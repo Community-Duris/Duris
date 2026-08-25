@@ -29,7 +29,7 @@ void spell_holy_sword(int level, P_char ch, char *arg, int type, P_char victim, 
 
 	bzero(&af, sizeof(af));
 
-	af.type     = SPELL_HOLY_SWORD;
+	af.type = SPELL_HOLY_SWORD;
 	af.duration = level / 2;
 	af.location = APPLY_DAMROLL;
 	af.modifier = 5;
@@ -39,13 +39,15 @@ void spell_holy_sword(int level, P_char ch, char *arg, int type, P_char victim, 
 	af.modifier = 5;
 	affect_to_char(ch, &af);
 
-	send_to_char("&+WHoliness flows down from the heavens, and imbues your sword with might!&n\n", ch);
+	send_to_char(
+		"&+WHoliness flows down from the heavens, and imbues your sword with might!&n\n",
+		ch);
 }
 
 void spell_divine_power(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	struct affected_type af;
-	int                  healpoints = level;
+	int healpoints = level;
 
 	if (!IS_GOOD(ch))
 	{
@@ -54,12 +56,13 @@ void spell_divine_power(int level, P_char ch, char *arg, int type, P_char victim
 	}
 	if (!affected_by_spell(ch, SPELL_DIVINE_POWER))
 	{
-		act("&+WHoly power surrounds $n&+W, and imbues him with it's might!&n", FALSE, ch, 0, 0, TO_ROOM);
+		act("&+WHoly power surrounds $n&+W, and imbues him with it's might!&n", FALSE, ch,
+		    0, 0, TO_ROOM);
 		send_to_char("&+WA wave of holy energy sweeps over your body.\n", ch);
 
 		bzero(&af, sizeof(af));
 
-		af.type     = SPELL_DIVINE_POWER;
+		af.type = SPELL_DIVINE_POWER;
 		af.duration = level / 2;
 		af.location = APPLY_HITROLL;
 		af.modifier = number(2, 5);
@@ -81,7 +84,7 @@ void spell_divine_power(int level, P_char ch, char *arg, int type, P_char victim
 void spell_atonement(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	struct affected_type af;
-	char                 Gbuf1[100];
+	char Gbuf1[100];
 
 	if (affected_by_spell(ch, SPELL_ATONEMENT))
 	{
@@ -89,10 +92,12 @@ void spell_atonement(int level, P_char ch, char *arg, int type, P_char victim, P
 		return;
 	}
 
-	snprintf(Gbuf1, 100, "&+WYou atone for your sins, and feel your holy power begin to heal your body.&n\n");
+	snprintf(
+		Gbuf1, 100,
+		"&+WYou atone for your sins, and feel your holy power begin to heal your body.&n\n");
 
 	bzero(&af, sizeof(af));
-	af.type     = SPELL_ATONEMENT;
+	af.type = SPELL_ATONEMENT;
 	af.duration = level / 2;
 	af.location = APPLY_HIT_REG;
 	af.modifier = level * 2;
@@ -103,16 +108,18 @@ void spell_atonement(int level, P_char ch, char *arg, int type, P_char victim, P
 // some skill type stuff, thrown in here for continuty
 void do_holy_smite(P_char ch, char *argument, int cmd)
 {
-	P_char                 vict = NULL;
-	char                   name[100];
-	int                    skl_lvl  = 0;
-	struct damage_messages messages = {"Calling forth the virtue of the gods, you smite $N with holy power!",
-	                                   "$n smirks proudly, as $e burns your soul with $s holy power!",
-	                                   "$n's smirks, chanting to $mself, and divine energy ravages $N's body!",
-	                                   "$N is utterly dissolved by your mighty torrent of divine energy!",
-	                                   "$n smirks a final time, as you feel your very soul being torn apart divine energy!",
-	                                   "$N falls to the ground, $s soul purged and cleansed by $n.",
-	                                   0};
+	P_char vict = NULL;
+	char name[100];
+	int skl_lvl = 0;
+	struct damage_messages messages = {
+		"Calling forth the virtue of the gods, you smite $N with holy power!",
+		"$n smirks proudly, as $e burns your soul with $s holy power!",
+		"$n's smirks, chanting to $mself, and divine energy ravages $N's body!",
+		"$N is utterly dissolved by your mighty torrent of divine energy!",
+		"$n smirks a final time, as you feel your very soul being torn apart divine energy!",
+		"$N falls to the ground, $s soul purged and cleansed by $n.",
+		0
+	};
 
 	if ((skl_lvl = GET_CHAR_SKILL(ch, SKILL_HOLY_SMITE)) == 0)
 	{
@@ -145,26 +152,35 @@ void do_holy_smite(P_char ch, char *argument, int cmd)
 
 	if (GET_ALIGNMENT(vict) > -1)
 	{
-		send_to_char("Your conscience prevents you from executing such a maneuver on this being.\r\n", ch);
+		send_to_char(
+			"Your conscience prevents you from executing such a maneuver on this being.\r\n",
+			ch);
 		return;
 	}
-	if (!notch_skill(ch, SKILL_HOLY_SMITE, get_property("skill.notch.offensive", 7)) && number(1, 101) > skl_lvl)
+	if (!notch_skill(ch, SKILL_HOLY_SMITE, get_property("skill.notch.offensive", 7)) &&
+	    number(1, 101) > skl_lvl)
 	{
 		act("You fruitlessly attempt to judge $N's sins.", FALSE, ch, 0, vict, TO_CHAR);
-		act("$n's attempt to judge your sins causes you to laugh malevolently.", FALSE, ch, 0, vict, TO_VICT);
-		act("$N laughs derisively at $n, as $e attempts to purify $S soul.", FALSE, ch, 0, vict, TO_NOTVICT);
+		act("$n's attempt to judge your sins causes you to laugh malevolently.", FALSE, ch,
+		    0, vict, TO_VICT);
+		act("$N laughs derisively at $n, as $e attempts to purify $S soul.", FALSE, ch, 0,
+		    vict, TO_NOTVICT);
 		engage(ch, vict);
 		CharWait(ch, PULSE_VIOLENCE);
 		return;
 	}
 	else
 	{
-		melee_damage(ch, vict, (dice((GET_LEVEL(ch) / 2), (skl_lvl / 10)) / 2), PHSDAM_NOSHIELDS | PHSDAM_NOREDUCE | PHSDAM_NOPOSITION, &messages);
+		melee_damage(ch, vict, (dice((GET_LEVEL(ch) / 2), (skl_lvl / 10)) / 2),
+			     PHSDAM_NOSHIELDS | PHSDAM_NOREDUCE | PHSDAM_NOPOSITION, &messages);
 		if ((GET_LEVEL(ch) / 2) > number(1, 150) && IS_ALIVE(vict))
 		{
-			act("&+L$N&+L is blinded by the &+Wholy&+L energy!&n", FALSE, ch, 0, vict, TO_CHAR);
-			act("&+LYou are blinded by the &+Wholy&+L energy!&n", FALSE, ch, 0, vict, TO_VICT);
-			act("&+L$N &+Lis blinded by the &+Wholy&+L energy!&n", FALSE, ch, 0, vict, TO_NOTVICT);
+			act("&+L$N&+L is blinded by the &+Wholy&+L energy!&n", FALSE, ch, 0, vict,
+			    TO_CHAR);
+			act("&+LYou are blinded by the &+Wholy&+L energy!&n", FALSE, ch, 0, vict,
+			    TO_VICT);
+			act("&+L$N &+Lis blinded by the &+Wholy&+L energy!&n", FALSE, ch, 0, vict,
+			    TO_NOTVICT);
 			blind(ch, vict, number(8, 10) * WAIT_SEC);
 		}
 	}
@@ -178,13 +194,15 @@ void spell_celestial_aura(int level, P_char ch, char *arg, int type, P_char vict
 	// The affects here are temporary, until I have time to whip up something really unique -Zion 9/13/08
 	if (!IS_AFFECTED(ch, AFF_ARMOR))
 	{
-		act("&+WA beam of light emerges from the heavens, infusing $n&+W's body with h&+Yol&+Wy energy!&n", TRUE, ch, 0, 0, TO_ROOM);
-		act("&+WA column of holy light sweeps over your body; your prayers are answered!&n", TRUE, ch, 0, 0, TO_CHAR);
+		act("&+WA beam of light emerges from the heavens, infusing $n&+W's body with h&+Yol&+Wy energy!&n",
+		    TRUE, ch, 0, 0, TO_ROOM);
+		act("&+WA column of holy light sweeps over your body; your prayers are answered!&n",
+		    TRUE, ch, 0, 0, TO_CHAR);
 		bzero(&af, sizeof(af));
-		af.type      = SPELL_CELESTIAL_AURA;
-		af.duration  = 4;
-		af.location  = APPLY_AC;
-		af.modifier  = -number(80, 150);
+		af.type = SPELL_CELESTIAL_AURA;
+		af.duration = 4;
+		af.location = APPLY_AC;
+		af.modifier = -number(80, 150);
 		af.bitvector = AFF_ARMOR;
 		affect_to_char(ch, &af);
 

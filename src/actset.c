@@ -26,69 +26,69 @@
 
 /* external variables */
 
-extern P_desc                   descriptor_list;
-extern P_room                   world;
-extern const flagDef            action_bits[];
-extern const flagDef            action2_bits[];
-extern const flagDef            affected1_bits[];
-extern const flagDef            affected2_bits[];
-extern const flagDef            affected3_bits[];
-extern const flagDef            affected4_bits[];
-extern const flagDef            affected5_bits[];
-extern const flagDef            aggro_bits[];
-extern const flagDef            aggro2_bits[];
-extern const flagDef            aggro3_bits[];
-extern const char              *apply_types[];
-extern const char              *connected_types[];
-extern const char              *dirs[];
-extern const char              *exit_bits[];
-extern const flagDef            extra_bits[];
-extern const flagDef            extra2_bits[];
-extern const flagDef            anti_bits[];
-extern const flagDef            anti2_bits[];
-extern const char              *item_material[];
-extern const char              *item_types[];
-extern const char              *player_bits[];
-extern const char              *player2_bits[];
-extern const char              *position_types[];
-extern const flagDef            room_bits[];
-extern const char              *sector_types[];
-extern const Skill              skills[];
-extern const char              *spells[];
-extern const flagDef            wear_bits[];
-extern const struct race_names  race_names_table[];
+extern P_desc descriptor_list;
+extern P_room world;
+extern const flagDef action_bits[];
+extern const flagDef action2_bits[];
+extern const flagDef affected1_bits[];
+extern const flagDef affected2_bits[];
+extern const flagDef affected3_bits[];
+extern const flagDef affected4_bits[];
+extern const flagDef affected5_bits[];
+extern const flagDef aggro_bits[];
+extern const flagDef aggro2_bits[];
+extern const flagDef aggro3_bits[];
+extern const char *apply_types[];
+extern const char *connected_types[];
+extern const char *dirs[];
+extern const char *exit_bits[];
+extern const flagDef extra_bits[];
+extern const flagDef extra2_bits[];
+extern const flagDef anti_bits[];
+extern const flagDef anti2_bits[];
+extern const char *item_material[];
+extern const char *item_types[];
+extern const char *player_bits[];
+extern const char *player2_bits[];
+extern const char *position_types[];
+extern const flagDef room_bits[];
+extern const char *sector_types[];
+extern const Skill skills[];
+extern const char *spells[];
+extern const flagDef wear_bits[];
+extern const struct race_names race_names_table[];
 extern const struct class_names class_names_table[];
-extern const char              *size_types[];
-extern const int                top_of_world;
-extern const int                rev_dir[];
-extern int                      top_of_zone_table;
-extern struct zone_data        *zone_table;
+extern const char *size_types[];
+extern const int top_of_world;
+extern const int rev_dir[];
+extern int top_of_zone_table;
+extern struct zone_data *zone_table;
 
 char bad_on_off[MAX_INPUT_LENGTH];
 
 /* Macros */
 #define SETBIT_ROOM 0
 #define SETBIT_CHAR 1
-#define SETBIT_OBJ  2
-#define SETBIT_DIR  3
-#define SETBIT_AFF  4
+#define SETBIT_OBJ 2
+#define SETBIT_DIR 3
+#define SETBIT_AFF 4
 #define SETBIT_ZONE 5
 #define SETBIT_SHIP 6
-#define SETBIT_MAX  6
+#define SETBIT_MAX 6
 
 #define ac_shintCopy ac_sh_intCopy
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof(*(A)))
 #endif
-#define SAME_STRING(A, B)      ac_strcasecmp((A), (B))
-#define LOWER_CASE(C)          (isupper(C) ? tolower(C) : (C))
+#define SAME_STRING(A, B) ac_strcasecmp((A), (B))
+#define LOWER_CASE(C) (isupper(C) ? tolower(C) : (C))
 #define OFFSET_OF(Type, Field) ((int)(((char *)(&(((Type)NULL)->Field))) - ((char *)NULL)))
 
 /* Types */
 struct setBitTable
 {
-	const char  *sb_flag;     // Name of "flag"
-	int          sb_offset;   // Offset from beginning of struct
+	const char *sb_flag; // Name of "flag"
+	int sb_offset; // Offset from beginning of struct
 	const char **sb_subtable; // Subtable for options
 
 	void (*sb_func)(void *, int, char *, int, int);
@@ -124,7 +124,7 @@ static void setbit_syntax(P_char ch, int type);
 /* Syntax error */
 static void setbit_printOutTable(P_char ch, SetBitTable *, int size);
 static void setbit_printOutSubTable(P_char ch, const char **subtable, int entry_size);
-static int  ac_strcasecmp(const char *s1, const char *s2);
+static int ac_strcasecmp(const char *s1, const char *s2);
 
 /* String insensitive case comparison */
 /* Copy functions */
@@ -166,10 +166,10 @@ static void ac_timerCopy(void *, int, char *, int, int);
 
 void do_setbit(P_char ch, char *arg, int cmd)
 {
-	int    type, on_off;
-	char   name[MAX_INPUT_LENGTH];
-	char   flag[MAX_INPUT_LENGTH];
-	char   value[MAX_INPUT_LENGTH];
+	int type, on_off;
+	char name[MAX_INPUT_LENGTH];
+	char flag[MAX_INPUT_LENGTH];
+	char value[MAX_INPUT_LENGTH];
 	P_char target;
 
 	if (IS_NPC(ch))
@@ -191,55 +191,56 @@ void do_setbit(P_char ch, char *arg, int cmd)
 
 	switch (type)
 	{
+	case SETBIT_ROOM:
+		setbit_room(ch, name, flag, value, on_off);
+		return;
 
-		case SETBIT_ROOM:
-			setbit_room(ch, name, flag, value, on_off);
+	case SETBIT_CHAR:
+		if (!god_check(GET_NAME(ch)) && god_check(name))
+		{
+			act("One hella pissed god says 'Hey buddy, that's not very polite, trying to setbit my ass.'",
+			    FALSE, ch, 0, 0, TO_ROOM);
+			act("One hella pissed god says 'Hey buddy, that's not very polite, trying to setbit my ass.'",
+			    FALSE, ch, 0, 0, TO_CHAR);
 			return;
-
-		case SETBIT_CHAR:
-			if (!god_check(GET_NAME(ch)) && god_check(name))
+		}
+		setbit_char(ch, name, flag, value, on_off);
+		// Different classes/specs get different skills.
+		if (!strcmp(flag, "spec") || !strcmp(flag, "class"))
+		{
+			target = get_char_vis(ch, name);
+			if (target == NULL)
 			{
-				act("One hella pissed god says 'Hey buddy, that's not very polite, trying to setbit my ass.'", FALSE, ch, 0, 0, TO_ROOM);
-				act("One hella pissed god says 'Hey buddy, that's not very polite, trying to setbit my ass.'", FALSE, ch, 0, 0, TO_CHAR);
+				send_to_char("No one by that name here.\r\n", ch);
 				return;
 			}
-			setbit_char(ch, name, flag, value, on_off);
-			// Different classes/specs get different skills.
-			if (!strcmp(flag, "spec") || !strcmp(flag, "class"))
-			{
-				target = get_char_vis(ch, name);
-				if (target == NULL)
-				{
-					send_to_char("No one by that name here.\r\n", ch);
-					return;
-				}
-				update_skills(target);
-			}
-			break;
+			update_skills(target);
+		}
+		break;
 
-		case SETBIT_OBJ:
-			setbit_obj(ch, name, flag, value, on_off);
-			break;
+	case SETBIT_OBJ:
+		setbit_obj(ch, name, flag, value, on_off);
+		break;
 
-		case SETBIT_DIR:
-			setbit_dir(ch, name, flag, value, on_off);
-			break;
+	case SETBIT_DIR:
+		setbit_dir(ch, name, flag, value, on_off);
+		break;
 
-		case SETBIT_AFF:
-			setbit_aff(ch, name, flag, value, on_off);
-			break;
+	case SETBIT_AFF:
+		setbit_aff(ch, name, flag, value, on_off);
+		break;
 
-		case SETBIT_ZONE:
-			setbit_zone(ch, name, flag, value, on_off);
-			break;
+	case SETBIT_ZONE:
+		setbit_zone(ch, name, flag, value, on_off);
+		break;
 
-		case SETBIT_SHIP:
-			setbit_ship(ch, name, flag, value, on_off);
-			break;
+	case SETBIT_SHIP:
+		setbit_ship(ch, name, flag, value, on_off);
+		break;
 
-		default:
-			logit(LOG_DEBUG, "SETBIT:  Unknown type: %d (%s %d)", type, __FILE__, __LINE__);
-			break;
+	default:
+		logit(LOG_DEBUG, "SETBIT:  Unknown type: %d (%s %d)", type, __FILE__, __LINE__);
+		break;
 	}
 }
 
@@ -272,48 +273,47 @@ static int setbit_parse(char *arg, int *type, char *name, char *flag, char *val,
 
 	switch (*type_str)
 	{
+	case 'r':
+	case 'R':
+		*type = SETBIT_ROOM;
+		break;
 
-		case 'r':
-		case 'R':
-			*type = SETBIT_ROOM;
-			break;
+	case 'c':
+	case 'C':
+	case 'm':
+	case 'M':
+		*type = SETBIT_CHAR;
+		break;
 
-		case 'c':
-		case 'C':
-		case 'm':
-		case 'M':
-			*type = SETBIT_CHAR;
-			break;
+	case 'o':
+	case 'O':
+	case 'i':
+	case 'I':
+		*type = SETBIT_OBJ;
+		break;
 
-		case 'o':
-		case 'O':
-		case 'i':
-		case 'I':
-			*type = SETBIT_OBJ;
-			break;
+	case 'd':
+	case 'D':
+		*type = SETBIT_DIR;
+		break;
 
-		case 'd':
-		case 'D':
-			*type = SETBIT_DIR;
-			break;
+	case 'a':
+	case 'A':
+		*type = SETBIT_AFF;
+		break;
 
-		case 'a':
-		case 'A':
-			*type = SETBIT_AFF;
-			break;
+	case 'z':
+	case 'Z':
+		*type = SETBIT_ZONE;
+		break;
 
-		case 'z':
-		case 'Z':
-			*type = SETBIT_ZONE;
-			break;
+	case 's':
+	case 'S':
+		*type = SETBIT_SHIP;
+		break;
 
-		case 's':
-		case 'S':
-			*type = SETBIT_SHIP;
-			break;
-
-		default:
-			return -1;
+	default:
+		return -1;
 	}
 
 	/*
@@ -321,7 +321,7 @@ static int setbit_parse(char *arg, int *type, char *name, char *flag, char *val,
 	 */
 	if (is_number(on_off_str))
 	{
-		*on_off       = atoi(on_off_str);
+		*on_off = atoi(on_off_str);
 		bad_on_off[0] = '\0';
 	}
 	else
@@ -347,21 +347,21 @@ static int setbit_parse(char *arg, int *type, char *name, char *flag, char *val,
  */
 static void setbit_room(P_char ch, char *name, char *flag, char *val, int on_off)
 {
-
 	/* Internal Macros */
 #undef OFFSET
 #define OFFSET(Field) OFFSET_OF(P_room, Field)
 
 	/* Table */
-	SetBitTable table[] = {
-		{"zone", OFFSET(zone), NULL, ac_shintCopy},
-		{"sect", OFFSET(sector_type), sector_types, ac_byteCopy, sizeof(char *)},
-		{"flag", OFFSET(room_flags), (const char **)room_bits, ac_bitCopy, sizeof(flagDef)},
-		{"light", OFFSET(light), NULL, ac_shortCopy},
-		{"fall", OFFSET(chance_fall), NULL, ac_shortCopy},
-		{"speed_current", OFFSET(current_speed), NULL, ac_shortCopy},
-		{"direction_current", OFFSET(current_direction), dirs, ac_sbyteCopy, sizeof(char *)}
-    };
+	SetBitTable table[] = { { "zone", OFFSET(zone), NULL, ac_shintCopy },
+				{ "sect", OFFSET(sector_type), sector_types, ac_byteCopy,
+				  sizeof(char *) },
+				{ "flag", OFFSET(room_flags), (const char **)room_bits, ac_bitCopy,
+				  sizeof(flagDef) },
+				{ "light", OFFSET(light), NULL, ac_shortCopy },
+				{ "fall", OFFSET(chance_fall), NULL, ac_shortCopy },
+				{ "speed_current", OFFSET(current_speed), NULL, ac_shortCopy },
+				{ "direction_current", OFFSET(current_direction), dirs,
+				  ac_sbyteCopy, sizeof(char *) } };
 
 	/* Local Variables */
 	int room_number;
@@ -381,7 +381,8 @@ static void setbit_room(P_char ch, char *name, char *flag, char *val, int on_off
 		send_to_char("Invalid room number.\n\r", ch);
 		return;
 	}
-	setbit_parseTable(ch, (void *)(world + room_number), table, ARRAY_SIZE(table), flag, val, on_off, SETBIT_ROOM);
+	setbit_parseTable(ch, (void *)(world + room_number), table, ARRAY_SIZE(table), flag, val,
+			  on_off, SETBIT_ROOM);
 
 	// Since we can set room lights (highly temporary as they get reset quickly),
 	//   we don't update the light here. - Lohrr
@@ -405,17 +406,15 @@ static void setbit_zone(P_char ch, char *name, char *flag, char *val, int on_off
 #define OFFSET(Field) OFFSET_OF(struct zone_data *, Field)
 
 	/* Table */
-	SetBitTable table[] = {
-		{"difficulty", OFFSET(difficulty), NULL, ac_shintCopy},
-        {       "age",        OFFSET(age), NULL,   ac_intCopy}
-    };
+	SetBitTable table[] = { { "difficulty", OFFSET(difficulty), NULL, ac_shintCopy },
+				{ "age", OFFSET(age), NULL, ac_intCopy } };
 
 	/* Local Variables */
 	int zone_id;
 
 	/* Executable Section */
 	int zone_number = atoi(name);
-	zone_id         = real_zone(zone_number);
+	zone_id = real_zone(zone_number);
 
 	if (zone_id < 0)
 	{
@@ -440,14 +439,15 @@ static void setbit_zone(P_char ch, char *name, char *flag, char *val, int on_off
 		}
 	}
 
-	setbit_parseTable(ch, (void *)(zone_table + zone_id), table, ARRAY_SIZE(table), flag, val, on_off, SETBIT_ZONE);
+	setbit_parseTable(ch, (void *)(zone_table + zone_id), table, ARRAY_SIZE(table), flag, val,
+			  on_off, SETBIT_ZONE);
 }
 
 static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off)
 {
 	/* Internal Macros */
 #undef OFFSET
-#define OFFSET(Field)   OFFSET_OF(P_char, Field)
+#define OFFSET(Field) OFFSET_OF(P_char, Field)
 #define PLOFFSET(Field) OFFSET(player.Field)
 #define ABOFFSET(Field) OFFSET(base_stats.Field)
 #define TAOFFSET(Field) OFFSET(curr_stats.Field)
@@ -458,119 +458,135 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 
 	SetBitTable table[] = {
 		/* char_player_data */
-		{"sex", PLOFFSET(sex), NULL, ac_ubyteCopy},
-		{"race", PLOFFSET(race), (const char **)race_names_table, ac_ubyteCopy, sizeof(struct race_names)},
-		{"racewar", PLOFFSET(racewar), NULL, ac_ubyteCopy},
-		{"level", PLOFFSET(level), NULL, ac_ubyteCopy},
-		{"spec", PLOFFSET(spec), NULL, ac_ubyteCopy},
-		{"home", PLOFFSET(hometown), NULL, ac_intCopy},
-		{"orighome", PLOFFSET(birthplace), NULL, ac_intCopy},
-		{"origbp", PLOFFSET(orig_birthplace), NULL, ac_intCopy},
-		{"age", 0, NULL, ac_ageCopy},
-		{"weight", PLOFFSET(weight), NULL, ac_shortCopy},
-		{"height", PLOFFSET(height), NULL, ac_shortCopy},
-		{"size", PLOFFSET(size), size_types, ac_ubyteCopy, sizeof(char *)},
+		{ "sex", PLOFFSET(sex), NULL, ac_ubyteCopy },
+		{ "race", PLOFFSET(race), (const char **)race_names_table, ac_ubyteCopy,
+		  sizeof(struct race_names) },
+		{ "racewar", PLOFFSET(racewar), NULL, ac_ubyteCopy },
+		{ "level", PLOFFSET(level), NULL, ac_ubyteCopy },
+		{ "spec", PLOFFSET(spec), NULL, ac_ubyteCopy },
+		{ "home", PLOFFSET(hometown), NULL, ac_intCopy },
+		{ "orighome", PLOFFSET(birthplace), NULL, ac_intCopy },
+		{ "origbp", PLOFFSET(orig_birthplace), NULL, ac_intCopy },
+		{ "age", 0, NULL, ac_ageCopy },
+		{ "weight", PLOFFSET(weight), NULL, ac_shortCopy },
+		{ "height", PLOFFSET(height), NULL, ac_shortCopy },
+		{ "size", PLOFFSET(size), size_types, ac_ubyteCopy, sizeof(char *) },
 		/* stat_data */
-		{"str", ABOFFSET(Str), NULL, ac_shortCopy},
-		{"dex", ABOFFSET(Dex), NULL, ac_shortCopy},
-		{"agi", ABOFFSET(Agi), NULL, ac_shortCopy},
-		{"con", ABOFFSET(Con), NULL, ac_shortCopy},
-		{"pow", ABOFFSET(Pow), NULL, ac_shortCopy},
-		{"int", ABOFFSET(Int), NULL, ac_shortCopy},
-		{"wis", ABOFFSET(Wis), NULL, ac_shortCopy},
-		{"cha", ABOFFSET(Cha), NULL, ac_shortCopy},
-		{"karma", ABOFFSET(Kar), NULL, ac_shortCopy},
-		{"luck", ABOFFSET(Luk), NULL, ac_shortCopy},
+		{ "str", ABOFFSET(Str), NULL, ac_shortCopy },
+		{ "dex", ABOFFSET(Dex), NULL, ac_shortCopy },
+		{ "agi", ABOFFSET(Agi), NULL, ac_shortCopy },
+		{ "con", ABOFFSET(Con), NULL, ac_shortCopy },
+		{ "pow", ABOFFSET(Pow), NULL, ac_shortCopy },
+		{ "int", ABOFFSET(Int), NULL, ac_shortCopy },
+		{ "wis", ABOFFSET(Wis), NULL, ac_shortCopy },
+		{ "cha", ABOFFSET(Cha), NULL, ac_shortCopy },
+		{ "karma", ABOFFSET(Kar), NULL, ac_shortCopy },
+		{ "luck", ABOFFSET(Luk), NULL, ac_shortCopy },
 		/* stat_data (temporary) */
-		{"tstr", TAOFFSET(Str), NULL, ac_shortCopy},
-		{"tdex", TAOFFSET(Dex), NULL, ac_shortCopy},
-		{"tagi", TAOFFSET(Agi), NULL, ac_shortCopy},
-		{"tcon", TAOFFSET(Con), NULL, ac_shortCopy},
-		{"tpow", TAOFFSET(Pow), NULL, ac_shortCopy},
-		{"tint", TAOFFSET(Int), NULL, ac_shortCopy},
-		{"twis", TAOFFSET(Wis), NULL, ac_shortCopy},
-		{"tcha", TAOFFSET(Cha), NULL, ac_shortCopy},
-		{"tkarma", TAOFFSET(Kar), NULL, ac_shortCopy},
-		{"tluck", TAOFFSET(Luk), NULL, ac_shortCopy},
+		{ "tstr", TAOFFSET(Str), NULL, ac_shortCopy },
+		{ "tdex", TAOFFSET(Dex), NULL, ac_shortCopy },
+		{ "tagi", TAOFFSET(Agi), NULL, ac_shortCopy },
+		{ "tcon", TAOFFSET(Con), NULL, ac_shortCopy },
+		{ "tpow", TAOFFSET(Pow), NULL, ac_shortCopy },
+		{ "tint", TAOFFSET(Int), NULL, ac_shortCopy },
+		{ "twis", TAOFFSET(Wis), NULL, ac_shortCopy },
+		{ "tcha", TAOFFSET(Cha), NULL, ac_shortCopy },
+		{ "tkarma", TAOFFSET(Kar), NULL, ac_shortCopy },
+		{ "tluck", TAOFFSET(Luk), NULL, ac_shortCopy },
 		/* char_point_data */
-		{"mana", POOFFSET(mana), NULL, ac_shintCopy},
-		{"mxmana", POOFFSET(base_mana), NULL, ac_hitmanaCopy},
-		{"hit", POOFFSET(hit), NULL, ac_intCopy},
-		{"basehit", POOFFSET(base_hit), NULL, ac_intCopy},
-		{"vit", POOFFSET(vitality), NULL, ac_shintCopy},
-		{"mxvit", POOFFSET(base_vitality), NULL, ac_shintCopy},
-		{"ac", POOFFSET(base_armor), NULL, ac_shintCopy},
-		{"copper", POOFFSET(cash[0]), NULL, ac_intCopy},
-		{"silver", POOFFSET(cash[1]), NULL, ac_intCopy},
-		{"gold", POOFFSET(cash[2]), NULL, ac_intCopy},
-		{"platinum", POOFFSET(cash[3]), NULL, ac_intCopy},
-		{"exp", POOFFSET(curr_exp), NULL, ac_longCopy},
-		{"hitrol", POOFFSET(base_hitroll), NULL, ac_sbyteCopy},
-		{"damrol", POOFFSET(base_damroll), NULL, ac_sbyteCopy},
-		{"diceno", POOFFSET(damnodice), NULL, ac_sbyteCopy},
-		{"dicesz", POOFFSET(damsizedice), NULL, ac_sbyteCopy},
+		{ "mana", POOFFSET(mana), NULL, ac_shintCopy },
+		{ "mxmana", POOFFSET(base_mana), NULL, ac_hitmanaCopy },
+		{ "hit", POOFFSET(hit), NULL, ac_intCopy },
+		{ "basehit", POOFFSET(base_hit), NULL, ac_intCopy },
+		{ "vit", POOFFSET(vitality), NULL, ac_shintCopy },
+		{ "mxvit", POOFFSET(base_vitality), NULL, ac_shintCopy },
+		{ "ac", POOFFSET(base_armor), NULL, ac_shintCopy },
+		{ "copper", POOFFSET(cash[0]), NULL, ac_intCopy },
+		{ "silver", POOFFSET(cash[1]), NULL, ac_intCopy },
+		{ "gold", POOFFSET(cash[2]), NULL, ac_intCopy },
+		{ "platinum", POOFFSET(cash[3]), NULL, ac_intCopy },
+		{ "exp", POOFFSET(curr_exp), NULL, ac_longCopy },
+		{ "hitrol", POOFFSET(base_hitroll), NULL, ac_sbyteCopy },
+		{ "damrol", POOFFSET(base_damroll), NULL, ac_sbyteCopy },
+		{ "diceno", POOFFSET(damnodice), NULL, ac_sbyteCopy },
+		{ "dicesz", POOFFSET(damsizedice), NULL, ac_sbyteCopy },
 		/* char_special_data */
-		{"pos", SPOFFSET(position), position_types, ac_positionCopy, sizeof(char *)},
-		{"pcact", SPOFFSET(act), player_bits, ac_bitCopy, sizeof(char *)},
-		{"pcact2", SPOFFSET(act2), player2_bits, ac_bitCopy, sizeof(char *)},
-		{"carryw", SPOFFSET(carry_weight), NULL, ac_intCopy},
-		{"carryn", SPOFFSET(carry_items), NULL, ac_shortCopy},
-		{"timer", SPOFFSET(timer), NULL, ac_shortCopy},
-		{"wasin", SPOFFSET(was_in_room), NULL, ac_intCopy},
-		{"savthr", 0, NULL, ac_savthrCopy},
-		{"drunk", SPOFFSET(conditions[0]), NULL, ac_sbyteCopy},
-		{"hunger", SPOFFSET(conditions[1]), NULL, ac_sbyteCopy},
-		{"thirst", SPOFFSET(conditions[2]), NULL, ac_sbyteCopy},
-		{"zcord", SPOFFSET(z_cord), NULL, ac_sbyteCopy},
-		{"align", SPOFFSET(alignment), NULL, ac_shintCopy},
-		{"ascnum", SPOFFSET(guild), NULL, ac_shintCopy},
-		{"aff", SPOFFSET(affected_by), (const char **)affected1_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aff2", SPOFFSET(affected_by2), (const char **)affected2_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aff3", SPOFFSET(affected_by3), (const char **)affected3_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aff4", SPOFFSET(affected_by4), (const char **)affected4_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aff5", SPOFFSET(affected_by5), (const char **)affected5_bits, ac_bitCopy, sizeof(flagDef)},
-		{"class", PLOFFSET(m_class), (const char **)class_names_table, ac_idx2flagCopy, sizeof(struct class_names)},
-		{"secondary", PLOFFSET(secondary_class), (const char **)class_names_table, ac_idx2flagCopy, sizeof(struct class_names)},
-		{"multiclass", PLOFFSET(m_class), (const char **)&(class_names_table[1]), ac_bitCopy, sizeof(struct class_names)},
-		{"npcact", SPOFFSET(act), (const char **)action_bits, ac_bitCopy, sizeof(flagDef)},
-		{"npcact2", SPOFFSET(act2), (const char **)action2_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aggro", NPOFFSET(aggro_flags), (const char **)aggro_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aggro2", NPOFFSET(aggro2_flags), (const char **)aggro2_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aggro3", NPOFFSET(aggro3_flags), (const char **)aggro3_bits, ac_bitCopy, sizeof(flagDef)},
+		{ "pos", SPOFFSET(position), position_types, ac_positionCopy, sizeof(char *) },
+		{ "pcact", SPOFFSET(act), player_bits, ac_bitCopy, sizeof(char *) },
+		{ "pcact2", SPOFFSET(act2), player2_bits, ac_bitCopy, sizeof(char *) },
+		{ "carryw", SPOFFSET(carry_weight), NULL, ac_intCopy },
+		{ "carryn", SPOFFSET(carry_items), NULL, ac_shortCopy },
+		{ "timer", SPOFFSET(timer), NULL, ac_shortCopy },
+		{ "wasin", SPOFFSET(was_in_room), NULL, ac_intCopy },
+		{ "savthr", 0, NULL, ac_savthrCopy },
+		{ "drunk", SPOFFSET(conditions[0]), NULL, ac_sbyteCopy },
+		{ "hunger", SPOFFSET(conditions[1]), NULL, ac_sbyteCopy },
+		{ "thirst", SPOFFSET(conditions[2]), NULL, ac_sbyteCopy },
+		{ "zcord", SPOFFSET(z_cord), NULL, ac_sbyteCopy },
+		{ "align", SPOFFSET(alignment), NULL, ac_shintCopy },
+		{ "ascnum", SPOFFSET(guild), NULL, ac_shintCopy },
+		{ "aff", SPOFFSET(affected_by), (const char **)affected1_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aff2", SPOFFSET(affected_by2), (const char **)affected2_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aff3", SPOFFSET(affected_by3), (const char **)affected3_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aff4", SPOFFSET(affected_by4), (const char **)affected4_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aff5", SPOFFSET(affected_by5), (const char **)affected5_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "class", PLOFFSET(m_class), (const char **)class_names_table, ac_idx2flagCopy,
+		  sizeof(struct class_names) },
+		{ "secondary", PLOFFSET(secondary_class), (const char **)class_names_table,
+		  ac_idx2flagCopy, sizeof(struct class_names) },
+		{ "multiclass", PLOFFSET(m_class), (const char **)&(class_names_table[1]),
+		  ac_bitCopy, sizeof(struct class_names) },
+		{ "npcact", SPOFFSET(act), (const char **)action_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "npcact2", SPOFFSET(act2), (const char **)action2_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aggro", NPOFFSET(aggro_flags), (const char **)aggro_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aggro2", NPOFFSET(aggro2_flags), (const char **)aggro2_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aggro3", NPOFFSET(aggro3_flags), (const char **)aggro3_bits, ac_bitCopy,
+		  sizeof(flagDef) },
 		/* char_skill_data */
-		{"skill", OFFSET_OF(struct char_skill_data *, learned), (const char **)spells, ac_skillCopy, sizeof(char *)},
-		{"taught", OFFSET_OF(struct char_skill_data *, taught), (const char **)spells, ac_skillCopy, sizeof(char *)},
+		{ "skill", OFFSET_OF(struct char_skill_data *, learned), (const char **)spells,
+		  ac_skillCopy, sizeof(char *) },
+		{ "taught", OFFSET_OF(struct char_skill_data *, taught), (const char **)spells,
+		  ac_skillCopy, sizeof(char *) },
 		/* only.npc */
-		{"ldir", NPOFFSET(last_direction), dirs, ac_sbyteCopy, sizeof(char *)},
-		{"attack", NPOFFSET(attack_type), NULL, ac_sbyteCopy},
-		{"val0", NPOFFSET(value[0]), NULL, ac_intCopy},
-		{"val1", NPOFFSET(value[1]), NULL, ac_intCopy},
-		{"val2", NPOFFSET(value[2]), NULL, ac_intCopy},
-		{"val3", NPOFFSET(value[3]), NULL, ac_intCopy},
-		{"val4", NPOFFSET(value[4]), NULL, ac_intCopy},
-		{"val5", NPOFFSET(value[5]), NULL, ac_intCopy},
-		{"val6", NPOFFSET(value[6]), NULL, ac_intCopy},
-		{"val7", NPOFFSET(value[7]), NULL, ac_intCopy},
+		{ "ldir", NPOFFSET(last_direction), dirs, ac_sbyteCopy, sizeof(char *) },
+		{ "attack", NPOFFSET(attack_type), NULL, ac_sbyteCopy },
+		{ "val0", NPOFFSET(value[0]), NULL, ac_intCopy },
+		{ "val1", NPOFFSET(value[1]), NULL, ac_intCopy },
+		{ "val2", NPOFFSET(value[2]), NULL, ac_intCopy },
+		{ "val3", NPOFFSET(value[3]), NULL, ac_intCopy },
+		{ "val4", NPOFFSET(value[4]), NULL, ac_intCopy },
+		{ "val5", NPOFFSET(value[5]), NULL, ac_intCopy },
+		{ "val6", NPOFFSET(value[6]), NULL, ac_intCopy },
+		{ "val7", NPOFFSET(value[7]), NULL, ac_intCopy },
 		// only.pc
-		{"frags", PCOFFSET(frags), NULL, ac_longCopy},
-		{"epics", PCOFFSET(epics), NULL, ac_longCopy},
-		{"epic_skill_points", PCOFFSET(epic_skill_points), NULL, ac_longCopy},
-		{"prestige", PCOFFSET(prestige), NULL, ac_shintCopy},
-		{"time_left_guild", PCOFFSET(time_left_guild), NULL, ac_longCopy},
-		{"nb_left_guild", PCOFFSET(nb_left_guild), NULL, ac_sbyteCopy},
-		{"echo", PCOFFSET(echo_toggle), NULL, ac_ubyteCopy},
-		{"prompt", PCOFFSET(prompt), NULL, ac_shortCopy},
-		{"screensize", PCOFFSET(screen_length), NULL, ac_ubyteCopy},
-		{"winvis", PCOFFSET(wiz_invis), NULL, ac_sbyteCopy},
-		{"wimpy", PCOFFSET(wimpy), NULL, ac_shortCopy},
-		{"aggr", PCOFFSET(aggressive), NULL, ac_shortCopy},
-		{"balc", PCOFFSET(spare1), NULL, ac_intCopy},
-		{"bals", PCOFFSET(spare2), NULL, ac_intCopy},
-		{"balg", PCOFFSET(spare3), NULL, ac_intCopy},
-		{"balp", PCOFFSET(spare4), NULL, ac_intCopy},
-		{"deaths", PCOFFSET(numb_deaths), NULL, ac_longCopy},
-		{"heaven", PCOFFSET(pc_timer[PC_TIMER_HEAVEN]), NULL, ac_timerCopy}
-    };
+		{ "frags", PCOFFSET(frags), NULL, ac_longCopy },
+		{ "epics", PCOFFSET(epics), NULL, ac_longCopy },
+		{ "epic_skill_points", PCOFFSET(epic_skill_points), NULL, ac_longCopy },
+		{ "prestige", PCOFFSET(prestige), NULL, ac_shintCopy },
+		{ "time_left_guild", PCOFFSET(time_left_guild), NULL, ac_longCopy },
+		{ "nb_left_guild", PCOFFSET(nb_left_guild), NULL, ac_sbyteCopy },
+		{ "echo", PCOFFSET(echo_toggle), NULL, ac_ubyteCopy },
+		{ "prompt", PCOFFSET(prompt), NULL, ac_shortCopy },
+		{ "screensize", PCOFFSET(screen_length), NULL, ac_ubyteCopy },
+		{ "winvis", PCOFFSET(wiz_invis), NULL, ac_sbyteCopy },
+		{ "wimpy", PCOFFSET(wimpy), NULL, ac_shortCopy },
+		{ "aggr", PCOFFSET(aggressive), NULL, ac_shortCopy },
+		{ "balc", PCOFFSET(spare1), NULL, ac_intCopy },
+		{ "bals", PCOFFSET(spare2), NULL, ac_intCopy },
+		{ "balg", PCOFFSET(spare3), NULL, ac_intCopy },
+		{ "balp", PCOFFSET(spare4), NULL, ac_intCopy },
+		{ "deaths", PCOFFSET(numb_deaths), NULL, ac_longCopy },
+		{ "heaven", PCOFFSET(pc_timer[PC_TIMER_HEAVEN]), NULL, ac_timerCopy }
+	};
 
 	P_char ppl;
 
@@ -590,27 +606,34 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		}
 		if (SAME_STRING(flag, "race"))
 		{
-			setbit_parseTable(ch, (void *)ppl, table, ARRAY_SIZE(table), flag, val, on_off, SETBIT_CHAR);
+			setbit_parseTable(ch, (void *)ppl, table, ARRAY_SIZE(table), flag, val,
+					  on_off, SETBIT_CHAR);
 
 			do_restore(ch, GET_NAME(ppl), 0);
 
 			set_char_size(ppl);
 			balance_affects(ppl);
 			if (!do_save_silent(ppl, 1))
-				logit(LOG_WIZ, "Failed to save %s after set command.", GET_NAME(ppl)); /* to make it stick */
+				logit(LOG_WIZ, "Failed to save %s after set command.",
+				      GET_NAME(ppl)); /* to make it stick */
 		}
 		if (ppl)
 		{
 			if (SAME_STRING(flag, "level"))
 			{
-				if (IS_PC(ppl) && GET_LEVEL(ch) < OVERLORD && atoi(val) >= MINLVLIMMORTAL)
+				if (IS_PC(ppl) && GET_LEVEL(ch) < OVERLORD &&
+				    atoi(val) >= MINLVLIMMORTAL)
 				{
-					send_to_char("You aren't allowed to set the level that high.\r\n", ch);
+					send_to_char(
+						"You aren't allowed to set the level that high.\r\n",
+						ch);
 					return;
 				}
 				if (IS_PC(ppl) && (atoi(val) > MAXLVL))
 				{
-					send_to_char("You can't setbit someone's level above 62.  Changing value to 62.\r\n", ch);
+					send_to_char(
+						"You can't setbit someone's level above 62.  Changing value to 62.\r\n",
+						ch);
 					snprintf(val, MAX_STRING_LENGTH, "62");
 				}
 			}
@@ -629,9 +652,14 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 #endif
 			return;
 		}
-		if (SAME_STRING(flag, "ldir") || SAME_STRING(flag, "defpos") || SAME_STRING(flag, "attack") || SAME_STRING(flag, "memory") || SAME_STRING(flag, "aggro") || SAME_STRING(flag, "aggro2") ||
-		    SAME_STRING(flag, "aggro3") || SAME_STRING(flag, "val0") || SAME_STRING(flag, "val1") || SAME_STRING(flag, "val2") || SAME_STRING(flag, "val3") || SAME_STRING(flag, "val4") ||
-		    SAME_STRING(flag, "val5") || SAME_STRING(flag, "val6") || SAME_STRING(flag, "val7"))
+		if (SAME_STRING(flag, "ldir") || SAME_STRING(flag, "defpos") ||
+		    SAME_STRING(flag, "attack") || SAME_STRING(flag, "memory") ||
+		    SAME_STRING(flag, "aggro") || SAME_STRING(flag, "aggro2") ||
+		    SAME_STRING(flag, "aggro3") || SAME_STRING(flag, "val0") ||
+		    SAME_STRING(flag, "val1") || SAME_STRING(flag, "val2") ||
+		    SAME_STRING(flag, "val3") || SAME_STRING(flag, "val4") ||
+		    SAME_STRING(flag, "val5") || SAME_STRING(flag, "val6") ||
+		    SAME_STRING(flag, "val7"))
 		{
 			if (IS_PC(ppl))
 			{
@@ -640,14 +668,22 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 			}
 			else
 			{
-				setbit_parseTable(ch, (void *)ppl->only.npc, table, ARRAY_SIZE(table), flag, val, on_off, SETBIT_CHAR);
+				setbit_parseTable(ch, (void *)ppl->only.npc, table,
+						  ARRAY_SIZE(table), flag, val, on_off,
+						  SETBIT_CHAR);
 				return;
 			}
 		}
-		else if (SAME_STRING(flag, "echo") || SAME_STRING(flag, "screensize") || SAME_STRING(flag, "prompt") || SAME_STRING(flag, "winvis") ||
-		         SAME_STRING(flag, "wimpy") || SAME_STRING(flag, "aggr") || SAME_STRING(flag, "balp") || SAME_STRING(flag, "balg") || SAME_STRING(flag, "bals") || SAME_STRING(flag, "balc") ||
-		         SAME_STRING(flag, "lesson") || SAME_STRING(flag, "frags") || SAME_STRING(flag, "epics") || SAME_STRING(flag, "epic_skill_points") || SAME_STRING(flag, "prestige") ||
-		         SAME_STRING(flag, "time_left_guild") || SAME_STRING(flag, "nb_left_guild") || SAME_STRING(flag, "deaths") || SAME_STRING(flag, "heaven"))
+		else if (SAME_STRING(flag, "echo") || SAME_STRING(flag, "screensize") ||
+			 SAME_STRING(flag, "prompt") || SAME_STRING(flag, "winvis") ||
+			 SAME_STRING(flag, "wimpy") || SAME_STRING(flag, "aggr") ||
+			 SAME_STRING(flag, "balp") || SAME_STRING(flag, "balg") ||
+			 SAME_STRING(flag, "bals") || SAME_STRING(flag, "balc") ||
+			 SAME_STRING(flag, "lesson") || SAME_STRING(flag, "frags") ||
+			 SAME_STRING(flag, "epics") || SAME_STRING(flag, "epic_skill_points") ||
+			 SAME_STRING(flag, "prestige") || SAME_STRING(flag, "time_left_guild") ||
+			 SAME_STRING(flag, "nb_left_guild") || SAME_STRING(flag, "deaths") ||
+			 SAME_STRING(flag, "heaven"))
 		{
 			if (IS_NPC(ppl))
 			{
@@ -656,8 +692,11 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 			}
 			else
 			{
-				if (SAME_STRING(flag, "heaven") && !(ppl->in_room == real_room0(GOOD_HEAVEN_ROOM) || ppl->in_room == real_room0(EVIL_HEAVEN_ROOM) || ppl->in_room == real_room0(UNDEAD_HEAVEN_ROOM) ||
-				                                     ppl->in_room == real_room0(NEUTRAL_HEAVEN_ROOM)))
+				if (SAME_STRING(flag, "heaven") &&
+				    !(ppl->in_room == real_room0(GOOD_HEAVEN_ROOM) ||
+				      ppl->in_room == real_room0(EVIL_HEAVEN_ROOM) ||
+				      ppl->in_room == real_room0(UNDEAD_HEAVEN_ROOM) ||
+				      ppl->in_room == real_room0(NEUTRAL_HEAVEN_ROOM)))
 				{
 					char_from_room(ppl);
 					if (IS_RACEWAR_GOOD(ppl))
@@ -665,24 +704,34 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 					else if (IS_RACEWAR_EVIL(ppl))
 						char_to_room(ppl, real_room0(EVIL_HEAVEN_ROOM), -2);
 					else if (IS_RACEWAR_UNDEAD(ppl))
-						char_to_room(ppl, real_room0(UNDEAD_HEAVEN_ROOM), -2);
+						char_to_room(ppl, real_room0(UNDEAD_HEAVEN_ROOM),
+							     -2);
 					else if (IS_RACEWAR_NEUTRAL(ppl))
-						char_to_room(ppl, real_room0(NEUTRAL_HEAVEN_ROOM), -2);
+						char_to_room(ppl, real_room0(NEUTRAL_HEAVEN_ROOM),
+							     -2);
 					else
 					{
-						char_to_room(ppl, real_room0(ppl->specials.was_in_room), -2);
-						act("Could not find heaven room for $N.. aborting", TRUE, ch, 0, ppl, TO_CHAR);
+						char_to_room(ppl,
+							     real_room0(ppl->specials.was_in_room),
+							     -2);
+						act("Could not find heaven room for $N.. aborting",
+						    TRUE, ch, 0, ppl, TO_CHAR);
 						return;
 					}
-					send_to_char("You feel your body pulled through reality by your soul...\n", ppl);
+					send_to_char(
+						"You feel your body pulled through reality by your soul...\n",
+						ppl);
 					new_look(ppl, "", CMD_LOOK, ppl->in_room);
 				}
-				setbit_parseTable(ch, (void *)ppl->only.pc, table, ARRAY_SIZE(table), flag, val, on_off, SETBIT_CHAR);
+				setbit_parseTable(ch, (void *)ppl->only.pc, table,
+						  ARRAY_SIZE(table), flag, val, on_off,
+						  SETBIT_CHAR);
 				return;
 			}
 		}
 	}
-	setbit_parseTable(ch, (void *)ppl, table, ARRAY_SIZE(table), flag, val, on_off, SETBIT_CHAR);
+	setbit_parseTable(ch, (void *)ppl, table, ARRAY_SIZE(table), flag, val, on_off,
+			  SETBIT_CHAR);
 
 	if (IS_NPC(ppl))
 		set_npc_multi(ppl);
@@ -698,7 +747,8 @@ static void setbit_char(P_char ch, char *name, char *flag, char *val, int on_off
 		update_skills(ppl);
 
 	if (!do_save_silent(ppl, 1))
-		logit(LOG_WIZ, "Failed to save %s after set command.", GET_NAME(ppl)); /* to make it stick */
+		logit(LOG_WIZ, "Failed to save %s after set command.",
+		      GET_NAME(ppl)); /* to make it stick */
 }
 
 static void setbit_ship(P_char ch, char *name, char *flag, char *val, int on_off)
@@ -712,40 +762,39 @@ static void setbit_ship(P_char ch, char *name, char *flag, char *val, int on_off
 
 	/* Table */
 
-	SetBitTable table[] = {
-		/*    {"item", OFFSET(R_num), NULL, ac_shintCopy},*/
+	SetBitTable table[] = { /*    {"item", OFFSET(R_num), NULL, ac_shintCopy},*/
 
-		{   "mxarmor0",    OFFSET(maxarmor[0]), NULL, ac_intCopy},
-		{   "mxarmor1",    OFFSET(maxarmor[1]), NULL, ac_intCopy},
-		{   "mxarmor2",    OFFSET(maxarmor[2]), NULL, ac_intCopy},
-		{   "mxarmor3",    OFFSET(maxarmor[3]), NULL, ac_intCopy},
-		{     "armor0",       OFFSET(armor[0]), NULL, ac_intCopy},
-		{     "armor1",       OFFSET(armor[1]), NULL, ac_intCopy},
-		{     "armor2",       OFFSET(armor[2]), NULL, ac_intCopy},
-		{     "armor3",       OFFSET(armor[3]), NULL, ac_intCopy},
-		{  "mxintern0", OFFSET(maxinternal[0]), NULL, ac_intCopy},
-		{  "mxintern1", OFFSET(maxinternal[1]), NULL, ac_intCopy},
-		{  "mxintern2", OFFSET(maxinternal[2]), NULL, ac_intCopy},
-		{  "mxintern3", OFFSET(maxinternal[3]), NULL, ac_intCopy},
-		{    "intern0",    OFFSET(internal[0]), NULL, ac_intCopy},
-		{    "intern1",    OFFSET(internal[1]), NULL, ac_intCopy},
-		{    "intern2",    OFFSET(internal[2]), NULL, ac_intCopy},
-		{    "intern3",    OFFSET(internal[3]), NULL, ac_intCopy},
-		{       "sail",       OFFSET(mainsail), NULL, ac_intCopy},
-		{      "money",          OFFSET(money), NULL, ac_intCopy},
-		{      "frags",          OFFSET(frags), NULL, ac_intCopy},
-		// entries below are just for help, they arent used in parsetable
-		{   "maxspeed",					  0, NULL, ac_intCopy},
-		{   "capacity",					  0, NULL, ac_intCopy},
-		{        "air",					  0, NULL, ac_intCopy},
-		{       "crew",					  0, NULL, ac_intCopy},
-		{      "chief",					  0, NULL, ac_intCopy},
-		{"clearchiefs",                      0, NULL, ac_intCopy},
-		{  "sailskill",					  0, NULL, ac_intCopy},
-		{   "gunskill",					  0, NULL, ac_intCopy},
-		{"repairskill",                      0, NULL, ac_intCopy},
-		{    "stamina",					  0, NULL, ac_intCopy}
-    };
+				{ "mxarmor0", OFFSET(maxarmor[0]), NULL, ac_intCopy },
+				{ "mxarmor1", OFFSET(maxarmor[1]), NULL, ac_intCopy },
+				{ "mxarmor2", OFFSET(maxarmor[2]), NULL, ac_intCopy },
+				{ "mxarmor3", OFFSET(maxarmor[3]), NULL, ac_intCopy },
+				{ "armor0", OFFSET(armor[0]), NULL, ac_intCopy },
+				{ "armor1", OFFSET(armor[1]), NULL, ac_intCopy },
+				{ "armor2", OFFSET(armor[2]), NULL, ac_intCopy },
+				{ "armor3", OFFSET(armor[3]), NULL, ac_intCopy },
+				{ "mxintern0", OFFSET(maxinternal[0]), NULL, ac_intCopy },
+				{ "mxintern1", OFFSET(maxinternal[1]), NULL, ac_intCopy },
+				{ "mxintern2", OFFSET(maxinternal[2]), NULL, ac_intCopy },
+				{ "mxintern3", OFFSET(maxinternal[3]), NULL, ac_intCopy },
+				{ "intern0", OFFSET(internal[0]), NULL, ac_intCopy },
+				{ "intern1", OFFSET(internal[1]), NULL, ac_intCopy },
+				{ "intern2", OFFSET(internal[2]), NULL, ac_intCopy },
+				{ "intern3", OFFSET(internal[3]), NULL, ac_intCopy },
+				{ "sail", OFFSET(mainsail), NULL, ac_intCopy },
+				{ "money", OFFSET(money), NULL, ac_intCopy },
+				{ "frags", OFFSET(frags), NULL, ac_intCopy },
+				// entries below are just for help, they arent used in parsetable
+				{ "maxspeed", 0, NULL, ac_intCopy },
+				{ "capacity", 0, NULL, ac_intCopy },
+				{ "air", 0, NULL, ac_intCopy },
+				{ "crew", 0, NULL, ac_intCopy },
+				{ "chief", 0, NULL, ac_intCopy },
+				{ "clearchiefs", 0, NULL, ac_intCopy },
+				{ "sailskill", 0, NULL, ac_intCopy },
+				{ "gunskill", 0, NULL, ac_intCopy },
+				{ "repairskill", 0, NULL, ac_intCopy },
+				{ "stamina", 0, NULL, ac_intCopy }
+	};
 
 	/* Local Variable */
 
@@ -821,7 +870,8 @@ static void setbit_ship(P_char ch, char *name, char *flag, char *val, int on_off
 		return;
 	}
 
-	setbit_parseTable(ch, (void *)ship, table, ARRAY_SIZE(table), flag, val, on_off, SETBIT_SHIP);
+	setbit_parseTable(ch, (void *)ship, table, ARRAY_SIZE(table), flag, val, on_off,
+			  SETBIT_SHIP);
 }
 
 static void setbit_obj(P_char ch, char *name, char *flag, char *val, int on_off)
@@ -837,38 +887,53 @@ static void setbit_obj(P_char ch, char *name, char *flag, char *val, int on_off)
 
 	SetBitTable table[] = {
 		/*    {"item", OFFSET(R_num), NULL, ac_shintCopy},*/
-		{"wear", OFFSET(wear_flags), (const char **)wear_bits, ac_bitCopy, sizeof(flagDef)},
-		{"extra", OFFSET(extra_flags), (const char **)extra_bits, ac_bitCopy, sizeof(flagDef)},
-		{"class", OFFSET(anti_flags), (const char **)&(class_names_table[1]), ac_bitCopy, sizeof(struct class_names), OFFSET_OF(struct class_names *, normal)},
-		{"race", OFFSET(anti2_flags), (const char **)&(race_names_table[1]), ac_bitCopy, sizeof(struct race_names), OFFSET_OF(struct race_names *, no_spaces)},
-		{"extra2", OFFSET(extra2_flags), (const char **)extra2_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aff", OFFSET(bitvector), (const char **)affected1_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aff2", OFFSET(bitvector2), (const char **)affected2_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aff3", OFFSET(bitvector3), (const char **)affected3_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aff4", OFFSET(bitvector4), (const char **)affected4_bits, ac_bitCopy, sizeof(flagDef)},
-		{"aff5", OFFSET(bitvector5), (const char **)affected5_bits, ac_bitCopy, sizeof(flagDef)},
-		{"val0", OFFSET(value[0]), NULL, ac_intCopy},
-		{"val1", OFFSET(value[1]), NULL, ac_intCopy},
-		{"val2", OFFSET(value[2]), NULL, ac_intCopy},
-		{"val3", OFFSET(value[3]), NULL, ac_intCopy},
-		{"val4", OFFSET(value[4]), NULL, ac_intCopy},
-		{"val5", OFFSET(value[5]), NULL, ac_intCopy},
-		{"val6", OFFSET(value[6]), NULL, ac_intCopy},
-		{"val7", OFFSET(value[7]), NULL, ac_intCopy},
-		{"type", OFFSET(type), (const char **)item_types, ac_byteCopy, sizeof(char *)},
-		{"material", OFFSET(material), (const char **)item_material, ac_shintCopy, sizeof(char *)},
-		{"weight", OFFSET(weight), NULL, ac_intCopy},
-		{"price", OFFSET(cost), NULL, ac_intCopy},
-		{"condition", OFFSET(condition), NULL, ac_shintCopy},
-		{"a0mod", AO(0, modifier), NULL, ac_sbyteCopy},
-		{"a1mod", AO(1, modifier), NULL, ac_sbyteCopy},
-		{"a2mod", AO(2, modifier), NULL, ac_sbyteCopy},
-		{"a3mod", AO(3, modifier), NULL, ac_sbyteCopy},
-		{"a0loc", AO(0, location), (const char **)apply_types, ac_objaffCopy, sizeof(char *)},
-		{"a1loc", AO(1, location), (const char **)apply_types, ac_objaffCopy, sizeof(char *)},
-		{"a2loc", AO(2, location), (const char **)apply_types, ac_objaffCopy, sizeof(char *)},
-		{"a3loc", AO(3, location), (const char **)apply_types, ac_objaffCopy, sizeof(char *)}
-    };
+		{ "wear", OFFSET(wear_flags), (const char **)wear_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "extra", OFFSET(extra_flags), (const char **)extra_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "class", OFFSET(anti_flags), (const char **)&(class_names_table[1]), ac_bitCopy,
+		  sizeof(struct class_names), OFFSET_OF(struct class_names *, normal) },
+		{ "race", OFFSET(anti2_flags), (const char **)&(race_names_table[1]), ac_bitCopy,
+		  sizeof(struct race_names), OFFSET_OF(struct race_names *, no_spaces) },
+		{ "extra2", OFFSET(extra2_flags), (const char **)extra2_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aff", OFFSET(bitvector), (const char **)affected1_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aff2", OFFSET(bitvector2), (const char **)affected2_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aff3", OFFSET(bitvector3), (const char **)affected3_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aff4", OFFSET(bitvector4), (const char **)affected4_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "aff5", OFFSET(bitvector5), (const char **)affected5_bits, ac_bitCopy,
+		  sizeof(flagDef) },
+		{ "val0", OFFSET(value[0]), NULL, ac_intCopy },
+		{ "val1", OFFSET(value[1]), NULL, ac_intCopy },
+		{ "val2", OFFSET(value[2]), NULL, ac_intCopy },
+		{ "val3", OFFSET(value[3]), NULL, ac_intCopy },
+		{ "val4", OFFSET(value[4]), NULL, ac_intCopy },
+		{ "val5", OFFSET(value[5]), NULL, ac_intCopy },
+		{ "val6", OFFSET(value[6]), NULL, ac_intCopy },
+		{ "val7", OFFSET(value[7]), NULL, ac_intCopy },
+		{ "type", OFFSET(type), (const char **)item_types, ac_byteCopy, sizeof(char *) },
+		{ "material", OFFSET(material), (const char **)item_material, ac_shintCopy,
+		  sizeof(char *) },
+		{ "weight", OFFSET(weight), NULL, ac_intCopy },
+		{ "price", OFFSET(cost), NULL, ac_intCopy },
+		{ "condition", OFFSET(condition), NULL, ac_shintCopy },
+		{ "a0mod", AO(0, modifier), NULL, ac_sbyteCopy },
+		{ "a1mod", AO(1, modifier), NULL, ac_sbyteCopy },
+		{ "a2mod", AO(2, modifier), NULL, ac_sbyteCopy },
+		{ "a3mod", AO(3, modifier), NULL, ac_sbyteCopy },
+		{ "a0loc", AO(0, location), (const char **)apply_types, ac_objaffCopy,
+		  sizeof(char *) },
+		{ "a1loc", AO(1, location), (const char **)apply_types, ac_objaffCopy,
+		  sizeof(char *) },
+		{ "a2loc", AO(2, location), (const char **)apply_types, ac_objaffCopy,
+		  sizeof(char *) },
+		{ "a3loc", AO(3, location), (const char **)apply_types, ac_objaffCopy,
+		  sizeof(char *) }
+	};
 
 	/* Local Variable */
 
@@ -908,7 +973,6 @@ static void setbit_obj(P_char ch, char *name, char *flag, char *val, int on_off)
  */
 static void setbit_dir(P_char ch, char *name, char *flag, char *value, int on_off)
 {
-
 	/* Internal Macros */
 
 #undef OFFSET
@@ -922,45 +986,45 @@ static void setbit_dir(P_char ch, char *name, char *flag, char *value, int on_of
 	/* Table */
 
 	SetBitTable table[] = {
-		{"ninfo", DIR(DIR_NORTH, exit_info), exit_bits, ac_bitCopy, sizeof(char *)},
-		{"einfo", DIR(DIR_EAST, exit_info), exit_bits, ac_bitCopy, sizeof(char *)},
-		{"sinfo", DIR(DIR_SOUTH, exit_info), exit_bits, ac_bitCopy, sizeof(char *)},
-		{"winfo", DIR(DIR_WEST, exit_info), exit_bits, ac_bitCopy, sizeof(char *)},
-		{"uinfo", DIR(DIR_UP, exit_info), exit_bits, ac_bitCopy, sizeof(char *)},
-		{"dinfo", DIR(DIR_DOWN, exit_info), exit_bits, ac_bitCopy, sizeof(char *)},
-		{"nwinfo", DIR(DIR_NORTHWEST, exit_info), exit_bits, ac_bitCopy, sizeof(char *)},
-		{"neinfo", DIR(DIR_NORTHEAST, exit_info), exit_bits, ac_bitCopy, sizeof(char *)},
-		{"swinfo", DIR(DIR_SOUTHWEST, exit_info), exit_bits, ac_bitCopy, sizeof(char *)},
-		{"seinfo", DIR(DIR_SOUTHEAST, exit_info), exit_bits, ac_bitCopy, sizeof(char *)},
-		{"nkey", DIR(DIR_NORTH, key), NULL, ac_shintCopy},
-		{"ekey", DIR(DIR_EAST, key), NULL, ac_shintCopy},
-		{"skey", DIR(DIR_SOUTH, key), NULL, ac_shintCopy},
-		{"wkey", DIR(DIR_WEST, key), NULL, ac_shintCopy},
-		{"ukey", DIR(UP, key), NULL, ac_shintCopy},
-		{"dkey", DIR(DOWN, key), NULL, ac_shintCopy},
-		{"nwkey", DIR(DIR_NORTHWEST, key), NULL, ac_shintCopy},
-		{"nekey", DIR(DIR_NORTHEAST, key), NULL, ac_shintCopy},
-		{"swkey", DIR(DIR_SOUTHWEST, key), NULL, ac_shintCopy},
-		{"sekey", DIR(DIR_SOUTHEAST, key), NULL, ac_shintCopy},
-		{"nroom", DIR(DIR_NORTH, to_room), NULL, ac_intCopy},
-		{"eroom", DIR(DIR_EAST, to_room), NULL, ac_intCopy},
-		{"sroom", DIR(DIR_SOUTH, to_room), NULL, ac_intCopy},
-		{"wroom", DIR(DIR_WEST, to_room), NULL, ac_intCopy},
-		{"uroom", DIR(UP, to_room), NULL, ac_intCopy},
-		{"droom", DIR(DOWN, to_room), NULL, ac_intCopy},
-		{"nwroom", DIR(DIR_NORTHWEST, to_room), NULL, ac_intCopy},
-		{"neroom", DIR(DIR_NORTHEAST, to_room), NULL, ac_intCopy},
-		{"swroom", DIR(DIR_SOUTHWEST, to_room), NULL, ac_intCopy},
-		{"seroom", DIR(DIR_SOUTHEAST, to_room), NULL, ac_intCopy}
-    };
+		{ "ninfo", DIR(DIR_NORTH, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
+		{ "einfo", DIR(DIR_EAST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
+		{ "sinfo", DIR(DIR_SOUTH, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
+		{ "winfo", DIR(DIR_WEST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
+		{ "uinfo", DIR(DIR_UP, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
+		{ "dinfo", DIR(DIR_DOWN, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
+		{ "nwinfo", DIR(DIR_NORTHWEST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
+		{ "neinfo", DIR(DIR_NORTHEAST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
+		{ "swinfo", DIR(DIR_SOUTHWEST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
+		{ "seinfo", DIR(DIR_SOUTHEAST, exit_info), exit_bits, ac_bitCopy, sizeof(char *) },
+		{ "nkey", DIR(DIR_NORTH, key), NULL, ac_shintCopy },
+		{ "ekey", DIR(DIR_EAST, key), NULL, ac_shintCopy },
+		{ "skey", DIR(DIR_SOUTH, key), NULL, ac_shintCopy },
+		{ "wkey", DIR(DIR_WEST, key), NULL, ac_shintCopy },
+		{ "ukey", DIR(UP, key), NULL, ac_shintCopy },
+		{ "dkey", DIR(DOWN, key), NULL, ac_shintCopy },
+		{ "nwkey", DIR(DIR_NORTHWEST, key), NULL, ac_shintCopy },
+		{ "nekey", DIR(DIR_NORTHEAST, key), NULL, ac_shintCopy },
+		{ "swkey", DIR(DIR_SOUTHWEST, key), NULL, ac_shintCopy },
+		{ "sekey", DIR(DIR_SOUTHEAST, key), NULL, ac_shintCopy },
+		{ "nroom", DIR(DIR_NORTH, to_room), NULL, ac_intCopy },
+		{ "eroom", DIR(DIR_EAST, to_room), NULL, ac_intCopy },
+		{ "sroom", DIR(DIR_SOUTH, to_room), NULL, ac_intCopy },
+		{ "wroom", DIR(DIR_WEST, to_room), NULL, ac_intCopy },
+		{ "uroom", DIR(UP, to_room), NULL, ac_intCopy },
+		{ "droom", DIR(DOWN, to_room), NULL, ac_intCopy },
+		{ "nwroom", DIR(DIR_NORTHWEST, to_room), NULL, ac_intCopy },
+		{ "neroom", DIR(DIR_NORTHEAST, to_room), NULL, ac_intCopy },
+		{ "swroom", DIR(DIR_SOUTHWEST, to_room), NULL, ac_intCopy },
+		{ "seroom", DIR(DIR_SOUTHEAST, to_room), NULL, ac_intCopy }
+	};
 
 	/*
 	 * Local Variable
 	 */
 
 	P_room room;
-	int    room_number;
-	void  *where = NULL;
+	int room_number;
+	void *where = NULL;
 
 	/*
 	 * Executable section
@@ -985,7 +1049,9 @@ static void setbit_dir(P_char ch, char *name, char *flag, char *value, int on_of
 	if (room_number < 0 || room_number > top_of_world)
 	{
 		setbit_syntax(ch, SETBIT_DIR);
-		send_to_char("Invalid room number.  Please enter a virtual number or 'here' for the room you are in.\n\r", ch);
+		send_to_char(
+			"Invalid room number.  Please enter a virtual number or 'here' for the room you are in.\n\r",
+			ch);
 		return;
 	}
 	room = &world[room_number];
@@ -1000,100 +1066,101 @@ static void setbit_dir(P_char ch, char *name, char *flag, char *value, int on_of
 	bool bIsSetRoom = false;
 	switch (*flag)
 	{
-
-		case 'n':
-		case 'N':
-			switch (toupper(flag[1]))
-			{
-				case 'W':
-					where = room->dir_option[DIR_NORTHWEST];
-					if (toupper(flag[2]) == 'R')
-						bIsSetRoom = true;
-					break;
-				case 'E':
-					where = room->dir_option[DIR_NORTHEAST];
-					if (toupper(flag[2]) == 'R')
-						bIsSetRoom = true;
-					break;
-				default:
-					if (toupper(flag[1]) == 'R')
-						bIsSetRoom = true;
-					where = room->dir_option[DIR_NORTH];
-					break;
-			}
-			break;
-
-		case 'e':
-		case 'E':
-			where = room->dir_option[DIR_EAST];
-			if (toupper(flag[1]) == 'R')
-			{
-				bIsSetRoom = true;
-			}
-			break;
-
-		case 'w':
+	case 'n':
+	case 'N':
+		switch (toupper(flag[1]))
+		{
 		case 'W':
-			where = room->dir_option[DIR_WEST];
-			if (toupper(flag[1]) == 'R')
-			{
-				bIsSetRoom = true;
-			}
-			break;
-
-		case 's':
-		case 'S':
-			switch (toupper(flag[1]))
-			{
-				case 'W':
-					where = room->dir_option[DIR_SOUTHWEST];
-					if (toupper(flag[2]) == 'R')
-					{
-						bIsSetRoom = true;
-					}
-					break;
-				case 'E':
-					where = room->dir_option[DIR_SOUTHEAST];
-					if (toupper(flag[2]) == 'R')
-					{
-						bIsSetRoom = true;
-					}
-					break;
-				default:
-					if (toupper(flag[1]) == 'R')
-					{
-						bIsSetRoom = true;
-					}
-					where = room->dir_option[DIR_SOUTH];
-					break;
-			}
-			break;
-
-		case 'u':
-		case 'U':
-			where = room->dir_option[DIR_UP];
-			if (toupper(flag[1]) == 'R')
+			where = room->dir_option[DIR_NORTHWEST];
+			if (toupper(flag[2]) == 'R')
 				bIsSetRoom = true;
 			break;
-
-		case 'd':
-		case 'D':
-			where = room->dir_option[DIR_DOWN];
-			if (toupper(flag[1]) == 'R')
+		case 'E':
+			where = room->dir_option[DIR_NORTHEAST];
+			if (toupper(flag[2]) == 'R')
 				bIsSetRoom = true;
 			break;
-
 		default:
-			*flag = 'g'; /*
+			if (toupper(flag[1]) == 'R')
+				bIsSetRoom = true;
+			where = room->dir_option[DIR_NORTH];
+			break;
+		}
+		break;
+
+	case 'e':
+	case 'E':
+		where = room->dir_option[DIR_EAST];
+		if (toupper(flag[1]) == 'R')
+		{
+			bIsSetRoom = true;
+		}
+		break;
+
+	case 'w':
+	case 'W':
+		where = room->dir_option[DIR_WEST];
+		if (toupper(flag[1]) == 'R')
+		{
+			bIsSetRoom = true;
+		}
+		break;
+
+	case 's':
+	case 'S':
+		switch (toupper(flag[1]))
+		{
+		case 'W':
+			where = room->dir_option[DIR_SOUTHWEST];
+			if (toupper(flag[2]) == 'R')
+			{
+				bIsSetRoom = true;
+			}
+			break;
+		case 'E':
+			where = room->dir_option[DIR_SOUTHEAST];
+			if (toupper(flag[2]) == 'R')
+			{
+				bIsSetRoom = true;
+			}
+			break;
+		default:
+			if (toupper(flag[1]) == 'R')
+			{
+				bIsSetRoom = true;
+			}
+			where = room->dir_option[DIR_SOUTH];
+			break;
+		}
+		break;
+
+	case 'u':
+	case 'U':
+		where = room->dir_option[DIR_UP];
+		if (toupper(flag[1]) == 'R')
+			bIsSetRoom = true;
+		break;
+
+	case 'd':
+	case 'D':
+		where = room->dir_option[DIR_DOWN];
+		if (toupper(flag[1]) == 'R')
+			bIsSetRoom = true;
+		break;
+
+	default:
+		*flag = 'g'; /*
 			              * To generate syntax error
 			              */
-			break;
+		break;
 	}
 
 	if (!where)
 	{
 		setbit_syntax(ch, SETBIT_DIR);
-		send_to_char("Invalid direction.  The prefix to the flag must be a valid dir (n/s/e/w/nw/ne/se/sw/u/d).\n\r", ch);
+		send_to_char(
+			"Invalid direction.  The prefix to the flag must be a valid dir (n/s/e/w/nw/ne/se/sw/u/d).\n\r",
+			ch);
 		send_to_char("The rest of the flag can be one of: info, key, room.\n\r", ch);
 		setbit_printOutTable(ch, table, ARRAY_SIZE(table));
 		return;
@@ -1116,7 +1183,8 @@ static void setbit_dir(P_char ch, char *name, char *flag, char *value, int on_of
 		snprintf(value, MAX_STRING_LENGTH, "%d", room_number);
 	}
 
-	setbit_parseTable(ch, (void *)where, table, ARRAY_SIZE(table), flag, value, on_off, SETBIT_DIR);
+	setbit_parseTable(ch, (void *)where, table, ARRAY_SIZE(table), flag, value, on_off,
+			  SETBIT_DIR);
 }
 
 /*
@@ -1140,26 +1208,30 @@ static void setbit_aff(P_char ch, char *name, char *flag, char *value, int on_of
 	 */
 	// Note: uint flags isn't represeted here.  You'd have to make a table for lookup.
 	//   using AFFTYPE_* in structs.h.
-	SetBitTable table[] = {
-		{"type", OFFSET(type), spells, ac_affModify, sizeof(char *)},
-		{"dur", OFFSET(duration), NULL, ac_intCopy},
-		{"mod", OFFSET(modifier), NULL, ac_intCopy},
-		{"loc", OFFSET(location), apply_types, ac_objaffCopy, sizeof(char *)},
-		{"bits", OFFSET(bitvector), (const char **)affected1_bits, ac_bitCopy, sizeof(flagDef)},
-		{"bits2", OFFSET(bitvector2), (const char **)affected2_bits, ac_bitCopy, sizeof(flagDef)},
-		{"bits3", OFFSET(bitvector3), (const char **)affected3_bits, ac_bitCopy, sizeof(flagDef)},
-		{"bits4", OFFSET(bitvector4), (const char **)affected4_bits, ac_bitCopy, sizeof(flagDef)},
-		{"bits5", OFFSET(bitvector5), (const char **)affected5_bits, ac_bitCopy, sizeof(flagDef)}
-    };
+	SetBitTable table[] = { { "type", OFFSET(type), spells, ac_affModify, sizeof(char *) },
+				{ "dur", OFFSET(duration), NULL, ac_intCopy },
+				{ "mod", OFFSET(modifier), NULL, ac_intCopy },
+				{ "loc", OFFSET(location), apply_types, ac_objaffCopy,
+				  sizeof(char *) },
+				{ "bits", OFFSET(bitvector), (const char **)affected1_bits,
+				  ac_bitCopy, sizeof(flagDef) },
+				{ "bits2", OFFSET(bitvector2), (const char **)affected2_bits,
+				  ac_bitCopy, sizeof(flagDef) },
+				{ "bits3", OFFSET(bitvector3), (const char **)affected3_bits,
+				  ac_bitCopy, sizeof(flagDef) },
+				{ "bits4", OFFSET(bitvector4), (const char **)affected4_bits,
+				  ac_bitCopy, sizeof(flagDef) },
+				{ "bits5", OFFSET(bitvector5), (const char **)affected5_bits,
+				  ac_bitCopy, sizeof(flagDef) } };
 
 	/*
 	 * Local Variable
 	 */
 
-	P_char                ppl;
+	P_char ppl;
 	struct affected_type *af;
-	char                 *af_num_str;
-	int                   af_num, i;
+	char *af_num_str;
+	int af_num, i;
 
 	/*
 	 * Executable section
@@ -1215,7 +1287,8 @@ static void setbit_aff(P_char ch, char *name, char *flag, char *value, int on_of
 		send_to_char("Affect number specified is too large.\r\n", ch);
 		return;
 	}
-	setbit_parseTable(ch, (void *)af, table, ARRAY_SIZE(table), flag, value, on_off, SETBIT_AFF);
+	setbit_parseTable(ch, (void *)af, table, ARRAY_SIZE(table), flag, value, on_off,
+			  SETBIT_AFF);
 }
 
 /*
@@ -1224,11 +1297,12 @@ static void setbit_aff(P_char ch, char *name, char *flag, char *value, int on_of
  * "value", and "on_off" are passed to function specified in table.  If
  * not found, prints out valid string parsable by table and return.
  */
-static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size, char *flag, char *value, int on_off, int type)
+static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size, char *flag,
+			      char *value, int on_off, int type)
 {
-	int          i, bit;
+	int i, bit;
 	SetBitTable *entry;
-	char        *string;
+	char *string;
 
 	for (i = 0; i < size && !SAME_STRING(flag, table[i].sb_flag); i++)
 		;
@@ -1246,7 +1320,11 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 
 	if (entry->sb_subtable)
 	{
-		for (bit = 0; (string = *(char **)(((char *)entry->sb_subtable) + entry->entry_size * bit + entry->entry_offset)) != NULL && string[0] != '\n'; bit++)
+		for (bit = 0;
+		     (string = *(char **)(((char *)entry->sb_subtable) + entry->entry_size * bit +
+					  entry->entry_offset)) != NULL &&
+		     string[0] != '\n';
+		     bit++)
 		{
 			if (SAME_STRING(string, value))
 			{
@@ -1271,7 +1349,9 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 			char buf[128];
 
 			setbit_syntax(ch, type);
-			snprintf(buf, 128, "'%s' is not a valid value.  Please enter a number instead.\n\r", value);
+			snprintf(buf, 128,
+				 "'%s' is not a valid value.  Please enter a number instead.\n\r",
+				 value);
 			send_to_char(buf, ch);
 			return;
 		}
@@ -1283,16 +1363,21 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 		{
 			char buf[128];
 
-			snprintf(buf, 128, "'%s' is not a valid value.  Please enter a number instead.\n\r", bad_on_off);
+			snprintf(buf, 128,
+				 "'%s' is not a valid value.  Please enter a number instead.\n\r",
+				 bad_on_off);
 			send_to_char(buf, ch);
 			return;
 		}
 	}
-	if ((entry->sb_func == ac_tongueCopy || entry->sb_func == ac_skillCopy) && (on_off < 0 || on_off > 100))
+	if ((entry->sb_func == ac_tongueCopy || entry->sb_func == ac_skillCopy) &&
+	    (on_off < 0 || on_off > 100))
 	{
 		char buf[128];
 
-		snprintf(buf, 128, "'%d' is not a valid value.  Please enter a number between 0 and 100.\n\r", on_off);
+		snprintf(buf, 128,
+			 "'%d' is not a valid value.  Please enter a number between 0 and 100.\n\r",
+			 on_off);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -1343,14 +1428,13 @@ static void setbit_syntax(P_char ch, int type)
 /* This function should be called when "flag" specified is unknown. */
 static void setbit_printOutTable(P_char ch, SetBitTable *table, int size)
 {
-	int  i;
+	int i;
 	char buff[128];
 
 	send_to_char("Valid flags are:\r\n", ch);
 
 	for (i = 0; i < size; i++)
 	{
-
 		if (i && !(i % 3))
 			send_to_char("\r\n", ch);
 
@@ -1364,15 +1448,16 @@ static void setbit_printOutTable(P_char ch, SetBitTable *table, int size)
 /* If specified is not in subtable, this function should be called. */
 static void setbit_printOutSubTable(P_char ch, const char **subtable, int entry_size)
 {
-	int   i;
-	char  buff[128];
+	int i;
+	char buff[128];
 	char *string;
 
 	send_to_char("Valid sub-options are:\r\n", ch);
 
-	for (i = 0; (string = *(char **)(((char *)subtable) + entry_size * i)) != NULL && string[0] != '\n'; i++)
+	for (i = 0; (string = *(char **)(((char *)subtable) + entry_size * i)) != NULL &&
+		    string[0] != '\n';
+	     i++)
 	{
-
 		if (!(i % 3))
 			send_to_char("\r\n", ch);
 
@@ -1425,11 +1510,10 @@ char *setbit_parseArgument(char *arg, char *val)
 static int ac_strcasecmp(const char *str1, const char *str2)
 {
 	char low1, low2;
-	int  i;
+	int i;
 
 	for (i = 0;; i++)
 	{
-
 		low1 = LOWER_CASE(*(str1 + i));
 		low2 = LOWER_CASE(*(str2 + i));
 
@@ -1443,20 +1527,20 @@ static int ac_strcasecmp(const char *str1, const char *str2)
 /* Copy functions */
 
 /* Macro to facilitate making of general copy functions */
-#define MAKE_COPY_FUNCTION(Type)                                                                                                                                                                       \
-	static void ac_##Type##Copy(void *where, int offset, char *value, int bit, int on_off)                                                                                                             \
-	{                                                                                                                                                                                                  \
-		Type val = (Type)bit;                                                                                                                                                                          \
-		bcopy((char *)&val, (char *)where + offset, sizeof(val));                                                                                                                                      \
+#define MAKE_COPY_FUNCTION(Type)                                                               \
+	static void ac_##Type##Copy(void *where, int offset, char *value, int bit, int on_off) \
+	{                                                                                      \
+		Type val = (Type)bit;                                                          \
+		bcopy((char *)&val, (char *)where + offset, sizeof(val));                      \
 	}
 
 /* Macro to facilitate making of general copy functions */
 // special case for ::byte with collisions in std::byte
-#define MAKE_COPY_FUNCTION_BYTE(Type)                                                                                                                                                                  \
-	static void ac_byteCopy(void *where, int offset, char *value, int bit, int on_off)                                                                                                                 \
-	{                                                                                                                                                                                                  \
-		Type val = (Type)bit;                                                                                                                                                                          \
-		bcopy((char *)&val, (char *)where + offset, sizeof(val));                                                                                                                                      \
+#define MAKE_COPY_FUNCTION_BYTE(Type)                                                      \
+	static void ac_byteCopy(void *where, int offset, char *value, int bit, int on_off) \
+	{                                                                                  \
+		Type val = (Type)bit;                                                      \
+		bcopy((char *)&val, (char *)where + offset, sizeof(val));                  \
 	}
 
 /* General copy functions */
@@ -1472,11 +1556,11 @@ MAKE_COPY_FUNCTION(ubyte)
    between current MUD time and intended age.  */
 static void ac_ageCopy(void *where, int offset, char *value, int bit, int on_off)
 {
-	long   secs;
+	long secs;
 	time_t curr_time = time(NULL);
-	P_char ch        = (P_char)where;
+	P_char ch = (P_char)where;
 
-	secs                  = (bit /* - 17 */) * SECS_PER_MUD_YEAR;
+	secs = (bit /* - 17 */) * SECS_PER_MUD_YEAR;
 	ch->player.time.birth = curr_time - secs;
 }
 
@@ -1535,7 +1619,8 @@ static void ac_savthrCopy(void *where, int offset, char *value, int bit, int on_
 	sh_int sav_thr[5];
 	P_char ch = (P_char)where;
 
-	sscanf(value, "%hd %hd %hd %hd %hd", sav_thr, sav_thr + 1, sav_thr + 2, sav_thr + 3, sav_thr + 4);
+	sscanf(value, "%hd %hd %hd %hd %hd", sav_thr, sav_thr + 1, sav_thr + 2, sav_thr + 3,
+	       sav_thr + 4);
 
 	bcopy((char *)&sav_thr, (char *)ch->specials.apply_saving_throw, sizeof(sav_thr));
 }
@@ -1547,11 +1632,11 @@ static void ac_savthrCopy(void *where, int offset, char *value, int bit, int on_
 static void ac_skillCopy(void *where, int offset, char *value, int bit, int on_off)
 {
 	P_char ch = (P_char)where;
-	int    skl;
+	int skl;
 	::byte val = on_off;
 
 	value = skip_spaces(value);
-	skl   = search_block(value, spells, FALSE);
+	skl = search_block(value, spells, FALSE);
 
 	if (IS_PC(ch))
 	{
@@ -1565,11 +1650,11 @@ static void ac_skillCopy(void *where, int offset, char *value, int bit, int on_o
  */
 static void ac_affModify(void *where, int offset, char *value, int bit, int on_off)
 {
-	int                   skl;
+	int skl;
 	struct affected_type *af = (affected_type *)where;
 
 	value = skip_spaces(value);
-	skl   = search_block(value, spells, FALSE);
+	skl = search_block(value, spells, FALSE);
 
 	af->type = skl;
 }
@@ -1577,7 +1662,10 @@ static void ac_affModify(void *where, int offset, char *value, int bit, int on_o
 /*
  * ** "Value" contains the string.
  */
-static void ac_stringCopy(void *where, int offset, char *value, int bit, int on_off) { strcpy((char *)where + offset, value); }
+static void ac_stringCopy(void *where, int offset, char *value, int bit, int on_off)
+{
+	strcpy((char *)where + offset, value);
+}
 
 /*
  * ** "bit" is not really a bit to set, but rather, the value of **

@@ -53,54 +53,54 @@ using namespace std;
 /*
  * extern variables
  */
-extern Skill                         skills[];
-extern int                           RUNNING_PORT;
-extern int                           allowed_secondary_classes[][5];
-extern int                           class_table[LAST_RACE + 1][CLASS_COUNT + 1];
-extern int                           num_appearances;
-extern int                           num_shapes;
-extern int                           num_modifiers;
-extern P_char                        character_list;
-extern struct str_app_type           str_app[];
-extern P_desc                        descriptor_list;
-extern P_room                        world;
-extern P_index                       obj_index;
+extern Skill skills[];
+extern int RUNNING_PORT;
+extern int allowed_secondary_classes[][5];
+extern int class_table[LAST_RACE + 1][CLASS_COUNT + 1];
+extern int num_appearances;
+extern int num_shapes;
+extern int num_modifiers;
+extern P_char character_list;
+extern struct str_app_type str_app[];
+extern P_desc descriptor_list;
+extern P_room world;
+extern P_index obj_index;
 extern const struct racial_data_type racial_data[];
-extern const struct stat_data        stat_factor[];
-extern const int                     movement_loss[];
-extern int                           top_of_zone_table;
-extern const int                     top_of_world;
-extern struct command_info           cmd_info[];
-extern struct time_info_data         time_info;
-extern struct zone_data             *zone_table;
-extern int                           hometown_arena[][3];
-extern const struct race_names       race_names_table[];
-extern const char                   *appearance_descs[];
-extern const char                   *shape_descs[];
-extern const char                   *modifier_descs[];
-extern const struct class_names      class_names_table[];
-extern const char                   *god_list[];
-extern const char                   *specdata[][MAX_SPEC];
-uint                                 debugcount = 0;
-extern P_index                       mob_index;
-extern const int                     rev_dir[];
-extern void                          event_spellcast(P_char, P_char, P_obj, void *);
+extern const struct stat_data stat_factor[];
+extern const int movement_loss[];
+extern int top_of_zone_table;
+extern const int top_of_world;
+extern struct command_info cmd_info[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone_table;
+extern int hometown_arena[][3];
+extern const struct race_names race_names_table[];
+extern const char *appearance_descs[];
+extern const char *shape_descs[];
+extern const char *modifier_descs[];
+extern const struct class_names class_names_table[];
+extern const char *god_list[];
+extern const char *specdata[][MAX_SPEC];
+uint debugcount = 0;
+extern P_index mob_index;
+extern const int rev_dir[];
+extern void event_spellcast(P_char, P_char, P_obj, void *);
 #define PERSISTENCE_ITEM_EVENT_PREFIX "PERSISTENCE_ITEM_EVENT|"
 #define PERSISTENCE_SCALAR_EVENT_PREFIX "PERSISTENCE_SCALAR_EVENT|"
 #define PERSISTENCE_LARGE_EVENT_PREFIX "PERSISTENCE_LARGE_EVENT|"
 static pthread_mutex_t persistence_fallback_log_mutex = PTHREAD_MUTEX_INITIALIZER;
-unsigned long                        persistence_fallback_count = 0;
-unsigned long                        persistence_replay_handled = 0;
-unsigned long                        persistence_item_worker_fallback_count = 0;
-unsigned long                        persistence_scalar_fallback_count = 0;
-unsigned long                        persistence_item_worker_restart_count = 0;
-unsigned long                        persistence_scalar_worker_restart_count = 0;
-unsigned long                        persistence_large_worker_restart_count = 0;
-int                                  ship_obj_proc(P_obj obj, P_char ch, int cmd, char *arg);
-extern struct mm_ds                 *dead_mob_pool;
-extern struct mm_ds                 *dead_pconly_pool;
-extern int                           _pwipe;
-extern const char                   *sector_types[];
+unsigned long persistence_fallback_count = 0;
+unsigned long persistence_replay_handled = 0;
+unsigned long persistence_item_worker_fallback_count = 0;
+unsigned long persistence_scalar_fallback_count = 0;
+unsigned long persistence_item_worker_restart_count = 0;
+unsigned long persistence_scalar_worker_restart_count = 0;
+unsigned long persistence_large_worker_restart_count = 0;
+int ship_obj_proc(P_obj obj, P_char ch, int cmd, char *arg);
+extern struct mm_ds *dead_mob_pool;
+extern struct mm_ds *dead_pconly_pool;
+extern int _pwipe;
+extern const char *sector_types[];
 
 char GS_buf1[MAX_STRING_LENGTH];
 
@@ -118,7 +118,7 @@ int CheckFor_remember(P_char ch, P_char victim);
 int get_vis_mode(P_char ch, int room)
 {
 	P_char tch;
-	bool   flame, globe;
+	bool flame, globe;
 
 	if (IS_TRUSTED(ch))
 	{
@@ -158,7 +158,8 @@ int get_vis_mode(P_char ch, int room)
 		return 2;
 	}
 	// Normal inside rooms are twilight, unless magic lit/darked.
-	if ((IS_ROOM(room, ROOM_LOCKER) || IS_INSIDE(room)) && !IS_MAGIC_LIGHT(room) && !IS_MAGIC_DARK(room))
+	if ((IS_ROOM(room, ROOM_LOCKER) || IS_INSIDE(room)) && !IS_MAGIC_LIGHT(room) &&
+	    !IS_MAGIC_DARK(room))
 	{
 		return 2;
 	}
@@ -238,25 +239,25 @@ bool is_ansi_char(char collor_char)
 {
 	switch (collor_char)
 	{
-		case 'W':
-		case 'w':
-		case 'L':
-		case 'l':
-		case 'R':
-		case 'r':
-		case 'B':
-		case 'b':
-		case 'G':
-		case 'g':
-		case 'Y':
-		case 'y':
-		case 'C':
-		case 'c':
-		case 'M':
-		case 'm':
-			return TRUE;
-		default:
-			break;
+	case 'W':
+	case 'w':
+	case 'L':
+	case 'l':
+	case 'R':
+	case 'r':
+	case 'B':
+	case 'b':
+	case 'G':
+	case 'g':
+	case 'Y':
+	case 'y':
+	case 'C':
+	case 'c':
+	case 'M':
+	case 'm':
+		return TRUE;
+	default:
+		break;
 	}
 
 	return FALSE;
@@ -291,7 +292,8 @@ int is_valid_ansi(char *mesg, bool can_set_blinking)
 					if (!is_ansi_char(mesg[i + 2]))
 						return FALSE;
 
-					if (!can_set_blinking && (mesg[i + 1] == '-') && isupper(mesg[i + 2]))
+					if (!can_set_blinking && (mesg[i + 1] == '-') &&
+					    isupper(mesg[i + 2]))
 						return FALSE;
 				}
 				else if (mesg[i + 1] == '=')
@@ -299,7 +301,8 @@ int is_valid_ansi(char *mesg, bool can_set_blinking)
 					if (mesg[i + 2] == '\0' || mesg[i + 3] == '\0')
 						return FALSE;
 
-					if (!is_ansi_char(mesg[i + 2]) || !is_ansi_char(mesg[i + 3]))
+					if (!is_ansi_char(mesg[i + 2]) ||
+					    !is_ansi_char(mesg[i + 3]))
 						return FALSE;
 
 					if (!can_set_blinking && isupper(mesg[i + 2]))
@@ -326,8 +329,10 @@ bool is_valid_ansi_with_msg(P_char ch, char *ansi_text, bool can_set_blinking)
 		else
 		{
 			act("&+L~~~~&+W(o)&+L~~~~&N", FALSE, ch, 0, 0, TO_CHAR);
-			act("&+LThe clouds part above and the unblinking &+WEye of Zion &+Llooks down at you skeptically.&N", FALSE, ch, 0, 0, TO_CHAR);
-			act("&+LA booming voice calls down, &+w'Check the helpfiles on how to use ANSI properly, puny mortal!'&N", FALSE, ch, 0, 0, TO_CHAR);
+			act("&+LThe clouds part above and the unblinking &+WEye of Zion &+Llooks down at you skeptically.&N",
+			    FALSE, ch, 0, 0, TO_CHAR);
+			act("&+LA booming voice calls down, &+w'Check the helpfiles on how to use ANSI properly, puny mortal!'&N",
+			    FALSE, ch, 0, 0, TO_CHAR);
 		}
 
 		return FALSE;
@@ -339,7 +344,7 @@ bool is_valid_ansi_with_msg(P_char ch, char *ansi_text, bool can_set_blinking)
 __attribute__((deprecated)) char *stripansi(const char *mesg)
 {
 	char tmp_buf[MAX_STRING_LENGTH];
-	int  i, j, length;
+	int i, j, length;
 
 	if (mesg == NULL)
 	{
@@ -353,22 +358,22 @@ __attribute__((deprecated)) char *stripansi(const char *mesg)
 		{
 			switch (mesg[j + 1])
 			{
-				case '-':
-				case '+':
-					j += 3;
-					break;
-				case '=':
-					j += 4;
-					break;
-				case 'n':
-				case 'N':
-				case 'L':
-				case 'l':
-					j += 2;
-					break;
-				default:
-					j++;
-					break;
+			case '-':
+			case '+':
+				j += 3;
+				break;
+			case '=':
+				j += 4;
+				break;
+			case 'n':
+			case 'N':
+			case 'L':
+			case 'l':
+				j += 2;
+				break;
+			default:
+				j++;
+				break;
 			}
 		}
 		tmp_buf[i] = mesg[j];
@@ -399,22 +404,22 @@ int stripansi_2(const char *mesg, char *destination)
 		{
 			switch (mesg[j + 1])
 			{
-				case '-':
-				case '+':
-					j += 3;
-					break;
-				case '=':
-					j += 4;
-					break;
-				case 'n':
-				case 'N':
-				case 'L':
-				case 'l':
-					j += 2;
-					break;
-				default:
-					j++;
-					break;
+			case '-':
+			case '+':
+				j += 3;
+				break;
+			case '=':
+				j += 4;
+				break;
+			case 'n':
+			case 'N':
+			case 'L':
+			case 'l':
+				j += 2;
+				break;
+			default:
+				j++;
+				break;
 			}
 		}
 		destination[i] = mesg[j];
@@ -432,7 +437,7 @@ int stripansi_2(const char *mesg, char *destination)
 char *striplinefeed(char *mesg)
 {
 	char tmp_buf[MAX_STRING_LENGTH];
-	int  i;
+	int i;
 
 	if (mesg == NULL)
 	{
@@ -457,7 +462,10 @@ char *striplinefeed(char *mesg)
 	return str_dup(tmp_buf);
 }
 
-int BOUNDED(int a, int b, int c) { return (MIN(MAX(a, b), c)); }
+int BOUNDED(int a, int b, int c)
+{
+	return (MIN(MAX(a, b), c));
+}
 
 float BOUNDEDF(float a, float b, float c)
 {
@@ -659,13 +667,14 @@ int exitnumb_to_cmd(int exitnumb)
  * writes a string to the log
  */
 
-static char *format_variadic_message(const char *prefix, const char *suffix, const char *format, va_list args)
+static char *format_variadic_message(const char *prefix, const char *suffix, const char *format,
+				     va_list args)
 {
 	va_list copy;
-	int     body_len;
-	size_t  prefix_len;
-	size_t  suffix_len;
-	char   *buf;
+	int body_len;
+	size_t prefix_len;
+	size_t suffix_len;
+	char *buf;
 	const char *safe_prefix = prefix ? prefix : "";
 	const char *safe_suffix = suffix ? suffix : "";
 
@@ -677,7 +686,7 @@ static char *format_variadic_message(const char *prefix, const char *suffix, con
 
 	prefix_len = strlen(safe_prefix);
 	suffix_len = strlen(safe_suffix);
-	buf        = (char *)malloc(prefix_len + (size_t)body_len + suffix_len + 1);
+	buf = (char *)malloc(prefix_len + (size_t)body_len + suffix_len + 1);
 	if (!buf)
 		return NULL;
 
@@ -692,9 +701,9 @@ static char *format_variadic_message(const char *prefix, const char *suffix, con
 
 void logit(const char *filename, const char *format, ...)
 {
-	FILE  *log_f;
-	char   tbuf[MAX_STRING_LENGTH];
-	char  *lbuf;
+	FILE *log_f;
+	char tbuf[MAX_STRING_LENGTH];
+	char *lbuf;
 	time_t ct;
 
 	// long ct;
@@ -746,8 +755,8 @@ void logit(const char *filename, const char *format, ...)
 void ereglog(int level, const char *format, ...)
 {
 	va_list args;
-	char   *lbuf;
-	P_desc  d;
+	char *lbuf;
+	P_desc d;
 
 	level = MIN(60, level);
 	va_start(args, format);
@@ -757,7 +766,9 @@ void ereglog(int level, const char *format, ...)
 		return;
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) && GET_LEVEL(d->character) >= level && IS_SET(d->character->specials.act, PLR_SNOTIFY))
+		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) &&
+		    GET_LEVEL(d->character) >= level &&
+		    IS_SET(d->character->specials.act, PLR_SNOTIFY))
 		{
 			send_to_char(lbuf, d->character);
 		}
@@ -768,8 +779,8 @@ void ereglog(int level, const char *format, ...)
 void wizlog(int level, const char *format, ...)
 {
 	va_list args;
-	char   *lbuf;
-	P_desc  d;
+	char *lbuf;
+	P_desc d;
 
 	va_start(args, format);
 	lbuf = format_variadic_message("&+C*** WIZLOG:&n ", "\r\n", format, args);
@@ -779,7 +790,9 @@ void wizlog(int level, const char *format, ...)
 
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) && GET_LEVEL(d->character) >= level && IS_SET(d->character->specials.act, PLR_WIZLOG))
+		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) &&
+		    GET_LEVEL(d->character) >= level &&
+		    IS_SET(d->character->specials.act, PLR_WIZLOG))
 		{
 			send_to_char(lbuf, d->character);
 		}
@@ -787,1092 +800,1059 @@ void wizlog(int level, const char *format, ...)
 	free(lbuf);
 }
 
-void persistence_alert(int level, const char *domain, const char *owner,
-                       const char *item_uid, const char *event_id,
-                       const char *action, const char *format, ...)
+void persistence_alert(int level, const char *domain, const char *owner, const char *item_uid,
+		       const char *event_id, const char *action, const char *format, ...)
 {
-  va_list args;
-  char details[MAX_STRING_LENGTH];
-  char alert[MAX_STRING_LENGTH * 2];
+	va_list args;
+	char details[MAX_STRING_LENGTH];
+	char alert[MAX_STRING_LENGTH * 2];
 
-  details[0] = '\0';
-  if (format && *format)
-  {
-    va_start(args, format);
-    vsnprintf(details, sizeof(details), format, args);
-    va_end(args);
-  }
+	details[0] = '\0';
+	if (format && *format)
+	{
+		va_start(args, format);
+		vsnprintf(details, sizeof(details), format, args);
+		va_end(args);
+	}
 
-  snprintf(alert, sizeof(alert),
-           "domain=%s owner=%s item_uid=%s event_id=%s action=%s%s%s",
-           (domain && *domain) ? domain : "unknown",
-           (owner && *owner) ? owner : "unknown",
-           (item_uid && *item_uid) ? item_uid : "none",
-           (event_id && *event_id) ? event_id : "none",
-           (action && *action) ? action : "unknown",
-           details[0] ? " detail=" : "",
-           details);
+	snprintf(alert, sizeof(alert), "domain=%s owner=%s item_uid=%s event_id=%s action=%s%s%s",
+		 (domain && *domain) ? domain : "unknown", (owner && *owner) ? owner : "unknown",
+		 (item_uid && *item_uid) ? item_uid : "none",
+		 (event_id && *event_id) ? event_id : "none",
+		 (action && *action) ? action : "unknown", details[0] ? " detail=" : "", details);
 
-  logit(LOG_FILE, "PERSISTENCE: %s", alert);
-  logit(LOG_WIZ, "PERSISTENCE: %s", alert);
-  wizlog(level, "&+R&-LPERSISTENCE:&n %s", alert);
+	logit(LOG_FILE, "PERSISTENCE: %s", alert);
+	logit(LOG_WIZ, "PERSISTENCE: %s", alert);
+	wizlog(level, "&+R&-LPERSISTENCE:&n %s", alert);
 }
 
 unsigned long long persistence_next_item_uid(void)
 {
-  return (unsigned long long) next_obj_uid++;
+	return (unsigned long long)next_obj_uid++;
 }
 
 void persistence_assign_item_uid(P_obj obj, const char *reason)
 {
-  if (!obj || obj->obj_uid)
-    return;
+	if (!obj || obj->obj_uid)
+		return;
 
-  obj->obj_uid = (unsigned long) persistence_next_item_uid();
+	obj->obj_uid = (unsigned long)persistence_next_item_uid();
 
-  if (!obj->obj_uid)
-  {
-    persistence_alert(AVATAR, "item_uid",
-                      reason ? reason : "unknown", "0", "none",
-                      "assignment_failed", "object pointer=%p", obj);
-  }
+	if (!obj->obj_uid)
+	{
+		persistence_alert(AVATAR, "item_uid", reason ? reason : "unknown", "0", "none",
+				  "assignment_failed", "object pointer=%p", obj);
+	}
 }
 
 const char *persistence_item_uid_text(P_obj obj, char *buf, int buf_size)
 {
-  if (!buf || buf_size <= 0)
-    return "none";
+	if (!buf || buf_size <= 0)
+		return "none";
 
-  if (!obj || !obj->obj_uid)
-  {
-    snprintf(buf, buf_size, "none");
-  }
-  else
-  {
-    snprintf(buf, buf_size, "%lu", obj->obj_uid);
-  }
+	if (!obj || !obj->obj_uid)
+	{
+		snprintf(buf, buf_size, "none");
+	}
+	else
+	{
+		snprintf(buf, buf_size, "%lu", obj->obj_uid);
+	}
 
-  return buf;
+	return buf;
 }
 
-static const char *persistence_fallback_record_line(const char *line,
-                                                      const char *domain,
-                                                      char *buf,
-                                                      int buf_size)
+static const char *persistence_fallback_record_line(const char *line, const char *domain, char *buf,
+						    int buf_size)
 {
-  if (!line || !*line)
-    return NULL;
+	if (!line || !*line)
+		return NULL;
 
-  if (!domain || strcmp(domain, "scalar_event") != 0 ||
-      !strncmp(line, PERSISTENCE_SCALAR_EVENT_PREFIX,
-               strlen(PERSISTENCE_SCALAR_EVENT_PREFIX)))
-    return line;
+	if (!domain || strcmp(domain, "scalar_event") != 0 ||
+	    !strncmp(line, PERSISTENCE_SCALAR_EVENT_PREFIX,
+		     strlen(PERSISTENCE_SCALAR_EVENT_PREFIX)))
+		return line;
 
-  if (!buf || buf_size <= 0 ||
-      snprintf(buf, buf_size, "%s%s", PERSISTENCE_SCALAR_EVENT_PREFIX, line) >= buf_size)
-    return NULL;
-  return buf;
+	if (!buf || buf_size <= 0 ||
+	    snprintf(buf, buf_size, "%s%s", PERSISTENCE_SCALAR_EVENT_PREFIX, line) >= buf_size)
+		return NULL;
+	return buf;
 }
 
-int persistence_write_fallback_event_line(const char *line,
-                                          const char *domain,
-                                          const char *owner,
-                                          const char *action)
+int persistence_write_fallback_event_line(const char *line, const char *domain, const char *owner,
+					  const char *action)
 {
-  FILE *log_f;
-  int ok = 1;
-  char scalar_record[PERSISTENCE_EVENT_MAX_LEN + 64];
-  const char *record_line;
-  static unsigned long fallback_count = 0;
+	FILE *log_f;
+	int ok = 1;
+	char scalar_record[PERSISTENCE_EVENT_MAX_LEN + 64];
+	const char *record_line;
+	static unsigned long fallback_count = 0;
 
-  if (_pwipe)
-  {
-    persistence_alert(AVATAR,
-                      domain ? domain : "persistence",
-                      owner ? owner : "fallback",
-                      "none",
-                      "none",
-                      "pwipe_rejected",
-                      "fallback event rejected while season reset is active");
-    return 0;
-  }
+	if (_pwipe)
+	{
+		persistence_alert(AVATAR, domain ? domain : "persistence",
+				  owner ? owner : "fallback", "none", "none", "pwipe_rejected",
+				  "fallback event rejected while season reset is active");
+		return 0;
+	}
 
-  if (!line || !*line)
-    return 0;
+	if (!line || !*line)
+		return 0;
 
-  record_line = persistence_fallback_record_line(line, domain,
-                                                   scalar_record,
-                                                   sizeof(scalar_record));
-  if (!record_line)
-    return 0;
+	record_line = persistence_fallback_record_line(line, domain, scalar_record,
+						       sizeof(scalar_record));
+	if (!record_line)
+		return 0;
 
-  pthread_mutex_lock(&persistence_fallback_log_mutex);
-  if (_pwipe)
-  {
-    pthread_mutex_unlock(&persistence_fallback_log_mutex);
-    persistence_alert(AVATAR,
-                      domain ? domain : "persistence",
-                      owner ? owner : "fallback",
-                      "none",
-                      "none",
-                      "pwipe_rejected",
-                      "fallback event rejected while season reset is active");
-    return 0;
-  }
-  log_f = fopen(LOG_EVENT, "a");
-  if (!log_f)
-  {
-    pthread_mutex_unlock(&persistence_fallback_log_mutex);
-    persistence_alert(AVATAR,
-                      domain ? domain : "persistence",
-                      owner ? owner : "fallback",
-                      "none",
-                      "none",
-                      action ? action : "fallback_open_failed",
-                      "could not open %s; event not persisted", LOG_EVENT);
-    return 0;
-  }
+	pthread_mutex_lock(&persistence_fallback_log_mutex);
+	if (_pwipe)
+	{
+		pthread_mutex_unlock(&persistence_fallback_log_mutex);
+		persistence_alert(AVATAR, domain ? domain : "persistence",
+				  owner ? owner : "fallback", "none", "none", "pwipe_rejected",
+				  "fallback event rejected while season reset is active");
+		return 0;
+	}
+	log_f = fopen(LOG_EVENT, "a");
+	if (!log_f)
+	{
+		pthread_mutex_unlock(&persistence_fallback_log_mutex);
+		persistence_alert(AVATAR, domain ? domain : "persistence",
+				  owner ? owner : "fallback", "none", "none",
+				  action ? action : "fallback_open_failed",
+				  "could not open %s; event not persisted", LOG_EVENT);
+		return 0;
+	}
 
-  clock_t _fb_beg = clock();
-  if (fputs(record_line, log_f) < 0 || fputs("\n", log_f) < 0)
-    ok = 0;
+	clock_t _fb_beg = clock();
+	if (fputs(record_line, log_f) < 0 || fputs("\n", log_f) < 0)
+		ok = 0;
 
-  if (fflush(log_f) || fsync(fileno(log_f)))
-    ok = 0;
-  if (fclose(log_f))
-    ok = 0;
-  { long _fb_us = (long)((clock() - _fb_beg) * 1000000L / CLOCKS_PER_SEC);
-    latency_trace_record("fallback_file_write", _fb_us, 0); }
-  persistence_fallback_count++;
-  pthread_mutex_unlock(&persistence_fallback_log_mutex);
+	if (fflush(log_f) || fsync(fileno(log_f)))
+		ok = 0;
+	if (fclose(log_f))
+		ok = 0;
+	{
+		long _fb_us = (long)((clock() - _fb_beg) * 1000000L / CLOCKS_PER_SEC);
+		latency_trace_record("fallback_file_write", _fb_us, 0);
+	}
+	persistence_fallback_count++;
+	pthread_mutex_unlock(&persistence_fallback_log_mutex);
 
-  fallback_count++;
-  if (!ok)
-  {
-    persistence_alert(AVATAR,
-                      domain ? domain : "persistence",
-                      owner ? owner : "fallback",
-                      "none",
-                      "none",
-                      action ? action : "fallback_write_failed",
-                      "write to %s failed; event not persisted", LOG_EVENT);
-    return 0;
-  }
+	fallback_count++;
+	if (!ok)
+	{
+		persistence_alert(AVATAR, domain ? domain : "persistence",
+				  owner ? owner : "fallback", "none", "none",
+				  action ? action : "fallback_write_failed",
+				  "write to %s failed; event not persisted", LOG_EVENT);
+		return 0;
+	}
 
-  if (fallback_count <= 5 || !(fallback_count % 1000))
-  {
-    logit(LOG_FILE,
-          "PERSISTENCE: domain=%s owner=%s action=%s detail=wrote event to flat fallback count=%lu",
-          domain ? domain : "persistence",
-          owner ? owner : "fallback",
-          action ? action : "flat_fallback",
-          fallback_count);
-    logit(LOG_WIZ,
-          "PERSISTENCE: domain=%s owner=%s action=%s detail=wrote event to flat fallback count=%lu",
-          domain ? domain : "persistence",
-          owner ? owner : "fallback",
-          action ? action : "flat_fallback",
-          fallback_count);
-  }
+	if (fallback_count <= 5 || !(fallback_count % 1000))
+	{
+		logit(LOG_FILE,
+		      "PERSISTENCE: domain=%s owner=%s action=%s detail=wrote event to flat fallback count=%lu",
+		      domain ? domain : "persistence", owner ? owner : "fallback",
+		      action ? action : "flat_fallback", fallback_count);
+		logit(LOG_WIZ,
+		      "PERSISTENCE: domain=%s owner=%s action=%s detail=wrote event to flat fallback count=%lu",
+		      domain ? domain : "persistence", owner ? owner : "fallback",
+		      action ? action : "flat_fallback", fallback_count);
+	}
 
-  return 1;
+	return 1;
 }
 
-static const char *persistence_clean_field(const char *in, char *buf,
-                                           int buf_size)
+static const char *persistence_clean_field(const char *in, char *buf, int buf_size)
 {
-  int i;
+	int i;
 
-  if (!buf || buf_size <= 0)
-    return "";
+	if (!buf || buf_size <= 0)
+		return "";
 
-  if (!in)
-  {
-    snprintf(buf, buf_size, "none");
-    return buf;
-  }
+	if (!in)
+	{
+		snprintf(buf, buf_size, "none");
+		return buf;
+	}
 
-  for (i = 0; in[i] && i < buf_size - 1; i++)
-  {
-    if (in[i] == '|' || in[i] == '\r' || in[i] == '\n')
-      buf[i] = ' ';
-    else
-      buf[i] = in[i];
-  }
-  buf[i] = '\0';
-  return buf;
+	for (i = 0; in[i] && i < buf_size - 1; i++)
+	{
+		if (in[i] == '|' || in[i] == '\r' || in[i] == '\n')
+			buf[i] = ' ';
+		else
+			buf[i] = in[i];
+	}
+	buf[i] = '\0';
+	return buf;
 }
 
 static unsigned long long persistence_event_time_usec(void)
 {
-  struct timeval tv;
+	struct timeval tv;
 
-  if (gettimeofday(&tv, NULL))
-    return (unsigned long long)time(NULL) * 1000000ULL;
+	if (gettimeofday(&tv, NULL))
+		return (unsigned long long)time(NULL) * 1000000ULL;
 
-  return ((unsigned long long)tv.tv_sec * 1000000ULL) +
-         (unsigned long long)tv.tv_usec;
+	return ((unsigned long long)tv.tv_sec * 1000000ULL) + (unsigned long long)tv.tv_usec;
 }
 /* Forward declaration: defined after persistence_flush_scalar_events(). */
 void persistence_worker_heartbeat_check(int threshold_secs);
 
-
 int persistence_flush_item_events(int max_events)
 {
-  char line[PERSISTENCE_EVENT_MAX_LEN];
-  unsigned long dropped;
-  FILE *log_f = NULL;
-  int flushed = 0;
-  int pending;
-  int ok = 1;
+	char line[PERSISTENCE_EVENT_MAX_LEN];
+	unsigned long dropped;
+	FILE *log_f = NULL;
+	int flushed = 0;
+	int pending;
+	int ok = 1;
 
-  if (persistence_item_event_worker_running())
-    return 0;
+	if (persistence_item_event_worker_running())
+		return 0;
 
-  pending = persistence_item_event_queue_pending();
-  if (max_events <= 0 || max_events > PERSISTENCE_FLUSH_BATCH_MAX)
-    max_events = pending < PERSISTENCE_FLUSH_BATCH_MAX ? pending : PERSISTENCE_FLUSH_BATCH_MAX;
-  if (pending > 0)
-  {
-    pthread_mutex_lock(&persistence_fallback_log_mutex);
-    if (_pwipe)
-    {
-      pthread_mutex_unlock(&persistence_fallback_log_mutex);
-      return 0;
-    }
-    log_f = fopen(LOG_EVENT, "a");
-    if (log_f)
-      setvbuf(log_f, NULL, _IONBF, 0);
-    if (!log_f)
-    {
-      pthread_mutex_unlock(&persistence_fallback_log_mutex);
-      persistence_alert(AVATAR, "item_event", "queue", "none", "none",
-                        "flush_open_failed",
-                        "could not open %s; %d events remain queued",
-                        LOG_EVENT, pending);
-      return 0;
-    }
-  }
+	pending = persistence_item_event_queue_pending();
+	if (max_events <= 0 || max_events > PERSISTENCE_FLUSH_BATCH_MAX)
+		max_events = pending < PERSISTENCE_FLUSH_BATCH_MAX ? pending :
+								     PERSISTENCE_FLUSH_BATCH_MAX;
+	if (pending > 0)
+	{
+		pthread_mutex_lock(&persistence_fallback_log_mutex);
+		if (_pwipe)
+		{
+			pthread_mutex_unlock(&persistence_fallback_log_mutex);
+			return 0;
+		}
+		log_f = fopen(LOG_EVENT, "a");
+		if (log_f)
+			setvbuf(log_f, NULL, _IONBF, 0);
+		if (!log_f)
+		{
+			pthread_mutex_unlock(&persistence_fallback_log_mutex);
+			persistence_alert(AVATAR, "item_event", "queue", "none", "none",
+					  "flush_open_failed",
+					  "could not open %s; %d events remain queued", LOG_EVENT,
+					  pending);
+			return 0;
+		}
+	}
 
-  long durability_offset = -1;
-  /* Collect dequeued events so they can be requeued if durability finalization
+	long durability_offset = -1;
+	/* Collect dequeued events so they can be requeued if durability finalization
    * fails.  Without this, fflush/fsync/fclose failure permanently loses data. */
-  char *dequeued[PERSISTENCE_FLUSH_BATCH_MAX];
-  int dequeued_count = 0;
-  memset(dequeued, 0, sizeof(dequeued));
+	char *dequeued[PERSISTENCE_FLUSH_BATCH_MAX];
+	int dequeued_count = 0;
+	memset(dequeued, 0, sizeof(dequeued));
 
-  while (ok && flushed < max_events &&
-         persistence_item_event_queue_dequeue(line, sizeof(line)))
-  {
-    if (durability_offset < 0)
-      durability_offset = ftell(log_f);
-    long file_offset = ftell(log_f);
-    if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
-    {
-      ok = 0;
-      if (file_offset >= 0 && ftruncate(fileno(log_f), file_offset) == 0)
-        clearerr(log_f);
-      if (persistence_item_event_queue_enqueue(line) <= 0)
-        persistence_alert(AVATAR, "item_event", "queue", "none", "none",
-                          "flush_requeue_failed",
-                          "failed to requeue an item event after fallback write failure");
-    }
-    else
-    {
-      if (dequeued_count < (int)(sizeof(dequeued) / sizeof(dequeued[0])))
-      {
-        dequeued[dequeued_count] = str_dup(line);
-        if (dequeued[dequeued_count])
-          dequeued_count++;
-      }
-      flushed++;
-    }
-  }
+	while (ok && flushed < max_events &&
+	       persistence_item_event_queue_dequeue(line, sizeof(line)))
+	{
+		if (durability_offset < 0)
+			durability_offset = ftell(log_f);
+		long file_offset = ftell(log_f);
+		if (fputs(line, log_f) < 0 || fputs("\n", log_f) < 0)
+		{
+			ok = 0;
+			if (file_offset >= 0 && ftruncate(fileno(log_f), file_offset) == 0)
+				clearerr(log_f);
+			if (persistence_item_event_queue_enqueue(line) <= 0)
+				persistence_alert(
+					AVATAR, "item_event", "queue", "none", "none",
+					"flush_requeue_failed",
+					"failed to requeue an item event after fallback write failure");
+		}
+		else
+		{
+			if (dequeued_count < (int)(sizeof(dequeued) / sizeof(dequeued[0])))
+			{
+				dequeued[dequeued_count] = str_dup(line);
+				if (dequeued[dequeued_count])
+					dequeued_count++;
+			}
+			flushed++;
+		}
+	}
 
-  if (log_f)
-  {
-    if (fflush(log_f) || fsync(fileno(log_f)))
-      ok = 0;
-    if (fclose(log_f))
-      ok = 0;
-    /* Truncate and requeue while still holding the mutex so another writer
+	if (log_f)
+	{
+		if (fflush(log_f) || fsync(fileno(log_f)))
+			ok = 0;
+		if (fclose(log_f))
+			ok = 0;
+		/* Truncate and requeue while still holding the mutex so another writer
      * cannot append between unlock and truncation. */
-    if (!ok)
-    {
-      if (durability_offset >= 0)
-      {
-        int fd = open(LOG_EVENT, O_WRONLY);
-        if (fd >= 0)
-        {
-          ftruncate(fd, durability_offset);
-          close(fd);
-        }
-      }
-      /* Requeue all dequeued events that were counted as flushed. */
-      for (int i = 0; i < dequeued_count; i++)
-      {
-        if (dequeued[i])
-        {
-          if (persistence_item_event_queue_enqueue(dequeued[i]) <= 0)
-            persistence_alert(AVATAR, "item_event", "queue", "none", "none",
-                              "flush_requeue_failed",
-                              "failed to requeue item event %d after durability failure", i);
-          FREE(dequeued[i]);
-        }
-      }
-      persistence_alert(AVATAR, "item_event", "queue", "none", "none",
-                        "flush_write_failed",
-                        "durability failed after flushing %d events; file truncated and events requeued", flushed);
-      flushed = 0;
-    }
-    else
-    {
-      /* Durability succeeded; free the dequeued copies. */
-      for (int i = 0; i < dequeued_count; i++)
-        if (dequeued[i])
-          FREE(dequeued[i]);
-    }
-    pthread_mutex_unlock(&persistence_fallback_log_mutex);
-  }
+		if (!ok)
+		{
+			if (durability_offset >= 0)
+			{
+				int fd = open(LOG_EVENT, O_WRONLY);
+				if (fd >= 0)
+				{
+					ftruncate(fd, durability_offset);
+					close(fd);
+				}
+			}
+			/* Requeue all dequeued events that were counted as flushed. */
+			for (int i = 0; i < dequeued_count; i++)
+			{
+				if (dequeued[i])
+				{
+					if (persistence_item_event_queue_enqueue(dequeued[i]) <= 0)
+						persistence_alert(
+							AVATAR, "item_event", "queue", "none",
+							"none", "flush_requeue_failed",
+							"failed to requeue item event %d after durability failure",
+							i);
+					FREE(dequeued[i]);
+				}
+			}
+			persistence_alert(
+				AVATAR, "item_event", "queue", "none", "none", "flush_write_failed",
+				"durability failed after flushing %d events; file truncated and events requeued",
+				flushed);
+			flushed = 0;
+		}
+		else
+		{
+			/* Durability succeeded; free the dequeued copies. */
+			for (int i = 0; i < dequeued_count; i++)
+				if (dequeued[i])
+					FREE(dequeued[i]);
+		}
+		pthread_mutex_unlock(&persistence_fallback_log_mutex);
+	}
 
-  dropped = persistence_item_event_queue_dropped();
-  if (dropped)
-  {
-    persistence_alert(AVATAR, "item_event", "queue", "none", "none",
-                      "dropped_events",
-                      "%lu item persistence events were dropped before flush",
-                      dropped);
-    persistence_item_event_queue_clear_dropped();
-  }
+	dropped = persistence_item_event_queue_dropped();
+	if (dropped)
+	{
+		persistence_alert(AVATAR, "item_event", "queue", "none", "none", "dropped_events",
+				  "%lu item persistence events were dropped before flush", dropped);
+		persistence_item_event_queue_clear_dropped();
+	}
 
-  persistence_worker_heartbeat_check(0);
+	persistence_worker_heartbeat_check(0);
 
-  return flushed;
+	return flushed;
 }
 
 int persistence_flush_scalar_events(int max_events)
 {
-  char line[PERSISTENCE_EVENT_MAX_LEN];
-  char fallback_line[PERSISTENCE_EVENT_MAX_LEN + 64];
-  const char *record_line;
-  unsigned long dropped;
-  FILE *log_f = NULL;
-  int flushed = 0;
-  int pending;
-  int ok = 1;
+	char line[PERSISTENCE_EVENT_MAX_LEN];
+	char fallback_line[PERSISTENCE_EVENT_MAX_LEN + 64];
+	const char *record_line;
+	unsigned long dropped;
+	FILE *log_f = NULL;
+	int flushed = 0;
+	int pending;
+	int ok = 1;
 
-  if (persistence_scalar_event_worker_running())
-    return 0;
+	if (persistence_scalar_event_worker_running())
+		return 0;
 
-  pending = persistence_scalar_event_queue_pending();
-  if (max_events <= 0 || max_events > PERSISTENCE_FLUSH_BATCH_MAX)
-    max_events = pending < PERSISTENCE_FLUSH_BATCH_MAX ? pending : PERSISTENCE_FLUSH_BATCH_MAX;
-  if (pending > 0)
-  {
-    pthread_mutex_lock(&persistence_fallback_log_mutex);
-    if (_pwipe)
-    {
-      pthread_mutex_unlock(&persistence_fallback_log_mutex);
-      return 0;
-    }
-    log_f = fopen(LOG_EVENT, "a");
-    if (log_f)
-      setvbuf(log_f, NULL, _IONBF, 0);
-    if (!log_f)
-    {
-      pthread_mutex_unlock(&persistence_fallback_log_mutex);
-      persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
-                        "flush_open_failed",
-                        "could not open %s; %d scalar events remain queued",
-                        LOG_EVENT, pending);
-      return 0;
-    }
-  }
+	pending = persistence_scalar_event_queue_pending();
+	if (max_events <= 0 || max_events > PERSISTENCE_FLUSH_BATCH_MAX)
+		max_events = pending < PERSISTENCE_FLUSH_BATCH_MAX ? pending :
+								     PERSISTENCE_FLUSH_BATCH_MAX;
+	if (pending > 0)
+	{
+		pthread_mutex_lock(&persistence_fallback_log_mutex);
+		if (_pwipe)
+		{
+			pthread_mutex_unlock(&persistence_fallback_log_mutex);
+			return 0;
+		}
+		log_f = fopen(LOG_EVENT, "a");
+		if (log_f)
+			setvbuf(log_f, NULL, _IONBF, 0);
+		if (!log_f)
+		{
+			pthread_mutex_unlock(&persistence_fallback_log_mutex);
+			persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
+					  "flush_open_failed",
+					  "could not open %s; %d scalar events remain queued",
+					  LOG_EVENT, pending);
+			return 0;
+		}
+	}
 
-  long durability_offset = -1;
-  char *dequeued[PERSISTENCE_FLUSH_BATCH_MAX];
-  int dequeued_count = 0;
-  memset(dequeued, 0, sizeof(dequeued));
+	long durability_offset = -1;
+	char *dequeued[PERSISTENCE_FLUSH_BATCH_MAX];
+	int dequeued_count = 0;
+	memset(dequeued, 0, sizeof(dequeued));
 
-  while (ok && flushed < max_events &&
-         persistence_scalar_event_queue_dequeue(line, sizeof(line)))
-  {
-    record_line = persistence_fallback_record_line(line, "scalar_event",
-                                                     fallback_line,
-                                                     sizeof(fallback_line));
-    if (!record_line)
-    {
-      ok = 0;
-      break;
-    }
-    if (durability_offset < 0)
-      durability_offset = ftell(log_f);
-    long file_offset = ftell(log_f);
-    if (fputs(record_line, log_f) < 0 || fputs("\n", log_f) < 0)
-    {
-      ok = 0;
-      if (file_offset >= 0 && ftruncate(fileno(log_f), file_offset) == 0)
-        clearerr(log_f);
-      if (persistence_scalar_event_queue_enqueue(line) <= 0)
-        persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
-                          "flush_requeue_failed",
-                          "failed to requeue a scalar event after fallback write failure");
-    }
-    else
-    {
-      if (dequeued_count < (int)(sizeof(dequeued) / sizeof(dequeued[0])))
-      {
-        dequeued[dequeued_count] = str_dup(line);
-        if (dequeued[dequeued_count])
-          dequeued_count++;
-      }
-      flushed++;
-    }
-  }
+	while (ok && flushed < max_events &&
+	       persistence_scalar_event_queue_dequeue(line, sizeof(line)))
+	{
+		record_line = persistence_fallback_record_line(line, "scalar_event", fallback_line,
+							       sizeof(fallback_line));
+		if (!record_line)
+		{
+			ok = 0;
+			break;
+		}
+		if (durability_offset < 0)
+			durability_offset = ftell(log_f);
+		long file_offset = ftell(log_f);
+		if (fputs(record_line, log_f) < 0 || fputs("\n", log_f) < 0)
+		{
+			ok = 0;
+			if (file_offset >= 0 && ftruncate(fileno(log_f), file_offset) == 0)
+				clearerr(log_f);
+			if (persistence_scalar_event_queue_enqueue(line) <= 0)
+				persistence_alert(
+					AVATAR, "scalar_event", "queue", "none", "none",
+					"flush_requeue_failed",
+					"failed to requeue a scalar event after fallback write failure");
+		}
+		else
+		{
+			if (dequeued_count < (int)(sizeof(dequeued) / sizeof(dequeued[0])))
+			{
+				dequeued[dequeued_count] = str_dup(line);
+				if (dequeued[dequeued_count])
+					dequeued_count++;
+			}
+			flushed++;
+		}
+	}
 
-  if (log_f)
-  {
-    if (fflush(log_f) || fsync(fileno(log_f)))
-      ok = 0;
-    if (fclose(log_f))
-      ok = 0;
-    if (!ok)
-    {
-      if (durability_offset >= 0)
-      {
-        int fd = open(LOG_EVENT, O_WRONLY);
-        if (fd >= 0)
-        {
-          ftruncate(fd, durability_offset);
-          close(fd);
-        }
-      }
-      for (int i = 0; i < dequeued_count; i++)
-      {
-        if (dequeued[i])
-        {
-          if (persistence_scalar_event_queue_enqueue(dequeued[i]) <= 0)
-            persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
-                              "flush_requeue_failed",
-                              "failed to requeue scalar event %d after durability failure", i);
-          FREE(dequeued[i]);
-        }
-      }
-      persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
-                        "flush_write_failed",
-                        "durability failed after flushing %d scalar events; file truncated and events requeued", flushed);
-      flushed = 0;
-    }
-    else
-    {
-      for (int i = 0; i < dequeued_count; i++)
-        if (dequeued[i])
-          FREE(dequeued[i]);
-    }
-    pthread_mutex_unlock(&persistence_fallback_log_mutex);
-  }
+	if (log_f)
+	{
+		if (fflush(log_f) || fsync(fileno(log_f)))
+			ok = 0;
+		if (fclose(log_f))
+			ok = 0;
+		if (!ok)
+		{
+			if (durability_offset >= 0)
+			{
+				int fd = open(LOG_EVENT, O_WRONLY);
+				if (fd >= 0)
+				{
+					ftruncate(fd, durability_offset);
+					close(fd);
+				}
+			}
+			for (int i = 0; i < dequeued_count; i++)
+			{
+				if (dequeued[i])
+				{
+					if (persistence_scalar_event_queue_enqueue(dequeued[i]) <=
+					    0)
+						persistence_alert(
+							AVATAR, "scalar_event", "queue", "none",
+							"none", "flush_requeue_failed",
+							"failed to requeue scalar event %d after durability failure",
+							i);
+					FREE(dequeued[i]);
+				}
+			}
+			persistence_alert(
+				AVATAR, "scalar_event", "queue", "none", "none",
+				"flush_write_failed",
+				"durability failed after flushing %d scalar events; file truncated and events requeued",
+				flushed);
+			flushed = 0;
+		}
+		else
+		{
+			for (int i = 0; i < dequeued_count; i++)
+				if (dequeued[i])
+					FREE(dequeued[i]);
+		}
+		pthread_mutex_unlock(&persistence_fallback_log_mutex);
+	}
 
-  dropped = persistence_scalar_event_queue_dropped();
-  if (dropped)
-  {
-    persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
-                      "dropped_events",
-                      "%lu scalar persistence events were dropped before flush",
-                      dropped);
-    persistence_scalar_event_queue_clear_dropped();
-  }
+	dropped = persistence_scalar_event_queue_dropped();
+	if (dropped)
+	{
+		persistence_alert(AVATAR, "scalar_event", "queue", "none", "none", "dropped_events",
+				  "%lu scalar persistence events were dropped before flush",
+				  dropped);
+		persistence_scalar_event_queue_clear_dropped();
+	}
 
-  /* Deadlock-detection watchdog: runs on the main thread, periodically. */
-  persistence_worker_heartbeat_check(0);
+	/* Deadlock-detection watchdog: runs on the main thread, periodically. */
+	persistence_worker_heartbeat_check(0);
 
-  return flushed;
+	return flushed;
 }
-
 
 void persistence_worker_heartbeat_check(int threshold_secs)
 {
-  int age;
+	int age;
 
-  if (threshold_secs <= 0)
-    threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
+	if (threshold_secs <= 0)
+		threshold_secs = PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS;
 
-  /* Item event worker */
-  if (!persistence_item_event_worker_stop_pending() &&
-      !persistence_item_event_worker_running())
-  {
-    age = persistence_item_event_worker_heartbeat_age();
-    if (age > 0 && age >= threshold_secs)
-    {
-      persistence_alert(AVATAR, "item_event", "worker", "none", "none",
-                        "auto_restart",
-                        "item worker dead (heartbeat_age=%d threshold=%d); restarting",
-                        age, threshold_secs);
-      persistence_item_worker_restart_count++;
-      logit(LOG_STATUS, "PERSISTENCE: domain=item_event owner=worker action=auto_restart detail=restarted count=%lu", persistence_item_worker_restart_count);
-      persistence_start_item_event_worker();
-    }
-  }
+	/* Item event worker */
+	if (!persistence_item_event_worker_stop_pending() &&
+	    !persistence_item_event_worker_running())
+	{
+		age = persistence_item_event_worker_heartbeat_age();
+		if (age > 0 && age >= threshold_secs)
+		{
+			persistence_alert(
+				AVATAR, "item_event", "worker", "none", "none", "auto_restart",
+				"item worker dead (heartbeat_age=%d threshold=%d); restarting", age,
+				threshold_secs);
+			persistence_item_worker_restart_count++;
+			logit(LOG_STATUS,
+			      "PERSISTENCE: domain=item_event owner=worker action=auto_restart detail=restarted count=%lu",
+			      persistence_item_worker_restart_count);
+			persistence_start_item_event_worker();
+		}
+	}
 
-  /* Scalar event worker */
-  if (!persistence_scalar_event_worker_stop_pending() &&
-      !persistence_scalar_event_worker_running())
-  {
-    age = persistence_scalar_event_worker_heartbeat_age();
-    if (age > 0 && age >= threshold_secs)
-    {
-      persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
-	                    "auto_restart",
-	                    "scalar worker dead (heartbeat_age=%d threshold=%d); restarting",
-	                    age, threshold_secs);
-	  persistence_scalar_worker_restart_count++;
-	  logit(LOG_STATUS, "PERSISTENCE: domain=scalar_event owner=worker action=auto_restart detail=restarted count=%lu", persistence_scalar_worker_restart_count);
-	  persistence_start_scalar_event_worker();
-    }
-  }
+	/* Scalar event worker */
+	if (!persistence_scalar_event_worker_stop_pending() &&
+	    !persistence_scalar_event_worker_running())
+	{
+		age = persistence_scalar_event_worker_heartbeat_age();
+		if (age > 0 && age >= threshold_secs)
+		{
+			persistence_alert(
+				AVATAR, "scalar_event", "worker", "none", "none", "auto_restart",
+				"scalar worker dead (heartbeat_age=%d threshold=%d); restarting",
+				age, threshold_secs);
+			persistence_scalar_worker_restart_count++;
+			logit(LOG_STATUS,
+			      "PERSISTENCE: domain=scalar_event owner=worker action=auto_restart detail=restarted count=%lu",
+			      persistence_scalar_worker_restart_count);
+			persistence_start_scalar_event_worker();
+		}
+	}
 
-  /* Large event worker */
-  if (!persistence_large_event_worker_stop_pending() &&
-      !persistence_large_event_worker_running())
-  {
-    age = persistence_large_event_worker_heartbeat_age();
-    if (age > 0 && age >= threshold_secs)
-    {
-      persistence_alert(AVATAR, "large_event", "worker", "none", "none",
-	                    "auto_restart",
-	                    "large-event worker dead (heartbeat_age=%d threshold=%d); restarting",
-	                    age, threshold_secs);
-	  persistence_large_worker_restart_count++;
-	  logit(LOG_STATUS, "PERSISTENCE: domain=large_event owner=worker action=auto_restart detail=restarted count=%lu", persistence_large_worker_restart_count);
-	  persistence_start_large_event_worker();
-    }
-  }
-
+	/* Large event worker */
+	if (!persistence_large_event_worker_stop_pending() &&
+	    !persistence_large_event_worker_running())
+	{
+		age = persistence_large_event_worker_heartbeat_age();
+		if (age > 0 && age >= threshold_secs)
+		{
+			persistence_alert(
+				AVATAR, "large_event", "worker", "none", "none", "auto_restart",
+				"large-event worker dead (heartbeat_age=%d threshold=%d); restarting",
+				age, threshold_secs);
+			persistence_large_worker_restart_count++;
+			logit(LOG_STATUS,
+			      "PERSISTENCE: domain=large_event owner=worker action=auto_restart detail=restarted count=%lu",
+			      persistence_large_worker_restart_count);
+			persistence_start_large_event_worker();
+		}
+	}
 }
 static int persistence_line_has_prefix(const char *line, const char *prefix)
 {
-  return line && prefix && !strncmp(line, prefix, strlen(prefix));
+	return line && prefix && !strncmp(line, prefix, strlen(prefix));
 }
 
 static void persistence_trim_record_line(char *line)
 {
-  int len;
+	int len;
 
-  if (!line)
-    return;
+	if (!line)
+		return;
 
-  len = strlen(line);
-  while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
-  {
-    line[len - 1] = '\0';
-    len--;
-  }
+	len = strlen(line);
+	while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+	{
+		line[len - 1] = '\0';
+		len--;
+	}
 }
 
 int persistence_quarantine_fallback_events(void)
 {
-  char quarantine_path[512];
+	char quarantine_path[512];
 
-  pthread_mutex_lock(&persistence_fallback_log_mutex);
-  if (access(LOG_EVENT, F_OK))
-  {
-    if (errno == ENOENT)
-    {
-      pthread_mutex_unlock(&persistence_fallback_log_mutex);
-      return 1;
-    }
-    persistence_alert(AVATAR, "persistence_replay", "pwipe", "none",
-                      "none", "quarantine_stat_failed",
-                      "could not inspect %s before pwipe: errno=%d",
-                      LOG_EVENT, errno);
-    pthread_mutex_unlock(&persistence_fallback_log_mutex);
-    return 0;
-  }
+	pthread_mutex_lock(&persistence_fallback_log_mutex);
+	if (access(LOG_EVENT, F_OK))
+	{
+		if (errno == ENOENT)
+		{
+			pthread_mutex_unlock(&persistence_fallback_log_mutex);
+			return 1;
+		}
+		persistence_alert(AVATAR, "persistence_replay", "pwipe", "none", "none",
+				  "quarantine_stat_failed",
+				  "could not inspect %s before pwipe: errno=%d", LOG_EVENT, errno);
+		pthread_mutex_unlock(&persistence_fallback_log_mutex);
+		return 0;
+	}
 
-  snprintf(quarantine_path, sizeof(quarantine_path),
-           "%s.pwipe-quarantine.%ld.%ld", LOG_EVENT, (long)time(NULL),
-           (long)getpid());
-  if (rename(LOG_EVENT, quarantine_path))
-  {
-    persistence_alert(AVATAR, "persistence_replay", "pwipe", "none",
-                      "none", "quarantine_rename_failed",
-                      "could not quarantine %s before pwipe: errno=%d",
-                      LOG_EVENT, errno);
-    pthread_mutex_unlock(&persistence_fallback_log_mutex);
-    return 0;
-  }
+	snprintf(quarantine_path, sizeof(quarantine_path), "%s.pwipe-quarantine.%ld.%ld", LOG_EVENT,
+		 (long)time(NULL), (long)getpid());
+	if (rename(LOG_EVENT, quarantine_path))
+	{
+		persistence_alert(AVATAR, "persistence_replay", "pwipe", "none", "none",
+				  "quarantine_rename_failed",
+				  "could not quarantine %s before pwipe: errno=%d", LOG_EVENT,
+				  errno);
+		pthread_mutex_unlock(&persistence_fallback_log_mutex);
+		return 0;
+	}
 
-  logit(LOG_STATUS,
-        "PERSISTENCE: domain=persistence_replay owner=pwipe action=quarantine detail=renamed %s to %s",
-        LOG_EVENT, quarantine_path);
-  pthread_mutex_unlock(&persistence_fallback_log_mutex);
-  return 1;
+	logit(LOG_STATUS,
+	      "PERSISTENCE: domain=persistence_replay owner=pwipe action=quarantine detail=renamed %s to %s",
+	      LOG_EVENT, quarantine_path);
+	pthread_mutex_unlock(&persistence_fallback_log_mutex);
+	return 1;
 }
 
 int persistence_replay_fallback_events(void)
 {
-  FILE *in_f;
-  FILE *out_f;
-  /* Sized to the largest event type we replay (large = 128KB). The scalar
+	FILE *in_f;
+	FILE *out_f;
+	/* Sized to the largest event type we replay (large = 128KB). The scalar
    * and item events are 1KB so the extra space is unused but harmless.
    * Stack cost: ~256KB, well within the default 8MB thread stack.
    */
-  char line[PERSISTENCE_LARGE_EVENT_MAX_LEN + 8];
-  char event_line[PERSISTENCE_LARGE_EVENT_MAX_LEN + 8];
-  char tmp_path[512];
-  char backup_path[512];
-  int replayed = 0;
-  int failed = 0;
-  int saw_persistence = 0;
-  int rewrite_failed = 0;
+	char line[PERSISTENCE_LARGE_EVENT_MAX_LEN + 8];
+	char event_line[PERSISTENCE_LARGE_EVENT_MAX_LEN + 8];
+	char tmp_path[512];
+	char backup_path[512];
+	int replayed = 0;
+	int failed = 0;
+	int saw_persistence = 0;
+	int rewrite_failed = 0;
 
-  in_f = fopen(LOG_EVENT, "r");
-  if (!in_f)
-  {
-    if (errno != ENOENT)
-    {
-      persistence_alert(AVATAR, "persistence_replay", "boot", "none",
-                        "none", "open_failed",
-                        "could not open %s for fallback replay: errno=%d",
-                        LOG_EVENT, errno);
-    }
-    return 0;
-  }
+	in_f = fopen(LOG_EVENT, "r");
+	if (!in_f)
+	{
+		if (errno != ENOENT)
+		{
+			persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
+					  "open_failed",
+					  "could not open %s for fallback replay: errno=%d",
+					  LOG_EVENT, errno);
+		}
+		return 0;
+	}
 
-  snprintf(tmp_path, sizeof(tmp_path), "%s.persistence-replay.tmp", LOG_EVENT);
-  out_f = fopen(tmp_path, "w");
-  if (!out_f)
-  {
-    fclose(in_f);
-    persistence_alert(AVATAR, "persistence_replay", "boot", "none",
-                      "none", "temp_open_failed",
-                      "could not open %s while replaying fallback events",
-                      tmp_path);
-    return 0;
-  }
+	snprintf(tmp_path, sizeof(tmp_path), "%s.persistence-replay.tmp", LOG_EVENT);
+	out_f = fopen(tmp_path, "w");
+	if (!out_f)
+	{
+		fclose(in_f);
+		persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
+				  "temp_open_failed",
+				  "could not open %s while replaying fallback events", tmp_path);
+		return 0;
+	}
 
-  while (fgets(line, sizeof(line), in_f))
-  {
-    snprintf(event_line, sizeof(event_line), "%s", line);
-    persistence_trim_record_line(event_line);
+	while (fgets(line, sizeof(line), in_f))
+	{
+		snprintf(event_line, sizeof(event_line), "%s", line);
+		persistence_trim_record_line(event_line);
 
-    if (persistence_line_has_prefix(event_line, PERSISTENCE_ITEM_EVENT_PREFIX))
-    {
-      saw_persistence = 1;
-      if (sql_persistence_write_item_event_line(event_line))
-        replayed++;
-      else
-      {
-        failed++;
-        if (fputs(event_line, out_f) < 0 || fputs("\n", out_f) < 0)
-          rewrite_failed = 1;
-      }
-    }
-    else if (persistence_line_has_prefix(event_line,
-                                         PERSISTENCE_SCALAR_EVENT_PREFIX))
-    {
-      const char *scalar_sql = event_line + strlen(PERSISTENCE_SCALAR_EVENT_PREFIX);
-      saw_persistence = 1;
-      if (*scalar_sql && sql_persistence_write_scalar_event_line(scalar_sql))
-        replayed++;
-      else
-      {
-        failed++;
-        if (fputs(event_line, out_f) < 0 || fputs("\n", out_f) < 0)
-          rewrite_failed = 1;
-      }
-    }
-    else if (persistence_line_has_prefix(event_line,
-                                         PERSISTENCE_LARGE_EVENT_PREFIX))
-    {
-      const char *large_sql = event_line + strlen(PERSISTENCE_LARGE_EVENT_PREFIX);
-      saw_persistence = 1;
-      if (*large_sql && sql_persistence_write_large_event_line(large_sql))
-        replayed++;
-      else
-      {
-        failed++;
-        if (fputs(event_line, out_f) < 0 || fputs("\n", out_f) < 0)
-          rewrite_failed = 1;
-      }
-    }
-    else if (fputs(line, out_f) < 0)
-      rewrite_failed = 1;
-  }
+		if (persistence_line_has_prefix(event_line, PERSISTENCE_ITEM_EVENT_PREFIX))
+		{
+			saw_persistence = 1;
+			if (sql_persistence_write_item_event_line(event_line))
+				replayed++;
+			else
+			{
+				failed++;
+				if (fputs(event_line, out_f) < 0 || fputs("\n", out_f) < 0)
+					rewrite_failed = 1;
+			}
+		}
+		else if (persistence_line_has_prefix(event_line, PERSISTENCE_SCALAR_EVENT_PREFIX))
+		{
+			const char *scalar_sql =
+				event_line + strlen(PERSISTENCE_SCALAR_EVENT_PREFIX);
+			saw_persistence = 1;
+			if (*scalar_sql && sql_persistence_write_scalar_event_line(scalar_sql))
+				replayed++;
+			else
+			{
+				failed++;
+				if (fputs(event_line, out_f) < 0 || fputs("\n", out_f) < 0)
+					rewrite_failed = 1;
+			}
+		}
+		else if (persistence_line_has_prefix(event_line, PERSISTENCE_LARGE_EVENT_PREFIX))
+		{
+			const char *large_sql = event_line + strlen(PERSISTENCE_LARGE_EVENT_PREFIX);
+			saw_persistence = 1;
+			if (*large_sql && sql_persistence_write_large_event_line(large_sql))
+				replayed++;
+			else
+			{
+				failed++;
+				if (fputs(event_line, out_f) < 0 || fputs("\n", out_f) < 0)
+					rewrite_failed = 1;
+			}
+		}
+		else if (fputs(line, out_f) < 0)
+			rewrite_failed = 1;
+	}
 
-  if (fclose(in_f))
-    rewrite_failed = 1;
-  if (fflush(out_f) || fsync(fileno(out_f)))
-    rewrite_failed = 1;
-  if (fclose(out_f))
-    rewrite_failed = 1;
+	if (fclose(in_f))
+		rewrite_failed = 1;
+	if (fflush(out_f) || fsync(fileno(out_f)))
+		rewrite_failed = 1;
+	if (fclose(out_f))
+		rewrite_failed = 1;
 
-  if (!saw_persistence)
-  {
-    remove(tmp_path);
-    return 0;
-  }
+	if (!saw_persistence)
+	{
+		remove(tmp_path);
+		return 0;
+	}
 
-  if (rewrite_failed)
-  {
-    persistence_alert(AVATAR, "persistence_replay", "boot", "none",
-                      "none", "rewrite_failed",
-                      "fallback replay wrote SQL but could not safely rewrite %s; leaving original log for retry",
-                      LOG_EVENT);
-    remove(tmp_path);
-    return replayed;
-  }
+	if (rewrite_failed)
+	{
+		persistence_alert(
+			AVATAR, "persistence_replay", "boot", "none", "none", "rewrite_failed",
+			"fallback replay wrote SQL but could not safely rewrite %s; leaving original log for retry",
+			LOG_EVENT);
+		remove(tmp_path);
+		return replayed;
+	}
 
-  snprintf(backup_path, sizeof(backup_path), "%s.persistence-replay.%ld.%ld",
-           LOG_EVENT, (long)time(NULL), (long)getpid());
-  if (link(LOG_EVENT, backup_path))
-  {
-    persistence_alert(AVATAR, "persistence_replay", "boot", "none",
-                      "none", "backup_failed",
-                      "could not link %s to %s before replay; leaving original log for retry",
-                      LOG_EVENT, backup_path);
-    remove(tmp_path);
-    return replayed;
-  }
+	snprintf(backup_path, sizeof(backup_path), "%s.persistence-replay.%ld.%ld", LOG_EVENT,
+		 (long)time(NULL), (long)getpid());
+	if (link(LOG_EVENT, backup_path))
+	{
+		persistence_alert(
+			AVATAR, "persistence_replay", "boot", "none", "none", "backup_failed",
+			"could not link %s to %s before replay; leaving original log for retry",
+			LOG_EVENT, backup_path);
+		remove(tmp_path);
+		return replayed;
+	}
 
-  if (rename(tmp_path, LOG_EVENT))
-  {
-    persistence_alert(AVATAR, "persistence_replay", "boot", "none",
-                      "none", "replace_failed",
-                      "could not replace %s after replay; backup retained at %s",
-                      LOG_EVENT, backup_path);
-    remove(tmp_path);
-    return replayed;
-  }
+	if (rename(tmp_path, LOG_EVENT))
+	{
+		persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
+				  "replace_failed",
+				  "could not replace %s after replay; backup retained at %s",
+				  LOG_EVENT, backup_path);
+		remove(tmp_path);
+		return replayed;
+	}
 
-  persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
-                    failed ? "partial_replay" : "replayed",
-                    "replayed %d fallback persistence events; %d remain queued in %s",
-                    replayed, failed, LOG_EVENT);
+	persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
+			  failed ? "partial_replay" : "replayed",
+			  "replayed %d fallback persistence events; %d remain queued in %s",
+			  replayed, failed, LOG_EVENT);
 
-  if (replayed > 0 || failed > 0)
-  {
-    persistence_replay_handled = replayed + failed;
-    wizlog(AVATAR, "&+R&-LPERSISTENCE FALLBACK REPLAY:&n %d events WERE handled (replayed into SQL). %d events WILL be retried on next boot. Location: %s (rotated to backup on replay).",
-           replayed, failed, LOG_EVENT);
-  }
-  else
-  {
-    persistence_replay_handled = 0;
-  }
+	if (replayed > 0 || failed > 0)
+	{
+		persistence_replay_handled = replayed + failed;
+		wizlog(AVATAR,
+		       "&+R&-LPERSISTENCE FALLBACK REPLAY:&n %d events WERE handled (replayed into SQL). %d events WILL be retried on next boot. Location: %s (rotated to backup on replay).",
+		       replayed, failed, LOG_EVENT);
+	}
+	else
+	{
+		persistence_replay_handled = 0;
+	}
 
-  return replayed;
+	return replayed;
 }
 
 static int persistence_item_event_log_writer(const char *line, void *context)
 {
-  static unsigned long fallback_count = 0;
+	static unsigned long fallback_count = 0;
 
-  (void) context;
+	(void)context;
 
-  if (!line || !*line)
-    return 1;
+	if (!line || !*line)
+		return 1;
 
-  if (sql_persistence_write_item_event_line(line))
-    return 1;
+	if (sql_persistence_write_item_event_line(line))
+		return 1;
 
-  fallback_count++;
-  if (fallback_count <= 5 || !(fallback_count % 1000))
-  {
-    logit(LOG_FILE,
-          "PERSISTENCE: domain=item_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote event to flat log fallback count=%lu",
-          fallback_count);
-    logit(LOG_WIZ,
-          "PERSISTENCE: domain=item_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote event to flat log fallback count=%lu",
-          fallback_count);
-  }
+	fallback_count++;
+	if (fallback_count <= 5 || !(fallback_count % 1000))
+	{
+		logit(LOG_FILE,
+		      "PERSISTENCE: domain=item_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote event to flat log fallback count=%lu",
+		      fallback_count);
+		logit(LOG_WIZ,
+		      "PERSISTENCE: domain=item_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote event to flat log fallback count=%lu",
+		      fallback_count);
+	}
 
-  if (!persistence_write_fallback_event_line(line, "item_event", "worker",
-                                             "sql_fallback"))
-    return 0;
-  persistence_item_worker_fallback_count++;
-  return 1;
+	if (!persistence_write_fallback_event_line(line, "item_event", "worker", "sql_fallback"))
+		return 0;
+	persistence_item_worker_fallback_count++;
+	return 1;
 }
 
 void utility_latency_dump(void)
 {
-  FILE *f = fopen("/durismud/logs/latency_trace.log", "a");
-  if (!f) return;
-  latency_trace_dump(f);
-  fclose(f);
+	FILE *f = fopen("/durismud/logs/latency_trace.log", "a");
+	if (!f)
+		return;
+	latency_trace_dump(f);
+	fclose(f);
 }
 
 void utility_latency_reset(void)
 {
-  latency_trace_reset();
+	latency_trace_reset();
 }
 
 int persistence_start_item_event_worker(void)
 {
-  if (!sql_pool_is_active())
-  {
-    persistence_alert(AVATAR, "item_event", "worker", "none", "none",
-                      "pool_unavailable", "item worker disabled; using durable flat-log fallback");
-    return 0;
-  }
-  if (!persistence_item_event_worker_start(persistence_item_event_log_writer,
-                                           NULL))
-  {
-    persistence_alert(AVATAR, "item_event", "worker", "none", "none",
-                      "start_failed",
-                      "item persistence worker could not start; using sync fallback");
-    return 0;
-  }
+	if (!sql_pool_is_active())
+	{
+		persistence_alert(AVATAR, "item_event", "worker", "none", "none",
+				  "pool_unavailable",
+				  "item worker disabled; using durable flat-log fallback");
+		return 0;
+	}
+	if (!persistence_item_event_worker_start(persistence_item_event_log_writer, NULL))
+	{
+		persistence_alert(AVATAR, "item_event", "worker", "none", "none", "start_failed",
+				  "item persistence worker could not start; using sync fallback");
+		return 0;
+	}
 
-  logit(LOG_STATUS, "Started item persistence worker.");
-  return 1;
+	logit(LOG_STATUS, "Started item persistence worker.");
+	return 1;
 }
 
 static int persistence_scalar_event_log_writer(const char *line, void *context)
 {
-  static unsigned long fallback_count = 0;
+	static unsigned long fallback_count = 0;
 
-  (void) context;
+	(void)context;
 
-  if (!line || !*line)
-    return 1;
+	if (!line || !*line)
+		return 1;
 
-  if (sql_persistence_write_scalar_event_line(line))
-    return 1;
+	if (sql_persistence_write_scalar_event_line(line))
+		return 1;
 
-  fallback_count++;
-  if (fallback_count <= 5 || !(fallback_count % 1000))
-  {
-    logit(LOG_FILE,
-          "PERSISTENCE: domain=scalar_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote scalar event to flat log fallback count=%lu",
-          fallback_count);
-    logit(LOG_WIZ,
-          "PERSISTENCE: domain=scalar_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote scalar event to flat log fallback count=%lu",
-          fallback_count);
-  }
+	fallback_count++;
+	if (fallback_count <= 5 || !(fallback_count % 1000))
+	{
+		logit(LOG_FILE,
+		      "PERSISTENCE: domain=scalar_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote scalar event to flat log fallback count=%lu",
+		      fallback_count);
+		logit(LOG_WIZ,
+		      "PERSISTENCE: domain=scalar_event owner=worker item_uid=none event_id=none action=sql_fallback detail=SQL persistence unavailable; wrote scalar event to flat log fallback count=%lu",
+		      fallback_count);
+	}
 
-  if (!persistence_write_fallback_event_line(line, "scalar_event", "worker",
-                                             "sql_fallback"))
-    return 0;
-  persistence_scalar_fallback_count++;
-  return 1;
+	if (!persistence_write_fallback_event_line(line, "scalar_event", "worker", "sql_fallback"))
+		return 0;
+	persistence_scalar_fallback_count++;
+	return 1;
 }
 
 int persistence_start_scalar_event_worker(void)
 {
-  if (!sql_pool_is_active())
-  {
-    persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
-                      "pool_unavailable", "scalar worker disabled; using sync fallback");
-    return 0;
-  }
-  if (!persistence_scalar_event_worker_start(persistence_scalar_event_log_writer,
-                                             NULL))
-  {
-    persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
-                      "start_failed",
-                      "scalar persistence worker could not start; using sync fallback");
-    return 0;
-  }
+	if (!sql_pool_is_active())
+	{
+		persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
+				  "pool_unavailable",
+				  "scalar worker disabled; using sync fallback");
+		return 0;
+	}
+	if (!persistence_scalar_event_worker_start(persistence_scalar_event_log_writer, NULL))
+	{
+		persistence_alert(AVATAR, "scalar_event", "worker", "none", "none", "start_failed",
+				  "scalar persistence worker could not start; using sync fallback");
+		return 0;
+	}
 
-  logit(LOG_STATUS, "Started scalar persistence worker.");
-  return 1;
+	logit(LOG_STATUS, "Started scalar persistence worker.");
+	return 1;
 }
 
 int persistence_prepare_pwipe(void)
 {
-  persistence_large_event_worker_stop(0);
-  persistence_scalar_event_worker_stop(0);
-  persistence_item_event_worker_stop(0);
+	persistence_large_event_worker_stop(0);
+	persistence_scalar_event_worker_stop(0);
+	persistence_item_event_worker_stop(0);
 
-  if (persistence_large_event_worker_running() ||
-      persistence_scalar_event_worker_running() ||
-      persistence_item_event_worker_running() ||
-      persistence_large_event_worker_stop_pending() ||
-      persistence_scalar_event_worker_stop_pending() ||
-      persistence_item_event_worker_stop_pending())
-  {
-    logit(LOG_STATUS,
-          "PWipe quiescence failed: persistence worker remains active or pending.");
-    return 0;
-  }
+	if (persistence_large_event_worker_running() || persistence_scalar_event_worker_running() ||
+	    persistence_item_event_worker_running() ||
+	    persistence_large_event_worker_stop_pending() ||
+	    persistence_scalar_event_worker_stop_pending() ||
+	    persistence_item_event_worker_stop_pending())
+	{
+		logit(LOG_STATUS,
+		      "PWipe quiescence failed: persistence worker remains active or pending.");
+		return 0;
+	}
 
-  persistence_large_event_queue_reset();
-  persistence_scalar_event_queue_reset();
-  persistence_item_event_queue_reset();
+	persistence_large_event_queue_reset();
+	persistence_scalar_event_queue_reset();
+	persistence_item_event_queue_reset();
 
-  logit(LOG_STATUS,
-        "PWipe persistence workers quiesced without flushing queued events.");
-  return 1;
+	logit(LOG_STATUS, "PWipe persistence workers quiesced without flushing queued events.");
+	return 1;
 }
 
 void persistence_stop_scalar_event_worker(void)
 {
-  unsigned long failures;
-  int stop_ok;
+	unsigned long failures;
+	int stop_ok;
 
-  stop_ok = persistence_scalar_event_worker_stop(0);
-  if (!stop_ok)
-  {
-    persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
-                      "stop_incomplete",
-                      "worker join timed out; refusing concurrent fallback drain");
-    return;
-  }
+	stop_ok = persistence_scalar_event_worker_stop(0);
+	if (!stop_ok)
+	{
+		persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
+				  "stop_incomplete",
+				  "worker join timed out; refusing concurrent fallback drain");
+		return;
+	}
 
-  while (persistence_scalar_event_queue_pending() > 0)
-  {
-    int before = persistence_scalar_event_queue_pending();
-    int flushed = persistence_flush_scalar_events(PERSISTENCE_FLUSH_BATCH_MAX);
-    if (flushed <= 0 || persistence_scalar_event_queue_pending() >= before)
-      break;
-  }
+	while (persistence_scalar_event_queue_pending() > 0)
+	{
+		int before = persistence_scalar_event_queue_pending();
+		int flushed = persistence_flush_scalar_events(PERSISTENCE_FLUSH_BATCH_MAX);
+		if (flushed <= 0 || persistence_scalar_event_queue_pending() >= before)
+			break;
+	}
 
-  if (persistence_scalar_event_queue_pending() > 0)
-    persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
-                      "flush_incomplete",
-                      "%d scalar events remain queued after worker stop",
-                      persistence_scalar_event_queue_pending());
+	if (persistence_scalar_event_queue_pending() > 0)
+		persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
+				  "flush_incomplete",
+				  "%d scalar events remain queued after worker stop",
+				  persistence_scalar_event_queue_pending());
 
-  failures = persistence_scalar_event_worker_write_failures();
-  if (failures)
-  {
-    persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
-                      "write_failures",
-                      "%lu scalar persistence worker writes failed and were retried",
-                      failures);
-  }
+	failures = persistence_scalar_event_worker_write_failures();
+	if (failures)
+	{
+		persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
+				  "write_failures",
+				  "%lu scalar persistence worker writes failed and were retried",
+				  failures);
+	}
 
-  logit(LOG_STATUS, "Stopped scalar persistence worker.");
+	logit(LOG_STATUS, "Stopped scalar persistence worker.");
 }
 
 int persistence_scalar_event_worker_active(void)
 {
-  return persistence_scalar_event_worker_running();
+	return persistence_scalar_event_worker_running();
 }
 
 int persistence_pending_scalar_events(void)
 {
-  return persistence_scalar_event_queue_pending();
+	return persistence_scalar_event_queue_pending();
 }
 
 unsigned long persistence_dropped_scalar_events(void)
 {
-  return persistence_scalar_event_queue_dropped();
+	return persistence_scalar_event_queue_dropped();
 }
 
 void persistence_stop_item_event_worker(void)
 {
-  unsigned long failures;
-  int stop_ok;
+	unsigned long failures;
+	int stop_ok;
 
-  stop_ok = persistence_item_event_worker_stop(0);
-  if (!stop_ok)
-  {
-    persistence_alert(AVATAR, "item_event", "worker", "none", "none",
-                      "stop_incomplete",
-                      "worker join timed out; refusing concurrent fallback drain");
-    return;
-  }
+	stop_ok = persistence_item_event_worker_stop(0);
+	if (!stop_ok)
+	{
+		persistence_alert(AVATAR, "item_event", "worker", "none", "none", "stop_incomplete",
+				  "worker join timed out; refusing concurrent fallback drain");
+		return;
+	}
 
-  while (persistence_item_event_queue_pending() > 0)
-  {
-    int before = persistence_item_event_queue_pending();
-    int flushed = persistence_flush_item_events(PERSISTENCE_FLUSH_BATCH_MAX);
-    if (flushed <= 0 || persistence_item_event_queue_pending() >= before)
-      break;
-  }
+	while (persistence_item_event_queue_pending() > 0)
+	{
+		int before = persistence_item_event_queue_pending();
+		int flushed = persistence_flush_item_events(PERSISTENCE_FLUSH_BATCH_MAX);
+		if (flushed <= 0 || persistence_item_event_queue_pending() >= before)
+			break;
+	}
 
-  if (persistence_item_event_queue_pending() > 0)
-    persistence_alert(AVATAR, "item_event", "queue", "none", "none",
-                      "flush_incomplete",
-                      "%d item events remain queued after worker stop",
-                      persistence_item_event_queue_pending());
+	if (persistence_item_event_queue_pending() > 0)
+		persistence_alert(AVATAR, "item_event", "queue", "none", "none", "flush_incomplete",
+				  "%d item events remain queued after worker stop",
+				  persistence_item_event_queue_pending());
 
-  failures = persistence_item_event_worker_write_failures();
-  if (failures)
-  {
-    persistence_alert(AVATAR, "item_event", "worker", "none", "none",
-                      "write_failures",
-                      "%lu item persistence worker writes failed and were retried",
-                      failures);
-  }
+	failures = persistence_item_event_worker_write_failures();
+	if (failures)
+	{
+		persistence_alert(AVATAR, "item_event", "worker", "none", "none", "write_failures",
+				  "%lu item persistence worker writes failed and were retried",
+				  failures);
+	}
 
-  logit(LOG_STATUS, "Stopped item persistence worker.");
+	logit(LOG_STATUS, "Stopped item persistence worker.");
 }
 
 int persistence_item_event_worker_active(void)
 {
-  return persistence_item_event_worker_running();
+	return persistence_item_event_worker_running();
 }
 
 int persistence_pending_item_events(void)
 {
-  return persistence_item_event_queue_pending();
+	return persistence_item_event_queue_pending();
 }
 
 unsigned long persistence_dropped_item_events(void)
 {
-  return persistence_item_event_queue_dropped();
+	return persistence_item_event_queue_dropped();
 }
 
-void persistence_record_item_event(const char *event_type, P_obj obj,
-                                   P_char actor, const char *source,
-                                   const char *target, const char *note)
+void persistence_record_item_event(const char *event_type, P_obj obj, P_char actor,
+				   const char *source, const char *target, const char *note)
 {
-  char uid[32];
-  char line[MAX_STRING_LENGTH];
-  char event_buf[128];
-  char item_buf[256];
-  char actor_buf[128];
-  char source_buf[256];
-  char target_buf[256];
-  char note_buf[256];
-  int item_vnum = -1;
-  int actor_id = -1;
+	char uid[32];
+	char line[MAX_STRING_LENGTH];
+	char event_buf[128];
+	char item_buf[256];
+	char actor_buf[128];
+	char source_buf[256];
+	char target_buf[256];
+	char note_buf[256];
+	int item_vnum = -1;
+	int actor_id = -1;
 
-  if (obj)
-  {
-    persistence_assign_item_uid(obj, event_type ? event_type : "item_event");
-    if (obj->R_num >= 0)
-      item_vnum = obj_index[obj->R_num].virtual_number;
-  }
+	if (obj)
+	{
+		persistence_assign_item_uid(obj, event_type ? event_type : "item_event");
+		if (obj->R_num >= 0)
+			item_vnum = obj_index[obj->R_num].virtual_number;
+	}
 
-  if (actor)
-    actor_id = IS_NPC(actor) ? GET_VNUM(actor) : GET_PID(actor);
+	if (actor)
+		actor_id = IS_NPC(actor) ? GET_VNUM(actor) : GET_PID(actor);
 
-  snprintf(line, sizeof(line),
-           "PERSISTENCE_ITEM_EVENT|ts=%llu|event=%s|item_uid=%s|vnum=%d|item=%s|actor=%s|actor_id=%d|source=%s|target=%s|note=%s",
-           persistence_event_time_usec(),
-           persistence_clean_field(event_type, event_buf, sizeof(event_buf)),
-           persistence_item_uid_text(obj, uid, sizeof(uid)),
-           item_vnum,
-           persistence_clean_field(obj ? OBJ_SHORT(obj) : "none",
-                                   item_buf, sizeof(item_buf)),
-           persistence_clean_field(actor ? J_NAME(actor) : "system",
-                                   actor_buf, sizeof(actor_buf)),
-           actor_id,
-           persistence_clean_field(source, source_buf, sizeof(source_buf)),
-           persistence_clean_field(target, target_buf, sizeof(target_buf)),
-           persistence_clean_field(note, note_buf, sizeof(note_buf)));
+	snprintf(
+		line, sizeof(line),
+		"PERSISTENCE_ITEM_EVENT|ts=%llu|event=%s|item_uid=%s|vnum=%d|item=%s|actor=%s|actor_id=%d|source=%s|target=%s|note=%s",
+		persistence_event_time_usec(),
+		persistence_clean_field(event_type, event_buf, sizeof(event_buf)),
+		persistence_item_uid_text(obj, uid, sizeof(uid)), item_vnum,
+		persistence_clean_field(obj ? OBJ_SHORT(obj) : "none", item_buf, sizeof(item_buf)),
+		persistence_clean_field(actor ? J_NAME(actor) : "system", actor_buf,
+					sizeof(actor_buf)),
+		actor_id, persistence_clean_field(source, source_buf, sizeof(source_buf)),
+		persistence_clean_field(target, target_buf, sizeof(target_buf)),
+		persistence_clean_field(note, note_buf, sizeof(note_buf)));
 
-  if (!persistence_item_event_worker_running() ||
-      !persistence_item_event_queue_enqueue(line))
-  {
-    persistence_write_fallback_event_line(
-        line, "item_event", actor ? J_NAME(actor) : "system",
-        persistence_item_event_worker_running()
-            ? "queue_full_flat_fallback"
-            : "worker_unavailable_flat_fallback");
-  }
+	if (!persistence_item_event_worker_running() || !persistence_item_event_queue_enqueue(line))
+	{
+		persistence_write_fallback_event_line(line, "item_event",
+						      actor ? J_NAME(actor) : "system",
+						      persistence_item_event_worker_running() ?
+							      "queue_full_flat_fallback" :
+							      "worker_unavailable_flat_fallback");
+	}
 
-  persistence_worker_heartbeat_check(0);
+	persistence_worker_heartbeat_check(0);
 }
 
 void debug(const char *format, ...)
 {
-	P_desc  i;
+	P_desc i;
 	va_list args;
-	char   *lbuf;
+	char *lbuf;
 
 	va_start(args, format);
 	lbuf = format_variadic_message("&+C*** DEBUG:&n ", "\n", format, args);
@@ -1881,16 +1861,17 @@ void debug(const char *format, ...)
 		return;
 	// logit(LOG_DEBUG, lbuf);
 	for (i = descriptor_list; i; i = i->next)
-		if (!i->connected && i->character && IS_TRUSTED(i->character) && IS_SET(i->character->specials.act, PLR_DEBUG))
+		if (!i->connected && i->character && IS_TRUSTED(i->character) &&
+		    IS_SET(i->character->specials.act, PLR_DEBUG))
 			send_to_char(lbuf, i->character);
 	free(lbuf);
 }
 
 void logexp(const char *format, ...)
 {
-	P_desc  i;
+	P_desc i;
 	va_list args;
-	char   *lbuf;
+	char *lbuf;
 
 	va_start(args, format);
 	lbuf = format_variadic_message("&+C*** EXP:&n ", "\n", format, args);
@@ -1898,7 +1879,8 @@ void logexp(const char *format, ...)
 	if (!lbuf)
 		return;
 	for (i = descriptor_list; i; i = i->next)
-		if (!i->connected && i->character && IS_TRUSTED(i->character) && IS_SET(i->character->specials.act2, PLR2_EXP))
+		if (!i->connected && i->character && IS_TRUSTED(i->character) &&
+		    IS_SET(i->character->specials.act2, PLR2_EXP))
 			send_to_char(lbuf, i->character);
 	free(lbuf);
 }
@@ -1906,8 +1888,8 @@ void logexp(const char *format, ...)
 void loginlog(int level, const char *format, ...)
 {
 	va_list args;
-	char   *lbuf;
-	P_desc  d;
+	char *lbuf;
+	P_desc d;
 
 	va_start(args, format);
 	lbuf = format_variadic_message("&+c*** LOGMSG:&n ", "\n", format, args);
@@ -1917,7 +1899,9 @@ void loginlog(int level, const char *format, ...)
 
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if ((d->connected == CON_PLAYING) && IS_TRUSTED(d->character) && (GET_LEVEL(d->character) >= level) && IS_SET(d->character->specials.act, PLR_PLRLOG))
+		if ((d->connected == CON_PLAYING) && IS_TRUSTED(d->character) &&
+		    (GET_LEVEL(d->character) >= level) &&
+		    IS_SET(d->character->specials.act, PLR_PLRLOG))
 		{
 			send_to_char(lbuf, d->character);
 		}
@@ -1928,8 +1912,8 @@ void loginlog(int level, const char *format, ...)
 void statuslog(int level, const char *format, ...)
 {
 	va_list args;
-	char   *lbuf;
-	P_desc  d;
+	char *lbuf;
+	P_desc d;
 
 	va_start(args, format);
 	lbuf = format_variadic_message("&+c*** STATUS:&n ", "\n", format, args);
@@ -1939,7 +1923,9 @@ void statuslog(int level, const char *format, ...)
 
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) && GET_LEVEL(d->character) >= level && IS_SET(d->character->specials.act, PLR_STATUS))
+		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) &&
+		    GET_LEVEL(d->character) >= level &&
+		    IS_SET(d->character->specials.act, PLR_STATUS))
 		{
 			send_to_char(lbuf, d->character);
 		}
@@ -1954,8 +1940,8 @@ void statuslog(int level, const char *format, ...)
 void epiclog(int level, const char *format, ...)
 {
 	va_list args;
-	char   *lbuf;
-	P_desc  d;
+	char *lbuf;
+	P_desc d;
 
 	va_start(args, format);
 	lbuf = format_variadic_message("&+c*** EPIC:&n ", "\n", format, args);
@@ -1965,7 +1951,9 @@ void epiclog(int level, const char *format, ...)
 
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) && GET_LEVEL(d->character) >= level && IS_SET(d->character->specials.act3, PLR3_EPICWATCH))
+		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) &&
+		    GET_LEVEL(d->character) >= level &&
+		    IS_SET(d->character->specials.act3, PLR3_EPICWATCH))
 		{
 			send_to_char(lbuf, d->character);
 		}
@@ -1980,18 +1968,20 @@ void epiclog(int level, const char *format, ...)
 void banlog(int level, const char *format, ...)
 {
 	va_list args;
-	char   *lbuf;
-	P_desc  d;
+	char *lbuf;
+	P_desc d;
 
 	va_start(args, format);
-	lbuf = format_variadic_message("&+y*&+Y*&N&+y*&+Y B&N&+yA&+YN&N&+y:&n ", "\n", format, args);
+	lbuf = format_variadic_message("&+y*&+Y*&N&+y*&+Y B&N&+yA&+YN&N&+y:&n ", "\n", format,
+				       args);
 	va_end(args);
 	if (!lbuf)
 		return;
 
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) && GET_LEVEL(d->character) >= level && IS_SET(d->character->specials.act, PLR_BAN))
+		if (d->connected == CON_PLAYING && IS_TRUSTED(d->character) &&
+		    GET_LEVEL(d->character) >= level && IS_SET(d->character->specials.act, PLR_BAN))
 		{
 			send_to_char(lbuf, d->character);
 		}
@@ -2116,7 +2106,7 @@ void sprinttype(int type, const char *names[], char *result)
 
 struct time_info_data real_time_countdown(time_t t2, time_t t1, int max_sec)
 {
-	long                  secs;
+	long secs;
 	struct time_info_data now;
 
 	secs = (long)max_sec - (t2 - t1);
@@ -2130,7 +2120,7 @@ struct time_info_data real_time_countdown(time_t t2, time_t t1, int max_sec)
 	now.day = MAX(0, (secs / SECS_PER_REAL_DAY));
 	secs -= SECS_PER_REAL_DAY * now.day;
 	now.month = -1;
-	now.year  = -1;
+	now.year = -1;
 	return now;
 }
 
@@ -2140,7 +2130,7 @@ struct time_info_data real_time_countdown(time_t t2, time_t t1, int max_sec)
 
 struct time_info_data real_time_passed(time_t t2, time_t t1)
 {
-	long                  secs;
+	long secs;
 	struct time_info_data now;
 
 	secs = (long)(t2 - t1);
@@ -2166,7 +2156,7 @@ struct time_info_data real_time_passed(time_t t2, time_t t1)
 	secs -= SECS_PER_REAL_DAY * now.day;
 
 	now.month = -1;
-	now.year  = -1;
+	now.year = -1;
 
 	return now;
 }
@@ -2177,7 +2167,7 @@ struct time_info_data real_time_passed(time_t t2, time_t t1)
 
 struct time_info_data mud_time_passed(time_t t2, time_t t1)
 {
-	long                         secs;
+	long secs;
 	static struct time_info_data now;
 
 	secs = (long)(t2 - t1);
@@ -2217,7 +2207,7 @@ struct time_info_data age(P_char ch)
 	 * aging
 	 */
 	player_age.year += 5;
-	player_age.year = MAX(0, player_age.year);  /*
+	player_age.year = MAX(0, player_age.year); /*
 	                                             * since I don't want to deal
 	                                             * with 'infants'
 	                                             */
@@ -2253,8 +2243,8 @@ int exist_in_equipment(P_char ch, int bitflag)
  */
 bool ac_can_see(P_char sub, P_char obj, bool check_z)
 {
-	bool   globe, flame, dayblind;
-	int    sroom, oroom, race;
+	bool globe, flame, dayblind;
+	int sroom, oroom, race;
 	P_char tmp_char;
 
 	if (!sub)
@@ -2295,7 +2285,8 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 
 	/* Object is invisible and subject does not have detect invis */
 	// Only check for CTF tag if CTF is active.
-	if ((IS_AFFECTED(obj, AFF_INVISIBLE) || IS_AFFECTED2(obj, AFF2_CONCEALMENT) || IS_AFFECTED3(obj, AFF3_ECTOPLASMIC_FORM))
+	if ((IS_AFFECTED(obj, AFF_INVISIBLE) || IS_AFFECTED2(obj, AFF2_CONCEALMENT) ||
+	     IS_AFFECTED3(obj, AFF3_ECTOPLASMIC_FORM))
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	    && !affected_by_spell(obj, TAG_CTF)
 #endif
@@ -2307,8 +2298,10 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 			return FALSE;
 		}
 
-		if (!IS_AFFECTED(sub, AFF_DETECT_INVISIBLE) && !(has_innate(sub, INNATE_OPHIDIAN_EYES) && GET_LEVEL(sub) > 45) &&
-		    !(IS_NPC(obj) && (obj->following == sub) && IS_AFFECTED4(sub, AFF4_SENSE_FOLLOWER)))
+		if (!IS_AFFECTED(sub, AFF_DETECT_INVISIBLE) &&
+		    !(has_innate(sub, INNATE_OPHIDIAN_EYES) && GET_LEVEL(sub) > 45) &&
+		    !(IS_NPC(obj) && (obj->following == sub) &&
+		      IS_AFFECTED4(sub, AFF4_SENSE_FOLLOWER)))
 		{
 			return FALSE;
 		}
@@ -2358,7 +2351,7 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 
 	// First, we need to see if the subject can see anything or is dayblind / nightblind in the room their in.
 	dayblind = IS_DAYBLIND(sub);
-	sroom    = sub->in_room;
+	sroom = sub->in_room;
 	if (!IS_MAP_ROOM(sroom))
 	{
 		// Check for dayblind: Light room with dayblind subject.
@@ -2366,7 +2359,8 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 		{
 			globe = FALSE;
 			// Anyone with globe of dark overrides room to twilight.
-			for (tmp_char = world[sroom].people; tmp_char; tmp_char = tmp_char->next_in_room)
+			for (tmp_char = world[sroom].people; tmp_char;
+			     tmp_char = tmp_char->next_in_room)
 			{
 				if (IS_AFFECTED4(tmp_char, AFF4_GLOBE_OF_DARKNESS))
 				{
@@ -2378,7 +2372,8 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 			if (!globe)
 			{
 				// Here we check sub's infra vs obj's race (some races are invis to infravision).
-				if (IS_AFFECTED(sub, AFF_INFRAVISION) || has_innate(sub, INNATE_OPHIDIAN_EYES))
+				if (IS_AFFECTED(sub, AFF_INFRAVISION) ||
+				    has_innate(sub, INNATE_OPHIDIAN_EYES))
 				{
 					// Changed this for the 6/3/2016 wipe.
 				}
@@ -2404,7 +2399,8 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 		{
 			flame = FALSE;
 			// Anyone with mage flame overrides room to twilight.
-			for (tmp_char = world[sroom].people; tmp_char; tmp_char = tmp_char->next_in_room)
+			for (tmp_char = world[sroom].people; tmp_char;
+			     tmp_char = tmp_char->next_in_room)
 			{
 				if (IS_AFFECTED4(tmp_char, AFF4_MAGE_FLAME))
 				{
@@ -2416,7 +2412,8 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 			if (!flame)
 			{
 				// Here we check sub's infra vs obj's race (some races are invis to infravision).
-				if (IS_AFFECTED(sub, AFF_INFRAVISION) || has_innate(sub, INNATE_OPHIDIAN_EYES))
+				if (IS_AFFECTED(sub, AFF_INFRAVISION) ||
+				    has_innate(sub, INNATE_OPHIDIAN_EYES))
 				{
 					// Changed this for the 6/3/2016 wipe.
 				}
@@ -2448,7 +2445,8 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 		{
 			globe = FALSE;
 			// Anyone with globe of dark overrides room to twilight.
-			for (tmp_char = world[oroom].people; tmp_char; tmp_char = tmp_char->next_in_room)
+			for (tmp_char = world[oroom].people; tmp_char;
+			     tmp_char = tmp_char->next_in_room)
 			{
 				if (IS_AFFECTED4(tmp_char, AFF4_GLOBE_OF_DARKNESS))
 				{
@@ -2459,7 +2457,8 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 			// If no globe of darkness in room, then sub can not see in obj's room.
 			if (!globe)
 			{
-				if (IS_AFFECTED(sub, AFF_INFRAVISION) || has_innate(sub, INNATE_OPHIDIAN_EYES))
+				if (IS_AFFECTED(sub, AFF_INFRAVISION) ||
+				    has_innate(sub, INNATE_OPHIDIAN_EYES))
 				{
 					// Changed this for the 6/3/2016 wipe.
 				}
@@ -2481,11 +2480,14 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 			}
 		}
 		// Else check for nightblind: Dark room with no infra/ultra subject.
-		else if (!has_innate(sub, INNATE_OPHIDIAN_EYES) && !IS_AFFECTED(sub, AFF_INFRAVISION) && !IS_AFFECTED2(sub, AFF2_ULTRAVISION) && !CAN_DAYPEOPLE_SEE(oroom))
+		else if (!has_innate(sub, INNATE_OPHIDIAN_EYES) &&
+			 !IS_AFFECTED(sub, AFF_INFRAVISION) &&
+			 !IS_AFFECTED2(sub, AFF2_ULTRAVISION) && !CAN_DAYPEOPLE_SEE(oroom))
 		{
 			flame = FALSE;
 			// Anyone with mage flame overrides room to twilight.
-			for (tmp_char = world[sroom].people; tmp_char; tmp_char = tmp_char->next_in_room)
+			for (tmp_char = world[sroom].people; tmp_char;
+			     tmp_char = tmp_char->next_in_room)
 			{
 				if (IS_AFFECTED4(tmp_char, AFF4_MAGE_FLAME))
 				{
@@ -2496,7 +2498,8 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 			// If no mage flame in room, then sub can not see in obj's room.
 			if (!flame)
 			{
-				if (IS_AFFECTED(sub, AFF_INFRAVISION) || has_innate(sub, INNATE_OPHIDIAN_EYES))
+				if (IS_AFFECTED(sub, AFF_INFRAVISION) ||
+				    has_innate(sub, INNATE_OPHIDIAN_EYES))
 				{
 					// Changed this for the 6/3/2016 wipe.
 				}
@@ -2528,9 +2531,9 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 
 bool ac_can_see_obj(P_char sub, P_obj obj, int zrange)
 {
-	int    rroom, zcord;
+	int rroom, zcord;
 	P_char tmp_char;
-	int    vis_mode;
+	int vis_mode;
 
 	/* wraiths can't see any objects */
 	if (IS_AFFECTED(sub, AFF_WRAITHFORM))
@@ -2573,7 +2576,8 @@ bool ac_can_see_obj(P_char sub, P_obj obj, int zrange)
 		return FALSE;
 
 	/* Check to see if object is invis */
-	if (IS_SET(obj->extra_flags, ITEM_INVISIBLE) && !IS_AFFECTED(sub, AFF_DETECT_INVISIBLE) && !(has_innate(sub, INNATE_OPHIDIAN_EYES) && GET_LEVEL(sub) > 45))
+	if (IS_SET(obj->extra_flags, ITEM_INVISIBLE) && !IS_AFFECTED(sub, AFF_DETECT_INVISIBLE) &&
+	    !(has_innate(sub, INNATE_OPHIDIAN_EYES) && GET_LEVEL(sub) > 45))
 		return FALSE;
 
 	/* Check if subject is blind */
@@ -2695,7 +2699,7 @@ int coin_type(char *s)
 int ScaleAreaDamage(P_char ch, int orig_dam)
 {
 	P_char tch;
-	int    count = 0;
+	int count = 0;
 
 	if (IS_PC(ch))
 		return (int)(orig_dam * 0.15);
@@ -2724,7 +2728,7 @@ int ScaleAreaDamage(P_char ch, int orig_dam)
 //   of the first non-zero coin type. (So, padfront 5 on 5 plat -> "    5 plat").
 char *coin_stringv(int amount, int padfront)
 {
-	int         p, g, s, c;
+	int p, g, s, c;
 	static char buf[300], *spot;
 
 	if (padfront < 0)
@@ -2742,7 +2746,7 @@ char *coin_stringv(int amount, int padfront)
 	}
 
 	buf[0] = '\0';
-	spot   = buf;
+	spot = buf;
 	if (amount < 0)
 	{
 		amount *= -1;
@@ -2825,7 +2829,7 @@ char *coin_stringv(int amount, int padfront)
 
 void ADD_MONEY(P_char ch, int amount)
 {
-	int t  = 0;
+	int t = 0;
 	int t2 = 0;
 
 	if (amount < 0)
@@ -2840,14 +2844,14 @@ void ADD_MONEY(P_char ch, int amount)
 	/* plat is a bit rarer, and thus is returned as change less often */
 	if (amount > 999)
 	{
-		t  = amount / 1000;
+		t = amount / 1000;
 		t2 = number(0, t / 2);
 		GET_PLATINUM(ch) += t;
 		amount -= t * 1000;
 	}
 	if (amount > 99)
 	{
-		t  = amount / 100;
+		t = amount / 100;
 		t2 = number(0, t);
 		GET_GOLD(ch) += t;
 		amount -= t * 100;
@@ -3060,21 +3064,29 @@ bool SanityCheck(P_char ch, const char *calling)
 		if (!ch)
 			logit(LOG_DEBUG, "%s: ch does not exist!", calling);
 		else
-			logit(LOG_DEBUG, "%s: ch is not alive: %s %d.", calling, GET_NAME(ch), (ch->only.npc != NULL) ? (IS_NPC(ch) ? ch->only.npc->idnum : ch->only.pc->pid) : -1);
+			logit(LOG_DEBUG, "%s: ch is not alive: %s %d.", calling, GET_NAME(ch),
+			      (ch->only.npc != NULL) ?
+				      (IS_NPC(ch) ? ch->only.npc->idnum : ch->only.pc->pid) :
+				      -1);
 		return FALSE;
 	}
 
 	if (ch->in_room && ch->in_room == NOWHERE)
 	{
-		if (ch->specials.was_in_room == NOWHERE && (IS_NPC(ch) && GET_VNUM(ch) != IMAGE_REFLECTION_VNUM))
+		if (ch->specials.was_in_room == NOWHERE &&
+		    (IS_NPC(ch) && GET_VNUM(ch) != IMAGE_REFLECTION_VNUM))
 		{
-			logit(LOG_EXIT, "%s in NOWHERE in call to SanityCheck from %s().", GET_NAME(ch), calling);
+			logit(LOG_EXIT, "%s in NOWHERE in call to SanityCheck from %s().",
+			      GET_NAME(ch), calling);
 			return FALSE;
 		}
 		else
 		{
-			debug("SanityCheck called from %s() for %s at NOWHERE! Original room: %d", calling, GET_NAME(ch), ch->specials.was_in_room);
-			logit(LOG_DEBUG, "SanityCheck called from %s() for %s at NOWHERE! Original room: %d", calling, GET_NAME(ch), ch->specials.was_in_room);
+			debug("SanityCheck called from %s() for %s at NOWHERE! Original room: %d",
+			      calling, GET_NAME(ch), ch->specials.was_in_room);
+			logit(LOG_DEBUG,
+			      "SanityCheck called from %s() for %s at NOWHERE! Original room: %d",
+			      calling, GET_NAME(ch), ch->specials.was_in_room);
 			if (GET_STAT(ch) != STAT_DEAD)
 			{
 				char_from_room(ch);
@@ -3103,7 +3115,8 @@ bool FightingCheck(P_char ch, P_char vic, const char *calling)
 
 	if (!IS_FIGHTING(ch))
 	{
-		logit(LOG_DEBUG, "%s not fighting %s in call to %s().", GET_NAME(ch), GET_NAME(vic), calling);
+		logit(LOG_DEBUG, "%s not fighting %s in call to %s().", GET_NAME(ch), GET_NAME(vic),
+		      calling);
 		return FALSE;
 	}
 	if (ch->in_room != vic->in_room)
@@ -3129,12 +3142,13 @@ bool FightingCheck(P_char ch, P_char vic, const char *calling)
 int get_multicast_chars(P_char leader, int m_class, int min_level)
 {
 	P_char i;
-	int    count = 1; // 1 for the leader
+	int count = 1; // 1 for the leader
 
 	//  for(i = character_list; i; i=i->next) {
 	LOOP_THRU_PEOPLE(i, leader)
 	{
-		if (i != leader && !is_linked_to(leader, i, LNK_CONSENT) && GET_CLASS(i, m_class) && GET_LEVEL(i) >= min_level && i->in_room == leader->in_room)
+		if (i != leader && !is_linked_to(leader, i, LNK_CONSENT) && GET_CLASS(i, m_class) &&
+		    GET_LEVEL(i) >= min_level && i->in_room == leader->in_room)
 			count++;
 	}
 	return count;
@@ -3148,7 +3162,7 @@ int get_multicast_chars(P_char leader, int m_class, int min_level)
 int move_cost(P_char ch, int dir)
 {
 	P_char mount;
-	int    moves, a, b;
+	int moves, a, b;
 
 	if ((dir < 0) || (dir > (NUM_EXITS - 1)))
 		return -1;
@@ -3161,8 +3175,10 @@ int move_cost(P_char ch, int dir)
 	int sector_idx_a = (int)world[ch->in_room].sector_type;
 	int sector_idx_b = (int)world[world[ch->in_room].dir_option[dir]->to_room].sector_type;
 	int num_sectors = 12;
-	if (sector_idx_a < 0 || sector_idx_a >= num_sectors) sector_idx_a = 3; /* SECT_FIELD */
-	if (sector_idx_b < 0 || sector_idx_b >= num_sectors) sector_idx_b = 3;
+	if (sector_idx_a < 0 || sector_idx_a >= num_sectors)
+		sector_idx_a = 3; /* SECT_FIELD */
+	if (sector_idx_b < 0 || sector_idx_b >= num_sectors)
+		sector_idx_b = 3;
 	a = movement_loss[sector_idx_a];
 	b = movement_loss[sector_idx_b];
 
@@ -3180,15 +3196,19 @@ int move_cost(P_char ch, int dir)
 	if (IS_AFFECTED(ch, AFF_FLY) || /* Fly/lev up/down costs very little */
 	    (IS_AFFECTED(ch, AFF_LEVITATE) && ((dir == DIR_UP) || (dir == DIR_DOWN))))
 	{
-		if (world[ch->in_room].sector_type == SECT_MOUNTAIN || world[ch->in_room].sector_type == SECT_OCEAN)
+		if (world[ch->in_room].sector_type == SECT_MOUNTAIN ||
+		    world[ch->in_room].sector_type == SECT_OCEAN)
 			;
-		else if (world[ch->in_room].sector_type == SECT_INSIDE || world[ch->in_room].sector_type == SECT_CITY || world[ch->in_room].sector_type == SECT_ROAD)
+		else if (world[ch->in_room].sector_type == SECT_INSIDE ||
+			 world[ch->in_room].sector_type == SECT_CITY ||
+			 world[ch->in_room].sector_type == SECT_ROAD)
 			moves = 1;
 		else
 			moves = 2;
 	}
 
-	if ((world[world[ch->in_room].dir_option[dir]->to_room].sector_type == SECT_OCEAN) && is_ice(ch, ch->in_room))
+	if ((world[world[ch->in_room].dir_option[dir]->to_room].sector_type == SECT_OCEAN) &&
+	    is_ice(ch, ch->in_room))
 		moves = moves >> 2;
 
 	if (IS_TLEGLOCK(ch))
@@ -3204,7 +3224,7 @@ int move_cost(P_char ch, int dir)
 int NumAttackers(P_char ch)
 {
 	P_char tch;
-	int    total = 0;
+	int total = 0;
 
 	if (!SanityCheck(ch, "NumAttackers"))
 		return -1;
@@ -3430,15 +3450,16 @@ bool aggressive_to_class(P_char ch, P_char target)
 
 bool aggressive_to(P_char ch, P_char target)
 {
-	int                   tmp_race = 0;
-	int          chance;
+	int tmp_race = 0;
+	int chance;
 	struct affected_type *af;
 
 	if (!ch || !target || ch == target)
 		return FALSE;
 
 	// 99.9% calls will leave here
-	if (IS_NPC(ch) && IS_NPC(target) && (!target->following || IS_NPC(target->following)) && !IS_MORPH(target))
+	if (IS_NPC(ch) && IS_NPC(target) && (!target->following || IS_NPC(target->following)) &&
+	    !IS_MORPH(target))
 		return FALSE;
 
 	if (IS_TRUSTED(target) && IS_SET(target->specials.act, PLR_AGGIMMUNE))
@@ -3482,7 +3503,8 @@ bool aggressive_to(P_char ch, P_char target)
 
 		/* rangers and druids might not get attacked by aggro animals */
 
-		if (IS_AGGRESSIVE(ch) && IS_ANIMAL(ch) && (GET_CLASS(target, CLASS_DRUID) || GET_CLASS(target, CLASS_RANGER)))
+		if (IS_AGGRESSIVE(ch) && IS_ANIMAL(ch) &&
+		    (GET_CLASS(target, CLASS_DRUID) || GET_CLASS(target, CLASS_RANGER)))
 		{
 			chance = GET_LEVEL(target) - GET_LEVEL(ch);
 			if (chance > 0)
@@ -3493,7 +3515,9 @@ bool aggressive_to(P_char ch, P_char target)
 				return FALSE;
 		}
 
-		if ((GET_LEVEL(ch) <= (GET_LEVEL(target) - 10)) && has_innate(target, INNATE_UNDEAD_FEALTY) && IS_UNDEADRACE(ch) && !affected_by_spell(ch, TAG_CTF) && !CheckFor_remember(ch, target))
+		if ((GET_LEVEL(ch) <= (GET_LEVEL(target) - 10)) &&
+		    has_innate(target, INNATE_UNDEAD_FEALTY) && IS_UNDEADRACE(ch) &&
+		    !affected_by_spell(ch, TAG_CTF) && !CheckFor_remember(ch, target))
 			return FALSE; // Liches are revered/feared by lower level undead - Jexni 8/18/08
 
 		/* check if mob is nocturnal/diurnal/perpetually angry */
@@ -3504,7 +3528,10 @@ bool aggressive_to(P_char ch, P_char target)
 		if (IS_AGGROFLAG(ch, AGGR_DAY_ONLY) && !IS_DAY)
 			return FALSE;
 
-		if (has_innate(target, INNATE_ASTRAL_NATIVE) && GET_LEVEL(target) >= GET_LEVEL(ch) && world[target->in_room].number >= ASTRAL_VNUM_BEGIN && world[target->in_room].number <= ASTRAL_VNUM_END)
+		if (has_innate(target, INNATE_ASTRAL_NATIVE) &&
+		    GET_LEVEL(target) >= GET_LEVEL(ch) &&
+		    world[target->in_room].number >= ASTRAL_VNUM_BEGIN &&
+		    world[target->in_room].number <= ASTRAL_VNUM_END)
 			return FALSE;
 
 		/* aggro to all?  how nice! */
@@ -3513,11 +3540,18 @@ bool aggressive_to(P_char ch, P_char target)
 
 		/* check alignment */
 
-		if ((IS_EVIL(target) && IS_AGGROFLAG(ch, AGGR_EVIL_ALIGN)) || (IS_GOOD(target) && IS_AGGROFLAG(ch, AGGR_GOOD_ALIGN)) || (IS_NEUTRAL(target) && IS_AGGROFLAG(ch, AGGR_NEUTRAL_ALIGN)))
+		if ((IS_EVIL(target) && IS_AGGROFLAG(ch, AGGR_EVIL_ALIGN)) ||
+		    (IS_GOOD(target) && IS_AGGROFLAG(ch, AGGR_GOOD_ALIGN)) ||
+		    (IS_NEUTRAL(target) && IS_AGGROFLAG(ch, AGGR_NEUTRAL_ALIGN)))
 			return TRUE;
 
-		if (IS_AGGROFLAG(ch, AGGR_GOOD_RACE) && (GET_RACE(target) != GET_RACE(ch)) && (!IS_DISGUISE_NPC(target) || IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION)) && // undetected NPC disguise makes immune
-		    (((!IS_DISGUISE_PC(target) || IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION)) ? target->player.racewar : target->disguise.racewar) == RACEWAR_GOOD))
+		if (IS_AGGROFLAG(ch, AGGR_GOOD_RACE) && (GET_RACE(target) != GET_RACE(ch)) &&
+		    (!IS_DISGUISE_NPC(target) ||
+		     IS_AFFECTED4(ch,
+				  AFF4_DETECT_ILLUSION)) && // undetected NPC disguise makes immune
+		    (((!IS_DISGUISE_PC(target) || IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION)) ?
+			      target->player.racewar :
+			      target->disguise.racewar) == RACEWAR_GOOD))
 		{
 			return TRUE;
 		}
@@ -3529,8 +3563,13 @@ bool aggressive_to(P_char ch, P_char target)
 		       }
 		       */
 
-		if (IS_AGGROFLAG(ch, AGGR_EVIL_RACE) && (GET_RACE(target) != GET_RACE(ch)) && (!IS_DISGUISE_NPC(target) || IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION)) && // undetected NPC disguise makes immune
-		    (((!IS_DISGUISE_PC(target) || IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION)) ? target->player.racewar : target->disguise.racewar) == RACEWAR_EVIL))
+		if (IS_AGGROFLAG(ch, AGGR_EVIL_RACE) && (GET_RACE(target) != GET_RACE(ch)) &&
+		    (!IS_DISGUISE_NPC(target) ||
+		     IS_AFFECTED4(ch,
+				  AFF4_DETECT_ILLUSION)) && // undetected NPC disguise makes immune
+		    (((!IS_DISGUISE_PC(target) || IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION)) ?
+			      target->player.racewar :
+			      target->disguise.racewar) == RACEWAR_EVIL))
 		{
 			return (TRUE);
 		}
@@ -3542,8 +3581,13 @@ bool aggressive_to(P_char ch, P_char target)
 		  return (TRUE);
 		}*/
 
-		if (IS_AGGROFLAG(ch, AGGR_UNDEAD_RACE) && (GET_RACE(target) != GET_RACE(ch)) && (!IS_DISGUISE_NPC(target) || IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION)) && // undetected NPC disguise makes immune
-		    ((!IS_DISGUISE_PC(target) || IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION)) ? target->player.racewar : target->disguise.racewar) == RACEWAR_UNDEAD)
+		if (IS_AGGROFLAG(ch, AGGR_UNDEAD_RACE) && (GET_RACE(target) != GET_RACE(ch)) &&
+		    (!IS_DISGUISE_NPC(target) ||
+		     IS_AFFECTED4(ch,
+				  AFF4_DETECT_ILLUSION)) && // undetected NPC disguise makes immune
+		    ((!IS_DISGUISE_PC(target) || IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION)) ?
+			     target->player.racewar :
+			     target->disguise.racewar) == RACEWAR_UNDEAD)
 		{
 			return TRUE;
 		}
@@ -3560,7 +3604,8 @@ bool aggressive_to(P_char ch, P_char target)
 			if (IS_AGGROFLAG(ch, AGGR_ELEMENTALS) && IS_ELEMENTAL(target))
 				return TRUE;
 
-			if (IS_AGGROFLAG(ch, AGGR_UNDEAD_FOL) && IS_UNDEAD(target) && IS_NPC(target))
+			if (IS_AGGROFLAG(ch, AGGR_UNDEAD_FOL) && IS_UNDEAD(target) &&
+			    IS_NPC(target))
 				return TRUE;
 
 			if (IS_AGGROFLAG(ch, AGGR_DRACOLICH) && IS_DRACOLICH(target))
@@ -3602,7 +3647,8 @@ bool aggressive_to(P_char ch, P_char target)
 		/*  if ( (GET_RACE(ch) == RACE_CENTAUR) && (GET_RACE(target) == RACE_ORC))
 		   return TRUE; *//* centaurs always agg orcs */
 
-		if (affected_by_spell(ch, SKILL_BERSERK) && !GET_CLASS(ch, CLASS_BERSERKER) && (GET_RACE(ch) != RACE_MOUNTAIN) && (GET_RACE(ch) != RACE_DUERGAR))
+		if (affected_by_spell(ch, SKILL_BERSERK) && !GET_CLASS(ch, CLASS_BERSERKER) &&
+		    (GET_RACE(ch) != RACE_MOUNTAIN) && (GET_RACE(ch) != RACE_DUERGAR))
 			return TRUE;
 		if (IS_PC(target))
 			return FALSE;
@@ -3614,7 +3660,8 @@ bool aggressive_to(P_char ch, P_char target)
 			if (IS_IMMOBILE(ch))
 				return FALSE;
 		}
-		if ((ch->only.pc->aggressive != -1) && (ch->only.pc->aggressive < GET_HIT(ch)) && is_aggr_to(target, ch))
+		if ((ch->only.pc->aggressive != -1) && (ch->only.pc->aggressive < GET_HIT(ch)) &&
+		    is_aggr_to(target, ch))
 			return TRUE;
 	}
 
@@ -3627,27 +3674,30 @@ bool aggressive_to(P_char ch, P_char target)
  */
 bool is_aggr_to(P_char ch, P_char target)
 {
-	int          tmp_race = 0;
+	int tmp_race = 0;
 	int chance;
-	P_char       master;
+	P_char master;
 
 	if (ch == target || !IS_ALIVE(ch) || !IS_ALIVE(target))
 	{
 		return FALSE;
 	}
 	// 99.9% calls will leave here
-	if (IS_NPC(ch) && IS_NPC(target) && (!target->following || IS_NPC(target->following)) && !IS_MORPH(target))
+	if (IS_NPC(ch) && IS_NPC(target) && (!target->following || IS_NPC(target->following)) &&
+	    !IS_MORPH(target))
 	{
 		return FALSE;
 	}
 
 	// If it's a pet with master in the room, the only thing they attack is what's fighting their master.
-	if (IS_NPC(ch) && ((master = get_linked_char(ch, LNK_PET)) != NULL) && (ch->in_room == master->in_room) && !(GET_OPPONENT(target) == master))
+	if (IS_NPC(ch) && ((master = get_linked_char(ch, LNK_PET)) != NULL) &&
+	    (ch->in_room == master->in_room) && !(GET_OPPONENT(target) == master))
 	{
 		return FALSE;
 	}
 
-	if (IS_FIGHTING(ch) || IS_DESTROYING(ch) || !IS_AWAKE(ch) || IS_IMMOBILE(ch) || CHAR_IN_SAFE_ROOM(ch) || !CAN_SEE(ch, target) || IS_AFFECTED(target, AFF_WRAITHFORM))
+	if (IS_FIGHTING(ch) || IS_DESTROYING(ch) || !IS_AWAKE(ch) || IS_IMMOBILE(ch) ||
+	    CHAR_IN_SAFE_ROOM(ch) || !CAN_SEE(ch, target) || IS_AFFECTED(target, AFF_WRAITHFORM))
 	{
 		return FALSE;
 	}
@@ -3659,13 +3709,16 @@ bool aggressive_to_basic(P_char ch, P_char target) // For exp checks
 	if (IS_AGGROFLAG(ch, AGGR_ALL))
 		return TRUE;
 
-	if ((IS_EVIL(target) && IS_AGGROFLAG(ch, AGGR_EVIL_ALIGN)) || (IS_GOOD(target) && IS_AGGROFLAG(ch, AGGR_GOOD_ALIGN)) || (IS_NEUTRAL(target) && IS_AGGROFLAG(ch, AGGR_NEUTRAL_ALIGN)))
+	if ((IS_EVIL(target) && IS_AGGROFLAG(ch, AGGR_EVIL_ALIGN)) ||
+	    (IS_GOOD(target) && IS_AGGROFLAG(ch, AGGR_GOOD_ALIGN)) ||
+	    (IS_NEUTRAL(target) && IS_AGGROFLAG(ch, AGGR_NEUTRAL_ALIGN)))
 	{
 		return TRUE;
 	}
 
 	if (GET_RACE(target) != GET_RACE(ch) &&
-	    ((IS_AGGROFLAG(ch, AGGR_GOOD_RACE) && target->player.racewar == RACEWAR_GOOD) || (IS_AGGROFLAG(ch, AGGR_EVIL_RACE) && target->player.racewar == RACEWAR_EVIL) ||
+	    ((IS_AGGROFLAG(ch, AGGR_GOOD_RACE) && target->player.racewar == RACEWAR_GOOD) ||
+	     (IS_AGGROFLAG(ch, AGGR_EVIL_RACE) && target->player.racewar == RACEWAR_EVIL) ||
 	     (IS_AGGROFLAG(ch, AGGR_UNDEAD_RACE) && target->player.racewar == RACEWAR_UNDEAD)))
 	{
 		return TRUE;
@@ -3699,106 +3752,110 @@ bool StatSave(P_char ch, int stat, int mod)
 	/*
 	 * change this when adding other stats
 	 */
-	if ((stat != APPLY_AGI) && (stat != APPLY_INT) && (stat != APPLY_POW) && (stat != APPLY_DEX) && (stat != APPLY_CON) && (stat != APPLY_WIS) && (stat != APPLY_STR))
+	if ((stat != APPLY_AGI) && (stat != APPLY_INT) && (stat != APPLY_POW) &&
+	    (stat != APPLY_DEX) && (stat != APPLY_CON) && (stat != APPLY_WIS) &&
+	    (stat != APPLY_STR))
 	{
 		return FALSE;
 	}
 
 	switch (stat)
 	{
-		case APPLY_AGI:
-			save_num = STAT_INDEX(GET_C_AGI(ch)) + mod;
+	case APPLY_AGI:
+		save_num = STAT_INDEX(GET_C_AGI(ch)) + mod;
 
-			if (!GET_CLASS(ch, CLASS_MONK))
-			{
-				if (IS_AFFECTED(ch, AFF_HASTE))
-					save_num += 2;
-
-				if (IS_AFFECTED2(ch, AFF2_SLOW))
-					save_num -= 2;
-			}
-
-			// Those heavy loaded folks are less than nimble eh?
-			if (load_modifier(ch) > 299)
-			{
-				save_num -= 3;
-			}
-			else if (load_modifier(ch) > 199)
-			{
-				save_num -= 2;
-			}
-			else if (load_modifier(ch) > 99)
-			{
-				save_num -= 1;
-			}
-
-			// And let us penalize for being off balance eh?
-			if (IS_AFFECTED2(ch, AFF2_STUNNED))
-			{
-				save_num -= 3;
-			}
-			save_num += GET_POS(ch) - 3;
-
-			// There are a few bonuses
-			if (IS_AFFECTED(ch, AFF_FLY) || IS_AFFECTED(ch, AFF_LEVITATE))
-			{
-				save_num += 1;
-			}
-			break;
-
-		case APPLY_DEX:
-			save_num = STAT_INDEX(GET_C_DEX(ch)) + mod;
-
-			if (IS_THIEF(ch))
-				save_num += 3;
-
+		if (!GET_CLASS(ch, CLASS_MONK))
+		{
 			if (IS_AFFECTED(ch, AFF_HASTE))
 				save_num += 2;
 
 			if (IS_AFFECTED2(ch, AFF2_SLOW))
 				save_num -= 2;
+		}
 
-			/*
+		// Those heavy loaded folks are less than nimble eh?
+		if (load_modifier(ch) > 299)
+		{
+			save_num -= 3;
+		}
+		else if (load_modifier(ch) > 199)
+		{
+			save_num -= 2;
+		}
+		else if (load_modifier(ch) > 99)
+		{
+			save_num -= 1;
+		}
+
+		// And let us penalize for being off balance eh?
+		if (IS_AFFECTED2(ch, AFF2_STUNNED))
+		{
+			save_num -= 3;
+		}
+		save_num += GET_POS(ch) - 3;
+
+		// There are a few bonuses
+		if (IS_AFFECTED(ch, AFF_FLY) || IS_AFFECTED(ch, AFF_LEVITATE))
+		{
+			save_num += 1;
+		}
+		break;
+
+	case APPLY_DEX:
+		save_num = STAT_INDEX(GET_C_DEX(ch)) + mod;
+
+		if (IS_THIEF(ch))
+			save_num += 3;
+
+		if (IS_AFFECTED(ch, AFF_HASTE))
+			save_num += 2;
+
+		if (IS_AFFECTED2(ch, AFF2_SLOW))
+			save_num -= 2;
+
+		/*
 			 * those heavy loaded folks are less than nimble eh?
 			 */
-			if (load_modifier(ch) > 299)
-				save_num -= 3;
-			else if (load_modifier(ch) > 199)
-				save_num -= 2;
-			else if (load_modifier(ch) > 99)
-				save_num -= 1;
+		if (load_modifier(ch) > 299)
+			save_num -= 3;
+		else if (load_modifier(ch) > 199)
+			save_num -= 2;
+		else if (load_modifier(ch) > 99)
+			save_num -= 1;
 
-			/*
+		/*
 			 * and let us penalize for being off balance eh?
 			 */
-			if (IS_AFFECTED2(ch, AFF2_STUNNED))
-				save_num -= 3;
+		if (IS_AFFECTED2(ch, AFF2_STUNNED))
+			save_num -= 3;
 
-			save_num += GET_POS(ch) - 3;
+		save_num += GET_POS(ch) - 3;
 
-			break;
-		case APPLY_INT:
-			save_num = STAT_INDEX(GET_C_INT(ch)) + mod;
-			if (has_innate(ch, INNATE_QUICK_THINKING) && number(1, 100) <= get_property("saves.quickthinking.percentage", 15))
-				return TRUE;
-			break;
-		case APPLY_POW:
-			save_num = STAT_INDEX(GET_C_POW(ch)) + mod;
-			if (has_innate(ch, INNATE_QUICK_THINKING) && number(1, 100) <= get_property("saves.quickthinking.percentage", 15))
-				return TRUE;
-			break;
-		case APPLY_CON:
-			save_num = STAT_INDEX(GET_C_CON(ch)) + mod;
-			break;
-		case APPLY_WIS:
-			save_num = STAT_INDEX(GET_C_WIS(ch)) + mod;
-			break;
-		case APPLY_STR:
-			save_num = STAT_INDEX(GET_C_STR(ch)) + mod;
-			break;
-		default:
-			return FALSE;
-			break;
+		break;
+	case APPLY_INT:
+		save_num = STAT_INDEX(GET_C_INT(ch)) + mod;
+		if (has_innate(ch, INNATE_QUICK_THINKING) &&
+		    number(1, 100) <= get_property("saves.quickthinking.percentage", 15))
+			return TRUE;
+		break;
+	case APPLY_POW:
+		save_num = STAT_INDEX(GET_C_POW(ch)) + mod;
+		if (has_innate(ch, INNATE_QUICK_THINKING) &&
+		    number(1, 100) <= get_property("saves.quickthinking.percentage", 15))
+			return TRUE;
+		break;
+	case APPLY_CON:
+		save_num = STAT_INDEX(GET_C_CON(ch)) + mod;
+		break;
+	case APPLY_WIS:
+		save_num = STAT_INDEX(GET_C_WIS(ch)) + mod;
+		break;
+	case APPLY_STR:
+		save_num = STAT_INDEX(GET_C_STR(ch)) + mod;
+		break;
+	default:
+		return FALSE;
+		break;
 	}
 
 	// 1/21 chance to fail, always.. why not 1/20 chance?  Guess we're a little nicer than D&D.
@@ -3856,7 +3913,10 @@ void DECAP(char *str)
 	str[pos] = LOWER(str[pos]);
 }
 
-char *PERS(P_char ch, P_char vict, int short_d) { return PERS(ch, vict, short_d, false); }
+char *PERS(P_char ch, P_char vict, int short_d)
+{
+	return PERS(ch, vict, short_d, false);
+}
 
 // This is kinda backwards: how does vict see ch?
 char *PERS(P_char ch, P_char vict, int short_d, bool noansi)
@@ -3880,7 +3940,8 @@ char *PERS(P_char ch, P_char vict, int short_d, bool noansi)
 
 	// Handle infravision during dayblind / nightblind.
 	// If they have infra, then it's a red shape..
-	if (IS_AFFECTED(vict, AFF_INFRAVISION) || has_innate(vict, INNATE_OPHIDIAN_EYES)) // && !IS_TRUSTED(vict) )
+	if (IS_AFFECTED(vict, AFF_INFRAVISION) ||
+	    has_innate(vict, INNATE_OPHIDIAN_EYES)) // && !IS_TRUSTED(vict) )
 	{
 		// Changed this for the 6/3/2016 wipe.
 	}
@@ -3891,7 +3952,8 @@ char *PERS(P_char ch, P_char vict, int short_d, bool noansi)
 			bool globe = FALSE;
 			if (ch->in_room >= 0)
 			{
-				for (P_char rch = world[ch->in_room].people; rch; rch = rch->next_in_room)
+				for (P_char rch = world[ch->in_room].people; rch;
+				     rch = rch->next_in_room)
 				{
 					if (IS_AFFECTED4(rch, AFF4_GLOBE_OF_DARKNESS))
 					{
@@ -3911,7 +3973,8 @@ char *PERS(P_char ch, P_char vict, int short_d, bool noansi)
 			bool flame = FALSE;
 			if (ch->in_room >= 0)
 			{
-				for (P_char rch = world[ch->in_room].people; rch; rch = rch->next_in_room)
+				for (P_char rch = world[ch->in_room].people; rch;
+				     rch = rch->next_in_room)
 				{
 					if (IS_AFFECTED4(rch, AFF4_MAGE_FLAME))
 					{
@@ -3933,23 +3996,23 @@ char *PERS(P_char ch, P_char vict, int short_d, bool noansi)
 	{
 		if (IS_DISGUISE_PC(ch))
 		{
-			snprintf(GS_buf1,
-			         MAX_STRING_LENGTH,
-			         noansi ? "%s" : "%s %s",
-			         noansi ? race_names_table[GET_DISGUISE_RACE(ch)].normal : ANA(*(race_names_table[GET_DISGUISE_RACE(ch)].normal)),
-			         race_names_table[GET_DISGUISE_RACE(ch)].ansi);
+			snprintf(GS_buf1, MAX_STRING_LENGTH, noansi ? "%s" : "%s %s",
+				 noansi ? race_names_table[GET_DISGUISE_RACE(ch)].normal :
+					  ANA(*(race_names_table[GET_DISGUISE_RACE(ch)].normal)),
+				 race_names_table[GET_DISGUISE_RACE(ch)].ansi);
 		}
 		else if (IS_DISGUISE_NPC(ch))
 		{
-			snprintf(GS_buf1, MAX_STRING_LENGTH, "%s", (noansi ? strip_ansi(ch->disguise.name).c_str() : (ch->disguise.name)));
+			snprintf(GS_buf1, MAX_STRING_LENGTH, "%s",
+				 (noansi ? strip_ansi(ch->disguise.name).c_str() :
+					   (ch->disguise.name)));
 		}
 		else
 		{
-			snprintf(GS_buf1,
-			         MAX_STRING_LENGTH,
-			         noansi ? "%s" : "%s %s",
-			         noansi ? race_names_table[GET_RACE(ch)].normal : ANA(*(race_names_table[GET_RACE(ch)].normal)),
-			         race_names_table[GET_RACE(ch)].ansi);
+			snprintf(GS_buf1, MAX_STRING_LENGTH, noansi ? "%s" : "%s %s",
+				 noansi ? race_names_table[GET_RACE(ch)].normal :
+					  ANA(*(race_names_table[GET_RACE(ch)].normal)),
+				 race_names_table[GET_RACE(ch)].ansi);
 		}
 		return GS_buf1;
 	}
@@ -3970,7 +4033,8 @@ char *PERS(P_char ch, P_char vict, int short_d, bool noansi)
 	}
 	if (IS_DISGUISE_NPC(ch))
 	{
-		snprintf(GS_buf1, MAX_STRING_LENGTH, "%s", (noansi ? strip_ansi(ch->disguise.name).c_str() : (ch->disguise.name)));
+		snprintf(GS_buf1, MAX_STRING_LENGTH, "%s",
+			 (noansi ? strip_ansi(ch->disguise.name).c_str() : (ch->disguise.name)));
 		return GS_buf1;
 	}
 	if (is_introd(ch, vict))
@@ -3981,7 +4045,10 @@ char *PERS(P_char ch, P_char vict, int short_d, bool noansi)
 	{
 		return ch->player.short_descr;
 	}
-	snprintf(GS_buf1, MAX_STRING_LENGTH, noansi ? "%s" : "%s %s", noansi ? race_names_table[GET_RACE(ch)].normal : ANA(*(race_names_table[GET_RACE(ch)].normal)), race_names_table[GET_RACE(ch)].ansi);
+	snprintf(GS_buf1, MAX_STRING_LENGTH, noansi ? "%s" : "%s %s",
+		 noansi ? race_names_table[GET_RACE(ch)].normal :
+			  ANA(*(race_names_table[GET_RACE(ch)].normal)),
+		 race_names_table[GET_RACE(ch)].ansi);
 	return GS_buf1;
 }
 
@@ -4049,9 +4116,9 @@ void ansi_comp(char *str)
 string pad_ansi(const char *str, int length, bool trim_to_length)
 {
 	char lookat;
-	bool          bPadEnd = TRUE;
-	string        ret_str("");
-	int           to_pad;
+	bool bPadEnd = TRUE;
+	string ret_str("");
+	int to_pad;
 
 	if (length < 0)
 	{
@@ -4095,49 +4162,49 @@ string pad_ansi(const char *str, int length, bool trim_to_length)
 					//   We use switch because there's more than 6 good codes => faster.
 					switch (LOWER(str[retLength + 2]))
 					{
-						// Valid color codes:
-						case 'b':
-						case 'c':
-						case 'g':
-						case 'l':
-						case 'm':
-						case 'r':
-						case 'w':
-						case 'y':
-							// For &=<x><y> where <x> is a valid color code, we check <y> for a valid color code.
-							if (lookat == '=')
+					// Valid color codes:
+					case 'b':
+					case 'c':
+					case 'g':
+					case 'l':
+					case 'm':
+					case 'r':
+					case 'w':
+					case 'y':
+						// For &=<x><y> where <x> is a valid color code, we check <y> for a valid color code.
+						if (lookat == '=')
+						{
+							switch (LOWER(str[retLength + 3]))
 							{
-								switch (LOWER(str[retLength + 3]))
-								{
-									case 'b':
-									case 'c':
-									case 'g':
-									case 'l':
-									case 'm':
-									case 'r':
-									case 'w':
-									case 'y':
-										// If <y> is a valid color code, we skip &=<x><y> -> 4 chars.
-										retLength += 4;
-										break;
-									// &=<x><y> where <x> is a color code, but <y> is not.  We count &=<x> -> 3 chars.
-									default:
-										count += 3;
-										retLength += 3;
-										break;
-								}
-							}
-							// For &+<x> or &-<x> where x is a color code, we skip these 3 characters.
-							else
-							{
+							case 'b':
+							case 'c':
+							case 'g':
+							case 'l':
+							case 'm':
+							case 'r':
+							case 'w':
+							case 'y':
+								// If <y> is a valid color code, we skip &=<x><y> -> 4 chars.
+								retLength += 4;
+								break;
+							// &=<x><y> where <x> is a color code, but <y> is not.  We count &=<x> -> 3 chars.
+							default:
+								count += 3;
 								retLength += 3;
+								break;
 							}
-							break;
-						// &<+|-|=><x> where <x> is not a color code.  We count the &+ or &- or &= as regular chars.
-						default:
-							count += 2;
-							retLength += 2;
-							break;
+						}
+						// For &+<x> or &-<x> where x is a color code, we skip these 3 characters.
+						else
+						{
+							retLength += 3;
+						}
+						break;
+					// &<+|-|=><x> where <x> is not a color code.  We count the &+ or &- or &= as regular chars.
+					default:
+						count += 2;
+						retLength += 2;
+						break;
 					}
 				}
 				// The '&' is a counted char. (We don't know about the next char).
@@ -4182,7 +4249,7 @@ string pad_ansi(const char *str, int length, bool trim_to_length)
 
 string strip_ansi(const char *str)
 {
-	int    i = 0;
+	int i = 0;
 	string colorless;
 
 	while (*str)
@@ -4540,7 +4607,7 @@ bool has_help(P_char ch)
 
 P_char char_in_room(int room)
 {
-	int    num = 0;
+	int num = 0;
 	P_char pl;
 
 	/*
@@ -4578,8 +4645,10 @@ bool spell_can_affect_char(P_char ch, int spl)
 	if (spl == SPELL_BALLISTIC_ATTACK)
 		return true;
 
-	return !((IS_AFFECTED(ch, AFF_MINOR_GLOBE) && (i < 4)) || (IS_AFFECTED3(ch, AFF3_SPIRIT_WARD) && (i < 5)) || (IS_AFFECTED3(ch, AFF3_GR_SPIRIT_WARD) && (i < 6)) ||
-	         (IS_AFFECTED2(ch, AFF2_GLOBE) && (i < 7) && (spl != SPELL_NEG_ENERGY_BARRIER)));
+	return !((IS_AFFECTED(ch, AFF_MINOR_GLOBE) && (i < 4)) ||
+		 (IS_AFFECTED3(ch, AFF3_SPIRIT_WARD) && (i < 5)) ||
+		 (IS_AFFECTED3(ch, AFF3_GR_SPIRIT_WARD) && (i < 6)) ||
+		 (IS_AFFECTED2(ch, AFF2_GLOBE) && (i < 7) && (spl != SPELL_NEG_ENERGY_BARRIER)));
 }
 
 /* is viewee at war with viewer? */
@@ -4714,7 +4783,7 @@ int IS_MORPH(P_char ch)
 /* returns virtual nmber */
 int maproom_of_zone(int zone_num)
 {
-	int               i, i2;
+	int i, i2;
 	struct zone_data *zone = 0;
 
 	if (zone_num < 0 || zone_num > top_of_zone_table)
@@ -4726,8 +4795,10 @@ int maproom_of_zone(int zone_num)
 		for (i2 = 0; i2 < NUM_EXITS; i2++)
 			if (world[i].dir_option[i2])
 				if (world[world[i].dir_option[i2]->to_room].zone != world[i].zone)
-					if (world[i].dir_option[i2]->to_room != NOWHERE && IS_MAP_ROOM(world[i].dir_option[i2]->to_room))
-						return (world[world[i].dir_option[i2]->to_room].number);
+					if (world[i].dir_option[i2]->to_room != NOWHERE &&
+					    IS_MAP_ROOM(world[i].dir_option[i2]->to_room))
+						return (world[world[i].dir_option[i2]->to_room]
+								.number);
 	return NOWHERE;
 }
 
@@ -4742,7 +4813,8 @@ int distance_from_shore(int room)
 		{
 			if (!IS_WATER_ROOM(room))
 				return distance;
-			if (VIRTUAL_EXIT(room, dir) && (VIRTUAL_EXIT(room, dir)->to_room != NOWHERE))
+			if (VIRTUAL_EXIT(room, dir) &&
+			    (VIRTUAL_EXIT(room, dir)->to_room != NOWHERE))
 				room = world[room].dir_option[dir]->to_room;
 		}
 	}
@@ -4754,8 +4826,10 @@ int distance_from_shore(int room)
 
 int dir_from_keyword(char *keyword)
 {
-	int         dir;
-	const char *keywords[] = {"north", "east", "south", "west", "up", "down", "northwest", "southwest", "northeast", "southeast", "nw", "sw", "ne", "se", "\n"};
+	int dir;
+	const char *keywords[] = { "north", "east",	 "south",     "west",	   "up",
+				   "down",  "northwest", "southwest", "northeast", "southeast",
+				   "nw",    "sw",	 "ne",	      "se",	   "\n" };
 
 	dir = search_block(keyword, keywords, FALSE);
 
@@ -4781,7 +4855,7 @@ int total_carried_weight(P_char ch)
 /* self-explanatory :) 0 would be naked, 14 overloaded */
 int weight_notches_above_naked(P_char ch)
 {
-	int    percent = CAN_CARRY_W(ch);
+	int percent = CAN_CARRY_W(ch);
 
 	if (percent <= 0)
 		percent = 1;
@@ -4849,7 +4923,7 @@ void rem_char_from_snoopby_list(snoop_by_data **head, P_char ch)
 
 	if ((*head)->snoop_by == ch)
 	{
-		old   = *head;
+		old = *head;
 		*head = (*head)->next;
 
 		FREE(old);
@@ -4872,7 +4946,7 @@ void rem_char_from_snoopby_list(snoop_by_data **head, P_char ch)
 			return;
 		}
 
-		old  = node;
+		old = node;
 		node = node->next;
 	}
 
@@ -4911,8 +4985,12 @@ int room_has_valid_exit(const int rnum)
 
 	for (i = 0; i < NUM_EXITS; i++)
 	{
-		if (world[rnum].dir_option[i] && !(world[rnum].dir_option[i]->exit_info & EX_CLOSED) && !(world[rnum].dir_option[i]->exit_info & EX_SECRET) &&
-		    !(world[rnum].dir_option[i]->exit_info & EX_BLOCKED) && !(world[rnum].dir_option[i]->exit_info & EX_WALLED) && (world[rnum].dir_option[i]->to_room >= 0))
+		if (world[rnum].dir_option[i] &&
+		    !(world[rnum].dir_option[i]->exit_info & EX_CLOSED) &&
+		    !(world[rnum].dir_option[i]->exit_info & EX_SECRET) &&
+		    !(world[rnum].dir_option[i]->exit_info & EX_BLOCKED) &&
+		    !(world[rnum].dir_option[i]->exit_info & EX_WALLED) &&
+		    (world[rnum].dir_option[i]->to_room >= 0))
 			return TRUE;
 	}
 
@@ -4921,12 +4999,11 @@ int room_has_valid_exit(const int rnum)
 
 void do_introduce(P_char ch, char *arg, int level)
 {
-
 #ifdef INTRO
 	P_char vict;
 	P_desc d;
-	int    x;
-	char   buf[40];
+	int x;
+	char buf[40];
 
 	if (IS_TRUSTED(ch) && (*arg == '\0'))
 	{
@@ -4968,7 +5045,9 @@ void do_introduce(P_char ch, char *arg, int level)
 
 	if (vict == ch)
 	{
-		send_to_char("Wow, after you get to know yourself you're really not such a bad guy.\r\n", ch);
+		send_to_char(
+			"Wow, after you get to know yourself you're really not such a bad guy.\r\n",
+			ch);
 		return;
 	}
 
@@ -5019,8 +5098,8 @@ void do_testdesc(P_char ch, char *arg, int level)
 void boot_desc_data()
 {
 	FILE *f;
-	int   count;
-	char  buf[100];
+	int count;
+	char buf[100];
 
 	/* appearance first */
 	if (!(f = fopen("lib/descs/appearance", "r")))
@@ -5029,14 +5108,14 @@ void boot_desc_data()
 	do
 	{
 		fgets(buf, 100, f);
-		*strchrnul(buf, '\n')   = '\0';
+		*strchrnul(buf, '\n') = '\0';
 		appearance_descs[count] = str_dup(buf);
 		count++;
 	} while (buf[0] != '$');
 
 	num_appearances = count - 1;
 	fclose(f);
-	count  = 0;
+	count = 0;
 	buf[0] = ' ';
 	if (!(f = fopen("lib/descs/shapes", "r")))
 		return;
@@ -5044,19 +5123,19 @@ void boot_desc_data()
 	{
 		fgets(buf, 100, f);
 		buf[strlen(buf) - 1] = '\0';
-		shape_descs[count]   = str_dup(buf);
+		shape_descs[count] = str_dup(buf);
 		count++;
 	}
 	num_shapes = count - 1;
 	fclose(f);
-	count  = 0;
+	count = 0;
 	buf[0] = ' ';
 	if (!(f = fopen("lib/descs/modifiers", "r")))
 		return;
 	while (buf[0] != '$')
 	{
 		fgets(buf, 100, f);
-		buf[strlen(buf) - 1]  = '\0';
+		buf[strlen(buf) - 1] = '\0';
 		modifier_descs[count] = str_dup(buf);
 		count++;
 	}
@@ -5064,21 +5143,29 @@ void boot_desc_data()
 	fclose(f);
 }
 
-char *generate_shape(P_char ch) { return str_dup(shape_descs[number(0, num_shapes - 1)]); }
+char *generate_shape(P_char ch)
+{
+	return str_dup(shape_descs[number(0, num_shapes - 1)]);
+}
 
-char *generate_appear(P_char ch) { return str_dup(appearance_descs[number(0, num_appearances - 1)]); }
+char *generate_appear(P_char ch)
+{
+	return str_dup(appearance_descs[number(0, num_appearances - 1)]);
+}
 
 char *generate_modif(P_char ch)
 {
 	char *buf;
-	int   flag = 0;
+	int flag = 0;
 
 	while (!flag)
 	{
-		buf  = str_dup(modifier_descs[number(0, num_modifiers - 1)]);
+		buf = str_dup(modifier_descs[number(0, num_modifiers - 1)]);
 		flag = 1;
 		/* no bearded elves */
-		if (((GET_RACE(ch) == RACE_GREY) || (GET_RACE(ch) == RACE_HALFELF) || (GET_RACE(ch) == RACE_DROW) || (GET_RACE(ch) == RACE_THRIKREEN)) && strstr(buf, "beard"))
+		if (((GET_RACE(ch) == RACE_GREY) || (GET_RACE(ch) == RACE_HALFELF) ||
+		     (GET_RACE(ch) == RACE_DROW) || (GET_RACE(ch) == RACE_THRIKREEN)) &&
+		    strstr(buf, "beard"))
 			flag = 0;
 		/* or female beards */
 		if ((GET_SEX(ch) == SEX_FEMALE) && strstr(buf, "beard"))
@@ -5089,12 +5176,14 @@ char *generate_modif(P_char ch)
 
 void generate_desc(P_char ch)
 {
-	char        buf[80];
-	char        buf2[40];
+	char buf[80];
+	char buf2[40];
 	const char *prep;
 
-	if ((GET_RACE(ch) == RACE_ORC) || (GET_RACE(ch) == RACE_OGRE) || (GET_RACE(ch) == RACE_OROG) || (GET_RACE(ch) == RACE_ILLITHID) || (GET_RACE(ch) == RACE_AGATHINON) ||
-	    (GET_RACE(ch) == RACE_PILLITHID) || (GET_RACE(ch) == RACE_ELADRIN))
+	if ((GET_RACE(ch) == RACE_ORC) || (GET_RACE(ch) == RACE_OGRE) ||
+	    (GET_RACE(ch) == RACE_OROG) || (GET_RACE(ch) == RACE_ILLITHID) ||
+	    (GET_RACE(ch) == RACE_AGATHINON) || (GET_RACE(ch) == RACE_PILLITHID) ||
+	    (GET_RACE(ch) == RACE_ELADRIN))
 	{
 		prep = "An";
 	}
@@ -5103,41 +5192,53 @@ void generate_desc(P_char ch)
 
 	switch (number(0, 9))
 	{
-		case 0: /* just shape */
-			snprintf(buf2, 40, "%s", generate_shape(ch));
-			snprintf(buf, 80, "%s %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2, race_names_table[GET_RACE(ch)].ansi);
-			break;
-		case 1: /* just modif */
-			snprintf(buf, 80, "%s %s with %s", prep, race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
-			break;
-		case 2: /* just appearance */
-			snprintf(buf2, sizeof buf2, "%s", generate_appear(ch));
-			snprintf(buf, 80, "%s %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2, race_names_table[GET_RACE(ch)].ansi);
-			break;
-		case 3:
-		case 4: /* s+m */
-			snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
-			snprintf(buf, 80, "%s %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2, race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
-			break;
-		case 5:
-		case 6: /*s+a */
-			snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
-			snprintf(buf, 80, "%s %s, %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2, generate_appear(ch), race_names_table[GET_RACE(ch)].ansi);
-			break;
-		case 7:
-		case 8: /*m+a */
-			snprintf(buf2, sizeof buf2, "%s", generate_appear(ch));
-			snprintf(buf, 80, "%s %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2, race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
-			break;
-		case 9: /*m+a+s */
-			snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
-			snprintf(buf, 80, "%s %s, %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2, generate_appear(ch), race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
-			break;
+	case 0: /* just shape */
+		snprintf(buf2, 40, "%s", generate_shape(ch));
+		snprintf(buf, 80, "%s %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
+			 race_names_table[GET_RACE(ch)].ansi);
+		break;
+	case 1: /* just modif */
+		snprintf(buf, 80, "%s %s with %s", prep, race_names_table[GET_RACE(ch)].ansi,
+			 generate_modif(ch));
+		break;
+	case 2: /* just appearance */
+		snprintf(buf2, sizeof buf2, "%s", generate_appear(ch));
+		snprintf(buf, 80, "%s %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
+			 race_names_table[GET_RACE(ch)].ansi);
+		break;
+	case 3:
+	case 4: /* s+m */
+		snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
+		snprintf(buf, 80, "%s %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
+			 race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
+		break;
+	case 5:
+	case 6: /*s+a */
+		snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
+		snprintf(buf, 80, "%s %s, %s %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
+			 generate_appear(ch), race_names_table[GET_RACE(ch)].ansi);
+		break;
+	case 7:
+	case 8: /*m+a */
+		snprintf(buf2, sizeof buf2, "%s", generate_appear(ch));
+		snprintf(buf, 80, "%s %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
+			 race_names_table[GET_RACE(ch)].ansi, generate_modif(ch));
+		break;
+	case 9: /*m+a+s */
+		snprintf(buf2, sizeof buf2, "%s", generate_shape(ch));
+		snprintf(buf, 80, "%s %s, %s %s with %s", VOWEL(buf2[0]) ? "An" : "A", buf2,
+			 generate_appear(ch), race_names_table[GET_RACE(ch)].ansi,
+			 generate_modif(ch));
+		break;
 	} /* case */
 	ch->player.short_descr = str_dup(buf);
 }
 
-void remove_plushit_bits(P_char mob) { mob->specials.affected_by3 &= ~(AFF3_PLUSONE | AFF3_PLUSTWO | AFF3_PLUSTHREE | AFF3_PLUSFOUR | AFF3_PLUSFIVE); }
+void remove_plushit_bits(P_char mob)
+{
+	mob->specials.affected_by3 &=
+		~(AFF3_PLUSONE | AFF3_PLUSTWO | AFF3_PLUSTHREE | AFF3_PLUSFOUR | AFF3_PLUSFIVE);
+}
 
 /* does victim know of ch's name? */
 
@@ -5160,15 +5261,16 @@ int is_introd(P_char viewee, P_char viewer)
 
 	if (IS_NPC(viewee) || (IS_NPC(viewer) && (GET_VNUM(viewer) != 250)))
 		return TRUE;
-	if (GET_ASSOC(viewee) && (GET_ASSOC(viewee) == GET_ASSOC(viewer)) && IS_MEMBER(GET_A_BITS(viewer)) && IS_MEMBER(GET_A_BITS(viewee)))
+	if (GET_ASSOC(viewee) && (GET_ASSOC(viewee) == GET_ASSOC(viewer)) &&
+	    IS_MEMBER(GET_A_BITS(viewer)) && IS_MEMBER(GET_A_BITS(viewee)))
 		return TRUE;
 	if (IS_TRUSTED(viewer) || IS_TRUSTED(viewee))
 		return TRUE;
 #ifdef INTRO
-	hi  = MAX_INTRO - 1;
-	lo  = 0;
+	hi = MAX_INTRO - 1;
+	lo = 0;
 	mid = (hi + lo) >> 1;
-	nr  = GET_RNUM(viewee);
+	nr = GET_RNUM(viewee);
 
 	while ((viewer->only.pc->introd_list[mid] != nr) && (hi >= lo))
 	{
@@ -5191,7 +5293,9 @@ int is_introd(P_char viewee, P_char viewer)
 	}
 #else
 
-	if (((IS_RACEWAR_EVIL(viewer) && IS_RACEWAR_EVIL(viewee)) || (IS_RACEWAR_GOOD(viewer) && IS_RACEWAR_GOOD(viewee)) || (IS_RACEWAR_UNDEAD(viewer) && IS_RACEWAR_UNDEAD(viewee)) ||
+	if (((IS_RACEWAR_EVIL(viewer) && IS_RACEWAR_EVIL(viewee)) ||
+	     (IS_RACEWAR_GOOD(viewer) && IS_RACEWAR_GOOD(viewee)) ||
+	     (IS_RACEWAR_UNDEAD(viewer) && IS_RACEWAR_UNDEAD(viewee)) ||
 	     (IS_NHARPY(viewer) && IS_NHARPY(viewee)) || (IS_ILLITHID(viewer))))
 		return TRUE;
 //  if (!racewar(viewer, viewee)) return TRUE;
@@ -5202,7 +5306,6 @@ int is_introd(P_char viewee, P_char viewer)
 /* add vict to ch's list */
 void add_intro(P_char introer, P_char introee)
 {
-
 	int oldest;
 	int x;
 	int found;
@@ -5212,34 +5315,35 @@ void add_intro(P_char introer, P_char introee)
 		/*    oldest = ch->only.pc->introd_times[0];*/
 		oldest = 0;
 		for (x = 0; x < MAX_INTRO; x++)
-			if (introee->only.pc->introd_times[x] < introee->only.pc->introd_times[oldest])
+			if (introee->only.pc->introd_times[x] <
+			    introee->only.pc->introd_times[oldest])
 				oldest = x;
 		/* got oldest, put 0, bubble 0 to top */
 		for (x = oldest; x > 0; x--)
 		{
 			introee->only.pc->introd_times[x] = introee->only.pc->introd_times[x - 1];
-			introee->only.pc->introd_list[x]  = introee->only.pc->introd_list[x - 1];
+			introee->only.pc->introd_list[x] = introee->only.pc->introd_list[x - 1];
 		}
 		introee->only.pc->introd_times[0] = 0;
-		introee->only.pc->introd_list[0]  = 0;
+		introee->only.pc->introd_list[0] = 0;
 	}
 	/* Okay, now we got 0 at top of array */
 	/* step down, bumping everything up till we don't go down anymore */
-	x     = 1;
+	x = 1;
 	found = 0;
 	while ((x < MAX_INTRO) && (found == FALSE))
 	{
 		if (GET_PID(introer) < introee->only.pc->introd_list[x + 1])
 		{
-			found                                 = TRUE;
-			introee->only.pc->introd_list[x - 1]  = introee->only.pc->introd_list[x];
+			found = TRUE;
+			introee->only.pc->introd_list[x - 1] = introee->only.pc->introd_list[x];
 			introee->only.pc->introd_times[x - 1] = introee->only.pc->introd_times[x];
-			introee->only.pc->introd_list[x]      = GET_PID(introer);
-			introee->only.pc->introd_times[x]     = time(0);
+			introee->only.pc->introd_list[x] = GET_PID(introer);
+			introee->only.pc->introd_times[x] = time(0);
 		}
 		else
 		{
-			introee->only.pc->introd_list[x - 1]  = introee->only.pc->introd_list[x];
+			introee->only.pc->introd_list[x - 1] = introee->only.pc->introd_list[x];
 			introee->only.pc->introd_times[x - 1] = introee->only.pc->introd_times[x];
 		}
 		x++;
@@ -5247,7 +5351,7 @@ void add_intro(P_char introer, P_char introee)
 	if (!found)
 	{ /* tack to end */
 		x--;
-		introee->only.pc->introd_list[x]  = GET_PID(introer);
+		introee->only.pc->introd_list[x] = GET_PID(introer);
 		introee->only.pc->introd_times[x] = time(0);
 	}
 }
@@ -5265,7 +5369,7 @@ void purge_old_intros(P_char ch)
 		/* go through, 0 out old ones */
 		if ((currtime - ch->only.pc->introd_times[x]) > 604800)
 		{
-			ch->only.pc->introd_list[x]  = 0;
+			ch->only.pc->introd_list[x] = 0;
 			ch->only.pc->introd_times[x] = 0;
 		}
 	}
@@ -5280,13 +5384,13 @@ void purge_old_intros(P_char ch)
 			if (ch->only.pc->introd_list[x] > ch->only.pc->introd_list[x + 1])
 			{
 				/* swap */
-				swaps                            = 1;
-				temptime                         = ch->only.pc->introd_times[x];
-				tempnum                          = ch->only.pc->introd_list[x];
-				ch->only.pc->introd_times[x]     = ch->only.pc->introd_times[x + 1];
-				ch->only.pc->introd_list[x]      = ch->only.pc->introd_list[x + 1];
+				swaps = 1;
+				temptime = ch->only.pc->introd_times[x];
+				tempnum = ch->only.pc->introd_list[x];
+				ch->only.pc->introd_times[x] = ch->only.pc->introd_times[x + 1];
+				ch->only.pc->introd_list[x] = ch->only.pc->introd_list[x + 1];
 				ch->only.pc->introd_times[x + 1] = temptime;
-				ch->only.pc->introd_list[x + 1]  = tempnum;
+				ch->only.pc->introd_list[x + 1] = tempnum;
 			}
 		}
 	}
@@ -5296,8 +5400,8 @@ void purge_old_intros(P_char ch)
 
 void broadcast_to_arena(const char *msg, P_char ch, P_char vict, int rm)
 {
-	int    i, j, pos;
-	char   strn[MAX_STRING_LENGTH];
+	int i, j, pos;
+	char strn[MAX_STRING_LENGTH];
 	P_char c;
 
 	if (!IS_ROOM(rm, ROOM_ARENA))
@@ -5330,7 +5434,8 @@ void broadcast_to_arena(const char *msg, P_char ch, P_char vict, int rm)
 
 			/* msg must have first %s be name of ch, second be name of vict */
 
-			snprintf(strn, MAX_STRING_LENGTH, msg, PERS(ch, c, 1), vict ? PERS(vict, c, 1) : "(null)");
+			snprintf(strn, MAX_STRING_LENGTH, msg, PERS(ch, c, 1),
+				 vict ? PERS(vict, c, 1) : "(null)");
 			send_to_char(strn, c);
 		}
 
@@ -5351,24 +5456,26 @@ void broadcast_to_arena(const char *msg, P_char ch, P_char vict, int rm)
 
 char *get_class_string(P_char ch, char *strn)
 {
-	int   i = 0;
+	int i = 0;
 	char *t;
-	bool  found;
+	bool found;
 
 	strn[0] = 0;
-	found   = FALSE;
+	found = FALSE;
 	// Display all classes (multiple -> ch is a NPC).
 	for (i = 0; i <= CLASS_COUNT; i++)
 	{
 		if (ch->player.m_class & (1 << i))
 		{
-			snprintf(strn + strlen(strn), MAX_STRING_LENGTH - strlen(strn), "%s%s", found ? " " : "", class_names_table[i + 1].ansi);
+			snprintf(strn + strlen(strn), MAX_STRING_LENGTH - strlen(strn), "%s%s",
+				 found ? " " : "", class_names_table[i + 1].ansi);
 			found = TRUE;
 		}
 	}
 	if (IS_SPECIALIZED(ch))
 	{
-		snprintf(strn + strlen(strn), MAX_STRING_LENGTH - strlen(strn), "&n / %s", GET_SPEC_NAME(ch->player.m_class, ch->player.spec - 1));
+		snprintf(strn + strlen(strn), MAX_STRING_LENGTH - strlen(strn), "&n / %s",
+			 GET_SPEC_NAME(ch->player.m_class, ch->player.spec - 1));
 	}
 
 	if (IS_MULTICLASS_PC(ch))
@@ -5378,7 +5485,9 @@ char *get_class_string(P_char ch, char *strn)
 			{
 				if (ch->player.secondary_class & (1 << i))
 				{
-					snprintf(strn + strlen(strn), MAX_STRING_LENGTH - strlen(strn), " %s", class_names_table[i + 1].ansi);
+					snprintf(strn + strlen(strn),
+						 MAX_STRING_LENGTH - strlen(strn), " %s",
+						 class_names_table[i + 1].ansi);
 				}
 			}
 		}
@@ -5418,11 +5527,20 @@ int GET_LEVEL(P_char ch)
  * GET_CLASS
  */
 
-int GET_CLASS(P_char ch, uint m_class) { return ((ch->player.m_class & m_class) || (ch->player.secondary_class & m_class)); }
+int GET_CLASS(P_char ch, uint m_class)
+{
+	return ((ch->player.m_class & m_class) || (ch->player.secondary_class & m_class));
+}
 
-int GET_PRIME_CLASS(P_char ch, uint m_class) { return ((ch->player.m_class & m_class)); }
+int GET_PRIME_CLASS(P_char ch, uint m_class)
+{
+	return ((ch->player.m_class & m_class));
+}
 
-int GET_SECONDARY_CLASS(P_char ch, uint m_class) { return ((ch->player.secondary_class & m_class)); }
+int GET_SECONDARY_CLASS(P_char ch, uint m_class)
+{
+	return ((ch->player.secondary_class & m_class));
+}
 
 int GET_CLASS1(P_char ch, uint m_class)
 {
@@ -5479,11 +5597,11 @@ int GET_ALT_SIZE(P_char ch)
 ClassSkillInfo SKILL_DATA_ALL(P_char ch, int skill)
 {
 	ClassSkillInfo dummy;
-	int            required_level, new_cap;
-	int            pri_class, sec_class;
-	int            pri_rlevel, sec_rlevel, pri_cap, sec_cap;
-	float          pri_mod = get_property("skill.cap.multi.mod.primarySkill", 100.0);
-	float          sec_mod = get_property("skill.cap.multi.mod.secondarySkill", 95.0);
+	int required_level, new_cap;
+	int pri_class, sec_class;
+	int pri_rlevel, sec_rlevel, pri_cap, sec_cap;
+	float pri_mod = get_property("skill.cap.multi.mod.primarySkill", 100.0);
+	float sec_mod = get_property("skill.cap.multi.mod.secondarySkill", 95.0);
 
 	pri_class = flag2idx(ch->player.m_class) - 1;
 	sec_class = flag2idx(ch->player.secondary_class) - 1;
@@ -5494,27 +5612,27 @@ ClassSkillInfo SKILL_DATA_ALL(P_char ch, int skill)
 		// Note: Currently you should not be spec'd and multi'd so ch->player.spec should be 0.
 		pri_rlevel = (skills[(skill)].m_class[pri_class]).rlevel[ch->player.spec];
 		sec_rlevel = (skills[(skill)].m_class[sec_class]).rlevel[ch->player.spec];
-		pri_cap    = skills[skill].m_class[pri_class].maxlearn[ch->player.spec];
-		sec_cap    = skills[skill].m_class[sec_class].maxlearn[ch->player.spec];
+		pri_cap = skills[skill].m_class[pri_class].maxlearn[ch->player.spec];
+		sec_cap = skills[skill].m_class[sec_class].maxlearn[ch->player.spec];
 
 		if ((pri_rlevel > 0) && (sec_rlevel < 1))
 		{
-			new_cap        = (int)(pri_cap * pri_mod) / 100;
+			new_cap = (int)(pri_cap * pri_mod) / 100;
 			required_level = pri_rlevel;
 		}
 		else if ((sec_rlevel > 0) && (pri_rlevel < 1))
 		{
-			new_cap        = (int)(sec_cap * sec_mod) / 100;
+			new_cap = (int)(sec_cap * sec_mod) / 100;
 			required_level = sec_rlevel + 5;
 		}
 		else if ((pri_rlevel > 0) && (sec_rlevel > 0))
 		{
-			new_cap        = (MAX((int)(pri_cap * pri_mod), (int)(sec_cap * sec_mod))) / 100;
+			new_cap = (MAX((int)(pri_cap * pri_mod), (int)(sec_cap * sec_mod))) / 100;
 			required_level = MIN(pri_rlevel, (sec_rlevel + 5));
 		}
 		else
 		{
-			new_cap        = 0;
+			new_cap = 0;
 			required_level = 0;
 		}
 
@@ -5523,7 +5641,7 @@ ClassSkillInfo SKILL_DATA_ALL(P_char ch, int skill)
 		//  skills[skill].name, skill, pri_rlevel, sec_rlevel, pri_cap, sec_cap, new_cap, required_level );
 
 		dummy.maxlearn[ch->player.spec] = new_cap;
-		dummy.rlevel[ch->player.spec]   = required_level;
+		dummy.rlevel[ch->player.spec] = required_level;
 	}
 	else if (IS_MULTICLASS_NPC(ch))
 	{
@@ -5532,8 +5650,8 @@ ClassSkillInfo SKILL_DATA_ALL(P_char ch, int skill)
 		highest order flag bit. This routine should go through and find the skill with the highest
 		value for any of the set classes - Torgal 4/2009 */
 
-		int                    highest           = 0;
-		struct ClassSkillInfo *classEntry        = skills[skill].m_class;
+		int highest = 0;
+		struct ClassSkillInfo *classEntry = skills[skill].m_class;
 		struct ClassSkillInfo *highestClassEntry = classEntry;
 
 		for (int i = 0; i < CLASS_COUNT; i++, classEntry++)
@@ -5543,7 +5661,7 @@ ClassSkillInfo SKILL_DATA_ALL(P_char ch, int skill)
 				if (classEntry->maxlearn[0] > highest)
 				{
 					highestClassEntry = classEntry;
-					highest           = classEntry->maxlearn[0];
+					highest = classEntry->maxlearn[0];
 				}
 			}
 		}
@@ -5558,7 +5676,7 @@ ClassSkillInfo SKILL_DATA_ALL(P_char ch, int skill)
 	{
 		printf("Invalid m_class %x for %s\n", ch->player.m_class, J_NAME(ch));
 		ch->player.m_class = 1; // warrior
-		dummy              = SKILL_DATA(ch, skill);
+		dummy = SKILL_DATA(ch, skill);
 	}
 
 	return dummy;
@@ -5566,8 +5684,8 @@ ClassSkillInfo SKILL_DATA_ALL(P_char ch, int skill)
 
 int GET_CHAR_SKILL_P(P_char ch, int skl)
 {
-	struct affected_type  *af;
-	int                    mod = 0, skllvl, highest, i, bit, lvl, cls, spec;
+	struct affected_type *af;
+	int mod = 0, skllvl, highest, i, bit, lvl, cls, spec;
 	struct ClassSkillInfo *classEntry;
 
 	if (!ch)
@@ -5597,12 +5715,12 @@ int GET_CHAR_SKILL_P(P_char ch, int skl)
 		{
 			return 0;
 		}
-		bit        = 1;
-		highest    = 0;
+		bit = 1;
+		highest = 0;
 		classEntry = skills[skl].m_class;
-		lvl        = GET_LEVEL(ch);
-		cls        = ch->player.m_class;
-		spec       = ch->player.spec;
+		lvl = GET_LEVEL(ch);
+		cls = ch->player.m_class;
+		spec = ch->player.spec;
 
 		for (i = 0; i < CLASS_COUNT; i++, bit <<= 1, classEntry++)
 		{
@@ -5690,14 +5808,16 @@ int GET_LVL_FOR_SKILL(P_char ch, int skill)
 P_char get_random_char_in_room(int room, P_char ch, int flag)
 {
 	P_char tch;
-	int    count;
-	int    chosen;
+	int count;
+	int chosen;
 
 	count = 0;
 
 	for (tch = world[room].people, count = 0; tch; tch = tch->next_in_room)
 	{
-		if (IS_TRUSTED(tch) || ((flag & DISALLOW_BACKRANK) && !on_front_line(tch)) || ((flag & DISALLOW_SELF) && tch == ch) || ((flag & DISALLOW_UNGROUPED) && !grouped(ch, tch)) ||
+		if (IS_TRUSTED(tch) || ((flag & DISALLOW_BACKRANK) && !on_front_line(tch)) ||
+		    ((flag & DISALLOW_SELF) && tch == ch) ||
+		    ((flag & DISALLOW_UNGROUPED) && !grouped(ch, tch)) ||
 		    ((flag & DISALLOW_GROUPED) && grouped(ch, tch)))
 			continue;
 		count++;
@@ -5710,7 +5830,9 @@ P_char get_random_char_in_room(int room, P_char ch, int flag)
 
 	for (tch = world[room].people, count = 0; tch; tch = tch->next_in_room)
 	{
-		if (IS_TRUSTED(tch) || ((flag & DISALLOW_BACKRANK) && !on_front_line(tch)) || ((flag & DISALLOW_SELF) && tch == ch) || ((flag & DISALLOW_UNGROUPED) && !grouped(ch, tch)) ||
+		if (IS_TRUSTED(tch) || ((flag & DISALLOW_BACKRANK) && !on_front_line(tch)) ||
+		    ((flag & DISALLOW_SELF) && tch == ch) ||
+		    ((flag & DISALLOW_UNGROUPED) && !grouped(ch, tch)) ||
 		    ((flag & DISALLOW_GROUPED) && grouped(ch, tch)))
 			continue;
 		if (count == chosen)
@@ -5727,7 +5849,7 @@ P_char get_random_char_in_room(int room, P_char ch, int flag)
  */
 bool should_area_hit(P_char ch, P_char victim)
 {
-	P_char                c_leader = NULL, v_leader = NULL;
+	P_char c_leader = NULL, v_leader = NULL;
 	struct affected_type *af;
 
 	if (!ch || !victim)
@@ -5751,7 +5873,9 @@ bool should_area_hit(P_char ch, P_char victim)
 	if (IS_AFFECTED(victim, AFF_WRAITHFORM) && number(0, 3))
 		return FALSE;
 
-	if (IS_NPC(GET_PLYR(ch)) && IS_NPC(GET_PLYR(victim)) && !(GET_PLYR(victim)->following && IS_PC(GET_PLYR(victim)->following)) && !(GET_PLYR(ch)->following && IS_PC(GET_PLYR(ch)->following)))
+	if (IS_NPC(GET_PLYR(ch)) && IS_NPC(GET_PLYR(victim)) &&
+	    !(GET_PLYR(victim)->following && IS_PC(GET_PLYR(victim)->following)) &&
+	    !(GET_PLYR(ch)->following && IS_PC(GET_PLYR(ch)->following)))
 		return FALSE;
 
 	if (IS_TRUSTED(victim) && (GET_OPPONENT(victim) != ch))
@@ -5809,7 +5933,7 @@ bool should_area_hit(P_char ch, P_char victim)
 void cast_as_area(P_char ch, int spl, int level, char *arg)
 {
 	P_char tch, nch;
-	P_obj  tobj, nobj;
+	P_obj tobj, nobj;
 	void (*spell_func)(int, P_char, char *, int, P_char, P_obj);
 
 	if (!ch)
@@ -5825,7 +5949,8 @@ void cast_as_area(P_char ch, int spl, int level, char *arg)
 	if (IS_AGG_SPELL(spl))
 	{
 		appear(ch);
-		if (IS_SET(skills[spl].targets, TAR_AREA) || IS_SET(skills[spl].targets, TAR_IGNORE))
+		if (IS_SET(skills[spl].targets, TAR_AREA) ||
+		    IS_SET(skills[spl].targets, TAR_IGNORE))
 			((*spell_func)(level, ch, arg, SPELL_TYPE_SPELL, 0, 0));
 		else if (IS_SET(skills[spl].targets, TAR_CHAR_ROOM))
 		{
@@ -5876,7 +6001,9 @@ void cast_as_area(P_char ch, int spl, int level, char *arg)
 /*
  * Used by damage area spells
  */
-int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj), int level, P_char victim, float min_chance, float chance_step, bool (*select_func)(P_char, P_char))
+int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),
+			int level, P_char victim, float min_chance, float chance_step,
+			bool (*select_func)(P_char, P_char))
 {
 	P_char tch, *vict_array;
 
@@ -5909,7 +6036,7 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 
 	CREATE(vict_array, P_char, count + 1, MEM_TAG_ARRAY);
 
-	count        = 0;
+	count = 0;
 	int pc_count = 0;
 	for (tch = world[ch_room].people; tch; tch = tch->next_in_room)
 	{
@@ -5924,11 +6051,13 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 	if (pc_count > 0)
 	{
 		float median = (float)pc_count / 2.0 + 5.0 / (float)pc_count;
-		float range  = 1.5;
-		int   pc_hit = number((int)((median - range / 2.0) * 1000.0), (int)((median + range / 2.0) * 1000.0)) / 1000;
-		pc_hit       = MAX((int)(pc_count * min_chance / 100), pc_hit);
-		pc_hit       = MIN(pc_hit, pc_count);
-		int pc_skip  = pc_count - pc_hit;
+		float range = 1.5;
+		int pc_hit = number((int)((median - range / 2.0) * 1000.0),
+				    (int)((median + range / 2.0) * 1000.0)) /
+			     1000;
+		pc_hit = MAX((int)(pc_count * min_chance / 100), pc_hit);
+		pc_hit = MIN(pc_hit, pc_count);
+		int pc_skip = pc_count - pc_hit;
 		if (pc_skip > 0)
 		{
 			for (int i = number(0, count - 1); pc_skip; i = (i + 1) % count)
@@ -5959,10 +6088,14 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 			break;
 		if (has_innate(tch, INNATE_EVASION) && GET_SPEC(tch, CLASS_MONK, SPEC_WAYOFSNAKE))
 		{
-			if ((GET_LEVEL(tch) - ((int)get_property("innate.evasion.removechance", 15.000))) > number(1, 100))
+			if ((GET_LEVEL(tch) - ((int)get_property("innate.evasion.removechance",
+								 15.000))) > number(1, 100))
 			{
-				send_to_char("You twist out of the way avoiding the harmful magic!\n", tch);
-				act("$n twists out of the way avoiding the harmful magic!", FALSE, tch, 0, ch, TO_ROOM);
+				send_to_char(
+					"You twist out of the way avoiding the harmful magic!\n",
+					tch);
+				act("$n twists out of the way avoiding the harmful magic!", FALSE,
+				    tch, 0, ch, TO_ROOM);
 				continue;
 			}
 		}
@@ -6036,9 +6169,11 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 	return hit;
 }
 
-int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj), int level, P_char victim, float min_chance, float chance_step)
+int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),
+			int level, P_char victim, float min_chance, float chance_step)
 {
-	return cast_as_damage_area(ch, spell_func, level, victim, min_chance, chance_step, should_area_hit);
+	return cast_as_damage_area(ch, spell_func, level, victim, min_chance, chance_step,
+				   should_area_hit);
 }
 
 void hummer(P_obj obj)
@@ -6050,12 +6185,15 @@ void hummer(P_obj obj)
 		P_char ch = OBJ_WORN(obj) ? obj->loc.wearing : obj->loc.carrying;
 		if (!ch || ch->in_room == NOWHERE)
 			return;
-		act("&+LA faint hum can be heard from&N $p&n&+L carried by $n&n.", FALSE, ch, obj, 0, TO_ROOM);
-		act("&+LA faint hum can be heard from&N $p&n&+L you are carrying.", FALSE, ch, obj, 0, TO_CHAR);
+		act("&+LA faint hum can be heard from&N $p&n&+L carried by $n&n.", FALSE, ch, obj,
+		    0, TO_ROOM);
+		act("&+LA faint hum can be heard from&N $p&n&+L you are carrying.", FALSE, ch, obj,
+		    0, TO_CHAR);
 	}
 	else if (OBJ_ROOM(obj))
 	{
-		act("&+LA strange humming sound comes from&N $p&+L.", FALSE, world[obj->loc.room].people, obj, 0, TO_ROOM);
+		act("&+LA strange humming sound comes from&N $p&+L.", FALSE,
+		    world[obj->loc.room].people, obj, 0, TO_ROOM);
 	}
 	return;
 }
@@ -6065,7 +6203,8 @@ bool grouped(P_char ch, P_char ch2)
 	if (ch->group && ch->group == ch2->group)
 		return true;
 
-	if (SET_BIT(ch->specials.act, ACT_GUILD_GOLEM) || SET_BIT(ch2->specials.act, ACT_GUILD_GOLEM))
+	if (SET_BIT(ch->specials.act, ACT_GUILD_GOLEM) ||
+	    SET_BIT(ch2->specials.act, ACT_GUILD_GOLEM))
 	{
 		if (ch->player.racewar == ch2->player.racewar)
 			return true;
@@ -6091,19 +6230,22 @@ bool char_falling(P_char ch)
 {
 	P_char mount = get_linked_char(ch, LNK_RIDING);
 
-	return (((world[(ch)->in_room].sector_type == SECT_NO_GROUND) || (world[(ch)->in_room].sector_type == SECT_UNDRWLD_NOGROUND) || (ch->specials.z_cord > 0)) && !IS_TRUSTED(ch) &&
-	        !IS_AFFECTED(ch, AFF_LEVITATE) && !IS_AFFECTED(ch, AFF_FLY) && !(mount && (IS_AFFECTED(mount, AFF_LEVITATE) || IS_AFFECTED(mount, AFF_FLY))));
+	return (((world[(ch)->in_room].sector_type == SECT_NO_GROUND) ||
+		 (world[(ch)->in_room].sector_type == SECT_UNDRWLD_NOGROUND) ||
+		 (ch->specials.z_cord > 0)) &&
+		!IS_TRUSTED(ch) && !IS_AFFECTED(ch, AFF_LEVITATE) && !IS_AFFECTED(ch, AFF_FLY) &&
+		!(mount && (IS_AFFECTED(mount, AFF_LEVITATE) || IS_AFFECTED(mount, AFF_FLY))));
 }
 
 /*
  */
 
 #define MAX_BUFFER 65536 /* size of the parse buffer          */
-#define HTML_SIZE  21    /* length of <font color=\"??????\"> */
+#define HTML_SIZE 21 /* length of <font color=\"??????\"> */
 
 /* local procudures */
 char *ansi_to_html(const char *str);
-void  append_html_color(char *buf, char *colorcode);
+void append_html_color(char *buf, char *colorcode);
 
 int ansi_strlen(const char *string)
 {
@@ -6146,7 +6288,8 @@ bool is_hot_in_room(int room)
 
 	for (raf = world[room].affected; raf; raf = raf->next)
 	{
-		if (raf->type == SPELL_INCENDIARY_CLOUD || raf->type == SPELL_FIRESTORM || raf->type == SPELL_SCATHING_WIND)
+		if (raf->type == SPELL_INCENDIARY_CLOUD || raf->type == SPELL_FIRESTORM ||
+		    raf->type == SPELL_SCATHING_WIND)
 			return true;
 	}
 
@@ -6161,7 +6304,7 @@ bool is_hot_in_room(int room)
 //   If none found, it defaults to return FALSE.  The one exception is the room flag ROOM_DARK.
 bool IS_TWILIGHT_ROOM(int r)
 {
-	int sect  = world[r].sector_type;
+	int sect = world[r].sector_type;
 	int flags = world[r].room_flags;
 
 	// Twilight rooms are twilight unless magically darkened or lit.
@@ -6195,67 +6338,68 @@ bool IS_TWILIGHT_ROOM(int r)
 	// Twilight by sector type.
 	switch (sect)
 	{
-		// Sectors that are twilight if not magically lit/dark or regular room dark.
-		// These are in order of creation (add to bottom of list).
-		// Note the exceptions SWAMP & SNOWY_FOREST to get the extra check.
-		//   These are only twilight when the sun is shining.
-		case SECT_FOREST:
-		case SECT_SWAMP:
-		case SECT_SNOWY_FOREST:
-			if (IS_NIGHT)
-			{
-				break;
-			}
-		case SECT_UNDERWATER:
-		case SECT_UNDERWATER_GR:
-		case SECT_FIREPLANE:
-		case SECT_UNDRWLD_WILD:
-		case SECT_UNDRWLD_CITY:
-		case SECT_UNDRWLD_INSIDE:
-		case SECT_UNDRWLD_WATER:
-		case SECT_UNDRWLD_NOSWIM:
-		case SECT_UNDRWLD_NOGROUND:
-		case SECT_AIR_PLANE:
-		case SECT_WATER_PLANE:
-		case SECT_EARTH_PLANE:
-		case SECT_ETHEREAL:
-		case SECT_ASTRAL:
-		case SECT_UNDRWLD_MOUNTAIN:
-		case SECT_UNDRWLD_SLIME:
-		case SECT_UNDRWLD_LOWCEIL:
-		case SECT_UNDRWLD_LIQMITH:
-		case SECT_UNDRWLD_MUSHROOM:
-		case SECT_CASTLE:
-		case SECT_NEG_PLANE:
-		case SECT_PLANE_OF_AVERNUS:
-		case SECT_CITY:
+	// Sectors that are twilight if not magically lit/dark or regular room dark.
+	// These are in order of creation (add to bottom of list).
+	// Note the exceptions SWAMP & SNOWY_FOREST to get the extra check.
+	//   These are only twilight when the sun is shining.
+	case SECT_FOREST:
+	case SECT_SWAMP:
+	case SECT_SNOWY_FOREST:
+		if (IS_NIGHT)
+		{
+			break;
+		}
+	case SECT_UNDERWATER:
+	case SECT_UNDERWATER_GR:
+	case SECT_FIREPLANE:
+	case SECT_UNDRWLD_WILD:
+	case SECT_UNDRWLD_CITY:
+	case SECT_UNDRWLD_INSIDE:
+	case SECT_UNDRWLD_WATER:
+	case SECT_UNDRWLD_NOSWIM:
+	case SECT_UNDRWLD_NOGROUND:
+	case SECT_AIR_PLANE:
+	case SECT_WATER_PLANE:
+	case SECT_EARTH_PLANE:
+	case SECT_ETHEREAL:
+	case SECT_ASTRAL:
+	case SECT_UNDRWLD_MOUNTAIN:
+	case SECT_UNDRWLD_SLIME:
+	case SECT_UNDRWLD_LOWCEIL:
+	case SECT_UNDRWLD_LIQMITH:
+	case SECT_UNDRWLD_MUSHROOM:
+	case SECT_CASTLE:
+	case SECT_NEG_PLANE:
+	case SECT_PLANE_OF_AVERNUS:
+	case SECT_CITY:
+		return TRUE;
+		break;
+	// These sectors are also in order.  These are the ones exposed to the sunlight.
+	// These are only twilight during sunrise/sunset (dawn/dusk).
+	case SECT_INSIDE:
+	case SECT_FIELD:
+	case SECT_HILLS:
+	case SECT_MOUNTAIN:
+	case SECT_WATER_SWIM:
+	case SECT_WATER_NOSWIM:
+	case SECT_NO_GROUND:
+	case SECT_OCEAN:
+	case SECT_DESERT:
+	case SECT_ARCTIC:
+	case SECT_CASTLE_WALL:
+	case SECT_CASTLE_GATE:
+	case SECT_ROAD:
+	case SECT_LAVA:
+		// If time of day makes it twilight
+		if (IS_TWILIGHT)
+		{
 			return TRUE;
-			break;
-		// These sectors are also in order.  These are the ones exposed to the sunlight.
-		// These are only twilight during sunrise/sunset (dawn/dusk).
-		case SECT_INSIDE:
-		case SECT_FIELD:
-		case SECT_HILLS:
-		case SECT_MOUNTAIN:
-		case SECT_WATER_SWIM:
-		case SECT_WATER_NOSWIM:
-		case SECT_NO_GROUND:
-		case SECT_OCEAN:
-		case SECT_DESERT:
-		case SECT_ARCTIC:
-		case SECT_CASTLE_WALL:
-		case SECT_CASTLE_GATE:
-		case SECT_ROAD:
-		case SECT_LAVA:
-			// If time of day makes it twilight
-			if (IS_TWILIGHT)
-			{
-				return TRUE;
-			}
-			break;
-		default:
-			debug("IS_TWILIGHT_ROOM: Sector '%s' (%d) not found in switch.", sector_types[sect], sect);
-			break;
+		}
+		break;
+	default:
+		debug("IS_TWILIGHT_ROOM: Sector '%s' (%d) not found in switch.", sector_types[sect],
+		      sect);
+		break;
 	}
 
 	return FALSE;
@@ -6268,13 +6412,15 @@ bool IS_TWILIGHT_ROOM(int r)
 //   it's not outdoors, ok?
 bool IS_OUTDOORS(int r)
 {
-	int sect  = world[r].sector_type;
+	int sect = world[r].sector_type;
 	int flags = world[r].room_flags;
 
 	// Rooms that are Lockers/Indoors/etc are not outside rooms.
 	// Note: The "HOUSE" bit was removed.  I dunno if it'll come back or not,
 	//   but should be in this list if it does.
-	if (IS_SET(flags, ROOM_LOCKER | ROOM_INDOORS | ROOM_UNDERWATER | ROOM_TUNNEL | ROOM_PRIVATE | ROOM_NO_PRECIP | ROOM_SINGLE_FILE | ROOM_JAIL | ROOM_GUILD))
+	if (IS_SET(flags, ROOM_LOCKER | ROOM_INDOORS | ROOM_UNDERWATER | ROOM_TUNNEL |
+				  ROOM_PRIVATE | ROOM_NO_PRECIP | ROOM_SINGLE_FILE | ROOM_JAIL |
+				  ROOM_GUILD))
 	{
 		return FALSE;
 	}
@@ -6282,27 +6428,27 @@ bool IS_OUTDOORS(int r)
 	// Outside by sector type.
 	switch (sect)
 	{
-		// Sectors that are outside.
-		// These are in order of creation (add to bottom of list).
-		// These sectors are in order.  These are the ones that can be exposed to sunlight.
-		case SECT_CITY:
-		case SECT_FIELD:
-		case SECT_HILLS:
-		case SECT_MOUNTAIN:
-		case SECT_WATER_SWIM:
-		case SECT_WATER_NOSWIM:
-		case SECT_NO_GROUND:
-		case SECT_OCEAN:
-		case SECT_DESERT:
-		case SECT_ARCTIC:
-		case SECT_CASTLE_WALL:
-		case SECT_CASTLE_GATE:
-		case SECT_ROAD:
-		case SECT_LAVA:
-			return TRUE;
-			break;
-		default:
-			break;
+	// Sectors that are outside.
+	// These are in order of creation (add to bottom of list).
+	// These sectors are in order.  These are the ones that can be exposed to sunlight.
+	case SECT_CITY:
+	case SECT_FIELD:
+	case SECT_HILLS:
+	case SECT_MOUNTAIN:
+	case SECT_WATER_SWIM:
+	case SECT_WATER_NOSWIM:
+	case SECT_NO_GROUND:
+	case SECT_OCEAN:
+	case SECT_DESERT:
+	case SECT_ARCTIC:
+	case SECT_CASTLE_WALL:
+	case SECT_CASTLE_GATE:
+	case SECT_ROAD:
+	case SECT_LAVA:
+		return TRUE;
+		break;
+	default:
+		break;
 	}
 
 	return FALSE;
@@ -6312,7 +6458,8 @@ P_char find_player_by_pid(int pid)
 {
 	for (P_desc desc = descriptor_list; desc; desc = desc->next)
 	{
-		if (STATE(desc) == CON_PLAYING && desc->character && IS_PC(desc->character) && GET_PID(desc->character) == pid)
+		if (STATE(desc) == CON_PLAYING && desc->character && IS_PC(desc->character) &&
+		    GET_PID(desc->character) == pid)
 			return desc->character;
 	}
 
@@ -6323,7 +6470,8 @@ P_char find_player_by_name(const char *name)
 {
 	for (P_desc desc = descriptor_list; desc; desc = desc->next)
 	{
-		if (STATE(desc) == CON_PLAYING && desc->character && IS_PC(desc->character) && !strcmp(GET_NAME(desc->character), name))
+		if (STATE(desc) == CON_PLAYING && desc->character && IS_PC(desc->character) &&
+		    !strcmp(GET_NAME(desc->character), name))
 			return desc->character;
 	}
 
@@ -6352,7 +6500,7 @@ P_char get_player_from_name(char *name)
 int get_player_pid_from_name(char *name)
 {
 	P_char player;
-	int    pid = 0;
+	int pid = 0;
 
 	player = (struct char_data *)mm_get(dead_mob_pool);
 	ensure_pconly_pool();
@@ -6413,41 +6561,41 @@ sh_int *char_stat(P_char ch, int stat)
 
 	switch (stat)
 	{
-		case APPLY_STR:
-			return &ch->base_stats.Str;
-			break;
+	case APPLY_STR:
+		return &ch->base_stats.Str;
+		break;
 
-		case APPLY_DEX:
-			return &ch->base_stats.Dex;
-			break;
+	case APPLY_DEX:
+		return &ch->base_stats.Dex;
+		break;
 
-		case APPLY_INT:
-			return &ch->base_stats.Int;
-			break;
+	case APPLY_INT:
+		return &ch->base_stats.Int;
+		break;
 
-		case APPLY_WIS:
-			return &ch->base_stats.Wis;
-			break;
+	case APPLY_WIS:
+		return &ch->base_stats.Wis;
+		break;
 
-		case APPLY_AGI:
-			return &ch->base_stats.Agi;
-			break;
+	case APPLY_AGI:
+		return &ch->base_stats.Agi;
+		break;
 
-		case APPLY_CON:
-			return &ch->base_stats.Con;
-			break;
+	case APPLY_CON:
+		return &ch->base_stats.Con;
+		break;
 
-		case APPLY_POW:
-			return &ch->base_stats.Pow;
-			break;
+	case APPLY_POW:
+		return &ch->base_stats.Pow;
+		break;
 
-		case APPLY_CHA:
-			return &ch->base_stats.Cha;
-			break;
+	case APPLY_CHA:
+		return &ch->base_stats.Cha;
+		break;
 
-		case APPLY_LUCK:
-			return &ch->base_stats.Luk;
-			break;
+	case APPLY_LUCK:
+		return &ch->base_stats.Luk;
+		break;
 	}
 
 	return NULL;
@@ -6480,7 +6628,7 @@ int array_size(int arr[])
 long unsigned int ip2ul(const char *ip)
 {
 	long unsigned int result = 0;
-	int               var1, var2, var3, var4;
+	int var1, var2, var3, var4;
 
 	if (sscanf(ip, "%d.%d.%d.%d", &var1, &var2, &var3, &var4))
 	{
@@ -6494,7 +6642,7 @@ long unsigned int ip2ul(const char *ip)
 int decimal2binary(unsigned decimal, char *str)
 {
 	unsigned remainder = 0;
-	unsigned number    = decimal;
+	unsigned number = decimal;
 
 	unsigned index = flag2idx(decimal);
 	if (index)
@@ -6503,7 +6651,7 @@ int decimal2binary(unsigned decimal, char *str)
 		str[1] = '\0';
 	while (index > 1)
 	{
-		remainder      = number % 2;
+		remainder = number % 2;
 		str[index - 1] = (char)('0' + remainder);
 
 		number = number >> 1;
@@ -6522,22 +6670,22 @@ bool is_natural_creature(P_char ch)
 
 	switch (GET_RACE(ch))
 	{
-		case RACE_REPTILE:
-		case RACE_HERBIVORE:
-		case RACE_CARNIVORE:
-		case RACE_SNAKE:
-		case RACE_INSECT:
-		case RACE_ARACHNID:
-		case RACE_AQUATIC_ANIMAL:
-		case RACE_FLYING_ANIMAL:
-		case RACE_QUADRUPED:
-		case RACE_ANIMAL:
-		case RACE_PLANT:
-		case RACE_PARASITE:
-		case RACE_PWORM:
-		case RACE_SLIME:
-		case RACE_PRIMATE:
-			return TRUE;
+	case RACE_REPTILE:
+	case RACE_HERBIVORE:
+	case RACE_CARNIVORE:
+	case RACE_SNAKE:
+	case RACE_INSECT:
+	case RACE_ARACHNID:
+	case RACE_AQUATIC_ANIMAL:
+	case RACE_FLYING_ANIMAL:
+	case RACE_QUADRUPED:
+	case RACE_ANIMAL:
+	case RACE_PLANT:
+	case RACE_PARASITE:
+	case RACE_PWORM:
+	case RACE_SLIME:
+	case RACE_PRIMATE:
+		return TRUE;
 	}
 	return FALSE;
 }
@@ -6545,7 +6693,7 @@ bool is_natural_creature(P_char ch)
 bool is_casting_aggr_spell(P_char ch)
 {
 	struct spellcast_datatype *data;
-	P_nevent                   e1;
+	P_nevent e1;
 
 	if (!IS_ALIVE(ch) || !IS_CASTING(ch))
 	{
@@ -6570,8 +6718,14 @@ bool is_casting_aggr_spell(P_char ch)
 
 int is_prime_plane(int room)
 {
-	if ((world[room].sector_type != SECT_AIR_PLANE) && (world[room].sector_type != SECT_WATER_PLANE) && (world[room].sector_type != SECT_EARTH_PLANE) && (world[room].sector_type != SECT_ETHEREAL) &&
-	    (world[room].sector_type != SECT_ASTRAL) && (world[room].sector_type != SECT_NEG_PLANE) && (world[room].sector_type != SECT_PLANE_OF_AVERNUS) && (world[room].sector_type != SECT_FIREPLANE))
+	if ((world[room].sector_type != SECT_AIR_PLANE) &&
+	    (world[room].sector_type != SECT_WATER_PLANE) &&
+	    (world[room].sector_type != SECT_EARTH_PLANE) &&
+	    (world[room].sector_type != SECT_ETHEREAL) &&
+	    (world[room].sector_type != SECT_ASTRAL) &&
+	    (world[room].sector_type != SECT_NEG_PLANE) &&
+	    (world[room].sector_type != SECT_PLANE_OF_AVERNUS) &&
+	    (world[room].sector_type != SECT_FIREPLANE))
 	{
 		return TRUE;
 	}
@@ -6587,25 +6741,25 @@ bool match_pattern(const char *pat, const char *str)
 	{
 		switch (*pat)
 		{
-			case '?':
-				if (*str == '.')
-					return FALSE;
-				break;
-			case '*':
-				do
-				{
-					++pat;
-				} while (*pat == '*'); /* enddo */
-				if (!*pat)
-					return TRUE;
-				while (*str)
-					if (match_pattern(pat, str++))
-						return TRUE;
+		case '?':
+			if (*str == '.')
 				return FALSE;
-			default:
-				if (*str != *pat)
-					return FALSE;
-				break;
+			break;
+		case '*':
+			do
+			{
+				++pat;
+			} while (*pat == '*'); /* enddo */
+			if (!*pat)
+				return TRUE;
+			while (*str)
+				if (match_pattern(pat, str++))
+					return TRUE;
+			return FALSE;
+		default:
+			if (*str != *pat)
+				return FALSE;
+			break;
 		} /* endswitch */
 		++pat, ++str;
 	} /* endwhile */
@@ -6632,19 +6786,22 @@ void connect_rooms(int v1, int v2, int to_dir, int from_dir)
 	if (to_dir >= 0 && !world[r1].dir_option[to_dir])
 	{
 		CREATE(world[r1].dir_option[to_dir], room_direction_data, 1, MEM_TAG_DIRDATA);
-		world[r1].dir_option[to_dir]->to_room   = r2;
+		world[r1].dir_option[to_dir]->to_room = r2;
 		world[r1].dir_option[to_dir]->exit_info = 0;
 	}
 
 	if (from_dir >= 0 && !world[r2].dir_option[from_dir])
 	{
 		CREATE(world[r2].dir_option[from_dir], room_direction_data, 1, MEM_TAG_DIRDATA);
-		world[r2].dir_option[from_dir]->to_room   = r1;
+		world[r2].dir_option[from_dir]->to_room = r1;
 		world[r2].dir_option[from_dir]->exit_info = 0;
 	}
 }
 
-void connect_rooms(int v1, int v2, int dir) { connect_rooms(v1, v2, dir, rev_dir[dir]); }
+void connect_rooms(int v1, int v2, int dir)
+{
+	connect_rooms(v1, v2, dir, rev_dir[dir]);
+}
 
 void disconnect_exit(int v1, int dir)
 {
@@ -6746,7 +6903,8 @@ bool is_pid_online(int pid, bool includeLD)
 			}
 
 			// Just making sure.  (If they're CON_PLAYING, they pretty much have to have a char, don't they?)
-			if ((temp_ch = (temp_d->original != NULL) ? temp_d->original : temp_d->character) == NULL)
+			if ((temp_ch = (temp_d->original != NULL) ? temp_d->original :
+								    temp_d->character) == NULL)
 			{
 				continue;
 			}
@@ -6765,26 +6923,26 @@ int cmd_from_dir(int dir)
 {
 	switch (dir)
 	{
-		case DIR_NORTH:
-			return CMD_NORTH;
-		case DIR_EAST:
-			return CMD_EAST;
-		case DIR_SOUTH:
-			return CMD_SOUTH;
-		case DIR_WEST:
-			return CMD_WEST;
-		case DIR_UP:
-			return CMD_UP;
-		case DIR_DOWN:
-			return CMD_DOWN;
-		case DIR_NORTHWEST:
-			return CMD_NORTHWEST;
-		case DIR_SOUTHWEST:
-			return CMD_SOUTHWEST;
-		case DIR_NORTHEAST:
-			return CMD_NORTHEAST;
-		case DIR_SOUTHEAST:
-			return CMD_SOUTHEAST;
+	case DIR_NORTH:
+		return CMD_NORTH;
+	case DIR_EAST:
+		return CMD_EAST;
+	case DIR_SOUTH:
+		return CMD_SOUTH;
+	case DIR_WEST:
+		return CMD_WEST;
+	case DIR_UP:
+		return CMD_UP;
+	case DIR_DOWN:
+		return CMD_DOWN;
+	case DIR_NORTHWEST:
+		return CMD_NORTHWEST;
+	case DIR_SOUTHWEST:
+		return CMD_SOUTHWEST;
+	case DIR_NORTHEAST:
+		return CMD_NORTHEAST;
+	case DIR_SOUTHEAST:
+		return CMD_SOUTHEAST;
 	}
 	return CMD_NONE;
 }
@@ -6834,7 +6992,7 @@ bool sub_string(const char *str, const char *substr)
 {
 	int strlength = strlen(str);
 	int sublength = strlen(substr);
-	int i         = 0;
+	int i = 0;
 	int j;
 
 	// While substr will fit into strlength - i
@@ -6860,7 +7018,7 @@ bool sub_string_cs(const char *str, const char *substr)
 {
 	int strlength = strlen(str);
 	int sublength = strlen(substr);
-	int i         = 0;
+	int i = 0;
 	int j;
 
 	// While substr will fit into strlength - i
@@ -6918,7 +7076,7 @@ char *CRYPT2(char *passwd, char *name)
 //   These chars do not get poofed out of a zone.
 bool has_touch_stone(P_char ch)
 {
-	int   i;
+	int i;
 	P_obj obj;
 
 	// First check inventory.
@@ -6945,7 +7103,7 @@ bool has_touch_stone(P_char ch)
 
 bool item_load_check(P_obj item, int ival, int zone_percent)
 {
-	// Artifacts are more rare 
+	// Artifacts are more rare
 	if (IS_ARTIFACT(item))
 	{
 		zone_percent /= 2;
@@ -6984,10 +7142,10 @@ P_desc get_descriptor_from_name(char *name)
 char *coins_to_string(int platinum, int gold, int silver, int copper, char *color_string)
 {
 	static char ret_string[MAX_STRING_LENGTH];
-	int         coins, and_pos, pos1, pos2;
+	int coins, and_pos, pos1, pos2;
 
 	coins = and_pos = pos1 = pos2 = 0;
-	ret_string[0]                 = '\0';
+	ret_string[0] = '\0';
 
 	// Start with copper to make and_pos easy to calculate.
 	if (copper != 0)
@@ -7059,7 +7217,8 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, char *colo
 		// If we have another type, use a comma.
 		if (coins & (BIT_2 | BIT_3 | BIT_4))
 		{
-			pos1 = snprintf(ret_string, MAX_STRING_LENGTH, "&+W%dp%s, ", platinum, color_string);
+			pos1 = snprintf(ret_string, MAX_STRING_LENGTH, "&+W%dp%s, ", platinum,
+					color_string);
 		}
 		// Otherwise, print just plat and return it.
 		else
@@ -7080,13 +7239,15 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, char *colo
 		// If we have another type, use a comma.
 		if (coins & (BIT_3 | BIT_4))
 		{
-			pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+Y%dg%s, ", gold, color_string);
+			pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+Y%dg%s, ", gold,
+					color_string);
 			pos1 += pos2;
 		}
 		// Otherwise, just add gold and return it.
 		else
 		{
-			snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+Y%dg%s&n", gold, color_string);
+			snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+Y%dg%s&n", gold,
+				 color_string);
 			return ret_string;
 		}
 	}
@@ -7102,13 +7263,15 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, char *colo
 		// If we have another type (copper), use a comma.
 		if (coins & BIT_4)
 		{
-			pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+w%ds%s, ", silver, color_string);
+			pos2 = snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+w%ds%s, ", silver,
+					color_string);
 			pos1 += pos2;
 		}
 		// Otherwise, just add silver and return it.
 		else
 		{
-			snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+w%ds%s&n", silver, color_string);
+			snprintf(ret_string + pos1, MAX_STRING_LENGTH, "&+w%ds%s&n", silver,
+				 color_string);
 			return ret_string;
 		}
 	}
@@ -7139,8 +7302,8 @@ char *coins_to_string(int platinum, int gold, int silver, int copper, char *colo
 //   but it's only a marginal change in size.
 void trim_and_end_colorless(char *orig, char *good, int length)
 {
-	int   chars_left;
-	bool  colored;
+	int chars_left;
+	bool colored;
 	char *index, *last_ansi_sequence;
 	// Arih: Track buffer start to prevent underflow in backward searches (infinite loop bug fix)
 	char *good_start;
@@ -7191,9 +7354,9 @@ void trim_and_end_colorless(char *orig, char *good, int length)
 			{
 				// Copy the &'s
 				// I don't know if it's faster to print each & vs snprintf(good, MAX_STRING_LENGTH, "&&") then good += 2.
-				*(good++)          = '&';
+				*(good++) = '&';
 				last_ansi_sequence = good;
-				*(good++)          = '&';
+				*(good++) = '&';
 				index += 2;
 				chars_left -= 2;
 			}
@@ -7203,7 +7366,8 @@ void trim_and_end_colorless(char *orig, char *good, int length)
 				if (is_ansi_char(index[2]))
 				{
 					// Copy the &<+|-><color>
-					snprintf(good, MAX_STRING_LENGTH, "&%c%c", index[1], index[2]);
+					snprintf(good, MAX_STRING_LENGTH, "&%c%c", index[1],
+						 index[2]);
 					last_ansi_sequence = good + 2;
 					good += 3;
 					index += 3;
@@ -7232,7 +7396,8 @@ void trim_and_end_colorless(char *orig, char *good, int length)
 				if (is_ansi_char(index[2]) && is_ansi_char(index[3]))
 				{
 					// Copy the &=<char><char>
-					snprintf(good, MAX_STRING_LENGTH, "&=%c%c", index[2], index[3]);
+					snprintf(good, MAX_STRING_LENGTH, "&=%c%c", index[2],
+						 index[3]);
 					last_ansi_sequence = good + 3;
 					good += 4;
 					index += 4;
@@ -7261,9 +7426,9 @@ void trim_and_end_colorless(char *orig, char *good, int length)
 			else
 			{
 				// Copy the & as && to escape it
-				*(good++)          = '&';
+				*(good++) = '&';
 				last_ansi_sequence = good;
-				*(good++)          = '&';
+				*(good++) = '&';
 				index++;
 				chars_left -= 2;
 			}
@@ -7568,74 +7733,72 @@ int yes_no(const char *str)
 
 static int persistence_large_event_log_writer(const char *line, void *context)
 {
-  char *fallback_line;
-  size_t line_len;
-  size_t prefix_len = strlen(PERSISTENCE_LARGE_EVENT_PREFIX);
+	char *fallback_line;
+	size_t line_len;
+	size_t prefix_len = strlen(PERSISTENCE_LARGE_EVENT_PREFIX);
 
-  (void) context;
+	(void)context;
 
-  if (!line || !*line)
-    return 1;
+	if (!line || !*line)
+		return 1;
 
-  if (sql_persistence_write_large_event_line(line))
-    return 1;
+	if (sql_persistence_write_large_event_line(line))
+		return 1;
 
-  line_len = strlen(line);
-  fallback_line = (char *) malloc(prefix_len + line_len + 1);
-  if (!fallback_line)
-  {
-    persistence_alert(AVATAR, "large_event", "worker", "none", "none",
-                      "worker_fallback_alloc_failed",
-                      "could not allocate %zu-byte replay record", prefix_len + line_len + 1);
-    return 0;
-  }
-  memcpy(fallback_line, PERSISTENCE_LARGE_EVENT_PREFIX, prefix_len);
-  memcpy(fallback_line + prefix_len, line, line_len + 1);
+	line_len = strlen(line);
+	fallback_line = (char *)malloc(prefix_len + line_len + 1);
+	if (!fallback_line)
+	{
+		persistence_alert(AVATAR, "large_event", "worker", "none", "none",
+				  "worker_fallback_alloc_failed",
+				  "could not allocate %zu-byte replay record",
+				  prefix_len + line_len + 1);
+		return 0;
+	}
+	memcpy(fallback_line, PERSISTENCE_LARGE_EVENT_PREFIX, prefix_len);
+	memcpy(fallback_line + prefix_len, line, line_len + 1);
 
-  int ok = persistence_write_fallback_event_line(fallback_line,
-                                                 "large_event",
-                                                 "worker",
-                                                 "worker_fallback");
-  free(fallback_line);
-  return ok ? 1 : 0;
+	int ok = persistence_write_fallback_event_line(fallback_line, "large_event", "worker",
+						       "worker_fallback");
+	free(fallback_line);
+	return ok ? 1 : 0;
 }
 
 int persistence_start_large_event_worker(void)
 {
-  if (!persistence_large_event_worker_start(persistence_large_event_log_writer,
-                                             NULL))
-  {
-    persistence_alert(AVATAR, "large_event", "worker", "none", "none",
-                      "start_failed",
-                      "large-event persistence worker could not start; using sync fallback");
-    return 0;
-  }
+	if (!persistence_large_event_worker_start(persistence_large_event_log_writer, NULL))
+	{
+		persistence_alert(
+			AVATAR, "large_event", "worker", "none", "none", "start_failed",
+			"large-event persistence worker could not start; using sync fallback");
+		return 0;
+	}
 
-  logit(LOG_STATUS, "Started large-event persistence worker.");
-  return 1;
+	logit(LOG_STATUS, "Started large-event persistence worker.");
+	return 1;
 }
 
 void persistence_stop_large_event_worker(void)
 {
-  unsigned long failures;
+	unsigned long failures;
 
-  persistence_large_event_worker_stop(1);
+	persistence_large_event_worker_stop(1);
 
-  failures = persistence_large_event_worker_write_failures();
-  if (failures)
-  {
-    persistence_alert(AVATAR, "large_event", "worker", "none", "none",
-                      "write_failures",
-                      "%lu large-event persistence worker writes failed and were retried",
-                      failures);
-  }
+	failures = persistence_large_event_worker_write_failures();
+	if (failures)
+	{
+		persistence_alert(
+			AVATAR, "large_event", "worker", "none", "none", "write_failures",
+			"%lu large-event persistence worker writes failed and were retried",
+			failures);
+	}
 
-  logit(LOG_STATUS, "Stopped large-event persistence worker.");
+	logit(LOG_STATUS, "Stopped large-event persistence worker.");
 }
 
 int persistence_large_event_worker_active(void)
 {
-  return persistence_large_event_worker_running();
+	return persistence_large_event_worker_running();
 }
 
 unsigned int popcnt(unsigned int x)

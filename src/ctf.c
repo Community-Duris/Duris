@@ -41,11 +41,11 @@ void do_ctf(P_char ch, char *arg, int cmd)
 }
 #else
 
-extern MYSQL            *DB;
-extern P_index           obj_index;
-extern P_obj             object_list;
-extern P_room            world;
-extern P_desc            descriptor_list;
+extern MYSQL *DB;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern P_desc descriptor_list;
 extern struct zone_data *zone_table;
 
 // Set RANDOM on the room it will randomize the room spawning point on
@@ -59,20 +59,20 @@ extern struct zone_data *zone_table;
 
 struct ctfData ctfdata[] = {
 	// ID,	FLAG_TYPE,	RACEWAR,	O VNUM,	ROOM,	OBJ POINTER
-	{0, 0, 0, 0, 0, NULL}, // None
-	{1, CTF_PRIMARY, RACEWAR_GOOD, 790, 132573, NULL}, // Tharn
-	{2, CTF_PRIMARY, RACEWAR_EVIL, 791, 97628, NULL}, // Shady
-	{3, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL}, // Random epic
-	{4, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL}, // Random epic
-	{5, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL}, // Random epic
-	{6, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL}, // Random epic
-                                                       // Allowing space for 5 possible boon flags.
-	{7, CTF_BOON, RACEWAR_NONE, 792, 0, NULL},
-	{8, CTF_BOON, RACEWAR_NONE, 792, 0, NULL},
-	{9, CTF_BOON, RACEWAR_NONE, 792, 0, NULL},
-	{10, CTF_BOON, RACEWAR_NONE, 792, 0, NULL},
-	{11, CTF_BOON, RACEWAR_NONE, 792, 0, NULL},
-	{0}
+	{ 0, 0, 0, 0, 0, NULL }, // None
+	{ 1, CTF_PRIMARY, RACEWAR_GOOD, 790, 132573, NULL }, // Tharn
+	{ 2, CTF_PRIMARY, RACEWAR_EVIL, 791, 97628, NULL }, // Shady
+	{ 3, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL }, // Random epic
+	{ 4, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL }, // Random epic
+	{ 5, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL }, // Random epic
+	{ 6, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL }, // Random epic
+	// Allowing space for 5 possible boon flags.
+	{ 7, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
+	{ 8, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
+	{ 9, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
+	{ 10, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
+	{ 11, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
+	{ 0 }
 };
 
 int init_ctf()
@@ -87,9 +87,9 @@ int init_ctf()
 
 int load_ctf()
 {
-	char  buff[MAX_STRING_LENGTH];
+	char buff[MAX_STRING_LENGTH];
 	P_obj flag;
-	int   i, r_num, boon = 0;
+	int i, r_num, boon = 0;
 
 	ctf_populate_boons();
 
@@ -103,7 +103,8 @@ int load_ctf()
 			continue;
 		}
 
-		if (ctfdata[i].room == RANDOM || ctfdata[i].room < 1 && ctfdata[i].type == CTF_RANDOM)
+		if (ctfdata[i].room == RANDOM ||
+		    ctfdata[i].room < 1 && ctfdata[i].type == CTF_RANDOM)
 			ctfdata[i].room = ctf_get_random_room(i);
 		if (!ctfdata[i].room)
 			continue;
@@ -112,16 +113,20 @@ int load_ctf()
 
 		if (!ctfdata[i].obj)
 		{
-			logit(LOG_DEBUG, "load_ctf(): obj %d [%d] not loadable", r_num, ctfdata[i].flag);
+			logit(LOG_DEBUG, "load_ctf(): obj %d [%d] not loadable", r_num,
+			      ctfdata[i].flag);
 			continue;
 		}
 
 		// set the flag short/long desc if its a secondary or boon flag type
-		if (ctfdata[i].type == CTF_SECONDARY || ctfdata[i].type == CTF_BOON || ctfdata[i].type == CTF_RANDOM)
+		if (ctfdata[i].type == CTF_SECONDARY || ctfdata[i].type == CTF_BOON ||
+		    ctfdata[i].type == CTF_RANDOM)
 		{
-			snprintf(buff, MAX_STRING_LENGTH, "&+Lthe flag of&n %s&n", zone_table[world[real_room0(ctfdata[i].room)].zone].name);
+			snprintf(buff, MAX_STRING_LENGTH, "&+Lthe flag of&n %s&n",
+				 zone_table[world[real_room0(ctfdata[i].room)].zone].name);
 			set_short_description(ctfdata[i].obj, buff);
-			snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "&+L is here.&n");
+			snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+				 "&+L is here.&n");
 			set_long_description(ctfdata[i].obj, buff);
 		}
 
@@ -133,12 +138,12 @@ int load_ctf()
 
 int ctf_flag_proc(P_obj flag, P_char ch, int cmd, char *argument)
 {
-	char  arg[MAX_STRING_LENGTH];
-	char  buff[MAX_STRING_LENGTH], buff2[MAX_STRING_LENGTH];
+	char arg[MAX_STRING_LENGTH];
+	char buff[MAX_STRING_LENGTH], buff2[MAX_STRING_LENGTH];
 	P_obj tobj;
-	int   i;
-	int   reset     = (int)get_property("ctf.reset", 5);
-	int   block_cmd = 0;
+	int i;
+	int reset = (int)get_property("ctf.reset", 5);
+	int block_cmd = 0;
 
 	if (!flag)
 		return FALSE;
@@ -157,7 +162,8 @@ int ctf_flag_proc(P_obj flag, P_char ch, int cmd, char *argument)
 		return FALSE;
 	}
 
-	if (cmd == CMD_PERIODIC && OBJ_ROOM(flag) && !OBJ_IN_ROOM(ctfdata[i].obj, real_room0(ctfdata[i].room)))
+	if (cmd == CMD_PERIODIC && OBJ_ROOM(flag) &&
+	    !OBJ_IN_ROOM(ctfdata[i].obj, real_room0(ctfdata[i].room)))
 	{
 		if (!flag->timer[0])
 			flag->timer[0] = time(NULL);
@@ -167,7 +173,10 @@ int ctf_flag_proc(P_obj flag, P_char ch, int cmd, char *argument)
 			{
 				// Not needed because reload makes us a new flag
 				flag->timer[0] = 0; // But just in case...
-				snprintf(buff, MAX_STRING_LENGTH, "%s &+Whas been left alone for too long and has reset!\r\n", flag->short_description);
+				snprintf(
+					buff, MAX_STRING_LENGTH,
+					"%s &+Whas been left alone for too long and has reset!\r\n",
+					flag->short_description);
 				CAP(buff);
 				ctf_notify(buff, 0);
 				ctf_reload_flag(i);
@@ -218,7 +227,9 @@ int ctf_flag_proc(P_obj flag, P_char ch, int cmd, char *argument)
 			// If they're in their flag room
 			if (world[ch->in_room].number == ctfdata[i].room)
 			{
-				send_to_char("Why would you pick up your own flag? Go get theirs!\r\n", ch);
+				send_to_char(
+					"Why would you pick up your own flag? Go get theirs!\r\n",
+					ch);
 			}
 			// If they're not in their flag room
 			else
@@ -226,15 +237,28 @@ int ctf_flag_proc(P_obj flag, P_char ch, int cmd, char *argument)
 				obj_from_room(flag);
 				act("You reach out to grab $p.", TRUE, ch, flag, 0, TO_CHAR);
 				act("$n reaches to grab $p.", TRUE, ch, flag, 0, TO_ROOM);
-				act("Upon being touched, $p dissapears in a &+YBLINDING flash&n.", FALSE, ch, flag, 0, TO_CHAR);
-				act("Upon being touched, $p dissapears in a &+YBLINDING flash&n.", FALSE, ch, flag, 0, TO_ROOM);
+				act("Upon being touched, $p dissapears in a &+YBLINDING flash&n.",
+				    FALSE, ch, flag, 0, TO_CHAR);
+				act("Upon being touched, $p dissapears in a &+YBLINDING flash&n.",
+				    FALSE, ch, flag, 0, TO_ROOM);
 				obj_to_room(flag, real_room(ctfdata[i].room));
-				send_to_room_f(real_room0(ctfdata[i].room), "%s suddenly appears in a &+YBLINDING flash&n.\r\n", flag->short_description);
+				send_to_room_f(real_room0(ctfdata[i].room),
+					       "%s suddenly appears in a &+YBLINDING flash&n.\r\n",
+					       flag->short_description);
 				if (GET_RACEWAR(ch) == RACEWAR_GOOD)
-					snprintf(buff, MAX_STRING_LENGTH, "&+YA beautiful melody rings through your ears as %s reclaims your team flag!\r\n", GET_NAME(ch));
+					snprintf(
+						buff, MAX_STRING_LENGTH,
+						"&+YA beautiful melody rings through your ears as %s reclaims your team flag!\r\n",
+						GET_NAME(ch));
 				else
-					snprintf(buff, MAX_STRING_LENGTH, "&+YYou feel the bloodlust of a thousand ogres rise within you as %s reclaims your team flag!&n\r\n", GET_NAME(ch));
-				snprintf(buff2, MAX_STRING_LENGTH, "&+YTorment and anguish can be felt gripping your soul as %s reclaims %s team's flag!&n\r\n", GET_NAME(ch), HSHR(ch));
+					snprintf(
+						buff, MAX_STRING_LENGTH,
+						"&+YYou feel the bloodlust of a thousand ogres rise within you as %s reclaims your team flag!&n\r\n",
+						GET_NAME(ch));
+				snprintf(
+					buff2, MAX_STRING_LENGTH,
+					"&+YTorment and anguish can be felt gripping your soul as %s reclaims %s team's flag!&n\r\n",
+					GET_NAME(ch), HSHR(ch));
 				ctf_notify(buff, GET_RACEWAR(ch));
 				ctf_notify(buff2, (GET_RACEWAR(ch) == 1 ? 2 : 1));
 				add_ctf_entry(ch, ctfdata[i].type, CTF_TYPE_RECLAIM);
@@ -246,14 +270,27 @@ int ctf_flag_proc(P_obj flag, P_char ch, int cmd, char *argument)
 			if (ctfdata[i].type == CTF_PRIMARY)
 			{
 				// perform stuff for picking up primary flag.. do we notify?
-				snprintf(buff, MAX_STRING_LENGTH, "&+rSeveral dull tones and chimes can be heard sounding through the area as %s picks up the enemies flag!&n\r\n", GET_NAME(ch));
-				snprintf(buff2, MAX_STRING_LENGTH, "&+rSeveral dull tones and chimes can be heard sounding through the area as %s picks up your flag!&n\r\n", GET_NAME(ch));
+				snprintf(
+					buff, MAX_STRING_LENGTH,
+					"&+rSeveral dull tones and chimes can be heard sounding through the area as %s picks up the enemies flag!&n\r\n",
+					GET_NAME(ch));
+				snprintf(
+					buff2, MAX_STRING_LENGTH,
+					"&+rSeveral dull tones and chimes can be heard sounding through the area as %s picks up your flag!&n\r\n",
+					GET_NAME(ch));
 			}
-			else if (ctfdata[i].type == CTF_SECONDARY || ctfdata[i].type == CTF_BOON || ctfdata[i].type == CTF_RANDOM)
+			else if (ctfdata[i].type == CTF_SECONDARY || ctfdata[i].type == CTF_BOON ||
+				 ctfdata[i].type == CTF_RANDOM)
 			{
 				// perform secondary flag pickup stuff
-				snprintf(buff, MAX_STRING_LENGTH, "&+rSeveral dull tones and chimes can be heard sounding through the area as %s picks up %s!&n\r\n", GET_NAME(ch), ctfdata[i].obj->short_description);
-				snprintf(buff2, MAX_STRING_LENGTH, "&+rSeveral dull tones and chimes can be heard sounding through the area as %s picks up %s!&n\r\n", GET_NAME(ch), ctfdata[i].obj->short_description);
+				snprintf(
+					buff, MAX_STRING_LENGTH,
+					"&+rSeveral dull tones and chimes can be heard sounding through the area as %s picks up %s!&n\r\n",
+					GET_NAME(ch), ctfdata[i].obj->short_description);
+				snprintf(
+					buff2, MAX_STRING_LENGTH,
+					"&+rSeveral dull tones and chimes can be heard sounding through the area as %s picks up %s!&n\r\n",
+					GET_NAME(ch), ctfdata[i].obj->short_description);
 			}
 			send_to_char_f(ch, "You get %s.\r\n", flag->short_description);
 			act("$n gets $p.", TRUE, ch, flag, 0, TO_ROOM);
@@ -273,10 +310,10 @@ int ctf_flag_proc(P_obj flag, P_char ch, int cmd, char *argument)
 			struct affected_type af;
 
 			memset(&af, 0, sizeof(af));
-			af.type     = TAG_CTF;
+			af.type = TAG_CTF;
 			af.modifier = ctfdata[i].id;
 			af.duration = -1;
-			af.flags    = AFFTYPE_NODISPEL | AFFTYPE_NOMSG | AFFTYPE_NOSAVE;
+			af.flags = AFFTYPE_NODISPEL | AFFTYPE_NOMSG | AFFTYPE_NOSAVE;
 			affect_to_char(ch, &af);
 		}
 
@@ -361,7 +398,8 @@ void ctf_notify(const char *msg, int racewar)
 		{
 			if (d->connected == CON_PLAYING)
 			{
-				if (IS_TRUSTED(d->character) || racewar == 0 || GET_RACEWAR(d->character) == racewar)
+				if (IS_TRUSTED(d->character) || racewar == 0 ||
+				    GET_RACEWAR(d->character) == racewar)
 				{
 					send_to_char(msg, d->character);
 					write_to_pc_log(d->character, msg, LOG_PRIVATE);
@@ -388,7 +426,7 @@ P_obj get_ctf_flag(int id)
 
 bool drop_ctf_flag(P_char ch)
 {
-	char                  buff[MAX_STRING_LENGTH];
+	char buff[MAX_STRING_LENGTH];
 	struct affected_type *af;
 
 	if (!ch)
@@ -405,7 +443,8 @@ bool drop_ctf_flag(P_char ch)
 		}
 		obj_to_room(flag, ch->in_room);
 		affect_remove(ch, af);
-		snprintf(buff, MAX_STRING_LENGTH, "&+Y%s has dropped %s at %s&n\r\n", GET_NAME(ch), flag->short_description, world[ch->in_room].name);
+		snprintf(buff, MAX_STRING_LENGTH, "&+Y%s has dropped %s at %s&n\r\n", GET_NAME(ch),
+			 flag->short_description, world[ch->in_room].name);
 		ctf_notify(buff, 0);
 		act("You drop $p&n.", TRUE, ch, flag, 0, TO_CHAR);
 		act("$n drops $p&n.", TRUE, ch, flag, 0, TO_ROOM);
@@ -427,7 +466,8 @@ bool check_ctf_capture(P_char ch, P_obj flag)
 	if (get_ctf_flag(CTF_FLAG_GOOD) == NULL)
 	{
 		debug("Can't find goodie CTF flag.  Reloading.");
-		if ((ctfdata[CTF_FLAG_GOOD].obj = read_object(real_object(ctfdata[CTF_FLAG_GOOD].flag), REAL)) == NULL)
+		if ((ctfdata[CTF_FLAG_GOOD].obj =
+			     read_object(real_object(ctfdata[CTF_FLAG_GOOD].flag), REAL)) == NULL)
 		{
 			debug("Error loading goodie ctf flag.");
 			return false;
@@ -438,7 +478,8 @@ bool check_ctf_capture(P_char ch, P_obj flag)
 	if (get_ctf_flag(CTF_FLAG_EVIL) == NULL)
 	{
 		debug("can't find evil CTF flag. reloading.");
-		if ((ctfdata[CTF_FLAG_EVIL].obj = read_object(real_object(ctfdata[CTF_FLAG_EVIL].flag), REAL)) == NULL)
+		if ((ctfdata[CTF_FLAG_EVIL].obj =
+			     read_object(real_object(ctfdata[CTF_FLAG_EVIL].flag), REAL)) == NULL)
 		{
 			debug("Error loading evil ctf flag.");
 			return false;
@@ -492,18 +533,34 @@ void capture_flag(P_char ch, P_obj flag, int id)
 	char buff2[MAX_STRING_LENGTH];
 	if (ctfdata[id].racewar == RACEWAR_EVIL)
 	{
-		snprintf(buff, MAX_STRING_LENGTH, "&+YThe sound of a thousand trumpets can be heard erupting through the area as %s captures the evil flag.&n\r\n", GET_NAME(ch));
-		snprintf(buff2, MAX_STRING_LENGTH, "&+YThe souls of a thousand demons can be heard wailing in anguish as %s captures your flag!&n\r\n", GET_NAME(ch));
+		snprintf(
+			buff, MAX_STRING_LENGTH,
+			"&+YThe sound of a thousand trumpets can be heard erupting through the area as %s captures the evil flag.&n\r\n",
+			GET_NAME(ch));
+		snprintf(
+			buff2, MAX_STRING_LENGTH,
+			"&+YThe souls of a thousand demons can be heard wailing in anguish as %s captures your flag!&n\r\n",
+			GET_NAME(ch));
 	}
 	else if (ctfdata[id].racewar == RACEWAR_GOOD)
 	{
-		snprintf(buff, MAX_STRING_LENGTH, "&+YA chilling monotonous horn can be heard echoing through the area as %s captures the good flag.&n\r\n", GET_NAME(ch));
-		snprintf(buff2, MAX_STRING_LENGTH, "&+YA high-pitched shriek screams through the area as %s captures your flag!&n\r\n", GET_NAME(ch));
+		snprintf(
+			buff, MAX_STRING_LENGTH,
+			"&+YA chilling monotonous horn can be heard echoing through the area as %s captures the good flag.&n\r\n",
+			GET_NAME(ch));
+		snprintf(
+			buff2, MAX_STRING_LENGTH,
+			"&+YA high-pitched shriek screams through the area as %s captures your flag!&n\r\n",
+			GET_NAME(ch));
 	}
 	else if (ctfdata[id].racewar == RACEWAR_NONE)
 	{
-		snprintf(buff, MAX_STRING_LENGTH, "&+YA calming feeling washes over you as %s captures %s&+Y.&n\r\n", GET_NAME(ch), flag->short_description);
-		snprintf(buff2, MAX_STRING_LENGTH, "&+YA deep anger overcomes you as %s captures %s&+Y.&n\r\n", GET_NAME(ch), flag->short_description);
+		snprintf(buff, MAX_STRING_LENGTH,
+			 "&+YA calming feeling washes over you as %s captures %s&+Y.&n\r\n",
+			 GET_NAME(ch), flag->short_description);
+		snprintf(buff2, MAX_STRING_LENGTH,
+			 "&+YA deep anger overcomes you as %s captures %s&+Y.&n\r\n", GET_NAME(ch),
+			 flag->short_description);
 	}
 	ctf_notify(buff, GET_RACEWAR(ch));
 	ctf_notify(buff2, (GET_RACEWAR(ch) == 1 ? 2 : 1));
@@ -519,15 +576,18 @@ void capture_flag(P_char ch, P_obj flag, int id)
 		if (ctfdata[id].type == CTF_RANDOM)
 		{
 			ctfdata[id].room = ctf_get_random_room(id);
-			snprintf(buff, MAX_STRING_LENGTH, "&+Lthe flag of&n %s&n", zone_table[world[real_room0(ctfdata[id].room)].zone].name);
+			snprintf(buff, MAX_STRING_LENGTH, "&+Lthe flag of&n %s&n",
+				 zone_table[world[real_room0(ctfdata[id].room)].zone].name);
 			set_short_description(ctfdata[id].obj, buff);
-			snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "&+L is here.&n");
+			snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+				 "&+L is here.&n");
 			set_long_description(ctfdata[id].obj, buff);
 		}
 		if (ctfdata[id].room > 0)
 		{
 			obj_to_room(flag, real_room0(ctfdata[id].room));
-			send_to_room_f(real_room0(ctfdata[id].room), "%s &nappears.\r\n", flag->short_description);
+			send_to_room_f(real_room0(ctfdata[id].room), "%s &nappears.\r\n",
+				       flag->short_description);
 		}
 	}
 	check_boon_completion(ch, NULL, id, BOPT_CTF);
@@ -538,11 +598,8 @@ void capture_flag(P_char ch, P_obj flag, int id)
 int add_ctf_entry(P_char ch, int flagtype, int type)
 {
 	if (qry("INSERT INTO ctf_data (time, pid, type, flagtype, racewar) VALUES "
-	        "(NOW(), %d, %d, %d, %d)",
-	        GET_PID(ch),
-	        type,
-	        flagtype,
-	        GET_RACEWAR(ch)))
+		"(NOW(), %d, %d, %d, %d)",
+		GET_PID(ch), type, flagtype, GET_RACEWAR(ch)))
 		return TRUE;
 
 	return FALSE;
@@ -551,7 +608,7 @@ int add_ctf_entry(P_char ch, int flagtype, int type)
 void show_ctf(P_char ch)
 {
 	char buff[MAX_STRING_LENGTH], buff2[MAX_STRING_LENGTH];
-	int  i;
+	int i;
 
 	send_to_char("&+WCapture The Flag&n\r\n", ch);
 	snprintf(buff, MAX_STRING_LENGTH, "%-2s %-60s %-60s\r\n", "ID", "Flag", "Location");
@@ -560,19 +617,29 @@ void show_ctf(P_char ch)
 	{
 		if (ctfdata[i].room && ctfdata[i].obj)
 		{
-			snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-2d %-60s ", ctfdata[i].id, pad_ansi(ctfdata[i].obj->short_description, 60).c_str());
+			snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+				 "%-2d %-60s ", ctfdata[i].id,
+				 pad_ansi(ctfdata[i].obj->short_description, 60).c_str());
 			if (OBJ_ROOM(ctfdata[i].obj))
 			{
-				snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-60s\r\n", pad_ansi(world[ctfdata[i].obj->loc.room].name, 60).c_str());
+				snprintf(
+					buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+					"%-60s\r\n",
+					pad_ansi(world[ctfdata[i].obj->loc.room].name, 60).c_str());
 			}
 			else if (get_flag_carrier(i))
 			{
-				snprintf(buff2, MAX_STRING_LENGTH, "Carried by %s in %s", GET_NAME(get_flag_carrier(i)), pad_ansi(world[get_flag_carrier(i)->in_room].name, 60).c_str());
-				snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-60s\r\n", buff2);
+				snprintf(buff2, MAX_STRING_LENGTH, "Carried by %s in %s",
+					 GET_NAME(get_flag_carrier(i)),
+					 pad_ansi(world[get_flag_carrier(i)->in_room].name, 60)
+						 .c_str());
+				snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+					 "%-60s\r\n", buff2);
 			}
 			else
 			{
-				snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-60s\r\n", "Unknown location");
+				snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+					 "%-60s\r\n", "Unknown location");
 			}
 		}
 	}
@@ -587,9 +654,9 @@ void show_ctf_score(P_char ch, char *argument)
 	char arg[MAX_STRING_LENGTH];
 	char buff[MAX_STRING_LENGTH];
 	char dbqry[MAX_STRING_LENGTH];
-	int  type     = 0;
-	int  flagtype = 0;
-	int  racewar  = 0;
+	int type = 0;
+	int flagtype = 0;
+	int racewar = 0;
 
 	send_to_char_f(ch, "&+W%-30s %-3s\r\n", "Name", "Score");
 
@@ -646,19 +713,24 @@ void show_ctf_score(P_char ch, char *argument)
 	if (racewar || type || flagtype)
 		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " WHERE");
 	if (racewar)
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " racewar = %d", racewar);
+		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " racewar = %d",
+			 racewar);
 	if ((racewar && type) || (racewar && flagtype))
 		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " AND");
 	if (type)
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " type = %d", type);
+		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " type = %d",
+			 type);
 	if (type && flagtype)
 		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " AND");
 	if (flagtype == 1)
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " flagtype = %d", CTF_PRIMARY);
+		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " flagtype = %d",
+			 CTF_PRIMARY);
 	if (flagtype == 2)
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " flagtype BETWEEN %d AND %d", CTF_SECONDARY, CTF_MAX);
+		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry),
+			 " flagtype BETWEEN %d AND %d", CTF_SECONDARY, CTF_MAX);
 
-	snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " GROUP BY pid ORDER BY score DESC LIMIT 10");
+	snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry),
+		 " GROUP BY pid ORDER BY score DESC LIMIT 10");
 
 	if (!qry(dbqry))
 	{
@@ -668,7 +740,8 @@ void show_ctf_score(P_char ch, char *argument)
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return;
 	}
@@ -685,7 +758,8 @@ void show_ctf_score(P_char ch, char *argument)
 	*buff = '\0';
 	while ((row = mysql_fetch_row(res)))
 	{
-		snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-30s %-3d\r\n", get_player_name_from_pid(atoi(row[1])), atoi(row[0]));
+		snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-30s %-3d\r\n",
+			 get_player_name_from_pid(atoi(row[1])), atoi(row[0]));
 	}
 
 	mysql_free_result(res);
@@ -699,7 +773,7 @@ void do_ctf(P_char ch, char *arg, int cmd)
 {
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
 	char arg3[MAX_STRING_LENGTH];
-	int  i;
+	int i;
 
 	// half_chop(arg, arg1, arg2);
 	arg = one_argument(arg, arg1);
@@ -736,8 +810,8 @@ void do_ctf(P_char ch, char *arg, int cmd)
 
 	if (!strcmp(arg1, "bonus") && IS_TRUSTED(ch))
 	{
-		arg         = one_argument(arg, arg2);
-		int    amnt = 1;
+		arg = one_argument(arg, arg2);
+		int amnt = 1;
 		P_char vict = get_char(arg2);
 		if (!vict)
 		{
@@ -750,7 +824,8 @@ void do_ctf(P_char ch, char *arg, int cmd)
 			amnt = atoi(arg3);
 			if (amnt <= 0)
 			{
-				send_to_char("You can't grant them a bonus of 0 or less silly.\r\n", ch);
+				send_to_char("You can't grant them a bonus of 0 or less silly.\r\n",
+					     ch);
 				return;
 			}
 		}
@@ -780,7 +855,8 @@ void ctf_populate_boons()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return;
 	}
@@ -828,9 +904,9 @@ int ctf_use_boon(BoonData *bdata)
 
 int ctf_reload_flag(int id)
 {
-	char           buff[MAX_STRING_LENGTH];
-	int            i;
-	P_desc         td;
+	char buff[MAX_STRING_LENGTH];
+	int i;
+	P_desc td;
 	affected_type *afp;
 
 	if (id <= 0)
@@ -885,9 +961,11 @@ int ctf_reload_flag(int id)
 	if (ctfdata[id].type == CTF_RANDOM)
 		ctfdata[id].room = ctf_get_random_room(id);
 
-	if (ctfdata[id].type == CTF_SECONDARY || ctfdata[id].type == CTF_BOON || ctfdata[id].type == CTF_RANDOM)
+	if (ctfdata[id].type == CTF_SECONDARY || ctfdata[id].type == CTF_BOON ||
+	    ctfdata[id].type == CTF_RANDOM)
 	{
-		snprintf(buff, MAX_STRING_LENGTH, "&+Lthe flag of&n %s&n", zone_table[world[real_room0(ctfdata[i].room)].zone].name);
+		snprintf(buff, MAX_STRING_LENGTH, "&+Lthe flag of&n %s&n",
+			 zone_table[world[real_room0(ctfdata[i].room)].zone].name);
 		set_short_description(ctfdata[id].obj, buff);
 		snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "&+L is here.&n");
 		set_long_description(ctfdata[id].obj, buff);
@@ -899,7 +977,7 @@ int ctf_reload_flag(int id)
 
 P_char get_flag_carrier(int id)
 {
-	P_desc         td;
+	P_desc td;
 	affected_type *afp;
 
 	if (ctfdata[id].obj != NULL && !OBJ_ROOM(ctfdata[id].obj))
@@ -921,7 +999,7 @@ P_char get_flag_carrier(int id)
 
 void ctf_delete_flag(int id)
 {
-	P_char         ch;
+	P_char ch;
 	affected_type *afp;
 
 	if (!ctfdata[id].id)
@@ -937,7 +1015,8 @@ void ctf_delete_flag(int id)
 	{
 		afp = get_spell_from_char(ch, TAG_CTF);
 		affect_remove(ch, afp);
-		send_to_char_f(ch, "Suddenly the %s &ndissapears from you posession!\r\n", ctfdata[id].obj->short_description);
+		send_to_char_f(ch, "Suddenly the %s &ndissapears from you posession!\r\n",
+			       ctfdata[id].obj->short_description);
 	}
 
 	extract_obj(ctfdata[id].obj);
@@ -948,10 +1027,10 @@ int ctf_get_random_room(int id)
 {
 	vector<epic_zone_data> epic_zones = get_epic_zones();
 
-	int   epic_zone   = 0;
-	int   zone_number = 0;
-	int   room        = 0;
-	P_obj obj         = NULL;
+	int epic_zone = 0;
+	int zone_number = 0;
+	int room = 0;
+	P_obj obj = NULL;
 
 	while (!room)
 	{
@@ -964,7 +1043,8 @@ int ctf_get_random_room(int id)
 			if (obj_zone_id(obj) != zone_number)
 				continue;
 			int obj_vnum = obj_index[obj->R_num].virtual_number;
-			if (obj_vnum != EPIC_SMALL_STONE && obj_vnum != EPIC_LARGE_STONE && obj_vnum != EPIC_MONOLITH)
+			if (obj_vnum != EPIC_SMALL_STONE && obj_vnum != EPIC_LARGE_STONE &&
+			    obj_vnum != EPIC_MONOLITH)
 				continue;
 			room = world[obj_room_id(obj)].number;
 			if (room < 0)
@@ -1017,10 +1097,10 @@ void ctf_update_bonus(P_char ch)
 	else
 	{
 		memset(&af, 0, sizeof(af));
-		af.type     = TAG_CTF_BONUS;
+		af.type = TAG_CTF_BONUS;
 		af.modifier = 1;
 		af.duration = -1;
-		af.flags    = AFFTYPE_NODISPEL | AFFTYPE_NOMSG;
+		af.flags = AFFTYPE_NODISPEL | AFFTYPE_NOMSG;
 		affect_to_char(ch, &af);
 	}
 	return;

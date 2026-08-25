@@ -60,18 +60,18 @@
  * external variables
  */
 extern struct time_info_data time_info;
-extern P_desc                descriptor_list;
+extern P_desc descriptor_list;
 
 extern char debug_mode;
-extern int  hometown[];
-extern int  no_specials;
-extern int  pulse; /*
+extern int hometown[];
+extern int no_specials;
+extern int pulse; /*
                     * TAM 2/94
                     */
-extern P_char  character_list;
+extern P_char character_list;
 extern P_index mob_index;
 extern P_index obj_index;
-extern P_room  world;
+extern P_room world;
 
 bool command_confirm;
 
@@ -611,7 +611,7 @@ const char *command[MAX_CMD] = {
 	"shapechange",
 	"assist",
 	"doorbash",
-	"exp",    /*
+	"exp", /*
                * 400
                */
 	"expkkk", // Arih: for debugging exp bug
@@ -1106,11 +1106,12 @@ const char *command[MAX_CMD] = {
 	"\n" /* MAX_CMD = 856, MAX_CMD_LIST = 1000 */
 };
 
-const char *fill_words[] = {"in", "from", "with", "the", "on", "at", "to", "\n"};
+const char *fill_words[] = { "in", "from", "with", "the", "on", "at", "to", "\n" };
 
 // Rude words that should not be found in names/ship names.
 // Please keep in alpha order to make sure no duplicates.
-const char *rude_ass[] = {"ass", "bitch", "cunt", "pussy", "dick", "fuck", "penis", "shit", "nigger", "nazi", "\n"};
+const char *rude_ass[] = { "ass",   "bitch", "cunt",   "pussy", "dick", "fuck",
+			   "penis", "shit",  "nigger", "nazi",	"\n" };
 
 int search_block(char *arg, const char **list, int exact)
 {
@@ -1146,7 +1147,8 @@ int search_block(char *arg, const char **list, int exact)
 	return (-1);
 }
 
-int old_search_block(const char *argument, const uint begin, uint length, const char **list, const int mode)
+int old_search_block(const char *argument, const uint begin, uint length, const char **list,
+		     const int mode)
 {
 	int guess, found, search;
 
@@ -1251,7 +1253,8 @@ void do_confirm(P_char ch, bool yes)
 		founder = world[ch->in_room].people;
 		while (founder)
 		{
-			if (IS_NPC(founder) && (mob_index[GET_RNUM(founder)].func.mob == assoc_founder))
+			if (IS_NPC(founder) &&
+			    (mob_index[GET_RNUM(founder)].func.mob == assoc_founder))
 				break;
 			founder = founder->next_in_room;
 		}
@@ -1287,9 +1290,9 @@ void do_confirm(P_char ch, bool yes)
  */
 void command_interpreter(P_char ch, char *argument)
 {
-	uint   look_at, begin, old_room;
-	int    cmd, i, j, k, current;
-	const char  *ch_ptr;
+	uint look_at, begin, old_room;
+	int cmd, i, j, k, current;
+	const char *ch_ptr;
 	P_char target, master, exec_char = ch;
 
 	if (debug_mode)
@@ -1301,7 +1304,9 @@ void command_interpreter(P_char ch, char *argument)
 	{
 		if (GET_LEVEL(ch) == MAXLVL)
 		{
-			send_to_char("Your &+Wpower&n ovverides the &+Cice&n that surrounds you.\n\r", ch);
+			send_to_char(
+				"Your &+Wpower&n ovverides the &+Cice&n that surrounds you.\n\r",
+				ch);
 		}
 		else
 		{
@@ -1367,10 +1372,12 @@ void command_interpreter(P_char ch, char *argument)
 	if (IS_PC(ch) && locker_async_player_obj_locked(ch))
 	{
 		if (cmd == CMD_GET || cmd == CMD_TAKE || cmd == CMD_DROP || cmd == CMD_PUT ||
-		    cmd == CMD_GIVE || cmd == CMD_WEAR || cmd == CMD_REMOVE || cmd == CMD_EQUIPMENT ||
-		    cmd == CMD_OPEN || cmd == CMD_CLOSE || cmd == CMD_GRANT)
+		    cmd == CMD_GIVE || cmd == CMD_WEAR || cmd == CMD_REMOVE ||
+		    cmd == CMD_EQUIPMENT || cmd == CMD_OPEN || cmd == CMD_CLOSE || cmd == CMD_GRANT)
 		{
-			send_to_char("Your belongings are being secured for storage. Please wait a moment.\r\n", ch);
+			send_to_char(
+				"Your belongings are being secured for storage. Please wait a moment.\r\n",
+				ch);
 			return;
 		}
 	}
@@ -1393,7 +1400,8 @@ void command_interpreter(P_char ch, char *argument)
 	if (world[ch->in_room].current_speed && !IS_TRUSTED(ch))
 	{
 		// If there's water and they're in it and not calling on Gods for help.
-		if (IS_WATER_ROOM(ch->in_room) && !IS_AFFECTED(ch, AFF_LEVITATE) && !IS_AFFECTED(ch, AFF_FLY) && cmd != CMD_PETITION)
+		if (IS_WATER_ROOM(ch->in_room) && !IS_AFFECTED(ch, AFF_LEVITATE) &&
+		    !IS_AFFECTED(ch, AFF_FLY) && cmd != CMD_PETITION)
 		{
 			if (number(1, 101) < world[ch->in_room].current_speed)
 			{
@@ -1413,9 +1421,13 @@ void command_interpreter(P_char ch, char *argument)
 		{
 			send_to_char("You're busy spellcasting!\r\n", ch);
 			if (IS_TRUSTED(ch))
-				send_to_char("&+YTry 'return' or you can petition other gods for help if you're stuck.&n\r\n", ch);
+				send_to_char(
+					"&+YTry 'return' or you can petition other gods for help if you're stuck.&n\r\n",
+					ch);
 			else
-				send_to_char("If you think you're stuck, you can still petition.\r\n", ch);
+				send_to_char(
+					"If you think you're stuck, you can still petition.\r\n",
+					ch);
 			return;
 		}
 	}
@@ -1426,7 +1438,9 @@ void command_interpreter(P_char ch, char *argument)
 			// Channel spell is multi-cast spell to create an avatar mob.
 			if (!(affected_by_spell(ch, SPELL_CHANNEL) && cmd == CMD_SAY))
 			{
-				send_to_char("Being knocked unconscious strictly limits what you can do.\r\n", ch);
+				send_to_char(
+					"Being knocked unconscious strictly limits what you can do.\r\n",
+					ch);
 				return;
 			}
 		}
@@ -1437,13 +1451,8 @@ void command_interpreter(P_char ch, char *argument)
 	// mortals may never use the magical newline
 	if (!IS_TRUSTED(ch))
 	{
-		if (!(cmd == CMD_SOCIETY
-		   || cmd == CMD_CONSTRUCT
-		   || cmd == CMD_BUY
-		   || cmd == CMD_RENAME
-		   || cmd == CMD_TESTCOLOR
-		   || cmd == CMD_MAPGLYPHS
-		   ))
+		if (!(cmd == CMD_SOCIETY || cmd == CMD_CONSTRUCT || cmd == CMD_BUY ||
+		      cmd == CMD_RENAME || cmd == CMD_TESTCOLOR || cmd == CMD_MAPGLYPHS))
 		{
 			for (ch_ptr = argument; *ch_ptr != '\0'; ch_ptr++)
 			{
@@ -1451,17 +1460,19 @@ void command_interpreter(P_char ch, char *argument)
 				{
 					switch (*(ch_ptr + 1))
 					{
-						case '+':
-						case '-':
-						case '=':
-						case 'n':
-						case 'N':
-							send_to_char("Pardon? No ansi chars allowed as input.\r\n", ch);
-							return;
-							break;
-						case '&':
-							ch_ptr++;
-							break;
+					case '+':
+					case '-':
+					case '=':
+					case 'n':
+					case 'N':
+						send_to_char(
+							"Pardon? No ansi chars allowed as input.\r\n",
+							ch);
+						return;
+						break;
+					case '&':
+						ch_ptr++;
+						break;
 					}
 				}
 			}
@@ -1475,11 +1486,13 @@ void command_interpreter(P_char ch, char *argument)
 			um = &u_ascii;
 		if (um)
 		{
-			for (ch_ptr = argument; *ch_ptr; )
+			for (ch_ptr = argument; *ch_ptr;)
 			{
 				int c = get_utf8(ch_ptr);
 				if (c >= 127 && !(*um)[c])
-					return send_to_char("Pardon? No fancy characters allowed as input.\n", ch);
+					return send_to_char(
+						"Pardon? No fancy characters allowed as input.\n",
+						ch);
 			}
 		}
 
@@ -1488,92 +1501,120 @@ void command_interpreter(P_char ch, char *argument)
 		{
 			if (*ch_ptr == '!' && *(ch_ptr + 1) == '!' && isupper(*(ch_ptr + 2)))
 			{
-				send_to_char("Pardon? No sound sequences allowed as input.\r\n", ch);
+				send_to_char("Pardon? No sound sequences allowed as input.\r\n",
+					     ch);
 				return;
 			}
 		}
 	}
 	if ((cmd > 0) && (cmd_info[cmd].command_pointer != 0))
 	{
-		if (!MIN_POS(ch, cmd_info[cmd].minimum_position) || ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && !cmd_info[cmd].in_battle))
+		if (!MIN_POS(ch, cmd_info[cmd].minimum_position) ||
+		    ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && !cmd_info[cmd].in_battle))
 		{
 			if (GET_STAT(ch) < (cmd_info[cmd].minimum_position & STAT_MASK))
 			{
 				switch (GET_STAT(ch))
 				{
-					case STAT_DEAD:
-						send_to_char("Lie still; you are DEAD!!!\r\n", ch);
-						break;
-					case STAT_INCAP:
-					case STAT_DYING:
-						send_to_char("You are in pretty bad shape, unable to do anything!\r\n", ch);
-						break;
-					case STAT_SLEEPING:
-						send_to_char("In your dreams, or what?\r\n", ch);
-						break;
-					case STAT_RESTING:
-						send_to_char("Nah... You feel too relaxed to do that...\r\n", ch);
-						break;
+				case STAT_DEAD:
+					send_to_char("Lie still; you are DEAD!!!\r\n", ch);
+					break;
+				case STAT_INCAP:
+				case STAT_DYING:
+					send_to_char(
+						"You are in pretty bad shape, unable to do anything!\r\n",
+						ch);
+					break;
+				case STAT_SLEEPING:
+					send_to_char("In your dreams, or what?\r\n", ch);
+					break;
+				case STAT_RESTING:
+					send_to_char(
+						"Nah... You feel too relaxed to do that...\r\n",
+						ch);
+					break;
 				}
 			}
 			if (GET_POS(ch) < (cmd_info[cmd].minimum_position & 3))
 				switch (GET_POS(ch))
 				{
-					case POS_PRONE:
-						send_to_char("Sorry, you can't do that while laying around.\r\n", ch);
-						break;
-					case POS_KNEELING:
-						send_to_char("Maybe you should get up off your knees first?\r\n", ch);
-						break;
-					case POS_SITTING:
-						send_to_char("Maybe you should get on your feet first?\r\n", ch);
-						break;
+				case POS_PRONE:
+					send_to_char(
+						"Sorry, you can't do that while laying around.\r\n",
+						ch);
+					break;
+				case POS_KNEELING:
+					send_to_char(
+						"Maybe you should get up off your knees first?\r\n",
+						ch);
+					break;
+				case POS_SITTING:
+					send_to_char("Maybe you should get on your feet first?\r\n",
+						     ch);
+					break;
 				}
 			if ((IS_FIGHTING(ch) || IS_DESTROYING(ch)) && !cmd_info[cmd].in_battle)
-				send_to_char("Sorry, you aren't allowed to do that in combat.\r\n", ch);
+				send_to_char("Sorry, you aren't allowed to do that in combat.\r\n",
+					     ch);
 			return;
 		}
 		else
 		{
 			// Always allow Imms to return to their own body.
-			if (cmd == CMD_RETURN && ch->desc && ch->desc->original && IS_TRUSTED(ch->desc->original))
+			if (cmd == CMD_RETURN && ch->desc && ch->desc->original &&
+			    IS_TRUSTED(ch->desc->original))
 			{
 				do_return(ch, 0, CMD_RETURN);
 			}
-			if ((IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS)) && !CAN_CMD_PARALYSIS(cmd) && !IS_TRUSTED(ch))
+			if ((IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) ||
+			     IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS)) &&
+			    !CAN_CMD_PARALYSIS(cmd) && !IS_TRUSTED(ch))
 			{
 				if ((IS_NPC(ch) || IS_NPC(ch)) && ch->following)
-					send_to_char("It can't being paralyzed.\r\n", ch->following);
+					send_to_char("It can't being paralyzed.\r\n",
+						     ch->following);
 				else if (ch)
-					send_to_char("You can't!  You're paralyzed to the bone.\r\n", ch);
+					send_to_char(
+						"You can't!  You're paralyzed to the bone.\r\n",
+						ch);
 				return;
 			}
 			if (affected_by_spell(ch, SKILL_GAZE))
 			{
-				send_to_char("You are too petrified with fear to try that.\r\n", ch);
+				send_to_char("You are too petrified with fear to try that.\r\n",
+					     ch);
 				return;
 			}
 			if (affected_by_spell(ch, SKILL_RESTRAIN))
 			{
-				send_to_char("&+LYou are being restrained by a band of &+rminions&+L right now!\r\n", ch);
+				send_to_char(
+					"&+LYou are being restrained by a band of &+rminions&+L right now!\r\n",
+					ch);
 				return;
 			}
 			if ((target = get_linked_char(ch, LNK_ESSENCE_OF_WOLF)))
 			{
 				clear_links(ch, LNK_ESSENCE_OF_WOLF);
 			}
-			if (IS_AFFECTED2(ch, AFF2_SCRIBING) && (cmd != CMD_PETITION && cmd != CMD_TELL && cmd != CMD_MOVE && cmd != CMD_LOOK && cmd != CMD_WHISPER && cmd != CMD_FORAGE))
+			if (IS_AFFECTED2(ch, AFF2_SCRIBING) &&
+			    (cmd != CMD_PETITION && cmd != CMD_TELL && cmd != CMD_MOVE &&
+			     cmd != CMD_LOOK && cmd != CMD_WHISPER && cmd != CMD_FORAGE))
 			{
-				send_to_char("You're busy scribing a spell into your spellbook!\r\n", ch);
+				send_to_char(
+					"You're busy scribing a spell into your spellbook!\r\n",
+					ch);
 				return;
 			}
 			if (affected_by_spell(ch, SKILL_WHIRLWIND))
 			{
-				send_to_char("You slow down unable to stay fully focused on melee.\n", ch);
+				send_to_char(
+					"You slow down unable to stay fully focused on melee.\n",
+					ch);
 				affect_from_char(ch, SKILL_WHIRLWIND);
 			}
 			/*   charmees who are not naturally aggro, may not follow aggro order   */
-			if (IS_AGG_CMD(cmd) && IS_SET(ch->specials.affected_by, AFF_CHARM) && (IS_PC(ch) || !IS_SET(ch->only.npc->aggro_flags, AGGR_ALL)))
+			if (IS_AGG_CMD(cmd) && IS_SET(ch->specials.affected_by, AFF_CHARM) &&
+			    (IS_PC(ch) || !IS_SET(ch->only.npc->aggro_flags, AGGR_ALL)))
 			{
 				i = number(1, 101);
 
@@ -1590,31 +1631,46 @@ void command_interpreter(P_char ch, char *argument)
 					i = MAX(1, i - 25);
 				}
 
-				if (ch->following && ((IS_UNDEADRACE(ch) && GET_CLASS(ch->following, CLASS_NECROMANCER)) || (IS_THEURPET_RACE(ch) && GET_CLASS(ch->following, CLASS_THEURGIST))))
+				if (ch->following &&
+				    ((IS_UNDEADRACE(ch) &&
+				      GET_CLASS(ch->following, CLASS_NECROMANCER)) ||
+				     (IS_THEURPET_RACE(ch) &&
+				      GET_CLASS(ch->following, CLASS_THEURGIST))))
 				{
 					i = 0;
 				}
 
-				if (IS_ANIMAL(ch) && GET_SPEC(ch->following, CLASS_SHAMAN, SPEC_ANIMALIST))
+				if (IS_ANIMAL(ch) &&
+				    GET_SPEC(ch->following, CLASS_SHAMAN, SPEC_ANIMALIST))
 				{
 					i >>= 1;
 				}
 
 				if (ch->following && GET_CLASS(ch->following, CLASS_MINDFLAYER))
 				{
-					i = i - GET_C_POW(ch->following); /* illithids get power bonus */
+					i = i -
+					    GET_C_POW(
+						    ch->following); /* illithids get power bonus */
 				}
 
-				if (ch->following && (i > (BOUNDED(0, GET_C_CHA(ch->following), 100))) && !number(0, 2))
+				if (ch->following &&
+				    (i > (BOUNDED(0, GET_C_CHA(ch->following), 100))) &&
+				    !number(0, 2))
 				{
-					if (((IS_UNDEADRACE(ch) || IS_THEURPET_RACE(ch)) && IS_NPC(ch)) || IS_ELEMENTAL(ch))
+					if (((IS_UNDEADRACE(ch) || IS_THEURPET_RACE(ch)) &&
+					     IS_NPC(ch)) ||
+					    IS_ELEMENTAL(ch))
 					{
 						REMOVE_BIT(ch->specials.affected_by, AFF_CHARM);
 					}
 
-					send_to_char("&+LUh oh. They don't seem to have agreed with that &+Wlast order.\r\n", ch->following);
+					send_to_char(
+						"&+LUh oh. They don't seem to have agreed with that &+Wlast order.\r\n",
+						ch->following);
 
-					if ((IS_UNDEADRACE(ch) || IS_THEURPET_RACE(ch)) && IS_NPC(ch) && !IS_SET(ch->only.npc->aggro_flags, AGGR_ALL))
+					if ((IS_UNDEADRACE(ch) || IS_THEURPET_RACE(ch)) &&
+					    IS_NPC(ch) &&
+					    !IS_SET(ch->only.npc->aggro_flags, AGGR_ALL))
 					{
 						SET_BIT(ch->only.npc->aggro_flags, AGGR_ALL);
 					}
@@ -1628,17 +1684,22 @@ void command_interpreter(P_char ch, char *argument)
 			if (!can_exec_cmd(ch, cmd))
 			{
 				// If we have a switched Imm
-				if (ch->desc && ch->desc->original && can_exec_cmd(ch->desc->original, cmd))
+				if (ch->desc && ch->desc->original &&
+				    can_exec_cmd(ch->desc->original, cmd))
 				{
 					if (ch->desc->original->desc == ch->desc)
 					{
-						send_to_char("&+WYou feel holy as you execute a Imm command while switched.\n\r", ch);
+						send_to_char(
+							"&+WYou feel holy as you execute a Imm command while switched.\n\r",
+							ch);
 						// Executing char gets the Imm's char.
 						exec_char = ch->desc->original;
 					}
 					else
 					{
-						send_to_char("&+YYou can not use Imm commands while switched in silent mode.\r\n", ch);
+						send_to_char(
+							"&+YYou can not use Imm commands while switched in silent mode.\r\n",
+							ch);
 						return;
 					}
 				}
@@ -1648,95 +1709,150 @@ void command_interpreter(P_char ch, char *argument)
 					return;
 				}
 			}
-			if (((cmd_info[cmd].minimum_position & STAT_MASK) > STAT_SLEEPING) || (cmd_info[cmd].command_pointer == do_action))
+			if (((cmd_info[cmd].minimum_position & STAT_MASK) > STAT_SLEEPING) ||
+			    (cmd_info[cmd].command_pointer == do_action))
 			{
 				// Kill minor invis if applicable.
-				if ((cmd != CMD_LOOK) && (cmd != CMD_MEMORIZE) && (cmd != CMD_GCC) && (cmd != CMD_HELP) && (cmd != CMD_PRAY) && (cmd != CMD_REST) && (cmd != CMD_SLEEP) && (cmd != CMD_SIT) &&
-				    (cmd != CMD_RECLINE) && (cmd != CMD_EAT) && (cmd != CMD_DRINK) && (cmd != CMD_MEDITATE) && (cmd != CMD_RWC) && (cmd != CMD_ASSIMILATE) && IS_AFFECTED2(exec_char, AFF2_CONCEALMENT))
+				if ((cmd != CMD_LOOK) && (cmd != CMD_MEMORIZE) &&
+				    (cmd != CMD_GCC) && (cmd != CMD_HELP) && (cmd != CMD_PRAY) &&
+				    (cmd != CMD_REST) && (cmd != CMD_SLEEP) && (cmd != CMD_SIT) &&
+				    (cmd != CMD_RECLINE) && (cmd != CMD_EAT) &&
+				    (cmd != CMD_DRINK) && (cmd != CMD_MEDITATE) &&
+				    (cmd != CMD_RWC) && (cmd != CMD_ASSIMILATE) &&
+				    IS_AFFECTED2(exec_char, AFF2_CONCEALMENT))
 				{
-					send_to_char("You reappear, visible to all.\r\n", exec_char);
+					send_to_char("You reappear, visible to all.\r\n",
+						     exec_char);
 					affect_from_char(ch, SPELL_CONCEALMENT);
 				}
 				// Kill hide if applicable
-				if (((cmd != CMD_LOOK) && (cmd != CMD_LISTEN) && (cmd != CMD_SNEAK) && (cmd != CMD_GLANCE) && (cmd != CMD_READ) && (cmd != CMD_STEAL) && (cmd != CMD_SCAN) &&
+				if (((cmd != CMD_LOOK) && (cmd != CMD_LISTEN) &&
+				     (cmd != CMD_SNEAK) && (cmd != CMD_GLANCE) &&
+				     (cmd != CMD_READ) && (cmd != CMD_STEAL) && (cmd != CMD_SCAN) &&
 				     IS_SET(exec_char->specials.affected_by, AFF_HIDE)))
 				{
 					// Ambush.. allows one to stay hidden through tackle/backstab/headbutt?
 					if (affected_by_spell(exec_char, SKILL_AMBUSH))
 					{
-						if (cmd == CMD_TACKLE || cmd == CMD_BACKSTAB || cmd == CMD_HEADBUTT || cmd == CMD_APPLY)
+						if (cmd == CMD_TACKLE || cmd == CMD_BACKSTAB ||
+						    cmd == CMD_HEADBUTT || cmd == CMD_APPLY)
 						{
-							if (number(0, 101) < GET_CHAR_SKILL(exec_char, SKILL_AMBUSH))
+							if (number(0, 101) <
+							    GET_CHAR_SKILL(exec_char, SKILL_AMBUSH))
 							{
-								send_to_char("&+LYou remain well prepared.&n\r\n", ch);
+								send_to_char(
+									"&+LYou remain well prepared.&n\r\n",
+									ch);
 							}
 							else
 							{
-								notch_skill(exec_char, SKILL_AMBUSH, 1);
-								affect_from_char(exec_char, SKILL_AMBUSH);
-								REMOVE_BIT(exec_char->specials.affected_by5, AFF5_SHADE_MOVEMENT);
-								REMOVE_BIT(exec_char->specials.affected_by, AFF_HIDE);
+								notch_skill(exec_char, SKILL_AMBUSH,
+									    1);
+								affect_from_char(exec_char,
+										 SKILL_AMBUSH);
+								REMOVE_BIT(exec_char->specials
+										   .affected_by5,
+									   AFF5_SHADE_MOVEMENT);
+								REMOVE_BIT(exec_char->specials
+										   .affected_by,
+									   AFF_HIDE);
 							}
 						}
 						else
 						{
 							notch_skill(exec_char, SKILL_AMBUSH, 2);
 							affect_from_char(exec_char, SKILL_AMBUSH);
-							REMOVE_BIT(exec_char->specials.affected_by5, AFF5_SHADE_MOVEMENT);
-							REMOVE_BIT(exec_char->specials.affected_by, AFF_HIDE);
+							REMOVE_BIT(exec_char->specials.affected_by5,
+								   AFF5_SHADE_MOVEMENT);
+							REMOVE_BIT(exec_char->specials.affected_by,
+								   AFF_HIDE);
 						}
 					}
 					// Shade movement allows one to stay hidden while walking in shadows (if there are any).
-					else if (IS_SET(exec_char->specials.affected_by5, AFF5_SHADE_MOVEMENT))
+					else if (IS_SET(exec_char->specials.affected_by5,
+							AFF5_SHADE_MOVEMENT))
 					{
 						// 1..6 or 541 .. 548 .. movement commands.  Must be a dark room to stay hidden.
-						if (!((cmd >= CMD_NORTH && cmd <= CMD_DOWN) || (cmd >= CMD_NORTHWEST && cmd <= CMD_SE)) || IS_SUNLIT(exec_char->in_room) || IS_TWILIGHT_ROOM(exec_char->in_room))
+						if (!((cmd >= CMD_NORTH && cmd <= CMD_DOWN) ||
+						      (cmd >= CMD_NORTHWEST && cmd <= CMD_SE)) ||
+						    IS_SUNLIT(exec_char->in_room) ||
+						    IS_TWILIGHT_ROOM(exec_char->in_room))
 						{
-							send_to_char("&+LYou quickly step out of the shadow.&n\r\n", exec_char);
-							REMOVE_BIT(exec_char->specials.affected_by5, AFF5_SHADE_MOVEMENT);
-							REMOVE_BIT(exec_char->specials.affected_by, AFF_HIDE);
+							send_to_char(
+								"&+LYou quickly step out of the shadow.&n\r\n",
+								exec_char);
+							REMOVE_BIT(exec_char->specials.affected_by5,
+								   AFF5_SHADE_MOVEMENT);
+							REMOVE_BIT(exec_char->specials.affected_by,
+								   AFF_HIDE);
 						}
 					}
 					// Shadow merge allows one to stay hidden while following.
 					else if (affected_by_spell(exec_char, SPELL_SHADOW_MERGE))
 					{
 						// 1..6 or 541 .. 548 .. movement commands.  Allowing
-						if (((cmd >= CMD_NORTH && cmd <= CMD_DOWN) || (cmd >= CMD_NORTHWEST && cmd <= CMD_SE)) && IS_AFFECTED5(exec_char, AFF5_FOLLOWING))
+						if (((cmd >= CMD_NORTH && cmd <= CMD_DOWN) ||
+						     (cmd >= CMD_NORTHWEST && cmd <= CMD_SE)) &&
+						    IS_AFFECTED5(exec_char, AFF5_FOLLOWING))
 						{
-							send_to_char("You move in the &+Lshadows&n.\r\n", exec_char);
+							send_to_char(
+								"You move in the &+Lshadows&n.\r\n",
+								exec_char);
 						}
 						else
 						{
-							send_to_char("You step out of the &+Lshadows&n.\r\n", exec_char);
-							if (affected_by_spell(exec_char, SPELL_SHADOW_MERGE))
+							send_to_char(
+								"You step out of the &+Lshadows&n.\r\n",
+								exec_char);
+							if (affected_by_spell(exec_char,
+									      SPELL_SHADOW_MERGE))
 							{
-								affect_from_char(exec_char, SPELL_SHADOW_MERGE);
+								affect_from_char(
+									exec_char,
+									SPELL_SHADOW_MERGE);
 							}
-							REMOVE_BIT(exec_char->specials.affected_by, AFF_HIDE);
+							REMOVE_BIT(exec_char->specials.affected_by,
+								   AFF_HIDE);
 						}
 					}
-					else if (affected_by_spell(exec_char, SPELL_SHADOW_PROJECTION))
+					else if (affected_by_spell(exec_char,
+								   SPELL_SHADOW_PROJECTION))
 					{
-						if ((IS_AGG_CMD(cmd) || (cmd == CMD_OPEN) || (cmd == CMD_GET) || (cmd == CMD_TAKE) || (cmd == CMD_DRAG)) && argument)
+						if ((IS_AGG_CMD(cmd) || (cmd == CMD_OPEN) ||
+						     (cmd == CMD_GET) || (cmd == CMD_TAKE) ||
+						     (cmd == CMD_DRAG)) &&
+						    argument)
 						{
-							send_to_char("&+LYour interaction causes you to phase back into existence.&n\r\n", exec_char);
-							affect_from_char(exec_char, SPELL_SHADOW_PROJECTION);
+							send_to_char(
+								"&+LYour interaction causes you to phase back into existence.&n\r\n",
+								exec_char);
+							affect_from_char(exec_char,
+									 SPELL_SHADOW_PROJECTION);
 						}
 						else
 						{
-							send_to_char("&+LYou effortlessly maneuver through the shadows, unseen by your foes.&n\r\n", exec_char);
+							send_to_char(
+								"&+LYou effortlessly maneuver through the shadows, unseen by your foes.&n\r\n",
+								exec_char);
 						}
 					}
 					else
 					{
-						if ((cmd == CMD_FIRE) && (number(1, 100) <= GET_CHAR_SKILL(exec_char, SKILL_SHADOW_ARCHERY)))
+						if ((cmd == CMD_FIRE) &&
+						    (number(1, 100) <=
+						     GET_CHAR_SKILL(exec_char,
+								    SKILL_SHADOW_ARCHERY)))
 						{
-							send_to_char("&+LYou fire silently from the shadows...&n\r\n", exec_char);
-							notch_skill(exec_char, SKILL_SHADOW_ARCHERY, 1);
+							send_to_char(
+								"&+LYou fire silently from the shadows...&n\r\n",
+								exec_char);
+							notch_skill(exec_char, SKILL_SHADOW_ARCHERY,
+								    1);
 						}
 						else
 						{
-							REMOVE_BIT(exec_char->specials.affected_by, AFF_HIDE);
+							REMOVE_BIT(exec_char->specials.affected_by,
+								   AFF_HIDE);
 						}
 					}
 				}
@@ -1745,22 +1861,36 @@ void command_interpreter(P_char ch, char *argument)
 				{
 					if (cmd == CMD_MEDITATE)
 					{
-						send_to_char("You are already meditating.\n", exec_char);
+						send_to_char("You are already meditating.\n",
+							     exec_char);
 					}
-					else if (cmd != CMD_PRAY && cmd != CMD_MEMORIZE && cmd != CMD_ASSIMILATE && cmd != CMD_FOCUS && cmd != CMD_GCC && cmd != CMD_HELP && cmd != CMD_RWC && cmd != CMD_OUTPOST &&
-					         cmd != CMD_NEXUS && cmd != CMD_FRAGLIST && cmd != CMD_DEFOREST && cmd != CMD_ARTIFACTS)
+					else if (cmd != CMD_PRAY && cmd != CMD_MEMORIZE &&
+						 cmd != CMD_ASSIMILATE && cmd != CMD_FOCUS &&
+						 cmd != CMD_GCC && cmd != CMD_HELP &&
+						 cmd != CMD_RWC && cmd != CMD_OUTPOST &&
+						 cmd != CMD_NEXUS && cmd != CMD_FRAGLIST &&
+						 cmd != CMD_DEFOREST && cmd != CMD_ARTIFACTS)
 					{
 						// Advanced med allows you to continue meditating while doing the below commands.
 						// At 60 skill, you no longer have to worry about these commands.
-						if (GET_CHAR_SKILL(exec_char, SKILL_ADVANCED_MEDITATION) < number(1, 60) || (cmd != CMD_GSAY && cmd != CMD_SAY && cmd != CMD_TELL && cmd != CMD_NCHAT && cmd != CMD_EMOTE))
+						if (GET_CHAR_SKILL(exec_char,
+								   SKILL_ADVANCED_MEDITATION) <
+							    number(1, 60) ||
+						    (cmd != CMD_GSAY && cmd != CMD_SAY &&
+						     cmd != CMD_TELL && cmd != CMD_NCHAT &&
+						     cmd != CMD_EMOTE))
 						{
-							send_to_char("You stop meditating.\r\n", exec_char);
+							send_to_char("You stop meditating.\r\n",
+								     exec_char);
 							stop_meditation(exec_char);
 						}
 						else
 						{
-							send_to_char("You continue your meditation uninterrupted.\n", exec_char);
-							notch_skill(exec_char, SKILL_ADVANCED_MEDITATION, 2);
+							send_to_char(
+								"You continue your meditation uninterrupted.\n",
+								exec_char);
+							notch_skill(exec_char,
+								    SKILL_ADVANCED_MEDITATION, 2);
 						}
 					}
 				}
@@ -1777,20 +1907,25 @@ void command_interpreter(P_char ch, char *argument)
 			}
 
 			// Hack for item_teleport objects
-			if (exec_char && check_item_teleport(exec_char, argument + begin + look_at, cmd))
+			if (exec_char &&
+			    check_item_teleport(exec_char, argument + begin + look_at, cmd))
 			{
 				return;
 			}
 
 			// Execute the bloody thing!!!
-			if ((cmd_info[cmd].req_confirm == 1) && (IS_NPC(exec_char) || (exec_char->desc->confirm_state == CONFIRM_DONE) || !strcmp(argument + begin + look_at, "confirm")))
+			if ((cmd_info[cmd].req_confirm == 1) &&
+			    (IS_NPC(exec_char) ||
+			     (exec_char->desc->confirm_state == CONFIRM_DONE) ||
+			     !strcmp(argument + begin + look_at, "confirm")))
 			{
 				if (exec_char->desc)
 				{
 					exec_char->desc->confirm_state = CONFIRM_NONE;
 				}
 				command_confirm = TRUE;
-				((*cmd_info[cmd].command_pointer)(exec_char, argument + begin + look_at, cmd));
+				((*cmd_info[cmd].command_pointer)(exec_char,
+								  argument + begin + look_at, cmd));
 			}
 			else if (cmd_info[cmd].req_confirm == 1)
 			{
@@ -1800,7 +1935,8 @@ void command_interpreter(P_char ch, char *argument)
 				}
 				strcpy(exec_char->desc->last_command, argument);
 				command_confirm = FALSE;
-				((*cmd_info[cmd].command_pointer)(exec_char, argument + begin + look_at, cmd));
+				((*cmd_info[cmd].command_pointer)(exec_char,
+								  argument + begin + look_at, cmd));
 			}
 			else
 			{
@@ -1815,16 +1951,23 @@ void command_interpreter(P_char ch, char *argument)
 				}
 				old_room = exec_char->in_room;
 
-				((*cmd_info[cmd].command_pointer)(exec_char, argument + begin + look_at, cmd));
+				((*cmd_info[cmd].command_pointer)(exec_char,
+								  argument + begin + look_at, cmd));
 
 				// If mobs should and can aggro the executor of the above command.
-				if ((cmd_info[cmd].check_aggro) && IS_ALIVE(exec_char) && (IS_PC(exec_char) || (((master = get_linked_char(exec_char, LNK_PET)) != NULL) && IS_PC(master))) &&
-				    (exec_char->in_room > RROOM_LIMBO) && !CHAR_IN_SAFE_ROOM(exec_char))
+				if ((cmd_info[cmd].check_aggro) && IS_ALIVE(exec_char) &&
+				    (IS_PC(exec_char) ||
+				     (((master = get_linked_char(exec_char, LNK_PET)) != NULL) &&
+				      IS_PC(master))) &&
+				    (exec_char->in_room > RROOM_LIMBO) &&
+				    !CHAR_IN_SAFE_ROOM(exec_char))
 				{
 					// 5% chance to fail sneak.
-					if ((exec_char->in_room == old_room) || !SNEAK(exec_char) || !number(0, 19))
+					if ((exec_char->in_room == old_room) || !SNEAK(exec_char) ||
+					    !number(0, 19))
 						// 5% chance for calming to work.
-						if (!has_innate(ch, INNATE_CALMING) || !number(0, 19))
+						if (!has_innate(ch, INNATE_CALMING) ||
+						    !number(0, 19))
 							// And the charisma calm chance.
 							if (number(1, 100) > CALMCHANCE(exec_char))
 								check_aggro_from_command(exec_char);
@@ -1874,7 +2017,7 @@ void argument_interpreter(char *argument, char *first_arg, char *second_arg)
 
 	if (!argument)
 	{
-		*first_arg  = '\0';
+		*first_arg = '\0';
 		*second_arg = '\0';
 		return;
 	}
@@ -1883,7 +2026,7 @@ void argument_interpreter(char *argument, char *first_arg, char *second_arg)
 	if (strlen(argument) >= MAX_INPUT_LENGTH)
 	{
 		logit(LOG_SYS, "too long arg in argument_interpreter.");
-		*(first_arg)  = '\0';
+		*(first_arg) = '\0';
 		*(second_arg) = '\0';
 		return;
 	}
@@ -2038,7 +2181,10 @@ char *one_argument(const char *argument, char *first_arg)
 	return ((char *)(argument + begin));
 }
 
-int fill_word(char *argument) { return (search_block(argument, fill_words, TRUE) >= 0); }
+int fill_word(char *argument)
+{
+	return (search_block(argument, fill_words, TRUE) >= 0);
+}
 
 // Determine if a given string is an abbreviation of another
 bool is_abbrev(const char *arg1, const char *arg2)
@@ -2127,9 +2273,9 @@ void half_chop(char *string, char *arg1, char *arg2)
 
 bool special(P_char ch, int cmd, char *arg)
 {
-	P_obj  i;
+	P_obj i;
 	P_char k;
-	int             j;
+	int j;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -2148,8 +2294,10 @@ bool special(P_char ch, int cmd, char *arg)
 	 */
 	for (j = 0; j <= (MAX_WEAR - 1); j++)
 	{
-		if (ch->equipment[j] && (ch->equipment[j]->R_num >= 0) && obj_index[ch->equipment[j]->R_num].func.obj)
-			if ((*obj_index[ch->equipment[j]->R_num].func.obj)(ch->equipment[j], ch, cmd, arg))
+		if (ch->equipment[j] && (ch->equipment[j]->R_num >= 0) &&
+		    obj_index[ch->equipment[j]->R_num].func.obj)
+			if ((*obj_index[ch->equipment[j]->R_num].func.obj)(ch->equipment[j], ch,
+									   cmd, arg))
 				return (1);
 	}
 	/*
@@ -2163,7 +2311,6 @@ bool special(P_char ch, int cmd, char *arg)
 	}
 	if (!ALONE(ch))
 	{
-
 		/*
 		 * special in mobile present?
 		 */
@@ -2173,8 +2320,11 @@ bool special(P_char ch, int cmd, char *arg)
 			{
 				continue;
 			}
-			if ((k != ch) && IS_NPC(k) && IS_AWAKE(k) && mob_index[GET_RNUM(k)].func.mob && !affected_by_spell(k, TAG_CONJURED_PET) &&
-			    (!IS_IMMOBILE(k) || (IS_NPC(k) && (GET_VNUM(k) == OUTPOST_BUILDING_MOB))))
+			if ((k != ch) && IS_NPC(k) && IS_AWAKE(k) &&
+			    mob_index[GET_RNUM(k)].func.mob &&
+			    !affected_by_spell(k, TAG_CONJURED_PET) &&
+			    (!IS_IMMOBILE(k) ||
+			     (IS_NPC(k) && (GET_VNUM(k) == OUTPOST_BUILDING_MOB))))
 			{
 				if ((*mob_index[GET_RNUM(k)].func.mob)(k, ch, cmd, arg))
 				{
@@ -2186,7 +2336,8 @@ bool special(P_char ch, int cmd, char *arg)
 		 * quest mobile present?
 		 */
 		for (k = world[ch->in_room].people; k; k = k->next_in_room)
-			if ((k != ch) && IS_NPC(k) && IS_AWAKE(k) && mob_index[GET_RNUM(k)].qst_func)
+			if ((k != ch) && IS_NPC(k) && IS_AWAKE(k) &&
+			    mob_index[GET_RNUM(k)].qst_func)
 				if ((*mob_index[GET_RNUM(k)].qst_func)(k, ch, cmd, arg))
 					return (1);
 	}
@@ -2225,82 +2376,82 @@ bool special(P_char ch, int cmd, char *arg)
  * JAB
  */
 
-#define CMD_N(number, min_pos, pointer, min_level, chk_aggro)                                                                                                                                          \
-	{                                                                                                                                                                                                  \
-		cmd_info[(number)].command_pointer  = (pointer);                                                                                                                                               \
-		cmd_info[(number)].minimum_position = (min_pos);                                                                                                                                               \
-		cmd_info[(number)].in_battle        = FALSE;                                                                                                                                                   \
-		cmd_info[(number)].minimum_level    = (min_level);                                                                                                                                             \
-		cmd_info[(number)].grantable        = 0;                                                                                                                                                       \
-		cmd_info[(number)].req_confirm      = FALSE;                                                                                                                                                   \
-		cmd_info[(number)].check_aggro      = chk_aggro;                                                                                                                                               \
+#define CMD_N(number, min_pos, pointer, min_level, chk_aggro)    \
+	{                                                        \
+		cmd_info[(number)].command_pointer = (pointer);  \
+		cmd_info[(number)].minimum_position = (min_pos); \
+		cmd_info[(number)].in_battle = FALSE;            \
+		cmd_info[(number)].minimum_level = (min_level);  \
+		cmd_info[(number)].grantable = 0;                \
+		cmd_info[(number)].req_confirm = FALSE;          \
+		cmd_info[(number)].check_aggro = chk_aggro;      \
 	}
 
-#define CMD_Y(number, min_pos, pointer, min_level, chk_aggro)                                                                                                                                          \
-	{                                                                                                                                                                                                  \
-		cmd_info[(number)].command_pointer  = (pointer);                                                                                                                                               \
-		cmd_info[(number)].minimum_position = (min_pos);                                                                                                                                               \
-		cmd_info[(number)].in_battle        = TRUE;                                                                                                                                                    \
-		cmd_info[(number)].minimum_level    = (min_level);                                                                                                                                             \
-		cmd_info[(number)].grantable        = 0;                                                                                                                                                       \
-		cmd_info[(number)].req_confirm      = FALSE;                                                                                                                                                   \
-		cmd_info[(number)].check_aggro      = chk_aggro;                                                                                                                                               \
+#define CMD_Y(number, min_pos, pointer, min_level, chk_aggro)    \
+	{                                                        \
+		cmd_info[(number)].command_pointer = (pointer);  \
+		cmd_info[(number)].minimum_position = (min_pos); \
+		cmd_info[(number)].in_battle = TRUE;             \
+		cmd_info[(number)].minimum_level = (min_level);  \
+		cmd_info[(number)].grantable = 0;                \
+		cmd_info[(number)].req_confirm = FALSE;          \
+		cmd_info[(number)].check_aggro = chk_aggro;      \
 	}
 
 // Commands that need confirmation do not draw aggro, ever.
-#define CMD_CNF_Y(number, min_pos, pointer, min_level)                                                                                                                                                 \
-	{                                                                                                                                                                                                  \
-		cmd_info[(number)].command_pointer  = (pointer);                                                                                                                                               \
-		cmd_info[(number)].minimum_position = (min_pos);                                                                                                                                               \
-		cmd_info[(number)].in_battle        = TRUE;                                                                                                                                                    \
-		cmd_info[(number)].minimum_level    = (min_level);                                                                                                                                             \
-		cmd_info[(number)].grantable        = 0;                                                                                                                                                       \
-		cmd_info[(number)].req_confirm      = TRUE;                                                                                                                                                    \
-		cmd_info[(number)].check_aggro      = FALSE;                                                                                                                                                   \
+#define CMD_CNF_Y(number, min_pos, pointer, min_level)           \
+	{                                                        \
+		cmd_info[(number)].command_pointer = (pointer);  \
+		cmd_info[(number)].minimum_position = (min_pos); \
+		cmd_info[(number)].in_battle = TRUE;             \
+		cmd_info[(number)].minimum_level = (min_level);  \
+		cmd_info[(number)].grantable = 0;                \
+		cmd_info[(number)].req_confirm = TRUE;           \
+		cmd_info[(number)].check_aggro = FALSE;          \
 	}
 
-#define CMD_CNF_N(number, min_pos, pointer, min_level)                                                                                                                                                 \
-	{                                                                                                                                                                                                  \
-		cmd_info[(number)].command_pointer  = (pointer);                                                                                                                                               \
-		cmd_info[(number)].minimum_position = (min_pos);                                                                                                                                               \
-		cmd_info[(number)].in_battle        = FALSE;                                                                                                                                                   \
-		cmd_info[(number)].minimum_level    = (min_level);                                                                                                                                             \
-		cmd_info[(number)].grantable        = 0;                                                                                                                                                       \
-		cmd_info[(number)].req_confirm      = TRUE;                                                                                                                                                    \
-		cmd_info[(number)].check_aggro      = FALSE;                                                                                                                                                   \
+#define CMD_CNF_N(number, min_pos, pointer, min_level)           \
+	{                                                        \
+		cmd_info[(number)].command_pointer = (pointer);  \
+		cmd_info[(number)].minimum_position = (min_pos); \
+		cmd_info[(number)].in_battle = FALSE;            \
+		cmd_info[(number)].minimum_level = (min_level);  \
+		cmd_info[(number)].grantable = 0;                \
+		cmd_info[(number)].req_confirm = TRUE;           \
+		cmd_info[(number)].check_aggro = FALSE;          \
 	}
 
-#define CMD_TRIG(number, min_level, chk_aggro)                                                                                                                                                         \
-	{                                                                                                                                                                                                  \
-		cmd_info[(number)].command_pointer  = do_not_here;                                                                                                                                             \
-		cmd_info[(number)].minimum_position = STAT_DEAD + POS_PRONE;                                                                                                                                   \
-		cmd_info[(number)].in_battle        = TRUE;                                                                                                                                                    \
-		cmd_info[(number)].minimum_level    = (min_level);                                                                                                                                             \
-		cmd_info[(number)].grantable        = 0;                                                                                                                                                       \
-		cmd_info[(number)].req_confirm      = FALSE;                                                                                                                                                   \
-		cmd_info[(number)].check_aggro      = chk_aggro;                                                                                                                                               \
+#define CMD_TRIG(number, min_level, chk_aggro)                               \
+	{                                                                    \
+		cmd_info[(number)].command_pointer = do_not_here;            \
+		cmd_info[(number)].minimum_position = STAT_DEAD + POS_PRONE; \
+		cmd_info[(number)].in_battle = TRUE;                         \
+		cmd_info[(number)].minimum_level = (min_level);              \
+		cmd_info[(number)].grantable = 0;                            \
+		cmd_info[(number)].req_confirm = FALSE;                      \
+		cmd_info[(number)].check_aggro = chk_aggro;                  \
 	}
 
 // Socials always draw aggro.
-#define CMD_SOC(number, min_position)                                                                                                                                                                  \
-	{                                                                                                                                                                                                  \
-		cmd_info[(number)].command_pointer  = do_action;                                                                                                                                               \
-		cmd_info[(number)].minimum_position = (min_position);                                                                                                                                          \
-		cmd_info[(number)].in_battle        = TRUE;                                                                                                                                                    \
-		cmd_info[(number)].minimum_level    = 0;                                                                                                                                                       \
-		cmd_info[(number)].grantable        = 0;                                                                                                                                                       \
-		cmd_info[(number)].req_confirm      = FALSE;                                                                                                                                                   \
-		cmd_info[(number)].check_aggro      = TRUE;                                                                                                                                                    \
+#define CMD_SOC(number, min_position)                                 \
+	{                                                             \
+		cmd_info[(number)].command_pointer = do_action;       \
+		cmd_info[(number)].minimum_position = (min_position); \
+		cmd_info[(number)].in_battle = TRUE;                  \
+		cmd_info[(number)].minimum_level = 0;                 \
+		cmd_info[(number)].grantable = 0;                     \
+		cmd_info[(number)].req_confirm = FALSE;               \
+		cmd_info[(number)].check_aggro = TRUE;                \
 	}
 
-#define CMD_GRT(number, min_pos, pointer, min_level)                                                                                                                                                   \
-	{                                                                                                                                                                                                  \
-		cmd_info[(number)].command_pointer  = (pointer);                                                                                                                                               \
-		cmd_info[(number)].minimum_position = (min_pos);                                                                                                                                               \
-		cmd_info[(number)].in_battle        = TRUE;                                                                                                                                                    \
-		cmd_info[(number)].minimum_level    = (min_level);                                                                                                                                             \
-		cmd_info[(number)].grantable        = 1;                                                                                                                                                       \
-		cmd_info[(number)].req_confirm      = FALSE;                                                                                                                                                   \
+#define CMD_GRT(number, min_pos, pointer, min_level)             \
+	{                                                        \
+		cmd_info[(number)].command_pointer = (pointer);  \
+		cmd_info[(number)].minimum_position = (min_pos); \
+		cmd_info[(number)].in_battle = TRUE;             \
+		cmd_info[(number)].minimum_level = (min_level);  \
+		cmd_info[(number)].grantable = 1;                \
+		cmd_info[(number)].req_confirm = FALSE;          \
 	}
 /*
  * change the 0 back to -1 when replacing grant - or, 1!
@@ -2436,7 +2587,8 @@ void assign_command_pointers(void)
 
 	CMD_N(CMD_BURY, STAT_NORMAL + POS_STANDING, do_bury, 0, TRUE);
 	CMD_Y(CMD_GCC, STAT_SLEEPING + POS_PRONE, do_gcc, 0, FALSE);
-	CMD_N(CMD_SUMMON, STAT_NORMAL + POS_STANDING, do_innate, 1, TRUE); // MWD 25 - Changed to 1 for dragoons, innate summon mount should check for correct level
+	CMD_N(CMD_SUMMON, STAT_NORMAL + POS_STANDING, do_innate, 1,
+	      TRUE); // MWD 25 - Changed to 1 for dragoons, innate summon mount should check for correct level
 #ifdef MEM_DEBUG
 	CMD_Y(CMD_MREPORT, STAT_DEAD + POS_PRONE, do_mreport, AVATAR, FALSE);
 #endif
@@ -2488,7 +2640,8 @@ void assign_command_pointers(void)
 	CMD_N(CMD_EXHUME, STAT_NORMAL + POS_STANDING, do_exhume, 0, TRUE);
 	CMD_N(CMD_FADE, STAT_NORMAL + POS_STANDING, do_fade, 0, TRUE);
 	CMD_N(CMD_DISGUISE, STAT_RESTING + POS_PRONE, do_disguise, 0, TRUE);
-	CMD_N(CMD_DO, STAT_RESTING + POS_PRONE, do_do, 0, TRUE); // Shouldn't really be here, but ok.
+	CMD_N(CMD_DO, STAT_RESTING + POS_PRONE, do_do, 0,
+	      TRUE); // Shouldn't really be here, but ok.
 	CMD_N(CMD_DONATE, STAT_NORMAL + POS_STANDING, do_donate, 0, TRUE);
 	CMD_N(CMD_DOORBASH, STAT_NORMAL + POS_STANDING, do_doorbash, 0, TRUE);
 	CMD_N(CMD_DOORKICK, STAT_NORMAL + POS_STANDING, do_doorkick, 0, TRUE);
@@ -2504,7 +2657,8 @@ void assign_command_pointers(void)
 	CMD_N(CMD_ENTER, STAT_NORMAL + POS_STANDING, do_enter, 0, FALSE);
 	CMD_N(CMD_EXAMINE, STAT_RESTING + POS_PRONE, do_examine, 0, FALSE);
 	CMD_N(CMD_EXP, STAT_DEAD + POS_PRONE, do_explist, 0, FALSE);
-	CMD_N(CMD_EXPKKK, STAT_DEAD + POS_PRONE, do_expkkk, 0, FALSE); // Arih: for debugging exp bug
+	CMD_N(CMD_EXPKKK, STAT_DEAD + POS_PRONE, do_expkkk, 0,
+	      FALSE); // Arih: for debugging exp bug
 	CMD_N(CMD_PROJECTS, STAT_SLEEPING + POS_PRONE, do_projects, 0, FALSE);
 	CMD_N(CMD_HOME, STAT_SLEEPING + POS_PRONE, do_home, 0, FALSE);
 	CMD_N(CMD_FAQ, STAT_SLEEPING + POS_PRONE, do_faq, 0, FALSE);
@@ -3224,7 +3378,7 @@ void assign_command_pointers(void)
 void check_aggro_from_command(P_char exec_char)
 {
 	P_char exec_master, mob, mob_master, next_mob;
-	int    room, calming_chance;
+	int room, calming_chance;
 
 	room = exec_char->in_room;
 	// Chance of aggro mobs not attacking.
@@ -3247,13 +3401,15 @@ void check_aggro_from_command(P_char exec_char)
 		next_mob = mob->next_in_room;
 
 		// Only consider aggro NPCs (not including self) that are not lagged nor fighting something else nor asleep/ko'd.
-		if (!IS_ALIVE(mob) || !IS_NPC(mob) || !IS_AGGRESSIVE(mob) || (mob == exec_char) || !CAN_ACT(mob) || IS_FIGHTING(mob) || !IS_AWAKE(mob))
+		if (!IS_ALIVE(mob) || !IS_NPC(mob) || !IS_AGGRESSIVE(mob) || (mob == exec_char) ||
+		    !CAN_ACT(mob) || IS_FIGHTING(mob) || !IS_AWAKE(mob))
 		{
 			continue;
 		}
 
 		// Pets only aggro chars when master is not in room, or when they are attacking master.
-		if (((mob_master = get_linked_char(mob, LNK_PET)) != NULL) && (mob_master->in_room == room) && (GET_OPPONENT(exec_char) != mob_master))
+		if (((mob_master = get_linked_char(mob, LNK_PET)) != NULL) &&
+		    (mob_master->in_room == room) && (GET_OPPONENT(exec_char) != mob_master))
 		{
 			continue;
 		}
@@ -3277,7 +3433,8 @@ void check_aggro_from_command(P_char exec_char)
 		}
 
 		// If the mob can see the master of the executor, it may attack them (int check).
-		if (exec_master && CAN_SEE(mob, exec_master) && aggressive_to(mob, exec_master) && (number(1, 100) < GET_C_INT(mob) / 2))
+		if (exec_master && CAN_SEE(mob, exec_master) && aggressive_to(mob, exec_master) &&
+		    (number(1, 100) < GET_C_INT(mob) / 2))
 		{
 			do_action(mob, "", CMD_SNEER);
 			MobStartFight(mob, exec_master);
@@ -3296,7 +3453,8 @@ void check_aggro_from_command(P_char exec_char)
 		}
 
 		// If the mob can see the executor of the command and doesn't like them or their boss.
-		if (CAN_SEE(mob, exec_char) && (aggressive_to(mob, exec_char) || (exec_master && aggressive_to(mob, exec_master))))
+		if (CAN_SEE(mob, exec_char) && (aggressive_to(mob, exec_char) ||
+						(exec_master && aggressive_to(mob, exec_master))))
 		{
 			MobStartFight(mob, exec_char);
 			// If they killed the executor, or room kicked them etc.
@@ -3305,9 +3463,11 @@ void check_aggro_from_command(P_char exec_char)
 				// Then start on the owner!
 				if (IS_ALIVE(exec_master) && exec_master->in_room == room)
 				{
-					exec_char      = exec_master;
-					calming_chance = CALMCHANCE(exec_char) + (has_innate(exec_char, INNATE_CALMING) ? 10 : 0);
-					exec_master    = NULL;
+					exec_char = exec_master;
+					calming_chance =
+						CALMCHANCE(exec_char) +
+						(has_innate(exec_char, INNATE_CALMING) ? 10 : 0);
+					exec_master = NULL;
 				}
 				else
 				{
@@ -3325,7 +3485,7 @@ void check_aggro_from_command(P_char exec_char)
 char *lohrr_chop(char *string, char *arg1)
 {
 	char *index;
-	bool  single_quoted;
+	bool single_quoted;
 
 	// First test for empty.
 	if ((string == NULL) || (*string == '\0'))
@@ -3361,7 +3521,7 @@ char *lohrr_chop(char *string, char *arg1)
 			// So we start over not looking for single quotes.
 			if (single_quoted)
 			{
-				index         = string;
+				index = string;
 				single_quoted = FALSE;
 			}
 			else

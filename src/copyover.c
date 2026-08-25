@@ -30,30 +30,33 @@
 #include "websocket.h"
 #include "locker_async.h"
 
-extern const int         top_of_world;
-extern int               top_of_zone_table;
+extern const int top_of_world;
+extern int top_of_zone_table;
 extern struct zone_data *zone_table;
-extern P_room            world;
-extern P_desc            descriptor_list;
-extern P_char            character_list;
-extern P_index           mob_index;
-extern P_index           obj_index;
-extern P_obj             object_list;
-extern int               RUNNING_PORT;
-extern struct mm_ds     *dead_mob_pool;
-extern struct mm_ds     *dead_pconly_pool;
-extern struct mm_ds     *dead_desc_pool;
-extern int               _copyover;
-extern int               used_descs;
+extern P_room world;
+extern P_desc descriptor_list;
+extern P_char character_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern int RUNNING_PORT;
+extern struct mm_ds *dead_mob_pool;
+extern struct mm_ds *dead_pconly_pool;
+extern struct mm_ds *dead_desc_pool;
+extern int _copyover;
+extern int used_descs;
 
 extern void nonblock(int s);
 
-extern int  restoreCharOnly(P_char ch, char *name);
+extern int restoreCharOnly(P_char ch, char *name);
 extern void clear_char(P_char ch);
 
 static int copyover_in_progress = 0;
 
-int is_copyover_boot(void) { return copyover_in_progress; }
+int is_copyover_boot(void)
+{
+	return copyover_in_progress;
+}
 
 void copyover_clear_boot(void)
 {
@@ -87,8 +90,8 @@ static void notify_copyover_failure(const char *message)
 static int write_desc_entry(FILE *fp, P_desc d)
 {
 	struct copyover_desc entry;
-	P_char               ch = d->character;
-	struct follow_type  *f;
+	P_char ch = d->character;
+	struct follow_type *f;
 
 	memset(&entry, 0, sizeof(entry));
 	entry.fd = d->descriptor;
@@ -96,7 +99,7 @@ static int write_desc_entry(FILE *fp, P_desc d)
 	if (ch && GET_NAME(ch))
 	{
 		strlcpy(entry.player_name, GET_NAME(ch), sizeof(entry.player_name));
-		entry.room                                       = ch->in_room;
+		entry.room = ch->in_room;
 
 		// save combat state
 		if (ch->specials.fighting)
@@ -105,13 +108,14 @@ static int write_desc_entry(FILE *fp, P_desc d)
 			if (IS_NPC(target))
 			{
 				entry.fighting_type = 1;
-				entry.fighting_id   = GET_IDNUM(target);
+				entry.fighting_id = GET_IDNUM(target);
 			}
 			else
 			{
 				entry.fighting_type = 2;
 				if (GET_NAME(target))
-					strlcpy(entry.fighting_name, GET_NAME(target), sizeof(entry.fighting_name));
+					strlcpy(entry.fighting_name, GET_NAME(target),
+						sizeof(entry.fighting_name));
 			}
 		}
 
@@ -121,20 +125,21 @@ static int write_desc_entry(FILE *fp, P_desc d)
 		{
 			if (IS_NPC(f->follower) && f->follower->in_room == ch->in_room)
 			{
-				int idx                = entry.num_pets++;
-				entry.pet_vnums[idx]   = mob_index[GET_RNUM(f->follower)].virtual_number;
-				entry.pet_hit[idx]     = GET_HIT(f->follower);
+				int idx = entry.num_pets++;
+				entry.pet_vnums[idx] =
+					mob_index[GET_RNUM(f->follower)].virtual_number;
+				entry.pet_hit[idx] = GET_HIT(f->follower);
 				entry.pet_max_hit[idx] = GET_MAX_HIT(f->follower);
 			}
 		}
 	}
 	strlcpy(entry.host, d->host, sizeof(entry.host));
 	strlcpy(entry.host2, d->host2, sizeof(entry.host2));
-	entry.term_type                      = d->term_type;
-	entry.gmcp_enabled                   = d->gmcp_enabled;
-	entry.out_compress                   = d->out_compress;
-	entry.mtts_flags                     = d->mtts_flags;
-	entry.charset_detected               = 0; // removed
+	entry.term_type = d->term_type;
+	entry.gmcp_enabled = d->gmcp_enabled;
+	entry.out_compress = d->out_compress;
+	entry.mtts_flags = d->mtts_flags;
+	entry.charset_detected = 0; // removed
 	strlcpy(entry.ttype_client, d->client_name, sizeof(entry.ttype_client));
 	entry.ttype_terminal[0] = '\0'; // removed
 
@@ -146,16 +151,16 @@ static int write_mob_entry(FILE *fp, P_char mob)
 	struct copyover_mob entry;
 
 	memset(&entry, 0, sizeof(entry));
-	entry.vnum         = mob_index[GET_RNUM(mob)].virtual_number;
-	entry.idnum        = GET_IDNUM(mob);
-	entry.room         = world[mob->in_room].number; // save vnum not rnum
-	entry.hit          = GET_HIT(mob);
-	entry.max_hit      = GET_MAX_HIT(mob);
-	entry.mana         = GET_MANA(mob);
-	entry.max_mana     = GET_MAX_MANA(mob);
-	entry.vitality     = GET_VITALITY(mob);
+	entry.vnum = mob_index[GET_RNUM(mob)].virtual_number;
+	entry.idnum = GET_IDNUM(mob);
+	entry.room = world[mob->in_room].number; // save vnum not rnum
+	entry.hit = GET_HIT(mob);
+	entry.max_hit = GET_MAX_HIT(mob);
+	entry.mana = GET_MANA(mob);
+	entry.max_mana = GET_MAX_MANA(mob);
+	entry.vitality = GET_VITALITY(mob);
 	entry.max_vitality = GET_MAX_VITALITY(mob);
-	entry.position     = GET_POS(mob);
+	entry.position = GET_POS(mob);
 
 	if (mob->specials.fighting)
 	{
@@ -167,13 +172,14 @@ static int write_mob_entry(FILE *fp, P_char mob)
 		else if (IS_NPC(target))
 		{
 			entry.fighting_type = 2;
-			entry.fighting_id   = GET_IDNUM(target);
+			entry.fighting_id = GET_IDNUM(target);
 		}
 		else
 		{
 			entry.fighting_type = 1;
 			if (GET_NAME(target))
-				strlcpy(entry.fighting_name, GET_NAME(target), sizeof(entry.fighting_name));
+				strlcpy(entry.fighting_name, GET_NAME(target),
+					sizeof(entry.fighting_name));
 		}
 	}
 
@@ -206,24 +212,24 @@ static int write_mob_entry(FILE *fp, P_char mob)
 static int write_mob_affects(FILE *fp, P_char mob)
 {
 	struct copyover_affect entry;
-	struct affected_type  *af;
+	struct affected_type *af;
 
 	for (af = mob->affected; af; af = af->next)
 	{
 		memset(&entry, 0, sizeof(entry));
-		entry.type                   = af->type;
+		entry.type = af->type;
 		entry.wear_off_message_index = af->wear_off_message_index;
-		entry.duration               = af->duration;
-		entry.flags                  = af->flags;
-		entry.modifier               = af->modifier;
-		entry.location               = af->location;
-		entry.loc2                   = af->loc2;
-		entry.level                  = af->level;
-		entry.bitvector              = af->bitvector;
-		entry.bitvector2             = af->bitvector2;
-		entry.bitvector3             = af->bitvector3;
-		entry.bitvector4             = af->bitvector4;
-		entry.bitvector5             = af->bitvector5;
+		entry.duration = af->duration;
+		entry.flags = af->flags;
+		entry.modifier = af->modifier;
+		entry.location = af->location;
+		entry.loc2 = af->loc2;
+		entry.level = af->level;
+		entry.bitvector = af->bitvector;
+		entry.bitvector2 = af->bitvector2;
+		entry.bitvector3 = af->bitvector3;
+		entry.bitvector4 = af->bitvector4;
+		entry.bitvector5 = af->bitvector5;
 
 		if (fwrite(&entry, sizeof(entry), 1, fp) != 1)
 		{
@@ -236,7 +242,7 @@ static int write_mob_affects(FILE *fp, P_char mob)
 static int write_mob_inventory(FILE *fp, P_char mob)
 {
 	copyover_carried_item entry;
-	P_obj                 obj;
+	P_obj obj;
 
 	for (obj = mob->carrying; obj; obj = obj->next_content)
 	{
@@ -254,8 +260,8 @@ static int write_room_door(FILE *fp, int room_rnum, int dir)
 	struct copyover_room entry;
 
 	memset(&entry, 0, sizeof(entry));
-	entry.vnum  = world[room_rnum].number;
-	entry.dir   = dir;
+	entry.vnum = world[room_rnum].number;
+	entry.dir = dir;
 	entry.state = world[room_rnum].dir_option[dir]->exit_info;
 
 	return fwrite(&entry, sizeof(entry), 1, fp) == 1;
@@ -263,8 +269,8 @@ static int write_room_door(FILE *fp, int room_rnum, int dir)
 
 static int write_obj_entry(FILE *fp, P_obj obj)
 {
-	struct copyover_obj         entry;
-	P_obj                       content;
+	struct copyover_obj entry;
+	P_obj content;
 	struct copyover_obj_content cont_entry;
 
 	memset(&entry, 0, sizeof(entry));
@@ -317,7 +323,8 @@ static void notify_ws_copyover(P_desc d)
 		return;
 
 	// send json message so web client knows whats happening
-	const char *msg = "{\"type\":\"system\",\"data\":{\"status\":\"copyover\",\"message\":\"Server updating, please wait...\"}}";
+	const char *msg =
+		"{\"type\":\"system\",\"data\":{\"status\":\"copyover\",\"message\":\"Server updating, please wait...\"}}";
 
 	// wrap in websocket frame
 	websocket_send_text(d, msg);
@@ -339,18 +346,19 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 {
 	P_desc d;
 	P_char ch;
-	P_obj  obj;
-	int    room, dir;
+	P_obj obj;
+	int room, dir;
 
 	*num_descs = 0;
-	*num_mobs  = 0;
-	*num_objs  = 0;
+	*num_mobs = 0;
+	*num_objs = 0;
 	*num_rooms = 0;
 
 	// count valid descriptors (telnet only, playing state)
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->descriptor > 0 && d->connected == CON_PLAYING && d->character && !d->websocket && !d->sslses)
+		if (d->descriptor > 0 && d->connected == CON_PLAYING && d->character &&
+		    !d->websocket && !d->sslses)
 		{
 			(*num_descs)++;
 		}
@@ -372,7 +380,8 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 		if (OBJ_ROOM(obj))
 		{
 			int vnum = OBJ_VNUM(obj);
-			if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS || vnum == VOBJ_CARGO_CRATE)
+			if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS ||
+			    vnum == VOBJ_CARGO_CRATE)
 				continue;
 			if (IS_SHIP_ROOM(obj->loc.room))
 				continue;
@@ -385,7 +394,8 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 	{
 		for (dir = 0; dir < NUM_EXITS; dir++)
 		{
-			if (world[room].dir_option[dir] && IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR))
+			if (world[room].dir_option[dir] &&
+			    IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR))
 			{
 				(*num_rooms)++;
 			}
@@ -395,15 +405,15 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 
 void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 {
-	FILE                  *fp = NULL;
+	FILE *fp = NULL;
 	struct copyover_header header;
-	P_desc                 d, d_next;
-	P_char                 ch;
-	P_obj                  obj;
-	int                    room, dir;
-	int                    num_descs, num_mobs, num_objs, num_rooms;
-	char                   exec_buf[256];
-	const char            *copyover_tmp = COPYOVER_FILE ".tmp";
+	P_desc d, d_next;
+	P_char ch;
+	P_obj obj;
+	int room, dir;
+	int num_descs, num_mobs, num_objs, num_rooms;
+	char exec_buf[256];
+	const char *copyover_tmp = COPYOVER_FILE ".tmp";
 
 	logit(LOG_STATUS, "copyover: saving world state...");
 	logit(LOG_STATUS, "copyover: world=%p top_of_world=%d", (void *)world, top_of_world);
@@ -412,14 +422,18 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	flush_pending_ship_saves();
 	if (!drain_pending_ship_saves())
 	{
-		logit(LOG_FILE, "copyover: aborted because pending ship saves could not be made durable");
-		notify_copyover_failure("\r\n*** Copyover cancelled: a pending ship save failed. ***\r\n");
+		logit(LOG_FILE,
+		      "copyover: aborted because pending ship saves could not be made durable");
+		notify_copyover_failure(
+			"\r\n*** Copyover cancelled: a pending ship save failed. ***\r\n");
 		return;
 	}
 	if (!locker_async_drain(3000))
 	{
-		logit(LOG_FILE, "copyover: aborted because pending locker async saves could not drain");
-		notify_copyover_failure("\r\n*** Copyover cancelled: a pending locker save failed. ***\r\n");
+		logit(LOG_FILE,
+		      "copyover: aborted because pending locker async saves could not drain");
+		notify_copyover_failure(
+			"\r\n*** Copyover cancelled: a pending locker save failed. ***\r\n");
 		return;
 	}
 	persistence_flush_all_character_saves();
@@ -427,7 +441,9 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		d_next = d->next;
 
-		logit(LOG_STATUS, "copyover: desc fd=%d state=%d char=%p ws=%d ssl=%d", d->descriptor, d->connected, (void *)d->character, d->websocket, d->sslses ? 1 : 0);
+		logit(LOG_STATUS, "copyover: desc fd=%d state=%d char=%p ws=%d ssl=%d",
+		      d->descriptor, d->connected, (void *)d->character, d->websocket,
+		      d->sslses ? 1 : 0);
 
 		if (d->descriptor < 0 || d->connected != CON_PLAYING || !d->character)
 		{
@@ -441,14 +457,19 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 			if (!do_save_silent(d->character, RENT_CRASH))
 			{
 				sql_rollback();
-				logit(LOG_STATUS, "copyover: save failed for %s, aborting copyover", GET_NAME(d->character));
-				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				logit(LOG_STATUS, "copyover: save failed for %s, aborting copyover",
+				      GET_NAME(d->character));
+				notify_copyover_failure(
+					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 				return;
 			}
 			if (!sql_commit())
 			{
-				logit(LOG_STATUS, "copyover: commit failed for %s, aborting copyover", GET_NAME(d->character));
-				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				logit(LOG_STATUS,
+				      "copyover: commit failed for %s, aborting copyover",
+				      GET_NAME(d->character));
+				notify_copyover_failure(
+					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 				return;
 			}
 		}
@@ -456,22 +477,26 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		{
 			if (!do_save_silent(d->character, RENT_CRASH))
 			{
-				logit(LOG_STATUS, "copyover: save failed for %s, aborting copyover", GET_NAME(d->character));
-				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				logit(LOG_STATUS, "copyover: save failed for %s, aborting copyover",
+				      GET_NAME(d->character));
+				notify_copyover_failure(
+					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 				return;
 			}
 		}
 
 		if (d->websocket)
 		{
-			logit(LOG_STATUS, "copyover: %s is websocket, disconnecting", GET_NAME(d->character));
+			logit(LOG_STATUS, "copyover: %s is websocket, disconnecting",
+			      GET_NAME(d->character));
 			notify_ws_copyover(d);
 			close(d->descriptor);
 			d->descriptor = -1;
 		}
 		else if (d->sslses)
 		{
-			logit(LOG_STATUS, "copyover: %s is ssl, disconnecting", GET_NAME(d->character));
+			logit(LOG_STATUS, "copyover: %s is ssl, disconnecting",
+			      GET_NAME(d->character));
 			notify_ssl_copyover(d);
 			gnutls_bye(d->sslses, GNUTLS_SHUT_WR);
 			close(d->descriptor);
@@ -484,7 +509,8 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 			{
 				compress_end(d, 1);
 			}
-			logit(LOG_STATUS, "copyover: %s is telnet fd=%d, preserving", GET_NAME(d->character), d->descriptor);
+			logit(LOG_STATUS, "copyover: %s is telnet fd=%d, preserving",
+			      GET_NAME(d->character), d->descriptor);
 		}
 	}
 
@@ -502,15 +528,18 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	// write header
 	memset(&header, 0, sizeof(header));
 	memcpy(header.magic, COPYOVER_MAGIC, 4);
-	header.version         = COPYOVER_VERSION;
-	header.timestamp       = time(NULL);
+	header.version = COPYOVER_VERSION;
+	header.timestamp = time(NULL);
 	header.num_descriptors = num_descs;
-	header.num_mobs        = num_mobs;
-	header.num_objects     = num_objs;
-	header.num_rooms       = num_rooms;
-	header.num_combat      = 0;
+	header.num_mobs = num_mobs;
+	header.num_objects = num_objs;
+	header.num_rooms = num_rooms;
+	header.num_combat = 0;
 
-	if (fwrite(&header, sizeof(header), 1, fp) != 1 || fwrite(&mother_desc, sizeof(int), 1, fp) != 1 || fwrite(&mother_desc_ssl, sizeof(int), 1, fp) != 1 || fwrite(&ws_desc, sizeof(int), 1, fp) != 1)
+	if (fwrite(&header, sizeof(header), 1, fp) != 1 ||
+	    fwrite(&mother_desc, sizeof(int), 1, fp) != 1 ||
+	    fwrite(&mother_desc_ssl, sizeof(int), 1, fp) != 1 ||
+	    fwrite(&ws_desc, sizeof(int), 1, fp) != 1)
 	{
 		logit(LOG_STATUS, "copyover: failed to write header/sockets");
 		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
@@ -522,15 +551,18 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	// write descriptors
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->descriptor > 0 && d->connected == CON_PLAYING && d->character && !d->websocket && !d->sslses)
+		if (d->descriptor > 0 && d->connected == CON_PLAYING && d->character &&
+		    !d->websocket && !d->sslses)
 		{
-
 			// keep socket open across exec
 			copyover_prepare_socket(d->descriptor);
 			if (!write_desc_entry(fp, d))
 			{
-				logit(LOG_STATUS, "copyover: failed to write descriptor entry for %s host=%s term_type=%d", GET_NAME(d->character), d->host, d->term_type);
-				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				logit(LOG_STATUS,
+				      "copyover: failed to write descriptor entry for %s host=%s term_type=%d",
+				      GET_NAME(d->character), d->host, d->term_type);
+				notify_copyover_failure(
+					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return;
@@ -546,10 +578,13 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		if (IS_NPC(ch) && ch->in_room >= 0 && !IS_PC_PET(ch))
 		{
-			if (!write_mob_entry(fp, ch) || !write_mob_affects(fp, ch) || !write_mob_inventory(fp, ch))
+			if (!write_mob_entry(fp, ch) || !write_mob_affects(fp, ch) ||
+			    !write_mob_inventory(fp, ch))
 			{
-				logit(LOG_STATUS, "copyover: failed to write mob entry for %s", GET_NAME(ch));
-				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				logit(LOG_STATUS, "copyover: failed to write mob entry for %s",
+				      GET_NAME(ch));
+				notify_copyover_failure(
+					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return;
@@ -564,14 +599,17 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		if (OBJ_ROOM(obj))
 		{
 			int vnum = OBJ_VNUM(obj);
-			if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS || vnum == VOBJ_CARGO_CRATE)
+			if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS ||
+			    vnum == VOBJ_CARGO_CRATE)
 				continue;
 			if (IS_SHIP_ROOM(obj->loc.room))
 				continue;
 			if (!write_obj_entry(fp, obj))
 			{
-				logit(LOG_STATUS, "copyover: failed to write object entry vnum %d", OBJ_VNUM(obj));
-				notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+				logit(LOG_STATUS, "copyover: failed to write object entry vnum %d",
+				      OBJ_VNUM(obj));
+				notify_copyover_failure(
+					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
 				return;
@@ -584,12 +622,16 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		for (dir = 0; dir < NUM_EXITS; dir++)
 		{
-			if (world[room].dir_option[dir] && IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR))
+			if (world[room].dir_option[dir] &&
+			    IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR))
 			{
 				if (!write_room_door(fp, room, dir))
 				{
-					logit(LOG_STATUS, "copyover: failed to write room door %d/%d", room, dir);
-					notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
+					logit(LOG_STATUS,
+					      "copyover: failed to write room door %d/%d", room,
+					      dir);
+					notify_copyover_failure(
+						"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 					fclose(fp);
 					unlink(copyover_tmp);
 					return;
@@ -600,20 +642,23 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 
 	if (fclose(fp) != 0)
 	{
-		logit(LOG_STATUS, "copyover: failed to close %s: %s", copyover_tmp, strerror(errno));
+		logit(LOG_STATUS, "copyover: failed to close %s: %s", copyover_tmp,
+		      strerror(errno));
 		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
 		unlink(copyover_tmp);
 		return;
 	}
 	if (rename(copyover_tmp, COPYOVER_FILE) != 0)
 	{
-		logit(LOG_STATUS, "copyover: failed to publish %s as %s: %s", copyover_tmp, COPYOVER_FILE, strerror(errno));
+		logit(LOG_STATUS, "copyover: failed to publish %s as %s: %s", copyover_tmp,
+		      COPYOVER_FILE, strerror(errno));
 		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
 		unlink(copyover_tmp);
 		return;
 	}
 
-	logit(LOG_STATUS, "copyover: saved %d descs, %d mobs, %d objs, %d doors", num_descs, num_mobs, num_objs, num_rooms);
+	logit(LOG_STATUS, "copyover: saved %d descs, %d mobs, %d objs, %d doors", num_descs,
+	      num_mobs, num_objs, num_rooms);
 
 	// prepare listener sockets
 	copyover_prepare_socket(mother_desc);
@@ -635,14 +680,18 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		}
 		else
 		{
-			logit(LOG_STATUS, "copyover: failed to rename ./dms to ./dms.old: %s", strerror(errno));
+			logit(LOG_STATUS, "copyover: failed to rename ./dms to ./dms.old: %s",
+			      strerror(errno));
 		}
 		if (rename("src/dms_new", "./dms") != 0)
 		{
-			logit(LOG_STATUS, "copyover: failed to install src/dms_new as ./dms: %s", strerror(errno));
+			logit(LOG_STATUS, "copyover: failed to install src/dms_new as ./dms: %s",
+			      strerror(errno));
 			if (old_binary_renamed && rename("./dms.old", "./dms") != 0)
 			{
-				logit(LOG_STATUS, "copyover: failed to restore ./dms from ./dms.old: %s", strerror(errno));
+				logit(LOG_STATUS,
+				      "copyover: failed to restore ./dms from ./dms.old: %s",
+				      strerror(errno));
 			}
 		}
 	}
@@ -670,7 +719,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 static P_char copyover_load_player(const char *name, P_desc d)
 {
 	P_char player;
-	int    status;
+	int status;
 
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
@@ -679,7 +728,10 @@ static P_char copyover_load_player(const char *name, P_desc d)
 	clear_char(player);
 
 	if (!dead_pconly_pool)
-		dead_pconly_pool = mm_create("PC_ONLY", sizeof(struct pc_only_data), offsetof(struct pc_only_data, switched), mm_find_best_chunk(sizeof(struct pc_only_data), 10, 25));
+		dead_pconly_pool =
+			mm_create("PC_ONLY", sizeof(struct pc_only_data),
+				  offsetof(struct pc_only_data, switched),
+				  mm_find_best_chunk(sizeof(struct pc_only_data), 10, 25));
 
 	player->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
 
@@ -697,14 +749,14 @@ static P_char copyover_load_player(const char *name, P_desc d)
 
 int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 {
-	FILE                  *fp;
+	FILE *fp;
 	struct copyover_header header;
-	struct copyover_desc   desc_entry;
-	struct copyover_room   room_entry;
-	P_desc                 d;
-	P_char                 ch;
-	int                    i, rnum, save_room;
-	int                    success = 0;
+	struct copyover_desc desc_entry;
+	struct copyover_room room_entry;
+	P_desc d;
+	P_char ch;
+	int i, rnum, save_room;
+	int success = 0;
 
 	copyover_in_progress = 1;
 
@@ -718,16 +770,20 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 	}
 
 	// read and verify header
-	if (fread(&header, sizeof(header), 1, fp) != 1 || memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 || header.version != COPYOVER_VERSION)
+	if (fread(&header, sizeof(header), 1, fp) != 1 ||
+	    memcmp(header.magic, COPYOVER_MAGIC, 4) != 0 || header.version != COPYOVER_VERSION)
 	{
 		logit(LOG_STATUS, "copyover_recover: invalid header or version mismatch");
 		goto copyover_recover_fail;
 	}
 
-	logit(LOG_STATUS, "copyover_recover: restoring %d descs, %d mobs, %d doors", header.num_descriptors, header.num_mobs, header.num_rooms);
+	logit(LOG_STATUS, "copyover_recover: restoring %d descs, %d mobs, %d doors",
+	      header.num_descriptors, header.num_mobs, header.num_rooms);
 
 	// read listener sockets
-	if (fread(mother_desc, sizeof(int), 1, fp) != 1 || fread(mother_desc_ssl, sizeof(int), 1, fp) != 1 || fread(ws_desc, sizeof(int), 1, fp) != 1)
+	if (fread(mother_desc, sizeof(int), 1, fp) != 1 ||
+	    fread(mother_desc_ssl, sizeof(int), 1, fp) != 1 ||
+	    fread(ws_desc, sizeof(int), 1, fp) != 1)
 	{
 		logit(LOG_STATUS, "copyover_recover: failed to read listener sockets");
 		goto copyover_recover_fail;
@@ -747,7 +803,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		{
 			logit(LOG_STATUS,
 			      "copyover_recover: descriptor pool exhausted after %d/%d descs; pool=%s used=%lu pages=%lu size=%zu",
-			      i, header.num_descriptors, dead_desc_pool ? dead_desc_pool->name : "<null>",
+			      i, header.num_descriptors,
+			      dead_desc_pool ? dead_desc_pool->name : "<null>",
 			      dead_desc_pool ? (unsigned long)dead_desc_pool->objs_used : 0UL,
 			      dead_desc_pool ? (unsigned long)dead_desc_pool->pages_owned : 0UL,
 			      dead_desc_pool ? dead_desc_pool->size : 0UL);
@@ -759,16 +816,19 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		d->descriptor = desc_entry.fd;
 
 		// check if fd is still valid socket
-		int       sock_type;
+		int sock_type;
 		socklen_t optlen = sizeof(sock_type);
 		if (getsockopt(d->descriptor, SOL_SOCKET, SO_TYPE, &sock_type, &optlen) < 0)
 		{
-			logit(LOG_STATUS, "copyover: fd=%d is NOT a valid socket for %s host=%s! errno=%d", d->descriptor, desc_entry.player_name, desc_entry.host, errno);
+			logit(LOG_STATUS,
+			      "copyover: fd=%d is NOT a valid socket for %s host=%s! errno=%d",
+			      d->descriptor, desc_entry.player_name, desc_entry.host, errno);
 			close(d->descriptor);
 			mm_release(dead_desc_pool, d);
 			continue;
 		}
-		logit(LOG_STATUS, "copyover: fd=%d is valid socket type=%d", d->descriptor, sock_type);
+		logit(LOG_STATUS, "copyover: fd=%d is valid socket type=%d", d->descriptor,
+		      sock_type);
 
 		nonblock(d->descriptor);
 		int opt = 1;
@@ -776,14 +836,14 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 
 		strlcpy(d->host, desc_entry.host, sizeof(d->host));
 		strlcpy(d->host2, desc_entry.host2, sizeof(d->host2));
-		d->term_type                   = desc_entry.term_type;
-		d->gmcp_enabled                = desc_entry.gmcp_enabled;
-		d->mtts_flags                  = desc_entry.mtts_flags;
+		d->term_type = desc_entry.term_type;
+		d->gmcp_enabled = desc_entry.gmcp_enabled;
+		d->mtts_flags = desc_entry.mtts_flags;
 		strlcpy(d->client_name, desc_entry.ttype_client, sizeof(d->client_name));
-		d->ttype_state                                   = TTYPE_COMPLETE; // already negotiated before copyover
-		d->wait                                          = 1;
-		d->prompt_mode                                   = FALSE;
-		d->connected                                     = -1; // temp state until player loads
+		d->ttype_state = TTYPE_COMPLETE; // already negotiated before copyover
+		d->wait = 1;
+		d->prompt_mode = FALSE;
+		d->connected = -1; // temp state until player loads
 		used_descs++;
 		check_cp437(d);
 
@@ -794,7 +854,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			if (ch)
 			{
 				d->character = ch;
-				ch->desc     = d;
+				ch->desc = d;
 				d->connected = CON_PLAYING;
 
 #ifdef USE_ACCOUNT
@@ -814,7 +874,7 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				SET_POS(ch, POS_STANDING + STAT_NORMAL);
 
 				// add to character_list first
-				ch->next       = character_list;
+				ch->next = character_list;
 				character_list = ch;
 
 				// use room from copyover data, not pfile
@@ -828,7 +888,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 
 				reset_char(ch);
 				int items_result = restoreItemsOnly(ch, 0);
-				logit(LOG_STATUS, "copyover: restoreItemsOnly for %s returned %d", GET_NAME(ch), items_result);
+				logit(LOG_STATUS, "copyover: restoreItemsOnly for %s returned %d",
+				      GET_NAME(ch), items_result);
 
 				// restore pets/followers with hp
 				for (int p = 0; p < desc_entry.num_pets && p < 10; p++)
@@ -846,9 +907,15 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 								setup_pet(pet, ch, -1, PET_NOAGGRO);
 								add_follower(pet, ch);
 								// restore hp from before copyover
-								GET_HIT(pet)     = desc_entry.pet_hit[p];
-								GET_MAX_HIT(pet) = desc_entry.pet_max_hit[p];
-								logit(LOG_STATUS, "copyover: restored pet %s for %s (%d/%d hp)", GET_NAME(pet), GET_NAME(ch), GET_HIT(pet), GET_MAX_HIT(pet));
+								GET_HIT(pet) =
+									desc_entry.pet_hit[p];
+								GET_MAX_HIT(pet) =
+									desc_entry.pet_max_hit[p];
+								logit(LOG_STATUS,
+								      "copyover: restored pet %s for %s (%d/%d hp)",
+								      GET_NAME(pet), GET_NAME(ch),
+								      GET_HIT(pet),
+								      GET_MAX_HIT(pet));
 							}
 						}
 					}
@@ -856,17 +923,23 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 
 				// stash fighting info for later restoration
 				ch->specials.copyover_fighting_type = desc_entry.fighting_type;
-				ch->specials.copyover_fighting_id   = desc_entry.fighting_id;
+				ch->specials.copyover_fighting_id = desc_entry.fighting_id;
 				if (desc_entry.fighting_name[0])
-					strlcpy(ch->specials.copyover_fighting_name, desc_entry.fighting_name, sizeof(ch->specials.copyover_fighting_name));
+					strlcpy(ch->specials.copyover_fighting_name,
+						desc_entry.fighting_name,
+						sizeof(ch->specials.copyover_fighting_name));
 
-				raw_write_to_fd(d->descriptor, "\r\n*** Copyover complete! ***\r\n");
+				raw_write_to_fd(d->descriptor,
+						"\r\n*** Copyover complete! ***\r\n");
 
-				logit(LOG_STATUS, "copyover: restored %s fd=%d room=%d fighting=%d", desc_entry.player_name, d->descriptor, save_room, desc_entry.fighting_type);
+				logit(LOG_STATUS, "copyover: restored %s fd=%d room=%d fighting=%d",
+				      desc_entry.player_name, d->descriptor, save_room,
+				      desc_entry.fighting_type);
 			}
 			else
 			{
-				logit(LOG_STATUS, "copyover: failed to load %s", desc_entry.player_name);
+				logit(LOG_STATUS, "copyover: failed to load %s",
+				      desc_entry.player_name);
 				close(desc_entry.fd);
 				mm_release(dead_desc_pool, d);
 				used_descs--;
@@ -875,17 +948,17 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		}
 
 		// add to descriptor list
-		d->next         = descriptor_list;
+		d->next = descriptor_list;
 		descriptor_list = d;
 	}
 
 	// restore mobs directly from saved data (zones were not reset)
 	for (i = 0; i < header.num_mobs; i++)
 	{
-		struct copyover_mob    mob_entry;
+		struct copyover_mob mob_entry;
 		struct copyover_affect aff_entries[64];
-		copyover_carried_item  inv_entries[256];
-		int                    num_affs, num_inv;
+		copyover_carried_item inv_entries[256];
+		int num_affs, num_inv;
 
 		if (fread(&mob_entry, sizeof(mob_entry), 1, fp) != 1)
 			goto copyover_recover_fail;
@@ -928,12 +1001,14 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		P_char mob = read_mobile(mob_rnum, REAL);
 		if (!mob)
 		{
-			logit(LOG_STATUS, "copyover: read_mobile failed for vnum %d at mob %d", mob_entry.vnum, i);
+			logit(LOG_STATUS, "copyover: read_mobile failed for vnum %d at mob %d",
+			      mob_entry.vnum, i);
 			continue;
 		}
 		if (!mob->only.npc)
 		{
-			logit(LOG_STATUS, "copyover: mob has null only.npc for vnum %d at mob %d", mob_entry.vnum, i);
+			logit(LOG_STATUS, "copyover: mob has null only.npc for vnum %d at mob %d",
+			      mob_entry.vnum, i);
 			continue;
 		}
 
@@ -945,11 +1020,11 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		char_to_room(mob, rnum, FALSE);
 
 		// restore saved state
-		GET_HIT(mob)          = mob_entry.hit;
-		GET_MAX_HIT(mob)      = mob_entry.max_hit;
-		GET_MANA(mob)         = mob_entry.mana;
-		GET_MAX_MANA(mob)     = mob_entry.max_mana;
-		GET_VITALITY(mob)     = mob_entry.vitality;
+		GET_HIT(mob) = mob_entry.hit;
+		GET_MAX_HIT(mob) = mob_entry.max_hit;
+		GET_MANA(mob) = mob_entry.mana;
+		GET_MAX_MANA(mob) = mob_entry.max_mana;
+		GET_VITALITY(mob) = mob_entry.vitality;
 		GET_MAX_VITALITY(mob) = mob_entry.max_vitality;
 		// force standing to avoid weird states like falling
 		SET_POS(mob, POS_STANDING + STAT_NORMAL);
@@ -962,19 +1037,19 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		{
 			struct affected_type af;
 			memset(&af, 0, sizeof(af));
-			af.type                   = aff_entries[a].type;
+			af.type = aff_entries[a].type;
 			af.wear_off_message_index = aff_entries[a].wear_off_message_index;
-			af.duration               = aff_entries[a].duration;
-			af.flags                  = aff_entries[a].flags;
-			af.modifier               = aff_entries[a].modifier;
-			af.location               = aff_entries[a].location;
-			af.loc2                   = aff_entries[a].loc2;
-			af.level                  = aff_entries[a].level;
-			af.bitvector              = aff_entries[a].bitvector;
-			af.bitvector2             = aff_entries[a].bitvector2;
-			af.bitvector3             = aff_entries[a].bitvector3;
-			af.bitvector4             = aff_entries[a].bitvector4;
-			af.bitvector5             = aff_entries[a].bitvector5;
+			af.duration = aff_entries[a].duration;
+			af.flags = aff_entries[a].flags;
+			af.modifier = aff_entries[a].modifier;
+			af.location = aff_entries[a].location;
+			af.loc2 = aff_entries[a].loc2;
+			af.level = aff_entries[a].level;
+			af.bitvector = aff_entries[a].bitvector;
+			af.bitvector2 = aff_entries[a].bitvector2;
+			af.bitvector3 = aff_entries[a].bitvector3;
+			af.bitvector4 = aff_entries[a].bitvector4;
+			af.bitvector5 = aff_entries[a].bitvector5;
 			affect_to_char(mob, &af);
 		}
 
@@ -1008,9 +1083,11 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 		if (mob_entry.fighting_type)
 		{
 			mob->specials.copyover_fighting_type = mob_entry.fighting_type;
-			mob->specials.copyover_fighting_id   = mob_entry.fighting_id;
+			mob->specials.copyover_fighting_id = mob_entry.fighting_id;
 			if (mob_entry.fighting_name[0])
-				strlcpy(mob->specials.copyover_fighting_name, mob_entry.fighting_name, sizeof(mob->specials.copyover_fighting_name));
+				strlcpy(mob->specials.copyover_fighting_name,
+					mob_entry.fighting_name,
+					sizeof(mob->specials.copyover_fighting_name));
 		}
 	}
 
@@ -1105,7 +1182,8 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 			goto copyover_recover_fail;
 
 		rnum = real_room(room_entry.vnum);
-		if (rnum >= 0 && rnum <= top_of_world && room_entry.dir >= 0 && room_entry.dir < NUM_EXITS && world[rnum].dir_option[room_entry.dir])
+		if (rnum >= 0 && rnum <= top_of_world && room_entry.dir >= 0 &&
+		    room_entry.dir < NUM_EXITS && world[rnum].dir_option[room_entry.dir])
 		{
 			world[rnum].dir_option[room_entry.dir]->exit_info = room_entry.state;
 		}
@@ -1155,7 +1233,8 @@ void copyover_restore_combat(void)
 			target = world[ch->in_room].people;
 			while (target)
 			{
-				if (IS_NPC(target) && target != ch && get_linked_char(target, LNK_PET) != ch)
+				if (IS_NPC(target) && target != ch &&
+				    get_linked_char(target, LNK_PET) != ch)
 				{
 					break;
 				}
@@ -1167,16 +1246,21 @@ void copyover_restore_combat(void)
 				set_fighting(ch, target);
 				if (!IS_FIGHTING(target))
 					set_fighting(target, ch);
-				logit(LOG_STATUS, "copyover: restored combat %s vs %s", GET_NAME(ch), GET_NAME(target));
+				logit(LOG_STATUS, "copyover: restored combat %s vs %s",
+				      GET_NAME(ch), GET_NAME(target));
 
 				// also make pets fight the same target
 				struct follow_type *f;
 				for (f = ch->followers; f; f = f->next)
 				{
-					if (IS_NPC(f->follower) && f->follower->in_room == ch->in_room && !IS_FIGHTING(f->follower))
+					if (IS_NPC(f->follower) &&
+					    f->follower->in_room == ch->in_room &&
+					    !IS_FIGHTING(f->follower))
 					{
 						set_fighting(f->follower, target);
-						logit(LOG_STATUS, "copyover: pet %s joins combat vs %s", GET_NAME(f->follower), GET_NAME(target));
+						logit(LOG_STATUS,
+						      "copyover: pet %s joins combat vs %s",
+						      GET_NAME(f->follower), GET_NAME(target));
 					}
 				}
 			}
@@ -1190,12 +1274,13 @@ void copyover_restore_combat(void)
 				set_fighting(ch, target);
 				if (!IS_FIGHTING(target))
 					set_fighting(target, ch);
-				logit(LOG_STATUS, "copyover: restored pvp %s vs %s", GET_NAME(ch), GET_NAME(target));
+				logit(LOG_STATUS, "copyover: restored pvp %s vs %s", GET_NAME(ch),
+				      GET_NAME(target));
 			}
 		}
 
-		ch->specials.copyover_fighting_type    = 0;
-		ch->specials.copyover_fighting_id      = 0;
+		ch->specials.copyover_fighting_type = 0;
+		ch->specials.copyover_fighting_id = 0;
 		ch->specials.copyover_fighting_name[0] = '\0';
 	}
 }
@@ -1205,11 +1290,11 @@ void copyover_restore_combat(void)
 void copyover_count_items(int *num_mobs, int *num_objs, int *num_rooms)
 {
 	P_char ch;
-	P_obj  obj;
-	int    room, dir;
+	P_obj obj;
+	int room, dir;
 
-	*num_mobs  = 0;
-	*num_objs  = 0;
+	*num_mobs = 0;
+	*num_objs = 0;
 	*num_rooms = 0;
 
 	for (ch = character_list; ch; ch = ch->next)
@@ -1225,7 +1310,8 @@ void copyover_count_items(int *num_mobs, int *num_objs, int *num_rooms)
 		if (OBJ_ROOM(obj))
 		{
 			int vnum = OBJ_VNUM(obj);
-			if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS || vnum == VOBJ_CARGO_CRATE)
+			if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS ||
+			    vnum == VOBJ_CARGO_CRATE)
 				continue;
 			(*num_objs)++;
 		}
@@ -1235,7 +1321,8 @@ void copyover_count_items(int *num_mobs, int *num_objs, int *num_rooms)
 	{
 		for (dir = 0; dir < NUM_EXITS; dir++)
 		{
-			if (world[room].dir_option[dir] && IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR))
+			if (world[room].dir_option[dir] &&
+			    IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR))
 			{
 				(*num_rooms)++;
 			}
@@ -1245,12 +1332,12 @@ void copyover_count_items(int *num_mobs, int *num_objs, int *num_rooms)
 
 int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 {
-	struct copyover_mob    entry;
+	struct copyover_mob entry;
 	struct copyover_affect aff_entry;
-	copyover_carried_item  inv_entry;
-	struct affected_type  *af;
-	P_obj                  obj;
-	size_t                 offset = 0;
+	copyover_carried_item inv_entry;
+	struct affected_type *af;
+	P_obj obj;
+	size_t offset = 0;
 
 	if (max_len < sizeof(entry))
 		return -1;
@@ -1260,16 +1347,16 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 		return -1;
 
 	memset(&entry, 0, sizeof(entry));
-	entry.vnum         = mob_index[mob_rnum].virtual_number;
-	entry.idnum        = GET_IDNUM(mob);
-	entry.room         = world[mob->in_room].number;
-	entry.hit          = GET_HIT(mob);
-	entry.max_hit      = GET_MAX_HIT(mob);
-	entry.mana         = GET_MANA(mob);
-	entry.max_mana     = GET_MAX_MANA(mob);
-	entry.vitality     = GET_VITALITY(mob);
+	entry.vnum = mob_index[mob_rnum].virtual_number;
+	entry.idnum = GET_IDNUM(mob);
+	entry.room = world[mob->in_room].number;
+	entry.hit = GET_HIT(mob);
+	entry.max_hit = GET_MAX_HIT(mob);
+	entry.mana = GET_MANA(mob);
+	entry.max_mana = GET_MAX_MANA(mob);
+	entry.vitality = GET_VITALITY(mob);
 	entry.max_vitality = GET_MAX_VITALITY(mob);
-	entry.position     = GET_POS(mob);
+	entry.position = GET_POS(mob);
 
 	if (mob->specials.fighting)
 	{
@@ -1281,13 +1368,14 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 		else if (IS_NPC(target))
 		{
 			entry.fighting_type = 2;
-			entry.fighting_id   = GET_IDNUM(target);
+			entry.fighting_id = GET_IDNUM(target);
 		}
 		else
 		{
 			entry.fighting_type = 1;
 			if (GET_NAME(target))
-				strlcpy(entry.fighting_name, GET_NAME(target), sizeof(entry.fighting_name));
+				strlcpy(entry.fighting_name, GET_NAME(target),
+					sizeof(entry.fighting_name));
 		}
 	}
 
@@ -1319,19 +1407,19 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 			return -1;
 
 		memset(&aff_entry, 0, sizeof(aff_entry));
-		aff_entry.type                   = af->type;
+		aff_entry.type = af->type;
 		aff_entry.wear_off_message_index = af->wear_off_message_index;
-		aff_entry.duration               = af->duration;
-		aff_entry.flags                  = af->flags;
-		aff_entry.modifier               = af->modifier;
-		aff_entry.location               = af->location;
-		aff_entry.loc2                   = af->loc2;
-		aff_entry.level                  = af->level;
-		aff_entry.bitvector              = af->bitvector;
-		aff_entry.bitvector2             = af->bitvector2;
-		aff_entry.bitvector3             = af->bitvector3;
-		aff_entry.bitvector4             = af->bitvector4;
-		aff_entry.bitvector5             = af->bitvector5;
+		aff_entry.duration = af->duration;
+		aff_entry.flags = af->flags;
+		aff_entry.modifier = af->modifier;
+		aff_entry.location = af->location;
+		aff_entry.loc2 = af->loc2;
+		aff_entry.level = af->level;
+		aff_entry.bitvector = af->bitvector;
+		aff_entry.bitvector2 = af->bitvector2;
+		aff_entry.bitvector3 = af->bitvector3;
+		aff_entry.bitvector4 = af->bitvector4;
+		aff_entry.bitvector5 = af->bitvector5;
 
 		memcpy(buf + offset, &aff_entry, sizeof(aff_entry));
 		offset += sizeof(aff_entry);
@@ -1345,7 +1433,7 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 
 		memset(&inv_entry, 0, sizeof(inv_entry));
 		inv_entry.obj_uid = obj->obj_uid;
-		inv_entry.vnum    = OBJ_VNUM(obj);
+		inv_entry.vnum = OBJ_VNUM(obj);
 		memcpy(buf + offset, &inv_entry, sizeof(inv_entry));
 		offset += sizeof(inv_entry);
 	}
@@ -1355,19 +1443,19 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 
 int copyover_write_obj_to_buffer(P_obj obj, char *buf, size_t max_len)
 {
-	struct copyover_obj         entry;
+	struct copyover_obj entry;
 	struct copyover_obj_content cont_entry;
-	P_obj                       content;
-	size_t                      offset = 0;
+	P_obj content;
+	size_t offset = 0;
 
 	if (max_len < sizeof(entry))
 		return -1;
 
 	memset(&entry, 0, sizeof(entry));
 	entry.obj_uid = obj->obj_uid;
-	entry.vnum    = OBJ_VNUM(obj);
-	entry.room    = world[obj->loc.room].number;
-	entry.type    = obj->type;
+	entry.vnum = OBJ_VNUM(obj);
+	entry.room = world[obj->loc.room].number;
+	entry.type = obj->type;
 	memcpy(entry.value, obj->value, sizeof(entry.value));
 	memcpy(entry.timer, obj->timer, sizeof(entry.timer));
 
@@ -1393,7 +1481,7 @@ int copyover_write_obj_to_buffer(P_obj obj, char *buf, size_t max_len)
 
 		memset(&cont_entry, 0, sizeof(cont_entry));
 		cont_entry.obj_uid = content->obj_uid;
-		cont_entry.vnum    = OBJ_VNUM(content);
+		cont_entry.vnum = OBJ_VNUM(content);
 		memcpy(buf + offset, &cont_entry, sizeof(cont_entry));
 		offset += sizeof(cont_entry);
 	}
@@ -1409,8 +1497,8 @@ int copyover_write_door_to_buffer(int room_rnum, int dir, char *buf, size_t max_
 		return -1;
 
 	memset(&entry, 0, sizeof(entry));
-	entry.vnum  = world[room_rnum].number;
-	entry.dir   = dir;
+	entry.vnum = world[room_rnum].number;
+	entry.dir = dir;
 	entry.state = world[room_rnum].dir_option[dir]->exit_info;
 
 	memcpy(buf, &entry, sizeof(entry));
@@ -1425,10 +1513,10 @@ int copyover_write_zone_age_to_buffer(int zone_rnum, char *buf, size_t max_len)
 		return -1;
 
 	memset(&entry, 0, sizeof(entry));
-	entry.zone_rnum          = zone_rnum;
-	entry.age                = zone_table[zone_rnum].age;
-	entry.lifespan           = zone_table[zone_rnum].lifespan;
-	entry.fullreset_age      = zone_table[zone_rnum].fullreset_age;
+	entry.zone_rnum = zone_rnum;
+	entry.age = zone_table[zone_rnum].age;
+	entry.lifespan = zone_table[zone_rnum].lifespan;
+	entry.fullreset_age = zone_table[zone_rnum].fullreset_age;
 	entry.fullreset_lifespan = zone_table[zone_rnum].fullreset_lifespan;
 
 	memcpy(buf, &entry, sizeof(entry));
@@ -1437,12 +1525,12 @@ int copyover_write_zone_age_to_buffer(int zone_rnum, char *buf, size_t max_len)
 
 P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *bytes_read)
 {
-	struct copyover_mob    mob_entry;
+	struct copyover_mob mob_entry;
 	struct copyover_affect aff_entry;
-	copyover_carried_item  inv_entry;
-	size_t                 offset = 0;
-	int                    rnum;
-	P_char                 mob;
+	copyover_carried_item inv_entry;
+	size_t offset = 0;
+	int rnum;
+	P_char mob;
 
 	if (len < sizeof(mob_entry))
 	{
@@ -1483,11 +1571,11 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 
 	GET_IDNUM(mob) = mob_entry.idnum;
 	char_to_room(mob, rnum, FALSE);
-	GET_HIT(mob)          = mob_entry.hit;
-	GET_MAX_HIT(mob)      = mob_entry.max_hit;
-	GET_MANA(mob)         = mob_entry.mana;
-	GET_MAX_MANA(mob)     = mob_entry.max_mana;
-	GET_VITALITY(mob)     = mob_entry.vitality;
+	GET_HIT(mob) = mob_entry.hit;
+	GET_MAX_HIT(mob) = mob_entry.max_hit;
+	GET_MANA(mob) = mob_entry.mana;
+	GET_MAX_MANA(mob) = mob_entry.max_mana;
+	GET_VITALITY(mob) = mob_entry.vitality;
 	GET_MAX_VITALITY(mob) = mob_entry.max_vitality;
 	SET_POS(mob, POS_STANDING + STAT_NORMAL);
 	GET_GOLD(mob) = mob_entry.gold;
@@ -1503,19 +1591,19 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 
 		struct affected_type af;
 		memset(&af, 0, sizeof(af));
-		af.type                   = aff_entry.type;
+		af.type = aff_entry.type;
 		af.wear_off_message_index = aff_entry.wear_off_message_index;
-		af.duration               = aff_entry.duration;
-		af.flags                  = aff_entry.flags;
-		af.modifier               = aff_entry.modifier;
-		af.location               = aff_entry.location;
-		af.loc2                   = aff_entry.loc2;
-		af.level                  = aff_entry.level;
-		af.bitvector              = aff_entry.bitvector;
-		af.bitvector2             = aff_entry.bitvector2;
-		af.bitvector3             = aff_entry.bitvector3;
-		af.bitvector4             = aff_entry.bitvector4;
-		af.bitvector5             = aff_entry.bitvector5;
+		af.duration = aff_entry.duration;
+		af.flags = aff_entry.flags;
+		af.modifier = aff_entry.modifier;
+		af.location = aff_entry.location;
+		af.loc2 = aff_entry.loc2;
+		af.level = aff_entry.level;
+		af.bitvector = aff_entry.bitvector;
+		af.bitvector2 = aff_entry.bitvector2;
+		af.bitvector3 = aff_entry.bitvector3;
+		af.bitvector4 = aff_entry.bitvector4;
+		af.bitvector5 = aff_entry.bitvector5;
 		affect_to_char(mob, &af);
 	}
 
@@ -1527,7 +1615,9 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 			// debug: log redis equipment restore for artifact 58424
 			if (mob_entry.equipment_vnums[w] == 58424)
 			{
-				logit(LOG_DEBUG, "[copyover.c] REDIS restoring artifact 58424 on mob '%s' vnum=%d room=%d slot=%d", GET_NAME(mob), mob_entry.vnum, mob_entry.room, w);
+				logit(LOG_DEBUG,
+				      "[copyover.c] REDIS restoring artifact 58424 on mob '%s' vnum=%d room=%d slot=%d",
+				      GET_NAME(mob), mob_entry.vnum, mob_entry.room, w);
 			}
 			P_obj obj = read_object(mob_entry.equipment_vnums[w], VIRTUAL);
 			if (obj)
@@ -1556,9 +1646,10 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 	if (mob_entry.fighting_type)
 	{
 		mob->specials.copyover_fighting_type = mob_entry.fighting_type;
-		mob->specials.copyover_fighting_id   = mob_entry.fighting_id;
+		mob->specials.copyover_fighting_id = mob_entry.fighting_id;
 		if (mob_entry.fighting_name[0])
-			strlcpy(mob->specials.copyover_fighting_name, mob_entry.fighting_name, sizeof(mob->specials.copyover_fighting_name));
+			strlcpy(mob->specials.copyover_fighting_name, mob_entry.fighting_name,
+				sizeof(mob->specials.copyover_fighting_name));
 	}
 
 	*bytes_read = offset;
@@ -1567,11 +1658,11 @@ P_char copyover_restore_mob_from_buffer(const char *buf, size_t len, size_t *byt
 
 P_obj copyover_restore_obj_from_buffer(const char *buf, size_t len, size_t *bytes_read)
 {
-	struct copyover_obj         obj_entry;
+	struct copyover_obj obj_entry;
 	struct copyover_obj_content cont_entry;
-	size_t                      offset = 0;
-	int                         rnum;
-	P_obj                       obj;
+	size_t offset = 0;
+	int rnum;
+	P_obj obj;
 
 	if (len < sizeof(obj_entry))
 	{
@@ -1640,7 +1731,7 @@ P_obj copyover_restore_obj_from_buffer(const char *buf, size_t len, size_t *byte
 int copyover_restore_door_from_buffer(const char *buf, size_t len, size_t *bytes_read)
 {
 	struct copyover_room room_entry;
-	int                  rnum;
+	int rnum;
 
 	if (len < sizeof(room_entry))
 	{
@@ -1652,7 +1743,8 @@ int copyover_restore_door_from_buffer(const char *buf, size_t len, size_t *bytes
 	*bytes_read = sizeof(room_entry);
 
 	rnum = real_room(room_entry.vnum);
-	if (rnum >= 0 && rnum <= top_of_world && room_entry.dir >= 0 && room_entry.dir < NUM_EXITS && world[rnum].dir_option[room_entry.dir])
+	if (rnum >= 0 && rnum <= top_of_world && room_entry.dir >= 0 &&
+	    room_entry.dir < NUM_EXITS && world[rnum].dir_option[room_entry.dir])
 	{
 		world[rnum].dir_option[room_entry.dir]->exit_info = room_entry.state;
 		return 0;
@@ -1675,9 +1767,9 @@ int copyover_restore_zone_age_from_buffer(const char *buf, size_t len, size_t *b
 
 	if (entry.zone_rnum >= 0 && entry.zone_rnum <= top_of_zone_table)
 	{
-		zone_table[entry.zone_rnum].age                = entry.age;
-		zone_table[entry.zone_rnum].lifespan           = entry.lifespan;
-		zone_table[entry.zone_rnum].fullreset_age      = entry.fullreset_age;
+		zone_table[entry.zone_rnum].age = entry.age;
+		zone_table[entry.zone_rnum].lifespan = entry.lifespan;
+		zone_table[entry.zone_rnum].fullreset_age = entry.fullreset_age;
 		zone_table[entry.zone_rnum].fullreset_lifespan = entry.fullreset_lifespan;
 		return 0;
 	}

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Source contracts for exact account-reward grants, expiry, cooldown, and pwipe policy."""
 from pathlib import Path
+from contract_text import contains, find, index
 
 ROOT = Path(__file__).resolve().parents[2]
 source = (ROOT / "src/account_reward.c").read_text()
@@ -25,14 +26,14 @@ config_header = config_header_path.read_text()
 config_file = config_file_path.read_text()
 
 # Player-facing reward output must happen after the initial room look.
-look_pos = nanny.index("do_look(ch, 0, -4);")
-hook_pos = nanny.index("account_bound_reward_on_login(ch);")
+look_pos = index(nanny, "do_look(ch, 0, -4);")
+hook_pos = index(nanny, "account_bound_reward_on_login(ch);")
 assert look_pos < hook_pos
-assert 'send_to_char("\\r\\n", ch)' in source or 'send_to_char("\\r\\n",ch)' in source
+assert contains(source, 'send_to_char("\\r\\n", ch)') or contains(source, 'send_to_char("\\r\\n",ch)')
 
 # Dedicated, boot-time, documented settings.
 assert "account_reward_config.o" in makefile
-assert "boot_account_reward_config();" in comm
+assert contains(comm, "boot_account_reward_config();")
 assert "summon.cooldown.seconds" in config_source
 assert "pwipe.preserve" in config_source
 assert "summon.cooldown.seconds=3600" in config_file
@@ -59,57 +60,57 @@ assert "template_json" in verifier
 assert "remaining_pwipes" in verifier
 
 # Versioned exact-object snapshot and claim-ID ownership markers.
-assert "ACCOUNT_REWARD_TEMPLATE_VERSION" in header
-assert "account_reward_snapshot_serialize" in source
-assert "account_reward_snapshot_apply" in source
-assert '"template_version"' in snapshot_source
-assert '"craftsmanship"' in snapshot_source
-assert '"extra_descriptions"' in snapshot_source
-assert '"linked_affects"' in snapshot_source
-assert 'read_int(root, "type", ITEM_LOWEST, ITEM_LAST' in snapshot_source
-assert 'APPLY_REWARD_INT("material", MAT_UNDEFINED, MAT_HIGHEST' in snapshot_source
-assert 'read_int(entry,"location",APPLY_NONE,APPLY_LAST' in snapshot_source
-assert "grant_id" in source
+assert contains(header, "ACCOUNT_REWARD_TEMPLATE_VERSION")
+assert contains(source, "account_reward_snapshot_serialize")
+assert contains(source, "account_reward_snapshot_apply")
+assert contains(snapshot_source, '"template_version"')
+assert contains(snapshot_source, '"craftsmanship"')
+assert contains(snapshot_source, '"extra_descriptions"')
+assert contains(snapshot_source, '"linked_affects"')
+assert contains(snapshot_source, 'read_int(root, "type", ITEM_LOWEST, ITEM_LAST')
+assert contains(snapshot_source, 'APPLY_REWARD_INT("material", MAT_UNDEFINED, MAT_HIGHEST')
+assert contains(snapshot_source, 'read_int(entry,"location",APPLY_NONE,APPLY_LAST')
+assert contains(source, "grant_id")
 
 # Trusted command UX: exact item shorthand, explicit lifetimes, global listing,
 # stable-ID removal, and backward-compatible vnum form.
-assert "permanent|days <count>|wipes <count>" in source
-assert "divineclaim list [account]" in source
-assert "divineclaim remove <claim-id>" in source
-assert "The source item remains in your inventory" in source
-assert "Each character on that account may summon one copy" in source
-assert "canonical_account(first,&first_account) && (!*second || parse_positive(second,&legacy_vnum))" in source
-assert "human_duration(grant.expires_seconds, true)" in source
+assert contains(source, "permanent|days <count>|wipes <count>")
+assert contains(source, "divineclaim list [account]")
+assert contains(source, "divineclaim remove <claim-id>")
+assert contains(source, "The source item remains in your inventory")
+assert contains(source, "Each character on that account may summon one copy")
+assert contains(source, "canonical_account(first,&first_account) && (!*second || parse_positive(second,&legacy_vnum))")
+assert contains(source, "human_duration(grant.expires_seconds, true)")
 
 # Cooldown is persisted per claim/PID, not kept in process memory.
-assert "last_summoned_at" in source
-assert "account_bound_reward_summons" in source
-assert "GET_PID(ch)" in source
-assert "cooldown" in source.lower()
+assert contains(source, "last_summoned_at")
+assert contains(source, "account_bound_reward_summons")
+assert contains(source, "GET_PID(ch)")
+assert contains(source.lower(), "cooldown")
 
 # Pwipe policy is applied only after existing postflight passes and before
 # success is announced.
 pwipe_hook = "account_bound_rewards_on_successful_pwipe()"
 assert pwipe_hook in sql_source
-postflight_pos = sql_source.index("if (!postflight_ok)")
+postflight_pos = index(sql_source, "if (!postflight_ok)")
 pwipe_pos = sql_source.index(pwipe_hook, postflight_pos)
-completed_pos = sql_source.index('send_to_all("WIPE COMPLETED!")', pwipe_pos)
+completed_pos = index(sql_source, 'send_to_all("WIPE COMPLETED!")', pwipe_pos)
 assert postflight_pos < pwipe_pos < completed_pos
-assert "return FALSE" not in sql_source[pwipe_pos:completed_pos]
-manifest = sql_source[sql_source.index("bool sql_verify_pwipe_manifest"):sql_source.index("bool sql_verify_persistence_schema")]
-assert '"account_bound_rewards"' in manifest
-assert '"account_bound_reward_summons"' in manifest
-assert '"account_bound_reward_pwipe_state"' in manifest
-assert '"remaining_pwipes"' in manifest
-assert '"last_processed_at"' in manifest
+assert not contains(sql_source[pwipe_pos:completed_pos], "return FALSE")
+manifest = sql_source[index(sql_source, "bool sql_verify_pwipe_manifest"):index(sql_source, "bool sql_verify_persistence_schema")]
+assert contains(manifest, '"account_bound_rewards"')
+assert contains(manifest, '"account_bound_reward_summons"')
+assert contains(manifest, '"account_bound_reward_pwipe_state"')
+assert contains(manifest, '"remaining_pwipes"')
+assert contains(manifest, '"last_processed_at"')
 assert pwipe_hook.replace("()", "") in header
-assert "remaining_pwipes = remaining_pwipes - 1" in source
-assert "DELETE FROM account_bound_reward_summons" in source
-lock_pos = source.index("FOR UPDATE", source.index("bool account_bound_rewards_on_successful_pwipe"))
-delete_pos = source.index("DELETE FROM account_bound_reward_summons", lock_pos)
-stamp_pos = source.index("SET last_processed_at=NOW()", delete_pos)
+assert contains(source, "remaining_pwipes = remaining_pwipes - 1")
+assert contains(source, "DELETE FROM account_bound_reward_summons")
+lock_pos = index(source, "FOR UPDATE", source.index("bool account_bound_rewards_on_successful_pwipe"))
+delete_pos = index(source, "DELETE FROM account_bound_reward_summons", lock_pos)
+stamp_pos = index(source, "SET last_processed_at=NOW()", delete_pos)
 assert lock_pos < delete_pos < stamp_pos
-assert "INTERVAL 28 DAY" in source
+assert contains(source, "INTERVAL 28 DAY")
 assert "account_bound_reward_pwipe_state" in verifier
 
 print("account reward exact-item/config/cooldown/expiry/pwipe source contract: ok")

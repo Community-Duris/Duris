@@ -28,7 +28,7 @@ int deliverer_hammer(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char victim;
 	P_char temp;
-	int    dam;
+	int dam;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -44,7 +44,8 @@ int deliverer_hammer(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		victim = (P_char)arg;
 
-		if (!IS_ALIVE(victim) || !(IS_UNDEAD(victim) || IS_AFFECTED(victim, AFF_WRAITHFORM)))
+		if (!IS_ALIVE(victim) ||
+		    !(IS_UNDEAD(victim) || IS_AFFECTED(victim, AFF_WRAITHFORM)))
 		{
 			return FALSE;
 		}
@@ -52,10 +53,13 @@ int deliverer_hammer(P_obj obj, P_char ch, int cmd, char *arg)
 		// 1/20 chance.
 		if (!number(0, 19))
 		{
-			act("&+WYour $q&+W is surrouned by a holy glow as it strikes $N&+W!&n", FALSE, ch, obj, victim, TO_CHAR);
-			act("&+W$n&+W's glows with a &+wholy &+Maura&+W!&n", FALSE, ch, obj, victim, TO_ROOM);
+			act("&+WYour $q&+W is surrouned by a holy glow as it strikes $N&+W!&n",
+			    FALSE, ch, obj, victim, TO_CHAR);
+			act("&+W$n&+W's glows with a &+wholy &+Maura&+W!&n", FALSE, ch, obj, victim,
+			    TO_ROOM);
 			int dam = number(50, 250);
-			spell_damage(ch, victim, dam, SPLDAM_HOLY, SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, 0);
+			spell_damage(ch, victim, dam, SPLDAM_HOLY,
+				     SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, 0);
 		}
 	}
 	return FALSE;

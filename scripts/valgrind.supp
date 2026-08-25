@@ -1,0 +1,131 @@
+# Valgrind suppressions for Duris.
+#
+# Only third-party noise belongs here: allocations the game never owns and
+# cannot free, or reads that libraries perform deliberately.  Never suppress
+# a Duris frame -- fix the bug instead.
+#
+# Used automatically by scripts/valgrind_mud.sh.  See docs/valgrind.md.
+
+# ---------------------------------------------------------------------------
+# glibc / dynamic loader
+# ---------------------------------------------------------------------------
+
+{
+   dl-init-allocations-are-never-freed
+   Memcheck:Leak
+   match-leak-kinds: reachable,possible
+   ...
+   fun:_dl_init
+}
+
+{
+   dlopen-keeps-handles-for-process-lifetime
+   Memcheck:Leak
+   match-leak-kinds: reachable,possible
+   ...
+   fun:dlopen*
+}
+
+{
+   libstdcxx-pool-is-freed-at-exit-only
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:_ZN9__gnu_cxx*pool*
+}
+
+# ---------------------------------------------------------------------------
+# GnuTLS / OpenSSL / libcrypto -- one-time global init, torn down (if at all)
+# after the game's own atexit handlers have run.
+# ---------------------------------------------------------------------------
+
+{
+   gnutls-global-init-one-time-state
+   Memcheck:Leak
+   match-leak-kinds: reachable,possible
+   ...
+   obj:*/libgnutls.so*
+}
+
+{
+   nettle-gmp-one-time-state
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*/libhogweed.so*
+}
+
+{
+   openssl-global-init-one-time-state
+   Memcheck:Leak
+   match-leak-kinds: reachable,possible
+   ...
+   obj:*/libcrypto.so*
+}
+
+{
+   openssl-ssl-global-init-one-time-state
+   Memcheck:Leak
+   match-leak-kinds: reachable,possible
+   ...
+   obj:*/libssl.so*
+}
+
+# ---------------------------------------------------------------------------
+# MySQL/MariaDB client -- caches connection and charset state per process.
+# ---------------------------------------------------------------------------
+
+{
+   mysql-client-library-init-state
+   Memcheck:Leak
+   match-leak-kinds: reachable,possible
+   ...
+   fun:mysql_server_init
+}
+
+{
+   mysql-client-charset-cache
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*/libmysqlclient.so*
+}
+
+{
+   mariadb-client-charset-cache
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*/libmariadb.so*
+}
+
+# ---------------------------------------------------------------------------
+# libxml2 -- global parser tables live until xmlCleanupParser(), which the
+# game does not call before exec()ing a copyover.
+# ---------------------------------------------------------------------------
+
+{
+   libxml2-global-parser-tables
+   Memcheck:Leak
+   match-leak-kinds: reachable,possible
+   ...
+   fun:xmlInitParser
+}
+
+# ---------------------------------------------------------------------------
+# zlib -- deflate/inflate windows read past the live bytes on purpose.
+# ---------------------------------------------------------------------------
+
+{
+   zlib-inflate-reads-whole-words
+   Memcheck:Cond
+   ...
+   obj:*/libz.so*
+}
+
+{
+   zlib-deflate-reads-whole-words
+   Memcheck:Value8
+   ...
+   obj:*/libz.so*
+}

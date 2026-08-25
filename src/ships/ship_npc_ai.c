@@ -53,14 +53,14 @@ static float get_arc_central_bearing(int arc)
 {
 	switch (arc)
 	{
-		case SLOT_FORE:
-			return 0;
-		case SLOT_PORT:
-			return 270;
-		case SLOT_REAR:
-			return 180;
-		case SLOT_STAR:
-			return 90;
+	case SLOT_FORE:
+		return 0;
+	case SLOT_PORT:
+		return 270;
+	case SLOT_REAR:
+		return 180;
+	case SLOT_STAR:
+		return 90;
 	};
 	return 0;
 }
@@ -69,12 +69,12 @@ static int get_arc_width(int arc)
 {
 	switch (arc)
 	{
-		case SLOT_FORE:
-		case SLOT_REAR:
-			return 80;
-		case SLOT_PORT:
-		case SLOT_STAR:
-			return 100;
+	case SLOT_FORE:
+	case SLOT_REAR:
+		return 80;
+	case SLOT_PORT:
+	case SLOT_STAR:
+		return 100;
 	};
 	return 0;
 }
@@ -104,34 +104,34 @@ static bool has_close_range_weapons(P_ship ship)
 
 NPCShipAI::NPCShipAI(P_ship s, P_char ch)
 {
-	ship                   = s;
-	escort                 = 0;
-	advanced               = 0;
-	permanent              = false;
-	mode                   = NPC_AI_IDLING;
-	turning                = NPC_AI_NOT_TURNING;
-	t_contact              = 0;
-	t_bearing              = 0;
-	t_arc                  = 0;
-	s_arc                  = 0;
-	t_range                = 0;
-	t_x                    = 0;
-	t_y                    = 0;
-	debug_char             = ch;
-	did_board              = 0;
-	speed_restriction      = -1;
+	ship = s;
+	escort = 0;
+	advanced = 0;
+	permanent = false;
+	mode = NPC_AI_IDLING;
+	turning = NPC_AI_NOT_TURNING;
+	t_contact = 0;
+	t_bearing = 0;
+	t_arc = 0;
+	s_arc = 0;
+	t_range = 0;
+	t_x = 0;
+	t_y = 0;
+	debug_char = ch;
+	did_board = 0;
+	speed_restriction = -1;
 	since_last_fired_right = 0;
-	target_side            = SIDE_REAR;
-	prev_hd                = 0;
+	target_side = SIDE_REAR;
+	prev_hd = 0;
 
 	if (SHIP_HULL_WEIGHT(ship) > 200)
 	{
-		is_heavy_ship   = true;
+		is_heavy_ship = true;
 		is_multi_target = true;
 	}
 	else
 	{
-		is_heavy_ship   = false;
+		is_heavy_ship = false;
 		is_multi_target = false;
 	}
 
@@ -140,7 +140,7 @@ NPCShipAI::NPCShipAI(P_ship s, P_char ch)
 	for (int i = 0; i < 4; i++)
 		active_arc[i] = 0;
 	too_close = 0;
-	too_far   = false;
+	too_far = false;
 
 	new_heading = 0;
 }
@@ -162,7 +162,7 @@ void NPCShipAI::activity()
 	if (!getmap(ship)) // doing it here once
 		return;
 
-	contacts_count    = getcontacts(ship, false); // doing it here once
+	contacts_count = getcontacts(ship, false); // doing it here once
 	speed_restriction = -1;
 
 	if (IS_SET(ship->flags, AIR) && !SHIP_FLYING(ship) && !number(0, 5))
@@ -170,107 +170,107 @@ void NPCShipAI::activity()
 
 	switch (mode)
 	{
-		case NPC_AI_ENGAGING:
+	case NPC_AI_ENGAGING:
+	{
+		// checking if we have ammo left to fight
+		if (!check_ammo())
 		{
-			// checking if we have ammo left to fight
-			if (!check_ammo())
-			{
-				mode = NPC_AI_RUNNING;
-				break;
-			}
-
-			if (ship->target == 0 || !find_current_target())
-			{
-				mode = NPC_AI_CRUISING;
-				break;
-			}
-
-			if (SHIP_IMMOBILE(ship))
-			{
-				immobile_maneuver();
-				break;
-			}
-
-			check_for_jettison();
-
-			if (check_dir_for_land_from(ship->x, ship->y, t_bearing, t_range))
-			{               // we have a land between us and target, forget about combat maneuvering for now, lets find a way to go around it
-				b_attack(); // trying to fire over land
-				if (!go_around_land(ship->target))
-					mode = NPC_AI_RUNNING; // TODO: do something better?
-				break;
-			}
-
-			if (worth_ramming() && check_ram())
-			{
-				ram_target();
-				if (ship->target == 0)
-					break;
-			}
-
-			if (did_board != ship->target && is_boardable(ship->target))
-			{ // not maneuvering, just charging target
-				if (check_boarding_conditions())
-				{
-					board_target();
-					break;
-				}
-				if (charge_target(true))
-				{
-					b_attack(); // well, trying to fire on the way
-					break;
-				}
-			}
-
-			if (advanced == 1)
-				advanced_combat_maneuver();
-			else
-				basic_combat_maneuver();
-		}
-		break;
-
-		case NPC_AI_RUNNING:
-		{
-			if (find_current_target())
-			{
-				run_away();
-			}
-			else
-			{
-				mode = NPC_AI_CRUISING;
-			}
-		}
-		break;
-
-		case NPC_AI_LOOTING:
+			mode = NPC_AI_RUNNING;
 			break;
-
-		case NPC_AI_CRUISING:
-		{
-			if (type == NPC_AI_PIRATE || type == NPC_AI_HUNTER)
-			{
-				if (find_new_target())
-				{
-					mode = NPC_AI_ENGAGING;
-					break;
-				}
-			}
-			if (type == NPC_AI_ESCORT)
-			{
-				if (do_escort())
-					break;
-			}
-		} // no break
-		case NPC_AI_LEAVING:
-		{
-			cruise();
-			if (!permanent && try_unload())
-				return;
 		}
+
+		if (ship->target == 0 || !find_current_target())
+		{
+			mode = NPC_AI_CRUISING;
+			break;
+		}
+
+		if (SHIP_IMMOBILE(ship))
+		{
+			immobile_maneuver();
+			break;
+		}
+
+		check_for_jettison();
+
+		if (check_dir_for_land_from(ship->x, ship->y, t_bearing, t_range))
+		{ // we have a land between us and target, forget about combat maneuvering for now, lets find a way to go around it
+			b_attack(); // trying to fire over land
+			if (!go_around_land(ship->target))
+				mode = NPC_AI_RUNNING; // TODO: do something better?
+			break;
+		}
+
+		if (worth_ramming() && check_ram())
+		{
+			ram_target();
+			if (ship->target == 0)
+				break;
+		}
+
+		if (did_board != ship->target && is_boardable(ship->target))
+		{ // not maneuvering, just charging target
+			if (check_boarding_conditions())
+			{
+				board_target();
+				break;
+			}
+			if (charge_target(true))
+			{
+				b_attack(); // well, trying to fire on the way
+				break;
+			}
+		}
+
+		if (advanced == 1)
+			advanced_combat_maneuver();
+		else
+			basic_combat_maneuver();
+	}
+	break;
+
+	case NPC_AI_RUNNING:
+	{
+		if (find_current_target())
+		{
+			run_away();
+		}
+		else
+		{
+			mode = NPC_AI_CRUISING;
+		}
+	}
+	break;
+
+	case NPC_AI_LOOTING:
 		break;
 
-		default:
-			break;
+	case NPC_AI_CRUISING:
+	{
+		if (type == NPC_AI_PIRATE || type == NPC_AI_HUNTER)
+		{
+			if (find_new_target())
+			{
+				mode = NPC_AI_ENGAGING;
+				break;
+			}
+		}
+		if (type == NPC_AI_ESCORT)
+		{
+			if (do_escort())
+				break;
+		}
+	} // no break
+	case NPC_AI_LEAVING:
+	{
+		cruise();
+		if (!permanent && try_unload())
+			return;
+	}
+	break;
+
+	default:
+		break;
 	};
 }
 
@@ -333,7 +333,7 @@ void NPCShipAI::attacked_by(P_ship attacker)
 	if (mode != NPC_AI_RUNNING && mode != NPC_AI_ENGAGING)
 	{
 		ship->target = attacker;
-		mode         = NPC_AI_ENGAGING;
+		mode = NPC_AI_ENGAGING;
 		if (type == NPC_AI_ESCORT && attacker == escort)
 			type = NPC_AI_HUNTER; // don't attack your escort, it will turn on you!
 	}
@@ -344,7 +344,7 @@ void NPCShipAI::escort_attacked_by(P_ship attacker)
 	if (ship->target == 0)
 	{
 		ship->target = attacker;
-		mode         = NPC_AI_ENGAGING;
+		mode = NPC_AI_ENGAGING;
 		// send_message_to_debug_char("Escortee attacked by %s, engaging!\r\n", attacker->id);
 	}
 }
@@ -376,7 +376,8 @@ bool NPCShipAI::check_for_captain_on_bridge()
 		if (ch)
 		{
 			ch_next = ch->next_in_room;
-			if (IS_NPC(ch) && mob_index[ch->only.npc->R_num].func.mob == npc_ship_crew_captain_func)
+			if (IS_NPC(ch) &&
+			    mob_index[ch->only.npc->R_num].func.mob == npc_ship_crew_captain_func)
 			{
 				return true;
 			}
@@ -412,8 +413,8 @@ bool NPCShipAI::do_escort()
 
 	// found our escortee
 	ship->timer[T_MAINTENANCE] = 0;
-	float e_range              = contacts[i].range;
-	float e_bearing            = contacts[i].bearing;
+	float e_range = contacts[i].range;
+	float e_bearing = contacts[i].bearing;
 	if (check_dir_for_land_from(ship->x, ship->y, e_bearing, e_range))
 	{ // we have a land between us and escort, lets find a way to go around it
 		if (!go_around_land(escort))
@@ -430,7 +431,7 @@ bool NPCShipAI::do_escort()
 	else
 	{
 		speed_restriction = escort->speed;
-		new_heading       = escort->heading;
+		new_heading = escort->heading;
 		// send_message_to_debug_char("Following escortee: ");
 	}
 	set_new_dir();
@@ -464,7 +465,7 @@ bool NPCShipAI::find_new_target()
 	if (ship == cyrics_revenge)
 	{
 		return false; // disabling aggro
-					  /*
+		/*
 		                  for (i = 0; i < contacts_count; i++)
 		                      {
 		                          if (!IS_NPC_SHIP(contacts[i].ship))
@@ -523,10 +524,10 @@ void NPCShipAI::update_target(int i) // index in contacts
 {
 	t_contact = i;
 	t_bearing = contacts[i].bearing;
-	t_range   = contacts[i].range;
-	t_x       = contacts[i].x;
-	t_y       = contacts[i].y;
-	t_arc     = get_arc(ship->heading, t_bearing);
+	t_range = contacts[i].range;
+	t_x = contacts[i].x;
+	t_y = contacts[i].y;
+	t_arc = get_arc(ship->heading, t_bearing);
 	s_bearing = t_bearing + 180;
 	normalize_direction(s_bearing);
 	s_arc = get_arc(ship->target->heading, s_bearing);
@@ -545,7 +546,8 @@ bool NPCShipAI::is_valid_target(P_ship tar)
 	//     return true;
 	// if (ship == cyrics_revenge) // Revenge attacks everything
 	//    return true;
-	return (tar->race == GOODIESHIP || tar->race == EVILSHIP || tar->race == UNDEADSHIP || tar->race == SQUIDSHIP);
+	return (tar->race == GOODIESHIP || tar->race == EVILSHIP || tar->race == UNDEADSHIP ||
+		tar->race == SQUIDSHIP);
 }
 
 bool NPCShipAI::check_ammo()
@@ -557,7 +559,8 @@ bool NPCShipAI::check_ammo()
 		{
 			if (ship->slot[slot].val1 != 0)
 				out_of_ammo = false;
-			if (ship == cyrics_revenge && ship->slot[slot].val1 < weapon_data[ship->slot[slot].index].ammo)
+			if (ship == cyrics_revenge &&
+			    ship->slot[slot].val1 < weapon_data[ship->slot[slot].index].ammo)
 			{ // Revenge reloads some ammo in combat
 				if (number(1, 60) == 1)
 					ship->slot[slot].val1++;
@@ -607,14 +610,20 @@ void NPCShipAI::board_target()
 
 	if (crew_data->level == 4)
 	{
-		act_to_all_in_ship(ship->target, "&+YA group of &+Rr&+ra&+Rv&+ra&+Rg&+ri&+Rn&+rg &+Rd&+re&+Rm&+ro&+Rn&+rs &+Yjust &=LWboarded&N &+Yyour ship!&N\r\n");
+		act_to_all_in_ship(
+			ship->target,
+			"&+YA group of &+Rr&+ra&+Rv&+ra&+Rg&+ri&+Rn&+rg &+Rd&+re&+Rm&+ro&+Rn&+rs &+Yjust &=LWboarded&N &+Yyour ship!&N\r\n");
 	}
 	else
 	{
 		if (type == NPC_AI_PIRATE)
-			act_to_all_in_ship(ship->target, "&+YA group of &+Rs&+ra&+Rv&+ra&+Rg&+re &+Rp&+ri&+Rr&+ra&+Rt&+re&+Rs &+Yjust &=LWboarded&N &+Yyour ship in search of valuables!&N\r\n");
+			act_to_all_in_ship(
+				ship->target,
+				"&+YA group of &+Rs&+ra&+Rv&+ra&+Rg&+re &+Rp&+ri&+Rr&+ra&+Rt&+re&+Rs &+Yjust &=LWboarded&N &+Yyour ship in search of valuables!&N\r\n");
 		else
-			act_to_all_in_ship(ship->target, "&+YA group of &+Rs&+ra&+Rv&+ra&+Rg&+re &+Rp&+ri&+Rr&+ra&+Rt&+re&+Rs &+Yjust &=LWboarded&N &+Yyour ship!&N\r\n");
+			act_to_all_in_ship(
+				ship->target,
+				"&+YA group of &+Rs&+ra&+Rv&+ra&+Rg&+re &+Rp&+ri&+Rr&+ra&+Rt&+re&+Rs &+Yjust &=LWboarded&N &+Yyour ship!&N\r\n");
 	}
 
 	int board_count = ship->target->room_count * ((crew_data->level > 2) ? 0.50 : 0.75);
@@ -626,8 +635,9 @@ void NPCShipAI::board_target()
 	while (board_count)
 	{
 		int room_no = number(1, ship->target->room_count - 1);
-		grunt       = crew_data->outer_grunts[number(0, grunt_count - 1)];
-		if (!load_npc_ship_crew_member(ship->target, ship->target->bridge + room_no, grunt, 0))
+		grunt = crew_data->outer_grunts[number(0, grunt_count - 1)];
+		if (!load_npc_ship_crew_member(ship->target, ship->target->bridge + room_no, grunt,
+					       0))
 			return;
 		board_count--;
 	}
@@ -635,13 +645,13 @@ void NPCShipAI::board_target()
 	if (type == NPC_AI_PIRATE)
 	{
 		steal_target_cargo();
-		ship->target               = 0;
-		mode                       = NPC_AI_LEAVING;
+		ship->target = 0;
+		mode = NPC_AI_LEAVING;
 		ship->timer[T_MAINTENANCE] = 300;
 	}
 }
 
-int  add_crate(P_ship ship, int index, int type);
+int add_crate(P_ship ship, int index, int type);
 void NPCShipAI::steal_target_cargo()
 {
 	int total_load = SHIP_CARGO_LOAD(ship->target);
@@ -652,8 +662,8 @@ void NPCShipAI::steal_target_cargo()
 	if (!available)
 		return;
 
-	float lost  = (float)number(40, 60) / 100.0;
-	float left  = (float)number(40, 60) / 100.0;
+	float lost = (float)number(40, 60) / 100.0;
+	float left = (float)number(40, 60) / 100.0;
 	float coeff = 1.0 + lost + left;
 
 	float stolen_pt;
@@ -665,7 +675,8 @@ void NPCShipAI::steal_target_cargo()
 
 	for (int i = 0; i < MAXSLOTS; i++) // TODO: not all maybe, not instantly etc
 	{
-		if (ship->target->slot[i].type == SLOT_CARGO || ship->target->slot[i].type == SLOT_CONTRABAND)
+		if (ship->target->slot[i].type == SLOT_CARGO ||
+		    ship->target->slot[i].type == SLOT_CONTRABAND)
 		{
 			int stolen_crates = ship->target->slot[i].val0 * stolen_pt;
 			if (stolen_crates == 0)
@@ -674,7 +685,8 @@ void NPCShipAI::steal_target_cargo()
 			int lost_crates = ship->target->slot[i].val0 * lost_pt;
 
 			for (int j = 0; j < stolen_crates; j++)
-				add_crate(ship, ship->target->slot[i].index, ship->target->slot[i].type == SLOT_CARGO ? 1 : 2);
+				add_crate(ship, ship->target->slot[i].index,
+					  ship->target->slot[i].type == SLOT_CARGO ? 1 : 2);
 
 			ship->target->slot[i].val0 -= (stolen_crates + lost_crates);
 			if (ship->target->slot[i].val0 <= 0)
@@ -686,7 +698,8 @@ void NPCShipAI::steal_target_cargo()
 
 bool NPCShipAI::charge_target(bool for_boarding)
 {
-	if (!SHIP_IMMOBILE(ship->target) && has_close_range_weapons(ship->target)) // TODO: add 'smart' charging for advanced ai
+	if (!SHIP_IMMOBILE(ship->target) &&
+	    has_close_range_weapons(ship->target)) // TODO: add 'smart' charging for advanced ai
 		return false;
 
 	new_heading = t_bearing;
@@ -733,23 +746,23 @@ bool NPCShipAI::go_around_land(P_ship dest)
 	}
 	switch (route[0])
 	{
-		case 0:
-			new_heading = 0;
-			break;
-		case 1:
-			new_heading = 90;
-			break;
-		case 2:
-			new_heading = 180;
-			break;
-		case 3:
-			new_heading = 270;
-			break;
-		default:
-		{
-			// send_message_to_debug("Going around land failed!\r\n");
-			return false;
-		}
+	case 0:
+		new_heading = 0;
+		break;
+	case 1:
+		new_heading = 90;
+		break;
+	case 2:
+		new_heading = 180;
+		break;
+	case 3:
+		new_heading = 270;
+		break;
+	default:
+	{
+		// send_message_to_debug("Going around land failed!\r\n");
+		return false;
+	}
 	};
 	// send_message_to_debug("Going around land: ");
 	set_new_dir();
@@ -768,13 +781,14 @@ void NPCShipAI::run_away()
 			if (!check_dir_for_land_from(ship->x, ship->y, new_heading + i * 30, 10))
 			{
 				new_heading = new_heading + i * 30;
-				found       = true;
+				found = true;
 				break;
 			}
-			else if (!check_dir_for_land_from(ship->x, ship->y, new_heading - i * 30, 10))
+			else if (!check_dir_for_land_from(ship->x, ship->y, new_heading - i * 30,
+							  10))
 			{
 				new_heading = new_heading - i * 30;
-				found       = true;
+				found = true;
 				break;
 			}
 		}
@@ -812,8 +826,12 @@ bool NPCShipAI::worth_ramming()
 	if ((float)SHIP_HULL_WEIGHT(ship->target) / (float)SHIP_HULL_WEIGHT(ship) >= 1.5)
 		return false;
 
-	if (ship->armor[SIDE_FORE] == 0 || ship->armor[SIDE_STAR] == 0 || ship->armor[SIDE_PORT] == 0 || ship->maxarmor[SIDE_FORE] / ship->armor[SIDE_FORE] >= 2 ||
-	    ship->maxarmor[SIDE_STAR] / ship->armor[SIDE_STAR] >= 2 || ship->maxarmor[SIDE_PORT] / ship->armor[SIDE_PORT] >= 2 || ship->internal[SIDE_FORE] == 0 || ship->internal[SIDE_STAR] == 0 ||
+	if (ship->armor[SIDE_FORE] == 0 || ship->armor[SIDE_STAR] == 0 ||
+	    ship->armor[SIDE_PORT] == 0 ||
+	    ship->maxarmor[SIDE_FORE] / ship->armor[SIDE_FORE] >= 2 ||
+	    ship->maxarmor[SIDE_STAR] / ship->armor[SIDE_STAR] >= 2 ||
+	    ship->maxarmor[SIDE_PORT] / ship->armor[SIDE_PORT] >= 2 ||
+	    ship->internal[SIDE_FORE] == 0 || ship->internal[SIDE_STAR] == 0 ||
 	    ship->internal[SIDE_PORT] == 0 || ship->internal[SIDE_REAR] == 0 || advanced < 0)
 	{
 		return false;
@@ -822,7 +840,7 @@ bool NPCShipAI::worth_ramming()
 	return true;
 }
 
-int  check_ram_arc(float heading, float bearing, float size);
+int check_ram_arc(float heading, float bearing, float size);
 bool NPCShipAI::check_ram()
 {
 	if (ship->timer[T_RAM] != 0)
@@ -885,7 +903,9 @@ void NPCShipAI::basic_combat_maneuver()
 		}
 		// else if(too_far && chase()) // if there is weapon ready to fire, but we are not in a good range
 		//{ }
-		else if (too_close && b_make_distance(too_close)) // if there is weapon ready to fire, but we are too close, try breaking distance
+		else if (too_close &&
+			 b_make_distance(
+				 too_close)) // if there is weapon ready to fire, but we are too close, try breaking distance
 		{
 		}
 		else if (b_turn_reloading_weapon()) // trying to turn: a weapon that is closest to ready and within good range already
@@ -913,7 +933,9 @@ void NPCShipAI::b_attack()
 			if (!weapon_ready_to_fire(ship, w_num))
 				continue;
 			int w_index = ship->slot[w_num].index;
-			if (ship->slot[w_num].position == t_arc && t_range > (float)weapon_data[w_index].min_range && t_range < (float)weapon_data[w_index].max_range)
+			if (ship->slot[w_num].position == t_arc &&
+			    t_range > (float)weapon_data[w_index].min_range &&
+			    t_range < (float)weapon_data[w_index].max_range)
 			{
 				ship->setheading = ship->heading;
 				fire_weapon(ship, w_num, t_contact, debug_char);
@@ -931,10 +953,13 @@ void NPCShipAI::b_attack()
 			int w_index = ship->slot[w_num].index;
 			for (int i = 0; i < contacts_count; i++)
 			{
-				if (contacts[i].ship == ship->target || !is_valid_target(contacts[i].ship))
+				if (contacts[i].ship == ship->target ||
+				    !is_valid_target(contacts[i].ship))
 					continue;
 				int t_a = get_arc(ship->heading, contacts[i].bearing);
-				if (ship->slot[w_num].position == t_a && contacts[i].range > (float)weapon_data[w_index].min_range && contacts[i].range < (float)weapon_data[w_index].max_range)
+				if (ship->slot[w_num].position == t_a &&
+				    contacts[i].range > (float)weapon_data[w_index].min_range &&
+				    contacts[i].range < (float)weapon_data[w_index].max_range)
 				{
 					ship->setheading = ship->heading;
 					fire_weapon(ship, w_num, i, debug_char);
@@ -948,7 +973,7 @@ void NPCShipAI::b_attack()
 void NPCShipAI::b_check_weapons()
 {
 	too_close = 0;
-	too_far   = false;
+	too_far = false;
 	for (int i = 0; i < 4; i++)
 		active_arc[i] = 1000;
 	for (int w_num = 0; w_num < MAXSLOTS; w_num++)
@@ -959,20 +984,25 @@ void NPCShipAI::b_check_weapons()
 				continue;
 			int w_index = ship->slot[w_num].index;
 
-			float good_range = MAX((float)weapon_data[w_index].min_range + 1, (float)weapon_data[w_index].max_range * 0.25);
+			float good_range = MAX((float)weapon_data[w_index].min_range + 1,
+					       (float)weapon_data[w_index].max_range * 0.25);
 
 			if (ship->slot[w_num].timer == 0) // weapon ready to fire
 			{
-				if (t_range < (float)weapon_data[w_index].min_range && weapon_data[w_index].min_range < 10)
+				if (t_range < (float)weapon_data[w_index].min_range &&
+				    weapon_data[w_index].min_range < 10)
 					too_close = weapon_data[w_index].min_range;
 				else if (t_range > good_range)
 					too_far = true;
 			}
 
-			if (t_range >= (float)weapon_data[w_index].min_range && t_range <= good_range)
+			if (t_range >= (float)weapon_data[w_index].min_range &&
+			    t_range <= good_range)
 			{
-				if (active_arc[ship->slot[w_num].position] > ship->slot[w_num].timer)
-					active_arc[ship->slot[w_num].position] = ship->slot[w_num].timer;
+				if (active_arc[ship->slot[w_num].position] >
+				    ship->slot[w_num].timer)
+					active_arc[ship->slot[w_num].position] =
+						ship->slot[w_num].timer;
 			}
 		}
 	}
@@ -993,7 +1023,8 @@ bool NPCShipAI::b_circle_around_arc(int arc)
 			land_dist[i] = 0;
 		else
 		{
-			land_dist[i] = check_dir_for_land_from(t_x, t_y, ship->target->heading + get_arc_central_bearing(i), 7);
+			land_dist[i] = check_dir_for_land_from(
+				t_x, t_y, ship->target->heading + get_arc_central_bearing(i), 7);
 			if (land_dist[i] == 0)
 				land_dist[i] = 7;
 			else
@@ -1030,20 +1061,20 @@ bool NPCShipAI::b_circle_around_arc(int arc)
 	}
 	switch (route[0])
 	{
-		case 0:
-			new_heading = 0;
-			break;
-		case 1:
-			new_heading = 90;
-			break;
-		case 2:
-			new_heading = 180;
-			break;
-		case 3:
-			new_heading = 270;
-			break;
-		default:
-			return false;
+	case 0:
+		new_heading = 0;
+		break;
+	case 1:
+		new_heading = 90;
+		break;
+	case 2:
+		new_heading = 180;
+		break;
+	case 3:
+		new_heading = 270;
+		break;
+	default:
+		return false;
 	};
 
 	return true;
@@ -1058,10 +1089,12 @@ bool NPCShipAI::b_turn_active_weapon()
 	b_set_arc_priority(t_bearing, t_arc, arc_priority);
 	for (int i = 0; i < 4; i++)
 	{
-		if (active_arc[arc_priority[i]] < 4) // there is weapon ready or almost ready to fire, turning
+		if (active_arc[arc_priority[i]] <
+		    4) // there is weapon ready or almost ready to fire, turning
 		{
 			float n_h = t_bearing - get_arc_central_bearing(arc_priority[i]);
-			if (is_heavy_ship && arc_priority[i] == SLOT_REAR && ((n_h - ship->heading) > 60 || (n_h - ship->heading) < -60))
+			if (is_heavy_ship && arc_priority[i] == SLOT_REAR &&
+			    ((n_h - ship->heading) > 60 || (n_h - ship->heading) < -60))
 				continue; // not turning heavy ship's rear (TODO: check if rear is the only remaining side)
 			new_heading = n_h;
 			// send_message_to_debug("Turning active weapon arc %s: ", get_arc_name(arc_priority[i]));
@@ -1079,10 +1112,11 @@ bool NPCShipAI::b_turn_reloading_weapon()
 		if (active_arc[i] < best_time)
 		{
 			float n_h = t_bearing - get_arc_central_bearing(i);
-			if (is_heavy_ship && i == SLOT_REAR && ((n_h - ship->heading) > 60 || (n_h - ship->heading) < -60))
+			if (is_heavy_ship && i == SLOT_REAR &&
+			    ((n_h - ship->heading) > 60 || (n_h - ship->heading) < -60))
 				continue; // not turning heavy ship's rear (TODO: check if rear is the only remaining side)
 			best_time = active_arc[i];
-			best_arc  = i;
+			best_arc = i;
 		}
 	}
 	if (best_arc != -1)
@@ -1105,24 +1139,28 @@ bool NPCShipAI::b_make_distance(float distance)
 
 	float rad = (float)((float)((t_bearing - 180) - ship->target->heading) * M_PI / 180.000);
 
-	float side_dist_full = sin(acos(cos(rad) * t_range / distance)) * distance; // always positive
+	float side_dist_full =
+		sin(acos(cos(rad) * t_range / distance)) * distance; // always positive
 	float side_dist_self = sin(rad);
-	float star_dist      = side_dist_full - side_dist_self;
-	float port_dist      = side_dist_full + side_dist_self;
+	float star_dist = side_dist_full - side_dist_self;
+	float port_dist = side_dist_full + side_dist_self;
 
-	float dire_dist_full = cos(asin(sin(rad) * t_range / distance)) * distance; // always positive
+	float dire_dist_full =
+		cos(asin(sin(rad) * t_range / distance)) * distance; // always positive
 	float dire_dist_self = cos(rad);
-	float fore_dist      = dire_dist_full - dire_dist_self;
-	float rear_dist      = dire_dist_full + dire_dist_self;
+	float fore_dist = dire_dist_full - dire_dist_self;
+	float rear_dist = dire_dist_full + dire_dist_self;
 
 	if (star_dist < port_dist)
 	{
-		if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading + 90, star_dist + 1))
+		if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading + 90,
+					     star_dist + 1))
 		{
 			new_heading = ship->target->heading + 90;
 			return true;
 		}
-		else if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading - 90, port_dist + 1))
+		else if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading - 90,
+						  port_dist + 1))
 		{
 			new_heading = ship->target->heading - 90;
 			return true;
@@ -1130,12 +1168,14 @@ bool NPCShipAI::b_make_distance(float distance)
 	}
 	else
 	{
-		if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading - 90, port_dist + 1))
+		if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading - 90,
+					     port_dist + 1))
 		{
 			new_heading = ship->target->heading - 90;
 			return true;
 		}
-		else if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading + 90, star_dist + 1))
+		else if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading + 90,
+						  star_dist + 1))
 		{
 			new_heading = ship->target->heading + 90;
 			return true;
@@ -1144,12 +1184,14 @@ bool NPCShipAI::b_make_distance(float distance)
 
 	if (fore_dist < rear_dist)
 	{
-		if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading, fore_dist + 1))
+		if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading,
+					     fore_dist + 1))
 		{
 			new_heading = ship->target->heading;
 			return true;
 		}
-		else if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading - 180, rear_dist + 1))
+		else if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading - 180,
+						  rear_dist + 1))
 		{
 			new_heading = ship->target->heading - 180;
 			return true;
@@ -1157,12 +1199,14 @@ bool NPCShipAI::b_make_distance(float distance)
 	}
 	else
 	{
-		if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading - 180, rear_dist + 1))
+		if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading - 180,
+					     rear_dist + 1))
 		{
 			new_heading = ship->target->heading - 180;
 			return true;
 		}
-		else if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading, fore_dist + 1))
+		else if (!check_dir_for_land_from(ship->x, ship->y, ship->target->heading,
+						  fore_dist + 1))
 		{
 			new_heading = ship->target->heading;
 			return true;
@@ -1193,8 +1237,8 @@ void NPCShipAI::set_new_dir()
 	else if (cur_land_dist < 2.0)
 		safe_speed = 40;
 
-	int maxspeed     = ship->get_maxspeed();
-	ship->setspeed   = maxspeed;
+	int maxspeed = ship->get_maxspeed();
+	ship->setspeed = maxspeed;
 	ship->setheading = new_heading;
 
 	if (advanced == 1)
@@ -1220,70 +1264,70 @@ void NPCShipAI::b_set_arc_priority(float current_bearing, int current_arc, int *
 {
 	switch (current_arc)
 	{
-		case SIDE_FORE:
+	case SIDE_FORE:
+	{
+		arc_priority[0] = SLOT_FORE;
+		arc_priority[3] = SLOT_REAR;
+		if (current_bearing < 45)
 		{
-			arc_priority[0] = SLOT_FORE;
-			arc_priority[3] = SLOT_REAR;
-			if (current_bearing < 45)
-			{
-				arc_priority[1] = SLOT_STAR;
-				arc_priority[2] = SLOT_PORT;
-			}
-			else
-			{
-				arc_priority[1] = SLOT_PORT;
-				arc_priority[2] = SLOT_STAR;
-			}
+			arc_priority[1] = SLOT_STAR;
+			arc_priority[2] = SLOT_PORT;
 		}
-		break;
-		case SIDE_STAR:
+		else
 		{
-			arc_priority[0] = SLOT_STAR;
-			arc_priority[3] = SLOT_PORT;
-			if (current_bearing < 90)
-			{
-				arc_priority[1] = SLOT_FORE;
-				arc_priority[2] = SLOT_REAR;
-			}
-			else
-			{
-				arc_priority[1] = SLOT_REAR;
-				arc_priority[2] = SLOT_FORE;
-			}
+			arc_priority[1] = SLOT_PORT;
+			arc_priority[2] = SLOT_STAR;
 		}
-		break;
-		case SIDE_PORT:
+	}
+	break;
+	case SIDE_STAR:
+	{
+		arc_priority[0] = SLOT_STAR;
+		arc_priority[3] = SLOT_PORT;
+		if (current_bearing < 90)
 		{
-			arc_priority[0] = SLOT_PORT;
-			arc_priority[3] = SLOT_STAR;
-			if (current_bearing > 270)
-			{
-				arc_priority[1] = SLOT_FORE;
-				arc_priority[2] = SLOT_REAR;
-			}
-			else
-			{
-				arc_priority[1] = SLOT_REAR;
-				arc_priority[2] = SLOT_FORE;
-			}
+			arc_priority[1] = SLOT_FORE;
+			arc_priority[2] = SLOT_REAR;
 		}
-		break;
-		case SIDE_REAR:
+		else
 		{
-			arc_priority[0] = SLOT_REAR;
-			arc_priority[3] = SLOT_FORE;
-			if (current_bearing < 180)
-			{
-				arc_priority[1] = SLOT_STAR;
-				arc_priority[2] = SLOT_PORT;
-			}
-			else
-			{
-				arc_priority[1] = SLOT_PORT;
-				arc_priority[2] = SLOT_STAR;
-			}
+			arc_priority[1] = SLOT_REAR;
+			arc_priority[2] = SLOT_FORE;
 		}
-		break;
+	}
+	break;
+	case SIDE_PORT:
+	{
+		arc_priority[0] = SLOT_PORT;
+		arc_priority[3] = SLOT_STAR;
+		if (current_bearing > 270)
+		{
+			arc_priority[1] = SLOT_FORE;
+			arc_priority[2] = SLOT_REAR;
+		}
+		else
+		{
+			arc_priority[1] = SLOT_REAR;
+			arc_priority[2] = SLOT_FORE;
+		}
+	}
+	break;
+	case SIDE_REAR:
+	{
+		arc_priority[0] = SLOT_REAR;
+		arc_priority[3] = SLOT_FORE;
+		if (current_bearing < 180)
+		{
+			arc_priority[1] = SLOT_STAR;
+			arc_priority[2] = SLOT_PORT;
+		}
+		else
+		{
+			arc_priority[1] = SLOT_PORT;
+			arc_priority[2] = SLOT_STAR;
+		}
+	}
+	break;
 	};
 }
 
@@ -1315,7 +1359,7 @@ void NPCShipAI::advanced_combat_maneuver()
 		return;
 
 	if (t_range > 10) // TODO: more smart decision
-	{                 // no point to maneuver around yet
+	{ // no point to maneuver around yet
 		b_attack();
 		chase();
 	}
@@ -1352,28 +1396,37 @@ void NPCShipAI::a_attack()
 			if (!weapon_ready_to_fire(ship, w_num))
 				continue;
 			int w_index = ship->slot[w_num].index;
-			if (ship->slot[w_num].position == t_arc && t_range > (float)weapon_data[w_index].min_range && t_range < (float)weapon_data[w_index].max_range)
+			if (ship->slot[w_num].position == t_arc &&
+			    t_range > (float)weapon_data[w_index].min_range &&
+			    t_range < (float)weapon_data[w_index].max_range)
 			{
 				can_fire_but_not_right = 1;
 
 				float hit_arc = weapon_data[w_index].hit_arc;
 				if (w_index == W_FRAG_CAN)
 					hit_arc = 360; // doesnt matter where to fire from
-				float arc_width     = get_arc_width(target_side);
-				float min_intersect = MIN(MIN(hit_arc, (hit_arc / 2 + 10)), arc_width / 2);
+				float arc_width = get_arc_width(target_side);
+				float min_intersect =
+					MIN(MIN(hit_arc, (hit_arc / 2 + 10)), arc_width / 2);
 
 				float intersect = 0;
 				{
-					float rbearing = s_bearing - ship->target->heading; // how target sees you, relatively to direction
+					float rbearing =
+						s_bearing -
+						ship->target
+							->heading; // how target sees you, relatively to direction
 					normalize_direction(rbearing);
 
 					float arc_center = get_arc_central_bearing(target_side);
-					float arc_cw     = arc_center + arc_width / 2;
+					float arc_cw = arc_center + arc_width / 2;
 					normalize_direction(arc_cw);
 					float arc_ccw = arc_center - arc_width / 2;
 					normalize_direction(arc_ccw);
 
-					if ((arc_cw >= arc_ccw && (rbearing > arc_ccw && rbearing < arc_cw)) || (arc_cw < arc_ccw && (rbearing > arc_ccw || rbearing < arc_cw)))
+					if ((arc_cw >= arc_ccw &&
+					     (rbearing > arc_ccw && rbearing < arc_cw)) ||
+					    (arc_cw < arc_ccw &&
+					     (rbearing > arc_ccw || rbearing < arc_cw)))
 					{ // center inside arc
 						float ccw_diff = rbearing - arc_ccw;
 						if (ccw_diff < 0)
@@ -1381,7 +1434,8 @@ void NPCShipAI::a_attack()
 						float cw_diff = arc_cw - rbearing;
 						if (cw_diff < 0)
 							cw_diff += 360;
-						intersect = MIN(ccw_diff, hit_arc / 2) + MIN(cw_diff, hit_arc / 2);
+						intersect = MIN(ccw_diff, hit_arc / 2) +
+							    MIN(cw_diff, hit_arc / 2);
 					}
 					else
 					{
@@ -1391,22 +1445,29 @@ void NPCShipAI::a_attack()
 						float cw_diff = rbearing - arc_cw;
 						if (cw_diff < 0)
 							cw_diff += 360;
-						intersect = MAX(hit_arc / 2 - ccw_diff, 0) + MAX(hit_arc / 2 - cw_diff, 0);
+						intersect = MAX(hit_arc / 2 - ccw_diff, 0) +
+							    MAX(hit_arc / 2 - cw_diff, 0);
 					}
 					// send_message_to_debug("  %d:%d", w_num, intersect);
 				}
 
 				if (intersect >= min_intersect)
 				{
-					to_fire[w_num]         = 1;
+					to_fire[w_num] = 1;
 					since_last_fired_right = 0;
 					can_fire_but_not_right = 0;
 					// send_message_to_debug("!");
 				}
 
-				if (intersect == 0 && (is_heavy_ship || since_last_fired_right > number(30, 180))) // if intersect not zero, we should try a bit more
+				if (intersect == 0 &&
+				    (is_heavy_ship ||
+				     since_last_fired_right >
+					     number(30,
+						    180))) // if intersect not zero, we should try a bit more
 				{
-					if ((ship->target->armor[s_arc] + ship->target->internal[s_arc]) > 0 || weapon_data[w_index].hit_arc > 180)
+					if ((ship->target->armor[s_arc] +
+					     ship->target->internal[s_arc]) > 0 ||
+					    weapon_data[w_index].hit_arc > 180)
 					{
 						to_fire[w_num] = 1;
 						// send_message_to_debug("!");
@@ -1425,7 +1486,7 @@ void NPCShipAI::a_attack()
 		if (to_fire[w_num])
 		{
 			ship->setheading = ship->heading;
-			int hit_chance   = weaponsight(ship, w_num, t_contact, debug_char);
+			int hit_chance = weaponsight(ship, w_num, t_contact, debug_char);
 			if (hit_chance > 50)
 				fire_weapon(ship, w_num, t_contact, hit_chance, debug_char);
 		}
@@ -1446,7 +1507,8 @@ void NPCShipAI::a_attack()
 			int w_index = ship->slot[w_num].index;
 			for (int i = 0; i < contacts_count; i++)
 			{
-				if (contacts[i].ship == ship->target || !is_valid_target(contacts[i].ship))
+				if (contacts[i].ship == ship->target ||
+				    !is_valid_target(contacts[i].ship))
 					continue;
 				int t_a = get_arc(ship->heading, contacts[i].bearing);
 				if (ship->slot[w_num].position != t_a)
@@ -1457,7 +1519,8 @@ void NPCShipAI::a_attack()
 					continue;
 
 				bool fire = false;
-				if (t_range > weapon_data[w_index].max_range || t_range < weapon_data[w_index].min_range)
+				if (t_range > weapon_data[w_index].max_range ||
+				    t_range < weapon_data[w_index].min_range)
 					fire = true; // main target is not in range anyways, fire it
 
 				if (t_a == (t_arc + 2) % 4)
@@ -1484,9 +1547,9 @@ void NPCShipAI::a_attack()
 
 void NPCShipAI::a_predict_target(int steps)
 {
-	float hd              = ship->target->heading;
-	curr_x                = (float)t_x + (ship->target->x - 50.0);
-	curr_y                = (float)t_y + (ship->target->y - 50.0);
+	float hd = ship->target->heading;
+	curr_x = (float)t_x + (ship->target->x - 50.0);
+	curr_y = (float)t_y + (ship->target->y - 50.0);
 	curr_angle[SLOT_FORE] = hd;
 	curr_angle[SLOT_STAR] = hd + 90;
 	curr_angle[SLOT_PORT] = hd - 90;
@@ -1495,7 +1558,7 @@ void NPCShipAI::a_predict_target(int steps)
 		normalize_direction(curr_angle[i]);
 
 	hd_change = hd - prev_hd;
-	prev_hd   = hd;
+	prev_hd = hd;
 	if (hd_change < -180.0)
 		hd_change += 360.0;
 	if (hd_change > 180.0)
@@ -1522,8 +1585,8 @@ void NPCShipAI::a_predict_target(int steps)
 
 	float proj_delta_x = ship->x - proj_x;
 	float proj_delta_y = ship->y - proj_y;
-	proj_range         = sqrt(proj_delta_x * proj_delta_x + proj_delta_y * proj_delta_y);
-	proj_sb            = acos(proj_delta_y / proj_range) / M_PI * 180.0;
+	proj_range = sqrt(proj_delta_x * proj_delta_x + proj_delta_y * proj_delta_y);
+	proj_sb = acos(proj_delta_y / proj_range) / M_PI * 180.0;
 	if (proj_delta_x < 0)
 		proj_sb = 360 - proj_sb;
 	proj_tb = proj_sb - 180;
@@ -1536,11 +1599,11 @@ void NPCShipAI::a_update_side_props()
 	min_range_total = INF_RANGE;
 	for (int i = 0; i < 4; i++)
 	{
-		side_props[i].ready_timer  = INT_MAX;
+		side_props[i].ready_timer = INT_MAX;
 		side_props[i].damage_ready = 0;
-		side_props[i].max_range    = INF_RANGE;
-		side_props[i].good_range   = INF_RANGE;
-		side_props[i].min_range    = INF_RANGE;
+		side_props[i].max_range = INF_RANGE;
+		side_props[i].good_range = INF_RANGE;
+		side_props[i].min_range = INF_RANGE;
 	}
 	for (int w_num = 0; w_num < MAXSLOTS; w_num++)
 	{
@@ -1550,17 +1613,23 @@ void NPCShipAI::a_update_side_props()
 				continue;
 
 			int w_index = ship->slot[w_num].index;
-			int pos     = ship->slot[w_num].position;
+			int pos = ship->slot[w_num].position;
 
 			if (weapon_ready_to_fire(ship, w_num))
 			{
 				side_props[pos].ready_timer = 0;
-				if (weapon_data[w_index].min_range == 0) // only counting ballista-types
-					side_props[pos].damage_ready += weapon_data[w_index].average_hull_damage();
-				if (side_props[pos].max_range > (float)weapon_data[w_index].max_range)
-					side_props[pos].max_range = (float)weapon_data[w_index].max_range;
-				if (side_props[pos].good_range > (float)weapon_data[w_index].max_range * 0.25)
-					side_props[pos].good_range = (float)weapon_data[w_index].max_range * 0.25;
+				if (weapon_data[w_index].min_range ==
+				    0) // only counting ballista-types
+					side_props[pos].damage_ready +=
+						weapon_data[w_index].average_hull_damage();
+				if (side_props[pos].max_range >
+				    (float)weapon_data[w_index].max_range)
+					side_props[pos].max_range =
+						(float)weapon_data[w_index].max_range;
+				if (side_props[pos].good_range >
+				    (float)weapon_data[w_index].max_range * 0.25)
+					side_props[pos].good_range =
+						(float)weapon_data[w_index].max_range * 0.25;
 				if (side_props[pos].min_range > weapon_data[w_index].min_range)
 					side_props[pos].min_range = weapon_data[w_index].min_range;
 				if (min_range_total > weapon_data[w_index].min_range)
@@ -1570,8 +1639,11 @@ void NPCShipAI::a_update_side_props()
 			{
 				if (side_props[pos].ready_timer > ship->slot[w_num].timer)
 					side_props[pos].ready_timer = ship->slot[w_num].timer;
-				if (side_props[pos].good_range > (float)weapon_data[w_index].max_range * 0.25) // still want to know it to get into right distance for reloading guns if none ready
-					side_props[pos].good_range = (float)weapon_data[w_index].max_range * 0.25;
+				if (side_props[pos].good_range >
+				    (float)weapon_data[w_index].max_range *
+					    0.25) // still want to know it to get into right distance for reloading guns if none ready
+					side_props[pos].good_range =
+						(float)weapon_data[w_index].max_range * 0.25;
 				// if (weapon_data[w_index].min_range == 0 && ship->slot[w_num].timer < 15) // if weapon is more or less close to reload, account for it damage partially
 				//     side_props[pos].damage_ready += weapon_data[w_index].average_hull_damage() * (float)ship->slot[w_num].timer / 30.0;
 			}
@@ -1588,16 +1660,15 @@ void NPCShipAI::a_update_side_props()
 
 void NPCShipAI::a_update_target_side_props()
 {
-
 	t_max_range = INF_RANGE;
 	t_min_range = INF_RANGE;
 	for (int i = 0; i < 4; i++)
 	{
-		tside_props[i].ready_timer  = INT_MAX;
+		tside_props[i].ready_timer = INT_MAX;
 		tside_props[i].damage_ready = 0;
-		tside_props[i].max_range    = INF_RANGE;
-		tside_props[i].min_range    = INF_RANGE;
-		tside_props[i].land_dist    = calc_land_dist(proj_x, proj_y, proj_angle[i], 10);
+		tside_props[i].max_range = INF_RANGE;
+		tside_props[i].min_range = INF_RANGE;
+		tside_props[i].land_dist = calc_land_dist(proj_x, proj_y, proj_angle[i], 10);
 	}
 
 	P_ship target = ship->target;
@@ -1612,20 +1683,25 @@ void NPCShipAI::a_update_target_side_props()
 				continue;
 
 			int w_index = target->slot[w_num].index;
-			int pos     = target->slot[w_num].position;
+			int pos = target->slot[w_num].position;
 
 			if (weapon_ready_to_fire(target, w_num))
 			{
-				tside_props[pos].damage_ready += weapon_data[w_index].average_hull_damage();
+				tside_props[pos].damage_ready +=
+					weapon_data[w_index].average_hull_damage();
 				if (weapon_data[w_index].min_range > 0)
 				{
-					if (tside_props[pos].min_range > weapon_data[w_index].min_range)
-						tside_props[pos].min_range = weapon_data[w_index].min_range;
+					if (tside_props[pos].min_range >
+					    weapon_data[w_index].min_range)
+						tside_props[pos].min_range =
+							weapon_data[w_index].min_range;
 					if (t_min_range < weapon_data[w_index].min_range)
 						t_min_range = weapon_data[w_index].min_range;
 				}
-				if (tside_props[pos].max_range > (float)weapon_data[w_index].max_range)
-					tside_props[pos].max_range = (float)weapon_data[w_index].max_range;
+				if (tside_props[pos].max_range >
+				    (float)weapon_data[w_index].max_range)
+					tside_props[pos].max_range =
+						(float)weapon_data[w_index].max_range;
 				tside_props[pos].ready_timer = 0;
 			}
 			else
@@ -1633,9 +1709,11 @@ void NPCShipAI::a_update_target_side_props()
 				if (tside_props[pos].ready_timer > target->slot[w_num].timer)
 					tside_props[pos].ready_timer = target->slot[w_num].timer;
 				if (tside_props[pos].ready_timer < 6)
-					tside_props[pos].ready_timer = 0; // counting weapons that are almost ready as ready
+					tside_props[pos].ready_timer =
+						0; // counting weapons that are almost ready as ready
 			}
-			if (weapon_data[w_index].min_range > 0 && t_min_range > weapon_data[w_index].min_range)
+			if (weapon_data[w_index].min_range > 0 &&
+			    t_min_range > weapon_data[w_index].min_range)
 				t_min_range = weapon_data[w_index].min_range;
 			if (t_max_range > weapon_data[w_index].max_range)
 				t_max_range = weapon_data[w_index].max_range;
@@ -1659,7 +1737,7 @@ void NPCShipAI::a_choose_target_side() // TODO: choose another one if too close 
 			int left = target->armor[i] + target->internal[i];
 			if (left > 0 && min_left > left)
 			{
-				min_left    = left;
+				min_left = left;
 				target_side = i;
 			}
 		}
@@ -1668,8 +1746,8 @@ void NPCShipAI::a_choose_target_side() // TODO: choose another one if too close 
 
 void NPCShipAI::a_calc_rotations()
 {
-	int   delta = (target_side == SLOT_FORE || target_side == SLOT_REAR) ? 30 : 40;
-	float cw    = proj_angle[target_side] + delta;
+	int delta = (target_side == SLOT_FORE || target_side == SLOT_REAR) ? 30 : 40;
+	float cw = proj_angle[target_side] + delta;
 	if (cw > 360)
 		cw -= 360;
 	float ccw = proj_angle[target_side] - delta;
@@ -1710,23 +1788,23 @@ void NPCShipAI::a_choose_rotation()
 		if (cw_ccw > ccw_ccw)
 		{
 			star_count = ccw_ccw; // double turn
-			star_dir   = -1;
+			star_dir = -1;
 		}
 		else
 		{
 			star_count = cw_ccw; // no turn
-			star_dir   = 1;
+			star_dir = 1;
 		}
 
 		if (ccw_ccw > cw_cw)
 		{
 			port_count = cw_cw; // post-turn
-			port_dir   = 1;
+			port_dir = 1;
 		}
 		else
 		{
 			port_count = ccw_ccw; // pre-turn
-			port_dir   = -1;
+			port_dir = -1;
 		}
 
 		if (ccw_ccw > cw_ccw)
@@ -1739,23 +1817,23 @@ void NPCShipAI::a_choose_rotation()
 		if (ccw_cw > cw_cw)
 		{
 			port_count = cw_cw; // double turn
-			port_dir   = 1;
+			port_dir = 1;
 		}
 		else
 		{
 			port_count = ccw_cw; // no turn
-			port_dir   = -1;
+			port_dir = -1;
 		}
 
 		if (ccw_ccw > cw_cw)
 		{
 			star_count = cw_cw; // pre-turn
-			star_dir   = 1;
+			star_dir = 1;
 		}
 		else
 		{
 			star_count = ccw_ccw; // post-turn
-			star_dir   = -1;
+			star_dir = -1;
 		}
 
 		if (ccw_cw > cw_cw)
@@ -1767,7 +1845,8 @@ void NPCShipAI::a_choose_rotation()
 	bool side_ok[4];
 	for (int i = 0; i < 4; i++)
 	{ // ready to fire and target side is not too close to land for this arc weapons
-		side_ok[i] = (side_props[i].ready_timer == 0) && (side_props[i].min_range < tside_props[target_side].land_dist);
+		side_ok[i] = (side_props[i].ready_timer == 0) &&
+			     (side_props[i].min_range < tside_props[target_side].land_dist);
 	}
 
 	// send_message_to_debug("pc=%d, pd=%d, sc=%d, sd=%d, cd=%d, sides=%c%c%c%c ", port_count, port_dir, star_count, star_dir, cnt_dir, side_ok[0]?'1':'0', side_ok[1]?'1':'0', side_ok[2]?'1':'0',
@@ -1777,14 +1856,14 @@ void NPCShipAI::a_choose_rotation()
 	if (side_ok[SLOT_PORT] && (port_count > star_count || !side_ok[SLOT_STAR]))
 	{
 		chosen_side = SLOT_PORT;
-		chosen_rot  = port_dir;
+		chosen_rot = port_dir;
 		// send_message_to_debug("choice 1\r\n");
 		return;
 	}
 	if (side_ok[SLOT_STAR] && (star_count >= port_count || !side_ok[SLOT_PORT]))
 	{
 		chosen_side = SLOT_STAR;
-		chosen_rot  = star_dir;
+		chosen_rot = star_dir;
 		// send_message_to_debug("choice 2\r\n");
 		return;
 	}
@@ -1801,23 +1880,25 @@ void NPCShipAI::a_choose_rotation()
 		return;
 	}
 
-	if (side_props[SLOT_PORT].ready_timer != INT_MAX || side_props[SLOT_STAR].ready_timer != INT_MAX)
+	if (side_props[SLOT_PORT].ready_timer != INT_MAX ||
+	    side_props[SLOT_STAR].ready_timer != INT_MAX)
 	{
 		if (side_props[SLOT_PORT].ready_timer > side_props[SLOT_STAR].ready_timer)
 		{
 			chosen_side = SLOT_STAR;
-			chosen_rot  = star_dir;
+			chosen_rot = star_dir;
 		}
 		else
 		{
 			chosen_side = SLOT_PORT;
-			chosen_rot  = star_dir;
+			chosen_rot = star_dir;
 		}
 		// send_message_to_debug("choice 4\r\n");
 		return;
 	}
 
-	if (side_props[SLOT_REAR].ready_timer != INT_MAX || side_props[SLOT_FORE].ready_timer != INT_MAX)
+	if (side_props[SLOT_REAR].ready_timer != INT_MAX ||
+	    side_props[SLOT_FORE].ready_timer != INT_MAX)
 	{
 		chosen_rot = cnt_dir;
 		if (side_props[SLOT_FORE].ready_timer > side_props[SLOT_REAR].ready_timer)
@@ -1834,8 +1915,8 @@ void NPCShipAI::a_choose_rotation()
 
 bool NPCShipAI::a_immediate_turn()
 {
-	int   delta = (target_side == SLOT_FORE || target_side == SLOT_REAR) ? 30 : 40;
-	float cw    = curr_angle[target_side] + delta;
+	int delta = (target_side == SLOT_FORE || target_side == SLOT_REAR) ? 30 : 40;
+	float cw = curr_angle[target_side] + delta;
 	if (cw > 360)
 		cw -= 360;
 	float ccw = curr_angle[target_side] - delta;
@@ -1843,33 +1924,38 @@ bool NPCShipAI::a_immediate_turn()
 		ccw += 360;
 
 	bool within_target_side = false;
-	if ((s_bearing <= cw && s_bearing >= ccw) || ((cw < ccw) && (s_bearing <= cw || s_bearing >= ccw)))
+	if ((s_bearing <= cw && s_bearing >= ccw) ||
+	    ((cw < ccw) && (s_bearing <= cw || s_bearing >= ccw)))
 		within_target_side = true;
 
 	if (within_target_side)
 	{
 		if ((chosen_side == SLOT_FORE && side_props[SLOT_FORE].ready_timer == 0))
 		{
-			if (t_range >= side_props[SLOT_FORE].min_range + 2) // have a little distance reserve to turn
+			if (t_range >= side_props[SLOT_FORE].min_range +
+					       2) // have a little distance reserve to turn
 			{
 				new_heading = t_bearing; // turning toward target to fire fore
 				// send_message_to_debug(" immediate turn to fire fore!\r\n");
 				return true;
 			}
 		}
-		if (chosen_side == SLOT_REAR && side_props[SLOT_REAR].ready_timer == 0 && side_props[SLOT_REAR].max_range > proj_range)
+		if (chosen_side == SLOT_REAR && side_props[SLOT_REAR].ready_timer == 0 &&
+		    side_props[SLOT_REAR].max_range > proj_range)
 		{
 			new_heading = s_bearing; // turning from target to fire rear
 			// send_message_to_debug(" immediate turn to fire rear!\r\n");
 			return true;
 		}
-		if (chosen_side == SLOT_PORT && side_props[SLOT_PORT].ready_timer == 0 && side_props[SLOT_PORT].max_range > proj_range)
+		if (chosen_side == SLOT_PORT && side_props[SLOT_PORT].ready_timer == 0 &&
+		    side_props[SLOT_PORT].max_range > proj_range)
 		{
 			new_heading = t_bearing + 90;
 			// send_message_to_debug(" immediate turn to fire port!\r\n");
 			return true;
 		}
-		if (chosen_side == SLOT_STAR && side_props[SLOT_STAR].ready_timer == 0 && side_props[SLOT_STAR].max_range > proj_range)
+		if (chosen_side == SLOT_STAR && side_props[SLOT_STAR].ready_timer == 0 &&
+		    side_props[SLOT_STAR].max_range > proj_range)
 		{
 			new_heading = t_bearing - 90;
 			// send_message_to_debug(" immediate turn to fire starboard!\r\n");
@@ -1898,11 +1984,16 @@ void NPCShipAI::a_choose_dest_point()
 	}
 	else
 	{
-		if (t_min_range && t_min_range - 1 <= chosen_range) // TODO: priority between catapults and short-ranged somehow
+		if (t_min_range &&
+		    t_min_range - 1 <=
+			    chosen_range) // TODO: priority between catapults and short-ranged somehow
 		{
 			chosen_range = t_min_range - 1;
 		}
-		if (t_max_range < 6 && t_max_range + 1 <= side_props[chosen_side].max_range) // short-ranged take priority for now (heavies)
+		if (t_max_range < 6 &&
+		    t_max_range + 1 <=
+			    side_props[chosen_side]
+				    .max_range) // short-ranged take priority for now (heavies)
 		{
 			chosen_range = t_max_range + 1;
 		}
@@ -1943,10 +2034,10 @@ void NPCShipAI::a_choose_dest_point()
 float NPCShipAI::calc_land_dist(float x, float y, float dir, float max_range)
 {
 	float loc_range;
-	float rad     = dir * M_PI / 180.000;
+	float rad = dir * M_PI / 180.000;
 	float dir_cos = cos(rad);
 	float dir_sin = sin(rad);
-	float range   = 0;
+	float range = 0;
 	float next_x, next_y;
 
 	////send_message_to_debug("Calculating land dist from (%5.2f, %5.2f) toward %4.0f within %5.2f:", x, y, dir, max_range);
@@ -1993,7 +2084,8 @@ float NPCShipAI::calc_land_dist(float x, float y, float dir, float max_range)
 		////send_message_to_debug("\r\nnx=%5.2f,ny=%5.2f,", next_x, next_y);
 		////send_message_to_debug("cx=%d,cy=%d,", x_to_check, y_to_check);
 
-		if (!is_valid_sailing_location(ship, tactical_map[x_to_check][100 - y_to_check].rroom))
+		if (!is_valid_sailing_location(ship,
+					       tactical_map[x_to_check][100 - y_to_check].rroom))
 		{ // next room is a land
 			// send_message_to_debug_char(" %5.2f\r\n", range);
 			return range;
@@ -2022,14 +2114,14 @@ float NPCShipAI::calc_land_dist(float x, float y, float dir, float max_range)
 			if (r1 > r2) // w/e
 			{
 				loc_range = delta_x / dir_sin;
-				x         = next_x;
-				y         = y + loc_range * dir_cos;
+				x = next_x;
+				y = y + loc_range * dir_cos;
 			}
 			else // n/s
 			{
 				loc_range = delta_y / dir_cos;
-				x         = x + loc_range * dir_sin;
-				y         = next_y;
+				x = x + loc_range * dir_sin;
+				y = next_y;
 			}
 		}
 		range += loc_range;
@@ -2042,7 +2134,7 @@ float NPCShipAI::calc_land_dist(float x, float y, float dir, float max_range)
 // returns the distance to land or 0 if none
 int NPCShipAI::check_dir_for_land_from(float cur_x, float cur_y, float heading, float range)
 { // tactical_map is supposed to be filled already
-	float rad     = heading * M_PI / 180.000;
+	float rad = heading * M_PI / 180.000;
 	float delta_x = sin(rad);
 	float delta_y = cos(rad);
 
@@ -2077,13 +2169,17 @@ int NPCShipAI::get_room_in_direction_from(float x, float y, float dir, float ran
 	return 0;
 }
 
-int NPCShipAI::get_room_at(float x, float y) { return tactical_map[(int)x][100 - (int)y].rroom; }
+int NPCShipAI::get_room_at(float x, float y)
+{
+	return tactical_map[(int)x][100 - (int)y].rroom;
+}
 
-bool NPCShipAI::get_coord_in_direction_from(float x, float y, float dir, float range, float &rx, float &ry)
+bool NPCShipAI::get_coord_in_direction_from(float x, float y, float dir, float range, float &rx,
+					    float &ry)
 {
 	float rad = (float)((float)(dir)*M_PI / 180.000);
-	rx        = x + sin(rad) * range;
-	ry        = y + cos(rad) * range;
+	rx = x + sin(rad) * range;
+	ry = y + cos(rad) * range;
 
 	if (!inside_map(rx, ry))
 		return false;

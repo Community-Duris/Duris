@@ -20,21 +20,20 @@
    external vars
  */
 
-extern P_char                 character_list;
-extern P_desc                 descriptor_list;
-extern P_index                obj_index;
-extern P_room                 world;
-extern char                  *coin_names[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index obj_index;
+extern P_room world;
+extern char *coin_names[];
 extern const struct stat_data stat_factor[];
-extern int                    pulse;
-extern int                    top_of_zone_table;
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone;
-extern struct zone_data      *zone_table;
+extern int pulse;
+extern int top_of_zone_table;
+extern struct time_info_data time_info;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
 
 int ioun_sustenance(P_obj obj, P_char ch, int cmd, char *argument)
 {
-
 	if (cmd == CMD_SET_PERIODIC)
 	{
 		return FALSE;
@@ -56,11 +55,15 @@ int ioun_sustenance(P_obj obj, P_char ch, int cmd, char *argument)
 				act("You say 'feedme'", FALSE, ch, 0, 0, TO_CHAR);
 				act("$n says 'feedme'", TRUE, ch, obj, NULL, TO_ROOM);
 
-				if (ch->specials.conditions[FULL] <= 4 || ch->specials.conditions[THIRST] <= 4)
+				if (ch->specials.conditions[FULL] <= 4 ||
+				    ch->specials.conditions[THIRST] <= 4)
 				{
-					act("&+W$n's $p &+Wglows with a bright light!&n", FALSE, ch, obj, 0, TO_ROOM);
-					act("&+WYour $p &+Wglows with a bright light!&n", FALSE, ch, obj, 0, TO_CHAR);
-					spell_greater_sustenance(50, ch, NULL, SPELL_TYPE_SPELL, NULL, NULL);
+					act("&+W$n's $p &+Wglows with a bright light!&n", FALSE, ch,
+					    obj, 0, TO_ROOM);
+					act("&+WYour $p &+Wglows with a bright light!&n", FALSE, ch,
+					    obj, 0, TO_CHAR);
+					spell_greater_sustenance(50, ch, NULL, SPELL_TYPE_SPELL,
+								 NULL, NULL);
 					obj->timer[0] = curr_time;
 				}
 				return TRUE;
@@ -72,10 +75,10 @@ int ioun_sustenance(P_obj obj, P_char ch, int cmd, char *argument)
 
 int ioun_testicle(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	int    current_time = time(NULL);
+	int current_time = time(NULL);
 	P_char next, target, vict;
-	P_obj  pobj, x;
-	int    i;
+	P_obj pobj, x;
+	int i;
 
 	if (!ch || !obj || !IS_PC(ch) || !OBJ_WORN(obj) || cmd != CMD_RUB || !ch->in_room)
 	{
@@ -99,18 +102,22 @@ int ioun_testicle(P_obj obj, P_char ch, int cmd, char *argument)
 			{
 				act("&+WOh NO!!  Something's wrong!&n", FALSE, ch, obj, 0, TO_ROOM);
 				act("&+W$p &+Wbegins to pulsate!&n", FALSE, ch, obj, 0, TO_ROOM);
-				act("&+W$p &+Wemits a SCALDING STREAM of acidic liquid!!&n", FALSE, ch, obj, 0, TO_ROOM);
-				act("&+WYou try to avoid the stream, but fail miserably!&n", FALSE, ch, obj, 0, TO_ROOM);
+				act("&+W$p &+Wemits a SCALDING STREAM of acidic liquid!!&n", FALSE,
+				    ch, obj, 0, TO_ROOM);
+				act("&+WYou try to avoid the stream, but fail miserably!&n", FALSE,
+				    ch, obj, 0, TO_ROOM);
 
 				act("&+WOh NO!!  Something's wrong!&n", FALSE, ch, obj, 0, TO_CHAR);
 				act("&+W$p &+Wbegins to pulsate!&n", FALSE, ch, obj, 0, TO_CHAR);
-				act("&+W$p &+Wemits a SCALDING STREAM of acidic liquid!!&n", FALSE, ch, obj, 0, TO_CHAR);
-				act("&+WYou try to avoid the stream, but fail miserably!&n", FALSE, ch, obj, 0, TO_CHAR);
+				act("&+W$p &+Wemits a SCALDING STREAM of acidic liquid!!&n", FALSE,
+				    ch, obj, 0, TO_CHAR);
+				act("&+WYou try to avoid the stream, but fail miserably!&n", FALSE,
+				    ch, obj, 0, TO_CHAR);
 
 				for (vict = world[ch->in_room].people; vict; vict = next)
 				{
 					next = vict->next_in_room;
-					i    = 0;
+					i = 0;
 					if (IS_TRUSTED(vict) || IS_NPC(vict))
 					{
 						continue;
@@ -150,7 +157,9 @@ int ioun_testicle(P_obj obj, P_char ch, int cmd, char *argument)
 							}
 							if (pobj)
 							{
-								extract_obj(pobj, TRUE); // Won't be an arti.
+								extract_obj(
+									pobj,
+									TRUE); // Won't be an arti.
 								pobj = NULL;
 							}
 						}
@@ -170,10 +179,10 @@ int ioun_testicle(P_obj obj, P_char ch, int cmd, char *argument)
 
 int ioun_warp(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char   Gbuf[MAX_STRING_LENGTH];
-	char   Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf[MAX_STRING_LENGTH];
+	char Gbuf2[MAX_STRING_LENGTH];
 	P_char next, target, vict;
-	int    dam;
+	int dam;
 
 	int curr_time = time(NULL);
 	;
@@ -242,12 +251,9 @@ int ioun_warp(P_obj obj, P_char ch, int cmd, char *argument)
 			{
 				act("&+G$n's $p &+Gbegins swirling in circles very fast, engulfing $s whole body in a blurry haze!&n\r\n"
 				    "&+wThe haze slowly subsides, and $n is gone!&n",
-				    FALSE,
-				    ch,
-				    obj,
-				    0,
-				    TO_ROOM);
-				act("&+GYour $p &+Gbegins whirling around your body very fast!!&n", FALSE, ch, obj, 0, TO_CHAR);
+				    FALSE, ch, obj, 0, TO_ROOM);
+				act("&+GYour $p &+Gbegins whirling around your body very fast!!&n",
+				    FALSE, ch, obj, 0, TO_CHAR);
 				spell_relocate(56, ch, 0, 0, target, NULL);
 				/* This was changed to relocate spell (for to use !port flags and such).
 				   char_from_room(ch);

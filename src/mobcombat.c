@@ -31,36 +31,25 @@
  * external variables
  */
 
-extern P_desc  descriptor_list;
+extern P_desc descriptor_list;
 extern P_index mob_index;
 extern P_index obj_index;
-extern P_room  world;
+extern P_room world;
 // extern char *dirs[];
 extern const struct stat_data stat_factor[];
-extern double                 lfactor[];
-extern float                  fake_sqrt_table[];
-extern int                    MobSpellIndex[MAX_SKILLS];
-extern int                    equipment_pos_table[CUR_MAX_WEAR][3];
-extern int                    no_specials;
-extern int                    spl_table[TOTALLVLS][MAX_CIRCLE];
+extern double lfactor[];
+extern float fake_sqrt_table[];
+extern int MobSpellIndex[MAX_SKILLS];
+extern int equipment_pos_table[CUR_MAX_WEAR][3];
+extern int no_specials;
+extern int spl_table[TOTALLVLS][MAX_CIRCLE];
 // extern const char rev_dir[];
 extern struct str_app_type str_app[];
-extern struct zone_data   *zone_table;
+extern struct zone_data *zone_table;
 
 const char demon_types[][16] = {
-	"babau",
-	"balor",
-	"bebilith",
-	"dretch",
-	"glabrezu",
-	"hezrou",
-	"incubus",
-	"marilith",
-	"nalfeshnee",
-	"quasit",
-	"retriever",
-	"succubus",
-	"vrock",
+	"babau",    "balor",	  "bebilith", "dretch",	   "glabrezu", "hezrou", "incubus",
+	"marilith", "nalfeshnee", "quasit",   "retriever", "succubus", "vrock",
 };
 
 bool GOOD_FOR_GAZING(P_char ch, P_char victim);
@@ -87,11 +76,13 @@ void ZombieCombat(P_char ch, P_char victim)
 
 	if (random == 1)
 	{
-		act("$n&n twitches slightly as a &+gchunk of flesh&n falls off its arm.", TRUE, ch, 0, 0, TO_ROOM);
+		act("$n&n twitches slightly as a &+gchunk of flesh&n falls off its arm.", TRUE, ch,
+		    0, 0, TO_ROOM);
 	}
 	else if (random == 2)
 	{
-		act("A piece of &+Lrotted flesh&n drops from $n&n's body.", TRUE, ch, 0, 0, TO_ROOM);
+		act("A piece of &+Lrotted flesh&n drops from $n&n's body.", TRUE, ch, 0, 0,
+		    TO_ROOM);
 	}
 	else if (random == 3)
 	{
@@ -113,7 +104,8 @@ void ZombieCombat(P_char ch, P_char victim)
 		act("$n&n savagely bites into $N's flesh!", TRUE, ch, 0, victim, TO_NOTVICT);
 		spell_disease(GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, victim, 0);
 	}
-	else if (!number(0, 4) && (GET_LEVEL(ch) >= 46) && !IS_UNDEAD(victim) && !IS_UNDEADRACE(victim))
+	else if (!number(0, 4) && (GET_LEVEL(ch) >= 46) && !IS_UNDEAD(victim) &&
+		 !IS_UNDEADRACE(victim))
 	{
 		act("You feel your life force slipping away...", TRUE, ch, 0, victim, TO_VICT);
 		act("$N recoils from $n!", TRUE, ch, 0, victim, TO_NOTVICT);
@@ -129,7 +121,6 @@ void ZombieCombat(P_char ch, P_char victim)
 
 void SkeletonCombat(P_char ch, P_char victim)
 {
-
 	int random = 0, dam = 0;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
@@ -150,11 +141,13 @@ void SkeletonCombat(P_char ch, P_char victim)
 
 	if (random == 1)
 	{
-		act("You hear $n&n's bones rattle slightly, before it presses the attack.", TRUE, ch, 0, 0, TO_ROOM);
+		act("You hear $n&n's bones rattle slightly, before it presses the attack.", TRUE,
+		    ch, 0, 0, TO_ROOM);
 	}
 	else if (random == 2)
 	{
-		act("Two eerie points of &+rred&n light flare in $n&n's hollow eye sockets.", TRUE, ch, 0, 0, TO_ROOM);
+		act("Two eerie points of &+rred&n light flare in $n&n's hollow eye sockets.", TRUE,
+		    ch, 0, 0, TO_ROOM);
 	}
 	else if (random == 3)
 	{
@@ -167,12 +160,14 @@ void SkeletonCombat(P_char ch, P_char victim)
 	else if (random <= 10)
 	{
 		do_action(ch, 0, CMD_MOAN);
-		act("Your attack dislodged one of $n&n's pale white bones, sending it flying into your flesh.", TRUE, ch, 0, victim, TO_VICT);
-		act("$N&n's critical hit dislodged one of $n's bones, sending it tearing into $N's flesh.", TRUE, ch, 0, victim, TO_NOTVICT);
+		act("Your attack dislodged one of $n&n's pale white bones, sending it flying into your flesh.",
+		    TRUE, ch, 0, victim, TO_VICT);
+		act("$N&n's critical hit dislodged one of $n's bones, sending it tearing into $N's flesh.",
+		    TRUE, ch, 0, victim, TO_NOTVICT);
 		damage(ch, victim, GET_LEVEL(ch), 0);
 	}
 	else if (!number(0, 4) && // 20%
-	         GET_LEVEL(ch) >= 50 && !IS_UNDEAD(victim) && !IS_UNDEADRACE(victim))
+		 GET_LEVEL(ch) >= 50 && !IS_UNDEAD(victim) && !IS_UNDEADRACE(victim))
 	{
 		act("You feel your life force slipping away...", TRUE, ch, 0, victim, TO_VICT);
 		act("$N recoils from $n!", TRUE, ch, 0, victim, TO_NOTVICT);
@@ -211,11 +206,12 @@ void SpectreCombat(P_char ch, P_char victim)
 	}
 	else if (random <= 10)
 	{
-		act("$n suddenly becomes incorporeal and vanishes from your sight!", TRUE, ch, 0, victim, TO_ROOM);
+		act("$n suddenly becomes incorporeal and vanishes from your sight!", TRUE, ch, 0,
+		    victim, TO_ROOM);
 		spell_blink(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 	}
 	else if (!number(0, 9) && // 10%
-	         GET_LEVEL(ch) >= 56 && !affected_by_spell(victim, SPELL_PLAGUE))
+		 GET_LEVEL(ch) >= 56 && !affected_by_spell(victim, SPELL_PLAGUE))
 	{
 		spell_plague(GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, ch, 0);
 	}
@@ -243,27 +239,30 @@ void ShadowCombat(P_char ch, P_char victim)
 
 	switch (number(1, top))
 	{
-		case 1:
-			act("$n silently moves through the room, covering the area in darkness!.", TRUE, ch, 0, 0, TO_ROOM);
-			spell_darkness(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
-			break;
-		case 2:
-		case 3:
-			do_action(ch, 0, CMD_CACKLE);
-			break;
-		case 4:
-		case 5:
-		case 6:
-		case 10:
-			if (victim)
-			{
-				act("$n suddenly flares black, and encases you in darkness!", TRUE, ch, 0, victim, TO_VICT);
-				act("$n emits a pure sphere of darkness, enveloping $N!", TRUE, ch, 0, victim, TO_NOTVICT);
-				blind(ch, victim, number(4, 10) * WAIT_SEC);
-			}
-			break;
-		default:
-			break;
+	case 1:
+		act("$n silently moves through the room, covering the area in darkness!.", TRUE, ch,
+		    0, 0, TO_ROOM);
+		spell_darkness(50, ch, 0, SPELL_TYPE_SPELL, ch, 0);
+		break;
+	case 2:
+	case 3:
+		do_action(ch, 0, CMD_CACKLE);
+		break;
+	case 4:
+	case 5:
+	case 6:
+	case 10:
+		if (victim)
+		{
+			act("$n suddenly flares black, and encases you in darkness!", TRUE, ch, 0,
+			    victim, TO_VICT);
+			act("$n emits a pure sphere of darkness, enveloping $N!", TRUE, ch, 0,
+			    victim, TO_NOTVICT);
+			blind(ch, victim, number(4, 10) * WAIT_SEC);
+		}
+		break;
+	default:
+		break;
 	}
 }
 
@@ -289,50 +288,58 @@ void WraithCombat(P_char ch, P_char victim)
 
 	switch (number(1, top))
 	{
-		case 1:
-			act("$n flows gracefully in combat, with dreadful accuracy.", TRUE, ch, 0, 0, TO_ROOM);
-			break;
-		case 2:
-		case 3:
-			do_action(ch, 0, CMD_MOAN);
-			break;
-		case 4:
-		case 5:
-			do_action(ch, 0, CMD_SCREAM);
-			break;
-		case 6:
-		case 10:
-			if (victim)
+	case 1:
+		act("$n flows gracefully in combat, with dreadful accuracy.", TRUE, ch, 0, 0,
+		    TO_ROOM);
+		break;
+	case 2:
+	case 3:
+		do_action(ch, 0, CMD_MOAN);
+		break;
+	case 4:
+	case 5:
+		do_action(ch, 0, CMD_SCREAM);
+		break;
+	case 6:
+	case 10:
+		if (victim)
+		{
+			act("$n lets out a long, &+Wfrightening &nhowl.\n", TRUE, ch, 0, victim,
+			    TO_VICT);
+			if (!fear_check(victim))
 			{
-				act("$n lets out a long, &+Wfrightening &nhowl.\n", TRUE, ch, 0, victim, TO_VICT);
-				if (!fear_check(victim))
+				if (GET_LEVEL(victim) < (GET_LEVEL(ch) / 2))
 				{
-					if (GET_LEVEL(victim) < (GET_LEVEL(ch) / 2))
+					act("$n's &+Wunearthly howl scares the bejesus out of $N&+W!&n",
+					    TRUE, ch, 0, victim, TO_NOTVICT);
+					act("&+WYou flee in sheer terror!&n", TRUE, ch, 0, victim,
+					    TO_VICT);
+					do_flee(victim, 0, 2);
+				}
+				else if (GET_LEVEL(victim) >= GET_LEVEL(ch))
+				{
+					if (!NewSaves(victim, SAVING_FEAR, 5))
 					{
-						act("$n's &+Wunearthly howl scares the bejesus out of $N&+W!&n", TRUE, ch, 0, victim, TO_NOTVICT);
-						act("&+WYou flee in sheer terror!&n", TRUE, ch, 0, victim, TO_VICT);
-						do_flee(victim, 0, 2);
-					}
-					else if (GET_LEVEL(victim) >= GET_LEVEL(ch))
-					{
-						if (!NewSaves(victim, SAVING_FEAR, 5))
-						{
-							act("$n's &+Wunearthly howl scares the bejesus out of $N&+W!&n", TRUE, ch, 0, victim, TO_NOTVICT);
-							act("&+WYou flee in sheer terror!&n", TRUE, ch, 0, victim, TO_VICT);
-							do_flee(victim, 0, 1);
-						}
-					}
-					else if (!NewSaves(victim, SAVING_FEAR, 2))
-					{
-						act("$n's &+Wunearthly howl scares the bejesus out of $N&+W!&n", TRUE, ch, 0, victim, TO_NOTVICT);
-						act("&+WYou flee in sheer terror!&n", TRUE, ch, 0, victim, TO_VICT);
+						act("$n's &+Wunearthly howl scares the bejesus out of $N&+W!&n",
+						    TRUE, ch, 0, victim, TO_NOTVICT);
+						act("&+WYou flee in sheer terror!&n", TRUE, ch, 0,
+						    victim, TO_VICT);
 						do_flee(victim, 0, 1);
 					}
 				}
+				else if (!NewSaves(victim, SAVING_FEAR, 2))
+				{
+					act("$n's &+Wunearthly howl scares the bejesus out of $N&+W!&n",
+					    TRUE, ch, 0, victim, TO_NOTVICT);
+					act("&+WYou flee in sheer terror!&n", TRUE, ch, 0, victim,
+					    TO_VICT);
+					do_flee(victim, 0, 1);
+				}
 			}
-			break;
-		default:
-			break;
+		}
+		break;
+	default:
+		break;
 	}
 }
 
@@ -349,7 +356,9 @@ int UndeadCombat(P_char ch)
 		return TRUE;
 
 	if (!IS_PC_PET(ch) &&
-	    (GET_RACE(ch) == RACE_GHOST || GET_RACE(ch) == RACE_SPECTRE || GET_RACE(ch) == RACE_WRAITH || GET_RACE(ch) == RACE_SHADOW || GET_RACE(ch) == RACE_BRALANI || GET_RACE(ch) == RACE_DEVA) &&
+	    (GET_RACE(ch) == RACE_GHOST || GET_RACE(ch) == RACE_SPECTRE ||
+	     GET_RACE(ch) == RACE_WRAITH || GET_RACE(ch) == RACE_SHADOW ||
+	     GET_RACE(ch) == RACE_BRALANI || GET_RACE(ch) == RACE_DEVA) &&
 	    (number(1, 100) <= 10))
 	{
 		GhostFearEffect(ch);
@@ -400,7 +409,8 @@ int AngelCombat(P_char ch)
 	if (ch->in_room < 0)
 		return TRUE;
 
-	if (!IS_PC_PET(ch) && (GET_RACE(ch) == RACE_BRALANI || GET_RACE(ch) == RACE_DEVA) && (number(1, 100) <= 10))
+	if (!IS_PC_PET(ch) && (GET_RACE(ch) == RACE_BRALANI || GET_RACE(ch) == RACE_DEVA) &&
+	    (number(1, 100) <= 10))
 	{
 		GhostFearEffect(ch);
 		return TRUE;
@@ -444,8 +454,8 @@ int BeholderCombat(P_char ch)
 	 *
 	 */
 
-	int    hitpc = FALSE, numbPCs = 0, luckyPC, currPC = 0, gotlucky = FALSE;
-	int    random;
+	int hitpc = FALSE, numbPCs = 0, luckyPC, currPC = 0, gotlucky = FALSE;
+	int random;
 	P_char tch, nextch, firstPC = NULL;
 
 	if (ch->in_room < 0)
@@ -501,32 +511,22 @@ int BeholderCombat(P_char ch)
 				 * stone (major para), disintegrate, fear, slow, and cause serious (more
 				 * like full harm on Duris)
 				 */
-				random = number(0, 9); // beholders will not proc every round - Jexni 5/15/09
+				random = number(
+					0,
+					9); // beholders will not proc every round - Jexni 5/15/09
 				{
 					/* sleep */
 					if (random == 0)
 					{
 						act("A &+mpurple&n beam shoots from one of your eyestalks,"
 						    " squarely hitting $N&n.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_CHAR);
+						    TRUE, ch, 0, tch, TO_CHAR);
 						act("A &+mpurple&n beam shoots from one of $n&n's eyestalks,"
 						    " striking you square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_VICT);
+						    TRUE, ch, 0, tch, TO_VICT);
 						act("A &+mpurple&n beam shoots from one of $n&n's eyestalks,"
 						    " striking $N&n square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_NOTVICT);
+						    TRUE, ch, 0, tch, TO_NOTVICT);
 
 						spell_beholder_sleep(GET_LEVEL(ch), ch, tch, NULL);
 					} /* paralyze (flesh to stone) */
@@ -534,53 +534,31 @@ int BeholderCombat(P_char ch)
 					{
 						act("A narrow &+Ggreen&n beam shoots from one of your eyestalks,"
 						    " squarely hitting $N&n.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_CHAR);
+						    TRUE, ch, 0, tch, TO_CHAR);
 						act("A narrow &+Ggreen&n beam shoots from one of $n&n's eyestalks,"
 						    " striking you square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_VICT);
+						    TRUE, ch, 0, tch, TO_VICT);
 						act("A narrow &+Ggreen&n beam shoots from one of $n&n's eyestalks,"
 						    " striking $N&n square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_NOTVICT);
+						    TRUE, ch, 0, tch, TO_NOTVICT);
 
-						spell_beholder_paralyze(GET_LEVEL(ch), ch, tch, NULL);
+						spell_beholder_paralyze(GET_LEVEL(ch), ch, tch,
+									NULL);
 					} /* disintegrate */
 					if (random == 2 && !number(0, 5))
 					{
 						act("A blinding &+Wwhite&n beam shoots from one of your eyestalks, "
 						    " squarely hitting $N&n.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_CHAR);
+						    TRUE, ch, 0, tch, TO_CHAR);
 						act("A blinding &+Wwhite&n beam shoots from one of $n&n's eyestalks,"
 						    " striking you square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_VICT);
+						    TRUE, ch, 0, tch, TO_VICT);
 						act("A blinding &+Wwhite&n beam shoots from one of $n&n's eyestalks,"
 						    " striking $N&n square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_NOTVICT);
+						    TRUE, ch, 0, tch, TO_NOTVICT);
 
-						spell_beholder_disintegrate(GET_LEVEL(ch), ch, tch, NULL);
+						spell_beholder_disintegrate(GET_LEVEL(ch), ch, tch,
+									    NULL);
 
 					} /* fear */
 					if (random == 3)
@@ -593,114 +571,71 @@ int BeholderCombat(P_char ch)
 						{
 							act("A &+rdeep red&n beam shoots from one of your eyestalks, "
 							    " squarely hitting $N&n.",
-							    TRUE,
-							    ch,
-							    0,
-							    tch,
-							    TO_CHAR);
+							    TRUE, ch, 0, tch, TO_CHAR);
 							act("A &+rdeep red&n beam shoots from one of $n&n's eyestalks,"
 							    " striking you square in the chest.",
-							    TRUE,
-							    ch,
-							    0,
-							    tch,
-							    TO_VICT);
+							    TRUE, ch, 0, tch, TO_VICT);
 							act("A &+rdeep red&n beam shoots from one of $n&n's eyestalks,"
 							    " striking $N&n square in the chest.",
-							    TRUE,
-							    ch,
-							    0,
-							    tch,
-							    TO_NOTVICT);
+							    TRUE, ch, 0, tch, TO_NOTVICT);
 
-							spell_beholder_fear(GET_LEVEL(ch), ch, tch, NULL);
+							spell_beholder_fear(GET_LEVEL(ch), ch, tch,
+									    NULL);
 						}
 					} /* slowness */
 					if (random == 4)
 					{
 						act("An intense &+Yyellow&n beam shoots from one of your eyestalks, "
 						    " squarely hitting $N&n.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_CHAR);
+						    TRUE, ch, 0, tch, TO_CHAR);
 						act("An intense &+Yyellow&n beam shoots from one of $n&n's eyestalks,"
 						    " striking you square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_VICT);
+						    TRUE, ch, 0, tch, TO_VICT);
 						act("An intense &+Yyellow&n beam shoots from one of $n&n's eyestalks,"
 						    " striking $N&n square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_NOTVICT);
+						    TRUE, ch, 0, tch, TO_NOTVICT);
 
-						spell_beholder_slowness(GET_LEVEL(ch), ch, tch, NULL);
+						spell_beholder_slowness(GET_LEVEL(ch), ch, tch,
+									NULL);
 
 					} /* damage (full harm-type) */
 					if (random == 5)
 					{
 						act("A crackling &+Bblue&n beam shoots from one of your eyestalks, "
 						    " squarely hitting $N&n.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_CHAR);
+						    TRUE, ch, 0, tch, TO_CHAR);
 						act("A crackling &+Bblue&n beam shoots from one of $n&n's eyestalks,"
 						    " striking you square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_VICT);
+						    TRUE, ch, 0, tch, TO_VICT);
 						act("A crackling &+Bblue&n beam shoots from one of $n&n's eyestalks,"
 						    " striking $N&n square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_NOTVICT);
+						    TRUE, ch, 0, tch, TO_NOTVICT);
 
 						spell_beholder_damage(GET_LEVEL(ch), ch, tch, NULL);
 
 					} /* wacky telekinesis thing - only useful in a room with doors */
 					if (random == 6)
 					{
-						act("$n&+W's eye briefly flares brightly.", TRUE, ch, 0, 0, TO_ROOM);
+						act("$n&+W's eye briefly flares brightly.", TRUE,
+						    ch, 0, 0, TO_ROOM);
 
-						spell_beholder_telekinesis(GET_LEVEL(ch), ch, tch, NULL);
+						spell_beholder_telekinesis(GET_LEVEL(ch), ch, tch,
+									   NULL);
 					}
 					if (random == 7 && !number(0, 1))
 					{
 						act("A thin &+Ggreen&n beam shoots from one of your eyestalks, "
 						    " squarely hitting $N&n.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_CHAR);
+						    TRUE, ch, 0, tch, TO_CHAR);
 						act("A thin &+Ggreen&n beam shoots from one of $n&n's eyestalks,"
 						    " striking you square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_VICT);
+						    TRUE, ch, 0, tch, TO_VICT);
 						act("A thin &+Ggreen&n beam shoots from one of $n&n's eyestalks,"
 						    " striking $N&n square in the chest.",
-						    TRUE,
-						    ch,
-						    0,
-						    tch,
-						    TO_NOTVICT);
+						    TRUE, ch, 0, tch, TO_NOTVICT);
 
-						spell_beholder_dispelmagic(GET_LEVEL(ch), ch, tch, NULL);
+						spell_beholder_dispelmagic(GET_LEVEL(ch), ch, tch,
+									   NULL);
 					}
 				}
 			} /* if (currPC == luckyPC) */
@@ -719,7 +654,6 @@ int BeholderCombat(P_char ch)
 
 void DriderCombat(P_char ch, P_char victim)
 {
-
 	int top;
 
 	// Multiclass will have other ability and specials to use.
@@ -740,34 +674,37 @@ void DriderCombat(P_char ch, P_char victim)
 
 	switch (number(1, top))
 	{
-		case 1:
-			act("$n&n hisses in drow 'Lloth has forsaken me!'", TRUE, ch, 0, 0, TO_ROOM);
-			do_action(ch, 0, CMD_MOAN);
+	case 1:
+		act("$n&n hisses in drow 'Lloth has forsaken me!'", TRUE, ch, 0, 0, TO_ROOM);
+		do_action(ch, 0, CMD_MOAN);
+		break;
+	case 2:
+		if (victim && IS_ALIVE(victim))
+		{
+			act("$n hisses at you, and strikes forth with devastating speed!", TRUE, ch,
+			    0, 0, TO_ROOM);
+			hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
 			break;
-		case 2:
-			if (victim && IS_ALIVE(victim))
-			{
-				act("$n hisses at you, and strikes forth with devastating speed!", TRUE, ch, 0, 0, TO_ROOM);
-				hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
-				break;
-			}
-		case 3:
-		case 4:
-			do_action(ch, 0, CMD_ROAR);
-			break;
-		case 5:
-		case 6:
-		case 10:
-			if (victim)
-			{
-				do_action(ch, 0, CMD_HISS);
-				act("$n begins to spin a web, attempting to encase you within it!", TRUE, ch, 0, victim, TO_VICT);
-				act("$n&n attempts to encase $N in it's web!", TRUE, ch, 0, victim, TO_NOTVICT);
-				spell_minor_paralysis(60, ch, NULL, SPELL_TYPE_SPELL, victim, 0);
-			}
-			break;
-		default:
-			break;
+		}
+	case 3:
+	case 4:
+		do_action(ch, 0, CMD_ROAR);
+		break;
+	case 5:
+	case 6:
+	case 10:
+		if (victim)
+		{
+			do_action(ch, 0, CMD_HISS);
+			act("$n begins to spin a web, attempting to encase you within it!", TRUE,
+			    ch, 0, victim, TO_VICT);
+			act("$n&n attempts to encase $N in it's web!", TRUE, ch, 0, victim,
+			    TO_NOTVICT);
+			spell_minor_paralysis(60, ch, NULL, SPELL_TYPE_SPELL, victim, 0);
+		}
+		break;
+	default:
+		break;
 	}
 }
 
@@ -793,26 +730,29 @@ void PwormCombat(P_char ch, P_char victim)
 
 	switch (number(1, top))
 	{
-		case 1:
-		case 2:
-			act("$n&n lets out a deafening &+RSHRIEK!", TRUE, ch, 0, 0, TO_ROOM);
-			break;
-		case 3:
-		case 4:
-		case 5:
-			act("$n&n begins to salivate, &+Gslimy&n mucus flowing from it's maw.", TRUE, ch, 0, 0, TO_ROOM);
-			break;
-		case 10:
-			if (victim && IS_ALIVE(victim))
-			{
-				do_action(ch, 0, CMD_HISS);
-				act("$n hisses loudly for a moment, and gurgles as it expels digestive enzymes at YOU!&n", TRUE, ch, 0, victim, TO_VICT);
-				act("$n, in a horrific display, belches up putrid digestive enzymes all over $N!&n", TRUE, ch, 0, victim, TO_NOTVICT);
-				spell_corrosive_blast(GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, victim, 0);
-			}
-			break;
-		default:
-			break;
+	case 1:
+	case 2:
+		act("$n&n lets out a deafening &+RSHRIEK!", TRUE, ch, 0, 0, TO_ROOM);
+		break;
+	case 3:
+	case 4:
+	case 5:
+		act("$n&n begins to salivate, &+Gslimy&n mucus flowing from it's maw.", TRUE, ch, 0,
+		    0, TO_ROOM);
+		break;
+	case 10:
+		if (victim && IS_ALIVE(victim))
+		{
+			do_action(ch, 0, CMD_HISS);
+			act("$n hisses loudly for a moment, and gurgles as it expels digestive enzymes at YOU!&n",
+			    TRUE, ch, 0, victim, TO_VICT);
+			act("$n, in a horrific display, belches up putrid digestive enzymes all over $N!&n",
+			    TRUE, ch, 0, victim, TO_NOTVICT);
+			spell_corrosive_blast(GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, victim, 0);
+		}
+		break;
+	default:
+		break;
 	}
 }
 
@@ -898,10 +838,10 @@ bool Mob_Furious(P_char ch, P_char victim, int chance)
 
 bool DragonCombat(P_char ch, int awe)
 {
-	int    i, breath_chance, attacktype = 0;
+	int i, breath_chance, attacktype = 0;
 	P_char tchar1 = NULL, tchar2 = NULL, vict, next_ch;
 	void (*funct)(int, P_char, char *, int, P_char, P_obj);
-	bool   bIsPet   = false;
+	bool bIsPet = false;
 	P_char chMaster = NULL;
 
 	/* check for non-dragon breathers .. */
@@ -911,7 +851,7 @@ bool DragonCombat(P_char ch, int awe)
 	   they need to be in the room taking risks along with the pet! */
 	if (IS_PC_PET(ch))
 	{
-		bIsPet   = true;
+		bIsPet = true;
 		chMaster = GET_MASTER(ch);
 		if (ch->in_room != chMaster->in_room)
 		{
@@ -952,13 +892,15 @@ bool DragonCombat(P_char ch, int awe)
 		}
 
 		act("Your ROAR fills your victims with sheer terror!", 0, ch, 0, 0, TO_CHAR);
-		act("$n&N &+RROARS&n, filling your heart with &+Lsheer terror!&n", 1, ch, 0, 0, TO_ROOM);
+		act("$n&N &+RROARS&n, filling your heart with &+Lsheer terror!&n", 1, ch, 0, 0,
+		    TO_ROOM);
 
-		radiate_message_from_room(ch->in_room,
-		                          "&+CA thundering roar echoes through the area!\r\n",
-		                          GET_LEVEL(ch) / 10 + (GET_LEVEL(ch) > 30 ? (GET_LEVEL(ch) - 30) / 5 : 0),
-		                          (RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL | RMFR_PASS_DOOR | RMFR_CROSS_ZONE_BARRIER),
-		                          0);
+		radiate_message_from_room(
+			ch->in_room, "&+CA thundering roar echoes through the area!\r\n",
+			GET_LEVEL(ch) / 10 + (GET_LEVEL(ch) > 30 ? (GET_LEVEL(ch) - 30) / 5 : 0),
+			(RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL | RMFR_PASS_DOOR |
+				     RMFR_CROSS_ZONE_BARRIER),
+			0);
 
 		for (tchar1 = world[ch->in_room].people; tchar1; tchar1 = tchar2)
 		{
@@ -979,10 +921,11 @@ bool DragonCombat(P_char ch, int awe)
 				continue;
 			}
 
-			if (!IS_DRAGON(tchar1) && !IS_TITAN(tchar1) && !IS_AVATAR(tchar1) && !IS_TRUSTED(tchar1) && (tchar1->specials.z_cord == ch->specials.z_cord))
+			if (!IS_DRAGON(tchar1) && !IS_TITAN(tchar1) && !IS_AVATAR(tchar1) &&
+			    !IS_TRUSTED(tchar1) && (tchar1->specials.z_cord == ch->specials.z_cord))
 			{
-
-				if (IS_NPC(tchar1) && !GET_MASTER(tchar1) && tchar1->group && (tchar1->group == ch->group))
+				if (IS_NPC(tchar1) && !GET_MASTER(tchar1) && tchar1->group &&
+				    (tchar1->group == ch->group))
 				{
 					continue;
 				}
@@ -994,13 +937,18 @@ bool DragonCombat(P_char ch, int awe)
 
 				if (bIsPet && IS_NPC(tchar1))
 				{
-					if ((tchar1->following && IS_NPC(tchar1->following)) || (IS_SET(tchar1->specials.act, ACT_SENTINEL) && !GET_MASTER(tchar1)))
+					if ((tchar1->following && IS_NPC(tchar1->following)) ||
+					    (IS_SET(tchar1->specials.act, ACT_SENTINEL) &&
+					     !GET_MASTER(tchar1)))
 					{
 						continue;
 					}
 				}
 				/* for non-pets: allow any non-PC-following NPCs to ignore it */
-				else if (IS_NPC(tchar1) && (!tchar1->following || IS_NPC(tchar1->following)) && (GET_OPPONENT(ch) != tchar1) && (GET_OPPONENT(tchar1) != ch))
+				else if (IS_NPC(tchar1) &&
+					 (!tchar1->following || IS_NPC(tchar1->following)) &&
+					 (GET_OPPONENT(ch) != tchar1) &&
+					 (GET_OPPONENT(tchar1) != ch))
 				{
 					continue;
 				}
@@ -1045,7 +993,8 @@ bool DragonCombat(P_char ch, int awe)
 	 * every round.
 	 */
 
-	if (IS_AFFECTED(ch, AFF_CHARM) && (ch->following) && (ch->in_room == ch->following->in_room))
+	if (IS_AFFECTED(ch, AFF_CHARM) && (ch->following) &&
+	    (ch->in_room == ch->following->in_room))
 		return FALSE;
 
 	/*
@@ -1055,8 +1004,10 @@ bool DragonCombat(P_char ch, int awe)
 
 	if (!number(0, 3))
 	{
-		if (!isname("br_f", GET_NAME(ch)) && !isname("br_c", GET_NAME(ch)) && !isname("br_g", GET_NAME(ch)) && !isname("br_a", GET_NAME(ch)) && !isname("br_l", GET_NAME(ch)) &&
-		    !isname("br_s", GET_NAME(ch)) && !isname("br_b", GET_NAME(ch)) && IS_DRAGON(ch))
+		if (!isname("br_f", GET_NAME(ch)) && !isname("br_c", GET_NAME(ch)) &&
+		    !isname("br_g", GET_NAME(ch)) && !isname("br_a", GET_NAME(ch)) &&
+		    !isname("br_l", GET_NAME(ch)) && !isname("br_s", GET_NAME(ch)) &&
+		    !isname("br_b", GET_NAME(ch)) && IS_DRAGON(ch))
 		{
 			if (IS_TITAN(ch) || IS_AVATAR(ch))
 				StompAttack(ch);
@@ -1128,7 +1079,10 @@ if (!IS_DRAGON(ch) && !IS_TITAN(ch) && !IS_AVATAR(ch) && CAN_BREATHE(ch))
  *  NOT want to be able to summon as well.  - Jexni  5/16/09
  */
 
-int dummy_function(P_char ch, P_char vict, int cmd, char *arg) { return FALSE; }
+int dummy_function(P_char ch, P_char vict, int cmd, char *arg)
+{
+	return FALSE;
+}
 
 int DemonCombat(P_char ch)
 {
@@ -1191,8 +1145,8 @@ int DemonCombat(P_char ch)
 
 int babau_combat(P_char ch, P_char vict, int cmd, char *arg)
 {
-	int    last_sum = 0, curr_time;
-	P_char target   = vict;
+	int last_sum = 0, curr_time;
+	P_char target = vict;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1253,11 +1207,7 @@ int summon_new_demon(P_char ch, int subtype)
 		mob_index[GET_RNUM(tmp)].func.mob = dummy_function;
 		act("$n &+rmakes a strange gesture, and a &+Lportal &+rto another plane opens!\r\n"
 		    "$N &+rsteps out of the portal.&n",
-		    FALSE,
-		    ch,
-		    0,
-		    tmp,
-		    TO_ROOM);
+		    FALSE, ch, 0, tmp, TO_ROOM);
 		char_to_room(tmp, ch->in_room, 0);
 		setup_pet(tmp, ch, -1, PET_NOAGGRO);
 		return TRUE;

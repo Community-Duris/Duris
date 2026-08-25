@@ -13,7 +13,7 @@
    extern variables
  */
 
-extern P_room            world;
+extern P_room world;
 extern struct zone_data *zone_table;
 
 /*
@@ -38,8 +38,11 @@ int mist_protect(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		if (GET_LEVEL(pl) > 36 && !IS_TRUSTED(pl))
 		{
-			act("&+LThe guardian druid solemnly blocks $n&+L's passage into the forest.&n", FALSE, pl, 0, 0, TO_ROOM);
-			send_to_char("&+LThe guardian druid looks at you solemnly, shaking his head.&n\r\n", pl);
+			act("&+LThe guardian druid solemnly blocks $n&+L's passage into the forest.&n",
+			    FALSE, pl, 0, 0, TO_ROOM);
+			send_to_char(
+				"&+LThe guardian druid looks at you solemnly, shaking his head.&n\r\n",
+				pl);
 			return TRUE;
 		}
 	}

@@ -30,19 +30,19 @@
  * external variables
  */
 
-extern P_desc      descriptor_list;
-extern P_room      world;
-extern P_index     mob_index;
-extern P_index     obj_index;
+extern P_desc descriptor_list;
+extern P_room world;
+extern P_index mob_index;
+extern P_index obj_index;
 extern const char *dirs[];
 extern const char *dirs2[];
 extern const char *shot_types[];
-extern const int   shot_damage[];
+extern const int shot_damage[];
 // extern int rev_dir[];
 extern struct agi_app_type agi_app[];
 extern struct dex_app_type dex_app[];
 extern struct str_app_type str_app[];
-extern struct zone_data   *zone_table;
+extern struct zone_data *zone_table;
 
 extern P_char misfire_check(P_char ch, P_char spell_target, int flag);
 
@@ -50,8 +50,8 @@ void do_cover(P_char, char *, int);
 
 #define RANGE_DAMAGE_MULTIPLIER 18
 
-#define ARROW_NONE   0
-#define ARROW_MARK   1
+#define ARROW_NONE 0
+#define ARROW_MARK 1
 #define ARROW_EFFECT 2
 
 /*
@@ -62,11 +62,11 @@ void do_cover(P_char, char *, int);
 
 void do_gather(P_char ch, char *argument, int cmd)
 {
-	char   name[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH];
+	char name[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH];
 	P_char tmp_char;
-	P_obj  corpse, tobj, quiver, next_obj;
-	int    bits, i, j, g, type;
-	int    weight = 0, full = 0;
+	P_obj corpse, tobj, quiver, next_obj;
+	int bits, i, j, g, type;
+	int weight = 0, full = 0;
 
 	one_argument(argument, name);
 
@@ -106,7 +106,8 @@ void do_gather(P_char ch, char *argument, int cmd)
 		}
 		else
 		{
-			bits = generic_find(name, FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &tmp_char, &corpse);
+			bits = generic_find(name, FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &tmp_char,
+					    &corpse);
 		}
 
 		if (!corpse)
@@ -180,14 +181,16 @@ void do_gather(P_char ch, char *argument, int cmd)
 
 int arrow_spell_fire(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int                    dam;
-	struct damage_messages messages = {"&+RFlames &+rlick at $N's &+mwounds&+r as an arrow &+rcollides with $S &+Rflesh&+r!&n",
-	                                   "&+RFlames &+rlick at your &+mwounds&+r as an arrow &+rcollides with your &+Rflesh&+r!&n",
-	                                   "&+RFlames &+rlick at $N's &+mwounds&+r as an arrow &+rcollides with $S &+Rflesh&+r!&n",
-	                                   "&+rA burning feeling is $N's &+rfinal reward as an arrow rips through $S neck!&n",
-	                                   "&+rA burning feeling is your final reward as an arrow rips through your neck!&n",
-	                                   "&+rA burning feeling is $N's &+rfinal reward as an arrow rips through $S neck!&n",
-	                                   0};
+	int dam;
+	struct damage_messages messages = {
+		"&+RFlames &+rlick at $N's &+mwounds&+r as an arrow &+rcollides with $S &+Rflesh&+r!&n",
+		"&+RFlames &+rlick at your &+mwounds&+r as an arrow &+rcollides with your &+Rflesh&+r!&n",
+		"&+RFlames &+rlick at $N's &+mwounds&+r as an arrow &+rcollides with $S &+Rflesh&+r!&n",
+		"&+rA burning feeling is $N's &+rfinal reward as an arrow rips through $S neck!&n",
+		"&+rA burning feeling is your final reward as an arrow rips through your neck!&n",
+		"&+rA burning feeling is $N's &+rfinal reward as an arrow rips through $S neck!&n",
+		0
+	};
 
 	dam = number(4, 16) * get_property("archery.enchantArrows.damage.mod", 1);
 
@@ -196,14 +199,16 @@ int arrow_spell_fire(int level, P_char ch, char *arg, int type, P_char victim, P
 
 int arrow_spell_lightning(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int                    dam;
-	struct damage_messages messages = {"&+WArcs of &+yelec&+Ytri&+ycity &+Wleap from an arrow &+Ysearing &+W$N's &+Wflesh!&n",
-	                                   "&+WArcs of &+yelec&+Ytri&+ycity &+Wleap from an arrow &+Ysearing &+Wyour &+Wflesh!&n",
-	                                   "&+WArcs of &+yelec&+Ytri&+ycity &+Wleap from an arrow &+Ysearing &+W$N's &+Wflesh!&n",
-	                                   "&+WArcing &+yelec&+Ytri&+ycity &+wstops &+W$N's &+Wheart, and $E falls to the ground, &+Ydead&+W.&n",
-	                                   "&+WArcing &+yelec&+Ytri&+ycity &+wstops &+Wyour heart, and you fall to the ground, &+Ydead&+W.&n",
-	                                   "&+WArcing &+yelec&+Ytri&+ycity &+wstops &+W$N's &+Wheart, and $E falls to the ground, &+Ydead&+W.&n",
-	                                   0};
+	int dam;
+	struct damage_messages messages = {
+		"&+WArcs of &+yelec&+Ytri&+ycity &+Wleap from an arrow &+Ysearing &+W$N's &+Wflesh!&n",
+		"&+WArcs of &+yelec&+Ytri&+ycity &+Wleap from an arrow &+Ysearing &+Wyour &+Wflesh!&n",
+		"&+WArcs of &+yelec&+Ytri&+ycity &+Wleap from an arrow &+Ysearing &+W$N's &+Wflesh!&n",
+		"&+WArcing &+yelec&+Ytri&+ycity &+wstops &+W$N's &+Wheart, and $E falls to the ground, &+Ydead&+W.&n",
+		"&+WArcing &+yelec&+Ytri&+ycity &+wstops &+Wyour heart, and you fall to the ground, &+Ydead&+W.&n",
+		"&+WArcing &+yelec&+Ytri&+ycity &+wstops &+W$N's &+Wheart, and $E falls to the ground, &+Ydead&+W.&n",
+		0
+	};
 
 	dam = number(4, 16) * get_property("archery.enchantArrows.damage.mod", 1);
 
@@ -212,14 +217,16 @@ int arrow_spell_lightning(int level, P_char ch, char *arg, int type, P_char vict
 
 int arrow_spell_cold(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int                    dam;
-	struct damage_messages messages = {"&+CA bitter &+Bchill &+Cflows through $N &+Cas an arrow &+Bpenetrates &+C$S flesh!&n",
-	                                   "&+CA bitter &+Bchill &+Cflows through you as an arrow &+Bpenetrates &+Cyour flesh!&n",
-	                                   "&+CA bitter &+Bchill &+Cflows through $N &+Cas an arrow &+Bpenetrates &+C$S flesh!&n",
-	                                   "&+C$N's &+Cblood &+bfreezes&+C solid in $S veins as an arrow &+brips &+Cthrough $S neck!&n",
-	                                   "&+CYour blood &+bfreezes&+C solid in your veins as an arrow &+brips &+Cthrough your neck!&n",
-	                                   "&+C$N's &+Cblood &+bfreezes&+C solid in $S veins as an arrow &+brips &+Cthrough $S neck!&n",
-	                                   0};
+	int dam;
+	struct damage_messages messages = {
+		"&+CA bitter &+Bchill &+Cflows through $N &+Cas an arrow &+Bpenetrates &+C$S flesh!&n",
+		"&+CA bitter &+Bchill &+Cflows through you as an arrow &+Bpenetrates &+Cyour flesh!&n",
+		"&+CA bitter &+Bchill &+Cflows through $N &+Cas an arrow &+Bpenetrates &+C$S flesh!&n",
+		"&+C$N's &+Cblood &+bfreezes&+C solid in $S veins as an arrow &+brips &+Cthrough $S neck!&n",
+		"&+CYour blood &+bfreezes&+C solid in your veins as an arrow &+brips &+Cthrough your neck!&n",
+		"&+C$N's &+Cblood &+bfreezes&+C solid in $S veins as an arrow &+brips &+Cthrough $S neck!&n",
+		0
+	};
 
 	dam = number(4, 16) * get_property("archery.enchantArrows.damage.mod", 1);
 
@@ -228,14 +235,16 @@ int arrow_spell_cold(int level, P_char ch, char *arg, int type, P_char victim, P
 
 int arrow_spell_acid(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int                    dam;
-	struct damage_messages messages = {"&+GAcid&+g seeps into $N's &+mwounds&+g as an arrow &+Gpunctures &+g$S flesh!&n",
-	                                   "&+GAcid&+g seeps into your &+mwounds&+g as an arrow &+Gpunctures &+gyour flesh!&n",
-	                                   "&+GAcid&+g seeps into $N's &+mwounds&+g as an arrow &+Gpunctures &+g$S flesh!&n",
-	                                   "&+gThe &+Gsearing pain &+gfrom an arrow's &+Gacid &+gis the last thing $N feels.&n",
-	                                   "&+gThe &+Gsearing pain &+gfrom an arrow's &+Gacid &+gis the last thing you feel.&n",
-	                                   "&+gThe &+Gsearing pain &+gfrom an arrow's &+Gacid &+gis the last thing $N feels.&n",
-	                                   0};
+	int dam;
+	struct damage_messages messages = {
+		"&+GAcid&+g seeps into $N's &+mwounds&+g as an arrow &+Gpunctures &+g$S flesh!&n",
+		"&+GAcid&+g seeps into your &+mwounds&+g as an arrow &+Gpunctures &+gyour flesh!&n",
+		"&+GAcid&+g seeps into $N's &+mwounds&+g as an arrow &+Gpunctures &+g$S flesh!&n",
+		"&+gThe &+Gsearing pain &+gfrom an arrow's &+Gacid &+gis the last thing $N feels.&n",
+		"&+gThe &+Gsearing pain &+gfrom an arrow's &+Gacid &+gis the last thing you feel.&n",
+		"&+gThe &+Gsearing pain &+gfrom an arrow's &+Gacid &+gis the last thing $N feels.&n",
+		0
+	};
 
 	dam = number(4, 16) * get_property("archery.enchantArrows.damage.mod", 1);
 
@@ -248,19 +257,21 @@ void event_enchant_arrow(P_char ch, P_char victim, P_obj obj, void *data)
 
 	arrow = read_object(obj->R_num, REAL);
 
-	obj->name              = arrow->name;
+	obj->name = arrow->name;
 	obj->short_description = arrow->short_description;
-	obj->timer[5]          = ARROW_NONE;
+	obj->timer[5] = ARROW_NONE;
 }
 
 int enchant_arrows(P_char ch, P_char vict, P_obj arrow, int cmd)
 {
-	int  duration;
+	int duration;
 	char buf[256], buf2[256];
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(vict) || !arrow)
 	{
-		return IS_ALIVE(ch) ? (IS_ALIVE(vict) ? DAM_NONEDEAD : DAM_VICTDEAD) : IS_ALIVE(vict) ? DAM_CHARDEAD : DAM_BOTHDEAD;
+		return IS_ALIVE(ch)   ? (IS_ALIVE(vict) ? DAM_NONEDEAD : DAM_VICTDEAD) :
+		       IS_ALIVE(vict) ? DAM_CHARDEAD :
+					DAM_BOTHDEAD;
 	}
 
 	if (!IS_SET(arrow->extra2_flags, ITEM2_MAGIC) && arrow->condition > 70)
@@ -270,60 +281,63 @@ int enchant_arrows(P_char ch, P_char vict, P_obj arrow, int cmd)
 
 	switch (cmd)
 	{
-		case ARROW_NONE:
-			break;
-		case ARROW_MARK:
-			if (arrow->timer[5] == ARROW_MARK)
-			{
-				return DAM_NONEDEAD;
-			}
-			snprintf(buf2, 256, "&n of &+L%s&n", GET_NAME(ch));
-			snprintf(buf, 256, "%s", arrow->short_description);
-			strcat(buf, buf2);
-			arrow->short_description = str_dup(buf);
+	case ARROW_NONE:
+		break;
+	case ARROW_MARK:
+		if (arrow->timer[5] == ARROW_MARK)
+		{
+			return DAM_NONEDEAD;
+		}
+		snprintf(buf2, 256, "&n of &+L%s&n", GET_NAME(ch));
+		snprintf(buf, 256, "%s", arrow->short_description);
+		strcat(buf, buf2);
+		arrow->short_description = str_dup(buf);
 
-			snprintf(buf, 256, "%s a%s", arrow->name, GET_NAME(ch));
-			arrow->name = str_dup(buf);
+		snprintf(buf, 256, "%s a%s", arrow->name, GET_NAME(ch));
+		arrow->name = str_dup(buf);
 
-			arrow->timer[5] = ARROW_MARK;
-			duration        = WAIT_SEC * (int)get_property("archery.enchantArrows.mark.duration", 300);
-			add_event(event_enchant_arrow, duration, 0, 0, arrow, 0, 0, 0);
-			break;
-		case 2:
-			if (GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) >= number(60, 180))
-			{
-				return arrow_spell_fire(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
-			}
-			break;
-		case 3:
-			if (GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) >= number(60, 180))
-			{
-				return arrow_spell_cold(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
-			}
-			break;
-		case 4:
-			if (GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) >= number(80, 180))
-			{
-				return arrow_spell_lightning(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
-			}
-			break;
-		case 5:
-			if (GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) >= number(80, 190))
-			{
-				return arrow_spell_acid(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
-			}
-			break;
-		case 6:
-			if (GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) > number(99, 199))
-			{
-				spell_major_paralysis(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
-			}
-			break;
-		default:
-			break;
+		arrow->timer[5] = ARROW_MARK;
+		duration = WAIT_SEC * (int)get_property("archery.enchantArrows.mark.duration", 300);
+		add_event(event_enchant_arrow, duration, 0, 0, arrow, 0, 0, 0);
+		break;
+	case 2:
+		if (GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) >= number(60, 180))
+		{
+			return arrow_spell_fire(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
+		}
+		break;
+	case 3:
+		if (GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) >= number(60, 180))
+		{
+			return arrow_spell_cold(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
+		}
+		break;
+	case 4:
+		if (GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) >= number(80, 180))
+		{
+			return arrow_spell_lightning(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict,
+						     0);
+		}
+		break;
+	case 5:
+		if (GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) >= number(80, 190))
+		{
+			return arrow_spell_acid(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
+		}
+		break;
+	case 6:
+		if (GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) > number(99, 199))
+		{
+			spell_major_paralysis(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
+		}
+		break;
+	default:
+		break;
 	}
 
-	return IS_ALIVE(ch) ? (IS_ALIVE(vict) ? DAM_NONEDEAD : DAM_VICTDEAD) : IS_ALIVE(vict) ? DAM_CHARDEAD : DAM_BOTHDEAD;
+	return IS_ALIVE(ch)   ? (IS_ALIVE(vict) ? DAM_NONEDEAD : DAM_VICTDEAD) :
+	       IS_ALIVE(vict) ? DAM_CHARDEAD :
+				DAM_BOTHDEAD;
 }
 
 /*
@@ -344,31 +358,31 @@ int enchant_arrows(P_char ch, P_char vict, P_obj arrow, int cmd)
 // change properties archery.diceFactor to 1.0!!!
 void do_fire(P_char ch, char *argument, int cmd)
 {
-	char                    tararg[256], dirarg[256];
-	P_char                  victim, mount;
-	P_obj                   weapon, quiver, missile, shield;
-	bool                    should_retaliate = FALSE, is_fighting_check = FALSE;
-	bool                    shield_blocked = FALSE;
-	int                     i, j, dir = -1, to_hit, room, range, result;
-	int                     shots, speed_per_shot;
-	double                  dam       = 0;
-	int                     wallcheck = 0, weight = 0;
-	int                     speed, strength, carrow, maxluck, actual;
-	float                   delay;
-	char                    buf[256];
-	char                    vict_msg[256];
-	char                    room_msg[256];
-	char                    vict_death_msg[256];
-	char                    room_death_msg[256];
+	char tararg[256], dirarg[256];
+	P_char victim, mount;
+	P_obj weapon, quiver, missile, shield;
+	bool should_retaliate = FALSE, is_fighting_check = FALSE;
+	bool shield_blocked = FALSE;
+	int i, j, dir = -1, to_hit, room, range, result;
+	int shots, speed_per_shot;
+	double dam = 0;
+	int wallcheck = 0, weight = 0;
+	int speed, strength, carrow, maxluck, actual;
+	float delay;
+	char buf[256];
+	char vict_msg[256];
+	char room_msg[256];
+	char vict_death_msg[256];
+	char room_death_msg[256];
 	struct damage_messages *messages;
-	struct damage_messages  room_messages = {
-        "Your $p's hit strikes $N!",
-        "$n's $p's hit strikes you!", //"$p fired by $n hits you!",
-        "$n's $p's hit strikes $N.",  //$p fired by $n hits $N!",
-        "Your $p went right through $N's throat killing $M instantly.",
-        "$p fired by $n pierces your throat killing you instantly.",
-        "$p fired by $n went right through $N's throat killing $M instantly.",
-    };
+	struct damage_messages room_messages = {
+		"Your $p's hit strikes $N!",
+		"$n's $p's hit strikes you!", //"$p fired by $n hits you!",
+		"$n's $p's hit strikes $N.", //$p fired by $n hits $N!",
+		"Your $p went right through $N's throat killing $M instantly.",
+		"$p fired by $n pierces your throat killing you instantly.",
+		"$p fired by $n went right through $N's throat killing $M instantly.",
+	};
 	struct damage_messages range_messages = {
 		"Your $p finds its mark as its%s hit strikes $N!",
 		vict_msg,
@@ -377,14 +391,16 @@ void do_fire(P_char ch, char *argument, int cmd)
 		vict_death_msg,
 		room_death_msg,
 	};
-	struct damage_messages blocked_messages = {"Your $p's hit strikes $N's shield!",
-	                                           "$n's $p's hit strikes your shield!",
-	                                           "$n's $p's hit strikes $N's shield.",
-	                                           "Your $p went right through $N's throat killing $M instantly.",
-	                                           "$p fired by $n pierces your throat killing you instantly.",
-	                                           "$p fired by $n went right through $N's throat killing $M instantly.",
-	                                           0,
-	                                           0};
+	struct damage_messages blocked_messages = {
+		"Your $p's hit strikes $N's shield!",
+		"$n's $p's hit strikes your shield!",
+		"$n's $p's hit strikes $N's shield.",
+		"Your $p went right through $N's throat killing $M instantly.",
+		"$p fired by $n pierces your throat killing you instantly.",
+		"$p fired by $n went right through $N's throat killing $M instantly.",
+		0,
+		0
+	};
 
 	if (!ch)
 	{
@@ -413,7 +429,8 @@ void do_fire(P_char ch, char *argument, int cmd)
 
 	if (GET_ITEM_TYPE(weapon) != ITEM_FIREWEAPON)
 	{
-		act("What?  Maybe you should try &+Wthrowing&n $p instead?", FALSE, ch, weapon, ch, TO_CHAR);
+		act("What?  Maybe you should try &+Wthrowing&n $p instead?", FALSE, ch, weapon, ch,
+		    TO_CHAR);
 		return;
 	}
 
@@ -431,7 +448,8 @@ void do_fire(P_char ch, char *argument, int cmd)
 		{
 			if (ch->equipment[i])
 			{
-				if (GET_ITEM_TYPE(ch->equipment[i]) == ITEM_QUIVER && ch->equipment[i]->contains)
+				if (GET_ITEM_TYPE(ch->equipment[i]) == ITEM_QUIVER &&
+				    ch->equipment[i]->contains)
 				{
 					quiver = ch->equipment[i];
 					break;
@@ -475,7 +493,8 @@ void do_fire(P_char ch, char *argument, int cmd)
 
 		if (!(victim = get_char_ranged(tararg, ch, 10, dir)))
 		{
-			snprintf(buf, sizeof buf, "Could not find target '%s' to the %s.\n", tararg, dirs[dir]);
+			snprintf(buf, sizeof buf, "Could not find target '%s' to the %s.\n", tararg,
+				 dirs[dir]);
 			send_to_char(buf, ch);
 			return;
 		}
@@ -542,7 +561,8 @@ void do_fire(P_char ch, char *argument, int cmd)
 	if (IS_FIGHTING(ch))
 	{
 		// Max 100/130 -> about a 77% chance.
-		if (notch_skill(ch, SKILL_POINT_BLANK_SHOT, 10) || number(1, 130) <= GET_CHAR_SKILL(ch, SKILL_POINT_BLANK_SHOT))
+		if (notch_skill(ch, SKILL_POINT_BLANK_SHOT, 10) ||
+		    number(1, 130) <= GET_CHAR_SKILL(ch, SKILL_POINT_BLANK_SHOT))
 		{
 			send_to_char("You take aim, and fire upon your enemy!\n", ch);
 			is_fighting_check = TRUE;
@@ -633,12 +653,20 @@ void do_fire(P_char ch, char *argument, int cmd)
 			send_to_char("It's a long shot, but you try anyway!\n", ch);
 		}
 
-		to_hit = chance_to_hit(ch, victim, (int)(GET_CHAR_SKILL(ch, SKILL_ARCHERY) * get_property("archery.hitSkill.percentage", 0.7) - i * get_property("archery.rangePenalty", 10)), 0);
+		to_hit = chance_to_hit(
+			ch, victim,
+			(int)(GET_CHAR_SKILL(ch, SKILL_ARCHERY) *
+				      get_property("archery.hitSkill.percentage", 0.7) -
+			      i * get_property("archery.rangePenalty", 10)),
+			0);
 	}
 	else
 	{
-		room   = victim->in_room;
-		to_hit = chance_to_hit(ch, victim, (int)(GET_CHAR_SKILL(ch, SKILL_ARCHERY) * get_property("archery.hitSkill.percentage", 0.7)), 0);
+		room = victim->in_room;
+		to_hit = chance_to_hit(ch, victim,
+				       (int)(GET_CHAR_SKILL(ch, SKILL_ARCHERY) *
+					     get_property("archery.hitSkill.percentage", 0.7)),
+				       0);
 	}
 
 	// If this is deemed overpowered, let's make it hit someone else if it fails instead of just missing.
@@ -646,7 +674,8 @@ void do_fire(P_char ch, char *argument, int cmd)
 	{
 		act("You aim high, arcing $p skyward.\r\n", FALSE, ch, weapon, ch, TO_CHAR);
 		// A 77% chance at 100 skill.
-		if (!notch_skill(ch, SKILL_INDIRECT_SHOT, 1) && GET_CHAR_SKILL(ch, SKILL_INDIRECT_SHOT) < number(1, 130))
+		if (!notch_skill(ch, SKILL_INDIRECT_SHOT, 1) &&
+		    GET_CHAR_SKILL(ch, SKILL_INDIRECT_SHOT) < number(1, 130))
 		{
 			to_hit = 0;
 		}
@@ -678,7 +707,9 @@ void do_fire(P_char ch, char *argument, int cmd)
 		}
 
 		// Cursed is auto return arrows
-		if (notch_skill(ch, SKILL_CURSED_ARROWS, 10) || number(1, 100) <= (int)(GET_CHAR_SKILL(ch, SKILL_CURSED_ARROWS) * get_property("archery.cursedArrows.percentage", 0.5)))
+		if (notch_skill(ch, SKILL_CURSED_ARROWS, 10) ||
+		    number(1, 100) <= (int)(GET_CHAR_SKILL(ch, SKILL_CURSED_ARROWS) *
+					    get_property("archery.cursedArrows.percentage", 0.5)))
 		{
 			carrow = TRUE;
 		}
@@ -694,7 +725,8 @@ void do_fire(P_char ch, char *argument, int cmd)
 		}
 
 		// For get all.playername
-		if (number(1, 100) <= GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) || notch_skill(ch, SKILL_ENCHANT_ARROWS, 10))
+		if (number(1, 100) <= GET_CHAR_SKILL(ch, SKILL_ENCHANT_ARROWS) ||
+		    notch_skill(ch, SKILL_ENCHANT_ARROWS, 10))
 		{
 			enchant_arrows(ch, victim, missile, ARROW_MARK);
 		}
@@ -710,7 +742,11 @@ void do_fire(P_char ch, char *argument, int cmd)
 
 		// Immobile victims are guaranteed hits, if we have any chance (within range).
 		// If we hit!
-		if (room == victim->in_room && to_hit && (IS_IMMOBILE(victim) || notch_skill(ch, SKILL_ARCHERY, get_property("skill.notch.offensive.auto", 4)) || number(1, 100) <= to_hit))
+		if (room == victim->in_room && to_hit &&
+		    (IS_IMMOBILE(victim) ||
+		     notch_skill(ch, SKILL_ARCHERY,
+				 get_property("skill.notch.offensive.auto", 4)) ||
+		     number(1, 100) <= to_hit))
 		{
 			if (IS_PC(ch) && IS_PC(victim))
 			{
@@ -722,11 +758,15 @@ void do_fire(P_char ch, char *argument, int cmd)
 
 			// Check for shield block.
 			shield = victim->equipment[WEAR_SHIELD];
-			if (shield && GET_ITEM_TYPE(shield) == ITEM_SHIELD && !IS_IMMOBILE(victim) && IS_AWAKE(victim))
+			if (shield && GET_ITEM_TYPE(shield) == ITEM_SHIELD &&
+			    !IS_IMMOBILE(victim) && IS_AWAKE(victim))
 			{
 				// Maxxed out char with 100 stats => 100 + 50 + 50 + 20 + 20 = 240
 				int block_chance =
-					(int)(GET_CHAR_SKILL(victim, SKILL_SHIELD_BLOCK) + (GET_C_AGI(victim) / 2) + (GET_CHAR_SKILL(victim, SKILL_SHIELD_COMBAT) / 2) + (GET_C_DEX(victim) / 5) + (GET_C_LUK(victim) / 5));
+					(int)(GET_CHAR_SKILL(victim, SKILL_SHIELD_BLOCK) +
+					      (GET_C_AGI(victim) / 2) +
+					      (GET_CHAR_SKILL(victim, SKILL_SHIELD_COMBAT) / 2) +
+					      (GET_C_DEX(victim) / 5) + (GET_C_LUK(victim) / 5));
 
 				if (IS_FIGHTING(victim))
 				{
@@ -741,14 +781,28 @@ void do_fire(P_char ch, char *argument, int cmd)
 
 					if (ch->in_room != victim->in_room)
 					{
-						snprintf(vict_msg, sizeof vict_msg, "$p fired from %s%%s, but hits your shield!", dirs[rev_dir[dir]]);
-						snprintf(vict_death_msg, sizeof vict_death_msg, "$p fired from %s goes through your throat killing you instantly.", dirs[rev_dir[dir]]);
+						snprintf(
+							vict_msg, sizeof vict_msg,
+							"$p fired from %s%%s, but hits your shield!",
+							dirs[rev_dir[dir]]);
+						snprintf(
+							vict_death_msg, sizeof vict_death_msg,
+							"$p fired from %s goes through your throat killing you instantly.",
+							dirs[rev_dir[dir]]);
 
-						snprintf(room_msg, sizeof room_msg, "$n fires $p %s!", dirs[dir]);
-						act(room_msg, FALSE, ch, missile, ch, TO_NOTVICT | ACT_NOTTERSE);
+						snprintf(room_msg, sizeof room_msg,
+							 "$n fires $p %s!", dirs[dir]);
+						act(room_msg, FALSE, ch, missile, ch,
+						    TO_NOTVICT | ACT_NOTTERSE);
 
-						snprintf(room_msg, sizeof room_msg, "$p fired from %s%%s, but hits $N's shield!", dirs[rev_dir[dir]]);
-						snprintf(room_death_msg, sizeof room_death_msg, "$p fired from %s went right through $N's throat killing $M instantly.", dirs[rev_dir[dir]]);
+						snprintf(
+							room_msg, sizeof room_msg,
+							"$p fired from %s%%s, but hits $N's shield!",
+							dirs[rev_dir[dir]]);
+						snprintf(
+							room_death_msg, sizeof room_death_msg,
+							"$p fired from %s went right through $N's throat killing $M instantly.",
+							dirs[rev_dir[dir]]);
 
 						messages = &range_messages;
 					}
@@ -765,10 +819,18 @@ void do_fire(P_char ch, char *argument, int cmd)
 				snprintf(room_msg, sizeof room_msg, "$n fires $p %s!", dirs[dir]);
 				act(room_msg, FALSE, ch, missile, ch, TO_NOTVICT | ACT_NOTTERSE);
 
-				snprintf(vict_msg, sizeof vict_msg, "$p fired from %s%%s hits you!", dirs[rev_dir[dir]]);
-				snprintf(vict_death_msg, sizeof vict_death_msg, "$p fired from %s goes through your throat killing you instantly.", dirs[rev_dir[dir]]);
-				snprintf(room_msg, sizeof room_msg, "$p fired from %s%%s hits $N!", dirs[rev_dir[dir]]);
-				snprintf(room_death_msg, sizeof room_death_msg, "$p fired from %s went right through $N's throat killing $M instantly.", dirs[rev_dir[dir]]);
+				snprintf(vict_msg, sizeof vict_msg, "$p fired from %s%%s hits you!",
+					 dirs[rev_dir[dir]]);
+				snprintf(
+					vict_death_msg, sizeof vict_death_msg,
+					"$p fired from %s goes through your throat killing you instantly.",
+					dirs[rev_dir[dir]]);
+				snprintf(room_msg, sizeof room_msg, "$p fired from %s%%s hits $N!",
+					 dirs[rev_dir[dir]]);
+				snprintf(
+					room_death_msg, sizeof room_death_msg,
+					"$p fired from %s went right through $N's throat killing $M instantly.",
+					dirs[rev_dir[dir]]);
 
 				messages = &range_messages;
 			}
@@ -778,7 +840,7 @@ void do_fire(P_char ch, char *argument, int cmd)
 				messages = &room_messages;
 			}
 
-			messages->obj  = missile;
+			messages->obj = missile;
 			messages->type = DAMMSG_TERSE | DAMMSG_HIT_EFFECT;
 
 			// initial damage calculation by arrow dice
@@ -786,7 +848,8 @@ void do_fire(P_char ch, char *argument, int cmd)
 			dam *= get_property("archery.diceFactor", 1.000);
 			// aditional mods
 			// damroll bonus: 35% of damroll
-			dam += GET_DAMROLL(ch) * get_property("damroll.mod", 1.0) * get_property("archery.damrollFactor", 0.350);
+			dam += GET_DAMROLL(ch) * get_property("damroll.mod", 1.0) *
+			       get_property("archery.damrollFactor", 0.350);
 			// hitroll bonus: 1/4 of hitroll
 			dam += GET_HITROLL(ch) * get_property("archery.hitrollFactor", 0.250);
 			// Minor mods by luck and dex.
@@ -824,7 +887,9 @@ void do_fire(P_char ch, char *argument, int cmd)
 			// 200 >= 1..3000 -> 200/1..3000 >= 1 -> 200/1..200 vs 200/201..3000 -> 200/3000 possibilities = 6.67%
 			// 100 + (luck-100) -> luck / 1..3000 >= 1: (luck/30) / ((1..3000)/30) -> 1% for each 30 luck.
 			//   So, for 90 luck: 3%, 180 luck: 6%, 210 luck: 7%, 270 luck: 9%.  Seems reasonable..
-			if (GET_CHAR_SKILL(ch, SKILL_CRITICAL_SHOT) > 0 && (GET_CHAR_SKILL(ch, SKILL_CRITICAL_SHOT) + GET_C_LUK(ch) - 100) >= number(1, 3000))
+			if (GET_CHAR_SKILL(ch, SKILL_CRITICAL_SHOT) > 0 &&
+			    (GET_CHAR_SKILL(ch, SKILL_CRITICAL_SHOT) + GET_C_LUK(ch) - 100) >=
+				    number(1, 3000))
 			{
 				send_to_char("&=LWYou score a CRITICAL SHOT!!!&N\n", ch);
 				dam *= get_property("archery.crit.bonus", 1.500);
@@ -868,15 +933,22 @@ void do_fire(P_char ch, char *argument, int cmd)
 			// lom: same as with weapons, so get magic arrows
 			if (CAN_HURT(ch, missile, victim) && !shield_blocked)
 			{
-				dam    = BOUNDED(1, (int)dam, get_property("archery.arrow.max.damage", 100));
-				result = melee_damage(ch, victim, (int)dam, PHSDAM_NOENGAGE | PHSDAM_NOSHIELDS | PHSDAM_NOPOSITION | PHSDAM_ARROW, messages);
+				dam = BOUNDED(1, (int)dam,
+					      get_property("archery.arrow.max.damage", 100));
+				result = melee_damage(ch, victim, (int)dam,
+						      PHSDAM_NOENGAGE | PHSDAM_NOSHIELDS |
+							      PHSDAM_NOPOSITION | PHSDAM_ARROW,
+						      messages);
 			}
 			// If the person isn't hurt-able or uses shield, we show messages, and result none dead.
 			else
 			{
-				act(messages->attacker, FALSE, ch, messages->obj, victim, TO_CHAR | ACT_NOTTERSE);
-				act(messages->victim, FALSE, ch, messages->obj, victim, TO_VICT | ACT_NOTTERSE);
-				act(messages->room, FALSE, ch, messages->obj, victim, TO_NOTVICTROOM | ACT_NOTTERSE);
+				act(messages->attacker, FALSE, ch, messages->obj, victim,
+				    TO_CHAR | ACT_NOTTERSE);
+				act(messages->victim, FALSE, ch, messages->obj, victim,
+				    TO_VICT | ACT_NOTTERSE);
+				act(messages->room, FALSE, ch, messages->obj, victim,
+				    TO_NOTVICTROOM | ACT_NOTTERSE);
 				result = DAM_NONEDEAD;
 			}
 			actual++;
@@ -892,7 +964,9 @@ void do_fire(P_char ch, char *argument, int cmd)
 				// At level 56, we have major para arrows.  Otherwise, they just have fire/cold/lightning/acid.
 				if (!shield_blocked)
 				{
-					result = enchant_arrows(ch, victim, missile, number(2, (GET_LEVEL(ch) >= MAXLVLMORTAL) ? 6 : 5));
+					result = enchant_arrows(
+						ch, victim, missile,
+						number(2, (GET_LEVEL(ch) >= MAXLVLMORTAL) ? 6 : 5));
 				}
 			}
 
@@ -909,20 +983,27 @@ void do_fire(P_char ch, char *argument, int cmd)
 		// So we missed, let them all enjoy nice miss messages
 		else
 		{
-			act("You fire $p at $N and miss!", FALSE, ch, missile, victim, TO_CHAR | ACT_NOTTERSE);
+			act("You fire $p at $N and miss!", FALSE, ch, missile, victim,
+			    TO_CHAR | ACT_NOTTERSE);
 
 			// Start with an arrow that was fired at an out of range target.
 			if ((ch->in_room != victim->in_room) && (room != victim->in_room))
 			{
-				snprintf(buf, sizeof buf, "$n lets $p fly %sward, but it falls far short of a target!", dirs[dir]);
+				snprintf(
+					buf, sizeof buf,
+					"$n lets $p fly %sward, but it falls far short of a target!",
+					dirs[dir]);
 				act(buf, FALSE, ch, missile, 0, TO_ROOM | ACT_NOTTERSE);
 
 				if (world[room].people)
 				{
 					if (room != ch->in_room)
 					{
-						snprintf(buf, sizeof buf, "$p fired from %s drops to the ground.\n", dirs2[rev_dir[dir]]);
-						act(buf, FALSE, world[room].people, missile, ch, TO_ROOM | ACT_NOTTERSE);
+						snprintf(buf, sizeof buf,
+							 "$p fired from %s drops to the ground.\n",
+							 dirs2[rev_dir[dir]]);
+						act(buf, FALSE, world[room].people, missile, ch,
+						    TO_ROOM | ACT_NOTTERSE);
 					}
 				}
 			}
@@ -932,17 +1013,21 @@ void do_fire(P_char ch, char *argument, int cmd)
 				snprintf(buf, sizeof buf, "$n fires $p %sward!", dirs[dir]);
 				act(buf, FALSE, ch, missile, 0, TO_ROOM | ACT_NOTTERSE);
 
-				snprintf(buf, sizeof buf, "$p fired from %s misses you!", dirs2[rev_dir[dir]]);
+				snprintf(buf, sizeof buf, "$p fired from %s misses you!",
+					 dirs2[rev_dir[dir]]);
 				act(buf, FALSE, 0, missile, victim, TO_VICT | ACT_NOTTERSE);
 
-				snprintf(buf, sizeof buf, "$p fired from %s misses $N!", dirs2[rev_dir[dir]]);
+				snprintf(buf, sizeof buf, "$p fired from %s misses $N!",
+					 dirs2[rev_dir[dir]]);
 				act(buf, FALSE, ch, missile, victim, TO_NOTVICTROOM | ACT_NOTTERSE);
 			}
 			// Missing with a shot at target in same room.
 			else
 			{
-				act("$p fired by $n misses you!", FALSE, ch, missile, victim, TO_VICT | ACT_NOTTERSE);
-				act("$p fired by $n misses $N!", FALSE, ch, missile, victim, TO_NOTVICT | ACT_NOTTERSE);
+				act("$p fired by $n misses you!", FALSE, ch, missile, victim,
+				    TO_VICT | ACT_NOTTERSE);
+				act("$p fired by $n misses $N!", FALSE, ch, missile, victim,
+				    TO_NOTVICT | ACT_NOTTERSE);
 			}
 
 			if (!carrow)
@@ -953,22 +1038,23 @@ void do_fire(P_char ch, char *argument, int cmd)
 
 		if (carrow)
 		{
-			act("$p &+mhums&n briefly before returning to you.", FALSE, ch, missile, victim, TO_CHAR | ACT_NOTTERSE);
+			act("$p &+mhums&n briefly before returning to you.", FALSE, ch, missile,
+			    victim, TO_CHAR | ACT_NOTTERSE);
 		}
 	} // End of for loop: shots in this one fire action
 
-	snprintf(buf, sizeof buf,
-	         "%sYou fire at $N.%s [&+R%d&n hits]",
-	         (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G-=[&n" : "",
-	         (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G]=-&n" : "",
-	         actual);
+	snprintf(buf, sizeof buf, "%sYou fire at $N.%s [&+R%d&n hits]",
+		 (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G-=[&n" : "",
+		 (IS_PC(ch) && !IS_SET(ch->specials.act2, PLR2_BATTLEALERT)) ? "&+G]=-&n" : "",
+		 actual);
 	act(buf, FALSE, ch, 0, victim, TO_CHAR | ACT_TERSE);
 
-	snprintf(buf, sizeof buf,
-	         "%s$n fires at you.%s [&+R%d&n hits]",
-	         (IS_PC(victim) && !IS_SET(victim->specials.act2, PLR2_BATTLEALERT)) ? "&+R-=[&n" : "",
-	         (IS_PC(victim) && !IS_SET(victim->specials.act2, PLR2_BATTLEALERT)) ? "&+R]=-&n" : "",
-	         actual);
+	snprintf(buf, sizeof buf, "%s$n fires at you.%s [&+R%d&n hits]",
+		 (IS_PC(victim) && !IS_SET(victim->specials.act2, PLR2_BATTLEALERT)) ? "&+R-=[&n" :
+										       "",
+		 (IS_PC(victim) && !IS_SET(victim->specials.act2, PLR2_BATTLEALERT)) ? "&+R]=-&n" :
+										       "",
+		 actual);
 	act(buf, FALSE, ch, 0, victim, TO_VICT | ACT_TERSE);
 
 	snprintf(buf, sizeof buf, "$n fires at $N. [&+R%d&n hits]", actual);
@@ -1037,7 +1123,8 @@ void do_fire(P_char ch, char *argument, int cmd)
 	// Shadow archery allows one to stay hidden.
 	if (IS_AFFECTED(ch, AFF_HIDE))
 	{
-		if (notch_skill(ch, SKILL_SHADOW_ARCHERY, 7) || (GET_CHAR_SKILL(ch, SKILL_SHADOW_ARCHERY) / 2) > number(1, 105))
+		if (notch_skill(ch, SKILL_SHADOW_ARCHERY, 7) ||
+		    (GET_CHAR_SKILL(ch, SKILL_SHADOW_ARCHERY) / 2) > number(1, 105))
 		{
 		}
 		else
@@ -1052,8 +1139,8 @@ void do_fire(P_char ch, char *argument, int cmd)
 
 void event_poisoned_dart(P_char ch, P_char vict, P_obj obj, void *args)
 {
-	int                    dam;
-	int                    poison;
+	int dam;
+	int poison;
 	struct damage_messages messages = {
 		"$N suddenly turns &+ggreen &nas your poison reaches $S &+Wvital &norgans.",
 		"You suddenly feel &+gsick &nas $n's poison reaches your &+Wvital &norgans.",
@@ -1064,7 +1151,7 @@ void event_poisoned_dart(P_char ch, P_char vict, P_obj obj, void *args)
 	};
 
 	poison = *((int *)args);
-	dam    = 200 + 2 * poison + number(0, 30);
+	dam = 200 + 2 * poison + number(0, 30);
 
 	if (IS_AFFECTED(vict, AFF_SLOW_POISON))
 		dam = (int)(dam * 0.7);
@@ -1079,27 +1166,28 @@ void event_poisoned_dart(P_char ch, P_char vict, P_obj obj, void *args)
  */
 void do_throw(P_char ch, char *argument, int cmd)
 {
-	char                       arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
-	char                       arg3[MAX_INPUT_LENGTH], argt[MAX_INPUT_LENGTH];
-	char                       buf[MAX_STRING_LENGTH];
-	char                       buf2[MAX_STRING_LENGTH];
-	char                       buf3[MAX_STRING_LENGTH];
-	char                       attacker[MAX_STRING_LENGTH];
-	char                       victim[MAX_STRING_LENGTH];
-	char                       room[MAX_STRING_LENGTH];
-	char                       death_attacker[MAX_STRING_LENGTH];
-	char                       death_victim[MAX_STRING_LENGTH];
-	char                       death_room[MAX_STRING_LENGTH];
-	P_obj                      weapon, t_obj;
-	P_char                     vict        = NULL, tch;
-	int                        target_room = -1;
-	int /*source_room = -1, */ victroom    = -1;
-	int                        far_room    = 0;
-	int                        max_range   = 0;
-	int                        to_hit, dmg = 0;
-	int                        nb_attack, i;
-	int                        result;
-	struct damage_messages     messages = {attacker, victim, room, death_attacker, death_victim, death_room};
+	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
+	char arg3[MAX_INPUT_LENGTH], argt[MAX_INPUT_LENGTH];
+	char buf[MAX_STRING_LENGTH];
+	char buf2[MAX_STRING_LENGTH];
+	char buf3[MAX_STRING_LENGTH];
+	char attacker[MAX_STRING_LENGTH];
+	char victim[MAX_STRING_LENGTH];
+	char room[MAX_STRING_LENGTH];
+	char death_attacker[MAX_STRING_LENGTH];
+	char death_victim[MAX_STRING_LENGTH];
+	char death_room[MAX_STRING_LENGTH];
+	P_obj weapon, t_obj;
+	P_char vict = NULL, tch;
+	int target_room = -1;
+	int /*source_room = -1, */ victroom = -1;
+	int far_room = 0;
+	int max_range = 0;
+	int to_hit, dmg = 0;
+	int nb_attack, i;
+	int result;
+	struct damage_messages messages = { attacker,	    victim,	  room,
+					    death_attacker, death_victim, death_room };
 
 	half_chop(argument, arg1, argt);
 	half_chop(argt, arg2, arg3);
@@ -1128,12 +1216,12 @@ void do_throw(P_char ch, char *argument, int cmd)
 
 	switch (world[ch->in_room].sector_type)
 	{
-		case SECT_WATER_PLANE:
-		case SECT_UNDERWATER:
-		case SECT_UNDERWATER_GR:
-			send_to_char("One cannot throw this weapon underwater!\r\n", ch);
-			return;
-			break;
+	case SECT_WATER_PLANE:
+	case SECT_UNDERWATER:
+	case SECT_UNDERWATER_GR:
+		send_to_char("One cannot throw this weapon underwater!\r\n", ch);
+		return;
+		break;
 	}
 	if (ch->specials.z_cord < 0)
 	{
@@ -1167,7 +1255,9 @@ void do_throw(P_char ch, char *argument, int cmd)
 		far_room = dir_from_keyword(arg3);
 		if (far_room == -1)
 		{
-			send_to_char("You have to specify a direction as one of north, east, west, east, NW, NE, SW, SE, D, U\r\n", ch);
+			send_to_char(
+				"You have to specify a direction as one of north, east, west, east, NW, NE, SW, SE, D, U\r\n",
+				ch);
 			return;
 		}
 
@@ -1229,22 +1319,39 @@ void do_throw(P_char ch, char *argument, int cmd)
 
 			snprintf(messages.attacker, MAX_STRING_LENGTH, "You hit $N with $p!");
 			act("You throw $p at $N!", FALSE, ch, weapon, vict, TO_CHAR);
-			snprintf(messages.death_attacker, MAX_STRING_LENGTH, "Your skilfully thrown $p cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!");
+			snprintf(
+				messages.death_attacker, MAX_STRING_LENGTH,
+				"Your skilfully thrown $p cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!");
 			if (ch->in_room != vict->in_room)
 			{
-				snprintf(messages.victim, MAX_STRING_LENGTH, "$p thrown from %s hits you!", buf3);
-				snprintf(messages.death_victim, MAX_STRING_LENGTH, "$p thrown from %s cuts right through your artery. You try to stop the &+rblood&n fountain but alas!", buf3);
-				snprintf(buf, MAX_STRING_LENGTH, "$N throws $p %s!", dirs[far_room]);
+				snprintf(messages.victim, MAX_STRING_LENGTH,
+					 "$p thrown from %s hits you!", buf3);
+				snprintf(
+					messages.death_victim, MAX_STRING_LENGTH,
+					"$p thrown from %s cuts right through your artery. You try to stop the &+rblood&n fountain but alas!",
+					buf3);
+				snprintf(buf, MAX_STRING_LENGTH, "$N throws $p %s!",
+					 dirs[far_room]);
 				act(buf, FALSE, ch, weapon, ch, TO_NOTVICT);
-				snprintf(messages.room, MAX_STRING_LENGTH, "$p thrown from %s hits $N!", buf3);
-				snprintf(messages.death_room, MAX_STRING_LENGTH, "$p thrown from %s cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!", buf3);
+				snprintf(messages.room, MAX_STRING_LENGTH,
+					 "$p thrown from %s hits $N!", buf3);
+				snprintf(
+					messages.death_room, MAX_STRING_LENGTH,
+					"$p thrown from %s cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!",
+					buf3);
 			}
 			else
 			{
-				snprintf(messages.victim, MAX_STRING_LENGTH, "$p thrown by $n hits you!");
-				snprintf(messages.room, MAX_STRING_LENGTH, "$p thrown by $n hits $N!");
-				snprintf(messages.death_room, MAX_STRING_LENGTH, "$p thrown by $n cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!");
-				snprintf(messages.death_victim, MAX_STRING_LENGTH, "$p thrown by $n cuts right through your artery. You try to stop the &+rblood&n fountain but alas!");
+				snprintf(messages.victim, MAX_STRING_LENGTH,
+					 "$p thrown by $n hits you!");
+				snprintf(messages.room, MAX_STRING_LENGTH,
+					 "$p thrown by $n hits $N!");
+				snprintf(
+					messages.death_room, MAX_STRING_LENGTH,
+					"$p thrown by $n cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!");
+				snprintf(
+					messages.death_victim, MAX_STRING_LENGTH,
+					"$p thrown by $n cuts right through your artery. You try to stop the &+rblood&n fountain but alas!");
 			}
 
 			dmg = dice(weapon->value[1], MAX(1, weapon->value[2]));
@@ -1253,14 +1360,18 @@ void do_throw(P_char ch, char *argument, int cmd)
 			if (!CAN_HURT(ch, weapon, vict))
 				dmg = 1;
 
-			victroom     = vict->in_room;
+			victroom = vict->in_room;
 			messages.obj = weapon;
-			result       = melee_damage(ch, vict, dmg, PHSDAM_NOENGAGE | PHSDAM_NOSHIELDS, &messages);
+			result = melee_damage(ch, vict, dmg, PHSDAM_NOENGAGE | PHSDAM_NOSHIELDS,
+					      &messages);
 			if (result == DAM_NONEDEAD)
 			{
-				if (IS_DART(weapon) && weapon->value[4] && GET_CHAR_SKILL(ch, SKILL_DARTS) > number(0, 100))
+				if (IS_DART(weapon) && weapon->value[4] &&
+				    GET_CHAR_SKILL(ch, SKILL_DARTS) > number(0, 100))
 				{
-					add_event(event_poisoned_dart, number(PULSE_VIOLENCE / 2, 2 * PULSE_VIOLENCE), ch, vict, 0, 0, &(weapon->value[4]), sizeof(int));
+					add_event(event_poisoned_dart,
+						  number(PULSE_VIOLENCE / 2, 2 * PULSE_VIOLENCE),
+						  ch, vict, 0, 0, &(weapon->value[4]), sizeof(int));
 					weapon->value[4] = 0;
 					break;
 				}
@@ -1274,11 +1385,14 @@ void do_throw(P_char ch, char *argument, int cmd)
 			act(buf, FALSE, ch, weapon, vict, TO_CHAR);
 			if (ch->in_room != vict->in_room)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "$p thrown from %s misses you!", buf3);
+				snprintf(buf, MAX_STRING_LENGTH, "$p thrown from %s misses you!",
+					 buf3);
 				act(buf, FALSE, vict, weapon, ch, TO_CHAR);
-				snprintf(buf, MAX_STRING_LENGTH, "$N throws $p %s!", dirs[far_room]);
+				snprintf(buf, MAX_STRING_LENGTH, "$N throws $p %s!",
+					 dirs[far_room]);
 				act(buf, FALSE, ch, weapon, ch, TO_NOTVICT);
-				snprintf(buf, MAX_STRING_LENGTH, "$p thrown from %s misses $N!", buf3);
+				snprintf(buf, MAX_STRING_LENGTH, "$p thrown from %s misses $N!",
+					 buf3);
 				act(buf, FALSE, vict, weapon, vict, TO_NOTVICT);
 			}
 			else
@@ -1302,7 +1416,9 @@ void do_throw(P_char ch, char *argument, int cmd)
 			act(buf, FALSE, vict, weapon, ch, TO_CHAR);
 			if (ch->in_room != vict->in_room)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "$p flies from %s and returns to $n's hand!", dirs[far_room]);
+				snprintf(buf, MAX_STRING_LENGTH,
+					 "$p flies from %s and returns to $n's hand!",
+					 dirs[far_room]);
 				act(buf, FALSE, ch, weapon, ch, TO_NOTVICT);
 				snprintf(buf, MAX_STRING_LENGTH, "$p flies %s!", buf3);
 				act(buf, FALSE, vict, weapon, vict, TO_NOTVICT);
@@ -1354,9 +1470,9 @@ void do_load_weapon(P_char ch, char *argument, int cmd)
 	 * arg1 = fire weapon arg2 = missiles
 	 */
 
-	char  arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
+	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
 	P_obj missile, weapon;
-	int   num_needed = 0, num_ammo = 0;
+	int num_needed = 0, num_ammo = 0;
 
 	weapon = ch->equipment[HOLD];
 	half_chop(argument, arg1, arg2);
@@ -1426,8 +1542,8 @@ void do_load_weapon(P_char ch, char *argument, int cmd)
 
 int range_scan(P_char ch, P_char target, int distance, int type_scan)
 {
-	int    i, door;
-	int    source_room, target_room;
+	int i, door;
+	int source_room, target_room;
 	P_char t_ch, vict;
 
 	if (!ch)
@@ -1444,7 +1560,9 @@ int range_scan(P_char ch, P_char target, int distance, int type_scan)
 		{
 			if (EXIT(ch, door))
 			{
-				if (CAN_GO(ch, door) && !check_wall(ch->in_room, door) && !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_MOB) && !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_TRACK) &&
+				if (CAN_GO(ch, door) && !check_wall(ch->in_room, door) &&
+				    !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_MOB) &&
+				    !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_TRACK) &&
 				    !IS_ROOM(EXIT(ch, door)->to_room, ROOM_MAGIC_DARK))
 				{
 					target_room = world[ch->in_room].dir_option[door]->to_room;
@@ -1452,58 +1570,58 @@ int range_scan(P_char ch, P_char target, int distance, int type_scan)
 
 					switch (type_scan)
 					{
-						case SCAN_TARGET:
-							if (!target)
-								return -1;
-							vict = get_char_room_vis(ch, J_NAME(target));
-							if (vict)
+					case SCAN_TARGET:
+						if (!target)
+							return -1;
+						vict = get_char_room_vis(ch, J_NAME(target));
+						if (vict)
+						{
+							ch->in_room = source_room;
+							return door;
+						}
+						break;
+					case SCAN_RANGE_TARGET:
+						break;
+					case SCAN_EVILRACE:
+						LOOP_THRU_PEOPLE(t_ch, ch)
+						{
+							if (IS_PC(t_ch) && IS_RACEWAR_EVIL(t_ch))
 							{
 								ch->in_room = source_room;
 								return door;
 							}
-							break;
-						case SCAN_RANGE_TARGET:
-							break;
-						case SCAN_EVILRACE:
-							LOOP_THRU_PEOPLE(t_ch, ch)
+						}
+						break;
+					case SCAN_GOODRACE:
+						LOOP_THRU_PEOPLE(t_ch, ch)
+						{
+							if (IS_PC(t_ch) && IS_RACEWAR_GOOD(t_ch))
 							{
-								if (IS_PC(t_ch) && IS_RACEWAR_EVIL(t_ch))
-								{
-									ch->in_room = source_room;
-									return door;
-								}
+								ch->in_room = source_room;
+								return door;
 							}
-							break;
-						case SCAN_GOODRACE:
-							LOOP_THRU_PEOPLE(t_ch, ch)
+						}
+						break;
+					case SCAN_COMBAT:
+						LOOP_THRU_PEOPLE(t_ch, ch)
+						{
+							if (IS_FIGHTING(t_ch))
 							{
-								if (IS_PC(t_ch) && IS_RACEWAR_GOOD(t_ch))
-								{
-									ch->in_room = source_room;
-									return door;
-								}
+								ch->in_room = source_room;
+								return door;
 							}
-							break;
-						case SCAN_COMBAT:
-							LOOP_THRU_PEOPLE(t_ch, ch)
+						}
+						break;
+					case SCAN_ANY:
+						LOOP_THRU_PEOPLE(t_ch, ch)
+						{
+							if (IS_PC(t_ch))
 							{
-								if (IS_FIGHTING(t_ch))
-								{
-									ch->in_room = source_room;
-									return door;
-								}
+								ch->in_room = source_room;
+								return door;
 							}
-							break;
-						case SCAN_ANY:
-							LOOP_THRU_PEOPLE(t_ch, ch)
-							{
-								if (IS_PC(t_ch))
-								{
-									ch->in_room = source_room;
-									return door;
-								}
-							}
-							break;
+						}
+						break;
 					}
 				}
 			}
@@ -1518,8 +1636,8 @@ int range_scan(P_char ch, P_char target, int distance, int type_scan)
 
 int range_scan_track(P_char ch, int distance, int type_scan)
 {
-	int    i, door;
-	int    source_room, target_room;
+	int i, door;
+	int source_room, target_room;
 	P_char t_ch, vict;
 
 	if (!ch)
@@ -1536,7 +1654,9 @@ int range_scan_track(P_char ch, int distance, int type_scan)
 		{
 			if (EXIT(ch, door))
 			{
-				if (CAN_GO(ch, door) && !check_wall(ch->in_room, door) && !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_MOB) && !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_TRACK) &&
+				if (CAN_GO(ch, door) && !check_wall(ch->in_room, door) &&
+				    !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_MOB) &&
+				    !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_TRACK) &&
 				    !IS_ROOM(EXIT(ch, door)->to_room, ROOM_MAGIC_DARK))
 				{
 					target_room = world[ch->in_room].dir_option[door]->to_room;
@@ -1544,50 +1664,50 @@ int range_scan_track(P_char ch, int distance, int type_scan)
 
 					switch (type_scan)
 					{
-						case SCAN_EVILRACE:
-							LOOP_THRU_PEOPLE(t_ch, ch)
+					case SCAN_EVILRACE:
+						LOOP_THRU_PEOPLE(t_ch, ch)
+						{
+							if (IS_PC(t_ch) && IS_RACEWAR_EVIL(t_ch))
 							{
-								if (IS_PC(t_ch) && IS_RACEWAR_EVIL(t_ch))
-								{
-									remember(ch, t_ch);
-									ch->in_room = source_room;
-									return TRUE;
-								}
+								remember(ch, t_ch);
+								ch->in_room = source_room;
+								return TRUE;
 							}
-							break;
-						case SCAN_GOODRACE:
-							LOOP_THRU_PEOPLE(t_ch, ch)
+						}
+						break;
+					case SCAN_GOODRACE:
+						LOOP_THRU_PEOPLE(t_ch, ch)
+						{
+							if (IS_PC(t_ch) && IS_RACEWAR_GOOD(t_ch))
 							{
-								if (IS_PC(t_ch) && IS_RACEWAR_GOOD(t_ch))
-								{
-									remember(ch, t_ch);
-									ch->in_room = source_room;
-									return TRUE;
-								}
+								remember(ch, t_ch);
+								ch->in_room = source_room;
+								return TRUE;
 							}
-							break;
-						case SCAN_COMBAT:
-							LOOP_THRU_PEOPLE(t_ch, ch)
+						}
+						break;
+					case SCAN_COMBAT:
+						LOOP_THRU_PEOPLE(t_ch, ch)
+						{
+							if (IS_FIGHTING(t_ch))
 							{
-								if (IS_FIGHTING(t_ch))
-								{
-									remember(ch, t_ch);
-									ch->in_room = source_room;
-									return TRUE;
-								}
+								remember(ch, t_ch);
+								ch->in_room = source_room;
+								return TRUE;
 							}
-							break;
-						case SCAN_ANY:
-							LOOP_THRU_PEOPLE(t_ch, ch)
+						}
+						break;
+					case SCAN_ANY:
+						LOOP_THRU_PEOPLE(t_ch, ch)
+						{
+							if (IS_PC(t_ch))
 							{
-								if (IS_PC(t_ch))
-								{
-									remember(ch, t_ch);
-									ch->in_room = source_room;
-									return TRUE;
-								}
+								remember(ch, t_ch);
+								ch->in_room = source_room;
+								return TRUE;
 							}
-							break;
+						}
+						break;
 					}
 				}
 			}
@@ -1604,9 +1724,9 @@ int range_scan_track(P_char ch, int distance, int type_scan)
 
 bool mob_can_range_att(P_char ch, P_char victim)
 {
-	int  spell_attack = FALSE;
-	int  direction, /*temp, */ distance;
-	int  lvl = 0, spl = 0;
+	int spell_attack = FALSE;
+	int direction, /*temp, */ distance;
+	int lvl = 0, spl = 0;
 	char buf[256];
 
 	buf[0] = '\0';
@@ -1704,7 +1824,8 @@ bool mob_can_range_att(P_char ch, P_char victim)
 			spl = SPELL_FLAMESTRIKE;
 	}
 
-	if (GET_CLASS(ch, CLASS_DRUID) || (IS_MULTICLASS_PC(ch) && GET_SECONDARY_CLASS(ch, CLASS_DRUID)))
+	if (GET_CLASS(ch, CLASS_DRUID) ||
+	    (IS_MULTICLASS_PC(ch) && GET_SECONDARY_CLASS(ch, CLASS_DRUID)))
 	{
 		if (!spl && npc_has_spell_slot(ch, SPELL_CYCLONE))
 			spl = SPELL_CYCLONE;
@@ -1756,7 +1877,8 @@ bool mob_can_range_att(P_char ch, P_char victim)
 				else if (npc_has_spell_slot(ch, SPELL_RAVENFLIGHT))
 					MobCastSpell(ch, ch, 0, SPELL_RAVENFLIGHT, GET_LEVEL(ch));
 				else if (npc_has_spell_slot(ch, SPELL_GREATER_RAVENFLIGHT))
-					MobCastSpell(ch, ch, 0, SPELL_GREATER_RAVENFLIGHT, GET_LEVEL(ch));
+					MobCastSpell(ch, ch, 0, SPELL_GREATER_RAVENFLIGHT,
+						     GET_LEVEL(ch));
 			}
 			else
 			{
@@ -1777,7 +1899,7 @@ bool mob_can_range_att(P_char ch, P_char victim)
 P_obj find_throw(P_char ch, char *name, int first)
 {
 	P_obj i;
-	char  tmpname[MAX_STRING_LENGTH];
+	char tmpname[MAX_STRING_LENGTH];
 	char *tmp;
 
 	if (!name || !*name)
@@ -1787,11 +1909,12 @@ P_obj find_throw(P_char ch, char *name, int first)
 	tmp = tmpname;
 
 	/* check all 4 weapon slots for throwable weapons */
-	int slots[] = {PRIMARY_WEAPON, SECONDARY_WEAPON, THIRD_WEAPON, FOURTH_WEAPON};
+	int slots[] = { PRIMARY_WEAPON, SECONDARY_WEAPON, THIRD_WEAPON, FOURTH_WEAPON };
 	for (int s = 0; s < 4; s++)
 	{
 		i = ch->equipment[slots[s]];
-		if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i)) && (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2)))
+		if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i)) &&
+		    (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2)))
 			return (i);
 	}
 
@@ -1811,12 +1934,12 @@ P_obj find_throw(P_char ch, char *name, int first)
 int number_throw(P_char ch, char *name)
 {
 	P_obj i;
-	char  tmpname[MAX_STRING_LENGTH];
+	char tmpname[MAX_STRING_LENGTH];
 	char *tmp;
-	int   nb_att  = 0;
-	int   primary = 0, secondary = 0, third = 0, fourth = 0;
-	int   pri_ret = 0, sec_ret = 0;
-	int   hAtt = 0, dW = 0;
+	int nb_att = 0;
+	int primary = 0, secondary = 0, third = 0, fourth = 0;
+	int pri_ret = 0, sec_ret = 0;
+	int hAtt = 0, dW = 0;
 
 	if (!name || !*name)
 		return 0;
@@ -1825,9 +1948,9 @@ int number_throw(P_char ch, char *name)
 	tmp = tmpname;
 
 	i = ch->equipment[PRIMARY_WEAPON];
-	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
-	    && (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2)))
-	 {
+	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i)) &&
+	    (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2)))
+	{
 		if (IS_OBJ_STAT(i, ITEM_RETURNING))
 		{
 			primary = 1;
@@ -1838,13 +1961,14 @@ int number_throw(P_char ch, char *name)
 	}
 
 	i = ch->equipment[SECONDARY_WEAPON];
-	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
-	    && IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2))
+	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i)) &&
+		    IS_OBJ_STAT(i, ITEM_CAN_THROW1) ||
+	    IS_OBJ_STAT(i, ITEM_CAN_THROW2))
 	{
 		if (IS_OBJ_STAT(i, ITEM_RETURNING))
 		{
 			secondary = 1;
-			sec_ret   = 1;
+			sec_ret = 1;
 		}
 		else
 			secondary = 1;
@@ -1854,14 +1978,16 @@ int number_throw(P_char ch, char *name)
 	if (i)
 		if (isname(tmp, i->name))
 			if (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
-				if (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2))
+				if (IS_OBJ_STAT(i, ITEM_CAN_THROW1) ||
+				    IS_OBJ_STAT(i, ITEM_CAN_THROW2))
 					third = 1;
 
 	i = ch->equipment[FOURTH_WEAPON];
 	if (i)
 		if (isname(tmp, i->name))
 			if (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i))
-				if (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2))
+				if (IS_OBJ_STAT(i, ITEM_CAN_THROW1) ||
+				    IS_OBJ_STAT(i, ITEM_CAN_THROW2))
 					fourth = 1;
 
 	if (!primary && !secondary && !third && !fourth)
@@ -1870,7 +1996,7 @@ int number_throw(P_char ch, char *name)
 	}
 
 	nb_att = 1;
-	hAtt   = (IS_AFFECTED(ch, AFF_HASTE)) ? 1 : 0;
+	hAtt = (IS_AFFECTED(ch, AFF_HASTE)) ? 1 : 0;
 
 	if (primary && secondary)
 	{
@@ -1898,9 +2024,8 @@ int number_throw(P_char ch, char *name)
 
 int check_wall(int room, int direction)
 {
-
 	P_obj tobj, next;
-	int   dir, obj_num;
+	int dir, obj_num;
 
 	for (tobj = world[room].contents; tobj; tobj = next)
 	{
@@ -1922,9 +2047,8 @@ int check_wall(int room, int direction)
 
 int check_visible_wall(P_char ch, int direction)
 {
-
 	P_obj tobj, next;
-	int   dir, obj_num, room;
+	int dir, obj_num, room;
 
 	room = ch->in_room;
 
@@ -1949,7 +2073,7 @@ int check_visible_wall(P_char ch, int direction)
 P_obj get_wall_dir(P_char ch, int dir)
 {
 	P_obj tobj, next;
-	int   wall_dir, obj_num, room;
+	int wall_dir, obj_num, room;
 
 	room = ch->in_room;
 
@@ -1972,10 +2096,9 @@ P_obj get_wall_dir(P_char ch, int dir)
 /* to take cover when someone fire from above */
 void do_cover(P_char ch, char *argument, int cmd)
 {
-
-	int                  chance;
+	int chance;
 	struct affected_type af;
-	char                 buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 
 	if (!ch)
 		return;
@@ -2006,49 +2129,49 @@ void do_cover(P_char ch, char *argument, int cmd)
 
 	switch (world[ch->in_room].sector_type)
 	{
-		case SECT_INSIDE:
-		case SECT_CITY:
-		case SECT_FOREST:
-		case SECT_UNDRWLD_CITY:
-		case SECT_UNDRWLD_INSIDE:
-			chance = 99;
-			break;
-		case SECT_HILLS:
-		case SECT_MOUNTAIN:
-		case SECT_EARTH_PLANE:
-		case SECT_SWAMP:
-		case SECT_UNDRWLD_MOUNTAIN:
-		case SECT_UNDRWLD_LOWCEIL:
-		case SECT_UNDRWLD_MUSHROOM:
-			chance = 90;
-			break;
-		case SECT_UNDRWLD_WILD:
-		case SECT_ETHEREAL:
-		case SECT_ASTRAL:
-		case SECT_FIREPLANE:
-		case SECT_LAVA:
-			chance = 50;
-			break;
-		case SECT_FIELD:
-		case SECT_DESERT:
-		case SECT_ARCTIC:
-			chance = 25;
-			break;
-		case SECT_WATER_PLANE:
-		case SECT_WATER_SWIM:
-		case SECT_WATER_NOSWIM:
-		case SECT_NO_GROUND:
-		case SECT_OCEAN:
-		case SECT_AIR_PLANE:
-		case SECT_UNDERWATER:
-		case SECT_UNDERWATER_GR:
-		case SECT_UNDRWLD_WATER:
-		case SECT_UNDRWLD_NOSWIM:
-		case SECT_UNDRWLD_NOGROUND:
-		case SECT_UNDRWLD_LIQMITH:
-		case SECT_UNDRWLD_SLIME:
-			chance = 1;
-			break;
+	case SECT_INSIDE:
+	case SECT_CITY:
+	case SECT_FOREST:
+	case SECT_UNDRWLD_CITY:
+	case SECT_UNDRWLD_INSIDE:
+		chance = 99;
+		break;
+	case SECT_HILLS:
+	case SECT_MOUNTAIN:
+	case SECT_EARTH_PLANE:
+	case SECT_SWAMP:
+	case SECT_UNDRWLD_MOUNTAIN:
+	case SECT_UNDRWLD_LOWCEIL:
+	case SECT_UNDRWLD_MUSHROOM:
+		chance = 90;
+		break;
+	case SECT_UNDRWLD_WILD:
+	case SECT_ETHEREAL:
+	case SECT_ASTRAL:
+	case SECT_FIREPLANE:
+	case SECT_LAVA:
+		chance = 50;
+		break;
+	case SECT_FIELD:
+	case SECT_DESERT:
+	case SECT_ARCTIC:
+		chance = 25;
+		break;
+	case SECT_WATER_PLANE:
+	case SECT_WATER_SWIM:
+	case SECT_WATER_NOSWIM:
+	case SECT_NO_GROUND:
+	case SECT_OCEAN:
+	case SECT_AIR_PLANE:
+	case SECT_UNDERWATER:
+	case SECT_UNDERWATER_GR:
+	case SECT_UNDRWLD_WATER:
+	case SECT_UNDRWLD_NOSWIM:
+	case SECT_UNDRWLD_NOGROUND:
+	case SECT_UNDRWLD_LIQMITH:
+	case SECT_UNDRWLD_SLIME:
+		chance = 1;
+		break;
 	}
 	if (ch->specials.z_cord)
 		chance = 1;
@@ -2061,7 +2184,7 @@ void do_cover(P_char ch, char *argument, int cmd)
 		act(buf, FALSE, ch, 0, 0, TO_ROOM);
 
 		bzero(&af, sizeof(af));
-		af.duration   = 5;
+		af.duration = 5;
 		af.bitvector3 = AFF3_COVER;
 		affect_to_char(ch, &af);
 	}
@@ -2076,8 +2199,7 @@ void do_cover(P_char ch, char *argument, int cmd)
 
 void return_home(P_char ch, P_char victim, P_obj obj, void *data)
 {
-
-	P_nevent  ev;
+	P_nevent ev;
 	hunt_data h_data;
 
 	if (!IS_ALIVE(ch))
@@ -2113,7 +2235,7 @@ void return_home(P_char ch, P_char victim, P_obj obj, void *data)
 	h_data.hunt_type = HUNT_JUSTICE_SPECROOM;
 	h_data.targ.room = real_room(GET_BIRTHPLACE(ch));
 	h_data.huntFlags = 0;
-	h_data.retry     = 0;
+	h_data.retry = 0;
 	h_data.retry_dir = 0;
 	h_data.path_step = -1;
 	add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &h_data, sizeof(hunt_data));

@@ -25,9 +25,9 @@ using namespace std;
 #include "spells.h"
 
 extern P_index obj_index;
-extern char   *spells[];
-extern int     char_is_on_plane(P_char);
-extern P_room  world;
+extern char *spells[];
+extern int char_is_on_plane(P_char);
+extern P_room world;
 
 int lucrot_mindstone(P_obj obj, P_char ch, int cmd, char *arg)
 {
@@ -44,7 +44,8 @@ int lucrot_mindstone(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			SET_BIT(obj->extra2_flags, ITEM2_MAGIC);
 			if (OBJ_WORN(obj) && (ch = obj->loc.wearing))
-				act("&+cYour&n $q &+cvibrates softly for a second.&n\n", FALSE, ch, obj, obj, TO_CHAR);
+				act("&+cYour&n $q &+cvibrates softly for a second.&n\n", FALSE, ch,
+				    obj, obj, TO_CHAR);
 		}
 		return TRUE;
 	}
@@ -60,9 +61,12 @@ int lucrot_mindstone(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			curr_time = time(NULL);
 
-			if (affected_by_spell(ch, TAG_PVPDELAY) || IS_FIGHTING(ch) || IS_IMMOBILE(ch))
+			if (affected_by_spell(ch, TAG_PVPDELAY) || IS_FIGHTING(ch) ||
+			    IS_IMMOBILE(ch))
 			{
-				send_to_char("&+WYour thoughts are too incohesive and disorganized.&n\r\n", ch);
+				send_to_char(
+					"&+WYour thoughts are too incohesive and disorganized.&n\r\n",
+					ch);
 				CharWait(ch, PULSE_VIOLENCE * 1);
 
 				return TRUE;
@@ -85,7 +89,9 @@ int lucrot_mindstone(P_obj obj, P_char ch, int cmd, char *arg)
 
 				if (IS_ROOM(ch->in_room, ROOM_NO_RECALL))
 				{
-					send_to_char("&+WThere is something about this area that prevents your journey home.&n\r\n", ch);
+					send_to_char(
+						"&+WThere is something about this area that prevents your journey home.&n\r\n",
+						ch);
 					CharWait(ch, PULSE_VIOLENCE * 1);
 
 					return TRUE;

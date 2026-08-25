@@ -42,6 +42,7 @@ logs/shutdown_info.txt
 
 # log files
 logs/log/*
+logs/valgrind/
 
 durismud-launcher
 Accounts.old.*

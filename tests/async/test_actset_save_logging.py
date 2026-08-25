@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
+from contract_text import find, index
 
 text = Path(__file__).resolve().parents[2].joinpath('src/actset.c').read_text()
-first = text.find('if (!do_save_silent(ppl, 1))')
-second = text.find('if (!do_save_silent(ppl, 1))', first + 1)
-log = text.find('logit(LOG_WIZ, "Failed to save %s after set command.", GET_NAME(ppl));')
+first = find(text, 'if (!do_save_silent(ppl, 1))')
+second = find(text, 'if (!do_save_silent(ppl, 1))', first + 1)
+log = find(text, 'logit(LOG_WIZ, "Failed to save %s after set command.", GET_NAME(ppl));')
 
 print(f'first={first} second={second} log={log}')
 

@@ -16,17 +16,18 @@
 #include "spells.h"
 #include "vnum.obj.h"
 
-extern P_room                  world;
-extern P_index                 mob_index;
-extern P_index                 obj_index;
-extern int                     spl_table[TOTALLVLS][MAX_CIRCLE];
+extern P_room world;
+extern P_index mob_index;
+extern P_index obj_index;
+extern int spl_table[TOTALLVLS][MAX_CIRCLE];
 extern const struct race_names race_names_table[];
-extern const char             *dirs[];
-extern const int               rev_dir[];
+extern const char *dirs[];
+extern const int rev_dir[];
 
 extern bool exit_wallable(int room, int dir, P_char ch);
-extern bool create_walls(int room, int exit, P_char ch, int level, int type, int power, int decay, char *short_desc, char *desc, ulong flags);
-P_obj       get_object_from_char(P_char owner, int vnum);
+extern bool create_walls(int room, int exit, P_char ch, int level, int type, int power, int decay,
+			 char *short_desc, char *desc, ulong flags);
+P_obj get_object_from_char(P_char owner, int vnum);
 
 bool isCarved(P_obj corpse);
 
@@ -36,24 +37,23 @@ static bool corpse_trace_enabled(void)
 	if (enabled < 0)
 	{
 		const char *value = getenv("DURIS_CORPSE_TRACE");
-		enabled            = value && *value && strcmp(value, "0") != 0;
+		enabled = value && *value && strcmp(value, "0") != 0;
 	}
 	return enabled != 0;
 }
 
-int   CheckFor_remember(P_char ch, P_char victim);
+int CheckFor_remember(P_char ch, P_char victim);
 P_obj get_globe(P_char ch);
 
-const struct golem_description golem_data[4] = {
-	{				   "flesh golem", 34, 41, 15.0, 50, 6},
-    {                   "blood golem", 35, 46, 20.0, 50, 6},
-    {                    "bone golem", 33, 51, 25.0, 51, 6},
-    {"valorhammer valor hammer golem", 77, 41,   25, 51, 6}
-};
+const struct golem_description golem_data[4] = { { "flesh golem", 34, 41, 15.0, 50, 6 },
+						 { "blood golem", 35, 46, 20.0, 50, 6 },
+						 { "bone golem", 33, 51, 25.0, 51, 6 },
+						 { "valorhammer valor hammer golem", 77, 41, 25, 51,
+						   6 } };
 
 extern const struct undead_description undead_data[NECROPET_LAST + 1];
-const struct undead_description        undead_data[NECROPET_LAST + 1] = {
-    /* Format:
+const struct undead_description undead_data[NECROPET_LAST + 1] = {
+	/* Format:
     Name, Short Desc, Corpse Level, Act Flags
     Affect 1 Flags
     Affect 2 Flags, Hitpoints, Max Level, Cost
@@ -61,63 +61,54 @@ const struct undead_description        undead_data[NECROPET_LAST + 1] = {
     * Note: AFF1 and AFF2 might be on the same line if they're both short
     * Note: For multiclass, use CLASS_<FIRST> | CLASS_<SECOND> ...
     */
-    {						  "skeleton",        "",  2,ACT_NICE_THIEF,																					  AFF_HASTE,AFF_NONE,1.2,21,10,CLASS_WARRIOR,RACE_SKELETON																																																																									 },
-    {							"zombie",												  "",  4, ACT_NICE_THIEF + ACT_MEMORY,																			   AFF_PROTECT_GOOD,                            AFF2_SLOW, 1.8, 26, 10,    CLASS_WARRIOR,   RACE_ZOMBIE},
-    {						   "spectre",												  "", 20,                  ACT_MEMORY,                  AFF_FLY + AFF_INVISIBLE + AFF_DETECT_INVISIBLE + AFF_PROTECT_GOOD + AFF_SNEAK,                       AFF2_PROT_COLD,   2, 31, 10,   CLASS_ASSASSIN,  RACE_SPECTRE},
-    {							"wraith",												  "", 30,                  ACT_MEMORY,                              AFF_FLY + AFF_DETECT_INVISIBLE + AFF_INVISIBLE + AFF_PROTECT_GOOD,                       AFF2_PROT_COLD, 3.2, 36, 22,   CLASS_SORCERER,   RACE_WRAITH},
-    {						   "vampire",												  "", 40,                  ACT_MEMORY,                  AFF_FLY + AFF_DETECT_INVISIBLE + AFF_INVISIBLE + AFF_PROTECT_GOOD + AFF_HASTE, AFF2_PROT_COLD + AFF2_VAMPIRIC_TOUCH,  12, 50, 28,    CLASS_WARRIOR,  RACE_VAMPIRE},
-    {							  "lich",
-     "", 45,
-     ACT_MEMORY, AFF_DETECT_INVISIBLE + AFF_SENSE_LIFE + AFF_FLY + AFF_INVISIBLE + AFF_PROTECT_GOOD + AFF_HASTE,
-     AFF2_PROT_COLD + AFF2_VAMPIRIC_TOUCH,
-     5, 46,
-     28,   CLASS_SORCERER,
-     RACE_LICH																																																																									 },
-    {							"shadow",
-     "", 40,
-     ACT_MEMORY, AFF_HASTE + AFF_DETECT_INVISIBLE + AFF_SENSE_LIFE + AFF_FLY + AFF_INVISIBLE + AFF_PROTECT_GOOD,
-     AFF2_PROT_COLD + AFF4_PHANTASMAL_FORM,
-     5, 50,
-     65, CLASS_PSIONICIST,
-     RACE_SHADOW																																																																								   },
-    {			  "hound archon brawler", "&+yhou&+Yn&+yd &+Rarch&+Wo&+Rn &+rbr&+Raw&+rler&n",  2,              ACT_NICE_THIEF,                                                                                      AFF_HASTE,                             AFF_NONE, 1.2, 21, 10,    CLASS_WARRIOR,   RACE_ARCHON},
-    {			"lantern archon soldier",     "&+Ylantern &+Rarch&+Wo&+Rn &+yso&+rldi&+yer&n",  4, ACT_NICE_THIEF + ACT_MEMORY,                                                                               AFF_PROTECT_EVIL,                            AFF2_SLOW, 1.8, 26, 10,    CLASS_WARRIOR,   RACE_ARCHON},
-    {					 "asura avenger",
-     "&+Rasu&+Yr&+Ra &+rave&+Lng&+rer&n", 20,
-     ACT_MEMORY,                  AFF_FLY + AFF_INVISIBLE + AFF_DETECT_INVISIBLE + AFF_PROTECT_EVIL + AFF_SNEAK,
-     AFF2_PROT_COLD,   2,
-     31, 10,
-     CLASS_ASSASSIN,    RACE_ASURA																																																																				 },
-    {				"bralani battlemage",
-     "&+Cbral&+Wa&+Cni &+Rbattle&+Mmage&n", 30,
-     ACT_MEMORY,                              AFF_FLY + AFF_DETECT_INVISIBLE + AFF_INVISIBLE + AFF_PROTECT_EVIL,
-     AFF2_PROT_COLD, 3.2,
-     36, 22,
-     CLASS_SORCERER,  RACE_BRALANI																																																																				 },
-    {"knight-errant knight errant ghaele",
-     "&+cgha&+Ce&+cle &+wkn&+Wi&+wght&+W-e&+wrr&+Wa&+wnt&n", 40,
-     ACT_MEMORY,                  AFF_FLY + AFF_DETECT_INVISIBLE + AFF_INVISIBLE + AFF_PROTECT_EVIL + AFF_HASTE,
-     AFF2_PROT_COLD + AFF2_VAMPIRIC_TOUCH,
-     12, 50,
-     28,    CLASS_WARRIOR,
-     RACE_GHAELE																																																																								   },
-    {			"liberator holy eladrin",
-     "&+ce&+Cl&+Wadr&+Ci&+cn &+Wholy &+Cliber&+Wator&n", 45,
-     ACT_MEMORY, AFF_DETECT_INVISIBLE + AFF_SENSE_LIFE + AFF_FLY + AFF_INVISIBLE + AFF_PROTECT_EVIL + AFF_HASTE,
-     AFF2_PROT_COLD + AFF2_VAMPIRIC_TOUCH,
-     5, 46,
-     28,   CLASS_SORCERER,
-     RACE_ELADRIN																																																																								  },
-    {					   "deva astral",
-     "&+Lastral &+wd&+Wev&+wa&n", 40,
-     ACT_MEMORY, AFF_HASTE + AFF_DETECT_INVISIBLE + AFF_SENSE_LIFE + AFF_FLY + AFF_INVISIBLE + AFF_PROTECT_EVIL,
-     AFF2_PROT_COLD + AFF4_PHANTASMAL_FORM,
-     5, 50,
-     65, CLASS_PSIONICIST,
-     RACE_DEVA																																																																									 }
+	{ "skeleton", "", 2, ACT_NICE_THIEF, AFF_HASTE, AFF_NONE, 1.2, 21, 10, CLASS_WARRIOR,
+	  RACE_SKELETON },
+	{ "zombie", "", 4, ACT_NICE_THIEF + ACT_MEMORY, AFF_PROTECT_GOOD, AFF2_SLOW, 1.8, 26, 10,
+	  CLASS_WARRIOR, RACE_ZOMBIE },
+	{ "spectre", "", 20, ACT_MEMORY,
+	  AFF_FLY + AFF_INVISIBLE + AFF_DETECT_INVISIBLE + AFF_PROTECT_GOOD + AFF_SNEAK,
+	  AFF2_PROT_COLD, 2, 31, 10, CLASS_ASSASSIN, RACE_SPECTRE },
+	{ "wraith", "", 30, ACT_MEMORY,
+	  AFF_FLY + AFF_DETECT_INVISIBLE + AFF_INVISIBLE + AFF_PROTECT_GOOD, AFF2_PROT_COLD, 3.2,
+	  36, 22, CLASS_SORCERER, RACE_WRAITH },
+	{ "vampire", "", 40, ACT_MEMORY,
+	  AFF_FLY + AFF_DETECT_INVISIBLE + AFF_INVISIBLE + AFF_PROTECT_GOOD + AFF_HASTE,
+	  AFF2_PROT_COLD + AFF2_VAMPIRIC_TOUCH, 12, 50, 28, CLASS_WARRIOR, RACE_VAMPIRE },
+	{ "lich", "", 45, ACT_MEMORY,
+	  AFF_DETECT_INVISIBLE + AFF_SENSE_LIFE + AFF_FLY + AFF_INVISIBLE + AFF_PROTECT_GOOD +
+		  AFF_HASTE,
+	  AFF2_PROT_COLD + AFF2_VAMPIRIC_TOUCH, 5, 46, 28, CLASS_SORCERER, RACE_LICH },
+	{ "shadow", "", 40, ACT_MEMORY,
+	  AFF_HASTE + AFF_DETECT_INVISIBLE + AFF_SENSE_LIFE + AFF_FLY + AFF_INVISIBLE +
+		  AFF_PROTECT_GOOD,
+	  AFF2_PROT_COLD + AFF4_PHANTASMAL_FORM, 5, 50, 65, CLASS_PSIONICIST, RACE_SHADOW },
+	{ "hound archon brawler", "&+yhou&+Yn&+yd &+Rarch&+Wo&+Rn &+rbr&+Raw&+rler&n", 2,
+	  ACT_NICE_THIEF, AFF_HASTE, AFF_NONE, 1.2, 21, 10, CLASS_WARRIOR, RACE_ARCHON },
+	{ "lantern archon soldier", "&+Ylantern &+Rarch&+Wo&+Rn &+yso&+rldi&+yer&n", 4,
+	  ACT_NICE_THIEF + ACT_MEMORY, AFF_PROTECT_EVIL, AFF2_SLOW, 1.8, 26, 10, CLASS_WARRIOR,
+	  RACE_ARCHON },
+	{ "asura avenger", "&+Rasu&+Yr&+Ra &+rave&+Lng&+rer&n", 20, ACT_MEMORY,
+	  AFF_FLY + AFF_INVISIBLE + AFF_DETECT_INVISIBLE + AFF_PROTECT_EVIL + AFF_SNEAK,
+	  AFF2_PROT_COLD, 2, 31, 10, CLASS_ASSASSIN, RACE_ASURA },
+	{ "bralani battlemage", "&+Cbral&+Wa&+Cni &+Rbattle&+Mmage&n", 30, ACT_MEMORY,
+	  AFF_FLY + AFF_DETECT_INVISIBLE + AFF_INVISIBLE + AFF_PROTECT_EVIL, AFF2_PROT_COLD, 3.2,
+	  36, 22, CLASS_SORCERER, RACE_BRALANI },
+	{ "knight-errant knight errant ghaele",
+	  "&+cgha&+Ce&+cle &+wkn&+Wi&+wght&+W-e&+wrr&+Wa&+wnt&n", 40, ACT_MEMORY,
+	  AFF_FLY + AFF_DETECT_INVISIBLE + AFF_INVISIBLE + AFF_PROTECT_EVIL + AFF_HASTE,
+	  AFF2_PROT_COLD + AFF2_VAMPIRIC_TOUCH, 12, 50, 28, CLASS_WARRIOR, RACE_GHAELE },
+	{ "liberator holy eladrin", "&+ce&+Cl&+Wadr&+Ci&+cn &+Wholy &+Cliber&+Wator&n", 45,
+	  ACT_MEMORY,
+	  AFF_DETECT_INVISIBLE + AFF_SENSE_LIFE + AFF_FLY + AFF_INVISIBLE + AFF_PROTECT_EVIL +
+		  AFF_HASTE,
+	  AFF2_PROT_COLD + AFF2_VAMPIRIC_TOUCH, 5, 46, 28, CLASS_SORCERER, RACE_ELADRIN },
+	{ "deva astral", "&+Lastral &+wd&+Wev&+wa&n", 40, ACT_MEMORY,
+	  AFF_HASTE + AFF_DETECT_INVISIBLE + AFF_SENSE_LIFE + AFF_FLY + AFF_INVISIBLE +
+		  AFF_PROTECT_EVIL,
+	  AFF2_PROT_COLD + AFF4_PHANTASMAL_FORM, 5, 50, 65, CLASS_PSIONICIST, RACE_DEVA }
 };
 
-#define NECROPLASM_VNUM    67243
+#define NECROPLASM_VNUM 67243
 #define GLOBE_SHADOWS_VNUM 16262
 
 // Returns TRUE if ch is alive and wearing plasm and tranced.
@@ -150,14 +141,15 @@ int is_wearing_necroplasm(P_char ch)
 // Called when a CHARM affect (LNK_PET) is broken
 void charm_broken(struct char_link_data *cld)
 {
-	int necropets[] = {3, 4, 5, 6, 7, 8, 9, 10, 78, 79, 80, 81, 82, 83, 84, 85};
+	int necropets[] = { 3, 4, 5, 6, 7, 8, 9, 10, 78, 79, 80, 81, 82, 83, 84, 85 };
 
 	// Verify that the pet is still following anyone, as some mobs self-poof
 	if (cld->linking && cld->linking->following)
 	{
 		stop_follower(cld->linking);
 		// The -10 check is to make sure the former master isn't in the process of dying.
-		if (IS_NPC(cld->linking) && (cld->linking->in_room == cld->linked->in_room) && CheckFor_remember(cld->linking, cld->linked) && GET_HIT(cld->linked) > -10)
+		if (IS_NPC(cld->linking) && (cld->linking->in_room == cld->linked->in_room) &&
+		    CheckFor_remember(cld->linking, cld->linked) && GET_HIT(cld->linked) > -10)
 		{
 			MobStartFight(cld->linking, cld->linked);
 		}
@@ -165,30 +157,36 @@ void charm_broken(struct char_link_data *cld)
 
 	for (int i = 0; i < 16; i++)
 	{
-		if (IS_NPC(cld->linking) && ((mob_index[GET_RNUM(cld->linking)].virtual_number == necropets[i]) || (mob_index[GET_RNUM(cld->linking)].virtual_number == NECROPET)))
+		if (IS_NPC(cld->linking) &&
+		    ((mob_index[GET_RNUM(cld->linking)].virtual_number == necropets[i]) ||
+		     (mob_index[GET_RNUM(cld->linking)].virtual_number == NECROPET)))
 		{
 			// Add pet death in 1 minute.
-			add_event(event_pet_death, 1 * WAIT_MIN, cld->linking, NULL, NULL, 0, NULL, 0);
+			add_event(event_pet_death, 1 * WAIT_MIN, cld->linking, NULL, NULL, 0, NULL,
+				  0);
 			break;
 		}
 	}
 }
 
-void event_pet_death(P_char ch, P_char victim, P_obj obj, void *data) { die(ch, ch); }
+void event_pet_death(P_char ch, P_char victim, P_obj obj, void *data)
+{
+	die(ch, ch);
+}
 
 int setup_pet(P_char mob, P_char ch, int duration, int flag)
 {
 	struct affected_type af;
-	P_obj                globe;
-	string               name;
+	P_obj globe;
+	string name;
 
 	memset(&af, 0, sizeof(af));
 	if (!IS_SET(flag, PET_NOORDER))
 	{
 		af.bitvector = AFF_CHARM;
 	}
-	af.flags    = AFFTYPE_NODISPEL;
-	af.type     = SPELL_CHARM_PERSON;
+	af.flags = AFFTYPE_NODISPEL;
+	af.type = SPELL_CHARM_PERSON;
 	af.duration = (IS_PC(ch) || IS_PC_PET(ch)) ? duration : -1;
 
 	globe = get_globe(ch);
@@ -200,7 +198,8 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 
 	duration = af.duration;
 	/* the higher the level of the mob, the more likely it'll be aggro to the caster after charm*/
-	if (IS_NPC(mob) && !IS_SET(flag, PET_NOAGGRO) && (GET_LEVEL(mob) > number(30, 62)) && !has_innate(ch, INNATE_UNHOLY_ALLIANCE))
+	if (IS_NPC(mob) && !IS_SET(flag, PET_NOAGGRO) && (GET_LEVEL(mob) > number(30, 62)) &&
+	    !has_innate(ch, INNATE_UNHOLY_ALLIANCE))
 	{
 		SET_BIT(mob->specials.act, ACT_MEMORY);
 		clearMemory(mob);
@@ -212,9 +211,9 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 	if (flag & PET_NOCASH)
 	{
 		GET_PLATINUM(mob) = 0;
-		GET_GOLD(mob)     = 0;
-		GET_SILVER(mob)   = 0;
-		GET_COPPER(mob)   = 0;
+		GET_GOLD(mob) = 0;
+		GET_SILVER(mob) = 0;
+		GET_COPPER(mob) = 0;
 	}
 
 	if (IS_NPC(mob))
@@ -225,7 +224,7 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 
 	if (IS_PC(ch))
 	{
-		name             = string(mob->player.name) + " _" + string(ch->player.name) + "_";
+		name = string(mob->player.name) + " _" + string(ch->player.name) + "_";
 		mob->player.name = str_dup(name.c_str());
 	}
 
@@ -235,7 +234,7 @@ int setup_pet(P_char mob, P_char ch, int duration, int flag)
 int count_pets(P_char ch)
 {
 	struct char_link_data *cld;
-	int                    count;
+	int count;
 
 	for (count = 0, cld = ch->linked; cld; cld = cld->next_linked)
 		if (cld->type == LNK_PET)
@@ -247,9 +246,9 @@ int count_pets(P_char ch)
 int count_undead(P_char ch)
 {
 	struct char_link_data *cld;
-	P_char                 follower;
-	float                  sum;
-	int                    i;
+	P_char follower;
+	float sum;
+	int i;
 
 	sum = 0;
 
@@ -275,7 +274,8 @@ int count_undead(P_char ch)
 		{
 			for (i = 0; i <= NECROPET_LAST; i++)
 			{
-				if (mob_index[GET_RNUM(follower)].virtual_number == NECROPET && strstr(follower->player.name, undead_data[i].name))
+				if (mob_index[GET_RNUM(follower)].virtual_number == NECROPET &&
+				    strstr(follower->player.name, undead_data[i].name))
 				{
 					sum += undead_data[i].cost;
 					break;
@@ -323,8 +323,9 @@ int can_raise_draco(P_char ch, int level, bool bGreater)
 	// return numb <= maxAllowed;
 
 	int necro_power = level * 2;
-	int cost        = 0;
-	if (GET_SPEC(ch, CLASS_NECROMANCER, SPEC_NECROLYTE) || GET_SPEC(ch, CLASS_THEURGIST, SPEC_TEMPLAR))
+	int cost = 0;
+	if (GET_SPEC(ch, CLASS_NECROMANCER, SPEC_NECROLYTE) ||
+	    GET_SPEC(ch, CLASS_THEURGIST, SPEC_TEMPLAR))
 		necro_power += 10;
 
 	// 56 * 2 == 112 == 75 + 37 => at 56, can raise 1 greater and 1 regular dracolich.
@@ -338,11 +339,13 @@ int can_raise_draco(P_char ch, int level, bool bGreater)
 	{
 		if (bGreater)
 		{
-			act("You are too weak to animate another greater dracolich!", FALSE, ch, 0, 0, TO_CHAR);
+			act("You are too weak to animate another greater dracolich!", FALSE, ch, 0,
+			    0, TO_CHAR);
 		}
 		else
 		{
-			act("You are too weak to animate another dracolich!", FALSE, ch, 0, 0, TO_CHAR);
+			act("You are too weak to animate another dracolich!", FALSE, ch, 0, 0,
+			    TO_CHAR);
 		}
 		return FALSE;
 	}
@@ -352,21 +355,22 @@ int can_raise_draco(P_char ch, int level, bool bGreater)
 
 void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type)
 {
-	P_char               undead;
-	P_obj                obj_in_corpse, next_obj;
-	P_obj                globe;
-	char                 Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	int                  num, i, j, l, clevel, tmp, typ, sum, cap;
+	P_char undead;
+	P_obj obj_in_corpse, next_obj;
+	P_obj globe;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	int num, i, j, l, clevel, tmp, typ, sum, cap;
 	struct affected_type af;
-	bool                 corpselog = FALSE;
-	int                  life      = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
+	bool corpselog = FALSE;
+	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 
 	if (!require_char(ch, "raise_undead", "bogus parms - missing ch"))
 		return;
 	if (!require_data(obj, "raise_undead", "bogus parms - missing obj"))
 		return;
 
-	if (GET_SPEC(ch, CLASS_NECROMANCER, SPEC_REAPER) || GET_SPEC(ch, CLASS_THEURGIST, SPEC_THAUMATURGE))
+	if (GET_SPEC(ch, CLASS_NECROMANCER, SPEC_REAPER) ||
+	    GET_SPEC(ch, CLASS_THEURGIST, SPEC_THAUMATURGE))
 	{
 		life += (int)(life / 3);
 	}
@@ -379,13 +383,15 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 
 	if ((GET_ALIGNMENT(ch) > 0) && GET_CLASS(ch, CLASS_NECROMANCER))
 	{
-		send_to_char("You don't even _consider_ such a evil act, meddling with undead!\n", ch);
+		send_to_char("You don't even _consider_ such a evil act, meddling with undead!\n",
+			     ch);
 		return;
 	}
 
 	if ((GET_ALIGNMENT(ch) < 0) && GET_CLASS(ch, CLASS_THEURGIST))
 	{
-		send_to_char("You don't even _consider_ such a good act, meddling with angels!\n", ch);
+		send_to_char("You don't even _consider_ such a good act, meddling with angels!\n",
+			     ch);
 		return;
 	}
 
@@ -395,7 +401,8 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 		return;
 	}
 
-	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) || affected_by_spell(ch, SPELL_CORPSEFORM))
+	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) ||
+	    affected_by_spell(ch, SPELL_CORPSEFORM))
 	{
 		send_to_char("You cannot control undead in that form!\n\r", ch);
 		return;
@@ -404,7 +411,8 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	// If corpse not in room with ch ?!
 	if (!OBJ_IN_ROOM(obj, ch->in_room))
 	{
-		act("Where'd $p go?? It's not in the room with you anymore!", FALSE, ch, obj, 0, TO_CHAR);
+		act("Where'd $p go?? It's not in the room with you anymore!", FALSE, ch, obj, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -429,7 +437,8 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 
 	if (clevel > (level + 4) && !IS_TRUSTED(ch) && (level < 49))
 	{
-		act("You are not powerful enough to animate that corpse!", FALSE, ch, 0, 0, TO_CHAR);
+		act("You are not powerful enough to animate that corpse!", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -437,7 +446,9 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 
 	if (sum < 0)
 	{
-		send_to_char("You cannot have dracoliches, titans, or avatars under your control when animating undead!\r\n", ch);
+		send_to_char(
+			"You cannot have dracoliches, titans, or avatars under your control when animating undead!\r\n",
+			ch);
 		return;
 	}
 
@@ -457,8 +468,10 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 
 	if (globe)
 	{
-		act("&+LYour $q &+Lpulses with evil energy, infusing part of its malevolence into your undead abomination!&N", FALSE, ch, globe, 0, TO_CHAR);
-		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s abomination!&N", FALSE, ch, globe, 0, TO_ROOM);
+		act("&+LYour $q &+Lpulses with evil energy, infusing part of its malevolence into your undead abomination!&N",
+		    FALSE, ch, globe, 0, TO_CHAR);
+		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s abomination!&N",
+		    FALSE, ch, globe, 0, TO_ROOM);
 		life = (life + number(50, 100));
 	}
 
@@ -467,7 +480,8 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 		do
 		{
 			if (GET_CLASS(ch, CLASS_THEURGIST))
-				typ = (int)(number(0, MIN(level + 5, 45)) / 10) + ((NECROPET_LAST + 1) / 2);
+				typ = (int)(number(0, MIN(level + 5, 45)) / 10) +
+				      ((NECROPET_LAST + 1) / 2);
 			// Blighters only raise skeletons/zombies.
 			else if (GET_CLASS(ch, CLASS_BLIGHTER))
 				typ = number(0, 1);
@@ -481,7 +495,8 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	}
 
 	int necro_power = level * 2;
-	if (GET_SPEC(ch, CLASS_NECROMANCER, SPEC_NECROLYTE) || GET_SPEC(ch, CLASS_THEURGIST, SPEC_TEMPLAR))
+	if (GET_SPEC(ch, CLASS_NECROMANCER, SPEC_NECROLYTE) ||
+	    GET_SPEC(ch, CLASS_THEURGIST, SPEC_TEMPLAR))
 	{
 		necro_power += 10;
 	}
@@ -507,8 +522,8 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	}
 
 	/* okie, a few changes so zombies aren't god-like. -JAB */
-	GET_SIZE(undead)              = SIZE_MEDIUM;
-	undead->specials.affected_by  = undead_data[typ].aff1;
+	GET_SIZE(undead) = SIZE_MEDIUM;
+	undead->specials.affected_by = undead_data[typ].aff1;
 	undead->specials.affected_by2 = undead_data[typ].aff2;
 
 	undead->specials.act = undead_data[typ].act;
@@ -524,7 +539,7 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	remove_plushit_bits(undead);
 
 	GET_RACE(undead) = undead_data[typ].race;
-	GET_SEX(undead)  = SEX_NEUTRAL;
+	GET_SEX(undead) = SEX_NEUTRAL;
 
 	if ((typ >= NECROPET_START) && (typ <= NECROPET_END))
 	{
@@ -554,8 +569,8 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	}
 
 	undead->points.base_mana = GET_LEVEL(undead) * typ * 2;
-	undead->points.mana      = undead->points.base_mana;
-	undead->player.m_class   = undead_data[typ].pet_class;
+	undead->points.mana = undead->points.base_mana;
+	undead->player.m_class = undead_data[typ].pet_class;
 
 	while (undead->affected)
 	{
@@ -577,17 +592,22 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	}
 
 	/* max hp: 800 - really lucky lich.  */
-	GET_HIT(undead) = GET_MAX_HIT(undead) = undead->points.base_hit = (int)(dice(GET_LEVEL(undead), 12) + GET_LEVEL(ch) * undead_data[typ].hps + (life * 3));
+	GET_HIT(undead) = GET_MAX_HIT(undead) = undead->points.base_hit =
+		(int)(dice(GET_LEVEL(undead), 12) + GET_LEVEL(ch) * undead_data[typ].hps +
+		      (life * 3));
 
-	undead->points.vitality = undead->points.base_vitality = undead->points.max_vitality = MAX(50, undead->base_stats.Agi) + (undead->base_stats.Str + undead->base_stats.Con) / 2;
+	undead->points.vitality = undead->points.base_vitality = undead->points.max_vitality =
+		MAX(50, undead->base_stats.Agi) +
+		(undead->base_stats.Str + undead->base_stats.Con) / 2;
 
 	undead->points.base_armor = 100 - GET_LEVEL(undead) - (typ * 15);
 
 	MonkSetSpecialDie(undead);
 	undead->points.base_hitroll = undead->points.hitroll = (int)(0.7 * GET_LEVEL(undead));
 	// 24 - 32 at 50.
-	undead->points.base_damroll = undead->points.damroll = (int)(0.55 * GET_LEVEL(undead)) + number(-6, 2);
-	undead->points.damnodice                             = (undead->points.damnodice / 2 + 2);
+	undead->points.base_damroll = undead->points.damroll =
+		(int)(0.55 * GET_LEVEL(undead)) + number(-6, 2);
+	undead->points.damnodice = (undead->points.damnodice / 2 + 2);
 	// 5 at 56.
 	undead->points.damsizedice = (level - 1) / 11;
 
@@ -603,31 +623,40 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 		{
 			snprintf(Gbuf1, MAX_STRING_LENGTH, "an %s", undead_data[typ].short_desc);
 			undead->player.short_descr = str_dup(Gbuf1);
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "An %s stands here.\r\n", undead_data[typ].short_desc);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "An %s stands here.\r\n",
+				 undead_data[typ].short_desc);
 			undead->player.long_descr = str_dup(Gbuf1);
 		}
 		else
 		{
 			snprintf(Gbuf1, MAX_STRING_LENGTH, "a %s", undead_data[typ].short_desc);
 			undead->player.short_descr = str_dup(Gbuf1);
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "A %s stands here.\r\n", undead_data[typ].short_desc);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "A %s stands here.\r\n",
+				 undead_data[typ].short_desc);
 			undead->player.long_descr = str_dup(Gbuf1);
 		}
 	}
 	else
 	{
-		snprintf(Gbuf2, MAX_STRING_LENGTH, "undead %s _%s_", undead_data[typ].name, undead_data[typ].name);
+		snprintf(Gbuf2, MAX_STRING_LENGTH, "undead %s _%s_", undead_data[typ].name,
+			 undead_data[typ].name);
 		undead->player.name = str_dup(Gbuf2);
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "the %s of %s", undead_data[typ].name, obj->action_description);
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "the %s of %s", undead_data[typ].name,
+			 obj->action_description);
 		undead->player.short_descr = str_dup(Gbuf1);
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "The %s of %s stands here.\r\n", undead_data[typ].name, obj->action_description);
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "The %s of %s stands here.\r\n",
+			 undead_data[typ].name, obj->action_description);
 		undead->player.long_descr = str_dup(Gbuf1);
 	}
 
 	if (IS_SET(obj->value[CORPSE_FLAGS], PC_CORPSE))
 	{
-		logit(LOG_CORPSE, "%s got raised while equipped ( by %s in room %d ).", obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr), world[ch->in_room].number);
-		wizlog(57, "%s got raised while equipped ( by %s in room %d ).", obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr), world[ch->in_room].number);
+		logit(LOG_CORPSE, "%s got raised while equipped ( by %s in room %d ).",
+		      obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+		      world[ch->in_room].number);
+		wizlog(57, "%s got raised while equipped ( by %s in room %d ).",
+		       obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+		       world[ch->in_room].number);
 		corpselog = TRUE;
 	}
 
@@ -639,7 +668,10 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 		{
 			if (corpselog)
 			{
-				logit(LOG_CORPSE, "%s raised with eq: [%d] %s", obj->short_description, obj_index[obj_in_corpse->R_num].virtual_number, obj_in_corpse->name);
+				logit(LOG_CORPSE, "%s raised with eq: [%d] %s",
+				      obj->short_description,
+				      obj_index[obj_in_corpse->R_num].virtual_number,
+				      obj_in_corpse->name);
 			}
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
@@ -649,20 +681,25 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 
 	if ((typ >= THEURPET_START) && (typ <= THEURPET_END))
 	{
-		act("After a short &+yr&+Yi&+Wtu&+Ya&+yl&n, the &+Wsoul&n of $N&n is called to inhabit the $p.", FALSE, ch, obj, undead, TO_CHAR);
-		act("The $p &+btr&+Ban&+Csf&+Bor&+bms&n into $N&n and awaits instructions from &n&n.", FALSE, ch, obj, undead, TO_ROOM);
+		act("After a short &+yr&+Yi&+Wtu&+Ya&+yl&n, the &+Wsoul&n of $N&n is called to inhabit the $p.",
+		    FALSE, ch, obj, undead, TO_CHAR);
+		act("The $p &+btr&+Ban&+Csf&+Bor&+bms&n into $N&n and awaits instructions from &n&n.",
+		    FALSE, ch, obj, undead, TO_ROOM);
 	}
 	else
 	{
-		act("You breathe life into $p with the awesome power of your art.", FALSE, ch, obj, 0, TO_CHAR);
-		act("You see $p take a deep breath, and suddenly come to life again.", FALSE, ch, obj, 0, TO_NOTVICT);
+		act("You breathe life into $p with the awesome power of your art.", FALSE, ch, obj,
+		    0, TO_CHAR);
+		act("You see $p take a deep breath, and suddenly come to life again.", FALSE, ch,
+		    obj, 0, TO_NOTVICT);
 	}
 
-	int                timeToDecay = 0;
-	struct obj_affect *afDecay     = get_obj_affect(obj, TAG_OBJ_DECAY);
+	int timeToDecay = 0;
+	struct obj_affect *afDecay = get_obj_affect(obj, TAG_OBJ_DECAY);
 	if (NULL != afDecay)
 	{
-		timeToDecay = obj_affect_time(obj, afDecay) / (60 * 4); /* 4 pulses in a sec, 60 secs in a minute */
+		timeToDecay = obj_affect_time(obj, afDecay) /
+			      (60 * 4); /* 4 pulses in a sec, 60 secs in a minute */
 	}
 
 	extract_obj(obj);
@@ -682,45 +719,83 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 #undef UNDEAD_TYPES
 
 // Necro Spells
-void spell_raise_spectre(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, NECROPET_SPECTRE); }
+void spell_raise_spectre(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, NECROPET_SPECTRE);
+}
 
-void spell_raise_wraith(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, NECROPET_WRAITH); }
+void spell_raise_wraith(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, NECROPET_WRAITH);
+}
 
-void spell_raise_shadow(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, NECROPET_SHADOW); }
+void spell_raise_shadow(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, NECROPET_SHADOW);
+}
 
-void spell_raise_vampire(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, NECROPET_VAMPIRE); }
+void spell_raise_vampire(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, NECROPET_VAMPIRE);
+}
 
-void spell_raise_lich(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, NECROPET_LICH); }
+void spell_raise_lich(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, NECROPET_LICH);
+}
 
-void spell_animate_dead(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, -1); }
+void spell_animate_dead(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, -1);
+}
 
 // Theurgist Spells
-void spell_call_asura(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, THEURPET_SPECTRE); }
+void spell_call_asura(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, THEURPET_SPECTRE);
+}
 
-void spell_call_bralani(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, THEURPET_WRAITH); }
+void spell_call_bralani(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, THEURPET_WRAITH);
+}
 
-void spell_call_deva(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, THEURPET_SHADOW); }
+void spell_call_deva(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, THEURPET_SHADOW);
+}
 
-void spell_call_knight(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, THEURPET_VAMPIRE); }
+void spell_call_knight(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, THEURPET_VAMPIRE);
+}
 
-void spell_call_liberator(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, THEURPET_LICH); }
+void spell_call_liberator(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, THEURPET_LICH);
+}
 
-void spell_call_archon(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj) { raise_undead(level, ch, victim, obj, -1); }
+void spell_call_archon(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+{
+	raise_undead(level, ch, victim, obj, -1);
+}
 
 void mummify(P_char ch, P_char vict, P_obj corpse)
 {
-	act("Your hand glows and with a twist of your wrist, you mummify the remains of $N.", FALSE, ch, NULL, vict, TO_CHAR);
-	act("$n gestures $s hand causing $N's body to glow with a deep red aura.", FALSE, ch, NULL, vict, TO_ROOM);
+	act("Your hand glows and with a twist of your wrist, you mummify the remains of $N.", FALSE,
+	    ch, NULL, vict, TO_CHAR);
+	act("$n gestures $s hand causing $N's body to glow with a deep red aura.", FALSE, ch, NULL,
+	    vict, TO_ROOM);
 
 	spell_embalm(MAXLVL, ch, 0, SPELL_TYPE_SPELL, NULL, corpse);
 }
 
 void spawn_raise_undead(P_char ch, P_char vict, P_obj corpse)
 {
-	P_char              follower;
+	P_char follower;
 	struct follow_type *ft;
-	int                 sum, type = 0;
-	int                 roll = (corpse->value[CORPSE_LEVEL]) / 5 + number(1, 20);
+	int sum, type = 0;
+	int roll = (corpse->value[CORPSE_LEVEL]) / 5 + number(1, 20);
 
 	if (!IS_ALIVE(ch))
 	{
@@ -740,31 +815,39 @@ void spawn_raise_undead(P_char ch, P_char vict, P_obj corpse)
 		follower = ft->follower;
 		if (IS_PC(follower))
 			continue;
-		if (strstr(GET_NAME(follower), "skeleton") || strstr(GET_NAME(follower), "hound archon brawler"))
+		if (strstr(GET_NAME(follower), "skeleton") ||
+		    strstr(GET_NAME(follower), "hound archon brawler"))
 		{
 			sum += 2;
 		}
-		else if (strstr(GET_NAME(follower), "zombie") || strstr(GET_NAME(follower), "lantern archon soldier"))
+		else if (strstr(GET_NAME(follower), "zombie") ||
+			 strstr(GET_NAME(follower), "lantern archon soldier"))
 		{
 			sum += 3;
 		}
-		else if (strstr(GET_NAME(follower), "spectre") || strstr(GET_NAME(follower), "asura avenger"))
+		else if (strstr(GET_NAME(follower), "spectre") ||
+			 strstr(GET_NAME(follower), "asura avenger"))
 		{
 			sum += 3;
 		}
-		else if (strstr(GET_NAME(follower), "wraith") || strstr(GET_NAME(follower), "bralani battlemage"))
+		else if (strstr(GET_NAME(follower), "wraith") ||
+			 strstr(GET_NAME(follower), "bralani battlemage"))
 		{
 			sum += 4;
 		}
-		else if (strstr(GET_NAME(follower), "vampire") || strstr(GET_NAME(follower), "knight-errant knight errant ghaele"))
+		else if (strstr(GET_NAME(follower), "vampire") ||
+			 strstr(GET_NAME(follower), "knight-errant knight errant ghaele"))
 		{
 			sum += 4;
 		}
-		else if (strstr(GET_NAME(follower), "dracolich") || strstr(GET_NAME(follower), "titan") || strstr(GET_NAME(follower), "avatar"))
+		else if (strstr(GET_NAME(follower), "dracolich") ||
+			 strstr(GET_NAME(follower), "titan") ||
+			 strstr(GET_NAME(follower), "avatar"))
 		{
 			sum += 9;
 		}
-		else if (strstr(GET_NAME(follower), "lich") || strstr(GET_NAME(follower), "liberator holy ghaele"))
+		else if (strstr(GET_NAME(follower), "lich") ||
+			 strstr(GET_NAME(follower), "liberator holy ghaele"))
 		{
 			sum += 5;
 		}
@@ -774,26 +857,34 @@ void spawn_raise_undead(P_char ch, P_char vict, P_obj corpse)
 	{
 		if (sum == 0)
 		{
-
 			if (GET_CLASS(ch, CLASS_THEURGIST))
 			{
-				act("You place your hand on $N upon $S last dying breath.", FALSE, ch, 0, vict, TO_CHAR);
-				act("After a short &+yr&+Yi&+Wtu&+Ya&+yl&n, the &+Wsoul&n of $N&n is called to inhabit the $p.", FALSE, ch, 0, vict, TO_CHAR);
-				act("$n&n places $s hand on $N upon $S last dying breath.", FALSE, ch, 0, vict, TO_ROOM);
-				act("The $p &+btr&+Ban&+Csf&+Bor&+bms&n into $N&n and awaits instructions from &n&n.", FALSE, ch, 0, vict, TO_ROOM);
+				act("You place your hand on $N upon $S last dying breath.", FALSE,
+				    ch, 0, vict, TO_CHAR);
+				act("After a short &+yr&+Yi&+Wtu&+Ya&+yl&n, the &+Wsoul&n of $N&n is called to inhabit the $p.",
+				    FALSE, ch, 0, vict, TO_CHAR);
+				act("$n&n places $s hand on $N upon $S last dying breath.", FALSE,
+				    ch, 0, vict, TO_ROOM);
+				act("The $p &+btr&+Ban&+Csf&+Bor&+bms&n into $N&n and awaits instructions from &n&n.",
+				    FALSE, ch, 0, vict, TO_ROOM);
 			}
 			else
 			{
-				act("You plunge your hand into $N's chest grasping $S dying heart.", FALSE, ch, NULL, vict, TO_CHAR);
-				act("Uttering an unholy curse you will $S soul back from the clutches of death.", FALSE, ch, NULL, vict, TO_CHAR);
-				act("$n plunges $s hand into $N's chest grasping $S dying heart.", FALSE, ch, NULL, vict, TO_ROOM);
-				act("Uttering an unholy curse $n wills the soul back from the clutches of death", FALSE, ch, NULL, vict, TO_ROOM);
+				act("You plunge your hand into $N's chest grasping $S dying heart.",
+				    FALSE, ch, NULL, vict, TO_CHAR);
+				act("Uttering an unholy curse you will $S soul back from the clutches of death.",
+				    FALSE, ch, NULL, vict, TO_CHAR);
+				act("$n plunges $s hand into $N's chest grasping $S dying heart.",
+				    FALSE, ch, NULL, vict, TO_ROOM);
+				act("Uttering an unholy curse $n wills the soul back from the clutches of death",
+				    FALSE, ch, NULL, vict, TO_ROOM);
 			}
 
 			if (GET_CLASS(ch, CLASS_THEURGIST))
 				spell_call_titan(56, ch, NULL, SPELL_TYPE_SPELL, NULL, corpse);
 			else
-				spell_create_dracolich(56, ch, NULL, SPELL_TYPE_SPELL, NULL, corpse);
+				spell_create_dracolich(56, ch, NULL, SPELL_TYPE_SPELL, NULL,
+						       corpse);
 		}
 	}
 	else if (roll > 22)
@@ -843,10 +934,14 @@ void spawn_raise_undead(P_char ch, P_char vict, P_obj corpse)
 
 	if (type != 0)
 	{
-		act("You plunge your hand into $N's chest grasping $S dying heart.", FALSE, ch, NULL, vict, TO_CHAR);
-		act("Uttering an unholy curse you will $S soul back from the clutches of death.", FALSE, ch, NULL, vict, TO_CHAR);
-		act("$n plunges $s hand into $N's chest grasping $S dying heart.", FALSE, ch, NULL, vict, TO_ROOM);
-		act("Uttering an unholy curse $n wills the soul back from the clutches of death", FALSE, ch, NULL, vict, TO_ROOM);
+		act("You plunge your hand into $N's chest grasping $S dying heart.", FALSE, ch,
+		    NULL, vict, TO_CHAR);
+		act("Uttering an unholy curse you will $S soul back from the clutches of death.",
+		    FALSE, ch, NULL, vict, TO_CHAR);
+		act("$n plunges $s hand into $N's chest grasping $S dying heart.", FALSE, ch, NULL,
+		    vict, TO_ROOM);
+		act("Uttering an unholy curse $n wills the soul back from the clutches of death",
+		    FALSE, ch, NULL, vict, TO_ROOM);
 		//    spell_embalm(50, ch, 0, SPELL_TYPE_SPELL, NULL, corpse);
 		raise_undead(GET_LEVEL(ch), ch, NULL, corpse, type);
 	}
@@ -862,34 +957,33 @@ void spell_spawn(int level, P_char ch, char *arg, int type, P_char victim, P_obj
 	}
 
 	bzero(&af, sizeof(af));
-	af.type      = SPELL_SPAWN;
-	af.duration  = 5;
+	af.type = SPELL_SPAWN;
+	af.duration = 5;
 	af.bitvector = 0;
 
 	affect_to_char(ch, &af);
 	act("An aura of &+Ldeath&N surrounds you.", FALSE, ch, 0, ch, TO_CHAR);
-	act("The smell of &+Ldeath&N and &+Lsuffering&N emanates from $n.", FALSE, ch, 0, ch, TO_ROOM);
+	act("The smell of &+Ldeath&N and &+Lsuffering&N emanates from $n.", FALSE, ch, 0, ch,
+	    TO_ROOM);
 }
 
 void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	P_char              mob;
-	P_obj               obj_in_corpse = NULL, next_obj = NULL;
-	P_obj               globe;
+	P_char mob;
+	P_obj obj_in_corpse = NULL, next_obj = NULL;
+	P_obj globe;
 	struct follow_type *k;
-	int                 i, sum, num_undead = 0;
-	int                 life      = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
-	bool                corpselog = FALSE;
+	int i, sum, num_undead = 0;
+	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
+	bool corpselog = FALSE;
 	static struct
 	{
-		const int   mob_number;
+		const int mob_number;
 		const char *message;
-	} summons[] = {
-		{78, "&+rThe corpse summons the spirit of &+ra &+Rcrimson &+rtitan&n!"},
-		{79,   "&+bThe corpse summons the spirit of &+Ba &+bazure &+Btitan&n!"},
-		{80,  "&+gThe corpse summons the spirit of &+ga &+Gjasper &+gtitan&n!"},
-		{81,  "&+LThe corpse summons the spirit of &+wa &+Lbasalt &+wtitan&n!"}
-    };
+	} summons[] = { { 78, "&+rThe corpse summons the spirit of &+ra &+Rcrimson &+rtitan&n!" },
+			{ 79, "&+bThe corpse summons the spirit of &+Ba &+bazure &+Btitan&n!" },
+			{ 80, "&+gThe corpse summons the spirit of &+ga &+Gjasper &+gtitan&n!" },
+			{ 81, "&+LThe corpse summons the spirit of &+wa &+Lbasalt &+wtitan&n!" } };
 
 	if (!IS_ALIVE(ch))
 	{
@@ -934,7 +1028,8 @@ void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, 
 		return;
 	}
 
-	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) || affected_by_spell(ch, SPELL_CORPSEFORM))
+	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) ||
+	    affected_by_spell(ch, SPELL_CORPSEFORM))
 	{
 		send_to_char("You cannot control undead in that form!\n\r", ch);
 		return;
@@ -950,8 +1045,10 @@ void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, 
 
 	if (globe)
 	{
-		act("&+LYour $q &+Lpulses with evil energy, infusing part of its malevolence into your titan!&N", FALSE, ch, globe, 0, TO_CHAR);
-		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s titan!&N", FALSE, ch, globe, 0, TO_ROOM);
+		act("&+LYour $q &+Lpulses with evil energy, infusing part of its malevolence into your titan!&N",
+		    FALSE, ch, globe, 0, TO_CHAR);
+		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s titan!&N",
+		    FALSE, ch, globe, 0, TO_ROOM);
 		life += GET_LEVEL(ch) * 2;
 	}
 
@@ -960,7 +1057,8 @@ void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, 
 
 	if (!mob)
 	{
-		logit(LOG_DEBUG, "spell_call_titan(): mob %d not loadable", summons[sum].mob_number);
+		logit(LOG_DEBUG, "spell_call_titan(): mob %d not loadable",
+		      summons[sum].mob_number);
 		send_to_char("Bug in call titan.  Tell a god!\r\n", ch);
 		return;
 	}
@@ -994,7 +1092,7 @@ void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, 
 		}
 		if (GET_LEVEL(ch) >= 54)
 		{
-			mob->points.damnodice    = 10;
+			mob->points.damnodice = 10;
 			mob->points.base_hitroll = mob->points.hitroll = (GET_LEVEL(ch));
 		}
 	}
@@ -1003,8 +1101,12 @@ void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, 
 
 	if (IS_SET(obj->value[CORPSE_FLAGS], PC_CORPSE))
 	{
-		logit(LOG_CORPSE, "%s got raised as titan ( by %s in room %d ).", obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr), world[ch->in_room].number);
-		wizlog(57, "%s got raised as titan ( by %s in room %d ).", obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr), world[ch->in_room].number);
+		logit(LOG_CORPSE, "%s got raised as titan ( by %s in room %d ).",
+		      obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+		      world[ch->in_room].number);
+		wizlog(57, "%s got raised as titan ( by %s in room %d ).", obj->short_description,
+		       (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+		       world[ch->in_room].number);
 		corpselog = TRUE;
 	}
 
@@ -1014,19 +1116,23 @@ void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, 
 		for (obj_in_corpse = obj->contains; obj_in_corpse; obj_in_corpse = next_obj)
 		{
 			if (corpselog)
-				logit(LOG_CORPSE, "%s raised with eq: [%d] %s", obj->short_description, obj_index[obj_in_corpse->R_num].virtual_number, obj_in_corpse->name);
+				logit(LOG_CORPSE, "%s raised with eq: [%d] %s",
+				      obj->short_description,
+				      obj_index[obj_in_corpse->R_num].virtual_number,
+				      obj_in_corpse->name);
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
 			obj_to_char(obj_in_corpse, mob);
 		}
 	}
 
-	int                timeToDecay = 0;
-	struct obj_affect *afDecay     = get_obj_affect(obj, TAG_OBJ_DECAY);
+	int timeToDecay = 0;
+	struct obj_affect *afDecay = get_obj_affect(obj, TAG_OBJ_DECAY);
 
 	if (NULL != afDecay)
 	{
-		timeToDecay = obj_affect_time(obj, afDecay) / (60 * 4); /* 4 pulses in a sec, 60 secs in a minute */
+		timeToDecay = obj_affect_time(obj, afDecay) /
+			      (60 * 4); /* 4 pulses in a sec, 60 secs in a minute */
 	}
 
 	extract_obj(obj);
@@ -1044,7 +1150,8 @@ void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, 
 		act("$N is NOT pleased at being returned to life!", TRUE, ch, 0, mob, TO_ROOM);
 		act("$N is NOT pleased with you at all!", TRUE, ch, 0, mob, TO_CHAR);
 		// Poof in 5-10 sec.
-		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL, 0);
+		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL,
+			  0);
 		MobStartFight(mob, ch);
 	}
 	else
@@ -1052,17 +1159,23 @@ void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, 
 		act("&+W$N roars to the sky 'I LIVE!!!'", TRUE, ch, 0, mob, TO_ROOM);
 		act("&+W$N roars to the sky 'I LIVE!!!'", TRUE, ch, 0, mob, TO_CHAR);
 
-		radiate_message_from_room(ch->in_room, "&+cYou hear a loud roar in the distance.\r\n", 3, (RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL | RMFR_PASS_DOOR | RMFR_CROSS_ZONE_BARRIER), 0);
+		radiate_message_from_room(ch->in_room,
+					  "&+cYou hear a loud roar in the distance.\r\n", 3,
+					  (RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL |
+						       RMFR_PASS_DOOR | RMFR_CROSS_ZONE_BARRIER),
+					  0);
 
 		GET_AC(mob) -= 50;
-		int duration = setup_pet(mob, ch, timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(mob))), PET_NOCASH);
+		int duration = setup_pet(
+			mob, ch, timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(mob))), PET_NOCASH);
 		add_follower(mob, ch);
 
 		/* if the undead will stop being charmed after a bit, also make it suicide 1-10 minutes later */
 		if (duration >= 0)
 		{
 			duration += number(1, 10);
-			add_event(event_pet_death, (duration + 1) * 60 * 4, mob, NULL, NULL, 0, NULL, 0);
+			add_event(event_pet_death, (duration + 1) * 60 * 4, mob, NULL, NULL, 0,
+				  NULL, 0);
 		}
 	}
 }
@@ -1074,8 +1187,8 @@ struct SavedCorpseData
 
 void check_saved_corpse(P_char ch)
 {
-	P_nevent e      = NULL;
-	P_obj    corpse = NULL;
+	P_nevent e = NULL;
+	P_obj corpse = NULL;
 
 	if (!ch)
 		return;
@@ -1083,7 +1196,7 @@ void check_saved_corpse(P_char ch)
 	if ((e = get_scheduled(ch, event_saved_corpse)))
 	{
 		SavedCorpseData *data = (SavedCorpseData *)e->data;
-		corpse                = data->corpse;
+		corpse = data->corpse;
 	}
 
 	if (corpse && corpse->loc.room == real_room(CORPSE_STORAGE))
@@ -1112,39 +1225,39 @@ void create_saved_corpse(P_obj obj, P_char mob)
 	P_obj savecorpse = clone_obj(obj);
 	clone_container_obj(savecorpse, obj);
 	snprintf(buff, MAX_STRING_LENGTH, "%s %s", savecorpse->name, "_savecorpse_");
-	savecorpse->name                 = str_dup(buff);
+	savecorpse->name = str_dup(buff);
 	savecorpse->value[CORPSE_SAVEID] = time(NULL);
 	obj_to_room(savecorpse, real_room(40));
 	affect_from_obj(savecorpse, TAG_OBJ_DECAY);
 	SavedCorpseData savedCorpseData;
 	savedCorpseData.corpse = savecorpse;
-	add_event(event_saved_corpse, 0, mob, NULL, NULL, 0, &savedCorpseData, sizeof(SavedCorpseData));
+	add_event(event_saved_corpse, 0, mob, NULL, NULL, 0, &savedCorpseData,
+		  sizeof(SavedCorpseData));
 }
 
 void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	P_char              mob;
-	P_obj               obj_in_corpse = NULL, next_obj = NULL;
-	P_obj               globe;
+	P_char mob;
+	P_obj obj_in_corpse = NULL, next_obj = NULL;
+	P_obj globe;
 	struct follow_type *k;
-	int                 i, sum, num_undead = 0;
-	int                 life      = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
-	bool                corpselog = FALSE;
+	int i, sum, num_undead = 0;
+	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
+	bool corpselog = FALSE;
 	static struct
 	{
-		const int   mob_number;
+		const int mob_number;
 		const char *message;
-	} summons[] = {
-		{3,   "&+rThe corpse summons the spirit of a red dragon!"},
-		{4,  "&+bThe corpse summons the spirit of a blue dragon!"},
-		{5, "&+gThe corpse summons the spirit of a green dragon!"},
-		{6, "&+LThe corpse summons the spirit of a black dragon!"}
-    };
+	} summons[] = { { 3, "&+rThe corpse summons the spirit of a red dragon!" },
+			{ 4, "&+bThe corpse summons the spirit of a blue dragon!" },
+			{ 5, "&+gThe corpse summons the spirit of a green dragon!" },
+			{ 6, "&+LThe corpse summons the spirit of a black dragon!" } };
 
 	if (!IS_ALIVE(ch))
 	{
 		logit(LOG_DEBUG, "spell_create_dracolich: Missing or dead char.");
-		debug("spell_create_dracolich: Missing or dead char '%s'.", ch ? J_NAME(ch) : "Null");
+		debug("spell_create_dracolich: Missing or dead char '%s'.",
+		      ch ? J_NAME(ch) : "Null");
 		return;
 	}
 
@@ -1192,7 +1305,8 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 		return;
 	}
 
-	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) || affected_by_spell(ch, SPELL_CORPSEFORM))
+	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) ||
+	    affected_by_spell(ch, SPELL_CORPSEFORM))
 	{
 		send_to_char("You cannot control undead in that form!\n\r", ch);
 		return;
@@ -1208,8 +1322,10 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 
 	if (globe)
 	{
-		act("&+LYour $q &+Lpulses with evil energy, infusing part of its malevolence into your abomination!&N", FALSE, ch, globe, 0, TO_CHAR);
-		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s abomination!&N", FALSE, ch, globe, 0, TO_ROOM);
+		act("&+LYour $q &+Lpulses with evil energy, infusing part of its malevolence into your abomination!&N",
+		    FALSE, ch, globe, 0, TO_CHAR);
+		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s abomination!&N",
+		    FALSE, ch, globe, 0, TO_ROOM);
 		life += GET_LEVEL(ch) * 2;
 	}
 
@@ -1237,7 +1353,8 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 
 	if (!mob)
 	{
-		logit(LOG_DEBUG, "spell_create_dracolich(): mob %d not loadable", summons[sum].mob_number);
+		logit(LOG_DEBUG, "spell_create_dracolich(): mob %d not loadable",
+		      summons[sum].mob_number);
 		send_to_char("Bug in create dracolich.  Tell a god!\r\n", ch);
 		return;
 	}
@@ -1270,14 +1387,14 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 		}
 		if (GET_LEVEL(ch) >= 50)
 		{
-			mob->points.damnodice    = 15;
+			mob->points.damnodice = 15;
 			mob->points.base_hitroll = mob->points.hitroll = (GET_LEVEL(ch));
 		}
 	}
 	else
 	{
 		// 5d6 at level 56.
-		mob->points.damnodice   = (level - 6) / 10;
+		mob->points.damnodice = (level - 6) / 10;
 		mob->points.damsizedice = (level + 10) / 11;
 		// 60 - 80 (actual 15 - 20) at level 56.
 		mob->points.base_damroll = mob->points.damroll = level + number(4, 24);
@@ -1287,8 +1404,12 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 
 	if (IS_SET(obj->value[CORPSE_FLAGS], PC_CORPSE))
 	{
-		logit(LOG_CORPSE, "%s got raised as dracolich ( by %s in room %d ).", obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr), world[ch->in_room].number);
-		wizlog(57, "%s got raised as dracolich ( by %s in room %d ).", obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr), world[ch->in_room].number);
+		logit(LOG_CORPSE, "%s got raised as dracolich ( by %s in room %d ).",
+		      obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+		      world[ch->in_room].number);
+		wizlog(57, "%s got raised as dracolich ( by %s in room %d ).",
+		       obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+		       world[ch->in_room].number);
 		corpselog = TRUE;
 	}
 
@@ -1299,7 +1420,10 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 		{
 			if (corpselog)
 			{
-				logit(LOG_CORPSE, "%s raised with eq: [%d] %s", obj->short_description, obj_index[obj_in_corpse->R_num].virtual_number, obj_in_corpse->name);
+				logit(LOG_CORPSE, "%s raised with eq: [%d] %s",
+				      obj->short_description,
+				      obj_index[obj_in_corpse->R_num].virtual_number,
+				      obj_in_corpse->name);
 			}
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
@@ -1307,8 +1431,8 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 		}
 	}
 
-	int                timeToDecay = 0;
-	struct obj_affect *afDecay     = get_obj_affect(obj, TAG_OBJ_DECAY);
+	int timeToDecay = 0;
+	struct obj_affect *afDecay = get_obj_affect(obj, TAG_OBJ_DECAY);
 
 	if (NULL != afDecay)
 	{
@@ -1316,7 +1440,8 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 		timeToDecay = obj_affect_time(obj, afDecay) / (60 * WAIT_SEC);
 	}
 	if (corpse_trace_enabled())
-		logit(LOG_DEBUG, "corpse_trace dracolich_prepare corpse_vnum=%d corpse_level=%d remaining_minutes=%d caster_level=%d",
+		logit(LOG_DEBUG,
+		      "corpse_trace dracolich_prepare corpse_vnum=%d corpse_level=%d remaining_minutes=%d caster_level=%d",
 		      OBJ_VNUM(obj), obj->value[CORPSE_LEVEL], timeToDecay, level);
 
 	extract_obj(obj);
@@ -1332,7 +1457,8 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 		act("$N is NOT pleased at being returned to life!", TRUE, ch, 0, mob, TO_ROOM);
 		act("$N is NOT pleased with you at all!", TRUE, ch, 0, mob, TO_CHAR);
 		// Poof in 5-10 sec.
-		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL, 0);
+		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL,
+			  0);
 		MobStartFight(mob, ch);
 	}
 	else
@@ -1340,19 +1466,26 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 		act("&+W$N roars to the sky 'I LIVE!!!'", TRUE, ch, 0, mob, TO_ROOM);
 		act("&+W$N roars to the sky 'I LIVE!!!'", TRUE, ch, 0, mob, TO_CHAR);
 
-		radiate_message_from_room(ch->in_room, "&+cYou hear a loud roar in the distance.\r\n", 3, (RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL | RMFR_PASS_DOOR | RMFR_CROSS_ZONE_BARRIER), 0);
+		radiate_message_from_room(ch->in_room,
+					  "&+cYou hear a loud roar in the distance.\r\n", 3,
+					  (RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL |
+						       RMFR_PASS_DOOR | RMFR_CROSS_ZONE_BARRIER),
+					  0);
 
 		GET_AC(mob) -= (GET_LEVEL(ch) * 7);
-		int duration = setup_pet(mob, ch, timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(mob))), PET_NOCASH);
+		int duration = setup_pet(
+			mob, ch, timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(mob))), PET_NOCASH);
 		if (corpse_trace_enabled())
-			logit(LOG_DEBUG, "corpse_trace dracolich_created mob_vnum=%d charm_minutes=%d corpse_remaining_minutes=%d",
+			logit(LOG_DEBUG,
+			      "corpse_trace dracolich_created mob_vnum=%d charm_minutes=%d corpse_remaining_minutes=%d",
 			      GET_VNUM(mob), duration, timeToDecay);
 		add_follower(mob, ch);
 
 		// if the undead will stop being charmed after a bit, also make it suicide 1 minute later.
 		if (duration >= 0)
 		{
-			add_event(event_pet_death, (duration + 1) * 60 * WAIT_SEC, mob, NULL, NULL, 0, NULL, 0);
+			add_event(event_pet_death, (duration + 1) * 60 * WAIT_SEC, mob, NULL, NULL,
+				  0, NULL, 0);
 		}
 	}
 }
@@ -1399,14 +1532,14 @@ void spell_create_golem(int level, P_char ch, char *arg, int type, P_char victim
 
 void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type)
 {
-	P_char              mob;
-	bool                corpselog     = FALSE;
-	P_obj               obj_in_corpse = NULL, next_obj = NULL;
-	P_obj               globe;
+	P_char mob;
+	bool corpselog = FALSE;
+	P_obj obj_in_corpse = NULL, next_obj = NULL;
+	P_obj globe;
 	struct follow_type *k;
-	int                 num, clevel, i, cap, sum, num_undead = 0;
-	int                 life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
-	int                 percent;
+	int num, clevel, i, cap, sum, num_undead = 0;
+	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
+	int percent;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -1449,7 +1582,8 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 		return;
 	}
 
-	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) || affected_by_spell(ch, SPELL_CORPSEFORM))
+	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) ||
+	    affected_by_spell(ch, SPELL_CORPSEFORM))
 	{
 		send_to_char("You cannot control undead in that form!\n\r", ch);
 		return;
@@ -1464,7 +1598,9 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	sum = count_undead(ch);
 	if (sum < 0)
 	{
-		send_to_char("You cannot have dracoliches under your control when animating golems!\r\n", ch);
+		send_to_char(
+			"You cannot have dracoliches under your control when animating golems!\r\n",
+			ch);
 		return;
 	}
 
@@ -1478,7 +1614,8 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 
 	if (!mob)
 	{
-		logit(LOG_DEBUG, "create_golem(): mob %d not loadable", golem_data[which_type].vnum);
+		logit(LOG_DEBUG, "create_golem(): mob %d not loadable",
+		      golem_data[which_type].vnum);
 		send_to_char("Bug in create_golem.  Tell a god!\r\n", ch);
 		return;
 	}
@@ -1489,15 +1626,18 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 
 	if (clevel > (level + 4) && !IS_TRUSTED(ch) && (level < 49))
 	{
-		act("You are not powerful enough to animate that corpse!", FALSE, ch, 0, 0, TO_CHAR);
+		act("You are not powerful enough to animate that corpse!", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
 	globe = get_globe(ch);
 	if (globe)
 	{
-		act("&+LYour $q &+Lpulses with evil energy, infusing part of it's malevolence into your undead abomination!&N", FALSE, ch, globe, 0, TO_CHAR);
-		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s abomination!&N", FALSE, ch, globe, 0, TO_ROOM);
+		act("&+LYour $q &+Lpulses with evil energy, infusing part of it's malevolence into your undead abomination!&N",
+		    FALSE, ch, globe, 0, TO_CHAR);
+		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s abomination!&N",
+		    FALSE, ch, globe, 0, TO_ROOM);
 		life = GET_LEVEL(ch) * 2;
 	}
 
@@ -1510,9 +1650,10 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 
 	mob->player.level = BOUNDED(1, num, cap);
 
-	mob->points.vitality = mob->points.base_vitality = mob->points.max_vitality = MAX(50, mob->base_stats.Agi) + (mob->base_stats.Str + mob->base_stats.Con) / 2;
+	mob->points.vitality = mob->points.base_vitality = mob->points.max_vitality =
+		MAX(50, mob->base_stats.Agi) + (mob->base_stats.Str + mob->base_stats.Con) / 2;
 
-	mob->points.base_armor    = 0 - GET_LEVEL(mob);
+	mob->points.base_armor = 0 - GET_LEVEL(mob);
 	mob->specials.affected_by = AFF_FLY + AFF_DETECT_INVISIBLE;
 
 	percent = number(0, 100);
@@ -1525,12 +1666,14 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	}
 
 	GET_SIZE(mob) = SIZE_HUGE;
-	GET_HIT(mob) = GET_MAX_HIT(mob) = mob->points.base_hit = (int)(dice(GET_LEVEL(mob), 11) + GET_LEVEL(ch) * golem_data[which_type].hps + (life * 3));
+	GET_HIT(mob) = GET_MAX_HIT(mob) = mob->points.base_hit =
+		(int)(dice(GET_LEVEL(mob), 11) + GET_LEVEL(ch) * golem_data[which_type].hps +
+		      (life * 3));
 
 	MonkSetSpecialDie(mob);
 	mob->points.base_hitroll = mob->points.hitroll = (int)(0.90 * GET_LEVEL(mob));
 	mob->points.base_damroll = mob->points.damroll = (int)(0.70 * GET_LEVEL(mob));
-	mob->points.damnodice                          = (mob->points.damnodice / 2 + 2);
+	mob->points.damnodice = (mob->points.damnodice / 2 + 2);
 
 	char_to_room(mob, ch->in_room, 0);
 
@@ -1540,17 +1683,21 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 		for (obj_in_corpse = obj->contains; obj_in_corpse; obj_in_corpse = next_obj)
 		{
 			if (corpselog)
-				logit(LOG_CORPSE, "%s raised with eq: [%d] %s", obj->short_description, obj_index[obj_in_corpse->R_num].virtual_number, obj_in_corpse->name);
+				logit(LOG_CORPSE, "%s raised with eq: [%d] %s",
+				      obj->short_description,
+				      obj_index[obj_in_corpse->R_num].virtual_number,
+				      obj_in_corpse->name);
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
 			obj_to_char(obj_in_corpse, mob);
 		}
 	}
-	int                timeToDecay = 0;
-	struct obj_affect *afDecay     = get_obj_affect(obj, TAG_OBJ_DECAY);
+	int timeToDecay = 0;
+	struct obj_affect *afDecay = get_obj_affect(obj, TAG_OBJ_DECAY);
 	if (NULL != afDecay)
 	{
-		timeToDecay = obj_affect_time(obj, afDecay) / (60 * 4); /* 4 pulses in a sec, 60 secs in a minute */
+		timeToDecay = obj_affect_time(obj, afDecay) /
+			      (60 * 4); /* 4 pulses in a sec, 60 secs in a minute */
 	}
 
 	extract_obj(obj);
@@ -1560,22 +1707,15 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 
 	balance_affects(mob);
 
-	int duration = setup_pet(mob, ch, (timeToDecay / 2) + (6000 / STAT_INDEX(GET_C_INT(mob))), PET_NOCASH);
+	int duration = setup_pet(mob, ch, (timeToDecay / 2) + (6000 / STAT_INDEX(GET_C_INT(mob))),
+				 PET_NOCASH);
 
 	act("&+LDark shadows engulf the &+bcorpse &+Las you weave a spell of &+Wreanimation&+L,\r\n"
 	    "&+Ltransforming the corpse into an &+wundead &+rminion&+L.",
-	    FALSE,
-	    ch,
-	    0,
-	    0,
-	    TO_CHAR);
+	    FALSE, ch, 0, 0, TO_CHAR);
 	act("&+LDark shadows fill the room as $n &+Lchants and descend upon the\r\n"
 	    "&+wrecently &+Wdeceased &+Ltransforming the corpse into an &+wundead &+rminion&+L.",
-	    FALSE,
-	    ch,
-	    0,
-	    0,
-	    TO_ROOM);
+	    FALSE, ch, 0, 0, TO_ROOM);
 	add_follower(mob, ch);
 	/* if the undead will stop being charmed after a bit, also make it suicide 1-10 minutes later */
 	if (duration >= 0)
@@ -1587,23 +1727,27 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 
 void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	P_char              mob;
-	bool                corpselog     = FALSE;
-	P_obj               obj_in_corpse = NULL, next_obj = NULL;
-	P_obj               globe;
+	P_char mob;
+	bool corpselog = FALSE;
+	P_obj obj_in_corpse = NULL, next_obj = NULL;
+	P_obj globe;
 	struct follow_type *k;
-	int                 i, sum, num_undead = 0;
-	int                 life;
+	int i, sum, num_undead = 0;
+	int life;
 	static struct
 	{
-		const int   mob_number;
+		const int mob_number;
 		const char *message;
 	} summons[] = {
-		{82,       "The corpse summons &+wan &+cav&+Ca&+Wt&+Ca&+cr &+wof the &+Warch&+wangel of &+rWar&+w!&n"},
-		{83, "The corpse summons &+wan &+cav&+Ca&+Wt&+Ca&+cr &+wof the &+Warch&+wangel of &+RJudgement&+w!&n"},
-		{84, "The corpse summons &+wan &+cav&+Ca&+Wt&+Ca&+cr &+wof the &+Warch&+wangel of &+LVengeance&+w!&n"},
-		{85,   "The corpse summons &+wan &+cav&+Ca&+Wt&+Ca&+cr &+wof the &+Warch&+wangel of &+CJustice&+w!&n"}
-    };
+		{ 82,
+		  "The corpse summons &+wan &+cav&+Ca&+Wt&+Ca&+cr &+wof the &+Warch&+wangel of &+rWar&+w!&n" },
+		{ 83,
+		  "The corpse summons &+wan &+cav&+Ca&+Wt&+Ca&+cr &+wof the &+Warch&+wangel of &+RJudgement&+w!&n" },
+		{ 84,
+		  "The corpse summons &+wan &+cav&+Ca&+Wt&+Ca&+cr &+wof the &+Warch&+wangel of &+LVengeance&+w!&n" },
+		{ 85,
+		  "The corpse summons &+wan &+cav&+Ca&+Wt&+Ca&+cr &+wof the &+Warch&+wangel of &+CJustice&+w!&n" }
+	};
 
 	if (!IS_ALIVE(ch))
 	{
@@ -1651,7 +1795,8 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 	  return;
 	}
 	*/
-	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) || affected_by_spell(ch, SPELL_CORPSEFORM))
+	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) ||
+	    affected_by_spell(ch, SPELL_CORPSEFORM))
 	{
 		send_to_char("You cannot control undead in that form!\n\r", ch);
 		return;
@@ -1669,13 +1814,15 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 		return;
 	}
 
-	life  = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
+	life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 	globe = get_globe(ch);
 
 	if (globe)
 	{
-		act("&+LYour $q &+Lpulses with evil energy, infusing part of it's malevolence into your undead abomination!&N", FALSE, ch, globe, 0, TO_CHAR);
-		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s abomination!&N", FALSE, ch, globe, 0, TO_ROOM);
+		act("&+LYour $q &+Lpulses with evil energy, infusing part of it's malevolence into your undead abomination!&N",
+		    FALSE, ch, globe, 0, TO_CHAR);
+		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s abomination!&N",
+		    FALSE, ch, globe, 0, TO_ROOM);
 		life += GET_LEVEL(ch) * 2;
 	}
 
@@ -1684,7 +1831,8 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 
 	if (!mob)
 	{
-		logit(LOG_DEBUG, "spell_call_avatar(): mob %d not loadable", summons[sum].mob_number);
+		logit(LOG_DEBUG, "spell_call_avatar(): mob %d not loadable",
+		      summons[sum].mob_number);
 		send_to_char("Bug in call avatar. Tell a god!\r\n", ch);
 		return;
 	}
@@ -1693,7 +1841,8 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 	GET_RACE(mob) = RACE_AVATAR;
 	SET_BIT(mob->specials.act, ACT_MOUNT);
 	mob->specials.act |= ACT_SPEC_DIE;
-	GET_HIT(mob) = GET_MAX_HIT(mob) = mob->points.base_hit = 2500 + number(-10, 50) + (life * 5);
+	GET_HIT(mob) = GET_MAX_HIT(mob) = mob->points.base_hit =
+		2500 + number(-10, 50) + (life * 5);
 	// REMOVE_BIT(mob->only.npc->aggro_flags, AGGR_ALL);
 	SET_BIT(mob->only.npc->aggro_flags, AGGR_ALL);
 	mob->specials.alignment = 1000;
@@ -1736,8 +1885,12 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 
 	if (IS_SET(obj->value[CORPSE_FLAGS], PC_CORPSE))
 	{
-		logit(LOG_CORPSE, "%s got raised as avatar while equipped ( by %s in room %d ).", obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr), world[ch->in_room].number);
-		wizlog(57, "%s got raised as avatar while equipped ( by %s in room %d ).", obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr), world[ch->in_room].number);
+		logit(LOG_CORPSE, "%s got raised as avatar while equipped ( by %s in room %d ).",
+		      obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+		      world[ch->in_room].number);
+		wizlog(57, "%s got raised as avatar while equipped ( by %s in room %d ).",
+		       obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+		       world[ch->in_room].number);
 		corpselog = TRUE;
 	}
 
@@ -1747,17 +1900,21 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 		for (obj_in_corpse = obj->contains; obj_in_corpse; obj_in_corpse = next_obj)
 		{
 			if (corpselog)
-				logit(LOG_CORPSE, "%s raised with eq: [%d] %s", obj->short_description, obj_index[obj_in_corpse->R_num].virtual_number, obj_in_corpse->name);
+				logit(LOG_CORPSE, "%s raised with eq: [%d] %s",
+				      obj->short_description,
+				      obj_index[obj_in_corpse->R_num].virtual_number,
+				      obj_in_corpse->name);
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
 			obj_to_char(obj_in_corpse, mob);
 		}
 	}
-	int                timeToDecay = 0;
-	struct obj_affect *afDecay     = get_obj_affect(obj, TAG_OBJ_DECAY);
+	int timeToDecay = 0;
+	struct obj_affect *afDecay = get_obj_affect(obj, TAG_OBJ_DECAY);
 	if (NULL != afDecay)
 	{
-		timeToDecay = obj_affect_time(obj, afDecay) / (60 * 4); /* 4 pulses in a sec, 60 secs in a minute */
+		timeToDecay = obj_affect_time(obj, afDecay) /
+			      (60 * 4); /* 4 pulses in a sec, 60 secs in a minute */
 	}
 	extract_obj(obj);
 
@@ -1776,7 +1933,8 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 		act("$N is NOT pleased at being returned to life!", TRUE, ch, 0, mob, TO_ROOM);
 		act("$N is NOT pleased with you at all!", TRUE, ch, 0, mob, TO_CHAR);
 		// Poof in 5-10 sec.
-		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL, 0);
+		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL,
+			  0);
 		MobStartFight(mob, ch);
 	}
 	else
@@ -1784,41 +1942,43 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 		act("&+W$N roars to the sky 'I LIVE!!!'", TRUE, ch, 0, mob, TO_ROOM);
 		act("&+W$N roars to the sky 'I LIVE!!!'", TRUE, ch, 0, mob, TO_CHAR);
 
-		int duration = setup_pet(mob, ch, timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(mob))), PET_NOCASH);
+		int duration = setup_pet(
+			mob, ch, timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(mob))), PET_NOCASH);
 		add_follower(mob, ch);
 		/* if the undead will stop being charmed after a bit, also make it suicide 1-10 minutes later */
 		if (duration >= 0)
 		{
 			duration += number(1, 10);
-			add_event(event_pet_death, (duration + 1) * 60 * 4, mob, NULL, NULL, 0, NULL, 0);
+			add_event(event_pet_death, (duration + 1) * 60 * 4, mob, NULL, NULL, 0,
+				  NULL, 0);
 		}
 	}
 }
 
-void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P_char victim,
+				    P_obj obj)
 {
-	P_char              mob;
-	bool                corpselog     = FALSE;
-	P_obj               obj_in_corpse = NULL, next_obj = NULL;
-	P_obj               globe;
+	P_char mob;
+	bool corpselog = FALSE;
+	P_obj obj_in_corpse = NULL, next_obj = NULL;
+	P_obj globe;
 	struct follow_type *k;
-	int                 i, sum, num_undead = 0;
-	int                 life;
+	int i, sum, num_undead = 0;
+	int life;
 	static struct
 	{
-		const int   mob_number;
+		const int mob_number;
 		const char *message;
-	} summons[] = {
-		{ 7, "The corpse summons a greater &+ybronze&n dracolich!"},
-		{ 8, "The corpse summons a greater &+csilver&n dracolich!"},
-		{ 9,   "The corpse summons a greater &+Ygold&n dracolich!"},
-		{10, "The corpse summons a greater &+Lshadow&n dracolich!"}
-    };
+	} summons[] = { { 7, "The corpse summons a greater &+ybronze&n dracolich!" },
+			{ 8, "The corpse summons a greater &+csilver&n dracolich!" },
+			{ 9, "The corpse summons a greater &+Ygold&n dracolich!" },
+			{ 10, "The corpse summons a greater &+Lshadow&n dracolich!" } };
 
 	if (!IS_ALIVE(ch))
 	{
 		logit(LOG_DEBUG, "spell_create_greater_dracolich: Missing or dead char.");
-		debug("spell_create_greater_dracolich: Missing or dead char '%s'.", ch ? J_NAME(ch) : "Null");
+		debug("spell_create_greater_dracolich: Missing or dead char '%s'.",
+		      ch ? J_NAME(ch) : "Null");
 		return;
 	}
 	if (IS_NPC(ch) && IS_PC_PET(ch))
@@ -1873,7 +2033,8 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 	  return;
 	}
 	*/
-	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) || affected_by_spell(ch, SPELL_CORPSEFORM))
+	if ((IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !is_wearing_necroplasm(ch) && !IS_NPC(ch)) ||
+	    affected_by_spell(ch, SPELL_CORPSEFORM))
 	{
 		send_to_char("You cannot control undead in that form!\n\r", ch);
 		return;
@@ -1891,13 +2052,15 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 		return;
 	}
 
-	life  = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
+	life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 	globe = get_globe(ch);
 
 	if (globe)
 	{
-		act("&+LYour $q &+Lpulses with evil energy, infusing part of it's malevolence into your undead abomination!&N", FALSE, ch, globe, 0, TO_CHAR);
-		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s abomination!&N", FALSE, ch, globe, 0, TO_ROOM);
+		act("&+LYour $q &+Lpulses with evil energy, infusing part of it's malevolence into your undead abomination!&N",
+		    FALSE, ch, globe, 0, TO_CHAR);
+		act("&+L$n's $q &+Lthrobs with evil energy, combining its unholy power with $s abomination!&N",
+		    FALSE, ch, globe, 0, TO_ROOM);
 		life += GET_LEVEL(ch) * 2;
 	}
 
@@ -1906,7 +2069,8 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 
 	if (!mob)
 	{
-		logit(LOG_DEBUG, "spell_create_greater_dracolich(): mob %d not loadable", summons[sum].mob_number);
+		logit(LOG_DEBUG, "spell_create_greater_dracolich(): mob %d not loadable",
+		      summons[sum].mob_number);
 		send_to_char("Bug in create greater  dracolich. Tell a god!\r\n", ch);
 		return;
 	}
@@ -1915,7 +2079,8 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 	GET_RACE(mob) = RACE_DRACOLICH;
 	SET_BIT(mob->specials.act, ACT_MOUNT);
 	mob->specials.act |= ACT_SPEC_DIE;
-	GET_HIT(mob) = GET_MAX_HIT(mob) = mob->points.base_hit = 2500 + number(-10, 50) + (life * 5);
+	GET_HIT(mob) = GET_MAX_HIT(mob) = mob->points.base_hit =
+		2500 + number(-10, 50) + (life * 5);
 	// REMOVE_BIT(mob->only.npc->aggro_flags, AGGR_ALL);
 	SET_BIT(mob->only.npc->aggro_flags, AGGR_ALL);
 
@@ -1949,7 +2114,7 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 	else
 	{
 		// 6d7 at level 56.
-		mob->points.damnodice   = (level + 9) / 10;
+		mob->points.damnodice = (level + 9) / 10;
 		mob->points.damsizedice = (level + 4) / 10 + 1;
 		// 80 - 100 (actual 20 - 25) at level 56.
 		mob->points.base_damroll = mob->points.damroll = level + number(24, 44);
@@ -1967,10 +2132,12 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 	{
 		logit(LOG_CORPSE,
 		      "%s got raised as greater dracolich while equipped ( by %s in room %d ).",
-		      obj->short_description,
-		      (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+		      obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
 		      world[ch->in_room].number);
-		wizlog(57, "%s got raised as greater dracolich while equipped ( by %s in room %d ).", obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr), world[ch->in_room].number);
+		wizlog(57,
+		       "%s got raised as greater dracolich while equipped ( by %s in room %d ).",
+		       obj->short_description, (IS_PC(ch) ? GET_NAME(ch) : ch->player.short_descr),
+		       world[ch->in_room].number);
 		corpselog = TRUE;
 	}
 
@@ -1981,15 +2148,18 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 		{
 			if (corpselog)
 			{
-				logit(LOG_CORPSE, "%s raised with eq: [%d] %s", obj->short_description, obj_index[obj_in_corpse->R_num].virtual_number, obj_in_corpse->name);
+				logit(LOG_CORPSE, "%s raised with eq: [%d] %s",
+				      obj->short_description,
+				      obj_index[obj_in_corpse->R_num].virtual_number,
+				      obj_in_corpse->name);
 			}
 			next_obj = obj_in_corpse->next_content;
 			obj_from_obj(obj_in_corpse);
 			obj_to_char(obj_in_corpse, mob);
 		}
 	}
-	int                timeToDecay = 0;
-	struct obj_affect *afDecay     = get_obj_affect(obj, TAG_OBJ_DECAY);
+	int timeToDecay = 0;
+	struct obj_affect *afDecay = get_obj_affect(obj, TAG_OBJ_DECAY);
 	if (NULL != afDecay)
 	{
 		// WAIT_SEC pulses in a sec, 60 secs in a minute
@@ -2011,7 +2181,8 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 		act("$N is NOT pleased at being returned to life!", TRUE, ch, 0, mob, TO_ROOM);
 		act("$N is NOT pleased with you at all!", TRUE, ch, 0, mob, TO_CHAR);
 		// Poof in 5-10 sec.
-		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL, 0);
+		add_event(event_pet_death, (4 + number(1, 6)) * WAIT_SEC, mob, NULL, NULL, 0, NULL,
+			  0);
 		MobStartFight(mob, ch);
 	}
 	else
@@ -2020,21 +2191,23 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 		act("&+W$N roars to the sky 'I LIVE!!!'", TRUE, ch, 0, mob, TO_CHAR);
 
 		GET_AC(mob) -= (level * 4);
-		int duration = setup_pet(mob, ch, timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(mob))), PET_NOCASH);
+		int duration = setup_pet(
+			mob, ch, timeToDecay / 2 + (6000 / STAT_INDEX(GET_C_INT(mob))), PET_NOCASH);
 		add_follower(mob, ch);
 		// if the undead will stop being charmed after a bit, also make it suicide 1 minute later
 		if (duration >= 0)
 		{
-			add_event(event_pet_death, (duration + 1) * 60 * WAIT_SEC, mob, NULL, NULL, 0, NULL, 0);
+			add_event(event_pet_death, (duration + 1) * 60 * WAIT_SEC, mob, NULL, NULL,
+				  0, NULL, 0);
 		}
 	}
 }
 
 void do_exhume(P_char ch, char *argument, int cmd)
 {
-	int   now, skl;
+	int now, skl;
 	P_obj obj1 = NULL, obj2 = NULL;
-	bool  found_something = FALSE, have_one = FALSE;
+	bool found_something = FALSE, have_one = FALSE;
 
 	if (((skl = GET_CHAR_SKILL(ch, SKILL_EXHUME)) == 0) && !IS_TRUSTED(ch))
 	{
@@ -2047,9 +2220,11 @@ void do_exhume(P_char ch, char *argument, int cmd)
 
 	if (!IS_TRUSTED(ch))
 	{
-		if (obj1 && ((isname("shovel", obj1->name) || isname("hoe", obj1->name) || isname("pick", obj1->name))))
+		if (obj1 && ((isname("shovel", obj1->name) || isname("hoe", obj1->name) ||
+			      isname("pick", obj1->name))))
 			have_one = TRUE;
-		else if (obj2 && ((isname("shovel", obj2->name) || isname("hoe", obj2->name) || isname("pick", obj2->name))))
+		else if (obj2 && ((isname("shovel", obj2->name) || isname("hoe", obj2->name) ||
+				   isname("pick", obj2->name))))
 			have_one = TRUE;
 
 		if (!have_one)
@@ -2058,21 +2233,30 @@ void do_exhume(P_char ch, char *argument, int cmd)
 			return;
 		}
 
-		if (world[ch->in_room].sector_type != SECT_FIELD && world[ch->in_room].sector_type != SECT_FOREST && world[ch->in_room].sector_type != SECT_HILLS &&
-		    world[ch->in_room].sector_type != SECT_MOUNTAIN && world[ch->in_room].sector_type != SECT_UNDRWLD_WILD && world[ch->in_room].sector_type != SECT_UNDRWLD_MOUNTAIN &&
+		if (world[ch->in_room].sector_type != SECT_FIELD &&
+		    world[ch->in_room].sector_type != SECT_FOREST &&
+		    world[ch->in_room].sector_type != SECT_HILLS &&
+		    world[ch->in_room].sector_type != SECT_MOUNTAIN &&
+		    world[ch->in_room].sector_type != SECT_UNDRWLD_WILD &&
+		    world[ch->in_room].sector_type != SECT_UNDRWLD_MOUNTAIN &&
 		    world[ch->in_room].sector_type != SECT_SNOWY_FOREST)
 		{
-			send_to_char("This doesn't appear to be the best place for digging.\r\n", ch);
+			send_to_char("This doesn't appear to be the best place for digging.\r\n",
+				     ch);
 			return;
 		}
 
 		if (ch->specials.z_cord < 0 || ch->specials.z_cord > 0)
 		{
-			send_to_char("This doesn't appears to be the best place for digging.\r\n", ch);
+			send_to_char("This doesn't appears to be the best place for digging.\r\n",
+				     ch);
 			return;
 		}
 
-		if (!affect_timer(ch, (get_property("timer.mins.exhume", 10) * WAIT_MIN * (150 - skl)) / 100, SKILL_EXHUME))
+		if (!affect_timer(ch,
+				  (get_property("timer.mins.exhume", 10) * WAIT_MIN * (150 - skl)) /
+					  100,
+				  SKILL_EXHUME))
 		{
 			send_to_char("Your weak arms need more rest.\r\n", ch);
 			return;
@@ -2080,16 +2264,18 @@ void do_exhume(P_char ch, char *argument, int cmd)
 	}
 	// on success
 	notch_skill(ch, SKILL_EXHUME, 20);
-	send_to_char("Your shovel breaks through the &+yearth&n, revealing a &+Lrotten corpse&n ready for use.\r\n", ch);
+	send_to_char(
+		"Your shovel breaks through the &+yearth&n, revealing a &+Lrotten corpse&n ready for use.\r\n",
+		ch);
 
 	/* charWait for exhume is skill dependent:  between 14 and 24 (with base skill of 40, its actually between 14-20) */
 	CharWait(ch, 6 * WAIT_SEC - (skl / 10));
 
-	obj1                      = read_object(2, VIRTUAL);
+	obj1 = read_object(2, VIRTUAL);
 	obj1->value[CORPSE_LEVEL] = MIN(50, GET_LEVEL(ch) + number(0, 8) - 4);
 
 	obj1->action_description = str_dup("&+La cadaver&n");
-	obj1->str_mask           = STRUNG_DESC3;
+	obj1->str_mask = STRUNG_DESC3;
 	obj_to_room(obj1, ch->in_room);
 	set_obj_affected(obj1, 0, TAG_OBJ_DECAY, 0);
 	spell_embalm(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, NULL, obj1);
@@ -2117,17 +2303,17 @@ void do_spawn(P_char ch, char *argument, int cmd)
 
 	send_to_char("You will try to summon pets from death blows.\n", ch);
 	memset(&af, 0, sizeof(af));
-	af.type     = TAG_SPAWN;
+	af.type = TAG_SPAWN;
 	af.duration = -1;
-	af.flags    = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+	af.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
 	affect_to_char(ch, &af);
 }
 
 void do_summon_host(P_char ch, char *argument, int cmd)
 {
-	int   now, skl;
+	int now, skl;
 	P_obj obj1 = NULL, obj2 = NULL;
-	bool  found_something = FALSE, have_one = FALSE;
+	bool found_something = FALSE, have_one = FALSE;
 
 	if (!has_innate(ch, INNATE_SUMMON_HOST) && !IS_TRUSTED(ch))
 	{
@@ -2175,24 +2361,31 @@ void do_summon_host(P_char ch, char *argument, int cmd)
 		  return;
 		}
 		*/
-		if (!affect_timer(ch, (get_property("timer.mins.exhume", 10) * WAIT_MIN * (150 - skl)) / 100, SKILL_EXHUME))
+		if (!affect_timer(ch,
+				  (get_property("timer.mins.exhume", 10) * WAIT_MIN * (150 - skl)) /
+					  100,
+				  SKILL_EXHUME))
 		{
-			send_to_char("Your spirit is too weak to summon a new host at this time.\r\n", ch);
+			send_to_char(
+				"Your spirit is too weak to summon a new host at this time.\r\n",
+				ch);
 			return;
 		}
 	}
 	// on success
 
-	send_to_char("A &+Wholy be&+Ra&+Wm&n of &+Ylight&n appears before you.  As the &+Ylight &+Wdis&+wsip&+Lates&n, a &+Wsoul&+wless &+Lcorpse&n remains.\r\n", ch);
+	send_to_char(
+		"A &+Wholy be&+Ra&+Wm&n of &+Ylight&n appears before you.  As the &+Ylight &+Wdis&+wsip&+Lates&n, a &+Wsoul&+wless &+Lcorpse&n remains.\r\n",
+		ch);
 
 	/* charWait for exhume is skill dependent:  between 14 and 24 (with base skill of 40, its actually between 14-20) */
 	CharWait(ch, 24 - (GET_CHAR_SKILL(ch, SKILL_EXHUME) / 10));
 
-	obj1                      = read_object(2, VIRTUAL);
+	obj1 = read_object(2, VIRTUAL);
 	obj1->value[CORPSE_LEVEL] = MIN(50, GET_LEVEL(ch) + number(0, 8) - 4);
 
 	obj1->action_description = str_dup("&+La cadaver&n");
-	obj1->str_mask           = STRUNG_DESC3;
+	obj1->str_mask = STRUNG_DESC3;
 	obj_to_room(obj1, ch->in_room);
 	set_obj_affected(obj1, 0, TAG_OBJ_DECAY, 0);
 	spell_embalm(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, NULL, obj1);
@@ -2200,11 +2393,11 @@ void do_summon_host(P_char ch, char *argument, int cmd)
 
 void do_remort(P_char ch, char *arg, int cmd)
 {
-
 	if (!IS_PC(ch))
 		return;
 
-	if (!affected_by_spell(ch, SPELL_VAMPIRE) && !affected_by_spell(ch, SPELL_ANGELIC_COUNTENANCE))
+	if (!affected_by_spell(ch, SPELL_VAMPIRE) &&
+	    !affected_by_spell(ch, SPELL_ANGELIC_COUNTENANCE))
 	{
 		send_to_char("But you're still alive!\r\n", ch);
 		return;
@@ -2224,14 +2417,14 @@ void do_remort(P_char ch, char *arg, int cmd)
 
 void spell_corpseform(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	bool                  loss_flag = FALSE;
-	int                   chance, l, found, clevel, ss_save, ss_roll, the_size;
-	long                  resu_exp;
-	P_obj                 obj_in_corpse, next_obj, t_obj, money;
+	bool loss_flag = FALSE;
+	int chance, l, found, clevel, ss_save, ss_roll, the_size;
+	long resu_exp;
+	P_obj obj_in_corpse, next_obj, t_obj, money;
 	struct affected_type *af, *afcf, *afrc, *next_af;
-	P_char                t_ch, folpet, target = NULL;
-	char                  tbuf[MAX_STRING_LENGTH];
-	struct follow_type   *foll, *next_foll;
+	P_char t_ch, folpet, target = NULL;
+	char tbuf[MAX_STRING_LENGTH];
+	struct follow_type *foll, *next_foll;
 
 	// Leaving the game (dying / renting / etc) breaks this 'cause affect is removed,
 	//   and event is removed but not the actual change in race.  It needs a rework. - Lohrr
@@ -2277,7 +2470,8 @@ void spell_corpseform(int level, P_char ch, char *arg, int type, P_char victim, 
 			return;
 		}
 
-		if (corpse_race == RACE_ILLITHID || corpse_race == RACE_CENTAUR || corpse_race == RACE_THRIKREEN || corpse_race == RACE_MINOTAUR)
+		if (corpse_race == RACE_ILLITHID || corpse_race == RACE_CENTAUR ||
+		    corpse_race == RACE_THRIKREEN || corpse_race == RACE_MINOTAUR)
 		{
 			send_to_char("That corpse is too weird for you to assume its form!\n", ch);
 			return;
@@ -2315,7 +2509,9 @@ void spell_corpseform(int level, P_char ch, char *arg, int type, P_char victim, 
 
 		if (obj->value[CORPSE_LEVEL] < (GET_LEVEL(ch) - 10))
 		{
-			send_to_char("That corpse is not powerful enough for you to assume its essence.\r\n", ch);
+			send_to_char(
+				"That corpse is not powerful enough for you to assume its essence.\r\n",
+				ch);
 			return;
 		}
 	}
@@ -2326,16 +2522,20 @@ void spell_corpseform(int level, P_char ch, char *arg, int type, P_char victim, 
 	memset(afrc, 0, sizeof(new_affect));
 	memset(afcf, 0, sizeof(new_affect));
 
-	act("&+LThe necromatic essence of $o swirls up and forms around $n.&n", TRUE, ch, obj, NULL, TO_ROOM);
-	act("&+LThe necromatic essence of $o swirls up and forms around you.&n", TRUE, ch, obj, NULL, TO_CHAR);
+	act("&+LThe necromatic essence of $o swirls up and forms around $n.&n", TRUE, ch, obj, NULL,
+	    TO_ROOM);
+	act("&+LThe necromatic essence of $o swirls up and forms around you.&n", TRUE, ch, obj,
+	    NULL, TO_CHAR);
 
 	if (number(1, 100) < (int)get_property("spell.corpseform.improvedChance", 10))
 	{
 		// Superior corpseform, get innates of new race
 		afcf->modifier = CORPSEFORM_INNATE;
 		// IS_DISGUISE_SHAPE(ch) = FALSE;
-		act("&+LThe dark mist &+wPULSES&+L for a moment before reforming around $n.", TRUE, ch, obj, NULL, TO_ROOM);
-		act("&+LThe dark mist &+wPULSES&+L for a moment before reforming around you.", TRUE, ch, obj, NULL, TO_CHAR);
+		act("&+LThe dark mist &+wPULSES&+L for a moment before reforming around $n.", TRUE,
+		    ch, obj, NULL, TO_ROOM);
+		act("&+LThe dark mist &+wPULSES&+L for a moment before reforming around you.", TRUE,
+		    ch, obj, NULL, TO_CHAR);
 	}
 	else
 	{
@@ -2344,27 +2544,31 @@ void spell_corpseform(int level, P_char ch, char *arg, int type, P_char victim, 
 		afcf->modifier = CORPSEFORM_REG;
 	}
 
-	afcf->type     = SPELL_CORPSEFORM;
-	afcf->flags    = AFFTYPE_NODISPEL;
+	afcf->type = SPELL_CORPSEFORM;
+	afcf->flags = AFFTYPE_NODISPEL;
 	afrc->modifier = GET_RACE(ch);
 	afcf->duration = (int)get_property("spell.corpseform.duration.mins", 20);
 	affect_to_char(ch, afcf);
 
-	afrc->type     = TAG_RACE_CHANGE;
-	afrc->flags    = AFFTYPE_NODISPEL | AFFTYPE_NOSAVE;
+	afrc->type = TAG_RACE_CHANGE;
+	afrc->flags = AFFTYPE_NODISPEL | AFFTYPE_NOSAVE;
 	afrc->modifier = GET_RACE(ch);
 	afrc->duration = -1;
 	affect_to_char(ch, afrc);
 
 	add_event(event_corpseform_wearoff, PULSE_VIOLENCE, ch, 0, 0, 0, 0, 0);
 
-	act("&+LThe corpse of $o crumbles to dust as its essence is completely drained.&n", TRUE, ch, obj, NULL, TO_ROOM);
-	act("&+LThe corpse of $o crumbles to dust as its essence is completely drained by you.&n", TRUE, ch, obj, NULL, TO_CHAR);
+	act("&+LThe corpse of $o crumbles to dust as its essence is completely drained.&n", TRUE,
+	    ch, obj, NULL, TO_ROOM);
+	act("&+LThe corpse of $o crumbles to dust as its essence is completely drained by you.&n",
+	    TRUE, ch, obj, NULL, TO_CHAR);
 
-	snprintf(tbuf, MAX_STRING_LENGTH, "You assume the form of %s!", race_names_table[corpse_race].normal);
+	snprintf(tbuf, MAX_STRING_LENGTH, "You assume the form of %s!",
+		 race_names_table[corpse_race].normal);
 	act(tbuf, FALSE, ch, NULL, NULL, TO_CHAR);
 
-	snprintf(tbuf, MAX_STRING_LENGTH, "$n assumes the form of %s!", race_names_table[corpse_race].normal);
+	snprintf(tbuf, MAX_STRING_LENGTH, "$n assumes the form of %s!",
+		 race_names_table[corpse_race].normal);
 	act(tbuf, FALSE, ch, NULL, NULL, TO_ROOM);
 
 	GET_RACE(ch) = corpse_race;
@@ -2373,7 +2577,7 @@ void spell_corpseform(int level, P_char ch, char *arg, int type, P_char victim, 
 	for (foll = ch->followers; foll; foll = next_foll)
 	{
 		next_foll = foll->next;
-		folpet    = foll->follower;
+		folpet = foll->follower;
 
 		if (IS_PC_PET(folpet))
 		{
@@ -2405,8 +2609,11 @@ void event_corpseform_wearoff(P_char ch, P_char victim, P_obj obj, void *data)
 		{
 			GET_RACE(ch) = afrc->modifier;
 			affect_remove(ch, afrc);
-			send_to_char("&+LThe necromatic aura dissipates and your true form is revealed.&n\r\n", ch);
-			act("&+LThe necromatic aura dissipates and reveals the true form of $n&n", TRUE, ch, 0, NULL, TO_ROOM);
+			send_to_char(
+				"&+LThe necromatic aura dissipates and your true form is revealed.&n\r\n",
+				ch);
+			act("&+LThe necromatic aura dissipates and reveals the true form of $n&n",
+			    TRUE, ch, 0, NULL, TO_ROOM);
 			return;
 		}
 		else
@@ -2419,12 +2626,14 @@ void event_corpseform_wearoff(P_char ch, P_char victim, P_obj obj, void *data)
 
 void spell_slashing_darkness(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	struct damage_messages messages = {"&+LThe shadowy hand slashes $N &+Lviciously.",
-	                                   "&+LYou stagger as the shadowy hand conjured by $n &+Lslashes you with its sharp claws.",
-	                                   "&+LThe shadowy hand slashes at $N&+L, who staggers under the blow.",
-	                                   "&+LThe shadowy hand tears away the remaining life of $N.",
-	                                   "&+LA clawed darkness rushing at you is the last thing you before everything goes dark...",
-	                                   "&+LThe shadowy hand tears away the remaining life of $N&+L, causing $m to stagger and collapse."};
+	struct damage_messages messages = {
+		"&+LThe shadowy hand slashes $N &+Lviciously.",
+		"&+LYou stagger as the shadowy hand conjured by $n &+Lslashes you with its sharp claws.",
+		"&+LThe shadowy hand slashes at $N&+L, who staggers under the blow.",
+		"&+LThe shadowy hand tears away the remaining life of $N.",
+		"&+LA clawed darkness rushing at you is the last thing you before everything goes dark...",
+		"&+LThe shadowy hand tears away the remaining life of $N&+L, causing $m to stagger and collapse."
+	};
 
 	if (resists_spell(ch, victim))
 		return;
@@ -2434,20 +2643,24 @@ void spell_slashing_darkness(int level, P_char ch, char *arg, int type, P_char v
 
 	dam = (dice(1, 4) * 4 + number(1, level)) * num_missiles;
 
-	act("&+LYou utter a word of dark speech and a shadowy hand coalesces near $N!&n", FALSE, ch, 0, victim, TO_CHAR);
-	act("&+L$n utters a word of dark speech, and a shadowy hand coalesces near $N!&n", FALSE, ch, 0, victim, TO_NOTVICT);
-	act("&+L$n utters a word of dark speech, and a shadowy hand coalesces near YOU!&n", FALSE, ch, 0, victim, TO_VICT);
+	act("&+LYou utter a word of dark speech and a shadowy hand coalesces near $N!&n", FALSE, ch,
+	    0, victim, TO_CHAR);
+	act("&+L$n utters a word of dark speech, and a shadowy hand coalesces near $N!&n", FALSE,
+	    ch, 0, victim, TO_NOTVICT);
+	act("&+L$n utters a word of dark speech, and a shadowy hand coalesces near YOU!&n", FALSE,
+	    ch, 0, victim, TO_VICT);
 
-	spell_damage(ch, victim, (dam / 2), SPLDAM_GENERIC, SPLDAM_ALLGLOBES | RAWDAM_NOKILL | SPLDAM_NOSHRUG, 0);
+	spell_damage(ch, victim, (dam / 2), SPLDAM_GENERIC,
+		     SPLDAM_ALLGLOBES | RAWDAM_NOKILL | SPLDAM_NOSHRUG, 0);
 
 	if (IS_ALIVE(ch) && IS_ALIVE(victim))
-		spell_damage(ch, victim, (dam / 2), SPLDAM_NEGATIVE, SPLDAM_ALLGLOBES | SPLDAM_NOSHRUG, &messages);
+		spell_damage(ch, victim, (dam / 2), SPLDAM_NEGATIVE,
+			     SPLDAM_ALLGLOBES | SPLDAM_NOSHRUG, &messages);
 }
 
 void spell_undead_to_death(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-
-	int                  save, dam, hits;
+	int save, dam, hits;
 	struct affected_type af;
 
 	struct damage_messages messages = {
@@ -2504,14 +2717,17 @@ void spell_undead_to_death(int level, P_char ch, char *arg, int type, P_char vic
 	else if (GET_HIT(victim) > GET_MAX_HIT(victim))
 	{
 		act("&+LYour undeath reserves were neutralized!&n", FALSE, ch, 0, victim, TO_VICT);
-		act("&+GThe green mist surrounding&n $n &+Gexplodes!&n", TRUE, victim, 0, 0, TO_ROOM);
+		act("&+GThe green mist surrounding&n $n &+Gexplodes!&n", TRUE, victim, 0, 0,
+		    TO_ROOM);
 
 		hits = GET_HIT(victim) - GET_MAX_HIT(victim);
 		GET_HIT(victim) -= hits;
 	}
-	else if (!NewSaves(victim, SAVING_PARA, save) && !affected_by_spell(victim, SPELL_UNDEAD_TO_DEATH))
+	else if (!NewSaves(victim, SAVING_PARA, save) &&
+		 !affected_by_spell(victim, SPELL_UNDEAD_TO_DEATH))
 	{
-		act("&+LSomething is very, very wrong. Your undead bindings were greatly weakened!&n", FALSE, ch, 0, victim, TO_VICT);
+		act("&+LSomething is very, very wrong. Your undead bindings were greatly weakened!&n",
+		    FALSE, ch, 0, victim, TO_VICT);
 		act("$n wavers and almost &+ycollapses!!!&n", TRUE, victim, 0, 0, TO_ROOM);
 
 		bzero(&af, sizeof(af));
@@ -2543,14 +2759,16 @@ void spell_undead_to_death(int level, P_char ch, char *arg, int type, P_char vic
 
 void spell_taint(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int                    dam;
-	struct damage_messages messages = {"Your &+rpowerful voice&n causes $N's &+Cs&nou&+Cl&n to distort and shimmer, writhing in agony!",
-	                                   "Your divine spirit writhes in agony at the power of $n's &+rtainted&n word!",
-	                                   "$n utters a &+rwicked&n word, causing $N to writhe in agony, echoes of $s &+Cs&nou&+Cl&n shimmering around $s body!",
-	                                   "Your eyes sparkle with an insane glee as the &+rabsolute power&n of your word destroys that which was $N!",
-	                                   "With a &+Gw&+gr&+Letch&+ge&+Gd &+mincantation&n $n opens $s mouth wider than $s skull and swallos your &+Cs&nou&+Cl&n.",
-	                                   "With a &+Gw&+gr&+Letch&+ge&+Gd &+mincantation&n, $n opens $s mouth wider than $s skull, swallowing the &+Cs&nou&+Cl&n of $N!",
-	                                   0};
+	int dam;
+	struct damage_messages messages = {
+		"Your &+rpowerful voice&n causes $N's &+Cs&nou&+Cl&n to distort and shimmer, writhing in agony!",
+		"Your divine spirit writhes in agony at the power of $n's &+rtainted&n word!",
+		"$n utters a &+rwicked&n word, causing $N to writhe in agony, echoes of $s &+Cs&nou&+Cl&n shimmering around $s body!",
+		"Your eyes sparkle with an insane glee as the &+rabsolute power&n of your word destroys that which was $N!",
+		"With a &+Gw&+gr&+Letch&+ge&+Gd &+mincantation&n $n opens $s mouth wider than $s skull and swallos your &+Cs&nou&+Cl&n.",
+		"With a &+Gw&+gr&+Letch&+ge&+Gd &+mincantation&n, $n opens $s mouth wider than $s skull, swallowing the &+Cs&nou&+Cl&n of $N!",
+		0
+	};
 
 	if (!ch)
 	{
@@ -2642,12 +2860,12 @@ P_obj get_globe(P_char ch)
 
 void spell_wall_of_bones(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
 {
-	char  arg1[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], *arg2;
-	int   exit_dir, clevel, scales;
+	char arg1[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], *arg2;
+	int exit_dir, clevel, scales;
 	P_obj corpse, obj_in_corpse, next_obj;
 
-	arg      = one_argument(arg, arg1);
-	arg2     = skip_spaces(arg);
+	arg = one_argument(arg, arg1);
+	arg2 = skip_spaces(arg);
 	exit_dir = dir_from_keyword(arg1);
 
 	corpse = NULL;
@@ -2675,15 +2893,19 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, int type, P_char tar_c
 
 				if (clevel > (level + 4) && !IS_TRUSTED(ch) && (level < 50))
 				{
-					act("You are not powerful enough to transform that corpse!", FALSE, ch, 0, 0, TO_CHAR);
-					act("&+L$n's&+L spell fizzles and dies.\n", TRUE, ch, 0, 0, TO_ROOM);
+					act("You are not powerful enough to transform that corpse!",
+					    FALSE, ch, 0, 0, TO_CHAR);
+					act("&+L$n's&+L spell fizzles and dies.\n", TRUE, ch, 0, 0,
+					    TO_ROOM);
 					return;
 				}
 
 				if (clevel < 46)
 				{
-					act("This spell requires the corpse of a more powerful being!", FALSE, ch, 0, 0, TO_CHAR);
-					act("&+L$n's&+L spell fizzles and dies.\n", TRUE, ch, 0, 0, TO_ROOM);
+					act("This spell requires the corpse of a more powerful being!",
+					    FALSE, ch, 0, 0, TO_CHAR);
+					act("&+L$n's&+L spell fizzles and dies.\n", TRUE, ch, 0, 0,
+					    TO_ROOM);
 					return;
 				}
 			}
@@ -2699,13 +2921,15 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, int type, P_char tar_c
 			{
 				if (corpse)
 				{
-					act("$p is not a corpse.", FALSE, ch, corpse, NULL, TO_CHAR);
+					act("$p is not a corpse.", FALSE, ch, corpse, NULL,
+					    TO_CHAR);
 				}
 				else
 				{
 					send_to_char_f(ch, "You don't see a '%s' here.\n", arg1);
 				}
-				act("&+L$n's&+L spell fizzles and dies.\n", TRUE, ch, 0, 0, TO_ROOM);
+				act("&+L$n's&+L spell fizzles and dies.\n", TRUE, ch, 0, 0,
+				    TO_ROOM);
 				return;
 			}
 		}
@@ -2735,22 +2959,32 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, int type, P_char tar_c
 
 	if (!clevel && !scales)
 	{
-		send_to_char("You need some flesh and bones to transform!"
-		             "\nAt the very last, even some &+gdragonscale&n or &+Lcompact &+Wbones&N would suffice.\n",
-		             ch);
+		send_to_char(
+			"You need some flesh and bones to transform!"
+			"\nAt the very last, even some &+gdragonscale&n or &+Lcompact &+Wbones&N would suffice.\n",
+			ch);
 		act("&+L$n's&+L spell fizzles and dies.\n", TRUE, ch, 0, 0, TO_ROOM);
 		return;
 	}
 
-	if (corpse && create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, level / 2, 1800, "&+La wall of &+wbones&n", "&+LA large wall of &+wbones&+L is here to the %s.&n", 0))
+	if (corpse && create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, level / 2, 1800,
+				   "&+La wall of &+wbones&n",
+				   "&+LA large wall of &+wbones&+L is here to the %s.&n", 0))
 	{
-
 		SET_BIT(EXIT(ch, exit_dir)->exit_info, EX_BREAKABLE);
-		SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room, rev_dir[exit_dir])->exit_info, EX_BREAKABLE);
+		SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room,
+				     rev_dir[exit_dir])
+				->exit_info,
+			EX_BREAKABLE);
 
-		snprintf(buf1, MAX_STRING_LENGTH, "&+LInfused by a powerful magic, %s &+Lmagically transforms into a wall of bones, blocking the %s exit!&n\r\n", corpse->short_description, dirs[exit_dir]);
+		snprintf(
+			buf1, MAX_STRING_LENGTH,
+			"&+LInfused by a powerful magic, %s &+Lmagically transforms into a wall of bones, blocking the %s exit!&n\r\n",
+			corpse->short_description, dirs[exit_dir]);
 		send_to_room(buf1, ch->in_room);
-		snprintf(buf1, MAX_STRING_LENGTH, "&+LA pile of bones magically assembles to the %s!&n\r\n", dirs[rev_dir[exit_dir]]);
+		snprintf(buf1, MAX_STRING_LENGTH,
+			 "&+LA pile of bones magically assembles to the %s!&n\r\n",
+			 dirs[rev_dir[exit_dir]]);
 		send_to_room(buf1, (world[ch->in_room].dir_option[exit_dir])->to_room);
 
 		for (obj_in_corpse = corpse->contains; obj_in_corpse; obj_in_corpse = next_obj)
@@ -2762,16 +2996,24 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, int type, P_char tar_c
 
 		extract_obj(corpse, TRUE); // Empty corpse, but 'in game.'
 	}
-	else if (scales && create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, scales, 1000, "&+La thin wall of &+gscales&n", "&+LA thin wall of &+gscales&+L is here to the %s.&n", 0))
+	else if (scales && create_walls(ch->in_room, exit_dir, ch, level, WALL_OF_BONES, scales,
+					1000, "&+La thin wall of &+gscales&n",
+					"&+LA thin wall of &+gscales&+L is here to the %s.&n", 0))
 	{
-
 		SET_BIT(EXIT(ch, exit_dir)->exit_info, EX_BREAKABLE);
-		SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room, rev_dir[exit_dir])->exit_info, EX_BREAKABLE);
+		SET_BIT(VIRTUAL_EXIT((world[ch->in_room].dir_option[exit_dir])->to_room,
+				     rev_dir[exit_dir])
+				->exit_info,
+			EX_BREAKABLE);
 
 		snprintf(
-			buf1, MAX_STRING_LENGTH, "&+LInfused by powerful sorcery, some &+gdragonscales &+Lmagically transform into a delicate yet solid curtain, blocking exit to the %s!&n\r\n", dirs[exit_dir]);
+			buf1, MAX_STRING_LENGTH,
+			"&+LInfused by powerful sorcery, some &+gdragonscales &+Lmagically transform into a delicate yet solid curtain, blocking exit to the %s!&n\r\n",
+			dirs[exit_dir]);
 		send_to_room(buf1, ch->in_room);
-		snprintf(buf1, MAX_STRING_LENGTH, "&+LA thin &+gdragonscale&+L curtain magically assembles to the %s!&n\r\n", dirs[rev_dir[exit_dir]]);
+		snprintf(buf1, MAX_STRING_LENGTH,
+			 "&+LA thin &+gdragonscale&+L curtain magically assembles to the %s!&n\r\n",
+			 dirs[rev_dir[exit_dir]]);
 		send_to_room(buf1, (world[ch->in_room].dir_option[exit_dir])->to_room);
 
 		if (corpse)
@@ -2787,7 +3029,7 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, int type, P_char tar_c
 void spell_compact_corpse(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	P_obj pile, content;
-	char  buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 
 	if (obj->type != ITEM_CORPSE)
 	{
@@ -2810,7 +3052,9 @@ void spell_compact_corpse(int level, P_char ch, char *arg, int type, P_char vict
 	{
 		pile->value[CORPSE_LEVEL] = obj->value[CORPSE_LEVEL];
 
-		snprintf(buf, MAX_STRING_LENGTH, "&+WCrunching&n sounds are heard as $p collapses into %s.", OBJ_SHORT(pile));
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+WCrunching&n sounds are heard as $p collapses into %s.",
+			 OBJ_SHORT(pile));
 		act(buf, FALSE, NULL, obj, NULL, TO_ROOM);
 
 		extract_obj(obj);

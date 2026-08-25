@@ -11,24 +11,24 @@ This copy is for the exclusive use of Duris: Land of the Bloodlust
 #define PLOT_SIZE 11
 #define MAX_PLOTS 11
 
-#define ROOM_TYPE_NONE         0
-#define ROOM_TYPE_DIRT         1
-#define ROOM_TYPE_GRASS        2
-#define ROOM_TYPE_WALL         3
-#define ROOM_TYPE_WATER        4
-#define ROOM_TYPE_FLOOR        5
-#define ROOM_TYPE_FARM         6
+#define ROOM_TYPE_NONE 0
+#define ROOM_TYPE_DIRT 1
+#define ROOM_TYPE_GRASS 2
+#define ROOM_TYPE_WALL 3
+#define ROOM_TYPE_WATER 4
+#define ROOM_TYPE_FLOOR 5
+#define ROOM_TYPE_FARM 6
 #define ROOM_TYPE_FARM_PLANTED 7
-#define ROOM_TYPE_ROAD         8
-#define ROOM_TYPE_EXIT         9
-#define ROOM_TYPE_TREE         10
-#define ROOM_TYPE_DOOR_WOOD    11
-#define ROOM_TYPE_DOOR_IRON    12
-#define ROOM_TYPE_MAX          13
+#define ROOM_TYPE_ROAD 8
+#define ROOM_TYPE_EXIT 9
+#define ROOM_TYPE_TREE 10
+#define ROOM_TYPE_DOOR_WOOD 11
+#define ROOM_TYPE_DOOR_IRON 12
+#define ROOM_TYPE_MAX 13
 
-#define HAS_HOME(ch)     (FALSE)
-#define IS_IN_HOUSE(ch)  (FALSE)
-#define IS_IN_HOME(ch)   (FALSE)
+#define HAS_HOME(ch) (FALSE)
+#define IS_IN_HOUSE(ch) (FALSE)
+#define IS_IN_HOME(ch) (FALSE)
 #define GET_CHUNK_IN(ch) (NULL)
 
 struct home_data;
@@ -37,19 +37,19 @@ static home_data *home_list = NULL;
 static home_data *last_home = NULL;
 
 char *room_type_ansi[ROOM_TYPE_MAX] = {
-	"&n",     // NONE
-	"&+y",    // DIRT
-	"&-G",    // GRASS
-	"&+L",    // WALL
-	"&-B",    // WATER
-	"&-Y",    // FLOOR
+	"&n", // NONE
+	"&+y", // DIRT
+	"&-G", // GRASS
+	"&+L", // WALL
+	"&-B", // WATER
+	"&-Y", // FLOOR
 	"&-G&+y", // FARM
 	"&-G&+y", // FARM Planted
-	"&+L+",   // ROAD
+	"&+L+", // ROAD
 	"&-W&+L", // EXIT
-	"&+g",    // TREE
-	"&+y",    // DOOR WOOD
-	"&+L",    // DOOR WOOD
+	"&+g", // TREE
+	"&+y", // DOOR WOOD
+	"&+L", // DOOR WOOD
 };
 
 char *room_types[ROOM_TYPE_MAX] = {
@@ -71,8 +71,8 @@ char *room_types[ROOM_TYPE_MAX] = {
 struct home_room_data
 {
 	room_data *room;
-	int        positionX, positionY;
-	int        room_type = ROOM_TYPE_NONE;
+	int positionX, positionY;
+	int room_type = ROOM_TYPE_NONE;
 };
 
 struct home_plot_data

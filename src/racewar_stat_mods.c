@@ -64,41 +64,41 @@ int set_racewar_stat_mod(int racewar, int stat_affect, int regular_stat, int max
 
 	switch (stat_affect)
 	{
-		case APPLY_STR:
-			racewar_stat_mods[i].Str = regular_stat;
-			break;
+	case APPLY_STR:
+		racewar_stat_mods[i].Str = regular_stat;
+		break;
 
-		case APPLY_DEX:
-			racewar_stat_mods[i].Dex = regular_stat;
-			break;
+	case APPLY_DEX:
+		racewar_stat_mods[i].Dex = regular_stat;
+		break;
 
-		case APPLY_INT:
-			racewar_stat_mods[i].Int = regular_stat;
-			break;
+	case APPLY_INT:
+		racewar_stat_mods[i].Int = regular_stat;
+		break;
 
-		case APPLY_WIS:
-			racewar_stat_mods[i].Wis = regular_stat;
-			break;
+	case APPLY_WIS:
+		racewar_stat_mods[i].Wis = regular_stat;
+		break;
 
-		case APPLY_AGI:
-			racewar_stat_mods[i].Agi = regular_stat;
-			break;
+	case APPLY_AGI:
+		racewar_stat_mods[i].Agi = regular_stat;
+		break;
 
-		case APPLY_CON:
-			racewar_stat_mods[i].Con = regular_stat;
-			break;
+	case APPLY_CON:
+		racewar_stat_mods[i].Con = regular_stat;
+		break;
 
-		case APPLY_POW:
-			racewar_stat_mods[i].Pow = regular_stat;
-			break;
+	case APPLY_POW:
+		racewar_stat_mods[i].Pow = regular_stat;
+		break;
 
-		case APPLY_CHA:
-			racewar_stat_mods[i].Cha = regular_stat;
-			break;
+	case APPLY_CHA:
+		racewar_stat_mods[i].Cha = regular_stat;
+		break;
 
-		case APPLY_LUCK:
-			racewar_stat_mods[i].Luk = regular_stat;
-			break;
+	case APPLY_LUCK:
+		racewar_stat_mods[i].Luk = regular_stat;
+		break;
 	}
 
 	return TRUE;

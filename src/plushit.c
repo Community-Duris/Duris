@@ -143,7 +143,8 @@ static int plushit_available(P_char ch, P_obj weapon)
 	{
 		for (i = 0; i < MAX_OBJ_AFFECT; i++)
 		{
-			if (weapon->affected[i].location == APPLY_HITROLL && (int)weapon->affected[i].modifier > rating)
+			if (weapon->affected[i].location == APPLY_HITROLL &&
+			    (int)weapon->affected[i].modifier > rating)
 				rating = (int)weapon->affected[i].modifier;
 		}
 		if (rating > 5)
@@ -155,7 +156,7 @@ static int plushit_available(P_char ch, P_obj weapon)
 	/* a builder may state the rating outright through bitvector3 */
 	if (ch)
 	{
-		int direct = plushit_required(ch);        /* same bits, other side */
+		int direct = plushit_required(ch); /* same bits, other side */
 
 		if (direct > rating)
 			rating = direct;
@@ -163,7 +164,10 @@ static int plushit_available(P_char ch, P_obj weapon)
 	return rating;
 }
 
-static int silver_required(P_char victim) { return victim && IS_AFFECTED3(victim, AFF3_SILVER); }
+static int silver_required(P_char victim)
+{
+	return victim && IS_AFFECTED3(victim, AFF3_SILVER);
+}
 
 static int silver_available(P_char ch, P_obj weapon)
 {
@@ -190,9 +194,11 @@ int plushit_blocks(P_char ch, P_char victim, P_obj weapon)
 	if (IS_PC(victim) || IS_TRUSTED(ch))
 		return FALSE;
 
-	if (get_property("combat.silver.enforce", 0) && silver_required(victim) && !silver_available(ch, weapon))
+	if (get_property("combat.silver.enforce", 0) && silver_required(victim) &&
+	    !silver_available(ch, weapon))
 	{
-		act("Your blow passes through $N as if $E were not there - silver, and nothing else, will bite.", FALSE, ch, 0, victim, TO_CHAR);
+		act("Your blow passes through $N as if $E were not there - silver, and nothing else, will bite.",
+		    FALSE, ch, 0, victim, TO_CHAR);
 		act("$n's blow passes harmlessly through $N.", TRUE, ch, 0, victim, TO_ROOM);
 		return TRUE;
 	}
@@ -202,8 +208,10 @@ int plushit_blocks(P_char ch, P_char victim, P_obj weapon)
 		need = plushit_required(victim);
 		if (need > 0 && plushit_available(ch, weapon) < need)
 		{
-			act("Your weapon is not enchanted enough to harm $N.", FALSE, ch, 0, victim, TO_CHAR);
-			act("$n's weapon glances off $N without leaving a mark.", TRUE, ch, 0, victim, TO_ROOM);
+			act("Your weapon is not enchanted enough to harm $N.", FALSE, ch, 0, victim,
+			    TO_CHAR);
+			act("$n's weapon glances off $N without leaving a mark.", TRUE, ch, 0,
+			    victim, TO_ROOM);
 			return TRUE;
 		}
 	}

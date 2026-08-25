@@ -6,6 +6,7 @@ logs/log/* on a clean boot.
 
 import re
 from pathlib import Path
+from contract_text import contains, find, index, split_at
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -25,30 +26,33 @@ assert (ROOT / "logs/log/.gitignore").is_file()
 redis_c = (ROOT / "src/redis.c").read_text()
 check = redis_c.split("void redis_check_donation_messages(void)", 1)[1]
 check = check.split("\nvoid ", 1)[0]
-assert "redisGetReply(donation_sub_ctx" not in check
-assert "poll(&pfd, 1, 0)" in check
-assert "redisBufferRead(" in check
-assert "redisGetReplyFromReader(" in check
+assert not contains(check, "redisGetReply(donation_sub_ctx")
+assert contains(check, "poll(&pfd, 1, 0)")
+assert contains(check, "redisBufferRead(")
+assert contains(check, "redisGetReplyFromReader(")
 # src/poll.h shadows <poll.h> through the Makefile's -I. include path.
-assert "#include <sys/poll.h>" in redis_c
+assert contains(redis_c, "#include <sys/poll.h>")
 
 
 # --- account saves must not emit a NULL pid ----------------------------------
 # account_characters.pid is NOT NULL; writing NULL aborted the whole account
 # transaction, discarding the accounts and account_ips writes with it.
 sql_player = (ROOT / "src/sql_player.c").read_text()
-save_chars = sql_player.split("static bool sql_save_account_characters(", 1)[1]
+# Anchor on the definition; the bare signature also matches the prototype.
+save_chars = split_at(
+    sql_player, "static bool sql_save_account_characters(struct acct_entry *acc)\n{", 1
+)[1]
 save_chars = save_chars.split("\nstatic ", 1)[0]
-assert "if (pid <= 0)" in save_chars
-assert "deferring mapping row" in save_chars
-assert '"NULL"' not in save_chars
+assert contains(save_chars, "if (pid <= 0)")
+assert contains(save_chars, "deferring mapping row")
+assert not contains(save_chars, '"NULL"')
 
 
 # --- a missing ban file is a normal state, not a failure ---------------------
 actwiz = (ROOT / "src/actwiz.c").read_text()
 read_ban = actwiz.split("void read_ban_file(void)", 1)[1].split("\nvoid ", 1)[0]
-assert "errno != ENOENT" in read_ban
-assert "#include <errno.h>" in actwiz
+assert contains(read_ban, "errno != ENOENT")
+assert contains(actwiz, "#include <errno.h>")
 
 
 # --- only an owned artifact with a zero timer is worth warning about ---------
@@ -61,8 +65,10 @@ timer_warnings = [
 ]
 assert len(timer_warnings) == 3
 for n in timer_warnings:
-    guard = artifact_lines[n - 1].strip()
-    assert guard in ("if (owned)", "if (new_owned)"), guard
+    # clang-format wraps the logit() call, so the ownership guard sits a couple
+    # of lines above the message rather than immediately before it.
+    window = [line.strip() for line in artifact_lines[max(0, n - 4) : n]]
+    assert any(g in window for g in ("if (owned)", "if (new_owned)")), window
 
 
 # --- MAX_TRADE must cover the largest trade list shipped in world.shp --------
@@ -96,9 +102,9 @@ if shop_file.is_file():
 # obj_to_char() logged "no obj: mob" on every occurrence.
 handler = (ROOT / "src/handler.c").read_text()
 rose = handler.split("P_obj flow = read_object(6107, VIRTUAL);", 1)[1][:400]
-assert "if (flow)" in rose
-assert rose.index("if (flow)") < rose.index("obj_to_char(flow, t_ch);")
-assert rose.index("if (flow)") < rose.index("do_give(t_ch, text, CMD_GIVE);")
+assert contains(rose, "if (flow)")
+assert index(rose, "if (flow)") < index(rose, "obj_to_char(flow, t_ch);")
+assert index(rose, "if (flow)") < index(rose, "do_give(t_ch, text, CMD_GIVE);")
 
 
 print("boot log hygiene contracts passed")

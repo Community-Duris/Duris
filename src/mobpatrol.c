@@ -17,24 +17,24 @@
 #include "spells.h"
 #include "vnum.obj.h"
 
-extern Skill   skills[];
-extern P_desc  descriptor_list;
+extern Skill skills[];
+extern P_desc descriptor_list;
 extern P_index mob_index;
 extern P_index obj_index;
-extern P_room  world;
+extern P_room world;
 // extern char *dirs[];
 extern const struct stat_data stat_factor[];
-extern double                 lfactor[];
-extern float                  fake_sqrt_table[];
-extern int                    MobSpellIndex[MAX_SKILLS];
-extern int                    equipment_pos_table[CUR_MAX_WEAR][3];
-extern int                    no_specials;
-extern int                    spl_table[TOTALLVLS][MAX_CIRCLE];
-extern const int              rev_dir[NUM_EXITS];
-extern struct str_app_type    str_app[];
-extern struct zone_data      *zone_table;
-extern const char            *undead_type[];
-extern struct potion          potion_data[];
+extern double lfactor[];
+extern float fake_sqrt_table[];
+extern int MobSpellIndex[MAX_SKILLS];
+extern int equipment_pos_table[CUR_MAX_WEAR][3];
+extern int no_specials;
+extern int spl_table[TOTALLVLS][MAX_CIRCLE];
+extern const int rev_dir[NUM_EXITS];
+extern struct str_app_type str_app[];
+extern struct zone_data *zone_table;
+extern const char *undead_type[];
+extern struct potion potion_data[];
 
 struct PatrolData
 {
@@ -62,8 +62,8 @@ struct PatrolData
 	// both of these get set, in which case the mob will hunt to
 	// huntCh, and when done (if nothing else to do), will hunt to
 	// huntRoom.
-	P_char huntCh;   // if set, the highest priority hunt
-	int    huntRoom; // lower priority..
+	P_char huntCh; // if set, the highest priority hunt
+	int huntRoom; // lower priority..
 };
 
 #define VALID_PATROL_ROOM(x) (((x) != NOWHERE) && (world[x].sector_type == SECT_ROAD))
@@ -98,8 +98,8 @@ void mobPatrol_SetupNew(P_char ch)
 	// this is the inital call.  setup some stuff...
 	memset(&newData, 0, sizeof(PatrolData));
 	newData.curActivity = PatrolData::PATROL_NOTHING;
-	newData.huntCh      = NULL;
-	newData.huntRoom    = NOWHERE;
+	newData.huntCh = NULL;
+	newData.huntRoom = NOWHERE;
 
 	if (IS_SET(ch->specials.act, ACT_SENTINEL))
 	{
@@ -116,7 +116,8 @@ void mobPatrol_SetupNew(P_char ch)
 	newData.normalSpeed = number(WAIT_SEC, WAIT_SEC * 3);
 	// the first event is always longer than any other.  This gives
 	// the standard mobAct time to put some spells up
-	add_event(event_patrol_move, PULSE_MOBILE * number(1, 4) + number(0, 10), ch, NULL, NULL, 0, &newData, sizeof(PatrolData));
+	add_event(event_patrol_move, PULSE_MOBILE * number(1, 4) + number(0, 10), ch, NULL, NULL, 0,
+		  &newData, sizeof(PatrolData));
 	return;
 }
 
@@ -133,7 +134,8 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
 	// standard mob can act checks..
 	if (!IS_NPC(ch) || IS_IMMOBILE(ch))
 	{ // reset the event and return
-		add_event(event_patrol_move, PULSE_VIOLENCE, ch, vict, obj, 0, huntData, huntData ? sizeof(PatrolData) : 0);
+		add_event(event_patrol_move, PULSE_VIOLENCE, ch, vict, obj, 0, huntData,
+			  huntData ? sizeof(PatrolData) : 0);
 		return;
 	}
 	if (NULL == huntData)
@@ -152,7 +154,8 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
 	{
 		if (huntData->curActivity != PatrolData::PATROL_FIGHTING)
 		{
-			do_yell(ch, "Guards!  Come destroy this trash which threatens our road!", CMD_SHOUT);
+			do_yell(ch, "Guards!  Come destroy this trash which threatens our road!",
+				CMD_SHOUT);
 			huntData->curActivity = PatrolData::PATROL_FIGHTING;
 		}
 	}
@@ -160,7 +163,8 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
 	{
 		huntData->curActivity = PatrolData::PATROL_NOTHING;
 	}
-	if (huntData->curActivity == PatrolData::PATROL_NOTHING) // standard movement, spell casting, etc.
+	if (huntData->curActivity ==
+	    PatrolData::PATROL_NOTHING) // standard movement, spell casting, etc.
 	{
 		if (huntData->dirPref != PatrolData::PATROL_SENTINEL)
 		{
@@ -177,10 +181,14 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
 			else if (!VALID_PATROL_ROOM(ch->in_room))
 			{ // if not in a valid patrolling room - find one!
 				int dummy = 0;
-				dir       = find_first_step(ch->in_room, 0, BFS_CAN_FLY | BFS_BREAK_WALLS | BFS_ROADRANGER | BFS_AVOID_NOMOB, 0, 0, &dummy);
+				dir = find_first_step(ch->in_room, 0,
+						      BFS_CAN_FLY | BFS_BREAK_WALLS |
+							      BFS_ROADRANGER | BFS_AVOID_NOMOB,
+						      0, 0, &dummy);
 				if (dir < 0)
 				{
-					mobsay(ch, "Well, I'm seriously screwed with no way to get back to the road.");
+					mobsay(ch,
+					       "Well, I'm seriously screwed with no way to get back to the road.");
 					die(ch, ch);
 					return;
 				}
@@ -191,16 +199,18 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
 				// starting from the last moved+1, and move to the first one thats
 				// SECT_CITY and in the same zome.
 				int fromdir = rev_dir[ch->only.npc->last_direction];
-				dir         = fromdir;
+				dir = fromdir;
 				do
 				{
-					dir += (huntData->dirPref == PatrolData::PATROL_LEFT ? -1 : 1);
+					dir += (huntData->dirPref == PatrolData::PATROL_LEFT ? -1 :
+											       1);
 					if (dir >= NUM_EXITS)
 						dir = 0;
 					else if (dir < 0)
 						dir = NUM_EXITS - 1;
 
-					if (world[ch->in_room].dir_option[dir] && VALID_PATROL_ROOM(TOROOM(ch->in_room, dir)))
+					if (world[ch->in_room].dir_option[dir] &&
+					    VALID_PATROL_ROOM(TOROOM(ch->in_room, dir)))
 						break;
 				} while (dir != fromdir);
 			}
@@ -221,5 +231,6 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
 			}
 		}
 	}
-	add_event(event_patrol_move, huntData->normalSpeed, ch, vict, obj, 0, huntData, sizeof(PatrolData));
+	add_event(event_patrol_move, huntData->normalSpeed, ch, vict, obj, 0, huntData,
+		  sizeof(PatrolData));
 }

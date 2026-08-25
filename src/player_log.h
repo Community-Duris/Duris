@@ -6,30 +6,36 @@
 #include <vector>
 using namespace std;
 
-#define PUBLIC_LOG_SIZE  600
+#define PUBLIC_LOG_SIZE 600
 #define PRIVATE_LOG_SIZE 200
 
-#define LOG_NONE    -1
-#define LOG_PUBLIC  0
+#define LOG_NONE -1
+#define LOG_PUBLIC 0
 #define LOG_PRIVATE 1
-#define NUM_LOGS    2
+#define NUM_LOGS 2
 
-#define ITERATE_LOG(ch, log) for (PlayerLog::iterator _log_iter = GET_PLAYER_LOG(ch)->begin(log); _log_iter != GET_PLAYER_LOG(ch)->end(log); _log_iter++)
+#define ITERATE_LOG(ch, log)                                                 \
+	for (PlayerLog::iterator _log_iter = GET_PLAYER_LOG(ch)->begin(log); \
+	     _log_iter != GET_PLAYER_LOG(ch)->end(log); _log_iter++)
 
-#define ITERATE_LOG_LIMIT(ch, log, limit) for (PlayerLog::iterator _log_iter = GET_PLAYER_LOG(ch)->begin(log, limit); _log_iter != GET_PLAYER_LOG(ch)->end(log); _log_iter++)
+#define ITERATE_LOG_LIMIT(ch, log, limit)                                           \
+	for (PlayerLog::iterator _log_iter = GET_PLAYER_LOG(ch)->begin(log, limit); \
+	     _log_iter != GET_PLAYER_LOG(ch)->end(log); _log_iter++)
 
-#define ITERATE_LOG_REVERSE(ch, log) for (PlayerLog::reverse_iterator _log_iter = GET_PLAYER_LOG(ch)->rbegin(log); _log_iter != GET_PLAYER_LOG(ch)->rend(log); _log_iter++)
+#define ITERATE_LOG_REVERSE(ch, log)                                                  \
+	for (PlayerLog::reverse_iterator _log_iter = GET_PLAYER_LOG(ch)->rbegin(log); \
+	     _log_iter != GET_PLAYER_LOG(ch)->rend(log); _log_iter++)
 
 #define LOG_MSG() ((_log_iter)->c_str())
 
 class PlayerLog
 {
-public:
+    public:
 	PlayerLog()
 	{
-		log_size[LOG_PUBLIC]      = 0;
-		log_size[LOG_PRIVATE]     = 0;
-		log_max_size[LOG_PUBLIC]  = PUBLIC_LOG_SIZE;
+		log_size[LOG_PUBLIC] = 0;
+		log_size[LOG_PRIVATE] = 0;
+		log_max_size[LOG_PUBLIC] = PUBLIC_LOG_SIZE;
 		log_max_size[LOG_PRIVATE] = PRIVATE_LOG_SIZE;
 	}
 
@@ -66,7 +72,7 @@ public:
 			read_buf.clear();
 
 		list<string> strings;
-		int          size = 0;
+		int size = 0;
 		for (reverse_iterator it = rbegin(log); it != rend(log); it++)
 		{
 			size += it->length();
@@ -76,7 +82,8 @@ public:
 			strings.push_back(*it);
 		}
 
-		for (list<string>::reverse_iterator it = strings.rbegin(); it != strings.rend(); it++)
+		for (list<string>::reverse_iterator it = strings.rbegin(); it != strings.rend();
+		     it++)
 		{
 			read_buf += (*it);
 		}
@@ -102,7 +109,7 @@ public:
 		int offset = log_size[log] - limit;
 
 		list<string>::iterator it;
-		int                    i = 0;
+		int i = 0;
 		for (it = logs[log].begin(); it != logs[log].end() && i < offset; it++, i++)
 			;
 
@@ -130,7 +137,7 @@ public:
 		return logs[log].rend();
 	}
 
-private:
+    private:
 	void check_log_index(int log)
 	{
 		if (log < 0 || log >= NUM_LOGS)
@@ -141,9 +148,9 @@ private:
 	}
 
 	list<string> logs[NUM_LOGS];
-	int          log_size[NUM_LOGS];
-	int          log_max_size[NUM_LOGS];
-	string       read_buf;
+	int log_size[NUM_LOGS];
+	int log_max_size[NUM_LOGS];
+	string read_buf;
 };
 
 #endif // __PLAYER_LOG_H__

@@ -38,11 +38,11 @@
 #include "studioproclib.h"
 
 extern P_index obj_index;
-extern P_room  world;
+extern P_room world;
 
 /* defined in specs.library.c */
 extern char *proclib_getNext_string(char *source, char *nextString);
-extern int   proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument);
+extern int proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument);
 
 /* ------------------------------------------------------------------ */
 /* sayresponse: 'keywords' 'reply text'                                */
@@ -50,8 +50,8 @@ extern int   proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument);
 
 char *proclibobj_parse_sayresponse(char *argument)
 {
-	char  arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
-	char  params[MAX_STRING_LENGTH * 2 + 2];
+	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
+	char params[MAX_STRING_LENGTH * 2 + 2];
 	char *pRet = NULL;
 
 	argument = proclib_getNext_string(argument, arg1);
@@ -75,11 +75,11 @@ char *proclibobj_parse_sayresponse(char *argument)
 int proclibobj_sayresponse(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	struct extra_descr_data *ed;
-	char                     low[MAX_STRING_LENGTH];
-	int                      room = -1, li, replied = FALSE;
+	char low[MAX_STRING_LENGTH];
+	int room = -1, li, replied = FALSE;
 
 	if (cmd == CMD_SET_PERIODIC)
-		return FALSE;                        /* command-driven only */
+		return FALSE; /* command-driven only */
 	if (cmd != CMD_SAY || !obj || !ch || !argument || !*argument)
 		return FALSE;
 
@@ -98,13 +98,14 @@ int proclibobj_sayresponse(P_obj obj, P_char ch, int cmd, char *argument)
 
 	for (ed = obj->ex_description; ed; ed = ed->next)
 	{
-		char       *delim;
-		char        kw[MAX_INPUT_LENGTH];
+		char *delim;
+		char kw[MAX_INPUT_LENGTH];
 		const char *p;
-		int         hit = FALSE, k;
-		char        buf[MAX_STRING_LENGTH];
+		int hit = FALSE, k;
+		char buf[MAX_STRING_LENGTH];
 
-		if (!ed->keyword || !ed->description || strn_cmp(ed->keyword, "_proclib_sayresponse", 20))
+		if (!ed->keyword || !ed->description ||
+		    strn_cmp(ed->keyword, "_proclib_sayresponse", 20))
 			continue;
 
 		delim = strchr(ed->description, '\xFF');
@@ -125,7 +126,8 @@ int proclibobj_sayresponse(P_obj obj, P_char ch, int cmd, char *argument)
 		if (!hit)
 			continue;
 
-		snprintf(buf, sizeof(buf) - 3, "%s replies, '%s'", obj->short_description ? obj->short_description : "something", delim + 1);
+		snprintf(buf, sizeof(buf) - 3, "%s replies, '%s'",
+			 obj->short_description ? obj->short_description : "something", delim + 1);
 		CAP(buf);
 		strcat(buf, "\r\n");
 		send_to_room(buf, room);
@@ -140,8 +142,8 @@ int proclibobj_sayresponse(P_obj obj, P_char ch, int cmd, char *argument)
 
 char *proclibobj_parse_transporter(char *argument)
 {
-	char  arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
-	char  params[MAX_STRING_LENGTH + 16];
+	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
+	char params[MAX_STRING_LENGTH + 16];
 	char *pRet = NULL;
 
 	argument = proclib_getNext_string(argument, arg1);
@@ -164,11 +166,11 @@ char *proclibobj_parse_transporter(char *argument)
 int proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	struct extra_descr_data *ed;
-	char                     word[MAX_INPUT_LENGTH];
-	int                      was_in;
+	char word[MAX_INPUT_LENGTH];
+	int was_in;
 
 	if (cmd == CMD_SET_PERIODIC)
-		return FALSE;                        /* command-driven only */
+		return FALSE; /* command-driven only */
 	if (cmd != CMD_ENTER || !obj || !ch || !argument)
 		return FALSE;
 
@@ -183,10 +185,11 @@ int proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument)
 	for (ed = obj->ex_description; ed; ed = ed->next)
 	{
 		char *delim;
-		char  kw[MAX_INPUT_LENGTH];
-		int   klen, rnum;
+		char kw[MAX_INPUT_LENGTH];
+		int klen, rnum;
 
-		if (!ed->keyword || !ed->description || strn_cmp(ed->keyword, "_proclib_transporter", 20))
+		if (!ed->keyword || !ed->description ||
+		    strn_cmp(ed->keyword, "_proclib_transporter", 20))
 			continue;
 
 		delim = strchr(ed->description, '\xFF');
@@ -204,7 +207,9 @@ int proclibobj_transporter(P_obj obj, P_char ch, int cmd, char *argument)
 		rnum = real_room(atoi(delim + 1));
 		if (rnum < 0)
 		{
-			logit(LOG_STATUS, "proclib transporter: obj %d keyword '%s' leads to missing room %d", obj_index[obj->R_num].virtual_number, kw, atoi(delim + 1));
+			logit(LOG_STATUS,
+			      "proclib transporter: obj %d keyword '%s' leads to missing room %d",
+			      obj_index[obj->R_num].virtual_number, kw, atoi(delim + 1));
 			send_to_char("It doesn't seem to lead anywhere.\r\n", ch);
 			return TRUE;
 		}
@@ -284,9 +289,9 @@ struct proclib_chain_ent
 	int rnum;
 	int (*prev)(P_obj, P_char, int, char *);
 };
-static struct proclib_chain_ent *proclib_chain     = NULL;
-static int                       proclib_chain_top = 0;
-static int                       proclib_chain_cap = 0;
+static struct proclib_chain_ent *proclib_chain = NULL;
+static int proclib_chain_top = 0;
+static int proclib_chain_cap = 0;
 
 void proclib_chain_install(int rnum, int (*prev)(P_obj, P_char, int, char *))
 {
@@ -296,16 +301,16 @@ void proclib_chain_install(int rnum, int (*prev)(P_obj, P_char, int, char *))
 		return;
 	for (i = 0; i < proclib_chain_top; i++)
 		if (proclib_chain[i].rnum == rnum)
-			return;                       /* already chained - never double-wrap */
+			return; /* already chained - never double-wrap */
 	if (proclib_chain_top == proclib_chain_cap)
 	{
 		int newcap = proclib_chain_cap ? proclib_chain_cap * 2 : 32;
 		struct proclib_chain_ent *grown =
-		    (struct proclib_chain_ent *)realloc(proclib_chain, newcap * sizeof(*grown));
+			(struct proclib_chain_ent *)realloc(proclib_chain, newcap * sizeof(*grown));
 
 		if (!grown)
-			return;                       /* out of memory: leave the incumbent alone */
-		proclib_chain     = grown;
+			return; /* out of memory: leave the incumbent alone */
+		proclib_chain = grown;
 		proclib_chain_cap = newcap;
 	}
 	proclib_chain[proclib_chain_top].rnum = rnum;

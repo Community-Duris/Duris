@@ -36,49 +36,79 @@
 /*
  * external variables
  */
-extern char                *spells[];
-extern Skill                skills[];
+extern char *spells[];
+extern Skill skills[];
 extern struct material_data materials[];
-extern P_char               character_list;
-extern P_desc               descriptor_list;
-extern P_index              mob_index;
-extern P_index              obj_index;
-extern P_obj                object_list;
-extern P_room               world;
-extern char                 debug_mode;
-extern const char          *race_types[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern char debug_mode;
+extern const char *race_types[];
 
 // extern const int material_absorbtion[][];
 extern const struct stat_data stat_factor[];
-extern float                  fake_sqrt_table[];
-extern int                    pulse;
-extern int                    arena_hometown_location[];
-extern struct arena_data      arena;
-extern struct agi_app_type    agi_app[];
-extern struct dex_app_type    dex_app[];
-extern struct message_list    fight_messages[];
-extern struct str_app_type    str_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone_table;
+extern float fake_sqrt_table[];
+extern int pulse;
+extern int arena_hometown_location[];
+extern struct arena_data arena;
+extern struct agi_app_type agi_app[];
+extern struct dex_app_type dex_app[];
+extern struct message_list fight_messages[];
+extern struct str_app_type str_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone_table;
 
 P_obj set_encrust_affect(P_obj obj, int proc);
 
 struct potion potion_data[] = {
-	{SPELL_GREATER_LIVING_STONE, 51, {LIVING_STONE, FAERIE_DUST, DRAGONS_BLOOD, BONE}, FIRST_POTION_VIRTUAL},
-	{SPELL_STRONG_ACID, 41, {BONE, DRAGONS_BLOOD, NIGHTSHADE, GREEN_HERB, LIVING_STONE}, FIRST_POTION_VIRTUAL + 3},
-	{SPELL_ENTANGLE, 41, {BONE, GREEN_HERB, GARLIC, MANDRAKE_ROOT}, FIRST_POTION_VIRTUAL + 4},
-	{SPELL_GLASS_BOMB, 36, {MANDRAKE_ROOT, GARLIC, GREEN_HERB, DRAGONS_BLOOD, NIGHTSHADE}, FIRST_POTION_VIRTUAL + 5},
-	{SPELL_FLY, 36, {MANDRAKE_ROOT, GARLIC, GREEN_HERB, FAERIE_DUST, NIGHTSHADE}, FIRST_POTION_VIRTUAL + 6},
-	{SPELL_NAPALM, 31, {GARLIC, DRAGONS_BLOOD, MANDRAKE_ROOT, NIGHTSHADE}, FIRST_POTION_VIRTUAL + 7},
-	{SPELL_FEEBLEMIND, 31, {GARLIC, GREEN_HERB, FAERIE_DUST, NIGHTSHADE}, FIRST_POTION_VIRTUAL + 8},
-	{SPELL_GREASE, 26, {GARLIC, DRAGONS_BLOOD, GREEN_HERB, NIGHTSHADE}, FIRST_POTION_VIRTUAL + 9},
-	{SPELL_LIVING_STONE, 26, {LIVING_STONE, FAERIE_DUST, DRAGONS_BLOOD, MANDRAKE_ROOT}, FIRST_POTION_VIRTUAL + 11},
-	{SPELL_SLOW, 21, {DRAGONS_BLOOD, FAERIE_DUST, GREEN_HERB, NIGHTSHADE}, FIRST_POTION_VIRTUAL + 13},
-	{SPELL_WITHER, 16, {NIGHTSHADE, GREEN_HERB, MANDRAKE_ROOT}, FIRST_POTION_VIRTUAL + 15},
-	{SPELL_DISPEL_MAGIC, 11, {NIGHTSHADE, GARLIC, MANDRAKE_ROOT}, FIRST_POTION_VIRTUAL + 16},
-	{SPELL_FAERIE_FIRE, 11, {GREEN_HERB, GARLIC, FAERIE_DUST}, FIRST_POTION_VIRTUAL + 17},
-	{SPELL_NITROGEN, 6, {GREEN_HERB, GARLIC}, FIRST_POTION_VIRTUAL + 18},
-	{0}
+	{ SPELL_GREATER_LIVING_STONE,
+	  51,
+	  { LIVING_STONE, FAERIE_DUST, DRAGONS_BLOOD, BONE },
+	  FIRST_POTION_VIRTUAL },
+	{ SPELL_STRONG_ACID,
+	  41,
+	  { BONE, DRAGONS_BLOOD, NIGHTSHADE, GREEN_HERB, LIVING_STONE },
+	  FIRST_POTION_VIRTUAL + 3 },
+	{ SPELL_ENTANGLE,
+	  41,
+	  { BONE, GREEN_HERB, GARLIC, MANDRAKE_ROOT },
+	  FIRST_POTION_VIRTUAL + 4 },
+	{ SPELL_GLASS_BOMB,
+	  36,
+	  { MANDRAKE_ROOT, GARLIC, GREEN_HERB, DRAGONS_BLOOD, NIGHTSHADE },
+	  FIRST_POTION_VIRTUAL + 5 },
+	{ SPELL_FLY,
+	  36,
+	  { MANDRAKE_ROOT, GARLIC, GREEN_HERB, FAERIE_DUST, NIGHTSHADE },
+	  FIRST_POTION_VIRTUAL + 6 },
+	{ SPELL_NAPALM,
+	  31,
+	  { GARLIC, DRAGONS_BLOOD, MANDRAKE_ROOT, NIGHTSHADE },
+	  FIRST_POTION_VIRTUAL + 7 },
+	{ SPELL_FEEBLEMIND,
+	  31,
+	  { GARLIC, GREEN_HERB, FAERIE_DUST, NIGHTSHADE },
+	  FIRST_POTION_VIRTUAL + 8 },
+	{ SPELL_GREASE,
+	  26,
+	  { GARLIC, DRAGONS_BLOOD, GREEN_HERB, NIGHTSHADE },
+	  FIRST_POTION_VIRTUAL + 9 },
+	{ SPELL_LIVING_STONE,
+	  26,
+	  { LIVING_STONE, FAERIE_DUST, DRAGONS_BLOOD, MANDRAKE_ROOT },
+	  FIRST_POTION_VIRTUAL + 11 },
+	{ SPELL_SLOW,
+	  21,
+	  { DRAGONS_BLOOD, FAERIE_DUST, GREEN_HERB, NIGHTSHADE },
+	  FIRST_POTION_VIRTUAL + 13 },
+	{ SPELL_WITHER, 16, { NIGHTSHADE, GREEN_HERB, MANDRAKE_ROOT }, FIRST_POTION_VIRTUAL + 15 },
+	{ SPELL_DISPEL_MAGIC, 11, { NIGHTSHADE, GARLIC, MANDRAKE_ROOT }, FIRST_POTION_VIRTUAL + 16 },
+	{ SPELL_FAERIE_FIRE, 11, { GREEN_HERB, GARLIC, FAERIE_DUST }, FIRST_POTION_VIRTUAL + 17 },
+	{ SPELL_NITROGEN, 6, { GREEN_HERB, GARLIC }, FIRST_POTION_VIRTUAL + 18 },
+	{ 0 }
 };
 
 struct poison
@@ -91,40 +121,74 @@ struct poison
 };
 
 struct poison poison_data[] = {
-	{POISON_MADNESS, 51, 100, {VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_DRAGON_BLOOD, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_MANGROVE_ROOT, VOBJ_FORAGE_PURPLE_MUSHROOMS, VOBJ_FORAGE_PINK_MUSHROOMS}, VOBJ_POISON_VIAL_MADNESS},
-	{POISON_SLOWNESS, 30, 70, {VOBJ_FORAGE_FAERIE_DUST, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_DRAGON_BLOOD, VOBJ_FORAGE_BLUE_MUSHROOMS}, VOBJ_POISON_VIAL_SLOWNESS},
-	{POISON_MOVELEAK, 30, 50, {VOBJ_FORAGE_WIREGRASS, VOBJ_FORAGE_GREEN_MUSHROOMS, VOBJ_FORAGE_TREEROOT_MOSS}, VOBJ_POISON_VIAL_MOVELEAK},
-	{POISON_HEART_TOXIN, 36, 80, {VOBJ_FORAGE_NIGHTSHADE, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_DRAGON_BLOOD, VOBJ_FORAGE_FAERIE_DUST}, VOBJ_POISON_VIAL_HEART_TOXIN},
-	{POISON_NEUROTOXIN, 30, 20, {VOBJ_FORAGE_MANGROVE_ROOT, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_CRABAPPLES}, VOBJ_POISON_VIAL_NEUROTOXIN},
-	{POISON_WEAKNESS, 30, 1, {VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_LICHEN, VOBJ_FORAGE_BLUEBERRIES}, VOBJ_POISON_VIAL_WEAKNESS},
-	{POISON_LIFELEAK, 30, 1, {VOBJ_FORAGE_FOREST_TOADSTOOL, VOBJ_FORAGE_RASPBERRIES}, VOBJ_POISON_VIAL_LIFELEAK},
-	{0}
+	{ POISON_MADNESS,
+	  51,
+	  100,
+	  { VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_DRAGON_BLOOD, VOBJ_FORAGE_MANDRAKE,
+	    VOBJ_FORAGE_MANGROVE_ROOT, VOBJ_FORAGE_PURPLE_MUSHROOMS, VOBJ_FORAGE_PINK_MUSHROOMS },
+	  VOBJ_POISON_VIAL_MADNESS },
+	{ POISON_SLOWNESS,
+	  30,
+	  70,
+	  { VOBJ_FORAGE_FAERIE_DUST, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_DRAGON_BLOOD,
+	    VOBJ_FORAGE_BLUE_MUSHROOMS },
+	  VOBJ_POISON_VIAL_SLOWNESS },
+	{ POISON_MOVELEAK,
+	  30,
+	  50,
+	  { VOBJ_FORAGE_WIREGRASS, VOBJ_FORAGE_GREEN_MUSHROOMS, VOBJ_FORAGE_TREEROOT_MOSS },
+	  VOBJ_POISON_VIAL_MOVELEAK },
+	{ POISON_HEART_TOXIN,
+	  36,
+	  80,
+	  { VOBJ_FORAGE_NIGHTSHADE, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_DRAGON_BLOOD,
+	    VOBJ_FORAGE_FAERIE_DUST },
+	  VOBJ_POISON_VIAL_HEART_TOXIN },
+	{ POISON_NEUROTOXIN,
+	  30,
+	  20,
+	  { VOBJ_FORAGE_MANGROVE_ROOT, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_CRABAPPLES },
+	  VOBJ_POISON_VIAL_NEUROTOXIN },
+	{ POISON_WEAKNESS,
+	  30,
+	  1,
+	  { VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_LICHEN, VOBJ_FORAGE_BLUEBERRIES },
+	  VOBJ_POISON_VIAL_WEAKNESS },
+	{ POISON_LIFELEAK,
+	  30,
+	  1,
+	  { VOBJ_FORAGE_FOREST_TOADSTOOL, VOBJ_FORAGE_RASPBERRIES },
+	  VOBJ_POISON_VIAL_LIFELEAK },
+	{ 0 }
 };
 
-int basic_ingredients[] = {
-	VOBJ_FORAGE_NIGHTSHADE, VOBJ_FORAGE_MANDRAKE, VOBJ_FORAGE_GARLIC, VOBJ_FORAGE_FAERIE_DUST, VOBJ_FORAGE_DRAGON_BLOOD, VOBJ_FORAGE_GREEN_HERB, VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_HUMAN_BONE};
+int basic_ingredients[] = { VOBJ_FORAGE_NIGHTSHADE,    VOBJ_FORAGE_MANDRAKE,
+			    VOBJ_FORAGE_GARLIC,	       VOBJ_FORAGE_FAERIE_DUST,
+			    VOBJ_FORAGE_DRAGON_BLOOD,  VOBJ_FORAGE_GREEN_HERB,
+			    VOBJ_FORAGE_STRANGE_STONE, VOBJ_FORAGE_HUMAN_BONE };
 
-const char *encrust_color_list[] = {"", "&+G", "&+R", "&+Y", "&+B", "&+L", "&+M", "&+r", "&+b", "&+m", " "};
+const char *encrust_color_list[] = { "",    "&+G", "&+R", "&+Y", "&+B", "&+L",
+				     "&+M", "&+r", "&+b", "&+m", " " };
 
-#define MAX_COMPONENTS_FOR_WEAPON          5
-#define MAX_MATERIAL_QUALITY               5
+#define MAX_COMPONENTS_FOR_WEAPON 5
+#define MAX_MATERIAL_QUALITY 5
 #define WEAPON_QUALITY_DESCRIPTIONS_NUMBER 7
-#define MIN_WEAPON_HARDINESS               3
-#define MAX_BASE_POWER                     12
+#define MIN_WEAPON_HARDINESS 3
+#define MAX_BASE_POWER 12
 // this is the main parameter to tweak the dice power of forged weapons
 // 12 == 4d5, the base power is increased by weapon type modifiers and
 // forging the best weapon for the given material type
 
-#define NO_WEAPON  1
-#define LONGSWORD  2
+#define NO_WEAPON 1
+#define LONGSWORD 2
 #define SHORTSWORD 4
-#define MACE       8
-#define DAGGER     16
-#define STAFF      32
-#define HAMMER     64
-#define AXE        128
+#define MACE 8
+#define DAGGER 16
+#define STAFF 32
+#define HAMMER 64
+#define AXE 128
 
-#define WHIP               512
+#define WHIP 512
 #define MIN_ELASTIC_WEAPON WHIP
 
 extern P_index obj_index;
@@ -132,91 +196,93 @@ extern P_index obj_index;
 struct weapon_type
 {
 	char *name;
-	int   type;
-	int   number_of_components;
-	int   preferred_dice;
-	int   power_mod;
-	int   magic_mod;
-	int   damage_type;
+	int type;
+	int number_of_components;
+	int preferred_dice;
+	int power_mod;
+	int magic_mod;
+	int damage_type;
 };
 
 struct weapon_type crafted_weapon_types[] = {
-	{"longsword", LONGSWORD, 3, 6, 4, 0, WEAPON_LONGSWORD},
-	{"shortsword", SHORTSWORD, 2, 5, 2, 1, WEAPON_SHORTSWORD},
-	{"axe", AXE, 3, 10, 5, 0, WEAPON_AXE},
-	{"mace", MACE, 2, 4, 1, 2, WEAPON_MACE},
-	{"dagger", DAGGER, 2, 4, 2, 2, WEAPON_DAGGER},
-	{"staff", STAFF, 2, 4, -4, 4, WEAPON_STAFF},
-	{"hammer", HAMMER, 2, 10, 3, 1, WEAPON_HAMMER},
-	{"whip", WHIP, 2, 6, 1, 3, WEAPON_WHIP},
-	{0}
+	{ "longsword", LONGSWORD, 3, 6, 4, 0, WEAPON_LONGSWORD },
+	{ "shortsword", SHORTSWORD, 2, 5, 2, 1, WEAPON_SHORTSWORD },
+	{ "axe", AXE, 3, 10, 5, 0, WEAPON_AXE },
+	{ "mace", MACE, 2, 4, 1, 2, WEAPON_MACE },
+	{ "dagger", DAGGER, 2, 4, 2, 2, WEAPON_DAGGER },
+	{ "staff", STAFF, 2, 4, -4, 4, WEAPON_STAFF },
+	{ "hammer", HAMMER, 2, 10, 3, 1, WEAPON_HAMMER },
+	{ "whip", WHIP, 2, 6, 1, 3, WEAPON_WHIP },
+	{ 0 }
 };
 
 struct material
 {
-	int   hardiness;
-	int   magic_power;
-	int   preferred_weapon;
+	int hardiness;
+	int magic_power;
+	int preferred_weapon;
 	char *adjective;
 };
 
-char *weapon_quality[WEAPON_QUALITY_DESCRIPTIONS_NUMBER] = {"a broken", "a cracked", "a primitive", "a plain", "a decent", "a fine", "an excellent"};
+char *weapon_quality[WEAPON_QUALITY_DESCRIPTIONS_NUMBER] = {
+	"a broken", "a cracked", "a primitive", "a plain", "a decent", "a fine", "an excellent"
+};
 
 struct material material_parameters[NUMB_MATERIALS] = {
-	{0, 0}, //"UNDEFINED",
-	{0, 0, NO_WEAPON}, //"NONSUBSTANTIAL",
-	{0, 1, WHIP}, //"FLESH",
-	{-2, 1, WHIP}, //"CLOTH",
-	{-4, 1}, //"BARK",
-	{0, 1, 0, "&+ywooden&n"}, //"SOFTWOOD",
-	{1, 1, STAFF, "&+ywooden&n"}, //"HARDWOOD",
-	{-2, 1, NO_WEAPON}, //"SILICON",
-	{2, 2, DAGGER}, //"CRYSTAL",
-	{-4, 1, NO_WEAPON}, //"CERAMIC",
-	{0, 1, MACE}, //"BONE",
-	{1, 1, HAMMER}, //"STONE",
-	{0, 1, WHIP}, //"HIDE",
-	{1, 1, WHIP}, //"LEATHER",
-	{2, 1, WHIP}, //"CURED_LEATHER",
-	{1, 1, MACE}, //"IRON",
-	{2, 1, LONGSWORD}, //"STEEL",
-	{1, 1, MACE}, //"BRASS",
-	{3, 3, LONGSWORD | SHORTSWORD}, //"MITHRIL",
-	{3, 2, LONGSWORD | SHORTSWORD}, //"ADAMANTIUM",
-	{1, 1, MACE}, //"BRONZE",
-	{0, 1, MACE}, //"COPPER",
-	{0, 2, SHORTSWORD}, //"SILVER",
-	{0, 2, SHORTSWORD}, //"ELECTRUM",
-	{0, 2, SHORTSWORD, "&+Ygolden&n"}, //"GOLD",
-	{1, 2, SHORTSWORD}, //"PLATINUM",
-	{1, 2, DAGGER}, //"GEM",
-	{3, 2, LONGSWORD | SHORTSWORD}, //"DIAMOND",
-	{-10, 1, WHIP}, //"PAPER",
-	{-10, 1, NO_WEAPON}, //"PARCHMENT",
-	{0, 1, NO_WEAPON}, //"LEAVES",
-	{1, 2, DAGGER | SHORTSWORD}, //"RUBY",
-	{1, 3, DAGGER | SHORTSWORD}, //"EMERALD",
-	{1, 2, DAGGER | SHORTSWORD}, //"SAPPHIRE",
-	{-4, 3}, //"IVORY",
-	{3, 4, NO_WEAPON}, //"DRAGONSCALE",
-	{1, 2, DAGGER}, //"OBSIDIAN",
-	{1, 2, HAMMER}, //"GRANITE",
-	{-2, 2}, //"MARBLE",
-	{-2, 2}, //"LIMESTONE",
-	{0, 0, NO_WEAPON}, //"LIQUID",
-	{-5, 1}, //"BAMBOO",
-	{-6, 2, NO_WEAPON}, //"REEDS",
-	{-4, 2, WHIP}, //"HEMP",
-	{0, 0, NO_WEAPON}, //"GLASSTEEL",
-	{0, 1, NO_WEAPON}, //"EGGSHELL",
-	{0, 1, NO_WEAPON}, //"CHITINOUS",
-	{0, 0, NO_WEAPON}, //"REPTILESCALE",
-	{0, 0, NO_WEAPON}, //"GENERICFOOD",
-	{-4, 0}, //"RUBBER",
-	{0, 2, NO_WEAPON}, //"FEATHER",
-	{0, 2, NO_WEAPON}, //"WAX",
-	{-8, 4}, //"PEARL",
-	{2, 1, LONGSWORD}  //"TIN"
+	{ 0, 0 }, //"UNDEFINED",
+	{ 0, 0, NO_WEAPON }, //"NONSUBSTANTIAL",
+	{ 0, 1, WHIP }, //"FLESH",
+	{ -2, 1, WHIP }, //"CLOTH",
+	{ -4, 1 }, //"BARK",
+	{ 0, 1, 0, "&+ywooden&n" }, //"SOFTWOOD",
+	{ 1, 1, STAFF, "&+ywooden&n" }, //"HARDWOOD",
+	{ -2, 1, NO_WEAPON }, //"SILICON",
+	{ 2, 2, DAGGER }, //"CRYSTAL",
+	{ -4, 1, NO_WEAPON }, //"CERAMIC",
+	{ 0, 1, MACE }, //"BONE",
+	{ 1, 1, HAMMER }, //"STONE",
+	{ 0, 1, WHIP }, //"HIDE",
+	{ 1, 1, WHIP }, //"LEATHER",
+	{ 2, 1, WHIP }, //"CURED_LEATHER",
+	{ 1, 1, MACE }, //"IRON",
+	{ 2, 1, LONGSWORD }, //"STEEL",
+	{ 1, 1, MACE }, //"BRASS",
+	{ 3, 3, LONGSWORD | SHORTSWORD }, //"MITHRIL",
+	{ 3, 2, LONGSWORD | SHORTSWORD }, //"ADAMANTIUM",
+	{ 1, 1, MACE }, //"BRONZE",
+	{ 0, 1, MACE }, //"COPPER",
+	{ 0, 2, SHORTSWORD }, //"SILVER",
+	{ 0, 2, SHORTSWORD }, //"ELECTRUM",
+	{ 0, 2, SHORTSWORD, "&+Ygolden&n" }, //"GOLD",
+	{ 1, 2, SHORTSWORD }, //"PLATINUM",
+	{ 1, 2, DAGGER }, //"GEM",
+	{ 3, 2, LONGSWORD | SHORTSWORD }, //"DIAMOND",
+	{ -10, 1, WHIP }, //"PAPER",
+	{ -10, 1, NO_WEAPON }, //"PARCHMENT",
+	{ 0, 1, NO_WEAPON }, //"LEAVES",
+	{ 1, 2, DAGGER | SHORTSWORD }, //"RUBY",
+	{ 1, 3, DAGGER | SHORTSWORD }, //"EMERALD",
+	{ 1, 2, DAGGER | SHORTSWORD }, //"SAPPHIRE",
+	{ -4, 3 }, //"IVORY",
+	{ 3, 4, NO_WEAPON }, //"DRAGONSCALE",
+	{ 1, 2, DAGGER }, //"OBSIDIAN",
+	{ 1, 2, HAMMER }, //"GRANITE",
+	{ -2, 2 }, //"MARBLE",
+	{ -2, 2 }, //"LIMESTONE",
+	{ 0, 0, NO_WEAPON }, //"LIQUID",
+	{ -5, 1 }, //"BAMBOO",
+	{ -6, 2, NO_WEAPON }, //"REEDS",
+	{ -4, 2, WHIP }, //"HEMP",
+	{ 0, 0, NO_WEAPON }, //"GLASSTEEL",
+	{ 0, 1, NO_WEAPON }, //"EGGSHELL",
+	{ 0, 1, NO_WEAPON }, //"CHITINOUS",
+	{ 0, 0, NO_WEAPON }, //"REPTILESCALE",
+	{ 0, 0, NO_WEAPON }, //"GENERICFOOD",
+	{ -4, 0 }, //"RUBBER",
+	{ 0, 2, NO_WEAPON }, //"FEATHER",
+	{ 0, 2, NO_WEAPON }, //"WAX",
+	{ -8, 4 }, //"PEARL",
+	{ 2, 1, LONGSWORD } //"TIN"
 };
 
 struct weapon_type *lookup_weapon(char *name)
@@ -237,7 +303,7 @@ struct weapon_type *lookup_weapon(char *name)
 int get_components(P_char ch, P_obj buffer[], int vnum, int max_components)
 {
 	P_obj t_obj, next_obj;
-	int   found = 0;
+	int found = 0;
 
 	for (t_obj = ch->carrying; t_obj && found < max_components; t_obj = next_obj)
 	{
@@ -280,7 +346,6 @@ void set_keywords(P_obj t_obj, const char *newKeys)
 
 void set_short_description(P_obj t_obj, const char *newShort)
 {
-
 	if ((t_obj->str_mask & STRUNG_DESC2) && t_obj->short_description)
 	{
 		FREE(t_obj->short_description);
@@ -359,11 +424,11 @@ int get_id_for(P_obj t_obj)
 
 int got_all_ingredients(P_char ch, int required[])
 {
-	int   found[MAX_INGREDIENTS + 1];
-	int   i;
-	int   temp;
+	int found[MAX_INGREDIENTS + 1];
+	int i;
+	int temp;
 	P_obj t_obj, next_obj;
-	int   object_id;
+	int object_id;
 
 	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
 	{
@@ -372,7 +437,7 @@ int got_all_ingredients(P_char ch, int required[])
 
 	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
 	{
-		next_obj  = t_obj->next_content;
+		next_obj = t_obj->next_content;
 		object_id = get_id_for(t_obj);
 
 		for (i = 0; i < MAX_INGREDIENTS + 1; i++)
@@ -400,11 +465,11 @@ int got_all_ingredients(P_char ch, int required[])
 
 int got_all_poison_ingredients(P_char ch, int required[])
 {
-	int   found[MAX_INGREDIENTS + 1];
-	int   i;
-	int   temp;
+	int found[MAX_INGREDIENTS + 1];
+	int i;
+	int temp;
 	P_obj t_obj, next_obj;
-	int   object_id;
+	int object_id;
 
 	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
 	{
@@ -413,7 +478,7 @@ int got_all_poison_ingredients(P_char ch, int required[])
 
 	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
 	{
-		next_obj  = t_obj->next_content;
+		next_obj = t_obj->next_content;
 		object_id = obj_index[t_obj->R_num].virtual_number;
 
 		for (i = 0; i < MAX_INGREDIENTS + 1; i++)
@@ -439,15 +504,15 @@ int got_all_poison_ingredients(P_char ch, int required[])
 
 void extract_used_poison_ingredients(P_char ch, int ingredients[])
 {
-	int   found[MAX_INGREDIENTS + 1];
+	int found[MAX_INGREDIENTS + 1];
 	P_obj used_objs[MAX_INGREDIENTS + 1];
 	P_obj t_obj, next_obj;
-	int   object_id;
-	int   i;
+	int object_id;
+	int i;
 
 	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
 	{
-		found[i]     = ingredients[i];
+		found[i] = ingredients[i];
 		used_objs[i] = NULL;
 	}
 
@@ -461,7 +526,7 @@ void extract_used_poison_ingredients(P_char ch, int ingredients[])
 		{
 			if (found[i] == object_id)
 			{
-				found[i]     = 0;
+				found[i] = 0;
 				used_objs[i] = t_obj;
 				break;
 			}
@@ -479,15 +544,15 @@ void extract_used_poison_ingredients(P_char ch, int ingredients[])
 
 void extract_used_ingredients(P_char ch, int ingredients[])
 {
-	int   found[MAX_INGREDIENTS + 1];
+	int found[MAX_INGREDIENTS + 1];
 	P_obj used_objs[MAX_INGREDIENTS + 1];
 	P_obj t_obj, next_obj;
-	int   object_id;
-	int   i;
+	int object_id;
+	int i;
 
 	for (i = 0; i < MAX_INGREDIENTS + 1; i++)
 	{
-		found[i]     = ingredients[i];
+		found[i] = ingredients[i];
 		used_objs[i] = NULL;
 	}
 
@@ -501,7 +566,7 @@ void extract_used_ingredients(P_char ch, int ingredients[])
 		{
 			if (found[i] == object_id)
 			{
-				found[i]     = 0;
+				found[i] = 0;
 				used_objs[i] = t_obj;
 				break;
 			}
@@ -549,7 +614,7 @@ P_obj get_vial(P_char ch)
 	return NULL;
 }
 
-char* print_poison_ingredients(int ingredients[])
+char *print_poison_ingredients(int ingredients[])
 {
 	static char buffer[MAX_STRING_LENGTH];
 
@@ -574,11 +639,11 @@ char* print_poison_ingredients(int ingredients[])
 void do_mixpoison(P_char ch, char *argument, int cmd)
 {
 	P_obj vial;
-	char  arg[MAX_STRING_LENGTH];
-	int   i;
-	int   x = 1;
-	char  Gbuf2[MAX_STRING_LENGTH];
-	int   skl_lvl;
+	char arg[MAX_STRING_LENGTH];
+	int i;
+	int x = 1;
+	char Gbuf2[MAX_STRING_LENGTH];
+	int skl_lvl;
 
 	if (!(skl_lvl = GET_CHAR_SKILL(ch, SKILL_MIXPOISON)))
 	{
@@ -590,16 +655,21 @@ void do_mixpoison(P_char ch, char *argument, int cmd)
 	one_argument(argument, arg);
 	if (*arg)
 	{
-		send_to_char("Get a poison vial, and have the ingredients and stuff in inventory and type mixpoison!\r\n\r\n", ch);
+		send_to_char(
+			"Get a poison vial, and have the ingredients and stuff in inventory and type mixpoison!\r\n\r\n",
+			ch);
 		send_to_char("Poisons you can make:\r\n", ch);
 		send_to_char("---------------------\r\n\r\n", ch);
 		for (i = 0; poison_data[i].poison_type; i++)
 		{
-			if (GET_LEVEL(ch) >= poison_data[i].level_required && skl_lvl >= poison_data[i].skill_required)
+			if (GET_LEVEL(ch) >= poison_data[i].level_required &&
+			    skl_lvl >= poison_data[i].skill_required)
 			{
 				char buffer[MAX_STRING_LENGTH];
 				P_obj poison_vial = read_object(poison_data[i].vnum, VIRTUAL);
-				snprintf(buffer, MAX_STRING_LENGTH, " %-40s - %s\r\n", poison_vial->short_description, print_poison_ingredients(poison_data[i].ingredients));
+				snprintf(buffer, MAX_STRING_LENGTH, " %-40s - %s\r\n",
+					 poison_vial->short_description,
+					 print_poison_ingredients(poison_data[i].ingredients));
 				extract_obj(poison_vial);
 				send_to_char(buffer, ch);
 			}
@@ -617,19 +687,22 @@ void do_mixpoison(P_char ch, char *argument, int cmd)
 	notch_skill(ch, SKILL_MIXPOISON, 6.25);
 	for (i = 0; poison_data[i].poison_type; i++)
 	{
-		if (GET_LEVEL(ch) >= poison_data[i].level_required && skl_lvl >= poison_data[i].skill_required)
+		if (GET_LEVEL(ch) >= poison_data[i].level_required &&
+		    skl_lvl >= poison_data[i].skill_required)
 		{
 			bool made_poison = false;
 			while (got_all_poison_ingredients(ch, poison_data[i].ingredients))
 			{
 				P_obj poison_vial;
-				char  gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
+				char gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
 
 				poison_vial = read_object(poison_data[i].vnum, VIRTUAL);
 				act("You've &+Wcreated&n $p!", FALSE, ch, poison_vial, 0, TO_CHAR);
-				snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch), poison_vial->name);
+				snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch),
+					 poison_vial->name);
 				poison_vial->name = str_dup(gbuf2);
-				snprintf(buffer, MAX_STRING_LENGTH, "%s mixed by %s", poison_vial->short_description, GET_NAME(ch));
+				snprintf(buffer, MAX_STRING_LENGTH, "%s mixed by %s",
+					 poison_vial->short_description, GET_NAME(ch));
 				set_short_description(poison_vial, buffer);
 				obj_to_char(poison_vial, ch);
 				extract_obj(vial);
@@ -656,10 +729,10 @@ void do_mixpoison(P_char ch, char *argument, int cmd)
 void do_mix(P_char ch, char *argument, int cmd)
 {
 	P_obj bottle;
-	char  arg[MAX_STRING_LENGTH];
-	int   i;
-	int   x = 1;
-	char  Gbuf2[MAX_STRING_LENGTH];
+	char arg[MAX_STRING_LENGTH];
+	int i;
+	int x = 1;
+	char Gbuf2[MAX_STRING_LENGTH];
 
 	if (!GET_CHAR_SKILL(ch, SKILL_MIX))
 	{
@@ -671,7 +744,8 @@ void do_mix(P_char ch, char *argument, int cmd)
 	one_argument(argument, arg);
 	if (*arg)
 	{
-		act("Get a potion bottle, and have the garlic and stuff in inventory and type mix!", FALSE, ch, 0, 0, TO_CHAR);
+		act("Get a potion bottle, and have the garlic and stuff in inventory and type mix!",
+		    FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
 
@@ -679,32 +753,38 @@ void do_mix(P_char ch, char *argument, int cmd)
 
 	if (!bottle)
 	{
-		act("You need to have a potion bottle in your inventory.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You need to have a potion bottle in your inventory.", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 	for (i = 0; potion_data[i].spell_type; i++)
 	{
-		if (GET_LEVEL(ch) >= potion_data[i].spell_level && got_all_ingredients(ch, potion_data[i].ingredients))
+		if (GET_LEVEL(ch) >= potion_data[i].spell_level &&
+		    got_all_ingredients(ch, potion_data[i].ingredients))
 		{
 			while (TRUE)
 			{
 				P_obj potion;
-				char  gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
+				char gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH];
 
 				if (number(1, 160) < ((GET_C_WIS(ch) + GET_C_DEX(ch)) / 2))
 				{
-					potion           = read_object(potion_data[i].vnum, VIRTUAL);
+					potion = read_object(potion_data[i].vnum, VIRTUAL);
 					potion->value[0] = GET_LEVEL(ch);
-					act("You've &+Wcreated&n $p.", FALSE, ch, potion, 0, TO_CHAR);
-					snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch), potion->name);
+					act("You've &+Wcreated&n $p.", FALSE, ch, potion, 0,
+					    TO_CHAR);
+					snprintf(gbuf2, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch),
+						 potion->name);
 					potion->name = str_dup(gbuf2);
-					snprintf(buffer, MAX_STRING_LENGTH, "%s mixed by %s", potion->short_description, GET_NAME(ch));
+					snprintf(buffer, MAX_STRING_LENGTH, "%s mixed by %s",
+						 potion->short_description, GET_NAME(ch));
 					set_short_description(potion, buffer);
 					obj_to_char(potion, ch);
 				}
 				else
 				{
-					act("&+RYou clumsily spill your ingredients everywhere, ruining your creation!", FALSE, ch, 0, 0, TO_CHAR);
+					act("&+RYou clumsily spill your ingredients everywhere, ruining your creation!",
+					    FALSE, ch, 0, 0, TO_CHAR);
 				}
 				extract_obj(bottle);
 
@@ -719,13 +799,15 @@ void do_mix(P_char ch, char *argument, int cmd)
 					bottle = get_bottle(ch);
 					if (!bottle)
 					{
-						act("But cant make more since you dont have any more bottles on you!", FALSE, ch, 0, 0, TO_CHAR);
+						act("But cant make more since you dont have any more bottles on you!",
+						    FALSE, ch, 0, 0, TO_CHAR);
 						break;
 					}
 				}
 				else
 				{
-					act("You wasted all your ingredients\r\n", FALSE, ch, 0, 0, TO_CHAR);
+					act("You wasted all your ingredients\r\n", FALSE, ch, 0, 0,
+					    TO_CHAR);
 					extract_used_ingredients(ch, potion_data[i].ingredients);
 					break;
 				}
@@ -745,30 +827,30 @@ bool is_neg_good(sbyte location)
 {
 	switch (location)
 	{
-		case APPLY_SAVING_PARA:
-		case APPLY_SAVING_ROD:
-		case APPLY_SAVING_FEAR:
-		case APPLY_SAVING_BREATH:
-		case APPLY_SAVING_SPELL:
-		case APPLY_ARMOR:
-			return TRUE;
-		default:
-			return FALSE;
+	case APPLY_SAVING_PARA:
+	case APPLY_SAVING_ROD:
+	case APPLY_SAVING_FEAR:
+	case APPLY_SAVING_BREATH:
+	case APPLY_SAVING_SPELL:
+	case APPLY_ARMOR:
+		return TRUE;
+	default:
+		return FALSE;
 	}
 }
 
 void do_spellbind(P_char ch, char *argument, int cmd)
 {
-	char                  arg[MAX_STRING_LENGTH];
-	char                  buf[MAX_STRING_LENGTH];
-	char                  tempbuf[MAX_STRING_LENGTH];
+	char arg[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
+	char tempbuf[MAX_STRING_LENGTH];
 	struct affected_type *afp;
-	P_obj                 item;
-	bool                  neggood;
-	int                   total_epic_points = GET_EPIC_POINTS(ch);
-	int                   bonus;
-	int                   skill = GET_CHAR_SKILL(ch, SKILL_SPELLBIND);
-	int                   total = 0;
+	P_obj item;
+	bool neggood;
+	int total_epic_points = GET_EPIC_POINTS(ch);
+	int bonus;
+	int skill = GET_CHAR_SKILL(ch, SKILL_SPELLBIND);
+	int total = 0;
 
 	if (!IS_ALIVE(ch))
 		return;
@@ -779,7 +861,8 @@ void do_spellbind(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	snprintf(buf, MAX_STRING_LENGTH, "You have %d spellbinds left...\n", (int)(total_epic_points));
+	snprintf(buf, MAX_STRING_LENGTH, "You have %d spellbinds left...\n",
+		 (int)(total_epic_points));
 
 	send_to_char(buf, ch);
 
@@ -814,13 +897,17 @@ void do_spellbind(P_char ch, char *argument, int cmd)
 
 	if (item->condition <= 99)
 	{
-		send_to_char("This item is &=LRnot&n in perfect condition. Please fix it, first.\r\n", ch);
+		send_to_char(
+			"This item is &=LRnot&n in perfect condition. Please fix it, first.\r\n",
+			ch);
 		return;
 	}
 
 	if (IS_ARTIFACT(item) && !IS_TRUSTED(ch))
 	{
-		send_to_char("Enchanting this item is far beyond the abilities of any mere mortal!\r\n", ch);
+		send_to_char(
+			"Enchanting this item is far beyond the abilities of any mere mortal!\r\n",
+			ch);
 		return;
 	}
 
@@ -862,8 +949,8 @@ void do_spellbind(P_char ch, char *argument, int cmd)
 
 	for (int i = 0; i < 3; i++)
 	{
-		bonus   = 0;
-		total   = 0;
+		bonus = 0;
+		total = 0;
 		neggood = is_neg_good(item->affected[i].location);
 
 		// Don't want to mess with race max, pulse or bad applies etc...
@@ -892,13 +979,15 @@ void do_spellbind(P_char ch, char *argument, int cmd)
 		}
 		else if (neggood)
 		{
-			if (item->affected[i].location >= APPLY_SAVING_PARA && item->affected[i].location <= APPLY_SAVING_SPELL)
+			if (item->affected[i].location >= APPLY_SAVING_PARA &&
+			    item->affected[i].location <= APPLY_SAVING_SPELL)
 			{
 				total = item->affected[i].modifier + ((total * -1) - (skill / 50));
 			}
 			else if (item->affected[i].location == APPLY_ARMOR)
 			{
-				total = (int)(item->affected[i].modifier * ((int)(skill / 50) + total));
+				total = (int)(item->affected[i].modifier *
+					      ((int)(skill / 50) + total));
 			}
 			else
 			{
@@ -915,11 +1004,14 @@ void do_spellbind(P_char ch, char *argument, int cmd)
 	snprintf(tempbuf, MAX_STRING_LENGTH, "%s %s", item->name, GET_NAME(ch));
 	set_keywords(item, tempbuf);
 	if (IS_RACEWAR_GOOD(ch))
-		snprintf(tempbuf, MAX_STRING_LENGTH, "%s &+yenc&+Yha&+ynted by &+L%s&n", item->short_description, GET_NAME(ch));
+		snprintf(tempbuf, MAX_STRING_LENGTH, "%s &+yenc&+Yha&+ynted by &+L%s&n",
+			 item->short_description, GET_NAME(ch));
 	else if (IS_RACEWAR_EVIL(ch))
-		snprintf(tempbuf, MAX_STRING_LENGTH, "%s &+renc&+Rha&+rnted by &+L%s&n", item->short_description, GET_NAME(ch));
+		snprintf(tempbuf, MAX_STRING_LENGTH, "%s &+renc&+Rha&+rnted by &+L%s&n",
+			 item->short_description, GET_NAME(ch));
 	else
-		snprintf(tempbuf, MAX_STRING_LENGTH, "%s &+wenc&+Wha&+wnted by &+L%s&n", item->short_description, GET_NAME(ch));
+		snprintf(tempbuf, MAX_STRING_LENGTH, "%s &+wenc&+Wha&+wnted by &+L%s&n",
+			 item->short_description, GET_NAME(ch));
 	set_short_description(item, tempbuf);
 }
 
@@ -931,8 +1023,8 @@ void do_encrust(P_char ch, char *argument, int cmd)
 	char arg2[MAX_STRING_LENGTH];
 	char buf1[MAX_STRING_LENGTH];
 	char buf2[MAX_STRING_LENGTH];
-	int  skill = 0;
-	int  craftsmanship;
+	int skill = 0;
+	int craftsmanship;
 
 	P_obj item;
 	P_obj jewel;
@@ -970,11 +1062,11 @@ void do_encrust(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (item->type != ITEM_WEAPON && item->type != ITEM_ARMOR &&
-	    item->type != ITEM_SHIELD && item->type != ITEM_WORN &&
-	    item->type != ITEM_LIGHT && item->type != ITEM_INSTRUMENT)
+	if (item->type != ITEM_WEAPON && item->type != ITEM_ARMOR && item->type != ITEM_SHIELD &&
+	    item->type != ITEM_WORN && item->type != ITEM_LIGHT && item->type != ITEM_INSTRUMENT)
 	{
-		act("You can only encrust weapons, armor, shields, instruments, and worn equipment.", FALSE, ch, 0, 0, TO_CHAR);
+		act("You can only encrust weapons, armor, shields, instruments, and worn equipment.",
+		    FALSE, ch, 0, 0, TO_CHAR);
 		return;
 	}
 
@@ -1013,7 +1105,8 @@ void do_encrust(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	snprintf(buf2, MAX_STRING_LENGTH, "%s attempts to encrust %s with %s...", GET_NAME(ch), item->short_description, jewel->short_description);
+	snprintf(buf2, MAX_STRING_LENGTH, "%s attempts to encrust %s with %s...", GET_NAME(ch),
+		 item->short_description, jewel->short_description);
 	act(buf2, TRUE, ch, 0, 0, TO_ROOM);
 	wizlog(56, buf2);
 
@@ -1042,9 +1135,9 @@ void do_encrust(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	new_item->material             = item->material;
-	new_item->type                 = item->type;
-	new_item->weight               = item->weight + 1;
+	new_item->material = item->material;
+	new_item->type = item->type;
+	new_item->weight = item->weight + 1;
 	for (int i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
 		new_item->affected[i].location = item->affected[i].location;
@@ -1089,7 +1182,8 @@ void do_encrust(P_char ch, char *argument, int cmd)
 
 	SET_BIT(new_item->extra_flags, ITEM_ENCRUSTED | ITEM_NOREPAIR);
 
-	snprintf(buf1, MAX_STRING_LENGTH, "%s with %s", item->short_description, jewel->short_description);
+	snprintf(buf1, MAX_STRING_LENGTH, "%s with %s", item->short_description,
+		 jewel->short_description);
 	set_short_description(new_item, buf1);
 	snprintf(buf1, MAX_STRING_LENGTH, "%s", item->description);
 	set_long_description(new_item, buf1);
@@ -1112,7 +1206,7 @@ void do_encrust(P_char ch, char *argument, int cmd)
 int encrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char kala;
-	int    j, dam;
+	int j, dam;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -1148,15 +1242,23 @@ int encrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 				return FALSE;
 			}
 
-			act("$n's&N $q &n&+Lmurmurs some strange incantations...&N", TRUE, ch, obj, kala, TO_NOTVICT);
-			act("Your&N $q &n&+Lmurmurs some strange incantations...&N", TRUE, ch, obj, kala, TO_CHAR);
-			act("$n's&N $q &n&+Lmurmurs some strange incantations...&N", TRUE, ch, obj, kala, TO_VICT);
-			((*skills[j].spell_pointer)((int)obj->value[6], ch, 0, SPELL_TYPE_SPELL, kala, obj));
+			act("$n's&N $q &n&+Lmurmurs some strange incantations...&N", TRUE, ch, obj,
+			    kala, TO_NOTVICT);
+			act("Your&N $q &n&+Lmurmurs some strange incantations...&N", TRUE, ch, obj,
+			    kala, TO_CHAR);
+			act("$n's&N $q &n&+Lmurmurs some strange incantations...&N", TRUE, ch, obj,
+			    kala, TO_VICT);
+			((*skills[j].spell_pointer)((int)obj->value[6], ch, 0, SPELL_TYPE_SPELL,
+						    kala, obj));
 		}
-		else if (j == SPELL_ENERGY_DRAIN && GET_HIT(ch) < GET_MAX_HIT(ch) && !IS_UNDEADRACE(kala) && !IS_AFFECTED4(kala, AFF4_NEG_SHIELD) && !resists_spell(ch, kala))
+		else if (j == SPELL_ENERGY_DRAIN && GET_HIT(ch) < GET_MAX_HIT(ch) &&
+			 !IS_UNDEADRACE(kala) && !IS_AFFECTED4(kala, AFF4_NEG_SHIELD) &&
+			 !resists_spell(ch, kala))
 		{
-			act("&+LYour encrusted &+rbloodstone &+Rglows brightly&+L, and your vision is &+rbathed in &+Rred&+L.&n", FALSE, ch, 0, 0, TO_CHAR);
-			act("$n&+L's encrusted &+rbloodstone &+Rglows&+L, and $s &+reyes &+Lare &+rbathed in &+Rred&+L.&n", FALSE, ch, 0, 0, TO_ROOM);
+			act("&+LYour encrusted &+rbloodstone &+Rglows brightly&+L, and your vision is &+rbathed in &+Rred&+L.&n",
+			    FALSE, ch, 0, 0, TO_CHAR);
+			act("$n&+L's encrusted &+rbloodstone &+Rglows&+L, and $s &+reyes &+Lare &+rbathed in &+Rred&+L.&n",
+			    FALSE, ch, 0, 0, TO_ROOM);
 			dam = number(10, 30);
 			vamp(ch, dam, GET_MAX_HIT(ch));
 			melee_damage(ch, kala, dam, 0, 0);
@@ -1170,7 +1272,7 @@ void do_fix(P_char ch, char *argument, int cmd)
 	char arg[MAX_STRING_LENGTH];
 	char arg2[MAX_STRING_LENGTH];
 	char buf1[MAX_STRING_LENGTH];
-	int  skill = 0;
+	int skill = 0;
 
 	P_obj item;
 
@@ -1196,7 +1298,8 @@ void do_fix(P_char ch, char *argument, int cmd)
 	}
 	if (IS_SET(item->extra_flags, ITEM_NOREPAIR))
 	{
-		act("The power within this item is far beyond your ability", FALSE, ch, 0, 0, TO_CHAR);
+		act("The power within this item is far beyond your ability", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
@@ -1207,15 +1310,16 @@ void do_fix(P_char ch, char *argument, int cmd)
 	}
 	if (item->condition < 20)
 	{
-		act("That item seems to be destroyed, not even you can fix that!", FALSE, ch, 0, 0, TO_CHAR);
+		act("That item seems to be destroyed, not even you can fix that!", FALSE, ch, 0, 0,
+		    TO_CHAR);
 		return;
 	}
 
 	// fix now requires a salvaged material piece from same material to fix
 	P_obj t_obj, nextobj;
-	char  gbuf1[MAX_STRING_LENGTH];
-	int   i    = 0;
-	int   imat = get_matstart(item);
+	char gbuf1[MAX_STRING_LENGTH];
+	int i = 0;
+	int imat = get_matstart(item);
 	for (t_obj = ch->carrying; t_obj; t_obj = nextobj)
 	{
 		nextobj = t_obj->next_content;
@@ -1228,7 +1332,9 @@ void do_fix(P_char ch, char *argument, int cmd)
 	P_obj needed = read_object(imat, VIRTUAL);
 	if (i < 1)
 	{
-		snprintf(gbuf1, MAX_STRING_LENGTH, "You must have %s in your inventory to repair that item.\r\n", needed->short_description);
+		snprintf(gbuf1, MAX_STRING_LENGTH,
+			 "You must have %s in your inventory to repair that item.\r\n",
+			 needed->short_description);
 		send_to_char(gbuf1, ch);
 		extract_obj(needed);
 		return;
@@ -1247,14 +1353,18 @@ void do_fix(P_char ch, char *argument, int cmd)
 		item->condition = item->condition - number(2, 30);
 		if (item->condition < 1)
 		{
-			act("$N fiddles with $p, but fails, destroying it!", TRUE, ch, item, ch, TO_ROOM);
-			act("You fiddle with $p, but you fail, destroying it!", TRUE, ch, item, 0, TO_CHAR);
+			act("$N fiddles with $p, but fails, destroying it!", TRUE, ch, item, ch,
+			    TO_ROOM);
+			act("You fiddle with $p, but you fail, destroying it!", TRUE, ch, item, 0,
+			    TO_CHAR);
 			item = NULL;
 		}
 		else
 		{
-			act("$N fiddles with $p, but fails, breaking it even more!", TRUE, ch, item, ch, TO_ROOM);
-			act("You fiddle with $p, but you fail, breaking it even more!", TRUE, ch, item, 0, TO_CHAR);
+			act("$N fiddles with $p, but fails, breaking it even more!", TRUE, ch, item,
+			    ch, TO_ROOM);
+			act("You fiddle with $p, but you fail, breaking it even more!", TRUE, ch,
+			    item, 0, TO_CHAR);
 		}
 	}
 	int done = 0;
@@ -1301,7 +1411,8 @@ void do_smelt(P_char ch, char *arg, int cmd)
 
 	if (!furnace)
 	{ // No furnace in room
-		act("&+LYou seem to be missing a vital part, wonder what it can be...&n", FALSE, ch, 0, 0, TO_CHAR);
+		act("&+LYou seem to be missing a vital part, wonder what it can be...&n", FALSE, ch,
+		    0, 0, TO_CHAR);
 		return;
 	}
 
@@ -1341,68 +1452,67 @@ void do_smelt(P_char ch, char *arg, int cmd)
 	// 2 items inside
 	else
 	{
-
 		new_obj = NULL;
 
 		if (first_obj->R_num == second_obj->R_num)
 		{ // 2 identical items
 			switch (obj_index[first_obj->R_num].virtual_number)
 			{
-				case 400260:                                // small iron
-					new_obj = read_object(400261, VIRTUAL); // medium iron
-					break;
-				case 400261:                                // medium iron
-					new_obj = read_object(400262, VIRTUAL); // large iron
-					break;
-				case 400263:                                // small TIN
-					new_obj = read_object(400264, VIRTUAL); // medium steel
-					break;
-				case 400264:                                // medium TIN
-					new_obj = read_object(400265, VIRTUAL); // large steel
-					break;
-				case 400266:                                // small copper
-					new_obj = read_object(400267, VIRTUAL); // medium copper
-					break;
-				case 400267:                                // medium copper
-					new_obj = read_object(400268, VIRTUAL); // large copper
-					break;
-				case 400269:                                // small silver
-					new_obj = read_object(400270, VIRTUAL); // medium silver
-					break;
-				case 400270:                                // medium silver
-					new_obj = read_object(400271, VIRTUAL); // large silver
-					break;
-				case 400272:                                // small gold
-					new_obj = read_object(400273, VIRTUAL); // medium gold
-					break;
-				case 400273:                                // medium gold
-					new_obj = read_object(400274, VIRTUAL); // large gold
-					break;
-				case 400275:                                // small platinum
-					new_obj = read_object(400276, VIRTUAL); // medium platinum
-					break;
-				case 400276:                                // medium platinum
-					new_obj = read_object(400277, VIRTUAL); // large platinum
-					break;
-				case 400278:                                // small mithril
-					new_obj = read_object(400279, VIRTUAL); // medium mithril
-					break;
-				case 400279:                                // medium mithril
-					new_obj = read_object(400280, VIRTUAL); // large mithril
-					break;
-				case 400281:                                // small adamantium
-					new_obj = read_object(400282, VIRTUAL); // medium adamantium
-					break;
-				case 400282:                                // medium adamantium
-					new_obj = read_object(400283, VIRTUAL); // large adamantium
-					break;
+			case 400260: // small iron
+				new_obj = read_object(400261, VIRTUAL); // medium iron
+				break;
+			case 400261: // medium iron
+				new_obj = read_object(400262, VIRTUAL); // large iron
+				break;
+			case 400263: // small TIN
+				new_obj = read_object(400264, VIRTUAL); // medium steel
+				break;
+			case 400264: // medium TIN
+				new_obj = read_object(400265, VIRTUAL); // large steel
+				break;
+			case 400266: // small copper
+				new_obj = read_object(400267, VIRTUAL); // medium copper
+				break;
+			case 400267: // medium copper
+				new_obj = read_object(400268, VIRTUAL); // large copper
+				break;
+			case 400269: // small silver
+				new_obj = read_object(400270, VIRTUAL); // medium silver
+				break;
+			case 400270: // medium silver
+				new_obj = read_object(400271, VIRTUAL); // large silver
+				break;
+			case 400272: // small gold
+				new_obj = read_object(400273, VIRTUAL); // medium gold
+				break;
+			case 400273: // medium gold
+				new_obj = read_object(400274, VIRTUAL); // large gold
+				break;
+			case 400275: // small platinum
+				new_obj = read_object(400276, VIRTUAL); // medium platinum
+				break;
+			case 400276: // medium platinum
+				new_obj = read_object(400277, VIRTUAL); // large platinum
+				break;
+			case 400278: // small mithril
+				new_obj = read_object(400279, VIRTUAL); // medium mithril
+				break;
+			case 400279: // medium mithril
+				new_obj = read_object(400280, VIRTUAL); // large mithril
+				break;
+			case 400281: // small adamantium
+				new_obj = read_object(400282, VIRTUAL); // medium adamantium
+				break;
+			case 400282: // medium adamantium
+				new_obj = read_object(400283, VIRTUAL); // large adamantium
+				break;
 			}
 		}
 
 		if (!new_obj)
 		{
 			if (strstr(first_obj->name, "_ore_") || strstr(second_obj->name, "_ore_"))
-			{                                        // at least one item is ore
+			{ // at least one item is ore
 				new_obj = read_object(362, VIRTUAL); // Alloy
 			}
 			else
@@ -1415,7 +1525,9 @@ void do_smelt(P_char ch, char *arg, int cmd)
 		{
 			if (GET_CHAR_SKILL(ch, SKILL_SMELT) < number(0, 99))
 			{
-				send_to_char("&+LYou decide you shoulda been a carpenter, because you mess up while smelting!&n", ch);
+				send_to_char(
+					"&+LYou decide you shoulda been a carpenter, because you mess up while smelting!&n",
+					ch);
 				new_obj = read_object(362, VIRTUAL); // Alloy
 			}
 		}
@@ -1434,11 +1546,11 @@ void do_smelt(P_char ch, char *arg, int cmd)
 bool MobAlchemistGetPotions(P_char ch, int type, int number)
 {
 	P_obj bottle;
-	int   i = 0;
+	int i = 0;
 
 	while (i++ < number)
 	{
-		bottle           = read_object(potion_data[type].vnum, VIRTUAL);
+		bottle = read_object(potion_data[type].vnum, VIRTUAL);
 		bottle->value[0] = MIN(50, GET_LEVEL(ch));
 		obj_to_char(bottle, ch);
 	}
@@ -1461,13 +1573,15 @@ int spl2potion(int spl)
 int count_potions(P_char ch)
 {
 	P_obj t_obj;
-	int   level;
-	int   potions = 0;
+	int level;
+	int potions = 0;
 
 	level = GET_LEVEL(ch);
 	for (t_obj = ch->carrying; t_obj; t_obj = t_obj->next_content)
 	{
-		if (obj_index[t_obj->R_num].virtual_number >= FIRST_POTION_VIRTUAL && obj_index[t_obj->R_num].virtual_number <= FIRST_POTION_VIRTUAL + 21 && t_obj->value[0] <= level)
+		if (obj_index[t_obj->R_num].virtual_number >= FIRST_POTION_VIRTUAL &&
+		    obj_index[t_obj->R_num].virtual_number <= FIRST_POTION_VIRTUAL + 21 &&
+		    t_obj->value[0] <= level)
 			potions++;
 	}
 
@@ -1477,13 +1591,15 @@ int count_potions(P_char ch)
 P_obj get_potion(P_char ch)
 {
 	P_obj t_obj, next_obj;
-	int   count = count_potions(ch);
-	int   pick  = number(0, count - 1);
+	int count = count_potions(ch);
+	int pick = number(0, count - 1);
 
 	for (t_obj = ch->carrying; t_obj; t_obj = next_obj)
 	{
 		next_obj = t_obj->next_content;
-		if (obj_index[t_obj->R_num].virtual_number >= FIRST_POTION_VIRTUAL && obj_index[t_obj->R_num].virtual_number <= FIRST_POTION_VIRTUAL + 21 && t_obj->value[0] <= GET_LEVEL(ch) && pick-- == 0)
+		if (obj_index[t_obj->R_num].virtual_number >= FIRST_POTION_VIRTUAL &&
+		    obj_index[t_obj->R_num].virtual_number <= FIRST_POTION_VIRTUAL + 21 &&
+		    t_obj->value[0] <= GET_LEVEL(ch) && pick-- == 0)
 		{
 			return t_obj;
 		}
@@ -1496,25 +1612,24 @@ P_obj get_potion(P_char ch)
 
 bool randomize_potion_non_damage(P_obj potion, int slot)
 {
-
-	int random_spell_for_potion[LAST_HARMFUL_SPELL_TO_ADD + 1] = {SPELL_CURSE,
-	                                                              SPELL_BLINDNESS,
-	                                                              SPELL_WITHER,
-	                                                              SPELL_STORNOGS_LOWERED_RES,
-	                                                              SPELL_RAY_OF_ENFEEBLEMENT,
-	                                                              SPELL_FEEBLEMIND,
-	                                                              SPELL_DISPEL_LIFEFORCE,
-	                                                              SPELL_DISEASE,
-	                                                              SPELL_POISON,
-	                                                              SPELL_MALISON,
-	                                                              SPELL_MOUSESTRENGTH,
-	                                                              SPELL_DISPEL_MAGIC};
+	int random_spell_for_potion[LAST_HARMFUL_SPELL_TO_ADD + 1] = { SPELL_CURSE,
+								       SPELL_BLINDNESS,
+								       SPELL_WITHER,
+								       SPELL_STORNOGS_LOWERED_RES,
+								       SPELL_RAY_OF_ENFEEBLEMENT,
+								       SPELL_FEEBLEMIND,
+								       SPELL_DISPEL_LIFEFORCE,
+								       SPELL_DISEASE,
+								       SPELL_POISON,
+								       SPELL_MALISON,
+								       SPELL_MOUSESTRENGTH,
+								       SPELL_DISPEL_MAGIC };
 
 	int i;
 
 	if (potion && (slot > 0) && (slot < 4))
 	{
-		i                   = number(0, LAST_HARMFUL_SPELL_TO_ADD);
+		i = number(0, LAST_HARMFUL_SPELL_TO_ADD);
 		potion->value[slot] = random_spell_for_potion[i];
 		return TRUE;
 	}
@@ -1525,13 +1640,13 @@ bool randomize_potion_non_damage(P_obj potion, int slot)
 // Random eq enchant proc (cure crit).
 int thrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int    rand;
-	int    curr_time;
+	int rand;
+	int curr_time;
 	P_char kala;
-	P_obj  ingred;
+	P_obj ingred;
 	P_char i;
-	int    j = 0;
-	bool   found;
+	int j = 0;
+	bool found;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -1557,7 +1672,8 @@ int thrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 
 		if (!found)
 		{
-			act("$p's &+Gmagical &+Yaura&+G slowly dissipates away", FALSE, 0, obj, 0, TO_ROOM);
+			act("$p's &+Gmagical &+Yaura&+G slowly dissipates away", FALSE, 0, obj, 0,
+			    TO_ROOM);
 			extract_obj(obj, TRUE); // A random eq arti?
 			return FALSE;
 		}
@@ -1567,44 +1683,62 @@ int thrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			switch (obj->value[6])
 			{
-				case 0:
-					act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i, obj, 0, TO_CHAR);
-					GET_HIT(i) = BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
-					break;
-				case 1:
-					act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i, obj, 0, TO_CHAR);
-					GET_HIT(i) = BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
-					break;
-				case 2:
-					act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i, obj, 0, TO_CHAR);
-					GET_HIT(i) = BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
-					break;
-				case 3:
-					act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i, obj, 0, TO_CHAR);
-					GET_HIT(i) = BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
-					break;
-				case 4:
-					act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i, obj, 0, TO_CHAR);
-					GET_HIT(i) = BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
-					break;
-				case 5:
-					act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i, obj, 0, TO_CHAR);
-					GET_HIT(i) = BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
-					break;
-				case 6:
-					act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i, obj, 0, TO_CHAR);
-					GET_HIT(i) = BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
-					break;
-				case 7:
-					act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i, obj, 0, TO_CHAR);
-					GET_HIT(i) = BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
-					break;
-				case 8:
-					act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i, obj, 0, TO_CHAR);
-					GET_HIT(i) = BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
-					break;
-				default:
-					break;
+			case 0:
+				act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i,
+				    obj, 0, TO_CHAR);
+				GET_HIT(i) =
+					BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
+				break;
+			case 1:
+				act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i,
+				    obj, 0, TO_CHAR);
+				GET_HIT(i) =
+					BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
+				break;
+			case 2:
+				act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i,
+				    obj, 0, TO_CHAR);
+				GET_HIT(i) =
+					BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
+				break;
+			case 3:
+				act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i,
+				    obj, 0, TO_CHAR);
+				GET_HIT(i) =
+					BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
+				break;
+			case 4:
+				act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i,
+				    obj, 0, TO_CHAR);
+				GET_HIT(i) =
+					BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
+				break;
+			case 5:
+				act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i,
+				    obj, 0, TO_CHAR);
+				GET_HIT(i) =
+					BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
+				break;
+			case 6:
+				act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i,
+				    obj, 0, TO_CHAR);
+				GET_HIT(i) =
+					BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
+				break;
+			case 7:
+				act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i,
+				    obj, 0, TO_CHAR);
+				GET_HIT(i) =
+					BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
+				break;
+			case 8:
+				act("$p's &+Wsoft &+Gmagical &+Yaura&+G surrounds you!", FALSE, i,
+				    obj, 0, TO_CHAR);
+				GET_HIT(i) =
+					BOUNDED(0, (GET_HIT(i) + number(20, 35)), GET_MAX_HIT(i));
+				break;
+			default:
+				break;
 			}
 		}
 	}
@@ -1613,26 +1747,26 @@ int thrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 
 struct spell_target_data common_target_data;
 
-#define spl      common_target_data.ttype
-#define tar_obj  common_target_data.t_obj
+#define spl common_target_data.ttype
+#define tar_obj common_target_data.t_obj
 #define tar_char common_target_data.t_char
-#define tar_arg  common_target_data.arg
+#define tar_arg common_target_data.arg
 extern const struct class_names class_names_table[];
-extern const char              *class_names[];
+extern const char *class_names[];
 
 void do_enchant(P_char ch, char *argument, int cmd)
 {
-	char  arg[MAX_STRING_LENGTH];
-	char  arg2[MAX_STRING_LENGTH];
-	char  buf1[MAX_STRING_LENGTH];
-	int   skill = 0, qend, circle = 0, t_circle = 0, i = 0;
+	char arg[MAX_STRING_LENGTH];
+	char arg2[MAX_STRING_LENGTH];
+	char buf1[MAX_STRING_LENGTH];
+	int skill = 0, qend, circle = 0, t_circle = 0, i = 0;
 	P_obj item;
 	P_obj jewel;
 
 	P_obj temp_obj;
 
-	common_target_data.ttype  = 0;
-	common_target_data.t_obj  = 0;
+	common_target_data.ttype = 0;
+	common_target_data.t_obj = 0;
 	common_target_data.t_char = 0;
 
 	if (!IS_ALIVE(ch))
@@ -1647,7 +1781,7 @@ void do_enchant(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	skill    = GET_CHAR_SKILL(ch, SKILL_ENCHANT);
+	skill = GET_CHAR_SKILL(ch, SKILL_ENCHANT);
 	argument = one_argument(argument, arg);
 
 	if (!*arg)
@@ -1715,9 +1849,11 @@ void do_enchant(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (!IS_SET(skills[spl].targets, TAR_CHAR_ROOM) || IS_SET(skills[spl].targets, TAR_SELF_ONLY))
+	if (!IS_SET(skills[spl].targets, TAR_CHAR_ROOM) ||
+	    IS_SET(skills[spl].targets, TAR_SELF_ONLY))
 	{
-		send_to_char("Sorry, this item cannot be enchanted with a spell such as this. \r\n", ch);
+		send_to_char("Sorry, this item cannot be enchanted with a spell such as this. \r\n",
+			     ch);
 		return;
 	}
 
@@ -1742,7 +1878,9 @@ void do_enchant(P_char ch, char *argument, int cmd)
 	}
 	if (item->condition < get_property("skill.enchant.minItemCondition", 30))
 	{
-		send_to_char("No true alchemist would do something with a weapon in that condition. Repair it!! \r\n", ch);
+		send_to_char(
+			"No true alchemist would do something with a weapon in that condition. Repair it!! \r\n",
+			ch);
 		return;
 	}
 
@@ -1750,16 +1888,19 @@ void do_enchant(P_char ch, char *argument, int cmd)
 	// notch_skill(ch, SKILL_ENCHANT, 7.7);
 
 	act("&+L$n melts some &+Wplatinum &+Lcoins in a vial of &+gacid &+Land then&n\n"
-	    "&+Lproceeds to carefully pour it over $s $q.&n", TRUE, ch, item, 0, TO_ROOM);
+	    "&+Lproceeds to carefully pour it over $s $q.&n",
+	    TRUE, ch, item, 0, TO_ROOM);
 	act("&+LYou melt some &+Wplatinum &+Lcoins in a vial of &+gacid &+Land then&n\n"
-	    "&+Lproceed to carefully pour it over your $q.&n", TRUE, ch, item, 0, TO_CHAR);
+	    "&+Lproceed to carefully pour it over your $q.&n",
+	    TRUE, ch, item, 0, TO_CHAR);
 
 	// cant add_event with both ch and item so item/spell has to be passed in data
 	// add_event(event_enchant, 1 * PULSE_VIOLENCE, ch, 0, item, 0, &spl, sizeof(spl));
 
 	common_target_data.ttype = spl;
 	common_target_data.t_obj = item;
-	add_event(event_enchant, 1 * PULSE_VIOLENCE, ch, 0, 0, 0, &common_target_data, sizeof(common_target_data));
+	add_event(event_enchant, 1 * PULSE_VIOLENCE, ch, 0, 0, 0, &common_target_data,
+		  sizeof(common_target_data));
 	CharWait(ch, PULSE_VIOLENCE * 1);
 }
 
@@ -1767,10 +1908,10 @@ void event_enchant(P_char ch, P_char victim, P_obj item, void *data)
 {
 	int spll = 0;
 	;
-	int                      skill = 0;
+	int skill = 0;
 	struct spell_target_data tmp;
 
-	tmp  = *((spell_target_data *)data);
+	tmp = *((spell_target_data *)data);
 	spll = tmp.ttype;
 	item = tmp.t_obj;
 
@@ -1783,14 +1924,16 @@ void event_enchant(P_char ch, P_char victim, P_obj item, void *data)
 	if (!item || ch != item->loc.carrying)
 	{
 		act("You lost the item! Where is it?", FALSE, ch, 0, 0, TO_CHAR);
-		act("$n suddenly stops abruptly, looking around in anger.", TRUE, ch, 0, 0, TO_ROOM);
+		act("$n suddenly stops abruptly, looking around in anger.", TRUE, ch, 0, 0,
+		    TO_ROOM);
 		CharWait(ch, PULSE_VIOLENCE * 1);
 		return;
 	}
 	if (IS_ARTIFACT(item))
 	{
 		act("Your attempt to enchant an artifact fails!!!", FALSE, ch, 0, 0, TO_CHAR);
-		act("$n sighs and mutters about something under $s breathe.", TRUE, ch, 0, 0, TO_ROOM);
+		act("$n sighs and mutters about something under $s breathe.", TRUE, ch, 0, 0,
+		    TO_ROOM);
 		CharWait(ch, PULSE_VIOLENCE * 1);
 		return;
 	}
@@ -1798,9 +1941,11 @@ void event_enchant(P_char ch, P_char victim, P_obj item, void *data)
 	if (!number(0, skill - 10))
 	{
 		act("$n utters a foul curse as $e pours too much acid on $q.\n"
-		    "$n's $q was damaged as the acid eats into it!", FALSE, ch, item, 0, TO_ROOM);
+		    "$n's $q was damaged as the acid eats into it!",
+		    FALSE, ch, item, 0, TO_ROOM);
 		act("You utter a foul curse as you pour too much acid on the $q.\n"
-		    "Your $q was damaged as the acid eats into it!", FALSE, ch, item, 0, TO_CHAR);
+		    "Your $q was damaged as the acid eats into it!",
+		    FALSE, ch, item, 0, TO_CHAR);
 		item->condition = item->condition - number(5, 10);
 
 		if (item->condition < 1)
@@ -1821,11 +1966,14 @@ void event_enchant(P_char ch, P_char victim, P_obj item, void *data)
 		return;
 	}
 	act("$n's $q starts to heat up and then turns &+Wwhite hot before&n\n"
-	    "slowly &+bcooling down&n and turning back to normal.&n", FALSE, ch, item, 0, TO_ROOM);
+	    "slowly &+bcooling down&n and turning back to normal.&n",
+	    FALSE, ch, item, 0, TO_ROOM);
 	act("Your $q starts to heat up and then turns &+Wwhite hot&n before&n\n"
-	    "slowly &+bcooling down&n and turning back to normal.", TRUE, ch, item, 0, TO_CHAR);
+	    "slowly &+bcooling down&n and turning back to normal.",
+	    TRUE, ch, item, 0, TO_CHAR);
 
-	logit(LOG_DEBUG, "%s enchanted %s with %s.", GET_NAME(ch), item->short_description, skills[spll].name);
+	logit(LOG_DEBUG, "%s enchanted %s with %s.", GET_NAME(ch), item->short_description,
+	      skills[spll].name);
 
 	if (get_obj_affect(item, SKILL_ENCHANT))
 	{
@@ -1850,14 +1998,16 @@ void event_enchant(P_char ch, P_char victim, P_obj item, void *data)
 
 void spell_napalm(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int                    dam;
-	struct damage_messages messages = {"&+RYou smirk as the sticky substance coating $N &+Rerupts in flames.&n",
-	                                   "&+WPain is all you know as the world around you turns into an inferno.&n",
-	                                   "&+RThe sticky substance coating $N &+Rerupts in flames as it comes into contact with air.&n",
-	                                   "&+L$N &+Lthrashes wildly as $E erupts in &+rflames &+Land soon all that remains is a pile of ash.&n",
-	                                   "&+LThe world becomes &+rfire &+Land &+ragony&+L, both following you into oblivion.&n",
-	                                   "&+L$N &+Lthrashes wildly as $E erupts in &+rflames &+Land soon all that remains is a pile of ash.&n",
-	                                   0};
+	int dam;
+	struct damage_messages messages = {
+		"&+RYou smirk as the sticky substance coating $N &+Rerupts in flames.&n",
+		"&+WPain is all you know as the world around you turns into an inferno.&n",
+		"&+RThe sticky substance coating $N &+Rerupts in flames as it comes into contact with air.&n",
+		"&+L$N &+Lthrashes wildly as $E erupts in &+rflames &+Land soon all that remains is a pile of ash.&n",
+		"&+LThe world becomes &+rfire &+Land &+ragony&+L, both following you into oblivion.&n",
+		"&+L$N &+Lthrashes wildly as $E erupts in &+rflames &+Land soon all that remains is a pile of ash.&n",
+		0
+	};
 
 	dam = MIN(40, level) * 4 + number(0, level);
 
@@ -1866,14 +2016,16 @@ void spell_napalm(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 
 void spell_strong_acid(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int                    dam;
-	struct damage_messages messages = {"$N screams in pain as the &+Gacid&n trickles down $S body.",
-	                                   "You scream in agony as the &+Gacid&n eats into your flesh.",
-	                                   "$N screams in pain as the &+Gacid&n trickles down $S body.",
-	                                   "You watch with disgust as $N is dissolved into a pile of smoking flesh.",
-	                                   "The sight of &+Gmelting flesh&n is the last you will ever see...",
-	                                   "The &+Gacid&n quickly dissolves $N into a pool of smoking flesh.",
-	                                   0};
+	int dam;
+	struct damage_messages messages = {
+		"$N screams in pain as the &+Gacid&n trickles down $S body.",
+		"You scream in agony as the &+Gacid&n eats into your flesh.",
+		"$N screams in pain as the &+Gacid&n trickles down $S body.",
+		"You watch with disgust as $N is dissolved into a pile of smoking flesh.",
+		"The sight of &+Gmelting flesh&n is the last you will ever see...",
+		"The &+Gacid&n quickly dissolves $N into a pool of smoking flesh.",
+		0
+	};
 
 	dam = (int)(10.5 * MIN(level, 50)) + number(1, 25);
 
@@ -1882,14 +2034,16 @@ void spell_strong_acid(int level, P_char ch, char *arg, int type, P_char victim,
 
 void spell_glass_bomb(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int                    dam;
-	struct damage_messages messages = {"The flask &+Yexplodes&n showering $N with sharp pieces of glass.",
-	                                   "The flask &+Yexplodes&n showering you with sharp pieces of glass.",
-	                                   "The flask &+Yexplodes&n showering $N with sharp pieces of glass.",
-	                                   "The fury of the exploding glass reduces $N to a pile of &+rbleeding flesh&n.",
-	                                   "The fury of the exploding glass reduces you to a pile of &+rbleeding flesh&n.",
-	                                   "The fury of the exploding glass reduces $N to a pile of &+rbleeding flesh&n.",
-	                                   0};
+	int dam;
+	struct damage_messages messages = {
+		"The flask &+Yexplodes&n showering $N with sharp pieces of glass.",
+		"The flask &+Yexplodes&n showering you with sharp pieces of glass.",
+		"The flask &+Yexplodes&n showering $N with sharp pieces of glass.",
+		"The fury of the exploding glass reduces $N to a pile of &+rbleeding flesh&n.",
+		"The fury of the exploding glass reduces you to a pile of &+rbleeding flesh&n.",
+		"The fury of the exploding glass reduces $N to a pile of &+rbleeding flesh&n.",
+		0
+	};
 
 	dam = 6 * MIN(level, 45) + number(1, 25);
 
@@ -1898,14 +2052,16 @@ void spell_glass_bomb(int level, P_char ch, char *arg, int type, P_char victim, 
 
 void spell_nitrogen(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int                    dam;
-	struct damage_messages messages = {"The &+Cnitrogen&n splashes $N freezing everything it touches.",
-	                                   "The &+Cintense cold&n of the liquid burns your body.",
-	                                   "The &+Cnitrogen&n splashes $N freezing everything it touches.",
-	                                   "$N &+Cis turned into a &+Wfrost-rimmed statue &+Cas $E is frozen solid by the liquid nitrogen.&n",
-	                                   "&+CFrost instantly covers you as the searing cold turns you into a &+Wfrozen statue.&n",
-	                                   "$N &+Cis turned into a &+Wfrost-rimmed statue &+Cas $E is frozen solid by the liquid nitrogen.&n",
-	                                   0};
+	int dam;
+	struct damage_messages messages = {
+		"The &+Cnitrogen&n splashes $N freezing everything it touches.",
+		"The &+Cintense cold&n of the liquid burns your body.",
+		"The &+Cnitrogen&n splashes $N freezing everything it touches.",
+		"$N &+Cis turned into a &+Wfrost-rimmed statue &+Cas $E is frozen solid by the liquid nitrogen.&n",
+		"&+CFrost instantly covers you as the searing cold turns you into a &+Wfrozen statue.&n",
+		"$N &+Cis turned into a &+Wfrost-rimmed statue &+Cas $E is frozen solid by the liquid nitrogen.&n",
+		0
+	};
 
 	dam = 4 * MIN(26, level) + number(0, 9);
 
@@ -1916,10 +2072,14 @@ bool grease_check(P_char ch)
 {
 	struct affected_type *af;
 
-	if ((af = get_spell_from_char(ch, SPELL_GREASE)) && !number(0, 2) && GET_C_AGI(ch) < number(0, 115))
+	if ((af = get_spell_from_char(ch, SPELL_GREASE)) && !number(0, 2) &&
+	    GET_C_AGI(ch) < number(0, 115))
 	{
-		act("$n tries to run but slips on a greasy substance dripping off $s cloths!", FALSE, ch, 0, 0, TO_ROOM);
-		send_to_char("You try to run but alas! You slip on the damned grease covering your feet!\n", ch);
+		act("$n tries to run but slips on a greasy substance dripping off $s cloths!",
+		    FALSE, ch, 0, 0, TO_ROOM);
+		send_to_char(
+			"You try to run but alas! You slip on the damned grease covering your feet!\n",
+			ch);
 		if (af->modifier-- == 0)
 		{
 			send_to_char("Fortunately you got rid of this thing this time!\n", ch);
@@ -1936,8 +2096,10 @@ void spell_grease(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 {
 	struct affected_type af, *afp;
 
-	act("&+LA black oily substance&n spreads all over $N's clothes, yuck!", FALSE, victim, 0, ch, TO_ROOM);
-	act("&+LA black oily substance&n spreads all over your clothes, yuck!", FALSE, victim, 0, 0, TO_CHAR);
+	act("&+LA black oily substance&n spreads all over $N's clothes, yuck!", FALSE, victim, 0,
+	    ch, TO_ROOM);
+	act("&+LA black oily substance&n spreads all over your clothes, yuck!", FALSE, victim, 0, 0,
+	    TO_CHAR);
 
 	if ((afp = get_spell_from_char(victim, SPELL_GREASE)))
 	{
@@ -1947,7 +2109,7 @@ void spell_grease(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 	else
 	{
 		memset(&af, 0, sizeof(af));
-		af.type     = SPELL_GREASE;
+		af.type = SPELL_GREASE;
 		af.duration = 1;
 		af.modifier = number(1, 4);
 

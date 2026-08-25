@@ -16,13 +16,13 @@
 #include "spells.h"
 #include "weather.h"
 
-extern P_char               character_list;
-extern P_desc               descriptor_list;
-extern P_index              mob_index;
-extern P_index              obj_index;
-extern P_obj                object_list;
-extern P_room               world;
-extern int                  proccing_slots[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern int proccing_slots[];
 extern struct material_data materials[];
 
 char *item_condition(P_obj obj)
@@ -56,28 +56,33 @@ char *item_condition(P_obj obj)
 }
 
 const char *item_damage_messages[][2] = {
-	{		"was damaged from the massive blow!",                   "was completely destroyed by the massive blow!"},
-	{				 "is burned from the blast!",								   "melted from the intense heat!"},
-	{		"is weakened from the intense cold!", "freezes and shatters into million pieces from the intense cold!"},
-	{		 "is filled with electrical energy!",                "exploded spreading charges of electrical energy!"},
-	{					  "was corroded by gas.",                   "crumbled as it was consumed by the toxic gas."},
-	{					 "was corroded by acid.",									"melted corroded by the acid."},
-	{		"is blasted by the negative energy!",                       "was disintegrated by the negative energy!"},
-	{				   "is burned by the light!",             "shattered into a million pieces by the divine fury!"},
-	{	  "cracks as the tortured body writhes!",      "shattered in bits as the tortured body spasms and quivers!"},
-	{		  "is corrupted by spiritual anger!",                                     "was destroyed by the blast!"},
-	{		"cracks attacked by the sound wave.",       "shattered into a million pieces as the sound wave hit it!"},
-	{"cracks from the bombardment of &+yearth&n.",               "is smashed to bits by &+Lrocks&n and &+ydebris&n!"},
+	{ "was damaged from the massive blow!", "was completely destroyed by the massive blow!" },
+	{ "is burned from the blast!", "melted from the intense heat!" },
+	{ "is weakened from the intense cold!",
+	  "freezes and shatters into million pieces from the intense cold!" },
+	{ "is filled with electrical energy!", "exploded spreading charges of electrical energy!" },
+	{ "was corroded by gas.", "crumbled as it was consumed by the toxic gas." },
+	{ "was corroded by acid.", "melted corroded by the acid." },
+	{ "is blasted by the negative energy!", "was disintegrated by the negative energy!" },
+	{ "is burned by the light!", "shattered into a million pieces by the divine fury!" },
+	{ "cracks as the tortured body writhes!",
+	  "shattered in bits as the tortured body spasms and quivers!" },
+	{ "is corrupted by spiritual anger!", "was destroyed by the blast!" },
+	{ "cracks attacked by the sound wave.",
+	  "shattered into a million pieces as the sound wave hit it!" },
+	{ "cracks from the bombardment of &+yearth&n.",
+	  "is smashed to bits by &+Lrocks&n and &+ydebris&n!" },
 };
 
 int DamageOneItem(P_char ch, int dam_type, P_obj obj, bool destroy)
 {
-	int  num;
+	int num;
 	char buf[MAX_STRING_LENGTH];
-	int  objtype       = GET_ITEM_TYPE(obj);
+	int objtype = GET_ITEM_TYPE(obj);
 	bool force_destroy = destroy;
 
-	if ((objtype == ITEM_TOTEM) || (objtype == ITEM_KEY) || (objtype == ITEM_SPELLBOOK) || IS_ARTIFACT(obj))
+	if ((objtype == ITEM_TOTEM) || (objtype == ITEM_KEY) || (objtype == ITEM_SPELLBOOK) ||
+	    IS_ARTIFACT(obj))
 	{
 		return 0;
 	}
@@ -106,10 +111,12 @@ int DamageOneItem(P_char ch, int dam_type, P_obj obj, bool destroy)
 
 	// objtype = GET_ITEM_TYPE(obj);
 
-	snprintf(buf, MAX_STRING_LENGTH, "Your $q %s", item_damage_messages[dam_type - 1][destroy ? 1 : 0]);
+	snprintf(buf, MAX_STRING_LENGTH, "Your $q %s",
+		 item_damage_messages[dam_type - 1][destroy ? 1 : 0]);
 	act(buf, TRUE, ch, obj, 0, TO_CHAR);
 
-	snprintf(buf, MAX_STRING_LENGTH, "$n's $q %s", item_damage_messages[dam_type - 1][destroy ? 1 : 0]);
+	snprintf(buf, MAX_STRING_LENGTH, "$n's $q %s",
+		 item_damage_messages[dam_type - 1][destroy ? 1 : 0]);
 	act(buf, TRUE, ch, obj, 0, TO_ROOM);
 
 	if (destroy)
@@ -125,9 +132,9 @@ int DamageOneItem(P_char ch, int dam_type, P_obj obj, bool destroy)
 
 void MakeScrap(P_char ch, P_obj obj)
 {
-	char  buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	P_obj t, x;
-	int   pos;
+	int pos;
 
 	if (!ch || !obj || (ch->in_room == NOWHERE))
 		return;
@@ -140,7 +147,8 @@ void MakeScrap(P_char ch, P_obj obj)
 	if (!t)
 		return;
 
-	snprintf(buf, MAX_STRING_LENGTH, "Scraps from %s&n lie in a pile here.", obj->short_description);
+	snprintf(buf, MAX_STRING_LENGTH, "Scraps from %s&n lie in a pile here.",
+		 obj->short_description);
 
 	t->description = str_dup(buf);
 
@@ -164,7 +172,9 @@ void MakeScrap(P_char ch, P_obj obj)
 
 		if (wearer && !char_in_list(wearer))
 		{
-			logit(LOG_DEBUG, "MakeScrap(): stale wearer pointer, caller=%s obj=%s", J_NAME(ch), obj->short_description ? obj->short_description : "unknown");
+			logit(LOG_DEBUG, "MakeScrap(): stale wearer pointer, caller=%s obj=%s",
+			      J_NAME(ch),
+			      obj->short_description ? obj->short_description : "unknown");
 			wearer = NULL;
 		}
 
@@ -176,14 +186,17 @@ void MakeScrap(P_char ch, P_obj obj)
 					if (wearer->equipment[pos] == obj)
 						break;
 				if (pos < MAX_WEAR)
-						break;
+					break;
 			}
 		}
 
 		if (wearer)
 		{
 			if (wearer != ch)
-				logit(LOG_DEBUG, "MakeScrap(): caller/wearer mismatch, caller=%s wearer=%s obj=%s", J_NAME(ch), J_NAME(wearer), obj->short_description ? obj->short_description : "unknown");
+				logit(LOG_DEBUG,
+				      "MakeScrap(): caller/wearer mismatch, caller=%s wearer=%s obj=%s",
+				      J_NAME(ch), J_NAME(wearer),
+				      obj->short_description ? obj->short_description : "unknown");
 
 			for (pos = 0; pos < MAX_WEAR; pos++)
 				if (wearer->equipment[pos] == obj)
@@ -193,36 +206,46 @@ void MakeScrap(P_char ch, P_obj obj)
 			else
 			{
 				P_char found = NULL;
-				int    found_pos = -1;
+				int found_pos = -1;
 
-				logit(LOG_EXIT, "MakeScrap(): worn object not found in wearer equipment: caller=%s wearer=%s obj=%s", J_NAME(ch), J_NAME(wearer), obj->short_description ? obj->short_description : "unknown");
+				logit(LOG_EXIT,
+				      "MakeScrap(): worn object not found in wearer equipment: caller=%s wearer=%s obj=%s",
+				      J_NAME(ch), J_NAME(wearer),
+				      obj->short_description ? obj->short_description : "unknown");
 				for (found = character_list; found; found = found->next)
 				{
 					for (pos = 0; pos < MAX_WEAR; pos++)
 						if (found->equipment[pos] == obj)
 							break;
 					if (pos < MAX_WEAR)
-						{
-							found_pos = pos;
-							break;
-						}
+					{
+						found_pos = pos;
+						break;
+					}
 				}
 				if (found_pos >= 0)
 				{
-					logit(LOG_DEBUG, "MakeScrap(): recovered worn object via global rescan, caller=%s wearer=%s obj=%s", J_NAME(ch), J_NAME(found), obj->short_description ? obj->short_description : "unknown");
+					logit(LOG_DEBUG,
+					      "MakeScrap(): recovered worn object via global rescan, caller=%s wearer=%s obj=%s",
+					      J_NAME(ch), J_NAME(found),
+					      obj->short_description ? obj->short_description :
+								       "unknown");
 					unequip_char(found, found_pos);
 				}
 				else
 				{
-					obj->loc_p       = LOC_NOWHERE;
+					obj->loc_p = LOC_NOWHERE;
 					obj->loc.wearing = NULL;
 				}
 			}
 		}
 		else
 		{
-			logit(LOG_EXIT, "MakeScrap(): worn object missing live wearer: caller=%s obj=%s", J_NAME(ch), obj->short_description ? obj->short_description : "unknown");
-			obj->loc_p       = LOC_NOWHERE;
+			logit(LOG_EXIT,
+			      "MakeScrap(): worn object missing live wearer: caller=%s obj=%s",
+			      J_NAME(ch),
+			      obj->short_description ? obj->short_description : "unknown");
+			obj->loc_p = LOC_NOWHERE;
 			obj->loc.wearing = NULL;
 		}
 	}
@@ -245,7 +268,7 @@ void MakeScrap(P_char ch, P_obj obj)
 
 void DamageAllStuff(P_char ch, int dam_type)
 {
-	int   j;
+	int j;
 	P_obj obj, next;
 
 	/* this procedure takes all of the items in equipment and inventory
@@ -272,7 +295,7 @@ void DamageAllStuff(P_char ch, int dam_type)
 
 void DamageStuff(P_char v, int type)
 {
-	int   slot;
+	int slot;
 	P_obj obj;
 
 	slot = number(2, CUR_MAX_WEAR);

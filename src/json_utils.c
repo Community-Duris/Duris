@@ -22,19 +22,19 @@
 #include "spells.h"
 
 /* externs */
-extern const char             *class_abbrevs[];
-extern const char             *race_abbrevs[];
-extern const char             *specdata[][MAX_SPEC];
-extern const char             *pc_class_types[];
+extern const char *class_abbrevs[];
+extern const char *race_abbrevs[];
+extern const char *specdata[][MAX_SPEC];
+extern const char *pc_class_types[];
 extern const struct race_names race_names_table[];
-extern struct room_data       *world;
-extern struct zone_data       *zone_table;
-extern struct index_data      *mob_index;
-extern struct index_data      *obj_index;
-extern struct time_info_data   time_info;
-extern const char             *month_name[];
-extern const char             *size_types[];
-int                            get_vis_mode(P_char ch, int room);
+extern struct room_data *world;
+extern struct zone_data *zone_table;
+extern struct index_data *mob_index;
+extern struct index_data *obj_index;
+extern struct time_info_data time_info;
+extern const char *month_name[];
+extern const char *size_types[];
+int get_vis_mode(P_char ch, int room);
 
 /* sql function for quest remaining count */
 int sql_world_quest_can_do_another(struct char_data *ch);
@@ -70,7 +70,10 @@ const char *json_get_cmd_name(cJSON *json)
 }
 
 /* get data object from parsed json */
-cJSON *json_get_data(cJSON *json) { return cJSON_GetObjectItem(json, "data"); }
+cJSON *json_get_data(cJSON *json)
+{
+	return cJSON_GetObjectItem(json, "data");
+}
 
 /* get string from data object */
 const char *json_get_string(cJSON *data, const char *key)
@@ -111,8 +114,8 @@ int json_get_int(cJSON *data, const char *key, int default_val)
 /* check if utf-8 sequence is valid, returns byte count (1-4) or 0 if invalid */
 static int utf8_sequence_len(const char *str, size_t i)
 {
-	unsigned char c       = (unsigned char)str[i];
-	int           seq_len = 0;
+	unsigned char c = (unsigned char)str[i];
+	int seq_len = 0;
 
 	if (c < 0x80)
 	{
@@ -156,8 +159,8 @@ static int utf8_sequence_len(const char *str, size_t i)
 /* escape string for json with utf-8 support (invalid bytes are skipped) */
 char *json_escape_string(const char *str)
 {
-	size_t        len, i, j;
-	char         *escaped;
+	size_t len, i, j;
+	char *escaped;
 	unsigned char c;
 
 	if (!str)
@@ -187,22 +190,22 @@ char *json_escape_string(const char *str)
 
 		switch (str[i])
 		{
-			case '"':
-			case '\\':
-			case '\n':
-			case '\r':
-			case '\t':
-				len += 2;
-				break;
-			default:
-				if (c < 32)
-				{
-					len += 6; /* \uXXXX */
-				}
-				else
-				{
-					len++;
-				}
+		case '"':
+		case '\\':
+		case '\n':
+		case '\r':
+		case '\t':
+			len += 2;
+			break;
+		default:
+			if (c < 32)
+			{
+				len += 6; /* \uXXXX */
+			}
+			else
+			{
+				len++;
+			}
 		}
 		i++;
 	}
@@ -238,35 +241,35 @@ char *json_escape_string(const char *str)
 
 		switch (str[i])
 		{
-			case '"':
-				escaped[j++] = '\\';
-				escaped[j++] = '"';
-				break;
-			case '\\':
-				escaped[j++] = '\\';
-				escaped[j++] = '\\';
-				break;
-			case '\n':
-				escaped[j++] = '\\';
-				escaped[j++] = 'n';
-				break;
-			case '\r':
-				escaped[j++] = '\\';
-				escaped[j++] = 'r';
-				break;
-			case '\t':
-				escaped[j++] = '\\';
-				escaped[j++] = 't';
-				break;
-			default:
-				if (c < 32)
-				{
-					j += sprintf(escaped + j, "\\u%04x", c);
-				}
-				else
-				{
-					escaped[j++] = str[i];
-				}
+		case '"':
+			escaped[j++] = '\\';
+			escaped[j++] = '"';
+			break;
+		case '\\':
+			escaped[j++] = '\\';
+			escaped[j++] = '\\';
+			break;
+		case '\n':
+			escaped[j++] = '\\';
+			escaped[j++] = 'n';
+			break;
+		case '\r':
+			escaped[j++] = '\\';
+			escaped[j++] = 'r';
+			break;
+		case '\t':
+			escaped[j++] = '\\';
+			escaped[j++] = 't';
+			break;
+		default:
+			if (c < 32)
+			{
+				j += sprintf(escaped + j, "\\u%04x", c);
+			}
+			else
+			{
+				escaped[j++] = str[i];
+			}
 		}
 		i++;
 	}
@@ -278,7 +281,7 @@ char *json_escape_string(const char *str)
 /* strip ansi color codes (&+X, &-X, &=XY, &n, &N) and escape for json */
 char *json_escape_ansi_string(const char *str)
 {
-	char  *stripped, *escaped;
+	char *stripped, *escaped;
 	size_t len, i, j;
 
 	if (!str)
@@ -367,9 +370,9 @@ void json_free_string(char *str)
 /* build auth success response */
 char *json_build_auth_success(const char *account, struct char_data *char_list)
 {
-	cJSON            *root, *data, *characters, *char_obj;
+	cJSON *root, *data, *characters, *char_obj;
 	struct char_data *ch;
-	char             *result;
+	char *result;
 
 	root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "type", MSG_TYPE_AUTH);
@@ -387,7 +390,8 @@ char *json_build_auth_success(const char *account, struct char_data *char_list)
 		cJSON_AddStringToObject(char_obj, "name", GET_NAME(ch));
 		cJSON_AddStringToObject(char_obj, "class", get_class_name(ch, NULL));
 		cJSON_AddNumberToObject(char_obj, "level", GET_LEVEL(ch));
-		cJSON_AddStringToObject(char_obj, "race", race_names_table[(int)GET_RACE(ch)].normal);
+		cJSON_AddStringToObject(char_obj, "race",
+					race_names_table[(int)GET_RACE(ch)].normal);
 		cJSON_AddItemToArray(characters, char_obj);
 	}
 
@@ -404,7 +408,7 @@ char *json_build_auth_success(const char *account, struct char_data *char_list)
 char *json_build_auth_failed(const char *error)
 {
 	cJSON *root;
-	char  *result;
+	char *result;
 
 	root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "type", MSG_TYPE_AUTH);
@@ -421,7 +425,7 @@ char *json_build_auth_failed(const char *error)
 char *json_build_text(const char *category, const char *text)
 {
 	cJSON *root;
-	char  *result;
+	char *result;
 
 	root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "type", MSG_TYPE_TEXT);
@@ -438,7 +442,7 @@ char *json_build_text(const char *category, const char *text)
 char *json_build_gmcp_message(const char *package, const char *data_json)
 {
 	cJSON *root, *data;
-	char  *result;
+	char *result;
 
 	root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "type", MSG_TYPE_GMCP);
@@ -464,15 +468,15 @@ char *json_build_gmcp_message(const char *package, const char *data_json)
 /* build room.info gmcp message (ch is for visibility checks, can be null) */
 char *json_build_room_info(struct room_data *room, struct char_data *ch)
 {
-	cJSON            *root, *exits, *coords, *doors, *players, *npcs, *items;
-	char             *result;
-	char             *clean_name, *clean_area;
-	int               dir;
+	cJSON *root, *exits, *coords, *doors, *players, *npcs, *items;
+	char *result;
+	char *clean_name, *clean_area;
+	int dir;
 	struct char_data *tch;
-	struct obj_data  *obj;
+	struct obj_data *obj;
 	/* standard gmcp uses short exit names */
 	/* order matches defines.h: n,e,s,w,u,d,nw,sw,ne,se */
-	const char *dir_abbrevs[] = {"n", "e", "s", "w", "u", "d", "nw", "sw", "ne", "se"};
+	const char *dir_abbrevs[] = { "n", "e", "s", "w", "u", "d", "nw", "sw", "ne", "se" };
 	/* Terrain type to environment string mapping */
 	const char *env_names[] = {
 		"inside",
@@ -523,12 +527,12 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 	root = cJSON_CreateObject();
 
 	/* Standard field: num (not vnum) - hide for wilderness zones */
-	int  zone_num      = (room->zone >= 0) ? zone_table[room->zone].number : 0;
-	bool is_wilderness = (zone_num == 600 ||                        // The Adventurers Shipyards
-	                      (zone_num >= 1200 && zone_num <= 1238) || // Alatorin
-	                      (zone_num >= 5000 && zone_num <= 6599) || // Surface
-	                      (zone_num >= 6600 && zone_num <= 6999) || // Newbie Maps
-	                      (zone_num >= 7000 && zone_num <= 8599));  // Underdark
+	int zone_num = (room->zone >= 0) ? zone_table[room->zone].number : 0;
+	bool is_wilderness = (zone_num == 600 || // The Adventurers Shipyards
+			      (zone_num >= 1200 && zone_num <= 1238) || // Alatorin
+			      (zone_num >= 5000 && zone_num <= 6599) || // Surface
+			      (zone_num >= 6600 && zone_num <= 6999) || // Newbie Maps
+			      (zone_num >= 7000 && zone_num <= 8599)); // Underdark
 	if (is_wilderness)
 	{
 		cJSON_AddNumberToObject(root, "num", 0);
@@ -593,7 +597,8 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 		if (room->dir_option[dir] && room->dir_option[dir]->to_room != NOWHERE)
 		{
 			/* Hide secret exits unless door is open */
-			if (IS_SET(room->dir_option[dir]->exit_info, EX_SECRET) && IS_SET(room->dir_option[dir]->exit_info, EX_CLOSED))
+			if (IS_SET(room->dir_option[dir]->exit_info, EX_SECRET) &&
+			    IS_SET(room->dir_option[dir]->exit_info, EX_CLOSED))
 			{
 				continue;
 			}
@@ -603,7 +608,9 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 			}
 			else
 			{
-				cJSON_AddNumberToObject(exits, dir_abbrevs[dir], world[room->dir_option[dir]->to_room].number);
+				cJSON_AddNumberToObject(
+					exits, dir_abbrevs[dir],
+					world[room->dir_option[dir]->to_room].number);
 			}
 		}
 	}
@@ -617,16 +624,21 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 		if (room->dir_option[dir] && IS_SET(room->dir_option[dir]->exit_info, EX_ISDOOR))
 		{
 			/* Hide secret doors unless they are open (discovered) */
-			if (IS_SET(room->dir_option[dir]->exit_info, EX_SECRET) && IS_SET(room->dir_option[dir]->exit_info, EX_CLOSED))
+			if (IS_SET(room->dir_option[dir]->exit_info, EX_SECRET) &&
+			    IS_SET(room->dir_option[dir]->exit_info, EX_CLOSED))
 			{
 				continue;
 			}
-			cJSON *door          = cJSON_CreateObject();
-			char  *clean_keyword = json_escape_ansi_string(room->dir_option[dir]->keyword ? room->dir_option[dir]->keyword : "door");
+			cJSON *door = cJSON_CreateObject();
+			char *clean_keyword = json_escape_ansi_string(
+				room->dir_option[dir]->keyword ? room->dir_option[dir]->keyword :
+								 "door");
 			cJSON_AddStringToObject(door, "name", clean_keyword);
 			free(clean_keyword);
-			cJSON_AddBoolToObject(door, "closed", IS_SET(room->dir_option[dir]->exit_info, EX_CLOSED));
-			cJSON_AddBoolToObject(door, "locked", IS_SET(room->dir_option[dir]->exit_info, EX_LOCKED));
+			cJSON_AddBoolToObject(door, "closed",
+					      IS_SET(room->dir_option[dir]->exit_info, EX_CLOSED));
+			cJSON_AddBoolToObject(door, "locked",
+					      IS_SET(room->dir_option[dir]->exit_info, EX_LOCKED));
 			cJSON_AddItemToObject(doors, dir_abbrevs[dir], door);
 		}
 	}
@@ -646,7 +658,7 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 				continue; /* Visibility check */
 
 			cJSON *player = cJSON_CreateObject();
-			clean_name    = json_escape_ansi_string(GET_NAME(tch));
+			clean_name = json_escape_ansi_string(GET_NAME(tch));
 			cJSON_AddStringToObject(player, "name", clean_name);
 			free(clean_name);
 			cJSON_AddItemToArray(players, player);
@@ -679,10 +691,14 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 			else
 			{
 				/* normal visibility - use short_descr */
-				clean_name = json_escape_ansi_string(tch->player.short_descr ? tch->player.short_descr : GET_NAME(tch));
+				clean_name = json_escape_ansi_string(
+					tch->player.short_descr ? tch->player.short_descr :
+								  GET_NAME(tch));
 				cJSON_AddStringToObject(npc, "name", clean_name);
 				free(clean_name);
-				clean_name = json_escape_string(tch->player.short_descr ? tch->player.short_descr : GET_NAME(tch));
+				clean_name = json_escape_string(tch->player.short_descr ?
+									tch->player.short_descr :
+									GET_NAME(tch));
 				cJSON_AddStringToObject(npc, "colored_name", clean_name);
 				free(clean_name);
 				cJSON_AddNumberToObject(npc, "vnum", GET_VNUM(tch));
@@ -691,7 +707,7 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 				{
 					char keyword_buf[64];
 					strlcpy(keyword_buf, tch->player.name, sizeof(keyword_buf));
-					char *space                          = strchr(keyword_buf, ' ');
+					char *space = strchr(keyword_buf, ' ');
 					if (space)
 						*space = '\0'; /* Get first word only */
 					cJSON_AddStringToObject(npc, "keyword", keyword_buf);
@@ -708,21 +724,27 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 				}
 				else if (opponent->in_room != tch->in_room)
 				{
-					cJSON_AddStringToObject(npc, "fighting", "someone who has already left");
+					cJSON_AddStringToObject(npc, "fighting",
+								"someone who has already left");
 				}
 				else if (CAN_SEE(ch, opponent))
 				{
 					if (IS_NPC(opponent))
 					{
 						/* fighting another npc - use short_descr */
-						clean_name = json_escape_ansi_string(opponent->player.short_descr ? opponent->player.short_descr : GET_NAME(opponent));
-						cJSON_AddStringToObject(npc, "fighting", clean_name);
+						clean_name = json_escape_ansi_string(
+							opponent->player.short_descr ?
+								opponent->player.short_descr :
+								GET_NAME(opponent));
+						cJSON_AddStringToObject(npc, "fighting",
+									clean_name);
 						free(clean_name);
 					}
 					else
 					{
 						/* fighting a player - use name */
-						cJSON_AddStringToObject(npc, "fighting", GET_NAME(opponent));
+						cJSON_AddStringToObject(npc, "fighting",
+									GET_NAME(opponent));
 					}
 				}
 				else
@@ -781,7 +803,7 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 char *json_build_char_vitals(struct char_data *ch)
 {
 	cJSON *root;
-	char  *result;
+	char *result;
 
 	if (!ch)
 		return strdup("{}");
@@ -797,7 +819,7 @@ char *json_build_char_vitals(struct char_data *ch)
 
 	/* Experience to next level */
 	extern long new_exp_table[];
-	long        tnl = 0;
+	long tnl = 0;
 	if (GET_LEVEL(ch) < MAXLVLMORTAL)
 	{
 		tnl = new_exp_table[GET_LEVEL(ch) + 1] - GET_EXP(ch);
@@ -813,8 +835,8 @@ char *json_build_char_vitals(struct char_data *ch)
 	cJSON_AddNumberToObject(root, "copper", GET_COPPER(ch));
 
 	/* Position - matches POS_ constants in defines.h */
-	const char *positions[] = {"on your ass", "sitting", "kneeling", "standing"};
-	int         pos         = GET_POS(ch);
+	const char *positions[] = { "on your ass", "sitting", "kneeling", "standing" };
+	int pos = GET_POS(ch);
 	if (pos >= 0 && pos <= 3)
 	{
 		cJSON_AddStringToObject(root, "position", positions[pos]);
@@ -846,9 +868,9 @@ char *json_build_char_vitals(struct char_data *ch)
 /* build char.status gmcp message */
 char *json_build_char_status(struct char_data *ch)
 {
-	cJSON      *root;
-	char       *result;
-	int         race;
+	cJSON *root;
+	char *result;
+	int race;
 	const char *class_name;
 
 	if (!ch)
@@ -916,11 +938,11 @@ char *json_build_char_status(struct char_data *ch)
 /* build char.affects gmcp message */
 char *json_build_char_affects(struct char_data *ch)
 {
-	extern Skill          skills[];
-	cJSON                *root, *affect_obj;
+	extern Skill skills[];
+	cJSON *root, *affect_obj;
 	struct affected_type *aff;
-	char                 *result;
-	int                   last = -1;
+	char *result;
+	int last = -1;
 
 	root = cJSON_CreateArray();
 
@@ -930,7 +952,8 @@ char *json_build_char_affects(struct char_data *ch)
 		{
 			/* Match score command logic for showing active spells */
 			int is_herb = (aff->type >= HERB_OCULARIUS && aff->type <= HERB_GOOTWIET);
-			if (aff->type <= 0 || !skills[aff->type].name || (aff->type > LAST_SKILL && !is_herb))
+			if (aff->type <= 0 || !skills[aff->type].name ||
+			    (aff->type > LAST_SKILL && !is_herb))
 			{
 				continue;
 			}
@@ -966,7 +989,7 @@ char *json_build_char_affects(struct char_data *ch)
 char *json_build_comm_channel(const char *channel, const char *sender, const char *text)
 {
 	cJSON *root;
-	char  *result;
+	char *result;
 	time_t now;
 
 	root = cJSON_CreateObject();
@@ -984,10 +1007,11 @@ char *json_build_comm_channel(const char *channel, const char *sender, const cha
 }
 
 /* build comm.channel gmcp message with alignment (for nchat) */
-char *json_build_comm_channel_ex(const char *channel, const char *sender, const char *text, const char *alignment)
+char *json_build_comm_channel_ex(const char *channel, const char *sender, const char *text,
+				 const char *alignment)
 {
 	cJSON *root;
-	char  *result;
+	char *result;
 	time_t now;
 
 	root = cJSON_CreateObject();
@@ -1012,10 +1036,10 @@ char *json_build_comm_channel_ex(const char *channel, const char *sender, const 
 /* build stat roll response */
 char *json_build_stat_roll(int *rolls, int *racial_mods, int *final, int rerolls)
 {
-	cJSON      *root, *data, *rolls_obj, *mods_obj, *final_obj;
-	char       *result;
-	const char *stats[] = {"str", "int", "wis", "dex", "con", "cha"};
-	int         i;
+	cJSON *root, *data, *rolls_obj, *mods_obj, *final_obj;
+	char *result;
+	const char *stats[] = { "str", "int", "wis", "dex", "con", "cha" };
+	int i;
 
 	root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "type", MSG_TYPE_CHARGEN);
@@ -1024,7 +1048,7 @@ char *json_build_stat_roll(int *rolls, int *racial_mods, int *final, int rerolls
 	data = cJSON_CreateObject();
 
 	rolls_obj = cJSON_CreateObject();
-	mods_obj  = cJSON_CreateObject();
+	mods_obj = cJSON_CreateObject();
 	final_obj = cJSON_CreateObject();
 
 	for (i = 0; i < 6; i++)
@@ -1051,7 +1075,7 @@ char *json_build_stat_roll(int *rolls, int *racial_mods, int *final, int rerolls
 char *json_build_chargen_complete(const char *name, const char *message)
 {
 	cJSON *root, *data;
-	char  *result;
+	char *result;
 
 	root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "type", MSG_TYPE_CHARGEN);
@@ -1072,11 +1096,11 @@ char *json_build_chargen_complete(const char *name, const char *message)
 /* build quest.status gmcp message for bartender quests */
 char *json_build_quest_status(struct char_data *ch)
 {
-	cJSON            *root;
-	char             *result;
-	char              target_buf[MAX_STRING_LENGTH];
+	cJSON *root;
+	char *result;
+	char target_buf[MAX_STRING_LENGTH];
 	struct char_data *q_mob = NULL;
-	int               remaining;
+	int remaining;
 
 	if (!ch || IS_NPC(ch))
 		return NULL;
@@ -1100,8 +1124,10 @@ char *json_build_quest_status(struct char_data *ch)
 		else if (ch->only.pc->quest_type == FIND_AND_KILL)
 		{
 			cJSON_AddStringToObject(root, "type", "kill");
-			cJSON_AddNumberToObject(root, "killCount", ch->only.pc->quest_kill_how_many);
-			cJSON_AddNumberToObject(root, "killRequired", ch->only.pc->quest_kill_original);
+			cJSON_AddNumberToObject(root, "killCount",
+						ch->only.pc->quest_kill_how_many);
+			cJSON_AddNumberToObject(root, "killRequired",
+						ch->only.pc->quest_kill_original);
 		}
 		else
 		{
@@ -1116,12 +1142,19 @@ char *json_build_quest_status(struct char_data *ch)
 
 			if (ch->only.pc->quest_type == FIND_AND_ASK)
 			{
-				snprintf(target_buf, MAX_STRING_LENGTH, "Go ask %s in %s about the %s.", q_mob->player.short_descr, zone_table[zone_idx].name, month_name[time_info.month]);
+				snprintf(target_buf, MAX_STRING_LENGTH,
+					 "Go ask %s in %s about the %s.", q_mob->player.short_descr,
+					 zone_table[zone_idx].name, month_name[time_info.month]);
 			}
 			else if (ch->only.pc->quest_type == FIND_AND_KILL)
 			{
-				int kills_left = ch->only.pc->quest_kill_original - ch->only.pc->quest_kill_how_many;
-				snprintf(target_buf, MAX_STRING_LENGTH, "Go kill %d %s (%d left) in %s!", ch->only.pc->quest_kill_original, q_mob->player.short_descr, kills_left, zone_table[zone_idx].name);
+				int kills_left = ch->only.pc->quest_kill_original -
+						 ch->only.pc->quest_kill_how_many;
+				snprintf(target_buf, MAX_STRING_LENGTH,
+					 "Go kill %d %s (%d left) in %s!",
+					 ch->only.pc->quest_kill_original,
+					 q_mob->player.short_descr, kills_left,
+					 zone_table[zone_idx].name);
 			}
 			else
 			{
@@ -1158,11 +1191,11 @@ char *json_build_quest_status(struct char_data *ch)
 /* build ship.info gmcp message - static/slow-changing ship data */
 char *json_build_ship_info(struct ShipData *ship, struct char_data *ch)
 {
-	cJSON      *root, *armor, *internal, *weapons, *cargo, *items;
-	cJSON      *arc_arr;
-	char       *result;
-	int         i;
-	const char *side_names[] = {"bow", "port", "stern", "starboard"};
+	cJSON *root, *armor, *internal, *weapons, *cargo, *items;
+	cJSON *arc_arr;
+	char *result;
+	int i;
+	const char *side_names[] = { "bow", "port", "stern", "starboard" };
 
 	if (!ship)
 		return strdup("{}");
@@ -1192,9 +1225,15 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch)
 	cJSON_AddStringToObject(root, "crewType", ship_crew_data[ship->crew.index].name);
 
 	cJSON *chiefs = cJSON_CreateObject();
-	cJSON_AddStringToObject(chiefs, "sail", ship->crew.sail_chief > 0 ? ship_chief_data[ship->crew.sail_chief].name : "");
-	cJSON_AddStringToObject(chiefs, "guns", ship->crew.guns_chief > 0 ? ship_chief_data[ship->crew.guns_chief].name : "");
-	cJSON_AddStringToObject(chiefs, "repair", ship->crew.rpar_chief > 0 ? ship_chief_data[ship->crew.rpar_chief].name : "");
+	cJSON_AddStringToObject(
+		chiefs, "sail",
+		ship->crew.sail_chief > 0 ? ship_chief_data[ship->crew.sail_chief].name : "");
+	cJSON_AddStringToObject(
+		chiefs, "guns",
+		ship->crew.guns_chief > 0 ? ship_chief_data[ship->crew.guns_chief].name : "");
+	cJSON_AddStringToObject(
+		chiefs, "repair",
+		ship->crew.rpar_chief > 0 ? ship_chief_data[ship->crew.rpar_chief].name : "");
 	cJSON_AddItemToObject(root, "chiefs", chiefs);
 
 	/* crew skills */
@@ -1243,11 +1282,13 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch)
 	{
 		if (ship->slot[i].type == SLOT_WEAPON)
 		{
-			cJSON *w     = cJSON_CreateObject();
-			int    w_idx = ship->slot[i].index;
+			cJSON *w = cJSON_CreateObject();
+			int w_idx = ship->slot[i].index;
 
 			cJSON_AddNumberToObject(w, "slot", i);
-			cJSON_AddStringToObject(w, "name", weapon_data[w_idx].name ? weapon_data[w_idx].name : "Unknown");
+			cJSON_AddStringToObject(w, "name",
+						weapon_data[w_idx].name ? weapon_data[w_idx].name :
+									  "Unknown");
 
 			/* position */
 			const char *pos = "hold";
@@ -1278,11 +1319,14 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch)
 	{
 		if (ship->slot[i].type == SLOT_EQUIPMENT)
 		{
-			cJSON *e     = cJSON_CreateObject();
-			int    e_idx = ship->slot[i].index;
+			cJSON *e = cJSON_CreateObject();
+			int e_idx = ship->slot[i].index;
 
 			cJSON_AddNumberToObject(e, "slot", i);
-			cJSON_AddStringToObject(e, "name", equipment_data[e_idx].name ? equipment_data[e_idx].name : "Unknown");
+			cJSON_AddStringToObject(e, "name",
+						equipment_data[e_idx].name ?
+							equipment_data[e_idx].name :
+							"Unknown");
 			cJSON_AddBoolToObject(e, "ready", ship->slot[i].timer == 0 ? 1 : 0);
 
 			cJSON_AddItemToArray(equipment, e);
@@ -1291,9 +1335,9 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch)
 	cJSON_AddItemToObject(root, "equipment", equipment);
 
 	/* cargo */
-	cargo           = cJSON_CreateObject();
+	cargo = cJSON_CreateObject();
 	int cargo_total = 0;
-	items           = cJSON_CreateArray();
+	items = cJSON_CreateArray();
 
 	for (i = 0; i < MAXSLOTS; i++)
 	{
@@ -1304,7 +1348,8 @@ char *json_build_ship_info(struct ShipData *ship, struct char_data *ch)
 			cJSON_AddStringToObject(c, "name", cargo_type_name(ship->slot[i].index));
 			cJSON_AddNumberToObject(c, "crates", ship->slot[i].val0);
 			cJSON_AddNumberToObject(c, "invoicePrice", ship->slot[i].val1);
-			cJSON_AddBoolToObject(c, "contraband", ship->slot[i].type == SLOT_CONTRABAND ? 1 : 0);
+			cJSON_AddBoolToObject(c, "contraband",
+					      ship->slot[i].type == SLOT_CONTRABAND ? 1 : 0);
 			cJSON_AddItemToArray(items, c);
 			cargo_total += ship->slot[i].val0;
 		}

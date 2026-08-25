@@ -32,39 +32,39 @@
 #include "vnum.obj.h"
 using namespace std;
 
-extern P_char            character_list;
-extern int               mini_mode;
-extern P_index           mob_index;
-extern P_desc            descriptor_list;
-extern int               spl_table[TOTALLVLS][MAX_CIRCLE];
-char                    *ibuf;
-static int               corpse_room;
-static int               int_size  = sizeof(int);
-static int               long_size = sizeof(long);
-static int               save_count;
-static int               short_size = sizeof(short);
-static int               stat_vers, obj_vers, aff_vers, skill_vers, witness_vers;
+extern P_char character_list;
+extern int mini_mode;
+extern P_index mob_index;
+extern P_desc descriptor_list;
+extern int spl_table[TOTALLVLS][MAX_CIRCLE];
+char *ibuf;
+static int corpse_room;
+static int int_size = sizeof(int);
+static int long_size = sizeof(long);
+static int save_count;
+static int short_size = sizeof(short);
+static int stat_vers, obj_vers, aff_vers, skill_vers, witness_vers;
 extern struct shop_data *shop_index;
 
 // flag to skip corpse saves during boot (loading from db)
-int                     skip_corpse_save = 0;
+int skip_corpse_save = 0;
 extern struct hold_data TmpAffs;
-extern struct mm_ds    *dead_mob_pool;
+extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_trophy_pool;
 extern struct mm_ds *dead_house_pool;
 extern int LOADED_RANDOM_ZONES;
 
-extern P_index                       obj_index;
-extern P_room                        world;
-extern const char                   *class_types[];
-extern const int                     min_stats_for_class[][8];
+extern P_index obj_index;
+extern P_room world;
+extern const char *class_types[];
+extern const int min_stats_for_class[][8];
 extern const struct racial_data_type racial_data[];
-extern int                           pulse;
-extern int                           innate_abilities[];
-extern int                           class_innates[][5];
-extern int                           innate2_abilities[];
-extern int                           class_innates2[][5];
-extern const int                     top_of_world;
+extern int pulse;
+extern int innate_abilities[];
+extern int class_innates[][5];
+extern int innate2_abilities[];
+extern int class_innates2[][5];
+extern const int top_of_world;
 
 #ifndef _PFILE_
 extern Skill skills[];
@@ -77,20 +77,20 @@ extern Skill skills[];
 #define PERSISTENCE_CORPSE_RESTORE_TIMER_MULTIPLIER 3
 
 #ifdef _PFILE_
-char  buff[SAV_MAXSIZE];
+char buff[SAV_MAXSIZE];
 char *buf = buff;
-int   skill_off, affect_off, item_off;
+int skill_off, affect_off, item_off;
 #endif
 
 /* local globals */
 P_obj save_equip[MAX_WEAR];
 
-int      anchor_room(int room);
-int      calculate_mana(P_char ch);
+int anchor_room(int room);
+int calculate_mana(P_char ch);
 P_nevent get_scheduled(P_obj obj, event_func func);
-void     proclib_obj_event(P_char, P_char, P_obj obj, void *);
-void     event_poison(P_char, P_char, P_obj obj, void *);
-void     event_short_affect(P_char, P_char, P_obj, void *);
+void proclib_obj_event(P_char, P_char, P_obj obj, void *);
+void event_poison(P_char, P_char, P_obj obj, void *);
+void event_short_affect(P_char, P_char, P_obj, void *);
 
 struct ship_reg_node *ship_reg_db = NULL;
 
@@ -262,15 +262,28 @@ struct ship_reg_node *ship_reg_db = NULL;
 
 // bv6 would be in here, but there's no unique flag for it yet
 
-#define ObjectsMatch(obj, control)                                                                                                                                                                     \
-	(((obj)->str_mask == (control)->str_mask) && ((obj)->affected[0].location == (control)->affected[0].location) && ((obj)->affected[0].modifier == (control)->affected[0].modifier) &&               \
-	 ((obj)->affected[1].location == (control)->affected[1].location) && ((obj)->affected[1].modifier == (control)->affected[1].modifier) && ((obj)->extra_flags == (control)->extra_flags) &&         \
-	 ((obj)->extra2_flags == (control)->extra2_flags) && ((obj)->anti_flags == (control)->anti_flags) && ((obj)->anti2_flags == (control)->anti2_flags) &&                                             \
-	 ((obj)->bitvector == (control)->bitvector) && ((obj)->bitvector2 == (control)->bitvector2) && ((obj)->bitvector3 == (control)->bitvector3) && ((obj)->bitvector4 == (control)->bitvector4) &&     \
-	 ((obj)->value[0] == (control)->value[0]) && ((obj)->value[1] == (control)->value[1]) && ((obj)->value[2] == (control)->value[2]) && ((obj)->value[3] == (control)->value[3]) &&                   \
-	 ((obj)->value[4] == (control)->value[4]) && ((obj)->value[5] == (control)->value[5]) && ((obj)->value[6] == (control)->value[6]) && ((obj)->value[7] == (control)->value[7]) &&                   \
-	 ((obj)->timer[0] == (control)->timer[0]) && ((obj)->timer[1] == (control)->timer[1]) && ((obj)->timer[2] == (control)->timer[2]) && ((obj)->timer[3] == (control)->timer[3]) &&                   \
-	 ((obj)->wear_flags == (control)->wear_flags) && ((obj)->weight == (control)->weight) && ((obj)->material == (control)->material) && ((obj)->cost == (control)->cost) &&                           \
+#define ObjectsMatch(obj, control)                                                               \
+	(((obj)->str_mask == (control)->str_mask) &&                                             \
+	 ((obj)->affected[0].location == (control)->affected[0].location) &&                     \
+	 ((obj)->affected[0].modifier == (control)->affected[0].modifier) &&                     \
+	 ((obj)->affected[1].location == (control)->affected[1].location) &&                     \
+	 ((obj)->affected[1].modifier == (control)->affected[1].modifier) &&                     \
+	 ((obj)->extra_flags == (control)->extra_flags) &&                                       \
+	 ((obj)->extra2_flags == (control)->extra2_flags) &&                                     \
+	 ((obj)->anti_flags == (control)->anti_flags) &&                                         \
+	 ((obj)->anti2_flags == (control)->anti2_flags) &&                                       \
+	 ((obj)->bitvector == (control)->bitvector) &&                                           \
+	 ((obj)->bitvector2 == (control)->bitvector2) &&                                         \
+	 ((obj)->bitvector3 == (control)->bitvector3) &&                                         \
+	 ((obj)->bitvector4 == (control)->bitvector4) &&                                         \
+	 ((obj)->value[0] == (control)->value[0]) && ((obj)->value[1] == (control)->value[1]) && \
+	 ((obj)->value[2] == (control)->value[2]) && ((obj)->value[3] == (control)->value[3]) && \
+	 ((obj)->value[4] == (control)->value[4]) && ((obj)->value[5] == (control)->value[5]) && \
+	 ((obj)->value[6] == (control)->value[6]) && ((obj)->value[7] == (control)->value[7]) && \
+	 ((obj)->timer[0] == (control)->timer[0]) && ((obj)->timer[1] == (control)->timer[1]) && \
+	 ((obj)->timer[2] == (control)->timer[2]) && ((obj)->timer[3] == (control)->timer[3]) && \
+	 ((obj)->wear_flags == (control)->wear_flags) && ((obj)->weight == (control)->weight) && \
+	 ((obj)->material == (control)->material) && ((obj)->cost == (control)->cost) &&         \
 	 ((obj)->type == (control)->type))
 
 /*
@@ -280,9 +293,9 @@ struct ship_reg_node *ship_reg_db = NULL;
 
 int writeStatus(char *buf, P_char ch, bool updateTime)
 {
-	char                 *start = buf;
-	int                   tmp, i;
-	long                  tmpl;
+	char *start = buf;
+	int tmp, i;
+	long tmpl;
 	struct affected_type *af = NULL, *next_af = NULL;
 	/*  sh_int dummy_short = 0; */
 
@@ -334,8 +347,8 @@ int writeStatus(char *buf, P_char ch, bool updateTime)
 	if (updateTime)
 	{
 		tmpl = time(0);
-		tmp  = ch->player.time.played + (int)(tmpl - ch->player.time.logon);
-		ADD_INT(buf, tmp);   /* player age in secs */
+		tmp = ch->player.time.played + (int)(tmpl - ch->player.time.logon);
+		ADD_INT(buf, tmp); /* player age in secs */
 		ADD_LONG(buf, tmpl); /* last save time */
 	}
 	else
@@ -457,9 +470,9 @@ int writeStatus(char *buf, P_char ch, bool updateTime)
 	ADD_SHORT(buf, ch->only.pc->wimpy);
 	ADD_SHORT(buf, ch->only.pc->aggressive);
 	ADD_BYTE(buf, ch->only.pc->highest_level);
-	ADD_INT(buf, GET_BALANCE_COPPER(ch));   /* bank account */
-	ADD_INT(buf, GET_BALANCE_SILVER(ch));   /* bank account */
-	ADD_INT(buf, GET_BALANCE_GOLD(ch));     /* bank account */
+	ADD_INT(buf, GET_BALANCE_COPPER(ch)); /* bank account */
+	ADD_INT(buf, GET_BALANCE_SILVER(ch)); /* bank account */
+	ADD_INT(buf, GET_BALANCE_GOLD(ch)); /* bank account */
 	ADD_INT(buf, GET_BALANCE_PLATINUM(ch)); /* bank account */
 	ADD_LONG(buf, ch->only.pc->numb_deaths);
 
@@ -488,7 +501,7 @@ int writeStatus(char *buf, P_char ch, bool updateTime)
 void updateShortAffects(P_char ch)
 {
 	affected_type *paf = ch->affected;
-	P_nevent       pnev;
+	P_nevent pnev;
 
 	// Look through each of ch's affects.
 	while (paf != NULL)
@@ -500,7 +513,8 @@ void updateShortAffects(P_char ch)
 			LOOP_EVENTS_CH(pnev, ch->nevents)
 			{
 				// If the event is a short affect wear-off event and it corresponds to paf.
-				if (pnev->func == event_short_affect && pnev->data != NULL && ((struct event_short_affect_data *)pnev->data)->af == paf)
+				if (pnev->func == event_short_affect && pnev->data != NULL &&
+				    ((struct event_short_affect_data *)pnev->data)->af == paf)
 				{
 					break;
 				}
@@ -512,7 +526,9 @@ void updateShortAffects(P_char ch)
 			}
 			else
 			{
-				debug("updateShortAffects: Couldn't find event for short affect '%s', timer %d, on '%s'.", (paf->type > 0) ? skills[paf->type].name : "Unknown", paf->duration, J_NAME(ch));
+				debug("updateShortAffects: Couldn't find event for short affect '%s', timer %d, on '%s'.",
+				      (paf->type > 0) ? skills[paf->type].name : "Unknown",
+				      paf->duration, J_NAME(ch));
 			}
 		}
 		paf = paf->next;
@@ -525,8 +541,8 @@ void updateShortAffects(P_char ch)
 int writeAffects(char *buf, struct affected_type *af)
 {
 	struct affected_type *first = af;
-	char                 *start = buf;
-	signed short          count = 0;
+	char *start = buf;
+	signed short count = 0;
 
 	ADD_BYTE(buf, (char)SAV_AFFVERS);
 
@@ -550,7 +566,8 @@ int writeAffects(char *buf, struct affected_type *af)
 		}
 
 #ifndef _PFILE_
-		if (af->wear_off_message_index > 0 && af->wear_off_message_index < MAX_WEAR_OFF_MESSAGES)
+		if (af->wear_off_message_index > 0 &&
+		    af->wear_off_message_index < MAX_WEAR_OFF_MESSAGES)
 		{
 			if (skills[af->type].wear_off_char[af->wear_off_message_index])
 				custom_messages = 1;
@@ -596,8 +613,8 @@ int writeAffects(char *buf, struct affected_type *af)
 
 int writeSkills(char *buf, P_char ch, int num)
 {
-	char                 *start = buf;
-	int                   i;
+	char *start = buf;
+	int i;
 	struct memorize_data *tmp;
 
 	ADD_BYTE(buf, (char)SAV_SKILLVERS);
@@ -668,7 +685,7 @@ ulong ObjUniqueFlags(P_obj obj, P_obj control)
 {
 	// mask the flag to ONLY see the O_U_ flags which corrospond directly to STRUNG_* bits
 	ulong flag = (ulong)(obj->str_mask & (O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3));
-	int   i;
+	int i;
 
 	if (obj->str_mask & STRUNG_EDESC)
 		flag |= O_U_EDESC;
@@ -743,7 +760,8 @@ ulong ObjUniqueFlags(P_obj obj, P_obj control)
 
 	for (i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
-		if ((obj->affected[i].location != control->affected[i].location) || (obj->affected[i].modifier != control->affected[i].modifier))
+		if ((obj->affected[i].location != control->affected[i].location) ||
+		    (obj->affected[i].modifier != control->affected[i].modifier))
 		{
 			flag |= O_U_AFFS;
 			break;
@@ -757,20 +775,20 @@ ulong ObjUniqueFlags(P_obj obj, P_obj control)
 
 bool writeObjectlist(P_obj obj, int loc)
 {
-	int    i, done[4000], done_num = 0, cont_wgt, count;
-	P_obj  t_obj = NULL, obj2 = NULL, obj_c = NULL, t_obj2 = NULL, w_obj;
+	int i, done[4000], done_num = 0, cont_wgt, count;
+	P_obj t_obj = NULL, obj2 = NULL, obj_c = NULL, t_obj2 = NULL, w_obj;
 	::byte o_f_flag;
-	ulong  o_u_flag;
-	bool   skip;
+	ulong o_u_flag;
+	bool skip;
 
 	for (w_obj = obj; w_obj; w_obj = obj2)
 	{
-		obj2     = w_obj->next_content;
-		obj_c    = w_obj->contains;
+		obj2 = w_obj->next_content;
+		obj_c = w_obj->contains;
 		o_f_flag = 0;
 		o_u_flag = 0;
 		cont_wgt = 0;
-		count    = 1;
+		count = 1;
 
 		if (t_obj && (t_obj->R_num != w_obj->R_num))
 		{
@@ -780,7 +798,8 @@ bool writeObjectlist(P_obj obj, int loc)
 		if (!t_obj)
 			if (!(t_obj = read_object(w_obj->R_num, REAL)))
 			{
-				logit(LOG_DEBUG, "writeObjectlist(): obj %d [%d] not loadable", w_obj->R_num, obj_index[w_obj->R_num].virtual_number);
+				logit(LOG_DEBUG, "writeObjectlist(): obj %d [%d] not loadable",
+				      w_obj->R_num, obj_index[w_obj->R_num].virtual_number);
 				continue;
 			}
 		if (OBJ_WORN(w_obj) || (loc && (save_equip[loc - 1] == w_obj)))
@@ -825,7 +844,6 @@ bool writeObjectlist(P_obj obj, int loc)
 
 		if (o_f_flag)
 		{
-
 			/*
 			 * by definition, if this flag is set, COUNT cannot apply
 			 * without going to absurd lengths, so we just write it out,
@@ -833,7 +851,8 @@ bool writeObjectlist(P_obj obj, int loc)
 			 */
 
 			if (!IS_SET(w_obj->extra_flags, ITEM_NORENT))
-				ibuf += writeObject(w_obj, o_f_flag, o_u_flag, (ush_int)1, loc, ibuf);
+				ibuf += writeObject(w_obj, o_f_flag, o_u_flag, (ush_int)1, loc,
+						    ibuf);
 
 			if (obj_c)
 				w_obj->weight += cont_wgt;
@@ -846,7 +865,6 @@ bool writeObjectlist(P_obj obj, int loc)
 		}
 		else
 		{
-
 			/*
 			 * ok, to keep things sane cpu-wise, but allow us to reduce
 			 * duplicate items to minimal storage requirements, we do
@@ -883,17 +901,23 @@ bool writeObjectlist(P_obj obj, int loc)
 			/* not in done[], so add to done[], then count copies after it.  */
 
 			done[done_num++] = w_obj->R_num;
-			t_obj2           = obj2;
-			skip             = TRUE;
+			t_obj2 = obj2;
+			skip = TRUE;
 
 			while (t_obj2)
 			{
-				if ((t_obj2->R_num == w_obj->R_num) && !t_obj2->contains && ObjectsMatch(t_obj2, t_obj) && (t_obj2->type != ITEM_SPELLBOOK || !find_spell_description(t_obj2)))
+				if ((t_obj2->R_num == w_obj->R_num) && !t_obj2->contains &&
+				    ObjectsMatch(t_obj2, t_obj) &&
+				    (t_obj2->type != ITEM_SPELLBOOK ||
+				     !find_spell_description(t_obj2)))
 				{
 					count++;
 					if (count > 32000)
 					{
-						statuslog(AVATAR, "Some feeb has > 32,000 %s, find him and kill him, he is too clueless to live.", w_obj->short_description);
+						statuslog(
+							AVATAR,
+							"Some feeb has > 32,000 %s, find him and kill him, he is too clueless to live.",
+							w_obj->short_description);
 						return FALSE;
 					}
 				}
@@ -938,11 +962,11 @@ bool writeObjectlist(P_obj obj, int loc)
 
 int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, char *dest_buff)
 {
-	char                    *start = dest_buff;
-	char                    *ibuf  = dest_buff;
-	int                      i;
+	char *start = dest_buff;
+	char *ibuf = dest_buff;
+	int i;
 	struct extra_descr_data *tmp;
-	struct obj_affect       *af;
+	struct obj_affect *af;
 
 	if (!obj)
 		return FALSE;
@@ -994,8 +1018,8 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 
 		if (o_u_flag & O_U_EDESC)
 		{
-			int                      nDescs = 0;
-			struct extra_descr_data *ed     = obj->ex_description;
+			int nDescs = 0;
+			struct extra_descr_data *ed = obj->ex_description;
 			while (ed)
 			{
 				if (ed->keyword)
@@ -1127,10 +1151,10 @@ int writeObject(P_obj obj, int o_f_flag, ulong o_u_flag, int count, int loc, cha
 int write_one_object(P_obj obj, char *dest_buff, int include_persistent_uid)
 {
 	char *start = dest_buff;
-	char *buff  = dest_buff;
+	char *buff = dest_buff;
 
 	::byte o_f_flag = 0;
-	ulong  o_u_flag = 0;
+	ulong o_u_flag = 0;
 
 	if (!obj)
 	{
@@ -1148,13 +1172,14 @@ int write_one_object(P_obj obj, char *dest_buff, int include_persistent_uid)
 
 	if (!t_obj)
 	{
-		logit(LOG_DEBUG, "write_one_object(): obj %d [%d] not loadable\n", obj->R_num, obj_index[obj->R_num].virtual_number);
+		logit(LOG_DEBUG, "write_one_object(): obj %d [%d] not loadable\n", obj->R_num,
+		      obj_index[obj->R_num].virtual_number);
 		extract_obj(t_obj);
 		return 0;
 	}
 
 	ADD_BYTE(buff, (char)SAV_ITEMVERS); // object version
-	ADD_INT(buff, 1);                   // just one item
+	ADD_INT(buff, 1); // just one item
 
 	if (obj->type == ITEM_SPELLBOOK && find_spell_description(obj))
 		o_f_flag |= O_F_SPELLBOOK;
@@ -1213,9 +1238,8 @@ void writeCorpse(P_obj corpse)
 
 	if (!sql_save_corpse(corpse))
 	{
-		persistence_alert(AVATAR, "corpse", corpse->action_description,
-		                  "none", "none", "sql_save_failed",
-		                  "save_id=%d", corpse->value[CORPSE_SAVEID]);
+		persistence_alert(AVATAR, "corpse", corpse->action_description, "none", "none",
+				  "sql_save_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
 	}
 }
 
@@ -1225,34 +1249,32 @@ void persistence_refresh_restored_corpse(P_obj corpse, const char *source)
 	int base_decay;
 	int restored_decay;
 
-	if (!corpse || (corpse->type != ITEM_CORPSE) || !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
+	if (!corpse || (corpse->type != ITEM_CORPSE) ||
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE))
 		return;
 
-	base_decay     = get_property("timer.decay.corpse.pc", 120) * WAIT_MIN;
+	base_decay = get_property("timer.decay.corpse.pc", 120) * WAIT_MIN;
 	restored_decay = base_decay * PERSISTENCE_CORPSE_RESTORE_TIMER_MULTIPLIER;
 
 	affect_from_obj(corpse, TAG_OBJ_DECAY);
 	set_obj_affected(corpse, restored_decay, TAG_OBJ_DECAY, 0);
 
 	snprintf(target, sizeof(target), "corpse:%d", corpse->value[CORPSE_SAVEID]);
-	persistence_record_item_event("owner_corpse_restored", corpse, NULL,
-	                              "corpse_file", target,
-	                              "restore_corpse_timer_refreshed");
+	persistence_record_item_event("owner_corpse_restored", corpse, NULL, "corpse_file", target,
+				      "restore_corpse_timer_refreshed");
 	logit(LOG_CORPSE,
 	      "Restored player corpse %s from %s with decay timer refreshed to %d pulses.",
 	      OBJ_SHORT(corpse) ? OBJ_SHORT(corpse) : "unknown corpse",
-	      source ? source : "unknown source",
-	      restored_decay);
-	logit(LOG_WIZ,
-	      "Persistence restored player corpse %s with refreshed crash recovery timer.",
+	      source ? source : "unknown source", restored_decay);
+	logit(LOG_WIZ, "Persistence restored player corpse %s with refreshed crash recovery timer.",
 	      target);
 }
 
 int writeItems(char *buf, P_char ch)
 {
 	char *start = buf;
-	int   count, i;
-	int   a, b; /*
+	int count, i;
+	int a, b; /*
 	             * Added for easier debugging via GDB
 	             * -Torm
 	             */
@@ -1263,8 +1285,8 @@ int writeItems(char *buf, P_char ch)
 	a = countEquip(ch); /*
 	                     * including contents of worn containers
 	                     */
-	b          = countInven(ch->carrying);
-	count      = a + b;
+	b = countInven(ch->carrying);
+	count = a + b;
 	save_count = 0;
 
 	ADD_INT(ibuf, count); /* total number of items being saved */
@@ -1293,10 +1315,10 @@ int writeItems(char *buf, P_char ch)
 
 static int persistence_write_character_flat_fallback(P_char ch, int type, int room)
 {
-	FILE        *f;
-	char        *buf, *skill_off, *affect_off, *item_off, *size_off, *witness_off, *tmp;
-	char        Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], dir[MAX_STRING_LENGTH];
-	int         bak;
+	FILE *f;
+	char *buf, *skill_off, *affect_off, *item_off, *size_off, *witness_off, *tmp;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], dir[MAX_STRING_LENGTH];
+	int bak;
 	static char fallback_buff[SAV_MAXSIZE * 2];
 	struct stat statbuf;
 
@@ -1324,14 +1346,18 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 	ADD_INT(buf, room);
 	ADD_LONG(buf, time(0));
 
-	buf += writeStatus(buf, ch, ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI)) ? TRUE : FALSE);
+	buf += writeStatus(buf, ch,
+			   ((type != RENT_POOFARTI) && (type != RENT_SWAPARTI) &&
+			    (type != RENT_FIGHTARTI)) ?
+				   TRUE :
+				   FALSE);
 	ADD_INT(skill_off, (int)(buf - fallback_buff));
 	buf += writeSkills(buf, ch, MAX_SKILLS);
 #if 1
 	// remove on wipe
 	ADD_INT(witness_off, (int)(buf - fallback_buff));
 	ADD_BYTE(buf, (char)SAV_WTNSVERS);
-        ADD_INT(buf, 0);
+	ADD_INT(buf, 0);
 	buf += 1 + sizeof(int);
 #endif
 	ADD_INT(affect_off, (int)(buf - fallback_buff));
@@ -1343,10 +1369,9 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 
 	if ((int)(buf - fallback_buff) > SAV_MAXSIZE)
 	{
-		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
-		                  "none", "fallback_too_large",
-		                  "type=%d room=%d size=%d max=%d",
-		                  type, room, (int)(buf - fallback_buff), SAV_MAXSIZE);
+		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none", "none",
+				  "fallback_too_large", "type=%d room=%d size=%d max=%d", type,
+				  room, (int)(buf - fallback_buff), SAV_MAXSIZE);
 		return 0;
 	}
 
@@ -1363,9 +1388,9 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 	{
 		if (rename(Gbuf1, Gbuf2) == -1)
 		{
-			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
-			                  "none", "none", "backup_failed",
-			                  "path=%s errno=%d", Gbuf1, errno);
+			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
+					  "none", "backup_failed", "path=%s errno=%d", Gbuf1,
+					  errno);
 			return 0;
 		}
 		bak = 1;
@@ -1374,9 +1399,8 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 	{
 		if (errno != ENOENT)
 		{
-			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
-			                  "none", "none", "stat_failed",
-			                  "path=%s errno=%d", Gbuf1, errno);
+			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
+					  "none", "stat_failed", "path=%s errno=%d", Gbuf1, errno);
 			return 0;
 		}
 		bak = 0;
@@ -1385,53 +1409,51 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 	f = fopen(Gbuf1, "wb");
 	if (!f)
 	{
-		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
-		                  "none", "none", "open_failed",
-		                  "path=%s errno=%d", Gbuf1, errno);
+		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none", "none",
+				  "open_failed", "path=%s errno=%d", Gbuf1, errno);
 		bak -= 2;
 	}
 	else
 	{
-		if (fwrite(fallback_buff, 1, (unsigned)(buf - fallback_buff), f) != (size_t)(buf - fallback_buff))
+		if (fwrite(fallback_buff, 1, (unsigned)(buf - fallback_buff), f) !=
+		    (size_t)(buf - fallback_buff))
 		{
-			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
-			                  "none", "none", "write_failed",
-			                  "path=%s errno=%d", Gbuf1, errno);
+			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
+					  "none", "write_failed", "path=%s errno=%d", Gbuf1, errno);
 			fclose(f);
 			bak -= 2;
 		}
 		else if (fclose(f))
 		{
-			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
-			                  "none", "none", "close_failed",
-			                  "path=%s errno=%d", Gbuf1, errno);
+			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
+					  "none", "close_failed", "path=%s errno=%d", Gbuf1, errno);
 			bak -= 2;
 		}
 	}
 
 	switch (bak)
 	{
-		case 1:
-			if (unlink(Gbuf2) == -1)
-				logit(LOG_FILE, "Could not delete backup pfile %s after fallback save.", Gbuf2);
-		case 0:
-			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
-			                  "none", "none", "fallback_saved",
-			                  "type=%d room=%d path=%s size=%d",
-			                  type, room, Gbuf1, (int)(buf - fallback_buff));
-			return 1;
+	case 1:
+		if (unlink(Gbuf2) == -1)
+			logit(LOG_FILE, "Could not delete backup pfile %s after fallback save.",
+			      Gbuf2);
+	case 0:
+		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none", "none",
+				  "fallback_saved", "type=%d room=%d path=%s size=%d", type, room,
+				  Gbuf1, (int)(buf - fallback_buff));
+		return 1;
 
-		case -1:
-			if (rename(Gbuf2, Gbuf1) == -1)
-			{
-				persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch),
-				                  "none", "none", "restore_failed",
-				                  "path=%s backup=%s errno=%d", Gbuf1, Gbuf2, errno);
-			}
-			return 0;
+	case -1:
+		if (rename(Gbuf2, Gbuf1) == -1)
+		{
+			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
+					  "none", "restore_failed", "path=%s backup=%s errno=%d",
+					  Gbuf1, Gbuf2, errno);
+		}
+		return 0;
 
-		case -2:
-			return 0;
+	case -2:
+		return 0;
 	}
 
 	return 0;
@@ -1455,7 +1477,9 @@ void writeShapechangeData(P_char ch)
 	if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
 	{
 		if (!sql_save_player_shapechanges(ch))
-			logit(LOG_FILE, "writeShapechangeData: failed to save shapechange data for %s", GET_NAME(ch));
+			logit(LOG_FILE,
+			      "writeShapechangeData: failed to save shapechange data for %s",
+			      GET_NAME(ch));
 	}
 }
 
@@ -1469,7 +1493,6 @@ void readShapechangeData(P_char ch)
 
 int calculate_save_room(P_char ch, int type, int room)
 {
-
 	/* type 7 save char in room, so if crash it will reload there */
 	if ((type == RENT_CRASH2) && (room != NOWHERE))
 		ch->specials.was_in_room = world[room].number;
@@ -1485,26 +1508,26 @@ int calculate_save_room(P_char ch, int type, int room)
 	}
 	switch ((room == ch->in_room) ? 1 : (room == real_room(ch->specials.was_in_room)) ? 2 : 0)
 	{
-		case 0:
-			/*
+	case 0:
+		/*
 			 * mystery room, make it NOWHERE
 			 */
-			room = NOWHERE;
-			break;
+		room = NOWHERE;
+		break;
 
-		case 1:
-			if ((ch->in_room > 1) && (ch->in_room <= top_of_world))
-				break;
-			room = real_room(ch->specials.was_in_room);
-		case 2:
-			if ((room > 1) && (room <= top_of_world))
-				break;
-			else if ((ch->in_room > 1) && (ch->in_room <= top_of_world))
-			{
-				room = ch->in_room;
-				break;
-			}
+	case 1:
+		if ((ch->in_room > 1) && (ch->in_room <= top_of_world))
 			break;
+		room = real_room(ch->specials.was_in_room);
+	case 2:
+		if ((room > 1) && (room <= top_of_world))
+			break;
+		else if ((ch->in_room > 1) && (ch->in_room <= top_of_world))
+		{
+			room = ch->in_room;
+			break;
+		}
+		break;
 	}
 
 	if (room == NOWHERE)
@@ -1518,7 +1541,7 @@ int calculate_save_room(P_char ch, int type, int room)
 	 */
 	if (type == RENT_DEATH)
 	{
-		room         = real_room(GET_BIRTHPLACE(ch));
+		room = real_room(GET_BIRTHPLACE(ch));
 		GET_HOME(ch) = GET_BIRTHPLACE(ch);
 	}
 	/*
@@ -1536,8 +1559,8 @@ int calculate_save_room(P_char ch, int type, int room)
 int writeCharacter(P_char ch, int type, int room)
 {
 	P_obj obj, obj2;
-	int   i;
-	int   result = 1;
+	int i;
+	int result = 1;
 
 	if (!ch || !GET_NAME(ch))
 		return 0;
@@ -1555,7 +1578,8 @@ int writeCharacter(P_char ch, int type, int room)
 	const bool is_locker_char = (strstr(GET_NAME(ch), ".locker") != NULL);
 
 	// locker hook (pre-save)
-	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
+	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
+	    (world[ch->in_room].funct))
 		room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
 
 	if (!is_locker_char)
@@ -1596,7 +1620,7 @@ int writeCharacter(P_char ch, int type, int room)
 	if (strstr(GET_NAME(ch), ".locker"))
 	{
 		// save locker to database
-		int owner_pid      = 0;
+		int owner_pid = 0;
 		int owner_assoc_id = 0;
 
 		if (strncmp(GET_NAME(ch), "guild.", 6) == 0)
@@ -1614,7 +1638,7 @@ int writeCharacter(P_char ch, int type, int room)
 			// player locker: playername.locker - get player's pid
 			char pname[MAX_NAME_LENGTH + 1];
 			strlcpy(pname, GET_NAME(ch), sizeof pname);
-			char *dot                = strstr(pname, ".locker");
+			char *dot = strstr(pname, ".locker");
 			if (dot)
 				*dot = '\0';
 			owner_pid = sql_get_player_pid(pname);
@@ -1624,16 +1648,15 @@ int writeCharacter(P_char ch, int type, int room)
 		{
 			logit(LOG_FILE, "sql_save_locker failed for %s", GET_NAME(ch));
 			wizlog(AVATAR, "&+RERROR&N sql_save_locker failed for %s", GET_NAME(ch));
-			persistence_alert(AVATAR, "locker", GET_NAME(ch), "none",
-			                  "none", "sql_save_failed",
-			                  "owner_pid=%d owner_assoc_id=%d",
-			                  owner_pid, owner_assoc_id);
+			persistence_alert(AVATAR, "locker", GET_NAME(ch), "none", "none",
+					  "sql_save_failed", "owner_pid=%d owner_assoc_id=%d",
+					  owner_pid, owner_assoc_id);
 			if (!persistence_write_character_flat_fallback(ch, type, room))
 			{
-				persistence_alert(AVATAR, "locker", GET_NAME(ch), "none",
-				                  "none", "flat_fallback_failed",
-				                  "owner_pid=%d owner_assoc_id=%d",
-				                  owner_pid, owner_assoc_id);
+				persistence_alert(AVATAR, "locker", GET_NAME(ch), "none", "none",
+						  "flat_fallback_failed",
+						  "owner_pid=%d owner_assoc_id=%d", owner_pid,
+						  owner_assoc_id);
 			}
 			result = 0;
 		}
@@ -1644,21 +1667,22 @@ int writeCharacter(P_char ch, int type, int room)
 		{
 			logit(LOG_FILE, "sql_save_player failed for %s", GET_NAME(ch));
 			wizlog(AVATAR, "&+RERROR&N sql_save_player failed for %s", GET_NAME(ch));
-			persistence_alert(AVATAR, "player", GET_NAME(ch), "none",
-			                  "none", "sql_save_failed",
-			                  "type=%d room=%d", type, room);
+			persistence_alert(AVATAR, "player", GET_NAME(ch), "none", "none",
+					  "sql_save_failed", "type=%d room=%d", type, room);
 			if (!persistence_write_character_flat_fallback(ch, type, room))
 			{
-				persistence_alert(AVATAR, "player", GET_NAME(ch), "none",
-				                  "none", "flat_fallback_failed",
-				                  "type=%d room=%d", type, room);
+				persistence_alert(AVATAR, "player", GET_NAME(ch), "none", "none",
+						  "flat_fallback_failed", "type=%d room=%d", type,
+						  room);
 			}
 			result = 0;
 		}
 	}
 
 	// re-equip or extract based on save type
-	if ((type != RENT_INN) && (type != RENT_LINKDEAD) && (type != RENT_CAMPED) && (type != RENT_DEATH) && (type != RENT_POOFARTI) && (type != RENT_SWAPARTI) && (type != RENT_FIGHTARTI))
+	if ((type != RENT_INN) && (type != RENT_LINKDEAD) && (type != RENT_CAMPED) &&
+	    (type != RENT_DEATH) && (type != RENT_POOFARTI) && (type != RENT_SWAPARTI) &&
+	    (type != RENT_FIGHTARTI))
 	{
 		for (i = 0; i < MAX_WEAR; i++)
 			if (save_equip[i])
@@ -1686,7 +1710,8 @@ int writeCharacter(P_char ch, int type, int room)
 	all_affects(ch, TRUE);
 
 	// locker hook (post-save)
-	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) && (world[ch->in_room].funct))
+	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
+	    (world[ch->in_room].funct))
 		(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
 
 	return result;
@@ -1697,11 +1722,11 @@ int writeCharacter(P_char ch, int type, int room)
 int deleteCharacter(P_char ch, bool bDeleteLocker)
 {
 	char *tmp;
-	char  name[MAX_STRING_LENGTH];
-	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char name[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	P_obj obj;
 	FILE *f;
-	bool  ok = TRUE;
+	bool ok = TRUE;
 
 	strcpy(name, GET_NAME(ch));
 	for (tmp = name; *tmp; tmp++)
@@ -1713,7 +1738,8 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 	remove_all_artifacts_sql(ch);
 	if (!remove_all_locker_access(ch))
 	{
-		logit(LOG_DEBUG, "deleteCharacter(): failed to clear locker access for %s", GET_NAME(ch));
+		logit(LOG_DEBUG, "deleteCharacter(): failed to clear locker access for %s",
+		      GET_NAME(ch));
 		ok = FALSE;
 	}
 	if (GET_ASSOC(ch) != NULL)
@@ -1737,7 +1763,9 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 	{
 		if (!sql_delete_locker(GET_PID(ch), 0))
 		{
-			logit(LOG_DEBUG, "deleteCharacter(): failed to delete locker data for pid %d", GET_PID(ch));
+			logit(LOG_DEBUG,
+			      "deleteCharacter(): failed to delete locker data for pid %d",
+			      GET_PID(ch));
 			ok = FALSE;
 		}
 	}
@@ -1745,7 +1773,8 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 	// delete the player_data
 	if (!sql_delete_player(GET_PID(ch)))
 	{
-		logit(LOG_DEBUG, "deleteCharacter(): failed to delete player_data for pid %d", GET_PID(ch));
+		logit(LOG_DEBUG, "deleteCharacter(): failed to delete player_data for pid %d",
+		      GET_PID(ch));
 		ok = FALSE;
 	}
 
@@ -1758,7 +1787,7 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 void PurgeCorpseFile(P_obj corpse)
 {
 	char *tmp;
-	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
 	if (!corpse || (corpse->type != ITEM_CORPSE) || !IS_SET(corpse->value[1], PC_CORPSE))
 	{
@@ -1766,7 +1795,8 @@ void PurgeCorpseFile(P_obj corpse)
 		return;
 	}
 
-	snprintf(Gbuf2, MAX_STRING_LENGTH, "%s%d", corpse->action_description, corpse->value[CORPSE_SAVEID]);
+	snprintf(Gbuf2, MAX_STRING_LENGTH, "%s%d", corpse->action_description,
+		 corpse->value[CORPSE_SAVEID]);
 	for (tmp = Gbuf2; *tmp; tmp++)
 		*tmp = LOWER(*tmp);
 
@@ -1836,7 +1866,7 @@ unsigned long long getUnsignedLongLong(char **buf)
 
 char *getString(char **buf)
 {
-	int   len;
+	int len;
 	char *s;
 
 	len = (int)GET_SHORT(*buf);
@@ -1854,22 +1884,23 @@ char *getString(char **buf)
 
 int restoreStatus(char *buf, P_char ch)
 {
-	::byte              dummy_byte;
-	char               *start = buf, *str;
-	long                dummy_long;
-	int                 tmp, tmp2, tmp3, dummy_int, i;
-	unsigned short      s; /*, dummy_short; */
+	::byte dummy_byte;
+	char *start = buf, *str;
+	long dummy_long;
+	int tmp, tmp2, tmp3, dummy_int, i;
+	unsigned short s; /*, dummy_short; */
 	struct trophy_data *tr, *tr2;
-	char                buffer[2056];
+	char buffer[2056];
 
 	stat_vers = GET_BYTE(buf);
 
 	if (stat_vers > (char)SAV_STATVERS)
 	{
 		logit(LOG_FILE, "Save file for %s status restore failed.", GET_NAME(ch));
-		send_to_char("Your character file is in a format which the game doesn't know how\r\n"
-		             "to load. Please log on with another character and talk to a God.\r\n",
-		             ch);
+		send_to_char(
+			"Your character file is in a format which the game doesn't know how\r\n"
+			"to load. Please log on with another character and talk to a God.\r\n",
+			ch);
 		return 0;
 	}
 	GET_NAME(ch) = GET_STRING(buf);
@@ -1877,22 +1908,26 @@ int restoreStatus(char *buf, P_char ch)
 	ch->only.pc->pid = GET_INTE(buf);
 
 	ch->only.pc->screen_length = (ubyte)GET_BYTE(buf);
-	str                        = GET_STRING(buf);
+	str = GET_STRING(buf);
 #ifndef _PFILE_
 	if (!str)
 	{
-		send_to_char("How did you manage to nullify your password!??\r\nPlease contact a GOD!\r\n", ch);
-		fprintf(stderr, "%s somehow managed to clear out his/her password field!\n", GET_NAME(ch));
-		logit(LOG_FILE, "%s somehow managed to clear out his/her password field!", GET_NAME(ch));
+		send_to_char(
+			"How did you manage to nullify your password!??\r\nPlease contact a GOD!\r\n",
+			ch);
+		fprintf(stderr, "%s somehow managed to clear out his/her password field!\n",
+			GET_NAME(ch));
+		logit(LOG_FILE, "%s somehow managed to clear out his/her password field!",
+		      GET_NAME(ch));
 		return 0;
 	}
 #endif
 	strcpy(ch->only.pc->pwd, str);
 	FREE(str);
 	ch->player.short_descr = GET_STRING(buf);
-	ch->player.long_descr  = GET_STRING(buf);
+	ch->player.long_descr = GET_STRING(buf);
 	ch->player.description = GET_STRING(buf);
-	GET_TITLE(ch)          = GET_STRING(buf);
+	GET_TITLE(ch) = GET_STRING(buf);
 	if (stat_vers < 33)
 	{
 		ch->player.m_class = 1 << (GET_INTE(buf) - 1);
@@ -1910,8 +1945,8 @@ int restoreStatus(char *buf, P_char ch)
 		ch->player.spec = 0;
 	}
 
-	GET_RACE(ch)     = GET_BYTE(buf);
-	GET_RACEWAR(ch)  = GET_BYTE(buf);
+	GET_RACE(ch) = GET_BYTE(buf);
+	GET_RACEWAR(ch) = GET_BYTE(buf);
 	ch->player.level = GET_BYTE(buf);
 	if (ch->player.level > MAXLVL)
 		ch->player.level = 1;
@@ -1921,19 +1956,19 @@ int restoreStatus(char *buf, P_char ch)
 		GET_BYTE(buf);
 	}
 
-	GET_SEX(ch)       = GET_BYTE(buf);
+	GET_SEX(ch) = GET_BYTE(buf);
 	ch->player.weight = GET_SHORT(buf);
 	ch->player.height = GET_SHORT(buf);
-	GET_SIZE(ch)      = GET_BYTE(buf);
+	GET_SIZE(ch) = GET_BYTE(buf);
 
-	GET_HOME(ch)            = GET_INTE(buf);
-	GET_BIRTHPLACE(ch)      = GET_INTE(buf);
+	GET_HOME(ch) = GET_INTE(buf);
+	GET_BIRTHPLACE(ch) = GET_INTE(buf);
 	GET_ORIG_BIRTHPLACE(ch) = GET_INTE(buf);
 
-	ch->player.time.birth      = GET_LONG(buf);
-	ch->player.time.played     = GET_INTE(buf);
-	ch->player.time.saved      = GET_LONG(buf); /* last save time */
-	ch->player.time.logon      = time(0);       /* set it */
+	ch->player.time.birth = GET_LONG(buf);
+	ch->player.time.played = GET_INTE(buf);
+	ch->player.time.saved = GET_LONG(buf); /* last save time */
+	ch->player.time.logon = time(0); /* set it */
 	GET_SHORT(buf); //!!! oerm_aging
 	for (i = 0; i < MAX_CIRCLE + 1; i++)
 		ch->specials.undead_spell_slots[i] = GET_BYTE(buf);
@@ -2007,19 +2042,19 @@ int restoreStatus(char *buf, P_char ch)
 	{
 		if ((tmp < s) && (tmp < MAX_INTRO))
 		{
-			ch->only.pc->introd_list[tmp]  = GET_INTE(buf);
+			ch->only.pc->introd_list[tmp] = GET_INTE(buf);
 			ch->only.pc->introd_times[tmp] = GET_LONG(buf);
 		}
 		else
 		{
 			if (tmp < s)
 			{
-				dummy_int  = GET_INTE(buf);
+				dummy_int = GET_INTE(buf);
 				dummy_long = GET_LONG(buf);
 			}
 			else
 			{
-				ch->only.pc->introd_list[tmp]  = 0;
+				ch->only.pc->introd_list[tmp] = 0;
 				ch->only.pc->introd_times[tmp] = 0;
 			}
 		}
@@ -2046,28 +2081,28 @@ int restoreStatus(char *buf, P_char ch)
 	ch->base_stats.Cha = (ubyte)GET_BYTE(buf);
 	ch->base_stats.Kar = (ubyte)GET_BYTE(buf);
 	ch->base_stats.Luk = (ubyte)GET_BYTE(buf);
-	ch->curr_stats     = ch->base_stats;
+	ch->curr_stats = ch->base_stats;
 
-	GET_MANA(ch)         = GET_SHORT(buf);
+	GET_MANA(ch) = GET_SHORT(buf);
 	ch->points.base_mana = GET_SHORT(buf);
-	GET_HIT(ch)          = GET_SHORT(buf);
+	GET_HIT(ch) = GET_SHORT(buf);
 	if (GET_HIT(ch) < 0)
 		GET_HIT(ch) = 0;
 	ch->only.pc->spells_memmed[MAX_CIRCLE] = GET_BYTE(buf);
-	ch->points.base_hit                    = GET_SHORT(buf);
+	ch->points.base_hit = GET_SHORT(buf);
 	if (ch->points.base_hit < 1)
 		ch->points.base_hit = 1;
-	GET_VITALITY(ch)         = GET_SHORT(buf);
+	GET_VITALITY(ch) = GET_SHORT(buf);
 	ch->points.base_vitality = GET_SHORT(buf);
-	ch->points.base_ward     = 0;
-	ch->points.hit_reg       = 0;
-	ch->points.move_reg      = 0;
-	ch->points.mana_reg      = 0;
-	ch->points.ward_reg      = 0;
+	ch->points.base_ward = 0;
+	ch->points.hit_reg = 0;
+	ch->points.move_reg = 0;
+	ch->points.mana_reg = 0;
+	ch->points.ward_reg = 0;
 
-	GET_COPPER(ch)   = GET_INTE(buf);
-	GET_SILVER(ch)   = GET_INTE(buf);
-	GET_GOLD(ch)     = GET_INTE(buf);
+	GET_COPPER(ch) = GET_INTE(buf);
+	GET_SILVER(ch) = GET_INTE(buf);
+	GET_GOLD(ch) = GET_INTE(buf);
 	GET_PLATINUM(ch) = GET_INTE(buf);
 
 	GET_EXP(ch) = GET_INTE(buf);
@@ -2095,7 +2130,7 @@ int restoreStatus(char *buf, P_char ch)
 		GET_INTE(buf);
 
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
-	ch->specials.act  = GET_INTE(buf);
+	ch->specials.act = GET_INTE(buf);
 	ch->specials.act2 = GET_INTE(buf);
 	REMOVE_BIT(ch->specials.act2, PLR2_WAIT);
 	if (stat_vers < 35)
@@ -2103,7 +2138,7 @@ int restoreStatus(char *buf, P_char ch)
 		GET_INTE(buf);
 		GET_INTE(buf);
 	}
-	ch->only.pc->vote      = GET_INTE(buf);
+	ch->only.pc->vote = GET_INTE(buf);
 	ch->specials.alignment = GET_INTE(buf);
 
 	GET_INTE(buf); // orig_align field, not used anymore
@@ -2128,18 +2163,18 @@ int restoreStatus(char *buf, P_char ch)
 		// Load guild info
 		else
 		{
-			GET_A_BITS(ch)          = GET_INTE(buf);
+			GET_A_BITS(ch) = GET_INTE(buf);
 			GET_TIME_LEFT_GUILD(ch) = GET_LONG(buf);
-			GET_NB_LEFT_GUILD(ch)   = GET_BYTE(buf);
+			GET_NB_LEFT_GUILD(ch) = GET_BYTE(buf);
 		}
 	}
 	// Not in a guild.
 	else
 	{
-		GET_ASSOC(ch)           = NULL;
-		GET_A_BITS(ch)          = GET_INTE(buf);
+		GET_ASSOC(ch) = NULL;
+		GET_A_BITS(ch) = GET_INTE(buf);
 		GET_TIME_LEFT_GUILD(ch) = GET_LONG(buf);
-		GET_NB_LEFT_GUILD(ch)   = GET_BYTE(buf);
+		GET_NB_LEFT_GUILD(ch) = GET_BYTE(buf);
 	}
 
 	if (stat_vers > 31)
@@ -2163,7 +2198,7 @@ int restoreStatus(char *buf, P_char ch)
 	}
 	else
 	{
-		ch->only.pc->frags    = GET_LONG(buf);
+		ch->only.pc->frags = GET_LONG(buf);
 		ch->only.pc->oldfrags = GET_LONG(buf);
 	}
 
@@ -2193,13 +2228,13 @@ int restoreStatus(char *buf, P_char ch)
 			ch->specials.conditions[tmp] = 0;
 	}
 
-// -Foo Remove hunger/thirst
-	GET_COND(ch, FULL)   = -1;
+	// -Foo Remove hunger/thirst
+	GET_COND(ch, FULL) = -1;
 	GET_COND(ch, THIRST) = -1;
 	if (stat_vers < 35)
 		for (tmp = 0; tmp < MAX_PETS; tmp++)
 			GET_INTE(buf);
-	ch->only.pc->poofIn  = GET_STRING(buf);
+	ch->only.pc->poofIn = GET_STRING(buf);
 	ch->only.pc->poofOut = GET_STRING(buf);
 	if (stat_vers > 10)
 	{
@@ -2207,45 +2242,44 @@ int restoreStatus(char *buf, P_char ch)
 		free(GET_STRING(buf));
 	}
 	ch->only.pc->echo_toggle = GET_BYTE(buf);
-	ch->only.pc->prompt      = GET_SHORT(buf);
-	ch->only.pc->wiz_invis   = GET_LONG(buf);
+	ch->only.pc->prompt = GET_SHORT(buf);
+	ch->only.pc->wiz_invis = GET_LONG(buf);
 	GET_LONG(buf);
-	ch->only.pc->wimpy       = GET_SHORT(buf);
-	ch->only.pc->aggressive  = GET_SHORT(buf);
+	ch->only.pc->wimpy = GET_SHORT(buf);
+	ch->only.pc->aggressive = GET_SHORT(buf);
 
 	ch->only.pc->highest_level = GET_BYTE(buf);
 
-	GET_BALANCE_COPPER(ch)   = GET_INTE(buf);
-	GET_BALANCE_SILVER(ch)   = GET_INTE(buf);
-	GET_BALANCE_GOLD(ch)     = GET_INTE(buf);
+	GET_BALANCE_COPPER(ch) = GET_INTE(buf);
+	GET_BALANCE_SILVER(ch) = GET_INTE(buf);
+	GET_BALANCE_GOLD(ch) = GET_INTE(buf);
 	GET_BALANCE_PLATINUM(ch) = GET_INTE(buf);
 
 	ch->only.pc->numb_deaths = GET_LONG(buf);
 
 	ch->specials.carry_weight = 0;
-	ch->specials.carry_items  = 0;
+	ch->specials.carry_items = 0;
 
-	ch->points.max_hit      = 0;
-	ch->points.max_mana     = ch->points.base_mana + calculate_mana(ch);
+	ch->points.max_hit = 0;
+	ch->points.max_mana = ch->points.base_mana + calculate_mana(ch);
 	ch->points.max_vitality = vitality_limit(ch);
 
 	if (stat_vers > 41)
 	{
-
-		ch->only.pc->quest_active        = GET_INTE(buf);
-		ch->only.pc->quest_mob_vnum      = GET_INTE(buf);
-		ch->only.pc->quest_type          = GET_INTE(buf);
-		ch->only.pc->quest_accomplished  = GET_INTE(buf);
-		ch->only.pc->quest_started       = GET_INTE(buf);
-		ch->only.pc->quest_zone_number   = GET_INTE(buf);
-		ch->only.pc->quest_giver         = GET_INTE(buf);
-		ch->only.pc->quest_level         = GET_INTE(buf);
-		ch->only.pc->quest_receiver      = GET_INTE(buf);
-		ch->only.pc->quest_shares_left   = GET_INTE(buf);
+		ch->only.pc->quest_active = GET_INTE(buf);
+		ch->only.pc->quest_mob_vnum = GET_INTE(buf);
+		ch->only.pc->quest_type = GET_INTE(buf);
+		ch->only.pc->quest_accomplished = GET_INTE(buf);
+		ch->only.pc->quest_started = GET_INTE(buf);
+		ch->only.pc->quest_zone_number = GET_INTE(buf);
+		ch->only.pc->quest_giver = GET_INTE(buf);
+		ch->only.pc->quest_level = GET_INTE(buf);
+		ch->only.pc->quest_receiver = GET_INTE(buf);
+		ch->only.pc->quest_shares_left = GET_INTE(buf);
 		ch->only.pc->quest_kill_how_many = GET_INTE(buf);
 		ch->only.pc->quest_kill_original = GET_INTE(buf);
-		ch->only.pc->quest_map_room      = GET_INTE(buf);
-		ch->only.pc->quest_map_bought    = GET_INTE(buf);
+		ch->only.pc->quest_map_room = GET_INTE(buf);
+		ch->only.pc->quest_map_bought = GET_INTE(buf);
 	}
 
 	return (int)(buf - start);
@@ -2255,19 +2289,20 @@ int restoreStatus(char *buf, P_char ch)
 int restoreAffects(char *buf, P_char ch)
 {
 	struct affected_type af;
-	char                *start = buf;
-	short                count;
-	long                 short_duration;
-	::byte               custom_messages = 0;
-	char                *wear_off_char   = NULL;
-	char                *wear_off_room   = NULL;
+	char *start = buf;
+	short count;
+	long short_duration;
+	::byte custom_messages = 0;
+	char *wear_off_char = NULL;
+	char *wear_off_room = NULL;
 
 	if ((aff_vers = GET_BYTE(buf)) > (char)SAV_AFFVERS)
 	{
 		logit(LOG_FILE, "Save file for %s affects restore failed.", GET_NAME(ch));
-		send_to_char("Your character file is in a format which the game doesn't know how\r\n"
-		             "to load. Please log on with another character and talk to a God.\r\n",
-		             ch);
+		send_to_char(
+			"Your character file is in a format which the game doesn't know how\r\n"
+			"to load. Please log on with another character and talk to a God.\r\n",
+			ch);
 		return 0;
 	}
 	for (count = GET_SHORT(buf); count > 0; count--)
@@ -2287,11 +2322,11 @@ int restoreAffects(char *buf, P_char ch)
 			{
 				af.type = GET_INTE(buf);
 			}
-			af.duration   = GET_INTE(buf);
-			af.flags      = GET_SHORT(buf);
-			af.modifier   = GET_INTE(buf);
-			af.location   = GET_BYTE(buf);
-			af.bitvector  = GET_LONG(buf);
+			af.duration = GET_INTE(buf);
+			af.flags = GET_SHORT(buf);
+			af.modifier = GET_INTE(buf);
+			af.location = GET_BYTE(buf);
+			af.bitvector = GET_LONG(buf);
 			af.bitvector2 = GET_LONG(buf);
 			af.bitvector3 = GET_LONG(buf);
 			af.bitvector4 = GET_LONG(buf);
@@ -2318,25 +2353,25 @@ int restoreAffects(char *buf, P_char ch)
 		}
 		else
 		{
-			af.type     = GET_INTE(buf);
+			af.type = GET_INTE(buf);
 			af.duration = GET_SHORT(buf);
 			af.modifier = GET_INTE(buf);
 			af.location = GET_BYTE(buf);
 			GET_INTE(buf); // loc2
-			af.bitvector              = GET_LONG(buf);
-			af.bitvector2             = GET_LONG(buf);
-			af.bitvector3             = GET_LONG(buf);
-			af.bitvector4             = GET_LONG(buf);
-			af.bitvector5             = GET_LONG(buf);
+			af.bitvector = GET_LONG(buf);
+			af.bitvector2 = GET_LONG(buf);
+			af.bitvector3 = GET_LONG(buf);
+			af.bitvector4 = GET_LONG(buf);
+			af.bitvector5 = GET_LONG(buf);
 			af.wear_off_message_index = 0;
-			af.flags                  = 0;
+			af.flags = 0;
 			if (aff_vers == 4)
 			{
 				/*af.bitvector6 = */ GET_LONG(buf);
 				short_duration = GET_LONG(buf);
 				if (short_duration > 0)
 				{
-					af.flags    = AFFTYPE_SHORT;
+					af.flags = AFFTYPE_SHORT;
 					af.duration = short_duration;
 				}
 			}
@@ -2353,7 +2388,8 @@ int restoreAffects(char *buf, P_char ch)
 		}
 		if (IS_POISON(af.type))
 		{
-			add_event(event_poison, PULSE_VIOLENCE * number(1, 5), ch, 0, 0, 0, &af.type, sizeof(af.type));
+			add_event(event_poison, PULSE_VIOLENCE * number(1, 5), ch, 0, 0, 0,
+				  &af.type, sizeof(af.type));
 		}
 	}
 	affect_total(ch, FALSE);
@@ -2411,22 +2447,25 @@ int restoreAffects(char *buf, P_char ch)
 int restoreSkills(char *buf, P_char ch, int maxnum)
 {
 	char *start = buf;
-	int   i, n;
+	int i, n;
 
 	skill_vers = GET_BYTE(buf);
 	if (skill_vers > (char)SAV_SKILLVERS)
 	{
 		logit(LOG_FILE, "Save file for %s skills restore failed.", GET_NAME(ch));
-		send_to_char("Your character file is in a format which the game doesn't know how\r\n"
-		             "to load. Please log on with another character and talk to a God.\r\n",
-		             ch);
+		send_to_char(
+			"Your character file is in a format which the game doesn't know how\r\n"
+			"to load. Please log on with another character and talk to a God.\r\n",
+			ch);
 		return 0;
 	}
 	n = (int)GET_INTE(buf);
 	if (n > maxnum)
 	{
 		logit(LOG_FILE, "Not all %s skills could be loaded.", GET_NAME(ch));
-		send_to_char("Not all your skills could be loaded. Please report this to a God.\r\n", ch);
+		send_to_char(
+			"Not all your skills could be loaded. Please report this to a God.\r\n",
+			ch);
 	}
 	/*
 	 * Allow memorized spells and skill usages to be saved. -DCL
@@ -2437,13 +2476,13 @@ int restoreSkills(char *buf, P_char ch, int maxnum)
 		if (i < n)
 		{
 			ch->only.pc->skills[i].learned = GET_BYTE(buf);
-			ch->only.pc->skills[i].taught  = GET_BYTE(buf);
+			ch->only.pc->skills[i].taught = GET_BYTE(buf);
 			GET_BYTE(buf);
 		}
 		else
 		{
 			ch->only.pc->skills[i].learned = 0;
-			ch->only.pc->skills[i].taught  = 0;
+			ch->only.pc->skills[i].taught = 0;
 		}
 	}
 
@@ -2456,7 +2495,8 @@ int restoreSkills(char *buf, P_char ch, int maxnum)
 	if (n > MAX_SKILL_USAGE)
 	{
 		logit(LOG_FILE, "Not all %s skill usages could be loaded.", GET_NAME(ch));
-		send_to_char("Not all your skill usages could be loaded. Please report a God.\r\n", ch);
+		send_to_char("Not all your skill usages could be loaded. Please report a God.\r\n",
+			     ch);
 	}
 	for (i = 0; i < MAX_SKILL_USAGE; i++)
 	{
@@ -2473,14 +2513,16 @@ int restoreSkills(char *buf, P_char ch, int maxnum)
 #ifndef _PFILE_
 int restoreWitness(char *buf, P_char ch)
 {
-	char     *start = buf;
-	int       count;
+	char *start = buf;
+	int count;
 
 	if ((witness_vers = GET_BYTE(buf)) > (char)SAV_WTNSVERS)
 	{
-	witnessed_fail:
+witnessed_fail:
 		logit(LOG_FILE, "Save file for %s witness restore failed.", GET_NAME(ch));
-		send_to_char("Your witness record is munged. Please log on with another character and talk to a God.\r\n", ch);
+		send_to_char(
+			"Your witness record is munged. Please log on with another character and talk to a God.\r\n",
+			ch);
 		return 0;
 	}
 	count = GET_INTE(buf);
@@ -2499,12 +2541,12 @@ int restorePasswdOnly(P_char ch, char *name)
 	FILE *f;
 
 	struct stat statbuf;
-	char        buff[SAV_MAXSIZE], *str;
-	char       *buf = buff;
-	int         size, csize, type, room;
-	char        Gbuf1[MAX_STRING_LENGTH];
-	char        b_savevers; /* TASFALEN */
-	char        buffer[2056];
+	char buff[SAV_MAXSIZE], *str;
+	char *buf = buff;
+	int size, csize, type, room;
+	char Gbuf1[MAX_STRING_LENGTH];
+	char b_savevers; /* TASFALEN */
+	char buffer[2056];
 
 	if (!name || !ch)
 		return 0;
@@ -2530,7 +2572,9 @@ int restorePasswdOnly(P_char ch, char *name)
 		logit(LOG_FILE, "Warning: Save file less than 4 bytes.");
 		fprintf(stderr, "Problem restoring save file of: %s\n", name);
 		logit(LOG_FILE, "Problem restoring save file of %s.", name);
-		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		send_to_char(
+			"There is something wrong with your save file!  Please talk to a God.\r\n",
+			ch);
 		return -2;
 	}
 	b_savevers = GET_BYTE(buf);
@@ -2544,26 +2588,23 @@ int restorePasswdOnly(P_char ch, char *name)
 	 */
 	// Read the type sizes from the save file
 	int saved_short_size = GET_BYTE(buf);
-	int saved_int_size   = GET_BYTE(buf);
-	int saved_long_size  = GET_BYTE(buf);
+	int saved_int_size = GET_BYTE(buf);
+	int saved_long_size = GET_BYTE(buf);
 
 	logit(LOG_FILE,
 	      "restoreCharacter: %s - saved sizes: short=%d int=%d long=%d, current sizes: short=%d int=%d long=%d",
-	      name,
-	      saved_short_size,
-	      saved_int_size,
-	      saved_long_size,
-	      short_size,
-	      int_size,
+	      name, saved_short_size, saved_int_size, saved_long_size, short_size, int_size,
 	      long_size);
 
-	if ((saved_short_size != short_size) || (saved_int_size != int_size) || (saved_long_size != long_size))
+	if ((saved_short_size != short_size) || (saved_int_size != int_size) ||
+	    (saved_long_size != long_size))
 	{
 		logit(LOG_FILE, "Save file of %s has mismatched architecture.", name);
-		send_to_char("Your character file was created on a machine of a different architecture\r\n"
-		             "type than the current one; loading such a file is not yet supported.\r\n"
-		             "Please talk to a God.\r\n",
-		             ch);
+		send_to_char(
+			"Your character file was created on a machine of a different architecture\r\n"
+			"type than the current one; loading such a file is not yet supported.\r\n"
+			"Please talk to a God.\r\n",
+			ch);
 		return -2;
 	}
 	if (size < 5 * int_size + 5 * sizeof(char) + long_size)
@@ -2571,11 +2612,13 @@ int restorePasswdOnly(P_char ch, char *name)
 		logit(LOG_FILE, "Warning: Save file is only %d bytes.", size);
 		fprintf(stderr, "Problem restoring save file of: %s\n", name);
 		logit(LOG_FILE, "Problem restoring save file of %s.", name);
-		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		send_to_char(
+			"There is something wrong with your save file!  Please talk to a God.\r\n",
+			ch);
 		return -2;
 	}
 	type = (int)GET_BYTE(buf);
-	GET_INTE(buf);                        /*
+	GET_INTE(buf); /*
 	                                       * skill offset
 	                                       */
 	if (b_savevers >= (char)SAV_WTNSVERS) /* no witness record save in file (TASFALEN) */
@@ -2596,7 +2639,9 @@ int restorePasswdOnly(P_char ch, char *name)
 		logit(LOG_FILE, "Warning: file size %d doesn't match csize %d.", size, csize);
 		fprintf(stderr, "Problem restoring save file of: %s\n", name);
 		logit(LOG_FILE, "Problem restoring save file of %s.", name);
-		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		send_to_char(
+			"There is something wrong with your save file!  Please talk to a God.\r\n",
+			ch);
 		return -2;
 	}
 	// Surname
@@ -2611,21 +2656,26 @@ int restorePasswdOnly(P_char ch, char *name)
 	if (stat_vers > (char)SAV_STATVERS)
 	{
 		logit(LOG_FILE, "Save file for %s status restore failed.", GET_NAME(ch));
-		send_to_char("Your character file is in a format which the game doesn't know how\r\n"
-		             "to load. Please log on with another character and talk to a God.\r\n",
-		             ch);
+		send_to_char(
+			"Your character file is in a format which the game doesn't know how\r\n"
+			"to load. Please log on with another character and talk to a God.\r\n",
+			ch);
 		return -2;
 	}
 	GET_NAME(ch) = GET_STRING(buf);
 	if (stat_vers > 16)
 		GET_INTE(buf); /* PC id numb */
 	ch->only.pc->screen_length = (ubyte)GET_BYTE(buf);
-	str                        = GET_STRING(buf);
+	str = GET_STRING(buf);
 	if (!str)
 	{
-		send_to_char("How did you manage to nullify your password!??\r\nPlease contact a God!\r\n", ch);
-		fprintf(stderr, "%s somehow managed to clear out his/her password field!\n", GET_NAME(ch));
-		logit(LOG_FILE, "%s somehow managed to clear out his/her password field!", GET_NAME(ch));
+		send_to_char(
+			"How did you manage to nullify your password!??\r\nPlease contact a God!\r\n",
+			ch);
+		fprintf(stderr, "%s somehow managed to clear out his/her password field!\n",
+			GET_NAME(ch));
+		logit(LOG_FILE, "%s somehow managed to clear out his/her password field!",
+		      GET_NAME(ch));
 		return -2;
 	}
 	strcpy(ch->only.pc->pwd, str);
@@ -2644,12 +2694,12 @@ int restoreCharOnly(P_char ch, char *name)
 	struct stat statbuf;
 
 #ifndef _PFILE_
-	char  buff[SAV_MAXSIZE];
+	char buff[SAV_MAXSIZE];
 	char *buf;
-	int   skill_off, affect_off, item_off, surname;
+	int skill_off, affect_off, item_off, surname;
 #endif
-	int  start, size, csize, type, room;
-	int  witness_off;
+	int start, size, csize, type, room;
+	int witness_off;
 	char Gbuf1[MAX_STRING_LENGTH];
 	char b_savevers;
 
@@ -2702,7 +2752,9 @@ int restoreCharOnly(P_char ch, char *name)
 		logit(LOG_FILE, "Warning: Save file less than 4 bytes.");
 		fprintf(stderr, "Problem restoring save file of: %s\n", name);
 		logit(LOG_FILE, "Problem restoring save file of %s.", name);
-		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		send_to_char(
+			"There is something wrong with your save file!  Please talk to a God.\r\n",
+			ch);
 		return -2;
 	}
 	/* TASFALEN */
@@ -2723,26 +2775,23 @@ int restoreCharOnly(P_char ch, char *name)
 
 	// Read the type sizes from the save file
 	int saved_short_size = GET_BYTE(buf);
-	int saved_int_size   = GET_BYTE(buf);
-	int saved_long_size  = GET_BYTE(buf);
+	int saved_int_size = GET_BYTE(buf);
+	int saved_long_size = GET_BYTE(buf);
 
 	logit(LOG_FILE,
 	      "restoreCharacter: %s - saved sizes: short=%d int=%d long=%d, current sizes: short=%d int=%d long=%d",
-	      name,
-	      saved_short_size,
-	      saved_int_size,
-	      saved_long_size,
-	      short_size,
-	      int_size,
+	      name, saved_short_size, saved_int_size, saved_long_size, short_size, int_size,
 	      long_size);
 
-	if ((saved_short_size != short_size) || (saved_int_size != int_size) || (saved_long_size != long_size))
+	if ((saved_short_size != short_size) || (saved_int_size != int_size) ||
+	    (saved_long_size != long_size))
 	{
 		logit(LOG_FILE, "Save file of %s has mismatched architecture.", name);
-		send_to_char("Your character file was created on a machine of a different architecture\r\n"
-		             "type than the current one; loading such a file is not yet supported.\r\n"
-		             "Please talk to a God.\r\n",
-		             ch);
+		send_to_char(
+			"Your character file was created on a machine of a different architecture\r\n"
+			"type than the current one; loading such a file is not yet supported.\r\n"
+			"Please talk to a God.\r\n",
+			ch);
 		return -2;
 	}
 	if (size < 5 * int_size + 5 * sizeof(char) + long_size)
@@ -2750,24 +2799,28 @@ int restoreCharOnly(P_char ch, char *name)
 		logit(LOG_FILE, "Warning: Save file is only %d bytes.", size);
 		fprintf(stderr, "Problem restoring save file of: %s\n", name);
 		logit(LOG_FILE, "Problem restoring save file of %s.", name);
-		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		send_to_char(
+			"There is something wrong with your save file!  Please talk to a God.\r\n",
+			ch);
 		return -2;
 	}
-	type      = (int)GET_BYTE(buf);
+	type = (int)GET_BYTE(buf);
 	skill_off = GET_INTE(buf);
 
 	if (b_savevers >= (char)SAV_WTNSVERS) /* no witness record save in file */
-		witness_off = GET_INTE(buf);      /* TASFALEN */
+		witness_off = GET_INTE(buf); /* TASFALEN */
 
 	affect_off = GET_INTE(buf);
-	item_off   = GET_INTE(buf);
-	csize      = GET_INTE(buf);
+	item_off = GET_INTE(buf);
+	csize = GET_INTE(buf);
 	if (size != csize)
 	{
 		logit(LOG_FILE, "Warning: file size %d doesn't match csize %d.", size, csize);
 		fprintf(stderr, "Problem restoring save file of: %s\n", name);
 		logit(LOG_FILE, "Problem restoring save file of %s.", name);
-		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		send_to_char(
+			"There is something wrong with your save file!  Please talk to a God.\r\n",
+			ch);
 		return -2;
 	}
 	if (b_savevers > 4)
@@ -2785,9 +2838,10 @@ int restoreCharOnly(P_char ch, char *name)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER))
 	{
 		int locker_room = ch->in_room;
-		int exit_room   = NOWHERE;
+		int exit_room = NOWHERE;
 
-		if (world[locker_room].dir_option[0] && world[locker_room].dir_option[0]->to_room != NOWHERE)
+		if (world[locker_room].dir_option[0] &&
+		    world[locker_room].dir_option[0]->to_room != NOWHERE)
 			exit_room = world[locker_room].dir_option[0]->to_room;
 		else if (GET_HOME(ch))
 		{
@@ -2807,29 +2861,33 @@ int restoreCharOnly(P_char ch, char *name)
 		{
 			logit(LOG_DEBUG,
 			      "restoreCharacter: redirecting %s out of locker room %d(%s) to %d(%s)",
-			      name,
-			      locker_room,
+			      name, locker_room,
 			      (world[locker_room].name) ? world[locker_room].name : "<unnamed>",
 			      exit_room,
 			      (world[exit_room].name) ? world[exit_room].name : "<unnamed>");
 			ch->specials.was_in_room = world[exit_room].number;
-			ch->in_room              = exit_room;
+			ch->in_room = exit_room;
 		}
 	}
 
 	GET_LONG(buf);
-	start                           = (int)(buf - buff);
+	start = (int)(buf - buff);
 	int bytes_read_by_restoreStatus = restoreStatus(buf, ch);
-	int expected_skill_off          = start + bytes_read_by_restoreStatus;
+	int expected_skill_off = start + bytes_read_by_restoreStatus;
 
-	logit(LOG_FILE, "restoreStatus debug: %s - start=%d, bytes_read=%d, expected_skill_off=%d, actual_skill_off=%d", name, start, bytes_read_by_restoreStatus, expected_skill_off, skill_off);
+	logit(LOG_FILE,
+	      "restoreStatus debug: %s - start=%d, bytes_read=%d, expected_skill_off=%d, actual_skill_off=%d",
+	      name, start, bytes_read_by_restoreStatus, expected_skill_off, skill_off);
 
 	if (expected_skill_off != skill_off)
 	{
-		logit(LOG_FILE, "Warning: restoreStatus() not match offset. Difference: %d bytes", skill_off - expected_skill_off);
+		logit(LOG_FILE, "Warning: restoreStatus() not match offset. Difference: %d bytes",
+		      skill_off - expected_skill_off);
 		fprintf(stderr, "Problem restoring save file of: %s\n", name);
 		logit(LOG_FILE, "Problem restoring save file of %s.", name);
-		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		send_to_char(
+			"There is something wrong with your save file!  Please talk to a God.\r\n",
+			ch);
 		return -2;
 	}
 	if (type == 4) /*
@@ -2847,19 +2905,22 @@ int restoreCharOnly(P_char ch, char *name)
 			logit(LOG_FILE, "Warning: restoreSkills() not match offset.");
 			fprintf(stderr, "Problem restoring save file of: %s\n", name);
 			logit(LOG_FILE, "Problem restoring save file of %s.", name);
-			send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+			send_to_char(
+				"There is something wrong with your save file!  Please talk to a God.\r\n",
+				ch);
 			return -2;
 		}
 	}
 	else
 	{
-
 		if ((restoreSkills(buff + skill_off, ch, MAX_SKILLS) + skill_off) != witness_off)
 		{
 			logit(LOG_FILE, "Warning: restoreSkills() not match offset.");
 			fprintf(stderr, "Problem restoring save file of: %s\n", name);
 			logit(LOG_FILE, "Problem restoring save file of %s.", name);
-			send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+			send_to_char(
+				"There is something wrong with your save file!  Please talk to a God.\r\n",
+				ch);
 			return -2;
 		}
 #ifndef _PFILE_
@@ -2868,7 +2929,9 @@ int restoreCharOnly(P_char ch, char *name)
 			logit(LOG_FILE, "Warning: restoreWitness() not match offset.");
 			fprintf(stderr, "Problem restoring save file of: %s\n", name);
 			logit(LOG_FILE, "Problem restoring save file of %s.", name);
-			send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+			send_to_char(
+				"There is something wrong with your save file!  Please talk to a God.\r\n",
+				ch);
 			return -2;
 		}
 #endif
@@ -2880,29 +2943,32 @@ int restoreCharOnly(P_char ch, char *name)
 
 P_obj restoreObjects(char *buf, P_char ch, int not_room)
 {
-	P_obj                    obj, c_obj = NULL;
-	bool                     dummy_obj;
-	::byte                   dummy_byte, o_f_flag;
-	int                      tmp, count, i, loc, obj_count = 0, V_num, i_count, ignore = 0, k;
+	P_obj obj, c_obj = NULL;
+	bool dummy_obj;
+	::byte dummy_byte, o_f_flag;
+	int tmp, count, i, loc, obj_count = 0, V_num, i_count, ignore = 0, k;
 	struct extra_descr_data *t_desc;
-	static struct obj_data   d_obj; // dummy object
-	ulong                    o_u_flag;
-	int                      new_vnum = 0;
-	P_obj                    root_obj = NULL;
+	static struct obj_data d_obj; // dummy object
+	ulong o_u_flag;
+	int new_vnum = 0;
+	P_obj root_obj = NULL;
 
 	obj_vers = (int)GET_BYTE(buf);
 	if (obj_vers > SAV_ITEMVERS)
 	{
 		if (ch)
 		{
-			logit(LOG_FILE, "Item save versions don't match (%d, %d) for %s.", obj_vers, SAV_ITEMVERS, GET_NAME(ch));
-			send_to_char("Your objects are in a format which the game doesn't know how\r\n"
-			             "to load. Please log on with another character and talk to a God.\r\n",
-			             ch);
+			logit(LOG_FILE, "Item save versions don't match (%d, %d) for %s.", obj_vers,
+			      SAV_ITEMVERS, GET_NAME(ch));
+			send_to_char(
+				"Your objects are in a format which the game doesn't know how\r\n"
+				"to load. Please log on with another character and talk to a God.\r\n",
+				ch);
 		}
 		else
 		{
-			logit(LOG_FILE, "Item save versions don't match (%d, %d) for pcorpse.", obj_vers, SAV_ITEMVERS);
+			logit(LOG_FILE, "Item save versions don't match (%d, %d) for pcorpse.",
+			      obj_vers, SAV_ITEMVERS);
 		}
 		return 0;
 	}
@@ -2920,10 +2986,10 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 	for (;;)
 	{
 		dummy_obj = FALSE;
-		o_u_flag  = 0;
-		loc       = 0;
-		i_count   = 1;
-		o_f_flag  = GET_BYTE(buf);
+		o_u_flag = 0;
+		loc = 0;
+		i_count = 1;
+		o_f_flag = GET_BYTE(buf);
 
 		if (o_f_flag & O_F_EOL)
 		{
@@ -2966,7 +3032,8 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 
 		if (!obj)
 		{
-			logit(LOG_OBJ, "Could not load object #%d for %s.", V_num, (ch) ? GET_NAME(ch) : "pcorpse");
+			logit(LOG_OBJ, "Could not load object #%d for %s.", V_num,
+			      (ch) ? GET_NAME(ch) : "pcorpse");
 			obj = &d_obj;
 			bzero(obj, sizeof(struct obj_data));
 			dummy_obj = TRUE;
@@ -2985,7 +3052,7 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 			root_obj = obj;
 
 		obj->craftsmanship = GET_SHORT(buf);
-		obj->condition     = GET_SHORT(buf);
+		obj->condition = GET_SHORT(buf);
 		if (obj_vers >= 36 && (o_f_flag & O_F_UID))
 		{
 			unsigned long long saved_uid = GET_ULL(buf);
@@ -3009,10 +3076,10 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 			tmp = GET_BYTE(buf);
 			while (tmp--)
 			{
-				int    time   = GET_INTE(buf);
-				sh_int type   = GET_SHORT(buf);
-				sh_int data   = GET_SHORT(buf);
-				ulong  extra2 = GET_INTE(buf);
+				int time = GET_INTE(buf);
+				sh_int type = GET_SHORT(buf);
+				sh_int data = GET_SHORT(buf);
+				ulong extra2 = GET_INTE(buf);
 				if (type == TAG_ALTERED_EXTRA2)
 					continue;
 #ifndef _PFILE_
@@ -3026,7 +3093,7 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 
 		if (o_f_flag & O_F_UNIQUE)
 		{
-			o_u_flag      = GET_INTE(buf);
+			o_u_flag = GET_INTE(buf);
 			obj->str_mask = (o_u_flag & (O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3));
 
 			if (obj->str_mask)
@@ -3056,19 +3123,19 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 						str_free(ed->description);
 					FREE(ed);
 				}
-				obj->ex_description               = NULL;
-				int                       nDescs  = GET_SHORT(buf);
+				obj->ex_description = NULL;
+				int nDescs = GET_SHORT(buf);
 				struct extra_descr_data **lastOne = &(obj->ex_description);
 				while (*lastOne)
 					lastOne = &((*lastOne)->next);
 				while (nDescs--)
 				{
 					CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
-					ed->next        = NULL;
-					ed->keyword     = GET_STRING(buf);
+					ed->next = NULL;
+					ed->keyword = GET_STRING(buf);
 					ed->description = GET_STRING(buf);
-					*lastOne        = ed;
-					lastOne         = &(ed->next);
+					*lastOne = ed;
+					lastOne = &(ed->next);
 				}
 			}
 			if (o_u_flag & O_U_VAL0)
@@ -3098,10 +3165,10 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 
 			if (o_u_flag & O_U_TRAP)
 			{
-				obj->trap_eff    = GET_SHORT(buf);
-				obj->trap_dam    = GET_SHORT(buf);
+				obj->trap_eff = GET_SHORT(buf);
+				obj->trap_dam = GET_SHORT(buf);
 				obj->trap_charge = GET_SHORT(buf);
-				obj->trap_level  = GET_SHORT(buf);
+				obj->trap_level = GET_SHORT(buf);
 			}
 			if (o_u_flag & O_U_TYPE)
 			{
@@ -3178,12 +3245,14 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 					   * create fake spell description
 					   * thing
 					   */
-						CREATE(t_desc, extra_descr_data, 1, MEM_TAG_EXDESCD);
+						CREATE(t_desc, extra_descr_data, 1,
+						       MEM_TAG_EXDESCD);
 
-						t_desc->next        = obj->ex_description;
+						t_desc->next = obj->ex_description;
 						obj->ex_description = t_desc;
-						t_desc->keyword     = str_dup("\03\01\03");
-						CREATE(t_desc->description, char, ((MAX_SKILLS / 8) + 1), MEM_TAG_STRING);
+						t_desc->keyword = str_dup("\03\01\03");
+						CREATE(t_desc->description, char,
+						       ((MAX_SKILLS / 8) + 1), MEM_TAG_STRING);
 
 						for (i = 0; i < tmp; i++)
 							t_desc->description[i] = GET_BYTE(buf);
@@ -3209,9 +3278,11 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 		obj_count += i_count;
 
 		/* Auto-fix corrupted spellbooks: pages consumed but no spell data stored. */
-		if (obj->type == ITEM_SPELLBOOK && obj->value[3] > 0 && !find_spell_description(obj))
+		if (obj->type == ITEM_SPELLBOOK && obj->value[3] > 0 &&
+		    !find_spell_description(obj))
 		{
-			logit(LOG_DEBUG, "restoreObjects: auto-fixed corrupted spellbook vnum %d (reset %d used pages)",
+			logit(LOG_DEBUG,
+			      "restoreObjects: auto-fixed corrupted spellbook vnum %d (reset %d used pages)",
 			      obj_index[obj->R_num].virtual_number, obj->value[3]);
 			obj->value[3] = 0;
 		}
@@ -3223,20 +3294,24 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 #ifdef _PFILE_
 				if (c_obj)
 				{
-					obj->loc_p      = LOC_INSIDE;
+					obj->loc_p = LOC_INSIDE;
 					obj->loc.inside = c_obj;
 				}
 
 				obj_to_char(obj, ch);
 #else
-				if (IS_SET(obj->extra_flags, ITEM_PROCLIB) && (NULL == get_scheduled(obj, proclib_obj_event)))
+				if (IS_SET(obj->extra_flags, ITEM_PROCLIB) &&
+				    (NULL == get_scheduled(obj, proclib_obj_event)))
 				{
-					add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), NULL, NULL, obj, 0, NULL, 0);
+					add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4),
+						  NULL, NULL, obj, 0, NULL, 0);
 				}
 
 				if (c_obj && (c_obj->type == ITEM_QUIVER || !ch))
 					obj_to_obj_at_end(obj, c_obj);
-				else if (c_obj && ((GET_OBJ_WEIGHT(obj) + GET_OBJ_WEIGHT(c_obj) <= c_obj->value[0]) || !ch))
+				else if (c_obj && ((GET_OBJ_WEIGHT(obj) + GET_OBJ_WEIGHT(c_obj) <=
+						    c_obj->value[0]) ||
+						   !ch))
 				{
 					obj_to_obj_at_end(obj, c_obj);
 				}
@@ -3282,18 +3357,19 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
   if it is a container, any possible contents will *not* be loaded */
 P_obj read_one_object(char *read_buf)
 {
-	char                    *buf = read_buf;
-	P_obj                    obj;
-	::byte                   dummy_byte, o_f_flag;
-	int                      tmp, V_num, count, i_count;
+	char *buf = read_buf;
+	P_obj obj;
+	::byte dummy_byte, o_f_flag;
+	int tmp, V_num, count, i_count;
 	struct extra_descr_data *t_desc;
-	struct obj_data          d_obj;
-	ulong                    o_u_flag;
+	struct obj_data d_obj;
+	ulong o_u_flag;
 
 	obj_vers = (int)GET_BYTE(buf);
 	if (obj_vers > SAV_ITEMVERS)
 	{
-		logit(LOG_DEBUG, "read_one_object(): invalid item save version! (%d, %d)", obj_vers, SAV_ITEMVERS);
+		logit(LOG_DEBUG, "read_one_object(): invalid item save version! (%d, %d)", obj_vers,
+		      SAV_ITEMVERS);
 		return NULL;
 	}
 
@@ -3301,7 +3377,7 @@ P_obj read_one_object(char *read_buf)
 
 	o_f_flag = GET_BYTE(buf);
 	o_u_flag = 0;
-	i_count  = 1;
+	i_count = 1;
 
 	if (o_f_flag & O_F_EOL)
 	{
@@ -3310,7 +3386,7 @@ P_obj read_one_object(char *read_buf)
 	}
 
 	V_num = GET_INTE(buf);
-	obj   = read_object(V_num, VIRTUAL);
+	obj = read_object(V_num, VIRTUAL);
 
 	if (!obj)
 	{
@@ -3318,9 +3394,9 @@ P_obj read_one_object(char *read_buf)
 		return NULL;
 	}
 
-	obj->g_key         = 1;
+	obj->g_key = 1;
 	obj->craftsmanship = GET_SHORT(buf);
-	obj->condition     = GET_SHORT(buf);
+	obj->condition = GET_SHORT(buf);
 
 	if (obj_vers >= 36 && (o_f_flag & O_F_UID))
 	{
@@ -3345,10 +3421,10 @@ P_obj read_one_object(char *read_buf)
 		tmp = GET_BYTE(buf);
 		while (tmp--)
 		{
-			int    time   = GET_INTE(buf);
-			sh_int type   = GET_SHORT(buf);
-			sh_int data   = GET_SHORT(buf);
-			ulong  extra2 = GET_INTE(buf);
+			int time = GET_INTE(buf);
+			sh_int type = GET_SHORT(buf);
+			sh_int data = GET_SHORT(buf);
+			ulong extra2 = GET_INTE(buf);
 
 			if (type == TAG_ALTERED_EXTRA2)
 				continue;
@@ -3364,7 +3440,7 @@ P_obj read_one_object(char *read_buf)
 
 	if (o_f_flag & O_F_UNIQUE)
 	{
-		o_u_flag      = GET_INTE(buf);
+		o_u_flag = GET_INTE(buf);
 		obj->str_mask = (o_u_flag & (O_U_KEYS | O_U_DESC1 | O_U_DESC2 | O_U_DESC3));
 
 		if (obj->str_mask)
@@ -3394,19 +3470,19 @@ P_obj read_one_object(char *read_buf)
 					str_free(ed->description);
 				FREE(ed);
 			}
-			obj->ex_description               = NULL;
-			int                       nDescs  = GET_SHORT(buf);
+			obj->ex_description = NULL;
+			int nDescs = GET_SHORT(buf);
 			struct extra_descr_data **lastOne = &(obj->ex_description);
 			while (*lastOne)
 				lastOne = &((*lastOne)->next);
 			while (nDescs--)
 			{
 				CREATE(ed, extra_descr_data, 1, MEM_TAG_EXDESCD);
-				ed->next        = NULL;
-				ed->keyword     = GET_STRING(buf);
+				ed->next = NULL;
+				ed->keyword = GET_STRING(buf);
 				ed->description = GET_STRING(buf);
-				*lastOne        = ed;
-				lastOne         = &(ed->next);
+				*lastOne = ed;
+				lastOne = &(ed->next);
 			}
 		}
 		if (o_u_flag & O_U_VAL0)
@@ -3436,10 +3512,10 @@ P_obj read_one_object(char *read_buf)
 
 		if (o_u_flag & O_U_TRAP)
 		{
-			obj->trap_eff    = GET_SHORT(buf);
-			obj->trap_dam    = GET_SHORT(buf);
+			obj->trap_eff = GET_SHORT(buf);
+			obj->trap_dam = GET_SHORT(buf);
 			obj->trap_charge = GET_SHORT(buf);
-			obj->trap_level  = GET_SHORT(buf);
+			obj->trap_level = GET_SHORT(buf);
 		}
 		if (o_u_flag & O_U_TYPE)
 		{
@@ -3518,10 +3594,11 @@ P_obj read_one_object(char *read_buf)
 				   */
 					CREATE(t_desc, extra_descr_data, 1, MEM_TAG_EXDESCD);
 
-					t_desc->next        = obj->ex_description;
+					t_desc->next = obj->ex_description;
 					obj->ex_description = t_desc;
-					t_desc->keyword     = str_dup("\03\01\03");
-					CREATE(t_desc->description, char, ((MAX_SKILLS / 8) + 1), MEM_TAG_STRING);
+					t_desc->keyword = str_dup("\03\01\03");
+					CREATE(t_desc->description, char, ((MAX_SKILLS / 8) + 1),
+					       MEM_TAG_STRING);
 
 					for (int i = 0; i < tmp; i++)
 						t_desc->description[i] = GET_BYTE(buf);
@@ -3545,9 +3622,11 @@ P_obj read_one_object(char *read_buf)
 	}
 
 #ifndef _PFILE_
-	if (IS_SET(obj->extra_flags, ITEM_PROCLIB) && (NULL == get_scheduled(obj, proclib_obj_event)))
+	if (IS_SET(obj->extra_flags, ITEM_PROCLIB) &&
+	    (NULL == get_scheduled(obj, proclib_obj_event)))
 	{
-		add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), NULL, NULL, obj, 0, NULL, 0);
+		add_event(proclib_obj_event, PULSE_MOBILE + number(-4, 4), NULL, NULL, obj, 0, NULL,
+			  0);
 	}
 #endif
 
@@ -3558,8 +3637,8 @@ P_obj read_one_object(char *read_buf)
 
 int confiscate_item(P_char ch, int debt)
 {
-	int   value = 2, i;
-	P_obj cobj  = 0, obj, obj2;
+	int value = 2, i;
+	P_obj cobj = 0, obj, obj2;
 
 	/*
 	 * find most expensive item first
@@ -3569,7 +3648,7 @@ int confiscate_item(P_char ch, int debt)
 	{
 		if (obj->cost > value && !obj->contains)
 		{
-			cobj  = obj;
+			cobj = obj;
 			value = cobj->cost;
 		}
 		if (OBJ_INSIDE(obj))
@@ -3613,13 +3692,13 @@ int confiscate_item(P_char ch, int debt)
 	 * find the LEAST expensive item that will cover the debt
 	 */
 
-	obj  = ch->carrying;
+	obj = ch->carrying;
 	cobj = NULL;
 	while (obj)
 	{
 		if ((obj->cost < value) && (((obj->cost * 3) / 4) >= debt) && !cobj->contains)
 		{
-			cobj  = obj;
+			cobj = obj;
 			value = cobj->cost;
 		}
 		if (OBJ_INSIDE(obj))
@@ -3654,7 +3733,7 @@ int confiscate_item(P_char ch, int debt)
 
 void confiscate_all(P_char ch)
 {
-	int   i;
+	int i;
 	P_obj obj, obj2;
 
 	for (i = 0; i < MAX_WEAR; i++)
@@ -3683,18 +3762,18 @@ void confiscate_all(P_char ch)
 
 int restore_wear[MAX_WEAR] = {
 	-2, /* WEAR_LIGHT */
-	1,  /* WEAR_FINGER_R */
-	1,  /* WEAR_FINGER_L */
-	2,  /* WEAR_NECK_1 */
-	2,  /* WEAR_NECK_2 */
-	3,  /* WEAR_BODY */
-	4,  /* WEAR_HEAD */
-	5,  /* WEAR_LEGS */
-	6,  /* WEAR_FEET */
-	7,  /* WEAR_HANDS */
-	8,  /* WEAR_ARMS */
+	1, /* WEAR_FINGER_R */
+	1, /* WEAR_FINGER_L */
+	2, /* WEAR_NECK_1 */
+	2, /* WEAR_NECK_2 */
+	3, /* WEAR_BODY */
+	4, /* WEAR_HEAD */
+	5, /* WEAR_LEGS */
+	6, /* WEAR_FEET */
+	7, /* WEAR_HANDS */
+	8, /* WEAR_ARMS */
 	14, /* WEAR_SHIELD */
-	9,  /* WEAR_ABOUT */
+	9, /* WEAR_ABOUT */
 	10, /* WEAR_WAIST */
 	11, /* WEAR_WRIST_R */
 	11, /* WEAR_WRIST_L */
@@ -3713,18 +3792,18 @@ int restore_wear[MAX_WEAR] = {
 	21, /* WEAR_ATTACH_BELT_1 */
 	21, /* WEAR_ATTACH_BELT_2 */
 	21, /* WEAR_ATTACH_BELT_3 */
-	8,  /* WEAR_ARMS2 */
-	7,  /* WEAR_HANDS2 */
+	8, /* WEAR_ARMS2 */
+	7, /* WEAR_HANDS2 */
 	11, /* WEAR_WRIST_LR */
 	11, /* WEAR_WRIST_LL */
 	22, /* WEAR_HORSE_BODY */
-	5,  /* WEAR_LEGS_REAR */
+	5, /* WEAR_LEGS_REAR */
 	23, /* WEAR_TAIL */
-	6,  /* WEAR_FEET_REAR */
+	6, /* WEAR_FEET_REAR */
 	24, /* WEAR_NOSE */
 	25, /* WEAR_HORN */
 	26, /* WEAR_IOUN */
-	27  /* WEAR_SPIDER_BODY */
+	27 /* WEAR_SPIDER_BODY */
 };
 
 /*
@@ -3737,15 +3816,15 @@ int restoreItemsOnly(P_char ch, int flatrate)
 	int wearSuccess;
 #ifndef _PFILE_
 	FILE *f;
-	char  buff[SAV_MAXSIZE];
+	char buff[SAV_MAXSIZE];
 	char *buf = buff;
-	int   skill_off, item_off, affect_off;
+	int skill_off, item_off, affect_off;
 #endif
-	int    size, csize, tmp, witness_off;
+	int size, csize, tmp, witness_off;
 	::byte dummy_byte;
-	char   Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char   b_savevers;
-	char   buf1[256];
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char b_savevers;
+	char buf1[256];
 
 	if (!ch)
 		return -2;
@@ -3766,7 +3845,7 @@ int restoreItemsOnly(P_char ch, int flatrate)
 	if (!f)
 		return -2;
 
-	buf  = buff;
+	buf = buff;
 	size = fread(buf, 1, SAV_MAXSIZE, f);
 	fclose(f);
 	if (size < 4)
@@ -3781,7 +3860,8 @@ int restoreItemsOnly(P_char ch, int flatrate)
 
 	b_savevers = GET_BYTE(buf);
 
-	if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) || (GET_BYTE(buf) != long_size))
+	if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) ||
+	    (GET_BYTE(buf) != long_size))
 	{
 		logit(LOG_FILE, "Save file in different machine format.");
 		fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
@@ -3802,14 +3882,14 @@ int restoreItemsOnly(P_char ch, int flatrate)
 		return -2;
 	}
 	dummy_byte = GET_BYTE(buf);
-	skill_off  = GET_INTE(buf);
+	skill_off = GET_INTE(buf);
 
 	if (b_savevers >= (char)SAV_WTNSVERS) /* no witness record save in file */
-		witness_off = GET_INTE(buf);      /* TASFALEN */
+		witness_off = GET_INTE(buf); /* TASFALEN */
 
 	affect_off = GET_INTE(buf);
-	item_off   = GET_INTE(buf);
-	csize      = GET_INTE(buf);
+	item_off = GET_INTE(buf);
+	csize = GET_INTE(buf);
 	if (size != csize)
 	{
 		logit(LOG_FILE, "Save file size %d not match size read %d.", size, csize);
@@ -3824,9 +3904,12 @@ int restoreItemsOnly(P_char ch, int flatrate)
 	if ((restoreAffects(buff + affect_off, ch) + affect_off) != item_off)
 	{
 		logit(LOG_FILE, "Warning: restoreAffects() not match offset.");
-		fprintf(stderr, "Problem restoring save file of: %s was %d, should be %d\n", GET_NAME(ch), affect_off, item_off);
+		fprintf(stderr, "Problem restoring save file of: %s was %d, should be %d\n",
+			GET_NAME(ch), affect_off, item_off);
 		logit(LOG_FILE, "Problem restoring save file of %s.", GET_NAME(ch));
-		send_to_char("There is something wrong with your save file!  Please talk to a God.\r\n", ch);
+		send_to_char(
+			"There is something wrong with your save file!  Please talk to a God.\r\n",
+			ch);
 		return -2;
 	}
 
@@ -3929,13 +4012,13 @@ int writePetStatus(char *buf, P_char ch)
 
 int writePet(P_char ch)
 {
-	FILE                 *f;
-	char                 *buf, *affect_off, *item_off, *size_off;
-	char                  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	int                   i, bak;
-	static char           buff[SAV_MAXSIZE * 2];
+	FILE *f;
+	char *buf, *affect_off, *item_off, *size_off;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	int i, bak;
+	static char buff[SAV_MAXSIZE * 2];
 	struct affected_type *af;
-	struct stat           statbuf;
+	struct stat statbuf;
 
 	if (!ch || !GET_NAME(ch))
 	{
@@ -4008,7 +4091,8 @@ int writePet(P_char ch)
 
 	if ((int)(buf - buff) > SAV_MAXSIZE)
 	{
-		logit(LOG_PLAYER, "Could not save %s, file too large (%d bytes)", GET_NAME(ch), (int)(buf - buff));
+		logit(LOG_PLAYER, "Could not save %s, file too large (%d bytes)", GET_NAME(ch),
+		      (int)(buf - buff));
 		return 0;
 	}
 	//  if (!ch->only.npc->owner)
@@ -4027,7 +4111,8 @@ int writePet(P_char ch)
 			tmp_errno = errno;
 			logit(LOG_FILE, "Problem with pet save files directory!\n");
 			logit(LOG_FILE, "   rename failed, errno = %d\n", tmp_errno);
-			wizlog(OVERLORD, "&+R&-LPANIC!&N  Error backing up petfile for %s!", GET_NAME(ch));
+			wizlog(OVERLORD, "&+R&-LPANIC!&N  Error backing up petfile for %s!",
+			       GET_NAME(ch));
 			return 0;
 		}
 		bak = 1;
@@ -4050,7 +4135,8 @@ int writePet(P_char ch)
 
 			logit(LOG_FILE, "Problem with pet save files directory!\n");
 			logit(LOG_FILE, "   stat failed, errno = %d\n", tmp_errno);
-			wizlog(OVERLORD, "&+R&-LPANIC!&N  Error finding petfile for %s!", GET_NAME(ch));
+			wizlog(OVERLORD, "&+R&-LPANIC!&N  Error finding petfile for %s!",
+			       GET_NAME(ch));
 			return 0;
 		}
 		/*
@@ -4081,7 +4167,8 @@ int writePet(P_char ch)
 			tmp_errno = errno;
 			logit(LOG_FILE, "Couldn't write to pet save file!\n");
 			logit(LOG_FILE, "   fwrite failed, errno = %d\n", tmp_errno);
-			wizlog(OVERLORD, "&+R&-LPANIC!&N  Error writing petfile for %s!", GET_NAME(ch));
+			wizlog(OVERLORD, "&+R&-LPANIC!&N  Error writing petfile for %s!",
+			       GET_NAME(ch));
 			fclose(f);
 			bak -= 2;
 		}
@@ -4091,30 +4178,31 @@ int writePet(P_char ch)
 
 	switch (bak)
 	{
-		case 1:                      /* save worked, just get rid of the backup */
-			if (unlink(Gbuf2) == -1) /* not a critical error */
-				logit(LOG_FILE, "Couldn't delete backup of pet file.\n");
-		case 0: /* save worked, no backup was made to begin with */
-			break;
-		case -1: /* save FAILED, but we have a backup */
-			if (rename(Gbuf2, Gbuf1) == -1)
-			{
-				int tmp_errno;
+	case 1: /* save worked, just get rid of the backup */
+		if (unlink(Gbuf2) == -1) /* not a critical error */
+			logit(LOG_FILE, "Couldn't delete backup of pet file.\n");
+	case 0: /* save worked, no backup was made to begin with */
+		break;
+	case -1: /* save FAILED, but we have a backup */
+		if (rename(Gbuf2, Gbuf1) == -1)
+		{
+			int tmp_errno;
 
-				tmp_errno = errno;
-				logit(LOG_FILE, " Unable to restore backup!  Argh!");
-				logit(LOG_FILE, "    rename failed, errno = %d\n", tmp_errno);
-				wizlog(OVERLORD, "&+R&-LPANIC!&N  Error restoring backup petfile for %s!", GET_NAME(ch));
-				logit(LOG_EXIT, "unable to restore backup petfile for %s", GET_NAME(ch));
-			}
-			else
-				wizlog(OVERLORD, "        Backup restored.");
-			/* restored or not, the save still failed, so return 0 */
-			return 0;
-		case -2: /* save FAILED, and we have NO backup! */
-			logit(LOG_FILE, " No restore file was made!");
-			wizlog(OVERLORD, "        No backup file available");
-			return 0;
+			tmp_errno = errno;
+			logit(LOG_FILE, " Unable to restore backup!  Argh!");
+			logit(LOG_FILE, "    rename failed, errno = %d\n", tmp_errno);
+			wizlog(OVERLORD, "&+R&-LPANIC!&N  Error restoring backup petfile for %s!",
+			       GET_NAME(ch));
+			logit(LOG_EXIT, "unable to restore backup petfile for %s", GET_NAME(ch));
+		}
+		else
+			wizlog(OVERLORD, "        Backup restored.");
+		/* restored or not, the save still failed, so return 0 */
+		return 0;
+	case -2: /* save FAILED, and we have NO backup! */
+		logit(LOG_FILE, " No restore file was made!");
+		wizlog(OVERLORD, "        No backup file available");
+		return 0;
 	}
 
 	return 1;
@@ -4138,73 +4226,73 @@ int deletePet(char *id)
 int restorePetStatus(char *buf, P_char ch)
 {
 	char *start = buf;
-	int   j;
+	int j;
 
 	clearMemory(ch);
 
 	if (IS_SET(ch->specials.act, ACT_SPEC)) /* No bogus procs!  */
 		REMOVE_BIT(ch->specials.act, ACT_SPEC);
 	all_affects(ch, FALSE); /* Clean the slate first */
-	GET_NAME(ch)           = GET_STRING(buf);
+	GET_NAME(ch) = GET_STRING(buf);
 	ch->player.short_descr = GET_STRING(buf);
-	ch->player.long_descr  = GET_STRING(buf);
+	ch->player.long_descr = GET_STRING(buf);
 	ch->player.description = GET_STRING(buf);
 	//  ch->only.npc->owner = GET_STRING(buf);
 
 	//  GET_CLASS(ch) = GET_BYTE(buf);
 	ch->player.m_class = GET_BYTE(buf); // should be updated, must be 16 bits or mroe
-	GET_RACE(ch)       = GET_BYTE(buf);
+	GET_RACE(ch) = GET_BYTE(buf);
 
 	//  GET_LEVEL(ch) = GET_BYTE(buf);
-	ch->player.level                       = GET_BYTE(buf);
-	GET_SEX(ch)                            = GET_BYTE(buf);
-	ch->player.weight                      = GET_SHORT(buf);
-	ch->player.height                      = GET_SHORT(buf);
-	GET_HOME(ch)                           = GET_BYTE(buf);
+	ch->player.level = GET_BYTE(buf);
+	GET_SEX(ch) = GET_BYTE(buf);
+	ch->player.weight = GET_SHORT(buf);
+	ch->player.height = GET_SHORT(buf);
+	GET_HOME(ch) = GET_BYTE(buf);
 	mob_index[GET_RNUM(ch)].virtual_number = GET_INTE(buf);
-	GET_BIRTHPLACE(ch)                     = GET_INTE(buf);
+	GET_BIRTHPLACE(ch) = GET_INTE(buf);
 
 	ch->player.time.birth = time(0);
-	ch->base_stats.Str    = (ubyte)GET_BYTE(buf);
-	ch->base_stats.Dex    = (ubyte)GET_BYTE(buf);
-	ch->base_stats.Agi    = (ubyte)GET_BYTE(buf);
-	ch->base_stats.Con    = (ubyte)GET_BYTE(buf);
-	ch->base_stats.Pow    = (ubyte)GET_BYTE(buf);
-	ch->base_stats.Int    = (ubyte)GET_BYTE(buf);
-	ch->base_stats.Wis    = (ubyte)GET_BYTE(buf);
-	ch->base_stats.Cha    = (ubyte)GET_BYTE(buf);
-	ch->base_stats.Kar    = (ubyte)GET_BYTE(buf);
-	ch->base_stats.Luk    = (ubyte)GET_BYTE(buf);
-	ch->curr_stats        = ch->base_stats;
-	GET_MANA(ch)          = GET_SHORT(buf);
-	ch->points.base_mana  = GET_SHORT(buf);
-	GET_HIT(ch)           = GET_SHORT(buf);
+	ch->base_stats.Str = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Dex = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Agi = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Con = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Pow = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Int = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Wis = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Cha = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Kar = (ubyte)GET_BYTE(buf);
+	ch->base_stats.Luk = (ubyte)GET_BYTE(buf);
+	ch->curr_stats = ch->base_stats;
+	GET_MANA(ch) = GET_SHORT(buf);
+	ch->points.base_mana = GET_SHORT(buf);
+	GET_HIT(ch) = GET_SHORT(buf);
 	if (GET_HIT(ch) < 0)
 		GET_HIT(ch) = 0;
 	ch->points.base_hit = GET_SHORT(buf);
 	if (ch->points.base_hit < 1)
 		ch->points.base_hit = 1;
-	GET_VITALITY(ch)         = GET_SHORT(buf);
+	GET_VITALITY(ch) = GET_SHORT(buf);
 	ch->points.base_vitality = GET_SHORT(buf);
 
-	GET_COPPER(ch)   = GET_INTE(buf);
-	GET_SILVER(ch)   = GET_INTE(buf);
-	GET_GOLD(ch)     = GET_INTE(buf);
+	GET_COPPER(ch) = GET_INTE(buf);
+	GET_SILVER(ch) = GET_INTE(buf);
+	GET_GOLD(ch) = GET_INTE(buf);
 	GET_PLATINUM(ch) = GET_INTE(buf);
 
-	GET_COPPER(ch)   = 0;
-	GET_SILVER(ch)   = 0;
-	GET_GOLD(ch)     = 0;
+	GET_COPPER(ch) = 0;
+	GET_SILVER(ch) = 0;
+	GET_GOLD(ch) = 0;
 	GET_PLATINUM(ch) = 0;
 
-	GET_EXP(ch)            = GET_INTE(buf);
-	ch->specials.act       = GET_INTE(buf);
-	ch->specials.act2      = GET_INTE(buf);
+	GET_EXP(ch) = GET_INTE(buf);
+	ch->specials.act = GET_INTE(buf);
+	ch->specials.act2 = GET_INTE(buf);
 	ch->specials.alignment = GET_INTE(buf);
 	if (GET_OPPONENT(ch))
 		stop_fighting(ch);
-	ch->points.max_hit      = ch->points.base_hit;
-	ch->points.max_mana     = ch->points.base_mana;
+	ch->points.max_hit = ch->points.base_hit;
+	ch->points.max_mana = ch->points.base_mana;
 	ch->points.max_vitality = ch->points.base_vitality;
 
 	SET_BIT(ch->specials.act, ACT_SENTINEL);
@@ -4218,12 +4306,12 @@ int restorePetStatus(char *buf, P_char ch)
 
 P_char restorePet(char *id)
 {
-	FILE  *f;
+	FILE *f;
 	P_char ch;
-	char   buff[SAV_MAXSIZE];
-	char  *buf = buff;
-	int    start, size, csize, affect_off, item_off, tmp, virt;
-	char   Gbuf1[MAX_STRING_LENGTH];
+	char buff[SAV_MAXSIZE];
+	char *buf = buff;
+	int start, size, csize, affect_off, item_off, tmp, virt;
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	if (!id)
 	{
@@ -4245,7 +4333,8 @@ P_char restorePet(char *id)
 	{
 		logit(LOG_FILE, "Warning: Save file less than 4 bytes for %s.", id);
 	}
-	if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) || (GET_BYTE(buf) != long_size))
+	if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) ||
+	    (GET_BYTE(buf) != long_size))
 	{
 		wizlog(OVERLORD, "Ouch. Bad file sizing for %d", id);
 		return 0;
@@ -4255,12 +4344,13 @@ P_char restorePet(char *id)
 		logit(LOG_FILE, "Warning: Petsave file is only %d bytes for %s.", size, id);
 	}
 	affect_off = GET_INTE(buf);
-	item_off   = GET_INTE(buf);
-	csize      = GET_INTE(buf);
-	virt       = GET_INTE(buf);
+	item_off = GET_INTE(buf);
+	csize = GET_INTE(buf);
+	virt = GET_INTE(buf);
 	if (size != csize)
 	{
-		wizlog(OVERLORD, "Warning: pet file size %d doesn't match csize %d for %s.", size, csize, id);
+		wizlog(OVERLORD, "Warning: pet file size %d doesn't match csize %d for %s.", size,
+		       csize, id);
 	}
 	ch = read_mobile(virt, VIRTUAL);
 	if (!ch)
@@ -4324,7 +4414,7 @@ void restoreSavedItems(void)
 void PurgeSavedItemFile(P_obj item)
 {
 	char *tmp;
-	char  Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
 	if (!item)
 		return;
@@ -4884,8 +4974,8 @@ int register_ship(int vnum)
 
 	CREATE(x, ship_reg_node, 1, MEM_TAG_SHIPREG);
 
-	x->vnum     = vnum;
-	x->next     = ship_reg_db;
+	x->vnum = vnum;
+	x->next = ship_reg_db;
 	ship_reg_db = x;
 	return TRUE;
 };

@@ -6,6 +6,6 @@
 #include "utils.h"
 
 void do_test(P_char ch, char *arg, int cmd);
-int  very_angry_npc(P_char, P_char, int, char *);
+int very_angry_npc(P_char, P_char, int, char *);
 
 #endif

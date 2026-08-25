@@ -63,56 +63,59 @@
  * Armlock (ARMREFLEX_OFFBALANCE) -> Groundslam -> Leglock
  */
 
-#define HOLD_NONE     0
-#define HOLD_NORMAL   1
+#define HOLD_NONE 0
+#define HOLD_NORMAL 1
 #define HOLD_IMPROVED 2
 
-#define ARMREFLEX_HOLD       1
+#define ARMREFLEX_HOLD 1
 #define ARMREFLEX_OFFBALANCE 2
-#define ARMREFLEX_MAX        2
+#define ARMREFLEX_MAX 2
 
-#define IS_GRAPPLED(ch)                                                                                                                                                                                \
-	(affected_by_spell(ch, TAG_GRAPPLE) || affected_by_spell(ch, SKILL_BEARHUG) || affected_by_spell(ch, TAG_BEARHUG) || affected_by_spell(ch, SKILL_HEADLOCK) ||                                      \
+#define IS_GRAPPLED(ch)                                                                 \
+	(affected_by_spell(ch, TAG_GRAPPLE) || affected_by_spell(ch, SKILL_BEARHUG) ||  \
+	 affected_by_spell(ch, TAG_BEARHUG) || affected_by_spell(ch, SKILL_HEADLOCK) || \
 	 affected_by_spell(ch, SKILL_ARMLOCK) || affected_by_spell(ch, SKILL_LEGLOCK))
 
 #define GRAPPLE_TIMER(ch) (affected_by_spell(ch, SKILL_GRAPPLER_COMBAT))
 
-#define HOLD_CANT_ATTACK(ch) (affected_by_spell(ch, TAG_GRAPPLE) || affected_by_spell(ch, SKILL_BEARHUG))
+#define HOLD_CANT_ATTACK(ch) \
+	(affected_by_spell(ch, TAG_GRAPPLE) || affected_by_spell(ch, SKILL_BEARHUG))
 
 #define IS_TGRAPPLE(ch) affected_by_spell(ch, TAG_GRAPPLE)
 
-#define IS_BEARHUG(ch)  (affected_by_spell(ch, SKILL_BEARHUG) || affected_by_spell(ch, TAG_BEARHUG))
+#define IS_BEARHUG(ch) (affected_by_spell(ch, SKILL_BEARHUG) || affected_by_spell(ch, TAG_BEARHUG))
 #define IS_SBEARHUG(ch) affected_by_spell(ch, SKILL_BEARHUG)
 #define IS_TBEARHUG(ch) affected_by_spell(ch, TAG_BEARHUG)
 
-#define IS_HEADLOCK(ch)  (affected_by_spell(ch, SKILL_HEADLOCK) || affected_by_spell(ch, TAG_HEADLOCK))
+#define IS_HEADLOCK(ch) \
+	(affected_by_spell(ch, SKILL_HEADLOCK) || affected_by_spell(ch, TAG_HEADLOCK))
 #define IS_SHEADLOCK(ch) affected_by_spell(ch, SKILL_HEADLOCK)
 #define IS_THEADLOCK(ch) affected_by_spell(ch, TAG_HEADLOCK)
 
-#define IS_ARMLOCK(ch)  (affected_by_spell(ch, SKILL_ARMLOCK) || affected_by_spell(ch, TAG_ARMLOCK))
+#define IS_ARMLOCK(ch) (affected_by_spell(ch, SKILL_ARMLOCK) || affected_by_spell(ch, TAG_ARMLOCK))
 #define IS_SARMLOCK(ch) affected_by_spell(ch, SKILL_ARMLOCK)
 #define IS_TARMLOCK(ch) affected_by_spell(ch, TAG_ARMLOCK)
 
 #define IS_GROUNDSLAM(ch) affected_by_spell(ch, SKILL_GROUNDSLAM)
 
-#define IS_LEGLOCK(ch)  (affected_by_spell(ch, SKILL_LEGLOCK) || affected_by_spell(ch, TAG_LEGLOCK))
+#define IS_LEGLOCK(ch) (affected_by_spell(ch, SKILL_LEGLOCK) || affected_by_spell(ch, TAG_LEGLOCK))
 #define IS_SLEGLOCK(ch) affected_by_spell(ch, SKILL_LEGLOCK)
 #define IS_TLEGLOCK(ch) affected_by_spell(ch, TAG_LEGLOCK)
 
-int    grapple_check_entrapment(P_char ch);
-int    grapple_check_hands(P_char ch);
-int    grapple_flee_check(P_char ch);
+int grapple_check_entrapment(P_char ch);
+int grapple_check_hands(P_char ch);
+int grapple_flee_check(P_char ch);
 P_char grapple_attack_check(P_char ch);
-int    grapple_misfire_chance(P_char ch, P_char victim, int type);
-void   do_bearhug(P_char ch, char *argument, int cmd);
-void   event_bearhug(P_char ch, P_char victim, P_obj obj, void *data);
-void   do_headlock(P_char ch, char *argument, int cmd);
-void   event_headlock(P_char ch, P_char victim, P_obj obj, void *data);
-void   armlock_check(P_char attacker, P_char grappler);
-void   event_armlock(P_char ch, P_char victim, P_obj obj, void *data);
-void   grapple_heal(P_char ch);
-void   do_groundslam(P_char ch, char *argument, int cmd);
-void   do_leglock(P_char ch, char *argument, int cmd);
-void   event_leglock(P_char ch, P_char victim, P_obj obj, void *data);
+int grapple_misfire_chance(P_char ch, P_char victim, int type);
+void do_bearhug(P_char ch, char *argument, int cmd);
+void event_bearhug(P_char ch, P_char victim, P_obj obj, void *data);
+void do_headlock(P_char ch, char *argument, int cmd);
+void event_headlock(P_char ch, P_char victim, P_obj obj, void *data);
+void armlock_check(P_char attacker, P_char grappler);
+void event_armlock(P_char ch, P_char victim, P_obj obj, void *data);
+void grapple_heal(P_char ch);
+void do_groundslam(P_char ch, char *argument, int cmd);
+void do_leglock(P_char ch, char *argument, int cmd);
+void event_leglock(P_char ch, P_char victim, P_obj obj, void *data);
 
 #endif // __GRAPPLE_H__

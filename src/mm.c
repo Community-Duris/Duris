@@ -17,16 +17,16 @@ struct mm_ds_list *mmds_list = NULL;
 
 struct mm_ds *mm_create(const char *name, size_t size, size_t next_off, unsigned pages)
 {
-	struct mm_ds      *mmds;
+	struct mm_ds *mmds;
 	struct mm_ds_list *list_entry;
 
 	CREATE(mmds, mm_ds, 1, MEM_TAG_MEMMAN);
 	strlcpy(mmds->name, name, sizeof mmds->name);
 
 	mmds->head = mmds->tail = NULL;
-	mmds->size              = size;
-	mmds->next_off          = next_off;
-	mmds->chunk_size        = pages;
+	mmds->size = size;
+	mmds->next_off = next_off;
+	mmds->chunk_size = pages;
 #ifdef MM_STATS
 	mmds->pages_owned = mmds->objs_used = mmds->bytes_wasted = 0;
 #endif
@@ -35,7 +35,7 @@ struct mm_ds *mm_create(const char *name, size_t size, size_t next_off, unsigned
 
 	list_entry->mmds = mmds;
 	list_entry->next = mmds_list;
-	mmds_list        = list_entry;
+	mmds_list = list_entry;
 
 	return mmds;
 }
@@ -48,7 +48,7 @@ void mm_release(struct mm_ds *mmds, void *mem)
 	if (mmds->tail)
 	{
 		*((char **)(mmds->tail + mmds->next_off)) = (char *)mem;
-		mmds->tail                                = (char *)mem;
+		mmds->tail = (char *)mem;
 	}
 	else
 	{
@@ -70,7 +70,7 @@ void *_mm_get(struct mm_ds *mmds, const char *file, int line)
 		mm_alloc_chunk(mmds);
 	}
 
-	mem        = mmds->head;
+	mem = mmds->head;
 	mmds->head = *((char **)(mem + mmds->next_off));
 	if (!mmds->head)
 		mmds->tail = NULL;
@@ -88,7 +88,7 @@ void *_mm_get(struct mm_ds *mmds, const char *file, int line)
 
 void mm_alloc_chunk(struct mm_ds *mmds)
 {
-	char  *more;
+	char *more;
 	size_t offset = 0;
 	size_t howmuch;
 
@@ -105,8 +105,8 @@ void mm_alloc_chunk(struct mm_ds *mmds)
 	{
 		int tmp_errno = errno;
 
-		fatal_boot_error("mm", "mmap failed for pool '%s' (%zu bytes): %s", mmds->name, howmuch,
-		                 strerror(tmp_errno));
+		fatal_boot_error("mm", "mmap failed for pool '%s' (%zu bytes): %s", mmds->name,
+				 howmuch, strerror(tmp_errno));
 	}
 	/*
 	   should I memset it to all 0's?
@@ -142,7 +142,7 @@ void mm_alloc_chunk(struct mm_ds *mmds)
 	while ((offset + mmds->size) <= howmuch)
 	{
 		*((char **)(more + offset + mmds->next_off)) = mmds->head;
-		mmds->head                                   = (char *)(more + offset);
+		mmds->head = (char *)(more + offset);
 		offset += mmds->size;
 	}
 }
@@ -179,7 +179,7 @@ unsigned mm_find_best_chunk(int size, int min, int max)
 		if (waste < best)
 		{
 			best = waste;
-			j    = i;
+			j = i;
 		}
 	}
 	return ((size * j) / 4096 + 1);

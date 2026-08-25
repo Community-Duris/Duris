@@ -14,7 +14,7 @@
    extern variables
  */
 
-extern P_room            world;
+extern P_room world;
 extern struct zone_data *zone_table;
 
 /*
@@ -33,7 +33,8 @@ int clwcvrn_crys_die(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (cmd == CMD_DEATH)
 	{
-		act("$n shatters into a million sharp fragments that fly everywhere.", TRUE, ch, 0, 0, TO_ROOM);
+		act("$n shatters into a million sharp fragments that fly everywhere.", TRUE, ch, 0,
+		    0, TO_ROOM);
 	}
 	return (FALSE);
 }
@@ -51,7 +52,7 @@ int clwcvrn_crys_die(P_char ch, P_char pl, int cmd, char *arg)
 int clwcvrn_golem_shatter(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_obj pile, money, obj, next_obj;
-	int   pos;
+	int pos;
 
 	// Check for periodic event calls
 	if (cmd == CMD_SET_PERIODIC)
@@ -66,12 +67,12 @@ int clwcvrn_golem_shatter(P_char ch, P_char pl, int cmd, char *arg)
 		pile = read_object(VOBJ_CLWCVRN_CRYSTAL_SHARDS, VIRTUAL);
 		if (!pile)
 		{
-			logit(LOG_OBJ, "clwcvrn_golem_shatter: could not load object %d", VOBJ_CLWCVRN_CRYSTAL_SHARDS);
+			logit(LOG_OBJ, "clwcvrn_golem_shatter: could not load object %d",
+			      VOBJ_CLWCVRN_CRYSTAL_SHARDS);
 			return FALSE;
 		}
 		if (pile->type == ITEM_CONTAINER)
 		{
-
 			// Transfer inventory to pile
 			for (obj = ch->carrying; obj; obj = next_obj)
 			{
@@ -92,7 +93,8 @@ int clwcvrn_golem_shatter(P_char ch, P_char pl, int cmd, char *arg)
 			// Transfer money
 			if (GET_MONEY(ch) > 0)
 			{
-				money = create_money(GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch), GET_PLATINUM(ch));
+				money = create_money(GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch),
+						     GET_PLATINUM(ch));
 				obj_to_obj(money, pile);
 			}
 
@@ -105,7 +107,9 @@ int clwcvrn_golem_shatter(P_char ch, P_char pl, int cmd, char *arg)
 				}
 				else
 				{
-					extract_obj(pile, TRUE); // No good place to put it (never 'in game', but contents may have been).
+					extract_obj(
+						pile,
+						TRUE); // No good place to put it (never 'in game', but contents may have been).
 					pile = NULL;
 					return FALSE;
 				}
@@ -118,16 +122,14 @@ int clwcvrn_golem_shatter(P_char ch, P_char pl, int cmd, char *arg)
 			// Clue players in
 			act("$n emits a lood pitched wail and begins to shake.\r\n"
 			    "$n shatters and falls into $p... a cloud of dust rises.",
-			    TRUE,
-			    ch,
-			    pile,
-			    0,
-			    TO_ROOM);
+			    TRUE, ch, pile, 0, TO_ROOM);
 			return TRUE;
 		}
 		else
 		{
-			logit(LOG_OBJ, "Object %d not CONTAINER for clwcvrn_golem_shatter()!!  Aborted.", VOBJ_CLWCVRN_CRYSTAL_SHARDS);
+			logit(LOG_OBJ,
+			      "Object %d not CONTAINER for clwcvrn_golem_shatter()!!  Aborted.",
+			      VOBJ_CLWCVRN_CRYSTAL_SHARDS);
 			return FALSE;
 		}
 	}
@@ -157,8 +159,11 @@ int clwcvrn_protect(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		if (GET_LEVEL(pl) > 20 && GET_LEVEL(pl) < 51)
 		{
-			act("The giant stone golem rumbles something to $n, stopping $m with its hand.", FALSE, pl, 0, 0, TO_ROOM);
-			send_to_char("The giant stone golem rumbles \"Murderers such as you must go elsewhere.\"\r\n", pl);
+			act("The giant stone golem rumbles something to $n, stopping $m with its hand.",
+			    FALSE, pl, 0, 0, TO_ROOM);
+			send_to_char(
+				"The giant stone golem rumbles \"Murderers such as you must go elsewhere.\"\r\n",
+				pl);
 			return TRUE;
 		}
 	}

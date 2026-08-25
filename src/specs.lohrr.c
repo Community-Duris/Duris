@@ -15,15 +15,15 @@
 
 extern P_room world;
 extern P_desc descriptor_list;
-extern bool   has_skin_spell(P_char);
+extern bool has_skin_spell(P_char);
 
-int    adjacent_room_nesw(P_char ch, int num_rooms);
+int adjacent_room_nesw(P_char ch, int num_rooms);
 P_ship leviathan_find_ship(P_char leviathan, int room, int num_rooms);
 
 // This is an old proc for Lohrr's eq..
 int proc_lohrr(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	int  locwearing;
+	int locwearing;
 	char buf[MAX_STRING_LENGTH];
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -54,30 +54,31 @@ int proc_lohrr(P_obj obj, P_char ch, int cmd, char *argument)
 
 	switch (locwearing)
 	{
-		// For his quiver first
-		case WEAR_QUIVER:
-			// Heal if down more than 10 hps
-			if ((GET_HIT(ch) < GET_MAX_HIT(ch) - 10) && (cmd == CMD_PERIODIC))
-			{
-				spell_full_heal(60, ch, 0, 0, ch, 0);
-				return TRUE;
-			}
-			break;
-		case WIELD:
-		case WIELD2:
-		case WIELD3:
-		case WIELD4:
-			// RAWR!  On a 4, 5 or 6 proc bigbys hand!
-			if ((cmd == CMD_MELEE_HIT) && GET_OPPONENT(ch) && (dice(1, 6) > 3))
-			{
-				spell_bigbys_crushing_hand(60, ch, NULL, SPELL_TYPE_SPELL, GET_OPPONENT(ch), 0);
-				return TRUE;
-			}
-			break;
-		case WEAR_WAIST:
-			if ((cmd == CMD_PERIODIC) && !has_skin_spell(ch) && (dice(1, 6) > 4))
-				spell_biofeedback(60, ch, 0, 0, ch, 0);
-			break;
+	// For his quiver first
+	case WEAR_QUIVER:
+		// Heal if down more than 10 hps
+		if ((GET_HIT(ch) < GET_MAX_HIT(ch) - 10) && (cmd == CMD_PERIODIC))
+		{
+			spell_full_heal(60, ch, 0, 0, ch, 0);
+			return TRUE;
+		}
+		break;
+	case WIELD:
+	case WIELD2:
+	case WIELD3:
+	case WIELD4:
+		// RAWR!  On a 4, 5 or 6 proc bigbys hand!
+		if ((cmd == CMD_MELEE_HIT) && GET_OPPONENT(ch) && (dice(1, 6) > 3))
+		{
+			spell_bigbys_crushing_hand(60, ch, NULL, SPELL_TYPE_SPELL, GET_OPPONENT(ch),
+						   0);
+			return TRUE;
+		}
+		break;
+	case WEAR_WAIST:
+		if ((cmd == CMD_PERIODIC) && !has_skin_spell(ch) && (dice(1, 6) > 4))
+			spell_biofeedback(60, ch, 0, 0, ch, 0);
+		break;
 	}
 
 	return FALSE;
@@ -128,7 +129,7 @@ void dagger_of_wind( P_obj obj, P_char ch, int cmd, char *argument )
 
 int sphinx_prefect_crown(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int  curr_time;
+	int curr_time;
 	char first_arg[256];
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -152,25 +153,23 @@ int sphinx_prefect_crown(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			act("You say 'sphinx'", FALSE, ch, 0, 0, TO_CHAR);
 			act("$n says 'sphinx'", TRUE, ch, obj, NULL, TO_ROOM);
-			act("&+LYour crown seems to &+Yp&+yu&+Yl&+ys&+Ye &+Lwith a vibrant &+Ymagic&+L!&n", FALSE, ch, obj, obj, TO_CHAR);
-			act("&+LA misty haze of &+yun&+Learthly &+Cknowledge &+Lflows from your crown!&n", FALSE, ch, obj, obj, TO_CHAR);
+			act("&+LYour crown seems to &+Yp&+yu&+Yl&+ys&+Ye &+Lwith a vibrant &+Ymagic&+L!&n",
+			    FALSE, ch, obj, obj, TO_CHAR);
+			act("&+LA misty haze of &+yun&+Learthly &+Cknowledge &+Lflows from your crown!&n",
+			    FALSE, ch, obj, obj, TO_CHAR);
 			act("&+mS&+Mw&+mi&+Mr&+ml&+Mi&+mn&+Mg &+Lthoughts and words of &+Bmagic &+Lseem to &+rsear &+Linto your mind as the wisdom of the &+Ys&+yp&+Yh&+yi&+Yn&+yx &+Cinvigorates &+Lyou with "
 			    "&+Gpower&+L!&n",
-			    FALSE,
-			    ch,
-			    obj,
-			    obj,
-			    TO_CHAR);
-			act("$n's &+Lcrown glows with a &+Gv&+gi&+Gb&+gr&+Ga&+gn&+Gt &+Ylight&+L!&n", TRUE, ch, obj, NULL, TO_ROOM);
-			act("&+LThe image of a wise &+Ys&+yp&+Yh&+yi&+Yn&+yx &+Lseems to &+Cshimmer &+Laround $n's &+Lhead!&n", TRUE, ch, obj, NULL, TO_ROOM);
-			act("&+LIn a rush of displaced &+Cair&+L, the image of the &+Ys&+yp&+Yh&+yi&+Yn&+yx &+Levaporates into a misty essence infused with &+mmagic&+L!&n", TRUE, ch, obj, NULL, TO_ROOM);
-			act("&+LThe misty essence of the &+Ys&+yp&+Yh&+yi&+Yn&+yx &+Lenvelopes $n!", TRUE, ch, obj, NULL, TO_ROOM);
+			    FALSE, ch, obj, obj, TO_CHAR);
+			act("$n's &+Lcrown glows with a &+Gv&+gi&+Gb&+gr&+Ga&+gn&+Gt &+Ylight&+L!&n",
+			    TRUE, ch, obj, NULL, TO_ROOM);
+			act("&+LThe image of a wise &+Ys&+yp&+Yh&+yi&+Yn&+yx &+Lseems to &+Cshimmer &+Laround $n's &+Lhead!&n",
+			    TRUE, ch, obj, NULL, TO_ROOM);
+			act("&+LIn a rush of displaced &+Cair&+L, the image of the &+Ys&+yp&+Yh&+yi&+Yn&+yx &+Levaporates into a misty essence infused with &+mmagic&+L!&n",
+			    TRUE, ch, obj, NULL, TO_ROOM);
+			act("&+LThe misty essence of the &+Ys&+yp&+Yh&+yi&+Yn&+yx &+Lenvelopes $n!",
+			    TRUE, ch, obj, NULL, TO_ROOM);
 			act("&+LA wicked &+rgrin &+Lpasses across $n's &+Lface as they are &+me&+Mm&+mp&+Mo&+mw&+Me&+mr&+Me&+md &+Lwith &+rancient &+gwisdom &+Land &+Cknowledge&+L!&n",
-			    TRUE,
-			    ch,
-			    obj,
-			    NULL,
-			    TO_ROOM);
+			    TRUE, ch, obj, NULL, TO_ROOM);
 			spell_mordenkainens_lucubration(60, ch, 0, 0, ch, NULL);
 			obj->timer[0] = curr_time;
 			obj->timer[1] = 0;
@@ -183,11 +182,7 @@ int sphinx_prefect_crown(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		act("&+LYour legendary &+ycrown &+Lof the &+Ys&+yp&+Yh&+yi&+Yn&+yx &+Gp&+gr&+Ge&+gf&+Ge&+gc&+Gt&+gs &+Cglows &+Lwith an unearthly &+Wlight &+Land starts to &+mpulse &+Lgently in time to your "
 		    "&+rheartbeat&+L.&n",
-		    TRUE,
-		    obj->loc.wearing,
-		    obj,
-		    0,
-		    TO_CHAR);
+		    TRUE, obj->loc.wearing, obj, 0, TO_CHAR);
 		obj->timer[1] = 1;
 		return FALSE;
 	}
@@ -196,8 +191,8 @@ int sphinx_prefect_crown(P_obj obj, P_char ch, int cmd, char *arg)
 
 int adjacent_room_nesw(P_char ch, int num_rooms)
 {
-	int                  dir = number(0, 3);
-	int                  i, j;
+	int dir = number(0, 3);
+	int i, j;
 	room_direction_data *exit;
 
 	if (!ch)
@@ -223,9 +218,9 @@ int adjacent_room_nesw(P_char ch, int num_rooms)
 int leviathan(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char tch;
-	int    to_room;
+	int to_room;
 	P_ship ship;
-	int    ram_damage, heading;
+	int ram_damage, heading;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -240,7 +235,7 @@ int leviathan(P_char ch, P_char pl, int cmd, char *arg)
 			act_to_all_in_ship(ship, "$N speeds into your ship!", ch);
 			act("$N speeds into a ship!", FALSE, ch, NULL, ch, TO_ROOM);
 			ram_damage = number(10, 15);
-			heading    = number(0, 3);
+			heading = number(0, 3);
 			ch_damage_hull(ch, ship, ram_damage, heading, number(0, 99));
 			update_ship_status(ship);
 			return TRUE;
@@ -250,46 +245,50 @@ int leviathan(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		switch (number(1, 2))
 		{
-			case 1:
-				act("$N lifts up out of the water, then splashes back down, causing a massive wave!", FALSE, ch, NULL, ch, TO_ROOM);
+		case 1:
+			act("$N lifts up out of the water, then splashes back down, causing a massive wave!",
+			    FALSE, ch, NULL, ch, TO_ROOM);
 
-				// To each char in room, chance of knockdown.
-				for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
+			// To each char in room, chance of knockdown.
+			for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
+			{
+				if (tch != ch)
 				{
-					if (tch != ch)
+					if (number(0, 1))
+						SET_POS(tch, POS_SITTING + GET_STAT(tch));
+					// if not knocked down, chance to get moved 1 room away.
+					else if (number(0, 1) &&
+						 (to_room = adjacent_room_nesw(ch, 1)))
 					{
-						if (number(0, 1))
-							SET_POS(tch, POS_SITTING + GET_STAT(tch));
-						// if not knocked down, chance to get moved 1 room away.
-						else if (number(0, 1) && (to_room = adjacent_room_nesw(ch, 1)))
-						{
-							// Move char 1 room
-							char_from_room(tch);
-							char_to_room(tch, to_room, -1);
-						}
-					}
-				}
-				break;
-			case 2:
-				tch = GET_OPPONENT(ch);
-				if (tch)
-				{
-					act("$N lashes out with a tentacle, wrapping it around you, lifts and quickly slams you upon the water surface!", FALSE, tch, NULL, ch, TO_CHAR);
-					act("$N lashes out grabbing $n with a tentacle, thrashing $m into the water!", FALSE, tch, NULL, ch, TO_ROOM);
-					// Move victim 1-3 rooms away
-					if ((to_room = adjacent_room_nesw(ch, number(1, 3))))
-					{
+						// Move char 1 room
 						char_from_room(tch);
 						char_to_room(tch, to_room, -1);
 					}
-					stop_fighting(tch);
-					if (IS_DESTROYING(tch))
-						stop_destroying(tch);
-					// Stun for 3-5 sec
-					CharWait(tch, number(3, 5));
 				}
-			default:
-				break;
+			}
+			break;
+		case 2:
+			tch = GET_OPPONENT(ch);
+			if (tch)
+			{
+				act("$N lashes out with a tentacle, wrapping it around you, lifts and quickly slams you upon the water surface!",
+				    FALSE, tch, NULL, ch, TO_CHAR);
+				act("$N lashes out grabbing $n with a tentacle, thrashing $m into the water!",
+				    FALSE, tch, NULL, ch, TO_ROOM);
+				// Move victim 1-3 rooms away
+				if ((to_room = adjacent_room_nesw(ch, number(1, 3))))
+				{
+					char_from_room(tch);
+					char_to_room(tch, to_room, -1);
+				}
+				stop_fighting(tch);
+				if (IS_DESTROYING(tch))
+					stop_destroying(tch);
+				// Stun for 3-5 sec
+				CharWait(tch, number(3, 5));
+			}
+		default:
+			break;
 		}
 	}
 
@@ -304,11 +303,11 @@ int leviathan(P_char ch, P_char pl, int cmd, char *arg)
 // Returns a ship if it's near Leviathan
 P_ship leviathan_find_ship(P_char leviathan, int room, int num_rooms)
 {
-	int                  i;
-	P_obj                obj;
-	P_ship               ship;
+	int i;
+	P_obj obj;
+	P_ship ship;
 	room_direction_data *exit;
-	char                 msg[100];
+	char msg[100];
 
 	if (!leviathan)
 		return NULL;
@@ -316,7 +315,8 @@ P_ship leviathan_find_ship(P_char leviathan, int room, int num_rooms)
 	// Look through contents
 	for (obj = world[room].contents; obj; obj = obj->next_content)
 		// If found a ship && percent >= 50
-		if (obj && (GET_ITEM_TYPE(obj) == ITEM_SHIP) && (obj->value[6] == 1) && number(0, 1))
+		if (obj && (GET_ITEM_TYPE(obj) == ITEM_SHIP) && (obj->value[6] == 1) &&
+		    number(0, 1))
 			return shipObjHash.find(obj);
 
 	// This is a bit repetative, but that's ok, it's for a small number.
@@ -340,8 +340,8 @@ P_ship leviathan_find_ship(P_char leviathan, int room, int num_rooms)
 // This is a proc for Soldon's hat which he won via winning competitive wipe: ship frags.
 int proc_soldon_hat(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	P_char        mob;
-	int           count;
+	P_char mob;
+	int count;
 	static time_t timer = 0;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -393,11 +393,11 @@ int proc_soldon_hat(P_obj obj, P_char ch, int cmd, char *argument)
 // This is a proc to punish people who crash the mud.
 int very_angry_npc(P_char ch, P_char pl, int cmd, char *arg)
 {
-	char   buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	P_desc d;
-	P_obj  headgear, head, corpse;
-	bool   naked;
-	int    i;
+	P_obj headgear, head, corpse;
+	bool naked;
+	int i;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -418,14 +418,16 @@ int very_angry_npc(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (cmd == CMD_SHOUT && GET_PID(pl) == 32620)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "Lohrr, come stop %s from cheating.  The bastard is trying to crash the MUD!", J_NAME(pl));
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"Lohrr, come stop %s from cheating.  The bastard is trying to crash the MUD!",
+			J_NAME(pl));
 		do_shout(ch, buf, CMD_SHOUT);
-		snprintf(buf,
-		         MAX_STRING_LENGTH,
-		         "&+CYou hear a rumbling like thunder... &+g'Ok, %s&+g, I shall deal with %s.\n\r"
-		         "&+gYour punishment shall be a &+rbeheading&+g, then you will watch as your headless corpse is &+Rdevoured&+g.'&n\n\r",
-		         J_NAME(ch),
-		         J_NAME(pl));
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+CYou hear a rumbling like thunder... &+g'Ok, %s&+g, I shall deal with %s.\n\r"
+			"&+gYour punishment shall be a &+rbeheading&+g, then you will watch as your headless corpse is &+Rdevoured&+g.'&n\n\r",
+			J_NAME(ch), J_NAME(pl));
 		for (d = descriptor_list; d; d = d->next)
 		{
 			if (d->connected == CON_PLAYING)
@@ -434,13 +436,13 @@ int very_angry_npc(P_char ch, P_char pl, int cmd, char *arg)
 				write_to_pc_log(d->character, buf, LOG_PRIVATE);
 			}
 		}
-		snprintf(buf,
-		         MAX_STRING_LENGTH,
-		         "&+wYou barely have time to flinch as a &+WBIG&+w hand karate chops your head into the air."
-		         "  You see the &+Csky&+w, the &+yground&+w, the &+Csky&+w again, and then feel someone grab your hair."
-		         "  Your eyes begin to focus on your corpse, still standing.  Suddenly, a large &+Rmouth&+w appears and"
-		         " begins chewing you up and swallowing.  Soon there is nothing left, the grip on your hair is released,"
-		         " and things begin to &+Lfade out...\n\r&+LYou hear a thump.&n\n\r");
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+wYou barely have time to flinch as a &+WBIG&+w hand karate chops your head into the air."
+			"  You see the &+Csky&+w, the &+yground&+w, the &+Csky&+w again, and then feel someone grab your hair."
+			"  Your eyes begin to focus on your corpse, still standing.  Suddenly, a large &+Rmouth&+w appears and"
+			" begins chewing you up and swallowing.  Soon there is nothing left, the grip on your hair is released,"
+			" and things begin to &+Lfade out...\n\r&+LYou hear a thump.&n\n\r");
 		send_to_char(buf, pl);
 		write_to_pc_log(pl, buf, LOG_PRIVATE);
 		// Remove / Drop / Hide headgear
@@ -451,15 +453,17 @@ int very_angry_npc(P_char ch, P_char pl, int cmd, char *arg)
 			SET_BIT(headgear->extra_flags, ITEM_SECRET);
 		}
 		// Create / Drop head in room.
-		head           = read_object(8, VIRTUAL);
+		head = read_object(8, VIRTUAL);
 		head->str_mask = (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3);
 		snprintf(buf, MAX_STRING_LENGTH, "head bloody %s", J_NAME(pl));
 		head->name = str_dup(buf);
-		snprintf(buf, MAX_STRING_LENGTH, "&+YThe &+rbloody&+Y head of &+R%s&+Y lies here.&n", J_NAME(pl));
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+YThe &+rbloody&+Y head of &+R%s&+Y lies here.&n", J_NAME(pl));
 		head->description = str_dup(buf);
 		snprintf(buf, MAX_STRING_LENGTH, "&+Ythe &+rbloody&+Y head of &+R%s&n", J_NAME(pl));
 		head->short_description = str_dup(buf);
-		snprintf(buf, MAX_STRING_LENGTH, "&+Ythe &+rbloody&+Y head of cheater &+R%s&n", J_NAME(pl));
+		snprintf(buf, MAX_STRING_LENGTH, "&+Ythe &+rbloody&+Y head of cheater &+R%s&n",
+			 J_NAME(pl));
 		head->action_description = str_dup(buf);
 		obj_to_room(head, pl->in_room);
 
@@ -523,7 +527,9 @@ int very_angry_npc(P_char ch, P_char pl, int cmd, char *arg)
 		}
 		else
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "You, %s, have number %d and are not on my list.", J_NAME(pl), GET_PID(pl));
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "You, %s, have number %d and are not on my list.", J_NAME(pl),
+				 GET_PID(pl));
 			do_say(ch, buf, CMD_SAY);
 			// We can return FALSE _only_ because we know they're both still alive.
 			return FALSE;

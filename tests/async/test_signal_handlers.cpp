@@ -14,7 +14,10 @@ volatile sig_atomic_t signal_shutdown_pending = 0;
 pid_t lookup_ident_process = 0;
 
 void logit(const char *, const char *, ...) {}
-void fatal_boot_error(const char *, const char *, ...) { std::abort(); }
+void fatal_boot_error(const char *, const char *, ...)
+{
+	std::abort();
+}
 
 #include "../../src/signals.c"
 
@@ -39,8 +42,10 @@ void reset_state()
 }
 } // namespace
 
-static_assert(std::is_same_v<decltype(tics), volatile sig_atomic_t>, "tics must be sig_atomic_t for signal safety");
-static_assert(std::is_same_v<decltype(signal_shutdown_pending), volatile sig_atomic_t>, "signal_shutdown_pending must be sig_atomic_t for signal safety");
+static_assert(std::is_same_v<decltype(tics), volatile sig_atomic_t>,
+	      "tics must be sig_atomic_t for signal safety");
+static_assert(std::is_same_v<decltype(signal_shutdown_pending), volatile sig_atomic_t>,
+	      "signal_shutdown_pending must be sig_atomic_t for signal safety");
 
 int main()
 {

@@ -27,17 +27,15 @@ static int char2col(char c)
 	}
 }
 #else
-static const unsigned char letters[64] =
-{
-	0,  0, 25, 27,  0,  0,  0, 26,  0,  0,  0,  0, 24, 29,  0,  0,
-	0,  0, 28,  0,  0,  0,  0, 31,  0, 30,  0,  0,  0,  0,  0,  0,
-	0,  0, 17, 19,  0,  0,  0, 18,  0,  0,  0,  0, 16, 21,  0,  0,
-	0,  0, 20,  0,  0,  0,  0, 23,  0, 22,  0,  0,  0,  0,  0,  0,
+static const unsigned char letters[64] = {
+	0,  0,	25, 27, 0, 0, 0,  26, 0, 0, 0, 0,  24, 29, 0, 0, 0, 0,	28, 0, 0, 0,
+	0,  31, 0,  30, 0, 0, 0,  0,  0, 0, 0, 0,  17, 19, 0, 0, 0, 18, 0,  0, 0, 0,
+	16, 21, 0,  0,	0, 0, 20, 0,  0, 0, 0, 23, 0,  22, 0, 0, 0, 0,	0,  0,
 };
 
 static int char2col(char c)
 {
-	if (c>=64 && c<128)
+	if (c >= 64 && c < 128)
 		return letters[c - 64];
 	return 0;
 }
@@ -51,13 +49,13 @@ static void put_ansi(char *&out, int attr)
 	int b = GET_BG(attr);
 
 	if (!GET_ATTR(attr))
-		*out++='&', *out++='n';
+		*out++ = '&', *out++ = 'n';
 	else if (!b)
-		*out++='&', *out++='+', *out++=col2char[f-16];
+		*out++ = '&', *out++ = '+', *out++ = col2char[f - 16];
 	else if (!f)
-		*out++='&', *out++='-', *out++=col2char[b-16];
+		*out++ = '&', *out++ = '-', *out++ = col2char[b - 16];
 	else
-		*out++='&', *out++='=', *out++=col2char[b-16], *out++=col2char[f-16];
+		*out++ = '&', *out++ = '=', *out++ = col2char[b - 16], *out++ = col2char[f - 16];
 }
 
 /*
@@ -79,23 +77,23 @@ Terminal colors: "\e[" then codes separated by ';' then "m"
 Various clients have varying support.
 */
 
-static const char *bgr="04261537";
+static const char *bgr = "04261537";
 
 static void put_term(char *&out, int attr, int lastbit)
 {
 	int f = GET_FG(attr);
 	int b = GET_BG(attr);
 
-	*out++='\e';
-	*out++='[';
-	*out++='0';
+	*out++ = '\e';
+	*out++ = '[';
+	*out++ = '0';
 
 	if (f)
 	{
 		if (f & 8)
-			*out++=';', *out++='1';
-		*out++=';';
-		*out++='3';
+			*out++ = ';', *out++ = '1';
+		*out++ = ';';
+		*out++ = '3';
 		*out++ = bgr[f & 7];
 	}
 
@@ -106,24 +104,24 @@ static void put_term(char *&out, int attr, int lastbit)
 			switch (lastbit)
 			{
 			case TL_BLINK:
-				*out++=';', *out++='5', *out++=';', *out++='4';
+				*out++ = ';', *out++ = '5', *out++ = ';', *out++ = '4';
 				break;
 			case TL_UNDERLINE:
-				*out++=';', *out++='4', *out++=';', *out++='4';
+				*out++ = ';', *out++ = '4', *out++ = ';', *out++ = '4';
 				break;
 			case TL_BRIGHT_BG:
-				*out++=';', *out++='1', *out++='0';
+				*out++ = ';', *out++ = '1', *out++ = '0';
 				break;
 			}
 		}
 		else
-			*out++=';', *out++='4';
+			*out++ = ';', *out++ = '4';
 
 		*out++ = bgr[b & 7];
 	}
 
-	*out++='m';
-	*out=0;
+	*out++ = 'm';
+	*out = 0;
 }
 
 void AnsiString::set(const char *txt)
@@ -144,39 +142,40 @@ void AnsiString::set(const char *txt)
 		}
 		else if (txt[0] != '&')
 			push_back(get_utf8(txt) | attr);
-		else switch (txt[1])
-		{
-		case 'n':
-		case 'N':
-			attr = 0;
-			txt += 2;
-			break;
-		case '+':
-			if (!(a = char2col(txt[2])))
-				goto bad_ansi;
-			SET_BG(attr, 0);
-			SET_FG(attr, a);
-			txt += 3;
-			break;
-		case '-':
-			if (!(a = char2col(txt[2])))
-				goto bad_ansi;
-			SET_BG(attr, a);
-			SET_FG(attr, 0);
-			txt += 3;
-			break;
-		case '=':
-			if (!(a = char2col(txt[2])) || !(b = char2col(txt[3])))
-				goto bad_ansi;
-			SET_BG(attr, a);
-			SET_FG(attr, b);
-			txt += 4;
-			break;
-		default:
-		bad_ansi:
-			push_back('&' | attr);
-			txt++;
-		}
+		else
+			switch (txt[1])
+			{
+			case 'n':
+			case 'N':
+				attr = 0;
+				txt += 2;
+				break;
+			case '+':
+				if (!(a = char2col(txt[2])))
+					goto bad_ansi;
+				SET_BG(attr, 0);
+				SET_FG(attr, a);
+				txt += 3;
+				break;
+			case '-':
+				if (!(a = char2col(txt[2])))
+					goto bad_ansi;
+				SET_BG(attr, a);
+				SET_FG(attr, 0);
+				txt += 3;
+				break;
+			case '=':
+				if (!(a = char2col(txt[2])) || !(b = char2col(txt[3])))
+					goto bad_ansi;
+				SET_BG(attr, a);
+				SET_FG(attr, b);
+				txt += 4;
+				break;
+			default:
+bad_ansi:
+				push_back('&' | attr);
+				txt++;
+			}
 	}
 }
 
@@ -199,7 +198,7 @@ void AnsiString::ansi(char *out) const
 	}
 
 	if (oattr)
-		*out++='&', *out++='n';
+		*out++ = '&', *out++ = 'n';
 	*out = 0;
 }
 
@@ -233,10 +232,10 @@ void AnsiString::term(char *out, int lastbit) const
 		{
 			if (oattr)
 			{
-				*out++='\e', *out++='[', *out++='m';
+				*out++ = '\e', *out++ = '[', *out++ = 'm';
 				oattr = 0;
 			}
-			*out++='\r', *out++='\n';
+			*out++ = '\r', *out++ = '\n';
 		}
 		else
 		{
@@ -248,7 +247,7 @@ void AnsiString::term(char *out, int lastbit) const
 	}
 
 	if (oattr)
-		*out++='\e', *out++='[', *out++='m';
+		*out++ = '\e', *out++ = '[', *out++ = 'm';
 	*out = 0;
 }
 
@@ -272,7 +271,7 @@ void AnsiString::colorize(const std::vector<int> &grad)
 	// have longer repeats on the left which is more consitent with what people
 	// tend to make manually.  Ie, aaabbcc not aabbbcc (most "evenest") or
 	// aabbccc.
-	int d = (n>m)? n-1 : 0;
+	int d = (n > m) ? n - 1 : 0;
 	auto ca = begin();
 	for (const auto &ga : grad)
 	{

@@ -6,14 +6,14 @@
 #include <time.h>
 #include "config.h"
 
-static gnutls_certificate_credentials_t x509_cred      = 0;
-static gnutls_priority_t                priority_cache = 0;
+static gnutls_certificate_credentials_t x509_cred = 0;
+static gnutls_priority_t priority_cache = 0;
 
-#define YELL(msg, ...)                                                                                                                                                                                 \
-	do                                                                                                                                                                                                 \
-	{                                                                                                                                                                                                  \
-		printf(msg, __VA_ARGS__);                                                                                                                                                                      \
-		logit(LOG_SYS, msg, __VA_ARGS__);                                                                                                                                                              \
+#define YELL(msg, ...)                            \
+	do                                        \
+	{                                         \
+		printf(msg, __VA_ARGS__);         \
+		logit(LOG_SYS, msg, __VA_ARGS__); \
 	} while (0)
 
 // read the cert, skipping if file date is the same.
@@ -21,13 +21,13 @@ static gnutls_priority_t                priority_cache = 0;
 // fatal on startup.
 void ssl_read_cert(void)
 {
-	static timespec                  cert_time = {0, 0};
-	struct stat                      st;
-	gnutls_certificate_credentials_t cred    = 0;
-	const char                      *errfunc = 0;
-	int                              err;
-	const char                      *certfile = CERTFILE;
-	const char                      *keyfile  = KEYFILE;
+	static timespec cert_time = { 0, 0 };
+	struct stat st;
+	gnutls_certificate_credentials_t cred = 0;
+	const char *errfunc = 0;
+	int err;
+	const char *certfile = CERTFILE;
+	const char *keyfile = KEYFILE;
 
 	if (!priority_cache)
 		if ((err = gnutls_priority_init(&priority_cache, NULL, NULL)) < 0)
@@ -40,11 +40,12 @@ void ssl_read_cert(void)
 	{
 		struct stat fallback_cert;
 		struct stat fallback_key;
-		if (!stat("certs/localhost.crt", &fallback_cert) && !stat("certs/localhost.key", &fallback_key))
+		if (!stat("certs/localhost.crt", &fallback_cert) &&
+		    !stat("certs/localhost.key", &fallback_key))
 		{
 			certfile = "certs/localhost.crt";
-			keyfile  = "certs/localhost.key";
-			st       = fallback_cert;
+			keyfile = "certs/localhost.key";
+			st = fallback_cert;
 		}
 		else
 		{
@@ -58,14 +59,19 @@ void ssl_read_cert(void)
 	if (st.st_mtim.tv_sec == cert_time.tv_sec && st.st_mtim.tv_nsec == cert_time.tv_nsec)
 		return;
 
-	printf("[%ld] reading ssl cert: %s key: %s (old_mtime=%ld.%ld new_mtime=%ld.%ld)\n", time(NULL), certfile, keyfile, cert_time.tv_sec, cert_time.tv_nsec, st.st_mtim.tv_sec, st.st_mtim.tv_nsec);
+	printf("[%ld] reading ssl cert: %s key: %s (old_mtime=%ld.%ld new_mtime=%ld.%ld)\n",
+	       time(NULL), certfile, keyfile, cert_time.tv_sec, cert_time.tv_nsec,
+	       st.st_mtim.tv_sec, st.st_mtim.tv_nsec);
 	cert_time = st.st_mtim;
-	if ((err = gnutls_certificate_allocate_credentials(&cred)) < 0 || (err = gnutls_certificate_set_x509_key_file(cred, certfile, keyfile, GNUTLS_X509_FMT_PEM)) < 0 ||
+	if ((err = gnutls_certificate_allocate_credentials(&cred)) < 0 ||
+	    (err = gnutls_certificate_set_x509_key_file(cred, certfile, keyfile,
+							GNUTLS_X509_FMT_PEM)) < 0 ||
 	    (err = gnutls_certificate_set_known_dh_params(cred, GNUTLS_SEC_PARAM_MEDIUM)) < 0)
 	{
 		if (cred)
 			gnutls_certificate_free_credentials(cred);
-		YELL("Can't read cert file %s key file %s: %s\n", CERTFILE, KEYFILE, gnutls_strerror(err));
+		YELL("Can't read cert file %s key file %s: %s\n", CERTFILE, KEYFILE,
+		     gnutls_strerror(err));
 		if (x509_cred)
 			return;
 		exit(1);
@@ -78,9 +84,9 @@ void ssl_read_cert(void)
 
 gnutls_session_t ssl_new(int s)
 {
-	int              err;
-	gnutls_session_t ses     = 0;
-	const char      *errfunc = 0;
+	int err;
+	gnutls_session_t ses = 0;
+	const char *errfunc = 0;
 
 	ssl_read_cert();
 

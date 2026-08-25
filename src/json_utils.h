@@ -19,40 +19,40 @@
 struct ShipData;
 
 /* message types */
-#define MSG_TYPE_CMD     "cmd"
-#define MSG_TYPE_AUTH    "auth"
+#define MSG_TYPE_CMD "cmd"
+#define MSG_TYPE_AUTH "auth"
 #define MSG_TYPE_CHARGEN "chargen"
-#define MSG_TYPE_GMCP    "gmcp"
-#define MSG_TYPE_TEXT    "text"
+#define MSG_TYPE_GMCP "gmcp"
+#define MSG_TYPE_TEXT "text"
 
 /* websocket commands (prefixed to avoid collision with interp.h) */
-#define WS_CMD_LOGIN           "login"
-#define WS_CMD_REGISTER        "register"
+#define WS_CMD_LOGIN "login"
+#define WS_CMD_REGISTER "register"
 #define WS_CMD_CHARGEN_OPTIONS "chargen_options"
-#define WS_CMD_ROLL_STATS      "roll_stats"
-#define WS_CMD_CREATE_CHAR     "create_character"
-#define WS_CMD_ENTER           "enter"
-#define WS_CMD_GAME            "game"
+#define WS_CMD_ROLL_STATS "roll_stats"
+#define WS_CMD_CREATE_CHAR "create_character"
+#define WS_CMD_ENTER "enter"
+#define WS_CMD_GAME "game"
 
 /* auth status */
-#define AUTH_SUCCESS    "success"
+#define AUTH_SUCCESS "success"
 #define AUTH_REGISTERED "registered"
-#define AUTH_FAILED     "failed"
+#define AUTH_FAILED "failed"
 
 /* text categories */
-#define TEXT_COMBAT   "combat"
+#define TEXT_COMBAT "combat"
 #define TEXT_MOVEMENT "movement"
-#define TEXT_INFO     "info"
-#define TEXT_SYSTEM   "system"
-#define TEXT_CHANNEL  "channel"
+#define TEXT_INFO "info"
+#define TEXT_SYSTEM "system"
+#define TEXT_CHANNEL "channel"
 
 /* gmcp package names (mudlet/ire compatible) */
-#define GMCP_ROOM_INFO     "Room.Info"
-#define GMCP_CHAR_VITALS   "Char.Vitals"
-#define GMCP_CHAR_STATUS   "Char.Status"
-#define GMCP_CHAR_AFFECTS  "Char.Affects"
+#define GMCP_ROOM_INFO "Room.Info"
+#define GMCP_CHAR_VITALS "Char.Vitals"
+#define GMCP_CHAR_STATUS "Char.Status"
+#define GMCP_CHAR_AFFECTS "Char.Affects"
 #define GMCP_COMBAT_UPDATE "Combat.Update"
-#define GMCP_COMM_CHANNEL  "Comm.Channel"
+#define GMCP_COMM_CHANNEL "Comm.Channel"
 
 /* parsing functions */
 
@@ -103,13 +103,15 @@ char *json_build_char_status(struct char_data *ch);
 char *json_build_char_affects(struct char_data *ch);
 
 /* build combat.update gmcp message */
-char *json_build_combat_update(struct char_data *ch, struct char_data *victim, int damage, const char *damage_type, int critical);
+char *json_build_combat_update(struct char_data *ch, struct char_data *victim, int damage,
+			       const char *damage_type, int critical);
 
 /* build comm.channel gmcp message */
 char *json_build_comm_channel(const char *channel, const char *sender, const char *text);
 
 /* build comm.channel gmcp message with alignment (for nchat) */
-char *json_build_comm_channel_ex(const char *channel, const char *sender, const char *text, const char *alignment);
+char *json_build_comm_channel_ex(const char *channel, const char *sender, const char *text,
+				 const char *alignment);
 
 /* build quest.status gmcp message */
 char *json_build_quest_status(struct char_data *ch);

@@ -24,7 +24,7 @@ P_char guarding(P_char ch)
 
 P_char guarding2(P_char ch, int n)
 {
-	int                    i = 0;
+	int i = 0;
 	struct char_link_data *cld;
 
 	if (number_guarding(ch) < n)
@@ -78,7 +78,7 @@ bool is_being_guarded(P_char ch)
 int number_guarding(P_char ch)
 {
 	struct char_link_data *cld;
-	int                    i = 0;
+	int i = 0;
 
 	for (cld = ch->linking; cld; cld = cld->next_linking)
 	{
@@ -161,12 +161,14 @@ void do_guard(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if ((CAN_MULTI_GUARD(ch)) && (number_guarding(ch) >= (int)get_property("skill.guard.max.multi", 2)))
+	if ((CAN_MULTI_GUARD(ch)) &&
+	    (number_guarding(ch) >= (int)get_property("skill.guard.max.multi", 2)))
 	{
 		send_to_char("You're guarding too many people, so you drop one.\n", ch);
 		drop_one_guard(ch);
 	}
-	else if (!CAN_MULTI_GUARD(ch) && number_guarding(ch) >= (int)get_property("skill.guard.max", 1))
+	else if (!CAN_MULTI_GUARD(ch) &&
+		 number_guarding(ch) >= (int)get_property("skill.guard.max", 1))
 	{
 		clear_links(ch, LNK_GUARDING);
 	}
@@ -181,7 +183,7 @@ void do_guard(P_char ch, char *argument, int cmd)
 
 void guard_broken(struct char_link_data *cld)
 {
-	P_char ch     = cld->linking;
+	P_char ch = cld->linking;
 	P_char target = cld->linked;
 
 	act("You are no longer guarding $N", FALSE, ch, 0, target, TO_CHAR);
@@ -209,7 +211,8 @@ P_char guard_check(P_char attacker, P_char victim)
 
 	guard = get_linking_char(victim, LNK_GUARDING);
 
-	if (!guard || guard->in_room != victim->in_room || guard == attacker || GET_POS(guard) != POS_STANDING || GET_STAT(guard) != STAT_NORMAL || !IS_AWAKE(guard) ||
+	if (!guard || guard->in_room != victim->in_room || guard == attacker ||
+	    GET_POS(guard) != POS_STANDING || GET_STAT(guard) != STAT_NORMAL || !IS_AWAKE(guard) ||
 	    affected_by_spell(guard, SKILL_GUARD) || IS_IMMOBILE(guard) || IS_BLIND(guard))
 	{
 		return victim;
@@ -217,14 +220,17 @@ P_char guard_check(P_char attacker, P_char victim)
 
 	if (IS_ROOM(attacker->in_room, ROOM_SINGLE_FILE))
 	{
-		act("You attempt to dive in front of $N, but this place is too cramped!!!", FALSE, guard, 0, victim, TO_CHAR);
+		act("You attempt to dive in front of $N, but this place is too cramped!!!", FALSE,
+		    guard, 0, victim, TO_CHAR);
 		clear_links(victim, LNK_GUARDING);
 		return victim;
 	}
 
 	// debug("guard_check: %s vs %s protecting %s", attacker->player.name, guard->player.name, victim->player.name);
 
-	int sneak_chance = BOUNDED(0, (GET_CHAR_SKILL(attacker, SKILL_SNEAK) - GET_CHAR_SKILL(guard, SKILL_GUARD)), 100);
+	int sneak_chance = BOUNDED(
+		0, (GET_CHAR_SKILL(attacker, SKILL_SNEAK) - GET_CHAR_SKILL(guard, SKILL_GUARD)),
+		100);
 
 	if (sneak_chance > 0)
 	{
@@ -254,7 +260,9 @@ P_char guard_check(P_char attacker, P_char victim)
 
 	if (chance <= 0)
 	{
-		logit(LOG_DEBUG, "guard_check(): somehow %s's guard got checked, but they don't have guard skill", guard->player.name);
+		logit(LOG_DEBUG,
+		      "guard_check(): somehow %s's guard got checked, but they don't have guard skill",
+		      guard->player.name);
 		// debug("guard_check(): somehow %s's guard got checked, but they don't have guard skill", guard->player.name);
 		return victim;
 	}
@@ -262,7 +270,9 @@ P_char guard_check(P_char attacker, P_char victim)
 	// debug("attacker agi: %d, guard agi: %d", GET_C_AGI(attacker), GET_C_AGI(guard));
 
 	// agi mod
-	chance += BOUNDED(-get_property("skill.guard.agiDiffMaxBonus", 5), (GET_C_AGI(guard) - GET_C_AGI(attacker)), get_property("skill.guard.agiDiffMaxBonus", 5));
+	chance += BOUNDED(-get_property("skill.guard.agiDiffMaxBonus", 5),
+			  (GET_C_AGI(guard) - GET_C_AGI(attacker)),
+			  get_property("skill.guard.agiDiffMaxBonus", 5));
 
 	// penalty if the guard is already engaged
 	// if( GET_OPPONENT(guard) )
@@ -289,14 +299,18 @@ P_char guard_check(P_char attacker, P_char victim)
 
 	// debug("final chance: %d", chance);
 
-	if (!notch_skill(guard, SKILL_GUARD, (int)get_property("skill.notch.guard", 17)) && number(0, 100) > chance)
+	if (!notch_skill(guard, SKILL_GUARD, (int)get_property("skill.notch.guard", 17)) &&
+	    number(0, 100) > chance)
 	{
 		// debug("guard failed");
 
 		// guard failed
-		act("You try to step in front of $N, but don't make it in time.", FALSE, guard, 0, victim, TO_CHAR);
-		act("$n tries to step in front of you, but doesn't make it in time.", FALSE, guard, 0, victim, TO_VICT);
-		act("$n tries to step in front of $N, but doesn't make it in time.", FALSE, guard, 0, victim, TO_NOTVICT);
+		act("You try to step in front of $N, but don't make it in time.", FALSE, guard, 0,
+		    victim, TO_CHAR);
+		act("$n tries to step in front of you, but doesn't make it in time.", FALSE, guard,
+		    0, victim, TO_VICT);
+		act("$n tries to step in front of $N, but doesn't make it in time.", FALSE, guard,
+		    0, victim, TO_NOTVICT);
 
 		return victim;
 	}
@@ -307,9 +321,12 @@ P_char guard_check(P_char attacker, P_char victim)
 		// success!
 		set_short_affected_by(guard, SKILL_GUARD, 1 * PULSE_VIOLENCE);
 
-		act("You bravely step in front of $N, shielding $M from harm!", FALSE, guard, 0, victim, TO_CHAR);
-		act("$n bravely steps in front of you, shielding you from harm!", FALSE, guard, 0, victim, TO_VICT);
-		act("$n bravely steps in front of $N, shielding $M from harm!", FALSE, guard, 0, victim, TO_NOTVICT);
+		act("You bravely step in front of $N, shielding $M from harm!", FALSE, guard, 0,
+		    victim, TO_CHAR);
+		act("$n bravely steps in front of you, shielding you from harm!", FALSE, guard, 0,
+		    victim, TO_VICT);
+		act("$n bravely steps in front of $N, shielding $M from harm!", FALSE, guard, 0,
+		    victim, TO_NOTVICT);
 
 		return guard;
 	}

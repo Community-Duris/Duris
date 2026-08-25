@@ -24,15 +24,15 @@
    external variables
  */
 
-extern P_room                world;
-extern const char           *command[];
-extern P_char                character_list;
-extern P_index               mob_index;
-extern P_index               obj_index;
-extern P_obj                 object_list;
+extern P_room world;
+extern const char *command[];
+extern P_char character_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
 extern struct time_info_data time_info;
-extern const int             rev_dir[];
-extern const char           *dirs[];
+extern const int rev_dir[];
+extern const char *dirs[];
 
 bool has_dragoon_mount(P_char ch)
 {
@@ -57,7 +57,7 @@ bool is_dragoon_mounted(P_char ch)
 
 	if (IS_DRAGOON(ch))
 	{
-		P_char mount  = get_linked_char(ch, LNK_RIDING);
+		P_char mount = get_linked_char(ch, LNK_RIDING);
 		P_char dragon = get_linked_char(ch, LNK_DRAGOON_MOUNT);
 
 		if (mount != NULL)
@@ -115,9 +115,9 @@ P_char get_dragoon_rider(P_char mount)
 
 void do_mount(P_char ch, char *argument, int cmd)
 {
-	char   name[MAX_STRING_LENGTH];
+	char name[MAX_STRING_LENGTH];
 	P_char mount, rider;
-	int    movescost;
+	int movescost;
 
 	one_argument(argument, name);
 
@@ -185,7 +185,8 @@ void do_mount(P_char ch, char *argument, int cmd)
 	}
 	if (GET_SIZE(ch) > (GET_SIZE(mount) + 1))
 	{
-		act("$N is too small for you to ride, find something bigger.", FALSE, ch, 0, mount, TO_CHAR);
+		act("$N is too small for you to ride, find something bigger.", FALSE, ch, 0, mount,
+		    TO_CHAR);
 		return;
 	}
 
@@ -195,11 +196,14 @@ void do_mount(P_char ch, char *argument, int cmd)
 		{
 			if (IS_CENTAUR(ch))
 			{
-				send_to_char("Most centaurs do that in the privacy of their own home..\r\n", ch);
+				send_to_char(
+					"Most centaurs do that in the privacy of their own home..\r\n",
+					ch);
 				return;
 			}
 
-			if (!is_linked_to(ch, mount, LNK_CONSENT) || IS_THRIKREEN(ch) || IS_DRIDER(ch))
+			if (!is_linked_to(ch, mount, LNK_CONSENT) || IS_THRIKREEN(ch) ||
+			    IS_DRIDER(ch))
 			{
 				send_to_char("They don't seem to want you on their back..\r\n", ch);
 				return;
@@ -215,11 +219,14 @@ void do_mount(P_char ch, char *argument, int cmd)
 		{
 			if (IS_DRIDER(ch))
 			{
-				send_to_char("Most driders do that in the privacy of their own home..\r\n", ch);
+				send_to_char(
+					"Most driders do that in the privacy of their own home..\r\n",
+					ch);
 				return;
 			}
 
-			if (!is_linked_to(ch, mount, LNK_CONSENT) || IS_THRIKREEN(ch) || IS_CENTAUR(ch))
+			if (!is_linked_to(ch, mount, LNK_CONSENT) || IS_THRIKREEN(ch) ||
+			    IS_CENTAUR(ch))
 			{
 				send_to_char("They don't seem to want you on their back..\r\n", ch);
 				return;
@@ -240,14 +247,16 @@ void do_mount(P_char ch, char *argument, int cmd)
 
 	else if (!IS_SET(mount->specials.act, ACT_MOUNT))
 	{
-		if ((GET_RACE(mount) == RACE_ANIMAL) || (GET_RACE(mount) == RACE_AQUATIC_ANIMAL) || (GET_RACE(mount) == RACE_QUADRUPED) || (GET_RACE(mount) == RACE_PRIMATE) ||
+		if ((GET_RACE(mount) == RACE_ANIMAL) || (GET_RACE(mount) == RACE_AQUATIC_ANIMAL) ||
+		    (GET_RACE(mount) == RACE_QUADRUPED) || (GET_RACE(mount) == RACE_PRIMATE) ||
 		    (GET_RACE(mount) == RACE_HERBIVORE) || (GET_RACE(mount) == RACE_CARNIVORE))
 		{
 			int mounttry = (GET_CHAR_SKILL(ch, SKILL_MOUNT) + GET_LEVEL(ch));
 			int mountdef = (GET_LEVEL(mount) * 2);
 			if (mountdef > mounttry)
 			{
-				act("You attempt to mount $N, but find you are not yet skilled enough to ride that creature.", FALSE, ch, 0, mount, TO_CHAR);
+				act("You attempt to mount $N, but find you are not yet skilled enough to ride that creature.",
+				    FALSE, ch, 0, mount, TO_CHAR);
 				return;
 			}
 		}
@@ -257,9 +266,11 @@ void do_mount(P_char ch, char *argument, int cmd)
 			return;
 		}
 	}
-	if (GET_MASTER(mount) && GET_MASTER(mount) != ch && !is_linked_to(ch, GET_MASTER(mount), LNK_CONSENT))
+	if (GET_MASTER(mount) && GET_MASTER(mount) != ch &&
+	    !is_linked_to(ch, GET_MASTER(mount), LNK_CONSENT))
 	{
-		act("$N does not recognize you and refuses to let you ride $M.", FALSE, ch, 0, mount, TO_CHAR);
+		act("$N does not recognize you and refuses to let you ride $M.", FALSE, ch, 0,
+		    mount, TO_CHAR);
 		return;
 	}
 
@@ -281,7 +292,8 @@ void do_mount(P_char ch, char *argument, int cmd)
 
 	if (IS_FIGHTING(ch) && GET_CHAR_SKILL(ch, SKILL_MOUNTED_COMBAT) / 1.5 < number(0, 100))
 	{
-		act("Fending off the attackers you try to mount $N, but alas you fail.", FALSE, ch, 0, mount, TO_CHAR);
+		act("Fending off the attackers you try to mount $N, but alas you fail.", FALSE, ch,
+		    0, mount, TO_CHAR);
 		CharWait(ch, PULSE_VIOLENCE);
 		return;
 	}
@@ -343,15 +355,18 @@ static int valid_ride(int room, P_char ch)
 void do_dismount(P_char ch, char *argument, int cmd)
 {
 	P_char mount = get_linked_char(ch, LNK_RIDING);
-	int    sect  = world[ch->in_room].sector_type;
+	int sect = world[ch->in_room].sector_type;
 
 	if (mount)
 	{
 		if (valid_ride(ch->in_room, mount))
 		{
-			if ((sect == SECT_WATER_SWIM || sect == SECT_WATER_NOSWIM || sect == SECT_NO_GROUND || sect == SECT_OCEAN || sect == SECT_UNDRWLD_WATER || sect == SECT_UNDRWLD_NOSWIM ||
+			if ((sect == SECT_WATER_SWIM || sect == SECT_WATER_NOSWIM ||
+			     sect == SECT_NO_GROUND || sect == SECT_OCEAN ||
+			     sect == SECT_UNDRWLD_WATER || sect == SECT_UNDRWLD_NOSWIM ||
 			     sect == SECT_UNDRWLD_NOGROUND) &&
-			    !IS_TRUSTED(ch) && !IS_AFFECTED(ch, AFF_FLY) && !IS_AFFECTED(ch, AFF_LEVITATE))
+			    !IS_TRUSTED(ch) && !IS_AFFECTED(ch, AFF_FLY) &&
+			    !IS_AFFECTED(ch, AFF_LEVITATE))
 			{
 				act("Here? That's not too wise.", FALSE, ch, 0, 0, TO_CHAR);
 			}
@@ -419,8 +434,8 @@ bool check_valid_ride(P_char ch)
 
 void do_hitch_vehicle(P_char ch, char *arg, int cmd)
 {
-	char   horse[MAX_STRING_LENGTH], cart[MAX_STRING_LENGTH];
-	P_obj  obj;
+	char horse[MAX_STRING_LENGTH], cart[MAX_STRING_LENGTH];
+	P_obj obj;
 	P_char pl;
 
 	send_to_char("Under construction.\n\r", ch);
@@ -451,9 +466,12 @@ void do_hitch_vehicle(P_char ch, char *arg, int cmd)
 		}
 		else
 		{
-			if ((IS_NPC(pl) && GET_MASTER(pl) != ch) || (!IS_NPC(pl) && !is_linked_to(pl, ch, LNK_CONSENT)))
+			if ((IS_NPC(pl) && GET_MASTER(pl) != ch) ||
+			    (!IS_NPC(pl) && !is_linked_to(pl, ch, LNK_CONSENT)))
 			{
-				send_to_char("They aren't interested in you hitching anything to them.\n", ch);
+				send_to_char(
+					"They aren't interested in you hitching anything to them.\n",
+					ch);
 				return;
 			}
 		}
@@ -465,7 +483,9 @@ void do_hitch_vehicle(P_char ch, char *arg, int cmd)
 
 	if (pl->lobj && pl->lobj->Visible_Type())
 	{
-		send_to_char("Unhitch from the current burden first.  You can't push or pull more than one thing.\r\n", ch);
+		send_to_char(
+			"Unhitch from the current burden first.  You can't push or pull more than one thing.\r\n",
+			ch);
 		return;
 	}
 	if (obj->hitched_to)
@@ -501,9 +521,8 @@ void do_hitch_vehicle(P_char ch, char *arg, int cmd)
 
 void do_unhitch_vehicle(P_char ch, char *arg, int cmd)
 {
-
-	char   horse[MAX_STRING_LENGTH], cart[MAX_STRING_LENGTH];
-	P_obj  obj;
+	char horse[MAX_STRING_LENGTH], cart[MAX_STRING_LENGTH];
+	P_obj obj;
 	P_char pl;
 
 	if (!SanityCheck(ch, "unhitch_vehicle"))
@@ -534,7 +553,8 @@ void do_unhitch_vehicle(P_char ch, char *arg, int cmd)
 		}
 		else
 		{
-			if ((IS_NPC(pl) && GET_MASTER(pl) != ch) || (!IS_NPC(pl) && !is_linked_to(pl, ch, LNK_CONSENT)))
+			if ((IS_NPC(pl) && GET_MASTER(pl) != ch) ||
+			    (!IS_NPC(pl) && !is_linked_to(pl, ch, LNK_CONSENT)))
 			{
 				send_to_char("They aren't interested in you touching them.\n", ch);
 				return;
@@ -584,7 +604,7 @@ void do_unhitch_vehicle(P_char ch, char *arg, int cmd)
 /* count chars in vehicle */
 int num_char_in_vehicle(P_obj obj)
 {
-	int    num = 0, room;
+	int num = 0, room;
 	P_char i;
 
 	room = obj->R_num;
@@ -600,11 +620,11 @@ int num_char_in_vehicle(P_obj obj)
 
 static struct vehicle_data navi_info[] = {
 	/* mob start dest1 dest2(opt) dest3(opt) 0 time freq */
-	{47000, 157026, 152728, 150777, 154478, 0, 6, 6},
+	{ 47000, 157026, 152728, 150777, 154478, 0, 6, 6 },
 	/* tharnadia->ashrumite->ugta->woodseer->tharnadia */
-	{47001, 150777, 154478, 157026, 152728, 0, 6, 6},
+	{ 47001, 150777, 154478, 157026, 152728, 0, 6, 6 },
 	/* ugta->woodseer->tharnadia->ashrumite->ugta */
-	{    0,      0,      0,      0,      0, 0, 0, 0}
+	{ 0, 0, 0, 0, 0, 0, 0, 0 }
 	/* obligatory null bullshit */
 };
 
@@ -614,9 +634,9 @@ static struct vehicle_data navi_info[] = {
 
 void init_wagons(void)
 {
-	int    Vnum, i;
+	int Vnum, i;
 	P_char horse;
-	P_obj  Wagon;
+	P_obj Wagon;
 
 	return; /* off till needed again */
 
@@ -633,8 +653,8 @@ void init_wagons(void)
 	for (i = 0; navi_info[i].mob != 0; i++)
 	{
 		/* initialize navigational data */
-		navi_info[i].mob          = navi_info[i].mob;
-		navi_info[i].start1       = real_room(navi_info[i].start1);
+		navi_info[i].mob = navi_info[i].mob;
+		navi_info[i].start1 = real_room(navi_info[i].start1);
 		navi_info[i].destination1 = real_room(navi_info[i].destination1);
 		navi_info[i].destination2 = real_room(navi_info[i].destination2);
 		navi_info[i].destination3 = real_room(navi_info[i].destination3);
@@ -665,9 +685,9 @@ void check_for_wagon(P_char ch)
 
 int wagon_pull(P_char ch, int mob)
 {
-	char        Gbuf3[MAX_STRING_LENGTH] = "\0";
-	signed char next_step                = -1;
-	int         dum;
+	char Gbuf3[MAX_STRING_LENGTH] = "\0";
+	signed char next_step = -1;
+	int dum;
 
 	if ((time_info.hour - navi_info[mob].move_time) % navi_info[mob].freq == 0)
 	{
@@ -693,7 +713,8 @@ int wagon_pull(P_char ch, int mob)
 			navi_info[mob].destination = navi_info[mob].start1;
 	}
 
-	next_step = find_first_step(ch->in_room, navi_info[mob].destination, 0, 0, WAGON_TYPE_WAGON, &dum);
+	next_step = find_first_step(ch->in_room, navi_info[mob].destination, 0, 0, WAGON_TYPE_WAGON,
+				    &dum);
 
 	if ((next_step >= 0) && (next_step < NUM_EXITS))
 	{
@@ -702,16 +723,18 @@ int wagon_pull(P_char ch, int mob)
 	else
 		switch (next_step)
 		{
-			case BFS_ALREADY_THERE:
-				break;
-			case BFS_NO_PATH:
-				logit(LOG_DEBUG, "BFS_NO_PATH in wagon_pull() mount.c with %s.", GET_NAME(ch));
-				break;
-			case BFS_ERROR:
-				logit(LOG_DEBUG, "BFS_ERROR in wagon_pull() mount.c with %s.", GET_NAME(ch));
-				break;
-			default:
-				fprintf(stderr, "Bug: this line should never be executed.\n");
+		case BFS_ALREADY_THERE:
+			break;
+		case BFS_NO_PATH:
+			logit(LOG_DEBUG, "BFS_NO_PATH in wagon_pull() mount.c with %s.",
+			      GET_NAME(ch));
+			break;
+		case BFS_ERROR:
+			logit(LOG_DEBUG, "BFS_ERROR in wagon_pull() mount.c with %s.",
+			      GET_NAME(ch));
+			break;
+		default:
+			fprintf(stderr, "Bug: this line should never be executed.\n");
 		}
 
 	command_interpreter(ch, Gbuf3);
@@ -721,9 +744,9 @@ int wagon_pull(P_char ch, int mob)
 /* proc assigned to the wagon object itself */
 int wagon(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	char  name[MAX_INPUT_LENGTH];
+	char name[MAX_INPUT_LENGTH];
 	P_obj obj_entered;
-	int   interior;
+	int interior;
 
 	/* check for periodic event calls */
 	if (cmd == CMD_SET_PERIODIC)
@@ -767,7 +790,7 @@ int wagon(P_obj obj, P_char ch, int cmd, char *arg)
 int wagon_exit_room(int room, P_char ch, int cmd, char *arg)
 {
 	P_obj obj;
-	int   rroom;
+	int rroom;
 
 	if ((cmd != CMD_LOOK) && (cmd != CMD_DISEMBARK) && (cmd != CMD_EXITS))
 		return (FALSE);

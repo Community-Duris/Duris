@@ -17,10 +17,10 @@
 P_siege siege_objects; /* List of siege objects to save   */
 
 extern P_room world;
-extern int    top_of_objt;
+extern int top_of_objt;
 extern P_town towns;
 extern P_char destroying_list;
-extern int    top_of_zone_table;
+extern int top_of_zone_table;
 
 // Dependent on ch's str and weight.  Pretty simple atm.
 int siege_move_wait(P_char ch)
@@ -79,16 +79,16 @@ bool can_move(P_char ch, int dir)
 // This proc is for a ballista(OBJ # 461).
 int ballista(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	char   arg1[MAX_STRING_LENGTH];
-	char   arg2[MAX_STRING_LENGTH];
-	char   arg3[MAX_STRING_LENGTH];
-	char   buf[MAX_STRING_LENGTH];
-	int    num_rooms;
-	int    in_room, ch_room;
-	P_obj  ammo;
-	int    dir;
+	char arg1[MAX_STRING_LENGTH];
+	char arg2[MAX_STRING_LENGTH];
+	char arg3[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
+	int num_rooms;
+	int in_room, ch_room;
+	P_obj ammo;
+	int dir;
 	P_char vict;
-	P_obj  target;
+	P_obj target;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -122,13 +122,16 @@ int ballista(P_obj obj, P_char ch, int cmd, char *arg)
 					return TRUE;
 				}
 				// Move it that direction.
-				snprintf(buf, MAX_STRING_LENGTH, "You begin to push $p %sward.", dirs[dir]);
+				snprintf(buf, MAX_STRING_LENGTH, "You begin to push $p %sward.",
+					 dirs[dir]);
 				act(buf, FALSE, ch, obj, NULL, TO_CHAR);
-				snprintf(buf, MAX_STRING_LENGTH, "$n starts pushing $p %sward.", dirs[dir]);
+				snprintf(buf, MAX_STRING_LENGTH, "$n starts pushing $p %sward.",
+					 dirs[dir]);
 				act(buf, TRUE, ch, obj, 0, TO_ROOM);
 				// Yes, this lags you to stop you from spamming.
 				CharWait(ch, siege_move_wait(ch));
-				add_event(event_move_engine, siege_move_wait(ch), ch, NULL, obj, 0, &dir, sizeof(int));
+				add_event(event_move_engine, siege_move_wait(ch), ch, NULL, obj, 0,
+					  &dir, sizeof(int));
 			}
 			return TRUE;
 		}
@@ -148,7 +151,8 @@ int ballista(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			act("You begin loading $p.", FALSE, ch, obj, NULL, TO_CHAR);
 			act("$n begins loading $p.", FALSE, ch, obj, NULL, TO_ROOM);
-			add_event(event_load_engine, siege_load_wait(ch, obj), ch, NULL, obj, 0, NULL, 0);
+			add_event(event_load_engine, siege_load_wait(ch, obj), ch, NULL, obj, 0,
+				  NULL, 0);
 			// Yes, this lags you while loading.
 			CharWait(ch, siege_move_wait(ch));
 		}
@@ -166,7 +170,8 @@ int ballista(P_obj obj, P_char ch, int cmd, char *arg)
 
 			if (obj->value[2] == 0)
 			{
-				act("$p has no ammo.  Try to reload it first.", FALSE, ch, obj, NULL, TO_CHAR);
+				act("$p has no ammo.  Try to reload it first.", FALSE, ch, obj,
+				    NULL, TO_CHAR);
 				return TRUE;
 			}
 
@@ -193,13 +198,15 @@ int ballista(P_obj obj, P_char ch, int cmd, char *arg)
 
 				if (obj->loc_p != LOC_ROOM)
 				{
-					logit(LOG_DEBUG, "ballista: firing siege weapon not in a room.");
+					logit(LOG_DEBUG,
+					      "ballista: firing siege weapon not in a room.");
 					return FALSE;
 				}
 				in_room = obj->loc.room;
 				if (!in_room)
 				{
-					logit(LOG_DEBUG, "ballista: firing siege weapon in room 0.");
+					logit(LOG_DEBUG,
+					      "ballista: firing siege weapon in room 0.");
 					return FALSE;
 				}
 				// Load exploded ammo into the room.
@@ -211,24 +218,28 @@ int ballista(P_obj obj, P_char ch, int cmd, char *arg)
 				}
 				obj->value[2] = 0;
 				obj_to_room(ammo, in_room);
-				vict   = NULL;
+				vict = NULL;
 				target = NULL;
 				// Fire the weapon 3x spaces to the dir. Hits walls.
 				for (num_rooms = 0; num_rooms < 3; num_rooms++)
 				{
-					ch_room     = ch->in_room;
+					ch_room = ch->in_room;
 					ch->in_room = in_room;
 					// Impale the target!
-					if (num_rooms > 0 && !vict && (vict = get_char_room_vis(ch, arg2)))
+					if (num_rooms > 0 && !vict &&
+					    (vict = get_char_room_vis(ch, arg2)))
 					{
 						act("$p impales $n!", TRUE, vict, ammo, 0, TO_ROOM);
-						act("$p impales YOU!", TRUE, vict, ammo, 0, TO_CHAR);
+						act("$p impales YOU!", TRUE, vict, ammo, 0,
+						    TO_CHAR);
 						char_from_room(vict);
 					}
 					// If we hit target siege object.
-					if (num_rooms > 0 && !vict && (target = get_siege_room(ch, arg2)))
+					if (num_rooms > 0 && !vict &&
+					    (target = get_siege_room(ch, arg2)))
 					{
-						snprintf(buf, MAX_STRING_LENGTH, "%s slams into $p", ammo->short_description);
+						snprintf(buf, MAX_STRING_LENGTH, "%s slams into $p",
+							 ammo->short_description);
 						act(buf, TRUE, NULL, target, 0, TO_ROOM);
 						act(buf, TRUE, ch, target, 0, TO_CHAR);
 						damage_siege(target, ammo);
@@ -237,9 +248,11 @@ int ballista(P_obj obj, P_char ch, int cmd, char *arg)
 					}
 					ch->in_room = ch_room;
 					// If we hit a wall.
-					if (!VIRTUAL_EXIT(in_room, dir) || !VIRTUAL_EXIT(in_room, dir)->to_room)
+					if (!VIRTUAL_EXIT(in_room, dir) ||
+					    !VIRTUAL_EXIT(in_room, dir)->to_room)
 					{
-						snprintf(buf, MAX_STRING_LENGTH, "$p hits the %s wall.", dirs[dir]);
+						snprintf(buf, MAX_STRING_LENGTH,
+							 "$p hits the %s wall.", dirs[dir]);
 						act(buf, TRUE, NULL, ammo, 0, TO_ROOM);
 						break;
 					}
@@ -248,22 +261,26 @@ int ballista(P_obj obj, P_char ch, int cmd, char *arg)
 						in_room = VIRTUAL_EXIT(in_room, dir)->to_room;
 						obj_from_room(ammo);
 						obj_to_room(ammo, in_room);
-						act("$p flies through the room..", TRUE, NULL, ammo, 0, TO_ROOM);
+						act("$p flies through the room..", TRUE, NULL, ammo,
+						    0, TO_ROOM);
 					}
 				}
-				ch_room     = ch->in_room;
+				ch_room = ch->in_room;
 				ch->in_room = ammo->loc.room;
 				// Missile go SMACK!
 				// If victim was impaled...
 				if (vict)
 				{
 					char_to_room(vict, ammo->loc.room, -1);
-					act("$p slams into the ground with $n impaled upon it.", TRUE, vict, ammo, NULL, TO_ROOM);
-					act("You hit the ground and bounce off of $p.", TRUE, vict, ammo, NULL, TO_CHAR);
+					act("$p slams into the ground with $n impaled upon it.",
+					    TRUE, vict, ammo, NULL, TO_ROOM);
+					act("You hit the ground and bounce off of $p.", TRUE, vict,
+					    ammo, NULL, TO_CHAR);
 				}
 				else if ((target = get_siege_room(ch, arg2)))
 				{
-					snprintf(buf, MAX_STRING_LENGTH, "%s slams into $p", ammo->short_description);
+					snprintf(buf, MAX_STRING_LENGTH, "%s slams into $p",
+						 ammo->short_description);
 					act(buf, TRUE, NULL, target, 0, TO_ROOM);
 					act(buf, TRUE, ch, target, 0, TO_CHAR);
 					damage_siege(target, ammo);
@@ -271,14 +288,18 @@ int ballista(P_obj obj, P_char ch, int cmd, char *arg)
 				// If victim in final room...
 				else if ((vict = get_char_room_vis(ch, arg2)) != NULL)
 				{
-					act("$p slams into $n before hitting the dirt.", TRUE, vict, ammo, NULL, TO_ROOM);
-					act("$p slams into you before hitting the dirt.", TRUE, vict, ammo, NULL, TO_CHAR);
+					act("$p slams into $n before hitting the dirt.", TRUE, vict,
+					    ammo, NULL, TO_ROOM);
+					act("$p slams into you before hitting the dirt.", TRUE,
+					    vict, ammo, NULL, TO_CHAR);
 				}
 				// Miss!
 				else
-					act("$p slams into the ground.", TRUE, NULL, ammo, NULL, TO_ROOM);
+					act("$p slams into the ground.", TRUE, NULL, ammo, NULL,
+					    TO_ROOM);
 				if (vict)
-					damage(ch, vict, dice(ammo->value[0], ammo->value[1] * 3), TYPE_UNDEFINED);
+					damage(ch, vict, dice(ammo->value[0], ammo->value[1] * 3),
+					       TYPE_UNDEFINED);
 				ch->in_room = ch_room;
 				return TRUE;
 			}
@@ -290,10 +311,10 @@ int ballista(P_obj obj, P_char ch, int cmd, char *arg)
 // This proc is for a battering ram(OBJ # 462).
 int battering_ram(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	char  arg1[MAX_STRING_LENGTH];
-	char  arg2[MAX_STRING_LENGTH];
-	char  buf[MAX_STRING_LENGTH];
-	int   dir;
+	char arg1[MAX_STRING_LENGTH];
+	char arg2[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
+	int dir;
 	P_obj target;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -328,13 +349,16 @@ int battering_ram(P_obj obj, P_char ch, int cmd, char *arg)
 					return TRUE;
 				}
 				// Move it that direction.
-				snprintf(buf, MAX_STRING_LENGTH, "You begin to push $p %sward.", dirs[dir]);
+				snprintf(buf, MAX_STRING_LENGTH, "You begin to push $p %sward.",
+					 dirs[dir]);
 				act(buf, FALSE, ch, obj, NULL, TO_CHAR);
-				snprintf(buf, MAX_STRING_LENGTH, "$n starts pushing $p %sward.", dirs[dir]);
+				snprintf(buf, MAX_STRING_LENGTH, "$n starts pushing $p %sward.",
+					 dirs[dir]);
 				act(buf, TRUE, ch, obj, 0, TO_ROOM);
 				// Yes, this lags you to stop you from spamming.
 				CharWait(ch, siege_move_wait(ch));
-				add_event(event_move_engine, siege_move_wait(ch), ch, NULL, obj, 0, &dir, sizeof(int));
+				add_event(event_move_engine, siege_move_wait(ch), ch, NULL, obj, 0,
+					  &dir, sizeof(int));
 			}
 			return TRUE;
 		}
@@ -348,17 +372,21 @@ int battering_ram(P_obj obj, P_char ch, int cmd, char *arg)
 			{
 				if (obj == target)
 				{
-					act("You push $p around in circles.", FALSE, ch, target, NULL, TO_CHAR);
-					act("$n pushes $p around in circles.", FALSE, ch, target, NULL, TO_ROOM);
+					act("You push $p around in circles.", FALSE, ch, target,
+					    NULL, TO_CHAR);
+					act("$n pushes $p around in circles.", FALSE, ch, target,
+					    NULL, TO_ROOM);
 					return TRUE;
 				}
 
 				// Yes, this lags you to stop you from spamming.
 				CharWait(ch, siege_move_wait(ch) / 2);
 
-				snprintf(buf, MAX_STRING_LENGTH, "You thrust %s at $p!", obj->short_description);
+				snprintf(buf, MAX_STRING_LENGTH, "You thrust %s at $p!",
+					 obj->short_description);
 				act(buf, FALSE, ch, target, NULL, TO_CHAR);
-				snprintf(buf, MAX_STRING_LENGTH, "$n thrusts %s at $p!", obj->short_description);
+				snprintf(buf, MAX_STRING_LENGTH, "$n thrusts %s at $p!",
+					 obj->short_description);
 				act(buf, FALSE, ch, target, NULL, TO_ROOM);
 
 				damage_siege(target, obj);
@@ -374,12 +402,12 @@ int battering_ram(P_obj obj, P_char ch, int cmd, char *arg)
 // This proc is for a catapult(OBJ # 463).
 int catapult(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	char  arg1[MAX_STRING_LENGTH];
-	char  arg2[MAX_STRING_LENGTH];
-	char  buf[MAX_STRING_LENGTH];
-	int   dir;
-	int   num_rooms;
-	int   in_room;
+	char arg1[MAX_STRING_LENGTH];
+	char arg2[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
+	int dir;
+	int num_rooms;
+	int in_room;
 	P_obj ammo;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -414,13 +442,16 @@ int catapult(P_obj obj, P_char ch, int cmd, char *arg)
 					return TRUE;
 				}
 				// Move it that direction.
-				snprintf(buf, MAX_STRING_LENGTH, "You begin to push $p %sward.", dirs[dir]);
+				snprintf(buf, MAX_STRING_LENGTH, "You begin to push $p %sward.",
+					 dirs[dir]);
 				act(buf, FALSE, ch, obj, NULL, TO_CHAR);
-				snprintf(buf, MAX_STRING_LENGTH, "$n starts pushing $p %sward.", dirs[dir]);
+				snprintf(buf, MAX_STRING_LENGTH, "$n starts pushing $p %sward.",
+					 dirs[dir]);
 				act(buf, TRUE, ch, obj, 0, TO_ROOM);
 				// Yes, this lags you to stop you from spamming.
 				CharWait(ch, siege_move_wait(ch));
-				add_event(event_move_engine, siege_move_wait(ch), ch, NULL, obj, 0, &dir, sizeof(int));
+				add_event(event_move_engine, siege_move_wait(ch), ch, NULL, obj, 0,
+					  &dir, sizeof(int));
 			}
 			return TRUE;
 		}
@@ -440,7 +471,8 @@ int catapult(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			act("You begin loading $p.", FALSE, ch, obj, NULL, TO_CHAR);
 			act("$n begins loading $p.", FALSE, ch, obj, NULL, TO_ROOM);
-			add_event(event_load_engine, siege_load_wait(ch, obj), ch, NULL, obj, 0, NULL, 0);
+			add_event(event_load_engine, siege_load_wait(ch, obj), ch, NULL, obj, 0,
+				  NULL, 0);
 			// Yes, this lags you while loading.
 			CharWait(ch, siege_move_wait(ch));
 		}
@@ -456,7 +488,8 @@ int catapult(P_obj obj, P_char ch, int cmd, char *arg)
 
 			if (obj->value[2] == 0)
 			{
-				act("$p has no ammo.  Try to reload it first.", FALSE, ch, obj, NULL, TO_CHAR);
+				act("$p has no ammo.  Try to reload it first.", FALSE, ch, obj,
+				    NULL, TO_CHAR);
 				return TRUE;
 			}
 
@@ -483,26 +516,30 @@ int catapult(P_obj obj, P_char ch, int cmd, char *arg)
 
 				if (obj->loc_p != LOC_ROOM)
 				{
-					logit(LOG_DEBUG, "catapult: firing siege weapon not in a room.");
+					logit(LOG_DEBUG,
+					      "catapult: firing siege weapon not in a room.");
 					return FALSE;
 				}
 				in_room = obj->loc.room;
 				if (!in_room)
 				{
-					logit(LOG_DEBUG, "catapult: firing siege weapon in room 0.");
+					logit(LOG_DEBUG,
+					      "catapult: firing siege weapon in room 0.");
 					return FALSE;
 				}
 				// Load exploded ammo into the room.
-				ammo          = read_object(real_object(obj->value[0]), REAL);
+				ammo = read_object(real_object(obj->value[0]), REAL);
 				obj->value[2] = 0;
 				obj_to_room(ammo, in_room);
 				// Fire the weapon 4x spaces to the dir. Hits walls.
 				for (num_rooms = 0; num_rooms < 4; num_rooms++)
 				{
 					// If we hit a wall.
-					if (!VIRTUAL_EXIT(in_room, dir) || !VIRTUAL_EXIT(in_room, dir)->to_room)
+					if (!VIRTUAL_EXIT(in_room, dir) ||
+					    !VIRTUAL_EXIT(in_room, dir)->to_room)
 					{
-						snprintf(buf, MAX_STRING_LENGTH, "$p slams into the %s wall.", dirs[dir]);
+						snprintf(buf, MAX_STRING_LENGTH,
+							 "$p slams into the %s wall.", dirs[dir]);
 						act(buf, TRUE, NULL, ammo, 0, TO_ROOM);
 						return TRUE;
 					}
@@ -511,7 +548,8 @@ int catapult(P_obj obj, P_char ch, int cmd, char *arg)
 						in_room = VIRTUAL_EXIT(in_room, dir)->to_room;
 						obj_from_room(ammo);
 						obj_to_room(ammo, in_room);
-						act("$p flies overhead..", TRUE, NULL, ammo, 0, TO_ROOM);
+						act("$p flies overhead..", TRUE, NULL, ammo, 0,
+						    TO_ROOM);
 					}
 				}
 				// Ammo lands in to_room.. BOOM, SPLAT!
@@ -528,8 +566,8 @@ int catapult(P_obj obj, P_char ch, int cmd, char *arg)
 void event_move_engine(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	char buf[MAX_STRING_LENGTH];
-	int  dir = *((int *)data);
-	int  to_room;
+	int dir = *((int *)data);
+	int to_room;
 
 	// If there's an exit and it's unblocked (and ch isn't fighting).
 	if (can_move(ch, dir))
@@ -546,7 +584,8 @@ void event_move_engine(P_char ch, P_char victim, P_obj obj, void *data)
 		char_from_room(ch);
 		char_to_room(ch, to_room, dir);
 
-		snprintf(buf, MAX_STRING_LENGTH, "$n pushes $p in from the %s.", dirs[rev_dir[dir]]);
+		snprintf(buf, MAX_STRING_LENGTH, "$n pushes $p in from the %s.",
+			 dirs[rev_dir[dir]]);
 		act(buf, TRUE, ch, obj, 0, TO_ROOM);
 	}
 	else
@@ -557,7 +596,7 @@ void event_move_engine(P_char ch, P_char victim, P_obj obj, void *data)
 void explode_ammo(P_char ch, P_obj ammo)
 {
 	P_char vict, next_vict;
-	P_obj  obj, next_obj;
+	P_obj obj, next_obj;
 
 	// Splat ppl!
 	for (vict = world[ammo->loc.room].people; vict; vict = next_vict)
@@ -579,11 +618,12 @@ void explode_ammo(P_char ch, P_obj ammo)
 bool check_gates(P_char ch, int room)
 {
 	P_obj wall;
-	int   dir;
+	int dir;
 
 	for (dir = 0; dir < NUM_EXITS; dir++)
 	{
-		if (world[ch->in_room].dir_option[dir] && world[ch->in_room].dir_option[dir]->to_room == room)
+		if (world[ch->in_room].dir_option[dir] &&
+		    world[ch->in_room].dir_option[dir]->to_room == room)
 			break;
 	}
 	// If no exit to room, no gate can block it.
@@ -625,7 +665,9 @@ int castlewall(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 
 	// Value0 of a castlewall is the direction it blocks.
-	if ((obj->value[0] == DIR_EAST && cmd == CMD_EAST) || (obj->value[0] == DIR_WEST && cmd == CMD_WEST) || (obj->value[0] == DIR_NORTH && cmd == CMD_NORTH) ||
+	if ((obj->value[0] == DIR_EAST && cmd == CMD_EAST) ||
+	    (obj->value[0] == DIR_WEST && cmd == CMD_WEST) ||
+	    (obj->value[0] == DIR_NORTH && cmd == CMD_NORTH) ||
 	    (obj->value[0] == DIR_SOUTH && cmd == CMD_SOUTH))
 	{
 		if (isname("gates", obj->name))
@@ -645,7 +687,9 @@ bool is_siege(P_obj object)
 		return FALSE;
 
 	// If the object proc is ballista/battering_ram/catapult..
-	if (obj_index[object->R_num].func.obj == ballista || obj_index[object->R_num].func.obj == battering_ram || obj_index[object->R_num].func.obj == catapult ||
+	if (obj_index[object->R_num].func.obj == ballista ||
+	    obj_index[object->R_num].func.obj == battering_ram ||
+	    obj_index[object->R_num].func.obj == catapult ||
 	    obj_index[object->R_num].func.obj == castlewall)
 		return TRUE;
 
@@ -654,101 +698,101 @@ bool is_siege(P_obj object)
 
 void damage_siege(P_obj siege, P_obj ammo)
 {
-	char  buf[MAX_STRING_LENGTH];
-	bool  destroy = FALSE;
-	int   damage;
+	char buf[MAX_STRING_LENGTH];
+	bool destroy = FALSE;
+	int damage;
 	P_obj scraps;
 
 	damage = dice(ammo->value[0], ammo->value[1]);
 
 	switch (siege->material)
 	{
-		default:
-			break;
-		case MAT_NONSUBSTANTIAL:
-		case MAT_LIQUID:
-		case MAT_WAX:
-			damage *= 10;
-			break;
-		case MAT_PAPER:
-		case MAT_PARCHMENT:
-		case MAT_LEAVES:
-		case MAT_FLESH:
-		case MAT_RUBBER:
-		case MAT_FEATHER:
-			damage *= 5;
-			break;
-		case MAT_CLOTH:
-			damage = (damage * 10) / 3;
-			break;
-		case MAT_BAMBOO:
-		case MAT_REEDS:
-		case MAT_HEMP:
-		case MAT_EGGSHELL:
-		case MAT_BARK:
-		case MAT_GENERICFOOD:
-			damage = (damage * 5) / 2;
-			break;
-		case MAT_SOFTWOOD:
-		case MAT_HARDWOOD:
-		case MAT_PEARL:
-			damage = (damage * 9) / 4;
-			break;
-		case MAT_SILICON:
-		case MAT_CERAMIC:
-			damage = (damage * 5) / 3;
-			break;
-		case MAT_HIDE:
-		case MAT_LEATHER:
-		case MAT_CURED_LEATHER:
-			damage = (damage * 7) / 3;
-			break;
-		case MAT_CRYSTAL:
-		case MAT_BONE:
-			damage = (damage * 7) / 3;
-			break;
-		case MAT_GEM:
-		case MAT_STONE:
-		case MAT_GRANITE:
-		case MAT_MARBLE:
-		case MAT_LIMESTONE:
-			damage = (damage * 85) / 100;
-			break;
-		case MAT_IRON:
-		case MAT_STEEL:
-			damage = (damage * 75) / 100;
-			break;
-		case MAT_BRASS:
-		case MAT_MITHRIL:
-			damage = (damage * 70) / 100;
-			break;
-		case MAT_GLASSTEEL:
-		case MAT_ADAMANTIUM:
-			damage = (damage * 65) / 100;
-			break;
-		case MAT_BRONZE:
-		case MAT_COPPER:
-		case MAT_SILVER:
-		case MAT_ELECTRUM:
-		case MAT_GOLD:
-		case MAT_PLATINUM:
-		case MAT_RUBY:
-		case MAT_EMERALD:
-		case MAT_SAPPHIRE:
-		case MAT_IVORY:
-			damage = (damage * 89) / 100;
-			break;
-		case MAT_DRAGONSCALE:
-		case MAT_DIAMOND:
-			damage = (damage * 67) / 100;
-			break;
-		case MAT_OBSIDIAN:
-			damage = (damage * 63) / 100;
-			break;
-		case MAT_CHITINOUS:
-		case MAT_REPTILESCALE:
-			damage = (damage * 95) / 100;
-			break;
+	default:
+		break;
+	case MAT_NONSUBSTANTIAL:
+	case MAT_LIQUID:
+	case MAT_WAX:
+		damage *= 10;
+		break;
+	case MAT_PAPER:
+	case MAT_PARCHMENT:
+	case MAT_LEAVES:
+	case MAT_FLESH:
+	case MAT_RUBBER:
+	case MAT_FEATHER:
+		damage *= 5;
+		break;
+	case MAT_CLOTH:
+		damage = (damage * 10) / 3;
+		break;
+	case MAT_BAMBOO:
+	case MAT_REEDS:
+	case MAT_HEMP:
+	case MAT_EGGSHELL:
+	case MAT_BARK:
+	case MAT_GENERICFOOD:
+		damage = (damage * 5) / 2;
+		break;
+	case MAT_SOFTWOOD:
+	case MAT_HARDWOOD:
+	case MAT_PEARL:
+		damage = (damage * 9) / 4;
+		break;
+	case MAT_SILICON:
+	case MAT_CERAMIC:
+		damage = (damage * 5) / 3;
+		break;
+	case MAT_HIDE:
+	case MAT_LEATHER:
+	case MAT_CURED_LEATHER:
+		damage = (damage * 7) / 3;
+		break;
+	case MAT_CRYSTAL:
+	case MAT_BONE:
+		damage = (damage * 7) / 3;
+		break;
+	case MAT_GEM:
+	case MAT_STONE:
+	case MAT_GRANITE:
+	case MAT_MARBLE:
+	case MAT_LIMESTONE:
+		damage = (damage * 85) / 100;
+		break;
+	case MAT_IRON:
+	case MAT_STEEL:
+		damage = (damage * 75) / 100;
+		break;
+	case MAT_BRASS:
+	case MAT_MITHRIL:
+		damage = (damage * 70) / 100;
+		break;
+	case MAT_GLASSTEEL:
+	case MAT_ADAMANTIUM:
+		damage = (damage * 65) / 100;
+		break;
+	case MAT_BRONZE:
+	case MAT_COPPER:
+	case MAT_SILVER:
+	case MAT_ELECTRUM:
+	case MAT_GOLD:
+	case MAT_PLATINUM:
+	case MAT_RUBY:
+	case MAT_EMERALD:
+	case MAT_SAPPHIRE:
+	case MAT_IVORY:
+		damage = (damage * 89) / 100;
+		break;
+	case MAT_DRAGONSCALE:
+	case MAT_DIAMOND:
+		damage = (damage * 67) / 100;
+		break;
+	case MAT_OBSIDIAN:
+		damage = (damage * 63) / 100;
+		break;
+	case MAT_CHITINOUS:
+	case MAT_REPTILESCALE:
+		damage = (damage * 95) / 100;
+		break;
 	}
 
 	// This should never happen, but just to make sure we don't heal target...
@@ -759,7 +803,8 @@ void damage_siege(P_obj siege, P_obj ammo)
 	if (siege->condition <= 0)
 		destroy = TRUE;
 
-	snprintf(buf, MAX_STRING_LENGTH, "$q %s", destroy ? "is completely destroyed!" : "is damaged from the blow!");
+	snprintf(buf, MAX_STRING_LENGTH, "$q %s",
+		 destroy ? "is completely destroyed!" : "is damaged from the blow!");
 	act(buf, TRUE, NULL, siege, 0, TO_ROOM);
 
 	if (destroy)
@@ -772,12 +817,14 @@ void damage_siege(P_obj siege, P_obj ammo)
 			extract_obj(siege, TRUE); // Siege arti?
 			return;
 		}
-		snprintf(buf, MAX_STRING_LENGTH, "Scraps from %s&n lie in a pile here.", siege->short_description);
+		snprintf(buf, MAX_STRING_LENGTH, "Scraps from %s&n lie in a pile here.",
+			 siege->short_description);
 		scraps->description = str_dup(buf);
-		snprintf(buf, MAX_STRING_LENGTH, "a pile of scraps from %s", siege->short_description);
+		snprintf(buf, MAX_STRING_LENGTH, "a pile of scraps from %s",
+			 siege->short_description);
 		scraps->short_description = str_dup(buf);
 		snprintf(buf, MAX_STRING_LENGTH, "%s scraps pile", siege->name);
-		scraps->name     = str_dup(buf);
+		scraps->name = str_dup(buf);
 		scraps->str_mask = STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_KEYS;
 		set_obj_affected(scraps, 400, TAG_OBJ_DECAY, 0);
 		obj_to_room(scraps, siege->loc.room);
@@ -792,8 +839,8 @@ P_obj get_siege_room(P_char ch, char *arg)
 {
 	P_obj obj;
 	char *temp = arg;
-	int   howmany;
-	int   count = 0;
+	int howmany;
+	int count = 0;
 
 	// Need to handle 2.siege.
 	howmany = get_number(&temp);
@@ -837,12 +884,12 @@ P_town gettown(P_char ch)
 int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_town town;
-	char   buf[MAX_STRING_LENGTH], arg1[MAX_STRING_LENGTH];
-	char   arg2[MAX_STRING_LENGTH];
-	char  *rest;
-	P_obj  donation, siege;
-	int    rank;
-	int    ztop, count, i, j, numgate;
+	char buf[MAX_STRING_LENGTH], arg1[MAX_STRING_LENGTH];
+	char arg2[MAX_STRING_LENGTH];
+	char *rest;
+	P_obj donation, siege;
+	int rank;
+	int ztop, count, i, j, numgate;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -878,43 +925,38 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 	if (cmd == CMD_LIST)
 	{
 		// List town's name, offense, defense, and resrources..
-		snprintf(buf,
-		         MAX_STRING_LENGTH,
-		         "'%s'\nOffense:     %7d\nDefense:     %7d\nResources:   %7d\n"
-		         "Town Guards:  %s\nTown Cavalry: %s\nTown Portals: %s\n\n",
-		         town->zone->name,
-		         town->offense,
-		         town->defense,
-		         town->resources,
-		         town->deploy_guard ? "  Deployed" : "Not Deployed",
-		         town->deploy_cavalry ? "  Deployed" : "Not Deployed",
-		         town->deploy_portals ? "  Deployed" : "Not Deployed");
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "'%s'\nOffense:     %7d\nDefense:     %7d\nResources:   %7d\n"
+			 "Town Guards:  %s\nTown Cavalry: %s\nTown Portals: %s\n\n",
+			 town->zone->name, town->offense, town->defense, town->resources,
+			 town->deploy_guard ? "  Deployed" : "Not Deployed",
+			 town->deploy_cavalry ? "  Deployed" : "Not Deployed",
+			 town->deploy_portals ? "  Deployed" : "Not Deployed");
 		send_to_char(buf, pl);
 
 		if (IS_TRUSTED(pl))
 		{
-			snprintf(buf,
-			         MAX_STRING_LENGTH,
-			         "Guards: %d deployed of %d max, vnum %d, load in room %d.\n",
-			         town->guard_vnum ? mob_index[real_mobile(town->guard_vnum)].number : 0,
-			         town->guard_max,
-			         town->guard_vnum,
-			         town->guard_load_room);
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "Guards: %d deployed of %d max, vnum %d, load in room %d.\n",
+				 town->guard_vnum ?
+					 mob_index[real_mobile(town->guard_vnum)].number :
+					 0,
+				 town->guard_max, town->guard_vnum, town->guard_load_room);
 			send_to_char(buf, pl);
-			snprintf(buf,
-			         MAX_STRING_LENGTH,
-			         "Cavalry: %d deployed of %d max, vnum %d, load in room %d.\n\n",
-			         town->cavalry_vnum ? mob_index[real_mobile(town->cavalry_vnum)].number : 0,
-			         town->cavalry_max,
-			         town->cavalry_vnum,
-			         town->cavalry_load_room);
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "Cavalry: %d deployed of %d max, vnum %d, load in room %d.\n\n",
+				 town->cavalry_vnum ?
+					 mob_index[real_mobile(town->cavalry_vnum)].number :
+					 0,
+				 town->cavalry_max, town->cavalry_vnum, town->cavalry_load_room);
 			send_to_char(buf, pl);
 		}
 
 		rank = GET_SURNAME(pl);
 		if (rank == 0)
 		{
-			do_say(ch, "Get out of here whelp! Earn a title before you come to me", CMD_SAY);
+			do_say(ch, "Get out of here whelp! Earn a title before you come to me",
+			       CMD_SAY);
 			return TRUE;
 		}
 
@@ -927,13 +969,19 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 		if (rank <= SURNAME_NOBLE)
 			return TRUE;
 		if (town->resources >= 50000)
-			send_to_char("You can deploy guards/stop deployment with the deploy command.\n", pl);
+			send_to_char(
+				"You can deploy guards/stop deployment with the deploy command.\n",
+				pl);
 		if (town->resources >= 600000)
-			send_to_char("You can deploy town portals/stop deployment with the deploy command.\n", pl);
+			send_to_char(
+				"You can deploy town portals/stop deployment with the deploy command.\n",
+				pl);
 		if (rank <= SURNAME_LORD)
 			return TRUE;
 		if (town->resources >= 450000)
-			send_to_char("You can deploy cavalry/stop deployment with the deploy command.\n", pl);
+			send_to_char(
+				"You can deploy cavalry/stop deployment with the deploy command.\n",
+				pl);
 		if (rank == SURNAME_KING)
 			return TRUE;
 		return TRUE;
@@ -946,7 +994,8 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 			send_to_char("Donate what?!?\n", pl);
 			return TRUE;
 		}
-		snprintf(buf, MAX_STRING_LENGTH, "You donate %s to %s.\n", donation->short_description, town->zone->name);
+		snprintf(buf, MAX_STRING_LENGTH, "You donate %s to %s.\n",
+			 donation->short_description, town->zone->name);
 		send_to_char(buf, pl);
 		obj_from_char(donation);
 		town->resources += itemvalue(donation);
@@ -980,8 +1029,8 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 			if (town->resources < 50000)
 			{
 				send_to_char("This town lacks the resources to deploy guards.\n"
-				             "You must have 50,000 in resources to deploy them.\n",
-				             pl);
+					     "You must have 50,000 in resources to deploy them.\n",
+					     pl);
 				return TRUE;
 			}
 
@@ -1011,8 +1060,8 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 			if (town->resources < 450000)
 			{
 				send_to_char("This town lacks the resources to deploy cavalry.\n"
-				             "You must have 450,000 in resources to deploy them.\n",
-				             pl);
+					     "You must have 450,000 in resources to deploy them.\n",
+					     pl);
 				return TRUE;
 			}
 
@@ -1039,8 +1088,8 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 			if (town->resources < 600000)
 			{
 				send_to_char("This town lacks the resources to deploy portals.\n"
-				             "You must have 600,000 in resources to deploy them.\n",
-				             pl);
+					     "You must have 600,000 in resources to deploy them.\n",
+					     pl);
 				return TRUE;
 			}
 
@@ -1159,8 +1208,8 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 			if (town->resources < 150000)
 			{
 				send_to_char("This town lacks the resources to have gates.\n"
-				             "You must have 150,000 in resources to buy them.\n",
-				             pl);
+					     "You must have 150,000 in resources to buy them.\n",
+					     pl);
 				return TRUE;
 			}
 
@@ -1170,7 +1219,7 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 				return TRUE;
 			}
 
-			ztop  = town->zone->real_top;
+			ztop = town->zone->real_top;
 			count = 0;
 			if (*arg2 == '\0')
 			{
@@ -1180,14 +1229,28 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 					for (j = 0; j < NUM_EXITS; j++)
 					{
 						// Skip non-existant exits and exits to nowhere.
-						if (!world[i].dir_option[j] || world[i].dir_option[j]->to_room == NOWHERE)
+						if (!world[i].dir_option[j] ||
+						    world[i].dir_option[j]->to_room == NOWHERE)
 							continue;
-						if (world[world[i].dir_option[j]->to_room].zone != world[i].zone)
+						if (world[world[i].dir_option[j]->to_room].zone !=
+						    world[i].zone)
 						{
 							if (has_gates(i))
-								snprintf(buf, MAX_STRING_LENGTH, "%2d)*%-5s %s\n", ++count, dirs[j], world[world[i].dir_option[j]->to_room].name);
+								snprintf(
+									buf, MAX_STRING_LENGTH,
+									"%2d)*%-5s %s\n", ++count,
+									dirs[j],
+									world[world[i].dir_option[j]
+										      ->to_room]
+										.name);
 							else
-								snprintf(buf, MAX_STRING_LENGTH, "%2d) %-5s %s\n", ++count, dirs[j], world[world[i].dir_option[j]->to_room].name);
+								snprintf(
+									buf, MAX_STRING_LENGTH,
+									"%2d) %-5s %s\n", ++count,
+									dirs[j],
+									world[world[i].dir_option[j]
+										      ->to_room]
+										.name);
 							send_to_char(buf, pl);
 						}
 					}
@@ -1208,30 +1271,40 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 					for (j = 0; j < NUM_EXITS; j++)
 					{
 						// Skip non-existant exits and exits to nowhere.
-						if (!world[i].dir_option[j] || world[i].dir_option[j]->to_room == NOWHERE)
+						if (!world[i].dir_option[j] ||
+						    world[i].dir_option[j]->to_room == NOWHERE)
 							continue;
-						if (world[world[i].dir_option[j]->to_room].zone != world[i].zone)
+						if (world[world[i].dir_option[j]->to_room].zone !=
+						    world[i].zone)
 						{
 							if (++count == numgate)
 							{
 								if (has_gates(i))
 								{
-									send_to_char("There are already gates at that exit.\n", pl);
+									send_to_char(
+										"There are already gates at that exit.\n",
+										pl);
 									return TRUE;
 								}
 								// Put a gate there.
-								siege = read_object(real_object(464), REAL);
+								siege = read_object(
+									real_object(464), REAL);
 								if (!siege)
 								{
-									logit(LOG_DEBUG, "warmaster: couldn't load town gates.");
+									logit(LOG_DEBUG,
+									      "warmaster: couldn't load town gates.");
 									return FALSE;
 								}
 								// Block the correct direction.
 								siege->value[0] = rev_dir[j];
-								obj_to_room(siege, i); // world[i].dir_option[j]->to_room );
+								obj_to_room(
+									siege,
+									i); // world[i].dir_option[j]->to_room );
 								add_siege(siege);
-								act("You buy $p.", FALSE, pl, siege, NULL, TO_CHAR);
-								act("$n buys $p.", FALSE, pl, siege, NULL, TO_ROOM);
+								act("You buy $p.", FALSE, pl, siege,
+								    NULL, TO_CHAR);
+								act("$n buys $p.", FALSE, pl, siege,
+								    NULL, TO_ROOM);
 								SUB_MONEY(pl, 5000 * 1000, 0);
 								return TRUE;
 							}
@@ -1252,8 +1325,8 @@ void check_deploy(struct zone_data *zone)
 {
 	P_town town = towns;
 	P_char mob;
-	int    i, vnum, rnum;
-	char   buf[MAX_STRING_LENGTH];
+	int i, vnum, rnum;
+	char buf[MAX_STRING_LENGTH];
 
 	// Search for town data corresponding to zone.
 	while (town && town->zone != zone)
@@ -1266,14 +1339,10 @@ void check_deploy(struct zone_data *zone)
 	{
 		rnum = real_mobile(town->guard_vnum);
 
-		snprintf(buf,
-		         MAX_STRING_LENGTH,
-		         "Mob: %d '%s': Current load: %d, Max load: %d in room: %d.",
-		         town->guard_vnum,
-		         mob_index[rnum].desc2,
-		         mob_index[rnum].number,
-		         mob_index[rnum].limit,
-		         town->guard_load_room);
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "Mob: %d '%s': Current load: %d, Max load: %d in room: %d.",
+			 town->guard_vnum, mob_index[rnum].desc2, mob_index[rnum].number,
+			 mob_index[rnum].limit, town->guard_load_room);
 		wizlog(60, buf);
 
 		// Deploy guards if necessary..
@@ -1288,14 +1357,10 @@ void check_deploy(struct zone_data *zone)
 	{
 		rnum = real_mobile(town->cavalry_vnum);
 
-		snprintf(buf,
-		         MAX_STRING_LENGTH,
-		         "Mob: %d '%s': Current load: %d, Max load: %d in room: %d.",
-		         town->cavalry_vnum,
-		         mob_index[rnum].desc2,
-		         mob_index[rnum].number,
-		         mob_index[rnum].limit,
-		         town->cavalry_load_room);
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "Mob: %d '%s': Current load: %d, Max load: %d in room: %d.",
+			 town->cavalry_vnum, mob_index[rnum].desc2, mob_index[rnum].number,
+			 mob_index[rnum].limit, town->cavalry_load_room);
 		wizlog(60, buf);
 
 		// Deploy cavalry if necessary..
@@ -1355,12 +1420,12 @@ void kill_siege(P_char ch, P_obj obj)
 void multihit_siege(P_char ch)
 {
 	P_char other_attacker;
-	P_obj  siege, scraps, weapon;
-	bool   destroy = FALSE;
-	char   buf[MAX_STRING_LENGTH];
-	int    number_attacks, num_attacks;
-	int    damage;
-	int    attacks[256];
+	P_obj siege, scraps, weapon;
+	bool destroy = FALSE;
+	char buf[MAX_STRING_LENGTH];
+	int number_attacks, num_attacks;
+	int damage;
+	int attacks[256];
 
 	if (!ch)
 		return;
@@ -1374,7 +1439,7 @@ void multihit_siege(P_char ch)
 
 	appear(ch);
 
-	num_attacks    = 0;
+	num_attacks = 0;
 	number_attacks = calculate_attacks(ch, attacks);
 	while (++num_attacks <= number_attacks)
 	{
@@ -1412,13 +1477,15 @@ void multihit_siege(P_char ch)
 	if (siege->condition <= 0)
 		destroy = TRUE;
 
-	snprintf(buf, MAX_STRING_LENGTH, "$q %s", destroy ? "is completely destroyed!" : "is damaged from the blow!");
+	snprintf(buf, MAX_STRING_LENGTH, "$q %s",
+		 destroy ? "is completely destroyed!" : "is damaged from the blow!");
 	act(buf, TRUE, NULL, siege, 0, TO_ROOM);
 
 	if (destroy)
 	{
 		stop_destroying(ch);
-		for (other_attacker = destroying_list; other_attacker; other_attacker = other_attacker->specials.next_destroying)
+		for (other_attacker = destroying_list; other_attacker;
+		     other_attacker = other_attacker->specials.next_destroying)
 		{
 			if (other_attacker->specials.destroying_obj == siege)
 				stop_destroying(other_attacker);
@@ -1432,12 +1499,14 @@ void multihit_siege(P_char ch)
 			extract_obj(siege, TRUE); // Siege arti?
 			return;
 		}
-		snprintf(buf, MAX_STRING_LENGTH, "Scraps from %s&n lie in a pile here.", siege->short_description);
+		snprintf(buf, MAX_STRING_LENGTH, "Scraps from %s&n lie in a pile here.",
+			 siege->short_description);
 		scraps->description = str_dup(buf);
-		snprintf(buf, MAX_STRING_LENGTH, "a pile of scraps from %s", siege->short_description);
+		snprintf(buf, MAX_STRING_LENGTH, "a pile of scraps from %s",
+			 siege->short_description);
 		scraps->short_description = str_dup(buf);
 		snprintf(buf, MAX_STRING_LENGTH, "%s scraps pile", siege->name);
-		scraps->name     = str_dup(buf);
+		scraps->name = str_dup(buf);
 		scraps->str_mask = STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_KEYS;
 		set_obj_affected(scraps, 400, TAG_OBJ_DECAY, 0);
 		obj_to_room(scraps, siege->loc.room);
@@ -1485,27 +1554,16 @@ void list_town(P_char ch, P_town town)
 	}
 
 	// Show town name: level, off, def.
-	snprintf(buf,
-	         MAX_STRING_LENGTH,
-	         "Town '%s': Resources %d, Offense %d, Defense %d\n"
-	         "  Guards:  %3s: Max %3d Vnum %6d Room %6d.\n"
-	         "  Cavalry: %3s: Max %3d Vnum %6d Room %6d.\n"
-	         "  Portals: %3s:         Vnum %6d Room %6d.\n",
-	         (town->zone != NULL) ? town->zone->name : "Unknown",
-	         town->resources,
-	         town->offense,
-	         town->defense,
-	         YESNO(town->deploy_guard),
-	         town->guard_max,
-	         town->guard_vnum,
-	         town->guard_load_room,
-	         YESNO(town->deploy_cavalry),
-	         town->cavalry_max,
-	         town->cavalry_vnum,
-	         town->cavalry_load_room,
-	         YESNO(town->deploy_portals),
-	         town->portal_vnum,
-	         town->portal_load_room);
+	snprintf(buf, MAX_STRING_LENGTH,
+		 "Town '%s': Resources %d, Offense %d, Defense %d\n"
+		 "  Guards:  %3s: Max %3d Vnum %6d Room %6d.\n"
+		 "  Cavalry: %3s: Max %3d Vnum %6d Room %6d.\n"
+		 "  Portals: %3s:         Vnum %6d Room %6d.\n",
+		 (town->zone != NULL) ? town->zone->name : "Unknown", town->resources,
+		 town->offense, town->defense, YESNO(town->deploy_guard), town->guard_max,
+		 town->guard_vnum, town->guard_load_room, YESNO(town->deploy_cavalry),
+		 town->cavalry_max, town->cavalry_vnum, town->cavalry_load_room,
+		 YESNO(town->deploy_portals), town->portal_vnum, town->portal_load_room);
 	send_to_char(buf, ch);
 }
 
@@ -1567,7 +1625,7 @@ void add_troopoffense(P_char ch, P_town town, int amount)
 P_town add_findtown(char *arg)
 {
 	P_town town = towns;
-	char   town_name[MAX_STRING_LENGTH];
+	char town_name[MAX_STRING_LENGTH];
 	stripansi_2(town->zone->name, town_name);
 
 	while (town)
@@ -1583,10 +1641,10 @@ P_town add_findtown(char *arg)
 
 void do_add(P_char ch, char *arg, int cmd)
 {
-	char   arg1[MAX_STRING_LENGTH];
-	char   arg2[MAX_STRING_LENGTH];
-	char  *rest;
-	int    amount;
+	char arg1[MAX_STRING_LENGTH];
+	char arg2[MAX_STRING_LENGTH];
+	char *rest;
+	int amount;
 	P_town town;
 
 	// Parse argument.
@@ -1610,7 +1668,7 @@ void do_add(P_char ch, char *arg, int cmd)
 	{
 		argument_interpreter(rest, arg1, arg2);
 		amount = atoi(arg2);
-		town   = add_findtown(arg1);
+		town = add_findtown(arg1);
 		if (amount == 0)
 		{
 			send_to_char("Syntax: add resources <town> <amount>.\n", ch);
@@ -1629,7 +1687,7 @@ void do_add(P_char ch, char *arg, int cmd)
 	{
 		argument_interpreter(rest, arg1, arg2);
 		amount = atoi(arg2);
-		town   = add_findtown(arg1);
+		town = add_findtown(arg1);
 		if (amount == 0)
 		{
 			send_to_char("Syntax: add defense <town> <amount>.\n", ch);
@@ -1648,7 +1706,7 @@ void do_add(P_char ch, char *arg, int cmd)
 	{
 		argument_interpreter(rest, arg1, arg2);
 		amount = atoi(arg2);
-		town   = add_findtown(arg1);
+		town = add_findtown(arg1);
 		if (amount == 0)
 		{
 			send_to_char("Syntax: add offense <town> <amount>.\n", ch);
@@ -1676,9 +1734,9 @@ void add_siege(P_obj siege)
 {
 	P_siege newsiege = new struct siege;
 
-	newsiege->obj        = siege;
+	newsiege->obj = siege;
 	newsiege->next_siege = siege_objects;
-	siege_objects        = newsiege;
+	siege_objects = newsiege;
 
 	save_siege_list();
 }
@@ -1691,7 +1749,7 @@ void remove_siege(P_obj siege)
 
 	if (sieges->obj == siege)
 	{
-		siege_objects      = siege_objects->next_siege;
+		siege_objects = siege_objects->next_siege;
 		sieges->next_siege = NULL;
 		free(sieges);
 		return;
@@ -1700,10 +1758,10 @@ void remove_siege(P_obj siege)
 	{
 		if (sieges->next_siege->obj == siege)
 		{
-			siege2             = sieges->next_siege;
+			siege2 = sieges->next_siege;
 			sieges->next_siege = siege2->next_siege;
 			siege2->next_siege = NULL;
-			siege2->obj        = NULL;
+			siege2->obj = NULL;
 			free(siege2);
 			return;
 		}
@@ -1745,7 +1803,7 @@ void save_siege_list()
 void list_siege(P_char ch)
 {
 	P_siege siege;
-	char    buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 
 	if (!siege_objects)
 	{
@@ -1756,7 +1814,8 @@ void list_siege(P_char ch)
 	// For each siege object
 	for (siege = siege_objects; siege; siege = siege->next_siege)
 	{
-		snprintf(buf, MAX_STRING_LENGTH, "%d) %s\n", siege->obj->loc.room, siege->obj->short_description);
+		snprintf(buf, MAX_STRING_LENGTH, "%d) %s\n", siege->obj->loc.room,
+			 siege->obj->short_description);
 		send_to_char(buf, ch);
 	}
 }

@@ -30,43 +30,43 @@
    external variables
  */
 
-extern P_desc        descriptor_list;
-extern P_char        character_list;
-extern P_room        world;
-extern int           slow_death;
+extern P_desc descriptor_list;
+extern P_char character_list;
+extern P_room world;
+extern int slow_death;
 extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 
 /* action modes for parse_action */
-#define PARSE_FORMAT    0
-#define PARSE_REPLACE   1
-#define PARSE_HELP      2
-#define PARSE_DELETE    3
-#define PARSE_INSERT    4
+#define PARSE_FORMAT 0
+#define PARSE_REPLACE 1
+#define PARSE_HELP 2
+#define PARSE_DELETE 3
+#define PARSE_INSERT 4
 #define PARSE_LIST_NORM 5
-#define PARSE_LIST_NUM  6
-#define PARSE_EDIT      7
+#define PARSE_LIST_NUM 6
+#define PARSE_EDIT 7
 
 #define FORMAT_INDENT (1 << 0)
 
-#define TP_MOB   0
-#define TP_OBJ   1
+#define TP_MOB 0
+#define TP_OBJ 1
 #define TP_ERROR 2
 
 int help_array[27][2];
 int info_array[27][2];
 
-const char *string_fields[] = {"name",               // 1
-                               "short",              // 2
-                               "long",               // 3
-                               "description",        // 4
-                               "title",              // 5
-                               "password",           // 6
-                               "delete-description", // 7
-                               "\n"};
+const char *string_fields[] = { "name", // 1
+				"short", // 2
+				"long", // 3
+				"description", // 4
+				"title", // 5
+				"password", // 6
+				"delete-description", // 7
+				"\n" };
 
 /* maximum length for text field x+1 */
-const int length[] = {80, 80, 256, 240, 80};
+const int length[] = { 80, 80, 256, 240, 80 };
 
 bool rename_character(P_char ch, char *old_name, char *new_name);
 
@@ -79,9 +79,10 @@ bool rename_character(P_char ch, char *old_name, char *new_name);
 char *replace(char *g_string, char *replace_from, char *replace_to)
 {
 	char *p, *p1, *return_str;
-	int   i_diff;
+	int i_diff;
 
-	i_diff = strlen(replace_from) - strlen(replace_to); // the margin between the replace_from and replace_to;
+	i_diff = strlen(replace_from) -
+		 strlen(replace_to); // the margin between the replace_from and replace_to;
 	CREATE(return_str, char, strlen(g_string) + 1, MEM_TAG_STRING);
 	// return_str = (char *) malloc(strlen(g_string) + 1);   //Changed line
 
@@ -93,8 +94,8 @@ char *replace(char *g_string, char *replace_from, char *replace_to)
 
 	for (;;)
 	{
-		p1 = p;                       // old position
-		p  = strstr(p, replace_from); // next position
+		p1 = p; // old position
+		p = strstr(p, replace_from); // next position
 		if (p == NULL)
 		{
 			strcat(return_str, p1);
@@ -119,27 +120,28 @@ char *replace(char *g_string, char *replace_from, char *replace_to)
 
 int replace_str(char **string, char *pattern, char *replacement, int rep_all, int max_size)
 {
-	char        *replace_buffer = NULL;
-	char        *flow = NULL, *jetsam = NULL, temp;
+	char *replace_buffer = NULL;
+	char *flow = NULL, *jetsam = NULL, temp;
 	unsigned int len;
-	int          i;
+	int i;
 
 	if ((strlen(*string) - strlen(pattern)) + strlen(replacement) > max_size)
 		return -1;
 
 	CREATE(replace_buffer, char, (unsigned)(max_size), MEM_TAG_STRING);
-	i               = 0;
-	jetsam          = *string;
-	flow            = *string;
+	i = 0;
+	jetsam = *string;
+	flow = *string;
 	*replace_buffer = '\0';
 	if (rep_all)
 	{
 		while ((flow = (char *)strstr(flow, pattern)) != NULL)
 		{
 			i++;
-			temp  = *flow;
+			temp = *flow;
 			*flow = '\0';
-			if ((strlen(replace_buffer) + strlen(jetsam) + strlen(replacement)) > max_size)
+			if ((strlen(replace_buffer) + strlen(jetsam) + strlen(replacement)) >
+			    max_size)
 			{
 				i = -1;
 				break;
@@ -182,7 +184,7 @@ int replace_str(char **string, char *pattern, char *replacement, int rep_all, in
 
 void format_text(char **ptr_string, int mode, struct descriptor_data *d, int maxlen)
 {
-	int   total_chars, cap_next = TRUE, cap_next_next = FALSE;
+	int total_chars, cap_next = TRUE, cap_next_next = FALSE;
 	char *flow = NULL, *start = NULL, temp;
 
 	/* warning: do not edit messages with max_str's of over this value */
@@ -199,18 +201,21 @@ void format_text(char **ptr_string, int mode, struct descriptor_data *d, int max
 	}
 	else
 	{
-		*formated   = '\0';
+		*formated = '\0';
 		total_chars = 0;
 	}
 
 	while (*flow != '\0')
 	{
-		while ((*flow == '\n') || (*flow == '\r') || (*flow == '\f') || (*flow == '\t') || (*flow == '\v') || (*flow == ' '))
+		while ((*flow == '\n') || (*flow == '\r') || (*flow == '\f') || (*flow == '\t') ||
+		       (*flow == '\v') || (*flow == ' '))
 			flow++;
 		if (*flow != '\0')
 		{
 			start = flow++;
-			while ((*flow != '\0') && (*flow != '\n') && (*flow != '\r') && (*flow != '\f') && (*flow != '\t') && (*flow != '\v') && (*flow != ' ') &&
+			while ((*flow != '\0') && (*flow != '\n') && (*flow != '\r') &&
+			       (*flow != '\f') && (*flow != '\t') && (*flow != '\v') &&
+			       (*flow != ' ') &&
 			       /*           (*flow != '.') && */
 			       (*flow != '?') && (*flow != '!'))
 				flow++;
@@ -218,7 +223,7 @@ void format_text(char **ptr_string, int mode, struct descriptor_data *d, int max
 			if (cap_next_next)
 			{
 				cap_next_next = FALSE;
-				cap_next      = TRUE;
+				cap_next = TRUE;
 			}
 			/* this is so that if we stopped on a sentance, we move off the sentance delim. */
 			while (/* (*flow == '.') || */ (*flow == '!') || (*flow == '?'))
@@ -227,7 +232,7 @@ void format_text(char **ptr_string, int mode, struct descriptor_data *d, int max
 				flow++;
 			}
 
-			temp  = *flow;
+			temp = *flow;
 			*flow = '\0';
 
 			if ((total_chars + strlen(start) + 1) > 69)
@@ -246,7 +251,7 @@ void format_text(char **ptr_string, int mode, struct descriptor_data *d, int max
 			else
 			{
 				cap_next = FALSE;
-				*start   = UPPER(*start);
+				*start = UPPER(*start);
 			}
 
 			total_chars += strlen(start);
@@ -281,468 +286,480 @@ void format_text(char **ptr_string, int mode, struct descriptor_data *d, int max
 
 void parse_action(int command, char *string, struct descriptor_data *d)
 {
-	int          indent = 0, rep_all = 0, flags = 0, total_len, replaced;
+	int indent = 0, rep_all = 0, flags = 0, total_len, replaced;
 	int j = 0;
-	int          i, line_low, line_high;
-	char        *s = NULL, *t = NULL, temp, buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	int i, line_low, line_high;
+	char *s = NULL, *t = NULL, temp, buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 
-	buf[0]  = '\0';
+	buf[0] = '\0';
 	buf2[0] = '\0';
 
 	switch (command)
 	{
-		case PARSE_HELP:
-			snprintf(buf,
-			         MAX_STRING_LENGTH,
-			         "Editor command formats: /<letter>\r\n\r\n"
-			         "/a         -  aborts editor\r\n"
-			         "/c         -  clears buffer\r\n"
-			         "/d#        -  deletes a line #\r\n"
-			         "/e# <text> -  changes the line at # with <text>\r\n"
-			         "/f         -  formats text\r\n"
-			         "/fi        -  indented formatting of text\r\n"
-			         "/h         -  list text editor commands\r\n"
-			         "/i# <text> -  inserts <text> before line #\r\n"
-			         "/l         -  lists buffer\r\n"
-			         "/n         -  lists buffer with line numbers\r\n"
-			         "/r 'a' 'b' -  replace 1st occurance of text <a> in buffer with text <b>\r\n"
-			         "/ra 'a' 'b'-  replace all occurances of text <a> within buffer with text <b>\r\n"
-			         "              usage: /r[a] 'pattern' 'replacement'\r\n"
-			         "/s         -  saves text\r\n");
-			SEND_TO_Q(buf, d);
-			break;
-		case PARSE_FORMAT:
-			while (isalpha(string[j]) && j < 2)
+	case PARSE_HELP:
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"Editor command formats: /<letter>\r\n\r\n"
+			"/a         -  aborts editor\r\n"
+			"/c         -  clears buffer\r\n"
+			"/d#        -  deletes a line #\r\n"
+			"/e# <text> -  changes the line at # with <text>\r\n"
+			"/f         -  formats text\r\n"
+			"/fi        -  indented formatting of text\r\n"
+			"/h         -  list text editor commands\r\n"
+			"/i# <text> -  inserts <text> before line #\r\n"
+			"/l         -  lists buffer\r\n"
+			"/n         -  lists buffer with line numbers\r\n"
+			"/r 'a' 'b' -  replace 1st occurance of text <a> in buffer with text <b>\r\n"
+			"/ra 'a' 'b'-  replace all occurances of text <a> within buffer with text <b>\r\n"
+			"              usage: /r[a] 'pattern' 'replacement'\r\n"
+			"/s         -  saves text\r\n");
+		SEND_TO_Q(buf, d);
+		break;
+	case PARSE_FORMAT:
+		while (isalpha(string[j]) && j < 2)
+		{
+			switch (string[j])
 			{
-				switch (string[j])
+			case 'i':
+				if (!indent)
 				{
-					case 'i':
-						if (!indent)
-						{
-							indent = 1;
-							flags += FORMAT_INDENT;
-						}
-						break;
-					default:
-						break;
+					indent = 1;
+					flags += FORMAT_INDENT;
 				}
-				j++;
+				break;
+			default:
+				break;
 			}
-			format_text(d->str, flags, d, d->max_str);
-			snprintf(buf, MAX_STRING_LENGTH, "Text formarted with%s indent.\r\n", (indent ? "" : "out"));
-			SEND_TO_Q(buf, d);
-			break;
-		case PARSE_REPLACE:
-			while (isalpha(string[j]) && j < 2)
+			j++;
+		}
+		format_text(d->str, flags, d, d->max_str);
+		snprintf(buf, MAX_STRING_LENGTH, "Text formarted with%s indent.\r\n",
+			 (indent ? "" : "out"));
+		SEND_TO_Q(buf, d);
+		break;
+	case PARSE_REPLACE:
+		while (isalpha(string[j]) && j < 2)
+		{
+			switch (string[j])
 			{
-				switch (string[j])
+			case 'a':
+				if (!indent)
 				{
-					case 'a':
-						if (!indent)
-						{
-							rep_all = 1;
-						}
-						break;
-					default:
-						break;
+					rep_all = 1;
 				}
-				j++;
+				break;
+			default:
+				break;
 			}
-			s = strtok(string, "'");
-			if (s == NULL)
+			j++;
+		}
+		s = strtok(string, "'");
+		if (s == NULL)
+		{
+			SEND_TO_Q("Invalid format.\r\n", d);
+			return;
+		}
+		s = strtok(NULL, "'");
+		if (s == NULL)
+		{
+			SEND_TO_Q("Target string must be enclosed in single quotes.\r\n", d);
+			return;
+		}
+		t = strtok(NULL, "'");
+		if (t == NULL)
+		{
+			SEND_TO_Q("No replacement string.\r\n", d);
+			return;
+		}
+		t = strtok(NULL, "'");
+		if (t == NULL)
+		{
+			SEND_TO_Q("Replacement string must be enclosed in single quotes.\r\n", d);
+			return;
+		}
+		total_len = ((strlen(t) - strlen(s)) + strlen(*d->str));
+		if (total_len <= d->max_str)
+		{
+			if ((replaced = replace_str(d->str, s, t, rep_all, d->max_str)) > 0)
 			{
-				SEND_TO_Q("Invalid format.\r\n", d);
-				return;
+				snprintf(buf, MAX_STRING_LENGTH,
+					 "Replaced %d occurance%sof '%s' with '%s'.\r\n", replaced,
+					 ((replaced != 1) ? "s " : " "), s, t);
+				SEND_TO_Q(buf, d);
 			}
-			s = strtok(NULL, "'");
-			if (s == NULL)
+			else if (replaced == 0)
 			{
-				SEND_TO_Q("Target string must be enclosed in single quotes.\r\n", d);
-				return;
-			}
-			t = strtok(NULL, "'");
-			if (t == NULL)
-			{
-				SEND_TO_Q("No replacement string.\r\n", d);
-				return;
-			}
-			t = strtok(NULL, "'");
-			if (t == NULL)
-			{
-				SEND_TO_Q("Replacement string must be enclosed in single quotes.\r\n", d);
-				return;
-			}
-			total_len = ((strlen(t) - strlen(s)) + strlen(*d->str));
-			if (total_len <= d->max_str)
-			{
-				if ((replaced = replace_str(d->str, s, t, rep_all, d->max_str)) > 0)
-				{
-					snprintf(buf, MAX_STRING_LENGTH, "Replaced %d occurance%sof '%s' with '%s'.\r\n", replaced, ((replaced != 1) ? "s " : " "), s, t);
-					SEND_TO_Q(buf, d);
-				}
-				else if (replaced == 0)
-				{
-					snprintf(buf, MAX_STRING_LENGTH, "String '%s' not found.\r\n", s);
-					SEND_TO_Q(buf, d);
-				}
-				else
-				{
-					SEND_TO_Q("ERROR: Replacement string causes buffer overflow, aborted replace.\r\n", d);
-				}
-			}
-			else
-				SEND_TO_Q("Not enough space left in buffer.\r\n", d);
-			break;
-		case PARSE_DELETE:
-			switch (sscanf(string, " %d - %d ", &line_low, &line_high))
-			{
-				case 0:
-					SEND_TO_Q("You must specify a line number or range to delete.\r\n", d);
-					return;
-				case 1:
-					line_high = line_low;
-					break;
-				case 2:
-					if (line_high < line_low)
-					{
-						SEND_TO_Q("That range is invalid.\r\n", d);
-						return;
-					}
-					break;
-			}
-
-			i         = 1;
-			total_len = 1;
-			if ((s = *d->str) == NULL)
-			{
-				SEND_TO_Q("Buffer is empty.\r\n", d);
-				return;
-			}
-			if (line_low > 0)
-			{
-				while (s && (i < line_low))
-					if ((s = strchr(s, '\n')) != NULL)
-					{
-						i++;
-						s++;
-					}
-				if ((i < line_low) || (s == NULL))
-				{
-					SEND_TO_Q("Line(s) out of range; not deleting.\r\n", d);
-					return;
-				}
-				t = s;
-				while (s && (i < line_high))
-					if ((s = strchr(s, '\n')) != NULL)
-					{
-						i++;
-						total_len++;
-						s++;
-					}
-				if ((s) && ((s = strchr(s, '\n')) != NULL))
-				{
-					s++;
-					while (*s != '\0')
-						*(t++) = *(s++);
-				}
-				else
-					total_len--;
-				*t = '\0';
-				RECREATE(*d->str, char, strlen(*d->str) + 3);
-
-				snprintf(buf, MAX_STRING_LENGTH, "%d line%sdeleted.\r\n", total_len, ((total_len != 1) ? "s " : " "));
+				snprintf(buf, MAX_STRING_LENGTH, "String '%s' not found.\r\n", s);
 				SEND_TO_Q(buf, d);
 			}
 			else
 			{
-				SEND_TO_Q("Invalid line numbers to delete must be higher than 0.\r\n", d);
-				return;
+				SEND_TO_Q(
+					"ERROR: Replacement string causes buffer overflow, aborted replace.\r\n",
+					d);
 			}
-			break;
-		case PARSE_LIST_NORM:
-			/* note: my buf,buf1,buf2 vars are defined at 32k sizes so they
-			 * are prolly ok fer what i want to do here. */
-			*buf = '\0';
-			if (*string != '\0')
-				switch (sscanf(string, " %d - %d ", &line_low, &line_high))
-				{
-					case 0:
-						line_low  = 1;
-						line_high = 999999;
-						break;
-					case 1:
-						line_high = line_low;
-						break;
-				}
-			else
-			{
-				line_low  = 1;
-				line_high = 999999;
-			}
-
-			if (line_low < 1)
-			{
-				SEND_TO_Q("Line numbers must be greater than 0.\r\n", d);
-				return;
-			}
-			if (line_high < line_low)
-			{
-				SEND_TO_Q("That range is invalid.\r\n", d);
-				return;
-			}
-			*buf = '\0';
-			if ((line_high < 999999) || (line_low > 1))
-			{
-				snprintf(buf, MAX_STRING_LENGTH, "Current buffer range [%d - %d]:\r\n", line_low, line_high);
-			}
-			i         = 1;
-			total_len = 0;
-			s         = *d->str;
-			while (s && (i < line_low))
-				if ((s = strchr(s, '\n')) != NULL)
-				{
-					i++;
-					s++;
-				}
-			if ((i < line_low) || (s == NULL))
-			{
-				SEND_TO_Q("Line(s) out of range; no buffer listing.\r\n", d);
-				return;
-			}
-			t = s;
-			while (s && (i <= line_high))
-				if ((s = strchr(s, '\n')) != NULL)
-				{
-					i++;
-					total_len++;
-					s++;
-				}
-			if (s)
-			{
-				temp = *s;
-				*s   = '\0';
-				strcat(buf, t);
-				*s = temp;
-			}
-			else
-				strcat(buf, t);
-			page_string(d, buf, TRUE);
-			break;
-		case PARSE_LIST_NUM:
-			/* note: my buf,buf1,buf2 vars are defined at 32k sizes so they
-			 * are prolly ok fer what i want to do here. */
-			*buf = '\0';
-			if (*string != '\0')
-				switch (sscanf(string, " %d - %d ", &line_low, &line_high))
-				{
-					case 0:
-						line_low  = 1;
-						line_high = 999999;
-						break;
-					case 1:
-						line_high = line_low;
-						break;
-				}
-			else
-			{
-				line_low  = 1;
-				line_high = 999999;
-			}
-
-			if (line_low < 1)
-			{
-				SEND_TO_Q("Line numbers must be greater than 0.\r\n", d);
-				return;
-			}
-			if (line_high < line_low)
-			{
-				SEND_TO_Q("That range is invalid.\r\n", d);
-				return;
-			}
-			*buf      = '\0';
-			i         = 1;
-			total_len = 0;
-			s         = *d->str;
-			while (s && (i < line_low))
-				if ((s = strchr(s, '\n')) != NULL)
-				{
-					i++;
-					s++;
-				}
-			if ((i < line_low) || (s == NULL))
-			{
-				SEND_TO_Q("Line(s) out of range; no buffer listing.\r\n", d);
-				return;
-			}
-			t = s;
-			while (s && (i <= line_high))
-				if ((s = strchr(s, '\n')) != NULL)
-				{
-					i++;
-					total_len++;
-					s++;
-					temp = *s;
-					*s   = '\0';
-					snprintf(buf, MAX_STRING_LENGTH, "&+c%s&n&+B%d:&n ", buf, (i - 1));
-					strcat(buf, t);
-					*s = temp;
-					t  = s;
-				}
-			if (s && t)
-			{
-				temp = *s;
-				*s   = '\0';
-				strcat(buf, t);
-				*s = temp;
-			}
-			else if (t)
-				strcat(buf, t);
-			page_string(d, buf, TRUE);
-			break;
-
-		case PARSE_INSERT:
-			half_chop(string, buf, buf2);
-			if (*buf == '\0')
-			{
-				SEND_TO_Q("You must specify a line number before which to insert text.\r\n", d);
-				return;
-			}
-			line_low = atoi(buf);
-			strcat(buf2, "\r\n");
-
-			i    = 1;
-			*buf = '\0';
-			if ((s = *d->str) == NULL)
-			{
-				SEND_TO_Q("Buffer is empty, nowhere to insert.\r\n", d);
-				return;
-			}
-			if (line_low > 0)
-			{
-				while (s && (i < line_low))
-					if ((s = strchr(s, '\n')) != NULL)
-					{
-						i++;
-						s++;
-					}
-				if ((i < line_low) || (s == NULL))
-				{
-					SEND_TO_Q("Line number out of range; insert aborted.\r\n", d);
-					return;
-				}
-				temp = *s;
-				*s   = '\0';
-				if ((strlen(*d->str) + strlen(buf2) + strlen(s + 1) + 3) > d->max_str)
-				{
-					*s = temp;
-					SEND_TO_Q("Insert text pushes buffer over maximum size, insert aborted.\r\n", d);
-					return;
-				}
-				if (*d->str && (**d->str != '\0'))
-					strcat(buf, *d->str);
-				*s = temp;
-				strcat(buf, buf2);
-				if (s && (*s != '\0'))
-					strcat(buf, s);
-				RECREATE(*d->str, char, strlen(buf) + 3);
-
-				strcpy(*d->str, buf);
-				SEND_TO_Q("Line inserted.\r\n", d);
-			}
-			else
-			{
-				SEND_TO_Q("Line number must be higher than 0.\r\n", d);
-				return;
-			}
-			break;
-
-		case PARSE_EDIT:
-			half_chop(string, buf, buf2);
-			if (*buf == '\0')
-			{
-				SEND_TO_Q("You must specify a line number at which to change text.\r\n", d);
-				return;
-			}
-			line_low = atoi(buf);
-			strcat(buf2, "\r\n");
-
-			i    = 1;
-			*buf = '\0';
-			if ((s = *d->str) == NULL)
-			{
-				SEND_TO_Q("Buffer is empty, nothing to change.\r\n", d);
-				return;
-			}
-			if (line_low > 0)
-			{
-				/* loop through the text counting /n chars till we get to the line */
-				while (s && (i < line_low))
-					if ((s = strchr(s, '\n')) != NULL)
-					{
-						i++;
-						s++;
-					}
-				/* make sure that there was a THAT line in the text */
-				if ((i < line_low) || (s == NULL))
-				{
-					SEND_TO_Q("Line number out of range; change aborted.\r\n", d);
-					return;
-				}
-				/* if s is the same as *d->str that means im at the beginning of the
-				 * message text and i dont need to put that into the changed buffer */
-				if (s != *d->str)
-				{
-					/* first things first .. we get this part into buf. */
-					temp = *s;
-					*s   = '\0';
-					/* put the first 'good' half of the text into storage */
-					strcat(buf, *d->str);
-					*s = temp;
-				}
-				/* put the new 'good' line into place. */
-				strcat(buf, buf2);
-				if ((s = strchr(s, '\n')) != NULL)
-				{
-					/* this means that we are at the END of the line we want outta there. */
-					/* BUT we want s to point to the beginning of the line AFTER
-					 * the line we want edited */
-					s++;
-					/* now put the last 'good' half of buffer into storage */
-					strcat(buf, s);
-				}
-				/* check for buffer overflow */
-				if (strlen(buf) > d->max_str)
-				{
-					SEND_TO_Q("Change causes new length to exceed buffer maximum size, aborted.\r\n", d);
-					return;
-				}
-				/* change the size of the REAL buffer to fit the new text */
-				RECREATE(*d->str, char, strlen(buf) + 3);
-				strcpy(*d->str, buf);
-				SEND_TO_Q("Line changed.\r\n", d);
-			}
-			else
-			{
-				SEND_TO_Q("Line number must be higher than 0.\r\n", d);
-				return;
-			}
-			break;
-		default:
-			SEND_TO_Q("Invalid option.\r\n", d);
+		}
+		else
+			SEND_TO_Q("Not enough space left in buffer.\r\n", d);
+		break;
+	case PARSE_DELETE:
+		switch (sscanf(string, " %d - %d ", &line_low, &line_high))
+		{
+		case 0:
+			SEND_TO_Q("You must specify a line number or range to delete.\r\n", d);
 			return;
+		case 1:
+			line_high = line_low;
+			break;
+		case 2:
+			if (line_high < line_low)
+			{
+				SEND_TO_Q("That range is invalid.\r\n", d);
+				return;
+			}
+			break;
+		}
+
+		i = 1;
+		total_len = 1;
+		if ((s = *d->str) == NULL)
+		{
+			SEND_TO_Q("Buffer is empty.\r\n", d);
+			return;
+		}
+		if (line_low > 0)
+		{
+			while (s && (i < line_low))
+				if ((s = strchr(s, '\n')) != NULL)
+				{
+					i++;
+					s++;
+				}
+			if ((i < line_low) || (s == NULL))
+			{
+				SEND_TO_Q("Line(s) out of range; not deleting.\r\n", d);
+				return;
+			}
+			t = s;
+			while (s && (i < line_high))
+				if ((s = strchr(s, '\n')) != NULL)
+				{
+					i++;
+					total_len++;
+					s++;
+				}
+			if ((s) && ((s = strchr(s, '\n')) != NULL))
+			{
+				s++;
+				while (*s != '\0')
+					*(t++) = *(s++);
+			}
+			else
+				total_len--;
+			*t = '\0';
+			RECREATE(*d->str, char, strlen(*d->str) + 3);
+
+			snprintf(buf, MAX_STRING_LENGTH, "%d line%sdeleted.\r\n", total_len,
+				 ((total_len != 1) ? "s " : " "));
+			SEND_TO_Q(buf, d);
+		}
+		else
+		{
+			SEND_TO_Q("Invalid line numbers to delete must be higher than 0.\r\n", d);
+			return;
+		}
+		break;
+	case PARSE_LIST_NORM:
+		/* note: my buf,buf1,buf2 vars are defined at 32k sizes so they
+			 * are prolly ok fer what i want to do here. */
+		*buf = '\0';
+		if (*string != '\0')
+			switch (sscanf(string, " %d - %d ", &line_low, &line_high))
+			{
+			case 0:
+				line_low = 1;
+				line_high = 999999;
+				break;
+			case 1:
+				line_high = line_low;
+				break;
+			}
+		else
+		{
+			line_low = 1;
+			line_high = 999999;
+		}
+
+		if (line_low < 1)
+		{
+			SEND_TO_Q("Line numbers must be greater than 0.\r\n", d);
+			return;
+		}
+		if (line_high < line_low)
+		{
+			SEND_TO_Q("That range is invalid.\r\n", d);
+			return;
+		}
+		*buf = '\0';
+		if ((line_high < 999999) || (line_low > 1))
+		{
+			snprintf(buf, MAX_STRING_LENGTH, "Current buffer range [%d - %d]:\r\n",
+				 line_low, line_high);
+		}
+		i = 1;
+		total_len = 0;
+		s = *d->str;
+		while (s && (i < line_low))
+			if ((s = strchr(s, '\n')) != NULL)
+			{
+				i++;
+				s++;
+			}
+		if ((i < line_low) || (s == NULL))
+		{
+			SEND_TO_Q("Line(s) out of range; no buffer listing.\r\n", d);
+			return;
+		}
+		t = s;
+		while (s && (i <= line_high))
+			if ((s = strchr(s, '\n')) != NULL)
+			{
+				i++;
+				total_len++;
+				s++;
+			}
+		if (s)
+		{
+			temp = *s;
+			*s = '\0';
+			strcat(buf, t);
+			*s = temp;
+		}
+		else
+			strcat(buf, t);
+		page_string(d, buf, TRUE);
+		break;
+	case PARSE_LIST_NUM:
+		/* note: my buf,buf1,buf2 vars are defined at 32k sizes so they
+			 * are prolly ok fer what i want to do here. */
+		*buf = '\0';
+		if (*string != '\0')
+			switch (sscanf(string, " %d - %d ", &line_low, &line_high))
+			{
+			case 0:
+				line_low = 1;
+				line_high = 999999;
+				break;
+			case 1:
+				line_high = line_low;
+				break;
+			}
+		else
+		{
+			line_low = 1;
+			line_high = 999999;
+		}
+
+		if (line_low < 1)
+		{
+			SEND_TO_Q("Line numbers must be greater than 0.\r\n", d);
+			return;
+		}
+		if (line_high < line_low)
+		{
+			SEND_TO_Q("That range is invalid.\r\n", d);
+			return;
+		}
+		*buf = '\0';
+		i = 1;
+		total_len = 0;
+		s = *d->str;
+		while (s && (i < line_low))
+			if ((s = strchr(s, '\n')) != NULL)
+			{
+				i++;
+				s++;
+			}
+		if ((i < line_low) || (s == NULL))
+		{
+			SEND_TO_Q("Line(s) out of range; no buffer listing.\r\n", d);
+			return;
+		}
+		t = s;
+		while (s && (i <= line_high))
+			if ((s = strchr(s, '\n')) != NULL)
+			{
+				i++;
+				total_len++;
+				s++;
+				temp = *s;
+				*s = '\0';
+				snprintf(buf, MAX_STRING_LENGTH, "&+c%s&n&+B%d:&n ", buf, (i - 1));
+				strcat(buf, t);
+				*s = temp;
+				t = s;
+			}
+		if (s && t)
+		{
+			temp = *s;
+			*s = '\0';
+			strcat(buf, t);
+			*s = temp;
+		}
+		else if (t)
+			strcat(buf, t);
+		page_string(d, buf, TRUE);
+		break;
+
+	case PARSE_INSERT:
+		half_chop(string, buf, buf2);
+		if (*buf == '\0')
+		{
+			SEND_TO_Q("You must specify a line number before which to insert text.\r\n",
+				  d);
+			return;
+		}
+		line_low = atoi(buf);
+		strcat(buf2, "\r\n");
+
+		i = 1;
+		*buf = '\0';
+		if ((s = *d->str) == NULL)
+		{
+			SEND_TO_Q("Buffer is empty, nowhere to insert.\r\n", d);
+			return;
+		}
+		if (line_low > 0)
+		{
+			while (s && (i < line_low))
+				if ((s = strchr(s, '\n')) != NULL)
+				{
+					i++;
+					s++;
+				}
+			if ((i < line_low) || (s == NULL))
+			{
+				SEND_TO_Q("Line number out of range; insert aborted.\r\n", d);
+				return;
+			}
+			temp = *s;
+			*s = '\0';
+			if ((strlen(*d->str) + strlen(buf2) + strlen(s + 1) + 3) > d->max_str)
+			{
+				*s = temp;
+				SEND_TO_Q(
+					"Insert text pushes buffer over maximum size, insert aborted.\r\n",
+					d);
+				return;
+			}
+			if (*d->str && (**d->str != '\0'))
+				strcat(buf, *d->str);
+			*s = temp;
+			strcat(buf, buf2);
+			if (s && (*s != '\0'))
+				strcat(buf, s);
+			RECREATE(*d->str, char, strlen(buf) + 3);
+
+			strcpy(*d->str, buf);
+			SEND_TO_Q("Line inserted.\r\n", d);
+		}
+		else
+		{
+			SEND_TO_Q("Line number must be higher than 0.\r\n", d);
+			return;
+		}
+		break;
+
+	case PARSE_EDIT:
+		half_chop(string, buf, buf2);
+		if (*buf == '\0')
+		{
+			SEND_TO_Q("You must specify a line number at which to change text.\r\n", d);
+			return;
+		}
+		line_low = atoi(buf);
+		strcat(buf2, "\r\n");
+
+		i = 1;
+		*buf = '\0';
+		if ((s = *d->str) == NULL)
+		{
+			SEND_TO_Q("Buffer is empty, nothing to change.\r\n", d);
+			return;
+		}
+		if (line_low > 0)
+		{
+			/* loop through the text counting /n chars till we get to the line */
+			while (s && (i < line_low))
+				if ((s = strchr(s, '\n')) != NULL)
+				{
+					i++;
+					s++;
+				}
+			/* make sure that there was a THAT line in the text */
+			if ((i < line_low) || (s == NULL))
+			{
+				SEND_TO_Q("Line number out of range; change aborted.\r\n", d);
+				return;
+			}
+			/* if s is the same as *d->str that means im at the beginning of the
+				 * message text and i dont need to put that into the changed buffer */
+			if (s != *d->str)
+			{
+				/* first things first .. we get this part into buf. */
+				temp = *s;
+				*s = '\0';
+				/* put the first 'good' half of the text into storage */
+				strcat(buf, *d->str);
+				*s = temp;
+			}
+			/* put the new 'good' line into place. */
+			strcat(buf, buf2);
+			if ((s = strchr(s, '\n')) != NULL)
+			{
+				/* this means that we are at the END of the line we want outta there. */
+				/* BUT we want s to point to the beginning of the line AFTER
+					 * the line we want edited */
+				s++;
+				/* now put the last 'good' half of buffer into storage */
+				strcat(buf, s);
+			}
+			/* check for buffer overflow */
+			if (strlen(buf) > d->max_str)
+			{
+				SEND_TO_Q(
+					"Change causes new length to exceed buffer maximum size, aborted.\r\n",
+					d);
+				return;
+			}
+			/* change the size of the REAL buffer to fit the new text */
+			RECREATE(*d->str, char, strlen(buf) + 3);
+			strcpy(*d->str, buf);
+			SEND_TO_Q("Line changed.\r\n", d);
+		}
+		else
+		{
+			SEND_TO_Q("Line number must be higher than 0.\r\n", d);
+			return;
+		}
+		break;
+	default:
+		SEND_TO_Q("Invalid option.\r\n", d);
+		return;
 	}
 }
 
 /* strips \r's from line */
 char *stripcr(char *dest, const char *src)
 {
-	int   i, len;
+	int i, len;
 	char *temp = NULL;
 
 	if (!dest || !src)
 		return NULL;
 	temp = &dest[0];
-	len  = strlen(src);
+	len = strlen(src);
 	for (i = 0; *src && (i < len); i++, src++)
 		if (*src != '\r')
 			*(temp++) = *src;
@@ -753,13 +770,13 @@ char *stripcr(char *dest, const char *src)
 /* Add user input to the 'current' string (as defined by d->str) */
 void string_add(struct descriptor_data *d, char *str)
 {
-	int          terminator = 0, num = 0;
+	int terminator = 0, num = 0;
 	int i = 2, j = 0;
-	char         actions[MAX_INPUT_LENGTH], *ch_ptr, buf1[MAX_STRING_LENGTH];
-	FILE        *fl;
+	char actions[MAX_INPUT_LENGTH], *ch_ptr, buf1[MAX_STRING_LENGTH];
+	FILE *fl;
 
 	actions[0] = '\0';
-	buf1[0]    = '\0';
+	buf1[0] = '\0';
 
 	/*
 	   Check for ansi characters, mortals not allowed to use them to put color in
@@ -772,15 +789,17 @@ void string_add(struct descriptor_data *d, char *str)
 			if (*ch_ptr == '&')
 				switch (*(ch_ptr + 1))
 				{
-					case '+':
-					case '-':
-					case '=':
-					case 'n':
-					case 'N':
-					case 'L':
-						SEND_TO_Q("No ansi chars allowed as input.  Discarding line.\r\n", d);
-						return;
-						break;
+				case '+':
+				case '-':
+				case '=':
+				case 'n':
+				case 'N':
+				case 'L':
+					SEND_TO_Q(
+						"No ansi chars allowed as input.  Discarding line.\r\n",
+						d);
+					return;
+					break;
 				}
 		}
 	}
@@ -798,70 +817,70 @@ void string_add(struct descriptor_data *d, char *str)
 			j++;
 		}
 		actions[j] = '\0';
-		*str       = '\0';
+		*str = '\0';
 		switch (str[1])
 		{
-			case 'a':
-				terminator = 2; /* working on an abort message */
-				break;
-			case 'c':
-				if (*d->str)
-				{
-					FREE(*d->str);
-					(*d->str) = NULL;
-					SEND_TO_Q("Current buffer cleared.\r\n", d);
-				}
-				else
-					SEND_TO_Q("Current buffer empty.\r\n", d);
-				break;
-			case 'd':
-				parse_action(PARSE_DELETE, actions, d);
-				break;
-			case 'e':
-				parse_action(PARSE_EDIT, actions, d);
-				break;
-			case 'f':
-				if (*(d->str))
-					parse_action(PARSE_FORMAT, actions, d);
-				else
-					SEND_TO_Q("Current buffer empty.\r\n", d);
-				break;
-			case 'i':
-				if (*(d->str))
-					parse_action(PARSE_INSERT, actions, d);
-				else
-					SEND_TO_Q("Current buffer empty.\r\n", d);
-				break;
-			case 'h':
-				parse_action(PARSE_HELP, actions, d);
-				break;
-			case 'l':
-				if (*d->str)
-					parse_action(PARSE_LIST_NORM, actions, d);
-				else
-					SEND_TO_Q("Current buffer empty.\r\n", d);
-				break;
-			case 'n':
-				if (*d->str)
-					parse_action(PARSE_LIST_NUM, actions, d);
-				else
-					SEND_TO_Q("Current buffer empty.\r\n", d);
-				break;
-				/*    case 'r':  // i'm afraid this is broken somehow..  we'll fix it someday, honest
+		case 'a':
+			terminator = 2; /* working on an abort message */
+			break;
+		case 'c':
+			if (*d->str)
+			{
+				FREE(*d->str);
+				(*d->str) = NULL;
+				SEND_TO_Q("Current buffer cleared.\r\n", d);
+			}
+			else
+				SEND_TO_Q("Current buffer empty.\r\n", d);
+			break;
+		case 'd':
+			parse_action(PARSE_DELETE, actions, d);
+			break;
+		case 'e':
+			parse_action(PARSE_EDIT, actions, d);
+			break;
+		case 'f':
+			if (*(d->str))
+				parse_action(PARSE_FORMAT, actions, d);
+			else
+				SEND_TO_Q("Current buffer empty.\r\n", d);
+			break;
+		case 'i':
+			if (*(d->str))
+				parse_action(PARSE_INSERT, actions, d);
+			else
+				SEND_TO_Q("Current buffer empty.\r\n", d);
+			break;
+		case 'h':
+			parse_action(PARSE_HELP, actions, d);
+			break;
+		case 'l':
+			if (*d->str)
+				parse_action(PARSE_LIST_NORM, actions, d);
+			else
+				SEND_TO_Q("Current buffer empty.\r\n", d);
+			break;
+		case 'n':
+			if (*d->str)
+				parse_action(PARSE_LIST_NUM, actions, d);
+			else
+				SEND_TO_Q("Current buffer empty.\r\n", d);
+			break;
+			/*    case 'r':  // i'm afraid this is broken somehow..  we'll fix it someday, honest
 				      parse_action(PARSE_REPLACE, actions, d);
 				      break;*/
-			case 's':
-				if (*(d->str))
-				{
-					terminator = 1;
-					*str       = '\0';
-				}
-				else
-					terminator = 2;
-				break;
-			default:
-				SEND_TO_Q("Invalid option.\r\n", d);
-				break;
+		case 's':
+			if (*(d->str))
+			{
+				terminator = 1;
+				*str = '\0';
+			}
+			else
+				terminator = 2;
+			break;
+		default:
+			SEND_TO_Q("Invalid option.\r\n", d);
+			break;
 		}
 	}
 	if (!(*d->str))
@@ -879,7 +898,9 @@ void string_add(struct descriptor_data *d, char *str)
 	{
 		if (strlen(str) + strlen(*d->str) > d->max_str)
 		{
-			send_to_char("String too long, limit reached on message.  Last line ignored.\r\n", d->character);
+			send_to_char(
+				"String too long, limit reached on message.  Last line ignored.\r\n",
+				d->character);
 			terminator = 1;
 		}
 		else
@@ -908,7 +929,7 @@ void string_add(struct descriptor_data *d, char *str)
 			else
 				*d->str = NULL;
 			d->backstr = NULL;
-			d->str     = NULL;
+			d->str = NULL;
 
 			SEND_TO_Q("Description aborted.\r\n", d);
 			SEND_TO_Q(MENU, d);
@@ -946,7 +967,7 @@ void string_add(struct descriptor_data *d, char *str)
 			d->name = NULL;
 			FREE(*d->str);
 			*d->str = NULL;
-			d->str  = NULL;
+			d->str = NULL;
 		}
 		else if (STATE(d) == CON_GET_EXTRA_DESC)
 		{
@@ -985,7 +1006,7 @@ void string_add(struct descriptor_data *d, char *str)
 		if (d->backstr)
 			FREE(d->backstr);
 		d->backstr = NULL;
-		d->str     = NULL;
+		d->str = NULL;
 	}
 	else if (!num)
 		strcat(*d->str, "\r\n");
@@ -1036,13 +1057,13 @@ void quad_arg(char *arg, int *type, char *name, int *field, char *string)
 /* modification of malloc'ed strings in chars/objects */
 void do_string(P_char ch, char *arg, int cmd)
 {
-	char                     name[MAX_STRING_LENGTH], string[MAX_STRING_LENGTH];
-	int                      field, type;
-	P_char                   mob;
-	P_obj                    obj;
+	char name[MAX_STRING_LENGTH], string[MAX_STRING_LENGTH];
+	int field, type;
+	P_char mob;
+	P_obj obj;
 	struct extra_descr_data *ed, *tmp;
 
-	name[0]   = '\0';
+	name[0] = '\0';
 	string[0] = '\0';
 
 	if (IS_NPC(ch))
@@ -1079,104 +1100,108 @@ void do_string(P_char ch, char *arg, int cmd)
 		}
 		switch (field)
 		{
-			case 1:
-				if (IS_PC(mob) && (GET_LEVEL(ch) < OVERLORD))
-				{
-					send_to_char("You can't change that field for players.", ch);
-					return;
-				}
-				else if (!ch->desc)
-					return;
-				if (IS_NPC(mob))
-				{
-					if ((mob->only.npc->str_mask & STRUNG_KEYS) && mob->player.name)
-						FREE(mob->player.name);
-					mob->player.name = NULL;
-					mob->only.npc->str_mask |= STRUNG_KEYS;
-				}
-				ch->desc->str = &mob->player.name;
-
-				if (IS_PC(mob))
-					send_to_char("WARNING: You have changed the name of a player.\r\n", ch);
-				break;
-
-			case 2:
-				if (IS_PC(mob) && (GET_LEVEL(ch) < OVERLORD))
-				{
-					send_to_char("You can't change that field for players.", ch);
-					return;
-				}
-				else if (!ch->desc)
-					return;
-				if ((mob->only.npc->str_mask & STRUNG_DESC2) && mob->player.short_descr)
-					FREE(mob->player.short_descr);
-				mob->player.short_descr = NULL;
-				if (IS_NPC(mob))
-					mob->only.npc->str_mask |= STRUNG_DESC2;
-				ch->desc->str = &mob->player.short_descr;
-				if (IS_PC(mob))
-					send_to_char("WARNING: You have changed the short description of a player.\r\n", ch);
-				break;
-
-			case 3:
-				if (IS_PC(mob))
-				{
-					send_to_char("That field is for monsters only.\r\n", ch);
-					return;
-				}
-				else if (!ch->desc)
-					return;
-				if ((mob->only.npc->str_mask & STRUNG_DESC1) && mob->player.long_descr)
-					FREE(mob->player.long_descr);
-				mob->player.long_descr = NULL;
-				mob->only.npc->str_mask |= STRUNG_DESC1;
-				ch->desc->str = &mob->player.long_descr;
-				break;
-
-			case 4:
-				if (!ch->desc)
-					return;
-				if (IS_NPC(mob))
-				{
-					if ((mob->only.npc->str_mask & STRUNG_DESC3) && mob->player.description)
-						mob->player.description = NULL;
-					mob->only.npc->str_mask |= STRUNG_DESC3;
-				}
-				ch->desc->str = &mob->player.description;
-				break;
-
-			case 5:
-				if (IS_NPC(mob))
-				{
-					send_to_char("Monsters have no titles.\r\n", ch);
-					return;
-				}
-				else if (!ch->desc)
-					return;
-				ch->desc->str = &mob->player.title;
-				break;
-			case 6:
-				if (GET_LEVEL(ch) < FORGER)
-				{
-					send_to_char("Ye haven't the power for such a task.\r\n", ch);
-					return;
-				}
-				if (IS_NPC(mob))
-				{
-					send_to_char("Monsters have no passwords.\r\n", ch);
-					return;
-				}
-				else if (!ch->desc)
-					return;
-				strcpy(mob->only.pc->pwd, CRYPT2(string, mob->player.name));
-				ch->desc->str = NULL;
-				send_to_char("Password set.\r\n", ch);
+		case 1:
+			if (IS_PC(mob) && (GET_LEVEL(ch) < OVERLORD))
+			{
+				send_to_char("You can't change that field for players.", ch);
 				return;
-				break;
-			default:
-				send_to_char("That field is undefined for monsters.\r\n", ch);
+			}
+			else if (!ch->desc)
 				return;
-				break;
+			if (IS_NPC(mob))
+			{
+				if ((mob->only.npc->str_mask & STRUNG_KEYS) && mob->player.name)
+					FREE(mob->player.name);
+				mob->player.name = NULL;
+				mob->only.npc->str_mask |= STRUNG_KEYS;
+			}
+			ch->desc->str = &mob->player.name;
+
+			if (IS_PC(mob))
+				send_to_char("WARNING: You have changed the name of a player.\r\n",
+					     ch);
+			break;
+
+		case 2:
+			if (IS_PC(mob) && (GET_LEVEL(ch) < OVERLORD))
+			{
+				send_to_char("You can't change that field for players.", ch);
+				return;
+			}
+			else if (!ch->desc)
+				return;
+			if ((mob->only.npc->str_mask & STRUNG_DESC2) && mob->player.short_descr)
+				FREE(mob->player.short_descr);
+			mob->player.short_descr = NULL;
+			if (IS_NPC(mob))
+				mob->only.npc->str_mask |= STRUNG_DESC2;
+			ch->desc->str = &mob->player.short_descr;
+			if (IS_PC(mob))
+				send_to_char(
+					"WARNING: You have changed the short description of a player.\r\n",
+					ch);
+			break;
+
+		case 3:
+			if (IS_PC(mob))
+			{
+				send_to_char("That field is for monsters only.\r\n", ch);
+				return;
+			}
+			else if (!ch->desc)
+				return;
+			if ((mob->only.npc->str_mask & STRUNG_DESC1) && mob->player.long_descr)
+				FREE(mob->player.long_descr);
+			mob->player.long_descr = NULL;
+			mob->only.npc->str_mask |= STRUNG_DESC1;
+			ch->desc->str = &mob->player.long_descr;
+			break;
+
+		case 4:
+			if (!ch->desc)
+				return;
+			if (IS_NPC(mob))
+			{
+				if ((mob->only.npc->str_mask & STRUNG_DESC3) &&
+				    mob->player.description)
+					mob->player.description = NULL;
+				mob->only.npc->str_mask |= STRUNG_DESC3;
+			}
+			ch->desc->str = &mob->player.description;
+			break;
+
+		case 5:
+			if (IS_NPC(mob))
+			{
+				send_to_char("Monsters have no titles.\r\n", ch);
+				return;
+			}
+			else if (!ch->desc)
+				return;
+			ch->desc->str = &mob->player.title;
+			break;
+		case 6:
+			if (GET_LEVEL(ch) < FORGER)
+			{
+				send_to_char("Ye haven't the power for such a task.\r\n", ch);
+				return;
+			}
+			if (IS_NPC(mob))
+			{
+				send_to_char("Monsters have no passwords.\r\n", ch);
+				return;
+			}
+			else if (!ch->desc)
+				return;
+			strcpy(mob->only.pc->pwd, CRYPT2(string, mob->player.name));
+			ch->desc->str = NULL;
+			send_to_char("Password set.\r\n", ch);
+			return;
+			break;
+		default:
+			send_to_char("That field is undefined for monsters.\r\n", ch);
+			return;
+			break;
 		}
 	}
 	else
@@ -1185,7 +1210,8 @@ void do_string(P_char ch, char *arg, int cmd)
 
 		if ((obj = get_obj_in_list_vis(ch, name, ch->carrying)) == NULL)
 		{
-			if ((obj = get_obj_in_list_vis(ch, name, world[ch->in_room].contents)) == NULL)
+			if ((obj = get_obj_in_list_vis(ch, name, world[ch->in_room].contents)) ==
+			    NULL)
 			{
 				send_to_char("No object by that name here.\r\n", ch);
 				return;
@@ -1193,119 +1219,121 @@ void do_string(P_char ch, char *arg, int cmd)
 		}
 		switch (field)
 		{
-			case 1:
-				if ((obj->str_mask & STRUNG_KEYS) && obj->name)
-					FREE(obj->name);
-				obj->name = NULL;
-				obj->str_mask |= STRUNG_KEYS;
-				ch->desc->str = &obj->name;
-				/* quest item hack */
-				if (isname("quest", obj->name))
-					set_obj_affected(obj, 302400, TAG_OBJ_DECAY, 0);
-				break;
+		case 1:
+			if ((obj->str_mask & STRUNG_KEYS) && obj->name)
+				FREE(obj->name);
+			obj->name = NULL;
+			obj->str_mask |= STRUNG_KEYS;
+			ch->desc->str = &obj->name;
+			/* quest item hack */
+			if (isname("quest", obj->name))
+				set_obj_affected(obj, 302400, TAG_OBJ_DECAY, 0);
+			break;
 
-			case 2:
-				if ((obj->str_mask & STRUNG_DESC2) && obj->short_description)
-					FREE(obj->short_description);
-				obj->short_description = NULL;
-				obj->str_mask |= STRUNG_DESC2;
-				ch->desc->str = &obj->short_description;
-				break;
+		case 2:
+			if ((obj->str_mask & STRUNG_DESC2) && obj->short_description)
+				FREE(obj->short_description);
+			obj->short_description = NULL;
+			obj->str_mask |= STRUNG_DESC2;
+			ch->desc->str = &obj->short_description;
+			break;
 
-			case 3:
-				if ((obj->str_mask & STRUNG_DESC1) && obj->description)
-					FREE(obj->description);
-				obj->description = NULL;
-				obj->str_mask |= STRUNG_DESC1;
-				ch->desc->str = &obj->description;
-				break;
+		case 3:
+			if ((obj->str_mask & STRUNG_DESC1) && obj->description)
+				FREE(obj->description);
+			obj->description = NULL;
+			obj->str_mask |= STRUNG_DESC1;
+			ch->desc->str = &obj->description;
+			break;
 
-			case 4:
-				if (!*string)
-				{
-					send_to_char("You have to supply a keyword.\r\n", ch);
-					return;
-				}
-				/*
+		case 4:
+			if (!*string)
+			{
+				send_to_char("You have to supply a keyword.\r\n", ch);
+				return;
+			}
+			/*
 				   try to locate extra description
 				 */
-				for (ed = obj->ex_description;; ed = ed->next)
-					if (!ed)
-					{ /*
+			for (ed = obj->ex_description;; ed = ed->next)
+				if (!ed)
+				{ /*
 						 the field was not found. create a new one.
 					   */
-						CREATE(ed, struct extra_descr_data, 1, MEM_TAG_EXDESCD);
+					CREATE(ed, struct extra_descr_data, 1, MEM_TAG_EXDESCD);
 
-						ed->next            = obj->ex_description;
-						obj->ex_description = ed;
-						CREATE(ed->keyword, char, strlen(string) + 1, MEM_TAG_STRING);
+					ed->next = obj->ex_description;
+					obj->ex_description = ed;
+					CREATE(ed->keyword, char, strlen(string) + 1,
+					       MEM_TAG_STRING);
 
-						strcpy(ed->keyword, string);
-						ed->description = 0;
-						ch->desc->str   = &ed->description;
-						send_to_char("New field.\r\n", ch);
-						obj->str_mask |= STRUNG_EDESC;
-						break;
-					}
-					else if (!str_cmp(ed->keyword, string))
-					{ /*
+					strcpy(ed->keyword, string);
+					ed->description = 0;
+					ch->desc->str = &ed->description;
+					send_to_char("New field.\r\n", ch);
+					obj->str_mask |= STRUNG_EDESC;
+					break;
+				}
+				else if (!str_cmp(ed->keyword, string))
+				{ /*
 						 the field exists
 					   */
-						FREE(ed->description);
-						ed->description = 0;
-						ch->desc->str   = &ed->description;
-						send_to_char("Modifying description.\r\n", ch);
-						obj->str_mask |= STRUNG_EDESC;
-						break;
-					}
-				ch->desc->max_str = MAX_STRING_LENGTH;
-				return; /*
+					FREE(ed->description);
+					ed->description = 0;
+					ch->desc->str = &ed->description;
+					send_to_char("Modifying description.\r\n", ch);
+					obj->str_mask |= STRUNG_EDESC;
+					break;
+				}
+			ch->desc->max_str = MAX_STRING_LENGTH;
+			return; /*
 				           the stndrd (see below) procedure does not
 				           apply here
 				         */
-				break;
-			case 7:
-				if (!*string)
-				{
-					send_to_char("You must supply a field name.\r\n", ch);
-					return;
-				}
-				/*
+			break;
+		case 7:
+			if (!*string)
+			{
+				send_to_char("You must supply a field name.\r\n", ch);
+				return;
+			}
+			/*
 				   try to locate field
 				 */
-				for (ed = obj->ex_description;; ed = ed->next)
-					if (!ed)
-					{
-						send_to_char("No field with that keyword.\r\n", ch);
-						return;
-					}
-					else if (!str_cmp(ed->keyword, string))
-					{
-						FREE(ed->keyword);
-						if (ed->description)
-							FREE(ed->description);
-						/*
+			for (ed = obj->ex_description;; ed = ed->next)
+				if (!ed)
+				{
+					send_to_char("No field with that keyword.\r\n", ch);
+					return;
+				}
+				else if (!str_cmp(ed->keyword, string))
+				{
+					FREE(ed->keyword);
+					if (ed->description)
+						FREE(ed->description);
+					/*
 						   delete the entry in the desr list
 						 */
-						if (ed == obj->ex_description)
-							obj->ex_description = ed->next;
-						else
-						{
-							for (tmp = obj->ex_description; tmp->next != ed; tmp = tmp->next)
-								;
-							tmp->next = ed->next;
-						}
-						FREE(ed);
-						ed = NULL;
-						send_to_char("Field deleted.\r\n", ch);
-						return;
+					if (ed == obj->ex_description)
+						obj->ex_description = ed->next;
+					else
+					{
+						for (tmp = obj->ex_description; tmp->next != ed;
+						     tmp = tmp->next)
+							;
+						tmp->next = ed->next;
 					}
-				break;
+					FREE(ed);
+					ed = NULL;
+					send_to_char("Field deleted.\r\n", ch);
+					return;
+				}
+			break;
 
-			default:
-				send_to_char("That field is undefined for objects.\r\n", ch);
-				return;
-				break;
+		default:
+			send_to_char("That field is undefined for objects.\r\n", ch);
+			return;
+			break;
 		}
 	}
 
@@ -1329,7 +1357,7 @@ void do_string(P_char ch, char *arg, int cmd)
 	else
 	{ /* there was no string. enter string mode */
 		send_to_char("Enter string (/s saves /h for help)\r\n\r\n", ch);
-		*ch->desc->str    = 0;
+		*ch->desc->str = 0;
 		ch->desc->max_str = length[field - 1];
 	}
 }
@@ -1374,7 +1402,8 @@ void do_rename(P_char ch, char *arg, int cmd)
 
 				if (rename_character(ch, who_to_rename, new_name) == TRUE)
 				{
-					send_to_char("Name changed, old one deleted. Good job!\r\n", ch);
+					send_to_char("Name changed, old one deleted. Good job!\r\n",
+						     ch);
 				}
 				else
 				{
@@ -1432,7 +1461,8 @@ int mob_do_rename_hook(P_char npc, P_char ch, int cmd, char *arg)
 		arg = one_argument(arg, new_name);
 		if (!*new_name)
 		{
-			snprintf(buffer, MAX_STRING_LENGTH, "Syntax: ask %s rename <newname>\r\n", npc->player.short_descr);
+			snprintf(buffer, MAX_STRING_LENGTH, "Syntax: ask %s rename <newname>\r\n",
+				 npc->player.short_descr);
 			send_to_char(buffer, ch);
 			return TRUE;
 		}
@@ -1450,7 +1480,8 @@ int mob_do_rename_hook(P_char npc, P_char ch, int cmd, char *arg)
 		int renamePrice = get_property("mobspecs.rename.price", 5000000);
 		if (GET_MONEY(ch) < renamePrice)
 		{
-			snprintf(buffer, MAX_STRING_LENGTH, "You need %s&n more!", coin_stringv(renamePrice - GET_MONEY(ch)));
+			snprintf(buffer, MAX_STRING_LENGTH, "You need %s&n more!",
+				 coin_stringv(renamePrice - GET_MONEY(ch)));
 			mobsay(npc, buffer);
 			return TRUE;
 		}
@@ -1468,11 +1499,15 @@ int mob_do_rename_hook(P_char npc, P_char ch, int cmd, char *arg)
 		}
 		SUB_MONEY(ch, renamePrice, 0);
 
-		snprintf(buffer, MAX_STRING_LENGTH, "&+WCongratulations! From now on you will be known as %s!\r\n", GET_NAME(ch));
+		snprintf(buffer, MAX_STRING_LENGTH,
+			 "&+WCongratulations! From now on you will be known as %s!\r\n",
+			 GET_NAME(ch));
 		send_to_char(buffer, ch);
 
-		wizlog(AVATAR, "%s renamed %sself to %s\r\n", old_name, GET_SEX(ch) == SEX_MALE ? "him" : "her", new_name);
-		logit(LOG_PLAYER, "%s renamed %sself to %s\r\n", old_name, GET_SEX(ch) == SEX_MALE ? "him" : "her", new_name);
+		wizlog(AVATAR, "%s renamed %sself to %s\r\n", old_name,
+		       GET_SEX(ch) == SEX_MALE ? "him" : "her", new_name);
+		logit(LOG_PLAYER, "%s renamed %sself to %s\r\n", old_name,
+		      GET_SEX(ch) == SEX_MALE ? "him" : "her", new_name);
 		sql_log(ch, PLAYERLOG, "Renamed self from %s to %s\r\n", old_name, new_name);
 		return TRUE;
 	}
@@ -1482,13 +1517,15 @@ int mob_do_rename_hook(P_char npc, P_char ch, int cmd, char *arg)
 
 bool rename_spellbook(char *old_name, char *new_name)
 {
-	char  old_book[MAX_STRING_LENGTH];
-	char  new_book[MAX_STRING_LENGTH];
-	char  command[MAX_STRING_LENGTH];
+	char old_book[MAX_STRING_LENGTH];
+	char new_book[MAX_STRING_LENGTH];
+	char command[MAX_STRING_LENGTH];
 	FILE *file;
 
-	snprintf(old_book, MAX_STRING_LENGTH, "%s/%c/%s.spellbook", SAVE_DIR, LOWER(*old_name), old_name);
-	snprintf(new_book, MAX_STRING_LENGTH, "%s/%c/%s.spellbook", SAVE_DIR, LOWER(*new_name), new_name);
+	snprintf(old_book, MAX_STRING_LENGTH, "%s/%c/%s.spellbook", SAVE_DIR, LOWER(*old_name),
+		 old_name);
+	snprintf(new_book, MAX_STRING_LENGTH, "%s/%c/%s.spellbook", SAVE_DIR, LOWER(*new_name),
+		 new_name);
 
 	// If old_name has a spellbook...
 	if ((file = fopen(old_book, "r")))
@@ -1503,13 +1540,15 @@ bool rename_spellbook(char *old_name, char *new_name)
 
 bool rename_craftlist(char *old_name, char *new_name)
 {
-	char  old_book[MAX_STRING_LENGTH];
-	char  new_book[MAX_STRING_LENGTH];
-	char  command[MAX_STRING_LENGTH];
+	char old_book[MAX_STRING_LENGTH];
+	char new_book[MAX_STRING_LENGTH];
+	char command[MAX_STRING_LENGTH];
 	FILE *file;
 
-	snprintf(old_book, MAX_STRING_LENGTH, "%s/Tradeskills/%c/%s.crafting", SAVE_DIR, LOWER(*old_name), old_name);
-	snprintf(new_book, MAX_STRING_LENGTH, "%s/Tradeskills/%c/%s.crafting", SAVE_DIR, LOWER(*new_name), new_name);
+	snprintf(old_book, MAX_STRING_LENGTH, "%s/Tradeskills/%c/%s.crafting", SAVE_DIR,
+		 LOWER(*old_name), old_name);
+	snprintf(new_book, MAX_STRING_LENGTH, "%s/Tradeskills/%c/%s.crafting", SAVE_DIR,
+		 LOWER(*new_name), new_name);
 
 	// If old_name has a crafting book...
 	if ((file = fopen(old_book, "r")))
@@ -1527,9 +1566,9 @@ bool rename_craftlist(char *old_name, char *new_name)
 /* ------------------------------------------------------------------------------ */
 bool rename_character(P_char ch, char *old_name, char *new_name)
 {
-	char               buf[256], *buff;
+	char buf[256], *buff;
 	struct acct_chars *c = NULL;
-	P_char             doofus;
+	P_char doofus;
 
 	// Validate new name (sets new_name to all lowercase)
 	if (_parse_name(new_name, new_name))
@@ -1555,7 +1594,8 @@ bool rename_character(P_char ch, char *old_name, char *new_name)
 	if (GET_LEVEL(doofus) >= GET_LEVEL(ch) && ch != doofus)
 	{
 		send_to_char("We call that cheating bud.\r\n", ch);
-		wizlog(AVATAR, "%s attempted to rename an equal or superior (\"%s\" to \"%s\")!", GET_NAME(ch), old_name, new_name);
+		wizlog(AVATAR, "%s attempted to rename an equal or superior (\"%s\" to \"%s\")!",
+		       GET_NAME(ch), old_name, new_name);
 		return FALSE;
 	}
 
@@ -1592,16 +1632,20 @@ bool rename_character(P_char ch, char *old_name, char *new_name)
 				// Remove new_name from BADNAME_DIR
 				snprintf(buf, 256, "%s/%c/%s", BADNAME_DIR, *new_name, new_name);
 				unlink(buf);
-				send_to_char("Name was in the declined list, but has been removed. :)\r\n", ch);
+				send_to_char(
+					"Name was in the declined list, but has been removed. :)\r\n",
+					ch);
 			}
 			else
 			{
-				send_to_char("That name has been declined before, and would be now too!\r\n", ch);
+				send_to_char(
+					"That name has been declined before, and would be now too!\r\n",
+					ch);
 				return FALSE;
 			}
 		}
 
-		if(!sql_player_rename(doofus, new_name))
+		if (!sql_player_rename(doofus, new_name))
 		{
 			send_to_char("Failed to rename character in DB!\r\n", ch);
 			return FALSE;
@@ -1633,9 +1677,13 @@ bool rename_character(P_char ch, char *old_name, char *new_name)
 		// Need to update the core stuff here.
 		if (!sql_save_player_core(doofus))
 		{
-			send_to_char("&+RWarning:&n failed to save the renamed character to the database.\r\n", ch);
-			statuslog(56, "&+RALERT&n: failed to save renamed character core for %s", GET_NAME(doofus));
-			persistence_alert(AVATAR, "player", GET_NAME(doofus), "none", "none", "sql_save_failed", "rename core save failed");
+			send_to_char(
+				"&+RWarning:&n failed to save the renamed character to the database.\r\n",
+				ch);
+			statuslog(56, "&+RALERT&n: failed to save renamed character core for %s",
+				  GET_NAME(doofus));
+			persistence_alert(AVATAR, "player", GET_NAME(doofus), "none", "none",
+					  "sql_save_failed", "rename core save failed");
 			return FALSE;
 		}
 		writeCharacter(doofus, 1, doofus->in_room);
@@ -1648,9 +1696,16 @@ bool rename_character(P_char ch, char *old_name, char *new_name)
 			c->charname = str_dup(new_name);
 			if (-1 == write_account(doofus->desc->account))
 			{
-				send_to_char("&+RWarning:&n failed to update the account character list.\r\n", ch);
-				statuslog(56, "&+RALERT&n: failed to update account file after rename for %s", GET_NAME(doofus));
-				persistence_alert(AVATAR, "account", doofus->desc->account->acct_name, "none", "none", "write_failed", "rename account update failed");
+				send_to_char(
+					"&+RWarning:&n failed to update the account character list.\r\n",
+					ch);
+				statuslog(
+					56,
+					"&+RALERT&n: failed to update account file after rename for %s",
+					GET_NAME(doofus));
+				persistence_alert(AVATAR, "account",
+						  doofus->desc->account->acct_name, "none", "none",
+						  "write_failed", "rename account update failed");
 			}
 		}
 #endif
@@ -1681,7 +1736,9 @@ char *one_word(char *argument, char *first_arg)
 		{ /* is it a quote */
 			begin++;
 
-			for (look_at = 0; (*(argument + begin + look_at) >= ' ') && (*(argument + begin + look_at) != '\"'); look_at++)
+			for (look_at = 0; (*(argument + begin + look_at) >= ' ') &&
+					  (*(argument + begin + look_at) != '\"');
+			     look_at++)
 				*(first_arg + look_at) = LOWER(*(argument + begin + look_at));
 			if (*(argument + begin + look_at) == '\"')
 				begin++;
@@ -1737,7 +1794,8 @@ char *next_page(char *str, struct descriptor_data *d)
 				str += 1;
 				continue;
 			}
-			if (*(str + 2) && ((*(str + 1) == '+') || (*(str + 1) == '=') || (*(str + 1) == '-')))
+			if (*(str + 2) &&
+			    ((*(str + 1) == '+') || (*(str + 1) == '=') || (*(str + 1) == '-')))
 			{
 				str += 2;
 				continue;
@@ -1780,7 +1838,7 @@ void page_string(struct descriptor_data *d, char *str, int keep_internal)
 void page_string_real(struct descriptor_data *d, char *str)
 {
 	char *s;
-	int   i, pages;
+	int i, pages;
 
 	if (!IS_SET(d->character->specials.act, PLR_PAGING_ON) || d->connected == CON_MAIN_MENU)
 	{
@@ -1825,10 +1883,10 @@ void free_paging_data(struct descriptor_data *d)
 void show_string(struct descriptor_data *d, const char *input)
 {
 	char buffer[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
-	int  diff;
+	int diff;
 
 	buffer[0] = '\0';
-	buf[0]    = '\0';
+	buf[0] = '\0';
 
 	one_argument(input, buf);
 
@@ -1892,9 +1950,9 @@ void show_string(struct descriptor_data *d, const char *input)
 void for_debug_print_char_list(P_char ch)
 {
 	P_char chLocker = NULL;
-	P_desc chDesc   = NULL;
-	char   buffer[MAX_STRING_LENGTH];
-	int    nCnt;
+	P_desc chDesc = NULL;
+	char buffer[MAX_STRING_LENGTH];
+	int nCnt;
 
 	nCnt = 1;
 	send_to_char("------------------\r\n", ch);
@@ -1917,7 +1975,8 @@ void for_debug_print_char_list(P_char ch)
 
 	for (chDesc = descriptor_list; chDesc; chDesc = chDesc->next)
 	{
-		snprintf(buffer, MAX_STRING_LENGTH, "%d) %s\r\n", nCnt, GET_NAME(chDesc->character));
+		snprintf(buffer, MAX_STRING_LENGTH, "%d) %s\r\n", nCnt,
+			 GET_NAME(chDesc->character));
 		send_to_char(buffer, ch);
 		nCnt++;
 	}

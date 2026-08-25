@@ -32,17 +32,17 @@
  * external variables
  */
 
-extern P_char    character_list;
-extern P_desc    descriptor_list;
-extern P_room    world;
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_room world;
 extern const int top_of_world;
 
 extern mm_ds_list *mmds_list;
-extern mem_usage   mem_used[];
-extern long        allocation_list_node_count;
+extern mem_usage mem_used[];
+extern long allocation_list_node_count;
 
 char debug_mode = 1;
-uint logcount   = 0;
+uint logcount = 0;
 
 /*
  * called once per game_loop
@@ -50,7 +50,7 @@ uint logcount   = 0;
 
 void loop_debug(void)
 {
-	FILE  *fl;
+	FILE *fl;
 	P_desc d;
 
 	fl = fopen("logs/log/loop.debug", "w");
@@ -60,9 +60,12 @@ void loop_debug(void)
 		if (d->character)
 		{
 			if (d->character->in_room >= 0 && d->character->in_room < top_of_world)
-				fprintf(fl, "%s m[%d] r[%d] v[%d]\n", GET_NAME(d->character), d->connected, d->character->in_room, world[d->character->in_room].number);
+				fprintf(fl, "%s m[%d] r[%d] v[%d]\n", GET_NAME(d->character),
+					d->connected, d->character->in_room,
+					world[d->character->in_room].number);
 			else
-				fprintf(fl, "%s m[%d] r[NOWHERE]\n", GET_NAME(d->character), d->connected);
+				fprintf(fl, "%s m[%d] r[NOWHERE]\n", GET_NAME(d->character),
+					d->connected);
 		}
 		else
 			fprintf(fl, "[No name] m[%d]\n", d->connected);
@@ -74,11 +77,14 @@ void hour_debug(void) {}
 
 static FILE *cmdfile;
 
-void init_cmdlog(void) { cmdfile = fopen("logs/log/cmd.debug", "w"); }
+void init_cmdlog(void)
+{
+	cmdfile = fopen("logs/log/cmd.debug", "w");
+}
 
 void cmdlog(P_char ch, char *str)
 {
-	char   tbuf[30];
+	char tbuf[30];
 	time_t ct;
 
 	if (!ch || !ch->player.name)
@@ -98,7 +104,8 @@ void cmdlog(P_char ch, char *str)
 		ct = time(0);
 		strcpy(tbuf, asctime(localtime(&ct)));
 		tbuf[strlen(tbuf) - 1] = '\0';
-		fprintf(cmdfile, "%s :: [%d] %s in %d: %s\n", tbuf, logcount, GET_NAME(ch), world[ch->in_room].number, str);
+		fprintf(cmdfile, "%s :: [%d] %s in %d: %s\n", tbuf, logcount, GET_NAME(ch),
+			world[ch->in_room].number, str);
 		fflush(cmdfile);
 	}
 }
@@ -158,7 +165,8 @@ void do_debug(P_char ch, char *argument, int cmd)
 			ShipVisitor svs;
 			if (isname(arg2, "off"))
 			{
-				for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
+				for (bool fn = shipObjHash.get_first(svs); fn;
+				     fn = shipObjHash.get_next(svs))
 				{
 					P_ship ship = svs;
 					if (ship->npc_ai && ship->npc_ai->debug_char == ch)
@@ -171,14 +179,17 @@ void do_debug(P_char ch, char *argument, int cmd)
 			}
 			else
 			{
-				for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
+				for (bool fn = shipObjHash.get_first(svs); fn;
+				     fn = shipObjHash.get_next(svs))
 				{
 					P_ship ship = svs;
 					if (isname(arg2, ship->id))
 					{
 						if (!ship->npc_ai)
 						{
-							send_to_char("This ship is not under NPC control, nothing to debug.\r\n", ch);
+							send_to_char(
+								"This ship is not under NPC control, nothing to debug.\r\n",
+								ch);
 							return;
 						}
 						ship->npc_ai->debug_char = ch;
@@ -209,35 +220,46 @@ void do_debug(P_char ch, char *argument, int cmd)
 void do_mreport(P_char ch, char *argument, int cmd)
 {
 #ifdef MEMCHK
-	char               buf[MAX_STRING_LENGTH] = "";
-	struct mm_ds      *mmds                   = NULL;
+	char buf[MAX_STRING_LENGTH] = "";
+	struct mm_ds *mmds = NULL;
 	struct mm_ds_list *mmlist;
-	size_t             mm_active, mm_inactive, mm_allocated, mm_wasted, total_allocs = 0, total_size = 0;
+	size_t mm_active, mm_inactive, mm_allocated, mm_wasted, total_allocs = 0, total_size = 0;
 
 	if (!ch || !ch->desc || !IS_TRUSTED(ch))
 		return;
 
 	snprintf(buf, MAX_STRING_LENGTH, "&+CDirectly allocated memory:&N\n");
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "  &+WTag       &+BAllocations       &+YSize&n\n");
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "------------------------------------\n");
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "  &+WTag       &+BAllocations       &+YSize&n\n");
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "------------------------------------\n");
 	for (int i = 0; i < 52; i++)
 	{
 		if (!mem_used[i].allocs)
 			continue;
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), " &+W%4s          &+B%10ld       &+Y%14ld&n\n", mem_used[i].tag, (long)mem_used[i].allocs, (long)mem_used[i].size);
+		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 " &+W%4s          &+B%10ld       &+Y%14ld&n\n", mem_used[i].tag,
+			 (long)mem_used[i].allocs, (long)mem_used[i].size);
 		total_allocs += mem_used[i].allocs;
 		total_size += mem_used[i].size;
 	}
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "------------------------------------\n");
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "             &+B%10ld     &+Y%14ld&n\n", (long)total_allocs, (long)total_size);
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "\n&+WAllocation header consumption: %s\n", comma_string((total_allocs * sizeof(ALLOCATION_HEADER))));
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "------------------------------------\n");
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "             &+B%10ld     &+Y%14ld&n\n", (long)total_allocs, (long)total_size);
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "\n&+WAllocation header consumption: %s\n",
+		 comma_string((total_allocs * sizeof(ALLOCATION_HEADER))));
 	total_size += total_allocs * sizeof(ALLOCATION_HEADER);
 
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "\n&+CPooled memory resources:&N\n");
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "\n&+CPooled memory resources:&N\n");
 
 #ifdef MM_STATS
 
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), " &+WType      &+C|&+W  Active Objects       &+C|&+W  Inactive Objects     &+C|&+W  Pages Owned         &+C|&+W  Waste&N\n");
+	snprintf(
+		buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		" &+WType      &+C|&+W  Active Objects       &+C|&+W  Inactive Objects     &+C|&+W  Pages Owned         &+C|&+W  Waste&N\n");
 
 	mm_active = mm_inactive = mm_allocated = mm_wasted = 0;
 
@@ -249,39 +271,33 @@ void do_mreport(P_char ch, char *argument, int cmd)
 
 		owned_memory = (mmds->pages_owned * 4096);
 		total_size += owned_memory;
-		active_memory   = (mmds->objs_used * mmds->size);
+		active_memory = (mmds->objs_used * mmds->size);
 		inactive_memory = (owned_memory - mmds->bytes_wasted - active_memory);
 
-		snprintf(buf + strlen(buf),
-		         MAX_STRING_LENGTH - strlen(buf),
-		         " %10s &+C|&n %6ld (%12ld) &+C|&N %6ld (%12ld) &+C|&N %6ld (%12ld) &+C|&n %7ld\n",
-		         mmds->name,
-		         (long)mmds->objs_used,
-		         (long)active_memory,
-		         (long)(inactive_memory / mmds->size),
-		         (long)inactive_memory,
-		         (long)mmds->pages_owned,
-		         (long)owned_memory,
-		         (long)mmds->bytes_wasted);
+		snprintf(
+			buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			" %10s &+C|&n %6ld (%12ld) &+C|&N %6ld (%12ld) &+C|&N %6ld (%12ld) &+C|&n %7ld\n",
+			mmds->name, (long)mmds->objs_used, (long)active_memory,
+			(long)(inactive_memory / mmds->size), (long)inactive_memory,
+			(long)mmds->pages_owned, (long)owned_memory, (long)mmds->bytes_wasted);
 
 		mm_active += active_memory;
 		mm_inactive += inactive_memory;
 		mm_allocated += owned_memory;
 		mm_wasted += mmds->bytes_wasted;
 	}
-	snprintf(buf + strlen(buf),
-	         MAX_STRING_LENGTH - strlen(buf),
-	         " &+WTOTALS  &+C|&+Y         %12ld  &+C|&+Y         %12ld  &+C|&+Y        %12ld  &+C|&+Y %7ld&N\n",
-	         (long)mm_active,
-	         (long)mm_inactive,
-	         (long)mm_allocated,
-	         (long)mm_wasted);
+	snprintf(
+		buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		" &+WTOTALS  &+C|&+Y         %12ld  &+C|&+Y         %12ld  &+C|&+Y        %12ld  &+C|&+Y %7ld&N\n",
+		(long)mm_active, (long)mm_inactive, (long)mm_allocated, (long)mm_wasted);
 
 #else
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+CMM_STATS not compiled in!&N\r\n");
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "&+CMM_STATS not compiled in!&N\r\n");
 #endif
 
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "\n&+WTotal bytes used: &+C%s&n\n", comma_string(total_size));
+	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+		 "\n&+WTotal bytes used: &+C%s&n\n", comma_string(total_size));
 
 	send_to_char(buf, ch);
 #else

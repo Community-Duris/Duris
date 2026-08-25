@@ -12,136 +12,157 @@
 #include "skills.h"
 #include "spells.h"
 
-extern P_index           mob_index;
-extern P_index           obj_index;
-extern Skill             skills[];
-extern P_room            world;
+extern P_index mob_index;
+extern P_index obj_index;
+extern Skill skills[];
+extern P_room world;
 extern struct race_names race_names_table[];
 
 epic_reward epic_rewards[] = {
-	{EPIC_REWARD_SKILL,
-     SKILL_ANATOMY, 25,
-     25, 250000,
-     CLASS_WARRIOR | CLASS_MERCENARY | CLASS_RANGER | CLASS_REAVER | CLASS_BERSERKER | CLASS_MONK | CLASS_DREADLORD | CLASS_CLERIC | CLASS_ROGUE | CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_AVENGER},
-	{EPIC_REWARD_SKILL,
-     SKILL_CHANT_MASTERY, 100,
-     75, 750000,
-     CLASS_SORCERER | CLASS_CONJURER | CLASS_ILLUSIONIST | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_BARD | CLASS_SUMMONER | CLASS_ETHERMANCER},
-	{EPIC_REWARD_SKILL, SKILL_SUMMON_BLIZZARD, 500, 50, 500000, CLASS_SHAMAN | CLASS_SORCERER | CLASS_ETHERMANCER | CLASS_DRUID | CLASS_BLIGHTER},
-	{EPIC_REWARD_SKILL,
-     SKILL_SUMMON_FAMILIAR, 100,
-     50, 500000,
-     CLASS_SORCERER | CLASS_CONJURER | CLASS_SHAMAN | CLASS_DRUID | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_ALCHEMIST | CLASS_ILLUSIONIST | CLASS_SUMMONER | CLASS_BLIGHTER},
-	{EPIC_REWARD_SKILL,
-     SKILL_ADVANCED_MEDITATION, 25,
-     25, 250000,
-     CLASS_SORCERER | CLASS_CONJURER | CLASS_ILLUSIONIST | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_PSIONICIST | CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_BARD | CLASS_REAVER | CLASS_SUMMONER},
-	{EPIC_REWARD_SKILL, SKILL_DEVOTION, 500, 100, 1000000, CLASS_CLERIC | CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_ETHERMANCER},
-	{EPIC_REWARD_SKILL, SKILL_SCRIBE_MASTERY, 500, 15, 150000, CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_ILLUSIONIST | CLASS_SUMMONER},
-	{EPIC_REWARD_SKILL, SKILL_SNEAKY_STRIKE, 100, 100, 1000000, CLASS_ROGUE | CLASS_BARD | CLASS_MERCENARY},
-	{EPIC_REWARD_SKILL, SKILL_SILENT_SPELL, 500, 50, 500000, CLASS_SORCERER | CLASS_CONJURER | CLASS_ILLUSIONIST | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_SUMMONER},
-	{EPIC_REWARD_SKILL, SKILL_IMPROVED_LISTEN, 100, 50, 500000, CLASS_ROGUE | CLASS_BARD | CLASS_MERCENARY},
-	{EPIC_REWARD_SKILL, SKILL_SHIELD_COMBAT, 100, 10, 100000, 0},
-	{EPIC_REWARD_SKILL, SKILL_IMPROVED_SHIELD_COMBAT, 1000, 50, 500000, CLASS_WARRIOR | CLASS_CLERIC},
-	{EPIC_REWARD_SKILL, SKILL_TWOWEAPON, 100, 25, 250000, CLASS_WARRIOR | CLASS_MERCENARY | CLASS_ROGUE | CLASS_RANGER | CLASS_REAVER | CLASS_BERSERKER},
-	{EPIC_REWARD_SKILL, SKILL_IMPROVED_TWOWEAPON, 1000, 100, 1000000, CLASS_WARRIOR | CLASS_MERCENARY | CLASS_ROGUE | CLASS_RANGER | CLASS_REAVER | CLASS_BERSERKER},
-	{EPIC_REWARD_SKILL, SKILL_JIN_TOUCH, 100, 75, 750000, CLASS_MONK},
-	{EPIC_REWARD_SKILL, SKILL_KI_STRIKE, 100, 100, 1000000, CLASS_MONK},
-	{EPIC_REWARD_SKILL, SKILL_INFUSE_LIFE, 100, 50, 500000, CLASS_CONJURER | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_SHAMAN | CLASS_SUMMONER},
-	{EPIC_REWARD_SKILL, SKILL_SPELL_PENETRATION, 500, 200, 2000000, CLASS_SORCERER | CLASS_CONJURER | CLASS_SUMMONER | CLASS_ILLUSIONIST | CLASS_MINDFLAYER},
-	{EPIC_REWARD_SKILL, SKILL_DEVASTATING_CRITICAL, 200, 75, 750000, CLASS_WARRIOR | CLASS_BERSERKER | CLASS_AVENGER | CLASS_DREADLORD},
-	{EPIC_REWARD_SKILL, SKILL_TOUGHNESS, 100, 50, 500000, 0},
-	{EPIC_REWARD_SKILL, SKILL_SPATIAL_FOCUS, 100, 100, 1000000, CLASS_PSIONICIST},
-	{EPIC_REWARD_SKILL, SKILL_IMPROVED_ENDURANCE, 100, 100, 1000000, 0},
-	{EPIC_REWARD_SKILL, SKILL_IMPROVED_TRACK, 100, 50, 500000, CLASS_ROGUE | CLASS_MERCENARY | CLASS_RANGER},
-	{EPIC_REWARD_SKILL, SKILL_EMPOWER_SONG, 100, 50, 500000, CLASS_BARD},
-	{EPIC_REWARD_SKILL, SKILL_FIX, 100, 50, 500000, 0},
+	{ EPIC_REWARD_SKILL, SKILL_ANATOMY, 25, 25, 250000,
+	  CLASS_WARRIOR | CLASS_MERCENARY | CLASS_RANGER | CLASS_REAVER | CLASS_BERSERKER |
+		  CLASS_MONK | CLASS_DREADLORD | CLASS_CLERIC | CLASS_ROGUE | CLASS_PALADIN |
+		  CLASS_ANTIPALADIN | CLASS_AVENGER },
+	{ EPIC_REWARD_SKILL, SKILL_CHANT_MASTERY, 100, 75, 750000,
+	  CLASS_SORCERER | CLASS_CONJURER | CLASS_ILLUSIONIST | CLASS_NECROMANCER |
+		  CLASS_THEURGIST | CLASS_BARD | CLASS_SUMMONER | CLASS_ETHERMANCER },
+	{ EPIC_REWARD_SKILL, SKILL_SUMMON_BLIZZARD, 500, 50, 500000,
+	  CLASS_SHAMAN | CLASS_SORCERER | CLASS_ETHERMANCER | CLASS_DRUID | CLASS_BLIGHTER },
+	{ EPIC_REWARD_SKILL, SKILL_SUMMON_FAMILIAR, 100, 50, 500000,
+	  CLASS_SORCERER | CLASS_CONJURER | CLASS_SHAMAN | CLASS_DRUID | CLASS_NECROMANCER |
+		  CLASS_THEURGIST | CLASS_ALCHEMIST | CLASS_ILLUSIONIST | CLASS_SUMMONER |
+		  CLASS_BLIGHTER },
+	{ EPIC_REWARD_SKILL, SKILL_ADVANCED_MEDITATION, 25, 25, 250000,
+	  CLASS_SORCERER | CLASS_CONJURER | CLASS_ILLUSIONIST | CLASS_NECROMANCER |
+		  CLASS_THEURGIST | CLASS_PSIONICIST | CLASS_PALADIN | CLASS_ANTIPALADIN |
+		  CLASS_BARD | CLASS_REAVER | CLASS_SUMMONER },
+	{ EPIC_REWARD_SKILL, SKILL_DEVOTION, 500, 100, 1000000,
+	  CLASS_CLERIC | CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_ETHERMANCER },
+	{ EPIC_REWARD_SKILL, SKILL_SCRIBE_MASTERY, 500, 15, 150000,
+	  CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_THEURGIST |
+		  CLASS_ILLUSIONIST | CLASS_SUMMONER },
+	{ EPIC_REWARD_SKILL, SKILL_SNEAKY_STRIKE, 100, 100, 1000000,
+	  CLASS_ROGUE | CLASS_BARD | CLASS_MERCENARY },
+	{ EPIC_REWARD_SKILL, SKILL_SILENT_SPELL, 500, 50, 500000,
+	  CLASS_SORCERER | CLASS_CONJURER | CLASS_ILLUSIONIST | CLASS_NECROMANCER |
+		  CLASS_THEURGIST | CLASS_SUMMONER },
+	{ EPIC_REWARD_SKILL, SKILL_IMPROVED_LISTEN, 100, 50, 500000,
+	  CLASS_ROGUE | CLASS_BARD | CLASS_MERCENARY },
+	{ EPIC_REWARD_SKILL, SKILL_SHIELD_COMBAT, 100, 10, 100000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_IMPROVED_SHIELD_COMBAT, 1000, 50, 500000,
+	  CLASS_WARRIOR | CLASS_CLERIC },
+	{ EPIC_REWARD_SKILL, SKILL_TWOWEAPON, 100, 25, 250000,
+	  CLASS_WARRIOR | CLASS_MERCENARY | CLASS_ROGUE | CLASS_RANGER | CLASS_REAVER |
+		  CLASS_BERSERKER },
+	{ EPIC_REWARD_SKILL, SKILL_IMPROVED_TWOWEAPON, 1000, 100, 1000000,
+	  CLASS_WARRIOR | CLASS_MERCENARY | CLASS_ROGUE | CLASS_RANGER | CLASS_REAVER |
+		  CLASS_BERSERKER },
+	{ EPIC_REWARD_SKILL, SKILL_JIN_TOUCH, 100, 75, 750000, CLASS_MONK },
+	{ EPIC_REWARD_SKILL, SKILL_KI_STRIKE, 100, 100, 1000000, CLASS_MONK },
+	{ EPIC_REWARD_SKILL, SKILL_INFUSE_LIFE, 100, 50, 500000,
+	  CLASS_CONJURER | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_SHAMAN | CLASS_SUMMONER },
+	{ EPIC_REWARD_SKILL, SKILL_SPELL_PENETRATION, 500, 200, 2000000,
+	  CLASS_SORCERER | CLASS_CONJURER | CLASS_SUMMONER | CLASS_ILLUSIONIST | CLASS_MINDFLAYER },
+	{ EPIC_REWARD_SKILL, SKILL_DEVASTATING_CRITICAL, 200, 75, 750000,
+	  CLASS_WARRIOR | CLASS_BERSERKER | CLASS_AVENGER | CLASS_DREADLORD },
+	{ EPIC_REWARD_SKILL, SKILL_TOUGHNESS, 100, 50, 500000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_SPATIAL_FOCUS, 100, 100, 1000000, CLASS_PSIONICIST },
+	{ EPIC_REWARD_SKILL, SKILL_IMPROVED_ENDURANCE, 100, 100, 1000000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_IMPROVED_TRACK, 100, 50, 500000,
+	  CLASS_ROGUE | CLASS_MERCENARY | CLASS_RANGER },
+	{ EPIC_REWARD_SKILL, SKILL_EMPOWER_SONG, 100, 50, 500000, CLASS_BARD },
+	{ EPIC_REWARD_SKILL, SKILL_FIX, 100, 50, 500000, 0 },
 	//  {EPIC_REWARD_SKILL, SKILL_CRAFT, 100, 10, 10000,
-    //    0 },
-	{EPIC_REWARD_SKILL, SKILL_ENCRUST, 100, 200, 2000000, 0},
+	//    0 },
+	{ EPIC_REWARD_SKILL, SKILL_ENCRUST, 100, 200, 2000000, 0 },
 	//  {EPIC_REWARD_SKILL, SKILL_ENCHANT, 500, 100, 100000,
-    //    0 },
-    //  {EPIC_REWARD_SKILL, SKILL_SPELLBIND, 250, 100, 100000,
-    //    0 },
-	{EPIC_REWARD_SKILL, SKILL_SMELT, 100, 50, 50000, 0},
+	//    0 },
+	//  {EPIC_REWARD_SKILL, SKILL_SPELLBIND, 250, 100, 100000,
+	//    0 },
+	{ EPIC_REWARD_SKILL, SKILL_SMELT, 100, 50, 50000, 0 },
 	//  {EPIC_REWARD_SKILL, SKILL_FORGE, 100, 1, 100000,
-    //    0 },
-	{EPIC_REWARD_SKILL, SKILL_TOTEMIC_MASTERY, 250, 75, 750000, CLASS_SHAMAN},
-	{EPIC_REWARD_SKILL,
-     SKILL_INFUSE_MAGICAL_DEVICE, 100,
-     100, 1000000,
-     CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_ETHERMANCER | CLASS_BARD | CLASS_DRUID | CLASS_CLERIC | CLASS_PSIONICIST | CLASS_ILLUSIONIST | CLASS_ALCHEMIST |
-         CLASS_SHAMAN | CLASS_SUMMONER | CLASS_BLIGHTER},
-	{EPIC_REWARD_SKILL, SKILL_INDOMITABLE_RAGE, 100, 10, 100000, CLASS_WARRIOR | CLASS_BERSERKER},
-	{EPIC_REWARD_SKILL, SKILL_NATURES_SANCTITY, 100, 75, 750000, CLASS_DRUID},
-	{EPIC_REWARD_SKILL, SKILL_EXPERT_PARRY, 100, 200, 2000000, CLASS_WARRIOR | CLASS_PALADIN | CLASS_RANGER},
-	{EPIC_REWARD_SKILL, SKILL_EXPERT_RIPOSTE, 100, 200, 2000000, CLASS_WARRIOR | CLASS_ANTIPALADIN | CLASS_DREADLORD | CLASS_AVENGER},
-	{EPIC_REWARD_SKILL, SKILL_EPIC_STRENGTH, 100, 50, 500000, 0},
-	{EPIC_REWARD_SKILL, SKILL_EPIC_POWER, 100, 50, 500000, 0},
-	{EPIC_REWARD_SKILL, SKILL_EPIC_AGILITY, 100, 50, 500000, 0},
-	{EPIC_REWARD_SKILL, SKILL_EPIC_INTELLIGENCE, 100, 50, 500000, 0},
-	{EPIC_REWARD_SKILL, SKILL_EPIC_DEXTERITY, 100, 50, 500000, 0},
-	{EPIC_REWARD_SKILL, SKILL_EPIC_WISDOM, 100, 50, 500000, 0},
-	{EPIC_REWARD_SKILL, SKILL_EPIC_CONSTITUTION, 100, 50, 500000, 0},
-	{EPIC_REWARD_SKILL, SKILL_EPIC_CHARISMA, 100, 50, 500000, 0},
-	{EPIC_REWARD_SKILL, SKILL_EPIC_LUCK, 100, 50, 500000, 0},
-	{EPIC_REWARD_SKILL, SKILL_SHIP_DAMAGE_CONTROL, 1000, 80, 8000000, 0},
-	{EPIC_REWARD_SKILL, SKILL_NATURES_RUIN, 100, 75, 750000, CLASS_BLIGHTER},
-	{EPIC_REWARD_SKILL, SKILL_EPIC_WARDING_FAITH, 1000, 100, 20000, CLASS_CLERIC},
-	{0}
+	//    0 },
+	{ EPIC_REWARD_SKILL, SKILL_TOTEMIC_MASTERY, 250, 75, 750000, CLASS_SHAMAN },
+	{ EPIC_REWARD_SKILL, SKILL_INFUSE_MAGICAL_DEVICE, 100, 100, 1000000,
+	  CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_THEURGIST |
+		  CLASS_ETHERMANCER | CLASS_BARD | CLASS_DRUID | CLASS_CLERIC | CLASS_PSIONICIST |
+		  CLASS_ILLUSIONIST | CLASS_ALCHEMIST | CLASS_SHAMAN | CLASS_SUMMONER |
+		  CLASS_BLIGHTER },
+	{ EPIC_REWARD_SKILL, SKILL_INDOMITABLE_RAGE, 100, 10, 100000,
+	  CLASS_WARRIOR | CLASS_BERSERKER },
+	{ EPIC_REWARD_SKILL, SKILL_NATURES_SANCTITY, 100, 75, 750000, CLASS_DRUID },
+	{ EPIC_REWARD_SKILL, SKILL_EXPERT_PARRY, 100, 200, 2000000,
+	  CLASS_WARRIOR | CLASS_PALADIN | CLASS_RANGER },
+	{ EPIC_REWARD_SKILL, SKILL_EXPERT_RIPOSTE, 100, 200, 2000000,
+	  CLASS_WARRIOR | CLASS_ANTIPALADIN | CLASS_DREADLORD | CLASS_AVENGER },
+	{ EPIC_REWARD_SKILL, SKILL_EPIC_STRENGTH, 100, 50, 500000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_EPIC_POWER, 100, 50, 500000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_EPIC_AGILITY, 100, 50, 500000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_EPIC_INTELLIGENCE, 100, 50, 500000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_EPIC_DEXTERITY, 100, 50, 500000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_EPIC_WISDOM, 100, 50, 500000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_EPIC_CONSTITUTION, 100, 50, 500000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_EPIC_CHARISMA, 100, 50, 500000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_EPIC_LUCK, 100, 50, 500000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_SHIP_DAMAGE_CONTROL, 1000, 80, 8000000, 0 },
+	{ EPIC_REWARD_SKILL, SKILL_NATURES_RUIN, 100, 75, 750000, CLASS_BLIGHTER },
+	{ EPIC_REWARD_SKILL, SKILL_EPIC_WARDING_FAITH, 1000, 100, 20000, CLASS_CLERIC },
+	{ 0 }
 };
 
 epic_teacher_skill epic_teachers[] = {
-	{67103, SKILL_ADVANCED_MEDITATION, 0, 100, 0, 0, 0},
-	{96013, SKILL_SUMMON_BLIZZARD, 0, 100, 0, 0, 0},
-	{19141, SKILL_ANATOMY, 0, 100, 0, 0, 0},
-	{75500, SKILL_CHANT_MASTERY, 0, 100, 0, 0, 0},
-	{34446, SKILL_SUMMON_FAMILIAR, 0, 100, 0, 0, 0},
-	{41327, SKILL_DEVOTION, 0, 100, 0, 0, 0},
-	{36720, SKILL_SCRIBE_MASTERY, 0, 100, 0, 0, 0},
-	{75523, SKILL_SNEAKY_STRIKE, 0, 100, 0, 0, 0},
-	{18001, SKILL_SILENT_SPELL, 0, 100, 0, 0, 0},
-	{27035, SKILL_IMPROVED_LISTEN, 0, 100, SKILL_LISTEN, 0, 80},
-	{85724, SKILL_SHIELD_COMBAT, 0, 100, 0, 0, 0},
-	{11306, SKILL_IMPROVED_SHIELD_COMBAT, 0, 100, SKILL_SHIELD_COMBAT, SKILL_IMPROVED_TWOWEAPON, 100},
-	{36849, SKILL_TWOWEAPON, 0, 100, 0, 0, 0},
-	{82500, SKILL_IMPROVED_TWOWEAPON, 0, 100, SKILL_TWOWEAPON, SKILL_IMPROVED_SHIELD_COMBAT, 100},
-	{13219, SKILL_JIN_TOUCH, 0, 100, 0, 0, 0},
-	{7357, SKILL_KI_STRIKE, 0, 100, 0, 0, 0},
-	{2428, SKILL_INFUSE_LIFE, 0, 100, 0, 0, 0},
-	{44824, SKILL_SPELL_PENETRATION, 0, 100, 0, 0, 0},
-	{94364, SKILL_DEVASTATING_CRITICAL, 0, 100, 0, 0, 0},
-	{80862, SKILL_TOUGHNESS, 0, 100, 0, 0, 0},
-	{4208, SKILL_SPATIAL_FOCUS, 0, 100, 0, 0, 0},
-	{49161, SKILL_IMPROVED_ENDURANCE, 0, 100, 0, 0, 0},
-	{20242, SKILL_IMPROVED_TRACK, 0, 100, SKILL_TRACK, 0, 95},
-	{99548, SKILL_EMPOWER_SONG, 0, 100, 0, 0},
-	{22436, SKILL_FIX, 0, 100, 0, 0, 0}, // smith in stormport
+	{ 67103, SKILL_ADVANCED_MEDITATION, 0, 100, 0, 0, 0 },
+	{ 96013, SKILL_SUMMON_BLIZZARD, 0, 100, 0, 0, 0 },
+	{ 19141, SKILL_ANATOMY, 0, 100, 0, 0, 0 },
+	{ 75500, SKILL_CHANT_MASTERY, 0, 100, 0, 0, 0 },
+	{ 34446, SKILL_SUMMON_FAMILIAR, 0, 100, 0, 0, 0 },
+	{ 41327, SKILL_DEVOTION, 0, 100, 0, 0, 0 },
+	{ 36720, SKILL_SCRIBE_MASTERY, 0, 100, 0, 0, 0 },
+	{ 75523, SKILL_SNEAKY_STRIKE, 0, 100, 0, 0, 0 },
+	{ 18001, SKILL_SILENT_SPELL, 0, 100, 0, 0, 0 },
+	{ 27035, SKILL_IMPROVED_LISTEN, 0, 100, SKILL_LISTEN, 0, 80 },
+	{ 85724, SKILL_SHIELD_COMBAT, 0, 100, 0, 0, 0 },
+	{ 11306, SKILL_IMPROVED_SHIELD_COMBAT, 0, 100, SKILL_SHIELD_COMBAT,
+	  SKILL_IMPROVED_TWOWEAPON, 100 },
+	{ 36849, SKILL_TWOWEAPON, 0, 100, 0, 0, 0 },
+	{ 82500, SKILL_IMPROVED_TWOWEAPON, 0, 100, SKILL_TWOWEAPON, SKILL_IMPROVED_SHIELD_COMBAT,
+	  100 },
+	{ 13219, SKILL_JIN_TOUCH, 0, 100, 0, 0, 0 },
+	{ 7357, SKILL_KI_STRIKE, 0, 100, 0, 0, 0 },
+	{ 2428, SKILL_INFUSE_LIFE, 0, 100, 0, 0, 0 },
+	{ 44824, SKILL_SPELL_PENETRATION, 0, 100, 0, 0, 0 },
+	{ 94364, SKILL_DEVASTATING_CRITICAL, 0, 100, 0, 0, 0 },
+	{ 80862, SKILL_TOUGHNESS, 0, 100, 0, 0, 0 },
+	{ 4208, SKILL_SPATIAL_FOCUS, 0, 100, 0, 0, 0 },
+	{ 49161, SKILL_IMPROVED_ENDURANCE, 0, 100, 0, 0, 0 },
+	{ 20242, SKILL_IMPROVED_TRACK, 0, 100, SKILL_TRACK, 0, 95 },
+	{ 99548, SKILL_EMPOWER_SONG, 0, 100, 0, 0 },
+	{ 22436, SKILL_FIX, 0, 100, 0, 0, 0 }, // smith in stormport
 	//  {9454,  SKILL_CRAFT, 0, 100, 0, 0, 0}, //Rjinal in Samirz
-	{40760, SKILL_ENCRUST, 0, 100, 0, 0, 0}, // Snent in Divine Home
-	{78006, SKILL_ENCHANT, 0, 100, 0, SKILL_SPELLBIND, 0}, // Bargor in Oasis
-	{94017, SKILL_SPELLBIND, 0, 100, 0, SKILL_ENCHANT, 0}, // Kalroh in Maze of Undead Army
-	{37145, SKILL_SMELT, 0, 100, 0, 0, 0}, // Carmotee in Dumaathe
+	{ 40760, SKILL_ENCRUST, 0, 100, 0, 0, 0 }, // Snent in Divine Home
+	{ 78006, SKILL_ENCHANT, 0, 100, 0, SKILL_SPELLBIND, 0 }, // Bargor in Oasis
+	{ 94017, SKILL_SPELLBIND, 0, 100, 0, SKILL_ENCHANT, 0 }, // Kalroh in Maze of Undead Army
+	{ 37145, SKILL_SMELT, 0, 100, 0, 0, 0 }, // Carmotee in Dumaathe
 	//  {21618, SKILL_FORGE, 0, 100, 0, 0, 0}, //Tenkuss in Aravne
-	{49162, SKILL_TOTEMIC_MASTERY, 0, 100, 0, 0, 0},
-	{76008, SKILL_INFUSE_MAGICAL_DEVICE, 0, 100, 0, 0, 0}, // Deathium in Ultarium
-	{28975, SKILL_INDOMITABLE_RAGE, 0, 100, 0, 0, 0},
-	{70806, SKILL_NATURES_SANCTITY, 0, 100, 0, 0, 0},
-	{6013, SKILL_EXPERT_PARRY, 0, 100, 0, 0, 0}, // Bemon in Clavikord Swamp
-	{75615, SKILL_EXPERT_RIPOSTE, 0, 100, 0, 0, 0}, // Rolart in Obsidian Citadel
-	{98534, SKILL_EPIC_STRENGTH, 0, 100, 0, 0, 0}, // Olat in Bandit Canyon
-	{4203, SKILL_EPIC_POWER, 0, 100, 0, 0, 0}, // Ezallixxel
-	{95304, SKILL_EPIC_AGILITY, 0, 100, 0, 0, 0}, // Grellinar in Darkfall
-	{15120, SKILL_EPIC_INTELLIGENCE, 0, 100, 0, 0, 0}, // Undead Wizard in Cave City
-	{80907, SKILL_EPIC_DEXTERITY, 0, 100, 0, 0, 0}, // Captain in Ceothia
-	{53658, SKILL_EPIC_WISDOM, 0, 100, 0, 0, 0}, // Chauseis in Connector Zones (Sunwell area)
-	{66671, SKILL_EPIC_CONSTITUTION, 0, 100, 0, 0, 0}, // Thurdorf in Torrhan
-	{82408, SKILL_EPIC_CHARISMA, 0, 100, 0, 0, 0}, // Frolikk in Temple of Sun
-	{21535, SKILL_EPIC_LUCK, 0, 100, 0, 0, 0}, // Babedo in Aravne
-	{2733, SKILL_SHIP_DAMAGE_CONTROL, 0, 100, 0, 0, 0}, // Commodore in Headless
-	{402029, SKILL_NATURES_RUIN, 0, 100, 0, 0, 0}, // Shezeera in Library zone
-	{55168, SKILL_EPIC_WARDING_FAITH, 0, 100, 0, 0, 0},
-	{0}
+	{ 49162, SKILL_TOTEMIC_MASTERY, 0, 100, 0, 0, 0 },
+	{ 76008, SKILL_INFUSE_MAGICAL_DEVICE, 0, 100, 0, 0, 0 }, // Deathium in Ultarium
+	{ 28975, SKILL_INDOMITABLE_RAGE, 0, 100, 0, 0, 0 },
+	{ 70806, SKILL_NATURES_SANCTITY, 0, 100, 0, 0, 0 },
+	{ 6013, SKILL_EXPERT_PARRY, 0, 100, 0, 0, 0 }, // Bemon in Clavikord Swamp
+	{ 75615, SKILL_EXPERT_RIPOSTE, 0, 100, 0, 0, 0 }, // Rolart in Obsidian Citadel
+	{ 98534, SKILL_EPIC_STRENGTH, 0, 100, 0, 0, 0 }, // Olat in Bandit Canyon
+	{ 4203, SKILL_EPIC_POWER, 0, 100, 0, 0, 0 }, // Ezallixxel
+	{ 95304, SKILL_EPIC_AGILITY, 0, 100, 0, 0, 0 }, // Grellinar in Darkfall
+	{ 15120, SKILL_EPIC_INTELLIGENCE, 0, 100, 0, 0, 0 }, // Undead Wizard in Cave City
+	{ 80907, SKILL_EPIC_DEXTERITY, 0, 100, 0, 0, 0 }, // Captain in Ceothia
+	{ 53658, SKILL_EPIC_WISDOM, 0, 100, 0, 0, 0 }, // Chauseis in Connector Zones (Sunwell area)
+	{ 66671, SKILL_EPIC_CONSTITUTION, 0, 100, 0, 0, 0 }, // Thurdorf in Torrhan
+	{ 82408, SKILL_EPIC_CHARISMA, 0, 100, 0, 0, 0 }, // Frolikk in Temple of Sun
+	{ 21535, SKILL_EPIC_LUCK, 0, 100, 0, 0, 0 }, // Babedo in Aravne
+	{ 2733, SKILL_SHIP_DAMAGE_CONTROL, 0, 100, 0, 0, 0 }, // Commodore in Headless
+	{ 402029, SKILL_NATURES_RUIN, 0, 100, 0, 0, 0 }, // Shezeera in Library zone
+	{ 55168, SKILL_EPIC_WARDING_FAITH, 0, 100, 0, 0, 0 },
+	{ 0 }
 };
 
 void create_epic_skills()
@@ -204,20 +225,20 @@ void create_epic_skills()
 
 void do_epic_skills(P_char ch, char *arg, int cmd)
 {
-	char   buff[MAX_STRING_LENGTH];
+	char buff[MAX_STRING_LENGTH];
 	P_char teacher;
 
 	if (IS_TRUSTED(ch))
 	{
 		send_to_char("&+GSkills                    (Vnum) Teacher Name\n"
-		             "-------------------------------------------------\n",
-		             ch);
+			     "-------------------------------------------------\n",
+			     ch);
 	}
 	else
 	{
 		send_to_char("&+GThe following epic skills are available to you:\n"
-		             "-----------------------------------------------\n",
-		             ch);
+			     "-----------------------------------------------\n",
+			     ch);
 	}
 
 	int s, t;
@@ -243,13 +264,17 @@ void do_epic_skills(P_char ch, char *arg, int cmd)
 		if (!epic_teachers[t].vnum)
 			continue;
 
-		if (epic_rewards[s].classes && !IS_SET(epic_rewards[s].classes, ch->player.m_class) && !IS_SET(epic_rewards[s].classes, ch->player.secondary_class))
+		if (epic_rewards[s].classes &&
+		    !IS_SET(epic_rewards[s].classes, ch->player.m_class) &&
+		    !IS_SET(epic_rewards[s].classes, ch->player.secondary_class))
 			continue;
 
 		if (epic_teachers[t].deny_skill && GET_CHAR_SKILL(ch, epic_teachers[t].deny_skill))
 			continue;
 
-		if (epic_teachers[t].pre_requisite && (GET_CHAR_SKILL(ch, epic_teachers[t].pre_requisite) < epic_teachers[t].pre_req_lvl))
+		if (epic_teachers[t].pre_requisite &&
+		    (GET_CHAR_SKILL(ch, epic_teachers[t].pre_requisite) <
+		     epic_teachers[t].pre_req_lvl))
 		{
 			continue;
 		}
@@ -258,18 +283,25 @@ void do_epic_skills(P_char ch, char *arg, int cmd)
 		{
 			if ((teacher = read_mobile(epic_teachers[t].vnum, VIRTUAL)))
 			{
-				snprintf(buff, MAX_STRING_LENGTH, "&+W%-25s &n(&+W%-5d&n) %s\n", skills[skill].name, epic_teachers[t].vnum, teacher->player.short_descr);
+				snprintf(buff, MAX_STRING_LENGTH, "&+W%-25s &n(&+W%-5d&n) %s\n",
+					 skills[skill].name, epic_teachers[t].vnum,
+					 teacher->player.short_descr);
 				extract_char(teacher);
 			}
 			else
 			{
-				logit(LOG_DEBUG, "do_epic_skills(): epic_teachers[%d].vnum does not exist for epic skill %s", t, skills[skill].name);
-				snprintf(buff, MAX_STRING_LENGTH, "&+W%-25s &n(&+W%-5d&n) Teacher does not exist.\n", skills[skill].name, epic_teachers[t].vnum);
+				logit(LOG_DEBUG,
+				      "do_epic_skills(): epic_teachers[%d].vnum does not exist for epic skill %s",
+				      t, skills[skill].name);
+				snprintf(buff, MAX_STRING_LENGTH,
+					 "&+W%-25s &n(&+W%-5d&n) Teacher does not exist.\n",
+					 skills[skill].name, epic_teachers[t].vnum);
 			}
 		}
 		else if ((teacher = read_mobile(epic_teachers[t].vnum, VIRTUAL)))
 		{
-			snprintf(buff, MAX_STRING_LENGTH, "&+W%-25s &n&+yTeacher&+Y: &n %s\n", skills[skill].name, teacher->player.short_descr);
+			snprintf(buff, MAX_STRING_LENGTH, "&+W%-25s &n&+yTeacher&+Y: &n %s\n",
+				 skills[skill].name, teacher->player.short_descr);
 			extract_char(teacher);
 		}
 		send_to_char(buff, ch);
@@ -280,11 +312,11 @@ void do_epic_skills(P_char ch, char *arg, int cmd)
 
 int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 {
-	int                 skl, epics_cost, coins_cost;
-	char                buffer[256];
-	float               cost_mod;
+	int skl, epics_cost, coins_cost;
+	char buffer[256];
+	float cost_mod;
 	epic_teacher_skill *pTeacher;
-	epic_reward        *pReward;
+	epic_reward *pReward;
 
 	if (cmd != CMD_PRACTICE)
 	{
@@ -307,7 +339,8 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	pReward = NULL;
 	for (skl = 0; epic_rewards[skl].type; skl++)
 	{
-		if (epic_rewards[skl].type == EPIC_REWARD_SKILL && epic_rewards[skl].value == pTeacher->skill)
+		if (epic_rewards[skl].type == EPIC_REWARD_SKILL &&
+		    epic_rewards[skl].value == pTeacher->skill)
 		{
 			pReward = &(epic_rewards[skl]);
 			break;
@@ -323,7 +356,8 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	epics_cost = 3 * (int)(cost_mod * pReward->points_cost);
 	coins_cost = 2 * (int)(cost_mod * pReward->coins);
 
-	if (IS_MULTICLASS_PC(pl) && !IS_SET(pReward->classes, pl->player.m_class) && IS_SET(pReward->classes, pl->player.secondary_class))
+	if (IS_MULTICLASS_PC(pl) && !IS_SET(pReward->classes, pl->player.m_class) &&
+	    IS_SET(pReward->classes, pl->player.secondary_class))
 	{
 		epics_cost *= (int)(get_property("epic.multiclass.EpicSkillCost", 2));
 		coins_cost *= (int)(get_property("epic.multiclass.EpicPlatCost", 3));
@@ -332,34 +366,46 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	if (!arg || !*arg)
 	{
 		// Practice called with no arguments
-		snprintf(buffer,
-		         256,
-		         "Welcome, traveller!\n"
-		         "I am pleased that you have wandered so far in order to seek my assistance.\n"
-		         "There are few adventurers willing to seek out the knowledge of &+W%s&n.\n\n",
-		         skills[skl].name);
+		snprintf(
+			buffer, 256,
+			"Welcome, traveller!\n"
+			"I am pleased that you have wandered so far in order to seek my assistance.\n"
+			"There are few adventurers willing to seek out the knowledge of &+W%s&n.\n\n",
+			skills[skl].name);
 		send_to_char(buffer, pl);
 		if (GET_CHAR_SKILL(pl, skl) < 100)
 		{
 			// If they can learn the skill: Class gets it, not thri+dev crit, don't have mutually exclusive skill,
 			//   missing pre-req skill, or skill maxxed.
-			if (!(pReward->classes && !IS_SET(pReward->classes, pl->player.m_class) && !IS_SET(pReward->classes, pl->player.secondary_class)) &&
-			    !(IS_THRIKREEN(pl) && skl == SKILL_DEVASTATING_CRITICAL) && !(pTeacher->deny_skill && GET_CHAR_SKILL(pl, pTeacher->deny_skill)) &&
-			    !(pTeacher->pre_requisite && GET_CHAR_SKILL(pl, pTeacher->pre_requisite) < pTeacher->pre_req_lvl) && !(GET_CHAR_SKILL(pl, skl) >= 100 || GET_CHAR_SKILL(pl, skl) >= pTeacher->max))
+			if (!(pReward->classes && !IS_SET(pReward->classes, pl->player.m_class) &&
+			      !IS_SET(pReward->classes, pl->player.secondary_class)) &&
+			    !(IS_THRIKREEN(pl) && skl == SKILL_DEVASTATING_CRITICAL) &&
+			    !(pTeacher->deny_skill && GET_CHAR_SKILL(pl, pTeacher->deny_skill)) &&
+			    !(pTeacher->pre_requisite &&
+			      GET_CHAR_SKILL(pl, pTeacher->pre_requisite) <
+				      pTeacher->pre_req_lvl) &&
+			    !(GET_CHAR_SKILL(pl, skl) >= 100 ||
+			      GET_CHAR_SKILL(pl, skl) >= pTeacher->max))
 			{
-				snprintf(buffer, 256, "It would cost you &+W%d&n epic points and &+W%s&n to learn &+W%s&n.\n", epics_cost, coin_stringv(coins_cost), skills[skl].name);
+				snprintf(
+					buffer, 256,
+					"It would cost you &+W%d&n epic points and &+W%s&n to learn &+W%s&n.\n",
+					epics_cost, coin_stringv(coins_cost), skills[skl].name);
 				send_to_char(buffer, pl);
 			}
 			else
 			{
-				snprintf(buffer, 256, "&+W%s&n is not currently available to you.\n", skills[skl].name);
+				snprintf(buffer, 256,
+					 "&+W%s&n is not currently available to you.\n",
+					 skills[skl].name);
 				CAP(buffer);
 				send_to_char(buffer, pl);
 			}
 		}
 		else
 		{
-			snprintf(buffer, 256, "You have already maxxed &+W%s&n.\n", skills[skl].name);
+			snprintf(buffer, 256, "You have already maxxed &+W%s&n.\n",
+				 skills[skl].name);
 			send_to_char(buffer, pl);
 		}
 		return TRUE;
@@ -369,12 +415,15 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	if (!strstr(arg, skills[skl].name))
 	{
 		if (is_abbrev(arg, skills[skl].name))
-			send_to_char("To practice an epic skill, you must type the full epic skill name out.\n", pl);
+			send_to_char(
+				"To practice an epic skill, you must type the full epic skill name out.\n",
+				pl);
 		return FALSE;
 	}
 
 	// Handle anti-classes
-	if (pReward->classes && !IS_SET(pReward->classes, pl->player.m_class) && !IS_SET(pReward->classes, pl->player.secondary_class))
+	if (pReward->classes && !IS_SET(pReward->classes, pl->player.m_class) &&
+	    !IS_SET(pReward->classes, pl->player.secondary_class))
 	{
 		send_to_char("Unfortunately, I am not able to teach people of your class.\n", pl);
 		return TRUE;
@@ -383,40 +432,54 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	// Handle anti-race - Thris dev crit.
 	if (IS_THRIKREEN(pl) && skl == SKILL_DEVASTATING_CRITICAL)
 	{
-		snprintf(buffer, sizeof buffer, "I cannot with good conscience teach this skill to a %s!\n", race_names_table[RACE_THRIKREEN].ansi);
+		snprintf(buffer, sizeof buffer,
+			 "I cannot with good conscience teach this skill to a %s!\n",
+			 race_names_table[RACE_THRIKREEN].ansi);
 		send_to_char(buffer, pl);
 		return TRUE;
 	}
 
 	if (pTeacher->deny_skill && GET_CHAR_SKILL(pl, pTeacher->deny_skill))
 	{
-		snprintf(buffer, sizeof buffer, "I cannot with good conscience teach this skill to someone who has already studied &+W%s&n!\n", skills[pTeacher->deny_skill].name);
+		snprintf(
+			buffer, sizeof buffer,
+			"I cannot with good conscience teach this skill to someone who has already studied &+W%s&n!\n",
+			skills[pTeacher->deny_skill].name);
 		send_to_char(buffer, pl);
 		return TRUE;
 	}
 
-	if (pTeacher->pre_requisite && GET_CHAR_SKILL(pl, pTeacher->pre_requisite) < pTeacher->pre_req_lvl)
+	if (pTeacher->pre_requisite &&
+	    GET_CHAR_SKILL(pl, pTeacher->pre_requisite) < pTeacher->pre_req_lvl)
 	{
-		snprintf(buffer, sizeof buffer, "You have not yet mastered the art of &+W%s&n!\r\n", skills[pTeacher->pre_requisite].name);
+		snprintf(buffer, sizeof buffer, "You have not yet mastered the art of &+W%s&n!\r\n",
+			 skills[pTeacher->pre_requisite].name);
 		send_to_char(buffer, pl);
 		return TRUE;
 	}
 
 	if (GET_CHAR_SKILL(pl, skl) >= 100 || GET_CHAR_SKILL(pl, skl) >= pTeacher->max)
 	{
-		send_to_char("Unfortunately, I cannot teach you anything more, you have already mastered this skill!\n", pl);
+		send_to_char(
+			"Unfortunately, I cannot teach you anything more, you have already mastered this skill!\n",
+			pl);
 		return TRUE;
 	}
 
 	// If the prereq skill is less than the epic skill (after teaching).
-	if (pTeacher->pre_requisite && GET_CHAR_SKILL(pl, pTeacher->pre_requisite) < GET_CHAR_SKILL(pl, skl) + get_property("epic.skillGain", 10))
+	if (pTeacher->pre_requisite &&
+	    GET_CHAR_SKILL(pl, pTeacher->pre_requisite) <
+		    GET_CHAR_SKILL(pl, skl) + get_property("epic.skillGain", 10))
 	{
-		snprintf(buffer, sizeof buffer, "You must study &+W%s&n more before you can progress in &+W%s&n.\n", skills[pTeacher->pre_requisite].name, skills[skl].name);
+		snprintf(buffer, sizeof buffer,
+			 "You must study &+W%s&n more before you can progress in &+W%s&n.\n",
+			 skills[pTeacher->pre_requisite].name, skills[skl].name);
 		send_to_char(buffer, pl);
 		return TRUE;
 	}
 
-	if (pReward->classes && !IS_SET(pReward->classes, pl->player.m_class) && !IS_SET(pReward->classes, pl->player.secondary_class))
+	if (pReward->classes && !IS_SET(pReward->classes, pl->player.m_class) &&
+	    !IS_SET(pReward->classes, pl->player.secondary_class))
 	{
 		send_to_char("Unfortunately, I am not able to teach people of your class.\n", pl);
 		return TRUE;
@@ -425,21 +488,29 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	// Handle anti-race - Thris dev crit.
 	if (IS_THRIKREEN(pl) && skl == SKILL_DEVASTATING_CRITICAL)
 	{
-		snprintf(buffer, sizeof buffer, "I cannot with good conscience teach this skill to a %s!\n", race_names_table[RACE_THRIKREEN].ansi);
+		snprintf(buffer, sizeof buffer,
+			 "I cannot with good conscience teach this skill to a %s!\n",
+			 race_names_table[RACE_THRIKREEN].ansi);
 		send_to_char(buffer, pl);
 		return TRUE;
 	}
 
 	if (pTeacher->deny_skill && GET_CHAR_SKILL(pl, pTeacher->deny_skill))
 	{
-		snprintf(buffer, sizeof buffer, "I cannot with good conscience teach that skill to someone who has already studied &+W%s&n!\n", skills[pTeacher->deny_skill].name);
+		snprintf(
+			buffer, sizeof buffer,
+			"I cannot with good conscience teach that skill to someone who has already studied &+W%s&n!\n",
+			skills[pTeacher->deny_skill].name);
 		send_to_char(buffer, pl);
 		return TRUE;
 	}
 
-	if (pTeacher->pre_requisite && GET_CHAR_SKILL(pl, pTeacher->pre_requisite) < pTeacher->pre_req_lvl)
+	if (pTeacher->pre_requisite &&
+	    GET_CHAR_SKILL(pl, pTeacher->pre_requisite) < pTeacher->pre_req_lvl)
 	{
-		send_to_char("You haven't progressed far enough to be able to master such skills!\n", pl);
+		send_to_char(
+			"You haven't progressed far enough to be able to master such skills!\n",
+			pl);
 		return TRUE;
 	}
 
@@ -457,23 +528,24 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 
 	if ((GET_CHAR_SKILL(pl, skl) >= 100) || (GET_CHAR_SKILL(pl, skl) >= pTeacher->max))
 	{
-		send_to_char("Unfortunately, I cannot teach you anything more, you have already mastered this skill!\n", pl);
+		send_to_char(
+			"Unfortunately, I cannot teach you anything more, you have already mastered this skill!\n",
+			pl);
 		return TRUE;
 	}
 
-	int old_plat   = pl->points.cash[0];
-	int old_gold   = pl->points.cash[1];
+	int old_plat = pl->points.cash[0];
+	int old_gold = pl->points.cash[1];
 	int old_silver = pl->points.cash[2];
 	int old_copper = pl->points.cash[3];
-	int old_epics  = pl->only.pc->epics;
-	int old_skill  = pl->only.pc->skills[skl].learned;
+	int old_epics = pl->only.pc->epics;
+	int old_skill = pl->only.pc->skills[skl].learned;
 	int old_taught = pl->only.pc->skills[skl].taught;
 
 	snprintf(buffer, sizeof buffer,
-         "$n takes you aside and teaches you the finer points of &+W%s&n.\n"
-         "&+cYou feel your skill in %s improving.&n\n",
-         skills[skl].name,
-         skills[skl].name);
+		 "$n takes you aside and teaches you the finer points of &+W%s&n.\n"
+		 "&+cYou feel your skill in %s improving.&n\n",
+		 skills[skl].name, skills[skl].name);
 	act(buffer, FALSE, ch, 0, pl, TO_VICT);
 
 	SUB_MONEY(pl, coins_cost, 0);
@@ -482,7 +554,8 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	// epic_gain_skillpoints(pl, -1 * points_cost);
 	pl->only.pc->epics -= epics_cost;
 
-	pl->only.pc->skills[skl].taught = pl->only.pc->skills[skl].learned = pl->only.pc->skills[skl].learned + get_property("epic.skillGain", 10);
+	pl->only.pc->skills[skl].taught = pl->only.pc->skills[skl].learned =
+		pl->only.pc->skills[skl].learned + get_property("epic.skillGain", 10);
 	if (pl->only.pc->skills[skl].taught > 100)
 		pl->only.pc->skills[skl].taught = pl->only.pc->skills[skl].learned = 100;
 	if (pl->only.pc->skills[skl].taught == 100)
@@ -509,19 +582,21 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 
 void event_blizzard(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int                    count;
-	P_room                 room = &world[ch->in_room];
-	P_char                 next_ch;
-	struct room_affect    *raf  = get_spell_from_room(room, SKILL_SUMMON_BLIZZARD);
-	int                    step = *((int *)data);
-	char                   buffer[256];
-	struct damage_messages messages1 = {"&+CTiny shards of ice from the ravaging blizzard hurt $N badly.",
-	                                    "&+CYou are hurt badly by the tiny shards of ice from the ravaging blizzard.",
-	                                    "&+CTiny shards of ice from the ravaging blizzard hurt $N badly.",
-	                                    "&+CTiny shards of ice from the ravaging blizzard turned $N into a spiked statue!",
-	                                    "&+CTiny shards of ice from the ravaging blizzard slowly but surely bash out the last drops of heat from your freezing body..",
-	                                    "&+CTiny shards of ice from the ravaging blizzard turned $N into a spiked statue!",
-	                                    0};
+	int count;
+	P_room room = &world[ch->in_room];
+	P_char next_ch;
+	struct room_affect *raf = get_spell_from_room(room, SKILL_SUMMON_BLIZZARD);
+	int step = *((int *)data);
+	char buffer[256];
+	struct damage_messages messages1 = {
+		"&+CTiny shards of ice from the ravaging blizzard hurt $N badly.",
+		"&+CYou are hurt badly by the tiny shards of ice from the ravaging blizzard.",
+		"&+CTiny shards of ice from the ravaging blizzard hurt $N badly.",
+		"&+CTiny shards of ice from the ravaging blizzard turned $N into a spiked statue!",
+		"&+CTiny shards of ice from the ravaging blizzard slowly but surely bash out the last drops of heat from your freezing body..",
+		"&+CTiny shards of ice from the ravaging blizzard turned $N into a spiked statue!",
+		0
+	};
 	struct damage_messages messages2 = {
 		"&+CA cloud of &+Wsnow&+C surrounds $N &+Ccompletely, sucking away all heat.",
 		"&+CYou are hurt badly by the tiny shards of ice from the ravaging blizzard.",
@@ -533,26 +608,32 @@ void event_blizzard(P_char ch, P_char victim, P_obj obj, void *data)
 
 	if (!raf)
 	{
-		send_to_room("&+CThe &+Ldark clouds&+C disperse and the blizzard comes to its end.&n\n", ch->in_room);
+		send_to_room(
+			"&+CThe &+Ldark clouds&+C disperse and the blizzard comes to its end.&n\n",
+			ch->in_room);
 		return;
 	}
 
 	if (step == 1)
 	{
-		send_to_room("&+CSuddenly &+Lheavy clouds&+C accumulate above your head, covering the entire sky!\n", ch->in_room);
+		send_to_room(
+			"&+CSuddenly &+Lheavy clouds&+C accumulate above your head, covering the entire sky!\n",
+			ch->in_room);
 		step++;
 		add_event(event_blizzard, 3, ch, 0, 0, 0, &step, sizeof(step));
 	}
 	else if (step == 2)
 	{
 		send_to_room("&+CIt starts to &+Wsnow&+C!\n", ch->in_room);
-		send_to_room("Strong &+Wwinds &+Cbegin tossing the &+Wsnow &+Cand ice around with incredible force.&n\n", ch->in_room);
+		send_to_room(
+			"Strong &+Wwinds &+Cbegin tossing the &+Wsnow &+Cand ice around with incredible force.&n\n",
+			ch->in_room);
 		step++;
 		add_event(event_blizzard, 3, ch, 0, 0, 0, &step, sizeof(step));
 	}
 	else
 	{
-		struct room_affect  *faf;
+		struct room_affect *faf;
 		struct affected_type af;
 
 		count = 1;
@@ -563,20 +644,34 @@ void event_blizzard(P_char ch, P_char victim, P_obj obj, void *data)
 				count++;
 		}
 
-		if ((faf = get_spell_from_room(room, SPELL_FIRESTORM)) || (faf = get_spell_from_room(room, SPELL_SCATHING_WIND)) || (faf = get_spell_from_room(room, SPELL_INCENDIARY_CLOUD)))
+		if ((faf = get_spell_from_room(room, SPELL_FIRESTORM)) ||
+		    (faf = get_spell_from_room(room, SPELL_SCATHING_WIND)) ||
+		    (faf = get_spell_from_room(room, SPELL_INCENDIARY_CLOUD)))
 		{
 			if ((victim = get_random_char_in_room(ch->in_room, ch, 0)))
 			{
-				snprintf(buffer, 256, "&+CThe snow melts from the heat of &+R%s &+Cand you are only splashed by &+bwater&n.", skills[faf->type].name);
+				snprintf(
+					buffer, 256,
+					"&+CThe snow melts from the heat of &+R%s &+Cand you are only splashed by &+bwater&n.",
+					skills[faf->type].name);
 				send_to_char(buffer, victim);
-				snprintf(buffer, 256, "&+CThe snow melts from the heat of &+R%s &+Cand $n is only splashed by &+bwater&n.", skills[faf->type].name);
+				snprintf(
+					buffer, 256,
+					"&+CThe snow melts from the heat of &+R%s &+Cand $n is only splashed by &+bwater&n.",
+					skills[faf->type].name);
 				act(buffer, FALSE, victim, 0, 0, TO_ROOM);
 				make_wet(victim, 2 * WAIT_MIN);
 			}
 		}
-		else if ((victim = get_random_char_in_room(ch->in_room, ch, DISALLOW_SELF | DISALLOW_GROUPED)))
+		else if ((victim = get_random_char_in_room(ch->in_room, ch,
+							   DISALLOW_SELF | DISALLOW_GROUPED)))
 		{
-			spell_damage(ch, victim, 70 + dice(4, 6), SPLDAM_COLD, SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, (number(0, 2) && GET_CHAR_SKILL(ch, SKILL_SUMMON_BLIZZARD) > 30) ? &messages1 : &messages2);
+			spell_damage(ch, victim, 70 + dice(4, 6), SPLDAM_COLD,
+				     SPLDAM_NOSHRUG | SPLDAM_NODEFLECT,
+				     (number(0, 2) &&
+				      GET_CHAR_SKILL(ch, SKILL_SUMMON_BLIZZARD) > 30) ?
+					     &messages1 :
+					     &messages2);
 		}
 
 		add_event(event_blizzard, number(20, 30) / count, ch, 0, 0, 0, &step, sizeof(step));
@@ -585,9 +680,9 @@ void event_blizzard(P_char ch, P_char victim, P_obj obj, void *data)
 
 void do_summon_blizzard(P_char ch, char *argument, int cmd)
 {
-	int                room = ch->in_room;
+	int room = ch->in_room;
 	struct room_affect raf;
-	int                step = 1;
+	int step = 1;
 
 	if (get_spell_from_room(&world[room], SKILL_SUMMON_BLIZZARD))
 	{
@@ -595,16 +690,19 @@ void do_summon_blizzard(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (!affect_timer(ch, get_property("timer.mins.summonBlizzard", 3) * WAIT_MIN, SKILL_SUMMON_BLIZZARD))
+	if (!affect_timer(ch, get_property("timer.mins.summonBlizzard", 3) * WAIT_MIN,
+			  SKILL_SUMMON_BLIZZARD))
 	{
 		send_to_char("You are too tired to summon another blizzard.\n", ch);
 		return;
 	}
 
-	send_to_char("You call upon forces of nature to bring a massive blizzard to this area.\n", ch);
+	send_to_char("You call upon forces of nature to bring a massive blizzard to this area.\n",
+		     ch);
 	memset(&raf, 0, sizeof(raf));
-	raf.type     = SKILL_SUMMON_BLIZZARD;
-	raf.duration = 3 * PULSE_VIOLENCE + (GET_CHAR_SKILL(ch, SKILL_SUMMON_BLIZZARD) * PULSE_VIOLENCE) / 30;
+	raf.type = SKILL_SUMMON_BLIZZARD;
+	raf.duration = 3 * PULSE_VIOLENCE +
+		       (GET_CHAR_SKILL(ch, SKILL_SUMMON_BLIZZARD) * PULSE_VIOLENCE) / 30;
 
 	affect_to_room(room, &raf);
 
@@ -613,26 +711,24 @@ void do_summon_blizzard(P_char ch, char *argument, int cmd)
 
 void do_summon_familiar(P_char ch, char *argument, int cmd)
 {
-	P_char                 mob;
-	char                   buffer[256];
+	P_char mob;
+	char buffer[256];
 	struct char_link_data *cld;
 
 	typedef struct
 	{
-		int   vnum;
-		int   skill;
+		int vnum;
+		int skill;
 		char *name;
 	} familiar_data;
 
-	familiar_data familiars[] = {
-		{EPIC_CAT_VNUM, 5, "cat"},
-        {EPIC_BAT_VNUM, 30, "bat"},
-        {EPIC_IGUANA_VNUM, 50, "iguana"},
-        {EPIC_RAVEN_VNUM, 70, "raven"},
-        {EPIC_OWL_VNUM, 90, "owl"},
-        {EPIC_IMP_VNUM, 100, "imp"},
-        {0}
-    };
+	familiar_data familiars[] = { { EPIC_CAT_VNUM, 5, "cat" },
+				      { EPIC_BAT_VNUM, 30, "bat" },
+				      { EPIC_IGUANA_VNUM, 50, "iguana" },
+				      { EPIC_RAVEN_VNUM, 70, "raven" },
+				      { EPIC_OWL_VNUM, 90, "owl" },
+				      { EPIC_IMP_VNUM, 100, "imp" },
+				      { 0 } };
 
 	int i;
 
@@ -660,7 +756,8 @@ void do_summon_familiar(P_char ch, char *argument, int cmd)
 		{
 			for (i = 0; familiars[i].vnum; i++)
 			{
-				if (mob_index[GET_RNUM(cld->linking)].virtual_number == familiars[i].vnum)
+				if (mob_index[GET_RNUM(cld->linking)].virtual_number ==
+				    familiars[i].vnum)
 				{
 					send_to_char("But you already have a familiar!\n", ch);
 					return;
@@ -669,7 +766,11 @@ void do_summon_familiar(P_char ch, char *argument, int cmd)
 		}
 	}
 
-	if (!affect_timer(ch, (get_property("timer.mins.summonFamiliar", 10) + 10 - 2 * (ch_skill_level / 20)) * WAIT_MIN, SKILL_SUMMON_FAMILIAR))
+	if (!affect_timer(ch,
+			  (get_property("timer.mins.summonFamiliar", 10) + 10 -
+			   2 * (ch_skill_level / 20)) *
+				  WAIT_MIN,
+			  SKILL_SUMMON_FAMILIAR))
 	{
 		send_to_char("You call for a familiar but no creature responds.\n", ch);
 		return;
@@ -687,11 +788,12 @@ void do_summon_familiar(P_char ch, char *argument, int cmd)
 				return;
 			}
 
-			int hits     = GET_HIT(mob) + (2 * ch_skill_level);
+			int hits = GET_HIT(mob) + (2 * ch_skill_level);
 			GET_HIT(mob) = GET_MAX_HIT(mob) = mob->points.base_hit = hits;
 
 			char_to_room(mob, ch->in_room, 0);
-			act("$n announces $s arrival with a quiet squeak.", FALSE, mob, 0, 0, TO_ROOM);
+			act("$n announces $s arrival with a quiet squeak.", FALSE, mob, 0, 0,
+			    TO_ROOM);
 			setup_pet(mob, ch, 1000, PET_NOCASH);
 			add_follower(mob, ch);
 			return;
@@ -715,7 +817,8 @@ bool epic_summon(P_char ch, char *arg)
 	{
 		do_summon_blizzard(ch, 0, CMD_SUMMON);
 	}
-	else if (!str_cmp("familiar", buff2) && (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_SUMMON_FAMILIAR)))
+	else if (!str_cmp("familiar", buff2) &&
+		 (IS_TRUSTED(ch) || GET_CHAR_SKILL(ch, SKILL_SUMMON_FAMILIAR)))
 	{
 		do_summon_familiar(ch, buff3, CMD_SUMMON);
 	}
@@ -738,16 +841,22 @@ int epic_familiar(P_char ch, P_char pl, int cmd, char *arg)
 	P_char master = get_linked_char(ch, LNK_PET);
 
 	// bat proc, has a chance to prevent incoming takedown
-	if (GET_VNUM(ch) == EPIC_BAT_VNUM && (cmd == CMD_BASH || cmd == CMD_TRIP || cmd == CMD_SPRINGLEAP || cmd == CMD_TACKLE || cmd == CMD_BODYSLAM || cmd == CMD_MAUL) &&
+	if (GET_VNUM(ch) == EPIC_BAT_VNUM &&
+	    (cmd == CMD_BASH || cmd == CMD_TRIP || cmd == CMD_SPRINGLEAP || cmd == CMD_TACKLE ||
+	     cmd == CMD_BODYSLAM || cmd == CMD_MAUL) &&
 	    get_char_vis(pl, arg) == master && !number(0, 2))
 	{
-		act("$n notices $N's maneuver and dives towards $S head to protect the master!", FALSE, ch, 0, pl, TO_NOTVICT);
-		act("$n notices your maneuver and dives towards your head to protect $s master!", FALSE, ch, 0, pl, TO_VICT);
+		act("$n notices $N's maneuver and dives towards $S head to protect the master!",
+		    FALSE, ch, 0, pl, TO_NOTVICT);
+		act("$n notices your maneuver and dives towards your head to protect $s master!",
+		    FALSE, ch, 0, pl, TO_VICT);
 
 		if (GET_C_AGI(pl) < number(0, 150) && !number(0, 2))
 		{
-			act("$n's unexpected attack caused you to get lost in your tracks..", FALSE, ch, 0, pl, TO_VICT);
-			act("$n's vicious assault disturbed $N's move.", FALSE, ch, 0, pl, TO_NOTVICT);
+			act("$n's unexpected attack caused you to get lost in your tracks..", FALSE,
+			    ch, 0, pl, TO_VICT);
+			act("$n's vicious assault disturbed $N's move.", FALSE, ch, 0, pl,
+			    TO_NOTVICT);
 			CharWait(pl, PULSE_VIOLENCE);
 			return TRUE;
 		}
@@ -758,42 +867,27 @@ int epic_familiar(P_char ch, P_char pl, int cmd, char *arg)
 		}
 	}
 
-	if (mob_index[GET_RNUM(ch)].virtual_number == EPIC_IGUANA_VNUM && cmd == CMD_PAT && get_char_vis(pl, arg) == ch && pl == master)
+	if (mob_index[GET_RNUM(ch)].virtual_number == EPIC_IGUANA_VNUM && cmd == CMD_PAT &&
+	    get_char_vis(pl, arg) == ch && pl == master)
 	{
 		if (IS_RIDING(ch))
 		{
 			act("$N pats $n softly on $s back.\n"
 			    "$n wiggles reluctantly and slowly begins to climb down $N's back.",
-			    FALSE,
-			    ch,
-			    0,
-			    master,
-			    TO_NOTVICT);
+			    FALSE, ch, 0, master, TO_NOTVICT);
 			act("You pat $n softly on $s back.\n"
 			    "$n wiggles reluctantly and slowly begins to climb down your back.",
-			    FALSE,
-			    ch,
-			    0,
-			    master,
-			    TO_VICT);
+			    FALSE, ch, 0, master, TO_VICT);
 			do_dismount(ch, 0, CMD_DISMOUNT);
 		}
 		else if (!IS_RIDING(master))
 		{
 			act("$N pats $n softly on $s back.\n"
 			    "$n slowly begins to climb up $N's back.",
-			    FALSE,
-			    ch,
-			    0,
-			    master,
-			    TO_NOTVICT);
+			    FALSE, ch, 0, master, TO_NOTVICT);
 			act("You pat $n softly on $s back.\n"
 			    "$n slowly begins to climb up your back.",
-			    FALSE,
-			    ch,
-			    0,
-			    master,
-			    TO_VICT);
+			    FALSE, ch, 0, master, TO_VICT);
 			link_char(ch, master, LNK_RIDING);
 		}
 		else
@@ -808,36 +902,37 @@ int epic_familiar(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		if (!master)
 		{
-			act("$n turns around looking for $s master then disappears.", FALSE, ch, 0, 0, TO_ROOM);
+			act("$n turns around looking for $s master then disappears.", FALSE, ch, 0,
+			    0, TO_ROOM);
 			extract_char(ch);
 			return TRUE;
 		}
 
 		switch (ch->player.m_class)
 		{
-			case CLASS_WARRIOR:
-			case CLASS_MERCENARY:
-				break;
+		case CLASS_WARRIOR:
+		case CLASS_MERCENARY:
+			break;
 
-			case CLASS_SORCERER:
-			case CLASS_CONJURER:
-				if (!number(0, 2) && master->in_room == ch->in_room)
-				{
-					CastMageSpell(ch, master, 1);
-					return TRUE;
-				}
-				break;
+		case CLASS_SORCERER:
+		case CLASS_CONJURER:
+			if (!number(0, 2) && master->in_room == ch->in_room)
+			{
+				CastMageSpell(ch, master, 1);
+				return TRUE;
+			}
+			break;
 
-			case CLASS_CLERIC:
-				if (!number(0, 2) && master->in_room == ch->in_room)
-				{
-					CastClericSpell(ch, master, 1);
-					return TRUE;
-				}
-				break;
+		case CLASS_CLERIC:
+			if (!number(0, 2) && master->in_room == ch->in_room)
+			{
+				CastClericSpell(ch, master, 1);
+				return TRUE;
+			}
+			break;
 
-			default:
-				break;
+		default:
+			break;
 		}
 
 		return TRUE;
@@ -854,18 +949,25 @@ int spell_penetration_check(P_char caster, P_char victim)
 	{
 		skill /= 2;
 
-		if (number(0, 110) < BOUNDED(10, skill, (int)get_property("skill.spellPenetration.highEndPercent", 60.000)) && caster->in_room == victim->in_room)
+		if (number(0, 110) <
+			    BOUNDED(10, skill,
+				    (int)get_property("skill.spellPenetration.highEndPercent",
+						      60.000)) &&
+		    caster->in_room == victim->in_room)
 		{
 			struct affected_type af;
 
 			memset(&af, 0, sizeof(af));
-			af.type     = SKILL_SPELL_PENETRATION;
-			af.flags    = AFFTYPE_NOAPPLY | AFFTYPE_SHORT;
+			af.type = SKILL_SPELL_PENETRATION;
+			af.flags = AFFTYPE_NOAPPLY | AFFTYPE_SHORT;
 			af.duration = 1;
 			affect_to_char(victim, &af);
-			act("&+CYour pure arcane focus causes your spell to partially burst through&n $N&+C's magical resistance!&n", TRUE, caster, 0, victim, TO_CHAR);
-			act("$n&+C seems to focus for a moment, and $s spell partially bursts through your magical barrier!&n", TRUE, caster, 0, victim, TO_VICT);
-			act("$n&+C seems to focus for a moment, and $s spell partially bursts through&n $N&+C's magical barrier!&n", TRUE, caster, 0, victim, TO_NOTVICT);
+			act("&+CYour pure arcane focus causes your spell to partially burst through&n $N&+C's magical resistance!&n",
+			    TRUE, caster, 0, victim, TO_CHAR);
+			act("$n&+C seems to focus for a moment, and $s spell partially bursts through your magical barrier!&n",
+			    TRUE, caster, 0, victim, TO_VICT);
+			act("$n&+C seems to focus for a moment, and $s spell partially bursts through&n $N&+C's magical barrier!&n",
+			    TRUE, caster, 0, victim, TO_NOTVICT);
 			return TRUE;
 		}
 	}
@@ -894,11 +996,16 @@ int devotion_skill_check(P_char ch)
 	buf[0] = '\0';
 
 	if (dev_power > 4)
-		snprintf(buf, sizeof buf, "You feel as if %s took over your body bringing death to your foes!\n", get_god_name(ch));
+		snprintf(buf, sizeof buf,
+			 "You feel as if %s took over your body bringing death to your foes!\n",
+			 get_god_name(ch));
 	else if (dev_power > 2)
-		snprintf(buf, sizeof buf, "%s fills you with holy power bringing death to your foes!\n", get_god_name(ch));
+		snprintf(buf, sizeof buf,
+			 "%s fills you with holy power bringing death to your foes!\n",
+			 get_god_name(ch));
 	else if (dev_power > 0)
-		snprintf(buf, sizeof buf, "%s fills you with holy power to destroy your foes!\n", get_god_name(ch));
+		snprintf(buf, sizeof buf, "%s fills you with holy power to destroy your foes!\n",
+			 get_god_name(ch));
 
 	send_to_char(buf, ch);
 
@@ -909,23 +1016,23 @@ int devotion_spell_check(int spell)
 {
 	switch (spell)
 	{
-		case SPELL_FLAMESTRIKE:
-		case SPELL_APOCALYPSE:
-		case SPELL_JUDGEMENT:
-		case SPELL_FULL_HARM:
-		case SPELL_HARM:
-		case SPELL_CAUSE_LIGHT:
-		case SPELL_CAUSE_SERIOUS:
-		case SPELL_CAUSE_CRITICAL:
-		case SPELL_DESTROY_UNDEAD:
-		case SPELL_HOLY_WORD:
-		case SPELL_UNHOLY_WORD:
-		case SPELL_EARTHQUAKE:
-		case SPELL_TURN_UNDEAD:
-		case SPELL_BANISH:
-			return TRUE;
-		default:
-			return FALSE;
+	case SPELL_FLAMESTRIKE:
+	case SPELL_APOCALYPSE:
+	case SPELL_JUDGEMENT:
+	case SPELL_FULL_HARM:
+	case SPELL_HARM:
+	case SPELL_CAUSE_LIGHT:
+	case SPELL_CAUSE_SERIOUS:
+	case SPELL_CAUSE_CRITICAL:
+	case SPELL_DESTROY_UNDEAD:
+	case SPELL_HOLY_WORD:
+	case SPELL_UNHOLY_WORD:
+	case SPELL_EARTHQUAKE:
+	case SPELL_TURN_UNDEAD:
+	case SPELL_BANISH:
+		return TRUE;
+	default:
+		return FALSE;
 	}
 
 	return FALSE;
@@ -933,15 +1040,21 @@ int devotion_spell_check(int spell)
 
 int chant_mastery_bonus(P_char ch, int dura)
 {
-	int  chant_bonus;
+	int chant_bonus;
 	char buffer[256];
 
 	if (5 + GET_CHAR_SKILL(ch, SKILL_CHANT_MASTERY) / 10 > number(0, 100))
 	{
 		chant_bonus = MAX(0, GET_CHAR_SKILL(ch, SKILL_CHANT_MASTERY) / 40 + number(-1, 1));
-		snprintf(buffer, 256, "%s magic surrounds you as you begin your chant.&n", chant_bonus == 0 ? "&+WSparkling&n" : chant_bonus == 1 ? "&+WSparkling" : "&+WSp&+Cark&+Wli&+Cn&+Wg");
+		snprintf(buffer, 256, "%s magic surrounds you as you begin your chant.&n",
+			 chant_bonus == 0 ? "&+WSparkling&n" :
+			 chant_bonus == 1 ? "&+WSparkling" :
+					    "&+WSp&+Cark&+Wli&+Cn&+Wg");
 		act(buffer, FALSE, ch, 0, 0, TO_CHAR);
-		snprintf(buffer, 256, "%s magic surrounds $n &+Was $e begins $s chant.&n", chant_bonus == 0 ? "&+WSparkling&n" : chant_bonus == 1 ? "&+WSparkling" : "&+WSp&+Cark&+Wli&+Cn&+Wg");
+		snprintf(buffer, 256, "%s magic surrounds $n &+Was $e begins $s chant.&n",
+			 chant_bonus == 0 ? "&+WSparkling&n" :
+			 chant_bonus == 1 ? "&+WSparkling" :
+					    "&+WSp&+Cark&+Wli&+Cn&+Wg");
 		act(buffer, FALSE, ch, 0, 0, TO_ROOM);
 	}
 	else
@@ -987,16 +1100,20 @@ bool silent_spell_check(P_char ch)
 	}
 	else
 	{
-		act("You try to use your hands to cast a spell, but you just end up looking goofy.", FALSE, ch, 0, 0, TO_CHAR);
-		act("$n tries to use $s hands to cast a spell, but just ends up looking goofy.", FALSE, ch, 0, 0, TO_ROOM);
+		act("You try to use your hands to cast a spell, but you just end up looking goofy.",
+		    FALSE, ch, 0, 0, TO_CHAR);
+		act("$n tries to use $s hands to cast a spell, but just ends up looking goofy.",
+		    FALSE, ch, 0, 0, TO_ROOM);
 		return FALSE;
 	}
 }
 
 void say_silent_spell(P_char ch, int spell)
 {
-	act("Using your expanded knowledge, you cast the spell with nothing but a gesture of the hand.", FALSE, ch, 0, 0, TO_CHAR);
-	act("Using $s expanded knowledge, $n casts $s spell with nothing but a gesture of the hand.", FALSE, ch, 0, 0, TO_ROOM);
+	act("Using your expanded knowledge, you cast the spell with nothing but a gesture of the hand.",
+	    FALSE, ch, 0, 0, TO_CHAR);
+	act("Using $s expanded knowledge, $n casts $s spell with nothing but a gesture of the hand.",
+	    FALSE, ch, 0, 0, TO_ROOM);
 }
 
 int two_weapon_check(P_char ch)
@@ -1005,7 +1122,10 @@ int two_weapon_check(P_char ch)
 
 	twoskl = GET_CHAR_SKILL(ch, SKILL_TWOWEAPON);
 
-	if (ch->equipment[PRIMARY_WEAPON] && (ch->equipment[SECONDARY_WEAPON] || ch->equipment[THIRD_WEAPON] || ch->equipment[FOURTH_WEAPON]) && twoskl)
+	if (ch->equipment[PRIMARY_WEAPON] &&
+	    (ch->equipment[SECONDARY_WEAPON] || ch->equipment[THIRD_WEAPON] ||
+	     ch->equipment[FOURTH_WEAPON]) &&
+	    twoskl)
 	{
 		if (twoskl > 0 && twoskl < 20)
 		{
@@ -1043,11 +1163,11 @@ int two_weapon_check(P_char ch)
 
 void do_infuse(P_char ch, char *arg, int cmd)
 {
-	P_obj                device, t_obj, nextobj, stone = NULL;
-	char                 Gbuf1[MAX_STRING_LENGTH], msg[MAX_STRING_LENGTH];
-	int                  skill, c, i = 0;
-	int                  charges, maxcharges;
-	int                  check;
+	P_obj device, t_obj, nextobj, stone = NULL;
+	char Gbuf1[MAX_STRING_LENGTH], msg[MAX_STRING_LENGTH];
+	int skill, c, i = 0;
+	int charges, maxcharges;
+	int check;
 	struct affected_type af;
 
 	if (!(skill = GET_CHAR_SKILL(ch, SKILL_INFUSE_MAGICAL_DEVICE)))
@@ -1084,7 +1204,9 @@ void do_infuse(P_char ch, char *arg, int cmd)
 
 	if (isname("wicked", device->name))
 	{
-		send_to_char("You do not possess the extreme power to infuse this particular item.\r\n", ch);
+		send_to_char(
+			"You do not possess the extreme power to infuse this particular item.\r\n",
+			ch);
 		return;
 	}
 
@@ -1112,7 +1234,9 @@ void do_infuse(P_char ch, char *arg, int cmd)
 
 	if (stone)
 	{
-		snprintf(msg, MAX_STRING_LENGTH, "&+WYou infuse the magic from %s &+Winto %s&+W.&n\r\n", stone->short_description, device->short_description);
+		snprintf(msg, MAX_STRING_LENGTH,
+			 "&+WYou infuse the magic from %s &+Winto %s&+W.&n\r\n",
+			 stone->short_description, device->short_description);
 		send_to_char(msg, ch);
 		obj_from_char(stone);
 		extract_obj(stone, FALSE);
@@ -1123,18 +1247,20 @@ void do_infuse(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	charges    = device->value[2];
+	charges = device->value[2];
 	maxcharges = device->value[1];
 
 	for (check = 0, c = charges; c < maxcharges; c++)
 	{
-		snprintf(msg, MAX_STRING_LENGTH, "&+wYou infuse %s &+wwith a charge!&n\r\n", device->short_description);
+		snprintf(msg, MAX_STRING_LENGTH, "&+wYou infuse %s &+wwith a charge!&n\r\n",
+			 device->short_description);
 		send_to_char(msg, ch);
 		device->value[2]++;
 
 		if (device->value[2] == device->value[1])
 		{
-			snprintf(msg, MAX_STRING_LENGTH, "&+W%s &+Whas been fully infused!\r\n", device->short_description);
+			snprintf(msg, MAX_STRING_LENGTH, "&+W%s &+Whas been fully infused!\r\n",
+				 device->short_description);
 			send_to_char(msg, ch);
 			break;
 		}
@@ -1148,9 +1274,9 @@ void do_infuse(P_char ch, char *arg, int cmd)
 	}
 
 	memset(&af, 0, sizeof(af));
-	af.type     = SKILL_INFUSE_MAGICAL_DEVICE;
+	af.type = SKILL_INFUSE_MAGICAL_DEVICE;
 	af.duration = 24;
-	af.flags    = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
+	af.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL;
 	affect_to_char(ch, &af);
 
 	if (skill >= 70)

@@ -16,6 +16,8 @@ Depends: build-essential,
 	 libbsd-dev,
 	 default-libmysqlclient-dev,
 	 default-mysql-server,
+	 valgrind,
+	 clang-format,
 Suggests: redis | redict,
 Description: build dependencies for Duris
  This metapackage will install what you need for hacking on and running

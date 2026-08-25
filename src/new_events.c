@@ -36,55 +36,55 @@
 #include "spells.h"
 #include "vnum.obj.h"
 
-#define MAX_FUNCTIONS             6000
-#define FUNCTION_NAMES_FILE       "lib/misc/event_names"
+#define MAX_FUNCTIONS 6000
+#define FUNCTION_NAMES_FILE "lib/misc/event_names"
 #define NEVENT_BUDGET_USEC_DEFAULT 25000L
 /* The wall-clock budget above is the real bound on the loop.  The callback count
  * is a secondary guard; at 1000 it was cutting every pulse short at roughly half
  * the time budget, leaving a permanent multi-thousand event backlog. */
 #define NEVENT_MAX_CALLBACKS_DEFAULT 2000L
-#define NEVENT_PRIORITY_NORMAL    0U
-#define NEVENT_PRIORITY_PLAYER    1U
-#define NEVENT_MAX_DEFERRALS      0U
+#define NEVENT_PRIORITY_NORMAL 0U
+#define NEVENT_PRIORITY_PLAYER 1U
+#define NEVENT_MAX_DEFERRALS 0U
 #define NEVENT_ANALYTICS_CALLBACK_SLOTS 128
 #define NEVENT_ANALYTICS_CALLBACK_NAME 96
 
 /*
  * internal variables
  */
-bool                    debug_event_list = FALSE;
-P_nevent                current_nevent   = NULL;
-long                    ne_event_counter = 0;
-unsigned long long      ne_event_tick = 0;
+bool debug_event_list = FALSE;
+P_nevent current_nevent = NULL;
+long ne_event_counter = 0;
+unsigned long long ne_event_tick = 0;
 static unsigned long long ne_event_sequence = 0;
 
 struct nevent_callback_analytics
 {
-	void              *func;
-	char               name[NEVENT_ANALYTICS_CALLBACK_NAME];
-	long long          calls;
-	long long          total_us;
-	long               max_us;
-	long long          deferred;
+	void *func;
+	char name[NEVENT_ANALYTICS_CALLBACK_NAME];
+	long long calls;
+	long long total_us;
+	long max_us;
+	long long deferred;
 };
 
 struct nevent_analytics_data
 {
 	unsigned long long window_start_tick;
-	long               pulses;
-	long long          total_scanned;
-	long long          total_executed;
-	long long          total_deferred;
-	long long          total_us;
-	long               peak_scanned;
-	long               peak_executed;
-	long               peak_deferred;
-	long               peak_total_us;
-	long               peak_pending;
+	long pulses;
+	long long total_scanned;
+	long long total_executed;
+	long long total_deferred;
+	long long total_us;
+	long peak_scanned;
+	long peak_executed;
+	long peak_deferred;
+	long peak_total_us;
+	long peak_pending;
 	unsigned long long peak_executed_tick;
 	unsigned long long peak_total_us_tick;
-	long               budget_exhausted_pulses;
-	long               callback_overflow;
+	long budget_exhausted_pulses;
+	long callback_overflow;
 	struct nevent_callback_analytics callbacks[NEVENT_ANALYTICS_CALLBACK_SLOTS];
 };
 
@@ -114,37 +114,37 @@ P_nevent ne_schedule_tail[PULSES_IN_TICK];
  */
 extern Skill skills[];
 /* if true, we have called Events() from the main loop this pulse already */
-extern bool                          after_events_call;
-extern P_char                        character_list;
-extern P_index                       mob_index;
-extern P_index                       obj_index;
-extern P_obj                         object_list;
-extern P_room                        world;
-extern int                           errno;
-extern int                           pulse;
-extern int                           top_of_mobt;
-extern int                           top_of_objt;
-extern const int                     top_of_world;
-extern int                           top_of_zone_table;
-extern struct time_info_data         time_info;
-extern struct zone_data             *zone;
-extern struct zone_data             *zone_table;
-extern struct sector_data           *sector_table;
+extern bool after_events_call;
+extern P_char character_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
+extern int errno;
+extern int pulse;
+extern int top_of_mobt;
+extern int top_of_objt;
+extern const int top_of_world;
+extern int top_of_zone_table;
+extern struct time_info_data time_info;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
+extern struct sector_data *sector_table;
 extern const struct racial_data_type racial_data[LAST_RACE + 1];
-void                                 interaction_to_new_wrapper(P_char, P_char, char *);
-void                                 event_reset_zone(P_char ch, P_char victim, P_obj obj, void *data);
-void                                 register_func_call(void *func, double time);
-const char                          *get_function_name(void *func);
-void                                 release_mob_mem(P_char ch, P_char victim, P_obj obj, void *data);
-extern void                          event_mob_mundane(P_char, P_char, P_obj, void *);
-extern void                          event_spellcast(P_char, P_char, P_obj, void *);
-extern void                          event_memorize(P_char, P_char, P_obj, void *);
-extern void                          event_wait(P_char, P_char, P_obj, void *);
-extern void                          event_mana_regen(P_char, P_char, P_obj, void *);
-extern void                          event_move_regen(P_char, P_char, P_obj, void *);
-extern void                          event_hit_regen(P_char, P_char, P_obj, void *);
-extern void                          event_balance_affects(P_char, P_char, P_obj, void *);
-static long                           nevent_config_limit(const char *name, long fallback);
+void interaction_to_new_wrapper(P_char, P_char, char *);
+void event_reset_zone(P_char ch, P_char victim, P_obj obj, void *data);
+void register_func_call(void *func, double time);
+const char *get_function_name(void *func);
+void release_mob_mem(P_char ch, P_char victim, P_obj obj, void *data);
+extern void event_mob_mundane(P_char, P_char, P_obj, void *);
+extern void event_spellcast(P_char, P_char, P_obj, void *);
+extern void event_memorize(P_char, P_char, P_obj, void *);
+extern void event_wait(P_char, P_char, P_obj, void *);
+extern void event_mana_regen(P_char, P_char, P_obj, void *);
+extern void event_move_regen(P_char, P_char, P_obj, void *);
+extern void event_hit_regen(P_char, P_char, P_obj, void *);
+extern void event_balance_affects(P_char, P_char, P_obj, void *);
+static long nevent_config_limit(const char *name, long fallback);
 
 static bool nevent_is_player_timed(event_func_type func, P_char ch)
 {
@@ -154,8 +154,10 @@ static bool nevent_is_player_timed(event_func_type func, P_char ch)
 	 * misses its deadline, the player remains unable to issue commands after
 	 * the visible action (cast/flee/combat action) has completed. */
 	if (func == event_wait)
-		return ch != NULL && (IS_PC(ch) || (IS_NPC(ch) && GET_MASTER(ch) && IS_AFFECTED5(GET_MASTER(ch), AFF5_ORDERING)));
-	return ch && IS_PC(ch) && (func == event_mana_regen || func == event_move_regen || func == event_hit_regen);
+		return ch != NULL && (IS_PC(ch) || (IS_NPC(ch) && GET_MASTER(ch) &&
+						    IS_AFFECTED5(GET_MASTER(ch), AFF5_ORDERING)));
+	return ch && IS_PC(ch) &&
+	       (func == event_mana_regen || func == event_move_regen || func == event_hit_regen);
 }
 
 static unsigned int nevent_priority(event_func_type func, P_char ch)
@@ -188,7 +190,8 @@ static void nevent_link_schedule(P_nevent event, int loc)
 		return;
 	}
 
-	for (cursor = ne_schedule[loc]; cursor && nevent_is_player_timed(cursor->func, cursor->ch); cursor = cursor->next_sched)
+	for (cursor = ne_schedule[loc]; cursor && nevent_is_player_timed(cursor->func, cursor->ch);
+	     cursor = cursor->next_sched)
 		last_player = cursor;
 
 	if (!last_player)
@@ -210,7 +213,8 @@ static void nevent_link_schedule(P_nevent event, int loc)
 
 static bool nevent_overdue_player(P_nevent event)
 {
-	return event && event->deferral_count >= NEVENT_MAX_DEFERRALS && nevent_is_player_timed(event->func, event->ch);
+	return event && event->deferral_count >= NEVENT_MAX_DEFERRALS &&
+	       nevent_is_player_timed(event->func, event->ch);
 }
 
 /* Keep the budget as the default, but move a repeatedly deferred player event
@@ -269,8 +273,8 @@ static bool nevent_promote_overdue_player(P_nevent *next_event, P_nevent anchor)
 void clear_nevent(P_nevent e)
 {
 	P_nevent e1;
-	P_obj    obj;
-	P_char   ch;
+	P_obj obj;
+	P_char ch;
 
 	if (!e)
 	{
@@ -310,7 +314,9 @@ void clear_nevent(P_nevent e)
 				else if (e1->obj != obj)
 				{
 					debug("clear_nevent: event '%s': event->obj '%s' != obj '%s' in obj's event list.",
-					      (e->func != NULL) ? get_function_name((void *)e->func) : "NULL",
+					      (e->func != NULL) ?
+						      get_function_name((void *)e->func) :
+						      "NULL",
 					      (e1->obj == NULL) ? "NULL" : OBJ_SHORT(e1->obj),
 					      OBJ_SHORT(obj));
 				}
@@ -319,11 +325,17 @@ void clear_nevent(P_nevent e)
 			{
 				debug("clear_nevent: obj '%s' does not have event '%s' in its event list head(%s).",
 				      OBJ_SHORT(obj),
-				      (e->func != NULL) ? get_function_name((void *)e->func) : "NoFunc",
-				      (obj->nevents != NULL) ? ((obj->nevents->func != NULL) ? get_function_name((void *)obj->nevents->func) : "NoFunc") : "NULL");
+				      (e->func != NULL) ? get_function_name((void *)e->func) :
+							  "NoFunc",
+				      (obj->nevents != NULL) ?
+					      ((obj->nevents->func != NULL) ?
+						       get_function_name(
+							       (void *)obj->nevents->func) :
+						       "NoFunc") :
+					      "NULL");
 			}
 		}
-		e->obj          = NULL;
+		e->obj = NULL;
 		e->next_obj_nev = NULL;
 	}
 
@@ -351,19 +363,20 @@ void clear_nevent(P_nevent e)
 				{
 					debug("clear_nevent: event->ch '%s' %d != ch '%s' %d in char's event list. %ld",
 					      J_NAME(e1->ch),
-					      IS_ALIVE(e1->ch) ? GET_ID(e1->ch) : -1,
-					      J_NAME(ch),
-					      IS_ALIVE(ch) ? GET_ID(ch) : -1,
-					      e1);
+					      IS_ALIVE(e1->ch) ? GET_ID(e1->ch) : -1, J_NAME(ch),
+					      IS_ALIVE(ch) ? GET_ID(ch) : -1, e1);
 				}
 			}
 			// If we reached the end of the list, or our assignment failed (can that even happen?)
 			if (!e1 || e1->next_char_nev != e->next_char_nev)
 			{
-				debug("clear_nevent: event '%s' not in char '%s' %d event list.", (e->func != NULL) ? get_function_name((void *)e->func) : "NoFunc", J_NAME(ch), IS_ALIVE(ch) ? GET_ID(ch) : -1);
+				debug("clear_nevent: event '%s' not in char '%s' %d event list.",
+				      (e->func != NULL) ? get_function_name((void *)e->func) :
+							  "NoFunc",
+				      J_NAME(ch), IS_ALIVE(ch) ? GET_ID(ch) : -1);
 			}
 		}
-		e->ch            = NULL;
+		e->ch = NULL;
 		e->next_char_nev = NULL;
 	}
 
@@ -393,7 +406,8 @@ void clear_nevent(P_nevent e)
 		// If not in list!?
 		if (!e1)
 		{
-			debug("Event e '%s' not in ne_schedule[e->element] list.", (e->func != NULL) ? get_function_name((void *)e->func) : "NoFunc");
+			debug("Event e '%s' not in ne_schedule[e->element] list.",
+			      (e->func != NULL) ? get_function_name((void *)e->func) : "NoFunc");
 			e->next_sched = e->prev_sched = NULL;
 		}
 		// Remove from list.
@@ -408,10 +422,10 @@ void clear_nevent(P_nevent e)
 		}
 	}
 
-	e->func    = NULL;
-	e->timer   = 1;
+	e->func = NULL;
+	e->timer = 1;
 	e->element = 0;
-	e->victim  = NULL;
+	e->victim = NULL;
 }
 
 // Returns true iff all the events in ch->nevents belong to ch.
@@ -461,8 +475,8 @@ void disarm_single_event(P_nevent e)
 	{
 		remove_link(e->ch, e->cld);
 	}
-	e->cld   = NULL;
-	e->func  = NULL;
+	e->cld = NULL;
+	e->func = NULL;
 	e->timer = 1;
 }
 
@@ -483,8 +497,8 @@ void disarm_char_nevents(P_char ch, event_func_type func)
 			{
 				remove_link(ch, e1->cld);
 			}
-			e1->cld   = NULL;
-			e1->func  = NULL;
+			e1->cld = NULL;
+			e1->func = NULL;
 			e1->timer = 1;
 		}
 		// Now clear the 'next_char_nev' list.
@@ -494,7 +508,7 @@ void disarm_char_nevents(P_char ch, event_func_type func)
 			e1 = ch->nevents->next_char_nev;
 			// Erase the next_char_nev & ch.
 			ch->nevents->next_char_nev = NULL;
-			ch->nevents->ch            = NULL;
+			ch->nevents->ch = NULL;
 			// Move to the next event.
 			ch->nevents = e1;
 		}
@@ -509,8 +523,8 @@ void disarm_char_nevents(P_char ch, event_func_type func)
 				{
 					remove_link(ch, e1->cld);
 				}
-				e1->cld   = NULL;
-				e1->func  = NULL;
+				e1->cld = NULL;
+				e1->func = NULL;
 				e1->timer = 1;
 			}
 		}
@@ -529,7 +543,7 @@ void disarm_obj_nevents(P_obj obj, event_func_type func)
 	{
 		LOOP_EVENTS_OBJ(e1, obj->nevents)
 		{
-			e1->func  = NULL;
+			e1->func = NULL;
 			e1->timer = 1;
 		}
 		// Now clear the 'next_obj_nev' list.
@@ -539,7 +553,7 @@ void disarm_obj_nevents(P_obj obj, event_func_type func)
 			e1 = obj->nevents->next_obj_nev;
 			// Erase the next_obj_nev & obj.
 			obj->nevents->next_obj_nev = NULL;
-			obj->nevents->obj          = NULL;
+			obj->nevents->obj = NULL;
 			// Move to the next event.
 			obj->nevents = e1;
 		}
@@ -550,19 +564,20 @@ void disarm_obj_nevents(P_obj obj, event_func_type func)
 		{
 			if (e1->func == func)
 			{
-				e1->func  = NULL;
+				e1->func = NULL;
 				e1->timer = 1;
 			}
 		}
 	}
 }
 
-void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int flag, void *data, int data_size)
+void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int flag,
+	       void *data, int data_size)
 {
-	P_nevent               event, e;
+	P_nevent event, e;
 	struct char_link_data *cld;
-	char                  *data_buf;
-	int                    loc;
+	char *data_buf;
+	int loc;
 
 	if (!func)
 	{
@@ -578,8 +593,11 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 
 	if (ch && !IS_ALIVE(ch) && func != release_mob_mem)
 	{
-		logit(LOG_DEBUG, "add_event: dead ch '%s' in room r%d/v%d function %s", GET_NAME(ch), ch->in_room, ROOM_VNUM(ch->in_room), get_function_name((void *)func));
-		debug("add_event: dead ch '%s' in room r%d/v%d function %s", GET_NAME(ch), ch->in_room, ROOM_VNUM(ch->in_room), get_function_name((void *)func));
+		logit(LOG_DEBUG, "add_event: dead ch '%s' in room r%d/v%d function %s",
+		      GET_NAME(ch), ch->in_room, ROOM_VNUM(ch->in_room),
+		      get_function_name((void *)func));
+		debug("add_event: dead ch '%s' in room r%d/v%d function %s", GET_NAME(ch),
+		      ch->in_room, ROOM_VNUM(ch->in_room), get_function_name((void *)func));
 		return;
 	}
 
@@ -601,8 +619,9 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 	// Should it be possible for an object to have a victim w/out a ch?
 	if (victim && !ch)
 	{
-		debug(
-			"add_event: victim '%s' & !ch, func: %s, obj: %s %d.", J_NAME(victim), (func == NULL) ? "NULL" : get_function_name((void *)func), obj ? OBJ_SHORT(obj) : "NULL", obj ? OBJ_VNUM(obj) : -1);
+		debug("add_event: victim '%s' & !ch, func: %s, obj: %s %d.", J_NAME(victim),
+		      (func == NULL) ? "NULL" : get_function_name((void *)func),
+		      obj ? OBJ_SHORT(obj) : "NULL", obj ? OBJ_VNUM(obj) : -1);
 		return;
 	}
 
@@ -615,13 +634,13 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 
 	event->prev_sched = event->next_sched = NULL;
 	event->next_char_nev = event->next_obj_nev = NULL;
-	event->ch                                  = ch;
-	event->victim                              = victim;
-	event->obj                                 = obj;
-	event->func                                = func;
-	event->priority                            = nevent_priority(func, ch);
-	event->scheduled_tick                      = ne_event_tick + (unsigned long long)delay;
-	event->sequence                            = ++ne_event_sequence;
+	event->ch = ch;
+	event->victim = victim;
+	event->obj = obj;
+	event->func = func;
+	event->priority = nevent_priority(func, ch);
+	event->scheduled_tick = ne_event_tick + (unsigned long long)delay;
+	event->sequence = ++ne_event_sequence;
 
 	if (ch && victim && ch != victim)
 		event->cld = link_char(ch, victim, LNK_EVENT);
@@ -637,7 +656,7 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 
 	loc = (delay + pulse) % PULSES_IN_TICK;
 
-	event->timer   = (delay / PULSES_IN_TICK) + 1;
+	event->timer = (delay / PULSES_IN_TICK) + 1;
 	event->element = loc;
 
 	if (ch)
@@ -663,7 +682,7 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 	if (obj)
 	{
 		event->next_obj_nev = obj->nevents;
-		obj->nevents        = event;
+		obj->nevents = event;
 	}
 
 	nevent_link_schedule(event, loc);
@@ -764,7 +783,8 @@ static long nevent_budget_usec(void)
 {
 	static long configured = -1;
 	if (configured < 0)
-		configured = nevent_config_limit("DURIS_NEVENT_BUDGET_USEC", NEVENT_BUDGET_USEC_DEFAULT);
+		configured =
+			nevent_config_limit("DURIS_NEVENT_BUDGET_USEC", NEVENT_BUDGET_USEC_DEFAULT);
 	return configured;
 }
 
@@ -772,7 +792,8 @@ static long nevent_max_callbacks(void)
 {
 	static long configured = -1;
 	if (configured < 0)
-		configured = nevent_config_limit("DURIS_NEVENT_MAX_CALLBACKS", NEVENT_MAX_CALLBACKS_DEFAULT);
+		configured = nevent_config_limit("DURIS_NEVENT_MAX_CALLBACKS",
+						 NEVENT_MAX_CALLBACKS_DEFAULT);
 	return configured;
 }
 
@@ -795,7 +816,8 @@ static void nevent_analytics_reset(unsigned long long start_tick)
 	nevent_analytics.window_start_tick = start_tick;
 }
 
-static struct nevent_callback_analytics *nevent_analytics_callback_slot(void *func, const char *name)
+static struct nevent_callback_analytics *nevent_analytics_callback_slot(void *func,
+									const char *name)
 {
 	int free_slot = -1;
 	int i;
@@ -808,8 +830,7 @@ static struct nevent_callback_analytics *nevent_analytics_callback_slot(void *fu
 		{
 			if (name && !nevent_analytics.callbacks[i].name[0])
 				snprintf(nevent_analytics.callbacks[i].name,
-				         sizeof(nevent_analytics.callbacks[i].name),
-				         "%s", name);
+					 sizeof(nevent_analytics.callbacks[i].name), "%s", name);
 			return &nevent_analytics.callbacks[i];
 		}
 		if ((free_slot < 0) && !nevent_analytics.callbacks[i].func)
@@ -823,12 +844,12 @@ static struct nevent_callback_analytics *nevent_analytics_callback_slot(void *fu
 	nevent_analytics.callbacks[free_slot].func = func;
 	if (name)
 		snprintf(nevent_analytics.callbacks[free_slot].name,
-		         sizeof(nevent_analytics.callbacks[free_slot].name),
-		         "%s", name);
+			 sizeof(nevent_analytics.callbacks[free_slot].name), "%s", name);
 	return &nevent_analytics.callbacks[free_slot];
 }
 
-static void nevent_analytics_record_callback(event_func_type func, const char *name, long callback_us)
+static void nevent_analytics_record_callback(event_func_type func, const char *name,
+					     long callback_us)
 {
 	struct nevent_callback_analytics *callback;
 
@@ -864,27 +885,25 @@ static void nevent_analytics_emit_callbacks(void)
 		const char *callback_name;
 		if (!callback->func)
 			continue;
-		callback_name = callback->name[0] ? callback->name : get_function_name(callback->func);
+		callback_name = callback->name[0] ? callback->name :
+						    get_function_name(callback->func);
 		logit(LOG_STATUS,
 		      "NEVENT ANALYTICS CALLBACK: window_start_tick=%llu func=%p name=%s calls=%lld total_us=%lld avg_us=%.2f max_us=%ld deferred=%lld",
-		      nevent_analytics.window_start_tick,
-		      callback->func,
-		      callback_name ? callback_name : "unknown",
-		      callback->calls,
+		      nevent_analytics.window_start_tick, callback->func,
+		      callback_name ? callback_name : "unknown", callback->calls,
 		      callback->total_us,
 		      callback->calls ? (double)callback->total_us / (double)callback->calls : 0.0,
-		      callback->max_us,
-		      callback->deferred);
+		      callback->max_us, callback->deferred);
 	}
 	if (nevent_analytics.callback_overflow > 0)
 		logit(LOG_STATUS,
 		      "NEVENT ANALYTICS CALLBACK OVERFLOW: window_start_tick=%llu dropped=%ld slots=%d",
-		      nevent_analytics.window_start_tick,
-		      nevent_analytics.callback_overflow,
+		      nevent_analytics.window_start_tick, nevent_analytics.callback_overflow,
 		      NEVENT_ANALYTICS_CALLBACK_SLOTS);
 }
 
-static void nevent_analytics_record(long scanned, long executed, long deferred, long loop_us, bool budget_exhausted)
+static void nevent_analytics_record(long scanned, long executed, long deferred, long loop_us,
+				    bool budget_exhausted)
 {
 	if (!nevent_analytics_enabled())
 		return;
@@ -919,12 +938,7 @@ static void nevent_analytics_record(long scanned, long executed, long deferred, 
 
 	logit(LOG_STATUS,
 	      "NEVENT ANALYTICS PULSE: tick=%llu scanned=%ld executed=%ld deferred=%ld total_us=%ld pending=%ld budget_exhausted=%d",
-	      ne_event_tick,
-	      scanned,
-	      executed,
-	      deferred,
-	      loop_us,
-	      ne_event_counter,
+	      ne_event_tick, scanned, executed, deferred, loop_us, ne_event_counter,
 	      budget_exhausted ? 1 : 0);
 
 	if (nevent_analytics.pulses >= PULSES_IN_TICK)
@@ -932,21 +946,14 @@ static void nevent_analytics_record(long scanned, long executed, long deferred, 
 		double pulses = (double)nevent_analytics.pulses;
 		logit(LOG_STATUS,
 		      "NEVENT ANALYTICS MINUTE: start_tick=%llu end_tick=%llu pulses=%ld avg_scanned=%.2f avg_executed=%.2f avg_deferred=%.2f avg_total_us=%.2f peak_scanned=%ld peak_executed=%ld peak_executed_tick=%llu peak_deferred=%ld peak_total_us=%ld peak_total_us_tick=%llu peak_pending=%ld budget_exhausted_pulses=%ld",
-		      nevent_analytics.window_start_tick,
-		      ne_event_tick,
-		      nevent_analytics.pulses,
+		      nevent_analytics.window_start_tick, ne_event_tick, nevent_analytics.pulses,
 		      nevent_analytics.total_scanned / pulses,
 		      nevent_analytics.total_executed / pulses,
-		      nevent_analytics.total_deferred / pulses,
-		      nevent_analytics.total_us / pulses,
-		      nevent_analytics.peak_scanned,
-		      nevent_analytics.peak_executed,
-		      nevent_analytics.peak_executed_tick,
-		      nevent_analytics.peak_deferred,
-		      nevent_analytics.peak_total_us,
-		      nevent_analytics.peak_total_us_tick,
-		      nevent_analytics.peak_pending,
-		      nevent_analytics.budget_exhausted_pulses);
+		      nevent_analytics.total_deferred / pulses, nevent_analytics.total_us / pulses,
+		      nevent_analytics.peak_scanned, nevent_analytics.peak_executed,
+		      nevent_analytics.peak_executed_tick, nevent_analytics.peak_deferred,
+		      nevent_analytics.peak_total_us, nevent_analytics.peak_total_us_tick,
+		      nevent_analytics.peak_pending, nevent_analytics.budget_exhausted_pulses);
 		nevent_analytics_emit_callbacks();
 		nevent_analytics_reset(ne_event_tick + 1);
 	}
@@ -954,7 +961,8 @@ static void nevent_analytics_record(long scanned, long executed, long deferred, 
 
 static long nevent_elapsed_us(const struct timespec *started, const struct timespec *finished)
 {
-	return (finished->tv_sec - started->tv_sec) * 1000000L + (finished->tv_nsec - started->tv_nsec) / 1000L;
+	return (finished->tv_sec - started->tv_sec) * 1000000L +
+	       (finished->tv_nsec - started->tv_nsec) / 1000L;
 }
 
 /* Move the unscanned but due events to the front of the next pulse.  Leaving
@@ -966,8 +974,8 @@ static long nevent_defer_suffix(P_nevent deferred_head)
 	P_nevent event, next;
 	P_nevent moved_head = NULL;
 	P_nevent moved_tail = NULL;
-	int      next_pulse;
-	long     deferred = 0;
+	int next_pulse;
+	long deferred = 0;
 
 	if (!deferred_head)
 		return 0;
@@ -998,8 +1006,8 @@ static long nevent_defer_suffix(P_nevent deferred_head)
 
 		event->prev_sched = NULL;
 		event->next_sched = NULL;
-		event->element    = next_pulse;
-		event->timer      = 1;
+		event->element = next_pulse;
+		event->timer = 1;
 		event->deferral_count++;
 		nevent_analytics_record_deferred(event);
 		deferred++;
@@ -1011,8 +1019,8 @@ static long nevent_defer_suffix(P_nevent deferred_head)
 		else
 		{
 			moved_tail->next_sched = event;
-			event->prev_sched      = moved_tail;
-			moved_tail             = event;
+			event->prev_sched = moved_tail;
+			moved_tail = event;
 		}
 	}
 
@@ -1022,7 +1030,7 @@ static long nevent_defer_suffix(P_nevent deferred_head)
 	/* Prepend the moved run to the next pulse, preserving their order. */
 	if (ne_schedule[next_pulse])
 	{
-		moved_tail->next_sched              = ne_schedule[next_pulse];
+		moved_tail->next_sched = ne_schedule[next_pulse];
 		ne_schedule[next_pulse]->prev_sched = moved_tail;
 	}
 	else
@@ -1038,9 +1046,9 @@ static long nevent_defer_suffix(P_nevent deferred_head)
 void ne_events(void)
 {
 	static long count = 0;
-	P_nevent    temp_event, next_event;
-	P_char      ch;
-	P_obj       obj;
+	P_nevent temp_event, next_event;
+	P_char ch;
+	P_obj obj;
 	struct timespec loop_started, callback_started, callback_finished, loop_finished;
 	long scanned = 0, executed = 0, slowest_us = 0, deferred = 0;
 	long budget_usec = nevent_budget_usec();
@@ -1071,10 +1079,12 @@ void ne_events(void)
 			if (budget_usec > 0 && !(scanned % 64))
 			{
 				clock_gettime(CLOCK_MONOTONIC, &loop_finished);
-				budget_exhausted = nevent_elapsed_us(&loop_started, &loop_finished) >= budget_usec;
+				budget_exhausted = nevent_elapsed_us(&loop_started,
+								     &loop_finished) >= budget_usec;
 			}
 			/* Allow one over-cap callback so a starved player event still fires. */
-			if (budget_exhausted && next_event && !priority_promotion_used && nevent_promote_overdue_player(&next_event, current_nevent))
+			if (budget_exhausted && next_event && !priority_promotion_used &&
+			    nevent_promote_overdue_player(&next_event, current_nevent))
 			{
 				priority_promotion_used = TRUE;
 				continue;
@@ -1095,11 +1105,14 @@ void ne_events(void)
 			clock_gettime(CLOCK_MONOTONIC, &callback_started);
 #ifdef DO_PROFILE
 			PROFILE_START(event_func);
-			(callback_func)(current_nevent->ch, current_nevent->victim, current_nevent->obj, current_nevent->data);
+			(callback_func)(current_nevent->ch, current_nevent->victim,
+					current_nevent->obj, current_nevent->data);
 			PROFILE_END(event_func);
-			PROFILE_REGISTER_CALL(callback_func, event_func_profile_end - event_func_profile_beg)
+			PROFILE_REGISTER_CALL(callback_func,
+					      event_func_profile_end - event_func_profile_beg)
 #else
-			(callback_func)(current_nevent->ch, current_nevent->victim, current_nevent->obj, current_nevent->data);
+			(callback_func)(current_nevent->ch, current_nevent->victim,
+					current_nevent->obj, current_nevent->data);
 #endif
 			clock_gettime(CLOCK_MONOTONIC, &callback_finished);
 			executed++;
@@ -1112,17 +1125,20 @@ void ne_events(void)
 			nevent_analytics_record_callback(callback_func, callback_name, callback_us);
 		}
 
-		if (nevent_is_player_timed(current_nevent->func, current_nevent->ch) && nevent_trace_player())
+		if (nevent_is_player_timed(current_nevent->func, current_nevent->ch) &&
+		    nevent_trace_player())
 		{
-			long long late_pulses = (ne_event_tick > current_nevent->scheduled_tick) ? (long long)(ne_event_tick - current_nevent->scheduled_tick) : 0;
+			long long late_pulses =
+				(ne_event_tick > current_nevent->scheduled_tick) ?
+					(long long)(ne_event_tick -
+						    current_nevent->scheduled_tick) :
+					0;
 			logit(LOG_STATUS,
 			      "PLAYER EVENT TIMING: func=%s sequence=%llu ch_pid=%ld due_tick=%llu actual_tick=%llu late_pulses=%lld scheduled=%ld",
 			      get_function_name((void *)current_nevent->func),
 			      current_nevent->sequence,
 			      current_nevent->ch ? (long)GET_ID(current_nevent->ch) : -1L,
-			      current_nevent->scheduled_tick,
-			      ne_event_tick,
-			      late_pulses,
+			      current_nevent->scheduled_tick, ne_event_tick, late_pulses,
 			      ne_event_counter);
 		}
 
@@ -1139,7 +1155,8 @@ void ne_events(void)
 				budget_exhausted = TRUE;
 		}
 		/* Allow one over-cap callback so a starved player event still fires. */
-		if (budget_exhausted && next_event && !priority_promotion_used && nevent_promote_overdue_player(&next_event, NULL))
+		if (budget_exhausted && next_event && !priority_promotion_used &&
+		    nevent_promote_overdue_player(&next_event, NULL))
 		{
 			priority_promotion_used = TRUE;
 			continue;
@@ -1158,26 +1175,15 @@ void ne_events(void)
 	{
 		logit(LOG_STATUS,
 		      "NEVENT BUDGET: pulse=%d total_us=%ld scanned=%ld executed=%ld deferred=%ld slowest=%s slowest_us=%ld scheduled=%ld",
-		      pulse,
-		      loop_us,
-		      scanned,
-		      executed,
-		      deferred,
-		      slowest_name ? slowest_name : "unknown",
-		      slowest_us,
-		      ne_event_counter);
+		      pulse, loop_us, scanned, executed, deferred,
+		      slowest_name ? slowest_name : "unknown", slowest_us, ne_event_counter);
 	}
 	if (loop_us >= 50000)
 	{
 		logit(LOG_STATUS,
 		      "NEVENT SLOW: pulse=%d total_us=%ld scanned=%ld executed=%ld slowest=%s slowest_us=%ld scheduled=%ld",
-		      pulse,
-		      loop_us,
-		      scanned,
-		      executed,
-		      slowest_name ? slowest_name : "unknown",
-		      slowest_us,
-		      ne_event_counter);
+		      pulse, loop_us, scanned, executed, slowest_name ? slowest_name : "unknown",
+		      slowest_us, ne_event_counter);
 	}
 	nevent_analytics_record(scanned, executed, deferred, loop_us, budget_exhausted);
 	count++;
@@ -1276,7 +1282,8 @@ void ne_init_event_pool(void)
 	ne_event_sequence = 0;
 	memset(ne_schedule, 0, sizeof(ne_schedule));
 	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
-	ne_dead_event_pool = mm_create("NEVENTS", sizeof(struct nevent_data), offsetof(struct nevent_data, next_sched), 11);
+	ne_dead_event_pool = mm_create("NEVENTS", sizeof(struct nevent_data),
+				       offsetof(struct nevent_data, next_sched), 11);
 }
 
 void ne_init_events(void)
@@ -1289,7 +1296,8 @@ void ne_init_events(void)
 	for (j = 0; j < top_of_world; j++)
 		if (world[j].funct && (*world[j].funct)(j, 0, CMD_SET_PERIODIC, 0))
 		{
-			add_event(room_event, PULSE_MOBILE + number(-4, 4), 0, 0, 0, 0, &j, sizeof(j));
+			add_event(room_event, PULSE_MOBILE + number(-4, 4), 0, 0, 0, 0, &j,
+				  sizeof(j));
 		}
 
 	/*
@@ -1304,7 +1312,8 @@ void ne_init_events(void)
 	{
 		i = i % PULSES_IN_TICK;
 
-		logit(LOG_STATUS, "Zone %3d:(%5d-%5d) %s", j, j ? (zone_table[j - 1].top + 1) : 0, zone_table[j].top, zone_table[j].name);
+		logit(LOG_STATUS, "Zone %3d:(%5d-%5d) %s", j, j ? (zone_table[j - 1].top + 1) : 0,
+		      zone_table[j].top, zone_table[j].name);
 
 		// schedule zone reset events (always needed)
 		if (zone_table[j].reset_mode)
@@ -1321,7 +1330,8 @@ void ne_init_events(void)
 			if (!crash_recovery_boot)
 			{
 				if (zone_table[j].lifespan_min != zone_table[j].lifespan_max)
-					zone_table[j].lifespan = number(zone_table[j].lifespan_min, zone_table[j].lifespan_max);
+					zone_table[j].lifespan = number(zone_table[j].lifespan_min,
+									zone_table[j].lifespan_max);
 				else
 					zone_table[j].lifespan = zone_table[j].lifespan_min;
 				zone_table[j].age = 0;
@@ -1354,7 +1364,8 @@ void ne_init_events(void)
 	for (j = 0; j < 100; j++)
 	{
 		// We take 2 ticks before we start changing the weather.
-		add_event(event_weather_change, 125 * WAIT_SEC + number(-9, 9), NULL, NULL, NULL, 0, &j, sizeof(j));
+		add_event(event_weather_change, 125 * WAIT_SEC + number(-9, 9), NULL, NULL, NULL, 0,
+			  &j, sizeof(j));
 		// AddEvent(EVENT_SPECIAL, 500 + number(-9, 9), TRUE, weather_change, Gbuf1);
 	}
 
@@ -1376,7 +1387,8 @@ void ne_init_events(void)
 	add_event(event_artifact_check_poof_sql, 35 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 
 	// Upkeep costs for outposts
-	add_event(event_outposts_upkeep, SECS_PER_MUD_HOUR * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	add_event(event_outposts_upkeep, SECS_PER_MUD_HOUR * WAIT_SEC, NULL, NULL, NULL, 0, NULL,
+		  0);
 
 	// Increases and notifies people if they've ranked up in feudal surname.
 	add_event(event_update_surnames, 45 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
@@ -1387,7 +1399,8 @@ void ne_init_events(void)
 
 	// redis donation message polling
 	if (redis_enabled)
-		add_event(event_check_donation_messages, 1 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+		add_event(event_check_donation_messages, 1 * WAIT_SEC, NULL, NULL, NULL, 0, NULL,
+			  0);
 
 	// redis world state saves for crash recovery
 	if (redis_enabled && redis_world_state_enabled && !crash_recovery_boot)
@@ -1398,10 +1411,10 @@ void ne_init_events(void)
 
 void zone_purge(int zone_number)
 {
-	P_char           vict, next_v;
-	P_obj            obj, next_o;
+	P_char vict, next_v;
+	P_obj obj, next_o;
 	struct zone_data to_purge = zone_table[zone_number];
-	int              k;
+	int k;
 
 	for (k = to_purge.real_bottom; k != NOWHERE && k <= to_purge.real_top; k++)
 	{
@@ -1422,7 +1435,8 @@ void zone_purge(int zone_number)
 			if (obj->R_num == real_object(VOBJ_WALLS))
 				continue;
 
-			if (obj->type == ITEM_CORPSE && !obj->contains) // Don't purge corpses w/ contents
+			if (obj->type == ITEM_CORPSE &&
+			    !obj->contains) // Don't purge corpses w/ contents
 			{
 			}
 			// Don't purge artis either.
@@ -1438,8 +1452,8 @@ void zone_purge(int zone_number)
 // This function is very CPU intensive.  Do _NOT_ leave it toggled on if you're not having issues.
 void check_nevents()
 {
-	P_char            ch;
-	bool              shown = FALSE;
+	P_char ch;
+	bool shown = FALSE;
 	P_nevent e1, e2;
 
 	// For each event in the game,
@@ -1453,21 +1467,25 @@ void check_nevents()
 				// If the head of the list isn't equal to the second.
 				if (ch->nevents && ch->nevents->ch && ch->nevents->ch != ch)
 				{
-					debug("check_nevents: ch '%s' %d not ch in ch->nevents, func %s.", IS_ALIVE(ch) ? J_NAME(ch) : GET_NAME(ch), GET_ID(ch), get_function_name((void *)ch->nevents->func));
-					shown       = TRUE;
+					debug("check_nevents: ch '%s' %d not ch in ch->nevents, func %s.",
+					      IS_ALIVE(ch) ? J_NAME(ch) : GET_NAME(ch), GET_ID(ch),
+					      get_function_name((void *)ch->nevents->func));
+					shown = TRUE;
 					ch->nevents = NULL;
 					continue;
 				}
 				// Make sure all of ch's events belong to ch.
 				LOOP_EVENTS_CH(e2, ch->nevents)
 				{
-					if (e2->next_char_nev && e2->next_char_nev->ch && e2->next_char_nev->ch != ch)
+					if (e2->next_char_nev && e2->next_char_nev->ch &&
+					    e2->next_char_nev->ch != ch)
 					{
 						debug("check_nevents: ch '%s' %d is not ch in sub-event e->next_char_nev, func %s.",
 						      IS_ALIVE(ch) ? J_NAME(ch) : GET_NAME(ch),
 						      GET_ID(ch),
-						      get_function_name((void *)e2->next_char_nev->func));
-						shown             = TRUE;
+						      get_function_name(
+							      (void *)e2->next_char_nev->func));
+						shown = TRUE;
 						e2->next_char_nev = NULL;
 						break;
 					}
@@ -1481,7 +1499,7 @@ void check_nevents()
 
 void event_broken(struct char_link_data *cld)
 {
-	P_char   ch = cld->linking;
+	P_char ch = cld->linking;
 	P_nevent e;
 
 	if (!ch)
@@ -1494,20 +1512,21 @@ void event_broken(struct char_link_data *cld)
 		if (e->cld == cld)
 		{
 			e->func = NULL;
-			e->cld  = NULL;
+			e->cld = NULL;
 			return;
 		}
 	}
 	if (debug_event_list)
 	{
-		debug("event_broken: couldn't find cld in cld->ch's event list, ch: '%s' %d", J_NAME(ch), GET_ID(ch));
+		debug("event_broken: couldn't find cld in cld->ch's event list, ch: '%s' %d",
+		      J_NAME(ch), GET_ID(ch));
 	}
 }
 
 void *get_executable_base_address()
 {
 	FILE *f;
-	char  line[256];
+	char line[256];
 	void *base_address = NULL;
 	// Open the maps file for the current process
 	f = fopen("/proc/self/maps", "r");
@@ -1524,7 +1543,7 @@ void *get_executable_base_address()
 		char *dash_pos = strchr(line, '-');
 		if (dash_pos != NULL)
 		{
-			*dash_pos    = '\0'; // Temporarily terminate the string at the dash
+			*dash_pos = '\0'; // Temporarily terminate the string at the dash
 			base_address = (void *)strtoul(line, NULL, 16);
 		}
 	}
@@ -1562,9 +1581,9 @@ void load_event_names()
 {
 	FILE *f;
 	void *func;
-	char  func_name[256];
-	char  c;
-	int   i = 0;
+	char func_name[256];
+	char c;
+	int i = 0;
 
 	void *base_address = get_executable_base_address();
 
@@ -1574,7 +1593,7 @@ void load_event_names()
 	{
 		while (fscanf(f, "%p %c %s", &func, &c, func_name) == 3 && i < MAX_FUNCTIONS)
 		{
-			function_names[i].func      = (void*)((ulong)func + (ulong)base_address);
+			function_names[i].func = (void *)((ulong)func + (ulong)base_address);
 			function_names[i].func_name = str_dup(func_name);
 			i++;
 		}
@@ -1586,7 +1605,7 @@ void load_event_names()
 
 void show_world_events(P_char ch, const char *arg)
 {
-	int  count = 0;
+	int count = 0;
 	char buf[MAX_STRING_LENGTH];
 	if (!arg || arg[0] == '\0')
 	{
@@ -1598,7 +1617,10 @@ void show_world_events(P_char ch, const char *arg)
 					count++;
 				}
 			}
-		snprintf(buf, MAX_STRING_LENGTH, "There are currently %d events scheduled on the system.\nSpecify a function name to see more information about that particular event.\n", count);
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"There are currently %d events scheduled on the system.\nSpecify a function name to see more information about that particular event.\n",
+			count);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -1616,16 +1638,14 @@ void show_world_events(P_char ch, const char *arg)
 				count++;
 				if ((strlen(buf) + 80) < sizeof(buf))
 				{
-					snprintf(buf + strlen(buf),
-					         MAX_STRING_LENGTH - strlen(buf),
-					         //                    "    %-5d | %-5d | %-12.12s | %-12.12s | %-8d | 0x%08.8x\n",
-					         "    %-5d | %-5d | %-12.12s | %-12.12s | %-8d | %p\n",
-					         ev->element,
-					         ev->timer,
-					         ev->ch ? GET_NAME(ev->ch) : "   none",
-					         ev->victim ? GET_NAME(ev->victim) : "   none",
-					         ev->obj ? OBJ_VNUM(ev->obj) : 0,
-					         ev->data);
+					snprintf(
+						buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+						//                    "    %-5d | %-5d | %-12.12s | %-12.12s | %-8d | 0x%08.8x\n",
+						"    %-5d | %-5d | %-12.12s | %-12.12s | %-8d | %p\n",
+						ev->element, ev->timer,
+						ev->ch ? GET_NAME(ev->ch) : "   none",
+						ev->victim ? GET_NAME(ev->victim) : "   none",
+						ev->obj ? OBJ_VNUM(ev->obj) : 0, ev->data);
 				}
 				else
 				{
@@ -1649,28 +1669,27 @@ void save_profile_data(const char *name, double total_inside, double total_outsi
 {
 	logit(LOG_FILE,
 	      "Profile info for \"%s\": inside = %.0f, outside = %.0f, total_calls = %d, average = %.0f, share = %6.3f%%",
-	      name,
-	      total_inside,
-	      total_outside,
-	      total,
+	      name, total_inside, total_outside, total,
 	      (total != 0) ? (total_inside / (double)total) : 0,
-	      (total_inside + total_outside != 0) ? (total_inside / (total_inside + total_outside) * 100.0) : 0);
-	statuslog(56,
-	          "Profile info for \"%s\": inside = %.0f, outside = %.0f, total_calls = %d, average = %.0f, share = %6.3f%%",
-	          name,
-	          total_inside,
-	          total_outside,
-	          total,
-	          (total != 0) ? (total_inside / (double)total) : 0,
-	          (total_inside + total_outside != 0) ? (total_inside / (total_inside + total_outside) * 100.0) : 0);
+	      (total_inside + total_outside != 0) ?
+		      (total_inside / (total_inside + total_outside) * 100.0) :
+		      0);
+	statuslog(
+		56,
+		"Profile info for \"%s\": inside = %.0f, outside = %.0f, total_calls = %d, average = %.0f, share = %6.3f%%",
+		name, total_inside, total_outside, total,
+		(total != 0) ? (total_inside / (double)total) : 0,
+		(total_inside + total_outside != 0) ?
+			(total_inside / (total_inside + total_outside) * 100.0) :
+			0);
 }
 
 struct FuncCallInfo
 {
-	const char   *name;
-	const void   *addr;
-	unsigned      calls;
-	double        time;
+	const char *name;
+	const void *addr;
+	unsigned calls;
+	double time;
 	FuncCallInfo *next;
 	FuncCallInfo *prev;
 } funcCallInfo[MAX_FUNCTIONS + 1];
@@ -1681,8 +1700,8 @@ void reset_func_call_info()
 	do
 	{
 		curr->calls = 0;
-		curr->time  = 0;
-		curr        = curr->next;
+		curr->time = 0;
+		curr = curr->next;
 	} while (curr != funcCallInfo);
 }
 
@@ -1694,20 +1713,20 @@ void init_func_call_info()
 
 	for (i = 1; function_names[i - 1].func; i++)
 	{
-		funcCallInfo[i].name     = function_names[i - 1].func_name;
-		funcCallInfo[i].addr     = function_names[i - 1].func;
+		funcCallInfo[i].name = function_names[i - 1].func_name;
+		funcCallInfo[i].addr = function_names[i - 1].func;
 		funcCallInfo[i - 1].next = &(funcCallInfo[i]);
-		funcCallInfo[i].prev     = &(funcCallInfo[i - 1]);
+		funcCallInfo[i].prev = &(funcCallInfo[i - 1]);
 	}
 	funcCallInfo[i - 1].next = &(funcCallInfo[0]);
-	funcCallInfo[0].prev     = &(funcCallInfo[i - 1]);
+	funcCallInfo[0].prev = &(funcCallInfo[i - 1]);
 	reset_func_call_info();
 }
 
 void save_func_call_info()
 {
 	unsigned total_calls = 0;
-	double   total_time  = 0;
+	double total_time = 0;
 
 	FuncCallInfo *curr = funcCallInfo;
 	do
@@ -1722,37 +1741,37 @@ void save_func_call_info()
 	{
 		logit(LOG_FILE,
 		      "Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
-		      curr->name,
-		      curr->calls,
+		      curr->name, curr->calls,
 		      (total_calls != 0) ? ((double)curr->calls / (double)total_calls * 100.0) : 0,
 		      curr->time / 1000.,
 		      (total_time != 0) ? (curr->time / total_time * 100.0) : 0);
-		statuslog(56,
-		          "Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
-		          curr->name,
-		          curr->calls,
-		          (total_calls != 0) ? ((double)curr->calls / (double)total_calls * 100.0) : 0,
-		          curr->time / 1000.,
-		          (total_time != 0) ? (curr->time / total_time * 100.0) : 0);
+		statuslog(
+			56,
+			"Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
+			curr->name, curr->calls,
+			(total_calls != 0) ? ((double)curr->calls / (double)total_calls * 100.0) :
+					     0,
+			curr->time / 1000.,
+			(total_time != 0) ? (curr->time / total_time * 100.0) : 0);
 		curr = curr->next;
 	} while (curr != funcCallInfo && curr->calls != 0);
 
-	logit(LOG_FILE, "Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)", "TOTAL", total_calls, 100.0, total_time / 1000., 100.0);
+	logit(LOG_FILE,
+	      "Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
+	      "TOTAL", total_calls, 100.0, total_time / 1000., 100.0);
 }
 
 void register_func_call(void *func, double time)
-{	
+{
 	for (FuncCallInfo *curr = funcCallInfo->next; curr != funcCallInfo; curr = curr->next)
 	{
 		if (curr->addr == func)
 		{
 			double wallClockInSec = time / (double)CLOCKS_PER_SEC;
-			if(wallClockInSec > 0.05)
+			if (wallClockInSec > 0.05)
 			{
-				statuslog(56,
-				  "LONG EVENT \"%-30s\": took %f seconds",
-				  curr->name,
-				  wallClockInSec);
+				statuslog(56, "LONG EVENT \"%-30s\": took %f seconds", curr->name,
+					  wallClockInSec);
 			}
 			curr->calls++;
 			curr->time += time;
@@ -1763,9 +1782,9 @@ void register_func_call(void *func, double time)
 					prev = prev->prev;
 				curr->next->prev = curr->prev;
 				curr->prev->next = curr->next;
-				curr->next       = prev->next;
-				curr->prev       = prev;
-				prev->next       = curr;
+				curr->next = prev->next;
+				curr->prev = prev;
+				prev->next = curr;
 				curr->next->prev = curr;
 			}
 			return;

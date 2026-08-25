@@ -25,83 +25,99 @@ randObjAff randomObjFieldsArr[] = {
 
 	/* possible affect1 bits */
 
-	{roatAffBit1,        AFF_INVISIBLE, 60, 0, FALSE, 0,  TRUE,                     "invisibility",                 "the spirits"},
-	{roatAffBit1,           AFF_FARSEE, 40, 0, FALSE, 0,  TRUE,                         "farsight",                   "the eagle"},
-	{roatAffBit1, AFF_DETECT_INVISIBLE, 60, 0, FALSE, 0,  TRUE,           "invisibility detection",                            ""},
-	{roatAffBit1,            AFF_HASTE, 60, 0, FALSE, 0,  TRUE,                            "haste",                   "the snake"},
-	{roatAffBit1,       AFF_SENSE_LIFE, 35, 0, FALSE, 0,  TRUE,                     "life-sensing",                            ""},
-	{roatAffBit1,      AFF_MINOR_GLOBE, 50, 0, FALSE, 0,  TRUE,      "minor protection from magic",                "the beholder"},
-	{roatAffBit1,       AFF_STONE_SKIN, 60, 0, FALSE, 0,  TRUE,                    "skin of stone",                   "the golem"},
-	{roatAffBit1,        AFF_UD_VISION, 40, 0, FALSE, 0,  TRUE,                 "Underdark vision",                     "the bat"},
-	{roatAffBit1,      AFF_WATERBREATH, 35, 0, FALSE, 0, FALSE,                   "waterbreathing",                    "the toad"},
-	{roatAffBit1,     AFF_PROTECT_EVIL, 25, 0, FALSE, 0, FALSE,                  "evil protection",                 "the paladin"},
-	{roatAffBit1,      AFF_SLOW_POISON, 15, 0, FALSE, 0, FALSE,           "protection from poison",                "the basilisk"},
-	{roatAffBit1,     AFF_PROTECT_GOOD, 25, 0, FALSE, 0, FALSE,                  "good protection",             "the deathknight"},
-	{roatAffBit1,      AFF_SKILL_AWARE, 60, 0, FALSE, 0,  TRUE,                        "awareness",                            ""},
-	{roatAffBit1,            AFF_SNEAK, 60, 0, FALSE, 0,  TRUE,                          "stealth",                   "the rogue"},
-	{roatAffBit1,      AFF_INFRAVISION, 35, 0, FALSE, 0, FALSE,                      "infravision",              "darkness sight"},
-	{roatAffBit1,         AFF_LEVITATE, 40, 0, FALSE, 0, FALSE,                       "levitation",              "the mindflayer"},
-	{roatAffBit1,              AFF_FLY, 70, 0, FALSE, 0, FALSE,                           "flight",                   "the swift"},
-	{roatAffBit1,            AFF_AWARE, 60, 0, FALSE, 0,  TRUE,                        "awareness",                            ""},
-	{roatAffBit1,        AFF_PROT_FIRE, 35, 0, FALSE, 0, FALSE,             "protection from fire",              "the salamander"},
-	{roatAffBit1,      AFF_BIOFEEDBACK, 60, 0, FALSE, 0,  TRUE,                      "biofeedback",                            ""},
+	{ roatAffBit1, AFF_INVISIBLE, 60, 0, FALSE, 0, TRUE, "invisibility", "the spirits" },
+	{ roatAffBit1, AFF_FARSEE, 40, 0, FALSE, 0, TRUE, "farsight", "the eagle" },
+	{ roatAffBit1, AFF_DETECT_INVISIBLE, 60, 0, FALSE, 0, TRUE, "invisibility detection", "" },
+	{ roatAffBit1, AFF_HASTE, 60, 0, FALSE, 0, TRUE, "haste", "the snake" },
+	{ roatAffBit1, AFF_SENSE_LIFE, 35, 0, FALSE, 0, TRUE, "life-sensing", "" },
+	{ roatAffBit1, AFF_MINOR_GLOBE, 50, 0, FALSE, 0, TRUE, "minor protection from magic",
+	  "the beholder" },
+	{ roatAffBit1, AFF_STONE_SKIN, 60, 0, FALSE, 0, TRUE, "skin of stone", "the golem" },
+	{ roatAffBit1, AFF_UD_VISION, 40, 0, FALSE, 0, TRUE, "Underdark vision", "the bat" },
+	{ roatAffBit1, AFF_WATERBREATH, 35, 0, FALSE, 0, FALSE, "waterbreathing", "the toad" },
+	{ roatAffBit1, AFF_PROTECT_EVIL, 25, 0, FALSE, 0, FALSE, "evil protection", "the paladin" },
+	{ roatAffBit1, AFF_SLOW_POISON, 15, 0, FALSE, 0, FALSE, "protection from poison",
+	  "the basilisk" },
+	{ roatAffBit1, AFF_PROTECT_GOOD, 25, 0, FALSE, 0, FALSE, "good protection",
+	  "the deathknight" },
+	{ roatAffBit1, AFF_SKILL_AWARE, 60, 0, FALSE, 0, TRUE, "awareness", "" },
+	{ roatAffBit1, AFF_SNEAK, 60, 0, FALSE, 0, TRUE, "stealth", "the rogue" },
+	{ roatAffBit1, AFF_INFRAVISION, 35, 0, FALSE, 0, FALSE, "infravision", "darkness sight" },
+	{ roatAffBit1, AFF_LEVITATE, 40, 0, FALSE, 0, FALSE, "levitation", "the mindflayer" },
+	{ roatAffBit1, AFF_FLY, 70, 0, FALSE, 0, FALSE, "flight", "the swift" },
+	{ roatAffBit1, AFF_AWARE, 60, 0, FALSE, 0, TRUE, "awareness", "" },
+	{ roatAffBit1, AFF_PROT_FIRE, 35, 0, FALSE, 0, FALSE, "protection from fire",
+	  "the salamander" },
+	{ roatAffBit1, AFF_BIOFEEDBACK, 60, 0, FALSE, 0, TRUE, "biofeedback", "" },
 
 	/* possible affect2 bits */
 
-	{roatAffBit2,      AFF2_FIRESHIELD, 60, 0, FALSE, 0,  TRUE,                       "fireshield",               "the elemental"},
-	{roatAffBit2,     AFF2_ULTRAVISION, 50, 0, FALSE, 0,  TRUE,                      "ultravision",                    "the drow"},
-	{roatAffBit2,     AFF2_DETECT_EVIL,  3, 0, FALSE, 0, FALSE,                   "evil detection",      "the eye of the paladin"},
-	{roatAffBit2,     AFF2_DETECT_GOOD,  3, 0, FALSE, 0, FALSE,                   "good detection", "the eye of the anti-paladin"},
-	{roatAffBit2,    AFF2_DETECT_MAGIC,  3, 0, FALSE, 0, FALSE,                  "magic detection",         "the eye of the mage"},
-	{roatAffBit2,       AFF2_PROT_COLD, 35, 0, FALSE, 0, FALSE,             "protection from cold",                    "the yeti"},
-	{roatAffBit2,  AFF2_PROT_LIGHTNING, 35, 0, FALSE, 0, FALSE,        "protection from lightning",                   "the storm"},
-	{roatAffBit2,           AFF2_GLOBE, 80, 0, FALSE, 0, FALSE,            "protection from magic",                "the beholder"},
-	{roatAffBit2,        AFF2_PROT_GAS, 35, 0, FALSE, 0, FALSE,              "protection from gas",                  "the dragon"},
-	{roatAffBit2,       AFF2_PROT_ACID, 35, 0, FALSE, 0, FALSE,             "protection from acid",                   "the viper"},
-	{roatAffBit2,      AFF2_SOULSHIELD, 55, 0, FALSE, 0,  TRUE,                       "soulshield",                       "faith"},
-	{roatAffBit2,  AFF2_VAMPIRIC_TOUCH, 45, 0, FALSE, 0, FALSE,                   "vampiric touch",                 "the vampire"},
-	{roatAffBit2,        AFF2_PASSDOOR, 55, 0, FALSE, 0,  TRUE,                         "passdoor",                   "the ghost"},
+	{ roatAffBit2, AFF2_FIRESHIELD, 60, 0, FALSE, 0, TRUE, "fireshield", "the elemental" },
+	{ roatAffBit2, AFF2_ULTRAVISION, 50, 0, FALSE, 0, TRUE, "ultravision", "the drow" },
+	{ roatAffBit2, AFF2_DETECT_EVIL, 3, 0, FALSE, 0, FALSE, "evil detection",
+	  "the eye of the paladin" },
+	{ roatAffBit2, AFF2_DETECT_GOOD, 3, 0, FALSE, 0, FALSE, "good detection",
+	  "the eye of the anti-paladin" },
+	{ roatAffBit2, AFF2_DETECT_MAGIC, 3, 0, FALSE, 0, FALSE, "magic detection",
+	  "the eye of the mage" },
+	{ roatAffBit2, AFF2_PROT_COLD, 35, 0, FALSE, 0, FALSE, "protection from cold", "the yeti" },
+	{ roatAffBit2, AFF2_PROT_LIGHTNING, 35, 0, FALSE, 0, FALSE, "protection from lightning",
+	  "the storm" },
+	{ roatAffBit2, AFF2_GLOBE, 80, 0, FALSE, 0, FALSE, "protection from magic",
+	  "the beholder" },
+	{ roatAffBit2, AFF2_PROT_GAS, 35, 0, FALSE, 0, FALSE, "protection from gas", "the dragon" },
+	{ roatAffBit2, AFF2_PROT_ACID, 35, 0, FALSE, 0, FALSE, "protection from acid",
+	  "the viper" },
+	{ roatAffBit2, AFF2_SOULSHIELD, 55, 0, FALSE, 0, TRUE, "soulshield", "faith" },
+	{ roatAffBit2, AFF2_VAMPIRIC_TOUCH, 45, 0, FALSE, 0, FALSE, "vampiric touch",
+	  "the vampire" },
+	{ roatAffBit2, AFF2_PASSDOOR, 55, 0, FALSE, 0, TRUE, "passdoor", "the ghost" },
 
 	/* possible 'affect's (strength etc) */
 
-	{    roatAff,            APPLY_STR,  3, 2, FALSE, 0, FALSE,                         "strength",                   "the giant"},
-	{    roatAff,            APPLY_DEX,  3, 2, FALSE, 0, FALSE,                        "dexterity",                   "the thief"},
-	{    roatAff,            APPLY_INT,  3, 2, FALSE, 0, FALSE,                     "intelligence",                   "the gnome"},
-	{    roatAff,            APPLY_WIS,  3, 2, FALSE, 0, FALSE,                           "wisdom",                    "the sage"},
-	{    roatAff,            APPLY_CON,  3, 2, FALSE, 0, FALSE,                     "constitution",                   "the troll"},
-	{    roatAff,            APPLY_AGI,  3, 2, FALSE, 0, FALSE,                          "agility",              "the mudskipper"},
-	{    roatAff,            APPLY_POW,  3, 2, FALSE, 0, FALSE,                            "power",                   "the gypsy"},
-	{    roatAff,            APPLY_CHA,  3, 2, FALSE, 0, FALSE,                         "charisma",                "the merchant"},
-	{    roatAff,           APPLY_LUCK,  6, 4, FALSE, 0, FALSE,                             "luck",                  "the jester"},
-	{    roatAff,           APPLY_MANA,  3, 2, FALSE, 0, FALSE,                             "mana",                  "the mystic"},
-	{    roatAff,            APPLY_HIT,  3, 2, FALSE, 0, FALSE,                           "health",                  "the badger"},
-	{    roatAff,           APPLY_MOVE,  3, 2, FALSE, 0, FALSE,                         "movement",                    "the hare"},
-	{    roatAff,             APPLY_AC,  3, 2,  TRUE, 0, FALSE,                       "protection",                   "the golem"},
-	{    roatAff,        APPLY_HITROLL, 10, 5, FALSE, 0, FALSE,                         "accuracy",                  "the archer"},
-	{    roatAff,        APPLY_DAMROLL, 10, 5, FALSE, 0, FALSE,                            "death",                      "damage"},
-	{    roatAff,    APPLY_SAVING_PARA, 15, 7,  TRUE, 0, FALSE,     "protection against paralysis",                    "the weed"},
-	{    roatAff,     APPLY_SAVING_ROD, 15, 7,  TRUE, 0, FALSE,          "protection against rods",                   "the steed"},
-	{    roatAff,    APPLY_SAVING_FEAR, 15, 7,  TRUE, 0, FALSE, "protection against petrification",                   "the ocean"},
-	{    roatAff,  APPLY_SAVING_BREATH, 15, 7,  TRUE, 0, FALSE,        "protection against breath",                    "the king"},
-	{    roatAff,   APPLY_SAVING_SPELL, 15, 7,  TRUE, 0, FALSE,         "protection against magic",                "the mountain"},
-	{    roatAff,        APPLY_STR_MAX, 60, 7, FALSE, 0, FALSE,                         "strength",                   "the giant"},
-	{    roatAff,        APPLY_DEX_MAX, 60, 7, FALSE, 0, FALSE,                        "dexterity",                   "the thief"},
-	{    roatAff,        APPLY_INT_MAX, 60, 7, FALSE, 0, FALSE,                     "intelligence",                   "the gnome"},
-	{    roatAff,        APPLY_WIS_MAX, 60, 7, FALSE, 0, FALSE,                           "wisdom",                    "the sage"},
-	{    roatAff,        APPLY_CON_MAX, 60, 7, FALSE, 0, FALSE,                     "constitution",                   "the troll"},
-	{    roatAff,        APPLY_AGI_MAX, 60, 7, FALSE, 0, FALSE,                          "agility",              "the mudskipper"},
-	{    roatAff,        APPLY_POW_MAX, 60, 7, FALSE, 0, FALSE,                            "power",                   "the gypsy"},
-	{    roatAff,        APPLY_CHA_MAX, 60, 7, FALSE, 0, FALSE,                         "charisma",                "the merchant"},
-	{    roatAff,       APPLY_LUCK_MAX, 60, 7, FALSE, 0, FALSE,                             "luck",                  "the jester"},
-	{    roatAff,       APPLY_STR_RACE, 70, 8, FALSE, 0, FALSE,                         "strength",                   "the giant"},
-	{    roatAff,       APPLY_DEX_RACE, 70, 8, FALSE, 0, FALSE,                        "dexterity",                   "the thief"},
-	{    roatAff,       APPLY_INT_RACE, 70, 8, FALSE, 0, FALSE,                     "intelligence",                   "the gnome"},
-	{    roatAff,       APPLY_WIS_RACE, 70, 8, FALSE, 0, FALSE,                           "wisdom",                    "the sage"},
-	{    roatAff,       APPLY_CON_RACE, 70, 8, FALSE, 0, FALSE,                     "constitution",                   "the troll"},
-	{    roatAff,       APPLY_AGI_RACE, 70, 8, FALSE, 0, FALSE,                          "agility",              "the mudskipper"},
-	{    roatAff,       APPLY_POW_RACE, 70, 8, FALSE, 0, FALSE,                            "power",                   "the gypsy"},
-	{    roatAff,       APPLY_CHA_RACE, 70, 8, FALSE, 0, FALSE,                         "charisma",                "the merchant"},
-	{    roatAff,      APPLY_LUCK_RACE, 70, 8, FALSE, 0, FALSE,                             "luck",                  "the jester"}
+	{ roatAff, APPLY_STR, 3, 2, FALSE, 0, FALSE, "strength", "the giant" },
+	{ roatAff, APPLY_DEX, 3, 2, FALSE, 0, FALSE, "dexterity", "the thief" },
+	{ roatAff, APPLY_INT, 3, 2, FALSE, 0, FALSE, "intelligence", "the gnome" },
+	{ roatAff, APPLY_WIS, 3, 2, FALSE, 0, FALSE, "wisdom", "the sage" },
+	{ roatAff, APPLY_CON, 3, 2, FALSE, 0, FALSE, "constitution", "the troll" },
+	{ roatAff, APPLY_AGI, 3, 2, FALSE, 0, FALSE, "agility", "the mudskipper" },
+	{ roatAff, APPLY_POW, 3, 2, FALSE, 0, FALSE, "power", "the gypsy" },
+	{ roatAff, APPLY_CHA, 3, 2, FALSE, 0, FALSE, "charisma", "the merchant" },
+	{ roatAff, APPLY_LUCK, 6, 4, FALSE, 0, FALSE, "luck", "the jester" },
+	{ roatAff, APPLY_MANA, 3, 2, FALSE, 0, FALSE, "mana", "the mystic" },
+	{ roatAff, APPLY_HIT, 3, 2, FALSE, 0, FALSE, "health", "the badger" },
+	{ roatAff, APPLY_MOVE, 3, 2, FALSE, 0, FALSE, "movement", "the hare" },
+	{ roatAff, APPLY_AC, 3, 2, TRUE, 0, FALSE, "protection", "the golem" },
+	{ roatAff, APPLY_HITROLL, 10, 5, FALSE, 0, FALSE, "accuracy", "the archer" },
+	{ roatAff, APPLY_DAMROLL, 10, 5, FALSE, 0, FALSE, "death", "damage" },
+	{ roatAff, APPLY_SAVING_PARA, 15, 7, TRUE, 0, FALSE, "protection against paralysis",
+	  "the weed" },
+	{ roatAff, APPLY_SAVING_ROD, 15, 7, TRUE, 0, FALSE, "protection against rods",
+	  "the steed" },
+	{ roatAff, APPLY_SAVING_FEAR, 15, 7, TRUE, 0, FALSE, "protection against petrification",
+	  "the ocean" },
+	{ roatAff, APPLY_SAVING_BREATH, 15, 7, TRUE, 0, FALSE, "protection against breath",
+	  "the king" },
+	{ roatAff, APPLY_SAVING_SPELL, 15, 7, TRUE, 0, FALSE, "protection against magic",
+	  "the mountain" },
+	{ roatAff, APPLY_STR_MAX, 60, 7, FALSE, 0, FALSE, "strength", "the giant" },
+	{ roatAff, APPLY_DEX_MAX, 60, 7, FALSE, 0, FALSE, "dexterity", "the thief" },
+	{ roatAff, APPLY_INT_MAX, 60, 7, FALSE, 0, FALSE, "intelligence", "the gnome" },
+	{ roatAff, APPLY_WIS_MAX, 60, 7, FALSE, 0, FALSE, "wisdom", "the sage" },
+	{ roatAff, APPLY_CON_MAX, 60, 7, FALSE, 0, FALSE, "constitution", "the troll" },
+	{ roatAff, APPLY_AGI_MAX, 60, 7, FALSE, 0, FALSE, "agility", "the mudskipper" },
+	{ roatAff, APPLY_POW_MAX, 60, 7, FALSE, 0, FALSE, "power", "the gypsy" },
+	{ roatAff, APPLY_CHA_MAX, 60, 7, FALSE, 0, FALSE, "charisma", "the merchant" },
+	{ roatAff, APPLY_LUCK_MAX, 60, 7, FALSE, 0, FALSE, "luck", "the jester" },
+	{ roatAff, APPLY_STR_RACE, 70, 8, FALSE, 0, FALSE, "strength", "the giant" },
+	{ roatAff, APPLY_DEX_RACE, 70, 8, FALSE, 0, FALSE, "dexterity", "the thief" },
+	{ roatAff, APPLY_INT_RACE, 70, 8, FALSE, 0, FALSE, "intelligence", "the gnome" },
+	{ roatAff, APPLY_WIS_RACE, 70, 8, FALSE, 0, FALSE, "wisdom", "the sage" },
+	{ roatAff, APPLY_CON_RACE, 70, 8, FALSE, 0, FALSE, "constitution", "the troll" },
+	{ roatAff, APPLY_AGI_RACE, 70, 8, FALSE, 0, FALSE, "agility", "the mudskipper" },
+	{ roatAff, APPLY_POW_RACE, 70, 8, FALSE, 0, FALSE, "power", "the gypsy" },
+	{ roatAff, APPLY_CHA_RACE, 70, 8, FALSE, 0, FALSE, "charisma", "the merchant" },
+	{ roatAff, APPLY_LUCK_RACE, 70, 8, FALSE, 0, FALSE, "luck", "the jester" }
 };
 
 /*randObjAff roaaAffBit2[];
@@ -128,9 +144,9 @@ void Encrypt(char *text, int sizeOfText, const char *key, int sizeOfKey)
 
 void do_randobj(P_char ch, char *strn, int val)
 {
-	P_obj                           o;
-	int                             tmp = 0;
-	char                            Gbuf5[MAX_STRING_LENGTH];
+	P_obj o;
+	int tmp = 0;
+	char Gbuf5[MAX_STRING_LENGTH];
 	extern const struct class_names class_names_table[];
 
 	if (!IS_TRUSTED(ch))
@@ -141,7 +157,6 @@ void do_randobj(P_char ch, char *strn, int val)
 
 	if (!str_cmp("remove", strn))
 	{
-
 		reset_lab(0);
 		reset_lab(1);
 		reset_lab(2);
@@ -189,9 +204,12 @@ void do_randobj(P_char ch, char *strn, int val)
 			return;
 		}
 
-		if (obj_index[o->R_num].virtual_number == VOBJ_RANDOM_ARMOR || obj_index[o->R_num].virtual_number == VOBJ_RANDOM_THRUSTED || obj_index[o->R_num].virtual_number == VOBJ_RANDOM_WEAPON)
+		if (obj_index[o->R_num].virtual_number == VOBJ_RANDOM_ARMOR ||
+		    obj_index[o->R_num].virtual_number == VOBJ_RANDOM_THRUSTED ||
+		    obj_index[o->R_num].virtual_number == VOBJ_RANDOM_WEAPON)
 		{
-			act("Created random object: $q.  Deleting it.", FALSE, ch, o, NULL, TO_CHAR);
+			act("Created random object: $q.  Deleting it.", FALSE, ch, o, NULL,
+			    TO_CHAR);
 			extract_obj(o);
 			return;
 		}
@@ -215,7 +233,7 @@ void do_randobj(P_char ch, char *strn, int val)
 
 	if (!str_cmp("encrust", strn))
 	{
-		for (int i = 0; i<10; i++)
+		for (int i = 0; i < 10; i++)
 		{
 			o = random_zone_item(ch);
 			if (!o)
@@ -228,7 +246,9 @@ void do_randobj(P_char ch, char *strn, int val)
 		return;
 	}
 
-	send_to_char("Syntax: randobj <remove, map, stone, piece, eq, recipe, mob, zone, encrust> \r\n", ch);
+	send_to_char(
+		"Syntax: randobj <remove, map, stone, piece, eq, recipe, mob, zone, encrust> \r\n",
+		ch);
 }
 
 //
@@ -282,7 +302,11 @@ P_obj createMundaneItem(P_obj mundane, unsigned int monDiffNumb)
 //
 //
 
-randObjAff *getRandObjAff(void) { return &randomObjFieldsArr[number(0, sizeof(randomObjFieldsArr) / sizeof(randomObjFieldsArr[0]) - 1)]; }
+randObjAff *getRandObjAff(void)
+{
+	return &randomObjFieldsArr[number(
+		0, sizeof(randomObjFieldsArr) / sizeof(randomObjFieldsArr[0]) - 1)];
+}
 
 //
 //
@@ -299,7 +323,8 @@ randObjAff *getValidRandObjAff(P_obj obj, unsigned int mdn, int rareOnly)
 	{
 		roa = getRandObjAff();
 
-		if ((rareOnly || !roa->rareOnly) && (roa->cost <= mdn) && !(obj->wear_flags & roa->restrictedLoc))
+		if ((rareOnly || !roa->rareOnly) && (roa->cost <= mdn) &&
+		    !(obj->wear_flags & roa->restrictedLoc))
 			return roa;
 	}
 }
@@ -345,33 +370,33 @@ void applyRandomAffToObject(P_obj obj, randObjAff *objAff, unsigned int monDiff)
 
 	switch (objAff->affType)
 	{
-		case roatAffBit1:
-			obj->bitvector |= objAff->where;
-			break;
+	case roatAffBit1:
+		obj->bitvector |= objAff->where;
+		break;
 
-		case roatAffBit2:
-			obj->bitvector2 |= objAff->where;
-			break;
+	case roatAffBit2:
+		obj->bitvector2 |= objAff->where;
+		break;
 
-		case roatAffBit3:
-			obj->bitvector3 |= objAff->where;
-			break;
+	case roatAffBit3:
+		obj->bitvector3 |= objAff->where;
+		break;
 
-		case roatAffBit4:
-			obj->bitvector4 |= objAff->where;
-			break;
+	case roatAffBit4:
+		obj->bitvector4 |= objAff->where;
+		break;
 
-		case roatExtra1:
-			obj->extra_flags |= objAff->where;
-			break;
+	case roatExtra1:
+		obj->extra_flags |= objAff->where;
+		break;
 
-		case roatExtra2:
-			obj->extra2_flags |= objAff->where;
-			break;
+	case roatExtra2:
+		obj->extra2_flags |= objAff->where;
+		break;
 
-		case roatAff:
-			applyRandomApplyToObject(obj, objAff, monDiff);
-			break;
+	case roatAff:
+		applyRandomApplyToObject(obj, objAff, monDiff);
+		break;
 	}
 }
 
@@ -412,7 +437,7 @@ P_obj createMagicItem(P_obj magicI, unsigned int monDiffNumb)
 P_obj createRareItem(P_obj rareI, unsigned int monDiffNumb)
 {
 	unsigned int numb;
-	randObjAff  *objAff;
+	randObjAff *objAff;
 
 	// can have 3-4 affs, first two take 100% of diff numb, third takes
 	// 75%, fourth (25% chance) takes 60%
@@ -509,7 +534,7 @@ P_obj createRandomItemType(void)
 
 P_obj createRandomItem(P_char pc, P_char mob, int moblvl, int zoneDiff, int createItem)
 {
-	int          rareUniqueCh = 100; // 100% = 1000, 10% = 100, 1% = 10, .5% = 5, .1% = 1
+	int rareUniqueCh = 100; // 100% = 1000, 10% = 100, 1% = 10, .5% = 5, .1% = 1
 	unsigned int monDiffNumb;
 
 	if (!pc || !moblvl)

@@ -21,7 +21,7 @@ extern int top_of_world;
 
 char buf[MAX_STRING_LENGTH];
 
-float hull_mod[MAXSHIPCLASS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+float hull_mod[MAXSHIPCLASS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 float ShipTypeData::get_hull_mod() const
 {
 	if (hull_mod[_classid - 1])
@@ -43,8 +43,8 @@ ShipObjHash::ShipObjHash()
 P_ship ShipObjHash::find(P_obj key)
 {
 	unsigned hash_value = (unsigned)(unsigned long)key;
-	unsigned t_index    = hash_value % SHIP_OBJ_TABLE_SIZE;
-	P_ship   curr       = table[t_index];
+	unsigned t_index = hash_value % SHIP_OBJ_TABLE_SIZE;
+	P_ship curr = table[t_index];
 	while (curr != 0)
 	{
 		if (curr->shipobj == key)
@@ -56,15 +56,15 @@ P_ship ShipObjHash::find(P_obj key)
 bool ShipObjHash::add(P_ship ship)
 {
 	unsigned hash_value = (unsigned)(unsigned long)ship->shipobj;
-	unsigned t_index    = hash_value % SHIP_OBJ_TABLE_SIZE;
-	P_ship   curr       = table[t_index];
+	unsigned t_index = hash_value % SHIP_OBJ_TABLE_SIZE;
+	P_ship curr = table[t_index];
 	while (curr != 0)
 	{
 		if (curr == ship)
 			return false;
 		curr = curr->next;
 	}
-	ship->next     = table[t_index];
+	ship->next = table[t_index];
 	table[t_index] = ship;
 	sz++;
 	return true;
@@ -127,8 +127,8 @@ bool ShipObjHash::get_next(visitor &vs)
 bool ShipObjHash::erase(visitor &vs)
 {
 	unsigned t_index = vs.t_index;
-	P_ship   curr    = vs.curr;
-	bool     res     = get_next(vs);
+	P_ship curr = vs.curr;
+	bool res = get_next(vs);
 	erase(curr, t_index);
 	return res;
 }
@@ -174,7 +174,7 @@ void look_out_ship(P_ship ship, P_char ch)
 void set_pvp_on_passengers(P_ship ship)
 {
 	P_char ch, ch_next;
-	int    i;
+	int i;
 
 	for (i = 0; i < ship->room_count; i++)
 	{
@@ -193,7 +193,7 @@ void set_pvp_on_passengers(P_ship ship)
 void everyone_look_out_ship(P_ship ship)
 {
 	P_char ch, ch_next;
-	int    i;
+	int i;
 
 	for (i = 0; i < ship->room_count; i++)
 	{
@@ -214,8 +214,8 @@ void everyone_look_out_ship(P_ship ship)
 void kick_everyone_off(P_ship ship)
 {
 	P_char ch, ch_next;
-	P_obj  obj, obj_next;
-	int    i;
+	P_obj obj, obj_next;
+	int i;
 
 	for (i = 0; i < ship->room_count; i++)
 	{
@@ -233,7 +233,8 @@ void kick_everyone_off(P_ship ship)
 			if (obj)
 			{
 				obj_next = obj->next_content;
-				if (obj != ship->panel && !(obj->type == ITEM_CORPSE && !IS_SET(obj->value[1], NPC_CORPSE)))
+				if (obj != ship->panel && !(obj->type == ITEM_CORPSE &&
+							    !IS_SET(obj->value[1], NPC_CORPSE)))
 				{
 					obj_from_room(obj);
 					obj_to_room(obj, ship->location);
@@ -246,8 +247,8 @@ void kick_everyone_off(P_ship ship)
 void clear_ship_content(P_ship ship)
 {
 	P_char ch, ch_next;
-	P_obj  obj, obj_next;
-	int    i;
+	P_obj obj, obj_next;
+	int i;
 
 	for (i = 0; i < ship->room_count; i++)
 	{
@@ -287,7 +288,7 @@ void clear_ship_content(P_ship ship)
 }
 
 static char local_buf[MAX_STRING_LENGTH];
-void        act_to_all_in_ship_f(P_ship ship, const char *msg, ...)
+void act_to_all_in_ship_f(P_ship ship, const char *msg, ...)
 {
 	if (ship == NULL)
 		return;
@@ -307,10 +308,13 @@ void act_to_all_in_ship(P_ship ship, const char *msg)
 
 	for (int i = 0; i < ship->room_count; i++)
 	{
-		if ((SHIP_ROOM_NUM(ship, i) != -1) && world[real_room(SHIP_ROOM_NUM(ship, i))].people)
+		if ((SHIP_ROOM_NUM(ship, i) != -1) &&
+		    world[real_room(SHIP_ROOM_NUM(ship, i))].people)
 		{
-			act(msg, FALSE, world[real_room(SHIP_ROOM_NUM(ship, i))].people, 0, 0, TO_ROOM);
-			act(msg, FALSE, world[real_room(SHIP_ROOM_NUM(ship, i))].people, 0, 0, TO_CHAR);
+			act(msg, FALSE, world[real_room(SHIP_ROOM_NUM(ship, i))].people, 0, 0,
+			    TO_ROOM);
+			act(msg, FALSE, world[real_room(SHIP_ROOM_NUM(ship, i))].people, 0, 0,
+			    TO_CHAR);
 		}
 	}
 }
@@ -322,10 +326,13 @@ void act_to_all_in_ship(P_ship ship, const char *msg, P_char victim)
 
 	for (int i = 0; i < ship->room_count; i++)
 	{
-		if ((SHIP_ROOM_NUM(ship, i) != -1) && world[real_room(SHIP_ROOM_NUM(ship, i))].people)
+		if ((SHIP_ROOM_NUM(ship, i) != -1) &&
+		    world[real_room(SHIP_ROOM_NUM(ship, i))].people)
 		{
-			act(msg, FALSE, world[real_room(SHIP_ROOM_NUM(ship, i))].people, 0, victim, TO_ROOM);
-			act(msg, FALSE, world[real_room(SHIP_ROOM_NUM(ship, i))].people, 0, victim, TO_CHAR);
+			act(msg, FALSE, world[real_room(SHIP_ROOM_NUM(ship, i))].people, 0, victim,
+			    TO_ROOM);
+			act(msg, FALSE, world[real_room(SHIP_ROOM_NUM(ship, i))].people, 0, victim,
+			    TO_CHAR);
 		}
 	}
 }
@@ -343,10 +350,13 @@ void act_to_outside(P_ship ship, int rng, const char *msg, ...)
 	{
 		for (int j = 0; j < 100; j++)
 		{
-			if ((range(50, 50, ship->z, j, i, 0) < rng) && world[tactical_map[j][i].rroom].people)
+			if ((range(50, 50, ship->z, j, i, 0) < rng) &&
+			    world[tactical_map[j][i].rroom].people)
 			{
-				act(local_buf, FALSE, world[tactical_map[j][i].rroom].people, 0, 0, TO_ROOM);
-				act(local_buf, FALSE, world[tactical_map[j][i].rroom].people, 0, 0, TO_CHAR);
+				act(local_buf, FALSE, world[tactical_map[j][i].rroom].people, 0, 0,
+				    TO_ROOM);
+				act(local_buf, FALSE, world[tactical_map[j][i].rroom].people, 0, 0,
+				    TO_CHAR);
 			}
 		}
 	}
@@ -365,16 +375,20 @@ void act_to_outside_ships(P_ship ship, P_ship target, int rng, const char *msg, 
 	{
 		for (int j = 0; j < 100; j++)
 		{
-			if ((range(50, 50, ship->z, j, i, 0) < rng) && world[tactical_map[j][i].rroom].contents)
+			if ((range(50, 50, ship->z, j, i, 0) < rng) &&
+			    world[tactical_map[j][i].rroom].contents)
 			{
-				for (P_obj obj = world[tactical_map[j][i].rroom].contents; obj; obj = obj->next_content)
+				for (P_obj obj = world[tactical_map[j][i].rroom].contents; obj;
+				     obj = obj->next_content)
 				{
-					if ((GET_ITEM_TYPE(obj) == ITEM_SHIP) && (obj->value[6] == 1) && (obj != ship->shipobj))
+					if ((GET_ITEM_TYPE(obj) == ITEM_SHIP) &&
+					    (obj->value[6] == 1) && (obj != ship->shipobj))
 					{
 						if (target != NULL && obj == target->shipobj)
 							continue;
 
-						act_to_all_in_ship(shipObjHash.find(obj), local_buf);
+						act_to_all_in_ship(shipObjHash.find(obj),
+								   local_buf);
 					}
 				}
 			}
@@ -385,9 +399,9 @@ void act_to_outside_ships(P_ship ship, P_ship target, int rng, const char *msg, 
 // Returns the ship that ch is on, or NULL if ch is not on a ship.
 P_ship get_ship_from_char(P_char ch)
 {
-	int         j, roomVnum;
+	int j, roomVnum;
 	ShipVisitor svs;
-	bool        fn;
+	bool fn;
 
 	// Dead chars can still be on a ship (but we need them in a room to be on the ship).
 	if (ch == NULL || ch->in_room < 0 || ch->in_room > top_of_world)
@@ -422,7 +436,7 @@ P_ship get_ship_from_char(P_char ch)
 
 int num_people_in_ship(P_ship ship)
 {
-	int    i, num = 0;
+	int i, num = 0;
 	P_char ch;
 
 	if (!SHIP_LOADED(ship))
@@ -430,12 +444,14 @@ int num_people_in_ship(P_ship ship)
 
 	for (i = 0; i < ship->room_count; i++)
 	{
-		for (ch = world[real_room0(ship->room[i].roomnum)].people; ch; ch = ch->next_in_room)
+		for (ch = world[real_room0(ship->room[i].roomnum)].people; ch;
+		     ch = ch->next_in_room)
 		{
 			if (IS_TRUSTED(ch))
 				continue;
-			if (IS_NPC(ch) && ((GET_VNUM(ch) > 40200 && GET_VNUM(ch) < 40300) || // pirates
-			                   (GET_VNUM(ch) == 250)))                           // images
+			if (IS_NPC(ch) &&
+			    ((GET_VNUM(ch) > 40200 && GET_VNUM(ch) < 40300) || // pirates
+			     (GET_VNUM(ch) == 250))) // images
 			{
 				continue;
 			}
@@ -451,7 +467,11 @@ float get_turning_speed(P_ship ship)
 		return 1;
 
 	float tspeed = (float)SHIP_HDDC(ship);
-	tspeed *= 0.75 + 0.25 * (float)(ship->speed - BOARDING_SPEED) / (float)(SHIPTYPE_SPEED(SHIP_CLASS(ship)) - BOARDING_SPEED); // only 3/4 turn at boarding speed, even less if slower
+	tspeed *=
+		0.75 +
+		0.25 * (float)(ship->speed - BOARDING_SPEED) /
+			(float)(SHIPTYPE_SPEED(SHIP_CLASS(ship)) -
+				BOARDING_SPEED); // only 3/4 turn at boarding speed, even less if slower
 	tspeed *= (1.0 + ship->crew.sail_mod_applied);
 	tspeed *= ship->crew.get_stamina_mod();
 	return tspeed;
@@ -514,12 +534,14 @@ void update_maxspeed(P_ship ship, int breach_count)
 		return;
 	}
 
-	int equipment_weight     = ship->slot_weight(SLOT_WEAPON) + ship->slot_weight(SLOT_EQUIPMENT);
+	int equipment_weight = ship->slot_weight(SLOT_WEAPON) + ship->slot_weight(SLOT_EQUIPMENT);
 	int equipment_weight_mod = MIN(SHIP_FREE_EQUIPMENT(ship), equipment_weight);
-	int cargo_weight         = ship->slot_weight(SLOT_CARGO) + ship->slot_weight(SLOT_CONTRABAND);
-	int cargo_weight_mod     = MIN(SHIP_FREE_CARGO(ship), cargo_weight);
+	int cargo_weight = ship->slot_weight(SLOT_CARGO) + ship->slot_weight(SLOT_CONTRABAND);
+	int cargo_weight_mod = MIN(SHIP_FREE_CARGO(ship), cargo_weight);
 
-	float weight_mod = 1.0 - ((float)(SHIP_SLOT_WEIGHT(ship) - equipment_weight_mod - cargo_weight_mod) / (float)SHIP_MAX_WEIGHT(ship));
+	float weight_mod =
+		1.0 - ((float)(SHIP_SLOT_WEIGHT(ship) - equipment_weight_mod - cargo_weight_mod) /
+		       (float)SHIP_MAX_WEIGHT(ship));
 
 	int ceil = SHIPTYPE_SPEED(ship->m_class) + ship->crew.get_maxspeed_mod();
 	if (breach_count == 0 && SHIP_FLYING(ship))
@@ -530,9 +552,10 @@ void update_maxspeed(P_ship ship, int breach_count)
 		maxspeed *= 1.2;
 	if (breach_count == 1 && SHIP_FLYING(ship))
 		maxspeed *= 0.5;
-	maxspeed       = maxspeed * (1.0 + ship->crew.sail_mod_applied);
-	maxspeed       = maxspeed * weight_mod;
-	maxspeed       = maxspeed * (float)ship->mainsail / (float)SHIP_MAX_SAIL(ship); // Adjust for sail condition
+	maxspeed = maxspeed * (1.0 + ship->crew.sail_mod_applied);
+	maxspeed = maxspeed * weight_mod;
+	maxspeed = maxspeed * (float)ship->mainsail /
+		   (float)SHIP_MAX_SAIL(ship); // Adjust for sail condition
 	ship->maxspeed = BOUNDED(1, (int)maxspeed, ceil);
 }
 
@@ -541,16 +564,18 @@ int get_maxspeed_without_cargo(P_ship ship)
 	if (ship->get_maxspeed() == 0)
 		return 0;
 
-	int equipment_weight     = ship->slot_weight(SLOT_WEAPON) + ship->slot_weight(SLOT_EQUIPMENT);
+	int equipment_weight = ship->slot_weight(SLOT_WEAPON) + ship->slot_weight(SLOT_EQUIPMENT);
 	int equipment_weight_mod = MIN(SHIP_FREE_EQUIPMENT(ship), equipment_weight);
 
-	float weight_mod = 1.0 - ((float)(equipment_weight - equipment_weight_mod) / (float)SHIP_MAX_WEIGHT(ship));
+	float weight_mod = 1.0 - ((float)(equipment_weight - equipment_weight_mod) /
+				  (float)SHIP_MAX_WEIGHT(ship));
 
-	int   ceil     = SHIPTYPE_SPEED(ship->m_class) + ship->crew.get_maxspeed_mod();
+	int ceil = SHIPTYPE_SPEED(ship->m_class) + ship->crew.get_maxspeed_mod();
 	float maxspeed = ceil;
-	maxspeed       = maxspeed * (1.0 + ship->crew.sail_mod_applied);
-	maxspeed       = maxspeed * weight_mod;
-	maxspeed       = maxspeed * (float)ship->mainsail / (float)SHIP_MAX_SAIL(ship); // Adjust for sail condition
+	maxspeed = maxspeed * (1.0 + ship->crew.sail_mod_applied);
+	maxspeed = maxspeed * weight_mod;
+	maxspeed = maxspeed * (float)ship->mainsail /
+		   (float)SHIP_MAX_SAIL(ship); // Adjust for sail condition
 	return BOUNDED(1, (int)maxspeed, ceil);
 }
 
@@ -570,7 +595,7 @@ void assignid(P_ship ship, char *id, bool npc)
 		// assigning new contact id
 
 		bool found_id = false;
-		char newid[]  = "--";
+		char newid[] = "--";
 
 		int c = 0; // to make sure its not an infinite loop
 
@@ -582,9 +607,10 @@ void assignid(P_ship ship, char *id, bool npc)
 				newid[0] = 'A' + number(0, 22);
 			newid[1] = 'A' + number(0, 25);
 
-			bool        taken = false;
+			bool taken = false;
 			ShipVisitor svs;
-			for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
+			for (bool fn = shipObjHash.get_first(svs); fn;
+			     fn = shipObjHash.get_next(svs))
 			{
 				if (strcmp(newid, SHIP_ID(svs)) == 0)
 				{
@@ -598,7 +624,8 @@ void assignid(P_ship ship, char *id, bool npc)
 
 			if (c++ > 1000)
 			{
-				wizlog(56, "error in ships code assignid(): cannot find new contact id");
+				wizlog(56,
+				       "error in ships code assignid(): cannot find new contact id");
 				return;
 			}
 		}
@@ -618,7 +645,7 @@ void assignid(P_ship ship, char *id, bool npc)
 
 bool getmap(P_ship ship, bool limit_range)
 {
-	int   x, y, rroom;
+	int x, y, rroom;
 	P_obj obj;
 	float rng = 35 + ship->crew.get_contact_range_mod();
 
@@ -636,11 +663,13 @@ bool getmap(P_ship ship, bool limit_range)
 	{
 		for (x = 0; x < 100; x++)
 		{
-			rroom                    = calculate_relative_room(ship->location, x - 50, y - 50);
+			rroom = calculate_relative_room(ship->location, x - 50, y - 50);
 			tactical_map[x][y].rroom = rroom;
-			if ((world[rroom].sector_type < NUM_SECT_TYPES) && (world[rroom].sector_type > -1))
+			if ((world[rroom].sector_type < NUM_SECT_TYPES) &&
+			    (world[rroom].sector_type > -1))
 			{
-				sprintf(tactical_map[x][y].map, "%s", ship_symbol[(int)world[rroom].sector_type]);
+				sprintf(tactical_map[x][y].map, "%s",
+					ship_symbol[(int)world[rroom].sector_type]);
 			}
 			else
 			{
@@ -650,13 +679,16 @@ bool getmap(P_ship ship, bool limit_range)
 			{
 				for (obj = world[rroom].contents; obj; obj = obj->next_content)
 				{
-					if ((GET_ITEM_TYPE(obj) == ITEM_SHIP) && (obj->value[6] == 1))
+					if ((GET_ITEM_TYPE(obj) == ITEM_SHIP) &&
+					    (obj->value[6] == 1))
 					{
 						P_ship temp = shipObjHash.find(obj);
 						if (temp == NULL)
 							continue;
-						if (!limit_range || (ship_range(ship, temp, x, 100 - y) <= rng))
-							sprintf(tactical_map[x][y].map, "&+W%s&N", temp->id);
+						if (!limit_range ||
+						    (ship_range(ship, temp, x, 100 - y) <= rng))
+							sprintf(tactical_map[x][y].map, "&+W%s&N",
+								temp->id);
 					}
 				}
 			}
@@ -686,52 +718,54 @@ const char *get_arc_indicator(int arc_no)
 {
 	switch (arc_no)
 	{
-		case SIDE_FORE:
-			return "F";
-		case SIDE_REAR:
-			return "R";
-		case SIDE_STAR:
-			return "S";
-		case SIDE_PORT:
-			return "P";
+	case SIDE_FORE:
+		return "F";
+	case SIDE_REAR:
+		return "R";
+	case SIDE_STAR:
+		return "S";
+	case SIDE_PORT:
+		return "P";
 	}
 	return "*";
 }
 
 void setcontact(int i, P_ship target, P_ship ship, int x, int y)
 {
-	contacts[i].bearing = bearing(ship->x, ship->y, (float)x + (target->x - 50.0), (float)y + (target->y - 50.0));
+	contacts[i].bearing = bearing(ship->x, ship->y, (float)x + (target->x - 50.0),
+				      (float)y + (target->y - 50.0));
 
 	contacts[i].range = ship_range(ship, target, x, y);
 
 	contacts[i].x = x;
 	contacts[i].y = y;
 
-	contacts[i].z    = (int)target->z;
+	contacts[i].z = (int)target->z;
 	contacts[i].ship = target;
 
-	sprintf(contacts[i].arc,
-	        "%s%s",
-	        get_arc_indicator(get_arc(ship->heading, contacts[i].bearing)),
-	        get_arc_indicator(get_arc(target->heading, (contacts[i].bearing >= 180) ? (contacts[i].bearing - 180) : (contacts[i].bearing + 180))));
+	sprintf(contacts[i].arc, "%s%s",
+		get_arc_indicator(get_arc(ship->heading, contacts[i].bearing)),
+		get_arc_indicator(get_arc(target->heading, (contacts[i].bearing >= 180) ?
+								   (contacts[i].bearing - 180) :
+								   (contacts[i].bearing + 180))));
 }
 
 int getcontacts(P_ship ship, bool limit_range)
 {
-	int    i, j, counter = 0;
-	P_obj  obj;
-	float  max_range = 35 + ship->crew.get_contact_range_mod();
+	int i, j, counter = 0;
+	P_obj obj;
+	float max_range = 35 + ship->crew.get_contact_range_mod();
 
 	ShipVisitor svs;
-        for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
-        {
-        	P_ship vict = svs;
-        	if (vict == ship)
-        		continue;
+	for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
+	{
+		P_ship vict = svs;
+		if (vict == ship)
+			continue;
 
-        	int x, y;
-        	if (!calculate_map_coords(ship->location, vict->location, x, y))
-        		continue;
+		int x, y;
+		if (!calculate_map_coords(ship->location, vict->location, x, y))
+			continue;
 
 		// somehow (0,0) is represented by (50,50)
 		x = 50 + x;
@@ -740,7 +774,7 @@ int getcontacts(P_ship ship, bool limit_range)
 			continue;
 
 		setcontact(counter++, vict, ship, x, y);
-        }
+	}
 
 	return counter;
 }
@@ -786,13 +820,19 @@ void ShipData::show(P_char ch) const
 
 	send_to_char_f(ch, "ID: %s\r\n", this->id);
 
-	send_to_char_f(ch, "Heading: %d, Set Heading: %d\r\n", (int)this->heading, (int)this->setheading);
+	send_to_char_f(ch, "Heading: %d, Set Heading: %d\r\n", (int)this->heading,
+		       (int)this->setheading);
 
-	send_to_char_f(ch, "Speed: %d, Set Speed: %d, Max Speed: %d, Sailcond: %d\r\n", this->speed, this->setspeed, this->maxspeed, this->mainsail);
+	send_to_char_f(ch, "Speed: %d, Set Speed: %d, Max Speed: %d, Sailcond: %d\r\n", this->speed,
+		       this->setspeed, this->maxspeed, this->mainsail);
 
-	send_to_char_f(ch, "Hull weight: %d, Max load: %d, Slot weight: %d, Available weight: %d\r\n", SHIP_HULL_WEIGHT(this), SHIP_MAX_WEIGHT(this), slot_weight(-1), SHIP_AVAIL_WEIGHT(this));
+	send_to_char_f(ch,
+		       "Hull weight: %d, Max load: %d, Slot weight: %d, Available weight: %d\r\n",
+		       SHIP_HULL_WEIGHT(this), SHIP_MAX_WEIGHT(this), slot_weight(-1),
+		       SHIP_AVAIL_WEIGHT(this));
 
-	send_to_char_f(ch, "Max cargo: %d, Current cargo: %d, Available cargo: %d\r\n", SHIP_MAX_CARGO(this), SHIP_CARGO(this), SHIP_AVAIL_CARGO_LOAD(this));
+	send_to_char_f(ch, "Max cargo: %d, Current cargo: %d, Available cargo: %d\r\n",
+		       SHIP_MAX_CARGO(this), SHIP_CARGO(this), SHIP_AVAIL_CARGO_LOAD(this));
 
 	send_to_char("\r\nSlots:\r\n---------------------------------------------------\r\n", ch);
 
@@ -808,61 +848,62 @@ void ShipSlot::show(P_char ch, const ShipData *ship) const
 {
 	switch (this->type)
 	{
-		case SLOT_EMPTY:
-			send_to_char("Empty       ", ch);
-			break;
+	case SLOT_EMPTY:
+		send_to_char("Empty       ", ch);
+		break;
 
-		case SLOT_WEAPON:
-			send_to_char("Weapon      ", ch);
-			break;
+	case SLOT_WEAPON:
+		send_to_char("Weapon      ", ch);
+		break;
 
-		case SLOT_CARGO:
-			send_to_char("Cargo       ", ch);
-			break;
+	case SLOT_CARGO:
+		send_to_char("Cargo       ", ch);
+		break;
 
-		case SLOT_CONTRABAND:
-			send_to_char("Contraband  ", ch);
-			break;
+	case SLOT_CONTRABAND:
+		send_to_char("Contraband  ", ch);
+		break;
 
-		default:
-			send_to_char("(unknown)   ", ch);
-			break;
+	default:
+		send_to_char("(unknown)   ", ch);
+		break;
 	}
 
 	switch (this->position)
 	{
-		case SLOT_FORE:
-			send_to_char("F  ", ch);
-			break;
+	case SLOT_FORE:
+		send_to_char("F  ", ch);
+		break;
 
-		case SLOT_PORT:
-			send_to_char("P  ", ch);
-			break;
+	case SLOT_PORT:
+		send_to_char("P  ", ch);
+		break;
 
-		case SLOT_REAR:
-			send_to_char("R  ", ch);
-			break;
+	case SLOT_REAR:
+		send_to_char("R  ", ch);
+		break;
 
-		case SLOT_STAR:
-			send_to_char("S  ", ch);
-			break;
+	case SLOT_STAR:
+		send_to_char("S  ", ch);
+		break;
 
-		case SLOT_EQUI:
-			send_to_char("E  ", ch);
-			break;
+	case SLOT_EQUI:
+		send_to_char("E  ", ch);
+		break;
 
-		case SLOT_HOLD:
-			send_to_char("H  ", ch);
-			break;
+	case SLOT_HOLD:
+		send_to_char("H  ", ch);
+		break;
 
-		default:
-			send_to_char("?  ", ch);
-			break;
+	default:
+		send_to_char("?  ", ch);
+		break;
 	}
 
 	send_to_char_f(ch, "%-3d  ", this->get_weight(ship));
 
-	send_to_char_f(ch, "%-5d %-7d %-5d %-5d %-5d  ", this->val0, this->val1, this->val2, this->val3, this->val4);
+	send_to_char_f(ch, "%-5d %-7d %-5d %-5d %-5d  ", this->val0, this->val1, this->val2,
+		       this->val3, this->val4);
 }
 
 int ShipData::slot_weight(int type) const
@@ -905,20 +946,20 @@ const char *ShipSlot::get_position_str()
 {
 	switch (position)
 	{
-		case SLOT_FORE:
-			return "Forward";
-		case SLOT_REAR:
-			return "Rear";
-		case SLOT_PORT:
-			return "Port";
-		case SLOT_STAR:
-			return "Starboard";
-		case SLOT_EQUI:
-			return "Equipment";
-		case SLOT_HOLD:
-			return "Cargo Hold";
-		default:
-			return "ERROR";
+	case SLOT_FORE:
+		return "Forward";
+	case SLOT_REAR:
+		return "Rear";
+	case SLOT_PORT:
+		return "Port";
+	case SLOT_STAR:
+		return "Starboard";
+	case SLOT_EQUI:
+		return "Equipment";
+	case SLOT_HOLD:
+		return "Cargo Hold";
+	default:
+		return "ERROR";
 	}
 }
 
@@ -951,15 +992,15 @@ void ShipSlot::clear()
 {
 	strcpy(desc, "");
 	strcpy(status, "");
-	type     = SLOT_EMPTY;
-	index    = -1;
+	type = SLOT_EMPTY;
+	index = -1;
 	position = -1;
-	timer    = 0;
-	val0     = -1;
-	val1     = -1;
-	val2     = -1;
-	val3     = -1;
-	val4     = -1;
+	timer = 0;
+	val0 = -1;
+	val1 = -1;
+	val2 = -1;
+	val3 = -1;
+	val4 = -1;
 }
 
 int ShipSlot::get_weight(const ShipData *ship) const
@@ -995,15 +1036,15 @@ int ShipSlot::get_weight(const ShipData *ship) const
 
 void ShipSlot::clone(const ShipSlot &other)
 {
-	type     = other.type;
-	index    = other.index;
+	type = other.type;
+	index = other.index;
 	position = other.position;
-	timer    = other.timer;
-	val0     = other.val0;
-	val1     = other.val1;
-	val2     = other.val2;
-	val3     = other.val3;
-	val4     = other.val4;
+	timer = other.timer;
+	val0 = other.val0;
+	val1 = other.val1;
+	val2 = other.val2;
+	val3 = other.val3;
+	val4 = other.val4;
 }
 
 bool ShipCrewData::hire_room(int room) const
@@ -1068,21 +1109,27 @@ const char *ShipChiefData::get_spec() const
 {
 	switch (type)
 	{
-		case SAIL_CHIEF:
-			return "Deck";
-		case GUNS_CHIEF:
-			return "Guns";
-		case RPAR_CHIEF:
-			return "Maintenance";
+	case SAIL_CHIEF:
+		return "Deck";
+	case GUNS_CHIEF:
+		return "Guns";
+	case RPAR_CHIEF:
+		return "Maintenance";
 	};
 	return "";
 }
 
 void ShipCrew::replace_members(float percent)
 {
-	sail_skill = (float)ship_crew_data[index].base_sail_skill + (sail_skill - (float)ship_crew_data[index].base_sail_skill) * (100.0 - percent) / 100.0;
-	guns_skill = (float)ship_crew_data[index].base_guns_skill + (guns_skill - (float)ship_crew_data[index].base_guns_skill) * (100.0 - percent) / 100.0;
-	rpar_skill = (float)ship_crew_data[index].base_rpar_skill + (rpar_skill - (float)ship_crew_data[index].base_rpar_skill) * (100.0 - percent) / 100.0;
+	sail_skill = (float)ship_crew_data[index].base_sail_skill +
+		     (sail_skill - (float)ship_crew_data[index].base_sail_skill) *
+			     (100.0 - percent) / 100.0;
+	guns_skill = (float)ship_crew_data[index].base_guns_skill +
+		     (guns_skill - (float)ship_crew_data[index].base_guns_skill) *
+			     (100.0 - percent) / 100.0;
+	rpar_skill = (float)ship_crew_data[index].base_rpar_skill +
+		     (rpar_skill - (float)ship_crew_data[index].base_rpar_skill) *
+			     (100.0 - percent) / 100.0;
 }
 
 float ShipCrew::get_stamina_mod()
@@ -1106,9 +1153,18 @@ int ShipCrew::get_display_stamina()
 	return (int)-sqrt(-stamina);
 }
 
-void ShipCrew::sail_skill_raise(float raise) { skill_raise(raise, sail_skill, sail_chief); }
-void ShipCrew::guns_skill_raise(float raise) { skill_raise(raise, guns_skill, guns_chief); }
-void ShipCrew::rpar_skill_raise(float raise) { skill_raise(raise, rpar_skill, rpar_chief); }
+void ShipCrew::sail_skill_raise(float raise)
+{
+	skill_raise(raise, sail_skill, sail_chief);
+}
+void ShipCrew::guns_skill_raise(float raise)
+{
+	skill_raise(raise, guns_skill, guns_chief);
+}
+void ShipCrew::rpar_skill_raise(float raise)
+{
+	skill_raise(raise, rpar_skill, rpar_chief);
+}
 
 void ShipCrew::skill_raise(float raise, float &skill, int chief)
 {
@@ -1133,17 +1189,29 @@ void ShipCrew::reduce_stamina(float val, P_ship ship)
 	// act_to_all_in_ship_f(ship, "stamina: -%f", val);
 }
 
-int ShipCrew::sail_mod() { return ship_crew_data[index].level + ship_crew_data[index].sail_mod + ship_chief_data[sail_chief].skill_mod; }
+int ShipCrew::sail_mod()
+{
+	return ship_crew_data[index].level + ship_crew_data[index].sail_mod +
+	       ship_chief_data[sail_chief].skill_mod;
+}
 
-int ShipCrew::guns_mod() { return ship_crew_data[index].level + ship_crew_data[index].guns_mod + ship_chief_data[guns_chief].skill_mod; }
+int ShipCrew::guns_mod()
+{
+	return ship_crew_data[index].level + ship_crew_data[index].guns_mod +
+	       ship_chief_data[guns_chief].skill_mod;
+}
 
-int ShipCrew::rpar_mod() { return ship_crew_data[index].level + ship_crew_data[index].rpar_mod + ship_chief_data[rpar_chief].skill_mod; }
+int ShipCrew::rpar_mod()
+{
+	return ship_crew_data[index].level + ship_crew_data[index].rpar_mod +
+	       ship_chief_data[rpar_chief].skill_mod;
+}
 
 void ShipCrew::update()
 {
-	sail_skill  = MAX((float)ship_crew_data[index].base_sail_skill, sail_skill);
-	guns_skill  = MAX((float)ship_crew_data[index].base_guns_skill, guns_skill);
-	rpar_skill  = MAX((float)ship_crew_data[index].base_rpar_skill, rpar_skill);
+	sail_skill = MAX((float)ship_crew_data[index].base_sail_skill, sail_skill);
+	guns_skill = MAX((float)ship_crew_data[index].base_guns_skill, guns_skill);
+	rpar_skill = MAX((float)ship_crew_data[index].base_rpar_skill, rpar_skill);
 	max_stamina = ship_crew_data[index].base_stamina;
 	// TODO max_stamina = (int)((float)ship_crew_data[index].base_stamina * (1.0 + sqrt((float)(skill - ship_crew_data[index].min_skill) / 1000.0) / 300.0) );
 	if (stamina > max_stamina)
@@ -1156,7 +1224,10 @@ void ShipCrew::update()
 	guns_mod_applied = (guns_mod_applied * 8 + rpar_mod_applied * 2) / 10.0;
 }
 
-void ShipCrew::reset_stamina() { stamina = max_stamina; }
+void ShipCrew::reset_stamina()
+{
+	stamina = max_stamina;
+}
 
 int ShipCrew::get_contact_range_mod() const
 {
@@ -1205,9 +1276,15 @@ float ShipCrew::get_maxcargo_mod() const
 	return 1.0;
 }
 
-void update_crew(P_ship ship) { ship->crew.update(); }
+void update_crew(P_ship ship)
+{
+	ship->crew.update();
+}
 
-void reset_crew_stamina(P_ship ship) { ship->crew.reset_stamina(); }
+void reset_crew_stamina(P_ship ship)
+{
+	ship->crew.reset_stamina();
+}
 
 void change_crew(P_ship ship, int crew_index, bool skill_drop)
 {
@@ -1224,10 +1301,13 @@ void change_crew(P_ship ship, int crew_index, bool skill_drop)
 		ship->crew.rpar_skill -= ship->crew.rpar_skill * ((float)number(20, 100) / 2000);
 	}
 
-	ship->crew.index      = crew_index;
-	ship->crew.sail_skill = MAX((float)ship_crew_data[crew_index].base_sail_skill, ship->crew.sail_skill);
-	ship->crew.guns_skill = MAX((float)ship_crew_data[crew_index].base_guns_skill, ship->crew.guns_skill);
-	ship->crew.rpar_skill = MAX((float)ship_crew_data[crew_index].base_rpar_skill, ship->crew.rpar_skill);
+	ship->crew.index = crew_index;
+	ship->crew.sail_skill =
+		MAX((float)ship_crew_data[crew_index].base_sail_skill, ship->crew.sail_skill);
+	ship->crew.guns_skill =
+		MAX((float)ship_crew_data[crew_index].base_guns_skill, ship->crew.guns_skill);
+	ship->crew.rpar_skill =
+		MAX((float)ship_crew_data[crew_index].base_rpar_skill, ship->crew.rpar_skill);
 	ship->crew.update();
 	ship->crew.reset_stamina();
 }
@@ -1336,29 +1416,37 @@ int anchor_room(int room)
 
 void set_weapon(P_ship ship, int slot, int w_num, int arc)
 {
-	ship->slot[slot].type     = SLOT_WEAPON;
-	ship->slot[slot].index    = w_num;
+	ship->slot[slot].type = SLOT_WEAPON;
+	ship->slot[slot].index = w_num;
 	ship->slot[slot].position = arc;
-	ship->slot[slot].timer    = 0;
-	ship->slot[slot].val0     = w_num;                   // ammo type
-	ship->slot[slot].val1     = weapon_data[w_num].ammo; // ammo count
-	ship->slot[slot].val2     = 0;                       // damage level
+	ship->slot[slot].timer = 0;
+	ship->slot[slot].val0 = w_num; // ammo type
+	ship->slot[slot].val1 = weapon_data[w_num].ammo; // ammo count
+	ship->slot[slot].val2 = 0; // damage level
 }
 
 void set_equipment(P_ship ship, int slot, int e_num)
 {
-	ship->slot[slot].type     = SLOT_EQUIPMENT;
-	ship->slot[slot].index    = e_num;
+	ship->slot[slot].type = SLOT_EQUIPMENT;
+	ship->slot[slot].index = e_num;
 	ship->slot[slot].position = SLOT_EQUI;
-	ship->slot[slot].timer    = 0;
-	ship->slot[slot].val0     = 0;
-	ship->slot[slot].val1     = 0;
-	ship->slot[slot].val2     = 0;
+	ship->slot[slot].timer = 0;
+	ship->slot[slot].val0 = 0;
+	ship->slot[slot].val1 = 0;
+	ship->slot[slot].val2 = 0;
 }
 
-float WeaponData::average_hull_damage() const { return ((float)(min_damage + max_damage) / 2.0) * ((float)fragments) * ((float)hull_dam / 100.0) * ((100.0 - (float)sail_hit) / 100.0); }
+float WeaponData::average_hull_damage() const
+{
+	return ((float)(min_damage + max_damage) / 2.0) * ((float)fragments) *
+	       ((float)hull_dam / 100.0) * ((100.0 - (float)sail_hit) / 100.0);
+}
 
-float WeaponData::average_sail_damage() const { return ((float)(min_damage + max_damage) / 2.0) * ((float)fragments) * ((float)sail_dam / 100.0) * ((float)sail_hit / 100.0); }
+float WeaponData::average_sail_damage() const
+{
+	return ((float)(min_damage + max_damage) / 2.0) * ((float)fragments) *
+	       ((float)sail_dam / 100.0) * ((float)sail_hit / 100.0);
+}
 
 void normalize_direction(float &dir)
 {
@@ -1372,14 +1460,14 @@ const char *get_arc_name(int arc)
 {
 	switch (arc)
 	{
-		case SIDE_FORE:
-			return "forward";
-		case SIDE_PORT:
-			return "port";
-		case SIDE_REAR:
-			return "rear";
-		case SIDE_STAR:
-			return "starboard";
+	case SIDE_FORE:
+		return "forward";
+	case SIDE_PORT:
+		return "port";
+	case SIDE_REAR:
+		return "rear";
+	case SIDE_STAR:
+		return "starboard";
 	}
 	return "";
 }
@@ -1400,7 +1488,11 @@ const char *condition_prefix(int maxhp, int curhp, bool light)
 	}
 }
 
-static float ship_range(P_ship ship, P_ship target, int x, int y) { return range(ship->x, ship->y, ship->z, x + target->x - 50.0, y + target->y - 50.0, target->z); }
+static float ship_range(P_ship ship, P_ship target, int x, int y)
+{
+	return range(ship->x, ship->y, ship->z, x + target->x - 50.0, y + target->y - 50.0,
+		     target->z);
+}
 
 float range(float x1, float y1, float z1, float x2, float y2, float z2)
 {
@@ -1436,27 +1528,46 @@ bool is_valid_sailing_location(P_ship ship, int room)
 	return true;
 }
 
-bool has_eq_ram(const ShipData *ship) { return eq_ram_slot(ship) != -1; }
-int  eq_ram_slot(const ShipData *ship)
+bool has_eq_ram(const ShipData *ship)
+{
+	return eq_ram_slot(ship) != -1;
+}
+int eq_ram_slot(const ShipData *ship)
 {
 	for (int slot = 0; slot < MAXSLOTS; slot++)
 		if (ship->slot[slot].type == SLOT_EQUIPMENT && ship->slot[slot].index == E_RAM)
 			return slot;
 	return -1;
 }
-int eq_ram_damage(const ShipData *ship) { return eq_ram_weight(ship); }
-int eq_ram_weight(const ShipData *ship) { return (SHIP_HULL_WEIGHT(ship) + 10) / 24; }
-int eq_ram_cost(const ShipData *ship) { return SHIP_HULL_WEIGHT(ship) * 1000; }
+int eq_ram_damage(const ShipData *ship)
+{
+	return eq_ram_weight(ship);
+}
+int eq_ram_weight(const ShipData *ship)
+{
+	return (SHIP_HULL_WEIGHT(ship) + 10) / 24;
+}
+int eq_ram_cost(const ShipData *ship)
+{
+	return SHIP_HULL_WEIGHT(ship) * 1000;
+}
 
-bool has_eq_levistone(const ShipData *ship) { return eq_levistone_slot(ship) != -1; }
-int  eq_levistone_slot(const ShipData *ship)
+bool has_eq_levistone(const ShipData *ship)
+{
+	return eq_levistone_slot(ship) != -1;
+}
+int eq_levistone_slot(const ShipData *ship)
 {
 	for (int slot = 0; slot < MAXSLOTS; slot++)
-		if (ship->slot[slot].type == SLOT_EQUIPMENT && ship->slot[slot].index == E_LEVISTONE)
+		if (ship->slot[slot].type == SLOT_EQUIPMENT &&
+		    ship->slot[slot].index == E_LEVISTONE)
 			return slot;
 	return -1;
 }
-int eq_levistone_weight(const ShipData *ship) { return (SHIP_HULL_WEIGHT(ship) + 50) / 40; }
+int eq_levistone_weight(const ShipData *ship)
+{
+	return (SHIP_HULL_WEIGHT(ship) + 50) / 40;
+}
 
 bool is_diplomat_slot(const ShipData *ship, int slot)
 {
@@ -1479,9 +1590,15 @@ int eq_diplomat_slot(const ShipData *ship)
 	return -1;
 }
 
-bool has_eq_diplomat(const ShipData *ship) { return eq_diplomat_slot(ship) != -1; }
+bool has_eq_diplomat(const ShipData *ship)
+{
+	return eq_diplomat_slot(ship) != -1;
+}
 
-int eq_diplomat_weight(const ShipData *ship) { return (SHIP_HULL_WEIGHT(ship) + 1) / 24; }
+int eq_diplomat_weight(const ShipData *ship)
+{
+	return (SHIP_HULL_WEIGHT(ship) + 1) / 24;
+}
 
 bool has_no_weapons(const ShipData *ship)
 {
@@ -1506,7 +1623,8 @@ bool ocean_pvp_state()
 			continue;
 
 		// Tiny ships don't trigger PvP?  Hrm... Let's make that weaponless small ships.
-		if (SHIP_CLASS(ship) == SH_SLOOP || (SHIP_CLASS(ship) == SH_YACHT && has_no_weapons(ship)))
+		if (SHIP_CLASS(ship) == SH_SLOOP ||
+		    (SHIP_CLASS(ship) == SH_YACHT && has_no_weapons(ship)))
 		{
 			continue;
 		}
@@ -1568,7 +1686,9 @@ int jettison_cargo(P_char ch, P_ship ship, int left)
 			if (ship->slot[i].val0 > left)
 			{
 				if (ch)
-					send_to_char_f(ch, "%d units of %s have been jettisoned!\r\n", left, cargo_type_name(ship->slot[i].index));
+					send_to_char_f(ch,
+						       "%d units of %s have been jettisoned!\r\n",
+						       left, cargo_type_name(ship->slot[i].index));
 				jettison_crates(ship, left, ship->slot[i].index, 1);
 				ship->slot[i].val0 -= left;
 				done += left;
@@ -1577,7 +1697,10 @@ int jettison_cargo(P_char ch, P_ship ship, int left)
 			else
 			{
 				if (ch)
-					send_to_char_f(ch, "%d units of %s have been jettisoned!\r\n", ship->slot[i].val0, cargo_type_name(ship->slot[i].index));
+					send_to_char_f(ch,
+						       "%d units of %s have been jettisoned!\r\n",
+						       ship->slot[i].val0,
+						       cargo_type_name(ship->slot[i].index));
 				jettison_crates(ship, ship->slot[i].val0, ship->slot[i].index, 1);
 				left -= ship->slot[i].val0;
 				done += ship->slot[i].val0;
@@ -1611,7 +1734,9 @@ int jettison_contraband(P_char ch, P_ship ship, int left)
 			if (ship->slot[i].val0 > left)
 			{
 				if (ch)
-					send_to_char_f(ch, "%d units of %s have been jettisoned!\r\n", left, contra_type_name(ship->slot[i].index));
+					send_to_char_f(ch,
+						       "%d units of %s have been jettisoned!\r\n",
+						       left, contra_type_name(ship->slot[i].index));
 				jettison_crates(ship, left, ship->slot[i].index, 2);
 				ship->slot[i].val0 -= left;
 				done += left;
@@ -1620,7 +1745,10 @@ int jettison_contraband(P_char ch, P_ship ship, int left)
 			else
 			{
 				if (ch)
-					send_to_char_f(ch, "%d units of %s have been jettisoned!\r\n", ship->slot[i].val0, contra_type_name(ship->slot[i].index));
+					send_to_char_f(ch,
+						       "%d units of %s have been jettisoned!\r\n",
+						       ship->slot[i].val0,
+						       contra_type_name(ship->slot[i].index));
 				jettison_crates(ship, ship->slot[i].val0, ship->slot[i].index, 2);
 				left -= ship->slot[i].val0;
 				done += ship->slot[i].val0;
@@ -1654,9 +1782,11 @@ int add_crate(P_ship ship, int index, int type)
 	int slot = 0;
 	for (; slot < MAXSLOTS; ++slot)
 	{
-		if (type == 1 && ship->slot[slot].type == SLOT_CARGO && ship->slot[slot].index == index && ship->slot[slot].val1 == 0)
+		if (type == 1 && ship->slot[slot].type == SLOT_CARGO &&
+		    ship->slot[slot].index == index && ship->slot[slot].val1 == 0)
 			break;
-		if (type == 2 && ship->slot[slot].type == SLOT_CONTRABAND && ship->slot[slot].index == index && ship->slot[slot].val1 == 0)
+		if (type == 2 && ship->slot[slot].type == SLOT_CONTRABAND &&
+		    ship->slot[slot].index == index && ship->slot[slot].val1 == 0)
 			break;
 	}
 	if (slot != MAXSLOTS)
@@ -1677,10 +1807,10 @@ int add_crate(P_ship ship, int index, int type)
 			ship->slot[slot].type = SLOT_CONTRABAND;
 		else
 			ship->slot[slot].type = SLOT_CARGO;
-		ship->slot[slot].index    = index;
+		ship->slot[slot].index = index;
 		ship->slot[slot].position = SLOT_HOLD;
-		ship->slot[slot].val0     = 1;
-		ship->slot[slot].val1     = 0;
+		ship->slot[slot].val0 = 1;
+		ship->slot[slot].val1 = 0;
 	}
 	return TRUE;
 }
@@ -1704,7 +1834,7 @@ int salvage_cargo(P_char ch, P_ship ship, int crates)
 
 	crates = MIN(crates, available);
 
-	int   i   = 0;
+	int i = 0;
 	P_obj obj = world[ship->location].contents;
 	while (obj && i < crates)
 	{
@@ -1714,7 +1844,8 @@ int salvage_cargo(P_char ch, P_ship ship, int crates)
 			if (!add_crate(ship, obj->value[0], obj->value[1]))
 			{
 				if (ch)
-					send_to_char("There is no more space on your ship.\r\n", ch);
+					send_to_char("There is no more space on your ship.\r\n",
+						     ch);
 				break;
 			}
 			i++;
@@ -1754,7 +1885,8 @@ void ShipData::guns_skill_raise(P_char ch, float raise)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 
-	sprintf(Gbuf1, "Name: '%s&n' Owner: '%s&n'\n\rOld Guns Skill: %.2f, ", this->name, this->ownername, this->crew.guns_skill);
+	sprintf(Gbuf1, "Name: '%s&n' Owner: '%s&n'\n\rOld Guns Skill: %.2f, ", this->name,
+		this->ownername, this->crew.guns_skill);
 	send_to_char(Gbuf1, ch);
 	this->crew.guns_skill_raise(raise);
 	sprintf(Gbuf1, "New Guns Skill: %.2f.\n\r", this->crew.guns_skill);
@@ -1765,7 +1897,8 @@ void ShipData::rpar_skill_raise(P_char ch, float raise)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 
-	sprintf(Gbuf1, "Name: '%s&n' Owner: '%s&n'\n\rOld Repair Skill: %.2f, ", this->name, this->ownername, this->crew.rpar_skill);
+	sprintf(Gbuf1, "Name: '%s&n' Owner: '%s&n'\n\rOld Repair Skill: %.2f, ", this->name,
+		this->ownername, this->crew.rpar_skill);
 	send_to_char(Gbuf1, ch);
 	this->crew.rpar_skill_raise(raise);
 	sprintf(Gbuf1, "New Repair Skill: %.2f.\n\r", this->crew.rpar_skill);
@@ -1776,7 +1909,8 @@ void ShipData::sail_skill_raise(P_char ch, float raise)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 
-	sprintf(Gbuf1, "Name: '%s&n' Owner: '%s&n'\n\rOld Sail Skill: %.2f, ", this->name, this->ownername, this->crew.sail_skill);
+	sprintf(Gbuf1, "Name: '%s&n' Owner: '%s&n'\n\rOld Sail Skill: %.2f, ", this->name,
+		this->ownername, this->crew.sail_skill);
 	send_to_char(Gbuf1, ch);
 	this->crew.sail_skill_raise(raise);
 	sprintf(Gbuf1, "New Sail Skill: %.2f.\n\r", this->crew.sail_skill);
@@ -1785,7 +1919,7 @@ void ShipData::sail_skill_raise(P_char ch, float raise)
 
 char *crew_bonuses(const ShipCrewData crew)
 {
-	int         bonus_num = 0;
+	int bonus_num = 0;
 	static char buf[MAX_STRING_LENGTH];
 
 	sprintf(buf, "%s", crew.get_next_bonus(&bonus_num));
@@ -1814,11 +1948,13 @@ int ShipData::has_capital()
 {
 	for (int i = 0; i < MAXSLOTS; i++)
 	{
-		if ((slot[i].type == SLOT_WEAPON) && IS_SET(weapon_data[slot[i].index].flags, CAPITAL))
+		if ((slot[i].type == SLOT_WEAPON) &&
+		    IS_SET(weapon_data[slot[i].index].flags, CAPITAL))
 		{
 			return SLOT_WEAPON;
 		}
-		if ((slot[i].type == SLOT_EQUIPMENT) && IS_SET(equipment_data[slot[i].index].flags, CAPITAL))
+		if ((slot[i].type == SLOT_EQUIPMENT) &&
+		    IS_SET(equipment_data[slot[i].index].flags, CAPITAL))
 		{
 			return SLOT_EQUIPMENT;
 		}
@@ -1831,12 +1967,16 @@ bool ShipData::buy_check_capital(P_char ch)
 {
 	switch (has_capital())
 	{
-		case SLOT_WEAPON:
-			send_to_char("&+gYou already have a capital weapon! You can only have one capital item.&n\n", ch);
-			return TRUE;
-		case SLOT_EQUIPMENT:
-			send_to_char("&+gYou already have capital equipment! You can only have one capital item.&n\n", ch);
-			return TRUE;
+	case SLOT_WEAPON:
+		send_to_char(
+			"&+gYou already have a capital weapon! You can only have one capital item.&n\n",
+			ch);
+		return TRUE;
+	case SLOT_EQUIPMENT:
+		send_to_char(
+			"&+gYou already have capital equipment! You can only have one capital item.&n\n",
+			ch);
+		return TRUE;
 	}
 	return FALSE;
 }

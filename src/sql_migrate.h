@@ -12,9 +12,9 @@
 
 static inline int sql_run_migrations(void *db, const char *migrations_dir)
 {
-    (void)db;
-    (void)migrations_dir;
-    return 0;
+	(void)db;
+	(void)migrations_dir;
+	return 0;
 }
 
 #endif /* __SQL_MIGRATE_H__ */

@@ -55,10 +55,8 @@ int websocket_flush_output(struct descriptor_data *d)
 
 	while (d->ws_output_offset < d->ws_output_len)
 	{
-		ssize_t sent = send(d->descriptor,
-		                    d->ws_output_buffer + d->ws_output_offset,
-		                    d->ws_output_len - d->ws_output_offset,
-		                    MSG_NOSIGNAL);
+		ssize_t sent = send(d->descriptor, d->ws_output_buffer + d->ws_output_offset,
+				    d->ws_output_len - d->ws_output_offset, MSG_NOSIGNAL);
 		if (sent > 0)
 		{
 			d->ws_output_offset += (size_t)sent;
@@ -90,16 +88,13 @@ static int websocket_queue_output(struct descriptor_data *d, const void *buf, si
 	if (len > WS_MAX_PENDING_OUTPUT - pending)
 	{
 		statuslog(56,
-		          "WebSocket: closing slow client %s; pending output would exceed %d bytes",
-		          d->host,
-		          WS_MAX_PENDING_OUTPUT);
+			  "WebSocket: closing slow client %s; pending output would exceed %d bytes",
+			  d->host, WS_MAX_PENDING_OUTPUT);
 		return -1;
 	}
 
 	if (d->ws_output_offset > 0 && pending > 0)
-		memmove(d->ws_output_buffer,
-		        d->ws_output_buffer + d->ws_output_offset,
-		        pending);
+		memmove(d->ws_output_buffer, d->ws_output_buffer + d->ws_output_offset, pending);
 	d->ws_output_len = pending;
 	d->ws_output_offset = 0;
 
@@ -116,9 +111,9 @@ static int websocket_queue_output(struct descriptor_data *d, const void *buf, si
 /* base64 encoding helper */
 static char *base64_encode(const unsigned char *input, int length)
 {
-	BIO     *b64 = NULL, *bio = NULL;
+	BIO *b64 = NULL, *bio = NULL;
 	BUF_MEM *bufferPtr;
-	char    *output = NULL;
+	char *output = NULL;
 
 	b64 = BIO_new(BIO_f_base64());
 	if (!b64)
@@ -151,7 +146,7 @@ static char *base64_encode(const unsigned char *input, int length)
 /* generate websocket accept key from client key (rfc 6455 section 4.2.2) */
 void websocket_generate_accept_key(const char *client_key, char *accept_key)
 {
-	char          concat[WS_CONCAT_BUFFER_SIZE];
+	char concat[WS_CONCAT_BUFFER_SIZE];
 	unsigned char sha1_hash[SHA_DIGEST_LENGTH];
 
 	accept_key[0] = '\0';
@@ -162,7 +157,9 @@ void websocket_generate_accept_key(const char *client_key, char *accept_key)
 	if (!ctx)
 		return;
 
-	if (EVP_DigestInit_ex(ctx, EVP_sha1(), NULL) != 1 || EVP_DigestUpdate(ctx, concat, strlen(concat)) != 1 || EVP_DigestFinal_ex(ctx, sha1_hash, NULL) != 1)
+	if (EVP_DigestInit_ex(ctx, EVP_sha1(), NULL) != 1 ||
+	    EVP_DigestUpdate(ctx, concat, strlen(concat)) != 1 ||
+	    EVP_DigestFinal_ex(ctx, sha1_hash, NULL) != 1)
 	{
 		EVP_MD_CTX_free(ctx);
 		return;
@@ -180,8 +177,8 @@ void websocket_generate_accept_key(const char *client_key, char *accept_key)
 /* initialize websocket subsystem */
 int websocket_init(int port)
 {
-	sockaddr_in6       sa;
-	int                opt = 1;
+	sockaddr_in6 sa;
+	int opt = 1;
 
 	ws_listen_fd = socket(AF_INET6, SOCK_STREAM, 0);
 	if (ws_listen_fd < 0)
@@ -200,8 +197,8 @@ int websocket_init(int port)
 
 	/* set up address */
 	memset(&sa, 0, sizeof(sa));
-	sa.sin6_family      = AF_INET6;
-	sa.sin6_port        = htons(port);
+	sa.sin6_family = AF_INET6;
+	sa.sin6_port = htons(port);
 
 	/* bind */
 	if (bind(ws_listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0)
@@ -244,10 +241,10 @@ void websocket_shutdown(void)
 /* accept new websocket connection */
 int websocket_accept(int listen_fd, struct descriptor_data *d)
 {
-	sockaddr_in6       peer;
-	socklen_t          peer_len = sizeof(peer);
-	int                new_fd;
-	int                opt = 1;
+	sockaddr_in6 peer;
+	socklen_t peer_len = sizeof(peer);
+	int new_fd;
+	int opt = 1;
 
 	new_fd = accept(listen_fd, (struct sockaddr *)&peer, &peer_len);
 	if (new_fd < 0)
@@ -271,19 +268,18 @@ int websocket_accept(int listen_fd, struct descriptor_data *d)
 	}
 
 	/* initialize descriptor for websocket */
-	d->descriptor        = new_fd;
-	d->websocket         = 1;
-	d->gmcp_enabled      = 1; /* websocket clients always have gmcp */
-	d->ws_state          = WS_STATE_CONNECTING;
+	d->descriptor = new_fd;
+	d->websocket = 1;
+	d->gmcp_enabled = 1; /* websocket clients always have gmcp */
+	d->ws_state = WS_STATE_CONNECTING;
 	d->ws_handshake_done = 0;
-	d->ws_last_ping      = 0;
-	d->ws_pong_received  = 0;
+	d->ws_last_ping = 0;
+	d->ws_pong_received = 0;
 
 	/* get peer address */
 	inet_ntop(AF_INET6, &peer.sin6_addr, d->host, sizeof d->host);
-        if (!strncmp(d->host, "::ffff:", 7)) // mapped IPv4
-	        strcpy(d->host, d->host + 7);
-
+	if (!strncmp(d->host, "::ffff:", 7)) // mapped IPv4
+		strcpy(d->host, d->host + 7);
 
 	statuslog(56, "WebSocket connection from %s", d->host);
 
@@ -294,11 +290,11 @@ int websocket_accept(int listen_fd, struct descriptor_data *d)
 int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t len)
 {
 	char *line, *saveptr;
-	char *request                    = NULL;
-	char  ws_key[WS_KEY_BUFFER_SIZE] = {0};
-	int   is_upgrade                 = 0;
-	int   is_websocket               = 0;
-	int   version_ok                 = 0;
+	char *request = NULL;
+	char ws_key[WS_KEY_BUFFER_SIZE] = { 0 };
+	int is_upgrade = 0;
+	int is_websocket = 0;
+	int version_ok = 0;
 
 	request = (char *)malloc(len + 1);
 	if (!request)
@@ -374,12 +370,14 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 		/* x-forwarded-for - only trust from local/private proxies */
 		else if (strncasecmp(line, "X-Forwarded-For:", 16) == 0)
 		{
-			if (strcmp(d->host, "127.0.0.1") == 0 || strcmp(d->host, "::1") == 0 || strncmp(d->host, "10.", 3) == 0)
+			if (strcmp(d->host, "127.0.0.1") == 0 || strcmp(d->host, "::1") == 0 ||
+			    strncmp(d->host, "10.", 3) == 0)
 			{
 				const char *value = skip_header_value(line, 16);
-				char        client_ip[INET6_ADDRSTRLEN];
-				int         i = 0;
-				while (value[i] && value[i] != ',' && value[i] != ' ' && i < (int)(sizeof(client_ip) - 1))
+				char client_ip[INET6_ADDRSTRLEN];
+				int i = 0;
+				while (value[i] && value[i] != ',' && value[i] != ' ' &&
+				       i < (int)(sizeof(client_ip) - 1))
 				{
 					client_ip[i] = value[i];
 					i++;
@@ -387,9 +385,10 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 				client_ip[i] = '\0';
 
 				/* validate with inet_pton */
-				struct in_addr  ipv4;
+				struct in_addr ipv4;
 				struct in6_addr ipv6;
-				if (inet_pton(AF_INET, client_ip, &ipv4) == 1 || inet_pton(AF_INET6, client_ip, &ipv6) == 1)
+				if (inet_pton(AF_INET, client_ip, &ipv4) == 1 ||
+				    inet_pton(AF_INET6, client_ip, &ipv6) == 1)
 				{
 					strlcpy(d->host, client_ip, sizeof(d->host));
 					resolve_descriptor_hostname_async(d->host, d->descriptor);
@@ -413,9 +412,9 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 /* send http upgrade response */
 int websocket_complete_handshake(struct descriptor_data *d, const char *key)
 {
-	char                    accept_key[WS_ACCEPT_KEY_SIZE];
-	char                    response[WS_RESPONSE_BUFFER_SIZE];
-	int                     len;
+	char accept_key[WS_ACCEPT_KEY_SIZE];
+	char response[WS_RESPONSE_BUFFER_SIZE];
+	int len;
 	struct descriptor_data *k, *next_k;
 
 	websocket_generate_accept_key(key, accept_key);
@@ -424,27 +423,26 @@ int websocket_complete_handshake(struct descriptor_data *d, const char *key)
 
 	if (d->ws_deflate_requested)
 	{
-		len            = snprintf(response,
-                       sizeof(response),
-                       "HTTP/1.1 101 Switching Protocols\r\n"
-		                          "Upgrade: websocket\r\n"
-		                          "Connection: Upgrade\r\n"
-		                          "Sec-WebSocket-Accept: %s\r\n"
-		                          "Sec-WebSocket-Extensions: permessage-deflate; server_no_context_takeover; client_no_context_takeover\r\n"
-		                          "\r\n",
-                       accept_key);
+		len = snprintf(
+			response, sizeof(response),
+			"HTTP/1.1 101 Switching Protocols\r\n"
+			"Upgrade: websocket\r\n"
+			"Connection: Upgrade\r\n"
+			"Sec-WebSocket-Accept: %s\r\n"
+			"Sec-WebSocket-Extensions: permessage-deflate; server_no_context_takeover; client_no_context_takeover\r\n"
+			"\r\n",
+			accept_key);
 		d->ws_compress = 1;
 	}
 	else
 	{
-		len = snprintf(response,
-		               sizeof(response),
-		               "HTTP/1.1 101 Switching Protocols\r\n"
-		               "Upgrade: websocket\r\n"
-		               "Connection: Upgrade\r\n"
-		               "Sec-WebSocket-Accept: %s\r\n"
-		               "\r\n",
-		               accept_key);
+		len = snprintf(response, sizeof(response),
+			       "HTTP/1.1 101 Switching Protocols\r\n"
+			       "Upgrade: websocket\r\n"
+			       "Connection: Upgrade\r\n"
+			       "Sec-WebSocket-Accept: %s\r\n"
+			       "\r\n",
+			       accept_key);
 	}
 
 	if (websocket_queue_output(d, response, len) < 0)
@@ -452,26 +450,27 @@ int websocket_complete_handshake(struct descriptor_data *d, const char *key)
 		return -1;
 	}
 
-	d->ws_state          = WS_STATE_OPEN;
+	d->ws_state = WS_STATE_OPEN;
 	d->ws_handshake_done = 1;
-	d->connected         = 60; /* ready for account login */
+	d->connected = 60; /* ready for account login */
 
 	/* init zlib streams for compression */
 	if (d->ws_compress)
 	{
-		z_stream *def    = (z_stream *)calloc(1, sizeof(z_stream));
-		z_stream *inf    = (z_stream *)calloc(1, sizeof(z_stream));
-		int       def_ok = 0, inf_ok = 0;
+		z_stream *def = (z_stream *)calloc(1, sizeof(z_stream));
+		z_stream *inf = (z_stream *)calloc(1, sizeof(z_stream));
+		int def_ok = 0, inf_ok = 0;
 
 		if (def && inf)
 		{
 			/* -15 = raw deflate per rfc 7692 */
-			if (deflateInit2(def, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY) == Z_OK)
+			if (deflateInit2(def, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -15, 8,
+					 Z_DEFAULT_STRATEGY) == Z_OK)
 			{
 				def_ok = 1;
 				if (inflateInit2(inf, -15) == Z_OK)
 				{
-					inf_ok               = 1;
+					inf_ok = 1;
 					d->ws_deflate_stream = def;
 					d->ws_inflate_stream = inf;
 				}
@@ -508,10 +507,13 @@ int websocket_complete_handshake(struct descriptor_data *d, const char *key)
 		if (k->websocket && k->ws_handshake_done && !k->account && /* not logged in yet */
 		    k->connected != CON_PLAYING && strcmp(k->host, d->host) == 0)
 		{
+			statuslog(
+				56,
+				"WebSocket: Kicking stale connection from %s (new connection established)",
+				k->host);
 
-			statuslog(56, "WebSocket: Kicking stale connection from %s (new connection established)", k->host);
-
-			ws_send_system(k, "kicked", "New connection established from your browser.");
+			ws_send_system(k, "kicked",
+				       "New connection established from your browser.");
 			websocket_close(k, WS_CLOSE_NORMAL, "New connection");
 			close_socket(k);
 		}
@@ -528,14 +530,14 @@ int websocket_complete_handshake(struct descriptor_data *d, const char *key)
 /* build and send a websocket frame */
 static int websocket_send_frame(struct descriptor_data *d, int opcode, const void *data, size_t len)
 {
-	unsigned char       *frame;
-	size_t               frame_len;
-	size_t               offset = 0;
-	int                  result;
-	const unsigned char *payload     = (const unsigned char *)data;
-	size_t               payload_len = len;
-	unsigned char       *compressed  = NULL;
-	int                  rsv1        = 0;
+	unsigned char *frame;
+	size_t frame_len;
+	size_t offset = 0;
+	int result;
+	const unsigned char *payload = (const unsigned char *)data;
+	size_t payload_len = len;
+	unsigned char *compressed = NULL;
+	int rsv1 = 0;
 
 	if (!d || d->descriptor < 0)
 		return -1;
@@ -544,18 +546,19 @@ static int websocket_send_frame(struct descriptor_data *d, int opcode, const voi
 		return -1;
 
 	/* only compress text/binary, not control frames like ping/pong */
-	if (d->ws_compress && d->ws_deflate_stream && (opcode == WS_OPCODE_TEXT || opcode == WS_OPCODE_BINARY) && len >= WS_COMPRESS_THRESHOLD)
+	if (d->ws_compress && d->ws_deflate_stream &&
+	    (opcode == WS_OPCODE_TEXT || opcode == WS_OPCODE_BINARY) &&
+	    len >= WS_COMPRESS_THRESHOLD)
 	{
-
-		z_stream *strm    = (z_stream *)d->ws_deflate_stream;
-		size_t    max_out = len + 64;
-		compressed        = (unsigned char *)malloc(max_out);
+		z_stream *strm = (z_stream *)d->ws_deflate_stream;
+		size_t max_out = len + 64;
+		compressed = (unsigned char *)malloc(max_out);
 
 		if (compressed)
 		{
-			strm->next_in   = (Bytef *)data;
-			strm->avail_in  = len;
-			strm->next_out  = compressed;
+			strm->next_in = (Bytef *)data;
+			strm->avail_in = len;
+			strm->next_out = compressed;
 			strm->avail_out = max_out;
 
 			if (deflate(strm, Z_SYNC_FLUSH) == Z_OK)
@@ -563,7 +566,10 @@ static int websocket_send_frame(struct descriptor_data *d, int opcode, const voi
 				payload_len = max_out - strm->avail_out;
 
 				/* rfc 7692: strip trailing 00 00 ff ff */
-				if (payload_len >= 4 && compressed[payload_len - 4] == 0x00 && compressed[payload_len - 3] == 0x00 && compressed[payload_len - 2] == 0xff && compressed[payload_len - 1] == 0xff)
+				if (payload_len >= 4 && compressed[payload_len - 4] == 0x00 &&
+				    compressed[payload_len - 3] == 0x00 &&
+				    compressed[payload_len - 2] == 0xff &&
+				    compressed[payload_len - 1] == 0xff)
 				{
 					payload_len -= 4;
 				}
@@ -571,14 +577,14 @@ static int websocket_send_frame(struct descriptor_data *d, int opcode, const voi
 				if (payload_len < len)
 				{
 					payload = compressed;
-					rsv1    = 0x40;
+					rsv1 = 0x40;
 					d->ws_bytes_in += len;
 					d->ws_bytes_out += payload_len;
 				}
 				else
 				{
 					payload_len = len;
-					payload     = (const unsigned char *)data;
+					payload = (const unsigned char *)data;
 				}
 			}
 			deflateReset(strm);
@@ -667,13 +673,17 @@ int websocket_send_text(struct descriptor_data *d, const char *text)
 }
 
 /* send binary frame */
-int websocket_send_binary(struct descriptor_data *d, const void *data, size_t len) { return websocket_send_frame(d, WS_OPCODE_BINARY, data, len); }
+int websocket_send_binary(struct descriptor_data *d, const void *data, size_t len)
+{
+	return websocket_send_frame(d, WS_OPCODE_BINARY, data, len);
+}
 
 /* send json message with type wrapper */
-int websocket_send_json(struct descriptor_data *d, const char *type, const char *package, const char *json)
+int websocket_send_json(struct descriptor_data *d, const char *type, const char *package,
+			const char *json)
 {
 	char *message;
-	int   result;
+	int result;
 
 	if (package)
 	{
@@ -698,13 +708,13 @@ int websocket_send_json(struct descriptor_data *d, const char *type, const char 
 int websocket_send_close(struct descriptor_data *d, int code, const char *reason)
 {
 	unsigned char payload[WS_CLOSE_PAYLOAD_SIZE];
-	size_t        len = 0;
+	size_t len = 0;
 
 	if (code > 0)
 	{
 		payload[0] = (code >> 8) & 0xFF;
 		payload[1] = code & 0xFF;
-		len        = 2;
+		len = 2;
 
 		if (reason)
 		{
@@ -723,24 +733,31 @@ int websocket_send_close(struct descriptor_data *d, int code, const char *reason
 }
 
 /* send ping frame */
-int websocket_send_ping(struct descriptor_data *d) { return websocket_send_frame(d, WS_OPCODE_PING, NULL, 0); }
+int websocket_send_ping(struct descriptor_data *d)
+{
+	return websocket_send_frame(d, WS_OPCODE_PING, NULL, 0);
+}
 
 /* send pong frame */
-int websocket_send_pong(struct descriptor_data *d, const char *data, size_t len) { return websocket_send_frame(d, WS_OPCODE_PONG, data, len); }
+int websocket_send_pong(struct descriptor_data *d, const char *data, size_t len)
+{
+	return websocket_send_frame(d, WS_OPCODE_PONG, data, len);
+}
 
 /* parse websocket frame, returns bytes consumed (-1 on error, 0 if need more data) */
-int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len, char **payload, size_t *payload_len, int *opcode, int *fin_out)
+int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len, char **payload,
+			  size_t *payload_len, int *opcode, int *fin_out)
 {
-	size_t        offset = 0;
-	size_t        frame_len;
-	size_t        data_len;
-	int           fin, rsv1, op, mask_bit;
+	size_t offset = 0;
+	size_t frame_len;
+	size_t data_len;
+	int fin, rsv1, op, mask_bit;
 	unsigned char mask_key[4];
-	size_t        i;
+	size_t i;
 
-	*payload     = NULL;
+	*payload = NULL;
 	*payload_len = 0;
-	*opcode      = -1;
+	*opcode = -1;
 	if (fin_out)
 		*fin_out = 1; /* default to fin=1 */
 
@@ -749,9 +766,9 @@ int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len
 		return 0;
 
 	/* parse first byte */
-	fin  = (buf[0] >> 7) & 0x01;
+	fin = (buf[0] >> 7) & 0x01;
 	rsv1 = (buf[0] >> 6) & 0x01; /* compression flag */
-	op   = buf[0] & 0x0F;
+	op = buf[0] & 0x0F;
 	offset++;
 
 	/* parse second byte */
@@ -772,8 +789,14 @@ int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len
 		if (len < 10)
 			return 0;
 		/* parse full 64-bit length */
-		uint64_t full_len = ((uint64_t)(unsigned char)buf[2] << 56) | ((uint64_t)(unsigned char)buf[3] << 48) | ((uint64_t)(unsigned char)buf[4] << 40) | ((uint64_t)(unsigned char)buf[5] << 32) |
-		                    ((uint64_t)(unsigned char)buf[6] << 24) | ((uint64_t)(unsigned char)buf[7] << 16) | ((uint64_t)(unsigned char)buf[8] << 8) | (uint64_t)(unsigned char)buf[9];
+		uint64_t full_len = ((uint64_t)(unsigned char)buf[2] << 56) |
+				    ((uint64_t)(unsigned char)buf[3] << 48) |
+				    ((uint64_t)(unsigned char)buf[4] << 40) |
+				    ((uint64_t)(unsigned char)buf[5] << 32) |
+				    ((uint64_t)(unsigned char)buf[6] << 24) |
+				    ((uint64_t)(unsigned char)buf[7] << 16) |
+				    ((uint64_t)(unsigned char)buf[8] << 8) |
+				    (uint64_t)(unsigned char)buf[9];
 		if (full_len > WS_MAX_FRAME_SIZE)
 		{
 			return -1;
@@ -820,29 +843,29 @@ int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len
 		/* decompress if rsv1 set */
 		if (rsv1 && d->ws_compress && d->ws_inflate_stream)
 		{
-			z_stream      *strm     = (z_stream *)d->ws_inflate_stream;
-			size_t         out_size = data_len * 10 + 256;
+			z_stream *strm = (z_stream *)d->ws_inflate_stream;
+			size_t out_size = data_len * 10 + 256;
 			unsigned char *inflated = (unsigned char *)malloc(out_size);
-			unsigned char *input    = (unsigned char *)malloc(data_len + 4);
+			unsigned char *input = (unsigned char *)malloc(data_len + 4);
 
 			if (inflated && input)
 			{
 				/* rfc 7692: append 00 00 ff ff before inflate */
 				memcpy(input, *payload, data_len);
-				input[data_len]     = 0x00;
+				input[data_len] = 0x00;
 				input[data_len + 1] = 0x00;
 				input[data_len + 2] = 0xff;
 				input[data_len + 3] = 0xff;
 
-				strm->next_in   = input;
-				strm->avail_in  = data_len + 4;
-				strm->next_out  = inflated;
+				strm->next_in = input;
+				strm->avail_in = data_len + 4;
+				strm->next_out = inflated;
 				strm->avail_out = out_size;
 
 				if (inflate(strm, Z_SYNC_FLUSH) == Z_OK || strm->avail_in == 0)
 				{
 					size_t inflated_len = out_size - strm->avail_out;
-					char  *new_payload  = (char *)malloc(inflated_len + 1);
+					char *new_payload = (char *)malloc(inflated_len + 1);
 					if (new_payload)
 					{
 						memcpy(new_payload, inflated, inflated_len);
@@ -863,7 +886,7 @@ int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len
 		if (*payload)
 		{
 			(*payload)[data_len] = '\0';
-			*payload_len         = data_len;
+			*payload_len = data_len;
 		}
 	}
 
@@ -881,7 +904,7 @@ int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len
 	{
 		websocket_send_pong(d, *payload, *payload_len);
 		free(*payload);
-		*payload     = NULL;
+		*payload = NULL;
 		*payload_len = 0;
 	}
 	else if (op == WS_OPCODE_PONG)
@@ -889,7 +912,7 @@ int websocket_parse_frame(struct descriptor_data *d, const char *buf, size_t len
 		/* mark pong received for dead connection detection */
 		d->ws_pong_received = 1;
 		free(*payload);
-		*payload     = NULL;
+		*payload = NULL;
 		*payload_len = 0;
 	}
 
@@ -920,14 +943,14 @@ void websocket_free(struct descriptor_data *d)
 	{
 		free(d->ws_handshake_buffer);
 		d->ws_handshake_buffer = NULL;
-		d->ws_handshake_len    = 0;
+		d->ws_handshake_len = 0;
 	}
 
 	if (d->ws_fragment_buffer)
 	{
 		free(d->ws_fragment_buffer);
 		d->ws_fragment_buffer = NULL;
-		d->ws_fragment_len    = 0;
+		d->ws_fragment_len = 0;
 	}
 
 	if (d->ws_output_buffer)
@@ -942,7 +965,7 @@ void websocket_free(struct descriptor_data *d)
 	{
 		free(d->ws_message_buffer);
 		d->ws_message_buffer = NULL;
-		d->ws_message_len    = 0;
+		d->ws_message_len = 0;
 		d->ws_message_opcode = 0;
 	}
 
@@ -962,11 +985,12 @@ void websocket_free(struct descriptor_data *d)
 	d->ws_compress = 0;
 
 	d->websocket = 0;
-	d->ws_state  = WS_STATE_CLOSED;
+	d->ws_state = WS_STATE_CLOSED;
 }
 
 /* helper: handle a complete websocket message (after fragmentation reassembly) */
-static void websocket_handle_message(struct descriptor_data *d, int opcode, char *payload, size_t payload_len)
+static void websocket_handle_message(struct descriptor_data *d, int opcode, char *payload,
+				     size_t payload_len)
 {
 	if (opcode == WS_OPCODE_TEXT && payload)
 	{
@@ -974,11 +998,11 @@ static void websocket_handle_message(struct descriptor_data *d, int opcode, char
 		cJSON *json = cJSON_Parse(payload);
 		if (json)
 		{
-			const char *type      = NULL;
-			const char *cmd       = NULL;
-			cJSON      *type_item = cJSON_GetObjectItem(json, "type");
-			cJSON      *cmd_item  = cJSON_GetObjectItem(json, "cmd");
-			cJSON      *data_item = cJSON_GetObjectItem(json, "data");
+			const char *type = NULL;
+			const char *cmd = NULL;
+			cJSON *type_item = cJSON_GetObjectItem(json, "type");
+			cJSON *cmd_item = cJSON_GetObjectItem(json, "cmd");
+			cJSON *data_item = cJSON_GetObjectItem(json, "data");
 
 			if (type_item && cJSON_IsString(type_item))
 				type = type_item->valuestring;
@@ -996,14 +1020,18 @@ static void websocket_handle_message(struct descriptor_data *d, int opcode, char
 				cJSON *pkg_item = cJSON_GetObjectItem(json, "package");
 				if (pkg_item && cJSON_IsString(pkg_item))
 				{
-					char  *data_str = data_item ? cJSON_PrintUnformatted(data_item) : NULL;
-					size_t gmcp_len = strlen(pkg_item->valuestring) + (data_str ? strlen(data_str) + 2 : 1);
-					char  *gmcp_msg = (char *)malloc(gmcp_len);
+					char *data_str = data_item ?
+								 cJSON_PrintUnformatted(data_item) :
+								 NULL;
+					size_t gmcp_len = strlen(pkg_item->valuestring) +
+							  (data_str ? strlen(data_str) + 2 : 1);
+					char *gmcp_msg = (char *)malloc(gmcp_len);
 					if (gmcp_msg)
 					{
 						if (data_str)
 						{
-							snprintf(gmcp_msg, gmcp_len, "%s %s", pkg_item->valuestring, data_str);
+							snprintf(gmcp_msg, gmcp_len, "%s %s",
+								 pkg_item->valuestring, data_str);
 						}
 						else
 						{
@@ -1045,14 +1073,14 @@ static void websocket_handle_message(struct descriptor_data *d, int opcode, char
 /* process incoming websocket data, called from game loop */
 int websocket_process_input(struct descriptor_data *d)
 {
-	char    buf[WS_INPUT_BUFFER_SIZE];
+	char buf[WS_INPUT_BUFFER_SIZE];
 	ssize_t bytes_read;
-	int     consumed;
-	char   *payload;
-	size_t  payload_len;
-	int     opcode, fin;
-	size_t  offset;
-	char   *new_buf;
+	int consumed;
+	char *payload;
+	size_t payload_len;
+	int opcode, fin;
+	size_t offset;
+	char *new_buf;
 
 	if (!d || d->descriptor < 0)
 		return -1;
@@ -1079,7 +1107,8 @@ int websocket_process_input(struct descriptor_data *d)
 	/* buffer http handshake until complete */
 	if (!d->ws_handshake_done)
 	{
-		new_buf = (char *)realloc(d->ws_handshake_buffer, d->ws_handshake_len + bytes_read + 1);
+		new_buf = (char *)realloc(d->ws_handshake_buffer,
+					  d->ws_handshake_len + bytes_read + 1);
 		if (!new_buf)
 			return -1;
 		d->ws_handshake_buffer = new_buf;
@@ -1097,10 +1126,11 @@ int websocket_process_input(struct descriptor_data *d)
 			return 0;
 		}
 
-		int result = websocket_parse_handshake(d, d->ws_handshake_buffer, d->ws_handshake_len);
+		int result =
+			websocket_parse_handshake(d, d->ws_handshake_buffer, d->ws_handshake_len);
 		free(d->ws_handshake_buffer);
 		d->ws_handshake_buffer = NULL;
-		d->ws_handshake_len    = 0;
+		d->ws_handshake_len = 0;
 
 		if (result <= 0)
 		{
@@ -1129,7 +1159,9 @@ int websocket_process_input(struct descriptor_data *d)
 	offset = 0;
 	while (offset < d->ws_fragment_len)
 	{
-		consumed = websocket_parse_frame(d, d->ws_fragment_buffer + offset, d->ws_fragment_len - offset, &payload, &payload_len, &opcode, &fin);
+		consumed = websocket_parse_frame(d, d->ws_fragment_buffer + offset,
+						 d->ws_fragment_len - offset, &payload,
+						 &payload_len, &opcode, &fin);
 
 		if (consumed < 0)
 		{
@@ -1146,21 +1178,24 @@ int websocket_process_input(struct descriptor_data *d)
 		offset += consumed;
 
 		/* skip control frames (already handled in parse_frame) */
-		if (opcode == WS_OPCODE_CLOSE || opcode == WS_OPCODE_PING || opcode == WS_OPCODE_PONG)
+		if (opcode == WS_OPCODE_CLOSE || opcode == WS_OPCODE_PING ||
+		    opcode == WS_OPCODE_PONG)
 		{
 			if (opcode == WS_OPCODE_CLOSE)
 			{
 				/* clean up and signal close */
 				if (offset < d->ws_fragment_len)
 				{
-					memmove(d->ws_fragment_buffer, d->ws_fragment_buffer + offset, d->ws_fragment_len - offset);
+					memmove(d->ws_fragment_buffer,
+						d->ws_fragment_buffer + offset,
+						d->ws_fragment_len - offset);
 					d->ws_fragment_len -= offset;
 				}
 				else
 				{
 					free(d->ws_fragment_buffer);
 					d->ws_fragment_buffer = NULL;
-					d->ws_fragment_len    = 0;
+					d->ws_fragment_len = 0;
 				}
 				return -1;
 			}
@@ -1184,14 +1219,16 @@ int websocket_process_input(struct descriptor_data *d)
 			}
 			if (payload && payload_len > 0)
 			{
-				new_buf = (char *)realloc(d->ws_message_buffer, d->ws_message_len + payload_len + 1);
+				new_buf = (char *)realloc(d->ws_message_buffer,
+							  d->ws_message_len + payload_len + 1);
 				if (!new_buf)
 				{
 					free(payload);
 					return -1;
 				}
 				d->ws_message_buffer = new_buf;
-				memcpy(d->ws_message_buffer + d->ws_message_len, payload, payload_len);
+				memcpy(d->ws_message_buffer + d->ws_message_len, payload,
+				       payload_len);
 				d->ws_message_len += payload_len;
 				d->ws_message_buffer[d->ws_message_len] = '\0';
 				free(payload);
@@ -1201,10 +1238,11 @@ int websocket_process_input(struct descriptor_data *d)
 			if (fin)
 			{
 				/* final fragment - deliver complete message */
-				websocket_handle_message(d, d->ws_message_opcode, d->ws_message_buffer, d->ws_message_len);
+				websocket_handle_message(d, d->ws_message_opcode,
+							 d->ws_message_buffer, d->ws_message_len);
 				free(d->ws_message_buffer);
 				d->ws_message_buffer = NULL;
-				d->ws_message_len    = 0;
+				d->ws_message_len = 0;
 				d->ws_message_opcode = 0;
 			}
 		}
@@ -1220,8 +1258,8 @@ int websocket_process_input(struct descriptor_data *d)
 			}
 			d->ws_message_opcode = opcode;
 			d->ws_message_buffer = payload; /* take ownership */
-			d->ws_message_len    = payload_len;
-			payload              = NULL; /* don't free, we own it now */
+			d->ws_message_len = payload_len;
+			payload = NULL; /* don't free, we own it now */
 		}
 		else
 		{
@@ -1243,12 +1281,13 @@ int websocket_process_input(struct descriptor_data *d)
 			/* consumed everything */
 			free(d->ws_fragment_buffer);
 			d->ws_fragment_buffer = NULL;
-			d->ws_fragment_len    = 0;
+			d->ws_fragment_len = 0;
 		}
 		else
 		{
 			/* keep remainder */
-			memmove(d->ws_fragment_buffer, d->ws_fragment_buffer + offset, d->ws_fragment_len - offset);
+			memmove(d->ws_fragment_buffer, d->ws_fragment_buffer + offset,
+				d->ws_fragment_len - offset);
 			d->ws_fragment_len -= offset;
 		}
 	}

@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 bootstrap = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text()
-legacy = (ROOT / "src/duris.sql").read_text()
+legacy = (ROOT / "migrations/bootstrap_legacy_baseline.sql").read_text()
 tables = ("auction_bid_history", "auction_item_pickups", "auction_money_pickups", "auctions")
 
 for text, name in ((bootstrap, "bootstrap"), (legacy, "legacy schema")):

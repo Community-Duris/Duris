@@ -9,42 +9,40 @@ static struct
 {
 	int vnum;
 	const char *name;
-} portdata[] =
-{
-	{ 559633, "flann" },
-	{ 132573, "tharnadia tharn" },
-	{  82500, "myra myrabolus" },
-	{  16551, "woodseer ws" },
-	{  93610, "vella" },
-	{  45000, "charing grey" },
-	{   5302, "marigot centaur" },
-	{  37712, "nax" },
-	{ 635260, "dalvik kk" },
-	{  97628, "shady" },
-	{  22410, "sp storm storm_port stormport" },
-	{   9401, "sarmiz" },
-	{   1711, "qq" },
-	{  11703, "ghore" },
-	{  70296, "moregeeth gob gobbo" },
-	{  43142, "tg tq" },
-	{  15263, "faang" },
-	{  99715, "lava lavasprings durka" },
-	{ 584171, "frzzt" },
-	{  19428, "githyanki" },
-	{  96537, "ix ixarkon" },
-	{  17021, "khild khildarak" },
-	{  36544, "arach arachdrathos drow" },
-	{ 0 }
-};
+} portdata[] = { { 559633, "flann" },
+		 { 132573, "tharnadia tharn" },
+		 { 82500, "myra myrabolus" },
+		 { 16551, "woodseer ws" },
+		 { 93610, "vella" },
+		 { 45000, "charing grey" },
+		 { 5302, "marigot centaur" },
+		 { 37712, "nax" },
+		 { 635260, "dalvik kk" },
+		 { 97628, "shady" },
+		 { 22410, "sp storm storm_port stormport" },
+		 { 9401, "sarmiz" },
+		 { 1711, "qq" },
+		 { 11703, "ghore" },
+		 { 70296, "moregeeth gob gobbo" },
+		 { 43142, "tg tq" },
+		 { 15263, "faang" },
+		 { 99715, "lava lavasprings durka" },
+		 { 584171, "frzzt" },
+		 { 19428, "githyanki" },
+		 { 96537, "ix ixarkon" },
+		 { 17021, "khild khildarak" },
+		 { 36544, "arach arachdrathos drow" },
+		 { 0 } };
 
 static void chaos_port(P_char ch, const char *arg)
 {
 	if (!*arg)
 		return send_to_char("Port to where?\n", ch);
-	for (int i=0; portdata[i].vnum; i++)
+	for (int i = 0; portdata[i].vnum; i++)
 		if (isname(arg, portdata[i].name))
 		{
-			act("$n creates and enters a chaos portal, which then dissipates.", 0, ch, 0, 0, TO_ROOM);
+			act("$n creates and enters a chaos portal, which then dissipates.", 0, ch,
+			    0, 0, TO_ROOM);
 			char_from_room(ch);
 			act("You create a step through a chaos portal.", 0, ch, 0, 0, TO_CHAR);
 			char_to_room(ch, real_room(portdata[i].vnum), -1);
@@ -55,25 +53,26 @@ static void chaos_port(P_char ch, const char *arg)
 	send_to_char("No portal leads there.\n", ch);
 }
 
-static struct { int id; const char *name; } sidenames[] =
-{ // some plurals are weird and ungrammatic, that's ok -- we use abbrevs
-	{ RACEWAR_GOOD,    "goodies" },
-	{ RACEWAR_GOOD,    "goods" },
-	{ RACEWAR_EVIL,    "evils" },
-	{ RACEWAR_UNDEAD,  "undeads" },
-	{ RACEWAR_NEUTRAL, "illithids" },
-	{ RACEWAR_NEUTRAL, "squids" },
-	{ RACEWAR_NEUTRAL, "seafood" },	// :p
-	{ RACEWAR_NEUTRAL, "neutrals" },
-	{ 0 }
+static struct
+{
+	int id;
+	const char *name;
+} sidenames[] = { // some plurals are weird and ungrammatic, that's ok -- we use abbrevs
+	{ RACEWAR_GOOD, "goodies" },	  { RACEWAR_GOOD, "goods" },
+	{ RACEWAR_EVIL, "evils" },	  { RACEWAR_UNDEAD, "undeads" },
+	{ RACEWAR_NEUTRAL, "illithids" }, { RACEWAR_NEUTRAL, "squids" },
+	{ RACEWAR_NEUTRAL, "seafood" }, // :p
+	{ RACEWAR_NEUTRAL, "neutrals" },  { 0 }
 };
 
 static void chaos_side(P_char ch, const char *arg)
 {
 	if (!*arg)
-		return send_to_char("Which side?  There are &+Gg&noodies, &+Re&nvils, &+Lu&nndead, and &+Mi&nllithids.\n", ch);
+		return send_to_char(
+			"Which side?  There are &+Gg&noodies, &+Re&nvils, &+Lu&nndead, and &+Mi&nllithids.\n",
+			ch);
 
-	for (int i=0; sidenames[i].id; i++)
+	for (int i = 0; sidenames[i].id; i++)
 		if (is_abbrev(arg, sidenames[i].name))
 		{
 			if (ch->player.racewar == sidenames[i].id)
@@ -161,10 +160,11 @@ void do_chaos(P_char ch, char *arg, int cmd)
 		s = -1;
 		if (sscanf(arg, "%d %d %d", &s, &g, &r) != 3)
 			g = r = s;
-		if (s < 0 ||  g <0 || r < 0)
+		if (s < 0 || g < 0 || r < 0)
 			return send_to_char("One or three numbers, for sail/gun/repair exp.\n", ch);
 		if (s > max || g > max || r > max)
-			return send_to_char("Nobody that experienced would work for a wuss like you.\n", ch);
+			return send_to_char(
+				"Nobody that experienced would work for a wuss like you.\n", ch);
 
 		ship->crew.sail_skill = s;
 		ship->crew.guns_skill = g;
@@ -179,5 +179,7 @@ void do_chaos(P_char ch, char *arg, int cmd)
 		return chaos_side(ch, arg);
 
 noarg:
-	send_to_char("Nuh uh. Can give only &+Wplat&n, &+Wlevel&n, &+Wshipfrags&n, &+Wcrewexp&n, &+Wportal&n, &+Wside&n.\n", ch);
+	send_to_char(
+		"Nuh uh. Can give only &+Wplat&n, &+Wlevel&n, &+Wshipfrags&n, &+Wcrewexp&n, &+Wportal&n, &+Wside&n.\n",
+		ch);
 }

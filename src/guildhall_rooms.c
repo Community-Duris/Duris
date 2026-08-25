@@ -19,8 +19,8 @@
 #include "spells.h"
 
 // external global variables
-extern P_room    world;
-extern P_index   obj_index;
+extern P_room world;
+extern P_index obj_index;
 extern const int rev_dir[];
 
 //
@@ -37,7 +37,8 @@ bool GuildhallRoom::save()
 
 	if (!save_guildhall_room(this))
 	{
-		logit(LOG_GUILDHALLS, "GuildhallRoom::save(%d): save_guildhall_room failed!", this->id);
+		logit(LOG_GUILDHALLS, "GuildhallRoom::save(%d): save_guildhall_room failed!",
+		      this->id);
 		return FALSE;
 	}
 
@@ -48,7 +49,8 @@ bool GuildhallRoom::destroy()
 {
 	if (!delete_guildhall_room(this))
 	{
-		logit(LOG_GUILDHALLS, "GuildhallRoom::destroy(%d): delete_guildhall_room failed!", this->id);
+		logit(LOG_GUILDHALLS, "GuildhallRoom::destroy(%d): delete_guildhall_room failed!",
+		      this->id);
 		return FALSE;
 	}
 
@@ -65,14 +67,16 @@ bool GuildhallRoom::valid()
 
 	if (this->type < 0 || this->type >= GH_ROOM_NUM_TYPES)
 	{
-		logit(LOG_GUILDHALLS, "GuildhallRoom::valid(%d): room with an illegal type (%d)", this->id, this->type);
+		logit(LOG_GUILDHALLS, "GuildhallRoom::valid(%d): room with an illegal type (%d)",
+		      this->id, this->type);
 		return FALSE;
 	}
 
 	// make sure vnum is valid
 	if (this->vnum < 0 || !real_room0(this->vnum))
 	{
-		logit(LOG_GUILDHALLS, "GuildhallRoom::valid(%d): invalid vnum! (%d)", this->id, this->vnum);
+		logit(LOG_GUILDHALLS, "GuildhallRoom::valid(%d): invalid vnum! (%d)", this->id,
+		      this->vnum);
 		return FALSE;
 	}
 
@@ -81,13 +85,12 @@ bool GuildhallRoom::valid()
 	{
 		for (int j = 0; j < Guildhall::guildhalls[i]->rooms.size(); j++)
 		{
-			if (this->id != Guildhall::guildhalls[i]->rooms[j]->id && this->vnum == Guildhall::guildhalls[i]->rooms[j]->vnum)
+			if (this->id != Guildhall::guildhalls[i]->rooms[j]->id &&
+			    this->vnum == Guildhall::guildhalls[i]->rooms[j]->vnum)
 			{
 				logit(LOG_GUILDHALLS,
 				      "GuildhallRoom::valid(%d): vnum [%d] already initialized (by guildhall %d / room %d)!",
-				      this->id,
-				      this->vnum,
-				      Guildhall::guildhalls[i]->id,
+				      this->id, this->vnum, Guildhall::guildhalls[i]->id,
 				      Guildhall::guildhalls[i]->rooms[j]->id);
 				return FALSE;
 			}
@@ -131,7 +134,8 @@ bool GuildhallRoom::init()
 	else
 	{
 		char buff[MAX_STRING_LENGTH];
-		snprintf(buff, MAX_STRING_LENGTH, world[real_room0(this->template_vnum)].name, this->guild->get_name().c_str());
+		snprintf(buff, MAX_STRING_LENGTH, world[real_room0(this->template_vnum)].name,
+			 this->guild->get_name().c_str());
 		this->room->name = str_dup(buff);
 	}
 
@@ -173,16 +177,18 @@ bool EntranceRoom::init()
 	this->guildhall->entrance_room = this;
 
 	// connect entrance room to outside room
-	connect_rooms(this->vnum, this->guildhall->outside_vnum, this->value[GH_VALUE_ENTRANCE_DIR], -1);
+	connect_rooms(this->vnum, this->guildhall->outside_vnum, this->value[GH_VALUE_ENTRANCE_DIR],
+		      -1);
 
 	// load door object
 	if ((this->door = read_object(GH_DOOR_VNUM, VIRTUAL)))
 	{
 		char buff[MAX_STRING_LENGTH];
 		this->door->str_mask = STRUNG_DESC1;
-		snprintf(buff, MAX_STRING_LENGTH, this->door->description, this->guild->get_name().c_str());
+		snprintf(buff, MAX_STRING_LENGTH, this->door->description,
+			 this->guild->get_name().c_str());
 		this->door->description = str_dup(buff);
-		this->door->value[0]    = this->vnum;
+		this->door->value[0] = this->vnum;
 		obj_to_room(this->door, real_room0(this->guildhall->outside_vnum));
 	}
 
@@ -192,18 +198,18 @@ bool EntranceRoom::init()
 		int vnum = 0;
 		switch (this->value[GH_GOLEM_SLOT + i])
 		{
-			case GH_GOLEM_TYPE_WARRIOR:
-				vnum = GH_GOLEM_WARRIOR;
-				break;
-			case GH_GOLEM_TYPE_CLERIC:
-				vnum = GH_GOLEM_CLERIC;
-				break;
-			case GH_GOLEM_TYPE_SORCERER:
-				vnum = GH_GOLEM_SORCERER;
-				break;
-			default:
-				// no golem
-				break;
+		case GH_GOLEM_TYPE_WARRIOR:
+			vnum = GH_GOLEM_WARRIOR;
+			break;
+		case GH_GOLEM_TYPE_CLERIC:
+			vnum = GH_GOLEM_CLERIC;
+			break;
+		case GH_GOLEM_TYPE_SORCERER:
+			vnum = GH_GOLEM_SORCERER;
+			break;
+		default:
+			// no golem
+			break;
 		}
 
 		if (vnum)
@@ -212,7 +218,9 @@ bool EntranceRoom::init()
 
 			if (!golem)
 			{
-				logit(LOG_MOB, "EntranceRoom::init(): couldn't load guildhall golem mob %d!", vnum);
+				logit(LOG_MOB,
+				      "EntranceRoom::init(): couldn't load guildhall golem mob %d!",
+				      vnum);
 				continue;
 			}
 
@@ -220,11 +228,12 @@ bool EntranceRoom::init()
 			SET_BIT(golem->specials.act, ACT_SPEC_DIE);
 
 			GET_PLATINUM(golem) = 0;
-			GET_GOLD(golem)     = 0;
-			GET_SILVER(golem)   = 0;
-			GET_COPPER(golem)   = 0;
+			GET_GOLD(golem) = 0;
+			GET_SILVER(golem) = 0;
+			GET_COPPER(golem) = 0;
 
-			GET_HOME(golem) = GET_BIRTHPLACE(golem) = GET_ORIG_BIRTHPLACE(golem) = this->vnum;
+			GET_HOME(golem) = GET_BIRTHPLACE(golem) = GET_ORIG_BIRTHPLACE(golem) =
+				this->vnum;
 
 			GET_ASSOC(golem) = this->guild;
 			if (this->guildhall->racewar == RACEWAR_GOOD)
@@ -236,7 +245,8 @@ bool EntranceRoom::init()
 				SET_BIT(golem->only.npc->aggro_flags, AGGR_GOOD_RACE);
 			}
 			add_tag_to_char(golem, TAG_GUILDHALL, this->guildhall->id, AFFTYPE_PERM);
-			add_tag_to_char(golem, TAG_DIRECTION, rev_dir[this->value[GH_VALUE_ENTRANCE_DIR]], AFFTYPE_PERM);
+			add_tag_to_char(golem, TAG_DIRECTION,
+					rev_dir[this->value[GH_VALUE_ENTRANCE_DIR]], AFFTYPE_PERM);
 			golem->player.racewar = guildhall->racewar;
 
 			char_to_room(golem, real_room0(this->vnum), -1);
@@ -259,8 +269,8 @@ bool EntranceRoom::golem_died(P_char golem)
 		if (golem == this->golems[i])
 		{
 			this->value[GH_GOLEM_SLOT + i] = 0;
-			this->golems[i]                = NULL;
-			changed                        = true;
+			this->golems[i] = NULL;
+			changed = true;
 		}
 	}
 
@@ -365,8 +375,8 @@ bool TownPortalRoom::init()
 	{
 		if (this->guildhall->racewar == RACEWAR_GOOD)
 		{
-			int town[] = {TH_MAP_VNUM, KI_MAP_VNUM, WS_MAP_VNUM};
-			int inn[]  = {TH_INN_VNUM, KI_INN_VNUM, WS_INN_VNUM};
+			int town[] = { TH_MAP_VNUM, KI_MAP_VNUM, WS_MAP_VNUM };
+			int inn[] = { TH_INN_VNUM, KI_INN_VNUM, WS_INN_VNUM };
 			int whichtown[3];
 			int dest = 0;
 			int dist = 0;
@@ -377,7 +387,9 @@ bool TownPortalRoom::init()
 
 			for (i = 0; i < 3; i++)
 			{
-				whichtown[i] = calculate_map_distance(real_room(this->guildhall->outside_vnum), real_room(town[i]));
+				whichtown[i] = calculate_map_distance(
+					real_room(this->guildhall->outside_vnum),
+					real_room(town[i]));
 				if (whichtown[i])
 					whichtown[i] = (int)sqrt(whichtown[i]);
 				if (dist < whichtown[i] || dist == 0)
@@ -389,21 +401,24 @@ bool TownPortalRoom::init()
 			char buff[MAX_STRING_LENGTH];
 			if (dest == WS_INN_VNUM)
 			{
-				snprintf(buff, MAX_STRING_LENGTH, this->portal->description, "&+GWoodseer&n");
+				snprintf(buff, MAX_STRING_LENGTH, this->portal->description,
+					 "&+GWoodseer&n");
 				this->portal->value[0] = WS_INN_VNUM;
 			}
 			else if (dest == KI_INN_VNUM)
 			{
-				snprintf(buff, MAX_STRING_LENGTH, this->portal->description, "&+YKimordril&n");
+				snprintf(buff, MAX_STRING_LENGTH, this->portal->description,
+					 "&+YKimordril&n");
 				this->portal->value[0] = KI_INN_VNUM;
 			}
 			else
 			{
-				snprintf(buff, MAX_STRING_LENGTH, this->portal->description, "&+cTharnadia&n");
+				snprintf(buff, MAX_STRING_LENGTH, this->portal->description,
+					 "&+cTharnadia&n");
 				this->portal->value[0] = TH_INN_VNUM;
 			}
 			this->portal->description = str_dup(buff);
-			this->portal->str_mask    = STRUNG_DESC1;
+			this->portal->str_mask = STRUNG_DESC1;
 			obj_to_room(this->portal, real_room0(this->vnum));
 		}
 		else if (this->guildhall->racewar == RACEWAR_EVIL)
@@ -411,16 +426,18 @@ bool TownPortalRoom::init()
 			char buff[MAX_STRING_LENGTH];
 			if (IS_UD_MAP(real_room(this->guildhall->outside_vnum)))
 			{
-				snprintf(buff, MAX_STRING_LENGTH, this->portal->description, "&+LShady Grove&n");
+				snprintf(buff, MAX_STRING_LENGTH, this->portal->description,
+					 "&+LShady Grove&n");
 				this->portal->value[0] = SHADY_INN_VNUM;
 			}
 			else
 			{
-				snprintf(buff, MAX_STRING_LENGTH, this->portal->description, "&+rKhildarak&n");
+				snprintf(buff, MAX_STRING_LENGTH, this->portal->description,
+					 "&+rKhildarak&n");
 				this->portal->value[0] = KHILD_INN_VNUM;
 			}
 			this->portal->description = str_dup(buff);
-			this->portal->str_mask    = STRUNG_DESC1;
+			this->portal->str_mask = STRUNG_DESC1;
 			obj_to_room(this->portal, real_room0(this->vnum));
 		}
 	}

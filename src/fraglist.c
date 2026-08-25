@@ -14,15 +14,15 @@
 #define MAX_FRAG_SIZE 10 /* max size of high/low lists */
 
 extern const struct class_names class_names_table[];
-extern const struct race_names  race_names_table[];
-extern P_char                   misfire_check(P_char ch, P_char spell_target, int flag);
+extern const struct race_names race_names_table[];
+extern P_char misfire_check(P_char ch, P_char spell_target, int flag);
 
-extern P_room               world;
+extern P_room world;
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
 
 extern void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_update);
 extern void get_level_cap(int *max_level, int *racewar);
-extern int  sql_level_cap(int racewar_side);
+extern int sql_level_cap(int racewar_side);
 
 /*
  * fragWorthy - is ch worthy of gaining a frag and victim worthy of losing
@@ -31,7 +31,7 @@ extern int  sql_level_cap(int racewar_side);
 
 int fragWorthy(P_char ch, P_char victim)
 {
-	int    racew;
+	int racew;
 	P_char tch;
 
 	if (IS_NPC(victim))
@@ -123,24 +123,19 @@ static MYSQL_RES *query_frag_leaders(const char *filter, int ascending, int limi
 
 	if (filter && filter[0])
 	{
-		snprintf(query,
-		         sizeof(query),
-		         "SELECT char_name, total_frags FROM frag_leaderboard "
-		         "WHERE deleted_at IS NULL AND %s "
-		         "ORDER BY total_frags %s LIMIT %d",
-		         filter,
-		         ascending ? "ASC" : "DESC",
-		         limit);
+		snprintf(query, sizeof(query),
+			 "SELECT char_name, total_frags FROM frag_leaderboard "
+			 "WHERE deleted_at IS NULL AND %s "
+			 "ORDER BY total_frags %s LIMIT %d",
+			 filter, ascending ? "ASC" : "DESC", limit);
 	}
 	else
 	{
-		snprintf(query,
-		         sizeof(query),
-		         "SELECT char_name, total_frags FROM frag_leaderboard "
-		         "WHERE deleted_at IS NULL "
-		         "ORDER BY total_frags %s LIMIT %d",
-		         ascending ? "ASC" : "DESC",
-		         limit);
+		snprintf(query, sizeof(query),
+			 "SELECT char_name, total_frags FROM frag_leaderboard "
+			 "WHERE deleted_at IS NULL "
+			 "ORDER BY total_frags %s LIMIT %d",
+			 ascending ? "ASC" : "DESC", limit);
 	}
 
 	return db_query(query);
@@ -150,14 +145,14 @@ static MYSQL_RES *query_frag_leaders(const char *filter, int ascending, int limi
 static void check_frag_position(P_char ch)
 {
 	MYSQL_RES *res;
-	MYSQL_ROW  row;
+	MYSQL_ROW row;
 
 	if (!ch || IS_NPC(ch))
 		return;
 
 	// check if player is #1 overall
 	res = db_query("SELECT char_name FROM frag_leaderboard "
-	               "WHERE deleted_at IS NULL ORDER BY total_frags DESC LIMIT 1");
+		       "WHERE deleted_at IS NULL ORDER BY total_frags DESC LIMIT 1");
 	if (res)
 	{
 		row = mysql_fetch_row(res);
@@ -174,7 +169,7 @@ static void check_frag_position(P_char ch)
 
 	// check if player is #1 lowest
 	res = db_query("SELECT char_name FROM frag_leaderboard "
-	               "WHERE deleted_at IS NULL ORDER BY total_frags ASC LIMIT 1");
+		       "WHERE deleted_at IS NULL ORDER BY total_frags ASC LIMIT 1");
 	if (res)
 	{
 		row = mysql_fetch_row(res);
@@ -193,16 +188,16 @@ static void check_frag_position(P_char ch)
 // shows the frag list from database
 void do_fraglist(P_char ch, char *arg, int cmd)
 {
-	char       buf[65536], buf2[2048], name[256];
-	int        frags, count;
-	float      fragnum     = 0;
-	char       filter[256] = "";
-	int        cap_level, cap_racewar, cap_others;
-	long       cap_frags;
-	time_t     cap_timer;
-	int        days, hours, mins, secs;
+	char buf[65536], buf2[2048], name[256];
+	int frags, count;
+	float fragnum = 0;
+	char filter[256] = "";
+	int cap_level, cap_racewar, cap_others;
+	long cap_frags;
+	time_t cap_timer;
+	int days, hours, mins, secs;
 	MYSQL_RES *res;
-	MYSQL_ROW  row;
+	MYSQL_ROW row;
 
 	if (!IS_ALIVE(ch))
 		return;
@@ -502,7 +497,9 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 		}
 		else
 		{
-			send_to_char("Valid fraglists exist by race, class, undead/evil/good, and overall (no argument).\r\n", ch);
+			send_to_char(
+				"Valid fraglists exist by race, class, undead/evil/good, and overall (no argument).\r\n",
+				ch);
 			return;
 		}
 	}
@@ -527,14 +524,15 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 		days = cap_timer;
 	}
 
-	long frag_totals[MAX_RACEWAR] = {0};
+	long frag_totals[MAX_RACEWAR] = { 0 };
 	for (int i = 0; i < MAX_RACEWAR; i++)
 	{
-		MYSQL_RES *res = db_query("SELECT SUM(total_frags) FROM frag_leaderboard WHERE racewar=%d", i);
+		MYSQL_RES *res = db_query(
+			"SELECT SUM(total_frags) FROM frag_leaderboard WHERE racewar=%d", i);
 		if (res)
 		{
 			MYSQL_ROW row = mysql_fetch_row(res);
-			if(row and row[0])
+			if (row and row[0])
 			{
 				frag_totals[i] = atol(row[0]);
 			}
@@ -542,19 +540,13 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 		}
 	}
 
-	snprintf(buf,
-	         MAX_STRING_LENGTH,
-	         "&+YFrag Level Cap:&+w %d - All, &+WGoodies Total Frags - &+w%d.%02d, &+REvils Total Frags - &+w%d.%02d\n&+YTimer:&+w %02d:%02d:%02d:%02d &+YFrags needed:&+w %.2f&n\n\n&+WTop Fraggers\n\n",
-	         cap_level,
-	         (int)(frag_totals[RACEWAR_GOOD] / 100),
-	         (int)(frag_totals[RACEWAR_GOOD] % 100),
-			 (int)(frag_totals[RACEWAR_EVIL] / 100),
-	         (int)(frag_totals[RACEWAR_EVIL] % 100),
-	         days,
-	         hours,
-	         mins,
-	         secs,
-	         frag_cap_config_frags_for_level(cap_level + 1));
+	snprintf(
+		buf, MAX_STRING_LENGTH,
+		"&+YFrag Level Cap:&+w %d - All, &+WGoodies Total Frags - &+w%d.%02d, &+REvils Total Frags - &+w%d.%02d\n&+YTimer:&+w %02d:%02d:%02d:%02d &+YFrags needed:&+w %.2f&n\n\n&+WTop Fraggers\n\n",
+		cap_level, (int)(frag_totals[RACEWAR_GOOD] / 100),
+		(int)(frag_totals[RACEWAR_GOOD] % 100), (int)(frag_totals[RACEWAR_EVIL] / 100),
+		(int)(frag_totals[RACEWAR_EVIL] % 100), days, hours, mins, secs,
+		frag_cap_config_frags_for_level(cap_level + 1));
 
 	// query top fraggers
 	res = query_frag_leaders(filter, 0, MAX_FRAG_SIZE);
@@ -570,10 +562,11 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 		if (row[0] && row[1])
 		{
 			strlcpy(name, row[0], sizeof name);
-			name[0]                = toupper(name[0]);
-			frags                  = atoi(row[1]);
-			fragnum                = frags / 100.0;
-			snprintf(buf2, sizeof buf2, "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
+			name[0] = toupper(name[0]);
+			frags = atoi(row[1]);
+			fragnum = frags / 100.0;
+			snprintf(buf2, sizeof buf2, "   &+Y%-30s             &+R% 6.2f\r\n", name,
+				 fragnum);
 			strcat(buf, buf2);
 			count++;
 		}
@@ -604,10 +597,11 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 		if (row[0] && row[1])
 		{
 			strlcpy(name, row[0], sizeof name);
-			name[0]                = toupper(name[0]);
-			frags                  = atoi(row[1]);
-			fragnum                = frags / 100.0;
-			snprintf(buf2, sizeof buf2, "   &+Y%-30s             &+R% 6.2f\r\n", name, fragnum);
+			name[0] = toupper(name[0]);
+			frags = atoi(row[1]);
+			fragnum = frags / 100.0;
+			snprintf(buf2, sizeof buf2, "   &+Y%-30s             &+R% 6.2f\r\n", name,
+				 fragnum);
 			strcat(buf, buf2);
 			count++;
 		}

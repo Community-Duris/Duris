@@ -1,8 +1,8 @@
 #ifndef _SPECS_WINTERHAVEN_H_
 #define _SPECS_WINTERHAVEN_H_
 
-#define WELL_ROOM   55126
-#define WELL        100
+#define WELL_ROOM 55126
+#define WELL 100
 #define WINTERHAVEN 550
 
 int winterhaven_shout_one(P_char, P_char, int, char *);

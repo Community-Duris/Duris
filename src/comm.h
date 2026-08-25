@@ -10,20 +10,20 @@
 #include "structs.h"
 #endif
 
-#define TO_ROOM           0
-#define TO_VICT           1
-#define TO_NOTVICT        2
-#define TO_CHAR           3
-#define TO_VICTROOM       4
-#define TO_NOTVICTROOM    5
-#define TO_ZONE           6
-#define TO_WORLD          7
+#define TO_ROOM 0
+#define TO_VICT 1
+#define TO_NOTVICT 2
+#define TO_CHAR 3
+#define TO_VICTROOM 4
+#define TO_NOTVICTROOM 5
+#define TO_ZONE 6
+#define TO_WORLD 7
 #define ACT_IGNORE_ZCOORD 8
-#define ACT_SILENCEABLE   16
-#define ACT_TERSE         32
-#define ACT_NOTTERSE      64
-#define ACT_NOEOL         128
-#define ACT_PRIVATE       256
+#define ACT_SILENCEABLE 16
+#define ACT_TERSE 32
+#define ACT_NOTTERSE 64
+#define ACT_NOEOL 128
+#define ACT_PRIVATE 256
 
 #define SEND_TO_Q(messg, desc) write_to_q((messg), &(desc)->output, 1)
 

@@ -32,9 +32,9 @@
 
 mem_usage mem_used[52];
 
-#define MEM_USAGE_INITCASE(i, t)                                                                                                                                                                       \
-	case i:                                                                                                                                                                                            \
-		mem_used[i].tag = t;                                                                                                                                                                           \
+#define MEM_USAGE_INITCASE(i, t)     \
+	case i:                      \
+		mem_used[i].tag = t; \
 		break;
 
 bool muinit = false;
@@ -128,9 +128,9 @@ void decrement_mem_used(char *tag, size_t size)
 	}
 }
 
-FILE              *mem_log                    = NULL;
-ALLOCATION_HEADER *allocation_list            = NULL; /* The list of memory alloced so far */
-long               allocation_list_node_count = 0;
+FILE *mem_log = NULL;
+ALLOCATION_HEADER *allocation_list = NULL; /* The list of memory alloced so far */
+long allocation_list_node_count = 0;
 
 /* adds a piece of memory to the list */
 void *getmem(size_t size, char *tag, char *file, int line)
@@ -162,7 +162,7 @@ void *getmem(size_t size, char *tag, char *file, int line)
 
 	memset(NewAllocation, 0, sizeof(ALLOCATION_HEADER) + size);
 	/* init new node */
-	NewAllocation->tag  = tag;
+	NewAllocation->tag = tag;
 	NewAllocation->size = size;
 	NewAllocation->file = file;
 	NewAllocation->line = line;
@@ -236,7 +236,8 @@ void *changemem(void *p, size_t size, char *file, int line)
 	else
 	{
 #if MEMCHK > 1
-		fprintf(mem_log, "Attempting to realloc non-alloced memory, file %s:%d\n", file, line);
+		fprintf(mem_log, "Attempting to realloc non-alloced memory, file %s:%d\n", file,
+			line);
 #endif
 		logit(LOG_EXIT, "RECREATE called, but memory not in allocation list!");
 		exit(1);
@@ -287,7 +288,7 @@ void delmem(void *p, char *file, int line)
 		//   l->next = m->next;
 		// }
 		decrement_mem_used(m->tag, m->size);
-		m->tag  = (char *)0x0BADF00D;
+		m->tag = (char *)0x0BADF00D;
 		m->file = file;
 		m->line = line;
 		free(m);
@@ -308,7 +309,7 @@ void dump_mem_log(void)
 {
 #if MEMCHK > 1
 	ALLOCATION_HEADER *l, *next;
-	size_t             total = 0;
+	size_t total = 0;
 
 	/* open the memory log if not already */
 	if (!mem_log)
@@ -324,7 +325,8 @@ void dump_mem_log(void)
 	{
 		next = l->next;
 		total += l->size;
-		fprintf(mem_log, "%d bytes with tag '%s' of unfreed memory at 0x%08x, %s:%d\n", l->size, l->tag, l, l->file, l->line);
+		fprintf(mem_log, "%d bytes with tag '%s' of unfreed memory at 0x%08x, %s:%d\n",
+			l->size, l->tag, l, l->file, l->line);
 		free((char *)l);
 	}
 

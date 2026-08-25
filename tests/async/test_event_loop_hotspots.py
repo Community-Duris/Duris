@@ -21,6 +21,7 @@ Verifies:
 from pathlib import Path
 import re
 import sys
+from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 handler = (ROOT / "src" / "handler.c").read_text(encoding="utf-8", errors="replace")
@@ -30,11 +31,11 @@ checks = []
 
 checks.append((
     "generic_char_event declares slices and a period",
-    "#define GENERIC_CHAR_EVENT_SLICES" in handler and "#define GENERIC_CHAR_EVENT_PERIOD" in handler
+    contains(handler, "#define GENERIC_CHAR_EVENT_SLICES") and contains(handler, "#define GENERIC_CHAR_EVENT_PERIOD")
 ))
 checks.append((
     "slice comes from a stable per-character hash",
-    "static unsigned int char_sweep_slice(P_char c)" in handler and "(uintptr_t)c" in handler
+    contains(handler, "static unsigned int char_sweep_slice(P_char c)") and contains(handler, "(uintptr_t)c")
 ))
 
 m = re.search(r"void generic_char_event\(P_char ch, P_char victim, P_obj obj, void \*data\)\s*\{.*?\n\}", handler, re.S)
@@ -42,8 +43,8 @@ if m:
     body = m.group(0)
     checks.append((
         "sweep advances a phase and skips characters outside it",
-        "generic_char_event_phase++ % GENERIC_CHAR_EVENT_SLICES" in body and
-        "if (char_sweep_slice(i) != phase)" in body
+        contains(body, "generic_char_event_phase++ % GENERIC_CHAR_EVENT_SLICES") and
+        contains(body, "if (char_sweep_slice(i) != phase)")
     ))
     checks.append((
         "mob sanity check still runs on every pass",
@@ -51,7 +52,7 @@ if m:
     ))
     checks.append((
         "reschedules at period / slices so cadence per character is unchanged",
-        "add_event(generic_char_event, GENERIC_CHAR_EVENT_PERIOD / GENERIC_CHAR_EVENT_SLICES" in body
+        contains(body, "add_event(generic_char_event, GENERIC_CHAR_EVENT_PERIOD / GENERIC_CHAR_EVENT_SLICES")
     ))
 else:
     checks.append(("generic_char_event present", False))
@@ -65,11 +66,11 @@ if m:
     ))
     checks.append((
         "sql_trace_enabled defaults to off",
-        "bool        on  = false;" in body
+        contains(body, "bool        on  = false;")
     ))
     checks.append((
         "sql_trace_enabled still honours SQL_TRACE",
-        'getenv("SQL_TRACE")' in body
+        contains(body, 'getenv("SQL_TRACE")')
     ))
 else:
     checks.append(("sql_trace_enabled present", False))

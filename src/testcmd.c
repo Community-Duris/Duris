@@ -14,22 +14,22 @@
 #include "sql.h"
 using namespace std;
 
-extern struct zone_data        *zone_table;
-extern int                      top_of_zone_table;
-extern struct room_data        *world;
-extern const int                top_of_world;
-extern P_index                  obj_index;
-extern int                      top_of_objt;
-extern const flagDef            room_bits[];
-extern const char              *sector_types[];
-extern const AnsiString		sector_symbol[];
-extern P_index                  mob_index;
-extern int                      top_of_mobt;
-extern P_desc                   descriptor_list;
-extern int                      count_classes(P_char mob);
-extern long                     new_exp_table[];
-extern const char              *spells[];
-extern float                    exp_mods[EXPMOD_MAX + 1];
+extern struct zone_data *zone_table;
+extern int top_of_zone_table;
+extern struct room_data *world;
+extern const int top_of_world;
+extern P_index obj_index;
+extern int top_of_objt;
+extern const flagDef room_bits[];
+extern const char *sector_types[];
+extern const AnsiString sector_symbol[];
+extern P_index mob_index;
+extern int top_of_mobt;
+extern P_desc descriptor_list;
+extern int count_classes(P_char mob);
+extern long new_exp_table[];
+extern const char *spells[];
+extern float exp_mods[EXPMOD_MAX + 1];
 extern const struct class_names class_names_table[];
 extern struct zone_random_data
 {
@@ -38,7 +38,7 @@ extern struct zone_random_data
 	int proc_spells[3][2];
 } zones_random_data[];
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
-extern P_char               character_list;
+extern P_char character_list;
 
 extern int get_mincircle(int spell);
 
@@ -47,15 +47,16 @@ void do_test_radiate(P_char ch, char *arg, int cmd);
 
 void disproom(P_char ch, int x, int y)
 {
-	int               local_y, local_x;
-	int               vroom           = world[ch->in_room].number;
-	struct zone_data *zone            = &zone_table[world[ch->in_room].zone];
-	int               zone_start_vnum = world[zone->real_bottom].number;
+	int local_y, local_x;
+	int vroom = world[ch->in_room].number;
+	struct zone_data *zone = &zone_table[world[ch->in_room].zone];
+	int zone_start_vnum = world[zone->real_bottom].number;
 
 	if (zone->mapx == 0 || zone->mapy == 0)
 	{
 		send_to_char("We have a serious problem: This room has a 0 mapx or 0 mapy.", ch);
-		debug("disproom: we have a serious problem with this room r:%d v:%d - zone->mapx = %d, zone->mapy = %d.", ch->in_room, vroom, zone->mapx, zone->mapy);
+		debug("disproom: we have a serious problem with this room r:%d v:%d - zone->mapx = %d, zone->mapy = %d.",
+		      ch->in_room, vroom, zone->mapx, zone->mapy);
 		return;
 	}
 
@@ -87,7 +88,8 @@ void disproom(P_char ch, int x, int y)
 	int newy = local_y + y;
 
 	char buff[100];
-	snprintf(buff, 100, "(%3d,%3d) : [%6d] <%3d,%3d>\n", x, y, (zone_start_vnum + newx + (newy * zone->mapx)), newx, newy);
+	snprintf(buff, 100, "(%3d,%3d) : [%6d] <%3d,%3d>\n", x, y,
+		 (zone_start_vnum + newx + (newy * zone->mapx)), newx, newy);
 	send_to_char(buff, ch);
 }
 
@@ -105,9 +107,9 @@ void display_exp_table(P_char ch, char *arg, int cmd)
 #define START_ROOM 0
 void do_test_lava(P_char ch, char *arg, int cmd)
 {
-	int    realRoomNum = START_ROOM, count = 0;
-	char   buf[MAX_STRING_LENGTH];
-	char   buf2[MAX_STRING_LENGTH];
+	int realRoomNum = START_ROOM, count = 0;
+	char buf[MAX_STRING_LENGTH];
+	char buf2[MAX_STRING_LENGTH];
 	P_room rm;
 
 	while (realRoomNum < top_of_world)
@@ -119,32 +121,29 @@ void do_test_lava(P_char ch, char *arg, int cmd)
 
 			sprintbitde(rm->room_flags, room_bits, buf2);
 
-			snprintf(buf,
-			         MAX_STRING_LENGTH,
-			         "&+YRoom: [&N%d&+Y](&N%d&+Y)  Zone: &N%d&+Y  Sector type: &N%s\n"
-			         "&+YName: &N%s\n&+YRoom flags:&N %s\n\n",
-			         rm->number,
-			         realRoomNum,
-			         zone_table[rm->zone].number,
-			         sector_types[rm->sector_type],
-			         rm->name,
-			         buf2);
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "&+YRoom: [&N%d&+Y](&N%d&+Y)  Zone: &N%d&+Y  Sector type: &N%s\n"
+				 "&+YName: &N%s\n&+YRoom flags:&N %s\n\n",
+				 rm->number, realRoomNum, zone_table[rm->zone].number,
+				 sector_types[rm->sector_type], rm->name, buf2);
 
 			send_to_char(buf, ch);
 		}
 		realRoomNum++;
 	}
 	--realRoomNum;
-	snprintf(buf, MAX_STRING_LENGTH, "From room %d (%d) to %d (%d), found %d Lava rooms.\n\r", START_ROOM, world[START_ROOM].number, realRoomNum, world[realRoomNum].number, count);
+	snprintf(buf, MAX_STRING_LENGTH, "From room %d (%d) to %d (%d), found %d Lava rooms.\n\r",
+		 START_ROOM, world[START_ROOM].number, realRoomNum, world[realRoomNum].number,
+		 count);
 	send_to_char(buf, ch);
 }
 
 void do_test_room(P_char ch, char *arg, int cmd)
 {
-	int               x = 0, y = 0;
-	int               local_y, local_x;
-	int               vroom = world[ch->in_room].number;
-	struct zone_data *zone  = &zone_table[world[ch->in_room].zone];
+	int x = 0, y = 0;
+	int local_y, local_x;
+	int vroom = world[ch->in_room].number;
+	struct zone_data *zone = &zone_table[world[ch->in_room].zone];
 
 	if (!IS_SET(zone->flags, ZONE_MAP))
 	{
@@ -156,8 +155,10 @@ void do_test_room(P_char ch, char *arg, int cmd)
 
 	if (zone->mapx == 0 || zone->mapy == 0)
 	{
-		send_to_char("We have a serious problem: This map room has a 0 mapx or 0 mapy.", ch);
-		debug("do_test_room: We have a serious problem with this map room r:%d v:%d - zone->mapx = %d, zone->mapy = %d.", ch->in_room, vroom, zone->mapx, zone->mapy);
+		send_to_char("We have a serious problem: This map room has a 0 mapx or 0 mapy.",
+			     ch);
+		debug("do_test_room: We have a serious problem with this map room r:%d v:%d - zone->mapx = %d, zone->mapy = %d.",
+		      ch->in_room, vroom, zone->mapx, zone->mapy);
 		return;
 	}
 
@@ -168,7 +169,8 @@ void do_test_room(P_char ch, char *arg, int cmd)
 	local_x = (vroom - zone_start_vnum) % zone->mapx;
 
 	char buff[100];
-	snprintf(buff, 100, "&+CZone:&n (%dx%d) [%d,%d] '%s'&n %s\n", zone->mapx, zone->mapy, local_x, local_y, zone->name, zone->filename);
+	snprintf(buff, 100, "&+CZone:&n (%dx%d) [%d,%d] '%s'&n %s\n", zone->mapx, zone->mapy,
+		 local_x, local_y, zone->name, zone->filename);
 	send_to_char(buff, ch);
 
 	send_to_char("&+CCalculated vnums:&n\n", ch);
@@ -202,12 +204,12 @@ void do_test_writemap(P_char ch, char *arg, int cmd)
 
 	int rroom = zone->real_bottom;
 
-	int  what  = 0;
+	int what = 0;
 	bool hadbg = false;
-	int  prev  = -1;
-	int  where_rnum;
+	int prev = -1;
+	int where_rnum;
 
-	int width  = zone->mapx;
+	int width = zone->mapx;
 	int height = zone->mapy;
 
 	for (int y = 0; y < height; y++)
@@ -231,9 +233,9 @@ void do_test_writemap(P_char ch, char *arg, int cmd)
 
 void do_test_zonepvp(P_char ch, char *arg)
 {
-	P_char  vict;
+	P_char vict;
 	u_short reset_players[MAX_RACEWAR + 1];
-	int     zone;
+	int zone;
 
 	// Initialize.
 	for (int i = 0; i < MAX_RACEWAR + 1; i++)
@@ -262,7 +264,9 @@ void do_test_zonepvp(P_char ch, char *arg)
 	{
 		if (zone_table[zone].players[i] != reset_players[i])
 		{
-			debug("do_test_zonepvp: Zone: %s (%d) - changing players[%s] from %d to %d.", zone_table[zone].name, zone, racewar_color[i].name, zone_table[zone].players[i], reset_players[i]);
+			debug("do_test_zonepvp: Zone: %s (%d) - changing players[%s] from %d to %d.",
+			      zone_table[zone].name, zone, racewar_color[i].name,
+			      zone_table[zone].players[i], reset_players[i]);
 			zone_table[zone].players[i] = reset_players[i];
 		}
 		zone_table[zone].misfiring[i] = FALSE;
@@ -276,7 +280,8 @@ void do_test_suffix(P_char ch, char *arg)
 	arg = one_argument(arg, orig);
 	arg = one_argument(arg, suffix);
 
-	send_to_char_f(ch, "string: '%s', suffix: '%s', suffix: %s.\n", orig, suffix, YESNO(ends_with(orig, suffix)));
+	send_to_char_f(ch, "string: '%s', suffix: '%s', suffix: %s.\n", orig, suffix,
+		       YESNO(ends_with(orig, suffix)));
 }
 
 void do_test_no_track(P_char ch, char *arg)
@@ -288,7 +293,8 @@ void do_test_no_track(P_char ch, char *arg)
 	{
 		if (IS_ROOM(rroom, ROOM_NO_TRACK))
 		{
-			send_to_char_f(ch, "Room: %3d) %6d '%s'.\n", ++count, world[rroom].number, world[rroom].name);
+			send_to_char_f(ch, "Room: %3d) %6d '%s'.\n", ++count, world[rroom].number,
+				       world[rroom].name);
 		}
 	}
 }
@@ -321,7 +327,8 @@ void do_test(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	snprintf(buff, MAX_STRING_LENGTH, "%s in [%d]: test %s", GET_NAME(ch), world[ch->in_room].number, arg);
+	snprintf(buff, MAX_STRING_LENGTH, "%s in [%d]: test %s", GET_NAME(ch),
+		 world[ch->in_room].number, arg);
 
 	wizlog(56, buff);
 	logit(LOG_WIZ, buff);
@@ -335,15 +342,17 @@ void do_test(P_char ch, char *arg, int cmd)
 	if (isname("weapondice", buff))
 	{
 		P_obj obj;
-		int   count = 0;
+		int count = 0;
 
 		for (int r_num = 0; r_num <= top_of_objt; r_num++)
 		{
 			// Load a copy of object.
 			obj = read_object(r_num, REAL);
-			if ((obj->type == ITEM_WEAPON) && ((obj->value[1] < 1) || (obj->value[2] < 1)))
+			if ((obj->type == ITEM_WEAPON) &&
+			    ((obj->value[1] < 1) || (obj->value[2] < 1)))
 			{
-				send_to_char_f(ch, "%d) %s %d - %dd%d.\n", ++count, OBJ_SHORT(obj), OBJ_VNUM(obj), obj->value[1], obj->value[2]);
+				send_to_char_f(ch, "%d) %s %d - %dd%d.\n", ++count, OBJ_SHORT(obj),
+					       OBJ_VNUM(obj), obj->value[1], obj->value[2]);
 			}
 			extract_obj(obj);
 		}
@@ -370,11 +379,11 @@ void do_test(P_char ch, char *arg, int cmd)
 	}
 	if (isname("missile", buff))
 	{
-		int   count, rnum, type, avgdam, maxdam;
+		int count, rnum, type, avgdam, maxdam;
 		P_obj obj;
 
 		type = 0;
-		arg  = skip_spaces(arg);
+		arg = skip_spaces(arg);
 		if (!strcmp(arg, "arrow"))
 		{
 			type = MISSILE_ARROW;
@@ -399,8 +408,12 @@ void do_test(P_char ch, char *arg, int cmd)
 		{
 			type = MISSILE_DART;
 		}
-		send_to_char_f(ch, "##)   VNUM 'object name                        '  dice  avg max    sugg actual\n");
-		send_to_char_f(ch, "          *=ignore                                      dam dam   value value\n");
+		send_to_char_f(
+			ch,
+			"##)   VNUM 'object name                        '  dice  avg max    sugg actual\n");
+		send_to_char_f(
+			ch,
+			"          *=ignore                                      dam dam   value value\n");
 		for (rnum = count = 0; rnum <= top_of_objt; rnum++)
 		{
 			obj = read_object(rnum, REAL);
@@ -410,23 +423,18 @@ void do_test(P_char ch, char *arg, int cmd)
 				avgdam = (obj->value[1] * (obj->value[2] + 1)) * 5;
 				maxdam = obj->value[1] * obj->value[2];
 
-				send_to_char_f(ch,
-				               "%2d) %6d%c'%s&n' %s%2dd%-2d&n %2d.%d  %2d %7d %d.\n",
-				               ++count,
-				               OBJ_VNUM(obj),
-				               IS_SET(obj->extra_flags, ITEM_IGNORE) ? '*' : ' ',
-				               pad_ansi(OBJ_SHORT(obj), 35, TRUE).c_str(),
-				               (obj->value[1] > 3)    ? "&+R"
-				               : (obj->value[1]) == 3 ? "&+Y"
-				               : (obj->value[1]) == 2 ? "&+B"
-				                                      : "",
-				               obj->value[1],
-				               obj->value[2],
-				               avgdam / 10,
-				               avgdam % 10,
-				               maxdam,
-				               avgdam * avgdam * maxdam * maxdam * maxdam / 125,
-				               obj->cost);
+				send_to_char_f(
+					ch, "%2d) %6d%c'%s&n' %s%2dd%-2d&n %2d.%d  %2d %7d %d.\n",
+					++count, OBJ_VNUM(obj),
+					IS_SET(obj->extra_flags, ITEM_IGNORE) ? '*' : ' ',
+					pad_ansi(OBJ_SHORT(obj), 35, TRUE).c_str(),
+					(obj->value[1] > 3)  ? "&+R" :
+					(obj->value[1]) == 3 ? "&+Y" :
+					(obj->value[1]) == 2 ? "&+B" :
+							       "",
+					obj->value[1], obj->value[2], avgdam / 10, avgdam % 10,
+					maxdam, avgdam * avgdam * maxdam * maxdam * maxdam / 125,
+					obj->cost);
 			}
 			extract_obj(obj);
 		}
@@ -435,14 +443,15 @@ void do_test(P_char ch, char *arg, int cmd)
 	if (isname("stormdruid", buff))
 	{
 		P_char mob;
-		int    R_num, count;
+		int R_num, count;
 
 		send_to_char("&=LgList of Storm Druids:&N\n", ch);
 		for (R_num = count = 0; R_num <= top_of_mobt; R_num++)
 		{
 			mob = read_mobile(R_num, REAL);
 			if (GET_SPEC(mob, CLASS_DRUID, SPEC_STORM))
-				send_to_char_f(ch, "%2d) %6d %s\n", ++count, GET_VNUM(mob), mob->player.short_descr);
+				send_to_char_f(ch, "%2d) %6d %s\n", ++count, GET_VNUM(mob),
+					       mob->player.short_descr);
 			extract_char(mob);
 		}
 		return;
@@ -454,7 +463,10 @@ void do_test(P_char ch, char *arg, int cmd)
 		{
 			if (IS_SET(zone_table[i].flags, ZONE_MAP))
 			{
-				snprintf(buff, MAX_STRING_LENGTH, "%3d) %s&n (%d): IS a map zone.\n", ++count, pad_ansi(zone_table[i].name, 35, TRUE).c_str(), zone_table[i].number);
+				snprintf(buff, MAX_STRING_LENGTH,
+					 "%3d) %s&n (%d): IS a map zone.\n", ++count,
+					 pad_ansi(zone_table[i].name, 35, TRUE).c_str(),
+					 zone_table[i].number);
 				send_to_char(buff, ch);
 			}
 		}
@@ -463,84 +475,89 @@ void do_test(P_char ch, char *arg, int cmd)
 	if (isname("exp_mods", buff))
 	{
 		// Last updated 10/31/2015
-		char *exp_mod_names[EXPMOD_MAX + 1] = {"NONE",
-		                                       "CLS_WARRIOR",
-		                                       "CLS_RANGER",
-		                                       "CLS_PSIONICIST",
-		                                       "CLS_PALADIN",
-		                                       "CLS_ANTIPALADIN",
-		                                       "CLS_CLERIC",
-		                                       "CLS_MONK",
-		                                       "CLS_DRUID",
-		                                       "CLS_SHAMAN",
-		                                       "CLS_SORCERER",
-		                                       "CLS_NECROMANCER",
-		                                       "CLS_CONJURER",
-		                                       "CLS_ROGUE",
-		                                       "CLS_ASSASSIN",
-		                                       "CLS_MERCENARY",
-		                                       "CLS_BARD",
-		                                       "CLS_THIEF",
-		                                       "CLS_WARLOCK",
-		                                       "CLS_MINDFLAYER",
-		                                       "CLS_ALCHEMIST",
-		                                       "CLS_BERSERKER",
-		                                       "CLS_REAVER",
-		                                       "CLS_ILLUSIONIST",
-		                                       "CLS_BLIGHTER",
-		                                       "CLS_DREADLORD",
-		                                       "CLS_ETHERMANCER",
-		                                       "CLS_AVENGER",
-		                                       "CLS_THEURGIST",
-		                                       "CLS_SUMMONER",
-		                                       "CLS_NEWCLASS1",
-		                                       "CLS_NEWCLASS2",
-		                                       "CLS_NEWCLASS3",
-		                                       "LVL_31_UP",
-		                                       "LVL_41_UP",
-		                                       "LVL_51_UP",
-		                                       "LVL_55_UP",
-		                                       "RES_EVIL",
-		                                       "RES_NORMAL",
-		                                       "VICT_BREATHES",
-		                                       "VICT_ACT_AGGRO",
-		                                       "VICT_ACT_HUNTER",
-		                                       "VICT_ELITE",
-		                                       "VICT_HOMETOWN",
-		                                       "VICT_NOMEMORY",
-		                                       "PVP",
-		                                       "GLOBAL",
-		                                       "GOOD",
-		                                       "EVIL",
-		                                       "UNDEAD",
-		                                       "NEUTRAL",
-		                                       "DAMAGE",
-		                                       "HEAL_NONHEALER",
-		                                       "HEAL_PETS",
-		                                       "HEALING",
-		                                       "MELEE",
-		                                       "TANK",
-		                                       "KILL",
-		                                       "PALADIN_VS_GOOD",
-		                                       "PALADIN_VS_EVIL",
-		                                       "ANTIPALADIN_VS_GOOD"};
+		char *exp_mod_names[EXPMOD_MAX + 1] = { "NONE",
+							"CLS_WARRIOR",
+							"CLS_RANGER",
+							"CLS_PSIONICIST",
+							"CLS_PALADIN",
+							"CLS_ANTIPALADIN",
+							"CLS_CLERIC",
+							"CLS_MONK",
+							"CLS_DRUID",
+							"CLS_SHAMAN",
+							"CLS_SORCERER",
+							"CLS_NECROMANCER",
+							"CLS_CONJURER",
+							"CLS_ROGUE",
+							"CLS_ASSASSIN",
+							"CLS_MERCENARY",
+							"CLS_BARD",
+							"CLS_THIEF",
+							"CLS_WARLOCK",
+							"CLS_MINDFLAYER",
+							"CLS_ALCHEMIST",
+							"CLS_BERSERKER",
+							"CLS_REAVER",
+							"CLS_ILLUSIONIST",
+							"CLS_BLIGHTER",
+							"CLS_DREADLORD",
+							"CLS_ETHERMANCER",
+							"CLS_AVENGER",
+							"CLS_THEURGIST",
+							"CLS_SUMMONER",
+							"CLS_NEWCLASS1",
+							"CLS_NEWCLASS2",
+							"CLS_NEWCLASS3",
+							"LVL_31_UP",
+							"LVL_41_UP",
+							"LVL_51_UP",
+							"LVL_55_UP",
+							"RES_EVIL",
+							"RES_NORMAL",
+							"VICT_BREATHES",
+							"VICT_ACT_AGGRO",
+							"VICT_ACT_HUNTER",
+							"VICT_ELITE",
+							"VICT_HOMETOWN",
+							"VICT_NOMEMORY",
+							"PVP",
+							"GLOBAL",
+							"GOOD",
+							"EVIL",
+							"UNDEAD",
+							"NEUTRAL",
+							"DAMAGE",
+							"HEAL_NONHEALER",
+							"HEAL_PETS",
+							"HEALING",
+							"MELEE",
+							"TANK",
+							"KILL",
+							"PALADIN_VS_GOOD",
+							"PALADIN_VS_EVIL",
+							"ANTIPALADIN_VS_GOOD" };
 
 		for (int i = 0; i <= EXPMOD_MAX; i++)
 		{
-			snprintf(buff, MAX_STRING_LENGTH, "%3d) %20s %2.3f %s\n", i, exp_mod_names[i], exp_mods[i], (i <= CLASS_COUNT) ? class_names_table[i].ansi : "");
+			snprintf(buff, MAX_STRING_LENGTH, "%3d) %20s %2.3f %s\n", i,
+				 exp_mod_names[i], exp_mods[i],
+				 (i <= CLASS_COUNT) ? class_names_table[i].ansi : "");
 			send_to_char(buff, ch);
 		}
-		snprintf(buff, MAX_STRING_LENGTH, "WARRIOR: %d %d, CLERIC: %d %d.\n", flag2idx(CLASS_WARRIOR), EXPMOD_CLS_WARRIOR, flag2idx(CLASS_CLERIC), EXPMOD_CLS_CLERIC);
+		snprintf(buff, MAX_STRING_LENGTH, "WARRIOR: %d %d, CLERIC: %d %d.\n",
+			 flag2idx(CLASS_WARRIOR), EXPMOD_CLS_WARRIOR, flag2idx(CLASS_CLERIC),
+			 EXPMOD_CLS_CLERIC);
 		send_to_char(buff, ch);
 		return;
 	}
 	if (isname("shield", buff))
 	{
-		int   rnum, count, count2, afnum, currac, maxac, minac;
-		long  sum;
+		int rnum, count, count2, afnum, currac, maxac, minac;
+		long sum;
 		P_obj obj;
 
-		for (sum = 0, rnum = count = 0, maxac = MIN_INT_SIGNED, minac = MAX_INT_SIGNED; rnum <= top_of_objt; rnum++)
+		for (sum = 0, rnum = count = 0, maxac = MIN_INT_SIGNED, minac = MAX_INT_SIGNED;
+		     rnum <= top_of_objt; rnum++)
 		{
 			obj = read_object(rnum, REAL);
 			if (obj->type == ITEM_SHIELD)
@@ -549,85 +566,88 @@ void do_test(P_char ch, char *arg, int cmd)
 				// This is pulled from affects.c - apply_ac
 				switch (obj->material)
 				{
-					case MAT_UNDEFINED:
-					case MAT_NONSUBSTANTIAL:
-						currac = 0;
-						break;
-					case MAT_FLESH:
-					case MAT_REEDS:
-					case MAT_HEMP:
-					case MAT_LIQUID:
-					case MAT_CLOTH:
-					case MAT_PAPER:
-					case MAT_PARCHMENT:
-					case MAT_LEAVES:
-					case MAT_GENERICFOOD:
-					case MAT_RUBBER:
-					case MAT_FEATHER:
-					case MAT_WAX:
-						currac = 15;
-						break;
-					case MAT_BARK:
-					case MAT_SOFTWOOD:
-					case MAT_SILICON:
-					case MAT_CERAMIC:
-					case MAT_PEARL:
-					case MAT_EGGSHELL:
-						currac = 30;
-						break;
-					case MAT_HIDE:
-					case MAT_LEATHER:
-					case MAT_CURED_LEATHER:
-					case MAT_LIMESTONE:
-						currac = 45;
-						break;
-					case MAT_IVORY:
-					case MAT_BAMBOO:
-					case MAT_HARDWOOD:
-					case MAT_COPPER:
-					case MAT_BONE:
-					case MAT_MARBLE:
-						currac = 60;
-						break;
-					case MAT_STONE:
-					case MAT_SILVER:
-					case MAT_BRONZE:
-					case MAT_IRON:
-					case MAT_REPTILESCALE:
-						currac = 75;
-						break;
-					case MAT_GOLD:
-					case MAT_CHITINOUS:
-					case MAT_CRYSTAL:
-					case MAT_STEEL:
-					case MAT_BRASS:
-					case MAT_OBSIDIAN:
-					case MAT_GRANITE:
-					case MAT_GEM:
-						currac = 90;
-						break;
-					case MAT_ELECTRUM:
-					case MAT_PLATINUM:
-					case MAT_RUBY:
-					case MAT_EMERALD:
-					case MAT_SAPPHIRE:
-					case MAT_GLASSTEEL:
-						currac = 105;
-						break;
-					case MAT_DRAGONSCALE:
-					case MAT_DIAMOND:
-						currac = 120;
-						break;
-					case MAT_MITHRIL:
-					case MAT_ADAMANTIUM:
-						currac = 135;
-						break;
-					default:
-						currac = 0;
+				case MAT_UNDEFINED:
+				case MAT_NONSUBSTANTIAL:
+					currac = 0;
+					break;
+				case MAT_FLESH:
+				case MAT_REEDS:
+				case MAT_HEMP:
+				case MAT_LIQUID:
+				case MAT_CLOTH:
+				case MAT_PAPER:
+				case MAT_PARCHMENT:
+				case MAT_LEAVES:
+				case MAT_GENERICFOOD:
+				case MAT_RUBBER:
+				case MAT_FEATHER:
+				case MAT_WAX:
+					currac = 15;
+					break;
+				case MAT_BARK:
+				case MAT_SOFTWOOD:
+				case MAT_SILICON:
+				case MAT_CERAMIC:
+				case MAT_PEARL:
+				case MAT_EGGSHELL:
+					currac = 30;
+					break;
+				case MAT_HIDE:
+				case MAT_LEATHER:
+				case MAT_CURED_LEATHER:
+				case MAT_LIMESTONE:
+					currac = 45;
+					break;
+				case MAT_IVORY:
+				case MAT_BAMBOO:
+				case MAT_HARDWOOD:
+				case MAT_COPPER:
+				case MAT_BONE:
+				case MAT_MARBLE:
+					currac = 60;
+					break;
+				case MAT_STONE:
+				case MAT_SILVER:
+				case MAT_BRONZE:
+				case MAT_IRON:
+				case MAT_REPTILESCALE:
+					currac = 75;
+					break;
+				case MAT_GOLD:
+				case MAT_CHITINOUS:
+				case MAT_CRYSTAL:
+				case MAT_STEEL:
+				case MAT_BRASS:
+				case MAT_OBSIDIAN:
+				case MAT_GRANITE:
+				case MAT_GEM:
+					currac = 90;
+					break;
+				case MAT_ELECTRUM:
+				case MAT_PLATINUM:
+				case MAT_RUBY:
+				case MAT_EMERALD:
+				case MAT_SAPPHIRE:
+				case MAT_GLASSTEEL:
+					currac = 105;
+					break;
+				case MAT_DRAGONSCALE:
+				case MAT_DIAMOND:
+					currac = 120;
+					break;
+				case MAT_MITHRIL:
+				case MAT_ADAMANTIUM:
+					currac = 135;
+					break;
+				default:
+					currac = 0;
 				}
 				if (obj->value[3] < 0)
 				{
-					send_to_char_f(ch, "Shield '%s' %d needs a fix to make val3 positive.\n", OBJ_SHORT(obj), OBJ_VNUM(obj));
+					send_to_char_f(
+						ch,
+						"Shield '%s' %d needs a fix to make val3 positive.\n",
+						OBJ_SHORT(obj), OBJ_VNUM(obj));
 					currac = MAX(currac, -obj->value[3]);
 				}
 				else
@@ -640,7 +660,11 @@ void do_test(P_char ch, char *arg, int cmd)
 					{
 						if (obj->affected[afnum].modifier > 0)
 						{
-							send_to_char_f(ch, "Shield '%s' %d needs a fix to make a%dmod negative.\n", OBJ_SHORT(obj), OBJ_VNUM(obj), afnum);
+							send_to_char_f(
+								ch,
+								"Shield '%s' %d needs a fix to make a%dmod negative.\n",
+								OBJ_SHORT(obj), OBJ_VNUM(obj),
+								afnum);
 							currac += obj->affected[afnum].modifier;
 						}
 						currac -= obj->affected[afnum].modifier;
@@ -648,7 +672,10 @@ void do_test(P_char ch, char *arg, int cmd)
 				}
 				if (currac <= 0)
 				{
-					send_to_char_f(ch, "Shield '%s' %d needs a fix, since it has %d total ac.\n", OBJ_SHORT(obj), OBJ_VNUM(obj), currac);
+					send_to_char_f(
+						ch,
+						"Shield '%s' %d needs a fix, since it has %d total ac.\n",
+						OBJ_SHORT(obj), OBJ_VNUM(obj), currac);
 				}
 				sum += currac;
 				if (currac > maxac)
@@ -662,7 +689,10 @@ void do_test(P_char ch, char *arg, int cmd)
 			}
 			extract_obj(obj);
 		}
-		send_to_char_f(ch, "\nThe total number of shields: %d, sum of ac: %ld, average ac: %ld, max ac: %d, min ac: %d.\n", count, sum, sum / count, maxac, minac);
+		send_to_char_f(
+			ch,
+			"\nThe total number of shields: %d, sum of ac: %ld, average ac: %ld, max ac: %d, min ac: %d.\n",
+			count, sum, sum / count, maxac, minac);
 		send_to_char_f(ch, "Shields with max %d ac:\n", maxac);
 		buff[0] = '\0';
 		for (rnum = count = count2 = 0; rnum <= top_of_objt; rnum++)
@@ -672,81 +702,81 @@ void do_test(P_char ch, char *arg, int cmd)
 			{
 				switch (obj->material)
 				{
-					case MAT_UNDEFINED:
-					case MAT_NONSUBSTANTIAL:
-						currac = 0;
-						break;
-					case MAT_FLESH:
-					case MAT_REEDS:
-					case MAT_HEMP:
-					case MAT_LIQUID:
-					case MAT_CLOTH:
-					case MAT_PAPER:
-					case MAT_PARCHMENT:
-					case MAT_LEAVES:
-					case MAT_GENERICFOOD:
-					case MAT_RUBBER:
-					case MAT_FEATHER:
-					case MAT_WAX:
-						currac = 15;
-						break;
-					case MAT_BARK:
-					case MAT_SOFTWOOD:
-					case MAT_SILICON:
-					case MAT_CERAMIC:
-					case MAT_PEARL:
-					case MAT_EGGSHELL:
-						currac = 30;
-						break;
-					case MAT_HIDE:
-					case MAT_LEATHER:
-					case MAT_CURED_LEATHER:
-					case MAT_LIMESTONE:
-						currac = 45;
-						break;
-					case MAT_IVORY:
-					case MAT_BAMBOO:
-					case MAT_HARDWOOD:
-					case MAT_COPPER:
-					case MAT_BONE:
-					case MAT_MARBLE:
-						currac = 60;
-						break;
-					case MAT_STONE:
-					case MAT_SILVER:
-					case MAT_BRONZE:
-					case MAT_IRON:
-					case MAT_REPTILESCALE:
-						currac = 75;
-						break;
-					case MAT_GOLD:
-					case MAT_CHITINOUS:
-					case MAT_CRYSTAL:
-					case MAT_STEEL:
-					case MAT_BRASS:
-					case MAT_OBSIDIAN:
-					case MAT_GRANITE:
-					case MAT_GEM:
-						currac = 90;
-						break;
-					case MAT_ELECTRUM:
-					case MAT_PLATINUM:
-					case MAT_RUBY:
-					case MAT_EMERALD:
-					case MAT_SAPPHIRE:
-					case MAT_GLASSTEEL:
-						currac = 105;
-						break;
-					case MAT_DRAGONSCALE:
-					case MAT_DIAMOND:
-						currac = 120;
-						break;
-					case MAT_MITHRIL:
-					case MAT_ADAMANTIUM:
-						currac = 135;
-						break;
-					default:
-						currac = 0;
+				case MAT_UNDEFINED:
+				case MAT_NONSUBSTANTIAL:
+					currac = 0;
+					break;
+				case MAT_FLESH:
+				case MAT_REEDS:
+				case MAT_HEMP:
+				case MAT_LIQUID:
+				case MAT_CLOTH:
+				case MAT_PAPER:
+				case MAT_PARCHMENT:
+				case MAT_LEAVES:
+				case MAT_GENERICFOOD:
+				case MAT_RUBBER:
+				case MAT_FEATHER:
+				case MAT_WAX:
+					currac = 15;
+					break;
+				case MAT_BARK:
+				case MAT_SOFTWOOD:
+				case MAT_SILICON:
+				case MAT_CERAMIC:
+				case MAT_PEARL:
+				case MAT_EGGSHELL:
+					currac = 30;
+					break;
+				case MAT_HIDE:
+				case MAT_LEATHER:
+				case MAT_CURED_LEATHER:
+				case MAT_LIMESTONE:
+					currac = 45;
+					break;
+				case MAT_IVORY:
+				case MAT_BAMBOO:
+				case MAT_HARDWOOD:
+				case MAT_COPPER:
+				case MAT_BONE:
+				case MAT_MARBLE:
+					currac = 60;
+					break;
+				case MAT_STONE:
+				case MAT_SILVER:
+				case MAT_BRONZE:
+				case MAT_IRON:
+				case MAT_REPTILESCALE:
+					currac = 75;
+					break;
+				case MAT_GOLD:
+				case MAT_CHITINOUS:
+				case MAT_CRYSTAL:
+				case MAT_STEEL:
+				case MAT_BRASS:
+				case MAT_OBSIDIAN:
+				case MAT_GRANITE:
+				case MAT_GEM:
+					currac = 90;
+					break;
+				case MAT_ELECTRUM:
+				case MAT_PLATINUM:
+				case MAT_RUBY:
+				case MAT_EMERALD:
+				case MAT_SAPPHIRE:
+				case MAT_GLASSTEEL:
+					currac = 105;
+					break;
+				case MAT_DRAGONSCALE:
+				case MAT_DIAMOND:
+					currac = 120;
+					break;
+				case MAT_MITHRIL:
+				case MAT_ADAMANTIUM:
+					currac = 135;
+					break;
+				default:
+					currac = 0;
 				}
 				if (obj->value[3] < 0)
 				{
@@ -769,12 +799,18 @@ void do_test(P_char ch, char *arg, int cmd)
 				}
 				if (currac == maxac)
 				{
-					send_to_char_f(ch, "%2d) '%s' %6d.\n", ++count, pad_ansi(OBJ_SHORT(obj), 35, TRUE).c_str(), OBJ_VNUM(obj));
+					send_to_char_f(ch, "%2d) '%s' %6d.\n", ++count,
+						       pad_ansi(OBJ_SHORT(obj), 35, TRUE).c_str(),
+						       OBJ_VNUM(obj));
 				}
 				// Sneak in and keep a record of minac shields too.
 				if (currac == minac)
 				{
-					snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%2d) '%s' %6d.\n", ++count2, pad_ansi(OBJ_SHORT(obj), 35, TRUE).c_str(), OBJ_VNUM(obj));
+					snprintf(buff + strlen(buff),
+						 MAX_STRING_LENGTH - strlen(buff),
+						 "%2d) '%s' %6d.\n", ++count2,
+						 pad_ansi(OBJ_SHORT(obj), 35, TRUE).c_str(),
+						 OBJ_VNUM(obj));
 				}
 			}
 			extract_obj(obj);
@@ -791,7 +827,10 @@ void do_test(P_char ch, char *arg, int cmd)
 		arg = skip_spaces(arg);
 		snprintf(buf1, MAX_STRING_LENGTH, "%s", CRYPT(arg, GET_NAME(ch)));
 		snprintf(buf2, MAX_STRING_LENGTH, "%s", CRYPT2(arg, GET_NAME(ch)));
-		snprintf(buff, MAX_STRING_LENGTH, "%s\n\rcrypt1: %s, crypt1(crypt1): %s.\n\rcrypt2: %s, crypt2(crypt2): %s.\n\r", arg, buf1, CRYPT(arg, buf1), buf2, CRYPT2(arg, buf2));
+		snprintf(
+			buff, MAX_STRING_LENGTH,
+			"%s\n\rcrypt1: %s, crypt1(crypt1): %s.\n\rcrypt2: %s, crypt2(crypt2): %s.\n\r",
+			arg, buf1, CRYPT(arg, buf1), buf2, CRYPT2(arg, buf2));
 		send_to_char(buff, ch);
 		snprintf(buf1, MAX_STRING_LENGTH, "%s", CRYPT2(arg, buf2));
 		if (!strcmp(buf1, buf2))
@@ -837,7 +876,7 @@ void do_test(P_char ch, char *arg, int cmd)
 	else if (isname("arti", buff))
 	{
 		P_obj arti;
-		int   feed_min;
+		int feed_min;
 
 		arg = one_argument(arg, buff);
 		if ((arti = get_obj_in_list(buff, ch->carrying)) != NULL)
@@ -849,7 +888,9 @@ void do_test(P_char ch, char *arg, int cmd)
 			}
 			else
 			{
-				send_to_char("Please enter a valid (positive) minimum feed minutes for arti.\n\r", ch);
+				send_to_char(
+					"Please enter a valid (positive) minimum feed minutes for arti.\n\r",
+					ch);
 			}
 		}
 		else
@@ -884,21 +925,23 @@ void do_test(P_char ch, char *arg, int cmd)
 	}
 	else if (isname("count", buff))
 	{
-		char   buf[MAX_STRING_LENGTH];
-		int    classes;
+		char buf[MAX_STRING_LENGTH];
+		int classes;
 		P_char mob;
-		P_obj  obj;
+		P_obj obj;
 
 		generic_find(arg, FIND_CHAR_WORLD, ch, &mob, &obj);
 		if (mob)
 		{
 			classes = count_classes(mob);
-			snprintf(buf, MAX_STRING_LENGTH, "%s (%d) has %d classes.\n", J_NAME(mob), IS_PC(mob) ? -1 : GET_VNUM(mob), classes);
+			snprintf(buf, MAX_STRING_LENGTH, "%s (%d) has %d classes.\n", J_NAME(mob),
+				 IS_PC(mob) ? -1 : GET_VNUM(mob), classes);
 			send_to_char(buf, ch);
 		}
 		else
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Char '%s' not found.\n", skip_spaces(arg));
+			snprintf(buf, MAX_STRING_LENGTH, "Char '%s' not found.\n",
+				 skip_spaces(arg));
 			send_to_char(buf, ch);
 		}
 		return;
@@ -913,43 +956,49 @@ void do_test(P_char ch, char *arg, int cmd)
 	}
 	else if (isname("xlogx", buff))
 	{
-		int  num = atoi(arg);
+		int num = atoi(arg);
 		char buf[MAX_STRING_LENGTH];
 
 		if (num > 0)
 		{
 			for (int i = 1; i <= num; i++)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "%d log %d: %f == %d.\n\r", i, i, i * log(i), (int)(i * log(i)));
+				snprintf(buf, MAX_STRING_LENGTH, "%d log %d: %f == %d.\n\r", i, i,
+					 i * log(i), (int)(i * log(i)));
 				send_to_char(buf, ch);
 			}
 		}
 		else
 		{
-			send_to_char("This is for testing x*log(x) function used in itemvalue.\n\rTakes a number > 0 as an argument.\n\r", ch);
+			send_to_char(
+				"This is for testing x*log(x) function used in itemvalue.\n\rTakes a number > 0 as an argument.\n\r",
+				ch);
 		}
 	}
 	else if (isname("xlog2x", buff))
 	{
-		int  num = atoi(arg);
+		int num = atoi(arg);
 		char buf[MAX_STRING_LENGTH];
 
 		if (num > 0)
 		{
 			for (int i = 1; i <= num; i++)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "%d log2 %d: %f == %d.\n\r", i, i, i * log2(i), (int)(i * log2(i)));
+				snprintf(buf, MAX_STRING_LENGTH, "%d log2 %d: %f == %d.\n\r", i, i,
+					 i * log2(i), (int)(i * log2(i)));
 				send_to_char(buf, ch);
 			}
 		}
 		else
 		{
-			send_to_char("This is for testing x*log2(x) function used in itemvalue.\n\rTakes a number > 0 as an argument.\n\r", ch);
+			send_to_char(
+				"This is for testing x*log2(x) function used in itemvalue.\n\rTakes a number > 0 as an argument.\n\r",
+				ch);
 		}
 	}
 	else if (isname("spell", buff))
 	{
-		int  num = atoi(arg);
+		int num = atoi(arg);
 		char buf[MAX_STRING_LENGTH];
 
 		if (num < 1)
@@ -958,17 +1007,21 @@ void do_test(P_char ch, char *arg, int cmd)
 		}
 		if (num < FIRST_SPELL || num > LAST_SPELL)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Spell must be a number between %d and %d, or a valid spell name.\n\r", FIRST_SPELL, LAST_SPELL);
+			snprintf(
+				buf, MAX_STRING_LENGTH,
+				"Spell must be a number between %d and %d, or a valid spell name.\n\r",
+				FIRST_SPELL, LAST_SPELL);
 			send_to_char(buf, ch);
 			return;
 		}
-		snprintf(buf, MAX_STRING_LENGTH, "The mincircle for spell '%s' (%d), is %d.\n\r", spells[num], num, get_mincircle(num));
+		snprintf(buf, MAX_STRING_LENGTH, "The mincircle for spell '%s' (%d), is %d.\n\r",
+			 spells[num], num, get_mincircle(num));
 		send_to_char(buf, ch);
 	}
 	else if (isname("randomzones", buff))
 	{
-		int   i, j;
-		char  buf[MAX_STRING_LENGTH];
+		int i, j;
+		char buf[MAX_STRING_LENGTH];
 		FILE *pf;
 
 		if (!(pf = fopen("logs/log/randomzones", "w")))
@@ -984,27 +1037,36 @@ void do_test(P_char ch, char *arg, int cmd)
 			{
 				break;
 			}
-			debug("%2d) %4d = %4d rb: %7d zone: '%s'.",
-			      i,
-			      zones_random_data[i].zone,
+			debug("%2d) %4d = %4d rb: %7d zone: '%s'.", i, zones_random_data[i].zone,
 			      zone_table[real_zone0(zones_random_data[i].zone)].number,
 			      zone_table[real_zone0(zones_random_data[i].zone)].real_bottom,
 			      zone_table[real_zone0(zones_random_data[i].zone)].name);
 
-			fprintf(pf, "%2d) '%s'\n", i + 1, strip_ansi(zone_table[real_zone0(zones_random_data[i].zone)].name).c_str());
+			fprintf(pf, "%2d) '%s'\n", i + 1,
+				strip_ansi(zone_table[real_zone0(zones_random_data[i].zone)].name)
+					.c_str());
 			for (j = 0; j < 3; j++)
 			{
 				if (zones_random_data[i].proc_spells[j][0] > 0)
 				{
-					fprintf(pf,
-					        "  With %d pieces: Spell '%s'.\n",
-					        zones_random_data[i].proc_spells[j][0],
-					        zones_random_data[i].proc_spells[j][1] == SPELL_STONE_SKIN ? "stone skin"
-					        : zones_random_data[i].proc_spells[j][1] == SPELL_BLESS    ? "bless"
-					        : zones_random_data[i].proc_spells[j][1] == SPELL_STRENGTH ? "strength"
-					        : zones_random_data[i].proc_spells[j][1] == SPELL_BARKSKIN ? "barkskin"
-					        : zones_random_data[i].proc_spells[j][1] == SPELL_ARMOR    ? "armor"
-					                                                                   : "unknown");
+					fprintf(pf, "  With %d pieces: Spell '%s'.\n",
+						zones_random_data[i].proc_spells[j][0],
+						zones_random_data[i].proc_spells[j][1] ==
+								SPELL_STONE_SKIN ?
+							"stone skin" :
+						zones_random_data[i].proc_spells[j][1] ==
+								SPELL_BLESS ?
+							"bless" :
+						zones_random_data[i].proc_spells[j][1] ==
+								SPELL_STRENGTH ?
+							"strength" :
+						zones_random_data[i].proc_spells[j][1] ==
+								SPELL_BARKSKIN ?
+							"barkskin" :
+						zones_random_data[i].proc_spells[j][1] ==
+								SPELL_ARMOR ?
+							"armor" :
+							"unknown");
 				}
 			}
 		}
@@ -1024,13 +1086,19 @@ void do_test(P_char ch, char *arg, int cmd)
 			}
 			else
 			{
-				send_to_char("You must '&=Blconfirm&n' this command in order to use it.\n\r", ch);
-				send_to_char("This will &=Blpermenantly&n clear the zone alignment list; there is no going back!\n\r", ch);
+				send_to_char(
+					"You must '&=Blconfirm&n' this command in order to use it.\n\r",
+					ch);
+				send_to_char(
+					"This will &=Blpermenantly&n clear the zone alignment list; there is no going back!\n\r",
+					ch);
 			}
 		}
 		else
 		{
-			send_to_char("You must be a &+LFORGER&n or higher to execute this command.\n\r", ch);
+			send_to_char(
+				"You must be a &+LFORGER&n or higher to execute this command.\n\r",
+				ch);
 		}
 	}
 	else if (isname("clearoutposts", buff))
@@ -1045,7 +1113,7 @@ void do_test(P_char ch, char *arg, int cmd)
 			{
 				send_to_char("&=GLResetting oupost information... .. .", ch);
 				if (qry("UPDATE outposts SET owner_id='0', level='8', walls='1', archers='0', hitpoints='300000', territory='0',"
-				        " portal_room='0', resources='0', applied_resources='0', golems='0', meurtriere='0', scouts='0'"))
+					" portal_room='0', resources='0', applied_resources='0', golems='0', meurtriere='0', scouts='0'"))
 				{
 					send_to_char("&=Bl success!&n\n\r", ch);
 				}
@@ -1056,13 +1124,19 @@ void do_test(P_char ch, char *arg, int cmd)
 			}
 			else
 			{
-				send_to_char("You must '&=Blconfirm&n' this command in order to use it.\n\r", ch);
-				send_to_char("This will &=Blpermenantly&n reset the info on outposts, setting owners to none; there is no going back!\n\r", ch);
+				send_to_char(
+					"You must '&=Blconfirm&n' this command in order to use it.\n\r",
+					ch);
+				send_to_char(
+					"This will &=Blpermenantly&n reset the info on outposts, setting owners to none; there is no going back!\n\r",
+					ch);
 			}
 		}
 		else
 		{
-			send_to_char("You must be a &+LFORGER&n or higher to execute this command.\n\r", ch);
+			send_to_char(
+				"You must be a &+LFORGER&n or higher to execute this command.\n\r",
+				ch);
 		}
 	}
 	else if (isname("angry", buff))
@@ -1084,9 +1158,11 @@ void do_test(P_char ch, char *arg, int cmd)
 		debug("Searching for maliciousPID %d (%s)...", maliciousPID, arg);
 		for (P_desc d = descriptor_list; d; d = d->next)
 		{
-			if (d->character && d->connected == CON_PLAYING && GET_PID(d->character) == maliciousPID)
+			if (d->character && d->connected == CON_PLAYING &&
+			    GET_PID(d->character) == maliciousPID)
 			{
-				debug("Found maliciousPID %d, calling very_angry_npc on '%s'...", GET_PID(d->character), J_NAME(d->character));
+				debug("Found maliciousPID %d, calling very_angry_npc on '%s'...",
+				      GET_PID(d->character), J_NAME(d->character));
 				very_angry_npc(ch, d->character, CMD_SHOUT, NULL);
 				return;
 			}
@@ -1103,27 +1179,32 @@ void do_test(P_char ch, char *arg, int cmd)
 // Function to test the radiate message from room code.
 void do_test_radiate(P_char ch, char *arg, int cmd)
 {
-	char  buff[MAX_STRING_LENGTH];
+	char buff[MAX_STRING_LENGTH];
 	char *message;
-	int   num_rooms;
+	int num_rooms;
 
 	arg = one_argument(arg, buff);
 
 	if (!is_number(buff))
 	{
-		send_to_char("You dork.  You must specify a number of rooms to radiate as a first argument.\n\r"
-		             "Then, supply the string you want to radiate.\n\r",
-		             ch);
+		send_to_char(
+			"You dork.  You must specify a number of rooms to radiate as a first argument.\n\r"
+			"Then, supply the string you want to radiate.\n\r",
+			ch);
 		return;
 	}
 
 	num_rooms = atoi(buff);
-	message   = skip_spaces(arg);
+	message = skip_spaces(arg);
 
-	snprintf(buff, MAX_STRING_LENGTH, "%s in %s [%d] radiates \"%s\" %d rooms.", J_NAME(ch), world[ch->in_room].name, world[ch->in_room].number, message, num_rooms);
+	snprintf(buff, MAX_STRING_LENGTH, "%s in %s [%d] radiates \"%s\" %d rooms.", J_NAME(ch),
+		 world[ch->in_room].name, world[ch->in_room].number, message, num_rooms);
 	wizlog(56, buff);
 	logit(LOG_WIZ, buff);
 
 	// Radiate from ch's room, the message, outward by num_rooms rooms, dracolich flags, and show 100% of the time.
-	radiate_message_from_room(ch->in_room, message, num_rooms, (RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL | RMFR_PASS_DOOR | RMFR_CROSS_ZONE_BARRIER), 100);
+	radiate_message_from_room(ch->in_room, message, num_rooms,
+				  (RMFR_FLAGS)(RMFR_RADIATE_ALL_DIRS | RMFR_PASS_WALL |
+					       RMFR_PASS_DOOR | RMFR_CROSS_ZONE_BARRIER),
+				  100);
 }

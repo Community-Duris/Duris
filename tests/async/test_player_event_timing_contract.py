@@ -1,19 +1,20 @@
 from pathlib import Path
+from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 source = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8", errors="replace")
 structs = (ROOT / "src" / "structs.h").read_text(encoding="utf-8", errors="replace")
 
-assert "nevent_is_player_timed" in source
-assert "NEVENT_PRIORITY_PLAYER" in source
-assert "scheduled_tick" in structs
-assert "event->priority" in source
-assert "PLAYER EVENT TIMING:" in source
-assert "nevent_link_schedule" in source
-assert "last_player" in source
-assert "deferral_count" in structs
-assert "NEVENT_MAX_DEFERRALS      0U" in source
-assert "nevent_promote_overdue_player" in source
-assert "event_wait" in source
-assert "func == event_wait" in source
+assert contains(source, "nevent_is_player_timed")
+assert contains(source, "NEVENT_PRIORITY_PLAYER")
+assert contains(structs, "scheduled_tick")
+assert contains(source, "event->priority")
+assert contains(source, "PLAYER EVENT TIMING:")
+assert contains(source, "nevent_link_schedule")
+assert contains(source, "last_player")
+assert contains(structs, "deferral_count")
+assert contains(source, "NEVENT_MAX_DEFERRALS      0U")
+assert contains(source, "nevent_promote_overdue_player")
+assert contains(source, "event_wait")
+assert contains(source, "func == event_wait")
 print("player event timing priority contract passed")

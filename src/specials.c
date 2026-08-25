@@ -24,12 +24,12 @@
    external variables
  */
 
-extern P_index             mob_index;
-extern P_index             obj_index;
-extern P_obj               object_list;
-extern P_room              world;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_obj object_list;
+extern P_room world;
 extern struct message_list fight_messages[MAX_MESSAGES];
-extern struct zone_data   *zone_table;
+extern struct zone_data *zone_table;
 extern struct str_app_type str_app[];
 
 P_nevent get_scheduled(P_char ch, event_func func);
@@ -44,7 +44,9 @@ void event_firesector(P_char ch, P_char victim, P_obj obj, void *data)
 	struct affected_type *af, *next;
 
 	if (IS_TRUSTED(ch) || ch->in_room == NOWHERE ||
-	    ((world[ch->in_room].sector_type != SECT_FIREPLANE) && (world[ch->in_room].sector_type != SECT_LAVA) && (world[ch->in_room].sector_type != SECT_UNDRWLD_LIQMITH)))
+	    ((world[ch->in_room].sector_type != SECT_FIREPLANE) &&
+	     (world[ch->in_room].sector_type != SECT_LAVA) &&
+	     (world[ch->in_room].sector_type != SECT_UNDRWLD_LIQMITH)))
 		return;
 
 	if (ENJOYS_FIRE_DAM(ch))
@@ -64,7 +66,9 @@ void event_firesector(P_char ch, P_char victim, P_obj obj, void *data)
 			next = af->next;
 			if (af->type == SPELL_PROTECT_FROM_FIRE || af->type == SPELL_FIRE_WARD)
 			{
-				send_to_char("Your feeble spell is no match for elemental fire!\r\n", ch);
+				send_to_char(
+					"Your feeble spell is no match for elemental fire!\r\n",
+					ch);
 				affect_remove(ch, af);
 			}
 		}
@@ -73,8 +77,11 @@ void event_firesector(P_char ch, P_char victim, P_obj obj, void *data)
 
 	if (GET_HIT(ch) < -7)
 	{
-		send_to_char("Failing to bear the &+Reternal heat&n of this place, your body is devoured by &+Yflames&n..\r\n", ch);
-		act("Failing to bear the &+Reternal heat&n of this place, $n's body is devoured by &+Yflames&n..", FALSE, ch, 0, 0, TO_ROOM);
+		send_to_char(
+			"Failing to bear the &+Reternal heat&n of this place, your body is devoured by &+Yflames&n..\r\n",
+			ch);
+		act("Failing to bear the &+Reternal heat&n of this place, $n's body is devoured by &+Yflames&n..",
+		    FALSE, ch, 0, 0, TO_ROOM);
 		die(ch, ch);
 		return;
 	}
@@ -92,8 +99,11 @@ void event_firesector(P_char ch, P_char victim, P_obj obj, void *data)
 
 void firesector(P_char ch)
 {
-	if (IS_TRUSTED(ch) || GET_RACE(ch) == RACE_F_ELEMENTAL || ch->in_room == NOWHERE || (IS_NPC(ch) && !IS_PC_PET(ch)) ||
-	    ((world[ch->in_room].sector_type != SECT_FIREPLANE) && (world[ch->in_room].sector_type != SECT_LAVA) && (world[ch->in_room].sector_type != SECT_UNDRWLD_LIQMITH)))
+	if (IS_TRUSTED(ch) || GET_RACE(ch) == RACE_F_ELEMENTAL || ch->in_room == NOWHERE ||
+	    (IS_NPC(ch) && !IS_PC_PET(ch)) ||
+	    ((world[ch->in_room].sector_type != SECT_FIREPLANE) &&
+	     (world[ch->in_room].sector_type != SECT_LAVA) &&
+	     (world[ch->in_room].sector_type != SECT_UNDRWLD_LIQMITH)))
 		return;
 
 	if (!get_scheduled(ch, event_firesector))
@@ -113,8 +123,11 @@ void event_underwatersector(P_char ch, P_char victim, P_obj obj, void *data)
 	{
 		if (GET_HIT(ch) < 0)
 		{
-			send_to_char("Failing to hold your breath any second longer, you draw an airless breath..\r\n", ch);
-			act("Failing to hold $s breath any second longer, $n draws an airless breath..", FALSE, ch, 0, 0, TO_ROOM);
+			send_to_char(
+				"Failing to hold your breath any second longer, you draw an airless breath..\r\n",
+				ch);
+			act("Failing to hold $s breath any second longer, $n draws an airless breath..",
+			    FALSE, ch, 0, 0, TO_ROOM);
 			die(ch, ch);
 			return;
 		}
@@ -146,7 +159,8 @@ void event_underwatersector(P_char ch, P_char victim, P_obj obj, void *data)
 
 void underwatersector(P_char ch)
 {
-	if ((IS_NPC(ch) && !IS_PC_PET(ch)) || !IS_UNDERWATER(ch) || IS_TRUSTED(ch) || IS_AFFECTED(ch, AFF_WATERBREATH))
+	if ((IS_NPC(ch) && !IS_PC_PET(ch)) || !IS_UNDERWATER(ch) || IS_TRUSTED(ch) ||
+	    IS_AFFECTED(ch, AFF_WATERBREATH))
 		return;
 
 	if (!get_scheduled(ch, event_underwatersector))
@@ -164,8 +178,9 @@ void swimming_char(P_char ch)
 	}
 
 	return;
-	if (IS_TRUSTED(ch) || IS_NPC(ch) || ch->specials.z_cord > 0 || IS_AFFECTED(ch, AFF_LEVITATE) || IS_AFFECTED(ch, AFF_FLY) || !IS_MAP_ROOM(ch->in_room) || (ch->in_room == NOWHERE) ||
-	    !IS_WATER_ROOM(ch->in_room))
+	if (IS_TRUSTED(ch) || IS_NPC(ch) || ch->specials.z_cord > 0 ||
+	    IS_AFFECTED(ch, AFF_LEVITATE) || IS_AFFECTED(ch, AFF_FLY) ||
+	    !IS_MAP_ROOM(ch->in_room) || (ch->in_room == NOWHERE) || !IS_WATER_ROOM(ch->in_room))
 	{
 		REMOVE_BIT(ch->specials.affected_by3, AFF3_SWIMMING);
 		REMOVE_BIT(ch->specials.affected_by2, AFF2_IS_DROWNING);
@@ -233,9 +248,9 @@ long pow10(long x)
 
 void npc_steal(P_char ch, P_char vict)
 {
-	P_obj  obj = NULL, next_obj = NULL;
-	int    percent, roll, loc, gold, chance;
-	bool   failed, caught;
+	P_obj obj = NULL, next_obj = NULL;
+	int percent, roll, loc, gold, chance;
+	bool failed, caught;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(vict) || IS_NPC(vict) || IS_PC_PET(ch))
 	{
@@ -255,8 +270,10 @@ void npc_steal(P_char ch, P_char vict)
 
 	if (!number(0, 1))
 	{ /* 50/50, items or coins */
-		if (IS_RIDING(ch) || ((IS_CARRYING_N(ch) + 1) > CAN_CARRY_N(ch)) || CHAR_IN_SAFE_ROOM(ch) || (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && !AdjacentInRoom(ch, vict)) || IS_FIGHTING(ch) ||
-		    IS_FIGHTING(vict))
+		if (IS_RIDING(ch) || ((IS_CARRYING_N(ch) + 1) > CAN_CARRY_N(ch)) ||
+		    CHAR_IN_SAFE_ROOM(ch) ||
+		    (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && !AdjacentInRoom(ch, vict)) ||
+		    IS_FIGHTING(ch) || IS_FIGHTING(vict))
 		{
 			return;
 		}
@@ -300,13 +317,15 @@ void npc_steal(P_char ch, P_char vict)
 			percent = 0; /* Failure */
 		}
 
-		roll   = number(1, 100);
+		roll = number(1, 100);
 		caught = FALSE;
 		failed = FALSE;
-		loc    = number(0, WEAR_QUIVER);
+		loc = number(0, WEAR_QUIVER);
 		if (loc && !vict->equipment[loc])
 		{
-			send_to_char("You cannot resist searching for items, yet you find nothing of interest!\r\n", ch);
+			send_to_char(
+				"You cannot resist searching for items, yet you find nothing of interest!\r\n",
+				ch);
 			failed = TRUE;
 			percent += 50;
 		}
@@ -319,30 +338,39 @@ void npc_steal(P_char ch, P_char vict)
 					next_obj = obj->next_content;
 					if (obj->type == ITEM_CONTAINER && ItemsIn(obj) >= 1)
 						break;
-					else if ((obj->weight <= 120) && (RateObject(ch, 0, obj) >= 0))
+					else if ((obj->weight <= 120) &&
+						 (RateObject(ch, 0, obj) >= 0))
 						break;
 				}
 				if (!obj)
 				{
-					send_to_char("Hmm, not much there. Try a different pocket.\r\n", ch);
+					send_to_char(
+						"Hmm, not much there. Try a different pocket.\r\n",
+						ch);
 					return;
 				}
 			}
 			else
 				obj = vict->equipment[loc];
 			// No stealing artifacts.
-			if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch) || IS_ARTIFACT(obj))
+			if ((total_carried_weight(ch) + GET_OBJ_WEIGHT(obj)) > CAN_CARRY_W(ch) ||
+			    IS_ARTIFACT(obj))
 				failed = TRUE;
 			if (!failed && (percent > 175))
 			{
-				act("You suddenly feel like relieving $N of $S spare equipment.. ", FALSE, ch, obj, vict, TO_CHAR);
+				act("You suddenly feel like relieving $N of $S spare equipment.. ",
+				    FALSE, ch, obj, vict, TO_CHAR);
 				act("You unequip $p and steal it.", FALSE, ch, obj, 0, TO_CHAR);
 				if (loc)
 				{
 					obj = unequip_char(vict, loc);
 					if (IS_ARTIFACT(obj))
 					{
-						statuslog(MINLVLIMMORTAL, "npc_steal: %s &+Rjust stole&n '%s' %d from %s.", OBJ_SHORT(obj), OBJ_VNUM(obj), J_NAME(vict));
+						statuslog(
+							MINLVLIMMORTAL,
+							"npc_steal: %s &+Rjust stole&n '%s' %d from %s.",
+							OBJ_SHORT(obj), OBJ_VNUM(obj),
+							J_NAME(vict));
 						// Don't need this; it's handled in unequip_char & obj_to_char.
 						//   artifact_update_location_sql( obj );
 					}
@@ -358,7 +386,9 @@ void npc_steal(P_char ch, P_char vict)
 			}
 			else
 			{
-				send_to_char("Uh huh.. You think your instincts got better of you!\r\n", ch);
+				send_to_char(
+					"Uh huh.. You think your instincts got better of you!\r\n",
+					ch);
 				failed = TRUE;
 				caught = TRUE;
 			}
@@ -378,7 +408,9 @@ void npc_steal(P_char ch, P_char vict)
 		if (GET_STAT(vict) == STAT_SLEEPING)
 		{
 			send_to_char("Groping fingers disturb your rest!\r\n", vict);
-			send_to_char("Uh oh, looks like you weren't quite as careful as you should have been!\r\n", ch);
+			send_to_char(
+				"Uh oh, looks like you weren't quite as careful as you should have been!\r\n",
+				ch);
 			do_wake(vict, 0, 0);
 		}
 		else
@@ -393,13 +425,16 @@ void npc_steal(P_char ch, P_char vict)
 		}
 		else if (obj)
 		{
-			act("&+WHey! $n just tried to steal your $q!&n", FALSE, ch, obj, vict, TO_VICT);
-			act("$n just tried to steal something from $N!", TRUE, ch, obj, vict, TO_NOTVICT);
+			act("&+WHey! $n just tried to steal your $q!&n", FALSE, ch, obj, vict,
+			    TO_VICT);
+			act("$n just tried to steal something from $N!", TRUE, ch, obj, vict,
+			    TO_NOTVICT);
 		}
 	}
 	if (IS_AWAKE(vict) && StatSave(vict, APPLY_DEX, (GET_LEVEL(vict) - GET_LEVEL(ch)) / 6))
 	{ /*(number(0, GET_LEVEL(vict)) > GET_LEVEL(ch)) */
-		act("You discover that $n has $s hands in your wallet.", FALSE, ch, 0, vict, TO_VICT);
+		act("You discover that $n has $s hands in your wallet.", FALSE, ch, 0, vict,
+		    TO_VICT);
 		act("$n tries to steal gold from $N.", TRUE, ch, 0, vict, TO_NOTVICT);
 	}
 	else
@@ -457,7 +492,8 @@ void event_negsector(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	struct affected_type *af, *next;
 
-	if (IS_TRUSTED(ch) || GET_RACE(ch) == RACE_UNDEAD || ch->in_room == NOWHERE || ((world[ch->in_room].sector_type != SECT_NEG_PLANE)))
+	if (IS_TRUSTED(ch) || GET_RACE(ch) == RACE_UNDEAD || ch->in_room == NOWHERE ||
+	    ((world[ch->in_room].sector_type != SECT_NEG_PLANE)))
 		return;
 
 	if (IS_AFFECTED5(ch, AFF5_PROT_UNDEAD))
@@ -467,7 +503,9 @@ void event_negsector(P_char ch, P_char victim, P_obj obj, void *data)
 			next = af->next;
 			if (af->type == SPELL_PROT_FROM_UNDEAD)
 			{
-				send_to_char("Your feeble spell is no match for the negative energy!\r\n", ch);
+				send_to_char(
+					"Your feeble spell is no match for the negative energy!\r\n",
+					ch);
 				affect_remove(ch, af);
 			}
 		}
@@ -477,7 +515,8 @@ void event_negsector(P_char ch, P_char victim, P_obj obj, void *data)
 	if (GET_HIT(ch) < 0)
 	{
 		send_to_char("&+LYou gasp as you realize your lifeforce has run out!&n.\r\n", ch);
-		act("$n&+L collapses in a crumpled heap, as their body shrivels into nothing.\r\n", FALSE, ch, 0, 0, TO_ROOM);
+		act("$n&+L collapses in a crumpled heap, as their body shrivels into nothing.\r\n",
+		    FALSE, ch, 0, 0, TO_ROOM);
 		die(ch, ch);
 		return;
 	}
@@ -494,7 +533,8 @@ void event_negsector(P_char ch, P_char victim, P_obj obj, void *data)
 
 void negsector(P_char ch)
 {
-	if (IS_TRUSTED(ch) || GET_RACE(ch) == RACE_UNDEAD || ch->in_room == NOWHERE || (IS_NPC(ch) && !IS_PC_PET(ch)) || ((world[ch->in_room].sector_type != SECT_NEG_PLANE)))
+	if (IS_TRUSTED(ch) || GET_RACE(ch) == RACE_UNDEAD || ch->in_room == NOWHERE ||
+	    (IS_NPC(ch) && !IS_PC_PET(ch)) || ((world[ch->in_room].sector_type != SECT_NEG_PLANE)))
 		return;
 
 	if (!get_scheduled(ch, event_negsector))

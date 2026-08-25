@@ -24,7 +24,7 @@ NOTE: TO DISABLE FERRIES COMPLETELY, UNCOMMENT THE #define DISABLE_FERRIES
 using namespace std;
 
 #define FRY_STATE_DISABLED 0
-#define FRY_STATE_WAITING  1
+#define FRY_STATE_WAITING 1
 #define FRY_STATE_DEPARTED 2
 #define FRY_STATE_UNDERWAY 3
 
@@ -39,9 +39,19 @@ int ferry_automat_proc(P_obj board, P_char ch, int cmd, char *arg);
 // struct for defining one leg of the ferry's journey
 struct RouteLeg
 {
-	RouteLeg(int _dest_room, string _dest_name) : dest_room(_dest_room), stop_here(true), dest_name(_dest_name) {}
+	RouteLeg(int _dest_room, string _dest_name)
+		: dest_room(_dest_room)
+		, stop_here(true)
+		, dest_name(_dest_name)
+	{
+	}
 
-	RouteLeg(int _dest_room) : dest_room(_dest_room), stop_here(false), dest_name("waypoint") {}
+	RouteLeg(int _dest_room)
+		: dest_room(_dest_room)
+		, stop_here(false)
+		, dest_name("waypoint")
+	{
+	}
 
 	const char *name() const { return dest_name.c_str(); }
 
@@ -49,13 +59,13 @@ struct RouteLeg
 
 	vector<int> path;
 
-	bool   stop_here;
+	bool stop_here;
 	string dest_name;
 };
 
 class Ferry
 {
-public:
+    public:
 	Ferry();
 	Ferry(int);
 
@@ -87,7 +97,10 @@ public:
 	}
 
 	// add a stop on the route, with name
-	void add_stop(int room_num, const char *stop_name) { route.push_back(RouteLeg(room_num, stop_name)); }
+	void add_stop(int room_num, const char *stop_name)
+	{
+		route.push_back(RouteLeg(room_num, stop_name));
+	}
 
 	// add a "waypoint" on the route, without name - the ferry won't stop
 	void add_stop(int room_num) { route.push_back(RouteLeg(room_num)); }
@@ -110,30 +123,30 @@ public:
 	void ticket_control();
 
 	string get_route_list(int route_stop);
-	int    eta(int route_stop);
+	int eta(int route_stop);
 
 	void panic();
 
 	// variables
 	string name;
-	int    id;
-	int    ticket_price;
+	int id;
+	int ticket_price;
 
-	int   obj_num;
+	int obj_num;
 	P_obj obj;
 
 	int ticket_obj_num;
 
 	int boarding_room_num;
 
-	int speed;              // number of seconds to wait between movement steps: 0 = every second
-	int wait_time;          // number of seconds to wait at each destination
+	int speed; // number of seconds to wait between movement steps: 0 = every second
+	int wait_time; // number of seconds to wait at each destination
 	int depart_notice_time; // number of seconds before departure to announce departing.
 
 	vector<int> rooms;
 
-	int              cur_route_leg;
-	int              cur_route_leg_step;
+	int cur_route_leg;
+	int cur_route_leg_step;
 	vector<RouteLeg> route;
 
 	int cur_state;
@@ -149,11 +162,11 @@ void shutdown_ferries();
 int ferry_room_proc(int room_num, P_char ch, int cmd, char *arg);
 int ferry_obj_proc(P_obj obj, P_char ch, int cmd, char *arg);
 
-void   ferry_activity();
+void ferry_activity();
 Ferry *get_ferry_from_room(int room_num);
 Ferry *get_ferry_from_obj(int obj_num);
 Ferry *get_ferry(int ferry_num);
-bool   has_item(P_char ch, int obj_num);
-bool   has_valid_ticket(P_char ch, int ferry_num);
+bool has_item(P_char ch, int obj_num);
+bool has_valid_ticket(P_char ch, int ferry_num);
 
 #endif

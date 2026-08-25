@@ -17,9 +17,9 @@ int next_guildhall_id();
 int next_guildhall_room_id();
 int next_guildhall_room_vnum();
 
-void                    load_guildhalls(vector<Guildhall *> &);
-void                    load_guildhall(int id, Guildhall *);
-void                    load_guildhall_rooms(Guildhall *);
+void load_guildhalls(vector<Guildhall *> &);
+void load_guildhall(int id, Guildhall *);
+void load_guildhall_rooms(Guildhall *);
 vector<GuildhallRoom *> load_guildhall_rooms(int guildhall_id);
 
 bool save_guildhall(Guildhall *);

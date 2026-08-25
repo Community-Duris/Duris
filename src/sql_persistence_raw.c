@@ -42,7 +42,8 @@ bool sql_persistence_execute_raw(const char *sql)
 	db = sql_persistence_connection();
 	if (!db)
 	{
-		logit(LOG_DEBUG, "Persistence MySQL: sql_persistence_execute_raw() failed - no connection");
+		logit(LOG_DEBUG,
+		      "Persistence MySQL: sql_persistence_execute_raw() failed - no connection");
 		return FALSE;
 	}
 
@@ -72,8 +73,7 @@ bool sql_persistence_execute_raw(const char *sql)
 			logit(LOG_DEBUG,
 			      "Persistence MySQL error in sql_persistence_execute_raw(): %s",
 			      mysql_error(db));
-			logit(LOG_DEBUG,
-			      "Persistence MySQL failed query (first 200 chars): %.200s",
+			logit(LOG_DEBUG, "Persistence MySQL failed query (first 200 chars): %.200s",
 			      sql);
 			ret = 1;
 			need_repair = (db != persistenceDB);
@@ -81,7 +81,8 @@ bool sql_persistence_execute_raw(const char *sql)
 	}
 	else
 	{
-		logit(LOG_DEBUG, "Persistence MySQL error in sql_persistence_execute_raw(): %s", mysql_error(db));
+		logit(LOG_DEBUG, "Persistence MySQL error in sql_persistence_execute_raw(): %s",
+		      mysql_error(db));
 		logit(LOG_DEBUG, "Persistence MySQL failed query (first 200 chars): %.200s", sql);
 		need_repair = (db != persistenceDB);
 	}
@@ -92,7 +93,8 @@ bool sql_persistence_execute_raw(const char *sql)
 		if (replacement)
 			db = replacement;
 		else
-			logit(LOG_DEBUG, "Persistence MySQL: failed to repair pooled connection after query error");
+			logit(LOG_DEBUG,
+			      "Persistence MySQL: failed to repair pooled connection after query error");
 	}
 
 	/* Release the connection back to the pool so other

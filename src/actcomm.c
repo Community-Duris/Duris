@@ -31,15 +31,15 @@
 #include "world_quest.h"
 
 /* external variables */
-extern P_char  character_list;
-extern P_desc  descriptor_list;
-extern P_room  world;
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_room world;
 extern P_index obj_index;
 extern P_index mob_index;
 // extern int rev_dir[];
-extern struct zone_data    *zone_table;
-extern struct race_names    race_names_table[];
-extern const char          *dirs2[];
+extern struct zone_data *zone_table;
+extern struct race_names race_names_table[];
+extern const char *dirs2[];
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
 
 struct social_messg
@@ -66,13 +66,13 @@ struct social_messg
 
 struct pose_type
 {
-	int level;          /*
+	int level; /*
 	                     * minimum level for poser
 	                     */
 	char *poser_msg[4]; /*
 	                     * message to poser
 	                     */
-	char *room_msg[4];  /*
+	char *room_msg[4]; /*
 	                     * message to room
 	                     */
 } pose_messages[MAX_MESSAGES];
@@ -93,7 +93,8 @@ void update_ovl(void)
 
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (d->character && IS_PC(d->character) && !d->connected && (d->character->only.pc->ovl_count > 0))
+		if (d->character && IS_PC(d->character) && !d->connected &&
+		    (d->character->only.pc->ovl_count > 0))
 		{
 			if (++(d->character->only.pc->ovl_timer) > OVL_PULSE)
 			{
@@ -130,9 +131,12 @@ bool is_silent(P_char ch, bool showit)
 		return TRUE;
 	}
 
-	if (ch->in_room != NOWHERE && ((IS_SET(zone_table[world[ch->in_room].zone].flags, ZONE_SILENT) || IS_ROOM(ch->in_room, ROOM_SILENT) || IS_AFFECTED2(ch, AFF2_SILENCED) ||
-	                                (IS_PC(ch) && IS_SET(ch->specials.act, PLR_SILENCE)) || affected_by_spell_flagged(ch, SKILL_THROAT_CRUSH, AFFTYPE_CUSTOM1)) &&
-	                               !IS_TRUSTED(ch)))
+	if (ch->in_room != NOWHERE &&
+	    ((IS_SET(zone_table[world[ch->in_room].zone].flags, ZONE_SILENT) ||
+	      IS_ROOM(ch->in_room, ROOM_SILENT) || IS_AFFECTED2(ch, AFF2_SILENCED) ||
+	      (IS_PC(ch) && IS_SET(ch->specials.act, PLR_SILENCE)) ||
+	      affected_by_spell_flagged(ch, SKILL_THROAT_CRUSH, AFFTYPE_CUSTOM1)) &&
+	     !IS_TRUSTED(ch)))
 	{
 		if (showit)
 		{
@@ -178,15 +182,16 @@ void mobsay(P_char ch, const char *msg)
 
 void check_magic_doors(P_char ch, const char *word)
 {
-	int                         door, other_room;
-	char                        arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
-	char                        Gbuf1[MAX_STRING_LENGTH];
-	char                       *arg;
+	int door, other_room;
+	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
+	char *arg;
 	struct room_direction_data *back;
 
 	for (door = 0; door < NUM_EXITS; door++)
 	{
-		if (EXIT(ch, door) && (EXIT(ch, door)->key == -2) && IS_SET(EXIT(ch, door)->exit_info, EX_LOCKED) && EXIT(ch, door)->keyword)
+		if (EXIT(ch, door) && (EXIT(ch, door)->key == -2) &&
+		    IS_SET(EXIT(ch, door)->exit_info, EX_LOCKED) && EXIT(ch, door)->keyword)
 		{
 			/*
 			 * now search to see if last word in keyword is the one
@@ -217,17 +222,22 @@ void check_magic_doors(P_char ch, const char *word)
 						{
 							REMOVE_BIT(back->exit_info, EX_LOCKED);
 							if (IS_SET(back->exit_info, EX_SECRET))
-								REMOVE_BIT(back->exit_info, EX_SECRET);
+								REMOVE_BIT(back->exit_info,
+									   EX_SECRET);
 						}
 					}
 				}
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "The %s begins to hum, then glow brightly.", FirstWord(EXIT(ch, door)->keyword));
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "The %s begins to hum, then glow brightly.",
+					 FirstWord(EXIT(ch, door)->keyword));
 				act(Gbuf1, FALSE, ch, 0, 0, TO_ROOM);
 				act(Gbuf1, FALSE, ch, 0, 0, TO_CHAR);
 				/*
 				 * send_to_room(Gbuf1, (EXIT(ch, door)->to_room));
 				 */
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "A magical force unlocks the %s.", FirstWord(EXIT(ch, door)->keyword));
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "A magical force unlocks the %s.",
+					 FirstWord(EXIT(ch, door)->keyword));
 				act(Gbuf1, FALSE, ch, 0, 0, TO_ROOM);
 				act(Gbuf1, FALSE, ch, 0, 0, TO_CHAR);
 				return;
@@ -239,10 +249,11 @@ void check_magic_doors(P_char ch, const char *word)
 void do_petition(P_char ch, char *argument, int cmd)
 {
 	P_desc i;
-	char   Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	char   escaped_text[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+	char escaped_text[MAX_STRING_LENGTH];
 
-	if (IS_NPC(ch) || IS_SET(ch->specials.act, PLR_SILENCE) || IS_SET(ch->specials.act2, PLR2_B_PETITION))
+	if (IS_NPC(ch) || IS_SET(ch->specials.act, PLR_SILENCE) ||
+	    IS_SET(ch->specials.act2, PLR2_B_PETITION))
 	{
 		send_to_char("You are not permitted to use petition!\r\n", ch);
 		return;
@@ -266,11 +277,11 @@ void do_petition(P_char ch, char *argument, int cmd)
 	{
 		if (IS_SET(ch->specials.act, PLR_ECHO))
 		{
-			snprintf(Gbuf1,
-			         MAX_STRING_LENGTH,
-			         "&+rYou petition '%s'\r\n"
-			         "&+RThe petition channel is not for general conversation. Use the idea, typo, or bug commands.&n\r\n",
-			         argument);
+			snprintf(
+				Gbuf1, MAX_STRING_LENGTH,
+				"&+rYou petition '%s'\r\n"
+				"&+RThe petition channel is not for general conversation. Use the idea, typo, or bug commands.&n\r\n",
+				argument);
 			send_to_char(Gbuf1, ch);
 		}
 		else
@@ -285,10 +296,13 @@ void do_petition(P_char ch, char *argument, int cmd)
 
 		escape_act_dollars(escaped_text, sizeof(escaped_text), argument);
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+r$n petitions '%s'&N", escaped_text);
-		snprintf(Gbuf2, MAX_STRING_LENGTH, "&+r%s petitions '%s'&N", GET_NAME(ch), escaped_text);
+		snprintf(Gbuf2, MAX_STRING_LENGTH, "&+r%s petitions '%s'&N", GET_NAME(ch),
+			 escaped_text);
 
 		for (i = descriptor_list; i; i = i->next)
-			if (!i->connected && (i->character != ch) && IS_SET(i->character->specials.act, PLR_PETITION) && IS_TRUSTED(i->character))
+			if (!i->connected && (i->character != ch) &&
+			    IS_SET(i->character->specials.act, PLR_PETITION) &&
+			    IS_TRUSTED(i->character))
 			{
 				if (IS_TRUSTED(ch))
 					act(Gbuf1, 0, ch, 0, i->character, TO_VICT | ACT_PRIVATE);
@@ -311,7 +325,8 @@ void send_to_gods(char *argument)
 	P_desc i;
 
 	for (i = descriptor_list; i; i = i->next)
-		if (!i->connected && i->character && IS_SET(i->character->specials.act, PLR_PETITION) && IS_TRUSTED(i->character))
+		if (!i->connected && i->character &&
+		    IS_SET(i->character->specials.act, PLR_PETITION) && IS_TRUSTED(i->character))
 			send_to_char(argument, i->character);
 }
 
@@ -322,7 +337,7 @@ void send_to_gods(char *argument)
 void send_to_avatar(P_char ch, const char *arg)
 {
 	P_char i;
-	char   Gbuf[MAX_STRING_LENGTH];
+	char Gbuf[MAX_STRING_LENGTH];
 
 	if (!ch)
 		return;
@@ -331,7 +346,8 @@ void send_to_avatar(P_char ch, const char *arg)
 		send_to_char("Being knocked unconscious strictly limits what you can do.\r\n", ch);
 		return;
 	}
-	snprintf(Gbuf, MAX_STRING_LENGTH, "\r\n&+m%s projects, '&+M%s&n&+m'&n\r\n", GET_NAME(ch), arg);
+	snprintf(Gbuf, MAX_STRING_LENGTH, "\r\n&+m%s projects, '&+M%s&n&+m'&n\r\n", GET_NAME(ch),
+		 arg);
 	send_to_char(Gbuf, ch->desc->snoop.snooping);
 }
 
@@ -344,11 +360,11 @@ void do_say(P_char ch, char *argument, int cmd)
 
 int say(P_char ch, const char *argument)
 {
-	int    i;
+	int i;
 	P_char kala;
-	bool   mind = FALSE;
-	char   Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
-	char   escaped_text[MAX_STRING_LENGTH];
+	bool mind = FALSE;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	char escaped_text[MAX_STRING_LENGTH];
 
 	// Skip whitespace.
 	for (i = 0; *(argument + i) == ' '; i++)
@@ -361,22 +377,27 @@ int say(P_char ch, const char *argument)
 		send_to_avatar(ch, argument + i);
 		return TRUE;
 	}
-	else if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) && !IS_TRUSTED(ch) && !IS_NPC(ch))
+	else if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) &&
+		 !IS_TRUSTED(ch) && !IS_NPC(ch))
 	{
 		send_to_char("You try to say something in the water...\n", ch);
-		act("$n's mouth moves, but all that comes forth is bubbles...", TRUE, ch, 0, 0, TO_ROOM);
+		act("$n's mouth moves, but all that comes forth is bubbles...", TRUE, ch, 0, 0,
+		    TO_ROOM);
 		return FALSE;
 	}
-	else if ((IS_AFFECTED2(ch, AFF2_SILENCED) || affected_by_spell(ch, SPELL_SUPPRESSION)) && !IS_ILLITHID(ch) && !IS_PILLITHID(ch))
+	else if ((IS_AFFECTED2(ch, AFF2_SILENCED) || affected_by_spell(ch, SPELL_SUPPRESSION)) &&
+		 !IS_ILLITHID(ch) && !IS_PILLITHID(ch))
 	{
 		send_to_char("You move your lips, but no sound comes forth!\r\n", ch);
-		act("$n seems to be trying to say something, but you hear no words...", TRUE, ch, 0, 0, TO_ROOM);
+		act("$n seems to be trying to say something, but you hear no words...", TRUE, ch, 0,
+		    0, TO_ROOM);
 		return FALSE;
 	}
 	else if (affected_by_spell_flagged(ch, SKILL_THROAT_CRUSH, AFFTYPE_CUSTOM1))
 	{
 		send_to_char("Your throat hurts far too much to speak!\r\n", ch);
-		act("$n seems to hoarsely grumble something unintelligable.", TRUE, ch, 0, 0, TO_ROOM);
+		act("$n seems to hoarsely grumble something unintelligable.", TRUE, ch, 0, 0,
+		    TO_ROOM);
 		return FALSE;
 	}
 	else if (IS_AFFECTED(ch, AFF_WRAITHFORM))
@@ -394,23 +415,32 @@ int say(P_char ch, const char *argument)
 			{
 				if (mind)
 				{
-					escape_act_dollars(escaped_text, sizeof(escaped_text), argument + i);
-					if (IS_ILLITHID(kala) || IS_PILLITHID(kala) || IS_TRUSTED(kala))
-						snprintf(Gbuf2, MAX_STRING_LENGTH, "$n projects '%s'", escaped_text);
+					escape_act_dollars(escaped_text, sizeof(escaped_text),
+							   argument + i);
+					if (IS_ILLITHID(kala) || IS_PILLITHID(kala) ||
+					    IS_TRUSTED(kala))
+						snprintf(Gbuf2, MAX_STRING_LENGTH,
+							 "$n projects '%s'", escaped_text);
 					else
-						snprintf(Gbuf2, MAX_STRING_LENGTH, "$n invades your mind with '%s'", escaped_text);
+						snprintf(Gbuf2, MAX_STRING_LENGTH,
+							 "$n invades your mind with '%s'",
+							 escaped_text);
 				}
 				else
 				{
 					snprintf(Gbuf3, MAX_STRING_LENGTH, "%s", argument + i);
-					escape_act_dollars(escaped_text, sizeof(escaped_text), language_CRYPT(ch, kala, Gbuf3));
+					escape_act_dollars(escaped_text, sizeof(escaped_text),
+							   language_CRYPT(ch, kala, Gbuf3));
 
 					if (IS_THRIKREEN(ch))
 					{
-						snprintf(Gbuf2, MAX_STRING_LENGTH, "$n chitters %s'%s'", language_known(ch, kala), escaped_text);
+						snprintf(Gbuf2, MAX_STRING_LENGTH,
+							 "$n chitters %s'%s'",
+							 language_known(ch, kala), escaped_text);
 					}
 					else
-						snprintf(Gbuf2, MAX_STRING_LENGTH, "$n says %s'%s'", language_known(ch, kala), escaped_text);
+						snprintf(Gbuf2, MAX_STRING_LENGTH, "$n says %s'%s'",
+							 language_known(ch, kala), escaped_text);
 				}
 				if (mind || IS_TRUSTED(ch))
 					act(Gbuf2, FALSE, ch, 0, kala, TO_VICT);
@@ -428,9 +458,12 @@ int say(P_char ch, const char *argument)
 		if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 		{
 			if (IS_ILLITHID(ch) || IS_PILLITHID(ch) || !strcmp(GET_NAME(ch), "Id"))
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "You project '%s'\r\n", argument + i);
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "You project '%s'\r\n",
+					 argument + i);
 			else
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "You %s %s'%s'\r\n", IS_THRIKREEN(ch) ? "chitter" : "say", language_known(ch, ch), argument + i);
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "You %s %s'%s'\r\n",
+					 IS_THRIKREEN(ch) ? "chitter" : "say",
+					 language_known(ch, ch), argument + i);
 			send_to_char(Gbuf1, ch);
 		}
 		else
@@ -443,7 +476,9 @@ int say(P_char ch, const char *argument)
 
 		check_magic_doors(ch, argument + i);
 
-		studioproc_speech(ch, argument + i); /* after the say has landed, so a reply reads as a reply */
+		studioproc_speech(
+			ch,
+			argument + i); /* after the say has landed, so a reply reads as a reply */
 	}
 
 	return TRUE;
@@ -471,13 +506,13 @@ CAN_GCC(P_char ch)
 
 void do_gcc(P_char ch, char *argument, int cmd)
 {
-	P_desc  i;
-	P_char  to_ch;
+	P_desc i;
+	P_char to_ch;
 	P_Guild from_guild, to_guild;
-	char    Gbuf1[MAX_STRING_LENGTH];
-	char    guild_name[MAX_INPUT_LENGTH];
-	int     guild_number;
-	FILE   *f;
+	char Gbuf1[MAX_STRING_LENGTH];
+	char guild_name[MAX_INPUT_LENGTH];
+	int guild_number;
+	FILE *f;
 
 	from_guild = GET_ASSOC(ch);
 
@@ -499,7 +534,9 @@ void do_gcc(P_char ch, char *argument, int cmd)
 
 	if (affected_by_spell(ch, SPELL_SUPPRESSION) || is_silent(ch, TRUE))
 	{
-		send_to_char("If you can't 'say', 'shout', or 'emote', what makes you think you can 'gcc'?\r\n", ch);
+		send_to_char(
+			"If you can't 'say', 'shout', or 'emote', what makes you think you can 'gcc'?\r\n",
+			ch);
 		return;
 	}
 
@@ -507,7 +544,9 @@ void do_gcc(P_char ch, char *argument, int cmd)
 	// Multi chars' primary level stays the same, allow multis to gcc at secondary levels 1-24..
 	if (ch->player.level < 25)
 	{
-		send_to_char("You cannot join a guild until level 25, thus you cannot GCC until level 25.\r\n", ch);
+		send_to_char(
+			"You cannot join a guild until level 25, thus you cannot GCC until level 25.\r\n",
+			ch);
 		return;
 	}
 
@@ -521,12 +560,16 @@ void do_gcc(P_char ch, char *argument, int cmd)
 	{
 		if (IS_TRUSTED(ch))
 		{
-			argument     = one_argument(argument, guild_name);
+			argument = one_argument(argument, guild_name);
 			guild_number = atoi(guild_name);
 			if ((from_guild = get_guild_from_id(guild_number)) == NULL)
 			{
-				send_to_char("&+WSyntax:&n\n   &+wgcc [guild number] <message>&n\n   &+wgcc <message>&n\n", ch);
-				send_to_char("Where you are either &+wsupervis&ning a guild or supply the &+wnumber&n of the guild.\n", ch);
+				send_to_char(
+					"&+WSyntax:&n\n   &+wgcc [guild number] <message>&n\n   &+wgcc <message>&n\n",
+					ch);
+				send_to_char(
+					"Where you are either &+wsupervis&ning a guild or supply the &+wnumber&n of the guild.\n",
+					ch);
 				return;
 			}
 		}
@@ -558,12 +601,20 @@ void do_gcc(P_char ch, char *argument, int cmd)
 			{
 				if (IS_NPC(ch) || IS_SET(ch->specials.act3, PLR3_GUILDNAME))
 				{
-					snprintf(Gbuf1, MAX_STRING_LENGTH, "&+cYou tell %s &+c'&+C%s&n&+c'\r\n", from_guild->get_name().c_str(), argument);
+					snprintf(Gbuf1, MAX_STRING_LENGTH,
+						 "&+cYou tell %s &+c'&+C%s&n&+c'\r\n",
+						 from_guild->get_name().c_str(), argument);
 					send_to_char(Gbuf1, ch, LOG_PRIVATE);
 				}
 				else
 				{
-					snprintf(Gbuf1, MAX_STRING_LENGTH, "&+cYou tell your &+%cguild&+c '&+C%s&n&+c'\r\n", IS_TRUSTED(ch) ? racewar_color[from_guild->get_racewar()].color : 'c', argument);
+					snprintf(Gbuf1, MAX_STRING_LENGTH,
+						 "&+cYou tell your &+%cguild&+c '&+C%s&n&+c'\r\n",
+						 IS_TRUSTED(ch) ?
+							 racewar_color[from_guild->get_racewar()]
+								 .color :
+							 'c',
+						 argument);
 					send_to_char(Gbuf1, ch, LOG_PRIVATE);
 				}
 			}
@@ -587,7 +638,9 @@ void do_gcc(P_char ch, char *argument, int cmd)
 			}
 			if (IS_NPC(to_ch))
 			{
-				logit(LOG_DEBUG, "do_gcc: Character (%s) is on descriptor_list but is a NPC!", J_NAME(to_ch));
+				logit(LOG_DEBUG,
+				      "do_gcc: Character (%s) is on descriptor_list but is a NPC!",
+				      J_NAME(to_ch));
 				continue;
 			}
 
@@ -602,29 +655,36 @@ void do_gcc(P_char ch, char *argument, int cmd)
 			if (IS_TRUSTED(to_ch))
 			{
 				// If they'r governing a diff't association or they have GCC toggled off, or ignoring ch.
-				if ((to_guild && to_guild != from_guild) || !PLR_FLAGGED(to_ch, PLR_GCC) || to_ch->only.pc->ignored == ch)
+				if ((to_guild && to_guild != from_guild) ||
+				    !PLR_FLAGGED(to_ch, PLR_GCC) || to_ch->only.pc->ignored == ch)
 				{
 					continue;
 				}
 			}
 			// Mortals need GCC on, and must be a guilded in the same guild, must be a member, not on parole.
 			//   And can't be ignoring ch.
-			else if (!PLR_FLAGGED(to_ch, PLR_GCC) || to_guild != from_guild || !IS_MEMBER(GET_A_BITS(i->character)) || !GT_PAROLE(GET_A_BITS(to_ch)) || to_ch->only.pc->ignored == ch)
+			else if (!PLR_FLAGGED(to_ch, PLR_GCC) || to_guild != from_guild ||
+				 !IS_MEMBER(GET_A_BITS(i->character)) ||
+				 !GT_PAROLE(GET_A_BITS(to_ch)) || to_ch->only.pc->ignored == ch)
 			{
 				continue;
 			}
 			if (IS_NPC(to_ch) || IS_SET(to_ch->specials.act3, PLR3_GUILDNAME))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+c%s&n&+c tells &n%s&+c '&+C%s&n&+c'\r\n", PERS(ch, to_ch, FALSE), guild_name, language_CRYPT(ch, to_ch, argument));
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "&+c%s&n&+c tells &n%s&+c '&+C%s&n&+c'\r\n",
+					 PERS(ch, to_ch, FALSE), guild_name,
+					 language_CRYPT(ch, to_ch, argument));
 			}
 			else
 			{
-				snprintf(Gbuf1,
-				         MAX_STRING_LENGTH,
-				         "&+c%s&n&+c tells your &+%cguild&+c '&+C%s&n&+c'\r\n",
-				         PERS(ch, to_ch, FALSE),
-				         IS_TRUSTED(to_ch) ? racewar_color[from_guild->get_racewar()].color : 'c',
-				         language_CRYPT(ch, to_ch, argument));
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "&+c%s&n&+c tells your &+%cguild&+c '&+C%s&n&+c'\r\n",
+					 PERS(ch, to_ch, FALSE),
+					 IS_TRUSTED(to_ch) ?
+						 racewar_color[from_guild->get_racewar()].color :
+						 'c',
+					 language_CRYPT(ch, to_ch, argument));
 			}
 			send_to_char(Gbuf1, to_ch, LOG_PRIVATE);
 
@@ -641,15 +701,18 @@ void do_gcc(P_char ch, char *argument, int cmd)
 void send_to_guild(P_Guild guild, char *name, char *arg)
 {
 	P_desc i;
-	char   Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	// Walk through connections...
 	for (i = descriptor_list; i; i = i->next)
 	{
 		// If we're not at menu, nor in silent room nor have gcc off
-		if (!i->connected && IS_SET(i->character->specials.act, PLR_GCC) && IS_MEMBER(GET_A_BITS(i->character)) && (GET_ASSOC(i->character) == guild) && (GT_PAROLE(GET_A_BITS(i->character))))
+		if (!i->connected && IS_SET(i->character->specials.act, PLR_GCC) &&
+		    IS_MEMBER(GET_A_BITS(i->character)) && (GET_ASSOC(i->character) == guild) &&
+		    (GT_PAROLE(GET_A_BITS(i->character))))
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "&+c%s&n&+c tells your guild '&+C%s&n&+c'\r\n", name, arg);
+			snprintf(Gbuf1, MAX_STRING_LENGTH,
+				 "&+c%s&n&+c tells your guild '&+C%s&n&+c'\r\n", name, arg);
 			send_to_char(Gbuf1, i->character, LOG_PRIVATE);
 		}
 	}
@@ -658,7 +721,7 @@ void send_to_guild(P_Guild guild, char *name, char *arg)
 void do_rwc(P_char ch, char *argument, int cmd)
 {
 	P_desc i;
-	char   Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	if (!ch)
 		return;
@@ -671,7 +734,8 @@ void do_rwc(P_char ch, char *argument, int cmd)
 		send_to_char("You can't use the RWC channel!\r\n", ch);
 		return;
 	}
-	else if (IS_SET(ch->specials.act, PLR_SILENCE) || !IS_SET(ch->specials.act2, PLR2_RWC) || is_silent(ch, TRUE))
+	else if (IS_SET(ch->specials.act, PLR_SILENCE) || !IS_SET(ch->specials.act2, PLR2_RWC) ||
+		 is_silent(ch, TRUE))
 	{
 		send_to_char("You can't use the RWC channel!\r\n", ch);
 		return;
@@ -683,7 +747,9 @@ void do_rwc(P_char ch, char *argument, int cmd)
 	}
 	if (IS_AFFECTED2(ch, AFF2_SILENCED))
 	{
-		send_to_char("If you can't 'say', 'shout', or 'emote', what makes you think you can 'gcc'?\r\n", ch);
+		send_to_char(
+			"If you can't 'say', 'shout', or 'emote', what makes you think you can 'gcc'?\r\n",
+			ch);
 		return;
 	}
 	while (*argument == ' ' && *argument != '\0')
@@ -697,16 +763,21 @@ void do_rwc(P_char ch, char *argument, int cmd)
 		{
 			if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+mYou RWC '&+M%s&n&+m'\r\n&N", argument);
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+mYou RWC '&+M%s&n&+m'\r\n&N",
+					 argument);
 				send_to_char(Gbuf1, ch);
 			}
 			else
 				send_to_char("Ok.\r\n", ch);
 		}
 		for (i = descriptor_list; i; i = i->next)
-			if ((i->character != ch) && !i->connected && !is_silent(i->character, FALSE) && IS_SET(i->character->specials.act2, PLR2_RWC))
+			if ((i->character != ch) && !i->connected &&
+			    !is_silent(i->character, FALSE) &&
+			    IS_SET(i->character->specials.act2, PLR2_RWC))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+m(RWC) %s - '&+M%s&n&+m'\r\n&N", GET_NAME(ch), argument);
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "&+m(RWC) %s - '&+M%s&n&+m'\r\n&N", GET_NAME(ch),
+					 argument);
 				send_to_char(Gbuf1, i->character);
 			}
 	}
@@ -715,8 +786,8 @@ void do_rwc(P_char ch, char *argument, int cmd)
 void do_project(P_char ch, char *argument, int cmd)
 {
 	P_desc desc;
-	char   Gbuf1[MAX_STRING_LENGTH];
-	char   escaped_text[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
+	char escaped_text[MAX_STRING_LENGTH];
 
 	if (IS_NPC(ch))
 	{
@@ -743,7 +814,9 @@ void do_project(P_char ch, char *argument, int cmd)
 	}
 	if (!IS_SET(ch->specials.act2, PLR2_PROJECT))
 	{
-		send_to_char("You do not feel close enough to the Elder Brain to communicate in this fashion...\r\n", ch);
+		send_to_char(
+			"You do not feel close enough to the Elder Brain to communicate in this fashion...\r\n",
+			ch);
 		return;
 	}
 
@@ -757,7 +830,8 @@ void do_project(P_char ch, char *argument, int cmd)
 	}
 	else if (ch->desc)
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+mYou project '&+M%s&n&+m' across the ether.&n\n", argument);
+		snprintf(Gbuf1, MAX_STRING_LENGTH,
+			 "&+mYou project '&+M%s&n&+m' across the ether.&n\n", argument);
 
 		if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 		{
@@ -773,10 +847,13 @@ void do_project(P_char ch, char *argument, int cmd)
 	}
 
 	escape_act_dollars(escaped_text, sizeof(escaped_text), argument);
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "&+m%s&+m projects '&+M%s&n&+m' across the ether.&n\n", GET_NAME(ch), escaped_text);
+	snprintf(Gbuf1, MAX_STRING_LENGTH, "&+m%s&+m projects '&+M%s&n&+m' across the ether.&n\n",
+		 GET_NAME(ch), escaped_text);
 	for (desc = descriptor_list; desc; desc = desc->next)
 	{
-		if ((desc->character != ch) && !desc->connected && ((GET_RACE(desc->character) == RACE_ILLITHID) || IS_PILLITHID(desc->character) || IS_TRUSTED(desc->character)) &&
+		if ((desc->character != ch) && !desc->connected &&
+		    ((GET_RACE(desc->character) == RACE_ILLITHID) ||
+		     IS_PILLITHID(desc->character) || IS_TRUSTED(desc->character)) &&
 		    (IS_SET(desc->character->specials.act2, PLR2_PROJECT)))
 		{
 			act(Gbuf1, 0, ch, 0, desc->character, TO_VICT | ACT_IGNORE_ZCOORD);
@@ -812,8 +889,8 @@ void do_page(P_char ch, char *argument, int cmd)
 void do_shout(P_char ch, char *argument, int cmd)
 {
 	P_desc i;
-	char   Gbuf1[MAX_STRING_LENGTH];
-	char   escaped_text[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
+	char escaped_text[MAX_STRING_LENGTH];
 
 	if ((IS_PC(ch) && IS_SET(ch->specials.act, PLR_SILENCE)) || is_silent(ch, TRUE))
 	{
@@ -830,7 +907,8 @@ void do_shout(P_char ch, char *argument, int cmd)
 		send_to_char("You cannot speak in that form!\r\n", ch);
 		return;
 	}
-	if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) && !IS_TRUSTED(ch) && !IS_NPC(ch))
+	if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) && !IS_TRUSTED(ch) &&
+	    !IS_NPC(ch))
 	{
 		send_to_char("You shout at the top of your lungs and inhale some water!\r\n", ch);
 		act("$n mouth opens wide and huge bubbles come forth...", TRUE, ch, 0, 0, TO_ROOM);
@@ -847,7 +925,8 @@ void do_shout(P_char ch, char *argument, int cmd)
 		{
 			if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+cYou shout across the world '%s'\r\n", argument);
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "&+cYou shout across the world '%s'\r\n", argument);
 				send_to_char(Gbuf1, ch);
 			}
 			else
@@ -857,13 +936,20 @@ void do_shout(P_char ch, char *argument, int cmd)
 				logit(LOG_CHAT, "%s gshout's '%s'", GET_NAME(ch), argument);
 		}
 		for (i = descriptor_list; i; i = i->next)
-			if ((i->character != ch) && !i->connected && !is_silent(i->character, FALSE) && !IS_SET(i->character->specials.act, PLR_NOSHOUT))
+			if ((i->character != ch) && !i->connected &&
+			    !is_silent(i->character, FALSE) &&
+			    !IS_SET(i->character->specials.act, PLR_NOSHOUT))
 			{
-				escape_act_dollars(escaped_text, sizeof(escaped_text), language_CRYPT(ch, i->character, argument));
+				escape_act_dollars(escaped_text, sizeof(escaped_text),
+						   language_CRYPT(ch, i->character, argument));
 				if (IS_TRUSTED(ch))
-					snprintf(Gbuf1, MAX_STRING_LENGTH, "&+c$n shouts from the heavens %s'%s'&N", language_known(ch, i->character), escaped_text);
+					snprintf(Gbuf1, MAX_STRING_LENGTH,
+						 "&+c$n shouts from the heavens %s'%s'&N",
+						 language_known(ch, i->character), escaped_text);
 				else
-					snprintf(Gbuf1, MAX_STRING_LENGTH, "&+c$n shouts across the world %s'%s'&N", language_known(ch, i->character), escaped_text);
+					snprintf(Gbuf1, MAX_STRING_LENGTH,
+						 "&+c$n shouts across the world %s'%s'&N",
+						 language_known(ch, i->character), escaped_text);
 				act(Gbuf1, 0, ch, 0, i->character, TO_VICT);
 			}
 	}
@@ -893,8 +979,8 @@ void do_tell(P_char ch, char *argument, int cmd)
 {
 	P_char vict;
 	P_desc d;
-	char   name[MAX_INPUT_LENGTH], message[MAX_STRING_LENGTH];
-	char   Gbuf1[MAX_STRING_LENGTH];
+	char name[MAX_INPUT_LENGTH], message[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	half_chop(argument, name, message);
 
@@ -950,7 +1036,9 @@ void do_tell(P_char ch, char *argument, int cmd)
 	}
 
 	if (vict && !IS_TRUSTED(ch) && !IS_TRUSTED(vict))
-		if (racewar(ch, vict) && !IS_DISGUISE(vict) || (IS_DISGUISE(vict) && (EVIL_RACE(ch) != EVIL_RACE(vict))) || (GET_RACE(ch) == RACE_ILLITHID && !IS_ILLITHID(vict)))
+		if (racewar(ch, vict) && !IS_DISGUISE(vict) ||
+		    (IS_DISGUISE(vict) && (EVIL_RACE(ch) != EVIL_RACE(vict))) ||
+		    (GET_RACE(ch) == RACE_ILLITHID && !IS_ILLITHID(vict)))
 			vict = NULL;
 
 	if (!vict)
@@ -959,16 +1047,20 @@ void do_tell(P_char ch, char *argument, int cmd)
 		send_to_char("You try to tell yourself something.\r\n", ch);
 	else if (!vict->desc || (IS_AFFECTED4(vict, AFF4_DEAF)))
 		act("$E can't hear you.", FALSE, ch, 0, vict, TO_CHAR);
-	else if (((IS_ROOM(vict->in_room, ROOM_UNDERWATER)) || vict->specials.z_cord < 0) && !IS_TRUSTED(vict))
+	else if (((IS_ROOM(vict->in_room, ROOM_UNDERWATER)) || vict->specials.z_cord < 0) &&
+		 !IS_TRUSTED(vict))
 	{
 		act("$E can't hear you.", FALSE, ch, 0, vict, TO_CHAR);
 		return;
 	}
-	else if (!IS_TRUSTED(ch) && (is_silent(vict, FALSE) || (GET_STAT(vict) < STAT_RESTING) || (IS_SET(vict->specials.act, PLR_NOTELL) && !is_linked_from(vict, ch, LNK_CONSENT))))
+	else if (!IS_TRUSTED(ch) && (is_silent(vict, FALSE) || (GET_STAT(vict) < STAT_RESTING) ||
+				     (IS_SET(vict->specials.act, PLR_NOTELL) &&
+				      !is_linked_from(vict, ch, LNK_CONSENT))))
 	{
 		act("No-one by that name here...", FALSE, ch, 0, vict, TO_CHAR);
 		if (IS_NPC(ch) && IS_SET(vict->specials.act, PLR_NOTELL))
-			act("$n attempted to tell you something, but you're not paying attention!", FALSE, ch, 0, vict, TO_VICT);
+			act("$n attempted to tell you something, but you're not paying attention!",
+			    FALSE, ch, 0, vict, TO_VICT);
 	}
 	else if (!IS_TRUSTED(ch) && (GET_STAT(ch) < STAT_RESTING))
 		send_to_char("You can't do that right now...\r\n", ch);
@@ -994,7 +1086,8 @@ void do_tell(P_char ch, char *argument, int cmd)
 		{
 			if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+WYou tell %s %s'%s'\r\n", GET_NAME(vict), language_known(ch, ch), message);
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+WYou tell %s %s'%s'\r\n",
+					 GET_NAME(vict), language_known(ch, ch), message);
 				send_to_char(Gbuf1, ch, LOG_PRIVATE);
 			}
 			else
@@ -1002,24 +1095,28 @@ void do_tell(P_char ch, char *argument, int cmd)
 				send_to_char("Ok.\r\n", ch);
 			}
 			if (IS_SET(vict->specials.act, PLR_AFK))
-				act("$E is away from $S keyboard right now..", FALSE, ch, 0, vict, TO_CHAR);
+				act("$E is away from $S keyboard right now..", FALSE, ch, 0, vict,
+				    TO_CHAR);
 			if (!CAN_SEE(vict, ch))
 				act("&+L$E cannot see you..&n", FALSE, ch, 0, vict, TO_CHAR);
 
 			if (get_property("logs.chat.status", 0.000) && IS_PC(ch) && IS_PC(vict))
-				logit(LOG_CHAT, "%s tells %s '%s'", GET_NAME(ch), GET_NAME(vict), message);
+				logit(LOG_CHAT, "%s tells %s '%s'", GET_NAME(ch), GET_NAME(vict),
+				      message);
 		}
 
-		snprintf(Gbuf1,
-		         MAX_STRING_LENGTH,
-		         "&+W%s&+W tells you %s'%s'&N\r\n",
-		         ((CAN_SEE(vict, ch) || racewar(vict, ch)) ? (IS_PC(ch) ? (ch)->player.name : (ch)->player.short_descr) : "Someone"),
-		         language_known(ch, vict),
-		         language_CRYPT(ch, vict, message));
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+W%s&+W tells you %s'%s'&N\r\n",
+			 ((CAN_SEE(vict, ch) || racewar(vict, ch)) ?
+				  (IS_PC(ch) ? (ch)->player.name : (ch)->player.short_descr) :
+				  "Someone"),
+			 language_known(ch, vict), language_CRYPT(ch, vict, message));
 		send_to_char(Gbuf1, vict, LOG_PRIVATE);
 
 		/* Send to web client via GMCP */
-		gmcp_comm_channel(vict, "tell", (CAN_SEE(vict, ch) || racewar(vict, ch)) ? GET_NAME(ch) : "Someone", message);
+		gmcp_comm_channel(vict, "tell",
+				  (CAN_SEE(vict, ch) || racewar(vict, ch)) ? GET_NAME(ch) :
+									     "Someone",
+				  message);
 
 		/* Also send to sender so they see their own tell in chat panel */
 		if (ch->desc && ch != vict)
@@ -1030,7 +1127,8 @@ void do_tell(P_char ch, char *argument, int cmd)
 		}
 
 		if (IS_SET(vict->specials.act, PLR_AFK))
-			act("$n sent you a tell, and your &+RAFK&N is toggled on!", FALSE, ch, 0, vict, TO_VICT);
+			act("$n sent you a tell, and your &+RAFK&N is toggled on!", FALSE, ch, 0,
+			    vict, TO_VICT);
 
 		if (IS_PC(vict))
 			vict->only.pc->last_tell = ch->player.name;
@@ -1046,9 +1144,9 @@ void do_tell(P_char ch, char *argument, int cmd)
 void do_whisper(P_char ch, char *argument, int cmd)
 {
 	P_char vict;
-	char   name[MAX_INPUT_LENGTH], message[MAX_STRING_LENGTH];
-	char   Gbuf1[MAX_STRING_LENGTH], dispname[MAX_STRING_LENGTH];
-	char   escaped_text[MAX_STRING_LENGTH];
+	char name[MAX_INPUT_LENGTH], message[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH], dispname[MAX_STRING_LENGTH];
+	char escaped_text[MAX_STRING_LENGTH];
 
 	half_chop(argument, name, message);
 
@@ -1065,7 +1163,8 @@ void do_whisper(P_char ch, char *argument, int cmd)
 	{
 		return;
 	}
-	else if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) && !IS_TRUSTED(ch) && !IS_NPC(ch))
+	else if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) &&
+		 !IS_TRUSTED(ch) && !IS_NPC(ch))
 	{
 		send_to_char("That would be too difficult considering the circumstances...", ch);
 		return;
@@ -1077,7 +1176,8 @@ void do_whisper(P_char ch, char *argument, int cmd)
 	}
 	else if (IS_AFFECTED4(vict, AFF4_DEAF))
 	{
-		act("$n whispers you something but you can't hear what!", FALSE, vict, 0, ch, TO_VICT);
+		act("$n whispers you something but you can't hear what!", FALSE, vict, 0, ch,
+		    TO_VICT);
 	}
 	else if (vict == ch && !IS_ILLITHID(ch) && !IS_PILLITHID(ch))
 	{
@@ -1096,24 +1196,28 @@ void do_whisper(P_char ch, char *argument, int cmd)
 		if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 		{
 			if (IS_ILLITHID(ch) || IS_PILLITHID(ch))
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "You softly project '%s' to %s\r\n", message, dispname);
+				snprintf(Gbuf1, MAX_STRING_LENGTH,
+					 "You softly project '%s' to %s\r\n", message, dispname);
 			else if (IS_NPC(ch) && !(GET_CLASS(vict, CLASS_DRUID)))
 			{
 				send_to_char("They wouldn't understand you anyway!\r\n", ch);
 				return;
 			}
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "You whisper '%s' to %s\r\n", message, dispname);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "You whisper '%s' to %s\r\n", message,
+				 dispname);
 			send_to_char(Gbuf1, ch);
 		}
 		else
 			send_to_char("Ok.\r\n", ch);
 
 		if (get_property("logs.chat.status", 0.000) && IS_PC(ch) && IS_PC(vict))
-			logit(LOG_CHAT, "%s whispers to %s '%s'", GET_NAME(ch), GET_NAME(vict), message);
+			logit(LOG_CHAT, "%s whispers to %s '%s'", GET_NAME(ch), GET_NAME(vict),
+			      message);
 		if (IS_ILLITHID(ch) || IS_PILLITHID(ch))
 		{
 			escape_act_dollars(escaped_text, sizeof(escaped_text), message);
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "A soft voice in your head whispers '%s'", escaped_text);
+			snprintf(Gbuf1, MAX_STRING_LENGTH,
+				 "A soft voice in your head whispers '%s'", escaped_text);
 			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT);
 		}
 		else
@@ -1123,8 +1227,10 @@ void do_whisper(P_char ch, char *argument, int cmd)
 				send_to_char("They wouldn't understand you!\r\n", ch);
 				return;
 			}
-			escape_act_dollars(escaped_text, sizeof(escaped_text), language_CRYPT(ch, vict, message));
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "$n whispers to you, %s'%s'", language_known(ch, vict), escaped_text);
+			escape_act_dollars(escaped_text, sizeof(escaped_text),
+					   language_CRYPT(ch, vict, message));
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "$n whispers to you, %s'%s'",
+				 language_known(ch, vict), escaped_text);
 			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT);
 			act("$n whispers something to $N.", FALSE, ch, 0, vict, TO_NOTVICT);
 			nq_action_check(ch, vict, message);
@@ -1135,9 +1241,9 @@ void do_whisper(P_char ch, char *argument, int cmd)
 void do_ask(P_char ch, char *argument, int cmd)
 {
 	P_char vict;
-	char   name[MAX_INPUT_LENGTH], message[MAX_STRING_LENGTH];
-	char   Gbuf1[MAX_STRING_LENGTH];
-	char   escaped_text[MAX_STRING_LENGTH];
+	char name[MAX_INPUT_LENGTH], message[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
+	char escaped_text[MAX_STRING_LENGTH];
 
 	half_chop(argument, name, message);
 
@@ -1151,7 +1257,8 @@ void do_ask(P_char ch, char *argument, int cmd)
 		send_to_char("No-one by that name here...\r\n", ch);
 		return;
 	}
-	else if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) && !IS_TRUSTED(ch) && !IS_NPC(ch))
+	else if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) &&
+		 !IS_TRUSTED(ch) && !IS_NPC(ch))
 	{
 		send_to_char("Too difficult to do here...", ch);
 		return;
@@ -1197,13 +1304,16 @@ void do_ask(P_char ch, char *argument, int cmd)
 		if (IS_ILLITHID(ch) || IS_PILLITHID(ch))
 		{
 			escape_act_dollars(escaped_text, sizeof(escaped_text), message);
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "A voice in your head asks '%s'", escaped_text);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "A voice in your head asks '%s'",
+				 escaped_text);
 			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT);
 		}
 		else
 		{
-			escape_act_dollars(escaped_text, sizeof(escaped_text), language_CRYPT(ch, vict, message));
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "$n asks you %s'%s'", language_known(ch, vict), escaped_text);
+			escape_act_dollars(escaped_text, sizeof(escaped_text),
+					   language_CRYPT(ch, vict, message));
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "$n asks you %s'%s'",
+				 language_known(ch, vict), escaped_text);
 			act(Gbuf1, FALSE, ch, 0, vict, TO_VICT | ACT_SILENCEABLE);
 			act("$n asks $N a question.", FALSE, ch, 0, vict, TO_NOTVICT);
 		}
@@ -1218,8 +1328,8 @@ void do_ask(P_char ch, char *argument, int cmd)
 void do_write(P_char ch, char *argument, int cmd)
 {
 	P_obj paper = 0, pen = 0;
-	char  papername[MAX_INPUT_LENGTH], penname[MAX_INPUT_LENGTH];
-	char  Gbuf1[MAX_STRING_LENGTH];
+	char papername[MAX_INPUT_LENGTH], penname[MAX_INPUT_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	argument_interpreter(argument, papername, penname);
 
@@ -1250,13 +1360,14 @@ void do_write(P_char ch, char *argument, int cmd)
 	{ /* there was one arg.let's see what we can find */
 		if (!(paper = get_obj_in_list_vis(ch, papername, ch->carrying)))
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "There is no %s in your inventory.\r\n", papername);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "There is no %s in your inventory.\r\n",
+				 papername);
 			send_to_char(Gbuf1, ch);
 			return;
 		}
 		if (paper->type == ITEM_PEN)
 		{ /* oops, a pen..  */
-			pen   = paper;
+			pen = paper;
 			paper = 0;
 		}
 		else if (paper->type != ITEM_NOTE)
@@ -1267,7 +1378,8 @@ void do_write(P_char ch, char *argument, int cmd)
 		/* one object was found. Now for the other one.  */
 		if (!ch->equipment[HOLD])
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "You can't write with a %s alone.\r\n", papername);
+			snprintf(Gbuf1, MAX_STRING_LENGTH, "You can't write with a %s alone.\r\n",
+				 papername);
 			send_to_char(Gbuf1, ch);
 			return;
 		}
@@ -1314,7 +1426,7 @@ void do_write(P_char ch, char *argument, int cmd)
 		/* pointer so that we can reallocate as needed (hopefully that made */
 		/* sense :>) */
 		paper->str_mask |= STRUNG_DESC3;
-		ch->desc->str     = &paper->action_description;
+		ch->desc->str = &paper->action_description;
 		ch->desc->max_str = MAX_NOTE_LENGTH;
 	}
 }
@@ -1340,7 +1452,7 @@ char *fread_action(FILE *fl)
 			return (0);
 		{
 			*(buf + strlen(buf) - 1) = '\0';
-			rslt                     = str_dup(buf);
+			rslt = str_dup(buf);
 			return (rslt);
 		}
 	}
@@ -1349,12 +1461,13 @@ char *fread_action(FILE *fl)
 void boot_social_messages(void)
 {
 	FILE *fl;
-	int   tmp, hide, min_pos;
+	int tmp, hide, min_pos;
 
 	if (!(fl = fopen(SOCMESS_FILE, "r")))
 	{
 		logit(LOG_EXIT, "boot_social_messages");
-		fatal_boot_error("actcomm", "boot_social_messages: could not open %s: %s", SOCMESS_FILE, strerror(errno));
+		fatal_boot_error("actcomm", "boot_social_messages: could not open %s: %s",
+				 SOCMESS_FILE, strerror(errno));
 	}
 	for (;;)
 	{
@@ -1371,52 +1484,52 @@ void boot_social_messages(void)
 		 */
 		switch (min_pos)
 		{
-			case 0: /*
+		case 0: /*
 			         * was POSITION_DEAD
 			         */
-				min_pos = STAT_DEAD + POS_PRONE;
-				break;
-			case 1: /*
+			min_pos = STAT_DEAD + POS_PRONE;
+			break;
+		case 1: /*
 			         * was POSITION_MORTALLYW
 			         */
-				min_pos = STAT_DYING + POS_PRONE;
-				break;
-			case 2: /*
+			min_pos = STAT_DYING + POS_PRONE;
+			break;
+		case 2: /*
 			         * was POSITION_INCAP
 			         */
-				min_pos = STAT_INCAP + POS_PRONE;
-				break;
-			case 3: /*
+			min_pos = STAT_INCAP + POS_PRONE;
+			break;
+		case 3: /*
 			         * was POSITION_STUNNED
 			         */
-				min_pos = STAT_SLEEPING + POS_PRONE;
-				break;
-			case 4: /*
+			min_pos = STAT_SLEEPING + POS_PRONE;
+			break;
+		case 4: /*
 			         * was POSITION_SLEEPING
 			         */
-				min_pos = STAT_SLEEPING + POS_PRONE;
-				break;
-			case 5: /*
+			min_pos = STAT_SLEEPING + POS_PRONE;
+			break;
+		case 5: /*
 			         * was POSITION_RESTING
 			         */
-				min_pos = STAT_RESTING + POS_KNEELING;
-				break;
-			case 6: /*
+			min_pos = STAT_RESTING + POS_KNEELING;
+			break;
+		case 6: /*
 			         * was POSITION_SITTING
 			         */
-				min_pos = STAT_RESTING + POS_SITTING;
-				break;
-			case 7: /*
+			min_pos = STAT_RESTING + POS_SITTING;
+			break;
+		case 7: /*
 			         * was POSITION_FIGHTING
 			         */
-			case 8: /*
+		case 8: /*
 			         * was POSITION_STANDING
 			         */
-				min_pos = STAT_NORMAL + POS_STANDING;
-				break;
-			default:
-				min_pos = STAT_DEAD + POS_PRONE;
-				break;
+			min_pos = STAT_NORMAL + POS_STANDING;
+			break;
+		default:
+			min_pos = STAT_DEAD + POS_PRONE;
+			break;
 		}
 
 		/*
@@ -1434,11 +1547,11 @@ void boot_social_messages(void)
 		/*
 		 * read the stuff
 		 */
-		soc_mess_list[list_top].act_nr              = tmp;
-		soc_mess_list[list_top].hide                = hide;
+		soc_mess_list[list_top].act_nr = tmp;
+		soc_mess_list[list_top].hide = hide;
 		soc_mess_list[list_top].min_victim_position = min_pos;
 
-		soc_mess_list[list_top].char_no_arg   = fread_action(fl);
+		soc_mess_list[list_top].char_no_arg = fread_action(fl);
 		soc_mess_list[list_top].others_no_arg = fread_action(fl);
 
 		soc_mess_list[list_top].char_found = fread_action(fl);
@@ -1450,7 +1563,7 @@ void boot_social_messages(void)
 			continue;
 
 		soc_mess_list[list_top].others_found = fread_action(fl);
-		soc_mess_list[list_top].vict_found   = fread_action(fl);
+		soc_mess_list[list_top].vict_found = fread_action(fl);
 
 		soc_mess_list[list_top].not_found = fread_action(fl);
 
@@ -1502,9 +1615,9 @@ void do_action(P_char ch, char *argument, int cmd)
 	/*
 	 * leave tmp as well, do_action called from lots of places too.
 	 */
-	char                 buf[MAX_INPUT_LENGTH];
+	char buf[MAX_INPUT_LENGTH];
 	struct social_messg *act_mesg;
-	P_char               vict;
+	P_char vict;
 
 	/*** First section will intercept commands, and reroute them if needed ***/
 	if (cmd == CMD_ROAR)
@@ -1579,7 +1692,8 @@ void do_action(P_char ch, char *argument, int cmd)
 	{
 		if (!MIN_POS(vict, act_mesg->min_victim_position))
 		{
-			act("$N is not in a proper position for that.", FALSE, ch, 0, vict, TO_CHAR);
+			act("$N is not in a proper position for that.", FALSE, ch, 0, vict,
+			    TO_CHAR);
 		}
 		else
 		{
@@ -1594,7 +1708,7 @@ void do_insult(P_char ch, char *argument, int cmd)
 {
 	/*  static char buf[100];*/
 	P_char victim;
-	char   Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	one_argument(argument, Gbuf1);
 
@@ -1614,36 +1728,42 @@ void do_insult(P_char ch, char *argument, int cmd)
 
 				switch (number(0, 2))
 				{
-					case 0:
+				case 0:
+				{
+					if (GET_SEX(ch) == SEX_MALE)
 					{
-						if (GET_SEX(ch) == SEX_MALE)
-						{
-							if (GET_SEX(victim) == SEX_MALE)
-								act("$n accuses you of fighting like a woman!", FALSE, ch, 0, victim, TO_VICT);
-							else
-								act("$n says that women can't fight.", FALSE, ch, 0, victim, TO_VICT);
-						}
+						if (GET_SEX(victim) == SEX_MALE)
+							act("$n accuses you of fighting like a woman!",
+							    FALSE, ch, 0, victim, TO_VICT);
 						else
-						{ /*
+							act("$n says that women can't fight.",
+							    FALSE, ch, 0, victim, TO_VICT);
+					}
+					else
+					{ /*
 						   * Ch == Woman
 						   */
-							if (GET_SEX(victim) == SEX_MALE)
-								act("$n accuses you of having the smallest.... (brain?)", FALSE, ch, 0, victim, TO_VICT);
-							else
-								act("$n tells you that you'd lose a beauty contest against a troll.", FALSE, ch, 0, victim, TO_VICT);
-						}
+						if (GET_SEX(victim) == SEX_MALE)
+							act("$n accuses you of having the smallest.... (brain?)",
+							    FALSE, ch, 0, victim, TO_VICT);
+						else
+							act("$n tells you that you'd lose a beauty contest against a troll.",
+							    FALSE, ch, 0, victim, TO_VICT);
 					}
-					break;
-					case 1:
-					{
-						act("$n calls your mother a bitch!", FALSE, ch, 0, victim, TO_VICT);
-					}
-					break;
-					default:
-					{
-						act("$n tells you to get lost!", FALSE, ch, 0, victim, TO_VICT);
-					}
-					break;
+				}
+				break;
+				case 1:
+				{
+					act("$n calls your mother a bitch!", FALSE, ch, 0, victim,
+					    TO_VICT);
+				}
+				break;
+				default:
+				{
+					act("$n tells you to get lost!", FALSE, ch, 0, victim,
+					    TO_VICT);
+				}
+				break;
 				} /*
 				   * end switch
 				   */
@@ -1665,12 +1785,13 @@ void do_insult(P_char ch, char *argument, int cmd)
 void boot_pose_messages(void)
 {
 	FILE *fl;
-	int   counter, m_class;
+	int counter, m_class;
 
 	if (!(fl = fopen(POSEMESS_FILE, "r")))
 	{
 		logit(LOG_EXIT, "boot_pose_messages");
-		fatal_boot_error("actcomm", "boot_pose_messages: could not open %s: %s", POSEMESS_FILE, strerror(errno));
+		fatal_boot_error("actcomm", "boot_pose_messages: could not open %s: %s",
+				 POSEMESS_FILE, strerror(errno));
 	}
 	for (counter = 0; counter < MAX_MESSAGES; counter++)
 		pose_messages[counter].level = -1;
@@ -1683,7 +1804,7 @@ void boot_pose_messages(void)
 		for (m_class = 0; m_class < 4; m_class++)
 		{
 			pose_messages[counter].poser_msg[m_class] = fread_action(fl);
-			pose_messages[counter].room_msg[m_class]  = fread_action(fl);
+			pose_messages[counter].room_msg[m_class] = fread_action(fl);
 		}
 	}
 
@@ -1694,14 +1815,16 @@ void do_pose(P_char ch, char *argument, int cmd)
 {
 	::byte to_pose;
 	::byte counter;
-	int    m_class;
+	int m_class;
 
 	if (IS_NPC(ch))
 	{
 		send_to_char("You can't do that.\r\n", ch);
 		return;
 	}
-	for (counter = 0; (pose_messages[(int)counter].level < GET_LEVEL(ch)) && (pose_messages[(int)counter].level > 0); counter++)
+	for (counter = 0; (pose_messages[(int)counter].level < GET_LEVEL(ch)) &&
+			  (pose_messages[(int)counter].level > 0);
+	     counter++)
 		;
 	counter--;
 
@@ -1713,13 +1836,17 @@ void do_pose(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (GET_CLASS(ch, CLASS_WARRIOR) || GET_CLASS(ch, CLASS_RANGER) || GET_CLASS(ch, CLASS_BERSERKER) || GET_CLASS(ch, CLASS_REAVER) || GET_CLASS(ch, CLASS_PALADIN) ||
-	    GET_CLASS(ch, CLASS_ANTIPALADIN))
+	if (GET_CLASS(ch, CLASS_WARRIOR) || GET_CLASS(ch, CLASS_RANGER) ||
+	    GET_CLASS(ch, CLASS_BERSERKER) || GET_CLASS(ch, CLASS_REAVER) ||
+	    GET_CLASS(ch, CLASS_PALADIN) || GET_CLASS(ch, CLASS_ANTIPALADIN))
 		m_class = 3;
-	else if (GET_CLASS(ch, CLASS_CLERIC) || GET_CLASS(ch, CLASS_MONK) || GET_CLASS(ch, CLASS_DRUID) || GET_CLASS(ch, CLASS_SHAMAN))
+	else if (GET_CLASS(ch, CLASS_CLERIC) || GET_CLASS(ch, CLASS_MONK) ||
+		 GET_CLASS(ch, CLASS_DRUID) || GET_CLASS(ch, CLASS_SHAMAN))
 		m_class = 1;
-	else if (GET_CLASS(ch, CLASS_SORCERER) || GET_CLASS(ch, CLASS_NECROMANCER) || GET_CLASS(ch, CLASS_CONJURER) || GET_CLASS(ch, CLASS_PSIONICIST) || GET_CLASS(ch, CLASS_MINDFLAYER) ||
-	         GET_CLASS(ch, CLASS_SUMMONER) || GET_CLASS(ch, CLASS_ILLUSIONIST))
+	else if (GET_CLASS(ch, CLASS_SORCERER) || GET_CLASS(ch, CLASS_NECROMANCER) ||
+		 GET_CLASS(ch, CLASS_CONJURER) || GET_CLASS(ch, CLASS_PSIONICIST) ||
+		 GET_CLASS(ch, CLASS_MINDFLAYER) || GET_CLASS(ch, CLASS_SUMMONER) ||
+		 GET_CLASS(ch, CLASS_ILLUSIONIST))
 		m_class = 0;
 	else
 		m_class = 2; // bard, rogue, assassin, merc, anything else
@@ -1763,9 +1890,9 @@ void do_pose(P_char ch, char *argument, int cmd)
 void do_yell(P_char ch, char *argument, int cmd)
 {
 	P_desc i;
-	char   Gbuf1[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
-	char   escaped_text[MAX_STRING_LENGTH];
-	int    range;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
+	char escaped_text[MAX_STRING_LENGTH];
+	int range;
 
 	/*
 	 * Check to see if the player is silenced by the gods
@@ -1789,10 +1916,12 @@ void do_yell(P_char ch, char *argument, int cmd)
 	}
 	if ((IS_ILLITHID(ch) || IS_PILLITHID(ch)) && !IS_TRUSTED(ch))
 	{
-		send_to_char("You cannot project your thoughts to so many that you cannot see.\r\n", ch);
+		send_to_char("You cannot project your thoughts to so many that you cannot see.\r\n",
+			     ch);
 		return;
 	}
-	if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) && !IS_TRUSTED(ch) && !IS_NPC(ch))
+	if ((IS_ROOM(ch->in_room, ROOM_UNDERWATER) || ch->specials.z_cord < 0) && !IS_TRUSTED(ch) &&
+	    !IS_NPC(ch))
 	{
 		send_to_char("You shout at the top of your lungs and inhale some water!\r\n", ch);
 		act("$n mouth opens wide and huge bubbles come forth...", TRUE, ch, 0, 0, TO_ROOM);
@@ -1824,12 +1953,17 @@ void do_yell(P_char ch, char *argument, int cmd)
 		/* Send the message to everyone in the zone */
 		for (i = descriptor_list; i; i = i->next)
 		{
-			if (i->character && (i->character != ch) && !is_silent(i->character, FALSE) && !IS_SET(i->character->specials.act, PLR_NOSHOUT) && !i->connected &&
-			    (!IS_ROOM(ch->in_room, ROOM_INDOORS) || (i->character->in_room == ch->in_room)))
+			if (i->character && (i->character != ch) &&
+			    !is_silent(i->character, FALSE) &&
+			    !IS_SET(i->character->specials.act, PLR_NOSHOUT) && !i->connected &&
+			    (!IS_ROOM(ch->in_room, ROOM_INDOORS) ||
+			     (i->character->in_room == ch->in_room)))
 			{
 				if (world[i->character->in_room].zone != world[ch->in_room].zone)
 					continue;
-				if (IS_MAP_ROOM(ch->in_room) && calculate_map_distance(ch->in_room, i->character->in_room) > range)
+				if (IS_MAP_ROOM(ch->in_room) &&
+				    calculate_map_distance(ch->in_room, i->character->in_room) >
+					    range)
 					continue;
 				/*
 				        if (racewar(ch, i->character))
@@ -1840,8 +1974,10 @@ void do_yell(P_char ch, char *argument, int cmd)
 				        else
 				*/
 				//{
-				escape_act_dollars(escaped_text, sizeof(escaped_text), language_CRYPT(ch, i->character, argument));
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "$n shouts %s'%s'", language_known(ch, i->character), escaped_text);
+				escape_act_dollars(escaped_text, sizeof(escaped_text),
+						   language_CRYPT(ch, i->character, argument));
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "$n shouts %s'%s'",
+					 language_known(ch, i->character), escaped_text);
 				act(Gbuf1, 0, ch, 0, i->character, TO_VICT | ACT_SILENCEABLE);
 				//}
 				/* zone to zone method */
@@ -1856,8 +1992,8 @@ void do_beep(P_char ch, char *argument, int cmd)
 {
 	P_char vict;
 	P_desc d;
-	char   name[MAX_INPUT_LENGTH];
-	char   Gbuf1[MAX_STRING_LENGTH];
+	char name[MAX_INPUT_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	one_argument(argument, name);
 
@@ -1897,7 +2033,8 @@ void do_beep(P_char ch, char *argument, int cmd)
 	// Using descriptor list as in do_tell.
 	for (d = descriptor_list; d; d = d->next)
 	{
-		if (!d->character || d->connected || !d->character->player.name || !isname(d->character->player.name, name) || !CAN_SEE_Z_CORD(ch, d->character))
+		if (!d->character || d->connected || !d->character->player.name ||
+		    !isname(d->character->player.name, name) || !CAN_SEE_Z_CORD(ch, d->character))
 		{
 			continue;
 		}
@@ -1906,7 +2043,9 @@ void do_beep(P_char ch, char *argument, int cmd)
 	}
 
 	// No beeping across racewar sides, nor NPCs (stops crashbug).
-	if (vict && ((!IS_TRUSTED(ch) && !IS_TRUSTED(vict) && GET_RACEWAR(ch) != GET_RACEWAR(vict)) || IS_NPC(vict)))
+	if (vict &&
+	    ((!IS_TRUSTED(ch) && !IS_TRUSTED(vict) && GET_RACEWAR(ch) != GET_RACEWAR(vict)) ||
+	     IS_NPC(vict)))
 	{
 		vict = NULL;
 	}
@@ -1926,13 +2065,17 @@ void do_beep(P_char ch, char *argument, int cmd)
 	{
 		act("$E can't hear you.", FALSE, ch, 0, vict, TO_CHAR);
 	}
-	else if ((IS_ROOM(vict->in_room, ROOM_UNDERWATER) || vict->specials.z_cord < 0) && !IS_TRUSTED(vict))
+	else if ((IS_ROOM(vict->in_room, ROOM_UNDERWATER) || vict->specials.z_cord < 0) &&
+		 !IS_TRUSTED(vict))
 	{
 		act("$E can't hear you.", FALSE, ch, 0, vict, TO_CHAR);
 		return;
 	}
-	else if (!IS_TRUSTED(ch) && ((IS_SET(zone_table[world[ch->in_room].zone].flags, ZONE_SILENT) || IS_ROOM(ch->in_room, ROOM_SILENT)) || GET_STAT(vict) < STAT_RESTING ||
-	                             (PLR3_FLAGGED(vict, PLR3_NOBEEP) && !is_linked_from(vict, ch, LNK_CONSENT))))
+	else if (!IS_TRUSTED(ch) &&
+		 ((IS_SET(zone_table[world[ch->in_room].zone].flags, ZONE_SILENT) ||
+		   IS_ROOM(ch->in_room, ROOM_SILENT)) ||
+		  GET_STAT(vict) < STAT_RESTING ||
+		  (PLR3_FLAGGED(vict, PLR3_NOBEEP) && !is_linked_from(vict, ch, LNK_CONSENT))))
 	{
 		act("No-one by that name here...", FALSE, ch, 0, vict, TO_CHAR);
 		if (IS_NPC(ch) && IS_SET(vict->specials.act, PLR_NOTELL))
@@ -1955,7 +2098,8 @@ void do_beep(P_char ch, char *argument, int cmd)
 		{
 			if (IS_SET(ch->specials.act, PLR_ECHO) || IS_NPC(ch))
 			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+WYou beep %s!\r\n", J_NAME(vict));
+				snprintf(Gbuf1, MAX_STRING_LENGTH, "&+WYou beep %s!\r\n",
+					 J_NAME(vict));
 				send_to_char(Gbuf1, ch, LOG_NONE);
 			}
 			else
@@ -1965,7 +2109,8 @@ void do_beep(P_char ch, char *argument, int cmd)
 			CharWait(ch, PULSE_VIOLENCE);
 			if (IS_SET(vict->specials.act, PLR_AFK))
 			{
-				act("$E is away from $S keyboard right now..", FALSE, ch, 0, vict, TO_CHAR);
+				act("$E is away from $S keyboard right now..", FALSE, ch, 0, vict,
+				    TO_CHAR);
 			}
 			if (!CAN_SEE(vict, ch))
 			{
@@ -1977,11 +2122,13 @@ void do_beep(P_char ch, char *argument, int cmd)
 			}
 		}
 
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+W%s&+W beeps you.\a\r\n", CAN_SEE(vict, ch) ? J_NAME(ch) : "Someone");
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+W%s&+W beeps you.\a\r\n",
+			 CAN_SEE(vict, ch) ? J_NAME(ch) : "Someone");
 		send_to_char(Gbuf1, vict, LOG_NONE);
 		if (IS_SET(vict->specials.act, PLR_AFK))
 		{
-			act("$n beeped you, and your &+RAFK&N is toggled on!", FALSE, ch, 0, vict, TO_VICT);
+			act("$n beeped you, and your &+RAFK&N is toggled on!", FALSE, ch, 0, vict,
+			    TO_VICT);
 		}
 	}
 }

@@ -22,7 +22,7 @@ struct ZombieGame
 	P_obj generator;
 
 	vector<P_char> zombies;
-	int            zombies_to_load;
+	int zombies_to_load;
 
 	int zombies_alive()
 	{
@@ -33,10 +33,10 @@ struct ZombieGame
 	}
 };
 
-int         zgame_load_zombie(P_obj obj);
-void        zgame_clear_zombies(P_obj obj);
-int         zg_count_zombies(P_obj obj);
-int         zgame_mob_proc(P_char ch, P_char pl, int cmd, char *arg);
+int zgame_load_zombie(P_obj obj);
+void zgame_clear_zombies(P_obj obj);
+int zg_count_zombies(P_obj obj);
+int zgame_mob_proc(P_char ch, P_char pl, int cmd, char *arg);
 ZombieGame *get_zgame_from_obj(P_obj obj);
 
 #endif

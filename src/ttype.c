@@ -25,8 +25,8 @@
 #include "telnet.h"
 
 /* telnet sequences */
-static const unsigned char ttype_do[]   = {IAC, DO, TELOPT_TTYPE};
-static const unsigned char ttype_send[] = {IAC, SB, TELOPT_TTYPE, TELQUAL_SEND, IAC, SE};
+static const unsigned char ttype_do[] = { IAC, DO, TELOPT_TTYPE };
+static const unsigned char ttype_send[] = { IAC, SB, TELOPT_TTYPE, TELQUAL_SEND, IAC, SE };
 
 /* internal helpers */
 static void ttype_send_request(P_desc d);
@@ -54,7 +54,7 @@ void ttype_handle_negotiation(P_desc d, int cmd)
 
 	if (cmd == WILL)
 	{
-		d->ttype_state   = TTYPE_CYCLING;
+		d->ttype_state = TTYPE_CYCLING;
 		d->ttype_last[0] = '\0';
 		ttype_send_request(d);
 	}
@@ -80,7 +80,7 @@ static void ttype_send_request(P_desc d)
  */
 static void parse_mtts_bitvector(P_desc d, const char *str)
 {
-	long  flags;
+	long flags;
 	char *endptr;
 
 	if (!d || !str)
@@ -108,7 +108,7 @@ static void parse_mtts_bitvector(P_desc d, const char *str)
 void ttype_handle_subnegotiation(P_desc d, const unsigned char *data, int len)
 {
 	char term_type[128];
-	int  i, copy_len, offset;
+	int i, copy_len, offset;
 
 	if (!d || d->websocket || !data || len < 1)
 		return;
@@ -119,12 +119,12 @@ void ttype_handle_subnegotiation(P_desc d, const unsigned char *data, int len)
 	/* check for IS (0) byte - if present, skip it */
 	if (data[0] == TELQUAL_IS)
 	{
-		offset   = 1;
+		offset = 1;
 		copy_len = len - 1;
 	}
 	else
 	{
-		offset   = 0;
+		offset = 0;
 		copy_len = len;
 	}
 
@@ -154,7 +154,8 @@ void ttype_handle_subnegotiation(P_desc d, const unsigned char *data, int len)
 
 	/* the list should be complete if it goes back to the first entry, but check for looping on
 	   the last response, too */
-	if (d->ttype_last[0] && !(strcmp(term_type, d->ttype_last) && strcmp(term_type, d->client_name)))
+	if (d->ttype_last[0] &&
+	    !(strcmp(term_type, d->ttype_last) && strcmp(term_type, d->client_name)))
 	{
 		d->ttype_state = TTYPE_COMPLETE;
 		return;
@@ -193,11 +194,11 @@ void check_cp437(P_desc d)
 		d->cp437 = !(d->mtts_flags & MTTS_UTF8);
 	else if (!d->client_name[0])
 		d->cp437 = 0;
-	else if (strncasecmp(d->client_name, "ZMUD", 4) == 0
-		 || strncasecmp(d->client_name, "CMUD", 4) == 0
-		 || strncasecmp(d->client_name, "VT", 2) == 0
-		 || strncasecmp(d->client_name, "ANSI", 4) == 0
-		 || strncasecmp(d->client_name, "DUMB", 4) == 0)
+	else if (strncasecmp(d->client_name, "ZMUD", 4) == 0 ||
+		 strncasecmp(d->client_name, "CMUD", 4) == 0 ||
+		 strncasecmp(d->client_name, "VT", 2) == 0 ||
+		 strncasecmp(d->client_name, "ANSI", 4) == 0 ||
+		 strncasecmp(d->client_name, "DUMB", 4) == 0)
 	{
 		d->cp437 = 1;
 	}

@@ -13,7 +13,7 @@
    extern variables
  */
 
-extern P_room            world;
+extern P_room world;
 extern struct zone_data *zone_table;
 
 /*
@@ -38,8 +38,11 @@ int morgs_protect(P_char ch, P_char pl, int cmd, char *arg)
 	{
 		if (GET_LEVEL(pl) > 46 && !IS_TRUSTED(pl))
 		{
-			act("The &+ghuge troll bouncer&n snickers at $n, stopping them with his hand.", FALSE, pl, 0, 0, TO_ROOM);
-			send_to_char("The &+ghuge troll bouncer&n tells you in troll '&+WGet outta 'ere welp! We be tryin to drink 'ere!&n'\r\n", pl);
+			act("The &+ghuge troll bouncer&n snickers at $n, stopping them with his hand.",
+			    FALSE, pl, 0, 0, TO_ROOM);
+			send_to_char(
+				"The &+ghuge troll bouncer&n tells you in troll '&+WGet outta 'ere welp! We be tryin to drink 'ere!&n'\r\n",
+				pl);
 			return TRUE;
 		}
 	}

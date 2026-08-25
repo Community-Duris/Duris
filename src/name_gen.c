@@ -34,8 +34,8 @@
 /****************************************************************************/
 
 #define SYLLABLES_PER_SECTION 100
-#define SYLLABLE_LENGTH       100
-#define NAME_LENGTH           20
+#define SYLLABLE_LENGTH 100
+#define NAME_LENGTH 20
 
 /****************************************************************************/
 /* main                                                                     */
@@ -43,19 +43,19 @@
 int get_name(char return_namn[256], int SEX, uint64_t id)
 {
 	time_t t;
-	int    loop;
-	int    antal_start = 0;
-	int    antal_mitt  = 0;
-	int    antal_slut  = 0;
-	char   tempstring[151];
+	int loop;
+	int antal_start = 0;
+	int antal_mitt = 0;
+	int antal_slut = 0;
+	char tempstring[151];
 	tempstring[0] = '\0';
-	char  filnamn[256];
-	char  start[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* start syllable               */
-	char  mitt[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH];  /* middle syllable              */
-	char  slut[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH];  /* ending syllable              */
-	char  namn[NAME_LENGTH];                             /* name                         */
+	char filnamn[256];
+	char start[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* start syllable               */
+	char mitt[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* middle syllable              */
+	char slut[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* ending syllable              */
+	char namn[NAME_LENGTH]; /* name                         */
 	FILE *infil;
-	int   cgi = 0;
+	int cgi = 0;
 
 	memset(start, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);
 	memset(mitt, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);
@@ -65,36 +65,36 @@ int get_name(char return_namn[256], int SEX, uint64_t id)
 	SEX = number(0, 9);
 	switch (SEX)
 	{
-		case 0:
-			infil = fopen("lib/misc/names/f_male.nam", "r");
-			break;
-		case 1:
-			infil = fopen("lib/misc/names/f_female.nam", "r");
-			break;
-		case 2:
-			infil = fopen("lib/misc/names/ALVER.NAM", "r");
-			break;
-		case 3:
-			infil = fopen("lib/misc/names/DEVERRY2.NAM", "r");
-			break;
-		case 4:
-			infil = fopen("lib/misc/names/gnome2.nam", "r");
-			break;
-		case 5:
-			infil = fopen("lib/misc/names/kender1.nam", "r");
-			break;
-		case 6:
-			infil = fopen("lib/misc/names/orc.nam", "r");
-			break;
-		case 7:
-			infil = fopen("lib/misc/names/DVARGAR.NAM", "r");
-			break;
-		case 8:
-			infil = fopen("lib/misc/names/HOBER.NAM", "r");
-			break;
-		case 9:
-			infil = fopen("lib/misc/names/kerrel.nam", "r");
-			break;
+	case 0:
+		infil = fopen("lib/misc/names/f_male.nam", "r");
+		break;
+	case 1:
+		infil = fopen("lib/misc/names/f_female.nam", "r");
+		break;
+	case 2:
+		infil = fopen("lib/misc/names/ALVER.NAM", "r");
+		break;
+	case 3:
+		infil = fopen("lib/misc/names/DEVERRY2.NAM", "r");
+		break;
+	case 4:
+		infil = fopen("lib/misc/names/gnome2.nam", "r");
+		break;
+	case 5:
+		infil = fopen("lib/misc/names/kender1.nam", "r");
+		break;
+	case 6:
+		infil = fopen("lib/misc/names/orc.nam", "r");
+		break;
+	case 7:
+		infil = fopen("lib/misc/names/DVARGAR.NAM", "r");
+		break;
+	case 8:
+		infil = fopen("lib/misc/names/HOBER.NAM", "r");
+		break;
+	case 9:
+		infil = fopen("lib/misc/names/kerrel.nam", "r");
+		break;
 	}
 
 	if (infil == NULL)
@@ -179,8 +179,8 @@ int get_name(char return_namn[256], int SEX, uint64_t id)
 		id = number(0, 2147483647);
 
 	strcpy(namn, start[id % antal_start]); /* get a start                  */
-	strcat(namn, mitt[id % antal_mitt]);   /* get a middle                 */
-	strcat(namn, slut[id % antal_slut]);   /* get an ending                */
+	strcat(namn, mitt[id % antal_mitt]); /* get a middle                 */
+	strcat(namn, slut[id % antal_slut]); /* get an ending                */
 	snprintf(return_namn, MAX_STRING_LENGTH, "%s", namn);
 
 	return (SEX);

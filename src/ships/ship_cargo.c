@@ -28,47 +28,34 @@ float ship_contra_market_mod[NUM_PORTS][NUM_PORTS];
 // type of contraband
 const CargoData cargo_location_data[NUM_PORTS] = {
 	//  Base cargo cost, Base contra cost, Required frags for contraband
-	{42, 192, 150},
-	{46, 202, 150},
-	{40, 176, 100},
-	{56, 196, 150},
-	{36, 214, 200},
-	{44, 183, 100},
-	{38, 220, 200},
-	{52, 204, 150},
-	{48, 190, 150},
-	{69, 312, 250},
+	{ 42, 192, 150 }, { 46, 202, 150 }, { 40, 176, 100 }, { 56, 196, 150 }, { 36, 214, 200 },
+	{ 44, 183, 100 }, { 38, 220, 200 }, { 52, 204, 150 }, { 48, 190, 150 }, { 69, 312, 250 },
 };
 
 // This is the matrix that shows each port's preference for the other ports' cargo. Number is percentage.
 const int cargo_location_mod[NUM_PORTS][NUM_PORTS] = {
-//            Flann  Dalvik Menden Myrabo Torrha Sarmiz Storm  Venan' Thur'G             MIN     MAX
-/*  Flann */ {    0,   254,   190,   214,   225,   311,   211,   249,   272,   200 }, // Menden  Sarmiz
-/* Dalvik */ {  254,     0,   286,   178,   235,   257,   275,   296,   201,   208 }, // Myrabo  Venan
-/* Menden */ {  190,   286,     0,   246,   271,   290,   179,   185,   297,   252 }, // Storm   Thur'G
-/* Myrabo */ {  214,   178,   246,     0,   273,   287,   290,   247,   239,   289 }, // Dalvik  Storm
-/* Torrha */ {  225,   235,   271,   273,     0,   308,   224,   254,   203,   313 }, // Thur'G  Sarmiz
-/* Sarmiz */ {  311,   257,   290,   287,   308,     0,   243,   276,   314,   386 }, // Storm   Thur'G
-/* Storm  */ {  211,   275,   179,   290,   224,   243,     0,   231,   271,   184 }, // Menden  Myrabo
-/* Venan' */ {  249,   296,   185,   247,   254,   276,   231,     0,   252,   297 }, // Menden  Dalvik
-/* Thur'G */ {  272,   201,   297,   239,   203,   314,   271,   252,     0,   281 }, // Dalvik  Sarmiz
-/* Dera   */ {  252,   207,   283,   309,   351,   325,   406,   264,   317,     0 }  // 
-                                                              // Shortest route: Dalvik <-> Myrabolus (178)
-                                                              // Longest route: Sarmiz'Duul <-> Thur'Gurax (314)
-                                                              // Num routes: 36, Average distance: 250
+	//            Flann  Dalvik Menden Myrabo Torrha Sarmiz Storm  Venan' Thur'G             MIN     MAX
+	/*  Flann */ { 0, 254, 190, 214, 225, 311, 211, 249, 272, 200 }, // Menden  Sarmiz
+	/* Dalvik */ { 254, 0, 286, 178, 235, 257, 275, 296, 201, 208 }, // Myrabo  Venan
+	/* Menden */ { 190, 286, 0, 246, 271, 290, 179, 185, 297, 252 }, // Storm   Thur'G
+	/* Myrabo */ { 214, 178, 246, 0, 273, 287, 290, 247, 239, 289 }, // Dalvik  Storm
+	/* Torrha */ { 225, 235, 271, 273, 0, 308, 224, 254, 203, 313 }, // Thur'G  Sarmiz
+	/* Sarmiz */ { 311, 257, 290, 287, 308, 0, 243, 276, 314, 386 }, // Storm   Thur'G
+	/* Storm  */ { 211, 275, 179, 290, 224, 243, 0, 231, 271, 184 }, // Menden  Myrabo
+	/* Venan' */ { 249, 296, 185, 247, 254, 276, 231, 0, 252, 297 }, // Menden  Dalvik
+	/* Thur'G */ { 272, 201, 297, 239, 203, 314, 271, 252, 0, 281 }, // Dalvik  Sarmiz
+	/* Dera   */ { 252, 207, 283, 309, 351, 325, 406, 264, 317, 0 } //
+	// Shortest route: Dalvik <-> Myrabolus (178)
+	// Longest route: Sarmiz'Duul <-> Thur'Gurax (314)
+	// Num routes: 36, Average distance: 250
 };
 
 const char *cargo_name[NUM_PORTS] = {
-	"&+LCured &+rMeats&N",
-	"&+GExotic &+yFoods&N",
-	"&+gPine &+LPitch&N",
-	"&+CElven &+RWines&N",
-	"&+LBulk &+yLumber&N",
-	"&+LBlack&+WSteel &+wIngots&N",
-	"&+LBulk Coal&N",
-	"&+MSi&+mlk &+BCl&+Co&+Yth&N",
-	"&+YCopper &+yIngots&N",
-	"&+yDw&+Ya&+yrv&+Ye&+yn &+mMi&+Mthr&+mil&N"
+	"&+LCured &+rMeats&N",	 "&+GExotic &+yFoods&N",
+	"&+gPine &+LPitch&N",	 "&+CElven &+RWines&N",
+	"&+LBulk &+yLumber&N",	 "&+LBlack&+WSteel &+wIngots&N",
+	"&+LBulk Coal&N",	 "&+MSi&+mlk &+BCl&+Co&+Yth&N",
+	"&+YCopper &+yIngots&N", "&+yDw&+Ya&+yrv&+Ye&+yn &+mMi&+Mthr&+mil&N"
 };
 
 const char *contra_name[NUM_PORTS] = {
@@ -90,8 +77,8 @@ void reset_cargo()
 	{
 		for (int j = 0; j < NUM_PORTS; j++)
 		{
-			ship_cargo_market_mod[i][j]         = 1.0;
-			ship_contra_market_mod[i][j]        = 1.0;
+			ship_cargo_market_mod[i][j] = 1.0;
+			ship_contra_market_mod[i][j] = 1.0;
 			ship_cargo_market_mod_delayed[i][j] = 1.0;
 		}
 	}
@@ -126,25 +113,29 @@ int read_cargo()
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
 	{
-		char *type       = row[0];
-		int   port_id    = atoi(row[1]);
-		int   cargo_type = atoi(row[2]);
-		float modifier   = atof(row[3]);
+		char *type = row[0];
+		int port_id = atoi(row[1]);
+		int cargo_type = atoi(row[2]);
+		float modifier = atof(row[3]);
 
 		if (port_id < 0 || port_id >= NUM_PORTS)
 		{
-			logit(LOG_DEBUG, "read_cargo(): invalid cargo record: (%s, %d, %d, %f)", type, port_id, cargo_type, modifier);
+			logit(LOG_DEBUG, "read_cargo(): invalid cargo record: (%s, %d, %d, %f)",
+			      type, port_id, cargo_type, modifier);
 			continue;
 		}
 
 		if (!strcmp(type, "CARGO"))
 		{
-			ship_cargo_market_mod[port_id][cargo_type]         = modifier; // BOUNDEDF(get_property("ship.cargo.minPriceMod", 0.0), modifier, get_property("ship.cargo.maxPriceMod", 0.0));
-			ship_cargo_market_mod_delayed[port_id][cargo_type] = ship_cargo_market_mod[port_id][cargo_type];
+			ship_cargo_market_mod[port_id][cargo_type] =
+				modifier; // BOUNDEDF(get_property("ship.cargo.minPriceMod", 0.0), modifier, get_property("ship.cargo.maxPriceMod", 0.0));
+			ship_cargo_market_mod_delayed[port_id][cargo_type] =
+				ship_cargo_market_mod[port_id][cargo_type];
 		}
 		else if (!strcmp(type, "CONTRABAND"))
 		{
-			ship_contra_market_mod[port_id][cargo_type] = modifier; // BOUNDEDF(get_property("ship.contraband.minPriceMod", 0.0), modifier, get_property("ship.contraband.maxPriceMod", 0.0));
+			ship_contra_market_mod[port_id][cargo_type] =
+				modifier; // BOUNDEDF(get_property("ship.contraband.minPriceMod", 0.0), modifier, get_property("ship.contraband.maxPriceMod", 0.0));
 		}
 	}
 
@@ -179,17 +170,23 @@ int write_cargo()
 		return FALSE;
 	}
 
-	char buffer[MAX_STRING_LENGTH]                   = {0};
-	char cargoPrices[MAX_STRING_LENGTH / 4]          = {0};
-	char contrabandPrices[MAX_STRING_LENGTH / 4]     = {0};
-	char cargoMarketMods[MAX_STRING_LENGTH / 4]      = {0};
-	char contrabandMarketMods[MAX_STRING_LENGTH / 4] = {0};
+	char buffer[MAX_STRING_LENGTH] = { 0 };
+	char cargoPrices[MAX_STRING_LENGTH / 4] = { 0 };
+	char contrabandPrices[MAX_STRING_LENGTH / 4] = { 0 };
+	char cargoMarketMods[MAX_STRING_LENGTH / 4] = { 0 };
+	char contrabandMarketMods[MAX_STRING_LENGTH / 4] = { 0 };
 
 	// create 4 separate statements
-	snprintf(cargoPrices, ARRAY_SIZE(cargoPrices), "insert into ship_cargo_prices (type, port_id, cargo_type, price) values ");
-	snprintf(contrabandPrices, ARRAY_SIZE(contrabandPrices), "insert into ship_cargo_prices (type, port_id, cargo_type, price) values ");
-	snprintf(cargoMarketMods, ARRAY_SIZE(cargoMarketMods), "insert into ship_cargo_market_mods (type, port_id, cargo_type, modifier) values ");
-	snprintf(contrabandMarketMods, ARRAY_SIZE(contrabandMarketMods), "insert into ship_cargo_market_mods (type, port_id, cargo_type, modifier) values ");
+	snprintf(cargoPrices, ARRAY_SIZE(cargoPrices),
+		 "insert into ship_cargo_prices (type, port_id, cargo_type, price) values ");
+	snprintf(contrabandPrices, ARRAY_SIZE(contrabandPrices),
+		 "insert into ship_cargo_prices (type, port_id, cargo_type, price) values ");
+	snprintf(
+		cargoMarketMods, ARRAY_SIZE(cargoMarketMods),
+		"insert into ship_cargo_market_mods (type, port_id, cargo_type, modifier) values ");
+	snprintf(
+		contrabandMarketMods, ARRAY_SIZE(contrabandMarketMods),
+		"insert into ship_cargo_market_mods (type, port_id, cargo_type, modifier) values ");
 
 	bool isFirst = true;
 
@@ -198,25 +195,31 @@ int write_cargo()
 		char buf[1024];
 		for (int type = 0; type < NUM_PORTS; type++)
 		{
-			int price = port == type ? cargo_sell_price(port) : cargo_buy_price(port, type);
+			int price = port == type ? cargo_sell_price(port) :
+						   cargo_buy_price(port, type);
 
 			// insert into prices table
-			snprintf(buf, ARRAY_SIZE(buf), "%s('%s', %d, %d, %d)", isFirst ? "" : ",", "CARGO", port, type, price);
+			snprintf(buf, ARRAY_SIZE(buf), "%s('%s', %d, %d, %d)", isFirst ? "" : ",",
+				 "CARGO", port, type, price);
 			strncat(cargoPrices, buf, ARRAY_SIZE(buf));
-			snprintf(buf, ARRAY_SIZE(buf), "%s('%s', %d, %d, %d)", isFirst ? "" : ",", "CONTRABAND", port, type, price);
+			snprintf(buf, ARRAY_SIZE(buf), "%s('%s', %d, %d, %d)", isFirst ? "" : ",",
+				 "CONTRABAND", port, type, price);
 			strncat(contrabandPrices, buf, ARRAY_SIZE(buf));
 
 			// insert into mods table
-			snprintf(buf, ARRAY_SIZE(buf), "%s('%s', %d, %d, %f)", isFirst ? "" : ",", "CARGO", port, type, ship_cargo_market_mod[port][type]);
+			snprintf(buf, ARRAY_SIZE(buf), "%s('%s', %d, %d, %f)", isFirst ? "" : ",",
+				 "CARGO", port, type, ship_cargo_market_mod[port][type]);
 			strncat(cargoMarketMods, buf, ARRAY_SIZE(buf));
-			snprintf(buf, ARRAY_SIZE(buf), "%s('%s', %d, %d, %f)", isFirst ? "" : ",", "CONTRABAND", port, type, ship_contra_market_mod[port][type]);
+			snprintf(buf, ARRAY_SIZE(buf), "%s('%s', %d, %d, %f)", isFirst ? "" : ",",
+				 "CONTRABAND", port, type, ship_contra_market_mod[port][type]);
 			strncat(contrabandMarketMods, buf, ARRAY_SIZE(buf));
 			isFirst = false;
 		}
 	}
 
 	// put all the statements into a single buffer
-	snprintf(buffer, ARRAY_SIZE(buffer), "%s;%s;%s;%s;", cargoPrices, contrabandPrices, cargoMarketMods, contrabandMarketMods);
+	snprintf(buffer, ARRAY_SIZE(buffer), "%s;%s;%s;%s;", cargoPrices, contrabandPrices,
+		 cargoMarketMods, contrabandMarketMods);
 
 	if (!qry(buffer))
 	{
@@ -275,25 +278,50 @@ void update_cargo(bool force)
 				float cargo_sell_mod = get_property("ship.cargo.sellPriceMod", 1.0);
 				if (ship_cargo_market_mod[i][j] < cargo_sell_mod)
 				{
-					ship_cargo_market_mod[i][j] =
-						MAX(cargo_sell_mod, ship_cargo_market_mod[i][j] + (cargo_sell_mod - ship_cargo_market_mod[i][j] + 0.1) * get_property("ship.cargo.autoSellAdjustRate", 0.05));
+					ship_cargo_market_mod[i][j] = MAX(
+						cargo_sell_mod,
+						ship_cargo_market_mod[i][j] +
+							(cargo_sell_mod -
+							 ship_cargo_market_mod[i][j] + 0.1) *
+								get_property(
+									"ship.cargo.autoSellAdjustRate",
+									0.05));
 				}
 				if (ship_cargo_market_mod[i][j] > cargo_sell_mod)
 				{
-					ship_cargo_market_mod[i][j] =
-						MIN(cargo_sell_mod, ship_cargo_market_mod[i][j] - (ship_cargo_market_mod[i][j] - cargo_sell_mod + 0.1) * get_property("ship.cargo.autoSellAdjustRate", 0.05));
+					ship_cargo_market_mod[i][j] = MIN(
+						cargo_sell_mod,
+						ship_cargo_market_mod[i][j] -
+							(ship_cargo_market_mod[i][j] -
+							 cargo_sell_mod + 0.1) *
+								get_property(
+									"ship.cargo.autoSellAdjustRate",
+									0.05));
 				}
 
-				float contra_sell_mod = get_property("ship.contraband.sellPriceMod", 1.0);
+				float contra_sell_mod =
+					get_property("ship.contraband.sellPriceMod", 1.0);
 				if (ship_contra_market_mod[i][j] < contra_sell_mod)
 				{
-					ship_contra_market_mod[i][j] =
-						MAX(contra_sell_mod, ship_contra_market_mod[i][j] + (contra_sell_mod - ship_contra_market_mod[i][j] + 0.1) * get_property("ship.contraband.autoSellAdjustRate", 0.05));
+					ship_contra_market_mod[i][j] = MAX(
+						contra_sell_mod,
+						ship_contra_market_mod[i][j] +
+							(contra_sell_mod -
+							 ship_contra_market_mod[i][j] + 0.1) *
+								get_property(
+									"ship.contraband.autoSellAdjustRate",
+									0.05));
 				}
 				if (ship_contra_market_mod[i][j] > contra_sell_mod)
 				{
-					ship_contra_market_mod[i][j] =
-						MIN(contra_sell_mod, ship_contra_market_mod[i][j] - (ship_contra_market_mod[i][j] - contra_sell_mod + 0.1) * get_property("ship.contraband.autoSellAdjustRate", 0.05));
+					ship_contra_market_mod[i][j] = MIN(
+						contra_sell_mod,
+						ship_contra_market_mod[i][j] -
+							(ship_contra_market_mod[i][j] -
+							 contra_sell_mod + 0.1) *
+								get_property(
+									"ship.contraband.autoSellAdjustRate",
+									0.05));
 				}
 			}
 			else
@@ -301,25 +329,50 @@ void update_cargo(bool force)
 				float cargo_buy_mod = get_property("ship.cargo.buyPriceMod", 1.0);
 				if (ship_cargo_market_mod[i][j] < cargo_buy_mod)
 				{
-					ship_cargo_market_mod[i][j] =
-						MAX(cargo_buy_mod, ship_cargo_market_mod[i][j] + (cargo_buy_mod - ship_cargo_market_mod[i][j] + 0.1) * get_property("ship.cargo.autoBuyAdjustRate", 0.05));
+					ship_cargo_market_mod[i][j] = MAX(
+						cargo_buy_mod,
+						ship_cargo_market_mod[i][j] +
+							(cargo_buy_mod -
+							 ship_cargo_market_mod[i][j] + 0.1) *
+								get_property(
+									"ship.cargo.autoBuyAdjustRate",
+									0.05));
 				}
 				if (ship_cargo_market_mod[i][j] > cargo_buy_mod)
 				{
-					ship_cargo_market_mod[i][j] =
-						MIN(cargo_buy_mod, ship_cargo_market_mod[i][j] - (ship_cargo_market_mod[i][j] - cargo_buy_mod + 0.1) * get_property("ship.cargo.autoBuyAdjustRate", 0.05));
+					ship_cargo_market_mod[i][j] = MIN(
+						cargo_buy_mod,
+						ship_cargo_market_mod[i][j] -
+							(ship_cargo_market_mod[i][j] -
+							 cargo_buy_mod + 0.1) *
+								get_property(
+									"ship.cargo.autoBuyAdjustRate",
+									0.05));
 				}
 
-				float contra_buy_mod = get_property("ship.contraband.buyPriceMod", 1.0);
+				float contra_buy_mod =
+					get_property("ship.contraband.buyPriceMod", 1.0);
 				if (ship_contra_market_mod[i][j] < contra_buy_mod)
 				{
-					ship_contra_market_mod[i][j] =
-						MAX(contra_buy_mod, ship_contra_market_mod[i][j] + (contra_buy_mod - ship_contra_market_mod[i][j] + 0.1) * get_property("ship.contraband.autoBuyAdjustRate", 0.05));
+					ship_contra_market_mod[i][j] = MAX(
+						contra_buy_mod,
+						ship_contra_market_mod[i][j] +
+							(contra_buy_mod -
+							 ship_contra_market_mod[i][j] + 0.1) *
+								get_property(
+									"ship.contraband.autoBuyAdjustRate",
+									0.05));
 				}
 				if (ship_contra_market_mod[i][j] > contra_buy_mod)
 				{
-					ship_contra_market_mod[i][j] =
-						MIN(contra_buy_mod, ship_contra_market_mod[i][j] - (ship_contra_market_mod[i][j] - contra_buy_mod + 0.1) * get_property("ship.contraband.autoBuyAdjustRate", 0.05));
+					ship_contra_market_mod[i][j] = MIN(
+						contra_buy_mod,
+						ship_contra_market_mod[i][j] -
+							(ship_contra_market_mod[i][j] -
+							 contra_buy_mod + 0.1) *
+								get_property(
+									"ship.contraband.autoBuyAdjustRate",
+									0.05));
 				}
 			}
 		}
@@ -333,11 +386,15 @@ void update_cargo(bool force)
 	set_timer("update_cargo");
 }
 
-void update_cargo() { update_cargo(false); }
+void update_cargo()
+{
+	update_cargo(false);
+}
 
 void update_delayed_cargo_prices()
 {
-	if (!has_elapsed("update_delayed_cargo_prices", get_property("ship.cargo.updateDelayedPrices.secs", 1800)))
+	if (!has_elapsed("update_delayed_cargo_prices",
+			 get_property("ship.cargo.updateDelayedPrices.secs", 1800)))
 		return;
 
 	debug("update_delayed_cargo_prices()");
@@ -381,12 +438,12 @@ void calculate_port_distances()
 	logit(LOG_SHIP, line);
 	line[0] = '\0';
 
-	int global_min_route[3] = {10000, 0, 0};
+	int global_min_route[3] = { 10000, 0, 0 };
 
-	int global_max_route[3] = {0, 0, 0};
+	int global_max_route[3] = { 0, 0, 0 };
 
 	float avg_distance = 0;
-	int   count        = 0;
+	int count = 0;
 
 	for (int i = 0; i < NUM_PORTS; i++)
 	{
@@ -408,12 +465,14 @@ void calculate_port_distances()
 
 			vector<int> route;
 
-			bool found_path = dijkstra(real_room0(ports[i].ocean_map_room), real_room0(ports[j].ocean_map_room), valid_ship_edge, route);
+			bool found_path = dijkstra(real_room0(ports[i].ocean_map_room),
+						   real_room0(ports[j].ocean_map_room),
+						   valid_ship_edge, route);
 
 			if (found_path)
 			{
 				int dist = (int)route.size();
-				dist     = (dist + 250) / 2;
+				dist = (dist + 250) / 2;
 
 				if (dist < min_dist)
 				{
@@ -438,7 +497,8 @@ void calculate_port_distances()
 			}
 		}
 
-		sprintf(buff, "%6s %6s", string(ports[min_port].loc_name).substr(0, 6).c_str(), string(ports[max_port].loc_name).substr(0, 6).c_str());
+		sprintf(buff, "%6s %6s", string(ports[min_port].loc_name).substr(0, 6).c_str(),
+			string(ports[max_port].loc_name).substr(0, 6).c_str());
 		strcat(line, buff);
 
 		if (min_dist < global_min_route[0])
@@ -458,9 +518,12 @@ void calculate_port_distances()
 		line[0] = '\0';
 	}
 
-	logit(LOG_SHIP, "Shortest route: %s <-> %s (%d)", ports[global_min_route[1]].loc_name, ports[global_min_route[2]].loc_name, global_min_route[0]);
-	logit(LOG_SHIP, "Longest route: %s <-> %s (%d)", ports[global_max_route[1]].loc_name, ports[global_max_route[2]].loc_name, global_max_route[0]);
-	logit(LOG_SHIP, "Num routes: %d, Average distance: %d", count / 2, (int)avg_distance / count);
+	logit(LOG_SHIP, "Shortest route: %s <-> %s (%d)", ports[global_min_route[1]].loc_name,
+	      ports[global_min_route[2]].loc_name, global_min_route[0]);
+	logit(LOG_SHIP, "Longest route: %s <-> %s (%d)", ports[global_max_route[1]].loc_name,
+	      ports[global_max_route[2]].loc_name, global_max_route[0]);
+	logit(LOG_SHIP, "Num routes: %d, Average distance: %d", count / 2,
+	      (int)avg_distance / count);
 }
 
 // i.e. the price the port charges to sell its cargo
@@ -469,11 +532,13 @@ int cargo_sell_price(int location, bool delayed)
 	// the port sells its own cargo at just base price * market mod
 	if (delayed)
 	{
-		return (int)(1000 * cargo_location_data[location].base_cost_cargo * ship_cargo_market_mod_delayed[location][location]);
+		return (int)(1000 * cargo_location_data[location].base_cost_cargo *
+			     ship_cargo_market_mod_delayed[location][location]);
 	}
 	else
 	{
-		return (int)(1000 * cargo_location_data[location].base_cost_cargo * ship_cargo_market_mod[location][location]);
+		return (int)(1000 * cargo_location_data[location].base_cost_cargo *
+			     ship_cargo_market_mod[location][location]);
 	}
 }
 
@@ -485,11 +550,15 @@ int cargo_buy_price(int location, int type, bool delayed)
 	// Adding a 1.5 multiplier for cargo being sold to account for gem mines. 01/04/2015
 	if (delayed)
 	{
-		return (int)(1500 * cargo_location_data[type].base_cost_cargo * (cargo_location_mod[location][type] / 100.0) * ship_cargo_market_mod_delayed[location][type]);
+		return (int)(1500 * cargo_location_data[type].base_cost_cargo *
+			     (cargo_location_mod[location][type] / 100.0) *
+			     ship_cargo_market_mod_delayed[location][type]);
 	}
 	else
 	{
-		return (int)(1500 * cargo_location_data[type].base_cost_cargo * (cargo_location_mod[location][type] / 100.0) * ship_cargo_market_mod[location][type]);
+		return (int)(1500 * cargo_location_data[type].base_cost_cargo *
+			     (cargo_location_mod[location][type] / 100.0) *
+			     ship_cargo_market_mod[location][type]);
 	}
 }
 
@@ -497,7 +566,8 @@ int cargo_buy_price(int location, int type, bool delayed)
 int contra_sell_price(int location)
 {
 	// the port sells its own contraband at just base price * market mod
-	return (int)(1000 * cargo_location_data[location].base_cost_contra * ship_contra_market_mod[location][location]);
+	return (int)(1000 * cargo_location_data[location].base_cost_contra *
+		     ship_contra_market_mod[location][location]);
 }
 
 // i.e. the price the port will pay to buy contraband
@@ -507,7 +577,9 @@ int contra_buy_price(int location, int type)
 		return contra_sell_price(location) * 0.5;
 	else
 		// Adding a 1.5 multiplier for cargo being sold to account for gem mines. 01/04/2015
-		return (int)(1500 * cargo_location_data[type].base_cost_contra * (cargo_location_mod[location][type] / 100.0) * ship_contra_market_mod[location][type]);
+		return (int)(1500 * cargo_location_data[type].base_cost_contra *
+			     (cargo_location_mod[location][type] / 100.0) *
+			     ship_contra_market_mod[location][type]);
 }
 
 void adjust_ship_market(int transaction, int location, int type, int volume)
@@ -515,22 +587,30 @@ void adjust_ship_market(int transaction, int location, int type, int volume)
 	if (transaction == SOLD_CARGO)
 	{
 		// player sold cargo, so adjust market price downwards slightly
-		ship_cargo_market_mod[location][type] = ship_cargo_market_mod[location][type] * (1.0 - get_property("ship.cargo.sellAdjustMod", 0.005) * volume);
+		ship_cargo_market_mod[location][type] =
+			ship_cargo_market_mod[location][type] *
+			(1.0 - get_property("ship.cargo.sellAdjustMod", 0.005) * volume);
 	}
 	else if (transaction == BOUGHT_CARGO)
 	{
 		// player bought cargo, so adjust market price upwards slightly
-		ship_cargo_market_mod[location][type] = ship_cargo_market_mod[location][type] * (1.0 + get_property("ship.cargo.buyAdjustMod", 0.003) * volume);
+		ship_cargo_market_mod[location][type] =
+			ship_cargo_market_mod[location][type] *
+			(1.0 + get_property("ship.cargo.buyAdjustMod", 0.003) * volume);
 	}
 	else if (transaction == SOLD_CONTRA)
 	{
 		// player sold contraband, so adjust market price downwards slightly
-		ship_contra_market_mod[location][type] = ship_contra_market_mod[location][type] * (1.0 - get_property("ship.contraband.sellAdjustMod", 0.025) * volume);
+		ship_contra_market_mod[location][type] =
+			ship_contra_market_mod[location][type] *
+			(1.0 - get_property("ship.contraband.sellAdjustMod", 0.025) * volume);
 	}
 	else if (transaction == BOUGHT_CONTRA)
 	{
 		// player bought contraband, so adjust market price upwards slightly
-		ship_contra_market_mod[location][type] = ship_contra_market_mod[location][type] * (1.0 + get_property("ship.contraband.buyAdjustMod", 0.015) * volume);
+		ship_contra_market_mod[location][type] =
+			ship_contra_market_mod[location][type] *
+			(1.0 + get_property("ship.contraband.buyAdjustMod", 0.015) * volume);
 	}
 
 	if (!write_cargo())
@@ -539,14 +619,18 @@ void adjust_ship_market(int transaction, int location, int type, int volume)
 	}
 }
 
-int required_ship_frags_for_contraband(int type) { return cargo_location_data[type].required_frags; }
+int required_ship_frags_for_contraband(int type)
+{
+	return cargo_location_data[type].required_frags;
+}
 
 bool can_buy_contraband(P_ship ship, int type)
 {
 	int frags = required_ship_frags_for_contraband(type);
 	if (ship->frags >= frags)
 		return true;
-	if (ship->crew.sail_skill >= frags * 4 && ship->crew.guns_skill >= frags * 1 && ship->crew.rpar_skill >= frags * 2)
+	if (ship->crew.sail_skill >= frags * 4 && ship->crew.guns_skill >= frags * 1 &&
+	    ship->crew.rpar_skill >= frags * 2)
 	{
 		return true;
 	}
@@ -576,7 +660,9 @@ void show_cargo_prices(P_char ch)
 
 	bool delayed = (bool)!IS_TRUSTED(ch);
 
-	send_to_char("&+y/--------------------------------------------------------------------------------------------\\\r\n", ch);
+	send_to_char(
+		"&+y/--------------------------------------------------------------------------------------------\\\r\n",
+		ch);
 
 	line[0] = '\0';
 	strcat(line, "&+y|&n                    ");
@@ -602,19 +688,25 @@ void show_cargo_prices(P_char ch)
 			if (type == port)
 			{
 				// show sell price
-				sprintf(buff, "&+W%6.2f", (float)cargo_sell_price(port, delayed) / 1000);
+				sprintf(buff, "&+W%6.2f",
+					(float)cargo_sell_price(port, delayed) / 1000);
 			}
-			else if (cargo_buy_price(port, type, delayed) > cargo_sell_price(type, delayed))
+			else if (cargo_buy_price(port, type, delayed) >
+				 cargo_sell_price(type, delayed))
 			{
-				sprintf(buff, "&+g%6.2f", (float)cargo_buy_price(port, type, delayed) / 1000);
+				sprintf(buff, "&+g%6.2f",
+					(float)cargo_buy_price(port, type, delayed) / 1000);
 			}
-			else if (cargo_buy_price(port, type, delayed) < cargo_sell_price(type, delayed))
+			else if (cargo_buy_price(port, type, delayed) <
+				 cargo_sell_price(type, delayed))
 			{
-				sprintf(buff, "&+r%6.2f", (float)cargo_buy_price(port, type, delayed) / 1000);
+				sprintf(buff, "&+r%6.2f",
+					(float)cargo_buy_price(port, type, delayed) / 1000);
 			}
 			else
 			{
-				sprintf(buff, "%6.2f", (float)cargo_buy_price(port, type, delayed) / 1000);
+				sprintf(buff, "%6.2f",
+					(float)cargo_buy_price(port, type, delayed) / 1000);
 			}
 
 			strcat(line, pad_ansi(buff, 6).c_str());
@@ -625,9 +717,15 @@ void show_cargo_prices(P_char ch)
 		send_to_char(line, ch);
 	}
 
-	send_to_char("&+y|                                                                                            &+y|\r\n", ch);
-	send_to_char("&+y| &nAll prices in platinum per crate, and are current within the last hour.                    &+y|\r\n", ch);
-	send_to_char("&+y\\--------------------------------------------------------------------------------------------/\r\n", ch);
+	send_to_char(
+		"&+y|                                                                                            &+y|\r\n",
+		ch);
+	send_to_char(
+		"&+y| &nAll prices in platinum per crate, and are current within the last hour.                    &+y|\r\n",
+		ch);
+	send_to_char(
+		"&+y\\--------------------------------------------------------------------------------------------/\r\n",
+		ch);
 }
 
 void show_contra_prices(P_char ch)
@@ -635,9 +733,10 @@ void show_contra_prices(P_char ch)
 	char line[MAX_STRING_LENGTH];
 	char buff[MAX_STRING_LENGTH];
 
-	send_to_char("&+yCurrent contraband market:\r\n"
-	             "&+y---------------------------------------------------------------------------------------------------------\r\n",
-	             ch);
+	send_to_char(
+		"&+yCurrent contraband market:\r\n"
+		"&+y---------------------------------------------------------------------------------------------------------\r\n",
+		ch);
 
 	line[0] = '\0';
 	strcat(line, "                          ");
@@ -667,11 +766,13 @@ void show_contra_prices(P_char ch)
 			}
 			else if (contra_buy_price(port, type) > contra_sell_price(type))
 			{
-				sprintf(buff, "&+g%7.2f", (float)contra_buy_price(port, type) / 1000);
+				sprintf(buff, "&+g%7.2f",
+					(float)contra_buy_price(port, type) / 1000);
 			}
 			else if (contra_buy_price(port, type) < contra_sell_price(type))
 			{
-				sprintf(buff, "&+r%7.2f", (float)contra_buy_price(port, type) / 1000);
+				sprintf(buff, "&+r%7.2f",
+					(float)contra_buy_price(port, type) / 1000);
 			}
 			else
 			{
@@ -719,9 +820,11 @@ int ship_cargo_info_stick(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			act("&+yListing &+YALL ships &+yin game:&n", FALSE, ch, obj, obj, TO_CHAR);
 			// LOOP through all ships
-			for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
+			for (bool fn = shipObjHash.get_first(svs); fn;
+			     fn = shipObjHash.get_next(svs))
 			{
-				send_to_char_f(ch, "&+yShip:&+C %s&+y Owner: &+C%s ", SHIP_NAME(svs), SHIP_OWNER(svs));
+				send_to_char_f(ch, "&+yShip:&+C %s&+y Owner: &+C%s ",
+					       SHIP_NAME(svs), SHIP_OWNER(svs));
 				send_to_char_f(ch, "&+yRoom: %s ", world[svs->location].name);
 				if (SHIP_DOCKED(svs))
 				{

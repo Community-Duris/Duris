@@ -25,9 +25,9 @@ using namespace std;
 
 vector<ZombieGame *> zgames;
 
-extern P_room            world;
-extern P_desc            descriptor_list;
-extern P_index           mob_index;
+extern P_room world;
+extern P_desc descriptor_list;
+extern P_index mob_index;
 extern struct zone_data *zone_table;
 
 int roulette_pistol(P_obj obj, P_char ch, int cmd, char *arg)
@@ -50,7 +50,8 @@ int roulette_pistol(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		if (ch->equipment[HOLD] != obj)
 		{
-			act("You must be holding the pistol to use it.", FALSE, ch, obj, 0, TO_CHAR);
+			act("You must be holding the pistol to use it.", FALSE, ch, obj, 0,
+			    TO_CHAR);
 			return TRUE;
 		}
 	}
@@ -62,16 +63,20 @@ int roulette_pistol(P_obj obj, P_char ch, int cmd, char *arg)
 			// Does the pistol still have a live round?
 			if (obj->value[0])
 			{
-				act("&+yA live round is still loaded.  You spin the chamber and lock it.&n", FALSE, ch, obj, 0, TO_CHAR);
+				act("&+yA live round is still loaded.  You spin the chamber and lock it.&n",
+				    FALSE, ch, obj, 0, TO_CHAR);
 				act("&+y$n opens the chamber and notices a live round already chambered.\n"
-				    "&+y$e spins the chamber and locks it back.&n", FALSE, ch, obj, 0, TO_ROOM);
+				    "&+y$e spins the chamber and locks it back.&n",
+				    FALSE, ch, obj, 0, TO_ROOM);
 			}
 
 			// If no live round is found in the pistol...
 			if (!obj->value[0])
 			{
-				act("&+y$n quickly reloads $p &+ywith a live round.", FALSE, ch, obj, 0, TO_ROOM);
-				act("&+yYou quickly reload $p &+ywith a live round.", FALSE, ch, obj, 0, TO_CHAR);
+				act("&+y$n quickly reloads $p &+ywith a live round.", FALSE, ch,
+				    obj, 0, TO_ROOM);
+				act("&+yYou quickly reload $p &+ywith a live round.", FALSE, ch,
+				    obj, 0, TO_CHAR);
 			}
 
 			// Randomize the live round...
@@ -87,8 +92,10 @@ int roulette_pistol(P_obj obj, P_char ch, int cmd, char *arg)
 			if (!obj->value[0])
 			{
 				// Gun is empty, no live round.  Reload before playing...
-				act("&+WClick!  &+yThere is no live round in the gun, reload you dummy!", FALSE, ch, obj, 0, TO_CHAR);
-				act("&+WClick!  &+y$n&+y tries to play roulette with an empty gun.", FALSE, ch, obj, 0, TO_ROOM);
+				act("&+WClick!  &+yThere is no live round in the gun, reload you dummy!",
+				    FALSE, ch, obj, 0, TO_CHAR);
+				act("&+WClick!  &+y$n&+y tries to play roulette with an empty gun.",
+				    FALSE, ch, obj, 0, TO_ROOM);
 				return TRUE;
 			}
 			else
@@ -96,22 +103,28 @@ int roulette_pistol(P_obj obj, P_char ch, int cmd, char *arg)
 				if ((obj->value[0] > 6) || (obj->value[0] < 0))
 				{
 					// Debug issue with code. Value out of acceptable parameters.
-					act("&-RBANG!&n &+WThe gun backfires and you're dead!&n", FALSE, ch, obj, 0, TO_CHAR);
-					act("&-RBANG!&n &+W$n&+W's gun bacfired!&n", FALSE, ch, obj, 0, TO_ROOM);
+					act("&-RBANG!&n &+WThe gun backfires and you're dead!&n",
+					    FALSE, ch, obj, 0, TO_CHAR);
+					act("&-RBANG!&n &+W$n&+W's gun bacfired!&n", FALSE, ch, obj,
+					    0, TO_ROOM);
 					GET_HIT(ch) = (-100);
 					return TRUE;
 				}
 				if (obj->value[0]-- != 1)
 				{
 					// CLICK, nothing happened, wew!
-					act("&+WClick! &+yNothing happened... &+Lweeew!&n", FALSE, ch, obj, 0, TO_CHAR);
-					act("&+WClick! &+y$n&+y pulled the trigger, but nothing happened.", FALSE, ch, obj, 0, TO_ROOM);
+					act("&+WClick! &+yNothing happened... &+Lweeew!&n", FALSE,
+					    ch, obj, 0, TO_CHAR);
+					act("&+WClick! &+y$n&+y pulled the trigger, but nothing happened.",
+					    FALSE, ch, obj, 0, TO_ROOM);
 				}
 				else
 				{
 					// BANG, your dead!
-					act("&-RBANG!&n &+WYou're dead!&n", FALSE, ch, obj, 0, TO_CHAR);
-					act("&-RBANG!&n &+W$n&+W shot himself... What a loser!", FALSE, ch, obj, 0, TO_ROOM);
+					act("&-RBANG!&n &+WYou're dead!&n", FALSE, ch, obj, 0,
+					    TO_CHAR);
+					act("&-RBANG!&n &+W$n&+W shot himself... What a loser!",
+					    FALSE, ch, obj, 0, TO_ROOM);
 					if (!IS_TRUSTED(ch))
 					{
 						// obj_from_char(unequip_char(ch, HOLD), FALSE);
@@ -121,7 +134,8 @@ int roulette_pistol(P_obj obj, P_char ch, int cmd, char *arg)
 					}
 					else
 					{
-						act("&+yThe bullet simply bounces off $n&+y's head.", FALSE, ch, obj, 0, TO_ROOM);
+						act("&+yThe bullet simply bounces off $n&+y's head.",
+						    FALSE, ch, obj, 0, TO_ROOM);
 						send_to_char("You can't die!\n", ch);
 					}
 				}
@@ -152,9 +166,12 @@ int orb_of_deception(P_obj obj, P_char ch, int cmd, char *arg)
 		if (isname(arg, "mirage"))
 		{
 			// Every 3 min.
-			if (((ch->equipment[WEAR_EARRING_L] == obj) || (ch->equipment[WEAR_EARRING_R] == obj)) && obj->timer[0] + 180 <= curr_time)
+			if (((ch->equipment[WEAR_EARRING_L] == obj) ||
+			     (ch->equipment[WEAR_EARRING_R] == obj)) &&
+			    obj->timer[0] + 180 <= curr_time)
 			{
-				act("&+L$n&+L's $p &+Lbegins to vibrate.", FALSE, ch, obj, 0, TO_ROOM);
+				act("&+L$n&+L's $p &+Lbegins to vibrate.", FALSE, ch, obj, 0,
+				    TO_ROOM);
 				act("&+LYour $p &+Lbegins to vibrate.", FALSE, ch, obj, 0, TO_CHAR);
 				spell_mirage(51, ch, 0, SPELL_TYPE_SPELL, ch, 0);
 				obj->timer[0] = time(NULL);
@@ -166,8 +183,8 @@ int orb_of_deception(P_obj obj, P_char ch, int cmd, char *arg)
 }
 
 #define CANNON_PLAYER 0
-#define CANNON_AMMO   1
-#define CANNON_DIR    2
+#define CANNON_AMMO 1
+#define CANNON_DIR 2
 #define CANNON_FIRING 3
 
 #define COORD_X 0
@@ -177,13 +194,13 @@ int orb_of_deception(P_obj obj, P_char ch, int cmd, char *arg)
 
 struct cannon_data
 {
-	int    fuze;    // fuze for countdown
-	int    ammo;    // gunpowder 1-50
-	int    dir;     // dir to go
-	double x;       // slope data x coordinates east and west
-	double y;       // slope data y coordinates north and south
-	int    doxy[2]; // make the move north south east or west
-	int    moved;   // how many rooms has player moved
+	int fuze; // fuze for countdown
+	int ammo; // gunpowder 1-50
+	int dir; // dir to go
+	double x; // slope data x coordinates east and west
+	double y; // slope data y coordinates north and south
+	int doxy[2]; // make the move north south east or west
+	int moved; // how many rooms has player moved
 };
 
 void get_cannon_heading(void *data)
@@ -203,7 +220,8 @@ void get_cannon_heading(void *data)
 	cdata->doxy[COORD_X] = -1;
 	cdata->doxy[COORD_Y] = -1;
 
-	if ((cdata->y >= 51.000) || (cdata->x >= 51.000) || (cdata->y < 50.000) || (cdata->x < 50.000))
+	if ((cdata->y >= 51.000) || (cdata->x >= 51.000) || (cdata->y < 50.000) ||
+	    (cdata->x < 50.000))
 	{
 		if (cdata->x > 50.999)
 		{
@@ -226,15 +244,16 @@ void get_cannon_heading(void *data)
 			cdata->doxy[COORD_Y] = DIR_SOUTH;
 		}
 	}
-	debug("dir: %d, doxy[x]: %d, doxy[y]: %d, x: %f, y: %f", cdata->dir, cdata->doxy[COORD_X], cdata->doxy[COORD_Y], cdata->x, cdata->y);
+	debug("dir: %d, doxy[x]: %d, doxy[y]: %d, x: %f, y: %f", cdata->dir, cdata->doxy[COORD_X],
+	      cdata->doxy[COORD_Y], cdata->x, cdata->y);
 	return;
 }
 
 void event_super_cannon_fire(P_char ch, P_char vict, P_obj obj, void *data)
 {
 	struct cannon_data *cdata = (struct cannon_data *)data;
-	int                 troom;
-	int                 dir;
+	int troom;
+	int dir;
 
 	if (!cdata)
 	{
@@ -254,9 +273,15 @@ void event_super_cannon_fire(P_char ch, P_char vict, P_obj obj, void *data)
 		cdata->moved++;
 
 		if (cdata->moved <= cdata->ammo / 2)
-			ch->specials.z_cord = MIN((int)get_property("cannon.super.max.z", 15), (int)((float)cdata->moved / ((float)cdata->ammo / 2) * (float)cdata->ammo / 5));
+			ch->specials.z_cord =
+				MIN((int)get_property("cannon.super.max.z", 15),
+				    (int)((float)cdata->moved / ((float)cdata->ammo / 2) *
+					  (float)cdata->ammo / 5));
 		else
-			ch->specials.z_cord = MIN((int)get_property("cannon.super.max.z", 15), (int)(((float)cdata->ammo - (float)cdata->moved) / ((float)cdata->ammo / 2) * (float)cdata->ammo / 5));
+			ch->specials.z_cord =
+				MIN((int)get_property("cannon.super.max.z", 15),
+				    (int)(((float)cdata->ammo - (float)cdata->moved) /
+					  ((float)cdata->ammo / 2) * (float)cdata->ammo / 5));
 
 		// handle movement
 		get_cannon_heading(cdata);
@@ -264,7 +289,9 @@ void event_super_cannon_fire(P_char ch, P_char vict, P_obj obj, void *data)
 		for (int n = COORD_X; n <= COORD_Y; n++)
 		{
 			dir = -1;
-			if (cdata->doxy[n] != -1 && (cdata->doxy[n] == DIR_NORTH || cdata->doxy[n] == DIR_EAST || cdata->doxy[n] == DIR_SOUTH || cdata->doxy[n] == DIR_WEST))
+			if (cdata->doxy[n] != -1 &&
+			    (cdata->doxy[n] == DIR_NORTH || cdata->doxy[n] == DIR_EAST ||
+			     cdata->doxy[n] == DIR_SOUTH || cdata->doxy[n] == DIR_WEST))
 				dir = cdata->doxy[n];
 			debug("dir: %d", dir);
 			if (dir < -1 || dir > 3)
@@ -278,11 +305,14 @@ void event_super_cannon_fire(P_char ch, P_char vict, P_obj obj, void *data)
 			if (dir == -1)
 				continue;
 
-			if (!EXIT(ch, dir) || EXIT(ch, dir)->to_room == NOWHERE || !IS_SURFACE_MAP(EXIT(ch, dir)->to_room))
+			if (!EXIT(ch, dir) || EXIT(ch, dir)->to_room == NOWHERE ||
+			    !IS_SURFACE_MAP(EXIT(ch, dir)->to_room))
 			{
-				send_to_char("&+WSMACK! &+LYou ran into something, that hurt!\r\n", ch);
+				send_to_char("&+WSMACK! &+LYou ran into something, that hurt!\r\n",
+					     ch);
 				ch->specials.z_cord = 0;
-				spell_damage(ch, ch, 20, SPLDAM_GENERIC, SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, 0);
+				spell_damage(ch, ch, 20, SPLDAM_GENERIC,
+					     SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, 0);
 				SET_POS(ch, GET_STAT(ch) + POS_PRONE);
 				return;
 			}
@@ -294,7 +324,8 @@ void event_super_cannon_fire(P_char ch, P_char vict, P_obj obj, void *data)
 				stop_destroying(ch);
 
 			if (ch->in_room != NOWHERE)
-				for (P_char attacker = world[ch->in_room].people; attacker; attacker = attacker->next)
+				for (P_char attacker = world[ch->in_room].people; attacker;
+				     attacker = attacker->next)
 					if (IS_FIGHTING(attacker) && (GET_OPPONENT(attacker) == ch))
 						stop_fighting(attacker);
 
@@ -311,33 +342,44 @@ void event_super_cannon_fire(P_char ch, P_char vict, P_obj obj, void *data)
 		{
 			// landed!
 			ch->specials.z_cord = 0;
-			if (world[ch->in_room].sector_type == SECT_WATER_SWIM || world[ch->in_room].sector_type == SECT_WATER_NOSWIM || world[ch->in_room].sector_type == SECT_OCEAN)
+			if (world[ch->in_room].sector_type == SECT_WATER_SWIM ||
+			    world[ch->in_room].sector_type == SECT_WATER_NOSWIM ||
+			    world[ch->in_room].sector_type == SECT_OCEAN)
 			{
-				send_to_char("&+LYou &+Bsplash &+Linto the &+Bwater &+Las you land!\r\n", ch);
+				send_to_char(
+					"&+LYou &+Bsplash &+Linto the &+Bwater &+Las you land!\r\n",
+					ch);
 			}
 			else
 			{
-				send_to_char("&+LYou've landed!  You roll as you hit the ground.&n\r\n", ch);
-				if (!affected_by_spell(ch, SPELL_FLY) && GET_CHAR_SKILL(ch, SKILL_SAFE_FALL) >= number(0, 100))
+				send_to_char(
+					"&+LYou've landed!  You roll as you hit the ground.&n\r\n",
+					ch);
+				if (!affected_by_spell(ch, SPELL_FLY) &&
+				    GET_CHAR_SKILL(ch, SKILL_SAFE_FALL) >= number(0, 100))
 				{
-					send_to_char("&+WOuch! &+LYou should try a fly spell next time.&n\r\n", ch);
-					spell_damage(ch, ch, 20, SPLDAM_GENERIC, SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, 0);
+					send_to_char(
+						"&+WOuch! &+LYou should try a fly spell next time.&n\r\n",
+						ch);
+					spell_damage(ch, ch, 20, SPLDAM_GENERIC,
+						     SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, 0);
 				}
 				SET_POS(ch, GET_STAT(ch) + POS_PRONE);
 			}
 			return;
 		}
 
-		add_event(event_super_cannon_fire, 1, ch, 0, 0, 0, data, sizeof(struct cannon_data));
+		add_event(event_super_cannon_fire, 1, ch, 0, 0, 0, data,
+			  sizeof(struct cannon_data));
 	}
 }
 
 void event_super_cannon(P_char pl, P_char vict, P_obj obj, void *data)
 {
 	struct cannon_data *cdata = (struct cannon_data *)data;
-	P_char              ch;
-	double              slope, x, y;
-	int                 dir, offsetaim;
+	P_char ch;
+	double slope, x, y;
+	int dir, offsetaim;
 
 	if (!cdata)
 	{
@@ -369,17 +411,23 @@ void event_super_cannon(P_char pl, P_char vict, P_obj obj, void *data)
 	if (cdata->fuze == 2)
 	{
 		// perform lighting of fuze
-		act("&+LA &+Rgnomish &+Ct&+Bi&+Mn&+Rk&+Ge&+Yr &+Lruns in from the s&+bh&+La&+bd&+Lo&+bw&+Ls and &+rl&+Ri&+rgh&+Rt&+rs &+Lthe fuze before everyone is ready!", FALSE, ch, obj, 0, TO_CHAR);
-		act("&+LA &+Rgnomish &+Ct&+Bi&+Mn&+Rk&+Ge&+Yr &+Lruns in from the s&+bh&+La&+bd&+Lo&+bw&+Ls and &+rl&+Ri&+rgh&+Rt&+rs &+Lthe fuze before everyone is ready!", FALSE, ch, obj, 0, TO_ROOM);
-		add_event(event_super_cannon, WAIT_SEC, 0, 0, obj, 0, data, sizeof(struct cannon_data));
+		act("&+LA &+Rgnomish &+Ct&+Bi&+Mn&+Rk&+Ge&+Yr &+Lruns in from the s&+bh&+La&+bd&+Lo&+bw&+Ls and &+rl&+Ri&+rgh&+Rt&+rs &+Lthe fuze before everyone is ready!",
+		    FALSE, ch, obj, 0, TO_CHAR);
+		act("&+LA &+Rgnomish &+Ct&+Bi&+Mn&+Rk&+Ge&+Yr &+Lruns in from the s&+bh&+La&+bd&+Lo&+bw&+Ls and &+rl&+Ri&+rgh&+Rt&+rs &+Lthe fuze before everyone is ready!",
+		    FALSE, ch, obj, 0, TO_ROOM);
+		add_event(event_super_cannon, WAIT_SEC, 0, 0, obj, 0, data,
+			  sizeof(struct cannon_data));
 		return;
 	}
 	else if (cdata->fuze == 1)
 	{
 		// perform fuze burning msg
-		act("&+LThe fuze &+Rsi&+rzz&+Rl&+re&+Rs &+Lquickly...&n", FALSE, ch, obj, 0, TO_CHAR);
-		act("&+LThe fuze &+Rsi&+rzz&+Rl&+re&+Rs &+Lquickly...&n", FALSE, ch, obj, 0, TO_ROOM);
-		add_event(event_super_cannon, WAIT_SEC, 0, 0, obj, 0, data, sizeof(struct cannon_data));
+		act("&+LThe fuze &+Rsi&+rzz&+Rl&+re&+Rs &+Lquickly...&n", FALSE, ch, obj, 0,
+		    TO_CHAR);
+		act("&+LThe fuze &+Rsi&+rzz&+Rl&+re&+Rs &+Lquickly...&n", FALSE, ch, obj, 0,
+		    TO_ROOM);
+		add_event(event_super_cannon, WAIT_SEC, 0, 0, obj, 0, data,
+			  sizeof(struct cannon_data));
 		return;
 	}
 	else if (cdata->fuze == 0)
@@ -387,17 +435,19 @@ void event_super_cannon(P_char pl, P_char vict, P_obj obj, void *data)
 		// perform firing event on player
 		act("&-RBOOOOOOOOOOOOOOOOM!", FALSE, ch, obj, 0, TO_CHAR);
 		act("&-RBOOOOOOOOOOOOOOOOM!", FALSE, ch, obj, 0, TO_ROOM);
-		act("$n has a shocked look on his face as he flies out of $p.", FALSE, ch, obj, 0, TO_ROOM);
+		act("$n has a shocked look on his face as he flies out of $p.", FALSE, ch, obj, 0,
+		    TO_ROOM);
 		obj->value[CANNON_PLAYER] = 0;
 		obj->value[CANNON_FIRING] = FALSE;
-		cdata->x                  = 50.500;
-		cdata->y                  = 50.500;
-		cdata->doxy[COORD_X]      = -1;
-		cdata->doxy[COORD_Y]      = -1;
-		cdata->moved              = 0;
-		offsetaim                 = cdata->ammo / 50;
+		cdata->x = 50.500;
+		cdata->y = 50.500;
+		cdata->doxy[COORD_X] = -1;
+		cdata->doxy[COORD_Y] = -1;
+		cdata->moved = 0;
+		offsetaim = cdata->ammo / 50;
 		cdata->dir += number(-offsetaim, offsetaim); // So the aim isn't perfect
-		add_event(event_super_cannon_fire, 0, ch, 0, 0, 0, data, sizeof(struct cannon_data));
+		add_event(event_super_cannon_fire, 0, ch, 0, 0, 0, data,
+			  sizeof(struct cannon_data));
 		return;
 	}
 }
@@ -407,7 +457,7 @@ int super_cannon(P_obj obj, P_char ch, int cmd, char *arg)
 	char load[MAX_STRING_LENGTH], dirstr[MAX_STRING_LENGTH];
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
 	char buf[MAX_STRING_LENGTH];
-	int  i, found = 0;
+	int i, found = 0;
 
 	struct cannon_data cdata;
 	cdata.fuze = 3;
@@ -458,7 +508,8 @@ int super_cannon(P_obj obj, P_char ch, int cmd, char *arg)
 
 		if (!*load || !*dirstr || !isdigit(*load) || !isdigit(*dirstr))
 		{
-			act("Please specify the load and direction.  Example: Order Cannon 10 45", FALSE, ch, 0, 0, TO_CHAR);
+			act("Please specify the load and direction.  Example: Order Cannon 10 45",
+			    FALSE, ch, 0, 0, TO_CHAR);
 			return TRUE;
 		}
 		if (atoi(load) <= 0)
@@ -468,24 +519,30 @@ int super_cannon(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		if (atoi(load) > (int)get_property("cannon.super.range", 500))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Are you trying to blow up the cannon? That's too much gunpowder! Try %d or less.", (int)get_property("cannon.super.range", 500));
+			snprintf(
+				buf, MAX_STRING_LENGTH,
+				"Are you trying to blow up the cannon? That's too much gunpowder! Try %d or less.",
+				(int)get_property("cannon.super.range", 500));
 			act(buf, FALSE, ch, 0, 0, TO_CHAR);
 			return TRUE;
 		}
 
-		obj->value[CANNON_AMMO]   = atoi(load);
-		obj->value[CANNON_DIR]    = atoi(dirstr);
+		obj->value[CANNON_AMMO] = atoi(load);
+		obj->value[CANNON_DIR] = atoi(dirstr);
 		obj->value[CANNON_PLAYER] = GET_PID(ch);
-		snprintf(buf, MAX_STRING_LENGTH, "&+L$n &+Lloads &+L$p &+Lwith %d pounds of gunpowder and tweaks it's aim.  Grinning, $e hops in.", atoi(load));
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"&+L$n &+Lloads &+L$p &+Lwith %d pounds of gunpowder and tweaks it's aim.  Grinning, $e hops in.",
+			atoi(load));
 		act(buf, FALSE, ch, obj, 0, TO_ROOM);
-		snprintf(buf, MAX_STRING_LENGTH, "&+LYou load $p &+Lwith %d pounds of gunpowder and aim it.", atoi(load));
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+LYou load $p &+Lwith %d pounds of gunpowder and aim it.", atoi(load));
 		act(buf, FALSE, ch, obj, 0, TO_CHAR);
 		return TRUE;
 	}
 
 	if (arg && (cmd == CMD_SHOUT) && obj->value[CANNON_FIRING] != TRUE)
 	{
-
 		if (isname(arg, "fire"))
 		{
 			if (obj->value[CANNON_PLAYER] == 0)
@@ -502,14 +559,16 @@ int super_cannon(P_obj obj, P_char ch, int cmd, char *arg)
 
 			if (!IS_SURFACE_MAP(ch->in_room))
 			{
-				act("Sorry, this cannon only works on the surface.", FALSE, ch, 0, 0, TO_CHAR);
+				act("Sorry, this cannon only works on the surface.", FALSE, ch, 0,
+				    0, TO_CHAR);
 				obj->value[CANNON_PLAYER] = 0;
 				return TRUE;
 			}
 			obj->value[CANNON_FIRING] = TRUE;
-			cdata.ammo                = obj->value[CANNON_AMMO];
-			cdata.dir                 = obj->value[CANNON_DIR];
-			add_event(event_super_cannon, WAIT_SEC, 0, 0, obj, 0, &cdata, sizeof(cdata));
+			cdata.ammo = obj->value[CANNON_AMMO];
+			cdata.dir = obj->value[CANNON_DIR];
+			add_event(event_super_cannon, WAIT_SEC, 0, 0, obj, 0, &cdata,
+				  sizeof(cdata));
 			return FALSE;
 		}
 	}
@@ -521,34 +580,36 @@ void halloween_mine_proc(P_char ch)
 	char buff[MAX_STRING_LENGTH];
 	snprintf(buff, MAX_STRING_LENGTH, " %s 86", GET_NAME(ch));
 	act("Your dig hits a burried &+ypumpkin&n.\n"
-	    "Suddenly it begins to move and digs itself out of the mine!", TRUE, ch, 0, 0, TO_CHAR);
+	    "Suddenly it begins to move and digs itself out of the mine!",
+	    TRUE, ch, 0, 0, TO_CHAR);
 	act("$n dig hits a burried &+ypumpkin&n.\n"
-	    "Suddenly it begins to move and digs itself out of the mine!", TRUE, ch, 0, 0, TO_ROOM);
+	    "Suddenly it begins to move and digs itself out of the mine!",
+	    TRUE, ch, 0, 0, TO_ROOM);
 	do_givepet(ch, buff, CMD_GIVEPET);
 }
 
 #define ZTIMER_STANDBY 0 // standby timer
-#define ZTIMER_WAVE    1 // wave timer
+#define ZTIMER_WAVE 1 // wave timer
 
-#define ZOMBIES_ID     0 // ZombiesGame Class id
+#define ZOMBIES_ID 0 // ZombiesGame Class id
 #define ZOMBIES_STATUS 1 // game 0=off, 1=on, 2=standby
-#define ZOMBIES_LEVEL  2 // current game level
-#define ZOMBIES_WAVE   3 // wave # of the level
+#define ZOMBIES_LEVEL 2 // current game level
+#define ZOMBIES_WAVE 3 // wave # of the level
 
 // Zombies game: loads zombies per round until all players are dead. :)
 // Need to setup a zombies class to load zombie vectors per spawner item.
 int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_desc i;
-	char   arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
-	char   arg3[MAX_STRING_LENGTH], arg4[MAX_STRING_LENGTH];
-	char   buff[MAX_STRING_LENGTH], buff2[MAX_STRING_LENGTH];
-	int    level     = 0;
-	int    zone      = 0;
-	int    num       = 0;
-	int    palive    = 0;
-	int    max_level = (int)get_property("zombies.game.maxlevel", 99);
-	int    zombies;
+	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
+	char arg3[MAX_STRING_LENGTH], arg4[MAX_STRING_LENGTH];
+	char buff[MAX_STRING_LENGTH], buff2[MAX_STRING_LENGTH];
+	int level = 0;
+	int zone = 0;
+	int num = 0;
+	int palive = 0;
+	int max_level = (int)get_property("zombies.game.maxlevel", 99);
+	int zombies;
 
 	if (!obj)
 	{
@@ -563,7 +624,7 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 		// load the zombies game class object with mob vector
 		ZombieGame *zgame = new ZombieGame(obj);
 		zgames.push_back(zgame);
-		obj->value[ZOMBIES_ID]               = zgame->id;
+		obj->value[ZOMBIES_ID] = zgame->id;
 		mob_index[real_mobile0(87)].func.mob = zgame_mob_proc;
 		return TRUE;
 	}
@@ -601,7 +662,9 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 		if (zombies < 0)
 		{
 			debug("Error with zg_count_zombies(): can't find zombie game data");
-			send_to_zone(zone, "&+RGame has ended due to technical difficulties, please notify a god.&n\r\n");
+			send_to_zone(
+				zone,
+				"&+RGame has ended due to technical difficulties, please notify a god.&n\r\n");
 			extract_obj(obj, TRUE); // Not an arti, but 'in game.'
 			return TRUE;
 		}
@@ -615,9 +678,11 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 				if (obj->value[ZOMBIES_LEVEL] >= max_level)
 				{
 					// reached end of max level end the game
-					obj->value[ZOMBIES_LEVEL]  = 0;
+					obj->value[ZOMBIES_LEVEL] = 0;
 					obj->value[ZOMBIES_STATUS] = 0;
-					send_to_zone(zone, "&+WYou've completed the last level, you're game is complete.  Congrats!&n\r\n");
+					send_to_zone(
+						zone,
+						"&+WYou've completed the last level, you're game is complete.  Congrats!&n\r\n");
 					return TRUE;
 				}
 				else
@@ -625,44 +690,57 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 					// set game to standby mode to setup the next round
 					obj->value[ZOMBIES_STATUS] = 2;
 					obj->timer[ZTIMER_STANDBY] = time(NULL);
-					snprintf(buff, MAX_STRING_LENGTH, "&+WYou've completed round &+c%d&+W.  Prepare for the next round.&n\r\n", obj->value[ZOMBIES_LEVEL]);
+					snprintf(
+						buff, MAX_STRING_LENGTH,
+						"&+WYou've completed round &+c%d&+W.  Prepare for the next round.&n\r\n",
+						obj->value[ZOMBIES_LEVEL]);
 					send_to_zone(zone, buff);
 					return TRUE;
 				}
 			}
 			else if (!palive)
 			{
-				snprintf(buff, MAX_STRING_LENGTH, "&+WAll players are dead, the game has ended on level &+c%d&+W.&n\r\n", obj->value[ZOMBIES_LEVEL]);
+				snprintf(
+					buff, MAX_STRING_LENGTH,
+					"&+WAll players are dead, the game has ended on level &+c%d&+W.&n\r\n",
+					obj->value[ZOMBIES_LEVEL]);
 				send_to_zone(zone, buff);
 				obj->value[ZOMBIES_STATUS] = 0;
 				obj->timer[ZTIMER_STANDBY] = 0;
-				obj->timer[ZTIMER_WAVE]    = 0;
+				obj->timer[ZTIMER_WAVE] = 0;
 				zgame_clear_zombies(obj);
 				return TRUE;
 			}
 			else
 			{
 				// Load zombies!!!
-				if ((obj->timer[ZTIMER_WAVE] + (int)get_property("zombies.game.spawn.delay", 30) <= time(NULL)) || (!zombies && !number(0, 2)))
+				if ((obj->timer[ZTIMER_WAVE] +
+					     (int)get_property("zombies.game.spawn.delay", 30) <=
+				     time(NULL)) ||
+				    (!zombies && !number(0, 2)))
 				{
 					obj->value[ZOMBIES_WAVE]++;
 					// Waves handling
-					int  max   = 0;
-					int  waves = 0;
-					int  load  = 0;
+					int max = 0;
+					int waves = 0;
+					int load = 0;
 					char loadstr[MAX_STRING_LENGTH];
-					snprintf(loadstr, MAX_STRING_LENGTH, "%d", (int)get_property("zombies.game.load", 3445));
+					snprintf(loadstr, MAX_STRING_LENGTH, "%d",
+						 (int)get_property("zombies.game.load", 3445));
 					char single[MAX_STRING_LENGTH];
 					while (loadstr[waves])
 					{
-						snprintf(single, MAX_STRING_LENGTH, "%c", loadstr[waves]);
+						snprintf(single, MAX_STRING_LENGTH, "%c",
+							 loadstr[waves]);
 						load = atoi(single);
 						waves++;
 						max += load;
 					}
-					snprintf(single, MAX_STRING_LENGTH, "%c", loadstr[obj->value[ZOMBIES_WAVE] - 1]);
+					snprintf(single, MAX_STRING_LENGTH, "%c",
+						 loadstr[obj->value[ZOMBIES_WAVE] - 1]);
 					load = atoi(single);
-					debug("loadstr: %s, load: %d, max: %d, waves: %d", loadstr, load, max, waves);
+					debug("loadstr: %s, load: %d, max: %d, waves: %d", loadstr,
+					      load, max, waves);
 
 					// Eventually change this to leave the remaining
 					//   to redistribute through waves as harder mobs/bosses
@@ -672,7 +750,8 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 					}
 					else
 					{
-						num = MAX(1, (int)(zgame->zombies_to_load * load / max));
+						num = MAX(1, (int)(zgame->zombies_to_load * load /
+								   max));
 					}
 					num = BOUNDED(1, num, zgame->zombies_to_load);
 					if (num)
@@ -692,18 +771,26 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 				return TRUE;
 			}
 		}
-		int delay = BOUNDED(10, (int)get_property("zombies.game.standby.delay", 15) * (obj->value[ZOMBIES_LEVEL] / 10), 120);
+		int delay = BOUNDED(10,
+				    (int)get_property("zombies.game.standby.delay", 15) *
+					    (obj->value[ZOMBIES_LEVEL] / 10),
+				    120);
 		// If 2 minutes have passed and we are in standby mode begin next round
-		if (obj->value[ZOMBIES_STATUS] == 2 && (obj->timer[ZTIMER_STANDBY] + delay) <= time(NULL))
+		if (obj->value[ZOMBIES_STATUS] == 2 &&
+		    (obj->timer[ZTIMER_STANDBY] + delay) <= time(NULL))
 		{
 			obj->timer[ZTIMER_STANDBY] = 0;
-			obj->timer[ZTIMER_WAVE]    = 0;
+			obj->timer[ZTIMER_WAVE] = 0;
 			obj->value[ZOMBIES_STATUS] = 1;
 			obj->value[ZOMBIES_LEVEL]++;
 			obj->value[ZOMBIES_WAVE] = 0;
 			// Need to scale the amount of mobs per level here
-			zgame->zombies_to_load = MAX(obj->value[ZOMBIES_LEVEL], ((obj->value[ZOMBIES_LEVEL] + (palive * 2)) * palive / 2));
-			snprintf(buff, MAX_STRING_LENGTH, "&+WRound &+c%d &+Wis beginning.  Good Luck!&n\r\n", obj->value[ZOMBIES_LEVEL]);
+			zgame->zombies_to_load =
+				MAX(obj->value[ZOMBIES_LEVEL],
+				    ((obj->value[ZOMBIES_LEVEL] + (palive * 2)) * palive / 2));
+			snprintf(buff, MAX_STRING_LENGTH,
+				 "&+WRound &+c%d &+Wis beginning.  Good Luck!&n\r\n",
+				 obj->value[ZOMBIES_LEVEL]);
 			send_to_zone(zone, buff);
 			return TRUE;
 		}
@@ -722,7 +809,8 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			// set game to standby mode to setup the next round
 			obj->value[ZOMBIES_STATUS] = 2;
-			obj->timer[ZTIMER_STANDBY] = time(NULL) - (10); // should be 10 seconds to start
+			obj->timer[ZTIMER_STANDBY] =
+				time(NULL) - (10); // should be 10 seconds to start
 			send_to_zone(zone, "&+WThe game has started.&n\r\n");
 			return TRUE;
 		}
@@ -730,7 +818,8 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			obj->value[ZOMBIES_STATUS] = 0;
 			obj->timer[ZTIMER_STANDBY] = 0;
-			snprintf(buff, MAX_STRING_LENGTH, "&+WThe game has been stopped by %s.&n\r\n", GET_NAME(ch));
+			snprintf(buff, MAX_STRING_LENGTH,
+				 "&+WThe game has been stopped by %s.&n\r\n", GET_NAME(ch));
 			send_to_zone(zone, buff);
 			zgame_clear_zombies(obj);
 			return TRUE;
@@ -738,15 +827,22 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 		else if (isname(arg2, "status"))
 		{
 			snprintf(buff, MAX_STRING_LENGTH, "&+WZombies Game Status&n\r\n");
-			snprintf(buff2, MAX_STRING_LENGTH, "&+L           Status&+W: &+c%s&n\r\n", (obj->value[ZOMBIES_STATUS] == 1 ? "On" : obj->value[ZOMBIES_STATUS] == 0 ? "Off" : "Standby"));
+			snprintf(buff2, MAX_STRING_LENGTH, "&+L           Status&+W: &+c%s&n\r\n",
+				 (obj->value[ZOMBIES_STATUS] == 1 ? "On" :
+				  obj->value[ZOMBIES_STATUS] == 0 ? "Off" :
+								    "Standby"));
 			strcat(buff, buff2);
-			snprintf(buff2, MAX_STRING_LENGTH, "&+L            Round&+W: &+c%d&n\r\n", obj->value[ZOMBIES_LEVEL]);
+			snprintf(buff2, MAX_STRING_LENGTH, "&+L            Round&+W: &+c%d&n\r\n",
+				 obj->value[ZOMBIES_LEVEL]);
 			strcat(buff, buff2);
-			snprintf(buff2, MAX_STRING_LENGTH, "&+L    Players Alive&+W: &+c%d&n\r\n", palive);
+			snprintf(buff2, MAX_STRING_LENGTH, "&+L    Players Alive&+W: &+c%d&n\r\n",
+				 palive);
 			strcat(buff, buff2);
-			snprintf(buff2, MAX_STRING_LENGTH, "&+L    Zombies Alive&+W: &+c%d&n\r\n", zombies);
+			snprintf(buff2, MAX_STRING_LENGTH, "&+L    Zombies Alive&+W: &+c%d&n\r\n",
+				 zombies);
 			strcat(buff, buff2);
-			snprintf(buff2, MAX_STRING_LENGTH, "&+LZombies Remaining&+W: &+c%d&n\r\n", zgame->zombies_to_load);
+			snprintf(buff2, MAX_STRING_LENGTH, "&+LZombies Remaining&+W: &+c%d&n\r\n",
+				 zgame->zombies_to_load);
 			strcat(buff, buff2);
 			send_to_char(buff, ch);
 			return TRUE;
@@ -769,7 +865,8 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 				return TRUE;
 			}
 			obj->value[ZOMBIES_LEVEL] = level;
-			snprintf(buff, MAX_STRING_LENGTH, "&+WZombies Game level set to: &+c%d&n.\r\n", level);
+			snprintf(buff, MAX_STRING_LENGTH,
+				 "&+WZombies Game level set to: &+c%d&n.\r\n", level);
 			send_to_char(buff, ch);
 			return TRUE;
 		}
@@ -929,11 +1026,21 @@ int zgame_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 
 int ZombieGame::next_id = 1;
 
-ZombieGame::ZombieGame() : generator(NULL) {}
+ZombieGame::ZombieGame()
+	: generator(NULL)
+{
+}
 
-ZombieGame::ZombieGame(P_obj _generator) : generator(_generator) { load(); }
+ZombieGame::ZombieGame(P_obj _generator)
+	: generator(_generator)
+{
+	load();
+}
 
-ZombieGame::~ZombieGame() { unload(); }
+ZombieGame::~ZombieGame()
+{
+	unload();
+}
 
 int ZombieGame::load()
 {

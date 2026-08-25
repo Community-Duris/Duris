@@ -31,25 +31,28 @@ using namespace std;
 #include "timers.h"
 #include "trophy.h"
 
-extern long              boot_time;
-extern P_room            world;
-extern P_index           obj_index;
-extern P_index           mob_index;
+extern long boot_time;
+extern P_room world;
+extern P_index obj_index;
+extern P_index mob_index;
 extern struct zone_data *zone_table;
-extern int               top_of_zone_table;
-extern P_obj             object_list;
-extern int               top_of_objt;
-extern P_desc            descriptor_list;
-extern Skill             skills[];
-extern long              new_exp_table[]; // Arih: Fixed type mismatch bug - was int, should be long
-extern void              event_reset_zone(P_char, P_char, P_obj, void *);
+extern int top_of_zone_table;
+extern P_obj object_list;
+extern int top_of_objt;
+extern P_desc descriptor_list;
+extern Skill skills[];
+extern long new_exp_table[]; // Arih: Fixed type mismatch bug - was int, should be long
+extern void event_reset_zone(P_char, P_char, P_obj, void *);
 
-extern epic_reward        epic_rewards[];
+extern epic_reward epic_rewards[];
 extern epic_teacher_skill epic_teachers[];
 
 vector<epic_zone_completion> epic_zone_completions;
 
-const char *prestige_names[EPIC_MAX_PRESTIGE] = {"Unknown", "Serf", "Peasant", "Commoner", "Citizen", "Squire", "Noble", "Knight", "Hero", "Lord", "Champion", "Living Legend"};
+const char *prestige_names[EPIC_MAX_PRESTIGE] = {
+	"Unknown", "Serf",   "Peasant", "Commoner", "Citizen",	"Squire",
+	"Noble",   "Knight", "Hero",	"Lord",	    "Champion", "Living Legend"
+};
 
 int errand_notch;
 
@@ -62,7 +65,11 @@ int epic_points(P_char ch)
 	return 0;
 }
 
-const char *epic_prestige(P_char ch) { return prestige_names[MIN(GET_EPIC_POINTS(ch) / get_property("epic.prestigeNotch", 400), EPIC_MAX_PRESTIGE - 1)]; }
+const char *epic_prestige(P_char ch)
+{
+	return prestige_names[MIN(GET_EPIC_POINTS(ch) / get_property("epic.prestigeNotch", 400),
+				  EPIC_MAX_PRESTIGE - 1)];
+}
 /* shouldn't need this now - Zion 4/8/2014
 int epic_skillpoints(P_char ch)
 {
@@ -118,10 +125,10 @@ void epic_complete_errand(P_char ch, int zone)
 	if (!afp)
 	{
 		memset(&af, 0, sizeof(af));
-		af.type      = TAG_EPIC_COMPLETED;
-		af.modifier  = 1;
-		af.flags     = AFFTYPE_STORE | AFFTYPE_PERM;
-		af.duration  = -1;
+		af.type = TAG_EPIC_COMPLETED;
+		af.modifier = 1;
+		af.flags = AFFTYPE_STORE | AFFTYPE_PERM;
+		af.duration = -1;
 		af.bitvector = 0x40000000 | zone;
 		affect_to_char(ch, &af);
 	}
@@ -134,14 +141,14 @@ int epic_random_task_zone(P_char ch)
 	return zone_number;
 #else
 	if (!qry("select number, name from zones where task_zone = 1 and number not in "
-	         "(select type_id from epic_gain where pid = '%d' and type = '%d') "
-	         "order by rand() limit 1",
-	         GET_PID(ch),
-	         EPIC_ZONE))
+		 "(select type_id from epic_gain where pid = '%d' and type = '%d') "
+		 "order by rand() limit 1",
+		 GET_PID(ch), EPIC_ZONE))
 		return -1;
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return FALSE;
 	}
@@ -149,7 +156,7 @@ int epic_random_task_zone(P_char ch)
 	if (mysql_num_rows(res) > 0)
 	{
 		MYSQL_ROW row = mysql_fetch_row(res);
-		zone_number   = atoi(row[0]);
+		zone_number = atoi(row[0]);
 	}
 
 	mysql_free_result(res);
@@ -161,10 +168,10 @@ int epic_random_task_zone(P_char ch)
 
 void epic_choose_new_epic_task(P_char ch)
 {
-	char                 buffer[512];
-	P_obj                nexus;
+	char buffer[512];
+	P_obj nexus;
 	struct affected_type af, *afp;
-	int                  zone_number = -1;
+	int zone_number = -1;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -172,8 +179,8 @@ void epic_choose_new_epic_task(P_char ch)
 	}
 
 	memset(&af, 0, sizeof(af));
-	af.type     = TAG_EPIC_ERRAND;
-	af.flags    = AFFTYPE_STORE | AFFTYPE_PERM;
+	af.type = TAG_EPIC_ERRAND;
+	af.flags = AFFTYPE_STORE | AFFTYPE_PERM;
 	af.duration = -1;
 
 	// Now a 5% chance to get spill blood down from 9%.
@@ -190,19 +197,25 @@ void epic_choose_new_epic_task(P_char ch)
 		// 10% chance.
 		if ((number(1, 100) <= 10) && (GET_LEVEL(ch) >= 51) && nexus)
 		{
-			act("The Gods of &+rDuris&n demand that you seek out $p and convert it!", FALSE, ch, nexus, 0, TO_CHAR);
+			act("The Gods of &+rDuris&n demand that you seek out $p and convert it!",
+			    FALSE, ch, nexus, 0, TO_CHAR);
 			// Nexus stone IDs run from 1 on up.
 			af.modifier = SPILL_BLOOD + STONE_ID(nexus);
 		}
 		else
 		{
-			send_to_char("The Gods of &+rDuris&n demand that you &+rspill the &+Rblood&n of the &+Lenemies&n of your race!\n", ch);
+			send_to_char(
+				"The Gods of &+rDuris&n demand that you &+rspill the &+Rblood&n of the &+Lenemies&n of your race!\n",
+				ch);
 			af.modifier = SPILL_BLOOD;
 		}
 	}
 	else
 	{
-		snprintf(buffer, 512, "The Gods of &+rDuris&n have sent you to seek out the &+Bmagical &+Lstone&n of %s!\n", zone_table[real_zone0(zone_number)].name);
+		snprintf(
+			buffer, 512,
+			"The Gods of &+rDuris&n have sent you to seek out the &+Bmagical &+Lstone&n of %s!\n",
+			zone_table[real_zone0(zone_number)].name);
 		send_to_char(buffer, ch);
 		af.modifier = zone_number;
 	}
@@ -218,7 +231,8 @@ vector<epic_trophy_data> get_epic_zone_trophy(P_char ch)
 	debug("get_epic_zone_trophy(): __NO_MYSQL__, returning 0");
 	return trophy;
 #else
-	if (!qry("select type_id from epic_gain where pid = '%d' and type = '%d' order by time asc", GET_PID(ch), EPIC_ZONE))
+	if (!qry("select type_id from epic_gain where pid = '%d' and type = '%d' order by time asc",
+		 GET_PID(ch), EPIC_ZONE))
 		return trophy;
 
 	MYSQL_RES *res = mysql_store_result(DB);
@@ -288,25 +302,27 @@ int modify_by_epic_trophy(P_char ch, int amount, int zone_number)
 	{
 		if (zone_number == it->zone_number && it->count > 0)
 		{
-			float factor = pow(get_property("epic.zoneTrophy.mod", 0.8), MIN(it->count, get_property("epic.zoneTrophy.maxMods", 4)));
-			amount       = (int)(amount * factor);
-			amount       = MAX(1, amount);
+			float factor =
+				pow(get_property("epic.zoneTrophy.mod", 0.8),
+				    MIN(it->count, get_property("epic.zoneTrophy.maxMods", 4)));
+			amount = (int)(amount * factor);
+			amount = MAX(1, amount);
 
 			switch (it->count)
 			{
-				case 1:
-					send_to_char("This seems familiar somehow...\n", ch);
-					break;
+			case 1:
+				send_to_char("This seems familiar somehow...\n", ch);
+				break;
 
-				case 2:
-				case 3:
-					send_to_char("&+GHaven't you seen all of this before?\n", ch);
-					break;
+			case 2:
+			case 3:
+				send_to_char("&+GHaven't you seen all of this before?\n", ch);
+				break;
 
-				case 4:
-				default:
-					send_to_char("&+RThis is getting extremely boring.\n", ch);
-					break;
+			case 4:
+			default:
+				send_to_char("&+RThis is getting extremely boring.\n", ch);
+				break;
 			}
 
 			return amount;
@@ -336,14 +352,15 @@ void group_gain_epic(P_char ch, int type, int data, int amount)
 
 void gain_epic(P_char ch, int type, int data, int amount)
 {
-	char                 buffer[256];
+	char buffer[256];
 	struct affected_type af, *afp;
-	int                  notch = get_property("epic.skillPointStep", 100);
+	int notch = get_property("epic.skillPointStep", 100);
 
 	// If invalid ch or bad load of errand_notch (don't care about notch as we don't use skillpoints anymore).
 	if (!IS_ALIVE(ch) || errand_notch < 1)
 	{
-		debug("gain_epic: Bad ch '%s' %d, or bad errand_notch %d.", (ch == NULL) ? "NULL" : J_NAME(ch), errand_notch);
+		debug("gain_epic: Bad ch '%s' %d, or bad errand_notch %d.",
+		      (ch == NULL) ? "NULL" : J_NAME(ch), errand_notch);
 		return;
 	}
 
@@ -362,11 +379,12 @@ void gain_epic(P_char ch, int type, int data, int amount)
 
 	// These don't get hacked by being tasked: randommob (only 1 epic to start with), strahdme (super acheivement),
 	//   bottle (epic bottles), PvP, ship PvP, or boons.
-	if (type != EPIC_RANDOMMOB && type != EPIC_STRAHDME && type != EPIC_BOTTLE && type != EPIC_PVP && type != EPIC_SHIP_PVP && type != EPIC_BOON && has_epic_task(ch))
+	if (type != EPIC_RANDOMMOB && type != EPIC_STRAHDME && type != EPIC_BOTTLE &&
+	    type != EPIC_PVP && type != EPIC_SHIP_PVP && type != EPIC_BOON && has_epic_task(ch))
 	{
 		send_to_char("You have not completed the task given to you by the Gods, \n"
-		             "so you are not able to progress at usual pace.\n",
-		             ch);
+			     "so you are not able to progress at usual pace.\n",
+			     ch);
 		amount = MAX(1, (int)(amount * get_property("epic.errand.penaltyMod", 0.25)));
 	}
 
@@ -403,42 +421,42 @@ void gain_epic(P_char ch, int type, int data, int amount)
 
 	switch (type)
 	{
-		case EPIC_ZONE:
-			strcpy(type_str, "ZONE");
-			break;
-		case EPIC_PVP:
-			strcpy(type_str, "PVP");
-			break;
-		case EPIC_SHIP_PVP:
-			strcpy(type_str, "PVP_SHIP");
-			break;
-		case EPIC_ELITE_MOB:
-			strcpy(type_str, "ELITE_MOB");
-			break;
-		case EPIC_QUEST:
-			strcpy(type_str, "QUEST");
-			break;
-		case EPIC_RANDOM_ZONE:
-			strcpy(type_str, "RANDOM_ZONE");
-			break;
-		case EPIC_NEXUS_STONE:
-			strcpy(type_str, "NEXUS_STONE");
-			break;
-		case EPIC_BOON:
-			strcpy(type_str, "BOON");
-			break;
-		case EPIC_BOTTLE:
-			strcpy(type_str, "BOTTLE");
-			break;
-		case EPIC_STRAHDME:
-			strcpy(type_str, "STRAHD_ME");
-			break;
-		case EPIC_RANDOMMOB:
-			strcpy(type_str, "RANDOM_MOB");
-			break;
-		default:
-			strcpy(type_str, "UNKNOWN");
-			break;
+	case EPIC_ZONE:
+		strcpy(type_str, "ZONE");
+		break;
+	case EPIC_PVP:
+		strcpy(type_str, "PVP");
+		break;
+	case EPIC_SHIP_PVP:
+		strcpy(type_str, "PVP_SHIP");
+		break;
+	case EPIC_ELITE_MOB:
+		strcpy(type_str, "ELITE_MOB");
+		break;
+	case EPIC_QUEST:
+		strcpy(type_str, "QUEST");
+		break;
+	case EPIC_RANDOM_ZONE:
+		strcpy(type_str, "RANDOM_ZONE");
+		break;
+	case EPIC_NEXUS_STONE:
+		strcpy(type_str, "NEXUS_STONE");
+		break;
+	case EPIC_BOON:
+		strcpy(type_str, "BOON");
+		break;
+	case EPIC_BOTTLE:
+		strcpy(type_str, "BOTTLE");
+		break;
+	case EPIC_STRAHDME:
+		strcpy(type_str, "STRAHD_ME");
+		break;
+	case EPIC_RANDOMMOB:
+		strcpy(type_str, "RANDOM_MOB");
+		break;
+	default:
+		strcpy(type_str, "UNKNOWN");
+		break;
 	}
 
 	epiclog(56, "%s received %d epic points (%s)", ch->player.name, amount, type_str);
@@ -449,7 +467,8 @@ void gain_epic(P_char ch, int type, int data, int amount)
 	  to touch specific stones to level.
 	*/
 
-	if (GET_LEVEL(ch) >= get_property("exp.maxExpLevel", 46) && GET_LEVEL(ch) < get_property("epic.maxFreeLevel", 50))
+	if (GET_LEVEL(ch) >= get_property("exp.maxExpLevel", 46) &&
+	    GET_LEVEL(ch) < get_property("epic.maxFreeLevel", 50))
 	{
 		epic_free_level(ch);
 		// advance_level(ch);//, FALSE); handles leveling for wipe2011
@@ -467,7 +486,7 @@ void gain_epic(P_char ch, int type, int data, int amount)
 		}
 		else
 		{
-			afp           = apply_achievement(ch, TAG_EPICS_GAINED);
+			afp = apply_achievement(ch, TAG_EPICS_GAINED);
 			afp->modifier = amount;
 		}
 	}
@@ -486,23 +505,16 @@ void gain_epic(P_char ch, int type, int data, int amount)
 	    epic_gain_skillpoints(ch, skill_notches);
 	  }
 	*/
-	if ((afp->modifier - amount) / errand_notch < afp->modifier / errand_notch && !has_epic_task(ch))
+	if ((afp->modifier - amount) / errand_notch < afp->modifier / errand_notch &&
+	    !has_epic_task(ch))
 	{
 		debug("%s got new task: old epics: %d, new epics: %d, errand_notch: %d, %d < %d.",
-		      J_NAME(ch),
-		      afp->modifier - amount,
-		      afp->modifier,
-		      errand_notch,
-		      (afp->modifier - amount) / errand_notch,
-		      afp->modifier / errand_notch);
+		      J_NAME(ch), afp->modifier - amount, afp->modifier, errand_notch,
+		      (afp->modifier - amount) / errand_notch, afp->modifier / errand_notch);
 		epiclog(56,
-		        "%s got new task: old epics: %d, new epics: %d, errand_notch: %d, %d < %d.",
-		        J_NAME(ch),
-		        afp->modifier - amount,
-		        afp->modifier,
-		        errand_notch,
-		        (afp->modifier - amount) / errand_notch,
-		        afp->modifier / errand_notch);
+			"%s got new task: old epics: %d, new epics: %d, errand_notch: %d, %d < %d.",
+			J_NAME(ch), afp->modifier - amount, afp->modifier, errand_notch,
+			(afp->modifier - amount) / errand_notch, afp->modifier / errand_notch);
 		epic_choose_new_epic_task(ch);
 	}
 }
@@ -521,7 +533,10 @@ struct affected_type *get_epic_task(P_char ch)
 	return NULL;
 }
 
-bool has_epic_task(P_char ch) { return (get_epic_task(ch) != NULL); }
+bool has_epic_task(P_char ch)
+{
+	return (get_epic_task(ch) != NULL);
+}
 
 void epic_frag(P_char ch, int victim_pid, int amount)
 {
@@ -531,8 +546,11 @@ void epic_frag(P_char ch, int victim_pid, int amount)
 	{
 		if (abs(afp->modifier) == SPILL_BLOOD)
 		{
-			send_to_char("The &+rGods of Duris&n are very pleased with this &+rblood&n.\n", ch);
-			send_to_char("You can now progress further in your quest for epic power!\n", ch);
+			send_to_char(
+				"The &+rGods of Duris&n are very pleased with this &+rblood&n.\n",
+				ch);
+			send_to_char("You can now progress further in your quest for epic power!\n",
+				     ch);
 			// Spill blood task is now a flat 500 epics, not a multiplier since that very easily translates to 3*0=0.
 			amount += 500;
 			affect_remove(ch, afp);
@@ -565,37 +583,45 @@ void epic_feed_artifacts(P_char ch, int epics, int epic_type)
 
 	switch (epic_type)
 	{
-		case EPIC_ZONE:
-			feed_seconds = (int)(feed_seconds * get_property("artifact.feeding.epic.typeMod.zone", 1.0));
-			break;
-		case EPIC_PVP:
-			feed_seconds = (int)(feed_seconds * get_property("artifact.feeding.epic.typeMod.pvp", 2.0));
-			break;
-		case EPIC_SHIP_PVP:
-			feed_seconds = (int)(feed_seconds * get_property("artifact.feeding.epic.typeMod.pvpShip", 2.0));
-			break;
-		case EPIC_ELITE_MOB:
-			feed_seconds = (int)(feed_seconds * get_property("artifact.feeding.epic.typeMod.eliteMob", 1.0));
-			break;
-		case EPIC_QUEST:
-			feed_seconds = (int)(feed_seconds * get_property("artifact.feeding.epic.typeMod.quest", 1.0));
-			break;
-		case EPIC_RANDOM_ZONE:
-			feed_seconds = (int)(feed_seconds * get_property("artifact.feeding.epic.typeMod.randomZone", 1.0));
-			break;
-		case EPIC_NEXUS_STONE:
-			feed_seconds = (int)(feed_seconds * get_property("artifact.feeding.epic.typeMod.nexusStone", 1.0));
-			break;
-		// This can add up quickly for repeatable boons, so we use a value less than 1.
-		case EPIC_BOON:
-			feed_seconds = (int)(feed_seconds * get_property("artifact.feeding.epic.typeMod.boon", 0.25));
-			break;
-		case EPIC_STRAHDME:
-		case EPIC_RANDOMMOB:
-			break;
-		default:
-			feed_seconds = 0;
-			break;
+	case EPIC_ZONE:
+		feed_seconds = (int)(feed_seconds *
+				     get_property("artifact.feeding.epic.typeMod.zone", 1.0));
+		break;
+	case EPIC_PVP:
+		feed_seconds = (int)(feed_seconds *
+				     get_property("artifact.feeding.epic.typeMod.pvp", 2.0));
+		break;
+	case EPIC_SHIP_PVP:
+		feed_seconds = (int)(feed_seconds *
+				     get_property("artifact.feeding.epic.typeMod.pvpShip", 2.0));
+		break;
+	case EPIC_ELITE_MOB:
+		feed_seconds = (int)(feed_seconds *
+				     get_property("artifact.feeding.epic.typeMod.eliteMob", 1.0));
+		break;
+	case EPIC_QUEST:
+		feed_seconds = (int)(feed_seconds *
+				     get_property("artifact.feeding.epic.typeMod.quest", 1.0));
+		break;
+	case EPIC_RANDOM_ZONE:
+		feed_seconds = (int)(feed_seconds *
+				     get_property("artifact.feeding.epic.typeMod.randomZone", 1.0));
+		break;
+	case EPIC_NEXUS_STONE:
+		feed_seconds = (int)(feed_seconds *
+				     get_property("artifact.feeding.epic.typeMod.nexusStone", 1.0));
+		break;
+	// This can add up quickly for repeatable boons, so we use a value less than 1.
+	case EPIC_BOON:
+		feed_seconds = (int)(feed_seconds *
+				     get_property("artifact.feeding.epic.typeMod.boon", 0.25));
+		break;
+	case EPIC_STRAHDME:
+	case EPIC_RANDOMMOB:
+		break;
+	default:
+		feed_seconds = 0;
+		break;
 	}
 
 	/* Making feed normal because we have artifact_wars for chars with multiple artis now.
@@ -616,7 +642,10 @@ void epic_feed_artifacts(P_char ch, int epics, int epic_type)
 		obj = ch->equipment[i];
 		if (obj && IS_ARTIFACT(obj))
 		{
-			artifact_feed_sql(ch, obj, feed_seconds, ((epic_type == EPIC_PVP || epic_type == EPIC_SHIP_PVP) ? TRUE : FALSE));
+			artifact_feed_sql(ch, obj, feed_seconds,
+					  ((epic_type == EPIC_PVP || epic_type == EPIC_SHIP_PVP) ?
+						   TRUE :
+						   FALSE));
 		}
 	}
 }
@@ -644,7 +673,8 @@ void epic_stone_absorb(P_obj obj)
 			continue;
 
 		/* if the other object is smaller epic stone, absorb it */
-		if (OBJ_VNUM(tobj) <= OBJ_VNUM(obj) && obj_index[tobj->R_num].func.obj == epic_stone)
+		if (OBJ_VNUM(tobj) <= OBJ_VNUM(obj) &&
+		    obj_index[tobj->R_num].func.obj == epic_stone)
 		{
 			extract_obj(tobj);
 		}
@@ -666,7 +696,8 @@ int epic_stone_payout(P_obj obj, P_char ch)
 		num_players = 0;
 		for (struct group_list *gl = ch->group; gl; gl = gl->next)
 		{
-			if (IS_PC(gl->ch) && !IS_TRUSTED(gl->ch) && (gl->ch->in_room == ch->in_room))
+			if (IS_PC(gl->ch) && !IS_TRUSTED(gl->ch) &&
+			    (gl->ch->in_room == ch->in_room))
 			{
 				num_players++;
 			}
@@ -683,7 +714,8 @@ int epic_stone_payout(P_obj obj, P_char ch)
 	// Payout is the base value of the stone * (100% for up to max group size, then max/current % for larger groups).
 	int payout = (int)(obj->value[0] * obj->value[1] / num_players);
 	// Max_payout is just the base value of the stone * 10.
-	int max_payout = (int)(obj->value[0] * (float)get_property("epic.touch.maxPayoutFactor", 10.));
+	int max_payout =
+		(int)(obj->value[0] * (float)get_property("epic.touch.maxPayoutFactor", 10.));
 
 	//  DEPRECATED - Torgal 12/21/09
 	//  float freq_mod = get_epic_zone_frequency_mod(obj->value[2]);
@@ -692,11 +724,12 @@ int epic_stone_payout(P_obj obj, P_char ch)
 	//  epic_value = MAX(1, (int) (epic_value * freq_mod));
 	//  debug("epic_stone_payout:freq_mod: old_epic_value: %d, epic_value: %d", __old_epic_value, epic_value);
 
-	float alignment_mod    = get_epic_zone_alignment_mod(obj->value[2], GET_RACEWAR(ch));
-	int   __old_epic_value = payout;
+	float alignment_mod = get_epic_zone_alignment_mod(obj->value[2], GET_RACEWAR(ch));
+	int __old_epic_value = payout;
 
 	payout = MAX(1, (int)(payout * alignment_mod));
-	debug("epic_stone_payout:alignment_mod: old_epic_value: %d, epic_value: %d", __old_epic_value, payout);
+	debug("epic_stone_payout:alignment_mod: old_epic_value: %d, epic_value: %d",
+	      __old_epic_value, payout);
 
 	int epic_value = payout * get_property("epic.touch.PayoutFactor", 1.000);
 
@@ -710,20 +743,20 @@ void epic_stone_feed_artifacts(P_obj obj, P_char ch)
 	int feed_amount = 0;
 	switch (OBJ_VNUM(obj))
 	{
-		case EPIC_MONOLITH:
-			feed_amount = 3600 * get_property("artifact.feeding.epic.hours.monolith", 12);
-			break;
+	case EPIC_MONOLITH:
+		feed_amount = 3600 * get_property("artifact.feeding.epic.hours.monolith", 12);
+		break;
 
-		case EPIC_LARGE_STONE:
-			feed_amount = 3600 * get_property("artifact.feeding.epic.hours.large", 6);
-			break;
+	case EPIC_LARGE_STONE:
+		feed_amount = 3600 * get_property("artifact.feeding.epic.hours.large", 6);
+		break;
 
-		case EPIC_SMALL_STONE:
-			feed_amount = 3600 * get_property("artifact.feeding.epic.hours.small", 1);
-			break;
+	case EPIC_SMALL_STONE:
+		feed_amount = 3600 * get_property("artifact.feeding.epic.hours.small", 1);
+		break;
 
-		default:
-			feed_amount = 0;
+	default:
+		feed_amount = 0;
 	}
 }
 
@@ -731,8 +764,8 @@ void epic_stone_set_affect(P_char ch)
 {
 	struct affected_type af;
 	memset(&af, 0, sizeof(af));
-	af.type     = TAG_EPIC_MONOLITH;
-	af.flags    = AFFTYPE_STORE | AFFTYPE_PERM;
+	af.type = TAG_EPIC_MONOLITH;
+	af.flags = AFFTYPE_STORE | AFFTYPE_PERM;
 	af.duration = 1 + get_property("epic.monolith.activeTime", 60) / 75;
 	affect_to_char(ch, &af);
 }
@@ -744,7 +777,8 @@ __attribute__((deprecated)) void epic_free_level(P_char ch)
 
 	int epics_for_level = get_property(buf, 1 << ((GET_LEVEL(ch) + 1) - 43));
 
-	if (GET_EXP(ch) >= new_exp_table[GET_LEVEL(ch) + 1] && ch->only.pc->epics >= epics_for_level)
+	if (GET_EXP(ch) >= new_exp_table[GET_LEVEL(ch) + 1] &&
+	    ch->only.pc->epics >= epics_for_level)
 	{
 		GET_EXP(ch) -= new_exp_table[GET_LEVEL(ch) + 1];
 		ch->only.pc->epics -= epics_for_level;
@@ -756,34 +790,33 @@ __attribute__((deprecated)) void epic_free_level(P_char ch)
 void epic_stone_level_char(P_obj obj, P_char ch)
 {
 	char buf[256];
-	int  epics_for_level, anystone_epics_for_level;
-	int  levelcap = sql_level_cap(GET_RACEWAR(ch));
+	int epics_for_level, anystone_epics_for_level;
+	int levelcap = sql_level_cap(GET_RACEWAR(ch));
 
 	if (!IS_ALIVE(ch) || IS_NPC(ch) || !obj)
 	{
 		debug("epic_stone_level_char: Bad argument(s).");
 		logit(LOG_DEBUG,
 		      "epic_stone_level_char: Bad argument(s): Char '%s' : %s, obj: %s (%d).",
-		      (ch == NULL) ? "NULL" : J_NAME(ch),
-		      IS_ALIVE(ch) ? "ALIVE" : "NOT ALIVE",
+		      (ch == NULL) ? "NULL" : J_NAME(ch), IS_ALIVE(ch) ? "ALIVE" : "NOT ALIVE",
 		      (obj == NULL) ? "NULL" : obj->short_description,
 		      (obj == NULL) ? -1 : OBJ_VNUM(obj));
-		epiclog(56,
-		        "epic_stone_level_char: Bad argument(s): Char '%s' : %s, obj: %s (%d).",
-		        (ch == NULL) ? "NULL" : J_NAME(ch),
-		        IS_ALIVE(ch) ? "ALIVE" : "NOT ALIVE",
-		        (obj == NULL) ? "NULL" : obj->short_description,
-		        (obj == NULL) ? -1 : OBJ_VNUM(obj));
+		epiclog(56, "epic_stone_level_char: Bad argument(s): Char '%s' : %s, obj: %s (%d).",
+			(ch == NULL) ? "NULL" : J_NAME(ch), IS_ALIVE(ch) ? "ALIVE" : "NOT ALIVE",
+			(obj == NULL) ? "NULL" : obj->short_description,
+			(obj == NULL) ? -1 : OBJ_VNUM(obj));
 		return;
 	}
 
 	// Already attained max level or doesn't want to spend epics to level.
-	if (GET_LEVEL(ch) >= MAXLVLMORTAL || PLR3_FLAGGED(ch, PLR3_NOLEVEL) || (GET_LEVEL(ch) >= levelcap))
+	if (GET_LEVEL(ch) >= MAXLVLMORTAL || PLR3_FLAGGED(ch, PLR3_NOLEVEL) ||
+	    (GET_LEVEL(ch) >= levelcap))
 	{
 		return;
 	}
 
-	if (IS_MULTICLASS_PC(ch) && GET_LEVEL(ch) >= get_property("exp.maxMultiLevel", MAXLVLMORTAL))
+	if (IS_MULTICLASS_PC(ch) &&
+	    GET_LEVEL(ch) >= get_property("exp.maxMultiLevel", MAXLVLMORTAL))
 	{
 		return;
 	}
@@ -796,9 +829,14 @@ void epic_stone_level_char(P_obj obj, P_char ch)
 	if (epics_for_level == -1)
 	{
 		send_to_char("&+RError in epic leveling please tell a God immediately.&n\n", ch);
-		debug("epic_stone_level_char: Couldn't find property '%s' which is vital for leveling.", buf);
-		logit(LOG_DEBUG, "epic_stone_level_char: Couldn't find property '%s' which is vital for leveling.", buf);
-		epiclog(56, "epic_stone_level_char: Couldn't find property '%s' which is vital for leveling.", buf);
+		debug("epic_stone_level_char: Couldn't find property '%s' which is vital for leveling.",
+		      buf);
+		logit(LOG_DEBUG,
+		      "epic_stone_level_char: Couldn't find property '%s' which is vital for leveling.",
+		      buf);
+		epiclog(56,
+			"epic_stone_level_char: Couldn't find property '%s' which is vital for leveling.",
+			buf);
 		return;
 	}
 
@@ -817,7 +855,9 @@ void epic_stone_level_char(P_obj obj, P_char ch)
 	anystone_epics_for_level = epics_for_level * 2;
 
 	// If they have the exp, and epics and touch right stone, or double epics..
-	if (GET_EXP(ch) >= new_exp_table[GET_LEVEL(ch) + 1] && ((ch->only.pc->epics >= epics_for_level && GET_LEVEL(ch) == obj->value[3] - 1) || ch->only.pc->epics >= anystone_epics_for_level))
+	if (GET_EXP(ch) >= new_exp_table[GET_LEVEL(ch) + 1] &&
+	    ((ch->only.pc->epics >= epics_for_level && GET_LEVEL(ch) == obj->value[3] - 1) ||
+	     ch->only.pc->epics >= anystone_epics_for_level))
 	{
 		GET_EXP(ch) -= new_exp_table[GET_LEVEL(ch) + 1];
 		ch->only.pc->epics -= epics_for_level;
@@ -828,7 +868,7 @@ void epic_stone_level_char(P_obj obj, P_char ch)
 
 void epic_stone_one_touch(P_obj obj, P_char ch, int epic_value)
 {
-	int  curr_epics;
+	int curr_epics;
 	char buf[256];
 
 	if (!obj || !ch || !epic_value || IS_NPC(ch))
@@ -853,11 +893,7 @@ void epic_stone_one_touch(P_obj obj, P_char ch, int epic_value)
 	    "magical energies flowing through the World of &+rDuris&n!\n"
 	    "Your body and mind align smoothly with the energy, embracing its powers, giving\n"
 	    "you strength and new knowledge!",
-	    FALSE,
-	    ch,
-	    obj,
-	    0,
-	    TO_CHAR);
+	    FALSE, ch, obj, 0, TO_CHAR);
 
 	epic_stone_set_affect(ch);
 
@@ -866,11 +902,12 @@ void epic_stone_one_touch(P_obj obj, P_char ch, int epic_value)
 	if (afp && ((afp->modifier == obj->value[2]) || (0 - afp->modifier == obj->value[2])))
 	{
 		send_to_char("The &+rGods of Duris&n are very pleased with your achievement!\n"
-		             "You can now continue with your quest for &+Wpower!\n",
-		             ch);
+			     "You can now continue with your quest for &+Wpower!\n",
+			     ch);
 		epic_complete_errand(ch, afp->modifier);
 		affect_remove(ch, afp);
-		gain_epic(ch, EPIC_ZONE, obj->value[2], (int)(epic_value * get_property("epic.errand.completeBonusMod", 1.5)));
+		gain_epic(ch, EPIC_ZONE, obj->value[2],
+			  (int)(epic_value * get_property("epic.errand.completeBonusMod", 1.5)));
 	}
 	else
 	{
@@ -882,7 +919,9 @@ void epic_stone_one_touch(P_obj obj, P_char ch, int epic_value)
 	// Characters can now level up to 55 by epics and exp alone - 11/13/12 Drannak
 	// Characters can now level up to 56 with double epics/exp. If they get BIT_32*2 epics they can be a imm... not.
 	// Characters with exp >= exp needed for lvl need epics to level.
-	if ((GET_EXP(ch) >= new_exp_table[GET_LEVEL(ch) + 1]) && ((GET_LEVEL(ch) == (obj->value[3] - 1)) || (curr_epics / 2 > get_property(buf, (int)BIT_32))))
+	if ((GET_EXP(ch) >= new_exp_table[GET_LEVEL(ch) + 1]) &&
+	    ((GET_LEVEL(ch) == (obj->value[3] - 1)) ||
+	     (curr_epics / 2 > get_property(buf, (int)BIT_32))))
 	{
 		epic_stone_level_char(obj, ch);
 	}
@@ -891,8 +930,8 @@ void epic_stone_one_touch(P_obj obj, P_char ch, int epic_value)
 
 int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int   zone_number = -1;
-	char  arg1[MAX_INPUT_LENGTH];
+	int zone_number = -1;
+	char arg1[MAX_INPUT_LENGTH];
 	P_obj stoneobj = NULL;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -906,7 +945,7 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 		/* set zone id */
 		if (!obj->value[2])
 		{
-			zone_number   = zone_table[obj_zone_id(obj)].number;
+			zone_number = zone_table[obj_zone_id(obj)].number;
 			obj->value[2] = zone_number;
 
 			// set epic payout, suggested_group_size and epic_level from db
@@ -925,7 +964,8 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 
 			if (OBJ_MAGIC(obj) && !number(0, 5))
 			{
-				act("A powerful humming sound can be heard from $p.", FALSE, 0, obj, 0, TO_ROOM);
+				act("A powerful humming sound can be heard from $p.", FALSE, 0, obj,
+				    0, TO_ROOM);
 			}
 		}
 	}
@@ -971,8 +1011,10 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 		/* stones must be touched in the zone in which they were loaded */
 		if (zone_number && world[ch->in_room].zone != real_zone(zone_number))
 		{
-			act("A sick noise emanates from $p, and a large crack runs down the side! Something was misplaced!", FALSE, ch, obj, 0, TO_CHAR);
-			act("A sick noise emanates from $p, and a large crack runs down the side! Something was misplaced!", FALSE, ch, obj, 0, TO_ROOM);
+			act("A sick noise emanates from $p, and a large crack runs down the side! Something was misplaced!",
+			    FALSE, ch, obj, 0, TO_CHAR);
+			act("A sick noise emanates from $p, and a large crack runs down the side! Something was misplaced!",
+			    FALSE, ch, obj, 0, TO_ROOM);
 
 			REMOVE_BIT(obj->extra2_flags, ITEM2_MAGIC);
 			return TRUE;
@@ -994,16 +1036,14 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 		act("$p begins to vibrate madly, shaking the entire room\n"
 		    "almost knocking you off your feet!\n"
 		    "Suddenly, a huge storm of &+Bblue energy&n erupts from it!",
-		    FALSE,
-		    ch,
-		    obj,
-		    0,
-		    TO_ROOM);
+		    FALSE, ch, obj, 0, TO_ROOM);
 
 		if (zone_number)
 		{
-			statuslog(GREATER_G, "%s touched the epic stone in %s", ch->player.name, zone_table[real_zone0(zone_number)].name);
-			epiclog(56, "%s touched the epic stone in %s.", J_NAME(ch), strip_ansi(zone_table[real_zone0(zone_number)].name).c_str());
+			statuslog(GREATER_G, "%s touched the epic stone in %s", ch->player.name,
+				  zone_table[real_zone0(zone_number)].name);
+			epiclog(56, "%s touched the epic stone in %s.", J_NAME(ch),
+				strip_ansi(zone_table[real_zone0(zone_number)].name).c_str());
 			if (get_property("thanksgiving", 0.000))
 				thanksgiving_proc(ch);
 		}
@@ -1017,7 +1057,8 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			for (struct group_list *gl = ch->group; gl; gl = gl->next)
 			{
-				if (gl->ch != ch && IS_PC(gl->ch) && !IS_TRUSTED(gl->ch) && gl->ch->in_room == ch->in_room)
+				if (gl->ch != ch && IS_PC(gl->ch) && !IS_TRUSTED(gl->ch) &&
+				    gl->ch->in_room == ch->in_room)
 				{
 					group_size++;
 					epic_stone_one_touch(obj, gl->ch, epic_value);
@@ -1028,32 +1069,32 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 		if (zone_number > 0 && zone_number != RANDOM_ZONE_ID)
 		{
 			int delta = GET_RACEWAR(ch);
-			delta     = (delta == RACEWAR_EVIL) ? -1 : (delta == RACEWAR_GOOD ? 1 : 0);
+			delta = (delta == RACEWAR_EVIL) ? -1 : (delta == RACEWAR_GOOD ? 1 : 0);
 			if (delta != 0)
 				update_epic_zone_alignment(zone_number, delta);
 
 			// set completed flag
-			epic_zone_completions.push_back(epic_zone_completion(zone_number, time(NULL), delta));
+			epic_zone_completions.push_back(
+				epic_zone_completion(zone_number, time(NULL), delta));
 			redis_invalidate_epic_zones();
-			db_query("UPDATE zones SET last_touch = NOW() WHERE number = '%d'", zone_number);
-			db_query("INSERT INTO zone_touches (boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value, alignment_delta) VALUES (FROM_UNIXTIME(%d), NOW(), %d, %d, %d, %d, %d);",
-			         boot_time,
-			         zone_number,
-			         GET_PID(ch),
-			         group_size,
-			         epic_value,
-			         delta);
+			db_query("UPDATE zones SET last_touch = NOW() WHERE number = '%d'",
+				 zone_number);
+			db_query(
+				"INSERT INTO zone_touches (boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value, alignment_delta) VALUES (FROM_UNIXTIME(%d), NOW(), %d, %d, %d, %d, %d);",
+				boot_time, zone_number, GET_PID(ch), group_size, epic_value, delta);
 
 			//  Allow !reset zones to possibly reset somewhere down the line...  - Jexni 11/7/11
 			if (!zone_table[zone_number].reset_mode)
 			{
 				int x = real_zone(zone_number);
 				add_event(event_reset_zone, 1, 0, 0, 0, 0, &x, sizeof(x));
-				db_query("UPDATE zones SET reset_perc = 1 WHERE number = '%d'", zone_number);
+				db_query("UPDATE zones SET reset_perc = 1 WHERE number = '%d'",
+					 zone_number);
 			}
 		}
 
-		act("$p flashes brightly then blurs, and remains still and powerless.", FALSE, 0, obj, 0, TO_ROOM);
+		act("$p flashes brightly then blurs, and remains still and powerless.", FALSE, 0,
+		    obj, 0, TO_ROOM);
 		REMOVE_BIT(obj->extra2_flags, ITEM2_MAGIC);
 
 		return TRUE;
@@ -1064,17 +1105,17 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 
 void epic_zone_balance()
 {
-	int                    i, alignment, delta;
-	long                   lt;
+	int i, alignment, delta;
+	long lt;
 	vector<epic_zone_data> epic_zones = get_epic_zones();
 
-	bool                   touch_last;
+	bool touch_last;
 
 	for (i = 0; i < epic_zones.size(); i++)
 	{
 		touch_last = false;
-		alignment  = epic_zones[i].alignment;
-		lt         = epic_zones[i].last_touch;
+		alignment = epic_zones[i].alignment;
+		lt = epic_zones[i].last_touch;
 
 		if (lt == 0)
 			touch_last = true;
@@ -1082,13 +1123,15 @@ void epic_zone_balance()
 		if (alignment == 0)
 		{
 			if (touch_last)
-				db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
+				db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'",
+					 epic_zones[i].number);
 			continue;
 		}
 
 		// debug("zone %d alignment %d", epic_zones[i].number, alignment);
 
-		if ((time(NULL) - lt) > ((int)get_property("epic.alignment.reset.hour", 7 * 24) * 60 * 60))
+		if ((time(NULL) - lt) >
+		    ((int)get_property("epic.alignment.reset.hour", 7 * 24) * 60 * 60))
 		{
 			if (alignment > 0)
 				delta = -1;
@@ -1101,7 +1144,8 @@ void epic_zone_balance()
 		}
 
 		if (touch_last)
-			db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'", epic_zones[i].number);
+			db_query("UPDATE zones SET last_touch=NOW() WHERE number='%d'",
+				 epic_zones[i].number);
 	}
 }
 
@@ -1117,9 +1161,9 @@ void epic_initialization()
 int stat_shops(int room, P_char ch, int cmd, char *arg)
 {
 	char buf[MAX_INPUT_LENGTH];
-	int  cost         = 0;
-	int  cost_mod     = 8;
-	int  MAX_SHOP_BUY = 95;
+	int cost = 0;
+	int cost_mod = 8;
+	int MAX_SHOP_BUY = 95;
 
 	/* check for periodic event calls */
 	if (cmd == CMD_SET_PERIODIC)
@@ -1134,65 +1178,95 @@ int stat_shops(int room, P_char ch, int cmd, char *arg)
 
 		cost = ch->base_stats.Str * ch->base_stats.Str * ch->base_stats.Str * cost_mod;
 		if (ch->base_stats.Str < MAX_SHOP_BUY)
-			snprintf(buf, MAX_INPUT_LENGTH, "1. A &+Gmagical&n strength potion for %s\r\n", coin_stringv(cost));
+			snprintf(buf, MAX_INPUT_LENGTH,
+				 "1. A &+Gmagical&n strength potion for %s\r\n",
+				 coin_stringv(cost));
 		else
-			snprintf(buf, MAX_INPUT_LENGTH, "1. A &+Gmagical&n strength potion is not available for you.\r\n");
+			snprintf(buf, MAX_INPUT_LENGTH,
+				 "1. A &+Gmagical&n strength potion is not available for you.\r\n");
 		send_to_char(buf, ch);
 
 		cost = ch->base_stats.Agi * ch->base_stats.Agi * ch->base_stats.Agi * cost_mod;
 		if (ch->base_stats.Agi < MAX_SHOP_BUY)
-			snprintf(buf, MAX_INPUT_LENGTH, "2. A &+Gmagical&n agility potion for %s\r\n", coin_stringv(cost));
+			snprintf(buf, MAX_INPUT_LENGTH,
+				 "2. A &+Gmagical&n agility potion for %s\r\n", coin_stringv(cost));
 		else
-			snprintf(buf, MAX_INPUT_LENGTH, "2. A &+Gmagical&n agility potion is not available for you.\r\n");
+			snprintf(buf, MAX_INPUT_LENGTH,
+				 "2. A &+Gmagical&n agility potion is not available for you.\r\n");
 		send_to_char(buf, ch);
 
 		cost = ch->base_stats.Dex * ch->base_stats.Dex * ch->base_stats.Dex * cost_mod;
 		if (ch->base_stats.Dex < MAX_SHOP_BUY)
-			snprintf(buf, MAX_INPUT_LENGTH, "3. A &+Gmagical&n dexterity potion for %s\r\n", coin_stringv(cost));
+			snprintf(buf, MAX_INPUT_LENGTH,
+				 "3. A &+Gmagical&n dexterity potion for %s\r\n",
+				 coin_stringv(cost));
 		else
-			snprintf(buf, MAX_INPUT_LENGTH, "3. A &+Gmagical&n dexterity potion is not available for you.\r\n");
+			snprintf(
+				buf, MAX_INPUT_LENGTH,
+				"3. A &+Gmagical&n dexterity potion is not available for you.\r\n");
 		send_to_char(buf, ch);
 
 		cost = ch->base_stats.Con * ch->base_stats.Con * ch->base_stats.Con * cost_mod;
 		if (ch->base_stats.Con < MAX_SHOP_BUY)
-			snprintf(buf, MAX_INPUT_LENGTH, "4. A &+Gmagical&n constitution potion for %s\r\n", coin_stringv(cost));
+			snprintf(buf, MAX_INPUT_LENGTH,
+				 "4. A &+Gmagical&n constitution potion for %s\r\n",
+				 coin_stringv(cost));
 		else
-			snprintf(buf, MAX_INPUT_LENGTH, "4. A &+Gmagical&n constitution potion is not available for you.\r\n");
+			snprintf(
+				buf, MAX_INPUT_LENGTH,
+				"4. A &+Gmagical&n constitution potion is not available for you.\r\n");
 		send_to_char(buf, ch);
 
 		cost = ch->base_stats.Luk * ch->base_stats.Luk * ch->base_stats.Luk * cost_mod;
 		if (ch->base_stats.Luk < MAX_SHOP_BUY)
-			snprintf(buf, MAX_INPUT_LENGTH, "5. A &+Gmagical&n luck potion for %s\r\n", coin_stringv(cost));
+			snprintf(buf, MAX_INPUT_LENGTH, "5. A &+Gmagical&n luck potion for %s\r\n",
+				 coin_stringv(cost));
 		else
-			snprintf(buf, MAX_INPUT_LENGTH, "5. A &+Gmagical&n luck stat potion is not available for you.\r\n");
+			snprintf(
+				buf, MAX_INPUT_LENGTH,
+				"5. A &+Gmagical&n luck stat potion is not available for you.\r\n");
 		send_to_char(buf, ch);
 
 		cost = ch->base_stats.Pow * ch->base_stats.Pow * ch->base_stats.Pow * cost_mod;
 		if (ch->base_stats.Pow < MAX_SHOP_BUY)
-			snprintf(buf, MAX_INPUT_LENGTH, "6. A &+Gmagical&n power potion for %s\r\n", coin_stringv(cost));
+			snprintf(buf, MAX_INPUT_LENGTH, "6. A &+Gmagical&n power potion for %s\r\n",
+				 coin_stringv(cost));
 		else
-			snprintf(buf, MAX_INPUT_LENGTH, "6. A &+Gmagical&n power stat potion is not available for you.\r\n");
+			snprintf(
+				buf, MAX_INPUT_LENGTH,
+				"6. A &+Gmagical&n power stat potion is not available for you.\r\n");
 		send_to_char(buf, ch);
 
 		cost = ch->base_stats.Int * ch->base_stats.Int * ch->base_stats.Int * cost_mod;
 		if (ch->base_stats.Int < MAX_SHOP_BUY)
-			snprintf(buf, MAX_INPUT_LENGTH, "7. A &+Gmagical&n intelligence potion for %s\r\n", coin_stringv(cost));
+			snprintf(buf, MAX_INPUT_LENGTH,
+				 "7. A &+Gmagical&n intelligence potion for %s\r\n",
+				 coin_stringv(cost));
 		else
-			snprintf(buf, MAX_INPUT_LENGTH, "7. A &+Gmagical&n intelligence stat potion is not available for you.\r\n");
+			snprintf(
+				buf, MAX_INPUT_LENGTH,
+				"7. A &+Gmagical&n intelligence stat potion is not available for you.\r\n");
 		send_to_char(buf, ch);
 
 		cost = ch->base_stats.Wis * ch->base_stats.Wis * ch->base_stats.Wis * cost_mod;
 		if (ch->base_stats.Wis < MAX_SHOP_BUY)
-			snprintf(buf, MAX_INPUT_LENGTH, "8. A &+Gmagical&n wisdom potion for %s\r\n", coin_stringv(cost));
+			snprintf(buf, MAX_INPUT_LENGTH,
+				 "8. A &+Gmagical&n wisdom potion for %s\r\n", coin_stringv(cost));
 		else
-			snprintf(buf, MAX_INPUT_LENGTH, "8. A &+Gmagical&n wisdom stat potion is not available for you.\r\n");
+			snprintf(
+				buf, MAX_INPUT_LENGTH,
+				"8. A &+Gmagical&n wisdom stat potion is not available for you.\r\n");
 		send_to_char(buf, ch);
 
 		cost = ch->base_stats.Cha * ch->base_stats.Cha * ch->base_stats.Cha * cost_mod;
 		if (ch->base_stats.Cha < MAX_SHOP_BUY)
-			snprintf(buf, MAX_INPUT_LENGTH, "9. A &+Gmagical&n charisma potion for %s\r\n", coin_stringv(cost));
+			snprintf(buf, MAX_INPUT_LENGTH,
+				 "9. A &+Gmagical&n charisma potion for %s\r\n",
+				 coin_stringv(cost));
 		else
-			snprintf(buf, MAX_INPUT_LENGTH, "9. A &+Gmagical&n charisma stat potion  is not available for you.\r\n");
+			snprintf(
+				buf, MAX_INPUT_LENGTH,
+				"9. A &+Gmagical&n charisma stat potion  is not available for you.\r\n");
 		send_to_char(buf, ch);
 
 		return TRUE;
@@ -1207,163 +1281,172 @@ int stat_shops(int room, P_char ch, int cmd, char *arg)
 		}
 		switch (atoi(buf))
 		{
-			case 1:
-				cost = ch->base_stats.Str * ch->base_stats.Str * ch->base_stats.Str * cost_mod;
-				if (GET_MONEY(ch) < cost)
-				{
-					send_to_char("You dont have enough money!\r\n", ch);
-					return TRUE;
-				}
-				if (ch->base_stats.Str >= MAX_SHOP_BUY)
-				{
-					send_to_char("You cant buy that.\r\n", ch);
-					return TRUE;
-				}
+		case 1:
+			cost = ch->base_stats.Str * ch->base_stats.Str * ch->base_stats.Str *
+			       cost_mod;
+			if (GET_MONEY(ch) < cost)
+			{
+				send_to_char("You dont have enough money!\r\n", ch);
+				return TRUE;
+			}
+			if (ch->base_stats.Str >= MAX_SHOP_BUY)
+			{
+				send_to_char("You cant buy that.\r\n", ch);
+				return TRUE;
+			}
 
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
-				spell_perm_increase_str(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			SUB_MONEY(ch, cost, 0);
+			send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
+			spell_perm_increase_str(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			return TRUE;
+			break;
+		case 2:
+			cost = ch->base_stats.Agi * ch->base_stats.Agi * ch->base_stats.Agi *
+			       cost_mod;
+			if (GET_MONEY(ch) < cost)
+			{
+				send_to_char("You dont have enough money!\r\n", ch);
 				return TRUE;
-				break;
-			case 2:
-				cost = ch->base_stats.Agi * ch->base_stats.Agi * ch->base_stats.Agi * cost_mod;
-				if (GET_MONEY(ch) < cost)
-				{
-					send_to_char("You dont have enough money!\r\n", ch);
-					return TRUE;
-				}
-				if (ch->base_stats.Agi >= MAX_SHOP_BUY)
-				{
-					send_to_char("You cant buy that.\r\n", ch);
-					return TRUE;
-				}
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
-				spell_perm_increase_agi(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			}
+			if (ch->base_stats.Agi >= MAX_SHOP_BUY)
+			{
+				send_to_char("You cant buy that.\r\n", ch);
 				return TRUE;
-				break;
-			case 3:
-				cost = ch->base_stats.Dex * ch->base_stats.Dex * ch->base_stats.Dex * cost_mod;
-				if (GET_MONEY(ch) < cost)
-				{
-					send_to_char("You dont have enough money!\r\n", ch);
-					return TRUE;
-				}
-				if (ch->base_stats.Dex >= MAX_SHOP_BUY)
-				{
-					send_to_char("You cant buy that.\r\n", ch);
-					return TRUE;
-				}
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
-				spell_perm_increase_dex(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			}
+			SUB_MONEY(ch, cost, 0);
+			send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
+			spell_perm_increase_agi(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			return TRUE;
+			break;
+		case 3:
+			cost = ch->base_stats.Dex * ch->base_stats.Dex * ch->base_stats.Dex *
+			       cost_mod;
+			if (GET_MONEY(ch) < cost)
+			{
+				send_to_char("You dont have enough money!\r\n", ch);
 				return TRUE;
-				break;
-			case 4:
-				cost = ch->base_stats.Con * ch->base_stats.Con * ch->base_stats.Con * cost_mod;
-				if (GET_MONEY(ch) < cost)
-				{
-					send_to_char("You dont have enough money!\r\n", ch);
-					return TRUE;
-				}
-				if (ch->base_stats.Con >= MAX_SHOP_BUY)
-				{
-					send_to_char("You cant buy that.\r\n", ch);
-					return TRUE;
-				}
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
-				spell_perm_increase_con(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			}
+			if (ch->base_stats.Dex >= MAX_SHOP_BUY)
+			{
+				send_to_char("You cant buy that.\r\n", ch);
 				return TRUE;
-				break;
-			case 5:
-				cost = ch->base_stats.Luk * ch->base_stats.Luk * ch->base_stats.Luk * cost_mod;
-				if (GET_MONEY(ch) < cost)
-				{
-					send_to_char("You dont have enough money!\r\n", ch);
-					return TRUE;
-				}
-				if (ch->base_stats.Luk >= MAX_SHOP_BUY)
-				{
-					send_to_char("You cant buy that.\r\n", ch);
-					return TRUE;
-				}
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
-				spell_perm_increase_luck(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			}
+			SUB_MONEY(ch, cost, 0);
+			send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
+			spell_perm_increase_dex(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			return TRUE;
+			break;
+		case 4:
+			cost = ch->base_stats.Con * ch->base_stats.Con * ch->base_stats.Con *
+			       cost_mod;
+			if (GET_MONEY(ch) < cost)
+			{
+				send_to_char("You dont have enough money!\r\n", ch);
 				return TRUE;
-				break;
-			case 6:
-				cost = ch->base_stats.Pow * ch->base_stats.Pow * ch->base_stats.Pow * cost_mod;
-				if (GET_MONEY(ch) < cost)
-				{
-					send_to_char("You dont have enough money!\r\n", ch);
-					return TRUE;
-				}
-				if (ch->base_stats.Pow >= MAX_SHOP_BUY)
-				{
-					send_to_char("You cant buy that.\r\n", ch);
-					return TRUE;
-				}
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
-				spell_perm_increase_pow(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			}
+			if (ch->base_stats.Con >= MAX_SHOP_BUY)
+			{
+				send_to_char("You cant buy that.\r\n", ch);
 				return TRUE;
-				break;
-			case 7:
-				cost = ch->base_stats.Int * ch->base_stats.Int * ch->base_stats.Int * cost_mod;
-				if (GET_MONEY(ch) < cost)
-				{
-					send_to_char("You dont have enough money!\r\n", ch);
-					return TRUE;
-				}
-				if (ch->base_stats.Int >= MAX_SHOP_BUY)
-				{
-					send_to_char("You cant buy that.\r\n", ch);
-					return TRUE;
-				}
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
-				spell_perm_increase_int(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			}
+			SUB_MONEY(ch, cost, 0);
+			send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
+			spell_perm_increase_con(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			return TRUE;
+			break;
+		case 5:
+			cost = ch->base_stats.Luk * ch->base_stats.Luk * ch->base_stats.Luk *
+			       cost_mod;
+			if (GET_MONEY(ch) < cost)
+			{
+				send_to_char("You dont have enough money!\r\n", ch);
 				return TRUE;
-				break;
-			case 8:
-				cost = ch->base_stats.Wis * ch->base_stats.Wis * ch->base_stats.Wis * cost_mod;
-				if (GET_MONEY(ch) < cost)
-				{
-					send_to_char("You dont have enough money!\r\n", ch);
-					return TRUE;
-				}
-				if (ch->base_stats.Wis >= MAX_SHOP_BUY)
-				{
-					send_to_char("You cant buy that.\r\n", ch);
-					return TRUE;
-				}
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
-				spell_perm_increase_wis(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			}
+			if (ch->base_stats.Luk >= MAX_SHOP_BUY)
+			{
+				send_to_char("You cant buy that.\r\n", ch);
 				return TRUE;
-				break;
-			case 9:
-				cost = ch->base_stats.Cha * ch->base_stats.Cha * ch->base_stats.Cha * cost_mod;
-				if (GET_MONEY(ch) < cost)
-				{
-					send_to_char("You dont have enough money!\r\n", ch);
-					return TRUE;
-				}
-				if (ch->base_stats.Cha >= MAX_SHOP_BUY)
-				{
-					send_to_char("You cant buy that.\r\n", ch);
-					return TRUE;
-				}
-				SUB_MONEY(ch, cost, 0);
-				send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
-				spell_perm_increase_cha(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			}
+			SUB_MONEY(ch, cost, 0);
+			send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
+			spell_perm_increase_luck(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			return TRUE;
+			break;
+		case 6:
+			cost = ch->base_stats.Pow * ch->base_stats.Pow * ch->base_stats.Pow *
+			       cost_mod;
+			if (GET_MONEY(ch) < cost)
+			{
+				send_to_char("You dont have enough money!\r\n", ch);
 				return TRUE;
-				break;
-			default:
-				send_to_char("Exactly what are you trying to buy?\r\n", ch);
+			}
+			if (ch->base_stats.Pow >= MAX_SHOP_BUY)
+			{
+				send_to_char("You cant buy that.\r\n", ch);
 				return TRUE;
+			}
+			SUB_MONEY(ch, cost, 0);
+			send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
+			spell_perm_increase_pow(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			return TRUE;
+			break;
+		case 7:
+			cost = ch->base_stats.Int * ch->base_stats.Int * ch->base_stats.Int *
+			       cost_mod;
+			if (GET_MONEY(ch) < cost)
+			{
+				send_to_char("You dont have enough money!\r\n", ch);
+				return TRUE;
+			}
+			if (ch->base_stats.Int >= MAX_SHOP_BUY)
+			{
+				send_to_char("You cant buy that.\r\n", ch);
+				return TRUE;
+			}
+			SUB_MONEY(ch, cost, 0);
+			send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
+			spell_perm_increase_int(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			return TRUE;
+			break;
+		case 8:
+			cost = ch->base_stats.Wis * ch->base_stats.Wis * ch->base_stats.Wis *
+			       cost_mod;
+			if (GET_MONEY(ch) < cost)
+			{
+				send_to_char("You dont have enough money!\r\n", ch);
+				return TRUE;
+			}
+			if (ch->base_stats.Wis >= MAX_SHOP_BUY)
+			{
+				send_to_char("You cant buy that.\r\n", ch);
+				return TRUE;
+			}
+			SUB_MONEY(ch, cost, 0);
+			send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
+			spell_perm_increase_wis(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			return TRUE;
+			break;
+		case 9:
+			cost = ch->base_stats.Cha * ch->base_stats.Cha * ch->base_stats.Cha *
+			       cost_mod;
+			if (GET_MONEY(ch) < cost)
+			{
+				send_to_char("You dont have enough money!\r\n", ch);
+				return TRUE;
+			}
+			if (ch->base_stats.Cha >= MAX_SHOP_BUY)
+			{
+				send_to_char("You cant buy that.\r\n", ch);
+				return TRUE;
+			}
+			SUB_MONEY(ch, cost, 0);
+			send_to_char("You quaffed a &+Gmagical&n potion.\r\n", ch);
+			spell_perm_increase_cha(60, ch, NULL, SPELL_TYPE_SPELL, ch, 0);
+			return TRUE;
+			break;
+		default:
+			send_to_char("Exactly what are you trying to buy?\r\n", ch);
+			return TRUE;
 		}
 	}
 	return FALSE;
@@ -1377,7 +1460,8 @@ vector<string> get_epic_players(int racewar)
 	debug("get_epic_players(): __NO_MYSQL__, returning 0");
 	return names;
 #else
-	if (!qry("SELECT name from player_data WHERE active=1 AND epics > 0 AND racewar = '%d' AND level < 57 ORDER BY epics DESC LIMIT %d", racewar, (int)get_property("epic.list.limit", 10)))
+	if (!qry("SELECT name from player_data WHERE active=1 AND epics > 0 AND racewar = '%d' AND level < 57 ORDER BY epics DESC LIMIT %d",
+		 racewar, (int)get_property("epic.list.limit", 10)))
 		return names;
 
 	MYSQL_RES *res = mysql_store_result(DB);
@@ -1470,7 +1554,8 @@ void do_epic(P_char ch, char *arg, int cmd)
 
 void epic_zone_erase_touch(int zone_number)
 {
-	for (vector<epic_zone_completion>::iterator it = epic_zone_completions.begin(); it != epic_zone_completions.end(); it++)
+	for (vector<epic_zone_completion>::iterator it = epic_zone_completions.begin();
+	     it != epic_zone_completions.end(); it++)
 	{
 		if (it->number == zone_number)
 		{
@@ -1488,7 +1573,8 @@ bool epic_zone_done_now(int zone_number)
 	if (qry("SELECT stonecount FROM zones WHERE number = %d", zone_number))
 	{
 		MYSQL_RES *res = mysql_store_result(DB);
-		if (!res) {
+		if (!res)
+		{
 			logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 			return FALSE;
 		}
@@ -1503,7 +1589,8 @@ bool epic_zone_done_now(int zone_number)
 		mysql_free_result(res);
 	}
 
-	for (vector<epic_zone_completion>::iterator it = epic_zone_completions.begin(); it != epic_zone_completions.end(); it++)
+	for (vector<epic_zone_completion>::iterator it = epic_zone_completions.begin();
+	     it != epic_zone_completions.end(); it++)
 	{
 		// Relys on lazy evaluation.
 		if (it->number == zone_number && --count <= 0)
@@ -1516,9 +1603,12 @@ bool epic_zone_done_now(int zone_number)
 
 bool epic_zone_done(int zone_number)
 {
-	for (vector<epic_zone_completion>::iterator it = epic_zone_completions.begin(); it != epic_zone_completions.end(); it++)
+	for (vector<epic_zone_completion>::iterator it = epic_zone_completions.begin();
+	     it != epic_zone_completions.end(); it++)
 	{
-		if ((it->number == zone_number) && (time(NULL) - it->done_at) > (int)get_property("epic.showCompleted.delaySecs", (15 * 60)))
+		if ((it->number == zone_number) &&
+		    (time(NULL) - it->done_at) >
+			    (int)get_property("epic.showCompleted.delaySecs", (15 * 60)))
 		{
 			return TRUE;
 		}
@@ -1530,9 +1620,12 @@ int epic_zone_data::displayed_alignment() const
 {
 	int delta = 0;
 
-	for (vector<epic_zone_completion>::iterator it = epic_zone_completions.begin(); it != epic_zone_completions.end(); it++)
+	for (vector<epic_zone_completion>::iterator it = epic_zone_completions.begin();
+	     it != epic_zone_completions.end(); it++)
 	{
-		if ((it->number == this->number) && (time(NULL) - it->done_at) < (int)get_property("epic.showCompleted.delaySecs", (15 * 60)))
+		if ((it->number == this->number) &&
+		    (time(NULL) - it->done_at) <
+			    (int)get_property("epic.showCompleted.delaySecs", (15 * 60)))
 		{
 			return this->alignment - it->delta;
 		}
@@ -1755,19 +1848,14 @@ char *generate_epic_zones_output(void)
 	output[0] = '\0';
 	char buff[MAX_STRING_LENGTH];
 	char done_char;
-	int  zone_align;
+	int zone_align;
 
-	const char *alignment_strs[] = {"&n(&+Lpure evil&n)     ",
-	                                "&n(&+Lextremely evil&n)",
-	                                "&n(&+Lvery evil&n)     ",
-	                                "&n(&+Levil&n)          ",
-	                                "&n(&+Lslightly evil&n) ",
-	                                "&N(&+wneutral&N)       ",
-	                                "&n(&+Wslightly good&n) ",
-	                                "&n(&+Wgood&n)          ",
-	                                "&n(&+Wvery good&n)     ",
-	                                "&n(&+Wextremely good&n)",
-	                                "&n(&+Wpure good&n)     "};
+	const char *alignment_strs[] = { "&n(&+Lpure evil&n)     ", "&n(&+Lextremely evil&n)",
+					 "&n(&+Lvery evil&n)     ", "&n(&+Levil&n)          ",
+					 "&n(&+Lslightly evil&n) ", "&N(&+wneutral&N)       ",
+					 "&n(&+Wslightly good&n) ", "&n(&+Wgood&n)          ",
+					 "&n(&+Wvery good&n)     ", "&n(&+Wextremely good&n)",
+					 "&n(&+Wpure good&n)     " };
 
 	strcat(output, "&+WEpic Zones &+G-----------------------------------------\n\n");
 
@@ -1780,9 +1868,12 @@ char *generate_epic_zones_output(void)
 		else
 			done_char = ' ';
 
-		zone_align = BOUNDED(0, EPIC_ZONE_ALIGNMENT_MAX + epic_zones[i].displayed_alignment(), 10);
+		zone_align = BOUNDED(
+			0, EPIC_ZONE_ALIGNMENT_MAX + epic_zones[i].displayed_alignment(), 10);
 
-		snprintf(buff, MAX_STRING_LENGTH, "  %c%s %s\r\n", done_char, pad_ansi(epic_zones[i].name.c_str(), 45).c_str(), alignment_strs[zone_align]);
+		snprintf(buff, MAX_STRING_LENGTH, "  %c%s %s\r\n", done_char,
+			 pad_ansi(epic_zones[i].name.c_str(), 45).c_str(),
+			 alignment_strs[zone_align]);
 
 		strcat(output, buff);
 	}
@@ -1795,7 +1886,6 @@ char *generate_epic_zones_output(void)
 
 void do_epic_share(P_char ch, char *arg, int cmd)
 {
-
 	struct affected_type *afp, *tafp;
 
 	if (!has_epic_task(ch))
@@ -1829,14 +1919,16 @@ void do_epic_share(P_char ch, char *arg, int cmd)
 						// Don't let nexus stones or pvp get replaced
 						if (abs(tafp->modifier) >= SPILL_BLOOD)
 							continue;
-						tafp->type     = afp->type;
-						tafp->flags    = afp->flags;
+						tafp->type = afp->type;
+						tafp->flags = afp->flags;
 						tafp->duration = afp->duration;
 						// The - sign here is intentional; it prevents people from sharing tasks that have been shared,
 						//   which, in turn, should stop storing tasks for the most part.
 						tafp->modifier = -afp->modifier;
-						act("&+C$n has just shared $s epic task with you!&n", TRUE, ch, 0, gl->ch, TO_VICT);
-						act("&+CYou have just shared your epic task with $N.&n", TRUE, ch, 0, gl->ch, TO_CHAR);
+						act("&+C$n has just shared $s epic task with you!&n",
+						    TRUE, ch, 0, gl->ch, TO_VICT);
+						act("&+CYou have just shared your epic task with $N.&n",
+						    TRUE, ch, 0, gl->ch, TO_CHAR);
 					}
 				}
 			}
@@ -1873,7 +1965,8 @@ void do_epic_trophy(P_char ch, char *arg, int cmd)
 	{
 		if (trophy[i].zone_number >= 0 && real_zone0(trophy[i].zone_number))
 		{
-			snprintf(buff2, MAX_STRING_LENGTH, "[&+W%3d&n] %s\n", trophy[i].count, zone_table[real_zone0(trophy[i].zone_number)].name);
+			snprintf(buff2, MAX_STRING_LENGTH, "[&+W%3d&n] %s\n", trophy[i].count,
+				 zone_table[real_zone0(trophy[i].zone_number)].name);
 			send_to_char(buff2, ch);
 		}
 	}
@@ -1885,15 +1978,18 @@ void update_epic_zone_alignment(int zone_number, int delta)
 	return;
 #else
 	// add alignment
-	qry("UPDATE zones SET alignment = alignment + (%d) WHERE number = %d AND epic_type > 0", delta, zone_number);
+	qry("UPDATE zones SET alignment = alignment + (%d) WHERE number = %d AND epic_type > 0",
+	    delta, zone_number);
 
 	// if alignment delta resulted in 0, add one more so that it doesn't stay on 0
 	/* This is ruining the epic_zone_balance function causing it to go from good to evil instead of neutral.
 	  qry("UPDATE zones SET alignment = alignment + (%d) WHERE number = %d AND epic_type > 0 and alignment = 0", delta, zone_number);
 	 */
 	// min/max bounds on alignment
-	qry("UPDATE zones SET alignment = %d WHERE alignment > %d", EPIC_ZONE_ALIGNMENT_MAX, EPIC_ZONE_ALIGNMENT_MAX);
-	qry("UPDATE zones SET alignment = %d WHERE alignment < %d", EPIC_ZONE_ALIGNMENT_MIN, EPIC_ZONE_ALIGNMENT_MIN);
+	qry("UPDATE zones SET alignment = %d WHERE alignment > %d", EPIC_ZONE_ALIGNMENT_MAX,
+	    EPIC_ZONE_ALIGNMENT_MAX);
+	qry("UPDATE zones SET alignment = %d WHERE alignment < %d", EPIC_ZONE_ALIGNMENT_MIN,
+	    EPIC_ZONE_ALIGNMENT_MIN);
 
 	// debug("update_epic_zone_alignment(zone_number=%d, delta=%d)", zone_number, delta);
 #endif
@@ -1906,14 +2002,15 @@ float get_epic_zone_alignment_mod(int zone_number, ubyte racewar)
 	return 1.0;
 #else
 
-	float mod       = 1.0, minPercentage;
-	int   alignment = 0;
+	float mod = 1.0, minPercentage;
+	int alignment = 0;
 
 	if (!qry("SELECT alignment FROM zones WHERE number = %d", zone_number))
 		return mod;
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return mod;
 	}
@@ -1933,15 +2030,19 @@ float get_epic_zone_alignment_mod(int zone_number, ubyte racewar)
 
 	mysql_free_result(res);
 
-	if ((alignment < 0 && racewar == RACEWAR_GOOD) || (alignment > 0 && racewar == RACEWAR_EVIL))
+	if ((alignment < 0 && racewar == RACEWAR_GOOD) ||
+	    (alignment > 0 && racewar == RACEWAR_EVIL))
 	{
 		// good alignment, evil racewar or evil alignment, good racewar
-		mod += ((float)abs(alignment)) * 0.3 * (float)get_property("epic.zone.alignmentMod", 0.10);
+		mod += ((float)abs(alignment)) * 0.3 *
+		       (float)get_property("epic.zone.alignmentMod", 0.10);
 	}
-	else if ((alignment > 0 && racewar == RACEWAR_GOOD) || (alignment < 0 && racewar == RACEWAR_EVIL))
+	else if ((alignment > 0 && racewar == RACEWAR_GOOD) ||
+		 (alignment < 0 && racewar == RACEWAR_EVIL))
 	{
 		// good alignment, good racewar or evil alignment, evil racewar
-		mod -= ((float)abs(alignment)) * (float)get_property("epic.zone.alignmentMod", 0.10);
+		mod -= ((float)abs(alignment)) *
+		       (float)get_property("epic.zone.alignmentMod", 0.10);
 	}
 	// Undead / Illithids don't get a modifier atm.
 	else
@@ -1954,7 +2055,8 @@ float get_epic_zone_alignment_mod(int zone_number, ubyte racewar)
 	if (minPercentage > mod)
 		mod = minPercentage;
 
-	debug("get_epic_zone_alignment_mod(zone_number=%d, racewar=%d): %f", zone_number, (int)racewar, mod);
+	debug("get_epic_zone_alignment_mod(zone_number=%d, racewar=%d): %f", zone_number,
+	      (int)racewar, mod);
 
 	return mod;
 
@@ -1972,7 +2074,7 @@ void update_epic_zone_mods()
 	if (!has_elapsed("epic_zone_mod", wait_secs))
 		return;
 
-	float add     = (float)get_property("epic.freqMod.tick.add", 0.002);
+	float add = (float)get_property("epic.freqMod.tick.add", 0.002);
 	float mod_max = (float)get_property("epic.freqMod.max", 2.00);
 	float mod_min = (float)get_property("epic.freqMod.min", 0.40);
 
@@ -1989,10 +2091,11 @@ void update_epic_zone_frequency(int zone_number)
 #ifdef __NO_MYSQL__
 	return;
 #else
-	float sub     = (float)get_property("epic.freqMod.touch.sub", 0.10);
+	float sub = (float)get_property("epic.freqMod.touch.sub", 0.10);
 	float mod_min = (float)get_property("epic.freqMod.min", 0.40);
 
-	qry("UPDATE zones SET frequency_mod = frequency_mod - (%f * zone_freq_mod) WHERE number = %d AND epic_type > 0", sub, zone_number);
+	qry("UPDATE zones SET frequency_mod = frequency_mod - (%f * zone_freq_mod) WHERE number = %d AND epic_type > 0",
+	    sub, zone_number);
 	qry("UPDATE zones SET frequency_mod = %f WHERE frequency_mod < %f", mod_min, mod_min);
 
 	debug("update_epic_zone_frequency(zone_number=%d): -%f", zone_number, sub);
@@ -2011,7 +2114,8 @@ float get_epic_zone_frequency_mod(int zone_number)
 		return mod;
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return mod;
 	}
@@ -2047,7 +2151,8 @@ vector<epic_zone_data> get_epic_zones()
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res) {
+	if (!res)
+	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
 		return zones;
 	}
@@ -2056,7 +2161,8 @@ vector<epic_zone_data> get_epic_zones()
 
 	while ((row = mysql_fetch_row(res)))
 	{
-		zones.push_back(epic_zone_data(atoi(row[0]), string(row[1]), atof(row[2]), atoi(row[3]), row[4] ? atol(row[4]) : 0));
+		zones.push_back(epic_zone_data(atoi(row[0]), string(row[1]), atof(row[2]),
+					       atoi(row[3]), row[4] ? atol(row[4]) : 0));
 	}
 
 	mysql_free_result(res);
@@ -2107,7 +2213,10 @@ void do_epic_reset_norefund(P_char ch, char *arg, int cmd)
 	{
 		int learned = t_ch->only.pc->skills[skill_id].learned;
 
-		if ((IS_EPIC_SKILL(skill_id) && learned) && (strcmp(skills[skill_id].name, "forge")) && (strcmp(skills[skill_id].name, "mine")) && (strcmp(skills[skill_id].name, "craft")))
+		if ((IS_EPIC_SKILL(skill_id) && learned) &&
+		    (strcmp(skills[skill_id].name, "forge")) &&
+		    (strcmp(skills[skill_id].name, "mine")) &&
+		    (strcmp(skills[skill_id].name, "craft")))
 		//  (skills[skill_id].name != ("forge" || "mine" || "craft")))
 		{
 			// find in epic_rewards
@@ -2129,18 +2238,24 @@ void do_epic_reset_norefund(P_char ch, char *arg, int cmd)
 			}
 
 			int points = 0;
-			int coins  = 0;
+			int coins = 0;
 
-			for (int skill_level = 0; skill_level < learned; skill_level += (int)get_property("epic.skillGain", 10))
+			for (int skill_level = 0; skill_level < learned;
+			     skill_level += (int)get_property("epic.skillGain", 10))
 			{
-				float cost_f      = 1 + skill_level / get_property("epic.progressFactor", 30);
-				int   points_cost = (int)(cost_f * epic_rewards[s].points_cost);
-				int   coins_cost  = (int)(cost_f * epic_rewards[s].coins);
+				float cost_f =
+					1 + skill_level / get_property("epic.progressFactor", 30);
+				int points_cost = (int)(cost_f * epic_rewards[s].points_cost);
+				int coins_cost = (int)(cost_f * epic_rewards[s].coins);
 
-				if (IS_MULTICLASS_PC(t_ch) && !IS_SET(epic_rewards[s].classes, t_ch->player.m_class) && IS_SET(epic_rewards[s].classes, t_ch->player.secondary_class))
+				if (IS_MULTICLASS_PC(t_ch) &&
+				    !IS_SET(epic_rewards[s].classes, t_ch->player.m_class) &&
+				    IS_SET(epic_rewards[s].classes, t_ch->player.secondary_class))
 				{
-					points_cost *= (int)(get_property("epic.multiclass.EpicSkillCost", 2));
-					coins_cost *= (int)(get_property("epic.multiclass.EpicPlatCost", 3));
+					points_cost *= (int)(get_property(
+						"epic.multiclass.EpicSkillCost", 2));
+					coins_cost *= (int)(get_property(
+						"epic.multiclass.EpicPlatCost", 3));
 				}
 
 				points += points_cost;
@@ -2150,7 +2265,8 @@ void do_epic_reset_norefund(P_char ch, char *arg, int cmd)
 			point_refund += points;
 			coins_refund += coins;
 
-			t_ch->only.pc->skills[skill_id].learned = t_ch->only.pc->skills[skill_id].taught = 0;
+			t_ch->only.pc->skills[skill_id].learned =
+				t_ch->only.pc->skills[skill_id].taught = 0;
 		}
 	}
 	/*
@@ -2183,7 +2299,9 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
 
 	if (!IS_TRUSTED(ch))
 	{
-		send_to_char("&+CEpic resetting is unavailable - choose your epic skills wisely\r\n.", ch);
+		send_to_char(
+			"&+CEpic resetting is unavailable - choose your epic skills wisely\r\n.",
+			ch);
 		return;
 	}
 
@@ -2218,7 +2336,10 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
 	{
 		int learned = t_ch->only.pc->skills[skill_id].learned;
 
-		if ((IS_EPIC_SKILL(skill_id) && learned) && (strcmp(skills[skill_id].name, "forge")) && (strcmp(skills[skill_id].name, "mine")) && (strcmp(skills[skill_id].name, "craft")))
+		if ((IS_EPIC_SKILL(skill_id) && learned) &&
+		    (strcmp(skills[skill_id].name, "forge")) &&
+		    (strcmp(skills[skill_id].name, "mine")) &&
+		    (strcmp(skills[skill_id].name, "craft")))
 		//  (skills[skill_id].name != ("forge" || "mine" || "craft")))
 		{
 			// find in epic_rewards
@@ -2240,18 +2361,24 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
 			}
 
 			int points = 0;
-			int coins  = 0;
+			int coins = 0;
 
-			for (int skill_level = 0; skill_level < learned; skill_level += (int)get_property("epic.skillGain", 10))
+			for (int skill_level = 0; skill_level < learned;
+			     skill_level += (int)get_property("epic.skillGain", 10))
 			{
-				float cost_f      = 1 + skill_level / get_property("epic.progressFactor", 30);
-				int   points_cost = (int)(cost_f * epic_rewards[s].points_cost);
-				int   coins_cost  = (int)(cost_f * epic_rewards[s].coins);
+				float cost_f =
+					1 + skill_level / get_property("epic.progressFactor", 30);
+				int points_cost = (int)(cost_f * epic_rewards[s].points_cost);
+				int coins_cost = (int)(cost_f * epic_rewards[s].coins);
 
-				if (IS_MULTICLASS_PC(t_ch) && !IS_SET(epic_rewards[s].classes, t_ch->player.m_class) && IS_SET(epic_rewards[s].classes, t_ch->player.secondary_class))
+				if (IS_MULTICLASS_PC(t_ch) &&
+				    !IS_SET(epic_rewards[s].classes, t_ch->player.m_class) &&
+				    IS_SET(epic_rewards[s].classes, t_ch->player.secondary_class))
 				{
-					points_cost *= (int)(get_property("epic.multiclass.EpicSkillCost", 2));
-					coins_cost *= (int)(get_property("epic.multiclass.EpicPlatCost", 3));
+					points_cost *= (int)(get_property(
+						"epic.multiclass.EpicSkillCost", 2));
+					coins_cost *= (int)(get_property(
+						"epic.multiclass.EpicPlatCost", 3));
 				}
 
 				points += points_cost;
@@ -2261,7 +2388,8 @@ void do_epic_reset(P_char ch, char *arg, int cmd)
 			point_refund += points;
 			coins_refund += coins;
 
-			t_ch->only.pc->skills[skill_id].learned = t_ch->only.pc->skills[skill_id].taught = 0;
+			t_ch->only.pc->skills[skill_id].learned =
+				t_ch->only.pc->skills[skill_id].taught = 0;
 		}
 	}
 	/*
@@ -2289,7 +2417,7 @@ void refund_epic_skills(P_char ch)
 	int coins_refund = 0;
 
 	point_refund = coins_refund = 0;
-	multiplier_step             = get_property("epic.progressFactor", 30) / 10;
+	multiplier_step = get_property("epic.progressFactor", 30) / 10;
 
 	for (skl = FIRST_SKILL; skl <= LAST_SKILL; skl++)
 	{
@@ -2326,17 +2454,24 @@ void refund_epic_skills(P_char ch)
 	}
 	if (!insert_money_pickup(GET_PID(ch), coins_refund))
 	{
-		logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d", GET_PID(ch));
+		logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d",
+		      GET_PID(ch));
 		ADD_MONEY(ch, coins_refund);
-		send_to_char("&+WEpic refund could not be staged, so it was credited directly instead.&n\r\n", ch);
+		send_to_char(
+			"&+WEpic refund could not be staged, so it was credited directly instead.&n\r\n",
+			ch);
 	}
 	ch->only.pc->epics += point_refund;
-	debug("%s getting epic-skill refund of %d epics and %s.", GET_NAME(ch), point_refund, coin_stringv(coins_refund));
-	logit(LOG_EPIC, "%s getting epic-skill refund of %d epics and %s coins.", GET_NAME(ch), point_refund, comma_string(coins_refund));
-	send_to_char_f(ch,
-	               "&+WYour epic skills have been reset.&n\n&+WYou are refunded %d epics.&N\n&+WYou are refunded %s.&n\n",
-	               point_refund,
-	               coins_to_string(coins_refund / 1000, (coins_refund / 100) % 10, (coins_refund / 10) % 10, coins_refund % 10, "&+W"));
+	debug("%s getting epic-skill refund of %d epics and %s.", GET_NAME(ch), point_refund,
+	      coin_stringv(coins_refund));
+	logit(LOG_EPIC, "%s getting epic-skill refund of %d epics and %s coins.", GET_NAME(ch),
+	      point_refund, comma_string(coins_refund));
+	send_to_char_f(
+		ch,
+		"&+WYour epic skills have been reset.&n\n&+WYou are refunded %d epics.&N\n&+WYou are refunded %s.&n\n",
+		point_refund,
+		coins_to_string(coins_refund / 1000, (coins_refund / 100) % 10,
+				(coins_refund / 10) % 10, coins_refund % 10, "&+W"));
 
 	if (!do_save_silent(ch, 1))
 		logit(LOG_WIZ, "Failed to save %s after clearing racial skills.", GET_NAME(ch));

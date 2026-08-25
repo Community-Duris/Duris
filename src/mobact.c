@@ -41,68 +41,70 @@
  * external variables
  */
 
-extern Skill   skills[];
-extern P_char  character_list;
-extern P_desc  descriptor_list;
+extern Skill skills[];
+extern P_char character_list;
+extern P_desc descriptor_list;
 extern P_index mob_index;
 extern P_index obj_index;
-extern P_room  world;
+extern P_room world;
 // extern char *dirs[];
 extern const struct stat_data stat_factor[];
-extern double                 lfactor[];
-extern float                  fake_sqrt_table[];
-extern int                    MobSpellIndex[MAX_SKILLS];
-extern int                    equipment_pos_table[CUR_MAX_WEAR][3];
-extern int                    no_specials;
-extern int                    spl_table[TOTALLVLS][MAX_CIRCLE];
-extern const int              top_of_world;
+extern double lfactor[];
+extern float fake_sqrt_table[];
+extern int MobSpellIndex[MAX_SKILLS];
+extern int equipment_pos_table[CUR_MAX_WEAR][3];
+extern int no_specials;
+extern int spl_table[TOTALLVLS][MAX_CIRCLE];
+extern const int top_of_world;
 // extern const char rev_dir[];
-extern struct str_app_type              str_app[];
-extern struct zone_data                *zone_table;
-extern const char                      *undead_type[];
-extern struct potion                    potion_data[];
-extern bool                             can_banish(P_char ch, P_char victim);
-extern bool                             has_skin_spell(P_char);
-extern bool                             has_wind_blade_wielded(P_char);
-extern void                             event_wait(P_char ch, P_char victim, P_obj obj, void *data);
-extern P_nevent                         ne_schedule[PULSES_IN_TICK];
-extern void                             clear_nevent(P_nevent e);
+extern struct str_app_type str_app[];
+extern struct zone_data *zone_table;
+extern const char *undead_type[];
+extern struct potion potion_data[];
+extern bool can_banish(P_char ch, P_char victim);
+extern bool has_skin_spell(P_char);
+extern bool has_wind_blade_wielded(P_char);
+extern void event_wait(P_char ch, P_char victim, P_obj obj, void *data);
+extern P_nevent ne_schedule[PULSES_IN_TICK];
+extern void clear_nevent(P_nevent e);
 extern struct misfire_properties_struct misfire_properties;
-extern const racewar_struct             racewar_color[MAX_RACEWAR + 2];
+extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
 
-int   CheckFor_remember(P_char ch, P_char victim);
-int   count_potions(P_char ch);
-void  try_wield_weapon(P_char ch);
-int   empty_slot_for_weapon(P_char ch);
-int   very_angry_npc(P_char, P_char, int, char *);
-bool  check_ch_nevents(P_char ch);
-bool  check_disruptive_blow(P_char ch);
+int CheckFor_remember(P_char ch, P_char victim);
+int count_potions(P_char ch);
+void try_wield_weapon(P_char ch);
+int empty_slot_for_weapon(P_char ch);
+int very_angry_npc(P_char, P_char, int, char *);
+bool check_ch_nevents(P_char ch);
+bool check_disruptive_blow(P_char ch);
 char *get_function_name(void *func);
 
 extern const struct undead_description undead_data[NECROPET_LAST + 1];
 
 static P_char find_protector_target(P_char ch);
-void          check_for_wagon(P_char);
-void          do_npc_commune(P_char ch);
+void check_for_wagon(P_char);
+void do_npc_commune(P_char ch);
 
 /* Combat Routines */
-extern bool  DragonCombat(P_char ch, int awe);
-void         do_assist_core(P_char ch, P_char victim);
-int          UndeadCombat(P_char ch);
-int          GenMobCombat(P_char ch);
-extern int   DemonCombat(P_char ch);
+extern bool DragonCombat(P_char ch, int awe);
+void do_assist_core(P_char ch, P_char victim);
+int UndeadCombat(P_char ch);
+int GenMobCombat(P_char ch);
+extern int DemonCombat(P_char ch);
 static char *mem_str_dup(char *);
-extern bool  execute_quest_routine(P_char, int);
-extern void  event_spellcast(P_char, P_char, P_obj, void *);
+extern bool execute_quest_routine(P_char, int);
+extern void event_spellcast(P_char, P_char, P_obj, void *);
 
-extern int cast_as_damage_area(P_char, void (*func)(int, P_char, char *, int, P_char, P_obj), int, P_char, float, float);
-extern int cast_as_damage_area(P_char, void (*func)(int, P_char, char *, int, P_char, P_obj), int, P_char, float, float, bool (*s_func)(P_char, P_char));
+extern int cast_as_damage_area(P_char, void (*func)(int, P_char, char *, int, P_char, P_obj), int,
+			       P_char, float, float);
+extern int cast_as_damage_area(P_char, void (*func)(int, P_char, char *, int, P_char, P_obj), int,
+			       P_char, float, float, bool (*s_func)(P_char, P_char));
 
 struct continent_misfire_data continent_misfire;
 
 struct remember_data
 {
-	P_char                c;
+	P_char c;
 	struct remember_data *next;
 } *remember_array[MAX_ZONES];
 
@@ -122,9 +124,11 @@ int pick_best_skin_spell(P_char ch, P_char target)
 		spl = SPELL_BIOFEEDBACK;
 	else if (knows_spell(ch, SPELL_STONE_SKIN))
 		spl = SPELL_STONE_SKIN;
-	else if (!affected_by_spell(ch, SPELL_SHADOW_SHIELD) && knows_spell(ch, SPELL_SHADOW_SHIELD) && ch == target)
+	else if (!affected_by_spell(ch, SPELL_SHADOW_SHIELD) &&
+		 knows_spell(ch, SPELL_SHADOW_SHIELD) && ch == target)
 		spl = SPELL_SHADOW_SHIELD;
-	else if (!affected_by_spell(ch, SPELL_IRONWOOD) && knows_spell(ch, SPELL_IRONWOOD) && IS_AFFECTED(ch, AFF_BARKSKIN) && ch == target)
+	else if (!affected_by_spell(ch, SPELL_IRONWOOD) && knows_spell(ch, SPELL_IRONWOOD) &&
+		 IS_AFFECTED(ch, AFF_BARKSKIN) && ch == target)
 		spl = SPELL_IRONWOOD;
 
 	return spl;
@@ -136,8 +140,8 @@ int pick_best_skin_spell(P_char ch, P_char target)
  */
 P_char pick_target(P_char ch, unsigned int flags)
 {
-	P_char                tch, any = 0, weakest = 0, caster = 0, good = 0;
-	int                   hits = 5000;
+	P_char tch, any = 0, weakest = 0, caster = 0, good = 0;
+	int hits = 5000;
 	struct affected_type *af;
 
 	if ((af = get_spell_from_char(ch, SKILL_TAUNT)) != NULL && CAN_SEE(ch, (P_char)af->context))
@@ -166,11 +170,15 @@ P_char pick_target(P_char ch, unsigned int flags)
 		{
 			continue;
 		}
-		if ((flags & PT_BASH_SIZE) && (get_takedown_size(ch) > get_takedown_size(tch) + 1 || (get_takedown_size(ch) < get_takedown_size(tch) - 1)))
+		if ((flags & PT_BASH_SIZE) &&
+		    (get_takedown_size(ch) > get_takedown_size(tch) + 1 ||
+		     (get_takedown_size(ch) < get_takedown_size(tch) - 1)))
 		{
 			continue;
 		}
-		if ((flags & PT_TRIP_SIZE) && (get_takedown_size(ch) > get_takedown_size(tch) || (get_takedown_size(ch) < get_takedown_size(tch) - 1)))
+		if ((flags & PT_TRIP_SIZE) &&
+		    (get_takedown_size(ch) > get_takedown_size(tch) ||
+		     (get_takedown_size(ch) < get_takedown_size(tch) - 1)))
 		{
 			continue;
 		}
@@ -186,7 +194,9 @@ P_char pick_target(P_char ch, unsigned int flags)
 			continue;
 		}
 		if ((flags & PT_NUKETARGET) &&
-		    (IS_AFFECTED4(tch, AFF4_DEFLECT) || IS_AFFECTED4(tch, AFF4_STORNOGS_SPHERES) || (has_innate(tch, INNATE_MAGIC_RESISTANCE) && get_innate_resistance(tch) > number(0, 100))))
+		    (IS_AFFECTED4(tch, AFF4_DEFLECT) || IS_AFFECTED4(tch, AFF4_STORNOGS_SPHERES) ||
+		     (has_innate(tch, INNATE_MAGIC_RESISTANCE) &&
+		      get_innate_resistance(tch) > number(0, 100))))
 		{
 			continue;
 		}
@@ -222,7 +232,7 @@ P_char pick_target(P_char ch, unsigned int flags)
 			if ((GET_HIT(tch) < hits && number(0, 3)) || !weakest || !number(0, 5))
 			{
 				weakest = tch;
-				hits    = GET_HIT(weakest);
+				hits = GET_HIT(weakest);
 			}
 		}
 	}
@@ -280,13 +290,17 @@ int char_deserves_helping(const P_char ch, const P_char candidate, int check_lea
 
 	/* don't spell up non-followers/groupees under level 15 */
 
-	if ((GET_LEVEL(candidate) < 15) && !((candidate->following == ch) || (ch->following == candidate) || (ch->group && (ch->group == candidate->group))))
+	if ((GET_LEVEL(candidate) < 15) &&
+	    !((candidate->following == ch) || (ch->following == candidate) ||
+	      (ch->group && (ch->group == candidate->group))))
 		return FALSE;
 
-	if ((IS_NPC(ch) && GET_VNUM(ch) == WH_HIGH_PRIEST_VNUM) || GET_VNUM(candidate) == WH_HIGH_PRIEST_VNUM)
+	if ((IS_NPC(ch) && GET_VNUM(ch) == WH_HIGH_PRIEST_VNUM) ||
+	    GET_VNUM(candidate) == WH_HIGH_PRIEST_VNUM)
 		return false;
 
-	if ((IS_NPC(ch) && GET_VNUM(ch) == IMAGE_REFLECTION_VNUM) || GET_VNUM(candidate) == IMAGE_REFLECTION_VNUM)
+	if ((IS_NPC(ch) && GET_VNUM(ch) == IMAGE_REFLECTION_VNUM) ||
+	    GET_VNUM(candidate) == IMAGE_REFLECTION_VNUM)
 		return false;
 
 	return TRUE;
@@ -295,7 +309,7 @@ int char_deserves_helping(const P_char ch, const P_char candidate, int check_lea
 int no_chars_in_room_deserve_helping(const P_char ch)
 {
 	P_char temp;
-	int    room = ch->in_room;
+	int room = ch->in_room;
 
 	if (room < 0)
 		return TRUE;
@@ -321,7 +335,7 @@ int no_chars_in_room_deserve_helping(const P_char ch)
 int room_has_evil_enemy(const P_char ch)
 {
 	P_char temp;
-	int    room = ch->in_room;
+	int room = ch->in_room;
 
 	if (room < 0)
 		return FALSE;
@@ -350,7 +364,7 @@ int room_has_evil_enemy(const P_char ch)
 int room_has_good_enemy(const P_char ch)
 {
 	P_char temp;
-	int    room = ch->in_room;
+	int room = ch->in_room;
 
 	if (room < 0)
 		return FALSE;
@@ -372,9 +386,15 @@ int room_has_good_enemy(const P_char ch)
 	return FALSE;
 }
 
-int GetLowestSpellCircle(int spl) { return MobSpellIndex[spl]; }
+int GetLowestSpellCircle(int spl)
+{
+	return MobSpellIndex[spl];
+}
 
-int GetLowestSpellCircle_p(int spl) { return (GetLowestSpellCircle(spl)); }
+int GetLowestSpellCircle_p(int spl)
+{
+	return (GetLowestSpellCircle(spl));
+}
 
 /*
  * one bit of cleverness here, if we can cast it, and we are facing
@@ -390,8 +410,8 @@ int GetLowestSpellCircle_p(int spl) { return (GetLowestSpellCircle(spl)); }
 P_char FindDispelTarget(P_char ch, int lvl)
 {
 	P_char tmp;
-	int    i, j, k, l;
-	int    scorecard[50];
+	int i, j, k, l;
+	int scorecard[50];
 
 	if (NumAttackers(ch) == 0)
 		return NULL;
@@ -466,7 +486,15 @@ P_char FindDispelTarget(P_char ch, int lvl)
 			else if (scorecard[i] > 5)
 			{
 				/* modify score by saving throw */
-				scorecard[i] += BOUNDED(0, (find_save(tmp, SAVING_SPELL) + BOUNDED(-20, tmp->specials.apply_saving_throw[SAVING_SPELL] + (lvl - GET_LEVEL(tmp)), 20)), 20) / 2;
+				scorecard[i] += BOUNDED(0,
+							(find_save(tmp, SAVING_SPELL) +
+							 BOUNDED(-20,
+								 tmp->specials.apply_saving_throw
+										 [SAVING_SPELL] +
+									 (lvl - GET_LEVEL(tmp)),
+								 20)),
+							20) /
+						2;
 			}
 			i++;
 		}
@@ -501,29 +529,41 @@ P_char FindDispelTarget(P_char ch, int lvl)
 
 int IS_CLERIC(P_char ch)
 {
-	return (GET_CLASS(ch, CLASS_DRUID) || GET_CLASS(ch, CLASS_CLERIC) || GET_CLASS(ch, CLASS_SHAMAN) || GET_CLASS(ch, CLASS_ETHERMANCER) || GET_CLASS(ch, CLASS_PALADIN) ||
-	        GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_PRIEST));
+	return (GET_CLASS(ch, CLASS_DRUID) || GET_CLASS(ch, CLASS_CLERIC) ||
+		GET_CLASS(ch, CLASS_SHAMAN) || GET_CLASS(ch, CLASS_ETHERMANCER) ||
+		GET_CLASS(ch, CLASS_PALADIN) || GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_PRIEST));
 }
 
-int IS_HOLY(P_char ch) { return (GET_CLASS(ch, CLASS_CLERIC) || GET_CLASS(ch, CLASS_PALADIN) || GET_CLASS(ch, CLASS_ANTIPALADIN) || GET_CLASS(ch, CLASS_AVENGER)); }
+int IS_HOLY(P_char ch)
+{
+	return (GET_CLASS(ch, CLASS_CLERIC) || GET_CLASS(ch, CLASS_PALADIN) ||
+		GET_CLASS(ch, CLASS_ANTIPALADIN) || GET_CLASS(ch, CLASS_AVENGER));
+}
 
 int IS_MAGE(P_char ch)
 {
-	return (GET_CLASS(ch, CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_BARD | CLASS_RANGER | CLASS_ILLUSIONIST | CLASS_REAVER | CLASS_ANTIPALADIN | CLASS_PSIONICIST) | CLASS_THEURGIST |
-	        CLASS_SUMMONER) ||
+	return (GET_CLASS(ch, CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_BARD |
+				      CLASS_RANGER | CLASS_ILLUSIONIST | CLASS_REAVER |
+				      CLASS_ANTIPALADIN | CLASS_PSIONICIST) |
+		CLASS_THEURGIST | CLASS_SUMMONER) ||
 	       (IS_DRAGOON(ch) && GET_SPEC(ch, CLASS_DRAGOON, 0));
 }
 
 int IS_THIEF(P_char ch)
 {
-	return (GET_CLASS(ch, CLASS_ROGUE) || GET_CLASS(ch, CLASS_THIEF) || GET_CLASS(ch, CLASS_ASSASSIN) || GET_SPEC(ch, CLASS_ROGUE, SPEC_THIEF) || GET_SPEC(ch, CLASS_ROGUE, SPEC_ASSASSIN));
+	return (GET_CLASS(ch, CLASS_ROGUE) || GET_CLASS(ch, CLASS_THIEF) ||
+		GET_CLASS(ch, CLASS_ASSASSIN) || GET_SPEC(ch, CLASS_ROGUE, SPEC_THIEF) ||
+		GET_SPEC(ch, CLASS_ROGUE, SPEC_ASSASSIN));
 }
 
 int IS_WARRIOR(P_char ch)
 {
-	return (GET_CLASS(ch, CLASS_WARRIOR) || GET_CLASS(ch, CLASS_ANTIPALADIN) || GET_CLASS(ch, CLASS_PALADIN) || GET_CLASS(ch, CLASS_MONK) || GET_CLASS(ch, CLASS_BERSERKER) ||
-	        GET_CLASS(ch, CLASS_ALCHEMIST) || GET_CLASS(ch, CLASS_RANGER) || GET_CLASS(ch, CLASS_REAVER) || GET_CLASS(ch, CLASS_AVENGER) || GET_CLASS(ch, CLASS_MERCENARY) ||
-	        GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER));
+	return (GET_CLASS(ch, CLASS_WARRIOR) || GET_CLASS(ch, CLASS_ANTIPALADIN) ||
+		GET_CLASS(ch, CLASS_PALADIN) || GET_CLASS(ch, CLASS_MONK) ||
+		GET_CLASS(ch, CLASS_BERSERKER) || GET_CLASS(ch, CLASS_ALCHEMIST) ||
+		GET_CLASS(ch, CLASS_RANGER) || GET_CLASS(ch, CLASS_REAVER) ||
+		GET_CLASS(ch, CLASS_AVENGER) || GET_CLASS(ch, CLASS_MERCENARY) ||
+		GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER));
 }
 
 bool In_Adjacent_Room(P_char ch, P_char vict)
@@ -539,14 +579,15 @@ bool In_Adjacent_Room(P_char ch, P_char vict)
 
 bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 {
-	int                       dura, skl;
-	P_char                    tch, tch2, kala, kala2;
+	int dura, skl;
+	P_char tch, tch2, kala, kala2;
 	struct spellcast_datatype castdata; /* for SpellCastProcess() */
-	int                       circle = 0, duration = 0;
-	char                      buf[MAX_STRING_LENGTH];
+	int circle = 0, duration = 0;
+	char buf[MAX_STRING_LENGTH];
 
 	// Crash iff: No caster, no target (and not area), or invalid spell.
-	if (!ch || !(victim || object || IS_SET(skills[spl].targets, TAR_AREA | TAR_OFFAREA)) || spl < FIRST_SPELL || spl > LAST_SPELL)
+	if (!ch || !(victim || object || IS_SET(skills[spl].targets, TAR_AREA | TAR_OFFAREA)) ||
+	    spl < FIRST_SPELL || spl > LAST_SPELL)
 	{
 		logit(LOG_EXIT, "MobCastSpell() bogus parms");
 		return FALSE;
@@ -590,7 +631,11 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 	{
 		char message[256];
 
-		snprintf(message, 256, "MobCastSpell():  spell = %s; target = %s; circle = %d; spelltype = %d\r\n", skills[spl].name, (victim ? GET_NAME(victim) : "unspecified"), circle, GET_SPELLTYPE(spl));
+		snprintf(
+			message, 256,
+			"MobCastSpell():  spell = %s; target = %s; circle = %d; spelltype = %d\r\n",
+			skills[spl].name, (victim ? GET_NAME(victim) : "unspecified"), circle,
+			GET_SPELLTYPE(spl));
 		send_to_char(message, ch);
 	}
 #endif
@@ -653,7 +698,8 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 	{
 		appear(ch);
 
-		if (IS_SET(skills[spl].targets, TAR_IGNORE) || IS_SET(skills[spl].targets, TAR_AREA))
+		if (IS_SET(skills[spl].targets, TAR_IGNORE) ||
+		    IS_SET(skills[spl].targets, TAR_AREA))
 		{
 			for (tch = world[ch->in_room].people; tch; tch = tch2)
 			{
@@ -671,7 +717,8 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 					continue;
 				if (IS_NPC(tch))
 					MobStartFight(tch, ch);
-				else if (tch->only.pc->aggressive >= 0 && tch->only.pc->aggressive < GET_HIT(tch))
+				else if (tch->only.pc->aggressive >= 0 &&
+					 tch->only.pc->aggressive < GET_HIT(tch))
 				{
 					hit(tch, ch, tch->equipment[PRIMARY_WEAPON]);
 				}
@@ -688,11 +735,16 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 		{
 			if (victim && (victim != ch))
 			{
-				if (IS_NPC(victim) && !IS_FIGHTING(victim) && !IS_DESTROYING(victim) && CAN_SEE(victim, ch) && (GET_POS(ch) == POS_STANDING))
+				if (IS_NPC(victim) && !IS_FIGHTING(victim) &&
+				    !IS_DESTROYING(victim) && CAN_SEE(victim, ch) &&
+				    (GET_POS(ch) == POS_STANDING))
 				{
-					if (number(1, 150) <= (GET_LEVEL(victim) + STAT_INDEX(GET_C_INT(victim))))
+					if (number(1, 150) <=
+					    (GET_LEVEL(victim) + STAT_INDEX(GET_C_INT(victim))))
 					{
-						if (IS_NPC(victim) || (victim->only.pc->aggressive >= 0 && victim->only.pc->aggressive < GET_HIT(victim)))
+						if (IS_NPC(victim) ||
+						    (victim->only.pc->aggressive >= 0 &&
+						     victim->only.pc->aggressive < GET_HIT(victim)))
 							MobStartFight(victim, ch);
 						if (!char_in_list(ch) || !char_in_list(victim))
 							return FALSE;
@@ -728,14 +780,16 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 	/*  castdata->timeleft = duration; */
 	if (lvl < 60)
 	{
-		castdata.timeleft = ((number(1, 101) > (20 + 3 * GET_LEVEL(ch) / 2)) ? duration : (duration >> 1));
+		castdata.timeleft = ((number(1, 101) > (20 + 3 * GET_LEVEL(ch) / 2)) ?
+					     duration :
+					     (duration >> 1));
 	}
 	else
 	{
 		castdata.timeleft = -1;
 	}
 
-	castdata.spell  = spl;
+	castdata.spell = spl;
 	castdata.object = object;
 
 	/*
@@ -760,10 +814,12 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 		event_spellcast(ch, victim, object, &castdata);
 	else
 	{
-		add_event(event_spellcast, 4, ch, victim, 0, 0, &castdata, sizeof(struct spellcast_datatype));
+		add_event(event_spellcast, 4, ch, victim, 0, 0, &castdata,
+			  sizeof(struct spellcast_datatype));
 		if (victim)
 		{
-			if (IS_SET(skills[spl].targets, TAR_CHAR_WORLD) || IS_SET(skills[spl].targets, TAR_CHAR_RANGE))
+			if (IS_SET(skills[spl].targets, TAR_CHAR_WORLD) ||
+			    IS_SET(skills[spl].targets, TAR_CHAR_RANGE))
 			{
 				link_char(ch, victim, LNK_CAST_WORLD);
 			}
@@ -783,7 +839,7 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 bool CastIllusionistSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL, tmp = NULL;
-	P_obj  obj = NULL;
+	P_obj obj = NULL;
 
 	int n_attk = 0, lvl = 0, spl = 0;
 
@@ -808,20 +864,25 @@ bool CastIllusionistSpell(P_char ch, P_char victim, int helping)
 
 	/* defensive spells */
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DETECT_ILLUSION) && (ch == target) && !IS_FIGHTING(ch) && !IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DETECT_ILLUSION) && (ch == target) &&
+	    !IS_FIGHTING(ch) && !IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION))
 		spl = SPELL_DETECT_ILLUSION;
 
 	if (!spl && (!number(0, 3) || !IS_FIGHTING(ch)))
 		spl = pick_best_skin_spell(ch, target);
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_PHANTOM_ARMOR) && (target == ch) && !IS_AFFECTED(target, AFF_ARMOR) && (!IS_FIGHTING(ch)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_PHANTOM_ARMOR) && (target == ch) &&
+	    !IS_AFFECTED(target, AFF_ARMOR) && (!IS_FIGHTING(ch)))
 		spl = SPELL_PHANTOM_ARMOR;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_FLY) && !IS_AFFECTED(target, AFF_FLY) && !IS_FIGHTING(ch))
+	if (!spl && npc_has_spell_slot(ch, SPELL_FLY) && !IS_AFFECTED(target, AFF_FLY) &&
+	    !IS_FIGHTING(ch))
 		spl = SPELL_FLY;
 
-	if (!spl && (ch == target) && npc_has_spell_slot(ch, SPELL_VANISH) && !IS_FIGHTING(ch) && !IS_AFFECTED(ch, AFF_INVISIBLE) && !IS_AFFECTED2(ch, AFF2_CONCEALMENT) && !IS_ACT(ch, ACT_TEACHER) &&
-	    !mob_index[GET_RNUM(ch)].qst_func && (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) && !number(0, 2))
+	if (!spl && (ch == target) && npc_has_spell_slot(ch, SPELL_VANISH) && !IS_FIGHTING(ch) &&
+	    !IS_AFFECTED(ch, AFF_INVISIBLE) && !IS_AFFECTED2(ch, AFF2_CONCEALMENT) &&
+	    !IS_ACT(ch, ACT_TEACHER) && !mob_index[GET_RNUM(ch)].qst_func &&
+	    (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) && !number(0, 2))
 		spl = SPELL_VANISH;
 
 	/*if(!spl && (ch == target) && npc_has_spell_slot(ch, SPELL_REFLECTION)
@@ -840,7 +901,7 @@ bool CastIllusionistSpell(P_char ch, P_char victim, int helping)
 	if (!spl && !helping && !IS_FIGHTING(ch))
 	{
 		P_char tch;
-		int    numb = 0, lucky, curr = 0;
+		int numb = 0, lucky, curr = 0;
 
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 			if ((ch != tch) && char_deserves_helping(ch, tch, TRUE))
@@ -896,10 +957,12 @@ bool CastIllusionistSpell(P_char ch, P_char victim, int helping)
 				   && !number(0, 2) && !IS_FIGHTING(tmp))
 				   spl = SPELL_IMPRISON; */
 
-				else if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) && !(tmp == ch) && number(0, 9) == 9)
+				else if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) &&
+					 !(tmp == ch) && number(0, 9) == 9)
 					spl = SPELL_DISPEL_MAGIC;
 
-				else if (!spl && npc_has_spell_slot(ch, SPELL_STUNNING_VISIONS) && !(tmp == ch) && !number(0, 2) && !IS_STUNNED(tmp))
+				else if (!spl && npc_has_spell_slot(ch, SPELL_STUNNING_VISIONS) &&
+					 !(tmp == ch) && !number(0, 2) && !IS_STUNNED(tmp))
 					spl = SPELL_STUNNING_VISIONS;
 
 				// else if(!spl &&
@@ -907,13 +970,18 @@ bool CastIllusionistSpell(P_char ch, P_char victim, int helping)
 				// !number(0, 2))
 				// spl = SPELL_REFLECTION;
 
-				else if (!spl && npc_has_spell_slot(ch, SPELL_NIGHTMARE) && !(tmp == ch) && number(0, 1))
+				else if (!spl && npc_has_spell_slot(ch, SPELL_NIGHTMARE) &&
+					 !(tmp == ch) && number(0, 1))
 					spl = SPELL_NIGHTMARE;
 
-				else if (!spl && npc_has_spell_slot(ch, SPELL_DELIRIUM) && !(tmp == ch) && number(0, 1) && !affected_by_spell(tmp, SPELL_DELIRIUM))
+				else if (!spl && npc_has_spell_slot(ch, SPELL_DELIRIUM) &&
+					 !(tmp == ch) && number(0, 1) &&
+					 !affected_by_spell(tmp, SPELL_DELIRIUM))
 					spl = SPELL_DELIRIUM;
 
-				else if (!spl && npc_has_spell_slot(ch, SPELL_BLINDNESS) && !(tmp == ch) && number(0, 1) && !IS_BLIND(tmp) && !EYELESS(tmp))
+				else if (!spl && npc_has_spell_slot(ch, SPELL_BLINDNESS) &&
+					 !(tmp == ch) && number(0, 1) && !IS_BLIND(tmp) &&
+					 !EYELESS(tmp))
 					spl = SPELL_BLINDNESS;
 			}
 		}
@@ -939,7 +1007,8 @@ bool CastIllusionistSpell(P_char ch, P_char victim, int helping)
 	{
 		spl = SPELL_SHADOW_MONSTER;
 	}
-	else if (!spl && npc_has_spell_slot(ch, SPELL_BOULDER) && number(0, 1) && !IS_GLOBED(target))
+	else if (!spl && npc_has_spell_slot(ch, SPELL_BOULDER) && number(0, 1) &&
+		 !IS_GLOBED(target))
 	{
 		spl = SPELL_BOULDER;
 	}
@@ -956,10 +1025,12 @@ bool CastIllusionistSpell(P_char ch, P_char victim, int helping)
 	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) && number(0, 1))
 		spl = SPELL_DISPEL_MAGIC;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_BURNING_HANDS) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_BURNING_HANDS) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 		spl = SPELL_BURNING_HANDS;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_MAGIC_MISSILE) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_MAGIC_MISSILE) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 		spl = SPELL_MAGIC_MISSILE;
 
 	if (spl && ch && target)
@@ -970,12 +1041,12 @@ bool CastIllusionistSpell(P_char ch, P_char victim, int helping)
 
 bool CastMageSpell(P_char ch, P_char victim, int helping)
 {
-	P_char  target = NULL, tmp = NULL;
-	P_obj   obj = NULL, best_corpse = NULL;
+	P_char target = NULL, tmp = NULL;
+	P_obj obj = NULL, best_corpse = NULL;
 
-	int                 dam = 0, lvl = 0, spl = 0, high_corpse = 0, pets;
-	int                 att_num_adjust[] = {100, 50, 15, 0};
-	int                 n_attk           = 0;
+	int dam = 0, lvl = 0, spl = 0, high_corpse = 0, pets;
+	int att_num_adjust[] = { 100, 50, 15, 0 };
+	int n_attk = 0;
 	struct follow_type *k;
 
 	lvl = GET_LEVEL(ch);
@@ -987,12 +1058,12 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 
 	if (helping)
 	{
-		dam    = GET_MAX_HIT(victim) - GET_HIT(victim);
+		dam = GET_MAX_HIT(victim) - GET_HIT(victim);
 		target = victim;
 	}
 	else
 	{
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 		target = ch;
 	}
 
@@ -1019,8 +1090,12 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	 * Some rudimentary necromancy!  Why not capitalise upon carnage and raise a
 	 * protective legion of undead? - SKB 27 Apr 1995
 	 */
-	if (!IS_GOOD(ch) && !IS_FIGHTING(ch) && !IS_DESTROYING(ch) && !GET_MASTER(ch) && !CHAR_IN_JUSTICE_AREA(ch) && !CHAR_IN_TOWN(ch) &&
-	    (npc_has_spell_slot(ch, SPELL_ANIMATE_DEAD) || npc_has_spell_slot(ch, SPELL_CALL_ARCHON) || npc_has_spell_slot(ch, SPELL_CREATE_DRACOLICH) || npc_has_spell_slot(ch, SPELL_CALL_TITAN) ||
+	if (!IS_GOOD(ch) && !IS_FIGHTING(ch) && !IS_DESTROYING(ch) && !GET_MASTER(ch) &&
+	    !CHAR_IN_JUSTICE_AREA(ch) && !CHAR_IN_TOWN(ch) &&
+	    (npc_has_spell_slot(ch, SPELL_ANIMATE_DEAD) ||
+	     npc_has_spell_slot(ch, SPELL_CALL_ARCHON) ||
+	     npc_has_spell_slot(ch, SPELL_CREATE_DRACOLICH) ||
+	     npc_has_spell_slot(ch, SPELL_CALL_TITAN) ||
 	     npc_has_spell_slot(ch, SPELL_CALL_AVATAR)) &&
 	    (!IS_AFFECTED(ch, AFF_HIDE) || IS_SET(ch->specials.act, ACT_SENTINEL)))
 	{
@@ -1028,7 +1103,8 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 
 		for (obj = world[ch->in_room].contents; obj; obj = obj->next_content)
 		{
-			if ((GET_ITEM_TYPE(obj) == ITEM_CORPSE) && (obj->value[2] > high_corpse) && (obj->value[2] >= 4) && ((GET_LEVEL(ch) + 4) >= obj->value[2]))
+			if ((GET_ITEM_TYPE(obj) == ITEM_CORPSE) && (obj->value[2] > high_corpse) &&
+			    (obj->value[2] >= 4) && ((GET_LEVEL(ch) + 4) >= obj->value[2]))
 			{
 				best_corpse = obj;
 				high_corpse = obj->value[2];
@@ -1038,35 +1114,41 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 		// mobs can create their own corpses
 		if (!best_corpse && GET_LEVEL(ch) > 10 && !number(0, 100) && count_pets(ch) < 3)
 		{
-			best_corpse           = read_object(2, VIRTUAL);
-			best_corpse->value[2] = high_corpse = MIN(50, GET_LEVEL(ch) + number(0, 8) - 4);
+			best_corpse = read_object(2, VIRTUAL);
+			best_corpse->value[2] = high_corpse =
+				MIN(50, GET_LEVEL(ch) + number(0, 8) - 4);
 
 			switch (number(0, 3))
 			{
-				case 0:
-					best_corpse->action_description = str_dup("&+La rotten corpse&n");
-					break;
-				case 1:
-					best_corpse->action_description = str_dup("&+ma bloated carcass&n");
-					break;
-				case 2:
-					best_corpse->action_description = str_dup("&+Lan &+rembalmed &+Lcadaver&n");
-					break;
-				case 3:
-					best_corpse->action_description = str_dup("&+La &+rbeheaded &+Ladventurer&n");
-					break;
+			case 0:
+				best_corpse->action_description = str_dup("&+La rotten corpse&n");
+				break;
+			case 1:
+				best_corpse->action_description = str_dup("&+ma bloated carcass&n");
+				break;
+			case 2:
+				best_corpse->action_description =
+					str_dup("&+Lan &+rembalmed &+Lcadaver&n");
+				break;
+			case 3:
+				best_corpse->action_description =
+					str_dup("&+La &+rbeheaded &+Ladventurer&n");
+				break;
 			}
 			best_corpse->str_mask = STRUNG_DESC3;
 			set_obj_affected(best_corpse, 2 * WAIT_MIN, TAG_OBJ_DECAY, 0);
 			obj_to_room(best_corpse, ch->in_room);
-			act("$n finishes digging, revealing a terribly rotten corpse.", FALSE, ch, 0, 0, TO_ROOM);
+			act("$n finishes digging, revealing a terribly rotten corpse.", FALSE, ch,
+			    0, 0, TO_ROOM);
 			best_corpse = NULL;
 		}
 
 		if (best_corpse)
 		{
-			if (can_raise_draco(ch, lvl, false) && (high_corpse >= 40) && (best_corpse->value[1] != PC_CORPSE) &&
-			    (npc_has_spell_slot(ch, SPELL_CREATE_DRACOLICH) || npc_has_spell_slot(ch, SPELL_CALL_TITAN)))
+			if (can_raise_draco(ch, lvl, false) && (high_corpse >= 40) &&
+			    (best_corpse->value[1] != PC_CORPSE) &&
+			    (npc_has_spell_slot(ch, SPELL_CREATE_DRACOLICH) ||
+			     npc_has_spell_slot(ch, SPELL_CALL_TITAN)))
 			{
 				struct obj_affect *af;
 				af = get_obj_affect(best_corpse, TAG_OBJ_DECAY);
@@ -1085,22 +1167,38 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 
 				return (MobCastSpell(ch, 0, best_corpse, spl, lvl));
 			}
-			else if ((npc_has_spell_slot(ch, SPELL_ANIMATE_DEAD) || npc_has_spell_slot(ch, SPELL_RAISE_SPECTRE) || npc_has_spell_slot(ch, SPELL_RAISE_WRAITH) ||
-			          npc_has_spell_slot(ch, SPELL_RAISE_VAMPIRE) || npc_has_spell_slot(ch, SPELL_RAISE_LICH) || npc_has_spell_slot(ch, SPELL_CALL_ARCHON) ||
-			          npc_has_spell_slot(ch, SPELL_CALL_ASURA) || npc_has_spell_slot(ch, SPELL_CALL_BRALANI) || npc_has_spell_slot(ch, SPELL_CALL_KNIGHT) ||
-			          npc_has_spell_slot(ch, SPELL_CALL_LIBERATOR)) &&
-			         !(strstr(best_corpse->name, "undead")) && ((pets = count_undead(ch)) < GET_LEVEL(ch) / 3) && pets >= 0)
+			else if ((npc_has_spell_slot(ch, SPELL_ANIMATE_DEAD) ||
+				  npc_has_spell_slot(ch, SPELL_RAISE_SPECTRE) ||
+				  npc_has_spell_slot(ch, SPELL_RAISE_WRAITH) ||
+				  npc_has_spell_slot(ch, SPELL_RAISE_VAMPIRE) ||
+				  npc_has_spell_slot(ch, SPELL_RAISE_LICH) ||
+				  npc_has_spell_slot(ch, SPELL_CALL_ARCHON) ||
+				  npc_has_spell_slot(ch, SPELL_CALL_ASURA) ||
+				  npc_has_spell_slot(ch, SPELL_CALL_BRALANI) ||
+				  npc_has_spell_slot(ch, SPELL_CALL_KNIGHT) ||
+				  npc_has_spell_slot(ch, SPELL_CALL_LIBERATOR)) &&
+				 !(strstr(best_corpse->name, "undead")) &&
+				 ((pets = count_undead(ch)) < GET_LEVEL(ch) / 3) && pets >= 0)
 			{
-				if ((npc_has_spell_slot(ch, SPELL_RAISE_LICH) || npc_has_spell_slot(ch, SPELL_CALL_LIBERATOR)) && (high_corpse >= undead_data[NECROPET_LICH].corpse_level))
+				if ((npc_has_spell_slot(ch, SPELL_RAISE_LICH) ||
+				     npc_has_spell_slot(ch, SPELL_CALL_LIBERATOR)) &&
+				    (high_corpse >= undead_data[NECROPET_LICH].corpse_level))
 				{
 					if (GET_CLASS(ch, CLASS_THEURGIST))
 						spl = SPELL_CALL_LIBERATOR;
 					else
 						spl = SPELL_RAISE_LICH;
 				}
-				else if ((npc_has_spell_slot(ch, SPELL_RAISE_VAMPIRE) || npc_has_spell_slot(ch, SPELL_CALL_KNIGHT)) && (high_corpse >= undead_data[NECROPET_VAMPIRE].corpse_level))
+				else if ((npc_has_spell_slot(ch, SPELL_RAISE_VAMPIRE) ||
+					  npc_has_spell_slot(ch, SPELL_CALL_KNIGHT)) &&
+					 (high_corpse >=
+					  undead_data[NECROPET_VAMPIRE].corpse_level))
 				{
-					if ((npc_has_spell_slot(ch, SPELL_RAISE_WRAITH) || npc_has_spell_slot(ch, SPELL_CALL_BRALANI)) && (number(0, 2) == 1) && (high_corpse >= undead_data[NECROPET_WRAITH].corpse_level))
+					if ((npc_has_spell_slot(ch, SPELL_RAISE_WRAITH) ||
+					     npc_has_spell_slot(ch, SPELL_CALL_BRALANI)) &&
+					    (number(0, 2) == 1) &&
+					    (high_corpse >=
+					     undead_data[NECROPET_WRAITH].corpse_level))
 						if (GET_CLASS(ch, CLASS_THEURGIST))
 							spl = SPELL_CALL_BRALANI;
 						else
@@ -1110,21 +1208,27 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 					else
 						spl = SPELL_RAISE_VAMPIRE;
 				}
-				else if ((npc_has_spell_slot(ch, SPELL_RAISE_WRAITH) || npc_has_spell_slot(ch, SPELL_CALL_BRALANI)) && (high_corpse >= undead_data[NECROPET_WRAITH].corpse_level))
+				else if ((npc_has_spell_slot(ch, SPELL_RAISE_WRAITH) ||
+					  npc_has_spell_slot(ch, SPELL_CALL_BRALANI)) &&
+					 (high_corpse >= undead_data[NECROPET_WRAITH].corpse_level))
 				{
 					if (GET_CLASS(ch, CLASS_THEURGIST))
 						spl = SPELL_CALL_BRALANI;
 					else
 						spl = SPELL_RAISE_WRAITH;
 				}
-				else if ((npc_has_spell_slot(ch, SPELL_RAISE_SPECTRE) || npc_has_spell_slot(ch, SPELL_CALL_ASURA)) && (high_corpse >= undead_data[NECROPET_SPECTRE].corpse_level))
+				else if ((npc_has_spell_slot(ch, SPELL_RAISE_SPECTRE) ||
+					  npc_has_spell_slot(ch, SPELL_CALL_ASURA)) &&
+					 (high_corpse >=
+					  undead_data[NECROPET_SPECTRE].corpse_level))
 				{
 					if (GET_CLASS(ch, CLASS_THEURGIST))
 						spl = SPELL_CALL_ASURA;
 					else
 						spl = SPELL_RAISE_SPECTRE;
 				}
-				else if (npc_has_spell_slot(ch, SPELL_ANIMATE_DEAD) || npc_has_spell_slot(ch, SPELL_CALL_ARCHON))
+				else if (npc_has_spell_slot(ch, SPELL_ANIMATE_DEAD) ||
+					 npc_has_spell_slot(ch, SPELL_CALL_ARCHON))
 				{
 					if (GET_CLASS(ch, CLASS_THEURGIST))
 						spl = SPELL_CALL_ARCHON;
@@ -1140,11 +1244,14 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	/* hey..  if we have a guy who can cast conjure elem/conjure greater elem,
 	   let's go to town on this too */
 
-	if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch) && !GET_MASTER(ch) && !CHAR_IN_JUSTICE_AREA(ch) && !CHAR_IN_TOWN(ch))
+	if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch) && !GET_MASTER(ch) &&
+	    !CHAR_IN_JUSTICE_AREA(ch) && !CHAR_IN_TOWN(ch))
 	{
-		if (npc_has_spell_slot(ch, SPELL_CONJURE_GREATER_ELEMENTAL) && can_conjure_greater_elem(ch, lvl))
+		if (npc_has_spell_slot(ch, SPELL_CONJURE_GREATER_ELEMENTAL) &&
+		    can_conjure_greater_elem(ch, lvl))
 			return (MobCastSpell(ch, ch, 0, SPELL_CONJURE_GREATER_ELEMENTAL, lvl));
-		else if (npc_has_spell_slot(ch, SPELL_CONJURE_ELEMENTAL) && can_conjure_lesser_elem(ch, lvl))
+		else if (npc_has_spell_slot(ch, SPELL_CONJURE_ELEMENTAL) &&
+			 can_conjure_lesser_elem(ch, lvl))
 			return (MobCastSpell(ch, ch, 0, SPELL_CONJURE_ELEMENTAL, lvl));
 	}
 	/*
@@ -1156,29 +1263,41 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	 */
 	if (!number(0, 3))
 	{
-		if (!spl && npc_has_spell_slot(ch, SPELL_INVISIBILITY) && !IS_FIGHTING(ch) && !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_DESTROYING(ch) && !IS_AFFECTED2(target, AFF2_CONCEALMENT) &&
-		    !IS_ACT(target, ACT_TEACHER) && !IS_FIGHTING(target) && (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) && (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) &&
+		if (!spl && npc_has_spell_slot(ch, SPELL_INVISIBILITY) && !IS_FIGHTING(ch) &&
+		    !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_DESTROYING(ch) &&
+		    !IS_AFFECTED2(target, AFF2_CONCEALMENT) && !IS_ACT(target, ACT_TEACHER) &&
+		    !IS_FIGHTING(target) &&
+		    (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) &&
+		    (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) &&
 		    !CHAR_IN_TOWN(target))
 			spl = SPELL_INVISIBILITY;
 	}
 	else
 	{
-		if (!spl && npc_has_spell_slot(ch, SPELL_CONCEALMENT) && !IS_FIGHTING(ch) && !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_DESTROYING(ch) && !IS_AFFECTED2(target, AFF2_CONCEALMENT) &&
-		    !IS_ACT(target, ACT_TEACHER) && !IS_FIGHTING(target) && (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) && (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) &&
+		if (!spl && npc_has_spell_slot(ch, SPELL_CONCEALMENT) && !IS_FIGHTING(ch) &&
+		    !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_DESTROYING(ch) &&
+		    !IS_AFFECTED2(target, AFF2_CONCEALMENT) && !IS_ACT(target, ACT_TEACHER) &&
+		    !IS_FIGHTING(target) &&
+		    (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) &&
+		    (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) &&
 		    !CHAR_IN_TOWN(target) && ((ch == target) && !number(0, 9)))
 			spl = SPELL_CONCEALMENT;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DETECT_INVISIBLE) && !IS_FIGHTING(ch) && !IS_AFFECTED(target, AFF_DETECT_INVISIBLE))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DETECT_INVISIBLE) && !IS_FIGHTING(ch) &&
+	    !IS_AFFECTED(target, AFF_DETECT_INVISIBLE))
 		spl = SPELL_DETECT_INVISIBLE;
 
-	if (!spl && (ch == target) && npc_has_spell_slot(ch, SPELL_VAMPIRIC_TOUCH) && IS_EVIL(ch) && !IS_AFFECTED2(ch, AFF2_VAMPIRIC_TOUCH) && !IS_FIGHTING(ch))
+	if (!spl && (ch == target) && npc_has_spell_slot(ch, SPELL_VAMPIRIC_TOUCH) && IS_EVIL(ch) &&
+	    !IS_AFFECTED2(ch, AFF2_VAMPIRIC_TOUCH) && !IS_FIGHTING(ch))
 		spl = SPELL_VAMPIRIC_TOUCH;
 
 	if (!spl)
 		n_attk = NumAttackers(ch);
 
-	if (!spl && (ch == target) && !IS_AFFECTED2(ch, AFF2_FIRESHIELD) && !IS_AFFECTED3(ch, AFF3_COLDSHIELD) && !IS_AFFECTED3(ch, AFF3_LIGHTNINGSHIELD) && (!IS_FIGHTING(ch) || (number(0, 3) == 2)))
+	if (!spl && (ch == target) && !IS_AFFECTED2(ch, AFF2_FIRESHIELD) &&
+	    !IS_AFFECTED3(ch, AFF3_COLDSHIELD) && !IS_AFFECTED3(ch, AFF3_LIGHTNINGSHIELD) &&
+	    (!IS_FIGHTING(ch) || (number(0, 3) == 2)))
 	{
 		if (!number(0, 1) && npc_has_spell_slot(ch, SPELL_FIRESHIELD))
 			spl = SPELL_FIRESHIELD;
@@ -1187,45 +1306,58 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 		else if (npc_has_spell_slot(ch, SPELL_LIGHTNINGSHIELD))
 			spl = SPELL_LIGHTNINGSHIELD;
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_GLOBE) && !IS_AFFECTED2(target, AFF2_GLOBE) && !IS_ANIMAL(target) && GET_RACE(target) != RACE_PLANT && GET_LEVEL(target) > 21)
+	if (!spl && npc_has_spell_slot(ch, SPELL_GLOBE) && !IS_AFFECTED2(target, AFF2_GLOBE) &&
+	    !IS_ANIMAL(target) && GET_RACE(target) != RACE_PLANT && GET_LEVEL(target) > 21)
 	{
 		spl = SPELL_GLOBE;
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_DEFLECT) && (!IS_FIGHTING(ch) || !number(0, 3)) && !IS_AFFECTED4(ch, AFF4_DEFLECT) && (ch == target))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DEFLECT) && (!IS_FIGHTING(ch) || !number(0, 3)) &&
+	    !IS_AFFECTED4(ch, AFF4_DEFLECT) && (ch == target))
 	{
 		spl = SPELL_DEFLECT;
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_STORNOGS_SPHERES) && (!IS_FIGHTING(ch) || !number(0, 3)) && !IS_AFFECTED4(ch, AFF4_STORNOGS_SPHERES) && (ch == target))
+	if (!spl && npc_has_spell_slot(ch, SPELL_STORNOGS_SPHERES) &&
+	    (!IS_FIGHTING(ch) || !number(0, 3)) && !IS_AFFECTED4(ch, AFF4_STORNOGS_SPHERES) &&
+	    (ch == target))
 	{
 		spl = SPELL_STORNOGS_SPHERES;
 	}
 	if (!spl && (!number(0, 8) || !IS_FIGHTING(ch)))
 		spl = pick_best_skin_spell(ch, target);
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_PROT_UNDEAD) && !has_skin_spell(target) && IS_UNDEAD(target) && (!number(0, 8) || !IS_FIGHTING(ch)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_PROT_UNDEAD) && !has_skin_spell(target) &&
+	    IS_UNDEAD(target) && (!number(0, 8) || !IS_FIGHTING(ch)))
 	{
 		spl = SPELL_PROT_UNDEAD;
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_VAMPIRE) && !IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) && !IS_FIGHTING(ch))
+	if (!spl && npc_has_spell_slot(ch, SPELL_VAMPIRE) && !IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM) &&
+	    !IS_FIGHTING(ch))
 	{
 		spl = SPELL_VAMPIRE;
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_VITALIZE_UNDEAD) && IS_UNDEAD(target) && !affected_by_spell(target, SPELL_VITALIZE_UNDEAD) && (!number(0, 5) || !IS_FIGHTING(ch)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_VITALIZE_UNDEAD) && IS_UNDEAD(target) &&
+	    !affected_by_spell(target, SPELL_VITALIZE_UNDEAD) &&
+	    (!number(0, 5) || !IS_FIGHTING(ch)))
 	{
 		spl = SPELL_VITALIZE_UNDEAD;
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_MINOR_GLOBE) && !IS_ANIMAL(target) && GET_RACE(target) != RACE_PLANT && !(IS_AFFECTED2(target, AFF2_GLOBE) || IS_AFFECTED(target, AFF_MINOR_GLOBE)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_MINOR_GLOBE) && !IS_ANIMAL(target) &&
+	    GET_RACE(target) != RACE_PLANT &&
+	    !(IS_AFFECTED2(target, AFF2_GLOBE) || IS_AFFECTED(target, AFF_MINOR_GLOBE)))
 	{
 		spl = SPELL_MINOR_GLOBE;
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_HASTE) && !IS_AFFECTED(target, AFF_HASTE) && (!IS_FIGHTING(ch) || !number(0, 4)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_HASTE) && !IS_AFFECTED(target, AFF_HASTE) &&
+	    (!IS_FIGHTING(ch) || !number(0, 4)))
 	{
 		if (!IS_PC_PET(target) && GET_LEVEL(target) > 21)
 			spl = SPELL_HASTE;
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_FLY) && !IS_AFFECTED(target, AFF_FLY) && !IS_FIGHTING(ch))
+	if (!spl && npc_has_spell_slot(ch, SPELL_FLY) && !IS_AFFECTED(target, AFF_FLY) &&
+	    !IS_FIGHTING(ch))
 		spl = SPELL_FLY;
-	if (!spl && npc_has_spell_slot(ch, SPELL_LEVITATE) && !IS_AFFECTED(target, AFF_LEVITATE) && !IS_AFFECTED(target, AFF_FLY) && !IS_FIGHTING(ch))
+	if (!spl && npc_has_spell_slot(ch, SPELL_LEVITATE) && !IS_AFFECTED(target, AFF_LEVITATE) &&
+	    !IS_AFFECTED(target, AFF_FLY) && !IS_FIGHTING(ch))
 		spl = SPELL_LEVITATE;
 	/*
 	 * If protection spell selected, then forego further evaluation and proceed
@@ -1238,7 +1370,7 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	if (!spl && !helping && !IS_FIGHTING(ch))
 	{
 		P_char tch;
-		int    numb = 0, lucky, curr = 0;
+		int numb = 0, lucky, curr = 0;
 
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 			if ((ch != tch) && char_deserves_helping(ch, tch, TRUE))
@@ -1297,29 +1429,35 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 		/* update..  bigby's crushing hand does enough damage to kill a PC in one hit, so if the
 		   mob has that, cast it usually */
 
-		if (((n_attk > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && (number(0, 3)))
+		if (((n_attk > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) &&
+		    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && (number(0, 3)))
 		{
 			if (!spl && npc_has_spell_slot(ch, SPELL_METEOR_SWARM) && OUTSIDE(ch))
 			{
 				spl = SPELL_METEOR_SWARM;
 			}
 
-			if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) && number(0, 5) == 3 && IS_PC(target) && affected_by_spell(target, SPELL_VITALITY))
+			if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) &&
+			    number(0, 5) == 3 && IS_PC(target) &&
+			    affected_by_spell(target, SPELL_VITALITY))
 			{
 				spl = SPELL_DISPEL_MAGIC;
 			}
 
-			if (!spl && npc_has_spell_slot(ch, SPELL_UNDEAD_TO_DEATH) && number(0, 2) && IS_UNDEADRACE(target))
+			if (!spl && npc_has_spell_slot(ch, SPELL_UNDEAD_TO_DEATH) && number(0, 2) &&
+			    IS_UNDEADRACE(target))
 			{
 				spl = SPELL_UNDEAD_TO_DEATH;
 			}
 
-			if (!spl && npc_has_spell_slot(ch, SPELL_SUMMON_GHASTS) && !IS_UNDEADRACE(target))
+			if (!spl && npc_has_spell_slot(ch, SPELL_SUMMON_GHASTS) &&
+			    !IS_UNDEADRACE(target))
 			{
 				spl = SPELL_SUMMON_GHASTS;
 			}
 
-			if (!spl && npc_has_spell_slot(ch, SPELL_AID_OF_THE_HEAVENS) && !IS_ANGEL(target))
+			if (!spl && npc_has_spell_slot(ch, SPELL_AID_OF_THE_HEAVENS) &&
+			    !IS_ANGEL(target))
 			{
 				spl = SPELL_AID_OF_THE_HEAVENS;
 			}
@@ -1349,7 +1487,8 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 			if (!spl && npc_has_spell_slot(ch, SPELL_CHAIN_LIGHTNING) && !number(0, 2))
 				spl = SPELL_CHAIN_LIGHTNING;
 
-			if (!spl && npc_has_spell_slot(ch, SPELL_ICE_STORM) && !IS_GLOBED(target) && GET_LEVEL(ch) < 46 && !number(0, 3))
+			if (!spl && npc_has_spell_slot(ch, SPELL_ICE_STORM) && !IS_GLOBED(target) &&
+			    GET_LEVEL(ch) < 46 && !number(0, 3))
 				spl = SPELL_ICE_STORM;
 		}
 	}
@@ -1367,7 +1506,8 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	 * potent spell for dealing with a single target. - SKB
 	 */
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DREAD_WAVE) && (!number(0, 2) || ENJOYS_FIRE_DAM(target) || IS_AFFECTED2(target, AFF2_FIRESHIELD)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DREAD_WAVE) &&
+	    (!number(0, 2) || ENJOYS_FIRE_DAM(target) || IS_AFFECTED2(target, AFF2_FIRESHIELD)))
 	{
 		spl = SPELL_DREAD_WAVE;
 	}
@@ -1375,11 +1515,13 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	{
 		spl = SPELL_CHAOTIC_RIPPLE;
 	}
-	else if (!spl && npc_has_spell_slot(ch, SPELL_CHAOS_VOLLEY) && number(0, 2) && (GET_HIT(ch) < (int)(GET_MAX_HIT(ch) * 0.66)))
+	else if (!spl && npc_has_spell_slot(ch, SPELL_CHAOS_VOLLEY) && number(0, 2) &&
+		 (GET_HIT(ch) < (int)(GET_MAX_HIT(ch) * 0.66)))
 	{
 		spl = SPELL_CHAOS_VOLLEY;
 	}
-	else if (!spl && npc_has_spell_slot(ch, SPELL_UNDEAD_TO_DEATH) && number(0, 2) && IS_UNDEADRACE(target))
+	else if (!spl && npc_has_spell_slot(ch, SPELL_UNDEAD_TO_DEATH) && number(0, 2) &&
+		 IS_UNDEADRACE(target))
 	{
 		spl = SPELL_UNDEAD_TO_DEATH;
 	}
@@ -1401,12 +1543,14 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 		spl = SPELL_DISPEL_MAGIC;
 	}
 
-	else if (!spl && npc_has_spell_slot(ch, SPELL_PWORD_STUN) && (ch != target) && !IS_STUNNED(target) && (GET_C_POW(target) < GET_C_POW(ch)) && number(0, 1))
+	else if (!spl && npc_has_spell_slot(ch, SPELL_PWORD_STUN) && (ch != target) &&
+		 !IS_STUNNED(target) && (GET_C_POW(target) < GET_C_POW(ch)) && number(0, 1))
 	{
 		spl = SPELL_PWORD_STUN;
 	}
-	else if (!spl && npc_has_spell_slot(ch, SPELL_PWORD_BLIND) && target != ch && !IS_AFFECTED(target, AFF_BLIND) && ((GET_LEVEL(target) < GET_LEVEL(ch))) && number(0, 1) && !EYELESS(target) &&
-	         GET_C_POW(ch) > GET_C_POW(target))
+	else if (!spl && npc_has_spell_slot(ch, SPELL_PWORD_BLIND) && target != ch &&
+		 !IS_AFFECTED(target, AFF_BLIND) && ((GET_LEVEL(target) < GET_LEVEL(ch))) &&
+		 number(0, 1) && !EYELESS(target) && GET_C_POW(ch) > GET_C_POW(target))
 	{
 		spl = SPELL_PWORD_BLIND;
 	}
@@ -1418,11 +1562,13 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	{
 		spl = SPELL_PRISMATIC_RAY;
 	}
-	else if (!spl && npc_has_spell_slot(ch, SPELL_NEGATIVE_CONCUSSION_BLAST) && !IS_UNDEAD(target) && number(0, 3))
+	else if (!spl && npc_has_spell_slot(ch, SPELL_NEGATIVE_CONCUSSION_BLAST) &&
+		 !IS_UNDEAD(target) && number(0, 3))
 	{
 		spl = SPELL_NEGATIVE_CONCUSSION_BLAST;
 	}
-	else if (!spl && npc_has_spell_slot(ch, SPELL_ENERGY_DRAIN) && !IS_UNDEAD(target) && number(0, 2))
+	else if (!spl && npc_has_spell_slot(ch, SPELL_ENERGY_DRAIN) && !IS_UNDEAD(target) &&
+		 number(0, 2))
 	{
 		spl = SPELL_ENERGY_DRAIN;
 	}
@@ -1450,7 +1596,8 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	{
 		spl = SPELL_DISINTEGRATE;
 	}
-	else if (!spl && npc_has_spell_slot(ch, SPELL_PRISMATIC_SPRAY) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	else if (!spl && npc_has_spell_slot(ch, SPELL_PRISMATIC_SPRAY) &&
+		 !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
 		spl = SPELL_PRISMATIC_SPRAY;
 	}
@@ -1463,7 +1610,8 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	{
 		spl = SPELL_FROSTBITE;
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_FIREBALL) && !IS_GLOBED(target) && !(GET_RACE(target) == RACE_F_ELEMENTAL))
+	if (!spl && npc_has_spell_slot(ch, SPELL_FIREBALL) && !IS_GLOBED(target) &&
+	    !(GET_RACE(target) == RACE_F_ELEMENTAL))
 	{
 		spl = SPELL_FIREBALL;
 	}
@@ -1473,18 +1621,21 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 		spl = SPELL_CONE_OF_COLD;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_COLOR_SPRAY) && !IS_GLOBED(target) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	if (!spl && npc_has_spell_slot(ch, SPELL_COLOR_SPRAY) && !IS_GLOBED(target) &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
 		spl = SPELL_COLOR_SPRAY;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_PWORD_KILL) && !(target == ch) && (GET_LEVEL(target) < GET_LEVEL(ch) + number(-5, 5)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_PWORD_KILL) && !(target == ch) &&
+	    (GET_LEVEL(target) < GET_LEVEL(ch) + number(-5, 5)))
 	{
 		spl = SPELL_PWORD_KILL;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_PWORD_BLIND) && target != ch && !IS_AFFECTED(target, AFF_BLIND) && ((GET_LEVEL(target) < GET_LEVEL(ch))) && number(0, 1) && !EYELESS(target) &&
-	    GET_C_POW(ch) > GET_C_POW(target))
+	if (!spl && npc_has_spell_slot(ch, SPELL_PWORD_BLIND) && target != ch &&
+	    !IS_AFFECTED(target, AFF_BLIND) && ((GET_LEVEL(target) < GET_LEVEL(ch))) &&
+	    number(0, 1) && !EYELESS(target) && GET_C_POW(ch) > GET_C_POW(target))
 	{
 		spl = SPELL_PWORD_BLIND;
 	}
@@ -1494,12 +1645,14 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 		spl = SPELL_LIGHTNING_BOLT;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_ACID_BLAST) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_ACID_BLAST) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 	{
 		spl = SPELL_ACID_BLAST;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_SHOCKING_GRASP) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_SHOCKING_GRASP) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 	{
 		spl = SPELL_SHOCKING_GRASP;
 	}
@@ -1520,7 +1673,8 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	 * fuxor a caster royally once more - Jexni 11/25/08
 	 */
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_FEEBLEMIND) && !IS_AFFECTED(target, SPELL_FEEBLEMIND) && (IS_MAGE(target) || IS_CLERIC(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_FEEBLEMIND) &&
+	    !IS_AFFECTED(target, SPELL_FEEBLEMIND) && (IS_MAGE(target) || IS_CLERIC(target)))
 	{
 		spl = SPELL_FEEBLEMIND;
 	}
@@ -1528,7 +1682,10 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	{
 		for (target = world[ch->in_room].people; target; target = target->next_in_room)
 		{
-			if ((target != ch) && should_area_hit(ch, target) && (CAN_SEE(ch, target) || (target == GET_OPPONENT(ch))) && IS_PC(target) && !affected_by_spell(target, SPELL_FEEBLEMIND) && number(0, 2))
+			if ((target != ch) && should_area_hit(ch, target) &&
+			    (CAN_SEE(ch, target) || (target == GET_OPPONENT(ch))) &&
+			    IS_PC(target) && !affected_by_spell(target, SPELL_FEEBLEMIND) &&
+			    number(0, 2))
 			{
 				break;
 			}
@@ -1556,7 +1713,8 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 
 	if (!number(0, 3))
 	{
-		if (!spl && npc_has_spell_slot(ch, SPELL_HEAL_UNDEAD) && IS_UNDEAD(target) && (dam > 75))
+		if (!spl && npc_has_spell_slot(ch, SPELL_HEAL_UNDEAD) && IS_UNDEAD(target) &&
+		    (dam > 75))
 			spl = SPELL_HEAL_UNDEAD;
 	}
 
@@ -1565,18 +1723,23 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 		spl = SPELL_SLOW;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_BURNING_HANDS) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !(GET_RACE(target) == RACE_F_ELEMENTAL))
+	if (!spl && npc_has_spell_slot(ch, SPELL_BURNING_HANDS) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)) &&
+	    !(GET_RACE(target) == RACE_F_ELEMENTAL))
 	{
 		spl = SPELL_BURNING_HANDS;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_CHILL_TOUCH) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_CHILL_TOUCH) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 		spl = SPELL_CHILL_TOUCH;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_SLASHING_DARKNESS) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_SLASHING_DARKNESS) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 		spl = SPELL_SLASHING_DARKNESS;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_MAGIC_MISSILE) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_MAGIC_MISSILE) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 		spl = SPELL_MAGIC_MISSILE;
 
 	if (spl && ch && target)
@@ -1588,8 +1751,8 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 bool CastReaverSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL, tmp = NULL;
-	P_obj  wpn;
-	int    dam = 0, lvl = 0, spl = 0, n_attk = 0;
+	P_obj wpn;
+	int dam = 0, lvl = 0, spl = 0, n_attk = 0;
 
 	if (IS_CASTING(ch))
 		return FALSE;
@@ -1598,16 +1761,17 @@ bool CastReaverSpell(P_char ch, P_char victim, int helping)
 
 	if (helping)
 	{
-		dam    = GET_MAX_HIT(victim) - GET_HIT(victim);
+		dam = GET_MAX_HIT(victim) - GET_HIT(victim);
 		target = victim;
 	}
 	else
 	{
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 		target = ch;
 	}
 
-	if (MobShouldFlee(ch) && !number(0, 9)) // Reavers are good hitters. No need to flee quickly.
+	if (MobShouldFlee(ch) &&
+	    !number(0, 9)) // Reavers are good hitters. No need to flee quickly.
 	{
 		do_flee(ch, 0, 0);
 		return false;
@@ -1620,46 +1784,59 @@ bool CastReaverSpell(P_char ch, P_char victim, int helping)
 	if (affected_by_spell(ch, SKILL_BERSERK))
 		return FALSE;
 
-	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_KANCHELSIS_FURY) && npc_has_spell_slot(ch, SPELL_KANCHELSIS_FURY) && (!IS_FIGHTING(ch) || number(0, 1)))
+	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_KANCHELSIS_FURY) &&
+	    npc_has_spell_slot(ch, SPELL_KANCHELSIS_FURY) && (!IS_FIGHTING(ch) || number(0, 1)))
 		spl = SPELL_KANCHELSIS_FURY;
 
-	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_THRYMS_ICERAZOR) && (wpn = ch->equipment[WIELD]) && wpn->type == ITEM_WEAPON && IS_BLUDGEON(wpn) &&
+	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_THRYMS_ICERAZOR) &&
+	    (wpn = ch->equipment[WIELD]) && wpn->type == ITEM_WEAPON && IS_BLUDGEON(wpn) &&
 	    npc_has_spell_slot(ch, SPELL_THRYMS_ICERAZOR) && (!IS_FIGHTING(ch) || number(0, 1)))
 		spl = SPELL_THRYMS_ICERAZOR;
 
-	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_LLIENDILS_STORMSHOCK) && (wpn = ch->equipment[WIELD]) && wpn->type == ITEM_WEAPON && !IS_BLUDGEON(wpn) && !IS_AXE(wpn) &&
-	    npc_has_spell_slot(ch, SPELL_LLIENDILS_STORMSHOCK) && (!IS_FIGHTING(ch) || number(0, 1)))
+	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_LLIENDILS_STORMSHOCK) &&
+	    (wpn = ch->equipment[WIELD]) && wpn->type == ITEM_WEAPON && !IS_BLUDGEON(wpn) &&
+	    !IS_AXE(wpn) && npc_has_spell_slot(ch, SPELL_LLIENDILS_STORMSHOCK) &&
+	    (!IS_FIGHTING(ch) || number(0, 1)))
 		spl = SPELL_LLIENDILS_STORMSHOCK;
 
-	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_ILIENZES_FLAME_SWORD) && (wpn = ch->equipment[WIELD]) && wpn->type == ITEM_WEAPON && IS_SWORD(wpn) &&
-	    npc_has_spell_slot(ch, SPELL_ILIENZES_FLAME_SWORD) && (!IS_FIGHTING(ch) || number(0, 1)))
+	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_ILIENZES_FLAME_SWORD) &&
+	    (wpn = ch->equipment[WIELD]) && wpn->type == ITEM_WEAPON && IS_SWORD(wpn) &&
+	    npc_has_spell_slot(ch, SPELL_ILIENZES_FLAME_SWORD) &&
+	    (!IS_FIGHTING(ch) || number(0, 1)))
 		spl = SPELL_ILIENZES_FLAME_SWORD;
 
-	if (!spl && (ch == target) && npc_has_spell_slot(ch, SPELL_ESHABALAS_VITALITY) && !affected_by_spell(target, SPELL_ESHABALAS_VITALITY) && !IS_FIGHTING(ch))
+	if (!spl && (ch == target) && npc_has_spell_slot(ch, SPELL_ESHABALAS_VITALITY) &&
+	    !affected_by_spell(target, SPELL_ESHABALAS_VITALITY) && !IS_FIGHTING(ch))
 		spl = SPELL_ESHABALAS_VITALITY;
 
-	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_CHILLING_IMPLOSION) && affected_by_spell(target, SPELL_THRYMS_ICERAZOR) && npc_has_spell_slot(ch, SPELL_CHILLING_IMPLOSION) &&
-	    (!IS_FIGHTING(ch) || number(0, 1)))
+	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_CHILLING_IMPLOSION) &&
+	    affected_by_spell(target, SPELL_THRYMS_ICERAZOR) &&
+	    npc_has_spell_slot(ch, SPELL_CHILLING_IMPLOSION) && (!IS_FIGHTING(ch) || number(0, 1)))
 		spl = SPELL_CHILLING_IMPLOSION;
 
-	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_STORMCALLERS_FURY) && affected_by_spell(target, SPELL_LLIENDILS_STORMSHOCK) && npc_has_spell_slot(ch, SPELL_STORMCALLERS_FURY) &&
-	    (!IS_FIGHTING(ch) || number(0, 1)))
+	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_STORMCALLERS_FURY) &&
+	    affected_by_spell(target, SPELL_LLIENDILS_STORMSHOCK) &&
+	    npc_has_spell_slot(ch, SPELL_STORMCALLERS_FURY) && (!IS_FIGHTING(ch) || number(0, 1)))
 		spl = SPELL_STORMCALLERS_FURY;
 
-	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_CEGILUNE_BLADE) && affected_by_spell(target, SPELL_ILIENZES_FLAME_SWORD) && npc_has_spell_slot(ch, SPELL_CEGILUNE_BLADE) &&
-	    (!IS_FIGHTING(ch) || number(0, 1)))
+	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_CEGILUNE_BLADE) &&
+	    affected_by_spell(target, SPELL_ILIENZES_FLAME_SWORD) &&
+	    npc_has_spell_slot(ch, SPELL_CEGILUNE_BLADE) && (!IS_FIGHTING(ch) || number(0, 1)))
 		spl = SPELL_CEGILUNE_BLADE;
 
 	if (!IS_FIGHTING(ch) && !spl && (ch == target))
 	{
-		if (!spl && !affected_by_spell(target, SPELL_BALADORS_PROTECTION) && npc_has_spell_slot(ch, SPELL_BALADORS_PROTECTION))
+		if (!spl && !affected_by_spell(target, SPELL_BALADORS_PROTECTION) &&
+		    npc_has_spell_slot(ch, SPELL_BALADORS_PROTECTION))
 			spl = SPELL_BALADORS_PROTECTION;
 
-		if (!spl && !affected_by_spell(target, SPELL_FERRIX_PRECISION) && npc_has_spell_slot(ch, SPELL_FERRIX_PRECISION))
+		if (!spl && !affected_by_spell(target, SPELL_FERRIX_PRECISION) &&
+		    npc_has_spell_slot(ch, SPELL_FERRIX_PRECISION))
 			spl = SPELL_FERRIX_PRECISION;
 	}
 
-	if (!spl && IS_AFFECTED(ch, AFF_BLIND) && room_has_valid_exit(ch->in_room) && !number(0, 5) && !fear_check(ch))
+	if (!spl && IS_AFFECTED(ch, AFF_BLIND) && room_has_valid_exit(ch->in_room) &&
+	    !number(0, 5) && !fear_check(ch))
 	{
 		do_flee(ch, 0, 0);
 		return FALSE;
@@ -1671,7 +1848,7 @@ bool CastReaverSpell(P_char ch, P_char victim, int helping)
 	if (!spl && !helping && !IS_FIGHTING(ch))
 	{
 		P_char tch;
-		int    numb = 0, lucky, curr = 0;
+		int numb = 0, lucky, curr = 0;
 
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 			if ((ch != tch) && char_deserves_helping(ch, tch, TRUE))
@@ -1720,12 +1897,17 @@ bool CastReaverSpell(P_char ch, P_char victim, int helping)
 				if (!((ch == GET_OPPONENT(tmp)) || are_together(target, tmp)))
 					continue;
 
-				if (!spl && npc_has_spell_slot(ch, SPELL_FEEBLEMIND) && !(tmp == ch) && !affected_by_spell(tmp, SPELL_FEEBLEMIND) && (IS_MAGE(tmp) || IS_CLERIC(tmp)) && !number(0, 3))
+				if (!spl && npc_has_spell_slot(ch, SPELL_FEEBLEMIND) &&
+				    !(tmp == ch) && !affected_by_spell(tmp, SPELL_FEEBLEMIND) &&
+				    (IS_MAGE(tmp) || IS_CLERIC(tmp)) && !number(0, 3))
 				{
 					spl = SPELL_FEEBLEMIND;
 				}
 
-				if (!spl && npc_has_spell_slot(ch, SPELL_RAY_OF_ENFEEBLEMENT) && !(tmp == ch) && !affected_by_spell(tmp, SPELL_RAY_OF_ENFEEBLEMENT) && !number(0, 3))
+				if (!spl && npc_has_spell_slot(ch, SPELL_RAY_OF_ENFEEBLEMENT) &&
+				    !(tmp == ch) &&
+				    !affected_by_spell(tmp, SPELL_RAY_OF_ENFEEBLEMENT) &&
+				    !number(0, 3))
 				{
 					spl = SPELL_RAY_OF_ENFEEBLEMENT;
 				}
@@ -1744,7 +1926,8 @@ bool CastReaverSpell(P_char ch, P_char victim, int helping)
 		if (spl && ch && tmp)
 			return (MobCastSpell(ch, tmp, 0, spl, lvl));
 
-		if (!spl && npc_has_spell_slot(ch, SPELL_CHAIN_LIGHTNING) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && !number(0, 6))
+		if (!spl && npc_has_spell_slot(ch, SPELL_CHAIN_LIGHTNING) &&
+		    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && !number(0, 6))
 		{
 			spl = SPELL_CHAIN_LIGHTNING;
 		}
@@ -1753,7 +1936,8 @@ bool CastReaverSpell(P_char ch, P_char victim, int helping)
 	if (!spl && npc_has_spell_slot(ch, SPELL_IMMOLATE) && number(0, 2))
 		spl = SPELL_IMMOLATE;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_RAY_OF_ENFEEBLEMENT) && number(0, 2) && !affected_by_spell(target, SPELL_RAY_OF_ENFEEBLEMENT))
+	if (!spl && npc_has_spell_slot(ch, SPELL_RAY_OF_ENFEEBLEMENT) && number(0, 2) &&
+	    !affected_by_spell(target, SPELL_RAY_OF_ENFEEBLEMENT))
 	{
 		spl = SPELL_RAY_OF_ENFEEBLEMENT;
 	}
@@ -1761,12 +1945,14 @@ bool CastReaverSpell(P_char ch, P_char victim, int helping)
 	if (!spl && npc_has_spell_slot(ch, SPELL_FIREBALL) && number(0, 2))
 		spl = SPELL_FIREBALL;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_CHILL_TOUCH) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 2))
+	if (!spl && npc_has_spell_slot(ch, SPELL_CHILL_TOUCH) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 2))
 	{
 		spl = SPELL_CHILL_TOUCH;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_LIGHTNING_BOLT) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 2))
+	if (!spl && npc_has_spell_slot(ch, SPELL_LIGHTNING_BOLT) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 2))
 	{
 		spl = SPELL_LIGHTNING_BOLT;
 	}
@@ -1783,9 +1969,10 @@ bool CastReaverSpell(P_char ch, P_char victim, int helping)
 	if (!spl)
 	{
 		target = ch;
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_TELEPORT) && (dam > GET_MAX_HIT(ch) * 7 / 8) && (number(0, 15) == 3) && !IS_ROOM(ch->in_room, ROOM_NO_TELEPORT))
+	if (!spl && npc_has_spell_slot(ch, SPELL_TELEPORT) && (dam > GET_MAX_HIT(ch) * 7 / 8) &&
+	    (number(0, 15) == 3) && !IS_ROOM(ch->in_room, ROOM_NO_TELEPORT))
 		spl = SPELL_TELEPORT;
 
 	if (spl && ch && target)
@@ -1797,8 +1984,8 @@ bool CastReaverSpell(P_char ch, P_char victim, int helping)
 bool CastRangerSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL;
-	P_obj  wpn;
-	int    dam = 0, lvl = 0, spl = 0;
+	P_obj wpn;
+	int dam = 0, lvl = 0, spl = 0;
 
 	if (IS_CASTING(ch))
 	{
@@ -1809,18 +1996,19 @@ bool CastRangerSpell(P_char ch, P_char victim, int helping)
 
 	if (helping)
 	{
-		dam    = GET_MAX_HIT(victim) - GET_HIT(victim);
+		dam = GET_MAX_HIT(victim) - GET_HIT(victim);
 		target = victim;
 	}
 	else
 	{
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 		target = ch;
 	}
 
 	/* make sure I'm even able to cast in this room! */
 
-	if (MobShouldFlee(ch) && !number(0, 9)) // Rangers are good hitters. No need to flee quickly.
+	if (MobShouldFlee(ch) &&
+	    !number(0, 9)) // Rangers are good hitters. No need to flee quickly.
 	{
 		do_flee(ch, 0, 0);
 		return false;
@@ -1846,41 +2034,54 @@ bool CastRangerSpell(P_char ch, P_char victim, int helping)
 	      (!IS_FIGHTING(ch) || number(0, 1)))
 	    spl = SPELL_HEALING_BLADE;
 	*/
-	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_DAZZLE) && !IS_AFFECTED4(target, AFF4_DAZZLER) && npc_has_spell_slot(ch, SPELL_DAZZLE) && (!IS_FIGHTING(ch) || number(0, 1)))
+	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_DAZZLE) &&
+	    !IS_AFFECTED4(target, AFF4_DAZZLER) && npc_has_spell_slot(ch, SPELL_DAZZLE) &&
+	    (!IS_FIGHTING(ch) || number(0, 1)))
 		spl = SPELL_DAZZLE;
 
-	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_BLUR) && !IS_AFFECTED3(target, AFF3_BLUR) && npc_has_spell_slot(ch, SPELL_BLUR) && (!IS_FIGHTING(ch) || number(0, 1)))
+	if (!spl && (ch == target) && !affected_by_spell(target, SPELL_BLUR) &&
+	    !IS_AFFECTED3(target, AFF3_BLUR) && npc_has_spell_slot(ch, SPELL_BLUR) &&
+	    (!IS_FIGHTING(ch) || number(0, 1)))
 		spl = SPELL_BLUR;
 
 	if (!IS_FIGHTING(ch) || (number(0, 2) == 1))
 	{
-		if (!spl && !affected_by_spell(target, SPELL_HASTE) && !IS_AFFECTED(target, AFF_HASTE) && npc_has_spell_slot(ch, SPELL_HASTE))
+		if (!spl && !affected_by_spell(target, SPELL_HASTE) &&
+		    !IS_AFFECTED(target, AFF_HASTE) && npc_has_spell_slot(ch, SPELL_HASTE))
 			spl = SPELL_HASTE;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_CONCEALMENT) && !IS_FIGHTING(target) && !IS_FIGHTING(ch) && !IS_AFFECTED2(target, AFF2_CONCEALMENT) && !IS_AFFECTED(target, AFF_INVISIBLE) &&
-	    !IS_ACT(target, ACT_TEACHER) && (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) && (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) && !CHAR_IN_TOWN(target) &&
+	if (!spl && npc_has_spell_slot(ch, SPELL_CONCEALMENT) && !IS_FIGHTING(target) &&
+	    !IS_FIGHTING(ch) && !IS_AFFECTED2(target, AFF2_CONCEALMENT) &&
+	    !IS_AFFECTED(target, AFF_INVISIBLE) && !IS_ACT(target, ACT_TEACHER) &&
+	    (!IS_NPC(target) || !mob_index[GET_RNUM(target)].qst_func) &&
+	    (GET_HIT(target) < GET_MAX_HIT(target)) && !CHAR_IN_TOWN(ch) && !CHAR_IN_TOWN(target) &&
 	    ((target == ch) && !number(0, 9)))
 		spl = SPELL_CONCEALMENT;
 
 	if (!IS_FIGHTING(ch))
 	{
-		if (!spl && !IS_AFFECTED(target, AFF_BARKSKIN) && npc_has_spell_slot(ch, SPELL_BARKSKIN) && GET_RACE(target) != RACE_ANIMAL)
+		if (!spl && !IS_AFFECTED(target, AFF_BARKSKIN) &&
+		    npc_has_spell_slot(ch, SPELL_BARKSKIN) && GET_RACE(target) != RACE_ANIMAL)
 		{
 			spl = SPELL_BARKSKIN;
 		}
 
-		if (!spl && !affected_by_spell(target, SPELL_BLESS) && npc_has_spell_slot(ch, SPELL_BLESS) && GET_RACE(target) != RACE_ANIMAL)
+		if (!spl && !affected_by_spell(target, SPELL_BLESS) &&
+		    npc_has_spell_slot(ch, SPELL_BLESS) && GET_RACE(target) != RACE_ANIMAL)
 			spl = SPELL_BLESS;
 
-		if (!spl && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_EVIL) && !IS_AFFECTED(target, AFF_PROTECT_EVIL))
+		if (!spl && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_EVIL) &&
+		    !IS_AFFECTED(target, AFF_PROTECT_EVIL))
 			spl = SPELL_PROTECT_FROM_EVIL;
 
-		if (!spl && !IS_AFFECTED(ch, AFF_SENSE_LIFE) && (ch == target) && npc_has_spell_slot(ch, SPELL_SENSE_LIFE))
+		if (!spl && !IS_AFFECTED(ch, AFF_SENSE_LIFE) && (ch == target) &&
+		    npc_has_spell_slot(ch, SPELL_SENSE_LIFE))
 			spl = SPELL_SENSE_LIFE;
 	}
 
-	if (!spl && IS_AFFECTED(ch, AFF_BLIND) && room_has_valid_exit(ch->in_room) && !number(0, 4) && !fear_check(ch))
+	if (!spl && IS_AFFECTED(ch, AFF_BLIND) && room_has_valid_exit(ch->in_room) &&
+	    !number(0, 4) && !fear_check(ch))
 	{
 		do_flee(ch, 0, 0);
 		return FALSE;
@@ -1888,7 +2089,8 @@ bool CastRangerSpell(P_char ch, P_char victim, int helping)
 
 	/* cure light is some weak shit, give rangers a chance to cast other stuff/track/whatever */
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_CURE_LIGHT) && dam && !IS_FIGHTING(ch) && !number(0, 3))
+	if (!spl && npc_has_spell_slot(ch, SPELL_CURE_LIGHT) && dam && !IS_FIGHTING(ch) &&
+	    !number(0, 3))
 		spl = SPELL_CURE_LIGHT;
 
 	if (spl && ch)
@@ -1897,7 +2099,7 @@ bool CastRangerSpell(P_char ch, P_char victim, int helping)
 	if (!spl && !helping && !IS_FIGHTING(ch))
 	{
 		P_char tch;
-		int    numb = 0, lucky, curr = 0;
+		int numb = 0, lucky, curr = 0;
 
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 			if ((ch != tch) && char_deserves_helping(ch, tch, TRUE))
@@ -1934,7 +2136,8 @@ bool CastRangerSpell(P_char ch, P_char victim, int helping)
 	if (!ch || !target)
 		return (FALSE);
 
-	if (((NumAttackers(ch) >= 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	if (((NumAttackers(ch) >= 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
 		if (!spl && npc_has_spell_slot(ch, SPELL_FIRESTORM))
 			spl = SPELL_FIRESTORM;
@@ -1944,18 +2147,21 @@ bool CastRangerSpell(P_char ch, P_char victim, int helping)
 
 	// never mind, rangers no longer get call lightning
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_LIGHTNING_BOLT) && !IS_GLOBED(target) && number(0, 2))
+	if (!spl && npc_has_spell_slot(ch, SPELL_LIGHTNING_BOLT) && !IS_GLOBED(target) &&
+	    number(0, 2))
 		spl = SPELL_LIGHTNING_BOLT;
 
 	/*  if(!spl && npc_has_spell_slot(ch, SPELL_CALL_LIGHTNING) && !IS_GLOBED(target))
 	    spl = SPELL_CALL_LIGHTNING;*/
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_EVIL) && !IS_EVIL(ch) && IS_EVIL(target) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && number(0, 1))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_EVIL) && !IS_EVIL(ch) && IS_EVIL(target) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && number(0, 1))
 	{
 		spl = SPELL_DISPEL_EVIL;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_CHILL_TOUCH) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 2))
+	if (!spl && npc_has_spell_slot(ch, SPELL_CHILL_TOUCH) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 2))
 	{
 		spl = SPELL_CHILL_TOUCH;
 	}
@@ -1970,7 +2176,7 @@ bool CastRangerSpell(P_char ch, P_char victim, int helping)
 	if (!spl)
 	{
 		target = ch;
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 	}
 	if (!spl && npc_has_spell_slot(ch, SPELL_CURE_LIGHT) && (dam > 8) && (number(0, 15) == 3))
 		spl = SPELL_CURE_LIGHT;
@@ -2003,7 +2209,7 @@ bool CastRangerSpell(P_char ch, P_char victim, int helping)
 bool CastWarlockSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL;
-	int    dam = 0, lvl = 0, spl = 0;
+	int dam = 0, lvl = 0, spl = 0;
 
 	/* make sure I'm even able to cast in this room! */
 
@@ -2017,18 +2223,19 @@ bool CastWarlockSpell(P_char ch, P_char victim, int helping)
 
 	if (helping)
 	{
-		dam    = GET_MAX_HIT(victim) - GET_HIT(victim);
+		dam = GET_MAX_HIT(victim) - GET_HIT(victim);
 		target = victim;
 	}
 	else
 	{
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 		target = ch;
 	}
 
 	// blind?  sweet lord!
 
-	if (IS_AFFECTED(target, AFF_BLIND) && npc_has_spell_slot(ch, SPELL_CURE_BLIND) && (((ch == target) && number(0, 1)) || !IS_FIGHTING(ch)))
+	if (IS_AFFECTED(target, AFF_BLIND) && npc_has_spell_slot(ch, SPELL_CURE_BLIND) &&
+	    (((ch == target) && number(0, 1)) || !IS_FIGHTING(ch)))
 	{
 		if (npc_has_spell_slot(ch, SPELL_CURE_BLIND))
 			spl = SPELL_CURE_BLIND;
@@ -2041,27 +2248,34 @@ bool CastWarlockSpell(P_char ch, P_char victim, int helping)
 
 	// cursed?  oh no!
 
-	if (!spl && affected_by_spell(target, SPELL_CURSE) && npc_has_spell_slot(ch, SPELL_REMOVE_CURSE) && (!IS_FIGHTING(ch) || !number(0, 5)))
+	if (!spl && affected_by_spell(target, SPELL_CURSE) &&
+	    npc_has_spell_slot(ch, SPELL_REMOVE_CURSE) && (!IS_FIGHTING(ch) || !number(0, 5)))
 		spl = SPELL_REMOVE_CURSE;
 
 	// lifelust is your buddy
 
-	if (!spl && (!IS_FIGHTING(ch) || !number(0, 3)) && !affected_by_spell(target, SPELL_LIFELUST) && npc_has_spell_slot(ch, SPELL_LIFELUST))
+	if (!spl && (!IS_FIGHTING(ch) || !number(0, 3)) &&
+	    !affected_by_spell(target, SPELL_LIFELUST) && npc_has_spell_slot(ch, SPELL_LIFELUST))
 		spl = SPELL_LIFELUST;
 
 	// add checking for NPC corpses to use for unmaking..
 
 	if (!spl && (!IS_FIGHTING(ch) || (number(1, 5) == 3)))
 	{
-		if ((ch == target) && !affected_by_spell(ch, SPELL_SHADOW_VISION) && npc_has_spell_slot(ch, SPELL_SHADOW_VISION))
+		if ((ch == target) && !affected_by_spell(ch, SPELL_SHADOW_VISION) &&
+		    npc_has_spell_slot(ch, SPELL_SHADOW_VISION))
 			spl = SPELL_SHADOW_VISION;
-		else if (!IS_AFFECTED(target, AFF_PROT_FIRE) && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_FIRE))
+		else if (!IS_AFFECTED(target, AFF_PROT_FIRE) &&
+			 npc_has_spell_slot(ch, SPELL_PROTECT_FROM_FIRE))
 			spl = SPELL_PROTECT_FROM_FIRE;
-		else if (!IS_AFFECTED2(target, AFF2_PROT_COLD) && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_COLD))
+		else if (!IS_AFFECTED2(target, AFF2_PROT_COLD) &&
+			 npc_has_spell_slot(ch, SPELL_PROTECT_FROM_COLD))
 			spl = SPELL_PROTECT_FROM_COLD;
-		else if (npc_has_spell_slot(ch, SPELL_PROTECT_FROM_LIVING) && !IS_AFFECTED4(target, AFF4_PROT_LIVING))
+		else if (npc_has_spell_slot(ch, SPELL_PROTECT_FROM_LIVING) &&
+			 !IS_AFFECTED4(target, AFF4_PROT_LIVING))
 			spl = SPELL_PROTECT_FROM_LIVING;
-		else if (npc_has_spell_slot(ch, SPELL_PROTECT_FROM_GOOD) && !IS_AFFECTED(target, AFF_PROTECT_GOOD))
+		else if (npc_has_spell_slot(ch, SPELL_PROTECT_FROM_GOOD) &&
+			 !IS_AFFECTED(target, AFF_PROTECT_GOOD))
 			spl = SPELL_PROTECT_FROM_GOOD;
 		else if (npc_has_spell_slot(ch, SPELL_GREATER_HEAL_UNDEAD) && (dam > 275))
 		{
@@ -2075,7 +2289,7 @@ bool CastWarlockSpell(P_char ch, P_char victim, int helping)
 	if (!spl && !helping && !IS_FIGHTING(ch))
 	{
 		P_char tch;
-		int    numb = 0, lucky, curr = 0;
+		int numb = 0, lucky, curr = 0;
 
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 			if ((ch != tch) && char_deserves_helping(ch, tch, TRUE))
@@ -2114,7 +2328,8 @@ bool CastWarlockSpell(P_char ch, P_char victim, int helping)
 
 	// offensive area check
 
-	if (((NumAttackers(ch) >= 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	if (((NumAttackers(ch) >= 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
 		if (!spl && npc_has_spell_slot(ch, SPELL_ENTROPY_STORM))
 			spl = SPELL_ENTROPY_STORM;
@@ -2125,38 +2340,49 @@ bool CastWarlockSpell(P_char ch, P_char victim, int helping)
 
 	// single-target spells..  alas, many of these are non-undead only
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_CHANNEL_NEG_ENERGY) && spell_can_affect_char(target, SPELL_CHANNEL_NEG_ENERGY))
+	if (!spl && npc_has_spell_slot(ch, SPELL_CHANNEL_NEG_ENERGY) &&
+	    spell_can_affect_char(target, SPELL_CHANNEL_NEG_ENERGY))
 		spl = SPELL_CHANNEL_NEG_ENERGY;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_FROSTBITE) && spell_can_affect_char(target, SPELL_FROSTBITE))
+	if (!spl && npc_has_spell_slot(ch, SPELL_FROSTBITE) &&
+	    spell_can_affect_char(target, SPELL_FROSTBITE))
 		spl = SPELL_FROSTBITE;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_PURGE_LIVING) && !IS_UNDEAD(target) && spell_can_affect_char(target, SPELL_PURGE_LIVING))
+	if (!spl && npc_has_spell_slot(ch, SPELL_PURGE_LIVING) && !IS_UNDEAD(target) &&
+	    spell_can_affect_char(target, SPELL_PURGE_LIVING))
 		spl = SPELL_PURGE_LIVING;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_GOOD) && IS_GOOD(target) && !IS_GOOD(ch) && spell_can_affect_char(target, SPELL_DISPEL_GOOD))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_GOOD) && IS_GOOD(target) && !IS_GOOD(ch) &&
+	    spell_can_affect_char(target, SPELL_DISPEL_GOOD))
 		spl = SPELL_DISPEL_GOOD;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_INVOKE_NEG_ENERGY) && spell_can_affect_char(target, SPELL_INVOKE_NEG_ENERGY))
+	if (!spl && npc_has_spell_slot(ch, SPELL_INVOKE_NEG_ENERGY) &&
+	    spell_can_affect_char(target, SPELL_INVOKE_NEG_ENERGY))
 		spl = SPELL_INVOKE_NEG_ENERGY;
 
 	// now the sucky spells
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_ALTER_ENERGY_POLARITY) && !affected_by_spell(target, SPELL_ALTER_ENERGY_POLARITY) && !number(0, 1))
+	if (!spl && npc_has_spell_slot(ch, SPELL_ALTER_ENERGY_POLARITY) &&
+	    !affected_by_spell(target, SPELL_ALTER_ENERGY_POLARITY) && !number(0, 1))
 		spl = SPELL_ALTER_ENERGY_POLARITY;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_LIFEFORCE) && !affected_by_spell(target, SPELL_DISPEL_LIFEFORCE) && !IS_UNDEAD(target) && !number(0, 1))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_LIFEFORCE) &&
+	    !affected_by_spell(target, SPELL_DISPEL_LIFEFORCE) && !IS_UNDEAD(target) &&
+	    !number(0, 1))
 		spl = SPELL_DISPEL_LIFEFORCE;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_NETHER_TOUCH) && !affected_by_spell(target, SPELL_NETHER_TOUCH) && !IS_UNDEAD(target) && !number(0, 1))
+	if (!spl && npc_has_spell_slot(ch, SPELL_NETHER_TOUCH) &&
+	    !affected_by_spell(target, SPELL_NETHER_TOUCH) && !IS_UNDEAD(target) && !number(0, 1))
 		spl = SPELL_NETHER_TOUCH;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_UNHOLY_WIND) && !IS_UNDEAD(target) && spell_can_affect_char(target, SPELL_UNHOLY_WIND) && !number(0, 1))
+	if (!spl && npc_has_spell_slot(ch, SPELL_UNHOLY_WIND) && !IS_UNDEAD(target) &&
+	    spell_can_affect_char(target, SPELL_UNHOLY_WIND) && !number(0, 1))
 		spl = SPELL_UNHOLY_WIND;
 
 	// drains movement, ultra-sucky
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DEVITALIZE) && GET_VITALITY(target) && !number(0, 3))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DEVITALIZE) && GET_VITALITY(target) &&
+	    !number(0, 3))
 		spl = SPELL_DEVITALIZE;
 
 	if (spl && ch && target)
@@ -2168,7 +2394,7 @@ bool CastWarlockSpell(P_char ch, P_char victim, int helping)
 bool CastDruidSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL;
-	int    dam = 0, lvl = 0, spl = 0;
+	int dam = 0, lvl = 0, spl = 0;
 
 	/* make sure I'm even able to cast in this room! */
 
@@ -2182,12 +2408,12 @@ bool CastDruidSpell(P_char ch, P_char victim, int helping)
 
 	if (helping)
 	{
-		dam    = GET_MAX_HIT(victim) - GET_HIT(victim);
+		dam = GET_MAX_HIT(victim) - GET_HIT(victim);
 		target = victim;
 	}
 	else
 	{
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 		target = ch;
 	}
 
@@ -2201,7 +2427,8 @@ bool CastDruidSpell(P_char ch, P_char victim, int helping)
 		if (npc_has_spell_slot(ch, SPELL_NATURES_TOUCH))
 			spl = SPELL_NATURES_TOUCH;
 	}
-	else if (!spl && IS_AFFECTED(ch, AFF_BLIND) && room_has_valid_exit(ch->in_room) && !fear_check(ch))
+	else if (!spl && IS_AFFECTED(ch, AFF_BLIND) && room_has_valid_exit(ch->in_room) &&
+		 !fear_check(ch))
 	{
 		do_flee(ch, 0, 0);
 		return FALSE;
@@ -2211,28 +2438,39 @@ bool CastDruidSpell(P_char ch, P_char victim, int helping)
 	{
 		if (npc_has_spell_slot(ch, SPELL_NATURES_TOUCH) && (dam > 90))
 			spl = SPELL_NATURES_TOUCH;
-		else if (!IS_AFFECTED(target, AFF_BARKSKIN) && npc_has_spell_slot(ch, SPELL_BARKSKIN) && GET_RACE(target) != RACE_ANIMAL)
+		else if (!IS_AFFECTED(target, AFF_BARKSKIN) &&
+			 npc_has_spell_slot(ch, SPELL_BARKSKIN) && GET_RACE(target) != RACE_ANIMAL)
 			spl = SPELL_BARKSKIN;
 	}
 
-	if (!spl && (affected_by_spell(target, SPELL_POISON) || IS_AFFECTED2(target, AFF2_POISONED)) && npc_has_spell_slot(ch, SPELL_AID))
+	if (!spl &&
+	    (affected_by_spell(target, SPELL_POISON) || IS_AFFECTED2(target, AFF2_POISONED)) &&
+	    npc_has_spell_slot(ch, SPELL_AID))
 		spl = SPELL_AID;
 
-	if (!spl && (ch == target) && (!IS_FIGHTING(ch) || number(0, 1)) && !IS_AFFECTED4(ch, AFF4_REGENERATION) && !affected_by_spell(ch, SPELL_REGENERATION))
+	if (!spl && (ch == target) && (!IS_FIGHTING(ch) || number(0, 1)) &&
+	    !IS_AFFECTED4(ch, AFF4_REGENERATION) && !affected_by_spell(ch, SPELL_REGENERATION))
 		spl = SPELL_REGENERATION;
 
 	if (!spl && (!IS_FIGHTING(ch) || (number(1, 5) == 3)))
 	{
-		if (IS_AFFECTED(target, AFF_BARKSKIN) && !has_skin_spell(target) && npc_has_spell_slot(ch, SPELL_IRONWOOD))
+		if (IS_AFFECTED(target, AFF_BARKSKIN) && !has_skin_spell(target) &&
+		    npc_has_spell_slot(ch, SPELL_IRONWOOD))
 			spl = SPELL_IRONWOOD;
-		else if (!affected_by_spell(ch, SPELL_STORMSHIELD) && ch->equipment[WEAR_SHIELD] && npc_has_spell_slot(ch, SPELL_STORMSHIELD))
+		else if (!affected_by_spell(ch, SPELL_STORMSHIELD) && ch->equipment[WEAR_SHIELD] &&
+			 npc_has_spell_slot(ch, SPELL_STORMSHIELD))
 			spl = SPELL_STORMSHIELD;
-		else if (!affected_by_spell(ch, SPELL_ENDURANCE) && npc_has_spell_slot(ch, SPELL_ENDURANCE))
+		else if (!affected_by_spell(ch, SPELL_ENDURANCE) &&
+			 npc_has_spell_slot(ch, SPELL_ENDURANCE))
 			spl = SPELL_ENDURANCE;
-		else if (!affected_by_spell(ch, SPELL_ANIMAL_VISION) && npc_has_spell_slot(ch, SPELL_ANIMAL_VISION))
+		else if (!affected_by_spell(ch, SPELL_ANIMAL_VISION) &&
+			 npc_has_spell_slot(ch, SPELL_ANIMAL_VISION))
 			spl = SPELL_ANIMAL_VISION;
-		else if (!affected_by_spell(ch, SPELL_ELEMENTAL_AURA) && (world[ch->in_room].sector_type == SECT_FIREPLANE || world[ch->in_room].sector_type == SECT_WATER_PLANE ||
-		                                                          world[ch->in_room].sector_type == SECT_AIR_PLANE || world[ch->in_room].sector_type == SECT_EARTH_PLANE))
+		else if (!affected_by_spell(ch, SPELL_ELEMENTAL_AURA) &&
+			 (world[ch->in_room].sector_type == SECT_FIREPLANE ||
+			  world[ch->in_room].sector_type == SECT_WATER_PLANE ||
+			  world[ch->in_room].sector_type == SECT_AIR_PLANE ||
+			  world[ch->in_room].sector_type == SECT_EARTH_PLANE))
 			spl = SPELL_ELEMENTAL_AURA;
 	}
 
@@ -2249,7 +2487,7 @@ bool CastDruidSpell(P_char ch, P_char victim, int helping)
 	if (!spl && !helping && !IS_FIGHTING(ch))
 	{
 		P_char tch;
-		int    numb = 0, lucky, curr = 0;
+		int numb = 0, lucky, curr = 0;
 
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 			if ((ch != tch) && char_deserves_helping(ch, tch, TRUE))
@@ -2286,15 +2524,18 @@ bool CastDruidSpell(P_char ch, P_char victim, int helping)
 	if (!ch || !target)
 		return (FALSE);
 
-	if (((NumAttackers(ch) > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	if (((NumAttackers(ch) > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
-		if (!spl && npc_has_spell_slot(ch, SPELL_NOVA) && !ch->specials.z_cord && number(0, 2))
+		if (!spl && npc_has_spell_slot(ch, SPELL_NOVA) && !ch->specials.z_cord &&
+		    number(0, 2))
 			spl = SPELL_NOVA;
 
 		if (!spl && npc_has_spell_slot(ch, SPELL_FIRESTORM))
 			spl = SPELL_FIRESTORM;
 
-		if (!spl && npc_has_spell_slot(ch, SPELL_AWAKEN_FOREST) && world[ch->in_room].sector_type == SECT_FOREST)
+		if (!spl && npc_has_spell_slot(ch, SPELL_AWAKEN_FOREST) &&
+		    world[ch->in_room].sector_type == SECT_FOREST)
 			spl = SPELL_AWAKEN_FOREST;
 
 		if (!spl && npc_has_spell_slot(ch, SPELL_HURRICANE) && number(0, 3))
@@ -2333,7 +2574,8 @@ bool CastDruidSpell(P_char ch, P_char victim, int helping)
 	if (!spl && npc_has_spell_slot(ch, SPELL_EARTHEN_MAUL))
 		spl = SPELL_EARTHEN_MAUL;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DISEASE) && !affected_by_spell(target, SPELL_DISEASE))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DISEASE) &&
+	    !affected_by_spell(target, SPELL_DISEASE))
 		spl = SPELL_DISEASE;
 
 	//  if(!spl && !IS_GLOBED(target) && npc_has_spell_slot(ch, SPELL_CALL_LIGHTNING))
@@ -2345,7 +2587,8 @@ bool CastDruidSpell(P_char ch, P_char victim, int helping)
 	if (!spl && npc_has_spell_slot(ch, SPELL_POISON) && !number(0, 4))
 		spl = SPELL_POISON;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_STICKS_TO_SNAKES) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_STICKS_TO_SNAKES) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 		spl = SPELL_STICKS_TO_SNAKES;
 
 	if (spl && ch && target)
@@ -2410,12 +2653,12 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 
 	if (helping)
 	{
-		dam    = GET_MAX_HIT(victim) - GET_HIT(victim);
+		dam = GET_MAX_HIT(victim) - GET_HIT(victim);
 		target = victim;
 	}
 	else
 	{
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 		target = ch;
 	}
 
@@ -2423,13 +2666,19 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 	// Cast in this room to remove afflictions, unless it is silent
 	if (!IS_ROOM(ch->in_room, (ROOM_NO_MAGIC | ROOM_SILENT)))
 	{
-		if (npc_has_spell_slot(ch, SPELL_RESTORATION) && DO_SHAM_RESTORATION(target) && !number(0, 2))
+		if (npc_has_spell_slot(ch, SPELL_RESTORATION) && DO_SHAM_RESTORATION(target) &&
+		    !number(0, 2))
 		{
 			spl = SPELL_RESTORATION;
 		}
 		else if (!spl && npc_has_spell_slot(ch, SPELL_PURIFY_SPIRIT) &&
-		         (IS_AFFECTED2(target, AFF2_POISONED) || affected_by_spell(target, SPELL_DISEASE) || affected_by_spell(target, SPELL_PLAGUE) || affected_by_spell(target, SPELL_MALISON) ||
-		          affected_by_spell(target, SPELL_CURSE) || get_scheduled(target, event_torment_spirits) || IS_AFFECTED(target, AFF_BLIND)))
+			 (IS_AFFECTED2(target, AFF2_POISONED) ||
+			  affected_by_spell(target, SPELL_DISEASE) ||
+			  affected_by_spell(target, SPELL_PLAGUE) ||
+			  affected_by_spell(target, SPELL_MALISON) ||
+			  affected_by_spell(target, SPELL_CURSE) ||
+			  get_scheduled(target, event_torment_spirits) ||
+			  IS_AFFECTED(target, AFF_BLIND)))
 		{
 			spl = SPELL_PURIFY_SPIRIT;
 		}
@@ -2449,7 +2698,8 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 
 	// Sort of weird here, but the idea is to not always cast healing
 	//   spells when not fighting and wounded.
-	if (!spl && (!IS_FIGHTING(ch) || (number(0, 9) == 8)) && GET_LEVEL(target) > 10 && GET_RACE(target) != RACE_ANIMAL)
+	if (!spl && (!IS_FIGHTING(ch) || (number(0, 9) == 8)) && GET_LEVEL(target) > 10 &&
+	    GET_RACE(target) != RACE_ANIMAL)
 	{
 		if (npc_has_spell_slot(ch, SPELL_RESTORATION) && DO_SHAM_RESTORATION(target))
 		{
@@ -2474,36 +2724,47 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 
 	if (!IS_FIGHTING(ch) && !spl)
 	{
-		if (!IS_AFFECTED3(target, AFF3_GR_SPIRIT_WARD) && !IS_AFFECTED3(target, AFF3_SPIRIT_WARD) && npc_has_spell_slot(ch, SPELL_GREATER_SPIRIT_WARD))
+		if (!IS_AFFECTED3(target, AFF3_GR_SPIRIT_WARD) &&
+		    !IS_AFFECTED3(target, AFF3_SPIRIT_WARD) &&
+		    npc_has_spell_slot(ch, SPELL_GREATER_SPIRIT_WARD))
 		{
 			spl = SPELL_GREATER_SPIRIT_WARD;
 		}
-		else if (!IS_AFFECTED3(target, AFF3_SPIRIT_WARD) && !IS_AFFECTED3(target, AFF3_GR_SPIRIT_WARD) && npc_has_spell_slot(ch, SPELL_SPIRIT_WARD))
+		else if (!IS_AFFECTED3(target, AFF3_SPIRIT_WARD) &&
+			 !IS_AFFECTED3(target, AFF3_GR_SPIRIT_WARD) &&
+			 npc_has_spell_slot(ch, SPELL_SPIRIT_WARD))
 		{
 			spl = SPELL_SPIRIT_WARD;
 		}
-		else if (!IS_AFFECTED(target, AFF_ARMOR) && npc_has_spell_slot(ch, SPELL_SPIRIT_ARMOR))
+		else if (!IS_AFFECTED(target, AFF_ARMOR) &&
+			 npc_has_spell_slot(ch, SPELL_SPIRIT_ARMOR))
 		{
 			spl = SPELL_SPIRIT_ARMOR;
 		}
-		else if (!IS_AFFECTED(target, AFF_PROT_FIRE) && npc_has_spell_slot(ch, SPELL_FIRE_WARD))
+		else if (!IS_AFFECTED(target, AFF_PROT_FIRE) &&
+			 npc_has_spell_slot(ch, SPELL_FIRE_WARD))
 		{
 			spl = SPELL_FIRE_WARD;
 		}
-		else if (!IS_AFFECTED2(target, AFF2_PROT_COLD) && npc_has_spell_slot(ch, SPELL_COLD_WARD))
+		else if (!IS_AFFECTED2(target, AFF2_PROT_COLD) &&
+			 npc_has_spell_slot(ch, SPELL_COLD_WARD))
 		{
 			spl = SPELL_COLD_WARD;
 		}
-		else if (!affected_by_spell(ch, SPELL_ELEM_AFFINITY) && target == ch && npc_has_spell_slot(ch, SPELL_ELEM_AFFINITY))
+		else if (!affected_by_spell(ch, SPELL_ELEM_AFFINITY) && target == ch &&
+			 npc_has_spell_slot(ch, SPELL_ELEM_AFFINITY))
 		{
 			spl = SPELL_ELEM_AFFINITY;
 		}
-		else if (!affected_by_spell(target, SPELL_GREATER_SPIRIT_SIGHT) && !IS_AFFECTED(target, AFF_DETECT_INVISIBLE) && npc_has_spell_slot(ch, SPELL_GREATER_SPIRIT_SIGHT))
+		else if (!affected_by_spell(target, SPELL_GREATER_SPIRIT_SIGHT) &&
+			 !IS_AFFECTED(target, AFF_DETECT_INVISIBLE) &&
+			 npc_has_spell_slot(ch, SPELL_GREATER_SPIRIT_SIGHT))
 		{
 			spl = SPELL_GREATER_SPIRIT_SIGHT;
 		}
 		// Let us cast greater ravenflight first.
-		else if (npc_has_spell_slot(ch, SPELL_GREATER_RAVENFLIGHT) && !IS_AFFECTED(target, AFF_FLY))
+		else if (npc_has_spell_slot(ch, SPELL_GREATER_RAVENFLIGHT) &&
+			 !IS_AFFECTED(target, AFF_FLY))
 		{
 			spl = SPELL_GREATER_RAVENFLIGHT;
 		}
@@ -2511,35 +2772,50 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 		{
 			spl = SPELL_RAVENFLIGHT;
 		}
-		else if (!helping && npc_has_spell_slot(ch, SPELL_ELEPHANTSTRENGTH) && !affected_by_spell(target, SPELL_ELEPHANTSTRENGTH) && !affected_by_spell(target, SPELL_BEARSTRENGTH) &&
-		         !affected_by_spell(target, SPELL_MOUSESTRENGTH))
+		else if (!helping && npc_has_spell_slot(ch, SPELL_ELEPHANTSTRENGTH) &&
+			 !affected_by_spell(target, SPELL_ELEPHANTSTRENGTH) &&
+			 !affected_by_spell(target, SPELL_BEARSTRENGTH) &&
+			 !affected_by_spell(target, SPELL_MOUSESTRENGTH))
 		{
 			spl = SPELL_ELEPHANTSTRENGTH;
 		}
-		else if (!helping && npc_has_spell_slot(ch, SPELL_LIONRAGE) && !affected_by_spell(target, SPELL_LIONRAGE) && !affected_by_spell(target, SPELL_SHREWTAMENESS))
+		else if (!helping && npc_has_spell_slot(ch, SPELL_LIONRAGE) &&
+			 !affected_by_spell(target, SPELL_LIONRAGE) &&
+			 !affected_by_spell(target, SPELL_SHREWTAMENESS))
 		{
 			spl = SPELL_LIONRAGE;
 		}
-		else if (!helping && npc_has_spell_slot(ch, SPELL_BEARSTRENGTH) && !affected_by_spell(target, SPELL_BEARSTRENGTH) && !affected_by_spell(target, SPELL_ELEPHANTSTRENGTH) &&
-		         !affected_by_spell(target, SPELL_MOUSESTRENGTH))
+		else if (!helping && npc_has_spell_slot(ch, SPELL_BEARSTRENGTH) &&
+			 !affected_by_spell(target, SPELL_BEARSTRENGTH) &&
+			 !affected_by_spell(target, SPELL_ELEPHANTSTRENGTH) &&
+			 !affected_by_spell(target, SPELL_MOUSESTRENGTH))
 		{
 			spl = SPELL_BEARSTRENGTH;
 		}
-		else if (npc_has_spell_slot(ch, SPELL_HAWKVISION) && !affected_by_spell(target, SPELL_HAWKVISION) && !affected_by_spell(target, SPELL_MOLEVISION) && !IS_AFFECTED4(ch, AFF4_HAWKVISION))
+		else if (npc_has_spell_slot(ch, SPELL_HAWKVISION) &&
+			 !affected_by_spell(target, SPELL_HAWKVISION) &&
+			 !affected_by_spell(target, SPELL_MOLEVISION) &&
+			 !IS_AFFECTED4(ch, AFF4_HAWKVISION))
 		{
 			spl = SPELL_HAWKVISION;
 		}
-		else if (npc_has_spell_slot(ch, SPELL_PANTHERSPEED) && !affected_by_spell(target, SPELL_PANTHERSPEED) && !affected_by_spell(target, SPELL_WOLFSPEED) &&
-		         !affected_by_spell(target, SPELL_SNAILSPEED))
+		else if (npc_has_spell_slot(ch, SPELL_PANTHERSPEED) &&
+			 !affected_by_spell(target, SPELL_PANTHERSPEED) &&
+			 !affected_by_spell(target, SPELL_WOLFSPEED) &&
+			 !affected_by_spell(target, SPELL_SNAILSPEED))
 		{
 			spl = SPELL_PANTHERSPEED;
 		}
 		/* summon us some beasts */
-		else if (!GET_MASTER(ch) && (!IS_AFFECTED(ch, AFF_HIDE) || IS_SET(ch->specials.act, ACT_SENTINEL)) && !helping)
+		else if (!GET_MASTER(ch) &&
+			 (!IS_AFFECTED(ch, AFF_HIDE) || IS_SET(ch->specials.act, ACT_SENTINEL)) &&
+			 !helping)
 		{
 			sect = world[ch->in_room].sector_type;
 
-			if (((sect == SECT_FIELD) || (sect == SECT_FOREST) || (sect == SECT_HILLS) || (sect == SECT_MOUNTAIN) || (sect == SECT_UNDRWLD_CITY) || (sect == SECT_UNDRWLD_INSIDE) ||
+			if (((sect == SECT_FIELD) || (sect == SECT_FOREST) ||
+			     (sect == SECT_HILLS) || (sect == SECT_MOUNTAIN) ||
+			     (sect == SECT_UNDRWLD_CITY) || (sect == SECT_UNDRWLD_INSIDE) ||
 			     (sect == SECT_UNDRWLD_WILD)) &&
 			    can_summon_beast(ch, lvl) && GET_VNUM(ch) != WH_HIGH_PRIEST_VNUM)
 			{
@@ -2556,7 +2832,7 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 		if (!spl && !helping)
 		{
 			P_char tch;
-			int    numb = 0, lucky, curr = 0;
+			int numb = 0, lucky, curr = 0;
 
 			for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 			{
@@ -2588,7 +2864,8 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 						}
 					}
 				}
-				debug("'%s' %d: Error in random number crap\r\n", J_NAME(ch), GET_VNUM(ch));
+				debug("'%s' %d: Error in random number crap\r\n", J_NAME(ch),
+				      GET_VNUM(ch));
 			}
 		}
 	}
@@ -2630,12 +2907,17 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 
 	// Just in case the mob is multiclass, let us hit the target
 	// with a dispel magic. Jan08 -Lucrot
-	if (npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) && !(number(0, 9)) && no_chars_in_room_deserve_helping(ch) &&
-	    (affected_by_spell(victim, SPELL_VITALITY) || IS_AFFECTED4(ch, AFF4_BATTLE_ECSTASY) || IS_AFFECTED4(victim, AFF4_SANCTUARY)) && (GET_LEVEL(ch) + 5) >= GET_LEVEL(target))
+	if (npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) && !(number(0, 9)) &&
+	    no_chars_in_room_deserve_helping(ch) &&
+	    (affected_by_spell(victim, SPELL_VITALITY) || IS_AFFECTED4(ch, AFF4_BATTLE_ECSTASY) ||
+	     IS_AFFECTED4(victim, AFF4_SANCTUARY)) &&
+	    (GET_LEVEL(ch) + 5) >= GET_LEVEL(target))
 	{
 		spl = SPELL_DISPEL_MAGIC;
 	}
-	else if (((NumAttackers(ch) > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	else if (((NumAttackers(ch) > 1) || has_help(target) ||
+		  no_chars_in_room_deserve_helping(ch)) &&
+		 !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
 		// let's assume these spells are never blockable by globe, shall we?
 		if (npc_has_spell_slot(ch, SPELL_ELEM_FURY) && OUTSIDE(ch) && !number(0, 2))
@@ -2675,91 +2957,111 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 		// Randomly pick something, fall through to next if mob doesn't have slot available.
 		switch (number(0, 4))
 		{
-			case 0:
-				if (npc_has_spell_slot(ch, SPELL_SHREWTAMENESS) && !affected_by_spell(target, SPELL_SHREWTAMENESS))
-				{
-					spl = SPELL_SHREWTAMENESS;
-				}
-			case 1:
-				if (!spl && npc_has_spell_slot(ch, SPELL_MOLEVISION) && !affected_by_spell(target, SPELL_MOLEVISION))
-				{
-					spl = SPELL_MOLEVISION;
-				}
-			case 2:
-				if (!spl && npc_has_spell_slot(ch, SPELL_MALISON) && !affected_by_spell(target, SPELL_MALISON))
-				{
-					spl = SPELL_MALISON;
-				}
-			case 3:
-				if (!spl && npc_has_spell_slot(ch, SPELL_PYTHONSTING) && !affected_by_spell(target, SPELL_POISON) && !IS_AFFECTED2(target, AFF2_POISONED))
-				{
-					spl = SPELL_PYTHONSTING;
-				}
-			case 4:
-				if (!spl && npc_has_spell_slot(ch, SPELL_MOUSESTRENGTH) && !affected_by_spell(target, SPELL_MOUSESTRENGTH))
-				{
-					spl = SPELL_MOUSESTRENGTH;
-				}
-				break; // Stop here 'cause call of the wild is broken.
-			case 5:
-			case 6:
-				if (!spl && npc_has_spell_slot(ch, SPELL_CALL_OF_THE_WILD) && IS_PC(target) && !IS_MORPH(target))
-					spl = SPELL_CALL_OF_THE_WILD;
-			default:
-				break;
+		case 0:
+			if (npc_has_spell_slot(ch, SPELL_SHREWTAMENESS) &&
+			    !affected_by_spell(target, SPELL_SHREWTAMENESS))
+			{
+				spl = SPELL_SHREWTAMENESS;
+			}
+		case 1:
+			if (!spl && npc_has_spell_slot(ch, SPELL_MOLEVISION) &&
+			    !affected_by_spell(target, SPELL_MOLEVISION))
+			{
+				spl = SPELL_MOLEVISION;
+			}
+		case 2:
+			if (!spl && npc_has_spell_slot(ch, SPELL_MALISON) &&
+			    !affected_by_spell(target, SPELL_MALISON))
+			{
+				spl = SPELL_MALISON;
+			}
+		case 3:
+			if (!spl && npc_has_spell_slot(ch, SPELL_PYTHONSTING) &&
+			    !affected_by_spell(target, SPELL_POISON) &&
+			    !IS_AFFECTED2(target, AFF2_POISONED))
+			{
+				spl = SPELL_PYTHONSTING;
+			}
+		case 4:
+			if (!spl && npc_has_spell_slot(ch, SPELL_MOUSESTRENGTH) &&
+			    !affected_by_spell(target, SPELL_MOUSESTRENGTH))
+			{
+				spl = SPELL_MOUSESTRENGTH;
+			}
+			break; // Stop here 'cause call of the wild is broken.
+		case 5:
+		case 6:
+			if (!spl && npc_has_spell_slot(ch, SPELL_CALL_OF_THE_WILD) &&
+			    IS_PC(target) && !IS_MORPH(target))
+				spl = SPELL_CALL_OF_THE_WILD;
+		default:
+			break;
 		}
 	}
 
 	if (spl)
 	{
 	}
-	else if (!number(0, 2) && npc_has_spell_slot(ch, SPELL_FIREBRAND) && !ENJOYS_FIRE_DAM(target) && !IS_AFFECTED(target, AFF_PROT_FIRE))
+	else if (!number(0, 2) && npc_has_spell_slot(ch, SPELL_FIREBRAND) &&
+		 !ENJOYS_FIRE_DAM(target) && !IS_AFFECTED(target, AFF_PROT_FIRE))
 	{
 		spl = SPELL_FIREBRAND;
 	}
-	else if (npc_has_spell_slot(ch, SPELL_CASCADING_ELEMENTAL_BEAM) && (IS_COLD_VULN(target) || COLDSHIELDED(target) || FIRESHIELDED(target) || LIGHTNINGSHIELDED(target) || number(0, 1)))
+	else if (npc_has_spell_slot(ch, SPELL_CASCADING_ELEMENTAL_BEAM) &&
+		 (IS_COLD_VULN(target) || COLDSHIELDED(target) || FIRESHIELDED(target) ||
+		  LIGHTNINGSHIELDED(target) || number(0, 1)))
 	{
 		spl = SPELL_CASCADING_ELEMENTAL_BEAM;
 	}
-	else if (npc_has_spell_slot(ch, SPELL_GASEOUS_CLOUD) && (affected_by_spell(target, SPELL_LIGHTNINGSHIELD) || number(0, 1)))
+	else if (npc_has_spell_slot(ch, SPELL_GASEOUS_CLOUD) &&
+		 (affected_by_spell(target, SPELL_LIGHTNINGSHIELD) || number(0, 1)))
 	{
 		spl = SPELL_GASEOUS_CLOUD;
 	}
 	// Molten spray does good damage versus undead (unless fire aura is up).
-	else if (npc_has_spell_slot(ch, SPELL_MOLTEN_SPRAY) && IS_UNDEADRACE(target) && !IS_AFFECTED2(target, AFF2_FIRE_AURA))
+	else if (npc_has_spell_slot(ch, SPELL_MOLTEN_SPRAY) && IS_UNDEADRACE(target) &&
+		 !IS_AFFECTED2(target, AFF2_FIRE_AURA))
 	{
 		spl = SPELL_MOLTEN_SPRAY;
 	}
-	else if (npc_has_spell_slot(ch, SPELL_ARIEKS_SHATTERING_ICEBALL) && (IS_COLD_VULN(target) || number(0, 1)))
+	else if (npc_has_spell_slot(ch, SPELL_ARIEKS_SHATTERING_ICEBALL) &&
+		 (IS_COLD_VULN(target) || number(0, 1)))
 	{
 		spl = SPELL_ARIEKS_SHATTERING_ICEBALL;
 	}
 	// Corrosive blast damage is reduced if affected by a previous corrosive blast.
-	else if (npc_has_spell_slot(ch, SPELL_CORROSIVE_BLAST) && !affected_by_spell(target, SPELL_CORROSIVE_BLAST))
+	else if (npc_has_spell_slot(ch, SPELL_CORROSIVE_BLAST) &&
+		 !affected_by_spell(target, SPELL_CORROSIVE_BLAST))
 	{
 		spl = SPELL_CORROSIVE_BLAST;
 	}
-	else if (npc_has_spell_slot(ch, SPELL_GREATER_SOUL_DISTURB) && spell_can_affect_char(target, SPELL_GREATER_SOUL_DISTURB))
+	else if (npc_has_spell_slot(ch, SPELL_GREATER_SOUL_DISTURB) &&
+		 spell_can_affect_char(target, SPELL_GREATER_SOUL_DISTURB))
 	{
 		spl = SPELL_GREATER_SOUL_DISTURB;
 	}
-	else if (npc_has_spell_slot(ch, SPELL_SPIRIT_ANGUISH) && spell_can_affect_char(target, SPELL_SPIRIT_ANGUISH))
+	else if (npc_has_spell_slot(ch, SPELL_SPIRIT_ANGUISH) &&
+		 spell_can_affect_char(target, SPELL_SPIRIT_ANGUISH))
 	{
 		spl = SPELL_SPIRIT_ANGUISH;
 	}
-	else if (npc_has_spell_slot(ch, SPELL_MOLTEN_SPRAY) && spell_can_affect_char(target, SPELL_MOLTEN_SPRAY))
+	else if (npc_has_spell_slot(ch, SPELL_MOLTEN_SPRAY) &&
+		 spell_can_affect_char(target, SPELL_MOLTEN_SPRAY))
 	{
 		spl = SPELL_MOLTEN_SPRAY;
 	}
-	else if (npc_has_spell_slot(ch, SPELL_SCORCHING_TOUCH) && spell_can_affect_char(target, SPELL_SCORCHING_TOUCH))
+	else if (npc_has_spell_slot(ch, SPELL_SCORCHING_TOUCH) &&
+		 spell_can_affect_char(target, SPELL_SCORCHING_TOUCH))
 	{
 		spl = SPELL_SCORCHING_TOUCH;
 	}
-	else if (npc_has_spell_slot(ch, SPELL_SCALDING_BLAST) && spell_can_affect_char(target, SPELL_SCALDING_BLAST))
+	else if (npc_has_spell_slot(ch, SPELL_SCALDING_BLAST) &&
+		 spell_can_affect_char(target, SPELL_SCALDING_BLAST))
 	{
 		spl = SPELL_SCALDING_BLAST;
 	}
-	else if (npc_has_spell_slot(ch, SPELL_FLAMEBURST) && spell_can_affect_char(target, SPELL_FLAMEBURST))
+	else if (npc_has_spell_slot(ch, SPELL_FLAMEBURST) &&
+		 spell_can_affect_char(target, SPELL_FLAMEBURST))
 	{
 		spl = SPELL_FLAMEBURST;
 	}
@@ -2771,7 +3073,7 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 	{
 		// Ok, we only heal self at this point ffs (not the person we're fighting).
 		target = ch;
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 
 		if (npc_has_spell_slot(ch, SPELL_RESTORATION) && DO_SHAM_RESTORATION(target))
 		{
@@ -2786,7 +3088,8 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 			bool cast_it = TRUE;
 
 			// For each person in the room,
-			for (tempch = world[ch->in_room].people; tempch; tempch = tempch->next_in_room)
+			for (tempch = world[ch->in_room].people; tempch;
+			     tempch = tempch->next_in_room)
 			{
 				// If they are a PC or a PC pet.
 				if (IS_PC(tempch) || IS_PC_PET(tempch))
@@ -2815,9 +3118,10 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 		}
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_ICE_MISSILE) && spell_can_affect_char(victim, SPELL_ICE_MISSILE))
+	if (!spl && npc_has_spell_slot(ch, SPELL_ICE_MISSILE) &&
+	    spell_can_affect_char(victim, SPELL_ICE_MISSILE))
 	{
-		spl    = SPELL_ICE_MISSILE;
+		spl = SPELL_ICE_MISSILE;
 		target = victim;
 	}
 
@@ -2857,7 +3161,7 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 bool CastEtherSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL, tempch;
-	int    sect;
+	int sect;
 
 	/*
 	 * P_obj   obj=NULL;
@@ -2871,12 +3175,12 @@ bool CastEtherSpell(P_char ch, P_char victim, int helping)
 
 	if (helping)
 	{
-		dam    = GET_MAX_HIT(victim) - GET_HIT(victim);
+		dam = GET_MAX_HIT(victim) - GET_HIT(victim);
 		target = victim;
 	}
 	else
 	{
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 		target = ch;
 	}
 
@@ -2888,14 +3192,17 @@ bool CastEtherSpell(P_char ch, P_char victim, int helping)
 		return false;
 	}
 
-	if (!spl && (affected_by_spell(target, SPELL_POISON) || IS_AFFECTED2(target, AFF2_POISONED)) && npc_has_spell_slot(ch, SPELL_PURIFY_SPIRIT))
+	if (!spl &&
+	    (affected_by_spell(target, SPELL_POISON) || IS_AFFECTED2(target, AFF2_POISONED)) &&
+	    npc_has_spell_slot(ch, SPELL_PURIFY_SPIRIT))
 		spl = SPELL_PURIFY_SPIRIT;
 
 	if (!spl && IS_AFFECTED(target, AFF_BLIND) && npc_has_spell_slot(ch, SPELL_PURIFY_SPIRIT))
 	{
 		spl = SPELL_PURIFY_SPIRIT;
 	}
-	else if (!spl && IS_AFFECTED(ch, AFF_BLIND) && room_has_valid_exit(ch->in_room) && !fear_check(ch))
+	else if (!spl && IS_AFFECTED(ch, AFF_BLIND) && room_has_valid_exit(ch->in_room) &&
+		 !fear_check(ch))
 	{
 		do_flee(ch, 0, 0);
 		return FALSE;
@@ -2903,48 +3210,59 @@ bool CastEtherSpell(P_char ch, P_char victim, int helping)
 
 	if ((!IS_FIGHTING(ch) || !number(0, 3)) && !spl)
 	{
-		if (!affected_by_spell(ch, SPELL_ETHEREAL_FORM) && npc_has_spell_slot(ch, SPELL_ETHEREAL_FORM) && !IS_ACT(ch, ACT_TEACHER))
+		if (!affected_by_spell(ch, SPELL_ETHEREAL_FORM) &&
+		    npc_has_spell_slot(ch, SPELL_ETHEREAL_FORM) && !IS_ACT(ch, ACT_TEACHER))
 			spl = SPELL_ETHEREAL_FORM;
 
 		/* sort of weird here, but the idea is to not always cast healing spells when not fighting and wounded */
 
 		if (IS_FIGHTING(ch) || (number(0, 9) != 8))
 		{
-			if (!spl && npc_has_spell_slot(ch, SPELL_GREATER_ETHEREAL) && affected_by_spell(ch, SPELL_ETHEREAL_FORM) && (dam > 75))
+			if (!spl && npc_has_spell_slot(ch, SPELL_GREATER_ETHEREAL) &&
+			    affected_by_spell(ch, SPELL_ETHEREAL_FORM) && (dam > 75))
 				spl = SPELL_GREATER_ETHEREAL;
 
-			if (!spl && npc_has_spell_slot(ch, SPELL_ETHEREAL_RECHARGE) && affected_by_spell(ch, SPELL_ETHEREAL_FORM) && (dam > 40))
+			if (!spl && npc_has_spell_slot(ch, SPELL_ETHEREAL_RECHARGE) &&
+			    affected_by_spell(ch, SPELL_ETHEREAL_FORM) && (dam > 40))
 				spl = SPELL_ETHEREAL_RECHARGE;
 		}
 
-		if (!spl && !IS_AFFECTED(target, AFF_ARMOR) && npc_has_spell_slot(ch, SPELL_VAPOR_ARMOR))
+		if (!spl && !IS_AFFECTED(target, AFF_ARMOR) &&
+		    npc_has_spell_slot(ch, SPELL_VAPOR_ARMOR))
 			spl = SPELL_VAPOR_ARMOR;
 
-		if (!spl && !affected_by_spell(target, SPELL_DETECT_MAGIC) && npc_has_spell_slot(ch, SPELL_DETECT_MAGIC))
+		if (!spl && !affected_by_spell(target, SPELL_DETECT_MAGIC) &&
+		    npc_has_spell_slot(ch, SPELL_DETECT_MAGIC))
 			spl = SPELL_DETECT_MAGIC;
 
-		if (!spl && !affected_by_spell(target, SPELL_STORM_EMPATHY) && npc_has_spell_slot(ch, SPELL_STORM_EMPATHY))
+		if (!spl && !affected_by_spell(target, SPELL_STORM_EMPATHY) &&
+		    npc_has_spell_slot(ch, SPELL_STORM_EMPATHY))
 			spl = SPELL_STORM_EMPATHY;
 
-		if (!spl && !affected_by_spell(target, SPELL_VAPOR_STRIKE) && npc_has_spell_slot(ch, SPELL_VAPOR_STRIKE))
+		if (!spl && !affected_by_spell(target, SPELL_VAPOR_STRIKE) &&
+		    npc_has_spell_slot(ch, SPELL_VAPOR_STRIKE))
 			spl = SPELL_VAPOR_STRIKE;
 
-		if (!spl && !affected_by_spell(ch, SPELL_WIND_RAGE) && target == ch && npc_has_spell_slot(ch, SPELL_WIND_RAGE))
+		if (!spl && !affected_by_spell(ch, SPELL_WIND_RAGE) && target == ch &&
+		    npc_has_spell_slot(ch, SPELL_WIND_RAGE))
 			spl = SPELL_WIND_RAGE;
 
-		if (!spl && !affected_by_spell(ch, SPELL_PLANETARY_ALIGNMENT) && target == ch && npc_has_spell_slot(ch, SPELL_PLANETARY_ALIGNMENT))
+		if (!spl && !affected_by_spell(ch, SPELL_PLANETARY_ALIGNMENT) && target == ch &&
+		    npc_has_spell_slot(ch, SPELL_PLANETARY_ALIGNMENT))
 			spl = SPELL_PLANETARY_ALIGNMENT;
 
-		if (!spl && !affected_by_spell(target, SPELL_FAERIE_SIGHT) && npc_has_spell_slot(ch, SPELL_FAERIE_SIGHT) && !IS_FIGHTING(ch))
+		if (!spl && !affected_by_spell(target, SPELL_FAERIE_SIGHT) &&
+		    npc_has_spell_slot(ch, SPELL_FAERIE_SIGHT) && !IS_FIGHTING(ch))
 			spl = SPELL_FAERIE_SIGHT;
 
-		if (!spl && !IS_FIGHTING(ch) && npc_has_spell_slot(ch, SPELL_BLUR) && !IS_AFFECTED3(ch, AFF3_BLUR) && target == ch)
+		if (!spl && !IS_FIGHTING(ch) && npc_has_spell_slot(ch, SPELL_BLUR) &&
+		    !IS_AFFECTED3(ch, AFF3_BLUR) && target == ch)
 			spl = SPELL_BLUR;
 
 		if (!spl && !helping && !IS_FIGHTING(ch))
 		{
 			P_char tch;
-			int    numb = 0, lucky, curr = 0;
+			int numb = 0, lucky, curr = 0;
 
 			for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 				if ((ch != tch) && char_deserves_helping(ch, tch, TRUE))
@@ -2994,9 +3312,9 @@ bool CastEtherSpell(P_char ch, P_char victim, int helping)
 	if (!ch || !target)
 		return (FALSE);
 
-	if (((NumAttackers(ch) > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	if (((NumAttackers(ch) > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
-
 		// let's assume these spells are never blockable by globe, shall we?
 		if (!spl && npc_has_spell_slot(ch, SPELL_COSMIC_RIFT))
 			spl = SPELL_COSMIC_RIFT;
@@ -3012,7 +3330,9 @@ bool CastEtherSpell(P_char ch, P_char victim, int helping)
 
 		/* why not?  it'll be fun */
 
-		if (!spl && (number(0, 15) == 6) && npc_has_spell_slot(ch, SPELL_ETHEREAL_DISCHARGE) && affected_by_spell(ch, SPELL_ETHEREAL_FORM))
+		if (!spl && (number(0, 15) == 6) &&
+		    npc_has_spell_slot(ch, SPELL_ETHEREAL_DISCHARGE) &&
+		    affected_by_spell(ch, SPELL_ETHEREAL_FORM))
 			spl = SPELL_ETHEREAL_DISCHARGE;
 
 		if (!spl && npc_has_spell_slot(ch, SPELL_TEMPEST))
@@ -3021,7 +3341,9 @@ bool CastEtherSpell(P_char ch, P_char victim, int helping)
 	if (spl && ch)
 		return (MobCastSpell(ch, target, 0, spl, lvl));
 
-	if (!spl && !number(0, 9) && (!ch->equipment[PRIMARY_WEAPON] || has_wind_blade_wielded(ch)) && npc_has_spell_slot(ch, SPELL_WIND_BLADE))
+	if (!spl && !number(0, 9) &&
+	    (!ch->equipment[PRIMARY_WEAPON] || has_wind_blade_wielded(ch)) &&
+	    npc_has_spell_slot(ch, SPELL_WIND_BLADE))
 		spl = SPELL_WIND_BLADE;
 
 	if (!spl && npc_has_spell_slot(ch, SPELL_ARIEKS_SHATTERING_ICEBALL))
@@ -3030,22 +3352,28 @@ bool CastEtherSpell(P_char ch, P_char victim, int helping)
 	if (!spl && npc_has_spell_slot(ch, SPELL_COMET))
 		spl = SPELL_COMET;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_FORKED_LIGHTNING) && spell_can_affect_char(target, SPELL_FORKED_LIGHTNING))
+	if (!spl && npc_has_spell_slot(ch, SPELL_FORKED_LIGHTNING) &&
+	    spell_can_affect_char(target, SPELL_FORKED_LIGHTNING))
 		spl = SPELL_FORKED_LIGHTNING;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_CYCLONE) && spell_can_affect_char(target, SPELL_CYCLONE))
+	if (!spl && npc_has_spell_slot(ch, SPELL_CYCLONE) &&
+	    spell_can_affect_char(target, SPELL_CYCLONE))
 		spl = SPELL_CYCLONE;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_ARCANE_WHIRLWIND) && spell_can_affect_char(target, SPELL_ARCANE_WHIRLWIND))
+	if (!spl && npc_has_spell_slot(ch, SPELL_ARCANE_WHIRLWIND) &&
+	    spell_can_affect_char(target, SPELL_ARCANE_WHIRLWIND))
 		spl = SPELL_ARCANE_WHIRLWIND;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_INDUCE_TUPOR) && spell_can_affect_char(target, SPELL_INDUCE_TUPOR))
+	if (!spl && npc_has_spell_slot(ch, SPELL_INDUCE_TUPOR) &&
+	    spell_can_affect_char(target, SPELL_INDUCE_TUPOR))
 		spl = SPELL_INDUCE_TUPOR;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_FROSTBITE) && spell_can_affect_char(target, SPELL_FROSTBITE))
+	if (!spl && npc_has_spell_slot(ch, SPELL_FROSTBITE) &&
+	    spell_can_affect_char(target, SPELL_FROSTBITE))
 		spl = SPELL_FROSTBITE;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_FROST_BOLT) && spell_can_affect_char(target, SPELL_FROST_BOLT))
+	if (!spl && npc_has_spell_slot(ch, SPELL_FROST_BOLT) &&
+	    spell_can_affect_char(target, SPELL_FROST_BOLT))
 		spl = SPELL_FROST_BOLT;
 
 	/* heal up, the offense that's left sucks anyway */
@@ -3055,13 +3383,16 @@ bool CastEtherSpell(P_char ch, P_char victim, int helping)
 
 	if (!number(0, 3))
 	{
-		if (!spl && npc_has_spell_slot(ch, SPELL_GREATER_ETHEREAL) && affected_by_spell(ch, SPELL_ETHEREAL_FORM) && (dam > 75))
+		if (!spl && npc_has_spell_slot(ch, SPELL_GREATER_ETHEREAL) &&
+		    affected_by_spell(ch, SPELL_ETHEREAL_FORM) && (dam > 75))
 			spl = SPELL_GREATER_ETHEREAL;
 
-		if (!spl && npc_has_spell_slot(ch, SPELL_ETHEREAL_RECHARGE) && affected_by_spell(ch, SPELL_ETHEREAL_FORM) && (dam > 40))
+		if (!spl && npc_has_spell_slot(ch, SPELL_ETHEREAL_RECHARGE) &&
+		    affected_by_spell(ch, SPELL_ETHEREAL_FORM) && (dam > 40))
 			spl = SPELL_ETHEREAL_RECHARGE;
 	}
-	if (!spl && npc_has_spell_slot(ch, SPELL_ICE_MISSILE) && spell_can_affect_char(target, SPELL_ICE_MISSILE))
+	if (!spl && npc_has_spell_slot(ch, SPELL_ICE_MISSILE) &&
+	    spell_can_affect_char(target, SPELL_ICE_MISSILE))
 		spl = SPELL_ICE_MISSILE;
 
 	if (spl && ch && target)
@@ -3087,7 +3418,7 @@ bool CastEtherSpell(P_char ch, P_char victim, int helping)
 bool CastClericSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL, tempch;
-	int    dam = 0, lvl = 0, spl = 0;
+	int dam = 0, lvl = 0, spl = 0;
 
 	/* make sure I'm even able to cast in this room! */
 
@@ -3102,12 +3433,12 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 	if (helping)
 	{
 		target = victim;
-		dam    = GET_MAX_HIT(target) - GET_HIT(target);
+		dam = GET_MAX_HIT(target) - GET_HIT(target);
 	}
 	else
 	{
 		target = ch;
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 	}
 
 	/*
@@ -3115,15 +3446,21 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 	 * my birthplace, get home!
 	 */
 
-	if (!spl && IS_FIGHTING(ch) && (GET_HIT(ch) < (GET_MAX_HIT(ch) >> 2)) && (world[ch->in_room].number != GET_BIRTHPLACE(ch)) && npc_has_spell_slot(ch, SPELL_WORD_OF_RECALL) &&
-	    !IS_ROOM(ch->in_room, ROOM_NO_RECALL) && !IS_ROOM(real_room0(GET_BIRTHPLACE(ch)), ROOM_NO_RECALL))
+	if (!spl && IS_FIGHTING(ch) && (GET_HIT(ch) < (GET_MAX_HIT(ch) >> 2)) &&
+	    (world[ch->in_room].number != GET_BIRTHPLACE(ch)) &&
+	    npc_has_spell_slot(ch, SPELL_WORD_OF_RECALL) && !IS_ROOM(ch->in_room, ROOM_NO_RECALL) &&
+	    !IS_ROOM(real_room0(GET_BIRTHPLACE(ch)), ROOM_NO_RECALL))
 		spl = SPELL_WORD_OF_RECALL;
 
-	if (!spl && (ch == target) && !IS_AFFECTED2(ch, AFF2_SOULSHIELD) && !affected_by_spell(ch, SPELL_SOULSHIELD) && !IS_AFFECTED4(ch, AFF4_NEG_SHIELD) &&
-	    ((GET_ALIGNMENT(ch) <= -950) || (GET_ALIGNMENT(ch) >= 950)) && npc_has_spell_slot(ch, SPELL_SOULSHIELD) && (!IS_FIGHTING(ch) || number(0, 2)))
+	if (!spl && (ch == target) && !IS_AFFECTED2(ch, AFF2_SOULSHIELD) &&
+	    !affected_by_spell(ch, SPELL_SOULSHIELD) && !IS_AFFECTED4(ch, AFF4_NEG_SHIELD) &&
+	    ((GET_ALIGNMENT(ch) <= -950) || (GET_ALIGNMENT(ch) >= 950)) &&
+	    npc_has_spell_slot(ch, SPELL_SOULSHIELD) && (!IS_FIGHTING(ch) || number(0, 2)))
 		spl = SPELL_SOULSHIELD;
 
-	if (!spl && (affected_by_spell(target, SPELL_POISON) || IS_AFFECTED2(target, AFF2_POISONED)) && (!IS_FIGHTING(ch) || !number(0, 3)))
+	if (!spl &&
+	    (affected_by_spell(target, SPELL_POISON) || IS_AFFECTED2(target, AFF2_POISONED)) &&
+	    (!IS_FIGHTING(ch) || !number(0, 3)))
 	{
 		if (npc_has_spell_slot(ch, SPELL_PURIFY_SPIRIT))
 		{
@@ -3139,14 +3476,18 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 		}
 	}
 
-	if (!spl && affected_by_spell(target, SPELL_CURSE) && npc_has_spell_slot(ch, SPELL_REMOVE_CURSE) && (!IS_FIGHTING(ch) || !number(0, 5)))
+	if (!spl && affected_by_spell(target, SPELL_CURSE) &&
+	    npc_has_spell_slot(ch, SPELL_REMOVE_CURSE) && (!IS_FIGHTING(ch) || !number(0, 5)))
 		spl = SPELL_REMOVE_CURSE;
 
-	if (!spl && IS_AFFECTED(target, AFF_BLIND) && npc_has_spell_slot(ch, SPELL_CURE_BLIND) && (!IS_FIGHTING(ch) || !number(0, 2)))
+	if (!spl && IS_AFFECTED(target, AFF_BLIND) && npc_has_spell_slot(ch, SPELL_CURE_BLIND) &&
+	    (!IS_FIGHTING(ch) || !number(0, 2)))
 		spl = SPELL_CURE_BLIND;
-	else if (!spl && IS_AFFECTED(target, AFF_BLIND) && npc_has_spell_slot(ch, SPELL_HEAL) && (!IS_FIGHTING(ch) || !number(0, 2)))
+	else if (!spl && IS_AFFECTED(target, AFF_BLIND) && npc_has_spell_slot(ch, SPELL_HEAL) &&
+		 (!IS_FIGHTING(ch) || !number(0, 2)))
 		spl = SPELL_HEAL;
-	else if (!spl && IS_AFFECTED(ch, AFF_BLIND) && room_has_valid_exit(ch->in_room) && !fear_check(ch))
+	else if (!spl && IS_AFFECTED(ch, AFF_BLIND) && room_has_valid_exit(ch->in_room) &&
+		 !fear_check(ch))
 	{
 		do_flee(ch, 0, 0);
 		return FALSE;
@@ -3157,7 +3498,8 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 
 	/* when not fighting, don't always cast heal spells..  other spells may need refreshing */
 
-	if (!spl && ((!IS_FIGHTING(ch) && (number(0, 9) != 8)) || (IS_FIGHTING(ch) && (number(0, 9) == 2))))
+	if (!spl &&
+	    ((!IS_FIGHTING(ch) && (number(0, 9) != 8)) || (IS_FIGHTING(ch) && (number(0, 9) == 2))))
 	{
 		if (npc_has_spell_slot(ch, SPELL_FULL_HEAL) && (dam > 200))
 			spl = SPELL_FULL_HEAL;
@@ -3169,9 +3511,11 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 		{
 			int cast_it = TRUE;
 
-			for (tempch = world[ch->in_room].people; tempch; tempch = tempch->next_in_room)
+			for (tempch = world[ch->in_room].people; tempch;
+			     tempch = tempch->next_in_room)
 			{
-				if (IS_PC(tempch) || (tempch->following && IS_PC(tempch->following)))
+				if (IS_PC(tempch) ||
+				    (tempch->following && IS_PC(tempch->following)))
 				{
 					cast_it = FALSE;
 					break;
@@ -3182,7 +3526,9 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 				spl = SPELL_MASS_HEAL;
 		}
 
-		if (!spl && npc_has_spell_slot(ch, SPELL_VITALITY) && !affected_by_spell(target, SPELL_VITALITY) && (number(0, 1) || !IS_FIGHTING(ch)))
+		if (!spl && npc_has_spell_slot(ch, SPELL_VITALITY) &&
+		    !affected_by_spell(target, SPELL_VITALITY) &&
+		    (number(0, 1) || !IS_FIGHTING(ch)))
 			spl = SPELL_VITALITY;
 
 		// if not fighting, might as well cast the shit heal spells
@@ -3200,9 +3546,11 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 
 	if (!spl && (!IS_FIGHTING(ch) || (number(0, 4) == 2)))
 	{
-		if (!IS_AFFECTED(target, AFF_ARMOR) && npc_has_spell_slot(ch, SPELL_ARMOR) && GET_RACE(target) != RACE_ANIMAL)
+		if (!IS_AFFECTED(target, AFF_ARMOR) && npc_has_spell_slot(ch, SPELL_ARMOR) &&
+		    GET_RACE(target) != RACE_ANIMAL)
 			spl = SPELL_ARMOR;
-		else if (!affected_by_spell(target, SPELL_BLESS) && npc_has_spell_slot(ch, SPELL_BLESS) && GET_RACE(target) != RACE_ANIMAL)
+		else if (!affected_by_spell(target, SPELL_BLESS) &&
+			 npc_has_spell_slot(ch, SPELL_BLESS) && GET_RACE(target) != RACE_ANIMAL)
 			spl = SPELL_BLESS;
 	}
 
@@ -3212,20 +3560,24 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 
 	if (!IS_FIGHTING(ch) || (number(0, 10) == 3))
 	{
-		if (!spl && !affected_by_spell(ch, SPELL_TRUE_SEEING) && npc_has_spell_slot(ch, SPELL_TRUE_SEEING) && (ch == target))
+		if (!spl && !affected_by_spell(ch, SPELL_TRUE_SEEING) &&
+		    npc_has_spell_slot(ch, SPELL_TRUE_SEEING) && (ch == target))
 			spl = SPELL_TRUE_SEEING;
 
-		if (!spl && !IS_AFFECTED4(ch, AFF4_SANCTUARY) && npc_has_spell_slot(ch, SPELL_LESSER_SANCTUARY) && (ch == target))
+		if (!spl && !IS_AFFECTED4(ch, AFF4_SANCTUARY) &&
+		    npc_has_spell_slot(ch, SPELL_LESSER_SANCTUARY) && (ch == target))
 			spl = SPELL_LESSER_SANCTUARY;
 
 		if (GET_RACE(target) != RACE_ANIMAL)
 		{
-			if (!spl && !IS_AFFECTED(target, AFF_PROT_FIRE) && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_FIRE))
+			if (!spl && !IS_AFFECTED(target, AFF_PROT_FIRE) &&
+			    npc_has_spell_slot(ch, SPELL_PROTECT_FROM_FIRE))
 			{
 				spl = SPELL_PROTECT_FROM_FIRE;
 			}
 
-			if (!spl && !IS_AFFECTED2(target, AFF2_PROT_COLD) && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_COLD))
+			if (!spl && !IS_AFFECTED2(target, AFF2_PROT_COLD) &&
+			    npc_has_spell_slot(ch, SPELL_PROTECT_FROM_COLD))
 			{
 				spl = SPELL_PROTECT_FROM_COLD;
 			}
@@ -3242,17 +3594,20 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 				}
 			}
 
-			if (!spl && !IS_AFFECTED2(target, AFF2_PROT_LIGHTNING) && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_LIGHTNING))
+			if (!spl && !IS_AFFECTED2(target, AFF2_PROT_LIGHTNING) &&
+			    npc_has_spell_slot(ch, SPELL_PROTECT_FROM_LIGHTNING))
 			{
 				spl = SPELL_PROTECT_FROM_LIGHTNING;
 			}
 
-			if (!spl && !IS_AFFECTED2(target, AFF2_PROT_ACID) && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_ACID))
+			if (!spl && !IS_AFFECTED2(target, AFF2_PROT_ACID) &&
+			    npc_has_spell_slot(ch, SPELL_PROTECT_FROM_ACID))
 			{
 				spl = SPELL_PROTECT_FROM_ACID;
 			}
 
-			if (!spl && !IS_AFFECTED2(target, AFF2_PROT_GAS) && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_GAS))
+			if (!spl && !IS_AFFECTED2(target, AFF2_PROT_GAS) &&
+			    npc_has_spell_slot(ch, SPELL_PROTECT_FROM_GAS))
 			{
 				spl = SPELL_PROTECT_FROM_GAS;
 			}
@@ -3264,7 +3619,7 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 	if (!spl && !helping && !IS_FIGHTING(ch))
 	{
 		P_char tch;
-		int    numb = 0, lucky, curr = 0;
+		int numb = 0, lucky, curr = 0;
 
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 			if ((ch != tch) && char_deserves_helping(ch, tch, TRUE))
@@ -3304,7 +3659,8 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 	/* holy/unholy word are good enough against one person, don't need a
 	   group */
 
-	if (!spl && number(0, 1) && !affected_by_spell(target, SPELL_PLAGUE) && npc_has_spell_slot(ch, SPELL_PLAGUE))
+	if (!spl && number(0, 1) && !affected_by_spell(target, SPELL_PLAGUE) &&
+	    npc_has_spell_slot(ch, SPELL_PLAGUE))
 	{
 		spl = SPELL_PLAGUE;
 	}
@@ -3314,7 +3670,8 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 		spl = SPELL_DISPEL_MAGIC;
 	}
 
-	if (!spl && (IS_EVIL(ch) || IS_GOOD(ch)) && npc_has_spell_slot(ch, SPELL_HOLY_WORD) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	if (!spl && (IS_EVIL(ch) || IS_GOOD(ch)) && npc_has_spell_slot(ch, SPELL_HOLY_WORD) &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
 		if (IS_EVIL(ch) && room_has_good_enemy(target))
 		{
@@ -3337,7 +3694,9 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 			}
 	}
 
-	if (!spl && ((NumAttackers(ch) > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	if (!spl &&
+	    ((NumAttackers(ch) > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
 		if (npc_has_spell_slot(ch, SPELL_EARTHQUAKE) && (number(0, 3) == 1))
 			spl = SPELL_EARTHQUAKE;
@@ -3351,7 +3710,8 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 		spl = SPELL_SUNRAY;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DESTROY_UNDEAD) && (GET_HIT(target) > 5) && IS_UNDEADRACE(target))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DESTROY_UNDEAD) && (GET_HIT(target) > 5) &&
+	    IS_UNDEADRACE(target))
 	{
 		spl = SPELL_DESTROY_UNDEAD;
 	}
@@ -3362,30 +3722,34 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 	{
 		switch (number(0, 3))
 		{
-			case 0:
-				if (npc_has_spell_slot(ch, SPELL_BLINDNESS) && !IS_AFFECTED(target, AFF_BLIND))
-					spl = SPELL_BLINDNESS;
-				break;
+		case 0:
+			if (npc_has_spell_slot(ch, SPELL_BLINDNESS) &&
+			    !IS_AFFECTED(target, AFF_BLIND))
+				spl = SPELL_BLINDNESS;
+			break;
 
-			case 1:
-				if (!spl && npc_has_spell_slot(ch, SPELL_SILENCE) && !IS_AFFECTED2(target, AFF2_SILENCED))
-					spl = SPELL_SILENCE;
-				break;
+		case 1:
+			if (!spl && npc_has_spell_slot(ch, SPELL_SILENCE) &&
+			    !IS_AFFECTED2(target, AFF2_SILENCED))
+				spl = SPELL_SILENCE;
+			break;
 
-			case 2:
-				if (!spl && npc_has_spell_slot(ch, SPELL_CURSE) && !affected_by_spell(target, SPELL_CURSE))
-					spl = SPELL_CURSE;
-				break;
+		case 2:
+			if (!spl && npc_has_spell_slot(ch, SPELL_CURSE) &&
+			    !affected_by_spell(target, SPELL_CURSE))
+				spl = SPELL_CURSE;
+			break;
 
-			case 3:
-				if (!spl && npc_has_spell_slot(ch, SPELL_FEAR))
-					spl = SPELL_FEAR;
+		case 3:
+			if (!spl && npc_has_spell_slot(ch, SPELL_FEAR))
+				spl = SPELL_FEAR;
 		}
 	}
 	if (!spl && npc_has_spell_slot(ch, SPELL_FULL_HARM) && (GET_HIT(target) > 10))
 		spl = SPELL_FULL_HARM;
 
-	if (!spl && OUTSIDE(ch) && !IS_GLOBED(target) && npc_has_spell_slot(ch, SPELL_CALL_LIGHTNING))
+	if (!spl && OUTSIDE(ch) && !IS_GLOBED(target) &&
+	    npc_has_spell_slot(ch, SPELL_CALL_LIGHTNING))
 	{
 		spl = SPELL_CALL_LIGHTNING;
 	}
@@ -3393,12 +3757,14 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 	if (!spl && npc_has_spell_slot(ch, SPELL_FLAMESTRIKE) && !IS_GLOBED(target))
 		spl = SPELL_FLAMESTRIKE;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_EVIL) && !IS_EVIL(ch) && IS_EVIL(target) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_EVIL) && !IS_EVIL(ch) && IS_EVIL(target) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 	{
 		spl = SPELL_DISPEL_EVIL;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_GOOD) && !IS_GOOD(ch) && IS_GOOD(target) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DISPEL_GOOD) && !IS_GOOD(ch) && IS_GOOD(target) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 	{
 		spl = SPELL_DISPEL_GOOD;
 	}
@@ -3410,10 +3776,12 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 
 	if (number(0, 6) == 3)
 	{
-		if (!spl && npc_has_spell_slot(ch, SPELL_CAUSE_CRITICAL) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+		if (!spl && npc_has_spell_slot(ch, SPELL_CAUSE_CRITICAL) &&
+		    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 			spl = SPELL_CAUSE_CRITICAL;
 
-		if (!spl && npc_has_spell_slot(ch, SPELL_CAUSE_SERIOUS) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+		if (!spl && npc_has_spell_slot(ch, SPELL_CAUSE_SERIOUS) &&
+		    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 			spl = SPELL_CAUSE_SERIOUS;
 	}
 	if (spl && ch && target)
@@ -3428,22 +3796,28 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 
 	if (TRUE)
 	{
-		if (!spl && npc_has_spell_slot(ch, SPELL_FULL_HEAL) && (dam > 200) && (!IS_FIGHTING(ch) || (number(0, 2) == 1)))
+		if (!spl && npc_has_spell_slot(ch, SPELL_FULL_HEAL) && (dam > 200) &&
+		    (!IS_FIGHTING(ch) || (number(0, 2) == 1)))
 			spl = SPELL_FULL_HEAL;
 
-		if (!spl && npc_has_spell_slot(ch, SPELL_HEALING_SALVE) && (dam > 125) && (!IS_FIGHTING(ch) || (number(0, 2) == 1)))
+		if (!spl && npc_has_spell_slot(ch, SPELL_HEALING_SALVE) && (dam > 125) &&
+		    (!IS_FIGHTING(ch) || (number(0, 2) == 1)))
 			spl = SPELL_HEALING_SALVE;
 
-		if (!spl && npc_has_spell_slot(ch, SPELL_HEAL) && (dam > 60) && (!IS_FIGHTING(ch) || (number(0, 5) == 1)))
+		if (!spl && npc_has_spell_slot(ch, SPELL_HEAL) && (dam > 60) &&
+		    (!IS_FIGHTING(ch) || (number(0, 5) == 1)))
 			spl = SPELL_HEAL;
 
-		if (!spl && npc_has_spell_slot(ch, SPELL_MASS_HEAL) && (dam > 90) && (!IS_FIGHTING(ch) || (number(0, 4) == 1)))
+		if (!spl && npc_has_spell_slot(ch, SPELL_MASS_HEAL) && (dam > 90) &&
+		    (!IS_FIGHTING(ch) || (number(0, 4) == 1)))
 		{
 			int cast_it = TRUE;
 
-			for (tempch = world[ch->in_room].people; tempch; tempch = tempch->next_in_room)
+			for (tempch = world[ch->in_room].people; tempch;
+			     tempch = tempch->next_in_room)
 			{
-				if (IS_PC(tempch) || (tempch->following && IS_PC(tempch->following)))
+				if (IS_PC(tempch) ||
+				    (tempch->following && IS_PC(tempch->following)))
 				{
 					cast_it = FALSE;
 					break;
@@ -3498,19 +3872,19 @@ bool CastClericSpell(P_char ch, P_char victim, int helping)
 bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL, tempch, tch;
-	int    dam = 0, lvl = 0, spl = 0;
+	int dam = 0, lvl = 0, spl = 0;
 
 	lvl = GET_LEVEL(ch);
 
 	if (helping)
 	{
 		target = victim;
-		dam    = GET_MAX_HIT(target) - GET_HIT(target);
+		dam = GET_MAX_HIT(target) - GET_HIT(target);
 	}
 	else
 	{
 		target = ch;
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 	}
 
 	/* make sure I'm even able to cast in this room! */
@@ -3521,7 +3895,9 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 		return false;
 	}
 
-	if (!spl && (affected_by_spell(target, SPELL_POISON) || IS_AFFECTED2(target, AFF2_POISONED)) && (!IS_FIGHTING(ch) || !number(0, 3)))
+	if (!spl &&
+	    (affected_by_spell(target, SPELL_POISON) || IS_AFFECTED2(target, AFF2_POISONED)) &&
+	    (!IS_FIGHTING(ch) || !number(0, 3)))
 	{
 		if (npc_has_spell_slot(ch, SPELL_REMOVE_POISON))
 			spl = SPELL_REMOVE_POISON;
@@ -3531,10 +3907,13 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 
 	// sanctuary good, cast that early
 
-	if (!spl && !IS_AFFECTED4(ch, AFF4_SANCTUARY) && (target == ch) && npc_has_spell_slot(ch, SPELL_SANCTUARY) && (!IS_FIGHTING(ch) || number(0, 1)))
+	if (!spl && !IS_AFFECTED4(ch, AFF4_SANCTUARY) && (target == ch) &&
+	    npc_has_spell_slot(ch, SPELL_SANCTUARY) && (!IS_FIGHTING(ch) || number(0, 1)))
 		spl = SPELL_SANCTUARY;
 
-	if (!spl && IS_AFFECTED(target, AFF_BLIND) && (npc_has_spell_slot(ch, SPELL_CURE_BLIND) || npc_has_spell_slot(ch, SPELL_HEAL)) && (!IS_FIGHTING(ch) || !number(0, 3)))
+	if (!spl && IS_AFFECTED(target, AFF_BLIND) &&
+	    (npc_has_spell_slot(ch, SPELL_CURE_BLIND) || npc_has_spell_slot(ch, SPELL_HEAL)) &&
+	    (!IS_FIGHTING(ch) || !number(0, 3)))
 	{
 		// prefer cure blind since lower circle..
 
@@ -3543,26 +3922,34 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 		else
 			spl = SPELL_HEAL;
 	}
-	else if (!spl && IS_AFFECTED(ch, AFF_BLIND) && IS_FIGHTING(ch) && room_has_valid_exit(ch->in_room) && !fear_check(ch))
+	else if (!spl && IS_AFFECTED(ch, AFF_BLIND) && IS_FIGHTING(ch) &&
+		 room_has_valid_exit(ch->in_room) && !fear_check(ch))
 	{
 		do_flee(ch, 0, 0);
 		return FALSE;
 	}
 
-	if (!spl && affected_by_spell(target, SPELL_CURSE) && npc_has_spell_slot(ch, SPELL_REMOVE_CURSE) && (!IS_FIGHTING(ch) || !number(0, 5)))
+	if (!spl && affected_by_spell(target, SPELL_CURSE) &&
+	    npc_has_spell_slot(ch, SPELL_REMOVE_CURSE) && (!IS_FIGHTING(ch) || !number(0, 5)))
 		spl = SPELL_REMOVE_CURSE;
 
-	if (!spl && (ch == target) && !IS_AFFECTED2(ch, AFF2_SOULSHIELD) && !affected_by_spell(ch, SPELL_SOULSHIELD) && !IS_AFFECTED4(ch, AFF4_NEG_SHIELD) &&
-	    ((GET_ALIGNMENT(ch) <= -950) || (GET_ALIGNMENT(ch) >= 950)) && npc_has_spell_slot(ch, SPELL_SOULSHIELD) && (!IS_FIGHTING(ch) || number(0, 2)))
+	if (!spl && (ch == target) && !IS_AFFECTED2(ch, AFF2_SOULSHIELD) &&
+	    !affected_by_spell(ch, SPELL_SOULSHIELD) && !IS_AFFECTED4(ch, AFF4_NEG_SHIELD) &&
+	    ((GET_ALIGNMENT(ch) <= -950) || (GET_ALIGNMENT(ch) >= 950)) &&
+	    npc_has_spell_slot(ch, SPELL_SOULSHIELD) && (!IS_FIGHTING(ch) || number(0, 2)))
 		spl = SPELL_SOULSHIELD;
 
-	if (!spl && !affected_by_spell(target, SPELL_ACCEL_HEALING) && (!IS_FIGHTING(ch) || number(0, 10) == 10))
+	if (!spl && !affected_by_spell(target, SPELL_ACCEL_HEALING) &&
+	    (!IS_FIGHTING(ch) || number(0, 10) == 10))
 		spl = SPELL_ACCEL_HEALING;
 
-	if (!spl && !IS_AFFECTED4(ch, AFF4_HOLY_SACRIFICE) && (target == ch) && npc_has_spell_slot(ch, SPELL_HOLY_SACRIFICE) && (!IS_FIGHTING(ch) || number(0, 10) == 10))
+	if (!spl && !IS_AFFECTED4(ch, AFF4_HOLY_SACRIFICE) && (target == ch) &&
+	    npc_has_spell_slot(ch, SPELL_HOLY_SACRIFICE) &&
+	    (!IS_FIGHTING(ch) || number(0, 10) == 10))
 		spl = SPELL_HOLY_SACRIFICE;
 
-	if (!spl && !affected_by_spell(ch, SPELL_HOLY_DHARMA) && affected_by_spell(ch, SPELL_SOULSHIELD))
+	if (!spl && !affected_by_spell(ch, SPELL_HOLY_DHARMA) &&
+	    affected_by_spell(ch, SPELL_SOULSHIELD))
 	{
 		spl = SPELL_HOLY_DHARMA;
 	}
@@ -3581,9 +3968,11 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 		{
 			int cast_it = TRUE;
 
-			for (tempch = world[ch->in_room].people; tempch; tempch = tempch->next_in_room)
+			for (tempch = world[ch->in_room].people; tempch;
+			     tempch = tempch->next_in_room)
 			{
-				if (IS_PC(tempch) || (tempch->following && IS_PC(tempch->following)))
+				if (IS_PC(tempch) ||
+				    (tempch->following && IS_PC(tempch->following)))
 				{
 					cast_it = FALSE;
 					break;
@@ -3609,12 +3998,14 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 
 	if (!IS_FIGHTING(ch) || (number(0, 4) == 2))
 	{
-		if (!spl && !IS_AFFECTED(target, AFF_ARMOR) && npc_has_spell_slot(ch, SPELL_ARMOR) && GET_RACE(target) != RACE_ANIMAL)
+		if (!spl && !IS_AFFECTED(target, AFF_ARMOR) &&
+		    npc_has_spell_slot(ch, SPELL_ARMOR) && GET_RACE(target) != RACE_ANIMAL)
 		{
 			spl = SPELL_ARMOR;
 		}
 
-		if (!spl && !affected_by_spell(target, SPELL_BLESS) && npc_has_spell_slot(ch, SPELL_BLESS) && GET_RACE(target) != RACE_ANIMAL)
+		if (!spl && !affected_by_spell(target, SPELL_BLESS) &&
+		    npc_has_spell_slot(ch, SPELL_BLESS) && GET_RACE(target) != RACE_ANIMAL)
 		{
 			spl = SPELL_BLESS;
 		}
@@ -3626,7 +4017,9 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 
 	if (!IS_FIGHTING(ch) || (number(0, 4) == 3))
 	{
-		if (!spl && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_EVIL) && (!IS_FIGHTING(ch) || (number(0, 2) == 1)) && IS_GOOD(target) && !IS_AFFECTED(target, AFF_PROTECT_EVIL))
+		if (!spl && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_EVIL) &&
+		    (!IS_FIGHTING(ch) || (number(0, 2) == 1)) && IS_GOOD(target) &&
+		    !IS_AFFECTED(target, AFF_PROTECT_EVIL))
 			spl = SPELL_PROTECT_FROM_EVIL;
 	}
 	if (spl && ch)
@@ -3671,7 +4064,8 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 	if (!ch || !target)
 		return (FALSE);
 
-	if (!spl && (GET_ALIGNMENT(ch) >= 980) && room_has_evil_enemy(ch) && npc_has_spell_slot(ch, SPELL_JUDGEMENT) && number(0, 2))
+	if (!spl && (GET_ALIGNMENT(ch) >= 980) && room_has_evil_enemy(ch) &&
+	    npc_has_spell_slot(ch, SPELL_JUDGEMENT) && number(0, 2))
 	{
 		spl = SPELL_JUDGEMENT;
 	}
@@ -3681,7 +4075,8 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 
 	/* no they aren't - Jexni 11/25/08 */
 
-	if (!spl && IS_GOOD(ch) && npc_has_spell_slot(ch, SPELL_HOLY_WORD) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && room_has_evil_enemy(ch) && number(0, 2))
+	if (!spl && IS_GOOD(ch) && npc_has_spell_slot(ch, SPELL_HOLY_WORD) &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && room_has_evil_enemy(ch) && number(0, 2))
 	{
 		int evnum = 0;
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
@@ -3696,7 +4091,8 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 	if (spl && ch)
 		return (MobCastSpell(ch, target, 0, spl, lvl));
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_DESTROY_UNDEAD) && (IS_UNDEAD(target) || IS_AFFECTED(target, AFF_WRAITHFORM)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_DESTROY_UNDEAD) &&
+	    (IS_UNDEAD(target) || IS_AFFECTED(target, AFF_WRAITHFORM)))
 	{
 		spl = SPELL_DESTROY_UNDEAD;
 	}
@@ -3704,7 +4100,8 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 	if (!spl && npc_has_spell_slot(ch, SPELL_TURN_UNDEAD) && IS_UNDEAD(target) && number(0, 1))
 		spl = SPELL_TURN_UNDEAD;
 
-	if (lvl < 26 && !spl && npc_has_spell_slot(ch, SPELL_DISPEL_EVIL) && !IS_EVIL(ch) && IS_EVIL(target) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 2))
+	if (lvl < 26 && !spl && npc_has_spell_slot(ch, SPELL_DISPEL_EVIL) && !IS_EVIL(ch) &&
+	    IS_EVIL(target) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 2))
 	{
 		spl = SPELL_DISPEL_EVIL; // God I hope no mob ever has to use this spell - Jexni 11/25/08
 	}
@@ -3728,9 +4125,11 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 		{
 			int cast_it = TRUE;
 
-			for (tempch = world[ch->in_room].people; tempch; tempch = tempch->next_in_room)
+			for (tempch = world[ch->in_room].people; tempch;
+			     tempch = tempch->next_in_room)
 			{
-				if (IS_PC(tempch) || (tempch->following && IS_PC(tempch->following)))
+				if (IS_PC(tempch) ||
+				    (tempch->following && IS_PC(tempch->following)))
 				{
 					cast_it = FALSE;
 					break;
@@ -3766,19 +4165,19 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL, tempch;
-	int    dam = 0, lvl = 0, spl = 0;
+	int dam = 0, lvl = 0, spl = 0;
 
 	lvl = GET_LEVEL(ch);
 
 	if (helping)
 	{
 		target = victim;
-		dam    = GET_MAX_HIT(target) - GET_HIT(target);
+		dam = GET_MAX_HIT(target) - GET_HIT(target);
 	}
 	else
 	{
 		target = ch;
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 	}
 
 	/* make sure I'm even able to cast in this room! */
@@ -3790,32 +4189,42 @@ bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 	}
 	/* alas, anti-pals have no way to cure blindness */
 
-	if (!spl && IS_AFFECTED(ch, AFF_BLIND) && IS_FIGHTING(ch) && room_has_valid_exit(ch->in_room) && !fear_check(ch) && !number(0, 2) && !IS_SHOPKEEPER(ch))
+	if (!spl && IS_AFFECTED(ch, AFF_BLIND) && IS_FIGHTING(ch) &&
+	    room_has_valid_exit(ch->in_room) && !fear_check(ch) && !number(0, 2) &&
+	    !IS_SHOPKEEPER(ch))
 	{
 		do_flee(ch, 0, 0);
 		return FALSE;
 	}
 
-	if (!spl && (ch == target) && !IS_AFFECTED2(ch, AFF2_SOULSHIELD) && !affected_by_spell(ch, SPELL_SOULSHIELD) && !IS_AFFECTED4(ch, AFF4_NEG_SHIELD) &&
-	    ((GET_ALIGNMENT(ch) <= -950) || (GET_ALIGNMENT(ch) >= 950)) && npc_has_spell_slot(ch, SPELL_SOULSHIELD) && (!IS_FIGHTING(ch) || number(0, 2)))
+	if (!spl && (ch == target) && !IS_AFFECTED2(ch, AFF2_SOULSHIELD) &&
+	    !affected_by_spell(ch, SPELL_SOULSHIELD) && !IS_AFFECTED4(ch, AFF4_NEG_SHIELD) &&
+	    ((GET_ALIGNMENT(ch) <= -950) || (GET_ALIGNMENT(ch) >= 950)) &&
+	    npc_has_spell_slot(ch, SPELL_SOULSHIELD) && (!IS_FIGHTING(ch) || number(0, 2)))
 	{
 		spl = SPELL_SOULSHIELD;
 	}
 
 	// hellfire good, (almost) always cast that
 
-	if (!spl && !affected_by_spell(ch, SPELL_HELLFIRE) && (ch == target) && !IS_AFFECTED4(ch, AFF4_HELLFIRE) && npc_has_spell_slot(ch, SPELL_HELLFIRE) && (!IS_FIGHTING(ch) || number(0, 2)))
+	if (!spl && !affected_by_spell(ch, SPELL_HELLFIRE) && (ch == target) &&
+	    !IS_AFFECTED4(ch, AFF4_HELLFIRE) && npc_has_spell_slot(ch, SPELL_HELLFIRE) &&
+	    (!IS_FIGHTING(ch) || number(0, 2)))
 		spl = SPELL_HELLFIRE;
 
-	if (!spl && !affected_by_spell(ch, SPELL_SPAWN) && (ch == target) && npc_has_spell_slot(ch, SPELL_SPAWN) && (!IS_FIGHTING(ch) || number(0, 2)))
+	if (!spl && !affected_by_spell(ch, SPELL_SPAWN) && (ch == target) &&
+	    npc_has_spell_slot(ch, SPELL_SPAWN) && (!IS_FIGHTING(ch) || number(0, 2)))
 		spl = SPELL_SPAWN;
 
-	if (!spl && !affected_by_spell(ch, SPELL_DREAD_BLADE) && (ch == target) && npc_has_spell_slot(ch, SPELL_DREAD_BLADE) && (!IS_FIGHTING(ch) || number(0, 2)))
+	if (!spl && !affected_by_spell(ch, SPELL_DREAD_BLADE) && (ch == target) &&
+	    npc_has_spell_slot(ch, SPELL_DREAD_BLADE) && (!IS_FIGHTING(ch) || number(0, 2)))
 		spl = SPELL_DREAD_BLADE;
 
-	if (!IS_FIGHTING(ch) || (number(0, 4) == 2) || ((ch->following || ch->followers) && number(0, 1)))
+	if (!IS_FIGHTING(ch) || (number(0, 4) == 2) ||
+	    ((ch->following || ch->followers) && number(0, 1)))
 	{
-		if (!spl && !IS_AFFECTED4(ch, AFF4_BATTLE_ECSTASY) && npc_has_spell_slot(ch, SPELL_BATTLE_ECSTASY) && (target == ch))
+		if (!spl && !IS_AFFECTED4(ch, AFF4_BATTLE_ECSTASY) &&
+		    npc_has_spell_slot(ch, SPELL_BATTLE_ECSTASY) && (target == ch))
 		{
 			spl = SPELL_BATTLE_ECSTASY;
 		}
@@ -3823,7 +4232,8 @@ bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 
 	if (!IS_FIGHTING(ch) || (number(0, 4) == 2))
 	{
-		if (!spl && !IS_AFFECTED(target, AFF_ARMOR) && npc_has_spell_slot(ch, SPELL_ARMOR) && GET_RACE(target) != RACE_ANIMAL)
+		if (!spl && !IS_AFFECTED(target, AFF_ARMOR) &&
+		    npc_has_spell_slot(ch, SPELL_ARMOR) && GET_RACE(target) != RACE_ANIMAL)
 		{
 			spl = SPELL_ARMOR;
 		}
@@ -3834,7 +4244,8 @@ bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 
 	if (!IS_FIGHTING(ch) || (number(0, 10) == 3))
 	{
-		if (IS_EVIL(target) && !IS_AFFECTED(target, AFF_PROTECT_GOOD) && npc_has_spell_slot(ch, SPELL_PROTECT_FROM_GOOD))
+		if (IS_EVIL(target) && !IS_AFFECTED(target, AFF_PROTECT_GOOD) &&
+		    npc_has_spell_slot(ch, SPELL_PROTECT_FROM_GOOD))
 		{
 			spl = SPELL_PROTECT_FROM_GOOD;
 		}
@@ -3846,7 +4257,7 @@ bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 	if (!spl && !helping && !IS_FIGHTING(ch))
 	{
 		P_char tch;
-		int    numb = 0, lucky, curr = 0;
+		int numb = 0, lucky, curr = 0;
 
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 			if ((ch != tch) && char_deserves_helping(ch, tch, TRUE))
@@ -3886,29 +4297,36 @@ bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 	/* apocalypse is a nice spell, it targets everyone..  no reason not to cast it
 	   if we got it */
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_APOCALYPSE) && number(0, 2) && target != ch && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	if (!spl && npc_has_spell_slot(ch, SPELL_APOCALYPSE) && number(0, 2) && target != ch &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
 		spl = SPELL_APOCALYPSE;
 	}
 	/* holy/unholy word are good enough against one person, don't need a
 	   group */
 
-	if (!spl && IS_EVIL(ch) && npc_has_spell_slot(ch, SPELL_UNHOLY_WORD) && room_has_good_enemy(ch) && target != ch && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) && number(0, 2))
+	if (!spl && IS_EVIL(ch) && npc_has_spell_slot(ch, SPELL_UNHOLY_WORD) &&
+	    room_has_good_enemy(ch) && target != ch && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE) &&
+	    number(0, 2))
 	{
 		spl = SPELL_UNHOLY_WORD;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_VORTEX_OF_FEAR) && !number(0, 4) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	if (!spl && npc_has_spell_slot(ch, SPELL_VORTEX_OF_FEAR) && !number(0, 4) &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
 		spl = SPELL_VORTEX_OF_FEAR;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_WITHER) && !affected_by_spell(target, SPELL_WITHER) && !number(0, 2) && target != ch && GET_C_POW(ch) > GET_C_POW(target))
+	if (!spl && npc_has_spell_slot(ch, SPELL_WITHER) &&
+	    !affected_by_spell(target, SPELL_WITHER) && !number(0, 2) && target != ch &&
+	    GET_C_POW(ch) > GET_C_POW(target))
 	{
 		spl = SPELL_WITHER;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_ENERGY_DRAIN) && !IS_UNDEAD(target) && !IS_PUNDEAD(target) && target != ch && number(0, 4))
+	if (!spl && npc_has_spell_slot(ch, SPELL_ENERGY_DRAIN) && !IS_UNDEAD(target) &&
+	    !IS_PUNDEAD(target) && target != ch && number(0, 4))
 	{
 		spl = SPELL_ENERGY_DRAIN;
 	}
@@ -3922,28 +4340,32 @@ bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 	{
 		switch (number(0, 2))
 		{
-			case 0:
-				if (npc_has_spell_slot(ch, SPELL_BLINDNESS) && !IS_AFFECTED(target, AFF_BLIND))
-					spl = SPELL_BLINDNESS;
+		case 0:
+			if (npc_has_spell_slot(ch, SPELL_BLINDNESS) &&
+			    !IS_AFFECTED(target, AFF_BLIND))
+				spl = SPELL_BLINDNESS;
 
-			case 1:
-				if (!spl && npc_has_spell_slot(ch, SPELL_CURSE) && !affected_by_spell(target, SPELL_CURSE))
-					spl = SPELL_CURSE;
+		case 1:
+			if (!spl && npc_has_spell_slot(ch, SPELL_CURSE) &&
+			    !affected_by_spell(target, SPELL_CURSE))
+				spl = SPELL_CURSE;
 
-			case 2:
-				if (!spl && npc_has_spell_slot(ch, SPELL_FEAR) && !fear_check(target))
-				{
-					spl = SPELL_FEAR;
-				}
+		case 2:
+			if (!spl && npc_has_spell_slot(ch, SPELL_FEAR) && !fear_check(target))
+			{
+				spl = SPELL_FEAR;
+			}
 		}
 	}
 
-	if (lvl < 26 && !spl && npc_has_spell_slot(ch, SPELL_DISPEL_GOOD) && !IS_GOOD(ch) && IS_GOOD(target) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 2))
+	if (lvl < 26 && !spl && npc_has_spell_slot(ch, SPELL_DISPEL_GOOD) && !IS_GOOD(ch) &&
+	    IS_GOOD(target) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 2))
 	{
 		spl = SPELL_DISPEL_GOOD; // this spell sucks balls, only cast it if you also suck balls - Jexni 11/25/08
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_HARM) && !IS_GLOBED(target) && !number(0, 2) && IS_UNDEAD(target))
+	if (!spl && npc_has_spell_slot(ch, SPELL_HARM) && !IS_GLOBED(target) && !number(0, 2) &&
+	    IS_UNDEAD(target))
 	{
 		spl = SPELL_HARM; //  Don't use crap spells as a pal/anti unless you can do _some_ damage - Jexni 11/25/08
 	}
@@ -3981,7 +4403,7 @@ bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 bool WillPsionicistSpell(P_char ch, P_char victim)
 {
 	P_char target = NULL;
-	int    dam = 0, lvl = 0, spl = 0;
+	int dam = 0, lvl = 0, spl = 0;
 
 	if (IS_PC_PET(ch) && GET_MASTER(ch)->in_room != ch->in_room)
 		return false;
@@ -3989,12 +4411,17 @@ bool WillPsionicistSpell(P_char ch, P_char victim)
 	lvl = GET_LEVEL(ch);
 
 	if (GET_HIT(ch) < (int)(GET_MAX_HIT(ch) / 10) && knows_spell(ch, SPELL_DEPART))
-		if (!IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) && !IS_HOMETOWN(ch->in_room) && world[ch->in_room].sector_type != SECT_OCEAN && IS_FIGHTING(ch))
+		if (!IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) && !IS_HOMETOWN(ch->in_room) &&
+		    world[ch->in_room].sector_type != SECT_OCEAN && IS_FIGHTING(ch))
 			spl = SPELL_DEPART;
 
 	if (!number(0, 4))
-		if (!spl && npc_has_spell_slot(ch, SPELL_ECTOPLASMIC_FORM) && !affected_by_spell(ch, SPELL_ECTOPLASMIC_FORM) && !IS_AFFECTED3(ch, AFF3_ECTOPLASMIC_FORM) && !IS_FIGHTING(ch) &&
-		    !IS_AFFECTED(ch, AFF_INVISIBLE) && !IS_AFFECTED2(ch, AFF2_CONCEALMENT) && !IS_ACT(ch, ACT_TEACHER) && !mob_index[GET_RNUM(ch)].qst_func && !CHAR_IN_TOWN(ch))
+		if (!spl && npc_has_spell_slot(ch, SPELL_ECTOPLASMIC_FORM) &&
+		    !affected_by_spell(ch, SPELL_ECTOPLASMIC_FORM) &&
+		    !IS_AFFECTED3(ch, AFF3_ECTOPLASMIC_FORM) && !IS_FIGHTING(ch) &&
+		    !IS_AFFECTED(ch, AFF_INVISIBLE) && !IS_AFFECTED2(ch, AFF2_CONCEALMENT) &&
+		    !IS_ACT(ch, ACT_TEACHER) && !mob_index[GET_RNUM(ch)].qst_func &&
+		    !CHAR_IN_TOWN(ch))
 			spl = SPELL_ECTOPLASMIC_FORM;
 
 	/* cannibalize is very important, especially in battle */
@@ -4006,63 +4433,85 @@ bool WillPsionicistSpell(P_char ch, P_char victim)
 	// !IS_FIGHTING(ch))
 	// spl = SPELL_CANNIBALIZE;
 
-	if (!spl && !IS_MELEE_CLASS(ch) && !affected_by_spell(ch, SPELL_INERTIAL_BARRIER) && !IS_AFFECTED3(ch, AFF3_INERTIAL_BARRIER) && knows_spell(ch, SPELL_INERTIAL_BARRIER))
+	if (!spl && !IS_MELEE_CLASS(ch) && !affected_by_spell(ch, SPELL_INERTIAL_BARRIER) &&
+	    !IS_AFFECTED3(ch, AFF3_INERTIAL_BARRIER) && knows_spell(ch, SPELL_INERTIAL_BARRIER))
 		spl = SPELL_INERTIAL_BARRIER;
 
 	if (!spl && !has_skin_spell(ch) && (!IS_FIGHTING(ch) || (number(0, 1))))
 		spl = pick_best_skin_spell(ch, ch);
 
-	if (!spl && !affected_by_spell(ch, SPELL_ENHANCE_ARMOR) && knows_spell(ch, SPELL_ENHANCE_ARMOR) && (!IS_FIGHTING(ch) || (number(0, 3) == 2)))
+	if (!spl && !affected_by_spell(ch, SPELL_ENHANCE_ARMOR) &&
+	    knows_spell(ch, SPELL_ENHANCE_ARMOR) && (!IS_FIGHTING(ch) || (number(0, 3) == 2)))
 		spl = SPELL_ENHANCE_ARMOR;
 
-	if (!spl && !affected_by_spell(ch, SPELL_ENERGY_CONTAINMENT) && knows_spell(ch, SPELL_ENERGY_CONTAINMENT))
+	if (!spl && !affected_by_spell(ch, SPELL_ENERGY_CONTAINMENT) &&
+	    knows_spell(ch, SPELL_ENERGY_CONTAINMENT))
 		spl = SPELL_ENERGY_CONTAINMENT;
 
-	if (!spl && !IS_AFFECTED(ch, AFF_ARMOR) && knows_spell(ch, SPELL_FLESH_ARMOR) && (!IS_FIGHTING(ch) || (number(0, 4) == 2)))
+	if (!spl && !IS_AFFECTED(ch, AFF_ARMOR) && knows_spell(ch, SPELL_FLESH_ARMOR) &&
+	    (!IS_FIGHTING(ch) || (number(0, 4) == 2)))
 		spl = SPELL_FLESH_ARMOR;
 
 	if (!IS_FIGHTING(ch) || (number(0, 3) == 2))
 	{
-		if (!spl && !affected_by_spell(ch, SPELL_ADRENALINE_CONTROL) && knows_spell(ch, SPELL_ADRENALINE_CONTROL))
+		if (!spl && !affected_by_spell(ch, SPELL_ADRENALINE_CONTROL) &&
+		    knows_spell(ch, SPELL_ADRENALINE_CONTROL))
 			spl = SPELL_ADRENALINE_CONTROL;
 
-		if (!spl && !affected_by_spell(ch, SPELL_COMBAT_MIND) && knows_spell(ch, SPELL_COMBAT_MIND))
+		if (!spl && !affected_by_spell(ch, SPELL_COMBAT_MIND) &&
+		    knows_spell(ch, SPELL_COMBAT_MIND))
 			spl = SPELL_COMBAT_MIND;
 
 		// this code should check level of psi since spell effects depend on level..
 
 		if (!spl &&
-		    (affected_by_spell(ch, SPELL_POISON) || (lvl > 2 && IS_AFFECTED2(ch, AFF2_POISONED)) || (lvl > 35 && affected_by_spell(ch, SPELL_RAY_OF_ENFEEBLEMENT)) ||
-		     (lvl > 36 && affected_by_spell(ch, SPELL_MALISON)) || (lvl > 41 && affected_by_spell(ch, SPELL_SLOW)) || (lvl > 9 && affected_by_spell(ch, SPELL_CURSE)) ||
-		     (lvl > 50 && affected_by_spell(ch, SPELL_WITHER)) || (lvl > 53 && affected_by_spell(ch, SPELL_DISEASE)) || (lvl > 29 && IS_AFFECTED(ch, AFF_BLIND))) &&
+		    (affected_by_spell(ch, SPELL_POISON) ||
+		     (lvl > 2 && IS_AFFECTED2(ch, AFF2_POISONED)) ||
+		     (lvl > 35 && affected_by_spell(ch, SPELL_RAY_OF_ENFEEBLEMENT)) ||
+		     (lvl > 36 && affected_by_spell(ch, SPELL_MALISON)) ||
+		     (lvl > 41 && affected_by_spell(ch, SPELL_SLOW)) ||
+		     (lvl > 9 && affected_by_spell(ch, SPELL_CURSE)) ||
+		     (lvl > 50 && affected_by_spell(ch, SPELL_WITHER)) ||
+		     (lvl > 53 && affected_by_spell(ch, SPELL_DISEASE)) ||
+		     (lvl > 29 && IS_AFFECTED(ch, AFF_BLIND))) &&
 		    knows_spell(ch, SPELL_CELL_ADJUSTMENT))
 			spl = SPELL_CELL_ADJUSTMENT;
 
-		if (!spl && !affected_by_spell(ch, SPELL_POWERCAST_FLY) && !IS_AFFECTED(ch, AFF_FLY) && knows_spell(ch, SPELL_POWERCAST_FLY))
+		if (!spl && !affected_by_spell(ch, SPELL_POWERCAST_FLY) &&
+		    !IS_AFFECTED(ch, AFF_FLY) && knows_spell(ch, SPELL_POWERCAST_FLY))
 			spl = SPELL_POWERCAST_FLY;
 
-		if (!spl && !affected_by_spell(ch, SPELL_ENHANCED_CON) && knows_spell(ch, SPELL_ENHANCED_CON))
+		if (!spl && !affected_by_spell(ch, SPELL_ENHANCED_CON) &&
+		    knows_spell(ch, SPELL_ENHANCED_CON))
 			spl = SPELL_ENHANCED_CON;
 
-		if (!spl && !affected_by_spell(ch, SPELL_ENHANCED_STR) && knows_spell(ch, SPELL_ENHANCED_STR))
+		if (!spl && !affected_by_spell(ch, SPELL_ENHANCED_STR) &&
+		    knows_spell(ch, SPELL_ENHANCED_STR))
 			spl = SPELL_ENHANCED_STR;
 
-		if (!spl && !affected_by_spell(ch, SPELL_ENHANCED_AGI) && knows_spell(ch, SPELL_ENHANCED_AGI))
+		if (!spl && !affected_by_spell(ch, SPELL_ENHANCED_AGI) &&
+		    knows_spell(ch, SPELL_ENHANCED_AGI))
 			spl = SPELL_ENHANCED_AGI;
 
-		if (!spl && !affected_by_spell(ch, SPELL_ENHANCED_DEX) && knows_spell(ch, SPELL_ENHANCED_DEX))
+		if (!spl && !affected_by_spell(ch, SPELL_ENHANCED_DEX) &&
+		    knows_spell(ch, SPELL_ENHANCED_DEX))
 			spl = SPELL_ENHANCED_DEX;
 
-		if (!spl && !affected_by_spell(ch, SPELL_MOLECULAR_CONTROL) && !IS_AFFECTED2(ch, AFF2_PASSDOOR) && knows_spell(ch, SPELL_MOLECULAR_CONTROL))
+		if (!spl && !affected_by_spell(ch, SPELL_MOLECULAR_CONTROL) &&
+		    !IS_AFFECTED2(ch, AFF2_PASSDOOR) && knows_spell(ch, SPELL_MOLECULAR_CONTROL))
 			spl = SPELL_MOLECULAR_CONTROL;
 
-		if (!spl && !affected_by_spell(ch, SPELL_INTELLECT_FORTRESS) && knows_spell(ch, SPELL_INTELLECT_FORTRESS))
+		if (!spl && !affected_by_spell(ch, SPELL_INTELLECT_FORTRESS) &&
+		    knows_spell(ch, SPELL_INTELLECT_FORTRESS))
 			spl = SPELL_INTELLECT_FORTRESS;
 
-		if (!spl && !affected_by_spell(ch, SPELL_AURA_SIGHT) && knows_spell(ch, SPELL_AURA_SIGHT))
+		if (!spl && !affected_by_spell(ch, SPELL_AURA_SIGHT) &&
+		    knows_spell(ch, SPELL_AURA_SIGHT))
 			spl = SPELL_AURA_SIGHT;
 
-		if (!spl && !affected_by_spell(ch, SPELL_TOWER_IRON_WILL) && !IS_AFFECTED3(ch, AFF3_TOWER_IRON_WILL) && knows_spell(ch, SPELL_TOWER_IRON_WILL))
+		if (!spl && !affected_by_spell(ch, SPELL_TOWER_IRON_WILL) &&
+		    !IS_AFFECTED3(ch, AFF3_TOWER_IRON_WILL) &&
+		    knows_spell(ch, SPELL_TOWER_IRON_WILL))
 			spl = SPELL_TOWER_IRON_WILL;
 	}
 	if (spl && ch)
@@ -4079,7 +4528,8 @@ bool WillPsionicistSpell(P_char ch, P_char victim)
 	if (!ch || !target)
 		return (FALSE);
 
-	if (GET_CLASS(ch, CLASS_MINDFLAYER) && !number(0, 2) && knows_spell(ch, SPELL_CONFUSE) && GET_C_POW(ch) > GET_C_POW(target))
+	if (GET_CLASS(ch, CLASS_MINDFLAYER) && !number(0, 2) && knows_spell(ch, SPELL_CONFUSE) &&
+	    GET_C_POW(ch) > GET_C_POW(target))
 		spl = SPELL_CONFUSE;
 
 	if (IS_BRAINLESS(target))
@@ -4132,25 +4582,25 @@ bool WillPsionicistSpell(P_char ch, P_char victim)
 	return (FALSE);
 }
 
-#define BREATH_FIRE       BIT_1
-#define BREATH_LIGHTNING  BIT_2
-#define BREATH_FROST      BIT_3
-#define BREATH_ACID       BIT_4
+#define BREATH_FIRE BIT_1
+#define BREATH_LIGHTNING BIT_2
+#define BREATH_FROST BIT_3
+#define BREATH_ACID BIT_4
 #define BREATH_GAS_POISON BIT_5
-#define BREATH_GAS_SLEEP  BIT_6
-#define BREATH_GAS_FEAR   BIT_7
-#define BREATH_GAS_PARA   BIT_8
-#define BREATH_SHADOW     BIT_9
-#define BREATH_GAS_BLIND  BIT_10
-#define BREATH_CRIMSON    BIT_11
-#define BREATH_AZURE      BIT_12
-#define BREATH_JASPER     BIT_13
-#define BREATH_BASALT     BIT_14
-#define NUM_BREATHS       14
+#define BREATH_GAS_SLEEP BIT_6
+#define BREATH_GAS_FEAR BIT_7
+#define BREATH_GAS_PARA BIT_8
+#define BREATH_SHADOW BIT_9
+#define BREATH_GAS_BLIND BIT_10
+#define BREATH_CRIMSON BIT_11
+#define BREATH_AZURE BIT_12
+#define BREATH_JASPER BIT_13
+#define BREATH_BASALT BIT_14
+#define NUM_BREATHS 14
 void BreathWeapon(P_char ch, int dir)
 {
-	int    breath_possibilities, breath_type, attempts, room, orig_room, i, distance;
-	char   buf[MAX_STRING_LENGTH], waited = FALSE;
+	int breath_possibilities, breath_type, attempts, room, orig_room, i, distance;
+	char buf[MAX_STRING_LENGTH], waited = FALSE;
 	P_char tchar1 = NULL, tchar2 = NULL;
 	void (*funct)(int, P_char, char *, int, P_char, P_obj);
 	P_char victim;
@@ -4164,7 +4614,7 @@ void BreathWeapon(P_char ch, int dir)
 	dir = -1;
 
 	orig_room = ch->in_room;
-	distance  = BOUNDED(2, GET_LEVEL(ch) / 10, 6);
+	distance = BOUNDED(2, GET_LEVEL(ch) / 10, 6);
 
 	// Figure out what breath types are possible.
 	breath_possibilities = 0;
@@ -4247,7 +4697,8 @@ void BreathWeapon(P_char ch, int dir)
 	// If we failed to find any possibilities for breath type, pick one of the first 5.
 	if (breath_possibilities == 0)
 	{
-		breath_possibilities = BREATH_FIRE + BREATH_LIGHTNING + BREATH_FROST + BREATH_ACID + BREATH_GAS_POISON;
+		breath_possibilities = BREATH_FIRE + BREATH_LIGHTNING + BREATH_FROST + BREATH_ACID +
+				       BREATH_GAS_POISON;
 	}
 
 	// Find a random breath type that is a possibility.
@@ -4263,117 +4714,159 @@ void BreathWeapon(P_char ch, int dir)
 
 	switch (breath_type)
 	{
-		// Default to fire breath, just in case.
-		default:
-		case BREATH_FIRE:
-			act("$n breathes &+Rfire&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You breathe &+Rfire&n!", 0, ch, 0, 0, TO_CHAR);
+	// Default to fire breath, just in case.
+	default:
+	case BREATH_FIRE:
+		act("$n breathes &+Rfire&n!", 1, ch, 0, 0, TO_ROOM);
+		act("You breathe &+Rfire&n!", 0, ch, 0, 0, TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A blast of &+Rfire&n shoots in from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_fire;
+		break;
+	case BREATH_LIGHTNING:
+		act("$n breathes &=LBlightning&n!", 1, ch, 0, 0, TO_ROOM);
+		act("You breathe &=LBlightning&n!", 0, ch, 0, 0, TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A bolt of &=LBlightning&n crackles from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_lightning;
+		break;
+	case BREATH_FROST:
+		act("$n breathes &+Wfrost&n!", 1, ch, 0, 0, TO_ROOM);
+		act("You breathe &+Wfrost&n!", 0, ch, 0, 0, TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A sudden &+Wfreezing gale&n blasts from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_frost;
+		break;
+	case BREATH_ACID:
+		act("$n breathes &+Lacid&n!", 1, ch, 0, 0, TO_ROOM);
+		act("You breathe &+Lacid&n!", 0, ch, 0, 0, TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A &+Lfrothing liquid&n streams in from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_acid;
+		break;
+	case BREATH_GAS_POISON:
+		act("$n breathes &+gpoison gas&n!", 1, ch, 0, 0, TO_ROOM);
+		act("You breathe &+gpoison gas&n!", 0, ch, 0, 0, TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A cloud of &+ggas&n billows in from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_poison;
+		break;
+	case BREATH_GAS_SLEEP:
+		act("$n breathes &+wgas&n!", 1, ch, 0, 0, TO_ROOM);
+		act("You breathe &+wgas&n!", 0, ch, 0, 0, TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A cloud of &+wgas&n billows in from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_sleep;
+		break;
+	case BREATH_GAS_FEAR:
+		act("$n breathes &+rgas&n!", 1, ch, 0, 0, TO_ROOM);
+		act("You breathe &+rgas&n!", 0, ch, 0, 0, TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A cloud of &+rgas&n billows in from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_fear;
+		break;
+	case BREATH_GAS_PARA:
+		act("$n breathes &+Mgas&n!", 1, ch, 0, 0, TO_ROOM);
+		act("You breathe &+Mgas&n!", 0, ch, 0, 0, TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A cloud of &+Mgas&n billows in from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_paralysis;
+		break;
+	case BREATH_SHADOW:
+		if (number(1, 10) < 7)
+		{
+			act("&+LA billowing cloud of darkness erupts from $n&+L's mouth!&n", 1, ch,
+			    0, 0, TO_ROOM);
+			act("&+LA billowing cloud of darkness erupts from your mouth!&n", 0, ch, 0,
+			    0, TO_CHAR);
 			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A blast of &+Rfire&n shoots in from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_fire;
-			break;
-		case BREATH_LIGHTNING:
-			act("$n breathes &=LBlightning&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You breathe &=LBlightning&n!", 0, ch, 0, 0, TO_CHAR);
+				snprintf(
+					buf, MAX_STRING_LENGTH,
+					"A billowing &+Lcloud of darkness&n flows in from the %s!\r\n",
+					dirs[(int)rev_dir[dir] - 1]);
+			funct = breath_weapon_shadow_1;
+		}
+		else
+		{
+			act("&+LA black beam shoots out of $n&+L's mouth!&n", 1, ch, 0, 0, TO_ROOM);
+			act("&+LA black beam shoots out of your mouth!&n", 0, ch, 0, 0, TO_CHAR);
 			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A bolt of &=LBlightning&n crackles from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_lightning;
-			break;
-		case BREATH_FROST:
-			act("$n breathes &+Wfrost&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You breathe &+Wfrost&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A sudden &+Wfreezing gale&n blasts from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_frost;
-			break;
-		case BREATH_ACID:
-			act("$n breathes &+Lacid&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You breathe &+Lacid&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A &+Lfrothing liquid&n streams in from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_acid;
-			break;
-		case BREATH_GAS_POISON:
-			act("$n breathes &+gpoison gas&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You breathe &+gpoison gas&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A cloud of &+ggas&n billows in from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_poison;
-			break;
-		case BREATH_GAS_SLEEP:
-			act("$n breathes &+wgas&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You breathe &+wgas&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A cloud of &+wgas&n billows in from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_sleep;
-			break;
-		case BREATH_GAS_FEAR:
-			act("$n breathes &+rgas&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You breathe &+rgas&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A cloud of &+rgas&n billows in from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_fear;
-			break;
-		case BREATH_GAS_PARA:
-			act("$n breathes &+Mgas&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You breathe &+Mgas&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A cloud of &+Mgas&n billows in from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_paralysis;
-			break;
-		case BREATH_SHADOW:
-			if (number(1, 10) < 7)
-			{
-				act("&+LA billowing cloud of darkness erupts from $n&+L's mouth!&n", 1, ch, 0, 0, TO_ROOM);
-				act("&+LA billowing cloud of darkness erupts from your mouth!&n", 0, ch, 0, 0, TO_CHAR);
-				if (dir != -1)
-					snprintf(buf, MAX_STRING_LENGTH, "A billowing &+Lcloud of darkness&n flows in from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-				funct = breath_weapon_shadow_1;
-			}
-			else
-			{
-				act("&+LA black beam shoots out of $n&+L's mouth!&n", 1, ch, 0, 0, TO_ROOM);
-				act("&+LA black beam shoots out of your mouth!&n", 0, ch, 0, 0, TO_CHAR);
-				if (dir != -1)
-					snprintf(buf, MAX_STRING_LENGTH, "A billowing &+Lcloud of darkness&n flows in from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-				funct = breath_weapon_shadow_2;
-			}
-			break;
-		case BREATH_GAS_BLIND:
-			act("$n breathes &+Lgas&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You breathe &+Lgas&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A blast of &+ggas&n shoots in from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_blind;
-			break;
-		case BREATH_CRIMSON:
-			act("$n spreads $s wings and emits a &+Rshimmering &+rlight&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You spread your wings and emit a &+Rshimmering &+rlight&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A &+Rshimmering&n light blasts through from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_crimson;
-			break;
-		case BREATH_JASPER:
-			act("$n spreads $s wings and emits a &+Bshimmering &+blight&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You spread your wings and emit a &+Bshimmering &+blight&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A &+Gshimmering&n light blasts through from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_jasper;
-			break;
-		case BREATH_AZURE:
-			act("$n spreads $s wings and emits a &+Gshimmering &+glight&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You spread your wings and emit a &+Gshimmering &+glight&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A &+Bshimmering&n light blasts through from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_azure;
-			break;
-		case BREATH_BASALT:
-			act("$n spreads $s wings and emits a &+Lshimmering &+wlight&n!", 1, ch, 0, 0, TO_ROOM);
-			act("You spread your wings and emit a &+Lshimmering &+wlight&n!", 0, ch, 0, 0, TO_CHAR);
-			if (dir != -1)
-				snprintf(buf, MAX_STRING_LENGTH, "A &+Lshimmering&n light blasts through from the %s!\r\n", dirs[(int)rev_dir[dir] - 1]);
-			funct = breath_weapon_basalt;
-			break;
+				snprintf(
+					buf, MAX_STRING_LENGTH,
+					"A billowing &+Lcloud of darkness&n flows in from the %s!\r\n",
+					dirs[(int)rev_dir[dir] - 1]);
+			funct = breath_weapon_shadow_2;
+		}
+		break;
+	case BREATH_GAS_BLIND:
+		act("$n breathes &+Lgas&n!", 1, ch, 0, 0, TO_ROOM);
+		act("You breathe &+Lgas&n!", 0, ch, 0, 0, TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A blast of &+ggas&n shoots in from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_blind;
+		break;
+	case BREATH_CRIMSON:
+		act("$n spreads $s wings and emits a &+Rshimmering &+rlight&n!", 1, ch, 0, 0,
+		    TO_ROOM);
+		act("You spread your wings and emit a &+Rshimmering &+rlight&n!", 0, ch, 0, 0,
+		    TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A &+Rshimmering&n light blasts through from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_crimson;
+		break;
+	case BREATH_JASPER:
+		act("$n spreads $s wings and emits a &+Bshimmering &+blight&n!", 1, ch, 0, 0,
+		    TO_ROOM);
+		act("You spread your wings and emit a &+Bshimmering &+blight&n!", 0, ch, 0, 0,
+		    TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A &+Gshimmering&n light blasts through from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_jasper;
+		break;
+	case BREATH_AZURE:
+		act("$n spreads $s wings and emits a &+Gshimmering &+glight&n!", 1, ch, 0, 0,
+		    TO_ROOM);
+		act("You spread your wings and emit a &+Gshimmering &+glight&n!", 0, ch, 0, 0,
+		    TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A &+Bshimmering&n light blasts through from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_azure;
+		break;
+	case BREATH_BASALT:
+		act("$n spreads $s wings and emits a &+Lshimmering &+wlight&n!", 1, ch, 0, 0,
+		    TO_ROOM);
+		act("You spread your wings and emit a &+Lshimmering &+wlight&n!", 0, ch, 0, 0,
+		    TO_CHAR);
+		if (dir != -1)
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "A &+Lshimmering&n light blasts through from the %s!\r\n",
+				 dirs[(int)rev_dir[dir] - 1]);
+		funct = breath_weapon_basalt;
+		break;
 	}
 
 	if (dir == -1)
@@ -4388,7 +4881,9 @@ void BreathWeapon(P_char ch, int dir)
 		}
 
 		/* cast_as_damage_area(ch, funct, GET_LEVEL(ch), victim,*/
-		cast_as_damage_area(ch, funct, GET_LEVEL(ch), victim, get_property("dragon.Breath.area.minChance", 60), get_property("dragon.Breath.area.chanceStep", 20));
+		cast_as_damage_area(ch, funct, GET_LEVEL(ch), victim,
+				    get_property("dragon.Breath.area.minChance", 60),
+				    get_property("dragon.Breath.area.chanceStep", 20));
 
 		if (GET_MASTER(ch))
 			CharWait(ch, PULSE_VIOLENCE * 4);
@@ -4403,7 +4898,8 @@ void BreathWeapon(P_char ch, int dir)
 			room = world[ch->in_room].dir_option[dir]->to_room;
 		else
 		{
-			send_to_char("Umm. I don't believe there is anything that direction.\r\n", ch);
+			send_to_char("Umm. I don't believe there is anything that direction.\r\n",
+				     ch);
 			return;
 		}
 
@@ -4412,7 +4908,9 @@ void BreathWeapon(P_char ch, int dir)
 			if (room != ch->in_room)
 				send_to_room(buf, room);
 
-			cast_as_damage_area(ch, funct, GET_LEVEL(ch), NULL, get_property("dragon.Breath.area.minChance", 60), get_property("dragon.Breath.area.chanceStep", 20));
+			cast_as_damage_area(ch, funct, GET_LEVEL(ch), NULL,
+					    get_property("dragon.Breath.area.minChance", 60),
+					    get_property("dragon.Breath.area.chanceStep", 20));
 
 			if (VIRTUAL_CAN_GO(room, dir))
 				room = world[room].dir_option[dir]->to_room;
@@ -4466,7 +4964,8 @@ void StompAttack(P_char ch)
 				continue;
 			}
 		}
-		else if (!IS_PC(tch) && (!tch->following || IS_NPC(tch->following)) && (GET_OPPONENT(ch) != tch) && (GET_OPPONENT(tch) != ch))
+		else if (!IS_PC(tch) && (!tch->following || IS_NPC(tch->following)) &&
+			 (GET_OPPONENT(ch) != tch) && (GET_OPPONENT(tch) != ch))
 		{
 			continue;
 		}
@@ -4476,7 +4975,9 @@ void StompAttack(P_char ch)
 			continue;
 		}
 
-		if (IS_OP_GOLEM(tch) || IS_GH_GOLEM(tch) || IS_NEXUS_GUARDIAN(tch) || IS_ELITE(tch) || IS_IMMATERIAL(tch) || IS_GREATER_RACE(tch) || GET_POS(tch) != POS_STANDING)
+		if (IS_OP_GOLEM(tch) || IS_GH_GOLEM(tch) || IS_NEXUS_GUARDIAN(tch) ||
+		    IS_ELITE(tch) || IS_IMMATERIAL(tch) || IS_GREATER_RACE(tch) ||
+		    GET_POS(tch) != POS_STANDING)
 		{
 			continue;
 		}
@@ -4486,14 +4987,17 @@ void StompAttack(P_char ch)
 			continue;
 		}
 
-		if (((IS_FIGHTING(tch) && (GET_OPPONENT(tch) == ch)) || !IS_FIGHTING(tch)) && !IS_DRAGON(tch) && !IS_TITAN(tch) && !IS_AVATAR(tch))
+		if (((IS_FIGHTING(tch) && (GET_OPPONENT(tch) == ch)) || !IS_FIGHTING(tch)) &&
+		    !IS_DRAGON(tch) && !IS_TITAN(tch) && !IS_AVATAR(tch))
 		{
 			if (!StatSave(tch, APPLY_AGI, (int)(-1 * GET_LEVEL(ch) / 10)))
 			{
 				SET_POS(tch, POS_SITTING + GET_STAT(tch));
 				CharWait(tch, PULSE_VIOLENCE * 2);
-				act("&+yThe powerful stomp sends out a shockwave knocking you to the &+Lground!&n", FALSE, tch, 0, 0, TO_CHAR);
-				act("&+yThe shockwave sends $n &+ycrashing to the &+Lground!&n", FALSE, tch, 0, 0, TO_ROOM);
+				act("&+yThe powerful stomp sends out a shockwave knocking you to the &+Lground!&n",
+				    FALSE, tch, 0, 0, TO_CHAR);
+				act("&+yThe shockwave sends $n &+ycrashing to the &+Lground!&n",
+				    FALSE, tch, 0, 0, TO_ROOM);
 
 				damage(ch, tch, dice(4, (GET_LEVEL(ch) / 2)), TYPE_UNDEFINED);
 			}
@@ -4518,7 +5022,7 @@ void StompAttack(P_char ch)
 void SweepAttack(P_char ch)
 {
 	P_char tch, tch_next, chMaster;
-	int    chance;
+	int chance;
 
 	if (!SanityCheck(ch, "SweepAttack"))
 	{
@@ -4553,13 +5057,16 @@ void SweepAttack(P_char ch)
 		}
 
 		// If not a PC pet, and NPC, and tch is not a PC pet, and they're not fighting eachother, skip.
-		if (!chMaster && IS_NPC(tch) && (!tch->following || IS_NPC(tch->following)) && (GET_OPPONENT(ch) != tch) && (GET_OPPONENT(tch) != ch))
+		if (!chMaster && IS_NPC(tch) && (!tch->following || IS_NPC(tch->following)) &&
+		    (GET_OPPONENT(ch) != tch) && (GET_OPPONENT(tch) != ch))
 		{
 			continue;
 		}
 
 		// If they're not sweepable, skip.
-		if (IS_OP_GOLEM(tch) || IS_GH_GOLEM(tch) || IS_NEXUS_GUARDIAN(tch) || IS_ELITE(tch) || IS_IMMATERIAL(tch) || IS_GREATER_RACE(tch) || GET_POS(tch) != POS_STANDING)
+		if (IS_OP_GOLEM(tch) || IS_GH_GOLEM(tch) || IS_NEXUS_GUARDIAN(tch) ||
+		    IS_ELITE(tch) || IS_IMMATERIAL(tch) || IS_GREATER_RACE(tch) ||
+		    GET_POS(tch) != POS_STANDING)
 		{
 			continue;
 		}
@@ -4571,13 +5078,15 @@ void SweepAttack(P_char ch)
 		}
 
 		// If target is fighting sweeper or not fighting.  And target not a dragon.
-		if (((IS_FIGHTING(tch) && (GET_OPPONENT(tch) == ch)) || !IS_FIGHTING(tch)) && !IS_DRAGON(tch))
+		if (((IS_FIGHTING(tch) && (GET_OPPONENT(tch) == ch)) || !IS_FIGHTING(tch)) &&
+		    !IS_DRAGON(tch))
 		{
 			if (!StatSave(tch, APPLY_AGI, chance))
 			{
 				SET_POS(tch, POS_SITTING + GET_STAT(tch));
 				CharWait(tch, PULSE_VIOLENCE * 2);
-				act("&+yThe powerful sweep sends you crashing to the &+Lground!&n", FALSE, tch, 0, 0, TO_CHAR);
+				act("&+yThe powerful sweep sends you crashing to the &+Lground!&n",
+				    FALSE, tch, 0, 0, TO_CHAR);
 				act("$n &+ycrashes to the &+Lground!&n", FALSE, tch, 0, 0, TO_ROOM);
 
 				damage(ch, tch, dice(4, MAX(1, GET_LEVEL(ch) / 4)), TYPE_UNDEFINED);
@@ -4603,11 +5112,11 @@ void SweepAttack(P_char ch)
 bool MobAlchemist(P_char ch)
 {
 	P_char tch, next_ch;
-	P_obj  t_obj;
-	char   Gbuf2[MAX_STRING_LENGTH];
-	int    level, i = 0;
-	int    type, number_potions, potions = 0;
-	int    n_atkr;
+	P_obj t_obj;
+	char Gbuf2[MAX_STRING_LENGTH];
+	int level, i = 0;
+	int type, number_potions, potions = 0;
+	int n_atkr;
 
 	level = GET_LEVEL(ch);
 
@@ -4623,141 +5132,150 @@ bool MobAlchemist(P_char ch)
 	{
 		switch (((level - 1) / 5) + 1)
 		{
-			case 1:
+		case 1:
 
-				break;
-			case 2:
-				number_potions = level - potions;
+			break;
+		case 2:
+			number_potions = level - potions;
 
-				for (i = 0; i < number_potions; i++)
+			for (i = 0; i < number_potions; i++)
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
+
+			break;
+		case 3:
+			number_potions = level - 2 - potions;
+
+			for (i = 0; i < number_potions; i++)
+				if (number(0, 4))
 					MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
+				else
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC),
+							       1);
 
-				break;
-			case 3:
-				number_potions = level - 2 - potions;
+			break;
 
-				for (i = 0; i < number_potions; i++)
-					if (number(0, 4))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
-					else
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
+		case 4:
+			number_potions = level - 4 - potions;
 
-				break;
+			for (i = 0; i < number_potions; i++)
+				if (number(0, 5))
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
+				else if (number(0, 1))
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC),
+							       1);
+				else
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
 
-			case 4:
-				number_potions = level - 4 - potions;
+			break;
 
-				for (i = 0; i < number_potions; i++)
-					if (number(0, 5))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
-					else if (number(0, 1))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
-					else
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
+		case 5:
+			number_potions = 11 + number(0, 9) - potions;
 
-				break;
+			for (i = 0; i < number_potions; i++)
+				if (number(0, 4))
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
+				else if (number(0, 1))
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC),
+							       1);
+				else if (number(0, 1))
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
+				else
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
+			break;
+		case 6:
+			number_potions = 12 + number(0, 9) - potions;
 
-			case 5:
-				number_potions = 11 + number(0, 9) - potions;
-
-				for (i = 0; i < number_potions; i++)
-					if (number(0, 4))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
-					else if (number(0, 1))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
-					else if (number(0, 1))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
-					else
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
-				break;
-			case 6:
-				number_potions = 12 + number(0, 9) - potions;
-
-				for (i = 0; i < number_potions; i++)
-					if (number(0, 3))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
-					else if (number(0, 1))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
-					else if (number(0, 1))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
-					else if (number(0, 1))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
-					else
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
-
-				break;
-			case 7:
-				number_potions = 13 + number(0, 9) - potions;
-
-				for (i = 0; i < number_potions; i++)
-					if (number(0, 3))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_NAPALM), 1);
-				if (number(0, 1))
+			for (i = 0; i < number_potions; i++)
+				if (number(0, 3))
 					MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
 				else if (number(0, 1))
 					MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
 				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC),
+							       1);
 				else if (number(0, 1))
 					MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
 				else
 					MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
 
-				break;
-			case 8:
-				number_potions = 14 + number(0, 9) - potions;
+			break;
+		case 7:
+			number_potions = 13 + number(0, 9) - potions;
 
-				for (i = 0; i < number_potions; i++)
-					if (number(0, 4))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_GLASS_BOMB), 1);
-					else if (number(0, 1))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
-				if (number(0, 1))
+			for (i = 0; i < number_potions; i++)
+				if (number(0, 3))
 					MobAlchemistGetPotions(ch, spl2potion(SPELL_NAPALM), 1);
+			if (number(0, 1))
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_NITROGEN), 1);
+			else if (number(0, 1))
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
+			else if (number(0, 1))
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
+			else if (number(0, 1))
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_WITHER), 1);
+			else
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
+
+			break;
+		case 8:
+			number_potions = 14 + number(0, 9) - potions;
+
+			for (i = 0; i < number_potions; i++)
+				if (number(0, 4))
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_GLASS_BOMB), 1);
 				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
-				else
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
+			if (number(0, 1))
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_NAPALM), 1);
+			else if (number(0, 1))
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
+			else
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
 
-				break;
-			case 9:
-			case 10:
-				number_potions = 15 + number(0, 9) - potions;
+			break;
+		case 9:
+		case 10:
+			number_potions = 15 + number(0, 9) - potions;
 
-				for (i = 0; i < number_potions; i++)
-					if (number(0, 5))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_STRONG_ACID), 1);
-					else if (number(0, 1))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
+			for (i = 0; i < number_potions; i++)
+				if (number(0, 5))
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_STRONG_ACID),
+							       1);
+				else if (number(0, 1))
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_GREASE), 1);
+			if (number(0, 1))
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_GLASS_BOMB), 1);
+			else if (number(0, 1))
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
+			else
+				MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
+			break;
+		case 11:
+		case 12:
+		case 13:
+			number_potions = 17 + number(0, 9) - potions;
+
+			for (i = 0; i < number_potions; i++)
+			{
+				if (number(0, 3))
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_STRONG_ACID),
+							       1);
+				else if (number(0, 2))
+					MobAlchemistGetPotions(
+						ch, spl2potion(SPELL_GREATER_LIVING_STONE), 1);
 				if (number(0, 1))
 					MobAlchemistGetPotions(ch, spl2potion(SPELL_GLASS_BOMB), 1);
 				else if (number(0, 1))
-					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
+					MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC),
+							       1);
 				else
 					MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
-				break;
-			case 11:
-			case 12:
-			case 13:
-				number_potions = 17 + number(0, 9) - potions;
+			}
 
-				for (i = 0; i < number_potions; i++)
-				{
-					if (number(0, 3))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_STRONG_ACID), 1);
-					else if (number(0, 2))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_GREATER_LIVING_STONE), 1);
-					if (number(0, 1))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_GLASS_BOMB), 1);
-					else if (number(0, 1))
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_DISPEL_MAGIC), 1);
-					else
-						MobAlchemistGetPotions(ch, spl2potion(SPELL_SLOW), 1);
-				}
-
-				break;
-			default:
-				wizlog(57, "mob %s failed to make any potions in [%d]", GET_NAME(ch), ch->in_room);
+			break;
+		default:
+			wizlog(57, "mob %s failed to make any potions in [%d]", GET_NAME(ch),
+			       ch->in_room);
 		}
 		if (i > 0)
 		{
@@ -4788,7 +5306,7 @@ bool MobMonk(P_char ch)
 {
 	P_char victim = NULL;
 	P_char tch;
-	int    n_atkr = 0;
+	int n_atkr = 0;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -4797,25 +5315,33 @@ bool MobMonk(P_char ch)
 
 	if (CAN_SPEAK(ch))
 	{
-		if (GET_LEVEL(ch) >= 21 && (affected_by_spell(ch, SPELL_CURSE) || affected_by_spell(ch, SPELL_WITHER) || affected_by_spell(ch, SPELL_POISON) || IS_AFFECTED2(ch, AFF2_POISONED) ||
-		                            affected_by_spell(ch, SPELL_BLINDNESS) || IS_AFFECTED(ch, AFF_BLIND) || affected_by_spell(ch, SPELL_DISEASE)))
+		if (GET_LEVEL(ch) >= 21 &&
+		    (affected_by_spell(ch, SPELL_CURSE) || affected_by_spell(ch, SPELL_WITHER) ||
+		     affected_by_spell(ch, SPELL_POISON) || IS_AFFECTED2(ch, AFF2_POISONED) ||
+		     affected_by_spell(ch, SPELL_BLINDNESS) || IS_AFFECTED(ch, AFF_BLIND) ||
+		     affected_by_spell(ch, SPELL_DISEASE)))
 		{
 			do_chant(ch, " cell adjustment", 0);
 			return TRUE;
 		}
-		else if (GET_CHAR_SKILL(ch, SKILL_REGENERATE) && GET_HIT(ch) < GET_MAX_HIT(ch) && !number(0, 1) && !affected_by_skill(ch, SKILL_REGENERATE) && !affected_by_spell(ch, SPELL_REGENERATION) &&
-		         !affected_by_spell(ch, SPELL_ACCEL_HEALING))
+		else if (GET_CHAR_SKILL(ch, SKILL_REGENERATE) && GET_HIT(ch) < GET_MAX_HIT(ch) &&
+			 !number(0, 1) && !affected_by_skill(ch, SKILL_REGENERATE) &&
+			 !affected_by_spell(ch, SPELL_REGENERATION) &&
+			 !affected_by_spell(ch, SPELL_ACCEL_HEALING))
 		{
 			do_chant(ch, " regen", 0);
 			return TRUE;
 		}
-		else if (!number(0, 3) && GET_CHAR_SKILL(ch, SKILL_HEROISM) && !affected_by_skill(ch, SKILL_HEROISM) && !affected_by_spell(ch, SONG_HEROISM))
+		else if (!number(0, 3) && GET_CHAR_SKILL(ch, SKILL_HEROISM) &&
+			 !affected_by_skill(ch, SKILL_HEROISM) &&
+			 !affected_by_spell(ch, SONG_HEROISM))
 		{
 			do_chant(ch, " heroism", 0);
 			return TRUE;
 		}
 	}
-	if (IS_FIGHTING(ch) && !number(0, 6) && ((number(1, 100) < (GET_LEVEL(ch) * 3))) && ((n_atkr > 1) || has_help(GET_OPPONENT(ch))))
+	if (IS_FIGHTING(ch) && !number(0, 6) && ((number(1, 100) < (GET_LEVEL(ch) * 3))) &&
+	    ((n_atkr > 1) || has_help(GET_OPPONENT(ch))))
 	{
 		if (GET_SPEC(ch, CLASS_MONK, SPEC_WAYOFSNAKE))
 		{
@@ -4827,11 +5353,13 @@ bool MobMonk(P_char ch)
 		}
 
 		P_char juiciest = NULL;
-		int    tenderness, t_tend;
+		int tenderness, t_tend;
 
 		LOOP_THRU_PEOPLE(tch, ch)
 		{
-			if (IS_FIGHTING(tch) && ((GET_OPPONENT(tch) == ch) || are_together(tch, GET_OPPONENT(ch))) && CAN_SEE(ch, tch))
+			if (IS_FIGHTING(tch) &&
+			    ((GET_OPPONENT(tch) == ch) || are_together(tch, GET_OPPONENT(ch))) &&
+			    CAN_SEE(ch, tch))
 			{
 				t_tend = GET_HIT(tch);
 
@@ -4847,7 +5375,7 @@ bool MobMonk(P_char ch)
 				}
 				if (!juiciest || (t_tend < tenderness))
 				{
-					juiciest   = tch;
+					juiciest = tch;
 					tenderness = t_tend;
 				}
 			}
@@ -4861,7 +5389,8 @@ bool MobMonk(P_char ch)
 
 	if (IS_FIGHTING(ch) && (victim = GET_OPPONENT(ch)))
 	{
-		if (GET_SPEC(ch, CLASS_MONK, SPEC_WAYOFSNAKE) || (IS_ELITE(ch) && GET_CLASS(ch, CLASS_MONK)))
+		if (GET_SPEC(ch, CLASS_MONK, SPEC_WAYOFSNAKE) ||
+		    (IS_ELITE(ch) && GET_CLASS(ch, CLASS_MONK)))
 		{
 			if (!number(0, 1) && !affected_by_skill(ch, SKILL_JIN_TOUCH))
 			{
@@ -4876,62 +5405,63 @@ bool MobMonk(P_char ch)
 
 		switch (number(1, 12))
 		{
-			case 1:
-				if (!affected_by_skill(ch, SKILL_COMBINATION))
-				{
-					do_combination(ch, 0, 0);
-					return TRUE;
-				}
-
-			case 2:
-			case 3:
-				if (chance_roundkick(ch, victim) > number(30, 50))
-				{
-					roundkick(ch, victim);
-					return TRUE;
-				}
-
-			case 4:
-				do_dragon_punch(ch, buf, 0);
+		case 1:
+			if (!affected_by_skill(ch, SKILL_COMBINATION))
+			{
+				do_combination(ch, 0, 0);
 				return TRUE;
+			}
 
-			case 5:
-				if (chance_kick(ch, victim) > number(30, 50))
-				{
-					kick(ch, victim);
-					return TRUE;
-				}
+		case 2:
+		case 3:
+			if (chance_roundkick(ch, victim) > number(30, 50))
+			{
+				roundkick(ch, victim);
+				return TRUE;
+			}
 
-			case 6:
-				if (GET_SPEC(ch, CLASS_MONK, SPEC_WAYOFDRAGON) && !affected_by_skill(ch, SKILL_FIST_OF_DRAGON))
-				{
-					strcpy(buf, " fist of dragon");
-					break;
-				}
+		case 4:
+			do_dragon_punch(ch, buf, 0);
+			return TRUE;
 
-			case 7:
-				if (NumAttackers(ch) > 1 && !affected_by_skill(ch, SKILL_BUDDHA_PALM))
-				{
-					strcpy(buf, " buddha palm");
-					break;
-				}
+		case 5:
+			if (chance_kick(ch, victim) > number(30, 50))
+			{
+				kick(ch, victim);
+				return TRUE;
+			}
 
-			case 8:
-				if (!affected_by_spell(ch, SKILL_QUIVERING_PALM))
-				{
-					strcpy(buf, " quivering palm");
-					break;
-				}
-
-			case 9:
-				if (isSpringable(ch, GET_OPPONENT(ch)))
-				{
-					do_kneel(ch, 0, CMD_KNEEL);
-					do_springleap(ch, buf, 0);
-					return TRUE;
-				}
-			default:
+		case 6:
+			if (GET_SPEC(ch, CLASS_MONK, SPEC_WAYOFDRAGON) &&
+			    !affected_by_skill(ch, SKILL_FIST_OF_DRAGON))
+			{
+				strcpy(buf, " fist of dragon");
 				break;
+			}
+
+		case 7:
+			if (NumAttackers(ch) > 1 && !affected_by_skill(ch, SKILL_BUDDHA_PALM))
+			{
+				strcpy(buf, " buddha palm");
+				break;
+			}
+
+		case 8:
+			if (!affected_by_spell(ch, SKILL_QUIVERING_PALM))
+			{
+				strcpy(buf, " quivering palm");
+				break;
+			}
+
+		case 9:
+			if (isSpringable(ch, GET_OPPONENT(ch)))
+			{
+				do_kneel(ch, 0, CMD_KNEEL);
+				do_springleap(ch, buf, 0);
+				return TRUE;
+			}
+		default:
+			break;
 		}
 
 		if (*buf)
@@ -4956,8 +5486,9 @@ bool GOOD_FOR_GAZING(P_char ch, P_char victim)
 		return FALSE;
 	}
 
-	if (isBashable(ch, victim, TRUE) && !has_innate(victim, INNATE_EYELESS) && !IS_AFFECTED(victim, AFF_BLIND) && GET_POS(ch) == POS_STANDING && !affected_by_spell(ch, SKILL_BASH) &&
-	    !affected_by_spell(victim, SKILL_GAZE))
+	if (isBashable(ch, victim, TRUE) && !has_innate(victim, INNATE_EYELESS) &&
+	    !IS_AFFECTED(victim, AFF_BLIND) && GET_POS(ch) == POS_STANDING &&
+	    !affected_by_spell(ch, SKILL_BASH) && !affected_by_spell(victim, SKILL_GAZE))
 	{
 		if (get_takedown_size(victim) > get_takedown_size(ch) + 1)
 		{
@@ -4977,9 +5508,10 @@ bool GOOD_FOR_GAZING(P_char ch, P_char victim)
 // Lucrot Oct08
 bool GOOD_FOR_FLANKING(P_char ch)
 {
-
-	if (IS_ALIVE(ch) && !IS_IMMOBILE(ch) && GET_CHAR_SKILL(ch, SKILL_FLANK) && GET_CHAR_SKILL(ch, SKILL_FLANK) > 0 && GET_POS(ch) == POS_STANDING && !IS_AFFECTED2(ch, AFF2_STUNNED) &&
-	    !get_linked_char(ch, LNK_FLANKING) && !affected_by_spell(ch, SKILL_FLANK))
+	if (IS_ALIVE(ch) && !IS_IMMOBILE(ch) && GET_CHAR_SKILL(ch, SKILL_FLANK) &&
+	    GET_CHAR_SKILL(ch, SKILL_FLANK) > 0 && GET_POS(ch) == POS_STANDING &&
+	    !IS_AFFECTED2(ch, AFF2_STUNNED) && !get_linked_char(ch, LNK_FLANKING) &&
+	    !affected_by_spell(ch, SKILL_FLANK))
 	{
 		return TRUE;
 	}
@@ -4989,7 +5521,7 @@ bool GOOD_FOR_FLANKING(P_char ch)
 
 bool MobDreadlord(P_char ch)
 {
-	char   buf[MAX_INPUT_LENGTH];
+	char buf[MAX_INPUT_LENGTH];
 	P_char tch;
 
 	if (!IS_ALIVE(ch))
@@ -5006,7 +5538,8 @@ bool MobDreadlord(P_char ch)
 	{
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 		{
-			if (IS_PC(tch) && IS_ALIVE(tch) && !GET_MASTER(tch) && (IS_MAGE(tch) || IS_CLERIC(tch)) && number(0, 2))
+			if (IS_PC(tch) && IS_ALIVE(tch) && !GET_MASTER(tch) &&
+			    (IS_MAGE(tch) || IS_CLERIC(tch)) && number(0, 2))
 			{
 				MobStartFight(ch, tch);
 				return true;
@@ -5038,7 +5571,8 @@ bool MobBerserker(P_char ch)
 			return TRUE;
 		}
 
-		if (isBashable(ch, GET_OPPONENT(ch)) && !number(0, 1) && (GET_CHAR_SKILL(ch, SKILL_MAUL) > 0))
+		if (isBashable(ch, GET_OPPONENT(ch)) && !number(0, 1) &&
+		    (GET_CHAR_SKILL(ch, SKILL_MAUL) > 0))
 		{
 			maul(ch, GET_OPPONENT(ch));
 			return TRUE;
@@ -5063,7 +5597,8 @@ bool MobBerserker(P_char ch)
 		return TRUE;
 	}
 
-	if (!affected_by_spell(ch, SPELL_HASTE) && !affected_by_spell(ch, SPELL_BLUR) && !number(0, 2))
+	if (!affected_by_spell(ch, SPELL_HASTE) && !affected_by_spell(ch, SPELL_BLUR) &&
+	    !number(0, 2))
 	{
 		do_rampage(ch, NULL, CMD_RAMPAGE);
 		return TRUE;
@@ -5076,7 +5611,7 @@ bool MobBerserker(P_char ch)
 bool MobBard(P_char ch)
 {
 	P_char victim;
-	int    dam;
+	int dam;
 
 	dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 
@@ -5090,39 +5625,39 @@ bool MobBard(P_char ch)
 	{
 		switch (number(1, 5))
 		{
-			case 1:
+		case 1:
+		{
+			do_play(ch, " harming", CMD_PLAY);
+			return TRUE;
+		}
+		case 2:
+			if (!IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) || !IS_HOMETOWN(ch->in_room))
 			{
-				do_play(ch, " harming", CMD_PLAY);
+				do_play(ch, " chaos", CMD_PLAY);
 				return TRUE;
 			}
-			case 2:
-				if (!IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) || !IS_HOMETOWN(ch->in_room))
-				{
-					do_play(ch, " chaos", CMD_PLAY);
-					return TRUE;
-				}
-			case 3:
-				if (GET_CHAR_SKILL(ch, SKILL_SHRIEK) > 0)
-				{
-					do_shriek(ch, NULL, CMD_SHRIEK);
-					return TRUE;
-				}
-			case 4:
-				if (OUTSIDE(ch) && !number(0, 1))
-				{
-					do_play(ch, " storms", CMD_PLAY);
-					return TRUE;
-				}
-			case 5:
+		case 3:
+			if (GET_CHAR_SKILL(ch, SKILL_SHRIEK) > 0)
 			{
-				if (GET_LEVEL(ch) > 55 && IS_ELITE(ch))
-					do_play(ch, " charming", CMD_PLAY);
+				do_shriek(ch, NULL, CMD_SHRIEK);
 				return TRUE;
 			}
-			default:
-				break;
+		case 4:
+			if (OUTSIDE(ch) && !number(0, 1))
+			{
+				do_play(ch, " storms", CMD_PLAY);
+				return TRUE;
+			}
+		case 5:
+		{
+			if (GET_LEVEL(ch) > 55 && IS_ELITE(ch))
+				do_play(ch, " charming", CMD_PLAY);
+			return TRUE;
+		}
+		default:
+			break;
 
-				return true;
+			return true;
 		}
 	}
 
@@ -5139,7 +5674,8 @@ bool MobBard(P_char ch)
 		return TRUE;
 	}
 
-	if (!affected_by_spell(ch, SPELL_STONE_SKIN) && (GET_LEVEL(ch) > 50) && !number(0, 1) && !has_skin_spell(ch))
+	if (!affected_by_spell(ch, SPELL_STONE_SKIN) && (GET_LEVEL(ch) > 50) && !number(0, 1) &&
+	    !has_skin_spell(ch))
 	{
 		do_play(ch, " protection", CMD_PLAY);
 		return TRUE;
@@ -5165,7 +5701,7 @@ bool MobBard(P_char ch)
 bool MobWarrior(P_char ch)
 {
 	P_char tch, next_ch;
-	int    n_atkr;
+	int n_atkr;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -5178,13 +5714,15 @@ bool MobWarrior(P_char ch)
 	{
 		for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
 		{
-			if ((ch == GET_OPPONENT(tch)) && (IS_MAGE(tch) || IS_CLERIC(tch)) && (GET_POS(ch) == POS_STANDING) && number(0, 1))
+			if ((ch == GET_OPPONENT(tch)) && (IS_MAGE(tch) || IS_CLERIC(tch)) &&
+			    (GET_POS(ch) == POS_STANDING) && number(0, 1))
 			{
 				break;
 			}
 		}
 
-		if ((ch && tch) && (ch->in_room == tch->in_room) && isBashable(ch, tch) && (GET_POS(tch) == POS_STANDING) && !IS_IMMATERIAL(ch))
+		if ((ch && tch) && (ch->in_room == tch->in_room) && isBashable(ch, tch) &&
+		    (GET_POS(tch) == POS_STANDING) && !IS_IMMATERIAL(ch))
 		{
 			// Switch to target instead of bashing.
 			if (ch != GET_OPPONENT(tch) && number(0, 1))
@@ -5204,11 +5742,13 @@ bool MobWarrior(P_char ch)
 		do_kick(ch, 0, 0);
 		return TRUE;
 	}
-	else if (!number(0, 3) && GET_OPPONENT(ch) && (GET_POS(GET_OPPONENT(ch)) == POS_STANDING) && isBashable(ch, GET_OPPONENT(ch)))
+	else if (!number(0, 3) && GET_OPPONENT(ch) && (GET_POS(GET_OPPONENT(ch)) == POS_STANDING) &&
+		 isBashable(ch, GET_OPPONENT(ch)))
 	{
 		do_bash(ch, 0, 0);
 
-		if (!IS_ALIVE(ch) || !IS_ALIVE(GET_OPPONENT(ch)) || (GET_POS(ch) < POS_STANDING) || (GET_POS(GET_OPPONENT(ch)) < POS_STANDING))
+		if (!IS_ALIVE(ch) || !IS_ALIVE(GET_OPPONENT(ch)) || (GET_POS(ch) < POS_STANDING) ||
+		    (GET_POS(GET_OPPONENT(ch)) < POS_STANDING))
 		{
 			return TRUE;
 		}
@@ -5223,7 +5763,8 @@ bool MobWarrior(P_char ch)
 		{
 			next_ch = tch->next_in_room;
 
-			if ((tch != ch) && IS_FIGHTING(tch) && ((GET_OPPONENT(tch) == ch) || (GET_OPPONENT(ch) == tch)))
+			if ((tch != ch) && IS_FIGHTING(tch) &&
+			    ((GET_OPPONENT(tch) == ch) || (GET_OPPONENT(ch) == tch)))
 			{
 				if (number(0, 135) > MAX(99, ((GET_LEVEL(ch) - 10) * 9)))
 					hit(ch, tch, ch->equipment[PRIMARY_WEAPON]);
@@ -5233,7 +5774,8 @@ bool MobWarrior(P_char ch)
 			CharWait(ch, MAX(PULSE_VIOLENCE * n_atkr, 3));
 		return TRUE;
 	}
-	else if (((number(1, 100) < (GET_LEVEL(ch) * 3))) && ((n_atkr > 1) || has_help(GET_OPPONENT(ch))))
+	else if (((number(1, 100) < (GET_LEVEL(ch) * 3))) &&
+		 ((n_atkr > 1) || has_help(GET_OPPONENT(ch))))
 	{
 		/*
 		 * The anti-tank clause.  The way players set things up, there is
@@ -5242,11 +5784,13 @@ bool MobWarrior(P_char ch)
 		 * let's see about switching to a juicier target.  JAB
 		 */
 		P_char juiciest = NULL;
-		int    tenderness, t_tend;
+		int tenderness, t_tend;
 
 		LOOP_THRU_PEOPLE(tch, ch)
 		{
-			if (IS_FIGHTING(tch) && ((GET_OPPONENT(tch) == ch) || are_together(tch, GET_OPPONENT(ch))) && CAN_SEE(ch, tch))
+			if (IS_FIGHTING(tch) &&
+			    ((GET_OPPONENT(tch) == ch) || are_together(tch, GET_OPPONENT(ch))) &&
+			    CAN_SEE(ch, tch))
 			{
 				t_tend = GET_HIT(tch) /*+ (100 - GET_AC(tch)) */;
 
@@ -5260,7 +5804,7 @@ bool MobWarrior(P_char ch)
 					t_tend >>= 1;
 				if (!juiciest || (t_tend < tenderness))
 				{
-					juiciest   = tch;
+					juiciest = tch;
 					tenderness = t_tend;
 				}
 			}
@@ -5274,10 +5818,10 @@ bool MobWarrior(P_char ch)
 
 bool MobRanger(P_char ch)
 {
-	P_obj  t_obj;
+	P_obj t_obj;
 	P_char vict;
 	P_char tch, next_ch;
-	int    n_atkr;
+	int n_atkr;
 
 	n_atkr = NumAttackers(ch);
 
@@ -5302,13 +5846,15 @@ bool MobRanger(P_char ch)
 		do_springleap(ch, NULL, 0);
 	}
 
-	if (GET_CHAR_SKILL(ch, SKILL_WHIRLWIND) > 0 && !affected_by_spell(ch, SKILL_WHIRLWIND) && GET_OPPONENT(ch) && !number(0, 2))
+	if (GET_CHAR_SKILL(ch, SKILL_WHIRLWIND) > 0 && !affected_by_spell(ch, SKILL_WHIRLWIND) &&
+	    GET_OPPONENT(ch) && !number(0, 2))
 	{
 		do_whirlwind(ch, 0, 0);
 		return true;
 	}
 
-	if (!GET_OPPONENT(ch) || (GET_POS(ch) < POS_STANDING) || (GET_POS(GET_OPPONENT(ch)) < POS_STANDING))
+	if (!GET_OPPONENT(ch) || (GET_POS(ch) < POS_STANDING) ||
+	    (GET_POS(GET_OPPONENT(ch)) < POS_STANDING))
 	{
 		return TRUE;
 	}
@@ -5335,10 +5881,10 @@ bool MobRanger(P_char ch)
 
 bool MobMercenary(P_char ch)
 {
-	P_obj                 t_obj;
-	P_char                vict;
-	P_char                tch, next_ch;
-	int                   n_atkr;
+	P_obj t_obj;
+	P_char vict;
+	P_char tch, next_ch;
+	int n_atkr;
 	struct affected_type *af;
 
 	n_atkr = NumAttackers(ch);
@@ -5351,13 +5897,15 @@ bool MobMercenary(P_char ch)
 		return (TRUE);
 	}
 
-	if (IS_FIGHTING(ch) && (vict = GET_OPPONENT(ch)) && !IS_AFFECTED(ch, AFF_BLIND) && !number(0, 2))
+	if (IS_FIGHTING(ch) && (vict = GET_OPPONENT(ch)) && !IS_AFFECTED(ch, AFF_BLIND) &&
+	    !number(0, 2))
 	{
-		if (number(0, 2) && !GRAPPLE_TIMER(ch) && (grapple_check_hands(ch) != FALSE) && !((GET_ALT_SIZE(vict) > GET_ALT_SIZE(ch) + 1) || (GET_ALT_SIZE(vict) < GET_ALT_SIZE(ch) - 1)))
+		if (number(0, 2) && !GRAPPLE_TIMER(ch) && (grapple_check_hands(ch) != FALSE) &&
+		    !((GET_ALT_SIZE(vict) > GET_ALT_SIZE(ch) + 1) ||
+		      (GET_ALT_SIZE(vict) < GET_ALT_SIZE(ch) - 1)))
 		{
 			if ((GET_POS(vict) == POS_STANDING) && (GET_POS(ch) == POS_STANDING))
 			{
-
 				if ((af = get_spell_from_char(vict, SKILL_ARMLOCK)) != NULL)
 				{
 					if (af->modifier == HOLD_IMPROVED)
@@ -5368,8 +5916,11 @@ bool MobMercenary(P_char ch)
 					}
 				}
 
-				if (vict->player.m_class & (CLASS_SORCERER | CLASS_PSIONICIST | CLASS_CLERIC | CLASS_CONJURER | CLASS_WARLOCK | CLASS_ILLUSIONIST | CLASS_BARD | CLASS_DRUID | CLASS_ETHERMANCER |
-				                            CLASS_SHAMAN | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_SUMMONER))
+				if (vict->player.m_class &
+				    (CLASS_SORCERER | CLASS_PSIONICIST | CLASS_CLERIC |
+				     CLASS_CONJURER | CLASS_WARLOCK | CLASS_ILLUSIONIST |
+				     CLASS_BARD | CLASS_DRUID | CLASS_ETHERMANCER | CLASS_SHAMAN |
+				     CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_SUMMONER))
 				{
 					do_headlock(ch, 0, CMD_HEADLOCK);
 				}
@@ -5387,12 +5938,17 @@ bool MobMercenary(P_char ch)
 			}
 		}
 
-		if (number(0, 2) && !IS_SET(vict->specials.act, ACT_NO_BASH) && !(IS_DEMON(vict) || IS_DRAGON(vict) || IS_GIANT(vict) || (GET_RACE(vict) == RACE_PLANT)) &&
-		    !((GET_ALT_SIZE(vict) > GET_ALT_SIZE(ch) + 1) || (GET_ALT_SIZE(vict) < GET_ALT_SIZE(ch) - 1)) && HAS_FOOTING(ch) && (GET_POS(vict) == POS_STANDING))
+		if (number(0, 2) && !IS_SET(vict->specials.act, ACT_NO_BASH) &&
+		    !(IS_DEMON(vict) || IS_DRAGON(vict) || IS_GIANT(vict) ||
+		      (GET_RACE(vict) == RACE_PLANT)) &&
+		    !((GET_ALT_SIZE(vict) > GET_ALT_SIZE(ch) + 1) ||
+		      (GET_ALT_SIZE(vict) < GET_ALT_SIZE(ch) - 1)) &&
+		    HAS_FOOTING(ch) && (GET_POS(vict) == POS_STANDING))
 		{
 			do_tackle(ch, 0, CMD_TACKLE);
 		}
-		else if (!affected_by_spell_flagged(vict, SKILL_THROAT_CRUSH, AFFTYPE_CUSTOM1) && number(0, 1) && GET_CHAR_SKILL_P(ch, SKILL_THROAT_CRUSH))
+		else if (!affected_by_spell_flagged(vict, SKILL_THROAT_CRUSH, AFFTYPE_CUSTOM1) &&
+			 number(0, 1) && GET_CHAR_SKILL_P(ch, SKILL_THROAT_CRUSH))
 		{
 			do_throat_crush(ch, 0, CMD_THROAT_CRUSH);
 		}
@@ -5406,10 +5962,10 @@ bool MobMercenary(P_char ch)
 
 bool MobReaver(P_char ch)
 {
-	P_obj  t_obj;
+	P_obj t_obj;
 	P_char vict;
 	P_char tch, next_ch;
-	int    n_atkr;
+	int n_atkr;
 
 	n_atkr = NumAttackers(ch);
 
@@ -5421,7 +5977,8 @@ bool MobReaver(P_char ch)
 		return (TRUE);
 	}
 
-	if (IS_FIGHTING(ch) && (vict = GET_OPPONENT(ch)) && !IS_AFFECTED(ch, AFF_BLIND) && !number(0, 2))
+	if (IS_FIGHTING(ch) && (vict = GET_OPPONENT(ch)) && !IS_AFFECTED(ch, AFF_BLIND) &&
+	    !number(0, 2))
 		/*if(number(0, 1))
 		{
 		  if((MAX(100, GET_LEVEL(ch) * 2) > number(40, 60)) &&
@@ -5444,7 +6001,8 @@ bool MobReaver(P_char ch)
 		  do_bash(ch, 0, 0);
 		}*/
 
-		if (!ch || !GET_OPPONENT(ch) || (GET_POS(ch) < POS_STANDING) || (GET_POS(GET_OPPONENT(ch)) < POS_STANDING))
+		if (!ch || !GET_OPPONENT(ch) || (GET_POS(ch) < POS_STANDING) ||
+		    (GET_POS(GET_OPPONENT(ch)) < POS_STANDING))
 			return TRUE;
 
 	if (IS_MULTICLASS_NPC(ch) && !number(0, 2))
@@ -5465,8 +6023,8 @@ bool MobThief(P_char ch)
 {
 	P_obj bs_weap = NULL;
 	P_obj t_obj;
-	int   start_room = ch->in_room;
-	bool  weapon_pos = FALSE;
+	int start_room = ch->in_room;
+	bool weapon_pos = FALSE;
 
 	/*
 	 * basic strategy, flee/wield a backstabbing weapon if we have one/hide
@@ -5480,15 +6038,19 @@ bool MobThief(P_char ch)
 	 * fleeing (wimpy can still kick in, this flee is tactical).
 	 */
 
-	if ((ch->equipment[WIELD]) && IS_BACKSTABBER(ch->equipment[WIELD]) && (CAN_WEAR(ch->equipment[WIELD], ITEM_TAKE)) && (CAN_WEAR(ch->equipment[WIELD], ITEM_WIELD)))
+	if ((ch->equipment[WIELD]) && IS_BACKSTABBER(ch->equipment[WIELD]) &&
+	    (CAN_WEAR(ch->equipment[WIELD], ITEM_TAKE)) &&
+	    (CAN_WEAR(ch->equipment[WIELD], ITEM_WIELD)))
 	{
-		bs_weap    = ch->equipment[WIELD];
+		bs_weap = ch->equipment[WIELD];
 		weapon_pos = TRUE;
 	}
-	else if ((ch->equipment[SECONDARY_WEAPON]) && IS_BACKSTABBER(ch->equipment[SECONDARY_WEAPON]) && (CAN_WEAR(ch->equipment[SECONDARY_WEAPON], ITEM_TAKE)) &&
-	         (CAN_WEAR(ch->equipment[SECONDARY_WEAPON], ITEM_WIELD)))
+	else if ((ch->equipment[SECONDARY_WEAPON]) &&
+		 IS_BACKSTABBER(ch->equipment[SECONDARY_WEAPON]) &&
+		 (CAN_WEAR(ch->equipment[SECONDARY_WEAPON], ITEM_TAKE)) &&
+		 (CAN_WEAR(ch->equipment[SECONDARY_WEAPON], ITEM_WIELD)))
 	{
-		bs_weap    = ch->equipment[SECONDARY_WEAPON];
+		bs_weap = ch->equipment[SECONDARY_WEAPON];
 		weapon_pos = TRUE;
 	}
 	else
@@ -5497,13 +6059,13 @@ bool MobThief(P_char ch)
 		 * let's see if we are carrying something suitable
 		 */
 		for (t_obj = ch->carrying; t_obj && !bs_weap; t_obj = t_obj->next_content)
-			if (IS_BACKSTABBER(t_obj) && (CAN_WEAR(t_obj, ITEM_TAKE)) && (CAN_WEAR(t_obj, ITEM_WIELD)))
+			if (IS_BACKSTABBER(t_obj) && (CAN_WEAR(t_obj, ITEM_TAKE)) &&
+			    (CAN_WEAR(t_obj, ITEM_WIELD)))
 				bs_weap = t_obj;
 	}
 
 	if (bs_weap)
 	{
-
 		/*
 		 * ok, we can backstab, good deal, let's work at it
 		 */
@@ -5516,7 +6078,8 @@ bool MobThief(P_char ch)
 			 */
 			if (!ch->equipment[WIELD])
 				equip_char(ch, bs_weap, WIELD, FALSE);
-			else if (!ch->equipment[SECONDARY_WEAPON] && !IS_SET(ch->equipment[WIELD]->extra_flags, ITEM_TWOHANDS))
+			else if (!ch->equipment[SECONDARY_WEAPON] &&
+				 !IS_SET(ch->equipment[WIELD]->extra_flags, ITEM_TWOHANDS))
 				equip_char(ch, bs_weap, SECONDARY_WEAPON, FALSE);
 			else
 			{
@@ -5533,7 +6096,8 @@ bool MobThief(P_char ch)
 					else
 						return TRUE; /* hosed */
 				}
-				else if (!IS_SET(ch->equipment[SECONDARY_WEAPON]->extra_flags, ITEM_NODROP))
+				else if (!IS_SET(ch->equipment[SECONDARY_WEAPON]->extra_flags,
+						 ITEM_NODROP))
 				{
 					obj_to_char(unequip_char(ch, SECONDARY_WEAPON), ch);
 					equip_char(ch, bs_weap, SECONDARY_WEAPON, FALSE);
@@ -5551,7 +6115,8 @@ bool MobThief(P_char ch)
 				}
 			}
 		}
-		if ((!GET_MASTER(ch) || (GET_MASTER(ch)->in_room != ch->in_room)) && room_has_valid_exit(ch->in_room))
+		if ((!GET_MASTER(ch) || (GET_MASTER(ch)->in_room != ch->in_room)) &&
+		    room_has_valid_exit(ch->in_room))
 		{
 			do_flee(ch, 0, 0);
 			if (ch->in_room == start_room)
@@ -5564,13 +6129,16 @@ bool MobThief(P_char ch)
 	}
 	/* let's toss some dirt now and then */
 
-	if (IS_FIGHTING(ch) && !IS_AFFECTED(GET_OPPONENT(ch), AFF_BLIND) && GET_CHAR_SKILL(ch, SKILL_DIRTTOSS) && !number(0, 6))
+	if (IS_FIGHTING(ch) && !IS_AFFECTED(GET_OPPONENT(ch), AFF_BLIND) &&
+	    GET_CHAR_SKILL(ch, SKILL_DIRTTOSS) && !number(0, 6))
 	{
 		do_dirttoss(ch, GET_NAME(GET_OPPONENT(ch)), CMD_DIRTTOSS);
 		return TRUE;
 	}
 
-	if (IS_FIGHTING(ch) && !number(0, 2) && GET_CLASS(ch, CLASS_THIEF) && isBashable(ch, GET_OPPONENT(ch)) && get_takedown_size(ch) <= get_takedown_size(GET_OPPONENT(ch)))
+	if (IS_FIGHTING(ch) && !number(0, 2) && GET_CLASS(ch, CLASS_THIEF) &&
+	    isBashable(ch, GET_OPPONENT(ch)) &&
+	    get_takedown_size(ch) <= get_takedown_size(GET_OPPONENT(ch)))
 
 	{
 		do_trip(ch, GET_NAME(GET_OPPONENT(ch)), CMD_TRIP);
@@ -5604,12 +6172,16 @@ void GhostFearEffect(P_char ch)
 	{
 		next = tch->next_in_room;
 
-		if (IS_PC(tch) && (!GET_CLASS(tch, CLASS_CLERIC) || GET_LEVEL(tch) <= 25) && !IS_THRIKREEN(tch) && (!IS_RACEWAR_UNDEAD(tch) && number(0, 2)))
+		if (IS_PC(tch) && (!GET_CLASS(tch, CLASS_CLERIC) || GET_LEVEL(tch) <= 25) &&
+		    !IS_THRIKREEN(tch) && (!IS_RACEWAR_UNDEAD(tch) && number(0, 2)))
 			if (!NewSaves(tch, SAVING_FEAR, 0) && CAN_SEE(tch, ch) && !IS_TRUSTED(tch))
 			{
-				act("$N is gripped by great fear after seeing $n's visage!", TRUE, ch, 0, tch, TO_NOTVICT);
-				act("$N is gripped by great fear after seeing your visage!", TRUE, ch, 0, tch, TO_CHAR);
-				act("You are gripped by great fear after seeing $n's visage!", TRUE, ch, 0, tch, TO_VICT);
+				act("$N is gripped by great fear after seeing $n's visage!", TRUE,
+				    ch, 0, tch, TO_NOTVICT);
+				act("$N is gripped by great fear after seeing your visage!", TRUE,
+				    ch, 0, tch, TO_CHAR);
+				act("You are gripped by great fear after seeing $n's visage!", TRUE,
+				    ch, 0, tch, TO_VICT);
 
 				// age victim if he get unlucky
 				if (!number(0, 3))
@@ -5619,7 +6191,9 @@ void GhostFearEffect(P_char ch)
 				}
 				else
 				{
-					send_to_char("Focusing your will, you stave off the fearful visage, utilizing every last drop of courage!\r\n", tch);
+					send_to_char(
+						"Focusing your will, you stave off the fearful visage, utilizing every last drop of courage!\r\n",
+						tch);
 					return;
 				}
 			}
@@ -5666,11 +6240,13 @@ void MobCombat(P_char ch)
 	/*
 	 * Examine call for special procedure
 	 */
-	if (!no_specials && IS_SET(ch->specials.act, ACT_SPEC) && !affected_by_spell(ch, TAG_CONJURED_PET))
+	if (!no_specials && IS_SET(ch->specials.act, ACT_SPEC) &&
+	    !affected_by_spell(ch, TAG_CONJURED_PET))
 	{
 		if (!mob_index[GET_RNUM(ch)].func.mob)
 		{
-			logit(LOG_MOB, "MobCombat: ACT_SPEC set, but no proc: %s #%d", J_NAME(ch), mob_index[GET_RNUM(ch)].virtual_number);
+			logit(LOG_MOB, "MobCombat: ACT_SPEC set, but no proc: %s #%d", J_NAME(ch),
+			      mob_index[GET_RNUM(ch)].virtual_number);
 			REMOVE_BIT(ch->specials.act, ACT_SPEC);
 			return;
 		}
@@ -5686,7 +6262,9 @@ void MobCombat(P_char ch)
 	}
 
 	// make mobs auto switch if taunted at 75% or pass int check for non-animals
-	if (CAN_ACT(ch) && ((affected_by_spell(ch, SKILL_TAUNT) && number(0, 3)) || ((number(1, 400) <= (GET_C_INT(ch) / 4 + GET_LEVEL(ch))) && !IS_ANIMAL(ch))))
+	if (CAN_ACT(ch) &&
+	    ((affected_by_spell(ch, SKILL_TAUNT) && number(0, 3)) ||
+	     ((number(1, 400) <= (GET_C_INT(ch) / 4 + GET_LEVEL(ch))) && !IS_ANIMAL(ch))))
 	{
 		tch = PickTarget(ch);
 
@@ -5796,7 +6374,8 @@ void MobCombat(P_char ch)
 		do_summon_imp(ch, 0, 0);
 	}
 
-	if (!number(0, 7) && has_innate(ch, INNATE_BLAST) && (tch = pick_target(ch, PT_CASTER | PT_TOLERANT)))
+	if (!number(0, 7) && has_innate(ch, INNATE_BLAST) &&
+	    (tch = pick_target(ch, PT_CASTER | PT_TOLERANT)))
 	{
 		spell_innate_blast(GET_LEVEL(ch), ch, 0, 0, tch, 0);
 		// High enough level illithids can innate blast alongside their normal actions.
@@ -5806,7 +6385,8 @@ void MobCombat(P_char ch)
 		}
 	}
 
-	if (!number(0, 5) && has_innate(ch, INNATE_BRANCH) && (tch = pick_target(ch, PT_CASTER | PT_TOLERANT | PT_STANDING | PT_SMALLER)))
+	if (!number(0, 5) && has_innate(ch, INNATE_BRANCH) &&
+	    (tch = pick_target(ch, PT_CASTER | PT_TOLERANT | PT_STANDING | PT_SMALLER)))
 	{
 		branch(ch, tch);
 		return;
@@ -5824,7 +6404,8 @@ void MobCombat(P_char ch)
 		return;
 	}
 
-	if (!number(0, 5) && has_innate(ch, INNATE_WEBWRAP) && (tch = pick_target(ch, PT_CASTER | PT_TOLERANT | PT_SMALLER)))
+	if (!number(0, 5) && has_innate(ch, INNATE_WEBWRAP) &&
+	    (tch = pick_target(ch, PT_CASTER | PT_TOLERANT | PT_SMALLER)))
 	{
 		webwrap(ch, tch);
 		return;
@@ -5842,8 +6423,9 @@ void MobCombat(P_char ch)
 
 	// combat casting, so go for offensive
 
-	if ((GET_CLASS(ch, CLASS_SORCERER) || GET_CLASS(ch, CLASS_CONJURER) || GET_CLASS(ch, CLASS_NECROMANCER) || GET_CLASS(ch, CLASS_BARD) || GET_CLASS(ch, CLASS_THEURGIST) ||
-	     GET_CLASS(ch, CLASS_SUMMONER)) &&
+	if ((GET_CLASS(ch, CLASS_SORCERER) || GET_CLASS(ch, CLASS_CONJURER) ||
+	     GET_CLASS(ch, CLASS_NECROMANCER) || GET_CLASS(ch, CLASS_BARD) ||
+	     GET_CLASS(ch, CLASS_THEURGIST) || GET_CLASS(ch, CLASS_SUMMONER)) &&
 	    (!IS_MULTICLASS_NPC(ch) || number(0, 2)))
 	{
 		if (CastMageSpell(ch, 0, FALSE))
@@ -5860,7 +6442,8 @@ void MobCombat(P_char ch)
 		}
 	}
 
-	if (GET_CLASS(ch, CLASS_PSIONICIST | CLASS_MINDFLAYER) && (!IS_MULTICLASS_NPC(ch) || number(0, 2)))
+	if (GET_CLASS(ch, CLASS_PSIONICIST | CLASS_MINDFLAYER) &&
+	    (!IS_MULTICLASS_NPC(ch) || number(0, 2)))
 	{
 		if (WillPsionicistSpell(ch, 0))
 		{
@@ -6013,7 +6596,8 @@ int CountToughness(P_char ch, P_char victim)
 
 	val = GET_HIT(victim);
 
-	if (!GET_CLASS(ch, CLASS_PALADIN) && !GET_CLASS(ch, CLASS_ANTIPALADIN) && (IS_CLERIC(victim) || IS_MAGE(victim)))
+	if (!GET_CLASS(ch, CLASS_PALADIN) && !GET_CLASS(ch, CLASS_ANTIPALADIN) &&
+	    (IS_CLERIC(victim) || IS_MAGE(victim)))
 	{
 		val = val * 2 / 3;
 	}
@@ -6028,7 +6612,8 @@ int CountToughness(P_char ch, P_char victim)
 	{
 		val = val / (IS_THIEF(ch) ? 4 : 2);
 	}
-	if ((IS_AFFECTED(victim, AFF_AWARE) || IS_AFFECTED(victim, AFF_SKILL_AWARE)) && IS_THIEF(ch))
+	if ((IS_AFFECTED(victim, AFF_AWARE) || IS_AFFECTED(victim, AFF_SKILL_AWARE)) &&
+	    IS_THIEF(ch))
 	{
 		val = (int)(val * 1.5);
 	}
@@ -6048,10 +6633,10 @@ int CountToughness(P_char ch, P_char victim)
 
 P_char PickTarget(P_char ch)
 {
-	P_char                t_ch;
-	int                   target_table[MAX_TARGETS + 1];
-	P_char                target_addr[MAX_TARGETS + 1];
-	int                   a, b, c, d, n_a;
+	P_char t_ch;
+	int target_table[MAX_TARGETS + 1];
+	P_char target_addr[MAX_TARGETS + 1];
+	int a, b, c, d, n_a;
 	struct affected_type *af;
 
 	if (!SanityCheck(ch, "PickTarget"))
@@ -6074,7 +6659,7 @@ P_char PickTarget(P_char ch)
 		return (P_char)af->context;
 	}
 
-	a   = 0;
+	a = 0;
 	n_a = NumAttackers(ch);
 
 	for (t_ch = world[ch->in_room].people; t_ch; t_ch = t_ch->next_in_room)
@@ -6091,7 +6676,9 @@ P_char PickTarget(P_char ch)
 		}
 
 		// Reflection Kobolds don't get innate calming anymore.
-		if (has_innate(t_ch, INNATE_CALMING) && number(0, 101) <= get_property("innate.calming.notarget.perc", 75) && !(IS_NPC(t_ch) && GET_VNUM(t_ch) == 250))
+		if (has_innate(t_ch, INNATE_CALMING) &&
+		    number(0, 101) <= get_property("innate.calming.notarget.perc", 75) &&
+		    !(IS_NPC(t_ch) && GET_VNUM(t_ch) == 250))
 		{
 			continue;
 		}
@@ -6104,10 +6691,10 @@ P_char PickTarget(P_char ch)
 
 		if (a < MAX_TARGETS)
 		{
-			target_table[a]     = CountToughness(ch, t_ch);
-			target_addr[a]      = t_ch;
+			target_table[a] = CountToughness(ch, t_ch);
+			target_addr[a] = t_ch;
 			target_table[a + 1] = -1;
-			target_addr[a + 1]  = NULL;
+			target_addr[a + 1] = NULL;
 			a++;
 		}
 		else
@@ -6159,8 +6746,8 @@ P_char PickTarget(P_char ch)
 
 void MobStartFight(P_char ch, P_char vict)
 {
-	char   buf[MAX_INPUT_LENGTH];
-	bool   fudge_flag = FALSE;
+	char buf[MAX_INPUT_LENGTH];
+	bool fudge_flag = FALSE;
 	P_char mount;
 
 	if (!ch)
@@ -6201,7 +6788,9 @@ void MobStartFight(P_char ch, P_char vict)
 
 	if (GET_STAT(vict) == STAT_DEAD)
 	{
-		logit(LOG_DEBUG, "MobStartFight: room %d(%s->%s): called with dead character as vict.", world[ch->in_room].number, GET_NAME(ch), GET_NAME(vict));
+		logit(LOG_DEBUG,
+		      "MobStartFight: room %d(%s->%s): called with dead character as vict.",
+		      world[ch->in_room].number, GET_NAME(ch), GET_NAME(vict));
 		return;
 	}
 
@@ -6266,20 +6855,26 @@ void MobStartFight(P_char ch, P_char vict)
 			}
 		}
 	}
-	if (!fudge_flag && IS_THIEF(ch) && ((ch->equipment[WIELD] && IS_BACKSTABBER(ch->equipment[WIELD])) || (ch->equipment[SECONDARY_WEAPON] && IS_BACKSTABBER(ch->equipment[SECONDARY_WEAPON]))) &&
-	    (GET_ALT_SIZE(ch) <= (GET_ALT_SIZE(vict) + 1)) && ((GET_ALT_SIZE(ch) + 1) >= GET_ALT_SIZE(vict)))
+	if (!fudge_flag && IS_THIEF(ch) &&
+	    ((ch->equipment[WIELD] && IS_BACKSTABBER(ch->equipment[WIELD])) ||
+	     (ch->equipment[SECONDARY_WEAPON] && IS_BACKSTABBER(ch->equipment[SECONDARY_WEAPON]))) &&
+	    (GET_ALT_SIZE(ch) <= (GET_ALT_SIZE(vict) + 1)) &&
+	    ((GET_ALT_SIZE(ch) + 1) >= GET_ALT_SIZE(vict)))
 	{
 		backstab(ch, vict);
 		return;
 	}
-	if (!fudge_flag && GET_CLASS(ch, CLASS_WARRIOR) && has_innate(ch, INNATE_BODYSLAM) && GET_POS(vict) == POS_STANDING && get_takedown_size(ch) <= get_takedown_size(vict) + 1 &&
-	    get_takedown_size(ch) >= get_takedown_size(vict) - 2 && !IS_BACKRANKED(vict) && !number(0, 3) && HAS_FOOTING(ch))
+	if (!fudge_flag && GET_CLASS(ch, CLASS_WARRIOR) && has_innate(ch, INNATE_BODYSLAM) &&
+	    GET_POS(vict) == POS_STANDING && get_takedown_size(ch) <= get_takedown_size(vict) + 1 &&
+	    get_takedown_size(ch) >= get_takedown_size(vict) - 2 && !IS_BACKRANKED(vict) &&
+	    !number(0, 3) && HAS_FOOTING(ch))
 	{
 		bodyslam(ch, vict);
 		return;
 	}
-	if (!fudge_flag && IS_WARRIOR(ch) && !IS_IMMATERIAL(ch) && (GET_CHAR_SKILL(ch, SKILL_BASH) > 0) && (GET_POS(ch) == POS_STANDING) && (GET_POS(vict) == POS_STANDING) && isBashable(ch, vict) &&
-	    !number(0, 2))
+	if (!fudge_flag && IS_WARRIOR(ch) && !IS_IMMATERIAL(ch) &&
+	    (GET_CHAR_SKILL(ch, SKILL_BASH) > 0) && (GET_POS(ch) == POS_STANDING) &&
+	    (GET_POS(vict) == POS_STANDING) && isBashable(ch, vict) && !number(0, 2))
 	{
 		bash(ch, vict);
 		// Due to certain cleverness in bash (if not likely to succeed, mob doesn't)
@@ -6320,16 +6915,18 @@ void MobStartFight(P_char ch, P_char vict)
  * nastier than ever! CACKLE. :) -Still the same
  */
 
-#define IS_CONTAINER(obj) ((((obj)->type == ITEM_CONTAINER) && !IS_SET((obj)->value[1], CONT_CLOSED)) || ((obj)->type == ITEM_CORPSE))
+#define IS_CONTAINER(obj)                                                              \
+	((((obj)->type == ITEM_CONTAINER) && !IS_SET((obj)->value[1], CONT_CLOSED)) || \
+	 ((obj)->type == ITEM_CORPSE))
 
 int RateObject(P_char ch, int a, P_obj obj)
 {
 	int manap, damp, hitp, value, tmp;
 
 	value = 0;
-	damp  = 100;
+	damp = 100;
 	manap = 0;
-	hitp  = 75;
+	hitp = 75;
 
 	if (obj == NULL)
 		return -1;
@@ -6357,74 +6954,75 @@ int RateObject(P_char ch, int a, P_obj obj)
 	if (IS_SET(obj->extra_flags, ITEM_TRANSIENT))
 		value -= 500;
 
-	if ((obj->type != ITEM_QUIVER) && (obj->type != ITEM_WORN) && (obj->type < ITEM_SCROLL || obj->type > ITEM_FIREWEAPON))
+	if ((obj->type != ITEM_QUIVER) && (obj->type != ITEM_WORN) &&
+	    (obj->type < ITEM_SCROLL || obj->type > ITEM_FIREWEAPON))
 		return value; /*
 		               * Practically, 'toy' items that are
 		               * nodrop won't be ever used
 		               */
 	switch (obj->type)
 	{
-			/*
+		/*
 			 * Mob can presently only value armor, and weapon(s). Other eq's
 			 * value comes to mob from their +dam/+tohit/+mana
 			 */
-		case ITEM_LIGHT:
-			if (CAN_SEE(ch, ch))
-				value += 100;
-			break;
-		case ITEM_ARMOR:
-			if (GET_AC(ch) > -100)
-				value += 5 * obj->value[0];
-			break;
-		case ITEM_WORN:
-		case ITEM_WEAPON:
-			value += (obj->value[1] * obj->value[2]) * damp / 10;
-			break;
-		default:
-			break;
+	case ITEM_LIGHT:
+		if (CAN_SEE(ch, ch))
+			value += 100;
+		break;
+	case ITEM_ARMOR:
+		if (GET_AC(ch) > -100)
+			value += 5 * obj->value[0];
+		break;
+	case ITEM_WORN:
+	case ITEM_WEAPON:
+		value += (obj->value[1] * obj->value[2]) * damp / 10;
+		break;
+	default:
+		break;
 	}
 	for (tmp = 0; tmp < MAX_OBJ_AFFECT; tmp++)
 	{
 		switch (obj->affected[tmp].location)
 		{
-			case APPLY_DAMROLL:
-				value += obj->affected[tmp].modifier * damp / 10;
-				break;
-			case APPLY_HITROLL:
-				value += obj->affected[tmp].modifier * hitp / 10;
-				break;
-			case APPLY_MANA:
-				value += obj->affected[tmp].modifier * manap / 3;
-				break;
-			case APPLY_ARMOR:
-				if (GET_AC(ch) > -100)
-					value += (0 - obj->affected[tmp].modifier * 5);
-				break;
-			case APPLY_STR:
-			case APPLY_DEX:
-			case APPLY_INT:
-			case APPLY_WIS:
-			case APPLY_CON:
-				if (GET_LEVEL(ch) <= 50)
-					value += obj->affected[tmp].modifier * 5;
-				break;
+		case APPLY_DAMROLL:
+			value += obj->affected[tmp].modifier * damp / 10;
+			break;
+		case APPLY_HITROLL:
+			value += obj->affected[tmp].modifier * hitp / 10;
+			break;
+		case APPLY_MANA:
+			value += obj->affected[tmp].modifier * manap / 3;
+			break;
+		case APPLY_ARMOR:
+			if (GET_AC(ch) > -100)
+				value += (0 - obj->affected[tmp].modifier * 5);
+			break;
+		case APPLY_STR:
+		case APPLY_DEX:
+		case APPLY_INT:
+		case APPLY_WIS:
+		case APPLY_CON:
+			if (GET_LEVEL(ch) <= 50)
+				value += obj->affected[tmp].modifier * 5;
+			break;
 
-				/*
+			/*
 				 * This apply_hit thing rules: street cleaners etc will prefer
 				 * +hitpoint stuff, other mobs will go for nastier +dam etc.
 				 * :)
 				 */
-			case APPLY_HIT:
-				value += 400 * obj->affected[tmp].modifier / GET_MAX_HIT(ch);
-				break;
-			case APPLY_SAVING_PARA:
-			case APPLY_SAVING_ROD:
-			case APPLY_SAVING_FEAR:
-			case APPLY_SAVING_BREATH:
-			case APPLY_SAVING_SPELL:
-				value += (0 - 30) * obj->affected[tmp].modifier;
-			default:
-				break;
+		case APPLY_HIT:
+			value += 400 * obj->affected[tmp].modifier / GET_MAX_HIT(ch);
+			break;
+		case APPLY_SAVING_PARA:
+		case APPLY_SAVING_ROD:
+		case APPLY_SAVING_FEAR:
+		case APPLY_SAVING_BREATH:
+		case APPLY_SAVING_SPELL:
+			value += (0 - 30) * obj->affected[tmp].modifier;
+		default:
+			break;
 		}
 	}
 	if (IS_THIEF(ch) && IS_BACKSTABBER(obj))
@@ -6436,7 +7034,7 @@ int RateObject(P_char ch, int a, P_obj obj)
 
 int IsBetterObject(P_char ch, P_obj obj, int foo)
 {
-	int   a, l;
+	int a, l;
 	P_obj foob = NULL, foo2 = NULL;
 
 	for (a = foo; a < CUR_MAX_WEAR; a++)
@@ -6444,9 +7042,11 @@ int IsBetterObject(P_char ch, P_obj obj, int foo)
 		{
 			if (ch->equipment[equipment_pos_table[a][2]] != NULL)
 			{
-				l    = equipment_pos_table[a][2];
+				l = equipment_pos_table[a][2];
 				foob = ch->equipment[l];
-				if ((RateObject(ch, a, obj) >= RateObject(ch, a, foob)) && (obj->R_num != foob->R_num) && !IS_SET(foob->extra_flags, ITEM_NODROP))
+				if ((RateObject(ch, a, obj) >= RateObject(ch, a, foob)) &&
+				    (obj->R_num != foob->R_num) &&
+				    !IS_SET(foob->extra_flags, ITEM_NODROP))
 				{
 					act("You stop using $p.", FALSE, ch, foob, 0, TO_CHAR);
 					act("$n stops using $p.", TRUE, ch, foob, 0, TO_ROOM);
@@ -6464,7 +7064,8 @@ int IsBetterObject(P_char ch, P_obj obj, int foo)
 					return 1;
 				}
 			}
-			else if (RateObject(ch, a, obj) >= 0 && wear(ch, obj, equipment_pos_table[a][1], 1))
+			else if (RateObject(ch, a, obj) >= 0 &&
+				 wear(ch, obj, equipment_pos_table[a][1], 1))
 				return 1;
 		}
 	return 0;
@@ -6529,7 +7130,7 @@ void CheckEqWorthUsing(P_char ch, P_obj obj)
 int ItemsIn(P_obj obj)
 {
 	P_obj ob;
-	int   a;
+	int a;
 
 	a = 0;
 	for (ob = obj->contains; ob; ob = ob->next_content)
@@ -6540,8 +7141,8 @@ int ItemsIn(P_obj obj)
 /* Return TRUE if mob shouldn't do anything else this pulse, */
 int handle_npc_assist(P_char ch)
 {
-	P_char              tmp_ch, Victim, foe = NULL;
-	char                Gbuf1[MAX_STRING_LENGTH];
+	P_char tmp_ch, Victim, foe = NULL;
+	char Gbuf1[MAX_STRING_LENGTH];
 	struct follow_type *fol;
 
 	if (IS_NPC(ch) && GET_VNUM(ch) == IMAGE_REFLECTION_VNUM)
@@ -6555,16 +7156,21 @@ int handle_npc_assist(P_char ch)
 	 * leader. - SKB 19 May 1995
 	 */
 
-	if ((GET_POS(ch) > POS_SITTING) && (ch->following) && (ch->in_room == ch->following->in_room) && (IS_NPC(ch->following) || (GET_MASTER(ch) && GET_MASTER(ch) != GET_RIDER(ch))) &&
+	if ((GET_POS(ch) > POS_SITTING) && (ch->following) &&
+	    (ch->in_room == ch->following->in_room) &&
+	    (IS_NPC(ch->following) || (GET_MASTER(ch) && GET_MASTER(ch) != GET_RIDER(ch))) &&
 	    (GET_OPPONENT(ch->following) || NumAttackers(ch->following)))
 	{
-		if (GET_CHAR_SKILL(ch, SKILL_RESCUE) > 0 && (NumAttackers(ch) < NumAttackers(ch->following)) && ((GET_HIT(ch) > GET_HIT(ch->following)) || number(0, 1)))
+		if (GET_CHAR_SKILL(ch, SKILL_RESCUE) > 0 &&
+		    (NumAttackers(ch) < NumAttackers(ch->following)) &&
+		    ((GET_HIT(ch) > GET_HIT(ch->following)) || number(0, 1)))
 		{
 			if (IS_NPC(ch->following) || IS_PC_PET(ch))
 			{
 				if (IS_UNDEADRACE(ch))
 				{
-					if (GET_C_POW(ch->following) > number(1, 500)) // 100 pow ~= 20%
+					if (GET_C_POW(ch->following) >
+					    number(1, 500)) // 100 pow ~= 20%
 					{
 						rescue(ch, ch->following, FALSE);
 						return TRUE;
@@ -6572,7 +7178,8 @@ int handle_npc_assist(P_char ch)
 				}
 				else
 				{
-					if (GET_C_CHA(ch->following) > number(1, 500)) // 100 charisma ~= 20%
+					if (GET_C_CHA(ch->following) >
+					    number(1, 500)) // 100 charisma ~= 20%
 					{
 						rescue(ch, ch->following, FALSE);
 						return TRUE;
@@ -6587,20 +7194,20 @@ int handle_npc_assist(P_char ch)
 			{
 				switch (number(1, 4))
 				{
-					case 1:
-						mobsay(ch, "I must assist my master!");
-						break;
-					case 2:
-						mobsay(ch, "Today is a good day to die!");
-						break;
-					case 3:
-						mobsay(ch, "Prepare to fight me, too!");
-						break;
-					case 4:
-						mobsay(ch, "For glory!");
-						break;
-					default:
-						break;
+				case 1:
+					mobsay(ch, "I must assist my master!");
+					break;
+				case 2:
+					mobsay(ch, "Today is a good day to die!");
+					break;
+				case 3:
+					mobsay(ch, "Prepare to fight me, too!");
+					break;
+				case 4:
+					mobsay(ch, "For glory!");
+					break;
+				default:
+					break;
 				}
 			}
 
@@ -6629,7 +7236,8 @@ int handle_npc_assist(P_char ch)
 		for (fol = ch->followers; fol; fol = fol->next)
 		{
 			tmp_ch = fol->follower;
-			if (IS_FIGHTING(tmp_ch) && (tmp_ch->in_room == ch->in_room) && IS_NPC(tmp_ch) && !(IS_MORPH(tmp_ch)))
+			if (IS_FIGHTING(tmp_ch) && (tmp_ch->in_room == ch->in_room) &&
+			    IS_NPC(tmp_ch) && !(IS_MORPH(tmp_ch)))
 			{
 				foe = GET_OPPONENT(tmp_ch);
 				if (CAN_SEE(ch, foe))
@@ -6646,7 +7254,8 @@ int handle_npc_assist(P_char ch)
 		}
 	}
 
-	if (CAN_ACT(ch) && GET_POS(ch) > POS_SITTING && IS_SET(ch->specials.act, ACT_PROTECTOR) && GET_STAT(ch) > STAT_SLEEPING && !IS_STUNNED(ch))
+	if (CAN_ACT(ch) && GET_POS(ch) > POS_SITTING && IS_SET(ch->specials.act, ACT_PROTECTOR) &&
+	    GET_STAT(ch) > STAT_SLEEPING && !IS_STUNNED(ch))
 	{
 		if ((Victim = find_protector_target(ch)) != NULL)
 		{
@@ -6668,30 +7277,35 @@ int handle_npc_assist(P_char ch)
 		{
 			switch (number(1, 10))
 			{
-				case 1:
-					act("$n watches the battle in amusement.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
+			case 1:
+				act("$n watches the battle in amusement.", TRUE, ch, 0, 0, TO_ROOM);
+				break;
 
-				case 2:
-					act("$n stands to the side, evaluating the fray.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
+			case 2:
+				act("$n stands to the side, evaluating the fray.", TRUE, ch, 0, 0,
+				    TO_ROOM);
+				break;
 
-				case 3:
-					act("$n evaluates the struggle, watching your battle tactics.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
+			case 3:
+				act("$n evaluates the struggle, watching your battle tactics.",
+				    TRUE, ch, 0, 0, TO_ROOM);
+				break;
 
-				case 4:
-					act("$n frowns in boredom at the obviously one-sided struggle.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
+			case 4:
+				act("$n frowns in boredom at the obviously one-sided struggle.",
+				    TRUE, ch, 0, 0, TO_ROOM);
+				break;
 
-				case 5:
-					act("$n watches the area, making sure the battle does not get out of hand.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				case 6:
-					act("$n is waving a platinum coin around wanting to make a bet on the outcome.", TRUE, ch, 0, 0, TO_ROOM);
-					break;
-				default:
-					break;
+			case 5:
+				act("$n watches the area, making sure the battle does not get out of hand.",
+				    TRUE, ch, 0, 0, TO_ROOM);
+				break;
+			case 6:
+				act("$n is waving a platinum coin around wanting to make a bet on the outcome.",
+				    TRUE, ch, 0, 0, TO_ROOM);
+				break;
+			default:
+				break;
 			}
 		}
 	}
@@ -6703,7 +7317,9 @@ bool MobSpellUp(P_char ch)
 	bool is_multiclass = IS_MULTICLASS_NPC(ch); // about 15% are multiclass
 
 	// If they're a mage, and not multi or a multi mage and 2/3 of the time.
-	if (GET_CLASS(ch, CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_SUMMONER) && (is_multiclass ? number(0, 2) : 1))
+	if (GET_CLASS(ch, CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_THEURGIST |
+				  CLASS_SUMMONER) &&
+	    (is_multiclass ? number(0, 2) : 1))
 	{
 		// If they start a mage spell
 		if (CastMageSpell(ch, ch, FALSE))
@@ -6726,7 +7342,8 @@ bool MobSpellUp(P_char ch)
 		if (!is_multiclass)
 			return FALSE;
 	}
-	if (GET_CLASS(ch, CLASS_PSIONICIST | CLASS_MINDFLAYER) && (is_multiclass ? number(0, 2) : 1))
+	if (GET_CLASS(ch, CLASS_PSIONICIST | CLASS_MINDFLAYER) &&
+	    (is_multiclass ? number(0, 2) : 1))
 	{
 		if (WillPsionicistSpell(ch, ch))
 			return TRUE;
@@ -6862,13 +7479,13 @@ bool MobSpellUp(P_char ch)
 
 void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 {
-	P_char              tmp_ch, rider;
-	P_obj               obj, obj2, best_obj, next_obj;
-	char                Gbuf1[MAX_STRING_LENGTH];
-	int                 door, moved, max, i;
+	P_char tmp_ch, rider;
+	P_obj obj, obj2, best_obj, next_obj;
+	char Gbuf1[MAX_STRING_LENGTH];
+	int door, moved, max, i;
 	struct follow_type *fol, *k;
-	bool                CombatInRoom;
-	int                 rnum;
+	bool CombatInRoom;
+	int rnum;
 
 	if (!IS_ALIVE(ch) || IS_PC(ch))
 	{
@@ -6888,8 +7505,10 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 
 	if (!ch->only.npc)
 	{
-		wizlog(IMMORTAL, "PANIC! NewMobAct called with an invalid npc! #%d", mob_index[GET_RNUM(ch)].virtual_number);
-		logit(LOG_DEBUG, "NewMobAct called with an invalid npc! #%d", mob_index[GET_RNUM(ch)].virtual_number);
+		wizlog(IMMORTAL, "PANIC! NewMobAct called with an invalid npc! #%d",
+		       mob_index[GET_RNUM(ch)].virtual_number);
+		logit(LOG_DEBUG, "NewMobAct called with an invalid npc! #%d",
+		      mob_index[GET_RNUM(ch)].virtual_number);
 		return;
 	}
 	//  if(get_linked_char(ch, LNK_RIDING))
@@ -6902,7 +7521,8 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	 * check the special first.
 	 */
 
-	if (!CAN_ACT(ch) || IS_SET(ch->specials.affected_by2, AFF2_MAJOR_PARALYSIS | AFF2_MINOR_PARALYSIS | AFF2_CASTING))
+	if (!CAN_ACT(ch) || IS_SET(ch->specials.affected_by2,
+				   AFF2_MAJOR_PARALYSIS | AFF2_MINOR_PARALYSIS | AFF2_CASTING))
 	{ // 0.01%
 		/*
 		 * check bit more oft for acting if silly bugger cannot do shit
@@ -6943,7 +7563,8 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	PROFILE_START(mundane_autoinvis);
 	if (GET_RACE(ch) == RACE_A_ELEMENTAL || IS_WRAITH(ch) || IS_BRALANI(ch))
 	{ // 2%
-		if (!IS_SET(ch->specials.affected_by, AFF_INVISIBLE) && !IS_FIGHTING(ch) && !IS_CASTING(ch))
+		if (!IS_SET(ch->specials.affected_by, AFF_INVISIBLE) && !IS_FIGHTING(ch) &&
+		    !IS_CASTING(ch))
 		{
 			act("$n fades from your mortal viewing...", TRUE, ch, 0, 0, TO_ROOM);
 			SET_BIT(ch->specials.affected_by, AFF_INVISIBLE);
@@ -6965,11 +7586,13 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	PROFILE_START(mundane_wakeup);
 	if ((GET_STAT(ch) == STAT_SLEEPING) && !ALONE(ch) &&
 	    /*(ch->in_room != NOWHERE) && - included in ALONE macro -Odorf */
-	    !IS_ROOM(ch->in_room, ROOM_SILENT) && !IS_AFFECTED(ch, AFF_SLEEP) && !IS_AFFECTED(ch, AFF_KNOCKED_OUT))
+	    !IS_ROOM(ch->in_room, ROOM_SILENT) && !IS_AFFECTED(ch, AFF_SLEEP) &&
+	    !IS_AFFECTED(ch, AFF_KNOCKED_OUT))
 	{ // 1.3%
 		LOOP_THRU_PEOPLE(tmp_ch, ch)
 		{ // 5.4%
-			if ((ch != tmp_ch) && IS_FIGHTING(tmp_ch) && (number(0, 120) <= GET_LEVEL(ch)))
+			if ((ch != tmp_ch) && IS_FIGHTING(tmp_ch) &&
+			    (number(0, 120) <= GET_LEVEL(ch)))
 			{
 				do_wake(ch, 0, -4);
 				send_to_char("Who can sleep with all this noise?\r\n", ch);
@@ -6982,7 +7605,7 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 
 	PROFILE_START(mundane_commune);
 	if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch) && !number(0, 20)) // If not fighting, "mem"
-	{                                                             // 5%
+	{ // 5%
 		// made a separate procedure for mobs, w/o sprintfs and all  -Odorf
 		do_npc_commune(ch);
 	}
@@ -7029,18 +7652,22 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	PROFILE_END(mundane_specproc);
 	*/
 	if (!MIN_POS(ch, POS_STANDING + STAT_NORMAL))
-	{                // 3%
+	{ // 3%
 		goto normal; /* not much we can do, if they can't stand */
 	}
 
 	PROFILE_START(mundane_mobcast);
 	// If they're not a sentinel in a safe zone? and they're not a pet with master in room.
-	if (!(IS_SET(ch->specials.act, ACT_SENTINEL) && CHAR_IN_SAFE_ROOM(ch)) && !(IS_PC_PET(ch) && (ch->in_room == GET_MASTER(ch)->in_room)))
+	if (!(IS_SET(ch->specials.act, ACT_SENTINEL) && CHAR_IN_SAFE_ROOM(ch)) &&
+	    !(IS_PC_PET(ch) && (ch->in_room == GET_MASTER(ch)->in_room)))
 	{ // 100%
-		if (GET_CLASS(ch,
-		              CLASS_CLERIC | CLASS_SHAMAN | CLASS_ETHERMANCER | CLASS_DRUID | CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_THEURGIST | CLASS_ILLUSIONIST | CLASS_WARLOCK |
-		                  CLASS_PSIONICIST | CLASS_MINDFLAYER | CLASS_SUMMONER | CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_BLIGHTER | CLASS_RANGER | CLASS_REAVER | CLASS_ALCHEMIST | CLASS_BARD |
-		                  CLASS_BERSERKER | CLASS_MONK))
+		if (GET_CLASS(ch, CLASS_CLERIC | CLASS_SHAMAN | CLASS_ETHERMANCER | CLASS_DRUID |
+					  CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER |
+					  CLASS_THEURGIST | CLASS_ILLUSIONIST | CLASS_WARLOCK |
+					  CLASS_PSIONICIST | CLASS_MINDFLAYER | CLASS_SUMMONER |
+					  CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_BLIGHTER |
+					  CLASS_RANGER | CLASS_REAVER | CLASS_ALCHEMIST |
+					  CLASS_BARD | CLASS_BERSERKER | CLASS_MONK))
 		{
 			// If they start to spellup, goto normal
 			if (MobSpellUp(ch))
@@ -7056,8 +7683,10 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	if (IS_SET(ch->specials.act, ACT_MEMORY) && !IS_FIGHTING(ch))
 	{ // 85%
 		if (IS_SET(ch->specials.act, ACT_HUNTER) || affected_by_spell(ch, SKILL_TAUNT))
-		{                                                       // 38%
-			if (ch->only.npc != NULL && GET_MEMORY(ch) != NULL) // guardcheck (no hunt will happen if mob has no memory)  -Odorf
+		{ // 38%
+			if (ch->only.npc != NULL &&
+			    GET_MEMORY(ch) !=
+				    NULL) // guardcheck (no hunt will happen if mob has no memory)  -Odorf
 			{
 				PROFILE_START(mundane_track_1);
 				if (InitNewMobHunt(ch))
@@ -7071,7 +7700,8 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 			else
 			{
 				PROFILE_START(mundane_track_2);
-				if (TryToGetHome(ch)) // if mob has no memory it might still want to go back  -Odorf
+				if (TryToGetHome(
+					    ch)) // if mob has no memory it might still want to go back  -Odorf
 				{
 					PROFILE_END(mundane_track_2);
 					PROFILE_END(mundane_track);
@@ -7081,7 +7711,8 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 			}
 		}
 
-		if (GET_MEMORY(ch) != NULL) // guardcheck (no real action will happen in either function if mob has no memory) -Odorf
+		if (GET_MEMORY(ch) !=
+		    NULL) // guardcheck (no real action will happen in either function if mob has no memory) -Odorf
 		{
 			PROFILE_START(mundane_track_3);
 			if (CheckForRemember(ch))
@@ -7095,7 +7726,8 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 			PROFILE_START(mundane_track_4);
 			mobact_memoryHandle(ch);
 			PROFILE_END(mundane_track_4);
-			if (/*!ch - no need -Odorf ||*/ !CAN_ACT(ch)) //  do we really need to check CAN_ACT here? -Odorf
+			if (/*!ch - no need -Odorf ||*/ !CAN_ACT(
+				ch)) //  do we really need to check CAN_ACT here? -Odorf
 			{
 				PROFILE_END(mundane_track);
 				goto normal;
@@ -7106,7 +7738,10 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	/* check for mobs that can break charm - DCL */
 
 	PROFILE_START(mundane_charmbreak);
-	if (IS_AFFECTED(ch, AFF_CHARM) && IS_SET(ch->specials.act, ACT_BREAK_CHARM) && ((!number(0, 3) && NewSaves(ch, SAVING_PARA, 0) && ch->only.npc->R_num != real_mobile(6)) || IS_SHOPKEEPER(ch)))
+	if (IS_AFFECTED(ch, AFF_CHARM) && IS_SET(ch->specials.act, ACT_BREAK_CHARM) &&
+	    ((!number(0, 3) && NewSaves(ch, SAVING_PARA, 0) &&
+	      ch->only.npc->R_num != real_mobile(6)) ||
+	     IS_SHOPKEEPER(ch)))
 	{ // 0%
 		clear_links(ch, LNK_PET);
 		if (ch->following && CAN_SEE(ch, ch->following))
@@ -7121,9 +7756,11 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 			{
 				if (IS_HUMANOID(ch))
 				{
-					snprintf(Gbuf1, MAX_STRING_LENGTH, "point %s", GET_NAME(tmp_ch));
+					snprintf(Gbuf1, MAX_STRING_LENGTH, "point %s",
+						 GET_NAME(tmp_ch));
 					command_interpreter(ch, Gbuf1);
-					act("\"You charmed me against my will.  Now you will pay!\" $n growls.", FALSE, ch, 0, 0, TO_ROOM);
+					act("\"You charmed me against my will.  Now you will pay!\" $n growls.",
+					    FALSE, ch, 0, 0, TO_ROOM);
 				}
 				MobStartFight(ch, tmp_ch);
 				goto normal;
@@ -7175,7 +7812,9 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 			if (EXIT(ch, i) && IS_WALLED(ch->in_room, i))
 			{
 				// I know it's a little messy, but this stops pets from dispelling / breaking walls with owner there.
-				if ((((tmp_ch = get_linked_char(ch, LNK_PET)) != NULL) && IS_PC(tmp_ch) && (tmp_ch->in_room == ch->in_room)) || MobDestroyWall(ch, i))
+				if ((((tmp_ch = get_linked_char(ch, LNK_PET)) != NULL) &&
+				     IS_PC(tmp_ch) && (tmp_ch->in_room == ch->in_room)) ||
+				    MobDestroyWall(ch, i))
 				{
 					PROFILE_END(mundane_wallbreak);
 					goto normal;
@@ -7195,18 +7834,26 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	 */
 
 	PROFILE_START(mundane_picktarget);
-	if ((GET_POS(ch) > POS_SITTING) && !IS_FIGHTING(ch) && !ALONE(ch) && (tmp_ch = PickTarget(ch)))
+	if ((GET_POS(ch) > POS_SITTING) && !IS_FIGHTING(ch) && !ALONE(ch) &&
+	    (tmp_ch = PickTarget(ch)))
 	{
-		int calming   = 0;
+		int calming = 0;
 		int nocalming = 0;
-		if ((IS_RACEWAR_EVIL(tmp_ch) && IS_SET(hometowns[VNUM2TOWN(world[tmp_ch->in_room].number) - 1].flags, JUSTICE_GOODHOME)) ||
-		    (IS_RACEWAR_GOOD(tmp_ch) && IS_SET(hometowns[VNUM2TOWN(world[tmp_ch->in_room].number) - 1].flags, JUSTICE_EVILHOME)))
+		if ((IS_RACEWAR_EVIL(tmp_ch) &&
+		     IS_SET(hometowns[VNUM2TOWN(world[tmp_ch->in_room].number) - 1].flags,
+			    JUSTICE_GOODHOME)) ||
+		    (IS_RACEWAR_GOOD(tmp_ch) &&
+		     IS_SET(hometowns[VNUM2TOWN(world[tmp_ch->in_room].number) - 1].flags,
+			    JUSTICE_EVILHOME)))
 			nocalming = 1;
 
 		// Alright, if !elite ch and !nocalming.. check for calming:
 		//   if ch's level <= target's level - 5 or 25% hit,
 		//   and target has innate calming and isn't a reflection/image.
-		if (!IS_ELITE(ch) && !nocalming && ((GET_LEVEL(ch) - GET_LEVEL(tmp_ch) <= 5) || !number(0, 3)) && (has_innate(tmp_ch, INNATE_CALMING) && !(IS_NPC(tmp_ch) && GET_VNUM(tmp_ch) == 250)))
+		if (!IS_ELITE(ch) && !nocalming &&
+		    ((GET_LEVEL(ch) - GET_LEVEL(tmp_ch) <= 5) || !number(0, 3)) &&
+		    (has_innate(tmp_ch, INNATE_CALMING) &&
+		     !(IS_NPC(tmp_ch) && GET_VNUM(tmp_ch) == 250)))
 		{
 			calming = (int)get_property("innate.calming.delay", 10);
 		}
@@ -7215,7 +7862,7 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 		if (calmcheck(ch))
 		{
 			int calmroll = CALMCHANCE(ch) / 2;
-			calming      = BOUNDED(1, calmroll, 20);
+			calming = BOUNDED(1, calmroll, 20);
 		}
 
 		add_event(event_agg_attack, 1 + calming, ch, tmp_ch, 0, 0, 0, 0);
@@ -7229,12 +7876,14 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	 */
 
 	PROFILE_START(mundane_attack);
-	if (IS_FIGHTING(ch) && MIN_POS(ch, POS_STANDING + STAT_RESTING) && !IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) && !IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
+	if (IS_FIGHTING(ch) && MIN_POS(ch, POS_STANDING + STAT_RESTING) &&
+	    !IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) && !IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS))
 	{ // 0%
 		tmp_ch = GET_OPPONENT(ch);
-		if (IS_NPC(tmp_ch) && GET_MASTER(tmp_ch) && (GET_MASTER(tmp_ch)->in_room == ch->in_room) && CAN_SEE(ch, GET_MASTER(tmp_ch)) && StatSave(ch, APPLY_INT, 0))
+		if (IS_NPC(tmp_ch) && GET_MASTER(tmp_ch) &&
+		    (GET_MASTER(tmp_ch)->in_room == ch->in_room) &&
+		    CAN_SEE(ch, GET_MASTER(tmp_ch)) && StatSave(ch, APPLY_INT, 0))
 		{
-
 			/* * switch targets (if we can) */
 			attack(ch, tmp_ch);
 			PROFILE_END(mundane_attack);
@@ -7262,18 +7911,26 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	 * check for battle noise next door - DCL
 	 */
 
-	if (IS_SET(ch->specials.act2, ACT2_COMBAT_NEARBY) && !CombatInRoom && !IS_SET(ch->specials.act, ACT_SENTINEL) && !IS_PATROL(ch) && IS_SET(ch->specials.act, ACT_PROTECTOR) &&
-	    ((door = number(0, 10)) < 6) && (ch->in_room != NOWHERE) && !IS_ROOM(ch->in_room, ROOM_SILENT) && !IS_SET(zone_table[world[ch->in_room].zone].flags, ZONE_SILENT) &&
+	if (IS_SET(ch->specials.act2, ACT2_COMBAT_NEARBY) && !CombatInRoom &&
+	    !IS_SET(ch->specials.act, ACT_SENTINEL) && !IS_PATROL(ch) &&
+	    IS_SET(ch->specials.act, ACT_PROTECTOR) && ((door = number(0, 10)) < 6) &&
+	    (ch->in_room != NOWHERE) && !IS_ROOM(ch->in_room, ROOM_SILENT) &&
+	    !IS_SET(zone_table[world[ch->in_room].zone].flags, ZONE_SILENT) &&
 	    (MIN_POS(ch, POS_STANDING + STAT_NORMAL)))
 	{
 		for (door = 0; door < NUM_EXITS; door++)
 		{
-			if (CAN_GO(ch, door) && !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_MOB) && (world[EXIT(ch, door)->to_room].zone == world[ch->in_room].zone) &&
-			    !IS_SET(zone_table[world[EXIT(ch, door)->to_room].zone].flags, ZONE_SILENT) && !IS_ROOM(EXIT(ch, door)->to_room, ROOM_SILENT) && (EXIT(ch, door)->to_room != NOWHERE)
+			if (CAN_GO(ch, door) && !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_MOB) &&
+			    (world[EXIT(ch, door)->to_room].zone == world[ch->in_room].zone) &&
+			    !IS_SET(zone_table[world[EXIT(ch, door)->to_room].zone].flags,
+				    ZONE_SILENT) &&
+			    !IS_ROOM(EXIT(ch, door)->to_room, ROOM_SILENT) &&
+			    (EXIT(ch, door)->to_room != NOWHERE)
 			    /* &&!IS_ROOM(EXIT(ch, door)->to_room, ROOM_MAGIC_DARK) */)
 			{
 				P_char next;
-				for (tmp_ch = world[EXIT(ch, door)->to_room].people; tmp_ch; tmp_ch = next)
+				for (tmp_ch = world[EXIT(ch, door)->to_room].people; tmp_ch;
+				     tmp_ch = next)
 				{
 					next = tmp_ch->next_in_room;
 
@@ -7303,7 +7960,7 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 		   re-scan from the head after every pickup instead.  The counter caps
 		   the rescan in case do_get() declines to take the pile. */
 		bool took_coins;
-		int  coin_scans = 0;
+		int coin_scans = 0;
 
 		do
 		{
@@ -7314,7 +7971,8 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 				next_obj = obj->next_content;
 				if (IS_SET(obj->extra_flags, ITEM_SECRET))
 					continue;
-				if (obj->type == ITEM_MONEY && CAN_CARRY_W(ch) >= GET_OBJ_WEIGHT(obj))
+				if (obj->type == ITEM_MONEY &&
+				    CAN_CARRY_W(ch) >= GET_OBJ_WEIGHT(obj))
 				{
 					strcpy(Gbuf1, "coins");
 					do_get(ch, Gbuf1, CMD_GET);
@@ -7325,9 +7983,11 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 		} while (took_coins && ++coin_scans < 20);
 	}
 
-	if (IS_SET(ch->specials.act, ACT_SCAVENGER) && world[ch->in_room].contents && (!number(0, MAX(1, 15 - STAT_INDEX(GET_C_INT(ch))))) && !IS_FIGHTING(ch) && !IS_ANIMAL(ch))
+	if (IS_SET(ch->specials.act, ACT_SCAVENGER) && world[ch->in_room].contents &&
+	    (!number(0, MAX(1, 15 - STAT_INDEX(GET_C_INT(ch))))) && !IS_FIGHTING(ch) &&
+	    !IS_ANIMAL(ch))
 	{
-		max      = 1;
+		max = 1;
 		best_obj = NULL;
 		for (obj = world[ch->in_room].contents; obj; obj = next_obj)
 		{
@@ -7338,7 +7998,9 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 			// ground, in order of value.
 			//
 
-			if (IS_SET(obj->extra_flags, ITEM_SECRET) || IS_SET(obj->extra_flags, ITEM_NOSHOW) || IS_SET(obj->extra_flags, ITEM_BURIED) || !CAN_WEAR(obj, ITEM_TAKE))
+			if (IS_SET(obj->extra_flags, ITEM_SECRET) ||
+			    IS_SET(obj->extra_flags, ITEM_NOSHOW) ||
+			    IS_SET(obj->extra_flags, ITEM_BURIED) || !CAN_WEAR(obj, ITEM_TAKE))
 				continue;
 
 			if (CAN_GET_OBJ(ch, obj, rider) || IS_CONTAINER(obj))
@@ -7347,12 +8009,16 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 					if (IS_CONTAINER(obj) && ItemsIn(obj) >= 1)
 					{
 						best_obj = obj;
-						max      = 0 - ItemsIn(obj);
+						max = 0 - ItemsIn(obj);
 					}
-					else if ((!IS_CONTAINER(obj) || CAN_GET_OBJ(ch, obj, rider)) && (obj->weight <= 120) && ((obj->cost * 100 / number(75, 125)) > max) && (RateObject(ch, 0, obj) >= 0))
+					else if ((!IS_CONTAINER(obj) ||
+						  CAN_GET_OBJ(ch, obj, rider)) &&
+						 (obj->weight <= 120) &&
+						 ((obj->cost * 100 / number(75, 125)) > max) &&
+						 (RateObject(ch, 0, obj) >= 0))
 					{
 						best_obj = obj;
-						max      = obj->cost;
+						max = obj->cost;
 					}
 				}
 		}
@@ -7369,15 +8035,20 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 						goto normal;
 				}
 				//      act("$n examines $p.", FALSE, ch, best_obj, 0, TO_ROOM);
-				for (obj = best_obj->contains; obj && (CAN_CARRY_N(ch) > IS_CARRYING_N(ch)); obj = obj2)
+				for (obj = best_obj->contains;
+				     obj && (CAN_CARRY_N(ch) > IS_CARRYING_N(ch)); obj = obj2)
 				{
 					obj2 = obj->next_content;
-					if (IS_SET(obj->extra_flags, ITEM_SECRET) || IS_SET(obj->extra_flags, ITEM_NOSHOW) || IS_SET(obj->extra_flags, ITEM_BURIED) || !CAN_WEAR(obj, ITEM_TAKE))
+					if (IS_SET(obj->extra_flags, ITEM_SECRET) ||
+					    IS_SET(obj->extra_flags, ITEM_NOSHOW) ||
+					    IS_SET(obj->extra_flags, ITEM_BURIED) ||
+					    !CAN_WEAR(obj, ITEM_TAKE))
 						continue;
 					if (obj->type == ITEM_MONEY)
 					{
 						get(ch, obj, best_obj, FALSE);
-						act("$n gets some stuff from $p.", FALSE, ch, best_obj, 0, TO_ROOM);
+						act("$n gets some stuff from $p.", FALSE, ch,
+						    best_obj, 0, TO_ROOM);
 						continue;
 					}
 					else
@@ -7385,14 +8056,19 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 						get(ch, obj, best_obj, FALSE);
 						if (!OBJ_CARRIED_BY(obj, ch))
 							continue; // obj is notake, or too heavy
-						act("$n gets some stuff from $p.", FALSE, ch, best_obj, 0, TO_ROOM);
-						if (!IS_ANIMAL(ch) && !IS_DRAGON(ch) && !IS_UNDEAD(ch))
+						act("$n gets some stuff from $p.", FALSE, ch,
+						    best_obj, 0, TO_ROOM);
+						if (!IS_ANIMAL(ch) && !IS_DRAGON(ch) &&
+						    !IS_UNDEAD(ch))
 							CheckEqWorthUsing(ch, obj);
 					}
 				}
 				goto normal;
 			}
-			else if (!IS_SET(best_obj->extra_flags, ITEM_SECRET) && !IS_SET(best_obj->extra_flags, ITEM_BURIED) && !IS_SET(best_obj->extra_flags, ITEM_NOSHOW) && CAN_WEAR(best_obj, ITEM_TAKE))
+			else if (!IS_SET(best_obj->extra_flags, ITEM_SECRET) &&
+				 !IS_SET(best_obj->extra_flags, ITEM_BURIED) &&
+				 !IS_SET(best_obj->extra_flags, ITEM_NOSHOW) &&
+				 CAN_WEAR(best_obj, ITEM_TAKE))
 			{
 				if (OBJ_ROOM(best_obj))
 					obj_from_room(best_obj);
@@ -7417,10 +8093,16 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	/* random wanderings */
 
 	PROFILE_START(mundane_wander);
-	if (!IS_FIGHTING(ch) && !IS_PATROL(ch) && !GET_MASTER(ch) && !get_linking_char(ch, LNK_RIDING) && should_teacher_move(ch))
+	if (!IS_FIGHTING(ch) && !IS_PATROL(ch) && !GET_MASTER(ch) &&
+	    !get_linking_char(ch, LNK_RIDING) && should_teacher_move(ch))
 	{ // 96%
-		if ((!IS_SET(ch->specials.act, ACT_SENTINEL) || (IS_ROOM(ch->in_room, ROOM_SAFE) && IS_AGGRESSIVE(ch) && GET_HIT(ch) > GET_MAX_HIT(ch) / 2)) && (MIN_POS(ch, POS_STANDING + STAT_RESTING)) &&
-		    ((door = number(0, NUM_EXITS)) < NUM_EXITS) && CAN_GO(ch, door) && !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_MOB) && world[EXIT(ch, door)->to_room].sector_type != SECT_NO_GROUND)
+		if ((!IS_SET(ch->specials.act, ACT_SENTINEL) ||
+		     (IS_ROOM(ch->in_room, ROOM_SAFE) && IS_AGGRESSIVE(ch) &&
+		      GET_HIT(ch) > GET_MAX_HIT(ch) / 2)) &&
+		    (MIN_POS(ch, POS_STANDING + STAT_RESTING)) &&
+		    ((door = number(0, NUM_EXITS)) < NUM_EXITS) && CAN_GO(ch, door) &&
+		    !IS_ROOM(EXIT(ch, door)->to_room, ROOM_NO_MOB) &&
+		    world[EXIT(ch, door)->to_room].sector_type != SECT_NO_GROUND)
 		{ // 13%
 			if (ch->only.npc->last_direction == door)
 			{
@@ -7428,10 +8110,14 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 			}
 			else
 			{ // 11%
-				if (!IS_SET(ch->specials.act, ACT_STAY_ZONE) || (world[EXIT(ch, door)->to_room].zone == world[ch->in_room].zone))
+				if (!IS_SET(ch->specials.act, ACT_STAY_ZONE) ||
+				    (world[EXIT(ch, door)->to_room].zone ==
+				     world[ch->in_room].zone))
 				{ // 11%
 					/* Couldn't move, so let's try again fairly soon */
-					if (IS_RANDOM_MOB(ch) && (world[EXIT(ch, door)->to_room].sector_type != world[ch->in_room].sector_type))
+					if (IS_RANDOM_MOB(ch) &&
+					    (world[EXIT(ch, door)->to_room].sector_type !=
+					     world[ch->in_room].sector_type))
 					{ // 0.0001%
 						PROFILE_END(mundane_wander);
 						goto quick;
@@ -7447,7 +8133,9 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 					}
 
 					/* Road wandering mobs move faster */
-					if (IS_RANDOM_MOB(ch) && EXIT(ch, door) && (world[EXIT(ch, door)->to_room].sector_type == SECT_CITY))
+					if (IS_RANDOM_MOB(ch) && EXIT(ch, door) &&
+					    (world[EXIT(ch, door)->to_room].sector_type ==
+					     SECT_CITY))
 					{ // 0%
 						PROFILE_END(mundane_wander);
 						goto quick;
@@ -7466,7 +8154,9 @@ normal: // 99.999%
 	if (remember_array[world[ch->in_room].zone])
 		add_event(event_mob_mundane, PULSE_MOBILE + number(-4, 4), ch, 0, 0, 0, 0, 0);
 	else
-		add_event(event_mob_mundane, PULSE_MOBILE * PLAYERLESS_ZONE_SPEED_MODIFIER + number(-4, 4), ch, 0, 0, 0, 0, 0);
+		add_event(event_mob_mundane,
+			  PULSE_MOBILE * PLAYERLESS_ZONE_SPEED_MODIFIER + number(-4, 4), ch, 0, 0,
+			  0, 0, 0);
 	PROFILE_END(mundane_newevent);
 	return;
 
@@ -7481,7 +8171,8 @@ bool MobDestroyWall(P_char ch, int dir, bool bTryHit)
 {
 	// find which wall in ch->in_room is blocking dir, and forward to
 	// MobDestroyWall(ch, wall)
-	if (!ch || (ch->in_room == NOWHERE) || !EXIT(ch, dir) || !IS_WALLED(ch->in_room, dir) || !CAN_ACT(ch))
+	if (!ch || (ch->in_room == NOWHERE) || !EXIT(ch, dir) || !IS_WALLED(ch->in_room, dir) ||
+	    !CAN_ACT(ch))
 		return false;
 
 	if (!bTryHit && !npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) && !IS_PATROL(ch))
@@ -7502,7 +8193,7 @@ bool MobDestroyWall(P_char ch, int dir, bool bTryHit)
 
 bool MobDestroyWall(P_char ch, P_obj wall, bool bTryHit)
 {
-	bool bIsSecret   = false;
+	bool bIsSecret = false;
 	bool bImpossible = false;
 
 	if (!ch)
@@ -7550,13 +8241,16 @@ bool MobDestroyWall(P_char ch, P_obj wall, bool bTryHit)
 			// about the cmd.
 			if (obj_index[wall->R_num].func.obj)
 			{
-				bImpossible = !((*obj_index[wall->R_num].func.obj)(wall, ch, CMD_HIT, cmdBuf));
+				bImpossible = !((*obj_index[wall->R_num].func.obj)(
+					wall, ch, CMD_HIT, cmdBuf));
 				// special for PATROLS - if the wall isn't hittable, then
 				// use a special dispel magic
 				if (bImpossible && IS_PATROL(ch))
 				{
-					act("$n utters a word of power while pointing at $p.", FALSE, ch, wall, NULL, TO_ROOM);
-					spell_dispel_magic(MAX(50, GET_LEVEL(ch)), ch, 0, SPELL_TYPE_SPELL, 0, wall);
+					act("$n utters a word of power while pointing at $p.",
+					    FALSE, ch, wall, NULL, TO_ROOM);
+					spell_dispel_magic(MAX(50, GET_LEVEL(ch)), ch, 0,
+							   SPELL_TYPE_SPELL, 0, wall);
 				}
 			}
 		}
@@ -7573,9 +8267,9 @@ void mobact_rescueHandle(P_char mob, P_char attacker)
 {
 #define comrade_inSameGroup(A, B) ((IS_NPC(A) && IS_NPC(B) && (GET_RNUM(A) == GET_RNUM(B))))
 
-	int    door, opp_dir, to_room;
+	int door, opp_dir, to_room;
 	P_char pl, next_pl;
-	char   buf[MAX_STRING_LENGTH]; /*, buf2[MAX_STRING_LENGTH]; */
+	char buf[MAX_STRING_LENGTH]; /*, buf2[MAX_STRING_LENGTH]; */
 
 	return;
 
@@ -7602,9 +8296,12 @@ void mobact_rescueHandle(P_char mob, P_char attacker)
 		if (pl != mob)
 		{
 			if (IS_GUARD(pl))
-				snprintf(buf, MAX_STRING_LENGTH, "Argh! Fighting right in front of me? Have you a deathwish?\r\n");
+				snprintf(
+					buf, MAX_STRING_LENGTH,
+					"Argh! Fighting right in front of me? Have you a deathwish?\r\n");
 			else
-				snprintf(buf, MAX_STRING_LENGTH, "Hey! That's my pal you're messing with!\r\n");
+				snprintf(buf, MAX_STRING_LENGTH,
+					 "Hey! That's my pal you're messing with!\r\n");
 			mobsay(pl, buf);
 			hit(pl, attacker, pl->equipment[PRIMARY_WEAPON]);
 
@@ -7619,7 +8316,6 @@ void mobact_rescueHandle(P_char mob, P_char attacker)
 
 	for (door = 0; door < NUM_EXITS; door++)
 	{
-
 		if ((door == DIR_UP) || (door == DIR_DOWN))
 			continue;
 		if (!EXIT(mob, door))
@@ -7646,7 +8342,8 @@ void mobact_rescueHandle(P_char mob, P_char attacker)
 			if (IS_PC(pl) || IS_MORPH(pl))
 				continue;
 
-			if (IS_FIGHTING(pl) || (GET_POS(pl) != POS_STANDING) || IS_SET(pl->specials.act, ACT_SENTINEL))
+			if (IS_FIGHTING(pl) || (GET_POS(pl) != POS_STANDING) ||
+			    IS_SET(pl->specials.act, ACT_SENTINEL))
 				continue;
 		}
 	}
@@ -7672,7 +8369,8 @@ int MobCanGo(P_char ch, int dir)
 	if (IS_ROOM(EXIT(ch, foo)->to_room, ROOM_NO_TRACK))
 		return FALSE;
 
-	if (IS_SET(ch->specials.act, ACT_STAY_ZONE) && !IS_SET(ch->specials.act, ACT_HUNTER) && (world[ch->in_room].zone != world[EXIT(ch, foo)->to_room].zone))
+	if (IS_SET(ch->specials.act, ACT_STAY_ZONE) && !IS_SET(ch->specials.act, ACT_HUNTER) &&
+	    (world[ch->in_room].zone != world[EXIT(ch, foo)->to_room].zone))
 		return FALSE;
 
 	if (IS_SET(ch->specials.act, ACT_SENTINEL) && !IS_SET(ch->specials.act, ACT_HUNTER))
@@ -7682,12 +8380,14 @@ int MobCanGo(P_char ch, int dir)
 	{
 		for (struct follow_type *k = ch->followers; k; k = k->next)
 		{
-			if (!CAN_GO(k->follower, foo) || !CAN_ACT(k->follower) || IS_CASTING(k->follower))
+			if (!CAN_GO(k->follower, foo) || !CAN_ACT(k->follower) ||
+			    IS_CASTING(k->follower))
 				return FALSE;
 		}
 	}
 
-	if (ch->player.birthplace && (EXIT(ch, foo)->to_room != ch->player.birthplace) && !IS_SET(ch->specials.act, ACT_HUNTER))
+	if (ch->player.birthplace && (EXIT(ch, foo)->to_room != ch->player.birthplace) &&
+	    !IS_SET(ch->specials.act, ACT_HUNTER))
 		return FALSE;
 
 	a = EXIT(ch, foo)->to_room;
@@ -7704,10 +8404,10 @@ int MobCanGo(P_char ch, int dir)
 void MobHuntCheck(P_char ch, P_char vict)
 {
 	P_char tmp;
-	int    a, ora;
-	int    room;
-	char   buf[10];
-	P_obj  t_obj, bs_weap = NULL;
+	int a, ora;
+	int room;
+	char buf[10];
+	P_obj t_obj, bs_weap = NULL;
 
 	if (IS_PC(ch))
 		return;
@@ -7730,7 +8430,8 @@ void MobHuntCheck(P_char ch, P_char vict)
 	/* mother fucking code needs some fucking sanity checks.  Here they
 	   come: */
 
-	if (IS_SET(ch->specials.act, ACT_STAY_ZONE) && (world[ch->in_room].zone != world[vict->in_room].zone))
+	if (IS_SET(ch->specials.act, ACT_STAY_ZONE) &&
+	    (world[ch->in_room].zone != world[vict->in_room].zone))
 		return;
 
 	if (IS_ROOM(vict->in_room, ROOM_NO_TRACK))
@@ -7762,16 +8463,21 @@ void MobHuntCheck(P_char ch, P_char vict)
 
 	if ((a = In_Adjacent_Room(ch, vict)) && MobCanGo(ch, a))
 		if (ch->in_room != vict->in_room)
-			if (number(1, 100) <= MIN(IS_SET(ch->specials.act, ACT_HUNTER) ? 97 : 90, 50 + GET_LEVEL(ch)))
+			if (number(1, 100) <=
+			    MIN(IS_SET(ch->specials.act, ACT_HUNTER) ? 97 : 90, 50 + GET_LEVEL(ch)))
 			{
 				if (IS_THIEF(ch))
 				{ /*
 				   * nice check to see if bs weapon
 				   * wielded
 				   */
-					if (!((ch->equipment[WIELD] && IS_BACKSTABBER(ch->equipment[WIELD])) || (ch->equipment[SECONDARY_WEAPON] && IS_BACKSTABBER(ch->equipment[SECONDARY_WEAPON]))))
+					if (!((ch->equipment[WIELD] &&
+					       IS_BACKSTABBER(ch->equipment[WIELD])) ||
+					      (ch->equipment[SECONDARY_WEAPON] &&
+					       IS_BACKSTABBER(ch->equipment[SECONDARY_WEAPON]))))
 					{
-						for (t_obj = ch->carrying; t_obj && !bs_weap; t_obj = t_obj->next_content)
+						for (t_obj = ch->carrying; t_obj && !bs_weap;
+						     t_obj = t_obj->next_content)
 							if (IS_BACKSTABBER(t_obj))
 								bs_weap = t_obj;
 						if (bs_weap)
@@ -7779,38 +8485,69 @@ void MobHuntCheck(P_char ch, P_char vict)
 							if (!ch->equipment[WIELD])
 							{
 								obj_from_char(bs_weap);
-								equip_char(ch, bs_weap, WIELD, FALSE);
+								equip_char(ch, bs_weap, WIELD,
+									   FALSE);
 							}
-							else if (!ch->equipment[SECONDARY_WEAPON] && !IS_SET(ch->equipment[WIELD]->extra_flags, ITEM_TWOHANDS))
+							else if (!ch->equipment[SECONDARY_WEAPON] &&
+								 !IS_SET(ch->equipment[WIELD]
+										 ->extra_flags,
+									 ITEM_TWOHANDS))
 							{
 								obj_from_char(bs_weap);
-								equip_char(ch, bs_weap, SECONDARY_WEAPON, FALSE);
+								equip_char(ch, bs_weap,
+									   SECONDARY_WEAPON, FALSE);
 							}
 							else
 							{
 								/*
 								 * got to clear a weapon slot
 								 */
-								if (IS_SET(ch->equipment[WIELD]->extra_flags, ITEM_TWOHANDS))
+								if (IS_SET(ch->equipment[WIELD]
+										   ->extra_flags,
+									   ITEM_TWOHANDS))
 								{
-									if (!IS_SET(ch->equipment[WIELD]->extra_flags, ITEM_NODROP))
+									if (!IS_SET(ch->equipment[WIELD]
+											    ->extra_flags,
+										    ITEM_NODROP))
 									{
-										obj_from_char(bs_weap);
-										obj_to_char(unequip_char(ch, WIELD), ch);
-										equip_char(ch, bs_weap, WIELD, FALSE);
+										obj_from_char(
+											bs_weap);
+										obj_to_char(
+											unequip_char(
+												ch,
+												WIELD),
+											ch);
+										equip_char(ch,
+											   bs_weap,
+											   WIELD,
+											   FALSE);
 									}
 								}
-								else if (!IS_SET(ch->equipment[SECONDARY_WEAPON]->extra_flags, ITEM_NODROP))
+								else if (!IS_SET(ch->equipment[SECONDARY_WEAPON]
+											 ->extra_flags,
+										 ITEM_NODROP))
 								{
 									obj_from_char(bs_weap);
-									obj_to_char(unequip_char(ch, SECONDARY_WEAPON), ch);
-									equip_char(ch, bs_weap, SECONDARY_WEAPON, FALSE);
+									obj_to_char(
+										unequip_char(
+											ch,
+											SECONDARY_WEAPON),
+										ch);
+									equip_char(ch, bs_weap,
+										   SECONDARY_WEAPON,
+										   FALSE);
 								}
-								else if (!IS_SET(ch->equipment[WIELD]->extra_flags, ITEM_NODROP))
+								else if (!IS_SET(ch->equipment[WIELD]
+											 ->extra_flags,
+										 ITEM_NODROP))
 								{
 									obj_from_char(bs_weap);
-									obj_to_char(unequip_char(ch, WIELD), ch);
-									equip_char(ch, bs_weap, WIELD, FALSE);
+									obj_to_char(
+										unequip_char(ch,
+											     WIELD),
+										ch);
+									equip_char(ch, bs_weap,
+										   WIELD, FALSE);
 								}
 							}
 						}
@@ -7822,7 +8559,7 @@ void MobHuntCheck(P_char ch, P_char vict)
 					if (!ch->player.birthplace)
 					{
 						ch->player.birthplace = world[ch->in_room].number;
-						ora                   = ch->in_room;
+						ora = ch->in_room;
 					}
 					else
 						ora = 0;
@@ -7893,7 +8630,9 @@ void MobHuntCheck(P_char ch, P_char vict)
 	if (ch->in_room != vict->in_room)
 	{
 		if (!IS_SET(ch->specials.act, ACT_SENTINEL) && /*IS_MAGE(ch) && */
-		    !IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) && !IS_ROOM(vict->in_room, ROOM_NO_TELEPORT) && world[ch->in_room].zone == world[vict->in_room].zone &&
+		    !IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) &&
+		    !IS_ROOM(vict->in_room, ROOM_NO_TELEPORT) &&
+		    world[ch->in_room].zone == world[vict->in_room].zone &&
 		    npc_has_spell_slot(ch, SPELL_DIMENSION_DOOR))
 			MobCastSpell(ch, vict, 0, SPELL_DIMENSION_DOOR, GET_LEVEL(ch));
 
@@ -7922,9 +8661,9 @@ void MobHuntCheck(P_char ch, P_char vict)
 #define GET_CHAR_ZONE(ch) world[(ch)->in_room].zone
 bool TryToGetHome(P_char ch)
 {
-	int       rr_birth;
+	int rr_birth;
 	hunt_data data;
-	P_nevent  ev;
+	P_nevent ev;
 
 	if (IS_PC(ch))
 		return FALSE;
@@ -7969,12 +8708,13 @@ bool TryToGetHome(P_char ch)
 		data.huntFlags |= BFS_CAN_DISPEL;
 	if (IS_MAGE(ch) || IS_AFFECTED(ch, AFF_FLY))
 		data.huntFlags |= BFS_CAN_FLY;
-	data.retry     = 0;
+	data.retry = 0;
 	data.retry_dir = 0;
 	data.path_step = -1;
 	if (!get_scheduled(ch, event_mob_hunt))
 	{
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
+		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
+			  sizeof(hunt_data));
 	}
 	// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, ch, data);
 
@@ -7992,7 +8732,7 @@ bool TryToGetHome(P_char ch)
 void clearRememberArray(void)
 {
 	struct remember_data *foo, *foo2;
-	int                   a;
+	int a;
 
 	for (a = 0; a < MAX_ZONES; a++)
 		if (remember_array[a] != NULL)
@@ -8018,8 +8758,8 @@ void AddToRememberArray(P_char ch, int zone)
 
 	CREATE(foo, remember_data, 1, MEM_TAG_REMEMBD);
 
-	foo->c               = ch;
-	foo->next            = remember_array[zone];
+	foo->c = ch;
+	foo->next = remember_array[zone];
 	remember_array[zone] = foo;
 }
 
@@ -8038,19 +8778,23 @@ void event_misfire_cooldown(P_char ch, P_char victim, P_obj obj, void *data)
 	if (info->zone_number < 0)
 	{
 		continent_misfire.misfiring[-(info->zone_number)][info->racewar_side] = FALSE;
-		debug("Misfire: Continent: %d - Racewar: &+%c%s&N ended.", -(info->zone_number), racewar_color[info->racewar_side].color, racewar_color[info->racewar_side].name);
+		debug("Misfire: Continent: %d - Racewar: &+%c%s&N ended.", -(info->zone_number),
+		      racewar_color[info->racewar_side].color,
+		      racewar_color[info->racewar_side].name);
 	}
 	else
 	{
 		zone_table[info->zone_number].misfiring[info->racewar_side] = FALSE;
-		debug(
-			"Misfire: Zone: %s %d - Racewar: &+%c%s&N ended.", zone_table[info->zone_number].name, info->zone_number, racewar_color[info->racewar_side].color, racewar_color[info->racewar_side].name);
+		debug("Misfire: Zone: %s %d - Racewar: &+%c%s&N ended.",
+		      zone_table[info->zone_number].name, info->zone_number,
+		      racewar_color[info->racewar_side].color,
+		      racewar_color[info->racewar_side].name);
 	}
 }
 
 void event_remove_misfire_cooldown(int zn, int racewar_side)
 {
-	P_nevent             e1;
+	P_nevent e1;
 	struct misfire_info *info;
 
 	for (int i = 0; i < PULSES_IN_TICK; i++)
@@ -8060,7 +8804,8 @@ void event_remove_misfire_cooldown(int zn, int racewar_side)
 			if (e1->func == event_misfire_cooldown)
 			{
 				info = (misfire_info *)(e1->data);
-				if ((info->racewar_side == racewar_side) && (info->zone_number == zn))
+				if ((info->racewar_side == racewar_side) &&
+				    (info->zone_number == zn))
 				{
 					clear_nevent(e1);
 					return;
@@ -8091,15 +8836,19 @@ void AddCharToZone(P_char ch)
 		{
 			// If the continent ch is on is back up to misfire size for ch's racewar side
 			//   and ch's racewar side is currently misfiring there.
-			if (((continent_misfire.players[CONTINENT(ch->in_room)][GET_RACEWAR(ch)])++ == misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)]) &&
+			if (((continent_misfire.players[CONTINENT(ch->in_room)][GET_RACEWAR(ch)])++ ==
+			     misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)]) &&
 			    continent_misfire.misfiring[CONTINENT(ch->in_room)][GET_RACEWAR(ch)])
 			{
 				// The negative sign means it's a continent and not a regular zone.
-				event_remove_misfire_cooldown(-CONTINENT(ch->in_room), GET_RACEWAR(ch));
+				event_remove_misfire_cooldown(-CONTINENT(ch->in_room),
+							      GET_RACEWAR(ch));
 			}
 		}
 		// If we're back up to misfire size and misfiring is ocurring.
-		else if ((zone_table[zn].players[GET_RACEWAR(ch)]++ == misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)]) && zone_table[zn].misfiring[GET_RACEWAR(ch)])
+		else if ((zone_table[zn].players[GET_RACEWAR(ch)]++ ==
+			  misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)]) &&
+			 zone_table[zn].misfiring[GET_RACEWAR(ch)])
 		{
 			event_remove_misfire_cooldown(zn, GET_RACEWAR(ch));
 		}
@@ -8131,9 +8880,9 @@ void send_to_zone_func(int z, int mask, const char *msg)
  */
 
 static char buf[MAX_STRING_LENGTH];
-void        zone_spellmessage(int room, bool hide_deaf, const char *msg, const char *msg_dir)
+void zone_spellmessage(int room, bool hide_deaf, const char *msg, const char *msg_dir)
 {
-	int                   z, mask;
+	int z, mask;
 	struct remember_data *chars_in_zone;
 
 	if ((room < 0) || (room > top_of_world))
@@ -8162,7 +8911,8 @@ void        zone_spellmessage(int room, bool hide_deaf, const char *msg, const c
 			{
 				if (msg_dir != NULL)
 				{
-					snprintf(buf, MAX_STRING_LENGTH, msg_dir, get_map_direction(c_room, room));
+					snprintf(buf, MAX_STRING_LENGTH, msg_dir,
+						 get_map_direction(c_room, room));
 					send_to_char(buf, chars_in_zone->c);
 				}
 				else
@@ -8171,11 +8921,13 @@ void        zone_spellmessage(int room, bool hide_deaf, const char *msg, const c
 		}
 		else if (IS_MAP_ROOM(room))
 		{
-			if (IS_MAP_ROOM(c_room) && (world[room].map_section != 0) && (world[room].map_section == world[c_room].map_section))
+			if (IS_MAP_ROOM(c_room) && (world[room].map_section != 0) &&
+			    (world[room].map_section == world[c_room].map_section))
 			{
 				if (msg_dir != NULL)
 				{
-					snprintf(buf, MAX_STRING_LENGTH, msg_dir, get_map_direction(c_room, room));
+					snprintf(buf, MAX_STRING_LENGTH, msg_dir,
+						 get_map_direction(c_room, room));
 					send_to_char(buf, chars_in_zone->c);
 				}
 				else
@@ -8193,7 +8945,7 @@ void        zone_spellmessage(int room, bool hide_deaf, const char *msg, const c
 
 void zone_powerspellmessage(int room, const char *msg)
 {
-	int                   z, mask;
+	int z, mask;
 	struct remember_data *chars_in_zone;
 
 	if ((room < 0) || (room > top_of_world))
@@ -8217,18 +8969,19 @@ void zone_powerspellmessage(int room, const char *msg)
 
 int CheckMindflayerPresence(P_char ch)
 {
-	int                   z;
-	int                   room;
+	int z;
+	int room;
 	struct remember_data *chars_in_zone;
 
 	return 0;
 
 	room = ch->in_room;
-	z    = world[room].zone;
+	z = world[room].zone;
 
 	for (chars_in_zone = remember_array[z]; chars_in_zone; chars_in_zone = chars_in_zone->next)
 	{
-		if (IS_ILLITHID(chars_in_zone->c) && (chars_in_zone->c != ch) && (GET_LEVEL(chars_in_zone->c) > 25))
+		if (IS_ILLITHID(chars_in_zone->c) && (chars_in_zone->c != ch) &&
+		    (GET_LEVEL(chars_in_zone->c) > 25))
 			return 1;
 	}
 	return 0;
@@ -8236,9 +8989,9 @@ int CheckMindflayerPresence(P_char ch)
 
 void DelCharFromZone(P_char ch)
 {
-	int                   zn;
+	int zn;
 	struct remember_data *foo, *foo2 = NULL;
-	struct misfire_info   misfire;
+	struct misfire_info misfire;
 
 	if (IS_NPC(ch))
 		return;
@@ -8254,23 +9007,28 @@ void DelCharFromZone(P_char ch)
 		// Surface map checks continent, others zone.
 		if (IS_SURFACE_MAP(ch->in_room))
 		{
-			if (((--continent_misfire.players[CONTINENT(ch->in_room)][GET_RACEWAR(ch)]) == misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)]) &&
+			if (((--continent_misfire.players[CONTINENT(ch->in_room)][GET_RACEWAR(ch)]) ==
+			     misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)]) &&
 			    continent_misfire.misfiring[CONTINENT(ch->in_room)][GET_RACEWAR(ch)])
 			{
 				// The negative sign means it's a continent and not a regular zone.
-				misfire.zone_number  = -CONTINENT(ch->in_room);
+				misfire.zone_number = -CONTINENT(ch->in_room);
 				misfire.racewar_side = GET_RACEWAR(ch);
 				// Create a cooldown timer for misfiring.
-				add_event(event_misfire_cooldown, MISFIRE_COOLDOWN, NULL, NULL, NULL, 0, &misfire, sizeof(misfire));
+				add_event(event_misfire_cooldown, MISFIRE_COOLDOWN, NULL, NULL,
+					  NULL, 0, &misfire, sizeof(misfire));
 			}
 		}
 		// If we're dropping below misfire size and misfiring is ocurring.
-		else if ((--zone_table[zn].players[GET_RACEWAR(ch)] == misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)]) && zone_table[zn].misfiring[GET_RACEWAR(ch)])
+		else if ((--zone_table[zn].players[GET_RACEWAR(ch)] ==
+			  misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)]) &&
+			 zone_table[zn].misfiring[GET_RACEWAR(ch)])
 		{
-			misfire.zone_number  = zn;
+			misfire.zone_number = zn;
 			misfire.racewar_side = GET_RACEWAR(ch);
 			// Create a cooldown timer for misfiring.
-			add_event(event_misfire_cooldown, MISFIRE_COOLDOWN, NULL, NULL, NULL, 0, &misfire, sizeof(misfire));
+			add_event(event_misfire_cooldown, MISFIRE_COOLDOWN, NULL, NULL, NULL, 0,
+				  &misfire, sizeof(misfire));
 		}
 	}
 
@@ -8278,7 +9036,7 @@ void DelCharFromZone(P_char ch)
 		return;
 	if (remember_array[zn]->c == ch)
 	{
-		foo                = remember_array[zn];
+		foo = remember_array[zn];
 		remember_array[zn] = foo->next;
 		FREE(foo);
 	}
@@ -8289,7 +9047,7 @@ void DelCharFromZone(P_char ch)
 				foo2 = foo;
 		if (foo2)
 		{
-			foo        = foo2->next;
+			foo = foo2->next;
 			foo2->next = foo->next;
 			FREE(foo);
 		}
@@ -8302,15 +9060,16 @@ void SetRememberArray(void)
 
 	clearRememberArray();
 	for (a = descriptor_list; a; a = a->next)
-		if (!a->connected && a->character && (a->character->in_room >= 0) && (GET_STAT(a->character) > STAT_DEAD))
+		if (!a->connected && a->character && (a->character->in_room >= 0) &&
+		    (GET_STAT(a->character) > STAT_DEAD))
 			AddToRememberArray(a->character, world[a->character->in_room].zone);
 }
 
 bool CheckForRemember(P_char ch)
 {
 	struct remember_data *a;
-	P_char                b = NULL, c = NULL, tmpch;
-	int                   real_birthroom;
+	P_char b = NULL, c = NULL, tmpch;
+	int real_birthroom;
 
 	if (!IS_ALIVE(ch) || !IS_NPC(ch))
 	{
@@ -8334,9 +9093,9 @@ bool CheckForRemember(P_char ch)
 
 	if (GET_HIT(ch) <= (GET_MAX_HIT(ch) / 3))
 	{
-
 		real_birthroom = real_room0(ch->player.birthplace);
-		if (IS_SET(ch->specials.act, ACT_SENTINEL) && real_birthroom && real_birthroom != ch->in_room)
+		if (IS_SET(ch->specials.act, ACT_SENTINEL) && real_birthroom &&
+		    real_birthroom != ch->in_room)
 		{
 			TryToGetHome(ch);
 		}
@@ -8386,13 +9145,14 @@ bool CheckForRemember(P_char ch)
 
 void mobact_memoryHandle(P_char mob)
 {
-	P_char  vict;
+	P_char vict;
 	Memory *mem;
 
 	if (CHAR_IN_SAFE_ROOM(mob))
 		return;
 
-	if (!HAS_MEMORY(mob) || IS_FIGHTING(mob) || ALONE(mob) || !IS_AWAKE(mob) || (NumAttackers(mob) > 0))
+	if (!HAS_MEMORY(mob) || IS_FIGHTING(mob) || ALONE(mob) || !IS_AWAKE(mob) ||
+	    (NumAttackers(mob) > 0))
 	{
 		return;
 	}
@@ -8407,12 +9167,16 @@ void mobact_memoryHandle(P_char mob)
 		{
 			if (mem->pcID == GET_PID(vict))
 			{
-				if ((IS_ROOM(mob->in_room, ROOM_SINGLE_FILE) && !AdjacentInRoom(mob, vict)) || !is_aggr_to(mob, vict))
+				if ((IS_ROOM(mob->in_room, ROOM_SINGLE_FILE) &&
+				     !AdjacentInRoom(mob, vict)) ||
+				    !is_aggr_to(mob, vict))
 					continue;
 				if (GET_HIT(mob) >= (GET_MAX_HIT(mob)) >> 2)
 				{
-					act("$n recognizes $N, and charges to attack!", FALSE, mob, 0, vict, TO_NOTVICT);
-					act("$n recognizes you, and charges to attack!", FALSE, mob, 0, vict, TO_VICT);
+					act("$n recognizes $N, and charges to attack!", FALSE, mob,
+					    0, vict, TO_NOTVICT);
+					act("$n recognizes you, and charges to attack!", FALSE, mob,
+					    0, vict, TO_VICT);
 
 					MobStartFight(mob, vict);
 					return;
@@ -8452,9 +9216,11 @@ bool npc_has_spell_slot(P_char mob, int spl)
 			}
 		}
 	}
-	else if (SKILL_DATA_ALL(mob, spl).maxlearn[0] || SKILL_DATA_ALL(mob, spl).maxlearn[mob->player.spec])
+	else if (SKILL_DATA_ALL(mob, spl).maxlearn[0] ||
+		 SKILL_DATA_ALL(mob, spl).maxlearn[mob->player.spec])
 	{
-		min_circle = MIN(SKILL_DATA_ALL(mob, spl).rlevel[0], SKILL_DATA_ALL(mob, spl).rlevel[mob->player.spec]);
+		min_circle = MIN(SKILL_DATA_ALL(mob, spl).rlevel[0],
+				 SKILL_DATA_ALL(mob, spl).rlevel[mob->player.spec]);
 	}
 
 	if (min_circle <= MAX_CIRCLE && mob->specials.undead_spell_slots[min_circle] > 0)
@@ -8465,11 +9231,11 @@ bool npc_has_spell_slot(P_char mob, int spl)
 
 bool InitNewMobHunt(P_char ch)
 {
-	P_nevent              ev = NULL;
+	P_nevent ev = NULL;
 	struct remember_data *a;
-	P_char                tmpch = NULL;
-	int                   dummy;
-	hunt_data             data;
+	P_char tmpch = NULL;
+	int dummy;
+	hunt_data data;
 	struct affected_type *af = NULL;
 
 	if (!ch)
@@ -8486,7 +9252,9 @@ bool InitNewMobHunt(P_char ch)
 		tmpch = (P_char)af->context;
 	}
 
-	if (IS_SET(ch->specials.act2, ACT2_NO_LURE) || (tmpch && !IS_ALIVE(tmpch)) || (!IS_SET(ch->specials.act, ACT_HUNTER) && !tmpch) || IS_FIGHTING(ch) || (GET_MASTER(ch) && !tmpch))
+	if (IS_SET(ch->specials.act2, ACT2_NO_LURE) || (tmpch && !IS_ALIVE(tmpch)) ||
+	    (!IS_SET(ch->specials.act, ACT_HUNTER) && !tmpch) || IS_FIGHTING(ch) ||
+	    (GET_MASTER(ch) && !tmpch))
 	{
 		return FALSE;
 	}
@@ -8541,24 +9309,30 @@ bool InitNewMobHunt(P_char ch)
 			if (!IS_AFFECTED(ch, AFF_FLY) && (tmpch->specials.z_cord > 0))
 				return FALSE;
 
-			long hunt_flags = (IS_MAGE(ch) || IS_AFFECTED(ch, AFF_FLY)) ? BFS_CAN_FLY : 0;
+			long hunt_flags = (IS_MAGE(ch) || IS_AFFECTED(ch, AFF_FLY)) ? BFS_CAN_FLY :
+										      0;
 			hunt_flags |= BFS_AVOID_NOMOB;
 
 			if (((GET_LEVEL(ch) * 2) + GET_C_INT(ch)) >= 190)
-				hunt_flags |= (npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) ? BFS_CAN_DISPEL : BFS_BREAK_WALLS);
+				hunt_flags |= (npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) ?
+						       BFS_CAN_DISPEL :
+						       BFS_BREAK_WALLS);
 
 			if (IS_SET(ch->specials.act, ACT_STAY_ZONE))
 				hunt_flags |= BFS_STAY_ZONE;
 
-			if (!get_scheduled(ch, event_mob_hunt) && find_first_step(ch->in_room, tmpch->in_room, hunt_flags, 0, 0, &dummy) >= 0)
+			if (!get_scheduled(ch, event_mob_hunt) &&
+			    find_first_step(ch->in_room, tmpch->in_room, hunt_flags, 0, 0,
+					    &dummy) >= 0)
 			{
-				data.huntFlags   = hunt_flags;
-				data.hunt_type   = HUNT_HUNTER;
+				data.huntFlags = hunt_flags;
+				data.hunt_type = HUNT_HUNTER;
 				data.targ.victim = tmpch;
-				data.retry       = 0;
-				data.retry_dir   = 0;
-				data.path_step   = -1;
-				add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
+				data.retry = 0;
+				data.retry_dir = 0;
+				data.path_step = -1;
+				add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
+					  sizeof(hunt_data));
 
 				// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, ch, data);
 				return TRUE;
@@ -8574,7 +9348,10 @@ bool InitNewMobHunt(P_char ch)
 	return (TryToGetHome(ch));
 }
 
-bool valid_mob_hunt_edge(int from_room, int dir) { return VALID_TRACK_EDGE(from_room, dir); }
+bool valid_mob_hunt_edge(int from_room, int dir)
+{
+	return VALID_TRACK_EDGE(from_room, dir);
+}
 
 /*
  * NewMobHunt.  This will only be called from an event. InitNewMobHunt
@@ -8589,12 +9366,12 @@ bool valid_mob_hunt_edge(int from_room, int dir) { return VALID_TRACK_EDGE(from_
 void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 // bool NewMobHunt(void)
 {
-	char        buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	signed char next_step;
-	int         dummy = 0, dummy2 = 0;
-	hunt_data  *data;
-	P_char      vict;
-	int         cur_room, targ_room;
+	int dummy = 0, dummy2 = 0;
+	hunt_data *data;
+	P_char vict;
+	int cur_room, targ_room;
 
 	/*
 	 * hmm.. if I'm hunting for a justice purpose, and the hunt stops, I
@@ -8638,9 +9415,11 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 			{
 				for (P_desc d = descriptor_list; d; d = d->next)
 				{
-					if (d->character && d->connected == CON_PLAYING && GET_PID(d->character) == maliciousPID)
+					if (d->character && d->connected == CON_PLAYING &&
+					    GET_PID(d->character) == maliciousPID)
 					{
-						debug("Found maliciousPID %d, calling very_angry_npc on '%s'...", GET_PID(d->character), J_NAME(d->character));
+						debug("Found maliciousPID %d, calling very_angry_npc on '%s'...",
+						      GET_PID(d->character), J_NAME(d->character));
 						very_angry_npc(ch, d->character, CMD_SHOUT, NULL);
 					}
 				}
@@ -8665,7 +9444,6 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 	 */
 	if (data->hunt_type == HUNT_HUNTER)
 	{
-
 		/*
 		 * non-HUNTER mobs should NEVER fall in here
 		 */
@@ -8680,7 +9458,9 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 		 * SENTINEL and STAY_ZONE mobs don't leave their zone when hunting
 		 */
 
-		if ((IS_SET(ch->specials.act, ACT_SENTINEL) || IS_SET(ch->specials.act, ACT_STAY_ZONE)) && (world[cur_room].zone != world[targ_room].zone))
+		if ((IS_SET(ch->specials.act, ACT_SENTINEL) ||
+		     IS_SET(ch->specials.act, ACT_STAY_ZONE)) &&
+		    (world[cur_room].zone != world[targ_room].zone))
 			return;
 
 		/* TIMKEN LAG patch, only track people in our zone EVER */
@@ -8703,7 +9483,9 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 			return;
 	}
 
-	if (!CAN_ACT(ch) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS) || IS_CASTING(ch) || IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || affected_by_spell(ch, SONG_SLEEP) || affected_by_spell(ch, SPELL_SLEEP))
+	if (!CAN_ACT(ch) || IS_AFFECTED2(ch, AFF2_MAJOR_PARALYSIS) || IS_CASTING(ch) ||
+	    IS_AFFECTED2(ch, AFF2_MINOR_PARALYSIS) || affected_by_spell(ch, SONG_SLEEP) ||
+	    affected_by_spell(ch, SPELL_SLEEP))
 	{
 		/*
 		 * Okay.. if anything falls in here, they can't move right now, but
@@ -8711,7 +9493,8 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 		 */
 		if (!get_scheduled(ch, event_mob_hunt))
 		{
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
+				  sizeof(hunt_data));
 		}
 		return;
 	}
@@ -8725,7 +9508,8 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 	}
 	if (!get_scheduled(ch, event_mob_hunt))
 	{
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
+		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
+			  sizeof(hunt_data));
 		return;
 	}
 	if (GET_POS(ch) != POS_STANDING)
@@ -8734,7 +9518,8 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 	}
 	if (!get_scheduled(ch, event_mob_hunt))
 	{
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
+		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
+			  sizeof(hunt_data));
 		return;
 	}
 	if (GET_STAT(ch) != STAT_NORMAL)
@@ -8742,7 +9527,8 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 		do_alert(ch, NULL, 0);
 		if (!get_scheduled(ch, event_mob_hunt))
 		{
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
+				  sizeof(hunt_data));
 		}
 		return;
 	}
@@ -8760,10 +9546,12 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 	 */
 
 	if ((cur_room != targ_room) &&
-	    (knows_spell(ch, SPELL_GREATER_RAVENFLIGHT) || knows_spell(ch, SPELL_LEVITATE) || knows_spell(ch, SPELL_FLY) || knows_spell(ch, SPELL_POWERCAST_FLY) || knows_spell(ch, SPELL_RAVENFLIGHT)) &&
-	    !IS_AFFECTED((ch), AFF_LEVITATE) && !IS_AFFECTED((ch), AFF_FLY) && !IS_ROOM(cur_room, (ROOM_NO_MAGIC | ROOM_SILENT)))
+	    (knows_spell(ch, SPELL_GREATER_RAVENFLIGHT) || knows_spell(ch, SPELL_LEVITATE) ||
+	     knows_spell(ch, SPELL_FLY) || knows_spell(ch, SPELL_POWERCAST_FLY) ||
+	     knows_spell(ch, SPELL_RAVENFLIGHT)) &&
+	    !IS_AFFECTED((ch), AFF_LEVITATE) && !IS_AFFECTED((ch), AFF_FLY) &&
+	    !IS_ROOM(cur_room, (ROOM_NO_MAGIC | ROOM_SILENT)))
 	{
-
 		/*
 		 * if I got the slots, cast it.. prefer fly over levitate.. its
 		 * more stylish, and puts less stress on moves
@@ -8771,32 +9559,37 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 		if (npc_has_spell_slot(ch, SPELL_GREATER_RAVENFLIGHT))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_GREATER_RAVENFLIGHT, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+				  sizeof(hunt_data));
 			return;
 		}
 
 		if (npc_has_spell_slot(ch, SPELL_FLY))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_FLY, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+				  sizeof(hunt_data));
 			return;
 		}
 		else if (npc_has_spell_slot(ch, SPELL_POWERCAST_FLY))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_POWERCAST_FLY, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+				  sizeof(hunt_data));
 			return;
 		}
 		else if (npc_has_spell_slot(ch, SPELL_LEVITATE))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_LEVITATE, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+				  sizeof(hunt_data));
 			return;
 		}
 		else if (npc_has_spell_slot(ch, SPELL_RAVENFLIGHT))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_RAVENFLIGHT, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+				  sizeof(hunt_data));
 			return;
 		}
 		/*
@@ -8815,7 +9608,8 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 		if (npc_has_spell_slot(ch, SPELL_INVIGORATE))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_INVIGORATE, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+				  sizeof(hunt_data));
 			return;
 		}
 	}
@@ -8826,21 +9620,23 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 	PROFILE_START(mobhunt_dijkstra);
 	if (cur_room == targ_room)
 	{
-		next_step       = BFS_ALREADY_THERE;
+		next_step = BFS_ALREADY_THERE;
 		data->path_step = -1;
-		debug("event_mob_hunt: %s finished hunting %s", J_NAME(ch), data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) : world[targ_room].name);
+		debug("event_mob_hunt: %s finished hunting %s", J_NAME(ch),
+		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) :
+								  world[targ_room].name);
 	}
 	else if (data->path_step >= 0 && data->path_step < data->path.size())
 	{
 		next_step = data->path[data->path_step];
-		dummy     = data->path.size() - data->path_step;
+		dummy = data->path.size() - data->path_step;
 		if (world[(cur_room)].dir_option[(int)next_step] != NULL)
 		{
-			debug("event_mob_hunt: %s hunting %s, step %d of %d",
-			      J_NAME(ch),
-			      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) : world[targ_room].name,
-			      data->path_step,
-			      data->path.size());
+			debug("event_mob_hunt: %s hunting %s, step %d of %d", J_NAME(ch),
+			      data->hunt_type < HUNT_LAST_VICTIM_TARGET ?
+				      J_NAME(data->targ.victim) :
+				      world[targ_room].name,
+			      data->path_step, data->path.size());
 			data->path_step++;
 		}
 		else
@@ -8848,32 +9644,34 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 			// this can happen when something moves a mob other than hunting, treat like no path, mob will try again
 			debug("event_mob_hunt: %s hunting %s, step %d is invalid (room %s (%d) exit %s)",
 			      J_NAME(ch),
-			      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) : world[targ_room].name,
-			      data->path_step,
-			      world[(cur_room)].name,
-			      cur_room,
-			      next_step >= 0 && next_step < NUM_EXITS ? dirs[next_step] : "unknown");
-			next_step       = BFS_NO_PATH;
+			      data->hunt_type < HUNT_LAST_VICTIM_TARGET ?
+				      J_NAME(data->targ.victim) :
+				      world[targ_room].name,
+			      data->path_step, world[(cur_room)].name, cur_room,
+			      next_step >= 0 && next_step < NUM_EXITS ? dirs[next_step] :
+									"unknown");
+			next_step = BFS_NO_PATH;
 			data->path_step = -1;
 		}
 	}
 	else if (dijkstra(cur_room, targ_room, valid_mob_hunt_edge, data->path))
 	{
 		data->path_step = 0;
-		next_step       = data->path[data->path_step];
-		dummy           = data->path.size();
-		debug("event_mob_hunt: %s starting hunting %s, step %d of %d",
-		      J_NAME(ch),
-		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) : world[targ_room].name,
-		      data->path_step,
-		      data->path.size());
+		next_step = data->path[data->path_step];
+		dummy = data->path.size();
+		debug("event_mob_hunt: %s starting hunting %s, step %d of %d", J_NAME(ch),
+		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) :
+								  world[targ_room].name,
+		      data->path_step, data->path.size());
 		data->path_step++;
 	}
 	else
 	{
-		next_step       = BFS_NO_PATH;
+		next_step = BFS_NO_PATH;
 		data->path_step = -1;
-		debug("event_mob_hunt: %s no hunt path to %s", J_NAME(ch), data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) : world[targ_room].name);
+		debug("event_mob_hunt: %s no hunt path to %s", J_NAME(ch),
+		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) :
+								  world[targ_room].name);
 	}
 	PROFILE_END(mobhunt_dijkstra);
 
@@ -8881,11 +9679,14 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 	 * We've arrived. What type of hunt? take action.
 	 */
 
-	debug("event_mob_hunt: %s moving %s from %s", J_NAME(ch), next_step >= 0 && next_step < NUM_EXITS ? dirs[next_step] : "invalid", world[cur_room].name);
+	debug("event_mob_hunt: %s moving %s from %s", J_NAME(ch),
+	      next_step >= 0 && next_step < NUM_EXITS ? dirs[next_step] : "invalid",
+	      world[cur_room].name);
 	/*
 	 * Was either hunting an invader, or just a normal hunt
 	 */
-	if ((next_step == BFS_ALREADY_THERE) && ((data->hunt_type == HUNT_HUNTER) || (data->hunt_type == HUNT_JUSTICE_INVADER)))
+	if ((next_step == BFS_ALREADY_THERE) &&
+	    ((data->hunt_type == HUNT_HUNTER) || (data->hunt_type == HUNT_JUSTICE_INVADER)))
 	{
 		if (IS_DISGUISE(vict) && (data->hunt_type == HUNT_JUSTICE_INVADER))
 			return;
@@ -8903,39 +9704,40 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 		else
 			switch (number(0, CAN_SPEAK(ch) ? 114 : 110))
 			{
-				case 1:
-					do_action(ch, 0, CMD_PEER);
-					break;
-				case 2:
-					do_action(ch, 0, CMD_GLARE);
-					break;
-				case 3:
-					if (!CAN_SPEAK(ch))
-						do_action(ch, 0, CMD_GROWL);
-					break;
-				case 4:
-					if (!LEGLESS(ch))
-					{
-						do_action(ch, 0, CMD_TAP);
-					}
-				case 5:
-					if (!IS_AFFECTED4(ch, AFF4_NOFEAR))
-					{
-						do_flee(ch, 0, 2);
-					}
-				case 101:
-					do_action(ch, 0, CMD_FROWN);
-					break;
-				case 102:
-					do_action(ch, 0, CMD_CURSE);
-					break;
+			case 1:
+				do_action(ch, 0, CMD_PEER);
+				break;
+			case 2:
+				do_action(ch, 0, CMD_GLARE);
+				break;
+			case 3:
+				if (!CAN_SPEAK(ch))
+					do_action(ch, 0, CMD_GROWL);
+				break;
+			case 4:
+				if (!LEGLESS(ch))
+				{
+					do_action(ch, 0, CMD_TAP);
+				}
+			case 5:
+				if (!IS_AFFECTED4(ch, AFF4_NOFEAR))
+				{
+					do_flee(ch, 0, 2);
+				}
+			case 101:
+				do_action(ch, 0, CMD_FROWN);
+				break;
+			case 102:
+				do_action(ch, 0, CMD_CURSE);
+				break;
 			}
 		if (!IS_FIGHTING(ch) && !IS_DESTROYING(ch))
 		{
 			/*
 			 * they flee?  whatever happened, stay on them...
 			 */
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+				  sizeof(hunt_data));
 			return;
 		}
 		return;
@@ -8951,7 +9753,8 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 			next_step = number(0, NUM_EXITS - 1);
 			if (!world[ch->in_room].dir_option[(int)next_step])
 			{
-				add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+				add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+					  sizeof(hunt_data));
 				return;
 			}
 		}
@@ -8969,48 +9772,62 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 	 */
 
 	if ((cur_room != targ_room) && (dummy > 5) && number(0, 10))
-		if ((IS_MAGE(ch) || GET_CLASS(ch, CLASS_SHAMAN)) && !IS_ROOM(cur_room, ROOM_NO_TELEPORT | ROOM_NO_MAGIC | ROOM_SILENT) && !IS_ROOM(targ_room, ROOM_NO_TELEPORT | ROOM_NO_MAGIC | ROOM_SILENT))
+		if ((IS_MAGE(ch) || GET_CLASS(ch, CLASS_SHAMAN)) &&
+		    !IS_ROOM(cur_room, ROOM_NO_TELEPORT | ROOM_NO_MAGIC | ROOM_SILENT) &&
+		    !IS_ROOM(targ_room, ROOM_NO_TELEPORT | ROOM_NO_MAGIC | ROOM_SILENT))
 		{
-
 			/*
 			 * if we don't have a victim to dim to, lets try to find
 			 * one...
 			 */
 			if (!vict)
-				for (vict = world[targ_room].people; vict; vict = vict->next_in_room)
+				for (vict = world[targ_room].people; vict;
+				     vict = vict->next_in_room)
 					if (!IS_TRUSTED(vict) && IS_PC(vict))
 						break;
 
 			if (vict)
 			{
-				if (world[cur_room].zone == world[vict->in_room].zone && npc_has_spell_slot(ch, SPELL_DIMENSION_DOOR))
+				if (world[cur_room].zone == world[vict->in_room].zone &&
+				    npc_has_spell_slot(ch, SPELL_DIMENSION_DOOR))
 				{
-					MobCastSpell(ch, vict, 0, SPELL_DIMENSION_DOOR, GET_LEVEL(ch));
-					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+					MobCastSpell(ch, vict, 0, SPELL_DIMENSION_DOOR,
+						     GET_LEVEL(ch));
+					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0,
+						  data, sizeof(hunt_data));
 					return;
 				}
-				else if (world[cur_room].zone != world[vict->in_room].zone && npc_has_spell_slot(ch, SPELL_SPIRIT_JUMP))
+				else if (world[cur_room].zone != world[vict->in_room].zone &&
+					 npc_has_spell_slot(ch, SPELL_SPIRIT_JUMP))
 				{
 					MobCastSpell(ch, vict, 0, SPELL_SPIRIT_JUMP, GET_LEVEL(ch));
-					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0,
+						  data, sizeof(hunt_data));
 					return;
 				}
-				else if (world[cur_room].zone != world[vict->in_room].zone && npc_has_spell_slot(ch, SPELL_RELOCATE))
+				else if (world[cur_room].zone != world[vict->in_room].zone &&
+					 npc_has_spell_slot(ch, SPELL_RELOCATE))
 				{
 					MobCastSpell(ch, vict, 0, SPELL_RELOCATE, GET_LEVEL(ch));
-					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0,
+						  data, sizeof(hunt_data));
 					return;
 				}
-				else if (world[cur_room].zone != world[vict->in_room].zone && npc_has_spell_slot(ch, SPELL_SHADOW_TRAVEL))
+				else if (world[cur_room].zone != world[vict->in_room].zone &&
+					 npc_has_spell_slot(ch, SPELL_SHADOW_TRAVEL))
 				{
-					MobCastSpell(ch, vict, 0, SPELL_SHADOW_TRAVEL, GET_LEVEL(ch));
-					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+					MobCastSpell(ch, vict, 0, SPELL_SHADOW_TRAVEL,
+						     GET_LEVEL(ch));
+					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0,
+						  data, sizeof(hunt_data));
 					return;
 				}
-				else if (world[cur_room].zone != world[vict->in_room].zone && npc_has_spell_slot(ch, SPELL_ETHER_WARP))
+				else if (world[cur_room].zone != world[vict->in_room].zone &&
+					 npc_has_spell_slot(ch, SPELL_ETHER_WARP))
 				{
 					MobCastSpell(ch, vict, 0, SPELL_ETHER_WARP, GET_LEVEL(ch));
-					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0,
+						  data, sizeof(hunt_data));
 					return;
 				}
 			}
@@ -9022,12 +9839,15 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 	 * going....
 	 */
 
-	if (IS_CLERIC(ch) && (dummy > 6) && !IS_ROOM(cur_room, (ROOM_NO_MAGIC | ROOM_NO_RECALL | ROOM_SILENT)) && GET_BIRTHPLACE(ch) && (real_room(GET_BIRTHPLACE(ch)) != NOWHERE) &&
+	if (IS_CLERIC(ch) && (dummy > 6) &&
+	    !IS_ROOM(cur_room, (ROOM_NO_MAGIC | ROOM_NO_RECALL | ROOM_SILENT)) &&
+	    GET_BIRTHPLACE(ch) && (real_room(GET_BIRTHPLACE(ch)) != NOWHERE) &&
 	    !IS_ROOM(real_room0(GET_BIRTHPLACE(ch)), ROOM_NO_RECALL))
 	{
 		if (targ_room == real_room(GET_BIRTHPLACE(ch)))
 			dummy2 = 0;
-		else if (find_first_step(real_room(GET_BIRTHPLACE(ch)), targ_room, data->huntFlags, 0, 0, &dummy2) < 0)
+		else if (find_first_step(real_room(GET_BIRTHPLACE(ch)), targ_room, data->huntFlags,
+					 0, 0, &dummy2) < 0)
 			dummy2 = dummy + 1; /*
 			                     * if no path from recall room, make sure
 			                     * dummy is smaller then dummy2
@@ -9036,7 +9856,8 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 		if ((dummy2 < dummy) && npc_has_spell_slot(ch, SPELL_WORD_OF_RECALL))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_WORD_OF_RECALL, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+				  sizeof(hunt_data));
 			return;
 		}
 	}
@@ -9051,7 +9872,8 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 	   Unless you can just walk though it. Apr09 -Lucrot
 	 */
 
-	if (IS_SET(world[(cur_room)].dir_option[(int)next_step]->exit_info, EX_CLOSED) && !IS_AFFECTED2(ch, AFF2_PASSDOOR))
+	if (IS_SET(world[(cur_room)].dir_option[(int)next_step]->exit_info, EX_CLOSED) &&
+	    !IS_AFFECTED2(ch, AFF2_PASSDOOR))
 	{
 		/* animals don't open doors! */
 		if (!CAN_SPEAK(ch) && !IS_GREATER_RACE(ch))
@@ -9061,14 +9883,16 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 		snprintf(buf, MAX_STRING_LENGTH, "%s", dirs[(int)next_step]);
 		do_open(ch, buf, 0);
 
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+			  sizeof(hunt_data));
 		return;
 	}
 
 	if (IS_WALLED(cur_room, next_step))
 	{
 		if (MobDestroyWall(ch, next_step, IS_SET(data->huntFlags, BFS_BREAK_WALLS)))
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
+				  sizeof(hunt_data));
 		return;
 	}
 
@@ -9137,15 +9961,16 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 
 P_char find_protector_target(P_char ch)
 {
-	P_char   t_ch, vict;
-	P_char   best_target = NULL; /* best yet found assist target */
-	unsigned best_value  = 0;    /* value for the best yet found target */
-	unsigned cur_val;            /* value for currently examining
+	P_char t_ch, vict;
+	P_char best_target = NULL; /* best yet found assist target */
+	unsigned best_value = 0; /* value for the best yet found target */
+	unsigned cur_val; /* value for currently examining
 	                                target */
-	int is_guard = FALSE;        /* set to TRUE if ch is a justice
+	int is_guard = FALSE; /* set to TRUE if ch is a justice
 	                                guard */
 
-	if (!ch || IS_FIGHTING(ch) || IS_DESTROYING(ch) || !CAN_ACT(ch) || ALONE(ch) || GET_MASTER(ch))
+	if (!ch || IS_FIGHTING(ch) || IS_DESTROYING(ch) || !CAN_ACT(ch) || ALONE(ch) ||
+	    GET_MASTER(ch))
 	{
 		return NULL;
 	}
@@ -9165,7 +9990,8 @@ P_char find_protector_target(P_char ch)
 		}
 
 		// don't assist undead unless ch and vict share group/follow
-		if (!IS_UNDEAD(ch) && IS_UNDEAD(t_ch) && (t_ch->following != ch) && (ch->following != t_ch) && (!ch->group || (ch->group != t_ch->group)))
+		if (!IS_UNDEAD(ch) && IS_UNDEAD(t_ch) && (t_ch->following != ch) &&
+		    (ch->following != t_ch) && (!ch->group || (ch->group != t_ch->group)))
 		{
 			continue;
 		}
@@ -9210,7 +10036,8 @@ P_char find_protector_target(P_char ch)
 			/* golems ALWAYS kill enemies */
 			if (GET_ASSOC(ch)->is_enemy(vict))
 				cur_val |= BIT_30;
-			else if ((GET_ASSOC(ch) == GET_ASSOC(t_ch)) && (GET_ASSOC(ch) != GET_ASSOC(vict)))
+			else if ((GET_ASSOC(ch) == GET_ASSOC(t_ch)) &&
+				 (GET_ASSOC(ch) != GET_ASSOC(vict)))
 				cur_val |= BIT_30;
 			else
 				continue; /* don't let other protector code work */
@@ -9218,7 +10045,6 @@ P_char find_protector_target(P_char ch)
 		/* now it splits, depending on if its justice related or not.. */
 		if (is_guard && (IS_NPC(t_ch) || IS_NPC(vict)) && !IS_ANIMAL(vict))
 		{
-
 			/* if this is the same race as me (but the person they are
 			   fighting isn't) */
 			if ((GET_RACE(t_ch) == GET_RACE(ch)) && (GET_RACE(vict) != GET_RACE(ch)))
@@ -9236,7 +10062,8 @@ P_char find_protector_target(P_char ch)
 		{
 			if (GET_MASTER(vict))
 				cur_val |= BIT_4;
-			else if ((GET_RACE(ch) != GET_RACE(vict)) || (GET_RACE(ch) == GET_RACE(t_ch)))
+			else if ((GET_RACE(ch) != GET_RACE(vict)) ||
+				 (GET_RACE(ch) == GET_RACE(t_ch)))
 				cur_val |= BIT_5;
 			else if (t_ch->following == ch)
 				cur_val |= BIT_4;
@@ -9247,7 +10074,7 @@ P_char find_protector_target(P_char ch)
 		if (cur_val > best_value)
 		{
 			best_target = t_ch;
-			best_value  = cur_val;
+			best_value = cur_val;
 		}
 	}
 	return best_target;
@@ -9256,9 +10083,9 @@ P_char find_protector_target(P_char ch)
 void MobRetaliateRange(P_char ch, P_char vict)
 {
 	char /*buf[MAX_INPUT_LENGTH], */ result;
-	P_nevent                         ev = NULL;
-	int                              dummy;
-	hunt_data                        data;
+	P_nevent ev = NULL;
+	int dummy;
+	hunt_data data;
 
 	/*  P_char hunter = NULL;
 	   int no_range_attack = TRUE; */
@@ -9317,7 +10144,8 @@ void MobRetaliateRange(P_char ch, P_char vict)
 		}
 		else if (IS_PC_PET(vict) && CAN_SEE(ch, GET_MASTER(vict)))
 		{
-			if (!(IS_TRUSTED(GET_MASTER(vict)) && IS_SET(GET_MASTER(vict)->specials.act, PLR_AGGIMMUNE)))
+			if (!(IS_TRUSTED(GET_MASTER(vict)) &&
+			      IS_SET(GET_MASTER(vict)->specials.act, PLR_AGGIMMUNE)))
 				if ((GET_STAT(ch) > STAT_INCAP))
 					remember(ch, GET_MASTER(vict));
 		}
@@ -9326,14 +10154,14 @@ void MobRetaliateRange(P_char ch, P_char vict)
 	/* Higher wimpy set, as they know its tough to charge into an arrow */
 
 	if (IS_AWAKE(ch) && CAN_ACT(ch) && !IS_STUNNED(ch))
-		if (IS_SET(ch->specials.act, ACT_WIMPY) && (GET_HIT(ch) < (GET_LEVEL(ch) * 6)) && room_has_valid_exit(ch->in_room))
+		if (IS_SET(ch->specials.act, ACT_WIMPY) && (GET_HIT(ch) < (GET_LEVEL(ch) * 6)) &&
+		    room_has_valid_exit(ch->in_room))
 			do_flee(ch, 0, 0);
 
 	/* Next group will handle situation on their own */
 
 	if (!mob_can_range_att(ch, vict) && !IS_SET(ch->specials.act2, ACT2_NO_LURE))
 	{
-
 		/* try to charge them */
 
 		/* Are they hunting already? */
@@ -9346,16 +10174,21 @@ void MobRetaliateRange(P_char ch, P_char vict)
 		}
 
 		/* Can they even get there? (rivers, etc) */
-		if (find_first_step(ch->in_room, vict->in_room, (((IS_MAGE(ch) || IS_AFFECTED(ch, AFF_FLY)) ? BFS_CAN_FLY : 0) | BFS_AVOID_NOMOB), 0, 0, &dummy) >= 0)
+		if (find_first_step(ch->in_room, vict->in_room,
+				    (((IS_MAGE(ch) || IS_AFFECTED(ch, AFF_FLY)) ? BFS_CAN_FLY : 0) |
+				     BFS_AVOID_NOMOB),
+				    0, 0, &dummy) >= 0)
 		{
-			data.hunt_type   = HUNT_JUSTICE_INVADER;
+			data.hunt_type = HUNT_JUSTICE_INVADER;
 			data.targ.victim = vict;
-			data.huntFlags   = (IS_MAGE(ch) || IS_AFFECTED(ch, AFF_FLY)) ? BFS_CAN_FLY : 0;
+			data.huntFlags = (IS_MAGE(ch) || IS_AFFECTED(ch, AFF_FLY)) ? BFS_CAN_FLY :
+										     0;
 			data.huntFlags |= BFS_AVOID_NOMOB;
-			data.retry     = 0;
+			data.retry = 0;
 			data.retry_dir = 0;
 			data.path_step = -1;
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data, sizeof(hunt_data));
+			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
+				  sizeof(hunt_data));
 			// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, ch, data);
 			add_event(return_home, 30, ch, 0, 0, 0, 0, 0);
 			return;
@@ -9367,7 +10200,7 @@ void MobRetaliateRange(P_char ch, P_char vict)
 			if ((!IS_AFFECTED3(ch, AFF3_COVER)))
 			{
 				bzero(&af, sizeof(af));
-				af.duration   = 10;
+				af.duration = 10;
 				af.bitvector3 = AFF3_COVER;
 				affect_to_char(ch, &af);
 			}
@@ -9379,15 +10212,19 @@ void MobRetaliateRange(P_char ch, P_char vict)
 
 /* Mob Memory Routines */
 
-void remember(P_char ch, P_char victim) { remember(ch, victim, TRUE); }
+void remember(P_char ch, P_char victim)
+{
+	remember(ch, victim, TRUE);
+}
 
 /* make ch remember victim */
 void remember(P_char ch, P_char victim, bool check_group_remember)
 {
-	Memory            *tmp;
+	Memory *tmp;
 	struct group_list *gl;
 
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || !IS_NPC(ch) || IS_NPC(victim) || IS_TRUSTED(victim) || !HAS_MEMORY(ch))
+	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || !IS_NPC(ch) || IS_NPC(victim) ||
+	    IS_TRUSTED(victim) || !HAS_MEMORY(ch))
 	{
 		return;
 	}
@@ -9419,8 +10256,8 @@ void remember(P_char ch, P_char victim, bool check_group_remember)
 	}
 
 	CREATE(tmp, Memory, 1, MEM_TAG_MOBMEM);
-	tmp->next            = ch->only.npc->memory;
-	tmp->pcID            = GET_PID(victim);
+	tmp->next = ch->only.npc->memory;
+	tmp->pcID = GET_PID(victim);
 	ch->only.npc->memory = tmp;
 }
 
@@ -9429,7 +10266,7 @@ void remember(P_char ch, P_char victim, bool check_group_remember)
 bool forget(P_char ch, P_char victim)
 {
 	Memory *curr, *prev = NULL;
-	int     pid;
+	int pid;
 
 	// PCs don't have memory, cannot call get_pid on npc.
 	// This handles ch == victim since, if ch==victim, !NPC || NPC == true.
@@ -9508,8 +10345,9 @@ void event_agg_attack(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	int door;
 
-	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || victim->in_room == NOWHERE || ch->in_room == NOWHERE || !IS_AWAKE(ch) || !MIN_POS(ch, POS_STANDING + STAT_RESTING) || !is_aggr_to(ch, victim) ||
-	    IS_IMMOBILE(ch) || IS_STUNNED(ch))
+	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || victim->in_room == NOWHERE ||
+	    ch->in_room == NOWHERE || !IS_AWAKE(ch) || !MIN_POS(ch, POS_STANDING + STAT_RESTING) ||
+	    !is_aggr_to(ch, victim) || IS_IMMOBILE(ch) || IS_STUNNED(ch))
 	{
 		return;
 	}
@@ -9521,25 +10359,29 @@ void event_agg_attack(P_char ch, P_char victim, P_obj obj, void *data)
 
 	if (ch->in_room == victim->in_room)
 	{
-		if ((IS_MAGE(victim) || IS_CLERIC(victim)) && !number(0, 2) && !IS_PC_PET(victim) && !IS_CASTING(ch) && !IS_IMMOBILE(ch))
+		if ((IS_MAGE(victim) || IS_CLERIC(victim)) && !number(0, 2) && !IS_PC_PET(victim) &&
+		    !IS_CASTING(ch) && !IS_IMMOBILE(ch))
 		{
 			if (GOOD_FOR_GAZING(ch, victim) && number(0, 2))
 			{
 				gaze(ch, victim);
 				return;
 			}
-			else if (isMaulable(ch, victim) && GET_CHAR_SKILL(ch, SKILL_MAUL) > 40 && number(0, 2))
+			else if (isMaulable(ch, victim) && GET_CHAR_SKILL(ch, SKILL_MAUL) > 40 &&
+				 number(0, 2))
 			{
 				do_maul(ch, GET_NAME(victim), CMD_MAUL);
 				return;
 			}
-			else if (isSpringable(ch, victim) && GET_CHAR_SKILL(ch, SKILL_SPRINGLEAP) > 40 && number(0, 2))
+			else if (isSpringable(ch, victim) &&
+				 GET_CHAR_SKILL(ch, SKILL_SPRINGLEAP) > 40 && number(0, 2))
 			{
 				do_kneel(ch, NULL, CMD_KNEEL);
 				do_springleap(ch, GET_NAME(victim), 0);
 				return;
 			}
-			else if (isBashable(ch, victim) && GET_CHAR_SKILL(ch, SKILL_BASH) > 40 && number(0, 2))
+			else if (isBashable(ch, victim) && GET_CHAR_SKILL(ch, SKILL_BASH) > 40 &&
+				 number(0, 2))
 			{
 				bash(ch, victim);
 				return;
@@ -9555,7 +10397,9 @@ void event_agg_attack(P_char ch, P_char victim, P_obj obj, void *data)
 		{
 			send_to_char("Being the ferocious sort, you charge at the enemy!\r\n", ch);
 			if (GET_CHAR_SKILL(ch, SKILL_BACKSTAB) &&
-			    ((ch->equipment[WIELD] && IS_BACKSTABBER(ch->equipment[WIELD])) || (ch->equipment[SECONDARY_WEAPON] && IS_BACKSTABBER(ch->equipment[SECONDARY_WEAPON]))))
+			    ((ch->equipment[WIELD] && IS_BACKSTABBER(ch->equipment[WIELD])) ||
+			     (ch->equipment[SECONDARY_WEAPON] &&
+			      IS_BACKSTABBER(ch->equipment[SECONDARY_WEAPON]))))
 			{
 				backstab(ch, victim);
 			}
@@ -9584,7 +10428,8 @@ void event_agg_attack(P_char ch, P_char victim, P_obj obj, void *data)
 
 		for (door = 0; door < NUM_EXITS; door++)
 		{
-			if (CAN_GO(ch, door) && (victim->in_room == EXIT(ch, door)->to_room) && CAN_SEE(ch, victim))
+			if (CAN_GO(ch, door) && (victim->in_room == EXIT(ch, door)->to_room) &&
+			    CAN_SEE(ch, victim))
 			{
 				do_move(ch, 0, exitnumb_to_cmd(door));
 				add_event(event_agg_attack, 1, ch, victim, 0, 0, 0, 0);
@@ -9602,7 +10447,7 @@ void event_mob_skin_spell(P_char ch, P_char vict, P_obj obj, void *data)
 	if (affected_by_skill(ch, TAG_SUPPRESS_PERM_BITS))
 	{
 		shouldSuppress = true;
-		afp            = get_spell_from_char(ch, TAG_SUPPRESS_PERM_BITS);
+		afp = get_spell_from_char(ch, TAG_SUPPRESS_PERM_BITS);
 		if (IS_AFFECTED(ch, AFF_STONE_SKIN) && !IS_SET(afp->bitvector, AFF_STONE_SKIN))
 		{
 			shouldSuppress = false;
@@ -9620,11 +10465,13 @@ void event_mob_skin_spell(P_char ch, P_char vict, P_obj obj, void *data)
 			if (!(afp = get_spell_from_char(ch, SPELL_STONE_SKIN)))
 			{
 				memset(&af, 0, sizeof(af));
-				af.type     = SPELL_STONE_SKIN;
+				af.type = SPELL_STONE_SKIN;
 				af.duration = -1;
-				afp         = affect_to_char(ch, &af);
-				act("&+L$n's skin seems to turn to stone.", TRUE, ch, 0, 0, TO_ROOM);
-				act("&+LYou feel your skin harden to stone.", TRUE, ch, 0, 0, TO_CHAR);
+				afp = affect_to_char(ch, &af);
+				act("&+L$n's skin seems to turn to stone.", TRUE, ch, 0, 0,
+				    TO_ROOM);
+				act("&+LYou feel your skin harden to stone.", TRUE, ch, 0, 0,
+				    TO_CHAR);
 			}
 			afp->modifier = GET_LEVEL(ch) + MAX(0, GET_LEVEL(ch) - 50) * 5;
 
@@ -9637,25 +10484,24 @@ void event_mob_skin_spell(P_char ch, P_char vict, P_obj obj, void *data)
 			if (!(afp = get_spell_from_char(ch, SPELL_BIOFEEDBACK)))
 			{
 				memset(&af, 0, sizeof(af));
-				af.type     = SPELL_BIOFEEDBACK;
+				af.type = SPELL_BIOFEEDBACK;
 				af.duration = -1;
-				af.modifier = (int)(1.5 * (GET_LEVEL(ch) + MAX(0, GET_LEVEL(ch) - 50) * 5));
-				afp         = affect_to_char(ch, &af);
+				af.modifier = (int)(1.5 * (GET_LEVEL(ch) +
+							   MAX(0, GET_LEVEL(ch) - 50) * 5));
+				afp = affect_to_char(ch, &af);
 				send_to_char("&+GYou are surrounded by a green mist!&n\r\n", ch);
-				act("&+G$n&+G is suddenly surrounded by a green mist!", TRUE, ch, 0, 0, TO_NOTVICT);
+				act("&+G$n&+G is suddenly surrounded by a green mist!", TRUE, ch, 0,
+				    0, TO_NOTVICT);
 			}
-			afp->modifier = (int)(1.5 * (GET_LEVEL(ch) + MAX(0, GET_LEVEL(ch) - 50) * 5));
+			afp->modifier =
+				(int)(1.5 * (GET_LEVEL(ch) + MAX(0, GET_LEVEL(ch) - 50) * 5));
 		}
 	}
 
 	add_event(event_mob_skin_spell,
-	          (get_property("timer.secs.mob.skinRefresh", 60) * WAIT_SEC) / (shouldSuppress ? 3 : 1), // fire more often if we should suppress
-	          ch,
-	          0,
-	          0,
-	          0,
-	          0,
-	          0);
+		  (get_property("timer.secs.mob.skinRefresh", 60) * WAIT_SEC) /
+			  (shouldSuppress ? 3 : 1), // fire more often if we should suppress
+		  ch, 0, 0, 0, 0, 0);
 }
 
 void try_wield_weapon(P_char ch)
@@ -9676,7 +10522,8 @@ void try_wield_weapon(P_char ch)
 		{ // Try to wield an available artifact weapon first.
 			if (IS_SET(t_obj->extra_flags, ITEM_ARTIFACT))
 			{
-				wear(ch, t_obj, 12, 1); // 12 means wield, 1 means display message to room
+				wear(ch, t_obj, 12,
+				     1); // 12 means wield, 1 means display message to room
 			}
 		}
 	}
@@ -9684,9 +10531,14 @@ void try_wield_weapon(P_char ch)
 	// Find a nice weapon and wield it.
 	for (P_obj t_obj = ch->carrying; t_obj; t_obj = t_obj->next_content)
 	{
-		if (t_obj->type == ITEM_WEAPON &&
-		        (IS_SET(t_obj->bitvector, AFF_STONE_SKIN) || IS_SET(t_obj->bitvector, AFF_HASTE) || IS_SET(t_obj->bitvector2, AFF2_FIRE_AURA) || IS_SET(t_obj->bitvector2, AFF2_GLOBE) ||
-		         IS_SET(t_obj->bitvector2, AFF2_SOULSHIELD) || IS_SET(t_obj->bitvector3, AFF3_GR_SPIRIT_WARD) || IS_SET(t_obj->bitvector4, AFF4_DAZZLER) || IS_SET(t_obj->bitvector4, AFF4_HELLFIRE)) ||
+		if (t_obj->type == ITEM_WEAPON && (IS_SET(t_obj->bitvector, AFF_STONE_SKIN) ||
+						   IS_SET(t_obj->bitvector, AFF_HASTE) ||
+						   IS_SET(t_obj->bitvector2, AFF2_FIRE_AURA) ||
+						   IS_SET(t_obj->bitvector2, AFF2_GLOBE) ||
+						   IS_SET(t_obj->bitvector2, AFF2_SOULSHIELD) ||
+						   IS_SET(t_obj->bitvector3, AFF3_GR_SPIRIT_WARD) ||
+						   IS_SET(t_obj->bitvector4, AFF4_DAZZLER) ||
+						   IS_SET(t_obj->bitvector4, AFF4_HELLFIRE)) ||
 		    obj_index[t_obj->R_num].func.obj != NULL)
 		{
 			wear(ch, t_obj, 12, 1); // 12 means wield, 1 means display message to room
@@ -9770,23 +10622,19 @@ bool CastBlighterSpell(P_char ch, P_char victim, bool helping)
 {
 	P_char target = NULL;
 	P_char tch;
-	int    dam = 0, lvl = 0, spl = 0;
-	int    numb = 0, lucky, curr = 0;
+	int dam = 0, lvl = 0, spl = 0;
+	int numb = 0, lucky, curr = 0;
 
 	if (!ch || (helping && !victim))
 	{
 		logit(LOG_DEBUG,
 		      "CastBlighterSpell: bad args: ch '%s' %d, helping: %s, victim: %s %d.",
-		      ch ? J_NAME(ch) : "NULL",
-		      (ch && IS_NPC(ch)) ? GET_VNUM(ch) : -1,
-		      helping ? "TRUE" : "FALSE",
-		      victim ? J_NAME(victim) : "NULL",
+		      ch ? J_NAME(ch) : "NULL", (ch && IS_NPC(ch)) ? GET_VNUM(ch) : -1,
+		      helping ? "TRUE" : "FALSE", victim ? J_NAME(victim) : "NULL",
 		      (victim && IS_NPC(victim)) ? GET_VNUM(victim) : -1);
 		debug("CastBlighterSpell: bad args: ch '%s' %d, helping: %s, victim: %s %d.",
-		      ch ? J_NAME(ch) : "NULL",
-		      (ch && IS_NPC(ch)) ? GET_VNUM(ch) : -1,
-		      helping ? "TRUE" : "FALSE",
-		      victim ? J_NAME(victim) : "NULL",
+		      ch ? J_NAME(ch) : "NULL", (ch && IS_NPC(ch)) ? GET_VNUM(ch) : -1,
+		      helping ? "TRUE" : "FALSE", victim ? J_NAME(victim) : "NULL",
 		      (victim && IS_NPC(victim)) ? GET_VNUM(victim) : -1);
 		return FALSE;
 	}
@@ -9812,12 +10660,12 @@ bool CastBlighterSpell(P_char ch, P_char victim, bool helping)
 		{
 			return FALSE;
 		}
-		dam    = GET_MAX_HIT(victim) - GET_HIT(victim);
+		dam = GET_MAX_HIT(victim) - GET_HIT(victim);
 		target = victim;
 	}
 	else
 	{
-		dam    = GET_MAX_HIT(ch) - GET_HIT(ch);
+		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 		target = ch;
 	}
 
@@ -9848,16 +10696,21 @@ bool CastBlighterSpell(P_char ch, P_char victim, bool helping)
 	// Self only spells.
 	if (!spl && (!IS_FIGHTING(ch) || (number(1, 5) == 3)) && ch == target)
 	{
-		if (!affected_by_spell(ch, SPELL_SAP_NATURE) && npc_has_spell_slot(ch, SPELL_SAP_NATURE))
+		if (!affected_by_spell(ch, SPELL_SAP_NATURE) &&
+		    npc_has_spell_slot(ch, SPELL_SAP_NATURE))
 		{
 			spl = SPELL_SAP_NATURE;
 		}
-		else if (!affected_by_spell(ch, SPELL_SHADOW_VISION) && npc_has_spell_slot(ch, SPELL_SHADOW_VISION))
+		else if (!affected_by_spell(ch, SPELL_SHADOW_VISION) &&
+			 npc_has_spell_slot(ch, SPELL_SHADOW_VISION))
 		{
 			spl = SPELL_SHADOW_VISION;
 		}
-		else if (!affected_by_spell(ch, SPELL_ELEMENTAL_AURA) && (world[ch->in_room].sector_type == SECT_FIREPLANE || world[ch->in_room].sector_type == SECT_WATER_PLANE ||
-		                                                          world[ch->in_room].sector_type == SECT_AIR_PLANE || world[ch->in_room].sector_type == SECT_EARTH_PLANE))
+		else if (!affected_by_spell(ch, SPELL_ELEMENTAL_AURA) &&
+			 (world[ch->in_room].sector_type == SECT_FIREPLANE ||
+			  world[ch->in_room].sector_type == SECT_WATER_PLANE ||
+			  world[ch->in_room].sector_type == SECT_AIR_PLANE ||
+			  world[ch->in_room].sector_type == SECT_EARTH_PLANE))
 		{
 			spl = SPELL_ELEMENTAL_AURA;
 		}
@@ -9921,14 +10774,16 @@ bool CastBlighterSpell(P_char ch, P_char victim, bool helping)
 	}
 
 	// If we're fighting a group.. check areas..
-	if (((NumAttackers(ch) > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) && !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
+	if (((NumAttackers(ch) > 1) || has_help(target) || no_chars_in_room_deserve_helping(ch)) &&
+	    !IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
 	{
 		if (npc_has_spell_slot(ch, SPELL_SANDSTORM) && !ch->specials.z_cord && number(0, 2))
 		{
 			spl = SPELL_SANDSTORM;
 		}
 
-		if (!spl && npc_has_spell_slot(ch, SPELL_ACID_RAIN) && IS_OUTSIDE(ch->in_room) && number(0, 1))
+		if (!spl && npc_has_spell_slot(ch, SPELL_ACID_RAIN) && IS_OUTSIDE(ch->in_room) &&
+		    number(0, 1))
 		{
 			spl = SPELL_ACID_RAIN;
 			// Since acid rain can be both targetted and area, we need target = NULL for area.
@@ -9954,7 +10809,8 @@ bool CastBlighterSpell(P_char ch, P_char victim, bool helping)
 	// Now we go to target spells..
 
 	// Storm Bringer spec.
-	if (!spl && npc_has_spell_slot(ch, SPELL_BLOODTOSTONE) && !affected_by_spell(target, SPELL_BLOODTOSTONE) && number(0, 1))
+	if (!spl && npc_has_spell_slot(ch, SPELL_BLOODTOSTONE) &&
+	    !affected_by_spell(target, SPELL_BLOODTOSTONE) && number(0, 1))
 	{
 		spl = SPELL_BLOODTOSTONE;
 	}
@@ -10020,20 +10876,24 @@ bool CastBlighterSpell(P_char ch, P_char victim, bool helping)
 	}
 
 	// Well, time to scrape the bottom of the barrel..
-	if (!spl && npc_has_spell_slot(ch, SPELL_ACID_BLAST) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_ACID_BLAST) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 		spl = SPELL_ACID_BLAST;
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_CHILL_TOUCH) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 3))
+	if (!spl && npc_has_spell_slot(ch, SPELL_CHILL_TOUCH) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)) && !number(0, 3))
 	{
 		spl = SPELL_CHILL_TOUCH;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_BURNING_HANDS) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_BURNING_HANDS) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 	{
 		spl = SPELL_BURNING_HANDS;
 	}
 
-	if (!spl && npc_has_spell_slot(ch, SPELL_CAUSE_LIGHT) && (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
+	if (!spl && npc_has_spell_slot(ch, SPELL_CAUSE_LIGHT) &&
+	    (!IS_GLOBED(target) || !IS_MINGLOBED(target)))
 	{
 		spl = SPELL_CAUSE_LIGHT;
 	}
@@ -10060,7 +10920,8 @@ void event_mob_proc(P_char mob, P_char victim, P_obj object, void *data)
 
 	if (object != NULL)
 	{
-		debug("event_mob_proc: non-NULL object: %s %d.", OBJ_SHORT(object), OBJ_VNUM(object));
+		debug("event_mob_proc: non-NULL object: %s %d.", OBJ_SHORT(object),
+		      OBJ_VNUM(object));
 	}
 
 	// If mob is lagged, we re-schedule for after the lag wears off.
@@ -10068,7 +10929,8 @@ void event_mob_proc(P_char mob, P_char victim, P_obj object, void *data)
 	{
 		if ((e = get_scheduled(mob, event_wait)) != NULL)
 		{
-			add_event(event_mob_proc, ne_event_time(e) + 1, mob, victim, NULL, 0, NULL, 0);
+			add_event(event_mob_proc, ne_event_time(e) + 1, mob, victim, NULL, 0, NULL,
+				  0);
 			return;
 		}
 		else
@@ -10082,7 +10944,8 @@ void event_mob_proc(P_char mob, P_char victim, P_obj object, void *data)
 	// Add another event... should check SPEC_ACT and CMD_SET_PERIODIC, but *shrug* supposedly done it once.
 	if (IS_ALIVE(mob))
 	{
-		add_event(event_mob_proc, PULSE_MOBILE + number(-4, 4), mob, victim, NULL, 0, NULL, 0);
+		add_event(event_mob_proc, PULSE_MOBILE + number(-4, 4), mob, victim, NULL, 0, NULL,
+			  0);
 	}
 }
 
@@ -10101,19 +10964,26 @@ void startPvP(P_char ch, bool racewar)
 	// Misfire activation here.
 	if (!CONTINENT(ch->in_room))
 	{
-		if (zone_table[zn].players[GET_RACEWAR(ch)] > misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)])
+		if (zone_table[zn].players[GET_RACEWAR(ch)] >
+		    misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)])
 		{
 			if (zone_table[zn].misfiring[GET_RACEWAR(ch)] == FALSE)
-				debug("Misfire: Zone: %s %d - Racewar: &+%c%s&N started.", zone_table[zn].name, zn, racewar_color[GET_RACEWAR(ch)].color, racewar_color[GET_RACEWAR(ch)].name);
+				debug("Misfire: Zone: %s %d - Racewar: &+%c%s&N started.",
+				      zone_table[zn].name, zn, racewar_color[GET_RACEWAR(ch)].color,
+				      racewar_color[GET_RACEWAR(ch)].name);
 			zone_table[zn].misfiring[GET_RACEWAR(ch)] = TRUE;
 		}
 	}
 	else
 	{
-		if (continent_misfire.players[CONTINENT(ch->in_room)][GET_RACEWAR(ch)] > misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)])
+		if (continent_misfire.players[CONTINENT(ch->in_room)][GET_RACEWAR(ch)] >
+		    misfire_properties.pvp_maxAllies[GET_RACEWAR(ch)])
 		{
-			if (continent_misfire.misfiring[CONTINENT(ch->in_room)][GET_RACEWAR(ch)] == FALSE)
-				debug("Misfire: Continent: %d - Racewar: &+%c%s&N started.", CONTINENT(ch->in_room), racewar_color[GET_RACEWAR(ch)].color, racewar_color[GET_RACEWAR(ch)].name);
+			if (continent_misfire.misfiring[CONTINENT(ch->in_room)][GET_RACEWAR(ch)] ==
+			    FALSE)
+				debug("Misfire: Continent: %d - Racewar: &+%c%s&N started.",
+				      CONTINENT(ch->in_room), racewar_color[GET_RACEWAR(ch)].color,
+				      racewar_color[GET_RACEWAR(ch)].name);
 			continent_misfire.misfiring[CONTINENT(ch->in_room)][GET_RACEWAR(ch)] = TRUE;
 		}
 	}

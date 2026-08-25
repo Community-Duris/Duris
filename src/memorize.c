@@ -26,19 +26,19 @@
    external variables
  */
 
-extern P_room                        world;
-extern char                         *command[];
-extern const struct stat_data        stat_factor[];
+extern P_room world;
+extern char *command[];
+extern const struct stat_data stat_factor[];
 extern const struct racial_data_type racial_data[];
-extern int                           pulse;
-extern const float                   druid_memtime_terrain_mod[];
-extern const float                   blighter_memtime_terrain_mod[];
-extern Skill                         skills[];
-extern char                         *spells[];
-P_nevent                             get_scheduled(P_char, event_func);
-extern void                          event_wait(P_char, P_char, P_obj, void *);
-extern int                           is_wearing_necroplasm(P_char);
-extern bool                          is_dragoon_mounted(P_char ch);
+extern int pulse;
+extern const float druid_memtime_terrain_mod[];
+extern const float blighter_memtime_terrain_mod[];
+extern Skill skills[];
+extern char *spells[];
+P_nevent get_scheduled(P_char, event_func);
+extern void event_wait(P_char, P_char, P_obj, void *);
+extern int is_wearing_necroplasm(P_char);
+extern bool is_dragoon_mounted(P_char ch);
 
 void event_memorize(P_char, P_char, P_obj, void *);
 void event_scribe(P_char, P_char, P_obj, void *);
@@ -72,12 +72,17 @@ int spl_table[TOTALLVLS][MAX_CIRCLE];
    precalculated to save _BUNCH_ of cpu when adding a lot of spells
  */
 
-float fake_sqrt_table[] = {.3311,  .3467,  .3631,  .3802,  .3981,  .4169,  .4365,  .4571,  .4786,  .5011,  .5248,  .5495,  .5754,  .6026,  .6310,  .6609,  .6918,
-                           .7244,  .7586,  .7943,  .8318,  .8710,  .9120,  .9550,  1,      1.0471, 1.0965, 1.1485, 1.2023, 1.2590, 1.3183, 1.3804, 1.4454, 1.514,
-                           1.5849, 1.6596, 1.7378, 1.8197, 1.9054, 1.9953, 2.0893, 2.1877, 2.291,  2.3988, 2.5119, 2.6302, 2.7542, 2.8840, 3.02,   3.1623, 3.3113,
-                           3.4674, 3.6308, 3.8019, 3.9811, 4.1687, 4.3652, 4.5709, 4.7863, 5.0118, 5.2481, 5.4954, 5.7544, 6.0256, 6.3096};
+float fake_sqrt_table[] = { .3311,  .3467,  .3631,  .3802,  .3981,  .4169,  .4365,  .4571,  .4786,
+			    .5011,  .5248,  .5495,  .5754,  .6026,  .6310,  .6609,  .6918,  .7244,
+			    .7586,  .7943,  .8318,  .8710,  .9120,  .9550,  1,	    1.0471, 1.0965,
+			    1.1485, 1.2023, 1.2590, 1.3183, 1.3804, 1.4454, 1.514,  1.5849, 1.6596,
+			    1.7378, 1.8197, 1.9054, 1.9953, 2.0893, 2.1877, 2.291,  2.3988, 2.5119,
+			    2.6302, 2.7542, 2.8840, 3.02,   3.1623, 3.3113, 3.4674, 3.6308, 3.8019,
+			    3.9811, 4.1687, 4.3652, 4.5709, 4.7863, 5.0118, 5.2481, 5.4954, 5.7544,
+			    6.0256, 6.3096 };
 
-double lfactor[MAX_CIRCLE] = {400.0000, 565.6854, 692.8203, 800.0000, 894.4272, 979.7959, 1058.3005, 1131.3708, 1200.0000, 1264.9110, 1324.0000, 1370.1234};
+double lfactor[MAX_CIRCLE] = { 400.0000,  565.6854,  692.8203,	800.0000,  894.4272,  979.7959,
+			       1058.3005, 1131.3708, 1200.0000, 1264.9110, 1324.0000, 1370.1234 };
 
 static int get_circle_memtime(P_char ch, int circle, bool bStatOnly = false);
 static int calculate_harpy_time(P_char ch, int circle, bool bStatOnly = false);
@@ -85,7 +90,7 @@ static int calculate_undead_time(P_char ch, int circle, bool bStatOnly = false);
 
 bool book_class(P_char ch)
 {
-	unsigned int first  = ch->player.m_class;
+	unsigned int first = ch->player.m_class;
 	unsigned int second = ch->player.secondary_class;
 
 	if (IS_MULTICLASS_PC(ch))
@@ -101,13 +106,23 @@ bool book_class(P_char ch)
 	}
 }
 
-bool praying_class(P_char ch) { return IS_PRAYING_CLASS(ch->player.m_class) || (!IS_CASTER_CLASS(ch->player.m_class) && IS_PRAYING_CLASS(ch->player.secondary_class)); }
+bool praying_class(P_char ch)
+{
+	return IS_PRAYING_CLASS(ch->player.m_class) ||
+	       (!IS_CASTER_CLASS(ch->player.m_class) &&
+		IS_PRAYING_CLASS(ch->player.secondary_class));
+}
 
-bool meming_class(P_char ch) { return IS_MEMING_CLASS(ch->player.m_class) || (!IS_CASTER_CLASS(ch->player.m_class) && !USES_MANA(ch) && IS_MEMING_CLASS(ch->player.secondary_class)); }
+bool meming_class(P_char ch)
+{
+	return IS_MEMING_CLASS(ch->player.m_class) ||
+	       (!IS_CASTER_CLASS(ch->player.m_class) && !USES_MANA(ch) &&
+		IS_MEMING_CLASS(ch->player.secondary_class));
+}
 
 int IS_SEMI_CASTER(P_char ch)
 {
-	unsigned int first  = ch->player.m_class;
+	unsigned int first = ch->player.m_class;
 	unsigned int second = ch->player.secondary_class;
 
 	if (IS_NPC(ch))
@@ -127,7 +142,7 @@ int IS_SEMI_CASTER(P_char ch)
 
 int IS_PARTIAL_CASTER(P_char ch)
 {
-	unsigned int first  = ch->player.m_class;
+	unsigned int first = ch->player.m_class;
 	unsigned int second = ch->player.secondary_class;
 
 	if (IS_MULTICLASS_PC(ch))
@@ -147,9 +162,15 @@ int IS_PARTIAL_CASTER(P_char ch)
 	}
 }
 
-int IS_CASTER(P_char ch) { return IS_CASTER_CLASS(ch->player.m_class) || IS_CASTER_CLASS(ch->player.secondary_class); }
+int IS_CASTER(P_char ch)
+{
+	return IS_CASTER_CLASS(ch->player.m_class) || IS_CASTER_CLASS(ch->player.secondary_class);
+}
 
-int get_max_circle(P_char ch) { return (BOUNDED(1, ((int)((GET_LEVEL(ch) - 1) / 5) + 1), MAX_CIRCLE)); }
+int get_max_circle(P_char ch)
+{
+	return (BOUNDED(1, ((int)((GET_LEVEL(ch) - 1) / 5) + 1), MAX_CIRCLE));
+}
 
 inline int max_spells_in_circle(P_char ch, int circ, int max_circ)
 {
@@ -175,7 +196,10 @@ inline int max_spells_in_circle(P_char ch, int circ, int max_circ)
 	return MAX(1, j);
 }
 
-int max_spells_in_circle(P_char ch, int circ) { return max_spells_in_circle(ch, circ, get_max_circle(ch)); }
+int max_spells_in_circle(P_char ch, int circ)
+{
+	return max_spells_in_circle(ch, circ, get_max_circle(ch));
+}
 
 int get_spells_in_circle(P_char ch, int circ)
 {
@@ -213,7 +237,7 @@ int get_spell_circle(P_char ch, int spl)
 	int i, ch_circle = (GET_LEVEL(ch) - 1) / 5 + 1;
 	int lowest, class_idx, spec;
 	lowest = MAX_CIRCLE + 1;
-	spec   = ch->player.spec;
+	spec = ch->player.spec;
 
 	// We check all classes for NPCs.
 	if (IS_NPC(ch))
@@ -224,7 +248,8 @@ int get_spell_circle(P_char ch, int spl)
 			// If the NPC has the class, check the circle.
 			if (ch->player.m_class & (1 << i))
 			{
-				if ((skills[spl].m_class[i].rlevel[0] > 0) && (skills[spl].m_class[i].rlevel[0] < lowest))
+				if ((skills[spl].m_class[i].rlevel[0] > 0) &&
+				    (skills[spl].m_class[i].rlevel[0] < lowest))
 				{
 					lowest = skills[spl].m_class[i].rlevel[0];
 				}
@@ -234,7 +259,8 @@ int get_spell_circle(P_char ch, int spl)
 		{
 			// Set i to the class.
 			i = flag2idx(ch->player.m_class) - 1;
-			if ((skills[spl].m_class[i].rlevel[spec] > 0) && (skills[spl].m_class[i].rlevel[spec] < lowest))
+			if ((skills[spl].m_class[i].rlevel[spec] > 0) &&
+			    (skills[spl].m_class[i].rlevel[spec] < lowest))
 			{
 				lowest = skills[spl].m_class[i].rlevel[spec];
 			}
@@ -252,7 +278,8 @@ int get_spell_circle(P_char ch, int spl)
 		if (ch->player.secondary_class)
 		{
 			// If the secondary class has the spell (not including MAX_CIRCLE) and the primary doesn't.
-			if ((SKILL_DATA2(ch, spl).rlevel[0] > 0) && lowest == MAX_CIRCLE + 1 && SKILL_DATA2(ch, spl).rlevel[0] + 1 < lowest)
+			if ((SKILL_DATA2(ch, spl).rlevel[0] > 0) && lowest == MAX_CIRCLE + 1 &&
+			    SKILL_DATA2(ch, spl).rlevel[0] + 1 < lowest)
 			{
 				return SKILL_DATA2(ch, spl).rlevel[0] + 1;
 			}
@@ -262,17 +289,28 @@ int get_spell_circle(P_char ch, int spl)
 	return lowest;
 }
 
-int SpellInThisSpellBook_p(struct extra_descr_data *tmp, int spl) { return (IS_SET(tmp->description[spl / 8], 1 << (spl % 8))); }
+int SpellInThisSpellBook_p(struct extra_descr_data *tmp, int spl)
+{
+	return (IS_SET(tmp->description[spl / 8], 1 << (spl % 8)));
+}
 
-int SpellInThisSpellBook(struct extra_descr_data *tmp, int spl) { return SpellInThisSpellBook_p(tmp, spl); }
+int SpellInThisSpellBook(struct extra_descr_data *tmp, int spl)
+{
+	return SpellInThisSpellBook_p(tmp, spl);
+}
 
-P_obj SpellInSpellBook(P_char ch, int spl, int mode) { return FindSpellBookWithSpell(ch, spl, mode); }
+P_obj SpellInSpellBook(P_char ch, int spl, int mode)
+{
+	return FindSpellBookWithSpell(ch, spl, mode);
+}
 
 int GetSpellPages(P_char ch, int spl)
 {
 	int pages;
 
-	pages = (!SKILL_DATA_ALL(ch, spl).rlevel[ch->player.spec] ? MAX_CIRCLE + 1 : SKILL_DATA_ALL(ch, spl).rlevel[ch->player.spec]);
+	pages = (!SKILL_DATA_ALL(ch, spl).rlevel[ch->player.spec] ?
+			 MAX_CIRCLE + 1 :
+			 SKILL_DATA_ALL(ch, spl).rlevel[ch->player.spec]);
 
 	if (IS_MULTICLASS_PC(ch))
 		pages = (int)(pages / 2);
@@ -280,7 +318,7 @@ int GetSpellPages(P_char ch, int spl)
 	if (GET_CHAR_SKILL(ch, SKILL_SCRIBE_MASTERY))
 	{
 		int skill = GET_CHAR_SKILL(ch, SKILL_SCRIBE_MASTERY);
-		int mod   = MAX(1, (int)(skill / 5));
+		int mod = MAX(1, (int)(skill / 5));
 		pages -= mod;
 	}
 
@@ -292,9 +330,9 @@ int GetSpellPages(P_char ch, int spl)
 
 int get_power_level(P_char ch)
 {
-	int power           = 0;
+	int power = 0;
 	int total_available = 0;
-	int total_spells    = 0;
+	int total_spells = 0;
 
 	for (int circle = 1; circle <= get_max_circle(ch); circle++)
 	{
@@ -332,7 +370,7 @@ int get_power_level(P_char ch)
 void SetSpellCircles(void)
 {
 	bool added, flag;
-	int  i, lvl, max, pf, p_c = 0, t_c = 0, tot_circles = 0, cur_circle;
+	int i, lvl, max, pf, p_c = 0, t_c = 0, tot_circles = 0, cur_circle;
 
 	pf = 125; /*
 	             a pf of 125 gives 74 total spells at level
@@ -344,7 +382,6 @@ void SetSpellCircles(void)
 
 	for (lvl = 1; lvl < TOTALLVLS; lvl++)
 	{
-
 		added = FALSE;
 		for (i = 0; i < MAX_CIRCLE; i++)
 			spl_table[lvl][i] = spl_table[lvl - 1][i];
@@ -354,7 +391,7 @@ void SetSpellCircles(void)
 		t_c += (max + 1); /* this is base value, eliminates rounding
 		                     errors without using floating point.  */
 
-		p_c        = MAX(1, (pf * t_c) / 100 - tot_circles);
+		p_c = MAX(1, (pf * t_c) / 100 - tot_circles);
 		cur_circle = max;
 
 		do
@@ -381,15 +418,18 @@ void SetSpellCircles(void)
 			}
 			else if (cur_circle == (max - 1))
 			{
-				if ((cur_circle != 0) && (spl_table[lvl][cur_circle] <= spl_table[lvl][cur_circle - 1]))
+				if ((cur_circle != 0) &&
+				    (spl_table[lvl][cur_circle] <= spl_table[lvl][cur_circle - 1]))
 					flag = TRUE;
 			}
 			else
 			{
 				/* < max - 1 */
-				if ((spl_table[lvl][cur_circle] - spl_table[lvl][cur_circle + 1]) < 2)
+				if ((spl_table[lvl][cur_circle] - spl_table[lvl][cur_circle + 1]) <
+				    2)
 					flag = TRUE;
-				if ((cur_circle != 0) && (spl_table[lvl][cur_circle] > spl_table[lvl][cur_circle - 1]))
+				if ((cur_circle != 0) &&
+				    (spl_table[lvl][cur_circle] > spl_table[lvl][cur_circle - 1]))
 					flag = FALSE;
 			}
 
@@ -446,18 +486,24 @@ void SetSpellCircles(void)
 
 void show_stop_memorizing(P_char ch)
 {
-	if (IS_PUNDEAD(ch) || GET_CLASS(ch, CLASS_WARLOCK) || IS_UNDEADRACE(ch) || is_wearing_necroplasm(ch))
+	if (IS_PUNDEAD(ch) || GET_CLASS(ch, CLASS_WARLOCK) || IS_UNDEADRACE(ch) ||
+	    is_wearing_necroplasm(ch))
 	{
-		send_to_char("Your mind reels in confusion as your link with &+Lnegative powers&N is disturbed!\n", ch);
-		act("$n moans loudly in confusion as $s contact with &+Ldark powers&n is disturbed.", FALSE, ch, 0, 0, TO_ROOM);
+		send_to_char(
+			"Your mind reels in confusion as your link with &+Lnegative powers&N is disturbed!\n",
+			ch);
+		act("$n moans loudly in confusion as $s contact with &+Ldark powers&n is disturbed.",
+		    FALSE, ch, 0, 0, TO_ROOM);
 		CharWait(ch, WAIT_SEC * 2);
 	}
 	else if (USES_TUPOR(ch))
 	{
-		send_to_char("Your tupor has been disturbed!\n"
-		             "&+CThe interr&n&+cupted lin&+Wk with the st&+Corm spirits leav&n&+ces you in sho&+Wck.\r\n",
-		             ch);
-		act("$n &+Wshrieks&n in shock from the severed tupor link.", FALSE, ch, 0, 0, TO_ROOM);
+		send_to_char(
+			"Your tupor has been disturbed!\n"
+			"&+CThe interr&n&+cupted lin&+Wk with the st&+Corm spirits leav&n&+ces you in sho&+Wck.\r\n",
+			ch);
+		act("$n &+Wshrieks&n in shock from the severed tupor link.", FALSE, ch, 0, 0,
+		    TO_ROOM);
 		CharWait(ch, WAIT_SEC * 2);
 	}
 	else if (book_class(ch))
@@ -473,7 +519,8 @@ void show_stop_memorizing(P_char ch)
 	else
 	{
 		send_to_char("You abandon your praying.\n", ch);
-		act("$n, looking very frustrated, packs up $s holy symbol.", FALSE, ch, 0, 0, TO_ROOM);
+		act("$n, looking very frustrated, packs up $s holy symbol.", FALSE, ch, 0, 0,
+		    TO_ROOM);
 	}
 	REMOVE_BIT(ch->specials.affected_by2, AFF2_MEMORIZING);
 	if (IS_AFFECTED(ch, AFF_MEDITATE))
@@ -521,9 +568,11 @@ int calculate_undead_time(P_char ch, int circle, bool bStatOnly)
 		tick_factor += 0.7 * (GET_C_WIS(ch) - (stat_factor[(int)GET_RACE(ch)].Wis)) / 2;
 	}
 
-	remem_time = (int)((time_mult * lfactor[circle - 1]) / (fake_sqrt_table[GET_LEVEL(ch) - 1] * tick_factor));
+	remem_time = (int)((time_mult * lfactor[circle - 1]) /
+			   (fake_sqrt_table[GET_LEVEL(ch) - 1] * tick_factor));
 
-	if (!bStatOnly && IS_AFFECTED(ch, AFF_MEDITATE) && GET_CHAR_SKILL(ch, SKILL_MEDITATE) > number(0, 100))
+	if (!bStatOnly && IS_AFFECTED(ch, AFF_MEDITATE) &&
+	    GET_CHAR_SKILL(ch, SKILL_MEDITATE) > number(0, 100))
 	{
 		remem_time *= 0.5;
 	}
@@ -565,7 +614,8 @@ int calculate_harpy_time(P_char ch, int circle, bool bStatOnly)
 
 	// Move the following lines from above to calc remem_time after all mods
 	// are made to tick_factor - Dalith 2/05
-	remem_time = (int)((time_mult * lfactor[circle - 1]) / (fake_sqrt_table[GET_LEVEL(ch) - 1] * tick_factor));
+	remem_time = (int)((time_mult * lfactor[circle - 1]) /
+			   (fake_sqrt_table[GET_LEVEL(ch) - 1] * tick_factor));
 
 	/* harpies who tupor while awake or not reclining get a slight disadvantage */
 	if (!IS_AWAKE(ch) && GET_POS(ch) == POS_PRONE)
@@ -573,7 +623,9 @@ int calculate_harpy_time(P_char ch, int circle, bool bStatOnly)
 		remem_time *= .75;
 	}
 
-	if (!bStatOnly && IS_AFFECTED(ch, AFF_MEDITATE) && (notch_skill(ch, SKILL_MEDITATE, (int)get_property("skill.notch.meditate", 3)) || GET_CHAR_SKILL(ch, SKILL_MEDITATE) < number(0, 100)))
+	if (!bStatOnly && IS_AFFECTED(ch, AFF_MEDITATE) &&
+	    (notch_skill(ch, SKILL_MEDITATE, (int)get_property("skill.notch.meditate", 3)) ||
+	     GET_CHAR_SKILL(ch, SKILL_MEDITATE) < number(0, 100)))
 	{
 		remem_time /= 2;
 	}
@@ -589,13 +641,14 @@ int calculate_harpy_time(P_char ch, int circle, bool bStatOnly)
 
 int get_circle_memtime(P_char ch, int circle, bool bStatOnly)
 {
-	float    time_mult, time;
+	float time_mult, time;
 	P_nevent e;
-	int      tick_factor = 0, align, level, clevel;
+	int tick_factor = 0, align, level, clevel;
 	// int      lowlvlcap = (int)get_property("memorize.lowlvl.cap", 30);
 	// int      lowlvlbottom = (int)get_property("memorize.lowlvl.bottom", 40);
 
-	if (IS_PUNDEAD(ch) || GET_CLASS(ch, CLASS_WARLOCK) || IS_UNDEADRACE(ch) || IS_ANGEL(ch) || is_wearing_necroplasm(ch))
+	if (IS_PUNDEAD(ch) || GET_CLASS(ch, CLASS_WARLOCK) || IS_UNDEADRACE(ch) || IS_ANGEL(ch) ||
+	    is_wearing_necroplasm(ch))
 	{
 		return calculate_undead_time(ch, circle, bStatOnly);
 	}
@@ -604,12 +657,13 @@ int get_circle_memtime(P_char ch, int circle, bool bStatOnly)
 		return calculate_harpy_time(ch, circle, bStatOnly);
 	}
 
-	level  = circle - 1;
+	level = circle - 1;
 	clevel = GET_LEVEL(ch) - 1;
 
 	if (IS_MULTICLASS_PC(ch))
 	{
-		if (ch->player.m_class && (GET_PRIME_CLASS(ch, CLASS_DRUID) || GET_PRIME_CLASS(ch, CLASS_RANGER)))
+		if (ch->player.m_class &&
+		    (GET_PRIME_CLASS(ch, CLASS_DRUID) || GET_PRIME_CLASS(ch, CLASS_RANGER)))
 		{
 			time_mult = get_property("memorize.factor.multi.commune", 1.75);
 		}
@@ -624,7 +678,7 @@ int get_circle_memtime(P_char ch, int circle, bool bStatOnly)
 	}
 	else if (IS_SEMI_CASTER(ch))
 	{
-		level     = MAX(1, level - 2);
+		level = MAX(1, level - 2);
 		time_mult = 2.25;
 	}
 	else
@@ -671,10 +725,14 @@ int get_circle_memtime(P_char ch, int circle, bool bStatOnly)
 		// If Wisdom w/eq is > 100.
 		if (GET_C_WIS(ch) > stat_factor[(int)GET_RACE(ch)].Wis)
 		{
-			if ((GET_PRIME_CLASS(ch, CLASS_DRUID) || GET_PRIME_CLASS(ch, CLASS_BLIGHTER)) && IS_MULTICLASS_PC(ch))
+			if ((GET_PRIME_CLASS(ch, CLASS_DRUID) ||
+			     GET_PRIME_CLASS(ch, CLASS_BLIGHTER)) &&
+			    IS_MULTICLASS_PC(ch))
 			{
 				// Increase tick factor by amount over 100 / 1.3.
-				tick_factor += (int)((GET_C_WIS(ch) - (stat_factor[(int)GET_RACE(ch)].Wis)) / 1.3);
+				tick_factor += (int)((GET_C_WIS(ch) -
+						      (stat_factor[(int)GET_RACE(ch)].Wis)) /
+						     1.3);
 			}
 			else
 			{
@@ -697,7 +755,8 @@ int get_circle_memtime(P_char ch, int circle, bool bStatOnly)
 	{
 		time = time * get_property("memorize.factor.npc", 1.0);
 	}
-	else if (ch->player.m_class && (GET_PRIME_CLASS(ch, CLASS_DRUID) || GET_PRIME_CLASS(ch, CLASS_RANGER)))
+	else if (ch->player.m_class &&
+		 (GET_PRIME_CLASS(ch, CLASS_DRUID) || GET_PRIME_CLASS(ch, CLASS_RANGER)))
 	{
 		// modify based on property tweak
 		time = time * get_property("memorize.factor.commune", 1.0);
@@ -745,8 +804,9 @@ int get_circle_memtime(P_char ch, int circle, bool bStatOnly)
 		// not regain spells while spamming cast
 		if (!bStatOnly && (e = get_scheduled(ch, event_wait)))
 		{
-			time += ne_event_time(e); // adding the time ensures that the event will not complete
-			                          // instantly after a fight or spell is cast
+			time += ne_event_time(
+				e); // adding the time ensures that the event will not complete
+			// instantly after a fight or spell is cast
 		}
 	}
 	else if (ch->player.m_class && GET_PRIME_CLASS(ch, CLASS_BLIGHTER))
@@ -772,8 +832,9 @@ int get_circle_memtime(P_char ch, int circle, bool bStatOnly)
 		// not regain spells while spamming cast
 		if (!bStatOnly && (e = get_scheduled(ch, event_wait)))
 		{
-			time += ne_event_time(e); // adding the time ensures that the event will not complete
-			                          // instantly after a fight or spell is cast
+			time += ne_event_time(
+				e); // adding the time ensures that the event will not complete
+			// instantly after a fight or spell is cast
 		}
 	}
 	/* Reverting back to use mana
@@ -822,18 +883,19 @@ void balance_align(P_char ch)
 	    return;
 	}
 	*/
-	if (!(GET_CLASS(ch, CLASS_DRUID) || (IS_MULTICLASS_PC(ch) && GET_SECONDARY_CLASS(ch, CLASS_DRUID))))
+	if (!(GET_CLASS(ch, CLASS_DRUID) ||
+	      (IS_MULTICLASS_PC(ch) && GET_SECONDARY_CLASS(ch, CLASS_DRUID))))
 	{
 		return;
 	}
 
 	switch (world[ch->in_room].sector_type)
 	{
-		case SECT_FOREST:
-			break;
-		default:
-			return;
-			break;
+	case SECT_FOREST:
+		break;
+	default:
+		return;
+		break;
 	}
 
 	c_al = GET_ALIGNMENT(ch);
@@ -864,19 +926,23 @@ void balance_align(P_char ch)
 
 void handle_undead_mem(P_char ch)
 {
-	int  max = 0, i = 1, j = 1, time;
-	int  memorized = FALSE, highest_empty = 0;
+	int max = 0, i = 1, j = 1, time;
+	int memorized = FALSE, highest_empty = 0;
 	char gbuf[MAX_STRING_LENGTH];
 
-	if (!USES_COMMUNE(ch) && !USES_FOCUS(ch) && !GET_CLASS(ch, CLASS_WARLOCK) && !USES_DEFOREST(ch) &&
-	    !((IS_UNDEADRACE(ch) || is_wearing_necroplasm(ch) || IS_PUNDEAD(ch) || USES_TUPOR(ch) || IS_ANGEL(ch)) && IS_AFFECTED2(ch, AFF2_MEMORIZING)))
+	if (!USES_COMMUNE(ch) && !USES_FOCUS(ch) && !GET_CLASS(ch, CLASS_WARLOCK) &&
+	    !USES_DEFOREST(ch) &&
+	    !((IS_UNDEADRACE(ch) || is_wearing_necroplasm(ch) || IS_PUNDEAD(ch) || USES_TUPOR(ch) ||
+	       IS_ANGEL(ch)) &&
+	      IS_AFFECTED2(ch, AFF2_MEMORIZING)))
 	{
 		return;
 	}
 
 	if (IS_DRAGOON(ch) && !is_dragoon_mounted(ch))
 	{
-		send_to_char("You feel unable to &+rcommune&n with the &+GDr&+Lag&+Gon&n god...\n", ch);
+		send_to_char("You feel unable to &+rcommune&n with the &+GDr&+Lag&+Gon&n god...\n",
+			     ch);
 		return;
 	}
 
@@ -892,7 +958,8 @@ void handle_undead_mem(P_char ch)
 			continue;
 		}
 
-		if ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) && (IS_CASTING(ch) || (!IS_DRAGOON(ch) && GET_OPPONENT(ch))))
+		if ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) &&
+		    (IS_CASTING(ch) || (!IS_DRAGOON(ch) && GET_OPPONENT(ch))))
 		{
 			highest_empty = i;
 			break;
@@ -900,13 +967,19 @@ void handle_undead_mem(P_char ch)
 
 		ch->specials.undead_spell_slots[i]++;
 
-		if (IS_PUNDEAD(ch) || is_wearing_necroplasm(ch) || GET_CLASS(ch, CLASS_WARLOCK) || IS_UNDEADRACE(ch))
+		if (IS_PUNDEAD(ch) || is_wearing_necroplasm(ch) || GET_CLASS(ch, CLASS_WARLOCK) ||
+		    IS_UNDEADRACE(ch))
 		{
-			snprintf(gbuf, MAX_STRING_LENGTH, "&+LYou feel infused by %d%s circle DARK powers!\n", i, i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
+			snprintf(gbuf, MAX_STRING_LENGTH,
+				 "&+LYou feel infused by %d%s circle DARK powers!\n", i,
+				 i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
 		}
 		else if (USES_TUPOR(ch))
 		{
-			snprintf(gbuf, MAX_STRING_LENGTH, "&+WEthereal e&+Cssences flo&+cw into you, res&+Ctoring your %d%s&+c &+Wcircle powers!\n", i, i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
+			snprintf(
+				gbuf, MAX_STRING_LENGTH,
+				"&+WEthereal e&+Cssences flo&+cw into you, res&+Ctoring your %d%s&+c &+Wcircle powers!\n",
+				i, i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
 		}
 		/* reverting to use mana
 		else if(GET_CLASS(ch, CLASS_PSIONICIST) || GET_CLASS(ch, CLASS_MINDFLAYER) || GET_RACE(ch) == RACE_PILLITHID)
@@ -917,19 +990,29 @@ void handle_undead_mem(P_char ch)
 		*/
 		else if (IS_ANGEL(ch))
 		{
-			snprintf(gbuf, MAX_STRING_LENGTH, "&+WYou feel illuminated with a %d%s circle spell.\n", i, i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
+			snprintf(gbuf, MAX_STRING_LENGTH,
+				 "&+WYou feel illuminated with a %d%s circle spell.\n", i,
+				 i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
 		}
 		else if (USES_DEFOREST(ch))
 		{
-			snprintf(gbuf, MAX_STRING_LENGTH, "&+yYou draw a %d%s circle of energy from your surroundings.\n", i, i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
+			snprintf(gbuf, MAX_STRING_LENGTH,
+				 "&+yYou draw a %d%s circle of energy from your surroundings.\n", i,
+				 i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
 		}
 		else if (IS_DRAGOON(ch))
 		{
-			snprintf(gbuf, MAX_STRING_LENGTH, "The &+Gdr&+Lag&+Gon&n god's &+rpower&n courses into your %d%s circle of knowledge.\n", i, i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
+			snprintf(
+				gbuf, MAX_STRING_LENGTH,
+				"The &+Gdr&+Lag&+Gon&n god's &+rpower&n courses into your %d%s circle of knowledge.\n",
+				i, i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
 		}
 		else
 		{
-			snprintf(gbuf, MAX_STRING_LENGTH, "&+GYou feel nature's energy flow into your %d%s circle of knowledge.\n", i, i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
+			snprintf(
+				gbuf, MAX_STRING_LENGTH,
+				"&+GYou feel nature's energy flow into your %d%s circle of knowledge.\n",
+				i, i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
 		}
 
 		send_to_char(gbuf, ch);
@@ -953,18 +1036,23 @@ void handle_undead_mem(P_char ch)
 		time = get_circle_memtime(ch, highest_empty);
 		add_event(event_memorize, time, ch, 0, 0, 0, &time, sizeof(time));
 	}
-	else if (is_wearing_necroplasm(ch) || !(USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)))
+	else if (is_wearing_necroplasm(ch) ||
+		 !(USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)))
 	{
 		send_to_char("&+rYou feel fully infused...\n", ch);
 
 		CharWait(ch, WAIT_SEC);
-		if (IS_PUNDEAD(ch) || is_wearing_necroplasm(ch) || IS_UNDEADRACE(ch) || GET_CLASS(ch, CLASS_WARLOCK))
+		if (IS_PUNDEAD(ch) || is_wearing_necroplasm(ch) || IS_UNDEADRACE(ch) ||
+		    GET_CLASS(ch, CLASS_WARLOCK))
 		{
-			send_to_char("The assimilation process leaves you momentarily shocked.\n", ch);
+			send_to_char("The assimilation process leaves you momentarily shocked.\n",
+				     ch);
 		}
 		else if (USES_TUPOR(ch))
 		{
-			send_to_char("&+CThe spir&n&+cits reced&+We, leaving y&+Cou in a m&n&+comentary stat&+We of lethargy.&n\n", ch);
+			send_to_char(
+				"&+CThe spir&n&+cits reced&+We, leaving y&+Cou in a m&n&+comentary stat&+We of lethargy.&n\n",
+				ch);
 		}
 		else if (IS_ANGEL(ch))
 		{
@@ -994,7 +1082,7 @@ void handle_undead_mem(P_char ch)
 int memorized_in_circle(P_char ch, int circle)
 {
 	struct affected_type *af;
-	int                   memorized = 0;
+	int memorized = 0;
 
 	for (af = ch->affected; af; af = af->next)
 	{
@@ -1010,14 +1098,15 @@ int memorized_in_circle(P_char ch, int circle)
 void handle_memorize(P_char ch)
 {
 	struct affected_type *af;
-	bool                  memorized = FALSE;
-	bool                  no_book = FALSE;
-	int                   time;
+	bool memorized = FALSE;
+	bool no_book = FALSE;
+	int time;
 
 	if (!IS_AFFECTED2(ch, AFF2_MEMORIZING))
 		return;
 
-	if (GET_STAT(ch) != STAT_RESTING || (GET_POS(ch) != POS_SITTING && GET_POS(ch) != POS_KNEELING))
+	if (GET_STAT(ch) != STAT_RESTING ||
+	    (GET_POS(ch) != POS_SITTING && GET_POS(ch) != POS_KNEELING))
 	{
 		show_stop_memorizing(ch);
 		return;
@@ -1030,30 +1119,43 @@ void handle_memorize(P_char ch)
 			if (memorized)
 			{
 #if !defined(CHAOS_MUD) || (CHAOS_MUD != 1)
-				if (book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS) && !(SpellInSpellBook(ch, af->modifier, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))
+				if (book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS) &&
+				    !(SpellInSpellBook(ch, af->modifier,
+						       SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND |
+							       SBOOK_MODE_ON_BELT |
+							       SBOOK_MODE_ON_GROUND)))
 				{
 					no_book = true;
 					continue;
 				}
 #endif
 				time = get_circle_memtime(ch, get_spell_circle(ch, af->modifier));
-				add_event(event_memorize, time / 2, ch, 0, 0, 0, &time, sizeof(time));
+				add_event(event_memorize, time / 2, ch, 0, 0, 0, &time,
+					  sizeof(time));
 				return;
 			}
 			else
 #if !defined(CHAOS_MUD) || (CHAOS_MUD != 1)
-				if (book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS) && !(SpellInSpellBook(ch, af->modifier, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))
-					no_book = TRUE;
+				if (book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS) &&
+				    !(SpellInSpellBook(ch, af->modifier,
+						       SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND |
+							       SBOOK_MODE_ON_BELT |
+							       SBOOK_MODE_ON_GROUND)))
+				no_book = TRUE;
 			else
 #endif
 			{
 				if (meming_class(ch))
 				{
-					snprintf(Gbuf1, MAX_STRING_LENGTH, "You have finished memorizing %s.\n", skills[af->modifier].name);
+					snprintf(Gbuf1, MAX_STRING_LENGTH,
+						 "You have finished memorizing %s.\n",
+						 skills[af->modifier].name);
 				}
 				else
 				{
-					snprintf(Gbuf1, MAX_STRING_LENGTH, "You have finished praying for %s.\n", skills[af->modifier].name);
+					snprintf(Gbuf1, MAX_STRING_LENGTH,
+						 "You have finished praying for %s.\n",
+						 skills[af->modifier].name);
 				}
 				send_to_char(Gbuf1, ch);
 				af->flags |= MEMTYPE_FULL;
@@ -1071,18 +1173,22 @@ void handle_memorize(P_char ch)
 
 	if (GET_CLASS(ch, CLASS_SHAMAN))
 	{
-		send_to_char("You snap out of your meditative trance, memorization complete.\n", ch);
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "$n snaps out of $s meditative trance, %s.", IS_EVIL(ch) ? "grinning widely" : "smiling placidly");
+		send_to_char("You snap out of your meditative trance, memorization complete.\n",
+			     ch);
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "$n snaps out of $s meditative trance, %s.",
+			 IS_EVIL(ch) ? "grinning widely" : "smiling placidly");
 	}
 	else if (!book_class(ch))
 	{
 		send_to_char("Your prayers are complete.\n", ch);
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "$n raises $s %sholy symbol and smiles %s.", IS_EVIL(ch) ? "un" : "", IS_EVIL(ch) ? "malevolently" : "broadly");
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "$n raises $s %sholy symbol and smiles %s.",
+			 IS_EVIL(ch) ? "un" : "", IS_EVIL(ch) ? "malevolently" : "broadly");
 	}
 	else
 	{
 		send_to_char("Your studies are complete.\n", ch);
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "$n closes $s book and %s.", IS_EVIL(ch) ? "grins malevolently" : "smiles broadly");
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "$n closes $s book and %s.",
+			 IS_EVIL(ch) ? "grins malevolently" : "smiles broadly");
 	}
 	act(Gbuf1, TRUE, ch, 0, 0, TO_ROOM);
 	REMOVE_BIT(ch->specials.affected_by2, AFF2_MEMORIZING);
@@ -1117,13 +1223,18 @@ void event_memorize(P_char ch, P_char victim, P_obj obj, void *data)
 	if (data)
 		time = *((int *)data);
 
-	if (time && (!IS_AFFECTED(ch, AFF_MEDITATE) || (!notch_skill(ch, SKILL_MEDITATE, (int)get_property("skill.notch.meditate", 3)) && GET_CHAR_SKILL(ch, SKILL_MEDITATE) < number(0, 100))))
+	if (time &&
+	    (!IS_AFFECTED(ch, AFF_MEDITATE) ||
+	     (!notch_skill(ch, SKILL_MEDITATE, (int)get_property("skill.notch.meditate", 3)) &&
+	      GET_CHAR_SKILL(ch, SKILL_MEDITATE) < number(0, 100))))
 	{
 		add_event(event_memorize, time / 2, ch, 0, 0, 0, 0, 0);
 		return;
 	}
 
-	if (GET_CLASS(ch, CLASS_WARLOCK) || IS_PUNDEAD(ch) || USES_COMMUNE(ch) || USES_DEFOREST(ch) || USES_TUPOR(ch) || IS_UNDEADRACE(ch) || is_wearing_necroplasm(ch) || USES_FOCUS(ch) || IS_ANGEL(ch))
+	if (GET_CLASS(ch, CLASS_WARLOCK) || IS_PUNDEAD(ch) || USES_COMMUNE(ch) ||
+	    USES_DEFOREST(ch) || USES_TUPOR(ch) || IS_UNDEADRACE(ch) || is_wearing_necroplasm(ch) ||
+	    USES_FOCUS(ch) || IS_ANGEL(ch))
 	{
 		handle_undead_mem(ch);
 	}
@@ -1137,7 +1248,9 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 {
 	int circle, available, need_mem = 0;
 
-	if (cmd == CMD_ASSIMILATE && !(IS_PUNDEAD(ch) || IS_NPC(ch) || IS_ANGEL(ch) || IS_UNDEADRACE(ch) || is_wearing_necroplasm(ch) || GET_CLASS(ch, CLASS_WARLOCK)))
+	if (cmd == CMD_ASSIMILATE &&
+	    !(IS_PUNDEAD(ch) || IS_NPC(ch) || IS_ANGEL(ch) || IS_UNDEADRACE(ch) ||
+	      is_wearing_necroplasm(ch) || GET_CLASS(ch, CLASS_WARLOCK)))
 	{
 		send_to_char("&+LThe powers of the dark ignore you...\n", ch);
 		return;
@@ -1163,24 +1276,26 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	snprintf(Gbuf1, MAX_STRING_LENGTH, "You currently have the following spell slots available:\n");
+	snprintf(Gbuf1, MAX_STRING_LENGTH,
+		 "You currently have the following spell slots available:\n");
 	for (circle = 1; circle <= get_max_circle(ch); circle++)
 	{
 		available = ch->specials.undead_spell_slots[circle];
-		snprintf(Gbuf1 + strlen(Gbuf1),
-		         MAX_STRING_LENGTH - strlen(Gbuf1),
-		         " %2d%s circle: %2d of %2d",
-		         circle,
-		         circle == 1   ? "st"
-		         : circle == 2 ? "nd"
-		         : circle == 3 ? "rd"
-		                       : "th",
-		         available,
-		         max_spells_in_circle(ch, circle));
+		snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+			 " %2d%s circle: %2d of %2d", circle,
+			 circle == 1 ? "st" :
+			 circle == 2 ? "nd" :
+			 circle == 3 ? "rd" :
+				       "th",
+			 available, max_spells_in_circle(ch, circle));
 		if (available != max_spells_in_circle(ch, circle))
 		{
 			need_mem = circle;
-			snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1), "   (%4d seconds)", (get_circle_memtime(ch, circle, true) * (max_spells_in_circle(ch, circle) - available)) / WAIT_SEC);
+			snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+				 "   (%4d seconds)",
+				 (get_circle_memtime(ch, circle, true) *
+				  (max_spells_in_circle(ch, circle) - available)) /
+					 WAIT_SEC);
 		}
 		strcat(Gbuf1, "\n");
 	}
@@ -1189,20 +1304,22 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 	{
 		int percent = get_power_level(ch);
 
-		constexpr int kPips  = 50;
-		int           filled = (percent * kPips) / 100;
-		int           empty  = kPips - filled;
+		constexpr int kPips = 50;
+		int filled = (percent * kPips) / 100;
+		int empty = kPips - filled;
 
-		const char *stars  = "**************************************************";
+		const char *stars = "**************************************************";
 		const char *spaces = "**************************************************";
 
 		if (GET_LEVEL(ch) >= 40)
 		{
-			snprintf(Gbuf2, MAX_STRING_LENGTH, "\n[&+r%.*s&n&+L%.*s&n] %3d%%\n", filled, stars, empty, spaces, percent);
+			snprintf(Gbuf2, MAX_STRING_LENGTH, "\n[&+r%.*s&n&+L%.*s&n] %3d%%\n", filled,
+				 stars, empty, spaces, percent);
 		}
 		else
 		{
-			snprintf(Gbuf2, MAX_STRING_LENGTH, "\n[&+r%.*s&n&+L%.*s&n]\n", filled, stars, empty, spaces);
+			snprintf(Gbuf2, MAX_STRING_LENGTH, "\n[&+r%.*s&n&+L%.*s&n]\n", filled,
+				 stars, empty, spaces);
 		}
 		strcat(Gbuf1, Gbuf2);
 	}
@@ -1210,12 +1327,16 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 	if (strcmp(argument, "nl"))
 		send_to_char(Gbuf1, ch);
 
-	if ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) && need_mem && !get_scheduled(ch, event_memorize))
+	if ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) && need_mem &&
+	    !get_scheduled(ch, event_memorize))
 	{
 		if (IS_DRAGOON(ch) && !is_dragoon_mounted(ch))
-			send_to_char("You feel unable to &+rcommune&n with the &+GDr&+Lag&+Gon&n god unless mounted.\n", ch);
+			send_to_char(
+				"You feel unable to &+rcommune&n with the &+GDr&+Lag&+Gon&n god unless mounted.\n",
+				ch);
 		else
-			add_event(event_memorize, get_circle_memtime(ch, need_mem), ch, 0, 0, 0, 0, 0);
+			add_event(event_memorize, get_circle_memtime(ch, need_mem), ch, 0, 0, 0, 0,
+				  0);
 	}
 
 	if (!need_mem || USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch))
@@ -1223,7 +1344,8 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 
 	if (cmd == CMD_TUPOR)
 	{
-		if (GET_STAT(ch) != STAT_RESTING || (GET_POS(ch) != POS_SITTING && GET_POS(ch) != POS_KNEELING))
+		if (GET_STAT(ch) != STAT_RESTING ||
+		    (GET_POS(ch) != POS_SITTING && GET_POS(ch) != POS_KNEELING))
 		{
 			/* harpies also get to tupor while sleeping... */
 			if (IS_AWAKE(ch))
@@ -1233,26 +1355,31 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 		}
 
 		send_to_char("\n&+cYour mind dr&+Cifts int&+Wo a deep meditat&+cion and "
-		             "th&+Ce spirits of sto&+Wrms and i&+cce spe&+Cak to yo&+cu.&n\n",
-		             ch);
+			     "th&+Ce spirits of sto&+Wrms and i&+cce spe&+Cak to yo&+cu.&n\n",
+			     ch);
 	}
 	else if (cmd == CMD_ASSIMILATE)
 	{
-		if (GET_STAT(ch) != STAT_RESTING || (GET_POS(ch) != POS_SITTING && GET_POS(ch) != POS_KNEELING))
+		if (GET_STAT(ch) != STAT_RESTING ||
+		    (GET_POS(ch) != POS_SITTING && GET_POS(ch) != POS_KNEELING))
 		{
 			return;
 		}
 		if (IS_ANGEL(ch))
-			send_to_char("\n&+WYou call to the heavens above for the gift of magic.\n", ch);
+			send_to_char("\n&+WYou call to the heavens above for the gift of magic.\n",
+				     ch);
 		else
-			send_to_char("&+LYou begin to invoke evil and assimilate the powers of darkness.\n", ch);
+			send_to_char(
+				"&+LYou begin to invoke evil and assimilate the powers of darkness.\n",
+				ch);
 		// if (!IS_AFFECTED2(ch, AFF2_MEMORIZING))
 		//   CharWait(ch, 1 * PULSE_VIOLENCE);
 	}
 
 	if (!IS_AFFECTED2(ch, AFF2_MEMORIZING))
 	{
-		add_event(event_memorize, get_circle_memtime(ch, get_max_circle(ch)) / 2, ch, 0, 0, 0, 0, 0);
+		add_event(event_memorize, get_circle_memtime(ch, get_max_circle(ch)) / 2, ch, 0, 0,
+			  0, 0, 0);
 	}
 
 	SET_BIT(ch->specials.affected_by2, AFF2_MEMORIZING);
@@ -1285,22 +1412,23 @@ void do_npc_commune(P_char ch)
 
 //  recount_spells_in_use(ch);
 
-#define MEM_LIST   BIT_1
-#define MEM_SPELL  BIT_2
+#define MEM_LIST BIT_1
+#define MEM_SPELL BIT_2
 #define MEM_SILENT BIT_3
-#define MEM_FULL   BIT_4
+#define MEM_FULL BIT_4
 
 void do_memorize(P_char ch, char *argument, int cmd)
 {
-	int                   circle, i, time, shown_one, first_to_mem, spl;
-	unsigned short        mode;
+	int circle, i, time, shown_one, first_to_mem, spl;
+	unsigned short mode;
 	struct affected_type *af, new_mem;
-	char                  memorized[MAX_CIRCLE + 1];
-	char                  per_spell[LAST_SPELL + 1];
-	P_obj                 sbook = NULL;
-	P_nevent              e1;
+	char memorized[MAX_CIRCLE + 1];
+	char per_spell[LAST_SPELL + 1];
+	P_obj sbook = NULL;
+	P_nevent e1;
 
-	if (cmd == CMD_ASSIMILATE || cmd == CMD_COMMUNE || cmd == CMD_TUPOR || cmd == CMD_FOCUS || cmd == CMD_DEFOREST)
+	if (cmd == CMD_ASSIMILATE || cmd == CMD_COMMUNE || cmd == CMD_TUPOR || cmd == CMD_FOCUS ||
+	    cmd == CMD_DEFOREST)
 	{
 		do_assimilate(ch, argument, cmd);
 		return;
@@ -1311,7 +1439,9 @@ void do_memorize(P_char ch, char *argument, int cmd)
 		send_to_char("The gods ignore you.\n", ch);
 		return;
 	}
-	else if (cmd == CMD_MEMORIZE && (IS_PUNDEAD(ch) || USES_TUPOR(ch) || !meming_class(ch) || IS_UNDEADRACE(ch) || is_wearing_necroplasm(ch)) || (IS_ANGEL(ch)))
+	else if (cmd == CMD_MEMORIZE && (IS_PUNDEAD(ch) || USES_TUPOR(ch) || !meming_class(ch) ||
+					 IS_UNDEADRACE(ch) || is_wearing_necroplasm(ch)) ||
+		 (IS_ANGEL(ch)))
 	{
 		if (IS_ANGEL(ch))
 		{
@@ -1347,7 +1477,7 @@ void do_memorize(P_char ch, char *argument, int cmd)
 	memset(&memorized, 0, sizeof(memorized));
 	memset(&per_spell, 0, sizeof(per_spell));
 	first_to_mem = 0;
-	e1           = get_scheduled(ch, (event_func)event_memorize);
+	e1 = get_scheduled(ch, (event_func)event_memorize);
 
 	for (af = ch->affected; af; af = af->next)
 	{
@@ -1381,19 +1511,20 @@ void do_memorize(P_char ch, char *argument, int cmd)
 					{
 						shown_one = TRUE;
 						snprintf(Gbuf1 + strlen(Gbuf1),
-						         MAX_STRING_LENGTH - strlen(Gbuf1),
-						         "(%2d%s circle) %2d - %s\n",
-						         circle,
-						         circle == 1   ? "st"
-						         : circle == 2 ? "nd"
-						         : circle == 3 ? "rd"
-						                       : "th",
-						         per_spell[spl],
-						         skills[spl].name);
+							 MAX_STRING_LENGTH - strlen(Gbuf1),
+							 "(%2d%s circle) %2d - %s\n", circle,
+							 circle == 1 ? "st" :
+							 circle == 2 ? "nd" :
+							 circle == 3 ? "rd" :
+								       "th",
+							 per_spell[spl], skills[spl].name);
 					}
 					else
 					{
-						snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1), "              %2d - %s\n", per_spell[spl], skills[spl].name);
+						snprintf(Gbuf1 + strlen(Gbuf1),
+							 MAX_STRING_LENGTH - strlen(Gbuf1),
+							 "              %2d - %s\n", per_spell[spl],
+							 skills[spl].name);
 					}
 				}
 			}
@@ -1434,7 +1565,7 @@ void do_memorize(P_char ch, char *argument, int cmd)
 			}
 			else
 			{
-				time      = 0;
+				time = 0;
 				shown_one = FALSE;
 			}
 
@@ -1452,17 +1583,25 @@ void do_memorize(P_char ch, char *argument, int cmd)
 						time += get_circle_memtime(ch, circle, true);
 					}
 					snprintf(Gbuf1 + strlen(Gbuf1),
-					         MAX_STRING_LENGTH - strlen(Gbuf1),
-					         "%5d seconds:  (%2d%s) %s%s\n",
-					         time / 4,
-					         circle,
-					         (circle == 1)   ? "st"
-					         : (circle == 2) ? "nd"
-					         : (circle == 3) ? "rd"
-					                         : "th",
-					         skills[af->modifier].name,
-					         book_class(ch) ? ((!has_innate(ch, INNATE_ARCANE_RUDIMENTS) && !(SpellInSpellBook(ch, af->modifier, (SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))) ? "  [not in spell book]" : "")
-					                        : "");
+						 MAX_STRING_LENGTH - strlen(Gbuf1),
+						 "%5d seconds:  (%2d%s) %s%s\n", time / 4, circle,
+						 (circle == 1) ? "st" :
+						 (circle == 2) ? "nd" :
+						 (circle == 3) ? "rd" :
+								 "th",
+						 skills[af->modifier].name,
+						 book_class(ch) ?
+							 ((!has_innate(ch,
+								       INNATE_ARCANE_RUDIMENTS) &&
+							   !(SpellInSpellBook(
+								   ch, af->modifier,
+								   (SBOOK_MODE_IN_INV |
+								    SBOOK_MODE_AT_HAND |
+								    SBOOK_MODE_ON_BELT |
+								    SBOOK_MODE_ON_GROUND)))) ?
+								  "  [not in spell book]" :
+								  "") :
+							 "");
 				}
 			}
 		}
@@ -1478,7 +1617,6 @@ void do_memorize(P_char ch, char *argument, int cmd)
 		i = 0;
 		for (circle = 1; circle <= get_max_circle(ch); circle++)
 		{
-
 			if (!get_spells_in_circle(ch, circle))
 				continue;
 
@@ -1493,7 +1631,13 @@ void do_memorize(P_char ch, char *argument, int cmd)
 					strcat(Gbuf1, Gbuf2);
 				}
 				i++;
-				snprintf(Gbuf2, MAX_STRING_LENGTH, "%d %d%s", max_spells_in_circle(ch, circle) - memorized[circle], circle, (circle == 1) ? "st" : (circle == 2) ? "nd" : (circle == 3) ? "rd" : "th");
+				snprintf(Gbuf2, MAX_STRING_LENGTH, "%d %d%s",
+					 max_spells_in_circle(ch, circle) - memorized[circle],
+					 circle,
+					 (circle == 1) ? "st" :
+					 (circle == 2) ? "nd" :
+					 (circle == 3) ? "rd" :
+							 "th");
 			}
 		}
 
@@ -1514,26 +1658,36 @@ void do_memorize(P_char ch, char *argument, int cmd)
 		{
 			send_to_char(Gbuf1, ch);
 		}
-		if (first_to_mem && !e1 && GET_STAT(ch) == STAT_RESTING && (GET_POS(ch) == POS_SITTING || GET_POS(ch) == POS_KNEELING))
+		if (first_to_mem && !e1 && GET_STAT(ch) == STAT_RESTING &&
+		    (GET_POS(ch) == POS_SITTING || GET_POS(ch) == POS_KNEELING))
 		{
 			if (GET_CLASS(ch, CLASS_SHAMAN))
 			{
 				send_to_char("You continue your study.\n", ch);
-				strcpy(Gbuf1, "$n stares off into space, entering a meditative trance.");
+				strcpy(Gbuf1,
+				       "$n stares off into space, entering a meditative trance.");
 			}
 			else if (book_class(ch))
 			{
-				sbook = SpellInSpellBook(ch, first_to_mem, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND);
+				sbook = SpellInSpellBook(ch, first_to_mem,
+							 SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND |
+								 SBOOK_MODE_ON_BELT |
+								 SBOOK_MODE_ON_GROUND);
 				send_to_char("You continue your study.\n", ch);
 				if (sbook)
-					strcpy(Gbuf1, "$n opens $p and begins studying it intently.");
+					strcpy(Gbuf1,
+					       "$n opens $p and begins studying it intently.");
 				else
-					strcpy(Gbuf1, "$n looks down at $s lap and begins studying it intently.");
+					strcpy(Gbuf1,
+					       "$n looks down at $s lap and begins studying it intently.");
 			}
 			else
 			{
 				send_to_char("You continue your praying.\n", ch);
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "$n takes out $s %sholy symbol and begins praying intently.", IS_EVIL(ch) ? "un" : "");
+				snprintf(
+					Gbuf1, MAX_STRING_LENGTH,
+					"$n takes out $s %sholy symbol and begins praying intently.",
+					IS_EVIL(ch) ? "un" : "");
 			}
 			act(Gbuf1, TRUE, ch, sbook, 0, TO_ROOM);
 			time = get_circle_memtime(ch, get_spell_circle(ch, first_to_mem));
@@ -1543,9 +1697,11 @@ void do_memorize(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (GET_STAT(ch) != STAT_RESTING || (GET_POS(ch) != POS_SITTING && GET_POS(ch) != POS_KNEELING))
+	if (GET_STAT(ch) != STAT_RESTING ||
+	    (GET_POS(ch) != POS_SITTING && GET_POS(ch) != POS_KNEELING))
 	{
-		send_to_char("You are not comfortable enough to study. (try sitting/resting)\n", ch);
+		send_to_char("You are not comfortable enough to study. (try sitting/resting)\n",
+			     ch);
 		return;
 	}
 
@@ -1566,7 +1722,9 @@ void do_memorize(P_char ch, char *argument, int cmd)
 
 	if (book_class(ch))
 	{
-		sbook = SpellInSpellBook(ch, spl, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND);
+		sbook = SpellInSpellBook(ch, spl,
+					 SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND |
+						 SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND);
 	}
 
 	circle = get_spell_circle(ch, spl);
@@ -1576,23 +1734,30 @@ void do_memorize(P_char ch, char *argument, int cmd)
 	{
 		if ((!book_class(ch) || sbook) && !quested_spell(ch, spl))
 		{
-			send_to_char("That is too powerful an enchantment for you to master.. yet, anyway.\n", ch);
+			send_to_char(
+				"That is too powerful an enchantment for you to master.. yet, anyway.\n",
+				ch);
 			return;
 		}
 		else if (!sbook)
 		{
-			send_to_char("Yes, you _HAVE_ heard of rumors about that spell.. but you think it beyond your powers anyway.\n", ch);
+			send_to_char(
+				"Yes, you _HAVE_ heard of rumors about that spell.. but you think it beyond your powers anyway.\n",
+				ch);
 			return;
 		}
 	}
-		else if (!sbook && book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS))
+	else if (!sbook && book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS))
 	{
-		send_to_char("Sorry, but you haven't got that spell in any available spellbooks!\n", ch);
+		send_to_char("Sorry, but you haven't got that spell in any available spellbooks!\n",
+			     ch);
 		return;
 	}
-	else if (!SKILL_DATA_ALL(ch, spl).maxlearn[0] && !SKILL_DATA_ALL(ch, spl).maxlearn[ch->player.spec] && !quested_spell(ch, spl))
+	else if (!SKILL_DATA_ALL(ch, spl).maxlearn[0] &&
+		 !SKILL_DATA_ALL(ch, spl).maxlearn[ch->player.spec] && !quested_spell(ch, spl))
 #else
-	if (!SKILL_DATA_ALL(ch, spl).maxlearn[0] && !SKILL_DATA_ALL(ch, spl).maxlearn[ch->player.spec] && !quested_spell(ch, spl))
+	if (!SKILL_DATA_ALL(ch, spl).maxlearn[0] &&
+	    !SKILL_DATA_ALL(ch, spl).maxlearn[ch->player.spec] && !quested_spell(ch, spl))
 #endif
 	{
 		send_to_char("That spell is beyond your comprehension.\n", ch);
@@ -1605,8 +1770,8 @@ void do_memorize(P_char ch, char *argument, int cmd)
 	}
 
 	memset(&new_mem, 0, sizeof(new_mem));
-	new_mem.type     = TAG_MEMORIZE;
-	new_mem.flags    = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY | AFFTYPE_PERM;
+	new_mem.type = TAG_MEMORIZE;
+	new_mem.flags = AFFTYPE_NOSHOW | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY | AFFTYPE_PERM;
 	new_mem.duration = -1;
 	new_mem.modifier = spl;
 	affect_to_end(ch, &new_mem);
@@ -1620,14 +1785,17 @@ void do_memorize(P_char ch, char *argument, int cmd)
 		}
 		else if (!book_class(ch))
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "$n takes out $s %sholy symbol and begins praying intently.", IS_EVIL(ch) ? "un" : "");
+			snprintf(Gbuf1, MAX_STRING_LENGTH,
+				 "$n takes out $s %sholy symbol and begins praying intently.",
+				 IS_EVIL(ch) ? "un" : "");
 		}
 		else
 		{
 			if (sbook)
 				strcpy(Gbuf1, "$n opens $p and begins studying it intently.");
 			else
-				strcpy(Gbuf1, "$n looks down at $s lap and begins studying it intently.");
+				strcpy(Gbuf1,
+				       "$n looks down at $s lap and begins studying it intently.");
 		}
 		act(Gbuf1, TRUE, ch, sbook, 0, TO_ROOM);
 		add_event(event_memorize, time / 2, ch, 0, 0, 0, &time, sizeof(time));
@@ -1635,15 +1803,21 @@ void do_memorize(P_char ch, char *argument, int cmd)
 	SET_BIT(ch->specials.affected_by2, AFF2_MEMORIZING);
 	if (GET_CLASS(ch, CLASS_SHAMAN))
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "You are memorizing %s, which will take about %d seconds.\n", skills[spl].name, time / 4);
+		snprintf(Gbuf1, MAX_STRING_LENGTH,
+			 "You are memorizing %s, which will take about %d seconds.\n",
+			 skills[spl].name, time / 4);
 	}
 	else if (!book_class(ch))
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "You are praying for %s, which will take about %d seconds.\n", skills[spl].name, time / 4);
+		snprintf(Gbuf1, MAX_STRING_LENGTH,
+			 "You are praying for %s, which will take about %d seconds.\n",
+			 skills[spl].name, time / 4);
 	}
 	else
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "You are memorizing %s, which will take about %d seconds.\n", skills[spl].name, time / 4);
+		snprintf(Gbuf1, MAX_STRING_LENGTH,
+			 "You are memorizing %s, which will take about %d seconds.\n",
+			 skills[spl].name, time / 4);
 	}
 	send_to_char(Gbuf1, ch);
 }
@@ -1662,7 +1836,7 @@ void do_memorize(P_char ch, char *argument, int cmd)
 int forget_spells(P_char ch, int spell)
 {
 	struct affected_type *af, *next_af, *full_matching = 0;
-	bool                  was_first = TRUE;
+	bool was_first = TRUE;
 
 	for (af = ch->affected; af; af = next_af)
 	{
@@ -1710,7 +1884,7 @@ int forget_spells(P_char ch, int spell)
 
 void do_forget(P_char ch, char *argument, int cmd)
 {
-	int                   spl, i;
+	int spl, i;
 	struct memorize_data *mem_ptr, *ptr;
 
 	if (!ch || IS_NPC(ch))
@@ -1721,8 +1895,8 @@ void do_forget(P_char ch, char *argument, int cmd)
 	if (!(*argument))
 	{
 		send_to_char("You forget all the spells you are trying to "
-		             "memorize.\n",
-		             ch);
+			     "memorize.\n",
+			     ch);
 		forget_spells(ch, 0);
 		return;
 	}
@@ -1742,7 +1916,8 @@ void do_forget(P_char ch, char *argument, int cmd)
 
 	if (forget_spells(ch, spl))
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "You purge '%s' from your thoughts.\n", skills[spl].name);
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "You purge '%s' from your thoughts.\n",
+			 skills[spl].name);
 		send_to_char(Gbuf1, ch);
 	}
 	else
@@ -1765,7 +1940,8 @@ int knows_spell(P_char ch, int spell)
 	// Check for specs (mostly only concerns druids, as this check is done for others at mem/pray time)
 	if (IS_PC(ch))
 	{
-		if (!SKILL_DATA_ALL(ch, spell).maxlearn[0] && !SKILL_DATA_ALL(ch, spell).maxlearn[ch->player.spec])
+		if (!SKILL_DATA_ALL(ch, spell).maxlearn[0] &&
+		    !SKILL_DATA_ALL(ch, spell).maxlearn[ch->player.spec])
 		{
 			return FALSE;
 		}
@@ -1789,8 +1965,8 @@ void *has_memorized(P_char ch, int spell)
 void use_spell(P_char ch, int spell)
 {
 	struct affected_type *af;
-	char                  buf[128];
-	int                   spatial = GET_CHAR_SKILL(ch, SKILL_SPATIAL_FOCUS);
+	char buf[128];
+	int spatial = GET_CHAR_SKILL(ch, SKILL_SPATIAL_FOCUS);
 
 	if (!IS_ALIVE(ch))
 		return;
@@ -1803,7 +1979,9 @@ void use_spell(P_char ch, int spell)
 	{
 		if ((int)(spatial / 2) > number(1, 100))
 		{
-			send_to_char("&+MFocusing your mind, you bend reality a bit more easily...&n\n", ch);
+			send_to_char(
+				"&+MFocusing your mind, you bend reality a bit more easily...&n\n",
+				ch);
 			GET_MANA(ch) -= (int)(get_spell_circle(ch, spell) * 35 / 10);
 			StartRegen(ch, EVENT_MANA_REGEN);
 		}
@@ -1825,7 +2003,10 @@ void use_spell(P_char ch, int spell)
 		{
 			if (MIN(GET_CHAR_SKILL(ch, SKILL_DEVOTION) / 10, 5) + 4 > number(0, 100))
 			{
-				snprintf(buf, 128, "%s's grace flows down on you refreshing your spell power!&n\n", get_god_name(ch));
+				snprintf(
+					buf, 128,
+					"%s's grace flows down on you refreshing your spell power!&n\n",
+					get_god_name(ch));
 				send_to_char(buf, ch);
 				return;
 			}
@@ -1835,9 +2016,12 @@ void use_spell(P_char ch, int spell)
 			ch->specials.undead_spell_slots[get_spell_circle(ch, spell)] -= 1;
 		}
 
-		if ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) && !get_scheduled(ch, event_memorize))
+		if ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) &&
+		    !get_scheduled(ch, event_memorize))
 		{
-			add_event(event_memorize, get_circle_memtime(ch, get_spell_circle(ch, spell)), ch, 0, 0, 0, 0, 0);
+			add_event(event_memorize,
+				  get_circle_memtime(ch, get_spell_circle(ch, spell)), ch, 0, 0, 0,
+				  0, 0);
 		}
 	}
 	else
@@ -1852,16 +2036,21 @@ void use_spell(P_char ch, int spell)
 		{
 			if (MIN(GET_CHAR_SKILL(ch, SKILL_DEVOTION) / 10, 5) + 4 > number(0, 100))
 			{
-				snprintf(buf, 128, "%s's grace flows down on you restoring the power of &+W%s.&n\n", get_god_name(ch), skills[spell].name);
+				snprintf(
+					buf, 128,
+					"%s's grace flows down on you restoring the power of &+W%s.&n\n",
+					get_god_name(ch), skills[spell].name);
 				send_to_char(buf, ch);
 				return;
 			}
 		}
 		for (af = ch->affected; af; af = af->next)
 		{
-			if (af->type == TAG_MEMORIZE && (af->flags & MEMTYPE_FULL) && af->modifier == spell)
+			if (af->type == TAG_MEMORIZE && (af->flags & MEMTYPE_FULL) &&
+			    af->modifier == spell)
 			{
-				if (SKILL_DATA_ALL(ch, spell).maxlearn[0] || SKILL_DATA_ALL(ch, spell).maxlearn[ch->player.spec])
+				if (SKILL_DATA_ALL(ch, spell).maxlearn[0] ||
+				    SKILL_DATA_ALL(ch, spell).maxlearn[ch->player.spec])
 				{
 					affect_to_end(ch, af);
 					af->flags ^= MEMTYPE_FULL;
@@ -1882,7 +2071,8 @@ struct extra_descr_data *find_spell_description(P_obj obj)
 
 	for (tmp = obj->ex_description; tmp; tmp = tmp->next)
 		if (tmp->keyword && tmp->description)
-			if ((tmp->keyword[0] == 3) && (tmp->keyword[1] == 1) && (tmp->keyword[2] == 3))
+			if ((tmp->keyword[0] == 3) && (tmp->keyword[1] == 1) &&
+			    (tmp->keyword[2] == 3))
 				return tmp;
 
 	return NULL;
@@ -1891,7 +2081,7 @@ struct extra_descr_data *find_spell_description(P_obj obj)
 P_obj Find_process_entry(P_char ch, P_obj foo, int spl)
 {
 	struct extra_descr_data *foo2;
-	int                      i, b, c;
+	int i, b, c;
 
 	if (foo->type == ITEM_SPELLBOOK)
 	{
@@ -1956,10 +2146,11 @@ P_obj FindSpellBookWithSpell(P_char ch, int spl, int mode)
 						return foo2;
 				}
 			}
-			else if ((foo->type == ITEM_SCROLL) && CAN_SEE_OBJ(ch, foo) && !IS_SET(mode, SBOOK_MODE_NO_SCROLL)
-				 && (foo2 = Find_process_entry(ch, foo, spl)))
+			else if ((foo->type == ITEM_SCROLL) && CAN_SEE_OBJ(ch, foo) &&
+				 !IS_SET(mode, SBOOK_MODE_NO_SCROLL) &&
+				 (foo2 = Find_process_entry(ch, foo, spl)))
 			{
-				 return foo2;
+				return foo2;
 			}
 		}
 
@@ -1974,7 +2165,9 @@ P_obj FindSpellBookWithSpell(P_char ch, int spl, int mode)
 				continue;
 			if (foo->R_num == real_object(31) && isname(wizBookName, foo->name))
 				return foo;
-			if ((foo->type == ITEM_SPELLBOOK) && CAN_SEE_OBJ(ch, foo) && !IS_SET(mode, SBOOK_MODE_NO_BOOK) && (foo2 = Find_process_entry(ch, foo, spl)))
+			if ((foo->type == ITEM_SPELLBOOK) && CAN_SEE_OBJ(ch, foo) &&
+			    !IS_SET(mode, SBOOK_MODE_NO_BOOK) &&
+			    (foo2 = Find_process_entry(ch, foo, spl)))
 				return foo2;
 		}
 	}
@@ -1993,7 +2186,7 @@ int AddSpellToSpellBook(P_char ch, P_obj obj, int spl)
 
 		CREATE(tmp, extra_descr_data, 1, MEM_TAG_EXDESCD);
 
-		tmp->next           = obj->ex_description;
+		tmp->next = obj->ex_description;
 		obj->ex_description = tmp;
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "%c%c%c", (char)3, (char)1, (char)3);
 		tmp->keyword = str_dup(Gbuf1);
@@ -2029,18 +2222,21 @@ void AddScribingAffect(P_char ch)
 	SET_BIT(ch->specials.affected_by2, AFF2_SCRIBING);
 }
 
-void add_scribe_data(int spl, P_char ch, P_obj book, int flag, P_obj obj, P_char teacher, void (*done_func)(P_char))
+void add_scribe_data(int spl, P_char ch, P_obj book, int flag, P_obj obj, P_char teacher,
+		     void (*done_func)(P_char))
 {
 	struct scribing_data_type tmp;
 
 	memset(&tmp, 0, sizeof(tmp));
 
-	tmp.ch   = ch;
+	tmp.ch = ch;
 	tmp.book = book;
 	/*
 	   added check -- DTS 7/11/95
 	 */
-	tmp.flag = (flag == 1 ? (((tmp.source.obj) && (tmp.source.obj->type == ITEM_SCROLL)) ? 2 : 1) : 0);
+	tmp.flag = (flag == 1 ?
+			    (((tmp.source.obj) && (tmp.source.obj->type == ITEM_SCROLL)) ? 2 : 1) :
+			    0);
 	if (flag)
 		tmp.source.obj = obj;
 	else
@@ -2062,7 +2258,8 @@ void add_scribe_data(int spl, P_char ch, P_obj book, int flag, P_obj obj, P_char
 	if (!flag)
 		if (teacher)
 			AddScribingAffect(teacher);
-	add_event(event_scribe, 4 - GET_CHAR_SKILL(ch, SKILL_SCRIBE) / 33, ch, 0, 0, 0, &tmp, sizeof(tmp));
+	add_event(event_scribe, 4 - GET_CHAR_SKILL(ch, SKILL_SCRIBE) / 33, ch, 0, 0, 0, &tmp,
+		  sizeof(tmp));
 }
 
 /*
@@ -2104,7 +2301,7 @@ void add_scribing(P_char ch, int spl, P_obj book, int flag, P_obj obj, P_char te
 
 int ScriberSillyChecks(P_char ch, int spl)
 {
-	P_obj                    o1, o2, o3;
+	P_obj o1, o2, o3;
 	struct extra_descr_data *d;
 
 	if (IS_AFFECTED2(ch, AFF2_MEMORIZING))
@@ -2114,12 +2311,14 @@ int ScriberSillyChecks(P_char ch, int spl)
 	}
 	if (IS_AFFECTED2(ch, AFF2_SCRIBING))
 	{
-		send_to_char("Sorry, you cannot speed up your scribing by doing multiple jobs at same time, \n"
-		             "nor teach/scribe at same time.\nYou are not UNIX compatible.\n*bonk*\n\n",
-		             ch);
+		send_to_char(
+			"Sorry, you cannot speed up your scribing by doing multiple jobs at same time, \n"
+			"nor teach/scribe at same time.\nYou are not UNIX compatible.\n*bonk*\n\n",
+			ch);
 		return FALSE;
 	}
-	if ((GET_STAT(ch) != STAT_RESTING) || ((GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING)))
+	if ((GET_STAT(ch) != STAT_RESTING) ||
+	    ((GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING)))
 	{
 		send_to_char("You don't feel comfortable enough to start to scribe.\n", ch);
 		return FALSE;
@@ -2185,7 +2384,7 @@ P_obj SpellBookAtHand(P_char ch)
 void do_teach(P_char ch, char *arg, int cmd)
 {
 	P_char target;
-	P_obj  o3;
+	P_obj o3;
 
 	int spl, tmp;
 
@@ -2254,7 +2453,8 @@ void do_teach(P_char ch, char *arg, int cmd)
 		send_to_char("Teach _WHAT_ spell?? That your target cannot learn, at least.\n", ch);
 		return;
 	}
-	if (!(o3 = FindSpellBookWithSpell(ch, tmp, SBOOK_MODE_IN_INV | SBOOK_MODE_ON_BELT)) && !IS_TRUSTED(ch) && !IS_NPC(ch))
+	if (!(o3 = FindSpellBookWithSpell(ch, tmp, SBOOK_MODE_IN_INV | SBOOK_MODE_ON_BELT)) &&
+	    !IS_TRUSTED(ch) && !IS_NPC(ch))
 	{
 		send_to_char("You don't have such spell in your _own_ spellbooks!\n", ch);
 		return;
@@ -2271,10 +2471,10 @@ void do_teach(P_char ch, char *arg, int cmd)
 
 void do_scribe(P_char ch, char *arg, int cmd)
 {
-	int                        spl = 0;
-	P_obj                      o1, o2, o3;
+	int spl = 0;
+	P_obj o1, o2, o3;
 	struct scribing_data_type *tmp_s;
-	P_char                     teacher;
+	P_char teacher;
 
 	// No scribing services, at least of now. we'll see later tho.
 	if (IS_NPC(ch))
@@ -2329,23 +2529,29 @@ void do_scribe(P_char ch, char *arg, int cmd)
 	}
 
 	// If ch doesn't have a book with spl in it already,
-	if (!(o3 = FindSpellBookWithSpell(ch, spl, SBOOK_MODE_IN_INV | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))
+	if (!(o3 = FindSpellBookWithSpell(
+		      ch, spl, SBOOK_MODE_IN_INV | SBOOK_MODE_ON_BELT | SBOOK_MODE_ON_GROUND)))
 	{
 		// Only fail if there's no teacher to teach it.
 		teacher = FindTeacher(ch);
 		if (!knows_spell(ch, spl))
 		{
-			send_to_char("That is too powerful an enchantment for you to master.. right now.\n", ch);
+			send_to_char(
+				"That is too powerful an enchantment for you to master.. right now.\n",
+				ch);
 			return;
 		}
 		else if (!teacher)
 		{
-			send_to_char("You don't have that spell in any of your books or scrolls in learnable form!\n", ch);
+			send_to_char(
+				"You don't have that spell in any of your books or scrolls in learnable form!\n",
+				ch);
 			return;
 		}
 		else if (!knows_spell(teacher, spl))
 		{
-			mobsay(teacher, "Yes, I have heard of rumors about that spell.. but I do not know it.");
+			mobsay(teacher,
+			       "Yes, I have heard of rumors about that spell.. but I do not know it.");
 			return;
 		}
 		else
@@ -2361,7 +2567,7 @@ void do_scribe(P_char ch, char *arg, int cmd)
 void event_scribe(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	struct scribing_data_type *s_data = (struct scribing_data_type *)data;
-	int                        i, j;
+	int i, j;
 
 	/*
 	   what this proc does? simple: - checks if in proper state (resting,
@@ -2370,9 +2576,14 @@ void event_scribe(P_char ch, P_char victim, P_obj obj, void *data)
 
 	   just adds one more page.. and queries a new event.
 	 */
-	if ((GET_STAT(ch) != STAT_RESTING) || ((GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING)) || (!ch->equipment[WIELD] || !ch->equipment[HOLD]) ||
-	    (ch->equipment[WIELD]->type != ITEM_SPELLBOOK && ch->equipment[HOLD]->type != ITEM_SPELLBOOK) || (ch->equipment[WIELD]->type != ITEM_PEN && ch->equipment[HOLD]->type != ITEM_PEN) ||
-	    (!s_data || !(s_data->book)) || ((s_data->book != ch->equipment[HOLD]) && (s_data->book != ch->equipment[WIELD])))
+	if ((GET_STAT(ch) != STAT_RESTING) ||
+	    ((GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING)) ||
+	    (!ch->equipment[WIELD] || !ch->equipment[HOLD]) ||
+	    (ch->equipment[WIELD]->type != ITEM_SPELLBOOK &&
+	     ch->equipment[HOLD]->type != ITEM_SPELLBOOK) ||
+	    (ch->equipment[WIELD]->type != ITEM_PEN && ch->equipment[HOLD]->type != ITEM_PEN) ||
+	    (!s_data || !(s_data->book)) ||
+	    ((s_data->book != ch->equipment[HOLD]) && (s_data->book != ch->equipment[WIELD])))
 	{
 		disarm_char_nevents(ch, event_scribe);
 		send_to_char("So much for that scribing effort!\n", ch);
@@ -2386,11 +2597,14 @@ void event_scribe(P_char ch, P_char victim, P_obj obj, void *data)
 	if (s_data->page >= GetSpellPages(ch, s_data->spell))
 	{
 		REMOVE_BIT(ch->specials.affected_by2, AFF2_SCRIBING);
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "You finish scribing the spell '%s' into $p.", skills[s_data->spell].name);
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "You finish scribing the spell '%s' into $p.",
+			 skills[s_data->spell].name);
 		act(Gbuf1, TRUE, ch, s_data->book, 0, TO_CHAR);
 		if (!s_data->flag && s_data->source.teacher)
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "You finish teaching the spell '%s' to %s.\n", skills[s_data->spell].name, GET_NAME(ch));
+			snprintf(Gbuf1, MAX_STRING_LENGTH,
+				 "You finish teaching the spell '%s' to %s.\n",
+				 skills[s_data->spell].name, GET_NAME(ch));
 			send_to_char(Gbuf1, s_data->source.teacher);
 
 			REMOVE_BIT(s_data->source.teacher->specials.affected_by2, AFF2_SCRIBING);
@@ -2403,12 +2617,15 @@ void event_scribe(P_char ch, P_char victim, P_obj obj, void *data)
 					j++;
 			if (j == 1)
 			{
-				send_to_char("The ancient parchment comes apart in your hands..\n", ch);
+				send_to_char("The ancient parchment comes apart in your hands..\n",
+					     ch);
 				extract_obj(s_data->source.obj, TRUE); // Artifact scroll??
 			}
 			else if (j == 0)
 			{
-				send_to_char("Error detected - please report this to a coder imm. [0 spells in scroll].\n", ch);
+				send_to_char(
+					"Error detected - please report this to a coder imm. [0 spells in scroll].\n",
+					ch);
 				return;
 			}
 			else
@@ -2417,9 +2634,11 @@ void event_scribe(P_char ch, P_char victim, P_obj obj, void *data)
 				for (i = 1; ((i < 4) && !j); i++)
 					if (s_data->source.obj->value[i] == s_data->spell)
 					{
-						j                            = 1;
+						j = 1;
 						s_data->source.obj->value[i] = 0;
-						send_to_char("You mess up the scroll so badly that part of it becomes unreadable!\n", ch);
+						send_to_char(
+							"You mess up the scroll so badly that part of it becomes unreadable!\n",
+							ch);
 					}
 			}
 		}
@@ -2434,12 +2653,16 @@ void event_scribe(P_char ch, P_char victim, P_obj obj, void *data)
 		mark_player_dirty(GET_PID(ch));
 		if (s_data->book->value[2] - s_data->book->value[3])
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "The spell uses %d pages in $p, leaving %d more pages free.", GetSpellPages(ch, s_data->spell), s_data->book->value[2] - s_data->book->value[3]);
+			snprintf(Gbuf1, MAX_STRING_LENGTH,
+				 "The spell uses %d pages in $p, leaving %d more pages free.",
+				 GetSpellPages(ch, s_data->spell),
+				 s_data->book->value[2] - s_data->book->value[3]);
 			act(Gbuf1, TRUE, ch, s_data->book, 0, TO_CHAR);
 		}
 		else
 		{
-			send_to_char("The spell used the rest of the empty pages in the book.\n", ch);
+			send_to_char("The spell used the rest of the empty pages in the book.\n",
+				     ch);
 		}
 		notch_skill(ch, SKILL_SCRIBE, 17);
 	}
@@ -2449,37 +2672,51 @@ void event_scribe(P_char ch, P_char victim, P_obj obj, void *data)
 		/*
 		   ok, let's schedule next event:
 		 */
-		add_event(event_scribe, MAX(1, (int)4 - (GET_CHAR_SKILL(ch, SKILL_SCRIBE) / 33) - (GET_CHAR_SKILL(ch, SKILL_SCRIBE_MASTERY) / 20)), ch, 0, 0, 0, s_data, sizeof(*s_data));
+		add_event(event_scribe,
+			  MAX(1, (int)4 - (GET_CHAR_SKILL(ch, SKILL_SCRIBE) / 33) -
+					 (GET_CHAR_SKILL(ch, SKILL_SCRIBE_MASTERY) / 20)),
+			  ch, 0, 0, 0, s_data, sizeof(*s_data));
 		return;
 	}
 	if (s_data->done_func)
 		s_data->done_func(ch);
 }
 
-void spell_mordenkainens_lucubration(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_mordenkainens_lucubration(int level, P_char ch, char *arg, int type, P_char victim,
+				     P_obj obj)
 {
 	if (!ch)
 		return;
 
 	char buff[MAX_STRING_LENGTH];
 
-	act("&+C$n releases a &+Ymassive&+C cloud of energy which $e immediately consumes, leaving $m with a dark grin...", TRUE, ch, 0, 0, TO_ROOM);
+	act("&+C$n releases a &+Ymassive&+C cloud of energy which $e immediately consumes, leaving $m with a dark grin...",
+	    TRUE, ch, 0, 0, TO_ROOM);
 
-	snprintf(buff, MAX_STRING_LENGTH, "&+CYour spell releases a &+Ymassive&+C cloud of energy which you instantly focus into your &+mmind&+C...\n");
+	snprintf(
+		buff, MAX_STRING_LENGTH,
+		"&+CYour spell releases a &+Ymassive&+C cloud of energy which you instantly focus into your &+mmind&+C...\n");
 	send_to_char(buff, ch);
 
-	if (!USES_COMMUNE(ch) && !GET_CLASS(ch, CLASS_WARLOCK) && !(IS_PUNDEAD(ch) || USES_TUPOR(ch) || IS_UNDEADRACE(ch) | is_wearing_necroplasm(ch)) || !USES_FOCUS(ch))
+	if (!USES_COMMUNE(ch) && !GET_CLASS(ch, CLASS_WARLOCK) &&
+		    !(IS_PUNDEAD(ch) || USES_TUPOR(ch) ||
+		      IS_UNDEADRACE(ch) | is_wearing_necroplasm(ch)) ||
+	    !USES_FOCUS(ch))
 	{
 		// normal casters
 
 		struct affected_type *af;
 		for (af = ch->affected; af; af = af->next)
 		{
-			if (af->type == TAG_MEMORIZE && !IS_SET(af->flags, MEMTYPE_FULL) && af->modifier != SPELL_MORDENKAINENS_LUCUBRATION &&
-			    number(0, 100) < (int)get_property("spell.mordenkainensLucubration.spellMemChance", 80))
+			if (af->type == TAG_MEMORIZE && !IS_SET(af->flags, MEMTYPE_FULL) &&
+			    af->modifier != SPELL_MORDENKAINENS_LUCUBRATION &&
+			    number(0, 100) <
+				    (int)get_property(
+					    "spell.mordenkainensLucubration.spellMemChance", 80))
 			{
 				af->flags |= MEMTYPE_FULL;
-				snprintf(buff, MAX_STRING_LENGTH, "&+WYou regain the power of %s!\n", spells[af->modifier]);
+				snprintf(buff, MAX_STRING_LENGTH,
+					 "&+WYou regain the power of %s!\n", spells[af->modifier]);
 				send_to_char(buff, ch);
 			}
 		}
@@ -2493,12 +2730,20 @@ void spell_mordenkainens_lucubration(int level, P_char ch, char *arg, int type, 
 			if (ch->specials.undead_spell_slots[i] >= max_spells_in_circle(ch, i))
 				continue;
 
-			for (int j = ch->specials.undead_spell_slots[i]; j < max_spells_in_circle(ch, i); j++)
+			for (int j = ch->specials.undead_spell_slots[i];
+			     j < max_spells_in_circle(ch, i); j++)
 			{
-				if (number(0, 100) < (int)get_property("spell.mordenkainensLucubration.spellMemChance", 80))
+				if (number(0, 100) <
+				    (int)get_property(
+					    "spell.mordenkainensLucubration.spellMemChance", 80))
 				{
 					ch->specials.undead_spell_slots[i]++;
-					snprintf(buff, MAX_STRING_LENGTH, "&+WYou regain power in the %d%s circle of magic!\n", i, i == 1 ? "st" : (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
+					snprintf(
+						buff, MAX_STRING_LENGTH,
+						"&+WYou regain power in the %d%s circle of magic!\n",
+						i,
+						i == 1 ? "st" :
+							 (i == 2 ? "nd" : (i == 3 ? "rd" : "th")));
 					send_to_char(buff, ch);
 				}
 			}
@@ -2528,7 +2773,8 @@ int get_spell_circle(int cls, int spec, int spl)
 	{
 		// If it's a pure spec spell..
 		// Note: Lost spells will return a value of 0 or less or MAX_CIRCLE+1.
-		if (!skills[spl].m_class[cls - 1].rlevel[0] && skills[spl].m_class[cls - 1].rlevel[spec])
+		if (!skills[spl].m_class[cls - 1].rlevel[0] &&
+		    skills[spl].m_class[cls - 1].rlevel[spec])
 		{
 			return skills[spl].m_class[cls - 1].rlevel[spec];
 		}
@@ -2561,7 +2807,8 @@ int get_skill_level(int cls, int spec, int skl)
 	{
 		// If it's a pure spec skill..
 		// Note: Lost skills will return a value of 0 or less.
-		if (skills[skl].m_class[cls - 1].rlevel[0] != skills[skl].m_class[cls - 1].rlevel[spec])
+		if (skills[skl].m_class[cls - 1].rlevel[0] !=
+		    skills[skl].m_class[cls - 1].rlevel[spec])
 		{
 			return skills[skl].m_class[cls - 1].rlevel[spec];
 		}
@@ -2594,7 +2841,8 @@ int get_song_level(int cls, int spec, int sng)
 	{
 		// If it's a pure spec song..
 		// Note: Lost songs will return a value of 0 or less.
-		if (skills[sng].m_class[cls - 1].rlevel[0] != skills[sng].m_class[cls - 1].rlevel[spec])
+		if (skills[sng].m_class[cls - 1].rlevel[0] !=
+		    skills[sng].m_class[cls - 1].rlevel[spec])
 		{
 			return skills[sng].m_class[cls - 1].rlevel[spec];
 		}
@@ -2611,7 +2859,7 @@ int get_song_level(int cls, int spec, int sng)
 void bad_spell_check(P_char ch)
 {
 	struct affected_type *paf, *paf_next;
-	int                   circle;
+	int circle;
 
 	for (paf = ch->affected; paf; paf = paf_next)
 	{
@@ -2623,7 +2871,8 @@ void bad_spell_check(P_char ch)
 			// If the spell is not valid for the char anymore (for whatever reason).
 			if (circle > MAX_CIRCLE)
 			{
-				debug("Found bad spell '%s' %d in mem list of char '%s'.", skills[paf->modifier].name, paf->modifier, J_NAME(ch));
+				debug("Found bad spell '%s' %d in mem list of char '%s'.",
+				      skills[paf->modifier].name, paf->modifier, J_NAME(ch));
 				affect_remove(ch, paf);
 			}
 		}

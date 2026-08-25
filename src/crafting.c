@@ -44,7 +44,8 @@ static void crafting_validate_content_vnum(int *configured_vnum, int default_vnu
 {
 	if (real_object(*configured_vnum) >= 0)
 		return;
-	logit(LOG_STATUS, "WARNING: %s vnum %d does not exist; using default %d.", key, *configured_vnum, default_vnum);
+	logit(LOG_STATUS, "WARNING: %s vnum %d does not exist; using default %d.", key,
+	      *configured_vnum, default_vnum);
 	*configured_vnum = default_vnum;
 }
 
@@ -85,21 +86,29 @@ static void load_crafting_config(void)
 	while (fgets(line, sizeof(line), fp) != NULL)
 	{
 		key = line;
-		while (*key == ' ' || *key == '\t') key++;
-		if (*key == '\0' || *key == '\n' || *key == '#') continue;
+		while (*key == ' ' || *key == '\t')
+			key++;
+		if (*key == '\0' || *key == '\n' || *key == '#')
+			continue;
 		equals = strchr(key, '=');
-		if (equals == NULL) continue;
+		if (equals == NULL)
+			continue;
 		*equals = '\0';
 		end = equals - 1;
-		while (end >= key && (*end == ' ' || *end == '\t')) *end-- = '\0';
+		while (end >= key && (*end == ' ' || *end == '\t'))
+			*end-- = '\0';
 		value = equals + 1;
-		while (*value == ' ' || *value == '\t') value++;
+		while (*value == ' ' || *value == '\t')
+			value++;
 		end = value + strlen(value);
-		while (end > value && (end[-1] == '\n' || end[-1] == '\r' || end[-1] == ' ' || end[-1] == '\t')) *--end = '\0';
+		while (end > value &&
+		       (end[-1] == '\n' || end[-1] == '\r' || end[-1] == ' ' || end[-1] == '\t'))
+			*--end = '\0';
 
 		if (!strcmp(key, "crafting.level.gate.multiplier") && atoi(value) > 0)
 			crafting_level_gate = atoi(value);
-		else if (!strcmp(key, "crafting.recipe.max.player.level") && atoi(value) > 0 && atoi(value) <= MAXLVLMORTAL)
+		else if (!strcmp(key, "crafting.recipe.max.player.level") && atoi(value) > 0 &&
+			 atoi(value) <= MAXLVLMORTAL)
 			crafting_recipe_max_player_level = atoi(value);
 		else if (!strcmp(key, "crafting.recipe.examine.materials"))
 			crafting_recipe_examine_materials = atoi(value) ? TRUE : FALSE;
@@ -107,7 +116,8 @@ static void load_crafting_config(void)
 			crafting_recipe_display_vnums = atoi(value) ? TRUE : FALSE;
 		else if (!strcmp(key, "crafting.experience.per.ival") && atoi(value) >= 0)
 			crafting_experience_per_item_value = atoi(value);
-		else if (!strcmp(key, "crafting.material.quantity.multiplier") && strtod(value, NULL) > 0.0)
+		else if (!strcmp(key, "crafting.material.quantity.multiplier") &&
+			 strtod(value, NULL) > 0.0)
 			crafting_material_quantity_multiplier = strtod(value, NULL);
 		else if (!strcmp(key, "crafting.craft.enabled"))
 			crafting_craft_enabled = atoi(value) ? TRUE : FALSE;
@@ -124,42 +134,75 @@ static void load_crafting_config(void)
 		else if (!strcmp(key, "crafting.salvage.scientific.tools.vnum") && atoi(value) > 0)
 			crafting_scientific_tools_vnum_value = atoi(value);
 		else if (!strcmp(key, "crafting.salvage.scientific.tools.prevent.breakage"))
-			crafting_scientific_tools_prevent_breakage_value = atoi(value) ? TRUE : FALSE;
-		else if (!strcmp(key, "crafting.salvage.scientific.tools.recipe.roll.divisor") && atoi(value) >= 1)
+			crafting_scientific_tools_prevent_breakage_value = atoi(value) ? TRUE :
+											 FALSE;
+		else if (!strcmp(key, "crafting.salvage.scientific.tools.recipe.roll.divisor") &&
+			 atoi(value) >= 1)
 			crafting_scientific_tools_recipe_roll_divisor_value = atoi(value);
-		else if (!strcmp(key, "crafting.salvage.scientific.tools.recipe.player.multiplier") && atoi(value) >= 1)
+		else if (!strcmp(key,
+				 "crafting.salvage.scientific.tools.recipe.player.multiplier") &&
+			 atoi(value) >= 1)
 			crafting_scientific_tools_recipe_player_multiplier_value = atoi(value);
-		else if (!strcmp(key, "crafting.salvage.essence.luck.multiplier") && strtod(value, NULL) > 0.0)
+		else if (!strcmp(key, "crafting.salvage.essence.luck.multiplier") &&
+			 strtod(value, NULL) > 0.0)
 			crafting_salvage_essence_luck_multiplier_value = strtod(value, NULL);
-		else if (!strcmp(key, "crafting.salvage.essence.chance.multiplier") && strtod(value, NULL) >= 0.0)
+		else if (!strcmp(key, "crafting.salvage.essence.chance.multiplier") &&
+			 strtod(value, NULL) >= 0.0)
 			crafting_salvage_essence_chance_multiplier_value = strtod(value, NULL);
 	}
 	fclose(fp);
 
 	/* Content references are configurable, but invalid entries must not turn a
 	 * recipe into an unfulfillable or silently free transaction. */
-	crafting_validate_content_vnum(&crafting_craft_essence_vnum, VOBJ_CRAFTING_ESSENCE, "crafting.craft.essence.vnum");
-	crafting_validate_content_vnum(&crafting_craft_tool_vnum, VOBJ_CRAFTING_TOOLS, "crafting.craft.tool.vnum");
-	crafting_validate_content_vnum(&crafting_forge_essence_vnum, VOBJ_FORGING_ESSENCE, "crafting.forge.essence.vnum");
-	crafting_validate_content_vnum(&crafting_forge_tool_vnum, VOBJ_FORGING_FLUX, "crafting.forge.tool.vnum");
-	crafting_validate_content_vnum(&crafting_scientific_tools_vnum_value, VOBJ_EPIC_LANTAN_TOOLS, "crafting.salvage.scientific.tools.vnum");
+	crafting_validate_content_vnum(&crafting_craft_essence_vnum, VOBJ_CRAFTING_ESSENCE,
+				       "crafting.craft.essence.vnum");
+	crafting_validate_content_vnum(&crafting_craft_tool_vnum, VOBJ_CRAFTING_TOOLS,
+				       "crafting.craft.tool.vnum");
+	crafting_validate_content_vnum(&crafting_forge_essence_vnum, VOBJ_FORGING_ESSENCE,
+				       "crafting.forge.essence.vnum");
+	crafting_validate_content_vnum(&crafting_forge_tool_vnum, VOBJ_FORGING_FLUX,
+				       "crafting.forge.tool.vnum");
+	crafting_validate_content_vnum(&crafting_scientific_tools_vnum_value,
+				       VOBJ_EPIC_LANTAN_TOOLS,
+				       "crafting.salvage.scientific.tools.vnum");
 }
 
-int crafting_scientific_tools_vnum(void) { return crafting_scientific_tools_vnum_value; }
-bool crafting_scientific_tools_prevent_breakage(void) { return crafting_scientific_tools_prevent_breakage_value; }
-int crafting_scientific_tools_recipe_roll_divisor(void) { return crafting_scientific_tools_recipe_roll_divisor_value; }
-int crafting_scientific_tools_recipe_player_multiplier(void) { return crafting_scientific_tools_recipe_player_multiplier_value; }
-double crafting_salvage_essence_luck_multiplier(void) { return crafting_salvage_essence_luck_multiplier_value; }
-double crafting_salvage_essence_chance_multiplier(void) { return crafting_salvage_essence_chance_multiplier_value; }
+int crafting_scientific_tools_vnum(void)
+{
+	return crafting_scientific_tools_vnum_value;
+}
+bool crafting_scientific_tools_prevent_breakage(void)
+{
+	return crafting_scientific_tools_prevent_breakage_value;
+}
+int crafting_scientific_tools_recipe_roll_divisor(void)
+{
+	return crafting_scientific_tools_recipe_roll_divisor_value;
+}
+int crafting_scientific_tools_recipe_player_multiplier(void)
+{
+	return crafting_scientific_tools_recipe_player_multiplier_value;
+}
+double crafting_salvage_essence_luck_multiplier(void)
+{
+	return crafting_salvage_essence_luck_multiplier_value;
+}
+double crafting_salvage_essence_chance_multiplier(void)
+{
+	return crafting_salvage_essence_chance_multiplier_value;
+}
 
 /* Any fifth-bitvector affect makes a recipe magical. */
 bool has_affect(P_obj obj)
 {
-
-	if (IS_SET(obj->bitvector, AFF_STONE_SKIN) || IS_SET(obj->bitvector, AFF_HIDE) || IS_SET(obj->bitvector, AFF_SNEAK) || IS_SET(obj->bitvector, AFF_FLY) || IS_SET(obj->bitvector, AFF4_NOFEAR) ||
-	    IS_SET(obj->bitvector2, AFF2_AIR_AURA) || IS_SET(obj->bitvector2, AFF2_EARTH_AURA) || IS_SET(obj->bitvector3, AFF3_INERTIAL_BARRIER) || IS_SET(obj->bitvector3, AFF3_REDUCE) ||
-	    IS_SET(obj->bitvector2, AFF2_GLOBE) || IS_SET(obj->bitvector, AFF_HASTE) || IS_SET(obj->bitvector, AFF_DETECT_INVISIBLE) || IS_SET(obj->bitvector4, AFF4_DETECT_ILLUSION) ||
-	    obj->bitvector5)
+	if (IS_SET(obj->bitvector, AFF_STONE_SKIN) || IS_SET(obj->bitvector, AFF_HIDE) ||
+	    IS_SET(obj->bitvector, AFF_SNEAK) || IS_SET(obj->bitvector, AFF_FLY) ||
+	    IS_SET(obj->bitvector, AFF4_NOFEAR) || IS_SET(obj->bitvector2, AFF2_AIR_AURA) ||
+	    IS_SET(obj->bitvector2, AFF2_EARTH_AURA) ||
+	    IS_SET(obj->bitvector3, AFF3_INERTIAL_BARRIER) ||
+	    IS_SET(obj->bitvector3, AFF3_REDUCE) || IS_SET(obj->bitvector2, AFF2_GLOBE) ||
+	    IS_SET(obj->bitvector, AFF_HASTE) || IS_SET(obj->bitvector, AFF_DETECT_INVISIBLE) ||
+	    IS_SET(obj->bitvector4, AFF4_DETECT_ILLUSION) || obj->bitvector5)
 	{
 		return TRUE;
 	}
@@ -188,8 +231,10 @@ bool crafting_build_plan(P_obj item, struct crafting_plan *plan)
 	plan->item_value = item_value;
 	plan->low_material_vnum = low_material_vnum;
 	plan->high_material_vnum = low_material_vnum + 4;
-	plan->high_material_count = (int)ceil(high_material_count * crafting_material_quantity_multiplier);
-	plan->low_material_count = (int)ceil(((item_value + 4) - high_material_count * 5) * crafting_material_quantity_multiplier);
+	plan->high_material_count =
+		(int)ceil(high_material_count * crafting_material_quantity_multiplier);
+	plan->low_material_count = (int)ceil(((item_value + 4) - high_material_count * 5) *
+					     crafting_material_quantity_multiplier);
 	plan->magical = has_affect(item);
 	return TRUE;
 }
@@ -198,7 +243,8 @@ bool crafting_validate_recipe_target(P_obj item)
 {
 	struct crafting_plan plan;
 
-	return item != NULL && !IS_OBJ_STAT2(item, ITEM2_QUESTITEM) && is_salvageable(item) && crafting_build_plan(item, &plan);
+	return item != NULL && !IS_OBJ_STAT2(item, ITEM2_QUESTITEM) && is_salvageable(item) &&
+	       crafting_build_plan(item, &plan);
 }
 
 bool crafting_recipe_target_is_available(P_obj item)
@@ -218,35 +264,43 @@ void crafting_configure_recipe_scroll(P_obj recipe, P_obj target)
 	P_obj low, high;
 	char text[MAX_STRING_LENGTH];
 
-	if (!crafting_recipe_examine_materials || recipe == NULL || !crafting_build_plan(target, &plan))
+	if (!crafting_recipe_examine_materials || recipe == NULL ||
+	    !crafting_build_plan(target, &plan))
 		return;
 	low = read_object(plan.low_material_vnum, VIRTUAL);
 	high = read_object(plan.high_material_vnum, VIRTUAL);
 	if (!low || !high)
 	{
-		if (low) extract_obj(low);
-		if (high) extract_obj(high);
+		if (low)
+			extract_obj(low);
+		if (high)
+			extract_obj(high);
 		return;
 	}
-	snprintf(text, sizeof(text), "This recipe teaches %s.\r\n\r\nRequired materials:\r\n  %d %s\r\n  %d %s\r\n",
-	         target->short_description, plan.high_material_count, high->short_description,
-	         plan.low_material_count, low->short_description);
+	snprintf(text, sizeof(text),
+		 "This recipe teaches %s.\r\n\r\nRequired materials:\r\n  %d %s\r\n  %d %s\r\n",
+		 target->short_description, plan.high_material_count, high->short_description,
+		 plan.low_material_count, low->short_description);
 	if (plan.magical)
 	{
 		char requirement[160];
-		snprintf(requirement, sizeof(requirement), "  1 magical essence (required for magical items)\r\n");
+		snprintf(requirement, sizeof(requirement),
+			 "  1 magical essence (required for magical items)\r\n");
 		strncat(text, requirement, sizeof(text) - strlen(text) - 1);
 	}
-	strncat(text, "\r\nDiscipline consumables (in addition to the materials above):\r\n", sizeof(text) - strlen(text) - 1);
+	strncat(text, "\r\nDiscipline consumables (in addition to the materials above):\r\n",
+		sizeof(text) - strlen(text) - 1);
 	{
 		char requirement[256];
 		snprintf(requirement, sizeof(requirement),
-		         "  Craft: 1 gnomish crafting tool box (configured item vnum %d)\r\n"
-		         "  Forge: 1 blacksmithing flux (configured item vnum %d)\r\n",
-		         crafting_craft_tool_vnum, crafting_forge_tool_vnum);
+			 "  Craft: 1 gnomish crafting tool box (configured item vnum %d)\r\n"
+			 "  Forge: 1 blacksmithing flux (configured item vnum %d)\r\n",
+			 crafting_craft_tool_vnum, crafting_forge_tool_vnum);
 		strncat(text, requirement, sizeof(text) - strlen(text) - 1);
 	}
-	strncat(text, "\r\nUse the recipe to learn it, then `craft` or `forge` to view and make it.\r\n", sizeof(text) - strlen(text) - 1);
+	strncat(text,
+		"\r\nUse the recipe to learn it, then `craft` or `forge` to view and make it.\r\n",
+		sizeof(text) - strlen(text) - 1);
 	if ((recipe->str_mask & STRUNG_DESC3) && recipe->action_description)
 		FREE(recipe->action_description);
 	recipe->action_description = str_dup(text);
@@ -277,7 +331,8 @@ bool crafting_mode_enabled(enum crafting_mode mode)
 
 int crafting_essence_vnum(enum crafting_mode mode)
 {
-	return mode == CRAFTING_MODE_CRAFT ? crafting_craft_essence_vnum : crafting_forge_essence_vnum;
+	return mode == CRAFTING_MODE_CRAFT ? crafting_craft_essence_vnum :
+					     crafting_forge_essence_vnum;
 }
 
 int crafting_tool_vnum(enum crafting_mode mode)
@@ -289,10 +344,16 @@ void crafting_examine_support_item(P_char ch, P_obj item)
 {
 	if (!ch || !item)
 		return;
-	if (OBJ_VNUM(item) == crafting_tool_vnum(CRAFTING_MODE_FORGE) && GET_CHAR_SKILL(ch, SKILL_FORGE))
-		send_to_char("&+yForge insight:&n This flux is consumed to bind the materials when you forge a recipe. Use `forge info <number>` to see what else you need.\r\n", ch);
-	else if (OBJ_VNUM(item) == crafting_tool_vnum(CRAFTING_MODE_CRAFT) && GET_CHAR_SKILL(ch, SKILL_CRAFT))
-		send_to_char("&+yCraft insight:&n This tool box is consumed while shaping a recipe. Use `craft info <number>` to see what else you need.\r\n", ch);
+	if (OBJ_VNUM(item) == crafting_tool_vnum(CRAFTING_MODE_FORGE) &&
+	    GET_CHAR_SKILL(ch, SKILL_FORGE))
+		send_to_char(
+			"&+yForge insight:&n This flux is consumed to bind the materials when you forge a recipe. Use `forge info <number>` to see what else you need.\r\n",
+			ch);
+	else if (OBJ_VNUM(item) == crafting_tool_vnum(CRAFTING_MODE_CRAFT) &&
+		 GET_CHAR_SKILL(ch, SKILL_CRAFT))
+		send_to_char(
+			"&+yCraft insight:&n This tool box is consumed while shaping a recipe. Use `craft info <number>` to see what else you need.\r\n",
+			ch);
 }
 
 /* SQL is canonical. The legacy file is read only when a player has no SQL
@@ -348,7 +409,8 @@ int *crafting_get_player_recipes(P_char ch, int *count)
 		target = read_object(recipe_vnum, VIRTUAL);
 		if (!target || !crafting_recipe_target_is_available(target))
 		{
-			if (target) extract_obj(target);
+			if (target)
+				extract_obj(target);
 			continue;
 		}
 		extract_obj(target);
@@ -389,37 +451,36 @@ void crafting_handle_command(P_char ch, enum crafting_mode mode, char *argument)
 	}
 	switch (mode)
 	{
-		case CRAFTING_MODE_CRAFT:
-			crafting_handle_craft_command(ch, argument, CMD_CRAFT);
-			return;
-		case CRAFTING_MODE_FORGE:
-			crafting_handle_forge_command(ch, argument, CMD_FORGE);
-			return;
+	case CRAFTING_MODE_CRAFT:
+		crafting_handle_craft_command(ch, argument, CMD_CRAFT);
+		return;
+	case CRAFTING_MODE_FORGE:
+		crafting_handle_forge_command(ch, argument, CMD_FORGE);
+		return;
 	}
 }
-
 
 /* Modern Craft command implementation, extracted from actnew.c. */
 static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 {
-	char  buf1[MAX_STRING_LENGTH];
-	char  first[MAX_INPUT_LENGTH];
-	char  second[MAX_INPUT_LENGTH];
-	char  rest[MAX_INPUT_LENGTH];
-	int   i      = 0;
-	int   choice = 0;
+	char buf1[MAX_STRING_LENGTH];
+	char first[MAX_INPUT_LENGTH];
+	char second[MAX_INPUT_LENGTH];
+	char rest[MAX_INPUT_LENGTH];
+	int i = 0;
+	int choice = 0;
 	P_obj hammer, foundry;
 
 	/***DISPLAYRECIPES STUFF***/
-	char          tempdesc[MAX_INPUT_LENGTH];
-	char          short_desc[MAX_STRING_LENGTH];
-	char          keywords[MAX_INPUT_LENGTH];
-	char          buffer[256];
-	long          choice2;
-	int           selected = 0;
-	int          *recipes;
-	int           recipe_count;
-	P_obj         tobj;
+	char tempdesc[MAX_INPUT_LENGTH];
+	char short_desc[MAX_STRING_LENGTH];
+	char keywords[MAX_INPUT_LENGTH];
+	char buffer[256];
+	long choice2;
+	int selected = 0;
+	int *recipes;
+	int recipe_count;
+	P_obj tobj;
 
 	/* Dunno the difference between this and above?
 	   P_obj    craft_obj1, craft_obj2, craft_obj3, obj;
@@ -445,7 +506,9 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 	recipes = crafting_get_player_recipes(ch, &recipe_count);
 	if (recipes == NULL || recipe_count == 0)
 	{
-		send_to_char("You do not know any Craft recipes yet. Learn a recipe, then type `craft` to list it.\r\n", ch);
+		send_to_char(
+			"You do not know any Craft recipes yet. Learn a recipe, then type `craft` to list it.\r\n",
+			ch);
 		free(recipes);
 		return;
 	}
@@ -457,9 +520,12 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		send_to_char("&+wcraft or craft list       - list your recipes\n&n", ch);
 		send_to_char("&+wcraft info <number>      - show costs and requirements\n&n", ch);
 		send_to_char("&+wcraft stat <number>      - inspect the finished item\n&n", ch);
-		send_to_char("&+wcraft make <number>      - consume requirements and create it\n&n", ch);
+		send_to_char("&+wcraft make <number>      - consume requirements and create it\n&n",
+			     ch);
 		send_to_char("&+yYou know the following recipes:\n&n", ch);
-		send_to_char("----------------------------------------------------------------------------\n", ch);
+		send_to_char(
+			"----------------------------------------------------------------------------\n",
+			ch);
 		send_to_char("&+B#     Recipe vnum       &+MItem&n\n\r", ch);
 		// Walk through each recipe and display its number and short description.
 		for (i = 0; i < recipe_count; i++)
@@ -467,15 +533,20 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			tobj = read_object(recipes[i], VIRTUAL);
 			if (tobj == NULL)
 			{
-				logit(LOG_DEBUG, "do_craft: '%s' has bad recipe vnum %d.", J_NAME(ch), recipes[i]);
+				logit(LOG_DEBUG, "do_craft: '%s' has bad recipe vnum %d.",
+				      J_NAME(ch), recipes[i]);
 				continue;
 			}
 			if (crafting_recipe_display_vnums)
-				snprintf(buffer, sizeof buffer, "   &+W%-4d  %-18d&n%s&n\n", i + 1, recipes[i], tobj->short_description);
+				snprintf(buffer, sizeof buffer, "   &+W%-4d  %-18d&n%s&n\n", i + 1,
+					 recipes[i], tobj->short_description);
 			else
-				snprintf(buffer, sizeof buffer, "   &+W%-4d  &n%s&n\n", i + 1, tobj->short_description);
+				snprintf(buffer, sizeof buffer, "   &+W%-4d  &n%s&n\n", i + 1,
+					 tobj->short_description);
 			page_string(ch->desc, buffer, 1);
-			send_to_char("----------------------------------------------------------------------------\n", ch);
+			send_to_char(
+				"----------------------------------------------------------------------------\n",
+				ch);
 			extract_obj(tobj);
 		}
 		free(recipes);
@@ -518,11 +589,14 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 	{
 		if (choice2 == 0)
 		{
-			send_to_char("What &+Wrecipe&n would you like &+ystatistics&n about?\n", ch);
+			send_to_char("What &+Wrecipe&n would you like &+ystatistics&n about?\n",
+				     ch);
 			return;
 		}
 		tobj = read_object(selected, VIRTUAL);
-		send_to_char("&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n", ch);
+		send_to_char(
+			"&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n",
+			ch);
 		spell_identify(GET_LEVEL(ch), ch, 0, 0, 0, tobj);
 		extract_obj(tobj);
 		return;
@@ -531,7 +605,8 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 	{
 		if (choice2 == 0)
 		{
-			send_to_char("What &+Wrecipe&n would you like &+yinformation&n about?\n", ch);
+			send_to_char("What &+Wrecipe&n would you like &+yinformation&n about?\n",
+				     ch);
 			return;
 		}
 
@@ -546,18 +621,24 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		struct crafting_plan plan;
 		if (!crafting_build_plan(tobj, &plan))
 		{
-			send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
-			debug("Couldn't build crafting plan for object: '%s' %d.", tobj->short_description, selected);
+			send_to_char(
+				"Could not figure out what this is made out of !?  Can bug it if you want.\n\r",
+				ch);
+			debug("Couldn't build crafting plan for object: '%s' %d.",
+			      tobj->short_description, selected);
 			extract_obj(tobj);
 			return;
 		}
-		int iVal                   = plan.item_value;
+		int iVal = plan.item_value;
 		int lowQualityMaterialVnum = plan.low_material_vnum;
 
 		if (lowQualityMaterialVnum <= 0)
 		{
-			send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
-			debug("Couldn't get start material for object: '%s' %d.", tobj->short_description, selected);
+			send_to_char(
+				"Could not figure out what this is made out of !?  Can bug it if you want.\n\r",
+				ch);
+			debug("Couldn't get start material for object: '%s' %d.",
+			      tobj->short_description, selected);
 			extract_obj(tobj);
 			return;
 		}
@@ -567,31 +648,41 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 
 		P_obj matLowest, matHighest;
 
-		matLowest  = read_object(lowQualityMaterialVnum, VIRTUAL);
+		matLowest = read_object(lowQualityMaterialVnum, VIRTUAL);
 		matHighest = read_object(lowQualityMaterialVnum + 4, VIRTUAL);
 
 		if (matLowest == NULL || matHighest == NULL)
 		{
-			send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
+			send_to_char(
+				"Could not figure out what this is made out of !?  Can bug it if you want.\n\r",
+				ch);
 			debug("Couldn't load a material: matLowest(%s) or matHighest(%s) for object '%s' %d.",
 			      (matLowest == NULL) ? "NULL" : matLowest->short_description,
 			      (matHighest == NULL) ? "NULL" : matHighest->short_description,
-			      tobj->short_description,
-			      selected);
+			      tobj->short_description, selected);
 			extract_obj(tobj);
 			return;
 		}
 
 		if (numLowest == 0)
 		{
-			send_to_char("&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n", ch);
-			snprintf(buf1, sizeof buf1, "To craft this item, you will need %d of %s.\r\n&n", numHighest, matHighest->short_description);
+			send_to_char(
+				"&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n",
+				ch);
+			snprintf(buf1, sizeof buf1,
+				 "To craft this item, you will need %d of %s.\r\n&n", numHighest,
+				 matHighest->short_description);
 			page_string(ch->desc, buf1, 1);
 		}
 		else
 		{
-			send_to_char("&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n", ch);
-			snprintf(buf1, sizeof buf1, "To craft this item, you will need %d of %s and %d of %s.\r\n&n", numHighest, matHighest->short_description, numLowest, matLowest->short_description);
+			send_to_char(
+				"&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n",
+				ch);
+			snprintf(buf1, sizeof buf1,
+				 "To craft this item, you will need %d of %s and %d of %s.\r\n&n",
+				 numHighest, matHighest->short_description, numLowest,
+				 matLowest->short_description);
 			page_string(ch->desc, buf1, 1);
 		}
 
@@ -605,9 +696,13 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 
 		if (has_affect(tobj))
 		{
-			send_to_char("...as well as &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n", ch);
+			send_to_char(
+				"...as well as &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n",
+				ch);
 		}
-		snprintf(buf1, sizeof buf1, "You will also need one gnomish crafting tool box; it is consumed as you work.\r\n");
+		snprintf(
+			buf1, sizeof buf1,
+			"You will also need one gnomish crafting tool box; it is consumed as you work.\r\n");
 		send_to_char(buf1, ch);
 
 		// It's safe to assume tobj exists since we checked after the read_object call.
@@ -636,43 +731,55 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		struct crafting_plan plan;
 		if (!crafting_build_plan(tobj, &plan))
 		{
-			send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
-			debug("Couldn't build crafting plan for object: '%s' %d.", tobj->short_description, selected);
+			send_to_char(
+				"Could not figure out what this is made out of !?  Can bug it if you want.\n\r",
+				ch);
+			debug("Couldn't build crafting plan for object: '%s' %d.",
+			      tobj->short_description, selected);
 			extract_obj(tobj);
 			return;
 		}
 		int iVal = plan.item_value;
-		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() || IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
+		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() ||
+		    IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
 		{
 			if (IS_OBJ_STAT2(tobj, ITEM2_QUESTITEM))
-				send_to_char("This is a quest item and cannot be crafted from a player recipe.\r\n", ch);
+				send_to_char(
+					"This is a quest item and cannot be crafted from a player recipe.\r\n",
+					ch);
 			else
 			{
-				snprintf(buf1, sizeof buf1, "You need level %d to craft this recipe (you are level %d).\r\n", (iVal + crafting_level_gate_multiplier() - 1) / crafting_level_gate_multiplier(), GET_LEVEL(ch));
+				snprintf(
+					buf1, sizeof buf1,
+					"You need level %d to craft this recipe (you are level %d).\r\n",
+					(iVal + crafting_level_gate_multiplier() - 1) /
+						crafting_level_gate_multiplier(),
+					GET_LEVEL(ch));
 				send_to_char(buf1, ch);
 			}
 			extract_obj(tobj);
 			return;
 		}
 
-		int lowQualityMaterialVnum  = plan.low_material_vnum;
+		int lowQualityMaterialVnum = plan.low_material_vnum;
 		int highQualityMaterialVnum = plan.high_material_vnum;
 		int numHighest = plan.high_material_count;
 		int numLowest = plan.low_material_count;
 
 		P_obj matLowest, matHighest;
 
-		matLowest  = read_object(lowQualityMaterialVnum, VIRTUAL);
+		matLowest = read_object(lowQualityMaterialVnum, VIRTUAL);
 		matHighest = read_object(highQualityMaterialVnum, VIRTUAL);
 
 		if (matLowest == NULL || matHighest == NULL)
 		{
-			send_to_char("Could not figure out what this is made out of !?  Can bug it if you want.\n\r", ch);
+			send_to_char(
+				"Could not figure out what this is made out of !?  Can bug it if you want.\n\r",
+				ch);
 			debug("Couldn't load a material: matLowest(%s) or matHighest(%s) for object '%s' %d.",
 			      (matLowest == NULL) ? "NULL" : matLowest->short_description,
 			      (matHighest == NULL) ? "NULL" : matHighest->short_description,
-			      tobj->short_description,
-			      selected);
+			      tobj->short_description, selected);
 			extract_obj(tobj);
 			return;
 		}
@@ -680,11 +787,11 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		// If we're going to require multiple essences, we need to change this to int numAffects ...
 		bool hasAffect = has_affect(tobj);
 
-		int invLowMats  = 0; // Number of lowest quality materials in inventory.
+		int invLowMats = 0; // Number of lowest quality materials in inventory.
 		int invHighMats = 0; // Number of highest quality materials in inventory.
 		int invEssences = 0; // Number of magical essences in inventory.
-		int invTools    = 0; // Number of crafting tools in inventory
-		int invVnum     = 0; // Vnum of the current inventory object.
+		int invTools = 0; // Number of crafting tools in inventory
+		int invVnum = 0; // Vnum of the current inventory object.
 		for (P_obj inventory = ch->carrying; inventory; inventory = inventory->next_content)
 		{
 			invVnum = OBJ_VNUM(inventory);
@@ -702,7 +809,9 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		// Check mats in inventory vs mats needed.
 		if (invLowMats < numLowest || invHighMats < numHighest)
 		{
-			send_to_char("You do not have the required &+ysalvaged &+Ymaterials &nin your inventory.\r\n", ch);
+			send_to_char(
+				"You do not have the required &+ysalvaged &+Ymaterials &nin your inventory.\r\n",
+				ch);
 			extract_obj(tobj);
 			extract_obj(matLowest);
 			extract_obj(matHighest);
@@ -711,7 +820,9 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		// If for some reason we want more than 1 box of tools, change the 1 below.
 		if (invTools < 1)
 		{
-			send_to_char("You must have &+ma &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&n to create your item.\r\n", ch);
+			send_to_char(
+				"You must have &+ma &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&n to create your item.\r\n",
+				ch);
 			extract_obj(tobj);
 			extract_obj(matLowest);
 			extract_obj(matHighest);
@@ -720,7 +831,9 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		// If we're going to require multiple essences, need to edit this if statement.
 		if (invEssences < 1 && hasAffect)
 		{
-			send_to_char("You must have &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n", ch);
+			send_to_char(
+				"You must have &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n",
+				ch);
 			extract_obj(tobj);
 			extract_obj(matLowest);
 			extract_obj(matHighest);
@@ -751,7 +864,8 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 				numHighest--;
 			}
 			// If we're requiring multiple essences, need to change this if clause.
-			else if (hasAffect && (invVnum == crafting_essence_vnum(CRAFTING_MODE_CRAFT)))
+			else if (hasAffect &&
+				 (invVnum == crafting_essence_vnum(CRAFTING_MODE_CRAFT)))
 			{
 				obj_from_char(inventory);
 				extract_obj(inventory);
@@ -774,41 +888,37 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		snprintf(keywords, sizeof keywords, "%s %s tradeskill", tobj->name, GET_NAME(ch));
 
 		snprintf(tempdesc, sizeof tempdesc, "%s", tobj->short_description);
-		snprintf(short_desc, sizeof short_desc, "%s &+ymade by&n &+r%s&n", tempdesc, GET_NAME(ch));
+		snprintf(short_desc, sizeof short_desc, "%s &+ymade by&n &+r%s&n", tempdesc,
+			 GET_NAME(ch));
 		set_keywords(tobj, keywords);
 		set_short_description(tobj, short_desc);
 
 		// Rewards here: tobj is the crafted item, so no need to load another.
-		wizlog(56, "%s crafted '%s' (%d) ival %d.", GET_NAME(ch), tobj->short_description, selected, itemvalue(tobj));
+		wizlog(56, "%s crafted '%s' (%d) ival %d.", GET_NAME(ch), tobj->short_description,
+		       selected, itemvalue(tobj));
 
 		obj_to_char(tobj, ch);
 		act("&+W$n &+Ldelicately opens their &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&+L and starts their work...\r\n"
 		    "&+W$n &+Lremoves the &+Wim&+wpur&+Lities &+Lfrom their &+ymaterials &+Land gently assembles a masterpiece...\r\n"
 		    "&+L...hands shaking, &+W$n &+Lraises their head and &+Ysmiles&+L, admiring their new $p.&N",
-		    TRUE,
-		    ch,
-		    tobj,
-		    0,
-		    TO_ROOM);
+		    TRUE, ch, tobj, 0, TO_ROOM);
 		act("You &+Ldelicately open your &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&+L and get to work...\r\n"
 		    "you &+Lremove the &+Wim&+wpur&+Lities &+Lfrom your &+ymaterials &+Land gently assemble a masterpiece...\r\n"
 		    "&+L...hands shaking, &+Wyou &+Lraise your head and &+Ysmile&+L, admiring your new $p.&N",
-		    FALSE,
-		    ch,
-		    tobj,
-		    0,
-		    TO_CHAR);
+		    FALSE, ch, tobj, 0, TO_CHAR);
 
 		gain_exp(ch, NULL, iVal * crafting_experience_per_ival(), EXP_BOON);
 		extract_obj(matLowest);
 		extract_obj(matHighest);
 		// Save the character! 1 -> in game.
-	if (!do_save_silent(ch, 1))
-		logit(LOG_DEBUG, "Failed to save %s after heroics reward.", GET_NAME(ch));
+		if (!do_save_silent(ch, 1))
+			logit(LOG_DEBUG, "Failed to save %s after heroics reward.", GET_NAME(ch));
 	}
 	else
 	{
-		send_to_char("Unknown Craft command. Use `craft` to list recipes and available commands.\r\n", ch);
+		send_to_char(
+			"Unknown Craft command. Use `craft` to list recipes and available commands.\r\n",
+			ch);
 	}
 
 	/*
@@ -946,18 +1056,18 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 /* Modern Forge command implementation, extracted from tradeskill.c. */
 static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 {
-	int   skillLevel, objVnum, recipeNumber, commandType, iVal, invVnum;
-	int   numHighQuality, numLowQuality, lowQualityMaterialVnum, highQualityMaterialVnum;
-	int   invLowMats, invHighMats, invEssences;
-	char  buf[256];
-	char  recipe[256];
-	char  Gbuf1[MAX_STRING_LENGTH];
-	char  first[MAX_INPUT_LENGTH];
-	char  second[MAX_INPUT_LENGTH];
-	char  keywords[MAX_STRING_LENGTH];
-	char  short_desc[MAX_STRING_LENGTH];
+	int skillLevel, objVnum, recipeNumber, commandType, iVal, invVnum;
+	int numHighQuality, numLowQuality, lowQualityMaterialVnum, highQualityMaterialVnum;
+	int invLowMats, invHighMats, invEssences;
+	char buf[256];
+	char recipe[256];
+	char Gbuf1[MAX_STRING_LENGTH];
+	char first[MAX_INPUT_LENGTH];
+	char second[MAX_INPUT_LENGTH];
+	char keywords[MAX_STRING_LENGTH];
+	char short_desc[MAX_STRING_LENGTH];
 	char *rest;
-	bool  hasAffect, hasFlux;
+	bool hasAffect, hasFlux;
 	P_obj obj, lowQualityMaterial, highQualityMaterial, inventory, invNextObj;
 
 	if (!(skillLevel = GET_CHAR_SKILL(ch, SKILL_FORGE)))
@@ -967,8 +1077,8 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 	}
 
 	// load recipes from database
-	int  recipe_count = 0;
-	int *recipes      = sql_get_player_recipes(GET_PID(ch), &recipe_count);
+	int recipe_count = 0;
+	int *recipes = sql_get_player_recipes(GET_PID(ch), &recipe_count);
 	if (!recipes || recipe_count == 0)
 	{
 		send_to_char("You dont know any recipes yet.\r\n", ch);
@@ -1008,7 +1118,9 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 	}
 	if (commandType == -1)
 	{
-		send_to_char("Unknown Forge command. Use `forge` to list recipes and available commands.\r\n", ch);
+		send_to_char(
+			"Unknown Forge command. Use `forge` to list recipes and available commands.\r\n",
+			ch);
 		free(recipes);
 		return;
 	}
@@ -1019,24 +1131,32 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		send_to_char("&+wforge or forge list       - list your recipes\n&n", ch);
 		send_to_char("&+wforge info <number>      - show costs and requirements\n&n", ch);
 		send_to_char("&+wforge stat <number>      - inspect the finished item\n&n", ch);
-		send_to_char("&+wforge make <number>      - consume requirements and create it\n&n", ch);
+		send_to_char("&+wforge make <number>      - consume requirements and create it\n&n",
+			     ch);
 		send_to_char("&+yYou know the following recipes:\n&n", ch);
-		send_to_char("----------------------------------------------------------------------------\n", ch);
+		send_to_char(
+			"----------------------------------------------------------------------------\n",
+			ch);
 		send_to_char("&+B#     Recipe vnum       &+MItem&n\n\r", ch);
 
 		for (int i = 0; i < recipe_count; i++)
 		{
 			if (!(obj = read_object(recipes[i], VIRTUAL)))
 			{
-				logit(LOG_DEBUG, "'%s' has bad recipe vnum %d.", ch ? J_NAME(ch) : "NULL", recipes[i]);
+				logit(LOG_DEBUG, "'%s' has bad recipe vnum %d.",
+				      ch ? J_NAME(ch) : "NULL", recipes[i]);
 				continue;
 			}
 			if (crafting_recipe_display_vnums)
-				snprintf(recipe, sizeof recipe, "   &+W%-4d  %-18d&n%s&n\n", i + 1, recipes[i], obj->short_description);
+				snprintf(recipe, sizeof recipe, "   &+W%-4d  %-18d&n%s&n\n", i + 1,
+					 recipes[i], obj->short_description);
 			else
-				snprintf(recipe, sizeof recipe, "   &+W%-4d  &n%s&n\n", i + 1, obj->short_description);
+				snprintf(recipe, sizeof recipe, "   &+W%-4d  &n%s&n\n", i + 1,
+					 obj->short_description);
 			page_string(ch->desc, recipe, 1);
-			send_to_char("----------------------------------------------------------------------------\n", ch);
+			send_to_char(
+				"----------------------------------------------------------------------------\n",
+				ch);
 			extract_obj(obj);
 		}
 		free(recipes);
@@ -1048,11 +1168,13 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 	{
 		if (commandType == 1)
 		{
-			send_to_char("What &+Wrecipe&n would you like &+yinformation&n about?\n", ch);
+			send_to_char("What &+Wrecipe&n would you like &+yinformation&n about?\n",
+				     ch);
 		}
 		else if (commandType == 2)
 		{
-			send_to_char("What &+Wrecipe&n would you like &+ystatistics&n about?\n", ch);
+			send_to_char("What &+Wrecipe&n would you like &+ystatistics&n about?\n",
+				     ch);
 		}
 		else
 		{
@@ -1089,8 +1211,11 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 	// Attempt to load the object we're inspecting/making.
 	if (!(obj = read_object(objVnum, VIRTUAL)))
 	{
-		snprintf(Gbuf1, sizeof Gbuf1, "Your recipe # %d seems to be &+rcorrupted&n. Please tell a &+WGod.\n\r", objVnum);
-		logit(LOG_DEBUG, "do_forge: '%s' has bad recipe vnum (%d) - couldn't load object.", ch ? J_NAME(ch) : "NULL", objVnum);
+		snprintf(Gbuf1, sizeof Gbuf1,
+			 "Your recipe # %d seems to be &+rcorrupted&n. Please tell a &+WGod.\n\r",
+			 objVnum);
+		logit(LOG_DEBUG, "do_forge: '%s' has bad recipe vnum (%d) - couldn't load object.",
+		      ch ? J_NAME(ch) : "NULL", objVnum);
 		return;
 	}
 
@@ -1105,13 +1230,13 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 			extract_obj(obj);
 			return;
 		}
-		iVal                    = plan.item_value;
-		numHighQuality          = plan.high_material_count;
-		numLowQuality           = plan.low_material_count;
-		lowQualityMaterialVnum  = plan.low_material_vnum;
+		iVal = plan.item_value;
+		numHighQuality = plan.high_material_count;
+		numLowQuality = plan.low_material_count;
+		lowQualityMaterialVnum = plan.low_material_vnum;
 		highQualityMaterialVnum = plan.high_material_vnum;
-		lowQualityMaterial      = read_object(lowQualityMaterialVnum, VIRTUAL);
-		highQualityMaterial     = read_object(highQualityMaterialVnum, VIRTUAL);
+		lowQualityMaterial = read_object(lowQualityMaterialVnum, VIRTUAL);
+		highQualityMaterial = read_object(highQualityMaterialVnum, VIRTUAL);
 
 		if (lowQualityMaterial == NULL || highQualityMaterial == NULL)
 		{
@@ -1128,35 +1253,42 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 			return;
 		}
 
-		send_to_char("&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n", ch);
+		send_to_char(
+			"&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n",
+			ch);
 		if (numLowQuality == 0)
 		{
-			snprintf(recipe, sizeof recipe, "To forge this item, you will need %d of %s.\r\n&n", numHighQuality, highQualityMaterial->short_description);
+			snprintf(recipe, sizeof recipe,
+				 "To forge this item, you will need %d of %s.\r\n&n",
+				 numHighQuality, highQualityMaterial->short_description);
 		}
 		else
 		{
 			// numHighQuality will always be >= 1 with the code the way it is on 2/11/2015.
 			if (numHighQuality == 0)
 			{
-				snprintf(recipe, sizeof recipe, "To forge this item, you will need %d of %s.\r\n&n", numLowQuality, lowQualityMaterial->short_description);
+				snprintf(recipe, sizeof recipe,
+					 "To forge this item, you will need %d of %s.\r\n&n",
+					 numLowQuality, lowQualityMaterial->short_description);
 			}
 			else
 			{
-				snprintf(recipe,
-				         sizeof recipe,
-				         "To forge this item, you will need %d of %s and %d of %s.\r\n&n",
-				         numHighQuality,
-				         highQualityMaterial->short_description,
-				         numLowQuality,
-				         lowQualityMaterial->short_description);
+				snprintf(
+					recipe, sizeof recipe,
+					"To forge this item, you will need %d of %s and %d of %s.\r\n&n",
+					numHighQuality, highQualityMaterial->short_description,
+					numLowQuality, lowQualityMaterial->short_description);
 			}
 		}
 		// If we're going to require multiple essences, need to edit this if statement.
 		if (has_affect(obj))
 		{
-			strcat(recipe, "You must have &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n");
+			strcat(recipe,
+			       "You must have &+W1 &nof &+ma &+Mm&+Ya&+Mg&+Yi&+Mc&+Ya&+Ml &+messence&n due to the &+mmagical &nproperties this item possesses.\r\n");
 		}
-		snprintf(Gbuf1, sizeof Gbuf1, "You will also need one blacksmithing flux; it is consumed to bind the work.\r\n");
+		snprintf(
+			Gbuf1, sizeof Gbuf1,
+			"You will also need one blacksmithing flux; it is consumed to bind the work.\r\n");
 		strncat(recipe, Gbuf1, sizeof(recipe) - strlen(recipe) - 1);
 
 		page_string(ch->desc, recipe, 1);
@@ -1169,7 +1301,9 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 	else if (commandType == 2)
 	{
 		// Display info on obj:
-		send_to_char("&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n", ch);
+		send_to_char(
+			"&+yYou open your &+Ltome &+yof &+Ycra&+yftsm&+Lanship &+yand examine the &+Litem&n.\n",
+			ch);
 		spell_identify(GET_LEVEL(ch), ch, 0, 0, 0, obj);
 		extract_obj(obj);
 		return;
@@ -1186,23 +1320,31 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 			return;
 		}
 		iVal = plan.item_value;
-		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() || IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
+		if (iVal > GET_LEVEL(ch) * crafting_level_gate_multiplier() ||
+		    IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
 		{
 			if (IS_OBJ_STAT2(obj, ITEM2_QUESTITEM))
-				send_to_char("This is a quest item and cannot be forged from a player recipe.\r\n", ch);
+				send_to_char(
+					"This is a quest item and cannot be forged from a player recipe.\r\n",
+					ch);
 			else
 			{
-				snprintf(buf, sizeof(buf), "You need level %d to forge this recipe (you are level %d).\r\n", (iVal + crafting_level_gate_multiplier() - 1) / crafting_level_gate_multiplier(), GET_LEVEL(ch));
+				snprintf(
+					buf, sizeof(buf),
+					"You need level %d to forge this recipe (you are level %d).\r\n",
+					(iVal + crafting_level_gate_multiplier() - 1) /
+						crafting_level_gate_multiplier(),
+					GET_LEVEL(ch));
 				send_to_char(buf, ch);
 			}
 			extract_obj(obj);
 			return;
 		}
-		numHighQuality          = plan.high_material_count;
-		numLowQuality           = plan.low_material_count;
-		lowQualityMaterialVnum  = plan.low_material_vnum;
+		numHighQuality = plan.high_material_count;
+		numLowQuality = plan.low_material_count;
+		lowQualityMaterialVnum = plan.low_material_vnum;
 		highQualityMaterialVnum = plan.high_material_vnum;
-		hasAffect               = plan.magical;
+		hasAffect = plan.magical;
 
 		/* Foundry code here (not requiring one atm I guess):
 		if( !check_foundry(ch) )
@@ -1213,7 +1355,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		}
 		*/
 
-		hasFlux    = FALSE;
+		hasFlux = FALSE;
 		invLowMats = invHighMats = invEssences = 0;
 		// Count up the materials ch has on hand.
 		for (inventory = ch->carrying; inventory; inventory = inventory->next_content)
@@ -1241,13 +1383,18 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		// Check to make sure ch has enough materials.
 		if (hasFlux == FALSE)
 		{
-			send_to_char("You must have a &+Lblacksmithing &nflux to complete the smithing process!\r\n", ch);
+			send_to_char(
+				"You must have a &+Lblacksmithing &nflux to complete the smithing process!\r\n",
+				ch);
 			extract_obj(obj);
 			return;
 		}
-		if ((hasAffect && invEssences < 1) || (invLowMats < numLowQuality) || (invHighMats < numHighQuality))
+		if ((hasAffect && invEssences < 1) || (invLowMats < numLowQuality) ||
+		    (invHighMats < numHighQuality))
 		{
-			send_to_char("You do not have the required &+ysalvaged &+Ymaterials &nin your inventory.\r\n", ch);
+			send_to_char(
+				"You do not have the required &+ysalvaged &+Ymaterials &nin your inventory.\r\n",
+				ch);
 			extract_obj(obj);
 			return;
 		}
@@ -1256,7 +1403,7 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		for (inventory = ch->carrying; inventory; inventory = invNextObj)
 		{
 			invNextObj = inventory->next_content;
-			invVnum    = OBJ_VNUM(inventory);
+			invVnum = OBJ_VNUM(inventory);
 
 			if ((invVnum == lowQualityMaterialVnum) && (numLowQuality > 0))
 			{
@@ -1268,7 +1415,8 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 				extract_obj(inventory, TRUE); // Not an arti, but 'in game.'
 				numHighQuality--;
 			}
-			else if (hasAffect && (invVnum == crafting_essence_vnum(CRAFTING_MODE_FORGE)))
+			else if (hasAffect &&
+				 (invVnum == crafting_essence_vnum(CRAFTING_MODE_FORGE)))
 			{
 				extract_obj(inventory, TRUE); // Not an arti, but 'in game.'
 				hasAffect = FALSE;
@@ -1286,36 +1434,31 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 		REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
 
 		snprintf(keywords, sizeof keywords, "%s %s tradeskill", obj->name, GET_NAME(ch));
-		snprintf(short_desc, sizeof short_desc, "%s &+ymade by&n &+r%s&n", obj->short_description, GET_NAME(ch));
+		snprintf(short_desc, sizeof short_desc, "%s &+ymade by&n &+r%s&n",
+			 obj->short_description, GET_NAME(ch));
 		set_keywords(obj, keywords);
 		set_short_description(obj, short_desc);
 
-		wizlog(56, "%s forged '%s' (%d) ival %d.", GET_NAME(ch), obj->short_description, objVnum, itemvalue(obj));
+		wizlog(56, "%s forged '%s' (%d) ival %d.", GET_NAME(ch), obj->short_description,
+		       objVnum, itemvalue(obj));
 		obj_to_char(obj, ch);
 
 		act("&+W$n &+Lgently takes their &+ymaterials&+L, their &nflux&+L, and places them into the &+rf&+Ro&+Yr&+Rg&+re&+L.\r\n"
 		    "&+W$n &+Lremoves the &+yitems &+Lfrom the &+rheat &+Land starts to &nhammer &+Laway at the mixture..\r\n"
 		    "&+L...after shedding plenty of &+Wsweat&+L, &+W$n &+Lsteps back, admiring their new $p.&N",
-		    TRUE,
-		    ch,
-		    obj,
-		    0,
-		    TO_ROOM);
+		    TRUE, ch, obj, 0, TO_ROOM);
 		act("You &+Lgently take your &+ymaterials&+L, the &nflux&+L, and place them into the &+rf&+Ro&+Yr&+Rg&+re&+L.\r\n"
 		    "You &+Lremove the &+yitems &+Lfrom the &+rheat &+Land start to &nhammer &+Laway at the mixture..\r\n"
 		    "&+L...after shedding plenty of &+Wsweat&+L, you &+Lstep back, admiring your new $p.&N",
-		    FALSE,
-		    ch,
-		    obj,
-		    0,
-		    TO_CHAR);
+		    FALSE, ch, obj, 0, TO_CHAR);
 
 		gain_exp(ch, NULL, iVal * crafting_experience_per_ival(), EXP_BOON);
 	}
 	else
 	{
 		send_to_char("&+RBad command type&n: Please report this to an Immortal.\n\r", ch);
-		logit(LOG_DEBUG, "do_forge: bad command arguments '%s' by '%s'.", argument, ch ? J_NAME(ch) : "NULL");
+		logit(LOG_DEBUG, "do_forge: bad command arguments '%s' by '%s'.", argument,
+		      ch ? J_NAME(ch) : "NULL");
 		extract_obj(obj);
 		return;
 	}

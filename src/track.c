@@ -21,17 +21,17 @@
 #include "map.h"
 #include "spells.h"
 
-extern P_desc                  descriptor_list;
-extern P_index                 mob_index;
-extern P_index                 obj_index;
-extern P_room                  world;
-extern const char             *dirs[];
-extern const char             *short_dirs[];
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_room world;
+extern const char *dirs[];
+extern const char *short_dirs[];
 extern const struct race_names race_names_table[];
-extern const int               track_limit[];
-extern const int               top_of_world;
-extern struct zone_data       *zone_table;
-extern struct sector_data     *sector_table;
+extern const int track_limit[];
+extern const int top_of_world;
+extern struct zone_data *zone_table;
+extern struct sector_data *sector_table;
 
 struct trackrecordtype *first_track, *last_track, *spare_track_base;
 
@@ -40,7 +40,7 @@ struct trackrecordtype *first_track, *last_track, *spare_track_base;
 
 void event_track_move(P_char ch, P_char vict, P_obj obj, void *data)
 {
-	int  dir, dist;
+	int dir, dist;
 	char buf[MAX_STRING_LENGTH];
 
 	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
@@ -52,7 +52,8 @@ void event_track_move(P_char ch, P_char vict, P_obj obj, void *data)
 
 	if (!IS_SET(ch->specials.affected_by3, AFF3_TRACKING))
 	{
-		send_to_char("Something breaks your concentration, and you abandon the hunt.\r\n", ch);
+		send_to_char("Something breaks your concentration, and you abandon the hunt.\r\n",
+			     ch);
 		return;
 	}
 
@@ -67,15 +68,19 @@ void event_track_move(P_char ch, P_char vict, P_obj obj, void *data)
 	dir = BFS_ERROR;
 
 	// debug( "Victim: %s, specs.tracking: %d", vict ? J_NAME(vict) : "NULL", ch->specials.tracking );
-	dir = find_first_step(
-		ch->in_room, (vict ? vict->in_room : ch->specials.tracking), (IS_SET(ch->specials.affected_by, AFF_FLY) ? BFS_CAN_FLY : 0) | BFS_CAN_DISPEL | (IS_NPC(ch) ? BFS_AVOID_NOMOB : 0), 0, 0, &dist);
+	dir = find_first_step(ch->in_room, (vict ? vict->in_room : ch->specials.tracking),
+			      (IS_SET(ch->specials.affected_by, AFF_FLY) ? BFS_CAN_FLY : 0) |
+				      BFS_CAN_DISPEL | (IS_NPC(ch) ? BFS_AVOID_NOMOB : 0),
+			      0, 0, &dist);
 
 	if (dir == BFS_ERROR || dir == BFS_NO_PATH)
 	{
 		send_to_char("You are unable to find any trace.\r\n", ch);
 		REMOVE_BIT(ch->specials.affected_by3, AFF3_TRACKING);
 
-		logit(LOG_DEBUG, "BFS_ERROR or BFS_NO_PATH error in event_track_move() track.c with %s.", GET_NAME(ch));
+		logit(LOG_DEBUG,
+		      "BFS_ERROR or BFS_NO_PATH error in event_track_move() track.c with %s.",
+		      GET_NAME(ch));
 		return;
 	}
 	else if (dir == BFS_ALREADY_THERE)
@@ -93,17 +98,28 @@ void event_track_move(P_char ch, P_char vict, P_obj obj, void *data)
 	else
 	{
 		/* still following the trail */
-		snprintf(buf, MAX_STRING_LENGTH, "You find traces of tracks leading %s.\r\n", dirs[dir]);
+		snprintf(buf, MAX_STRING_LENGTH, "You find traces of tracks leading %s.\r\n",
+			 dirs[dir]);
 		send_to_char(buf, ch);
-		if (EXIT(ch, dir) && (EXIT(ch, dir)->to_room != NOWHERE) && IS_SET(EXIT(ch, dir)->exit_info, EX_CLOSED) && !IS_SET(EXIT(ch, dir)->exit_info, EX_LOCKED))
+		if (EXIT(ch, dir) && (EXIT(ch, dir)->to_room != NOWHERE) &&
+		    IS_SET(EXIT(ch, dir)->exit_info, EX_CLOSED) &&
+		    !IS_SET(EXIT(ch, dir)->exit_info, EX_LOCKED))
 		{
 			if ((dir == DIR_DOWN) || (dir == DIR_UP))
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "You open the %sward %s.\n", dirs[dir], EXIT(ch, dir)->keyword ? FirstWord(EXIT(ch, dir)->keyword) : "door");
+				snprintf(buf, MAX_STRING_LENGTH, "You open the %sward %s.\n",
+					 dirs[dir],
+					 EXIT(ch, dir)->keyword ?
+						 FirstWord(EXIT(ch, dir)->keyword) :
+						 "door");
 			}
 			else
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "You open the %s to the %s.\n", EXIT(ch, dir)->keyword ? FirstWord(EXIT(ch, dir)->keyword) : "door", dirs[dir]);
+				snprintf(buf, MAX_STRING_LENGTH, "You open the %s to the %s.\n",
+					 EXIT(ch, dir)->keyword ?
+						 FirstWord(EXIT(ch, dir)->keyword) :
+						 "door",
+					 dirs[dir]);
 			}
 			send_to_char(buf, ch);
 			snprintf(buf, MAX_STRING_LENGTH, "%s", dirs[(int)dir]);
@@ -129,13 +145,16 @@ void event_track_move(P_char ch, P_char vict, P_obj obj, void *data)
 	}
 }
 
-bool valid_track_edge(int from_room, int dir) { return VALID_TRACK_EDGE(from_room, dir); }
+bool valid_track_edge(int from_room, int dir)
+{
+	return VALID_TRACK_EDGE(from_room, dir);
+}
 
 void do_track_not_in_use(P_char ch, char *arg, int cmd)
 {
-	int   skill, epic_skill, percent, found_track;
+	int skill, epic_skill, percent, found_track;
 	P_obj obj;
-	char  descbuf[MAX_STRING_LENGTH];
+	char descbuf[MAX_STRING_LENGTH];
 
 #ifdef NOTRACK
 	send_to_char("Tracking is a passive skill. If you know how, you will see tracks.\r\n", ch);
@@ -149,7 +168,7 @@ void do_track_not_in_use(P_char ch, char *arg, int cmd)
 
 	if (IS_TRUSTED(ch))
 	{
-		int         i = 0;
+		int i = 0;
 		vector<int> path;
 
 		if (!is_number(arg) || ((i = real_room(atoi(arg))) < 0) || (i > top_of_world))
@@ -162,7 +181,8 @@ void do_track_not_in_use(P_char ch, char *arg, int cmd)
 
 		if (found_path)
 		{
-			snprintf(descbuf, MAX_STRING_LENGTH, "&+BFound path (%ld steps):\r\n", (long)path.size());
+			snprintf(descbuf, MAX_STRING_LENGTH, "&+BFound path (%ld steps):\r\n",
+				 (long)path.size());
 			send_to_char(descbuf, ch);
 			for (vector<int>::iterator it = path.begin(); it != path.end(); it++)
 			{
@@ -180,9 +200,9 @@ void do_track_not_in_use(P_char ch, char *arg, int cmd)
 	}
 
 	// Setup the numbers
-	skill      = GET_CHAR_SKILL(ch, SKILL_TRACK);
+	skill = GET_CHAR_SKILL(ch, SKILL_TRACK);
 	epic_skill = GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK);
-	percent    = number(1, 100);
+	percent = number(1, 100);
 
 	if (!skill)
 	{
@@ -270,8 +290,8 @@ void do_track_not_in_use(P_char ch, char *arg, int cmd)
 void do_track(P_char ch, char *arg, int cmd) // do_track_not_in_use
 {
 	P_char victim;
-	int    skill_lvl;
-	char   name[MAX_INPUT_LENGTH];
+	int skill_lvl;
+	char name[MAX_INPUT_LENGTH];
 
 	/*
 	  struct trackrecordtype *hmm;
@@ -303,7 +323,8 @@ void do_track(P_char ch, char *arg, int cmd) // do_track_not_in_use
 		if (IS_MAP_ROOM(ch->in_room))
 		{
 			show_tracking_map(ch);
-			CharWait(ch, (int)(PULSE_VIOLENCE * (float)get_property("track.scan.lag", 1)));
+			CharWait(ch,
+				 (int)(PULSE_VIOLENCE * (float)get_property("track.scan.lag", 1)));
 			return;
 		}
 		else
@@ -339,8 +360,10 @@ void do_track(P_char ch, char *arg, int cmd) // do_track_not_in_use
 	/* New IF */
 	// victim = get_char_vis(ch, name);
 
-	if (!name[0] && (GET_SPEC(ch, CLASS_ROGUE, SPEC_ASSASSIN) || GET_CLASS(ch, CLASS_ASSASSIN) || GET_SPEC(ch, CLASS_ROGUE, SPEC_THIEF)) && ch->specials.was_fighting &&
-	    char_in_list(ch->specials.was_fighting))
+	if (!name[0] &&
+	    (GET_SPEC(ch, CLASS_ROGUE, SPEC_ASSASSIN) || GET_CLASS(ch, CLASS_ASSASSIN) ||
+	     GET_SPEC(ch, CLASS_ROGUE, SPEC_THIEF)) &&
+	    ch->specials.was_fighting && char_in_list(ch->specials.was_fighting))
 	{
 		victim = ch->specials.was_fighting;
 	}
@@ -375,7 +398,7 @@ void do_track(P_char ch, char *arg, int cmd) // do_track_not_in_use
 	}
 
 	SET_BIT(ch->specials.affected_by3, AFF3_TRACKING);
-	ch->specials.tracking     = (victim ? victim->in_room : real_room(atoi(name)));
+	ch->specials.tracking = (victim ? victim->in_room : real_room(atoi(name)));
 	ch->specials.was_fighting = victim;
 	send_to_char("You attempt your skills at tracking.\r\n", ch);
 	add_event(event_track_move, 5, ch, victim, 0, 0, 0, 0);
@@ -399,15 +422,15 @@ int MaxTrackDist(P_char ch)
 
 	switch (GET_RACE(ch))
 	{
-		case RACE_GREY:
-			dist = (int)(dist * 1.5); /* even better */
-			break;
-		case RACE_DEVIL:
-		case RACE_DEMON:
-			dist = MAX_ROOMS; /* as good as can be */
-			break;
-		default:
-			break;
+	case RACE_GREY:
+		dist = (int)(dist * 1.5); /* even better */
+		break;
+	case RACE_DEVIL:
+	case RACE_DEMON:
+		dist = MAX_ROOMS; /* as good as can be */
+		break;
+	default:
+		break;
 	}
 
 	if (IS_TRUSTED(ch))
@@ -422,11 +445,11 @@ int MaxTrackDist(P_char ch)
 void add_track(P_char ch, int dir)
 {
 	P_char mount;
-	P_obj  track, obj, next_obj;
-	int    counter, found, dura, zon;
-	char   buf1[MAX_STRING_LENGTH];
+	P_obj track, obj, next_obj;
+	int counter, found, dura, zon;
+	char buf1[MAX_STRING_LENGTH];
 	//  char    buf2[MAX_STRING_LENGTH];
-	char                     buf3[MAX_STRING_LENGTH];
+	char buf3[MAX_STRING_LENGTH];
 	struct extra_descr_data *ed;
 
 	// Gods don't leave tracks.
@@ -441,7 +464,8 @@ void add_track(P_char ch, int dir)
 		return;
 
 	// These races leave no tracks
-	if (GET_RACE(ch) == RACE_INSECT || GET_RACE(ch) == RACE_GHOST || GET_RACE(ch) == RACE_FAERIE || GET_RACE(ch) == RACE_PARASITE)
+	if (GET_RACE(ch) == RACE_INSECT || GET_RACE(ch) == RACE_GHOST ||
+	    GET_RACE(ch) == RACE_FAERIE || GET_RACE(ch) == RACE_PARASITE)
 		return;
 
 	// If they're in nowhere.. no tracks.
@@ -456,66 +480,66 @@ void add_track(P_char ch, int dir)
 
 	switch (world[ch->in_room].sector_type)
 	{
-		case SECT_WATER_SWIM:
-		case SECT_WATER_NOSWIM:
-		case SECT_UNDERWATER:
-		case SECT_UNDRWLD_WATER:
-		case SECT_UNDRWLD_NOGROUND:
-		case SECT_NO_GROUND:
-		case SECT_FIREPLANE:
-		case SECT_OCEAN:
-		case SECT_UNDRWLD_NOSWIM:
-		case SECT_ASTRAL:
-		case SECT_ETHEREAL:
-		case SECT_ROAD:
-			return;
-		case SECT_UNDRWLD_INSIDE:
-		case SECT_INSIDE:
+	case SECT_WATER_SWIM:
+	case SECT_WATER_NOSWIM:
+	case SECT_UNDERWATER:
+	case SECT_UNDRWLD_WATER:
+	case SECT_UNDRWLD_NOGROUND:
+	case SECT_NO_GROUND:
+	case SECT_FIREPLANE:
+	case SECT_OCEAN:
+	case SECT_UNDRWLD_NOSWIM:
+	case SECT_ASTRAL:
+	case SECT_ETHEREAL:
+	case SECT_ROAD:
+		return;
+	case SECT_UNDRWLD_INSIDE:
+	case SECT_INSIDE:
+		dura /= 4;
+		break;
+	case SECT_UNDERWATER_GR:
+	case SECT_CITY:
+	case SECT_LAVA:
+		dura /= 3;
+		break;
+	case SECT_DESERT:
+	case SECT_ARCTIC:
+		if (GET_RACE(ch) == RACE_BARBARIAN)
+			dura = (2 * dura) / 3;
+		else
+			dura += 60;
+		break;
+	case SECT_FOREST:
+		if (GET_RACE(ch) == RACE_GREY)
 			dura /= 4;
-			break;
-		case SECT_UNDERWATER_GR:
-		case SECT_CITY:
-		case SECT_LAVA:
+		else if (GET_RACE(ch) == RACE_CENTAUR)
+			dura /= 2;
+		else if (GET_RACE(ch) == RACE_HALFELF)
 			dura /= 3;
-			break;
-		case SECT_DESERT:
-		case SECT_ARCTIC:
-			if (GET_RACE(ch) == RACE_BARBARIAN)
-				dura = (2 * dura) / 3;
-			else
-				dura += 60;
-			break;
-		case SECT_FOREST:
-			if (GET_RACE(ch) == RACE_GREY)
-				dura /= 4;
-			else if (GET_RACE(ch) == RACE_CENTAUR)
-				dura /= 2;
-			else if (GET_RACE(ch) == RACE_HALFELF)
-				dura /= 3;
-			break;
-		case SECT_UNDRWLD_MOUNTAIN:
-		case SECT_UNDRWLD_SLIME:
-		case SECT_UNDRWLD_MUSHROOM:
-		case SECT_UNDRWLD_LIQMITH:
-		case SECT_UNDRWLD_WILD:
-		case SECT_UNDRWLD_CITY:
-			if (GET_RACE(ch) == RACE_DROW || GET_RACE(ch) == RACE_DUERGAR)
-				dura /= 4;
-			else
-				dura *= 2;
-			break;
-		case SECT_HILLS:
-			if (GET_RACE(ch) == RACE_HALFLING || GET_RACE(ch) == RACE_GOBLIN)
-				dura /= 3;
-			break;
-		case SECT_MOUNTAIN:
-			if (GET_RACE(ch) == RACE_MOUNTAIN || GET_RACE(ch) == RACE_DUERGAR)
-				dura /= 3;
-			else
-				dura += 40;
-			break;
-		default:
-			break; /* stuff is as we want it to be.      */
+		break;
+	case SECT_UNDRWLD_MOUNTAIN:
+	case SECT_UNDRWLD_SLIME:
+	case SECT_UNDRWLD_MUSHROOM:
+	case SECT_UNDRWLD_LIQMITH:
+	case SECT_UNDRWLD_WILD:
+	case SECT_UNDRWLD_CITY:
+		if (GET_RACE(ch) == RACE_DROW || GET_RACE(ch) == RACE_DUERGAR)
+			dura /= 4;
+		else
+			dura *= 2;
+		break;
+	case SECT_HILLS:
+		if (GET_RACE(ch) == RACE_HALFLING || GET_RACE(ch) == RACE_GOBLIN)
+			dura /= 3;
+		break;
+	case SECT_MOUNTAIN:
+		if (GET_RACE(ch) == RACE_MOUNTAIN || GET_RACE(ch) == RACE_DUERGAR)
+			dura /= 3;
+		else
+			dura += 40;
+		break;
+	default:
+		break; /* stuff is as we want it to be.      */
 	}
 
 	/*  Removing weather conditions until weather is rationalized
@@ -587,20 +611,23 @@ void add_track(P_char ch, int dir)
 	// Show tracks of the mount if mounted.
 	if ((mount = GET_MOUNT(ch)) != NULL)
 	{
-		snprintf(buf1, MAX_STRING_LENGTH, "There are deep %s tracks going %s.", race_names_table[(int)GET_RACE(mount)].ansi, dirs[dir]);
+		snprintf(buf1, MAX_STRING_LENGTH, "There are deep %s tracks going %s.",
+			 race_names_table[(int)GET_RACE(mount)].ansi, dirs[dir]);
 		strcpy(buf3, mount->player.short_descr);
 		track->value[0] = dir;
 		dura += 15 * WAIT_SEC;
 	}
 	else if (IS_DISGUISE_SHAPE(ch))
 	{
-		snprintf(buf1, MAX_STRING_LENGTH, "There are %s tracks going %s.", race_names_table[(int)GET_DISGUISE_RACE(ch)].ansi, dirs[dir]);
+		snprintf(buf1, MAX_STRING_LENGTH, "There are %s tracks going %s.",
+			 race_names_table[(int)GET_DISGUISE_RACE(ch)].ansi, dirs[dir]);
 		strcpy(buf3, ch->disguise.name);
 		track->value[0] = dir;
 	}
 	else
 	{
-		snprintf(buf1, MAX_STRING_LENGTH, "There are %s tracks going %s.", race_names_table[(int)GET_RACE(ch)].ansi, dirs[dir]);
+		snprintf(buf1, MAX_STRING_LENGTH, "There are %s tracks going %s.",
+			 race_names_table[(int)GET_RACE(ch)].ansi, dirs[dir]);
 		if (ch->player.short_descr)
 			strcpy(buf3, ch->player.short_descr);
 		else if (ch->player.name)
@@ -658,9 +685,9 @@ char *sickprocess(const char *arg)
 void show_tracks(P_char ch, int room)
 {
 	P_obj obj, next_obj;
-	char  Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
-	int   chance, percent, skill, level, race;
-	bool  outside, forest_check;
+	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
+	int chance, percent, skill, level, race;
+	bool outside, forest_check;
 
 	// Changed this from IS_NPC for the sake of switched Immortals.
 	if (!ch->desc)
@@ -678,11 +705,11 @@ void show_tracks(P_char ch, int room)
 		return;
 	}
 
-	skill        = GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK);
-	percent      = number(1, 100);
-	level        = GET_LEVEL(ch);
-	race         = GET_RACE(ch);
-	outside      = FALSE; // set for shaman/druid presence detection
+	skill = GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK);
+	percent = number(1, 100);
+	level = GET_LEVEL(ch);
+	race = GET_RACE(ch);
+	outside = FALSE; // set for shaman/druid presence detection
 	forest_check = GET_SPEC(ch, CLASS_DRUID, SPEC_WOODLAND) && IS_SECT(room, SECT_FOREST);
 
 	// If they don't have the skill, make it impossible to use it.
@@ -714,18 +741,18 @@ void show_tracks(P_char ch, int room)
 
 	switch (GET_POS(ch))
 	{
-		case POS_PRONE:
-			percent -= 20;
-			break;
-		case POS_KNEELING:
-		case POS_SITTING:
-			percent -= 10;
-			break;
-		case POS_STANDING:
-			percent += 10;
-			break;
-		default:
-			break;
+	case POS_PRONE:
+		percent -= 20;
+		break;
+	case POS_KNEELING:
+	case POS_SITTING:
+		percent -= 10;
+		break;
+	case POS_STANDING:
+		percent += 10;
+		break;
+	default:
+		break;
 	}
 
 	if (IS_AFFECTED(ch, AFF_FARSEE))
@@ -749,87 +776,89 @@ void show_tracks(P_char ch, int room)
 
 	switch (world[room].sector_type)
 	{
-		case SECT_CITY:
-			if (GET_CLASS(ch, CLASS_ROGUE | CLASS_ASSASSIN | CLASS_THIEF | CLASS_MERCENARY) || GET_SPEC(ch, CLASS_ROGUE, SPEC_ASSASSIN))
-			{
-				skill += 15;
-			}
+	case SECT_CITY:
+		if (GET_CLASS(ch, CLASS_ROGUE | CLASS_ASSASSIN | CLASS_THIEF | CLASS_MERCENARY) ||
+		    GET_SPEC(ch, CLASS_ROGUE, SPEC_ASSASSIN))
+		{
+			skill += 15;
+		}
 
-			if (GET_CLASS(ch, CLASS_RANGER))
-			{
-				skill -= 20;
-			}
+		if (GET_CLASS(ch, CLASS_RANGER))
+		{
+			skill -= 20;
+		}
 
-			if (race != RACE_HUMAN && race != RACE_BARBARIAN && race != RACE_ORC && race != RACE_HALFELF)
-			{
-				skill -= 15;
-			}
-			break;
-		case SECT_FIELD:
-		case SECT_ROAD:
-			outside = TRUE;
-			break;
-		case SECT_FOREST:
-			if (GET_CLASS(ch, CLASS_RANGER))
-			{
-				skill += 15;
-			}
+		if (race != RACE_HUMAN && race != RACE_BARBARIAN && race != RACE_ORC &&
+		    race != RACE_HALFELF)
+		{
+			skill -= 15;
+		}
+		break;
+	case SECT_FIELD:
+	case SECT_ROAD:
+		outside = TRUE;
+		break;
+	case SECT_FOREST:
+		if (GET_CLASS(ch, CLASS_RANGER))
+		{
+			skill += 15;
+		}
 
-			if (race == RACE_GREY || race == RACE_CENTAUR)
-				skill += 10;
-			else if (race == RACE_HALFELF)
-				skill += 5;
-			else
-				skill -= 20;
-			outside = TRUE;
-			break;
-		case SECT_HILLS:
-			if (race == RACE_HALFLING)
-				skill += 20;
-			else if (race == RACE_MOUNTAIN)
-				skill += 10;
-			else
-				skill -= 10;
-			outside = TRUE;
-			break;
-		case SECT_MOUNTAIN:
-			if (race == RACE_MOUNTAIN || race == RACE_DUERGAR)
-				skill += 30;
-			else
-				skill -= 20;
-			break;
-		case SECT_SWAMP:
-			if (race == RACE_TROLL)
-				skill += 20;
-			else
-				skill -= 30;
-			break;
-		case SECT_DESERT:
-			percent -= 20;
-			break;
-		case SECT_ARCTIC:
-			if (race == RACE_BARBARIAN)
-				skill += 10;
-			percent -= 10;
-			break;
-		case SECT_UNDRWLD_WILD:
-		case SECT_UNDRWLD_CITY:
-		case SECT_UNDRWLD_MOUNTAIN:
-		case SECT_UNDRWLD_SLIME:
-		case SECT_UNDRWLD_LOWCEIL:
-		case SECT_UNDRWLD_LIQMITH:
-		case SECT_UNDRWLD_MUSHROOM:
-			if (race == RACE_DROW || race == RACE_DUERGAR)
-				skill += 30;
-			else
-				skill -= 30;
-			break;
-		case SECT_INSIDE:
-		case SECT_UNDRWLD_INSIDE:
-			skill -= 40;
-			break;
-		default:
-			break;
+		if (race == RACE_GREY || race == RACE_CENTAUR)
+			skill += 10;
+		else if (race == RACE_HALFELF)
+			skill += 5;
+		else
+			skill -= 20;
+		outside = TRUE;
+		break;
+	case SECT_HILLS:
+		if (race == RACE_HALFLING)
+			skill += 20;
+		else if (race == RACE_MOUNTAIN)
+			skill += 10;
+		else
+			skill -= 10;
+		outside = TRUE;
+		break;
+	case SECT_MOUNTAIN:
+		if (race == RACE_MOUNTAIN || race == RACE_DUERGAR)
+			skill += 30;
+		else
+			skill -= 20;
+		break;
+	case SECT_SWAMP:
+		if (race == RACE_TROLL)
+			skill += 20;
+		else
+			skill -= 30;
+		break;
+	case SECT_DESERT:
+		percent -= 20;
+		break;
+	case SECT_ARCTIC:
+		if (race == RACE_BARBARIAN)
+			skill += 10;
+		percent -= 10;
+		break;
+	case SECT_UNDRWLD_WILD:
+	case SECT_UNDRWLD_CITY:
+	case SECT_UNDRWLD_MOUNTAIN:
+	case SECT_UNDRWLD_SLIME:
+	case SECT_UNDRWLD_LOWCEIL:
+	case SECT_UNDRWLD_LIQMITH:
+	case SECT_UNDRWLD_MUSHROOM:
+		if (race == RACE_DROW || race == RACE_DUERGAR)
+			skill += 30;
+		else
+			skill -= 30;
+		break;
+	case SECT_INSIDE:
+	case SECT_UNDRWLD_INSIDE:
+		skill -= 40;
+		break;
+	default:
+		break;
 	}
 	if (IS_INSIDE(room))
 	{
@@ -852,7 +881,9 @@ void show_tracks(P_char ch, int room)
 			{
 				if (chance > number(1, 100))
 				{
-					send_to_char("&+LThere are residual brain waves in the area.\n", ch);
+					send_to_char(
+						"&+LThere are residual brain waves in the area.\n",
+						ch);
 				}
 			}
 			if (affected_by_spell(ch, SPELL_BLOODHOUND))
@@ -870,13 +901,16 @@ void show_tracks(P_char ch, int room)
 			 * Tweaked this such that we only skip if we're in a forest room.
 			 */
 			// All druids except Ranger/Druids (They get better).
-			if (!GET_PRIME_CLASS(ch, CLASS_RANGER) && GET_CLASS(ch, CLASS_DRUID) && !forest_check)
+			if (!GET_PRIME_CLASS(ch, CLASS_RANGER) && GET_CLASS(ch, CLASS_DRUID) &&
+			    !forest_check)
 			{
 				if (outside)
 				{
 					if (chance > number(1, 100))
 					{
-						send_to_char("&+gThere is a slight disturbance in nature.\n", ch);
+						send_to_char(
+							"&+gThere is a slight disturbance in nature.\n",
+							ch);
 					}
 				}
 			}
@@ -887,16 +921,21 @@ void show_tracks(P_char ch, int room)
 				{
 					if (chance > number(1, 100))
 					{
-						send_to_char("&+mThere is a slight disturbance in the spirit realm here.\n", ch);
+						send_to_char(
+							"&+mThere is a slight disturbance in the spirit realm here.\n",
+							ch);
 					}
 				}
 			}
 
-			if (GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_HUNTER) && has_innate(ch, INNATE_OPHIDIAN_EYES))
+			if (GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_HUNTER) &&
+			    has_innate(ch, INNATE_OPHIDIAN_EYES))
 			{
 				if (chance > number(1, 100))
 				{
-					send_to_char("Your &+Goph&+Lid&+Gian&n eyes sense a presence through the veil.\n", ch);
+					send_to_char(
+						"Your &+Goph&+Lid&+Gian&n eyes sense a presence through the veil.\n",
+						ch);
 				}
 			}
 
@@ -907,9 +946,11 @@ void show_tracks(P_char ch, int room)
 					percent = 0;
 				}
 				// 2/3 chance for ppl with 30 greater skill than necessary & 1/2 for forest druids in forest.
-				if ((number(0, 2) && skill - percent > 30) || (number(0, 1) && forest_check))
+				if ((number(0, 2) && skill - percent > 30) ||
+				    (number(0, 1) && forest_check))
 				{
-					snprintf(Gbuf3, MAX_STRING_LENGTH, "%s\n", obj->description);
+					snprintf(Gbuf3, MAX_STRING_LENGTH, "%s\n",
+						 obj->description);
 					send_to_char(Gbuf3, ch);
 				}
 				else
@@ -962,8 +1003,8 @@ void show_tracking_map(P_char ch)
 	struct affected_type af;
 
 	memset(&af, 0, sizeof(af));
-	af.type     = SKILL_TRACK;
-	af.flags    = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL | AFFTYPE_NOSAVE;
+	af.type = SKILL_TRACK;
+	af.flags = AFFTYPE_SHORT | AFFTYPE_NOSHOW | AFFTYPE_NODISPEL | AFFTYPE_NOSAVE;
 	af.duration = 1;
 	affect_to_char(ch, &af);
 

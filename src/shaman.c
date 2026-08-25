@@ -22,17 +22,17 @@
 #include "spells.h"
 #include "weather.h"
 
-extern P_char                 character_list;
-extern P_desc                 descriptor_list;
-extern P_index                mob_index;
-extern P_index                obj_index;
-extern P_room                 world;
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_room world;
 extern const struct stat_data stat_factor[];
-extern int                    spl_table[TOTALLVLS][MAX_CIRCLE];
-extern struct zone_data      *zone_table;
-extern struct time_info_data  time_info;
+extern int spl_table[TOTALLVLS][MAX_CIRCLE];
+extern struct zone_data *zone_table;
+extern struct time_info_data time_info;
 
-extern Skill       skills[];
+extern Skill skills[];
 extern const char *spells[];
 
 /*
@@ -41,7 +41,7 @@ extern const char *spells[];
 bool checkTotem(P_char ch, P_obj obj, int skill)
 {
 	char strn[MAX_STRING_LENGTH];
-	int  sph, val0;
+	int sph, val0;
 
 	if (!obj || (obj->type != ITEM_TOTEM) || (skill < 0) || !ch)
 		return FALSE;
@@ -85,7 +85,9 @@ bool hasTotem(P_char ch, int skill)
 {
 	if (!ch)
 		return FALSE;
-	if ((ch->equipment[WIELD] && obj_index[ch->equipment[WIELD]->R_num].virtual_number == 139004) || (ch->equipment[HOLD] && obj_index[ch->equipment[HOLD]->R_num].virtual_number == 139004))
+	if ((ch->equipment[WIELD] &&
+	     obj_index[ch->equipment[WIELD]->R_num].virtual_number == 139004) ||
+	    (ch->equipment[HOLD] && obj_index[ch->equipment[HOLD]->R_num].virtual_number == 139004))
 		return TRUE;
 	if (checkTotem(ch, ch->equipment[WIELD], skill) || checkTotem(ch, ch->equipment[HOLD], skill) /*||
                                                                                                    checkTotem(ch, ch->equipment[WEAR_NECK_1], skill) ||

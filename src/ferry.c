@@ -56,10 +56,10 @@ Enjoy!
 #include "spells.h"
 using namespace std;
 
-extern P_room      world;
-extern P_index     obj_index;
+extern P_room world;
+extern P_index obj_index;
 extern const char *dirs[];
-extern const int   rev_dir[];
+extern const int rev_dir[];
 extern const char *dirs2[];
 extern const char *short_dirs[];
 
@@ -67,8 +67,19 @@ char buffer[MAX_STRING_LENGTH];
 
 // Ferry Class
 Ferry::Ferry()
-	: id(0), ticket_price(5000), boarding_room_num(0), cur_state(FRY_STATE_DISABLED), state_timer(0), speed(0), wait_time(0), depart_notice_time(0), obj_num(0), obj(NULL), ticket_obj_num(0),
-	  cur_route_leg(0), cur_route_leg_step(0)
+	: id(0)
+	, ticket_price(5000)
+	, boarding_room_num(0)
+	, cur_state(FRY_STATE_DISABLED)
+	, state_timer(0)
+	, speed(0)
+	, wait_time(0)
+	, depart_notice_time(0)
+	, obj_num(0)
+	, obj(NULL)
+	, ticket_obj_num(0)
+	, cur_route_leg(0)
+	, cur_route_leg_step(0)
 {
 }
 
@@ -78,9 +89,9 @@ void Ferry::init()
 	obj = read_object(obj_num, REAL);
 	obj_to_room(obj, route[0].dest_room);
 	obj_index[obj_num].func.obj = ferry_obj_proc;
-	cur_state                   = FRY_STATE_WAITING;
-	state_timer                 = wait_time;
-	cur_route_leg               = 0;
+	cur_state = FRY_STATE_WAITING;
+	state_timer = wait_time;
+	cur_route_leg = 0;
 
 	// fprintf(stderr, "        Loading %s...\r\n", name.c_str() );
 
@@ -92,14 +103,14 @@ void Ferry::init()
 	// fprintf(stderr, "         Generating route paths...\r\n");
 	for (int i = 0; i < route.size(); i++)
 	{
-
 		if (route[i].stop_here)
 		{
 			P_obj automat = read_object(FERRY_AUTOMAT_OBJ, VIRTUAL);
 
 			if (!automat)
 			{
-				logit(LOG_DEBUG, "Can't find ferry ticket automat object (%d)!", FERRY_AUTOMAT_OBJ);
+				logit(LOG_DEBUG, "Can't find ferry ticket automat object (%d)!",
+				      FERRY_AUTOMAT_OBJ);
 				break;
 			}
 
@@ -110,11 +121,14 @@ void Ferry::init()
 			obj_index[automat->R_num].func.obj = ferry_automat_proc;
 		}
 
-		bool found_path = dijkstra(route[i].dest_room, route[(i + 1) % route.size()].dest_room, valid_ship_edge, route[i].path);
+		bool found_path = dijkstra(route[i].dest_room,
+					   route[(i + 1) % route.size()].dest_room, valid_ship_edge,
+					   route[i].path);
 
 		if (!found_path)
 		{
-			fprintf(stderr, "   %s        %s-> no path found!\r\n", name.c_str(), route[i].name());
+			fprintf(stderr, "   %s        %s-> no path found!\r\n", name.c_str(),
+				route[i].name());
 		}
 	}
 }
@@ -186,72 +200,75 @@ void Ferry::activity()
 {
 	switch (cur_state)
 	{
-		case FRY_STATE_DISABLED:
-			return;
-			break;
+	case FRY_STATE_DISABLED:
+		return;
+		break;
 
-		case FRY_STATE_WAITING:
-			state_timer--;
+	case FRY_STATE_WAITING:
+		state_timer--;
 
-			if (state_timer == depart_notice_time)
+		if (state_timer == depart_notice_time)
+		{
+			snprintf(
+				buffer, MAX_STRING_LENGTH,
+				"A bell rings, announcing final boarding call for %s\r\nA strange voice announces, 'All aboard! Now departing for %s.'&n\r\n",
+				name.c_str(), cur_dest_name());
+			act_to_all_on_board(buffer);
+			send_to_room(buffer, cur_room());
+		}
+		else if (state_timer <= 0)
+		{
+			snprintf(buffer, MAX_STRING_LENGTH, "The %s departs for %s&n.\r\n",
+				 name.c_str(), cur_dest_name());
+			act_to_all_on_board(buffer);
+			send_to_room(buffer, cur_room());
+
+			cur_state = FRY_STATE_UNDERWAY;
+			state_timer = speed;
+		}
+		break;
+
+	case FRY_STATE_UNDERWAY:
+		state_timer--;
+
+		ticket_control();
+
+		if (state_timer <= 0)
+		{
+			move();
+			state_timer = speed;
+		}
+
+		if (cur_room() == cur_dest_room())
+		{
+			int next_route_leg = (cur_route_leg + 1) % route.size();
+
+			if (route[next_route_leg].stop_here)
 			{
-				snprintf(buffer,
-				         MAX_STRING_LENGTH,
-				         "A bell rings, announcing final boarding call for %s\r\nA strange voice announces, 'All aboard! Now departing for %s.'&n\r\n",
-				         name.c_str(),
-				         cur_dest_name());
+				// we've reached one of our stops
+				snprintf(
+					buffer, MAX_STRING_LENGTH,
+					"A shrill horn blows, alerting passengers to disembark.\r\nA strange voice announces, 'Now arrived at %s.'&n\r\n",
+					cur_dest_name());
 				act_to_all_on_board(buffer);
 				send_to_room(buffer, cur_room());
-			}
-			else if (state_timer <= 0)
-			{
-				snprintf(buffer, MAX_STRING_LENGTH, "The %s departs for %s&n.\r\n", name.c_str(), cur_dest_name());
-				act_to_all_on_board(buffer);
-				send_to_room(buffer, cur_room());
 
-				cur_state   = FRY_STATE_UNDERWAY;
-				state_timer = speed;
-			}
-			break;
-
-		case FRY_STATE_UNDERWAY:
-			state_timer--;
-
-			ticket_control();
-
-			if (state_timer <= 0)
-			{
-				move();
-				state_timer = speed;
+				cur_state = FRY_STATE_WAITING;
+				state_timer = wait_time;
+				passenger_list.clear();
 			}
 
-			if (cur_room() == cur_dest_room())
-			{
-				int next_route_leg = (cur_route_leg + 1) % route.size();
+			cur_route_leg = next_route_leg;
+			cur_route_leg_step = 0;
+		}
+		break;
 
-				if (route[next_route_leg].stop_here)
-				{
-					// we've reached one of our stops
-					snprintf(buffer, MAX_STRING_LENGTH, "A shrill horn blows, alerting passengers to disembark.\r\nA strange voice announces, 'Now arrived at %s.'&n\r\n", cur_dest_name());
-					act_to_all_on_board(buffer);
-					send_to_room(buffer, cur_room());
-
-					cur_state   = FRY_STATE_WAITING;
-					state_timer = wait_time;
-					passenger_list.clear();
-				}
-
-				cur_route_leg      = next_route_leg;
-				cur_route_leg_step = 0;
-			}
-			break;
-
-		default:
-			// error, reset to disabled
-			debug("%s got into invalid state.", name.c_str());
-			cur_state   = FRY_STATE_DISABLED;
-			state_timer = 0;
-			panic();
+	default:
+		// error, reset to disabled
+		debug("%s got into invalid state.", name.c_str());
+		cur_state = FRY_STATE_DISABLED;
+		state_timer = 0;
+		panic();
 	}
 }
 
@@ -272,10 +289,13 @@ void Ferry::ticket_control()
 			if (has_valid_ticket(p, id))
 			{
 				// put on passenger list so we won't keep checking their ticket
-				send_to_char("The Automated Ticket System punches your ticket for the journey.&n\r\n", p);
+				send_to_char(
+					"The Automated Ticket System punches your ticket for the journey.&n\r\n",
+					p);
 				add_to_passenger_list(p);
 
-				logit(LOG_STATUS, "%s is a passenger on ferry %s", p->player.name, name.c_str());
+				logit(LOG_STATUS, "%s is a passenger on ferry %s", p->player.name,
+				      name.c_str());
 			}
 			else
 			{
@@ -289,11 +309,13 @@ void Ferry::ticket_control()
 				continue;
 
 			// stowaway!! kick 'em off!
-			send_to_char("The Stowaway Detection System ushers you off the boat.&n\r\n", (*jt));
+			send_to_char("The Stowaway Detection System ushers you off the boat.&n\r\n",
+				     (*jt));
 			char_from_room(*jt);
 			char_to_room(*jt, cur_room(), 0);
 
-			logit(LOG_STATUS, "%s kicked off ferry %s in %d", (*jt)->player.name, name.c_str(), cur_room());
+			logit(LOG_STATUS, "%s kicked off ferry %s in %d", (*jt)->player.name,
+			      name.c_str(), cur_room());
 		}
 	}
 }
@@ -353,7 +375,8 @@ void Ferry::move()
 
 		if (!to_room)
 		{
-			logit(LOG_DEBUG, "ferry %s wants to move but to_room doesn't exist!", name.c_str());
+			logit(LOG_DEBUG, "ferry %s wants to move but to_room doesn't exist!",
+			      name.c_str());
 			panic();
 			return;
 		}
@@ -363,7 +386,8 @@ void Ferry::move()
 		obj_from_room(obj);
 
 		obj_to_room(obj, to_room);
-		snprintf(buffer, MAX_STRING_LENGTH, "$p sails in from %s.", dirs2[rev_dir[next_step]]);
+		snprintf(buffer, MAX_STRING_LENGTH, "$p sails in from %s.",
+			 dirs2[rev_dir[next_step]]);
 		act(buffer, FALSE, 0, obj, 0, TO_ROOM);
 
 		everyone_look_out_ferry();
@@ -384,7 +408,9 @@ void Ferry::panic()
 	int to_room;
 	if (!route.size())
 	{
-		logit(LOG_DEBUG, "something went really wrong with ferry %s - no initial destination room, moved passengers to limbo.", name.c_str());
+		logit(LOG_DEBUG,
+		      "something went really wrong with ferry %s - no initial destination room, moved passengers to limbo.",
+		      name.c_str());
 		to_room = 1;
 	}
 	else
@@ -392,7 +418,8 @@ void Ferry::panic()
 		to_room = route[0].dest_room;
 	}
 
-	logit(LOG_DEBUG, "ferry %s panicked in %d, disabling and dropping passengers in %d.", name.c_str(), cur_room(), to_room);
+	logit(LOG_DEBUG, "ferry %s panicked in %d, disabling and dropping passengers in %d.",
+	      name.c_str(), cur_room(), to_room);
 
 	cur_state = FRY_STATE_DISABLED;
 
@@ -404,7 +431,9 @@ void Ferry::panic()
 			{
 				if (IS_PC(p))
 				{
-					send_to_char("&+MThe ship disappears in a blinding flash of magic. As the smoke clears, you find yourself somewhere ... else.\r\n", p);
+					send_to_char(
+						"&+MThe ship disappears in a blinding flash of magic. As the smoke clears, you find yourself somewhere ... else.\r\n",
+						p);
 					char_from_room(p);
 					char_to_room(p, to_room, 0);
 				}
@@ -429,7 +458,6 @@ string Ferry::get_route_list(int route_stop)
 
 int Ferry::eta(int route_stop)
 {
-
 	if (cur_state == FRY_STATE_DISABLED)
 		return -2;
 
@@ -439,7 +467,7 @@ int Ferry::eta(int route_stop)
 	int secs = 0;
 
 	int steptime = speed + 1;
-	int leg      = cur_route_leg;
+	int leg = cur_route_leg;
 
 	if (cur_state == FRY_STATE_WAITING)
 	{

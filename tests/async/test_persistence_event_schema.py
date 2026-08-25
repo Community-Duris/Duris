@@ -4,7 +4,7 @@ ROOT = Path(__file__).resolve().parents[2]
 schema_paths = (
     ROOT / "migrations/bootstrap_multithread_safe.sql",
     ROOT / "migrations/persistence_contract.sql",
-    ROOT / "src/duris.sql",
+    ROOT / "migrations/bootstrap_legacy_baseline.sql",
 )
 required = {
     "persistence_item_events": ("item_uid", "target", "ts_usec", "dedupe_key", "uq_item_dedupe"),

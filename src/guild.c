@@ -25,28 +25,28 @@
  * external variables
  */
 
-extern P_char                 character_list;
-extern P_room                 world;
-extern char                  *coin_names[];
+extern P_char character_list;
+extern P_room world;
+extern char *coin_names[];
 extern const struct stat_data stat_factor[];
-extern int                    top_of_zone_table;
-extern struct int_app_type    int_app[];
-extern struct time_info_data  time_info;
-extern struct zone_data      *zone;
-extern struct zone_data      *zone_table;
-extern int                    SortedSkills[];
-extern const char            *spell_types[];
-extern const char            *position_types[];
-extern const char            *target_types[];
-extern const char            *class_names[];
-extern const char            *specdata[][MAX_SPEC];
-extern bool                   racial_innates[][LAST_RACE + 1];
-extern Skill                  skills[];
-extern char                  *spells[];
-extern epic_teacher_skill     epic_teachers[];
+extern int top_of_zone_table;
+extern struct int_app_type int_app[];
+extern struct time_info_data time_info;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
+extern int SortedSkills[];
+extern const char *spell_types[];
+extern const char *position_types[];
+extern const char *target_types[];
+extern const char *class_names[];
+extern const char *specdata[][MAX_SPEC];
+extern bool racial_innates[][LAST_RACE + 1];
+extern Skill skills[];
+extern char *spells[];
+extern epic_teacher_skill epic_teachers[];
 
-int         GET_LVL_FOR_SKILL(P_char ch, int skill);
-P_obj       find_gh_library_book_obj(P_char ch);
+int GET_LVL_FOR_SKILL(P_char ch, int skill);
+P_obj find_gh_library_book_obj(P_char ch);
 
 #define MAX_GUILDS 15 /* max size of high/low lists */
 
@@ -56,8 +56,8 @@ void update_skills(P_char ch)
 {
 	int skl, spec, cls, skllvl, maxlearn, minlearn;
 
-	spec     = ch->player.spec;
-	cls      = flag2idx(ch->player.m_class) - 1;
+	spec = ch->player.spec;
+	cls = flag2idx(ch->player.m_class) - 1;
 	minlearn = MIN(40, ((3 * GET_LEVEL(ch)) / 2));
 
 	if (!ch || !IS_PC(ch))
@@ -69,7 +69,7 @@ void update_skills(P_char ch)
 		if (IS_EPIC_SKILL(skl))
 		{
 #if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-			ch->only.pc->skills[skl].taught  = 100;
+			ch->only.pc->skills[skl].taught = 100;
 			ch->only.pc->skills[skl].learned = 100;
 #endif
 		}
@@ -93,14 +93,14 @@ void update_skills(P_char ch)
 
 #if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
 			ch->only.pc->skills[skl].learned = 100;
-			ch->only.pc->skills[skl].taught  = 100;
+			ch->only.pc->skills[skl].taught = 100;
 #else
 			if (ch->only.pc->skills[skl].taught < minlearn)
 				ch->only.pc->skills[skl].taught = minlearn;
 			if (ch->only.pc->skills[skl].learned < minlearn)
 				ch->only.pc->skills[skl].learned = minlearn;
 
-			// debug("new learned: %d", ch->only.pc->skills[s].learned);
+				// debug("new learned: %d", ch->only.pc->skills[s].learned);
 #endif
 		}
 		// If they never get the skill, or aren't high enough level for it.
@@ -108,7 +108,8 @@ void update_skills(P_char ch)
 		{
 			ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned = 0;
 		}
-		if (!IS_EPIC_SKILL(skl) && (ch->only.pc->skills[skl].taught < ch->only.pc->skills[skl].learned))
+		if (!IS_EPIC_SKILL(skl) &&
+		    (ch->only.pc->skills[skl].taught < ch->only.pc->skills[skl].learned))
 		{
 #if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
 			ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned = 100;
@@ -126,26 +127,34 @@ void update_skills(P_char ch)
 #if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
 			ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned = 100;
 #else
-			ch->only.pc->skills[skl].taught  = MAX(ch->only.pc->skills[skl].taught, MAX(SKILL_DATA_ALL(ch, skl).maxlearn[0], SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec]));
-			ch->only.pc->skills[skl].learned = MAX(MIN(40, GET_LEVEL(ch) * 3 / 2), ch->only.pc->skills[skl].learned);
+			ch->only.pc->skills[skl].taught =
+				MAX(ch->only.pc->skills[skl].taught,
+				    MAX(SKILL_DATA_ALL(ch, skl).maxlearn[0],
+					SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec]));
+			ch->only.pc->skills[skl].learned = MAX(MIN(40, GET_LEVEL(ch) * 3 / 2),
+							       ch->only.pc->skills[skl].learned);
 #endif
 		}
 		else
 		{
 			ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned = 0;
 		}
-		if (SKILL_DATA_ALL(ch, skl).maxlearn[0] < ch->only.pc->skills[skl].taught && SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec] < ch->only.pc->skills[skl].taught)
+		if (SKILL_DATA_ALL(ch, skl).maxlearn[0] < ch->only.pc->skills[skl].taught &&
+		    SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec] <
+			    ch->only.pc->skills[skl].taught)
 #if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
 			ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned = 100;
 #else
-			ch->only.pc->skills[skl].taught = MAX(0, MAX(SKILL_DATA_ALL(ch, skl).maxlearn[0], SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec]));
+			ch->only.pc->skills[skl].taught =
+				MAX(0, MAX(SKILL_DATA_ALL(ch, skl).maxlearn[0],
+					   SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec]));
 #endif
 	}
 }
 
 bool notch_skill(P_char ch, int skill, float chance)
 {
-	int  intel, t, lvl, l, slvl, i;
+	int intel, t, lvl, l, slvl, i;
 	char buf[MAX_STRING_LENGTH];
 
 	if (!IS_ALIVE(ch))
@@ -182,7 +191,7 @@ bool notch_skill(P_char ch, int skill, float chance)
 	// The following addition is for wipe 2011, where intelligence will help determine
 	//   chance to notch a skill, thus making it a partially important stat for rockhead melee
 	//   characters - Jexni 6/5/11
-	intel  = BOUNDED(0, 100 - GET_C_INT(ch), 50);
+	intel = BOUNDED(0, 100 - GET_C_INT(ch), 50);
 	chance = chance + (intel / 2);
 
 	/* skills can be no higher than level * 2.5 + 5 */
@@ -240,19 +249,22 @@ bool notch_skill(P_char ch, int skill, float chance)
 	// These will fail if ch is already affected by TAG_..._SKILL_NOTCH.
 	if (IS_SET(skills[skill].targets, TAR_PHYS))
 	{
-		if (!affect_timer(ch, get_property("timer.mins.physicalNotch", 5) * WAIT_MIN, TAG_PHYS_SKILL_NOTCH))
+		if (!affect_timer(ch, get_property("timer.mins.physicalNotch", 5) * WAIT_MIN,
+				  TAG_PHYS_SKILL_NOTCH))
 		{
 			//      debug( "notch_skill: failed affect_timer on '%s' TAG_PHYS_SKILL_NOTCH", J_NAME(ch) );
 		}
 	}
-	else if (!affect_timer(ch, get_property("timer.mins.mentalNotch", 10) * WAIT_MIN, TAG_MENTAL_SKILL_NOTCH))
+	else if (!affect_timer(ch, get_property("timer.mins.mentalNotch", 10) * WAIT_MIN,
+			       TAG_MENTAL_SKILL_NOTCH))
 	{
 		//    debug( "notch_skill: failed affect_timer on '%s' TAG_MENTAL_SKILL_NOTCH", J_NAME(ch) );
 	}
 #endif
 
 again:
-	snprintf(buf, MAX_STRING_LENGTH, "&+cYou feel your skill in %s improving.\n", skills[skill].name);
+	snprintf(buf, MAX_STRING_LENGTH, "&+cYou feel your skill in %s improving.\n",
+		 skills[skill].name);
 	send_to_char(buf, ch);
 	// If skill is maxxed, check it vs. the epic skill list to see if an epic skill has opened up.
 	l = ++(ch->only.pc->skills[skill].learned);
@@ -262,12 +274,14 @@ again:
 		// If they've just opened up the new skill.
 		if (epic_teachers[i].pre_requisite == skill && epic_teachers[i].pre_req_lvl == l)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "&+WYou can now learn the epic skill '%s'.&n\n\r", skills[epic_teachers[i].skill].name);
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "&+WYou can now learn the epic skill '%s'.&n\n\r",
+				 skills[epic_teachers[i].skill].name);
 			send_to_char(buf, ch);
 		}
 	}
 
-	if (l < t && number(0,1) && affected_by_spell(ch, SPELL_LEARNING))
+	if (l < t && number(0, 1) && affected_by_spell(ch, SPELL_LEARNING))
 		goto again; // 2 notches on average
 
 	return TRUE;
@@ -279,9 +293,9 @@ void spell_learning(int level, P_char ch, char *arg, int type, P_char victim, P_
 
 	struct affected_type af;
 	bzero(&af, sizeof(af));
-	af.type       = SPELL_LEARNING;
-	af.flags      = AFFTYPE_NOAPPLY;
-	af.duration   = 2 * level;
+	af.type = SPELL_LEARNING;
+	af.flags = AFFTYPE_NOAPPLY;
+	af.duration = 2 * level;
 	affect_to_char(ch, &af);
 
 	act("&+cYou feel more capable of improving your skills.", FALSE, ch, 0, 0, TO_CHAR);
@@ -292,7 +306,7 @@ int SpellCopyCost(P_char ch, int spell)
 	int circle, cost;
 	// new simple cost formula, none of that other BS - Jexni 1/2/12
 	circle = get_spell_circle(ch, spell);
-	cost   = circle * get_property("spell.cost.plat.per.circle", 1000.000);
+	cost = circle * get_property("spell.cost.plat.per.circle", 1000.000);
 	// All spells are currently free to scribe. - Lohrr
 	return 0;
 }
@@ -305,8 +319,8 @@ int SkillRaiseCost(P_char ch, int skill)
 		return SpellCopyCost(ch, skill);
 
 	s_lvl = MAX(1, ch->only.pc->skills[skill].learned / 10);
-	cost  = (s_lvl * s_lvl - (2 * s_lvl)) + 2;
-	cost  = cost * get_property("skill.cost.practice", 1.0);
+	cost = (s_lvl * s_lvl - (2 * s_lvl)) + 2;
+	cost = cost * get_property("skill.cost.practice", 1.0);
 
 	/* ok, the result: cost in gp/etc stuff raising of the skill costs. */
 	if (cost < 10)
@@ -357,7 +371,10 @@ char *how_good(int percent, int level)
 	return (GS_buf1);
 }
 
-int FindHomeTown(P_char ch) { return (zone_table[world[(ch)->in_room].zone].hometown); }
+int FindHomeTown(P_char ch)
+{
+	return (zone_table[world[(ch)->in_room].zone].hometown);
+}
 
 P_char FindTeacher(P_char ch)
 {
@@ -399,7 +416,7 @@ bool is_spec_spell(P_char teacher, int skl)
 int IsTaughtHere(P_char ch, int skl)
 {
 	P_char teacher;
-	char   Gbuf1[MAX_STRING_LENGTH];
+	char Gbuf1[MAX_STRING_LENGTH];
 
 	teacher = FindTeacher(ch);
 
@@ -422,9 +439,13 @@ int IsTaughtHere(P_char ch, int skl)
 		else
 		{
 			if (IS_CASTER(teacher) || IS_SEMI_CASTER(teacher))
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "I'm not familiar with that spell. Perhaps another more experienced could aid you.");
+				snprintf(
+					Gbuf1, MAX_STRING_LENGTH,
+					"I'm not familiar with that spell. Perhaps another more experienced could aid you.");
 			else
-				snprintf(Gbuf1, MAX_STRING_LENGTH, "Magic?!? If you had wished to learn the arts, you should have signed up with another guild!");
+				snprintf(
+					Gbuf1, MAX_STRING_LENGTH,
+					"Magic?!? If you had wished to learn the arts, you should have signed up with another guild!");
 			mobsay(teacher, Gbuf1);
 			return FALSE;
 		}
@@ -468,17 +489,17 @@ int RobCash(P_char ch, int cost)
 		GET_GOLD(ch) += GET_BALANCE_GOLD(ch);
 		GET_PLATINUM(ch) += GET_BALANCE_PLATINUM(ch);
 		SUB_MONEY(ch, cost, 0);
-		snprintf(buf,
-		         MAX_STRING_LENGTH,
-		         "Withdrawing &+W%d p&n, &+Y%d g&n, %d s and &+y%d c&N from the bank for training.\n",
-		         GET_BALANCE_PLATINUM(ch) - GET_PLATINUM(ch),
-		         GET_BALANCE_GOLD(ch) - GET_GOLD(ch),
-		         GET_BALANCE_SILVER(ch) - GET_SILVER(ch),
-		         GET_BALANCE_COPPER(ch) - GET_COPPER(ch));
+		snprintf(
+			buf, MAX_STRING_LENGTH,
+			"Withdrawing &+W%d p&n, &+Y%d g&n, %d s and &+y%d c&N from the bank for training.\n",
+			GET_BALANCE_PLATINUM(ch) - GET_PLATINUM(ch),
+			GET_BALANCE_GOLD(ch) - GET_GOLD(ch),
+			GET_BALANCE_SILVER(ch) - GET_SILVER(ch),
+			GET_BALANCE_COPPER(ch) - GET_COPPER(ch));
 		send_to_char(buf, ch);
-		GET_BALANCE_COPPER(ch)   = GET_COPPER(ch);
-		GET_BALANCE_SILVER(ch)   = GET_SILVER(ch);
-		GET_BALANCE_GOLD(ch)     = GET_GOLD(ch);
+		GET_BALANCE_COPPER(ch) = GET_COPPER(ch);
+		GET_BALANCE_SILVER(ch) = GET_SILVER(ch);
+		GET_BALANCE_GOLD(ch) = GET_GOLD(ch);
 		GET_BALANCE_PLATINUM(ch) = GET_PLATINUM(ch);
 		GET_COPPER(ch) = GET_SILVER(ch) = GET_GOLD(ch) = GET_PLATINUM(ch) = 0;
 	}
@@ -511,10 +532,11 @@ int spell_cmp(const void *va, const void *vb)
 
 void do_spells(P_char ch, char *argument, int cmd)
 {
-	int                   spl, circle, i, count = 0, m_class = 0, class2 = 0, god_mode = 0, memmed = 0, to_mem = 0, lvl, qend;
-	char                  buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-	P_char                target = NULL;
-	struct spl_list       spell_list[LAST_SPELL + 1];
+	int spl, circle, i, count = 0, m_class = 0, class2 = 0, god_mode = 0, memmed = 0,
+			    to_mem = 0, lvl, qend;
+	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	P_char target = NULL;
+	struct spl_list spell_list[LAST_SPELL + 1];
 	struct memorize_data *ptr;
 
 	if (IS_NPC(ch))
@@ -522,7 +544,7 @@ void do_spells(P_char ch, char *argument, int cmd)
 		send_to_char("You ain't nothin' but a hound-dog.\n", ch);
 		return;
 	}
-	*buf  = '\0';
+	*buf = '\0';
 	*buf1 = '\0';
 	*buf2 = '\0';
 
@@ -537,38 +559,55 @@ void do_spells(P_char ch, char *argument, int cmd)
 
 			*buf2 = '\0';
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_ANTIPALADIN) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+LAP(&n&+C%d&+L)&n,", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+LAP(&n&+C%d&+L)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_CLERIC) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf), MAX_STRING_LENGTH, "&+cCL(&n&+C%d&n&+y)&n,", lvl);
+				snprintf(buf2 + strlen(buf), MAX_STRING_LENGTH,
+					 "&+cCL(&n&+C%d&n&+y)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_CONJURER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+YCO(&n&+C%d&+Y)&n,", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+YCO(&n&+C%d&+Y)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_DRUID) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+gDR(&n&+C%d&n&+g)&n,", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+gDR(&n&+C%d&n&+g)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_NECROMANCER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+mNE(&n&+C%d&n&+m)&n,", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+mNE(&n&+C%d&n&+m)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_PALADIN) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+WPA(&n&+C%d&+W)&n,", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+WPA(&n&+C%d&+W)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_RANGER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+GRA(&n&+C%d&+G)&n,", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+GRA(&n&+C%d&+G)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_SHAMAN) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+CSH(&n&+C%d&+C)&n,", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+CSH(&n&+C%d&+C)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_SORCERER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+MSO(&n&+C%d&+M)&n,", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+MSO(&n&+C%d&+M)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_PSIONICIST) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+bPS(&n&+C%d&n&+b)&n", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+bPS(&n&+C%d&n&+b)&n", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_MINDFLAYER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+bMF(&n&+C%d&n&+b)&n", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+bMF(&n&+C%d&n&+b)&n", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_ILLUSIONIST) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+MIL(&n&+C%d&+M)&n,", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+MIL(&n&+C%d&+M)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_REAVER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+bRV(&n&+C%d&n&+b)&n", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+bRV(&n&+C%d&n&+b)&n", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_THEURGIST) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+cTH(&n&+C%d&n&+b)&n", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+cTH(&n&+C%d&n&+b)&n", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_SUMMONER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2), "&+RSU(&n&+C%d&+R)&n,", lvl);
+				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
+					 "&+RSU(&n&+C%d&+R)&n,", lvl);
 
 			char buf3[MAX_STRING_LENGTH];
-			snprintf(buf3, MAX_STRING_LENGTH, "[%3d] %-28s  %s   %s\n", spell, skills[spell].name, ((int)IS_AGG_SPELL(spell) ? "&+RAGGR&n" : "    "), buf2);
+			snprintf(buf3, MAX_STRING_LENGTH, "[%3d] %-28s  %s   %s\n", spell,
+				 skills[spell].name,
+				 ((int)IS_AGG_SPELL(spell) ? "&+RAGGR&n" : "    "), buf2);
 			count++;
 
 			if (strlen(buf1) + strlen(buf3) > MAX_STRING_LENGTH)
@@ -658,7 +697,7 @@ void do_spells(P_char ch, char *argument, int cmd)
 		if (!m_class && target)
 		{
 			m_class = target->player.m_class;
-			class2  = target->player.secondary_class;
+			class2 = target->player.secondary_class;
 		}
 		i = 0;
 		for (spl = FIRST_SPELL; spl <= LAST_SPELL; spl++)
@@ -667,7 +706,7 @@ void do_spells(P_char ch, char *argument, int cmd)
 
 			if (circle < MAX_CIRCLE + 1)
 			{
-				spell_list[i].circle  = circle;
+				spell_list[i].circle = circle;
 				spell_list[i++].spell = spl;
 			}
 		}
@@ -679,25 +718,36 @@ void do_spells(P_char ch, char *argument, int cmd)
 		for (spl = 0; spl < i; spl++)
 		{
 			int spell = spell_list[spl].spell;
-			circle    = spell_list[spl].circle;
+			circle = spell_list[spl].circle;
 
 			if (!spl || (circle != spell_list[spl - 1].circle))
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "\n&+B%d%s CIRCLE:&N\n", circle, circle == 1 ? "st" : circle == 2 ? "nd" : circle == 3 ? "rd" : "th");
+				snprintf(buf, MAX_STRING_LENGTH, "\n&+B%d%s CIRCLE:&N\n", circle,
+					 circle == 1 ? "st" :
+					 circle == 2 ? "nd" :
+					 circle == 3 ? "rd" :
+						       "th");
 				strcat(buf1, buf);
 			}
 			strcpy(buf2, " ");
 
-			if (!SKILL_DATA_ALL(target, spell).maxlearn[0] && !SKILL_DATA_ALL(target, spell).maxlearn[target->player.spec])
+			if (!SKILL_DATA_ALL(target, spell).maxlearn[0] &&
+			    !SKILL_DATA_ALL(target, spell).maxlearn[target->player.spec])
 				continue;
-			snprintf(buf, MAX_STRING_LENGTH, "%s%-25s %s", (target && (circle > get_max_circle(target))) ? "&+L" : "", skills[spell].name, buf2);
+			snprintf(buf, MAX_STRING_LENGTH, "%s%-25s %s",
+				 (target && (circle > get_max_circle(target))) ? "&+L" : "",
+				 skills[spell].name, buf2);
 			if (target)
 			{
 				if (meming_class(target))
-					strcat(buf,
-					       (SpellInSpellBook(target, spell, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT))
-					           ? circle > get_max_circle(target) ? " [in spellbook, but too high level]" : " [in spellbook]"
-					           : "");
+					strcat(buf, (SpellInSpellBook(target, spell,
+								      SBOOK_MODE_IN_INV |
+									      SBOOK_MODE_AT_HAND |
+									      SBOOK_MODE_ON_BELT)) ?
+							    circle > get_max_circle(target) ?
+							    " [in spellbook, but too high level]" :
+							    " [in spellbook]" :
+							    "");
 			}
 			strcat(buf, "\n");
 			strcat(buf1, buf);
@@ -711,8 +761,8 @@ void do_spells(P_char ch, char *argument, int cmd)
 
 void do_skills(P_char ch, char *argument, int cmd)
 {
-	int    skl, passes, skil;
-	char   buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[256];
+	int skl, passes, skil;
+	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[256];
 	P_char target;
 
 	if (IS_NPC(ch))
@@ -721,12 +771,14 @@ void do_skills(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	*buf  = '\0';
+	*buf = '\0';
 	*buf1 = '\0';
 
 	if (!*argument && IS_TRUSTED(ch))
 	{
-		send_to_char("      Name                        Ap As Ps Ba Cl Co Dr Me Mo Ne Pa Ra Sh So Th Wa Al Re Be Wl Il Su\n", ch);
+		send_to_char(
+			"      Name                        Ap As Ps Ba Cl Co Dr Me Mo Ne Pa Ra Sh So Th Wa Al Re Be Wl Il Su\n",
+			ch);
 		for (skil = 0; skil <= MAX_AFFECT_TYPES; skil++)
 		{
 			skl = SortedSkills[skil];
@@ -734,32 +786,32 @@ void do_skills(P_char ch, char *argument, int cmd)
 			if (!IS_SKILL(skl) && !IS_INSTRUMENT_SKILL(skl) && !IS_BARD_SONG(skl))
 				continue;
 
-			snprintf(buf1,
-			         MAX_STRING_LENGTH,
-			         "%-30s    %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d\n",
-			         skills[skl].name,
-			         skills[skl].m_class[flag2idx(CLASS_ANTIPALADIN) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_ASSASSIN) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_PSIONICIST) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_BARD) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_CLERIC) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_CONJURER) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_DRUID) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_MERCENARY) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_MONK) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_NECROMANCER) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_PALADIN) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_RANGER) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_SHAMAN) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_SORCERER) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_ROGUE) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_WARRIOR) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_ALCHEMIST) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_REAVER) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_BERSERKER) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_WARLOCK) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_ILLUSIONIST) - 1].rlevel[0],
-			         skills[skl].m_class[flag2idx(CLASS_SUMMONER) - 1].rlevel[0]);
+			snprintf(
+				buf1, MAX_STRING_LENGTH,
+				"%-30s    %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d %2d\n",
+				skills[skl].name,
+				skills[skl].m_class[flag2idx(CLASS_ANTIPALADIN) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_ASSASSIN) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_PSIONICIST) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_BARD) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_CLERIC) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_CONJURER) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_DRUID) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_MERCENARY) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_MONK) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_NECROMANCER) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_PALADIN) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_RANGER) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_SHAMAN) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_SORCERER) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_ROGUE) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_WARRIOR) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_ALCHEMIST) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_REAVER) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_BERSERKER) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_WARLOCK) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_ILLUSIONIST) - 1].rlevel[0],
+				skills[skl].m_class[flag2idx(CLASS_SUMMONER) - 1].rlevel[0]);
 
 			send_to_char(buf1, ch);
 		}
@@ -780,7 +832,9 @@ void do_skills(P_char ch, char *argument, int cmd)
 				}
 				else
 				{
-					send_to_char("No longer using racial skils, so nothing to reset.\n", ch);
+					send_to_char(
+						"No longer using racial skils, so nothing to reset.\n",
+						ch);
 					return;
 				}
 			}
@@ -801,40 +855,50 @@ void do_skills(P_char ch, char *argument, int cmd)
 		for (skil = 0; skil <= MAX_AFFECT_TYPES; skil++)
 		{
 			buf[0] = '\0';
-			skl    = SortedSkills[skil];
-			if (((IS_EPIC_SKILL(skl) && target->only.pc->skills[skl].learned) || GET_LVL_FOR_SKILL(target, skl) > 0 && GET_LVL_FOR_SKILL(target, skl) <= MAXLVLMORTAL) &&
+			skl = SortedSkills[skil];
+			if (((IS_EPIC_SKILL(skl) && target->only.pc->skills[skl].learned) ||
+			     GET_LVL_FOR_SKILL(target, skl) > 0 &&
+				     GET_LVL_FOR_SKILL(target, skl) <= MAXLVLMORTAL) &&
 			    (IS_SKILL(skl) || IS_INSTRUMENT_SKILL(skl) || IS_BARD_SONG(skl)))
 			{
 				if (IS_PC(target))
 				{
 					const char *color = "";
 					if (IS_EPIC_SKILL(skl))
-						color = GET_CHAR_SKILL(target, skl)<100 ? "&+y" : "&+Y";
-					else if (GET_CHAR_SKILL(target, skl) >= target->only.pc->skills[skl].taught)
+						color = GET_CHAR_SKILL(target, skl) < 100 ? "&+y" :
+											    "&+Y";
+					else if (GET_CHAR_SKILL(target, skl) >=
+						 target->only.pc->skills[skl].taught)
 						color = "&+W";
 					int lvl = GET_LVL_FOR_SKILL(target, skl);
 					if (lvl > GET_LEVEL(target))
 						if (IS_TRUSTED(ch))
 							snprintf(
-								buf, MAX_STRING_LENGTH, "%-25s (obtained at level %d) [%d/%d]\n", skills[skl].name, lvl, target->only.pc->skills[skl].taught, target->only.pc->skills[skl].learned);
+								buf, MAX_STRING_LENGTH,
+								"%-25s (obtained at level %d) [%d/%d]\n",
+								skills[skl].name, lvl,
+								target->only.pc->skills[skl].taught,
+								target->only.pc->skills[skl]
+									.learned);
 						else
-							snprintf(buf, MAX_STRING_LENGTH, "%-25s (obtained at level %d)\n", skills[skl].name, lvl);
+							snprintf(buf, MAX_STRING_LENGTH,
+								 "%-25s (obtained at level %d)\n",
+								 skills[skl].name, lvl);
 
 					else if (IS_TRUSTED(ch))
-						snprintf(buf,
-						         MAX_STRING_LENGTH,
-						         "%-25s %s%6d&n [%d]\n",
-						         skills[skl].name,
-						         color,
-						         GET_CHAR_SKILL(target, skl),
-						         target->only.pc->skills[skl].taught);
+						snprintf(buf, MAX_STRING_LENGTH,
+							 "%-25s %s%6d&n [%d]\n", skills[skl].name,
+							 color, GET_CHAR_SKILL(target, skl),
+							 target->only.pc->skills[skl].taught);
 					else
-						snprintf(
-							buf, MAX_STRING_LENGTH, "%-25s %s%6d&n\n", skills[skl].name, color, GET_CHAR_SKILL(target, skl));
+						snprintf(buf, MAX_STRING_LENGTH, "%-25s %s%6d&n\n",
+							 skills[skl].name, color,
+							 GET_CHAR_SKILL(target, skl));
 				}
 				else
 				{
-					snprintf(buf, MAX_STRING_LENGTH, "%-25s %6d  \n", skills[skl].name, GET_CHAR_SKILL_P(target, skl));
+					snprintf(buf, MAX_STRING_LENGTH, "%-25s %6d  \n",
+						 skills[skl].name, GET_CHAR_SKILL_P(target, skl));
 				}
 			}
 			strcat(buf1, buf);
@@ -845,8 +909,8 @@ void do_skills(P_char ch, char *argument, int cmd)
 
 void prac_all_spells(P_char ch)
 {
-	int             spl;
-	int             nSpellCnt = 0;
+	int spl;
+	int nSpellCnt = 0;
 	struct spl_list spell_list[LAST_SPELL + 1];
 
 	if (!meming_class(ch))
@@ -860,7 +924,8 @@ void prac_all_spells(P_char ch)
 	for (spl = FIRST_SPELL; spl <= LAST_SPELL; spl++)
 	{
 		// if they can't have the spell, then don't look at it!
-		if (!SKILL_DATA_ALL(ch, spl).maxlearn[0] && !SKILL_DATA_ALL(ch, spl).maxlearn[ch->player.spec])
+		if (!SKILL_DATA_ALL(ch, spl).maxlearn[0] &&
+		    !SKILL_DATA_ALL(ch, spl).maxlearn[ch->player.spec])
 			continue;
 
 		int circle = get_spell_circle(ch, spl);
@@ -869,7 +934,7 @@ void prac_all_spells(P_char ch)
 
 		if (circle < MAX_CIRCLE + 1)
 		{
-			spell_list[nSpellCnt].circle  = circle;
+			spell_list[nSpellCnt].circle = circle;
 			spell_list[nSpellCnt++].spell = spl;
 		}
 	}
@@ -878,11 +943,13 @@ void prac_all_spells(P_char ch)
 	// Now find the first one in that SORTED list that they don't already have in a spellbook
 	for (spl = 0; spl < nSpellCnt; spl++)
 	{
-		if (!SpellInSpellBook(ch, spell_list[spl].spell, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT))
+		if (!SpellInSpellBook(ch, spell_list[spl].spell,
+				      SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_ON_BELT))
 		{
 			// yes!  found a spell to scribe!
 			char buf[MAX_STRING_LENGTH];
-			snprintf(buf, MAX_STRING_LENGTH, "Attempting to scribe '%s'...\r\n", skills[spell_list[spl].spell].name);
+			snprintf(buf, MAX_STRING_LENGTH, "Attempting to scribe '%s'...\r\n",
+				 skills[spell_list[spl].spell].name);
 			send_to_char(buf, ch);
 			if (!IsTaughtHere(ch, spell_list[spl].spell))
 			{
@@ -894,7 +961,8 @@ void prac_all_spells(P_char ch)
 				return;
 			}
 
-			add_scribe_data(spell_list[spl].spell, ch, SpellBookAtHand(ch), 0, NULL, NULL, prac_all_spells);
+			add_scribe_data(spell_list[spl].spell, ch, SpellBookAtHand(ch), 0, NULL,
+					NULL, prac_all_spells);
 			//      CharWait(ch, (int) ((3.0 - ((double) GET_CHAR_SKILL(ch, SKILL_SCRIBE)) / 45) * PULSE_VIOLENCE));
 			return;
 		}
@@ -908,8 +976,8 @@ void prac_all_spells(P_char ch)
 
 void do_practice(P_char ch, char *arg, int cmd)
 {
-	char   buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], obuf[MAX_STRING_LENGTH];
-	int    skl, spl, circle, i, meming_cl, cost, ret;
+	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], obuf[MAX_STRING_LENGTH];
+	int skl, spl, circle, i, meming_cl, cost, ret;
 	P_char teacher;
 
 	if (!IS_ALIVE(ch) || !IS_PC(ch))
@@ -917,16 +985,16 @@ void do_practice(P_char ch, char *arg, int cmd)
 
 	teacher = FindTeacher(ch);
 
-	*buf      = '\0';
-	*buf1     = '\0';
-	*obuf     = '\0';
+	*buf = '\0';
+	*buf1 = '\0';
+	*obuf = '\0';
 	meming_cl = meming_class(ch);
 
 	// List skills available to be taught
 	if (!*arg && teacher)
 	{
-
-		snprintf(obuf, MAX_STRING_LENGTH, "&+BSkill                    Cost of Teachings\n&n");
+		snprintf(obuf, MAX_STRING_LENGTH,
+			 "&+BSkill                    Cost of Teachings\n&n");
 		for (skl = FIRST_SKILL; skl <= LAST_SKILL; skl++)
 		{
 			/* skills first */
@@ -934,13 +1002,17 @@ void do_practice(P_char ch, char *arg, int cmd)
                              ((GET_LEVEL(FindTeacher(ch)) >= 51) &&
                               (GET_LEVEL(ch) >= 51)) */ ))
 			{
-				if (GET_LVL_FOR_SKILL(ch, skl) <= GET_LEVEL(ch) && GET_LVL_FOR_SKILL(teacher, skl) <= GET_LEVEL(teacher))
+				if (GET_LVL_FOR_SKILL(ch, skl) <= GET_LEVEL(ch) &&
+				    GET_LVL_FOR_SKILL(teacher, skl) <= GET_LEVEL(teacher))
 				{
-					snprintf(buf, MAX_STRING_LENGTH, "%-25s %s\n", skills[skl].name, coin_stringv(SkillRaiseCost(ch, skl)));
+					snprintf(buf, MAX_STRING_LENGTH, "%-25s %s\n",
+						 skills[skl].name,
+						 coin_stringv(SkillRaiseCost(ch, skl)));
 				}
 				else
 				{
-					snprintf(buf, MAX_STRING_LENGTH, "%-25s (cannot practice)\n", skills[skl].name);
+					snprintf(buf, MAX_STRING_LENGTH,
+						 "%-25s (cannot practice)\n", skills[skl].name);
 				}
 				strcat(buf1, buf);
 			}
@@ -953,12 +1025,17 @@ void do_practice(P_char ch, char *arg, int cmd)
 			strcat(obuf, "\n&+BSpell                    Cost to Scribe\n&n");
 			for (spl = FIRST_SPELL; spl <= LAST_SPELL; spl++)
 			{
-				if (IS_SPELL(spl) && GET_LVL_FOR_SKILL(ch, spl) <= GET_LEVEL(ch) && GET_LVL_FOR_SKILL(teacher, spl) <= GET_LEVEL(teacher))
+				if (IS_SPELL(spl) && GET_LVL_FOR_SKILL(ch, spl) <= GET_LEVEL(ch) &&
+				    GET_LVL_FOR_SKILL(teacher, spl) <= GET_LEVEL(teacher))
 				{
 					circle = get_spell_circle(ch, spl);
-					if (circle <= get_max_circle(ch) && circle < MAX_CIRCLE + 1 && circle > 0 && knows_spell(teacher, spl))
+					if (circle <= get_max_circle(ch) &&
+					    circle < MAX_CIRCLE + 1 && circle > 0 &&
+					    knows_spell(teacher, spl))
 					{
-						snprintf(buf, MAX_STRING_LENGTH, "%-25s %s\n", skills[spl].name, coin_stringv(SpellCopyCost(ch, spl)));
+						snprintf(buf, MAX_STRING_LENGTH, "%-25s %s\n",
+							 skills[spl].name,
+							 coin_stringv(SpellCopyCost(ch, spl)));
 						strcat(buf1, buf);
 					}
 				}
@@ -975,7 +1052,7 @@ void do_practice(P_char ch, char *arg, int cmd)
 	else
 	{ /* request teachings of a certain skill */
 		*buf1 = '\0';
-		*buf  = '\0';
+		*buf = '\0';
 
 		arg = skip_spaces(arg);
 		if (!str_cmp(arg, "all"))
@@ -1004,7 +1081,9 @@ void do_practice(P_char ch, char *arg, int cmd)
 		}
 		if (IS_SPELL(skl) && get_max_circle(ch) < get_spell_circle(ch, skl))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Well, sure, I know that one, but my conscience prevents me from teaching it to someone so unskilled as yourself.");
+			snprintf(
+				buf, MAX_STRING_LENGTH,
+				"Well, sure, I know that one, but my conscience prevents me from teaching it to someone so unskilled as yourself.");
 			if (teacher)
 			{
 				mobsay(teacher, buf);
@@ -1016,11 +1095,13 @@ void do_practice(P_char ch, char *arg, int cmd)
 			return;
 		}
 
-		if (!SKILL_DATA_ALL(ch, skl).rlevel[ch->player.spec] || SKILL_DATA_ALL(ch, skl).rlevel[ch->player.spec] > GET_LEVEL(ch))
+		if (!SKILL_DATA_ALL(ch, skl).rlevel[ch->player.spec] ||
+		    SKILL_DATA_ALL(ch, skl).rlevel[ch->player.spec] > GET_LEVEL(ch))
 		{
 			if (teacher)
 			{
-				mobsay(teacher, "Hmm, I don't think you'd understand a damn thing if I *did* try to teach you.");
+				mobsay(teacher,
+				       "Hmm, I don't think you'd understand a damn thing if I *did* try to teach you.");
 			}
 			else
 			{
@@ -1035,12 +1116,14 @@ void do_practice(P_char ch, char *arg, int cmd)
 
 			if (GET_LEVEL(teacher) < 51)
 			{
-				strcpy(buf, "Yes, I've heard of such a skill, but have never learned it myself..");
+				strcpy(buf,
+				       "Yes, I've heard of such a skill, but have never learned it myself..");
 				ret = TRUE;
 			}
 			else if (GET_LEVEL(ch) < 51)
 			{
-				strcpy(buf, "Sorry, but you're not quite learned enough for that one yet.");
+				strcpy(buf,
+				       "Sorry, but you're not quite learned enough for that one yet.");
 				ret = TRUE;
 			}
 
@@ -1053,33 +1136,44 @@ void do_practice(P_char ch, char *arg, int cmd)
 
 		if (IS_SPELL(skl) && !meming_class(ch) && ch->only.pc->skills[i].learned)
 		{
-			send_to_char("You need not prac spells! Your deity grants it to you, if you are deemed worthy of it.\n", ch);
+			send_to_char(
+				"You need not prac spells! Your deity grants it to you, if you are deemed worthy of it.\n",
+				ch);
 			return;
 		}
 
 		if ((cost = (!IS_SPELL(skl) ? SkillRaiseCost(ch, skl) : 0
-		             /*SpellCopyCost(ch, skl) */)) > GET_MONEY(ch))
+			     /*SpellCopyCost(ch, skl) */)) > GET_MONEY(ch))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "Sorry, boss, but I'm afraid you cannot afford the training.");
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "Sorry, boss, but I'm afraid you cannot afford the training.");
 			mobsay(teacher, buf);
 			return;
 		}
 		if (!IS_SPELL(skl) && GET_LEVEL(ch) * 2 < (ch->only.pc->skills[i].learned))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "You have not fully grasped your previous lessons. Come back when you have practiced more.");
+			snprintf(
+				buf, MAX_STRING_LENGTH,
+				"You have not fully grasped your previous lessons. Come back when you have practiced more.");
 			mobsay(teacher, buf);
 			return;
 		}
 
 		if (!IS_SPELL(skl) &&
-		    (ch->only.pc->skills[i].learned >= 2 * GET_LEVEL(ch) || ch->only.pc->skills[i].learned >= ch->only.pc->skills[i].taught * get_property("skill.practice.relativeCap", 0.75)))
+		    (ch->only.pc->skills[i].learned >= 2 * GET_LEVEL(ch) ||
+		     ch->only.pc->skills[i].learned >=
+			     ch->only.pc->skills[i].taught *
+				     get_property("skill.practice.relativeCap", 0.75)))
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "You will have to go learn more on your own, I can teach you no more right now.");
+			snprintf(
+				buf, MAX_STRING_LENGTH,
+				"You will have to go learn more on your own, I can teach you no more right now.");
 			mobsay(teacher, buf);
 			return;
 		}
 
-		if (!IS_SPELL(skl) && (ch->only.pc->skills[i].learned == ch->only.pc->skills[i].taught))
+		if (!IS_SPELL(skl) &&
+		    (ch->only.pc->skills[i].learned == ch->only.pc->skills[i].taught))
 		{
 			snprintf(buf, MAX_STRING_LENGTH, "I'm sorry but I can teach you no more.");
 			mobsay(teacher, buf);
@@ -1089,28 +1183,38 @@ void do_practice(P_char ch, char *arg, int cmd)
 		{
 			switch (number(1, 4))
 			{
-				case 1:
-					snprintf(buf, MAX_STRING_LENGTH, "You are awesome already! Perhaps you would be so kind as to teach me?");
-					break;
-				case 2:
-					snprintf(buf, MAX_STRING_LENGTH, "You trying to make a fool of me? I can teach you nothing more!");
-					break;
-				case 3:
-					snprintf(buf, MAX_STRING_LENGTH, "I fear I am not good enough to teach you more.");
-					break;
-				case 4:
-					snprintf(buf, MAX_STRING_LENGTH, "Begone from my halls! I do not stand for sarcasm!");
-					break;
+			case 1:
+				snprintf(
+					buf, MAX_STRING_LENGTH,
+					"You are awesome already! Perhaps you would be so kind as to teach me?");
+				break;
+			case 2:
+				snprintf(
+					buf, MAX_STRING_LENGTH,
+					"You trying to make a fool of me? I can teach you nothing more!");
+				break;
+			case 3:
+				snprintf(buf, MAX_STRING_LENGTH,
+					 "I fear I am not good enough to teach you more.");
+				break;
+			case 4:
+				snprintf(buf, MAX_STRING_LENGTH,
+					 "Begone from my halls! I do not stand for sarcasm!");
+				break;
 			}
 			mobsay(teacher, buf);
-			snprintf(buf, MAX_STRING_LENGTH, "DEBUG: ch->only.pc->skills[i].learned = %d (%s)\n", ch->only.pc->skills[i].learned, J_NAME(ch));
+			snprintf(buf, MAX_STRING_LENGTH,
+				 "DEBUG: ch->only.pc->skills[i].learned = %d (%s)\n",
+				 ch->only.pc->skills[i].learned, J_NAME(ch));
 			debug(buf);
 			return;
 		}
 
 		if (IS_SPELL(skl))
 		{
-			if (SpellInSpellBook(ch, skl, SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND | SBOOK_MODE_NO_SCROLL | SBOOK_MODE_ON_BELT))
+			if (SpellInSpellBook(ch, skl,
+					     SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND |
+						     SBOOK_MODE_NO_SCROLL | SBOOK_MODE_ON_BELT))
 			{
 				send_to_char("You know that spell already!\n", ch);
 				return;
@@ -1134,12 +1238,14 @@ void do_practice(P_char ch, char *arg, int cmd)
 			/*      if (ch->only.pc->skills[i].taught > 100)
 			        ch->only.pc->skills[i].taught = 100;
 			*/
-			snprintf(buf, MAX_STRING_LENGTH, "You practice '%s' for a while...\n", skills[skl].name);
+			snprintf(buf, MAX_STRING_LENGTH, "You practice '%s' for a while...\n",
+				 skills[skl].name);
 			send_to_char(buf, ch);
 		}
 		else
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "You start to scribe the spell '%s'..\n", skills[skl].name);
+			snprintf(buf, MAX_STRING_LENGTH, "You start to scribe the spell '%s'..\n",
+				 skills[skl].name);
 			send_to_char(buf, ch);
 			snprintf(buf, MAX_STRING_LENGTH, " %s %s", GET_NAME(ch), skills[skl].name);
 			do_teach(teacher, buf, cmd);
@@ -1152,13 +1258,13 @@ void do_practice(P_char ch, char *arg, int cmd)
 
 string list_spells(int cls, int spec)
 {
-	int             spl, spell, circle, i, oldcircle;
-	char            buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-	char            color;
+	int spl, spell, circle, i, oldcircle;
+	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	char color;
 	struct spl_list spell_list[LAST_SPELL + 1];
-	bool            found;
+	bool found;
 
-	*buf  = '\0';
+	*buf = '\0';
 	*buf1 = '\0';
 	*buf2 = '\0';
 	memset(spell_list, 0, sizeof(spl_list) * (LAST_SPELL + 1));
@@ -1171,7 +1277,7 @@ string list_spells(int cls, int spec)
 
 		if (circle < MAX_CIRCLE + 1)
 		{
-			spell_list[i].circle  = circle;
+			spell_list[i].circle = circle;
 			spell_list[i++].spell = spl;
 		}
 	}
@@ -1179,11 +1285,11 @@ string list_spells(int cls, int spec)
 	qsort(spell_list, i, sizeof(struct spl_list), spell_cmp);
 
 	oldcircle = 0;
-	found     = FALSE;
+	found = FALSE;
 	/* finally, show it */
 	for (spl = 0; spl < i; spl++)
 	{
-		spell  = spell_list[spl].spell;
+		spell = spell_list[spl].spell;
 		circle = spell_list[spl].circle;
 
 		// If they don't have the spell..
@@ -1193,19 +1299,24 @@ string list_spells(int cls, int spec)
 		}
 		if (!spl || circle != oldcircle)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, "\n&+B%d%s Circle:&N", circle, circle == 1 ? "st" : circle == 2 ? "nd" : circle == 3 ? "rd" : "th");
+			snprintf(buf, MAX_STRING_LENGTH, "\n&+B%d%s Circle:&N", circle,
+				 circle == 1 ? "st" :
+				 circle == 2 ? "nd" :
+				 circle == 3 ? "rd" :
+					       "th");
 			strcat(buf1, buf);
 			oldcircle = circle;
-			found     = FALSE;
+			found = FALSE;
 		}
 		strcpy(buf2, " ");
 
-		color = cls != flag2idx(CLASS_SHAMAN)                  ? 'c'
-		        : IS_SET(skills[spell].targets, TAR_ANIMAL)    ? 'y'
-		        : IS_SET(skills[spell].targets, TAR_ELEMENTAL) ? 'r'
-		        : IS_SET(skills[spell].targets, TAR_SPIRIT)    ? 'W'
-		                                                       : 'L';
-		snprintf(buf, MAX_STRING_LENGTH, "%s&+%c%s&n", found ? ", " : " ", color, skills[spell].name);
+		color = cls != flag2idx(CLASS_SHAMAN)		     ? 'c' :
+			IS_SET(skills[spell].targets, TAR_ANIMAL)    ? 'y' :
+			IS_SET(skills[spell].targets, TAR_ELEMENTAL) ? 'r' :
+			IS_SET(skills[spell].targets, TAR_SPIRIT)    ? 'W' :
+								       'L';
+		snprintf(buf, MAX_STRING_LENGTH, "%s&+%c%s&n", found ? ", " : " ", color,
+			 skills[spell].name);
 		found = TRUE;
 		strcat(buf1, buf);
 	}
@@ -1220,12 +1331,12 @@ string list_spells(int cls, int spec)
 
 string list_skills(int cls, int spec)
 {
-	int             skl, skill, skllvl, i, oldskllvl, lvlending;
-	char            buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	int skl, skill, skllvl, i, oldskllvl, lvlending;
+	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	struct spl_list skill_list[LAST_SKILL - FIRST_SKILL + 1];
-	bool            found;
+	bool found;
 
-	*buf  = '\0';
+	*buf = '\0';
 	*buf1 = '\0';
 	*buf2 = '\0';
 	memset(skill_list, 0, sizeof(spl_list) * (LAST_SKILL - FIRST_SKILL + 1));
@@ -1238,7 +1349,7 @@ string list_skills(int cls, int spec)
 
 		if (skllvl < MAXLVLMORTAL + 1)
 		{
-			skill_list[i].circle  = skllvl;
+			skill_list[i].circle = skllvl;
 			skill_list[i++].spell = skl;
 		}
 	}
@@ -1246,18 +1357,19 @@ string list_skills(int cls, int spec)
 	qsort(skill_list, i, sizeof(struct spl_list), spell_cmp);
 
 	oldskllvl = 0;
-	found     = FALSE;
+	found = FALSE;
 	/* finally, show it */
 	// First, hunt for lost skills:
 	for (skl = 0; skl < i; skl++)
 	{
-		skill  = skill_list[skl].spell;
+		skill = skill_list[skl].spell;
 		skllvl = skill_list[skl].circle;
 		if (skllvl < 1)
 		{
 			if (!found)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "\n&+BSkills lost:&N &+c%s&n", skills[skill].name);
+				snprintf(buf, MAX_STRING_LENGTH, "\n&+BSkills lost:&N &+c%s&n",
+					 skills[skill].name);
 				strcat(buf1, buf);
 				found = TRUE;
 			}
@@ -1276,7 +1388,7 @@ string list_skills(int cls, int spec)
 	found = FALSE;
 	for (; skl < i; skl++)
 	{
-		skill  = skill_list[skl].spell;
+		skill = skill_list[skl].spell;
 		skllvl = skill_list[skl].circle;
 
 		// If they don't have the spell..
@@ -1288,14 +1400,19 @@ string list_skills(int cls, int spec)
 		{
 			// Lvls 4-20 get "th", rest get the st/nd/rd or th.
 			lvlending = (skllvl > 3 && skllvl < 21) ? 4 : skllvl % 10;
-			snprintf(buf, MAX_STRING_LENGTH, "\n&+B%d%s Level:&N", skllvl, lvlending == 1 ? "st" : lvlending == 2 ? "nd" : lvlending == 3 ? "rd" : "th");
+			snprintf(buf, MAX_STRING_LENGTH, "\n&+B%d%s Level:&N", skllvl,
+				 lvlending == 1 ? "st" :
+				 lvlending == 2 ? "nd" :
+				 lvlending == 3 ? "rd" :
+						  "th");
 			strcat(buf1, buf);
 			oldskllvl = skllvl;
-			found     = FALSE;
+			found = FALSE;
 		}
 		strcpy(buf2, " ");
 
-		snprintf(buf, MAX_STRING_LENGTH, "%s&+c%s&n", found ? ", " : " ", skills[skill].name);
+		snprintf(buf, MAX_STRING_LENGTH, "%s&+c%s&n", found ? ", " : " ",
+			 skills[skill].name);
 		found = TRUE;
 		strcat(buf1, buf);
 	}
@@ -1310,13 +1427,13 @@ string list_skills(int cls, int spec)
 
 string list_songs(int cls, int spec)
 {
-	int             sng, song, snglvl, i, oldsnglvl, lvlending;
-	char            buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	int sng, song, snglvl, i, oldsnglvl, lvlending;
+	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	struct spl_list song_list[LAST_SONG - FIRST_SONG + 1];
 	struct spl_list instrument_list[LAST_INSTRUMENT - FIRST_INSTRUMENT + 1];
-	bool            found;
+	bool found;
 
-	*buf  = '\0';
+	*buf = '\0';
 	*buf1 = '\0';
 	*buf2 = '\0';
 	memset(song_list, 0, sizeof(spl_list) * (LAST_SONG - FIRST_SONG + 1));
@@ -1329,7 +1446,7 @@ string list_songs(int cls, int spec)
 
 		if (snglvl < MAXLVLMORTAL + 1)
 		{
-			song_list[i].circle  = snglvl;
+			song_list[i].circle = snglvl;
 			song_list[i++].spell = sng;
 		}
 	}
@@ -1337,19 +1454,20 @@ string list_songs(int cls, int spec)
 	qsort(song_list, i, sizeof(struct spl_list), spell_cmp);
 
 	oldsnglvl = 0;
-	found     = FALSE;
+	found = FALSE;
 	/* finally, show it */
 	// First, hunt for lost skills:
 	for (sng = 0; sng < i; sng++)
 	{
-		song   = song_list[sng].spell;
+		song = song_list[sng].spell;
 		snglvl = song_list[sng].circle;
 		// Don't think this will be the case ever, but...
 		if (snglvl < 1)
 		{
 			if (!found)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "\n&+BSongs lost:&N &+c%s&n", skills[song].name);
+				snprintf(buf, MAX_STRING_LENGTH, "\n&+BSongs lost:&N &+c%s&n",
+					 skills[song].name);
 				strcat(buf1, buf);
 				found = TRUE;
 			}
@@ -1368,7 +1486,7 @@ string list_songs(int cls, int spec)
 	found = FALSE;
 	for (; sng < i; sng++)
 	{
-		song   = song_list[sng].spell;
+		song = song_list[sng].spell;
 		snglvl = song_list[sng].circle;
 
 		// If they don't have the song..
@@ -1380,14 +1498,19 @@ string list_songs(int cls, int spec)
 		{
 			// Lvls 4-20 get "th", rest get the st/nd/rd or th.
 			lvlending = (snglvl > 3 && snglvl < 21) ? 4 : snglvl % 10;
-			snprintf(buf, MAX_STRING_LENGTH, "\n&+B%d%s Level:&N", snglvl, lvlending == 1 ? "st" : lvlending == 2 ? "nd" : lvlending == 3 ? "rd" : "th");
+			snprintf(buf, MAX_STRING_LENGTH, "\n&+B%d%s Level:&N", snglvl,
+				 lvlending == 1 ? "st" :
+				 lvlending == 2 ? "nd" :
+				 lvlending == 3 ? "rd" :
+						  "th");
 			strcat(buf1, buf);
 			oldsnglvl = snglvl;
-			found     = FALSE;
+			found = FALSE;
 		}
 		strcpy(buf2, " ");
 
-		snprintf(buf, MAX_STRING_LENGTH, "%s&+c%s&n", found ? ", " : " ", skills[song].name);
+		snprintf(buf, MAX_STRING_LENGTH, "%s&+c%s&n", found ? ", " : " ",
+			 skills[song].name);
 		found = TRUE;
 		strcat(buf1, buf);
 	}
@@ -1417,7 +1540,7 @@ string list_songs(int cls, int spec)
 
 		if (snglvl < MAXLVLMORTAL + 1)
 		{
-			instrument_list[i].circle  = snglvl;
+			instrument_list[i].circle = snglvl;
 			instrument_list[i++].spell = sng;
 		}
 	}
@@ -1425,19 +1548,20 @@ string list_songs(int cls, int spec)
 	qsort(instrument_list, i, sizeof(struct spl_list), spell_cmp);
 
 	oldsnglvl = 0;
-	found     = FALSE;
+	found = FALSE;
 	/* finally, show it */
 	// First, hunt for lost instruments:
 	for (sng = 0; sng < i; sng++)
 	{
-		song   = instrument_list[sng].spell;
+		song = instrument_list[sng].spell;
 		snglvl = instrument_list[sng].circle;
 		// Don't think this will be the case ever, but...
 		if (snglvl < 1)
 		{
 			if (!found)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "\n&+BInstruments lost:&N &+c%s&n", skills[song].name);
+				snprintf(buf, MAX_STRING_LENGTH, "\n&+BInstruments lost:&N &+c%s&n",
+					 skills[song].name);
 				strcat(buf1, buf);
 				found = TRUE;
 			}
@@ -1456,7 +1580,7 @@ string list_songs(int cls, int spec)
 	found = FALSE;
 	for (; sng < i; sng++)
 	{
-		song   = instrument_list[sng].spell;
+		song = instrument_list[sng].spell;
 		snglvl = instrument_list[sng].circle;
 
 		// If they don't have the song..
@@ -1468,14 +1592,19 @@ string list_songs(int cls, int spec)
 		{
 			// Lvls 4-20 get "th", rest get the st/nd/rd or th.
 			lvlending = (snglvl > 3 && snglvl < 21) ? 4 : snglvl % 10;
-			snprintf(buf, MAX_STRING_LENGTH, "\n&+B%d%s Level:&N", snglvl, lvlending == 1 ? "st" : lvlending == 2 ? "nd" : lvlending == 3 ? "rd" : "th");
+			snprintf(buf, MAX_STRING_LENGTH, "\n&+B%d%s Level:&N", snglvl,
+				 lvlending == 1 ? "st" :
+				 lvlending == 2 ? "nd" :
+				 lvlending == 3 ? "rd" :
+						  "th");
 			strcat(buf1, buf);
 			oldsnglvl = snglvl;
-			found     = FALSE;
+			found = FALSE;
 		}
 		strcpy(buf2, " ");
 
-		snprintf(buf, MAX_STRING_LENGTH, "%s&+c%s&n", found ? ", " : " ", skills[song].name);
+		snprintf(buf, MAX_STRING_LENGTH, "%s&+c%s&n", found ? ", " : " ",
+			 skills[song].name);
 		found = TRUE;
 		strcat(buf1, buf);
 	}

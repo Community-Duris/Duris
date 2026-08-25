@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0
 #
-# clang-format configuration file. Intended for clang-format >= 11.
+# clang-format configuration file. Intended for clang-format >= 14.
+#
+# Duris style: Linux-kernel derived -- hard tabs at width 8, Allman braces,
+# 100-column lines.  Apply it to code you touch, never to whole files:
+# see docs/formatting.md.
 #
 # For more information, see:
 #
@@ -11,10 +15,15 @@
 ---
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: true
-AlignConsecutiveDeclarations: true
+# Column alignment of consecutive assignments/declarations is deliberately
+# OFF.  With UseTab: Always the padding becomes tabs, so the columns only line
+# up at tab width 8; every rename reflows a whole block; and clang-format
+# picks different columns for a whole-file pass than for the changed-line
+# ranges git-clang-format formats, so the two disagree on the same file.
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
 AlignEscapedNewlines: Left
-AlignOperands: true
+AlignOperands: Align
 AlignTrailingComments: false
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortBlocksOnASingleLine: false
@@ -25,7 +34,7 @@ AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
-AlwaysBreakTemplateDeclarations: false
+AlwaysBreakTemplateDeclarations: No
 BinPackArguments: true
 BinPackParameters: true
 BraceWrapping:
@@ -44,15 +53,11 @@ BraceWrapping:
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
-BreakAfterOpenBracketBracedList: true
-BreakBeforeCloseBracketBracedList: true
 BreakBeforeBinaryOperators: None
 BreakBeforeBraces: Allman
-BreakBeforeInheritanceComma: false
 BreakBeforeTernaryOperators: false
-BreakConstructorInitializersBeforeComma: false
 BreakConstructorInitializers: BeforeComma
-BreakAfterJavaFieldAnnotations: false
+BreakInheritanceList: BeforeComma
 BreakStringLiterals: false
 ColumnLimit: 100
 CommentPragmas: '^ IWYU pragma:'
@@ -104,7 +109,11 @@ PenaltyReturnTypeOnItsOwnLine: 60
 
 PointerAlignment: Right
 ReflowComments: false
-RemoveBracesLLVM: true
+# RemoveBracesLLVM is deliberately OFF.  Duris is full of brace-block macros
+# that are not do{}while(0) wrapped (ADD_BYTE, ADD_SHORT, ... in files.h);
+# stripping braces around `if (x) ADD_BYTE(...); else ...` yields
+# `if (x) { ... }; else` and does not compile.
+RemoveBracesLLVM: false
 SortIncludes: false
 SortUsingDeclarations: false
 SpaceAfterCStyleCast: false
@@ -121,7 +130,7 @@ SpacesInContainerLiterals: false
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
-Standard: Cpp03
+Standard: c++20
 TabWidth: 8
 UseTab: Always
 ...

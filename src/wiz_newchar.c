@@ -18,30 +18,30 @@
 #include "sql.h"
 #include "sql_player.h"
 
-extern int                class_table[LAST_RACE + 1][CLASS_COUNT + 1];
-extern Skill              skills[];
-extern epic_reward        epic_rewards[];
-extern struct race_names  race_names_table[];
+extern int class_table[LAST_RACE + 1][CLASS_COUNT + 1];
+extern Skill skills[];
+extern epic_reward epic_rewards[];
+extern struct race_names race_names_table[];
 extern struct class_names class_names_table[];
-extern struct mm_ds      *dead_mob_pool;
-extern struct mm_ds      *dead_pconly_pool;
+extern struct mm_ds *dead_mob_pool;
+extern struct mm_ds *dead_pconly_pool;
 
 // syntax: newchar <name> <race_id> <class_id> <level> <true|false>
 // see: newchar help race, newchar help class
 void do_newchar(P_char ch, char *argument, int cmd)
 {
-	extern int   writeCharacter(P_char ch, int type, int room);
-	extern void  clear_char(P_char ch);
-	extern void  init_char(P_char ch);
+	extern int writeCharacter(P_char ch, int type, int room);
+	extern void clear_char(P_char ch);
+	extern void init_char(P_char ch);
 	extern char *mysql_str(const char *str, char *buf);
 
-	char   arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
-	char   arg3[MAX_INPUT_LENGTH], arg4[MAX_INPUT_LENGTH], arg5[MAX_INPUT_LENGTH];
-	char   buf[MAX_STRING_LENGTH];
-	char   name_lower[MAX_NAME_LENGTH + 1];
-	int    race_id, class_id, level, class_bitmask, class_index;
-	int    i, is_playable;
-	bool   max_skills;
+	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
+	char arg3[MAX_INPUT_LENGTH], arg4[MAX_INPUT_LENGTH], arg5[MAX_INPUT_LENGTH];
+	char buf[MAX_STRING_LENGTH];
+	char name_lower[MAX_NAME_LENGTH + 1];
+	int race_id, class_id, level, class_bitmask, class_index;
+	int i, is_playable;
+	bool max_skills;
 	P_char newch;
 
 	if (IS_NPC(ch))
@@ -70,11 +70,15 @@ void do_newchar(P_char ch, char *argument, int cmd)
 	{
 		if (!*arg2 || !str_cmp(arg2, "usage"))
 		{
-			send_to_char("usage: newchar <name> <race_id> <class_id> <level> <true|false>\r\n", ch);
+			send_to_char(
+				"usage: newchar <name> <race_id> <class_id> <level> <true|false>\r\n",
+				ch);
 			send_to_char("       newchar help race   - list playable races\r\n", ch);
 			send_to_char("       newchar help class  - list classes\r\n", ch);
 			send_to_char("\r\nexample: newchar testnecro 3 11 56 true\r\n", ch);
-			send_to_char("creates a drow elf necromancer at level 56 with maxed skills.\r\n", ch);
+			send_to_char(
+				"creates a drow elf necromancer at level 56 with maxed skills.\r\n",
+				ch);
 			return;
 		}
 
@@ -85,7 +89,10 @@ void do_newchar(P_char ch, char *argument, int cmd)
 			send_to_char("---- ----------------- -------\r\n", ch);
 			for (i = 0; playable_races[i].race_id != -1; i++)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, "%-4d %-17s %s\r\n", playable_races[i].race_id, race_names_table[playable_races[i].race_id].normal, playable_races[i].faction);
+				snprintf(buf, MAX_STRING_LENGTH, "%-4d %-17s %s\r\n",
+					 playable_races[i].race_id,
+					 race_names_table[playable_races[i].race_id].normal,
+					 playable_races[i].faction);
 				send_to_char(buf, ch);
 			}
 			return;
@@ -100,7 +107,8 @@ void do_newchar(P_char ch, char *argument, int cmd)
 			{
 				if (class_names_table[i].normal)
 				{
-					snprintf(buf, MAX_STRING_LENGTH, "%-4d %s\r\n", i, class_names_table[i].normal);
+					snprintf(buf, MAX_STRING_LENGTH, "%-4d %s\r\n", i,
+						 class_names_table[i].normal);
 					send_to_char(buf, ch);
 				}
 			}
@@ -114,7 +122,8 @@ void do_newchar(P_char ch, char *argument, int cmd)
 	// validate we have all required args
 	if (!*arg2 || !*arg3 || !*arg4 || !*arg5)
 	{
-		send_to_char("usage: newchar <name> <race_id> <class_id> <level> <true|false>\r\n", ch);
+		send_to_char("usage: newchar <name> <race_id> <class_id> <level> <true|false>\r\n",
+			     ch);
 		return;
 	}
 
@@ -164,7 +173,8 @@ void do_newchar(P_char ch, char *argument, int cmd)
 	class_id = atoi(arg3);
 	if (class_id < 1 || class_id > CLASS_COUNT)
 	{
-		send_to_char("invalid class id. use 'newchar help class' to see valid ids.\r\n", ch);
+		send_to_char("invalid class id. use 'newchar help class' to see valid ids.\r\n",
+			     ch);
 		return;
 	}
 
@@ -228,9 +238,9 @@ void do_newchar(P_char ch, char *argument, int cmd)
 	GET_RACE(newch) = race_id;
 
 	// set class bitmask
-	class_bitmask         = 1 << (class_id - 1);
+	class_bitmask = 1 << (class_id - 1);
 	newch->player.m_class = class_bitmask;
-	class_index           = flag2idx(class_bitmask) - 1;
+	class_index = flag2idx(class_bitmask) - 1;
 
 	// set sex (default male)
 	newch->player.sex = SEX_MALE;
@@ -243,32 +253,32 @@ void do_newchar(P_char ch, char *argument, int cmd)
 			if (!strcmp(playable_races[i].faction, "good"))
 			{
 				GET_ALIGNMENT(newch) = 1000;
-				GET_RACEWAR(newch)   = RACEWAR_GOOD;
+				GET_RACEWAR(newch) = RACEWAR_GOOD;
 			}
 			else if (!strcmp(playable_races[i].faction, "evil"))
 			{
 				GET_ALIGNMENT(newch) = -1000;
-				GET_RACEWAR(newch)   = RACEWAR_EVIL;
+				GET_RACEWAR(newch) = RACEWAR_EVIL;
 			}
 			else
 			{
 				// neutral race - default to evil
 				GET_ALIGNMENT(newch) = -1000;
-				GET_RACEWAR(newch)   = RACEWAR_EVIL;
+				GET_RACEWAR(newch) = RACEWAR_EVIL;
 			}
 			break;
 		}
 	}
 
 	// set hometown
-	GET_HOME(newch)            = find_hometown(race_id, FALSE);
-	GET_BIRTHPLACE(newch)      = GET_HOME(newch);
+	GET_HOME(newch) = find_hometown(race_id, FALSE);
+	GET_BIRTHPLACE(newch) = GET_HOME(newch);
 	GET_ORIG_BIRTHPLACE(newch) = GET_HOME(newch);
 
 	// set all stats to 100
 	for (int i = 0; i < MAX_ATTRIBUTES; i++)
 		newch->base_stats[i] = 100;
-	newch->curr_stats                                                     = newch->base_stats;
+	newch->curr_stats = newch->base_stats;
 
 	// init_char does pid assignment, skill setup, hp/mana/vitality etc
 	init_char(newch);
@@ -291,9 +301,11 @@ void do_newchar(P_char ch, char *argument, int cmd)
 	if (!GET_CLASS(newch, CLASS_PALADIN))
 		SET_BIT(newch->specials.act, PLR_VICIOUS);
 
-	newch->only.pc->wimpy      = 10;
+	newch->only.pc->wimpy = 10;
 	newch->only.pc->aggressive = -1;
-	newch->only.pc->prompt = (PROMPT_HIT | PROMPT_MAX_HIT | PROMPT_MOVE | PROMPT_MAX_MOVE | PROMPT_TANK_NAME | PROMPT_TANK_COND | PROMPT_ENEMY | PROMPT_ENEMY_COND | PROMPT_TWOLINE | PROMPT_STATUS);
+	newch->only.pc->prompt = (PROMPT_HIT | PROMPT_MAX_HIT | PROMPT_MOVE | PROMPT_MAX_MOVE |
+				  PROMPT_TANK_NAME | PROMPT_TANK_COND | PROMPT_ENEMY |
+				  PROMPT_ENEMY_COND | PROMPT_TWOLINE | PROMPT_STATUS);
 
 	// set skills based on max_skills flag
 	if (max_skills)
@@ -303,12 +315,12 @@ void do_newchar(P_char ch, char *argument, int cmd)
 		{
 			if (class_index >= 0 && class_index < CLASS_COUNT)
 			{
-				int rlevel   = skills[i].m_class[class_index].rlevel[0];
+				int rlevel = skills[i].m_class[class_index].rlevel[0];
 				int maxlearn = skills[i].m_class[class_index].maxlearn[0];
 				if (rlevel > 0 && rlevel <= level)
 				{
 					newch->only.pc->skills[i].learned = maxlearn;
-					newch->only.pc->skills[i].taught  = maxlearn;
+					newch->only.pc->skills[i].taught = maxlearn;
 				}
 			}
 		}
@@ -318,15 +330,15 @@ void do_newchar(P_char ch, char *argument, int cmd)
 		{
 			if (epic_rewards[i].type == EPIC_REWARD_SKILL)
 			{
-				int          skill_num       = epic_rewards[i].value;
+				int skill_num = epic_rewards[i].value;
 				unsigned int allowed_classes = epic_rewards[i].classes;
 
 				// check if class can have this epic skill (0 means all classes)
 				if (allowed_classes == 0 || (allowed_classes & class_bitmask))
 				{
-					int maxlearn                              = epic_rewards[i].points_cost;
+					int maxlearn = epic_rewards[i].points_cost;
 					newch->only.pc->skills[skill_num].learned = maxlearn;
-					newch->only.pc->skills[skill_num].taught  = maxlearn;
+					newch->only.pc->skills[skill_num].taught = maxlearn;
 				}
 			}
 		}
@@ -356,16 +368,16 @@ void do_newchar(P_char ch, char *argument, int cmd)
 		mysql_str(ch->desc->account->acct_name, account_sql);
 		mysql_str(newch->player.name, name_sql);
 
-		if (!db_query("INSERT INTO account_characters "
-		         "(account_name, pid, char_name, created_at, deleted_at) "
-		         "VALUES('%s', %ld, '%s', NOW(), NULL) "
-		         "ON DUPLICATE KEY UPDATE char_name = VALUES(char_name), deleted_at = NULL",
-		         account_sql,
-		         GET_PID(newch),
-		         name_sql))
+		if (!db_query(
+			    "INSERT INTO account_characters "
+			    "(account_name, pid, char_name, created_at, deleted_at) "
+			    "VALUES('%s', %ld, '%s', NOW(), NULL) "
+			    "ON DUPLICATE KEY UPDATE char_name = VALUES(char_name), deleted_at = NULL",
+			    account_sql, GET_PID(newch), name_sql))
 		{
 			send_to_char("failed to link character to account.\r\n", ch);
-			logit(LOG_DEBUG, "wiz_newchar: failed to link %s to account %s", newch->player.name, ch->desc->account->acct_name);
+			logit(LOG_DEBUG, "wiz_newchar: failed to link %s to account %s",
+			      newch->player.name, ch->desc->account->acct_name);
 			deleteCharacter(newch, FALSE);
 			free_char(newch);
 			return;
@@ -377,21 +389,25 @@ void do_newchar(P_char ch, char *argument, int cmd)
 		struct acct_chars *c;
 		CREATE(c, struct acct_chars, 1, MEM_TAG_OTHER);
 		memset(c, 0, sizeof(struct acct_chars));
-		c->charname                            = str_dup(newch->player.name);
-		c->count                               = 1;
-		c->last                                = time(NULL);
-		c->racewar                             = (GET_RACEWAR(newch) == RACEWAR_EVIL) ? ACCT_EVIL : ACCT_GOOD;
-		c->next                                = ch->desc->account->acct_character_list;
+		c->charname = str_dup(newch->player.name);
+		c->count = 1;
+		c->last = time(NULL);
+		c->racewar = (GET_RACEWAR(newch) == RACEWAR_EVIL) ? ACCT_EVIL : ACCT_GOOD;
+		c->next = ch->desc->account->acct_character_list;
 		ch->desc->account->acct_character_list = c;
 		ch->desc->account->num_chars++;
 	}
 
 	// log it
-	logit(LOG_WIZ, "%s created test character %s (race %d, class %d, level %d, maxskills %s)", GET_NAME(ch), newch->player.name, race_id, class_id, level, max_skills ? "true" : "false");
+	logit(LOG_WIZ, "%s created test character %s (race %d, class %d, level %d, maxskills %s)",
+	      GET_NAME(ch), newch->player.name, race_id, class_id, level,
+	      max_skills ? "true" : "false");
 	wizlog(GET_LEVEL(ch), "%s created test character %s", GET_NAME(ch), newch->player.name);
 
 	// notify the wizard
-	snprintf(buf, MAX_STRING_LENGTH, "created %s - %s %s level %d (pid %d)\r\n", newch->player.name, race_names_table[race_id].normal, class_names_table[class_id].normal, level, GET_PID(newch));
+	snprintf(buf, MAX_STRING_LENGTH, "created %s - %s %s level %d (pid %d)\r\n",
+		 newch->player.name, race_names_table[race_id].normal,
+		 class_names_table[class_id].normal, level, GET_PID(newch));
 	send_to_char(buf, ch);
 
 	if (max_skills)

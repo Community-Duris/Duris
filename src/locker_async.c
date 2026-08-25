@@ -39,14 +39,14 @@
 #include <unistd.h>
 
 extern P_index obj_index;
-extern P_char  character_list;
-extern P_room  world;
+extern P_char character_list;
+extern P_room world;
 extern const int top_of_world;
 
-#define LOCKER_ASYNC_SLOTS       128
-#define LOCKER_ASYNC_NAME_LEN    128
-#define LOCKER_ASYNC_JOBS        16
-#define LOCKER_ASYNC_RESULTS     32
+#define LOCKER_ASYNC_SLOTS 128
+#define LOCKER_ASYNC_NAME_LEN 128
+#define LOCKER_ASYNC_JOBS 16
+#define LOCKER_ASYNC_RESULTS 32
 #define LOCKER_ASYNC_SCRIPT_INIT (64 * 1024)
 
 enum locker_async_state
@@ -59,37 +59,37 @@ enum locker_async_state
 struct locker_async_slot
 {
 	enum locker_async_state state;
-	char   locker_name[LOCKER_ASYNC_NAME_LEN];
-	int    locker_id;
-	int    owner_pid;
-	int    owner_assoc_id;
-	int    terminal;
-	int    rebuild_objects; /* another dirty landed while inflight */
+	char locker_name[LOCKER_ASYNC_NAME_LEN];
+	int locker_id;
+	int owner_pid;
+	int owner_assoc_id;
+	int terminal;
+	int rebuild_objects; /* another dirty landed while inflight */
 	unsigned long gen;
 	time_t dirty_at;
-	int    user_pid;
+	int user_pid;
 	P_char chLocker;
 	P_char chUser;
 };
 
 struct locker_async_job
 {
-	int    used;
-	char   locker_name[LOCKER_ASYNC_NAME_LEN];
+	int used;
+	char locker_name[LOCKER_ASYNC_NAME_LEN];
 	unsigned long gen;
-	int    terminal;
-	int    user_pid;
-	char  *sql;
+	int terminal;
+	int user_pid;
+	char *sql;
 };
 
 struct locker_async_result
 {
-	int    used;
-	char   locker_name[LOCKER_ASYNC_NAME_LEN];
+	int used;
+	char locker_name[LOCKER_ASYNC_NAME_LEN];
 	unsigned long gen;
-	int    ok;
-	int    terminal;
-	int    user_pid;
+	int ok;
+	int terminal;
+	int user_pid;
 };
 
 static struct locker_async_slot g_slots[LOCKER_ASYNC_SLOTS];
@@ -98,7 +98,7 @@ static int g_snapshots_started_this_pulse = 0;
 static int g_inflight = 0;
 
 static pthread_mutex_t g_q_mu = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  g_q_cv = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t g_q_cv = PTHREAD_COND_INITIALIZER;
 static struct locker_async_job g_jobs[LOCKER_ASYNC_JOBS];
 static struct locker_async_result g_results[LOCKER_ASYNC_RESULTS];
 static int g_worker_running = 0;
@@ -140,7 +140,8 @@ static struct locker_async_slot *slot_alloc(const char *name)
 		if (g_slots[i].state == LCHK_FREE)
 		{
 			memset(&g_slots[i], 0, sizeof(g_slots[i]));
-			snprintf(g_slots[i].locker_name, sizeof(g_slots[i].locker_name), "%s", name);
+			snprintf(g_slots[i].locker_name, sizeof(g_slots[i].locker_name), "%s",
+				 name);
 			g_slots[i].state = LCHK_DIRTY;
 			return &g_slots[i];
 		}
@@ -238,10 +239,10 @@ static void result_push_locked(const struct locker_async_result *r)
 
 struct la_buf
 {
-	char  *data;
+	char *data;
 	size_t len;
 	size_t cap;
-	int    failed;
+	int failed;
 };
 
 static int la_buf_init(struct la_buf *b, size_t cap)
@@ -399,46 +400,40 @@ static int emit_item_sql(struct la_buf *b, P_obj obj, int locker_id, int chest_i
 		strcpy(chest_id_str, "NULL");
 
 	if (!la_buf_printf(b,
-	         "INSERT INTO locker_items ("
-	         "locker_id, chest_id, vnum, container_id, quantity, "
-	         "weight, cost, timer, extra_flags, wear_flags, item_type, "
-	         "value0, value1, value2, value3, value4, value5, value6, value7, "
-	         "name, short_descr, description, action_descr, "
-	         "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-	         "item_material, obj_uid, item_condition"
-	         ") VALUES ("
-	         "%d, %s, %d, %s, 1, "
-	         "%d, %d, %ld, %lu, %s, %s, "
-	         "%d, %d, %d, %d, %d, %d, %d, %d, "
-	         "%s, %s, %s, %s, "
-	         "%s, %s, %s, %s, %s, "
-	         "%s, %lu, %d"
-	         ");\n"
-	         "SET @la_i%d = LAST_INSERT_ID();\n",
-	         locker_id,
-	         chest_id_str,
-	         vnum,
-	         container_str,
-	         obj->weight,
-	         obj->cost,
-	         (long)obj->timer[0],
-	         (unsigned long)obj->extra_flags,
-	         wear_str,
-	         type_str,
-	         obj->value[0], obj->value[1], obj->value[2], obj->value[3],
-	         obj->value[4], obj->value[5], obj->value[6], obj->value[7],
-	         name_str, short_str, desc_str, action_str,
-	         bv1_str, bv2_str, bv3_str, bv4_str, bv5_str,
-	         material_str,
-	         obj->obj_uid,
-	         obj->condition,
-	         tmp))
+			   "INSERT INTO locker_items ("
+			   "locker_id, chest_id, vnum, container_id, quantity, "
+			   "weight, cost, timer, extra_flags, wear_flags, item_type, "
+			   "value0, value1, value2, value3, value4, value5, value6, value7, "
+			   "name, short_descr, description, action_descr, "
+			   "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+			   "item_material, obj_uid, item_condition"
+			   ") VALUES ("
+			   "%d, %s, %d, %s, 1, "
+			   "%d, %d, %ld, %lu, %s, %s, "
+			   "%d, %d, %d, %d, %d, %d, %d, %d, "
+			   "%s, %s, %s, %s, "
+			   "%s, %s, %s, %s, %s, "
+			   "%s, %lu, %d"
+			   ");\n"
+			   "SET @la_i%d = LAST_INSERT_ID();\n",
+			   locker_id, chest_id_str, vnum, container_str, obj->weight, obj->cost,
+			   (long)obj->timer[0], (unsigned long)obj->extra_flags, wear_str, type_str,
+			   obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+			   obj->value[4], obj->value[5], obj->value[6], obj->value[7], name_str,
+			   short_str, desc_str, action_str, bv1_str, bv2_str, bv3_str, bv4_str,
+			   bv5_str, material_str, obj->obj_uid, obj->condition, tmp))
 	{
-		free(esc_name); free(esc_short); free(esc_desc); free(esc_action);
+		free(esc_name);
+		free(esc_short);
+		free(esc_desc);
+		free(esc_action);
 		return 0;
 	}
 
-	free(esc_name); free(esc_short); free(esc_desc); free(esc_action);
+	free(esc_name);
+	free(esc_short);
+	free(esc_desc);
+	free(esc_action);
 
 	for (i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
@@ -458,9 +453,9 @@ static int emit_item_sql(struct la_buf *b, P_obj obj, int locker_id, int chest_i
 		if (is_dup)
 			continue;
 		if (!la_buf_printf(b,
-		         "INSERT INTO locker_item_affects (item_id, location, modifier) "
-		         "VALUES (@la_i%d, %d, %d);\n",
-		         tmp, obj->affected[i].location, obj->affected[i].modifier))
+				   "INSERT INTO locker_item_affects (item_id, location, modifier) "
+				   "VALUES (@la_i%d, %d, %d);\n",
+				   tmp, obj->affected[i].location, obj->affected[i].modifier))
 			return 0;
 	}
 
@@ -470,18 +465,22 @@ static int emit_item_sql(struct la_buf *b, P_obj obj, int locker_id, int chest_i
 		char *edesc = la_esc(ed->description ? ed->description : "");
 		if (!ek || !edesc)
 		{
-			free(ek); free(edesc);
+			free(ek);
+			free(edesc);
 			return 0;
 		}
-		if (!la_buf_printf(b,
-		         "INSERT INTO locker_item_extra_descr (item_id, keyword, description) "
-		         "VALUES (@la_i%d, '%s', '%s');\n",
-		         tmp, ek, edesc))
+		if (!la_buf_printf(
+			    b,
+			    "INSERT INTO locker_item_extra_descr (item_id, keyword, description) "
+			    "VALUES (@la_i%d, '%s', '%s');\n",
+			    tmp, ek, edesc))
 		{
-			free(ek); free(edesc);
+			free(ek);
+			free(edesc);
 			return 0;
 		}
-		free(ek); free(edesc);
+		free(ek);
+		free(edesc);
 	}
 
 	for (child = obj->contains; child; child = child->next_content)
@@ -520,8 +519,8 @@ static void locker_owner_ids(P_char chLocker, int *owner_pid, int *owner_assoc_i
 
 /* Ensure the locker row + public chest exist; return locker_id and public_chest_id.
  * Only metadata — no item walk. Returns 0 on failure. */
-static int ensure_locker_ids(P_char chLocker, int owner_pid, int owner_assoc_id,
-                             int *out_locker_id, int *out_public_id)
+static int ensure_locker_ids(P_char chLocker, int owner_pid, int owner_assoc_id, int *out_locker_id,
+			     int *out_public_id)
 {
 	int locker_id;
 	int public_id;
@@ -546,11 +545,12 @@ static int ensure_locker_ids(P_char chLocker, int owner_pid, int owner_assoc_id,
 			snprintf(owner_assoc_str, sizeof(owner_assoc_str), "%d", owner_assoc_id);
 		else
 			strcpy(owner_assoc_str, "NULL");
-		snprintf(query, sizeof(query),
-		         "INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
-		         "VALUES ('%s', %s, %s, %d, %d)",
-		         esc_name, owner_pid_str, owner_assoc_str,
-		         GET_RACEWAR(chLocker), GET_RACE(chLocker));
+		snprintf(
+			query, sizeof(query),
+			"INSERT INTO lockers (locker_name, owner_pid, owner_assoc_id, racewar, race) "
+			"VALUES ('%s', %s, %s, %d, %d)",
+			esc_name, owner_pid_str, owner_assoc_str, GET_RACEWAR(chLocker),
+			GET_RACE(chLocker));
 		free(esc_name);
 		if (!qry("%s", query))
 			return 0;
@@ -597,10 +597,11 @@ static char *build_locker_snapshot_sql(struct locker_async_slot *s)
 
 	g_tmp_id_seq = 0;
 
-	if (!la_buf_printf(&b,
-	         "START TRANSACTION;\n"
-	         "DELETE FROM locker_items WHERE locker_id=%d AND (chest_id IS NULL OR chest_id=%d);\n",
-	         locker_id, public_id))
+	if (!la_buf_printf(
+		    &b,
+		    "START TRANSACTION;\n"
+		    "DELETE FROM locker_items WHERE locker_id=%d AND (chest_id IS NULL OR chest_id=%d);\n",
+		    locker_id, public_id))
 		goto fail;
 
 	for (obj = chLocker->carrying; obj; obj = obj->next_content)
@@ -644,7 +645,8 @@ static int repair_failed_connection(MYSQL **conn_io)
 	 * sync and cannot be safely reused. */
 	sql_clear_results_on(conn);
 	if (mysql_rollback(conn) != 0)
-		logit(LOG_FILE, "locker_async: rollback after failed snapshot failed: %s", mysql_error(conn));
+		logit(LOG_FILE, "locker_async: rollback after failed snapshot failed: %s",
+		      mysql_error(conn));
 
 	/* The connection may still have an unknown server-side state (for
 	 * example, a dropped socket or a failed statement in a batch).  Discard
@@ -679,7 +681,8 @@ static int apply_sql_script(MYSQL **conn_io, const char *sql)
 	 * transaction boundary ambiguous. */
 	if (mysql_real_query(conn, sql, (unsigned long)strlen(sql)) != 0)
 	{
-		logit(LOG_FILE, "locker_async: multi-statement snapshot failed: %s", mysql_error(conn));
+		logit(LOG_FILE, "locker_async: multi-statement snapshot failed: %s",
+		      mysql_error(conn));
 		return repair_failed_connection(conn_io);
 	}
 
@@ -781,10 +784,8 @@ int locker_async_mark_dirty(P_char chLocker, P_char chUser, int terminal, const 
 	s = slot_alloc(name);
 	if (!s)
 	{
-		persistence_alert(AVATAR, "locker_async", name, "none", "none",
-		                  "slots_full",
-		                  "dirty table full; reason=%s",
-		                  reason ? reason : "unknown");
+		persistence_alert(AVATAR, "locker_async", name, "none", "none", "slots_full",
+				  "dirty table full; reason=%s", reason ? reason : "unknown");
 		return 0;
 	}
 
@@ -810,8 +811,7 @@ int locker_async_mark_dirty(P_char chLocker, P_char chUser, int terminal, const 
 		s->dirty_at = time(NULL);
 	}
 
-	logit(LOG_DEBUG,
-	      "locker_async: mark dirty name=%s terminal=%d gen=%lu reason=%s state=%d",
+	logit(LOG_DEBUG, "locker_async: mark dirty name=%s terminal=%d gen=%lu reason=%s state=%d",
 	      name, terminal ? 1 : 0, s->gen, reason ? reason : "?", s->state);
 	return 1;
 }
@@ -887,9 +887,9 @@ static void apply_result(struct locker_async_result *r)
 	if (!r->ok)
 	{
 		persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
-		                  "worker_failed",
-		                  "async locker save failed gen=%lu terminal=%d; sync fallback",
-		                  s->gen, s->terminal ? 1 : 0);
+				  "worker_failed",
+				  "async locker save failed gen=%lu terminal=%d; sync fallback",
+				  s->gen, s->terminal ? 1 : 0);
 		if (chLocker)
 		{
 			int owner_pid = s->owner_pid, owner_assoc = s->owner_assoc_id;
@@ -921,8 +921,8 @@ static void apply_result(struct locker_async_result *r)
 			/* Fail closed: keep locker char / re-entry fence until staff
 			 * can recover; never extract after both async + sync failed. */
 			persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
-			                  "terminal_not_durable",
-			                  "terminal save failed; refusing extract of locker char");
+					  "terminal_not_durable",
+					  "terminal save failed; refusing extract of locker char");
 			s->rebuild_objects = 1;
 		}
 	}
@@ -1020,7 +1020,8 @@ static int start_one_snapshot(struct locker_async_slot *s)
 	chUser = s->chUser ? s->chUser : find_char_by_pid(s->user_pid);
 	if (!chLocker)
 	{
-		logit(LOG_FILE, "locker_async: dirty locker char missing for %s — clearing", s->locker_name);
+		logit(LOG_FILE, "locker_async: dirty locker char missing for %s — clearing",
+		      s->locker_name);
 		slot_clear(s);
 		return 0;
 	}
@@ -1035,8 +1036,8 @@ static int start_one_snapshot(struct locker_async_slot *s)
 		if (!locker_async_prepare_snapshot(chUser))
 		{
 			persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
-			                  "prepare_failed",
-			                  "LockerToPFile failed before snapshot; aborting gen");
+					  "prepare_failed",
+					  "LockerToPFile failed before snapshot; aborting gen");
 			slot_clear(s);
 			return 0;
 		}
@@ -1048,9 +1049,9 @@ static int start_one_snapshot(struct locker_async_slot *s)
 	{
 		int durable_ok;
 
-		persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
-		                  "snapshot_failed",
-		                  "could not build snapshot; falling back to synchronous persistence");
+		persistence_alert(
+			AVATAR, "locker_async", s->locker_name, "none", "none", "snapshot_failed",
+			"could not build snapshot; falling back to synchronous persistence");
 		durable_ok = locker_sync_fallback_durable(s, chLocker);
 		if (s->terminal && durable_ok)
 		{
@@ -1061,9 +1062,10 @@ static int start_one_snapshot(struct locker_async_slot *s)
 		}
 		else if (s->terminal)
 		{
-			persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
-			                  "terminal_not_durable",
-			                  "snapshot and synchronous fallbacks failed; refusing extract of locker char");
+			persistence_alert(
+				AVATAR, "locker_async", s->locker_name, "none", "none",
+				"terminal_not_durable",
+				"snapshot and synchronous fallbacks failed; refusing extract of locker char");
 			s->state = LCHK_DIRTY;
 			s->dirty_at = time(NULL);
 		}
@@ -1089,8 +1091,7 @@ static int start_one_snapshot(struct locker_async_slot *s)
 
 		free(sql);
 		persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
-		                  "job_queue_full",
-		                  "falling back to synchronous persistence");
+				  "job_queue_full", "falling back to synchronous persistence");
 		durable_ok = locker_sync_fallback_durable(s, chLocker);
 		if (s->terminal && durable_ok)
 		{
@@ -1101,9 +1102,10 @@ static int start_one_snapshot(struct locker_async_slot *s)
 		}
 		else if (s->terminal)
 		{
-			persistence_alert(AVATAR, "locker_async", s->locker_name, "none", "none",
-			                  "terminal_not_durable",
-			                  "job queue and synchronous fallbacks failed; refusing extract of locker char");
+			persistence_alert(
+				AVATAR, "locker_async", s->locker_name, "none", "none",
+				"terminal_not_durable",
+				"job queue and synchronous fallbacks failed; refusing extract of locker char");
 			s->state = LCHK_DIRTY;
 			s->dirty_at = time(NULL);
 		}
@@ -1180,7 +1182,8 @@ int locker_async_drain(int wait_ms)
 		g_snapshots_started_this_pulse = 0;
 		for (i = 0; i < LOCKER_ASYNC_SLOTS; i++)
 		{
-			if (g_slots[i].state == LCHK_DIRTY && g_inflight < LOCKER_ASYNC_MAX_INFLIGHT)
+			if (g_slots[i].state == LCHK_DIRTY &&
+			    g_inflight < LOCKER_ASYNC_MAX_INFLIGHT)
 			{
 				g_snapshots_started_this_pulse = 0;
 				start_one_snapshot(&g_slots[i]);
@@ -1204,9 +1207,10 @@ void locker_async_init(void)
 		return;
 	if (!sql_pool_is_active())
 	{
-		logit(LOG_STATUS, "locker_async: connection pool unavailable; async worker disabled");
+		logit(LOG_STATUS,
+		      "locker_async: connection pool unavailable; async worker disabled");
 		persistence_alert(AVATAR, "locker_async", "worker", "none", "none",
-		                  "pool_unavailable", "locker async worker disabled");
+				  "pool_unavailable", "locker async worker disabled");
 		return;
 	}
 	memset(g_slots, 0, sizeof(g_slots));
@@ -1224,8 +1228,8 @@ void locker_async_init(void)
 		g_worker_running = 0;
 		pthread_mutex_unlock(&g_q_mu);
 		logit(LOG_FILE, "locker_async: pthread_create failed: %d", err);
-		persistence_alert(AVATAR, "locker_async", "worker", "none", "none",
-		                  "start_failed", "locker async worker could not start");
+		persistence_alert(AVATAR, "locker_async", "worker", "none", "none", "start_failed",
+				  "locker async worker could not start");
 		return;
 	}
 	pthread_mutex_lock(&g_q_mu);

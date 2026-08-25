@@ -34,46 +34,44 @@ using namespace std;
 
 struct continent
 {
-	int        id;
+	int id;
 	const char name[64];
-	int        seed_room;
-} continents[] = {
-	{	  CONT_GC,				 "&+WGood Continent", 546926},
-	{	  CONT_EC,				 "&+LEvil Continent", 607066},
-	{	  CONT_IC,					"&+WIce &+CCrag", 521504},
-	{	  CONT_KK,				   "&+gKhomani-Khan", 608451},
-	{	  CONT_UC,			   "&+rUndead Continent", 567408},
-	{    CONT_JADE,				 "&+GJade &+gEmpire", 644892},
-	{ CONT_DRAGONS,        "&+cIsland &+yof &+cDragons", 643968},
-	{ CONT_CEOTHIA,						"&+bCeothia", 628685},
-	{  CONT_BOYARD,                 "&+rFort &+RBoyard", 562323},
-	{   CONT_VENAN,					 "&+YVenan'Trut", 545016},
-	{  CONT_SHADOW,				  "&+LShadow Island", 513382},
-	{CONT_SCORCHED, "&+rSc&+Ro&+Yrc&+Rh&+red &+rIsland", 576166},
-	{  CONT_TEZCAT, "&+rT&+Rez&+rca&+Rtl&+rip&+Ro&+rca", 575445},
-	{CONT_MOONSHAE,             "&+YMoonshae &+GIsland", 556818},
-	{			0,								   0,      0}
-};
+	int seed_room;
+} continents[] = { { CONT_GC, "&+WGood Continent", 546926 },
+		   { CONT_EC, "&+LEvil Continent", 607066 },
+		   { CONT_IC, "&+WIce &+CCrag", 521504 },
+		   { CONT_KK, "&+gKhomani-Khan", 608451 },
+		   { CONT_UC, "&+rUndead Continent", 567408 },
+		   { CONT_JADE, "&+GJade &+gEmpire", 644892 },
+		   { CONT_DRAGONS, "&+cIsland &+yof &+cDragons", 643968 },
+		   { CONT_CEOTHIA, "&+bCeothia", 628685 },
+		   { CONT_BOYARD, "&+rFort &+RBoyard", 562323 },
+		   { CONT_VENAN, "&+YVenan'Trut", 545016 },
+		   { CONT_SHADOW, "&+LShadow Island", 513382 },
+		   { CONT_SCORCHED, "&+rSc&+Ro&+Yrc&+Rh&+red &+rIsland", 576166 },
+		   { CONT_TEZCAT, "&+rT&+Rez&+rca&+Rtl&+rip&+Ro&+rca", 575445 },
+		   { CONT_MOONSHAE, "&+YMoonshae &+GIsland", 556818 },
+		   { 0, 0, 0 } };
 
 /*
    external variables
  */
 
-extern P_char      char_in_room(int);
-extern P_char      character_list;
-extern P_desc      descriptor_list;
-extern P_index     mob_index;
-extern P_index     obj_index;
-extern P_room      world;
+extern P_char char_in_room(int);
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_room world;
 extern const char *dirs[];
-extern const int   rev_dir[];
-extern const int   top_of_world;
-extern int         top_of_zone_table;
+extern const int rev_dir[];
+extern const int top_of_world;
+extern int top_of_zone_table;
 
-extern struct zone_data             *zone;
-extern struct zone_data             *zone_table;
-extern int                           LOADED_RANDOM_ZONES;
-extern struct time_info_data         time_info;
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
+extern int LOADED_RANDOM_ZONES;
+extern struct time_info_data time_info;
 extern struct continent_misfire_data continent_misfire;
 
 int whats_in_maproom(P_char, int, int);
@@ -87,12 +85,12 @@ void add_quest_data(char *map);
 /* map specific defines */
 enum
 {
-// Category 1: Stuff that overrides everything:
+	// Category 1: Stuff that overrides everything:
 	CONTAINS_NOTHING,
 	CONTAINS_CH = NUM_SECT_TYPES,
 	CONTAINS_YOUR_SHIP,
 	CONTAINS_CTF_FLAG,
-// Category 2: Stuff that's really big:
+	// Category 2: Stuff that's really big:
 	CONTAINS_GOOD_SHIP,
 	CONTAINS_EVIL_SHIP,
 	CONTAINS_UNDEAD_SHIP,
@@ -101,10 +99,10 @@ enum
 	CONTAINS_NPC_SHIP,
 	CONTAINS_SHIP,
 	CONTAINS_FERRY,
-// Category 3: Light/Dark:
+	// Category 3: Light/Dark:
 	CONTAINS_MAGIC_DARK,
 	CONTAINS_MAGIC_LIGHT,
-// Category 4: Lifeforms:
+	// Category 4: Lifeforms:
 	CONTAINS_WITCH,
 	CONTAINS_DRAGON,
 	CONTAINS_BUILDING,
@@ -113,7 +111,7 @@ enum
 	CONTAINS_GROUP,
 	CONTAINS_PC,
 	CONTAINS_MOB,
-// Category 5: Objects:
+	// Category 5: Objects:
 	CONTAINS_PORTAL,
 	CONTAINS_GUILDHALL,
 	CONTAINS_CORPSE,
@@ -128,162 +126,119 @@ enum
 
 #define NUM_GLYPHS CONTAINS_MAX
 
-#define HIDDEN_BY_FOREST(from_room, to_room) (world[to_room].sector_type == SECT_FOREST && world[from_room].sector_type != SECT_FOREST)
+#define HIDDEN_BY_FOREST(from_room, to_room) \
+	(world[to_room].sector_type == SECT_FOREST && world[from_room].sector_type != SECT_FOREST)
 
 extern const AnsiString sector_symbol[];
 const AnsiString sector_symbol[NUM_GLYPHS] = {
 	"&=wl^", /* * larger towns */
-	 "&+L+", /* * roads */
-	 "&+g.", /* * plains/fields */
-	 "&+g**&+G*",  /* * forest */
-	 "&+y^", /* * hills */
-	 "&+yM", /* * mountains */
+	"&+L+", /* * roads */
+	"&+g.", /* * plains/fields */
+	"&+g**&+G*", /* * forest */
+	"&+y^", /* * hills */
+	"&+yM", /* * mountains */
 	"&=cwr", /* * water shallow */
 	"&=bB ", /* * water boat */
-	 "&+w ", /* * noground */
-	 "&+w ", /* * underwater */
+	"&+w ", /* * noground */
+	"&+w ", /* * underwater */
 
-	 "&+w ", /* * underwater ground */
+	"&+w ", /* * underwater ground */
 	"&=rR ", /* * fire plane */
 	"&=bB ", /* * water */
 	"&=mL.", /* * UD wild */
 	"&=wl*", /* * UD city */
-	 "&+m.", /* * UD inside */
+	"&+m.", /* * UD inside */
 	"&=bB ", /* * UD water */
 	"&=bB ", /* * UD noswim */
-	 "&+w ", /* * UD noground */
-	 "&+w ", /* * air plane */
+	"&+w ", /* * UD noground */
+	"&+w ", /* * air plane */
 
-	 "&+L ", /* * water plane */
-	 "&+w ", /* * earth plane */
-	 "&+w ", /* * etheral plane */
+	"&+L ", /* * water plane */
+	"&+w ", /* * earth plane */
+	"&+w ", /* * etheral plane */
 	"&=LrR", /* * astral plane */
 	"&=yY.", /* desert */
-	 "&+W.", /* arctic tundra */
+	"&+W.", /* arctic tundra */
 	"&=mL*", /* swamp */
-	 "&+LM", /* UD mountains */
+	"&+LM", /* UD mountains */
 	"&=rL*", /* UD slime */
-	 "&+M,", /* UD low ceilings */
+	"&+M,", /* UD low ceilings */
 
 	"&=wW ", /* UD liquid mithril */
-	 "&+Mo", /* UD mushroom forest */
+	"&+Mo", /* UD mushroom forest */
 	"&=wL#", /* Castle Wall */
 	"&=wB^", /* Castle Porticulus */
-	 "&+rO", /* Castle Itself */
+	"&+rO", /* Castle Itself */
 	"&=lw ", // Negative Plane
 	"&=lw ", // Plane of Avernus
-	 "&+L+", // Patrolled Road
+	"&+L+", // Patrolled Road
 	"&=lg*", // Snowy Forest
 	"&=rR ", // Lava
 
-	"&+W@",         // ch (you)
-	"&+W^>v<",      // your ship	↑↗→↘↓↙←↖
-	"&=LYF",        // CTF flag
-	"&+YS",         // good ship
-	"&+RS",         // evil ship
-	"&+LS",         // undead ship
-	"&+MS",         // neutral/squid ship
-	"&+CS",         // unknown ship
-	"&+WS",         // NPC ship
-	"&+WS",         // ship
-	"&+WF",         // ferry
-	"&+LD",         // magic dark
-	"&+WL",         // magic light
-	"&=LWW",        // witch
-	"&=LRD",        // dragon
-	"&+C#",         // building
-	"&=LYP",        // good pc
-	"&=LRP",        // evil pc
-	"&=LGP",        // group
-	"&=LWP",        // pc
-	"&=LBM",        // mob
-	"&+MO",         // portal
-	"&+CG",         // guildhall
-	"&+rC",         // corpse
-	"&+Y.",         // track
-	"&+R.",         // blood
-	"&+r.",         // old blood
-	"&+Ym",         // mine
-	"&+ym",         // gem mine
-	"&=bLo",        // cargo
+	"&+W@", // ch (you)
+	"&+W^>v<", // your ship	↑↗→↘↓↙←↖
+	"&=LYF", // CTF flag
+	"&+YS", // good ship
+	"&+RS", // evil ship
+	"&+LS", // undead ship
+	"&+MS", // neutral/squid ship
+	"&+CS", // unknown ship
+	"&+WS", // NPC ship
+	"&+WS", // ship
+	"&+WF", // ferry
+	"&+LD", // magic dark
+	"&+WL", // magic light
+	"&=LWW", // witch
+	"&=LRD", // dragon
+	"&+C#", // building
+	"&=LYP", // good pc
+	"&=LRP", // evil pc
+	"&=LGP", // group
+	"&=LWP", // pc
+	"&=LBM", // mob
+	"&+MO", // portal
+	"&+CG", // guildhall
+	"&+rC", // corpse
+	"&+Y.", // track
+	"&+R.", // blood
+	"&+r.", // old blood
+	"&+Ym", // mine
+	"&+ym", // gem mine
+	"&=bLo", // cargo
 };
 
 // mostly sector_types but some have unfitting names
 const char *glyph_names[NUM_GLYPHS] = {
-	"zone",         // inside
-	"city",
-	"field",
-	"forest",
-	"hills",
-	"mountain",
-	"reefs",	// water-swim
-	"water",	// water-noswim
-	"noground",
-	"underwater",
+	"zone", // inside
+	"city",		"field",       "forest",       "hills",	      "mountain",
+	"reefs", // water-swim
+	"water", // water-noswim
+	"noground",	"underwater",
 
-	"bottom",       // underwater_ground
-	"fire_plane",
-	"ocean",
-	"ud_wild",
-	"ud_city",
-	"ud_inside",
-	"ud_water",     // UD-swim
-	"ud_pool",      // UD-noswim (this name sounds being impassable)
-	"ud_noground",
-	"air_plane",
+	"bottom", // underwater_ground
+	"fire_plane",	"ocean",       "ud_wild",      "ud_city",     "ud_inside",
+	"ud_water", // UD-swim
+	"ud_pool", // UD-noswim (this name sounds being impassable)
+	"ud_noground",	"air_plane",
 
-	"water_plane",
-	"earth_plane",
-	"ethereal",
-	"astral",
-	"desert",
-	"tundra",
-	"swamp",
-	"ud_mountain",
-	"ud_slime",
-	"ud_lowceil",
+	"water_plane",	"earth_plane", "ethereal",     "astral",      "desert",	   "tundra",
+	"swamp",	"ud_mountain", "ud_slime",     "ud_lowceil",
 
-	"ud_liqmith",
-	"ud_mushroom",
-	"castle_wall",
-	"castle_gate",
-	"castle",
-	"neg_plane",
-	"avernus",
-	"road",
-	"snowy_forest",
-	"magma",        // "lava" but it'd be terribly confusing
+	"ud_liqmith",	"ud_mushroom", "castle_wall",  "castle_gate", "castle",	   "neg_plane",
+	"avernus",	"road",	       "snowy_forest",
+	"magma", // "lava" but it'd be terribly confusing
 
-	"you",
-	"your_ship",
-	"CTF_flag",
-	"good_ship",
-	"evil_ship",
-	"undead_ship",
+	"you",		"your_ship",   "CTF_flag",     "good_ship",   "evil_ship", "undead_ship",
 	"neutral_ship", // also squid ship
 	"unknown_ship", // never used
 	"npc_ship",
-	"ship",         // docked
-	"ferry",
-	"magic_dark",
-	"magic_light",
-	"witch",
-	"dragon",       // or devil/demon
-	"building",
-	"good_pc",
-	"evil_pc",      // by align not side
-	"group",
-	"pc",
-	"mob",
-	"portal",
-	"guildhall",
-	"corpse",
-	"track",
-	"blood",
-	"old_blood",
-	"mine",
-	"gem_mine",
-	"cargo",
+	"ship", // docked
+	"ferry",	"magic_dark",  "magic_light",  "witch",
+	"dragon", // or devil/demon
+	"building",	"good_pc",
+	"evil_pc", // by align not side
+	"group",	"pc",	       "mob",	       "portal",      "guildhall", "corpse",
+	"track",	"blood",       "old_blood",    "mine",	      "gem_mine",  "cargo",
 };
 
 unsigned int calculate_relative_room(unsigned int rroom, int x, int y)
@@ -385,10 +340,10 @@ bool calculate_map_coords(int room1, int room2, int &x, int &y)
 
 int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 {
-	P_obj  obj; // For looping through objs in a room.
+	P_obj obj; // For looping through objs in a room.
 	P_char who; // For looping through chars in a room.
-	int    z, zw, portal = FALSE, val = CONTAINS_MAX + 1;
-	int    from_room = ch->in_room;
+	int z, zw, portal = FALSE, val = CONTAINS_MAX + 1;
+	int from_room = ch->in_room;
 
 	if (!IS_ALIVE(ch) || room <= 0)
 	{
@@ -414,13 +369,17 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 #endif
 
 	// Underwater / sight blocked / 999 ??
-	if ((ch->specials.z_cord < 0) || IS_ROOM(room, ROOM_BLOCKS_SIGHT) || (show_regardless == 999))
+	if ((ch->specials.z_cord < 0) || IS_ROOM(room, ROOM_BLOCKS_SIGHT) ||
+	    (show_regardless == 999))
 	{
 		return CONTAINS_NOTHING;
 	}
 
-	if ((world[room].sector_type == SECT_CASTLE || world[room].sector_type == SECT_CASTLE_WALL || world[room].sector_type == SECT_CASTLE_GATE) &&
-	    (world[from_room].sector_type != SECT_CASTLE && world[from_room].sector_type != SECT_CASTLE_WALL))
+	if ((world[room].sector_type == SECT_CASTLE ||
+	     world[room].sector_type == SECT_CASTLE_WALL ||
+	     world[room].sector_type == SECT_CASTLE_GATE) &&
+	    (world[from_room].sector_type != SECT_CASTLE &&
+	     world[from_room].sector_type != SECT_CASTLE_WALL))
 	{
 		return CONTAINS_NOTHING;
 	}
@@ -478,36 +437,50 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 			}
 			else if (obj->type == ITEM_CORPSE)
 			{
-				if (!str_cmp(ch->player.name, obj->action_description) || IS_TRUSTED(ch) || has_innate(ch, INNATE_VISION_OF_THE_DEAD))
+				if (!str_cmp(ch->player.name, obj->action_description) ||
+				    IS_TRUSTED(ch) || has_innate(ch, INNATE_VISION_OF_THE_DEAD))
 				{
 					val = MIN(val, CONTAINS_CORPSE);
 				}
 			}
-			else if (OBJ_VNUM(obj) == VOBJ_GEMMINE && (((has_innate(ch, INNATE_MINER) || IS_AFFECTED5(ch, AFF5_MINE)) && distance < 5) || IS_TRUSTED(ch)))
+			else if (OBJ_VNUM(obj) == VOBJ_GEMMINE &&
+				 (((has_innate(ch, INNATE_MINER) || IS_AFFECTED5(ch, AFF5_MINE)) &&
+				   distance < 5) ||
+				  IS_TRUSTED(ch)))
 			{
 				val = MIN(val, CONTAINS_GEMMINE);
 			}
-			else if (OBJ_VNUM(obj) == VOBJ_MINE && (((has_innate(ch, INNATE_MINER) || IS_AFFECTED5(ch, AFF5_MINE)) && distance < 10) || IS_TRUSTED(ch)))
+			else if (OBJ_VNUM(obj) == VOBJ_MINE &&
+				 (((has_innate(ch, INNATE_MINER) || IS_AFFECTED5(ch, AFF5_MINE)) &&
+				   distance < 10) ||
+				  IS_TRUSTED(ch)))
 			{
 				val = MIN(val, CONTAINS_MINE);
 			}
 			// Using track scan ?
-			else if ((OBJ_VNUM(obj) == VNUM_TRACKS) && ((distance <= (GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK) / 20)) || IS_TRUSTED(ch)))
+			else if ((OBJ_VNUM(obj) == VNUM_TRACKS) &&
+				 ((distance <= (GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK) / 20)) ||
+				  IS_TRUSTED(ch)))
 			{
 				val = MIN(val, CONTAINS_TRACK);
 			}
-			else if ((OBJ_VNUM(obj) == VOBJ_BLOOD) && ((distance <= (GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK) / 20)) || IS_TRUSTED(ch)))
+			else if ((OBJ_VNUM(obj) == VOBJ_BLOOD) &&
+				 ((distance <= (GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK) / 20)) ||
+				  IS_TRUSTED(ch)))
 			{
-				if ((obj->value[1] == BLOOD_FRESH) && (GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK) > number(50, 80)))
+				if ((obj->value[1] == BLOOD_FRESH) &&
+				    (GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK) > number(50, 80)))
 				{
 					val = MIN(val, CONTAINS_BLOOD);
 				}
-				else if (GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK) >= number(80, 100))
+				else if (GET_CHAR_SKILL(ch, SKILL_IMPROVED_TRACK) >=
+					 number(80, 100))
 				{
 					val = MIN(val, CONTAINS_OLD_BLOOD);
 				}
 			}
-			else if (obj->type == ITEM_TELEPORT && OBJ_VNUM(obj) >= 99800 && OBJ_VNUM(obj) <= 99899)
+			else if (obj->type == ITEM_TELEPORT && OBJ_VNUM(obj) >= 99800 &&
+				 OBJ_VNUM(obj) <= 99899)
 			{
 				val = MIN(val, CONTAINS_PORTAL);
 			}
@@ -515,7 +488,10 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 			{
 				val = MIN(val, CONTAINS_GUILDHALL);
 			}
-			else if (OBJ_VNUM(obj) == VOBJ_CARGO_CRATE && (world[room].sector_type == SECT_WATER_NOSWIM || world[room].sector_type == SECT_OCEAN || world[room].sector_type == SECT_UNDRWLD_NOSWIM))
+			else if (OBJ_VNUM(obj) == VOBJ_CARGO_CRATE &&
+				 (world[room].sector_type == SECT_WATER_NOSWIM ||
+				  world[room].sector_type == SECT_OCEAN ||
+				  world[room].sector_type == SECT_UNDRWLD_NOSWIM))
 			{
 				val = MIN(val, CONTAINS_CARGO);
 			}
@@ -568,11 +544,12 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 			}
 
 			zw = who->specials.z_cord;
-			z  = ch->specials.z_cord;
+			z = ch->specials.z_cord;
 
 			if (!IS_TRUSTED(ch))
 			{
-				if (IS_AFFECTED3(who, AFF3_PASS_WITHOUT_TRACE) && SECTOR_TYPE(who->in_room) == SECT_FOREST)
+				if (IS_AFFECTED3(who, AFF3_PASS_WITHOUT_TRACE) &&
+				    SECTOR_TYPE(who->in_room) == SECT_FOREST)
 					continue;
 
 				if (affected_by_spell(who, SKILL_EXPEDITIOUS_RETREAT))
@@ -581,9 +558,12 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 				if (has_innate(who, INNATE_SWAMP_SNEAK) && SWAMP_SNEAK_TERRAIN(who))
 					continue;
 
-				if (GET_SPEC(who, CLASS_ROGUE, SPEC_THIEF) && IS_AFFECTED(who, AFF_SNEAK))
+				if (GET_SPEC(who, CLASS_ROGUE, SPEC_THIEF) &&
+				    IS_AFFECTED(who, AFF_SNEAK))
 				{
-					if (((GET_CHAR_SKILL(who, SKILL_SNEAK) * .46) + ((GET_LEVEL(who) >= 30) ? (GET_LEVEL(who) * 2 - 58) : 0)) >= number(1, 100))
+					if (((GET_CHAR_SKILL(who, SKILL_SNEAK) * .46) +
+					     ((GET_LEVEL(who) >= 30) ? (GET_LEVEL(who) * 2 - 58) :
+								       0)) >= number(1, 100))
 					{
 						continue;
 					}
@@ -621,14 +601,24 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 					// Priority of good/evil: You see enemy P before friendly P color.
 					if (GET_RACEWAR(ch) != GET_RACEWAR(who))
 					{
-						if (IS_GOOD(who) && ((IS_AFFECTED2(ch, AFF2_DETECT_GOOD) || (has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER)))))
+						if (IS_GOOD(who) &&
+						    ((IS_AFFECTED2(ch, AFF2_DETECT_GOOD) ||
+						      (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+						       GET_SPEC(ch, CLASS_DRAGOON,
+								SPEC_DRAGON_LANCER)))))
 						{
 							val = MIN(val, CONTAINS_GOOD_PC);
 						}
 						// Here is tricky.. CONTAINS_GOOD_PC < CONTAINS_EVIL_PC, but we still want to show Evil over Good.
-						else if (IS_EVIL(who) && (IS_AFFECTED2(ch, AFF2_DETECT_EVIL) || (has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER))))
+						else if (IS_EVIL(who) &&
+							 (IS_AFFECTED2(ch, AFF2_DETECT_EVIL) ||
+							  (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+							   GET_SPEC(ch, CLASS_DRAGOON,
+								    SPEC_DRAGON_LANCER))))
 						{
-							val = (val == CONTAINS_GOOD_PC) ? CONTAINS_EVIL_PC : MIN(val, CONTAINS_EVIL_PC);
+							val = (val == CONTAINS_GOOD_PC) ?
+								      CONTAINS_EVIL_PC :
+								      MIN(val, CONTAINS_EVIL_PC);
 						}
 						else
 						{
@@ -638,16 +628,25 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 					// For friendlies, we don't change the color of the P (if it is colored) to preserve the above.
 					else
 					{
-						if (val == CONTAINS_EVIL_PC || val == CONTAINS_GOOD_PC)
+						if (val == CONTAINS_EVIL_PC ||
+						    val == CONTAINS_GOOD_PC)
 						{
 							continue;
 						}
 
-						if (IS_EVIL(who) && (IS_AFFECTED2(ch, AFF2_DETECT_EVIL) || (has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER))))
+						if (IS_EVIL(who) &&
+						    (IS_AFFECTED2(ch, AFF2_DETECT_EVIL) ||
+						     (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+						      GET_SPEC(ch, CLASS_DRAGOON,
+							       SPEC_DRAGON_LANCER))))
 						{
 							val = MIN(val, CONTAINS_EVIL_PC);
 						}
-						else if (IS_GOOD(who) && (IS_AFFECTED2(ch, AFF2_DETECT_GOOD) || (has_innate(ch, INNATE_OPHIDIAN_EYES) && GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_LANCER))))
+						else if (IS_GOOD(who) &&
+							 (IS_AFFECTED2(ch, AFF2_DETECT_GOOD) ||
+							  (has_innate(ch, INNATE_OPHIDIAN_EYES) &&
+							   GET_SPEC(ch, CLASS_DRAGOON,
+								    SPEC_DRAGON_LANCER))))
 						{
 							val = MIN(val, CONTAINS_GOOD_PC);
 						}
@@ -676,8 +675,7 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 
 // Show ch the map with a distance of n as if the ch is in room from_room
 //   and show_map_regardless
-template <size_t N>
-static inline void append_cstr(char (&dst)[N], const char *src)
+template <size_t N> static inline void append_cstr(char (&dst)[N], const char *src)
 {
 	strlcat(dst, src, N);
 }
@@ -703,12 +701,12 @@ static inline void append_fmt(char (&dst)[N], int shift, const char *fmt, Args..
 
 void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, int gmcp_pkg_type)
 {
-	int    x, y, where, what, from_what, heading;
-	int    where_rnum, whats_in;
-	bool   hadbg = false, map_tile;
-	char   buf[MAX_STRING_LENGTH], minibuf[10];
-	char   gmcp_map_buf[MAX_STRING_LENGTH * 4]; /* Buffer for GMCP map */
-	float  horizontal_factor, vertical_factor;
+	int x, y, where, what, from_what, heading;
+	int where_rnum, whats_in;
+	bool hadbg = false, map_tile;
+	char buf[MAX_STRING_LENGTH], minibuf[10];
+	char gmcp_map_buf[MAX_STRING_LENGTH * 4]; /* Buffer for GMCP map */
+	float horizontal_factor, vertical_factor;
 	P_ship ship;
 
 	gmcp_map_buf[0] = '\0'; /* Initialize GMCP buffer */
@@ -726,8 +724,11 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 	}
 
 	/* Skip text output for GMCP auto-updates (unless MSP terminal) or if toggle map is off */
-	bool toggle_map_off   = IS_PC(GET_TRUE_CHAR(ch)) && !IS_SET(GET_TRUE_CHAR(ch)->specials.act, PLR_MAP);
-	bool skip_text_output = (GMCP_ENABLED(ch) && (show_map_regardless == MAP_AUTOMAP) && (ch->desc->term_type != TERM_MSP)) || (GMCP_ENABLED(ch) && toggle_map_off);
+	bool toggle_map_off = IS_PC(GET_TRUE_CHAR(ch)) &&
+			      !IS_SET(GET_TRUE_CHAR(ch)->specials.act, PLR_MAP);
+	bool skip_text_output = (GMCP_ENABLED(ch) && (show_map_regardless == MAP_AUTOMAP) &&
+				 (ch->desc->term_type != TERM_MSP)) ||
+				(GMCP_ENABLED(ch) && toggle_map_off);
 
 	from_what = SECTOR_TYPE(from_room);
 
@@ -751,7 +752,7 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 	}
 
 	horizontal_factor = get_property("map.horizontalFactor", 0.6);
-	vertical_factor   = get_property("map.verticalFactor", 1.2);
+	vertical_factor = get_property("map.verticalFactor", 1.2);
 
 	for (y = (int)(-0.6 * n); y <= (int)(0.6 * n); y++)
 	{
@@ -777,48 +778,52 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 			else
 				what = SECTOR_TYPE(where_rnum);
 
-			what     = BOUNDED(0, what, (NUM_SECT_TYPES - 1));
+			what = BOUNDED(0, what, (NUM_SECT_TYPES - 1));
 
-			if (x == 0 && y == 0 && (ship = get_ship_from_char(ch)) && !SHIP_DOCKED(ship) && ship->location == from_room)
+			if (x == 0 && y == 0 && (ship = get_ship_from_char(ch)) &&
+			    !SHIP_DOCKED(ship) && ship->location == from_room)
 				whats_in = CONTAINS_YOUR_SHIP;
 			else
-				whats_in = whats_in_maproom(ch, where_rnum, distance, show_map_regardless);
+				whats_in = whats_in_maproom(ch, where_rnum, distance,
+							    show_map_regardless);
 
 			if (whats_in && whats_in < CONTAINS_MAX)
 				what = whats_in;
 
-			const AnsiString& symb = (IS_PC(ch) && ch->only.pc->map_glyphs)?
-				(*ch->only.pc->map_glyphs)[what] : sector_symbol[what];
+			const AnsiString &symb = (IS_PC(ch) && ch->only.pc->map_glyphs) ?
+							 (*ch->only.pc->map_glyphs)[what] :
+							 sector_symbol[what];
 			size_t nv = symb.size();
 			if (!nv)
 				line.push_back('!'); // error
 			else if (nv == 1)
 				line.push_back(symb[0]);
-			else switch(what)
-			{
-			case CONTAINS_YOUR_SHIP:
-				// Use an arrow in the direction of the ship.
-				heading = ship->heading;
-				heading += 180 / nv - 1; // center on north etc
-				heading %= 360;
-				heading /= 360 / nv;
-				line.push_back(symb[BOUNDED(0, heading, nv-1)]);
-				break;
+			else
+				switch (what)
+				{
+				case CONTAINS_YOUR_SHIP:
+					// Use an arrow in the direction of the ship.
+					heading = ship->heading;
+					heading += 180 / nv - 1; // center on north etc
+					heading %= 360;
+					heading /= 360 / nv;
+					line.push_back(symb[BOUNDED(0, heading, nv - 1)]);
+					break;
 
-			case SECT_ROAD:
-			case SECT_CASTLE_WALL:
-			case SECT_CASTLE_GATE:
-				heading = 0;
-				if (where_rnum)
-					heading = world[where_rnum].altglyph;
-				if (heading > nv)
+				case SECT_ROAD:
+				case SECT_CASTLE_WALL:
+				case SECT_CASTLE_GATE:
 					heading = 0;
-				line.push_back(symb[heading]);
-				break;
+					if (where_rnum)
+						heading = world[where_rnum].altglyph;
+					if (heading > nv)
+						heading = 0;
+					line.push_back(symb[heading]);
+					break;
 
-			default: // forest/etc: pick randomly
-				line.push_back(symb[number(0, nv - 1)]);
-			}
+				default: // forest/etc: pick randomly
+					line.push_back(symb[number(0, nv - 1)]);
+				}
 		}
 
 		line.push_back('\n');
@@ -859,20 +864,23 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 	}
 }
 
-void display_map(P_char ch, int n, int show_map_regardless) { display_map_room(ch, ch->in_room, n, show_map_regardless, 0); }
+void display_map(P_char ch, int n, int show_map_regardless)
+{
+	display_map_room(ch, ch->in_room, n, show_map_regardless, 0);
+}
 
-static const char* glyph_preset_names[][2] = {
-	{"ascii", "0 basic ascii base baseline"},
-	{"cp437", "1 cp437 ibm"},
-	{"diag. arrows", "2"},
-	{"diag. double arrows", "3"},
+static const char *glyph_preset_names[][2] = {
+	{ "ascii", "0 basic ascii base baseline" },
+	{ "cp437", "1 cp437 ibm" },
+	{ "diag. arrows", "2" },
+	{ "diag. double arrows", "3" },
 };
 
 void set_glyphs_preset(P_char ch, int w)
 {
 	if (!ch->only.pc->map_glyphs)
 		ch->only.pc->map_glyphs = new vector<AnsiString>;
-	auto& gly = *ch->only.pc->map_glyphs;
+	auto &gly = *ch->only.pc->map_glyphs;
 	gly.resize(NUM_GLYPHS);
 
 	for (int i = 0; i < NUM_GLYPHS; i++)
@@ -880,25 +888,25 @@ void set_glyphs_preset(P_char ch, int w)
 
 	if (w >= 1)
 	{
-		gly[CONTAINS_MOB]          = "&+B☺";
-		gly[CONTAINS_YOUR_SHIP]    = "&+W↑→↓←";
-		gly[SECT_ROAD]             = "&+L+║═╚║║╔╠═╝═╩╗╣╦╬";
-		gly[SECT_FOREST]           = "&+g♣♣♠♣♣♠&+G♣♠";
-		gly[SECT_HILLS]            = "&+y⌂";
+		gly[CONTAINS_MOB] = "&+B☺";
+		gly[CONTAINS_YOUR_SHIP] = "&+W↑→↓←";
+		gly[SECT_ROAD] = "&+L+║═╚║║╔╠═╝═╩╗╣╦╬";
+		gly[SECT_FOREST] = "&+g♣♣♠♣♣♠&+G♣♠";
+		gly[SECT_HILLS] = "&+y⌂";
 		gly[SECT_UNDRWLD_MOUNTAIN] = "&+L▒";
-		gly[SECT_CASTLE_WALL]      = "&=wL#┌─┐││└─┘";
-		gly[SECT_CASTLE_GATE]      = "&=wB╨╞╥╡";
-		gly[SECT_CASTLE]           = "&=wrO";
+		gly[SECT_CASTLE_WALL] = "&=wL#┌─┐││└─┘";
+		gly[SECT_CASTLE_GATE] = "&=wB╨╞╥╡";
+		gly[SECT_CASTLE] = "&=wrO";
 	}
 
 	if (w == 2)
 	{
-		gly[CONTAINS_YOUR_SHIP]    = "&+W↑↗→↘↓↙←↖";
+		gly[CONTAINS_YOUR_SHIP] = "&+W↑↗→↘↓↙←↖";
 	}
 
 	if (w == 3)
 	{
-		gly[CONTAINS_YOUR_SHIP]    = "&+W⇑⇗⇒⇘⇓⇙⇐⇖";
+		gly[CONTAINS_YOUR_SHIP] = "&+W⇑⇗⇒⇘⇓⇙⇐⇖";
 	}
 }
 
@@ -908,7 +916,7 @@ void do_mapglyphs(P_char ch, char *argument, int cmd)
 		return send_to_char("Mobs have to live with the defaults.\n", ch);
 
 	char buf[MAX_STRING_LENGTH], bufgl[MAX_STRING_LENGTH];
-	auto& glyp = ch->only.pc->map_glyphs;
+	auto &glyp = ch->only.pc->map_glyphs;
 
 	argument = one_argument(argument, buf);
 	if (isname(buf, "0 basic ascii base baseline"))
@@ -922,7 +930,7 @@ void do_mapglyphs(P_char ch, char *argument, int cmd)
 
 	if (!glyp)
 		set_glyphs_preset(ch, 0);
-	auto& gly = *glyp;
+	auto &gly = *glyp;
 
 	if (*buf)
 	{
@@ -931,7 +939,8 @@ void do_mapglyphs(P_char ch, char *argument, int cmd)
 			if (isname(buf, glyph_preset_names[i][1]))
 			{
 				set_glyphs_preset(ch, i);
-				send_to_char_f(ch, "Loaded preset %d (%s).\n", i, glyph_preset_names[i][0]);
+				send_to_char_f(ch, "Loaded preset %d (%s).\n", i,
+					       glyph_preset_names[i][0]);
 				return;
 			}
 
@@ -985,7 +994,7 @@ void do_mapglyphs(P_char ch, char *argument, int cmd)
 	{
 		char *bp = buf;
 
-		for (int x = 0; ; x++)
+		for (int x = 0;; x++)
 		{
 			int i = x * num_rows + y;
 			if (i >= NUM_GLYPHS)
@@ -1032,7 +1041,8 @@ int map_view_distance(P_char ch, int room)
 		// The map_*_modifiers vary over time of day (done in weather.c).
 		if (IS_DAYBLIND(ch) && IS_SUNLIT(ch->in_room))
 		{
-			if (IS_AFFECTED(ch, AFF_INFRAVISION) || has_innate(ch, INNATE_OPHIDIAN_EYES))
+			if (IS_AFFECTED(ch, AFF_INFRAVISION) ||
+			    has_innate(ch, INNATE_OPHIDIAN_EYES))
 			{
 				n = BOUNDED(0, (map_dayblind_modifier + 2), 8);
 			}
@@ -1052,7 +1062,8 @@ int map_view_distance(P_char ch, int room)
 				n = BOUNDED(0, (map_normal_modifier), 8);
 			}
 			// Infra raises view slightly on surface maps.
-			if (IS_AFFECTED(ch, AFF_INFRAVISION) || has_innate(ch, INNATE_OPHIDIAN_EYES))
+			if (IS_AFFECTED(ch, AFF_INFRAVISION) ||
+			    has_innate(ch, INNATE_OPHIDIAN_EYES))
 			{
 				n = MIN(8, n + 1);
 			}
@@ -1134,7 +1145,7 @@ int map_view_distance(P_char ch, int room)
 void map_look_room(P_char ch, int room, int show_map_regardless)
 {
 	char tot_buf[MAX_STRING_LENGTH];
-	int  n;
+	int n;
 
 	// If don't have a living char with a desc to send the map to.
 	if (!IS_ALIVE(ch) || !ch->desc)
@@ -1151,7 +1162,8 @@ void map_look_room(P_char ch, int room, int show_map_regardless)
 
 	// If we're not ignoring the toggle and we have a PC (includes switched Imms), and they have
 	//   the toggle off, don't show the map (but GMCP clients still get GMCP map data).
-	if (show_map_regardless != MAP_IGNORE_TOGGLE && IS_PC(GET_TRUE_CHAR(ch)) && !IS_SET(GET_TRUE_CHAR(ch)->specials.act, PLR_MAP))
+	if (show_map_regardless != MAP_IGNORE_TOGGLE && IS_PC(GET_TRUE_CHAR(ch)) &&
+	    !IS_SET(GET_TRUE_CHAR(ch)->specials.act, PLR_MAP))
 	{
 		if (!GMCP_ENABLED(ch))
 			return;
@@ -1163,7 +1175,10 @@ void map_look_room(P_char ch, int room, int show_map_regardless)
 	}
 }
 
-void map_look(P_char ch, int show_map_regardless) { map_look_room(ch, ch->in_room, show_map_regardless); }
+void map_look(P_char ch, int show_map_regardless)
+{
+	map_look_room(ch, ch->in_room, show_map_regardless);
+}
 
 bool is_in_line_of_sight_dir(P_char ch, P_char target, int current_room)
 {
@@ -1178,10 +1193,10 @@ bool is_in_line_of_sight_dir(P_char ch, P_char target, int current_room)
 
 	return FALSE;
 
-	end       = world[target->in_room].number;
-	x         = 0;
-	x2        = 0;
-	where     = 0;
+	end = world[target->in_room].number;
+	x = 0;
+	x2 = 0;
+	where = 0;
 	which_dir = line_of_sight_dir(ch->in_room, target->in_room);
 
 	if (which_dir == 0)
@@ -1189,13 +1204,17 @@ bool is_in_line_of_sight_dir(P_char ch, P_char target, int current_room)
 
 	for (count = 0; count < 5; count++)
 	{
-		if (which_dir == DIR_NORTH || which_dir == DIR_NORTHEAST || which_dir == DIR_NORTHWEST)
+		if (which_dir == DIR_NORTH || which_dir == DIR_NORTHEAST ||
+		    which_dir == DIR_NORTHWEST)
 			x -= 100;
-		else if (which_dir == DIR_SOUTH || which_dir == DIR_SOUTHEAST || which_dir == DIR_SOUTHWEST)
+		else if (which_dir == DIR_SOUTH || which_dir == DIR_SOUTHEAST ||
+			 which_dir == DIR_SOUTHWEST)
 			x += 100;
-		if (which_dir == DIR_EAST || which_dir == DIR_NORTHEAST || which_dir == DIR_SOUTHEAST)
+		if (which_dir == DIR_EAST || which_dir == DIR_NORTHEAST ||
+		    which_dir == DIR_SOUTHEAST)
 			x2 -= 1;
-		else if (which_dir == DIR_WEST || which_dir == DIR_NORTHWEST || which_dir == DIR_SOUTHWEST)
+		else if (which_dir == DIR_WEST || which_dir == DIR_NORTHWEST ||
+			 which_dir == DIR_SOUTHWEST)
 			x2 += 1;
 
 		/* Did the last bump toss us onto a new map? Adjust our figures then... */
@@ -1231,7 +1250,9 @@ bool is_in_line_of_sight_dir(P_char ch, P_char target, int current_room)
 
 		start = where;
 
-		if (SECTOR_TYPE(real_room0(start)) == SECT_HILLS || SECTOR_TYPE(real_room0(start)) == SECT_FOREST || SECTOR_TYPE(real_room0(start)) == SECT_MOUNTAIN)
+		if (SECTOR_TYPE(real_room0(start)) == SECT_HILLS ||
+		    SECTOR_TYPE(real_room0(start)) == SECT_FOREST ||
+		    SECTOR_TYPE(real_room0(start)) == SECT_MOUNTAIN)
 			return FALSE;
 
 		if (start == current_room)
@@ -1257,7 +1278,7 @@ void assign_continents()
 	{
 		for (int j = 0; j <= MAX_RACEWAR; j++)
 		{
-			continent_misfire.players[i][j]   = 0;
+			continent_misfire.players[i][j] = 0;
 			continent_misfire.misfiring[i][j] = FALSE;
 		}
 	}
@@ -1272,7 +1293,7 @@ bool set_continent(int start_room, int continent)
 
 	rooms_left.push_back(start_room);
 
-	int room  = -1;
+	int room = -1;
 	int count = 0;
 	while (!rooms_left.empty())
 	{
@@ -1335,9 +1356,9 @@ void calculate_map_coordinates()
 	}
 	for (int room = 0; room <= top_of_world; room++)
 	{
-		world[room].x_coord     = 0;
-		world[room].y_coord     = 0;
-		world[room].z_coord     = 0;
+		world[room].x_coord = 0;
+		world[room].y_coord = 0;
+		world[room].z_coord = 0;
 		world[room].map_section = 0;
 	}
 	bfs_clear_marks();
@@ -1352,9 +1373,9 @@ void calculate_map_coordinates()
 		cur_section++;
 		unsigned rs_start = rs_pointer;
 		BFSMARK(room);
-		world[room].x_coord     = 0;
-		world[room].y_coord     = 0;
-		world[room].z_coord     = 0;
+		world[room].x_coord = 0;
+		world[room].y_coord = 0;
+		world[room].z_coord = 0;
 		world[room].map_section = cur_section;
 
 		room_stack[rs_pointer++] = room;
@@ -1365,9 +1386,13 @@ void calculate_map_coordinates()
 			{
 				if (world[curr_room].dir_option[curr_dir])
 				{
-					int next_room = world[curr_room].dir_option[curr_dir]->to_room;
+					int next_room =
+						world[curr_room].dir_option[curr_dir]->to_room;
 
-					if (!world[next_room].dir_option[rev_dir[curr_dir]] || (world[next_room].dir_option[rev_dir[curr_dir]]->to_room != curr_room))
+					if (!world[next_room].dir_option[rev_dir[curr_dir]] ||
+					    (world[next_room]
+						     .dir_option[rev_dir[curr_dir]]
+						     ->to_room != curr_room))
 					{
 						continue; // skipping teleport exits
 					}
@@ -1379,81 +1404,95 @@ void calculate_map_coordinates()
 					BFSMARK(next_room);
 					switch (curr_dir)
 					{
-						case DIR_NORTH:
-						{
-							world[next_room].x_coord = world[curr_room].x_coord;
-							world[next_room].y_coord = world[curr_room].y_coord + 1;
-							world[next_room].z_coord = world[curr_room].z_coord;
-						}
+					case DIR_NORTH:
+					{
+						world[next_room].x_coord = world[curr_room].x_coord;
+						world[next_room].y_coord =
+							world[curr_room].y_coord + 1;
+						world[next_room].z_coord = world[curr_room].z_coord;
+					}
+					break;
+					case DIR_EAST:
+					{
+						world[next_room].x_coord =
+							world[curr_room].x_coord + 1;
+						world[next_room].y_coord = world[curr_room].y_coord;
+						world[next_room].z_coord = world[curr_room].z_coord;
+					}
+					break;
+					case DIR_SOUTH:
+					{
+						world[next_room].x_coord = world[curr_room].x_coord;
+						world[next_room].y_coord =
+							world[curr_room].y_coord - 1;
+						world[next_room].z_coord = world[curr_room].z_coord;
+					}
+					break;
+					case DIR_WEST:
+					{
+						world[next_room].x_coord =
+							world[curr_room].x_coord - 1;
+						world[next_room].y_coord = world[curr_room].y_coord;
+						world[next_room].z_coord = world[curr_room].z_coord;
+					}
+					break;
+					case DIR_UP:
+					{
+						world[next_room].x_coord = world[curr_room].x_coord;
+						world[next_room].y_coord = world[curr_room].y_coord;
+						world[next_room].z_coord =
+							world[curr_room].z_coord + 1;
+					}
+					break;
+					case DIR_DOWN:
+					{
+						world[next_room].x_coord = world[curr_room].x_coord;
+						world[next_room].y_coord = world[curr_room].y_coord;
+						world[next_room].z_coord =
+							world[curr_room].z_coord - 1;
+					}
+					break;
+					case DIR_NORTHWEST:
+					{
+						world[next_room].x_coord =
+							world[curr_room].x_coord - 1;
+						world[next_room].y_coord =
+							world[curr_room].y_coord + 1;
+						world[next_room].z_coord = world[curr_room].z_coord;
+					}
+					break;
+					case DIR_SOUTHWEST:
+					{
+						world[next_room].x_coord =
+							world[curr_room].x_coord - 1;
+						world[next_room].y_coord =
+							world[curr_room].y_coord - 1;
+						world[next_room].z_coord = world[curr_room].z_coord;
+					}
+					break;
+					case DIR_NORTHEAST:
+					{
+						world[next_room].x_coord =
+							world[curr_room].x_coord + 1;
+						world[next_room].y_coord =
+							world[curr_room].y_coord + 1;
+						world[next_room].z_coord = world[curr_room].z_coord;
+					}
+					break;
+					case DIR_SOUTHEAST:
+					{
+						world[next_room].x_coord =
+							world[curr_room].x_coord + 1;
+						world[next_room].y_coord =
+							world[curr_room].y_coord - 1;
+						world[next_room].z_coord = world[curr_room].z_coord;
+					}
+					break;
+					default:
 						break;
-						case DIR_EAST:
-						{
-							world[next_room].x_coord = world[curr_room].x_coord + 1;
-							world[next_room].y_coord = world[curr_room].y_coord;
-							world[next_room].z_coord = world[curr_room].z_coord;
-						}
-						break;
-						case DIR_SOUTH:
-						{
-							world[next_room].x_coord = world[curr_room].x_coord;
-							world[next_room].y_coord = world[curr_room].y_coord - 1;
-							world[next_room].z_coord = world[curr_room].z_coord;
-						}
-						break;
-						case DIR_WEST:
-						{
-							world[next_room].x_coord = world[curr_room].x_coord - 1;
-							world[next_room].y_coord = world[curr_room].y_coord;
-							world[next_room].z_coord = world[curr_room].z_coord;
-						}
-						break;
-						case DIR_UP:
-						{
-							world[next_room].x_coord = world[curr_room].x_coord;
-							world[next_room].y_coord = world[curr_room].y_coord;
-							world[next_room].z_coord = world[curr_room].z_coord + 1;
-						}
-						break;
-						case DIR_DOWN:
-						{
-							world[next_room].x_coord = world[curr_room].x_coord;
-							world[next_room].y_coord = world[curr_room].y_coord;
-							world[next_room].z_coord = world[curr_room].z_coord - 1;
-						}
-						break;
-						case DIR_NORTHWEST:
-						{
-							world[next_room].x_coord = world[curr_room].x_coord - 1;
-							world[next_room].y_coord = world[curr_room].y_coord + 1;
-							world[next_room].z_coord = world[curr_room].z_coord;
-						}
-						break;
-						case DIR_SOUTHWEST:
-						{
-							world[next_room].x_coord = world[curr_room].x_coord - 1;
-							world[next_room].y_coord = world[curr_room].y_coord - 1;
-							world[next_room].z_coord = world[curr_room].z_coord;
-						}
-						break;
-						case DIR_NORTHEAST:
-						{
-							world[next_room].x_coord = world[curr_room].x_coord + 1;
-							world[next_room].y_coord = world[curr_room].y_coord + 1;
-							world[next_room].z_coord = world[curr_room].z_coord;
-						}
-						break;
-						case DIR_SOUTHEAST:
-						{
-							world[next_room].x_coord = world[curr_room].x_coord + 1;
-							world[next_room].y_coord = world[curr_room].y_coord - 1;
-							world[next_room].z_coord = world[curr_room].z_coord;
-						}
-						break;
-						default:
-							break;
 					};
 					world[next_room].map_section = cur_section;
-					room_stack[rs_pointer++]     = next_room;
+					room_stack[rs_pointer++] = next_room;
 				}
 			}
 		}
@@ -1495,7 +1534,7 @@ const char *get_map_direction(int from, int to)
 		return "somewhere";
 	}
 	double delta_tan = delta_y / delta_x;
-	double angle     = atan(delta_tan) * 180 / 3.14159265358979323846;
+	double angle = atan(delta_tan) * 180 / 3.14159265358979323846;
 	if (delta_x < 0)
 		angle = 180 + angle;
 	else if (delta_x > 0 && angle < 0)
@@ -1526,9 +1565,9 @@ void init_map_glyphs(void)
 	for (int room = 0; room <= top_of_world; room++)
 	{
 		if (!IS_MAP_ROOM(room))
-			 continue;
+			continue;
 		ubyte variant = 0;
-		switch(world[room].sector_type)
+		switch (world[room].sector_type)
 		{
 		case SECT_ROAD:
 			for (int dir = 0; dir < 4; dir++)

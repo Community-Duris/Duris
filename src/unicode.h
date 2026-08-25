@@ -9,30 +9,31 @@ typedef unsigned short ushort;
 
 class um128
 {
-private:
+    private:
 	ushort v[128];
 
-public:
-	um128() : v{} {};
-	ushort  operator[](int c) const { return v[c & 127]; }
+    public:
+	um128()
+		: v{} {};
+	ushort operator[](int c) const { return v[c & 127]; }
 	ushort &operator[](int c) { return v[c & 127]; }
 };
 
 class unimap : private std::vector<um128>
 {
-public:
+    public:
 	unimap();
 	unimap(const char16_t[256]);
 	unimap(const char *);
 	unimap(ushort r, const char *);
 	ushort operator[](int c) const;
-	void   set(int c, ushort v);
-	void   foreach(std::function<void(int, ushort)> func) const;
-	void operator+=(const unimap& other);
-	void operator-=(const unimap& other);
+	void set(int c, ushort v);
+	void foreach(std::function<void(int, ushort)> func) const;
+	void operator+=(const unimap &other);
+	void operator-=(const unimap &other);
 };
 
-int  get_utf8(const char *&s);
+int get_utf8(const char *&s);
 void put_utf8(char *&d, int v);
 void downgrade_string(char *out, const char *in, const unimap &conv);
 

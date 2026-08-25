@@ -22,21 +22,21 @@
    external variables
  */
 
-extern P_char      character_list;
-extern P_desc      descriptor_list;
-extern P_index     mob_index;
-extern P_index     obj_index;
-extern P_room      world;
-extern char       *coin_names[];
-extern char       *command[];
+extern P_char character_list;
+extern P_desc descriptor_list;
+extern P_index mob_index;
+extern P_index obj_index;
+extern P_room world;
+extern char *coin_names[];
+extern char *command[];
 extern const char *dirs[];
 // extern const char rev_dir[];
 extern const struct stat_data stat_factor[];
-extern int                    planes_room_num[];
-extern int                    top_of_zone_table;
-extern struct command_info    cmd_info[MAX_CMD_LIST];
-extern struct zone_data      *zone;
-extern struct zone_data      *zone_table;
+extern int planes_room_num[];
+extern int top_of_zone_table;
+extern struct command_info cmd_info[MAX_CMD_LIST];
+extern struct zone_data *zone;
+extern struct zone_data *zone_table;
 
 int forest_animals(P_char ch, P_char pl, int cmd, char *arg)
 {
@@ -47,7 +47,8 @@ int forest_animals(P_char ch, P_char pl, int cmd, char *arg)
 		obj = read_object(GET_VNUM(ch), VIRTUAL);
 		if (!(obj))
 		{
-			logit(LOG_EXIT, "forest_animals: death object for mob %d doesn't exist", GET_VNUM(ch));
+			logit(LOG_EXIT, "forest_animals: death object for mob %d doesn't exist",
+			      GET_VNUM(ch));
 			return FALSE;
 		}
 		obj_to_room(obj, ch->in_room);
@@ -90,11 +91,13 @@ int forest_corpse(P_obj obj, P_char ch, int cmd, char *args)
 		corpse = read_object(VOBJ_TTFOREST_ROTTING_CORPSE, VIRTUAL);
 		if (!corpse)
 		{
-			logit(LOG_EXIT, "forest_corpse: unable to load obj #%d", VOBJ_TTFOREST_ROTTING_CORPSE);
+			logit(LOG_EXIT, "forest_corpse: unable to load obj #%d",
+			      VOBJ_TTFOREST_ROTTING_CORPSE);
 			return FALSE;
 		}
 		corpse->weight = obj->weight;
-		set_obj_affected(corpse, get_property("timer.decay.corpse.npc", 120), TAG_OBJ_DECAY, 0);
+		set_obj_affected(corpse, get_property("timer.decay.corpse.npc", 120), TAG_OBJ_DECAY,
+				 0);
 
 		if (OBJ_CARRIED(obj))
 		{
@@ -138,27 +141,30 @@ int gardener_block(int room, P_char ch, int cmd, char *args)
 	r = world[room].number;
 	switch (cmd)
 	{
-		case CMD_NORTH:
-			if ((r == 13553) || (r == 13558) || (r == 13568) || (r == 13569))
-				block = 1;
-			break;
-		case CMD_SOUTH:
-			if ((r == 13553) || (r == 13556) || (r == 13564) || (r == 13569))
-				block = 1;
-			break;
-		case CMD_EAST:
-			if ((r == 13570) || (r == 13558) || (r == 13557) || (r == 13555) || (r == 13556) || (r == 13571))
-				block = 1;
-			break;
-		case CMD_WEST:
-			if ((r == 13570) || (r == 13568) || (r == 13567) || (r == 13565) || (r == 13564) || (r == 13571))
-				block = 1;
-			break;
-		default:
-			return FALSE;
+	case CMD_NORTH:
+		if ((r == 13553) || (r == 13558) || (r == 13568) || (r == 13569))
+			block = 1;
+		break;
+	case CMD_SOUTH:
+		if ((r == 13553) || (r == 13556) || (r == 13564) || (r == 13569))
+			block = 1;
+		break;
+	case CMD_EAST:
+		if ((r == 13570) || (r == 13558) || (r == 13557) || (r == 13555) || (r == 13556) ||
+		    (r == 13571))
+			block = 1;
+		break;
+	case CMD_WEST:
+		if ((r == 13570) || (r == 13568) || (r == 13567) || (r == 13565) || (r == 13564) ||
+		    (r == 13571))
+			block = 1;
+		break;
+	default:
+		return FALSE;
 	}
 
-	if (!block || ch->equipment[WEAR_WAIST] && obj_index[ch->equipment[WEAR_WAIST]->R_num].virtual_number == 13521)
+	if (!block || ch->equipment[WEAR_WAIST] &&
+			      obj_index[ch->equipment[WEAR_WAIST]->R_num].virtual_number == 13521)
 		return FALSE;
 
 	act("A magical force prevents you from entering the garden", TRUE, ch, NULL, NULL, TO_CHAR);

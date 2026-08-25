@@ -29,7 +29,7 @@ typedef struct _randObjAff
 
 	unsigned int cost;
 	unsigned int incCost;
-	int          negGood; // boolean
+	int negGood; // boolean
 
 	unsigned int restrictedLoc; // uses item_wear flags
 

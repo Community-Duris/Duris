@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 source = (ROOT / "src/plushit.c").read_text()
@@ -23,22 +24,22 @@ for symbol in (
     assert symbol in source, symbol
 
 # both switches are read per call and default to off
-assert 'get_property("combat.plushit.enforce", 0)' in source
-assert 'get_property("combat.silver.enforce", 0)' in source
+assert contains(source, 'get_property("combat.plushit.enforce", 0)')
+assert contains(source, 'get_property("combat.silver.enforce", 0)')
 
 # the rule is never enforced against players or for trusted attackers
-assert "IS_PC(victim) || IS_TRUSTED(ch)" in source
+assert contains(source, "IS_PC(victim) || IS_TRUSTED(ch)")
 
 # fight.c carries exactly one guard, and it only ever aborts the swing
 assert fight.count("plushit_blocks(") == 1
-assert '#include "plushit.h"' in fight
-assert "if (plushit_blocks(ch, victim, weapon))" in fight
+assert contains(fight, '#include "plushit.h"')
+assert contains(fight, "if (plushit_blocks(ch, victim, weapon))")
 
 # one object line
 assert "plushit.o" in makefile
 
 # the public surface is one predicate
-assert "int plushit_blocks(P_char ch, P_char victim, P_obj weapon);" in header
+assert contains(header, "int plushit_blocks(P_char ch, P_char victim, P_obj weapon);")
 
 # ships off: the stock properties file carries neither key
 assert "combat.plushit.enforce" not in properties
