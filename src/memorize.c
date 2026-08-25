@@ -45,8 +45,6 @@ void event_scribe(P_char, P_char, P_obj, void *);
 void affect_to_end(P_char ch, struct affected_type *af);
 void prac_all_spells(P_char ch);
 
-#define REVERSE_DRAGOON_COMMUNE
-
 char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 
 /*
@@ -882,18 +880,7 @@ void handle_undead_mem(P_char ch)
 		return;
 	}
 
-#ifdef REVERSE_DRAGOON_COMMUNE
-	bool swapMemOrder = false;
-
-	if (IS_DRAGOON(ch))
-		swapMemOrder = true;
-
-	int max_circle = get_max_circle(ch);
-
-	for (i = (swapMemOrder ? 1 : max_circle); (swapMemOrder ? i <= max_circle : i >= 1); (swapMemOrder ? i++ : i--))
-#else
 	for (i = get_max_circle(ch); i >= 1; i--)
-#endif
 	{
 		if (ch->specials.undead_spell_slots[i] >= max_spells_in_circle(ch, i))
 		{
@@ -1224,7 +1211,12 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 		send_to_char(Gbuf1, ch);
 
 	if ((USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch)) && need_mem && !get_scheduled(ch, event_memorize))
-		add_event(event_memorize, get_circle_memtime(ch, need_mem), ch, 0, 0, 0, 0, 0);
+	{
+		if (IS_DRAGOON(ch) && !is_dragoon_mounted(ch))
+			send_to_char("You feel unable to &+rcommune&n with the &+GDr&+Lag&+Gon&n god unless mounted.\n", ch);
+		else
+			add_event(event_memorize, get_circle_memtime(ch, need_mem), ch, 0, 0, 0, 0, 0);
+	}
 
 	if (!need_mem || USES_COMMUNE(ch) || USES_FOCUS(ch) || USES_DEFOREST(ch))
 		return;
