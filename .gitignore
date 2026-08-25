@@ -23,6 +23,7 @@ lib/etc/help
 lib/etc/vote.undead
 lib/etc/vote.miniwipe
 lib/ban_sites
+lib/relic_highscore
 Ships/ship_index
 arih/
 Accounts/email.db
@@ -46,9 +47,6 @@ durismud-launcher
 Accounts.old.*
 Players.old.*
 backup/
-docs/*
-!docs/STUDIOPROC.md
-!docs/classes_and_races.txt
 .bash_history
 etc/group
 etc/passwd

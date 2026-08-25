@@ -2,6 +2,7 @@
 
 ## Repository guide
 
+- Use `scripts/start_mud.sh` to start/run the game
 - NEVER add co-authors, NEVER add attributions, NEVER add `Claude-Session`, NEVER add signed-off-by lines
 - `src/` contains the server. Its `.c` files are compiled as C++20 with `g++`.
 - `tests/async/` contains focused regression and source-contract tests.
