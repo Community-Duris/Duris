@@ -7297,17 +7297,32 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 
 	if (IS_HUMANOID(ch) && !IS_PATROL(ch))
 	{
-		for (obj = world[ch->in_room].contents; obj; obj = next_obj)
+		/* do_get() takes the first "coins" it finds in the room, which is not
+		   necessarily the pile being examined, and extracting a pile frees it.
+		   A next_content cached across that call can therefore dangle, so
+		   re-scan from the head after every pickup instead.  The counter caps
+		   the rescan in case do_get() declines to take the pile. */
+		bool took_coins;
+		int  coin_scans = 0;
+
+		do
 		{
-			next_obj = obj->next_content;
-			if (IS_SET(obj->extra_flags, ITEM_SECRET))
-				continue;
-			if (obj->type == ITEM_MONEY && CAN_CARRY_W(ch) >= GET_OBJ_WEIGHT(obj))
+			took_coins = FALSE;
+
+			for (obj = world[ch->in_room].contents; obj; obj = next_obj)
 			{
-				strcpy(Gbuf1, "coins");
-				do_get(ch, Gbuf1, CMD_GET);
+				next_obj = obj->next_content;
+				if (IS_SET(obj->extra_flags, ITEM_SECRET))
+					continue;
+				if (obj->type == ITEM_MONEY && CAN_CARRY_W(ch) >= GET_OBJ_WEIGHT(obj))
+				{
+					strcpy(Gbuf1, "coins");
+					do_get(ch, Gbuf1, CMD_GET);
+					took_coins = TRUE;
+					break;
+				}
 			}
-		}
+		} while (took_coins && ++coin_scans < 20);
 	}
 
 	if (IS_SET(ch->specials.act, ACT_SCAVENGER) && world[ch->in_room].contents && (!number(0, MAX(1, 15 - STAT_INDEX(GET_C_INT(ch))))) && !IS_FIGHTING(ch) && !IS_ANIMAL(ch))
