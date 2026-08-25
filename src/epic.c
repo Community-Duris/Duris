@@ -2337,4 +2337,7 @@ void refund_epic_skills(P_char ch)
 	               "&+WYour epic skills have been reset.&n\n&+WYou are refunded %d epics.&N\n&+WYou are refunded %s.&n\n",
 	               point_refund,
 	               coins_to_string(coins_refund / 1000, (coins_refund / 100) % 10, (coins_refund / 10) % 10, coins_refund % 10, "&+W"));
+
+	if (!do_save_silent(ch, 1))
+		logit(LOG_WIZ, "Failed to save %s after clearing racial skills.", GET_NAME(ch));
 }

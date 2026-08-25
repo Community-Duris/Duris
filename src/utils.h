@@ -457,9 +457,9 @@ int race_size(int race);
 
 #define CAN_WEAR(obj, part) (IS_SET((obj)->wear_flags, part))
 
-#define OBJ_VNUM(obj)     (!obj ? panic_corruption_int("utils", "OBJ_VNUM called with NULL obj at %s:%d", __FILE__, __LINE__) : obj_index[obj->R_num].virtual_number)
+#define OBJ_VNUM(obj)     (!obj ? panic_corruption_int("utils", "OBJ_VNUM called with NULL obj at %s:%d", __FILE__, __LINE__) : ((obj)->R_num >= 0 ? obj_index[(obj)->R_num].virtual_number : -1))
 #define OBJ_SHORT(obj)    ((obj)->short_description)
-#define GET_OBJ_PROC(obj) (!obj ? panic_corruption_int("utils", "GET_OBJ_PROC called with NULL obj at %s:%d", __FILE__, __LINE__) : obj_index[obj->R_num].func.obj)
+#define GET_OBJ_PROC(obj) (!obj ? panic_corruption_int("utils", "GET_OBJ_PROC called with NULL obj at %s:%d", __FILE__, __LINE__) : ((obj)->R_num >= 0 ? obj_index[(obj)->R_num].func.obj : NULL))
 
 #define OBJ_MAGIC(obj) (IS_SET(obj->extra2_flags, ITEM2_MAGIC))
 

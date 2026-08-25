@@ -3955,7 +3955,7 @@ void free_obj(P_obj obj)
 		str_free(obj->action_description);
 
 	// If the special function is barb (the mystical warhammer arti).
-	if (obj_index[obj->R_num].func.obj == barb)
+	if (obj->R_num >= 0 && obj_index[obj->R_num].func.obj == barb)
 	{
 		// Call the proc with the reset command for static variables.
 		barb(obj, NULL, CMD_BARB_REMOVE, NULL);

@@ -337,14 +337,17 @@ int calculate_hitpoints2(P_char ch)
 
 	// Calculate racial con.
 	race       = GET_RACE(ch);
-	racial_con = stat_factor[race].Con;
+	racial_con = (race >= 0 && race <= LAST_RACE) ? stat_factor[race].Con : 100;
 	for (i = 0; i < MAX_WEAR; i++)
 	{
 		if ((obj = ch->equipment[i]))
 		{
 			for (j = 0; j < MAX_OBJ_AFFECT; j++)
 			{
-				if (obj->affected[j].location == APPLY_CON_RACE && stat_factor[obj->affected[j].modifier].Con > racial_con)
+				if (obj->affected[j].location == APPLY_CON_RACE &&
+				    obj->affected[j].modifier >= 0 &&
+				    obj->affected[j].modifier <= LAST_RACE &&
+				    stat_factor[obj->affected[j].modifier].Con > racial_con)
 				{
 					race       = obj->affected[j].modifier;
 					racial_con = stat_factor[race].Con;
@@ -682,22 +685,26 @@ void apply_affs(P_char ch, int mode)
 	}
 
 	t1            = (!mode || !TmpAffs.r_Str) ? (int)GET_RACE(ch) : TmpAffs.r_Str;
+	t1            = BOUNDED(0, t1, LAST_RACE);
 	t3            = (mode) ? (100 + TmpAffs.m_Str) : 100;
 	t2            = BOUNDED(1, (ch->base_stats.Str + ((mode) ? TmpAffs.c_Str : 0)), t3);
 	GET_C_STR(ch) = BOUNDED(1, (int)(stat_factor[t1].Str * t2 / 100. + .55), 511);
 
 	t1            = (!mode || !TmpAffs.r_Dex) ? (int)GET_RACE(ch) : TmpAffs.r_Dex;
+	t1            = BOUNDED(0, t1, LAST_RACE);
 	t3            = (mode) ? (100 + TmpAffs.m_Dex) : 100;
 	t2            = BOUNDED(1, (ch->base_stats.Dex + ((mode) ? TmpAffs.c_Dex : 0)), t3);
 	GET_C_DEX(ch) = BOUNDED(1, (int)(stat_factor[t1].Dex * t2 / 100. + .55), 511);
 
 	t1            = (!mode || !TmpAffs.r_Agi) ? (int)GET_RACE(ch) : TmpAffs.r_Agi;
+	t1            = BOUNDED(0, t1, LAST_RACE);
 	t3            = (mode) ? (100 + TmpAffs.m_Agi) : 100;
 	t2            = BOUNDED(1, (ch->base_stats.Agi + ((mode) ? TmpAffs.c_Agi : 0)), t3);
 	GET_C_AGI(ch) = BOUNDED(1, (int)(stat_factor[t1].Agi * t2 / 100. + .55), 511);
 
 	// t1 = which race to apply racial con with.
 	t1 = (!mode || !TmpAffs.r_Con) ? (int)GET_RACE(ch) : TmpAffs.r_Con;
+	t1 = BOUNDED(0, t1, LAST_RACE);
 	// t3 = the amount of maxcon to apply.
 	t3 = (mode) ? (100 + TmpAffs.m_Con) : 100;
 	// t2 = amount of base_con + reg con eq, bounded between 1 and t3 (100 + maxcon).
@@ -708,31 +715,37 @@ void apply_affs(P_char ch, int mode)
 	GET_C_CON(ch) = BOUNDED(1, (int)(stat_factor[t1].Con * t2 / 100. + .55), 511);
 
 	t1            = (!mode || !TmpAffs.r_Pow) ? (int)GET_RACE(ch) : TmpAffs.r_Pow;
+	t1            = BOUNDED(0, t1, LAST_RACE);
 	t3            = (mode) ? (100 + TmpAffs.m_Pow) : 100;
 	t2            = BOUNDED(1, (ch->base_stats.Pow + ((mode) ? TmpAffs.c_Pow : 0)), t3);
 	GET_C_POW(ch) = BOUNDED(1, (int)(stat_factor[t1].Pow * t2 / 100. + .55), 511);
 
 	t1            = (!mode || !TmpAffs.r_Int) ? (int)GET_RACE(ch) : TmpAffs.r_Int;
+	t1            = BOUNDED(0, t1, LAST_RACE);
 	t3            = (mode) ? (100 + TmpAffs.m_Int) : 100;
 	t2            = BOUNDED(1, (ch->base_stats.Int + ((mode) ? TmpAffs.c_Int : 0)), t3);
 	GET_C_INT(ch) = BOUNDED(1, (int)(stat_factor[t1].Int * t2 / 100. + .55), 511);
 
 	t1            = (!mode || !TmpAffs.r_Wis) ? (int)GET_RACE(ch) : TmpAffs.r_Wis;
+	t1            = BOUNDED(0, t1, LAST_RACE);
 	t3            = (mode) ? (100 + TmpAffs.m_Wis) : 100;
 	t2            = BOUNDED(1, (ch->base_stats.Wis + ((mode) ? TmpAffs.c_Wis : 0)), t3);
 	GET_C_WIS(ch) = BOUNDED(1, (int)(stat_factor[t1].Wis * t2 / 100. + .55), 511);
 
 	t1            = (!mode || !TmpAffs.r_Cha) ? (int)GET_RACE(ch) : TmpAffs.r_Cha;
+	t1            = BOUNDED(0, t1, LAST_RACE);
 	t3            = (mode) ? (100 + TmpAffs.m_Cha) : 100;
 	t2            = BOUNDED(1, (ch->base_stats.Cha + ((mode) ? TmpAffs.c_Cha : 0)), t3);
 	GET_C_CHA(ch) = BOUNDED(1, (int)(stat_factor[t1].Cha * t2 / 100. + .55), 511);
 
 	t1            = (!mode || !TmpAffs.r_Kar) ? (int)GET_RACE(ch) : TmpAffs.r_Kar;
+	t1            = BOUNDED(0, t1, LAST_RACE);
 	t3            = (mode) ? (100 + TmpAffs.m_Kar) : 100;
 	t2            = BOUNDED(1, (ch->base_stats.Kar + ((mode) ? TmpAffs.c_Kar : 0)), t3);
 	GET_C_KAR(ch) = BOUNDED(1, (int)(stat_factor[t1].Kar * t2 / 100. + .55), 511);
 
 	t1            = (!mode || !TmpAffs.r_Luc) ? (int)GET_RACE(ch) : TmpAffs.r_Luc;
+	t1            = BOUNDED(0, t1, LAST_RACE);
 	t3            = (mode) ? (100 + TmpAffs.m_Luc) : 100;
 	t2            = BOUNDED(1, (ch->base_stats.Luk + ((mode) ? TmpAffs.c_Luc : 0)), t3);
 	GET_C_LUK(ch) = BOUNDED(1, (int)(stat_factor[t1].Luk * t2 / 100. + .55), 511);
@@ -752,20 +765,22 @@ void apply_affs(P_char ch, int mode)
 
 	GET_AC(ch) = ch->points.base_armor + ((mode) ? TmpAffs.AC : 0);
 
-	if (GET_C_AGI(ch) > stat_factor[(int)GET_RACE(ch)].Agi)
+	int ch_race = BOUNDED(0, (int)GET_RACE(ch), LAST_RACE);
+
+	if (GET_C_AGI(ch) > stat_factor[ch_race].Agi)
 	{
-		GET_AC(ch) -= (int)(GET_C_AGI(ch) - stat_factor[(int)GET_RACE(ch)].Agi);
+		GET_AC(ch) -= (int)(GET_C_AGI(ch) - stat_factor[ch_race].Agi);
 	}
 
 	temp = ch->points.base_damroll + ((mode) ? TmpAffs.Dam : 0);
 	// Can go over for Immortals and mobs (which is an undetected overflow error).
 	ch->points.damroll = (temp > 255) ? 255 : temp;
 
-	if (IS_PC(ch) && ch->points.damroll > (damroll_cap * combat_by_race[GET_RACE(ch)][2]))
+	if (IS_PC(ch) && ch->points.damroll > (damroll_cap * combat_by_race[ch_race][2]))
 	{
 		// if( IS_PC(ch) ) debug( "damroll: %d, damroll_cap: %d, racial modifier: %.3f, new damroll: %d", ch->points.damroll,
 		//   damroll_cap, combat_by_race[GET_RACE(ch)][2], (int)(damroll_cap * combat_by_race[GET_RACE(ch)][2]) );
-		ch->points.damroll = (int)(damroll_cap * combat_by_race[GET_RACE(ch)][2]);
+		ch->points.damroll = (int)(damroll_cap * combat_by_race[ch_race][2]);
 	}
 
 	/* This shit right here has got to go..  Too complex.
@@ -811,9 +826,9 @@ void apply_affs(P_char ch, int mode)
 		ch->points.hitroll = hitroll_cap;
 	}
 
-	if (GET_C_DEX(ch) > stat_factor[(int)GET_RACE(ch)].Dex)
+	if (GET_C_DEX(ch) > stat_factor[ch_race].Dex)
 	{
-		temp               = ch->points.hitroll + (int)(GET_C_DEX(ch) - stat_factor[(int)GET_RACE(ch)].Dex) / 2;
+		temp               = ch->points.hitroll + (int)(GET_C_DEX(ch) - stat_factor[ch_race].Dex) / 2;
 		ch->points.hitroll = (temp > 127) ? 127 : temp;
 	}
 
@@ -1037,7 +1052,6 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		SET_BIT(TmpAffs.BV_3, bitv[2]);
 		SET_BIT(TmpAffs.BV_4, bitv[3]);
 		SET_BIT(TmpAffs.BV_5, bitv[4]);
-		SET_BIT(TmpAffs.BV_6, bitv[5]);
 	}
 	switch (loc)
 	{
@@ -1143,7 +1157,7 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		case APPLY_STR_RACE:
 			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
 			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_STR_RACE.", loc);
+				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_STR_RACE.", mod);
 				break;
 			}
 			if (!TmpAffs.r_Str || (stat_factor[mod].Str > stat_factor[TmpAffs.r_Str].Str))
@@ -1152,7 +1166,7 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		case APPLY_DEX_RACE:
 			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
 			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_DEX_RACE.", loc);
+				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_DEX_RACE.", mod);
 				break;
 			}
 			if (!TmpAffs.r_Dex || (stat_factor[mod].Dex > stat_factor[TmpAffs.r_Dex].Dex))
@@ -1161,7 +1175,7 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		case APPLY_AGI_RACE:
 			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
 			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_AGI_RACE.", loc);
+				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_AGI_RACE.", mod);
 				break;
 			}
 			if (!TmpAffs.r_Agi || (stat_factor[mod].Agi > stat_factor[TmpAffs.r_Agi].Agi))
@@ -1170,7 +1184,7 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		case APPLY_CON_RACE:
 			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
 			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_CON_RACE.", loc);
+				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_CON_RACE.", mod);
 				break;
 			}
 			if (!TmpAffs.r_Con || (stat_factor[mod].Con > stat_factor[TmpAffs.r_Con].Con))
@@ -1179,7 +1193,7 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		case APPLY_POW_RACE:
 			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
 			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_POW_RACE.", loc);
+				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_POW_RACE.", mod);
 				break;
 			}
 			if (!TmpAffs.r_Pow || (stat_factor[mod].Pow > stat_factor[TmpAffs.r_Pow].Pow))
@@ -1188,7 +1202,7 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		case APPLY_INT_RACE:
 			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
 			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_INT_RACE.", loc);
+				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_INT_RACE.", mod);
 				break;
 			}
 			if (!TmpAffs.r_Int || (stat_factor[mod].Int > stat_factor[TmpAffs.r_Int].Int))
@@ -1197,7 +1211,7 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		case APPLY_WIS_RACE:
 			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
 			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_WIS_RACE.", loc);
+				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_WIS_RACE.", mod);
 				break;
 			}
 			if (!TmpAffs.r_Wis || (stat_factor[mod].Wis > stat_factor[TmpAffs.r_Wis].Wis))
@@ -1206,7 +1220,7 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		case APPLY_CHA_RACE:
 			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
 			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_CHA_RACE.", loc);
+				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_CHA_RACE.", mod);
 				break;
 			}
 			if (!TmpAffs.r_Cha || (stat_factor[mod].Cha > stat_factor[TmpAffs.r_Cha].Cha))
@@ -1215,7 +1229,7 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		case APPLY_KARMA_RACE:
 			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
 			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_KARMA_RACE.", loc);
+				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_KARMA_RACE.", mod);
 				break;
 			}
 			if (!TmpAffs.r_Kar || (stat_factor[mod].Kar > stat_factor[TmpAffs.r_Kar].Kar))
@@ -1224,7 +1238,7 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 		case APPLY_LUCK_RACE:
 			if ((mod <= RACE_NONE) || (mod > LAST_RACE))
 			{
-				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_LUCK_RACE.", loc);
+				logit(LOG_DEBUG, "affect_modify(): unknown race (%d) for APPLY_LUCK_RACE.", mod);
 				break;
 			}
 			if (!TmpAffs.r_Luc || (stat_factor[mod].Luk > stat_factor[TmpAffs.r_Luc].Luk))
@@ -1620,8 +1634,10 @@ char affect_total(P_char ch, int kill_ch)
 		return TRUE;
 	}
 
+	int ch_race = BOUNDED(0, (int)GET_RACE(ch), LAST_RACE);
+
 	// Almost the same as original, just changed get_prop... to pulse_all for speed.
-	ch->specials.base_combat_round = combat_by_race[GET_RACE(ch)][0] + pulse_all;
+	ch->specials.base_combat_round = combat_by_race[ch_race][0] + pulse_all;
 
 	/* Original:
 	ch->specials.base_combat_round = (int)(combat_by_race[GET_RACE(ch)][0]);
@@ -1651,7 +1667,7 @@ char affect_total(P_char ch, int kill_ch)
 	    ch->specials.base_combat_round += (int)cmod;
 	    }
 	*/
-	ch->specials.damage_mod = combat_by_race[GET_RACE(ch)][1];
+	ch->specials.damage_mod = combat_by_race[ch_race][1];
 
 	// Add class modifiers for pulse and damage.
 	if (IS_PC(ch))

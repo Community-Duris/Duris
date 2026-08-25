@@ -16,6 +16,6 @@ assert 'help.lag.pulses' not in properties, "obsolete help lag property remains 
 assert 'if (type == EPIC_BOTTLE)' in epic
 assert 'log_epic_gain_event("epic_bottle"' in epic
 assert 'func == event_wait' in new_events
-assert 'return ch != NULL && IS_PC(ch);' in new_events
+assert 'return ch != NULL && (IS_PC(ch)' in new_events
 
 print("reported latency contract passed")

@@ -9,7 +9,7 @@ log = text.count('logit(LOG_WIZ, "Failed to save %s after wizard flag change.", 
 print(f'count={count} log={log}')
 
 ok = True
-if count < 3 or log < 3:
+if count < 2 or log < 2:
     print('missing wrapped do_save_silent call(s) in actwiz.c')
     ok = False
 

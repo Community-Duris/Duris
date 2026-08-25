@@ -3994,7 +3994,7 @@ void do_attributes(P_char ch, char *argument, int cmd)
 			int              i, i2, i3;
 			struct stat_data racial_stats;
 
-			i                = GET_RACE(ch);
+			i                = BOUNDED(0, (int)GET_RACE(ch), LAST_RACE);
 			for (int j = 0; j < MAX_ATTRIBUTES; j++)
 				racial_stats[j] = stat_factor[i][j];
 
@@ -4007,37 +4007,41 @@ void do_attributes(P_char ch, char *argument, int cmd)
 				{
 					for (i2 = 0; i2 < MAX_OBJ_AFFECT; i2++)
 					{
+						int mod = ch->equipment[i]->affected[i2].modifier;
+						if (mod <= RACE_NONE || mod > LAST_RACE)
+							continue;
+
 						switch (ch->equipment[i]->affected[i2].location)
 						{
 							case APPLY_STR_RACE:
-								racial_stats.Str = MAX(racial_stats.Str, stat_factor[ch->equipment[i]->affected[i2].modifier].Str);
+								racial_stats.Str = MAX(racial_stats.Str, stat_factor[mod].Str);
 								break;
 							case APPLY_DEX_RACE:
-								racial_stats.Dex = MAX(racial_stats.Dex, stat_factor[ch->equipment[i]->affected[i2].modifier].Dex);
+								racial_stats.Dex = MAX(racial_stats.Dex, stat_factor[mod].Dex);
 								break;
 							case APPLY_INT_RACE:
-								racial_stats.Int = MAX(racial_stats.Int, stat_factor[ch->equipment[i]->affected[i2].modifier].Int);
+								racial_stats.Int = MAX(racial_stats.Int, stat_factor[mod].Int);
 								break;
 							case APPLY_WIS_RACE:
-								racial_stats.Wis = MAX(racial_stats.Wis, stat_factor[ch->equipment[i]->affected[i2].modifier].Wis);
+								racial_stats.Wis = MAX(racial_stats.Wis, stat_factor[mod].Wis);
 								break;
 							case APPLY_CON_RACE:
-								racial_stats.Con = MAX(racial_stats.Con, stat_factor[ch->equipment[i]->affected[i2].modifier].Con);
+								racial_stats.Con = MAX(racial_stats.Con, stat_factor[mod].Con);
 								break;
 							case APPLY_AGI_RACE:
-								racial_stats.Agi = MAX(racial_stats.Agi, stat_factor[ch->equipment[i]->affected[i2].modifier].Agi);
+								racial_stats.Agi = MAX(racial_stats.Agi, stat_factor[mod].Agi);
 								break;
 							case APPLY_POW_RACE:
-								racial_stats.Pow = MAX(racial_stats.Pow, stat_factor[ch->equipment[i]->affected[i2].modifier].Pow);
+								racial_stats.Pow = MAX(racial_stats.Pow, stat_factor[mod].Pow);
 								break;
 							case APPLY_CHA_RACE:
-								racial_stats.Cha = MAX(racial_stats.Cha, stat_factor[ch->equipment[i]->affected[i2].modifier].Cha);
+								racial_stats.Cha = MAX(racial_stats.Cha, stat_factor[mod].Cha);
 								break;
 							case APPLY_KARMA_RACE:
-								racial_stats.Kar = MAX(racial_stats.Kar, stat_factor[ch->equipment[i]->affected[i2].modifier].Kar);
+								racial_stats.Kar = MAX(racial_stats.Kar, stat_factor[mod].Kar);
 								break;
 							case APPLY_LUCK_RACE:
-								racial_stats.Luk = MAX(racial_stats.Luk, stat_factor[ch->equipment[i]->affected[i2].modifier].Luk);
+								racial_stats.Luk = MAX(racial_stats.Luk, stat_factor[mod].Luk);
 								break;
 							default:
 								break;

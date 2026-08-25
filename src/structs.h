@@ -2383,7 +2383,7 @@ struct hold_data
 	sh_int move_reg, mana_reg, ward_reg;
 	//  sh_int   spell_pulse, combat_pulse;
 	float spell_pulse, combat_pulse;
-	ulong BV_1, BV_2, BV_3, BV_4, BV_5, BV_6;
+	ulong BV_1, BV_2, BV_3, BV_4, BV_5;
 };
 
 //-----------------------

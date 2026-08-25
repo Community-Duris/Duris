@@ -3950,7 +3950,7 @@ void perform_wear(P_char ch, P_obj obj_object, int keyword)
 	}
 
 	// Battlemage Coat
-	if (obj_index[obj_object->R_num].virtual_number == 400218 && !IS_MULTICLASS_PC(ch) && !affected_by_spell(ch, SPELL_BATTLEMAGE))
+	if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 && !IS_MULTICLASS_PC(ch) && !affected_by_spell(ch, SPELL_BATTLEMAGE))
 	{
 		send_to_char("&+rAs you cover yourself with your &+Ymaje&+rst&+Yic &+Yrobe&+r,\r\n&+ryou suddenly feel an enhanced &+mpower&+r rise up within your &+Ybody&+r!&n\r\n", ch);
 		act("&+L$n's &+Yeyes&+r suddenly glow &+yg&+Yo&+yl&+Yd&+ye&+Yn&+r with po&+Rwe&+rr!&n", TRUE, ch, 0, 0, TO_ROOM);
@@ -4839,9 +4839,18 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 					{
 						wield_to_where = THIRD_WEAPON;
 					}
-					else if (!(IS_SET(ch->equipment[THIRD_WEAPON]->extra_flags, ITEM_TWOHANDS) || ch->equipment[THIRD_WEAPON]->value[0] == WEAPON_2HANDSWORD) || IS_TRUSTED(ch))
+					else if (!ch->equipment[FOURTH_WEAPON] &&
+					         (!(IS_SET(ch->equipment[THIRD_WEAPON]->extra_flags, ITEM_TWOHANDS) || ch->equipment[THIRD_WEAPON]->value[0] == WEAPON_2HANDSWORD) || IS_TRUSTED(ch)))
 					{
 						wield_to_where = FOURTH_WEAPON;
+					}
+					else
+					{
+						if (showit)
+						{
+							send_to_char("You are already wielding as many weapons as you can.\r\n", ch);
+						}
+						break;
 					}
 				}
 				// Let's assume everything takes one or two hands, so here we are doing
@@ -4878,6 +4887,14 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			{
 				if (ch->equipment[PRIMARY_WEAPON])
 				{
+					if (ch->equipment[SECONDARY_WEAPON])
+					{
+						if (showit)
+						{
+							send_to_char("You are already wielding two weapons.\r\n", ch);
+						}
+						break;
+					}
 					wield_to_where = SECONDARY_WEAPON;
 				}
 				else
@@ -4937,46 +4954,15 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 				}
 				break;
 			}
-			if (showit)
+			if (ch->equipment[HOLD])
 			{
-				perform_wear(ch, obj_object, keyword);
+				if (showit)
+				{
+					act("You are already holding $p.", 0, ch, ch->equipment[HOLD], 0, TO_CHAR);
+				}
+				break;
 			}
-			obj_from_char(obj_object);
-			if (HAS_FOUR_HANDS(ch))
-			{
-				if (!ch->equipment[HOLD])
-				{
-					equip_char(ch, obj_object, HOLD, !showit);
-				}
-				else if (!ch->equipment[WIELD])
-				{
-					equip_char(ch, obj_object, WIELD, !showit);
-				}
-				else if (!ch->equipment[WIELD3])
-				{
-					equip_char(ch, obj_object, WIELD3, !showit);
-				}
-				else
-				{
-					equip_char(ch, obj_object, WIELD4, !showit);
-				}
-			}
-			else
-			{
-				if (!ch->equipment[HOLD] || !ch->equipment[WIELD])
-				{
-					equip_char(ch, obj_object, ch->equipment[HOLD] ? WIELD : HOLD, !showit);
-				}
-				else
-				{
-					obj_to_char(obj_object, ch);
-					if (showit)
-					{
-						send_to_char("Weird bug in wield.\r\n", ch);
-					}
-					return FALSE;
-				}
-			}
+			execute_wear(ch, obj_object, HOLD, keyword, showit);
 			return TRUE;
 			break;
 
@@ -5419,7 +5405,7 @@ void do_wear(P_char ch, char *argument, int cmd)
 					return;
 				}
 				// Wear the Object
-				if (obj_index[obj_object->R_num].virtual_number == 400218 && IS_MULTICLASS_PC(ch))
+				if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 && IS_MULTICLASS_PC(ch))
 				{
 					send_to_char("&nThe power of this item is too great for a multiclassed character!&n\r\n", ch);
 					return;
@@ -5465,7 +5451,7 @@ void do_wear(P_char ch, char *argument, int cmd)
 					{
 						continue;
 					}
-					if (obj_index[obj_object->R_num].virtual_number == 400218 && IS_MULTICLASS_PC(ch))
+					if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 && IS_MULTICLASS_PC(ch))
 					{
 						send_to_char("&nThe power of this item is too great for a multiclassed character!&n\r\n", ch);
 						continue;
@@ -5556,7 +5542,7 @@ void do_grab(P_char ch, char *argument, int cmd)
 		obj_object = get_obj_in_list(Gbuf1, ch->carrying);
 		if (obj_object)
 		{
-			if (obj_index[obj_object->R_num].virtual_number == 400218 && IS_MULTICLASS_PC(ch))
+			if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 && IS_MULTICLASS_PC(ch))
 			{
 				send_to_char("&nThe power of this item is too great for a multiclassed character!&n\r\n", ch);
 				return;
@@ -5634,7 +5620,7 @@ void do_remove(P_char ch, char *argument, int cmd)
 					affect_to_char(ch, &af);
 
 					// Battlemage robe
-					if (obj_index[temp_obj->R_num].virtual_number == 400218 && !IS_MULTICLASS_PC(ch))
+					if (temp_obj->R_num >= 0 && obj_index[temp_obj->R_num].virtual_number == 400218 && !IS_MULTICLASS_PC(ch))
 					{
 						affect_from_char(ch, SPELL_BATTLEMAGE);
 						send_to_char("&+rAs you remove the &+Ymaje&+rst&+Yic &+Yrobe&+r, you feel your enhanced &+mpower&+r fade.&n\r\n", ch);
@@ -5692,7 +5678,7 @@ void do_remove(P_char ch, char *argument, int cmd)
 				affect_to_char(ch, &af);
 
 				// Battlemage robe
-				if (obj_index[obj_object->R_num].virtual_number == 400218 && !IS_MULTICLASS_PC(ch))
+				if (obj_object->R_num >= 0 && obj_index[obj_object->R_num].virtual_number == 400218 && !IS_MULTICLASS_PC(ch))
 				{
 					affect_from_char(ch, SPELL_BATTLEMAGE);
 					send_to_char("&+rAs you remove the &+Ymaje&+rst&+Yic &+Yrobe&+r, you feel your enhanced &+mpower&+r fade.&n\r\n", ch);
@@ -5819,7 +5805,7 @@ void do_search(P_char ch, char *argument, int cmd)
 			{ /*
 			   * Was it found?
 			   */
-				if (obj_index[k->R_num].func.obj)
+				if (k->R_num >= 0 && obj_index[k->R_num].func.obj)
 				{
 					proc_handled = (*obj_index[k->R_num].func.obj)(k, ch, CMD_FOUND, NULL);
 				}
