@@ -630,9 +630,20 @@ void CharWait(P_char ch, int delay)
 			}
 		}
 	}
+	// An absurd delay is almost always a caller bug, and it gates the character for
+	//   the whole time.  Log it so the caller can be found, but honour it.
+	if (delay > PULSES_IN_TICK)
+	{
+		logit(LOG_DEBUG, "CharWait: %s given a %d pulse (%d sec) wait.", J_NAME(ch), delay, delay / WAIT_SEC);
+	}
+
 	if (!IS_TRUSTED(ch))
 	{
 		SET_BIT(ch->specials.act2, PLR2_WAIT);
+		// Hard deadline for the command gate.  event_wait normally clears it well
+		//   before this, but if the event is lost, delayed or starved the gate must
+		//   still come down on its own -- a player who cannot type is unrecoverable.
+		ch->specials.wait_until_pulse = ne_event_tick + (unsigned long long)delay + (unsigned long long)(2 * WAIT_SEC);
 	}
 	add_event(event_wait, delay, ch, 0, 0, 0, 0, 0);
 

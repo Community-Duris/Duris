@@ -133,6 +133,7 @@ void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 
 extern void ne_events();
 extern void event_wait(P_char, P_char, P_obj, void *);
+extern unsigned long long ne_event_tick;
 
 long unsigned int ip2ul(const char *ip);
 void              load_alliances();
@@ -1132,9 +1133,14 @@ void game_loop(int port, int sslport)
 			/* Self-heal a stuck command gate: PLR2_WAIT is only ever cleared by
 			 * event_wait, so a wait whose event never got scheduled would silently
 			 * swallow every command the player types for the rest of the session. */
-			if (t_ch && !CAN_ACT(t_ch) && !get_scheduled(t_ch, event_wait))
+			if (t_ch && !CAN_ACT(t_ch) && (!get_scheduled(t_ch, event_wait) || ne_event_tick > t_ch->specials.wait_until_pulse))
 			{
-				logit(LOG_DEBUG, "command gate: %s had PLR2_WAIT set with no event_wait scheduled, clearing.", J_NAME(t_ch));
+				logit(LOG_DEBUG,
+				      "command gate: clearing stuck PLR2_WAIT on %s (event_wait scheduled: %s, pulse %llu, deadline %llu).",
+				      J_NAME(t_ch),
+				      get_scheduled(t_ch, event_wait) ? "yes" : "no",
+				      ne_event_tick,
+				      t_ch->specials.wait_until_pulse);
 				REMOVE_BIT(t_ch->specials.act2, PLR2_WAIT);
 				if (t_ch->in_room != NOWHERE)
 				{

@@ -39,7 +39,10 @@
 #define MAX_FUNCTIONS             6000
 #define FUNCTION_NAMES_FILE       "lib/misc/event_names"
 #define NEVENT_BUDGET_USEC_DEFAULT 25000L
-#define NEVENT_MAX_CALLBACKS_DEFAULT 1000L
+/* The wall-clock budget above is the real bound on the loop.  The callback count
+ * is a secondary guard; at 1000 it was cutting every pulse short at roughly half
+ * the time budget, leaving a permanent multi-thousand event backlog. */
+#define NEVENT_MAX_CALLBACKS_DEFAULT 2000L
 #define NEVENT_PRIORITY_NORMAL    0U
 #define NEVENT_PRIORITY_PLAYER    1U
 #define NEVENT_MAX_DEFERRALS      0U
@@ -954,80 +957,80 @@ static long nevent_elapsed_us(const struct timespec *started, const struct times
 	return (finished->tv_sec - started->tv_sec) * 1000000L + (finished->tv_nsec - started->tv_nsec) / 1000L;
 }
 
-/* Move only the unscanned suffix to the front of the next pulse. Leaving it
- * in the current ring bucket would delay already-due work for a full cycle. */
+/* Move the unscanned but due events to the front of the next pulse.  Leaving
+ * them in the current ring bucket would delay already-due work for a full cycle.
+ * Events that are not due yet stay put, but still get credited the revolution
+ * the scan never gave them. */
 static long nevent_defer_suffix(P_nevent deferred_head)
 {
-	P_nevent event;
-	P_nevent deferred_tail = NULL;
-	P_nevent future_head = NULL;
-	P_nevent prior;
-	int next_pulse;
-	long deferred = 0;
+	P_nevent event, next;
+	P_nevent moved_head = NULL;
+	P_nevent moved_tail = NULL;
+	int      next_pulse;
+	long     deferred = 0;
 
 	if (!deferred_head)
 		return 0;
 
-	/* Only move events that are due in this bucket.  A timer greater than one
-	 * means the event is scheduled for a later ring traversal; moving it to the
-	 * next pulse would make it fire early and would also corrupt its intended
-	 * delay. */
-	for (event = deferred_head; event; event = event->next_sched)
+	next_pulse = (pulse + 1) % PULSES_IN_TICK;
+
+	for (event = deferred_head; event; event = next)
 	{
+		next = event->next_sched;
+
+		/* Scheduled for a later ring traversal.  The scan never reached it, so
+		 * decrement here; otherwise it silently loses a whole revolution. */
 		if (event->timer > 1)
 		{
-			future_head = event;
-			break;
+			event->timer--;
+			continue;
 		}
-		deferred_tail = event;
-	}
-	if (!deferred_tail)
-		return 0;
 
-	next_pulse = (pulse + 1) % PULSES_IN_TICK;
-	prior = deferred_head->prev_sched;
-	if (future_head)
-	{
-		deferred_tail->next_sched = NULL;
-		future_head->prev_sched = prior;
-		if (prior)
-			prior->next_sched = future_head;
+		/* Unlink from this bucket. */
+		if (event->prev_sched)
+			event->prev_sched->next_sched = event->next_sched;
 		else
-			ne_schedule[pulse] = future_head;
-	}
-	else
-	{
-		if (prior)
-			prior->next_sched = NULL;
+			ne_schedule[pulse] = event->next_sched;
+		if (event->next_sched)
+			event->next_sched->prev_sched = event->prev_sched;
 		else
-			ne_schedule[pulse] = NULL;
-		ne_schedule_tail[pulse] = prior;
-	}
-	deferred_head->prev_sched = NULL;
-	deferred_tail->next_sched = NULL;
+			ne_schedule_tail[pulse] = event->prev_sched;
 
-	for (event = deferred_head; event; event = event->next_sched)
-	{
-		event->element = next_pulse;
-		event->timer = 1;
+		event->prev_sched = NULL;
+		event->next_sched = NULL;
+		event->element    = next_pulse;
+		event->timer      = 1;
 		event->deferral_count++;
 		nevent_analytics_record_deferred(event);
 		deferred++;
-		if (event == deferred_tail)
-			break;
+
+		if (!moved_head)
+		{
+			moved_head = moved_tail = event;
+		}
+		else
+		{
+			moved_tail->next_sched = event;
+			event->prev_sched      = moved_tail;
+			moved_tail             = event;
+		}
 	}
 
+	if (!moved_head)
+		return 0;
+
+	/* Prepend the moved run to the next pulse, preserving their order. */
 	if (ne_schedule[next_pulse])
 	{
-		deferred_tail->next_sched = ne_schedule[next_pulse];
-		ne_schedule[next_pulse]->prev_sched = deferred_tail;
+		moved_tail->next_sched              = ne_schedule[next_pulse];
+		ne_schedule[next_pulse]->prev_sched = moved_tail;
 	}
 	else
 	{
-		deferred_tail->next_sched = NULL;
-		ne_schedule_tail[next_pulse] = deferred_tail;
+		ne_schedule_tail[next_pulse] = moved_tail;
 	}
-	ne_schedule[next_pulse] = deferred_head;
+	ne_schedule[next_pulse] = moved_head;
+
 	return deferred;
 }
 
@@ -1070,7 +1073,8 @@ void ne_events(void)
 				clock_gettime(CLOCK_MONOTONIC, &loop_finished);
 				budget_exhausted = nevent_elapsed_us(&loop_started, &loop_finished) >= budget_usec;
 			}
-			if (budget_exhausted && next_event && (max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used && nevent_promote_overdue_player(&next_event, current_nevent))
+			/* Allow one over-cap callback so a starved player event still fires. */
+			if (budget_exhausted && next_event && !priority_promotion_used && nevent_promote_overdue_player(&next_event, current_nevent))
 			{
 				priority_promotion_used = TRUE;
 				continue;
@@ -1134,7 +1138,8 @@ void ne_events(void)
 			if (nevent_elapsed_us(&loop_started, &loop_finished) >= budget_usec)
 				budget_exhausted = TRUE;
 		}
-		if (budget_exhausted && next_event && (max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used && nevent_promote_overdue_player(&next_event, NULL))
+		/* Allow one over-cap callback so a starved player event still fires. */
+		if (budget_exhausted && next_event && !priority_promotion_used && nevent_promote_overdue_player(&next_event, NULL))
 		{
 			priority_promotion_used = TRUE;
 			continue;

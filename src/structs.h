@@ -1421,6 +1421,9 @@ struct char_special_data
 	P_obj  destroying_obj;  /* For destroying objects                  */
 
 	sh_int    timer;
+	// Absolute pulse (ne_event_tick) by which a CharWait() gate must be gone.
+	//   Runtime only; never saved.  See CharWait() and the command gate in comm.c.
+	unsigned long long wait_until_pulse;
 	P_char    arrest_by;
 	char      undead_spell_slots[MAX_CIRCLE + 1];
 
