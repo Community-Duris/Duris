@@ -13,6 +13,7 @@
 #include "interp.h"
 #include "utility.h"
 #include "utils.h"
+#include "chaos_config.h"
 #include <math.h>
 #include <signal.h>
 #include <stdio.h>
@@ -1118,8 +1119,8 @@ void handle_memorize(P_char ch)
 		{
 			if (memorized)
 			{
-#if !defined(CHAOS_MUD) || (CHAOS_MUD != 1)
-				if (book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS) &&
+				if (!chaos_mud_enabled() && book_class(ch) &&
+				    !has_innate(ch, INNATE_ARCANE_RUDIMENTS) &&
 				    !(SpellInSpellBook(ch, af->modifier,
 						       SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND |
 							       SBOOK_MODE_ON_BELT |
@@ -1128,22 +1129,19 @@ void handle_memorize(P_char ch)
 					no_book = true;
 					continue;
 				}
-#endif
 				time = get_circle_memtime(ch, get_spell_circle(ch, af->modifier));
 				add_event(event_memorize, time / 2, ch, 0, 0, 0, &time,
 					  sizeof(time));
 				return;
 			}
-			else
-#if !defined(CHAOS_MUD) || (CHAOS_MUD != 1)
-				if (book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS) &&
-				    !(SpellInSpellBook(ch, af->modifier,
-						       SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND |
-							       SBOOK_MODE_ON_BELT |
-							       SBOOK_MODE_ON_GROUND)))
+			else if (!chaos_mud_enabled() && book_class(ch) &&
+				 !has_innate(ch, INNATE_ARCANE_RUDIMENTS) &&
+				 !(SpellInSpellBook(ch, af->modifier,
+						    SBOOK_MODE_IN_INV | SBOOK_MODE_AT_HAND |
+							    SBOOK_MODE_ON_BELT |
+							    SBOOK_MODE_ON_GROUND)))
 				no_book = TRUE;
 			else
-#endif
 			{
 				if (meming_class(ch))
 				{
@@ -1729,36 +1727,36 @@ void do_memorize(P_char ch, char *argument, int cmd)
 
 	circle = get_spell_circle(ch, spl);
 
-#if !defined(CHAOS_MUD) || (CHAOS_MUD != 1)
-	if (circle > get_max_circle(ch) && !quested_spell(ch, spl))
+	if (!chaos_mud_enabled())
 	{
-		if ((!book_class(ch) || sbook) && !quested_spell(ch, spl))
+		if (circle > get_max_circle(ch) && !quested_spell(ch, spl))
 		{
-			send_to_char(
-				"That is too powerful an enchantment for you to master.. yet, anyway.\n",
-				ch);
-			return;
+			if ((!book_class(ch) || sbook) && !quested_spell(ch, spl))
+			{
+				send_to_char(
+					"That is too powerful an enchantment for you to master.. yet, anyway.\n",
+					ch);
+				return;
+			}
+			else if (!sbook)
+			{
+				send_to_char(
+					"Yes, you _HAVE_ heard of rumors about that spell.. but you think it beyond your powers anyway.\n",
+					ch);
+				return;
+			}
 		}
-		else if (!sbook)
+		else if (!sbook && book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS))
 		{
 			send_to_char(
-				"Yes, you _HAVE_ heard of rumors about that spell.. but you think it beyond your powers anyway.\n",
+				"Sorry, but you haven't got that spell in any available spellbooks!\n",
 				ch);
 			return;
 		}
 	}
-	else if (!sbook && book_class(ch) && !has_innate(ch, INNATE_ARCANE_RUDIMENTS))
-	{
-		send_to_char("Sorry, but you haven't got that spell in any available spellbooks!\n",
-			     ch);
-		return;
-	}
-	else if (!SKILL_DATA_ALL(ch, spl).maxlearn[0] &&
-		 !SKILL_DATA_ALL(ch, spl).maxlearn[ch->player.spec] && !quested_spell(ch, spl))
-#else
+
 	if (!SKILL_DATA_ALL(ch, spl).maxlearn[0] &&
 	    !SKILL_DATA_ALL(ch, spl).maxlearn[ch->player.spec] && !quested_spell(ch, spl))
-#endif
 	{
 		send_to_char("That spell is beyond your comprehension.\n", ch);
 		return;

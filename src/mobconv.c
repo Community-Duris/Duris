@@ -2,6 +2,7 @@
 #include "structs.h"
 #include "db.h"
 #include "utils.h"
+#include "chaos_config.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -403,10 +404,11 @@ void convertMob(P_char ch)
 
 	hits -= (int)(0.5 * hits * (1.0 - class_hitpoints[flag2idx(ch->player.m_class)]));
 
-#if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-	hits = (int)(hits * (1 / 10));
-	hits += 1; // make sure they have at least a single hp..
-#endif
+	if (chaos_mud_enabled())
+	{
+		hits = (int)(hits * (1 / 10));
+		hits += 1; // make sure they have at least a single hp..
+	}
 
 	ch->points.base_hit = hits;
 	ch->points.hit = ch->points.max_hit = ch->points.base_hit;

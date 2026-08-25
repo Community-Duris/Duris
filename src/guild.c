@@ -15,6 +15,7 @@
 #include "interp.h"
 #include "utility.h"
 #include "utils.h"
+#include "chaos_config.h"
 #include "guild.h"
 #include "hardcore_config.h"
 #include <stdio.h>
@@ -55,6 +56,7 @@ bool avail_prac[MAX_SKILLS];
 void update_skills(P_char ch)
 {
 	int skl, spec, cls, skllvl, maxlearn, minlearn;
+	bool chaos_mode;
 
 	spec = ch->player.spec;
 	cls = flag2idx(ch->player.m_class) - 1;
@@ -62,16 +64,18 @@ void update_skills(P_char ch)
 
 	if (!ch || !IS_PC(ch))
 		return;
+	chaos_mode = chaos_mud_enabled();
 
 	for (skl = FIRST_SKILL; skl <= LAST_SKILL; skl++)
 	{
 		skllvl = GET_LVL_FOR_SKILL(ch, skl);
 		if (IS_EPIC_SKILL(skl))
 		{
-#if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-			ch->only.pc->skills[skl].taught = 100;
-			ch->only.pc->skills[skl].learned = 100;
-#endif
+			if (chaos_mode)
+			{
+				ch->only.pc->skills[skl].taught = 100;
+				ch->only.pc->skills[skl].learned = 100;
+			}
 		}
 		// If they get th skill and they're high enough level for it.
 		else if ((skllvl > 0) && (GET_LEVEL(ch) >= skllvl))
@@ -91,17 +95,20 @@ void update_skills(P_char ch)
 			      debug("should be: %d, learned so far: %d, notched above: %d", shouldbe, lastlvl, notched);
 			*/
 
-#if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-			ch->only.pc->skills[skl].learned = 100;
-			ch->only.pc->skills[skl].taught = 100;
-#else
-			if (ch->only.pc->skills[skl].taught < minlearn)
-				ch->only.pc->skills[skl].taught = minlearn;
-			if (ch->only.pc->skills[skl].learned < minlearn)
-				ch->only.pc->skills[skl].learned = minlearn;
+			if (chaos_mode)
+			{
+				ch->only.pc->skills[skl].learned = 100;
+				ch->only.pc->skills[skl].taught = 100;
+			}
+			else
+			{
+				if (ch->only.pc->skills[skl].taught < minlearn)
+					ch->only.pc->skills[skl].taught = minlearn;
+				if (ch->only.pc->skills[skl].learned < minlearn)
+					ch->only.pc->skills[skl].learned = minlearn;
 
 				// debug("new learned: %d", ch->only.pc->skills[s].learned);
-#endif
+			}
 		}
 		// If they never get the skill, or aren't high enough level for it.
 		else
@@ -111,11 +118,11 @@ void update_skills(P_char ch)
 		if (!IS_EPIC_SKILL(skl) &&
 		    (ch->only.pc->skills[skl].taught < ch->only.pc->skills[skl].learned))
 		{
-#if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-			ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned = 100;
-#else
-			ch->only.pc->skills[skl].learned = ch->only.pc->skills[skl].taught;
-#endif
+			if (chaos_mode)
+				ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned =
+					100;
+			else
+				ch->only.pc->skills[skl].learned = ch->only.pc->skills[skl].taught;
 		}
 	}
 
@@ -124,16 +131,19 @@ void update_skills(P_char ch)
 	{
 		if (GET_LVL_FOR_SKILL(ch, skl) > 0 && GET_LEVEL(ch) >= GET_LVL_FOR_SKILL(ch, skl))
 		{
-#if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-			ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned = 100;
-#else
-			ch->only.pc->skills[skl].taught =
-				MAX(ch->only.pc->skills[skl].taught,
-				    MAX(SKILL_DATA_ALL(ch, skl).maxlearn[0],
-					SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec]));
-			ch->only.pc->skills[skl].learned = MAX(MIN(40, GET_LEVEL(ch) * 3 / 2),
-							       ch->only.pc->skills[skl].learned);
-#endif
+			if (chaos_mode)
+				ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned =
+					100;
+			else
+			{
+				ch->only.pc->skills[skl].taught =
+					MAX(ch->only.pc->skills[skl].taught,
+					    MAX(SKILL_DATA_ALL(ch, skl).maxlearn[0],
+						SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec]));
+				ch->only.pc->skills[skl].learned =
+					MAX(MIN(40, GET_LEVEL(ch) * 3 / 2),
+					    ch->only.pc->skills[skl].learned);
+			}
 		}
 		else
 		{
@@ -142,13 +152,15 @@ void update_skills(P_char ch)
 		if (SKILL_DATA_ALL(ch, skl).maxlearn[0] < ch->only.pc->skills[skl].taught &&
 		    SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec] <
 			    ch->only.pc->skills[skl].taught)
-#if defined(CHAOS_MUD) && (CHAOS_MUD == 1)
-			ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned = 100;
-#else
-			ch->only.pc->skills[skl].taught =
-				MAX(0, MAX(SKILL_DATA_ALL(ch, skl).maxlearn[0],
-					   SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec]));
-#endif
+		{
+			if (chaos_mode)
+				ch->only.pc->skills[skl].taught = ch->only.pc->skills[skl].learned =
+					100;
+			else
+				ch->only.pc->skills[skl].taught = MAX(
+					0, MAX(SKILL_DATA_ALL(ch, skl).maxlearn[0],
+					       SKILL_DATA_ALL(ch, skl).maxlearn[ch->player.spec]));
+		}
 	}
 }
 
@@ -239,28 +251,30 @@ bool notch_skill(P_char ch, int skill, float chance)
 
 #endif
 
-#if !defined(CHAOS_MUD) || (CHAOS_MUD == 0)
-	// Actual check here.
-	if (number(1, 10000) > chance * 100)
+	if (!chaos_mud_enabled())
 	{
-		return FALSE;
-	}
-
-	// These will fail if ch is already affected by TAG_..._SKILL_NOTCH.
-	if (IS_SET(skills[skill].targets, TAR_PHYS))
-	{
-		if (!affect_timer(ch, get_property("timer.mins.physicalNotch", 5) * WAIT_MIN,
-				  TAG_PHYS_SKILL_NOTCH))
+		// Actual check here.
+		if (number(1, 10000) > chance * 100)
 		{
-			//      debug( "notch_skill: failed affect_timer on '%s' TAG_PHYS_SKILL_NOTCH", J_NAME(ch) );
+			return FALSE;
+		}
+
+		// These will fail if ch is already affected by TAG_..._SKILL_NOTCH.
+		if (IS_SET(skills[skill].targets, TAR_PHYS))
+		{
+			if (!affect_timer(ch,
+					  get_property("timer.mins.physicalNotch", 5) * WAIT_MIN,
+					  TAG_PHYS_SKILL_NOTCH))
+			{
+				//      debug( "notch_skill: failed affect_timer on '%s' TAG_PHYS_SKILL_NOTCH", J_NAME(ch) );
+			}
+		}
+		else if (!affect_timer(ch, get_property("timer.mins.mentalNotch", 10) * WAIT_MIN,
+				       TAG_MENTAL_SKILL_NOTCH))
+		{
+			//    debug( "notch_skill: failed affect_timer on '%s' TAG_MENTAL_SKILL_NOTCH", J_NAME(ch) );
 		}
 	}
-	else if (!affect_timer(ch, get_property("timer.mins.mentalNotch", 10) * WAIT_MIN,
-			       TAG_MENTAL_SKILL_NOTCH))
-	{
-		//    debug( "notch_skill: failed affect_timer on '%s' TAG_MENTAL_SKILL_NOTCH", J_NAME(ch) );
-	}
-#endif
 
 again:
 	snprintf(buf, MAX_STRING_LENGTH, "&+cYou feel your skill in %s improving.\n",
