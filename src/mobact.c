@@ -92,7 +92,6 @@ void do_assist_core(P_char ch, P_char victim);
 int UndeadCombat(P_char ch);
 int GenMobCombat(P_char ch);
 extern int DemonCombat(P_char ch);
-static char *mem_str_dup(char *);
 extern bool execute_quest_routine(P_char, int);
 extern void event_spellcast(P_char, P_char, P_obj, void *);
 

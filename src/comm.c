@@ -684,15 +684,6 @@ void run_the_game(int port, int sslport)
 
 /* Accept new connects, relay commands, and call 'heartbeat-functs' */
 
-static void check_section_time(struct timespec *start, struct timespec *end, const char *name,
-			       int threshold)
-{
-	long elapsed =
-		(end->tv_sec - start->tv_sec) * 1000 + (end->tv_nsec - start->tv_nsec) / 1000000;
-	if (elapsed > threshold * 1000)
-		logit(LOG_EXIT, "SLOW SECTION: %s took %ld ms", name, elapsed);
-}
-
 #define MAX_ACCEPTS_PER_PULSE 32
 
 static int drain_new_connections(int listener, int conn_type, const char *label)

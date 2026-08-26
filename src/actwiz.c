@@ -176,7 +176,6 @@ void write_shutdown_info(const char *immortal_name, const char *reason)
 }
 
 void apply_zone_modifier(P_char ch);
-static P_char load_locker_char(P_char ch, char *locker_name, int bValidateAccess);
 void shopping_stat(P_char ch, P_char keeper, char *arg, int cmd);
 bool is_quested_item(P_obj obj);
 void do_setship(P_char ch, char *arg);

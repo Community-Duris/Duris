@@ -1,11 +1,11 @@
 # Compiler Legacy-Exception Cleanup Plan
 
-**Date:** August 26, 2026  
-**Status:** Planned  
-**Estimated Duration:** 12 working days, plus 2–3 contingency days if const propagation exposes
-behavior-sensitive interfaces  
-**Target:** Remove every flag in `LEGACY_WARNING_EXCEPTIONS` from `src/Makefile` while preserving a clean
-C++20 `-Werror` build
+- **Date:** August 26, 2026
+- **Status:** In progress
+- **Estimated Duration:** 12 working days, plus 2–3 contingency days if const propagation exposes
+  behavior-sensitive interfaces
+- **Target:** Remove every flag in `LEGACY_WARNING_EXCEPTIONS` from `src/Makefile` while preserving a clean
+  C++20 `-Werror` build
 
 ---
 
@@ -310,13 +310,39 @@ Update this table at the end of each day from a clean inventory build:
 
 | Category | Baseline | Current | Exception removed? |
 |---|---:|---:|:---:|
-| `unused-function` | 7 | 7 | No |
+| `unused-function` | 7 | 0 | **Yes** |
 | `unused-but-set-variable` | 160 | 160 | No |
 | `missing-field-initializers` | 546 | 546 | No |
 | `unused-variable` | 1,434 | 1,434 | No |
-| `unused-parameter` | 4,670 | 4,670 | No |
+| `unused-parameter` | 4,670 | 4,668 | No |
 | `write-strings` | 3,130 | 3,130 | No |
-| **Total** | **9,947** | **9,947** | — |
+| **Total** | **9,947** | **9,938** | — |
+
+## 8. Execution Log
+
+### Day 1 — inventory helper and `unused-function` (complete)
+
+**Inventory helper.** `scripts/warning-inventory.sh` performs a clean, non-fatal build with the six legacy
+categories enabled and writes `build/warning-inventory/{raw.log,dedup.txt,report.txt}`. The report records the
+compiler version and the full flag set so counts stay comparable. `build/` is already git-ignored, so the
+inventory leaves no tracked artifacts. It reproduced the documented 9,947 baseline exactly.
+
+**`unused-function` dispositions (7 warnings, 6 files):**
+
+| Site | Classification | Resolution |
+|---|---|---|
+| `actobj.c` `do_get_reject_out_of_sight` | extraction never adopted | Wired in: `do_get_try_container_item` had an inline byte-for-byte duplicate of the helper. Helper moved above its caller and the duplicate replaced; the `GETDBG_LOG` trace is preserved. |
+| `actobj.c` `do_get_reject_too_much_stuff` | obsolete | Removed. Its message string ("That is too much stuff at once.") exists nowhere else and no bulk-get path ever rejected on it. |
+| `actset.c` `ac_stringCopy` | obsolete | Removed. It was never forward-declared with the rest of the `ac_*` setter family and appears in no `set` dispatch table; it was also an unbounded `strcpy` into a struct at a caller-supplied offset. |
+| `actwiz.c` `load_locker_char` | stale declaration | Declaration removed. The real function is `static` inside `storage_lockers.c`; `actwiz.c` could never have linked against it, and its only reference there is commented out. |
+| `mobact.c` `mem_str_dup` | stale declaration | Declaration removed. Never defined, never called anywhere in the tree. |
+| `comm.c` `check_section_time` | partially integrated upstream code | Removed. Introduced by upstream `81f4f813`, which also added five `game_loop` call sites; only the helper was carried into this tree, so the instrumentation it belongs to does not exist here. |
+| `ws_handlers.c` `ws_cmd_request_wholist` | **registration defect** | Wired into `ws_handle_command` as `"request_wholist"`. The handler, its `ws_send_wholist_to_client` producer, and its `durisweb_verified` authorization check were all written but the dispatcher branch was never added, so the backend who-list request silently fell through to the "unknown = game cmd" path. |
+
+**Behavioral defects found:** 1 (`ws_cmd_request_wholist` never dispatched). **Mechanical cleanups:** 6.
+
+**Validation:** `./scripts/format.sh --check` clean; `git diff --check` clean; `make -C src clean && make -C src -j14`
+succeeds with `-Wunused-function` fatal; all `tests/async/test_*.py` contracts pass.
 
 Record behavioral defects separately from mechanical cleanups. The most important result of this project is
 not the warning count reaching zero; it is making the compiler's future signal trustworthy without hiding

@@ -814,6 +814,15 @@ static bool do_get_finalize_container_item_or_reject(P_char ch, P_char hood, P_o
 	return TRUE;
 }
 
+static void do_get_reject_out_of_sight(P_char ch, P_obj o_obj, bool &fail)
+{
+	char Gbuf3[MAX_STRING_LENGTH];
+
+	snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is out of sight.\r\n", o_obj->short_description);
+	send_to_char(Gbuf3, ch);
+	fail = TRUE;
+}
+
 static bool do_get_try_container_item(P_char ch, P_char hood, P_obj s_obj, P_obj o_obj, int &total,
 				      bool &found, bool corpse_flag, bool source_is_local,
 				      bool &stop_bulk, bool &fail, const char *invisible_tag,
@@ -823,14 +832,10 @@ static bool do_get_try_container_item(P_char ch, P_char hood, P_obj s_obj, P_obj
 {
 	const bool local_container = source_is_local;
 	P_char rider = NULL;
-	char Gbuf3[MAX_STRING_LENGTH];
 
 	if (!CAN_SEE_OBJ(ch, o_obj) && !local_container)
 	{
-		snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is out of sight.\r\n",
-			 o_obj->short_description);
-		send_to_char(Gbuf3, ch);
-		fail = TRUE;
+		do_get_reject_out_of_sight(ch, o_obj, fail);
 		GETDBG_LOG(
 			"%s: ch=%s room=%d obj=%s [%d] container=%s [%d] corpse_contents=%d cansee=%d local=%d",
 			invisible_tag, GET_NAME(ch), world[ch->in_room].number,
@@ -924,20 +929,6 @@ static void do_get_reject_missing_container(P_char ch, const char *arg2, bool &f
 static void do_get_reject_not_container(P_char ch, P_obj s_obj, bool &fail)
 {
 	do_get_reject_object(ch, s_obj, "is not a container.", fail);
-}
-
-static void do_get_reject_too_much_stuff(P_char ch, bool &fail)
-{
-	do_get_reject_text(ch, "That is too much stuff at once.\r\n", fail);
-}
-
-static void do_get_reject_out_of_sight(P_char ch, P_obj o_obj, bool &fail)
-{
-	char Gbuf3[MAX_STRING_LENGTH];
-
-	snprintf(Gbuf3, MAX_STRING_LENGTH, "%s is out of sight.\r\n", o_obj->short_description);
-	send_to_char(Gbuf3, ch);
-	fail = TRUE;
 }
 
 static void do_get_reject_fighting_bags(P_char ch, bool &fail)

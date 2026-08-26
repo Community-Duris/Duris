@@ -1665,14 +1665,6 @@ static void ac_affModify(void *where, int offset, char *value, int bit, int on_o
 }
 
 /*
- * ** "Value" contains the string.
- */
-static void ac_stringCopy(void *where, int offset, char *value, int bit, int on_off)
-{
-	strcpy((char *)where + offset, value);
-}
-
-/*
  * ** "bit" is not really a bit to set, but rather, the value of **
  * location.
  */

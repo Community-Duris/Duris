@@ -3361,6 +3361,10 @@ void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 	{
 		ws_cmd_poll_vote(d, data);
 	}
+	else if (strcmp(cmd, "request_wholist") == 0)
+	{
+		ws_cmd_request_wholist(d, data);
+	}
 	else
 	{
 		/* unknown = game cmd */
