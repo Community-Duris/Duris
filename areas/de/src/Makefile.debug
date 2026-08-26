@@ -25,10 +25,17 @@ LIBS     = -lncurses -lstdc++
 SH_LIBS  =
 
 SOURCES  = $(shell find -name "*.cpp")
-OBJS     = $(SOURCES:./%.cpp=../ofiles/%.o)
+
+ROOT_DIR          := $(abspath ../../..)
+BIN_ROOT          ?= $(ROOT_DIR)/bin
+EDITOR_BIN_DIR    ?= $(BIN_ROOT)/areas/editor
+EDITOR_OBJ_DIR    ?= $(BIN_ROOT)/objects/areas/editor/debug
+DE_BINARY         ?= $(EDITOR_BIN_DIR)/de-debug
+
+OBJS = $(patsubst ./%.cpp,$(EDITOR_OBJ_DIR)/%.o,$(SOURCES))
 
 # those below are .c files shared with dms
-C_OBJS = ../ofiles/common.o ../ofiles/skills.o
+C_OBJS = $(EDITOR_OBJ_DIR)/common.o $(EDITOR_OBJ_DIR)/skills.o
 
 #******************************************************************************#
 #******************************************************************************#
@@ -39,59 +46,49 @@ C_OBJS = ../ofiles/common.o ../ofiles/skills.o
 #*******************************************************************************
 #*******************************************************************************
 
-DMS_OBJS = 
-PROGS = de
+DMS_OBJS =
+PROGS = $(DE_BINARY)
 
 ifndef USE_SHARED
 	DMS_OBJS += $(SH_LIBS)
 else
-	PROGS += $(SH_LIBS:.o=.so)
+	PROGS += $(addprefix $(EDITOR_BIN_DIR)/,$(SH_LIBS:.o=.so))
 endif
 
 all: $(PROGS)
 
-de : $(OBJS) message $(C_OBJS)
-	$(CC) $(LDFLAGS) -o de $(OBJS) $(C_OBJS) $(LIBS) $(DEBUG)
+.PHONY: de
+de: $(DE_BINARY)
 
--include ../depend/*.d ../depend/*/*.d
+$(DE_BINARY): $(OBJS) $(C_OBJS) | message
+	@mkdir -p $(dir $@)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(C_OBJS) $(LIBS) $(DEBUG)
 
-../ofiles/%.o: %.cpp
-	@mkdir -p ../ofiles/`echo $* | grep -o '.*/'`
-	$(CC) -c $(CCFLAGS) $(DEBUG) $(INCLUDES) $(OPTS) $< -o $@
-	@mkdir -p ../depend/`echo $* | grep -o '.*/'`
-	@$(CC) -MM $(CCFLAGS) $(DEBUG) $(INCLUDES) $(OPTS) $*.cpp > $*.dep
-	@sed -e 's|.*:|../ofiles/$*.o:|' < $*.dep > ../depend/$*.d
-	@rm -f $*.dep
+-include $(OBJS:.o=.d) $(C_OBJS:.o=.d)
 
-$(C_OBJS): ../ofiles/%.o: %.c
-	$(CC) $(CFLAGS) $(DEBUG) $(INCLUDES) $(OPTS) -c $< -o $@
+$(EDITOR_OBJ_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CC) -c $(CCFLAGS) $(DEBUG) $(INCLUDES) $(OPTS) -MMD -MP $< -o $@
 
-ifeq ($(MALLOC_DEBUG),y)
+$(EDITOR_OBJ_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(DEBUG) $(INCLUDES) $(OPTS) -MMD -MP -c $< -o $@
 
-$(MALLOC_OBJS): %.o: %.cpp
-	$(CC) $(CFLAGS) $(DEBUG) $(INCLUDES) -DDEBUG -c $< -o $@
-else
-
-$(MALLOC_OBJS): %.o: %.cpp
-	$(CC) $(CFLAGS) $(DEBUG) $(OPTS) $(INCLUDES) -c $< -o $@
-endif
-
-$(SH_LIBS:.o=.so): %.so: %.cpp
-	$(CC) $(CFLAGS) $(DEBUG) -fpic -c $< -o $*.o
-	ld -shared -o $@ /usr/lib/crtbeginS.o $*.o /usr/lib/crtendS.o
+$(EDITOR_BIN_DIR)/%.so: %.cpp
+	@mkdir -p $(EDITOR_OBJ_DIR) $(dir $@)
+	$(CC) $(CFLAGS) $(DEBUG) -fpic -c $< -o $(EDITOR_OBJ_DIR)/$*.o
+	ld -shared -o $@ /usr/lib/crtbeginS.o $(EDITOR_OBJ_DIR)/$*.o /usr/lib/crtendS.o
 
 depend .depend:
 	@/bin/echo -e "\e[4mDependencies now created during the creation of .o files.\e[0m"
 	@echo $(OBJS)
 
 clean:
-	rm -f *.o */*.o
-	rm -f de
-	rm -f ../depend/*.d ../depend/*/*.d
-	rm -f ../ofiles/*.o ../ofiles/*/*.o
+	rm -f $(DE_BINARY) $(addprefix $(EDITOR_BIN_DIR)/,$(SH_LIBS:.o=.so))
+	rm -rf $(EDITOR_OBJ_DIR)
 
 message:
-	@if [ ! -f ../ofiles/skills.o ]; then \
+	@if [ ! -f $(EDITOR_OBJ_DIR)/skills.o ]; then \
 	  /bin/echo -e "\e[1mCompiling skills.o may take a few seconds...\e[0m"; \
 	fi
 

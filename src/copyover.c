@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 #include "defines.h"
@@ -29,6 +30,11 @@
 #include "ttype.h"
 #include "websocket.h"
 #include "locker_async.h"
+
+#define DMS_STAGED_BINARY "bin/server/dms_new"
+#define DMS_RUNTIME_BINARY "bin/server/dms"
+#define DMS_HISTORY_DIR "bin/server/history"
+#define DMS_COPYOVER_BACKUP "bin/server/history/dms.copyover"
 
 extern const int top_of_world;
 extern int top_of_zone_table;
@@ -684,36 +690,43 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	// exec new binary
 	snprintf(exec_buf, sizeof(exec_buf), "%d", RUNNING_PORT);
 
-	// copy new binary if exists
-	if (access("src/dms_new", X_OK) == 0)
+	// Promote the staged binary if one exists. All executable artifacts stay
+	// below bin/, including the rollback copy.
+	if (access(DMS_STAGED_BINARY, X_OK) == 0)
 	{
 		int old_binary_renamed = 0;
-		logit(LOG_STATUS, "copyover: copying src/dms_new to ./dms");
-		if (rename("./dms", "./dms.old") == 0)
+		if (mkdir(DMS_HISTORY_DIR, 0755) != 0 && errno != EEXIST)
+		{
+			logit(LOG_STATUS, "copyover: failed to create %s: %s", DMS_HISTORY_DIR,
+			      strerror(errno));
+		}
+		logit(LOG_STATUS, "copyover: promoting %s to %s", DMS_STAGED_BINARY,
+		      DMS_RUNTIME_BINARY);
+		if (rename(DMS_RUNTIME_BINARY, DMS_COPYOVER_BACKUP) == 0)
 		{
 			old_binary_renamed = 1;
 		}
 		else
 		{
-			logit(LOG_STATUS, "copyover: failed to rename ./dms to ./dms.old: %s",
-			      strerror(errno));
+			logit(LOG_STATUS, "copyover: failed to rename %s to %s: %s",
+			      DMS_RUNTIME_BINARY, DMS_COPYOVER_BACKUP, strerror(errno));
 		}
-		if (rename("src/dms_new", "./dms") != 0)
+		if (rename(DMS_STAGED_BINARY, DMS_RUNTIME_BINARY) != 0)
 		{
-			logit(LOG_STATUS, "copyover: failed to install src/dms_new as ./dms: %s",
-			      strerror(errno));
-			if (old_binary_renamed && rename("./dms.old", "./dms") != 0)
+			logit(LOG_STATUS, "copyover: failed to install %s as %s: %s",
+			      DMS_STAGED_BINARY, DMS_RUNTIME_BINARY, strerror(errno));
+			if (old_binary_renamed &&
+			    rename(DMS_COPYOVER_BACKUP, DMS_RUNTIME_BINARY) != 0)
 			{
-				logit(LOG_STATUS,
-				      "copyover: failed to restore ./dms from ./dms.old: %s",
-				      strerror(errno));
+				logit(LOG_STATUS, "copyover: failed to restore %s from %s: %s",
+				      DMS_RUNTIME_BINARY, DMS_COPYOVER_BACKUP, strerror(errno));
 			}
 		}
 	}
 
 	logit(LOG_STATUS, "copyover: executing new binary...");
 
-	execl("./dms", "dms", "-C", exec_buf, (char *)NULL);
+	execl(DMS_RUNTIME_BINARY, "dms", "-C", exec_buf, (char *)NULL);
 
 	// if we get here, exec failed
 	logit(LOG_STATUS, "copyover: execl failed: %s", strerror(errno));

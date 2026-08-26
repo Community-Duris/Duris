@@ -8,14 +8,25 @@ itself.
 ## Standard build
 
 ```bash
-make                 # server, area editor, and area-generation tools
-make -C src          # server only; produces src/dms_new
-cp src/dms_new dms   # runtime binary name expected by scripts/
+make                                    # server, editor, and area tools
+make -C src                             # produces bin/server/dms_new
+cp bin/server/dms_new bin/server/dms    # manually promote for a direct run
 ```
 
 The root `Makefile` is the maintained full-project entry point. `make clean`
 removes compiled server, editor, and area-tool artifacts but preserves generated
-world data. Do not commit binaries or `obj/` output (gitignored).
+world data, the active runtime, package artifacts, and runtime history. Every
+compiled artifact belongs below `bin/`, whose contents are gitignored:
+
+| Path | Contents |
+| --- | --- |
+| `bin/server/` | Staged, active, and sanitizer server executables. |
+| `bin/server/history/` | Bounded runtime executable history. |
+| `bin/areas/` | Area editor and generation tools. |
+| `bin/migrations/`, `bin/tools/` | Standalone maintenance utilities. |
+| `bin/objects/` | Object and dependency files for every build flavor. |
+| `bin/packages/` | Debian package and package metadata. |
+| `bin/tests/` | Native test executables. |
 
 ## Compile flags
 
@@ -57,7 +68,8 @@ The server boots from combined area files (`areas/world.wld`, `world.mob`,
 are generated, not hand-edited:
 
 1. Build the compilers: `make build-area-tools` (produces `make_mob`,
-   `make_obj`, `make_qst`, `make_shp`, `make_wld`, `make_zon`).
+   `make_obj`, `make_qst`, `make_shp`, `make_wld`, and `make_zon` under
+   `bin/areas/tools/`).
 2. Generate: `make world` (runs `areas/m_slow`, including lookup generation).
 
 The six independent compiler builds inherit GNU Make's jobserver, so
@@ -81,7 +93,7 @@ intervention.
 - Smoke test on a development port (uses `duris_dev`, never production):
 
   ```bash
-  ./dms 4000 &
+  ./bin/server/dms 4000 &
   sleep 5 && telnet localhost 4000   # confirm greeting, then shut down
   ```
 

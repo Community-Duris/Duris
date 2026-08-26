@@ -1,9 +1,12 @@
 #!/bin/sh
 set -eu
 
-./make_mob
-./make_obj
-./make_qst
-./make_shp
-./make_wld
-./make_zon
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+TOOL_DIR="$SCRIPT_DIR/../bin/areas/tools"
+
+"$TOOL_DIR/make_mob"
+"$TOOL_DIR/make_obj"
+"$TOOL_DIR/make_qst"
+"$TOOL_DIR/make_shp"
+"$TOOL_DIR/make_wld"
+"$TOOL_DIR/make_zon"

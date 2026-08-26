@@ -21,6 +21,18 @@ fi
 
 RESULT=53
 STOP_REASON="initial bootup"
+SERVER_BIN_DIR="bin/server"
+STAGED_BINARY="$SERVER_BIN_DIR/dms_new"
+RUNTIME_BINARY="$SERVER_BIN_DIR/dms"
+BINARY_HISTORY_DIR="$SERVER_BIN_DIR/history"
+BINARY_HISTORY_LIMIT="${DMS_BINARY_HISTORY_LIMIT:-5}"
+
+if ! [[ "$BINARY_HISTORY_LIMIT" =~ ^[0-9]+$ ]]; then
+  echo "Warning: invalid DMS_BINARY_HISTORY_LIMIT; using 5"
+  BINARY_HISTORY_LIMIT=5
+fi
+
+mkdir -p "$BINARY_HISTORY_DIR"
 
 ulimit -c unlimited
 
@@ -75,11 +87,19 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
 	DATESTR=`date +%C%y.%m.%d-%H.%M.%S`
 
   if [[ $RESULT == 53 || $RESULT == 57 ]]; then
-    if [ -f src/dms_new ]; then
-			if [ -f dms ]; then
-		  	mv dms dms.$DATESTR
-			fi
-      mv src/dms_new dms
+    if [ -f "$STAGED_BINARY" ]; then
+      if [ -f "$RUNTIME_BINARY" ]; then
+        mv "$RUNTIME_BINARY" "$BINARY_HISTORY_DIR/dms.$DATESTR"
+      fi
+      mv "$STAGED_BINARY" "$RUNTIME_BINARY"
+
+      mapfile -t OLD_BINARIES < <(
+        find "$BINARY_HISTORY_DIR" -maxdepth 1 -type f -name 'dms.*' \
+          -printf '%T@ %p\n' | sort -nr | tail -n "+$((BINARY_HISTORY_LIMIT + 1))" | cut -d' ' -f2-
+      )
+      if (( ${#OLD_BINARIES[@]} > 0 )); then
+        rm -f -- "${OLD_BINARIES[@]}"
+      fi
     fi
   fi
 
@@ -101,7 +121,7 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   ./scripts/backup_pfiles.sh
 
   echo "Building area tools if needed..."
-  if [ ! -x "areas/make_mob" ] || [ ! -x "areas/make_obj" ] || [ ! -x "areas/make_qst" ] || [ ! -x "areas/make_shp" ] || [ ! -x "areas/make_wld" ] || [ ! -x "areas/make_zon" ]; then
+  if [ ! -x "bin/areas/tools/make_mob" ] || [ ! -x "bin/areas/tools/make_obj" ] || [ ! -x "bin/areas/tools/make_qst" ] || [ ! -x "bin/areas/tools/make_shp" ] || [ ! -x "bin/areas/tools/make_wld" ] || [ ! -x "bin/areas/tools/make_zon" ]; then
     (cd ./areas/src && make -j1) || exit 1
   fi
 
@@ -109,7 +129,7 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   (cd ./areas && ./m_slow)
 
   echo "Generating list of function names.."
-  nm --demangle dms | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
+  nm --demangle "$RUNTIME_BINARY" | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
 
 	if [ -f /usr/bin/sendemail ]; then
 		if [ -f /logs/old-logs/$DATESTR/exit ]; then
@@ -133,7 +153,7 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   fi
 
   echo "Starting duris on port ${MUD_PORT}..."
-  ./dms ${MUD_PORT} # > dms.out
+  "$RUNTIME_BINARY" ${MUD_PORT} # > dms.out
 
 	# capture the exit code
   RESULT=${PIPESTATUS[0]}
@@ -227,4 +247,3 @@ if [ -f /usr/bin/sendemail ]; then
 		-f mud@durismud.com -u "Duris Shutdown..." \
 		-m "Mud shutdown at ${DATESTR}, shutdown reason: ${STOP_REASON} [${RESULT}]."
 fi
-

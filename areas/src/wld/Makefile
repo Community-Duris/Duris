@@ -1,12 +1,22 @@
-.PHONY: all clean
+TOOL := make_wld
+BIN_ROOT ?= $(abspath ../../..)/bin
+AREA_TOOL_BIN_DIR ?= $(BIN_ROOT)/areas/tools
+AREA_TOOL_OBJ_DIR ?= $(BIN_ROOT)/objects/areas/tools
+TARGET := $(AREA_TOOL_BIN_DIR)/$(TOOL)
+OBJECT := $(AREA_TOOL_OBJ_DIR)/wld/$(TOOL).o
 
-all: ../../make_wld
+.PHONY: all $(TOOL) clean
 
-../../make_wld: make_wld.o
+all: $(TARGET)
+$(TOOL): $(TARGET)
+
+$(TARGET): $(OBJECT)
+	@mkdir -p $(dir $@)
 	gcc -o $@ $<
 
-make_wld.o : make_wld.c
-	gcc -c -g make_wld.c
+$(OBJECT): $(TOOL).c
+	@mkdir -p $(dir $@)
+	gcc -c -g $< -o $@
 
 clean:
-	$(RM) make_wld.o ../../make_wld
+	rm -f $(TARGET) $(OBJECT)

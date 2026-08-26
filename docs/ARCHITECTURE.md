@@ -12,7 +12,7 @@ for operations. A visual overview lives in
 
 ## Process model
 
-One process (`dms`, built as `src/dms_new`). There is no fork-per-connection;
+One process (`bin/server/dms`, staged as `bin/server/dms_new`). There is no fork-per-connection;
 all I/O is multiplexed in a single `select()` loop. Concurrency exists only in:
 
 - Three asynchronous MySQL persistence worker threads (see [DATABASE.md](DATABASE.md)).

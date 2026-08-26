@@ -60,7 +60,7 @@
         {
             "label": "Kill Duris",
             "type": "shell",
-            "command": "pkill -KILL -x dms || true; pkill -KILL -f 'gdb.*(\\./)?dms' || true",
+            "command": "pkill -KILL -x dms || true; pkill -KILL -f 'gdb.*bin/server/dms' || true",
             "presentation": {
                 "reveal": "never",
                 "panel": "shared"
@@ -69,7 +69,7 @@
         {
             "label": "Copy Duris",
             "type": "shell",
-            "command": "cp ./src/dms_new ./dms",
+            "command": "mkdir -p ./bin/server/history && cp ./bin/server/dms_new ./bin/server/dms",
             "presentation": {
                 "reveal": "never",
                 "panel": "shared"

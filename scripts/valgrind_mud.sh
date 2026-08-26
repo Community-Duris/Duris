@@ -27,7 +27,7 @@ Usage: scripts/valgrind_mud.sh [options] [-- valgrind-args...]
 Options:
   --tool=TOOL         memcheck (default), helgrind, drd, massif, callgrind
   --port N            port to bind (default 4000; 7777 is refused)
-  --build             run `make -C src` and refresh ./dms first
+  --build             run `make -C src` and refresh bin/server/dms first
   --gen-suppressions  emit ready-to-paste suppression blocks for every error
   --trace-children    follow exec() (copyover); off by default
   -h, --help          this message
@@ -79,17 +79,21 @@ if (( PORT == 7777 )); then
   exit 2
 fi
 
+STAGED_BINARY="bin/server/dms_new"
+RUNTIME_BINARY="bin/server/dms"
+
 if (( BUILD )); then
-  echo "Building src/dms_new..."
+  echo "Building $STAGED_BINARY..."
   make -C src
 fi
 
-if [[ -f src/dms_new ]] && { (( BUILD )) || [[ ! -f dms ]] || [[ src/dms_new -nt dms ]]; }; then
-  cp -f src/dms_new dms
+if [[ -f "$STAGED_BINARY" ]] && { (( BUILD )) || [[ ! -f "$RUNTIME_BINARY" ]] || [[ "$STAGED_BINARY" -nt "$RUNTIME_BINARY" ]]; }; then
+  mkdir -p bin/server/history
+  cp -f "$STAGED_BINARY" "$RUNTIME_BINARY"
 fi
 
-if [[ ! -x dms ]]; then
-  echo "ERROR: ./dms not found. Run with --build, or 'make -C src && cp src/dms_new dms'." >&2
+if [[ ! -x "$RUNTIME_BINARY" ]]; then
+  echo "ERROR: $RUNTIME_BINARY not found. Run with --build." >&2
   exit 1
 fi
 
@@ -100,7 +104,7 @@ mkdir -p logs/log logs/valgrind
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG="logs/valgrind/${TOOL}-${STAMP}.log"
 
-# -g is already in src/Makefile CFLAGS with no -O, so ./dms carries the full
+# -g is already in src/Makefile CFLAGS with no -O, so the runtime carries the full
 # debug info Valgrind needs for readable stacks.
 COMMON=(
   "--tool=$TOOL"
@@ -143,13 +147,13 @@ fi
 
 # The MUD ignores SIGPIPE and reboots itself on some exit codes; under
 # Valgrind we want a single, plain, foreground run instead.
-echo "Running: valgrind --tool=$TOOL ./dms $PORT"
+echo "Running: valgrind --tool=$TOOL $RUNTIME_BINARY $PORT"
 echo "Report:  $LOG"
 echo "Expect the game to boot roughly 20-50x slower than normal."
 echo
 
 set +e
-valgrind "${COMMON[@]}" ${EXTRA[@]+"${EXTRA[@]}"} ./dms "$PORT"
+valgrind "${COMMON[@]}" ${EXTRA[@]+"${EXTRA[@]}"} "$RUNTIME_BINARY" "$PORT"
 RESULT=$?
 set -e
 

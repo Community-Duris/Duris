@@ -48,21 +48,25 @@ if ! command -v nm >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ ! -x src/dms_new ]]; then
-  echo "ERROR: src/dms_new not found. Run 'make -C src' first." >&2
+STAGED_BINARY="bin/server/dms_new"
+RUNTIME_BINARY="bin/server/dms"
+
+if [[ ! -x "$STAGED_BINARY" ]]; then
+  echo "ERROR: $STAGED_BINARY not found. Run 'make -C src' first." >&2
   exit 1
 fi
 
 ulimit -c unlimited 2>/dev/null || echo "WARNING: could not enable unlimited core dumps." >&2
 
-cp -f src/dms_new dms
+mkdir -p bin/server/history
+cp -f "$STAGED_BINARY" "$RUNTIME_BINARY"
 
 echo "Generating list of function names.."
-nm --demangle dms | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
+nm --demangle "$RUNTIME_BINARY" | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
 
 echo "Starting Duris development environment on port ${PORT}..."
 exec gdb -q \
   -ex "set pagination off" \
   -ex "set debuginfod enabled on" \
   -ex "run ${PORT}" \
-  ./dms
+  "$RUNTIME_BINARY"

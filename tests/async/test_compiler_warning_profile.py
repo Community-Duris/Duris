@@ -66,7 +66,8 @@ check("inventory asks for byte-accurate warning columns",
 san = (root / "scripts/build-san.sh").read_text()
 check("sanitizer build does not overwrite the runtime dms binary",
       "cp dms_new ../dms" not in san and "dms_san" in san)
-check("sanitizer build keeps its objects separate", "OBJDIR=../obj-san" in san)
+check("sanitizer build keeps its objects separate",
+      "OBJDIR=../bin/objects/server-san" in san)
 check("sanitizer build appends to the warning profile rather than replacing it",
       "EXTRA_CFLAGS=" in san and 'export CFLAGS=' not in san)
 check("Makefile honours EXTRA_CFLAGS/EXTRA_LDFLAGS",

@@ -83,7 +83,7 @@ than hundreds of mechanical callback annotations.
 9. Use a development database and non-production port for any runtime test. The source-contract suite and
    compiler do not require a live database.
 10. Commit in category-sized checkpoints only after the day's build and tests are green. Never commit
-    `src/dms_new`, `obj/`, logs, or local environment data.
+    `bin/server/dms_new`, `bin/objects/`, logs, or local environment data.
 
 ## 4. Standard Daily Verification
 
@@ -283,8 +283,8 @@ runtime/source contracts pass.
 - Perform a development-only smoke boot on a non-7777 port if configuration and development database access
   are available.
 - Build with AddressSanitizer and UndefinedBehaviorSanitizer using a compile path that does not overwrite the
-  runtime `dms` binary. `scripts/build-san.sh` currently copies `src/dms_new` to `dms`, so amend it or use an
-  equivalent isolated build before this step.
+  runtime `dms` binary. `scripts/build-san.sh` writes `bin/server/dms_san`, so use that isolated
+  build before this step.
 - Update this document with final counts, defects found, tests added, validation results, and any deliberately
   retained local annotations.
 - Clean all generated binaries and object files.
@@ -636,8 +636,9 @@ now fails if one appears.
 - `scripts/build-san.sh` — rewritten. It previously `export`ed `CFLAGS`, which a Makefile assignment
   overrides, so the sanitizer flags never reached the compiler and the "sanitizer build" was not sanitized;
   and it copied its output over the runtime `dms` binary. It now appends through `EXTRA_CFLAGS`/`EXTRA_LDFLAGS`
-  (new Makefile hooks) so the full warning profile is kept, builds into `obj-san/`, and leaves its result at
-  `src/dms_san` without touching `dms`.
+  (new Makefile hooks) so the full warning profile is kept, builds into
+  `bin/objects/server-san/`, and leaves its result at `bin/server/dms_san`
+  without touching `bin/server/dms`.
 
 ### Validation
 
@@ -650,7 +651,7 @@ now fails if one appears.
 | `git diff --check` | Clean |
 | Compile-only sweep of every `.c`, per configuration | Clean under `REQUIRE_EMAIL_VERIFICATION`, `CTF_MUD=1`, `SIEGE_ENABLED`, `MEMCHK` |
 | `scripts/build-san.sh` | Builds clean with ASan + UBSan |
-| Worktree | No build artifacts; `obj/`, `obj-san/`, `src/dms_new`, `src/dms_san` all removed |
+| Worktree | No build artifacts outside the ignored `bin/` tree |
 
 Not run: a development smoke boot. This session had no development database or non-production port
 available, and the plan forbids touching production. Every check that does not need a live server was run.

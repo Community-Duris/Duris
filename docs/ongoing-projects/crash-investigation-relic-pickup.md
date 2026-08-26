@@ -75,8 +75,8 @@ contents are drained, and the very first room of each lab was never drained at a
 
 ## 5. Validation
 
-- `make -C src` — clean build (`src/dms_new`).
+- `make -C src` — clean build (`bin/server/dms_new`).
 - `python3 tests/async/test_relic_lab_reset_bounds.py` — new regression test, all checks pass.
 - `python3 tests/async/test_wear_all_regression.py` — still passes.
-- Not run: live in-game reproduction. The running server is still on the pre-fix `./dms` binary; the fixed
+- Not run: live in-game reproduction. The running server is still on the pre-fix `bin/server/dms` binary; the fixed
   binary is promoted by `scripts/cycle_mud.sh` on the next restart.

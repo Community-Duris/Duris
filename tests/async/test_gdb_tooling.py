@@ -14,8 +14,12 @@ assert os.access(SCRIPT, os.X_OK), "scripts/gdbdms is not executable"
 body = SCRIPT.read_text()
 assert 'PORT="${1:-4000}"' in body, "GDB must default to development port 4000"
 assert "PORT == 7777" in body, "GDB wrapper no longer refuses the production port"
-assert "cp -f src/dms_new dms" in body, "GDB wrapper must preserve src/dms_new"
-assert "mv src/dms_new dms" not in body, "GDB wrapper must not move the build output"
+assert 'STAGED_BINARY="bin/server/dms_new"' in body
+assert 'RUNTIME_BINARY="bin/server/dms"' in body
+assert 'cp -f "$STAGED_BINARY" "$RUNTIME_BINARY"' in body, (
+    "GDB wrapper must preserve the staged build output"
+)
+assert 'mv "$STAGED_BINARY" "$RUNTIME_BINARY"' not in body
 assert "command -v gdb" in body and "command -v nm" in body
 
 subprocess.run(["bash", "-n", str(SCRIPT)], check=True)

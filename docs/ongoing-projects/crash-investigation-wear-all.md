@@ -13,7 +13,7 @@ At 13:14:03 IDT, the MUD server crashed with a segmentation fault (`SIGSEGV`, ex
 
 Investigation of `cmd.debug`, `debug`, and system logs identified that player `Amoz` (PID 58, Level 56 Dragon Dragoon) triggered the crash upon executing `wear all` in room `96537` after retrieving high-end equipment prototypes and artifacts from a portable hole (`#19780`).
 
-All root causes and adjacent memory vulnerabilities have been remediated, verified with targeted regression tests, compiled into `src/dms_new`, and validated against the entire test suite.
+All root causes and adjacent memory vulnerabilities have been remediated, verified with targeted regression tests, compiled into `bin/server/dms_new`, and validated against the entire test suite.
 
 ---
 
@@ -85,5 +85,4 @@ Four distinct vulnerabilities in affect processing, array bounding, and slot res
 - **Full Async Test Suite:**
   All 120+ async test contracts (`tests/async/test_*.py`) — **100% PASSED**.
 - **Build Verification:**
-  `make -C src` compiled cleanly with `g++ -std=c++20`, generating executable `src/dms_new`.
-
+  `make -C src` compiled cleanly with `g++ -std=c++20`, generating executable `bin/server/dms_new`.

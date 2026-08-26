@@ -1,12 +1,22 @@
-.PHONY: all clean
+TOOL := make_mob
+BIN_ROOT ?= $(abspath ../../..)/bin
+AREA_TOOL_BIN_DIR ?= $(BIN_ROOT)/areas/tools
+AREA_TOOL_OBJ_DIR ?= $(BIN_ROOT)/objects/areas/tools
+TARGET := $(AREA_TOOL_BIN_DIR)/$(TOOL)
+OBJECT := $(AREA_TOOL_OBJ_DIR)/mob/$(TOOL).o
 
-all: ../../make_mob
+.PHONY: all $(TOOL) clean
 
-../../make_mob: make_mob.o
+all: $(TARGET)
+$(TOOL): $(TARGET)
+
+$(TARGET): $(OBJECT)
+	@mkdir -p $(dir $@)
 	gcc -o $@ $<
 
-make_mob.o : make_mob.c
-	gcc -c -g make_mob.c
+$(OBJECT): $(TOOL).c
+	@mkdir -p $(dir $@)
+	gcc -c -g $< -o $@
 
 clean:
-	$(RM) make_mob.o ../../make_mob
+	rm -f $(TARGET) $(OBJECT)
