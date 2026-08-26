@@ -33,9 +33,9 @@ void salvage_examine_item(P_char ch, P_obj item);
 struct forge_item
 {
 	int id;
-	char *keywords;
-	char *long_desc;
-	char *short_desc;
+	const char *keywords;
+	const char *long_desc;
+	const char *short_desc;
 	int ore_needed[5];
 
 	int loc0;

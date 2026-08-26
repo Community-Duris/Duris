@@ -101,7 +101,7 @@ struct randomeq_prefix_data
 struct randomeq_prefix
 {
 	int m_number;
-	char *m_name;
+	const char *m_name;
 	float m_stat;
 	float m_ac;
 	float weight_mod;

@@ -87,7 +87,7 @@ void bard_dissonance(int, P_char, P_char, int);
  */
 struct song_description
 {
-	char *name;
+	const char *name;
 	song_function *funct;
 	int instrument;
 	int song;

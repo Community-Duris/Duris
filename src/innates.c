@@ -4612,7 +4612,7 @@ bool has_divine_force(P_char ch)
 
 struct innate_item
 {
-	char *name;
+	const char *name;
 	int num;
 };
 

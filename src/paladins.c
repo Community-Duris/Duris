@@ -19,8 +19,8 @@ char _buff[MAX_STRING_LENGTH];
 
 struct aura_description
 {
-	char *name;
-	char *glow_name;
+	const char *name;
+	const char *glow_name;
 } auras[] = { { "Protection", "&+Bblue glow&n" },	  { "Precision", "&+Ggreen glow&n" },
 	      { "Battle Lust", "&+rblood-red glow&n" },	  { "Improved Healing", "&+Wwhite glow&n" },
 	      { "Endurance", "&+Yyellow glow&n" },	  { "Vigor", "&+mpurple glow&n" },

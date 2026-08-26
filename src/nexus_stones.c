@@ -123,7 +123,7 @@ char *ns_messages[] = {
 
 struct NexusBonusData
 {
-	char *name;
+	const char *name;
 	int minval;
 } nexus_bonus_data[] = { { "\0", 0 }, // ID Name
 			 { "epics", 1 }, //  1 Marduk

@@ -2146,7 +2146,7 @@ struct mob_prog_data
 struct mcname
 {
 	int cls1, cls2;
-	char *mc_name;
+	const char *mc_name;
 };
 
 // #ifndef _NEWSHIP_H_
@@ -2355,7 +2355,7 @@ struct random_quest
 struct randomeq_slots
 {
 	int m_number;
-	char *m_name;
+	const char *m_name;
 	float m_stat;
 	float m_ac;
 	int wear_bit;
@@ -2367,7 +2367,7 @@ struct randomeq_slots
 struct randomeq_material
 {
 	int m_number;
-	char *m_name;
+	const char *m_name;
 	float m_stat;
 	float m_ac;
 	float weight_mod;
@@ -2438,30 +2438,30 @@ struct hold_data
 //-----------------------
 struct portal_create_messages
 {
-	char *fail_to_caster;
-	char *fail_to_caster_room;
-	char *fail_to_victim;
-	char *fail_to_victim_room;
-	char *open_to_caster;
-	char *open_to_caster_room;
-	char *open_to_victim;
-	char *open_to_victim_room;
-	char *npc_target_caster;
-	char *bad_target_caster;
+	const char *fail_to_caster;
+	const char *fail_to_caster_room;
+	const char *fail_to_victim;
+	const char *fail_to_victim_room;
+	const char *open_to_caster;
+	const char *open_to_caster_room;
+	const char *open_to_victim;
+	const char *open_to_victim_room;
+	const char *npc_target_caster;
+	const char *bad_target_caster;
 };
 
 //-----------------------
 struct portal_action_messages
 {
-	char *step_in_to_char;
-	char *step_in_to_room;
-	char *step_out_to_char;
-	char *step_out_to_room;
-	char *wait_init_to_char;
-	char *wait_to_char;
-	char *decay_to_char;
-	char *decay_to_room;
-	char *bug_to_char;
+	const char *step_in_to_char;
+	const char *step_in_to_room;
+	const char *step_out_to_char;
+	const char *step_out_to_room;
+	const char *wait_init_to_char;
+	const char *wait_to_char;
+	const char *decay_to_char;
+	const char *decay_to_room;
+	const char *bug_to_char;
 };
 
 struct portal_settings
@@ -2570,7 +2570,7 @@ struct TimedShutdownData
 typedef void cmd_func(P_char, char *, int);
 struct innate_data
 {
-	char *name;
+	const char *name;
 	cmd_func *func;
 };
 

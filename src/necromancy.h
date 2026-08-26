@@ -53,8 +53,8 @@
 
 struct undead_description
 {
-	char *name;
-	char *short_desc;
+	const char *name;
+	const char *short_desc;
 	int corpse_level;
 	int act;
 	int aff1;

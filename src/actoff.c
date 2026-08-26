@@ -88,9 +88,9 @@ extern P_char get_dragoon_mount(P_char ch);
 struct failed_takedown_messages
 {
 	int reason;
-	char *to_char;
-	char *to_room;
-	char *to_vict;
+	const char *to_char;
+	const char *to_room;
+	const char *to_vict;
 };
 
 /* DEFAULT messages must be ALWAYS at the end - also when you define

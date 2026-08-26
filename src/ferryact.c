@@ -39,7 +39,7 @@ list<Ferry *> ferry_list;
 
 struct ferry_definition
 {
-	char *name;
+	const char *name;
 	int id;
 	int obj_vnum;
 	int board_room_vnum;
@@ -51,7 +51,7 @@ struct ferry_definition
 	struct stop_info
 	{
 		int room_vnum;
-		char *name;
+		const char *name;
 	} *stops;
 };
 

@@ -35,8 +35,8 @@ bool load_one_mine(int map);
 
 struct mine_range_data
 {
-	char *name;
-	char *abbrev;
+	const char *name;
+	const char *abbrev;
 	int start;
 	int end;
 	int type;

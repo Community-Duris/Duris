@@ -195,7 +195,7 @@ extern P_index obj_index;
 
 struct weapon_type
 {
-	char *name;
+	const char *name;
 	int type;
 	int number_of_components;
 	int preferred_dice;

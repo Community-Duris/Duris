@@ -13758,8 +13758,8 @@ int witch_doctor(P_char witch, P_char customer, int cmd, char *arg)
 	int i, room, tries, code;
 	struct item
 	{
-		char *keyword;
-		char *desc;
+		const char *keyword;
+		const char *desc;
 		int price;
 		::byte affect_vector;
 		uint affect_flag;

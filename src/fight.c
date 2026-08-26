@@ -143,9 +143,9 @@ struct attack_hit_type attack_hit_text[] = {
 
 struct melee_death_messages
 {
-	char *attacker;
-	char *victim;
-	char *room;
+	const char *attacker;
+	const char *victim;
+	const char *room;
 } melee_death_messages_table[] = {
 	// HIT
 	{ "Your fearsome punch hits $N, smashing $M to death.",
