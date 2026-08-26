@@ -16,7 +16,7 @@ jobs:
     - name: sysinfo
       run: echo -en '\e[33;1mThread count:\e[0m ' && nproc && free -h
     - name: build-deps
-      run: sudo apt install equivs dos2unix && equivs-build packaging/duris-build-deps.equivs && sudo apt install ./duris-build-deps_1.0_all.deb
+      run: sudo apt install equivs && equivs-build packaging/duris-build-deps.equivs && sudo apt install ./duris-build-deps_1.0_all.deb
     - name: build DMS
       run: make -j`nproc` -C src
     - name: build DE

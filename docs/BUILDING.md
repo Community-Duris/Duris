@@ -31,13 +31,19 @@ Chaos gameplay mode is selected at runtime with `CHAOS_MUD=TRUE` or
 `CHAOS_MUD=FALSE` in `.env`. The default example disables it. The value must
 use uppercase `TRUE` or `FALSE`; numeric values are not supported.
 
-Dependency install lines are in [README.md](../README.md#prerequisites);
-the `packaging/` directory contains equivs packaging for build dependencies.
+Dependency install lines are in [README.md](../README.md#quick-start). The
+`packaging/` directory contains the equivs manifest for the complete developer
+toolset, including Git, Python, area-generation utilities, the
+compiler-provided sanitizer runtimes, Valgrind, GDB, and clang-format. It
+accepts an existing MariaDB or MySQL toolchain and otherwise uses the
+distribution's default MySQL-compatible packages.
 
 ## Sanitizer build
 
 `scripts/build-san.sh` builds an ASan/UBSan instrumented binary for hunting
-memory bugs. Use it for debugging sessions, not for production.
+memory bugs. The sanitizer runtimes arrive with the compiler declared by the
+developer dependency manifest; no separate sanitizer package is needed. Use
+this build for debugging sessions, not for production.
 
 ## Area file generation
 
