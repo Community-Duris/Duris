@@ -14,8 +14,9 @@ assert "mining_config_gem_vnum" in source
 assert "mining_config_region_value" in source
 assert "mining.gem.504.weight=8" in config
 assert "mining.region.map.duration=9" in config
-assert "int mining_config_gem_vnum(void);" in header
+assert "int mining_config_gem_vnum(int mine_quality);" in header
 assert "mining_config_boot();" in mining
-assert "mining_config_gem_vnum()" in mining
+# the gem roll is biased by the mine's quality, like the sibling ore roll
+assert "mining_config_gem_vnum(mine_quality)" in mining
 assert "mining_config.o" in makefile
 print("mining configuration contract passed")

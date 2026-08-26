@@ -2543,7 +2543,7 @@ void die(P_char ch, P_char killer)
 			if (!number(0, 25)) // &&
 			// (GET_LEVEL(ch) > 51))
 			{
-				tempobj = create_stones(ch);
+				tempobj = create_stones();
 			}
 			else
 			{
@@ -2571,7 +2571,7 @@ void die(P_char ch, P_char killer)
 		{
 			if (!number(0, 25)) // &&
 				// (GET_LEVEL(ch) > 51))
-				tempobj = create_stones(ch);
+				tempobj = create_stones();
 			else
 				tempobj = create_material(killer, ch);
 

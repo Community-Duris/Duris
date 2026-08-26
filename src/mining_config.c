@@ -100,16 +100,40 @@ int mining_config_region_value(int region, const char *field, int fallback)
 	return fallback;
 }
 
-int mining_config_gem_vnum(void)
+static int mining_config_gem_pick(int total)
+{
+	int roll = number(1, total);
+	for (int i = 0; i < MINING_GEM_COUNT; ++i)
+		if ((roll -= gems[i].weight) <= 0)
+			return i;
+	return 0;
+}
+
+/*
+ * The gem table is ordered common-to-rare by descending weight, so a better
+ * mine is expressed as extra draws that keep the rarest result: quality 0 rolls
+ * once (the historical distribution), quality 3 rolls four times and keeps the
+ * best.  get_gem_from_mine() used to discard its mine_quality entirely, which
+ * left gem mines paying identically regardless of quality while the sibling
+ * ore path scaled with it.
+ */
+int mining_config_gem_vnum(int mine_quality)
 {
 	int total = 0;
 	for (int i = 0; i < MINING_GEM_COUNT; ++i)
 		total += gems[i].weight;
 	if (total <= 0)
 		return 504;
-	int roll = number(1, total);
-	for (int i = 0; i < MINING_GEM_COUNT; ++i)
-		if ((roll -= gems[i].weight) <= 0)
-			return gems[i].vnum;
-	return 504;
+
+	int draws = 1 + BOUNDED(0, mine_quality, 3);
+	int best = mining_config_gem_pick(total);
+
+	for (int d = 1; d < draws; ++d)
+	{
+		int candidate = mining_config_gem_pick(total);
+		if (gems[candidate].weight < gems[best].weight)
+			best = candidate;
+	}
+
+	return gems[best].vnum;
 }

@@ -875,6 +875,12 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	const char *modstring;
 	int mod = 0, loctype = 0;
 	int cost = 0;
+	// Deliberately no enhance_material_ival_delta floor here.  That floor is
+	// enhance()'s rule for arbitrary salvage: the material has to be roughly
+	// as good as the item it feeds.  Essences (vnum 400238..400258) are
+	// purpose-built enhancement stock priced by the tiers below, so applying
+	// the floor would make a cheap essence unusable on exactly the good gear
+	// it exists for.  A dead 'minval' local here once implied otherwise.
 	int val = itemvalue(material);
 
 	if (val <= 20)

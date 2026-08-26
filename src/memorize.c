@@ -1729,9 +1729,9 @@ void do_memorize(P_char ch, char *argument, int cmd)
 
 	if (!chaos_mud_enabled())
 	{
-		if (circle > get_max_circle(ch) && !quested_spell(ch, spl))
+		if (circle > get_max_circle(ch))
 		{
-			if ((!book_class(ch) || sbook) && !quested_spell(ch, spl))
+			if (!book_class(ch) || sbook)
 			{
 				send_to_char(
 					"That is too powerful an enchantment for you to master.. yet, anyway.\n",
@@ -1756,7 +1756,7 @@ void do_memorize(P_char ch, char *argument, int cmd)
 	}
 
 	if (!SKILL_DATA_ALL(ch, spl).maxlearn[0] &&
-	    !SKILL_DATA_ALL(ch, spl).maxlearn[ch->player.spec] && !quested_spell(ch, spl))
+	    !SKILL_DATA_ALL(ch, spl).maxlearn[ch->player.spec])
 	{
 		send_to_char("That spell is beyond your comprehension.\n", ch);
 		return;

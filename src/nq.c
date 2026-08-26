@@ -1270,6 +1270,55 @@ struct nq_instance *nq_parse_instance(xmlNodePtr node, struct nq_quest *quest)
 }
 
 /*
+ * Resolves the text of a <class> element to its CLASS_* bit, or 0 if the name
+ * matches nothing.  class_names_table is 1-based on the CLASS_* bit index, so
+ * entry i is BIT(i).  Both the display name ("Anti-Paladin") and the three
+ * letter code ("A-P") are accepted so quest files can use either.
+ */
+static uint nq_parse_class_bit(const char *name)
+{
+	extern const struct class_names class_names_table[];
+
+	if (!name || !*name)
+		return 0;
+
+	for (int i = 1; i <= CLASS_COUNT && class_names_table[i].normal; i++)
+	{
+		if (!str_cmp(name, class_names_table[i].normal) ||
+		    !str_cmp(name, class_names_table[i].code))
+			return (uint)1 << (i - 1);
+	}
+
+	return 0;
+}
+
+/*
+ * Resolves the text of a <race> element to its RACE_* index, or -1 if the name
+ * matches nothing.  race_names_table is indexed by race id.  The spaced name
+ * ("Grey Elf"), the unspaced name ("GreyElf") and the two letter code ("PE")
+ * are all accepted.
+ */
+static int nq_parse_race_index(const char *name)
+{
+	extern const struct race_names race_names_table[];
+
+	if (!name || !*name)
+		return -1;
+
+	for (int i = 1; i <= LAST_RACE; i++)
+	{
+		if (!race_names_table[i].normal)
+			continue;
+		if (!str_cmp(name, race_names_table[i].normal) ||
+		    !str_cmp(name, race_names_table[i].no_spaces) ||
+		    !str_cmp(name, race_names_table[i].code))
+			return i;
+	}
+
+	return -1;
+}
+
+/*
  * creates quest structure from the data stored in file fname
  */
 struct nq_quest *nq_parse_quest(char *fname)
@@ -1282,6 +1331,10 @@ struct nq_quest *nq_parse_quest(char *fname)
 	struct nq_instance *instance;
 	int actor_templates = 0;
 	int i;
+	/* "listedclasses"/"listedraces" say whether the <class>/<race> children
+	   below are an allow-list or a deny-list; the child handlers need it. */
+	int classes_are_allow_list = FALSE;
+	int races_are_allow_list = FALSE;
 
 	snprintf(buf, 256, "%s/%s", QUEST_DIR, fname);
 	doc = xmlParseFile(buf);
@@ -1339,6 +1392,7 @@ struct nq_quest *nq_parse_quest(char *fname)
 	att = xmlGetProp(node, (const xmlChar *)"listedclasses");
 	if (!xmlStrcmp(att, (const xmlChar *)"allow"))
 	{
+		classes_are_allow_list = TRUE;
 		quest->allowed_classes = 0;
 	}
 	else
@@ -1349,6 +1403,7 @@ struct nq_quest *nq_parse_quest(char *fname)
 	att = xmlGetProp(node, (const xmlChar *)"listedraces");
 	if (!xmlStrcmp(att, (const xmlChar *)"allow"))
 	{
+		races_are_allow_list = TRUE;
 		for (i = 0; i <= LAST_RACE; i++)
 			quest->allowed_races[i] = 0;
 	}
@@ -1374,13 +1429,29 @@ struct nq_quest *nq_parse_quest(char *fname)
 		}
 		else if (!xmlStrcmp(node->name, NQ_CLASS))
 		{
-			/* Unimplemented.  A handler here has to re-read the
-			   quest's "listedclasses" mode to know whether the
-			   listed classes are an allow-list or a deny-list. */
+			xmlChar *content = xmlNodeGetContent(node);
+			uint bit = nq_parse_class_bit((const char *)content);
+
+			if (!bit)
+				logit(LOG_DEBUG, "nq_parse_quest: %s lists unknown class '%s'",
+				      fname, content ? (const char *)content : "");
+			else if (classes_are_allow_list)
+				quest->allowed_classes |= bit;
+			else
+				quest->allowed_classes &= ~bit;
+			xmlFree(content);
 		}
 		else if (!xmlStrcmp(node->name, NQ_RACE))
 		{
-			/* Unimplemented; see NQ_CLASS above for "listedraces". */
+			xmlChar *content = xmlNodeGetContent(node);
+			int race = nq_parse_race_index((const char *)content);
+
+			if (race < 0)
+				logit(LOG_DEBUG, "nq_parse_quest: %s lists unknown race '%s'",
+				      fname, content ? (const char *)content : "");
+			else
+				quest->allowed_races[race] = races_are_allow_list ? 1 : 0;
+			xmlFree(content);
 		}
 		else if (!xmlStrcmp(node->name, NQ_SKILL))
 		{

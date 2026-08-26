@@ -106,7 +106,6 @@ struct acct_entry *sql_load_account(const char *name);
 bool sql_account_exists(const char *name);
 
 // link player to account (updates player_data.account_name)
-bool sql_link_player_to_account(const char *account_name, int pid);
 
 // ============================================================================
 // locker functions

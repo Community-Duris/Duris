@@ -260,9 +260,9 @@ P_obj get_ore_from_mine(P_char /*ch*/, int mine_quality)
 	return ore;
 }
 
-P_obj get_gem_from_mine(P_char /*ch*/, int /*mine_quality*/)
+P_obj get_gem_from_mine(P_char /*ch*/, int mine_quality)
 {
-	P_obj gem = read_object(mining_config_gem_vnum(), VIRTUAL);
+	P_obj gem = read_object(mining_config_gem_vnum(mine_quality), VIRTUAL);
 	if (!gem)
 		return NULL;
 	gem->value[4] = time(NULL);

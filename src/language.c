@@ -50,10 +50,18 @@ void do_speak(P_char ch, char * /*argument*/, int /*cmd*/)
 	send_to_char("You mean, 'say'?\n", ch);
 }
 
-const char *language_known(P_char /*ch*/, P_char /*vict*/)
+/*
+ * The qualifier that goes between the speech verb and the quoted text: empty
+ * when the listener understands, otherwise a phrase explaining why the text
+ * that language_CRYPT() garbles is unintelligible.  Callers splice it in as
+ * "$n says %s'%s'", so a non-empty answer carries its own trailing space.
+ */
+const char *language_known(P_char ch, P_char vict)
 {
-	// "in some strange language"?
-	return "";
+	if (!ch || !vict || can_understand_language(ch, vict))
+		return "";
+
+	return "in some strange tongue ";
 }
 
 struct translation_table

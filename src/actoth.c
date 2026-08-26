@@ -5949,13 +5949,14 @@ void do_fly(P_char ch, char *argument, int /*cmd*/)
 		ch = mount; /* simply change who were dealing with */
 		rider = ch;
 	}
+
+	argument_interpreter(argument, buf, Gbuf1);
+
 	if (!*buf)
 	{
 		send_to_char("Fly what, where why or who?!?\r\n", ch);
 		return;
 	}
-
-	argument_interpreter(argument, buf, Gbuf1);
 
 	if (!affected_by_spell(ch, SPELL_FLY) && !IS_AFFECTED(ch, AFF_FLY) && !IS_TRUSTED(ch) &&
 	    !(IS_AFFECTED(ch, AFF_LEVITATE) && !str_cmp(buf, "land")))
@@ -6131,12 +6132,14 @@ void do_swim(P_char ch, char *argument, int /*cmd*/)
 		ch = mount;
 		rider = ch;
 	}
+
+	one_argument(argument, buf);
+
 	if (!*buf)
 	{
 		send_to_char("Swim what, where why or who?!?\r\n", ch);
 		return;
 	}
-	one_argument(argument, buf);
 	if (GET_VITALITY(ch) < 10 && !IS_TRUSTED(ch))
 	{
 		send_to_char("You are much to exhausted to swim!\r\n", ch);

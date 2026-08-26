@@ -560,12 +560,12 @@ void do_bardsing(P_char ch, char *arg)
 		{
 			if (foo != ch)
 			{
-				snprintf(Gbuf4, MAX_STRING_LENGTH, "$n sings %s '%s'",
+				snprintf(Gbuf4, MAX_STRING_LENGTH, "$n sings %s'%s'",
 					 language_known(ch, foo), language_CRYPT(ch, foo, arg));
 				act(Gbuf4, FALSE, ch, 0, foo, TO_VICT);
 			}
 		}
-		snprintf(Gbuf4, MAX_STRING_LENGTH, "You sing %s '%s'", language_known(ch, ch), arg);
+		snprintf(Gbuf4, MAX_STRING_LENGTH, "You sing %s'%s'", language_known(ch, ch), arg);
 		act(Gbuf4, FALSE, ch, 0, 0, TO_CHAR);
 	}
 }
