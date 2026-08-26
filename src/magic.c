@@ -1019,7 +1019,6 @@ void spell_enervation(int level, P_char ch, char *arg, int type, P_char victim, 
 void spell_life_leech(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	int mana, dam, result, moves;
-	bool saved = FALSE;
 
 	struct damage_messages messages = {
 		"&+LYou reach out and touch $N, &+rleeching &+Lsome of $S &+Llife&+wfor&+Wce.&n",
@@ -1050,7 +1049,6 @@ void spell_life_leech(int level, P_char ch, char *arg, int type, P_char victim, 
 	int mod = get_default_save_mod(victim, ch, SAVING_SPELL, SPELL_LIFE_LEECH);
 	if (NewSaves(victim, SAVING_SPELL, mod))
 	{
-		saved = TRUE;
 		dam = (int)(dam * 0.80);
 	}
 
@@ -1686,9 +1684,9 @@ bool can_conjure_lesser_elem(P_char ch, int level)
 {
 	struct follow_type *k;
 	P_char victim;
-	int i, j;
+	int i;
 
-	for (k = ch->followers, i = 0, j = 0; k; k = k->next)
+	for (k = ch->followers, i = 0; k; k = k->next)
 	{
 		victim = k->follower;
 		/*
@@ -9093,13 +9091,10 @@ void spell_channel(int level, P_char ch, P_char victim, P_obj obj)
 	char Gbuf[MAX_STRING_LENGTH];
 	P_char vict, avatar;
 	struct affected_type new_af;
-	int room;
 	snoop_by_data *snoop_by_ptr;
 
 	if (!ch || !victim || !obj)
 		return;
-
-	room = ch->in_room;
 
 	obj->timer[0]++;
 
@@ -11410,10 +11405,8 @@ bool check_item_teleport(P_char ch, char *arg, int cmd)
 	P_obj obj = NULL, obj_next;
 	P_char dummy;
 	int timeleft;
-	int bits;
 	int room, to_room;
 	int pos;
-	int vnum;
 	int virt;
 	P_Guild guild;
 	char Gbuf1[100];
@@ -11431,16 +11424,13 @@ bool check_item_teleport(P_char ch, char *arg, int cmd)
 	}
 	else
 	{
-		bits = generic_find(arg, FIND_OBJ_INV | FIND_OBJ_EQUIP | FIND_OBJ_ROOM, ch, &dummy,
-				    &obj);
+		generic_find(arg, FIND_OBJ_INV | FIND_OBJ_EQUIP | FIND_OBJ_ROOM, ch, &dummy, &obj);
 	}
 	if (!obj)
 		return FALSE;
 
 	if ((obj->type != ITEM_TELEPORT) || (obj->value[1] != cmd))
 		return FALSE;
-
-	vnum = obj_index[obj->R_num].virtual_number;
 
 	// allow house/guild entrances to always work regardless of no-magic status
 	/*
@@ -12561,11 +12551,9 @@ void spell_greater_wraithform(int level, P_char ch, P_char victim, char *arg)
 	 * surprise surprise.
 	 */
 	struct affected_type af;
-	int /*i, */ dr;
 
 	/*  P_obj o1, o2; */
 
-	dr = 0;
 	/*
 	 * ok, now we _can_ use this beauty.. muhahahahahaa!
 	 */
@@ -12608,9 +12596,7 @@ void spell_wraithform(int level, P_char ch, P_char victim, char *arg)
 	 */
 	struct affected_type af;
 	int i;
-	bool dr;
 
-	dr = FALSE;
 	/*
 	 * ok, now we _can_ use this beauty.. muhahahahahaa!
 	 */
@@ -15234,7 +15220,7 @@ bool isCarved(P_obj corpse)
 void spell_resurrect(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	bool loss_flag = FALSE;
-	int chance, l, found, clevel, ss_roll;
+	int chance, l, found, ss_roll;
 	long resu_exp;
 	P_obj obj_in_corpse, next_obj, t_obj, money;
 	struct affected_type *af, *next_af;
@@ -15518,7 +15504,6 @@ void spell_resurrect(int level, P_char ch, char *arg, int type, P_char victim, P
 	/*
 	 * restore lost exp from death
 	 */
-	clevel = obj->value[2];
 
 	if (IS_PC(t_ch) && !IS_TRUSTED(t_ch))
 	{
@@ -15649,7 +15634,7 @@ void spell_preserve(int level, P_char ch, char *arg, int type, P_char victim, P_
 void spell_lesser_resurrect(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	bool loss_flag = FALSE;
-	int chance, l, found, clevel, ss_roll;
+	int chance, l, found, ss_roll;
 	long resu_exp;
 	P_obj obj_in_corpse, next_obj, t_obj, money;
 	struct affected_type *af, *next_af;
@@ -15907,7 +15892,6 @@ void spell_lesser_resurrect(int level, P_char ch, char *arg, int type, P_char vi
 	/*
 	 * restore lost exp from death
 	 */
-	clevel = obj->value[2];
 
 	GET_HIT(t_ch) = GET_MAX_HIT(t_ch);
 	GET_MANA(t_ch) = MAX(0, GET_MAX_MANA(t_ch) >> 2);
@@ -17229,8 +17213,8 @@ struct judgement_data
 void spell_oldjudgement(int level, P_char ch, P_char victim, P_obj obj)
 {
 	P_char t, t_next;
-	int lev, k, /*minalign, maxalign, dam, */ door, target_room, temp_coor, the_room, new_room,
-		i, max_affected;
+	int lev, k, /*minalign, maxalign, dam, */ door, target_room, the_room, new_room, i,
+		max_affected;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -17259,12 +17243,10 @@ void spell_oldjudgement(int level, P_char ch, P_char victim, P_obj obj)
 	if (victim)
 	{
 		the_room = victim->in_room;
-		temp_coor = victim->specials.z_cord;
 	}
 	else
 	{
 		the_room = ch->in_room;
-		temp_coor = ch->specials.z_cord;
 	}
 
 	max_affected = (int)(get_property("spell.judgement.maxAffected", 4.000));
@@ -20705,7 +20687,7 @@ void spell_moonwell(int level, P_char ch, char *arg, int type, P_char victim, P_
 {
 	P_obj moonstone;
 	struct affected_type *afp;
-	int to_room = NOWHERE, from_room;
+	int to_room = NOWHERE;
 	int count;
 	int distance;
 	bool success = true;
@@ -20773,9 +20755,6 @@ void spell_moonwell(int level, P_char ch, char *arg, int type, P_char victim, P_
 	{
 		to_room = victim->in_room;
 	}
-	from_room = ch->in_room;
-
-	int specBonus = 0;
 	set.to_room = to_room;
 	int maxToPass = get_property("portals.moonwell.maxToPass", 3);
 	set.init_timeout = get_property("portals.moonwell.initTimeout", 3);
@@ -20789,7 +20768,6 @@ void spell_moonwell(int level, P_char ch, char *arg, int type, P_char victim, P_
 	if (GET_SPEC(ch, CLASS_DRUID, SPEC_WOODLAND) &&
 	    world[ch->in_room].sector_type == SECT_FOREST)
 	{
-		specBonus = 2;
 		set.decay_timer = (set.decay_timer / 2) * 3;
 	}
 	//--------------------------------

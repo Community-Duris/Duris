@@ -2016,7 +2016,7 @@ void command_interpreter(P_char ch, char *argument)
 
 void argument_interpreter(char *argument, char *first_arg, char *second_arg)
 {
-	int look_at, found, begin;
+	int look_at, begin;
 
 	if (!argument)
 	{
@@ -2024,7 +2024,7 @@ void argument_interpreter(char *argument, char *first_arg, char *second_arg)
 		*second_arg = '\0';
 		return;
 	}
-	found = begin = 0;
+	begin = 0;
 
 	if (strlen(argument) >= MAX_INPUT_LENGTH)
 	{
@@ -2145,9 +2145,9 @@ bool is_real_number(char *str)
  */
 char *one_argument(const char *argument, char *first_arg)
 {
-	int found, begin, look_at;
+	int begin, look_at;
 
-	found = begin = 0;
+	begin = 0;
 
 	if (!argument)
 	{

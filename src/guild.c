@@ -55,11 +55,10 @@ bool avail_prac[MAX_SKILLS];
 
 void update_skills(P_char ch)
 {
-	int skl, spec, cls, skllvl, maxlearn, minlearn;
+	int skl, spec, skllvl, maxlearn, minlearn;
 	bool chaos_mode;
 
 	spec = ch->player.spec;
-	cls = flag2idx(ch->player.m_class) - 1;
 	minlearn = MIN(40, ((3 * GET_LEVEL(ch)) / 2));
 
 	if (!ch || !IS_PC(ch))
@@ -166,7 +165,7 @@ void update_skills(P_char ch)
 
 bool notch_skill(P_char ch, int skill, float chance)
 {
-	int intel, t, lvl, l, slvl, i;
+	int t, l, i;
 	char buf[MAX_STRING_LENGTH];
 
 	if (!IS_ALIVE(ch))
@@ -188,8 +187,6 @@ bool notch_skill(P_char ch, int skill, float chance)
 		}
 	}
 
-	lvl = GET_LEVEL(ch);
-
 	l = ch->only.pc->skills[skill].learned;
 	t = ch->only.pc->skills[skill].taught;
 
@@ -203,6 +200,9 @@ bool notch_skill(P_char ch, int skill, float chance)
 	// The following addition is for wipe 2011, where intelligence will help determine
 	//   chance to notch a skill, thus making it a partially important stat for rockhead melee
 	//   characters - Jexni 6/5/11
+	int intel, lvl, slvl;
+
+	lvl = GET_LEVEL(ch);
 	intel = BOUNDED(0, 100 - GET_C_INT(ch), 50);
 	chance = chance + (intel / 2);
 
@@ -317,11 +317,9 @@ void spell_learning(int level, P_char ch, char *arg, int type, P_char victim, P_
 
 int SpellCopyCost(P_char ch, int spell)
 {
-	int circle, cost;
-	// new simple cost formula, none of that other BS - Jexni 1/2/12
-	circle = get_spell_circle(ch, spell);
-	cost = circle * get_property("spell.cost.plat.per.circle", 1000.000);
 	// All spells are currently free to scribe. - Lohrr
+	// Former formula, kept for reference:
+	//   get_spell_circle(ch, spell) * get_property("spell.cost.plat.per.circle", 1000)
 	return 0;
 }
 
@@ -546,8 +544,7 @@ int spell_cmp(const void *va, const void *vb)
 
 void do_spells(P_char ch, char *argument, int cmd)
 {
-	int spl, circle, i, count = 0, m_class = 0, class2 = 0, god_mode = 0, memmed = 0,
-			    to_mem = 0, lvl, qend;
+	int spl, circle, i, count = 0, m_class = 0, god_mode = 0, memmed = 0, to_mem = 0, lvl, qend;
 	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	P_char target = NULL;
 	struct spl_list spell_list[LAST_SPELL + 1];
@@ -725,7 +722,6 @@ void do_spells(P_char ch, char *argument, int cmd)
 		if (!m_class && target)
 		{
 			m_class = target->player.m_class;
-			class2 = target->player.secondary_class;
 		}
 		i = 0;
 		for (spl = FIRST_SPELL; spl <= LAST_SPELL; spl++)

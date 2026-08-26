@@ -135,7 +135,6 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 	int room_nr = 0, room2_nr = 0;
 	int temp_room = 0;
 	int i = 0;
-	int zz = 0;
 	int map_room = 0;
 	int direction = 0;
 	int valid_to_room = 0;
@@ -353,7 +352,6 @@ void create_zone(int theme, int map_room1, int map_room2, int level_range, int r
 					EX_CLOSED);
 			}
 
-			zz = 0;
 			// and now fill it with mobs!
 			if (number(0, 2) && i > 2)
 			{
@@ -1453,7 +1451,6 @@ int create_lab(int type)
 {
 	int start_room = 0;
 	int current_room = start_room;
-	int parent_room = 0;
 	int direction = 0;
 	int rooms = 800;
 	int parent_dir = -1;
@@ -1544,8 +1541,6 @@ int create_lab(int type)
 		{
 			direction = parent_dir;
 		}
-
-		parent_room = current_room;
 
 		if (real_room(current_room) != NOWHERE)
 		{

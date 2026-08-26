@@ -408,7 +408,6 @@ void justice_delete_guard(P_char ch)
 void justice_action_invader(P_char ch)
 {
 	struct zone_data *zone_struct;
-	int room;
 
 	if (IS_TRUSTED(ch))
 		return;
@@ -425,7 +424,6 @@ void justice_action_invader(P_char ch)
 		return;
 
 	zone_struct = &zone_table[world[ch->in_room].zone];
-	room = ch->in_room;
 
 	//  Re-doing justice here.  Major idea is to get rid of the overkill response
 	//  which doesn't allow for any hometown raiding, but still not make it far

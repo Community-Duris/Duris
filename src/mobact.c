@@ -4169,19 +4169,17 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL, tempch;
-	int dam = 0, lvl = 0, spl = 0;
+	int lvl = 0, spl = 0;
 
 	lvl = GET_LEVEL(ch);
 
 	if (helping)
 	{
 		target = victim;
-		dam = GET_MAX_HIT(target) - GET_HIT(target);
 	}
 	else
 	{
 		target = ch;
-		dam = GET_MAX_HIT(ch) - GET_HIT(ch);
 	}
 
 	/* make sure I'm even able to cast in this room! */
@@ -4605,7 +4603,7 @@ bool WillPsionicistSpell(P_char ch, P_char victim)
 #define NUM_BREATHS 14
 void BreathWeapon(P_char ch, int dir)
 {
-	int breath_possibilities, breath_type, attempts, room, orig_room, i, distance;
+	int breath_possibilities, breath_type, attempts, room, i, distance;
 	char buf[MAX_STRING_LENGTH], waited = FALSE;
 	P_char tchar1 = NULL, tchar2 = NULL;
 	void (*funct)(int, P_char, char *, int, P_char, P_obj);
@@ -4619,7 +4617,6 @@ void BreathWeapon(P_char ch, int dir)
 	// Breathing a direction must be buggy?
 	dir = -1;
 
-	orig_room = ch->in_room;
 	distance = BOUNDED(2, GET_LEVEL(ch) / 10, 6);
 
 	// Figure out what breath types are possible.
@@ -6651,7 +6648,7 @@ P_char PickTarget(P_char ch)
 	P_char t_ch;
 	int target_table[MAX_TARGETS + 1];
 	P_char target_addr[MAX_TARGETS + 1];
-	int a, b, c, d, n_a;
+	int a, b, c, d;
 	struct affected_type *af;
 
 	if (!SanityCheck(ch, "PickTarget"))
@@ -6675,7 +6672,6 @@ P_char PickTarget(P_char ch)
 	}
 
 	a = 0;
-	n_a = NumAttackers(ch);
 
 	for (t_ch = world[ch->in_room].people; t_ch; t_ch = t_ch->next_in_room)
 	{
@@ -7497,7 +7493,7 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 	P_char tmp_ch, rider;
 	P_obj obj, obj2, best_obj, next_obj;
 	char Gbuf1[MAX_STRING_LENGTH];
-	int door, moved, max, i;
+	int door, max, i;
 	struct follow_type *fol, *k;
 	bool CombatInRoom;
 	int rnum;
@@ -7558,8 +7554,6 @@ void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 		}
 	}
 	PROFILE_END(mundane_quest);
-
-	moved = FALSE;
 
 #if 0 // since the body is commented out, commenting out the whole thing -Odorf 
   /* Remount if needed */

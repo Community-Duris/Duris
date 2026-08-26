@@ -28,7 +28,6 @@ void do_slip(P_char ch, char *argument, int cmd)
 	P_obj obj, container;
 	P_char t_ch = NULL;
 	int success, percent, check, bits, bits2;
-	bool putsuc = FALSE;
 
 	argument = one_argument(argument, obj_name);
 
@@ -53,7 +52,7 @@ void do_slip(P_char ch, char *argument, int cmd)
 			     container->value[0]) ||
 			    ((container->value[0] == -1)))
 			{
-				putsuc = put(ch, obj, container, FALSE);
+				put(ch, obj, container, FALSE);
 				act("You slip $p into $P...", TRUE, ch, obj, container, TO_CHAR);
 				if ((GET_CHAR_SKILL(ch, SKILL_SLIP) - GET_OBJ_WEIGHT(obj)) <
 				    number(1, 100))

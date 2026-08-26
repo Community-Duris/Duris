@@ -3661,7 +3661,6 @@ void do_true_strike(P_char ch, char *argument, int cmd)
 	char name[100];
 	int skl_lvl = 0;
 	int x;
-	int victim_dead;
 
 	if (!GET_SPEC(ch, CLASS_MONK, SPEC_CHIMONK) || IS_NPC(ch))
 	{
@@ -3762,7 +3761,7 @@ void do_true_strike(P_char ch, char *argument, int cmd)
 		{
 			send_to_char("You feel like your nervous system is on fire!\n\r", vict);
 			send_to_char("You feel as tho you hit something vital!\n\r", ch);
-			victim_dead = damage(ch, vict, (10 + dice(1, 12)) * 3, SKILL_TRUE_STRIKE);
+			damage(ch, vict, (10 + dice(1, 12)) * 3, SKILL_TRUE_STRIKE);
 		}
 		notch_skill(ch, SKILL_TRUE_STRIKE, 10);
 	}

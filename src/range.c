@@ -65,7 +65,7 @@ void do_gather(P_char ch, char *argument, int cmd)
 	char name[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH];
 	P_char tmp_char;
 	P_obj corpse, tobj, quiver, next_obj;
-	int bits, i, j, g, type;
+	int i, j, g, type;
 	int weight = 0, full = 0;
 
 	one_argument(argument, name);
@@ -102,12 +102,11 @@ void do_gather(P_char ch, char *argument, int cmd)
 	{
 		if (IS_TRUSTED(ch))
 		{
-			bits = generic_find(name, FIND_OBJ_ROOM, ch, &tmp_char, &corpse);
+			generic_find(name, FIND_OBJ_ROOM, ch, &tmp_char, &corpse);
 		}
 		else
 		{
-			bits = generic_find(name, FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &tmp_char,
-					    &corpse);
+			generic_find(name, FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &tmp_char, &corpse);
 		}
 
 		if (!corpse)
@@ -1726,7 +1725,7 @@ int range_scan_track(P_char ch, int distance, int type_scan)
 bool mob_can_range_att(P_char ch, P_char victim)
 {
 	int spell_attack = FALSE;
-	int direction, /*temp, */ distance;
+	int direction;
 	int lvl = 0, spl = 0;
 	char buf[256];
 
@@ -1745,14 +1744,8 @@ bool mob_can_range_att(P_char ch, P_char victim)
 			{
 				return FALSE;
 			}
-			else
-				distance = 1;
 		}
-		else
-			distance = 2;
 	}
-	else
-		distance = 3;
 
 	/* ok first we check if able to cast some nice range spell  */
 
@@ -1939,7 +1932,6 @@ int number_throw(P_char ch, char *name)
 	char *tmp;
 	int nb_att = 0;
 	int primary = 0, secondary = 0, third = 0, fourth = 0;
-	int pri_ret = 0, sec_ret = 0;
 	int hAtt = 0, dW = 0;
 
 	if (!name || !*name)
@@ -1952,26 +1944,18 @@ int number_throw(P_char ch, char *name)
 	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i)) &&
 	    (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2)))
 	{
-		if (IS_OBJ_STAT(i, ITEM_RETURNING))
-		{
-			primary = 1;
-			pri_ret = 1;
-		}
-		else
-			primary = 1;
+		/* ITEM_RETURNING is not distinguished here; both cases count
+		   the weapon as throwable. */
+		primary = 1;
 	}
 
 	i = ch->equipment[SECONDARY_WEAPON];
 	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i)) &&
 	    (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2)))
 	{
-		if (IS_OBJ_STAT(i, ITEM_RETURNING))
-		{
-			secondary = 1;
-			sec_ret = 1;
-		}
-		else
-			secondary = 1;
+		/* ITEM_RETURNING is not distinguished here; both cases count
+		   the weapon as throwable. */
+		secondary = 1;
 	}
 
 	i = ch->equipment[THIRD_WEAPON];

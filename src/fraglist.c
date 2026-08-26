@@ -192,7 +192,7 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 	int frags, count;
 	float fragnum = 0;
 	char filter[256] = "";
-	int cap_level, cap_racewar, cap_others;
+	int cap_level, cap_racewar;
 	long cap_frags;
 	time_t cap_timer;
 	int days, hours, mins, secs;
@@ -506,7 +506,6 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 
 	// get level cap info (already uses sql)
 	get_level_cap_info(&cap_frags, &cap_racewar, &cap_level, &cap_timer);
-	cap_others = sql_level_cap((cap_racewar == RACEWAR_GOOD) ? RACEWAR_EVIL : RACEWAR_GOOD);
 	cap_timer -= time(NULL);
 
 	if (cap_timer <= 0)

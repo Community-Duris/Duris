@@ -2460,7 +2460,6 @@ void do_firestorm(P_char ch, char *arg, int cmd)
 
 void do_dimension_door(P_char ch, char *arg, int cmd)
 {
-	uint bits;
 	P_char victim;
 	P_obj obj;
 
@@ -2477,7 +2476,7 @@ void do_dimension_door(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	bits = generic_find(arg, FIND_CHAR_WORLD, ch, &victim, &obj);
+	generic_find(arg, FIND_CHAR_WORLD, ch, &victim, &obj);
 
 	if (!*arg || !victim || !CAN_SEE(ch, victim))
 	{

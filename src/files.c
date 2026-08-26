@@ -1886,10 +1886,13 @@ char *getString(char **buf)
 
 int restoreStatus(char *buf, P_char ch)
 {
-	::byte dummy_byte;
+	/* Deprecated pfile fields.  The reads must stay: they advance the
+	   save-file cursor for the fields that follow. */
+	[[maybe_unused]] ::byte dummy_byte;
+	[[maybe_unused]] long dummy_long;
+	[[maybe_unused]] int dummy_int;
 	char *start = buf, *str;
-	long dummy_long;
-	int tmp, tmp2, tmp3, dummy_int, i;
+	int tmp, tmp2, tmp3, i;
 	unsigned short s; /*, dummy_short; */
 	struct trophy_data *tr, *tr2;
 	char buffer[2056];
@@ -2545,7 +2548,10 @@ int restorePasswdOnly(P_char ch, char *name)
 	struct stat statbuf;
 	char buff[SAV_MAXSIZE], *str;
 	char *buf = buff;
-	int size, csize, type, room;
+	int size, csize, type;
+	/* Saved room vnum: read to advance the cursor, unused by a
+	   password-only restore. */
+	[[maybe_unused]] int room;
 	char Gbuf1[MAX_STRING_LENGTH];
 	char b_savevers; /* TASFALEN */
 	char buffer[2056];
@@ -2698,7 +2704,9 @@ int restoreCharOnly(P_char ch, char *name)
 #ifndef _PFILE_
 	char buff[SAV_MAXSIZE];
 	char *buf;
-	int skill_off, affect_off, item_off, surname = 0;
+	int skill_off, affect_off, surname = 0;
+	/* Header offset read to advance the cursor; only skill_off is verified. */
+	[[maybe_unused]] int item_off;
 #endif
 	int start, size, csize, type, room;
 	int witness_off;
@@ -2947,7 +2955,9 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 {
 	P_obj obj, c_obj = NULL;
 	bool dummy_obj;
-	::byte dummy_byte, o_f_flag;
+	::byte o_f_flag;
+	/* Deprecated item-format field; the read advances the cursor. */
+	[[maybe_unused]] ::byte dummy_byte;
 	int tmp, count, i, loc, obj_count = 0, V_num, i_count, ignore = 0, k;
 	struct extra_descr_data *t_desc;
 	static struct obj_data d_obj; // dummy object
@@ -3361,8 +3371,11 @@ P_obj read_one_object(char *read_buf)
 {
 	char *buf = read_buf;
 	P_obj obj;
-	::byte dummy_byte, o_f_flag;
-	int tmp, V_num, count, i_count;
+	::byte o_f_flag;
+	/* Deprecated item-format fields; the reads advance the cursor. */
+	[[maybe_unused]] ::byte dummy_byte;
+	[[maybe_unused]] int count;
+	int tmp, V_num, i_count;
 	struct extra_descr_data *t_desc;
 	struct obj_data d_obj;
 	ulong o_u_flag;
@@ -3820,10 +3833,14 @@ int restoreItemsOnly(P_char ch, int flatrate)
 	FILE *f;
 	char buff[SAV_MAXSIZE];
 	char *buf = buff;
-	int skill_off, item_off, affect_off;
+	int item_off, affect_off;
+	/* Header offsets read to advance the cursor; unused when only the
+	   inventory section is restored. */
+	[[maybe_unused]] int skill_off;
 #endif
-	int size, csize, tmp, witness_off;
-	::byte dummy_byte;
+	int size, csize, tmp;
+	[[maybe_unused]] int witness_off;
+	[[maybe_unused]] ::byte dummy_byte;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	char b_savevers;
 	char buf1[256];
@@ -4019,7 +4036,6 @@ int writePet(P_char ch)
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	int i, bak;
 	static char buff[SAV_MAXSIZE * 2];
-	struct affected_type *af;
 	struct stat statbuf;
 
 	if (!ch || !GET_NAME(ch))
@@ -4061,7 +4077,6 @@ int writePet(P_char ch)
 		else
 			save_equip[i] = NULL;
 
-	af = ch->affected;
 	all_affects(ch, FALSE); /* reset to unaffected state */
 	buf += writePetStatus(buf, ch);
 	ADD_INT(affect_off, (int)(buf - buff));
@@ -4313,7 +4328,10 @@ P_char restorePet(char *id)
 	P_char ch;
 	char buff[SAV_MAXSIZE];
 	char *buf = buff;
-	int start, size, csize, affect_off, item_off, tmp, virt;
+	int size, csize, affect_off, tmp, virt;
+	/* Cursor bookmark and header offset kept for format symmetry with
+	   restoreCharacter(); neither is verified for pets. */
+	[[maybe_unused]] int start, item_off;
 	char Gbuf1[MAX_STRING_LENGTH];
 
 	if (!id)

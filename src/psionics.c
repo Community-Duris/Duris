@@ -2613,7 +2613,7 @@ void spell_radial_navigation(int level, P_char ch, char *arg, int type, P_char v
 			     P_obj tar_obj)
 {
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
-	int distance, i, dir, to_room, temp, curr_room;
+	int distance, i, dir, to_room, curr_room;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -2682,7 +2682,6 @@ void spell_radial_navigation(int level, P_char ch, char *arg, int type, P_char v
 		to_room = TOROOM(to_room, dir);
 	}
 
-	temp = world[ch->in_room].sector_type;
 	if (!IS_TRUSTED(ch) &&
 	    ((to_room == NOWHERE) || (to_room == ch->in_room) || !IS_MAP_ROOM(ch->in_room) ||
 	     !IS_MAP_ROOM(to_room) || IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) ||
@@ -3010,7 +3009,7 @@ void spell_wormhole(int level, P_char ch, char *arg, int type, P_char victim, P_
 
 	P_obj beacon;
 	struct affected_type *afp;
-	int to_room = ch ? ch->in_room : NOWHERE, from_room;
+	int to_room = ch ? ch->in_room : NOWHERE;
 	int count;
 	int distance;
 	bool success = true;
@@ -3070,8 +3069,6 @@ void spell_wormhole(int level, P_char ch, char *arg, int type, P_char victim, P_
 		}
 		else
 			to_room = victim->in_room;
-
-		from_room = ch->in_room;
 
 		if (IS_NPC(victim))
 		{

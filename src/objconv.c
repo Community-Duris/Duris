@@ -94,7 +94,7 @@ void material_restrictions(P_obj obj)
 
 void convertObj(P_obj obj)
 {
-	int i, val0, val1, val2, val3, type;
+	int i, val0, val1, val2, type;
 	long weight = 0, cost = 0;
 	char buf2[MAX_STRING_LENGTH];
 
@@ -106,7 +106,6 @@ void convertObj(P_obj obj)
 	val0 = obj->value[0];
 	val1 = obj->value[1];
 	val2 = obj->value[2];
-	val3 = obj->value[3];
 	type = GET_ITEM_TYPE(obj);
 
 	/* set a few base values */

@@ -1286,8 +1286,6 @@ struct nq_quest *nq_parse_quest(char *fname)
 	struct nq_actor_template *actor_template;
 	struct nq_actor *actor;
 	struct nq_instance *instance;
-	bool allow_classes;
-	bool allow_races;
 	int actor_templates = 0;
 	int i;
 
@@ -1348,18 +1346,15 @@ struct nq_quest *nq_parse_quest(char *fname)
 	if (!xmlStrcmp(att, (const xmlChar *)"allow"))
 	{
 		quest->allowed_classes = 0;
-		allow_classes = TRUE;
 	}
 	else
 	{
 		quest->allowed_classes = (1 << CLASS_COUNT) - 1;
-		allow_classes = FALSE;
 	}
 	xmlFree(att);
 	att = xmlGetProp(node, (const xmlChar *)"listedraces");
 	if (!xmlStrcmp(att, (const xmlChar *)"allow"))
 	{
-		allow_races = TRUE;
 		for (i = 0; i <= LAST_RACE; i++)
 			quest->allowed_races[i] = 0;
 	}
@@ -1367,7 +1362,6 @@ struct nq_quest *nq_parse_quest(char *fname)
 	{
 		for (i = 0; i <= LAST_RACE; i++)
 			quest->allowed_races[i] = 1;
-		allow_races = FALSE;
 	}
 	xmlFree(att);
 
@@ -1386,11 +1380,13 @@ struct nq_quest *nq_parse_quest(char *fname)
 		}
 		else if (!xmlStrcmp(node->name, NQ_CLASS))
 		{
-			//!!!
+			/* Unimplemented.  A handler here has to re-read the
+			   quest's "listedclasses" mode to know whether the
+			   listed classes are an allow-list or a deny-list. */
 		}
 		else if (!xmlStrcmp(node->name, NQ_RACE))
 		{
-			//!!!
+			/* Unimplemented; see NQ_CLASS above for "listedraces". */
 		}
 		else if (!xmlStrcmp(node->name, NQ_SKILL))
 		{

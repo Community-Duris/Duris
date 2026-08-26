@@ -342,7 +342,7 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 {
 	P_obj obj; // For looping through objs in a room.
 	P_char who; // For looping through chars in a room.
-	int z, zw, portal = FALSE, val = CONTAINS_MAX + 1;
+	int portal = FALSE, val = CONTAINS_MAX + 1;
 	int from_room = ch->in_room;
 
 	if (!IS_ALIVE(ch) || room <= 0)
@@ -543,9 +543,6 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 				continue;
 			}
 
-			zw = who->specials.z_cord;
-			z = ch->specials.z_cord;
-
 			if (!IS_TRUSTED(ch))
 			{
 				if (IS_AFFECTED3(who, AFF3_PASS_WITHOUT_TRACE) &&
@@ -701,7 +698,7 @@ static inline void append_fmt(char (&dst)[N], int shift, const char *fmt, Args..
 
 void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, int gmcp_pkg_type)
 {
-	int x, y, where, what, from_what, heading;
+	int x, y, where, what, heading;
 	int whats_in;
 	bool hadbg = false, map_tile;
 	char buf[MAX_STRING_LENGTH], minibuf[10];
@@ -729,8 +726,6 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 	bool skip_text_output = (GMCP_ENABLED(ch) && (show_map_regardless == MAP_AUTOMAP) &&
 				 (ch->desc->term_type != TERM_MSP)) ||
 				(GMCP_ENABLED(ch) && toggle_map_off);
-
-	from_what = SECTOR_TYPE(from_room);
 
 	if (!skip_text_output)
 	{
@@ -1188,7 +1183,7 @@ void map_look(P_char ch, int show_map_regardless)
 
 bool is_in_line_of_sight_dir(P_char ch, P_char target, int current_room)
 {
-	int start, end, x, x2, temp, count, where, which_dir;
+	int start, x, x2, temp, count, where, which_dir;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -1199,7 +1194,6 @@ bool is_in_line_of_sight_dir(P_char ch, P_char target, int current_room)
 
 	return FALSE;
 
-	end = world[target->in_room].number;
 	x = 0;
 	x2 = 0;
 	where = 0;

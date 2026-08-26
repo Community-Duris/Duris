@@ -2015,7 +2015,7 @@ void spell_wolfspeed(int level, P_char ch, char *arg, int type, P_char victim, P
 void spell_snailspeed(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	struct affected_type af;
-	int percent = 0, maxpoints;
+	int percent = 0;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return;
@@ -2042,8 +2042,6 @@ void spell_snailspeed(int level, P_char ch, char *arg, int type, P_char victim, 
 		send_to_char("&+LThe spirits do not heed your call!&n\n&n", ch);
 		return;
 	}
-
-	maxpoints = GET_MAX_VITALITY(victim);
 
 	if (IS_ANIMALIST(ch))
 		level += number(10, (int)(GET_LEVEL(ch) / 2));
@@ -3264,7 +3262,7 @@ void spell_sense_spirit(int level, P_char ch, char *arg, int type, P_char victim
 int can_summon_beast(P_char ch, int level)
 {
 	struct follow_type *k;
-	int i, j, room, charisma = GET_C_CHA(ch);
+	int i, room, charisma = GET_C_CHA(ch);
 	P_char victim;
 
 	if (!IS_ALIVE(ch) || !(ch->in_room) || IS_PC_PET(ch))
@@ -3278,7 +3276,7 @@ int can_summon_beast(P_char ch, int level)
 		return FALSE;
 	}
 
-	for (k = ch->followers, i = 0, j = 0; k; k = k->next)
+	for (k = ch->followers, i = 0; k; k = k->next)
 	{
 		victim = k->follower;
 
