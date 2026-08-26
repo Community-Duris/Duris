@@ -81,6 +81,7 @@ OBJS =  $(SHIP_OBJS) \
 				 magic.o \
 				 achievements.o \
 				 account.o \
+				 password_hash.o \
 				 account_reward.o \
 				 account_reward_snapshot.o \
 				 account_reward_config.o \

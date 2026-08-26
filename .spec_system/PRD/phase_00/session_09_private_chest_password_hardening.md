@@ -1,7 +1,7 @@
 # Session 09: Private Chest Password Hardening
 
 **Session ID**: `phase00-session09-private-chest-password-hardening`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The complete private-chest secret lifecycle from create and reset
 through verification, legacy recognition, upgrade, and schema compatibility.
 
@@ -39,8 +39,8 @@ and preserve access through a tested legacy upgrade or explicit reset path.
 
 ## Prerequisites
 
-- [ ] Session 08 connection and logging boundaries are validated.
-- [ ] Any schema test runs against an isolated development database.
+- [x] Session 08 connection and logging boundaries are validated.
+- [x] Any schema test runs against an isolated development database.
 
 ---
 
@@ -58,10 +58,10 @@ and preserve access through a tested legacy upgrade or explicit reset path.
 
 ## Success Criteria
 
-- [ ] New and reset chest passwords use unique salts and an adaptive work factor.
-- [ ] Correct passwords succeed, incorrect passwords fail, and comparisons do not leak
+- [x] New and reset chest passwords use unique salts and an adaptive work factor.
+- [x] Correct passwords succeed, incorrect passwords fail, and comparisons do not leak
       raw secret or hash values through logs.
-- [ ] Legacy values have a tested successful-verification upgrade or authenticated
+- [x] Legacy values have a tested successful-verification upgrade or authenticated
       reset path that does not lock out valid owners silently.
-- [ ] Empty-password behavior remains explicit and compatible.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Empty-password behavior remains explicit and compatible.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

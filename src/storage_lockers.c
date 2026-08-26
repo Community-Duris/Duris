@@ -31,6 +31,7 @@
 #include "justice.h"
 #include "mm.h"
 #include "objmisc.h"
+#include "password_hash.h"
 #include "ships.h"
 #include "specs.winterhaven.h"
 #include "spells.h"
@@ -3817,6 +3818,11 @@ static int locker_chestcmd(P_char ch, char *arg)
 			send_to_char("Usage: eq chest create <name> [password]\r\n", ch);
 			return TRUE;
 		}
+		if (strlen(arg3) > BCRYPT_PASSWORD_MAX_BYTES)
+		{
+			send_to_char("Chest passwords must be at most 72 bytes.\r\n", ch);
+			return TRUE;
+		}
 
 		int chest_cost = 500000;
 		int result = sql_create_private_chest(locker_id, arg2, arg3[0] ? arg3 : NULL);
@@ -3897,8 +3903,7 @@ static int locker_chestcmd(P_char ch, char *arg)
 
 		if (!arg3[0] || !strcasecmp(arg3, "none"))
 		{
-			if (!qry("UPDATE private_chests SET password_hash=NULL WHERE id=%d",
-				 chest_id))
+			if (!sql_set_chest_password(chest_id, NULL))
 			{
 				send_to_char("Failed to remove chest password.\r\n", ch);
 				return TRUE;
@@ -3907,17 +3912,12 @@ static int locker_chestcmd(P_char ch, char *arg)
 		}
 		else
 		{
-			char *esc_pass = sql_escape_string(arg3);
-			if (!esc_pass)
+			if (strlen(arg3) > BCRYPT_PASSWORD_MAX_BYTES)
 			{
-				send_to_char("Failed to set chest password.\r\n", ch);
+				send_to_char("Chest passwords must be at most 72 bytes.\r\n", ch);
 				return TRUE;
 			}
-			bool updated = qry(
-				"UPDATE private_chests SET password_hash=SHA2('%s', 256) WHERE id=%d",
-				esc_pass, chest_id);
-			free(esc_pass);
-			if (!updated)
+			if (!sql_set_chest_password(chest_id, arg3))
 			{
 				send_to_char("Failed to set chest password.\r\n", ch);
 				return TRUE;

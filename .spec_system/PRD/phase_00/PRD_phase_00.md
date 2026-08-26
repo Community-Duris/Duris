@@ -4,7 +4,7 @@
 **Sessions**: 10 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 8/10 sessions (80%)
+**Progress**: 9/10 sessions (90%)
 
 ---
 
@@ -36,7 +36,7 @@ remain Phase 03 work.
 | 06 | Redis Failure and Recovery Containment | Complete | Redis deadlines, dirty-set recovery, child bounds, and floor-delta ACK rules | 2026-08-27 |
 | 07 | Account Bank Delta Safety | Complete | Checked delta-only shared-bank behavior and multi-character regressions | 2026-08-27 |
 | 08 | Runtime Connection Trust Boundaries | Complete | Fail-closed DB/TLS configuration and uniform connection invariants | 2026-08-27 |
-| 09 | Private Chest Password Hardening | Not Started | Adaptive salted hashes with compatible legacy upgrade behavior | - |
+| 09 | Private Chest Password Hardening | Complete | Adaptive salted hashes with compatible legacy upgrade behavior | 2026-08-27 |
 | 10 | Security Policy and Dependency Baseline | Not Started | Actionable policy, dependency inventory, SBOM, and CI security checks | - |
 
 ---
@@ -51,12 +51,13 @@ remain Phase 03 work.
 - Session 06: Redis Failure and Recovery Containment (completed 2026-08-27)
 - Session 07: Account Bank Delta Safety (completed 2026-08-27)
 - Session 08: Runtime Connection Trust Boundaries (completed 2026-08-27)
+- Session 09: Private Chest Password Hardening (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 09: Private Chest Password Hardening
+- Session 10: Security Policy and Dependency Baseline
 
 ---
 

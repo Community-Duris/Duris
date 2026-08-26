@@ -28,6 +28,7 @@
 #include "spells.h"
 #include "sql.h"
 #include "player_name.h"
+#include "password_hash.h"
 
 // external tables
 extern P_index obj_index;
@@ -5866,6 +5867,8 @@ int sql_create_private_chest(int locker_id, const char *chest_name, const char *
 {
 	if (!DB || locker_id <= 0 || !chest_name)
 		return 0;
+	if (password && strlen(password) > BCRYPT_PASSWORD_MAX_BYTES)
+		return 0;
 
 	if (sql_count_private_chests(locker_id) >= 5)
 		return -1;
@@ -5877,13 +5880,20 @@ int sql_create_private_chest(int locker_id, const char *chest_name, const char *
 	char query[512];
 	if (password && password[0])
 	{
-		char *esc_pass = sql_escape_string(password);
+		char *hash = bcrypt_hash_password(password);
+		char *esc_hash = hash ? sql_escape_string(hash) : NULL;
+		free(hash);
+		if (!esc_hash)
+		{
+			free(esc_name);
+			return 0;
+		}
 		snprintf(
 			query, sizeof(query),
 			"INSERT INTO private_chests (locker_id, chest_name, password_hash, is_public) "
-			"VALUES (%d, '%s', SHA2('%s', 256), 0)",
-			locker_id, esc_name, esc_pass);
-		free(esc_pass);
+			"VALUES (%d, '%s', '%s', 0)",
+			locker_id, esc_name, esc_hash);
+		free(esc_hash);
 	}
 	else
 	{
@@ -5983,38 +5993,128 @@ int sql_get_chest_id(int locker_id, const char *chest_name)
 	return id;
 }
 
-bool sql_verify_chest_password(int chest_id, const char *password)
+bool sql_set_chest_password(int chest_id, const char *password)
 {
 	if (!DB || chest_id <= 0)
 		return false;
 
 	char query[512];
-
 	if (!password || !password[0])
 	{
 		snprintf(query, sizeof(query),
-			 "SELECT id FROM private_chests WHERE id=%d AND password_hash IS NULL",
+			 "UPDATE private_chests SET password_hash=NULL WHERE id=%d AND is_public=0",
 			 chest_id);
-	}
-	else
-	{
-		char *esc_pass = sql_escape_string(password);
-		if (!esc_pass)
+		if (!sql_run_query(query))
 			return false;
+		if (mysql_affected_rows(DB) == 1)
+			return true;
+
 		snprintf(
 			query, sizeof(query),
-			"SELECT id FROM private_chests WHERE id=%d AND password_hash=SHA2('%s', 256)",
-			chest_id, esc_pass);
-		free(esc_pass);
+			"SELECT id FROM private_chests WHERE id=%d AND is_public=0 AND password_hash IS NULL",
+			chest_id);
+		MYSQL_RES *result = db_query("%s", query);
+		if (!result)
+			return false;
+		bool found = mysql_fetch_row(result) != NULL;
+		mysql_free_result(result);
+		return found;
 	}
+	if (strlen(password) > BCRYPT_PASSWORD_MAX_BYTES)
+		return false;
 
+	char *hash = bcrypt_hash_password(password);
+	char *esc_hash = hash ? sql_escape_string(hash) : NULL;
+	free(hash);
+	if (!esc_hash)
+		return false;
+	snprintf(query, sizeof(query),
+		 "UPDATE private_chests SET password_hash='%s' WHERE id=%d AND is_public=0",
+		 esc_hash, chest_id);
+	free(esc_hash);
+	return sql_run_query(query) && mysql_affected_rows(DB) == 1;
+}
+
+static bool sql_verify_chest_password_internal(int chest_id, const char *password,
+					       bool upgrade_legacy)
+{
+	char query[512];
+	snprintf(query, sizeof(query), "SELECT password_hash FROM private_chests WHERE id=%d",
+		 chest_id);
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
 		return false;
 
-	bool found = (mysql_fetch_row(result) != NULL);
+	MYSQL_ROW row = mysql_fetch_row(result);
+	if (!row)
+	{
+		mysql_free_result(result);
+		return false;
+	}
+	if (!password || !password[0])
+	{
+		bool valid = row[0] == NULL;
+		mysql_free_result(result);
+		return valid;
+	}
+	if (!row[0])
+	{
+		mysql_free_result(result);
+		return false;
+	}
+
+	if (is_bcrypt_hash(row[0]))
+	{
+		bool valid = bcrypt_verify_password(password, row[0]) != 0;
+		mysql_free_result(result);
+		return valid;
+	}
+
+	bool valid = password_verify_legacy_sha256(password, row[0]) != 0;
+	char *esc_legacy = valid ? sql_escape_string(row[0]) : NULL;
 	mysql_free_result(result);
-	return found;
+	if (!valid || !upgrade_legacy)
+	{
+		free(esc_legacy);
+		return valid;
+	}
+	if (!esc_legacy)
+		return false;
+
+	char *hash = bcrypt_hash_password(password);
+	char *esc_hash = hash ? sql_escape_string(hash) : NULL;
+	free(hash);
+	if (!esc_hash)
+	{
+		free(esc_legacy);
+		logit(LOG_DEBUG, "sql_player: site=chest_password_upgrade outcome=hash_failure");
+		return true;
+	}
+
+	snprintf(query, sizeof(query),
+		 "UPDATE private_chests SET password_hash='%s' WHERE id=%d AND password_hash='%s'",
+		 esc_hash, chest_id, esc_legacy);
+	free(esc_hash);
+	free(esc_legacy);
+	if (!sql_run_query(query))
+	{
+		logit(LOG_DEBUG, "sql_player: site=chest_password_upgrade outcome=not_applied");
+		return true;
+	}
+	if (mysql_affected_rows(DB) == 1)
+		return true;
+
+	logit(LOG_DEBUG, "sql_player: site=chest_password_upgrade outcome=stale");
+	return sql_verify_chest_password_internal(chest_id, password, false);
+}
+
+bool sql_verify_chest_password(int chest_id, const char *password)
+{
+	if (!DB || chest_id <= 0)
+		return false;
+	if (password && strlen(password) > BCRYPT_PASSWORD_MAX_BYTES)
+		return false;
+	return sql_verify_chest_password_internal(chest_id, password, true);
 }
 
 int sql_count_private_chests(int locker_id)

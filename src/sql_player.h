@@ -138,6 +138,7 @@ int sql_get_or_create_public_chest(int locker_id);
 int sql_create_private_chest(int locker_id, const char *chest_name, const char *password);
 bool sql_delete_private_chest(int chest_id);
 int sql_get_chest_id(int locker_id, const char *chest_name);
+bool sql_set_chest_password(int chest_id, const char *password);
 bool sql_verify_chest_password(int chest_id, const char *password);
 int sql_count_private_chests(int locker_id);
 // private_chest_log action_type values

@@ -28,6 +28,7 @@
 #include "sql.h"
 #include "sql_player.h"
 #include "player_name.h"
+#include "password_hash.h"
 #include "websocket.h"
 #include "ws_auth.h"
 
@@ -36,9 +37,6 @@ extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 extern struct room_data *world;
 extern int top_of_world;
-extern int is_bcrypt_hash(const char *hash);
-extern int bcrypt_verify_password(const char *password, const char *hash);
-extern char *bcrypt_hash_password(const char *password);
 extern bool account_exists(const char *dir, char *name);
 extern int read_account(P_acct acct);
 extern int write_account(P_acct acct);
