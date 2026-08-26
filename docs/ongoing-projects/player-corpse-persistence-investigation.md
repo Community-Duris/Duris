@@ -6,7 +6,7 @@
 
 **Severity:** High (self-persisting corpse corruption; resurrection and race-war behavior can change after a restart)
 
-**Status:** Root cause confirmed; no code or database repair applied
+**Status:** Fix in progress on `bugfix-corpse`; investigation baseline published as `e677a046`
 
 **Target subsystem:** Player-corpse SQL persistence (`files.c`, `fight.c`, `sql_player.c`)
 
@@ -283,7 +283,17 @@ Add a database-backed corpse round-trip test with deliberately distinct values:
 A source-contract test for named indexes is useful as an additional guard, but it is not a substitute for a
 real save/load round trip.
 
-## 8. Completion boundary
+## 8. Implementation progress
+
+| Checkpoint | State | Evidence |
+|---|---|---|
+| Investigation baseline | Complete and published | `e677a046`; live DB and log evidence captured above |
+| Display-field reconstruction | Complete; ready to publish | Named result columns, field-count guard, owned-string setters, and owner-keyword reconstruction; focused contract test, formatting check, and strict build pass |
+| Outer corpse state | Not started | Schema and save/load work remains |
+| Existing-row repair | Not started | Guarded compatibility repair remains |
+| Full validation | Not started | Clean build, full suite, migration test, and runtime round trip remain |
+
+## 9. Completion boundary
 
 This document records investigation findings only. It does **not** modify `src/`, add a migration, repair the
 live local corpse row, restart the service, or claim that corpse persistence is fixed. The immediate display
