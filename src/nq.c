@@ -592,9 +592,6 @@ void nq_reward_player(struct nq_action *action, struct nq_instance *instance,
 	if (action->reward->cash)
 		ch->points.cash[3] += action->reward->cash / 1000;
 
-	if (action->reward->exp)
-		;
-
 	for (item = action->reward->item; item; item = item->next)
 	{
 		if ((obj = nq_create_item(item)))
@@ -1158,8 +1155,8 @@ struct nq_actor_template *nq_parse_actor_template(xmlNodePtr node)
 struct nq_actor *nq_parse_actor(xmlNodePtr node, struct nq_quest *quest)
 {
 	struct nq_actor *actor;
-	int template_index;
-	int action_set_index;
+	int template_index = -1;
+	int action_set_index = -1;
 
 	CREATE(actor, nq_actor, 1, MEM_TAG_NQACTOR);
 	memset(actor, 0, sizeof(struct nq_actor));
@@ -1175,13 +1172,32 @@ struct nq_actor *nq_parse_actor(xmlNodePtr node, struct nq_quest *quest)
 		else if (!xmlStrcmp(node->name, NQI_TMPL_IDX))
 		{
 			template_index = nq_parse_int(node->xmlChildrenNode);
-			actor->tmpl = quest->actor_template[template_index];
 		}
 		else if (!xmlStrcmp(node->name, NQI_ACTSET_IDX))
 		{
 			action_set_index = nq_parse_int(node->xmlChildrenNode);
 		}
 		node = node->next;
+	}
+
+	if (template_index < 0 || template_index >= NQ_MAX_ACTORS ||
+	    !quest->actor_template[template_index])
+	{
+		logit(LOG_SYS,
+		      "nq_parse_actor: invalid template/action indexes %d/%d while loading quest",
+		      template_index, action_set_index);
+		FREE(actor);
+		return NULL;
+	}
+	actor->tmpl = quest->actor_template[template_index];
+	if (action_set_index < 0 || action_set_index >= NQ_MAX_ACTION_SET ||
+	    !actor->tmpl->action_set[action_set_index])
+	{
+		logit(LOG_SYS,
+		      "nq_parse_actor: invalid template/action indexes %d/%d while loading quest",
+		      template_index, action_set_index);
+		FREE(actor);
+		return NULL;
 	}
 
 	actor->action = actor->tmpl->action_set[action_set_index];
@@ -1211,8 +1227,11 @@ struct nq_instance *nq_parse_instance(xmlNodePtr node, struct nq_quest *quest)
 		if (!xmlStrcmp(node->name, NQI_ACTOR))
 		{
 			actor = nq_parse_actor(node, quest);
-			actor->next = instance->actor;
-			instance->actor = actor;
+			if (actor)
+			{
+				actor->next = instance->actor;
+				instance->actor = actor;
+			}
 		}
 		else if (!xmlStrcmp(node->name, NQI_LOG_ENTRY))
 		{

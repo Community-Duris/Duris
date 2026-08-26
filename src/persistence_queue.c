@@ -16,6 +16,7 @@
 
 #include "persistence_queue.h"
 #include "latency_trace.h"
+#include "safe_format.h"
 
 /* wizlog() and logit() are declared in utility.h / structs.h; pull in
  * just the declarations to avoid dragging heavy dependencies into this
@@ -375,7 +376,7 @@ int persistence_item_event_queue_dequeue(char *out, int out_size)
 	pthread_mutex_lock(&persistence_item_event_queue_mutex);
 	if (q->count > 0)
 	{
-		snprintf(out, out_size, "%s", q->events[q->head]);
+		checked_snprintf(out, out_size, "%s", q->events[q->head]);
 		persistence_item_event_queue_pop_head();
 		ok = 1;
 	}
@@ -798,7 +799,7 @@ int persistence_scalar_event_queue_dequeue(char *out, int out_size)
 	pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
 	if (q->count > 0)
 	{
-		snprintf(out, out_size, "%s", q->events[q->head]);
+		checked_snprintf(out, out_size, "%s", q->events[q->head]);
 		persistence_scalar_event_queue_pop_head();
 		ok = 1;
 	}
@@ -895,7 +896,7 @@ int persistence_large_event_queue_dequeue(char *out, int out_size)
 	pthread_mutex_lock(&persistence_large_event_queue_mutex);
 	if (q->count > 0)
 	{
-		snprintf(out, out_size, "%s", q->events[q->head]);
+		checked_snprintf(out, out_size, "%s", q->events[q->head]);
 		persistence_large_event_queue_pop_head();
 		ok = 1;
 	}
@@ -1678,7 +1679,7 @@ const char *persistence_sql_escape_field(const char *in, char *buf, int buf_size
 
 	if (!in)
 	{
-		snprintf(buf, buf_size, "none");
+		checked_snprintf(buf, buf_size, "none");
 		return buf;
 	}
 

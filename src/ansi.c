@@ -35,8 +35,10 @@ static const unsigned char letters[64] = {
 
 static int char2col(char c)
 {
-	if (c >= 64 && c < 128)
-		return letters[c - 64];
+	const unsigned char code = (unsigned char)c;
+
+	if (code >= 64 && code < 128)
+		return letters[code - 64];
 	return 0;
 }
 #endif
@@ -84,7 +86,7 @@ static void put_term(char *&out, int attr, int lastbit)
 	int f = GET_FG(attr);
 	int b = GET_BG(attr);
 
-	*out++ = '\e';
+	*out++ = '\x1b';
 	*out++ = '[';
 	*out++ = '0';
 
@@ -232,7 +234,7 @@ void AnsiString::term(char *out, int lastbit) const
 		{
 			if (oattr)
 			{
-				*out++ = '\e', *out++ = '[', *out++ = 'm';
+				*out++ = '\x1b', *out++ = '[', *out++ = 'm';
 				oattr = 0;
 			}
 			*out++ = '\r', *out++ = '\n';
@@ -247,7 +249,7 @@ void AnsiString::term(char *out, int lastbit) const
 	}
 
 	if (oattr)
-		*out++ = '\e', *out++ = '[', *out++ = 'm';
+		*out++ = '\x1b', *out++ = '[', *out++ = 'm';
 	*out = 0;
 }
 

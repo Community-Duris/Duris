@@ -13,7 +13,7 @@ int frost_elb_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int incombat;
 	int is_charged;
-	char can_use, *arg2;
+	char can_use, arg2[MAX_INPUT_LENGTH];
 	P_char victim;
 
 	incombat = (cmd / 1000);
@@ -31,8 +31,8 @@ int frost_elb_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 	is_charged = IS_OBJ_STAT(obj, ITEM_LIT);
 	if (arg && (cmd == CMD_SAY) && is_charged)
 	{
-		arg = one_argument(arg, arg2);
-		if (!strcmp(arg, "frost"))
+		one_argument(arg, arg2);
+		if (!strcmp(arg2, "frost"))
 		{
 			act("$n says something to $p&n.", TRUE, ch, obj, 0, TO_ROOM);
 			act("You say 'frost' to $p&n.", TRUE, ch, obj, 0, TO_CHAR);
@@ -46,7 +46,7 @@ int frost_elb_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		else
 		{
-			if (!strcmp(arg, "eld"))
+			if (!strcmp(arg2, "eld"))
 			{
 				act("$n says something to $p&n.", TRUE, ch, obj, 0, TO_ROOM);
 				act("You say 'eld' to $p&n.", TRUE, ch, obj, 0, TO_CHAR);

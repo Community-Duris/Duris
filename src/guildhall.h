@@ -164,9 +164,9 @@ struct GuildhallRoom
 		: vnum(-1)
 		, guild(NULL)
 		, type(0)
-		, room(NULL)
-		, guildhall(NULL)
 		, template_vnum(GH_ROOM_TEMPLATE_GENERIC)
+		, guildhall(NULL)
+		, room(NULL)
 	{
 		for (int i = 0; i < GH_ROOM_NUM_VALUES; i++)
 		{
@@ -183,11 +183,19 @@ struct GuildhallRoom
 		: vnum(-1)
 		, guild(NULL)
 		, type(0)
-		, room(NULL)
-		, guildhall(NULL)
 		, template_vnum(_template_vnum)
+		, guildhall(NULL)
+		, room(NULL)
 	{
-		GuildhallRoom();
+		for (int i = 0; i < GH_ROOM_NUM_VALUES; i++)
+		{
+			this->value[i] = 0;
+		}
+
+		for (int i = 0; i < NUM_EXITS; i++)
+		{
+			this->exits[i] = -1;
+		}
 	}
 
 	virtual ~GuildhallRoom() = default;

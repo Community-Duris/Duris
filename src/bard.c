@@ -1765,12 +1765,13 @@ void event_echosong(P_char ch, P_char victim, P_obj obj, void *data)
 
 void event_bardsong(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int echoChance = 0, song, l, room, i, terrainType = SECT_INSIDE, song_chance, aggr_chance;
+	int echoChance = 0, song, l, room, i, terrainType = SECT_INSIDE, song_chance,
+	    aggr_chance = 0;
 	P_obj instrument = NULL;
 	struct affected_type *af, *af2;
 	struct char_link_data *cld, *next_cld;
 	struct echo_details echoDetails;
-	struct song_description *sd;
+	struct song_description *sd = NULL;
 	P_char tch, next;
 
 	if (!IS_ALIVE(ch))
@@ -1867,6 +1868,12 @@ void event_bardsong(P_char ch, P_char victim, P_obj obj, void *data)
 			sd = &songs[i];
 			break;
 		}
+	}
+	if (!sd)
+	{
+		logit(LOG_SYS, "event_bardsong: unknown song %d", song);
+		stop_singing(ch);
+		return;
 	}
 	room = ch->in_room;
 
@@ -2161,7 +2168,7 @@ void do_riff(P_char ch, char *arg, int cmd)
 	struct affected_type *af, *af2;
 	struct char_link_data *cld, *next_cld;
 	struct echo_details echoDetails;
-	struct song_description *sd;
+	struct song_description *sd = NULL;
 	P_char tch, next;
 
 	if (!IS_ALIVE(ch))
@@ -2280,6 +2287,11 @@ void do_riff(P_char ch, char *arg, int cmd)
 			sd = &songs[i];
 			break;
 		}
+	}
+	if (!sd)
+	{
+		logit(LOG_SYS, "do_riff: unknown song %d", s);
+		return;
 	}
 	room = ch->in_room;
 

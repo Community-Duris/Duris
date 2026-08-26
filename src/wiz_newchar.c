@@ -276,8 +276,8 @@ void do_newchar(P_char ch, char *argument, int cmd)
 	GET_ORIG_BIRTHPLACE(newch) = GET_HOME(newch);
 
 	// set all stats to 100
-	for (int i = 0; i < MAX_ATTRIBUTES; i++)
-		newch->base_stats[i] = 100;
+	for (int stat_index = 0; stat_index < MAX_ATTRIBUTES; stat_index++)
+		newch->base_stats[stat_index] = 100;
 	newch->curr_stats = newch->base_stats;
 
 	// init_char does pid assignment, skill setup, hp/mana/vitality etc

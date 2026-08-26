@@ -324,10 +324,9 @@ void spell_single_prismatic_ray(int level, P_char ch, char *arg, int type, P_cha
 		0
 	};
 
+	ray_type = 0;
 	if (arg)
-		ray_type = *((int *)arg);
-	else
-		ray_type = 0;
+		memcpy(&ray_type, arg, sizeof(ray_type));
 
 	int mod = get_default_save_mod(victim, ch, SAVING_SPELL, SPELL_PRISMATIC_RAY);
 
@@ -1445,8 +1444,8 @@ void spell_wither(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 		return;
 	}
 
-	if (percent > 0 && (IS_AFFECTED4(victim, AFF4_NEG_SHIELD) ||
-			    IS_AFFECTED2(victim, AFF2_SOULSHIELD)) ||
+	if ((percent > 0 &&
+	     (IS_AFFECTED4(victim, AFF4_NEG_SHIELD) || IS_AFFECTED2(victim, AFF2_SOULSHIELD))) ||
 	    IS_UNDEADRACE(victim) || IS_GREATER_RACE(victim))
 	{
 		percent = (int)(percent * 0.75);
@@ -2808,7 +2807,6 @@ void spell_conjour_greater_elemental(int level, P_char ch, char *arg, int type, 
 void spell_summon_greater_demon(int level, P_char ch, P_char victim, P_obj obj)
 {
 	P_char mob;
-	P_obj weapon;
 	int sum, mlvl, lvl;
 	static struct
 	{
@@ -2864,7 +2862,7 @@ void spell_summon_greater_demon(int level, P_char ch, P_char victim, P_obj obj)
 	char_to_room(mob, ch->in_room, 0);
 
 	if (IS_PC(ch) && /*(GET_LEVEL(mob) > number((level - i * 4), level * 3 / 2)) */
-	    (weapon && (weapon->R_num != real_object(67207))) && !number(0, 300) && !IS_TRUSTED(ch))
+	    !has_air_staff_arti(ch) && !number(0, 300) && !IS_TRUSTED(ch))
 	{
 		act("$N is NOT pleased at being suddenly summoned against $S will!", TRUE, ch, 0,
 		    mob, TO_ROOM);
@@ -3284,7 +3282,8 @@ void spell_single_chain_lightning(int level, P_char ch, char *arg, int type, P_c
 		0
 	};
 
-	order = *((int *)arg);
+	memcpy(&order, arg, sizeof(order));
+	const bool secondary_strike = order != 0;
 	dam = 8 * MIN(51, level) + number(level / 3, level) + 30;
 	while (order--)
 	{
@@ -3298,7 +3297,7 @@ void spell_single_chain_lightning(int level, P_char ch, char *arg, int type, P_c
 	dam = dam * get_property("spell.area.damage.factor.chainlightning", 1.000);
 
 	spell_damage(ch, victim, dam, SPLDAM_LIGHTNING, 0,
-		     *((int *)arg) ? &secondary_messages : &primary_messages);
+		     secondary_strike ? &secondary_messages : &primary_messages);
 }
 
 void spell_chain_lightning(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
@@ -3745,7 +3744,6 @@ void spell_earthquake(int level, P_char ch, char *arg, int type, P_char victim, 
 									 SPLDAM_NOSHRUG |
 										 SPLDAM_NODEFLECT,
 									 0) == DAM_NONEDEAD)
-								;
 							{
 								SET_POS(tch, number(0, 2) +
 										     GET_STAT(tch));
@@ -4267,7 +4265,7 @@ void spell_decaying_flesh(int level, P_char ch, char *arg, int type, P_char vict
 				act("&+RYou &nagain point at &+L$N &ncausing the existing &+gdecay&n to worsen&n.",
 				    FALSE, ch, 0, victim, TO_CHAR);
 
-				af1->modifier = af1->modifier++;
+				af1->modifier++;
 			}
 			break;
 		}
@@ -5838,10 +5836,6 @@ void spell_wandering_woods(int level, P_char ch, char *arg, int type, P_char vic
 	{
 		temp = 3;
 	}
-	else if ((GET_LEVEL(ch) == 56))
-	{
-		temp = 4;
-	}
 	else
 	{
 		temp = 4;
@@ -7278,7 +7272,6 @@ void spell_shadow_projection(int level, P_char ch, char *arg, int type, P_char v
 
 void spell_concealment(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int room;
 	struct affected_type af;
 
 	if (obj)
@@ -7303,7 +7296,8 @@ void spell_concealment(int level, P_char ch, char *arg, int type, P_char victim,
 			af.duration = level / 2;
 
 			if (GET_SPEC(ch, CLASS_SORCERER, SPEC_SHADOW) && ch == victim &&
-			    !IS_WATER_ROOM(ch->in_room) && world[room].sector_type != SECT_OCEAN)
+			    !IS_WATER_ROOM(ch->in_room) &&
+			    world[ch->in_room].sector_type != SECT_OCEAN)
 			{
 				af.bitvector = AFF_HIDE;
 			}
@@ -10556,9 +10550,7 @@ void spell_shadow_breath_1(int level, P_char ch, char *arg, int type, P_char vic
 
 	dam = BOUNDED(1, dam, 80);
 
-	if (spell_damage(ch, victim, dam, SPLDAM_NEGATIVE, SPLDAM_BREATH | SPLDAM_NODEFLECT,
-			 &messages) != DAM_NONEDEAD)
-		;
+	spell_damage(ch, victim, dam, SPLDAM_NEGATIVE, SPLDAM_BREATH | SPLDAM_NODEFLECT, &messages);
 	return;
 }
 
@@ -14532,7 +14524,7 @@ void spell_silence(int level, P_char ch, char *arg, int type, P_char victim, P_o
 		return;
 	}
 
-	int save;
+	int save = victim->specials.apply_saving_throw[SAVING_SPELL];
 
 	if (GET_LEVEL(victim) > 57)
 	{
@@ -14545,10 +14537,6 @@ void spell_silence(int level, P_char ch, char *arg, int type, P_char victim, P_o
 		{
 			save += 15;
 		}
-	}
-	else
-	{
-		save = victim->specials.apply_saving_throw[SAVING_SPELL];
 	}
 
 	int percent = BOUNDED(0,
@@ -15679,7 +15667,7 @@ void spell_lesser_resurrect(int level, P_char ch, char *arg, int type, P_char vi
 	if (IS_NPC(ch))
 		return;
 
-	if (GET_CHAR_SKILL(ch, SKILL_DEVOTION) <= 20 && !IS_TRUSTED(ch) ||
+	if ((GET_CHAR_SKILL(ch, SKILL_DEVOTION) <= 20 && !IS_TRUSTED(ch)) ||
 	    (GET_CLASS(ch, CLASS_SHAMAN) && level < 52))
 	{
 		CharWait(ch, 100);
@@ -18896,7 +18884,7 @@ void spell_ether_sense(int level, P_char ch, char *arg, int type, P_char vict, P
 	P_desc d;
 	char buf[256];
 
-	if (!IS_ILLITHID(ch) || !IS_PILLITHID(ch))
+	if (!IS_ILLITHID(ch) && !IS_PILLITHID(ch))
 	{
 		send_to_char(
 			"A flood of strange images stream into your brain at a mind-numbing pace..  Woah man, the colors.  Alas, you can't make sense of any of it.\n",
@@ -18915,7 +18903,7 @@ void spell_ether_sense(int level, P_char ch, char *arg, int type, P_char vict, P
 			/*found char in same zone */
 			if ((GET_LEVEL(d->character) > 25) && !IS_TRUSTED(d->character))
 			{
-				if (IS_ILLITHID(d->character) || IS_PILLITHID(ch))
+				if (IS_ILLITHID(d->character) || IS_PILLITHID(d->character))
 				{
 					ilevel += GET_LEVEL(d->character);
 				}
@@ -18946,16 +18934,6 @@ void spell_ether_sense(int level, P_char ch, char *arg, int type, P_char vict, P
 			snprintf(buf, 256,
 				 "&+WYou detect no good presence in the ether around you.\n");
 		}
-		else if (glevel < 100)
-		{
-			snprintf(buf, 256,
-				 "&+WYou detect a good presence in the ether around you.\n");
-		}
-		else if (glevel < 250)
-		{
-			snprintf(buf, 256,
-				 "&+WYou detect a good presence in the ether around you.\n");
-		}
 		else
 		{
 			snprintf(buf, 256,
@@ -18970,16 +18948,6 @@ void spell_ether_sense(int level, P_char ch, char *arg, int type, P_char vict, P
 			snprintf(buf, 256,
 				 "&+mYou detect no planar presence in the ether around you.\n");
 		}
-		else if (ilevel < 50)
-		{
-			snprintf(buf, 256,
-				 "&+mYou detect planar presence in the ether around you.\n");
-		}
-		else if (ilevel < 100)
-		{
-			snprintf(buf, 256,
-				 "&+mYou detect planar presence in the ether around you.\n");
-		}
 		else
 		{
 			snprintf(buf, 256,
@@ -18993,16 +18961,6 @@ void spell_ether_sense(int level, P_char ch, char *arg, int type, P_char vict, P
 		{
 			snprintf(buf, 256,
 				 "&+rYou detect no evil presence in the ether around you.\n");
-		}
-		else if (elevel < 100)
-		{
-			snprintf(buf, sizeof buf,
-				 "&+rYou detect a evil presence in the ether around you.\n");
-		}
-		else if (elevel < 250)
-		{
-			snprintf(buf, sizeof buf,
-				 "&+rYou detect a evil presence in the ether around you.\n");
 		}
 		else
 		{
@@ -19774,7 +19732,6 @@ void spell_acidimmolate(int level, P_char ch, char *arg, int type, P_char victim
 
 	if (spell_damage(ch, victim, (int)GET_LEVEL(ch) * 2 + number(20, 120), SPLDAM_ACID,
 			 SPLDAM_NODEFLECT | SPLDAM_NOSHRUG, NULL) == DAM_NONEDEAD)
-		;
 	{
 		if (IS_ALIVE(victim)) // Adding double check.
 		{
@@ -19921,7 +19878,8 @@ void spell_chaotic_ripple(int level, P_char ch, char *arg, int type, P_char vict
 					attack(victim, tch);
 				}
 				break;
-			} // Continue on to RIPPLE_BOLTS if target is a non-pet npc.
+			}
+			[[fallthrough]]; // Non-pet NPCs continue on to RIPPLE_BOLTS.
 		case RIPPLE_BOLTS:
 			messages.attacker = messages.room =
 				"Twin &+Bbolts&n of writhing power slam into $N's chest.&n";
@@ -20747,7 +20705,7 @@ void spell_moonwell(int level, P_char ch, char *arg, int type, P_char victim, P_
 {
 	P_obj moonstone;
 	struct affected_type *afp;
-	int to_room, from_room;
+	int to_room = NOWHERE, from_room;
 	int count;
 	int distance;
 	bool success = true;

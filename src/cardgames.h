@@ -18,7 +18,7 @@ class Card
 
 	const char *getSuit();
 	const char *getValue();
-	const int getNumber() { return value; };
+	int getNumber() { return value; };
 
     public:
 	Card(int val, P_Card next = NULL)
@@ -82,7 +82,7 @@ class Hand
 		};
 		return i;
 	};
-	const P_char getOwner() { return owner; };
+	P_char getOwner() { return owner; };
 	void ReceiveCard(P_Card newCard)
 	{
 		newCard->nextCard = cards;

@@ -93,7 +93,7 @@ int hammer(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (!dam || !IS_ALIVE(ch) || !IS_ALIVE(vict) || cmd != CMD_MELEE_HIT)
 	{
 		return FALSE;
@@ -155,7 +155,7 @@ int torment(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(ch) || !OBJ_WORN_BY(obj, ch) || !IS_ALIVE(vict))
 	{
 		return FALSE;
@@ -236,7 +236,7 @@ int dragonkind(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (!dam || !IS_ALIVE(vict) || !GET_OPPONENT(ch))
 	{
 		return FALSE;
@@ -282,7 +282,8 @@ int dragonkind(P_obj obj, P_char ch, int cmd, char *arg)
 
 				if (IS_ALIVE(vict))
 				{
-					if (vict->group && (vict->group == ch->group) || vict == ch)
+					if ((vict->group && (vict->group == ch->group)) ||
+					    vict == ch)
 					{
 						continue;
 					}
@@ -303,7 +304,8 @@ int dragonkind(P_obj obj, P_char ch, int cmd, char *arg)
 
 				if (IS_ALIVE(vict))
 				{
-					if (vict->group && (vict->group == ch->group) || vict == ch)
+					if ((vict->group && (vict->group == ch->group)) ||
+					    vict == ch)
 					{
 						continue;
 					}
@@ -324,7 +326,8 @@ int dragonkind(P_obj obj, P_char ch, int cmd, char *arg)
 
 				if (IS_ALIVE(vict))
 				{
-					if (vict->group && (vict->group == ch->group) || vict == ch)
+					if ((vict->group && (vict->group == ch->group)) ||
+					    vict == ch)
 					{
 						continue;
 					}
@@ -343,49 +346,55 @@ int dragonkind(P_obj obj, P_char ch, int cmd, char *arg)
 		// 1/28 chance for tailswep proc.
 		if (!number(0, 27))
 		{
-			P_char tch, tch_next;
+			P_char sweep_target, next_sweep_target;
 
 			act("$n's $q &+Lsummons forth a visage of a &+gDRAGON\n&+LThe &+gdragon&+L visage of the &+Waxe&+L lashes out with its mighty tail!",
 			    TRUE, ch, obj, NULL, TO_ROOM);
 			act("Your $q &+Lsummons forth a visage of a &+gDRAGON\n&+LThe &+gdragon&+L visage of the &+Waxe&+L lashes out with its mighty tail!",
 			    TRUE, ch, obj, vict, TO_CHAR);
 
-			for (tch = world[ch->in_room].people; tch; tch = tch_next)
+			for (sweep_target = world[ch->in_room].people; sweep_target;
+			     sweep_target = next_sweep_target)
 			{
-				tch_next = tch->next_in_room;
+				next_sweep_target = sweep_target->next_in_room;
 
-				if (IS_NPC(tch) && (!tch->following || IS_NPC(tch->following)) &&
-				    (GET_OPPONENT(ch) != tch) && (GET_OPPONENT(tch) != ch))
+				if (IS_NPC(sweep_target) &&
+				    (!sweep_target->following || IS_NPC(sweep_target->following)) &&
+				    (GET_OPPONENT(ch) != sweep_target) &&
+				    (GET_OPPONENT(sweep_target) != ch))
 				{
 					continue;
 				}
-				if (IS_TRUSTED(tch))
+				if (IS_TRUSTED(sweep_target))
 				{
 					continue;
 				}
-				if (((IS_FIGHTING(tch) && (GET_OPPONENT(tch) == ch)) ||
+				if (((IS_FIGHTING(sweep_target) &&
+				      (GET_OPPONENT(sweep_target) == ch)) ||
 				     !IS_FIGHTING(ch)) &&
-				    !IS_DRAGON(tch))
+				    !IS_DRAGON(sweep_target))
 				{
-					if (!StatSave(tch, APPLY_AGI, -2))
+					if (!StatSave(sweep_target, APPLY_AGI, -2))
 					{
 						/* fall down, go boom */
-						SET_POS(tch, POS_SITTING + GET_STAT(tch));
-						CharWait(tch, PULSE_VIOLENCE * 2);
+						SET_POS(sweep_target,
+							POS_SITTING + GET_STAT(sweep_target));
+						CharWait(sweep_target, PULSE_VIOLENCE * 2);
 						act("The powerful sweep sends you crashing to the ground!",
-						    FALSE, tch, 0, 0, TO_CHAR);
-						act("$n crashes to the ground!", FALSE, tch, 0, 0,
-						    TO_ROOM);
+						    FALSE, sweep_target, 0, 0, TO_CHAR);
+						act("$n crashes to the ground!", FALSE,
+						    sweep_target, 0, 0, TO_ROOM);
 						/* don't want to kill them with it, but can mess them up BAD! */
-						damage(ch, tch,
+						damage(ch, sweep_target,
 						       MIN(dice(2, (GET_LEVEL(ch) / 5)) + 5,
-							   GET_HIT(tch) + 8),
+							   GET_HIT(sweep_target) + 8),
 						       TYPE_UNDEFINED);
 					}
 					else
 					{
-						send_to_char("You nimbly dodge the sweep!\n", tch);
-						act("$N dodges your sweep.", 0, ch, 0, tch,
+						send_to_char("You nimbly dodge the sweep!\n",
+							     sweep_target);
+						act("$N dodges your sweep.", 0, ch, 0, sweep_target,
 						    TO_CHAR);
 					}
 				}
@@ -427,7 +436,7 @@ int dragonkind(P_obj obj, P_char ch, int cmd, char *arg)
 						do_flee(tchar1, 0, 2);
 						continue;
 					}
-					if (tchar1->group && (tchar1->group == ch->group) ||
+					if ((tchar1->group && (tchar1->group == ch->group)) ||
 					    fear_check(tchar1))
 					{
 						continue;
@@ -521,7 +530,7 @@ int lightning(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	return FALSE;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) ||
 	    obj->loc.wearing != ch || !IS_ALIVE(vict))
 	{
@@ -569,7 +578,7 @@ int dispator(P_obj obj, P_char ch, int cmd, char *arg)
 		return TRUE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (!dam || !IS_ALIVE(ch) || !IS_ALIVE(vict) || !OBJ_WORN_BY(obj, ch))
 	{
 		return FALSE;
@@ -646,7 +655,7 @@ int orb_of_the_sea(P_obj obj, P_char ch, int cmd, char *arg)
 	// If we can't find the victim
 	if (cmd == CMD_GOTHIT)
 	{
-		if (!((data = (struct proc_data *)arg) && (victim = data->victim)))
+		if (!((data = legacy_proc_arg<struct proc_data *>(arg)) && (victim = data->victim)))
 		{
 			debug("orb_of_the_sea: CMD_GOTHIT: no attacker.");
 			return FALSE;
@@ -654,7 +663,7 @@ int orb_of_the_sea(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	else
 	{
-		if (!(victim = (P_char)arg))
+		if (!(victim = legacy_proc_arg<P_char>(arg)))
 		{
 			debug("orb_of_the_sea: CMD_MELEE_HIT: no victim.");
 			return FALSE;
@@ -726,8 +735,7 @@ int orb_of_the_sea(P_obj obj, P_char ch, int cmd, char *arg)
 				act("&+WA ghostly banshee appears in a puff of mist, and points at YOU!",
 				    FALSE, obj->loc.wearing, obj, victim, TO_VICT);
 				char_from_room(victim);
-				new_room = new_room =
-					real_room(number(WATERP_VNUM_BEGIN, WATERP_VNUM_END));
+				new_room = real_room(number(WATERP_VNUM_BEGIN, WATERP_VNUM_END));
 				char_to_room(victim, new_room, -1);
 				return TRUE;
 			}
@@ -798,7 +806,7 @@ int mace(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd != CMD_MELEE_HIT)
 		return FALSE;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	if (number(0, 24))
 		return FALSE;
@@ -932,7 +940,7 @@ int flamberge(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	// 1/30 chance.
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(ch) || number(0, 29) || !(room = ch->in_room) ||
 	    !IS_ALIVE(vict))
@@ -1011,7 +1019,7 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	else
 	{
-		vict = (P_char)arg;
+		vict = legacy_proc_arg<P_char>(arg);
 	}
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(vict) || !OBJ_WORN_BY(obj, ch))
 	{
@@ -1096,7 +1104,7 @@ int unholy_avenger_bloodlust(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	// 1/25 chance.
 	if (!number(0, 24) && CheckMultiProcTiming(ch) && IS_ALIVE(vict) && !IS_UNDEADRACE(vict))
@@ -1195,7 +1203,7 @@ int mace(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd != CMD_MELEE_HIT)
 		return FALSE;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	if (OBJ_WORN_BY(obj, ch) && vict)
 	{
@@ -1251,7 +1259,7 @@ int unholy_avenger_bloodlust(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	dam = BOUNDED(0, (GET_HIT(vict) + 9), 100);
 
 	// 1/25 chance.
@@ -1305,7 +1313,7 @@ int flamberge(P_obj obj, P_char ch, int cmd, char *arg)
 	if (!OBJ_WORN_POS(obj, WIELD))
 		return FALSE;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	if (OBJ_WORN_BY(obj, ch) && vict)
 	{
@@ -1347,7 +1355,7 @@ int nightbringer(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (!dam || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) || !OBJ_WORN_BY(obj, ch) ||
 	    !IS_ALIVE(vict))
 	{
@@ -1425,7 +1433,7 @@ int avernus(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(vict) || !OBJ_WORN_BY(obj, ch))
 	{
 		return FALSE;
@@ -1557,19 +1565,20 @@ int purple_worm(P_char ch, P_char pl, int cmd, char *arg)
 					die(vict, ch);
 					vict = NULL;
 
-					for (P_obj obj = world[ch->in_room].contents; obj;
-					     obj = obj->next_content)
+					for (P_obj corpse_obj = world[ch->in_room].contents;
+					     corpse_obj; corpse_obj = corpse_obj->next_content)
 					{
-						if (obj->value[3] == id)
+						if (corpse_obj->value[3] == id)
 						{
-							obj_from_room(obj);
-							obj_to_char(obj, ch);
-							if (obj->type == ITEM_CORPSE &&
-							    IS_SET(obj->value[1], PC_CORPSE))
+							obj_from_room(corpse_obj);
+							obj_to_char(corpse_obj, ch);
+							if (corpse_obj->type == ITEM_CORPSE &&
+							    IS_SET(corpse_obj->value[1], PC_CORPSE))
 							{
-								writeCorpse(obj);
+								writeCorpse(corpse_obj);
 								// Corpse is digested for a minute
-								obj->timer[0] = 60 + time(NULL);
+								corpse_obj->timer[0] =
+									60 + time(NULL);
 							}
 						}
 					}
@@ -1920,7 +1929,7 @@ int githyanki(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) || !IS_ALIVE(vict))
 	{
 		return FALSE;
@@ -2178,7 +2187,7 @@ int githpc_special_weap(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 		else
 		{
-			vict = (P_char)arg;
+			vict = legacy_proc_arg<P_char>(arg);
 
 			if (!GET_OPPONENT(ch) && vict)
 			{
@@ -2207,7 +2216,7 @@ int tiamat(P_char ch, P_char pl, int cmd, char *arg)
 	char colors[5][16] = { "&+rred&N", "&+Lblack&N", "&+bblue&N", "&+ggreen&N", "&+Wwhite&N" };
 	P_char vict, next_ch;
 	P_obj t_obj, next;
-	int damtype, i;
+	int damtype = SPLDAM_FIRE, i;
 	void (*funct)(int, P_char, char *, int, P_char, P_obj);
 
 	/*
@@ -2684,7 +2693,7 @@ int tiamat_stinger(P_obj obj, P_char ch, int cmd, char *arg)
 		return TRUE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (!dam || !IS_ALIVE(ch) || !OBJ_WORN_BY(obj, ch) || !IS_ALIVE(vict))
 	{
 		return FALSE;
@@ -2716,7 +2725,7 @@ int holy_mace(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int dam;
 	struct proc_data *data;
-	P_char vict;
+	P_char vict = NULL;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -2740,7 +2749,7 @@ int holy_mace(P_obj obj, P_char ch, int cmd, char *arg)
 		 if (!OBJ_WORN_POS(obj, WIELD) || !OBJ_WORN_POS(obj, WIELD2))
 		   return (FALSE);
 		*/
-		vict = (P_char)arg;
+		vict = legacy_proc_arg<P_char>(arg);
 
 		if (OBJ_WORN_BY(obj, ch) && IS_ALIVE(vict) && CheckMultiProcTiming(ch))
 		{
@@ -2764,7 +2773,7 @@ int holy_mace(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	else if (cmd == CMD_GOTNUKED && !number(0, 3))
 	{
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return FALSE;
 		}
@@ -2787,7 +2796,7 @@ int holy_mace(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int dam;
 	struct proc_data *data;
-	P_char vict;
+	P_char vict = NULL;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -2812,7 +2821,7 @@ int holy_mace(P_obj obj, P_char ch, int cmd, char *arg)
 			return (FALSE);
 		}
 
-		vict = (P_char)arg;
+		vict = legacy_proc_arg<P_char>(arg);
 
 		// 1/25 chance.
 		if (OBJ_WORN_BY(obj, ch) && IS_ALIVE(vict) && CheckMultiProcTiming(ch) &&
@@ -2839,7 +2848,7 @@ int holy_mace(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	else if (cmd == CMD_GOTNUKED && !number(0, 3))
 	{
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return TRUE;
 		}
@@ -2892,7 +2901,7 @@ int elvenkind_cloak(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	data = (struct proc_data *)arg;
+	data = legacy_proc_arg<struct proc_data *>(arg);
 
 	if (!data || ch == data->victim)
 	{
@@ -2958,7 +2967,7 @@ int deflect_ioun(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	data = (struct proc_data *)arg;
+	data = legacy_proc_arg<struct proc_data *>(arg);
 
 	if (!data || ch == data->victim || !ch->in_room)
 	{
@@ -3341,7 +3350,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 	    (GET_RACE(ch) == RACE_MOUNTAIN || GET_RACE(ch) == RACE_DUERGAR) && (!number(0, 5)))
 	{
 		hammer_berserk_check(ch);
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return FALSE;
 		}
@@ -3453,7 +3462,7 @@ int barb(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	if (IS_ALIVE(vict))
 	{
@@ -4212,7 +4221,7 @@ int SeaKingdom_Tsunami(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int dam = cmd / 1000;
 	struct affected_type *af;
-	P_char vict;
+	P_char vict = NULL;
 
 	/* check for periodic event calls */
 	if (cmd == CMD_SET_PERIODIC)
@@ -4400,7 +4409,7 @@ int sevenoaks_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	room = ch->in_room;
 
 	if (!IS_ALIVE(vict) || !room)
@@ -4454,7 +4463,7 @@ int dagger_of_wind(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	room = ch->in_room;
 
 	if (!IS_ALIVE(vict) || !room)
@@ -4513,7 +4522,7 @@ int sevenoaks_mace(P_obj obj, P_char ch, int cmd, char *arg)
 	if (!OBJ_WORN_POS(obj, WIELD))
 		return (FALSE);
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	if (OBJ_WORN_BY(obj, ch) && vict)
 	{
@@ -4638,7 +4647,7 @@ int tendrils(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd != CMD_GOTHIT || number(0, 7))
 		return FALSE;
 
-	data = (struct proc_data *)arg;
+	data = legacy_proc_arg<struct proc_data *>(arg);
 	vict = data->victim;
 	if (GET_STAT(vict) == STAT_DEAD)
 		return FALSE;
@@ -4710,7 +4719,7 @@ int Einjar(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	// Shield block code was updated and hits far more frequently.
 	// Einjar proc rate reduced from 33% to 20%.
-	if (cmd != CMD_GOTHIT || number(0, 4) || !(data = (struct proc_data *)arg))
+	if (cmd != CMD_GOTHIT || number(0, 4) || !(data = legacy_proc_arg<struct proc_data *>(arg)))
 	{
 		return FALSE;
 	}

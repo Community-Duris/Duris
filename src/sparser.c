@@ -1552,8 +1552,6 @@ bool parse_spell_arguments(P_char ch, struct spell_target_data *data, char *argu
 				send_to_char("&+CYou failed.\n", ch);
 			else if (IS_SET(skills[spl].targets, TAR_OBJ_EQUIP))
 				send_to_char("&+CYou are not wearing anything like that.\n", ch);
-			else if (IS_SET(skills[spl].targets, TAR_OBJ_WORLD))
-				send_to_char("&+CYou failed.\n", ch);
 			else if (IS_SET(skills[spl].targets, TAR_SELF_ONLY))
 				send_to_char("&+rYou can only cast this spell upon yourself.\n",
 					     ch);
@@ -1895,7 +1893,7 @@ bool check_mob_retaliate(P_char ch, P_char tar_char, int spl)
 			// If the below conditional is true, then ITS NOT AN AGGRO SPELL!
 			if (((spl == SPELL_HOLY_WORD) && !IS_EVIL(tch)) ||
 			    ((spl == SPELL_UNHOLY_WORD) && !IS_GOOD(tch)) ||
-			    ((spl == SPELL_VOICE_OF_CREATION)) && !IS_EVIL(tch))
+			    ((spl == SPELL_VOICE_OF_CREATION) && !IS_EVIL(tch)))
 			{
 				continue;
 			}
@@ -2608,9 +2606,9 @@ void event_spellcast(P_char ch, P_char victim, P_obj obj, void *data)
 		}
 		if (!ok && IS_SET(skills[arg->spell].targets, TAR_OBJ_EQUIP))
 		{
-			for (int i = 0; i < MAX_WEAR; i++)
+			for (int wear_position = 0; wear_position < MAX_WEAR; wear_position++)
 			{
-				if (ch->equipment[i] == tar_obj)
+				if (ch->equipment[wear_position] == tar_obj)
 				{
 					ok = TRUE;
 					break;
@@ -2713,14 +2711,14 @@ void event_spellcast(P_char ch, P_char victim, P_obj obj, void *data)
 
 	if (weaving)
 	{
-		struct affected_type af;
+		struct affected_type weave_effect;
 
 		REMOVE_BIT(ch->specials.affected_by2, AFF2_CASTING);
-		memset(&af, 0, sizeof(af));
-		af.type = SKILL_SPELLWEAVE;
-		af.modifier = arg->spell;
-		af.duration = GET_LEVEL(ch) / 10; // 3 mins at 30, 5 mins max at lvl 50+
-		affect_to_char(ch, &af);
+		memset(&weave_effect, 0, sizeof(weave_effect));
+		weave_effect.type = SKILL_SPELLWEAVE;
+		weave_effect.modifier = arg->spell;
+		weave_effect.duration = GET_LEVEL(ch) / 10; // 3 mins at 30, 5 mins max at lvl 50+
+		affect_to_char(ch, &weave_effect);
 		send_to_char("You finish weaving a spell.\n", ch);
 		return;
 	}

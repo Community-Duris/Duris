@@ -244,7 +244,7 @@ int proclibobj_actworn(P_obj obj, P_char ch, int cmd, char *params)
 		{
 			*delim = '\0'; // temp make the delim be EOS
 			strcpy(buf, pAct); // copy it
-			*delim = 0xFF; // put delim bac
+			*delim = static_cast<char>(0xFF); // put delimiter back
 			// note: the above method is faster then using strncpy and then manually adding a null
 
 			pAct = delim + 1;
@@ -331,8 +331,7 @@ int proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument)
 		{
 			if (!strn_cmp(ed->keyword, "_proclib_", 9))
 			{
-				for (int i = 0; i < (sizeof(object_proc_libs) / sizeof(ObjProcLib));
-				     i++)
+				for (size_t i = 0; i < ARRAY_SIZE(object_proc_libs); i++)
 				{
 					if (!strn_cmp(ed->keyword + 9, object_proc_libs[i].procName,
 						      strlen(object_proc_libs[i].procName)) &&

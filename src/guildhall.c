@@ -45,7 +45,7 @@ void Guildhall::initialize()
 	// load guildhalls from DB
 	load_guildhalls(guildhalls);
 
-	for (int i = 0; i < guildhalls.size(); i++)
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
 		load_guildhall_rooms(guildhalls[i]);
 		if (!guildhalls[i]->guild)
@@ -61,12 +61,12 @@ void Guildhall::initialize()
 
 void Guildhall::shutdown()
 {
-	for (int i = 0; i < guildhalls.size(); i++)
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
 		guildhalls[i]->save();
 	}
 
-	for (int i = 0; i < guildhalls.size(); i++)
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
 		delete (guildhalls[i]);
 	}
@@ -118,7 +118,7 @@ void Guildhall::remove(Guildhall *gh)
 //
 Guildhall *Guildhall::find_by_id(int id)
 {
-	for (int i = 0; i < guildhalls.size(); i++)
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
 		if (guildhalls[i] && guildhalls[i]->id == id)
 		{
@@ -132,9 +132,13 @@ Guildhall *Guildhall::find_by_id(int id)
 
 Guildhall *Guildhall::find_by_assoc_id(int id)
 {
-	for (int i = 0; i < guildhalls.size(); i++)
+	if (id < 0)
+		return NULL;
+
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
-		if (guildhalls[i] && guildhalls[i]->guild->get_id() == id)
+		if (guildhalls[i] &&
+		    guildhalls[i]->guild->get_id() == static_cast<unsigned int>(id))
 		{
 			return guildhalls[i];
 		}
@@ -148,12 +152,12 @@ Guildhall *Guildhall::find_by_assoc_id(int id)
 //
 Guildhall *Guildhall::find_by_vnum(int vnum)
 {
-	for (int i = 0; i < guildhalls.size(); i++)
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
 		if (!guildhalls[i])
 			continue;
 
-		for (int j = 0; j < guildhalls[i]->rooms.size(); j++)
+		for (size_t j = 0; j < guildhalls[i]->rooms.size(); j++)
 		{
 			if (!guildhalls[i]->rooms[j])
 				continue;
@@ -170,7 +174,7 @@ Guildhall *Guildhall::find_by_vnum(int vnum)
 //
 Guildhall *Guildhall::find_by_outside_vnum(int vnum)
 {
-	for (int i = 0; i < guildhalls.size(); i++)
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
 		if (guildhalls[i] && guildhalls[i]->outside_vnum == vnum)
 			return guildhalls[i];
@@ -198,12 +202,12 @@ Guildhall *Guildhall::find_from_ch(P_char ch)
 //
 GuildhallRoom *Guildhall::find_room_by_id(int id)
 {
-	for (int i = 0; i < guildhalls.size(); i++)
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
 		if (!guildhalls[i])
 			continue;
 
-		for (int j = 0; j < guildhalls[i]->rooms.size(); j++)
+		for (size_t j = 0; j < guildhalls[i]->rooms.size(); j++)
 		{
 			if (guildhalls[i]->rooms[j] && guildhalls[i]->rooms[j]->id == id)
 				return guildhalls[i]->rooms[j];
@@ -217,12 +221,12 @@ GuildhallRoom *Guildhall::find_room_by_id(int id)
 //
 GuildhallRoom *Guildhall::find_room_by_vnum(int vnum)
 {
-	for (int i = 0; i < guildhalls.size(); i++)
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
 		if (!guildhalls[i])
 			continue;
 
-		for (int j = 0; j < guildhalls[i]->rooms.size(); j++)
+		for (size_t j = 0; j < guildhalls[i]->rooms.size(); j++)
 		{
 			if (guildhalls[i]->rooms[j] && guildhalls[i]->rooms[j]->vnum == vnum)
 				return guildhalls[i]->rooms[j];
@@ -236,12 +240,12 @@ GuildhallRoom *Guildhall::find_room_by_vnum(int vnum)
 //
 LibraryRoom *Guildhall::find_library_by_vnum(int vnum)
 {
-	for (int i = 0; i < guildhalls.size(); i++)
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
 		if (!guildhalls[i])
 			continue;
 
-		for (int j = 0; j < guildhalls[i]->rooms.size(); j++)
+		for (size_t j = 0; j < guildhalls[i]->rooms.size(); j++)
 		{
 			if (guildhalls[i]->rooms[j] &&
 			    guildhalls[i]->rooms[j]->type == GH_ROOM_TYPE_LIBRARY &&
@@ -257,14 +261,18 @@ LibraryRoom *Guildhall::find_library_by_vnum(int vnum)
 //
 int Guildhall::count_by_assoc_id(int assoc_id, int type)
 {
+	if (assoc_id < 0)
+		return 0;
+
 	int count = 0;
 
-	for (int i = 0; i < guildhalls.size(); i++)
+	for (size_t i = 0; i < guildhalls.size(); i++)
 	{
 		if (!guildhalls[i])
 			continue;
 
-		if (guildhalls[i]->guild->get_id() == assoc_id && guildhalls[i]->type == type)
+		if (guildhalls[i]->guild->get_id() == static_cast<unsigned int>(assoc_id) &&
+		    guildhalls[i]->type == type)
 			count++;
 	}
 	return count;
@@ -290,7 +298,7 @@ bool Guildhall::save()
 	}
 
 	// also save rooms
-	for (int i = 0; i < this->rooms.size(); i++)
+	for (size_t i = 0; i < this->rooms.size(); i++)
 	{
 		this->rooms[i]->save();
 	}
@@ -306,7 +314,7 @@ bool Guildhall::destroy()
 		return FALSE;
 	}
 
-	for (int i = 0; i < this->rooms.size(); i++)
+	for (size_t i = 0; i < this->rooms.size(); i++)
 	{
 		this->rooms[i]->destroy();
 	}
@@ -339,7 +347,7 @@ bool Guildhall::init()
 	// TODO: set up upkeep events
 
 	// initialize rooms
-	for (int i = 0; i < this->rooms.size(); i++)
+	for (size_t i = 0; i < this->rooms.size(); i++)
 	{
 		this->rooms[i]->assoc_id = this->assoc_id;
 		this->rooms[i]->guild = this->guild;
@@ -368,7 +376,7 @@ bool Guildhall::deinit()
 	// TODO: remove upkeep events
 
 	// deinitialize rooms
-	for (int i = 0; i < this->rooms.size(); i++)
+	for (size_t i = 0; i < this->rooms.size(); i++)
 	{
 		if (!this->rooms[i]->deinit())
 		{
@@ -384,7 +392,7 @@ bool Guildhall::deinit()
 bool Guildhall::valid()
 {
 	// initialize *rooms array and run init on each room
-	for (int i = 0; i < this->rooms.size(); i++)
+	for (size_t i = 0; i < this->rooms.size(); i++)
 	{
 		GuildhallRoom *room = this->rooms[i];
 

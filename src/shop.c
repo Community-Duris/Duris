@@ -185,7 +185,7 @@ int is_ok(P_char keeper, P_char ch, int shop_nr)
 	 */
 	if ((shop_index[shop_nr].racist == 1) && !IS_TRUSTED(ch))
 	{
-		if (shop_index[shop_nr].shopkeeper_race != (unsigned)GET_RACE(ch))
+		if (shop_index[shop_nr].shopkeeper_race != GET_RACE(ch))
 		{
 			/*
 			 * old version gave namelist of keeper, not short descr. - DTS
@@ -331,8 +331,9 @@ P_obj get_purchase_obj(P_char ch, char *arg, P_char keeper, int shop_nr, int msg
 		{
 			if (msg)
 			{
-				snprintf(buf, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
-					 GET_NAME(ch));
+				checked_snprintf_runtime(buf, MAX_STRING_LENGTH,
+							 shop_index[shop_nr].no_such_item1,
+							 GET_NAME(ch));
 			}
 			return NULL;
 		}
@@ -398,8 +399,8 @@ P_obj get_selling_obj(P_char ch, char *name, P_char keeper, int shop_nr, int msg
 	{
 		if (msg)
 		{
-			snprintf(buf, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item2,
-				 GET_NAME(ch));
+			checked_snprintf_runtime(buf, MAX_STRING_LENGTH,
+						 shop_index[shop_nr].no_such_item2, GET_NAME(ch));
 			mobsay(keeper, buf);
 		}
 		return (0);
@@ -410,7 +411,8 @@ P_obj get_selling_obj(P_char ch, char *name, P_char keeper, int shop_nr, int msg
 	switch (result)
 	{
 	case OBJECT_NOTOK:
-		snprintf(buf, MAX_STRING_LENGTH, shop_index[shop_nr].do_not_buy, GET_NAME(ch));
+		checked_snprintf_runtime(buf, MAX_STRING_LENGTH, shop_index[shop_nr].do_not_buy,
+					 GET_NAME(ch));
 		break;
 	case OBJECT_DEAD:
 		snprintf(buf, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch), MSG_NO_USED_WANDSTAFF);
@@ -476,8 +478,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		}
 		if (!temp1)
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
-				 GET_NAME(ch));
+			checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
+						 shop_index[shop_nr].no_such_item1, GET_NAME(ch));
 			do_tell(keeper, Gbuf1, 0);
 			return;
 		}
@@ -485,7 +487,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if (temp1->cost <= 0)
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1, GET_NAME(ch));
+		checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
+					 shop_index[shop_nr].no_such_item1, GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 		extract_obj(temp1, TRUE); // Arti with no cost?
 		return;
@@ -539,15 +542,15 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		if (!transact(ch, gem, keeper, sale))
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash2,
-				 GET_NAME(ch));
+			checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
+						 shop_index[shop_nr].missing_cash2, GET_NAME(ch));
 			mobsay(keeper, Gbuf1);
 			return;
 		}
 	}
 	act("$n buys $p.", FALSE, ch, temp1, 0, TO_ROOM);
-	snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_buy, GET_NAME(ch),
-		 coin_stringv(sale));
+	checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_buy,
+				 GET_NAME(ch), coin_stringv(sale));
 	do_tell(keeper, Gbuf1, 0);
 	// SET_BIT(temp1->type, ITEM_TREASURE);
 	snprintf(Gbuf1, MAX_STRING_LENGTH, "You now have %s.\r\n", temp1->short_description);
@@ -691,7 +694,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	if ((GET_VNUM(keeper) != 11005) && /* guild shops don't lose cash */
 	    ((shop_index[shop_nr].shop_is_roaming == 1) && (GET_MONEY(keeper) < sale)))
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash1, GET_NAME(ch));
+		checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
+					 shop_index[shop_nr].missing_cash1, GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 		return;
 	}
@@ -705,8 +709,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	}
 	act("$n sells $p.", FALSE, ch, temp1, 0, TO_ROOM);
 
-	snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell, GET_NAME(ch),
-		 coin_stringv(sale));
+	checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell,
+				 GET_NAME(ch), coin_stringv(sale));
 
 	int temp = 0;
 
@@ -897,15 +901,16 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 		}
 		if (!temp1)
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
-				 GET_NAME(ch));
+			checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
+						 shop_index[shop_nr].no_such_item1, GET_NAME(ch));
 			do_tell(keeper, Gbuf1, 0);
 			return;
 		}
 	}
 	if (temp1->cost <= 0)
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1, GET_NAME(ch));
+		checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
+					 shop_index[shop_nr].no_such_item1, GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 		extract_obj(temp1, TRUE); // Arti with no cost?
 		return;
@@ -917,8 +922,8 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		if (!transact(ch, gem, keeper, sale))
 		{
-			snprintf(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash2,
-				 GET_NAME(ch));
+			checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
+						 shop_index[shop_nr].missing_cash2, GET_NAME(ch));
 			mobsay(keeper, Gbuf1);
 			return;
 		}
@@ -1038,7 +1043,8 @@ void shopping_list(char *arg, P_char ch, P_char keeper, int shop_nr)
 								 "%s of %s", descbuf,
 								 drinks[obj1->value[2]]);
 					else
-						snprintf(Gbuf3, MAX_STRING_LENGTH, "%s", descbuf);
+						checked_snprintf(Gbuf3, MAX_STRING_LENGTH, "%s",
+								 descbuf);
 
 					snprintf(Gbuf2, MAX_STRING_LENGTH, "%s for %s.\r\n",
 						 pad_ansi(Gbuf3, 45).c_str(), coin_stringv(sale));
@@ -1161,8 +1167,9 @@ void shopping_repair(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 			if (!transact(ch, gem, keeper, cost))
 			{
-				snprintf(buf, MAX_INPUT_LENGTH, shop_index[shop_nr].missing_cash2,
-					 GET_NAME(ch));
+				checked_snprintf_runtime(buf, MAX_INPUT_LENGTH,
+							 shop_index[shop_nr].missing_cash2,
+							 GET_NAME(ch));
 				mobsay(keeper, buf);
 				return;
 			}
@@ -1402,7 +1409,7 @@ int read_type_list(FILE *shop_f, struct shop_buy_data *list, int max)
 	do
 	{
 		// Read a line.
-		fgets(buf, MAX_STRING_LENGTH - 1, shop_f);
+		REQUIRED_FGETS(buf, MAX_STRING_LENGTH - 1, shop_f);
 		// Put a 0 (?) at the end of the line/at the ;.
 		if ((ptr = strchr(buf, ';')) != NULL)
 		{
@@ -1547,7 +1554,7 @@ void boot_the_shops(void)
 				bzero(&shop_index[number_of_shops], sizeof(struct shop_data));
 			}
 
-			fscanf(shop_f, "%c \n", &tbuf);
+			REQUIRED_FSCANF(shop_f, "%c \n", &tbuf);
 			// Determine weather this shop is in the NEW or OLD format
 			if (tbuf == 'N')
 			{
@@ -1563,7 +1570,7 @@ void boot_the_shops(void)
 
 			for (count = 0; count < MAX_PROD; count++)
 			{
-				fscanf(shop_f, "%d \n", &temp);
+				REQUIRED_FSCANF(shop_f, "%d \n", &temp);
 				if (temp > 0)
 				{
 					shop_index[number_of_shops].producing[count] =
@@ -1579,13 +1586,13 @@ void boot_the_shops(void)
 			if (count == MAX_PROD && temp > 0)
 			{
 				shop_index[number_of_shops].number_items_produced = MAX_PROD;
-				fscanf(shop_f, "%d \n", &temp);
+				REQUIRED_FSCANF(shop_f, "%d \n", &temp);
 				while (temp > 0)
 				{
 					fprintf(stderr,
 						"boot_the_shops: Shop '%s' has too many items: Item %d.\n\r",
 						buf, temp);
-					fscanf(shop_f, "%d \n", &temp);
+					REQUIRED_FSCANF(shop_f, "%d \n", &temp);
 				}
 			}
 
@@ -1667,25 +1674,25 @@ void boot_the_shops(void)
 			shop_index[number_of_shops].missing_cash2 = fread_string(shop_f);
 			shop_index[number_of_shops].message_buy = fread_string(shop_f);
 			shop_index[number_of_shops].message_sell = fread_string(shop_f);
-			fscanf(shop_f, "%d \n", &tmp);
+			REQUIRED_FSCANF(shop_f, "%d \n", &tmp);
 			shop_index[number_of_shops].temper1 = tmp;
 			tmp = 0;
-			fscanf(shop_f, "%d \n", &tmp);
+			REQUIRED_FSCANF(shop_f, "%d \n", &tmp);
 			shop_index[number_of_shops].temper2 = tmp;
-			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].keeper);
+			REQUIRED_FSCANF(shop_f, "%d \n", &shop_index[number_of_shops].keeper);
 
 			// logit(LOG_DEBUG, "Loaded shop '%d' list..", shop_index[number_of_shops].keeper); For debugging.
 			shop_index[number_of_shops].keeper =
 				real_mobile(shop_index[number_of_shops].keeper);
 
-			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].with_who);
-			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].in_room);
-			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].open1);
-			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].close1);
-			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].open2);
-			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].close2);
+			REQUIRED_FSCANF(shop_f, "%d \n", &shop_index[number_of_shops].with_who);
+			REQUIRED_FSCANF(shop_f, "%d \n", &shop_index[number_of_shops].in_room);
+			REQUIRED_FSCANF(shop_f, "%d \n", &shop_index[number_of_shops].open1);
+			REQUIRED_FSCANF(shop_f, "%d \n", &shop_index[number_of_shops].close1);
+			REQUIRED_FSCANF(shop_f, "%d \n", &shop_index[number_of_shops].open2);
+			REQUIRED_FSCANF(shop_f, "%d \n", &shop_index[number_of_shops].close2);
 
-			fscanf(shop_f, "%c \n", &tbuf);
+			REQUIRED_FSCANF(shop_f, "%c \n", &tbuf);
 			if (tbuf == 'Y')
 			{
 				shop_index[number_of_shops].shop_is_roaming = 1;
@@ -1696,14 +1703,14 @@ void boot_the_shops(void)
 			}
 
 			/* * Does the shopkeeper stop players from using magic? */
-			fscanf(shop_f, "%c \n", &tbuf);
+			REQUIRED_FSCANF(shop_f, "%c \n", &tbuf);
 			if (tbuf == 'Y' && !shop_index[number_of_shops].shop_is_roaming)
 				shop_index[number_of_shops].magic_allowed = 1;
 			else
 				shop_index[number_of_shops].magic_allowed = 0;
 
 			/* * Does the shopkeeper stop players from attacking? */
-			fscanf(shop_f, "%c \n", &tbuf);
+			REQUIRED_FSCANF(shop_f, "%c \n", &tbuf);
 			if (tbuf == 'Y')
 				shop_index[number_of_shops].shop_killable = 1;
 			else
@@ -1714,24 +1721,26 @@ void boot_the_shops(void)
 			shop_index[number_of_shops].close_message = fread_string(shop_f);
 
 			/* * What hometown (if any) is this shop in? (0 for none) */
-			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].shop_hometown);
+			REQUIRED_FSCANF(shop_f, "%d \n",
+					&shop_index[number_of_shops].shop_hometown);
 
 			/* * What catagory does this shopkeeper fall into for random socials? */
-			fscanf(shop_f, "%d \n", &shop_index[number_of_shops].social_action_types);
+			REQUIRED_FSCANF(shop_f, "%d \n",
+					&shop_index[number_of_shops].social_action_types);
 
 			/* * What race is shopkeeper and do they trade with outsiders */
-			fscanf(shop_f, "%c \n", &tbuf);
+			REQUIRED_FSCANF(shop_f, "%c \n", &tbuf);
 			if (tbuf == 'Y')
 				shop_index[number_of_shops].racist = 1;
 			else
 				shop_index[number_of_shops].racist = 0;
 			tmp = 0;
-			fscanf(shop_f, "%d \n", &tmp);
+			REQUIRED_FSCANF(shop_f, "%d \n", &tmp);
 			shop_index[number_of_shops].shopkeeper_race = tmp;
 			buf = fread_string(shop_f);
 			shop_index[number_of_shops].racist_message = buf;
 
-			fscanf(shop_f, "%c \n", &tbuf);
+			REQUIRED_FSCANF(shop_f, "%c \n", &tbuf);
 			if (tbuf == 'X')
 				shop_end = TRUE;
 

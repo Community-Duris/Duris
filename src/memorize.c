@@ -1279,21 +1279,21 @@ void do_assimilate(P_char ch, char *argument, int cmd)
 	for (circle = 1; circle <= get_max_circle(ch); circle++)
 	{
 		available = ch->specials.undead_spell_slots[circle];
-		snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-			 " %2d%s circle: %2d of %2d", circle,
-			 circle == 1 ? "st" :
-			 circle == 2 ? "nd" :
-			 circle == 3 ? "rd" :
-				       "th",
-			 available, max_spells_in_circle(ch, circle));
+		checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+				 " %2d%s circle: %2d of %2d", circle,
+				 circle == 1 ? "st" :
+				 circle == 2 ? "nd" :
+				 circle == 3 ? "rd" :
+					       "th",
+				 available, max_spells_in_circle(ch, circle));
 		if (available != max_spells_in_circle(ch, circle))
 		{
 			need_mem = circle;
-			snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-				 "   (%4d seconds)",
-				 (get_circle_memtime(ch, circle, true) *
-				  (max_spells_in_circle(ch, circle) - available)) /
-					 WAIT_SEC);
+			checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+					 "   (%4d seconds)",
+					 (get_circle_memtime(ch, circle, true) *
+					  (max_spells_in_circle(ch, circle) - available)) /
+						 WAIT_SEC);
 		}
 		strcat(Gbuf1, "\n");
 	}
@@ -1437,9 +1437,9 @@ void do_memorize(P_char ch, char *argument, int cmd)
 		send_to_char("The gods ignore you.\n", ch);
 		return;
 	}
-	else if (cmd == CMD_MEMORIZE && (IS_PUNDEAD(ch) || USES_TUPOR(ch) || !meming_class(ch) ||
-					 IS_UNDEADRACE(ch) || is_wearing_necroplasm(ch)) ||
-		 (IS_ANGEL(ch)))
+	else if (cmd == CMD_MEMORIZE &&
+		 (IS_PUNDEAD(ch) || USES_TUPOR(ch) || !meming_class(ch) || IS_UNDEADRACE(ch) ||
+		  is_wearing_necroplasm(ch) || IS_ANGEL(ch)))
 	{
 		if (IS_ANGEL(ch))
 		{
@@ -1508,21 +1508,22 @@ void do_memorize(P_char ch, char *argument, int cmd)
 					if (!shown_one)
 					{
 						shown_one = TRUE;
-						snprintf(Gbuf1 + strlen(Gbuf1),
-							 MAX_STRING_LENGTH - strlen(Gbuf1),
-							 "(%2d%s circle) %2d - %s\n", circle,
-							 circle == 1 ? "st" :
-							 circle == 2 ? "nd" :
-							 circle == 3 ? "rd" :
-								       "th",
-							 per_spell[spl], skills[spl].name);
+						checked_snprintf(Gbuf1 + strlen(Gbuf1),
+								 MAX_STRING_LENGTH - strlen(Gbuf1),
+								 "(%2d%s circle) %2d - %s\n",
+								 circle,
+								 circle == 1 ? "st" :
+								 circle == 2 ? "nd" :
+								 circle == 3 ? "rd" :
+									       "th",
+								 per_spell[spl], skills[spl].name);
 					}
 					else
 					{
-						snprintf(Gbuf1 + strlen(Gbuf1),
-							 MAX_STRING_LENGTH - strlen(Gbuf1),
-							 "              %2d - %s\n", per_spell[spl],
-							 skills[spl].name);
+						checked_snprintf(Gbuf1 + strlen(Gbuf1),
+								 MAX_STRING_LENGTH - strlen(Gbuf1),
+								 "              %2d - %s\n",
+								 per_spell[spl], skills[spl].name);
 					}
 				}
 			}
@@ -1580,26 +1581,26 @@ void do_memorize(P_char ch, char *argument, int cmd)
 					{
 						time += get_circle_memtime(ch, circle, true);
 					}
-					snprintf(Gbuf1 + strlen(Gbuf1),
-						 MAX_STRING_LENGTH - strlen(Gbuf1),
-						 "%5d seconds:  (%2d%s) %s%s\n", time / 4, circle,
-						 (circle == 1) ? "st" :
-						 (circle == 2) ? "nd" :
-						 (circle == 3) ? "rd" :
-								 "th",
-						 skills[af->modifier].name,
-						 book_class(ch) ?
-							 ((!has_innate(ch,
-								       INNATE_ARCANE_RUDIMENTS) &&
-							   !(SpellInSpellBook(
-								   ch, af->modifier,
-								   (SBOOK_MODE_IN_INV |
-								    SBOOK_MODE_AT_HAND |
-								    SBOOK_MODE_ON_BELT |
-								    SBOOK_MODE_ON_GROUND)))) ?
-								  "  [not in spell book]" :
-								  "") :
-							 "");
+					checked_snprintf(
+						Gbuf1 + strlen(Gbuf1),
+						MAX_STRING_LENGTH - strlen(Gbuf1),
+						"%5d seconds:  (%2d%s) %s%s\n", time / 4, circle,
+						(circle == 1) ? "st" :
+						(circle == 2) ? "nd" :
+						(circle == 3) ? "rd" :
+								"th",
+						skills[af->modifier].name,
+						book_class(ch) ?
+							((!has_innate(ch, INNATE_ARCANE_RUDIMENTS) &&
+							  !(SpellInSpellBook(
+								  ch, af->modifier,
+								  (SBOOK_MODE_IN_INV |
+								   SBOOK_MODE_AT_HAND |
+								   SBOOK_MODE_ON_BELT |
+								   SBOOK_MODE_ON_GROUND)))) ?
+								 "  [not in spell book]" :
+								 "") :
+							"");
 				}
 			}
 		}
@@ -2696,9 +2697,9 @@ void spell_mordenkainens_lucubration(int level, P_char ch, char *arg, int type, 
 		"&+CYour spell releases a &+Ymassive&+C cloud of energy which you instantly focus into your &+mmind&+C...\n");
 	send_to_char(buff, ch);
 
-	if (!USES_COMMUNE(ch) && !GET_CLASS(ch, CLASS_WARLOCK) &&
-		    !(IS_PUNDEAD(ch) || USES_TUPOR(ch) ||
-		      IS_UNDEADRACE(ch) | is_wearing_necroplasm(ch)) ||
+	if ((!USES_COMMUNE(ch) && !GET_CLASS(ch, CLASS_WARLOCK) &&
+	     !(IS_PUNDEAD(ch) || USES_TUPOR(ch) || IS_UNDEADRACE(ch) ||
+	       is_wearing_necroplasm(ch))) ||
 	    !USES_FOCUS(ch))
 	{
 		// normal casters

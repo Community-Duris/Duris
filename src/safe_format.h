@@ -12,4 +12,8 @@
 int checked_snprintf(char *destination, size_t destination_size, const char *format, ...)
 	__attribute__((format(printf, 3, 4)));
 
+/* For vetted, data-driven format templates whose conversion types cannot be
+ * checked at compile time. Prefer checked_snprintf for literal formats. */
+int checked_snprintf_runtime(char *destination, size_t destination_size, const char *format, ...);
+
 #endif

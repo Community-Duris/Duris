@@ -192,7 +192,7 @@ int dragonarmor(P_obj obj, P_char ch, int cmd, char *arg)
 	*/
 	if (cmd == CMD_GOTNUKED)
 	{
-		struct proc_data *data = (struct proc_data *)arg;
+		struct proc_data *data = legacy_proc_arg<struct proc_data *>(arg);
 		P_char nuker = data->victim;
 
 		if ((GET_RACE(nuker) != RACE_DRAGON && GET_RACE(nuker) != RACE_DRAGONKIN) ||
@@ -266,7 +266,7 @@ int squelcher(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	if (!dam)
 		return FALSE;
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (!vict)
 		return FALSE;
 	if (obj->loc.wearing->equipment[WIELD] != obj)

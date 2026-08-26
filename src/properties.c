@@ -264,14 +264,14 @@ void do_properties(P_char ch, char *args, int cmd)
 				{
 					if (duris_properties[i].value !=
 					    duris_properties[i].old_value)
-						snprintf(buf, 256, "*%s: %.3f(%.3f)\r\n",
-							 duris_properties[i].key,
-							 duris_properties[i].value,
-							 duris_properties[i].old_value);
+						checked_snprintf(buf, 256, "*%s: %.3f(%.3f)\r\n",
+								 duris_properties[i].key,
+								 duris_properties[i].value,
+								 duris_properties[i].old_value);
 					else
-						snprintf(buf, 256, "%s: %.3f\r\n",
-							 duris_properties[i].key,
-							 duris_properties[i].value);
+						checked_snprintf(buf, 256, "%s: %.3f\r\n",
+								 duris_properties[i].key,
+								 duris_properties[i].value);
 					send_to_char(buf, ch);
 				}
 			}
@@ -281,9 +281,10 @@ void do_properties(P_char ch, char *args, int cmd)
 			for (i = 0; i < properties_count; i++)
 				if (duris_properties[i].value != duris_properties[i].old_value)
 				{
-					snprintf(buf, 256, "%s=%.3f(%.3f)\r\n",
-						 duris_properties[i].key, duris_properties[i].value,
-						 duris_properties[i].old_value);
+					checked_snprintf(buf, 256, "%s=%.3f(%.3f)\r\n",
+							 duris_properties[i].key,
+							 duris_properties[i].value,
+							 duris_properties[i].old_value);
 					send_to_char(buf, ch);
 				}
 		}
@@ -298,9 +299,10 @@ void do_properties(P_char ch, char *args, int cmd)
 						    FNM_CASEFOLD) == 0)
 					{
 						duris_properties[i].value = new_value;
-						snprintf(buf, 256, "%s set %s to %.3f",
-							 ch->player.name, duris_properties[i].key,
-							 new_value);
+						checked_snprintf(buf, 256, "%s set %s to %.3f",
+								 ch->player.name,
+								 duris_properties[i].key,
+								 new_value);
 						wizlog(57, buf);
 						logit(LOG_WIZ, buf);
 						sql_log(ch, WIZLOG, "Set %s to %.3f",
@@ -335,10 +337,11 @@ void do_properties(P_char ch, char *args, int cmd)
 			{
 				if (duris_properties[i].value != duris_properties[i].old_value)
 				{
-					snprintf(buf, 256, "%s reverted to %.3f from %.3f\r\n",
-						 duris_properties[i].key,
-						 duris_properties[i].old_value,
-						 duris_properties[i].value);
+					checked_snprintf(buf, 256,
+							 "%s reverted to %.3f from %.3f\r\n",
+							 duris_properties[i].key,
+							 duris_properties[i].old_value,
+							 duris_properties[i].value);
 					send_to_char(buf, ch);
 					duris_properties[i].value = duris_properties[i].old_value;
 				}

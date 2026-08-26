@@ -324,17 +324,20 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		else
 			snprintf(Gbuf3, MAX_STRING_LENGTH, "There were: ");
 		if (got_p)
-			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
-				 "%d &+Wplatinum&N coin%s, ", got_p, ((got_p > 1) ? "s" : ""));
+			checked_snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
+					 "%d &+Wplatinum&N coin%s, ", got_p,
+					 ((got_p > 1) ? "s" : ""));
 		if (got_g)
-			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
-				 "%d &+Ygold&N coin%s, ", got_g, ((got_g > 1) ? "s" : ""));
+			checked_snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
+					 "%d &+Ygold&N coin%s, ", got_g, ((got_g > 1) ? "s" : ""));
 		if (got_s)
-			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
-				 "%d &+wsilver&n coin%s, ", got_s, ((got_s > 1) ? "s" : ""));
+			checked_snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
+					 "%d &+wsilver&n coin%s, ", got_s,
+					 ((got_s > 1) ? "s" : ""));
 		if (got_c)
-			snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
-				 "%d &+ycopper&N coin%s, ", got_c, ((got_c > 1) ? "s" : ""));
+			checked_snprintf(Gbuf3 + strlen(Gbuf3), MAX_STRING_LENGTH - strlen(Gbuf3),
+					 "%d &+ycopper&N coin%s, ", got_c,
+					 ((got_c > 1) ? "s" : ""));
 		Gbuf3[strlen(Gbuf3) - 2] = '.';
 		strcat(Gbuf3, "\r\n");
 
@@ -1391,7 +1394,7 @@ void do_get(P_char ch, char *argument, int cmd)
 					fight_in_room(ch) ? 1 : 0, on_front_line(ch) ? 1 : 0,
 					s_obj->contains ? "yes" : "no");
 
-				bool stop_bulk = FALSE;
+				bool stop_container_bulk = FALSE;
 				for (o_obj = s_obj->contains; o_obj; o_obj = next_obj)
 				{
 					if (container_safety-- <= 0)
@@ -1449,13 +1452,13 @@ void do_get(P_char ch, char *argument, int cmd)
 
 					(void)do_get_try_container_item(
 						ch, hood, s_obj, o_obj, total, found, corpse_flag,
-						carried, stop_bulk, fail,
+						carried, stop_container_bulk, fail,
 						"GETDBG[get-all reject:invisible]",
 						"GETDBG[get-all reject:too-heavy]",
 						"GETDBG[get-all reject:carry-limit]",
 						"GETDBG[get-all reject:not-takeable]",
 						"GETDBG[get-container-post]", FALSE);
-					if (stop_bulk)
+					if (stop_container_bulk)
 						break;
 				}
 
@@ -1465,7 +1468,7 @@ void do_get(P_char ch, char *argument, int cmd)
 						 total);
 					send_to_char(Gbuf3, ch);
 				}
-				if (stop_bulk)
+				if (stop_container_bulk)
 					do_get_reject_carry_limit(ch, fail);
 
 				return;
@@ -4378,7 +4381,7 @@ int remove_item(P_char ch, P_obj obj, int position)
  * Helper function which wraps about Execute_Wear() and allows for the remove
  * and replace behavior used on single location items (ie. head, arms, body, etc). -Sniktiorg (Dec.1.12)
  */
-int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, int comnd, bool showit)
+int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, bool showit)
 {
 	P_obj temp = ch->equipment[position];
 	int removed;
@@ -4451,7 +4454,7 @@ int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, int 
 int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 {
 	char Gbuf3[MAX_STRING_LENGTH];
-	int free_hands, wield_to_where, o_size, hands_needed, comnd;
+	int free_hands, wield_to_where, o_size, hands_needed;
 
 	// Kill on !Object or !Character or dead char.
 	if (!obj_object || !IS_ALIVE(ch))
@@ -4687,7 +4690,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 				}
 			}
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_BODY, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_BODY, keyword, showit);
 		}
 		else
 		{
@@ -4736,7 +4739,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 				}
 			}
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_HEAD, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_HEAD, keyword, showit);
 		}
 		else
 		{
@@ -4770,7 +4773,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 				break;
 			}
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_LEGS, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_LEGS, keyword, showit);
 		}
 		else
 		{
@@ -4797,15 +4800,14 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 				{
 					// Replace if Wearing Something or Wear New Item
 					return remove_and_wear(ch, obj_object, WEAR_FEET, keyword,
-							       comnd, showit);
+							       showit);
 				}
 			}
 			else if (!IS_DRIDER(ch) && !IS_THRIKREEN(ch) && !IS_HARPY(ch) &&
 				 !IS_MINOTAUR(ch) && !IS_CENTAUR(ch))
 			{
 				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_FEET, keyword, comnd,
-						       showit);
+				return remove_and_wear(ch, obj_object, WEAR_FEET, keyword, showit);
 			}
 		}
 		if (showit)
@@ -4923,7 +4925,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 		if (CAN_WEAR(obj_object, ITEM_WEAR_ABOUT))
 		{
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_ABOUT, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_ABOUT, keyword, showit);
 		}
 		else
 		{
@@ -4938,7 +4940,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 		if ((CAN_WEAR(obj_object, ITEM_WEAR_WAIST)))
 		{
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_WAIST, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_WAIST, keyword, showit);
 		}
 		else
 		{
@@ -5293,7 +5295,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 				break;
 			}
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_EYES, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_EYES, keyword, showit);
 		}
 		else
 		{
@@ -5319,7 +5321,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 				break;
 			}
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_FACE, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_FACE, keyword, showit);
 		}
 		else
 		{
@@ -5365,7 +5367,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 		if (CAN_WEAR(obj_object, ITEM_WEAR_QUIVER))
 		{
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_QUIVER, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_QUIVER, keyword, showit);
 		}
 		else
 		{
@@ -5382,8 +5384,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 		{
 			// Replace if Wearing Something or Wear New Item
 			// Using hardcoded 19, 'cause 28 is just a duplicate.
-			return remove_and_wear(ch, obj_object, GUILD_INSIGNIA, keyword, comnd,
-					       showit);
+			return remove_and_wear(ch, obj_object, GUILD_INSIGNIA, keyword, showit);
 		}
 		else
 		{
@@ -5398,7 +5399,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 		if (CAN_WEAR(obj_object, ITEM_WEAR_BACK))
 		{
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_BACK, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_BACK, keyword, showit);
 		}
 		else
 		{
@@ -5464,8 +5465,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 		if (CAN_WEAR(obj_object, ITEM_HORSE_BODY) && (IS_CENTAUR(ch)))
 		{
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_HORSE_BODY, keyword, comnd,
-					       showit);
+			return remove_and_wear(ch, obj_object, WEAR_HORSE_BODY, keyword, showit);
 		}
 		else
 		{
@@ -5482,8 +5482,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 			if (CAN_WEAR(obj_object, ITEM_WEAR_TAIL))
 			{
 				// Replace if Wearing Something or Wear New Item
-				return remove_and_wear(ch, obj_object, WEAR_TAIL, keyword, comnd,
-						       showit);
+				return remove_and_wear(ch, obj_object, WEAR_TAIL, keyword, showit);
 			}
 			else
 			{
@@ -5503,7 +5502,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 	case 24: /* Nose */
 		if (CAN_WEAR(obj_object, ITEM_WEAR_NOSE) && IS_MINOTAUR(ch))
 		{
-			return remove_and_wear(ch, obj_object, WEAR_NOSE, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_NOSE, keyword, showit);
 		}
 		else
 		{
@@ -5518,7 +5517,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 		if (CAN_WEAR(obj_object, ITEM_WEAR_HORN) &&
 		    (IS_MINOTAUR(ch) || IS_HARPY(ch) || IS_PSBEAST(ch) || IS_TIEFLING(ch)))
 		{
-			return remove_and_wear(ch, obj_object, WEAR_HORN, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_HORN, keyword, showit);
 		}
 		else
 		{
@@ -5532,7 +5531,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 	case 26: /* Ioun Stone */
 		if (CAN_WEAR(obj_object, ITEM_WEAR_IOUN))
 		{
-			return remove_and_wear(ch, obj_object, WEAR_IOUN, keyword, comnd, showit);
+			return remove_and_wear(ch, obj_object, WEAR_IOUN, keyword, showit);
 		}
 		break;
 
@@ -5550,8 +5549,7 @@ int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 				break;
 			}
 			// Replace if Wearing Something or Wear New Item
-			return remove_and_wear(ch, obj_object, WEAR_SPIDER_BODY, keyword, comnd,
-					       showit);
+			return remove_and_wear(ch, obj_object, WEAR_SPIDER_BODY, keyword, showit);
 		}
 		else
 		{

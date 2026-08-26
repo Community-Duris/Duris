@@ -456,16 +456,16 @@ void do_salvage(P_char ch, char *argument, int cmd)
 			 "do_salvage: Newcost(initial): %d, Modifier: %.3f", newcost, modifier);
 	newcost = (int)((float)newcost * modifier);
 	if (DEBUG)
-		snprintf(debugBuf + strlen(debugBuf), MAX_STRING_LENGTH - strlen(debugBuf),
-			 ", Newcost(mod): %d", newcost);
+		checked_snprintf(debugBuf + strlen(debugBuf), MAX_STRING_LENGTH - strlen(debugBuf),
+				 ", Newcost(mod): %d", newcost);
 	newcost = (newcost * GET_LEVEL(ch)) / 56;
 	if (DEBUG)
-		snprintf(debugBuf + strlen(debugBuf), MAX_STRING_LENGTH - strlen(debugBuf),
-			 ", Newcost(lvl): %d", newcost);
+		checked_snprintf(debugBuf + strlen(debugBuf), MAX_STRING_LENGTH - strlen(debugBuf),
+				 ", Newcost(lvl): %d", newcost);
 	newcost = (newcost * GET_CHAR_SKILL(ch, SKILL_SALVAGE) / 100);
 	if (DEBUG)
-		snprintf(debugBuf + strlen(debugBuf), MAX_STRING_LENGTH - strlen(debugBuf),
-			 ", Newcost(skill): %d", newcost);
+		checked_snprintf(debugBuf + strlen(debugBuf), MAX_STRING_LENGTH - strlen(debugBuf),
+				 ", Newcost(skill): %d", newcost);
 
 	// 67% chance to get 2 salvaged materials.
 	if (!number(0, 2))
@@ -487,8 +487,9 @@ void do_salvage(P_char ch, char *argument, int cmd)
 
 		if (DEBUG)
 		{
-			snprintf(debugBuf + strlen(debugBuf), MAX_STRING_LENGTH - strlen(debugBuf),
-				 ", Final cost: %d.", salvaged->cost);
+			checked_snprintf(debugBuf + strlen(debugBuf),
+					 MAX_STRING_LENGTH - strlen(debugBuf), ", Final cost: %d.",
+					 salvaged->cost);
 			debug(debugBuf);
 		}
 
@@ -528,8 +529,9 @@ void do_salvage(P_char ch, char *argument, int cmd)
 
 		if (DEBUG)
 		{
-			snprintf(debugBuf + strlen(debugBuf), MAX_STRING_LENGTH - strlen(debugBuf),
-				 ", Final cost: %d.", salvaged->cost);
+			checked_snprintf(debugBuf + strlen(debugBuf),
+					 MAX_STRING_LENGTH - strlen(debugBuf), ", Final cost: %d.",
+					 salvaged->cost);
 			debug(debugBuf);
 		}
 	}

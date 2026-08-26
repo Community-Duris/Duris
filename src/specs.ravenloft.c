@@ -299,7 +299,7 @@ int strahd_charm(P_char strahd, P_char charmie, int cmd, char *arg)
 
 int shimmer_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict;
+	P_char vict = NULL;
 	struct affected_type af;
 	int curr_time;
 

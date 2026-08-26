@@ -81,9 +81,9 @@ bool GuildhallRoom::valid()
 	}
 
 	// check to make sure there arent any other rooms already initialized with this vnum
-	for (int i = 0; i < Guildhall::guildhalls.size(); i++)
+	for (size_t i = 0; i < Guildhall::guildhalls.size(); i++)
 	{
-		for (int j = 0; j < Guildhall::guildhalls[i]->rooms.size(); j++)
+		for (size_t j = 0; j < Guildhall::guildhalls[i]->rooms.size(); j++)
 		{
 			if (this->id != Guildhall::guildhalls[i]->rooms[j]->id &&
 			    this->vnum == Guildhall::guildhalls[i]->rooms[j]->vnum)
@@ -134,8 +134,9 @@ bool GuildhallRoom::init()
 	else
 	{
 		char buff[MAX_STRING_LENGTH];
-		snprintf(buff, MAX_STRING_LENGTH, world[real_room0(this->template_vnum)].name,
-			 this->guild->get_name().c_str());
+		checked_snprintf_runtime(buff, MAX_STRING_LENGTH,
+					 world[real_room0(this->template_vnum)].name,
+					 this->guild->get_name().c_str());
 		this->room->name = str_dup(buff);
 	}
 
@@ -185,8 +186,8 @@ bool EntranceRoom::init()
 	{
 		char buff[MAX_STRING_LENGTH];
 		this->door->str_mask = STRUNG_DESC1;
-		snprintf(buff, MAX_STRING_LENGTH, this->door->description,
-			 this->guild->get_name().c_str());
+		checked_snprintf_runtime(buff, MAX_STRING_LENGTH, this->door->description,
+					 this->guild->get_name().c_str());
 		this->door->description = str_dup(buff);
 		this->door->value[0] = this->vnum;
 		obj_to_room(this->door, real_room0(this->guildhall->outside_vnum));
@@ -401,20 +402,23 @@ bool TownPortalRoom::init()
 			char buff[MAX_STRING_LENGTH];
 			if (dest == WS_INN_VNUM)
 			{
-				snprintf(buff, MAX_STRING_LENGTH, this->portal->description,
-					 "&+GWoodseer&n");
+				checked_snprintf_runtime(buff, MAX_STRING_LENGTH,
+							 this->portal->description,
+							 "&+GWoodseer&n");
 				this->portal->value[0] = WS_INN_VNUM;
 			}
 			else if (dest == KI_INN_VNUM)
 			{
-				snprintf(buff, MAX_STRING_LENGTH, this->portal->description,
-					 "&+YKimordril&n");
+				checked_snprintf_runtime(buff, MAX_STRING_LENGTH,
+							 this->portal->description,
+							 "&+YKimordril&n");
 				this->portal->value[0] = KI_INN_VNUM;
 			}
 			else
 			{
-				snprintf(buff, MAX_STRING_LENGTH, this->portal->description,
-					 "&+cTharnadia&n");
+				checked_snprintf_runtime(buff, MAX_STRING_LENGTH,
+							 this->portal->description,
+							 "&+cTharnadia&n");
 				this->portal->value[0] = TH_INN_VNUM;
 			}
 			this->portal->description = str_dup(buff);
@@ -426,14 +430,16 @@ bool TownPortalRoom::init()
 			char buff[MAX_STRING_LENGTH];
 			if (IS_UD_MAP(real_room(this->guildhall->outside_vnum)))
 			{
-				snprintf(buff, MAX_STRING_LENGTH, this->portal->description,
-					 "&+LShady Grove&n");
+				checked_snprintf_runtime(buff, MAX_STRING_LENGTH,
+							 this->portal->description,
+							 "&+LShady Grove&n");
 				this->portal->value[0] = SHADY_INN_VNUM;
 			}
 			else
 			{
-				snprintf(buff, MAX_STRING_LENGTH, this->portal->description,
-					 "&+rKhildarak&n");
+				checked_snprintf_runtime(buff, MAX_STRING_LENGTH,
+							 this->portal->description,
+							 "&+rKhildarak&n");
 				this->portal->value[0] = KHILD_INN_VNUM;
 			}
 			this->portal->description = str_dup(buff);

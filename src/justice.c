@@ -580,8 +580,9 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str,
 	 * scream for help
 	 */
 	snprintf(buffer, MAX_STRING_LENGTH, "%s shouts '", ch->player.short_descr);
-	snprintf(buffer2, MAX_STRING_LENGTH, shout_str,
-		 CAN_SEE(ch, GET_OPPONENT(ch)) ? J_NAME(GET_OPPONENT(ch)) : "Someone");
+	checked_snprintf_runtime(buffer2, MAX_STRING_LENGTH, shout_str,
+				 CAN_SEE(ch, GET_OPPONENT(ch)) ? J_NAME(GET_OPPONENT(ch)) :
+								 "Someone");
 	strcat(buffer, buffer2);
 	strcat(buffer, "&n'\n");
 
@@ -800,18 +801,18 @@ void load_justice_area(void)
 
 	do
 	{
-		fscanf(fl, " %c ", &type_rec);
+		REQUIRED_FSCANF(fl, " %c ", &type_rec);
 		if (type_rec == 'H')
-			fscanf(fl, " %d\n", &town_number);
+			REQUIRED_FSCANF(fl, " %d\n", &town_number);
 		else if (type_rec == 'R')
 		{
-			fscanf(fl, " %d %d\n", &room_number, &room_number1);
+			REQUIRED_FSCANF(fl, " %d %d\n", &room_number, &room_number1);
 			for (i = room_number; i <= room_number1; i++)
 				world[real_room0(i)].justice_area = town_number;
 		}
 		else if (type_rec == 'U')
 		{
-			fscanf(fl, " %d\n", &room_number);
+			REQUIRED_FSCANF(fl, " %d\n", &room_number);
 			world[real_room0(room_number)].justice_area = town_number;
 		}
 		else if (type_rec == '$')

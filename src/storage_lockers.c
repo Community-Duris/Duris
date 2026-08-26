@@ -81,15 +81,15 @@ static long locker_elapsed_ms(const struct timespec *start, const struct timespe
 
 inline StorageLocker *GetChestList(int real_room)
 {
-	StorageLocker *pRet = NULL;
+	void *raw_pointer = NULL;
 
 	if ((world[real_room].ex_description) && (world[real_room].ex_description->next) &&
 	    (world[real_room].ex_description->next->keyword))
 	{
-		if (sscanf(world[real_room].ex_description->next->keyword, "%p", &pRet) != 1)
-			pRet = NULL;
+		if (sscanf(world[real_room].ex_description->next->keyword, "%p", &raw_pointer) != 1)
+			raw_pointer = NULL;
 	}
-	return pRet;
+	return static_cast<StorageLocker *>(raw_pointer);
 }
 
 /* Called from locker_async.c after a non-terminal public snapshot is sealed:
@@ -556,7 +556,7 @@ static bool locker_is_guild_member(StorageLocker *pLocker, P_char ch)
 	if (!GET_ASSOC(ch))
 		return false;
 
-	return (GET_ASSOC(ch)->get_id() == guild_id);
+	return GET_ASSOC(ch)->get_id() == static_cast<unsigned int>(guild_id);
 }
 
 static bool locker_require_owner(StorageLocker *pLocker, P_char ch, const char *message)
@@ -592,11 +592,11 @@ static P_char locker_char_or_error(StorageLocker *pLocker, P_char ch, const char
 const unsigned LockerChest::m_chestVnum = 173;
 
 StorageLocker::StorageLocker(int rroom, P_char chLocker, P_char chUser)
-	: m_realRoom(rroom)
+	: m_itemCount(0)
+	, m_pChestList(NULL)
+	, m_realRoom(rroom)
 	, m_chLocker(chLocker)
 	, m_chUser(chUser)
-	, m_pChestList(NULL)
-	, m_itemCount(0)
 	, m_bIValue(false)
 	, m_currentChestId(0)
 	, m_lockerId(0)
@@ -856,39 +856,39 @@ bool StorageLocker::MakeChests(P_char ch, char *args)
 	const char *chestKeyword;
 	const char *chestDesc;
 
-#define IF_ISLOCKERTYPE(keyword, desc, action)                                                  \
-	chestKeyword = (keyword);                                                               \
-	chestDesc = (desc);                                                                     \
-	if (helpMode == LOCKER_HELP_ALL_LONG)                                                   \
-	{                                                                                       \
-		bFound = true;                                                                  \
-		snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2),              \
-			 "&+C%15s&n   &+w(items %s)\r\n", keyword, desc);                       \
-	}                                                                                       \
-	else if (helpMode == LOCKER_HELP_ALL_SHORT)                                             \
-	{                                                                                       \
-		bFound = true;                                                                  \
-		snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2), "&+C%s&n, ", \
-			 keyword);                                                              \
-	}                                                                                       \
-	else if (!str_cmp(keyword, GBuf1))                                                      \
-	{                                                                                       \
-		if (isname(keyword, args))                                                      \
-			bFound = true;                                                          \
-		else if (helpMode == LOCKER_HELP_LONG)                                          \
-		{                                                                               \
-			bFound = true;                                                          \
-			snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2),      \
-				 "&+C%15s&n   &+w(items %s)\r\n", keyword, desc);               \
-		}                                                                               \
-		else if (helpMode == LOCKER_HELP_SHORT)                                         \
-		{                                                                               \
-			bFound = true;                                                          \
-			snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2),      \
-				 "&+C%s&n, ", keyword);                                         \
-		}                                                                               \
-		else                                                                            \
-			action;                                                                 \
+#define IF_ISLOCKERTYPE(keyword, desc, action)                                                     \
+	chestKeyword = (keyword);                                                                  \
+	chestDesc = (desc);                                                                        \
+	if (helpMode == LOCKER_HELP_ALL_LONG)                                                      \
+	{                                                                                          \
+		bFound = true;                                                                     \
+		checked_snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2),         \
+				 "&+C%15s&n   &+w(items %s)\r\n", keyword, desc);                  \
+	}                                                                                          \
+	else if (helpMode == LOCKER_HELP_ALL_SHORT)                                                \
+	{                                                                                          \
+		bFound = true;                                                                     \
+		checked_snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2),         \
+				 "&+C%s&n, ", keyword);                                            \
+	}                                                                                          \
+	else if (!str_cmp(keyword, GBuf1))                                                         \
+	{                                                                                          \
+		if (isname(keyword, args))                                                         \
+			bFound = true;                                                             \
+		else if (helpMode == LOCKER_HELP_LONG)                                             \
+		{                                                                                  \
+			bFound = true;                                                             \
+			checked_snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2), \
+					 "&+C%15s&n   &+w(items %s)\r\n", keyword, desc);          \
+		}                                                                                  \
+		else if (helpMode == LOCKER_HELP_SHORT)                                            \
+		{                                                                                  \
+			bFound = true;                                                             \
+			checked_snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2), \
+					 "&+C%s&n, ", keyword);                                    \
+		}                                                                                  \
+		else                                                                               \
+			action;                                                                    \
 	}
 
 	if (helpMode != LOCKER_HELP_NONE || ('\0' != GBuf1[0]))
@@ -1396,8 +1396,9 @@ bool StorageLocker::MakeChests(P_char ch, char *args)
 			    helpMode !=
 				    LOCKER_HELP_SHORT) // != LOCKER_HELP_ALL_SHORT && helpMode != LOCKER_HELP_ALL_LONG )
 			{
-				snprintf(GBuf2 + strlen(GBuf2), MAX_STRING_LENGTH - strlen(GBuf2),
-					 "Invalid sort option: %s \n", GBuf1);
+				checked_snprintf(GBuf2 + strlen(GBuf2),
+						 MAX_STRING_LENGTH - strlen(GBuf2),
+						 "Invalid sort option: %s \n", GBuf1);
 			}
 			args = one_argument(args, GBuf1);
 		} while ('\0' != GBuf1[0]);
@@ -1841,7 +1842,9 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 			return TRUE;
 		}
 
-		if (GET_ASSOC(ch)->get_prestige() < get_property("prestige.locker.required", 0))
+		const unsigned long required_prestige = static_cast<unsigned long>(
+			MAX(0, get_property("prestige.locker.required", 0)));
+		if (GET_ASSOC(ch)->get_prestige() < required_prestige)
 		{
 			send_to_char(
 				"Your association is not yet prestigious enough to have a locker!\r\n",
@@ -2962,7 +2965,7 @@ static int create_new_locker(P_char ch, P_char locker)
 			f = fopen(Gbuf1, "r");
 			if (f)
 			{
-				fgets(Gbuf1, MAX_STR_NORMAL, f);
+				REQUIRED_FGETS(Gbuf1, MAX_STR_NORMAL, f);
 				fclose(f);
 			}
 			else

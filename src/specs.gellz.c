@@ -188,9 +188,9 @@ int gellz_test_obj_procs(P_obj obj, P_char ch, int cmd, char *argument)
 				{
 					act("&+RDeleting ship...&n", FALSE, ch, NULL, NULL,
 					    TO_CHAR);
-					P_ship ship = svs;
+					P_ship ship_to_delete = svs;
 					fn = shipObjHash.erase(svs);
-					delete_ship(ship);
+					delete_ship(ship_to_delete);
 					return TRUE;
 				}
 			}
@@ -1000,43 +1000,43 @@ void do_deaths_door(P_char ch, char *arg, int cmd)
 		snprintf(buf, MAX_STRING_LENGTH, "&+yYou still need&+W: ");
 		if (ch->base_stats.Str < 100)
 		{
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 "&+w%d &+LStr&+y, ", 100 - ch->base_stats.Str);
+			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+					 "&+w%d &+LStr&+y, ", 100 - ch->base_stats.Str);
 		}
 		if (ch->base_stats.Dex < 100)
 		{
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 "&+w%d &+LDex&+y, ", 100 - ch->base_stats.Dex);
+			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+					 "&+w%d &+LDex&+y, ", 100 - ch->base_stats.Dex);
 		}
 		if (ch->base_stats.Int < 100)
 		{
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 "&+w%d &+LInt&+y, ", 100 - ch->base_stats.Int);
+			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+					 "&+w%d &+LInt&+y, ", 100 - ch->base_stats.Int);
 		}
 		if (ch->base_stats.Wis < 100)
 		{
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 "&+w%d &+LWis&+y, ", 100 - ch->base_stats.Wis);
+			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+					 "&+w%d &+LWis&+y, ", 100 - ch->base_stats.Wis);
 		}
 		if (ch->base_stats.Agi < 100)
 		{
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 "&+w%d &+LAgi&+y, ", 100 - ch->base_stats.Agi);
+			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+					 "&+w%d &+LAgi&+y, ", 100 - ch->base_stats.Agi);
 		}
 		if (ch->base_stats.Con < 100)
 		{
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 "&+w%d &+LCon&+y, ", 100 - ch->base_stats.Con);
+			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+					 "&+w%d &+LCon&+y, ", 100 - ch->base_stats.Con);
 		}
 		if (ch->base_stats.Pow < 100)
 		{
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 "&+w%d &+LPow&+y, ", 100 - ch->base_stats.Pow);
+			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+					 "&+w%d &+LPow&+y, ", 100 - ch->base_stats.Pow);
 		}
 		if (ch->base_stats.Cha < 100)
 		{
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 "&+w%d &+LCha&+y, ", 100 - ch->base_stats.Cha);
+			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+					 "&+w%d &+LCha&+y, ", 100 - ch->base_stats.Cha);
 		}
 		snprintf(buf + strlen(buf) - 2, MAX_STRING_LENGTH, "&+y.\n");
 		send_to_char(buf, ch);

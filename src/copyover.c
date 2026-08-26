@@ -313,7 +313,22 @@ static void raw_write_to_fd(int fd, const char *msg)
 {
 	if (fd < 0)
 		return;
-	write(fd, msg, strlen(msg));
+
+	size_t remaining = strlen(msg);
+	while (remaining > 0)
+	{
+		ssize_t written = write(fd, msg, remaining);
+		if (written < 0 && errno == EINTR)
+			continue;
+		if (written <= 0)
+		{
+			logit(LOG_STATUS, "copyover: write to descriptor %d failed: %s", fd,
+			      strerror(errno));
+			return;
+		}
+		msg += written;
+		remaining -= static_cast<size_t>(written);
+	}
 }
 
 // notify websocket users before disconnect
@@ -1191,7 +1206,6 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 
 	success = 1;
 
-copyover_recover_done:
 	copyover_in_progress = 0;
 	fclose(fp);
 	unlink(COPYOVER_FILE);

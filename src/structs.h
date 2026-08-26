@@ -610,11 +610,11 @@ struct scribing_data_type
 
 struct climate
 {
-	char season_wind[MAX_SEASONS];
-	char season_wind_dir[MAX_SEASONS];
-	char season_wind_variance[MAX_SEASONS];
-	char season_precip[MAX_SEASONS];
-	char season_temp[MAX_SEASONS];
+	unsigned char season_wind[MAX_SEASONS];
+	unsigned char season_wind_dir[MAX_SEASONS];
+	unsigned char season_wind_variance[MAX_SEASONS];
+	unsigned char season_precip[MAX_SEASONS];
+	unsigned char season_temp[MAX_SEASONS];
 	char flags;
 	signed int energy_add;
 };
@@ -1940,6 +1940,7 @@ struct ClassSkillInfo
 			rlevel[i] = 0;
 			maxlearn[i] = 0;
 		}
+		costmult = 0;
 	}
 	::byte rlevel[MAX_SPEC + 1]; /* level required, for spells, spell circle #*/
 	::byte maxlearn[MAX_SPEC + 1]; /* max % that can be gained */
@@ -1967,11 +1968,11 @@ typedef struct s_skill Skill;
 struct command_info
 {
 	void (*command_pointer)(P_char, char *, int);
-	::byte minimum_position;
+	unsigned char minimum_position;
 	bool in_battle;
-	::byte minimum_level;
-	::byte req_confirm;
-	::byte grantable;
+	unsigned char minimum_level;
+	unsigned char req_confirm;
+	unsigned char grantable;
 	bool check_aggro; // Check the room for mobs to aggro any ch that executes this command.
 };
 
@@ -2007,7 +2008,7 @@ struct hunt_data
 		int room; /* what room am I hunting? */
 	} targ;
 	vector<int> path; /* path returned by dijkstra */
-	ubyte path_step;
+	int path_step;
 };
 
 struct nevent_data
@@ -2482,7 +2483,7 @@ struct vehicle_data
 	int freq; /* after starting, how often repeat? */
 };
 
-struct ALLOCATION_HEADER
+struct alignas(max_align_t) ALLOCATION_HEADER
 {
 	char *tag;
 	size_t size;

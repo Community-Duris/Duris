@@ -247,6 +247,7 @@ void listen_emote(P_char ch, P_char tch, const char *buf)
 void muddle_listened_string(P_char ch, P_char vict, const char *arg, char *muddled, int extr_depth)
 {
 	const char missed_word[] = "(mumble)";
+	const int missed_word_length = static_cast<int>(sizeof(missed_word) - 1);
 	char buf[MAX_STRING_LENGTH];
 	int i, j, k, len;
 
@@ -277,7 +278,7 @@ void muddle_listened_string(P_char ch, P_char vict, const char *arg, char *muddl
 		{
 			// insert an appropriate number of asterisks
 
-			for (k = 0; k < strlen(missed_word); k++)
+			for (k = 0; k < missed_word_length; k++)
 				muddled[j++] = '*';
 
 			// advance to next space
@@ -319,8 +320,10 @@ void muddle_listened_string(P_char ch, P_char vict, const char *arg, char *muddl
 		if (muddled[i] == '*')
 		{
 			// make sure we have the right number of em..
+			if (i + missed_word_length > len)
+				k = 1;
 
-			for (j = i; j < i + strlen(missed_word); j++)
+			for (j = i; j < len && j < i + missed_word_length; j++)
 			{
 				if (muddled[j] != '*')
 				{
@@ -332,7 +335,7 @@ void muddle_listened_string(P_char ch, P_char vict, const char *arg, char *muddl
 
 			if (!k)
 			{
-				for (j = i; j < i + strlen(missed_word); j++)
+				for (j = i; j < i + missed_word_length; j++)
 				{
 					muddled[j] = missed_word[k++];
 				}

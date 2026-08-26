@@ -1963,8 +1963,7 @@ int number_throw(P_char ch, char *name)
 
 	i = ch->equipment[SECONDARY_WEAPON];
 	if (i && isname(tmp, i->name) && (CAN_SEE_OBJ(ch, i) || IS_NOSHOW(i)) &&
-		    IS_OBJ_STAT(i, ITEM_CAN_THROW1) ||
-	    IS_OBJ_STAT(i, ITEM_CAN_THROW2))
+	    (IS_OBJ_STAT(i, ITEM_CAN_THROW1) || IS_OBJ_STAT(i, ITEM_CAN_THROW2)))
 	{
 		if (IS_OBJ_STAT(i, ITEM_RETURNING))
 		{
@@ -2097,7 +2096,7 @@ P_obj get_wall_dir(P_char ch, int dir)
 /* to take cover when someone fire from above */
 void do_cover(P_char ch, char *argument, int cmd)
 {
-	int chance;
+	int chance = 1;
 	struct affected_type af;
 	char buf[MAX_STRING_LENGTH];
 

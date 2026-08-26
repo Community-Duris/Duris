@@ -38,7 +38,7 @@ int barovia_undead_necklace(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		return FALSE;
 	}
-	if (!(data = (struct proc_data *)arg))
+	if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 	{
 		return FALSE;
 	}

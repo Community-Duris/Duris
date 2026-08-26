@@ -13,7 +13,9 @@ assert "ws_output_len" in structs
 assert "ws_output_offset" in structs
 assert "ws_control_output_buffer" in structs
 assert "websocket_flush_output" in header
-assert "errno == EAGAIN || errno == EWOULDBLOCK" in ws
+assert "errno == EAGAIN" in ws
+assert "#if EWOULDBLOCK != EAGAIN" in ws
+assert "errno == EWOULDBLOCK" in ws
 assert "websocket_flush_output(point)" in comm
 assert "free(d->ws_output_buffer)" in ws
 assert "free(d->ws_control_output_buffer)" in ws

@@ -406,7 +406,8 @@ void game_up_message(int port)
 	snprintf(Gbuf1, 200, "Duris> The mud is up at port %d. Run! Panic! *FLEE*\n", port);
 	fputs(Gbuf1, f);
 	fclose(f);
-	system("/usr/local/bin/stealth-wall < foo_tmp");
+	if (system("/usr/local/bin/stealth-wall < foo_tmp") != 0)
+		logit(LOG_STATUS, "game_up_message: stealth-wall failed");
 	unlink("foo_tmp");
 	//  signal(SIGCHLD, (void *) reaper);
 }
@@ -710,7 +711,11 @@ static int drain_new_connections(int listener, int conn_type, const char *label)
 			attempt--;
 			continue;
 		}
-		if (errno != EAGAIN && errno != EWOULDBLOCK)
+		if (errno != EAGAIN
+#if EWOULDBLOCK != EAGAIN
+		    && errno != EWOULDBLOCK
+#endif
+		)
 			logit(LOG_COMM, "%s accept failed: %s", label, strerror(errno));
 		break;
 	}
@@ -1488,7 +1493,7 @@ void game_loop(int port, int sslport)
 		PROFILE_START(pulse_reset);
 		// tics since last checkpoint signal
 		tics = tics + 1;
-		if (tics > BIT_30)
+		if (tics > static_cast<sig_atomic_t>(BIT_30))
 		{
 			tics = 1;
 			debug("Huge value for tics, resetting to 1.");
@@ -3238,8 +3243,8 @@ static void process_line(P_desc t, char *in)
 			k--; // max 3, we have validated
 		out[k] = 0;
 
-		char buffer[MAX_STRING_LENGTH];
-		snprintf(buffer, sizeof buffer, "Line too long. Truncated to:\r\n%s\r\n", out);
+		checked_snprintf(buffer, sizeof buffer, "Line too long. Truncated to:\r\n%s\r\n",
+				 out);
 		if (write_to_descriptor(t, buffer) < 0)
 			return;
 	}
@@ -3659,7 +3664,7 @@ void act_convert(char *buf, const char *str, P_char ch, P_char to, P_obj obj, vo
 							 */
 						if (!found && (*i == '&'))
 						{
-							if ((*(i + 1) == 'N') || (*(i + 1) == 'N'))
+							if ((*(i + 1) == 'N') || (*(i + 1) == 'n'))
 								skip = 1;
 							else if ((*(i + 1) == '-') ||
 								 (*(i + 1) == '+'))
@@ -4208,8 +4213,9 @@ void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_o
 						// Otherwise, add the rest of the string to the end of tbuf (contains ansi).
 						else
 						{
-							snprintf(tbuf + tbp,
-								 MAX_STRING_LENGTH - tbp, "%s", i);
+							checked_snprintf(tbuf + tbp,
+									 MAX_STRING_LENGTH - tbp,
+									 "%s", i);
 							i = tbuf;
 						}
 						break;

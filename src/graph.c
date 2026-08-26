@@ -1060,7 +1060,7 @@ ubyte *find_the_path(int from, int to, int *max_steps, long hunt_flags)
 {
 	ubyte path[MAX_STRING_LENGTH];
 	ubyte *ret_path;
-	unsigned i;
+	int i;
 	signed char next_step;
 	int room_no;
 	int dummy;
@@ -1201,7 +1201,7 @@ bool find_ship_path(int from_room, int to_room, vector<int> &path)
 
 	list<BFSNode *> nodes; // stores pointers for cleanup later
 
-	int rooms_searched = 0;
+	unsigned int rooms_searched = 0;
 
 	// reset all room "seen" flags
 	bfs_clear_marks();
@@ -1250,7 +1250,7 @@ bool find_ship_path(int from_room, int to_room, vector<int> &path)
 			return true;
 		}
 
-		if (rooms_searched++ > BFS_MAX_ROOMS)
+		if (++rooms_searched > BFS_MAX_ROOMS)
 		{
 			fprintf(stderr, "(find_ship_path failed: too many rooms searched)");
 			return false;

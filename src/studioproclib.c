@@ -60,7 +60,7 @@ char *proclibobj_parse_sayresponse(char *argument)
 		argument = proclib_getNext_string(argument, arg2);
 		if (arg2[0])
 		{
-			snprintf(params, sizeof(params), "%s\xFF%s", arg1, arg2);
+			checked_snprintf(params, sizeof(params), "%s\xFF%s", arg1, arg2);
 			CREATE(pRet, char, strlen(params) + 1, MEM_TAG_EXDESCD);
 			strcpy(pRet, params);
 			return pRet;
@@ -152,7 +152,7 @@ char *proclibobj_parse_transporter(char *argument)
 		argument = proclib_getNext_string(argument, arg2);
 		if (arg2[0] && is_number(arg2) && atoi(arg2) > 0)
 		{
-			snprintf(params, sizeof(params), "%s\xFF%d", arg1, atoi(arg2));
+			checked_snprintf(params, sizeof(params), "%s\xFF%d", arg1, atoi(arg2));
 			CREATE(pRet, char, strlen(params) + 1, MEM_TAG_EXDESCD);
 			strcpy(pRet, params);
 			return pRet;

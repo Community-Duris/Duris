@@ -106,7 +106,7 @@ int monitor_trident(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (!OBJ_WORN(obj) || (obj->loc.wearing != ch))
 		return (FALSE);
-	kala = (P_char)arg;
+	kala = legacy_proc_arg<P_char>(arg);
 	if (!kala)
 		return (FALSE);
 	if (number(0, 30))

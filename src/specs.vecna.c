@@ -648,8 +648,8 @@ int vecna_staffoaken(P_obj obj, P_char ch, int cmd, char *arg)
 
 		// Or remaining 50% of time, 70% chance to check wanting to be outside if inside.
 		if (!IS_TRUSTED(ch) && number(0, 100) <= 70 &&
-			    world[ch->in_room].sector_type == SECT_INSIDE ||
-		    IS_ROOM(ch->in_room, ROOM_INDOORS))
+		    (world[ch->in_room].sector_type == SECT_INSIDE ||
+		     IS_ROOM(ch->in_room, ROOM_INDOORS)))
 		{
 			dam = dice(25, 5) + 75;
 			if (number(0, 100) <= 50)
@@ -1265,7 +1265,7 @@ int krindor_illusionist(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (!(number(0, 49))) // 2 percent
 	{
-		data = (struct proc_data *)arg;
+		data = legacy_proc_arg<struct proc_data *>(arg);
 		victim = data->victim;
 
 		act("Your $q &+ys&+Yh&+yi&+Ym&+ym&+Ye&+yr&+Ys!", FALSE, ch, obj, victim,
@@ -1327,7 +1327,7 @@ int vecna_death_mask(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (cmd == CMD_GOTHIT && !num)
 	{
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return FALSE;
 		}
@@ -1428,7 +1428,7 @@ int mob_vecna_procs(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (!number(0, 40) && !IS_PC(ch) && !IS_PC_PET(ch))
 	{
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return FALSE;
 		}

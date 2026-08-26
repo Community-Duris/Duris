@@ -128,7 +128,8 @@ void checkpointing(void)
 		char msg[64];
 		int len = snprintf(msg, sizeof(msg), "\n--- hung backtrace #%d ---\n",
 				   (int)checkpoint_strikes);
-		write(fd, msg, len);
+		const ssize_t written = write(fd, msg, len);
+		(void)written;
 		backtrace_symbols_fd(bt, n, fd);
 		close(fd);
 	}

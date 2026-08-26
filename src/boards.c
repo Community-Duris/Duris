@@ -313,14 +313,16 @@ int Board_show_board(int board_type, struct char_data *ch, char *arg)
 		strcat(buf, "The board is empty.\r\n");
 	else
 	{
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-			 "There are %d messages on the board.\r\n", num_of_msgs[board_type]);
+		checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+				 "There are %d messages on the board.\r\n",
+				 num_of_msgs[board_type]);
 		/*   for (i = 0; i < num_of_msgs[board_type]; i++) {  */
 		for (i = num_of_msgs[board_type] - 1; i >= 0; i--)
 		{
 			if (MSG_HEADING(board_type, i))
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "%-2d : %s\r\n", i + 1, MSG_HEADING(board_type, i));
+				checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+						 "%-2d : %s\r\n", i + 1,
+						 MSG_HEADING(board_type, i));
 			else
 			{
 				logit(LOG_BOARD, " The board is fubar'd.");
@@ -521,7 +523,7 @@ void Board_load_board(int board_type)
 	{
 		return;
 	}
-	fread(&(num_of_msgs[board_type]), sizeof(int), 1, fl);
+	REQUIRED_FREAD(&(num_of_msgs[board_type]), sizeof(int), 1, fl);
 	if (num_of_msgs[board_type] < 1 || num_of_msgs[board_type] > MAX_BOARD_MESSAGES)
 	{
 		logit(LOG_BOARD, " Board file corrupt.  Resetting.");
@@ -530,7 +532,7 @@ void Board_load_board(int board_type)
 	}
 	for (i = 0; i < num_of_msgs[board_type]; i++)
 	{
-		fread(&(msg_index[board_type][i]), sizeof(struct board_msginfo), 1, fl);
+		REQUIRED_FREAD(&(msg_index[board_type][i]), sizeof(struct board_msginfo), 1, fl);
 		if (!(len1 = msg_index[board_type][i].heading_len))
 		{
 			logit(LOG_BOARD, " Board file corrupt!  Resetting.");
@@ -543,7 +545,7 @@ void Board_load_board(int board_type)
 			logit(LOG_BOARD, " Error - malloc failed for board header");
 			exit(1);
 		}
-		fread(tmp1, sizeof(char), (unsigned)len1, fl);
+		REQUIRED_FREAD(tmp1, sizeof(char), (unsigned)len1, fl);
 		MSG_HEADING(board_type, i) = tmp1;
 
 		if ((len2 = msg_index[board_type][i].message_len))
@@ -560,7 +562,7 @@ void Board_load_board(int board_type)
 				logit(LOG_BOARD, " malloc failed for board text");
 				exit(1);
 			}
-			fread(tmp2, sizeof(char), (unsigned)len2, fl);
+			REQUIRED_FREAD(tmp2, sizeof(char), (unsigned)len2, fl);
 			msg_storage[MSG_SLOTNUM(board_type, i)] = tmp2;
 		}
 	}

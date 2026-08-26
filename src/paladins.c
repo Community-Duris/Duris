@@ -247,8 +247,6 @@ void spell_vortex_of_fear(int level, P_char ch, char *arg, int type, P_char vict
 
 	int healpoints = 70 + number(0, 10) + dice(num_hit, 10);
 
-	struct group_list *gl;
-
 	if (ch && ch->group)
 	{
 		for (struct group_list *gl = ch->group; gl; gl = gl->next)

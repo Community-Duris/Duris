@@ -2412,7 +2412,7 @@ void read_unique_ip(P_acct acct, FILE *f)
 	struct acct_ip *d = NULL;
 	char buf[256];
 
-	fscanf(f, "%d\n", &count);
+	REQUIRED_FSCANF(f, "%d\n", &count);
 	if (count == 0)
 		return;
 
@@ -2422,11 +2422,11 @@ void read_unique_ip(P_acct acct, FILE *f)
 		if (!c)
 			return;
 
-		fscanf(f, "%s\n", buf);
+		REQUIRED_FSCANF(f, "%s\n", buf);
 		c->hostname = str_dup(buf);
-		fscanf(f, "%s\n", buf);
+		REQUIRED_FSCANF(f, "%s\n", buf);
 		c->ip_address = str_dup(buf);
-		fscanf(f, "%lu\n", &c->count);
+		REQUIRED_FSCANF(f, "%lu\n", &c->count);
 		if (i == 0)
 			acct->acct_unique_ips = c;
 		if (d)
@@ -2467,11 +2467,13 @@ void read_character_list(P_acct acct, FILE *f)
 {
 	int count = 0;
 	int i;
+	int blocked;
+	int racewar_value;
 	struct acct_chars *c = NULL;
 	struct acct_chars *d = NULL;
 	char buf[256];
 
-	fscanf(f, "%d\n", &count);
+	REQUIRED_FSCANF(f, "%d\n", &count);
 	if (count == 0)
 		return;
 
@@ -2481,9 +2483,12 @@ void read_character_list(P_acct acct, FILE *f)
 		if (!c)
 			return;
 
-		fscanf(f, "%s\n", buf);
+		REQUIRED_FSCANF(f, "%s\n", buf);
 		c->charname = str_dup(buf);
-		fscanf(f, "%lu %ld %hhd %hhd\n", &c->count, &c->last, &c->blocked, &c->racewar);
+		REQUIRED_FSCANF(f, "%lu %ld %d %d\n", &c->count, &c->last, &blocked,
+				&racewar_value);
+		c->blocked = static_cast<char>(blocked);
+		c->racewar = static_cast<char>(racewar_value);
 		if (i == 0)
 			acct->acct_character_list = c;
 		if (d)

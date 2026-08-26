@@ -570,12 +570,8 @@ float takedown_check(P_char ch, P_char victim, float chance, int skill, ulong ap
 	{
 		guardian_spirits_messages(ch, victim);
 
-		if (TRUE || IS_PC(victim) && IS_PC(ch))
-		{
-			debug("Takedown_check: attacker (%s) reduced by Guardian Spirit from (%.2f) to (%.2f).",
-			      GET_NAME(ch), chance,
-			      chance * get_property("spell.GuardianSpirit", 0.750));
-		}
+		debug("Takedown_check: attacker (%s) reduced by Guardian Spirit from (%.2f) to (%.2f).",
+		      GET_NAME(ch), chance, chance * get_property("spell.GuardianSpirit", 0.750));
 
 		// No need to put bounds on chance here; a multiplier won't go into negative,
 		//   nor do we need to worry about an upper bounds and definitely don't need to upper at 75%!
@@ -814,7 +810,7 @@ void lance_charge(P_char ch, char *argument)
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
 	P_obj weapon, other_weapon;
 	int knockdown_chance, percent_chance, dam, dir = -1, continue_dir = -1;
-	int effect, available_exits = 0, choice, i;
+	int effect = 0, available_exits = 0, choice, i;
 	char buf[512];
 
 	half_chop(argument, arg1, arg2);
@@ -1178,6 +1174,7 @@ void lance_charge(P_char ch, char *argument)
 			act(buf, FALSE, ch, weapon, victim, TO_NOTVICT);
 			break;
 		}
+		[[fallthrough]];
 	case 4:
 		dam = dam + dice(30, 6);
 		act("You ram your $q right through $N causing &+Rb&+rl&+Ro&+ro&+Rd&n to pour from $S body.",
@@ -2732,7 +2729,7 @@ char *monk_combos_messages[][2][3] = {
 
 void event_combination(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int percent = 100, skill, stage = 0, dam = 0, move, result, skill_req;
+	int percent = 100, skill, stage = 0, dam = 0, move, result, skill_req = 0;
 	struct damage_messages messages = {
 		0,
 		0,
@@ -2849,8 +2846,8 @@ void event_combination(P_char ch, P_char victim, P_obj obj, void *data)
 			}
 		}
 		stage++;
-	} while (result == DAM_NONEDEAD && skill >= skill_req && percent > number(0, 100) &&
-		 stage < 7);
+	} while (stage < 7 && result == DAM_NONEDEAD && skill >= skill_req &&
+		 percent > number(0, 100));
 
 	notch_skill(ch, SKILL_COMBINATION, get_property("skill.notch.offensive", 7));
 
@@ -2907,7 +2904,7 @@ void do_combination(P_char ch, char *argument, int cmd)
 //  Note: this only notches if the victim lives through it.
 void event_barrage(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int percent, skill, stage, skill_req;
+	int percent, skill, stage, skill_req = 0;
 	struct damage_messages messages = {
 		0,
 		0,
@@ -3041,7 +3038,7 @@ void event_barrage(P_char ch, P_char victim, P_obj obj, void *data)
 			break;
 		}
 		stage++;
-	} while (skill >= skill_req && percent >= number(1, 100) && stage < 7);
+	} while (stage < 7 && skill >= skill_req && percent >= number(1, 100));
 
 	notch_skill(ch, SKILL_BLADE_BARRAGE, get_property("skill.notch.offensive", 7));
 }
@@ -3839,7 +3836,6 @@ void do_dragon_roar(P_char ch, char *argument, int cmd)
 			    mount, TO_ROOM);
 		}
 
-		struct affected_type af;
 		int empower = is_hunter ? GET_CHAR_SKILL(ch, SKILL_DRAGON_ROAR) :
 					  GET_CHAR_SKILL(ch, SKILL_DRAGON_ROAR) / 2;
 
@@ -3989,7 +3985,7 @@ void do_dragon_breath(P_char ch, char *argument, int cmd)
 	bool is_priest = FALSE;
 	char name[MAX_INPUT_LENGTH];
 	char buf[MAX_STRING_LENGTH];
-	char *spellName;
+	char spellName[MAX_INPUT_LENGTH] = {};
 
 	if (!IS_ALIVE(ch))
 	{
@@ -4192,7 +4188,7 @@ void do_dragon_breath(P_char ch, char *argument, int cmd)
 				{
 					argument = one_argument(argument, spellName);
 
-					if (spellName)
+					if (*spellName)
 					{
 						int chosenCircle = circle;
 
@@ -8628,6 +8624,7 @@ void do_sweeping_thrust(P_char ch, char *argument, int cmd)
 		return;
 	}
 
+	takedown_chance = GET_CHAR_SKILL(ch, SKILL_SWEEPING_THRUST);
 	takedown_chance = takedown_check(ch, victim, takedown_chance, SKILL_SWEEPING_THRUST,
 					 TAKEDOWN_ALL ^ TAKEDOWN_AGI_CHECK ^ TAKEDOWN_FOOTING);
 
@@ -10013,8 +10010,7 @@ void do_trip(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	if (IS_PC(ch))
-		percent_chance = MIN(100, 10 + GET_CHAR_SKILL(ch, SKILL_TRIP));
+	percent_chance = MIN(100, 10 + GET_CHAR_SKILL(ch, SKILL_TRIP));
 
 	one_argument(argument, name);
 

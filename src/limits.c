@@ -598,7 +598,6 @@ void advance_level(P_char ch)
 {
 	/*  struct time_info_data playing_time;*/
 	int add_mana = 0, i;
-	int prestige = 100;
 	/* level normally, please
 	 *
 	 *
@@ -636,11 +635,12 @@ void advance_level(P_char ch)
 
 		if (group_size >= get_property("prestige.guildedInGroupMinimum", 0))
 		{
-			int prestige = get_property("prestige.gain.leveling", 0);
+			int guild_prestige = get_property("prestige.gain.leveling", 0);
 
 			send_to_char("&+bYour guild gained prestige!\r\n", ch);
-			prestige = check_nexus_bonus(ch, prestige, NEXUS_BONUS_PRESTIGE);
-			GET_ASSOC(ch)->add_prestige(prestige);
+			guild_prestige =
+				check_nexus_bonus(ch, guild_prestige, NEXUS_BONUS_PRESTIGE);
+			GET_ASSOC(ch)->add_prestige(guild_prestige);
 		}
 	}
 
@@ -1401,8 +1401,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 
 	// increase exp only to some limit (cumulative exp for mortals)
 	if (GET_LEVEL(ch) < MINLVLIMMORTAL &&
-	    (XP_final < 0 || (GET_EXP(ch) < global_exp_limit) &&
-				     GET_EXP(ch) < (2 * new_exp_table[GET_LEVEL(ch) + 1])))
+	    (XP_final < 0 || ((GET_EXP(ch) < global_exp_limit) &&
+			      GET_EXP(ch) < (2 * new_exp_table[GET_LEVEL(ch) + 1]))))
 	{
 		GET_EXP(ch) += (int)XP_final;
 		mark_player_dirty(GET_PID(ch));

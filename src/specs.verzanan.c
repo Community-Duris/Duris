@@ -1703,6 +1703,7 @@ int casino_two(P_char ch, P_char pl, int cmd, char *arg)
 			{
 			case 2:
 				mobsay(ch, "I'll raise 20.");
+				[[fallthrough]];
 			case 3:
 				act("$n studies his cards carefully.", TRUE, ch, 0, 0, TO_ROOM);
 				break;
@@ -2540,6 +2541,7 @@ int prostitute_one(P_char ch, P_char pl, int cmd, char *arg)
 			case 6:
 				mobsay(ch, "They say I'm the best around.");
 				act("$n smirks arrogantly.", TRUE, ch, 0, 0, TO_ROOM);
+				[[fallthrough]];
 			case 7:
 				act("$n adjusts her stockings.", TRUE, ch, 0, 0, TO_ROOM);
 				break;
@@ -4489,7 +4491,7 @@ int gesen(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (cmd == CMD_MELEE_HIT || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) ||
 	    obj->loc.wearing != ch || !IS_ALIVE(vict))
 	{
@@ -7016,6 +7018,7 @@ int bouncer_three(P_char ch, P_char pl, int cmd, char *arg)
 				act("$n grabs $N by the collar and drags $S out of the tavern!",
 				    FALSE, ch, 0, evil, TO_NOTVICT);
 				act("A loud thud can be heard.", FALSE, ch, 0, evil, TO_NOTVICT);
+				[[fallthrough]];
 			case 1:
 				act("A bouncer throws $N from the tavern, who lands in a heap on the ground!",
 				    FALSE, ch, 0, evil, TO_NOTVICT);

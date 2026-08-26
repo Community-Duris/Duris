@@ -143,8 +143,10 @@ void event_githyanki_neckbite(P_char ch, P_char victim, P_obj obj, void *data)
 	GET_MANA(ch) += get_mana;
 
 	if (GET_MANA(ch) < GET_MAX_MANA(ch))
-		;
-	send_to_char("&+RSadly, your victim had too weak lifeforce to fully feed you.\r\n", ch);
+	{
+		send_to_char("&+RSadly, your victim had too weak lifeforce to fully feed you.\r\n",
+			     ch);
+	}
 
 	die(victim, ch);
 }
@@ -315,7 +317,7 @@ void spell_molecular_agitation(int level, P_char ch, char *arg, int type, P_char
 		"$N suddenly doubles over due to what must be incredible pain. Only death can save $M. Wait, it did..."
 	};
 
-	level = MIN(level, (sizeof(dam_each) / sizeof(dam_each[0])) - 1);
+	level = MIN(level, static_cast<int>(ARRAY_SIZE(dam_each)) - 1);
 	level = MAX(0, level);
 	dam = number((dam_each[level] / 2), (dam_each[level] * 2));
 	if (StatSave(victim, APPLY_POW, POW_DIFF(ch, victim)))
@@ -638,7 +640,7 @@ void spell_ballistic_attack(int level, P_char ch, char *arg, int type, P_char vi
 				   19, 20, 20, 21, 21, 21, 22, 22, 22, 23, 23, 23, 24 };
 	int dam;
 
-	level = MIN(level, sizeof(dam_each) / sizeof(dam_each[0]) - 1);
+	level = MIN(level, static_cast<int>(ARRAY_SIZE(dam_each)) - 1);
 	level = MAX(0, level);
 	dam = number(dam_each[level] / 2, dam_each[level] * 4);
 
@@ -869,7 +871,7 @@ void spell_control_flames(int level, P_char ch, char *arg, int type, P_char vict
 		return;
 	}
 
-	level = MIN(level, sizeof(dam_each) / sizeof(dam_each[0]) - 1);
+	level = MIN(level, static_cast<int>(ARRAY_SIZE(dam_each)) - 1);
 	level = MAX(0, level);
 	dam = number(dam_each[level] / 2, dam_each[level] * 2);
 
@@ -906,7 +908,7 @@ void spell_ego_blast(int level, P_char ch, char *arg, int type, P_char victim, P
 	      return;
 	    }
 	*/
-	level = MIN(level, sizeof(dam_each) / sizeof(dam_each[0]) - 1);
+	level = MIN(level, static_cast<int>(ARRAY_SIZE(dam_each)) - 1);
 	level = MAX(0, level);
 	dam = number(dam_each[level] / 2, dam_each[level] * 2);
 
@@ -1523,7 +1525,7 @@ void spell_ego_whip(int level, P_char ch, char *arg, int type, P_char victim, P_
 				   19, 20, 20, 21, 21, 21, 22, 22, 22, 23, 23, 23, 24 };
 	int dam;
 
-	level = MIN(level, sizeof(dam_each) / sizeof(dam_each[0]) - 1);
+	level = MIN(level, static_cast<int>(ARRAY_SIZE(dam_each)) - 1);
 	level = MAX(0, level);
 	dam = number(dam_each[level] >> 1, dam_each[level] << 1);
 	// dam = dice(4,6) * 2;
@@ -2842,14 +2844,14 @@ void spell_ether_warp(int level, P_char ch, char *arg, int type, P_char victim, 
 	     (IS_PC(victim) && IS_SET(victim->specials.act2, PLR2_NOLOCATE) &&
 	      !is_introd(victim, ch)) ||
 	     racewar(ch, victim) ||
-	     (GET_MASTER(ch) && IS_PC(victim))
-		     /* Allowing warping off planes - Drannak
+	     ((GET_MASTER(ch) && IS_PC(victim))
+	      /* Allowing warping off planes - Drannak
 	                                                              || (((temp == SECT_EARTH_PLANE)
 	                                                                   || (temp == SECT_AIR_PLANE) || (temp == SECT_ETHEREAL)
 	                                                                   || (temp == SECT_FIREPLANE) || (temp == SECT_WATER_PLANE)
 	                                                                   || (temp == SECT_NEG_PLANE))
 	                                                       */
-		     && !(temp == world[to_room].sector_type)))
+	      && !(temp == world[to_room].sector_type))))
 	{
 		to_room = ch->in_room;
 	}
@@ -3008,7 +3010,7 @@ void spell_wormhole(int level, P_char ch, char *arg, int type, P_char victim, P_
 
 	P_obj beacon;
 	struct affected_type *afp;
-	int to_room, from_room;
+	int to_room = ch ? ch->in_room : NOWHERE, from_room;
 	int count;
 	int distance;
 	bool success = true;

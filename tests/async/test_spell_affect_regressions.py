@@ -18,7 +18,7 @@ assert contains(bard_sleep, "af.duration = 4 + (level < 0 ? -level : level);")
 agitation_start = index(psionics, "void spell_molecular_agitation(")
 agitation_end = index(psionics, "void spell_adrenaline_control(", agitation_start)
 agitation = psionics[agitation_start:agitation_end]
-assert contains(agitation, "level = MIN(level, (sizeof(dam_each) / sizeof(dam_each[0])) - 1);")
+assert contains(agitation, "level = MIN(level, static_cast<int>(ARRAY_SIZE(dam_each)) - 1);")
 assert not contains(agitation, "sizeof(dam_each[0] - 1)")
 
 shadow_start = index(magic, "void spell_shadow_projection(")

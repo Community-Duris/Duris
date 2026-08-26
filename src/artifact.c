@@ -104,7 +104,7 @@ static char *arti_generate_json(int type, bool Godlist)
 	MYSQL_RES *res;
 	MYSQL_ROW row;
 	P_obj obj;
-	P_char owner;
+	P_char owner = NULL;
 	char *locName;
 	int racewar;
 	cJSON *root, *arr, *item;
@@ -558,18 +558,18 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 
 	// summary
 	snprintf(buf, MAX_STRING_LENGTH, "\r\n       &+r------&+LSummary&+r------&n\r\n");
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "         &+WGoodies:      %d&n\r\n", articount[RACEWAR_GOOD]);
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "         &+rEvils:        %d&n\r\n", articount[RACEWAR_EVIL]);
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+WGoodies:      %d&n\r\n", articount[RACEWAR_GOOD]);
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+rEvils:        %d&n\r\n", articount[RACEWAR_EVIL]);
 	if (articount[RACEWAR_UNDEAD])
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-			 "         &+LUndead:       %d&n\r\n", articount[RACEWAR_UNDEAD]);
+		checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+				 "         &+LUndead:       %d&n\r\n", articount[RACEWAR_UNDEAD]);
 	if (articount[RACEWAR_NEUTRAL])
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-			 "         &+MNeutral:      %d&n\r\n", articount[RACEWAR_NEUTRAL]);
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
+		checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+				 "         &+MNeutral:      %d&n\r\n", articount[RACEWAR_NEUTRAL]);
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
 	send_to_char(buf, ch);
 #endif
 }
@@ -1731,6 +1731,7 @@ void artifact_timer_sql(int vnum, char *buffer)
 		else
 		{
 			snprintf(buffer, MAX_STRING_LENGTH, "[ &=LRUnknown&n ]");
+			return;
 		}
 		if (timer < 0)
 		{
@@ -2044,12 +2045,17 @@ void arti_files_to_sql(P_char ch, char *arg)
 
 		// Init name to empty string.
 		pname[0] = '\0';
-		if (fscanf(f, "%s %d %lu %d %lu\n", pname, &pid, &lastUpdate, &temp, &timer) != 5)
+		long last_update_value;
+		long timer_value;
+		if (fscanf(f, "%s %d %ld %d %ld\n", pname, &pid, &last_update_value, &temp,
+			   &timer_value) != 5)
 		{
 			logit(LOG_ARTIFACT, "arti_files_to_sql: Could not read file '%s'.", fname);
 			fclose(f);
 			continue;
 		}
+		lastUpdate = static_cast<time_t>(last_update_value);
+		timer = static_cast<time_t>(timer_value);
 		fclose(f);
 
 		timer += ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
@@ -2731,7 +2737,11 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 		{
 			// Count[0] holds total number of artis.. to punish those who go 1 over with 4 artis.
 			count[0]++;
-			count[node->type]++;
+			if (node->type >= ARTIFACT_MAJOR && node->type <= ARTIFACT_IOUN)
+				count[(unsigned char)node->type]++;
+			else
+				logit(LOG_ARTIFACT, "Ignoring artifact with invalid type %d",
+				      node->type);
 			node = node->next;
 		}
 		// Count up how much over limit (1 of each is limit).
@@ -2745,7 +2755,7 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 
 			if (owner && owner->in_room != NOWHERE)
 			{
-				P_obj obj, next_obj;
+				P_obj carried_obj, next_obj;
 				bool first = TRUE;
 
 				for (int pos = 0; pos < MAX_WEAR; pos++)
@@ -2753,48 +2763,49 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 					if (owner->equipment[pos] &&
 					    IS_ARTIFACT(owner->equipment[pos]))
 					{
-						obj = unequip_char(owner, pos, FALSE);
+						carried_obj = unequip_char(owner, pos, FALSE);
 						if (first)
 						{
 							act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n",
-							    FALSE, owner, obj, 0, TO_CHAR);
+							    FALSE, owner, carried_obj, 0, TO_CHAR);
 							act("&+R$n screams as $p burns $m and falls to the ground!&n",
-							    FALSE, owner, obj, 0, TO_ROOM);
+							    FALSE, owner, carried_obj, 0, TO_ROOM);
 							first = FALSE;
 						}
 						else
 						{
 							act("&+R$p falls to the ground!&n", FALSE,
-							    owner, obj, 0, TO_CHAR);
+							    owner, carried_obj, 0, TO_CHAR);
 							act("&+R$p falls to the ground!&n", FALSE,
-							    owner, obj, 0, TO_ROOM);
+							    owner, carried_obj, 0, TO_ROOM);
 						}
-						obj_to_room(obj, owner->in_room);
+						obj_to_room(carried_obj, owner->in_room);
 					}
 				}
 
-				for (obj = owner->carrying; obj; obj = next_obj)
+				for (carried_obj = owner->carrying; carried_obj;
+				     carried_obj = next_obj)
 				{
-					next_obj = obj->next_content;
-					if (IS_ARTIFACT(obj))
+					next_obj = carried_obj->next_content;
+					if (IS_ARTIFACT(carried_obj))
 					{
 						if (first)
 						{
 							act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n",
-							    FALSE, owner, obj, 0, TO_CHAR);
+							    FALSE, owner, carried_obj, 0, TO_CHAR);
 							act("&+R$n screams as $p burns $m and falls to the ground!&n",
-							    FALSE, owner, obj, 0, TO_ROOM);
+							    FALSE, owner, carried_obj, 0, TO_ROOM);
 							first = FALSE;
 						}
 						else
 						{
 							act("&+R$p falls to the ground!&n", FALSE,
-							    owner, obj, 0, TO_CHAR);
+							    owner, carried_obj, 0, TO_CHAR);
 							act("&+R$p falls to the ground!&n", FALSE,
-							    owner, obj, 0, TO_ROOM);
+							    owner, carried_obj, 0, TO_ROOM);
 						}
-						obj_from_char(obj);
-						obj_to_room(obj, owner->in_room);
+						obj_from_char(carried_obj);
+						obj_to_room(carried_obj, owner->in_room);
 					}
 				}
 
@@ -3442,7 +3453,7 @@ void arti_swap_sql(P_char ch, char *arg)
 	int vnum1, vnum2, wearloc;
 	bool found;
 	P_obj arti1, arti2, cont;
-	P_char owner1, dummy;
+	P_char owner1 = NULL, dummy;
 	arti_data artidata;
 
 	arg = one_argument(arg, arg1);
@@ -3839,7 +3850,9 @@ void event_artifact_check_bind_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 						      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35,
 							       TRUE)
 							      .c_str(),
-						      list->vnum, J_NAME(owner), artidata.location);
+						      list->vnum,
+						      get_player_name_from_pid(artidata.location),
+						      artidata.location);
 						qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d",
 						    artidata.location, curr_time, list->vnum);
 					}
@@ -4297,7 +4310,7 @@ void arti_player_sql(P_char ch, char *arg)
 		else if (locType == ARTIFACT_ONCORPSE)
 		{
 			snprintf(buf, MAX_STRING_LENGTH, "%s's corpse", name);
-			snprintf(locationBuf, MAX_STRING_LENGTH, "%-21s", buf);
+			checked_snprintf(locationBuf, MAX_STRING_LENGTH, "%-21s", buf);
 		}
 		else
 		{

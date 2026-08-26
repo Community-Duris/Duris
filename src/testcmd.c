@@ -807,11 +807,11 @@ void do_test(P_char ch, char *arg, int cmd)
 				// Sneak in and keep a record of minac shields too.
 				if (currac == minac)
 				{
-					snprintf(buff + strlen(buff),
-						 MAX_STRING_LENGTH - strlen(buff),
-						 "%2d) '%s' %6d.\n", ++count2,
-						 pad_ansi(OBJ_SHORT(obj), 35, TRUE).c_str(),
-						 OBJ_VNUM(obj));
+					checked_snprintf(buff + strlen(buff),
+							 MAX_STRING_LENGTH - strlen(buff),
+							 "%2d) '%s' %6d.\n", ++count2,
+							 pad_ansi(OBJ_SHORT(obj), 35, TRUE).c_str(),
+							 OBJ_VNUM(obj));
 				}
 			}
 			extract_obj(obj);

@@ -2229,11 +2229,12 @@ void do_sql(P_char ch, char *argument, int cmd)
 					prep_statement);
 				if (db)
 				{
-					MYSQL_ROW row = mysql_fetch_row(db);
+					MYSQL_ROW prepared_row = mysql_fetch_row(db);
 
-					if (row != NULL)
+					if (prepared_row != NULL)
 					{
-						snprintf(tmp, MAX_STRING_LENGTH, "%s", row[0]);
+						snprintf(tmp, MAX_STRING_LENGTH, "%s",
+							 prepared_row[0]);
 					}
 					else
 					{
@@ -2242,7 +2243,7 @@ void do_sql(P_char ch, char *argument, int cmd)
 							ch);
 						tmp[0] = '\0';
 					}
-					while ((row = mysql_fetch_row(db)))
+					while ((prepared_row = mysql_fetch_row(db)))
 						;
 					mysql_free_result(db);
 
@@ -3882,7 +3883,7 @@ bool sql_persistence_write_item_event_line(const char *line)
 	snprintf(item_q, sizeof(item_q), "%s", item_uid);
 	snprintf(vnum_q, sizeof(vnum_q), "%s", vnum);
 	snprintf(actor_id_q, sizeof(actor_id_q), "%s", actor_id);
-	query_len = snprintf(
+	query_len = checked_snprintf(
 		query, sizeof(query),
 		"INSERT INTO persistence_item_events "
 		"(ts_usec,event_type,item_uid,vnum,item,actor,actor_id,source,target,note,dedupe_key) "

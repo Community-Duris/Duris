@@ -1669,7 +1669,7 @@ void snakebite(P_char ch, P_char victim)
 
 int parasitebite(P_char ch, P_char victim)
 {
-	int level, damage, mod;
+	int level, damage, mod = 0;
 
 	struct damage_messages messages = { "You leap towards $N and bite $M savagely.",
 					    "$n leaps towards you and bites you savagely!",
@@ -1978,7 +1978,7 @@ void do_shift_ethereal(P_char ch, char *arg, int cmd)
 
 void do_shift_prime(P_char ch, char *arg, int cmd)
 {
-	int astral = world[real_room(PLANE_ZONETARG_ROOMNUMB)].zone, r_room;
+	int astral = world[real_room(PLANE_ZONETARG_ROOMNUMB)].zone, r_room = NOWHERE;
 	const int githyanki_room[] = { 33366, 2381,  11545,  42950, 23691, 36171, 93001, 4437,
 				       90803, 96803, 619036, 17607, 6405,  88122, 53122 };
 	const int githzerai_room[] = { 41767, 20484, 6224,  66651, 7117,  93665,  16805,
@@ -2031,6 +2031,11 @@ void do_shift_prime(P_char ch, char *arg, int cmd)
 			r_room = real_room(githyanki_room[number(
 				0, (sizeof(githyanki_room) / sizeof(int)) - 1)]);
 		while (r_room == -1);
+	}
+	else
+	{
+		send_to_char("You cannot find a path back to the prime plane.\n", ch);
+		return;
 	}
 
 	act("$n slowly fades away...", 0, ch, 0, 0, TO_ROOM);
@@ -3469,8 +3474,8 @@ void do_innate(P_char ch, char *arg, int cmd)
 
 			if (!has_innate(ch, i))
 			{
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 " (unlocks at level %d)\n", unlock_lvl);
+				checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+						 " (unlocks at level %d)\n", unlock_lvl);
 			}
 			else if (can_use_innate(ch, i))
 			{
@@ -4857,6 +4862,7 @@ void do_squidrage(P_char ch, char *arg, int cmd)
 		send_to_char("Pardon?\n", ch);
 		return;
 	}
+	level = GET_LEVEL(ch);
 
 	if (level < 41)
 	{
@@ -4878,7 +4884,6 @@ void do_squidrage(P_char ch, char *arg, int cmd)
 
 	affect_to_char(ch, &af);
 
-	level = GET_LEVEL(ch);
 	// 1st
 	spell_adrenaline_control(level, ch, "", 0, ch, NULL);
 	spell_combat_mind(level, ch, "", 0, ch, NULL);

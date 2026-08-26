@@ -1415,7 +1415,6 @@ void spell_single_tempest(int level, P_char ch, char *args, int type, P_char vic
 	dam = dam * get_property("spell.area.damage.factor.squallTempest", 1.000);
 
 	if (spell_damage(ch, victim, dam, SPLDAM_COLD, SPLDAM_NODEFLECT, &messages) == DAM_NONEDEAD)
-		;
 	{
 		/* Room kick code from actoff.c
 		 * Maximum probability is 27% for a room kick.*/
@@ -2029,9 +2028,9 @@ void spell_single_polar_vortex(int level, P_char ch, char *arg, int type, P_char
 		dam = dam * get_property("spell.area.damage.to.pc", 0.5);
 	dam = dam * get_property("spell.area.damage.factor.polarVortex", 1.000);
 
-	if ((!IS_AFFECTED3(victim, AFF3_COLDSHIELD) && !NewSaves(victim, SAVING_PARA, 2)) ||
-	    (GET_RACE(victim) == RACE_THRIKREEN && !NewSaves(victim, SAVING_PARA, 0)) &&
-		    !check_freedom_of_movement(victim, number(0, 1)))
+	if (((!IS_AFFECTED3(victim, AFF3_COLDSHIELD) && !NewSaves(victim, SAVING_PARA, 2)) ||
+	     (GET_RACE(victim) == RACE_THRIKREEN && !NewSaves(victim, SAVING_PARA, 0))) &&
+	    !check_freedom_of_movement(victim, number(0, 1)))
 	{
 		struct affected_type af;
 
@@ -2226,15 +2225,17 @@ void spell_single_cosmic_rift(int level, P_char ch, char *arg, int type, P_char 
 		die(victim, ch);
 		victim = NULL;
 
-		for (P_obj obj = world[ch->in_room].contents; obj; obj = obj->next_content)
+		for (P_obj room_obj = world[ch->in_room].contents; room_obj;
+		     room_obj = room_obj->next_content)
 		{
-			if (obj->value[3] == id)
+			if (room_obj->value[3] == id)
 			{
-				obj_from_room(obj);
-				obj_to_room(obj,
+				obj_from_room(room_obj);
+				obj_to_room(room_obj,
 					    real_room(number(ASTRAL_VNUM_BEGIN, ASTRAL_VNUM_END)));
-				if (obj->type == ITEM_CORPSE && IS_SET(obj->value[1], PC_CORPSE))
-					writeCorpse(obj);
+				if (room_obj->type == ITEM_CORPSE &&
+				    IS_SET(room_obj->value[1], PC_CORPSE))
+					writeCorpse(room_obj);
 			}
 		}
 	}

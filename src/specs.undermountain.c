@@ -81,7 +81,7 @@ int blade_of_paladins(P_obj obj, P_char ch, int cmd, char *arg)
 	char e_pos;
 	int in_battle, bad_owner;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	in_battle = cmd / 1000;
 
 	/*
@@ -178,7 +178,7 @@ int iron_flindbar(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	// If it must be wielded, use this
 	e_pos = ((obj->loc.wearing->equipment[WIELD] == obj)		? WIELD :
 		 (obj->loc.wearing->equipment[SECONDARY_WEAPON] == obj) ? SECONDARY_WEAPON :
@@ -218,7 +218,7 @@ int fade_drusus(P_obj obj, P_char ch, int cmd, char *argument)
 	char e_pos, arg[MAX_STRING_LENGTH];
 	int in_battle;
 
-	/*  vict = (P_char) arg;*/
+	/*  vict = legacy_proc_arg<P_char>(arg);*/
 
 	in_battle = cmd / 1000;
 
@@ -301,7 +301,7 @@ int magebane_falchion(P_obj obj, P_char ch, int cmd, char *arg)
 	int in_battle;
 	int i;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	in_battle = cmd / 1000;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -406,7 +406,7 @@ int lightning_sword(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	// 1/33 chance.
 	if (!IS_ALIVE(ch) || !IS_FIGHTING(ch) || !IS_ALIVE(vict) || !OBJ_WORN(obj) ||
 	    CheckMultiProcTiming(ch) || number(0, 32))
@@ -502,7 +502,7 @@ int woundhealer_scimitar(P_obj obj, P_char ch, int cmd, char *arg)
 	char e_pos;
 	int in_battle, hits;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -551,7 +551,7 @@ int flame_of_north_sword(P_obj obj, P_char ch, int cmd, char *arg)
 	bool in_battle, working;
 	P_char vict;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	in_battle = cmd / 1000;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -633,7 +633,7 @@ int staff_of_power(P_obj obj, P_char ch, int cmd, char *arg)
 	char e_pos;
 	int working, curr_time;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -1095,7 +1095,7 @@ int generic_drow_eq(P_obj obj, P_char ch, int cmd, char *arg)
 	P_char vict;
 	int in_battle;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	in_battle = cmd / 1000;
 
 	if (cmd == CMD_SET_PERIODIC) /* Events have priority */
@@ -1121,7 +1121,7 @@ int elfdawn_sword(P_obj obj, P_char ch, int cmd, char *arg)
 	char e_pos;
 	int in_battle, bad_owner;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	in_battle = cmd / 1000;
 
 	/*
@@ -1254,7 +1254,7 @@ int undead_trident(P_obj obj, P_char ch, int cmd, char *arg)
 	char e_pos;
 	bool bad_owner;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -1348,7 +1348,7 @@ int martelo_mstar(P_obj obj, P_char ch, int cmd, char *arg)
 	char e_pos;
 	int bad_owner;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -1592,6 +1592,7 @@ int um_regular(P_char ch, P_char pl, int cmd, char *arg)
 	case 5:
 		act("$n looks at you.", 0, ch, 0, 0, TO_ROOM);
 		do_action(ch, 0, CMD_LAUGH);
+		[[fallthrough]];
 	default:
 		return FALSE;
 	}
@@ -2144,7 +2145,7 @@ int malodine_three(P_char ch, P_char pl, int cmd, char *arg)
 
 int black_pudding(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char split, split2;
+	P_char split = NULL, split2 = NULL;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -2182,6 +2183,16 @@ int black_pudding(P_char ch, P_char pl, int cmd, char *arg)
 		{
 			split = read_mobile(92633, VIRTUAL);
 			split2 = read_mobile(92633, VIRTUAL);
+		}
+		if (!split || !split2)
+		{
+			if (split)
+				extract_char(split);
+			if (split2)
+				extract_char(split2);
+			logit(LOG_SYS, "black_pudding could not create both splits for vnum %d",
+			      GET_VNUM(ch));
+			return FALSE;
 		}
 		char_to_room(split, ch->in_room, 0);
 		char_to_room(split2, ch->in_room, 0);

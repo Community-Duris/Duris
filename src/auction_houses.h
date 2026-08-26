@@ -59,8 +59,8 @@ class EqSlotFlag : public EqSortFlag
 {
     public:
 	EqSlotFlag(const char *_keyword, const char *_desc, unsigned int _eq_bit)
-		: eq_bit(_eq_bit)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, eq_bit(_eq_bit)
 	{
 	}
 
@@ -73,8 +73,8 @@ class EqClassFlag : public EqSortFlag
 {
     public:
 	EqClassFlag(const char *_keyword, const char *_desc, unsigned _wear_class)
-		: wear_class(_wear_class)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, wear_class(_wear_class)
 	{
 	}
 
@@ -92,8 +92,8 @@ class EqTypeFlag : public EqSortFlag
 {
     public:
 	EqTypeFlag(const char *_keyword, const char *_desc, ::byte _type)
-		: type(_type)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, type(_type)
 	{
 	}
 
@@ -106,8 +106,8 @@ class EqAffFlag : public EqSortFlag
 {
     public:
 	EqAffFlag(const char *_keyword, const char *_desc, unsigned _bitv)
-		: bitv(_bitv)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, bitv(_bitv)
 	{
 	}
 
@@ -121,8 +121,8 @@ class EqAff2Flag : public EqSortFlag
 {
     public:
 	EqAff2Flag(const char *_keyword, const char *_desc, unsigned _bitv)
-		: bitv(_bitv)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, bitv(_bitv)
 	{
 	}
 
@@ -136,8 +136,8 @@ class EqAff3Flag : public EqSortFlag
 {
     public:
 	EqAff3Flag(const char *_keyword, const char *_desc, unsigned _bitv)
-		: bitv(_bitv)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, bitv(_bitv)
 	{
 	}
 
@@ -151,8 +151,8 @@ class EqAff4Flag : public EqSortFlag
 {
     public:
 	EqAff4Flag(const char *_keyword, const char *_desc, unsigned _bitv)
-		: bitv(_bitv)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, bitv(_bitv)
 	{
 	}
 
@@ -166,8 +166,8 @@ class EqAff5Flag : public EqSortFlag
 {
     public:
 	EqAff5Flag(const char *_keyword, const char *_desc, unsigned _bitv)
-		: bitv(_bitv)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, bitv(_bitv)
 	{
 	}
 
@@ -181,8 +181,8 @@ class EqExtraFlag : public EqSortFlag
 {
     public:
 	EqExtraFlag(const char *_keyword, const char *_desc, unsigned _extra)
-		: extra(_extra)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, extra(_extra)
 	{
 	}
 
@@ -196,8 +196,8 @@ class EqExtra2Flag : public EqSortFlag
 {
     public:
 	EqExtra2Flag(const char *_keyword, const char *_desc, unsigned _extra2)
-		: extra2(_extra2)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, extra2(_extra2)
 	{
 	}
 
@@ -211,8 +211,8 @@ class EqApplyFlag : public EqSortFlag
 {
     public:
 	EqApplyFlag(const char *_keyword, const char *_desc, ::byte _apply)
-		: apply(_apply)
-		, EqSortFlag(_keyword, _desc)
+		: EqSortFlag(_keyword, _desc)
+		, apply(_apply)
 	{
 	}
 

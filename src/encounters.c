@@ -306,16 +306,16 @@ int randobjs_to_mob(P_char mob)
 char *strip_color(const char *string)
 {
 	static char colorless[MAX_STRING_LENGTH];
-	int x;
+	const size_t string_length = strlen(string);
 
 	if (string[0] != '&')
 	{
-		strcpy(colorless, string);
+		checked_snprintf(colorless, sizeof(colorless), "%s", string);
 		return colorless;
 	}
 
-	for (x = 0; x <= strlen(string); x++)
-		colorless[x] = string[x + 3];
+	const size_t prefix_length = string_length < 3 ? string_length : 3;
+	checked_snprintf(colorless, sizeof(colorless), "%s", string + prefix_length);
 
 	return colorless;
 }
@@ -1021,13 +1021,13 @@ void random_jewelry(P_obj obj, int base_value)
 		nice_work = " (exquisite workmanship)";
 		if (bv == bv_table[base_value_place][1] * bv_table[base_value_place][2] *
 				  bv_table[base_value_place][3])
+		{
 			if (base_value_place < 6)
 			{
 				++base_value_place;
 				/*      goto roll_bv_dice;*/
 			}
-			else
-				; /* If already at max, do nothing */
+		}
 		else
 		{
 			/* Set bv to maximum for this base_value_place */

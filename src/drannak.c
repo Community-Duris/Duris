@@ -599,25 +599,25 @@ char get_alias(P_char ch, char *argument)
 			char bfbug[256];
 			char bfr[MAX_STRING_LENGTH] = "";
 			char ruf[MAX_STRING_LENGTH];
-			int i = 0;
-			int times = 0;
+			int alias_index = 0;
+			int delimiter_count = 0;
 
 			checked_snprintf(bfbug, 256, "%s", charalias);
 
-			while (times < 2)
+			while (delimiter_count < 2)
 			{
-				snprintf(ruf, MAX_STRING_LENGTH, "%c", bfbug[i]);
+				snprintf(ruf, MAX_STRING_LENGTH, "%c", bfbug[alias_index]);
 				if (strstr(ruf, "(") || strstr(ruf, ")"))
-					times++;
+					delimiter_count++;
 
-				if (times > 0)
+				if (delimiter_count > 0)
 				{
 					if (!strstr(ruf, "(") && !strstr(ruf, ")"))
 					{
 						strcat(bfr, ruf);
 					}
 				}
-				i++;
+				alias_index++;
 			}
 			send_to_char("Valid Alias!\r\n", ch);
 			send_to_char(bfr, ch);

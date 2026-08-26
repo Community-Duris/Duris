@@ -621,8 +621,8 @@ void do_headlock(P_char ch, char *argument, int cmd)
 
 void event_headlock(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int type, percent, mod, gclvl;
-	float damage;
+	int type = HOLD_NONE, percent, mod, gclvl;
+	float damage = 0.0;
 	bool knockedout = FALSE;
 	struct affected_type af, *aft;
 	struct damage_messages messages = {
@@ -848,10 +848,11 @@ void armlock_check(P_char attacker, P_char grappler)
 			af.duration = -1;
 			affect_to_char(attacker, &af);
 
-			int dam = (int)(((GET_C_DEX(grappler) / 10) + str) * 4 *
-					(float)get_property("grapple.armlock.break.dmgmod", 1.00));
-			raw_damage(grappler, attacker, dam, RAWDAM_DEFAULT, &breakmsg);
-			check_shields(grappler, attacker, dam, RAWDAM_DEFAULT);
+			int break_damage =
+				(int)(((GET_C_DEX(grappler) / 10) + str) * 4 *
+				      (float)get_property("grapple.armlock.break.dmgmod", 1.00));
+			raw_damage(grappler, attacker, break_damage, RAWDAM_DEFAULT, &breakmsg);
+			check_shields(grappler, attacker, break_damage, RAWDAM_DEFAULT);
 
 			if (!IS_ALIVE(grappler) || !IS_ALIVE(attacker))
 				return;
@@ -1145,8 +1146,8 @@ void do_leglock(P_char ch, char *argument, int cmd)
 
 void event_leglock(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int type, percent, mod, gclvl, str, legbreak;
-	float damage;
+	int type = HOLD_NONE, percent, mod, gclvl, str, legbreak;
+	float damage = 0.0;
 	bool legbroke = FALSE;
 	struct affected_type af, *aft;
 

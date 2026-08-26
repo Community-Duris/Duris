@@ -265,7 +265,7 @@ vector<epic_trophy_data> get_epic_zone_trophy(P_char ch)
 		if (!in_trophy)
 		{
 			tq.push_front(epic_trophy_data(zone_number, 1));
-			if (tq.size() > trophy_size)
+			if (trophy_size < 0 || tq.size() > static_cast<size_t>(trophy_size))
 				tq.pop_back();
 		}
 		else
@@ -1105,7 +1105,8 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 
 void epic_zone_balance()
 {
-	int i, alignment, delta;
+	size_t i;
+	int alignment, delta;
 	long lt;
 	vector<epic_zone_data> epic_zones = get_epic_zones();
 
@@ -1133,10 +1134,7 @@ void epic_zone_balance()
 		if ((time(NULL) - lt) >
 		    ((int)get_property("epic.alignment.reset.hour", 7 * 24) * 60 * 60))
 		{
-			if (alignment > 0)
-				delta = -1;
-			else if (alignment < 0)
-				delta = 1;
+			delta = alignment > 0 ? -1 : 1;
 
 			// debug("calling update_epic_zone_alignment");
 			touch_last = true;
@@ -1535,7 +1533,7 @@ void do_epic(P_char ch, char *arg, int cmd)
 	send_to_char("&+GEpic Players\n\n", ch);
 	send_to_char(" &+WGoods\n\n", ch);
 
-	for (int i = 0; i < top_good_players.size(); i++)
+	for (size_t i = 0; i < top_good_players.size(); i++)
 	{
 		send_to_char("   ", ch);
 		send_to_char(top_good_players[i].c_str(), ch);
@@ -1544,7 +1542,7 @@ void do_epic(P_char ch, char *arg, int cmd)
 
 	send_to_char("\n\n &+LEvils\n\n", ch);
 
-	for (int i = 0; i < top_evil_players.size(); i++)
+	for (size_t i = 0; i < top_evil_players.size(); i++)
 	{
 		send_to_char("   ", ch);
 		send_to_char(top_evil_players[i].c_str(), ch);
@@ -1961,7 +1959,7 @@ void do_epic_trophy(P_char ch, char *arg, int cmd)
 
 	send_to_char("&+WEpic Trophy\n", ch);
 
-	for (int i = 0; i < trophy.size(); i++)
+	for (size_t i = 0; i < trophy.size(); i++)
 	{
 		if (trophy[i].zone_number >= 0 && real_zone0(trophy[i].zone_number))
 		{

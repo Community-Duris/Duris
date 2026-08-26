@@ -447,7 +447,7 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 	floor_drop_batch[idx].room_vnum = room_vnum;
 	floor_drop_batch[idx].type = obj->type;
 
-	for (int i = 0; i < NUMB_OBJ_VALS && i < 8; i++)
+	for (int i = 0; i < NUMB_OBJ_VALS; i++)
 		floor_drop_batch[idx].values[i] = obj->value[i];
 
 	for (int i = 0; i < 6; i++)

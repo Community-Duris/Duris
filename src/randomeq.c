@@ -1436,7 +1436,7 @@ P_obj setprefix_obj(P_obj obj, float modifier, int affectnumber)
 		bool reroll = true;
 		float modOriginal = modifier;
 
-		for (i = 0; i < ARRAY_SIZE(inUse); i++)
+		for (i = 0; i < static_cast<int>(ARRAY_SIZE(inUse)); i++)
 		{
 			inUse[i] = obj->affected[i].location;
 		}
@@ -1564,7 +1564,7 @@ P_obj setprefix_obj(P_obj obj, float modifier, int affectnumber)
 				break;
 			}
 
-			for (i = 0; i < ARRAY_SIZE(inUse); i++)
+			for (i = 0; i < static_cast<int>(ARRAY_SIZE(inUse)); i++)
 			{
 				if (i == affectnumber)
 				{
@@ -1579,7 +1579,7 @@ P_obj setprefix_obj(P_obj obj, float modifier, int affectnumber)
 					break;
 				}
 			}
-			reroll = (i < ARRAY_SIZE(inUse));
+			reroll = (i < static_cast<int>(ARRAY_SIZE(inUse)));
 		}
 	}
 
@@ -1593,7 +1593,6 @@ int random_eq_proc(P_obj obj, P_char ch, int cmd, char *argument)
 	int j;
 	int dam = cmd / 1000;
 	P_obj t_obj;
-	char *arg;
 	long curr_time;
 	int numNamed = 0;
 	int wear_order[] = { 41, 24, 40, 6,  19, 21, 22, 20, 39, 3,  4,	 5,  35, 37,
@@ -1627,7 +1626,7 @@ int random_eq_proc(P_obj obj, P_char ch, int cmd, char *argument)
 		chance = 50;
 	}
 
-	kala = (P_char)arg;
+	kala = legacy_proc_arg<P_char>(argument);
 
 	if (!kala)
 	{

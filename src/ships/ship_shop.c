@@ -207,7 +207,7 @@ int list_cargo(P_char ch, P_ship ship, bool owned)
 
 int list_weapons(P_char ch, P_ship ship, int owned)
 {
-	char rng[20], dam[20];
+	char rng[32], dam[48];
 	if (!owned)
 	{
 		send_to_char("&+gBut you do not own a ship!&n\n", ch);
@@ -324,7 +324,7 @@ int list_equipment(P_char ch, P_ship ship, int owned)
 char *epic_cost_string(int hull_type)
 {
 	// We have length 8 here, just in case somewhere in the future we get in the millions.
-	static char buf[8];
+	static char buf[16];
 	int cost = SHIPTYPE_EPIC_COST(hull_type);
 
 	if (cost == 0)
@@ -332,7 +332,7 @@ char *epic_cost_string(int hull_type)
 		return "      ";
 	}
 
-	sprintf(buf, "%6d", SHIPTYPE_EPIC_COST(hull_type));
+	checked_snprintf(buf, sizeof(buf), "%6d", SHIPTYPE_EPIC_COST(hull_type));
 	return buf;
 }
 
@@ -1543,6 +1543,11 @@ int reload_ammo(P_char ch, P_ship ship, char *arg)
 				weapons_to_reload[slot] = 0;
 			}
 		}
+	}
+	else
+	{
+		send_to_char("&+YSyntax: '&+greload <&+Gall&+g|weapon slot>&+Y'.&n\n", ch);
+		return TRUE;
 	}
 
 	if (cost == 0 || buildtime == 0)
@@ -2877,11 +2882,12 @@ int crew_shop_proc(int room, P_char ch, int cmd, char *arg)
 
 				if (ship_chief_data[i].skill_gain_bonus != 0)
 				{
-					char skill_gain[10];
-					sprintf(skill_gain, "%s%d%%",
-						(ship_chief_data[i].skill_gain_bonus > 0) ? "+" :
-											    "",
-						ship_chief_data[i].skill_gain_bonus);
+					char skill_gain[16];
+					checked_snprintf(skill_gain, sizeof(skill_gain), "%s%d%%",
+							 (ship_chief_data[i].skill_gain_bonus > 0) ?
+								 "+" :
+								 "",
+							 ship_chief_data[i].skill_gain_bonus);
 					send_to_char_f(ch, "  &+W%6s", skill_gain);
 				}
 				else
@@ -2889,10 +2895,11 @@ int crew_shop_proc(int room, P_char ch, int cmd, char *arg)
 
 				if (ship_chief_data[i].skill_mod != 0)
 				{
-					char skill_mod[10];
-					sprintf(skill_mod, "%s%d",
-						(ship_chief_data[i].skill_mod > 0) ? "+" : "",
-						ship_chief_data[i].skill_mod);
+					char skill_mod[16];
+					checked_snprintf(skill_mod, sizeof(skill_mod), "%s%d",
+							 (ship_chief_data[i].skill_mod > 0) ? "+" :
+											      "",
+							 ship_chief_data[i].skill_mod);
 					send_to_char_f(ch, "    &+W%3s", skill_mod);
 				}
 				else
@@ -2916,7 +2923,7 @@ int crew_shop_proc(int room, P_char ch, int cmd, char *arg)
 			return TRUE;
 		}
 
-		int n = atoi(arg);
+		n = atoi(arg);
 		int c = 0;
 		for (int i = 0; i < MAXCREWS; i++)
 		{
@@ -3037,11 +3044,12 @@ int moonstone_fragment(P_obj obj, P_char ch, int cmd, char *argument)
 		{
 			ch = obj->loc.carrying;
 			int fragment_count = 0, core_count = 0;
-			for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
+			for (P_obj carried_obj = ch->carrying; carried_obj;
+			     carried_obj = carried_obj->next_content)
 			{
-				if (IS_MOONSTONE_FRAGMENT(obj))
+				if (IS_MOONSTONE_FRAGMENT(carried_obj))
 					fragment_count++;
-				if (IS_MOONSTONE_CORE(obj))
+				if (IS_MOONSTONE_CORE(carried_obj))
 					core_count++;
 			}
 			if (core_count > 1)
@@ -3055,13 +3063,14 @@ int moonstone_fragment(P_obj obj, P_char ch, int cmd, char *argument)
 					"&+WMoonstone &+Rf&+rra&+Rg&+rme&+Rn&+rts &+Gsuddenly glow &+Wbrightly &+Gin your hands and combine into &+Rh&+rea&+Rr&+rt-&+Rs&+rha&+Rp&+red &+Wobject&+G!&N\r\n\r\n",
 					ch);
 				P_obj next_obj = 0;
-				for (P_obj obj = ch->carrying; obj; obj = next_obj)
+				for (P_obj carried_obj = ch->carrying; carried_obj;
+				     carried_obj = next_obj)
 				{
-					next_obj = obj->next_content;
-					if (IS_MOONSTONE_PART(obj))
+					next_obj = carried_obj->next_content;
+					if (IS_MOONSTONE_PART(carried_obj))
 					{
-						obj_from_char(obj);
-						extract_obj(obj, TRUE);
+						obj_from_char(carried_obj);
+						extract_obj(carried_obj, TRUE);
 					}
 				}
 				int r_num = real_object(AUTOMATONS_MOONSTONE);

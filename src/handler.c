@@ -1108,10 +1108,11 @@ bool char_to_room(P_char ch, int room, int dir)
 {
 	P_char t_ch, k, who;
 	P_desc d;
-	char j, exit1 = -1, exit2 = -1, exit3 = -1;
+	char exit1 = -1, exit2 = -1, exit3 = -1;
 	char Gbuf1[MAX_STRING_LENGTH];
 	char temp_buffer[MAX_STRING_LENGTH];
-	int was_in, current, total_coins, x, worked = FALSE, was_in_arena;
+	int j, was_in, current, total_coins, x, worked = FALSE;
+	bool was_in_arena;
 	struct zone_data *zone = 0;
 	P_room rm = 0;
 	struct group_list *gl;
@@ -1198,11 +1199,11 @@ bool char_to_room(P_char ch, int room, int dir)
 	}
 
 	was_in = real_room0(ch->specials.was_in_room);
-	was_in_arena = IS_ROOM(was_in, ROOM_ARENA);
+	was_in_arena = IS_ROOM(was_in, ROOM_ARENA) != 0;
 
 	ch->in_room = room;
 
-	if ((was_in_arena != IS_ROOM(room, ROOM_ARENA)) && !IS_TRUSTED(ch))
+	if ((was_in_arena != (IS_ROOM(room, ROOM_ARENA) != 0)) && !IS_TRUSTED(ch))
 	{
 		if (was_in_arena && IS_SET(arena.flags, FLAG_SEENAME))
 		{
@@ -3917,7 +3918,7 @@ P_obj get_obj_in_list_vis(P_char ch, char *name, P_obj list, bool no_tracks)
 						     atoi(name) > 0 && atoi(name) == OBJ_VNUM(i)))
 			{
 				if (CAN_SEE_OBJ(ch, i) ||
-				    IS_NOSHOW(i) && OBJ_VNUM(i) != VNUM_TRACKS)
+				    (IS_NOSHOW(i) && OBJ_VNUM(i) != VNUM_TRACKS))
 				{
 					if (j == k)
 						return (i);
@@ -4114,7 +4115,7 @@ P_obj get_obj_vis_no_tracks(P_char ch, char *name, int zrange)
 			if ((vnum && vnum == OBJ_VNUM(t_obj)) || isname(tmp, t_obj->name))
 			{
 				if (CAN_SEE_OBJ(ch, t_obj) ||
-				    IS_NOSHOW(t_obj) && OBJ_VNUM(t_obj) != VNUM_TRACKS)
+				    (IS_NOSHOW(t_obj) && OBJ_VNUM(t_obj) != VNUM_TRACKS))
 				{
 					if (++j == k)
 					{
@@ -4132,7 +4133,7 @@ P_obj get_obj_vis_no_tracks(P_char ch, char *name, int zrange)
 		if ((vnum && vnum == OBJ_VNUM(t_obj)) || isname(tmp, t_obj->name))
 		{
 			if (CAN_SEE_OBJ(ch, t_obj) ||
-			    IS_NOSHOW(t_obj) && OBJ_VNUM(t_obj) != VNUM_TRACKS)
+			    (IS_NOSHOW(t_obj) && OBJ_VNUM(t_obj) != VNUM_TRACKS))
 			{
 				if (++j == k)
 				{
@@ -4150,7 +4151,7 @@ P_obj get_obj_vis_no_tracks(P_char ch, char *name, int zrange)
 		if ((vnum && vnum == OBJ_VNUM(t_obj)) || isname(tmp, t_obj->name))
 		{
 			if (CAN_SEE_OBJ(ch, t_obj) ||
-			    IS_NOSHOW(t_obj) && OBJ_VNUM(t_obj) != VNUM_TRACKS)
+			    (IS_NOSHOW(t_obj) && OBJ_VNUM(t_obj) != VNUM_TRACKS))
 			{
 				if (++j == k)
 				{
@@ -4172,7 +4173,7 @@ P_obj get_obj_vis_no_tracks(P_char ch, char *name, int zrange)
 				//   Yes, the NOSHOW flag means you can't see it when you look in room,
 				//   but it shows when you try to interact with it (ie push button / touch flowers / l <extra desc> etc).
 				if (CAN_SEE_OBJ(ch, t_obj) ||
-				    IS_NOSHOW(t_obj) && OBJ_VNUM(t_obj) != VNUM_TRACKS)
+				    (IS_NOSHOW(t_obj) && OBJ_VNUM(t_obj) != VNUM_TRACKS))
 				{
 					if (++j == k)
 					{
@@ -4189,7 +4190,7 @@ P_obj get_obj_vis_no_tracks(P_char ch, char *name, int zrange)
 			if ((vnum && vnum == OBJ_VNUM(t_obj)) || isname(tmp, t_obj->name))
 			{
 				if (CAN_SEE_OBJZ(ch, t_obj, zrange) ||
-				    IS_NOSHOW(t_obj) && OBJ_VNUM(t_obj) != VNUM_TRACKS)
+				    (IS_NOSHOW(t_obj) && OBJ_VNUM(t_obj) != VNUM_TRACKS))
 				{
 					if (++j == k)
 					{

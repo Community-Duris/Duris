@@ -65,7 +65,7 @@ int snogres_lich_shout(P_char ch, P_char tch, int cmd, char *arg)
 int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char i;
-	P_char golem, lich;
+	P_char golem, lich = NULL;
 	int count = 0;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -147,7 +147,8 @@ int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 			return FALSE;
 		}
 		char_to_room(golem, 87798, 0);
-		add_follower(golem, lich);
+		if (lich)
+			add_follower(golem, lich);
 		act("$n &+rbubbles and boils as it enters from the west, its wounds healing quickly.&n",
 		    FALSE, golem, 0, 0, TO_ROOM);
 	}
@@ -226,7 +227,7 @@ int hellfire_axe(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/50 chance.
 	if (cmd == CMD_MELEE_HIT && !number(0, 49))
 	{
-		vict = (P_char)arg;
+		vict = legacy_proc_arg<P_char>(arg);
 
 		if (obj->loc.wearing->equipment[WIELD] != obj || !dam || !IS_ALIVE(vict) ||
 		    !IS_HUMANOID(vict))
@@ -399,7 +400,7 @@ int illithid_whip(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/30 chance.
 	if ((cmd == CMD_MELEE_HIT) && !number(0, 29))
 	{
-		vict = (P_char)arg;
+		vict = legacy_proc_arg<P_char>(arg);
 
 		if (obj->loc.wearing->equipment[WIELD] != obj || !dam || !IS_ALIVE(vict) ||
 		    !IS_HUMANOID(vict) || GET_POS(vict) < POS_STANDING)

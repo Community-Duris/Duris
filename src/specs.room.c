@@ -1665,6 +1665,7 @@ int cage_room2(int room, P_char ch, int cmd, char *argument)
 	case 6:
 	case 7:
 		send_to_room("&+LYou hear &+Cpiercing &+Lcries from behind you!&n\n", room);
+		[[fallthrough]];
 	case 8:
 	case 9:
 	case 10:

@@ -1320,12 +1320,14 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 
 	if (entry->sb_subtable)
 	{
-		for (bit = 0;
-		     (string = *(char **)(((char *)entry->sb_subtable) + entry->entry_size * bit +
-					  entry->entry_offset)) != NULL &&
-		     string[0] != '\n';
-		     bit++)
+		for (bit = 0;; bit++)
 		{
+			memcpy(&string,
+			       reinterpret_cast<const char *>(entry->sb_subtable) +
+				       entry->entry_size * bit + entry->entry_offset,
+			       sizeof(string));
+			if (string == NULL || string[0] == '\n')
+				break;
 			if (SAME_STRING(string, value))
 			{
 				break;
@@ -1455,10 +1457,12 @@ static void setbit_printOutSubTable(P_char ch, const char **subtable, int entry_
 
 	send_to_char("Valid sub-options are:\r\n", ch);
 
-	for (i = 0; (string = *(char **)(((char *)subtable) + entry_size * i)) != NULL &&
-		    string[0] != '\n';
-	     i++)
+	for (i = 0;; i++)
 	{
+		memcpy(&string, reinterpret_cast<const char *>(subtable) + entry_size * i,
+		       sizeof(string));
+		if (string == NULL || string[0] == '\n')
+			break;
 		if (!(i % 3))
 			send_to_char("\r\n", ch);
 

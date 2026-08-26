@@ -231,7 +231,7 @@ int storm_legplates(P_obj obj, P_char ch, int cmd, char *arg)
 		// 1/30 chance.
 		if (cmd == CMD_GOTHIT && !number(0, 29))
 		{
-			if (!(data = (struct proc_data *)arg))
+			if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 			{
 				return FALSE;
 			}
@@ -416,7 +416,7 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 		if (cmd == CMD_GOTHIT && !number(0, 24))
 		{
 			// important! can do this cast (next line) ONLY if cmd was CMD_GOTHIT or CMD_GOTNUKED
-			if (!(data = (struct proc_data *)arg))
+			if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 			{
 				return FALSE;
 			}
@@ -640,7 +640,7 @@ int volo_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 
 int snowogre_warhammer(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict;
+	P_char vict = NULL;
 	int rand, room, curr_time;
 	struct affected_type af;
 
@@ -940,7 +940,7 @@ int snowogre_warhammer(P_obj obj, P_char ch, int cmd, char *arg)
 
 int deathseeker_mace(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
+	P_char vict = NULL, target;
 	char Command[MAX_STRING_LENGTH];
 	char viewperson[MAX_STRING_LENGTH];
 	int room;
@@ -1187,7 +1187,7 @@ int illithid_axe(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	char Command[MAX_STRING_LENGTH];
 	char Toperson[MAX_STRING_LENGTH];
-	P_char next, target, vict;
+	P_char next, target, vict = NULL;
 	int dam;
 	int curr_time;
 	int room;
@@ -1322,7 +1322,7 @@ int illithid_axe(P_obj obj, P_char ch, int cmd, char *arg)
 
 int dagger_ra(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict;
+	P_char vict = NULL;
 	struct affected_type af;
 	int curr_time;
 
@@ -1405,7 +1405,7 @@ int dagger_ra(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/50 chance.
 	if (cmd == CMD_MELEE_HIT && !number(0, 49) && CheckMultiProcTiming(ch))
 	{
-		vict = (P_char)arg;
+		vict = legacy_proc_arg<P_char>(arg);
 		if (!IS_ALIVE(vict))
 		{
 			return FALSE;
@@ -1811,7 +1811,7 @@ int no_kill_priest_obj(P_obj fountain, P_char ch, int cmd, char *arg)
 
 int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
+	P_char vict = NULL, target;
 	int room, rand;
 	int curr_time;
 
@@ -2438,7 +2438,7 @@ int helmet_vampires(P_obj obj, P_char ch, int cmd, char *arg)
 
 int buckler_saints(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
+	P_char vict = NULL, target;
 	int room, max_hp;
 	int curr_time = time(NULL);
 	int curr_time2 = time(NULL);
@@ -2581,7 +2581,7 @@ int buckler_saints(P_obj obj, P_char ch, int cmd, char *arg)
 		if (cmd == CMD_GOTHIT && !number(0, 24))
 		{
 			// important! can do this cast (next line) ONLY if cmd was CMD_GOTHIT or CMD_GOTNUKED
-			if (!(data = (struct proc_data *)arg))
+			if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 			{
 				return FALSE;
 			}
@@ -2644,7 +2644,7 @@ int mob_death_proc(P_obj obj, P_char ch, int cmd, char *arg)
 
 int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
+	P_char vict;
 	int room;
 	struct affected_type *af;
 
@@ -2684,7 +2684,7 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
 					act("&nYour &+Lstone skin &ncrumbles to the ground!&n",
 					    TRUE, ch, obj, vict, TO_VICT);
 
-					af = get_spell_from_char(target, SPELL_STONE_SKIN);
+					af = get_spell_from_char(vict, SPELL_STONE_SKIN);
 					if (af)
 					{
 						wear_off_message(vict, af);
@@ -2706,7 +2706,7 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
 					act("&nYour &+Rglobe of invulnerability &nshatters to pieces!&n",
 					    TRUE, ch, obj, vict, TO_VICT);
 
-					af = get_spell_from_char(target, SPELL_GLOBE);
+					af = get_spell_from_char(vict, SPELL_GLOBE);
 					if (af)
 					{
 						wear_off_message(vict, af);
@@ -2728,7 +2728,7 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
 					act("&nWaves of energy destroy your &+Lshadow shield&n!",
 					    TRUE, ch, obj, vict, TO_VICT);
 
-					af = get_spell_from_char(target, SPELL_SHADOW_SHIELD);
+					af = get_spell_from_char(vict, SPELL_SHADOW_SHIELD);
 					if (af)
 					{
 						wear_off_message(vict, af);
@@ -2750,7 +2750,7 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
 					act("The thick &+Ggreen &+gmist &nsurrounding you turns pale and fades away.",
 					    TRUE, ch, obj, vict, TO_VICT);
 
-					af = get_spell_from_char(target, SPELL_BIOFEEDBACK);
+					af = get_spell_from_char(vict, SPELL_BIOFEEDBACK);
 					if (af)
 					{
 						wear_off_message(vict, af);
@@ -2772,7 +2772,7 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
 					act("The &+rflames &nsurrounding you flicker out of existence.&n",
 					    TRUE, ch, obj, vict, TO_VICT);
 
-					af = get_spell_from_char(target, SPELL_FIRESHIELD);
+					af = get_spell_from_char(vict, SPELL_FIRESHIELD);
 					if (af)
 					{
 						wear_off_message(vict, af);
@@ -2794,7 +2794,7 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
 					act("The &+Bice &nsurrounding you melt away.&n", TRUE, ch,
 					    obj, vict, TO_VICT);
 
-					af = get_spell_from_char(target, SPELL_COLDSHIELD);
+					af = get_spell_from_char(vict, SPELL_COLDSHIELD);
 					if (af)
 					{
 						wear_off_message(vict, af);
@@ -3118,7 +3118,7 @@ int sword_random(P_obj obj, P_char ch, int cmd, char *arg)
 
 int gauntlets_legend(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
+	P_char vict = NULL, target;
 	int room;
 	int curr_time = time(NULL);
 	int curr_time2 = time(NULL);
@@ -4068,7 +4068,7 @@ int damnation_staff(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/20 chance.
 	if (cmd == CMD_GOTHIT && !number(0, 19))
 	{
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return FALSE;
 		}
@@ -4161,7 +4161,7 @@ int nuke_damnation(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/20 chance.
 	if (cmd == CMD_GOTNUKED && !number(0, 19))
 	{
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return FALSE;
 		}
@@ -4457,7 +4457,7 @@ int collar_flames(P_obj obj, P_char ch, int cmd, char *arg)
 					firemental = read_mobile(1100, VIRTUAL);
 				}
 
-				if (!firemental || firemental == NULL || ch->in_room == NOWHERE)
+				if (!firemental || ch->in_room == NOWHERE)
 				{
 					act("&+LTHERE IS NO FIRE ELEMENTAL, TELL A GOD!!&N", FALSE,
 					    ch, obj, obj, TO_CHAR);
@@ -4581,7 +4581,7 @@ int tiamat_human_to_rareloads(P_char ch, P_char pl, int cmd, char *arg)
 {
 	if (cmd == CMD_DEATH)
 	{
-		P_obj obj;
+		P_obj obj = NULL;
 
 		switch (number(0, 3))
 		{
@@ -4813,7 +4813,7 @@ int lanella_heart(P_char ch, P_char pl, int cmd, char *arg)
 {
 	if (cmd == CMD_DEATH)
 	{
-		P_obj obj;
+		P_obj obj = NULL;
 
 		switch (number(0, 1))
 		{
@@ -4851,7 +4851,7 @@ int weapon_vampire(P_obj obj, P_char ch, int cmd, char *arg)
 	char e_pos;
 	int in_battle;
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	in_battle = cmd / 1000;
 
 	if (cmd == CMD_SET_PERIODIC) /*

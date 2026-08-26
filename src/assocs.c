@@ -46,7 +46,7 @@ bool Guild::is_allied_with(P_Guild ally)
 
 P_Alliance Guild::get_alliance()
 {
-	for (int i = 0; i < alliances.size(); i++)
+	for (size_t i = 0; i < alliances.size(); i++)
 	{
 		if (this == alliances[i].get_forgers() || this == alliances[i].get_joiners())
 		{
@@ -58,9 +58,12 @@ P_Alliance Guild::get_alliance()
 
 P_Guild get_guild_from_id(int id_num)
 {
+	if (id_num < 0)
+		return NULL;
+
 	for (P_Guild guild = guild_list; guild; guild = guild->next())
 	{
-		if (guild->get_id() == id_num)
+		if (guild->get_id() == static_cast<unsigned int>(id_num))
 			return guild;
 	}
 	return NULL;
@@ -122,8 +125,8 @@ void Guild::add_points_from_epics(P_char ch, int epics, int epic_type)
 	int assoc_members = 1;
 	int room = ch->in_room;
 	// add construction points
-	int cp_notch = get_property("prestige.constructionPoints.notch", 100);
-	int construction_points;
+	int cp_notch = MAX(1, get_property("prestige.constructionPoints.notch", 100));
+	int construction_points = 0;
 
 	if ((GET_ASSOC(ch) != this) || (epics < (int)get_property("prestige.epicsMinimum", 4.000)))
 	{
@@ -167,13 +170,14 @@ void Guild::add_points_from_epics(P_char ch, int epics, int epic_type)
 			prest = (int)get_property("prestige.gain.default", 10);
 		}
 
-		prest = check_nexus_bonus(ch, prest, NEXUS_BONUS_PRESTIGE);
+		prest = MAX(0, check_nexus_bonus(ch, prest, NEXUS_BONUS_PRESTIGE));
 
 		debug("add_points_from_epics(): '%s' gaining: %d", get_name().c_str(), prest);
 
 		send_to_char("&+bYour guild gained prestige!\n", ch);
-		construction_points =
-			MAX(0, (int)((prestige + prest) / cp_notch) - (prestige / cp_notch));
+		const unsigned long new_prestige = prestige + (unsigned long)prest;
+		construction_points = (int)(new_prestige / (unsigned long)cp_notch -
+					    prestige / (unsigned long)cp_notch);
 		add_prestige(prest);
 	}
 
@@ -191,7 +195,9 @@ bool Guild::sub_money(int p, int g, int s, int c)
 {
 	// debug( "%s: %d/%d p %d/%d g %d/%d s %d/%d c.", name, p, platinum, g, gold, s, silver, c, copper );
 
-	if (platinum < p || gold < g || silver < s || copper < c)
+	if (p < 0 || g < 0 || s < 0 || c < 0 || platinum < static_cast<unsigned int>(p) ||
+	    gold < static_cast<unsigned int>(g) || silver < static_cast<unsigned int>(s) ||
+	    copper < static_cast<unsigned int>(c))
 		return FALSE;
 
 	platinum -= p;
@@ -214,7 +220,7 @@ void Guild::add_frags(P_char ch, long new_frags)
 	// new frag leader in guild?
 	if (GET_FRAGS(ch) > frags.top_frags)
 	{
-		snprintf(frags.topfragger, MAX_STRING_LENGTH, "%s", GET_NAME(ch));
+		snprintf(frags.topfragger, sizeof(frags.topfragger), "%s", GET_NAME(ch));
 		frags.top_frags = GET_FRAGS(ch);
 	}
 
@@ -252,7 +258,7 @@ void show_guild_frags(P_char ch)
 		// Insert the new entry into the open slot.
 		strcpy(gfrag_list[i].guild_name, guild->get_name().c_str());
 		gfrag_list[i].tot_frags = guild->get_frags();
-		snprintf(gfrag_list[i].top_fragger, MAX_STRING_LENGTH, "%s",
+		snprintf(gfrag_list[i].top_fragger, sizeof(gfrag_list[i].top_fragger), "%s",
 			 guild->get_top_fragger());
 		gfrag_list[i].top_frags = guild->get_top_frags();
 		gfrag_list[i].num_members = guild->get_num_members();
@@ -486,39 +492,39 @@ bool Guild::load_guild(int guild_num)
 	new_guild = new Guild();
 
 	// Get the guild name.
-	fgets(new_guild->name, ASC_MAX_STR, file);
+	REQUIRED_FGETS(new_guild->name, ASC_MAX_STR, file);
 	// Cut the carriage return off.
 	*strchrnul(new_guild->name, '\n') = '\0';
 	// Then the guild number and frag info.
-	fscanf(file, "%u %lu %lu %s\n", &(new_guild->racewar), &(new_guild->frags.frags),
-	       &(new_guild->frags.top_frags), new_guild->frags.topfragger);
+	REQUIRED_FSCANF(file, "%u %ld %ld %s\n", &(new_guild->racewar), &(new_guild->frags.frags),
+			&(new_guild->frags.top_frags), new_guild->frags.topfragger);
 
 	new_guild->id_number = guild_num;
 
 	// Then get the default guild titles.
 	for (int i = 0; i < ASC_NUM_RANKS; i++)
 	{
-		fgets(buf, ASC_MAX_STR_RANK + 1, file);
+		REQUIRED_FGETS(buf, ASC_MAX_STR_RANK + 1, file);
 		// Cut the carriage return off.
 		buf[strlen(buf) - 1] = '\0';
-		snprintf(new_guild->titles[i], MAX_STRING_LENGTH, "%s", buf);
+		checked_snprintf(new_guild->titles[i], sizeof(new_guild->titles[i]), "%s", buf);
 	}
 	// Then get the guild bits, prestige and construction.
-	fgets(buf, MAX_STR_NORMAL, file);
+	REQUIRED_FGETS(buf, MAX_STR_NORMAL, file);
 
 	sscanf(buf, "%u %lu %lu\n", &new_guild->bits, &new_guild->prestige,
 	       &new_guild->construction);
 
 	// Then get the money for the guild...
-	fscanf(file, "%u %u %u %u\n", &(new_guild->platinum), &(new_guild->gold),
-	       &(new_guild->silver), &(new_guild->copper));
+	REQUIRED_FSCANF(file, "%u %u %u %u\n", &(new_guild->platinum), &(new_guild->gold),
+			&(new_guild->silver), &(new_guild->copper));
 
 	// Then get members.
 	last_member = NULL;
-	while (fscanf(file, "%s %u %u\n", mem_name, &mem_bits, &mem_debt) == 3)
+	while (fscanf(file, "%s %d %d\n", mem_name, &mem_bits, &mem_debt) == 3)
 	{
 		new_member = new guild_member();
-		snprintf(new_member->name, MAX_STRING_LENGTH, "%s", mem_name);
+		snprintf(new_member->name, sizeof(new_member->name), "%s", mem_name);
 		new_member->bits = mem_bits;
 		new_member->debt = mem_debt;
 		new_member->next = NULL;
@@ -900,10 +906,10 @@ bool Guild::is_enemy(P_char enemy)
 
 	// Go past cash
 	for (int i = 0; i < 11; i++)
-		fgets(buf, MAX_STR_NORMAL, f);
+		REQUIRED_FGETS(buf, MAX_STR_NORMAL, f);
 
 	// Control if enemy
-	while (fscanf(f, "%s %u %u %u %u %u\n", buf, &dummy1, &dummy2, &dummy3, &dummy4, &dummy5) !=
+	while (fscanf(f, "%s %d %d %d %d %d\n", buf, &dummy1, &dummy2, &dummy3, &dummy4, &dummy5) !=
 	       EOF)
 	{
 		if (!str_cmp(GET_NAME(enemy), buf) && IS_ENEMY(dummy1))
@@ -922,7 +928,7 @@ void Guild::display(P_char member)
 	char buf[MAX_STRING_LENGTH], Gbuf2[MAX_STR_NORMAL], *current_title;
 	P_Alliance alliance;
 	int gbits = bits & ASC_MASK;
-	int rank = GET_A_BITS(member) & A_RK_MASK;
+	unsigned int rank = GET_A_BITS(member) & A_RK_MASK;
 	const char *standard_names[ASC_NUM_RANKS] = { "enemy",	 "parole", "normal", "senior",
 						      "officer", "deputy", "leader", "king" };
 	P_member pMembers;
@@ -948,20 +954,20 @@ void Guild::display(P_char member)
 	// Display rank names if leader or higher.
 	if (rank >= A_LEADER)
 	{
-		for (int i = 0; i < ASC_NUM_RANKS; i++)
+		for (unsigned int i = 0; i < ASC_NUM_RANKS; i++)
 		{
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 "%-8s : %s&n\n", standard_names[i], titles[i]);
+			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+					 "%-8s : %s&n\n", standard_names[i], titles[i]);
 		}
 		strcat(buf, "\n");
 	}
 
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "Type: %s%s%s%s.\n",
-		 ((gbits == 0) ? "normal " : ""), ((gbits & A_CHALL) ? "challenge " : ""),
-		 ((gbits & A_HIDETITLE) ? "hidden_titles " : ""),
-		 ((gbits & A_HIDESUBTITLE) ? "hidden_subtitles " : ""));
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "Type: %s%s%s%s.\n",
+			 ((gbits == 0) ? "normal " : ""), ((gbits & A_CHALL) ? "challenge " : ""),
+			 ((gbits & A_HIDETITLE) ? "hidden_titles " : ""),
+			 ((gbits & A_HIDESUBTITLE) ? "hidden_subtitles " : ""));
 
-	snprintf(
+	checked_snprintf(
 		buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
 		"Prestige:            &+W%lu&n.\nConstruction points: &+W%lu&n.\n"
 		"Maximum members:     &+W%u&n.\nCurrent members:     &+W%u&n.\n"
@@ -969,9 +975,9 @@ void Guild::display(P_char member)
 		prestige, construction, get_max_members(), member_count, platinum, gold, silver,
 		copper);
 
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "Total Frags: &+W%.2f&N, Top Fragger: '&+W%s&N' with &+W%.2f&N frags.\n",
-		 frags.frags / 100., frags.topfragger, frags.top_frags / 100.);
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "Total Frags: &+W%.2f&N, Top Fragger: '&+W%s&N' with &+W%.2f&N frags.\n",
+			 frags.frags / 100., frags.topfragger, frags.top_frags / 100.);
 
 	strcat(buf, "Members:\n");
 	if (members != NULL)
@@ -986,25 +992,27 @@ void Guild::display(P_char member)
 			pMembers = members;
 			while (pMembers)
 			{
-				if (NR_RANK(pMembers->bits) == i)
+				if (NR_RANK(pMembers->bits) == static_cast<unsigned int>(i))
 				{
-					snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 " %s | %-12s | %s | %s\n",
-						 (pMembers->online_status == GSTAT_ONLINE) ?
-							 "&+Go&n" :
-						 (pMembers->online_status == GSTAT_LINKDEAD) ?
-							 "&+y+&n" :
-							 " ",
-						 pMembers->name, current_title,
-						 (pMembers->debt &&
-						  ((rank > A_SENIOR) ||
-						   !strcmp(pMembers->name, GET_NAME(member)))) ?
-							 (((rank > GET_RK_BITS(pMembers->bits)) ||
-							   !strcmp(pMembers->name,
-								   GET_NAME(member))) ?
-								  coin_stringv(pMembers->debt, 0) :
-								  "&+R(-)&n") :
-							 "");
+					checked_snprintf(
+						buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+						" %s | %-12s | %s | %s\n",
+						(pMembers->online_status == GSTAT_ONLINE) ?
+							"&+Go&n" :
+						(pMembers->online_status == GSTAT_LINKDEAD) ?
+							"&+y+&n" :
+							" ",
+						pMembers->name, current_title,
+						(pMembers->debt &&
+						 ((rank > static_cast<unsigned int>(A_SENIOR)) ||
+						  !strcmp(pMembers->name, GET_NAME(member)))) ?
+							(((static_cast<unsigned int>(rank) >
+							   GET_RK_BITS(pMembers->bits)) ||
+							  !strcmp(pMembers->name,
+								  GET_NAME(member))) ?
+								 coin_stringv(pMembers->debt, 0) :
+								 "&+R(-)&n") :
+							"");
 				}
 				pMembers = pMembers->next;
 			}
@@ -1702,7 +1710,7 @@ void do_society(P_char member, char *argument, int cmd)
 	char first[MAX_INPUT_LENGTH], second[MAX_INPUT_LENGTH], third[MAX_INPUT_LENGTH];
 	char fourth[MAX_INPUT_LENGTH], *rest;
 	int command, platinum, gold, silver, copper;
-	P_char victim;
+	P_char victim = NULL;
 	P_Guild guild;
 
 	guild = GET_ASSOC(member);
@@ -1978,6 +1986,7 @@ void do_society(P_char member, char *argument, int cmd)
 	//   Also, this should never show up anyway.
 	case SOC_CMD_NONE:
 		send_to_char("\n&+RHuh?&n\n", member);
+		[[fallthrough]];
 	case SOC_CMD_HELP:
 		// TASFALEN
 		strcpy(buf,
@@ -2234,7 +2243,8 @@ void Guild::deposit(P_char member, int p, int g, int s, int c)
 			if (!strcmp(char_name, pMembers->name))
 			{
 				iDeposit = (1000 * p) + (100 * g) + (10 * s) + c;
-				if (pMembers->debt <= iDeposit)
+				if (iDeposit >= 0 &&
+				    pMembers->debt <= static_cast<unsigned int>(iDeposit))
 				{
 					pMembers->debt = 0;
 					// Remove debt flag from member list.
@@ -2287,7 +2297,7 @@ void Guild::enroll(P_char member, P_char victim)
 		return;
 	}
 
-	if (member_count >= max_assoc_size())
+	if (static_cast<int>(member_count) >= max_assoc_size())
 	{
 		send_to_char(
 			"Your association cannot grow any further until it gains some prestige!\r\n",
@@ -3019,7 +3029,9 @@ void Guild::withdraw(P_char member, int p, int g, int s, int c)
 	P_member pMembers;
 
 	// Verify they have enough money.
-	if ((platinum < p) || (gold < g) || (silver < s) || (copper < c))
+	if (p < 0 || g < 0 || s < 0 || c < 0 || platinum < static_cast<unsigned int>(p) ||
+	    gold < static_cast<unsigned int>(g) || silver < static_cast<unsigned int>(s) ||
+	    copper < static_cast<unsigned int>(c))
 	{
 		send_to_char("Deficit spending is forbidden...\n", member);
 		return;
@@ -3063,7 +3075,7 @@ void Guild::withdraw(P_char member, int p, int g, int s, int c)
 void Guild::name_title(P_char member, char *args)
 {
 	char arg1[MAX_STRING_LENGTH];
-	int rank_number;
+	int rank_number = -1;
 
 	args = lohrr_chop(args, arg1);
 
@@ -3201,7 +3213,7 @@ int Guild::max_assoc_size()
 	int base_size = get_property("guild.size.base", 0);
 	int max_size = get_property("guild.size.max", 0);
 	int step_size = get_property("guild.size.prestige.step", 0);
-	int members = base_size + (int)((float)(MAX(0, prestige)) / (float)MAX(1, step_size));
+	int members = base_size + (int)((float)prestige / (float)MAX(1, step_size));
 
 	members = MIN(members, max_size);
 

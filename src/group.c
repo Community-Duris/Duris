@@ -234,7 +234,7 @@ P_char get_char_on_ship_bridge(P_char ch, const char *name)
 	}
 
 	if (vict && !IS_TRUSTED(ch) && !IS_TRUSTED(vict))
-		if (racewar(ch, vict) && !IS_DISGUISE(vict) ||
+		if ((racewar(ch, vict) && !IS_DISGUISE(vict)) ||
 		    (IS_DISGUISE(vict) && (EVIL_RACE(ch) != EVIL_RACE(vict))) ||
 		    (GET_RACE(ch) == RACE_ILLITHID && !IS_ILLITHID(vict)))
 		{
@@ -487,6 +487,7 @@ void do_group(P_char ch, char *argument, int cmd)
 			{
 				counter++;
 			}
+			maxsize = 13;
 			if (IS_RACEWAR_EVIL(ch))
 				maxsize = (int)get_property("groups.size.max.evil", 13);
 			if (IS_RACEWAR_GOOD(ch))
@@ -524,8 +525,6 @@ void do_group(P_char ch, char *argument, int cmd)
 				hp_ansi_char = 'm';
 			else if (hp_percent >= 15)
 				hp_ansi_char = 'R';
-			else if (hp_percent >= 0)
-				hp_ansi_char = 'r';
 			else
 				hp_ansi_char = 'r';
 
@@ -545,8 +544,6 @@ void do_group(P_char ch, char *argument, int cmd)
 				mv_ansi_char = 'm';
 			else if (mv_percent >= 15)
 				mv_ansi_char = 'R';
-			else if (mv_percent >= 0)
-				mv_ansi_char = 'r';
 			else
 				mv_ansi_char = 'r';
 
@@ -626,53 +623,50 @@ void do_group(P_char ch, char *argument, int cmd)
 				          GET_MAX_MANA(gl->ch));
 				else*/
 
-				char hp_ansi_char = 'g';
-				int hp_percent = (int)(((float)GET_HIT(gl->ch) /
-							(float)GET_MAX_HIT(gl->ch)) *
-						       100.0f);
-				if (hp_percent >= 100)
-					hp_ansi_char = 'g';
-				else if (hp_percent >= 90)
-					hp_ansi_char = 'y';
-				else if (hp_percent >= 75)
-					hp_ansi_char = 'Y';
-				else if (hp_percent >= 50)
-					hp_ansi_char = 'M';
-				else if (hp_percent >= 30)
-					hp_ansi_char = 'm';
-				else if (hp_percent >= 15)
-					hp_ansi_char = 'R';
-				else if (hp_percent >= 0)
-					hp_ansi_char = 'r';
+				char member_hp_ansi = 'g';
+				int member_hp_percent = (int)(((float)GET_HIT(gl->ch) /
+							       (float)GET_MAX_HIT(gl->ch)) *
+							      100.0f);
+				if (member_hp_percent >= 100)
+					member_hp_ansi = 'g';
+				else if (member_hp_percent >= 90)
+					member_hp_ansi = 'y';
+				else if (member_hp_percent >= 75)
+					member_hp_ansi = 'Y';
+				else if (member_hp_percent >= 50)
+					member_hp_ansi = 'M';
+				else if (member_hp_percent >= 30)
+					member_hp_ansi = 'm';
+				else if (member_hp_percent >= 15)
+					member_hp_ansi = 'R';
 				else
-					hp_ansi_char = 'r';
+					member_hp_ansi = 'r';
 
-				char mv_ansi_char = 'g';
-				int mv_percent = (int)(((float)GET_VITALITY(gl->ch) /
-							(float)GET_MAX_VITALITY(gl->ch)) *
-						       100.0f);
-				if (mv_percent >= 100)
-					mv_ansi_char = 'g';
-				else if (mv_percent >= 90)
-					mv_ansi_char = 'y';
-				else if (mv_percent >= 75)
-					mv_ansi_char = 'Y';
-				else if (mv_percent >= 50)
-					mv_ansi_char = 'M';
-				else if (mv_percent >= 30)
-					mv_ansi_char = 'm';
-				else if (mv_percent >= 15)
-					mv_ansi_char = 'R';
-				else if (mv_percent >= 0)
-					mv_ansi_char = 'r';
+				char member_mv_ansi = 'g';
+				int member_mv_percent = (int)(((float)GET_VITALITY(gl->ch) /
+							       (float)GET_MAX_VITALITY(gl->ch)) *
+							      100.0f);
+				if (member_mv_percent >= 100)
+					member_mv_ansi = 'g';
+				else if (member_mv_percent >= 90)
+					member_mv_ansi = 'y';
+				else if (member_mv_percent >= 75)
+					member_mv_ansi = 'Y';
+				else if (member_mv_percent >= 50)
+					member_mv_ansi = 'M';
+				else if (member_mv_percent >= 30)
+					member_mv_ansi = 'm';
+				else if (member_mv_percent >= 15)
+					member_mv_ansi = 'R';
 				else
-					mv_ansi_char = 'r';
+					member_mv_ansi = 'r';
 
 				snprintf(Gbuf2, MAX_STRING_LENGTH,
 					 "%5d/%-5dH (&+%c%3d&n%%), %5d/%-5dV (&+%c%3d&n%%)",
-					 GET_HIT(gl->ch), GET_MAX_HIT(gl->ch), hp_ansi_char,
-					 hp_percent, GET_VITALITY(gl->ch), GET_MAX_VITALITY(gl->ch),
-					 mv_ansi_char, mv_percent);
+					 GET_HIT(gl->ch), GET_MAX_HIT(gl->ch), member_hp_ansi,
+					 member_hp_percent, GET_VITALITY(gl->ch),
+					 GET_MAX_VITALITY(gl->ch), member_mv_ansi,
+					 member_mv_percent);
 
 				if (IS_NPC(gl->ch))
 					strcpy(Gbuf3, gl->ch->player.short_descr);

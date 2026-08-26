@@ -212,7 +212,7 @@ void setNewPCidNumbfromFile(void)
 	}
 	else
 	{
-		fscanf(file, "%ld\n", &highestPCidNumb);
+		REQUIRED_FSCANF(file, "%ld\n", &highestPCidNumb);
 		fclose(file);
 	}
 
@@ -2009,7 +2009,7 @@ bool _parse_name(char *arg, char *name)
 	if (strlen(arg) < 2) /* min name size */
 		return TRUE;
 
-	for (i = 0; i < strlen(arg); i++)
+	for (i = 0; i < static_cast<int>(strlen(arg)); i++)
 	{
 		name[i] = LOWER(arg[i]);
 		/* check for high bit chars, non-alphas, and if any letter other
@@ -2638,7 +2638,10 @@ void enter_game(P_desc d)
 						 */
 						long total_pulses =
 							(evp->timer -
-							 ((evp->element < pulse) ? 0 : 1)) *
+							 ((evp->element <
+							   static_cast<unsigned int>(pulse)) ?
+								  0 :
+								  1)) *
 								PULSES_IN_TICK +
 							evp->element - pulse;
 						/* Debugging:
@@ -2776,7 +2779,7 @@ void enter_game(P_desc d)
 	if (!*d->host)
 	{
 		wizlog(57, "%s had null host.", GET_NAME(ch));
-		snprintf(d->host, MAX_STRING_LENGTH, "UNKNOWN");
+		snprintf(d->host, sizeof(d->host), "UNKNOWN");
 	}
 
 	ch->only.pc->last_ip = ip2ul(d->host);
@@ -3396,9 +3399,9 @@ void select_name(P_desc d, char *arg, int flag)
 		return;
 	}
 	else if (((IS_SET(game_locked, LOCK_MAX_PLAYERS)) &&
-		  (number_of_players() > game_locked_players)))
+		  (static_cast<unsigned int>(number_of_players()) > game_locked_players)))
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, "Game is temporarily locked to %d chars.\n",
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "Game is temporarily locked to %u chars.\n",
 			 game_locked_players);
 		SEND_TO_Q(Gbuf1, d);
 		SEND_TO_Q("Game is temporarily full.  Please try again later.\r\n", d);
@@ -3710,10 +3713,10 @@ void select_pwd(P_desc d, char *arg)
 			}
 
 			if ((IS_SET(game_locked, LOCK_MAX_PLAYERS)) && !IS_TRUSTED(d->character) &&
-			    (number_of_players() > game_locked_players))
+			    (static_cast<unsigned int>(number_of_players()) > game_locked_players))
 			{
 				snprintf(Gbuf1, MAX_STRING_LENGTH,
-					 "Game is temporarily locked to %d chars.\n",
+					 "Game is temporarily locked to %u chars.\n",
 					 game_locked_players);
 				SEND_TO_Q(Gbuf1, d);
 				SEND_TO_Q(
@@ -3725,11 +3728,12 @@ void select_pwd(P_desc d, char *arg)
 			}
 
 			if (((IS_SET(game_locked, LOCK_LEVEL)) &&
-			     (GET_LEVEL(d->character) < game_locked_level)))
+			     (static_cast<unsigned int>(GET_LEVEL(d->character)) <
+			      game_locked_level)))
 			{
 				snprintf(
 					Gbuf1, MAX_STRING_LENGTH,
-					"Game is temporarily locked to your level (levels below %d).  Please try again later.\r\n",
+					"Game is temporarily locked to your level (levels below %u).  Please try again later.\r\n",
 					game_locked_level);
 				SEND_TO_Q(Gbuf1, d);
 				STATE(d) = CON_FLUSH;
@@ -4146,9 +4150,9 @@ static void display_available_races(P_desc d)
 	{
 		if (creation_race_enabled(playable_races[i].race_id))
 		{
-			snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "  (%c) %s\r\n",
-				 playable_races[i].select_key,
-				 race_names_table[playable_races[i].race_id].normal);
+			checked_snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+					 "  (%c) %s\r\n", playable_races[i].select_key,
+					 race_names_table[playable_races[i].race_id].normal);
 		}
 	}
 
@@ -4168,9 +4172,10 @@ static void display_available_races(P_desc d)
 			if (!creation_race_enabled(restricted_races[i].race_id))
 				continue;
 
-			snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "      %-22s %s\r\n",
-				 race_names_table[restricted_races[i].race_id].normal,
-				 restricted_races[i].note);
+			checked_snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+					 "      %-22s %s\r\n",
+					 race_names_table[restricted_races[i].race_id].normal,
+					 restricted_races[i].note);
 			shown++;
 		}
 
@@ -4713,11 +4718,12 @@ void display_classtable(P_desc d)
 			snprintf(template_buf, MAX_STRING_LENGTH, "\r\n%%c) %%-%lds(%%c for help)",
 				 strlen(class_names_table[cls].ansi) -
 					 ansi_strlen(class_names_table[cls].ansi) + 20);
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), template_buf,
-				 class_names_table[cls].letter, class_names_table[cls].ansi,
-				 (class_names_table[cls].letter == '3') ?
-					 '#' :
-					 toupper(class_names_table[cls].letter));
+			checked_snprintf_runtime(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+						 template_buf, class_names_table[cls].letter,
+						 class_names_table[cls].ansi,
+						 (class_names_table[cls].letter == '3') ?
+							 '#' :
+							 toupper(class_names_table[cls].letter));
 		}
 
 	if (creation_all_classes_enabled())
@@ -4732,8 +4738,8 @@ void display_classtable(P_desc d)
 			    creation_class_align(GET_RACE(d->character), cls) != 5 &&
 			    !creation_class_normally_available(GET_RACE(d->character), cls))
 			{
-				snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "      %s\r\n", class_names_table[cls].ansi);
+				checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+						 "      %s\r\n", class_names_table[cls].ansi);
 				shown++;
 			}
 		}
@@ -4922,40 +4928,40 @@ void display_stats(P_desc d)
 
 	strcpy(Gbuf1, "\r\nYour basic stats:\r\n");
 
-	snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-		 "Strength:     &+%c%15s&n      Power:        &+%c%s&n\r\n",
-		 stat_to_ansi2((int)d->character->base_stats.Str),
-		 stat_to_string2((int)d->character->base_stats.Str),
-		 stat_to_ansi2((int)d->character->base_stats.Pow),
-		 stat_to_string2((int)d->character->base_stats.Pow));
+	checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+			 "Strength:     &+%c%15s&n      Power:        &+%c%s&n\r\n",
+			 stat_to_ansi2((int)d->character->base_stats.Str),
+			 stat_to_string2((int)d->character->base_stats.Str),
+			 stat_to_ansi2((int)d->character->base_stats.Pow),
+			 stat_to_string2((int)d->character->base_stats.Pow));
 
-	snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-		 "Dexterity:    &+%c%15s&n      Intelligence: &+%c%s&n\r\n",
-		 stat_to_ansi2((int)d->character->base_stats.Dex),
-		 stat_to_string2((int)d->character->base_stats.Dex),
-		 stat_to_ansi2((int)d->character->base_stats.Int),
-		 stat_to_string2((int)d->character->base_stats.Int));
+	checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+			 "Dexterity:    &+%c%15s&n      Intelligence: &+%c%s&n\r\n",
+			 stat_to_ansi2((int)d->character->base_stats.Dex),
+			 stat_to_string2((int)d->character->base_stats.Dex),
+			 stat_to_ansi2((int)d->character->base_stats.Int),
+			 stat_to_string2((int)d->character->base_stats.Int));
 
-	snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-		 "Agility:      &+%c%15s&n      Wisdom:       &+%c%s&n\r\n",
-		 stat_to_ansi2((int)d->character->base_stats.Agi),
-		 stat_to_string2((int)d->character->base_stats.Agi),
-		 stat_to_ansi2((int)d->character->base_stats.Wis),
-		 stat_to_string2((int)d->character->base_stats.Wis));
+	checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+			 "Agility:      &+%c%15s&n      Wisdom:       &+%c%s&n\r\n",
+			 stat_to_ansi2((int)d->character->base_stats.Agi),
+			 stat_to_string2((int)d->character->base_stats.Agi),
+			 stat_to_ansi2((int)d->character->base_stats.Wis),
+			 stat_to_string2((int)d->character->base_stats.Wis));
 
-	snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-		 "Constitution: &+%c%15s&n      Charisma:     &+%c%s&n\r\n\r\n",
-		 stat_to_ansi2((int)d->character->base_stats.Con),
-		 stat_to_string2((int)d->character->base_stats.Con),
-		 stat_to_ansi2((int)d->character->base_stats.Cha),
-		 stat_to_string2((int)d->character->base_stats.Cha));
+	checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+			 "Constitution: &+%c%15s&n      Charisma:     &+%c%s&n\r\n\r\n",
+			 stat_to_ansi2((int)d->character->base_stats.Con),
+			 stat_to_string2((int)d->character->base_stats.Con),
+			 stat_to_ansi2((int)d->character->base_stats.Cha),
+			 stat_to_string2((int)d->character->base_stats.Cha));
 
-	snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-		 "Luck: &+%c%15s&n      Karma:      &+%c%s&n\r\n\r\n",
-		 stat_to_ansi2((int)d->character->base_stats.Luk),
-		 stat_to_string2((int)d->character->base_stats.Luk),
-		 stat_to_ansi2((int)d->character->base_stats.Kar),
-		 stat_to_string2((int)d->character->base_stats.Kar));
+	checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+			 "Luck: &+%c%15s&n      Karma:      &+%c%s&n\r\n\r\n",
+			 stat_to_ansi2((int)d->character->base_stats.Luk),
+			 stat_to_string2((int)d->character->base_stats.Luk),
+			 stat_to_ansi2((int)d->character->base_stats.Kar),
+			 stat_to_string2((int)d->character->base_stats.Kar));
 
 	SEND_TO_Q(Gbuf1, d);
 }
@@ -4979,10 +4985,10 @@ void display_characteristics(P_desc d)
 	        d->character->player.short_descr);
 	*/
 
-	snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1), "RACE:     %s\r\n",
-		 race_to_string(d->character));
-	snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1), "CLASS:    %s\r\n",
-		 get_class_string(d->character, buffer));
+	checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+			 "RACE:     %s\r\n", race_to_string(d->character));
+	checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+			 "CLASS:    %s\r\n", get_class_string(d->character, buffer));
 
 	if (GET_ALIGNMENT(d->character) == 1000)
 		strcat(Gbuf1, "ALIGN:    &+YGood&n\r\n");
@@ -5001,24 +5007,25 @@ void display_characteristics(P_desc d)
 
 	if (GET_HOME(d->character) > 0)
 	{
-		snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-			 "HOMETOWN: %s\r\n", town_name_list[GET_HOME(d->character)]);
+		checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+				 "HOMETOWN: %s\r\n", town_name_list[GET_HOME(d->character)]);
 	}
 	else
 	{
 		logit(LOG_STATUS, "display_characteristics: unknown hometown, %d\n",
 		      GET_HOME(d->character));
 		GET_HOME(d->character) = HOME_THARN;
-		snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-			 "HOMETOWN: %s\r\n", town_name_list[GET_HOME(d->character)]);
+		checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+				 "HOMETOWN: %s\r\n", town_name_list[GET_HOME(d->character)]);
 	}
 
-	snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
-		 "\nPossible specializations:\n");
+	checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+			 "\nPossible specializations:\n");
 
 	if (!append_valid_specs(Gbuf1, d->character))
 	{
-		snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1), "None\n");
+		checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+				 "None\n");
 	}
 
 	/*

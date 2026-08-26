@@ -207,7 +207,7 @@ void read_from_file(void *buf, unsigned int size, long filepos)
 		return;
 	}
 	fseek(mail_file, filepos, SEEK_SET);
-	fread(buf, size, 1, mail_file);
+	REQUIRED_FREAD(buf, size, 1, mail_file);
 	fclose(mail_file);
 }
 
@@ -516,7 +516,7 @@ char *read_delete(char *recipient, char *recipient_formatted)
 	push_free_list(mail_address);
 
 	{
-		int chain_blocks = 0;
+		size_t chain_blocks = 0;
 
 		while (following_block != LAST_BLOCK && chain_blocks < MAIL_MAX_CHAIN_BLOCKS)
 		{

@@ -23,7 +23,16 @@
 #include "account.h"
 #include "mail.h"
 #include "safe_format.h"
+#include "safe_io.h"
 using namespace std;
+
+/* Legacy special-procedure callbacks expose their tagged payload as char *.
+ * Convert it through void * so every object-pointer interpretation is explicit
+ * and centralized instead of relying on alignment-raising C-style casts. */
+template <typename T> inline T legacy_proc_arg(char *argument)
+{
+	return static_cast<T>(static_cast<void *>(argument));
+}
 
 // The below line will abuse player times in game, and use it to eq-wipe every player in the game.
 #define EQ_WIPE 20000000
@@ -169,7 +178,7 @@ string save_to_string(int);
 const char *stat_to_string1(int);
 const char *stat_to_string2(int);
 const char *stat_to_string3(int);
-const char stat_to_ansi2(int);
+char stat_to_ansi2(int);
 const char *stat_to_string_damage_pulse(float);
 const char *stat_to_string_spell_pulse(float);
 void ShowCharSpellBookSpells(P_char, P_obj, char *);
@@ -328,7 +337,7 @@ int get_numb_free_hands(P_char);
 bool put(P_char, P_obj, P_obj, int);
 int wear(P_char, P_obj, int, bool);
 int remove_item(P_char, P_obj, int);
-int remove_and_wear(P_char, P_obj, int, int, int, int);
+int remove_and_wear(P_char, P_obj, int, int, bool);
 bool find_chance(P_char);
 bool is_salvageable(P_obj);
 void do_drink(P_char, char *, int);
@@ -2820,8 +2829,8 @@ char *generate_modif(P_char);
 int room_has_valid_exit(const int rnum);
 int race_portal_check(P_char, P_char);
 void ereglog(int level, const char *format, ...);
-const int char_in_list(const P_char);
-const int is_char_in_room(const P_char, int);
+int char_in_list(const P_char);
+int is_char_in_room(const P_char, int);
 bool racewar(P_char, P_char);
 bool who_visible_to(P_char, P_char);
 const char *who_display_name(P_char viewer, P_char viewee, char *buf, size_t bufsize);

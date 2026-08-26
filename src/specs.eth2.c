@@ -333,7 +333,7 @@ int eth2_godsfury(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/20 chance.
 	if (cmd == CMD_MELEE_HIT && !number(0, 19) && CheckMultiProcTiming(ch))
 	{
-		P_char vict = (P_char)arg;
+		P_char vict = legacy_proc_arg<P_char>(arg);
 		if (!vict)
 		{
 			return FALSE;
@@ -435,6 +435,7 @@ int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
 									  LNK_CHAR_OBJ_AFF);
 						break;
 					}
+					[[fallthrough]];
 
 				case 2:
 				case 3:
@@ -449,6 +450,7 @@ int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
 									  LNK_CHAR_OBJ_AFF);
 						break;
 					}
+					[[fallthrough]];
 
 				case 4:
 				case 5:
@@ -464,6 +466,7 @@ int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
 									  LNK_CHAR_OBJ_AFF);
 						break;
 					}
+					[[fallthrough]];
 
 				case 6:
 				case 7:
@@ -478,6 +481,7 @@ int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
 									  LNK_CHAR_OBJ_AFF);
 						break;
 					}
+					[[fallthrough]];
 
 				case 8:
 				case 9:
@@ -492,6 +496,7 @@ int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
 									  LNK_CHAR_OBJ_AFF);
 						break;
 					}
+					[[fallthrough]];
 
 				case 10:
 				case 11:
@@ -507,6 +512,7 @@ int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
 									  LNK_CHAR_OBJ_AFF);
 						break;
 					}
+					[[fallthrough]];
 
 				case 13:
 					if (number(1, 100) == 1)

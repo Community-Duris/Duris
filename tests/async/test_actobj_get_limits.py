@@ -25,7 +25,7 @@ checks.append(("bulk get from container defers carry-limit report", bulk_call is
 single_call = re.search(r"do_get_try_container_item\(\s*ch,.*?GETDBG\[get-container-single-post\].*?\);", actobj, re.S)
 checks.append(("single get from container reports carry-limit immediately", single_call is not None and contains(single_call.group(0), "TRUE")))
 
-bulk_summary = re.search(r"if \(total > 1\).*?You got %d items.*?if \(stop_bulk\).*?do_get_reject_carry_limit\(ch, fail\);", actobj, re.S)
+bulk_summary = re.search(r"if \(total > 1\).*?You got %d items.*?if \(stop_container_bulk\).*?do_get_reject_carry_limit\(ch, fail\);", actobj, re.S)
 checks.append(("bulk get reports item total before final carry-limit", bulk_summary is not None))
 
 failed = [name for name, ok in checks if not ok]

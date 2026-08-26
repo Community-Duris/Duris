@@ -229,35 +229,36 @@ void do_mreport(P_char ch, char *argument, int cmd)
 		return;
 
 	snprintf(buf, MAX_STRING_LENGTH, "&+CDirectly allocated memory:&N\n");
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "  &+WTag       &+BAllocations       &+YSize&n\n");
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "------------------------------------\n");
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "  &+WTag       &+BAllocations       &+YSize&n\n");
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "------------------------------------\n");
 	for (int i = 0; i < 52; i++)
 	{
 		if (!mem_used[i].allocs)
 			continue;
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-			 " &+W%4s          &+B%10ld       &+Y%14ld&n\n", mem_used[i].tag,
-			 (long)mem_used[i].allocs, (long)mem_used[i].size);
+		checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+				 " &+W%4s          &+B%10ld       &+Y%14ld&n\n", mem_used[i].tag,
+				 (long)mem_used[i].allocs, (long)mem_used[i].size);
 		total_allocs += mem_used[i].allocs;
 		total_size += mem_used[i].size;
 	}
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "------------------------------------\n");
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "             &+B%10ld     &+Y%14ld&n\n", (long)total_allocs, (long)total_size);
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "\n&+WAllocation header consumption: %s\n",
-		 comma_string((total_allocs * sizeof(ALLOCATION_HEADER))));
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "------------------------------------\n");
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "             &+B%10ld     &+Y%14ld&n\n", (long)total_allocs,
+			 (long)total_size);
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "\n&+WAllocation header consumption: %s\n",
+			 comma_string((total_allocs * sizeof(ALLOCATION_HEADER))));
 	total_size += total_allocs * sizeof(ALLOCATION_HEADER);
 
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "\n&+CPooled memory resources:&N\n");
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "\n&+CPooled memory resources:&N\n");
 
 #ifdef MM_STATS
 
-	snprintf(
+	checked_snprintf(
 		buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
 		" &+WType      &+C|&+W  Active Objects       &+C|&+W  Inactive Objects     &+C|&+W  Pages Owned         &+C|&+W  Waste&N\n");
 
@@ -274,7 +275,7 @@ void do_mreport(P_char ch, char *argument, int cmd)
 		active_memory = (mmds->objs_used * mmds->size);
 		inactive_memory = (owned_memory - mmds->bytes_wasted - active_memory);
 
-		snprintf(
+		checked_snprintf(
 			buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
 			" %10s &+C|&n %6ld (%12ld) &+C|&N %6ld (%12ld) &+C|&N %6ld (%12ld) &+C|&n %7ld\n",
 			mmds->name, (long)mmds->objs_used, (long)active_memory,
@@ -286,7 +287,7 @@ void do_mreport(P_char ch, char *argument, int cmd)
 		mm_allocated += owned_memory;
 		mm_wasted += mmds->bytes_wasted;
 	}
-	snprintf(
+	checked_snprintf(
 		buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
 		" &+WTOTALS  &+C|&+Y         %12ld  &+C|&+Y         %12ld  &+C|&+Y        %12ld  &+C|&+Y %7ld&N\n",
 		(long)mm_active, (long)mm_inactive, (long)mm_allocated, (long)mm_wasted);
@@ -296,8 +297,8 @@ void do_mreport(P_char ch, char *argument, int cmd)
 		 "&+CMM_STATS not compiled in!&N\r\n");
 #endif
 
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-		 "\n&+WTotal bytes used: &+C%s&n\n", comma_string(total_size));
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "\n&+WTotal bytes used: &+C%s&n\n", comma_string(total_size));
 
 	send_to_char(buf, ch);
 #else

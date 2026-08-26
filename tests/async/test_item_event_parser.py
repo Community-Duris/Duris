@@ -16,7 +16,7 @@ assert 'field, "item_uid"' in body
 assert 'INSERT INTO persistence_item_events' in body
 assert 'ts_usec, event_q' in body
 assert "ON DUPLICATE KEY UPDATE id=id" in body
-assert "query_len = snprintf" in body
+assert "query_len = checked_snprintf" in body
 assert "query_len >= (int)sizeof(query)" in body
 assert "SHA2(CONCAT_WS" in body
 assert "sql_persistence_execute_raw(query)" in body

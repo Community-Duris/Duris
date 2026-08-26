@@ -188,7 +188,6 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl)
 	char Gbuf1[MAX_STRING_LENGTH];
 	int value_pts = 0;
 	char buffer[1024];
-	struct group_list *gl;
 	int group_fact = 1;
 	int temp = 1;
 
@@ -656,7 +655,7 @@ void boot_the_quests(void)
 				 */
 			}
 			//      letter = 0;
-			fscanf(quest_f, " %s \n", letterStrn);
+			REQUIRED_FSCANF(quest_f, " %s \n", letterStrn);
 			while (letterStrn[0] != 'S')
 			{
 				switch (letterStrn[0])
@@ -708,7 +707,7 @@ void boot_the_quests(void)
 					{
 						CREATE(gp, goal_data, 1, MEM_TAG_QSTGOAL);
 
-						fscanf(quest_f, " %c \n", &letter);
+						REQUIRED_FSCANF(quest_f, " %c \n", &letter);
 						switch (letter)
 						{
 						case 'I':
@@ -729,7 +728,7 @@ void boot_the_quests(void)
 							exit(1);
 						}
 						gp->number = 0;
-						fscanf(quest_f, " %d \n", &(gp->number));
+						REQUIRED_FSCANF(quest_f, " %d \n", &(gp->number));
 						gp->next = quest_index[number_of_quests]
 								   .quest_complete->give;
 						quest_index[number_of_quests].quest_complete->give =
@@ -749,7 +748,7 @@ void boot_the_quests(void)
 					{
 						CREATE(gp, goal_data, 1, MEM_TAG_QSTGOAL);
 
-						fscanf(quest_f, " %c \n", &letter);
+						REQUIRED_FSCANF(quest_f, " %c \n", &letter);
 						switch (letter)
 						{
 						case 'I':
@@ -773,7 +772,7 @@ void boot_the_quests(void)
 							exit(1);
 						}
 						gp->number = 0;
-						fscanf(quest_f, " %d \n", &(gp->number));
+						REQUIRED_FSCANF(quest_f, " %d \n", &(gp->number));
 						if (gp->goal_type == QUEST_GOAL_SKILL &&
 						    gp->number >= MAX_SKILLS)
 						{
@@ -871,7 +870,7 @@ int addQuestTropy(int questID)
 
 	while (!(feof(f)))
 	{
-		fscanf(f, "%d %d\n", &t_id, &t_trophy);
+		REQUIRED_FSCANF(f, "%d %d\n", &t_id, &t_trophy);
 
 		if (t_id == questID)
 		{
@@ -909,7 +908,7 @@ float getQuestTropy(int questID)
 
 	while (!(feof(f)))
 	{
-		fscanf(f, "%d %d\n", &t_id, &t_trophy);
+		REQUIRED_FSCANF(f, "%d %d\n", &t_id, &t_trophy);
 
 		if (t_id == questID)
 			trophy = t_trophy;

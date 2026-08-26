@@ -312,6 +312,7 @@ int topless_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 			case 6:
 				mobsay(ch, "You're not a two minute man are you?");
 				act("$n snickers softly.", TRUE, ch, 0, 0, TO_ROOM);
+				[[fallthrough]];
 			case 7:
 				act("$n purposely bends down in front of you.", TRUE, ch, 0, 0,
 				    TO_ROOM);
@@ -518,6 +519,7 @@ int sex_crazed_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 			case 6:
 				mobsay(ch, "Stop playing around and come here now!");
 				act("$n grits her teeth in frustration.", TRUE, ch, 0, 0, TO_ROOM);
+				[[fallthrough]];
 			case 7:
 				act("$n grasps her legs to contain her emotions.", TRUE, ch, 0, 0,
 				    TO_ROOM);
@@ -725,6 +727,7 @@ int well_built_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 			case 6:
 				mobsay(ch, "You're kinda flimsy, can you handle me?");
 				act("$n smirks arrogantly.", TRUE, ch, 0, 0, TO_ROOM);
+				[[fallthrough]];
 			case 7:
 				act("$n bends down and stretches to touch her toes.", TRUE, ch, 0,
 				    0, TO_ROOM);
@@ -931,6 +934,7 @@ int sleezy_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 			case 6:
 				mobsay(ch, "Gimme a kiss and see what I do to you.");
 				act("$n giggles.", TRUE, ch, 0, 0, TO_ROOM);
+				[[fallthrough]];
 			case 7:
 				act("$n touches you.", TRUE, ch, 0, 0, TO_ROOM);
 				break;
@@ -1220,7 +1224,7 @@ int shimmering_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// If vict already dead.. don't proc.
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (!IS_ALIVE(vict))
 	{
 		return FALSE;

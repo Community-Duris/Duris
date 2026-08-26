@@ -123,12 +123,12 @@ void enhance(P_char ch, P_obj source, P_obj material)
 
 	if (itemvalue(material) < minval)
 	{
-		char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-		snprintf(buf2, MAX_STRING_LENGTH, "%s", source->short_description);
+		char source_description[MAX_STRING_LENGTH];
+		snprintf(source_description, MAX_STRING_LENGTH, "%s", source->short_description);
 		checked_snprintf(
 			buf, MAX_STRING_LENGTH,
 			"&+REnhancing %s requires an item with at least an &+Witem value of: %d&n\r\n",
-			buf2, minval);
+			source_description, minval);
 		send_to_char(buf, ch);
 		return;
 	}
@@ -1036,7 +1036,7 @@ void thanksgiving_proc(P_char ch)
  * this is an eligible NPC-death event. */
 static void enhance_load_essence_drop(P_char ch, P_char killer)
 {
-	int reward;
+	int reward = 0;
 	int moblvl = GET_LEVEL(ch);
 
 	if (!enhance_essence_drop_enabled)
@@ -1147,6 +1147,11 @@ static void enhance_load_essence_drop(P_char ch, P_char killer)
 					reward = 400258;
 					break;
 				}
+			}
+			if (!reward)
+			{
+				logit(LOG_SYS, "enhance_load_essence_drop selected no reward");
+				return;
 			}
 			P_obj gift = read_object(reward, VIRTUAL);
 			if (gift)

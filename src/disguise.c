@@ -101,8 +101,8 @@ void do_disguise(P_char ch, char *arg, int cmd)
 	char Gbuf1[MAX_STRING_LENGTH];
 	char name[MAX_STRING_LENGTH];
 	P_char target = NULL;
-	P_obj temp;
-	bool equipped;
+	P_obj temp = NULL;
+	bool equipped = false;
 
 	bool /*disguise_pc = FALSE, */ disguise_npc = FALSE;
 
@@ -232,8 +232,6 @@ void do_disguise(P_char ch, char *arg, int cmd)
 		}
 	}
 
-	equipped = FALSE;
-
 	// Check if we have a disguise kit
 	if (!IS_TRUSTED(ch) || !affected_by_spell(ch, ACH_DECEPTICON))
 	{
@@ -282,7 +280,8 @@ void do_disguise(P_char ch, char *arg, int cmd)
 			send_to_char(", and ruin your disguise kit in the process.\r\n", ch);
 			if (equipped)
 				unequip_char(ch, HOLD);
-			extract_obj(temp, TRUE); // An artifact disguise kit?
+			if (temp)
+				extract_obj(temp, TRUE); // An artifact disguise kit?
 		}
 		else
 			send_to_char(", but manage to salvage the rest of the kit's supplies.\r\n",
@@ -366,7 +365,8 @@ void do_disguise(P_char ch, char *arg, int cmd)
 		{
 			if (equipped)
 				unequip_char(ch, HOLD);
-			extract_obj(temp, TRUE); // An artifact disguise kit?
+			if (temp)
+				extract_obj(temp, TRUE); // An artifact disguise kit?
 		}
 		notch_skill(ch, SKILL_DISGUISE, 6.25);
 		CharWait(ch, PULSE_VIOLENCE * 5);

@@ -1223,7 +1223,7 @@ int encrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	kala = (P_char)arg;
+	kala = legacy_proc_arg<P_char>(arg);
 	if (!IS_ALIVE(kala))
 	{
 		return FALSE;
@@ -1833,7 +1833,7 @@ void do_enchant(P_char ch, char *argument, int cmd)
 	{
 		spl--;
 	}
-	if ((IS_AGG_SPELL(spl) != -1) && (skills[spl].spell_pointer == 0))
+	if (spl == -1 || skills[spl].spell_pointer == 0)
 	{
 		send_to_char("Sorry, this magic has not yet been implemented.\r\n", ch);
 		return;

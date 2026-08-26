@@ -179,7 +179,8 @@ void initialize_skills()
 {
 	int i;
 
-	memset(skills, 0, sizeof(Skill) * (MAX_AFFECT_TYPES + 1));
+	for (i = 0; i <= MAX_AFFECT_TYPES; i++)
+		skills[i] = Skill{};
 
 	for (i = 0; i < MAX_AFFECT_TYPES; i++)
 	{
@@ -729,7 +730,7 @@ void initialize_skills()
 	SPEC_SPELL_ADD(CLASS_BARD, 9, SPEC_DISHARMONIST);
 
 	SPELL_CREATE("enrage", SPELL_ENRAGE, PULSE_SPELLCAST / 2,
-		     TAR_CHAR_ROOM + TAR_FIGHT_VICT | TAR_AGGRO, spell_enrage);
+		     TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO, spell_enrage);
 	SPELL_ADD(CLASS_MINDFLAYER, 9);
 	SPELL_ADD(CLASS_PSIONICIST, 12);
 
@@ -739,7 +740,7 @@ void initialize_skills()
 	SPELL_ADD(CLASS_PSIONICIST, 1);
 
 	SPELL_CREATE("detonate", SPELL_DETONATE, (PULSE_SPELLCAST * 3) / 2,
-		     TAR_CHAR_ROOM + TAR_FIGHT_VICT | TAR_AGGRO, spell_detonate);
+		     TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO, spell_detonate);
 	SPELL_ADD(CLASS_MINDFLAYER, 6);
 	SPELL_ADD(CLASS_PSIONICIST, 7);
 
@@ -967,12 +968,12 @@ void initialize_skills()
 	SPELL_ADD(CLASS_MINDFLAYER, 12);
 
 	SPELL_CREATE_MSG("psychic crush", SPELL_PSYCHIC_CRUSH, (5 * PULSE_SPELLCAST) / 2,
-			 TAR_CHAR_ROOM + TAR_FIGHT_VICT | TAR_AGGRO, spell_psychic_crush,
+			 TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO, spell_psychic_crush,
 			 "&+MYou feel your mind recover from the assault.&n");
 	SPELL_ADD(CLASS_PSIONICIST, 9);
 
 	SPELL_CREATE_MSG("pyrokinesis", SPELL_PYROKINESIS, PULSE_SPELLCAST * 2,
-			 TAR_CHAR_ROOM + TAR_FIGHT_VICT | TAR_AGGRO, spell_pyrokinesis,
+			 TAR_CHAR_ROOM | TAR_FIGHT_VICT | TAR_AGGRO, spell_pyrokinesis,
 			 "&+MYou feel your body recover from the heat.&n");
 	// SPELL_ADD(CLASS_PSIONICIST, 11);
 	SPEC_SPELL_ADD(CLASS_PSIONICIST, 11, SPEC_PYROKINETIC);
@@ -1124,7 +1125,7 @@ void initialize_skills()
 	SPEC_SPELL_ADD(CLASS_REAVER, 8, SPEC_FLAME_REAVER);
 
 	SPELL_CREATE("meteorswarm", SPELL_METEOR_SWARM, PULSE_SPELLCAST * 3,
-		     TAR_AREA + TAR_OFFAREA | TAR_AGGRO, spell_meteorswarm);
+		     TAR_AREA | TAR_OFFAREA | TAR_AGGRO, spell_meteorswarm);
 	SPELL_ADD(CLASS_SORCERER, 10);
 
 	SPELL_CREATE("entropy storm", SPELL_ENTROPY_STORM, PULSE_SPELLCAST * 2,
@@ -1132,12 +1133,12 @@ void initialize_skills()
 	SPELL_ADD(CLASS_WARLOCK, 11);
 
 	SPELL_CREATE("chain lightning", SPELL_CHAIN_LIGHTNING, PULSE_SPELLCAST * 2,
-		     TAR_AREA + TAR_OFFAREA /*| TAR_CHAR_RANGE */ | TAR_AGGRO,
+		     TAR_AREA | TAR_OFFAREA /*| TAR_CHAR_RANGE */ | TAR_AGGRO,
 		     spell_chain_lightning);
 	SPELL_ADD(CLASS_SORCERER, 10);
 
 	SPELL_CREATE("lightning ring", SPELL_RING_LIGHTNING, (int)(PULSE_SPELLCAST * 2.5),
-		     TAR_AREA + TAR_OFFAREA /*| TAR_CHAR_RANGE */ | TAR_AGGRO,
+		     TAR_AREA | TAR_OFFAREA /*| TAR_CHAR_RANGE */ | TAR_AGGRO,
 		     spell_ring_lightning);
 	SPEC_SPELL_ADD(CLASS_ETHERMANCER, 9, SPEC_FROSTMAGUS);
 	SPEC_SPELL_ADD(CLASS_ETHERMANCER, 9, SPEC_TEMPESTMAGUS);
@@ -3362,7 +3363,7 @@ void initialize_skills()
 
 	// Cosmomancer spec, Ethermancer
 	SPELL_CREATE("supernova", SPELL_SUPERNOVA, PULSE_SPELLCAST * 3,
-		     TAR_AREA + TAR_OFFAREA | TAR_AGGRO, spell_supernova);
+		     TAR_AREA | TAR_OFFAREA | TAR_AGGRO, spell_supernova);
 	SPEC_SPELL_ADD(CLASS_ETHERMANCER, 11, SPEC_STARMAGUS);
 
 	SPELL_CREATE("cosmic vacuum", SPELL_COSMIC_VACUUM, PULSE_SPELLCAST * 2,
@@ -3374,7 +3375,7 @@ void initialize_skills()
 	SPEC_SPELL_ADD(CLASS_ETHERMANCER, 7, SPEC_STARMAGUS);
 
 	SPELL_CREATE("ethereal discharge", SPELL_ETHEREAL_DISCHARGE, PULSE_SPELLCAST * 3,
-		     TAR_AREA + TAR_OFFAREA | TAR_AGGRO, spell_ethereal_discharge);
+		     TAR_AREA | TAR_OFFAREA | TAR_AGGRO, spell_ethereal_discharge);
 	SPEC_SPELL_ADD(CLASS_ETHERMANCER, 8, SPEC_STARMAGUS);
 
 	SPELL_CREATE_MSG("planetary alignment", SPELL_PLANETARY_ALIGNMENT, PULSE_SPELLCAST * 5,
@@ -3382,7 +3383,7 @@ void initialize_skills()
 	SPEC_SPELL_ADD(CLASS_ETHERMANCER, 9, SPEC_STARMAGUS);
 
 	SPELL_CREATE("cosmic rift", SPELL_COSMIC_RIFT, PULSE_SPELLCAST * 6,
-		     TAR_AREA + TAR_OFFAREA | TAR_AGGRO, spell_cosmic_rift);
+		     TAR_AREA | TAR_OFFAREA | TAR_AGGRO, spell_cosmic_rift);
 	SPEC_SPELL_ADD(CLASS_ETHERMANCER, 12, SPEC_STARMAGUS);
 
 	// Frost Magus Spec

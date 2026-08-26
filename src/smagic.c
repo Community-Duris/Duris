@@ -415,7 +415,8 @@ void spell_spirit_walk(int level, P_char ch, char *arg, int type, P_char victim,
 	unsigned timer = 0;
 	if (a1)
 		timer = (unsigned)obj_affect_time(tobj, a1);
-	if (!timer || (timer >= (get_property("timer.decay.corpse.pc", 120) * WAIT_MIN)))
+	if (!timer || (timer >= static_cast<unsigned int>(
+					get_property("timer.decay.corpse.pc", 120) * WAIT_MIN)))
 	{
 		act("&+L$n quickly becomes dazed and immobile from a sudden shock to the core of his spirit.&N",
 		    TRUE, ch, 0, 0, TO_ROOM);
@@ -923,7 +924,8 @@ void spell_scalding_blast(int level, P_char ch, char *arg, int type, P_char vict
 		return;
 	}
 
-	spell_damage(ch, victim, dam, SPLDAM_ACID, SPLDAM_ALLGLOBES ^ SPLDAM_MINORGLOBE, &messages);
+	spell_damage(ch, victim, dam, SPLDAM_ACID, ((SPLDAM_ALLGLOBES) ^ SPLDAM_MINORGLOBE),
+		     &messages);
 }
 
 void spell_scorching_touch(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
@@ -2662,7 +2664,7 @@ void spell_elephantstrength(int level, P_char ch, char *arg, int type, P_char vi
 		affect_to_char(victim, &af);
 
 		af.location = APPLY_CON_MAX;
-		af.modifier = af.modifier = (int)(level / 5) + dice(3, 3);
+		af.modifier = (int)(level / 5) + dice(3, 3);
 
 		affect_to_char(victim, &af);
 
@@ -2692,7 +2694,7 @@ void spell_elephantstrength(int level, P_char ch, char *arg, int type, P_char vi
 		affect_to_char(victim, &af);
 
 		af.location = APPLY_CON_MAX;
-		af.modifier = af.modifier = (int)(level / 5) + dice(3, 3);
+		af.modifier = (int)(level / 5) + dice(3, 3);
 
 		affect_to_char(victim, &af);
 

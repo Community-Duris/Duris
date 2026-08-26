@@ -104,7 +104,7 @@ int load_ctf()
 		}
 
 		if (ctfdata[i].room == RANDOM ||
-		    ctfdata[i].room < 1 && ctfdata[i].type == CTF_RANDOM)
+		    (ctfdata[i].room < 1 && ctfdata[i].type == CTF_RANDOM))
 			ctfdata[i].room = ctf_get_random_room(i);
 		if (!ctfdata[i].room)
 			continue;
@@ -125,8 +125,8 @@ int load_ctf()
 			snprintf(buff, MAX_STRING_LENGTH, "&+Lthe flag of&n %s&n",
 				 zone_table[world[real_room0(ctfdata[i].room)].zone].name);
 			set_short_description(ctfdata[i].obj, buff);
-			snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-				 "&+L is here.&n");
+			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+					 "&+L is here.&n");
 			set_long_description(ctfdata[i].obj, buff);
 		}
 
@@ -579,8 +579,8 @@ void capture_flag(P_char ch, P_obj flag, int id)
 			snprintf(buff, MAX_STRING_LENGTH, "&+Lthe flag of&n %s&n",
 				 zone_table[world[real_room0(ctfdata[id].room)].zone].name);
 			set_short_description(ctfdata[id].obj, buff);
-			snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-				 "&+L is here.&n");
+			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+					 "&+L is here.&n");
 			set_long_description(ctfdata[id].obj, buff);
 		}
 		if (ctfdata[id].room > 0)
@@ -617,12 +617,12 @@ void show_ctf(P_char ch)
 	{
 		if (ctfdata[i].room && ctfdata[i].obj)
 		{
-			snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-				 "%-2d %-60s ", ctfdata[i].id,
-				 pad_ansi(ctfdata[i].obj->short_description, 60).c_str());
+			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+					 "%-2d %-60s ", ctfdata[i].id,
+					 pad_ansi(ctfdata[i].obj->short_description, 60).c_str());
 			if (OBJ_ROOM(ctfdata[i].obj))
 			{
-				snprintf(
+				checked_snprintf(
 					buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
 					"%-60s\r\n",
 					pad_ansi(world[ctfdata[i].obj->loc.room].name, 60).c_str());
@@ -633,13 +633,15 @@ void show_ctf(P_char ch)
 					 GET_NAME(get_flag_carrier(i)),
 					 pad_ansi(world[get_flag_carrier(i)->in_room].name, 60)
 						 .c_str());
-				snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%-60s\r\n", buff2);
+				checked_snprintf(buff + strlen(buff),
+						 MAX_STRING_LENGTH - strlen(buff), "%-60s\r\n",
+						 buff2);
 			}
 			else
 			{
-				snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%-60s\r\n", "Unknown location");
+				checked_snprintf(buff + strlen(buff),
+						 MAX_STRING_LENGTH - strlen(buff), "%-60s\r\n",
+						 "Unknown location");
 			}
 		}
 	}
@@ -711,26 +713,27 @@ void show_ctf_score(P_char ch, char *argument)
 	snprintf(dbqry, MAX_STRING_LENGTH, "SELECT COUNT(pid) as 'score', pid FROM ctf_data");
 
 	if (racewar || type || flagtype)
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " WHERE");
+		checked_snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry),
+				 " WHERE");
 	if (racewar)
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " racewar = %d",
-			 racewar);
+		checked_snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry),
+				 " racewar = %d", racewar);
 	if ((racewar && type) || (racewar && flagtype))
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " AND");
+		checked_snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " AND");
 	if (type)
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " type = %d",
-			 type);
+		checked_snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry),
+				 " type = %d", type);
 	if (type && flagtype)
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " AND");
+		checked_snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " AND");
 	if (flagtype == 1)
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry), " flagtype = %d",
-			 CTF_PRIMARY);
+		checked_snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry),
+				 " flagtype = %d", CTF_PRIMARY);
 	if (flagtype == 2)
-		snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry),
-			 " flagtype BETWEEN %d AND %d", CTF_SECONDARY, CTF_MAX);
+		checked_snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry),
+				 " flagtype BETWEEN %d AND %d", CTF_SECONDARY, CTF_MAX);
 
-	snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry),
-		 " GROUP BY pid ORDER BY score DESC LIMIT 10");
+	checked_snprintf(dbqry + strlen(dbqry), MAX_STRING_LENGTH - strlen(dbqry),
+			 " GROUP BY pid ORDER BY score DESC LIMIT 10");
 
 	if (!qry(dbqry))
 	{
@@ -758,8 +761,9 @@ void show_ctf_score(P_char ch, char *argument)
 	*buff = '\0';
 	while ((row = mysql_fetch_row(res)))
 	{
-		snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-30s %-3d\r\n",
-			 get_player_name_from_pid(atoi(row[1])), atoi(row[0]));
+		checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+				 "%-30s %-3d\r\n", get_player_name_from_pid(atoi(row[1])),
+				 atoi(row[0]));
 	}
 
 	mysql_free_result(res);
@@ -967,7 +971,8 @@ int ctf_reload_flag(int id)
 		snprintf(buff, MAX_STRING_LENGTH, "&+Lthe flag of&n %s&n",
 			 zone_table[world[real_room0(ctfdata[i].room)].zone].name);
 		set_short_description(ctfdata[id].obj, buff);
-		snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "&+L is here.&n");
+		checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
+				 "&+L is here.&n");
 		set_long_description(ctfdata[id].obj, buff);
 	}
 

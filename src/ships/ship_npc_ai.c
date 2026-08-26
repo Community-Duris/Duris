@@ -260,7 +260,8 @@ void NPCShipAI::activity()
 			if (do_escort())
 				break;
 		}
-	} // no break
+	}
+		[[fallthrough]];
 	case NPC_AI_LEAVING:
 	{
 		cruise();
@@ -2154,9 +2155,9 @@ int NPCShipAI::check_dir_for_land_from(float cur_x, float cur_y, float heading, 
 
 bool NPCShipAI::inside_map(float x, float y)
 {
-	if ((int)x < 0 && (int)x > 100)
+	if ((int)x < 0 || (int)x > 100)
 		return false;
-	if ((int)y < 0 && (int)y > 100)
+	if ((int)y < 0 || (int)y > 100)
 		return false;
 	return true;
 }

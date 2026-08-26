@@ -809,7 +809,6 @@ int yeenoghu(P_char ch, P_char tch, int cmd, char *arg)
 		whirlwind_of_teetch(ch, dice(2, 6));
 	else if (!number(0, 3))
 	{
-		P_char victim;
 		if ((victim = pick_target(ch, PT_NUKETARGET | PT_WEAKEST)))
 			hyena_bite(ch, victim);
 	}
@@ -3020,6 +3019,7 @@ int dryad(P_char ch, P_char pl, int cmd, char *arg)
 				case 7:
 					mobsay(ch, "Welcome traveller.");
 					act("$n smiles.", TRUE, ch, 0, 0, TO_ROOM);
+					[[fallthrough]];
 				case 8:
 					act("$n keeps a wary eye on you.", TRUE, ch, 0, 0, TO_ROOM);
 					break;
@@ -6670,6 +6670,7 @@ int nw_woodelf(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "The forest provides the perfect shelter for me and my forest friends!");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7211,6 +7212,7 @@ int nw_chief(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "Soon, the crops will be grown, and we will all eat like kings!");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7245,6 +7247,7 @@ int nw_malchor(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "There is much to learn here.");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7279,6 +7282,7 @@ int nw_builder(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "I wonder if that roof needs thatching.");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7313,6 +7317,7 @@ int nw_carpen(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "I wonder whether these measurements are correct?");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7347,6 +7352,7 @@ int nw_logger(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "I must get these logs to the stream!");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7381,6 +7387,7 @@ int nw_cutter(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "TIMBER!");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7415,6 +7422,7 @@ int nw_foreman(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "I want those planks cut by the end of the hour!");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7449,6 +7457,7 @@ int nw_ansal(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "Looks like our production is going well.");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7483,6 +7492,7 @@ int nw_vitnor(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "Drinks are great to end a day on!");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7517,6 +7527,7 @@ int nw_brock(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "Let's see, what rugs will I kill today?");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7552,6 +7563,7 @@ int nw_merthol(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 	{
 		mobsay(ch, "My furs will keep you warm in the winter.");
+		[[fallthrough]];
 	}
 	default:
 	{
@@ -7716,7 +7728,7 @@ int nw_mirroid(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char t_ch = NULL;
 	bool run_away = FALSE;
-	int mode = 0, i, e_count = 0, e_flag = -1, c_dir = -1, c_room, e_dir, e_room = 0;
+	int mode = 0, i, e_count = 0, e_flag = -1, c_dir = -1, c_room, e_dir = -1, e_room = 0;
 
 	/*
 	 * check for periodic event calls
@@ -8236,6 +8248,7 @@ int ghore_paradise(P_char ch, P_char pl, int cmd, char *arg)
 			case 5:
 				mobsay(ch, "Pay now, or die now; 'tis a simple choice, is it not?");
 				do_action(ch, 0, CMD_CACKLE);
+				[[fallthrough]];
 			default:
 				return FALSE;
 			}
@@ -8376,6 +8389,7 @@ int warhorse(P_char ch, P_char pl, int cmd, char *arg)
 			act("$N dodges your charge, you whirl around and connect with both rear feet!",
 			    FALSE, ch, 0, vict, TO_CHAR);
 			dropped_through = TRUE;
+			[[fallthrough]];
 		}
 
 	case 2: /*
@@ -9709,7 +9723,7 @@ int newbie_guard_west(P_char ch, P_char pl, int cmd, char *arg)
 int rentacleric(P_char ch, P_char vict, int cmd, char *argument)
 {
 	int i, diff, cost, spl;
-	P_obj obj, next_obj;
+	P_obj obj = NULL, next_obj;
 	char buf[MAX_STRING_LENGTH];
 	struct price_info
 	{
@@ -11381,7 +11395,7 @@ int celestia_pulsar(P_char ch, P_char pl, int cmd, char *arg)
 
 int construct(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch, next, vict;
+	P_char tch, next, vict = NULL;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -11468,14 +11482,13 @@ int living_stone(P_char ch, P_char pl, int cmd, char *arg)
 int elemental_swarm_fire(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char tch, next, fury;
-	P_char vict;
+	P_char vict = NULL;
 	char didit = FALSE;
 	char buf[256];
 
-	if (cmd == CMD_SET_PERIODIC && GET_OPPONENT(ch))
-		return FALSE;
-
 	if (!ch)
+		return FALSE;
+	if (cmd == CMD_SET_PERIODIC && GET_OPPONENT(ch))
 		return FALSE;
 	// let's junk it on anything if not fighitng!
 	if (cmd && GET_OPPONENT(ch))
@@ -11483,6 +11496,7 @@ int elemental_swarm_fire(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (IS_FIGHTING(ch) && (cmd == 0) && (number(1, 15) == 1))
 	{
+		vict = GET_OPPONENT(ch);
 		act("$n &+rlets forth a guttural &=LRROAR&+r!&n", TRUE, ch, 0, 0, TO_ROOM);
 		spell_flamestrike(GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, vict, 0);
 	}
@@ -11492,14 +11506,13 @@ int elemental_swarm_fire(P_char ch, P_char pl, int cmd, char *arg)
 int elemental_swarm_earth(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char tch, next, fury;
-	P_char vict;
+	P_char vict = NULL;
 	char didit = FALSE;
 	char buf[256];
 
-	if (cmd == CMD_SET_PERIODIC && GET_OPPONENT(ch))
-		return FALSE;
-
 	if (!ch)
+		return FALSE;
+	if (cmd == CMD_SET_PERIODIC && GET_OPPONENT(ch))
 		return FALSE;
 	// let's junk it on anything if not fighitng!
 	if (cmd && GET_OPPONENT(ch))
@@ -11507,6 +11520,7 @@ int elemental_swarm_earth(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (IS_FIGHTING(ch) && (cmd == 0) && (number(1, 15) == 1))
 	{
+		vict = GET_OPPONENT(ch);
 		act("$n &+rlets forth a guttural &=LRROAR&+r!&n", TRUE, ch, 0, 0, TO_ROOM);
 		spell_earthen_maul(GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, vict, 0);
 	}
@@ -11516,14 +11530,13 @@ int elemental_swarm_earth(P_char ch, P_char pl, int cmd, char *arg)
 int elemental_swarm_air(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char tch, next, fury;
-	P_char vict;
+	P_char vict = NULL;
 	char didit = FALSE;
 	char buf[256];
 
-	if (cmd == CMD_SET_PERIODIC && GET_OPPONENT(ch))
-		return FALSE;
-
 	if (!ch)
+		return FALSE;
+	if (cmd == CMD_SET_PERIODIC && GET_OPPONENT(ch))
 		return FALSE;
 	// let's junk it on anything if not fighitng!
 	if (cmd && GET_OPPONENT(ch))
@@ -11531,6 +11544,7 @@ int elemental_swarm_air(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (IS_FIGHTING(ch) && (cmd == 0) && (number(1, 15) == 1))
 	{
+		vict = GET_OPPONENT(ch);
 		act("$n &+rlets forth a guttural &=LRROAR&+r!&n", TRUE, ch, 0, 0, TO_ROOM);
 		spell_cyclone(GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, vict, 0);
 	}
@@ -11540,14 +11554,13 @@ int elemental_swarm_air(P_char ch, P_char pl, int cmd, char *arg)
 int elemental_swarm_water(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char tch, next, fury;
-	P_char vict;
+	P_char vict = NULL;
 	char didit = FALSE;
 	char buf[256];
 
-	if (cmd == CMD_SET_PERIODIC && GET_OPPONENT(ch))
-		return FALSE;
-
 	if (!ch)
+		return FALSE;
+	if (cmd == CMD_SET_PERIODIC && GET_OPPONENT(ch))
 		return FALSE;
 	// let's junk it on anything if not fighitng!
 	if (cmd && GET_OPPONENT(ch))
@@ -11555,6 +11568,7 @@ int elemental_swarm_water(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (IS_FIGHTING(ch) && (cmd == 0) && (number(1, 15) == 1))
 	{
+		vict = GET_OPPONENT(ch);
 		act("$n &+rlets forth a guttural &=LRROAR&+r!&n", TRUE, ch, 0, 0, TO_ROOM);
 		spell_dread_wave(GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, vict, 0);
 	}
@@ -13282,7 +13296,7 @@ int conj_specpet_slyph(P_char ch, P_char pl, int cmd, char *arg)
 int conj_specpet_triton(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char tch;
-	P_char vict;
+	P_char vict = NULL;
 	int healpoints = 432, in_room;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -14366,6 +14380,7 @@ int bs_merchant(P_char ch, P_char pl, int cmd, char *arg)
 	case 3:
 		mobsay(ch, "A saber, a black silk sash...hmm what else was there?");
 		do_action(ch, 0, CMD_PONDER);
+		[[fallthrough]];
 	default:
 		return FALSE;
 	}
@@ -15779,7 +15794,7 @@ int block_dir(P_char ch, P_char pl, int cmd, char *arg)
 
 int undead_howl(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch, next, vict;
+	P_char tch, next, vict = NULL;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -15872,7 +15887,7 @@ int tentacler_death(P_char tentacler, P_char ch, int cmd, char *arg)
 
 	if (cmd == CMD_DEATH)
 	{
-		P_obj tempobj;
+		P_obj tempobj = NULL;
 		obj_load = number(0, 4);
 		switch (obj_load)
 		{
@@ -15915,7 +15930,10 @@ int tentacler_death(P_char tentacler, P_char ch, int cmd, char *arg)
 				debug("tentacler_death: object failed to load.");
 				return FALSE;
 			}
+			break;
 		}
+		if (!tempobj)
+			return FALSE;
 		obj_to_room(tempobj, real_room(89227));
 		return TRUE;
 	}
@@ -16035,8 +16053,8 @@ int smelter(P_char ch, P_char pl, int cmd, char *argument)
 {
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], *rest;
 	char buf[MAX_STRING_LENGTH];
-	int amount, type;
-	P_obj obj;
+	int amount = 0, type;
+	P_obj obj = NULL;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{

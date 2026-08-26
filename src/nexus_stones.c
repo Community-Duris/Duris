@@ -822,7 +822,7 @@ int nexus_guardian_pwn_mace(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (cmd == CMD_GOTHIT && !number(0, 5))
 	{
-		struct proc_data *data = (struct proc_data *)arg;
+		struct proc_data *data = legacy_proc_arg<struct proc_data *>(arg);
 		victim = data->victim;
 
 		if (ch == victim)
@@ -852,7 +852,7 @@ int nexus_guardian_pwn_mace(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (cmd == CMD_GOTNUKED && !number(0, 5))
 	{
-		struct proc_data *data = (struct proc_data *)arg;
+		struct proc_data *data = legacy_proc_arg<struct proc_data *>(arg);
 		int dam = data->dam;
 		victim = data->victim;
 
@@ -890,9 +890,9 @@ int nexus_guardian_pwn_mace(P_obj obj, P_char ch, int cmd, char *arg)
 		return TRUE;
 	}
 
-	if (cmd == CMD_MELEE_HIT && (P_char)arg && !number(0, 18))
+	if (cmd == CMD_MELEE_HIT && legacy_proc_arg<P_char>(arg) && !number(0, 18))
 	{
-		spell_prismatic_spray(60, ch, 0, 0, (P_char)arg, 0);
+		spell_prismatic_spray(60, ch, 0, 0, legacy_proc_arg<P_char>(arg), 0);
 		return TRUE;
 	}
 

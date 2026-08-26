@@ -1102,90 +1102,70 @@ void affect_modify(int loc, int mod, unsigned long *bitv, int from_eq)
 
 	case APPLY_AGI_MAX:
 		TmpAffs.m_Agi += mod;
-		/*
-			 * fall through, _MAX also affects current
-			 */
+		[[fallthrough]]; /* _MAX also affects current. */
 	case APPLY_AGI:
 		TmpAffs.c_Agi += mod;
 		break;
 
 	case APPLY_CHA_MAX:
 		TmpAffs.m_Cha += mod;
-		/*
-			 * fall through, _MAX also affects current
-			 */
+		[[fallthrough]]; /* _MAX also affects current. */
 	case APPLY_CHA:
 		TmpAffs.c_Cha += mod;
 		break;
 
 	case APPLY_CON_MAX:
 		TmpAffs.m_Con += mod;
-		/*
-			 * fall through, _MAX also affects current
-			 */
+		[[fallthrough]]; /* _MAX also affects current. */
 	case APPLY_CON:
 		TmpAffs.c_Con += mod;
 		break;
 
 	case APPLY_DEX_MAX:
 		TmpAffs.m_Dex += mod;
-		/*
-			 * fall through, _MAX also affects current
-			 */
+		[[fallthrough]]; /* _MAX also affects current. */
 	case APPLY_DEX:
 		TmpAffs.c_Dex += mod;
 		break;
 
 	case APPLY_INT_MAX:
 		TmpAffs.m_Int += mod;
-		/*
-			 * fall through, _MAX also affects current
-			 */
+		[[fallthrough]]; /* _MAX also affects current. */
 	case APPLY_INT:
 		TmpAffs.c_Int += mod;
 		break;
 
 	case APPLY_KARMA_MAX:
 		TmpAffs.m_Kar += mod;
-		/*
-			 * fall through, _MAX also affects current
-			 */
+		[[fallthrough]]; /* _MAX also affects current. */
 	case APPLY_KARMA:
 		TmpAffs.c_Kar += mod;
 		break;
 
 	case APPLY_LUCK_MAX:
 		TmpAffs.m_Luc += mod;
-		/*
-			 * fall through, _MAX also affects current
-			 */
+		[[fallthrough]]; /* _MAX also affects current. */
 	case APPLY_LUCK:
 		TmpAffs.c_Luc += mod;
 		break;
 
 	case APPLY_POW_MAX:
 		TmpAffs.m_Pow += mod;
-		/*
-			 * fall through, _MAX also affects current
-			 */
+		[[fallthrough]]; /* _MAX also affects current. */
 	case APPLY_POW:
 		TmpAffs.c_Pow += mod;
 		break;
 
 	case APPLY_STR_MAX:
 		TmpAffs.m_Str += mod;
-		/*
-			 * fall through, _MAX also affects current
-			 */
+		[[fallthrough]]; /* _MAX also affects current. */
 	case APPLY_STR:
 		TmpAffs.c_Str += mod;
 		break;
 
 	case APPLY_WIS_MAX:
 		TmpAffs.m_Wis += mod;
-		/*
-			 * fall through, _MAX also affects current
-			 */
+		[[fallthrough]]; /* _MAX also affects current. */
 	case APPLY_WIS:
 		TmpAffs.c_Wis += mod;
 		break;
@@ -2810,7 +2790,7 @@ struct char_obj_link_data *link_char_obj_with_affect(P_char ch, P_obj obj, ush_i
 	struct char_obj_link_data *cold;
 
 	// attempt to create an undefined link - have a look at initialize_links
-	if ((type > LNK_MAX) || (type < 0))
+	if (type > LNK_MAX)
 	{
 		logit(LOG_EXIT, "link_char_obj_with_affect called with invalid link type %u", type);
 		return NULL;
@@ -4042,7 +4022,7 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 {
 	static bool already_falling = FALSE;
 	P_nevent ev;
-	room_direction_data *exit;
+	room_direction_data *exit = NULL;
 	int dam, new_room;
 	bool sect_check;
 

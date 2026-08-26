@@ -132,6 +132,12 @@ FILE *mem_log = NULL;
 ALLOCATION_HEADER *allocation_list = NULL; /* The list of memory alloced so far */
 long allocation_list_node_count = 0;
 
+static ALLOCATION_HEADER *allocation_header_from_body(void *body)
+{
+	char *header_address = static_cast<char *>(body) - sizeof(ALLOCATION_HEADER);
+	return static_cast<ALLOCATION_HEADER *>(static_cast<void *>(header_address));
+}
+
 /* adds a piece of memory to the list */
 void *getmem(size_t size, char *tag, char *file, int line)
 {
@@ -202,7 +208,7 @@ void *changemem(void *p, size_t size, char *file, int line)
 #if MEMCHK > 1
 		fprintf(mem_log, "%p: realloc in file %s:%d\n", p, file, line);
 #endif
-		m = (ALLOCATION_HEADER *)(((char *)p) - sizeof(ALLOCATION_HEADER));
+		m = allocation_header_from_body(p);
 		if (m->tag[0] != 'M')
 		{
 			logit(LOG_EXIT, "changemem: memory failed check!");
@@ -268,7 +274,7 @@ void delmem(void *p, char *file, int line)
 
 	if (p)
 	{
-		m = (ALLOCATION_HEADER *)(((char *)p) - sizeof(ALLOCATION_HEADER));
+		m = allocation_header_from_body(p);
 		if (m->tag[0] != 'M')
 		{
 			logit(LOG_EXIT, "delmem: memory failed check!");

@@ -5,22 +5,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-int checked_snprintf(char *destination, size_t destination_size, const char *format, ...)
+static int checked_vsnprintf(char *destination, size_t destination_size, const char *format,
+			     va_list args)
 {
 	char *rendered;
 	int required;
-	va_list args, measure_args;
+	va_list measure_args;
 
 	if ((!destination && destination_size) || !format)
 		return -1;
 
-	va_start(args, format);
 	va_copy(measure_args, args);
 	required = vsnprintf(NULL, 0, format, measure_args);
 	va_end(measure_args);
 	if (required < 0)
 	{
-		va_end(args);
 		if (destination_size)
 			destination[0] = '\0';
 		return required;
@@ -29,13 +28,11 @@ int checked_snprintf(char *destination, size_t destination_size, const char *for
 	rendered = (char *)malloc((size_t)required + 1);
 	if (!rendered)
 	{
-		va_end(args);
 		if (destination_size)
 			destination[0] = '\0';
 		return -1;
 	}
 	vsnprintf(rendered, (size_t)required + 1, format, args);
-	va_end(args);
 
 	if (destination_size)
 	{
@@ -51,5 +48,23 @@ int checked_snprintf(char *destination, size_t destination_size, const char *for
 			required, destination_size ? destination_size - 1 : 0);
 
 	free(rendered);
+	return required;
+}
+
+int checked_snprintf(char *destination, size_t destination_size, const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	int required = checked_vsnprintf(destination, destination_size, format, args);
+	va_end(args);
+	return required;
+}
+
+int checked_snprintf_runtime(char *destination, size_t destination_size, const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	int required = checked_vsnprintf(destination, destination_size, format, args);
+	va_end(args);
 	return required;
 }

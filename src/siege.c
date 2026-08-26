@@ -888,7 +888,7 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 	char arg2[MAX_STRING_LENGTH];
 	char *rest;
 	P_obj donation, siege;
-	int rank;
+	unsigned int rank;
 	int ztop, count, i, j, numgate;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -1203,7 +1203,7 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 		{
 			// For 'buy <#>' instead of 'buy gates <#>'
 			if (atoi(arg1) > 0)
-				snprintf(arg2, MAX_STRING_LENGTH, "%s", arg1);
+				checked_snprintf(arg2, MAX_STRING_LENGTH, "%s", arg1);
 
 			if (town->resources < 150000)
 			{

@@ -1042,7 +1042,7 @@ void do_tell(P_char ch, char *argument, int cmd)
 	}
 
 	if (vict && !IS_TRUSTED(ch) && !IS_TRUSTED(vict))
-		if (racewar(ch, vict) && !IS_DISGUISE(vict) ||
+		if ((racewar(ch, vict) && !IS_DISGUISE(vict)) ||
 		    (IS_DISGUISE(vict) && (EVIL_RACE(ch) != EVIL_RACE(vict))) ||
 		    (GET_RACE(ch) == RACE_ILLITHID && !IS_ILLITHID(vict)))
 			vict = NULL;
@@ -1450,7 +1450,7 @@ char *fread_action(FILE *fl)
 
 	for (;;)
 	{
-		fgets(buf, MAX_STRING_LENGTH, fl);
+		REQUIRED_FGETS(buf, MAX_STRING_LENGTH, fl);
 		if (feof(fl))
 		{
 			logit(LOG_EXIT, "Fread_action - unexpected EOF.");
@@ -1480,11 +1480,11 @@ void boot_social_messages(void)
 	for (;;)
 	{
 		tmp = -1;
-		fscanf(fl, " %d ", &tmp);
+		REQUIRED_FSCANF(fl, " %d ", &tmp);
 		if (tmp < 0)
 			break;
-		fscanf(fl, " %d ", &hide);
-		fscanf(fl, " %d \n", &min_pos);
+		REQUIRED_FSCANF(fl, " %d ", &hide);
+		REQUIRED_FSCANF(fl, " %d \n", &min_pos);
 
 		/*
 		 * Gond == lazy, rather than change the poses file (have to
@@ -1806,7 +1806,7 @@ void boot_pose_messages(void)
 
 	for (counter = 0;; counter++)
 	{
-		fscanf(fl, " %d ", &pose_messages[counter].level);
+		REQUIRED_FSCANF(fl, " %d ", &pose_messages[counter].level);
 		if (pose_messages[counter].level < 0)
 			break;
 		for (m_class = 0; m_class < 4; m_class++)

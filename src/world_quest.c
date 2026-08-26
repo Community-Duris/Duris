@@ -770,9 +770,8 @@ bool createQuest(P_char ch, P_char giver)
 			if (quest_mob == -1 && GET_LEVEL(ch) < 50)
 			{
 				// Swap Quest type and try again.
-				QUEST_TYPE = (QUEST_TYPE == FIND_AND_KILL) ?
-						     QUEST_TYPE = FIND_AND_ASK :
-						     QUEST_TYPE = FIND_AND_KILL;
+				QUEST_TYPE = (QUEST_TYPE == FIND_AND_KILL) ? FIND_AND_ASK :
+									     FIND_AND_KILL;
 
 				quest_mob = suggestQuestMob(quest_zone, ch, QUEST_TYPE);
 				// If there aren't enough mobs to complete a quest (Need 2 for kill, 1 for ask)..
@@ -1040,7 +1039,7 @@ void getQuestZoneList(P_char ch, vector<int> &valid_zones)
 						if (!IS_MAP_ROOM(to_room1))
 							continue;
 
-						int k = 0;
+						size_t k = 0;
 						for (; k < curMapExits.size(); k++)
 							if (curMapExits[k] == to_room1)
 								break;
@@ -1090,7 +1089,7 @@ void getQuestZoneList(P_char ch, vector<int> &valid_zones)
 			continue;
 		}
 
-		for (int i = 0; i < curMapExits.size(); i++)
+		for (size_t i = 0; i < curMapExits.size(); i++)
 		{
 			int cur_maproom = curMapExits[i];
 			if (GET_LEVEL(ch) < 30)
@@ -1163,15 +1162,15 @@ int suggestQuestMob(int zone_num, P_char ch, int QUEST_TYPE)
 
 				char_to_room(t_mob, 1, -2);
 
-				if (GET_LEVEL(t_mob) < MAX_LEVEL &&
-					    GET_LEVEL(t_mob) > GET_LEVEL(ch) - 5 &&
-					    KIND_OF_QUEST == FIND_AND_KILL ||
-				    GET_LEVEL(t_mob) < MAX_LEVEL && KIND_OF_QUEST == FIND_AND_ASK)
+				if ((GET_LEVEL(t_mob) < MAX_LEVEL &&
+				     GET_LEVEL(t_mob) > GET_LEVEL(ch) - 5 &&
+				     KIND_OF_QUEST == FIND_AND_KILL) ||
+				    (GET_LEVEL(t_mob) < MAX_LEVEL && KIND_OF_QUEST == FIND_AND_ASK))
 				{
-					if (mob_index[i].number == 2 &&
-						    KIND_OF_QUEST == FIND_AND_ASK ||
-					    KIND_OF_QUEST == FIND_AND_KILL &&
-						    mob_index[i].number > 2)
+					if ((mob_index[i].number == 2 &&
+					     KIND_OF_QUEST == FIND_AND_ASK) ||
+					    (KIND_OF_QUEST == FIND_AND_KILL &&
+					     mob_index[i].number > 2))
 					{
 						if (KIND_OF_QUEST == FIND_AND_KILL)
 						{
@@ -1181,10 +1180,10 @@ int suggestQuestMob(int zone_num, P_char ch, int QUEST_TYPE)
 							  ch->only.pc->quest_kill_original, mob_index[i].number, mob_index[i].limit -1, mob_index[i].virtual_number);*/
 						}
 
-						if (aggressive_to(t_mob, ch) &&
-							    KIND_OF_QUEST == FIND_AND_ASK ||
-						    !CAN_SPEAK(t_mob) &&
-							    KIND_OF_QUEST == FIND_AND_ASK)
+						if ((aggressive_to(t_mob, ch) &&
+						     KIND_OF_QUEST == FIND_AND_ASK) ||
+						    (!CAN_SPEAK(t_mob) &&
+						     KIND_OF_QUEST == FIND_AND_ASK))
 						{
 							// dont suggest aggresive ask mobs..nor not humanoids
 							;

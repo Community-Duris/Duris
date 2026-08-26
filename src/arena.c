@@ -242,8 +242,9 @@ void players_to_map()
 					if (!IS_SET(arena.flags, FLAG_TOURNAMENT))
 						arena.team[i].player[k].lives = DEFAULT_LIVES;
 					arena.team[i].player[k].flags = 0;
-					snprintf(arena.team[i].player[k].name, MAX_STRING_LENGTH,
-						 "%s", GET_NAME(ch));
+					snprintf(arena.team[i].player[k].name,
+						 sizeof(arena.team[i].player[k].name), "%s",
+						 GET_NAME(ch));
 					k++;
 				}
 				char_from_room(ch);
@@ -471,7 +472,7 @@ int arenaobj_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	char name[MAX_INPUT_LENGTH], tbuf[MAX_STRING_LENGTH];
 	P_obj obj_entered;
 	P_char temp;
-	int race, i, j, count = 0;
+	int race = RACEWAR_NEUTRAL, i, j, count = 0;
 
 	/* check for periodic event calls */
 	if (cmd == CMD_SET_PERIODIC)
@@ -510,6 +511,11 @@ int arenaobj_proc(P_obj obj, P_char ch, int cmd, char *arg)
 			race = GOODIE;
 		else if (IS_RACEWAR_UNDEAD(ch))
 			race = UNDEAD;
+		else
+		{
+			send_to_char("Your race is not eligible for this arena.\r\n", ch);
+			return TRUE;
+		}
 
 		for (i = 0; i < 2; i++)
 		{

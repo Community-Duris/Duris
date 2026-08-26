@@ -54,7 +54,7 @@ int get_name(char return_namn[256], int SEX, uint64_t id)
 	char mitt[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* middle syllable              */
 	char slut[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* ending syllable              */
 	char namn[NAME_LENGTH]; /* name                         */
-	FILE *infil;
+	FILE *infil = NULL;
 	int cgi = 0;
 
 	memset(start, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);

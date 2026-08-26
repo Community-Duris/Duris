@@ -792,8 +792,8 @@ void weather_setup(void)
 		}
 		sector_table[zon].climate.flags = 0;
 		sector_table[zon].climate.energy_add = number(0, 1000);
-		fscanf(fl, " %d %d %d %d %d %d %d %d %d %d %d %d \n", &tmp1, &tmp2, &tmp3, &tmp4,
-		       &tmp5, &tmp6, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11, &tmp12);
+		REQUIRED_FSCANF(fl, " %d %d %d %d %d %d %d %d %d %d %d %d \n", &tmp1, &tmp2, &tmp3,
+				&tmp4, &tmp5, &tmp6, &tmp7, &tmp8, &tmp9, &tmp10, &tmp11, &tmp12);
 		sector_table[zon].climate.season_wind[0] = tmp1;
 		sector_table[zon].climate.season_precip[0] = tmp2;
 		sector_table[zon].climate.season_temp[0] = tmp3;
@@ -864,7 +864,7 @@ void init_rand_tables()
 	/* First, count the number of each table. */
 	for (;;)
 	{
-		fgets(buf, 81, tfile);
+		REQUIRED_FGETS(buf, 81, tfile);
 		if (buf[0] == '$')
 			break; /*eof */
 		if (buf[0] == 'M')
@@ -886,7 +886,7 @@ void init_rand_tables()
 	mtables = otables = 0;
 	for (;;)
 	{
-		fgets(buf, 81, tfile);
+		REQUIRED_FGETS(buf, 81, tfile);
 		if (buf[0] == '$')
 			break; /* EOF */
 		switch (buf[0])
@@ -900,7 +900,7 @@ void init_rand_tables()
 			tmp = 0;
 			for (;;)
 			{
-				fgets(buf, 81, tfile);
+				REQUIRED_FGETS(buf, 81, tfile);
 				if (buf[0] == 'S')
 					break; /*end of table */
 				tmp++;
@@ -913,7 +913,7 @@ void init_rand_tables()
 			tmp = 0;
 			for (;;)
 			{
-				fgets(buf, 81, tfile);
+				REQUIRED_FGETS(buf, 81, tfile);
 				if (buf[0] == 'S')
 					break;
 				sscanf(buf, "%d %d", &v, &w);
@@ -932,7 +932,7 @@ void init_rand_tables()
 			tmp = 0;
 			for (;;)
 			{
-				fgets(buf, 81, tfile);
+				REQUIRED_FGETS(buf, 81, tfile);
 				if (buf[0] == 'S')
 					break;
 				tmp++;
@@ -945,7 +945,7 @@ void init_rand_tables()
 			tmp = 0;
 			for (;;)
 			{
-				fgets(buf, 81, tfile);
+				REQUIRED_FGETS(buf, 81, tfile);
 				if (buf[0] == 'S')
 					break;
 				sscanf(buf, "%d %d", &v, &w);
@@ -1035,7 +1035,6 @@ void boot_world(int mini_mode)
 	char name_buf[MAX_STRING_LENGTH] = { 0 }, desc_buf[MAX_STRING_LENGTH] = { 0 };
 	struct extra_descr_data *new_descr;
 	bool found_name, found_desc;
-	char chk_fmt[32];
 
 	world = 0;
 	character_list = 0;
@@ -1056,8 +1055,6 @@ void boot_world(int mini_mode)
 			fatal_boot_error("db", "boot_world: fopen failed: %s", strerror(errno));
 		}
 	}
-
-	snprintf(chk_fmt, sizeof(chk_fmt), " %%%zus \n", sizeof(chk) - 1);
 
 	fseek(fl, 0, SEEK_END);
 	size_t fsize = ftell(fl);
@@ -1207,7 +1204,7 @@ void boot_world(int mini_mode)
 
 		/* tmp is the zone. Never used, and don't ask why :P */
 
-		fgets(buf, sizeof(buf) - 1, fl);
+		REQUIRED_FGETS(buf, sizeof(buf) - 1, fl);
 		if (sscanf(buf, " %d %d %d %d\n", &tmp, &tmp1, &tmp2, &tmp3) == 4)
 		{
 			world[room_nr].room_flags = tmp1;
@@ -1241,7 +1238,7 @@ void boot_world(int mini_mode)
 
 		for (;;)
 		{
-			if (fscanf(fl, chk_fmt, chk) != 1)
+			if (fscanf(fl, " %65535s \n", chk) != 1)
 				break;
 
 			if (*chk == 'D') /* direction field  */
@@ -1256,12 +1253,12 @@ void boot_world(int mini_mode)
 			}
 			else if (*chk == 'F')
 			{
-				fscanf(fl, "%d ", &tmp);
+				REQUIRED_FSCANF(fl, "%d ", &tmp);
 				world[room_nr].chance_fall = tmp;
 			}
 			else if (*chk == 'C')
 			{
-				fscanf(fl, "%d %d ", &tmp, &tmp2);
+				REQUIRED_FSCANF(fl, "%d %d ", &tmp, &tmp2);
 				world[room_nr].current_speed = tmp;
 				world[room_nr].current_direction = tmp2;
 			}
@@ -1682,7 +1679,8 @@ void boot_zones(int mini_mode)
 
 		zone_table[zon].filename = check;
 
-		fscanf(fl, "%d %d %d %d %d %d\n", &tmp1, &tmp2, &tmp3, &tmp4, &tmp5, &tmp6);
+		REQUIRED_FSCANF(fl, "%d %d %d %d %d %d\n", &tmp1, &tmp2, &tmp3, &tmp4, &tmp5,
+				&tmp6);
 		/* * new with variable length lifespan */
 		zone_table[zon].top = tmp1;
 		zone_table[zon].reset_mode = tmp2;
@@ -1715,7 +1713,7 @@ void boot_zones(int mini_mode)
 		/* if zone is flagged as map, read map info (x,y size) */
 		if (zone_table[zon].flags & ZONE_MAP)
 		{
-			fscanf(fl, "%d %d\n", &tmp1, &tmp2);
+			REQUIRED_FSCANF(fl, "%d %d\n", &tmp1, &tmp2);
 			zone_table[zon].mapx = tmp1;
 			zone_table[zon].mapy = tmp2;
 		}
@@ -1741,12 +1739,12 @@ void boot_zones(int mini_mode)
 
 		for (;;)
 		{
-			fscanf(fl, " "); /* skip blanks */
-			fscanf(fl, "%c", &c);
+			REQUIRED_FSCANF_NO_FIELDS(fl, " "); /* skip blanks */
+			REQUIRED_FSCANF(fl, "%c", &c);
 
 			if (c == '*')
 			{
-				fgets(buf, MAX_STRING_LENGTH, fl); /* skip command */
+				REQUIRED_FGETS(buf, MAX_STRING_LENGTH, fl); /* skip command */
 				/* OLC KLUDGE! */
 				if (!strn_cmp(buf, "owner:", 6) && !zone_table[zon].owner)
 				{
@@ -1769,7 +1767,7 @@ void boot_zones(int mini_mode)
 
 			if (!IS_ZONE_COMMAND(c))
 			{
-				fgets(buf, MAX_STRING_LENGTH, fl); /* skip command */
+				REQUIRED_FGETS(buf, MAX_STRING_LENGTH, fl); /* skip command */
 				continue;
 			}
 
@@ -1778,13 +1776,15 @@ void boot_zones(int mini_mode)
 			if (c == 'S')
 				break;
 
-			fscanf(fl, " %d %d %d %d %d %d %d", &tmp, &zone_table[zon].cmd[cmd_no].arg1,
-			       &zone_table[zon].cmd[cmd_no].arg2, &zone_table[zon].cmd[cmd_no].arg3,
-			       &zone_table[zon].cmd[cmd_no].arg4, &nu1, &nu2);
+			REQUIRED_FSCANF(fl, " %d %d %d %d %d %d %d", &tmp,
+					&zone_table[zon].cmd[cmd_no].arg1,
+					&zone_table[zon].cmd[cmd_no].arg2,
+					&zone_table[zon].cmd[cmd_no].arg3,
+					&zone_table[zon].cmd[cmd_no].arg4, &nu1, &nu2);
 
 			zone_table[zon].cmd[cmd_no].if_flag = tmp;
 
-			fgets(buf, sizeof(buf) - 1, fl); /* read comment */
+			REQUIRED_FGETS(buf, sizeof(buf) - 1, fl); /* read comment */
 
 			cmd_no++;
 			if (mini_mode == 2)
@@ -1877,7 +1877,7 @@ P_char read_mobile(int nr, int type)
 	if (type == VIRTUAL)
 		if ((nr = real_mobile(nr)) < 0)
 		{
-#if DB_NOTIFY
+#if defined(DB_NOTIFY) && DB_NOTIFY
 			logit(LOG_DEBUG, "read_mobile: Mob %d not in database", i);
 #endif
 			return 0;
@@ -1914,9 +1914,9 @@ P_char read_mobile(int nr, int type)
 	mob->only.npc->idnum = idnum;
 	mob->only.npc->default_pos = POS_STANDING + STAT_NORMAL;
 
-	for (int i = 0; i < NUMB_CHAR_VALS; i++)
+	for (int value_index = 0; value_index < NUMB_CHAR_VALS; value_index++)
 	{
-		mob->only.npc->value[i] = 0;
+		mob->only.npc->value[value_index] = 0;
 	}
 
 	/***** String data *** */
@@ -1986,7 +1986,7 @@ P_char read_mobile(int nr, int type)
 	 * %d%d%dS, or %d%d%d - DCL
 	 */
 
-	fgets(buf, sizeof(buf) - 1, mob_f);
+	REQUIRED_FGETS(buf, sizeof(buf) - 1, mob_f);
 	if (sscanf(buf, " %u %u %u %u %u %u %u %u %u %c \n", &utmp1, &utmp7, &utmp8, &utmp9, &utmp2,
 		   &utmp3, &utmp4, &utmp5, &utmp6, &letter) == 10)
 	{
@@ -2001,7 +2001,7 @@ P_char read_mobile(int nr, int type)
 		mob->only.npc->aggro2_flags = utmp8;
 		mob->only.npc->aggro3_flags = utmp9;
 	}
-	else if (sscanf(buf, " %lu %lu %lu %lu %lu %lu %lu %lu %c \n", &tmp1, &tmp7, &tmp8, &tmp2,
+	else if (sscanf(buf, " %ld %ld %ld %ld %ld %ld %ld %ld %c \n", &tmp1, &tmp7, &tmp8, &tmp2,
 			&tmp3, &tmp4, &tmp5, &tmp6, &letter) == 9)
 	{
 		mob->specials.act = tmp1;
@@ -2015,7 +2015,7 @@ P_char read_mobile(int nr, int type)
 		mob->specials.affected_by5 = 0;
 		mob->specials.alignment = tmp6;
 	}
-	else if (sscanf(buf, " %lu %lu %lu %lu %c \n", &tmp1, &tmp2, &tmp3, &tmp4, &letter) == 5)
+	else if (sscanf(buf, " %ld %ld %ld %ld %c \n", &tmp1, &tmp2, &tmp3, &tmp4, &letter) == 5)
 	{
 		mob->specials.act = tmp1;
 		mob->specials.affected_by = tmp2;
@@ -2024,7 +2024,7 @@ P_char read_mobile(int nr, int type)
 	}
 	else
 	{
-		if (sscanf(buf, " %lu %lu %lu %c \n", &tmp1, &tmp2, &tmp3, &letter) < 3)
+		if (sscanf(buf, " %ld %ld %ld %c \n", &tmp1, &tmp2, &tmp3, &letter) < 3)
 		{
 			logit(LOG_DEBUG, "Mob %d has messed up format.",
 			      mob_index[nr].virtual_number);
@@ -2056,7 +2056,7 @@ P_char read_mobile(int nr, int type)
 	// This should always be true as of 10/22/2015.
 	if (letter == 'S')
 	{
-		fgets(buf, sizeof(buf) - 1, mob_f);
+		REQUIRED_FGETS(buf, sizeof(buf) - 1, mob_f);
 		if (sscanf(buf, " %s %i %u %i %i \n", Gbuf1, &stmp, &utmp2, &stmp3, &stmp4) == 5)
 		{
 			mob->player.race = RACE_NONE;
@@ -2095,7 +2095,7 @@ P_char read_mobile(int nr, int type)
 			mob->player.size = stmp3;
 		}
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		if (tmp > MAXLVL || tmp < 1)
 		{
 			logit(LOG_DEBUG, "Bad level %d for mob '%s' %d.", tmp, J_NAME(mob),
@@ -2133,7 +2133,7 @@ P_char read_mobile(int nr, int type)
 			mob->specials.undead_spell_slots[j] = spl_table[level][j - 1];
 		}
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		/* was warping things.  Tempy fix til everything changes.  JAB */
 		if (IS_WARRIOR(mob) || IS_GREATER_RACE(mob) || IS_ELITE(mob) || IS_GIANT(mob))
 		{
@@ -2146,13 +2146,13 @@ P_char read_mobile(int nr, int type)
 
 		mob->points.hitroll = mob->points.base_hitroll;
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		mob->points.base_armor = BOUNDED(-250, tmp, 250);
 
 		tmp = 0;
 		tmp2 = 0;
 		tmp3 = 0;
-		fscanf(mob_f, " %ldd%ld+%ld ", &tmp, &tmp2, &tmp3);
+		REQUIRED_FSCANF(mob_f, " %ldd%ld+%ld ", &tmp, &tmp2, &tmp3);
 
 		// Added some extra hps for mobs for the Sept 12th 2014 wipe.
 		//  lvl 1:0, lvl 2:2, lvl 3:4, lvl4:8 .. lvl 50:1250, lvl 62:1922.
@@ -2171,12 +2171,12 @@ P_char read_mobile(int nr, int type)
 			logit(LOG_MOB, "Warning: MOB #%d has negative (%d) hp.\n",
 			      mob_index[nr].virtual_number, mob->points.hit);
 
-		fscanf(mob_f, " %ldd%ld+%ld \n", &tmp, &tmp2, &tmp3);
+		REQUIRED_FSCANF(mob_f, " %ldd%ld+%ld \n", &tmp, &tmp2, &tmp3);
 		mob->points.base_damroll = mob->points.damroll = tmp3 + level;
 		mob->points.damnodice = tmp;
 		mob->points.damsizedice = tmp2;
 
-		fgets(buf, sizeof(buf) - 1, mob_f);
+		REQUIRED_FGETS(buf, sizeof(buf) - 1, mob_f);
 		if (sscanf(buf, " %ld.%ld.%ld.%ld %ld", &tmp1, &tmp2, &tmp3, &tmp4, &tmp) == 5)
 		{
 			GET_PLATINUM(mob) = tmp4; /* * (number(50, 200) / 100); */
@@ -2221,21 +2221,21 @@ P_char read_mobile(int nr, int type)
 		mob->player.spec = SPEC_NONE;
 		mob->player.size = SIZE_NONE;
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		mob->base_stats.Str = (sh_int)(tmp * 4.5);
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		mob->base_stats.Int = (sh_int)(tmp * 4.5);
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		mob->base_stats.Wis = (sh_int)(tmp * 4.5);
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		mob->base_stats.Dex = (sh_int)(tmp * 4.5);
 
-		fscanf(mob_f, " %ld \n", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld \n", &tmp);
 		mob->base_stats.Con = (sh_int)(tmp * 4.5);
 
 		mob->base_stats.Pow = mob->base_stats.Int;
@@ -2244,8 +2244,8 @@ P_char read_mobile(int nr, int type)
 		mob->base_stats.Kar = dice(3, 20) + 40;
 		mob->base_stats.Luk = dice(3, 20) + 40;
 
-		fscanf(mob_f, " %ld ", &tmp);
-		fscanf(mob_f, " %ld ", &tmp2);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp2);
 
 		mob->points.base_hit = number(tmp, tmp2);
 		mob->points.hit = mob->points.max_hit = mob->points.base_hit;
@@ -2255,32 +2255,32 @@ P_char read_mobile(int nr, int type)
 			      mob_index[nr].virtual_number, mob->points.hit);
 		}
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 
 		mob->points.base_armor = 250;
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		mob->points.mana = mob->points.base_mana = mob->points.max_mana = tmp;
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		mob->points.vitality = mob->points.base_vitality = mob->points.max_vitality = tmp;
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		GET_EXP(mob) = tmp * exp_mods[EXPMOD_GLOBAL];
 
 		/* Get hometown */
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		GET_HOME(mob) = tmp;
 		GET_BIRTHPLACE(mob) = tmp;
 
 		/* Get alignment */
-		fscanf(mob_f, " %ld \n", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld \n", &tmp);
 		GET_ALIGNMENT(mob) = tmp;
 	}
 	mob->points.base_ward = 0;
 	mob->points.ward_reg = 0;
 
-	fscanf(mob_f, " %ld ", &tmp);
+	REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 	/*
 	 * ok, this has to be changed, until all mob files are changed.  We
 	 * have to interpret old 'position' number into new one. JAB
@@ -2311,6 +2311,7 @@ P_char read_mobile(int nr, int type)
 		break;
 	case 7: /* * was POSITION_FIGHTING */
 		logit(LOG_DEBUG, "Mob %d loaded fighting.", mob_index[nr].virtual_number);
+		[[fallthrough]];
 	case 8: /* * was POSITION_STANDING */
 		SET_POS(mob, POS_STANDING + STAT_NORMAL);
 		break;
@@ -2329,7 +2330,7 @@ P_char read_mobile(int nr, int type)
 
 	mob->only.npc->default_pos = mob->specials.position;
 
-	fscanf(mob_f, " %ld ", &tmp);
+	REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 	/*
 	 * ok, this has to be changed, until all mob files are changed.  We
 	 * have to interpret old 'position' number into new one. JAB
@@ -2360,6 +2361,7 @@ P_char read_mobile(int nr, int type)
 		break;
 	case 7: /* * was POSITION_FIGHTING */
 		logit(LOG_DEBUG, "Mob %d loaded fighting.", mob_index[nr].virtual_number);
+		[[fallthrough]];
 	case 8: /* * was POSITION_STANDING */
 		SET_POS(mob, POS_STANDING + STAT_NORMAL);
 		break;
@@ -2380,7 +2382,7 @@ P_char read_mobile(int nr, int type)
 	mob->only.npc->default_pos = mob->specials.position;
 	mob->specials.position = tmp;
 
-	fscanf(mob_f, " %ld \n", &tmp);
+	REQUIRED_FSCANF(mob_f, " %ld \n", &tmp);
 	mob->player.sex = tmp;
 
 	if (letter == 'S')
@@ -2499,7 +2501,7 @@ P_char read_mobile(int nr, int type)
 	}
 	else
 	{ /* The old monsters are down below here */
-		fscanf(mob_f, " %s ", Gbuf1);
+		REQUIRED_FSCANF(mob_f, " %s ", Gbuf1);
 		mob->player.race = 0;
 
 		/* defaults to RACE_NONE */
@@ -2510,7 +2512,7 @@ P_char read_mobile(int nr, int type)
 		logit(LOG_MOB, "Old style mob: %d Race: %s(%d)", mob_index[nr].virtual_number,
 		      Gbuf1, mob->player.race);
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		//    GET_LEVEL(mob) = tmp;
 		mob->player.level = tmp;
 
@@ -2524,32 +2526,32 @@ P_char read_mobile(int nr, int type)
 			mob->player.level = 56;
 #endif
 
-		fscanf(mob_f, " %ld ", &tmp);
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		mob->player.time.birth = time(0);
 		mob->player.time.played = 0;
 		mob->player.time.logon = time(0);
 
-		fscanf(mob_f, " %ld ", &tmp); /* weight */
+		REQUIRED_FSCANF(mob_f, " %ld ", &tmp); /* weight */
 
-		fscanf(mob_f, " %ld \n", &tmp); /* height */
+		REQUIRED_FSCANF(mob_f, " %ld \n", &tmp); /* height */
 
 		for (i = 0; i < 3; i++)
 		{
-			fscanf(mob_f, " %ld ", &tmp);
+			REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 			GET_COND(mob, i) = tmp;
 		}
-		fscanf(mob_f, " \n ");
+		REQUIRED_FSCANF_NO_FIELDS(mob_f, " \n ");
 
 		for (i = 0; i < 5; i++)
 		{
-			fscanf(mob_f, " %ld ", &tmp);
+			REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 			mob->specials.apply_saving_throw[i] = tmp;
 		}
 
-		fscanf(mob_f, " \n ");
+		REQUIRED_FSCANF_NO_FIELDS(mob_f, " \n ");
 
 		/* Set the damage as some standard 1d6 */
-		fscanf(mob_f, " %ldd%ld+%ld %ld\n", &tmp, &tmp2, &tmp3, &tmp4);
+		REQUIRED_FSCANF(mob_f, " %ldd%ld+%ld %ld\n", &tmp, &tmp2, &tmp3, &tmp4);
 		mob->points.base_damroll = mob->points.damroll = tmp3 + level / 2;
 		mob->points.damnodice = tmp;
 		mob->points.damsizedice = tmp2;
@@ -2565,7 +2567,7 @@ P_char read_mobile(int nr, int type)
 		mob->points.hitroll = mob->points.base_hitroll;
 
 		/* read in amount of money the mob is carrying */
-		fgets(buf, sizeof(buf) - 1, mob_f);
+		REQUIRED_FGETS(buf, sizeof(buf) - 1, mob_f);
 		if (sscanf(buf, " %ld.%ld.%ld.%ld %ld", &tmp1, &tmp2, &tmp3, &tmp4, &tmp) == 5)
 		{
 			GET_COPPER(mob) = tmp1;
@@ -2697,7 +2699,7 @@ P_obj read_object(int nr, int type)
 	if (type == VIRTUAL)
 		if ((nr = real_object(nr)) < 0)
 		{
-#if DB_NOTIFY
+#if defined(DB_NOTIFY) && DB_NOTIFY
 			logit(LOG_DEBUG, "read_object: Obj %d not in database", i);
 #endif
 			return (0);
@@ -2791,52 +2793,52 @@ P_obj read_object(int nr, int type)
 
 	/* *** numeric data *** */
 
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->type = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->material = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	//  obj->size = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	//  obj->space = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->craftsmanship = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	//  obj->damres_bonus = tmp;
-	fscanf(obj_f, " %lu ", &utmp);
+	REQUIRED_FSCANF(obj_f, " %lu ", &utmp);
 	obj->extra_flags = utmp;
-	fscanf(obj_f, " %lu ", &utmp);
+	REQUIRED_FSCANF(obj_f, " %lu ", &utmp);
 	obj->wear_flags = utmp;
-	fscanf(obj_f, " %lu ", &utmp);
+	REQUIRED_FSCANF(obj_f, " %lu ", &utmp);
 	obj->extra2_flags = utmp;
-	fscanf(obj_f, " %lu ", &utmp);
+	REQUIRED_FSCANF(obj_f, " %lu ", &utmp);
 	obj->anti_flags = utmp;
-	fscanf(obj_f, " %lu ", &utmp);
+	REQUIRED_FSCANF(obj_f, " %lu ", &utmp);
 	// Hack until we make as script to edit files directly.
 	if (IS_SET(obj->anti_flags, CLASS_NECROMANCER))
 		SET_BIT(obj->anti_flags, CLASS_THEURGIST);
 	obj->anti2_flags = utmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->value[0] = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->value[1] = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->value[2] = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->value[3] = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->value[4] = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->value[5] = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->value[6] = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->value[7] = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->weight = tmp;
-	fscanf(obj_f, " %d ", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 	obj->cost = tmp;
-	fscanf(obj_f, " %d \n", &tmp);
+	REQUIRED_FSCANF(obj_f, " %d \n", &tmp);
 	obj->condition = tmp;
 	//  fscanf(obj_f, " %d \n", &tmp);
 	//  obj->max_condition = tmp;  wipe2011
@@ -2912,11 +2914,11 @@ P_obj read_object(int nr, int type)
 
 	for (i = 0; (i < MAX_OBJ_AFFECT) && (*chk == 'A'); i++)
 	{
-		fscanf(obj_f, " %d ", &tmp);
+		REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 		obj->affected[i].location = tmp;
-		fscanf(obj_f, " %d \n", &tmp);
+		REQUIRED_FSCANF(obj_f, " %d \n", &tmp);
 		obj->affected[i].modifier = tmp;
-		fscanf(obj_f, " %s \n", chk);
+		REQUIRED_FSCANF(obj_f, " %s \n", chk);
 	}
 
 	obj->z_cord = 0;
@@ -2925,13 +2927,13 @@ P_obj read_object(int nr, int type)
 	obj->trap_eff = obj->trap_dam = obj->trap_charge = 0;
 	if (*chk == 'T')
 	{
-		fscanf(obj_f, " %d ", &tmp);
+		REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 		obj->trap_eff = tmp;
-		fscanf(obj_f, " %d ", &tmp);
+		REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 		obj->trap_dam = tmp;
-		fscanf(obj_f, " %d ", &tmp);
+		REQUIRED_FSCANF(obj_f, " %d ", &tmp);
 		obj->trap_charge = tmp;
-		fscanf(obj_f, " %d \n", &tmp);
+		REQUIRED_FSCANF(obj_f, " %d \n", &tmp);
 		obj->trap_level = tmp;
 	}
 	/* ensure builders dont mess things up */
@@ -3204,7 +3206,7 @@ void reset_zone(int zone, int force_item_repop)
 				break;
 
 			case 'C': /* As of 11/8/2015, no zones have a case 'C' .. hrm.
-				           *   Checked via 'grep "^C" gmud/areas/zon/*' - only zone names starting with C show up.
+				           *   Checked all files in gmud/areas/zon/ - only zone names starting with C show up.
 				           */
 				last_cmd = 0;
 				temp = get_obj_table(ZCMD.arg1);
@@ -3263,7 +3265,7 @@ void reset_zone(int zone, int force_item_repop)
 				break;
 
 			case 'A': /* As of 11/8/2015, no zones have a case 'A' .. hrm.
-				           *   Checked via 'grep "^A" gmud/areas/zon/*' - only zone names starting with A show up.
+				           *   Checked all files in gmud/areas/zon/ - only zone names starting with A show up.
 				           */
 				last_cmd = 0;
 				temp = get_obj_table(ZCMD.arg1);
@@ -4238,7 +4240,7 @@ char *file_to_string(const char *name)
 
 	do
 	{
-		fgets(tmp, 255, fl);
+		REQUIRED_FGETS(tmp, 255, fl);
 
 		if (!feof(fl))
 		{
@@ -4356,7 +4358,7 @@ int real_zone0(const int virt)
 			return (mid);
 		if (bot >= top)
 		{
-#if DB_NOTIFY
+#if defined(DB_NOTIFY) && DB_NOTIFY
 			logit(LOG_DEBUG, "real_zone0: Zone %d not in database", virt);
 #endif
 			debug("real_zone0: Zone %d not in database", virt);
@@ -4392,7 +4394,7 @@ int real_zone(const int virt)
 			return (mid);
 		if (bot >= top)
 		{
-#if DB_NOTIFY
+#if defined(DB_NOTIFY) && DB_NOTIFY
 			logit(LOG_DEBUG, "real_zone: Zone %d not in database", virt);
 #endif
 			return (-1);
@@ -4426,7 +4428,7 @@ int real_room0(const int virt)
 			return (mid);
 		if (bot >= top)
 		{
-#if DB_NOTIFY
+#if defined(DB_NOTIFY) && DB_NOTIFY
 			logit(LOG_DEBUG, "real_room0: Room %d not in database", virt);
 #endif
 			return (0);
@@ -4462,7 +4464,7 @@ int real_room(const int virt)
 			return (mid);
 		if (bot >= top)
 		{
-#if DB_NOTIFY
+#if defined(DB_NOTIFY) && DB_NOTIFY
 			logit(LOG_DEBUG, "real_room: Room %d not in database", virt);
 #endif
 			return NOWHERE;
@@ -4496,7 +4498,7 @@ int real_mobile0(const int virt)
 			return (mid);
 		if (bot >= top)
 		{
-#if DB_NOTIFY
+#if defined(DB_NOTIFY) && DB_NOTIFY
 			logit(LOG_DEBUG, "real_mobile0: Mob %d not in database", virt);
 #endif
 			return (0);
@@ -4530,7 +4532,7 @@ int real_mobile(const int virt)
 			return (mid);
 		if (bot >= top)
 		{
-#if DB_NOTIFY
+#if defined(DB_NOTIFY) && DB_NOTIFY
 			logit(LOG_DEBUG, "real_mobile: Mob %d not in database", virt);
 #endif
 			return (-1);
@@ -4564,7 +4566,7 @@ int real_object0(const int virt)
 			return (mid);
 		if (bot >= top)
 		{
-#if DB_NOTIFY
+#if defined(DB_NOTIFY) && DB_NOTIFY
 			logit(LOG_DEBUG, "real_object0: Obj %d not in database", virt);
 #endif
 			return (0);
@@ -4598,7 +4600,7 @@ int real_object(const int virt)
 			return (mid);
 		if (bot >= top)
 		{
-#if DB_NOTIFY
+#if defined(DB_NOTIFY) && DB_NOTIFY
 			logit(LOG_DEBUG, "real_object: Obj %d not in database", virt);
 #endif
 			return (-1);
@@ -4660,7 +4662,7 @@ int InsertIntoFile(const char *filename, const char *text)
 			sizeToRead = MAX_STRING_LENGTH;
 
 		// read the file until the max size or end is found
-		fread(buffer, sizeToRead, 1, fin);
+		REQUIRED_FREAD(buffer, sizeToRead, 1, fin);
 
 		// close the input file
 		fclose(fin);
@@ -4703,7 +4705,7 @@ void load_obj_limits()
   }
   while (!feof(f))
   {
-    fgets(buf, sizeof(buf) - 1, f);
+    REQUIRED_FGETS(buf, sizeof(buf) - 1, f);
     if (sscanf(buf, "%d %d %d", &vnum, &max, &rented) == 3)
     {
       rnum = real_object(vnum);

@@ -702,12 +702,12 @@ static inline void append_fmt(char (&dst)[N], int shift, const char *fmt, Args..
 void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, int gmcp_pkg_type)
 {
 	int x, y, where, what, from_what, heading;
-	int where_rnum, whats_in;
+	int whats_in;
 	bool hadbg = false, map_tile;
 	char buf[MAX_STRING_LENGTH], minibuf[10];
 	char gmcp_map_buf[MAX_STRING_LENGTH * 4]; /* Buffer for GMCP map */
 	float horizontal_factor, vertical_factor;
-	P_ship ship;
+	P_ship ship = get_ship_from_char(ch);
 
 	gmcp_map_buf[0] = '\0'; /* Initialize GMCP buffer */
 
@@ -780,8 +780,8 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 
 			what = BOUNDED(0, what, (NUM_SECT_TYPES - 1));
 
-			if (x == 0 && y == 0 && (ship = get_ship_from_char(ch)) &&
-			    !SHIP_DOCKED(ship) && ship->location == from_room)
+			if (x == 0 && y == 0 && ship && !SHIP_DOCKED(ship) &&
+			    ship->location == from_room)
 				whats_in = CONTAINS_YOUR_SHIP;
 			else
 				whats_in = whats_in_maproom(ch, where_rnum, distance,
@@ -803,10 +803,16 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 				{
 				case CONTAINS_YOUR_SHIP:
 					// Use an arrow in the direction of the ship.
+					if (!ship)
+					{
+						line.push_back(symb[0]);
+						break;
+					}
 					heading = ship->heading;
-					heading += 180 / nv - 1; // center on north etc
+					heading += 180 / static_cast<int>(nv) -
+						   1; // center on north etc
 					heading %= 360;
-					heading /= 360 / nv;
+					heading /= 360 / static_cast<int>(nv);
 					line.push_back(symb[BOUNDED(0, heading, nv - 1)]);
 					break;
 
@@ -816,13 +822,13 @@ void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, 
 					heading = 0;
 					if (where_rnum)
 						heading = world[where_rnum].altglyph;
-					if (heading > nv)
+					if (heading >= static_cast<int>(nv))
 						heading = 0;
 					line.push_back(symb[heading]);
 					break;
 
 				default: // forest/etc: pick randomly
-					line.push_back(symb[number(0, nv - 1)]);
+					line.push_back(symb[number(0, static_cast<int>(nv) - 1)]);
 				}
 		}
 
@@ -935,11 +941,11 @@ void do_mapglyphs(P_char ch, char *argument, int cmd)
 	if (*buf)
 	{
 		// Presets
-		for (int i = 0; i < ARRAY_SIZE(glyph_preset_names); i++)
+		for (size_t i = 0; i < ARRAY_SIZE(glyph_preset_names); i++)
 			if (isname(buf, glyph_preset_names[i][1]))
 			{
-				set_glyphs_preset(ch, i);
-				send_to_char_f(ch, "Loaded preset %d (%s).\n", i,
+				set_glyphs_preset(ch, static_cast<int>(i));
+				send_to_char_f(ch, "Loaded preset %zu (%s).\n", i,
 					       glyph_preset_names[i][0]);
 				return;
 			}

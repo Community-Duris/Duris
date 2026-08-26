@@ -735,7 +735,8 @@ int read_relic_highscore()
 	if (!f)
 		return 0;
 
-	fscanf(f, "%d %d %d", &GOODIE_RELIC_POINTS, &EVIL_RELIC_POINTS, &UNDEAD_RELIC_POINTS);
+	REQUIRED_FSCANF(f, "%d %d %d", &GOODIE_RELIC_POINTS, &EVIL_RELIC_POINTS,
+			&UNDEAD_RELIC_POINTS);
 	fclose(f);
 
 	wizlog(56, "%d %d %d", GOODIE_RELIC_POINTS, EVIL_RELIC_POINTS, UNDEAD_RELIC_POINTS);
@@ -903,7 +904,7 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	struct spell_target_data target_data;
 	P_char t_char = NULL;
 	P_desc d;
-	P_obj potion;
+	P_obj potion = NULL;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -968,10 +969,14 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 					potion = read_object(45534, VIRTUAL);
 					break;
 				}
-				obj_to_char(potion, ch);
-				act("Your $q &+Mhums&+W briefly.", FALSE, ch, potion, potion,
-				    TO_CHAR);
-				act("$n's $q &+Mhums&+W briefly.", TRUE, ch, potion, NULL, TO_ROOM);
+				if (potion)
+				{
+					obj_to_char(potion, ch);
+					act("Your $q &+Mhums&+W briefly.", FALSE, ch, potion,
+					    potion, TO_CHAR);
+					act("$n's $q &+Mhums&+W briefly.", TRUE, ch, potion, NULL,
+					    TO_ROOM);
+				}
 			}
 		}
 

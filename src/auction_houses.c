@@ -215,12 +215,12 @@ bool check_db_active()
 }
 
 // lazy helper macro for build_obj_info_text
-#define APPEND_INFO(fmt, ...)                                                    \
-	do                                                                       \
-	{                                                                        \
-		int _w = snprintf(buf + pos, bufsize - pos, fmt, ##__VA_ARGS__); \
-		if (_w > 0 && pos + _w < bufsize)                                \
-			pos += _w;                                               \
+#define APPEND_INFO(fmt, ...)                                                            \
+	do                                                                               \
+	{                                                                                \
+		int _w = checked_snprintf(buf + pos, bufsize - pos, fmt, ##__VA_ARGS__); \
+		if (_w > 0)                                                              \
+			pos += MIN(static_cast<size_t>(_w), bufsize - pos - 1);          \
 	} while (0)
 
 // builds item info text for db storage / web display
@@ -900,7 +900,7 @@ bool auction_list(P_char ch, char *args)
 	{
 		half_chop(args, list_arg, args);
 
-		if (strlen(list_arg) < 0)
+		if (!list_arg[0])
 		{
 			send_to_char("&+WPlease enter the name of a player.\r\n", ch);
 			return TRUE;
@@ -951,13 +951,13 @@ bool auction_list(P_char ch, char *args)
 			send_to_char(buff, ch);
 
 			mysql_real_escape_string(DB, buff, list_arg, strlen(list_arg));
-			list_args.push_back(string(buff));
+			list_args.back() = string(buff);
 		}
 
-		for (int i = 0; i < list_args.size(); i++)
+		for (size_t list_index = 0; list_index < list_args.size(); list_index++)
 		{
 			snprintf(buff, MAX_STRING_LENGTH, " and id_keywords like '%% %s,%%'",
-				 list_args[i].c_str());
+				 list_args[list_index].c_str());
 			strcat(where_str, buff);
 		}
 
@@ -2360,7 +2360,7 @@ string EqSort::getSortFlagsString(P_obj obj)
 		return keywords;
 	}
 
-	for (int i = 0; i < flags.size(); i++)
+	for (size_t i = 0; i < flags.size(); i++)
 	{
 		if (flags[i] && flags[i]->match(obj))
 		{
@@ -2378,7 +2378,7 @@ string EqSort::getDescString(const char *keyword)
 	if (strlen(keyword) < 1)
 		return string();
 
-	for (int i = 0; i < flags.size(); i++)
+	for (size_t i = 0; i < flags.size(); i++)
 	{
 		if (flags[i] && !strcmp(keyword, flags[i]->gKey()))
 		{
@@ -2391,7 +2391,7 @@ string EqSort::getDescString(const char *keyword)
 
 string EqSort::getKeyword(const int num)
 {
-	if (num < 0 || num > flags.size())
+	if (num < 0 || static_cast<size_t>(num) >= flags.size())
 	{
 		return "NULL";
 	}
@@ -2404,7 +2404,7 @@ bool EqSort::isKeyword(const char *keyword)
 	if (strlen(keyword) < 1)
 		return false;
 
-	for (int i = 0; i < flags.size(); i++)
+	for (size_t i = 0; i < flags.size(); i++)
 	{
 		if (flags[i] && !strcmp(keyword, flags[i]->gKey()))
 		{

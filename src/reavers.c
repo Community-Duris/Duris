@@ -1047,7 +1047,6 @@ bool thryms_icerazor(P_char ch, P_char victim, P_obj wpn)
 		    FALSE, ch, 0, victim, TO_VICT);
 
 		// apply slowness
-		struct affected_type af;
 		bzero(&af, sizeof(af));
 		af.type = SPELL_SLOW;
 		af.duration = 2;

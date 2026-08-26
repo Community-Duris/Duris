@@ -625,7 +625,7 @@ dam_mod->type = dam_mod_type::More;
 }
 }
 , { MAKE_DAM_MOD_PRED(){ if (affected_by_spell(caster, TAG_BLOODLUST) && !IS_PC_PET(victim) &&
-			     IS_NPC(victim)){ int dammod;
+			     IS_NPC(victim)){ int dammod = 0;
 struct affected_type *findaf, *next_af; // initialize affects
 for (findaf = caster->affected; findaf; findaf = next_af)
 {

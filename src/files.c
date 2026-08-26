@@ -295,7 +295,7 @@ int writeStatus(char *buf, P_char ch, bool updateTime)
 {
 	char *start = buf;
 	int tmp, i;
-	long tmpl;
+	long tmpl = ch->player.time.saved;
 	struct affected_type *af = NULL, *next_af = NULL;
 	/*  sh_int dummy_short = 0; */
 
@@ -1437,6 +1437,7 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 		if (unlink(Gbuf2) == -1)
 			logit(LOG_FILE, "Could not delete backup pfile %s after fallback save.",
 			      Gbuf2);
+		[[fallthrough]];
 	case 0:
 		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none", "none",
 				  "fallback_saved", "type=%d room=%d path=%s size=%d", type, room,
@@ -1519,6 +1520,7 @@ int calculate_save_room(P_char ch, int type, int room)
 		if ((ch->in_room > 1) && (ch->in_room <= top_of_world))
 			break;
 		room = real_room(ch->specials.was_in_room);
+		[[fallthrough]];
 	case 2:
 		if ((room > 1) && (room <= top_of_world))
 			break;
@@ -2607,7 +2609,7 @@ int restorePasswdOnly(P_char ch, char *name)
 			ch);
 		return -2;
 	}
-	if (size < 5 * int_size + 5 * sizeof(char) + long_size)
+	if (size < static_cast<int>(5 * int_size + 5 * sizeof(char) + long_size))
 	{
 		logit(LOG_FILE, "Warning: Save file is only %d bytes.", size);
 		fprintf(stderr, "Problem restoring save file of: %s\n", name);
@@ -2696,7 +2698,7 @@ int restoreCharOnly(P_char ch, char *name)
 #ifndef _PFILE_
 	char buff[SAV_MAXSIZE];
 	char *buf;
-	int skill_off, affect_off, item_off, surname;
+	int skill_off, affect_off, item_off, surname = 0;
 #endif
 	int start, size, csize, type, room;
 	int witness_off;
@@ -2794,7 +2796,7 @@ int restoreCharOnly(P_char ch, char *name)
 			ch);
 		return -2;
 	}
-	if (size < 5 * int_size + 5 * sizeof(char) + long_size)
+	if (size < static_cast<int>(5 * int_size + 5 * sizeof(char) + long_size))
 	{
 		logit(LOG_FILE, "Warning: Save file is only %d bytes.", size);
 		fprintf(stderr, "Problem restoring save file of: %s\n", name);
@@ -3871,7 +3873,7 @@ int restoreItemsOnly(P_char ch, int flatrate)
 		rename(Gbuf1, Gbuf2);
 		return -2;
 	}
-	if (size < (5 * int_size + 5 * sizeof(char) + long_size))
+	if (size < static_cast<int>(5 * int_size + 5 * sizeof(char) + long_size))
 	{
 		logit(LOG_FILE, "Save file is too small %d.", size);
 		fprintf(stderr, "Problem restoring inventory of: %s\n", GET_NAME(ch));
@@ -4160,7 +4162,8 @@ int writePet(P_char ch)
 	}
 	else
 	{
-		if (fwrite(buff, 1, (unsigned)(buf - buff), f) != (buf - buff))
+		const size_t bytes_to_write = static_cast<size_t>(buf - buff);
+		if (fwrite(buff, 1, bytes_to_write, f) != bytes_to_write)
 		{
 			int tmp_errno;
 
@@ -4339,7 +4342,7 @@ P_char restorePet(char *id)
 		wizlog(OVERLORD, "Ouch. Bad file sizing for %d", id);
 		return 0;
 	}
-	if (size < 5 * int_size + 5 * sizeof(char) + long_size)
+	if (size < static_cast<int>(5 * int_size + 5 * sizeof(char) + long_size))
 	{
 		logit(LOG_FILE, "Warning: Petsave file is only %d bytes for %s.", size, id);
 	}

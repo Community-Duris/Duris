@@ -148,7 +148,7 @@ string wiki_help(string str)
 	}
 
 	// list the topics
-	for (int i = 0; i < matching_topics.size(); i++)
+	for (size_t i = 0; i < matching_topics.size(); i++)
 	{
 		return_str += " &+c";
 		return_str += matching_topics[i];
@@ -350,7 +350,7 @@ string wiki_specs(string title)
 string wiki_innates(string title, int type)
 {
 	string return_str;
-	int i, j = 0, innate, found = 0;
+	int i = 0, j = 0, innate, found = 0;
 
 	if (type == WIKI_RACE)
 	{
@@ -417,8 +417,8 @@ string wiki_innates(string title, int type)
 string wiki_races(string title, int type)
 {
 	string return_str;
-	int cls, spec, race;
-	bool found;
+	int cls = CLASS_COUNT + 1, spec = 0, race;
+	bool found = false;
 
 	if (type == WIKI_CLASS)
 	{
@@ -683,7 +683,7 @@ void load_cmd_attributes()
 			vi_attributes[i] = FALSE;
 		}
 		// Following lines are attributes until '~' is encountered.
-		fgets(line, sizeof line, cmd_file);
+		REQUIRED_FGETS(line, sizeof line, cmd_file);
 		while (line[0] != '~')
 		{
 			// If GET_C_STR
@@ -762,7 +762,7 @@ void load_cmd_attributes()
 				logit(LOG_DEBUG, "Bad line in command_attributes.txt: ");
 				logit(LOG_DEBUG, line);
 			}
-			fgets(line, sizeof line, cmd_file);
+			REQUIRED_FGETS(line, sizeof line, cmd_file);
 		}
 		// create the list of attributes.
 		attributes[0] = '\0';

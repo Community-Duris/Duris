@@ -35,14 +35,14 @@
    *
    * WHAT THE CONTENT ACTUALLY SAYS  (measured over areas/ at 2e4c95e8)
    * ------------------------------------------------------------------
-   * Mob sources (areas/mob/*.mob, 446 files, 20,127 records): FIVE carry
+   * Mob sources (446 .mob files under areas/mob/, 20,127 records): FIVE carry
    * a plus requirement - forofcon.mob #139930/#139975/#140039 (PLUSFIVE),
    * mavulsk.mob #48 (PLUSONE), vecna.mob #130016 (PLUSFOUR).  ZERO carry
    * AFF3_SILVER.  Of the five, only vecna is listed in areas/AREA, so
    * exactly ONE flagged mob (#130016, Chressan) is in the world a stock
    * boot builds; the other four exist in unlisted zone files.
    *
-   * Object sources (areas/obj/*.obj, 443 files, 21,656 records): 385
+   * Object sources (443 .obj files under areas/obj/, 21,656 records): 385
    * objects in 105 files carry ITEM2_SILVER (extra2 BIT_1, "Item harm
    * AFF_SILVER"), 199 of them weapons.  ONE object grants an attacker a
    * plus rating through bitvector3: heavens.obj #499 (PLUSFIVE), an

@@ -630,7 +630,7 @@ int do_roar_of_heroes(P_char ch)
 				bzero(&af, sizeof(af));
 				af.type = SKILL_ROAR_OF_HEROES;
 				af.duration = 5;
-				af.modifier = af.modifier = number(9, 13);
+				af.modifier = number(9, 13);
 				af.location = APPLY_CON_MAX;
 				affect_to_char(gl->ch, &af);
 
@@ -695,7 +695,7 @@ int do_roar_of_heroes(P_char ch)
 					bzero(&af, sizeof(af));
 					af.type = SKILL_ROAR_OF_HEROES;
 					af.duration = 5;
-					af.modifier = af.modifier = number(9, 13);
+					af.modifier = number(9, 13);
 
 					af.location = APPLY_CON_MAX;
 					affect_to_char(gl->ch, &af);
@@ -760,7 +760,7 @@ int do_roar_of_heroes(P_char ch)
 			bzero(&af, sizeof(af));
 			af.type = SKILL_ROAR_OF_HEROES;
 			af.duration = 5;
-			af.modifier = af.modifier = number(9, 13);
+			af.modifier = number(9, 13);
 			af.location = APPLY_CON_MAX;
 			affect_to_char(ch, &af);
 			update_pos(ch);
@@ -1058,7 +1058,7 @@ void do_hitall(P_char ch, char *arg, int cmd)
 	}
 }
 
-#if TRAPS
+#if defined(TRAPS) && TRAPS
 /*
  * ** Rogue skill "trap"
  */
@@ -1232,14 +1232,14 @@ void do_commands(P_char ch, char *arg, int cmd)
 				break;
 			}
 
-			snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1), "%-16s",
-				 command[i]);
+			checked_snprintf(Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
+					 "%-16s", command[i]);
 			if (!(no % 5))
 				strcat(Gbuf1, "\r\n");
 			no++;
 		}
 	}
-	snprintf(
+	checked_snprintf(
 		Gbuf1 + strlen(Gbuf1), MAX_STRING_LENGTH - strlen(Gbuf1),
 		"\r\n\r\nCommands listed:  %d of %d total.   (Use 'commands all' to see a full list)\r\n",
 		no - 1, i);
@@ -2427,7 +2427,6 @@ void do_shapechange(P_char ch, char *arg, int cmd)
 
 	balance_affects(ch);
 
-cleanup:
 	extract_char(mob);
 }
 
@@ -2931,7 +2930,7 @@ void do_make(P_char ch, char *arg, int cmd)
 {
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
 
-	if (!arg[0] || !*arg)
+	if (!arg || !*arg)
 		send_to_char(MAKE_FORMAT, ch);
 
 	half_chop(arg, arg1, arg2);
@@ -3668,7 +3667,7 @@ void do_vote(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	if ((ch->only.pc->vote == vote_serial) && !isname(GET_NAME(ch), "io"))
+	if ((ch->only.pc->vote == static_cast<ulong>(vote_serial)) && !isname(GET_NAME(ch), "io"))
 	{
 		send_to_char("You've already voted in this election!\r\n", ch);
 		return;

@@ -355,7 +355,11 @@ int websocket_accept(int listen_fd, struct descriptor_data *d)
 	new_fd = accept(listen_fd, (struct sockaddr *)&peer, &peer_len);
 	if (new_fd < 0)
 	{
-		if (errno != EWOULDBLOCK && errno != EAGAIN)
+		if (errno != EAGAIN
+#if EWOULDBLOCK != EAGAIN
+		    && errno != EWOULDBLOCK
+#endif
+		)
 		{
 			perror("websocket_accept: accept");
 		}
@@ -806,7 +810,11 @@ static int websocket_flush_queue(struct descriptor_data *d, unsigned char *buffe
 		}
 		else if (sent < 0 && errno == EINTR)
 			continue;
-		else if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+		else if (sent < 0 && (errno == EAGAIN
+#if EWOULDBLOCK != EAGAIN
+				      || errno == EWOULDBLOCK
+#endif
+				      ))
 			return 0;
 		else
 		{
@@ -1517,7 +1525,7 @@ static void websocket_handle_message(struct descriptor_data *d, int opcode, char
 							if (gmcp_msg)
 							{
 								if (data_str)
-									snprintf(
+									checked_snprintf(
 										gmcp_msg, gmcp_len,
 										"%s %s",
 										pkg_item->valuestring,
@@ -1566,6 +1574,7 @@ int websocket_process_input(struct descriptor_data *d)
 {
 	char buf[WS_INPUT_BUFFER_SIZE];
 	ssize_t bytes_read;
+	size_t read_len;
 	int consumed;
 	char *payload;
 	size_t payload_len;
@@ -1581,7 +1590,11 @@ int websocket_process_input(struct descriptor_data *d)
 
 	if (bytes_read < 0)
 	{
-		if (errno == EWOULDBLOCK || errno == EAGAIN)
+		if (errno == EAGAIN
+#if EWOULDBLOCK != EAGAIN
+		    || errno == EWOULDBLOCK
+#endif
+		)
 		{
 			return 0;
 		}
@@ -1592,6 +1605,7 @@ int websocket_process_input(struct descriptor_data *d)
 	{
 		return -1;
 	}
+	read_len = static_cast<size_t>(bytes_read);
 
 	if (d->character && d->character->only.pc)
 		d->character->only.pc->received_data += bytes_read;
@@ -1604,15 +1618,15 @@ int websocket_process_input(struct descriptor_data *d)
 		size_t trailing_bytes;
 
 		if (d->ws_handshake_len > WS_MAX_HANDSHAKE_SIZE ||
-		    bytes_read > WS_MAX_HANDSHAKE_SIZE - d->ws_handshake_len)
+		    read_len > WS_MAX_HANDSHAKE_SIZE - d->ws_handshake_len)
 			return -1;
-		new_buf = (char *)realloc(d->ws_handshake_buffer,
-					  d->ws_handshake_len + bytes_read + 1);
+		new_buf =
+			(char *)realloc(d->ws_handshake_buffer, d->ws_handshake_len + read_len + 1);
 		if (!new_buf)
 			return -1;
 		d->ws_handshake_buffer = new_buf;
-		memcpy(d->ws_handshake_buffer + d->ws_handshake_len, buf, bytes_read);
-		d->ws_handshake_len += bytes_read;
+		memcpy(d->ws_handshake_buffer + d->ws_handshake_len, buf, read_len);
+		d->ws_handshake_len += read_len;
 		d->ws_handshake_buffer[d->ws_handshake_len] = '\0';
 
 		/* check for complete http request */
@@ -1649,7 +1663,7 @@ int websocket_process_input(struct descriptor_data *d)
 		}
 
 		/* The current read has already been copied into the handshake/fragment buffer. */
-		bytes_read = 0;
+		read_len = 0;
 		free(d->ws_handshake_buffer);
 		d->ws_handshake_buffer = NULL;
 		d->ws_handshake_len = 0;
@@ -1665,16 +1679,16 @@ int websocket_process_input(struct descriptor_data *d)
 	 * this handles frames split across tcp packets.
 	 */
 	if (d->ws_fragment_len > WS_MAX_BUFFERED_BYTES ||
-	    bytes_read > WS_MAX_BUFFERED_BYTES - d->ws_fragment_len)
+	    read_len > WS_MAX_BUFFERED_BYTES - d->ws_fragment_len)
 		return -1;
-	new_buf = (char *)realloc(d->ws_fragment_buffer, d->ws_fragment_len + bytes_read);
+	new_buf = (char *)realloc(d->ws_fragment_buffer, d->ws_fragment_len + read_len);
 	if (!new_buf)
 	{
 		return -1; /* oom */
 	}
 	d->ws_fragment_buffer = new_buf;
-	memcpy(d->ws_fragment_buffer + d->ws_fragment_len, buf, bytes_read);
-	d->ws_fragment_len += bytes_read;
+	memcpy(d->ws_fragment_buffer + d->ws_fragment_len, buf, read_len);
+	d->ws_fragment_len += read_len;
 
 	/*
 	 * process all complete frames in buffer.

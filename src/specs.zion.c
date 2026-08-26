@@ -159,7 +159,7 @@ int zion_shield_absorb_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/10-1/100 chance?
 	if ((cmd == CMD_GOTNUKED) && percent > number(1, 100))
 	{
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return FALSE;
 		}
@@ -179,7 +179,7 @@ int zion_shield_absorb_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/20 chance.
 	if ((cmd == CMD_GOTNUKED) && !number(0, 19) && !affected_by_spell(ch, SPELL_BLINDNESS))
 	{
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return FALSE;
 		}
@@ -234,7 +234,7 @@ int generic_shield_block_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/5 chance.
 	if (!number(0, 4))
 	{
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return FALSE;
 		}
@@ -339,7 +339,7 @@ int zion_fnf(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/25 chance.
 	if ((cmd == CMD_MELEE_HIT) && !number(0, 24) && CheckMultiProcTiming(ch))
 	{
-		vict = (P_char)arg;
+		vict = legacy_proc_arg<P_char>(arg);
 		if (!IS_ALIVE(vict))
 		{
 			return FALSE;
@@ -500,7 +500,7 @@ int zion_light_dark(P_obj obj, P_char ch, int cmd, char *arg)
 		{
 			return FALSE;
 		}
-		vict = (P_char)arg;
+		vict = legacy_proc_arg<P_char>(arg);
 		if (!IS_ALIVE(vict))
 		{
 			return FALSE;
@@ -1000,7 +1000,7 @@ int zion_mace_of_earth(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if ((cmd == CMD_GOTHIT) && !number(0, 50) && !has_skin_spell(ch) && IS_ALIVE(ch))
 	{
-		if (!(data = (struct proc_data *)arg))
+		if (!(data = legacy_proc_arg<struct proc_data *>(arg)))
 		{
 			return FALSE;
 		}
@@ -1021,7 +1021,7 @@ int zion_mace_of_earth(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(vict))
 	{
 		return FALSE;

@@ -88,7 +88,8 @@ def test_fragmented_input_has_an_aggregate_cap():
     assert "WS_MAX_BUFFERED_BYTES" in HEADER
     assert "WS_MAX_MESSAGE_SIZE" in HEADER
     assert "ws_message_len + payload_len" in process_input
-    assert "ws_fragment_len + bytes_read" in process_input
+    assert "read_len > WS_MAX_BUFFERED_BYTES - d->ws_fragment_len" in process_input
+    assert "ws_fragment_len + read_len" in process_input
 
 def test_decompression_does_not_deliver_truncated_output():
     assert "avail_out > 0" in parse_frame
@@ -109,7 +110,7 @@ def test_handshake_preserves_coalesced_websocket_bytes():
     assert "header_bytes" in process_input
     assert "ws_fragment_buffer" in process_input
     assert "ws_handshake_buffer + header_bytes" in process_input
-    assert "bytes_read = 0" in process_input
+    assert "read_len = 0" in process_input
     assert "if (d->ws_fragment_len == 0)" in process_input or "if (!d->ws_fragment_len)" in process_input
 
 

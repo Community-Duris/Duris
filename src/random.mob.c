@@ -488,7 +488,7 @@ void do_namedreport(P_char ch, char *argument, int cmd)
 	send_to_char(
 		"&+W-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&n\n",
 		ch);
-	for (int i = 0; i < ARRAY_SIZE(zones_random_data); i++)
+	for (size_t i = 0; i < ARRAY_SIZE(zones_random_data); i++)
 	{
 		char buffer[MAX_STRING_LENGTH] = { 0 };
 
@@ -510,7 +510,7 @@ void do_namedreport(P_char ch, char *argument, int cmd)
 			continue;
 		}
 
-		for (int x = 0; x < ARRAY_SIZE(zones_random_data[i].proc_spells); x++)
+		for (size_t x = 0; x < ARRAY_SIZE(zones_random_data[i].proc_spells); x++)
 		{
 			char buf[1024];
 			if (zones_random_data[i].proc_spells[x][0] != 0 &&
@@ -524,7 +524,7 @@ void do_namedreport(P_char ch, char *argument, int cmd)
 						    { SPELL_INVIGORATE, "&+G" },
 						    { SPELL_CONJURE_ELEMENTAL, "&+y" } };
 				const char *spellColor = "&+B";
-				for (int y = 0; y < ARRAY_SIZE(spellColors); y++)
+				for (size_t y = 0; y < ARRAY_SIZE(spellColors); y++)
 				{
 					if (zones_random_data[i].proc_spells[x][1] ==
 					    spellColors[y].spellNum)
@@ -619,7 +619,7 @@ P_char create_random_mob(int theme, int mob_level)
 	}
 
 	int zones_random_data_size = 0;
-	for (int i = 0; zones_random_data[i].zone; i++)
+	for (int data_index = 0; zones_random_data[data_index].zone; data_index++)
 	{
 		zones_random_data_size++;
 	}
@@ -646,7 +646,7 @@ P_char create_random_mob(int theme, int mob_level)
 	char_to_room(random_mob, to_room, 0);
 
 	int races = 0;
-	for (int i = 0; zones_random_data[zone_idx].races[i]; i++)
+	for (int race_index = 0; zones_random_data[zone_idx].races[race_index]; race_index++)
 	{
 		races++;
 	}

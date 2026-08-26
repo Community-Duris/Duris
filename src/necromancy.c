@@ -127,9 +127,10 @@ int is_wearing_necroplasm(P_char ch)
 	plasmID = real_object0(NECROPLASM_VNUM);
 	if (plasmID)
 	{
-		for (int i = 0; i < MAX_WEAR; i++)
+		for (int wear_position = 0; wear_position < MAX_WEAR; wear_position++)
 		{
-			if (ch->equipment[i] && ch->equipment[i]->R_num == plasmID)
+			if (ch->equipment[wear_position] &&
+			    ch->equipment[wear_position]->R_num == plasmID)
 			{
 				return TRUE;
 			}

@@ -377,7 +377,7 @@ void event_super_cannon_fire(P_char ch, P_char vict, P_obj obj, void *data)
 void event_super_cannon(P_char pl, P_char vict, P_obj obj, void *data)
 {
 	struct cannon_data *cdata = (struct cannon_data *)data;
-	P_char ch;
+	P_char ch = NULL;
 	double slope, x, y;
 	int dir, offsetaim;
 
@@ -404,6 +404,11 @@ void event_super_cannon(P_char pl, P_char vict, P_obj obj, void *data)
 			obj->value[CANNON_PLAYER] = 0;
 			return;
 		}
+	}
+	else
+	{
+		obj->value[CANNON_PLAYER] = 0;
+		return;
 	}
 
 	cdata->fuze--;
@@ -970,7 +975,7 @@ int zg_count_zombies(P_obj obj)
 
 ZombieGame *get_zgame_from_obj(P_obj obj)
 {
-	for (int i = 0; i < zgames.size(); i++)
+	for (size_t i = 0; i < zgames.size(); i++)
 	{
 		if (zgames[i] && zgames[i]->id == obj->value[ZOMBIES_ID])
 			return zgames[i];
@@ -983,9 +988,9 @@ ZombieGame *get_zgame_from_zombie(P_char z)
 	if (!z)
 		return NULL;
 
-	for (int i = 0; i < zgames.size(); i++)
+	for (size_t i = 0; i < zgames.size(); i++)
 	{
-		for (int j = 0; j < zgames[i]->zombies.size(); j++)
+		for (size_t j = 0; j < zgames[i]->zombies.size(); j++)
 		{
 			if (zgames[i]->zombies[j] == z)
 				return zgames[i];
@@ -1009,7 +1014,7 @@ int zgame_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 		if (!zgame)
 			return FALSE;
 
-		for (int i = 0; i < zgame->zombies.size(); i++)
+		for (size_t i = 0; i < zgame->zombies.size(); i++)
 		{
 			if (zgame->zombies[i] == ch)
 				// This ends up moving all the iterators past this point

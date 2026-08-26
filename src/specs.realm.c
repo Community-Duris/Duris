@@ -65,6 +65,7 @@ int tree_spirit(P_char ch, P_char pl, int cmd, char *arg)
 						mob = read_mobile(14024, VIRTUAL);
 						break;
 					}
+					[[fallthrough]];
 				case 2:
 					if (helper_called < 8)
 						mob = read_mobile(14023, VIRTUAL);

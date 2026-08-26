@@ -178,7 +178,7 @@ int illesarus(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(vict))
 	{
 		return FALSE;

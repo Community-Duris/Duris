@@ -1030,7 +1030,7 @@ char *enter_message(P_char ch, P_char people, int exitnumb, char *amsg, int was_
 		}
 		/* amsg's only %s is placeholder for verb, which is now in tmp2 */
 
-		snprintf(tmp, sizeof tmp, amsg, tmp2);
+		checked_snprintf_runtime(tmp, sizeof tmp, amsg, tmp2);
 
 		strcpy(amsg, tmp);
 	}
@@ -1039,20 +1039,20 @@ char *enter_message(P_char ch, P_char people, int exitnumb, char *amsg, int was_
 
 		/* amsg's only %s is placeholder for verb .. */
 
-		snprintf(tmp, sizeof tmp, amsg,
-			 IS_ROOM(ch->in_room, ROOM_UNDERWATER) ? "swims in" :
-			 ch->specials.z_cord < 0	       ? "swims in" :
-			 ch->specials.z_cord > 0	       ? "flies in" :
-			 LEVITATE(ch, exitnumb)		       ? "floats in" :
-			 IS_SLIME(ch)			       ? "oozes in" :
-			 GET_RACE(ch) == RACE_DRAGON	       ? "lumbers in" :
-			 load_modifier(ch) > 199	       ? "staggers in" :
-			 (SNEAK(ch) && !mount)		       ? "sneaks in" :
-			 GET_POS(ch) == POS_PRONE	       ? "slithers in" :
-			 GET_POS(ch) == POS_KNEELING	       ? "crawls in" :
-			 has_innate(ch, INNATE_HORSE_BODY)     ? "trots in" :
-			 has_innate(ch, INNATE_SPIDER_BODY)    ? "skitters in" :
-								 "enters");
+		checked_snprintf_runtime(tmp, sizeof tmp, amsg,
+					 IS_ROOM(ch->in_room, ROOM_UNDERWATER) ? "swims in" :
+					 ch->specials.z_cord < 0	       ? "swims in" :
+					 ch->specials.z_cord > 0	       ? "flies in" :
+					 LEVITATE(ch, exitnumb)		       ? "floats in" :
+					 IS_SLIME(ch)			       ? "oozes in" :
+					 GET_RACE(ch) == RACE_DRAGON	       ? "lumbers in" :
+					 load_modifier(ch) > 199	       ? "staggers in" :
+					 (SNEAK(ch) && !mount)		       ? "sneaks in" :
+					 GET_POS(ch) == POS_PRONE	       ? "slithers in" :
+					 GET_POS(ch) == POS_KNEELING	       ? "crawls in" :
+					 has_innate(ch, INNATE_HORSE_BODY)     ? "trots in" :
+					 has_innate(ch, INNATE_SPIDER_BODY)    ? "skitters in" :
+										 "enters");
 
 		if (SNEAK(ch) && (!ch->lobj || (ch->lobj && !ch->lobj->Visible_Type())))
 		{
@@ -1928,14 +1928,15 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 				 }*/
 				if (affected_by_spell(ch, SPELL_DELIRIUM) && !number(0, 2))
 				{
+					int attempts = 0;
 					cmd2 = number(1, 6);
-					while (!CAN_GO(ch, cmd2) && i < 10)
+					while (!CAN_GO(ch, cmd2) && attempts < 10)
 					{
-						i++;
+						attempts++;
 						cmd2 = number(0, 6);
 					}
 
-					if (i < 9)
+					if (attempts < 9)
 					{
 						send_to_char(
 							"&+WYou are &+Gconfused&+W and unable to follow, watch out!&n\n",
@@ -2156,7 +2157,7 @@ void make_ice(P_char ch)
  */
 void do_move(P_char ch, char *argument, int cmd)
 {
-	int cmd2, i;
+	int cmd2, attempts = 0;
 
 	cmd = cmd_to_exitnumb(cmd);
 
@@ -2164,12 +2165,12 @@ void do_move(P_char ch, char *argument, int cmd)
 	{
 		cmd2 = number(1, 6);
 
-		while (!CAN_GO(ch, cmd2) && i < 10)
+		while (!CAN_GO(ch, cmd2) && attempts < 10)
 		{
-			i++;
+			attempts++;
 			cmd2 = number(1, 6);
 		}
-		if (i < 9)
+		if (attempts < 9)
 		{
 			send_to_char("&+WYou are &+Gconfused&+W, watch out!&n\n", ch);
 			cmd = cmd2;
@@ -2200,10 +2201,12 @@ void do_move(P_char ch, char *argument, int cmd)
 		{
 			// distance was specified, so warp forward
 			int to_room = ch->in_room;
+			int steps = 0;
 
 			bfs_clear_marks();
 
-			for (i = 0; i < distance && VALID_RADIAL_EDGE(to_room, cmd); i++)
+			for (steps = 0; steps < distance && VALID_RADIAL_EDGE(to_room, cmd);
+			     steps++)
 			{
 				to_room = TOROOM(to_room, cmd);
 			}
@@ -4425,8 +4428,8 @@ void do_wake(P_char ch, char *argument, int cmd)
 						   }
 						 */
 						if (!IS_TRUSTED(ch) &&
-							    IS_AFFECTED(tmp_char, AFF_SLEEP) ||
-						    IS_AFFECTED(tmp_char, AFF_KNOCKED_OUT))
+						    (IS_AFFECTED(tmp_char, AFF_SLEEP) ||
+						     IS_AFFECTED(tmp_char, AFF_KNOCKED_OUT)))
 						{
 							act("You try to wake $M up, but $E does not respond!",
 							    FALSE, ch, 0, tmp_char, TO_CHAR);

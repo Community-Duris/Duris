@@ -62,7 +62,7 @@ BuildingType get_type(int type)
 
 Building *get_building_from_id(int id)
 {
-	for (int i = 0; i < buildings.size(); i++)
+	for (size_t i = 0; i < buildings.size(); i++)
 	{
 		if (!buildings[i])
 			continue;
@@ -77,7 +77,7 @@ Building *get_building_from_room(int rroom)
 {
 	int vnum = world[rroom].number;
 
-	for (int i = 0; i < buildings.size(); i++)
+	for (size_t i = 0; i < buildings.size(); i++)
 	{
 		if (!buildings[i])
 			continue;
@@ -108,7 +108,7 @@ Building *get_building_from_gateguard(P_char ch)
 	if (!af)
 		return NULL;
 
-	for (int i = 0; i < buildings.size(); i++)
+	for (size_t i = 0; i < buildings.size(); i++)
 	{
 		if (buildings[i] && buildings[i]->get_id() == af->modifier)
 			return buildings[i];
@@ -125,7 +125,7 @@ Building *get_building_from_rubble(P_obj rubble)
 		return NULL;
 	}
 
-	for (int i = 0; i < buildings.size(); i++)
+	for (size_t i = 0; i < buildings.size(); i++)
 	{
 		if (buildings[i] && buildings[i]->get_id() == rubble->value[3])
 			return buildings[i];
@@ -151,7 +151,7 @@ Building *get_building_from_char(P_char ch)
 	if (!af)
 		return NULL;
 
-	for (int i = 0; i < buildings.size(); i++)
+	for (size_t i = 0; i < buildings.size(); i++)
 	{
 		if (buildings[i] && buildings[i]->get_id() == af->modifier)
 			return buildings[i];
@@ -773,7 +773,7 @@ bool Building::generate_portals()
 		}
 		else
 		{
-			fgets(Gbuf2, MAX_STR_NORMAL, f);
+			REQUIRED_FGETS(Gbuf2, MAX_STR_NORMAL, f);
 			Gbuf2[strlen(Gbuf2) - 1] = 0;
 			Gbuf2[ASC_MAX_STR - 1] = 0;
 			strcpy(ghname, Gbuf2);
@@ -783,7 +783,7 @@ bool Building::generate_portals()
 
 	if ((portal_op = read_object(BUILDING_PORTAL, VIRTUAL)))
 	{
-		snprintf(buff, MAX_STRING_LENGTH, portal_op->description, ghname);
+		checked_snprintf_runtime(buff, MAX_STRING_LENGTH, portal_op->description, ghname);
 		portal_op->value[0] = guildhall_room;
 		portal_op->description = str_dup(buff);
 		portal_op->str_mask = STRUNG_DESC1;
@@ -792,8 +792,8 @@ bool Building::generate_portals()
 
 	if ((portal_gh = read_object(BUILDING_PORTAL, VIRTUAL)))
 	{
-		snprintf(buff, MAX_STRING_LENGTH, portal_gh->description,
-			 continent_name(world[location()].continent));
+		checked_snprintf_runtime(buff, MAX_STRING_LENGTH, portal_gh->description,
+					 continent_name(world[location()].continent));
 		portal_gh->value[0] = rooms[0]->number;
 		portal_gh->description = str_dup(buff);
 		portal_gh->str_mask = STRUNG_DESC1;

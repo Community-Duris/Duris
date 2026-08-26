@@ -1151,7 +1151,8 @@ int search_block(char *arg, const char **list, int exact)
 int old_search_block(const char *argument, const uint begin, uint length, const char **list,
 		     const int mode)
 {
-	int guess, found, search;
+	int guess, found;
+	uint search;
 
 	if (!argument)
 		return -1;
@@ -1291,7 +1292,8 @@ void do_confirm(P_char ch, bool yes)
  */
 void command_interpreter(P_char ch, char *argument)
 {
-	uint look_at, begin, old_room;
+	uint look_at, begin;
+	int old_room;
 	int cmd, i, j, k, current;
 	const char *ch_ptr;
 	P_char target, master, exec_char = ch;

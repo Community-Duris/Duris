@@ -188,9 +188,8 @@
 
 #define NUMB_ARMOR_HORSE_FLAGS 8
 #define ARMOR_HORSE_ALL BIT_1
-#define ARMOR_HORSE_FRONT_TOP \
-	BIT_2 // from middle to head - let's say \
-		// saddles go here
+// From the middle to the head; saddles go here.
+#define ARMOR_HORSE_FRONT_TOP BIT_2
 #define ARMOR_HORSE_FRONT_SIDES BIT_3
 #define ARMOR_HORSE_FRONT_BOTTOM BIT_4
 #define ARMOR_HORSE_BACK_TOP BIT_5 // from middle to ass
@@ -209,12 +208,10 @@
 #define ARMOR_HEAD_CROWN BIT_5 // top of head - lights out, mommy
 #define ARMOR_HEAD_FRONT_LOWER BIT_6 // face area below nose
 #define ARMOR_HEAD_SIDES_LOWER BIT_7 // side of jaw
-#define ARMOR_HEAD_BACK_LOWER \
-	BIT_8 // back of head, where skull stops \
-		// and flesh of neck begins
-#define ARMOR_HEAD_CHIN \
-	BIT_9 // a dagger through the bottom of \
-		// the chin.  shrug.
+// Back of the head, where the skull stops and the flesh of the neck begins.
+#define ARMOR_HEAD_BACK_LOWER BIT_8
+// A dagger through the bottom of the chin. Shrug.
+#define ARMOR_HEAD_CHIN BIT_9
 
 // no need to really break these up, you get hit in the front of the neck and
 // you're generally fucked - back of neck, maybe not as bad, unless it's a

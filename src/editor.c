@@ -127,6 +127,7 @@ static char **edit_text_to_data(const char *source)
 				case '=':
 					t++;
 					loc++;
+					[[fallthrough]];
 				case 'n':
 				case 'N':
 					t += 2;
@@ -245,7 +246,10 @@ static int edit_delete_line(struct edit_data *data, int loc)
 	/* finally walk through the array, moving each entry up one slot  */
 	i = loc;
 	while (i < j)
-		data->lines[i] = data->lines[++i];
+	{
+		data->lines[i] = data->lines[i + 1];
+		i++;
+	}
 
 	return 0;
 }
@@ -284,7 +288,10 @@ static int edit_insert_data(struct edit_data *data, char **lines)
 
 	/* loop from j to curline, moving each line down i lines  */
 	while (j > data->cur_line)
-		data->lines[j - 1 + i] = data->lines[--j];
+	{
+		j--;
+		data->lines[j + i] = data->lines[j];
+	}
 
 	/* need the value of 'i' to update curline, but can't update curline
 	   yet... */
@@ -292,7 +299,10 @@ static int edit_insert_data(struct edit_data *data, char **lines)
 
 	/* then fill the "gap" with the new data */
 	while (i)
-		data->lines[data->cur_line + i - 1] = lines[--i];
+	{
+		i--;
+		data->lines[data->cur_line + i] = lines[i];
+	}
 
 	/* update cur_line  */
 	data->cur_line += new_cur;

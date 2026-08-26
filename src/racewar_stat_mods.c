@@ -21,12 +21,7 @@ int add_racewar_stat_mods(P_char ch, struct hold_data *affs)
 	if (!IS_PC(ch) || (GET_RACEWAR(ch) != RACEWAR_GOOD && GET_RACEWAR(ch) != RACEWAR_EVIL))
 		return FALSE;
 
-	int i;
-
-	if (GET_RACEWAR(ch) == RACEWAR_GOOD)
-		i = 0;
-	else if (GET_RACEWAR(ch) == RACEWAR_EVIL)
-		i = 1;
+	const int i = GET_RACEWAR(ch) == RACEWAR_GOOD ? 0 : 1;
 
 	affs->c_Str += racewar_stat_mods[i].Str;
 	affs->m_Str += racewar_stat_mods[i].Str;
@@ -55,12 +50,7 @@ int set_racewar_stat_mod(int racewar, int stat_affect, int regular_stat, int max
 	if (racewar != RACEWAR_GOOD && racewar != RACEWAR_EVIL)
 		return FALSE;
 
-	int i;
-
-	if (racewar == RACEWAR_GOOD)
-		i = 0;
-	else if (racewar == RACEWAR_EVIL)
-		i = 1;
+	const int i = racewar == RACEWAR_GOOD ? 0 : 1;
 
 	switch (stat_affect)
 	{

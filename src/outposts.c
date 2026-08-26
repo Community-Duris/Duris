@@ -181,7 +181,7 @@ void show_outposts(P_char ch)
 	Building *building;
 
 	send_to_char("&+WList of outposts:&n\r\n", ch);
-	for (i = 0; i <= buildings.size(); i++)
+	for (i = 0; i < static_cast<int>(buildings.size()); i++)
 	{
 		building = get_building_from_id(i + 1);
 		if (!qry("SELECT id, owner_id, archers, portal_room, golems, hitpoints, meurtriere FROM outposts WHERE id = %d",
@@ -223,7 +223,7 @@ void show_outposts(P_char ch)
 		}
 		else
 		{
-			fgets(Gbuf2, MAX_STR_NORMAL, f);
+			REQUIRED_FGETS(Gbuf2, MAX_STR_NORMAL, f);
 			Gbuf2[strlen(Gbuf2) - 1] = 0;
 			Gbuf2[ASC_MAX_STR - 1] = 0;
 			strcpy(title, Gbuf2);
@@ -236,7 +236,8 @@ void show_outposts(P_char ch)
 			pad_ansi(continent_name(world[building->location()].continent), 18).c_str(),
 			title);
 		send_to_char(buff, ch);
-		if (IS_TRUSTED(ch) || ((owner != 0) && (owner == GET_ASSOC(ch)->get_id())))
+		if (IS_TRUSTED(ch) || (GET_ASSOC(ch) && owner > 0 &&
+				       static_cast<unsigned int>(owner) == GET_ASSOC(ch)->get_id()))
 		{
 			snprintf(
 				buff, MAX_STRING_LENGTH,
@@ -254,7 +255,7 @@ void show_outposts(P_char ch)
 								 "&+c"),
 				 hitp, basehit);
 			send_to_char(buff, ch);
-			if (i + 1 < buildings.size())
+			if (i + 1 < static_cast<int>(buildings.size()))
 				send_to_char("\r\n", ch);
 		}
 	}
@@ -454,7 +455,6 @@ int get_guild_resources(int id, int type)
 	}
 
 	if (!qry("SELECT id, wood, stone FROM associations WHERE id = %d", id))
-		;
 	{
 		// WHY IS THIS FAILING?
 		debug("get_guild_resources() cant read from db");
@@ -909,11 +909,7 @@ void do_outpost(P_char ch, char *arg, int cmd)
 		return;
 	}
 
-	if (IS_TRUSTED(ch))
-		// show_outposts_wiz(ch);
-		show_outposts(ch);
-	else
-		show_outposts(ch);
+	show_outposts(ch);
 }
 
 void event_outpost_repair(P_char op, P_char vict, P_obj obj, void *data)
@@ -1477,7 +1473,7 @@ int outpost_gateguard_proc(P_char ch, P_char pl, int cmd, char *arg)
 			outpost_meurtriere_attack(ch);
 	}
 
-	if (pl && (cmd == CMD_GOTHIT && !number(0, 15)) || (cmd == CMD_HIT || cmd == CMD_KILL))
+	if (pl && ((cmd == CMD_GOTHIT && !number(0, 15)) || cmd == CMD_HIT || cmd == CMD_KILL))
 	{
 		// can add check here to see if guild has magic mouth upgrade from db?
 		snprintf(
@@ -1524,7 +1520,7 @@ void event_outposts_upkeep(P_char ch, P_char vict, P_obj obj, void *data)
 		num_ops[guild_num] = 0;
 	}
 
-	for (i = 1; i <= buildings.size(); i++)
+	for (i = 1; i <= static_cast<int>(buildings.size()); i++)
 	{
 		building = get_building_from_id(i);
 		if (!building)
@@ -1566,7 +1562,7 @@ void event_outposts_upkeep(P_char ch, P_char vict, P_obj obj, void *data)
 				send_to_guild(guild, "The Guild Banker",
 					      "There are not enough funds for the outpost upkeep.");
 				// drop outposts.
-				for (i = 1; i <= buildings.size(); i++)
+				for (i = 1; i <= static_cast<int>(buildings.size()); i++)
 				{
 					building = get_building_from_id(i);
 					if (!building)

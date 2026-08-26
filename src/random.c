@@ -54,7 +54,7 @@ void randomize(uint64_t seed)
 {
 	if (!seed)
 	{
-#if _WIN32
+#if defined(_WIN32) && _WIN32
 #pragma comment(lib, "Bcrypt.lib")
 		if (BCryptGenRandom(NULL, (PUCHAR)rng_state, sizeof rng_state,
 				    BCRYPT_USE_SYSTEM_PREFERRED_RNG))

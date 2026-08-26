@@ -527,16 +527,16 @@ void do_fraglist(P_char ch, char *arg, int cmd)
 	long frag_totals[MAX_RACEWAR] = { 0 };
 	for (int i = 0; i < MAX_RACEWAR; i++)
 	{
-		MYSQL_RES *res = db_query(
+		MYSQL_RES *total_result = db_query(
 			"SELECT SUM(total_frags) FROM frag_leaderboard WHERE racewar=%d", i);
-		if (res)
+		if (total_result)
 		{
-			MYSQL_ROW row = mysql_fetch_row(res);
-			if (row and row[0])
+			MYSQL_ROW total_row = mysql_fetch_row(total_result);
+			if (total_row and total_row[0])
 			{
-				frag_totals[i] = atol(row[0]);
+				frag_totals[i] = atol(total_row[0]);
 			}
-			mysql_free_result(res);
+			mysql_free_result(total_result);
 		}
 	}
 

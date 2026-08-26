@@ -71,7 +71,7 @@ unimap::unimap(const char16_t conv[256])
 const char16_t cp437_u[257] = u" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼▶◀↕‼¶§▬↨↑↓→←∟↔▲▼" CP437_PRINTABLE;
 
 // Control characters map to controls or ' '.
-unimap u_cp437(u"       \a\b\t\n  \r             \e    " CP437_PRINTABLE);
+unimap u_cp437(u"       \a\b\t\n  \r             \x1b    " CP437_PRINTABLE);
 
 // Downgrade table.
 unimap u_ascii("  " // U+00A0 = &nbsp;
@@ -472,9 +472,9 @@ void put_utf8(char *&d, int v)
 	else
 	{
 		// U+FFFD, replacement character
-		*d++ = 0xef;
-		*d++ = 0xbf;
-		*d++ = 0xbd;
+		*d++ = static_cast<char>(0xef);
+		*d++ = static_cast<char>(0xbf);
+		*d++ = static_cast<char>(0xbd);
 	}
 }
 

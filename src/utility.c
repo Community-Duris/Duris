@@ -557,7 +557,7 @@ int strn_cmp(const char *arg1, const char *arg2, uint n)
 
 /* returns TRUE if char is in global list, FALSE if not */
 
-const int char_in_list(const P_char ch)
+int char_in_list(const P_char ch)
 {
 	P_char tmp;
 
@@ -575,7 +575,7 @@ const int char_in_list(const P_char ch)
 
 /* returns TRUE if char is in given real room, FALSE if not */
 
-const int is_char_in_room(P_char ch, const int room)
+int is_char_in_room(P_char ch, const int room)
 {
 	P_char tmp;
 
@@ -815,11 +815,12 @@ void persistence_alert(int level, const char *domain, const char *owner, const c
 		va_end(args);
 	}
 
-	snprintf(alert, sizeof(alert), "domain=%s owner=%s item_uid=%s event_id=%s action=%s%s%s",
-		 (domain && *domain) ? domain : "unknown", (owner && *owner) ? owner : "unknown",
-		 (item_uid && *item_uid) ? item_uid : "none",
-		 (event_id && *event_id) ? event_id : "none",
-		 (action && *action) ? action : "unknown", details[0] ? " detail=" : "", details);
+	checked_snprintf(
+		alert, sizeof(alert), "domain=%s owner=%s item_uid=%s event_id=%s action=%s%s%s",
+		(domain && *domain) ? domain : "unknown", (owner && *owner) ? owner : "unknown",
+		(item_uid && *item_uid) ? item_uid : "none",
+		(event_id && *event_id) ? event_id : "none",
+		(action && *action) ? action : "unknown", details[0] ? " detail=" : "", details);
 
 	logit(LOG_FILE, "PERSISTENCE: %s", alert);
 	logit(LOG_WIZ, "PERSISTENCE: %s", alert);
@@ -852,11 +853,11 @@ const char *persistence_item_uid_text(P_obj obj, char *buf, int buf_size)
 
 	if (!obj || !obj->obj_uid)
 	{
-		snprintf(buf, buf_size, "none");
+		checked_snprintf(buf, buf_size, "none");
 	}
 	else
 	{
-		snprintf(buf, buf_size, "%lu", obj->obj_uid);
+		checked_snprintf(buf, buf_size, "%lu", obj->obj_uid);
 	}
 
 	return buf;
@@ -874,7 +875,8 @@ static const char *persistence_fallback_record_line(const char *line, const char
 		return line;
 
 	if (!buf || buf_size <= 0 ||
-	    snprintf(buf, buf_size, "%s%s", PERSISTENCE_SCALAR_EVENT_PREFIX, line) >= buf_size)
+	    checked_snprintf(buf, buf_size, "%s%s", PERSISTENCE_SCALAR_EVENT_PREFIX, line) >=
+		    buf_size)
 		return NULL;
 	return buf;
 }
@@ -973,7 +975,7 @@ static const char *persistence_clean_field(const char *in, char *buf, int buf_si
 
 	if (!in)
 	{
-		snprintf(buf, buf_size, "none");
+		checked_snprintf(buf, buf_size, "none");
 		return buf;
 	}
 
@@ -1089,7 +1091,10 @@ int persistence_flush_item_events(int max_events)
 				int fd = open(LOG_EVENT, O_WRONLY);
 				if (fd >= 0)
 				{
-					ftruncate(fd, durability_offset);
+					if (ftruncate(fd, durability_offset) != 0)
+						logit(LOG_SYS,
+						      "Could not restore %s after persistence failure: %s",
+						      LOG_EVENT, strerror(errno));
 					close(fd);
 				}
 			}
@@ -1230,7 +1235,10 @@ int persistence_flush_scalar_events(int max_events)
 				int fd = open(LOG_EVENT, O_WRONLY);
 				if (fd >= 0)
 				{
-					ftruncate(fd, durability_offset);
+					if (ftruncate(fd, durability_offset) != 0)
+						logit(LOG_SYS,
+						      "Could not restore %s after persistence failure: %s",
+						      LOG_EVENT, strerror(errno));
 					close(fd);
 				}
 			}
@@ -1444,7 +1452,7 @@ int persistence_replay_fallback_events(void)
 
 	while (fgets(line, sizeof(line), in_f))
 	{
-		snprintf(event_line, sizeof(event_line), "%s", line);
+		checked_snprintf(event_line, sizeof(event_line), "%s", line);
 		persistence_trim_record_line(event_line);
 
 		if (persistence_line_has_prefix(event_line, PERSISTENCE_ITEM_EVENT_PREFIX))
@@ -3880,7 +3888,7 @@ void CAP(char *str)
 			pos += 4;
 		else if (str[pos + 1] == 'n' || str[pos + 1] == 'N')
 			pos += 2;
-		else if (str[pos + 1] == '-' || str[pos + 1] == '+' && is_ansi_char(str[pos + 2]))
+		else if ((str[pos + 1] == '-' || str[pos + 1] == '+') && is_ansi_char(str[pos + 2]))
 			pos += 3;
 		// It's an actual & at the start of the string.. go figure.
 		else
@@ -3904,7 +3912,7 @@ void DECAP(char *str)
 			pos += 4;
 		else if (str[pos + 1] == 'n' || str[pos + 1] == 'N')
 			pos += 2;
-		else if (str[pos + 1] == '-' || str[pos + 1] == '+' && is_ansi_char(str[pos + 2]))
+		else if ((str[pos + 1] == '-' || str[pos + 1] == '+') && is_ansi_char(str[pos + 2]))
 			pos += 3;
 		// It's an actual & at the start of the string.. go figure.
 		else
@@ -4263,17 +4271,11 @@ string strip_ansi(const char *str)
 			}
 			if ((*(str + 1) == '-') || (*(str + 1) == '+'))
 			{
-				if (isupper(*(str + 1)))
-					;
 				str += 3;
 				continue;
 			}
 			if ((*(str + 1) == '='))
 			{
-				if (isupper(*(str + 1)))
-					;
-				if (isupper(*(str + 2)))
-					;
 				str += 4;
 				continue;
 			}
@@ -4753,16 +4755,16 @@ const char *who_display_name(P_char viewer, P_char viewee, char *buf, size_t buf
 	{
 		if (IS_DISGUISE(viewee))
 		{
-			snprintf(buf, bufsize, "%s (disguised)", GET_NAME(viewee));
+			checked_snprintf(buf, bufsize, "%s (disguised)", GET_NAME(viewee));
 		}
 		else
 		{
-			snprintf(buf, bufsize, "%s", GET_NAME(viewee));
+			checked_snprintf(buf, bufsize, "%s", GET_NAME(viewee));
 		}
 	}
 	else
 	{
-		snprintf(buf, bufsize, "%s", GET_NAME1(viewee));
+		checked_snprintf(buf, bufsize, "%s", GET_NAME1(viewee));
 	}
 
 	return buf;
@@ -5107,7 +5109,7 @@ void boot_desc_data()
 	count = 0;
 	do
 	{
-		fgets(buf, 100, f);
+		REQUIRED_FGETS(buf, 100, f);
 		*strchrnul(buf, '\n') = '\0';
 		appearance_descs[count] = str_dup(buf);
 		count++;
@@ -5121,7 +5123,7 @@ void boot_desc_data()
 		return;
 	while (buf[0] != '$')
 	{
-		fgets(buf, 100, f);
+		REQUIRED_FGETS(buf, 100, f);
 		buf[strlen(buf) - 1] = '\0';
 		shape_descs[count] = str_dup(buf);
 		count++;
@@ -5134,7 +5136,7 @@ void boot_desc_data()
 		return;
 	while (buf[0] != '$')
 	{
-		fgets(buf, 100, f);
+		REQUIRED_FGETS(buf, 100, f);
 		buf[strlen(buf) - 1] = '\0';
 		modifier_descs[count] = str_dup(buf);
 		count++;
@@ -5434,8 +5436,8 @@ void broadcast_to_arena(const char *msg, P_char ch, P_char vict, int rm)
 
 			/* msg must have first %s be name of ch, second be name of vict */
 
-			snprintf(strn, MAX_STRING_LENGTH, msg, PERS(ch, c, 1),
-				 vict ? PERS(vict, c, 1) : "(null)");
+			checked_snprintf_runtime(strn, MAX_STRING_LENGTH, msg, PERS(ch, c, 1),
+						 vict ? PERS(vict, c, 1) : "(null)");
 			send_to_char(strn, c);
 		}
 
@@ -6079,27 +6081,29 @@ int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, 
 	int hit = 0;
 	for (int i = 0; i < count; i++)
 	{
-		P_char tch = vict_array[i];
-		if (!tch)
+		P_char area_target = vict_array[i];
+		if (!area_target)
 			continue;
-		if (!is_char_in_room(tch, ch_room))
+		if (!is_char_in_room(area_target, ch_room))
 			continue;
 		if (!is_char_in_room(ch, ch_room))
 			break;
-		if (has_innate(tch, INNATE_EVASION) && GET_SPEC(tch, CLASS_MONK, SPEC_WAYOFSNAKE))
+		if (has_innate(area_target, INNATE_EVASION) &&
+		    GET_SPEC(area_target, CLASS_MONK, SPEC_WAYOFSNAKE))
 		{
-			if ((GET_LEVEL(tch) - ((int)get_property("innate.evasion.removechance",
-								 15.000))) > number(1, 100))
+			if ((GET_LEVEL(area_target) -
+			     ((int)get_property("innate.evasion.removechance", 15.000))) >
+			    number(1, 100))
 			{
 				send_to_char(
 					"You twist out of the way avoiding the harmful magic!\n",
-					tch);
+					area_target);
 				act("$n twists out of the way avoiding the harmful magic!", FALSE,
-				    tch, 0, ch, TO_ROOM);
+				    area_target, 0, ch, TO_ROOM);
 				continue;
 			}
 		}
-		spell_func(level, ch, (char *)&hit, 0, tch, NULL);
+		spell_func(level, ch, (char *)&hit, 0, area_target, NULL);
 		hit++;
 	}
 
@@ -6349,6 +6353,7 @@ bool IS_TWILIGHT_ROOM(int r)
 		{
 			break;
 		}
+		[[fallthrough]];
 	case SECT_UNDERWATER:
 	case SECT_UNDERWATER_GR:
 	case SECT_FIREPLANE:

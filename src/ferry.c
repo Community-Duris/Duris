@@ -69,17 +69,17 @@ char buffer[MAX_STRING_LENGTH];
 Ferry::Ferry()
 	: id(0)
 	, ticket_price(5000)
-	, boarding_room_num(0)
-	, cur_state(FRY_STATE_DISABLED)
-	, state_timer(0)
-	, speed(0)
-	, wait_time(0)
-	, depart_notice_time(0)
 	, obj_num(0)
 	, obj(NULL)
 	, ticket_obj_num(0)
+	, boarding_room_num(0)
+	, speed(0)
+	, wait_time(0)
+	, depart_notice_time(0)
 	, cur_route_leg(0)
 	, cur_route_leg_step(0)
+	, cur_state(FRY_STATE_DISABLED)
+	, state_timer(0)
 {
 }
 
@@ -101,7 +101,7 @@ void Ferry::init()
 	}
 
 	// fprintf(stderr, "         Generating route paths...\r\n");
-	for (int i = 0; i < route.size(); i++)
+	for (size_t i = 0; i < route.size(); i++)
 	{
 		if (route[i].stop_here)
 		{
@@ -358,7 +358,8 @@ void Ferry::move()
 		return;
 	}
 
-	if (cur_route_leg_step >= route[cur_route_leg].path.size())
+	if (cur_route_leg_step < 0 ||
+	    static_cast<size_t>(cur_route_leg_step) >= route[cur_route_leg].path.size())
 	{
 		// somehow the path is messed up - panic!
 		logit(LOG_DEBUG, "ferry %s tried to move past the path length.", name.c_str());

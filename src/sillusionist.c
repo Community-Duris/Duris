@@ -156,7 +156,8 @@ void spell_shadow_monster(int level, P_char ch, char *arg, int type, P_char vict
 	}
 
 	// Non-illusionists get a limit of 1 (for weapon procs etc).
-	if (summoned >= MAX(1, GET_LEVEL(ch) / 14) || summoned && !GET_CLASS(ch, CLASS_ILLUSIONIST))
+	if (summoned >= MAX(1, GET_LEVEL(ch) / 14) ||
+	    (summoned && !GET_CLASS(ch, CLASS_ILLUSIONIST)))
 	{
 		send_to_char("You cannot summon any more shadows!\r\n", ch);
 		return;
@@ -1717,8 +1718,9 @@ void spell_imprison(int level, P_char ch, char *arg, int type, P_char victim, P_
 
 	SET_BIT(shell->str_mask, STRUNG_DESC1);
 
-	snprintf(buf, 1024, shell->description,
-		 victim->player.short_descr ? victim->player.short_descr : "someone");
+	checked_snprintf_runtime(buf, 1024, shell->description,
+				 victim->player.short_descr ? victim->player.short_descr :
+							      "someone");
 
 	shell->description = str_dup(buf);
 	shell->value[0] = GET_PID(victim);
@@ -2371,7 +2373,6 @@ void spell_shadow_spawn(int level, P_char ch, char *arg, int type, P_char victim
 	}
 
 	if (spell_damage(ch, victim, dam, SPLDAM_SPIRIT, 0, &messages) == DAM_NONEDEAD)
-		;
 	{
 		// Undead, elite, and greater races don't care about the affects.
 		if ((IS_ELITE(victim) || IS_GREATER_RACE(victim) || IS_UNDEAD(victim)))

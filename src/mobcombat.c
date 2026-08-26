@@ -686,6 +686,7 @@ void DriderCombat(P_char ch, P_char victim)
 			hit(ch, victim, ch->equipment[PRIMARY_WEAPON]);
 			break;
 		}
+		[[fallthrough]];
 	case 3:
 	case 4:
 		do_action(ch, 0, CMD_ROAR);
@@ -1145,7 +1146,8 @@ int DemonCombat(P_char ch)
 
 int babau_combat(P_char ch, P_char vict, int cmd, char *arg)
 {
-	int last_sum = 0, curr_time;
+	static time_t last_summon = 0;
+	const time_t current_time = time(NULL);
 	P_char target = vict;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -1157,8 +1159,6 @@ int babau_combat(P_char ch, P_char vict, int cmd, char *arg)
 	if (!IS_SET(ch->specials.act, ACT_HUNTER))
 		SET_BIT(ch->specials.act, ACT_HUNTER);
 
-	if (!IS_SET(ch->specials.affected_by, AFF_SNEAK))
-		;
 	SET_BIT(ch->specials.affected_by, AFF_SNEAK);
 
 	if (GET_OPPONENT(ch))
@@ -1170,10 +1170,10 @@ int babau_combat(P_char ch, P_char vict, int cmd, char *arg)
 		do_hide(ch, 0, 1);
 		return FALSE;
 	}
-	else if (IS_FIGHTING(ch) && number(0, 100) < 40 && (last_sum + 1800 < curr_time))
+	else if (IS_FIGHTING(ch) && number(0, 100) < 40 && (last_summon + 1800 < current_time))
 	{
 		summon_new_demon(ch, 1);
-		last_sum = curr_time;
+		last_summon = current_time;
 		return FALSE;
 	}
 

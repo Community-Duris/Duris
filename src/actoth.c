@@ -1988,12 +1988,12 @@ bool do_save_silent(P_char ch, int type)
 
 			if (f != NULL)
 			{
-				fgets(tmp_buf, MAX_STRING_LENGTH, f);
+				REQUIRED_FGETS(tmp_buf, MAX_STRING_LENGTH, f);
 				if (tmp_buf[0] != '\0')
 				{
-					fscanf(f, "Address:  %s\n", tmp_buf);
-					fscanf(f, "\n");
-					fgets(tmp_buf, MAX_STRING_LENGTH, f);
+					REQUIRED_FSCANF(f, "Address:  %s\n", tmp_buf);
+					REQUIRED_FSCANF_NO_FIELDS(f, "\n");
+					REQUIRED_FGETS(tmp_buf, MAX_STRING_LENGTH, f);
 					if (tmp_buf[0] == 'N')
 					{
 						sscanf(tmp_buf, "Name:    %s\n", tmp_buf2);
@@ -3767,10 +3767,7 @@ void do_cheat(P_char ch, char *argument, int cmd)
 		if (!i->connected && !is_silent(i->character, FALSE) && (i->character != ch) &&
 		    IS_SET(i->character->specials.act, PLR_PETITION) && IS_TRUSTED(i->character))
 		{
-			if (IS_TRUSTED(ch))
-				act(Gbuf1, 0, ch, 0, i->character, TO_VICT);
-			else
-				act(Gbuf1, 0, ch, 0, i->character, TO_VICT);
+			act(Gbuf1, 0, ch, 0, i->character, TO_VICT);
 		}
 }
 
@@ -5236,11 +5233,13 @@ void do_toggle(P_char ch, char *arg, int cmd)
 		return send_to_char("A boolean flag needed: yes/no/1/0/on/off\n", ch);
 	if (result)
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, tog_messages[tog_nr][TOG_ON], Gbuf3);
+		checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH, tog_messages[tog_nr][TOG_ON],
+					 Gbuf3);
 	}
 	else
 	{
-		snprintf(Gbuf1, MAX_STRING_LENGTH, tog_messages[tog_nr][TOG_OFF], Gbuf3);
+		checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH, tog_messages[tog_nr][TOG_OFF],
+					 Gbuf3);
 	}
 	send_to_char(Gbuf1, send_ch);
 }

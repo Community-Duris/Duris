@@ -6,7 +6,22 @@ CC	= g++
 DEBUG	= -ggdb3
 #LDFLAGS	= -ggdb3
 
-CFLAGS = -g -std=c++20 -D_FORTIFY_SOURCE=0 -Wno-write-strings
+HARDENING_FLAGS = -Og -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection
+WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
+	-Wformat=2 -Wformat-overflow=2 -Wformat-truncation=2 \
+	-Wnull-dereference -Wduplicated-cond -Wduplicated-branches -Wlogical-op \
+	-Wimplicit-fallthrough=5 -Walloca -Wvla -Wdate-time -Wundef \
+	-Wshadow=compatible-local -Wcast-align=strict -Wstringop-overflow=4 \
+	-Warray-bounds=2 -Wstrict-overflow=2 -Wuse-after-free=3
+
+# Legacy command/procedure signatures intentionally leave callback parameters
+# unused, many feature-gated locals survive disabled builds, and partial C-style
+# aggregates intentionally zero-initialize their trailing fields.
+LEGACY_WARNING_EXCEPTIONS = -Wno-write-strings -Wno-unused-parameter \
+	-Wno-unused-variable -Wno-unused-but-set-variable \
+	-Wno-missing-field-initializers -Wno-unused-function
+
+CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS) $(LEGACY_WARNING_EXCEPTIONS)
 #CFLAGS += -D__NO_MYSQL__
 CFLAGS += -DTEST_MUD
 CFLAGS += -D__NO_TESTS__    # exclude test suite from production build
@@ -100,6 +115,7 @@ OBJS =  $(SHIP_OBJS) \
 				 mining_config.o \
 				 random_equipment_config.o \
 				 safe_format.o \
+				 safe_io.o \
 				 salvage.o \
 				 material_rarity.o \
 				 dreadlord.o \

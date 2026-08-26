@@ -55,7 +55,7 @@ struct ferry_definition
 	} *stops;
 };
 
-Ferry *create_ferry(struct ferry_definition *fd)
+Ferry *create_ferry(const struct ferry_definition *fd)
 {
 	Ferry *wd = new Ferry();
 
@@ -91,90 +91,104 @@ Ferry *create_ferry(struct ferry_definition *fd)
 	return wd;
 }
 
-const struct ferry_definition ferries[] = {
+static int wave_dancer_rooms[] = { 47003, 47010, 0 };
+static struct ferry_definition::stop_info wave_dancer_stops[] = {
+	{ 635261, "&+gKhomani-Khan&N" },
+	{ 76654, "&+gThe &+GJade &+gEmpire&N" },
+	{ 1712, "&+mQuietus Quay&N" },
+	{ 76654, "&+gThe &+GJade &+gEmpire&N" },
+	{ 82686, "&+MMyrabolus&N" },
+	{ 76654, "&+gThe &+GJade &+gEmpire&N" },
+	{ 0 }
+};
+static int seaspray_rooms[] = { 47025, 47025, 0 };
+static struct ferry_definition::stop_info seaspray_stops[] = { { 22444, "&+WSto&+Lrm Port&n" },
+							       { 550724,
+								 "&+bMenden-on-the-Deep&n" },
+							       { 0 } };
+static int stalval_rooms[] = { 47073, 47132, 0 };
+static struct ferry_definition::stop_info stalval_stops[] = { { 83787, "&+WDeramuth Port&N" },
+							      { 564319, "&+rFort &+RBoyard&N" },
+							      { 0 } };
+static int crimson_fulgur_rooms[] = { 47133, 47195, 0 };
+static struct ferry_definition::stop_info crimson_fulgur_stops[] = { { 83788,
+								       "&+WDeramuth Port&N" },
+								     { 9979, "&+ySarmiz'Duul&N" },
+								     { 0 } };
+static int ironhold_grudge_rooms[] = { 47030, 47071, 0 };
+static struct ferry_definition::stop_info ironhold_grudge_stops[] = { { 83789,
+									"&+WDeramuth Port&N" },
+								      { 49089, "&+YVenan'Trut&N" },
+								      { 0 } };
+static int rickety_ferry_rooms[] = { 47027, 47028, 0 };
+static struct ferry_definition::stop_info rickety_ferry_stops[] = {
+	{ 133052, "&+WTharnadia&N" },
+	{ 557216, "&+CMoonshae &+GIsland&N" },
+	{ 550723, "&+bMenden-of-the-Deep&N" },
+	{ 0 }
+};
+
+static const struct ferry_definition ferries[] = {
 	{ "&+yThe &+WWave&+BDancer&N", // name
 	  1, // id
 	  47013, // shop object
 	  47011, // boarding room vnum
-	  (int[]){ 47003, 47010, 0 }, // other rooms
+	  wave_dancer_rooms, // other rooms
 	  1, // speed
 	  180, // wait time
 	  60, // depart notice time
 	  10000, // ticket price
-	  (struct ferry_definition::stop_info[]){ // stops
-						  { 635261, "&+gKhomani-Khan&N" },
-						  { 76654, "&+gThe &+GJade &+gEmpire&N" },
-						  { 1712, "&+mQuietus Quay&N" },
-						  { 76654, "&+gThe &+GJade &+gEmpire&N" },
-						  { 82686, "&+MMyrabolus&N" },
-						  { 76654, "&+gThe &+GJade &+gEmpire&N" },
-						  { 0 } } },
+	  wave_dancer_stops }, // stops
 	{ "&+yThe &+bSe&+ca&+Wsp&+Cr&+bay&N", // name
 	  2, // id
 	  47014, // shop object
 	  47026, // boarding room vnum
-	  (int[]){ 47025, 47025, 0 }, // other rooms
+	  seaspray_rooms, // other rooms
 	  1, // speed
 	  120, // wait time
 	  60, // depart notice time
 	  10000, // ticket price
-	  (struct ferry_definition::stop_info[]){ // stops
-						  { 22444, "&+WSto&+Lrm Port&n" },
-						  { 550724, "&+bMenden-on-the-Deep&n" },
-						  { 0 } } },
+	  seaspray_stops }, // stops
 	{ "&+yThe &+CStalval&N", // name
 	  3, // id
 	  47016, // shop object
 	  47072, // boarding room vnum
-	  (int[]){ 47073, 47132, 0 }, // other rooms
+	  stalval_rooms, // other rooms
 	  2, // speed
 	  180, // wait time
 	  60, // depart notice time
 	  10000, // ticket price
-	  (struct ferry_definition::stop_info[]){ // stops
-						  { 83787, "&+WDeramuth Port&N" },
-						  { 564319, "&+rFort &+RBoyard&N" },
-						  { 0 } } },
+	  stalval_stops }, // stops
 	{ "&+rThe &+RC&+rr&+Ri&+rm&+Rs&+ro&+Rn F&+ru&+ylg&+ru&+Rr&N", // name
 	  4, // id
 	  47017, // shop object
 	  47146, // boarding room vnum
-	  (int[]){ 47133, 47195, 0 }, // other rooms
+	  crimson_fulgur_rooms, // other rooms
 	  2, // speed
 	  240, // wait time
 	  30, // depart notice time
 	  10000, // ticket price
-	  (struct ferry_definition::stop_info[]){ // stops
-						  { 83788, "&+WDeramuth Port&N" },
-						  { 9979, "&+ySarmiz'Duul&N" },
-						  { 0 } } },
+	  crimson_fulgur_stops }, // stops
 	{ "&+LThe &+cIron&+Lhold &+CG&+crudg&+Ce&n", // name
 	  5, // id
 	  47015, // shop object
 	  47029, // boarding room vnum
-	  (int[]){ 47030, 47071, 0 }, // other rooms
+	  ironhold_grudge_rooms, // other rooms
 	  2, // speed
 	  180, // wait time
 	  60, // depart notice time
 	  10000, // ticket price
-	  (struct ferry_definition::stop_info[]){ // stops
-						  { 83789, "&+WDeramuth Port&N" },
-						  { 49089, "&+YVenan'Trut&N" },
-						  { 0 } } },
+	  ironhold_grudge_stops }, // stops
 	{ "&+yOld Rickety Ferry&N", // name
 	  6, // id
 	  47004, // shop object
 	  47024, // boarding room vnum
-	  (int[]){ 47027, 47028, 0 }, // other rooms
+	  rickety_ferry_rooms, // other rooms
 	  2, // speed
 	  120, // wait time
 	  60, // depart notice time
 	  5000, // ticket price
-	  (struct ferry_definition::stop_info[]){ // stops
-						  { 133052, "&+WTharnadia&N" },
-						  { 557216, "&+CMoonshae &+GIsland&N" },
-						  { 550723, "&+bMenden-of-the-Deep&N" },
-						  { 0 } } },
+	  rickety_ferry_stops }, // stops
 	{ 0 }
 };
 
@@ -190,7 +204,7 @@ void init_ferries()
 
 	fprintf(stderr, "--    Booting Ferries\r\n");
 
-	struct ferry_definition *it = (struct ferry_definition *)ferries;
+	const struct ferry_definition *it = ferries;
 	while (it->name != NULL)
 	{
 		ferry_list.push_back(create_ferry(it));

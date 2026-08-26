@@ -152,7 +152,11 @@
 		}                                \
 	}
 
-#define GET_BYTE(buf) (*(char *)((buf)++))
+template <typename T> inline char getByte(T *&buf)
+{
+	return *(char *)(buf++);
+}
+#define GET_BYTE(buf) getByte(buf)
 #define GET_SHORT(buf) getShort(&buf)
 #define GET_INTE(buf) getInt(&buf)
 #if 0

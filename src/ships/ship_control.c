@@ -1264,7 +1264,7 @@ int look_contacts(P_char ch, P_ship ship)
 
 int look_weaponspec(P_char ch, P_ship ship)
 {
-	char rng[20], dam[20];
+	char rng[32], dam[48];
 	send_to_char("&+rWeapon Specifications&N\r\n", ch);
 	send_to_char("&+r===========================================================&N\r\n", ch);
 	send_to_char("Num  Name                     Range  Damage    Ammo   Status\r\n", ch);

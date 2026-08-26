@@ -31,6 +31,7 @@ extern struct room_data *world;
 extern struct zone_data *zone_table;
 extern struct index_data *mob_index;
 extern struct index_data *obj_index;
+extern int top_of_zone_table;
 extern struct time_info_data time_info;
 extern const char *month_name[];
 extern const char *size_types[];
@@ -527,7 +528,9 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 	root = cJSON_CreateObject();
 
 	/* Standard field: num (not vnum) - hide for wilderness zones */
-	int zone_num = (room->zone >= 0) ? zone_table[room->zone].number : 0;
+	const bool has_zone = top_of_zone_table >= 0 &&
+			      room->zone <= (unsigned int)top_of_zone_table;
+	int zone_num = has_zone ? zone_table[room->zone].number : 0;
 	bool is_wilderness = (zone_num == 600 || // The Adventurers Shipyards
 			      (zone_num >= 1200 && zone_num <= 1238) || // Alatorin
 			      (zone_num >= 5000 && zone_num <= 6599) || // Surface
@@ -551,7 +554,7 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 	free(clean_name);
 
 	/* Area name - clean for Mudlet, colored for web */
-	if (room->zone >= 0 && zone_table[room->zone].name)
+	if (has_zone && zone_table[room->zone].name)
 	{
 		clean_area = json_escape_ansi_string(zone_table[room->zone].name);
 		cJSON_AddStringToObject(root, "area", clean_area);
@@ -783,7 +786,7 @@ char *json_build_room_info(struct room_data *room, struct char_data *ch)
 	cJSON_AddItemToObject(root, "items", items);
 
 	/* DurisMUD extensions (beyond standard GMCP) */
-	if (room->zone >= 0)
+	if (has_zone)
 	{
 		cJSON_AddNumberToObject(root, "zone", zone_table[room->zone].number);
 	}

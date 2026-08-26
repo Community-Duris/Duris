@@ -92,7 +92,7 @@ int betrayal(P_obj obj, P_char ch, int cmd, char *arg)
 	if (!OBJ_WORN_POS(obj, WIELD))
 		return (FALSE);
 
-	vict = (P_char)arg;
+	vict = legacy_proc_arg<P_char>(arg);
 
 	if (!vict)
 		return (FALSE);
@@ -219,7 +219,7 @@ int mistweave(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	if (!(vict = (P_char)arg))
+	if (!(vict = legacy_proc_arg<P_char>(arg)))
 	{
 		return FALSE;
 	}
@@ -314,7 +314,7 @@ int leather_vest(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// IMPORTANT: Can do this type cast (next line) ONLY if cmd was CMD_GOTHIT!
-	data = (struct proc_data *)arg;
+	data = legacy_proc_arg<struct proc_data *>(arg);
 	vict = data->victim;
 	act("&+LHuge &+wsp&+Wi&+wkes &+Ljet out from your $q &+Lstopping $N's &+Llunge at you.",
 	    FALSE, ch, obj, vict, TO_CHAR | ACT_NOTTERSE);
@@ -394,7 +394,8 @@ int ogrebane(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// If dam is not 0, we have been called when weapon hits someone
-	if (!dam || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) || !(vict = (P_char)arg))
+	if (!dam || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) ||
+	    !(vict = legacy_proc_arg<P_char>(arg)))
 	{
 		return FALSE;
 	}
@@ -446,7 +447,8 @@ int giantbane(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// If dam is not 0, we have been called when weapon hits someone
-	if (!dam || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) || !(vict = (P_char)arg))
+	if (!dam || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) ||
+	    !(vict = legacy_proc_arg<P_char>(arg)))
 	{
 		return FALSE;
 	}
@@ -497,7 +499,7 @@ int dwarfslayer(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) ||
-	    !(vict = (P_char)arg))
+	    !(vict = legacy_proc_arg<P_char>(arg)))
 	{
 		return FALSE;
 	}
@@ -552,7 +554,8 @@ int mindbreaker(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// If dam is not 0, we have been called when weapon hits someone
-	if (!dam || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) || !(vict = (P_char)arg))
+	if (!dam || !IS_ALIVE(ch) || !OBJ_WORN_POS(obj, WIELD) ||
+	    !(vict = legacy_proc_arg<P_char>(arg)))
 	{
 		return FALSE;
 	}

@@ -199,7 +199,7 @@ bool notch_skill(P_char ch, int skill, float chance)
 		return FALSE;
 	}
 
-#if wipe2011
+#if defined(wipe2011) && wipe2011
 	// The following addition is for wipe 2011, where intelligence will help determine
 	//   chance to notch a skill, thus making it a partially important stat for rockhead melee
 	//   characters - Jexni 6/5/11
@@ -573,50 +573,64 @@ void do_spells(P_char ch, char *argument, int cmd)
 
 			*buf2 = '\0';
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_ANTIPALADIN) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+LAP(&n&+C%d&+L)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+LAP(&n&+C%d&+L)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_CLERIC) - 1].rlevel[0]))
 				snprintf(buf2 + strlen(buf), MAX_STRING_LENGTH,
 					 "&+cCL(&n&+C%d&n&+y)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_CONJURER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+YCO(&n&+C%d&+Y)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+YCO(&n&+C%d&+Y)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_DRUID) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+gDR(&n&+C%d&n&+g)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+gDR(&n&+C%d&n&+g)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_NECROMANCER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+mNE(&n&+C%d&n&+m)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+mNE(&n&+C%d&n&+m)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_PALADIN) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+WPA(&n&+C%d&+W)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+WPA(&n&+C%d&+W)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_RANGER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+GRA(&n&+C%d&+G)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+GRA(&n&+C%d&+G)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_SHAMAN) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+CSH(&n&+C%d&+C)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+CSH(&n&+C%d&+C)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_SORCERER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+MSO(&n&+C%d&+M)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+MSO(&n&+C%d&+M)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_PSIONICIST) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+bPS(&n&+C%d&n&+b)&n", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+bPS(&n&+C%d&n&+b)&n", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_MINDFLAYER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+bMF(&n&+C%d&n&+b)&n", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+bMF(&n&+C%d&n&+b)&n", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_ILLUSIONIST) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+MIL(&n&+C%d&+M)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+MIL(&n&+C%d&+M)&n,", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_REAVER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+bRV(&n&+C%d&n&+b)&n", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+bRV(&n&+C%d&n&+b)&n", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_THEURGIST) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+cTH(&n&+C%d&n&+b)&n", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+cTH(&n&+C%d&n&+b)&n", lvl);
 			if ((lvl = skills[spell].m_class[flag2idx(CLASS_SUMMONER) - 1].rlevel[0]))
-				snprintf(buf2 + strlen(buf2), MAX_STRING_LENGTH - strlen(buf2),
-					 "&+RSU(&n&+C%d&+R)&n,", lvl);
+				checked_snprintf(buf2 + strlen(buf2),
+						 MAX_STRING_LENGTH - strlen(buf2),
+						 "&+RSU(&n&+C%d&+R)&n,", lvl);
 
 			char buf3[MAX_STRING_LENGTH];
 			checked_snprintf(buf3, MAX_STRING_LENGTH, "[%3d] %-28s  %s   %s\n", spell,
@@ -627,7 +641,7 @@ void do_spells(P_char ch, char *argument, int cmd)
 			if (strlen(buf1) + strlen(buf3) > MAX_STRING_LENGTH)
 			{
 				send_to_char(buf1, ch);
-				snprintf(buf1, MAX_STRING_LENGTH, "%s", buf3);
+				checked_snprintf(buf1, MAX_STRING_LENGTH, "%s", buf3);
 			}
 			else
 			{
@@ -871,8 +885,8 @@ void do_skills(P_char ch, char *argument, int cmd)
 			buf[0] = '\0';
 			skl = SortedSkills[skil];
 			if (((IS_EPIC_SKILL(skl) && target->only.pc->skills[skl].learned) ||
-			     GET_LVL_FOR_SKILL(target, skl) > 0 &&
-				     GET_LVL_FOR_SKILL(target, skl) <= MAXLVLMORTAL) &&
+			     (GET_LVL_FOR_SKILL(target, skl) > 0 &&
+			      GET_LVL_FOR_SKILL(target, skl) <= MAXLVLMORTAL)) &&
 			    (IS_SKILL(skl) || IS_INSTRUMENT_SKILL(skl) || IS_BARD_SONG(skl)))
 			{
 				if (IS_PC(target))

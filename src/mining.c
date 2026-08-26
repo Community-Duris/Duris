@@ -90,11 +90,11 @@ int mines_properties(int map)
 	}
 }
 
-// #define IS_MINING_PICK(obj) ( OBJ_VNUM(obj) == 253 || \
-// OBJ_VNUM(obj) == 338 || \
-// OBJ_VNUM(obj) == 10640 || \
-// OBJ_VNUM(obj) == 95531 || \
-// OBJ_VNUM(obj) == 49018 )
+/*
+#define IS_MINING_PICK(obj) (OBJ_VNUM(obj) == 253 || OBJ_VNUM(obj) == 338 ||
+			     OBJ_VNUM(obj) == 10640 || OBJ_VNUM(obj) == 95531 ||
+			     OBJ_VNUM(obj) == 49018)
+*/
 
 #define IS_MINING_PICK(obj) (isname("pick", obj->name) && obj->type == ITEM_WEAPON)
 

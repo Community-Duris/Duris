@@ -209,7 +209,7 @@ void do_construct_overmax(P_char ch, char *arg)
 	else
 		maxovermax = 0;
 
-	if (GET_ASSOC(ch)->get_overmax() >= maxovermax)
+	if (GET_ASSOC(ch)->get_overmax() >= static_cast<unsigned int>(MAX(0, maxovermax)))
 	{
 		send_to_char("You can't purchase anymore max players.\r\n", ch);
 		return;
@@ -228,7 +228,8 @@ void do_construct_overmax(P_char ch, char *arg)
 			return;
 		}
 
-		if (GET_ASSOC(ch)->get_construction() < cp_cost)
+		if (cp_cost > 0 &&
+		    GET_ASSOC(ch)->get_construction() < static_cast<unsigned long>(cp_cost))
 		{
 			snprintf(
 				buff, MAX_STRING_LENGTH,
@@ -284,7 +285,8 @@ void do_construct_guildhall(P_char ch, char *arg)
 			return;
 		}
 
-		if (GET_ASSOC(ch)->get_construction() < cp_cost)
+		if (cp_cost > 0 &&
+		    GET_ASSOC(ch)->get_construction() < static_cast<unsigned long>(cp_cost))
 		{
 			snprintf(
 				buff, MAX_STRING_LENGTH,
@@ -393,7 +395,8 @@ void do_construct_room(P_char ch, char *arg)
 			return;
 		}
 
-		if (GET_ASSOC(ch)->get_construction() < cp_cost)
+		if (cp_cost > 0 &&
+		    GET_ASSOC(ch)->get_construction() < static_cast<unsigned long>(cp_cost))
 		{
 			snprintf(
 				buff, MAX_STRING_LENGTH,
@@ -577,7 +580,8 @@ void do_construct_golem(P_char ch, char *arg)
 			return;
 		}
 
-		if (GET_ASSOC(ch)->get_construction() < cp_cost)
+		if (cp_cost > 0 &&
+		    GET_ASSOC(ch)->get_construction() < static_cast<unsigned long>(cp_cost))
 		{
 			snprintf(
 				buff, MAX_STRING_LENGTH,
@@ -784,7 +788,8 @@ void do_construct_upgrade(P_char ch, char *arg)
 			return;
 		}
 
-		if (GET_ASSOC(ch)->get_construction() < cp_cost)
+		if (cp_cost > 0 &&
+		    GET_ASSOC(ch)->get_construction() < static_cast<unsigned long>(cp_cost))
 		{
 			snprintf(
 				buff, MAX_STRING_LENGTH,
@@ -881,7 +886,8 @@ void do_construct_rename(P_char ch, char *arg)
 			return;
 		}
 
-		if (GET_ASSOC(ch)->get_construction() < cp_cost)
+		if (cp_cost > 0 &&
+		    GET_ASSOC(ch)->get_construction() < static_cast<unsigned long>(cp_cost))
 		{
 			snprintf(
 				buff, MAX_STRING_LENGTH,
@@ -997,7 +1003,7 @@ void do_guildhall_list(P_char ch, char *arg)
 		"&+b-----------------------------------------------------------------------------------------------------\r\n",
 		ch);
 
-	for (int i = 0; i < Guildhall::guildhalls.size(); i++)
+	for (size_t i = 0; i < Guildhall::guildhalls.size(); i++)
 	{
 		Guildhall *gh = Guildhall::guildhalls[i];
 
@@ -1495,7 +1501,7 @@ bool guildhall_map_check(P_char ch)
 	   }
 	 }*/
 
-	for (int i = 0; i < Guildhall::guildhalls.size(); i++)
+	for (size_t i = 0; i < Guildhall::guildhalls.size(); i++)
 	{
 		Guildhall *gh = Guildhall::guildhalls[i];
 

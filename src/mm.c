@@ -15,6 +15,18 @@
 
 struct mm_ds_list *mmds_list = NULL;
 
+static char *mm_next(const char *object, size_t next_offset)
+{
+	char *next;
+	memcpy(&next, object + next_offset, sizeof(next));
+	return next;
+}
+
+static void mm_set_next(char *object, size_t next_offset, char *next)
+{
+	memcpy(object + next_offset, &next, sizeof(next));
+}
+
 struct mm_ds *mm_create(const char *name, size_t size, size_t next_off, unsigned pages)
 {
 	struct mm_ds *mmds;
@@ -42,12 +54,12 @@ struct mm_ds *mm_create(const char *name, size_t size, size_t next_off, unsigned
 
 void mm_release(struct mm_ds *mmds, void *mem)
 {
-	*((char **)((char *)mem + mmds->next_off)) = NULL;
+	mm_set_next(static_cast<char *>(mem), mmds->next_off, NULL);
 
 	// Then put it at the end of the list.
 	if (mmds->tail)
 	{
-		*((char **)(mmds->tail + mmds->next_off)) = (char *)mem;
+		mm_set_next(mmds->tail, mmds->next_off, static_cast<char *>(mem));
 		mmds->tail = (char *)mem;
 	}
 	else
@@ -71,7 +83,7 @@ void *_mm_get(struct mm_ds *mmds, const char *file, int line)
 	}
 
 	mem = mmds->head;
-	mmds->head = *((char **)(mem + mmds->next_off));
+	mmds->head = mm_next(mem, mmds->next_off);
 	if (!mmds->head)
 		mmds->tail = NULL;
 
@@ -141,7 +153,7 @@ void mm_alloc_chunk(struct mm_ds *mmds)
 
 	while ((offset + mmds->size) <= howmuch)
 	{
-		*((char **)(more + offset + mmds->next_off)) = mmds->head;
+		mm_set_next(more + offset, mmds->next_off, mmds->head);
 		mmds->head = (char *)(more + offset);
 		offset += mmds->size;
 	}

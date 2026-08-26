@@ -690,9 +690,9 @@ int race_size(int race);
 #define ENCRUST_VNUM_BEGIN 400291
 #define ENCRUST_VNUM_END 400299
 // old encrustables use RANDOM_OBJ_VNUM, can be deleted after wipe
-#define IS_ENCRUSTABLE(o)                                                        \
-	(OBJ_VNUM(o) >= ENCRUST_VNUM_BEGIN && OBJ_VNUM(o) <= ENCRUST_VNUM_END || \
-	 OBJ_VNUM(o) == RANDOM_OBJ_VNUM && isname("_strange_", (o)->name))
+#define IS_ENCRUSTABLE(o)                                                          \
+	((OBJ_VNUM(o) >= ENCRUST_VNUM_BEGIN && OBJ_VNUM(o) <= ENCRUST_VNUM_END) || \
+	 (OBJ_VNUM(o) == RANDOM_OBJ_VNUM && isname("_strange_", (o)->name)))
 
 #define IS_PATROL(CH) (IS_NPC(CH) && IS_SET((CH)->specials.act, ACT_PATROL))
 
@@ -815,20 +815,20 @@ int race_size(int race);
 
 #define IS_PLANT(ch) ((GET_RACE(ch) == RACE_PLANT) || (GET_RACE(ch) == RACE_SLIME))
 
-#define IS_HUMANOID(ch)                                                                          \
-	((GET_RACE(ch) > RACE_NONE) && (GET_RACE(ch) < 31) || (GET_RACE(ch) == RACE_TIEFLING) || \
-	 (GET_RACE(ch) == RACE_FIRBOLG) || (GET_RACE(ch) == RACE_AGATHINON) ||                   \
-	 (GET_RACE(ch) == RACE_HUMANOID) || (GET_RACE(ch) == RACE_HALFORC) ||                    \
-	 (GET_RACE(ch) == RACE_FAERIE) || (GET_RACE(ch) == RACE_PVAMPIRE) ||                     \
-	 (GET_RACE(ch) == RACE_VAMPIRE) || (GET_RACE(ch) == RACE_RAKSHASA) ||                    \
-	 (GET_RACE(ch) == RACE_ANGEL) || (GET_RACE(ch) == RACE_DRIDER) ||                        \
-	 (GET_RACE(ch) == RACE_SNOW_OGRE) || (GET_RACE(ch) == RACE_LYCANTH) ||                   \
-	 (GET_RACE(ch) == RACE_ZOMBIE) || (GET_RACE(ch) == RACE_PRIMATE) ||                      \
-	 (GET_RACE(ch) == RACE_ELADRIN) || (GET_RACE(ch) == RACE_KOBOLD) ||                      \
-	 (GET_RACE(ch) == RACE_PILLITHID) || (GET_RACE(ch) == RACE_KUOTOA) ||                    \
-	 (GET_RACE(ch) == RACE_WOODELF) || (GET_RACE(ch) == RACE_ARCHON) ||                      \
-	 (GET_RACE(ch) == RACE_ASURA) || (GET_RACE(ch) == RACE_GHAELE) ||                        \
-	 (GET_RACE(ch) == RACE_BRALANI) || (GET_RACE(ch) == RACE_INCUBUS) ||                     \
+#define IS_HUMANOID(ch)                                                                            \
+	(((GET_RACE(ch) > RACE_NONE) && (GET_RACE(ch) < 31)) || (GET_RACE(ch) == RACE_TIEFLING) || \
+	 (GET_RACE(ch) == RACE_FIRBOLG) || (GET_RACE(ch) == RACE_AGATHINON) ||                     \
+	 (GET_RACE(ch) == RACE_HUMANOID) || (GET_RACE(ch) == RACE_HALFORC) ||                      \
+	 (GET_RACE(ch) == RACE_FAERIE) || (GET_RACE(ch) == RACE_PVAMPIRE) ||                       \
+	 (GET_RACE(ch) == RACE_VAMPIRE) || (GET_RACE(ch) == RACE_RAKSHASA) ||                      \
+	 (GET_RACE(ch) == RACE_ANGEL) || (GET_RACE(ch) == RACE_DRIDER) ||                          \
+	 (GET_RACE(ch) == RACE_SNOW_OGRE) || (GET_RACE(ch) == RACE_LYCANTH) ||                     \
+	 (GET_RACE(ch) == RACE_ZOMBIE) || (GET_RACE(ch) == RACE_PRIMATE) ||                        \
+	 (GET_RACE(ch) == RACE_ELADRIN) || (GET_RACE(ch) == RACE_KOBOLD) ||                        \
+	 (GET_RACE(ch) == RACE_PILLITHID) || (GET_RACE(ch) == RACE_KUOTOA) ||                      \
+	 (GET_RACE(ch) == RACE_WOODELF) || (GET_RACE(ch) == RACE_ARCHON) ||                        \
+	 (GET_RACE(ch) == RACE_ASURA) || (GET_RACE(ch) == RACE_GHAELE) ||                          \
+	 (GET_RACE(ch) == RACE_BRALANI) || (GET_RACE(ch) == RACE_INCUBUS) ||                       \
 	 (GET_RACE(ch) == RACE_SUCCUBUS))
 
 #define IS_CONTROLLER_RACE(race)                                                     \
@@ -1295,12 +1295,12 @@ char *CRYPT2(char *passwd, char *name);
 	 affected_by_spell(ch, SPELL_BEARSTRENGTH) ||  \
 	 affected_by_spell(ch, SPELL_ELEPHANTSTRENGTH))
 
-#define IS_GREATER_ELEMENTAL(mob)                                          \
-	(IS_NPC(mob) && (GET_VNUM(mob) >= 1110 && GET_VNUM(mob) <= 1112 || \
-			 GET_VNUM(mob) >= 1120 && GET_VNUM(mob) <= 1122 || \
-			 GET_VNUM(mob) >= 1130 && GET_VNUM(mob) <= 1132 || \
-			 GET_VNUM(mob) >= 1140 && GET_VNUM(mob) <= 1142 || \
-			 GET_VNUM(mob) >= 41 && GET_VNUM(mob) <= 44))
+#define IS_GREATER_ELEMENTAL(mob)                                            \
+	(IS_NPC(mob) && ((GET_VNUM(mob) >= 1110 && GET_VNUM(mob) <= 1112) || \
+			 (GET_VNUM(mob) >= 1120 && GET_VNUM(mob) <= 1122) || \
+			 (GET_VNUM(mob) >= 1130 && GET_VNUM(mob) <= 1132) || \
+			 (GET_VNUM(mob) >= 1140 && GET_VNUM(mob) <= 1142) || \
+			 (GET_VNUM(mob) >= 41 && GET_VNUM(mob) <= 44)))
 
 #define IS_ANIMALIST(ch) (GET_SPEC(ch, CLASS_SHAMAN, SPEC_ANIMALIST))
 #define IS_SPIRITUALIST(ch) (GET_SPEC(ch, CLASS_SHAMAN, SPEC_SPIRITUALIST))

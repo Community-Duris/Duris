@@ -1167,7 +1167,7 @@ void cast_prismatic_cube(int level, P_char ch, char *arg, int type, P_char tar_c
 void event_earthen_tomb(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-	int exit, room;
+	int exit = -1, room;
 	int available_exits, picked, i;
 
 	room = *((int *)data);
@@ -1218,6 +1218,12 @@ void event_earthen_tomb(P_char ch, P_char victim, P_obj obj, void *data)
 				break;
 			}
 		}
+	}
+	if (exit < 0)
+	{
+		logit(LOG_SYS, "event_earthen_tomb could not select one of %d exits",
+		      available_exits);
+		return;
 	}
 
 	if (create_walls(room, exit, NULL, 50, WALL_OF_STONE, 50, 1800, "&+yAn earthen wall&n",
@@ -2630,8 +2636,8 @@ bool create_walls(int room, int exit, P_char ch, int level, int type, int power,
 	SET_BIT(wall_inside->str_mask, STRUNG_DESC1 | STRUNG_DESC2);
 	SET_BIT(wall_outside->str_mask, STRUNG_DESC1 | STRUNG_DESC2);
 
-	snprintf(buf1, 1024, desc, dirs[exit]);
-	snprintf(buf2, 1024, desc, dirs[reverse_exit]);
+	checked_snprintf_runtime(buf1, 1024, desc, dirs[exit]);
+	checked_snprintf_runtime(buf2, 1024, desc, dirs[reverse_exit]);
 
 	wall_inside->description = str_dup(buf1);
 	wall_outside->description = str_dup(buf2);

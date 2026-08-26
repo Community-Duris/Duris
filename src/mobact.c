@@ -17,6 +17,7 @@
 #include "events.h"
 #include "interp.h"
 #include "utils.h"
+#include <climits>
 #include <stdio.h>
 #include <string.h>
 #include "assocs.h"
@@ -2963,18 +2964,21 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 			{
 				spl = SPELL_SHREWTAMENESS;
 			}
+			[[fallthrough]];
 		case 1:
 			if (!spl && npc_has_spell_slot(ch, SPELL_MOLEVISION) &&
 			    !affected_by_spell(target, SPELL_MOLEVISION))
 			{
 				spl = SPELL_MOLEVISION;
 			}
+			[[fallthrough]];
 		case 2:
 			if (!spl && npc_has_spell_slot(ch, SPELL_MALISON) &&
 			    !affected_by_spell(target, SPELL_MALISON))
 			{
 				spl = SPELL_MALISON;
 			}
+			[[fallthrough]];
 		case 3:
 			if (!spl && npc_has_spell_slot(ch, SPELL_PYTHONSTING) &&
 			    !affected_by_spell(target, SPELL_POISON) &&
@@ -2982,6 +2986,7 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 			{
 				spl = SPELL_PYTHONSTING;
 			}
+			[[fallthrough]];
 		case 4:
 			if (!spl && npc_has_spell_slot(ch, SPELL_MOUSESTRENGTH) &&
 			    !affected_by_spell(target, SPELL_MOUSESTRENGTH))
@@ -4345,11 +4350,13 @@ bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 			    !IS_AFFECTED(target, AFF_BLIND))
 				spl = SPELL_BLINDNESS;
 
+			[[fallthrough]];
 		case 1:
 			if (!spl && npc_has_spell_slot(ch, SPELL_CURSE) &&
 			    !affected_by_spell(target, SPELL_CURSE))
 				spl = SPELL_CURSE;
 
+			[[fallthrough]];
 		case 2:
 			if (!spl && npc_has_spell_slot(ch, SPELL_FEAR) && !fear_check(target))
 			{
@@ -5353,7 +5360,7 @@ bool MobMonk(P_char ch)
 		}
 
 		P_char juiciest = NULL;
-		int tenderness, t_tend;
+		int tenderness = INT_MAX, t_tend;
 
 		LOOP_THRU_PEOPLE(tch, ch)
 		{
@@ -5412,6 +5419,7 @@ bool MobMonk(P_char ch)
 				return TRUE;
 			}
 
+			[[fallthrough]];
 		case 2:
 		case 3:
 			if (chance_roundkick(ch, victim) > number(30, 50))
@@ -5420,6 +5428,7 @@ bool MobMonk(P_char ch)
 				return TRUE;
 			}
 
+			[[fallthrough]];
 		case 4:
 			do_dragon_punch(ch, buf, 0);
 			return TRUE;
@@ -5431,6 +5440,7 @@ bool MobMonk(P_char ch)
 				return TRUE;
 			}
 
+			[[fallthrough]];
 		case 6:
 			if (GET_SPEC(ch, CLASS_MONK, SPEC_WAYOFDRAGON) &&
 			    !affected_by_skill(ch, SKILL_FIST_OF_DRAGON))
@@ -5439,6 +5449,7 @@ bool MobMonk(P_char ch)
 				break;
 			}
 
+			[[fallthrough]];
 		case 7:
 			if (NumAttackers(ch) > 1 && !affected_by_skill(ch, SKILL_BUDDHA_PALM))
 			{
@@ -5446,6 +5457,7 @@ bool MobMonk(P_char ch)
 				break;
 			}
 
+			[[fallthrough]];
 		case 8:
 			if (!affected_by_spell(ch, SKILL_QUIVERING_PALM))
 			{
@@ -5453,6 +5465,7 @@ bool MobMonk(P_char ch)
 				break;
 			}
 
+			[[fallthrough]];
 		case 9:
 			if (isSpringable(ch, GET_OPPONENT(ch)))
 			{
@@ -5636,18 +5649,21 @@ bool MobBard(P_char ch)
 				do_play(ch, " chaos", CMD_PLAY);
 				return TRUE;
 			}
+			[[fallthrough]];
 		case 3:
 			if (GET_CHAR_SKILL(ch, SKILL_SHRIEK) > 0)
 			{
 				do_shriek(ch, NULL, CMD_SHRIEK);
 				return TRUE;
 			}
+			[[fallthrough]];
 		case 4:
 			if (OUTSIDE(ch) && !number(0, 1))
 			{
 				do_play(ch, " storms", CMD_PLAY);
 				return TRUE;
 			}
+			[[fallthrough]];
 		case 5:
 		{
 			if (GET_LEVEL(ch) > 55 && IS_ELITE(ch))
@@ -5784,7 +5800,7 @@ bool MobWarrior(P_char ch)
 		 * let's see about switching to a juicier target.  JAB
 		 */
 		P_char juiciest = NULL;
-		int tenderness, t_tend;
+		int tenderness = INT_MAX, t_tend;
 
 		LOOP_THRU_PEOPLE(tch, ch)
 		{
@@ -8911,8 +8927,8 @@ void zone_spellmessage(int room, bool hide_deaf, const char *msg, const char *ms
 			{
 				if (msg_dir != NULL)
 				{
-					snprintf(buf, MAX_STRING_LENGTH, msg_dir,
-						 get_map_direction(c_room, room));
+					checked_snprintf_runtime(buf, MAX_STRING_LENGTH, msg_dir,
+								 get_map_direction(c_room, room));
 					send_to_char(buf, chars_in_zone->c);
 				}
 				else
@@ -8926,8 +8942,8 @@ void zone_spellmessage(int room, bool hide_deaf, const char *msg, const char *ms
 			{
 				if (msg_dir != NULL)
 				{
-					snprintf(buf, MAX_STRING_LENGTH, msg_dir,
-						 get_map_direction(c_room, room));
+					checked_snprintf_runtime(buf, MAX_STRING_LENGTH, msg_dir,
+								 get_map_direction(c_room, room));
 					send_to_char(buf, chars_in_zone->c);
 				}
 				else
@@ -9165,7 +9181,7 @@ void mobact_memoryHandle(P_char mob)
 			continue;
 		for (mem = mob->only.npc->memory; mem; mem = mem->next)
 		{
-			if (mem->pcID == GET_PID(vict))
+			if (mem->pcID == static_cast<unsigned int>(GET_PID(vict)))
 			{
 				if ((IS_ROOM(mob->in_room, ROOM_SINGLE_FILE) &&
 				     !AdjacentInRoom(mob, vict)) ||
@@ -9413,14 +9429,18 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 
 			if (mob_index[GET_RNUM(ch)].func.mob == very_angry_npc && maliciousPID > 0)
 			{
-				for (P_desc d = descriptor_list; d; d = d->next)
+				for (P_desc player_desc = descriptor_list; player_desc;
+				     player_desc = player_desc->next)
 				{
-					if (d->character && d->connected == CON_PLAYING &&
-					    GET_PID(d->character) == maliciousPID)
+					if (player_desc->character &&
+					    player_desc->connected == CON_PLAYING &&
+					    GET_PID(player_desc->character) == maliciousPID)
 					{
 						debug("Found maliciousPID %d, calling very_angry_npc on '%s'...",
-						      GET_PID(d->character), J_NAME(d->character));
-						very_angry_npc(ch, d->character, CMD_SHOUT, NULL);
+						      GET_PID(player_desc->character),
+						      J_NAME(player_desc->character));
+						very_angry_npc(ch, player_desc->character,
+							       CMD_SHOUT, NULL);
 					}
 				}
 			}
@@ -9626,7 +9646,7 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) :
 								  world[targ_room].name);
 	}
-	else if (data->path_step >= 0 && data->path_step < data->path.size())
+	else if (data->path_step >= 0 && (size_t)data->path_step < data->path.size())
 	{
 		next_step = data->path[data->path_step];
 		dummy = data->path.size() - data->path_step;
@@ -9719,11 +9739,13 @@ void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
 				{
 					do_action(ch, 0, CMD_TAP);
 				}
+				[[fallthrough]];
 			case 5:
 				if (!IS_AFFECTED4(ch, AFF4_NOFEAR))
 				{
 					do_flee(ch, 0, 2);
 				}
+				[[fallthrough]];
 			case 101:
 				do_action(ch, 0, CMD_FROWN);
 				break;
@@ -10251,7 +10273,7 @@ void remember(P_char ch, P_char victim, bool check_group_remember)
 
 	for (tmp = ch->only.npc->memory; tmp; tmp = tmp->next)
 	{
-		if (tmp->pcID == GET_PID(victim))
+		if (tmp->pcID == static_cast<unsigned int>(GET_PID(victim)))
 			return;
 	}
 
@@ -10266,7 +10288,7 @@ void remember(P_char ch, P_char victim, bool check_group_remember)
 bool forget(P_char ch, P_char victim)
 {
 	Memory *curr, *prev = NULL;
-	int pid;
+	unsigned int pid;
 
 	// PCs don't have memory, cannot call get_pid on npc.
 	// This handles ch == victim since, if ch==victim, !NPC || NPC == true.
@@ -10276,7 +10298,7 @@ bool forget(P_char ch, P_char victim)
 	if (!(curr = ch->only.npc->memory))
 		return FALSE;
 
-	pid = GET_PID(victim);
+	pid = static_cast<unsigned int>(GET_PID(victim));
 
 	while (curr && (curr->pcID != pid))
 	{
@@ -10306,7 +10328,7 @@ int CheckFor_remember(P_char ch, P_char victim)
 
 	for (tmp = ch->only.npc->memory; tmp; tmp = tmp->next)
 	{
-		if (tmp->pcID == GET_PID(victim))
+		if (tmp->pcID == static_cast<unsigned int>(GET_PID(victim)))
 			return TRUE;
 	}
 
@@ -10538,8 +10560,8 @@ void try_wield_weapon(P_char ch)
 						   IS_SET(t_obj->bitvector2, AFF2_SOULSHIELD) ||
 						   IS_SET(t_obj->bitvector3, AFF3_GR_SPIRIT_WARD) ||
 						   IS_SET(t_obj->bitvector4, AFF4_DAZZLER) ||
-						   IS_SET(t_obj->bitvector4, AFF4_HELLFIRE)) ||
-		    obj_index[t_obj->R_num].func.obj != NULL)
+						   IS_SET(t_obj->bitvector4, AFF4_HELLFIRE) ||
+						   obj_index[t_obj->R_num].func.obj != NULL))
 		{
 			wear(ch, t_obj, 12, 1); // 12 means wield, 1 means display message to room
 		}

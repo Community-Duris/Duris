@@ -106,8 +106,8 @@ class LockerChest
 	LockerChest(const char *keyword, const char *prettyDesc)
 		: m_chestKeyword(keyword)
 		, m_chestDescText(prettyDesc)
-		, m_pChestObject(NULL)
-		, m_pNextInChain(NULL){};
+		, m_pNextInChain(NULL)
+		, m_pChestObject(NULL){};
 
 	P_obj CreateChestObject(void);
 

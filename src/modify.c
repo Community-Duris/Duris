@@ -125,7 +125,8 @@ int replace_str(char **string, char *pattern, char *replacement, int rep_all, in
 	unsigned int len;
 	int i;
 
-	if ((strlen(*string) - strlen(pattern)) + strlen(replacement) > max_size)
+	if ((strlen(*string) - strlen(pattern)) + strlen(replacement) >
+	    static_cast<size_t>(max_size))
 		return -1;
 
 	CREATE(replace_buffer, char, (unsigned)(max_size), MEM_TAG_STRING);
@@ -141,7 +142,7 @@ int replace_str(char **string, char *pattern, char *replacement, int rep_all, in
 			temp = *flow;
 			*flow = '\0';
 			if ((strlen(replace_buffer) + strlen(jetsam) + strlen(replacement)) >
-			    max_size)
+			    static_cast<size_t>(max_size))
 			{
 				i = -1;
 				break;
@@ -275,7 +276,7 @@ void format_text(char **ptr_string, int mode, struct descriptor_data *d, int max
 	}
 	strcat(formated, "\r\n");
 
-	if (strlen(formated) > maxlen)
+	if (strlen(formated) > static_cast<size_t>(maxlen))
 		formated[maxlen] = '\0';
 	RECREATE(*ptr_string, char, MIN(maxlen, (signed)strlen(formated) + 3));
 
@@ -646,7 +647,8 @@ void parse_action(int command, char *string, struct descriptor_data *d)
 			}
 			temp = *s;
 			*s = '\0';
-			if ((strlen(*d->str) + strlen(buf2) + strlen(s + 1) + 3) > d->max_str)
+			if ((strlen(*d->str) + strlen(buf2) + strlen(s + 1) + 3) >
+			    static_cast<size_t>(d->max_str))
 			{
 				*s = temp;
 				SEND_TO_Q(
@@ -727,7 +729,7 @@ void parse_action(int command, char *string, struct descriptor_data *d)
 				strcat(buf, s);
 			}
 			/* check for buffer overflow */
-			if (strlen(buf) > d->max_str)
+			if (strlen(buf) > static_cast<size_t>(d->max_str))
 			{
 				SEND_TO_Q(
 					"Change causes new length to exceed buffer maximum size, aborted.\r\n",
@@ -886,7 +888,7 @@ void string_add(struct descriptor_data *d, char *str)
 	}
 	if (!(*d->str))
 	{
-		if (strlen(str) > d->max_str)
+		if (strlen(str) > static_cast<size_t>(d->max_str))
 		{
 			send_to_char("String too long - Truncated.\r\n", d->character);
 			*(str + d->max_str) = '\0';
@@ -897,7 +899,7 @@ void string_add(struct descriptor_data *d, char *str)
 	}
 	else
 	{
-		if (strlen(str) + strlen(*d->str) > d->max_str)
+		if (strlen(str) + strlen(*d->str) > static_cast<size_t>(d->max_str))
 		{
 			send_to_char(
 				"String too long, limit reached on message.  Last line ignored.\r\n",
@@ -1344,7 +1346,7 @@ void do_string(P_char ch, char *arg, int cmd)
 	}
 	if (*string)
 	{ /* there was a string in the argument array */
-		if (strlen(string) > length[field - 1])
+		if (strlen(string) > static_cast<size_t>(length[field - 1]))
 		{
 			send_to_char("String too long - truncated.\r\n", ch);
 			*(string + length[field - 1]) = '\0';

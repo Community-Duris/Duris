@@ -94,13 +94,13 @@ void save_alliances()
 		return;
 	}
 
-	for (int i = 0; i < alliances.size(); i++)
+	for (size_t i = 0; i < alliances.size(); i++)
 	{
 		if (!qry("INSERT INTO alliances (forging_assoc_id, joining_assoc_id) VALUES ('%d', '%d')",
 			 alliances[i].forging_assoc->get_id(),
 			 alliances[i].joining_assoc->get_id()))
 		{
-			logit(LOG_DEBUG, "save_alliances(): insert failed at index %d", i);
+			logit(LOG_DEBUG, "save_alliances(): insert failed at index %zu", i);
 			if (own_txn)
 				sql_rollback();
 			return;
@@ -253,7 +253,9 @@ void do_alliance(P_char ch, char *arg, int cmd)
 		//----------------------------
 		// valid to propose?
 		//----------------------------
-		if (guild->get_prestige() < get_property("prestige.alliance.required", 0))
+		int required_prestige = get_property("prestige.alliance.required", 0);
+		if (required_prestige > 0 &&
+		    guild->get_prestige() < static_cast<unsigned long>(required_prestige))
 		{
 			send_to_char(
 				"&+bYour association is not famous enough to forge an alliance.\n",

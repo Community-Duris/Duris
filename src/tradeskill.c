@@ -223,9 +223,9 @@ P_obj forge_create(int choice, P_char ch, int material)
 
 	snprintf(keywords, MAX_INPUT_LENGTH, "%s", forge_item_list[choice].keywords);
 	snprintf(dummy, MAX_INPUT_LENGTH, "%s", forge_item_list[choice].short_desc);
-	snprintf(short_desc, MAX_STRING_LENGTH, dummy, GET_NAME(ch));
+	checked_snprintf_runtime(short_desc, MAX_STRING_LENGTH, dummy, GET_NAME(ch));
 	snprintf(dummy, MAX_INPUT_LENGTH, "%s", forge_item_list[choice].long_desc);
-	snprintf(long_desc, MAX_INPUT_LENGTH, dummy, GET_NAME(ch));
+	checked_snprintf_runtime(long_desc, MAX_INPUT_LENGTH, dummy, GET_NAME(ch));
 
 	set_short_description(obj, short_desc);
 	set_long_description(obj, long_desc);
@@ -2470,7 +2470,7 @@ void do_refine(P_char ch, char *arg, int cmd)
 	P_obj obj;
 	P_obj t_obj, nextobj;
 	int i = 0, o = 0, vnum;
-	int orechance;
+	int orechance = 0;
 	bool plat = FALSE;
 	char gbuf1[MAX_STRING_LENGTH], gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH],
 		gbuf3[MAX_STRING_LENGTH];

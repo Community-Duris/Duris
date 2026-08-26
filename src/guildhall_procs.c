@@ -264,7 +264,7 @@ int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
 		return TRUE;
 	}
 
-	if (pl && (cmd == CMD_GOTHIT && !number(0, 15)) || (cmd == CMD_HIT || cmd == CMD_KILL))
+	if (pl && ((cmd == CMD_GOTHIT && !number(0, 15)) || cmd == CMD_HIT || cmd == CMD_KILL))
 	{
 		if (IS_PC(pl) && GET_RACEWAR(pl) == GET_ASSOC(ch)->get_racewar())
 			snprintf(buff, MAX_STRING_LENGTH, "Alert! %s has trespassed into %s!",

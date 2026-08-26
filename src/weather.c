@@ -173,6 +173,7 @@ int astral_clock_setMapModifiers(void)
 		break;
 	case 14:
 		astralMsgIdx = 5;
+		[[fallthrough]];
 	case 15:
 		map_normal_modifier = 7;
 		map_ultra_modifier = 5;

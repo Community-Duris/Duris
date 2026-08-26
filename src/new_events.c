@@ -248,7 +248,9 @@ static bool nevent_overdue_event(P_nevent event)
 {
 	/* Player-timed events remain normally prioritized, but ordinary events
 	 * must not starve behind a continuously busy player prefix. */
-	return event && event->deferral_count >= NEVENT_MAX_DEFERRALS;
+	static_assert(NEVENT_MAX_DEFERRALS == 0U,
+		      "Immediate overdue-event promotion is part of the scheduler contract");
+	return event != NULL;
 }
 
 /* Keep the budget as the default, but allow one repeatedly deferred event to
@@ -733,10 +735,11 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 // Returns the time left (in pulses) in the e1 event
 int ne_event_time(P_nevent e1)
 {
+	const int event_element = static_cast<int>(e1->element);
 	int time_left;
 
-	time_left = (e1->timer - 1) * PULSES_IN_TICK + e1->element - pulse;
-	if (e1->element < pulse)
+	time_left = (e1->timer - 1) * PULSES_IN_TICK + event_element - pulse;
+	if (event_element < pulse)
 		time_left += PULSES_IN_TICK;
 
 	return time_left;
@@ -1738,7 +1741,7 @@ const char *get_function_name(void *func)
 	}
 
 	// Shouldn't this event be in the function_names array?
-	if (event_autosave == func)
+	if ((void *)event_autosave == func)
 		return "event_autosave";
 
 	return "unknown function";
