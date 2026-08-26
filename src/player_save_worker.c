@@ -43,6 +43,9 @@ std::unordered_set<int> ready_set;
 std::vector<std::thread> workers;
 player_save_apply_fn apply_callback = nullptr;
 void *apply_context = nullptr;
+player_save_journal_append_fn journal_append_callback = nullptr;
+player_save_journal_ack_fn journal_ack_callback = nullptr;
+void *journal_context = nullptr;
 player_save_worker_health health = {};
 size_t retained_bytes = 0;
 bool stop_requested = false;
@@ -146,6 +149,22 @@ void worker_main()
 		catch (...)
 		{
 			applied = { player_save_apply_outcome::terminal_failure, 0, EFAULT };
+		}
+		if ((applied.outcome == player_save_apply_outcome::applied ||
+		     applied.outcome == player_save_apply_outcome::already_applied ||
+		     applied.outcome == player_save_apply_outcome::stale_revision) &&
+		    applied.durable_revision >= job->snapshot.revision)
+		{
+			player_save_journal_ack_fn acknowledge = nullptr;
+			void *ack_context = nullptr;
+			{
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				acknowledge = journal_ack_callback;
+				ack_context = journal_context;
+			}
+			if (acknowledge)
+				acknowledge(job->snapshot.pid, applied.durable_revision,
+					    ack_context);
 		}
 		const uint64_t completed = now_usec();
 		player_save_completion completion = {
@@ -277,20 +296,46 @@ void player_save_worker_shutdown(void)
 	apply_context = nullptr;
 }
 
+bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
+					  player_save_journal_ack_fn acknowledge, void *context)
+{
+	if ((append && !acknowledge) || (!append && acknowledge))
+		return false;
+	std::lock_guard<std::mutex> lock(worker_mutex);
+	if (!slots.empty())
+		return false;
+	journal_append_callback = append;
+	journal_ack_callback = acknowledge;
+	journal_context = context;
+	return true;
+}
+
 player_save_submit_result player_save_worker_submit(player_snapshot snapshot)
 {
 	if (!valid_snapshot(snapshot))
 		return player_save_submit_result::invalid;
+	player_save_journal_append_fn append = nullptr;
+	void *append_context = nullptr;
+	{
+		std::lock_guard<std::mutex> lock(worker_mutex);
+		append = journal_append_callback;
+		append_context = journal_context;
+	}
+	const bool durably_journaled = append && append(snapshot, append_context);
+	if (append && !durably_journaled)
+		return player_save_submit_result::journal_failure;
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	if (!health.running || stop_requested || !apply_callback)
-		return player_save_submit_result::worker_unavailable;
+		return durably_journaled ? player_save_submit_result::durably_spilled :
+					   player_save_submit_result::worker_unavailable;
 
 	auto found = slots.find(snapshot.pid);
 	if (found == slots.end())
 	{
 		if (slots.size() >= PLAYER_SAVE_WORKER_MAX_PIDS ||
 		    snapshot.encoded_size_bound > PLAYER_SAVE_WORKER_MAX_BYTES - retained_bytes)
-			return player_save_submit_result::capacity_exceeded;
+			return durably_journaled ? player_save_submit_result::durably_spilled :
+						   player_save_submit_result::capacity_exceeded;
 		if (!player_revision_begin_inflight(snapshot.pid, snapshot.revision,
 						    snapshot.components))
 			return player_save_submit_result::revision_state_mismatch;
@@ -378,7 +423,7 @@ size_t player_save_worker_pulse(player_save_completion *completions_out, size_t 
 {
 	if (capacity && !completions_out)
 		return 0;
-	std::lock_guard<std::mutex> lock(worker_mutex);
+	std::unique_lock<std::mutex> lock(worker_mutex);
 	size_t consumed = 0;
 	while (consumed < capacity && !results.empty())
 	{
@@ -497,4 +542,7 @@ void player_save_worker_reset_for_tests(void)
 	retained_bytes = 0;
 	stop_requested = false;
 	health = {};
+	journal_append_callback = nullptr;
+	journal_ack_callback = nullptr;
+	journal_context = nullptr;
 }

@@ -41,6 +41,7 @@ using namespace std;
 #include "persistence_observability.h"
 #include "persistence_queue.h"
 #include "player_save_worker.h"
+#include "player_save_journal.h"
 #include "redis.h"
 #include "ships/ships.h"
 #include "specializations.h"
@@ -3983,6 +3984,7 @@ static void show_world_persistence(P_char ch)
 	const struct persistence_deferred_save_snapshot deferred =
 		persistence_deferred_save_snapshot_copy();
 	const player_save_worker_health player_saves = player_save_worker_health_copy();
+	const player_save_journal_health player_journal = player_save_journal_health_copy();
 	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
 	char line[MAX_STRING_LENGTH];
 
@@ -3992,6 +3994,8 @@ static void show_world_persistence(P_char ch)
 		world_persistence_max(oldest_save_age_msec, dirty.inflight_oldest_age_msec);
 	oldest_save_age_msec =
 		world_persistence_max(oldest_save_age_msec, player_saves.oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, player_journal.oldest_age_msec);
 
 	send_to_char("Persistence health (metadata only)\n", ch);
 	if (query.total_calls == 0)
@@ -4062,6 +4066,31 @@ static void show_world_persistence(P_char ch)
 			 (unsigned long long)dirty.active_oldest_age_msec,
 			 (unsigned long long)dirty.inflight_count,
 			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "player_journal state=%s bytes=%llu records=%llu oldest_age_ms=%llu "
+		 "appended=%llu append_failures=%llu checkpoints=%llu checkpoint_failures=%llu "
+		 "replayed=%llu duplicates=%llu corrupt=%llu unsupported=%llu "
+		 "quarantined_bytes=%llu backpressure=%llu quota_exceeded=%d "
+		 "age_limit_exceeded=%d\n",
+		 !player_journal.initialized ? "stopped" :
+		 player_journal.records	     ? "pending" :
+					       "empty",
+		 (unsigned long long)player_journal.bytes,
+		 (unsigned long long)player_journal.records,
+		 (unsigned long long)player_journal.oldest_age_msec,
+		 (unsigned long long)player_journal.appended,
+		 (unsigned long long)player_journal.append_failures,
+		 (unsigned long long)player_journal.checkpoints,
+		 (unsigned long long)player_journal.checkpoint_failures,
+		 (unsigned long long)player_journal.replayed,
+		 (unsigned long long)player_journal.duplicates,
+		 (unsigned long long)player_journal.corrupt_records,
+		 (unsigned long long)player_journal.unsupported_records,
+		 (unsigned long long)player_journal.quarantined_bytes,
+		 (unsigned long long)player_journal.backpressure, player_journal.quota_exceeded,
+		 player_journal.age_limit_exceeded);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),

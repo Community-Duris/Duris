@@ -1,7 +1,7 @@
 # Session 04: Typed Persistence Journal and Replay
 
 **Session ID**: `phase01-session04-typed-persistence-journal-and-replay`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The durable handoff boundary for unacknowledged player snapshots,
 including append, sync, spill, checkpoint, restart replay, corruption, and quota edges.
 
@@ -47,8 +47,8 @@ ordered by player.
 
 ## Prerequisites
 
-- [ ] Session 03 keyed worker and exact acknowledgement semantics are validated.
-- [ ] Journal tests use isolated ignored paths and never inspect or commit runtime
+- [x] Session 03 keyed worker and exact acknowledgement semantics are validated.
+- [x] Journal tests use isolated ignored paths and never inspect or commit runtime
       player records.
 
 ---
@@ -68,14 +68,14 @@ ordered by player.
 
 ## Success Criteria
 
-- [ ] A process kill after any append, enqueue, apply, commit, acknowledgement, or
+- [x] A process kill after any append, enqueue, apply, commit, acknowledgement, or
       checkpoint boundary converges without losing or applying a player revision twice.
-- [ ] Corrupt, truncated, oversized, or unsupported records are detected and reported;
+- [x] Corrupt, truncated, oversized, or unsupported records are detected and reported;
       no invalid record is executed as SQL or trusted as acknowledged.
-- [ ] Journal files and directories use explicit safe permissions and remain bounded by
+- [x] Journal files and directories use explicit safe permissions and remain bounded by
       configured bytes and age with an explicit overload policy.
-- [ ] Acknowledged records are compacted atomically, while every newer or unacknowledged
+- [x] Acknowledged records are compacted atomically, while every newer or unacknowledged
       record survives a crash during compaction.
-- [ ] Replay is bounded, observable, ordered per player, and safe when the database or
+- [x] Replay is bounded, observable, ordered per player, and safe when the database or
       worker remains unavailable.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

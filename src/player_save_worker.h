@@ -53,6 +53,8 @@ enum class player_save_submit_result : uint8_t
 	capacity_exceeded,
 	revision_state_mismatch,
 	worker_unavailable,
+	journal_failure,
+	durably_spilled,
 };
 
 struct player_save_worker_health
@@ -83,10 +85,14 @@ struct player_save_worker_health
 
 using player_save_apply_fn = player_save_apply_result (*)(const player_snapshot &snapshot,
 							  void *context);
+using player_save_journal_append_fn = bool (*)(const player_snapshot &snapshot, void *context);
+using player_save_journal_ack_fn = bool (*)(int pid, player_revision_t revision, void *context);
 
 bool player_save_worker_init(player_save_apply_fn apply, void *context,
 			     unsigned int worker_threads = PLAYER_SAVE_WORKER_DEFAULT_THREADS);
 void player_save_worker_shutdown(void);
+bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
+					  player_save_journal_ack_fn acknowledge, void *context);
 player_save_submit_result player_save_worker_submit(player_snapshot snapshot);
 size_t player_save_worker_pulse(player_save_completion *completions_out, size_t capacity);
 player_save_worker_health player_save_worker_health_copy(void);

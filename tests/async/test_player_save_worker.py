@@ -46,6 +46,24 @@ struct capacity_state
     bool release = false;
 };
 
+struct journal_hook_state
+{
+    unsigned int appends = 0;
+    unsigned int acknowledgements = 0;
+};
+
+bool journal_append(const player_snapshot &, void *raw)
+{
+    ++static_cast<journal_hook_state *>(raw)->appends;
+    return true;
+}
+
+bool journal_ack(int, player_revision_t, void *raw)
+{
+    ++static_cast<journal_hook_state *>(raw)->acknowledgements;
+    return true;
+}
+
 player_save_apply_result apply_snapshot(const player_snapshot &snapshot, void *raw)
 {
     auto &state = *static_cast<apply_state *>(raw);
@@ -166,6 +184,26 @@ int main()
 
     player_save_worker_shutdown();
     assert(!player_save_worker_health_copy().running);
+    player_save_worker_reset_for_tests();
+    player_revision_reset_for_tests();
+
+    apply_state durable_apply;
+    journal_hook_state journal_hooks;
+    assert(player_save_worker_set_journal_hooks(journal_append, journal_ack, &journal_hooks));
+    assert(player_save_worker_init(apply_snapshot, &durable_apply, 1));
+    assert(player_revision_hydrate(4, 0));
+    assert(player_save_worker_submit(next_snapshot(4, PLAYER_COMPONENT_STATUS)) ==
+           player_save_submit_result::accepted);
+    wait_until([&] {
+        player_save_worker_pulse(completions, 8);
+        return player_save_worker_health_copy().applied == 1;
+    });
+    assert(journal_hooks.appends == 1 && journal_hooks.acknowledgements == 1);
+    player_save_worker_shutdown();
+    assert(player_revision_hydrate(5, 0));
+    assert(player_save_worker_submit(next_snapshot(5, PLAYER_COMPONENT_STATUS)) ==
+           player_save_submit_result::durably_spilled);
+    assert(journal_hooks.appends == 2 && journal_hooks.acknowledgements == 1);
     player_save_worker_reset_for_tests();
     player_revision_reset_for_tests();
 

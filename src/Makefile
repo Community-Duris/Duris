@@ -194,8 +194,10 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence_observability.o \
 				 player_revision_state.o \
 				 player_save_worker.o \
+				 player_save_journal.o \
 				 player_snapshot_repository.o \
 				 player_snapshot_capture.o \
+				 player_snapshot_codec.o \
 				 persistence_queue.o \
 				 latency_trace.o \
 				 sql_persistence_raw.o \
