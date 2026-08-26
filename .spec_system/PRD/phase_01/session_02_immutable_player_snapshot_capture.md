@@ -1,7 +1,7 @@
 # Session 02: Immutable Player Snapshot Capture
 
 **Session ID**: `phase01-session02-immutable-player-snapshot-capture`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The complete main-thread capture boundary for revisioned player
 components, including nested objects, bounds, ownership, and deterministic cleanup.
 
@@ -42,8 +42,8 @@ objects to later worker execution.
 
 ## Prerequisites
 
-- [ ] Session 01 revision and component-state contracts are validated.
-- [ ] Phase 00 replacement-row and terminal-save fixes remain covered by regressions.
+- [x] Session 01 revision and component-state contracts are validated.
+- [x] Phase 00 replacement-row and terminal-save fixes remain covered by regressions.
 
 ---
 
@@ -62,14 +62,14 @@ objects to later worker execution.
 
 ## Success Criteria
 
-- [ ] Snapshot payloads contain no `P_char`, `P_obj`, descriptor, room pointer, or
+- [x] Snapshot payloads contain no `P_char`, `P_obj`, descriptor, room pointer, or
       other live mutable pointer.
-- [ ] Capturing a snapshot does not unequip, extract, reorder, or mutate player state,
+- [x] Capturing a snapshot does not unequip, extract, reorder, or mutate player state,
       affects, inventory, equipment, pets, or containers.
-- [ ] Every payload carries PID, revision, component mask, schema version, and bounded
+- [x] Every payload carries PID, revision, component mask, schema version, and bounded
       lengths sufficient for journal and worker validation.
-- [ ] Allocation or bound failure produces no partial enqueue and leaves all dirty
+- [x] Allocation or bound failure produces no partial enqueue and leaves all dirty
       components pending.
-- [ ] Component equivalence regressions cover empty, maximum, nested, removed-row, and
+- [x] Component equivalence regressions cover empty, maximum, nested, removed-row, and
       malformed legacy edge cases.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.
