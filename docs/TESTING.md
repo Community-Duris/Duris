@@ -1,17 +1,18 @@
 # Testing
 
-The project uses a focused regression-test harness in `tests/async/`, plus
-schema/migration checks at `tests/` root. There is no single test runner;
-convention is to run the smallest relevant test directly.
+The project uses focused regression tests in `tests/async/`, plus
+schema/migration checks at `tests/` root. The root `Makefile` provides a single
+developer and CI gate while retaining fast commands for focused work.
 
 ## Layout
 
 ```
 tests/
 ├── async/                       # focused regression + source-contract tests
-│   ├── test_*.py                # ~130 test scripts (plain python3, no framework)
-│   ├── run_*.sh                 # thin wrappers: exec the matching test_*.py
+│   ├── test_*.py                # plain python3 regressions; no framework
+│   ├── run_*.sh                 # special-purpose and legacy thin wrappers
 │   └── run_*_mysql.sh           # MySQL-backed schema-contract tests (need a live DB)
+├── run_regression_tests.py      # discovery, bounded parallelism, failure summary
 ├── compare_bootstrap_mud_schema.sh   # diff live schema vs bootstrap baseline
 ├── test_migration_replay_safety.sh   # migration re-run safety
 └── test_run_migration_persistence_schema.sh
@@ -35,23 +36,44 @@ MySQL instance (development database only).
 ## Running
 
 ```bash
-# Single test (preferred during development):
+# Complete safe developer/CI gate: builds all maintained binaries and tools,
+# generates world data, then runs Python and native regression tests.
+make test-all
+
+# Regression tests without rebuilding the server or area editor:
+make test
+
+# Limit concurrency, filter by filename, or inspect discovery:
+make test TEST_JOBS=1
+make test-python TEST_MATCH=wear
+make test-list
+
+# Single test (preferred while iterating):
 python3 tests/async/test_wear_all_regression.py
 # or via its wrapper:
 tests/async/run_sql_pool_shutdown.sh
 
-# Schema test against dev DB:
-tests/async/run_persistence_contract_mysql.sh
+# Isolated Docker/MySQL schema suites (Docker is an optional prerequisite):
+make test-db
 ```
 
-Wrappers self-anchor to the repo root, so they work from any directory.
-Exit code 0 = pass; failures print which check failed and exit nonzero.
+`TEST_JOBS=0` is the default and selects up to eight workers based on available
+CPUs. Test output is buffered per process so parallel failures remain readable.
+The runner executes every discovered `test_*.py` in a separate process and
+returns nonzero if any test fails.
+
+`make test-all` deliberately excludes Docker and externally provisioned
+database checks. `make test-db` creates and destroys isolated MySQL containers;
+the three scripts at the root of `tests/` require explicitly named disposable
+or read-only databases and are manual migration-verification tools. Never point
+them at production.
 
 ## Conventions for new tests
 
 - One concern per file; name it after the feature/regression
-  (`test_<feature>.py`), and add a matching `run_<feature>.sh` wrapper that
-  just invokes it.
+  (`test_<feature>.py`). The root runner discovers it automatically. Add a
+  `run_<feature>.sh` wrapper only when the test needs special environment setup
+  or is useful as a standalone workflow.
 - Keep them fast and deterministic; prefer source contracts over full boots
   when the invariant is structural.
 - When you change behavior, add or update the focused regression test next to

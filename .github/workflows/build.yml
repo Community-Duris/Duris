@@ -17,9 +17,5 @@ jobs:
       run: echo -en '\e[33;1mThread count:\e[0m ' && nproc && free -h
     - name: build-deps
       run: sudo apt install equivs && equivs-build packaging/duris-build-deps.equivs && sudo apt install ./duris-build-deps_1.0_all.deb
-    - name: build DMS
-      run: make -j`nproc` -C src
-    - name: build DE
-      run: make -j`nproc` -C areas/de/src
-    - name: build areas
-      run: make -j`nproc` -C areas/src && cd areas && ./m_slow
+    - name: build and test
+      run: make test-all -j"$(nproc)" TEST_JOBS="$(nproc)"

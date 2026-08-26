@@ -133,14 +133,15 @@ MYSQL_PWD="$DB_PASSWD" mysql \
 ### 4. Build and start
 
 ```bash
-make -C src
+make
 ./scripts/start_mud.sh
 ```
 
-The build produces `src/dms_new`. The startup supervisor promotes it to the
-runtime executable `./dms`, regenerates combined `areas/world.*` files, and
-starts the server. Without a configured user service it runs in the background
-and writes console output to `logs/duris-console.log`.
+The root build produces `src/dms_new`, the area editor, and the area-generation
+tools. The startup supervisor promotes the server to the runtime executable
+`./dms`, regenerates combined `areas/world.*` files, and starts it. Without a
+configured user service it runs in the background and writes console output to
+`logs/duris-console.log`.
 
 For a foreground development session on port 4000, use this instead of
 `start_mud.sh`:
@@ -167,8 +168,13 @@ For a networked deployment, point the ignored root files `duris.crt` and
 
 ## Development workflow
 
-Build after changing C/C++ code, then run the smallest relevant regression
-test:
+Run the complete developer/CI gate before handing off a change:
+
+```bash
+make test-all
+```
+
+During development, run the smallest relevant regression directly:
 
 ```bash
 make -C src
@@ -176,9 +182,11 @@ python3 tests/async/test_wear_all_regression.py
 ```
 
 Tests under `tests/async/` are focused Python regression or source-contract
-checks; MySQL-backed wrappers are named `run_*_mysql.sh` and must target a
-development clone. There is intentionally no single catch-all test command.
-See [Testing](docs/TESTING.md) for the available test styles and examples.
+checks. The root harness generates required world data and runs these tests in
+bounded parallel workers. Docker/MySQL suites remain an explicit `make test-db`
+step, while externally provisioned migration checks must target a development
+clone. See [Testing](docs/TESTING.md) for target details and focused-test
+controls.
 
 Format only touched C/C++ lines so legacy diffs stay reviewable:
 
@@ -195,6 +203,7 @@ Sanitizer and Valgrind workflows are covered in
 
 | Path | Purpose |
 | --- | --- |
+| `Makefile` | Root build, world-generation, and test entry points. |
 | `src/` | Server sources and `Makefile`; builds `src/dms_new` with `g++`. |
 | `areas/` | World sources, compilers, and generated `world.*` boot files. |
 | `lib/` | Runtime configuration, help, boards, descriptions, and game data. |
