@@ -221,17 +221,17 @@ archives.
 The complete index, including builder references and standalone diagrams, is
 in [`docs/README.md`](docs/README.md).
 
-[build]: https://github.com/moshehbenavraham/DurisMUD/actions/workflows/build.yml
-[build-badge]: https://img.shields.io/github/actions/workflow/status/moshehbenavraham/DurisMUD/build.yml?branch=master&style=flat-square&logo=githubactions&logoColor=white&label=build
-[commit-badge]: https://img.shields.io/github/last-commit/moshehbenavraham/DurisMUD?style=flat-square&logo=github
-[commits]: https://github.com/moshehbenavraham/DurisMUD/commits/master
+[build]: https://github.com/LuminariMUD/DurisMUD/actions/workflows/build.yml
+[build-badge]: https://img.shields.io/github/actions/workflow/status/LuminariMUD/DurisMUD/build.yml?branch=master&style=flat-square&logo=githubactions&logoColor=white&label=build
+[commit-badge]: https://img.shields.io/github/last-commit/LuminariMUD/DurisMUD?style=flat-square&logo=github
+[commits]: https://github.com/LuminariMUD/DurisMUD/commits/master
 [compiler-badge]: https://img.shields.io/badge/compiler-g%2B%2B-A42E2B?style=flat-square&logo=gnu&logoColor=white
 [cpp20-badge]: https://img.shields.io/badge/C%2B%2B-20-00599C?style=flat-square&logo=cplusplus&logoColor=white
 [database-badge]: https://img.shields.io/badge/database-MySQL%20%2F%20MariaDB-4479A1?style=flat-square&logo=mysql&logoColor=white
 [format-badge]: https://img.shields.io/badge/style-clang--format-262D3A?style=flat-square&logo=llvm&logoColor=white
 [formatting]: docs/formatting.md
-[issues]: https://github.com/moshehbenavraham/DurisMUD/issues
-[issues-badge]: https://img.shields.io/github/issues/moshehbenavraham/DurisMUD?style=flat-square&logo=github
+[issues]: https://github.com/LuminariMUD/DurisMUD/issues
+[issues-badge]: https://img.shields.io/github/issues/LuminariMUD/DurisMUD?style=flat-square&logo=github
 [linux-badge]: https://img.shields.io/badge/platform-Linux-FCC624?style=flat-square&logo=linux&logoColor=black
 [redis-badge]: https://img.shields.io/badge/Redis-optional-DC382D?style=flat-square&logo=redis&logoColor=white
 [tls-badge]: https://img.shields.io/badge/TLS-GnuTLS-386892?style=flat-square&logo=gnu&logoColor=white
