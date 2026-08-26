@@ -2247,6 +2247,7 @@ void NukeRedunantSpellcast(P_char);
 void SpellCastProcess(P_char, struct spellcast_datatype *);
 void SpellCastShow(P_char, int);
 void StopCasting(P_char);
+void do_abort(P_char, char *, int);
 void add_follower(P_char, P_char);
 void petrestore(P_char, char *);
 void affect_update(void);

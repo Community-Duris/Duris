@@ -1236,9 +1236,10 @@ void game_loop(int port, int sslport)
 				}
 			}
 
-			if ((!t_ch || (t_ch && (CAN_ACT(t_ch) &&
-						(!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
-						 (point->original))))) &&
+			if ((!t_ch ||
+			     (t_ch && ((CAN_ACT(t_ch) || IS_AFFECTED2(t_ch, AFF2_CASTING)) &&
+				       (!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
+					(point->original))))) &&
 			    get_from_q(&point->input, comm))
 			{
 				if (t_ch)

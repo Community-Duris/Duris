@@ -72,6 +72,7 @@ extern bool divine_blessing_check(P_char, P_char, int);
 extern int devotion_skill_check(P_char);
 void event_spellcast(P_char, P_char, P_obj, void *);
 void event_abort_spell(P_char, P_char, P_obj, void *);
+extern void event_wait(P_char, P_char, P_obj, void *);
 int chant_mastery_bonus(P_char, int);
 bool ground_casting_check(P_char ch, int spl);
 
@@ -1204,6 +1205,41 @@ void StopCasting(P_char ch)
 
 	clear_links(ch, LNK_CAST_ROOM);
 	clear_links(ch, LNK_CAST_WORLD);
+}
+
+void do_abort(P_char ch, char * /*argument*/, int /*cmd*/)
+{
+	if (!IS_ALIVE(ch))
+		return;
+
+	if (IS_AFFECTED2(ch, AFF2_CASTING))
+	{
+		/* 1. Cancel spell event, clear links, remove AFF2_CASTING, show flavor message */
+		StopCasting(ch);
+
+		/* 2. Disarm full casting wait timer */
+		disarm_char_nevents(ch, event_wait);
+		REMOVE_BIT(ch->specials.act2, PLR2_WAIT);
+
+		/* 3. Apply standard abort recovery delay (1 combat pulse) */
+		CharWait(ch, PULSE_VIOLENCE);
+
+		if (ch->in_room != NOWHERE)
+			update_pos(ch);
+
+		return;
+	}
+
+	/* Fallback: Support aborting camping setup */
+	if (IS_AFFECTED(ch, AFF_CAMPING))
+	{
+		send_to_char("You quickly pack up your things and move on.\r\n", ch);
+		act("$n stops setting up camp.", TRUE, ch, NULL, NULL, TO_ROOM);
+		affect_from_char(ch, TAG_CAMP);
+		return;
+	}
+
+	send_to_char("You are not casting a spell to abort!\r\n", ch);
 }
 
 bool ground_casting_check(P_char ch, int spl)

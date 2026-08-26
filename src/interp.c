@@ -1104,7 +1104,8 @@ const char *command[MAX_CMD] = {
 	"divineclaim",
 	"eqrate",
 	"zcheck",
-	"\n" /* MAX_CMD = 857, MAX_CMD_LIST = 1000 */
+	"abort",
+	"\n" /* MAX_CMD = 858, MAX_CMD_LIST = 1000 */
 };
 
 const char *fill_words[] = { "in", "from", "with", "the", "on", "at", "to", "\n" };
@@ -1420,7 +1421,7 @@ void command_interpreter(P_char ch, char *argument)
 	}
 	if (IS_AFFECTED2(ch, AFF2_CASTING))
 	{
-		if (cmd != CMD_PETITION && cmd != CMD_RETURN)
+		if (cmd != CMD_PETITION && cmd != CMD_RETURN && cmd != CMD_ABORT)
 		{
 			send_to_char("You're busy spellcasting!\r\n", ch);
 			if (IS_TRUSTED(ch))
@@ -2967,6 +2968,7 @@ void assign_command_pointers(void)
 	CMD_Y(CMD_OLIST, STAT_DEAD + POS_PRONE, do_olist, IMMORTAL, FALSE);
 	CMD_Y(CMD_MLIST, STAT_DEAD + POS_PRONE, do_mlist, IMMORTAL, FALSE);
 	CMD_Y(CMD_ZCHECK, STAT_DEAD + POS_PRONE, do_zcheck, IMMORTAL, FALSE);
+	CMD_Y(CMD_ABORT, STAT_RESTING + POS_PRONE, do_abort, 0, TRUE);
 	CMD_N(CMD_POLL, STAT_NORMAL + POS_PRONE, do_poll, 30, FALSE);
 	CMD_GRT(CMD_NEWCHAR, STAT_DEAD + POS_PRONE, do_newchar, OVERLORD);
 
