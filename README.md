@@ -1,3 +1,5 @@
+![DurisMUD — a dragon circles a citadel between moonlit ruins and a volcanic fortress](docs/assets/durismud-readme-header.webp)
+
 # DurisMUD
 
 DurisMUD forked from Xanadinn's repo.
