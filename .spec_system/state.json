@@ -3,15 +3,28 @@
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
   "current_phase": 0,
-  "current_session": null,
+  "current_session": "phase00-session01-redacted-persistence-observability",
   "monorepo": false,
   "phases": {
+    "1": {
+      "name": "Replace Forked Full Saves",
+      "description": "Replace player and world persistence forks with revisioned immutable workers, exact acknowledgements, and typed journal recovery.",
+      "status": "not_started",
+      "session_count": 8
+    },
     "0": {
       "name": "Correctness and Immediate Lag Removal",
+      "description": "Remove confirmed persistence correctness defects, immediate simulation-thread lag hazards, and fail-open security behavior before the revisioned save pipeline.",
       "status": "not_started",
-      "session_count": 0
+      "session_count": 10
     }
   },
   "completed_sessions": [],
-  "next_session_history": []
+  "next_session_history": [
+    {
+      "date": "2026-08-26",
+      "session": "phase00-session01-redacted-persistence-observability",
+      "status": "planned"
+    }
+  ]
 }

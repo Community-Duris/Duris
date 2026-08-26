@@ -12,9 +12,9 @@ Items requiring attention in upcoming phases. Review before each session.
 ### Technical Debt
 <!-- Max 5 items -->
 
-- [P00] **Remediation has not started**: The current branch adds the investigation and
-  spec-system baseline only. Phase 00 has 0 completed sessions and no session stubs;
-  run `phasebuild` before planning implementation work.
+- [P00] **Remediation has not started**: Phase 00 has 0 completed sessions, ten session
+  stubs, and a planned Session 01 spec/checklist. Phase 01 is preplanned but not active;
+  the next executable workflow step remains `implement` for Phase 00 Session 01.
 - [P00] **Save failures can become data loss**: Deferred-save failures strand occupied
   slots, while terminal paths can extract characters or inventory after failed SQL;
   the legacy pfile fallback is not automatically reconciled (DB-004, DB-005).
@@ -161,7 +161,8 @@ Proven patterns and anti-patterns. Reference during implementation.
   `./scripts/format.sh --check`.
 - [P00] **Spec state is script-derived**: Use
   `.spec_system/scripts/analyze-project.sh --json` instead of manually interpreting
-  `state.json`; it currently reports Phase 00 as not started with no active session.
+  `state.json`; it currently reports Phase 00 as not started with Session 01 planned and
+  no completed sessions.
 - [P00] **Database tests require isolation**: Start with the smallest relevant Python or
   shell regression, use `make test-db` only for isolated DB suites, and reserve
   `make test-all` for the complete handoff gate.

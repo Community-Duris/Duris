@@ -215,18 +215,21 @@ generalized.
   inbox semantics.
 - Queue bytes, oldest age, operation deadlines, retry classification, circuit state,
   and journal replay must be bounded and observable.
-- Session planning must keep one clear objective within 2-4 hours and 12-25 tasks;
-  `phasebuild` owns phase trackers and session stubs.
+- Session planning must keep one coherent outcome or tightly related objective cluster,
+  sized from the working set, dependencies, risk, verification boundary, and practical
+  model capacity. No fixed duration or task-count cap applies; `phasebuild` owns phase
+  trackers and session stubs.
 
 ## Phases
 
 This system delivers the remediation via phases. Each phase is implemented through
-multiple 2-4 hour sessions with 12-25 tasks each.
+adaptively sized sessions whose specs define coherent implementation and verification
+boundaries.
 
 | Phase | Name | Sessions | Status |
 |-------|------|----------|--------|
-| 00 | Correctness and Immediate Lag Removal | TBD | Not Started |
-| 01 | Replace Forked Full Saves | TBD | Not Started |
+| 00 | Correctness and Immediate Lag Removal | 10 | Not Started |
+| 01 | Replace Forked Full Saves | 8 | Not Started |
 | 02 | Transactional Gameplay Domains | TBD | Not Started |
 | 03 | Load Path, Schema, and Retention | TBD | Not Started |
 
@@ -248,12 +251,56 @@ multiple 2-4 hour sessions with 12-25 tasks each.
    is prepared.
 9. Add redacted call-site query timing plus dirty-state and save-age metrics.
 
-### Sessions (To Be Defined)
+### Sessions
 
-Sessions are defined via `phasebuild` as `session_NN_name.md` stubs under
-`.spec_system/PRD/phase_00/`.
+| Session | Name | Status |
+|---------|------|--------|
+| 01 | Redacted Persistence Observability | Not Started |
+| 02 | In-Memory Epic Bonus Hot Path | Not Started |
+| 03 | Save Failure Retry and Terminal Safety | Not Started |
+| 04 | Player Replacement State Cleanup | Not Started |
+| 05 | Combat and Artifact Persistence Correctness | Not Started |
+| 06 | Redis Failure and Recovery Containment | Not Started |
+| 07 | Account Bank Delta Safety | Not Started |
+| 08 | Runtime Connection Trust Boundaries | Not Started |
+| 09 | Private Chest Password Hardening | Not Started |
+| 10 | Security Policy and Dependency Baseline | Not Started |
 
-**Note:** `createprd` does not create or replace phase trackers or session stubs.
+Detailed scopes and verification boundaries are tracked in the Phase 00 PRD and its
+`session_NN_name.md` stubs under `.spec_system/PRD/phase_00/`.
+
+## Phase 01: Replace Forked Full Saves
+
+Phase 01 is planned in advance while Phase 00 remains active. It does not mark Phase 00
+complete or change the current executable session.
+
+### Objectives
+
+1. Add monotonic player revisions and explicit dirty component state.
+2. Capture immutable player snapshot DTOs on the game thread without unequipping or
+   exposing live game objects to workers.
+3. Apply keyed, coalescing player jobs through revision-guarded transactions and exact
+   main-thread acknowledgements.
+4. Retain unacknowledged work in a typed, checksummed, idempotent local journal.
+5. Move nonterminal and terminal player-save triggers to the revisioned pipeline.
+6. Replace forked world recovery with an immutable sequence-numbered worker pipeline.
+7. Delete both persistence fork paths and pass the Phase 01 recovery and load gate.
+
+### Sessions
+
+| Session | Name | Status |
+|---------|------|--------|
+| 01 | Player Revision and Component State Foundation | Not Started |
+| 02 | Immutable Player Snapshot Capture | Not Started |
+| 03 | Keyed Revision-Guarded Save Worker | Not Started |
+| 04 | Typed Persistence Journal and Replay | Not Started |
+| 05 | Nonterminal Save Pipeline Cutover | Not Started |
+| 06 | Terminal Drain and Shutdown Safety | Not Started |
+| 07 | Immutable World Recovery Worker | Not Started |
+| 08 | Legacy Fork Removal and Recovery Gate | Not Started |
+
+Detailed scopes and verification boundaries are tracked in the Phase 01 PRD and its
+`session_NN_name.md` stubs under `.spec_system/PRD/phase_01/`.
 
 ## Technical Stack
 
@@ -1174,7 +1221,9 @@ selection comes from `DB_NAME`, with a port guard only for the exact names `duri
 There is no MySQL TLS configuration, so a remote DB connection relies on external
 transport security.
 
-The local `.env` itself is mode 0600 and ignored by Git, which is good.
+The local `.env` is ignored by Git, but a Phase 00 read-only check found mode 0644.
+Restrict it to 0600 without exposing or committing its contents, and enforce that
+expectation in the runtime configuration preflight.
 
 Evidence: [`sql.h:7`](../../src/sql.h#L7) and [`sql.c:410`](../../src/sql.c#L410).
 
@@ -1413,7 +1462,8 @@ Targets should be finalized with gameplay owners, but a reasonable initial gate 
   generation-aware coalescing.
 - Query truncation checks and 1 MiB item sub-batches avoid some legacy fixed-buffer and
   packet-size failures; the local server's `max_allowed_packet` is 16 MiB.
-- The local `.env` is permission-restricted and ignored by version control.
+- The local `.env` is ignored by version control; its current mode 0644 is a Phase 00
+  security finding and must be restricted without exposing or committing its contents.
 
 These are useful building blocks. The central change is to extend their transactional,
 immutable, and idempotent properties to every player-critical path while removing all
