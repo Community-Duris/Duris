@@ -424,7 +424,7 @@ static void count_copyover_items(int *num_descs, int *num_mobs, int *num_objs, i
 	}
 }
 
-void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
+bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 {
 	FILE *fp = NULL;
 	struct copyover_header header;
@@ -439,7 +439,8 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	logit(LOG_STATUS, "copyover: saving world state...");
 	logit(LOG_STATUS, "copyover: world=%p top_of_world=%d", (void *)world, top_of_world);
 
-	// first pass - save all players, disconnect websocket/ssl
+	// First pass: prove every persistence prerequisite while all descriptors and
+	// transport settings still belong to the live process.
 	flush_pending_ship_saves();
 	if (!drain_pending_ship_saves())
 	{
@@ -447,7 +448,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		      "copyover: aborted because pending ship saves could not be made durable");
 		notify_copyover_failure(
 			"\r\n*** Copyover cancelled: a pending ship save failed. ***\r\n");
-		return;
+		return false;
 	}
 	if (!locker_async_drain(3000))
 	{
@@ -455,9 +456,12 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		      "copyover: aborted because pending locker async saves could not drain");
 		notify_copyover_failure(
 			"\r\n*** Copyover cancelled: a pending locker save failed. ***\r\n");
-		return;
+		return false;
 	}
-	persistence_flush_all_character_saves();
+
+	// Prove every connected player save before closing any descriptor or
+	// publishing copyover state. The terminal helper consumes a pending slot
+	// as the final save instead of writing the same character twice.
 	for (d = descriptor_list; d; d = d_next)
 	{
 		d_next = d->next;
@@ -472,67 +476,20 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		}
 
 		logit(LOG_STATUS, "copyover: saving %s with RENT_CRASH", GET_NAME(d->character));
-		// Wrap save in transaction
-		if (sql_begin_transaction())
+		if (!persistence_save_character_terminal(d->character, RENT_CRASH))
 		{
-			if (!do_save_silent(d->character, RENT_CRASH))
-			{
-				sql_rollback();
-				logit(LOG_STATUS, "copyover: save failed for %s, aborting copyover",
-				      GET_NAME(d->character));
-				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
-				return;
-			}
-			if (!sql_commit())
-			{
-				logit(LOG_STATUS,
-				      "copyover: commit failed for %s, aborting copyover",
-				      GET_NAME(d->character));
-				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
-				return;
-			}
-		}
-		else
-		{
-			if (!do_save_silent(d->character, RENT_CRASH))
-			{
-				logit(LOG_STATUS, "copyover: save failed for %s, aborting copyover",
-				      GET_NAME(d->character));
-				notify_copyover_failure(
-					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
-				return;
-			}
-		}
-
-		if (d->websocket)
-		{
-			logit(LOG_STATUS, "copyover: %s is websocket, disconnecting",
+			logit(LOG_STATUS, "copyover: save failed for %s, aborting copyover",
 			      GET_NAME(d->character));
-			notify_ws_copyover(d);
-			close(d->descriptor);
-			d->descriptor = -1;
+			notify_copyover_failure(
+				"\r\n*** Copyover FAILED - server remains live. ***\r\n");
+			return false;
 		}
-		else if (d->sslses)
-		{
-			logit(LOG_STATUS, "copyover: %s is ssl, disconnecting",
-			      GET_NAME(d->character));
-			notify_ssl_copyover(d);
-			gnutls_bye(d->sslses, GNUTLS_SHUT_WR);
-			close(d->descriptor);
-			d->descriptor = -1;
-		}
-		else
-		{
-			// end mccp compression so client stops expecting compressed data
-			if (d->out_compress)
-			{
-				compress_end(d, 1);
-			}
-			logit(LOG_STATUS, "copyover: %s is telnet fd=%d, preserving",
-			      GET_NAME(d->character), d->descriptor);
-		}
+	}
+	if (!persistence_flush_all_character_saves())
+	{
+		logit(LOG_STATUS, "copyover: pending character flush failed, aborting copyover");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
 	}
 
 	// count items to save
@@ -543,7 +500,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		logit(LOG_STATUS, "copyover: cant open %s for writing", copyover_tmp);
 		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
-		return;
+		return false;
 	}
 
 	// write header
@@ -566,7 +523,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
 		fclose(fp);
 		unlink(copyover_tmp);
-		return;
+		return false;
 	}
 
 	// write descriptors
@@ -575,8 +532,6 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		if (d->descriptor > 0 && d->connected == CON_PLAYING && d->character &&
 		    !d->websocket && !d->sslses)
 		{
-			// keep socket open across exec
-			copyover_prepare_socket(d->descriptor);
 			if (!write_desc_entry(fp, d))
 			{
 				logit(LOG_STATUS,
@@ -586,11 +541,8 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
-				return;
+				return false;
 			}
-
-			// let player know
-			raw_write_to_fd(d->descriptor, "\r\n*** Copyover in progress... ***\r\n");
 		}
 	}
 
@@ -608,7 +560,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
-				return;
+				return false;
 			}
 		}
 	}
@@ -633,7 +585,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 					"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 				fclose(fp);
 				unlink(copyover_tmp);
-				return;
+				return false;
 			}
 		}
 	}
@@ -655,7 +607,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 						"\r\n*** Copyover FAILED - reconnect. ***\r\n");
 					fclose(fp);
 					unlink(copyover_tmp);
-					return;
+					return false;
 				}
 			}
 		}
@@ -667,7 +619,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		      strerror(errno));
 		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
 		unlink(copyover_tmp);
-		return;
+		return false;
 	}
 	if (rename(copyover_tmp, COPYOVER_FILE) != 0)
 	{
@@ -675,11 +627,39 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 		      COPYOVER_FILE, strerror(errno));
 		notify_copyover_failure("\r\n*** Copyover FAILED - reconnect. ***\r\n");
 		unlink(copyover_tmp);
-		return;
+		return false;
 	}
 
 	logit(LOG_STATUS, "copyover: saved %d descs, %d mobs, %d objs, %d doors", num_descs,
 	      num_mobs, num_objs, num_rooms);
+
+	// All prerequisite saves and the complete copyover file are durable. Only
+	// now may non-preservable transports be disconnected.
+	for (d = descriptor_list; d; d = d->next)
+	{
+		if (d->descriptor < 0 || d->connected != CON_PLAYING || !d->character)
+			continue;
+		if (d->websocket)
+		{
+			notify_ws_copyover(d);
+			close(d->descriptor);
+			d->descriptor = -1;
+		}
+		else if (d->sslses)
+		{
+			notify_ssl_copyover(d);
+			gnutls_bye(d->sslses, GNUTLS_SHUT_WR);
+			close(d->descriptor);
+			d->descriptor = -1;
+		}
+		else
+		{
+			copyover_prepare_socket(d->descriptor);
+			if (d->out_compress)
+				compress_end(d, 1);
+			raw_write_to_fd(d->descriptor, "\r\n*** Copyover in progress... ***\r\n");
+		}
+	}
 
 	// prepare listener sockets
 	copyover_prepare_socket(mother_desc);
@@ -739,6 +719,7 @@ void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 			raw_write_to_fd(d->descriptor, "\r\n*** Copyover FAILED! ***\r\n");
 		}
 	}
+	return false;
 }
 
 // find_player_by_name already declared in prototypes.h

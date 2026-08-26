@@ -3543,6 +3543,25 @@ int camp(P_char ch)
 					if (IS_DESTROYING(ch))
 						stop_destroying(ch);
 					affect_from_char(ch, TAG_CAMP);
+					int previous_home = GET_HOME(ch);
+					if (IS_SHIP_ROOM(ch->in_room))
+					{
+						GET_HOME(ch) = GET_BIRTHPLACE(ch);
+					}
+					else
+					{
+						GET_HOME(ch) = world[ch->in_room].number;
+					}
+
+					if (!persistence_save_character_terminal(ch, RENT_CAMPED))
+					{
+						GET_HOME(ch) = previous_home;
+						send_to_char(
+							"Your character could not be saved, so your camp is cancelled.\r\n",
+							ch);
+						return 1;
+					}
+
 					if (!IS_RACEWAR_UNDEAD(ch))
 					{
 						act("$n rolls $mself up in $s bedroll and tunes out the world.",
@@ -3559,16 +3578,6 @@ int camp(P_char ch)
 							"You climb into your little grave and bury yourself.\n",
 							ch);
 					}
-					if (IS_SHIP_ROOM(ch->in_room))
-					{
-						GET_HOME(ch) = GET_BIRTHPLACE(ch);
-					}
-					else
-					{
-						GET_HOME(ch) = world[ch->in_room].number;
-					}
-
-					writeCharacter(ch, RENT_CAMPED, ch->in_room);
 
 					loginlog(ch->player.level, "%s has camped in [%d].",
 						 GET_NAME(ch), world[ch->in_room].number);

@@ -147,7 +147,7 @@ typedef struct copyover_obj_content copyover_carried_item;
 extern int copyover_boot;
 
 // main copyover functions
-void copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc);
+bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc);
 int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc);
 void copyover_restore_combat(void);
 int is_copyover_boot(void);

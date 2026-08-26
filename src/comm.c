@@ -646,26 +646,13 @@ void run_the_game(int port, int sslport)
 		ws_broadcast_mud_shutdown("reboot");
 		exit(52); /* what's so great about HHGTTG, anyhow? */
 	}
+	// A successful copyover replaces this process from inside game_loop(). A
+	// failed copyover resumes that loop, so reaching here with the flag set is
+	// an invariant failure and must not fall back to a destructive restart.
 	if (_copyover)
 	{
-		if (_autoboot)
-		{
-			logit(LOG_EXIT, "Auto reboot with copyover.");
-			logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good,
-			      max_ingame_evil);
-		}
-		else
-		{
-			logit(LOG_EXIT, "Copyover reboot.");
-			logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good,
-			      max_ingame_evil);
-		}
-		ws_broadcast_mud_shutdown("copyover");
-		// attempt true copyover - if it returns, something went wrong
-		copyover_save(mother_desc, mother_desc_ssl, ws_desc);
-		// fallback to old behavior if copyover_save fails
-		logit(LOG_EXIT, "Copyover failed, falling back to normal restart.");
-		exit(_autoboot ? 57 : 53);
+		logit(LOG_EXIT, "Copyover returned unexpectedly; refusing fallback exit.");
+		return;
 	}
 	if (_autoboot)
 	{
@@ -844,6 +831,7 @@ void game_loop(int port, int sslport)
 	long last_desc_per_hour_reset = time(0);
 	clock_t loop_time_end;
 	/* Main loop */
+resume_game_loop:
 	while (!shutdownflag)
 	{
 		clock_t loop_time_begin = clock();
@@ -1567,6 +1555,37 @@ void game_loop(int port, int sslport)
 		PROFILE_END(pulse_reset);
 	}
 
+	if (_copyover)
+	{
+		if (!copyover_save(s, S, WS))
+		{
+			persistence_alert(AVATAR, "player_save", "copyover", "none", "none",
+					  "terminal_save_failed", "shutdown_cancelled=1");
+			shutdownflag = 0;
+			_reboot = 0;
+			_copyover = 0;
+			_autoboot = 0;
+			goto resume_game_loop;
+		}
+		return;
+	}
+
+	if (!_pwipe && !persistence_save_all_characters_terminal(RENT_CRASH))
+	{
+		persistence_alert(AVATAR, "player_save", "shutdown", "none", "none",
+				  "terminal_save_failed", "shutdown_cancelled=1");
+		for (P_desc pending_desc = descriptor_list; pending_desc;
+		     pending_desc = pending_desc->next)
+			if (pending_desc->descriptor > 0 && pending_desc->connected == CON_PLAYING)
+				write_to_descriptor(
+					pending_desc,
+					"\r\nShutdown cancelled because a character save failed.\r\n");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
+
 	PROFILES(SAVE);
 #ifdef DO_PROFILE
 	save_func_call_info();
@@ -1594,7 +1613,6 @@ void game_loop(int port, int sslport)
 	// skip character extraction during copyover - we need them intact
 	if (!_copyover && !_pwipe)
 	{
-		persistence_flush_all_character_saves();
 		for (point = descriptor_list; point; point = point->next)
 		{
 			if (point->character)
@@ -1617,14 +1635,6 @@ void game_loop(int port, int sslport)
 					if (shutdown_message)
 					{
 						write_to_descriptor(point, shutdown_message);
-					}
-					if (!_pwipe)
-					{
-						write_to_descriptor(point, "\r\nSaving...\r\n");
-						if (!do_save_silent(point->character, 3))
-							logit(LOG_STATUS,
-							      "Failed to save %s during shutdown.",
-							      GET_NAME(point->character));
 					}
 					// If it's not an immortal.
 					if (GET_LEVEL(point->character) < MINLVLIMMORTAL)
@@ -2160,23 +2170,13 @@ void close_socket(struct descriptor_data *d)
 					 GET_NAME(GET_PLYR(d->character)), d->host, Gbuf1);
 				sql_log(d->character, CONNECTLOG, "Lost Link");
 			}
-			persistence_flush_character_saves(d->character);
-
-			// Wrap final save in transaction (flush already completed above)
-			if (sql_begin_transaction())
+			if (!persistence_save_character_terminal(d->character, RENT_CRASH))
 			{
-				writeCharacter(d->character, RENT_CRASH, d->character->in_room);
-				if (!sql_commit())
-				{
-					logit(LOG_DEBUG, "close_socket: commit failed for %s",
-					      GET_NAME(d->character));
-					sql_rollback();
-				}
-			}
-			else
-			{
-				// still try to save even if transaction start fails
-				writeCharacter(d->character, RENT_CRASH, d->character->in_room);
+				persistence_alert(AVATAR, "player_save", "link_loss", "none",
+						  "none", "terminal_save_failed",
+						  "retry_scheduled=1");
+				persistence_schedule_character_save(d->character, RENT_CRASH, 4,
+								    "link-loss-retry");
 			}
 			d->character->desc = 0;
 		}
@@ -3853,7 +3853,7 @@ void escape_act_dollars(char *dst, size_t dst_size, const char *src)
 	dst[di] = '\0';
 }
 
-// LATENT: no output buffer bounds checking on 'buf'/'tbuf' — safe only
+// LATENT: no output buffer bounds checking on 'buf'/'tbuf' - safe only
 // because format strings are code constants, not player-controlled.
 // Would need snprintf-style length tracking to harden.
 void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type)

@@ -141,6 +141,7 @@ OBJS =  $(SHIP_OBJS) \
 				 epic.o \
 				 epic_bonus.o \
 				 epic_bonus_state.o \
+				 deferred_save_policy.o \
 				 epic_skills.o \
 				 ethermancer.o \
 				 events.o \

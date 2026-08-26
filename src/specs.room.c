@@ -358,36 +358,33 @@ int inn(int room, P_char ch, int cmd, char * /*arg*/)
 			return FALSE;
 		}
 
-		if (IS_AFFECTED4(ch, AFF4_TUPOR))
+		bool had_tupor = IS_AFFECTED4(ch, AFF4_TUPOR);
+		if (had_tupor)
 		{
 			send_to_char("&+cYour mind ceases its trance.&n\n\r", ch);
 			REMOVE_BIT(ch->specials.affected_by4, AFF4_TUPOR);
 		}
 
-		send_to_char(
-			"The innkeeper stores your stuff in the safe and shows you to your room.\r\n",
-			ch);
-		act("The innkeeper stores $n&n's stuff in the safe and shows $m to $s room.", TRUE,
-		    ch, 0, 0, TO_ROOM);
-
-		if (ch->following)
-		{
-			do_dismiss(ch, NULL, CMD_RENT);
-		}
-
+		int previous_home = GET_HOME(ch);
 		GET_HOME(ch) = world[ch->in_room].number;
 
-		if (!writeCharacter(ch, RENT_CRASH, ch->in_room))
+		if (!persistence_save_character_terminal(ch, RENT_INN))
 		{
+			GET_HOME(ch) = previous_home;
+			if (had_tupor)
+				SET_BIT(ch->specials.affected_by4, AFF4_TUPOR);
 			send_to_char("Failed to save this character, most likely too much eq.\r\n",
 				     ch);
 			wizlog(56, "%s was unable to rent [specs.room.c()].", GET_NAME(ch));
 			return TRUE;
 		}
-		else
-		{
-			writeCharacter(ch, RENT_INN, ch->in_room);
-		}
+		if (ch->following)
+			do_dismiss(ch, NULL, CMD_RENT);
+		send_to_char(
+			"The innkeeper stores your stuff in the safe and shows you to your room.\r\n",
+			ch);
+		act("The innkeeper stores $n&n's stuff in the safe and shows $m to $s room.", TRUE,
+		    ch, 0, 0, TO_ROOM);
 
 		if (!ch)
 		{
@@ -460,18 +457,26 @@ int undead_inn(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 				ch);
 			return TRUE;
 		}
+		bool had_tupor = IS_AFFECTED4(ch, AFF4_TUPOR);
+		if (had_tupor)
+			REMOVE_BIT(ch->specials.affected_by4, AFF4_TUPOR);
+
+		int previous_home = GET_HOME(ch);
+		GET_HOME(ch) = world[ch->in_room].number;
+		if (IS_PC(ch) && !persistence_save_character_terminal(ch, RENT_INN))
+		{
+			GET_HOME(ch) = previous_home;
+			if (had_tupor)
+				SET_BIT(ch->specials.affected_by4, AFF4_TUPOR);
+			send_to_char("Your character could not be saved, so you remain here.\r\n",
+				     ch);
+			return TRUE;
+		}
 		send_to_char(
 			"The innkeeper shows you to a rotted coffin, you climb in and shut the lid.\r\n",
 			ch);
 		act("The innkeeper shows $n&n to a rotted coffin. $n climbs in and shuts the lid.",
 		    TRUE, ch, 0, 0, TO_ROOM);
-
-		if (IS_AFFECTED4(ch, AFF4_TUPOR))
-			REMOVE_BIT(ch->specials.affected_by4, AFF4_TUPOR);
-
-		GET_HOME(ch) = world[ch->in_room].number;
-		if (IS_PC(ch))
-			writeCharacter(ch, 3, ch->in_room);
 		loginlog(ch->player.level, "%s [%s] has rented out in [%d].", GET_NAME(ch),
 			 (ch->desc) ? ch->desc->host : "LINKDEAD", world[ch->in_room].number);
 		sql_log(ch, CONNECTLOG, "Rented Out");
@@ -1456,11 +1461,17 @@ int mortal_heaven(int room, P_char ch, int cmd, char * /*arg*/)
 
 		if (tch->only.pc->pc_timer[PC_TIMER_HEAVEN] <= time(NULL))
 		{
+			if (!persistence_save_character_terminal(tch, RENT_DEATH))
+			{
+				persistence_alert(AVATAR, "player_save", "mortal_heaven", "none",
+						  "none", "terminal_save_failed",
+						  "extract_refused=1");
+				continue;
+			}
 			send_to_char(
 				"Your soul is torn from the afterlife, eternal rest denied...\n\r",
 				tch);
 			act("$n is torn from the afterlife.", FALSE, tch, 0, 0, TO_ROOM);
-			writeCharacter(tch, RENT_DEATH, NOWHERE);
 			// If it's not an immortal.
 			if (IS_PC(tch) && (GET_LEVEL(tch) < MINLVLIMMORTAL))
 			{

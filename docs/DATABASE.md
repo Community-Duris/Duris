@@ -200,6 +200,40 @@ contributions expire locally at the same calendar boundary represented by the fo
 boundary: Phase 02 still owns atomic epic balance, ledger, operation identity, and
 ambiguous-commit reconciliation.
 
+## Deferred and terminal player saves
+
+Deferred player checkpoints use a fixed 512-slot game-thread table. Requests for the
+same PID coalesce the newest save type, level-checkpoint intent, reason, and request
+time. A failed attempt remains pending and owns exactly one retry event. Retry delay
+starts at four pulses, doubles after each failure, and stops growing at 240 pulses.
+Attempts and failures saturate instead of wrapping. A later request repairs an
+unscheduled occupied slot rather than leaving it stranded.
+
+Direct and global flush functions return a real result. Successful flush clears the
+slot, so its already queued event becomes a no-op. Failure retains and re-arms live
+work. A terminal request consumes an existing slot after replacing its save type, so
+the same player is not fully serialized once for the checkpoint and again for the
+terminal transition.
+
+`writeCharacter()` treats the MySQL/MariaDB result as the terminal durability gate.
+On failure it re-equips the original objects, leaves carried inventory reachable,
+reapplies affects, and returns false. A successfully written legacy binary pfile is
+reported as a fallback record, but it is not automatically reconciled and does not
+authorize character, inventory, offline artifact owner, or locker extraction.
+The shared terminal helper queues a safe non-destructive crash-save retry when a
+direct terminal attempt fails; it never retries an inventory-extracting rent type in
+the background.
+
+Camp, rent, death, idle/link-loss cleanup, ghost extraction, copyover, shutdown, and
+reboot callers check this result before irreversible completion. Copyover validates
+all player saves and publishes its complete state file before closing transports.
+Locker departure is vetoed before room release when its character is absent or a
+coherent snapshot cannot be prepared.
+Shutdown/reboot uses non-destructive crash saves as a preflight; if any fail, terminal
+flags are cancelled and the live game loop resumes with player state available for
+retry. Phase 01 replaces this synchronous safety boundary with revisioned immutable
+workers and a typed journal.
+
 ## Operational notes
 
 - Connection problems at boot print `MySQL initialization failed!` --

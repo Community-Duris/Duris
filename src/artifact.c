@@ -2159,13 +2159,25 @@ void arti_files_to_sql(P_char ch, char *arg)
 				}
 				else
 				{
+					bool owner_saved = TRUE;
 					if (get_object_from_char(owner, vnum) == NULL)
 					{
 						obj_to_char(arti, owner);
-						writeCharacter(owner, RENT_CRASH, owner->in_room);
+						owner_saved = writeCharacter(owner, RENT_CRASH,
+									     owner->in_room);
 					}
-					nuke_eq(owner);
-					extract_char(owner);
+					if (owner_saved)
+					{
+						nuke_eq(owner);
+						extract_char(owner);
+					}
+					else
+					{
+						persistence_alert(AVATAR, "artifact",
+								  "offline_owner", "none", "none",
+								  "terminal_save_failed",
+								  "extract_refused=1");
+					}
 				}
 			}
 			else
@@ -2184,6 +2196,7 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	int vnum, locType, location;
 	bool found;
 	bool expired = FALSE;
+	bool save_failed = FALSE;
 	char *name;
 	MYSQL_RES *res;
 	MYSQL_ROW row = NULL;
@@ -2206,6 +2219,7 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 		expired = TRUE;
 		while ((row = mysql_fetch_row(res)))
 		{
+			bool owner_terminal_saved = TRUE;
 			vnum = atoi(row[0]);
 			locType = atoi(row[1]);
 			location = atoi(row[2]);
@@ -2335,8 +2349,17 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 					if (arti)
 					{
 						poof_artifact(arti);
-						writeCharacter(owner, RENT_POOFARTI,
-							       owner->in_room);
+						if (!writeCharacter(owner, RENT_POOFARTI,
+								    owner->in_room))
+						{
+							save_failed = TRUE;
+							owner_terminal_saved = FALSE;
+							persistence_alert(AVATAR, "artifact",
+									  "offline_poof", "none",
+									  "none",
+									  "terminal_save_failed",
+									  "extract_refused=1");
+						}
 						logit(LOG_ARTIFACT,
 						      "event_artifact_check_poof_sql: poofed vnum=%d for offline pid=%d ('%s')",
 						      vnum, location,
@@ -2354,7 +2377,7 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 						      vnum, get_player_name_from_pid(location),
 						      location);
 					}
-					if (owner)
+					if (owner && owner_terminal_saved)
 					{
 						extract_char(owner);
 					}
@@ -2584,7 +2607,7 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	mysql_free_result(res);
 
 	// Clear the artis from the list.  Note: doing it after the loop intentionally.
-	if (expired)
+	if (expired && !save_failed)
 	{
 		qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()",
 		    ARTIFACT_NOTINGAME);
@@ -3719,11 +3742,15 @@ void arti_swap_sql(P_char ch, char *arg)
 		owner1 = NULL;
 	}
 	// Save pfile if applies.
-	if (dummy)
+	if (dummy && writeCharacter(dummy, RENT_SWAPARTI, dummy->in_room))
 	{
-		writeCharacter(dummy, RENT_SWAPARTI, dummy->in_room);
 		nuke_eq(dummy);
 		extract_char(dummy);
+	}
+	else if (dummy)
+	{
+		persistence_alert(AVATAR, "artifact", "offline_swap", "none", "none",
+				  "terminal_save_failed", "extract_refused=1");
 	}
 	// Save in-game owner if applies.
 	if (owner1)

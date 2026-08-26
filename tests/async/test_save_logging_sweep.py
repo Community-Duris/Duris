@@ -11,8 +11,8 @@ checks = [
     ),
     (
         'src/comm.c',
-        'Failed to save %s during shutdown.',
-        'if (!do_save_silent(point->character, 3))',
+        'shutdown_cancelled=1',
+        'if (!_pwipe && !persistence_save_all_characters_terminal(RENT_CRASH))',
         1,
     ),
     (

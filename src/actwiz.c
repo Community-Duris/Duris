@@ -13430,25 +13430,7 @@ void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-			persistence_flush_character_saves(vict);
-			/* Wrap final save in transaction (flush already completed above) */
-			bool saved = false;
-			if (sql_begin_transaction())
-			{
-				if (writeCharacter(vict, RENT_LINKDEAD, vict->in_room))
-				{
-					if (sql_commit())
-						saved = true;
-					else
-						sql_rollback();
-				}
-				else
-					sql_rollback();
-			}
-			else
-			{
-				saved = writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-			}
+			bool saved = persistence_save_character_terminal(vict, RENT_LINKDEAD);
 			if (!saved)
 			{
 				send_to_char(
@@ -13505,25 +13487,7 @@ void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-			persistence_flush_character_saves(vict);
-			/* Wrap final save in transaction (flush already completed above) */
-			bool saved = false;
-			if (sql_begin_transaction())
-			{
-				if (writeCharacter(vict, RENT_LINKDEAD, vict->in_room))
-				{
-					if (sql_commit())
-						saved = true;
-					else
-						sql_rollback();
-				}
-				else
-					sql_rollback();
-			}
-			else
-			{
-				saved = writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-			}
+			bool saved = persistence_save_character_terminal(vict, RENT_LINKDEAD);
 			if (!saved)
 			{
 				send_to_char(

@@ -1,7 +1,7 @@
 # Session 03: Save Failure Retry and Terminal Safety
 
 **Session ID**: `phase00-session03-save-failure-retry-and-terminal-safety`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One durable-save failure contract covering deferred coordination,
 flush behavior, fallback truthfulness, and every destructive terminal caller.
 
@@ -43,7 +43,7 @@ the required durable save succeeds.
 
 ## Prerequisites
 
-- [ ] Session 01 redacted diagnostics and save-age reporting are validated.
+- [x] Session 01 redacted diagnostics and save-age reporting are validated.
 
 ---
 
@@ -61,11 +61,25 @@ the required durable save succeeds.
 
 ## Success Criteria
 
-- [ ] A failed deferred save remains pending and is retried with bounded backoff.
-- [ ] A later save request for the same player updates the pending state and cannot be
+- [x] A failed deferred save remains pending and is retried with bounded backoff.
+- [x] A later save request for the same player updates the pending state and cannot be
       stranded behind a slot with no scheduled callback.
-- [ ] Failed terminal saves leave the character and all inventory live and retryable.
-- [ ] Successful terminal paths do not perform redundant full saves for the same state.
-- [ ] Alerts distinguish database success, retryable failure, fallback-record success,
+- [x] Failed terminal saves leave the character and all inventory live and retryable.
+- [x] Successful terminal paths do not perform redundant full saves for the same state.
+- [x] Alerts distinguish database success, retryable failure, fallback-record success,
       and fallback-record failure accurately.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.
+
+---
+
+## Completion Summary
+
+Implemented a bounded deferred-save retry state machine with truthful flush results,
+fail-closed inventory restoration, and a shared terminal gate across player, artifact,
+locker, copyover, shutdown, and reboot paths. Direct terminal failure queues only a
+safe crash-save retry. Copyover and shutdown preserve the live process until all
+required saves succeed, and incoherent locker departure now vetoes room release.
+
+Validation passed the C++20 warning-as-error build, safe development runtime smoke,
+170/170 Python regressions, signal-handler checks, formatting, whitespace, and
+ASCII/LF scans. See the session package for review findings and detailed evidence.

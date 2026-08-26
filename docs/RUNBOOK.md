@@ -112,8 +112,9 @@ Interpret explicit states as follows:
 - `state=unavailable` means the subsystem is enabled but its local health state
   cannot currently confirm availability. `heartbeat=unavailable` means that
   queue worker has never published a heartbeat.
-- `failed_unscheduled` greater than zero is stranded deferred-save work, not a
-  retry-in-progress claim. Investigate the categorical persistence alerts.
+- Failed deferred work normally remains in `scheduled` while its bounded retry is
+  pending. `failed_unscheduled` should remain zero; a non-zero value means scheduling
+  invariants were violated and requires investigation.
 - `registry_overflow` greater than zero means additional source sites were not
   retained; recorded totals remain bounded and should not be treated as a full
   site inventory.
@@ -121,6 +122,28 @@ Interpret explicit states as follows:
 The displayed query operation IDs and any `SQL_TRACE` operation IDs are scoped
 to the current process. They are correlation aids, not durable transaction or
 idempotency identifiers.
+
+### Retained terminal-save failures
+
+`deferred_save_retry_scheduled` means the live character remains the recovery source;
+the alert includes only delay and aggregate counters. Let the bounded retry run and
+watch `world persistence` for pending age and failure growth.
+
+`terminal_save_failed` or `terminal_not_durable` with `extract_refused=1` means camp,
+rent, death cleanup, ghost extraction, an offline artifact transition, or a locker
+transition deliberately kept its live object graph. Do not manually extract that
+character or locker. Restore database availability, retry the originating action or a
+trusted save, and verify the pending count clears.
+
+`terminal_not_durable` with `leave_vetoed=1` means locker snapshot preparation did
+not complete. The occupant and dynamic locker room remain live; do not purge either.
+Restore database availability and have the occupant retry departure.
+
+A copyover or shutdown alert with `shutdown_cancelled=1` means the process deliberately
+returned to the live game loop. No fallback restart should be forced. Correct the
+database failure, confirm every pending age is falling or stable, then request the
+copyover/shutdown again. A `fallback_saved` player-pfile alert is recovery evidence
+only; it does not mean MySQL committed and is not automatically replayed.
 
 ## Crash recovery
 

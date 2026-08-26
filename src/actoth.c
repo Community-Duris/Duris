@@ -24,6 +24,7 @@
 #include "achievements.h"
 #include "assocs.h"
 #include "damage.h"
+#include "deferred_save_policy.h"
 #include "epic.h"
 #include "files.h"
 #include "gmcp.h"
@@ -301,15 +302,20 @@ void do_camp(P_char ch, char *arg, int /*cmd*/)
 		*(timestr + strlen(timestr) - 1) = '\0';
 		strcat(timestr, " EST");
 
+		if (!persistence_save_character_terminal(ch, RENT_INN))
+		{
+			send_to_char(
+				"Your character could not be saved, so you remain in the game.\r\n",
+				ch);
+			return;
+		}
+
 		logit(LOG_COMM, "%s has quit in [%d] @ %s.", GET_NAME(ch),
 		      world[ch->in_room].number, timestr);
 		loginlog(GET_LEVEL(ch), "%s has quit in [%d] @ %s.", GET_NAME(ch),
 			 ROOM_VNUM(ch->in_room), timestr);
 		sql_log(ch, CONNECTLOG, "Quit Game");
 		act("$n has left the game.", TRUE, ch, 0, 0, TO_ROOM);
-
-		writeCharacter(ch, RENT_INN, ch->in_room);
-
 		sql_log_player_login(ch, "logout");
 		redis_player_offline(ch);
 		extract_char(ch);
@@ -1637,15 +1643,10 @@ void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 		return;
 	}
 
-	act("Goodbye, friend.. Come back soon!", FALSE, ch, 0, 0, TO_CHAR);
-	act("$n has quit the game.", TRUE, ch, 0, 0, TO_ROOM);
 	/* ugly, could get stuck in wraithform. JAB */
 	if (IS_AFFECTED(ch, AFF_WRAITHFORM))
 		BackToUsualForm(ch);
 	i = ch->in_room;
-	logit(LOG_COMM, "%s has quit in [%d].", GET_NAME(ch), world[ch->in_room].number);
-	loginlog(GET_LEVEL(ch), "%s has quit in [%d].", GET_NAME(ch), world[ch->in_room].number);
-	sql_log(ch, CONNECTLOG, "Quit Game");
 
 	/*
 	 * Mortals: drop everything but nodrop items, write char, then extract
@@ -1693,8 +1694,20 @@ void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 	{
 		ch->specials.was_in_room = world[i].number;
 		ch->in_room = i;
-		writeCharacter(ch, 3, i);
 	}
+
+	if (!persistence_save_character_terminal(ch, RENT_INN))
+	{
+		send_to_char("Your character could not be saved, so you remain in the game.\r\n",
+			     ch);
+		return;
+	}
+
+	act("Goodbye, friend.. Come back soon!", FALSE, ch, 0, 0, TO_CHAR);
+	act("$n has quit the game.", TRUE, ch, 0, 0, TO_ROOM);
+	logit(LOG_COMM, "%s has quit in [%d].", GET_NAME(ch), world[ch->in_room].number);
+	loginlog(GET_LEVEL(ch), "%s has quit in [%d].", GET_NAME(ch), world[ch->in_room].number);
+	sql_log(ch, CONNECTLOG, "Quit Game");
 
 	// If it's not an immortal.
 	if (IS_PC(ch) && (GET_LEVEL(ch) < MINLVLIMMORTAL))
@@ -1703,7 +1716,6 @@ void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 	}
 
 	sql_log_player_login(ch, "logout");
-	persistence_flush_character_saves(ch);
 	redis_player_offline(ch);
 	extract_char(ch);
 	ch = NULL;
@@ -1743,10 +1755,13 @@ struct deferred_save_slot
 	uint64_t latest_pending_usec;
 	uint64_t attempts;
 	uint64_t failures;
+	int retry_delay;
 	char reason[64];
 };
 
 static struct deferred_save_slot deferred_saves[PERSISTENCE_DEFERRED_SAVE_SLOTS];
+
+static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, void *data);
 
 static struct deferred_save_slot *find_deferred_save_slot(int pid)
 {
@@ -1768,6 +1783,16 @@ static struct deferred_save_slot *find_empty_deferred_save_slot(void)
 			return &deferred_saves[i];
 
 	return NULL;
+}
+
+static void schedule_deferred_save_event(struct deferred_save_slot *slot, P_char ch, int delay)
+{
+	if (!slot || !slot->pid || slot->scheduled || !ch || IS_NPC(ch) || !GET_NAME(ch))
+		return;
+
+	slot->scheduled = 1;
+	add_event(event_deferred_character_save, delay > 0 ? delay : 1, ch, 0, 0, 0, &slot->pid,
+		  sizeof(slot->pid));
 }
 
 static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, void *data)
@@ -1801,10 +1826,10 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 		return;
 	}
 
-	if (!IS_ALIVE(ch))
+	if (!GET_NAME(ch))
 	{
 		persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
-				  "deferred_save_character_not_alive", "discarded=1");
+				  "deferred_save_character_invalid", "discarded=1");
 		memset(slot, 0, sizeof(*slot));
 		return;
 	}
@@ -1815,7 +1840,16 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 	if (do_save_silent(ch, pending.type ? pending.type : 1))
 		memset(slot, 0, sizeof(*slot));
 	else
+	{
 		persistence_counter_saturating_add(&slot->failures, 1);
+		slot->retry_delay = deferred_save_next_retry_delay(slot->retry_delay);
+		persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
+				  "deferred_save_retry_scheduled",
+				  "delay=%d attempts=%llu failures=%llu", slot->retry_delay,
+				  (unsigned long long)slot->attempts,
+				  (unsigned long long)slot->failures);
+		schedule_deferred_save_event(slot, ch, slot->retry_delay);
+	}
 }
 
 static void persistence_schedule_checkpoint(P_char ch, int type, int delay, const char *reason,
@@ -1823,7 +1857,7 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay, cons
 {
 	struct deferred_save_slot *slot;
 
-	if (!IS_ALIVE(ch) || IS_NPC(ch))
+	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
 		return;
 
 	slot = find_deferred_save_slot(GET_PID(ch));
@@ -1832,6 +1866,10 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay, cons
 		slot->type = type ? type : slot->type;
 		slot->level_dirty = slot->level_dirty || level_dirty;
 		slot->latest_pending_usec = persistence_observability_now_usec();
+		snprintf(slot->reason, sizeof(slot->reason), "%s", reason ? reason : "unknown");
+		if (!slot->scheduled)
+			schedule_deferred_save_event(slot, ch,
+						     slot->retry_delay ? slot->retry_delay : delay);
 		return;
 	}
 
@@ -1851,13 +1889,12 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay, cons
 	slot->pid = GET_PID(ch);
 	slot->type = type ? type : 1;
 	slot->level_dirty = level_dirty;
-	slot->scheduled = 1;
 	slot->first_pending_usec = persistence_observability_now_usec();
 	slot->latest_pending_usec = slot->first_pending_usec;
+	slot->retry_delay = 0;
 	snprintf(slot->reason, sizeof(slot->reason), "%s", reason ? reason : "unknown");
 
-	add_event(event_deferred_character_save, delay > 0 ? delay : 1, ch, 0, 0, 0, &slot->pid,
-		  sizeof(slot->pid));
+	schedule_deferred_save_event(slot, ch, delay);
 }
 
 void persistence_schedule_character_save(P_char ch, int type, int delay, const char *reason)
@@ -1882,17 +1919,17 @@ void persistence_schedule_level_checkpoint(P_char ch, int type, int delay, const
  * visible and retryable. A still-queued event becomes a no-op after a
  * successful clear because it rechecks find_deferred_save_slot(pid).
  */
-void persistence_flush_character_saves(P_char ch)
+bool persistence_flush_character_saves(P_char ch)
 {
 	struct deferred_save_slot pending;
 	struct deferred_save_slot *slot;
 
-	if (!ch || IS_NPC(ch) || !IS_ALIVE(ch))
-		return;
+	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
+		return false;
 
 	slot = find_deferred_save_slot(GET_PID(ch));
 	if (!slot)
-		return;
+		return true;
 
 	pending = *slot;
 	persistence_counter_saturating_add(&slot->attempts, 1);
@@ -1907,6 +1944,8 @@ void persistence_flush_character_saves(P_char ch)
 	else
 	{
 		persistence_counter_saturating_add(&slot->failures, 1);
+		slot->retry_delay = deferred_save_next_retry_delay(slot->retry_delay);
+		schedule_deferred_save_event(slot, ch, slot->retry_delay);
 		logit(LOG_DEBUG, "Deferred player save flush failed");
 	}
 
@@ -1914,16 +1953,18 @@ void persistence_flush_character_saves(P_char ch)
 			  saved ? "deferred_save_flushed" : "deferred_save_flush_failed",
 			  "attempts=%llu failures=%llu", (unsigned long long)attempts,
 			  (unsigned long long)(saved ? pending.failures : slot->failures));
+	return saved;
 }
 
 /*
  * persistence_flush_all_character_saves: flush every pending deferred save.
  * Intended for global shutdown / copyover so no scheduled save is lost.
  */
-void persistence_flush_all_character_saves(void)
+bool persistence_flush_all_character_saves(void)
 {
 	int i;
 	P_char ch;
+	bool all_saved = true;
 	struct deferred_save_slot pending;
 	struct deferred_save_slot *slot;
 
@@ -1942,11 +1983,12 @@ void persistence_flush_all_character_saves(void)
 
 		pending = *slot;
 
-		if (!ch || !IS_ALIVE(ch))
+		if (!ch || !GET_NAME(ch))
 		{
 			persistence_alert(AVATAR, "player_save", "none", "none", "none",
 					  "deferred_save_discard_global", "discarded=1");
 			memset(slot, 0, sizeof(*slot));
+			all_saved = false;
 			continue;
 		}
 
@@ -1957,8 +1999,59 @@ void persistence_flush_all_character_saves(void)
 		if (do_save_silent(ch, pending.type ? pending.type : 1))
 			memset(slot, 0, sizeof(*slot));
 		else
+		{
 			persistence_counter_saturating_add(&slot->failures, 1);
+			slot->retry_delay = deferred_save_next_retry_delay(slot->retry_delay);
+			schedule_deferred_save_event(slot, ch, slot->retry_delay);
+			all_saved = false;
+		}
 	}
+	return all_saved;
+}
+
+bool persistence_save_character_terminal(P_char ch, int type)
+{
+	struct deferred_save_slot *slot;
+
+	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
+		return false;
+
+	slot = find_deferred_save_slot(GET_PID(ch));
+	if (slot)
+	{
+		int pending_type = slot->type;
+		slot->type = type;
+		bool saved = persistence_flush_character_saves(ch);
+		if (!saved)
+		{
+			slot = find_deferred_save_slot(GET_PID(ch));
+			if (slot)
+				slot->type = pending_type ? pending_type : RENT_CRASH;
+		}
+		return saved;
+	}
+	bool saved = do_save_silent(ch, type);
+	if (!saved)
+		persistence_schedule_character_save(
+			ch, RENT_CRASH, PERSISTENCE_DEFERRED_RETRY_INITIAL, "terminal-save-retry");
+	return saved;
+}
+
+bool persistence_save_all_characters_terminal(int type)
+{
+	P_char ch;
+	bool all_saved = true;
+
+	for (ch = character_list; ch; ch = ch->next)
+	{
+		if (!IS_PC(ch) || !GET_NAME(ch))
+			continue;
+		if (!persistence_save_character_terminal(ch, type))
+		{
+			all_saved = false;
+		}
+	}
+	return all_saved;
 }
 
 struct persistence_deferred_save_snapshot persistence_deferred_save_snapshot_copy(void)

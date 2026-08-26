@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include "assocs.h"
 #include "config.h"
+#include "deferred_save_policy.h"
 #include "justice.h"
 #include "mm.h"
 #include "necromancy.h"
@@ -1672,10 +1673,15 @@ int writeCharacter(P_char ch, int type, int room)
 		}
 	}
 
-	// re-equip or extract based on save type
-	if ((type != RENT_INN) && (type != RENT_LINKDEAD) && (type != RENT_CAMPED) &&
-	    (type != RENT_DEATH) && (type != RENT_POOFARTI) && (type != RENT_SWAPARTI) &&
-	    (type != RENT_FIGHTARTI))
+	const bool terminal_type = (type == RENT_INN || type == RENT_LINKDEAD ||
+				    type == RENT_CAMPED || type == RENT_DEATH ||
+				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
+				    type == RENT_FIGHTARTI);
+
+	// Failed saves always restore the live recovery source. Terminal inventory may
+	// be extracted only after the database save has succeeded; a flat fallback is
+	// recovery evidence, not authorization to destroy live state.
+	if (!persistence_should_extract_terminal_inventory(result != 0, terminal_type))
 	{
 		for (i = 0; i < MAX_WEAR; i++)
 			if (save_equip[i])

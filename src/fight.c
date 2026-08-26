@@ -2824,8 +2824,15 @@ void die(P_char ch, P_char killer)
 	{
 		REMOVE_BIT(ch->specials.act2, PLR2_SPEC_TIMER);
 		GET_HIT(ch) = 1;
-		if (!CHAR_IN_ARENA(ch))
-			writeCharacter(ch, 4, NOWHERE);
+		if (!CHAR_IN_ARENA(ch) && !persistence_save_character_terminal(ch, RENT_DEATH))
+		{
+			persistence_alert(AVATAR, "player_save", "death", "none", "none",
+					  "terminal_save_failed", "extract_refused=1");
+			send_to_char(
+				"Your death could not be saved. You remain in the world for recovery.\r\n",
+				ch);
+			return;
+		}
 		ch->only.pc->pc_timer[1] = 0; // reset flee timer
 	}
 
