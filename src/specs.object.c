@@ -282,15 +282,12 @@ int guildhome(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	char *arg;
 	int curr_time;
-	P_char temp_ch;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
 
 	if (!obj)
 		return FALSE;
-
-	temp_ch = ch;
 
 	if (argument && (cmd == CMD_SAY))
 	{
@@ -1395,7 +1392,7 @@ int creeping_doom(P_obj obj, P_char ch, int cmd, char *arg)
 
 int item_switch(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int door, in_room, bits, back;
+	int door, in_room, back;
 	P_char dummy;
 	P_obj object;
 	char buf[MAX_STRING_LENGTH];
@@ -1411,8 +1408,8 @@ int item_switch(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// Tracks are never a switch.
-	bits = generic_find(arg, FIND_OBJ_INV | FIND_OBJ_EQUIP | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
-			    &dummy, &object);
+	generic_find(arg, FIND_OBJ_INV | FIND_OBJ_EQUIP | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
+		     &dummy, &object);
 	if (obj != object)
 	{
 		return FALSE;
@@ -1701,7 +1698,7 @@ int slot_machine(P_obj obj, P_char ch, int cmd, char *arg)
 		"[&+L     BLANK     &N]" // 109
 	};
 
-	int bits, coins, type, wheela, wheelb, wheelc, greywheel, count;
+	int coins, type, wheela, wheelb, wheelc, greywheel, count;
 	P_char dummy;
 	P_obj object;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
@@ -1729,7 +1726,7 @@ int slot_machine(P_obj obj, P_char ch, int cmd, char *arg)
 	type = coin_type(Gbuf2);
 	coinamt = atoi(Gbuf1);
 	// Don't include tracks with slot machine.
-	bits = generic_find(Gbuf3, FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &dummy, &object);
+	generic_find(Gbuf3, FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &dummy, &object);
 
 	//  wizlog(MINLVLIMMORTAL, "%s played %s %s on %s in [%d]", GET_NAME(ch),
 	//                              Gbuf1, Gbuf2, Gbuf3, world[ch->in_room].number);
@@ -3141,7 +3138,6 @@ int vapor(P_obj obj, P_char ch, int cmd, char *arg)
 int dragon_helm(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time;
-	P_char temp_ch;
 
 	/*
 	   check for periodic event calls
@@ -3152,7 +3148,6 @@ int dragon_helm(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		if (OBJ_WORN(obj))
 		{
-			temp_ch = obj->loc.wearing;
 			if (obj->timer[0] == 0 && GET_RACE(ch) != RACE_DRAGON && IS_PC(ch))
 			{
 				obj->timer[0] = GET_RACE(ch);
@@ -6143,7 +6138,6 @@ int cursed_mirror(P_obj obj, P_char ch, int cmd, char *arg)
  */
 int automaton_lever(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int bits;
 	P_char tempch;
 	P_obj tempobj;
 
@@ -6158,8 +6152,8 @@ int automaton_lever(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// No tracks are autmaton levers.
-	bits = generic_find(arg, FIND_OBJ_INV | FIND_OBJ_EQUIP | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
-			    &tempch, &tempobj);
+	generic_find(arg, FIND_OBJ_INV | FIND_OBJ_EQUIP | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
+		     &tempch, &tempobj);
 	if (tempobj != obj)
 	{
 		return FALSE;
@@ -6206,7 +6200,7 @@ int llyms_altar(P_obj obj, P_char ch, int cmd, char *arg)
 	P_obj treasure = NULL, tempobj = NULL;
 	char treas_name[MAX_INPUT_LENGTH], altar_name[MAX_INPUT_LENGTH];
 	P_char tempchar = NULL;
-	int bits, money = 0;
+	int money = 0;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -6227,8 +6221,8 @@ int llyms_altar(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	// Skip tracks when looking for altar.
-	bits = generic_find(altar_name, FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &tempchar, &tempobj);
-	bits = generic_find(treas_name, FIND_OBJ_EQUIP, ch, &tempchar, &treasure);
+	generic_find(altar_name, FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &tempchar, &tempobj);
+	generic_find(treas_name, FIND_OBJ_EQUIP, ch, &tempchar, &treasure);
 	if (tempobj != obj || !treasure)
 	{
 		return FALSE;
@@ -11117,7 +11111,7 @@ int out_of_god_bp(P_obj obj, P_char ch, int cmd, char *arg)
 	P_obj object;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 	char whee[MAX_STRING_LENGTH];
-	int rr, target, bproom;
+	int rr, target;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -11138,7 +11132,6 @@ int out_of_god_bp(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 
 	target = real_room(world[ch->specials.was_in_room].number);
-	bproom = world[ch->in_room].number;
 
 	if (isname(whee, "flap"))
 	{ // we have a winner!
@@ -12503,7 +12496,6 @@ int glades_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 
 int cold_hammer(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int dam;
 	P_char vict;
 	struct proc_data *data;
 
@@ -12559,7 +12551,6 @@ int cold_hammer(P_obj obj, P_char ch, int cmd, char *arg)
 			return FALSE;
 		}
 		vict = data->victim;
-		dam = data->dam;
 		if (!IS_ALIVE(vict))
 		{
 			return FALSE;
@@ -12593,7 +12584,6 @@ int cold_hammer(P_obj obj, P_char ch, int cmd, char *arg)
 			return FALSE;
 		}
 		vict = data->victim;
-		dam = data->dam;
 		if (!IS_ALIVE(vict))
 		{
 			return FALSE;
@@ -14141,7 +14131,6 @@ int portal_etherportal(P_obj obj, P_char ch, int cmd, char *arg)
 int portal_general_internal(P_obj obj, P_char ch, int cmd, char *arg,
 			    struct portal_action_messages *msg)
 {
-	int bits;
 	int to_room;
 	P_char dummy;
 	P_obj obj2 = NULL;
@@ -14181,7 +14170,7 @@ int portal_general_internal(P_obj obj, P_char ch, int cmd, char *arg,
 	}
 
 	// Get the portal object, since there may be more than one (skipping tracks)
-	bits = generic_find(arg, FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &dummy, &obj2);
+	generic_find(arg, FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &dummy, &obj2);
 
 	// If the object is not the one we seek then return false
 	if (obj2 != obj)

@@ -32,13 +32,14 @@ It is also in `packaging/duris-build-deps.equivs`.
 ```bash
 ./scripts/format.sh                    # format the lines you changed, in place
 ./scripts/format.sh --check            # report only; exit 1 if anything is off
-./scripts/format.sh --staged           # only what is staged
+./scripts/format.sh --staged           # format staged lines directly in the index
 ./scripts/format.sh --rev origin/master
 ```
 
 Without `--all`, the script wraps `git clang-format`, so it rewrites **only
-lines your diff touches**. Run it before committing; `--check` is the form to
-use in a hook or CI job.
+lines your diff touches**. `--staged` applies formatting directly to the index
+and mirrors it into the working tree when that can be done without conflicting
+with unstaged edits. `--check` reports without changing anything.
 
 ## Pre-commit hook
 
@@ -48,9 +49,11 @@ use in a hook or CI job.
 ```
 
 This sets `core.hooksPath` to the versioned `scripts/git-hooks/`, whose
-`pre-commit` rejects a commit when the staged C/C++ lines do not match
-`.clang-format`. It prints the offending diff and how to fix it. Hooks are
-per-clone git config, so each checkout runs the installer once.
+`pre-commit` auto-formats staged C/C++ lines directly in the index before the
+commit is created. It does not stage unrelated worktree edits; when a partially
+staged file prevents the same formatting patch from being mirrored safely, the
+working tree is left alone. Hooks are per-clone git config, so each checkout
+runs the installer once.
 
 - Bypass a single commit with `git commit --no-verify`.
 - If clang-format is not installed, the hook warns and lets the commit

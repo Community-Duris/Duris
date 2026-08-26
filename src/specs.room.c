@@ -239,7 +239,6 @@ int multiclass_proc(int room, P_char ch, int cmd, char *arg)
 
 int inn(int room, P_char ch, int cmd, char *arg)
 {
-	struct zone_data *zone;
 	P_char tch, next_ch;
 	char timestr[MAX_STRING_LENGTH];
 	time_t ct;
@@ -343,7 +342,6 @@ int inn(int room, P_char ch, int cmd, char *arg)
 			return FALSE;
 		}
 
-		zone = &zone_table[world[ch->in_room].zone];
 		if (IS_TOWN_RAIDED(ch) && (GET_LEVEL(ch) > 25) &&
 		    (zone_table[world[ch->in_room].zone].number != WINTERHAVEN))
 		{

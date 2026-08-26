@@ -619,7 +619,8 @@ lines you changed so diffs stay reviewable:
 ./scripts/format.sh --all --check   # verify the whole tree (~12s)
 ```
 
-Install the pre-commit hook once per clone so this is enforced automatically:
+Install the pre-commit hook once per clone so staged C/C++ changes are
+auto-formatted before every commit:
 
 ```bash
 ./scripts/install-hooks.sh
@@ -668,4 +669,3 @@ Deeper documentation lives in [`docs/`](docs/README.md):
 - [Help System](docs/HELP_SYSTEM.md) — in-game help pipeline
 
 ---
-

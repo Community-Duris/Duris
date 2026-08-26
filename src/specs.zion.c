@@ -943,7 +943,6 @@ void event_zion_netheril(P_char ch, P_char victim, P_obj obj, void *data)
 int zion_mace_of_earth(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time;
-	int dam;
 	P_char vict;
 	struct proc_data *data;
 	struct damage_messages messages = {
@@ -1027,7 +1026,6 @@ int zion_mace_of_earth(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	dam = number(50, 200) * 4;
 	// 1/25 chance.
 	if (OBJ_WORN_BY(obj, ch) && CheckMultiProcTiming(ch) && !number(0, 24))
 	{

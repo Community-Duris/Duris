@@ -298,11 +298,9 @@ int magebane_falchion(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict, tmp_vict;
 	char e_pos;
-	int in_battle;
 	int i;
 
 	vict = legacy_proc_arg<P_char>(arg);
-	in_battle = cmd / 1000;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1093,10 +1091,8 @@ int staff_of_blue_flames(P_obj obj, P_char ch, int cmd, char *arg)
 int generic_drow_eq(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
-	int in_battle;
 
 	vict = legacy_proc_arg<P_char>(arg);
-	in_battle = cmd / 1000;
 
 	if (cmd == CMD_SET_PERIODIC) /* Events have priority */
 		return FALSE;

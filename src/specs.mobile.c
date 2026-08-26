@@ -1842,8 +1842,6 @@ void exec_social(P_char npc, char *cmd, int next_line, int *cur_line, void **thi
 
 int poison(P_char ch, P_char pl, int cmd, char *arg)
 {
-	int type;
-
 	/*
 	 * check for periodic event calls
 	 */
@@ -1859,14 +1857,6 @@ int poison(P_char ch, P_char pl, int cmd, char *arg)
 	if (GET_OPPONENT(ch) && (GET_OPPONENT(ch)->in_room == ch->in_room) &&
 	    !number(0, (MAXLVL - GET_LEVEL(ch))))
 	{
-		if (GET_LEVEL(ch) < 10)
-			type = 2;
-		else if (GET_LEVEL(ch) < 25)
-			type = 1;
-		else if (GET_LEVEL(ch) < 50)
-			type = 3;
-		else
-			type = 10;
 		act("$n bites $N!", 1, ch, 0, GET_OPPONENT(ch), TO_NOTVICT);
 		act("$n bites you!", 1, ch, 0, GET_OPPONENT(ch), TO_VICT);
 		poison_neurotoxin(GET_LEVEL(ch), ch, 0, 0, GET_OPPONENT(ch), 0);
@@ -7728,7 +7718,7 @@ int nw_mirroid(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char t_ch = NULL;
 	bool run_away = FALSE;
-	int mode = 0, i, e_count = 0, e_flag = -1, c_dir = -1, c_room, e_dir = -1, e_room = 0;
+	int mode = 0, i, e_count = 0, c_dir = -1, e_dir = -1, e_room = 0;
 
 	/*
 	 * check for periodic event calls
@@ -7739,8 +7729,6 @@ int nw_mirroid(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (pl || cmd || !IS_AWAKE(ch) || !CAN_ACT(ch))
 		return FALSE;
-
-	c_room = ch->in_room;
 
 	/*
 	 * mode numbers: 0 - do nothing 1 - open an exit and stay (only way to open
@@ -7755,20 +7743,8 @@ int nw_mirroid(P_char ch, P_char pl, int cmd, char *arg)
 	 */
 
 	for (i = 0; i < 4; i++)
-		if (EXIT(ch, i))
-		{
-			if (!IS_SET(EXIT(ch, i)->exit_info, EX_BLOCKED))
-				e_count++;
-
-			if ((EXIT(ch, i)->to_room == real_room(99200)) ||
-			    (EXIT(ch, i)->to_room == real_room(99237)))
-			{
-				if (IS_SET(EXIT(ch, i)->exit_info, EX_BLOCKED))
-					e_flag = 0;
-				else
-					e_flag = 1;
-			}
-		}
+		if (EXIT(ch, i) && !IS_SET(EXIT(ch, i)->exit_info, EX_BLOCKED))
+			e_count++;
 	if (IS_FIGHTING(ch))
 	{
 		run_away = TRUE;
@@ -12347,7 +12323,7 @@ int annoying_mob(P_char ch, P_char pl, int cmd, char *arg)
 
 int shabo_petre(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char i, i_next, tempchar = NULL, tempchar2 = NULL, was_fighting = NULL;
+	P_char i, i_next, tempchar = NULL, tempchar2 = NULL;
 	P_desc d;
 	P_obj item, next_item;
 	P_char gunnadie;
@@ -12367,7 +12343,6 @@ int shabo_petre(P_char ch, P_char pl, int cmd, char *arg)
 
 	if (IS_FIGHTING(ch) && ch->in_room != real_room(32885))
 	{
-		was_fighting = GET_OPPONENT(ch);
 		gunnadie = GET_OPPONENT(ch);
 
 		act("\n&+YHELP! Anyone please help! $N just hit me! HELP!\n&n", 0, ch, 0, gunnadie,
@@ -12903,14 +12878,11 @@ int necro_specpet_bone(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char tch;
 	P_char vict;
-	int room;
-
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
 
 	if (IS_FIGHTING(ch) && (cmd == 0) && (number(1, 15) == 1))
 	{
-		room = ch->in_room;
 		vict = GET_OPPONENT(ch);
 
 		act("$n&+L cackles with delight!", FALSE, ch, 0, vict, TO_ROOM);
@@ -13574,7 +13546,7 @@ int tower_data[5][6] = {
 
 int outpost_captain(P_char ch, P_char pl, int cmd, char *arg)
 {
-	int i, door, direction;
+	int door, direction;
 	int source_room, target_room;
 	bool CombatInRoom;
 	int distance = 10;
@@ -13701,8 +13673,6 @@ int outpost_captain(P_char ch, P_char pl, int cmd, char *arg)
 				ii = 3;
 			if (GET_RACE(ch) == RACE_HALFLING)
 				ii = 4;
-			i = 6;
-
 			helpers_1[0] = tower_data[ii][number(0, 5)];
 
 			helpers_2[0] = tower_data[ii][number(0, 5)];

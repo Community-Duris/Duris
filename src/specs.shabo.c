@@ -718,7 +718,6 @@ int mox_totem(P_obj obj, P_char ch, int cmd, char *argument)
 	char *arg;
 	int rand;
 	int curr_time;
-	P_char temp_ch;
 	P_char kala;
 	char e_pos;
 
@@ -731,7 +730,6 @@ int mox_totem(P_obj obj, P_char ch, int cmd, char *argument)
 		return FALSE;
 	}
 
-	temp_ch = ch;
 	if (OBJ_WORN(obj))
 		ch = obj->loc.wearing;
 	else

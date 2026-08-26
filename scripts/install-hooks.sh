@@ -29,5 +29,5 @@ fi
 
 git config core.hooksPath scripts/git-hooks
 echo "Installed: core.hooksPath = scripts/git-hooks"
-echo "  pre-commit: rejects staged C/C++ that does not match .clang-format"
+echo "  pre-commit: auto-formats staged C/C++ changes"
 echo "  bypass one commit with: git commit --no-verify"

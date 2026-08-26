@@ -306,7 +306,6 @@ int tharn_lighthouse_attendent(P_char ch, P_char pl, int cmd, char *arg)
 int tharn_crier_one(P_char ch, P_char pl, int cmd, char *arg)
 {
 	char buf[MAX_INPUT_LENGTH];
-	int the_zone;
 
 	/*
 	   check for periodic event calls
@@ -323,7 +322,6 @@ int tharn_crier_one(P_char ch, P_char pl, int cmd, char *arg)
 	}
 	else
 	{
-		the_zone = world[ch->in_room].zone;
 		if (MIN_POS(ch, POS_STANDING + STAT_NORMAL))
 		{
 			switch (number(1, 150))

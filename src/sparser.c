@@ -1968,13 +1968,11 @@ extern void DelayCommune(P_char ch, int delay);
 void do_will(P_char ch, char *argument, int cmd)
 {
 	int dura, fail;
-	int splnum;
 	P_char kala, kala2;
 	struct spellcast_datatype tmp_spl;
-	char *orig_arg;
-	bool is_tank = FALSE;
 	int spl;
 	P_char tar_char;
+	bool is_tank = FALSE;
 
 	memset(&tmp_spl, 0, sizeof(tmp_spl));
 	if (!USES_MANA(ch))
@@ -1988,8 +1986,6 @@ void do_will(P_char ch, char *argument, int cmd)
 		send_to_char("You are too filled with &+RRAGE&N to think!\n", ch);
 		return;
 	}
-
-	orig_arg = argument;
 
 	if (!parse_spell(ch, argument, &common_target_data))
 		return;
@@ -2044,7 +2040,6 @@ void do_will(P_char ch, char *argument, int cmd)
 		CharWait(ch, dura);
 	}
 
-	splnum = spl;
 	SpellCastShow(ch, spl);
 
 	if (IS_ROOM(ch->in_room, ROOM_NO_PSI) && !IS_TRUSTED(ch))
@@ -2223,7 +2218,6 @@ void do_cast(P_char ch, char *argument, int cmd)
 	int dura, fail;
 	P_char kala, kala2;
 	struct spellcast_datatype tmp_spl;
-	char *orig_arg;
 	bool is_tank = FALSE, weaved = false;
 	int virt, spl;
 	int skl, chant_bonus = 0;
@@ -2300,7 +2294,6 @@ void do_cast(P_char ch, char *argument, int cmd)
 	}
 
 	argument = skip_spaces(argument);
-	orig_arg = argument;
 
 	if (IS_AFFECTED2(ch, AFF2_SILENCED) && !USES_MANA(ch) &&
 	    !GET_CHAR_SKILL(ch, SKILL_SILENT_SPELL) && !IS_TRUSTED(ch))
@@ -2554,7 +2547,7 @@ void event_abort_spell(P_char ch, P_char victim, P_obj obj, void *data)
 void event_spellcast(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	struct spellcast_datatype *arg = (struct spellcast_datatype *)data;
-	int skl = 0, i = 0, circle = 0, num = 0, manacost, room = ch->in_room, chance;
+	int skl = 0, i = 0, num = 0, manacost, room = ch->in_room, chance;
 	char buf[1024];
 	char args[128];
 	P_obj room_junk = NULL, room_junk_temp = NULL;
@@ -2890,8 +2883,6 @@ void event_spellcast(P_char ch, P_char victim, P_obj obj, void *data)
 			return;
 		}
 	}
-
-	circle = 0;
 
 	/* justice hook  */
 	/* note the special checking for holyword spells...  */

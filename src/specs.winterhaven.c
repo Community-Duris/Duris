@@ -511,7 +511,6 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 int volo_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict, target;
-	int room;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -582,7 +581,6 @@ int volo_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 			}
 		}
 
-		room = ch->in_room;
 		vict = ParseTarget(ch, arg);
 		// 1/33 chance.
 		if (cmd == CMD_MELEE_HIT && IS_ALIVE(vict) && !number(0, 32) &&
@@ -641,7 +639,7 @@ int volo_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 int snowogre_warhammer(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict = NULL;
-	int rand, room, curr_time;
+	int rand, curr_time;
 	struct affected_type af;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -712,7 +710,6 @@ int snowogre_warhammer(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 	}
 
-	room = ch->in_room;
 	vict = GET_OPPONENT(ch);
 	// 1/33 chance.
 	if (cmd == CMD_MELEE_HIT && CanDoFightMove(ch, GET_OPPONENT(ch)) && !IS_IMMOBILE(ch) &&
@@ -943,7 +940,6 @@ int deathseeker_mace(P_obj obj, P_char ch, int cmd, char *arg)
 	P_char vict = NULL, target;
 	char Command[MAX_STRING_LENGTH];
 	char viewperson[MAX_STRING_LENGTH];
-	int room;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -1083,7 +1079,6 @@ int deathseeker_mace(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 	}
 
-	room = ch->in_room;
 	vict = ParseTarget(ch, arg);
 
 	// 1/33 chance.
@@ -1812,7 +1807,7 @@ int no_kill_priest_obj(P_obj fountain, P_char ch, int cmd, char *arg)
 int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict = NULL, target;
-	int room, rand;
+	int rand;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -2137,7 +2132,6 @@ int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 	}
 
-	room = ch->in_room;
 	vict = ParseTarget(ch, arg);
 	// 1/33 chance.
 	if (cmd == CMD_MELEE_HIT && IS_ALIVE(vict) && !number(0, 32) && CheckMultiProcTiming(ch))
@@ -2645,7 +2639,6 @@ int mob_death_proc(P_obj obj, P_char ch, int cmd, char *arg)
 int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
-	int room;
 	struct affected_type *af;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -2656,7 +2649,6 @@ int rapier_penetration(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (IS_FIGHTING(ch))
 	{
-		room = ch->in_room;
 		vict = ParseTarget(ch, arg);
 
 		if (cmd == CMD_MELEE_HIT && ch && vict && !number(0, 32) && // 3%
@@ -3119,7 +3111,6 @@ int sword_random(P_obj obj, P_char ch, int cmd, char *arg)
 int gauntlets_legend(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict = NULL, target;
-	int room;
 	int curr_time = time(NULL);
 	int curr_time2 = time(NULL);
 	struct proc_data *data;
@@ -3166,7 +3157,6 @@ int gauntlets_legend(P_obj obj, P_char ch, int cmd, char *arg)
 	// 1/10 chance.
 	if (IS_FIGHTING(ch) && (cmd == CMD_PERIODIC) && !number(0, 9))
 	{
-		room = ch->in_room;
 		vict = ParseTarget(ch, arg);
 
 		act("$q &nbegin to &+mglow&n.", TRUE, ch, obj, vict, TO_CHAR);
@@ -3986,7 +3976,6 @@ int gladius_backstabber(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict, target;
 	P_obj first_w, second_w;
-	int room;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -4009,7 +3998,6 @@ int gladius_backstabber(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (IS_FIGHTING(ch))
 	{
-		room = ch->in_room;
 		vict = ParseTarget(ch, arg);
 		if (!IS_ALIVE(vict) || !CanDoFightMove(ch, vict) || GET_POS(ch) < POS_STANDING)
 		{

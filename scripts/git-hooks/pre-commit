@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Reject a commit whose staged C/C++ lines do not match .clang-format.
+# Auto-format staged C/C++ lines before committing.
 #
 # Installed by scripts/install-hooks.sh (sets core.hooksPath).
 # Bypass a single commit with `git commit --no-verify`.
@@ -15,16 +15,16 @@ if ! command -v clang-format >/dev/null 2>&1 || ! command -v git-clang-format >/
   exit 0
 fi
 
-if "$ROOT/scripts/format.sh" --staged --check; then
+if "$ROOT/scripts/format.sh" --staged; then
   exit 0
 fi
 
 cat >&2 <<'MSG'
 
-pre-commit: staged C/C++ lines do not match .clang-format.
+pre-commit: could not auto-format the staged C/C++ changes.
 
-  ./scripts/format.sh --staged   # fix them, then `git add` the result
-  git commit --no-verify         # commit anyway
+  ./scripts/format.sh --staged   # retry with full diagnostics
+  git commit --no-verify         # bypass formatting for this commit
 
 MSG
 exit 1

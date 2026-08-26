@@ -249,7 +249,7 @@ long pow10(long x)
 void npc_steal(P_char ch, P_char vict)
 {
 	P_obj obj = NULL, next_obj = NULL;
-	int percent, roll, loc, gold, chance;
+	int percent, loc, gold, chance;
 	bool failed, caught;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(vict) || IS_NPC(vict) || IS_PC_PET(ch))
@@ -317,7 +317,6 @@ void npc_steal(P_char ch, P_char vict)
 			percent = 0; /* Failure */
 		}
 
-		roll = number(1, 100);
 		caught = FALSE;
 		failed = FALSE;
 		loc = number(0, WEAR_QUIVER);

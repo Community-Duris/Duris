@@ -140,7 +140,7 @@ int trap_tower2_sleep(P_obj obj, P_char ch, int cmd, char *arg)
 int illesarus(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
-	int dam, limb, curr_time;
+	int limb, curr_time;
 	struct affected_type af;
 
 	struct damage_messages messages = {
@@ -183,8 +183,6 @@ int illesarus(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		return FALSE;
 	}
-
-	dam = BOUNDED(0, (GET_HIT(vict) + 9), 200);
 
 	// 1/25 chance.
 	if (!number(0, 24) && CheckMultiProcTiming(ch))

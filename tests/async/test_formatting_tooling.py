@@ -185,13 +185,68 @@ for path in (HOOK, INSTALLER):
     subprocess.run(["bash", "-n", str(path)], check=True)
 
 hook = HOOK.read_text()
-assert "--staged --check" in hook, "the hook must check staged lines only"
+assert 'format.sh" --staged' in hook, "the hook must auto-format staged lines"
 assert "--no-verify" in hook, "the hook must tell the user how to bypass it"
 # A missing clang-format must warn and let the commit through, not block work.
 missing_branch = hook.split("command -v clang-format", 1)[1].split("fi", 1)[0]
 assert "exit 0" in missing_branch, (
     "the hook must not block commits when clang-format is unavailable"
 )
+
+# Auto-fixing must update the committed index without swallowing unrelated
+# unstaged edits from a partially staged source file.
+if clang_format and shutil.which("git-clang-format"):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        fixture = Path(temp_dir)
+        (fixture / "scripts/git-hooks").mkdir(parents=True)
+        shutil.copy2(CONFIG, fixture / ".clang-format")
+        shutil.copy2(SCRIPT, fixture / "scripts/format.sh")
+        shutil.copy2(HOOK, fixture / "scripts/git-hooks/pre-commit")
+
+        subprocess.run(["git", "init", "-q"], cwd=fixture, check=True)
+        subprocess.run(
+            ["git", "config", "user.name", "Formatting Test"],
+            cwd=fixture, check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "format@example.invalid"],
+            cwd=fixture, check=True,
+        )
+        subprocess.run(
+            ["git", "config", "core.hooksPath", "scripts/git-hooks"],
+            cwd=fixture, check=True,
+        )
+
+        probe = fixture / "probe.c"
+        probe.write_text("int value()\n{\n\treturn 0;\n}\n")
+        subprocess.run(
+            ["git", "add", ".clang-format", "probe.c"], cwd=fixture, check=True
+        )
+        subprocess.run(
+            ["git", "commit", "--no-verify", "-qm", "base"],
+            cwd=fixture, check=True,
+        )
+
+        probe.write_text("int value(){int number=1;return number;}\n")
+        subprocess.run(["git", "add", "probe.c"], cwd=fixture, check=True)
+        with probe.open("a") as source:
+            source.write("// preserve this unstaged edit\n")
+
+        committed = subprocess.run(
+            ["git", "commit", "-m", "auto-format"],
+            cwd=fixture, capture_output=True, text=True,
+        )
+        assert committed.returncode == 0, committed.stdout + committed.stderr
+        indexed = subprocess.run(
+            ["git", "show", "HEAD:probe.c"],
+            cwd=fixture, capture_output=True, text=True, check=True,
+        ).stdout
+        assert "int value()\n{" in indexed, indexed
+        assert "int number = 1;" in indexed, indexed
+        assert "preserve this unstaged edit" not in indexed, indexed
+        assert "preserve this unstaged edit" in probe.read_text(), (
+            "the hook discarded an unstaged edit"
+        )
 
 installer = INSTALLER.read_text()
 assert "core.hooksPath" in installer and "scripts/git-hooks" in installer

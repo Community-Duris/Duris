@@ -1668,7 +1668,7 @@ int piercer(P_char ch, P_char pl, int cmd, char *arg)
 
 int elfgate(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int temp, to_room;
+	int to_room;
 	char Gbuf1[MAX_STRING_LENGTH];
 	P_char t_ch;
 
@@ -1710,7 +1710,6 @@ int elfgate(P_obj obj, P_char ch, int cmd, char *arg)
 	    TO_CHAR);
 	act("$n wades into the $o.", FALSE, ch, obj, 0, TO_ROOM);
 
-	temp = (number(0, 3));
 #if 0
   teleport_to(ch, real_room(obj->value[temp]));
 #else
@@ -1738,7 +1737,7 @@ int elfgate(P_obj obj, P_char ch, int cmd, char *arg)
 
 int nexus(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int temp, to_room;
+	int to_room;
 	char Gbuf1[MAX_STRING_LENGTH];
 	P_char t_ch;
 
@@ -1773,7 +1772,6 @@ int nexus(P_obj obj, P_char ch, int cmd, char *arg)
 	    TO_CHAR);
 	act("$n wades into the $o.", FALSE, ch, obj, 0, TO_ROOM);
 
-	temp = (number(0, 3));
 #if 0
   teleport_to(ch, real_room(obj->value[temp]));
 #else

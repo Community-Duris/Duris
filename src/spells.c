@@ -2026,11 +2026,10 @@ void event_grow(P_char ch, P_char victim, P_obj obj, void *data)
 
 void cast_grow(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
 {
-	int terrain_type, seconds, duration;
+	int terrain_type, seconds;
 	struct room_affect af;
 
 	seconds = 5 + dice(2, 5);
-	duration = 4 * (60 * 5);
 
 	terrain_type = world[ch->in_room].sector_type;
 
