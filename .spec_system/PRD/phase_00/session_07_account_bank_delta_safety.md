@@ -1,7 +1,7 @@
 # Session 07: Account Bank Delta Safety
 
 **Session ID**: `phase00-session07-account-bank-delta-safety`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The temporary shared-bank command boundary, including all callers,
 authoritative committed balances, and multi-character stale-overwrite regressions.
 
@@ -41,9 +41,9 @@ truthfully while the Phase 02 idempotent bank/wallet ledger is prepared.
 
 ## Prerequisites
 
-- [ ] Session 03 failure semantics prevent destructive completion after failed durable
+- [x] Session 03 failure semantics prevent destructive completion after failed durable
       work.
-- [ ] Database tests use an isolated development schema.
+- [x] Database tests use an isolated development schema.
 
 ---
 
@@ -58,9 +58,20 @@ truthfully while the Phase 02 idempotent bank/wallet ledger is prepared.
 
 ## Success Criteria
 
-- [ ] No normal player-save or money path writes a cached absolute account-bank value.
-- [ ] Deposit and withdrawal failures are detected and never presented as success.
-- [ ] Successful operations publish the database-committed balance to all relevant
+- [x] No normal player-save or money path writes a cached absolute account-bank value.
+- [x] Deposit and withdrawal failures are detected and never presented as success.
+- [x] Successful operations publish the database-committed balance to all relevant
       online characters.
-- [ ] A stale character cache cannot overwrite a newer shared-bank update.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] A stale character cache cannot overwrite a newer shared-bank update.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.
+
+---
+
+## Completion Summary
+
+Completed on 2026-08-27. Cached absolute shared-bank saves were removed. Denomination
+and aggregate operations now use checked owned transactions, arithmetic updates,
+strict post-update reads, and commit-gated results. ATM, training, locker, boon, and
+ship-insurance callers publish committed balances to all online same-account/same-side
+characters and do not claim success after bank failure. Validation passed with an
+ephemeral MySQL 8 regression and 174/174 repository tests plus signal-handler checks.

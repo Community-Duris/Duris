@@ -2909,78 +2909,81 @@ void ADD_MONEY(P_char ch, int amount)
  * mode 2 = subtract as close as possible without going over, return amount short
  * modes 1 & 2 not supported yet
  */
+void publish_account_bank_balance(const char *account_name, int racewar, int coin_type, int balance)
+{
+	if (!account_name || !*account_name || balance < 0 || coin_type < 0 || coin_type > 3)
+		return;
+
+	for (P_desc desc = descriptor_list; desc; desc = desc->next)
+	{
+		P_char target = desc->original ? desc->original : desc->character;
+		if (desc->connected != CON_PLAYING || !target || IS_NPC(target) || !desc->account ||
+		    !desc->account->acct_name ||
+		    strcasecmp(desc->account->acct_name, account_name) ||
+		    GET_RACEWAR(target) != racewar)
+			continue;
+
+		switch (coin_type)
+		{
+		case 0:
+			GET_BALANCE_COPPER(target) = balance;
+			break;
+		case 1:
+			GET_BALANCE_SILVER(target) = balance;
+			break;
+		case 2:
+			GET_BALANCE_GOLD(target) = balance;
+			break;
+		case 3:
+			GET_BALANCE_PLATINUM(target) = balance;
+			break;
+		}
+		gmcp_char_vitals(target);
+	}
+}
+
+void publish_account_bank_balances(const char *account_name, int racewar,
+				   const AccountBankBalances *balances)
+{
+	if (!account_name || !*account_name || !balances || balances->copper < 0 ||
+	    balances->silver < 0 || balances->gold < 0 || balances->platinum < 0)
+		return;
+
+	for (P_desc desc = descriptor_list; desc; desc = desc->next)
+	{
+		P_char target = desc->original ? desc->original : desc->character;
+		if (desc->connected != CON_PLAYING || !target || IS_NPC(target) || !desc->account ||
+		    !desc->account->acct_name ||
+		    strcasecmp(desc->account->acct_name, account_name) ||
+		    GET_RACEWAR(target) != racewar)
+			continue;
+
+		GET_BALANCE_COPPER(target) = balances->copper;
+		GET_BALANCE_SILVER(target) = balances->silver;
+		GET_BALANCE_GOLD(target) = balances->gold;
+		GET_BALANCE_PLATINUM(target) = balances->platinum;
+		gmcp_char_vitals(target);
+	}
+}
+
 int SUB_BALANCE(P_char ch, int amount, int mode)
 {
-	int t = 0;
-
-	if (amount <= 0)
-		return -1;
-	if (amount > GET_BALANCE(ch))
-		return -1;
-	if (mode != 0)
+	if (!ch || amount <= 0 || mode != 0)
 		return -1;
 
-	if (amount > GET_BALANCE_COPPER(ch))
-	{
-		amount -= GET_BALANCE_COPPER(ch);
-		GET_BALANCE_COPPER(ch) = 0;
-	}
-	else
-	{
-		GET_BALANCE_COPPER(ch) -= amount;
-		return 0;
-	}
+	const char *account_name = get_account_name_safe(ch);
+	if (!account_name || !strcmp(account_name, "Unknown"))
+		return -1;
 
-	if (amount > 0)
-	{
-		t = GET_BALANCE_SILVER(ch) * 10;
-		if (amount >= t)
-		{
-			amount -= t;
-			GET_BALANCE_SILVER(ch) = 0;
-		}
-		else
-		{
-			t = (int)(amount / 10) + 1;
-			GET_BALANCE_SILVER(ch) -= t;
-			amount -= t * 10;
-		}
-	}
-	if (amount > 0)
-	{
-		t = GET_BALANCE_GOLD(ch) * 100;
-		if (amount >= t)
-		{
-			amount -= t;
-			GET_BALANCE_GOLD(ch) = 0;
-		}
-		else
-		{
-			t = (int)(amount / 100) + 1;
-			GET_BALANCE_GOLD(ch) -= t;
-			amount -= t * 100;
-		}
-	}
-	if (amount > 0)
-	{
-		t = GET_BALANCE_PLATINUM(ch) * 1000;
-		if (amount >= t)
-		{
-			amount -= t;
-			GET_BALANCE_PLATINUM(ch) = 0;
-		}
-		else
-		{
-			t = (int)(amount / 1000) + 1;
-			GET_BALANCE_PLATINUM(ch) -= t;
-			amount -= t * 1000;
-		}
-	}
-	if (amount < 0)
-		ADD_MONEY(ch, -(amount));
+	AccountBankBalances committed = {};
+	int change = 0;
+	if (sql_account_bank_withdraw_value(account_name, GET_RACEWAR(ch), amount, &committed,
+					    &change) != 0)
+		return -1;
 
-	sql_save_account_bank(get_account_name_safe(ch), GET_RACEWAR(ch), ch);
-
+	publish_account_bank_balances(account_name, GET_RACEWAR(ch), &committed);
+	if (change > 0)
+		ADD_MONEY(ch, change);
 	return 0;
 }
 

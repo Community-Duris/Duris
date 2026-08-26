@@ -30,11 +30,11 @@ remain Phase 03 work.
 |---------|------|--------|-------------|-----------|
 | 01 | Redacted Persistence Observability | Complete | Safe call-site timing, trace removal, and dirty/save age metrics | 2026-08-27 |
 | 02 | In-Memory Epic Bonus Hot Path | Complete | Epic-bonus hydration, mutation updates, expiry, and hot-path regressions | 2026-08-27 |
-| 03 | Save Failure Retry and Terminal Safety | Not Started | Deferred-save state plus all destructive terminal save boundaries | - |
-| 04 | Player Replacement State Cleanup | Not Started | Transactional delete-and-replace semantics for removable player rows | - |
-| 05 | Combat and Artifact Persistence Correctness | Not Started | Post-mutation frag publication and deterministic bind lookup outputs | - |
-| 06 | Redis Failure and Recovery Containment | Not Started | Redis deadlines, dirty-set recovery, child bounds, and floor-delta ACK rules | - |
-| 07 | Account Bank Delta Safety | Not Started | Checked delta-only shared-bank behavior and multi-character regressions | - |
+| 03 | Save Failure Retry and Terminal Safety | Complete | Deferred-save state plus all destructive terminal save boundaries | 2026-08-27 |
+| 04 | Player Replacement State Cleanup | Complete | Transactional delete-and-replace semantics for removable player rows | 2026-08-27 |
+| 05 | Combat and Artifact Persistence Correctness | Complete | Post-mutation frag publication and deterministic bind lookup outputs | 2026-08-27 |
+| 06 | Redis Failure and Recovery Containment | Complete | Redis deadlines, dirty-set recovery, child bounds, and floor-delta ACK rules | 2026-08-27 |
+| 07 | Account Bank Delta Safety | Complete | Checked delta-only shared-bank behavior and multi-character regressions | 2026-08-27 |
 | 08 | Runtime Connection Trust Boundaries | Not Started | Fail-closed DB/TLS configuration and uniform connection invariants | - |
 | 09 | Private Chest Password Hardening | Not Started | Adaptive salted hashes with compatible legacy upgrade behavior | - |
 | 10 | Security Policy and Dependency Baseline | Not Started | Actionable policy, dependency inventory, SBOM, and CI security checks | - |

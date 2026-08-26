@@ -153,12 +153,24 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
 void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
 
 // account bank
+struct AccountBankBalances
+{
+	int copper;
+	int silver;
+	int gold;
+	int platinum;
+};
+
 bool sql_load_account_bank(const char *account_name, int racewar, P_char ch);
-bool sql_save_account_bank(const char *account_name, int racewar, P_char ch);
 long long sql_account_bank_deposit(const char *account_name, int racewar, int coin_type,
 				   int amount);
+bool sql_account_bank_deposit_balances(const char *account_name, int racewar,
+				       const AccountBankBalances *amounts,
+				       AccountBankBalances *committed);
 long long sql_account_bank_withdraw(const char *account_name, int racewar, int coin_type,
 				    int amount);
+int sql_account_bank_withdraw_value(const char *account_name, int racewar, int amount,
+				    AccountBankBalances *committed, int *change);
 bool sql_ensure_account_bank(const char *account_name, int racewar);
 
 // ============================================================================

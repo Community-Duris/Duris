@@ -8,6 +8,8 @@
 #include "db.h"
 #include "utils.h"
 #include "sql_player.h"
+#include <errno.h>
+#include <limits.h>
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -344,8 +346,12 @@ bool sql_load_account_bank(const char *account_name, int racewar, P_char ch)
 {
 	return false;
 }
-bool sql_save_account_bank(const char *account_name, int racewar, P_char ch)
+bool sql_account_bank_deposit_balances(const char *account_name, int racewar,
+				       const AccountBankBalances *amounts,
+				       AccountBankBalances *committed)
 {
+	if (committed)
+		*committed = {};
 	return false;
 }
 long long sql_account_bank_deposit(const char *account_name, int racewar, int coin_type, int amount)
@@ -355,6 +361,15 @@ long long sql_account_bank_deposit(const char *account_name, int racewar, int co
 long long sql_account_bank_withdraw(const char *account_name, int racewar, int coin_type,
 				    int amount)
 {
+	return -1;
+}
+int sql_account_bank_withdraw_value(const char *account_name, int racewar, int amount,
+				    AccountBankBalances *committed, int *change)
+{
+	if (committed)
+		*committed = {};
+	if (change)
+		*change = 0;
 	return -1;
 }
 bool sql_ensure_account_bank(const char *account_name, int racewar)
@@ -10607,10 +10622,16 @@ bool sql_ensure_account_bank(const char *account_name, int racewar)
 	return sql_run_query(query);
 }
 
+static bool sql_parse_account_bank_balance(const char *value, int *balance);
+
 bool sql_load_account_bank(const char *account_name, int racewar, P_char ch)
 {
 	if (!DB || !account_name || !*account_name || !ch)
 		return false;
+	GET_BALANCE_COPPER(ch) = 0;
+	GET_BALANCE_SILVER(ch) = 0;
+	GET_BALANCE_GOLD(ch) = 0;
+	GET_BALANCE_PLATINUM(ch) = 0;
 
 	char *esc_name = sql_escape_string(account_name);
 	if (!esc_name)
@@ -10631,156 +10652,221 @@ bool sql_load_account_bank(const char *account_name, int racewar, P_char ch)
 	MYSQL_ROW row = mysql_fetch_row(result);
 	if (row)
 	{
-		GET_BALANCE_COPPER(ch) = atoi(row[0] ? row[0] : "0");
-		GET_BALANCE_SILVER(ch) = atoi(row[1] ? row[1] : "0");
-		GET_BALANCE_GOLD(ch) = atoi(row[2] ? row[2] : "0");
-		GET_BALANCE_PLATINUM(ch) = atoi(row[3] ? row[3] : "0");
+		AccountBankBalances parsed = {};
+		bool valid = sql_parse_account_bank_balance(row[0], &parsed.copper) &&
+			     sql_parse_account_bank_balance(row[1], &parsed.silver) &&
+			     sql_parse_account_bank_balance(row[2], &parsed.gold) &&
+			     sql_parse_account_bank_balance(row[3], &parsed.platinum);
 		mysql_free_result(result);
+		if (!valid)
+			return false;
+		GET_BALANCE_COPPER(ch) = parsed.copper;
+		GET_BALANCE_SILVER(ch) = parsed.silver;
+		GET_BALANCE_GOLD(ch) = parsed.gold;
+		GET_BALANCE_PLATINUM(ch) = parsed.platinum;
 		return true;
 	}
 
 	mysql_free_result(result);
-
-	GET_BALANCE_COPPER(ch) = 0;
-	GET_BALANCE_SILVER(ch) = 0;
-	GET_BALANCE_GOLD(ch) = 0;
-	GET_BALANCE_PLATINUM(ch) = 0;
 	return false;
 }
 
-bool sql_save_account_bank(const char *account_name, int racewar, P_char ch)
+static bool sql_parse_account_bank_balance(const char *value, int *balance)
 {
-	if (!DB || !account_name || !*account_name || !ch)
+	if (!value || !balance || !*value)
 		return false;
 
-	sql_ensure_account_bank(account_name, racewar);
+	errno = 0;
+	char *end = NULL;
+	long long parsed = strtoll(value, &end, 10);
+	if (errno == ERANGE || end == value || *end != '\0' || parsed < 0 || parsed > INT_MAX)
+		return false;
+
+	*balance = (int)parsed;
+	return true;
+}
+
+static bool sql_read_account_bank_balances(const char *escaped_name, int racewar, bool lock_row,
+					   AccountBankBalances *balances)
+{
+	if (!escaped_name || !balances)
+		return false;
+
+	char query[512];
+	snprintf(query, sizeof(query),
+		 "select bank_copper, bank_silver, bank_gold, bank_platinum "
+		 "from account_banks where account_name='%s' and racewar=%d%s",
+		 escaped_name, racewar, lock_row ? " for update" : "");
+
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return false;
+
+	MYSQL_ROW row = mysql_fetch_row(result);
+	AccountBankBalances parsed = {};
+	bool valid = row && sql_parse_account_bank_balance(row[0], &parsed.copper) &&
+		     sql_parse_account_bank_balance(row[1], &parsed.silver) &&
+		     sql_parse_account_bank_balance(row[2], &parsed.gold) &&
+		     sql_parse_account_bank_balance(row[3], &parsed.platinum);
+	mysql_free_result(result);
+	if (!valid)
+		return false;
+
+	*balances = parsed;
+	return true;
+}
+
+static const char *sql_account_bank_coin_column(int coin_type)
+{
+	switch (coin_type)
+	{
+	case 0:
+		return "bank_copper";
+	case 1:
+		return "bank_silver";
+	case 2:
+		return "bank_gold";
+	case 3:
+		return "bank_platinum";
+	default:
+		return NULL;
+	}
+}
+
+static int sql_account_bank_selected_balance(const AccountBankBalances &balances, int coin_type)
+{
+	switch (coin_type)
+	{
+	case 0:
+		return balances.copper;
+	case 1:
+		return balances.silver;
+	case 2:
+		return balances.gold;
+	case 3:
+		return balances.platinum;
+	default:
+		return -1;
+	}
+}
+
+static void sql_account_bank_rollback(void)
+{
+	if (sql_in_transaction())
+		sql_rollback();
+}
+
+bool sql_account_bank_deposit_balances(const char *account_name, int racewar,
+				       const AccountBankBalances *amounts,
+				       AccountBankBalances *committed)
+{
+	if (committed)
+		*committed = {};
+	if (!DB || !account_name || !*account_name || !amounts || !committed ||
+	    amounts->copper < 0 || amounts->silver < 0 || amounts->gold < 0 ||
+	    amounts->platinum < 0 ||
+	    (amounts->copper == 0 && amounts->silver == 0 && amounts->gold == 0 &&
+	     amounts->platinum == 0) ||
+	    sql_in_transaction())
+		return false;
 
 	char *esc_name = sql_escape_string(account_name);
 	if (!esc_name)
 		return false;
 
+	if (!sql_begin_transaction())
+	{
+		free(esc_name);
+		return false;
+	}
+	if (!sql_ensure_account_bank(account_name, racewar))
+	{
+		free(esc_name);
+		sql_account_bank_rollback();
+		return false;
+	}
+
 	char query[512];
-	snprintf(
-		query, sizeof(query),
-		"update account_banks set bank_copper=%d, bank_silver=%d, bank_gold=%d, bank_platinum=%d "
-		"where account_name='%s' and racewar=%d",
-		GET_BALANCE_COPPER(ch), GET_BALANCE_SILVER(ch), GET_BALANCE_GOLD(ch),
-		GET_BALANCE_PLATINUM(ch), esc_name, racewar);
+	snprintf(query, sizeof(query),
+		 "update account_banks set bank_copper=bank_copper+%d, "
+		 "bank_silver=bank_silver+%d, bank_gold=bank_gold+%d, "
+		 "bank_platinum=bank_platinum+%d where account_name='%s' and racewar=%d",
+		 amounts->copper, amounts->silver, amounts->gold, amounts->platinum, esc_name,
+		 racewar);
+	if (!sql_run_query(query) || mysql_affected_rows(DB) != 1)
+	{
+		free(esc_name);
+		sql_account_bank_rollback();
+		return false;
+	}
 
+	AccountBankBalances result = {};
+	bool read_ok = sql_read_account_bank_balances(esc_name, racewar, false, &result);
 	free(esc_name);
+	if (!read_ok || !sql_commit())
+	{
+		sql_account_bank_rollback();
+		return false;
+	}
 
-	return sql_run_query(query);
+	*committed = result;
+	return true;
 }
 
 long long sql_account_bank_deposit(const char *account_name, int racewar, int coin_type, int amount)
 {
-	if (!DB || !account_name || !*account_name || amount <= 0)
+	if (!sql_account_bank_coin_column(coin_type) || amount <= 0)
 		return -1;
 
-	sql_ensure_account_bank(account_name, racewar);
-
-	const char *coin_col;
+	AccountBankBalances amounts = {};
 	switch (coin_type)
 	{
 	case 0:
-		coin_col = "bank_copper";
+		amounts.copper = amount;
 		break;
 	case 1:
-		coin_col = "bank_silver";
+		amounts.silver = amount;
 		break;
 	case 2:
-		coin_col = "bank_gold";
+		amounts.gold = amount;
 		break;
 	case 3:
-		coin_col = "bank_platinum";
+		amounts.platinum = amount;
 		break;
 	default:
 		return -1;
 	}
 
-	char *esc_name = sql_escape_string(account_name);
-	if (!esc_name)
+	AccountBankBalances committed = {};
+	if (!sql_account_bank_deposit_balances(account_name, racewar, &amounts, &committed))
 		return -1;
-
-	char query[512];
-	snprintf(query, sizeof(query),
-		 "update account_banks set %s = %s + %d where account_name='%s' and racewar=%d",
-		 coin_col, coin_col, amount, esc_name, racewar);
-
-	if (!sql_run_query(query))
-	{
-		free(esc_name);
-		return -1;
-	}
-
-	snprintf(query, sizeof(query),
-		 "select %s from account_banks where account_name='%s' and racewar=%d", coin_col,
-		 esc_name, racewar);
-
-	free(esc_name);
-
-	MYSQL_RES *result = db_query("%s", query);
-	if (!result)
-		return -1;
-
-	MYSQL_ROW row = mysql_fetch_row(result);
-	long long new_balance = row ? atoll(row[0] ? row[0] : "0") : -1;
-	mysql_free_result(result);
-
-	return new_balance;
+	return sql_account_bank_selected_balance(committed, coin_type);
 }
 
 long long sql_account_bank_withdraw(const char *account_name, int racewar, int coin_type,
 				    int amount)
 {
-	if (!DB || !account_name || !*account_name || amount <= 0)
+	const char *coin_col = sql_account_bank_coin_column(coin_type);
+	if (!DB || !account_name || !*account_name || !coin_col || amount <= 0 ||
+	    sql_in_transaction())
 		return -1;
-
-	const char *coin_col;
-	switch (coin_type)
-	{
-	case 0:
-		coin_col = "bank_copper";
-		break;
-	case 1:
-		coin_col = "bank_silver";
-		break;
-	case 2:
-		coin_col = "bank_gold";
-		break;
-	case 3:
-		coin_col = "bank_platinum";
-		break;
-	default:
-		return -1;
-	}
 
 	char *esc_name = sql_escape_string(account_name);
 	if (!esc_name)
 		return -1;
-
-	char query[512];
-	snprintf(query, sizeof(query),
-		 "select %s from account_banks where account_name='%s' and racewar=%d", coin_col,
-		 esc_name, racewar);
-
-	MYSQL_RES *result = db_query("%s", query);
-	if (!result)
+	if (!sql_begin_transaction())
 	{
 		free(esc_name);
 		return -1;
 	}
-
-	MYSQL_ROW row = mysql_fetch_row(result);
-	long long current = row ? atoll(row[0] ? row[0] : "0") : 0;
-	mysql_free_result(result);
-
-	if (current < amount)
+	if (!sql_ensure_account_bank(account_name, racewar))
 	{
 		free(esc_name);
-		return -2;
+		sql_account_bank_rollback();
+		return -1;
 	}
 
+	char query[512];
 	snprintf(
 		query, sizeof(query),
 		"update account_banks set %s = %s - %d where account_name='%s' and racewar=%d and %s >= %d",
@@ -10789,15 +10875,124 @@ long long sql_account_bank_withdraw(const char *account_name, int racewar, int c
 	if (!sql_run_query(query))
 	{
 		free(esc_name);
+		sql_account_bank_rollback();
+		return -1;
+	}
+	if (mysql_affected_rows(DB) != 1)
+	{
+		AccountBankBalances current = {};
+		bool row_exists = sql_read_account_bank_balances(esc_name, racewar, true, &current);
+		free(esc_name);
+		sql_account_bank_rollback();
+		return row_exists ? -2 : -1;
+	}
+
+	AccountBankBalances result = {};
+	bool read_ok = sql_read_account_bank_balances(esc_name, racewar, false, &result);
+	free(esc_name);
+	if (!read_ok || !sql_commit())
+	{
+		sql_account_bank_rollback();
 		return -1;
 	}
 
-	free(esc_name);
+	return sql_account_bank_selected_balance(result, coin_type);
+}
 
-	if (mysql_affected_rows(DB) == 0)
+int sql_account_bank_withdraw_value(const char *account_name, int racewar, int amount,
+				    AccountBankBalances *committed, int *change)
+{
+	if (committed)
+		*committed = {};
+	if (change)
+		*change = 0;
+	if (!DB || !account_name || !*account_name || amount <= 0 || !committed || !change ||
+	    sql_in_transaction())
+		return -1;
+
+	char *esc_name = sql_escape_string(account_name);
+	if (!esc_name)
+		return -1;
+	if (!sql_begin_transaction())
+	{
+		free(esc_name);
+		return -1;
+	}
+	if (!sql_ensure_account_bank(account_name, racewar))
+	{
+		free(esc_name);
+		sql_account_bank_rollback();
+		return -1;
+	}
+
+	AccountBankBalances current = {};
+	if (!sql_read_account_bank_balances(esc_name, racewar, true, &current))
+	{
+		free(esc_name);
+		sql_account_bank_rollback();
+		return -1;
+	}
+
+	long long total = current.copper + (long long)current.silver * 10 +
+			  (long long)current.gold * 100 + (long long)current.platinum * 1000;
+	if (total < amount)
+	{
+		free(esc_name);
+		sql_account_bank_rollback();
 		return -2;
+	}
 
-	return current - amount;
+	int remaining = amount;
+	AccountBankBalances used = {};
+	used.copper = current.copper < remaining ? current.copper : remaining;
+	remaining -= used.copper;
+	if (remaining > 0)
+	{
+		long long needed = (remaining + 9LL) / 10;
+		used.silver = current.silver < needed ? current.silver : (int)needed;
+		remaining -= used.silver * 10;
+	}
+	if (remaining > 0)
+	{
+		long long needed = (remaining + 99LL) / 100;
+		used.gold = current.gold < needed ? current.gold : (int)needed;
+		remaining -= used.gold * 100;
+	}
+	if (remaining > 0)
+	{
+		long long needed = (remaining + 999LL) / 1000;
+		used.platinum = current.platinum < needed ? current.platinum : (int)needed;
+		remaining -= used.platinum * 1000;
+	}
+
+	char query[768];
+	snprintf(query, sizeof(query),
+		 "update account_banks set bank_copper=bank_copper-%d, "
+		 "bank_silver=bank_silver-%d, bank_gold=bank_gold-%d, "
+		 "bank_platinum=bank_platinum-%d where account_name='%s' and racewar=%d "
+		 "and bank_copper >= %d and bank_silver >= %d and bank_gold >= %d and "
+		 "bank_platinum >= %d",
+		 used.copper, used.silver, used.gold, used.platinum, esc_name, racewar, used.copper,
+		 used.silver, used.gold, used.platinum);
+	if (!sql_run_query(query) || mysql_affected_rows(DB) != 1)
+	{
+		free(esc_name);
+		sql_account_bank_rollback();
+		return -1;
+	}
+
+	AccountBankBalances result = {};
+	bool read_ok = sql_read_account_bank_balances(esc_name, racewar, false, &result);
+	free(esc_name);
+	if (!read_ok || !sql_commit())
+	{
+		sql_account_bank_rollback();
+		return -1;
+	}
+
+	*committed = result;
+	*change = -remaining;
+	return 0;
 }
 
 #endif // __NO_MYSQL__

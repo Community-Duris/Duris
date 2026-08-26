@@ -2266,6 +2266,55 @@ void do_balance(P_char ch, char * /*argument*/, int /*cmd*/)
 	}
 }
 
+static int carried_coin_count(P_char ch, int coin_type)
+{
+	switch (coin_type)
+	{
+	case 0:
+		return GET_COPPER(ch);
+	case 1:
+		return GET_SILVER(ch);
+	case 2:
+		return GET_GOLD(ch);
+	case 3:
+		return GET_PLATINUM(ch);
+	default:
+		return 0;
+	}
+}
+
+static void change_carried_coin(P_char ch, int coin_type, int amount)
+{
+	switch (coin_type)
+	{
+	case 0:
+		GET_COPPER(ch) += amount;
+		break;
+	case 1:
+		GET_SILVER(ch) += amount;
+		break;
+	case 2:
+		GET_GOLD(ch) += amount;
+		break;
+	case 3:
+		GET_PLATINUM(ch) += amount;
+		break;
+	}
+}
+
+static bool deposit_carried_coin(P_char ch, const char *account_name, int racewar, int coin_type,
+				 int amount)
+{
+	long long committed = sql_account_bank_deposit(account_name, racewar, coin_type, amount);
+	if (committed < 0)
+		return false;
+
+	change_carried_coin(ch, coin_type, -amount);
+	publish_account_bank_balance(account_name, racewar, coin_type, (int)committed);
+	mark_player_dirty(GET_PID(ch));
+	return true;
+}
+
 void do_deposit(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_INPUT_LENGTH];
@@ -2292,38 +2341,17 @@ void do_deposit(P_char ch, char *argument, int /*cmd*/)
 
 	if (strstr("all", argument))
 	{
-		ok = (GET_COPPER(ch));
-		money = ok;
-		if (ok)
+		bool failed = false;
+		for (int coin_type = 0; coin_type < 4; ++coin_type)
 		{
-			GET_COPPER(ch) -= money;
-			GET_BALANCE_COPPER(ch) += money;
-			sql_account_bank_deposit(acct, racewar, 0, money);
+			money = carried_coin_count(ch, coin_type);
+			if (money > 0 && !deposit_carried_coin(ch, acct, racewar, coin_type, money))
+				failed = true;
 		}
-		ok = (GET_SILVER(ch));
-		money = ok;
-		if (ok)
-		{
-			GET_SILVER(ch) -= money;
-			GET_BALANCE_SILVER(ch) += money;
-			sql_account_bank_deposit(acct, racewar, 1, money);
-		}
-		ok = (GET_GOLD(ch));
-		money = ok;
-		if (ok)
-		{
-			GET_GOLD(ch) -= money;
-			GET_BALANCE_GOLD(ch) += money;
-			sql_account_bank_deposit(acct, racewar, 2, money);
-		}
-		ok = (GET_PLATINUM(ch));
-		money = ok;
-		if (ok)
-		{
-			GET_PLATINUM(ch) -= money;
-			GET_BALANCE_PLATINUM(ch) += money;
-			sql_account_bank_deposit(acct, racewar, 3, money);
-		}
+		if (failed)
+			send_to_char(
+				"Some coins could not be deposited; each failed denomination was retained.\r\n",
+				ch);
 		do_balance(ch, 0, -4);
 		/* Send GMCP update for deposit all */
 		gmcp_char_vitals(ch);
@@ -2351,39 +2379,15 @@ void do_deposit(P_char ch, char *argument, int /*cmd*/)
 		{
 		case 0:
 			ok = (money <= GET_COPPER(ch));
-			if (ok)
-			{
-				GET_COPPER(ch) -= money;
-				GET_BALANCE_COPPER(ch) += money;
-				sql_account_bank_deposit(acct, racewar, 0, money);
-			}
 			break;
 		case 1:
 			ok = (money <= GET_SILVER(ch));
-			if (ok)
-			{
-				GET_SILVER(ch) -= money;
-				GET_BALANCE_SILVER(ch) += money;
-				sql_account_bank_deposit(acct, racewar, 1, money);
-			}
 			break;
 		case 2:
 			ok = (money <= GET_GOLD(ch));
-			if (ok)
-			{
-				GET_GOLD(ch) -= money;
-				GET_BALANCE_GOLD(ch) += money;
-				sql_account_bank_deposit(acct, racewar, 2, money);
-			}
 			break;
 		case 3:
 			ok = (money <= GET_PLATINUM(ch));
-			if (ok)
-			{
-				GET_PLATINUM(ch) -= money;
-				GET_BALANCE_PLATINUM(ch) += money;
-				sql_account_bank_deposit(acct, racewar, 3, money);
-			}
 			break;
 		}
 		if (!ok)
@@ -2392,9 +2396,18 @@ void do_deposit(P_char ch, char *argument, int /*cmd*/)
 		}
 		else
 		{
-			do_balance(ch, 0, -4);
-			/* Send GMCP update for deposit */
-			gmcp_char_vitals(ch);
+			if (!deposit_carried_coin(ch, acct, racewar, ctype, money))
+			{
+				send_to_char(
+					"The bank could not complete that deposit. Your coins were retained.\r\n",
+					ch);
+			}
+			else
+			{
+				do_balance(ch, 0, -4);
+				/* Send GMCP update for deposit */
+				gmcp_char_vitals(ch);
+			}
 		}
 	}
 }
@@ -2404,6 +2417,7 @@ void do_withdraw(P_char ch, char *argument, int /*cmd*/)
 	char arg[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
 	int money, ctype, ok;
+	long long bank_result = -1;
 
 	ok = 0;
 
@@ -2445,53 +2459,27 @@ void do_withdraw(P_char ch, char *argument, int /*cmd*/)
 		switch (ctype)
 		{
 		case 0:
-		{
-			long long result = sql_account_bank_withdraw(acct, racewar, 0, money);
-			if (result >= 0)
-			{
-				GET_BALANCE_COPPER(ch) = (int)result;
-				GET_COPPER(ch) += money;
-				ok = 1;
-			}
-		}
-		break;
 		case 1:
-		{
-			long long result = sql_account_bank_withdraw(acct, racewar, 1, money);
-			if (result >= 0)
-			{
-				GET_BALANCE_SILVER(ch) = (int)result;
-				GET_SILVER(ch) += money;
-				ok = 1;
-			}
-		}
-		break;
 		case 2:
-		{
-			long long result = sql_account_bank_withdraw(acct, racewar, 2, money);
-			if (result >= 0)
-			{
-				GET_BALANCE_GOLD(ch) = (int)result;
-				GET_GOLD(ch) += money;
-				ok = 1;
-			}
-		}
-		break;
 		case 3:
-		{
-			long long result = sql_account_bank_withdraw(acct, racewar, 3, money);
-			if (result >= 0)
+			bank_result = sql_account_bank_withdraw(acct, racewar, ctype, money);
+			if (bank_result >= 0)
 			{
-				GET_BALANCE_PLATINUM(ch) = (int)result;
-				GET_PLATINUM(ch) += money;
+				publish_account_bank_balance(acct, racewar, ctype,
+							     (int)bank_result);
+				change_carried_coin(ch, ctype, money);
+				mark_player_dirty(GET_PID(ch));
 				ok = 1;
 			}
-		}
-		break;
+			break;
 		}
 		if (!ok)
 		{
-			send_to_char("You haven't got that much in your account!\r\n", ch);
+			if (bank_result == -2)
+				send_to_char("You haven't got that much in your account!\r\n", ch);
+			else
+				send_to_char("The bank could not complete that withdrawal.\r\n",
+					     ch);
 		}
 		else
 		{

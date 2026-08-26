@@ -2292,15 +2292,28 @@ void finish_sinking(P_ship ship)
 						  0.50); // only partial insurance for warships
 		}
 
-		if (P_char owner = get_char2(str_dup(SHIP_OWNER(ship))))
+		P_char owner = get_char2(str_dup(SHIP_OWNER(ship)));
+		int insurance_platinum = insurance / 1000;
+		bool insurance_deposited = insurance_platinum == 0;
+		if (owner && insurance_platinum > 0)
 		{
-			GET_BALANCE_PLATINUM(owner) += insurance / 1000;
-			wizlog(56, "Ship insurance to account of %s: %d", ship->ownername,
-			       insurance / 1000);
-			logit(LOG_SHIP, "Ship insurance deposit to account of %s: %d",
-			      ship->ownername, insurance / 1000);
+			const char *account_name = get_account_name_safe(owner);
+			long long committed = -1;
+			if (account_name && strcmp(account_name, "Unknown"))
+				committed = sql_account_bank_deposit(
+					account_name, GET_RACEWAR(owner), 3, insurance_platinum);
+			if (committed >= 0)
+			{
+				publish_account_bank_balance(account_name, GET_RACEWAR(owner), 3,
+							     (int)committed);
+				insurance_deposited = true;
+				wizlog(56, "Ship insurance to account of %s: %d", ship->ownername,
+				       insurance_platinum);
+				logit(LOG_SHIP, "Ship insurance deposit to account of %s: %d",
+				      ship->ownername, insurance_platinum);
+			}
 		}
-		else
+		if (!insurance_deposited)
 		{
 			/* Putting this into auction house instead.
 			 ship->money = insurance; // if owner is not online, money go into ships coffer

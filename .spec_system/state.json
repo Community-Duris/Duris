@@ -3,7 +3,7 @@
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
   "current_phase": 0,
-  "current_session": "phase00-session07-account-bank-delta-safety",
+  "current_session": "phase00-session08-runtime-connection-trust-boundaries",
   "monorepo": false,
   "phases": {
     "1": {
@@ -37,7 +37,8 @@
     "phase00-session03-save-failure-retry-and-terminal-safety",
     "phase00-session04-player-replacement-state-cleanup",
     "phase00-session05-combat-artifact-persistence-correctness",
-    "phase00-session06-redis-failure-and-recovery-containment"
+    "phase00-session06-redis-failure-and-recovery-containment",
+    "phase00-session07-account-bank-delta-safety"
   ],
   "next_session_history": [
     {
@@ -133,6 +134,21 @@
     {
       "date": "2026-08-27",
       "session": "phase00-session07-account-bank-delta-safety",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase00-session07-account-bank-delta-safety",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase00-session07-account-bank-delta-safety",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase00-session08-runtime-connection-trust-boundaries",
       "status": "planned"
     }
   ]

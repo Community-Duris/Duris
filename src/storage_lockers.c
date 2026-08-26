@@ -1918,22 +1918,20 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 		 pLocker ? pLocker->m_itemCount : 0, coin_stringv(temp));
 	send_to_char(money_string, ch);
 
-	if (GET_MONEY(ch) < temp && GET_BALANCE(ch) < temp)
-	{
-		send_to_char(
-			"..but you don't have the money not even in your bank account!, GET OUT!\r\n\r\n",
-			ch);
-		room = ch->in_room;
-		char_from_room(ch);
-		char_to_room(ch, locker_exit_room(ch, room), 0);
-		free_locker(room);
-		extract_char(chLocker);
-		return TRUE;
-	}
-
 	if (GET_MONEY(ch) < temp)
 	{
-		SUB_BALANCE(ch, temp, 0);
+		if (SUB_BALANCE(ch, temp, 0) != 0)
+		{
+			send_to_char(
+				"..but you don't have the money or the bank could not complete the payment, GET OUT!\r\n\r\n",
+				ch);
+			room = ch->in_room;
+			char_from_room(ch);
+			char_to_room(ch, locker_exit_room(ch, room), 0);
+			free_locker(room);
+			extract_char(chLocker);
+			return TRUE;
+		}
 	}
 	else
 	{
@@ -2151,33 +2149,29 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 		if (tmp_object)
 		{
 			CharWait(ch, (int)(PULSE_VIOLENCE * 1.5));
-			if (GET_MONEY(ch) < cost && GET_BALANCE(ch) < cost)
+			if (GET_MONEY(ch) < cost)
 			{
-				send_to_char(
-					"The member of the &+YStorage Locker Safety Commission&n says 'Bring me 1 &+Ygold&n and ill give you the stats.'\r\n",
-					ch);
-				return (TRUE);
+				if (SUB_BALANCE(ch, cost, 0) != 0)
+				{
+					send_to_char(
+						"The member of the &+YStorage Locker Safety Commission&n says 'Bring me 1 &+Ygold&n and ill give you the stats.'\r\n",
+						ch);
+					return (TRUE);
+				}
 			}
 			else
 			{
-				send_to_char(
-					"The member of the &+YStorage Locker Safety Commission&n takes 1 &+Ygold.&n\r\n",
-					ch);
-				send_to_char(
-					"The member of the &+YStorage Locker Safety Commission&n says 'This is:'\r\n",
-					ch);
-				if (GET_MONEY(ch) < cost)
-				{
-					SUB_BALANCE(ch, cost, 0);
-				}
-				else
-				{
-					SUB_MONEY(ch, cost, 0);
-				}
-
-				do_lore(ch, arg, 999);
-				return TRUE;
+				SUB_MONEY(ch, cost, 0);
 			}
+			send_to_char(
+				"The member of the &+YStorage Locker Safety Commission&n takes 1 &+Ygold.&n\r\n",
+				ch);
+			send_to_char(
+				"The member of the &+YStorage Locker Safety Commission&n says 'This is:'\r\n",
+				ch);
+
+			do_lore(ch, arg, 999);
+			return TRUE;
 		}
 		else
 		{
@@ -3825,12 +3819,6 @@ static int locker_chestcmd(P_char ch, char *arg)
 		}
 
 		int chest_cost = 500000;
-		if (GET_MONEY(ch) < chest_cost && GET_BALANCE(ch) < chest_cost)
-		{
-			send_to_char("You need 500 platinum to create a private chest.\r\n", ch);
-			return TRUE;
-		}
-
 		int result = sql_create_private_chest(locker_id, arg2, arg3[0] ? arg3 : NULL);
 		if (result == -1)
 		{
@@ -3844,7 +3832,18 @@ static int locker_chestcmd(P_char ch, char *arg)
 		}
 
 		if (GET_MONEY(ch) < chest_cost)
-			SUB_BALANCE(ch, chest_cost, 0);
+		{
+			if (SUB_BALANCE(ch, chest_cost, 0) != 0)
+			{
+				if (!sql_delete_private_chest(result))
+					logit(LOG_DEBUG,
+					      "Failed to remove unpaid private chest id %d",
+					      result);
+				send_to_char("The bank could not complete the chest payment.\r\n",
+					     ch);
+				return TRUE;
+			}
+		}
 		else
 			SUB_MONEY(ch, chest_cost, 0);
 		send_to_char_f(ch, "Private chest '%s' created for 500 platinum.%s\r\n", arg2,

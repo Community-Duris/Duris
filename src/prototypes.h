@@ -26,6 +26,8 @@
 #include "safe_io.h"
 using namespace std;
 
+struct AccountBankBalances;
+
 /* Legacy special-procedure callbacks expose their tagged payload as char *.
  * Convert it through void * so every object-pointer interpretation is explicit
  * and centralized instead of relying on alignment-raising C-style casts. */
@@ -2866,6 +2868,10 @@ int STAT_INDEX_DAMAGE_PULSE(float);
 int STAT_INDEX_SPELL_PULSE(float);
 int SUB_MONEY(P_char, int, int);
 int SUB_BALANCE(P_char, int, int);
+void publish_account_bank_balance(const char *account_name, int racewar, int coin_type,
+				  int balance);
+void publish_account_bank_balances(const char *account_name, int racewar,
+				   const AccountBankBalances *balances);
 bool ac_can_see(P_char, P_char, bool);
 bool ac_can_see_obj(P_char sub, P_obj obj, int zrange = 0);
 int get_vis_mode(P_char, int);

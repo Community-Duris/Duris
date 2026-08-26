@@ -3348,15 +3348,32 @@ void check_boon_completion(P_char ch, P_char victim, double data, int option)
 			gain_epic(ch, EPIC_BOON, GET_PID(ch), bdata.bonus);
 			break;
 		case BTYPE_CASH:
-			boon_notify(bdata.id, ch, BN_COMPLETE);
-			send_to_char_f(ch, "Your bank receives a deposit of %s&n.\r\n",
-				       coin_stringv(bdata.bonus));
-			GET_BALANCE_PLATINUM(ch) += (bdata.bonus / 1000);
-			GET_BALANCE_GOLD(ch) += (((int)bdata.bonus % 1000) / 100);
-			GET_BALANCE_SILVER(ch) += ((((int)bdata.bonus % 1000) % 100) / 10);
-			GET_BALANCE_COPPER(ch) += ((((int)bdata.bonus % 1000) % 100) % 10);
-			sql_save_account_bank(get_account_name_safe(ch), GET_RACEWAR(ch), ch);
+		{
+			int cash = (int)bdata.bonus;
+			AccountBankBalances amounts = { cash % 10, (cash % 100) / 10,
+							(cash % 1000) / 100, cash / 1000 };
+			AccountBankBalances committed = {};
+			const char *account_name = get_account_name_safe(ch);
+			if (cash > 0 && account_name && strcmp(account_name, "Unknown") &&
+			    sql_account_bank_deposit_balances(account_name, GET_RACEWAR(ch),
+							      &amounts, &committed))
+			{
+				boon_notify(bdata.id, ch, BN_COMPLETE);
+				publish_account_bank_balances(account_name, GET_RACEWAR(ch),
+							      &committed);
+				send_to_char_f(ch, "Your bank receives a deposit of %s&n.\r\n",
+					       coin_stringv(bdata.bonus));
+			}
+			else
+			{
+				logit(LOG_DEBUG, "Cash boon bank deposit failed for pid %d",
+				      GET_PID(ch));
+				send_to_char(
+					"Your cash boon could not be deposited. Please contact staff.\r\n",
+					ch);
+			}
 			break;
+		}
 		case BTYPE_LEVEL:
 			boon_notify(bdata.id, ch, BN_COMPLETE);
 			if ((GET_LEVEL(ch) + 1) > (int)bdata.bonus)
