@@ -1,7 +1,13 @@
-all:
-	cd mob && ${MAKE}
-	cd obj && ${MAKE}
-	cd qst && ${MAKE}
-	cd shp && ${MAKE}
-	cd wld && ${MAKE}
-	cd zon && ${MAKE}
+SUBDIRS := mob obj qst shp wld zon
+
+.PHONY: all clean $(SUBDIRS)
+
+all: $(SUBDIRS)
+
+$(SUBDIRS):
+	$(MAKE) -C $@
+
+clean:
+	@for directory in $(SUBDIRS); do \
+		$(MAKE) -C "$$directory" clean || exit; \
+	done

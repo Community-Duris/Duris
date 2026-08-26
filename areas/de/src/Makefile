@@ -41,6 +41,8 @@ C_OBJS = ../ofiles/common.o ../ofiles/skills.o
 DMS_OBJS = 
 PROGS = de
 
+.PHONY: all clean depend .depend message
+
 ifndef USE_SHARED
 	DMS_OBJS += $(SH_LIBS)
 else
@@ -49,7 +51,7 @@ endif
 
 all: $(PROGS)
 
-de : $(OBJS) message $(C_OBJS)
+de : $(OBJS) $(C_OBJS) | message
 	$(CC) $(LDFLAGS) -o de $(OBJS) $(C_OBJS) $(LIBS)
 
 -include ../depend/*.d ../depend/*/*.d

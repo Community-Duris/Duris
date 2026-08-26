@@ -1,4 +1,5 @@
 /world.*
+/.world.stamp
 /mini.*
 /make_mob
 /make_obj

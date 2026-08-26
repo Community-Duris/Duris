@@ -17,7 +17,17 @@ assert re.search(r"^Version:\s*1\.0\s*$", body, re.MULTILINE)
 assert re.search(r"^Architecture:\s*all\s*$", body, re.MULTILINE)
 
 # These commands are invoked directly by the maintained developer workflow.
-for package in ("build-essential", "git", "python3", "dos2unix", "valgrind", "gdb", "clang-format"):
+for package in (
+    "build-essential",
+    "git",
+    "python3",
+    "dos2unix",
+    "gawk",
+    "libncurses-dev",
+    "valgrind",
+    "gdb",
+    "clang-format",
+):
     assert re.search(rf"(^|[,|])\s*{re.escape(package)}\s*(?=[,|]|$)", depends), (
         f"{package} is not a direct developer dependency"
     )
