@@ -1,5 +1,7 @@
 # High-value regression test expansion
 
+**Status:** Complete on 2026-08-26.
+
 ## Goal
 
 Add at least twelve high-value regression cases in previously uncovered areas,
@@ -82,7 +84,28 @@ Validation completed:
 - `./scripts/format.sh --check`
 - `git diff --check`
 
-The original minimum of twelve high-value tests is exceeded. The remaining
-work is broad-suite validation and a final completion audit; the name parser is
-recorded as a strong candidate for a future expansion rather than being mixed
-into this boundary-focused series without the same validation depth.
+At this checkpoint the original minimum of twelve high-value tests was
+exceeded. The name parser remains a strong candidate for a future expansion
+rather than being mixed into this boundary-focused series without the same
+validation depth.
+
+## Completion audit
+
+- Coverage delivered: 50 executable behavioral cases in four newly discovered
+  runtime test files (13 Unicode, 11 ANSI, 13 JSON, 13 terminal type), against a
+  requested minimum of twelve.
+- Value/risk focus: all four suites exercise live code handling untrusted
+  network or player-visible text, including malformed encodings, truncated
+  protocol input, parser state transitions, escaping, and bounded rendering.
+- Defects encountered: every failure exposed while developing the new cases was
+  repaired and retained as a regression; the fixes are listed in Checkpoints 1
+  and 2.
+- Progress durability: implementation and documentation were published in two
+  intermediate commits, `3748f7a4` and `9dcd3a16`, before this final audit.
+- Full repository gate: `make test-all TEST_JOBS=4` built the server, area
+  editor, and area generators; generated the combined world; passed all 162
+  Python regression files with zero failures; and passed the native signal
+  handler suite.
+- Final hygiene: changed C/C++ lines pass `./scripts/format.sh --check`, the
+  diff passes `git diff --check`, generated artifacts remain under ignored
+  paths, and the worktree was clean before this documentation-only closeout.
