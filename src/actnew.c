@@ -2320,8 +2320,8 @@ void do_shapechange(P_char ch, char *arg, int /*cmd*/)
 
 	if (!mobname[0] || !*arg)
 	{
-		char *how_learned[5] = { "about to forget", "vaguely", "average", "good",
-					 "mastered" };
+		const char *how_learned[5] = { "about to forget", "vaguely", "average", "good",
+					       "mastered" };
 		send_to_char("You have studied the following creatures:\n", ch);
 		for (af = ch->affected, count = 1; af; af = af->next)
 			if (af->type == TAG_KNOWN_SHAPE)
@@ -3610,9 +3610,9 @@ void do_vote(P_char ch, char *arg, int /*cmd*/)
 	const char *ip;
 	char ipbuf[255];
 	time_t lastConnect, lastDisconnect;
-	char *vote_options[] = { "nothing", "Follow through on the Miniwipe",
-				 "Completely abandon the group-cap idea.",
-				 "Wait until Sept 12th to test 5-man group caps.", "" };
+	const char *vote_options[] = { "nothing", "Follow through on the Miniwipe",
+				       "Completely abandon the group-cap idea.",
+				       "Wait until Sept 12th to test 5-man group caps.", "" };
 
 	snprintf(vote_opts, 4096, "\r\n");
 

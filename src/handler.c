@@ -3880,7 +3880,7 @@ P_char get_char_vis(P_char ch, const char *name)
 	return (0);
 }
 
-P_obj get_obj_in_list_vis(P_char ch, char *name, P_obj list, bool no_tracks)
+P_obj get_obj_in_list_vis(P_char ch, const char *name, P_obj list, bool no_tracks)
 {
 	P_obj i;
 	int j, k;
@@ -4418,7 +4418,7 @@ P_obj create_money(int copper, int silver, int gold, int platinum)
  * which target was found.
  */
 
-int generic_find(char *arg, int bitvector, P_char ch, P_char *tar_ch, P_obj *tar_obj)
+int generic_find(const char *arg, int bitvector, P_char ch, P_char *tar_ch, P_obj *tar_obj)
 {
 	int i;
 	char name[MAX_INPUT_LENGTH];

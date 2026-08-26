@@ -427,7 +427,7 @@ dam_mod->type = dam_mod_type::More;
 , { MAKE_DAM_MOD_PRED(){ struct affected_type *af = NULL;
 if ((af = get_spell_from_char(victim, SPELL_ELEM_AFFINITY)) && ELEMENTAL_DAM(damageType))
 {
-	char *colors[6] = { "rfire", "Bcold", "Ylightning", "ggas", "Gacid", "yearth" };
+	const char *colors[6] = { "rfire", "Bcold", "Ylightning", "ggas", "Gacid", "yearth" };
 	char buf[128];
 
 	if (af->modifier == damageType)

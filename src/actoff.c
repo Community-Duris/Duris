@@ -2679,7 +2679,7 @@ void do_flee(P_char ch, char *argument, int cmd)
 
 #define MAX_STR_NORMAL 300
 
-char *monk_combos_messages[][2][3] = {
+const char *monk_combos_messages[][2][3] = {
 	{ { "$n spins around on $s foot and swings at $N with $s leg...",
 	    "You spin around on your foot and swing at $N with your leg...",
 	    "$n spins around on $s foot and swings at you with $s leg..." },

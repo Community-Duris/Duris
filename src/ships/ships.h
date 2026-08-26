@@ -749,7 +749,9 @@ void set_crew(P_ship ship, int crew_index, bool reset_skills = true);
 void set_chief(P_ship ship, int chief_index);
 void update_crew(P_ship ship);
 void reset_crew_stamina(P_ship ship);
-char *crew_bonuses(const ShipCrewData crew);
+/* Returns either a literal or a static buffer reused on the next call;
+   the caller must only read it. */
+const char *crew_bonuses(const ShipCrewData crew);
 
 void set_weapon(P_ship ship, int slot, int w_num, int arc);
 void set_equipment(P_ship ship, int slot, int w_num);
@@ -757,7 +759,7 @@ void update_maxspeed(P_ship ship, int breach_count);
 int get_maxspeed_without_cargo(P_ship ship);
 const char *get_ship_status(P_ship ship);
 
-void assignid(P_ship ship, char *id, bool npc = false);
+void assignid(P_ship ship, const char *id, bool npc = false);
 
 float bearing(float x1, float y1, float x2, float y2);
 float range(float x1, float y1, float z1, float x2, float y2, float z2);

@@ -127,7 +127,7 @@ int nexus_sage_train(P_char ch, P_char pl, char *arg);
 int nexus_sage_ask(P_char ch, P_char pl, char *arg);
 int remove_nexus_sage(int stone_id);
 bool load_nexus_stone(int stone_id, const char *name, int room_vnum, int align);
-void world_echo(char *str);
+void world_echo(const char *str);
 void event_nexus_stone_hum(P_char __ch, P_char __victim, P_obj stone, void *data);
 void update_nexus_stat_mods();
 void nexus_stone_epics(P_char ch, P_obj stone);

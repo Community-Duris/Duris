@@ -321,7 +321,7 @@ int list_equipment(P_char ch, P_ship ship, int owned)
 // Returns a  string with the value of the epic cost of the hull type
 //   with preceeding spaces to make the length total 6 (excluding the terminating char).
 // If epic cost is 0, just returns 6 spaces.
-char *epic_cost_string(int hull_type)
+const char *epic_cost_string(int hull_type)
 {
 	// We have length 8 here, just in case somewhere in the future we get in the millions.
 	static char buf[16];
@@ -2767,7 +2767,7 @@ int look_crew(P_char ch, P_ship ship);
 int crew_shop_proc(int room, P_char ch, int cmd, char *arg)
 {
 	int n;
-	char *bonuses;
+	const char *bonuses;
 
 	if (!IS_ALIVE(ch))
 		return FALSE;

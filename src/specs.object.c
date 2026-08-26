@@ -3777,9 +3777,9 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 	char tmp_buf[300];
 	char curWhisper[300];
 	static int num_attacks = 0;
-	char **whisperings;
+	const char **whisperings;
 #define SWORD_WHISPERINGS 7
-	char *e_whispers[SWORD_WHISPERINGS] = {
+	const char *e_whispers[SWORD_WHISPERINGS] = {
 		"I crave blood!",
 		"Serve me well, and you shall be given unimaginable power!",
 		"This world has not yet seen our true power, show them!",
@@ -3788,7 +3788,7 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 		"All your base are belong to us!",
 		"Slice your enemies apart with me, so that I may absorb their souls."
 	};
-	char *g_whispers[SWORD_WHISPERINGS] = {
+	const char *g_whispers[SWORD_WHISPERINGS] = {
 		"Persue the path of goodness always.",
 		"Study the way of 'pleasantry' that you may better love the gods.",
 		"You must destroy the non-believers.",

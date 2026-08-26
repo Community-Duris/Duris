@@ -588,7 +588,7 @@ int ShipData::get_maxspeed(P_char ch) const
 	return speed;
 }
 
-void assignid(P_ship ship, char *id, bool npc)
+void assignid(P_ship ship, const char *id, bool npc)
 {
 	if (!id)
 	{
@@ -1916,7 +1916,7 @@ void ShipData::sail_skill_raise(P_char ch, float raise)
 	send_to_char(Gbuf1, ch);
 }
 
-char *crew_bonuses(const ShipCrewData crew)
+const char *crew_bonuses(const ShipCrewData crew)
 {
 	int bonus_num = 0;
 	static char buf[MAX_STRING_LENGTH];

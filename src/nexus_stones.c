@@ -94,7 +94,7 @@ int check_nexus_bonus(P_char ch, int amount, int type)
 #define _EVIL_SAGE_DIE 20
 #define _NEUTRAL_GUARD_LOAD 21
 
-char *ns_messages[] = {
+const char *ns_messages[] = {
 	"&+gA strange field of energy prevents you from touching $p&+G.&n",
 	"&+WThe stone is indifferent to your touch.",
 	"&+WYour touch is repulsed by the stone!",
@@ -662,7 +662,7 @@ void nexus_stone_epics(P_char ch, P_obj stone)
 	}
 }
 
-void world_echo(char *str)
+void world_echo(const char *str)
 {
 	for (P_desc d = descriptor_list; d; d = d->next)
 	{

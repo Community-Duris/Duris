@@ -223,10 +223,10 @@ struct material
 	int hardiness = 0;
 	int magic_power = 0;
 	int preferred_weapon = 0;
-	char *adjective = nullptr;
+	const char *adjective = nullptr;
 };
 
-char *weapon_quality[WEAPON_QUALITY_DESCRIPTIONS_NUMBER] = {
+const char *weapon_quality[WEAPON_QUALITY_DESCRIPTIONS_NUMBER] = {
 	"a broken", "a cracked", "a primitive", "a plain", "a decent", "a fine", "an excellent"
 };
 

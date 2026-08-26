@@ -36,7 +36,7 @@ struct home_data;
 static home_data *home_list = NULL;
 static home_data *last_home = NULL;
 
-char *room_type_ansi[ROOM_TYPE_MAX] = {
+const char *room_type_ansi[ROOM_TYPE_MAX] = {
 	"&n", // NONE
 	"&+y", // DIRT
 	"&-G", // GRASS
@@ -52,7 +52,7 @@ char *room_type_ansi[ROOM_TYPE_MAX] = {
 	"&+L", // DOOR WOOD
 };
 
-char *room_types[ROOM_TYPE_MAX] = {
+const char *room_types[ROOM_TYPE_MAX] = {
 	" ", // NONE
 	".", // DIRT
 	"°", // GRASS

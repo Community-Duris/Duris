@@ -77,7 +77,7 @@ bool ground_casting_check(P_char ch, int spl);
 
 typedef struct
 {
-	char *name;
+	const char *name;
 	int starting;
 	int top;
 } saves_data_type;
