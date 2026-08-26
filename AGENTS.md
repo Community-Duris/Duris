@@ -10,6 +10,7 @@
 - `tests/async/` contains focused regression and source-contract tests.
 - `areas/` holds world data and generators; `migrations/` is the authoritative schema-change location.
 - Read `README.md` for setup, runtime, and database details.
+- An in-game account is set up for testing, with credentials in `.env`: `GAME_ACCOUNT_NAME` `GAME_ACCOUNT_PASSWORD` `GAME_ACCOUNT_CHARACTER_NAME`
 
 ## Working conventions
 

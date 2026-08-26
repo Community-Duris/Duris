@@ -18,6 +18,15 @@ import re, sys
 from pathlib import Path
 
 SIZES = {"MAX_STRING_LENGTH": 65536, "MAX_INPUT_LENGTH": 1024}
+def enclosing_function(text, pos):
+    """Body of the function containing pos, found from the last definition-like
+    line that starts at column 0 before it."""
+    starts = [m.start() for m in
+              re.finditer(r'^[A-Za-z_][A-Za-z0-9_ \t*:&<>,]*\([^;]*?\)\s*\n?\s*\{', text, re.M)
+              if m.start() < pos]
+    return text[starts[-1]:pos] if starts else text[:pos]
+
+
 root = Path("src")
 hits = []
 
@@ -42,10 +51,21 @@ for path in sorted(list(root.rglob("*.c")) + list(root.rglob("*.h"))):
         sizes = decls.get(buf)
         if not sizes:
             continue
-        smallest = min(sizes)
-        if smallest < capval:
-            line = text.count("\n", 0, m.start()) + 1
-            hits.append((str(path), line, buf, smallest, cap, capval))
+        # Only trust a size when the buffer is declared as an array inside the
+        # enclosing function.  A same-named array elsewhere in the file says
+        # nothing about a `char *buf` parameter, whose size only the caller
+        # knows -- reporting those produced false positives.
+        fn = enclosing_function(text, m.start())
+        local = re.search(r'\bchar\s+[^;\n()]*?\b' + re.escape(buf) + r'\s*\[\s*([A-Za-z0-9_]+)\s*\]', fn)
+        if not local:
+            continue
+        declared = SIZES.get(local.group(1))
+        if declared is None and local.group(1).isdigit():
+            declared = int(local.group(1))
+        if declared is None or declared >= capval:
+            continue
+        line = text.count("\n", 0, m.start()) + 1
+        hits.append((str(path), line, buf, declared, cap, capval))
 
 if hits:
     print("%-26s %6s  %-14s %-9s %s" % ("file", "line", "buffer", "declared", "claimed"))

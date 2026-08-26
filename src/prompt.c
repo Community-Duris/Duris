@@ -23,35 +23,10 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include "mm.h"
+#include "safe_format.h"
 
 extern P_desc descriptor_list;
 extern P_index mob_index;
-
-/*
- * Append formatted text to a bounded buffer.
- *
- * Every prompt element used to open-code
- *   snprintf(buf + strlen(buf), CAPACITY - strlen(buf), ...)
- * with CAPACITY hard-coded to MAX_STRING_LENGTH (64KB) while the buffers are
- * MAX_INPUT_LENGTH (1KB).  That claimed 64x more room than existed and aborted
- * under _FORTIFY_SOURCE on the first prompt a player was sent.  One correct
- * implementation replaces sixteen chances to get it wrong.
- */
-static void prompt_appendf(char *buffer, size_t capacity, const char *format, ...)
-	__attribute__((format(printf, 3, 4)));
-
-static void prompt_appendf(char *buffer, size_t capacity, const char *format, ...)
-{
-	size_t used = strnlen(buffer, capacity);
-	va_list args;
-
-	if (used + 1 >= capacity)
-		return;
-
-	va_start(args, format);
-	vsnprintf(buffer + used, capacity - used, format, args);
-	va_end(args);
-}
 
 void make_prompt(P_desc point)
 {
@@ -139,12 +114,11 @@ void make_prompt(P_desc point)
 					wardAmount += paf->modifier;
 				}
 			}
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+C %dW", wardAmount);
+			APPENDF(promptbuf, "&+C %dW", wardAmount);
 		}
 		else if (GET_MAX_WARD(t_ch) > 0)
 		{
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+C %d/%dW", GET_WARD(t_ch),
-				       GET_MAX_WARD(t_ch));
+			APPENDF(promptbuf, "&+C %d/%dW", GET_WARD(t_ch), GET_MAX_WARD(t_ch));
 		}
 	}
 	if (IS_SET(t_ch_p, PROMPT_HIT))
@@ -163,19 +137,19 @@ void make_prompt(P_desc point)
 
 		// Healthy -> Green.
 		if (percent >= 66)
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+g %dh", t_ch->points.hit);
+			APPENDF(promptbuf, "&+g %dh", t_ch->points.hit);
 		// Wounded -> Brown.
 		else if (percent >= 33)
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+y %dh", t_ch->points.hit);
+			APPENDF(promptbuf, "&+y %dh", t_ch->points.hit);
 		// Hurt bad -> Red.
 		else if (percent >= 15)
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+r %dh", t_ch->points.hit);
+			APPENDF(promptbuf, "&+r %dh", t_ch->points.hit);
 		// Nearing death -> Bright red on grey.
 		else
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+R %dh", t_ch->points.hit);
+			APPENDF(promptbuf, "&+R %dh", t_ch->points.hit);
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_HIT))
-		prompt_appendf(promptbuf, sizeof(promptbuf), "&+g/%dH", GET_MAX_HIT(t_ch));
+		APPENDF(promptbuf, "&+g/%dH", GET_MAX_HIT(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_MANA))
 	{
 		if (GET_MAX_MANA(t_ch) > 0)
@@ -188,16 +162,16 @@ void make_prompt(P_desc point)
 			percent = -1;
 		}
 		if (percent >= 66)
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+g %dm", GET_MANA(t_ch));
+			APPENDF(promptbuf, "&+g %dm", GET_MANA(t_ch));
 		else if (percent >= 33)
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+y %dm", GET_MANA(t_ch));
+			APPENDF(promptbuf, "&+y %dm", GET_MANA(t_ch));
 		else if (percent >= 0)
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+r %dm", GET_MANA(t_ch));
+			APPENDF(promptbuf, "&+r %dm", GET_MANA(t_ch));
 		else
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+R%dm", GET_MANA(t_ch));
+			APPENDF(promptbuf, "&+R%dm", GET_MANA(t_ch));
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_MANA))
-		prompt_appendf(promptbuf, sizeof(promptbuf), "&+g/%dM", GET_MAX_MANA(t_ch));
+		APPENDF(promptbuf, "&+g/%dM", GET_MAX_MANA(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_MOVE))
 	{
 		if (GET_MAX_VITALITY(t_ch) > 0)
@@ -213,17 +187,14 @@ void make_prompt(P_desc point)
 		}
 
 		if (percent >= 66)
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+g %dv",
-				       t_ch->points.vitality);
+			APPENDF(promptbuf, "&+g %dv", t_ch->points.vitality);
 		else if (percent >= 33)
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+y %dv",
-				       t_ch->points.vitality);
+			APPENDF(promptbuf, "&+y %dv", t_ch->points.vitality);
 		else
-			prompt_appendf(promptbuf, sizeof(promptbuf), "&+r %dv",
-				       t_ch->points.vitality);
+			APPENDF(promptbuf, "&+r %dv", t_ch->points.vitality);
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_MOVE))
-		prompt_appendf(promptbuf, sizeof(promptbuf), "&+g/%dV", GET_MAX_VITALITY(t_ch));
+		APPENDF(promptbuf, "&+g/%dV", GET_MAX_VITALITY(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_STATUS))
 	{
 		strcat(promptbuf, " &+cPos:&n");
@@ -271,12 +242,12 @@ void make_prompt(P_desc point)
 		{
 			if (IS_SET(t_ch_p, PROMPT_TANK_NAME))
 			{
-				prompt_appendf(pPrompt, pPromptCap, " &+BT: %s",
-					       (t_ch != tank && !CAN_SEE(t_ch, tank)) ?
-						       "someone" :
-						       (IS_PC(tank) ?
-								PERS(tank, t_ch, 0, true) :
-								(FirstWord((tank)->player.name))));
+				checked_appendf(pPrompt, pPromptCap, " &+BT: %s",
+						(t_ch != tank && !CAN_SEE(t_ch, tank)) ?
+							"someone" :
+							(IS_PC(tank) ?
+								 PERS(tank, t_ch, 0, true) :
+								 (FirstWord((tank)->player.name))));
 			}
 			if (IS_SET(t_ch_p, PROMPT_STATUS) && IS_SET(t_ch_p, PROMPT_TANK_COND))
 			{
@@ -323,12 +294,12 @@ void make_prompt(P_desc point)
 
 		if (IS_SET(t_ch_p, PROMPT_ENEMY))
 		{
-			prompt_appendf(pPrompt, pPromptCap, " &+rE: %s",
-				       (!CAN_SEE(t_ch, t_ch_f)) ?
-					       "someone" :
-					       (IS_PC(t_ch_f) ?
-							PERS(t_ch_f, t_ch, 0, true) :
-							(FirstWord((t_ch_f)->player.name))));
+			checked_appendf(pPrompt, pPromptCap, " &+rE: %s",
+					(!CAN_SEE(t_ch, t_ch_f)) ?
+						"someone" :
+						(IS_PC(t_ch_f) ?
+							 PERS(t_ch_f, t_ch, 0, true) :
+							 (FirstWord((t_ch_f)->player.name))));
 		}
 
 		if (IS_SET(t_ch_p, PROMPT_STATUS) && IS_SET(t_ch_p, PROMPT_ENEMY_COND))
@@ -388,13 +359,13 @@ void make_prompt(P_desc point)
 		else
 			strcat(pPrompt, "&+R");
 
-		prompt_appendf(pPrompt, pPromptCap, "%d ", t_obj_f->condition);
+		checked_appendf(pPrompt, pPromptCap, "%d ", t_obj_f->condition);
 	}
 
 	if (IS_SET(t_ch_p, PROMPT_VIS) && IS_TRUSTED(t_ch))
 	{
 		strcat(pPrompt, "&+m");
-		prompt_appendf(pPrompt, pPromptCap, " Vis: %d", t_ch->only.pc->wiz_invis);
+		checked_appendf(pPrompt, pPromptCap, " Vis: %d", t_ch->only.pc->wiz_invis);
 	}
 	if (IS_SET(t_ch->specials.act, PLR_AFK))
 		strcat(pPrompt, "&n (&+RAFK&n)");

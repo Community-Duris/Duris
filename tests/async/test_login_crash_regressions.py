@@ -17,7 +17,8 @@ in logs/duris-console.log was:
    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), ...) while its
    buffers are MAX_INPUT_LENGTH. glibc's __snprintf_chk aborts when the claimed
    size exceeds the real object size, so the first prompt sent to a player - the
-   moment they enter the world - killed the process.
+   moment they enter the world - killed the process. This was one instance of a
+   115-site class; see tests/async/test_append_bounds.py.
 
 3. make_bar() had the same mismatch against a 512-byte static buffer, and
    divided by `max` without guarding zero.
@@ -48,12 +49,14 @@ for name, text in (("comm.c", comm), ("websocket.c", websocket)):
           re.search(r'strcpy\(\s*(\w+(?:->\w+)?)\s*,\s*\1\s*\+', live) is None)
 
 # 2/3. prompt.c appends through one bounded helper, with no open-coded mismatch.
-check("prompt.c has the bounded append helper",
-      "static void prompt_appendf(char *buffer, size_t capacity, const char *format, ...)" in prompt)
-check("prompt_appendf is format-checked",
-      "__attribute__((format(printf, 3, 4)))" in prompt)
-check("prompt_appendf refuses to write past capacity",
-      "strnlen(buffer, capacity)" in prompt and "if (used + 1 >= capacity)" in prompt)
+# The helper this fix introduced now lives in safe_format.h and is shared with
+# the other 115 sites; test_append_bounds.py covers the helper itself.
+check("prompt.c appends through the shared bounded helper",
+      '#include "safe_format.h"' in prompt
+      and "APPENDF(promptbuf," in prompt
+      and "checked_appendf(pPrompt, pPromptCap," in prompt)
+check("prompt.c open-codes no append of its own",
+      "snprintf(promptbuf" not in prompt and "snprintf(pPrompt" not in prompt)
 check("prompt.c no longer claims MAX_STRING_LENGTH on a smaller buffer",
       "MAX_STRING_LENGTH - strlen(" not in prompt)
 check("pPrompt carries the capacity of the buffer it aliases",

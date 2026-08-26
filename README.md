@@ -1,673 +1,238 @@
-![DurisMUD — a dragon circles a citadel between moonlit ruins and a volcanic fortress](docs/assets/durismud-readme-header.webp)
-
 # DurisMUD
 
-DurisMUD forked from Xanadinn's repo.
+[![Build status][build-badge]][build]
+![C++20][cpp20-badge]
+![g++ compiler][compiler-badge]
+![Linux platform][linux-badge]
+![MySQL and MariaDB][database-badge]
+![Optional Redis integration][redis-badge]
+![GnuTLS][tls-badge]
+![RFC 6455 WebSocket support][websocket-badge]
+[![clang-format code style][format-badge]][formatting]
+[![Last commit][commit-badge]][commits]
+[![Open issues][issues-badge]][issues]
 
-## Table of Contents
+![DurisMUD — a dragon circles a citadel between moonlit ruins and a volcanic fortress](docs/assets/durismud-readme-header.webp)
 
-- [Prerequisites](#prerequisites)
-- [Database Setup](#database-setup)
-- [Compilation](#compilation)
-- [Configuration](#configuration)
-- [Running the MUD](#running-the-mud)
-- [Connecting](#connecting)
-- [Troubleshooting](#troubleshooting)
-- [Development vs Production](#development-vs-production)
-- [Database Migrations](#database-migrations)
-- [Project Structure](#project-structure)
-- [Logs](#logs)
-- [Documentation](#documentation)
+DurisMUD is a long-running dark-fantasy MUD built around a global race war
+between good and evil. Its text world combines full player-versus-player
+conflict with exploration, quests, ships, crafting, guilds, and powerful
+artifacts.
 
----
+This repository contains the game server, world data, area-building toolchain,
+database schema, regression tests, and operational scripts.
 
-## Prerequisites
+## Architecture
 
-### Required Software
+```mermaid
+flowchart LR
+    Player["MUD client"]
 
-- **C Compiler:** GCC 4.x or later (tested with GCC 14.2.0)
-- **Build Tools:** GNU Make
-- **MySQL/MariaDB:** 8.0 or later (tested with MySQL 8.0.44)
-- **MySQL Client Library:** libmysqlclient-dev
-- **Valgrind:** required for development; memory/thread checking (see [docs/valgrind.md](docs/valgrind.md))
-- **clang-format:** 14 or later; enforces the code style in `.clang-format` (see [docs/formatting.md](docs/formatting.md))
+    subgraph Server["DurisMUD server process"]
+        Network["Telnet / TLS / WebSocket"]
+        Loop["Single event loop<br/>commands, combat, world ticks"]
+        Workers["3 persistence workers<br/>item, scalar, large payload"]
 
-### Installing Dependencies
+        Network <--> Loop
+        Loop -->|enqueue saves| Workers
+    end
 
-**Ubuntu/Debian:**
-```bash
-sudo apt-get update
-sudo apt-get install build-essential
-sudo apt-get install libxml2 libxml2-dev
-sudo apt-get install zlib1g zlib1g-dev
-sudo apt-get install gnutls-dev
-sudo apt-get install libcjson-dev libssl-dev
-sudo apt-get install libhiredis-dev libbsd-dev
-sudo apt-get install default-libmysqlclient-dev default-mysql-server
-sudo apt-get install valgrind clang-format
-```
-(MySQL has been replaced by MariaDB)
+    Content["World + runtime data<br/>areas/ and lib/"]
+    Content -->|boot and reset data| Loop
+    Loop -->|synchronous queries| Database[("MySQL / MariaDB<br/>durable state")]
+    Workers -->|asynchronous writes| Database
+    Loop -.-|optional dirty saves and recovery| Redis[("Redis")]
+    Player <-->|game protocol| Network
 
-**CentOS/RHEL:**
-```bash
-sudo yum install gcc make mysql-server mysql-devel valgrind clang-tools-extra
+    classDef focal fill:#f4ecd9,stroke:#9e3b25,color:#2e2418,stroke-width:2px;
+    class Loop focal;
 ```
 
----
+The C-style sources under `src/` are compiled as C++20. Network I/O and game
+updates run in a single `select()`-driven pulse loop; three worker threads
+handle item, scalar, and large-payload persistence. MySQL or MariaDB stores
+durable game state, while Redis can optionally buffer dirty saves and retain
+crash-recovery snapshots. See the full [architecture guide](docs/ARCHITECTURE.md)
+and [database guide](docs/DATABASE.md).
 
-## Database Setup
+## Quick start
 
-### 1. Install and Start MySQL
+The maintained setup path is Debian/Ubuntu, matching the CI workflow and the
+repository's build-dependency manifest.
+
+### 1. Install dependencies
 
 ```bash
-# Start MySQL service
-sudo systemctl start mysql
-sudo systemctl enable mysql
-```
-or
-```bash
-sudo service restart mysql
+sudo apt update
+sudo apt install equivs dos2unix
+equivs-build packaging/duris-build-deps.equivs
+sudo apt install ./duris-build-deps_1.0_all.deb
 ```
 
-### 2. Create Database and User
+The manifest installs the compiler, GNU Make, MariaDB-compatible client and
+server packages, and the XML, compression, TLS, JSON, Redis, BSD, and MySQL
+development libraries required by `src/Makefile`. Redis itself is optional.
 
-**Development Database:**
+On another Linux distribution, use
+[`packaging/duris-build-deps.equivs`](packaging/duris-build-deps.equivs) as the
+authoritative dependency list.
+
+### 2. Configure the server
+
 ```bash
-mysql -u root -p
+cp .env.example .env
 ```
+
+Edit `.env` and set `DB_HOST`, optional `DB_PORT`, `DB_USER`, `DB_PASSWD`, and
+`DB_NAME`. The server loads this file at boot, and the migration scripts use
+the same values. `.env` is ignored by Git and must never be committed.
+
+Set `REDIS=TRUE` with `REDIS_HOST` and `REDIS_PORT` to enable dirty-save
+buffering. If a DurisWeb backend will authenticate through WebSocket or GMCP,
+give it a private `DURISWEB_SECRET`. The remaining switches in `.env.example`
+are documented inline and are intended primarily for local gameplay testing.
+
+### 3. Create a development database
+
+The following matches the names in `.env.example`. Replace
+`CHOOSE_A_PASSWORD` in both the SQL and `.env`.
 
 ```sql
--- Create development database
-CREATE DATABASE duris_dev;
-
--- Create user with privileges
-GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'localhost' IDENTIFIED BY 'duris';
-GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'127.0.0.1' IDENTIFIED BY 'duris';
-FLUSH PRIVILEGES;
-
--- newer versions of MYSQL
-CREATE USER 'duris'@'localhost' IDENTIFIED BY 'duris';
-CREATE USER 'duris'@'127.0.0.1' IDENTIFIED BY 'duris';
-GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'localhost' WITH GRANT OPTION;
-GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'127.0.0.1' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
+CREATE DATABASE IF NOT EXISTS duris_dev
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'duris'@'localhost'
+  IDENTIFIED BY 'CHOOSE_A_PASSWORD';
+ALTER USER 'duris'@'localhost'
+  IDENTIFIED BY 'CHOOSE_A_PASSWORD';
+GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'localhost';
 ```
 
-**Production Database (when ready):**
-```sql
--- Create production database
-CREATE DATABASE duris;
-
--- Grant privileges (use a strong password in production!)
-GRANT ALL PRIVILEGES ON duris.* TO 'duris'@'localhost' IDENTIFIED BY 'your_secure_password';
-GRANT ALL PRIVILEGES ON duris.* TO 'duris'@'127.0.0.1' IDENTIFIED BY 'your_secure_password';
-FLUSH PRIVILEGES;
-
--- newer versions of MYSQL
-CREATE USER 'duris'@'localhost' IDENTIFIED BY 'duris';
-CREATE USER 'duris'@'127.0.0.1' IDENTIFIED BY 'duris';
-GRANT ALL PRIVILEGES ON duris.* TO 'duris'@'localhost' WITH GRANT OPTION;
-GRANT ALL PRIVILEGES ON duris.* TO 'duris'@'127.0.0.1' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
-```
-
-### 3. Import Database Schema
+Load the authoritative fresh-database baseline:
 
 ```bash
-# For development:
-mysql -u duris -p duris_dev < migrations/bootstrap_legacy_baseline.sql
-
-# For production:
-mysql -u duris -p duris < migrations/bootstrap_legacy_baseline.sql
+set -a
+source .env
+set +a
+MYSQL_PWD="$DB_PASSWD" mysql \
+  --host="$DB_HOST" \
+  --port="${DB_PORT:-3306}" \
+  --user="$DB_USER" \
+  "$DB_NAME" < migrations/bootstrap_multithread_safe.sql
 ```
 
-### 4. Apply Migrations
+> [!IMPORTANT]
+> `bootstrap_multithread_safe.sql` is for an empty database. To upgrade an
+> existing populated database, back it up, restore a clone, and run
+> `./migrations/run_migration.sh` against the clone. Never test schema changes
+> on a live database.
 
-This branch does **not** use an in-process automigration feature at boot.
-Run schema changes explicitly with a shell script or direct `mysql` import.
+### 4. Build and start
 
 ```bash
-# Fresh database only: create the complete baseline schema.
-mysql -u duris -p duris_dev < migrations/bootstrap_multithread_safe.sql
-
-# Existing populated database: run the incremental upgrade path.
-./migrations/run_migration.sh
-```
-
-`migrations/bootstrap_multithread_safe.sql` is the authoritative **fresh-database baseline** for this branch.
-
-For an existing populated database, use `migrations/run_migration.sh` instead. The bootstrap uses `CREATE TABLE` definitions and is useful for schema comparison, but it is not an upgrade runner: `CREATE TABLE IF NOT EXISTS` does not add missing columns to an existing table.
-
-The migration runner contains the additive, guarded upgrade steps and is designed to be re-runnable after clone validation. `migrations/run_migration.sh` is the single entrypoint; there is no root-level wrapper.
-
-For a scoped persistence/auction repair on an archive-restored clone, use:
-
-```bash
-# Read-only exact-schema check.
-./migrations/verify_persistence_contract.sh
-
-# Apply only the persistence/auction contract; the confirmation must exactly
-# match DB_NAME from the selected clone configuration.
-./migrations/apply_persistence_contract.sh --confirm-db <clone_database_name>
-```
-
-Do not apply either migration path to an active database without first taking a backup, restoring a clone, and validating replay against that clone.
-
-**Note:** The frag leaderboard tables will be automatically populated as players log in and save. No manual population is needed.
-
-### 5. Import Help Files (Optional)
-
-Help files, news, credits, etc, you can import them to the database:
-
-```bash
-# Edit the script to configure your database settings:
-nano scripts/import_help_to_prod.sh
-# Update: REMOTE_HOST, REMOTE_USER, MYSQL_USER, MYSQL_PASS, MYSQL_DB
-
-# Dry run to see what would be imported:
-./scripts/import_help_to_prod.sh --dry-run
-
-# Import to database:
-./scripts/import_help_to_prod.sh
-```
-
-This imports:
-- Individual help files (motd, news, help, faq, etc.) → `mud_info` and `pages` tables
-- Help index entries (~535 entries) → `pages` table
-- Parsed help file entries → `pages` table
-
-**Note:** This is only needed if you're running the web interface. The MUD itself reads help files directly from disk.
-
-### 6. Link an SSL Certificate
-
-Unless configured otherwise, the game expects the SSL cert and its private
-key as `duris.crt` and `duris.key`.  It's probably most convenient to use
-symlinks for managing them.
-
-For testing, you can use a self-signed certificate.  You can link it via:
-```
-ln -s certs/localhost.crt duris.crt
-ln -s certs/localhost.key duris.key
-```
-
-For a server reachable from the network, though, you should use a real
-certificate.  You can obtain one eg. via Let's Encrypt.  Once you do,
-you need to set up a cronjob to renew it, allow the Duris process to
-read the files, and point the links appropriately, for example:
-```
-ln -s /var/lib/dehydrated/certs/testduris.net/fullchain.pem duris.crt
-ln -s /var/lib/dehydrated/certs/testduris.net/privkey.pem duris.key
-```
-
----
-
-## Compilation
-
-### Standard Build
-
-```bash
-cd src
-make
-cp dms_new ../dms
-```
-
-**Note:** The Makefile compiles to `src/dms_new`, which you then copy to `dms` in the root directory.
-
-### Area File Bootstrap
-
-The runtime expects generated `areas/world.*` files. On a fresh clone, the area-generator helpers may need to be rebuilt first:
-
-```bash
-cd areas/src
-make -j1
-cd ..
-./m_slow
-```
-
-This rebuilds the missing `areas/make_*` helper binaries, then generates the combined `world.*` files used at boot.
-
-### Clean Build
-
-```bash
-cd src
-make clean
-make
-cp dms_new ../dms
-```
-
-### Build Configuration
-
-The build is configured in `src/Makefile`:
-
-- **MySQL Enabled:** MySQL support is enabled by default
-- **Test Mode:** `TEST_MUD` flag is enabled for development builds
-
-To disable MySQL (not recommended):
-```bash
-# Edit src/Makefile and uncomment:
-# CFLAGS += -D__NO_MYSQL__
-```
-
----
-
-## Configuration
-
-### Database Credentials
-
-Database connection settings are **hardcoded** in `src/sql.h` (lines 6-16):
-
-```c
-#ifdef TEST_MUD
-  #define DB_HOST "localhost"
-  #define DB_USER "duris"
-  #define DB_PASSWD "duris"
-  #define DB_NAME "duris_dev"
-#else
-  #define DB_HOST "localhost"
-  #define DB_USER "duris"
-  #define DB_PASSWD "duris"
-  #define DB_NAME "duris"
-#endif
-```
-
-**Important Notes:**
-- These credentials are compiled into the binary
-- Changes require recompilation: `cd src && make clean && make`
-- For production: Change `DB_PASSWD` to a secure password before compiling
-- Default credentials: **user:** `duris`, **password:** `duris`
-
-### Port Configuration
-
-The MUD automatically selects the database based on the port:
-
-- **Port 7777 (default):** Uses production database (`duris`)
-- **Other ports:** Uses development database (`duris_dev`)
-
-This is configured in `src/sql.c` `initialize_mysql()` function.
-
----
-
-## Running the MUD
-
-### Starting the Server
-
-The helper scripts now self-anchor to the repository root, so you can launch them from anywhere as long as the checkout is intact.
-
-**Preferred startup:**
-```bash
+make -C src
 ./scripts/start_mud.sh
 ```
 
-**Direct startup / debugging:**
-```bash
-./scripts/cycle_mud.sh
-```
+The build produces `src/dms_new`. The startup supervisor promotes it to the
+runtime executable `./dms`, regenerates combined `areas/world.*` files, and
+starts the server. Without a configured user service it runs in the background
+and writes console output to `logs/duris-console.log`.
 
-If the area helper binaries are missing, `scripts/cycle_mud.sh` will rebuild them automatically before running `areas/m_slow`.
-
-**Development (port 4000):**
-```bash
-./dms 4000
-```
-
-**Production (port 7777):**
-```bash
-./dms 7777
-# or just:
-./dms
-```
-
-### Running in Background
+For a foreground development session on port 4000, use this instead of
+`start_mud.sh`:
 
 ```bash
-# Using nohup:
-nohup ./dms 7777 > logs/mud.out 2>&1 &
-
-# Using screen:
-screen -S duris
-./dms 7777
-# Press Ctrl+A, D to detach
+./scripts/cycle_mud.sh --dev
 ```
 
-### Stopping the Server
-
-**Graceful shutdown:**
-- Connect as immortal and use `shutdown` command
-
-**Force stop:**
-```bash
-# Find process:
-ps aux | grep duris
-
-# Kill process:
-kill <PID>
-```
-
----
-
-## Connecting
-
-### Using telnet
+## Connect
 
 ```bash
 telnet localhost 7777
 ```
 
-### Using MUD Client
+| Listener | Standard start | `--dev` start |
+| --- | ---: | ---: |
+| Plain telnet | 7777 | 4000 |
+| TLS telnet | 7778 | 4001 |
+| WebSocket | 4050 | 4050 |
 
-Recommended clients:
-- **TinTin++** (Linux/Mac/Windows)
-- **MUSHclient** (Windows)
-- **Mudlet** (Cross-platform)
+The tracked self-signed certificate in `certs/` is an automatic local fallback.
+For a networked deployment, point the ignored root files `duris.crt` and
+`duris.key` at a real certificate and private key, usually with symlinks.
 
-Connect to:
-- **Host:** localhost (or your server IP)
-- **Port:** 7777 (or configured port)
+## Development workflow
 
----
-
-## Troubleshooting
-
-### MySQL Initialization Failed
-
-**Error message:**
-```
-MySQL initialization failed! Dying!
-```
-
-**Common causes and solutions:**
-
-1. **MySQL not running:**
-   ```bash
-   sudo systemctl status mysql
-   sudo systemctl start mysql
-   ```
-   or, more universal:
-   ```
-   sudo service mysql restart
-   ```
-
-2. **Database doesn't exist:**
-   ```bash
-   mysql -u root -p -e "CREATE DATABASE duris_dev;"
-   ```
-
-3. **Wrong credentials:**
-   ```bash
-   # Test connection:
-   mysql -hlocalhost -u duris -p duris_dev
-   # Password: duris
-   ```
-
-4. **User lacks privileges:**
-   ```sql
-   GRANT ALL PRIVILEGES ON duris_dev.* TO 'duris'@'localhost' IDENTIFIED BY 'duris';
-   FLUSH PRIVILEGES;
-   ```
-
-5. **Database schema not loaded:**
-   ```bash
-   mysql -u duris -p duris_dev < migrations/bootstrap_legacy_baseline.sql
-   ```
-
-### Check Logs
+Build after changing C/C++ code, then run the smallest relevant regression
+test:
 
 ```bash
-# Status log (MySQL connection, etc.):
-tail -f logs/log/status
-
-# System log (game events):
-tail -f logs/log/syslog
-
-# Command log (player commands):
-tail -f logs/log/cmdlog
+make -C src
+python3 tests/async/test_wear_all_regression.py
 ```
 
-### Compilation Errors
+Tests under `tests/async/` are focused Python regression or source-contract
+checks; MySQL-backed wrappers are named `run_*_mysql.sh` and must target a
+development clone. There is intentionally no single catch-all test command.
+See [Testing](docs/TESTING.md) for the available test styles and examples.
 
-**Missing MySQL library:**
-```bash
-sudo apt-get install libmysqlclient-dev
-```
-
-**Undefined references:**
-```bash
-# Clean and rebuild:
-cd src
-make clean
-make
-```
-
----
-
-## Development vs Production
-
-### Development Mode
-
-**Characteristics:**
-- Uses `duris_dev` database
-- Runs on non-7777 ports (e.g., 4000, 4001)
-- `TEST_MUD` flag enabled in compilation
-- Safe for testing without affecting production
-
-**Running:**
-```bash
-./dms 4000
-```
-
-**Memory and thread checking:**
-```bash
-./scripts/valgrind_mud.sh              # memcheck on port 4000
-./scripts/valgrind_mud.sh --tool=helgrind
-```
-Reports land in `logs/valgrind/`. The script refuses port 7777. See
-[docs/valgrind.md](docs/valgrind.md).
-
-### Production Mode
-
-**Characteristics:**
-- Uses `duris` database
-- Runs on port 7777 (default)
-- Production-grade database credentials recommended
-- Affects live player data
-
-**Running:**
-```bash
-./dms 7777
-```
-
-**Security recommendations:**
-- Change database password from default `duris`
-- Update `src/sql.h` with secure credentials
-- Recompile after credential changes
-- Use firewall rules to restrict MySQL access
-- Regular database backups
-
----
-
-## Database Migrations
-
-### Applying Migrations
-
-Migrations are SQL scripts in the `migrations/` directory.
-
-**To apply a migration:**
-```bash
-# Development:
-mysql -u duris -p duris_dev < migrations/migration_name.sql
-
-# Production:
-mysql -u duris -p duris < migrations/migration_name.sql
-```
-
-### Available Migrations
-
-1. **add_frag_leaderboard_tables.sql**
-   - Adds `account_characters` and `frag_leaderboard` tables
-   - Required for web leaderboard integration
-   - Safe to run multiple times (uses `IF NOT EXISTS`)
-   - Tables will automatically populate as players log in and save
-
-### Creating New Migrations
-
-1. Create the SQL file in `migrations/`
-2. Use descriptive filename (e.g., `add_feature_name.sql`)
-3. Include header comment with purpose and date
-4. Use `IF NOT EXISTS` or `IF EXISTS` for idempotency
-5. Test on development database first
-
----
-
-## Project Structure
-
-```
-DurisMUD/
-├── src/               # C source code
-│   ├── sql.c          # MySQL integration
-│   ├── sql.h          # Database configuration
-│   ├── files.c        # Player file I/O
-│   ├── comm.c         # Network communication
-│   ├── nanny.c        # Login handler
-│   └── ...
-├── src-migrate/       # Standalone migration/conversion tools (pfile_converter, ...)
-├── lib/               # Game data files
-│   ├── information/   # Help files
-│   ├── etc/           # Configuration files
-│   └── ...
-├── areas/             # Zone/area files
-├── Players/           # Player save files
-│   └── {a-z}/         # Organized by first letter
-├── Accounts/          # Account files
-│   └── {a-z}/         # Organized by first letter
-├── logs/              # Log files
-│   ├── log/           # System logs
-│   │   ├── status     # MySQL and system status
-│   │   ├── syslog     # Game events
-│   │   └── cmdlog     # Player commands
-│   └── valgrind/      # Valgrind reports (gitignored)
-├── migrations/        # Database migrations (authoritative runner lives here)
-├── scripts/           # Operational scripts (start_mud.sh, cycle_mud.sh, gdbdms, valgrind_mud.sh, format.sh, ...)
-│   └── git-hooks/     # Versioned git hooks (install with scripts/install-hooks.sh)
-├── help/              # Help source files (*.hlp) and the help style guide
-├── certs/             # Self-signed/testing certificates
-├── packaging/         # Build-dependency packaging (equivs)
-├── archives/          # Seed/backup tarballs
-├── attic/             # Retired areas, lib data and old_code/
-├── docs/              # Documentation
-├── tests/             # Test suites
-└── dms                # Compiled binary
-```
-
-Scripts under `scripts/` cd to the repository root themselves, so they can be
-run from anywhere (`./scripts/start_mud.sh`).
-
-
-### Important Files
-
-- **dms** - Compiled MUD executable
-- **src/sql.h** - Database credentials and configuration
-- **src/config.h** - MUD configuration (port, directories, etc.)
-- **migrations/bootstrap_legacy_baseline.sql** - Main database schema
-- **logs/log/status** - MySQL connection logs
-- **logs/log/syslog** - Main game log
-
----
-
-## Logs
-
-### Log Locations
-
-All logs are in `logs/log/` directory:
-
-| Log File | Purpose | When to Check |
-|----------|---------|---------------|
-| **status** | MySQL connections, system status | Database connection issues |
-| **syslog** | Game events, player actions | General debugging |
-| **cmdlog** | Player commands | Command debugging |
-| **wizlog** | Immortal commands | Admin actions |
-
-### Viewing Logs
+Format only touched C/C++ lines so legacy diffs stay reviewable:
 
 ```bash
-# Real-time monitoring:
-tail -f logs/log/status
-tail -f logs/log/syslog
-
-# Search for errors:
-grep -i error logs/log/status
-grep -i mysql logs/log/status
-
-# View recent entries:
-tail -100 logs/log/status
+./scripts/format.sh
+./scripts/format.sh --check
 ```
 
----
+Install the repository's pre-commit hook with `./scripts/install-hooks.sh`.
+Sanitizer and Valgrind workflows are covered in
+[Building](docs/BUILDING.md) and [Valgrind](docs/valgrind.md).
 
-## Contributing
+## Repository map
 
-### Code Style
+| Path | Purpose |
+| --- | --- |
+| `src/` | Server sources and `Makefile`; builds `src/dms_new` with `g++`. |
+| `areas/` | World sources, compilers, and generated `world.*` boot files. |
+| `lib/` | Runtime configuration, help, boards, descriptions, and game data. |
+| `migrations/` | Fresh schema, upgrade runner, and schema-contract tools. |
+| `scripts/` | Launch, backup, formatting, debugging, and maintenance helpers. |
+| `tests/async/` | Focused regression, source-contract, and DB-backed tests. |
+| `src-migrate/` | Standalone legacy player/account conversion tools. |
+| `docs/` | Architecture, operations, database, test, and builder guides. |
 
-`.clang-format` at the repository root is authoritative for C/C++. It is a
-Linux-kernel-derived style: **hard tabs at width 8**, Allman braces, 100-column
-lines, pointers bound to the name (`char *p`).
-
-The whole C/C++ tree is formatted to this style. Day to day, format just the
-lines you changed so diffs stay reviewable:
-
-```bash
-./scripts/format.sh              # format your changed lines in place
-./scripts/format.sh --check      # verify without changing anything
-./scripts/format.sh --all        # re-format every tracked C/C++ file
-./scripts/format.sh --all --check   # verify the whole tree (~12s)
-```
-
-Install the pre-commit hook once per clone so staged C/C++ changes are
-auto-formatted before every commit:
-
-```bash
-./scripts/install-hooks.sh
-```
-
-- Comment complex logic
-- Follow the style of the nearby legacy code
-- Test thoroughly before committing
-
-Details and editor setup: [docs/formatting.md](docs/formatting.md).
-
-### Committing Changes
-
-```bash
-# Create a new feature branch:
-git checkout -b feature/your-feature-name
-
-# Stage changes:
-git add <files>
-
-# Commit with descriptive message:
-git commit -m "Brief description of changes"
-
-# Push branch to remote:
-git push origin feature/your-feature-name
-
-# Create pull request using GitHub CLI:
-gh pr create --title "Your feature title" --body "Detailed description of changes"
-```
-
-**Note:** All changes should go through pull requests for code review before merging to master.
-
----
+Runtime state belongs under `Players/`, `Accounts/`, `Ships/`, and `logs/`.
+Do not commit player data, credentials, logs, generated binaries, or backup
+archives.
 
 ## Documentation
 
-Deeper documentation lives in [`docs/`](docs/README.md):
+| Guide | Covers |
+| --- | --- |
+| [Architecture](docs/ARCHITECTURE.md) | Process model, boot, game loop, networking, persistence. |
+| [Codebase](docs/CODEBASE.md) | Module-by-module map of the server sources. |
+| [Building](docs/BUILDING.md) | Build flags, areas, sanitizers, verification. |
+| [Database](docs/DATABASE.md) | Connections, async saves, schema, migrations. |
+| [Runbook](docs/RUNBOOK.md) | Restarts, logs, backups, recovery, operations. |
+| [Testing](docs/TESTING.md) | Test layout, commands, and conventions. |
+| [Formatting](docs/formatting.md) | Style, changed-line formatting, and editors. |
+| [Help system](docs/HELP_SYSTEM.md) | Help sources, database import, and rendering. |
 
-- [Architecture](docs/ARCHITECTURE.md) — process model, game loop, persistence, networking
-- [Codebase Guide](docs/CODEBASE.md) — module map of `src/`
-- [Building](docs/BUILDING.md) — build flags, area-file generation, sanitizer builds
-- [Database](docs/DATABASE.md) — connection handling, async persistence, migrations
-- [Runbook](docs/RUNBOOK.md) — operations: restart codes, logs, backups, crash recovery
-- [Testing](docs/TESTING.md) — regression/source-contract test harness
-- [Formatting](docs/formatting.md) — `.clang-format` style and `scripts/format.sh`
-- [Help System](docs/HELP_SYSTEM.md) — in-game help pipeline
+The complete index, including builder references and standalone diagrams, is
+in [`docs/README.md`](docs/README.md).
 
----
+[build]: https://github.com/moshehbenavraham/DurisMUD/actions/workflows/build.yml
+[build-badge]: https://img.shields.io/github/actions/workflow/status/moshehbenavraham/DurisMUD/build.yml?branch=master&style=flat-square&logo=githubactions&logoColor=white&label=build
+[commit-badge]: https://img.shields.io/github/last-commit/moshehbenavraham/DurisMUD?style=flat-square&logo=github
+[commits]: https://github.com/moshehbenavraham/DurisMUD/commits/master
+[compiler-badge]: https://img.shields.io/badge/compiler-g%2B%2B-A42E2B?style=flat-square&logo=gnu&logoColor=white
+[cpp20-badge]: https://img.shields.io/badge/C%2B%2B-20-00599C?style=flat-square&logo=cplusplus&logoColor=white
+[database-badge]: https://img.shields.io/badge/database-MySQL%20%2F%20MariaDB-4479A1?style=flat-square&logo=mysql&logoColor=white
+[format-badge]: https://img.shields.io/badge/style-clang--format-262D3A?style=flat-square&logo=llvm&logoColor=white
+[formatting]: docs/formatting.md
+[issues]: https://github.com/moshehbenavraham/DurisMUD/issues
+[issues-badge]: https://img.shields.io/github/issues/moshehbenavraham/DurisMUD?style=flat-square&logo=github
+[linux-badge]: https://img.shields.io/badge/platform-Linux-FCC624?style=flat-square&logo=linux&logoColor=black
+[redis-badge]: https://img.shields.io/badge/Redis-optional-DC382D?style=flat-square&logo=redis&logoColor=white
+[tls-badge]: https://img.shields.io/badge/TLS-GnuTLS-386892?style=flat-square&logo=gnu&logoColor=white
+[websocket-badge]: https://img.shields.io/badge/WebSocket-RFC%206455-010101?style=flat-square
