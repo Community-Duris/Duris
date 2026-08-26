@@ -2406,7 +2406,7 @@ struct char_obj_link_data
 
 struct link_description
 {
-	char *name;
+	const char *name;
 	union
 	{
 		link_breakage_func ch;

@@ -6650,12 +6650,15 @@ int orcus_wand(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-void prepare_wall_messages(char *color_string, char *ch_buffer, char *room_buffer)
+/* size is the caller's real buffer size; this used to format with
+   MAX_STRING_LENGTH into 512-byte buffers. */
+void prepare_wall_messages(const char *color_string, char *ch_buffer, char *room_buffer,
+			   size_t size)
 {
-	snprintf(ch_buffer, MAX_STRING_LENGTH,
+	snprintf(ch_buffer, size,
 		 "...and are enveloped by a %s&N field as you try to pass through it.",
 		 color_string);
-	snprintf(room_buffer, MAX_STRING_LENGTH,
+	snprintf(room_buffer, size,
 		 "...and is enveloped by a %s&N field as $e tries to pass through it.",
 		 color_string);
 }
@@ -7068,31 +7071,38 @@ int wall_generic(P_obj obj, P_char ch, int cmd, char *arg)
 		switch (number(0, 6))
 		{
 		case 0:
-			prepare_wall_messages("&+rred", char_message, room_message);
+			prepare_wall_messages("&+rred", char_message, room_message,
+					      sizeof char_message);
 			dam = 100;
 			break;
 		case 1:
-			prepare_wall_messages("&+Rorange", char_message, room_message);
+			prepare_wall_messages("&+Rorange", char_message, room_message,
+					      sizeof char_message);
 			dam = 70;
 			break;
 		case 2:
-			prepare_wall_messages("&+Yyellow", char_message, room_message);
+			prepare_wall_messages("&+Yyellow", char_message, room_message,
+					      sizeof char_message);
 			dam = 40;
 			break;
 		case 3:
-			prepare_wall_messages("&+Bblue", char_message, room_message);
+			prepare_wall_messages("&+Bblue", char_message, room_message,
+					      sizeof char_message);
 			spl = SPELL_MINOR_PARALYSIS;
 			break;
 		case 4:
-			prepare_wall_messages("&+bindigo", char_message, room_message);
+			prepare_wall_messages("&+bindigo", char_message, room_message,
+					      sizeof char_message);
 			spl = SPELL_FEEBLEMIND;
 			break;
 		case 5:
-			prepare_wall_messages("&+ggreen", char_message, room_message);
+			prepare_wall_messages("&+ggreen", char_message, room_message,
+					      sizeof char_message);
 			spl = SPELL_POISON;
 			break;
 		case 6:
-			prepare_wall_messages("&+bazure", char_message, room_message);
+			prepare_wall_messages("&+bazure", char_message, room_message,
+					      sizeof char_message);
 			spl = SPELL_BLINDNESS;
 			break;
 		}

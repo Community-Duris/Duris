@@ -55,7 +55,7 @@ extern const char *get_function_name(void *);
 extern bool has_skin_spell(P_char);
 extern bool exit_wallable(int room, int dir, P_char ch);
 extern bool create_walls(int room, int exit, P_char ch, int level, int type, int power, int decay,
-			 char *short_desc, char *desc, ulong flags);
+			 const char *short_desc, const char *desc, ulong flags);
 
 #define WIND_BLADE 98
 

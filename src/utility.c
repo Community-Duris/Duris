@@ -7137,7 +7137,7 @@ P_desc get_descriptor_from_name(char *name)
 // coins is a bitstring representing whether or not to print each coin type.
 // and_pos is the place to put the and (before the last non-zero coin type iff there's a preceding type).
 // This is kinda long, but it should be easy enough to read.
-char *coins_to_string(int platinum, int gold, int silver, int copper, char *color_string)
+char *coins_to_string(int platinum, int gold, int silver, int copper, const char *color_string)
 {
 	static char ret_string[MAX_STRING_LENGTH];
 	int coins, and_pos, pos1, pos2;

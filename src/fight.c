@@ -88,7 +88,7 @@ extern struct wis_app_type wis_app[];
 int pv_common(P_char, P_char, const P_obj, int *);
 bool monk_superhit(P_char, P_char, int *);
 extern char *arena_death_msg(P_obj p_weapon);
-extern void send_to_arena(char *msg, int race);
+extern void send_to_arena(const char *msg, int race);
 extern int get_numb_chars_in_group(struct group_list *group);
 extern int get_number_allies_in_room(P_char ch, int room_index);
 extern P_char misfire_check(P_char ch, P_char spell_target, int flag);

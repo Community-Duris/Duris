@@ -69,7 +69,7 @@ extern const char *connected_types[];
 
 static char buf[MAX_INPUT_LENGTH];
 
-void send_to_arena(char *msg, int race);
+void send_to_arena(const char *msg, int race);
 extern void timedShutdown(P_char ch, P_char, P_obj, void *data);
 // void disarm_obj_events(P_obj obj, event_func func);
 int map_view_distance(P_char ch, int room);

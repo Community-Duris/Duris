@@ -699,7 +699,7 @@ void do_gcc(P_char ch, char *argument, int /*cmd*/)
 }
 
 // Sends a message to each person in-game and in guild.
-void send_to_guild(P_Guild guild, char *name, char *arg)
+void send_to_guild(P_Guild guild, const char *name, const char *arg)
 {
 	P_desc i;
 	char Gbuf1[MAX_STRING_LENGTH];

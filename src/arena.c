@@ -78,7 +78,7 @@ int loadmap(int map)
 	return TRUE;
 }
 
-void send_to_arena(char *msg, int race)
+void send_to_arena(const char *msg, int race)
 {
 	int i;
 	P_desc d;

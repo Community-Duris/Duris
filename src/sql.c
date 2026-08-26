@@ -148,7 +148,7 @@ void show_frag_trophy(P_char ch, P_char who)
 {
 	send_to_char("Disabled.", ch);
 }
-void sql_log(P_char ch, char *kind, char *format, ...)
+void sql_log(P_char ch, const char *kind, const char *format, ...)
 {
 	if (!ch)
 	{
@@ -2435,7 +2435,7 @@ void show_frag_trophy(P_char ch, P_char who)
 	mysql_free_result(res);
 }
 
-void sql_log(P_char ch, char *kind, char *format, ...)
+void sql_log(P_char ch, const char *kind, const char *format, ...)
 {
 	static char buff[MAX_STRING_LENGTH];
 	buff[0] = '\0';

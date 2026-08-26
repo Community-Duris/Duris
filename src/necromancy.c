@@ -26,7 +26,7 @@ extern const int rev_dir[];
 
 extern bool exit_wallable(int room, int dir, P_char ch);
 extern bool create_walls(int room, int exit, P_char ch, int level, int type, int power, int decay,
-			 char *short_desc, char *desc, ulong flags);
+			 const char *short_desc, const char *desc, ulong flags);
 P_obj get_object_from_char(P_char owner, int vnum);
 
 bool isCarved(P_obj corpse);

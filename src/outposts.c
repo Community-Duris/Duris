@@ -53,7 +53,7 @@ extern BuildingType building_types[];
 extern const char *dirs[];
 extern const int rev_dir[NUM_EXITS];
 extern bool create_walls(int room, int exit, P_char ch, int level, int type, int power, int decay,
-			 char *short_desc, char *desc, ulong flags);
+			 const char *short_desc, const char *desc, ulong flags);
 extern vector<Building *> buildings;
 extern const long boot_time;
 

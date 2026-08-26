@@ -289,17 +289,20 @@ int get_spell_component(P_char ch, int vnum, int max_components)
 #define RAY_RED BIT_8
 #define RAY_COUNT 8
 
-void prepare_ray_messages(char *color_string, char *ch_buffer, char *vict_buffer, char *room_buffer)
+/* size is the caller's real buffer size; this used to format with
+   MAX_STRING_LENGTH into 512-byte buffers. */
+void prepare_ray_messages(const char *color_string, char *ch_buffer, char *vict_buffer,
+			  char *room_buffer, size_t size)
 {
-	snprintf(ch_buffer, MAX_STRING_LENGTH, "You send a %s shaft of light streaking towards $N!",
+	snprintf(ch_buffer, size, "You send a %s shaft of light streaking towards $N!",
 		 color_string);
-	snprintf(vict_buffer, MAX_STRING_LENGTH,
-		 "$n sends a %s shaft of light streaking towards YOU!", color_string);
-	snprintf(room_buffer, MAX_STRING_LENGTH,
-		 "$n sends a %s shaft of light streaking towards $N!", color_string);
+	snprintf(vict_buffer, size, "$n sends a %s shaft of light streaking towards YOU!",
+		 color_string);
+	snprintf(room_buffer, size, "$n sends a %s shaft of light streaking towards $N!",
+		 color_string);
 }
 
-void show_ray_messages(char *color_string, P_char ch, P_char victim)
+void show_ray_messages(const char *color_string, P_char ch, P_char victim)
 {
 	char buffer[512];
 
@@ -336,26 +339,29 @@ void spell_single_prismatic_ray(int level, P_char ch, char *arg, int /*type*/, P
 	{
 	case 0:
 		prepare_ray_messages("&+rsh&+Ri&+Ym&n&+gm&+be&+Br&+Mi&n&+mng&+L", char_message,
-				     victim_message, room_message);
+				     victim_message, room_message, sizeof char_message);
 		spell_damage(ch, victim, dice(level, 9), SPLDAM_GENERIC, 0, &messages);
 		break;
 	case RAY_RED:
 		dam = 400 + dice(level, 2);
-		prepare_ray_messages("&+rred&+w", char_message, victim_message, room_message);
+		prepare_ray_messages("&+rred&+w", char_message, victim_message, room_message,
+				     sizeof char_message);
 		if (NewSaves(victim, SAVING_SPELL, mod))
 			dam >>= 1;
 		spell_damage(ch, victim, dam, SPLDAM_FIRE, 0, &messages);
 		break;
 	case RAY_ORANGE:
 		dam = 275 + dice(level, 2);
-		prepare_ray_messages("&+Rorange&n", char_message, victim_message, room_message);
+		prepare_ray_messages("&+Rorange&n", char_message, victim_message, room_message,
+				     sizeof char_message);
 		if (NewSaves(victim, SAVING_SPELL, mod))
 			dam >>= 1;
 		spell_damage(ch, victim, dam, SPLDAM_FIRE, 0, &messages);
 		break;
 	case RAY_BLUE:
 		dam = 150 + dice(level, 2);
-		prepare_ray_messages("&+Bblue&n", char_message, victim_message, room_message);
+		prepare_ray_messages("&+Bblue&n", char_message, victim_message, room_message,
+				     sizeof char_message);
 		if (NewSaves(victim, SAVING_SPELL, mod))
 			dam >>= 1;
 		spell_damage(ch, victim, dam, SPLDAM_COLD, 0, &messages);

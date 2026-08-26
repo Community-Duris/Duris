@@ -1867,8 +1867,8 @@ struct affected_type *affect_to_char(P_char ch, struct affected_type *af)
 	return affected_alloc;
 }
 
-void affect_to_char_with_messages(P_char ch, struct affected_type *af, char *wear_off_char,
-				  char *wear_off_room)
+void affect_to_char_with_messages(P_char ch, struct affected_type *af, const char *wear_off_char,
+				  const char *wear_off_room)
 {
 	struct affected_type *affected_alloc;
 	Skill *skill;
@@ -2694,7 +2694,7 @@ void remove_counter(P_char ch, int tag, int modifier)
  */
 
 //---------------------------------------------------------------------------------
-void define_link(int type, char *name, link_breakage_func break_func, int flags)
+void define_link(int type, const char *name, link_breakage_func break_func, int flags)
 {
 	link_types[type].name = name;
 	link_types[type].break_func.ch = break_func;
@@ -2702,7 +2702,7 @@ void define_link(int type, char *name, link_breakage_func break_func, int flags)
 	link_types[type].flags = flags & ~LNKFLG_OBJECT;
 }
 
-void define_olink(int type, char *name, link_obj_breakage_func break_func, int flags)
+void define_olink(int type, const char *name, link_obj_breakage_func break_func, int flags)
 {
 	link_types[type].name = name;
 	link_types[type].break_func.obj = break_func;

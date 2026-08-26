@@ -140,7 +140,7 @@ void do_gossip(P_char, char *, int);
 void do_insult(P_char, char *, int);
 /*bool CAN_GCC(P_char);*/
 void do_gcc(P_char, char *, int);
-void send_to_guild(P_Guild, char *, char *);
+void send_to_guild(P_Guild, const char *, const char *);
 void do_project(P_char, char *, int);
 void do_page(P_char, char *, int);
 void do_petition(P_char, char *, int);
@@ -1210,7 +1210,7 @@ int counter(P_char ch, int tag);
 void affect_join(P_char, struct affected_type *, int, int);
 void affect_remove(P_char, struct affected_type *);
 struct affected_type *affect_to_char(P_char, struct affected_type *);
-void affect_to_char_with_messages(P_char, struct affected_type *, char *, char *);
+void affect_to_char_with_messages(P_char, struct affected_type *, const char *, const char *);
 struct room_affect *affect_to_room(int, struct room_affect *);
 void affect_room_remove(int, struct room_affect *);
 char affect_total(P_char, int);

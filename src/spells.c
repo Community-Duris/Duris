@@ -47,7 +47,7 @@ extern const struct race_names race_names_table[];
 extern struct time_info_data time_info;
 extern bool exit_wallable(int room, int dir, P_char ch);
 extern bool create_walls(int room, int exit, P_char ch, int level, int type, int power, int decay,
-			 char *short_desc, char *desc, ulong flags);
+			 const char *short_desc, const char *desc, ulong flags);
 
 void cast_call_lightning(int level, P_char ch, char * /*arg*/, int type, P_char victim,
 			 P_obj tar_obj)
@@ -2615,7 +2615,7 @@ void cast_bloodstone(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
  * returns true if direction was walled succesfully, will always happen unless zone files are broken etc.
  */
 bool create_walls(int room, int exit, P_char ch, int level, int type, int power, int decay,
-		  char *short_desc, char *desc, ulong flags)
+		  const char *short_desc, const char *desc, ulong flags)
 {
 	P_obj wall_inside;
 	P_obj wall_outside;
