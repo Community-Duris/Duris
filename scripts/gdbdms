@@ -1,23 +1,67 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+set -euo pipefail
 
 # Always run from the repository root so relative paths resolve correctly.
 cd "$(dirname "$0")/.." || exit 1
 
-ulimit -c unlimited
+PORT="${1:-4000}"
 
-if [ "$1" ]; then
-  PORT="$1"
-else
-  PORT=7788
+usage() {
+  cat <<'USAGE'
+Usage: scripts/gdbdms [port]
+
+Start the normal development binary under GDB. The default port is 4000;
+production port 7777 is always refused.
+USAGE
+}
+
+if (( $# > 1 )); then
+  usage >&2
+  exit 2
 fi
 
-mv src/dms_new dms
+if [[ "$PORT" == "-h" || "$PORT" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+if ! [[ "$PORT" =~ ^[0-9]+$ ]] || (( PORT < 1024 || PORT > 65535 )); then
+  echo "ERROR: port must be a number between 1024 and 65535." >&2
+  exit 2
+fi
+
+if (( PORT == 7777 )); then
+  echo "ERROR: port 7777 is the production port/database; refusing to run." >&2
+  echo "       Pick a development port, e.g. 4000." >&2
+  exit 2
+fi
+
+if ! command -v gdb >/dev/null 2>&1; then
+  echo "ERROR: gdb is not installed." >&2
+  echo "       Install packaging/duris-build-deps.equivs first." >&2
+  exit 1
+fi
+
+if ! command -v nm >/dev/null 2>&1; then
+  echo "ERROR: nm is not installed (it is supplied by binutils/build-essential)." >&2
+  exit 1
+fi
+
+if [[ ! -x src/dms_new ]]; then
+  echo "ERROR: src/dms_new not found. Run 'make -C src' first." >&2
+  exit 1
+fi
+
+ulimit -c unlimited 2>/dev/null || echo "WARNING: could not enable unlimited core dumps." >&2
+
+cp -f src/dms_new dms
 
 echo "Generating list of function names.."
 nm --demangle dms | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
 
-echo "Starting duris test enviornment..."
-gdb -q \
+echo "Starting Duris development environment on port ${PORT}..."
+exec gdb -q \
   -ex "set pagination off" \
   -ex "set debuginfod enabled on" \
   -ex "run ${PORT}" \

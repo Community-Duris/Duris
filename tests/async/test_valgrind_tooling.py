@@ -90,11 +90,16 @@ if valgrind:
     assert probe.returncode == 0, f"valgrind rejected the suppression file:\n{probe.stderr}"
 
 # --------------------------------------------------------------------------
-# 4. The dependency and the docs are declared where a fresh clone will see it.
+# 4. The diagnostic dependencies and docs are declared where a fresh clone
+#    will see them. GDB is direct rather than relying on Valgrind's optional
+#    package recommendation.
 # --------------------------------------------------------------------------
 equivs = (ROOT / "packaging/duris-build-deps.equivs").read_text()
 depends = equivs.split("Depends:", 1)[1].split("Suggests:", 1)[0]
 assert "valgrind" in depends, "valgrind is not a declared build dependency"
+assert re.search(r"^\s*gdb,?$", depends, re.MULTILINE), (
+    "gdb is not a direct developer dependency"
+)
 
 readme = (ROOT / "README.md").read_text()
 assert "valgrind" in readme.lower(), "README.md does not mention valgrind"

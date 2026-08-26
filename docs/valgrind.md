@@ -70,4 +70,7 @@ comment saying why the library cannot free that allocation.
   better at stack/global overflows; Valgrind needs no rebuild and catches
   uninitialised reads that ASan misses. Use whichever fits, not both at once
   (the sanitizer runtime and Valgrind conflict).
-- `scripts/gdbdms` — plain gdb session on the same binary.
+- `scripts/gdbdms` — plain GDB session on the same binary, defaulting to
+  development port 4000 and refusing production port 7777. GDB is declared
+  directly in the developer dependency manifest rather than relying on
+  Valgrind's package recommendation.
