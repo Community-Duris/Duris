@@ -44,7 +44,7 @@ void set_npc_multi(P_char ch)
 void convertMob(P_char ch)
 {
 	float xp, copp, silv, gold, plat;
-	int damN, damS, damA, hits, level, x, xhigh;
+	int damN, damS, damA, hits, level, x;
 
 	if (!ch || IS_PC(ch))
 		return;
@@ -215,7 +215,6 @@ void convertMob(P_char ch)
 		GET_PLATINUM(ch) *= 4;
 
 	/* finally, rarefy valuable platinum */
-	xhigh = GET_PLATINUM(ch);
 	/* make sure they get at least 1 coin... */
 	if (!GET_MONEY(ch))
 		GET_COPPER(ch) = 1;

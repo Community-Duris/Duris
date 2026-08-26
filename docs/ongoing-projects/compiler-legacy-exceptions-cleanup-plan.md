@@ -311,12 +311,12 @@ Update this table at the end of each day from a clean inventory build:
 | Category | Baseline | Current | Exception removed? |
 |---|---:|---:|:---:|
 | `unused-function` | 7 | 0 | **Yes** |
-| `unused-but-set-variable` | 160 | 160 | No |
+| `unused-but-set-variable` | 160 | 0 | **Yes** |
 | `missing-field-initializers` | 546 | 546 | No |
-| `unused-variable` | 1,434 | 1,434 | No |
-| `unused-parameter` | 4,670 | 4,668 | No |
-| `write-strings` | 3,130 | 3,130 | No |
-| **Total** | **9,947** | **9,938** | — |
+| `unused-variable` | 1,434 | 1,425 | No |
+| `unused-parameter` | 4,670 | 4,671 | No |
+| `write-strings` | 3,130 | 3,129 | No |
+| **Total** | **9,947** | **9,771** | — |
 
 ## 8. Execution Log
 
@@ -347,3 +347,58 @@ succeeds with `-Wunused-function` fatal; all `tests/async/test_*.py` contracts p
 Record behavioral defects separately from mechanical cleanups. The most important result of this project is
 not the warning count reaching zero; it is making the compiler's future signal trustworthy without hiding
 real mistakes in legacy-noise categories.
+
+### Day 2 — `unused-but-set-variable` (complete)
+
+All 160 warnings across 60 files are resolved and `-Wno-unused-but-set-variable` is removed.
+
+**Dispositions used**
+
+| Disposition | Count (approx.) | Notes |
+|---|---:|---|
+| Dead assignment (reader removed or commented out) | ~120 | Removed the declaration and its assignments; every call with side effects was kept. |
+| Feature-gated | 3 | Moved the declaration and assignment inside the `#if` that holds their only consumer. |
+| Format/interface slot | 12 | `files.c` pfile-header reads, marked `[[maybe_unused]]` with the reason; the reads must stay to keep the save-file cursor aligned. |
+| Missing consumer, repaired | 3 | See defects below. |
+| Unreachable code behind an early `return` | 2 | `do_artireset`, and the disabled `boon_random_maintenance` accumulator. |
+
+**Behavioral defects found and repaired**
+
+1. `sql_player.c` `sql_save_player_status` — the `snprintf` return for the player-save
+   `INSERT`/`UPDATE` was discarded, so a query longer than the 16 KB buffer was silently truncated and
+   handed to MySQL as malformed SQL. Now detected: the save logs the overflow, rolls back its own
+   transaction if it opened one, and returns failure.
+2. `artifact.c` `arti_player_sql` — `artifact player <name>` printed nothing at all when the query
+   returned rows but every row was filtered out by `locType`. Restored the `!shownData` report that the
+   sibling artifact listing already had.
+3. `artifact.c` `event_artifact_wars` — read the `artifact.wars.modifier` property into a local that was
+   never applied, and declared a `punishment` local that was never even assigned. The penalty is not
+   implemented; the misleading property read is gone rather than left implying it does something.
+
+**Unimplemented features made explicit rather than silently deleted**
+
+- `nq.c`: the `<class>` and `<race>` quest handlers are empty stubs, so the `listedclasses` and
+  `listedraces` allow/deny modes were parsed into locals nothing read. The stubs now say what a real
+  handler has to do instead of carrying a bare `//!!!`.
+- `epic.c`: `epic_stone_feed_artifacts` computed a feed amount, used it for nothing, and had no callers.
+  Removed from both the source and `epic.h`.
+- `boon.c`: `boon_random_maintenance` is disabled by a leading `return` and its `create_boon` call is
+  still commented out. Documented, and its unread `id[]` collection dropped.
+- `range.c`: `ITEM_RETURNING` set flags nothing consumed, leaving `if`/`else` branches already identical
+  in effect. Collapsed with a note.
+
+**Adjacent defects observed but not changed** (out of this project's scope; recorded so they are not lost)
+
+- `actoth.c` `do_fly` and `do_swim` both test `if (!*buf)` before `buf` is initialized — `argument_interpreter`
+  / `one_argument` fill it only afterwards. This reads uninitialized stack memory on every invocation.
+- `sql_player.c` `sql_load_all_corpses` — the two `last_item_id = item_id; continue;` paths taken when an
+  object fails to load leave `num_objs` unchanged, so a following affect row for the same item can match the
+  "same item, another affect" branch and apply the affect to `obj_map[num_objs - 1]`, a different object.
+
+**Validation:** `./scripts/format.sh --check` clean; `git diff --check` clean; `make -C src clean &&
+make -C src -j14` succeeds with `-Wunused-but-set-variable` fatal; all `tests/async/test_*.py` pass.
+
+**Tooling note:** `scripts/warning-inventory.sh` grew a companion scratch helper for this pass; the rule it
+enforces is worth keeping in mind for the remaining categories — never delete an assignment statement whose
+right-hand side calls anything but a known-pure helper. `generic_find()` in particular returns a bitmask that
+most callers ignore while depending entirely on the character/object it writes through its out-parameters.

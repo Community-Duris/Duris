@@ -2002,7 +2002,6 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 	char enterWho[MAX_INPUT_LENGTH];
 	int locker_room;
 	struct zone_data *zone;
-	int is_guild_locker = 0;
 
 	char lockerName[500];
 	int bValidate = 0;
@@ -2061,7 +2060,6 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 	}
 
 	snprintf(enterWho, MAX_INPUT_LENGTH, "guild.%d", GET_ASSOC(ch)->get_id());
-	is_guild_locker = 1;
 
 	checked_snprintf(lockerName, 500, "%s.locker", enterWho);
 
@@ -2134,7 +2132,7 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 		return FALSE;
 
 	troom = locker_exit_room(ch, room);
-	int bits, wtype, craft, mat;
+	int wtype, craft, mat;
 	P_char tmp_char;
 	P_obj tmp_object;
 	float result_space;
@@ -2175,7 +2173,7 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 			return TRUE;
 		}
 
-		bits = generic_find(name, FIND_OBJ_INV, ch, &tmp_char, &tmp_object);
+		generic_find(name, FIND_OBJ_INV, ch, &tmp_char, &tmp_object);
 
 		// 1000 = 1 plat, 100 = 1 gold
 		cost = get_property("locker.stat.cost", 100);

@@ -775,11 +775,10 @@ void string_add(struct descriptor_data *d, char *str)
 {
 	int terminator = 0, num = 0;
 	int i = 2, j = 0;
-	char actions[MAX_INPUT_LENGTH], *ch_ptr, buf1[MAX_STRING_LENGTH];
+	char actions[MAX_INPUT_LENGTH], *ch_ptr;
 	FILE *fl;
 
 	actions[0] = '\0';
-	buf1[0] = '\0';
 
 	/*
 	   Check for ansi characters, mortals not allowed to use them to put color in
@@ -1726,9 +1725,9 @@ bool rename_character(P_char ch, char *old_name, char *new_name)
 /* regarded as ONE word                                              */
 char *one_word(char *argument, char *first_arg)
 {
-	int found, begin, look_at;
+	int begin, look_at;
 
-	found = begin = 0;
+	begin = 0;
 
 	do
 	{

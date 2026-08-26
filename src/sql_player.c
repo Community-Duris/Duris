@@ -1286,6 +1286,17 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	free(esc_poofinsnd);
 	free(esc_poofoutsnd);
 
+	// a truncated query would reach MySQL as malformed SQL
+	if (written < 0 || written >= remaining)
+	{
+		logit(LOG_PLAYER,
+		      "sql_save_player_status: query for %s truncated (%d bytes needed, %d available)",
+		      GET_NAME(ch), written, remaining);
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
+
 	// run the main query
 	if (!sql_run_query(query))
 	{
@@ -7423,7 +7434,6 @@ bool sql_load_all_corpses(void)
 
 	bool ok = false;
 	MYSQL_RES *result = NULL;
-	int total_rows = 0;
 	int cur_corpse_id = -1;
 	P_obj cur_corpse = NULL;
 	int cur_room = 0;
@@ -7432,7 +7442,6 @@ bool sql_load_all_corpses(void)
 	int container_map[MAX_CORPSE_ITEMS];
 	int num_objs = 0;
 	int last_item_id = -1;
-	int skipped_item_id = -1;
 	int loaded = 0;
 	MYSQL_ROW row;
 
@@ -7454,8 +7463,6 @@ bool sql_load_all_corpses(void)
 		"ORDER BY c.id, ci.id, cia.id");
 	if (!result)
 		goto cleanup;
-
-	total_rows = mysql_num_rows(result);
 
 	// tracking for current corpse being built
 	while ((row = mysql_fetch_row(result)))
@@ -7550,7 +7557,6 @@ bool sql_load_all_corpses(void)
 			// start new corpse
 			num_objs = 0;
 			last_item_id = -1;
-			skipped_item_id = -1;
 			cur_corpse_id = corpse_id;
 
 			const char *player_name = row[1] ? row[1] : "";
@@ -7703,7 +7709,6 @@ bool sql_load_all_corpses(void)
 							"sql_load_all_corpses"))
 		{
 			extract_obj(obj, FALSE);
-			skipped_item_id = item_id;
 			continue;
 		}
 

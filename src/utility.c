@@ -2838,7 +2838,6 @@ char *coin_stringv(int amount, int padfront)
 void ADD_MONEY(P_char ch, int amount)
 {
 	int t = 0;
-	int t2 = 0;
 
 	if (amount < 0)
 	{
@@ -2853,14 +2852,12 @@ void ADD_MONEY(P_char ch, int amount)
 	if (amount > 999)
 	{
 		t = amount / 1000;
-		t2 = number(0, t / 2);
 		GET_PLATINUM(ch) += t;
 		amount -= t * 1000;
 	}
 	if (amount > 99)
 	{
 		t = amount / 100;
-		t2 = number(0, t);
 		GET_GOLD(ch) += t;
 		amount -= t * 100;
 	}

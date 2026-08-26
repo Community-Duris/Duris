@@ -528,15 +528,11 @@ int show_moth_stati(P_char ch, char *stati_date, char *argument)
 	struct statistics_day day[24];
 	struct statistics_day month[31];
 	int x, args;
-	long ct;
 	char *tmstr;
-	struct tm *lt;
 	char mdate[15];
 	FILE *f;
 	int k = 0;
 
-	ct = time(0);
-	lt = localtime(&ct);
 	// tmstr = asctime(lt);
 	// create_zone(0);
 	memset(day, 0, sizeof(day));

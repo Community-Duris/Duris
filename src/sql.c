@@ -709,14 +709,11 @@ int sql_save_player_core(P_char ch)
 	char query[MAX_STRING_LENGTH];
 	char assoc_name[MAX_STRING_LENGTH];
 	char assoc_name_sql[MAX_STRING_LENGTH * 2 + 1];
-	const char *spec_name = "";
 	struct char_player_data *p;
-	int val;
 
 	if (IS_MORPH(ch))
 		ch = MORPH_ORIG(ch);
 	p = &ch->player;
-	val = flag2idx(p->m_class);
 
 	if (GET_ASSOC(ch) == NULL)
 	{
@@ -730,7 +727,6 @@ int sql_save_player_core(P_char ch)
 
 	if (IS_SPECIALIZED(ch))
 	{
-		spec_name = GET_SPEC_NAME(ch->player.m_class, ch->player.spec - 1);
 	}
 
 	// deactivate any other players with same name (handles renamed characters)
@@ -790,7 +786,7 @@ void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_
 // Returns the highest level achievable by mortals, limited by racewar side.
 int sql_level_cap(int racewar_side)
 {
-	int leading_racewar, level_cap;
+	int level_cap;
 	MYSQL_RES *db = NULL;
 	MYSQL_ROW row;
 
@@ -803,7 +799,6 @@ int sql_level_cap(int racewar_side)
 	}
 
 	level_cap = atoi(row[0]);
-	leading_racewar = atoi(row[1]);
 
 	// cycle out until a NULL return
 	while (row != NULL)
@@ -1172,9 +1167,6 @@ void sql_insert_item(P_char ch, P_obj obj, char *desc)
 			 sql_desc, m_virtual, sql_short);
 
 	db_query(query);
-
-	struct zone_data *zone = 0;
-	zone = &zone_table[world[ch->in_room].zone];
 }
 
 void sql_insert_new_item(P_char ch, P_obj obj)
@@ -1183,8 +1175,6 @@ void sql_insert_new_item(P_char ch, P_obj obj)
 	int m_virtual = (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : 0;
 	int i = ch->in_room;
 	P_room rm = &world[i];
-	struct zone_data *zone = 0;
-	zone = &zone_table[world[ch->in_room].zone];
 
 	snprintf(item_id, MAX_STRING_LENGTH, "o %s", obj->name);
 	do_stat(ch, item_id, 555);
@@ -1634,12 +1624,10 @@ void perform_wiki_search(P_char ch, const char *query)
 {
 	char buf[MAX_STRING_LENGTH];
 	char buf2[MAX_STRING_LENGTH];
-	char buf3[MAX_STRING_LENGTH];
 	char escaped_query[MAX_STRING_LENGTH * 2 +
 			   1]; // SECURITY: Buffer for escaped query (MySQL needs 2x+1 size)
 	buf[0] = '\0';
 	buf2[0] = '\0';
-	buf3[0] = '\0';
 	MYSQL_ROW row;
 	MYSQL_ROW row2;
 

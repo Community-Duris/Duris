@@ -1148,8 +1148,6 @@ int babau_combat(P_char ch, P_char vict, int cmd, char *arg)
 {
 	static time_t last_summon = 0;
 	const time_t current_time = time(NULL);
-	P_char target = vict;
-
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
 
@@ -1160,9 +1158,6 @@ int babau_combat(P_char ch, P_char vict, int cmd, char *arg)
 		SET_BIT(ch->specials.act, ACT_HUNTER);
 
 	SET_BIT(ch->specials.affected_by, AFF_SNEAK);
-
-	if (GET_OPPONENT(ch))
-		target = GET_OPPONENT(ch);
 
 	if (!number(0, 20) && IS_FIGHTING(ch))
 	{

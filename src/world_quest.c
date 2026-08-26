@@ -907,7 +907,7 @@ int getItemFromZone(int zone)
 	*/
 	long ct, diff_time;
 	char *tmstr;
-	int count, i, choice, zone_count, world_index, room_count, length;
+	int count, i, choice, zone_count, world_index, room_count;
 	struct zone_data *z_num = &zone_table[zone];
 	P_obj t_obj;
 	P_char t_mob;
@@ -915,7 +915,6 @@ int getItemFromZone(int zone)
 	int valid_items[1000];
 	int list = 0;
 
-	length = 0;
 	for (i = 0; i <= top_of_objt; i++)
 	{
 		if ((obj_index[i].virtual_number >= world[z_num->real_bottom].number) &&

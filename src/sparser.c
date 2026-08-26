@@ -1972,7 +1972,6 @@ void do_will(P_char ch, char *argument, int cmd)
 	struct spellcast_datatype tmp_spl;
 	int spl;
 	P_char tar_char;
-	bool is_tank = FALSE;
 
 	memset(&tmp_spl, 0, sizeof(tmp_spl));
 	if (!USES_MANA(ch))
@@ -2072,13 +2071,11 @@ void do_will(P_char ch, char *argument, int cmd)
 			return;
 		}
 	}
-	is_tank = FALSE;
 
 	LOOP_THRU_PEOPLE(kala, ch)
 	{
 		if (GET_OPPONENT(kala) == ch)
 		{
-			is_tank = TRUE;
 		}
 	}
 
