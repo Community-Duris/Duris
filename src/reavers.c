@@ -438,22 +438,26 @@ bool ilienze_sword(P_char ch, P_char victim, P_obj wpn)
 		{
 			if (afp->modifier < 8)
 			{
-				ilienze_sword_proc_messages(&proc_messages,
+				ilienze_sword_proc_messages(ch_msg, vict_msg, room_msg,
+							    sizeof ch_msg,
 							    "&+Rf&+Yi&+Rr&+re&+rball&n");
 			}
 			else if (afp->modifier < 14)
 			{
-				ilienze_sword_proc_messages(&proc_messages,
+				ilienze_sword_proc_messages(ch_msg, vict_msg, room_msg,
+							    sizeof ch_msg,
 							    "&+Rf&+Yi&+Rr&+Re&+rb&+rall");
 			}
 			else if (afp->modifier < 21)
 			{
-				ilienze_sword_proc_messages(&proc_messages,
+				ilienze_sword_proc_messages(ch_msg, vict_msg, room_msg,
+							    sizeof ch_msg,
 							    "&+Rf&+Yi&+Rr&+Re&+Rb&+rall&n");
 			}
 			else
 			{
-				ilienze_sword_proc_messages(&proc_messages,
+				ilienze_sword_proc_messages(ch_msg, vict_msg, room_msg,
+							    sizeof ch_msg,
 							    "&+Rf&+Yi&+Rr&+Re&+Rb&+Ra&+rll&n");
 			}
 
@@ -472,18 +476,21 @@ bool ilienze_sword(P_char ch, P_char victim, P_obj wpn)
 	return FALSE;
 }
 
-void ilienze_sword_proc_messages(struct damage_messages *messages, const char *sub)
+/* Formats into the caller's own buffers.  size is the caller's real buffer
+   size: this used to format with MAX_STRING_LENGTH into 256-byte buffers. */
+void ilienze_sword_proc_messages(char *attacker, char *victim, char *room, size_t size,
+				 const char *sub)
 {
 	snprintf(
-		messages->attacker, MAX_STRING_LENGTH,
+		attacker, size,
 		"&+rUnholy &+Rflames&n &+rflow down your blade and shoot in a %s &+rtowards $N&+r.&n",
 		sub);
 	snprintf(
-		messages->victim, MAX_STRING_LENGTH,
+		victim, size,
 		"&+rUnholy &+Rflames&n &+rflow down $n's &+rblade and shoot in a %s &+rtowards &+Ryou&+r.&n",
 		sub);
 	snprintf(
-		messages->room, MAX_STRING_LENGTH,
+		room, size,
 		"&+rUnholy &+Rflames&n &+rflow down $n's &+rblade and shoot in a %s &+rtowards $N&+r.&n",
 		sub);
 }

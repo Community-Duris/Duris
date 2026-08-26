@@ -104,7 +104,7 @@ void init_mem_used()
 	muinit = true;
 }
 
-void increment_mem_used(char *tag, size_t size)
+void increment_mem_used(const char *tag, size_t size)
 {
 	for (int i = 0; i < 52; i++)
 	{
@@ -116,7 +116,7 @@ void increment_mem_used(char *tag, size_t size)
 	}
 }
 
-void decrement_mem_used(char *tag, size_t size)
+void decrement_mem_used(const char *tag, size_t size)
 {
 	for (int i = 0; i < 52; i++)
 	{
@@ -139,7 +139,7 @@ static ALLOCATION_HEADER *allocation_header_from_body(void *body)
 }
 
 /* adds a piece of memory to the list */
-void *getmem(size_t size, char *tag, char *file, int line)
+void *getmem(size_t size, const char *tag, const char *file, int line)
 {
 	ALLOCATION_HEADER *NewAllocation;
 
@@ -184,7 +184,7 @@ void *getmem(size_t size, char *tag, char *file, int line)
 	return NewAllocation->body;
 }
 
-void *changemem(void *p, size_t size, char *file, int line)
+void *changemem(void *p, size_t size, const char *file, int line)
 {
 	ALLOCATION_HEADER *m;
 
@@ -253,7 +253,7 @@ void *changemem(void *p, size_t size, char *file, int line)
 }
 
 /* removes a memory entry from the list */
-void delmem(void *p, char *file, int line)
+void delmem(void *p, const char *file, int line)
 {
 	ALLOCATION_HEADER *m;
 
@@ -342,7 +342,7 @@ void dump_mem_log(void)
 #endif
 }
 
-void *__malloc(size_t size, char *tag, char *file, int line)
+void *__malloc(size_t size, const char *tag, const char *file, int line)
 {
 #ifdef MEMCHK
 	return getmem(size, tag, file, line);
@@ -351,7 +351,7 @@ void *__malloc(size_t size, char *tag, char *file, int line)
 #endif
 }
 
-void *__realloc(void *p, size_t size, char *file, int line)
+void *__realloc(void *p, size_t size, const char *file, int line)
 {
 #ifdef MEMCHK
 	return changemem(p, size, file, line);
@@ -360,7 +360,7 @@ void *__realloc(void *p, size_t size, char *file, int line)
 #endif
 }
 
-void __free(void *p, char *file, int line)
+void __free(void *p, const char *file, int line)
 {
 #ifdef MEMCHK
 	delmem(p, file, line);

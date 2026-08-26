@@ -41,10 +41,13 @@ void obj_to_char(P_obj obj, P_char ch)
 	ch->carrying = obj;
 }
 
-void str_free(char *source)
+void str_free(const char *source)
 {
 	if (source)
-		FREE(source);
+	{
+		char *owned = const_cast<char *>(source);
+		FREE(owned);
+	}
 }
 
 int GET_LEVEL(P_char ch)

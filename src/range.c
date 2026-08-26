@@ -1321,40 +1321,38 @@ void do_throw(P_char ch, char *argument, int /*cmd*/)
 				startPvP(vict, GET_RACEWAR(ch) != GET_RACEWAR(vict));
 			}
 
-			snprintf(messages.attacker, MAX_STRING_LENGTH, "You hit $N with $p!");
+			snprintf(attacker, MAX_STRING_LENGTH, "You hit $N with $p!");
 			act("You throw $p at $N!", FALSE, ch, weapon, vict, TO_CHAR);
 			snprintf(
-				messages.death_attacker, MAX_STRING_LENGTH,
+				death_attacker, MAX_STRING_LENGTH,
 				"Your skilfully thrown $p cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!");
 			if (ch->in_room != vict->in_room)
 			{
-				checked_snprintf(messages.victim, MAX_STRING_LENGTH,
+				checked_snprintf(victim, MAX_STRING_LENGTH,
 						 "$p thrown from %s hits you!", buf3);
 				checked_snprintf(
-					messages.death_victim, MAX_STRING_LENGTH,
+					death_victim, MAX_STRING_LENGTH,
 					"$p thrown from %s cuts right through your artery. You try to stop the &+rblood&n fountain but alas!",
 					buf3);
 				snprintf(buf, MAX_STRING_LENGTH, "$N throws $p %s!",
 					 dirs[far_room]);
 				act(buf, FALSE, ch, weapon, ch, TO_NOTVICT);
-				checked_snprintf(messages.room, MAX_STRING_LENGTH,
+				checked_snprintf(room, MAX_STRING_LENGTH,
 						 "$p thrown from %s hits $N!", buf3);
 				checked_snprintf(
-					messages.death_room, MAX_STRING_LENGTH,
+					death_room, MAX_STRING_LENGTH,
 					"$p thrown from %s cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!",
 					buf3);
 			}
 			else
 			{
-				snprintf(messages.victim, MAX_STRING_LENGTH,
-					 "$p thrown by $n hits you!");
-				snprintf(messages.room, MAX_STRING_LENGTH,
-					 "$p thrown by $n hits $N!");
+				snprintf(victim, MAX_STRING_LENGTH, "$p thrown by $n hits you!");
+				snprintf(room, MAX_STRING_LENGTH, "$p thrown by $n hits $N!");
 				snprintf(
-					messages.death_room, MAX_STRING_LENGTH,
+					death_room, MAX_STRING_LENGTH,
 					"$p thrown by $n cuts right through $N's artery. $E tries to stop the &+rblood&n fountain but alas!");
 				snprintf(
-					messages.death_victim, MAX_STRING_LENGTH,
+					death_victim, MAX_STRING_LENGTH,
 					"$p thrown by $n cuts right through your artery. You try to stop the &+rblood&n fountain but alas!");
 			}
 

@@ -23,7 +23,8 @@ void spell_kostchtchies_implosion(int level, P_char ch, char *arg, int type, P_c
 
 void spell_ilienzes_flame_sword(int, P_char, char *, int, P_char, P_obj);
 bool ilienze_sword(P_char ch, P_char victim, P_obj wpn);
-void ilienze_sword_proc_messages(struct damage_messages *messages, const char *sub);
+void ilienze_sword_proc_messages(char *attacker, char *victim, char *room, size_t size,
+				 const char *sub);
 
 void spell_girilals_granite_hammer(int, P_char, char *, int, P_char, P_obj);
 void spell_ileshs_smashing_fury(int, P_char, char *, int, P_char, P_obj);

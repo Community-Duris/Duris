@@ -1752,9 +1752,9 @@ void bad_spell_check(P_char ch);
 /* memory.c */
 
 void dump_mem_log(void);
-void *__malloc(size_t size, char *tag, char *file, int line);
-void *__realloc(void *p, size_t size, char *file, int line);
-void __free(void *p, char *file, int line);
+void *__malloc(size_t size, const char *tag, const char *file, int line);
+void *__realloc(void *p, size_t size, const char *file, int line);
+void __free(void *p, const char *file, int line);
 // void *debug_calloc(size_t nobj, size_t size, char *file, int line);
 // void *debug_realloc(void *p, size_t size, char *file, int line);
 // void debug_free(void *p, char *file, int line);
@@ -2847,7 +2847,7 @@ bool aggressive_to_basic(P_char, P_char);
 char *PERS(P_char, P_char, int);
 char *PERS(P_char, P_char, int, bool);
 char *str_dup(const char *);
-void str_free(char *);
+void str_free(const char *);
 char strleft(const char *, const char *);
 char *deleteChar(char *, const unsigned long);
 int send_incoming_msg(P_char ch);

@@ -6247,7 +6247,12 @@ bool frightening_presence(P_char ch, P_char victim)
 
 int battle_frenzy(P_char, P_char);
 
-int anatomy_strike(P_char ch, P_char victim, int msg, struct damage_messages *messages, int dam)
+/* The caller lends its three message buffers; damage_messages itself only ever
+   points at immutable text.  msg_size is the caller's real buffer size: this
+   function used to format with MAX_STRING_LENGTH into hit()'s 512-byte
+   buffers. */
+int anatomy_strike(P_char ch, P_char victim, int msg, struct damage_messages *messages,
+		   char *attacker_msg, char *victim_msg, char *room_msg, size_t msg_size, int dam)
 {
 	int skl = GET_CHAR_SKILL(ch, SKILL_ANATOMY);
 	struct affected_type af;
@@ -6264,13 +6269,13 @@ int anatomy_strike(P_char ch, P_char victim, int msg, struct damage_messages *me
 	case 0:
 		if (IS_HUMANOID(victim))
 		{
-			snprintf(messages->attacker, MAX_STRING_LENGTH,
+			snprintf(attacker_msg, msg_size,
 				 "Your%%s %s hits $N on the torso making $M grimace in pain.",
 				 attack_hit_text[msg].singular);
-			snprintf(messages->victim, MAX_STRING_LENGTH,
+			snprintf(victim_msg, msg_size,
 				 "$n's%%s %s hits $N on the torso making $M grimace in pain.",
 				 attack_hit_text[msg].singular);
-			snprintf(messages->room, MAX_STRING_LENGTH,
+			snprintf(room_msg, msg_size,
 				 "$n's%%s %s hits $N on the torso making $M grimace in pain.",
 				 attack_hit_text[msg].singular);
 			messages->type = DAMMSG_HIT_EFFECT;
@@ -6279,13 +6284,13 @@ int anatomy_strike(P_char ch, P_char victim, int msg, struct damage_messages *me
 	case 1:
 		if (!LEGLESS(victim))
 		{
-			snprintf(messages->attacker, MAX_STRING_LENGTH,
+			snprintf(attacker_msg, msg_size,
 				 "Your%%s %s hits $N across the leg, resulting in a limp stride.",
 				 attack_hit_text[msg].singular);
-			snprintf(messages->victim, MAX_STRING_LENGTH,
+			snprintf(victim_msg, msg_size,
 				 "$n's%%s %s hits $N across the leg, resulting in a limp stride.",
 				 attack_hit_text[msg].singular);
-			snprintf(messages->room, MAX_STRING_LENGTH,
+			snprintf(room_msg, msg_size,
 				 "$n's%%s %s hits $N across the leg, resulting in a limp stride.",
 				 attack_hit_text[msg].singular);
 			messages->type = DAMMSG_HIT_EFFECT;
@@ -6304,13 +6309,13 @@ int anatomy_strike(P_char ch, P_char victim, int msg, struct damage_messages *me
 	case 3:
 		if (IS_HUMANOID(victim))
 		{
-			snprintf(messages->attacker, MAX_STRING_LENGTH,
+			snprintf(attacker_msg, msg_size,
 				 "Your%%s %s reached $N's arm severing tendons and muscles.",
 				 attack_hit_text[msg].singular);
-			snprintf(messages->victim, MAX_STRING_LENGTH,
+			snprintf(victim_msg, msg_size,
 				 "$n's%%s %s reached your arm severing tendons and muscles.",
 				 attack_hit_text[msg].singular);
-			snprintf(messages->room, MAX_STRING_LENGTH,
+			snprintf(room_msg, msg_size,
 				 "$n's%%s %s reached $N's arm severing tendons and muscles.",
 				 attack_hit_text[msg].singular);
 			messages->type = DAMMSG_HIT_EFFECT;
@@ -6350,13 +6355,13 @@ int anatomy_strike(P_char ch, P_char victim, int msg, struct damage_messages *me
 	case 6:
 		if (IS_HUMANOID(victim))
 		{
-			snprintf(messages->attacker, MAX_STRING_LENGTH,
+			snprintf(attacker_msg, msg_size,
 				 "Your%%s %s reached $N's ear causing a gush of blood.",
 				 attack_hit_text[msg].singular);
-			snprintf(messages->victim, MAX_STRING_LENGTH,
+			snprintf(victim_msg, msg_size,
 				 "$n's%%s %s reached your ear causing a gush of blood.",
 				 attack_hit_text[msg].singular);
-			snprintf(messages->room, MAX_STRING_LENGTH,
+			snprintf(room_msg, msg_size,
 				 "$n's%%s %s reached $N's ear causing a gush of blood.",
 				 attack_hit_text[msg].singular);
 			messages->type = DAMMSG_HIT_EFFECT;
@@ -6371,12 +6376,9 @@ int anatomy_strike(P_char ch, P_char victim, int msg, struct damage_messages *me
 
 regular:
 
-	snprintf(messages->attacker, MAX_STRING_LENGTH, "Your%%s %s %%s.",
-		 attack_hit_text[msg].singular);
-	snprintf(messages->victim, MAX_STRING_LENGTH, "$n's%%s %s %%s.",
-		 attack_hit_text[msg].singular);
-	snprintf(messages->room, MAX_STRING_LENGTH, "$n's%%s %s %%s.",
-		 attack_hit_text[msg].singular);
+	snprintf(attacker_msg, msg_size, "Your%%s %s %%s.", attack_hit_text[msg].singular);
+	snprintf(victim_msg, msg_size, "$n's%%s %s %%s.", attack_hit_text[msg].singular);
+	snprintf(room_msg, msg_size, "$n's%%s %s %%s.", attack_hit_text[msg].singular);
 	messages->type = DAMMSG_HIT_EFFECT | DAMMSG_TERSE;
 
 	return dam;
@@ -7169,12 +7171,14 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 		 get_property("skill.anatomy.NPC", 5.000) <= number(1, 100) &&
 		 IS_HUMANOID(victim) && IS_HUMANOID(ch))
 	{
-		dam = anatomy_strike(ch, victim, msg, &messages, (int)dam);
+		dam = anatomy_strike(ch, victim, msg, &messages, attacker_msg, victim_msg, room_msg,
+				     sizeof attacker_msg, (int)dam);
 	}
 	else if (GET_CHAR_SKILL(ch, SKILL_ANATOMY) && IS_HUMANOID(victim) && IS_HUMANOID(ch) &&
 		 GET_CHAR_SKILL(ch, SKILL_ANATOMY) / 25 >= (number(1, 100)))
 	{
-		dam = anatomy_strike(ch, victim, msg, &messages, (int)dam);
+		dam = anatomy_strike(ch, victim, msg, &messages, attacker_msg, victim_msg, room_msg,
+				     sizeof attacker_msg, (int)dam);
 	}
 	else
 	{

@@ -519,14 +519,18 @@ char *str_dup(const char *source)
 
 /*
  * free a string created with str_dup()
+ *
+ * Takes const because an owning pointer to string data is usually spelled
+ * const char *; releasing the allocation is not a write through the pointer.
+ * The one cast needed for that lives here rather than at every call site.
  */
-void str_free(char *source)
+void str_free(const char *source)
 {
 	if (source == NULL)
 		return;
 
-	FREE(source);
-	source = NULL;
+	char *owned = const_cast<char *>(source);
+	FREE(owned);
 }
 
 /*

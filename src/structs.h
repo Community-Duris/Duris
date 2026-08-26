@@ -1820,12 +1820,12 @@ struct descriptor_data
    so existing designated and positional initializers are unaffected. */
 struct damage_messages
 {
-	char *attacker = nullptr;
-	char *victim = nullptr;
-	char *room = nullptr;
-	char *death_attacker = nullptr;
-	char *death_victim = nullptr;
-	char *death_room = nullptr;
+	const char *attacker = nullptr;
+	const char *victim = nullptr;
+	const char *room = nullptr;
+	const char *death_attacker = nullptr;
+	const char *death_victim = nullptr;
+	const char *death_room = nullptr;
 	int type = 0;
 	P_obj obj = nullptr;
 };
@@ -2489,18 +2489,19 @@ struct vehicle_data
 	int freq; /* after starting, how often repeat? */
 };
 
+/* tag and file are always string literals (MEM_TAG_* and __FILE__). */
 struct alignas(max_align_t) ALLOCATION_HEADER
 {
-	char *tag;
+	const char *tag;
 	size_t size;
-	char *file;
+	const char *file;
 	int line;
 	void *body;
 };
 
 struct mem_usage
 {
-	char *tag;
+	const char *tag;
 	size_t size;
 	size_t allocs;
 };
