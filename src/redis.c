@@ -9,6 +9,8 @@
 #include "redis.h"
 #include <ctype.h>
 #include <errno.h>
+#include <signal.h>
+#include <stdarg.h>
 #include <sys/poll.h> /* local src/poll.h shadows <poll.h> via -I. */
 #include <stdlib.h>
 #include <string.h>
@@ -59,13 +61,238 @@ int crash_recovery_boot = 0;
 #define REDIS_FLUSH_INTERVAL (30 * WAIT_SEC)
 #define REDIS_WORLD_STATE_INTERVAL_DEFAULT 10
 #define REDIS_WORLD_STATE_MAX_AGE_DEFAULT 300
+#define REDIS_CONNECT_TIMEOUT_MSEC 250
+#define REDIS_COMMAND_TIMEOUT_MSEC 100
+#define REDIS_DIRTY_CHILD_TIMEOUT_SEC 30
+#define REDIS_WORLD_CHILD_TIMEOUT_SEC 30
 
 static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
 static volatile pid_t world_state_save_pid = 0;
 static volatile pid_t dirty_flush_pid = 0;
+static time_t world_state_save_started = 0;
+static time_t dirty_flush_started = 0;
+static bool world_state_snapshot_pending_ack = false;
 static redisContext *donation_sub_ctx = NULL;
 static volatile bool donation_sub_connected = false;
+static bool redis_restore_dirty_snapshot(const char *inflight_key);
+static void donation_sub_drop(const char *reason);
+
+#define REDIS_LOCAL_DIRTY_CAPACITY 512
+static int redis_local_dirty[REDIS_LOCAL_DIRTY_CAPACITY];
+static int redis_local_dirty_count = 0;
+
+#ifndef __NO_MYSQL__
+static void redis_log_command_failure(const char *outcome)
+{
+	static time_t last_log = 0;
+	time_t now = time(NULL);
+	if (now == last_log)
+		return;
+	last_log = now;
+	logit(LOG_DEBUG, "redis command failed: outcome=%s", outcome);
+}
+
+static redisContext *redis_connect_bounded(const char *host, int port)
+{
+	struct timeval connect_timeout = { REDIS_CONNECT_TIMEOUT_MSEC / 1000,
+					   (REDIS_CONNECT_TIMEOUT_MSEC % 1000) * 1000 };
+	struct timeval command_timeout = { REDIS_COMMAND_TIMEOUT_MSEC / 1000,
+					   (REDIS_COMMAND_TIMEOUT_MSEC % 1000) * 1000 };
+	redisContext *ctx = redisConnectWithTimeout(host, port, connect_timeout);
+	if (!ctx || ctx->err)
+		return ctx;
+	if (redisSetTimeout(ctx, command_timeout) != REDIS_OK)
+	{
+		redisFree(ctx);
+		return NULL;
+	}
+	return ctx;
+}
+
+static redisReply *redis_command(redisContext *ctx, const char *format, ...)
+{
+	if (!ctx)
+	{
+		redis_log_command_failure("unavailable");
+		return NULL;
+	}
+	if (ctx->err)
+	{
+		redis_log_command_failure(ctx->err == REDIS_ERR_IO ? "timeout_or_io" :
+								     "context_error");
+		return NULL;
+	}
+
+	va_list args;
+	va_start(args, format);
+	redisReply *reply = (redisReply *)redisvCommand(ctx, format, args);
+	va_end(args);
+
+	if (!reply)
+	{
+		redis_log_command_failure(ctx->err == REDIS_ERR_IO ? "timeout_or_io" : "no_reply");
+		return NULL;
+	}
+	if (reply->type == REDIS_REPLY_ERROR)
+	{
+		redis_log_command_failure("error_reply");
+		freeReplyObject(reply);
+		return NULL;
+	}
+	return reply;
+}
+
+static bool redis_reply_status_ok(redisReply *reply)
+{
+	return reply && reply->type == REDIS_REPLY_STATUS && reply->str &&
+	       strcasecmp(reply->str, "OK") == 0;
+}
+#endif
+
+static bool redis_local_dirty_contains(int pid)
+{
+	for (int i = 0; i < redis_local_dirty_count; ++i)
+	{
+		if (redis_local_dirty[i] == pid)
+			return true;
+	}
+	return false;
+}
+
+static void redis_local_dirty_add(int pid)
+{
+	if (pid <= 0 || redis_local_dirty_contains(pid))
+		return;
+	if (redis_local_dirty_count >= REDIS_LOCAL_DIRTY_CAPACITY)
+	{
+		logit(LOG_SYS, "redis dirty retry set is full; pid retained only in metrics");
+		return;
+	}
+	redis_local_dirty[redis_local_dirty_count++] = pid;
+}
+
+static void redis_local_dirty_remove(int pid)
+{
+	for (int i = 0; i < redis_local_dirty_count; ++i)
+	{
+		if (redis_local_dirty[i] != pid)
+			continue;
+		redis_local_dirty[i] = redis_local_dirty[--redis_local_dirty_count];
+		return;
+	}
+}
+
+static bool redis_flush_local_dirty(void)
+{
+#ifdef __NO_MYSQL__
+	return false;
+#else
+	if (!redis_enabled || !redis_ctx || redis_ctx->err)
+		return false;
+
+	int index = 0;
+	while (index < redis_local_dirty_count)
+	{
+		int pid = redis_local_dirty[index];
+		redisReply *reply =
+			(redisReply *)redis_command(redis_ctx, "SADD mud:dirty_players %d", pid);
+		if (!reply || reply->type != REDIS_REPLY_INTEGER)
+		{
+			if (reply)
+				freeReplyObject(reply);
+			return false;
+		}
+		freeReplyObject(reply);
+		redis_local_dirty_remove(pid);
+	}
+	return true;
+#endif
+}
+
+enum redis_child_poll_result
+{
+	REDIS_CHILD_NONE,
+	REDIS_CHILD_RUNNING,
+	REDIS_CHILD_SUCCEEDED,
+	REDIS_CHILD_FAILED
+};
+
+static enum redis_child_poll_result redis_poll_child(volatile pid_t *pid_slot, time_t *started,
+						     int timeout_sec, const char *label)
+{
+	pid_t pid = *pid_slot;
+	if (pid <= 0)
+		return REDIS_CHILD_NONE;
+
+	int status = 0;
+	pid_t result = 0;
+	if (take_reaped_child_status(pid, &status))
+		result = pid;
+	else
+		result = waitpid(pid, &status, WNOHANG);
+	if (result < 0 && errno == ECHILD && take_reaped_child_status(pid, &status))
+		result = pid;
+	if (result == 0)
+	{
+		if (*started > 0 && time(NULL) - *started >= timeout_sec)
+		{
+			logit(LOG_SYS, "redis: %s child timed out; terminating", label);
+			if (kill(pid, SIGKILL) < 0 && errno != ESRCH)
+			{
+				logit(LOG_SYS, "redis: %s child termination failed", label);
+				return REDIS_CHILD_RUNNING;
+			}
+			pid_t reap_result;
+			do
+			{
+				reap_result = waitpid(pid, &status, 0);
+			} while (reap_result < 0 && errno == EINTR);
+			if (reap_result < 0 && errno == ECHILD)
+			{
+				take_reaped_child_status(pid, &status);
+			}
+			*pid_slot = 0;
+			*started = 0;
+			return REDIS_CHILD_FAILED;
+		}
+		return REDIS_CHILD_RUNNING;
+	}
+
+	if (result < 0 && errno == EINTR)
+		return REDIS_CHILD_RUNNING;
+
+	*pid_slot = 0;
+	*started = 0;
+	if (result < 0)
+	{
+		logit(LOG_SYS, "redis: %s child wait failed", label);
+		return REDIS_CHILD_FAILED;
+	}
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+		return REDIS_CHILD_SUCCEEDED;
+
+	logit(LOG_SYS, "redis: %s child failed", label);
+	return REDIS_CHILD_FAILED;
+}
+
+static void redis_terminate_child(volatile pid_t *pid_slot, time_t *started, const char *label)
+{
+	pid_t pid = *pid_slot;
+	if (pid <= 0)
+		return;
+	logit(LOG_SYS, "redis: terminating %s child during shutdown", label);
+	if (kill(pid, SIGKILL) < 0 && errno != ESRCH)
+	{
+		logit(LOG_SYS, "redis: %s child termination failed during shutdown", label);
+		return;
+	}
+	while (waitpid(pid, NULL, 0) < 0 && errno == EINTR)
+	{
+	}
+	*pid_slot = 0;
+	*started = 0;
+}
 
 #define REDIS_DIRTY_METRIC_CAPACITY 512
 struct redis_dirty_metric
@@ -147,7 +374,7 @@ static bool redis_clear_scan_match(const char *pattern)
 
 	do
 	{
-		redisReply *scan = (redisReply *)redisCommand(
+		redisReply *scan = (redisReply *)redis_command(
 			redis_ctx, "SCAN %s MATCH %s COUNT 256", cursor, pattern);
 		if (!scan || scan->type != REDIS_REPLY_ARRAY || scan->elements != 2 ||
 		    !scan->element[0] || !scan->element[1] || !scan->element[0]->str ||
@@ -169,8 +396,8 @@ static bool redis_clear_scan_match(const char *pattern)
 				freeReplyObject(scan);
 				return false;
 			}
-			redisReply *del =
-				(redisReply *)redisCommand(redis_ctx, "DEL %b", key->str, key->len);
+			redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %b", key->str,
+								      key->len);
 			if (!del ||
 			    (del->type != REDIS_REPLY_INTEGER && del->type != REDIS_REPLY_NIL))
 			{
@@ -223,7 +450,7 @@ static bool redis_reconnect(void)
 			redis_port = 6379;
 	}
 
-	redis_ctx = redisConnect(redis_host, redis_port);
+	redis_ctx = redis_connect_bounded(redis_host, redis_port);
 	if (!redis_ctx || redis_ctx->err)
 	{
 		if (redis_ctx)
@@ -253,6 +480,7 @@ bool redis_init(void)
 		redis_enabled = false;
 		return true;
 	}
+	redis_enabled = true;
 
 	const char *redis_host = getenv("REDIS_HOST");
 	if (!redis_host || !*redis_host)
@@ -267,25 +495,22 @@ bool redis_init(void)
 			redis_port = 6379;
 	}
 
-	redis_ctx = redisConnect(redis_host, redis_port);
+	redis_ctx = redis_connect_bounded(redis_host, redis_port);
 	if (!redis_ctx)
 	{
 		logit(LOG_SYS, "redis: failed to allocate context");
-		redis_enabled = false;
-		return false;
 	}
-
-	if (redis_ctx->err)
+	else if (redis_ctx->err)
 	{
-		logit(LOG_SYS, "redis connect failed: %s", redis_ctx->errstr);
+		logit(LOG_SYS, "redis connect failed: outcome=unavailable");
 		redisFree(redis_ctx);
 		redis_ctx = NULL;
-		redis_enabled = false;
-		return false;
 	}
-
-	redis_enabled = true;
-	logit(LOG_SYS, "redis connected to %s:%d, dirty saves enabled", redis_host, redis_port);
+	else
+	{
+		logit(LOG_SYS, "redis connected to %s:%d, dirty saves enabled", redis_host,
+		      redis_port);
+	}
 
 	// check for world state persistence
 	const char *world_state_env = getenv("REDIS_WORLD_STATE");
@@ -315,10 +540,12 @@ bool redis_init(void)
 
 	// note: flush event scheduled in ne_init_events() after event system is ready
 
-	// load obj_uid counter from redis
-	redis_load_obj_uid_counter();
-
-	redis_donation_subscribe_init();
+	if (redis_ctx)
+	{
+		redis_restore_dirty_snapshot("mud:dirty_players:flushing");
+		redis_load_obj_uid_counter();
+		redis_donation_subscribe_init();
+	}
 
 	return true;
 #endif
@@ -349,21 +576,21 @@ bool redis_clear_pwipe_state(void)
 void redis_cleanup(void)
 {
 #ifndef __NO_MYSQL__
+	redis_terminate_child(&dirty_flush_pid, &dirty_flush_started, "dirty-save");
+	redis_terminate_child(&world_state_save_pid, &world_state_save_started, "world-snapshot");
 	if (redis_ctx)
 	{
 		// save obj_uid counter before disconnect
 		redis_save_obj_uid_counter();
-
-		if (donation_sub_ctx)
-		{
-			redisFree(donation_sub_ctx);
-			donation_sub_ctx = NULL;
-			donation_sub_connected = false;
-		}
-
 		redisFree(redis_ctx);
 		redis_ctx = NULL;
 	}
+	if (donation_sub_ctx)
+	{
+		redisFree(donation_sub_ctx);
+		donation_sub_ctx = NULL;
+	}
+	donation_sub_connected = false;
 	redis_enabled = false;
 #endif
 }
@@ -374,7 +601,7 @@ bool redis_ping(void)
 	if (!redis_enabled || !redis_ctx)
 		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "PING");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "PING");
 	if (!reply)
 	{
 		logit(LOG_DEBUG, "redis ping failed: no reply");
@@ -397,7 +624,7 @@ void redis_save_obj_uid_counter(void)
 		return;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "SET mud:next_obj_uid %lu", next_obj_uid);
+		(redisReply *)redis_command(redis_ctx, "SET mud:next_obj_uid %lu", next_obj_uid);
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -409,7 +636,7 @@ void redis_load_obj_uid_counter(void)
 	if (!redis_enabled || !redis_ctx)
 		return;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET mud:next_obj_uid");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:next_obj_uid");
 	if (reply && reply->type == REDIS_REPLY_STRING && reply->str)
 	{
 		unsigned long loaded = strtoul(reply->str, NULL, 10);
@@ -433,7 +660,7 @@ void redis_log_floor_pickup(unsigned long obj_uid)
 		return;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "SADD mud:floor_pickups %lu", obj_uid);
+		(redisReply *)redis_command(redis_ctx, "SADD mud:floor_pickups %lu", obj_uid);
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -446,7 +673,7 @@ bool redis_check_floor_pickup(unsigned long obj_uid)
 		return false;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "SISMEMBER mud:floor_pickups %lu", obj_uid);
+		(redisReply *)redis_command(redis_ctx, "SISMEMBER mud:floor_pickups %lu", obj_uid);
 	bool found = (reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
 	if (reply)
 		freeReplyObject(reply);
@@ -462,13 +689,13 @@ void redis_clear_floor_pickups(void)
 	if (!redis_enabled || !redis_ctx)
 		return;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:floor_pickups");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL mud:floor_pickups");
 	if (reply)
 		freeReplyObject(reply);
 #endif
 }
 
-#define MAX_FLOOR_DROP_BATCH 64
+#define MAX_FLOOR_DROP_BATCH 1024
 
 static struct
 {
@@ -508,6 +735,11 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 	if (floor_drop_batch_count >= MAX_FLOOR_DROP_BATCH)
 	{
 		redis_flush_floor_drops();
+		if (floor_drop_batch_count >= MAX_FLOOR_DROP_BATCH)
+		{
+			logit(LOG_SYS, "redis: floor delta retry buffer is full");
+			return;
+		}
 	}
 
 	int idx = floor_drop_batch_count++;
@@ -540,31 +772,37 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 #endif
 }
 
-void redis_flush_floor_drops(void)
+bool redis_flush_floor_drops(void)
 {
 #ifndef __NO_MYSQL__
+	if (world_state_save_pid > 0 || world_state_snapshot_pending_ack)
+		return false;
 	if (!redis_enabled || !redis_ctx)
-		goto cleanup;
+		return false;
 
 	if (floor_drop_batch_count == 0 && floor_drop_remove_count == 0)
-		return;
+		return true;
 
 	// process removes first
 	for (int i = 0; i < floor_drop_remove_count; i++)
 	{
-		redisReply *reply = (redisReply *)redisCommand(
+		redisReply *reply = (redisReply *)redis_command(
 			redis_ctx, "HDEL mud:floor_drops %lu", floor_drop_removes[i]);
-		if (reply)
-			freeReplyObject(reply);
+		if (!reply || reply->type != REDIS_REPLY_INTEGER)
+		{
+			if (reply)
+				freeReplyObject(reply);
+			return false;
+		}
+		freeReplyObject(reply);
 	}
-	floor_drop_remove_count = 0;
 
 	// process adds
 	for (int i = 0; i < floor_drop_batch_count; i++)
 	{
 		cJSON *o = cJSON_CreateObject();
 		if (!o)
-			continue;
+			return false;
 
 		cJSON_AddNumberToObject(o, "uid", (double)floor_drop_batch[i].uid);
 		cJSON_AddNumberToObject(o, "v", floor_drop_batch[i].vnum);
@@ -619,18 +857,23 @@ void redis_flush_floor_drops(void)
 
 		char *json_str = cJSON_PrintUnformatted(o);
 		cJSON_Delete(o);
-		if (json_str)
+		if (!json_str)
+			return false;
+
+		redisReply *reply = (redisReply *)redis_command(redis_ctx,
+								"HSET mud:floor_drops %lu %s",
+								floor_drop_batch[i].uid, json_str);
+		free(json_str);
+		if (!reply || reply->type != REDIS_REPLY_INTEGER)
 		{
-			redisReply *reply =
-				(redisReply *)redisCommand(redis_ctx, "HSET mud:floor_drops %lu %s",
-							   floor_drop_batch[i].uid, json_str);
-			free(json_str);
 			if (reply)
 				freeReplyObject(reply);
+			return false;
 		}
+		freeReplyObject(reply);
 	}
 
-cleanup:
+	floor_drop_remove_count = 0;
 	for (int i = 0; i < floor_drop_batch_count; i++)
 	{
 		if (floor_drop_batch[i].name)
@@ -644,6 +887,9 @@ cleanup:
 		floor_drop_batch[i].long_desc = NULL;
 	}
 	floor_drop_batch_count = 0;
+	return true;
+#else
+	return false;
 #endif
 }
 
@@ -679,16 +925,29 @@ void redis_remove_floor_drop(unsigned long obj_uid)
 #endif
 }
 
-void redis_clear_floor_drops(void)
+static bool redis_clear_floor_drops_checked(void)
 {
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_ctx)
-		return;
+		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:floor_drops");
-	if (reply)
-		freeReplyObject(reply);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL mud:floor_drops");
+	if (!reply || reply->type != REDIS_REPLY_INTEGER)
+	{
+		if (reply)
+			freeReplyObject(reply);
+		return false;
+	}
+	freeReplyObject(reply);
+	return true;
+#else
+	return false;
 #endif
+}
+
+void redis_clear_floor_drops(void)
+{
+	redis_clear_floor_drops_checked();
 }
 
 bool redis_check_floor_drop(unsigned long obj_uid)
@@ -698,7 +957,7 @@ bool redis_check_floor_drop(unsigned long obj_uid)
 		return false;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "HEXISTS mud:floor_drops %lu", obj_uid);
+		(redisReply *)redis_command(redis_ctx, "HEXISTS mud:floor_drops %lu", obj_uid);
 	bool found = (reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
 	if (reply)
 		freeReplyObject(reply);
@@ -714,7 +973,7 @@ int redis_restore_floor_drops(void)
 	if (!redis_enabled || !redis_ctx)
 		return 0;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "HGETALL mud:floor_drops");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HGETALL mud:floor_drops");
 	if (!reply || reply->type != REDIS_REPLY_ARRAY)
 	{
 		if (reply)
@@ -899,26 +1158,31 @@ static bool check_dirty_debounce(int pid)
 	return true;
 }
 
-static void redis_restore_dirty_snapshot(const char *inflight_key)
+static bool redis_restore_dirty_snapshot(const char *inflight_key)
 {
 	if (!redis_enabled || !redis_ctx || !inflight_key)
-		return;
+		return false;
 
-	redisReply *restore = (redisReply *)redisCommand(
+	redisReply *restore = (redisReply *)redis_command(
 		redis_ctx, "SUNIONSTORE mud:dirty_players 2 mud:dirty_players %s", inflight_key);
-	if (restore)
+	if (!restore || restore->type != REDIS_REPLY_INTEGER)
 	{
-		bool restored = (restore->type != REDIS_REPLY_ERROR);
-		freeReplyObject(restore);
-		if (restored)
-		{
-			redis_dirty_metrics_restore_inflight();
-			redisReply *del =
-				(redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
-			if (del)
-				freeReplyObject(del);
-		}
+		if (restore)
+			freeReplyObject(restore);
+		return false;
 	}
+	freeReplyObject(restore);
+	redis_dirty_metrics_restore_inflight();
+
+	redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %s", inflight_key);
+	if (!del || del->type != REDIS_REPLY_INTEGER)
+	{
+		if (del)
+			freeReplyObject(del);
+		return false;
+	}
+	freeReplyObject(del);
+	return true;
 }
 
 void mark_player_dirty(int pid)
@@ -928,11 +1192,15 @@ void mark_player_dirty(int pid)
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || pid <= 0)
 		return;
+	redis_dirty_metric_mark_active(pid);
+	redis_local_dirty_add(pid);
 
 	// debounce - skip if we marked this pid dirty within the last second
 	if (!check_dirty_debounce(pid))
 	{
-		redisReply *queued = (redisReply *)redisCommand(
+		if (!redis_ctx || redis_ctx->err)
+			return;
+		redisReply *queued = (redisReply *)redis_command(
 			redis_ctx, "SISMEMBER mud:dirty_players %d", pid);
 		if (queued)
 		{
@@ -941,7 +1209,7 @@ void mark_player_dirty(int pid)
 			freeReplyObject(queued);
 			if (already_queued)
 			{
-				redis_dirty_metric_mark_active(pid);
+				redis_local_dirty_remove(pid);
 				return;
 			}
 		}
@@ -951,45 +1219,20 @@ void mark_player_dirty(int pid)
 	{
 		if (!redis_reconnect())
 		{
-			redis_enabled = false;
-			P_char ch = find_player_by_pid(pid);
-			if (ch && IS_PC(ch))
-			{
-				// Wrap save in transaction
-				if (sql_begin_transaction())
-				{
-					sql_save_player(ch, RENT_CRASH, 0);
-					if (!sql_commit())
-						sql_rollback();
-				}
-				else
-					sql_save_player(ch, RENT_CRASH, 0);
-			}
 			return;
 		}
 	}
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SADD mud:dirty_players %d", pid);
-	if (!reply)
+	redisReply *reply =
+		(redisReply *)redis_command(redis_ctx, "SADD mud:dirty_players %d", pid);
+	if (!reply || reply->type != REDIS_REPLY_INTEGER)
 	{
-		P_char ch = find_player_by_pid(pid);
-		if (ch && IS_PC(ch))
-		{
-			// Wrap save in transaction
-			if (sql_begin_transaction())
-			{
-				sql_save_player(ch, RENT_CRASH, 0);
-				if (!sql_commit())
-					sql_rollback();
-			}
-			else
-				sql_save_player(ch, RENT_CRASH, 0);
-		}
+		if (reply)
+			freeReplyObject(reply);
 		return;
 	}
-	if (reply->type != REDIS_REPLY_ERROR)
-		redis_dirty_metric_mark_active(pid);
 	freeReplyObject(reply);
+	redis_local_dirty_remove(pid);
 #endif
 }
 
@@ -1001,47 +1244,44 @@ void flush_dirty_players(void)
 
 	const char *inflight_key = "mud:dirty_players:flushing";
 
-	// skip if previous async save still running
-	if (dirty_flush_pid > 0)
+	enum redis_child_poll_result child_result =
+		redis_poll_child(&dirty_flush_pid, &dirty_flush_started,
+				 REDIS_DIRTY_CHILD_TIMEOUT_SEC, "dirty-save");
+	if (child_result == REDIS_CHILD_RUNNING)
+		return;
+	if (child_result == REDIS_CHILD_SUCCEEDED)
 	{
-		int status;
-		pid_t result = waitpid(dirty_flush_pid, &status, WNOHANG);
-		if (result == 0)
-			return;
-		if (result > 0)
+		redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %s", inflight_key);
+		if (del && del->type == REDIS_REPLY_INTEGER)
 		{
-			if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-			{
-				redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s",
-									     inflight_key);
-				if (del)
-				{
-					if (del->type != REDIS_REPLY_ERROR)
-						redis_dirty_metrics_clear_inflight();
-					freeReplyObject(del);
-				}
-			}
-			else
-			{
-				logit(LOG_SYS,
-				      "flush_dirty: previous async save failed, restoring dirty set for retry");
-				redis_restore_dirty_snapshot(inflight_key);
-			}
+			redis_dirty_metrics_clear_inflight();
+			freeReplyObject(del);
 		}
-		dirty_flush_pid = 0;
+		else
+		{
+			if (del)
+				freeReplyObject(del);
+			redis_restore_dirty_snapshot(inflight_key);
+		}
+	}
+	else if (child_result == REDIS_CHILD_FAILED)
+	{
+		logit(LOG_SYS, "flush_dirty: async save failed, restoring dirty set for retry");
+		redis_restore_dirty_snapshot(inflight_key);
 	}
 
 	if (!redis_ctx || redis_ctx->err)
 	{
 		if (!redis_reconnect())
-		{
-			redis_enabled = false;
 			return;
-		}
 	}
+	if (!redis_flush_local_dirty())
+		return;
+	if (!redis_restore_dirty_snapshot(inflight_key))
+		return;
 
 	redisReply *rename =
-		(redisReply *)redisCommand(redis_ctx, "RENAME mud:dirty_players %s", inflight_key);
+		(redisReply *)redis_command(redis_ctx, "RENAME mud:dirty_players %s", inflight_key);
 	if (!rename)
 		return;
 	if (rename->type == REDIS_REPLY_ERROR)
@@ -1052,13 +1292,23 @@ void flush_dirty_players(void)
 	freeReplyObject(rename);
 	redis_dirty_metrics_move_active_to_inflight();
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SMEMBERS %s", inflight_key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "SMEMBERS %s", inflight_key);
 	if (!reply)
+	{
+		redis_restore_dirty_snapshot(inflight_key);
 		return;
+	}
 
-	if (reply->type != REDIS_REPLY_ARRAY || reply->elements == 0)
+	if (reply->type != REDIS_REPLY_ARRAY)
 	{
 		freeReplyObject(reply);
+		redis_restore_dirty_snapshot(inflight_key);
+		return;
+	}
+	if (reply->elements == 0)
+	{
+		freeReplyObject(reply);
+		redis_restore_dirty_snapshot(inflight_key);
 		return;
 	}
 
@@ -1089,7 +1339,7 @@ void flush_dirty_players(void)
 	if (valid == 0)
 	{
 		free(pids);
-		redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
+		redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %s", inflight_key);
 		if (del)
 		{
 			if (del->type != REDIS_REPLY_ERROR)
@@ -1104,41 +1354,17 @@ void flush_dirty_players(void)
 	pid_t pid = fork();
 	if (pid < 0)
 	{
-		// fork failed, sync fallback
-		logit(LOG_SYS, "flush_dirty: fork failed, saving sync");
-		for (int i = 0; i < valid; i++)
-		{
-			P_char ch = find_player_by_pid(pids[i]);
-			if (!ch || !IS_PC(ch))
-				continue;
-			// Wrap save in transaction
-			if (sql_begin_transaction())
-			{
-				sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
-				if (!sql_commit())
-					sql_rollback();
-			}
-			else
-				sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
-			// gremlin needs to run in main process
-			if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-			    world[ch->in_room].funct)
-				(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
-		}
+		logit(LOG_SYS, "flush_dirty: fork failed, restoring dirty set for retry");
 		free(pids);
-		redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
-		if (del)
-		{
-			if (del->type != REDIS_REPLY_ERROR)
-				redis_dirty_metrics_clear_inflight();
-			freeReplyObject(del);
-		}
+		redis_restore_dirty_snapshot(inflight_key);
 		return;
 	}
 
 	if (pid == 0)
 	{
 		// child
+		signal(SIGALRM, SIG_DFL);
+		alarm(REDIS_DIRTY_CHILD_TIMEOUT_SEC);
 		MYSQL *child_conn = sql_create_child_connection();
 		if (!child_conn)
 		{
@@ -1173,6 +1399,7 @@ void flush_dirty_players(void)
 
 		mysql_close(child_conn);
 		free(pids);
+		alarm(0);
 		_exit(all_ok ? 0 : 1);
 	}
 
@@ -1191,6 +1418,7 @@ void flush_dirty_players(void)
 	}
 
 	dirty_flush_pid = pid;
+	dirty_flush_started = time(NULL);
 	free(pids);
 #endif
 }
@@ -1199,15 +1427,15 @@ int get_dirty_player_count(void)
 {
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_ctx)
-		return 0;
+		return redis_local_dirty_count;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SCARD mud:dirty_players");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "SCARD mud:dirty_players");
 	if (!reply)
-		return 0;
+		return redis_local_dirty_count;
 
-	int count = 0;
+	int count = redis_local_dirty_count;
 	if (reply->type == REDIS_REPLY_INTEGER)
-		count = (int)reply->integer;
+		count += (int)reply->integer;
 
 	freeReplyObject(reply);
 	return count;
@@ -1523,22 +1751,36 @@ static bool redis_save_world_state_json(redisContext *ctx)
 		return false;
 
 	size_t json_len = strlen(json);
-	redisReply *reply = (redisReply *)redisCommand(ctx, "SET mud:world_state %s", json);
+	redisReply *reply = (redisReply *)redis_command(ctx, "SET mud:world_state %s", json);
 	free(json);
 
-	if (!reply)
+	if (!redis_reply_status_ok(reply))
+	{
+		if (reply)
+			freeReplyObject(reply);
 		return false;
+	}
 	freeReplyObject(reply);
 
 	char timestamp_str[32];
 	snprintf(timestamp_str, sizeof(timestamp_str), "%ld", (long)time(NULL));
-	reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:timestamp %s", timestamp_str);
-	if (reply)
-		freeReplyObject(reply);
+	reply = (redisReply *)redis_command(ctx, "SET mud:world_state:timestamp %s", timestamp_str);
+	if (!redis_reply_status_ok(reply))
+	{
+		if (reply)
+			freeReplyObject(reply);
+		return false;
+	}
+	freeReplyObject(reply);
 
-	reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:valid 1");
-	if (reply)
-		freeReplyObject(reply);
+	reply = (redisReply *)redis_command(ctx, "SET mud:world_state:valid 1");
+	if (!redis_reply_status_ok(reply))
+	{
+		if (reply)
+			freeReplyObject(reply);
+		return false;
+	}
+	freeReplyObject(reply);
 
 	gettimeofday(&end, NULL);
 	long ms = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_usec - start.tv_usec) / 1000;
@@ -1567,7 +1809,7 @@ static bool redis_save_world_state_sync(void)
 			redis_port = 6379;
 	}
 
-	redisContext *ctx = redisConnect(redis_host, redis_port);
+	redisContext *ctx = redis_connect_bounded(redis_host, redis_port);
 	if (!ctx || ctx->err)
 	{
 		if (ctx)
@@ -1575,9 +1817,15 @@ static bool redis_save_world_state_sync(void)
 		return false;
 	}
 
-	redisReply *valid_reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:valid 0");
-	if (valid_reply)
-		freeReplyObject(valid_reply);
+	redisReply *valid_reply = (redisReply *)redis_command(ctx, "SET mud:world_state:valid 0");
+	if (!redis_reply_status_ok(valid_reply))
+	{
+		if (valid_reply)
+			freeReplyObject(valid_reply);
+		redisFree(ctx);
+		return false;
+	}
+	freeReplyObject(valid_reply);
 
 	// use json format instead of binary
 	bool result = redis_save_world_state_json(ctx);
@@ -1595,18 +1843,30 @@ bool redis_save_world_state(void)
 	if (!redis_enabled || !redis_world_state_enabled)
 		return false;
 
-	if (world_state_save_pid > 0)
+	enum redis_child_poll_result child_result =
+		redis_poll_child(&world_state_save_pid, &world_state_save_started,
+				 REDIS_WORLD_CHILD_TIMEOUT_SEC, "world-snapshot");
+	if (child_result == REDIS_CHILD_RUNNING)
 	{
-		int status;
-		pid_t result = waitpid(world_state_save_pid, &status, WNOHANG);
-		if (result == 0)
-		{
-			// still running
-			logit(LOG_DEBUG, "redis: world state save still in progress, skipping");
-			return true;
-		}
-		world_state_save_pid = 0;
+		logit(LOG_DEBUG, "redis: world state save still in progress, skipping");
+		return true;
 	}
+	if (child_result == REDIS_CHILD_SUCCEEDED)
+		world_state_snapshot_pending_ack = true;
+
+	if (world_state_snapshot_pending_ack)
+	{
+		if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
+			return false;
+		if (!redis_clear_floor_drops_checked())
+			return false;
+		world_state_snapshot_pending_ack = false;
+	}
+
+	if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
+		return false;
+	if (!redis_flush_floor_drops())
+		return false;
 
 	int num_mobs, num_objs, num_rooms;
 	copyover_count_items(&num_mobs, &num_objs, &num_rooms);
@@ -1624,11 +1884,15 @@ bool redis_save_world_state(void)
 
 	if (pid == 0)
 	{
+		signal(SIGALRM, SIG_DFL);
+		alarm(REDIS_WORLD_CHILD_TIMEOUT_SEC);
 		bool success = redis_save_world_state_sync();
+		alarm(0);
 		_exit(success ? 0 : 1);
 	}
 
 	world_state_save_pid = pid;
+	world_state_save_started = time(NULL);
 	return true;
 #endif
 }
@@ -1648,7 +1912,7 @@ bool redis_has_world_state(void)
 	}
 
 	// check valid flag
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET mud:world_state:valid");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:valid");
 	if (!reply)
 		return false;
 
@@ -1662,7 +1926,7 @@ bool redis_has_world_state(void)
 		return false;
 
 	// check timestamp
-	reply = (redisReply *)redisCommand(redis_ctx, "GET mud:world_state:timestamp");
+	reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:timestamp");
 	if (!reply)
 		return false;
 
@@ -1685,7 +1949,7 @@ bool redis_has_world_state(void)
 	}
 
 	// check data exists
-	reply = (redisReply *)redisCommand(redis_ctx, "EXISTS mud:world_state");
+	reply = (redisReply *)redis_command(redis_ctx, "EXISTS mud:world_state");
 	if (!reply)
 		return false;
 
@@ -1704,7 +1968,7 @@ time_t redis_world_state_timestamp(void)
 	if (!redis_enabled || !redis_ctx)
 		return 0;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET mud:world_state:timestamp");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:timestamp");
 	if (!reply)
 		return 0;
 
@@ -1723,7 +1987,7 @@ void redis_clear_world_state(void)
 	if (!redis_enabled || !redis_ctx)
 		return;
 
-	redisReply *reply = (redisReply *)redisCommand(
+	redisReply *reply = (redisReply *)redis_command(
 		redis_ctx, "DEL mud:world_state mud:world_state:timestamp mud:world_state:valid");
 	if (reply)
 		freeReplyObject(reply);
@@ -2225,7 +2489,7 @@ bool redis_load_world_state(void)
 	// restore floor drops first - has most recent data
 	redis_restore_floor_drops();
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET mud:world_state");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state");
 	if (!reply || redis_ctx->err)
 	{
 		if (reply)
@@ -2275,9 +2539,6 @@ void event_save_world_state(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, voi
 	{
 		redis_flush_floor_drops();
 		redis_save_world_state();
-		// clear floor_drops - items now in world_state snapshot
-		// this prevents purged/decayed items from coming back as zombies
-		redis_clear_floor_drops();
 		add_event(event_save_world_state, world_state_interval * WAIT_SEC, NULL, NULL, NULL,
 			  0, NULL, 0);
 	}
@@ -2292,7 +2553,7 @@ bool redis_cache_set(const char *key, const char *value)
 		return false;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "SET %s %b", key, value, strlen(value));
+		(redisReply *)redis_command(redis_ctx, "SET %s %b", key, value, strlen(value));
 	if (!reply)
 		return false;
 
@@ -2310,8 +2571,8 @@ bool redis_cache_set_ex(const char *key, int seconds, const char *value)
 	if (!redis_enabled || !redis_ctx || !key || !value || seconds <= 0)
 		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SETEX %s %d %b", key, seconds,
-						       value, strlen(value));
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "SETEX %s %d %b", key, seconds,
+							value, strlen(value));
 	if (!reply)
 		return false;
 
@@ -2329,7 +2590,7 @@ char *redis_cache_get(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return NULL;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", key);
 	if (!reply)
 		return NULL;
 
@@ -2348,7 +2609,7 @@ void redis_cache_del(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s", key);
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -2668,7 +2929,7 @@ bool redis_clear_ship_snapshots(void)
 	char cursor[64] = "0";
 	do
 	{
-		redisReply *scan = (redisReply *)redisCommand(
+		redisReply *scan = (redisReply *)redis_command(
 			redis_ctx, "SCAN %s MATCH ship:snapshot:* COUNT 256", cursor);
 		if (!scan || scan->type != REDIS_REPLY_ARRAY || scan->elements != 2 ||
 		    !scan->element[0] || !scan->element[1] || !scan->element[0]->str ||
@@ -2690,8 +2951,8 @@ bool redis_clear_ship_snapshots(void)
 				freeReplyObject(scan);
 				return false;
 			}
-			redisReply *del =
-				(redisReply *)redisCommand(redis_ctx, "DEL %b", key->str, key->len);
+			redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %b", key->str,
+								      key->len);
 			if (!del ||
 			    (del->type != REDIS_REPLY_INTEGER && del->type != REDIS_REPLY_NIL))
 			{
@@ -2717,8 +2978,8 @@ bool redis_publish(const char *channel, const char *message)
 	if (!redis_enabled || !redis_ctx || !channel || !message)
 		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "PUBLISH %s %b", channel, message,
-						       strlen(message));
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "PUBLISH %s %b", channel,
+							message, strlen(message));
 	if (!reply)
 		return false;
 
@@ -2747,7 +3008,7 @@ void redis_donation_subscribe_init(void)
 			redis_port = 6379;
 	}
 
-	donation_sub_ctx = redisConnect(redis_host, redis_port);
+	donation_sub_ctx = redis_connect_bounded(redis_host, redis_port);
 	if (!donation_sub_ctx || donation_sub_ctx->err)
 	{
 		if (donation_sub_ctx)
@@ -2759,12 +3020,15 @@ void redis_donation_subscribe_init(void)
 		return;
 	}
 
-	struct timeval tv = { 0, 100000 };
-	redisSetTimeout(donation_sub_ctx, tv);
-
-	redisReply *reply = (redisReply *)redisCommand(donation_sub_ctx, "SUBSCRIBE mud:nchat");
-	if (reply)
-		freeReplyObject(reply);
+	redisReply *reply = (redisReply *)redis_command(donation_sub_ctx, "SUBSCRIBE mud:nchat");
+	if (!reply || reply->type != REDIS_REPLY_ARRAY)
+	{
+		if (reply)
+			freeReplyObject(reply);
+		donation_sub_drop("subscribe failed");
+		return;
+	}
+	freeReplyObject(reply);
 
 	donation_sub_connected = true;
 	logit(LOG_SYS, "redis: donation subscriber connected to mud:nchat");
@@ -3247,7 +3511,7 @@ static void redis_publish_player_event(int pid, const char *event)
 	snprintf(json, sizeof(json), "{\"event\":\"%s\",\"pid\":%d}", event, pid);
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "PUBLISH mud:player %b", json, strlen(json));
+		(redisReply *)redis_command(redis_ctx, "PUBLISH mud:player %b", json, strlen(json));
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -3278,8 +3542,8 @@ void redis_player_online(P_char ch)
 		class_str ? class_str : "", GET_RACEWAR(ch), ip, client, client_ver,
 		(long)login_time);
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "HSET mud:online %d %b",
-						       GET_PID(ch), json, strlen(json));
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HSET mud:online %d %b",
+							GET_PID(ch), json, strlen(json));
 	if (reply)
 		freeReplyObject(reply);
 
@@ -3294,7 +3558,7 @@ void redis_player_offline(P_char ch)
 		return;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "HDEL mud:online %d", GET_PID(ch));
+		(redisReply *)redis_command(redis_ctx, "HDEL mud:online %d", GET_PID(ch));
 	if (reply)
 		freeReplyObject(reply);
 
@@ -3308,7 +3572,7 @@ void redis_clear_online_players(void)
 	if (!redis_enabled || !redis_ctx)
 		return;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:online");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL mud:online");
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -3360,7 +3624,7 @@ bool redis_key_exists(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "EXISTS %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "EXISTS %s", key);
 	if (!reply)
 		return false;
 
@@ -3378,7 +3642,7 @@ long redis_get_ttl(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return -1;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "TTL %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "TTL %s", key);
 	if (!reply)
 		return -1;
 
@@ -3399,7 +3663,7 @@ long redis_hlen(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return 0;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "HLEN %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HLEN %s", key);
 	if (!reply)
 		return 0;
 
@@ -3420,7 +3684,7 @@ long redis_scard(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return 0;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SCARD %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "SCARD %s", key);
 	if (!reply)
 		return 0;
 
@@ -3441,7 +3705,7 @@ char *redis_get_string(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return NULL;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", key);
 	if (!reply)
 		return NULL;
 
@@ -3457,16 +3721,17 @@ char *redis_get_string(const char *key)
 void redis_clear_dirty_players(void)
 {
 	memset(redis_dirty_metrics, 0, sizeof(redis_dirty_metrics));
+	redis_local_dirty_count = 0;
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_ctx)
 		return;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL mud:dirty_players");
 	if (reply)
 		freeReplyObject(reply);
 
 	redisReply *inflight =
-		(redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players:flushing");
+		(redisReply *)redis_command(redis_ctx, "DEL mud:dirty_players:flushing");
 	if (inflight)
 		freeReplyObject(inflight);
 

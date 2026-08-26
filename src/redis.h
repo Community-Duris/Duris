@@ -27,7 +27,7 @@ void redis_log_floor_drop(P_obj obj, int room_vnum);
 void redis_remove_floor_drop(unsigned long obj_uid);
 void redis_clear_floor_drops(void);
 bool redis_check_floor_drop(unsigned long obj_uid);
-void redis_flush_floor_drops(void);
+bool redis_flush_floor_drops(void);
 int redis_restore_floor_drops(void);
 
 void mark_player_dirty(int pid);

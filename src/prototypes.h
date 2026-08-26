@@ -2210,6 +2210,7 @@ void shutdown_notice(void);
 void shutdown_request(void);
 */
 void signal_setup(void);
+bool take_reaped_child_status(pid_t pid, int *status);
 
 /* sojourn.c */
 

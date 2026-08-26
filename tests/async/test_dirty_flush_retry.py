@@ -1,36 +1,37 @@
 #!/usr/bin/env python3
+"""Dirty-player inflight retry contracts."""
+
 from pathlib import Path
-import sys
-from contract_text import contains, find, index
 
-root = Path(__file__).resolve().parents[2]
-text = (root / 'src/redis.c').read_text()
+text = (Path(__file__).resolve().parents[2] / "src/redis.c").read_text()
 
-wait_block = find(text, 'if (dirty_flush_pid > 0)')
-clear_on_success = find(text, 'redisCommand(redis_ctx, "DEL %s", inflight_key)', wait_block)
-keep_on_fail = find(text, 'restoring dirty set for retry', wait_block)
-pre_fork_region = text[find(text, '// fork for async save'):find(text, 'if (pid < 0)', text.find('// fork for async save'))]
-pre_fork_del = contains(pre_fork_region, 'DEL mud:dirty_players')
-child_block = find(text, 'if (pid == 0)')
-child_all_ok = find(text, 'bool all_ok = true;', child_block)
-child_save_check = find(text, 'if (!sql_save_player(ch, RENT_CRASH, get_room_vnum(ch)))', child_block)
-child_exit = find(text, '_exit(all_ok ? 0 : 1);', child_block)
+flush_start = text.index("void flush_dirty_players(void)")
+flush_end = text.index("int get_dirty_player_count(void)", flush_start)
+flush = text[flush_start:flush_end]
 
-checks = [
-    ("waitpid block exists", wait_block != -1),
-    ("dirty set is cleared only after a successful child exit", clear_on_success != -1 and keep_on_fail != -1 and clear_on_success < keep_on_fail),
-    ("dirty set is no longer cleared before fork", not pre_fork_del),
-    ("child tracks overall save success", child_all_ok != -1 and child_save_check != -1 and child_exit != -1 and child_all_ok < child_exit),
-]
+poll = flush.index("redis_poll_child(")
+success = flush.index("child_result == REDIS_CHILD_SUCCEEDED")
+clear = flush.index('redis_command(redis_ctx, "DEL %s", inflight_key)', success)
+failure = flush.index("child_result == REDIS_CHILD_FAILED")
+restore_failure = flush.index("redis_restore_dirty_snapshot(inflight_key);", failure)
+preflight_restore = flush.index("if (!redis_restore_dirty_snapshot(inflight_key))")
+rename = flush.index('"RENAME mud:dirty_players %s"')
+fork_failure = flush[flush.index("if (pid < 0)"):flush.index("if (pid == 0)")]
 
-failed = [name for name, ok in checks if not ok]
-for name, ok in checks:
-    print(f"[{'PASS' if ok else 'FAIL'}] {name}")
+checks = {
+    "child poll precedes acknowledgment": poll < success < clear,
+    "only successful child deletes inflight": clear < failure,
+    "failed child restores inflight": failure < restore_failure,
+    "stale inflight merges before rename": preflight_restore < rename,
+    "fork failure restores instead of saving synchronously": (
+        "redis_restore_dirty_snapshot(inflight_key);" in fork_failure
+        and "sql_save_player" not in fork_failure
+    ),
+    "child exit represents aggregate save status": "_exit(all_ok ? 0 : 1);" in flush,
+    "child has its own hard deadline": "alarm(REDIS_DIRTY_CHILD_TIMEOUT_SEC);" in flush,
+}
 
-if failed:
-    print("\nFailed checks:")
-    for name in failed:
-        print(f"- {name}")
-    sys.exit(1)
-
-print("\nDirty flush retry semantics look correct.")
+for label, passed in checks.items():
+    print(f"[{'PASS' if passed else 'FAIL'}] {label}")
+assert all(checks.values())
+print("dirty flush retry semantics look correct")

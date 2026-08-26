@@ -1,7 +1,7 @@
 # Session 06: Redis Failure and Recovery Containment
 
 **Session ID**: `phase00-session06-redis-failure-and-recovery-containment`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One Redis outage and recovery domain spanning connection deadlines,
 dirty-player preservation, temporary child supervision, and world floor-delta ACKs.
 
@@ -47,8 +47,8 @@ before the matching world snapshot succeeds.
 
 ## Prerequisites
 
-- [ ] Session 01 diagnostics expose Redis failures without bound values.
-- [ ] Session 03 establishes the fail-closed save behavior reused by dirty-state
+- [x] Session 01 diagnostics expose Redis failures without bound values.
+- [x] Session 03 establishes the fail-closed save behavior reused by dirty-state
       recovery edges.
 
 ---
@@ -64,13 +64,23 @@ before the matching world snapshot succeeds.
 
 ## Success Criteria
 
-- [ ] No Redis connection or command can block the simulation thread without a bounded
+- [x] No Redis connection or command can block the simulation thread without a bounded
       deadline.
-- [ ] No dirty-player mutation failure invokes a synchronous full player save.
-- [ ] Existing and newly produced dirty inflight membership is merged without loss on
+- [x] No dirty-player mutation failure invokes a synchronous full player save.
+- [x] Existing and newly produced dirty inflight membership is merged without loss on
       boot, timeout, crash, or child failure.
-- [ ] Player-save and world-snapshot children have enforced runtime bounds and their
+- [x] Player-save and world-snapshot children have enforced runtime bounds and their
       exit status controls success reporting.
-- [ ] Floor deltas are cleared only after the matching world snapshot has completed
+- [x] Floor deltas are cleared only after the matching world snapshot has completed
       successfully.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.
+
+---
+
+## Completion Summary
+
+Completed on 2026-08-27. Redis connections and commands now have explicit deadlines,
+dirty membership survives degraded operation and every child failure edge, temporary
+children are supervised by deadline and exact exit status, and floor deltas remain
+pending until the corresponding world snapshot is acknowledged. Validation passed
+with 173/173 regressions plus signal-handler checks.
