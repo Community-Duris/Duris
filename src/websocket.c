@@ -303,7 +303,12 @@ int websocket_init(int port)
 
 	/* set up address */
 	memset(&sa, 0, sizeof(sa));
-	sa.sin6_family = AF_INET6;
+	if (!runtime_listener_address(&sa))
+	{
+		logit(LOG_STATUS, "WebSocket LISTEN_ADDRESS is invalid");
+		close(ws_listen_fd);
+		return -1;
+	}
 	sa.sin6_port = htons(port);
 
 	/* bind */

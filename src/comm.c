@@ -19,7 +19,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <gnutls/gnutls.h>
-#include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -348,7 +347,8 @@ int main(int argc, char **argv)
 
 	logit(LOG_STATUS, "Using %s as data directory.", dir);
 
-	load_env_file();
+	if (load_env_file() < 0)
+		fatal_boot_error("comm", "Unsafe environment configuration file");
 
 	if (initialize_mysql() < 0)
 	{
@@ -563,12 +563,12 @@ void run_the_game(int port, int sslport)
 
 		loadHints();
 		epic_initialization();
-		ssl_read_cert();
 	}
 	else
 	{
 		fprintf(stderr, "--  Skipping optional subsystems in mini mode.\r\n");
 	}
+	ssl_read_cert();
 
 	fprintf(stderr, "Assigning map glyph variations.\r\n");
 	init_map_glyphs();
@@ -1902,6 +1902,31 @@ int bannedsite(char *name, int flag)
        * old/new socket code. JAB                                                                                                                                                                      \
        */
 
+bool runtime_listener_address(sockaddr_in6 *address)
+{
+	if (!address)
+		return false;
+	memset(address, 0, sizeof(*address));
+	address->sin6_family = AF_INET6;
+
+	const char *configured = getenv("LISTEN_ADDRESS");
+	if (!configured || !*configured || !strcmp(configured, "::"))
+	{
+		address->sin6_addr = in6addr_any;
+		return true;
+	}
+	if (inet_pton(AF_INET6, configured, &address->sin6_addr) == 1)
+		return true;
+
+	in_addr ipv4;
+	if (inet_pton(AF_INET, configured, &ipv4) != 1)
+		return false;
+	address->sin6_addr.s6_addr[10] = 0xff;
+	address->sin6_addr.s6_addr[11] = 0xff;
+	memcpy(&address->sin6_addr.s6_addr[12], &ipv4, sizeof(ipv4));
+	return true;
+}
+
 int init_socket(int port)
 {
 	int s, bind_error;
@@ -1918,6 +1943,11 @@ int init_socket(int port)
 	linger_values.l_linger = 0;
 
 	bzero(&sa, sizeof sa);
+	if (!runtime_listener_address(&sa))
+	{
+		logit(LOG_EXIT, "LISTEN_ADDRESS must be a numeric IPv4 or IPv6 address");
+		exit(1);
+	}
 	/*
 	  gethostname(hostname, MAX_HOSTNAME);
 	  hp = gethostbyname(hostname);
@@ -1927,7 +1957,6 @@ int init_socket(int port)
 	  }
 	*/
 	/*  sa.sin_family = hp->h_addrtype; */
-	sa.sin6_family = AF_INET6;
 	sa.sin6_port = htons((unsigned short int)port);
 #ifdef IPPROTO_MPTCP
 	/*

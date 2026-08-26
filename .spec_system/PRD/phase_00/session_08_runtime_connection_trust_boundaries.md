@@ -1,7 +1,7 @@
 # Session 08: Runtime Connection Trust Boundaries
 
 **Session ID**: `phase00-session08-runtime-connection-trust-boundaries`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One fail-closed deployment boundary across environment selection,
 MySQL connection construction, session invariants, transport, and listener certificate
 fallback.
@@ -43,8 +43,8 @@ listener key, while keeping explicit loopback development usable.
 
 ## Prerequisites
 
-- [ ] Session 01 ensures connection failures are logged without SQL or private values.
-- [ ] Tests can construct isolated environment fixtures without reading the repository
+- [x] Session 01 ensures connection failures are logged without SQL or private values.
+- [x] Tests can construct isolated environment fixtures without reading the repository
       `.env` contents.
 
 ---
@@ -63,12 +63,12 @@ listener key, while keeping explicit loopback development usable.
 
 ## Success Criteria
 
-- [ ] Missing credentials or an unapproved database target fails before any boot write.
-- [ ] Secret-file permission checks identify mode 0644 as unsafe without exposing file
+- [x] Missing credentials or an unapproved database target fails before any boot write.
+- [x] Secret-file permission checks identify mode 0644 as unsafe without exposing file
       contents, and safe local operation requires mode 0600 or stricter.
-- [ ] Every MySQL connection has a bounded connect deadline and verifies the same
+- [x] Every MySQL connection has a bounded connect deadline and verifies the same
       charset, time zone, isolation, and SQL-mode contract.
-- [ ] Every non-local database connection requires verified protected transport.
-- [ ] The tracked localhost key can be used only by explicit loopback development and
+- [x] Every non-local database connection requires verified protected transport.
+- [x] The tracked localhost key can be used only by explicit loopback development and
       never as a network deployment fallback.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

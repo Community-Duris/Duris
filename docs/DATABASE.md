@@ -16,11 +16,13 @@ reference. In particular, `DB_NAME` is the requested name, while the runtime
 port safety rule can redirect an implicit production name to `duris_dev` on a
 non-`7777` port.
 
-The server reads `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWD`, and `DB_NAME`
-from the process environment after loading `.env`; `src/sql.h` supplies
-compiled fallback defaults. `TEST_MUD` changes the fallback database from
-`duris` to `duris_dev`, but it does not override explicit environment values.
-See [CONFIGURATION.md](CONFIGURATION.md) for parsing and precedence details.
+The server requires explicit `DB_HOST`, `DB_USER`, `DB_PASSWD`, and `DB_NAME`
+values from the process environment after loading `.env`; `DB_PORT` is optional
+and must be valid when present. It has no compiled credential or target
+defaults. The resolved `host/database` pair must also appear in
+`DB_ALLOWED_TARGETS`; remote TCP targets require verified TLS. See
+[CONFIGURATION.md](CONFIGURATION.md) for parsing, trust-boundary, and precedence
+details.
 
 The listen port applies a production safety redirect in
 `sql_persistence_db_name()` (`src/sql.c`):

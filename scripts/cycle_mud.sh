@@ -5,7 +5,20 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
 # Load environment variables from .env if it exists
-if [ -f .env ]; then
+if [ -L .env ]; then
+  echo "Unsafe .env metadata; symbolic links are not allowed" >&2
+  exit 1
+elif [ -e .env ]; then
+  if [ ! -f .env ]; then
+    echo "Unsafe .env metadata; a regular file is required" >&2
+    exit 1
+  fi
+  ENV_MODE=$(stat -c '%a' .env) || exit 1
+  ENV_OWNER=$(stat -c '%u' .env) || exit 1
+  if (( (8#$ENV_MODE & 0177) != 0 )) || [[ "$ENV_OWNER" != "$(id -u)" ]]; then
+    echo "Unsafe .env metadata; run: chmod 600 .env" >&2
+    exit 1
+  fi
   echo "Loading environment from .env"
   set -a
   source .env
@@ -17,6 +30,10 @@ DEV_MODE=0
 if [[ "$1" == "--dev" ]]; then
   DEV_MODE=1
   echo "Running in DEV mode - using TEST_MUD database"
+fi
+MUD_PORT=7777
+if [ $DEV_MODE -eq 1 ]; then
+  MUD_PORT=4000
 fi
 
 RESULT=53
@@ -36,52 +53,55 @@ mkdir -p "$BINARY_HISTORY_DIR"
 
 ulimit -c unlimited
 
-# Extract database credentials from sql.h as FALLBACK only (if not set by .env)
-if [ -f "src/sql.h" ]; then
-  if [ $DEV_MODE -eq 1 ]; then
-    # Get TEST_MUD credentials (first match in ifdef) - only if not already set
-    [ -z "$DB_HOST" ] && DB_HOST=$(grep '#define DB_HOST' src/sql.h | sed -n '1p' | sed 's/.*"\(.*\)".*/\1/')
-    [ -z "$DB_USER" ] && DB_USER=$(grep '#define DB_USER' src/sql.h | sed -n '1p' | sed 's/.*"\(.*\)".*/\1/')
-    [ -z "$DB_PASSWD" ] && DB_PASSWD=$(grep '#define DB_PASSWD' src/sql.h | sed -n '1p' | sed 's/.*"\(.*\)".*/\1/')
-    [ -z "$DB_NAME" ] && DB_NAME=$(grep '#define DB_NAME' src/sql.h | sed -n '1p' | sed 's/.*"\(.*\)".*/\1/')
-  else
-    # Get production credentials (second match in else clause) - only if not already set
-    [ -z "$DB_HOST" ] && DB_HOST=$(grep '#define DB_HOST' src/sql.h | sed -n '2p' | sed 's/.*"\(.*\)".*/\1/')
-    [ -z "$DB_USER" ] && DB_USER=$(grep '#define DB_USER' src/sql.h | sed -n '2p' | sed 's/.*"\(.*\)".*/\1/')
-    [ -z "$DB_PASSWD" ] && DB_PASSWD=$(grep '#define DB_PASSWD' src/sql.h | sed -n '2p' | sed 's/.*"\(.*\)".*/\1/')
-    [ -z "$DB_NAME" ] && DB_NAME=$(grep '#define DB_NAME' src/sql.h | sed -n '2p' | sed 's/.*"\(.*\)".*/\1/')
+for REQUIRED_DB_FIELD in ENVIRONMENT DB_HOST DB_USER DB_PASSWD DB_NAME DB_ALLOWED_TARGETS; do
+  if [[ -z "${!REQUIRED_DB_FIELD:-}" ]]; then
+    echo "Missing required database field: $REQUIRED_DB_FIELD" >&2
+    exit 1
   fi
-  echo "Database: $DB_NAME on $DB_HOST"
-
-  # Create server_reboots table if it doesn't exist
-  mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" -e "
-    CREATE TABLE IF NOT EXISTS server_reboots (
-      id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      boot_time INT NOT NULL,
-      shutdown_time INT NOT NULL,
-      uptime_seconds INT NOT NULL,
-      shutdown_type VARCHAR(50) NOT NULL DEFAULT 'unknown',
-      initiated_by VARCHAR(255) NULL,
-      reason TEXT NULL,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_boot_time (boot_time),
-      INDEX idx_shutdown_time (shutdown_time),
-      INDEX idx_created_at (created_at),
-      INDEX idx_shutdown_type (shutdown_type)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-  " 2>/dev/null
-
-  # ---- Incremental migrations ----------------------------------------
-  # Migrations are handled externally now; use one of the explicit mysql
-  # import commands below when you need to bootstrap or patch a database.
-  # echo "Running schema migrations..."
-  # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/schema_migration_v17_schema_fixes.sql || true)
-  # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/schema_migration_v18_player_affects_unique.sql || true)
-  # (mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" < ./migrations/bootstrap_multithread_safe.sql || true)
-else
-  echo "Warning: src/sql.h not found, skipping database operations"
-  DB_HOST=""
+done
+if [[ "$ENVIRONMENT" != "local" && "$ENVIRONMENT" != "production" ]]; then
+  echo "ENVIRONMENT must be local or production" >&2
+  exit 1
 fi
+if [[ -n "${DB_PORT:-}" ]] &&
+   { ! [[ "$DB_PORT" =~ ^[0-9]+$ ]] || (( DB_PORT < 1 || DB_PORT > 65535 )); }; then
+  echo "DB_PORT must be between 1 and 65535" >&2
+  exit 1
+fi
+if [[ "$ENVIRONMENT" == "production" && $MUD_PORT -ne 7777 ]]; then
+  echo "Production mode requires port 7777" >&2
+  exit 1
+fi
+
+EFFECTIVE_DB_NAME="$DB_NAME"
+if [[ $MUD_PORT -ne 7777 && ( "$DB_NAME" == "duris" || "$DB_NAME" == "duris_prod" ) ]]; then
+  EFFECTIVE_DB_NAME="duris_dev"
+fi
+case ",$DB_ALLOWED_TARGETS," in
+  *",$DB_HOST/$EFFECTIVE_DB_NAME,"*) ;;
+  *) echo "Resolved database target is not allow-listed" >&2; exit 1 ;;
+esac
+
+MYSQL_CONNECTION_ARGS=(--connect-timeout=10 -u "$DB_USER")
+if [[ -n "${DB_SOCKET:-}" ]]; then
+  if [[ "$ENVIRONMENT" != "local" ||
+        ( "$DB_HOST" != "localhost" && "$DB_HOST" != "127.0.0.1" && "$DB_HOST" != "::1" ) ]]; then
+    echo "DB_SOCKET is restricted to local loopback mode" >&2
+    exit 1
+  fi
+  MYSQL_CONNECTION_ARGS+=(--protocol=socket --socket="$DB_SOCKET")
+elif [[ "$DB_HOST" == "localhost" || "$DB_HOST" == "127.0.0.1" || "$DB_HOST" == "::1" ]]; then
+  MYSQL_CONNECTION_ARGS+=(--protocol=tcp -h "$DB_HOST" -P "${DB_PORT:-3306}")
+else
+  if [[ "${DB_TLS:-}" != "TRUE" || ! -f "${DB_SSL_CA:-}" ]]; then
+    echo "Remote database transport requires TLS and a CA file" >&2
+    exit 1
+  fi
+  MYSQL_CONNECTION_ARGS+=(--protocol=tcp -h "$DB_HOST" -P "${DB_PORT:-3306}"
+                          --ssl-ca="$DB_SSL_CA" --ssl-verify-server-cert)
+fi
+export MYSQL_PWD="$DB_PASSWD"
+echo "Validated explicit database configuration"
 
 while [[ $RESULT != 0 && $RESULT != 55 ]]; do
 	DATESTR=`date +%C%y.%m.%d-%H.%M.%S`
@@ -147,11 +167,6 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   # Record boot time (will be used for shutdown record later)
   BOOT_TIME=$(date +%s)
 
-  MUD_PORT=7777
-  if [ $DEV_MODE -eq 1 ]; then
-    MUD_PORT=4000
-  fi
-
   echo "Starting duris on port ${MUD_PORT}..."
   "$RUNTIME_BINARY" ${MUD_PORT} # > dms.out
 
@@ -208,7 +223,7 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
     MUD_UPTIME=$((SHUTDOWN_TIME - BOOT_TIME))
 
     # Insert a complete reboot record (boot + shutdown)
-    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWD" "$DB_NAME" -e "
+    mysql "${MYSQL_CONNECTION_ARGS[@]}" "$EFFECTIVE_DB_NAME" -e "
       INSERT INTO server_reboots
         (boot_time, shutdown_time, uptime_seconds, shutdown_type, initiated_by, reason)
       VALUES

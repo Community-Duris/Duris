@@ -31,7 +31,10 @@ for name, text in texts.items():
         direct_sites.append((name, text.count("\n", 0, match.start()) + 1))
 
 checks = [
-    ("one observed MySQL execution boundary", len(direct_sites) == 1 and direct_sites[0][0] == "sql.c"),
+    (
+        "raw MySQL execution remains confined to sql.c",
+        bool(direct_sites) and all(name == "sql.c" for name, _line in direct_sites),
+    ),
     ("raw persistence workers use observed executor", "sql_observed_execute_at" in texts["sql_persistence_raw.c"] and "sql_observed_execute_at" in texts["locker_async.c"]),
     ("explicit trace labels remain semantic sites", "const struct persistence_query_site semantic_site" in texts["sql.c"] and "(void)label" not in texts["sql.c"]),
     ("fork context uses process origin", "static const pid_t sql_main_process_id = getpid();" in texts["sql.c"]),

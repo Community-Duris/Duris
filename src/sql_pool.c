@@ -46,33 +46,12 @@ static int pool_closing = 0;
 
 static MYSQL *sql_pool_create_connection(const char *site, int slot)
 {
-	MYSQL *conn = mysql_init(NULL);
+	MYSQL *conn = sql_open_configured_connection(CLIENT_MULTI_STATEMENTS);
 	if (!conn)
 	{
-		logit(LOG_DEBUG, "%s: mysql_init failed for slot %d", site, slot);
+		logit(LOG_DEBUG, "%s: validated connection failed for slot %d", site, slot);
 		return NULL;
 	}
-
-	/* Match the main connection: 10-second read/write timeouts. */
-	unsigned int timeout = 10;
-	mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &timeout);
-	mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
-
-	/* Connect with CLIENT_MULTI_STATEMENTS so multi-statement batches work
-	 * through the pool too. Use the shared db-name resolver so every slot
-	 * agrees with the main DB connection about which database to target. */
-	if (!mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, sql_persistence_db_name(),
-				DB_PORT, NULL, /* unix_socket */
-				CLIENT_MULTI_STATEMENTS))
-	{
-		logit(LOG_DEBUG,
-		      "%s: database connect failed for slot %d error_code=%u sqlstate=%.5s", site,
-		      slot, (unsigned int)mysql_errno(conn), mysql_sqlstate(conn));
-		mysql_close(conn);
-		return NULL;
-	}
-
-	mysql_set_character_set(conn, "utf8mb4");
 	return conn;
 }
 

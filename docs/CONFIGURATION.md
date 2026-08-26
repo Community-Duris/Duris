@@ -11,20 +11,28 @@ Start from [`.env.example`](../.env.example):
 
 ```bash
 cp .env.example .env
+chmod 600 .env
 ```
 
 Keep `.env` local and never commit passwords, HMAC secrets, or production
-connection details.
+connection details. The server checks metadata before reading: `.env` must be
+a regular file owned by the effective server user and must grant no permission
+beyond owner read/write (`0600`).
 
 ## Database
 
-| Variable | Default | Meaning |
+| Variable | Requirement | Meaning |
 | --- | --- | --- |
-| `DB_HOST` | `localhost` | MySQL/MariaDB host. |
-| `DB_PORT` | client default | Database TCP port; normally `3306`. |
-| `DB_USER` | `duris` | Database account. |
-| `DB_PASSWD` | build default | Database password. |
-| `DB_NAME` | `duris_dev` in `TEST_MUD`, otherwise `duris` | Requested database name. |
+| `ENVIRONMENT` | Required: `local` or `production` | Runtime trust role. |
+| `DB_HOST` | Required | MySQL/MariaDB host. |
+| `DB_PORT` | Optional; `1`-`65535` | Database TCP port; the client default applies when omitted. |
+| `DB_USER` | Required | Database account. |
+| `DB_PASSWD` | Required | Database password. |
+| `DB_NAME` | Required | Requested database name. |
+| `DB_ALLOWED_TARGETS` | Required | Comma-separated exact `host/database` pairs; the resolved pair must match. |
+| `DB_SOCKET` | Optional, local role only | Protected local Unix socket used instead of remote transport. |
+| `DB_TLS` | Required as `TRUE` for non-loopback hosts | Enforce encrypted database transport. |
+| `DB_SSL_CA` | Required for non-loopback hosts | Regular CA file used to verify the database server certificate. |
 
 The server selects the database through the listen port as a final safety
 check. Port `7777` is the production default; on any other port an explicitly
@@ -32,9 +40,11 @@ production-like name (`duris` or `duris_prod`) is redirected to `duris_dev`.
 Use a separate database account and a non-`7777` port for development. This
 redirect does not make a production credential safe to reuse locally.
 
-The `ENVIRONMENT` value in `.env.example` is informational; the server does
-not use it to select behavior or protect a database. Treat the port, database
-name, and credentials as the real safety controls.
+Every connection has bounded connect/read/write deadlines, disables automatic
+reconnect, and must establish the same verified session contract: `utf8mb4`,
+UTC, READ COMMITTED, and strict transactional SQL mode. Loopback TCP and an
+explicit local socket are treated as protected local transport. Any other host
+requires enforced TLS, CA verification, and a negotiated cipher.
 
 ## Redis
 
@@ -90,13 +100,16 @@ for production.
 
 | Variable | Meaning |
 | --- | --- |
+| `LISTEN_ADDRESS` | Numeric IPv4 or IPv6 address applied to telnet, TLS telnet, and WebSocket listeners. Use `127.0.0.1` or `::1` for local development. |
 | `DURISWEB_SECRET` | Shared secret for DurisWeb HMAC authentication. The client signature is a 64-character SHA-256 hex digest for the current Unix minute; the server accepts the adjacent minute on either side to tolerate clock skew. Keep this secret private and use the same value in the backend. |
 | `DURIS_TRUSTED_PROXY_IP` | One immediate proxy IP address whose `X-Forwarded-For` header may be trusted for WebSocket and telnet connections. If unset, forwarded addresses are ignored. This is an address allow-list, not a CIDR range. |
 
 WebSocket listens on `4050`. Plain telnet defaults to `7777` and TLS telnet to
 `7778`; a custom plain-telnet port uses the following port for TLS. Configure a
-real `duris.crt` and `duris.key` in the repository root for networked TLS; the
-tracked self-signed certificate is suitable only for local testing.
+real `duris.crt` and `duris.key` in the repository root for networked TLS. The
+operator key must be owner-controlled and mode `0600` or stricter. The tracked
+self-signed certificate is accepted only with the explicit local role and an
+exact loopback listener.
 
 ## Diagnostics
 
@@ -142,9 +155,11 @@ builds a deferred backlog; see [ARCHITECTURE.md](ARCHITECTURE.md#event-wheel).
 1. The launching process environment has precedence over `.env`.
 2. `.env` values are loaded from the server's data directory, normally the
    repository root or the directory supplied with `-d`.
-3. Built-in defaults apply when neither source provides a value.
-4. The selected database and host/port are recorded in the status log during
-   boot. Confirm them before allowing clients to connect.
+3. Missing required values fail closed; no database credentials or names have
+   compiled defaults.
+4. The resolved database target must be present in `DB_ALLOWED_TARGETS` before
+   a connection is attempted. Logs report validation categories without
+   printing credentials or target values.
 
 A configuration change generally requires a restart. Database credentials and
 Redis settings are read before normal gameplay initialization; creation flags

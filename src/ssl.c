@@ -9,6 +9,14 @@
 static gnutls_certificate_credentials_t x509_cred = 0;
 static gnutls_priority_t priority_cache = 0;
 
+static bool ssl_local_fallback_allowed(void)
+{
+	const char *role = getenv("ENVIRONMENT");
+	const char *address = getenv("LISTEN_ADDRESS");
+	return role && !strcmp(role, "local") && address &&
+	       (!strcmp(address, "127.0.0.1") || !strcmp(address, "::1"));
+}
+
 #define YELL(msg, ...)                            \
 	do                                        \
 	{                                         \
@@ -22,11 +30,14 @@ static gnutls_priority_t priority_cache = 0;
 void ssl_read_cert(void)
 {
 	static timespec cert_time = { 0, 0 };
+	static timespec key_time = { 0, 0 };
 	struct stat st;
+	struct stat key_st;
 	gnutls_certificate_credentials_t cred = 0;
 	int err;
 	const char *certfile = CERTFILE;
 	const char *keyfile = KEYFILE;
+	bool local_fallback = false;
 
 	if (!priority_cache)
 		if ((err = gnutls_priority_init(&priority_cache, NULL, NULL)) < 0)
@@ -35,33 +46,46 @@ void ssl_read_cert(void)
 			exit(1);
 		}
 
-	if ((err = stat(certfile, &st)))
+	if ((err = stat(certfile, &st)) || stat(keyfile, &key_st))
 	{
 		struct stat fallback_cert;
 		struct stat fallback_key;
-		if (!stat("certs/localhost.crt", &fallback_cert) &&
+		if (ssl_local_fallback_allowed() && !stat("certs/localhost.crt", &fallback_cert) &&
 		    !stat("certs/localhost.key", &fallback_key))
 		{
 			certfile = "certs/localhost.crt";
 			keyfile = "certs/localhost.key";
 			st = fallback_cert;
+			key_st = fallback_key;
+			local_fallback = true;
 		}
 		else
 		{
-			YELL("Can't stat cert file %s: %s\n", certfile, strerror(errno));
+			YELL("TLS certificate configuration is unavailable: %s\n", strerror(errno));
 			if (x509_cred)
 				return;
-			return;
+			exit(1);
 		}
+	}
+	if (!S_ISREG(st.st_mode) || !S_ISREG(key_st.st_mode) ||
+	    (!local_fallback && (key_st.st_uid != geteuid() || ((key_st.st_mode & 0777) & ~0600))))
+	{
+		YELL("TLS certificate configuration has unsafe file metadata: %s\n", keyfile);
+		if (x509_cred)
+			return;
+		exit(1);
 	}
 
 	if (st.st_mtim.tv_sec == cert_time.tv_sec && st.st_mtim.tv_nsec == cert_time.tv_nsec)
-		return;
+		if (key_st.st_mtim.tv_sec == key_time.tv_sec &&
+		    key_st.st_mtim.tv_nsec == key_time.tv_nsec)
+			return;
 
 	printf("[%ld] reading ssl cert: %s key: %s (old_mtime=%ld.%ld new_mtime=%ld.%ld)\n",
 	       time(NULL), certfile, keyfile, cert_time.tv_sec, cert_time.tv_nsec,
 	       st.st_mtim.tv_sec, st.st_mtim.tv_nsec);
 	cert_time = st.st_mtim;
+	key_time = key_st.st_mtim;
 	if ((err = gnutls_certificate_allocate_credentials(&cred)) < 0 ||
 	    (err = gnutls_certificate_set_x509_key_file(cred, certfile, keyfile,
 							GNUTLS_X509_FMT_PEM)) < 0 ||
@@ -69,7 +93,7 @@ void ssl_read_cert(void)
 	{
 		if (cred)
 			gnutls_certificate_free_credentials(cred);
-		YELL("Can't read cert file %s key file %s: %s\n", CERTFILE, KEYFILE,
+		YELL("Can't read cert file %s key file %s: %s\n", certfile, keyfile,
 		     gnutls_strerror(err));
 		if (x509_cred)
 			return;

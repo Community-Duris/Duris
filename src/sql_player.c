@@ -794,17 +794,7 @@ static void json_to_spellbook(const char *json, char *output)
 // for forked child process - needs its own db connection
 MYSQL *sql_create_child_connection(void)
 {
-	MYSQL *conn = mysql_init(NULL);
-	if (!conn)
-		return NULL;
-
-	conn = mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, sql_persistence_db_name(),
-				  DB_PORT, NULL, CLIENT_MULTI_STATEMENTS);
-	if (!conn)
-		return NULL;
-
-	mysql_set_character_set(conn, "utf8mb4");
-	return conn;
+	return sql_open_configured_connection(CLIENT_MULTI_STATEMENTS);
 }
 
 // child swaps in its own connection after fork

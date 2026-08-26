@@ -26,8 +26,8 @@ assert "CRYPTO_memcmp(sig, expected, 64)" in AUTH
 # The example contains a placeholder only; the runtime reads .env, never the
 # template. The server also loads .env when launched without cycle_mud.sh.
 assert "DURISWEB_SECRET=put-secret-here" in EXAMPLE
-assert 'fopen(".env", "r")' in SQL
+assert 'open(".env", O_RDONLY | O_CLOEXEC | O_NOFOLLOW)' in SQL
 assert ".env.example" not in SQL
-assert "load_env_file();" in COMM
+assert "if (load_env_file() < 0)" in COMM
 
 print("DurisWeb secret configuration contracts passed")

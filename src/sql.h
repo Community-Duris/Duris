@@ -5,47 +5,29 @@
 #include "persistence_observability.h"
 #include <stdlib.h>
 
-/* default database credentials (fallback if env vars not set) */
-#ifdef TEST_MUD
-#define DB_HOST_DEFAULT "localhost"
-#define DB_USER_DEFAULT "duris"
-#define DB_PASSWD_DEFAULT "duris"
-#define DB_NAME_DEFAULT "duris_dev"
-#else
-#define DB_HOST_DEFAULT "localhost"
-#define DB_USER_DEFAULT "duris"
-#define DB_PASSWD_DEFAULT "duris"
-#define DB_NAME_DEFAULT "duris"
-#endif
-
-#ifdef __CYGWIN_BUILD__
-#undef DB_HOST_DEFAULT
-#define DB_HOST_DEFAULT "localhost"
-#endif
-
-/* get database credentials from env vars with fallback */
+/* Database connection fields are explicit. Runtime validation rejects missing values. */
 static inline const char *get_db_host(void)
 {
 	const char *val = getenv("DB_HOST");
-	return (val && *val) ? val : DB_HOST_DEFAULT;
+	return val ? val : "";
 }
 
 static inline const char *get_db_user(void)
 {
 	const char *val = getenv("DB_USER");
-	return (val && *val) ? val : DB_USER_DEFAULT;
+	return val ? val : "";
 }
 
 static inline const char *get_db_passwd(void)
 {
 	const char *val = getenv("DB_PASSWD");
-	return (val && *val) ? val : DB_PASSWD_DEFAULT;
+	return val ? val : "";
 }
 
 static inline const char *get_db_name(void)
 {
 	const char *val = getenv("DB_NAME");
-	return (val && *val) ? val : DB_NAME_DEFAULT;
+	return val ? val : "";
 }
 
 static inline int get_db_port(void)
@@ -64,6 +46,7 @@ static inline int get_db_port(void)
 #ifndef __NO_MYSQL__
 #include <mysql.h>
 extern MYSQL *DB;
+MYSQL *sql_open_configured_connection(unsigned long client_flags);
 MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...);
 MYSQL_RES *db_query_nolog_at(struct persistence_query_site site, const char *format, ...);
 bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,

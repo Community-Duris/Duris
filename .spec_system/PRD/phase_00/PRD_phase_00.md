@@ -4,7 +4,7 @@
 **Sessions**: 10 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 2/10 sessions (20%)
+**Progress**: 8/10 sessions (80%)
 
 ---
 
@@ -35,7 +35,7 @@ remain Phase 03 work.
 | 05 | Combat and Artifact Persistence Correctness | Complete | Post-mutation frag publication and deterministic bind lookup outputs | 2026-08-27 |
 | 06 | Redis Failure and Recovery Containment | Complete | Redis deadlines, dirty-set recovery, child bounds, and floor-delta ACK rules | 2026-08-27 |
 | 07 | Account Bank Delta Safety | Complete | Checked delta-only shared-bank behavior and multi-character regressions | 2026-08-27 |
-| 08 | Runtime Connection Trust Boundaries | Not Started | Fail-closed DB/TLS configuration and uniform connection invariants | - |
+| 08 | Runtime Connection Trust Boundaries | Complete | Fail-closed DB/TLS configuration and uniform connection invariants | 2026-08-27 |
 | 09 | Private Chest Password Hardening | Not Started | Adaptive salted hashes with compatible legacy upgrade behavior | - |
 | 10 | Security Policy and Dependency Baseline | Not Started | Actionable policy, dependency inventory, SBOM, and CI security checks | - |
 
@@ -45,12 +45,18 @@ remain Phase 03 work.
 
 - Session 01: Redacted Persistence Observability (completed 2026-08-27)
 - Session 02: In-Memory Epic Bonus Hot Path (completed 2026-08-27)
+- Session 03: Save Failure Retry and Terminal Safety (completed 2026-08-27)
+- Session 04: Player Replacement State Cleanup (completed 2026-08-27)
+- Session 05: Combat and Artifact Persistence Correctness (completed 2026-08-27)
+- Session 06: Redis Failure and Recovery Containment (completed 2026-08-27)
+- Session 07: Account Bank Delta Safety (completed 2026-08-27)
+- Session 08: Runtime Connection Trust Boundaries (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 03: Save Failure Retry and Terminal Safety
+- Session 09: Private Chest Password Hardening
 
 ---
 

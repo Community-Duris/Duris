@@ -20,6 +20,7 @@
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -304,6 +305,251 @@ MYSQL *DB;
 MYSQL *persistenceDB = NULL;
 pthread_mutex_t persistence_sql_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+static bool sql_env_true(const char *name)
+{
+	const char *value = getenv(name);
+	return value && !strcasecmp(value, "TRUE");
+}
+
+static bool sql_host_is_loopback(const char *host)
+{
+	return host && (!strcasecmp(host, "localhost") || !strcmp(host, "127.0.0.1") ||
+			!strcmp(host, "::1"));
+}
+
+static bool sql_target_is_allowed(const char *host, const char *database)
+{
+	const char *allowed = getenv("DB_ALLOWED_TARGETS");
+	if (!allowed || !*allowed || !host || !database)
+		return false;
+
+	char target[512];
+	int written = snprintf(target, sizeof(target), "%s/%s", host, database);
+	if (written < 0 || (size_t)written >= sizeof(target))
+		return false;
+
+	size_t target_len = (size_t)written;
+	for (const char *start = allowed; *start;)
+	{
+		const char *end = strchr(start, ',');
+		size_t len = end ? (size_t)(end - start) : strlen(start);
+		if (len == target_len && !strncmp(start, target, len))
+			return true;
+		if (!end)
+			break;
+		start = end + 1;
+	}
+	return false;
+}
+
+static bool sql_runtime_config_valid(void)
+{
+	const char *role = getenv("ENVIRONMENT");
+	if (!role || (strcmp(role, "local") && strcmp(role, "production")))
+	{
+		logit(LOG_STATUS,
+		      "Database configuration rejected: ENVIRONMENT must be local or production");
+		return false;
+	}
+
+	const char *required[] = { "DB_HOST", "DB_USER", "DB_PASSWD", "DB_NAME",
+				   "DB_ALLOWED_TARGETS" };
+	for (const char *name : required)
+	{
+		const char *value = getenv(name);
+		if (!value || !*value)
+		{
+			logit(LOG_STATUS,
+			      "Database configuration rejected: required field %s is missing",
+			      name);
+			return false;
+		}
+	}
+
+	const char *port = getenv("DB_PORT");
+	if (port && *port)
+	{
+		errno = 0;
+		char *end = NULL;
+		long parsed = strtol(port, &end, 10);
+		if (errno == ERANGE || end == port || *end || parsed < 1 || parsed > 65535)
+		{
+			logit(LOG_STATUS, "Database configuration rejected: DB_PORT is invalid");
+			return false;
+		}
+	}
+
+	if (!strcmp(role, "production") && RUNNING_PORT != DFLT_PORT)
+	{
+		logit(LOG_STATUS,
+		      "Database configuration rejected: production role requires the production port");
+		return false;
+	}
+
+	const char *database = sql_persistence_db_name();
+	if (!sql_target_is_allowed(DB_HOST, database))
+	{
+		logit(LOG_STATUS,
+		      "Database configuration rejected: resolved target is not allow-listed");
+		return false;
+	}
+
+	const char *socket_path = getenv("DB_SOCKET");
+	bool protected_local = sql_host_is_loopback(DB_HOST) || (socket_path && *socket_path);
+	if (socket_path && *socket_path &&
+	    (!sql_host_is_loopback(DB_HOST) || strcmp(role, "local")))
+	{
+		logit(LOG_STATUS, "Database configuration rejected: DB_SOCKET is local-mode only");
+		return false;
+	}
+	if (!protected_local)
+	{
+		const char *ca = getenv("DB_SSL_CA");
+		struct stat ca_stat;
+		if (!sql_env_true("DB_TLS") || !ca || !*ca || stat(ca, &ca_stat) ||
+		    !S_ISREG(ca_stat.st_mode))
+		{
+			logit(LOG_STATUS,
+			      "Database configuration rejected: remote transport requires TLS and a CA file");
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool sql_connection_execute(MYSQL *conn, const char *statement)
+{
+	if (mysql_real_query(conn, statement, strlen(statement)))
+		return false;
+	MYSQL_RES *result = mysql_store_result(conn);
+	if (result)
+		mysql_free_result(result);
+	return mysql_next_result(conn) == -1;
+}
+
+static bool sql_mode_has(const char *mode, const char *required)
+{
+	if (!mode || !required)
+		return false;
+	size_t required_len = strlen(required);
+	for (const char *start = mode; *start;)
+	{
+		const char *end = strchr(start, ',');
+		size_t len = end ? (size_t)(end - start) : strlen(start);
+		if (len == required_len && !strncmp(start, required, len))
+			return true;
+		if (!end)
+			break;
+		start = end + 1;
+	}
+	return false;
+}
+
+static bool sql_verify_session_contract(MYSQL *conn)
+{
+	const char *verify = "SELECT @@character_set_connection,@@time_zone,@@sql_mode";
+	if (mysql_real_query(conn, verify, strlen(verify)))
+		return false;
+	MYSQL_RES *result = mysql_store_result(conn);
+	MYSQL_ROW row = result ? mysql_fetch_row(result) : NULL;
+	bool valid = row && row[0] && !strcmp(row[0], "utf8mb4") && row[1] &&
+		     !strcmp(row[1], "+00:00") && row[2] &&
+		     sql_mode_has(row[2], "STRICT_TRANS_TABLES") &&
+		     sql_mode_has(row[2], "ERROR_FOR_DIVISION_BY_ZERO") &&
+		     sql_mode_has(row[2], "NO_ENGINE_SUBSTITUTION");
+	if (result)
+		mysql_free_result(result);
+	if (!valid)
+		return false;
+
+	const char *isolation_queries[] = { "SELECT @@transaction_isolation",
+					    "SELECT @@tx_isolation" };
+	for (const char *query : isolation_queries)
+	{
+		if (mysql_real_query(conn, query, strlen(query)))
+			continue;
+		result = mysql_store_result(conn);
+		row = result ? mysql_fetch_row(result) : NULL;
+		valid = row && row[0] && !strcasecmp(row[0], "READ-COMMITTED");
+		if (result)
+			mysql_free_result(result);
+		if (valid)
+			return true;
+	}
+	return false;
+}
+
+static bool sql_apply_session_contract(MYSQL *conn)
+{
+	if (mysql_set_character_set(conn, "utf8mb4"))
+		return false;
+	const char *statements[] = {
+		"SET SESSION time_zone='+00:00'",
+		"SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED",
+		"SET SESSION sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+	};
+	for (const char *statement : statements)
+		if (!sql_connection_execute(conn, statement))
+			return false;
+	return sql_verify_session_contract(conn);
+}
+
+MYSQL *sql_open_configured_connection(unsigned long client_flags)
+{
+	if (!sql_runtime_config_valid())
+		return NULL;
+
+	MYSQL *conn = mysql_init(NULL);
+	if (!conn)
+		return NULL;
+
+	unsigned int timeout = 10;
+	bool reconnect = false;
+	if (mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) ||
+	    mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &timeout) ||
+	    mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &timeout) ||
+	    mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect) ||
+	    mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8mb4"))
+	{
+		mysql_close(conn);
+		return NULL;
+	}
+
+	const char *socket_path = getenv("DB_SOCKET");
+	bool protected_local = sql_host_is_loopback(DB_HOST) || (socket_path && *socket_path);
+	if (!protected_local)
+	{
+		bool enabled = true;
+		const char *ca = getenv("DB_SSL_CA");
+		if (mysql_options(conn, MYSQL_OPT_SSL_ENFORCE, &enabled) ||
+		    mysql_options(conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &enabled) ||
+		    mysql_options(conn, MYSQL_OPT_SSL_CA, ca))
+		{
+			mysql_close(conn);
+			return NULL;
+		}
+		client_flags |= CLIENT_SSL;
+	}
+
+	if (!mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, sql_persistence_db_name(),
+				DB_PORT, socket_path && *socket_path ? socket_path : NULL,
+				client_flags))
+	{
+		logit(LOG_STATUS, "Database connection failed error_code=%u sqlstate=%.5s",
+		      (unsigned int)mysql_errno(conn), mysql_sqlstate(conn));
+		mysql_close(conn);
+		return NULL;
+	}
+	if ((!protected_local && !mysql_get_ssl_cipher(conn)) || !sql_apply_session_contract(conn))
+	{
+		logit(LOG_STATUS,
+		      "Database connection rejected: transport or session contract failed");
+		mysql_close(conn);
+		return NULL;
+	}
+	return conn;
+}
+
 /* Escapes a string. */
 char *mysql_str(const char *str, char *buf)
 {
@@ -436,11 +682,33 @@ const char *sql_persistence_db_name(void)
 /* load .env file if present, setting environment variables */
 int load_env_file(void)
 {
-	FILE *f = fopen(".env", "r");
+	int fd = open(".env", O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+	if (fd < 0)
+	{
+		if (errno != ENOENT)
+		{
+			logit(LOG_STATUS, "Unable to open .env securely");
+			return -1;
+		}
+		logit(LOG_STATUS, "No .env file found; explicit process environment is required.");
+		return 0;
+	}
+
+	struct stat file_stat;
+	if (fstat(fd, &file_stat) || !S_ISREG(file_stat.st_mode) || file_stat.st_uid != geteuid() ||
+	    (file_stat.st_mode & 0177))
+	{
+		logit(LOG_STATUS,
+		      "Unsafe .env metadata: require an owner-controlled regular file with mode 0600 or stricter");
+		close(fd);
+		return -1;
+	}
+
+	FILE *f = fdopen(fd, "r");
 	if (!f)
 	{
-		logit(LOG_STATUS, "No .env file found, using default database credentials.");
-		return 0;
+		close(fd);
+		return -1;
 	}
 
 	char line[256];
@@ -482,29 +750,10 @@ int load_env_file(void)
  * throughout the mud session. */
 int initialize_mysql()
 {
-	/* Resolve the target database through the shared helper so the
-	 * main DB connection, the connection pool slots, and the legacy
-	 * persistenceDB fallback all connect to the same database. */
-	const char *db_name = sql_persistence_db_name();
-
-	logit(LOG_STATUS, "Initializing MySQL persistent connection to %s (host=%s port=%d).",
-	      db_name, DB_HOST, DB_PORT);
-	DB = mysql_init(NULL);
-	if (DB == NULL)
+	logit(LOG_STATUS, "Initializing validated MySQL connection.");
+	DB = sql_open_configured_connection(CLIENT_MULTI_STATEMENTS);
+	if (!DB)
 	{
-		logit(LOG_STATUS, "Error initializing handler.");
-		return -1;
-	}
-
-	unsigned int timeout = 10;
-	mysql_options(DB, MYSQL_OPT_READ_TIMEOUT, &timeout);
-	mysql_options(DB, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
-
-	if (!mysql_real_connect(DB, DB_HOST, DB_USER, DB_PASSWD, db_name, DB_PORT, NULL,
-				CLIENT_MULTI_STATEMENTS))
-	{
-		logit(LOG_STATUS, "Database connect failed error_code=%u sqlstate=%.5s",
-		      (unsigned int)mysql_errno(DB), mysql_sqlstate(DB));
 		return -1;
 	}
 
@@ -3748,22 +3997,9 @@ MYSQL *sql_persistence_connection(void)
 		pthread_mutex_lock(&persistence_sql_mutex);
 		if (!persistenceDB)
 		{
-			persistenceDB = mysql_init(NULL);
+			persistenceDB = sql_open_configured_connection(0);
 			if (!persistenceDB)
 			{
-				pthread_mutex_unlock(&persistence_sql_mutex);
-				return NULL;
-			}
-			if (!mysql_real_connect(persistenceDB, DB_HOST, DB_USER, DB_PASSWD,
-						sql_persistence_db_name(), DB_PORT, NULL, 0))
-			{
-				logit(LOG_DEBUG,
-				      "Persistence database connection failed error_code=%u "
-				      "sqlstate=%.5s",
-				      (unsigned int)mysql_errno(persistenceDB),
-				      mysql_sqlstate(persistenceDB));
-				mysql_close(persistenceDB);
-				persistenceDB = NULL;
 				pthread_mutex_unlock(&persistence_sql_mutex);
 				return NULL;
 			}

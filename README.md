@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 1.81.18** | [Versioning policy](docs/VERSIONING.md)
+**Version: 1.81.19** | [Versioning policy](docs/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -86,11 +86,15 @@ authoritative dependency list.
 
 ```bash
 cp .env.example .env
+chmod 600 .env
 ```
 
-Edit `.env` and set `DB_HOST`, optional `DB_PORT`, `DB_USER`, `DB_PASSWD`, and
-`DB_NAME`. The server loads this file at boot, and the migration scripts use
-the same values. `.env` is ignored by Git and must never be committed. See the
+Edit `.env` and set the explicit environment role, listener address, database
+host/port, user, password, name, and exact `DB_ALLOWED_TARGETS` entry. There are
+no database credential defaults. The server rejects a `.env` that is not an
+owner-controlled regular file with mode `0600` or stricter. It loads this file
+at boot, and the migration scripts use the same values. `.env` is ignored by
+Git and must never be committed. See the
 [configuration reference](docs/CONFIGURATION.md) for precedence, Redis
 recovery, proxy handling, and diagnostic switches.
 
@@ -101,8 +105,9 @@ are documented inline and are intended primarily for local gameplay testing.
 
 ### 3. Create a development database
 
-The following matches the names in `.env.example`. Replace
-`CHOOSE_A_PASSWORD` in both the SQL and `.env`.
+The following uses `duris_dev` as an example. Set that database name, the new
+user password, and `DB_ALLOWED_TARGETS=127.0.0.1/duris_dev` explicitly in
+`.env`.
 
 ```sql
 CREATE DATABASE IF NOT EXISTS duris_dev
@@ -189,9 +194,11 @@ telnet localhost 7777
 | TLS telnet | 7778 | 4001 |
 | WebSocket | 4050 | 4050 |
 
-The tracked self-signed certificate in `certs/` is an automatic local fallback.
-For a networked deployment, point the ignored root files `duris.crt` and
-`duris.key` at a real certificate and private key, usually with symlinks.
+The tracked self-signed certificate in `certs/` is available only when
+`ENVIRONMENT=local` and `LISTEN_ADDRESS` is exactly `127.0.0.1` or `::1`. For a
+networked deployment, provide the ignored root files `duris.crt` and
+`duris.key`; the key must be owned by the server user and mode `0600` or
+stricter. Startup fails if that deployment certificate boundary is not met.
 
 ## Development workflow
 
