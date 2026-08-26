@@ -395,7 +395,11 @@ int websocket_accept(int listen_fd, struct descriptor_data *d)
 	/* get peer address */
 	inet_ntop(AF_INET6, &peer.sin6_addr, d->host, sizeof d->host);
 	if (!strncmp(d->host, "::ffff:", 7)) // mapped IPv4
-		strcpy(d->host, d->host + 7);
+	{
+		/* Overlapping ranges: see the same strip in new_descriptor(). */
+		char *mapped = d->host + 7;
+		memmove(d->host, mapped, strlen(mapped) + 1);
+	}
 
 	statuslog(56, "WebSocket connection from %s", d->host);
 

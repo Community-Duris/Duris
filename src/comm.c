@@ -2518,7 +2518,14 @@ int new_descriptor(int s, int conn_type)
 	{
 		inet_ntop(AF_INET6, &sock.sin6_addr, newd->host, sizeof newd->host);
 		if (!strncmp(newd->host, "::ffff:", 7)) // mapped IPv4
-			strcpy(newd->host, newd->host + 7);
+		{
+			/* Source and destination overlap, so this must be memmove:
+			   strcpy() is undefined for overlapping ranges and aborts
+			   under _FORTIFY_SOURCE.  Every IPv4 client arrives as an
+			   IPv4-mapped address, so this ran on each connection. */
+			char *mapped = newd->host + 7;
+			memmove(newd->host, mapped, strlen(mapped) + 1);
+		}
 
 		/* check for proxy protocol on websocket connections */
 		if (conn_type == 2 && proxy_peer_is_trusted(desc))

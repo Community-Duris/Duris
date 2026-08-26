@@ -17,6 +17,7 @@
 #include "utils.h"
 #include <ctype.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -26,12 +27,41 @@
 extern P_desc descriptor_list;
 extern P_index mob_index;
 
+/*
+ * Append formatted text to a bounded buffer.
+ *
+ * Every prompt element used to open-code
+ *   snprintf(buf + strlen(buf), CAPACITY - strlen(buf), ...)
+ * with CAPACITY hard-coded to MAX_STRING_LENGTH (64KB) while the buffers are
+ * MAX_INPUT_LENGTH (1KB).  That claimed 64x more room than existed and aborted
+ * under _FORTIFY_SOURCE on the first prompt a player was sent.  One correct
+ * implementation replaces sixteen chances to get it wrong.
+ */
+static void prompt_appendf(char *buffer, size_t capacity, const char *format, ...)
+	__attribute__((format(printf, 3, 4)));
+
+static void prompt_appendf(char *buffer, size_t capacity, const char *format, ...)
+{
+	size_t used = strnlen(buffer, capacity);
+	va_list args;
+
+	if (used + 1 >= capacity)
+		return;
+
+	va_start(args, format);
+	vsnprintf(buffer + used, capacity - used, format, args);
+	va_end(args);
+}
+
 void make_prompt(P_desc point)
 {
 	P_char t_ch = NULL, t_ch_f = NULL, tank = NULL, orig = NULL;
 	P_obj t_obj_f = NULL;
 	char promptbuf[MAX_INPUT_LENGTH]; /*, pname[512]; */
 	char promptbuf2[MAX_INPUT_LENGTH], *pPrompt;
+	/* Space left from pPrompt onward.  pPrompt aliases one of two
+	   MAX_INPUT_LENGTH buffers, so its capacity cannot come from sizeof. */
+	size_t pPromptCap;
 	snoop_by_data *snoop_by_ptr;
 	int percent, t_ch_p = 0;
 	char prompt_buf[MAX_STRING_LENGTH];
@@ -109,14 +139,12 @@ void make_prompt(P_desc point)
 					wardAmount += paf->modifier;
 				}
 			}
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+C %dW", wardAmount);
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+C %dW", wardAmount);
 		}
 		else if (GET_MAX_WARD(t_ch) > 0)
 		{
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+C %d/%dW",
-				 GET_WARD(t_ch), GET_MAX_WARD(t_ch));
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+C %d/%dW", GET_WARD(t_ch),
+				       GET_MAX_WARD(t_ch));
 		}
 	}
 	if (IS_SET(t_ch_p, PROMPT_HIT))
@@ -135,28 +163,19 @@ void make_prompt(P_desc point)
 
 		// Healthy -> Green.
 		if (percent >= 66)
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+g %dh",
-				 t_ch->points.hit);
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+g %dh", t_ch->points.hit);
 		// Wounded -> Brown.
 		else if (percent >= 33)
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+y %dh",
-				 t_ch->points.hit);
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+y %dh", t_ch->points.hit);
 		// Hurt bad -> Red.
 		else if (percent >= 15)
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+r %dh",
-				 t_ch->points.hit);
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+r %dh", t_ch->points.hit);
 		// Nearing death -> Bright red on grey.
 		else
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+R %dh",
-				 t_ch->points.hit);
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+R %dh", t_ch->points.hit);
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_HIT))
-		snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf),
-			 "&+g/%dH", GET_MAX_HIT(t_ch));
+		prompt_appendf(promptbuf, sizeof(promptbuf), "&+g/%dH", GET_MAX_HIT(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_MANA))
 	{
 		if (GET_MAX_MANA(t_ch) > 0)
@@ -169,21 +188,16 @@ void make_prompt(P_desc point)
 			percent = -1;
 		}
 		if (percent >= 66)
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+g %dm", GET_MANA(t_ch));
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+g %dm", GET_MANA(t_ch));
 		else if (percent >= 33)
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+y %dm", GET_MANA(t_ch));
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+y %dm", GET_MANA(t_ch));
 		else if (percent >= 0)
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+r %dm", GET_MANA(t_ch));
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+r %dm", GET_MANA(t_ch));
 		else
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+R%dm", GET_MANA(t_ch));
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+R%dm", GET_MANA(t_ch));
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_MANA))
-		snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf),
-			 "&+g/%dM", GET_MAX_MANA(t_ch));
+		prompt_appendf(promptbuf, sizeof(promptbuf), "&+g/%dM", GET_MAX_MANA(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_MOVE))
 	{
 		if (GET_MAX_VITALITY(t_ch) > 0)
@@ -199,21 +213,17 @@ void make_prompt(P_desc point)
 		}
 
 		if (percent >= 66)
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+g %dv",
-				 t_ch->points.vitality);
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+g %dv",
+				       t_ch->points.vitality);
 		else if (percent >= 33)
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+y %dv",
-				 t_ch->points.vitality);
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+y %dv",
+				       t_ch->points.vitality);
 		else
-			snprintf(promptbuf + strlen(promptbuf),
-				 MAX_STRING_LENGTH - strlen(promptbuf), "&+r %dv",
-				 t_ch->points.vitality);
+			prompt_appendf(promptbuf, sizeof(promptbuf), "&+r %dv",
+				       t_ch->points.vitality);
 	}
 	if (IS_SET(t_ch_p, PROMPT_MAX_MOVE))
-		snprintf(promptbuf + strlen(promptbuf), MAX_STRING_LENGTH - strlen(promptbuf),
-			 "&+g/%dV", GET_MAX_VITALITY(t_ch));
+		prompt_appendf(promptbuf, sizeof(promptbuf), "&+g/%dV", GET_MAX_VITALITY(t_ch));
 	if (IS_SET(t_ch_p, PROMPT_STATUS))
 	{
 		strcat(promptbuf, " &+cPos:&n");
@@ -245,10 +255,12 @@ void make_prompt(P_desc point)
 		strcat(promptbuf, "&+g >\n");
 		snprintf(promptbuf2, sizeof promptbuf2, "&+g<");
 		pPrompt = promptbuf2 + strlen(promptbuf2);
+		pPromptCap = sizeof(promptbuf2) - strlen(promptbuf2);
 	}
 	else
 	{
 		pPrompt = promptbuf + strlen(promptbuf);
+		pPromptCap = sizeof(promptbuf) - strlen(promptbuf);
 	}
 
 	/* the prompt elements only active while fighting */
@@ -259,11 +271,11 @@ void make_prompt(P_desc point)
 		{
 			if (IS_SET(t_ch_p, PROMPT_TANK_NAME))
 			{
-				snprintf(pPrompt + strlen(pPrompt),
-					 MAX_STRING_LENGTH - strlen(pPrompt), " &+BT: %s",
-					 (t_ch != tank && !CAN_SEE(t_ch, tank)) ?
-						 "someone" :
-						 (IS_PC(tank) ? PERS(tank, t_ch, 0, true) :
+				prompt_appendf(pPrompt, pPromptCap, " &+BT: %s",
+					       (t_ch != tank && !CAN_SEE(t_ch, tank)) ?
+						       "someone" :
+						       (IS_PC(tank) ?
+								PERS(tank, t_ch, 0, true) :
 								(FirstWord((tank)->player.name))));
 			}
 			if (IS_SET(t_ch_p, PROMPT_STATUS) && IS_SET(t_ch_p, PROMPT_TANK_COND))
@@ -311,12 +323,12 @@ void make_prompt(P_desc point)
 
 		if (IS_SET(t_ch_p, PROMPT_ENEMY))
 		{
-			snprintf(pPrompt + strlen(pPrompt), MAX_STRING_LENGTH - strlen(pPrompt),
-				 " &+rE: %s",
-				 (!CAN_SEE(t_ch, t_ch_f)) ?
-					 "someone" :
-					 (IS_PC(t_ch_f) ? PERS(t_ch_f, t_ch, 0, true) :
-							  (FirstWord((t_ch_f)->player.name))));
+			prompt_appendf(pPrompt, pPromptCap, " &+rE: %s",
+				       (!CAN_SEE(t_ch, t_ch_f)) ?
+					       "someone" :
+					       (IS_PC(t_ch_f) ?
+							PERS(t_ch_f, t_ch, 0, true) :
+							(FirstWord((t_ch_f)->player.name))));
 		}
 
 		if (IS_SET(t_ch_p, PROMPT_STATUS) && IS_SET(t_ch_p, PROMPT_ENEMY_COND))
@@ -376,15 +388,13 @@ void make_prompt(P_desc point)
 		else
 			strcat(pPrompt, "&+R");
 
-		snprintf(pPrompt + strlen(pPrompt), MAX_STRING_LENGTH - strlen(pPrompt), "%d ",
-			 t_obj_f->condition);
+		prompt_appendf(pPrompt, pPromptCap, "%d ", t_obj_f->condition);
 	}
 
 	if (IS_SET(t_ch_p, PROMPT_VIS) && IS_TRUSTED(t_ch))
 	{
 		strcat(pPrompt, "&+m");
-		snprintf(pPrompt + strlen(pPrompt), MAX_STRING_LENGTH - strlen(pPrompt), " Vis: %d",
-			 t_ch->only.pc->wiz_invis);
+		prompt_appendf(pPrompt, pPromptCap, " Vis: %d", t_ch->only.pc->wiz_invis);
 	}
 	if (IS_SET(t_ch->specials.act, PLR_AFK))
 		strcat(pPrompt, "&n (&+RAFK&n)");
@@ -431,39 +441,41 @@ char *make_bar(long val, long max, long len)
 	int i, n;
 	int percent;
 
-	strcpy(buf, "&+R<&n");
+	strlcpy(buf, "&+R<&n", sizeof buf);
 
-	percent = (100 * val) / max;
+	/* Every append below is a constant, so strlcat says what is meant and is
+	   bounded without asking the compiler to reason about strlen(buf). */
+	percent = (max > 0) ? (int)((100 * val) / max) : 0;
 	if (percent >= 100)
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+g");
+		strlcat(buf, "&+g", sizeof buf);
 	else if (percent >= 90)
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+y");
+		strlcat(buf, "&+y", sizeof buf);
 	else if (percent >= 75)
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+Y");
+		strlcat(buf, "&+Y", sizeof buf);
 	else if (percent >= 50)
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+M");
+		strlcat(buf, "&+M", sizeof buf);
 	else if (percent >= 30)
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+m");
+		strlcat(buf, "&+m", sizeof buf);
 	else if (percent >= 15)
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+R");
+		strlcat(buf, "&+R", sizeof buf);
 	else
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+r");
+		strlcat(buf, "&+r", sizeof buf);
 
-	if (val > max)
+	if (max > 0 && val > max)
 	{
 		for (i = 0; i < len; i++)
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "|");
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&n+");
+			strlcat(buf, "|", sizeof buf);
+		strlcat(buf, "&n+", sizeof buf);
 	}
 	else
 	{
-		for (i = ((val * len) / max), n = 0; n < i; n++)
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "|");
-		snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&n");
+		for (i = (max > 0) ? (int)((val * len) / max) : 0, n = 0; n < i; n++)
+			strlcat(buf, "|", sizeof buf);
+		strlcat(buf, "&n", sizeof buf);
 		while ((n++) < len)
-			snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "|");
+			strlcat(buf, "|", sizeof buf);
 	}
-	snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "&+R>&n");
+	strlcat(buf, "&+R>&n", sizeof buf);
 
 	return buf;
 }
