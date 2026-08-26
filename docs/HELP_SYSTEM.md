@@ -36,13 +36,17 @@ The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
      skills, spells). Titles `Multiclass` and `Races` also get hardcoded
      sections. Editing those pages means authoring only the static part.
 
-2. **`attrib_help()`** — appends per-command attributes (syntax, level,
-    position requirements) loaded at boot from
-    `docs/lib/information/command_attributes.txt`
+2. **`attrib_help()`** — appends per-command attributes (stat usage)
+    loaded at boot from `docs/lib/information/command_attributes.txt`
     (`src/wikihelp.c`, boot loader). If the file is missing, only a debug log
-    line notes it. Coverage is partial: ~382 commands are listed (loader
-    caps at 400 of ~850 registered commands), so many commands show no
-    attribute block.
+    line notes it. Coverage is complete: every command name registered in
+    `src/interp.c` has an entry, plus legacy entries keyed by ability names
+    that are not commands (`apply poison`, `parry`, ...) which serve
+    `help <ability>` lookups. Each entry lists the `GET_C_*` stats its
+    handler (or skill-gated helper chain) actually uses; commands whose
+    handlers consult no stats carry just the header line. The loader holds
+    up to `CMD_ATTRIB_MAX` entries (1024, `src/wikihelp.h`) and bounds-checks
+    the count, logging and skipping anything beyond the cap.
 
 Without MySQL (`-D__NO_MYSQL__` builds) help is disabled and returns a stub
 message — the help system is database-backed by design.
