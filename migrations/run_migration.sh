@@ -23,7 +23,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=111
+TOTAL=113
 FAILED=0
 
 run_sql() {
@@ -544,6 +544,17 @@ CREATE TABLE IF NOT EXISTS corpses (
     save_id BIGINT NOT NULL,
     room_vnum INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    short_descr VARCHAR(512) DEFAULT NULL,
+    description TEXT DEFAULT NULL,
+    name VARCHAR(512) DEFAULT NULL,
+    weight INT DEFAULT NULL,
+    value0 INT DEFAULT NULL,
+    value1 INT DEFAULT NULL,
+    value2 INT DEFAULT NULL,
+    value3 INT DEFAULT NULL,
+    value4 INT DEFAULT NULL,
+    value5 INT DEFAULT NULL,
+    value7 INT DEFAULT NULL,
     INDEX idx_player_name (player_name),
     UNIQUE KEY uk_player_saveid (player_name, save_id)
 );"
@@ -2896,6 +2907,7 @@ convert_tables_to_charset "ensure consistent collation on all tables" 1
 run_sql_file "apply account-bound reward schema" "$SCRIPT_DIR/account_bound_rewards.sql"
 run_check "verify account-bound reward schema" "$SCRIPT_DIR/verify_account_bound_rewards.sh"
 run_sql_file "apply persistence and auction schema contract" "$SCRIPT_DIR/persistence_contract.sql"
+run_sql_file "apply player corpse persistence state" "$SCRIPT_DIR/corpse_persistence_state.sql"
 
 # Production dumps predate the full item-diff schema. CREATE TABLE IF NOT EXISTS
 # above cannot repair existing tables, but current save/load and pwipe SQL requires

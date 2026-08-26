@@ -7274,6 +7274,15 @@ bool sql_save_corpse(P_obj corpse)
 		return false;
 	}
 
+	char *esc_keywords = sql_escape_string(corpse->name ? corpse->name : "");
+	if (!esc_keywords)
+	{
+		free(esc_name);
+		free(esc_sdesc);
+		free(esc_desc);
+		return false;
+	}
+
 	// start transaction (must succeed before any writes)
 	if (!sql_begin_transaction())
 	{
@@ -7281,6 +7290,7 @@ bool sql_save_corpse(P_obj corpse)
 		free(esc_name);
 		free(esc_sdesc);
 		free(esc_desc);
+		free(esc_keywords);
 		return false;
 	}
 
@@ -7293,18 +7303,36 @@ bool sql_save_corpse(P_obj corpse)
 		free(esc_name);
 		free(esc_sdesc);
 		free(esc_desc);
+		free(esc_keywords);
 		sql_rollback();
 		return false;
 	}
 
-	char ins_query[512];
-	snprintf(
-		ins_query, sizeof(ins_query),
-		"INSERT INTO corpses (player_name, save_id, room_vnum, short_descr, description) VALUES ('%s', %d, %d, '%s', '%s')",
-		esc_name, save_id, room_vnum, esc_sdesc, esc_desc);
+	char ins_query[8192];
+	int query_length =
+		snprintf(ins_query, sizeof(ins_query),
+			 "INSERT INTO corpses ("
+			 "player_name, save_id, room_vnum, short_descr, description, name, weight, "
+			 "value0, value1, value2, value3, value4, value5, value7"
+			 ") VALUES ("
+			 "'%s', %d, %d, '%s', '%s', '%s', %d, "
+			 "%d, %d, %d, %d, %d, %d, %d"
+			 ")",
+			 esc_name, save_id, room_vnum, esc_sdesc, esc_desc, esc_keywords,
+			 corpse->weight, corpse->value[0], corpse->value[1], corpse->value[2],
+			 corpse->value[3], corpse->value[4], corpse->value[5], corpse->value[7]);
 	free(esc_name);
 	free(esc_sdesc);
 	free(esc_desc);
+	free(esc_keywords);
+
+	if (query_length < 0 || (size_t)query_length >= sizeof(ins_query))
+	{
+		logit(LOG_DEBUG, "sql_save_corpse: corpse insert query exceeded %zu bytes",
+		      sizeof(ins_query));
+		sql_rollback();
+		return false;
+	}
 
 	if (!sql_run_query(ins_query))
 	{
@@ -7414,6 +7442,82 @@ bool sql_delete_corpse(const char *player_name, int save_id)
 
 extern int skip_corpse_save;
 
+enum corpse_load_column
+{
+	CORPSE_COL_ID,
+	CORPSE_COL_PLAYER_NAME,
+	CORPSE_COL_SAVE_ID,
+	CORPSE_COL_ROOM_VNUM,
+	CORPSE_COL_ITEM_ID,
+	CORPSE_COL_ITEM_CONTAINER_ID,
+	CORPSE_COL_ITEM_VNUM,
+	CORPSE_COL_ITEM_TYPE_COALESCED,
+	CORPSE_COL_ITEM_WEIGHT,
+	CORPSE_COL_ITEM_COST,
+	CORPSE_COL_ITEM_TIMER,
+	CORPSE_COL_ITEM_EXTRA_FLAGS,
+	CORPSE_COL_ITEM_VALUE0,
+	CORPSE_COL_ITEM_VALUE1,
+	CORPSE_COL_ITEM_VALUE2,
+	CORPSE_COL_ITEM_VALUE3,
+	CORPSE_COL_ITEM_VALUE4,
+	CORPSE_COL_ITEM_VALUE5,
+	CORPSE_COL_ITEM_VALUE6,
+	CORPSE_COL_ITEM_VALUE7,
+	CORPSE_COL_ITEM_NAME,
+	CORPSE_COL_ITEM_SHORT_DESCRIPTION,
+	CORPSE_COL_ITEM_DESCRIPTION,
+	CORPSE_COL_ITEM_ACTION_DESCRIPTION,
+	CORPSE_COL_ITEM_AFFECT_LOCATION,
+	CORPSE_COL_ITEM_AFFECT_MODIFIER,
+	CORPSE_COL_ITEM_UID,
+	CORPSE_COL_ITEM_CONDITION,
+	CORPSE_COL_SHORT_DESCRIPTION,
+	CORPSE_COL_DESCRIPTION,
+	CORPSE_COL_NAME,
+	CORPSE_COL_WEIGHT,
+	CORPSE_COL_VALUE0,
+	CORPSE_COL_VALUE1,
+	CORPSE_COL_VALUE2,
+	CORPSE_COL_VALUE3,
+	CORPSE_COL_VALUE4,
+	CORPSE_COL_VALUE5,
+	CORPSE_COL_VALUE7,
+	CORPSE_COL_ITEM_WEAR_FLAGS,
+	CORPSE_COL_ITEM_TYPE,
+	CORPSE_COL_ITEM_MATERIAL,
+	CORPSE_COL_ITEM_BITVECTOR1,
+	CORPSE_COL_ITEM_BITVECTOR2,
+	CORPSE_COL_ITEM_BITVECTOR3,
+	CORPSE_COL_ITEM_BITVECTOR4,
+	CORPSE_COL_ITEM_BITVECTOR5,
+	CORPSE_COL_COUNT
+};
+
+static void sql_restore_corpse_identity(P_obj corpse, const char *player_name, const char *name,
+					const char *short_description, const char *description)
+{
+	char keywords[MAX_STRING_LENGTH];
+
+	if (name && *name)
+		set_keywords(corpse, name);
+	else
+	{
+		checked_snprintf(keywords, sizeof(keywords), "%s corpse _pcorpse_", player_name);
+		set_keywords(corpse, keywords);
+	}
+
+	if (short_description && *short_description)
+		set_short_description(corpse, short_description);
+	if (description && *description)
+		set_long_description(corpse, description);
+
+	if ((corpse->str_mask & STRUNG_DESC3) && corpse->action_description)
+		FREE(corpse->action_description);
+	corpse->str_mask |= STRUNG_DESC3;
+	corpse->action_description = str_dup(player_name);
+}
+
 bool sql_load_all_corpses(void)
 {
 	if (!DB)
@@ -7447,7 +7551,8 @@ bool sql_load_all_corpses(void)
 		"ci.value5, ci.value6, ci.value7, ci.name, ci.short_descr, ci.description, "
 		"ci.action_descr, COALESCE(cia.location, -1), COALESCE(cia.modifier, 0), "
 		"ci.obj_uid, ci.item_condition, "
-		"c.short_descr, c.description, "
+		"c.short_descr, c.description, c.name, c.weight, "
+		"c.value0, c.value1, c.value2, c.value3, c.value4, c.value5, c.value7, "
 		"ci.wear_flags, ci.item_type, ci.item_material, "
 		"ci.bitvector1, ci.bitvector2, ci.bitvector3, ci.bitvector4, ci.bitvector5 "
 		"FROM corpses c "
@@ -7456,12 +7561,18 @@ bool sql_load_all_corpses(void)
 		"ORDER BY c.id, ci.id, cia.id");
 	if (!result)
 		goto cleanup;
+	if (mysql_num_fields(result) != CORPSE_COL_COUNT)
+	{
+		logit(LOG_DEBUG, "sql_load_all_corpses: expected %d result columns, got %u",
+		      CORPSE_COL_COUNT, mysql_num_fields(result));
+		goto cleanup;
+	}
 
 	// tracking for current corpse being built
 	while ((row = mysql_fetch_row(result)))
 	{
-		int corpse_id = atoi(row[0]);
-		int item_id = row[4] ? atoi(row[4]) : 0;
+		int corpse_id = atoi(row[CORPSE_COL_ID]);
+		int item_id = row[CORPSE_COL_ITEM_ID] ? atoi(row[CORPSE_COL_ITEM_ID]) : 0;
 
 		// new corpse - finalize previous one first
 		if (corpse_id != cur_corpse_id)
@@ -7553,9 +7664,10 @@ bool sql_load_all_corpses(void)
 			last_item_stored = false;
 			cur_corpse_id = corpse_id;
 
-			const char *player_name = row[1] ? row[1] : "";
-			int save_id = atoi(row[2]);
-			int room_vnum = atoi(row[3]);
+			const char *player_name =
+				row[CORPSE_COL_PLAYER_NAME] ? row[CORPSE_COL_PLAYER_NAME] : "";
+			int save_id = atoi(row[CORPSE_COL_SAVE_ID]);
+			int room_vnum = atoi(row[CORPSE_COL_ROOM_VNUM]);
 
 			cur_room = real_room(room_vnum);
 			if (cur_room == NOWHERE)
@@ -7573,33 +7685,32 @@ bool sql_load_all_corpses(void)
 				continue;
 
 			cur_corpse->type = ITEM_CORPSE;
-			SET_BIT(cur_corpse->value[1], PC_CORPSE);
+			if (row[CORPSE_COL_WEIGHT])
+				cur_corpse->weight = atoi(row[CORPSE_COL_WEIGHT]);
+			for (int value_index = 0; value_index <= CORPSE_RACEWAR; value_index++)
+			{
+				if (row[CORPSE_COL_VALUE0 + value_index])
+					cur_corpse->value[value_index] =
+						atoi(row[CORPSE_COL_VALUE0 + value_index]);
+			}
+			if (row[CORPSE_COL_VALUE7])
+				cur_corpse->value[CORPSE_RACE] = atoi(row[CORPSE_COL_VALUE7]);
+			SET_BIT(cur_corpse->value[CORPSE_FLAGS], PC_CORPSE);
 			cur_corpse->value[CORPSE_SAVEID] = save_id;
 
-			if (cur_corpse->action_description)
-				FREE(cur_corpse->action_description);
-			cur_corpse->action_description = str_dup(player_name);
-
-			if (row[27])
-			{
-				//FREE(cur_corpse->short_description);
-				cur_corpse->short_description = str_dup(row[27]);
-			}
-			if (row[28])
-			{
-				//FREE(cur_corpse->description);
-				cur_corpse->description = str_dup(row[28]);
-			}
+			sql_restore_corpse_identity(cur_corpse, player_name, row[CORPSE_COL_NAME],
+						    row[CORPSE_COL_SHORT_DESCRIPTION],
+						    row[CORPSE_COL_DESCRIPTION]);
 		}
 
 		// no item in this row (corpse with no items)
-		if (!row[4] || !cur_corpse)
+		if (!row[CORPSE_COL_ITEM_ID] || !cur_corpse)
 			continue;
 
 		// same item, just another affect
 		if (item_id == last_item_id && last_item_stored && num_objs > 0)
 		{
-			int aff_loc = atoi(row[24]);
+			int aff_loc = atoi(row[CORPSE_COL_ITEM_AFFECT_LOCATION]);
 			if (aff_loc >= 0)
 			{
 				P_obj obj = obj_map[num_objs - 1];
@@ -7609,7 +7720,8 @@ bool sql_load_all_corpses(void)
 					    obj->affected[i].modifier == 0)
 					{
 						obj->affected[i].location = aff_loc;
-						obj->affected[i].modifier = atoi(row[25]);
+						obj->affected[i].modifier =
+							atoi(row[CORPSE_COL_ITEM_AFFECT_MODIFIER]);
 						break;
 					}
 				}
@@ -7621,7 +7733,7 @@ bool sql_load_all_corpses(void)
 		if (num_objs >= MAX_CORPSE_ITEMS)
 			continue;
 
-		int vnum = atoi(row[6]);
+		int vnum = atoi(row[CORPSE_COL_ITEM_VNUM]);
 		int rnum = real_object(vnum);
 		if (rnum < 0)
 		{
@@ -7638,66 +7750,71 @@ bool sql_load_all_corpses(void)
 			continue;
 		}
 
-		if (row[8])
-			obj->weight = atoi(row[8]);
-		if (row[9])
-			obj->cost = atoi(row[9]);
-		if (row[10])
-			obj->timer[0] = atol(row[10]);
-		if (row[11])
-			obj->extra_flags = strtoul(row[11], NULL, 10);
+		if (row[CORPSE_COL_ITEM_WEIGHT])
+			obj->weight = atoi(row[CORPSE_COL_ITEM_WEIGHT]);
+		if (row[CORPSE_COL_ITEM_COST])
+			obj->cost = atoi(row[CORPSE_COL_ITEM_COST]);
+		if (row[CORPSE_COL_ITEM_TIMER])
+			obj->timer[0] = atol(row[CORPSE_COL_ITEM_TIMER]);
+		if (row[CORPSE_COL_ITEM_EXTRA_FLAGS])
+			obj->extra_flags = strtoul(row[CORPSE_COL_ITEM_EXTRA_FLAGS], NULL, 10);
 		for (int v = 0; v < 8; v++)
-			obj->value[v] = row[12 + v] ? atoi(row[12 + v]) : 0;
+			obj->value[v] = row[CORPSE_COL_ITEM_VALUE0 + v] ?
+						atoi(row[CORPSE_COL_ITEM_VALUE0 + v]) :
+						0;
 
-		if (row[20] && row[20][0])
+		if (row[CORPSE_COL_ITEM_NAME] && row[CORPSE_COL_ITEM_NAME][0])
 		{
-			obj->name = str_dup(row[20]);
+			obj->name = str_dup(row[CORPSE_COL_ITEM_NAME]);
 			obj->str_mask |= STRUNG_KEYS;
 		}
-		if (row[21] && row[21][0])
+		if (row[CORPSE_COL_ITEM_SHORT_DESCRIPTION] &&
+		    row[CORPSE_COL_ITEM_SHORT_DESCRIPTION][0])
 		{
-			obj->short_description = str_dup(row[21]);
+			obj->short_description = str_dup(row[CORPSE_COL_ITEM_SHORT_DESCRIPTION]);
 			obj->str_mask |= STRUNG_DESC2;
 		}
-		if (row[22] && row[22][0])
+		if (row[CORPSE_COL_ITEM_DESCRIPTION] && row[CORPSE_COL_ITEM_DESCRIPTION][0])
 		{
-			obj->description = str_dup(row[22]);
+			obj->description = str_dup(row[CORPSE_COL_ITEM_DESCRIPTION]);
 			obj->str_mask |= STRUNG_DESC1;
 		}
-		if (row[23] && row[23][0])
+		if (row[CORPSE_COL_ITEM_ACTION_DESCRIPTION] &&
+		    row[CORPSE_COL_ITEM_ACTION_DESCRIPTION][0])
 		{
-			obj->action_description = str_dup(row[23]);
+			obj->action_description = str_dup(row[CORPSE_COL_ITEM_ACTION_DESCRIPTION]);
 			obj->str_mask |= STRUNG_DESC3;
 		}
 
-		unsigned long saved_uid = row[26] ? strtoul(row[26], NULL, 10) : 0;
+		unsigned long saved_uid =
+			row[CORPSE_COL_ITEM_UID] ? strtoul(row[CORPSE_COL_ITEM_UID], NULL, 10) : 0;
 		if (saved_uid > 0)
 		{
 			obj->obj_uid = saved_uid;
 			if (obj->obj_uid >= next_obj_uid)
 				next_obj_uid = obj->obj_uid + 1;
 		}
-		if (row[27])
-			obj->condition = atoi(row[27]);
+		if (row[CORPSE_COL_ITEM_CONDITION])
+			obj->condition = atoi(row[CORPSE_COL_ITEM_CONDITION]);
 
 		// v19 diff columns - NULL means use prototype value from read_object()
-		if (row[30])
-			obj->wear_flags = atoi(row[30]);
-		if (row[31])
-			obj->type = sql_validate_loaded_item_type(obj, atoi(row[31]),
-								  "sql_load_all_corpses");
-		if (row[32])
-			obj->material = atoi(row[32]);
-		if (row[33])
-			obj->bitvector = strtoul(row[33], NULL, 10);
-		if (row[34])
-			obj->bitvector2 = strtoul(row[34], NULL, 10);
-		if (row[35])
-			obj->bitvector3 = strtoul(row[35], NULL, 10);
-		if (row[36])
-			obj->bitvector4 = strtoul(row[36], NULL, 10);
-		if (row[37])
-			obj->bitvector5 = strtoul(row[37], NULL, 10);
+		if (row[CORPSE_COL_ITEM_WEAR_FLAGS])
+			obj->wear_flags = atoi(row[CORPSE_COL_ITEM_WEAR_FLAGS]);
+		if (row[CORPSE_COL_ITEM_TYPE])
+			obj->type = sql_validate_loaded_item_type(
+				obj, atoi(row[CORPSE_COL_ITEM_TYPE]), "sql_load_all_corpses");
+		if (row[CORPSE_COL_ITEM_MATERIAL])
+			obj->material = atoi(row[CORPSE_COL_ITEM_MATERIAL]);
+		if (row[CORPSE_COL_ITEM_BITVECTOR1])
+			obj->bitvector = strtoul(row[CORPSE_COL_ITEM_BITVECTOR1], NULL, 10);
+		if (row[CORPSE_COL_ITEM_BITVECTOR2])
+			obj->bitvector2 = strtoul(row[CORPSE_COL_ITEM_BITVECTOR2], NULL, 10);
+		if (row[CORPSE_COL_ITEM_BITVECTOR3])
+			obj->bitvector3 = strtoul(row[CORPSE_COL_ITEM_BITVECTOR3], NULL, 10);
+		if (row[CORPSE_COL_ITEM_BITVECTOR4])
+			obj->bitvector4 = strtoul(row[CORPSE_COL_ITEM_BITVECTOR4], NULL, 10);
+		if (row[CORPSE_COL_ITEM_BITVECTOR5])
+			obj->bitvector5 = strtoul(row[CORPSE_COL_ITEM_BITVECTOR5], NULL, 10);
 
 		char owner_ref[32];
 		snprintf(owner_ref, sizeof(owner_ref), "%d", cur_corpse->value[CORPSE_SAVEID]);
@@ -7710,18 +7827,18 @@ bool sql_load_all_corpses(void)
 			continue;
 		}
 
-		int aff_loc = atoi(row[24]);
+		int aff_loc = atoi(row[CORPSE_COL_ITEM_AFFECT_LOCATION]);
 		if (aff_loc >= 0)
 		{
 			obj->affected[0].location = aff_loc;
-			obj->affected[0].modifier = atoi(row[25]);
+			obj->affected[0].modifier = atoi(row[CORPSE_COL_ITEM_AFFECT_MODIFIER]);
 		}
 
 		sql_load_item_extra_descr_from_table(item_id, obj, "corpse_item");
 
 		obj_map[num_objs] = obj;
 		id_map[num_objs] = item_id;
-		container_map[num_objs] = atoi(row[5]);
+		container_map[num_objs] = atoi(row[CORPSE_COL_ITEM_CONTAINER_ID]);
 		num_objs++;
 		last_item_id = item_id;
 		last_item_stored = true;
