@@ -32,7 +32,7 @@ extern struct time_info_data time_info;
 extern struct zone_data *zone;
 extern struct zone_data *zone_table;
 
-int troll_slave(P_char ch, P_char pl, int cmd, char *arg)
+int troll_slave(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -69,7 +69,7 @@ int troll_slave(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int stray_dog(P_char ch, P_char pl, int cmd, char *arg)
+int stray_dog(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -108,7 +108,7 @@ int stray_dog(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int hardworking_fisherman(P_char ch, P_char pl, int cmd, char *arg)
+int hardworking_fisherman(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -148,7 +148,7 @@ int hardworking_fisherman(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int orcish_jailkeeper(P_char ch, P_char pl, int cmd, char *arg)
+int orcish_jailkeeper(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -187,7 +187,7 @@ int orcish_jailkeeper(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int orcish_woman(P_char ch, P_char pl, int cmd, char *arg)
+int orcish_woman(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1054,7 +1054,7 @@ int sleezy_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int Vella_slut(P_char ch, P_char pl, int cmd, char *arg)
+int Vella_slut(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1090,7 +1090,7 @@ int Vella_slut(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int Padh_bouncer(P_char ch, P_char pl, int cmd, char *arg)
+int Padh_bouncer(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1126,7 +1126,7 @@ int Padh_bouncer(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int Vem_rouge(P_char ch, P_char pl, int cmd, char *arg)
+int Vem_rouge(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1166,7 +1166,7 @@ int Vem_rouge(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tired_young_man(P_char ch, P_char pl, int cmd, char *arg)
+int tired_young_man(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls

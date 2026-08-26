@@ -133,7 +133,7 @@ P_obj get_hammer(P_char ch)
 	return NULL;
 }
 
-int parchment_forge(P_obj obj, P_char ch, int cmd, char *arg)
+int parchment_forge(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char temp_ch;
 	if (!ch)
@@ -304,7 +304,7 @@ P_obj check_foundry(P_char ch)
 	return NULL;
 }
 
-void do_forge(P_char ch, char *argument, int cmd)
+void do_forge(P_char ch, char *argument, int /*cmd*/)
 {
 	crafting_handle_command(ch, CRAFTING_MODE_FORGE, argument);
 }
@@ -480,7 +480,7 @@ P_obj get_pole(P_char ch)
 	return NULL;
 }
 
-void do_fish(P_char ch, char *, int cmd)
+void do_fish(P_char ch, char *, int /*cmd*/)
 {
 	P_obj pole;
 	struct fishing_data data;
@@ -540,7 +540,7 @@ void do_fish(P_char ch, char *, int cmd)
 		  sizeof(struct fishing_data));
 }
 
-void event_fish_check(P_char ch, P_char victim, P_obj, void *data)
+void event_fish_check(P_char ch, P_char /*victim*/, P_obj, void *data)
 {
 	struct fishing_data *fdata = (struct fishing_data *)data;
 	P_obj pole, fish;
@@ -935,7 +935,7 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 		  sizeof(struct bandage_data));
 }
 
-void do_bandage(P_char ch, char *arg, int cmd)
+void do_bandage(P_char ch, char *arg, int /*cmd*/)
 {
 	struct affected_type af;
 	struct bandage_data data;
@@ -1230,7 +1230,7 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 #define COST_EPIC_FOREST_EYES 4500
 #define COST_EPIC_BOTTLE_EPICS 100
 
-int epic_store(P_char ch, P_char pl, int cmd, char *arg)
+int epic_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 {
 	char buffer[MAX_STRING_LENGTH];
 	P_obj obj;
@@ -2243,7 +2243,7 @@ int itemvalue(P_obj obj)
 	return workingvalue;
 }
 
-void do_salvation(P_char ch, char *arg, int cmd)
+void do_salvation(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af;
 	if (!affected_by_spell(ch, ACH_MAYIHEALSYOU) && !IS_TRUSTED(ch))
@@ -2446,7 +2446,7 @@ int get_matstart(P_obj obj)
 	return matstart;
 }
 
-void do_refine(P_char ch, char *arg, int cmd)
+void do_refine(P_char ch, char *arg, int /*cmd*/)
 {
 	P_obj obj;
 	P_obj t_obj, nextobj;
@@ -2591,7 +2591,7 @@ void do_refine(P_char ch, char *arg, int cmd)
 	extract_obj(obj);
 }
 
-void do_dice(P_char ch, char *arg, int cmd)
+void do_dice(P_char ch, char *arg, int /*cmd*/)
 {
 	char first_arg[MAX_INPUT_LENGTH], second_arg[MAX_INPUT_LENGTH], gbuf[MAX_STRING_LENGTH];
 	int numdice, dice;

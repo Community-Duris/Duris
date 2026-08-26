@@ -56,7 +56,7 @@ const char *prestige_names[EPIC_MAX_PRESTIGE] = {
 
 int errand_notch;
 
-int epic_points(P_char ch)
+int epic_points(P_char /*ch*/)
 {
 	for (int i = 0; epic_teachers[i].vnum; i++)
 	{
@@ -1133,7 +1133,7 @@ void epic_initialization()
 	errand_notch = get_property("epic.errandStep", 200);
 }
 
-int stat_shops(int room, P_char ch, int cmd, char *arg)
+int stat_shops(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	char buf[MAX_INPUT_LENGTH];
 	int cost = 0;
@@ -1780,7 +1780,7 @@ house.\r\n\r\n", coin_stringv(coins_refund));
   do_save_silent(t_ch, 1);
 }*/
 
-void do_epic_zones(P_char ch, char *arg, int cmd)
+void do_epic_zones(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (!ch || IS_NPC(ch))
 		return;
@@ -1857,7 +1857,7 @@ char *generate_epic_zones_output(void)
 #endif
 }
 
-void do_epic_share(P_char ch, char *arg, int cmd)
+void do_epic_share(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type *afp, *tafp;
 
@@ -1909,7 +1909,7 @@ void do_epic_share(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_epic_trophy(P_char ch, char *arg, int cmd)
+void do_epic_trophy(P_char ch, char *arg, int /*cmd*/)
 {
 	char buff2[MAX_STRING_LENGTH];
 	char buff3[MAX_STRING_LENGTH];
@@ -2145,7 +2145,7 @@ vector<epic_zone_data> get_epic_zones()
 }
 
 // referenced in actwiz.c for existing chars - Drannak
-void do_epic_reset_norefund(P_char ch, char *arg, int cmd)
+void do_epic_reset_norefund(P_char ch, char *arg, int /*cmd*/)
 {
 	char buff2[MAX_STRING_LENGTH];
 	char buff3[MAX_STRING_LENGTH];
@@ -2260,7 +2260,7 @@ void do_epic_reset_norefund(P_char ch, char *arg, int cmd)
 		logit(LOG_WIZ, "Failed to save %s after epic reset refund.", GET_NAME(t_ch));
 }
 
-void do_epic_reset(P_char ch, char *arg, int cmd)
+void do_epic_reset(P_char ch, char *arg, int /*cmd*/)
 {
 	char buff2[MAX_STRING_LENGTH];
 	char buff3[MAX_STRING_LENGTH];

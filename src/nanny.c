@@ -2222,7 +2222,7 @@ void perform_eq_wipe(P_char ch)
 }
 
 // #define MAX_HT_ESCAPE -1
-int alt_hometown_check(P_char ch, int room, int count)
+int alt_hometown_check(P_char /*ch*/, int room, int /*count*/)
 {
 	// struct zone_data *current_zone;
 	// int new_room, new_count;

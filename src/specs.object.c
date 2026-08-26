@@ -350,7 +350,7 @@ int illithid_sack(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int artifact_biofeedback(P_obj obj, P_char ch, int cmd, char *argument)
+int artifact_biofeedback(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int curr_time;
 	P_char temp_ch;
@@ -403,7 +403,7 @@ int artifact_biofeedback(P_obj obj, P_char ch, int cmd, char *argument)
 /* I have horrbly twisted this function to be called only from
    equip_char, if passed cmd == -1 it activates stone -Zod*/
 // This works just fine but I don't see any reference to -1 in the code anywhere?
-int artifact_stone(P_obj obj, P_char ch, int cmd, char *argument)
+int artifact_stone(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int curr_time;
 
@@ -454,7 +454,7 @@ int artifact_stone(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int artifact_shadow_shield(P_obj obj, P_char ch, int cmd, char *argument)
+int artifact_shadow_shield(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int curr_time, i;
 
@@ -501,7 +501,7 @@ int artifact_shadow_shield(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int death_proc(P_obj obj, P_char ch, int cmd, char *argument)
+int death_proc(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -522,7 +522,7 @@ int death_proc(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int charon_ship(P_obj obj, P_char ch, int cmd, char *argument)
+int charon_ship(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int curr_time, boat_room = real_room0(VROOM_UNDEAD_FERRY);
 	int to_room, old_room, spill = 0, look_out = 0;
@@ -935,7 +935,7 @@ if (!obj || number(0,9))
 }*/
 #define FLT_TOROOM(x, y) (world[(x)].dir_option[(y)]->to_room)
 
-int magic_mouth(P_obj obj, P_char ch, int cmd, char *arg)
+int magic_mouth(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_desc i;
 	char buff[MAX_STRING_LENGTH];
@@ -1286,7 +1286,7 @@ int trustee_artifact(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int creeping_doom(P_obj obj, P_char ch, int cmd, char *arg)
+int creeping_doom(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 {
 	P_char t;
 
@@ -2323,7 +2323,7 @@ int mist_claymore(P_obj obj, P_char ch, int cmd, char *arg)
 	return (TRUE);
 }
 
-void event_revenant_crown(P_char ch, P_char victim, P_obj obj, void *data)
+void event_revenant_crown(P_char ch, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	struct affected_type *af;
 	P_obj armor = ch->equipment[WEAR_HEAD];
@@ -2382,7 +2382,7 @@ void event_revenant_crown(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-int revenant_helm(P_obj obj, P_char ch, int cmd, char *arg)
+int revenant_helm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int k = 0;
 	P_obj temp_obj;
@@ -2456,7 +2456,7 @@ int revenant_helm(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-void event_dragonlord_check(P_char ch, P_char victim, P_obj obj, void *data)
+void event_dragonlord_check(P_char ch, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	struct affected_type *af;
 	P_obj armor = ch->equipment[WEAR_BODY];
@@ -2554,7 +2554,7 @@ void event_dragonlord_check(P_char ch, P_char victim, P_obj obj, void *data)
 	// }
 }
 
-int dragonlord_plate_old(P_obj obj, P_char ch, int cmd, char *arg)
+int dragonlord_plate_old(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	P_obj temp_obj;
 	P_char temp_ch;
@@ -2633,7 +2633,7 @@ int dragonlord_plate_old(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int dragonlord_plate(P_obj obj, P_char ch, int cmd, char *arg)
+int dragonlord_plate(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int curr_time;
 
@@ -2664,7 +2664,7 @@ int dragonlord_plate(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int dragonlord_plate_oldold(P_obj obj, P_char ch, int cmd, char *arg)
+int dragonlord_plate_oldold(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int curr_time;
 	P_char temp_ch;
@@ -2711,7 +2711,7 @@ int dragonlord_plate_oldold(P_obj obj, P_char ch, int cmd, char *arg)
 	return (FALSE);
 }
 
-int olympus_portal(P_obj obj, P_char ch, int cmd, char *arg)
+int olympus_portal(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	int to_room, base, real_top, real_bottom, origin_portal, origin_room;
 	P_obj portal = NULL;
@@ -2787,7 +2787,7 @@ int olympus_portal(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int living_necroplasm(P_obj obj, P_char ch, int cmd, char *arg)
+int living_necroplasm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char i;
 	int slot;
@@ -3127,7 +3127,7 @@ int vapor(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int dragon_helm(P_obj obj, P_char ch, int cmd, char *arg)
+int dragon_helm(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3679,7 +3679,7 @@ int killOtherSword(P_obj obj, P_char ch, int isGood)
 	return FALSE;
 }
 
-int attemptToDisengage(P_char ch, int cmd, char *arg)
+int attemptToDisengage(P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_KILL || cmd == CMD_HIT || cmd == CMD_INNATE || cmd == CMD_FLEE ||
 	    cmd == CMD_RESCUE || cmd == CMD_RETREAT)
@@ -4015,7 +4015,7 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int dranum_mask(P_obj obj, P_char ch, int cmd, char *arg)
+int dranum_mask(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char vict;
 
@@ -4528,7 +4528,7 @@ int sanguine(P_obj obj, P_char ch, int cmd, char *argument)
 
 // for 51 potions
 
-int treasure_chest(P_obj obj, P_char ch, int cmd, char *argument)
+int treasure_chest(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int found, chance1, chance2;
 	P_obj potion;
@@ -5835,7 +5835,7 @@ int tyr_sword(P_obj obj, P_char ch, int cmd, char *arg)
 }
 
 // Subtract 1 from values[0] each cast.  When reaching 0, poof item.
-int crystal_spike(P_obj obj, P_char ch, int cmd, char *arg)
+int crystal_spike(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -6371,7 +6371,7 @@ int llyms_altar(P_obj obj, P_char ch, int cmd, char *arg)
    * -- DTS 4/4/95
  */
 
-int fw_ruby_monocle(P_obj obj, P_char ch, int cmd, char *arg)
+int fw_ruby_monocle(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	int randroom;
 
@@ -6400,7 +6400,7 @@ int fw_ruby_monocle(P_obj obj, P_char ch, int cmd, char *arg)
 
 /* This object randomly moves around the map world, and allows entrance to
    the flying citadel floating above */
-int flying_citadel(P_obj obj, P_char ch, int cmd, char *arg)
+int flying_citadel(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int door;
 
@@ -7798,7 +7798,7 @@ int sword_named_magik(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 }
 
-int yuan_ti_stone(P_obj obj, P_char ch, int cmd, char *arg)
+int yuan_ti_stone(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	/* check for periodic event calls */
 	if (cmd == CMD_SET_PERIODIC)
@@ -7885,7 +7885,7 @@ int trans_tower_sword(P_obj obj, P_char ch, int cmd, char *arg)
 }
 
 #ifdef THARKUN_ARTIS
-int trans_tower_shadow_globe(P_obj obj, P_char ch, int cmd, char *arg)
+int trans_tower_shadow_globe(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	int curr_time = time(NULL);
@@ -8166,7 +8166,7 @@ int stat_pool_common(P_obj obj, P_char ch, int cmd, sh_int *statPtr, const char 
 	return TRUE;
 }
 
-int spell_pool(P_obj obj, P_char ch, int cmd, char *arg)
+int spell_pool(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int curr_time, rannum;
 	typedef void (*spell_func_ptr)(int, P_char, char *, int, P_char, P_obj);
@@ -8214,7 +8214,7 @@ int spell_pool(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int stat_pool_str(P_obj obj, P_char ch, int cmd, char *arg)
+int stat_pool_str(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -8225,7 +8225,7 @@ int stat_pool_str(P_obj obj, P_char ch, int cmd, char *arg)
 				"$n's muscles seem to grow for a brief instant.");
 }
 
-int stat_pool_dex(P_obj obj, P_char ch, int cmd, char *arg)
+int stat_pool_dex(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -8237,7 +8237,7 @@ int stat_pool_dex(P_obj obj, P_char ch, int cmd, char *arg)
 		"$n nimbly moves $s fingers with newfound dexterity.");
 }
 
-int stat_pool_agi(P_obj obj, P_char ch, int cmd, char *arg)
+int stat_pool_agi(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -8248,7 +8248,7 @@ int stat_pool_agi(P_obj obj, P_char ch, int cmd, char *arg)
 		"$n's body suddenly appears more flexible than ever - $e does 23 backflips in a row!");
 }
 
-int stat_pool_con(P_obj obj, P_char ch, int cmd, char *arg)
+int stat_pool_con(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -8260,7 +8260,7 @@ int stat_pool_con(P_obj obj, P_char ch, int cmd, char *arg)
 				"$n's countenance takes on a more healthy appearance.");
 }
 
-int stat_pool_pow(P_obj obj, P_char ch, int cmd, char *arg)
+int stat_pool_pow(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -8273,7 +8273,7 @@ int stat_pool_pow(P_obj obj, P_char ch, int cmd, char *arg)
 		"$n's eyes take on a glimmering sheen as $e looks up from the pool.");
 }
 
-int stat_pool_int(P_obj obj, P_char ch, int cmd, char *arg)
+int stat_pool_int(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -8286,7 +8286,7 @@ int stat_pool_int(P_obj obj, P_char ch, int cmd, char *arg)
 		"$n smiles and recites a poem in a language you do not even recognize!");
 }
 
-int stat_pool_wis(P_obj obj, P_char ch, int cmd, char *arg)
+int stat_pool_wis(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -8298,7 +8298,7 @@ int stat_pool_wis(P_obj obj, P_char ch, int cmd, char *arg)
 		"$n begins to admonish younger people around $m.");
 }
 
-int stat_pool_cha(P_obj obj, P_char ch, int cmd, char *arg)
+int stat_pool_cha(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -8310,7 +8310,7 @@ int stat_pool_cha(P_obj obj, P_char ch, int cmd, char *arg)
 				"Wow, you never noticed before, but $n is kinda sexy.");
 }
 
-int stat_pool_luc(P_obj obj, P_char ch, int cmd, char *arg)
+int stat_pool_luc(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -8322,7 +8322,7 @@ int stat_pool_luc(P_obj obj, P_char ch, int cmd, char *arg)
 				"$n looks to have the confidence that life is going his way.\n");
 }
 
-int druid_sabre(P_obj obj, P_char ch, int cmd, char *arg)
+int druid_sabre(P_obj /*obj*/, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -8554,7 +8554,7 @@ int church_door(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int earthquake_gauntlet(P_obj obj, P_char ch, int cmd, char *arg)
+int earthquake_gauntlet(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 
@@ -8587,7 +8587,7 @@ int earthquake_gauntlet(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int blind_boots(P_obj obj, P_char ch, int cmd, char *arg)
+int blind_boots(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 
@@ -8852,7 +8852,7 @@ int stream_of_life(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int newbie_sign1(P_obj obj, P_char ch, int cmd, char *arg)
+int newbie_sign1(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 
@@ -8881,7 +8881,7 @@ int newbie_sign1(P_obj obj, P_char ch, int cmd, char *arg)
 }
 
 // Second Sign
-int newbie_sign2(P_obj obj, P_char ch, int cmd, char *arg)
+int newbie_sign2(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 
@@ -9024,7 +9024,7 @@ int madman_mangler(P_obj obj, P_char ch, int cmd, char *arg)
 }
 
 // Thanks giving procs -Kvark
-int tripboots(P_obj obj, P_char ch, int cmd, char *arg)
+int tripboots(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 	int rand;
@@ -9075,7 +9075,7 @@ int tripboots(P_obj obj, P_char ch, int cmd, char *arg)
 	return (FALSE);
 }
 
-int blindbadge(P_obj obj, P_char ch, int cmd, char *arg)
+int blindbadge(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 	struct affected_type af;
@@ -9191,7 +9191,7 @@ int confusionsword(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int fumblegaunts(P_obj obj, P_char ch, int cmd, char *arg)
+int fumblegaunts(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 	int rand;
@@ -9422,7 +9422,7 @@ int hammer_titans(P_obj obj, P_char ch, int cmd, char *arg)
  *   it's also fun for lowbies and others. This item might need tweaking in long wipes since the frag
  *   amount might be pretty high and frags above 100 let ya get pretty nice stat's.
  */
-int guild_badge(P_obj obj, P_char ch, int cmd, char *arg)
+int guild_badge(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int affects_bonus;
 	int i, count, weekday;
@@ -9829,7 +9829,7 @@ int dragonslayer(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-void event_lifereaver(P_char ch, P_char victim, P_obj obj, void *data)
+void event_lifereaver(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int dam;
 	int count = *((int *)data);
@@ -9855,7 +9855,7 @@ void event_lifereaver(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-int lifereaver(P_obj obj, P_char ch, int cmd, char *arg)
+int lifereaver(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	int numb;
@@ -9935,7 +9935,7 @@ int rax_red_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int obj_imprison(P_obj obj, P_char ch, int cmd, char *arg)
+int obj_imprison(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int victim_in_room;
 	P_char tch;
@@ -10453,7 +10453,7 @@ int alch_rod(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int dragon_skull_helm(P_obj obj, P_char ch, int cmd, char *argument)
+int dragon_skull_helm(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int rand;
 	int curr_time;
@@ -10545,7 +10545,7 @@ int dragon_skull_helm(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int priest_rudder(P_obj obj, P_char ch, int cmd, char *argument)
+int priest_rudder(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int curr_time;
 
@@ -10582,7 +10582,7 @@ int priest_rudder(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int ljs_armor(P_obj obj, P_char ch, int cmd, char *arg)
+int ljs_armor(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char vict;
 
@@ -10648,7 +10648,7 @@ int ljs_armor(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int alch_bag(P_obj obj, P_char ch, int cmd, char *arg)
+int alch_bag(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int curr_time;
 	P_obj ingred;
@@ -11614,7 +11614,7 @@ int nightcrawler_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 
 // Mossi Modification:   Moving DECAY Procs
 
-int blood_stains(P_obj obj, P_char ch, int cmd, char *argument)
+int blood_stains(P_obj obj, P_char /*ch*/, int cmd, char * /*argument*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	const char *long_desc_reg[] = { "&+rBlood splatters cover the area.&n",
@@ -11671,7 +11671,7 @@ int blood_stains(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int tracks(P_obj obj, P_char ch, int cmd, char *argument)
+int tracks(P_obj /*obj*/, P_char /*ch*/, int cmd, char * /*argument*/)
 {
 	if (cmd == CMD_DECAY)
 	{
@@ -11680,7 +11680,7 @@ int tracks(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int ice_shattered_bits(P_obj obj, P_char ch, int cmd, char *argument)
+int ice_shattered_bits(P_obj obj, P_char /*ch*/, int cmd, char * /*argument*/)
 {
 	if (cmd == CMD_DECAY)
 	{
@@ -11696,7 +11696,7 @@ int ice_shattered_bits(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int ice_block(P_obj obj, P_char ch, int cmd, char *argument)
+int ice_block(P_obj /*obj*/, P_char /*ch*/, int cmd, char * /*argument*/)
 {
 	if (cmd == CMD_DECAY)
 		return TRUE;
@@ -11704,7 +11704,7 @@ int ice_block(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int frost_beacon(P_obj obj, P_char ch, int cmd, char *argument)
+int frost_beacon(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	P_char tch;
 	char buf[1024];
@@ -11759,7 +11759,7 @@ int frost_beacon(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int random_tomb(P_obj obj, P_char ch, int cmd, char *arg)
+int random_tomb(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	P_obj tmp_object = NULL;
 	bool have_one = FALSE;
@@ -11821,7 +11821,7 @@ int random_tomb(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int random_glass(P_obj obj, P_char ch, int cmd, char *arg)
+int random_glass(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	P_obj tmp_object = NULL;
 	bool have_one = FALSE;
@@ -11883,7 +11883,7 @@ int random_glass(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int random_slab(P_obj obj, P_char ch, int cmd, char *arg)
+int random_slab(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	P_obj tmp_object = NULL;
 	bool have_one = FALSE;
@@ -11943,7 +11943,7 @@ int random_slab(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int lyrical_instrument_of_time(P_obj obj, P_char ch, int cmd, char *argument)
+int lyrical_instrument_of_time(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int rand;
 	int curr_time;
@@ -12045,7 +12045,7 @@ int lyrical_instrument_of_time(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int ogre_warlords_sword(P_obj obj, P_char ch, int cmd, char *arg)
+int ogre_warlords_sword(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	int dam = cmd / 1000;
 
@@ -12072,7 +12072,7 @@ int ogre_warlords_sword(P_obj obj, P_char ch, int cmd, char *arg)
 
 #define AZER 7359
 
-int flaming_axe_of_azer(P_obj obj, P_char ch, int cmd, char *arg)
+int flaming_axe_of_azer(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 {
 	P_char tmp_ch, vict = NULL;
 	int room, level;
@@ -12176,7 +12176,7 @@ int mrinlor_whip(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int khildarak_warhammer(P_obj obj, P_char ch, int cmd, char *arg)
+int khildarak_warhammer(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -12228,7 +12228,7 @@ int khildarak_warhammer(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int mace_dragondeath(P_obj obj, P_char ch, int cmd, char *arg)
+int mace_dragondeath(P_obj obj, P_char /*ch*/, int cmd, char *arg)
 {
 	P_char temp_ch;
 	P_char vict;
@@ -12568,7 +12568,7 @@ int refreshing_fountain(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int magical_fountain(P_obj obj, P_char ch, int cmd, char *arg)
+int magical_fountain(P_obj /*obj*/, P_char /*ch*/, int /*cmd*/, char * /*arg*/)
 {
 	return FALSE;
 }
@@ -12909,7 +12909,7 @@ int skill_beacon(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int vareena_statue(P_obj obj, P_char ch, int cmd, char *argument)
+int vareena_statue(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -13092,7 +13092,7 @@ int newbie_portal(P_obj obj, P_char ch, int cmd, char *arg)
 
 typedef int (*set_func)(P_char ch, P_obj obj, int count, int cmd, char *arg);
 
-static int master_set_adapter(P_char ch, P_obj obj, int count, int cmd, char *arg)
+static int master_set_adapter(P_char ch, P_obj obj, int /*count*/, int cmd, char *arg)
 {
 	return master_set(obj, ch, cmd, arg);
 }
@@ -13105,7 +13105,7 @@ struct random_set_wear_off
 
 void check_zone_spells(P_char ch, P_obj obj, int count, const char *zone_name);
 
-void event_random_set_proc(P_char ch, P_char victim, P_obj obj, void *data)
+void event_random_set_proc(P_char ch, P_char /*victim*/, P_obj obj, void *data)
 {
 	struct random_set_wear_off *rdata = (struct random_set_wear_off *)data;
 	struct affected_type *afp, *afpp = rdata->af;
@@ -13393,7 +13393,7 @@ void check_zone_spells(P_char ch, P_obj obj, int count, const char *zone_name)
 	}
 }
 
-int random_set(P_char ch, P_obj obj, int count, int cmd, char *arg)
+int random_set(P_char ch, P_obj obj, int count, int cmd, char * /*arg*/)
 {
 	struct affected_type af, *afp;
 	char *zone_name, buffer[256];
@@ -13670,7 +13670,7 @@ int unmulti_altar(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int thought_beacon(P_obj obj, P_char ch, int cmd, char *arg)
+int thought_beacon(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	if (cmd != CMD_DISPEL || !OBJ_ROOM(obj))
 		return FALSE;
@@ -14196,7 +14196,7 @@ int portal_general_internal(P_obj obj, P_char ch, int cmd, char *arg,
 	return TRUE;
 }
 
-void event_mentality_mace_vibrate(P_char ch, P_char victim, P_obj obj, void *data)
+void event_mentality_mace_vibrate(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	if (OBJ_WORN(obj) && obj->loc.wearing)
 	{
@@ -14446,7 +14446,7 @@ int resurrect_totem(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int harpy_gate(P_obj obj, P_char ch, int cmd, char *arg)
+int harpy_gate(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (!obj || !ch)
 		return FALSE;
@@ -14782,7 +14782,7 @@ int righteous_blade(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int flame_blade(P_obj obj, P_char ch, int cmd, char *argument)
+int flame_blade(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	if (!ch || !obj)
 		return FALSE;
@@ -14857,7 +14857,7 @@ int miners_helmet(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int thanksgiving_wings(P_obj obj, P_char ch, int cmd, char *argument)
+int thanksgiving_wings(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int curr_time;
 	P_char temp_ch;
@@ -14898,7 +14898,7 @@ int thanksgiving_wings(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int moonstone(P_obj obj, P_char ch, int cmd, char *argument)
+int moonstone(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	char *name;
 	struct obj_affect *aff;
@@ -14994,17 +14994,17 @@ int random_gc_room()
 	return 0;
 }
 
-int dragoon_blade(P_obj obj, P_char ch, int cmd, char *argument)
+int dragoon_blade(P_obj /*obj*/, P_char /*ch*/, int /*cmd*/, char * /*argument*/)
 {
 	return 0;
 }
 
-int dragoon_lance(P_obj obj, P_char ch, int cmd, char *argument)
+int dragoon_lance(P_obj /*obj*/, P_char /*ch*/, int /*cmd*/, char * /*argument*/)
 {
 	return 0;
 }
 
-int dragoon_totem(P_obj obj, P_char ch, int cmd, char *argument)
+int dragoon_totem(P_obj /*obj*/, P_char /*ch*/, int /*cmd*/, char * /*argument*/)
 {
 	return 0;
 }

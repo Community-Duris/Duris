@@ -126,7 +126,7 @@ void send_to_arena(char *msg, int race)
 	}
 }
 
-char *arena_death_msg(P_obj p_weapon)
+char *arena_death_msg(P_obj /*p_weapon*/)
 {
 	return "killed";
 }

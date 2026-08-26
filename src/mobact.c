@@ -6913,7 +6913,7 @@ void MobStartFight(P_char ch, P_char vict)
 	((((obj)->type == ITEM_CONTAINER) && !IS_SET((obj)->value[1], CONT_CLOSED)) || \
 	 ((obj)->type == ITEM_CORPSE))
 
-int RateObject(P_char ch, int a, P_obj obj)
+int RateObject(P_char ch, int /*a*/, P_obj obj)
 {
 	int manap, damp, hitp, value, tmp;
 
@@ -7471,7 +7471,7 @@ bool MobSpellUp(P_char ch)
 
         Odorf */
 
-void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
+void event_mob_mundane(P_char ch, P_char /*victim*/, P_obj /*object*/, void * /*data*/)
 {
 	P_char tmp_ch;
 	P_obj obj, obj2, best_obj, next_obj;
@@ -8760,7 +8760,7 @@ struct misfire_info
 };
 
 // The ch, victim, and obj args should be NULL.  data contains the zone number and racewar side.
-void event_misfire_cooldown(P_char ch, P_char victim, P_obj obj, void *data)
+void event_misfire_cooldown(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct misfire_info *info = (misfire_info *)data;
 
@@ -9353,7 +9353,7 @@ bool valid_mob_hunt_edge(int from_room, int dir)
  * This code will deal with adding a new event for the next step.  return
  * TRUE if I did something, otherwise, FALSE
  */
-void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *d)
+void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, void *d)
 // bool NewMobHunt(void)
 {
 	char buf[MAX_STRING_LENGTH];
@@ -10336,7 +10336,7 @@ void clearMemory(P_char ch)
  * target is still legal, if it is, it starts combat.  JAB
  */
 
-void event_agg_attack(P_char ch, P_char victim, P_obj obj, void *data)
+void event_agg_attack(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int door;
 
@@ -10434,7 +10434,7 @@ void event_agg_attack(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void event_mob_skin_spell(P_char ch, P_char vict, P_obj obj, void *data)
+void event_mob_skin_spell(P_char ch, P_char /*vict*/, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type af, *afp;
 
@@ -10901,7 +10901,7 @@ bool CastBlighterSpell(P_char ch, P_char victim, bool helping)
 }
 
 // Should just be called during a periodic event.
-void event_mob_proc(P_char mob, P_char victim, P_obj object, void *data)
+void event_mob_proc(P_char mob, P_char victim, P_obj object, void * /*data*/)
 {
 	P_nevent e;
 

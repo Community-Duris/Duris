@@ -598,7 +598,7 @@ static bool perform_superior_enhancement(P_char ch, P_obj source,
 	return TRUE;
 }
 
-void do_enhance(P_char ch, char *argument, int cmd)
+void do_enhance(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj source, material;
 	char first[MAX_INPUT_LENGTH];

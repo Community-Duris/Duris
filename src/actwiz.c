@@ -344,7 +344,7 @@ void sa_intCopy(P_char ch, unsigned long offset, int value)
 /*
  ** Used by do_setattr to do set the year of player to "value"
  */
-void sa_ageCopy(P_char ch, unsigned long offset, int value)
+void sa_ageCopy(P_char ch, unsigned long /*offset*/, int value)
 {
 	long secs;
 	time_t curr_time = time(NULL);
@@ -472,7 +472,7 @@ void test_load_all_chars(P_char ch)
 }
 
 /* Load a player manually from save files */
-void do_read_player(P_char ch, char *arg, int cmd)
+void do_read_player(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char vict = NULL;
 	int tmp;
@@ -531,7 +531,7 @@ void do_read_player(P_char ch, char *arg, int cmd)
 	sql_log(ch, WIZLOG, "Loaded char %s", GET_NAME(vict));
 }
 
-void do_release(P_char ch, char *argument, int cmd)
+void do_release(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_STRING_LENGTH];
 	char buf[MAX_STRING_LENGTH];
@@ -593,7 +593,7 @@ void do_release(P_char ch, char *argument, int cmd)
 	send_to_char("Descriptor not found!\n", ch);
 }
 
-void do_emote(P_char ch, char *argument, int cmd)
+void do_emote(P_char ch, char *argument, int /*cmd*/)
 {
 	int i;
 	P_char k;
@@ -668,7 +668,7 @@ void do_emote(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_echo(P_char ch, char *argument, int cmd)
+void do_echo(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc d;
 	int i;
@@ -700,7 +700,7 @@ void do_echo(P_char ch, char *argument, int cmd)
 }
 
 // This function toggles a player's newbie status
-void do_newbie(P_char ch, char *argument, int cmd)
+void do_newbie(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	char buf[MAX_INPUT_LENGTH];
@@ -757,7 +757,7 @@ void do_newbie(P_char ch, char *argument, int cmd)
 }
 
 // This function toggles a player's newbie helper status
-void do_make_guide(P_char ch, char *argument, int cmd)
+void do_make_guide(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	char buf[MAX_INPUT_LENGTH];
@@ -805,7 +805,7 @@ void do_make_guide(P_char ch, char *argument, int cmd)
  ** This function now allows a player to transfer anyone
  ** at or below his level
  */
-void do_trans(P_char ch, char *argument, int cmd)
+void do_trans(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc i;
 	P_char victim;
@@ -896,7 +896,7 @@ void do_trans(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_at(P_char ch, char *argument, int cmd)
+void do_at(P_char ch, char *argument, int /*cmd*/)
 {
 	char loc_str[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
 	int loc_nr, location, original_loc, zc, original_zc;
@@ -1004,7 +1004,7 @@ void do_at(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_goto(P_char ch, char *argument, int cmd)
+void do_goto(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH], output[MAX_STRING_LENGTH];
 	int location = NOWHERE, old_room, bits, zcoord = 0;
@@ -1167,7 +1167,7 @@ void do_goto(P_char ch, char *argument, int cmd)
 	act(output, TRUE, ch, 0, 0, TO_ROOM);
 }
 
-void do_affectpurge(P_char ch, char *argument, int cmd)
+void do_affectpurge(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	char arg1[MAX_STRING_LENGTH], rest[MAX_STRING_LENGTH];
@@ -1265,7 +1265,7 @@ void do_affectpurge(P_char ch, char *argument, int cmd)
 // With arg remove: Removes argument from list of deathobjects and sets proc to NULL.
 // Question: Are these procs read/set at boot and after regular procs set?
 //   Otherwise, they won't persist through boots and would make this lame.
-void do_deathobj(P_char ch, char *argument, int cmd)
+void do_deathobj(P_char ch, char *argument, int /*cmd*/)
 {
 	char vnum[15], out[MAX_STRING_LENGTH], Gbuf[MAX_STRING_LENGTH];
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
@@ -1411,7 +1411,7 @@ void do_deathobj(P_char ch, char *argument, int cmd)
 	}
 }
 
-void stat_dam(P_char ch, char *arg)
+void stat_dam(P_char ch, char * /*arg*/)
 {
 	const char *race_name;
 	char tmplate[512], buf[512], prop_name[512];
@@ -1439,7 +1439,7 @@ void stat_dam(P_char ch, char *arg)
 	}
 }
 
-void stat_spldam(P_char ch, char *arg)
+void stat_spldam(P_char ch, char * /*arg*/)
 {
 	char line[MAX_STRING_LENGTH], buf[512];
 	int type, race;
@@ -3450,7 +3450,7 @@ void do_stat(P_char ch, char *argument, int cmd)
 }
 #undef STAT_SYNTAX
 
-void do_echoa(P_char ch, char *argument, int cmd)
+void do_echoa(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc d;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -3490,7 +3490,7 @@ void do_echoa(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_echoz(P_char ch, char *arg, int cmd)
+void do_echoz(P_char ch, char *arg, int /*cmd*/)
 {
 	P_desc d;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -3537,7 +3537,7 @@ void do_echoz(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_echog(P_char ch, char *arg, int cmd)
+void do_echog(P_char ch, char *arg, int /*cmd*/)
 {
 	P_desc d;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -3584,7 +3584,7 @@ void do_echog(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_echoe(P_char ch, char *arg, int cmd)
+void do_echoe(P_char ch, char *arg, int /*cmd*/)
 {
 	P_desc d;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -3632,7 +3632,7 @@ void do_echoe(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_echou(P_char ch, char *arg, int cmd)
+void do_echou(P_char ch, char *arg, int /*cmd*/)
 {
 	P_desc d;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -3679,12 +3679,12 @@ void do_echou(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_shutdow(P_char ch, char *argument, int cmd)
+void do_shutdow(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	send_to_char("If you want to shut something down - say so!\n", ch);
 }
 
-void do_wizlock(P_char ch, char *arg, int cmd)
+void do_wizlock(P_char ch, char *arg, int /*cmd*/)
 {
 	P_desc d;
 	char buf[MAX_STRING_LENGTH];
@@ -3813,7 +3813,7 @@ void do_wizlock(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_nchat(P_char ch, char *argument, int cmd)
+void do_nchat(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc i;
 	bool good, evil, undead, neutral, all;
@@ -4104,7 +4104,7 @@ void do_nchat(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_jestros(P_char ch, char *argument, int cmd)
+void do_jestros(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc i;
 	bool good, evil, undead, neutral, all;
@@ -4308,7 +4308,7 @@ void do_jestros(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_wizmsg(P_char ch, char *arg, int cmd)
+void do_wizmsg(P_char ch, char *arg, int /*cmd*/)
 {
 	P_desc d;
 	P_char realChar, toChar;
@@ -4412,7 +4412,7 @@ void do_wizmsg(P_char ch, char *arg, int cmd)
 
 TimedShutdownData shutdownData = { 0, -1, TimedShutdownData::NONE, "", "" };
 
-void timedShutdown(P_char ch, P_char, P_obj, void *data)
+void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 {
 	// timed shutdown event.  ch is the god who initiated the shutdown.
 	//  data refers to the shutdown timer and shutdown type
@@ -4656,7 +4656,7 @@ void displayShutdownMsg(P_char ch)
 	send_to_char(buf, ch);
 }
 
-void do_shutdown(P_char ch, char *argument, int cmd)
+void do_shutdown(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[100], arg[MAX_STRING_LENGTH];
 
@@ -4842,7 +4842,7 @@ void do_shutdown(P_char ch, char *argument, int cmd)
 	timedShutdown(NULL, NULL, NULL, NULL);
 }
 
-void do_snoop(P_char ch, char *argument, int cmd)
+void do_snoop(P_char ch, char *argument, int /*cmd*/)
 {
 	static char arg[MAX_STRING_LENGTH];
 	P_char victim;
@@ -5077,7 +5077,7 @@ void do_switch(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_return(P_char ch, char *argument, int cmd)
+void do_return(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	/*  if(CHAR_POLYMORPH_OBJ(ch))
 	  {
@@ -5122,7 +5122,7 @@ void do_return(P_char ch, char *argument, int cmd)
 
 int forced_command = 0;
 
-void do_force(P_char ch, char *argument, int cmd)
+void do_force(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc i;
 	P_char vict = NULL;
@@ -5214,7 +5214,7 @@ void do_force(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_load(P_char ch, char *argument, int cmd)
+void do_load(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char mob;
 	P_obj obj;
@@ -5307,7 +5307,7 @@ void do_load(P_char ch, char *argument, int cmd)
 }
 
 /* clean a room of all mobiles and objects */
-void do_purge(P_char ch, char *argument, int cmd)
+void do_purge(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict, next_v;
 	P_obj obj, next_o;
@@ -5858,7 +5858,7 @@ void do_start(P_char ch, int nomsg)
 	ch->player.time.logon = time(0);
 }
 
-void do_advance(P_char ch, char *argument, int cmd)
+void do_advance(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	char name[MAX_INPUT_LENGTH], level[MAX_INPUT_LENGTH];
@@ -5985,7 +5985,7 @@ void do_advance(P_char ch, char *argument, int cmd)
     3 - great, can be above normal\n\
     4 - exceptional, well above average\n"
 
-void do_reroll(P_char ch, char *argument, int cmd)
+void do_reroll(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	int flag;
@@ -6249,7 +6249,7 @@ void do_restore(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_freeze(P_char ch, char *argument, int cmd)
+void do_freeze(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL;
 	P_obj dummy;
@@ -6298,7 +6298,7 @@ void do_freeze(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_zreset(P_char ch, char *argument, int cmd)
+void do_zreset(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_STRING_LENGTH];
 	char buf[MAX_STRING_LENGTH];
@@ -6351,7 +6351,7 @@ void do_zreset(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_reinitphys(P_char ch, char *arg, int cmd)
+void do_reinitphys(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char vict;
 	P_desc p;
@@ -6428,7 +6428,7 @@ void do_reinitphys(P_char ch, char *arg, int cmd)
 	set_char_height_weight(vict);
 }
 
-void do_silence(P_char ch, char *argument, int cmd)
+void do_silence(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict;
 	P_obj dummy;
@@ -6482,7 +6482,7 @@ void do_silence(P_char ch, char *argument, int cmd)
 }
 
 /* Make oneself visible only to players above certain levels. */
-void do_vis(P_char ch, char *argument, int cmd)
+void do_vis(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 
@@ -6539,7 +6539,7 @@ void do_vis(P_char ch, char *argument, int cmd)
 
 /* Used to demote player to level 1 (and level 1 only) */
 
-void do_demote(P_char ch, char *argument, int cmd)
+void do_demote(P_char ch, char *argument, int /*cmd*/)
 {
 	char person[MAX_STRING_LENGTH];
 	char buf[MAX_STRING_LENGTH];
@@ -6623,7 +6623,7 @@ void do_demote(P_char ch, char *argument, int cmd)
  * ** ** Usage: **     setattr player attribute value **
  */
 
-void do_setattr(P_char ch, char *arg, int cmd)
+void do_setattr(P_char ch, char *arg, int /*cmd*/)
 {
 	/* Internal Macros */
 
@@ -6789,7 +6789,7 @@ void do_setattr(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_poofIn(P_char ch, char *argument, int cmd)
+void do_poofIn(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_INPUT_LENGTH], buf[MAX_INPUT_LENGTH];
 	size_t i;
@@ -6841,7 +6841,7 @@ void do_poofIn(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_poofOut(P_char ch, char *argument, int cmd)
+void do_poofOut(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_INPUT_LENGTH], buf[MAX_INPUT_LENGTH];
 	size_t i;
@@ -6893,7 +6893,7 @@ void do_poofOut(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_teleport(P_char ch, char *argument, int cmd)
+void do_teleport(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim, target_mob;
 	char person[MAX_INPUT_LENGTH], room[MAX_INPUT_LENGTH];
@@ -6991,7 +6991,7 @@ void do_teleport(P_char ch, char *argument, int cmd)
 		world[old_room].number, world[victim->in_room].number);
 }
 
-void do_wizhost(P_char ch, char *argument, int cmd)
+void do_wizhost(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	char ip[MAX_INPUT_LENGTH];
@@ -7039,7 +7039,7 @@ void do_wizhost(P_char ch, char *argument, int cmd)
 	save_wizconnect_file();
 }
 
-void do_ban(P_char ch, char *argument, int cmd)
+void do_ban(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	char buf[MAX_STRING_LENGTH];
@@ -7108,7 +7108,7 @@ void do_ban(P_char ch, char *argument, int cmd)
 	save_ban_file();
 }
 
-void do_allow(P_char ch, char *argument, int cmd)
+void do_allow(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	char buf[MAX_STRING_LENGTH];
@@ -7189,7 +7189,7 @@ void do_allow(P_char ch, char *argument, int cmd)
 	send_to_char("String not found in list!\n", ch);
 }
 
-void do_secret(P_char ch, char *argument, int cmd)
+void do_secret(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj = NULL;
 	P_char dummy;
@@ -7218,7 +7218,7 @@ void do_secret(P_char ch, char *argument, int cmd)
  *
  * Syntax : "lookup <room | mob | obj | random> <search_string>"
  */
-void do_lookup(P_char ch, char *argument, int cmd)
+void do_lookup(P_char ch, char *argument, int /*cmd*/)
 {
 	FILE *fp;
 	char *irc;
@@ -7532,7 +7532,7 @@ void save_wizconnect_file(void)
 	fclose(f);
 }
 
-void do_ptell(P_char ch, char *arg, int cmd)
+void do_ptell(P_char ch, char *arg, int /*cmd*/)
 {
 	struct descriptor_data *d;
 	P_char vict = NULL;
@@ -7783,7 +7783,7 @@ void GetMIA2(char *playerName, char *returned)
 		 (timegone / SECS_PER_MUD_HOUR) > 1 ? "s" : "");
 }
 
-void do_finger(P_char ch, char *arg, int cmd)
+void do_finger(P_char ch, char *arg, int /*cmd*/)
 {
 	unsigned long timegone;
 	time_t laston;
@@ -7903,7 +7903,7 @@ void do_finger(P_char ch, char *arg, int cmd)
 		free_char(finger_foo);
 }
 
-void do_decline(P_char ch, char *arg, int cmd)
+void do_decline(P_char ch, char *arg, int /*cmd*/)
 {
 	char Gbuf2[MAX_STRING_LENGTH], f_a[MAX_STRING_LENGTH], Gbuf1[MAX_STRING_LENGTH];
 	P_desc d, i;
@@ -7973,7 +7973,7 @@ extern int approve_mode;
 
 #define APPROVE_OFF 0
 #define APPROVE_ON 1
-void do_approve(P_char ch, char *arg, int cmd)
+void do_approve(P_char ch, char *arg, int /*cmd*/)
 {
 	int count;
 	P_desc d1, d2;
@@ -8132,7 +8132,7 @@ void do_approve(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_invite(P_char ch, char *arg, int cmd)
+void do_invite(P_char ch, char *arg, int /*cmd*/)
 {
 	char f_a[MAX_STRING_LENGTH];
 
@@ -8168,7 +8168,7 @@ void do_invite(P_char ch, char *arg, int cmd)
 	wizlog(GET_LEVEL(ch), "%s has invited %s", GET_NAME(ch), f_a);
 }
 
-void do_uninvite(P_char ch, char *arg, int cmd)
+void do_uninvite(P_char ch, char *arg, int /*cmd*/)
 {
 	char f_a[MAX_STRING_LENGTH], path[2048];
 
@@ -8287,7 +8287,7 @@ void clone_container_obj(P_obj to, P_obj obj)
 	}
 }
 
-void do_clone(P_char ch, char *argument, int cmd)
+void do_clone(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char mob, mcopy;
 	P_obj obj, ocopy;
@@ -8472,7 +8472,7 @@ void do_clone(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_knock(P_char ch, char *arg, int cmd)
+void do_knock(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char victim;
 
@@ -8506,7 +8506,7 @@ void do_knock(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_ingame(P_char ch, char *args, int cmd)
+void do_ingame(P_char ch, char *args, int /*cmd*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], buf3[MAX_STRING_LENGTH];
 	char name[MAX_NAME_LENGTH + 1];
@@ -8590,7 +8590,7 @@ void do_ingame(P_char ch, char *args, int cmd)
 	}
 }
 
-void do_inroom(P_char ch, char *args, int cmd)
+void do_inroom(P_char ch, char *args, int /*cmd*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	char *p;
@@ -8750,7 +8750,7 @@ bool check_apply(int *value, const char *flagName)
 	"&+w   which spec <flag> <amount>&n\n"
 
 // Lists all mob/object types that match the search string.
-void do_which(P_char ch, char *args, int cmd)
+void do_which(P_char ch, char *args, int /*cmd*/)
 {
 	typedef enum _whichObjFlagsEnum
 	{
@@ -9461,7 +9461,7 @@ void do_revoke(P_char ch, char *args, int cmd)
 
 #define SYNTAX_SETHOME "Syntax:\n   sethome <char> <home flags> <room>\n"
 
-void do_sethome(P_char ch, char *args, int cmd)
+void do_sethome(P_char ch, char *args, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH], hflg[MAX_INPUT_LENGTH];
 	char val[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH];
@@ -9677,7 +9677,7 @@ void do_proc(P_char ch, char *args, int cmd)
 
 #endif
 
-void do_terminate(P_char ch, char *argument, int cmd)
+void do_terminate(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	char buf[MAX_STRING_LENGTH];
@@ -9770,7 +9770,7 @@ void do_terminate(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_sacrifice(P_char ch, char *argument, int cmd)
+void do_sacrifice(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	char buf[MAX_STRING_LENGTH];
@@ -9898,7 +9898,7 @@ ACMD(do_repiss)
 	send_to_char(buf3, ch);
 }
 
-void do_echot(P_char ch, char *argument, int cmd)
+void do_echot(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict;
 	P_desc d;
@@ -10090,7 +10090,7 @@ int vnum_room(char *searchname, struct char_data *ch)
 	return (found);
 }
 
-void do_unspec(P_char ch, char *argument, int cmd)
+void do_unspec(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	char buf[MAX_STRING_LENGTH];
@@ -10126,7 +10126,7 @@ void do_unspec(P_char ch, char *argument, int cmd)
 	send_to_char("They are no longer specialized.\n", ch);
 }
 
-void do_RemoveSpecTimer(P_char ch, char *argument, int cmd)
+void do_RemoveSpecTimer(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	char buf[MAX_STRING_LENGTH];
@@ -10191,7 +10191,7 @@ void tranquilize(P_char ch, P_char victim)
 	}
 }
 
-void do_tranquilize(P_char ch, char *argument, int cmd)
+void do_tranquilize(P_char ch, char *argument, int /*cmd*/)
 {
 	if (!ch || !IS_PC(ch) || !IS_TRUSTED(ch))
 		return;
@@ -10237,7 +10237,7 @@ void do_tranquilize(P_char ch, char *argument, int cmd)
  * storage remove <item name> - deletes a storage object and drops all contents to room.
  */
 
-void do_storage(P_char ch, char *arg, int cmd)
+void do_storage(P_char ch, char *arg, int /*cmd*/)
 {
 	char subcmd[MAX_STRING_LENGTH], objarg[MAX_STRING_LENGTH];
 	P_obj s_obj, tmpobj, next_obj;
@@ -10378,7 +10378,7 @@ void newb_spellup(P_char ch, P_char victim)
 	send_to_char("\nEnjoy your blessings.\n", victim);
 }
 
-void do_newb_spellup_all(P_char ch, char *arg, int cmd)
+void do_newb_spellup_all(P_char ch, char *arg, int /*cmd*/)
 {
 	P_desc d;
 	char buf[MAX_STRING_LENGTH];
@@ -10421,7 +10421,7 @@ void do_newb_spellup_all(P_char ch, char *arg, int cmd)
 	send_to_char_f(ch, "Done. Blessed %d player%s.\n", count, count == 1 ? "" : "s");
 }
 
-void do_newb_spellup(P_char ch, char *arg, int cmd)
+void do_newb_spellup(P_char ch, char *arg, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_char victim;
@@ -10450,7 +10450,7 @@ void do_newb_spellup(P_char ch, char *arg, int cmd)
 	send_to_char("Done.\n", ch);
 }
 
-void do_givepet(P_char ch, char *arg, int cmd)
+void do_givepet(P_char ch, char *arg, int /*cmd*/)
 {
 	char msg[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH], pet[MAX_STRING_LENGTH];
 	P_char mob = NULL;
@@ -10523,7 +10523,7 @@ void do_givepet(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_petition_block(P_char ch, char *argument, int cmd)
+void do_petition_block(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict;
 	P_obj dummy;
@@ -10571,7 +10571,7 @@ void do_petition_block(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_questwhere(P_char ch, char *arg, int cmd)
+void do_questwhere(P_char ch, char *arg, int /*cmd*/)
 {
 	P_obj obj;
 	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
@@ -11227,7 +11227,7 @@ void stat_race(P_char ch, char *arg)
 //   If that character is online, it sends them the message right away.
 //   If that character is ld/offline, it adds the message to the offline_messages
 //     table which, in turn, shows the message at next login.
-void do_offlinemsg(P_char ch, char *arg, int cmd)
+void do_offlinemsg(P_char ch, char *arg, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH], *rest;
 	char message[MAX_INPUT_LENGTH];
@@ -11851,7 +11851,7 @@ void whois_ip(P_char ch, char *ip_address)
 #endif
 }
 
-void do_whois(P_char ch, char *arg, int cmd)
+void do_whois(P_char ch, char *arg, int /*cmd*/)
 {
 	char ip_address[MAX_STRING_LENGTH];
 	char name[MAX_INPUT_LENGTH];
@@ -11989,7 +11989,7 @@ char *food_modifiers(P_obj food)
 }
 
 // This looks through each item type for food-types and lists them along with their benefits.
-void which_food(P_char ch, char *argument)
+void which_food(P_char ch, char * /*argument*/)
 {
 	int count = 0;
 	char buf[MAX_STRING_LENGTH];
@@ -12458,7 +12458,7 @@ void where_stat(P_char ch, char *argument)
 
 // Looks through obj / char list and displays those items/chars in "NOWHERE".
 // TODO: Subcategories: char and obj that just list chars or just objs.
-void where_nowhere(P_char ch, char *args)
+void where_nowhere(P_char ch, char * /*args*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	int count;
@@ -12512,7 +12512,7 @@ int where_compare(const void *line1, const void *line2)
 
 // Does a lookup and shows where things are in game.
 //   Note: This is an Immortal only command per interp.c -> assign_command_pointers.
-void do_where(P_char ch, char *argument, int cmd)
+void do_where(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	char *args;
@@ -13311,29 +13311,29 @@ void show_account_info(P_char ch, P_char target)
 	}
 }
 
-void remove_account_char(P_char ch, P_char target)
+void remove_account_char(P_char ch, P_char /*target*/)
 {
 	send_to_char("Not supported yet.\n", ch);
 }
 
-void add_account_char(P_char ch, P_char target)
+void add_account_char(P_char ch, P_char /*target*/)
 {
 	send_to_char("Not supported yet.\n", ch);
 }
 
-void change_account_email(P_char ch, P_char target, const char *newEmail)
+void change_account_email(P_char ch, P_char /*target*/, const char * /*newEmail*/)
 {
 	send_to_char("Not supported yet.\n", ch);
 }
 
-void lookup_account(P_char ch, const char *arguments)
+void lookup_account(P_char ch, const char * /*arguments*/)
 {
 	send_to_char("Not supported yet.\n", ch);
 }
 
 #define ACCOUNT_SYNTAX ""
 
-void do_account(P_char ch, char *arg, int cmd)
+void do_account(P_char ch, char *arg, int /*cmd*/)
 {
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH], newEmail[MAX_STRING_LENGTH], *rest;
 	P_char target;
@@ -13400,7 +13400,7 @@ void do_account(P_char ch, char *arg, int cmd)
  * Usage: extractlink <name> - extract specific ghost character
  *        extractlink all    - extract all ghost characters
  */
-void do_extractlink(P_char ch, char *argument, int cmd)
+void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict, next_vict;
 	char name[MAX_INPUT_LENGTH];
@@ -14179,7 +14179,7 @@ static void eqrate_show_vnum(P_char ch, int vnum)
 }
 
 /* Command to list equipment prototypes by wear slot and rating. */
-void do_eqrate(P_char ch, char *argument, int cmd)
+void do_eqrate(P_char ch, char *argument, int /*cmd*/)
 {
 	struct eqrate_entry *ratings = NULL;
 	char arg[MAX_INPUT_LENGTH];

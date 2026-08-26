@@ -129,7 +129,7 @@ float modify_exp_by_zone_trophy(P_char ch, int type, float XP)
 	return XP;
 }
 
-void do_trophy(P_char ch, char *arg, int cmd)
+void do_trophy(P_char ch, char *arg, int /*cmd*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	char Gbuf3[MAX_STRING_LENGTH];

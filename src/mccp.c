@@ -35,7 +35,7 @@ void *zlib_alloc(void *opaque, unsigned int items, unsigned int size);
 void zlib_free(void *opaque, void *address);
 int raw_write_to_descriptor(P_desc desc, const char *txt, const int total);
 
-void *zlib_alloc(void *opaque, unsigned int items, unsigned int size)
+void *zlib_alloc(void * /*opaque*/, unsigned int items, unsigned int size)
 {
 	char *p;
 	mccp_alloc++;
@@ -43,7 +43,7 @@ void *zlib_alloc(void *opaque, unsigned int items, unsigned int size)
 	return (void *)p;
 }
 
-void zlib_free(void *opaque, void *address)
+void zlib_free(void * /*opaque*/, void *address)
 {
 	mccp_free++;
 	FREE(address);

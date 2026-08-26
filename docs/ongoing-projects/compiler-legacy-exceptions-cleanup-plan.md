@@ -314,9 +314,9 @@ Update this table at the end of each day from a clean inventory build:
 | `unused-but-set-variable` | 160 | 0 | **Yes** |
 | `missing-field-initializers` | 546 | 0 | **Yes** |
 | `unused-variable` | 1,434 | 0 | **Yes** |
-| `unused-parameter` | 4,670 | 4,673 | No |
+| `unused-parameter` | 4,670 | 0 | **Yes** |
 | `write-strings` | 3,130 | 3,077 | No |
-| **Total** | **9,947** | **7,750** | — |
+| **Total** | **9,947** | **3,077** | — |
 
 ## 8. Execution Log
 
@@ -469,3 +469,63 @@ balance decision rather than a cleanup.
 
 **Validation:** `./scripts/format.sh --check` clean; `git diff --check` clean; `make -C src clean &&
 make -C src -j14` succeeds with `-Wunused-variable` fatal; all `tests/async/test_*.py` pass.
+
+### Days 7-9 — `unused-parameter` (complete)
+
+All 4,670 warnings across 171 files are resolved and `-Wno-unused-parameter` is removed.
+
+**The policy, and why it is safe here.** Parameter names are not part of a function's type, so nothing done in
+this category can change function-pointer compatibility with a dispatch table. Two outcomes per parameter:
+
+1. **The body never mentions the name.** Drop the name and keep it visible as a comment:
+   `P_obj /*obj*/`. 4,337 parameters.
+2. **The body does mention the name**, which means its only use sits inside an `#if` that is inactive in this
+   build. Keep the name and mark it `[[maybe_unused]]`, so the other configuration still compiles.
+   329 parameters, plus 7 in two macros (below).
+
+That second rule is the load-bearing one. A first attempt without it unnamed `email` in
+`account.c:is_email_taken()`, whose only use is inside `#ifdef REQUIRE_EMAIL_VERIFICATION` — which would have
+broken that build silently, since this configuration never compiles it.
+
+**Why the slots stay.** The distribution shows the category is almost entirely fixed dispatch signatures:
+
+| Signature | Functions |
+|---|---:|
+| `(int, P_char, char *, int, P_char, P_obj)` — spell dispatch, `skills[].spell_pointer` | 686 |
+| `(P_char, char *, int)` — command handlers | 510 |
+| `(P_char, P_char, int, char *)` — mobile and room special procedures | 455 |
+| `(P_char, P_char, P_obj, void *)` — event callbacks | 209 |
+| `(P_obj, P_char, int, char *)` — object special procedures | 149 |
+| `(void *, int, char *, int, int)` — `actset.c` `ac_*` setters, held in `setBitTable::sb_func` | 18 |
+| `(descriptor_data *, cJSON *)` — WebSocket command handlers | 9 |
+
+**Two macros needed the annotation instead.** `interp.h`'s `ACMD(c)` and `dam_mods.h`'s
+`MAKE_DAM_MOD_PRED()` each expand into many bodies, some of which read a given parameter and some of which do
+not. There is no single unnaming that is correct for every expansion, so their slots carry `[[maybe_unused]]`
+with a comment saying why. This is the conditional-use case rule 3 exists for.
+
+**Diff reviewed for meaningless annotations.** Every `static` (file-private) function that gained an unnamed
+parameter was checked by hand — 17 of them. All 17 are genuinely shape-bound: eleven `ac_*Copy` setters held
+in `setBitTable`, `master_set_adapter` held in the `sets[]` table, two event callbacks, and three members of
+uniform private families (`locker_*cmd(P_char, char *arg)` and
+`crafting_handle_*_command(P_char, char *, int cmd)`) whose siblings do use the slot. None was a private
+helper that should simply have lost the parameter.
+
+**Configuration checks.** Beyond the normal `TEST_MUD` / `__NO_TESTS__` build, every `.c` was compiled
+`-fsyntax-only` with `REQUIRE_EMAIL_VERIFICATION`, `CTF_MUD=1`, and `SIEGE_ENABLED` in turn, requiring zero
+unused-parameter, unused-variable, or set-but-unused diagnostics in each. All clean.
+
+**Contracts updated.** Three source-contract tests pinned a function's full signature text, which now carries
+`/*name*/` on its unused slots: `test_auction_persistence.py` (`finalize_auction`),
+`test_event_loop_hotspots.py` (`generic_char_event`), and `test_eqrate_contract.py` (`do_eqrate`). Each now
+matches on the function name and its used parameters, so it still anchors the right function without being
+brittle about the unused ones.
+
+**Functions worth a second look** (found while reviewing, deliberately unchanged — each ignores an argument
+its caller still supplies): `sql_link_player_to_account()` is a `// todo: implement` stub returning `false`;
+`quested_spell(ch, spl)` ignores the spell; `language_known(ch, vict)` ignores both characters;
+`createSetItem`, `createUniqueItem`, `create_material`, `create_stones`, and `get_gem_from_mine` ignore their
+difficulty or character arguments.
+
+**Validation:** `./scripts/format.sh --check` clean; `git diff --check` clean; `make -C src clean &&
+make -C src -j14` succeeds with `-Wunused-parameter` fatal; all `tests/async/test_*.py` pass.

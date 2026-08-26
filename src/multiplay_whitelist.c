@@ -112,7 +112,7 @@ bool is_connected(const char *pattern)
 	return false;
 }
 
-void do_whitelist(P_char ch, char *argument, int cmd)
+void do_whitelist(P_char ch, char *argument, int /*cmd*/)
 {
 	char argbuf[MAX_STRING_LENGTH], linebuf[MAX_STRING_LENGTH];
 

@@ -955,7 +955,7 @@ string wiki_skills(string title, int type)
 	return return_str;
 }
 
-string wiki_multiclass(string title)
+string wiki_multiclass(string /*title*/)
 {
 	string return_str;
 	int i, j, k;
@@ -1038,7 +1038,7 @@ string wiki_multiclass(string title)
 	return return_str;
 }
 
-string wiki_pcraces(string title)
+string wiki_pcraces(string /*title*/)
 {
 	string return_str;
 	bool found = FALSE;

@@ -84,7 +84,7 @@ int voting_enabled = 0;
 // This sets players to forego all their attacks. It is useful for
 // caster type classes which do not want their opponent to riposte or
 // other tactical situations.
-void do_offensive(P_char ch, char *arg, int cmd)
+void do_offensive(P_char ch, char *arg, int /*cmd*/)
 {
 	char Gbuf2[MAX_STRING_LENGTH];
 
@@ -132,7 +132,7 @@ void do_offensive(P_char ch, char *arg, int cmd)
  * ** instanteously when s/he enters a room.
  */
 
-void do_aggr(P_char ch, char *arg, int cmd)
+void do_aggr(P_char ch, char *arg, int /*cmd*/)
 {
 	char Gbuf2[MAX_STRING_LENGTH];
 
@@ -218,7 +218,7 @@ void do_aggr(P_char ch, char *arg, int cmd)
  * in your group, and also works if group members ** are in different
  * rooms (sort of like conference).
  */
-void do_gsay(P_char ch, char *arg, int cmd)
+void do_gsay(P_char ch, char *arg, int /*cmd*/)
 {
 	struct group_list *gl;
 	int i;
@@ -298,7 +298,7 @@ void do_gsay(P_char ch, char *arg, int cmd)
  * is not revoked by them abusing it to attack you.  All penalties for
  * attacking another player still apply though.  JAB
  */
-void do_consent(P_char ch, char *argument, int cmd)
+void do_consent(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char target;
 	char Gbuf3[MAX_STRING_LENGTH];
@@ -405,7 +405,7 @@ void do_consent(P_char ch, char *argument, int cmd)
 	act("$n has just given you $s consent.", FALSE, ch, 0, target, TO_VICT);
 }
 
-void do_stampede(P_char ch, char *arg, int cmd)
+void do_stampede(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int missed;
 	int count;
@@ -505,7 +505,7 @@ void do_stampede(P_char ch, char *arg, int cmd)
 }
 
 // SPEC SKILL FOR WARRIOR - Kvark
-void do_war_cry(P_char ch, char *arg, int cmd)
+void do_war_cry(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int hpoints = (GET_CHAR_SKILL(ch, SKILL_WAR_CRY) / 2);
 	struct group_list *gl;
@@ -924,7 +924,7 @@ void do_flurry_of_blows(P_char ch, char *arg)
  * ** Warrior skill "hitall"
  */
 
-void do_hitall(P_char ch, char *arg, int cmd)
+void do_hitall(P_char ch, char *arg, int /*cmd*/)
 {
 	::byte percent;
 	int count, hit_all;
@@ -1165,7 +1165,7 @@ void do_trap(P_char ch, char *arg, int cmd)
  * was awful with ~500 commands.  JAB
  */
 
-void do_commands(P_char ch, char *arg, int cmd)
+void do_commands(P_char ch, char *arg, int /*cmd*/)
 {
 	int no, i, mode, t_pos;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -1248,7 +1248,7 @@ void do_commands(P_char ch, char *arg, int cmd)
  * ** Rogue's skill subterfuge.  Basically, confuse NPC's with ** memories
  * as to erase their entire memory.
  */
-void do_subterfuge(P_char ch, char *arg, int cmd)
+void do_subterfuge(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char npc; /* Which NPC */
 	char name[MAX_INPUT_LENGTH];
@@ -1311,7 +1311,7 @@ void do_subterfuge(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_disarm(P_char ch, char *arg, int cmd)
+void do_disarm(P_char ch, char *arg, int /*cmd*/)
 {
 	int pos, percent, rnd_num, bits;
 	char obj_name[MAX_INPUT_LENGTH], vict_name[MAX_INPUT_LENGTH];
@@ -1495,7 +1495,7 @@ void do_disarm(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE * 2);
 }
 
-void event_meditation(P_char ch, P_char victim, P_obj obj, void *data)
+void event_meditation(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	if (GET_CHAR_SKILL(ch, SKILL_ADVANCED_MEDITATION) / 2 > number(0, 100))
 	{
@@ -1533,7 +1533,7 @@ void stop_meditation(P_char ch)
 	disarm_char_nevents(ch, event_meditation);
 }
 
-void do_meditate(P_char ch, char *arg, int cmd)
+void do_meditate(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -2190,7 +2190,7 @@ int shapechange_levelNeeded(int race)
 	}
 }
 
-void event_learn_shape(P_char ch, P_char victim, P_obj obj, void *data)
+void event_learn_shape(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type af, *afp;
 	int vnum;
@@ -2282,7 +2282,7 @@ void shapechange_learn(P_char ch, char *mobname)
 	add_event(event_learn_shape, 3 * PULSE_VIOLENCE, ch, mob, 0, 0, 0, 0);
 }
 
-void do_shapechange(P_char ch, char *arg, int cmd)
+void do_shapechange(P_char ch, char *arg, int /*cmd*/)
 {
 	char mobname[MAX_INPUT_LENGTH], *rest, buf[256];
 	struct affected_type *af;
@@ -2428,7 +2428,7 @@ void do_shapechange(P_char ch, char *arg, int cmd)
 	extract_char(mob);
 }
 
-void do_dirttoss(P_char ch, char *arg, int cmd)
+void do_dirttoss(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char vict = NULL;
 	int skl_lvl = 0, sect;
@@ -2919,7 +2919,7 @@ const char *MAKE_FORMAT =
 	"(&+LMany require special materials, skills, classes, and/or levels to perform&n)\r\n"
 	"\r\n";
 
-void do_make(P_char ch, char *arg, int cmd)
+void do_make(P_char ch, char *arg, int /*cmd*/)
 {
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
 
@@ -3126,7 +3126,7 @@ void make_key(P_char ch, char *arg)
 #endif
 }
 
-void do_throat_crush(P_char ch, char *arg, int cmd)
+void do_throat_crush(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char vict = NULL;
 	struct affected_type af;
@@ -3286,7 +3286,7 @@ void do_throat_crush(P_char ch, char *arg, int cmd)
 	affect_to_char(ch, &af);
 }
 
-void do_hamstring(P_char ch, char *arg, int cmd)
+void do_hamstring(P_char ch, char *arg, int /*cmd*/)
 {
 	struct affected_type *af, afs;
 	P_char vict = NULL;
@@ -3505,7 +3505,7 @@ void do_hamstring(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_arena(P_char ch, char *arg, int cmd)
+void do_arena(P_char ch, char *arg, int /*cmd*/)
 {
 	int i;
 	char strn[MAX_STRING_LENGTH];
@@ -3598,7 +3598,7 @@ void do_arena(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_vote(P_char ch, char *arg, int cmd)
+void do_vote(P_char ch, char *arg, int /*cmd*/)
 {
 	char vote_opts[4096];
 	int votes, i;
@@ -3700,14 +3700,14 @@ void do_vote(P_char ch, char *arg, int cmd)
 	send_to_char(voted, ch);
 }
 
-void do_craft(P_char ch, char *argument, int cmd)
+void do_craft(P_char ch, char *argument, int /*cmd*/)
 {
 	crafting_handle_command(ch, CRAFTING_MODE_CRAFT, argument);
 }
 
-void do_smith(P_char ch, char *argument, int cmd) {}
+void do_smith(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 
-int chance_throw_potion(P_char ch, P_char victim)
+int chance_throw_potion(P_char ch, P_char /*victim*/)
 {
 	int chance = 0;
 
@@ -3953,7 +3953,7 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
 	return FALSE;
 }
 
-void do_throw_potion(P_char ch, char *argument, int cmd)
+void do_throw_potion(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj scroll, obj;
 	P_char victim = NULL;
@@ -4045,7 +4045,7 @@ void do_throw_potion(P_char ch, char *argument, int cmd)
 	throw_potion(ch, scroll, victim, obj);
 }
 
-void do_home(P_char ch, char *argument, int cmd)
+void do_home(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	char buf2[MAX_STRING_LENGTH];
 	int cost, plat;
@@ -4137,6 +4137,6 @@ void do_home(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_thrust(P_char ch, char *argument, int cmd) {}
+void do_thrust(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 
-void do_unthrust(P_char ch, char *argument, int cmd) {}
+void do_unthrust(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}

@@ -44,7 +44,7 @@ extern P_obj object_list;
 extern Skill skills[];
 extern char *spells[];
 
-int slime_lake(P_char ch, P_char pl, int cmd, char *arg)
+int slime_lake(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_DEATH)
 	{
@@ -76,7 +76,7 @@ int slime_lake(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int juiblex_one(P_char ch, P_char pl, int cmd, char *arg)
+int juiblex_one(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_DEATH)
 	{
@@ -114,7 +114,7 @@ int juiblex_one(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int mask_of_wildmagic(P_obj obj, P_char ch, int cmd, char *arg)
+int mask_of_wildmagic(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -216,7 +216,7 @@ int ebb_vambraces(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-void event_flow_amulet_vibrate(P_char ch, P_char victim, P_obj obj, void *data)
+void event_flow_amulet_vibrate(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	if (OBJ_WORN(obj) && obj->loc.wearing)
 	{
@@ -314,7 +314,7 @@ int flow_amulet(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int juiblex_grid_mob_generator(P_obj obj, P_char ch, int cmd, char *arg)
+int juiblex_grid_mob_generator(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	int mob_vnums[] = {
 		87507, 87505, 87508, 87604, 87599, 87504, 87506, 87515, 87552, 87514, 0

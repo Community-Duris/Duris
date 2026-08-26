@@ -607,7 +607,7 @@ P_char find_mailman(P_char pl)
 	return NULL;
 }
 
-void do_mail(P_char ch, char *arg, int cmd)
+void do_mail(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char mailman;
 
@@ -720,7 +720,7 @@ void postmaster_send_mail(P_char ch, P_char mailman, char *arg)
 	ch->desc->max_str = MAX_MAIL_SIZE;
 }
 
-int postmaster_check_mail(P_char ch, P_char mailman)
+int postmaster_check_mail(P_char ch, P_char /*mailman*/)
 {
 	char *tmp;
 

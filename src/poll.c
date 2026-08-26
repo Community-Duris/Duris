@@ -1246,7 +1246,7 @@ void poll_broadcast_close(int poll_id, const char *question)
 }
 
 /* main handler */
-void do_poll(P_char ch, char *argument, int cmd)
+void do_poll(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg1[MAX_INPUT_LENGTH];
 	char arg2[MAX_INPUT_LENGTH];

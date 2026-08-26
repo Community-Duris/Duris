@@ -937,7 +937,7 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 	return;
 }
 
-void shopping_list(char *arg, P_char ch, P_char keeper, int shop_nr)
+void shopping_list(char * /*arg*/, P_char ch, P_char keeper, int shop_nr)
 {
 	P_obj obj1;
 	int found_obj, temp;
@@ -1065,7 +1065,7 @@ void shopping_list(char *arg, P_char ch, P_char keeper, int shop_nr)
 	return;
 }
 
-void shopping_kill(char *arg, P_char ch, P_char keeper, int shop_nr)
+void shopping_kill(char * /*arg*/, P_char ch, P_char keeper, int shop_nr)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 
@@ -1400,7 +1400,7 @@ int add_to_list(struct shop_buy_data *list, int type, int *len, int *val)
 	return 0;
 }
 
-int read_type_list(FILE *shop_f, struct shop_buy_data *list, int max)
+int read_type_list(FILE *shop_f, struct shop_buy_data *list, int /*max*/)
 {
 	int num, len = 0, error = 0;
 	char *ptr, buf[MAX_STRING_LENGTH];
@@ -1892,7 +1892,7 @@ bool transact(P_char from, P_obj merchandise, P_char to, int value)
 
 // Stats objects for sale, like in locker code.
 // Must be duplicated because do_lore is limited to inventory.
-void shopping_stat(P_char ch, P_char keeper, char *arg, int cmd)
+void shopping_stat(P_char ch, P_char keeper, char *arg, int /*cmd*/)
 {
 	int i = 0;
 	P_obj obj;

@@ -48,7 +48,7 @@ int real_object(const int virt);
 #define MAGIC_PRECIP_STOP 970
 #define STWS(z, t) send_to_weather_sector((z), (t))
 
-void event_another_hour(P_char ch, P_char victim, P_obj obj, void *data)
+void event_another_hour(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_obj flower;
 	const int flowerroom = real_room(41059);
@@ -226,7 +226,7 @@ void init_astral_clock(void)
 	astral_clock_setMapModifiers();
 }
 
-void event_astral_clock(P_char ch, P_char victim, P_obj obj, void *data)
+void event_astral_clock(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	const char *s = astralMsgs[astral_clock_setMapModifiers()];
 
@@ -254,7 +254,7 @@ void event_astral_clock(P_char ch, P_char victim, P_obj obj, void *data)
 	add_event(event_astral_clock, PULSES_IN_TICK, NULL, NULL, NULL, 0, NULL, 0);
 }
 
-void event_weather_change(P_char ch, P_char victim, P_obj obj, void *data)
+void event_weather_change(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int zon, magic, old_wind;
 	signed char old_temp;
@@ -876,7 +876,7 @@ void calc_light_zone(int zon)
 	t_zone->conditions.ambient_light = light_sum;
 }
 
-char get_season(int sector)
+char get_season(int /*sector*/)
 {
 	char season_num;
 

@@ -53,7 +53,7 @@ extern struct zone_data *zone;
 extern struct zone_data *zone_table;
 extern bool has_skin_spell(P_char);
 
-int trap_razor_hooks(P_obj obj, P_char ch, int cmd, char *arg)
+int trap_razor_hooks(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -79,7 +79,7 @@ int trap_razor_hooks(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int trap_tower1_para(P_obj obj, P_char ch, int cmd, char *arg)
+int trap_tower1_para(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -106,7 +106,7 @@ int trap_tower1_para(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int trap_tower2_sleep(P_obj obj, P_char ch, int cmd, char *arg)
+int trap_tower2_sleep(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -246,7 +246,7 @@ int illesarus(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int morkoth_mother(P_char ch, P_char tch, int cmd, char *arg)
+int morkoth_mother(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 77713 };
 
@@ -262,7 +262,7 @@ int morkoth_mother(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int akckx(P_char ch, P_char vict, int cmd, char *arg)
+int akckx(P_char ch, P_char /*vict*/, int cmd, char * /*arg*/)
 {
 	P_char soul;
 	P_obj questobj;
@@ -301,7 +301,7 @@ int akckx(P_char ch, P_char vict, int cmd, char *arg)
 	return FALSE;
 }
 
-int human_girl(P_char ch, P_char vict, int cmd, char *arg)
+int human_girl(P_char ch, P_char /*vict*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -327,7 +327,7 @@ int human_girl(P_char ch, P_char vict, int cmd, char *arg)
 	return FALSE;
 }
 
-int hoa_plat(P_obj obj, P_char ch, int cmd, char *arg)
+int hoa_plat(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -355,7 +355,7 @@ int hoa_plat(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int hoa_death(P_char ch, P_char vict, int cmd, char *arg)
+int hoa_death(P_char ch, P_char /*vict*/, int cmd, char * /*arg*/)
 {
 	P_char victim;
 
@@ -395,7 +395,7 @@ int hoa_death(P_char ch, P_char vict, int cmd, char *arg)
 	return FALSE;
 }
 
-int hoa_sin(P_char ch, P_char vict, int cmd, char *arg)
+int hoa_sin(P_char ch, P_char vict, int cmd, char * /*arg*/)
 {
 	P_char victim;
 	struct affected_type af;

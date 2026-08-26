@@ -538,7 +538,7 @@ bool nexus_stone_touch(P_obj stone, P_char ch)
 	return TRUE;
 }
 
-void event_nexus_stone_hum(P_char __ch, P_char __victim, P_obj stone, void *data)
+void event_nexus_stone_hum(P_char /*__ch*/, P_char /*__victim*/, P_obj stone, void * /*data*/)
 {
 	SET_BIT(stone->extra_flags, ITEM_HUM);
 	act(ns_messages[_STONE_HUM], FALSE, 0, stone, 0, TO_ROOM);
@@ -809,7 +809,7 @@ void nexus_guardian_energy_burst(P_char ch, bool show_message = true)
 	}
 }
 
-int nexus_guardian_pwn_mace(P_obj obj, P_char ch, int cmd, char *arg)
+int nexus_guardian_pwn_mace(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 {
 	P_char victim;
 
@@ -899,7 +899,7 @@ int nexus_guardian_pwn_mace(P_obj obj, P_char ch, int cmd, char *arg)
 }
 
 // nexus guardian mob spec. only set if nexus stones initialized
-int nexus_stone_guardian(P_char ch, P_char pl, int cmd, char *arg)
+int nexus_stone_guardian(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (ch->player.birthplace && ch->in_room != real_room(ch->player.birthplace))
 	{
@@ -1069,7 +1069,7 @@ int nexus_sage_ask(P_char ch, P_char pl, char *arg)
 	return TRUE;
 }
 
-int nexus_sage_train(P_char ch, P_char pl, char *arg)
+int nexus_sage_train(P_char ch, P_char pl, char * /*arg*/)
 {
 	char buff[MAX_STRING_LENGTH];
 
@@ -1368,7 +1368,7 @@ bool load_nexus_stone(int stone_id, const char *stone_name, int room_vnum, int a
 	return TRUE;
 }
 
-void do_nexus(P_char ch, char *arg, int cmd)
+void do_nexus(P_char ch, char *arg, int /*cmd*/)
 {
 	char buff2[MAX_STRING_LENGTH];
 	char buff3[MAX_STRING_LENGTH];

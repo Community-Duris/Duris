@@ -357,7 +357,7 @@ static void redis_clear_all(P_char ch, bool force, bool confirmed)
 	send_to_char("&+GCleared:&n artifacts (6), fraglist, epic_zones, named\r\n", ch);
 }
 
-void do_redis(P_char ch, char *argument, int cmd)
+void do_redis(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg1[MAX_INPUT_LENGTH];
 	char arg2[MAX_INPUT_LENGTH];

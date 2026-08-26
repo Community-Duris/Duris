@@ -2145,7 +2145,7 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 }
 
 // mode argument is unused?
-void list_char_to_char(P_char list, P_char ch, int mode)
+void list_char_to_char(P_char list, P_char ch, int /*mode*/)
 {
 	P_char i;
 	char buf[MAX_STRING_LENGTH];
@@ -2234,7 +2234,7 @@ void list_char_to_char(P_char list, P_char ch, int mode)
 	}
 }
 
-void do_do(P_char ch, char *argument, int cmd)
+void do_do(P_char /*ch*/, char * /*argument*/, int /*cmd*/)
 {
 	/*
 	 * This command should replace all social commands ... as in do poke
@@ -3690,7 +3690,7 @@ void show_exits_to_char(P_char ch, int room_no, int mode)
 	send_to_char(buffer, ch);
 }
 
-void do_read(P_char ch, char *argument, int cmd)
+void do_read(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_INPUT_LENGTH];
 
@@ -3701,7 +3701,7 @@ void do_read(P_char ch, char *argument, int cmd)
 	do_look(ch, buf, -4);
 }
 
-void do_examine(P_char ch, char *argument, int cmd)
+void do_examine(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH], buf[MAX_INPUT_LENGTH + 4], buf2[MAX_INPUT_LENGTH];
 	int wtype, craft, mat, percent;
@@ -3937,7 +3937,7 @@ void do_examine(P_char ch, char *argument, int cmd)
  * almost completely rewritten to handle various 'vis_modes'. JAB
  */
 
-void do_exits(P_char ch, char *argument, int cmd)
+void do_exits(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (!ch->desc || (ch->in_room == NOWHERE))
 	{
@@ -4042,7 +4042,7 @@ const int world_values[] = { WORLD_STATS,   WORLD_ZONES,   WORLD_EVENTS,  WORLD_
 
 extern const char *get_function_name(void *);
 
-void do_world(P_char ch, char *argument, int cmd)
+void do_world(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH], buff[MAX_STRING_LENGTH];
 	char arg[MAX_INPUT_LENGTH];
@@ -4494,7 +4494,7 @@ void do_world(P_char ch, char *argument, int cmd)
 /*
  *      SAM 5-94, re-written to make a bit nicer, show more info!
  */
-void do_attributes(P_char ch, char *argument, int cmd)
+void do_attributes(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	char buffer[MAX_STRING_LENGTH];
@@ -4937,7 +4937,7 @@ void do_attributes(P_char ch, char *argument, int cmd)
 	send_to_char(buf, ch);
 }
 
-void do_score(P_char ch, char *argument, int cmd)
+void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct time_info_data playing_time;
 	static char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
@@ -6233,7 +6233,7 @@ void do_score(P_char ch, char *argument, int cmd)
 	send_to_char("\n", ch);
 }
 
-void do_time(P_char ch, char *argument, int cmd)
+void do_time(P_char ch, char *argument, int /*cmd*/)
 {
 	char *tmstr;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
@@ -6345,7 +6345,7 @@ void do_time(P_char ch, char *argument, int cmd)
 	displayShutdownMsg(ch);
 }
 
-void do_weather(P_char ch, char *argument, int cmd)
+void do_weather(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	struct weather_data *cond;
@@ -6530,7 +6530,7 @@ void do_weather(P_char ch, char *argument, int cmd)
 	send_to_char("\n", ch);
 }
 
-void do_help(P_char ch, char *argument, int cmd)
+void do_help(P_char ch, char *argument, int /*cmd*/)
 {
 	char *attribs;
 	int help_cooldown;
@@ -6554,7 +6554,7 @@ void do_help(P_char ch, char *argument, int cmd)
 		send_to_char(attribs, ch);
 }
 
-void do_wizhelp(P_char ch, char *argument, int cmd)
+void do_wizhelp(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	int no, i;
@@ -6667,7 +6667,7 @@ int compare_char_data(const void *char1, const void *char2)
 		return GET_RACEWAR(*(P_char *)char1) - GET_RACEWAR(*(P_char *)char2);
 }
 
-void do_who(P_char ch, char *argument, int cmd)
+void do_who(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char who_list[MAX_WHO_PLAYERS], who_gods[MAX_WHO_PLAYERS];
 	struct time_info_data playing_time;
@@ -7420,7 +7420,7 @@ void do_users(P_char ch, char *argument, int cmd)
  * descriptor_list, added some features too. JAB
  */
 /* deprecated by Torgal 12/21/09 */
-void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
+void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 {
 	char biglist[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
 	char buf2[MAX_INPUT_LENGTH], line[MAX_INPUT_LENGTH], name[MAX_INPUT_LENGTH];
@@ -7716,7 +7716,7 @@ void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
 	page_string(ch->desc, biglist, 1);
 }
 
-void do_inventory(P_char ch, char *argument, int cmd)
+void do_inventory(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 
@@ -8059,7 +8059,7 @@ bool get_equipment_list(P_char ch, char *buf, int list_only)
 	}
 }
 
-void do_equipment(P_char ch, char *argument, int cmd)
+void do_equipment(P_char ch, char *argument, int /*cmd*/)
 {
 	bool found;
 	char buf[MAX_STRING_LENGTH];
@@ -8085,7 +8085,7 @@ void do_equipment(P_char ch, char *argument, int cmd)
 		send_to_char(buf, ch);
 }
 
-void do_credits(P_char ch, char *argument, int cmd)
+void do_credits(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	int cooldown = (int)get_property("info.cooldown.secs", 2);
 	if (!affect_timer(ch, cooldown, TAG_INFO_COOLDOWN))
@@ -8097,7 +8097,7 @@ void do_credits(P_char ch, char *argument, int cmd)
 	page_string(ch->desc, (char *)content.c_str(), 0);
 }
 
-void do_map(P_char ch, char *arg, int cmd)
+void do_map(P_char ch, char *arg, int /*cmd*/)
 {
 	if (!IS_TRUSTED(ch))
 	{
@@ -8126,14 +8126,14 @@ void do_map(P_char ch, char *arg, int cmd)
 	display_map(ch, radius, TRUE);
 }
 
-void do_cheaters(P_char ch, char *argument, int cmd)
+void do_cheaters(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	char *buf;
 
 	buf = file_to_string(CHEATERS_FILE);
 	send_to_char(buf, ch);
 }
-void do_news(P_char ch, char *argument, int cmd)
+void do_news(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (!IS_SET(ch->specials.act, PLR_PAGING_ON))
 	{
@@ -8144,13 +8144,13 @@ void do_news(P_char ch, char *argument, int cmd)
 	send_to_char(news.c_str(), ch, LOG_NONE);
 }
 
-void do_projects(P_char ch, char *argument, int cmd)
+void do_projects(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	send_to_char("Current list of projects:\n\r", ch);
 	page_string(ch->desc, projects, 0);
 }
 
-void do_faq(P_char ch, char *argument, int cmd)
+void do_faq(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	int cooldown = (int)get_property("info.cooldown.secs", 2);
 	if (!affect_timer(ch, cooldown, TAG_INFO_COOLDOWN))
@@ -8162,7 +8162,7 @@ void do_faq(P_char ch, char *argument, int cmd)
 	page_string(ch->desc, (char *)content.c_str(), 0);
 }
 
-void do_wizlist(P_char ch, char *argument, int cmd)
+void do_wizlist(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	int cooldown = (int)get_property("info.cooldown.secs", 2);
 	if (!affect_timer(ch, cooldown, TAG_INFO_COOLDOWN))
@@ -8174,20 +8174,20 @@ void do_wizlist(P_char ch, char *argument, int cmd)
 	page_string(ch->desc, (char *)content.c_str(), 0);
 }
 
-void do_rules(P_char ch, char *argument, int cmd)
+void do_rules(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	do_help(ch, "rules", -4);
 	//  page_string(ch->desc, rules, 0);
 }
 
-void do_motd(P_char ch, char *argument, int cmd)
+void do_motd(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	send_to_char(motd.c_str(), ch, LOG_NONE);
 }
 
 // This is pretty outdated since all classes get same exp table now.
 //   Even more so, with exp being subtracted upon level.
-void do_levels(P_char ch, char *argument, int cmd)
+void do_levels(P_char ch, char *argument, int /*cmd*/)
 {
 	int i, which;
 	char buf[MAX_STRING_LENGTH], arg[MAX_STRING_LENGTH];
@@ -8322,7 +8322,7 @@ void do_levels(P_char ch, char *argument, int cmd)
  * can be ignored at a time.
  */
 
-void do_ignore(P_char ch, char *argument, int cmd)
+void do_ignore(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_STRING_LENGTH];
 	P_char target;
@@ -8376,7 +8376,7 @@ void do_ignore(P_char ch, char *argument, int cmd)
 	*/
 }
 
-void do_consider(P_char ch, char *argument, int cmd)
+void do_consider(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	char name[MAX_STRING_LENGTH];
@@ -8430,7 +8430,7 @@ void do_consider(P_char ch, char *argument, int cmd)
 	act("$n&n sizes up $N&n with a quick glance.", TRUE, ch, 0, victim, TO_NOTVICT);
 }
 
-void do_report(P_char ch, char *argument, int cmd)
+void do_report(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[240], report_name[MAX_INPUT_LENGTH];
 
@@ -8460,7 +8460,7 @@ void do_report(P_char ch, char *argument, int cmd)
 		do_say(ch, buf, -4);
 }
 
-void do_display(P_char ch, char *argument, int cmd)
+void do_display(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_char to_ch = ch;
@@ -8713,7 +8713,7 @@ void do_display(P_char ch, char *argument, int cmd)
  * Set a players title
  */
 
-void do_ok(P_char ch, char *arg, int cmd)
+void do_ok(P_char ch, char *arg, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_INPUT_LENGTH];
@@ -8771,7 +8771,7 @@ void do_ok(P_char ch, char *arg, int cmd)
 	t_ch->only.pc->poofIn = str_dup("Accepted");
 }
 
-void do_punish(P_char ch, char *arg, int cmd)
+void do_punish(P_char ch, char *arg, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -8851,7 +8851,7 @@ void do_punish(P_char ch, char *arg, int cmd)
 	send_to_char("&+WPunished...\n", ch);
 }
 
-void do_title(P_char ch, char *arg, int cmd)
+void do_title(P_char ch, char *arg, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -8904,14 +8904,14 @@ void do_title(P_char ch, char *arg, int cmd)
 	do_string(ch, Gbuf1, -4);
 }
 
-void do_artireset(P_char ch, char *arg, int cmd)
+void do_artireset(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	send_to_char(
 		"This is no longer supported.  Use the 'artifact timer <artifact name> <timer>' command instead.\n",
 		ch);
 }
 
-void do_glance(P_char ch, char *argument, int cmd)
+void do_glance(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	P_char tar_char = NULL;
@@ -9032,7 +9032,7 @@ const char *dir_desc[] = { "to your north",	"to your east",	     "to your south"
 			   "to your northwest", "to your southwest", "to your northeast",
 			   "to your southeast" };
 
-void do_scan(P_char ch, char *argument, int cmd)
+void do_scan(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	int dir, distance, visibility /*= 4*/;
@@ -9393,7 +9393,7 @@ void web_info(void)
 	fclose(opf);
 }
 
-void do_recall(P_char ch, char *argument, int cmd)
+void do_recall(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[256];
 	char buf[2048];
@@ -9540,7 +9540,7 @@ void list_ships_to_char(P_char ch, int room_no)
 	}
 }
 
-void do_zlist(P_char ch, char *argument, int cmd)
+void do_zlist(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	int i;
@@ -9606,9 +9606,9 @@ void do_zlist(P_char ch, char *argument, int cmd)
 		ch);
 }
 
-void do_hlist(P_char ch, char *argument, int cmd) {}
+void do_hlist(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 
-void do_rlist(P_char ch, char *argument, int cmd)
+void do_rlist(P_char ch, char *argument, int /*cmd*/)
 {
 	std::vector<std::string> t;
 	char tmp[MAX_INPUT_LENGTH];
@@ -9742,9 +9742,9 @@ void do_rlist(P_char ch, char *argument, int cmd)
 		ch);
 }
 
-void do_olist(P_char ch, char *argument, int cmd) {}
+void do_olist(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 
-void do_mlist(P_char ch, char *argument, int cmd)
+void do_mlist(P_char ch, char *argument, int /*cmd*/)
 {
 	std::vector<std::string> t;
 	char tmp[MAX_INPUT_LENGTH];

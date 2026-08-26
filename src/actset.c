@@ -1535,20 +1535,22 @@ static int ac_strcasecmp(const char *str1, const char *str2)
 /* Copy functions */
 
 /* Macro to facilitate making of general copy functions */
-#define MAKE_COPY_FUNCTION(Type)                                                               \
-	static void ac_##Type##Copy(void *where, int offset, char *value, int bit, int on_off) \
-	{                                                                                      \
-		Type val = (Type)bit;                                                          \
-		bcopy((char *)&val, (char *)where + offset, sizeof(val));                      \
+#define MAKE_COPY_FUNCTION(Type)                                                        \
+	static void ac_##Type##Copy(void *where, int offset, char * /*value*/, int bit, \
+				    int /*on_off*/)                                     \
+	{                                                                               \
+		Type val = (Type)bit;                                                   \
+		bcopy((char *)&val, (char *)where + offset, sizeof(val));               \
 	}
 
 /* Macro to facilitate making of general copy functions */
 // special case for ::byte with collisions in std::byte
-#define MAKE_COPY_FUNCTION_BYTE(Type)                                                      \
-	static void ac_byteCopy(void *where, int offset, char *value, int bit, int on_off) \
-	{                                                                                  \
-		Type val = (Type)bit;                                                      \
-		bcopy((char *)&val, (char *)where + offset, sizeof(val));                  \
+#define MAKE_COPY_FUNCTION_BYTE(Type)                                               \
+	static void ac_byteCopy(void *where, int offset, char * /*value*/, int bit, \
+				int /*on_off*/)                                     \
+	{                                                                           \
+		Type val = (Type)bit;                                               \
+		bcopy((char *)&val, (char *)where + offset, sizeof(val));           \
 	}
 
 /* General copy functions */
@@ -1562,7 +1564,7 @@ MAKE_COPY_FUNCTION(ubyte)
 /* Specifical copy functions */
 /* For age, we set only the year using by finding the difference
    between current MUD time and intended age.  */
-static void ac_ageCopy(void *where, int offset, char *value, int bit, int on_off)
+static void ac_ageCopy(void *where, int /*offset*/, char * /*value*/, int bit, int /*on_off*/)
 {
 	long secs;
 	time_t curr_time = time(NULL);
@@ -1573,7 +1575,7 @@ static void ac_ageCopy(void *where, int offset, char *value, int bit, int on_off
 }
 
 /* Use on_off to determine whether to set/clr which bit */
-static void ac_bitCopy(void *where, int offset, char *value, int bit, int on_off)
+static void ac_bitCopy(void *where, int offset, char * /*value*/, int bit, int on_off)
 {
 	int orig_bits;
 
@@ -1592,7 +1594,7 @@ static void ac_bitCopy(void *where, int offset, char *value, int bit, int on_off
 	bcopy((char *)&orig_bits, (char *)where + offset, sizeof(orig_bits));
 }
 
-static void ac_idx2flagCopy(void *where, int offset, char *value, int bit, int on_off)
+static void ac_idx2flagCopy(void *where, int offset, char * /*value*/, int bit, int /*on_off*/)
 {
 	int flag;
 
@@ -1600,7 +1602,7 @@ static void ac_idx2flagCopy(void *where, int offset, char *value, int bit, int o
 	bcopy((char *)&flag, (char *)where + offset, sizeof(int));
 }
 
-static void ac_positionCopy(void *where, int offset, char *value, int bit, int on_off)
+static void ac_positionCopy(void *where, int /*offset*/, char * /*value*/, int bit, int /*on_off*/)
 {
 	P_char ch = (P_char)where;
 
@@ -1611,7 +1613,7 @@ static void ac_positionCopy(void *where, int offset, char *value, int bit, int o
 	;
 }
 
-static void ac_tongueCopy(void *where, int offset, char *value, int bit, int on_off)
+static void ac_tongueCopy(void *where, int /*offset*/, char * /*value*/, int bit, int on_off)
 {
 	P_char ch = (P_char)where;
 
@@ -1622,7 +1624,7 @@ static void ac_tongueCopy(void *where, int offset, char *value, int bit, int on_
 /*
  * ** Saving throw is done by assuming value is in the form ** "A B C D E"
  */
-static void ac_savthrCopy(void *where, int offset, char *value, int bit, int on_off)
+static void ac_savthrCopy(void *where, int /*offset*/, char *value, int /*bit*/, int /*on_off*/)
 {
 	sh_int sav_thr[5];
 	P_char ch = (P_char)where;
@@ -1637,7 +1639,7 @@ static void ac_savthrCopy(void *where, int offset, char *value, int bit, int on_
  * ** For skill, "bit" is the actual skill number to practice - 1. ** And
  * "on_off" indicates how learn a skill is.
  */
-static void ac_skillCopy(void *where, int offset, char *value, int bit, int on_off)
+static void ac_skillCopy(void *where, int offset, char *value, int /*bit*/, int on_off)
 {
 	P_char ch = (P_char)where;
 	int skl;
@@ -1656,7 +1658,7 @@ static void ac_skillCopy(void *where, int offset, char *value, int bit, int on_o
  * ** For skill, "bit" is the actual skill number to practice - 1. ** And
  * "on_off" indicates how learn a skill is.
  */
-static void ac_affModify(void *where, int offset, char *value, int bit, int on_off)
+static void ac_affModify(void *where, int /*offset*/, char *value, int /*bit*/, int /*on_off*/)
 {
 	int skl;
 	struct affected_type *af = (affected_type *)where;
@@ -1671,7 +1673,7 @@ static void ac_affModify(void *where, int offset, char *value, int bit, int on_o
  * ** "bit" is not really a bit to set, but rather, the value of **
  * location.
  */
-static void ac_objaffCopy(void *where, int offset, char *value, int bit, int on_off)
+static void ac_objaffCopy(void *where, int offset, char * /*value*/, int bit, int /*on_off*/)
 {
 	::byte location = (::byte)bit;
 
@@ -1685,7 +1687,7 @@ static void ac_objaffCopy(void *where, int offset, char *value, int bit, int on_
  * it will be ok.
  */
 
-static void ac_hitmanaCopy(void *where, int offset, char *value, int bit, int on_off)
+static void ac_hitmanaCopy(void *where, int offset, char * /*value*/, int bit, int /*on_off*/)
 {
 	P_char ch = (P_char)where;
 	sh_int val;
@@ -1699,7 +1701,8 @@ static void ac_hitmanaCopy(void *where, int offset, char *value, int bit, int on
 }
 
 // Sets a time_t value.
-static void ac_timerCopy(void *where, int offset, char *value, int time_to_zero, int on_off)
+static void ac_timerCopy(void *where, int offset, char * /*value*/, int time_to_zero,
+			 int /*on_off*/)
 {
 	// So, we need to add the timer to time(NULL) to get the time when it should end.
 	// And we need to adjust offset to handle the size difference between the time_t and char.

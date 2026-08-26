@@ -354,7 +354,7 @@ static void zc_note_loader(zc_state &st, int idx, const reset_com &rc, zc_why wh
 /* ================================================================== *
  * do_zcheck - the audit                                              *
  * ================================================================== */
-void do_zcheck(P_char ch, char *argument, int cmd)
+void do_zcheck(P_char ch, char *argument, [[maybe_unused]] int cmd)
 {
 	char arg[MAX_INPUT_LENGTH];
 	int i, r, d, zn;

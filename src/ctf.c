@@ -771,7 +771,7 @@ void show_ctf_score(P_char ch, char *argument)
 	return;
 }
 
-void do_ctf(P_char ch, char *arg, int cmd)
+void do_ctf(P_char ch, char *arg, int /*cmd*/)
 {
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
 	char arg3[MAX_STRING_LENGTH];
@@ -846,7 +846,7 @@ void do_ctf(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void reset_ctf(P_char ch) {}
+void reset_ctf(P_char /*ch*/) {}
 
 void ctf_populate_boons()
 {
@@ -1026,7 +1026,7 @@ void ctf_delete_flag(int id)
 	ctfdata[id].obj = NULL;
 }
 
-int ctf_get_random_room(int id)
+int ctf_get_random_room([[maybe_unused]] int id)
 {
 	vector<epic_zone_data> epic_zones = get_epic_zones();
 

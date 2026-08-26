@@ -23,7 +23,7 @@
 
 extern P_room world;
 
-int tree_spirit(P_char ch, P_char pl, int cmd, char *arg)
+int tree_spirit(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	static int count = 0;
 	static int helper_called = 0;
@@ -97,7 +97,7 @@ int tree_spirit(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int finn(P_char ch, P_char pl, int cmd, char *arg)
+int finn(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -185,7 +185,7 @@ int finn(P_char ch, P_char pl, int cmd, char *arg)
    for mob 14048... a cricket, duh!
  */
 
-int cricket(P_char ch, P_char pl, int cmd, char *arg)
+int cricket(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -226,7 +226,7 @@ int cricket(P_char ch, P_char pl, int cmd, char *arg)
    picks a random mortal in the room
  */
 
-int faerie(P_char ch, P_char pl, int cmd, char *arg)
+int faerie(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls

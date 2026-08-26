@@ -28,7 +28,7 @@ extern struct mm_ds *dead_pconly_pool;
 
 // syntax: newchar <name> <race_id> <class_id> <level> <true|false>
 // see: newchar help race, newchar help class
-void do_newchar(P_char ch, char *argument, int cmd)
+void do_newchar(P_char ch, char *argument, int /*cmd*/)
 {
 	extern int writeCharacter(P_char ch, int type, int room);
 	extern void clear_char(P_char ch);

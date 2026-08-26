@@ -175,7 +175,7 @@ int is_valid_email(const char *email)
 	return 1;
 }
 
-bool is_email_taken(const char *email)
+bool is_email_taken([[maybe_unused]] const char *email)
 {
 #ifdef REQUIRE_EMAIL_VERIFICATION
 	FILE *f = NULL;
@@ -1912,7 +1912,7 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 	}
 }
 
-void account_new_char(P_desc d, char *arg)
+void account_new_char(P_desc d, char * /*arg*/)
 {
 	SEND_TO_Q("Enter your new name:  ", d);
 	STATE(d) = CON_ACCT_NEW_CHAR_NAME;
@@ -2248,7 +2248,7 @@ void remove_char_from_list(P_acct acct, char *ch)
 	}
 }
 
-void account_display_info(P_desc d, char *arg)
+void account_display_info(P_desc d, char * /*arg*/)
 {
 	display_account_information(d);
 	STATE(d) = CON_DISPLAY_ACCT_MENU;
@@ -2256,9 +2256,9 @@ void account_display_info(P_desc d, char *arg)
 	return;
 }
 
-void delete_account(P_desc d, char *arg) {}
+void delete_account(P_desc /*d*/, char * /*arg*/) {}
 
-void verify_delete_account(P_desc d, char *arg) {}
+void verify_delete_account(P_desc /*d*/, char * /*arg*/) {}
 
 int read_account(P_acct acct) // returns -1 if error, 1 if no errors
 {
@@ -2486,7 +2486,7 @@ void read_character_list(P_acct acct, FILE *f)
 	}
 }
 
-void generate_account_confirmation_code(P_desc d, char *arg)
+void generate_account_confirmation_code(P_desc d, char * /*arg*/)
 {
 	char a[256], b[256];
 

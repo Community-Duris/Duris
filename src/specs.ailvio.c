@@ -24,7 +24,7 @@ extern P_nevent get_scheduled(P_char ch, event_func func);
 extern void event_bandage_check(P_char ch, P_char victim, P_obj, void *data);
 extern P_index mob_index;
 
-int burbul_map_obj(P_obj obj, P_char ch, int cmd, char *arg)
+int burbul_map_obj(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 {
 	P_obj map;
 
@@ -117,7 +117,7 @@ int chyron_search_obj(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int bandage_mob(P_char ch, P_char pl, int cmd, char *arg)
+int bandage_mob(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	// Start him off incapacitated.
 	if (cmd == CMD_SET_PERIODIC)
@@ -141,7 +141,7 @@ int bandage_mob(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int bandage_reward_mob(P_char ch, P_char tch, int cmd, char *arg)
+int bandage_reward_mob(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	P_char man;
 	P_nevent nev;

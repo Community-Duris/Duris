@@ -96,7 +96,7 @@ P_char grapple_attack_check(P_char ch)
 	return grappler;
 }
 
-int grapple_misfire_chance(P_char ch, P_char victim, int type)
+int grapple_misfire_chance(P_char /*ch*/, P_char victim, int type)
 {
 	int chance;
 
@@ -128,7 +128,7 @@ int grapple_misfire_chance(P_char ch, P_char victim, int type)
 	return chance;
 }
 
-void do_bearhug(P_char ch, char *argument, int cmd)
+void do_bearhug(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	struct affected_type af;
@@ -332,7 +332,7 @@ void do_bearhug(P_char ch, char *argument, int cmd)
 	}
 }
 
-void event_bearhug(P_char ch, P_char victim, P_obj obj, void *data)
+void event_bearhug(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type af;
 
@@ -405,7 +405,7 @@ void event_bearhug(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void do_headlock(P_char ch, char *argument, int cmd)
+void do_headlock(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	struct affected_type af;
@@ -617,7 +617,7 @@ void do_headlock(P_char ch, char *argument, int cmd)
 	}
 }
 
-void event_headlock(P_char ch, P_char victim, P_obj obj, void *data)
+void event_headlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int type = HOLD_NONE, percent, gclvl;
 	float damage = 0.0;
@@ -901,7 +901,7 @@ void armlock_check(P_char attacker, P_char grappler)
 	}
 }
 
-void event_armlock(P_char ch, P_char victim, P_obj obj, void *data)
+void event_armlock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type *af;
 
@@ -949,7 +949,7 @@ void grapple_heal(P_char ch)
 	}
 }
 
-void do_leglock(P_char ch, char *argument, int cmd)
+void do_leglock(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	struct affected_type af;
@@ -1142,7 +1142,7 @@ void do_leglock(P_char ch, char *argument, int cmd)
 	}
 }
 
-void event_leglock(P_char ch, P_char victim, P_obj obj, void *data)
+void event_leglock(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int type = HOLD_NONE, percent, gclvl, str, legbreak;
 	float damage = 0.0;
@@ -1283,7 +1283,7 @@ void event_leglock(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void do_groundslam(P_char ch, char *argument, int cmd)
+void do_groundslam(P_char ch, char *argument, int /*cmd*/)
 {
 	int percent, offbalance = FALSE;
 	P_char victim;

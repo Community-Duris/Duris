@@ -578,7 +578,7 @@ int piergeiron(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int piergeiron_guard(P_char ch, P_char pl, int cmd, char *arg)
+int piergeiron_guard(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH], buf[MAX_INPUT_LENGTH];
 
@@ -648,7 +648,7 @@ int piergeiron_guard(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int wanderer(P_char ch, P_char pl, int cmd, char *arg)
+int wanderer(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -692,7 +692,7 @@ int wanderer(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int dog_one(P_char ch, P_char pl, int cmd, char *arg)
+int dog_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_obj i, temp, next_obj;
 
@@ -766,7 +766,7 @@ int dog_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int dog_two(P_char ch, P_char pl, int cmd, char *arg)
+int dog_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_obj i, temp, next_obj;
 
@@ -841,7 +841,7 @@ int dog_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int drunk_one(P_char ch, P_char pl, int cmd, char *arg)
+int drunk_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -884,7 +884,7 @@ int drunk_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int drunk_two(P_char ch, P_char pl, int cmd, char *arg)
+int drunk_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -931,7 +931,7 @@ int drunk_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int drunk_three(P_char ch, P_char pl, int cmd, char *arg)
+int drunk_three(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -976,7 +976,7 @@ int drunk_three(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int homeless_one(P_char ch, P_char pl, int cmd, char *arg)
+int homeless_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1017,7 +1017,7 @@ int homeless_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int homeless_two(P_char ch, P_char pl, int cmd, char *arg)
+int homeless_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1062,7 +1062,7 @@ int homeless_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int cat_one(P_char ch, P_char pl, int cmd, char *arg)
+int cat_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1103,7 +1103,7 @@ int cat_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int merchant_one(P_char ch, P_char pl, int cmd, char *arg)
+int merchant_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1147,7 +1147,7 @@ int merchant_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int merchant_two(P_char ch, P_char pl, int cmd, char *arg)
+int merchant_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1191,7 +1191,7 @@ int merchant_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int farmer_one(P_char ch, P_char pl, int cmd, char *arg)
+int farmer_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1234,7 +1234,7 @@ int farmer_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int baker_one(P_char ch, P_char pl, int cmd, char *arg)
+int baker_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1277,7 +1277,7 @@ int baker_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int baker_two(P_char ch, P_char pl, int cmd, char *arg)
+int baker_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1321,7 +1321,7 @@ int baker_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int mage_one(P_char ch, P_char pl, int cmd, char *arg)
+int mage_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1365,7 +1365,7 @@ int mage_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int cleric_one(P_char ch, P_char pl, int cmd, char *arg)
+int cleric_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1409,7 +1409,7 @@ int cleric_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int artillery_one(P_char ch, P_char pl, int cmd, char *arg)
+int artillery_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1454,7 +1454,7 @@ int artillery_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int warrior_one(P_char ch, P_char pl, int cmd, char *arg)
+int warrior_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1498,7 +1498,7 @@ int warrior_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int mercenary_one(P_char ch, P_char pl, int cmd, char *arg)
+int mercenary_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1543,7 +1543,7 @@ int mercenary_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int mercenary_two(P_char ch, P_char pl, int cmd, char *arg)
+int mercenary_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1586,7 +1586,7 @@ int mercenary_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int mercenary_three(P_char ch, P_char pl, int cmd, char *arg)
+int mercenary_three(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1629,7 +1629,7 @@ int mercenary_three(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int casino_one(P_char ch, P_char pl, int cmd, char *arg)
+int casino_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1680,7 +1680,7 @@ int casino_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int casino_two(P_char ch, P_char pl, int cmd, char *arg)
+int casino_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1724,7 +1724,7 @@ int casino_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int casino_three(P_char ch, P_char pl, int cmd, char *arg)
+int casino_three(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, evil;
 	int max_evil;
@@ -1797,7 +1797,7 @@ int casino_three(P_char ch, P_char pl, int cmd, char *arg)
 	return false;
 }
 
-int casino_four(P_char ch, P_char pl, int cmd, char *arg)
+int casino_four(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1858,7 +1858,7 @@ int casino_four(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int guard_one(P_char ch, P_char pl, int cmd, char *arg)
+int guard_one(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, evil = NULL;
 	int max_evil = 1000;
@@ -1924,7 +1924,7 @@ int guard_one(P_char ch, P_char pl, int cmd, char *arg)
 	return false;
 }
 
-int guard_two(P_char ch, P_char pl, int cmd, char *arg)
+int guard_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1963,7 +1963,7 @@ int guard_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int park_one(P_char ch, P_char pl, int cmd, char *arg)
+int park_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2003,7 +2003,7 @@ int park_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int park_two(P_char ch, P_char pl, int cmd, char *arg)
+int park_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2042,7 +2042,7 @@ int park_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int park_three(P_char ch, P_char pl, int cmd, char *arg)
+int park_three(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2080,7 +2080,7 @@ int park_three(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int park_four(P_char ch, P_char pl, int cmd, char *arg)
+int park_four(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2119,7 +2119,7 @@ int park_four(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int park_five(P_char ch, P_char pl, int cmd, char *arg)
+int park_five(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2158,7 +2158,7 @@ int park_five(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int park_six(P_char ch, P_char pl, int cmd, char *arg)
+int park_six(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2199,7 +2199,7 @@ int park_six(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int youth_one(P_char ch, P_char pl, int cmd, char *arg)
+int youth_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2242,7 +2242,7 @@ int youth_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int youth_two(P_char ch, P_char pl, int cmd, char *arg)
+int youth_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2283,7 +2283,7 @@ int youth_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tailor_one(P_char ch, P_char pl, int cmd, char *arg)
+int tailor_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2329,7 +2329,7 @@ int tailor_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int shopper_one(P_char ch, P_char pl, int cmd, char *arg)
+int shopper_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2374,7 +2374,7 @@ int shopper_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int shopper_two(P_char ch, P_char pl, int cmd, char *arg)
+int shopper_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2417,7 +2417,7 @@ int shopper_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int rogue_one(P_char ch, P_char pl, int cmd, char *arg)
+int rogue_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2665,7 +2665,7 @@ int prostitute_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int assassin_one(P_char ch, P_char pl, int cmd, char *arg)
+int assassin_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2710,7 +2710,7 @@ int assassin_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int brigand_one(P_char ch, P_char pl, int cmd, char *arg)
+int brigand_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2752,7 +2752,7 @@ int brigand_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int fisherman_one(P_char ch, P_char pl, int cmd, char *arg)
+int fisherman_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2793,7 +2793,7 @@ int fisherman_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int fisherman_two(P_char ch, P_char pl, int cmd, char *arg)
+int fisherman_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2836,7 +2836,7 @@ int fisherman_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int sailor_one(P_char ch, P_char pl, int cmd, char *arg)
+int sailor_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2879,7 +2879,7 @@ int sailor_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int seaman_one(P_char ch, P_char pl, int cmd, char *arg)
+int seaman_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2920,7 +2920,7 @@ int seaman_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int naval_one(P_char ch, P_char pl, int cmd, char *arg)
+int naval_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -2961,7 +2961,7 @@ int naval_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int naval_two(P_char ch, P_char pl, int cmd, char *arg)
+int naval_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3003,7 +3003,7 @@ int naval_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int naval_three(P_char ch, P_char pl, int cmd, char *arg)
+int naval_three(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char vict, temp;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -3098,7 +3098,7 @@ int naval_three(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int naval_four(P_char ch, P_char pl, int cmd, char *arg)
+int naval_four(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3146,7 +3146,7 @@ int naval_four(P_char ch, P_char pl, int cmd, char *arg)
 static int lighthouseone = 0;
 static int lightcounter = 0;
 
-int lighthouse_one(P_char ch, P_char pl, int cmd, char *arg)
+int lighthouse_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3267,7 +3267,7 @@ int lighthouse_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int lighthouse_two(P_char ch, P_char pl, int cmd, char *arg)
+int lighthouse_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3327,7 +3327,7 @@ int lighthouse_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int seabird_one(P_char ch, P_char pl, int cmd, char *arg)
+int seabird_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3370,7 +3370,7 @@ int seabird_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int seabird_two(P_char ch, P_char pl, int cmd, char *arg)
+int seabird_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3414,7 +3414,7 @@ int seabird_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int commoner_one(P_char ch, P_char pl, int cmd, char *arg)
+int commoner_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3456,7 +3456,7 @@ int commoner_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int commoner_two(P_char ch, P_char pl, int cmd, char *arg)
+int commoner_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3518,7 +3518,7 @@ int commoner_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int commoner_three(P_char ch, P_char pl, int cmd, char *arg)
+int commoner_three(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3563,7 +3563,7 @@ int commoner_three(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int commoner_four(P_char ch, P_char pl, int cmd, char *arg)
+int commoner_four(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3605,7 +3605,7 @@ int commoner_four(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int commoner_five(P_char ch, P_char pl, int cmd, char *arg)
+int commoner_five(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3647,7 +3647,7 @@ int commoner_five(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int commoner_six(P_char ch, P_char pl, int cmd, char *arg)
+int commoner_six(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3692,7 +3692,7 @@ int commoner_six(P_char ch, P_char pl, int cmd, char *arg)
 static int crierhour1 = 0;
 static int crierhour2 = 0;
 
-int crier_one(P_char ch, P_char pl, int cmd, char *arg)
+int crier_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char buf[MAX_INPUT_LENGTH];
 
@@ -4652,7 +4652,7 @@ int guild_protection(P_char ch, P_char pl)
 	return (1);
 }
 
-int guild_guard_one(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char tch, evil = NULL;
 	int max_evil = 1000;
@@ -4784,7 +4784,7 @@ int guild_guard_one(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_two(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH];
@@ -4886,7 +4886,7 @@ int guild_guard_two(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_three(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_three(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH];
@@ -4981,7 +4981,7 @@ int guild_guard_three(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_four(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_four(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char tch, evil = NULL;
 	int g_prot, max_evil = 1000;
@@ -5151,7 +5151,7 @@ int guild_guard_four(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_five(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_five(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH];
@@ -5262,7 +5262,7 @@ int guild_guard_five(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_six(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_six(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH];
@@ -5365,7 +5365,7 @@ int guild_guard_six(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_seven(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_seven(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH];
@@ -5439,7 +5439,7 @@ int guild_guard_seven(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_eight(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_eight(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH], tbuf[40];
@@ -5545,7 +5545,7 @@ int guild_guard_eight(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_nine(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_nine(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH], tbuf[40];
@@ -5651,7 +5651,7 @@ int guild_guard_nine(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_ten(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_ten(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH], tbuf[40];
@@ -5755,7 +5755,7 @@ int guild_guard_ten(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_eleven(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_eleven(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH], tbuf[40];
@@ -5859,7 +5859,7 @@ int guild_guard_eleven(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_twelve(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_twelve(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH], tbuf[40];
@@ -5957,7 +5957,7 @@ int guild_guard_twelve(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard_thirteen(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard_thirteen(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int g_prot;
 	char Gbuf3[MAX_STRING_LENGTH];
@@ -6057,7 +6057,7 @@ int guild_guard_thirteen(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int young_paladin_one(P_char ch, P_char pl, int cmd, char *arg)
+int young_paladin_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6114,7 +6114,7 @@ int young_paladin_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int wrestler_one(P_char ch, P_char pl, int cmd, char *arg)
+int wrestler_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6171,7 +6171,7 @@ int wrestler_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int young_mercenary_one(P_char ch, P_char pl, int cmd, char *arg)
+int young_mercenary_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6227,7 +6227,7 @@ int young_mercenary_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int young_monk_one(P_char ch, P_char pl, int cmd, char *arg)
+int young_monk_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6283,7 +6283,7 @@ int young_monk_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int selune_one(P_char ch, P_char pl, int cmd, char *arg)
+int selune_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6341,7 +6341,7 @@ int selune_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int selune_two(P_char ch, P_char pl, int cmd, char *arg)
+int selune_two(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6399,7 +6399,7 @@ int selune_two(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int selune_three(P_char ch, P_char pl, int cmd, char *arg)
+int selune_three(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6454,7 +6454,7 @@ int selune_three(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int selune_four(P_char ch, P_char pl, int cmd, char *arg)
+int selune_four(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6519,7 +6519,7 @@ int selune_four(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int selune_five(P_char ch, P_char pl, int cmd, char *arg)
+int selune_five(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6577,7 +6577,7 @@ int selune_five(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int selune_six(P_char ch, P_char pl, int cmd, char *arg)
+int selune_six(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6632,7 +6632,7 @@ int selune_six(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int young_druid_one(P_char ch, P_char pl, int cmd, char *arg)
+int young_druid_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6688,7 +6688,7 @@ int young_druid_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int young_necro_one(P_char ch, P_char pl, int cmd, char *arg)
+int young_necro_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -6745,7 +6745,7 @@ int young_necro_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int bouncer_one(P_char ch, P_char pl, int cmd, char *arg)
+int bouncer_one(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, evil = NULL;
 	int bp_var = 0, max_evil = 1000;
@@ -6863,7 +6863,7 @@ int bouncer_one(P_char ch, P_char pl, int cmd, char *arg)
 	return false;
 }
 
-int bouncer_two(P_char ch, P_char pl, int cmd, char *arg)
+int bouncer_two(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, evil = NULL;
 	int bp_var = 0, max_evil = 1000;
@@ -6968,7 +6968,7 @@ int bouncer_two(P_char ch, P_char pl, int cmd, char *arg)
 	return false;
 }
 
-int bouncer_three(P_char ch, P_char pl, int cmd, char *arg)
+int bouncer_three(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, evil = NULL;
 	int bp_var = 0, max_evil = 1000;
@@ -7061,7 +7061,7 @@ int bouncer_three(P_char ch, P_char pl, int cmd, char *arg)
 	return false;
 }
 
-int bouncer_four(P_char ch, P_char pl, int cmd, char *arg)
+int bouncer_four(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, evil = NULL;
 	int bp_var = 0, max_evil = 1000;

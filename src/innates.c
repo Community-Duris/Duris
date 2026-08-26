@@ -1216,7 +1216,7 @@ bool check_reincarnate(P_char ch)
 	return FALSE;
 }
 
-void do_disappear(P_char ch, char *arg, int cmd)
+void do_disappear(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (has_innate(ch, INNATE_DISAPPEAR))
 	{
@@ -1237,7 +1237,7 @@ void do_disappear(P_char ch, char *arg, int cmd)
 	}
 }
 
-void event_embrace_death(P_char ch, P_char victim, P_obj obj, void *data)
+void event_embrace_death(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	float hp_state = ((float)GET_HIT(ch)) / GET_MAX_HIT(ch);
 	struct affected_type *afp;
@@ -1313,7 +1313,7 @@ void do_innate_embrace_death(P_char ch)
 	}
 }
 
-void event_paladin_vit(P_char ch, P_char victim, P_obj obj, void *data)
+void event_paladin_vit(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type *af;
 
@@ -1375,7 +1375,7 @@ void do_innate_anti_evil(P_char ch, P_char vict)
 	}
 }
 
-void event_decrepify(P_char ch, P_char victim, P_obj obj, void *data)
+void event_decrepify(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type *af;
 	P_char curr_vict;
@@ -1453,7 +1453,7 @@ void do_innate_decrepify(P_char ch, P_char victim)
 	return;
 }
 
-void event_throw_lightning(P_char ch, P_char victim, P_obj obj, void *data)
+void event_throw_lightning(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -1483,7 +1483,7 @@ void event_throw_lightning(P_char ch, P_char victim, P_obj obj, void *data)
 	spell_damage(ch, victim, dam, SPLDAM_LIGHTNING, 0, &messages);
 }
 
-void do_throw_lightning(P_char ch, char *argument, int cmd)
+void do_throw_lightning(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (!check_innate_time(ch, INNATE_THROW_LIGHTNING))
 	{
@@ -1504,7 +1504,7 @@ void do_throw_lightning(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_levitate(P_char ch, char *arg, int cmd)
+void do_levitate(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (IS_AFFECTED(ch, AFF_LEVITATE))
 		send_to_char("You are already floating around!\n", ch);
@@ -1614,7 +1614,7 @@ void insectbite(P_char ch, P_char victim)
 	}
 }
 
-void event_snakebite(P_char ch, P_char victim, P_obj obj, void *data)
+void event_snakebite(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	struct damage_messages messages = {
 		"Your shape blurs as you lash towards $N and sink your fangs in $S flesh.",
@@ -1815,7 +1815,7 @@ void bite(P_char ch, P_char victim)
 	insectbite(ch, victim);
 }
 
-void do_bite(P_char ch, char *arg, int cmd)
+void do_bite(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char victim;
 
@@ -1876,7 +1876,7 @@ void innate_gaze(P_char ch, P_char victim)
 	}
 }
 
-void do_innate_gaze(P_char ch, char *arg, int cmd)
+void do_innate_gaze(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char victim;
 
@@ -1895,7 +1895,7 @@ void do_innate_gaze(P_char ch, char *arg, int cmd)
 	innate_gaze(ch, victim);
 }
 
-void do_darkness(P_char ch, char *arg, int cmd)
+void do_darkness(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (!check_innate_time(ch, INNATE_DARKNESS))
 	{
@@ -1911,7 +1911,7 @@ void do_darkness(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_shift_astral(P_char ch, char *arg, int cmd)
+void do_shift_astral(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
 	{
@@ -1937,7 +1937,7 @@ void do_shift_astral(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_shift_ethereal(P_char ch, char *arg, int cmd)
+void do_shift_ethereal(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
 	{
@@ -1965,7 +1965,7 @@ void do_shift_ethereal(P_char ch, char *arg, int cmd)
 
 #define PLANE_ZONETARG_ROOMNUMB 19701 /* astral */
 
-void do_shift_prime(P_char ch, char *arg, int cmd)
+void do_shift_prime(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int astral = world[real_room(PLANE_ZONETARG_ROOMNUMB)].zone, r_room = NOWHERE;
 	const int githyanki_room[] = { 33366, 2381,  11545,  42950, 23691, 36171, 93001, 4437,
@@ -2036,7 +2036,7 @@ void do_shift_prime(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_blast(P_char ch, char *arg, int cmd)
+void do_blast(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char victim;
 
@@ -2059,7 +2059,7 @@ void do_blast(P_char ch, char *arg, int cmd)
 		spell_innate_blast(GET_LEVEL(ch), ch, 0, 0, victim, 0);
 }
 
-void do_faerie_fire(P_char ch, char *arg, int cmd)
+void do_faerie_fire(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char victim;
 
@@ -2079,7 +2079,7 @@ void do_faerie_fire(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_ud_invisibility(P_char ch, char *arg, int cmd)
+void do_ud_invisibility(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -2106,7 +2106,7 @@ void do_ud_invisibility(P_char ch, char *arg, int cmd)
 	send_to_char("You find a deep shadow and meld into it.\n", ch);
 }
 
-void do_strength(P_char ch, char *arg, int cmd)
+void do_strength(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -2132,7 +2132,7 @@ void do_strength(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_reduce(P_char ch, char *arg, int cmd)
+void do_reduce(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -2159,7 +2159,7 @@ void do_reduce(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_enlarge(P_char ch, char *arg, int cmd)
+void do_enlarge(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -2192,12 +2192,12 @@ void do_enlarge(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_wall_climbing(P_char ch, char *arg, int cmd)
+void do_wall_climbing(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	act("&+LThis &+Wability &+Lis always active.", TRUE, ch, 0, 0, TO_CHAR);
 }
 
-void do_flurry(P_char ch, char *arg, int cmd)
+void do_flurry(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -2240,7 +2240,7 @@ void do_flurry(P_char ch, char *arg, int cmd)
 	// CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_plane_shift(P_char ch, char *arg, int cmd)
+void do_plane_shift(P_char ch, char *arg, int /*cmd*/)
 {
 	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
 	{
@@ -2272,7 +2272,7 @@ void do_plane_shift(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_charm_animal(P_char ch, char *arg, int cmd)
+void do_charm_animal(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char victim;
 
@@ -2292,7 +2292,7 @@ void do_charm_animal(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_dispel_magic(P_char ch, char *arg, int cmd)
+void do_dispel_magic(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char victim;
 
@@ -2312,7 +2312,7 @@ void do_dispel_magic(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE * 3);
 }
 
-void do_mass_dispel(P_char ch, char *arg, int cmd)
+void do_mass_dispel(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	P_char tch, next;
 
@@ -2332,7 +2332,7 @@ void do_mass_dispel(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE * 4);
 }
 
-void do_globe_of_darkness(P_char ch, char *arg, int cmd)
+void do_globe_of_darkness(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (!check_innate_time(ch, INNATE_GLOBE_OF_DARKNESS))
 	{
@@ -2344,7 +2344,7 @@ void do_globe_of_darkness(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_innate_hide(P_char ch, char *arg, int cmd)
+void do_innate_hide(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (IS_AFFECTED(ch, AFF_HIDE))
 	{
@@ -2368,7 +2368,7 @@ void do_innate_hide(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_project_image(P_char ch, char *arg, int cmd)
+void do_project_image(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char image;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -2412,7 +2412,7 @@ void do_project_image(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_fireball(P_char ch, char *arg, int cmd)
+void do_fireball(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char victim;
 
@@ -2433,20 +2433,20 @@ void do_fireball(P_char ch, char *arg, int cmd)
 		CharWait(ch, PULSE_VIOLENCE * 5);
 }
 
-void do_fireshield(P_char ch, char *arg, int cmd)
+void do_fireshield(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	spell_fireshield(GET_LEVEL(ch), ch, NULL, 0, ch, 0);
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_firestorm(P_char ch, char *arg, int cmd)
+void do_firestorm(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	spell_firestorm(GET_LEVEL(ch), ch, NULL, 0, 0, 0);
 	if (char_in_list(ch))
 		CharWait(ch, PULSE_VIOLENCE * 4);
 }
 
-void do_dimension_door(P_char ch, char *arg, int cmd)
+void do_dimension_door(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char victim;
 	P_obj obj;
@@ -2482,7 +2482,7 @@ void do_dimension_door(P_char ch, char *arg, int cmd)
 	spell_dimension_door(GET_LEVEL(ch), ch, NULL, SPELL_TYPE_SPELL, victim, 0);
 }
 
-void do_battle_rage(P_char ch, char *arg, int cmd)
+void do_battle_rage(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (!check_innate_time(ch, INNATE_BATTLE_RAGE))
 	{
@@ -2498,7 +2498,7 @@ void do_battle_rage(P_char ch, char *arg, int cmd)
 	spell_haste(60, ch, 0, 0, ch, 0);
 }
 
-void do_phantasmal_form(P_char ch, char *arg, int cmd)
+void do_phantasmal_form(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af, *afp;
 
@@ -2531,7 +2531,7 @@ void do_phantasmal_form(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_stone_skin(P_char ch, char *arg, int cmd)
+void do_stone_skin(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (!check_innate_time(ch, INNATE_STONE, 300))
 	{
@@ -2542,7 +2542,7 @@ void do_stone_skin(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE * 3);
 }
 
-void do_shade_movement(P_char ch, char *arg, int cmd)
+void do_shade_movement(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -2575,7 +2575,7 @@ void do_shade_movement(P_char ch, char *arg, int cmd)
 	SET_BIT(ch->specials.affected_by, AFF_SNEAK);
 }
 
-void event_tempus(P_char ch, P_char victim, P_obj obj, void *args)
+void event_tempus(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*args*/)
 {
 	struct affected_type af;
 	struct affected_type af1;
@@ -2630,7 +2630,7 @@ void event_tempus(P_char ch, P_char victim, P_obj obj, void *args)
 	act(buf, TRUE, ch, 0, 0, TO_ROOM);
 }
 
-void event_lathander(P_char ch, P_char victim, P_obj obj, void *args)
+void event_lathander(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*args*/)
 {
 	P_char tch;
 	struct affected_type af;
@@ -2658,7 +2658,7 @@ void event_lathander(P_char ch, P_char victim, P_obj obj, void *args)
 	}
 }
 
-void event_torm(P_char ch, P_char victim, P_obj obj, void *args)
+void event_torm(P_char ch, P_char victim, P_obj /*obj*/, void * /*args*/)
 {
 	P_char tch;
 	struct affected_type af;
@@ -2803,7 +2803,7 @@ const char *get_god_name(P_char ch)
 	return god_list_data[i].healer;
 }
 
-void do_god_call(P_char ch, char *args, int cmd)
+void do_god_call(P_char ch, char *args, int /*cmd*/)
 {
 	int choice;
 	const char *god_name;
@@ -2888,7 +2888,7 @@ void do_god_call(P_char ch, char *args, int cmd)
 	}
 }
 
-void do_doorbash(P_char ch, char *arg, int cmd)
+void do_doorbash(P_char ch, char *arg, int /*cmd*/)
 {
 	char buf[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -3021,7 +3021,7 @@ void do_doorbash(P_char ch, char *arg, int cmd)
 /* doorkick (for centaurs) - like doorbash, except centaur takes a bit less
    damage and doesn't move through door */
 
-void do_doorkick(P_char ch, char *arg, int cmd)
+void do_doorkick(P_char ch, char *arg, int /*cmd*/)
 {
 	char buf[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -3171,7 +3171,7 @@ void do_doorkick(P_char ch, char *arg, int cmd)
 	CharWait(ch, 2 * PULSE_VIOLENCE);
 }
 
-void do_tupor(P_char ch, char *arg, int cmd)
+void do_tupor(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (!IS_ALIVE(ch))
 	{
@@ -3200,7 +3200,7 @@ void do_tupor(P_char ch, char *arg, int cmd)
 	act("$n slips into a death-like trance...", TRUE, ch, 0, 0, TO_ROOM);
 }
 
-void do_breathe(P_char ch, char *arg, int cmd)
+void do_breathe(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char victim;
 	char buf[80];
@@ -3299,7 +3299,7 @@ void do_breathe(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_stomp(P_char ch, char *arg, int cmd)
+void do_stomp(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	/*
 	 * This could very well be expanded to include a char skill
@@ -3323,7 +3323,7 @@ void do_stomp(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_sweep(P_char ch, char *arg, int cmd)
+void do_sweep(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	// This could very well be expanded to include a char skill
 	if (IS_PC(ch))
@@ -3443,7 +3443,7 @@ void do_innate(P_char ch, char *arg, int cmd)
 		send_to_char("You know no such ability!\n", ch);
 }
 
-void event_conjure_water(P_char ch, P_char vict, P_obj obj, void *data)
+void event_conjure_water(P_char ch, P_char /*vict*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_obj spring;
 
@@ -3461,7 +3461,7 @@ void event_conjure_water(P_char ch, P_char vict, P_obj obj, void *data)
 	set_obj_affected(spring, 15 * 60 * 4, TAG_OBJ_DECAY, 0);
 }
 
-void do_conjure_water(P_char ch, char *arg, int cmd)
+void do_conjure_water(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (!check_innate_time(ch, INNATE_CONJURE_WATER))
 	{
@@ -3480,7 +3480,7 @@ void do_conjure_water(P_char ch, char *arg, int cmd)
 
 // ------ Foundry ---------
 
-void event_foundry(P_char ch, P_char vict, P_obj obj, void *data)
+void event_foundry(P_char ch, P_char /*vict*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_obj forge;
 
@@ -3499,7 +3499,7 @@ void event_foundry(P_char ch, P_char vict, P_obj obj, void *data)
 	set_obj_affected(forge, 15 * 60 * 4, TAG_OBJ_DECAY, 0);
 }
 
-void do_foundry(P_char ch, char *arg, int cmd)
+void do_foundry(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (!check_innate_time(ch, INNATE_FOUNDRY))
 	{
@@ -3772,15 +3772,15 @@ bool resists_spell(P_char caster, P_char victim)
 	return FALSE;
 }
 
-void engulf(P_char ch, P_char victim) {}
+void engulf(P_char /*ch*/, P_char /*victim*/) {}
 
-void do_engulf(P_char ch, char *argument, int cmd) {}
+void do_engulf(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 
-void slime(P_char ch, P_char victim) {}
+void slime(P_char /*ch*/, P_char /*victim*/) {}
 
-void do_slime(P_char ch, char *argument, int cmd) {}
+void do_slime(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 
-void do_branch(P_char ch, char *argument, int cmd)
+void do_branch(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 
@@ -3903,7 +3903,7 @@ void webwrap(P_char ch, P_char victim)
 		stop_destroying(victim);
 }
 
-void do_webwrap(P_char ch, char *argument, int cmd)
+void do_webwrap(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 
@@ -3913,7 +3913,7 @@ void do_webwrap(P_char ch, char *argument, int cmd)
 
 #define DEVIL_IMP 63
 
-void do_summon_imp(P_char ch, char *argument, int cmd)
+void do_summon_imp(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	P_char imp, foe;
 	struct char_link_data *cld;
@@ -3974,7 +3974,7 @@ void do_summon_imp(P_char ch, char *argument, int cmd)
 
 #undef DEVIL_IMP
 
-void event_lifedrain(P_char ch, P_char victim, P_obj obj, void *data)
+void event_lifedrain(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	int gain = *((int *)data);
 
@@ -4013,7 +4013,7 @@ void event_lifedrain(P_char ch, P_char victim, P_obj obj, void *data)
 	attack_back(ch, victim, FALSE);
 }
 
-void do_lifedrain(P_char ch, char *argument, int cmd)
+void do_lifedrain(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	int gain = GET_LEVEL(ch) * 2;
@@ -4046,7 +4046,7 @@ void do_lifedrain(P_char ch, char *argument, int cmd)
 	add_event(event_lifedrain, WAIT_SEC, ch, victim, 0, 0, &gain, sizeof(gain));
 }
 
-void do_immolate(P_char ch, char *argument, int cmd)
+void do_immolate(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	struct affected_type *afp;
@@ -4090,7 +4090,7 @@ void do_immolate(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void event_halfling_check(P_char ch, P_char victim, P_obj obj, void *data)
+void event_halfling_check(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	if (!ch->equipment[WEAR_FEET] && !affected_by_spell(ch, TAG_BAREFEET))
 	{
@@ -4113,7 +4113,7 @@ void event_halfling_check(P_char ch, P_char victim, P_obj obj, void *data)
 	add_event(event_halfling_check, 3 * WAIT_SEC, ch, 0, 0, 0, 0, 0);
 }
 
-void event_hatred_check(P_char ch, P_char victim, P_obj obj, void *data)
+void event_hatred_check(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	// int CH_RACE = GET_RACE(ch);
 	// LOOP_ROOM....
@@ -4239,7 +4239,7 @@ struct fade_data
 	int counter;
 };
 
-void event_fade(P_char ch, P_char victim, P_obj obj, void *data)
+void event_fade(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct fade_data *fdata = (struct fade_data *)data;
 
@@ -4265,7 +4265,7 @@ void event_fade(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void do_fade(P_char ch, char *argument, int cmd)
+void do_fade(P_char ch, char *argument, int /*cmd*/)
 {
 	char back[128];
 	struct affected_type af, *afp;
@@ -4330,7 +4330,7 @@ void do_fade(P_char ch, char *argument, int cmd)
 	add_event(event_fade, WAIT_SEC, ch, 0, 0, 0, &fdata, sizeof(fdata));
 }
 
-void do_layhand(P_char ch, char *argument, int cmd)
+void do_layhand(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL;
 	char name[MAX_INPUT_LENGTH];
@@ -4502,49 +4502,49 @@ void holy_crusade_check(P_char ch, P_char victim)
 	}
 }
 
-void do_aura_protection(P_char ch, char *arg, int cmd)
+void do_aura_protection(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	do_aura(ch, AURA_PROTECTION);
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_aura_spell_protection(P_char ch, char *arg, int cmd)
+void do_aura_spell_protection(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	do_aura(ch, AURA_SPELL_PROTECTION);
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_aura_precision(P_char ch, char *arg, int cmd)
+void do_aura_precision(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	do_aura(ch, AURA_PRECISION);
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_aura_battlelust(P_char ch, char *arg, int cmd)
+void do_aura_battlelust(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	do_aura(ch, AURA_BATTLELUST);
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_aura_healing(P_char ch, char *arg, int cmd)
+void do_aura_healing(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	do_aura(ch, AURA_HEALING);
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_aura_endurance(P_char ch, char *arg, int cmd)
+void do_aura_endurance(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	do_aura(ch, AURA_ENDURANCE);
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_aura_vigor(P_char ch, char *arg, int cmd)
+void do_aura_vigor(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	do_aura(ch, AURA_VIGOR);
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_divine_force(P_char ch, char *arg, int cmd)
+void do_divine_force(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af;
 	struct affected_type af1;
@@ -4758,7 +4758,7 @@ void do_list_innates(P_char ch, char *args)
 	}
 }
 
-void do_squidrage(P_char ch, char *arg, int cmd)
+void do_squidrage(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int level;
 	struct affected_type af;

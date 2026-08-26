@@ -1031,7 +1031,7 @@ int websocket_send_binary(struct descriptor_data *d, const void *data, size_t le
 }
 
 /* send json message with type wrapper */
-int websocket_send_json(struct descriptor_data *d, const char *type, const char *package,
+int websocket_send_json(struct descriptor_data *d, const char * /*type*/, const char *package,
 			const char *json)
 {
 	char *message;
@@ -1475,7 +1475,7 @@ void websocket_free(struct descriptor_data *d)
 
 /* helper: handle a complete websocket message (after fragmentation reassembly) */
 static void websocket_handle_message(struct descriptor_data *d, int opcode, char *payload,
-				     size_t payload_len)
+				     size_t /*payload_len*/)
 {
 	if (opcode == WS_OPCODE_TEXT && payload)
 	{

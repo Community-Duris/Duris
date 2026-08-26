@@ -1309,7 +1309,7 @@ static void ws_add_chargen_race(cJSON *races_array, int race_id, const char *fac
 }
 
 /* handle chargen options request */
-void ws_cmd_chargen_options(struct descriptor_data *d, cJSON *data)
+void ws_cmd_chargen_options(struct descriptor_data *d, cJSON * /*data*/)
 {
 	cJSON *response, *races_array;
 	int i, race_id;
@@ -2181,7 +2181,7 @@ static cJSON *ws_build_character_list(struct descriptor_data *d)
 }
 
 /* get extended account information */
-void ws_cmd_account_info(struct descriptor_data *d, cJSON *data)
+void ws_cmd_account_info(struct descriptor_data *d, cJSON * /*data*/)
 {
 	extern char *get_class_string(P_char ch, char *strn);
 	cJSON *info_data, *characters, *char_obj;
@@ -2919,7 +2919,7 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 }
 
 /* get rested bonus status for all characters */
-void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON *data)
+void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON * /*data*/)
 {
 	cJSON *result_data, *characters, *char_obj;
 	struct acct_chars *c;
@@ -2987,7 +2987,7 @@ void ws_cmd_rested_bonus(struct descriptor_data *d, cJSON *data)
 }
 
 /* logout from account (disconnect) */
-void ws_cmd_logout(struct descriptor_data *d, cJSON *data)
+void ws_cmd_logout(struct descriptor_data *d, cJSON * /*data*/)
 {
 	if (!d->account)
 	{

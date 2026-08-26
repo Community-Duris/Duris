@@ -17,7 +17,7 @@ int get_frags(P_char ch)
 	return ch->only.pc->frags;
 }
 
-void do_achievements(P_char ch, char *arg, int cmd)
+void do_achievements(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], buf3[MAX_STRING_LENGTH];
 	struct affected_type *paf = get_spell_from_char(ch, AIP_LEVELACHIEVEMENT);
@@ -555,7 +555,7 @@ affected_type *apply_achievement(P_char ch, int ach)
 }
 
 // Addicted to Blood - Display
-void do_addicted_blood(P_char ch, char *arg, int cmd)
+void do_addicted_blood(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	int time, bonus;

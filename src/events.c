@@ -261,7 +261,7 @@ extern const struct racial_data_type racial_data[LAST_RACE + 1];
 void interaction_to_new_wrapper(P_char, P_char, char *);
 
 // The type is an artifact of old event code.  It's ignored now.
-void clear_char_nevents(P_char ch, int type, void *func)
+void clear_char_nevents(P_char ch, int /*type*/, void *func)
 {
 	if (!ch)
 	{
@@ -343,7 +343,7 @@ void calculate_regen_values(int reg, int *per_pulse, int *delay)
 
 #define MOB_MANA_REGEN_DELAY 5
 // codemod
-void event_mana_regen(P_char ch, P_char victim, P_obj obj, void *data)
+void event_mana_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct regen_event_state state = regen_state_from_data(data);
 	unsigned long long elapsed_ticks = regen_elapsed_ticks(&state);
@@ -379,7 +379,7 @@ void event_mana_regen(P_char ch, P_char victim, P_obj obj, void *data)
 
 #define MOB_WARD_REGEN_DELAY 3
 // codemod
-void event_ward_regen(P_char ch, P_char victim, P_obj obj, void *data)
+void event_ward_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct regen_event_state state = regen_state_from_data(data);
 	unsigned long long elapsed_ticks = regen_elapsed_ticks(&state);
@@ -406,7 +406,7 @@ void event_ward_regen(P_char ch, P_char victim, P_obj obj, void *data)
 
 #define MOB_MOVE_REGEN_DELAY 10
 
-void event_move_regen(P_char ch, P_char victim, P_obj obj, void *data)
+void event_move_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct regen_event_state state = regen_state_from_data(data);
 	unsigned long long elapsed_ticks = regen_elapsed_ticks(&state);
@@ -438,7 +438,7 @@ void event_move_regen(P_char ch, P_char victim, P_obj obj, void *data)
 		  sizeof(state));
 }
 
-void event_hit_regen(P_char ch, P_char victim, P_obj obj, void *data)
+void event_hit_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct regen_event_state state = regen_state_from_data(data);
 	unsigned long long elapsed_ticks = regen_elapsed_ticks(&state);
@@ -535,7 +535,7 @@ void StartRegen(P_char ch, int type)
 	add_event(func, delay, ch, 0, 0, 0, &state, sizeof(state));
 }
 
-void event_wait(P_char ch, P_char victim, P_obj obj, void *data)
+void event_wait(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	if (!ch)
 	{
@@ -642,7 +642,7 @@ void CharWait(P_char ch, int delay)
 	}
 }
 
-void event_reset_zone(P_char ch, P_char victim, P_obj obj, void *data)
+void event_reset_zone(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int zone = *((int *)data);
 	int age_before = zone_table[zone].age;
@@ -678,7 +678,7 @@ void event_reset_zone(P_char ch, P_char victim, P_obj obj, void *data)
 	add_event(event_reset_zone, PULSES_IN_TICK, 0, 0, 0, 0, &zone, sizeof(zone));
 }
 
-void room_event(P_char ch, P_char victim, P_obj obj, void *data)
+void room_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	P_room room = &world[*((int *)data)];
 

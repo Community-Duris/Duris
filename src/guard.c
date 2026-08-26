@@ -99,7 +99,7 @@ void drop_one_guard(P_char ch)
 	return;
 }
 
-void do_guard(P_char ch, char *argument, int cmd)
+void do_guard(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char target;
 

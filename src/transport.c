@@ -182,7 +182,7 @@ void initialize_transport()
 }
 
 // Handles list command for flying_transport proc
-bool flying_transport_cmd_list(P_char ch, P_char victim, char *arg)
+bool flying_transport_cmd_list(P_char ch, P_char victim, char * /*arg*/)
 {
 	// ch - player listing command
 	// victim - mob with the flying_transport proc
@@ -432,7 +432,7 @@ int flying_transport(P_char ch, P_char victim, int cmd, char *arg)
 
 int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags);
 
-void event_flying_transport_move(P_char ch, P_char victim, P_obj obj, void *data)
+void event_flying_transport_move(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	char buff[MAX_STRING_LENGTH];
 
@@ -541,7 +541,7 @@ void event_flying_transport_move(P_char ch, P_char victim, P_obj obj, void *data
 	add_event(event_flying_transport_move, (int)(PULSE_VIOLENCE / 5), ch, victim, 0, 0, 0, 0);
 }
 
-void event_flying_transport_return(P_char ch, P_char victim, P_obj obj, void *data)
+void event_flying_transport_return(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	char buff[MAX_STRING_LENGTH];
 

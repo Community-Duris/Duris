@@ -1427,7 +1427,7 @@ int martelo_mstar(P_obj obj, P_char ch, int cmd, char *arg)
 
 /*********************** Mobs ******************************/
 
-int um_durnan(P_char ch, P_char pl, int cmd, char *arg)
+int um_durnan(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1533,7 +1533,7 @@ int um_durnan(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int um_mhaere(P_char ch, P_char pl, int cmd, char *arg)
+int um_mhaere(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1562,7 +1562,7 @@ int um_mhaere(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int um_regular(P_char ch, P_char pl, int cmd, char *arg)
+int um_regular(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1594,7 +1594,7 @@ int um_regular(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int um_gambler(P_char ch, P_char pl, int cmd, char *arg)
+int um_gambler(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1641,7 +1641,7 @@ int um_gambler(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int um_tamsil(P_char ch, P_char pl, int cmd, char *arg)
+int um_tamsil(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1672,7 +1672,7 @@ int um_tamsil(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int um_kevlar(P_char ch, P_char pl, int cmd, char *arg)
+int um_kevlar(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	int i;
 
@@ -1736,7 +1736,7 @@ int um_kevlar(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int um_thorn(P_char ch, P_char pl, int cmd, char *arg)
+int um_thorn(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char leader;
 
@@ -1786,7 +1786,7 @@ int um_thorn(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int um_korelar(P_char ch, P_char pl, int cmd, char *arg)
+int um_korelar(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char leader;
 
@@ -1835,7 +1835,7 @@ int um_korelar(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int um_essra(P_char ch, P_char pl, int cmd, char *arg)
+int um_essra(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1938,13 +1938,13 @@ int um_mezzoloth(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int um_goblin_leader(P_char ch, P_char pl, int cmd, char *arg)
+int um_goblin_leader(P_char /*ch*/, P_char /*pl*/, int /*cmd*/, char * /*arg*/)
 {
 	// is a mimic
 	return FALSE;
 }
 
-int flying_dagger(P_char ch, P_char pl, int cmd, char *arg)
+int flying_dagger(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj dagger, i, temp, next_obj;
 
@@ -1984,7 +1984,7 @@ int flying_dagger(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ochre_jelly(P_char ch, P_char pl, int cmd, char *arg)
+int ochre_jelly(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj i, temp, next_obj;
 
@@ -2017,7 +2017,7 @@ int ochre_jelly(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int animated_sword(P_char ch, P_char pl, int cmd, char *arg)
+int animated_sword(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj sword;
 
@@ -2037,7 +2037,7 @@ int animated_sword(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int helmed_horror(P_char ch, P_char pl, int cmd, char *arg)
+int helmed_horror(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj helm;
 
@@ -2058,7 +2058,7 @@ int helmed_horror(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int malodine_one(P_char ch, P_char pl, int cmd, char *arg)
+int malodine_one(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 
@@ -2099,7 +2099,7 @@ int malodine_one(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int malodine_two(P_char ch, P_char pl, int cmd, char *arg)
+int malodine_two(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char ghost;
 
@@ -2118,7 +2118,7 @@ int malodine_two(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int malodine_three(P_char ch, P_char pl, int cmd, char *arg)
+int malodine_three(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -2135,7 +2135,7 @@ int malodine_three(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int black_pudding(P_char ch, P_char pl, int cmd, char *arg)
+int black_pudding(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char split = NULL, split2 = NULL;
 
@@ -2241,7 +2241,7 @@ int flame_of_north(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-void event_flame_of_north(P_char ch, P_char victim, P_obj obj, void *data)
+void event_flame_of_north(P_char ch, P_char victim, [[maybe_unused]] P_obj obj, void * /*data*/)
 {
 	// first check to make sure the item is still on the character
 	bool has_item = FALSE;

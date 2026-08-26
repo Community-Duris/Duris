@@ -1024,7 +1024,7 @@ NPCShipCrewData npcShipCrewData[] = { { 0,
 					40224,
 					6 } };
 
-int npc_ship_crew_member_func(P_char ch, P_char player, int cmd, char *arg)
+int npc_ship_crew_member_func(P_char ch, [[maybe_unused]] P_char player, int cmd, char * /*arg*/)
 {
 	if (cmd != CMD_MOB_MUNDANE)
 	{
@@ -1147,7 +1147,7 @@ P_obj load_treasure_chest(P_ship ship, P_char captain, NPCShipCrewData *crew)
 }
 
 void apply_zone_modifier(P_char ch);
-P_char load_npc_ship_crew_member(P_ship ship, int room_no, int vnum, int load_eq)
+P_char load_npc_ship_crew_member(P_ship /*ship*/, int room_no, int vnum, int /*load_eq*/)
 {
 	int room = real_room0(room_no);
 	int rnum;

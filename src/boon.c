@@ -1556,7 +1556,7 @@ int parse_boon_args(P_char ch, BoonData *bdata, char *argument)
 	return TRUE;
 }
 
-void do_boon(P_char ch, char *argument, int cmd)
+void do_boon(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_STRING_LENGTH];
 	char buff[MAX_STRING_LENGTH], buffline[MAX_STRING_LENGTH];

@@ -50,7 +50,7 @@ extern P_obj object_list;
 
 #define KOSSUTH_HELPER_LIMIT 6
 
-int kossuth(P_char ch, P_char pl, int cmd, char *arg)
+int kossuth(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char i;
 	P_char minion;
@@ -110,7 +110,7 @@ int kossuth(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int fruaack_shout(P_char ch, P_char tch, int cmd, char *arg)
+int fruaack_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 88300, 88301, 88304, 88326, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -124,7 +124,7 @@ int fruaack_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int charcoal_guard(P_char ch, P_char victim, int cmd, char *arg)
+int charcoal_guard(P_char ch, P_char /*victim*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;

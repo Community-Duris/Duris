@@ -169,7 +169,7 @@ void charm_broken(struct char_link_data *cld)
 	}
 }
 
-void event_pet_death(P_char ch, P_char victim, P_obj obj, void *data)
+void event_pet_death(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	die(ch, ch);
 }
@@ -353,7 +353,7 @@ int can_raise_draco(P_char ch, int level, bool bGreater)
 	return TRUE;
 }
 
-void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type)
+void raise_undead(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_type)
 {
 	P_char undead;
 	P_obj obj_in_corpse, next_obj;
@@ -718,63 +718,70 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 #undef UNDEAD_TYPES
 
 // Necro Spells
-void spell_raise_spectre(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_raise_spectre(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			 P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, NECROPET_SPECTRE);
 }
 
-void spell_raise_wraith(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_raise_wraith(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, NECROPET_WRAITH);
 }
 
-void spell_raise_shadow(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_raise_shadow(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, NECROPET_SHADOW);
 }
 
-void spell_raise_vampire(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_raise_vampire(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			 P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, NECROPET_VAMPIRE);
 }
 
-void spell_raise_lich(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_raise_lich(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, NECROPET_LICH);
 }
 
-void spell_animate_dead(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_animate_dead(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, -1);
 }
 
 // Theurgist Spells
-void spell_call_asura(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_call_asura(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, THEURPET_SPECTRE);
 }
 
-void spell_call_bralani(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_call_bralani(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, THEURPET_WRAITH);
 }
 
-void spell_call_deva(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_call_deva(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, THEURPET_SHADOW);
 }
 
-void spell_call_knight(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_call_knight(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, THEURPET_VAMPIRE);
 }
 
-void spell_call_liberator(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_call_liberator(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, THEURPET_LICH);
 }
 
-void spell_call_archon(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_call_archon(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj obj)
 {
 	raise_undead(level, ch, victim, obj, -1);
 }
@@ -946,7 +953,8 @@ void spawn_raise_undead(P_char ch, P_char vict, P_obj corpse)
 	}
 }
 
-void spell_spawn(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_spawn(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		 P_char /*victim*/, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -966,7 +974,8 @@ void spell_spawn(int level, P_char ch, char *arg, int type, P_char victim, P_obj
 	    TO_ROOM);
 }
 
-void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_call_titan(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char /*victim*/, P_obj obj)
 {
 	P_char mob;
 	P_obj obj_in_corpse = NULL, next_obj = NULL;
@@ -1201,7 +1210,7 @@ void check_saved_corpse(P_char ch)
 		extract_obj(corpse);
 }
 
-void event_saved_corpse(P_char ch, P_char vict, P_obj obj, void *data)
+void event_saved_corpse(P_char ch, P_char /*vict*/, P_obj /*obj*/, void *data)
 {
 	if (!ch || !data)
 		return;
@@ -1233,7 +1242,8 @@ void create_saved_corpse(P_obj obj, P_char mob)
 		  sizeof(SavedCorpseData));
 }
 
-void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_create_dracolich(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			    P_char /*victim*/, P_obj obj)
 {
 	P_char mob;
 	P_obj obj_in_corpse = NULL, next_obj = NULL;
@@ -1487,7 +1497,8 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 	}
 }
 
-void spell_create_golem(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_create_golem(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj obj)
 {
 	int pet_type;
 	int clevel;
@@ -1527,7 +1538,7 @@ void spell_create_golem(int level, P_char ch, char *arg, int type, P_char victim
 	create_golem(level, ch, victim, obj, pet_type);
 }
 
-void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type)
+void create_golem(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_type)
 {
 	P_char mob;
 	bool corpselog = FALSE;
@@ -1721,7 +1732,8 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	}
 }
 
-void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_call_avatar(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		       P_char /*victim*/, P_obj obj)
 {
 	P_char mob;
 	bool corpselog = FALSE;
@@ -1950,8 +1962,8 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 	}
 }
 
-void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P_char victim,
-				    P_obj obj)
+void spell_create_greater_dracolich(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				    P_char /*victim*/, P_obj obj)
 {
 	P_char mob;
 	bool corpselog = FALSE;
@@ -2197,7 +2209,7 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 	}
 }
 
-void do_exhume(P_char ch, char *argument, int cmd)
+void do_exhume(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	int skl;
 	P_obj obj1 = NULL, obj2 = NULL;
@@ -2275,7 +2287,7 @@ void do_exhume(P_char ch, char *argument, int cmd)
 	spell_embalm(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, NULL, obj1);
 }
 
-void do_spawn(P_char ch, char *argument, int cmd)
+void do_spawn(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -2303,7 +2315,7 @@ void do_spawn(P_char ch, char *argument, int cmd)
 	affect_to_char(ch, &af);
 }
 
-void do_summon_host(P_char ch, char *argument, int cmd)
+void do_summon_host(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	int skl;
 	P_obj obj1 = NULL;
@@ -2384,7 +2396,7 @@ void do_summon_host(P_char ch, char *argument, int cmd)
 	spell_embalm(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, NULL, obj1);
 }
 
-void do_remort(P_char ch, char *arg, int cmd)
+void do_remort(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (!IS_PC(ch))
 		return;
@@ -2408,7 +2420,8 @@ void do_remort(P_char ch, char *arg, int cmd)
 	CharWait(ch, PULSE_VIOLENCE * 3);
 }
 
-void spell_corpseform(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_corpseform(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char /*victim*/, P_obj obj)
 {
 	P_obj obj_in_corpse, next_obj;
 	struct affected_type *afcf, *afrc;
@@ -2589,7 +2602,7 @@ void spell_corpseform(int level, P_char ch, char *arg, int type, P_char victim, 
 	extract_obj(obj);
 }
 
-void event_corpseform_wearoff(P_char ch, P_char victim, P_obj obj, void *data)
+void event_corpseform_wearoff(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type *afrc;
 
@@ -2614,7 +2627,8 @@ void event_corpseform_wearoff(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void spell_slashing_darkness(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_slashing_darkness(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			     P_obj /*obj*/)
 {
 	struct damage_messages messages = {
 		"&+LThe shadowy hand slashes $N &+Lviciously.",
@@ -2648,7 +2662,8 @@ void spell_slashing_darkness(int level, P_char ch, char *arg, int type, P_char v
 			     SPLDAM_ALLGLOBES | SPLDAM_NOSHRUG, &messages);
 }
 
-void spell_undead_to_death(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_undead_to_death(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			   P_char victim, P_obj /*obj*/)
 {
 	int save, dam, hits;
 	struct affected_type af;
@@ -2747,7 +2762,7 @@ void spell_undead_to_death(int level, P_char ch, char *arg, int type, P_char vic
 	}
 }
 
-void spell_taint(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_taint(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -2848,7 +2863,8 @@ P_obj get_globe(P_char ch)
 	return globe;
 }
 
-void spell_wall_of_bones(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void spell_wall_of_bones(int level, P_char ch, char *arg, [[maybe_unused]] int type,
+			 P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	char arg1[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], *arg2;
 	int exit_dir, clevel, scales;
@@ -3016,7 +3032,8 @@ void spell_wall_of_bones(int level, P_char ch, char *arg, int type, P_char tar_c
 	}
 }
 
-void spell_compact_corpse(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_compact_corpse(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			  P_char /*victim*/, P_obj obj)
 {
 	P_obj pile, content;
 	char buf[MAX_STRING_LENGTH];

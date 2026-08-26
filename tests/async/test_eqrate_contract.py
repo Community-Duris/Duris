@@ -179,7 +179,7 @@ assert contains(score_fn, "case APPLY_SPELL_PULSE:") and contains(score_fn, "-mo
 # --------------------------------------------------------------------------
 # 6. Argument surface matches the RoL command, plus the Duris-only wear slots.
 # --------------------------------------------------------------------------
-do_start = index(ACTWIZ_C, "void do_eqrate(P_char ch, char *argument, int cmd)")
+do_start = index(ACTWIZ_C, "void do_eqrate(P_char ch, char *argument, int")
 do_body = ACTWIZ_C[do_start:]
 
 for sub in ("check", "stats", "show", "detail"):

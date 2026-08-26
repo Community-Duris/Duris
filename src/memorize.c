@@ -1213,7 +1213,7 @@ int memorize_last_spell(P_char ch)
 	return FALSE;
 }
 
-void event_memorize(P_char ch, P_char victim, P_obj obj, void *data)
+void event_memorize(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int time = 0;
 
@@ -1880,7 +1880,7 @@ int forget_spells(P_char ch, int spell)
 	return 0;
 }
 
-void do_forget(P_char ch, char *argument, int cmd)
+void do_forget(P_char ch, char *argument, int /*cmd*/)
 {
 	int spl;
 
@@ -2075,7 +2075,7 @@ struct extra_descr_data *find_spell_description(P_obj obj)
 	return NULL;
 }
 
-P_obj Find_process_entry(P_char ch, P_obj foo, int spl)
+P_obj Find_process_entry(P_char /*ch*/, P_obj foo, int spl)
 {
 	struct extra_descr_data *foo2;
 	int i, b, c;
@@ -2466,7 +2466,7 @@ void do_teach(P_char ch, char *arg, int cmd)
 	add_scribing(target, tmp, SpellBookAtHand(target), 0, 0, ch);
 }
 
-void do_scribe(P_char ch, char *arg, int cmd)
+void do_scribe(P_char ch, char *arg, int /*cmd*/)
 {
 	int spl = 0;
 	P_obj o1, o2, o3;
@@ -2560,7 +2560,7 @@ void do_scribe(P_char ch, char *arg, int cmd)
 	add_scribing(ch, spl, o1, TRUE, o3, NULL);
 }
 
-void event_scribe(P_char ch, P_char victim, P_obj obj, void *data)
+void event_scribe(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj obj, void *data)
 {
 	struct scribing_data_type *s_data = (struct scribing_data_type *)data;
 	int i, j;
@@ -2678,8 +2678,8 @@ void event_scribe(P_char ch, P_char victim, P_obj obj, void *data)
 		s_data->done_func(ch);
 }
 
-void spell_mordenkainens_lucubration(int level, P_char ch, char *arg, int type, P_char victim,
-				     P_obj obj)
+void spell_mordenkainens_lucubration(int /*level*/, P_char ch, char * /*arg*/,
+				     [[maybe_unused]] int type, P_char /*victim*/, P_obj /*obj*/)
 {
 	if (!ch)
 		return;

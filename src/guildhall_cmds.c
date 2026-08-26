@@ -130,7 +130,7 @@ const char CONSTRUCT_SYNTAX[] =
 	"&+Wconstruct rename   &n - rename the current room\r\n"
 	"&+Wconstruct overmax  &n - increase max players\r\n";
 
-void do_construct(P_char ch, char *arg, int cmd)
+void do_construct(P_char ch, char *arg, int /*cmd*/)
 {
 	if (!ch)
 		return;
@@ -182,7 +182,7 @@ void do_construct(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_construct_overmax(P_char ch, char *arg)
+void do_construct_overmax(P_char ch, char * /*arg*/)
 {
 	char buff[MAX_STRING_LENGTH];
 	int cp_cost = (int)get_property("guildhalls.construction.points.overmax", 100);
@@ -249,7 +249,7 @@ void do_construct_overmax(P_char ch, char *arg)
 	return;
 }
 
-void do_construct_guildhall(P_char ch, char *arg)
+void do_construct_guildhall(P_char ch, char * /*arg*/)
 {
 	char buff[MAX_STRING_LENGTH];
 
@@ -939,7 +939,7 @@ const char GUILDHALL_GOD_SYNTAX[] =
 	"&+Wguildhall move <id> <here|vnum>&n            - move a guildhall doorway \r\n"
 	"\r\n";
 
-void do_guildhall(P_char ch, char *arg, int cmd)
+void do_guildhall(P_char ch, char *arg, int /*cmd*/)
 {
 	if (!ch || !IS_PC(ch))
 		return;
@@ -994,7 +994,7 @@ void do_guildhall(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_guildhall_list(P_char ch, char *arg)
+void do_guildhall_list(P_char ch, char * /*arg*/)
 {
 	send_to_char(
 		"&+BListing guildhall structures\r\n"
@@ -1089,7 +1089,7 @@ void do_guildhall_status(P_char ch, char *arg)
 //
 // guildhall info command for guild leader
 //
-void do_guildhall_info(P_char ch, char *arg)
+void do_guildhall_info(P_char ch, char * /*arg*/)
 {
 	if (!ch)
 		return;

@@ -196,7 +196,7 @@ int lookup_surname(char *name)
 	return 0;
 }
 
-void do_surname(P_char ch, char *argument, int cmd)
+void do_surname(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg1[MAX_STRING_LENGTH];
 	int surname_index;
@@ -229,7 +229,7 @@ void do_surname(P_char ch, char *argument, int cmd)
 	set_surname(ch, surname_index);
 }
 
-void event_update_surnames(P_char ch, P_char victim, P_obj, void *data)
+void event_update_surnames(P_char /*ch*/, P_char /*victim*/, P_obj, void * /*data*/)
 {
 	P_desc d;
 
@@ -247,7 +247,7 @@ void event_update_surnames(P_char ch, P_char victim, P_obj, void *data)
 	add_event(event_update_surnames, number(300, 600) * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 }
 
-bool quested_spell(P_char ch, int spl)
+bool quested_spell(P_char ch, int /*spl*/)
 {
 	// debug("spell: %d\r\n");
 	if (IS_NPC(ch))
@@ -304,7 +304,7 @@ int vnum_in_inv(P_char ch, int vnum)
 }
 
 #define SHARDS_FOR_ORB 3
-int pvp_store(P_char ch, P_char pl, int cmd, char *arg)
+int pvp_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 {
 	char buffer[MAX_STRING_LENGTH];
 	P_obj orb;
@@ -834,7 +834,7 @@ P_obj random_zone_item(P_char ch)
 	"&+W(&+wconjure summon <number> &+m- &+mcall the &+Mminion&+m into existence&n.)\n&n"             \
 	"&+W(&+wconjure remove <number> &+m- &+Mpermanently&+m remove the &+Mminion&+m from your book&n.)\n&n"
 
-void do_conjure(P_char ch, char *argument, int cmd)
+void do_conjure(P_char ch, char *argument, int /*cmd*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], rest[MAX_INPUT_LENGTH];

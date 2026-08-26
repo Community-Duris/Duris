@@ -185,7 +185,7 @@ static void check_frag_position(P_char ch)
 }
 
 // shows the frag list from database
-void do_fraglist(P_char ch, char *arg, int cmd)
+void do_fraglist(P_char ch, char *arg, int /*cmd*/)
 {
 	char buf[65536], buf2[2048], name[256];
 	int frags, count;

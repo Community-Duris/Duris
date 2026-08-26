@@ -32,7 +32,7 @@ extern struct zone_data *zone_table;
 extern struct sector_data *sector_table;
 extern P_desc descriptor_list;
 
-void event_write_statistic(P_char ch, P_char victim, P_obj obj, void *data)
+void event_write_statistic(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_desc d;
 	P_char t_ch;
@@ -164,7 +164,7 @@ struct statistics_day
 	float total_illithids_lvl;
 };
 
-void do_statistic(P_char ch, char *argument, int val)
+void do_statistic(P_char ch, char *argument, int /*val*/)
 {
 	char Gbuf0[MAX_STRING_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];

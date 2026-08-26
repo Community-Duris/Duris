@@ -33,7 +33,8 @@
 extern P_room world;
 extern const int top_of_world;
 
-void spell_thornskin(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_thornskin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		     P_obj /*obj*/)
 {
 	struct affected_type af1;
 	bool shown;
@@ -117,7 +118,8 @@ void spell_thornskin(int level, P_char ch, char *arg, int type, P_char victim, P
 // Range Spell!
 // A burning globe of fire that burns target 2d6 damage / round.
 // Since range, limited to one round with lightning bolt damage.
-void spell_flame_sphere(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_flame_sphere(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj /*obj*/)
 {
 	if (!ch || !victim || !IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
@@ -151,7 +153,8 @@ void spell_flame_sphere(int level, P_char ch, char *arg, int type, P_char victim
 }
 
 // Room spell.
-void spell_desecrate_land(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_desecrate_land(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			  P_char /*victim*/, P_obj /*obj*/)
 {
 	struct room_affect *raf;
 	struct room_affect af;
@@ -236,7 +239,8 @@ void spell_desecrate_land(int level, P_char ch, char *arg, int type, P_char vict
 
 // Target spell
 // Similar to disease
-void spell_contagion(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_contagion(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		     P_obj /*obj*/)
 {
 	struct affected_type af;
 	int temp;
@@ -348,7 +352,7 @@ void spell_contagion(int level, P_char ch, char *arg, int type, P_char victim, P
 
 // Target Plant only spell
 // 1d6 damage / caster lvl to 15.
-void spell_blight(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_blight(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj /*obj*/)
 {
 	if (!ch || !victim || !IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
@@ -386,7 +390,8 @@ void spell_blight(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 
 // Room spell.
 // Stops all forms of magical transportation.
-void spell_forbiddance(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_forbiddance(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		       P_char /*victim*/, P_obj /*obj*/)
 {
 	struct room_affect af;
 
@@ -405,7 +410,7 @@ void spell_forbiddance(int level, P_char ch, char *arg, int type, P_char victim,
 	affect_to_room(ch->in_room, &af);
 }
 
-void event_waves_fatigue(P_char ch, P_char victim, P_obj obj, void *data)
+void event_waves_fatigue(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	int moves = *(int *)data;
 
@@ -429,7 +434,8 @@ void event_waves_fatigue(P_char ch, P_char victim, P_obj obj, void *data)
 extern struct link_description link_types[];
 // Target spell.
 // Create 3 waves (2 events) that sap moves.
-void spell_waves_fatigue(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_waves_fatigue(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			 P_obj /*obj*/)
 {
 	int moves;
 	P_nevent e;
@@ -477,7 +483,7 @@ void spell_waves_fatigue(int level, P_char ch, char *arg, int type, P_char victi
 	add_event(event_waves_fatigue, PULSE_VIOLENCE, ch, victim, 0, 0, &moves, sizeof(moves));
 }
 
-void event_acid_rain(P_char ch, P_char victim, P_obj obj, void *data)
+void event_acid_rain(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int room = ch->in_room;
 	int dam;
@@ -557,7 +563,8 @@ bool has_scheduled_area_acid_rain(P_char ch)
 
 // Area spell.
 // Create events that do 2d6 damage for lvl rounds.
-void spell_acid_rain(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_acid_rain(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*obj*/)
 {
 	int waves = level / 10;
 
@@ -595,7 +602,8 @@ void spell_acid_rain(int level, P_char ch, char *arg, int type, P_char victim, P
 
 // Sunray equivalent.
 // 1d6 damage (1d8 to water mentals/plants) per lvl.
-void spell_horrid_wilting(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_horrid_wilting(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj /*obj*/)
 {
 	struct damage_messages messages = { "$N &+Lbegins to dry and wilt.&n",
 					    "&+LYou begin to dry out and wilt.&n",
@@ -641,7 +649,8 @@ void spell_horrid_wilting(int level, P_char ch, char *arg, int type, P_char vict
 }
 
 // Summon spell: 1d4+2 shambling mounds.
-void spell_shambler(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_shambler(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		    P_char /*victim*/, P_obj /*obj*/)
 {
 	int count;
 	P_char mob;
@@ -719,7 +728,8 @@ void spell_shambler(int level, P_char ch, char *arg, int type, P_char victim, P_
 }
 
 // Target Damage.
-void spell_implosion(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_implosion(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*obj*/)
 {
 	// Slight decrease in damage and decent cecrease in damage variance.
 	int dam = 5 * level + dice(level * 2, 10);
@@ -751,7 +761,7 @@ void spell_implosion(int level, P_char ch, char *arg, int type, P_char victim, P
 	spell_damage(ch, victim, dam, SPLDAM_NEGATIVE, 0, &messages);
 }
 
-void event_sandstorm(P_char ch, P_char victim, P_obj obj, void *data)
+void event_sandstorm(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int level = GET_LEVEL(ch);
 	int rroom;
@@ -811,7 +821,7 @@ void event_sandstorm(P_char ch, P_char victim, P_obj obj, void *data)
 }
 
 // Just display growing messages..
-void event_sandstorm_message(P_char ch, P_char victim, P_obj obj, void *data)
+void event_sandstorm_message(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	int rroom, num_rounds = *((int *)data);
 
@@ -851,7 +861,8 @@ void event_sandstorm_message(P_char ch, P_char victim, P_obj obj, void *data)
 }
 
 // Area Damage on timer.
-void spell_sandstorm(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_sandstorm(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*obj*/)
 {
 	// number of rounds before sandstorm hits.
 	int num_rounds = number(1, 3);
@@ -888,7 +899,8 @@ void spell_sandstorm(int level, P_char ch, char *arg, int type, P_char victim, P
 }
 
 // Target Damage.
-void spell_firelance(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_firelance(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -921,7 +933,7 @@ void spell_firelance(int level, P_char ch, char *arg, int type, P_char victim, P
 	spell_damage(ch, victim, dam, SPLDAM_FIRE, SPLDAM_GLOBE | SPLDAM_GRSPIRIT, &messages);
 }
 
-void event_drain_nature(P_char ch, P_char vict, P_obj obj, void *data)
+void event_drain_nature(P_char ch, P_char vict, P_obj /*obj*/, void *data)
 {
 	int healpoints, wavevalue, x;
 
@@ -970,7 +982,8 @@ void event_drain_nature(P_char ch, P_char vict, P_obj obj, void *data)
 }
 
 // Heals the target/cures blind.
-void spell_drain_nature(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_drain_nature(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj obj)
 {
 	int healpoints;
 
@@ -1016,7 +1029,8 @@ void spell_drain_nature(int level, P_char ch, char *arg, int type, P_char victim
 	    ch, 0, victim, TO_NOTVICT);
 }
 
-void spell_create_pond(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_create_pond(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
+		       P_obj /*obj*/)
 {
 	P_obj pond;
 
@@ -1043,7 +1057,8 @@ void spell_create_pond(int level, P_char ch, char *arg, int type, P_char victim,
 }
 
 // Target Damage.
-void spell_toxic_fog(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_toxic_fog(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -1079,7 +1094,8 @@ void spell_toxic_fog(int level, P_char ch, char *arg, int type, P_char victim, P
 	spell_damage(ch, victim, dam, SPLDAM_GAS, 0, &messages);
 }
 
-void spell_faluzures_vitality(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_faluzures_vitality(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			      P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	bool message = FALSE;
@@ -1143,7 +1159,8 @@ void spell_faluzures_vitality(int level, P_char ch, char *arg, int type, P_char 
 }
 
 // Blighter's version of endurance.
-void spell_sap_nature(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_sap_nature(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	struct affected_type *afp;
@@ -1214,7 +1231,8 @@ void spell_sap_nature(int level, P_char ch, char *arg, int type, P_char victim, 
 	    TO_NOTVICT);
 }
 
-void spell_bloodstone(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_bloodstone(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char /*victim*/, P_obj /*tar_obj*/)
 {
 	P_obj bloodstone;
 	struct affected_type af, *afp;

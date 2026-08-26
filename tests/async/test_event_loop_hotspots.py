@@ -38,7 +38,7 @@ checks.append((
     contains(handler, "static unsigned int char_sweep_slice(P_char c)") and contains(handler, "(uintptr_t)c")
 ))
 
-m = re.search(r"void generic_char_event\(P_char ch, P_char victim, P_obj obj, void \*data\)\s*\{.*?\n\}", handler, re.S)
+m = re.search(r"void generic_char_event\([^)]*\)\s*\{.*?\n\}", handler, re.S)
 if m:
     body = m.group(0)
     checks.append((

@@ -466,7 +466,7 @@ int calculate_hitpoints2(P_char ch)
 	       old_bonus + new_bonus + age_mod + maxconbonus + toughness + newbie + hardcore;
 }
 
-void event_balance_affects(P_char ch, P_char victim, P_obj obj, void *data)
+void event_balance_affects(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	affect_total(ch, TRUE);
 }
@@ -1791,7 +1791,7 @@ char affect_total(P_char ch, int kill_ch)
 //=================================================================================
 //=== AFFECTS - CHAR
 //=================================================================================
-void event_short_affect(P_char ch, P_char victim, P_obj obj, void *data)
+void event_short_affect([[maybe_unused]] P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct event_short_affect_data *event_data = (struct event_short_affect_data *)data;
 	struct affected_type *af;
@@ -2245,7 +2245,7 @@ void wear_off_message(P_char ch, struct affected_type *af)
 //=================================================================================
 
 //---------------------------------------------------------------------------------
-void event_room_affect(P_char ch, P_char victim, P_obj obj, void *data)
+void event_room_affect([[maybe_unused]] P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct event_room_affect_data *event_data = (struct event_room_affect_data *)data;
 	struct room_affect *af;
@@ -3604,7 +3604,7 @@ int camp(P_char ch)
 	return 0;
 }
 
-void event_falling_char(P_char ch, P_char victim, P_obj obj, void *data)
+void event_falling_char(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	falling_char(ch, *((int *)data), TRUE);
 }
@@ -3981,7 +3981,7 @@ bool falling_char(P_char ch, const int kill_char, bool caller_is_event)
 	return TRUE;
 }
 
-void event_falling_obj(P_char ch, P_char victim, P_obj obj, void *data)
+void event_falling_obj(P_char /*ch*/, P_char /*victim*/, P_obj obj, void *data)
 {
 	falling_obj(obj, *((int *)data), TRUE);
 }

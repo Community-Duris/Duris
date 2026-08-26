@@ -189,7 +189,7 @@ Building *load_building(P_Guild guild, int type, int location, int level)
 	return building;
 }
 
-void do_build(P_char ch, char *argument, int cmd)
+void do_build(P_char ch, char *argument, int /*cmd*/)
 {
 	if (!IS_TRUSTED(ch))
 	{
@@ -625,7 +625,7 @@ int outpost_generate(Building *building)
 }
 
 // mob proc for outpost
-int outpost_mob(P_char ch, P_char pl, int cmd, char *arg)
+int outpost_mob(P_char ch, P_char /*pl*/, int /*cmd*/, char * /*arg*/)
 {
 	if (!ch)
 		return FALSE;

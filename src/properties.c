@@ -238,7 +238,7 @@ void initialize_properties()
 	apply_properties();
 }
 
-void do_properties(P_char ch, char *args, int cmd)
+void do_properties(P_char ch, char *args, int /*cmd*/)
 {
 	char *command;
 	char *pattern;

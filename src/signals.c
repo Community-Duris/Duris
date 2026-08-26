@@ -208,4 +208,4 @@ void reap(int sig)
 		;
 }
 
-void reaper(int signum) {}
+void reaper(int /*signum*/) {}

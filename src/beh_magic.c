@@ -23,7 +23,7 @@ extern P_room world;
  * like full harm on Duris)
  */
 
-void spell_beholder_sleep(int level, P_char ch, P_char victim, P_obj obj)
+void spell_beholder_sleep(int level, P_char ch, P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int save = 2, i;
@@ -117,7 +117,7 @@ void spell_beholder_sleep(int level, P_char ch, P_char victim, P_obj obj)
 	}
 }
 
-void spell_beholder_telekinesis(int level, P_char ch, P_char victim, P_obj obj)
+void spell_beholder_telekinesis(int /*level*/, P_char ch, P_char /*victim*/, P_obj /*obj*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 	struct room_direction_data *back;
@@ -231,7 +231,7 @@ void spell_beholder_telekinesis(int level, P_char ch, P_char victim, P_obj obj)
 	}
 }
 
-void spell_beholder_paralyze(int level, P_char ch, P_char victim, P_obj obj)
+void spell_beholder_paralyze(int level, P_char ch, P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int lev = level, save = 2;
@@ -535,7 +535,7 @@ void spell_beholder_fear(int level, P_char ch, P_char victim, P_obj obj)
 	}
 }
 
-void spell_beholder_slowness(int level, P_char ch, P_char victim, P_obj obj)
+void spell_beholder_slowness(int level, P_char ch, P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int save = 2;
@@ -594,7 +594,7 @@ void spell_beholder_slowness(int level, P_char ch, P_char victim, P_obj obj)
 	}
 }
 
-void spell_beholder_damage(int level, P_char ch, P_char victim, P_obj obj)
+void spell_beholder_damage(int level, P_char ch, P_char victim, P_obj /*obj*/)
 {
 	int dam;
 
@@ -628,7 +628,7 @@ void spell_beholder_damage(int level, P_char ch, P_char victim, P_obj obj)
 	spell_damage(ch, victim, dam, SPLDAM_GENERIC, SPLDAM_NOSHRUG | SPLDAM_NODEFLECT, &messages);
 }
 
-void spell_beholder_dispelmagic(int level, P_char ch, P_char victim, P_obj obj)
+void spell_beholder_dispelmagic(int /*level*/, P_char ch, P_char victim, P_obj /*obj*/)
 {
 	if (!(victim && ch))
 	{

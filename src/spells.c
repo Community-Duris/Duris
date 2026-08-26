@@ -49,7 +49,8 @@ extern bool exit_wallable(int room, int dir, P_char ch);
 extern bool create_walls(int room, int exit, P_char ch, int level, int type, int power, int decay,
 			 char *short_desc, char *desc, ulong flags);
 
-void cast_call_lightning(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void cast_call_lightning(int level, P_char ch, char * /*arg*/, int type, P_char victim,
+			 P_obj tar_obj)
 {
 	P_char next;
 
@@ -105,7 +106,8 @@ void cast_call_lightning(int level, P_char ch, char *arg, int type, P_char victi
 	}
 }
 
-void cast_control_weather(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_control_weather(int level, P_char ch, char *arg, int type, P_char /*tar_ch*/,
+			  P_obj /*tar_obj*/)
 {
 	char Gbuf4[MAX_STRING_LENGTH];
 	int var;
@@ -246,7 +248,8 @@ void cast_control_weather(int level, P_char ch, char *arg, int type, P_char tar_
 	}
 }
 
-void cast_minor_creation(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_minor_creation(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/,
+			 P_obj tar_obj)
 {
 	int i;
 	sh_int obj_num;
@@ -286,7 +289,8 @@ void cast_minor_creation(int level, P_char ch, char *arg, int type, P_char tar_c
 	spell_minor_creation(level, ch, 0, tar_obj);
 }
 
-void cast_channel(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_channel(int level, P_char ch, char * /*arg*/, int type, P_char /*tar_ch*/,
+		  P_obj /*tar_obj*/)
 {
 	P_char t_ch, is_head = get_linked_char(ch, LNK_CONSENT);
 	P_obj t_obj;
@@ -394,7 +398,7 @@ int planes_room_num[] = { 23801, 23201, 12401, 24401, 19701, 25401, SURFACE_MAP_
 const char *planes_name[] = { "earth", "water", "ethereal", "air",	"astral",
 			      "fire",  "prime", "hell",	    "negative", "\n" };
 
-void cast_gate(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_gate(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj /*tar_obj*/)
 {
 	struct portal_settings set = {
 		752, /* portal type  */
@@ -533,7 +537,7 @@ void cast_gate(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj t
 	}
 }
 
-void cast_nether_gate(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_nether_gate(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj /*tar_obj*/)
 {
 	struct portal_settings set = {
 		781, /* portal type  */
@@ -676,7 +680,8 @@ int char_is_on_plane(P_char ch)
 	return FALSE;
 }
 
-void cast_plane_shift(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_plane_shift(int /*level*/, P_char ch, char *arg, int type, P_char tar_ch,
+		      P_obj /*tar_obj*/)
 {
 	char Gbuf4[MAX_STRING_LENGTH];
 	int to_room, plane_id, from_zone;
@@ -832,7 +837,8 @@ void cast_plane_shift(int level, P_char ch, char *arg, int type, P_char tar_ch, 
 	}
 }
 
-void cast_area_resurrect(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_area_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	P_obj t_obj;
 	P_obj obj;
@@ -883,7 +889,8 @@ void cast_area_resurrect(int level, P_char ch, char *arg, int type, P_char tar_c
 	}
 }
 
-void spell_wall_of_flames(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void spell_wall_of_flames(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/,
+			  P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	int var = 0;
@@ -920,7 +927,8 @@ void spell_wall_of_flames(int level, P_char ch, char *arg, int type, P_char tar_
 	}
 }
 
-void spell_wall_of_ice(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void spell_wall_of_ice(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/,
+		       P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	int var = 0;
@@ -953,7 +961,8 @@ void spell_wall_of_ice(int level, P_char ch, char *arg, int type, P_char tar_ch,
 	}
 }
 
-void cast_life_ward(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_life_ward(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/,
+		    P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	int var = 0;
@@ -981,7 +990,8 @@ void cast_life_ward(int level, P_char ch, char *arg, int type, P_char tar_ch, P_
 	}
 }
 
-void spell_wall_of_stone(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void spell_wall_of_stone(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/,
+			 P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	int var = 0;
@@ -1012,7 +1022,8 @@ void spell_wall_of_stone(int level, P_char ch, char *arg, int type, P_char tar_c
 	}
 }
 
-void spell_wall_of_iron(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void spell_wall_of_iron(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/,
+			P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	int var = 0;
@@ -1044,7 +1055,8 @@ void spell_wall_of_iron(int level, P_char ch, char *arg, int type, P_char tar_ch
 	}
 }
 
-void spell_wall_of_force(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void spell_wall_of_force(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/,
+			 P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	int var = 0;
@@ -1076,7 +1088,8 @@ void spell_wall_of_force(int level, P_char ch, char *arg, int type, P_char tar_c
 	}
 }
 
-void cast_lightning_curtain(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_lightning_curtain(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/,
+			    P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	int var = 0;
@@ -1103,7 +1116,7 @@ void cast_lightning_curtain(int level, P_char ch, char *arg, int type, P_char ta
 	}
 }
 
-void cast_web(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_web(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	int var = 0;
@@ -1128,7 +1141,8 @@ void cast_web(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj ta
 	}
 }
 
-void cast_prismatic_cube(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_prismatic_cube(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*tar_ch*/,
+			 P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	int dir, room;
@@ -1163,7 +1177,7 @@ void cast_prismatic_cube(int level, P_char ch, char *arg, int type, P_char tar_c
 	}
 }
 
-void event_earthen_tomb(P_char ch, P_char victim, P_obj obj, void *data)
+void event_earthen_tomb(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	int exit = -1, room;
@@ -1243,7 +1257,8 @@ void event_earthen_tomb(P_char ch, P_char victim, P_obj obj, void *data)
 	add_event(event_earthen_tomb, PULSE_VIOLENCE, 0, 0, 0, 0, &room, sizeof(room));
 }
 
-void cast_earthen_tomb(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_earthen_tomb(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		       P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	struct room_affect af;
 
@@ -1389,7 +1404,7 @@ void finish_room_transmute(P_char ch, struct grow_data *data)
 //-------------------------------------------------------------------------------
 
 //--------- SPELL_ETHEREAL_GROUNDS ------------
-void event_ethereal_grounds_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_ethereal_grounds_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1401,7 +1416,7 @@ void event_ethereal_grounds_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_ethereal_grounds(P_char ch, P_char victim, P_obj obj, void *data)
+void event_ethereal_grounds(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -1414,7 +1429,8 @@ void event_ethereal_grounds(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void spell_ethereal_grounds(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_ethereal_grounds(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			    P_char /*victim*/, P_obj /*obj*/)
 {
 	int terrain_type, seconds;
 
@@ -1447,7 +1463,7 @@ void spell_ethereal_grounds(int level, P_char ch, char *arg, int type, P_char vi
 }
 
 //--------- SPELL_TRANS_MUD_ROCK ------------
-void event_mud_rock_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_mud_rock_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1457,7 +1473,7 @@ void event_mud_rock_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_trans_mud_rock(P_char ch, P_char victim, P_obj obj, void *data)
+void event_trans_mud_rock(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -1468,8 +1484,8 @@ void event_trans_mud_rock(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void cast_transmute_mud_rock(int level, P_char ch, char *arg, int type, P_char tar_ch,
-			     P_obj tar_obj)
+void cast_transmute_mud_rock(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			     P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	int terrain_type, seconds;
 
@@ -1502,7 +1518,7 @@ void cast_transmute_mud_rock(int level, P_char ch, char *arg, int type, P_char t
 }
 
 //--------- SPELL_TRANS_ROCK_MUD ------------
-void event_rock_mud_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_rock_mud_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1512,7 +1528,7 @@ void event_rock_mud_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_trans_rock_mud(P_char ch, P_char victim, P_obj obj, void *data)
+void event_trans_rock_mud(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -1523,8 +1539,8 @@ void event_trans_rock_mud(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void cast_transmute_rock_mud(int level, P_char ch, char *arg, int type, P_char tar_ch,
-			     P_obj tar_obj)
+void cast_transmute_rock_mud(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			     P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	int terrain_type, seconds;
 
@@ -1566,7 +1582,7 @@ void cast_transmute_rock_mud(int level, P_char ch, char *arg, int type, P_char t
 }
 
 //--------- SPELL_TRANS_MUD_WATER ------------
-void event_mud_water_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_mud_water_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1577,7 +1593,7 @@ void event_mud_water_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_trans_mud_water(P_char ch, P_char victim, P_obj obj, void *data)
+void event_trans_mud_water(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -1588,8 +1604,8 @@ void event_trans_mud_water(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void cast_transmute_mud_water(int level, P_char ch, char *arg, int type, P_char tar_ch,
-			      P_obj tar_obj)
+void cast_transmute_mud_water(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			      P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	int terrain_type, seconds;
 
@@ -1622,7 +1638,7 @@ void cast_transmute_mud_water(int level, P_char ch, char *arg, int type, P_char 
 }
 
 //--------- SPELL_TRANS_WATER_MUD ------------
-void event_water_mud_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_water_mud_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1633,7 +1649,7 @@ void event_water_mud_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_trans_water_mud(P_char ch, P_char victim, P_obj obj, void *data)
+void event_trans_water_mud(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -1645,8 +1661,8 @@ void event_trans_water_mud(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void cast_transmute_water_mud(int level, P_char ch, char *arg, int type, P_char tar_ch,
-			      P_obj tar_obj)
+void cast_transmute_water_mud(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			      P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	int terrain_type, seconds;
 
@@ -1683,7 +1699,7 @@ void cast_transmute_water_mud(int level, P_char ch, char *arg, int type, P_char 
 }
 
 //--------- SPELL_TRANS_WATER_AIR ------------
-void event_water_air_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_water_air_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1693,7 +1709,7 @@ void event_water_air_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_trans_water_air(P_char ch, P_char victim, P_obj obj, void *data)
+void event_trans_water_air(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -1704,8 +1720,8 @@ void event_trans_water_air(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void cast_transmute_water_air(int level, P_char ch, char *arg, int type, P_char tar_ch,
-			      P_obj tar_obj)
+void cast_transmute_water_air(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			      P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	int terrain_type, seconds;
 
@@ -1742,7 +1758,7 @@ void cast_transmute_water_air(int level, P_char ch, char *arg, int type, P_char 
 }
 
 //--------- SPELL_TRANS_AIR_WATER ------------
-void event_air_water_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_air_water_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1752,7 +1768,7 @@ void event_air_water_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_trans_air_water(P_char ch, P_char victim, P_obj obj, void *data)
+void event_trans_air_water(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -1764,8 +1780,8 @@ void event_trans_air_water(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void cast_transmute_air_water(int level, P_char ch, char *arg, int type, P_char tar_ch,
-			      P_obj tar_obj)
+void cast_transmute_air_water(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			      P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	int terrain_type, seconds;
 
@@ -1796,7 +1812,7 @@ void cast_transmute_air_water(int level, P_char ch, char *arg, int type, P_char 
 }
 
 //--------- SPELL_TRANS_ROCK_LAVA ------------
-void event_rock_lava_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_rock_lava_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1806,7 +1822,7 @@ void event_rock_lava_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_trans_rock_lava(P_char ch, P_char victim, P_obj obj, void *data)
+void event_trans_rock_lava(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -1817,8 +1833,8 @@ void event_trans_rock_lava(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void cast_transmute_rock_lava(int level, P_char ch, char *arg, int type, P_char tar_ch,
-			      P_obj tar_obj)
+void cast_transmute_rock_lava(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			      P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	int terrain_type, seconds;
 
@@ -1862,7 +1878,7 @@ void cast_transmute_rock_lava(int level, P_char ch, char *arg, int type, P_char 
 }
 
 //--------- SPELL_TRANS_LAVA_ROCK ------------
-void event_lava_rock_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_lava_rock_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1873,7 +1889,7 @@ void event_lava_rock_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_trans_lava_rock(P_char ch, P_char victim, P_obj obj, void *data)
+void event_trans_lava_rock(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -1884,8 +1900,8 @@ void event_trans_lava_rock(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void cast_transmute_lava_rock(int level, P_char ch, char *arg, int type, P_char tar_ch,
-			      P_obj tar_obj)
+void cast_transmute_lava_rock(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			      P_char /*tar_ch*/, P_obj /*tar_obj*/)
 {
 	int terrain_type, seconds;
 
@@ -1916,7 +1932,7 @@ void cast_transmute_lava_rock(int level, P_char ch, char *arg, int type, P_char 
 }
 
 //--------- SPELL_DEPRESSED_EARTH ------------
-void event_depressed_earth_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_depressed_earth_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1927,7 +1943,7 @@ void event_depressed_earth_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_depressed_earth(P_char ch, P_char victim, P_obj obj, void *data)
+void event_depressed_earth(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -1939,7 +1955,8 @@ void event_depressed_earth(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void cast_depressed_earth(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_depressed_earth(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*tar_ch*/,
+			  P_obj /*tar_obj*/)
 {
 	int terrain_type, seconds;
 
@@ -1976,7 +1993,7 @@ void cast_depressed_earth(int level, P_char ch, char *arg, int type, P_char tar_
 }
 
 //--------- SPELL_GROW ------------
-void event_grow_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_grow_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 
@@ -1988,7 +2005,7 @@ void event_grow_bye(P_char ch, P_char victim, P_obj obj, void *data)
 	world[g_data->room].room_flags = g_data->flags;
 }
 
-void event_grow(P_char ch, P_char victim, P_obj obj, void *data)
+void event_grow(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct grow_data *g_data = (struct grow_data *)data;
 	finish_room_transmute(ch, g_data);
@@ -2013,7 +2030,8 @@ void event_grow(P_char ch, P_char victim, P_obj obj, void *data)
 	REMOVE_BIT(world[g_data->room].room_flags, ROOM_INDOORS);
 }
 
-void cast_grow(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_grow(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*tar_ch*/,
+	       P_obj /*tar_obj*/)
 {
 	int terrain_type, seconds;
 
@@ -2070,7 +2088,8 @@ void cast_grow(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj t
 	send_to_room("&+GThe ground starts to glow with a soft green light.&n\n", ch->in_room);
 }
 
-void cast_vines(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_vines(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char /*tar_ch*/,
+		P_obj /*tar_obj*/)
 {
 	P_obj t_obj, next_obj;
 	P_obj used_obj[4];
@@ -2144,7 +2163,7 @@ struct awaken_forest_data
 	int iter;
 };
 
-void event_spike_growth(P_char ch, P_char victim, P_obj obj, void *data)
+void event_spike_growth(P_char ch, P_char /*victim*/, P_obj obj, void *data)
 {
 	struct spike_growth_data *sgd;
 	P_char tch;
@@ -2248,7 +2267,7 @@ spike_grow_next:
 		  sizeof(struct spike_growth_data));
 }
 
-void event_awaken_forest(P_char ch, P_char victim, P_obj obj, void *data)
+void event_awaken_forest(P_char ch, P_char /*victim*/, P_obj obj, void *data)
 {
 	struct awaken_forest_data *awd;
 	P_char tch;
@@ -2377,7 +2396,8 @@ awaken_next:
 		  sizeof(struct awaken_forest_data));
 }
 
-void cast_spike_growth(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_spike_growth(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*tar_ch*/,
+		       P_obj /*tar_obj*/)
 {
 	struct spike_growth_data sgd;
 
@@ -2415,7 +2435,8 @@ void cast_spike_growth(int level, P_char ch, char *arg, int type, P_char tar_ch,
 	add_event(event_spike_growth, WAIT_SEC, ch, NULL, NULL, 0, &sgd, sizeof(sgd));
 }
 
-void cast_awaken_forest(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_awaken_forest(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*tar_ch*/,
+			P_obj /*tar_obj*/)
 {
 	struct awaken_forest_data awd;
 
@@ -2444,7 +2465,8 @@ void cast_awaken_forest(int level, P_char ch, char *arg, int type, P_char tar_ch
 
 /*** STORM DRUID ***/
 
-void cast_hurricane(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_hurricane(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*tar_ch*/,
+		    P_obj /*tar_obj*/)
 {
 	int dam, affchance, chance;
 	P_char tch, next;
@@ -2503,7 +2525,8 @@ void cast_hurricane(int level, P_char ch, char *arg, int type, P_char tar_ch, P_
 	}
 }
 
-void cast_storm_shield(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_storm_shield(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		       P_char tar_ch, P_obj /*tar_obj*/)
 {
 	struct affected_type af;
 
@@ -2528,7 +2551,8 @@ void cast_storm_shield(int level, P_char ch, char *arg, int type, P_char tar_ch,
 	    FALSE, ch, ch->equipment[WEAR_SHIELD], 0, TO_ROOM);
 }
 
-void cast_bloodstone(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void cast_bloodstone(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		     P_obj /*tar_obj*/)
 {
 	struct affected_type af;
 
@@ -2745,7 +2769,8 @@ bool exit_wallable(int room, int dir, P_char ch)
 	return TRUE;
 }
 
-void spell_mirage(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_mirage([[maybe_unused]] int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		  P_char /*victim*/, P_obj /*obj*/)
 {
 	P_char gm, fm;
 	struct group_list *gl;
@@ -2889,7 +2914,7 @@ void spell_mirage(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 	}
 }
 
-void event_mirage(P_char ch, P_char vict, P_obj obj, void *data)
+void event_mirage(P_char ch, P_char /*vict*/, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type *afp;
 
@@ -2918,7 +2943,7 @@ void event_mirage(P_char ch, P_char vict, P_obj obj, void *data)
 
 #define NUM_YZARS 10
 // Curse of the Yzar... changes his race randomly every mud-night at 3am.
-void event_change_yzar_race(P_char ch, P_char victim, P_obj obj, void *data)
+void event_change_yzar_race(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int time_to_witching_hour, hps;
 	struct affected_type *paf, af;
@@ -3031,7 +3056,8 @@ void event_change_yzar_race(P_char ch, P_char victim, P_obj obj, void *data)
 		  sizeof(NULL));
 }
 
-void spell_curse_of_yzar(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_curse_of_yzar(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -3063,7 +3089,8 @@ void spell_curse_of_yzar(int level, P_char ch, char *arg, int type, P_char victi
 	send_to_char("Your spell has taken hold of poor Yzar.\n", ch);
 }
 
-void spell_rest(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_rest(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		P_obj /*obj*/)
 {
 	struct affected_type af, *afp;
 

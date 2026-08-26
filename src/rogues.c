@@ -20,7 +20,7 @@
 extern struct str_app_type str_app[];
 extern P_room world;
 
-void do_slip(P_char ch, char *argument, int cmd)
+void do_slip(P_char ch, char *argument, int /*cmd*/)
 {
 	char obj_name[MAX_INPUT_LENGTH], vict_name[MAX_INPUT_LENGTH];
 	P_char vict;

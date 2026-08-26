@@ -60,7 +60,7 @@ void do_cover(P_char, char *, int);
  * FIRE <victim> [direction]
  */
 
-void do_gather(P_char ch, char *argument, int cmd)
+void do_gather(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH];
 	P_char tmp_char;
@@ -178,7 +178,8 @@ void do_gather(P_char ch, char *argument, int cmd)
 	}
 }
 
-int arrow_spell_fire(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+int arrow_spell_fire(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -196,7 +197,8 @@ int arrow_spell_fire(int level, P_char ch, char *arg, int type, P_char victim, P
 	return spell_damage(ch, victim, dam, SPLDAM_FIRE, SPLDAM_NODEFLECT, &messages);
 }
 
-int arrow_spell_lightning(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+int arrow_spell_lightning(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -214,7 +216,8 @@ int arrow_spell_lightning(int level, P_char ch, char *arg, int type, P_char vict
 	return spell_damage(ch, victim, dam, SPLDAM_LIGHTNING, SPLDAM_NODEFLECT, &messages);
 }
 
-int arrow_spell_cold(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+int arrow_spell_cold(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -232,7 +235,8 @@ int arrow_spell_cold(int level, P_char ch, char *arg, int type, P_char victim, P
 	return spell_damage(ch, victim, dam, SPLDAM_COLD, SPLDAM_NODEFLECT, &messages);
 }
 
-int arrow_spell_acid(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+int arrow_spell_acid(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -250,7 +254,7 @@ int arrow_spell_acid(int level, P_char ch, char *arg, int type, P_char victim, P
 	return spell_damage(ch, victim, dam, SPLDAM_ACID, SPLDAM_NODEFLECT, &messages);
 }
 
-void event_enchant_arrow(P_char ch, P_char victim, P_obj obj, void *data)
+void event_enchant_arrow(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	P_obj arrow;
 
@@ -1137,7 +1141,7 @@ void do_fire(P_char ch, char *argument, int cmd)
 	}
 }
 
-void event_poisoned_dart(P_char ch, P_char vict, P_obj obj, void *args)
+void event_poisoned_dart(P_char ch, P_char vict, P_obj /*obj*/, void *args)
 {
 	int dam;
 	int poison;
@@ -1164,7 +1168,7 @@ void event_poisoned_dart(P_char ch, P_char vict, P_obj obj, void *args)
  *
  * THROW <weapon> <victim> [direction]
  */
-void do_throw(P_char ch, char *argument, int cmd)
+void do_throw(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
 	char arg3[MAX_INPUT_LENGTH], argt[MAX_INPUT_LENGTH];
@@ -1464,7 +1468,7 @@ void do_throw(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_load_weapon(P_char ch, char *argument, int cmd)
+void do_load_weapon(P_char ch, char *argument, int /*cmd*/)
 {
 	/*
 	 * arg1 = fire weapon arg2 = missiles
@@ -2078,7 +2082,7 @@ P_obj get_wall_dir(P_char ch, int dir)
 }
 
 /* to take cover when someone fire from above */
-void do_cover(P_char ch, char *argument, int cmd)
+void do_cover(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	int chance = 1;
 	struct affected_type af;
@@ -2181,7 +2185,7 @@ void do_cover(P_char ch, char *argument, int cmd)
 	}
 }
 
-void return_home(P_char ch, P_char victim, P_obj obj, void *data)
+void return_home(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_nevent ev;
 	hunt_data h_data;

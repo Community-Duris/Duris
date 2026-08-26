@@ -214,7 +214,7 @@ const char *att_kick_hit_room[] = {
 	""
 };
 
-void kick_messages(P_char ch, P_char victim, bool hit, struct damage_messages *messages)
+void kick_messages(P_char /*ch*/, P_char victim, bool hit, struct damage_messages *messages)
 {
 	int i;
 

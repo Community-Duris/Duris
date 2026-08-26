@@ -40,7 +40,7 @@ void save_home(home_data *home)
 	}
 }
 
-void load_home(P_char ch) {}
+void load_home(P_char /*ch*/) {}
 
 void construct_home(P_char ch)
 {

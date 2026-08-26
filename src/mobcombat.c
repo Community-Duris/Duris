@@ -394,13 +394,13 @@ int UndeadCombat(P_char ch)
 	return FALSE;
 }
 
-void ArchonCombat(P_char ch, P_char victim) {}
+void ArchonCombat(P_char /*ch*/, P_char /*victim*/) {}
 
-void AsuraCombat(P_char ch, P_char victim) {}
+void AsuraCombat(P_char /*ch*/, P_char /*victim*/) {}
 
-void DevaCombat(P_char ch, P_char victim) {}
+void DevaCombat(P_char /*ch*/, P_char /*victim*/) {}
 
-void BralaniCombat(P_char ch, P_char victim) {}
+void BralaniCombat(P_char /*ch*/, P_char /*victim*/) {}
 
 int AngelCombat(P_char ch)
 {
@@ -788,7 +788,7 @@ int GenMobCombat(P_char ch)
 // Mob special currently used for dragons, but can be applied elsewhere.
 // Mob stats and dice are increased via randomized rolls. Jan08 -Lucrot
 // Chance is probability
-bool Mob_Furious(P_char ch, P_char victim, int chance)
+bool Mob_Furious(P_char ch, P_char /*victim*/, int chance)
 {
 	int random = number(1, 100);
 
@@ -1077,7 +1077,7 @@ if (!IS_DRAGON(ch) && !IS_TITAN(ch) && !IS_AVATAR(ch) && CAN_BREATHE(ch))
  *  NOT want to be able to summon as well.  - Jexni  5/16/09
  */
 
-int dummy_function(P_char ch, P_char vict, int cmd, char *arg)
+int dummy_function(P_char /*ch*/, P_char /*vict*/, int /*cmd*/, char * /*arg*/)
 {
 	return FALSE;
 }
@@ -1141,7 +1141,7 @@ int DemonCombat(P_char ch)
 	  return FALSE;  */
 }
 
-int babau_combat(P_char ch, P_char vict, int cmd, char *arg)
+int babau_combat(P_char ch, P_char /*vict*/, int cmd, char * /*arg*/)
 {
 	static time_t last_summon = 0;
 	const time_t current_time = time(NULL);
@@ -1180,7 +1180,7 @@ bool DevilCombat(P_char ch)
 		return FALSE;
 }
 
-int summon_new_demon(P_char ch, int subtype)
+int summon_new_demon(P_char ch, int /*subtype*/)
 {
 	P_char tmp;
 

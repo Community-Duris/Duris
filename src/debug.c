@@ -110,7 +110,7 @@ void cmdlog(P_char ch, char *str)
 	}
 }
 
-void do_debug(P_char ch, char *argument, int cmd)
+void do_debug(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
 	if (*argument)
@@ -217,7 +217,7 @@ void do_debug(P_char ch, char *argument, int cmd)
 
 #ifdef MEM_DEBUG
 
-void do_mreport(P_char ch, char *argument, int cmd)
+void do_mreport(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 #ifdef MEMCHK
 	char buf[MAX_STRING_LENGTH] = "";

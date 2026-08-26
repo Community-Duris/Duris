@@ -38,7 +38,7 @@ extern struct command_info cmd_info[MAX_CMD_LIST];
 extern struct zone_data *zone;
 extern struct zone_data *zone_table;
 
-int forest_animals(P_char ch, P_char pl, int cmd, char *arg)
+int forest_animals(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_DEATH)
 	{
@@ -71,7 +71,7 @@ int forest_animals(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int forest_corpse(P_obj obj, P_char ch, int cmd, char *args)
+int forest_corpse(P_obj obj, P_char ch, int cmd, char * /*args*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -127,7 +127,7 @@ int forest_corpse(P_obj obj, P_char ch, int cmd, char *args)
 	return FALSE;
 }
 
-int gardener_block(int room, P_char ch, int cmd, char *args)
+int gardener_block(int room, P_char ch, int cmd, char * /*args*/)
 {
 	int r;
 	int block = 0;

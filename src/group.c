@@ -278,7 +278,7 @@ P_char get_char_on_ship_bridge(P_char ch, const char *name)
    node and the target node. Group-related client updates and aura
    messages are adjusted and notifications are sent. */
 
-void do_appoint(P_char ch, char *argument, int cmd)
+void do_appoint(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	char buf[MAX_STRING_LENGTH];
@@ -361,7 +361,7 @@ void do_appoint(P_char ch, char *argument, int cmd)
 	update_groupies(ch);
 }
 
-void do_group(P_char ch, char *argument, int cmd)
+void do_group(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH], rank[MAX_INPUT_LENGTH];
 	struct follow_type *f;
@@ -927,7 +927,7 @@ static bool do_group_add(P_char ch, P_char victim)
 	return true;
 }
 
-void do_disband(P_char ch, char *arg, int cmd)
+void do_disband(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 

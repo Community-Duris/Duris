@@ -59,7 +59,7 @@ const char *set_master_text[] = {
 	" ",
 };
 
-int master_set(P_obj obj, P_char ch, int cmd, char *arg)
+int master_set(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	struct affected_type af;
 	int numb_items = 0;

@@ -560,7 +560,7 @@ void do_spec_list(P_char ch)
 	}
 }
 
-void do_specialize(P_char ch, char *argument, int cmd)
+void do_specialize(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char teacher;
 	int i;

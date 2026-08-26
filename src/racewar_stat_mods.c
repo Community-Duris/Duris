@@ -45,7 +45,7 @@ int add_racewar_stat_mods(P_char ch, struct hold_data *affs)
 	return TRUE;
 }
 
-int set_racewar_stat_mod(int racewar, int stat_affect, int regular_stat, int max_stat)
+int set_racewar_stat_mod(int racewar, int stat_affect, int regular_stat, int /*max_stat*/)
 {
 	if (racewar != RACEWAR_GOOD && racewar != RACEWAR_EVIL)
 		return FALSE;

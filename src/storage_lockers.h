@@ -86,7 +86,7 @@ class LockerChest
 	virtual P_obj GetChestObj(void) { return m_pChestObject; };
 
 	// does an object fit in 'this' locker?
-	virtual bool ItemFits(P_obj obj) { return true; };
+	virtual bool ItemFits(P_obj /*obj*/) { return true; };
 
 	virtual bool IsPrivateChest(void) { return false; };
 	virtual int GetChestId(void) { return 0; };
@@ -274,7 +274,7 @@ class PrivateChest : public LockerChest
     public:
 	PrivateChest(int chest_id, const char *name, bool has_password);
 
-	virtual bool ItemFits(P_obj obj) override { return false; };
+	virtual bool ItemFits(P_obj /*obj*/) override { return false; };
 	virtual bool IsPrivateChest(void) override { return true; };
 	virtual int GetChestId(void) override { return m_chestId; };
 

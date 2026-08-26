@@ -861,7 +861,7 @@ int get_relic_num(P_char ch)
 	return 0;
 }
 
-void displayRelic(P_char ch, char *arg, int cmd)
+void displayRelic(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	char buf[512];
 
@@ -1099,7 +1099,7 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int random_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
+int random_mob_proc(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char kala;
 	int j = 0;

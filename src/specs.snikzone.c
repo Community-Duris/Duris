@@ -131,7 +131,7 @@ int dagger_submission(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int wristthrow_and_gore(P_char ch, P_char pl, int cmd, char *arg)
+int wristthrow_and_gore(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;

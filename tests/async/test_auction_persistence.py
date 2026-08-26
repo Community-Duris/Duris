@@ -44,7 +44,7 @@ else:
         print('[PASS] auction_pickup checks writeCharacter() result and logs persistence failures')
 
 # finalize_auction transaction wrapper and ordering
-final_start = text.find('bool finalize_auction(int auction_id, P_char to_ch)')
+final_start = text.find('bool finalize_auction(int auction_id, P_char')
 if final_start == -1:
     print('[FAIL] finalize_auction not found')
     ok = False

@@ -636,7 +636,7 @@ char *print_poison_ingredients(int ingredients[])
 	return buffer;
 }
 
-void do_mixpoison(P_char ch, char *argument, int cmd)
+void do_mixpoison(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj vial;
 	char arg[MAX_STRING_LENGTH];
@@ -724,7 +724,7 @@ void do_mixpoison(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_mix(P_char ch, char *argument, int cmd)
+void do_mix(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj bottle;
 	char arg[MAX_STRING_LENGTH];
@@ -835,7 +835,7 @@ bool is_neg_good(sbyte location)
 	}
 }
 
-void do_spellbind(P_char ch, char *argument, int cmd)
+void do_spellbind(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_STRING_LENGTH];
 	char buf[MAX_STRING_LENGTH];
@@ -1012,7 +1012,7 @@ void do_spellbind(P_char ch, char *argument, int cmd)
 
 // Jewel list is located in randomeq.c under stone_list and stone_spell_list
 
-void do_encrust(P_char ch, char *argument, int cmd)
+void do_encrust(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_STRING_LENGTH];
 	char arg2[MAX_STRING_LENGTH];
@@ -1262,7 +1262,7 @@ int encrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-void do_fix(P_char ch, char *argument, int cmd)
+void do_fix(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_STRING_LENGTH];
 	int skill = 0;
@@ -1391,7 +1391,7 @@ P_obj check_furnace(P_char ch)
 	return NULL;
 }
 
-void do_smelt(P_char ch, char *arg, int cmd)
+void do_smelt(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	P_obj furnace, first_obj, second_obj, ash, new_obj;
 
@@ -1631,7 +1631,7 @@ bool randomize_potion_non_damage(P_obj potion, int slot)
 }
 
 // Random eq enchant proc (cure crit).
-int thrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
+int thrusted_eq_proc(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	P_char i;
 	bool found;
@@ -1742,7 +1742,7 @@ struct spell_target_data common_target_data;
 extern const struct class_names class_names_table[];
 extern const char *class_names[];
 
-void do_enchant(P_char ch, char *argument, int cmd)
+void do_enchant(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_STRING_LENGTH];
 	int skill = 0, qend, circle = 0, t_circle = 0, i = 0;
@@ -1887,7 +1887,7 @@ void do_enchant(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE * 1);
 }
 
-void event_enchant(P_char ch, P_char victim, P_obj item, void *data)
+void event_enchant(P_char ch, P_char /*victim*/, P_obj item, void *data)
 {
 	int spll = 0;
 	;
@@ -1979,7 +1979,7 @@ void event_enchant(P_char ch, P_char victim, P_obj item, void *data)
 	}
 }
 
-void spell_napalm(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_napalm(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -1997,7 +1997,8 @@ void spell_napalm(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 	spell_damage(ch, victim, dam, SPLDAM_FIRE, SPLDAM_NODEFLECT, &messages);
 }
 
-void spell_strong_acid(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_strong_acid(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		       P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -2015,7 +2016,8 @@ void spell_strong_acid(int level, P_char ch, char *arg, int type, P_char victim,
 	spell_damage(ch, victim, dam, SPLDAM_ACID, SPLDAM_NODEFLECT, &messages);
 }
 
-void spell_glass_bomb(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_glass_bomb(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		      P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -2033,7 +2035,8 @@ void spell_glass_bomb(int level, P_char ch, char *arg, int type, P_char victim, 
 	spell_damage(ch, victim, dam, SPLDAM_GENERIC, SPLDAM_NODEFLECT | SPLDAM_NOSHRUG, &messages);
 }
 
-void spell_nitrogen(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_nitrogen(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		    P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -2075,7 +2078,8 @@ bool grease_check(P_char ch)
 	return FALSE;
 }
 
-void spell_grease(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_grease(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		  P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af, *afp;
 

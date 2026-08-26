@@ -88,7 +88,7 @@ void remove_linked_object(P_obj o)
 	}
 }
 
-int get_object_link_type(P_obj o)
+int get_object_link_type(P_obj /*o*/)
 {
 	return LINKED_FOLLOWING;
 }

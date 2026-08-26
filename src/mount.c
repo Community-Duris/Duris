@@ -113,7 +113,7 @@ P_char get_dragoon_rider(P_char mount)
 	return NULL;
 }
 
-void do_mount(P_char ch, char *argument, int cmd)
+void do_mount(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_STRING_LENGTH];
 	P_char mount, rider;
@@ -352,7 +352,7 @@ static int valid_ride(int room, P_char ch)
 	return FALSE;
 }
 
-void do_dismount(P_char ch, char *argument, int cmd)
+void do_dismount(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	P_char mount = get_linked_char(ch, LNK_RIDING);
 	int sect = world[ch->in_room].sector_type;
@@ -432,7 +432,7 @@ bool check_valid_ride(P_char ch)
 /* value[0] Number of occupants                         */
 /* value[1] Type: 1) land/cart 2) water/ferry 3) air/?  */
 
-void do_hitch_vehicle(P_char ch, char *arg, int cmd)
+void do_hitch_vehicle(P_char ch, char *arg, int /*cmd*/)
 {
 	char horse[MAX_STRING_LENGTH], cart[MAX_STRING_LENGTH];
 	P_obj obj;
@@ -519,7 +519,7 @@ void do_hitch_vehicle(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_unhitch_vehicle(P_char ch, char *arg, int cmd)
+void do_unhitch_vehicle(P_char ch, char *arg, int /*cmd*/)
 {
 	char horse[MAX_STRING_LENGTH], cart[MAX_STRING_LENGTH];
 	P_obj obj;

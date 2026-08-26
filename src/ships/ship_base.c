@@ -237,7 +237,7 @@ void shutdown_ships()
 //--------------------------------------------------------------------
 // create new ship of given class
 //--------------------------------------------------------------------
-struct ShipData *new_ship(int m_class, bool npc)
+struct ShipData *new_ship(int m_class, bool /*npc*/)
 {
 	if (shipObjHash.size() >= MAXSHIPS)
 	{
@@ -1158,7 +1158,7 @@ void reset_ship(P_ship ship, bool clear_slots)
 // This proc is added to rooms inside ship
 //--------------------------------------------------------------------
 
-int ship_room_proc(int room, P_char ch, int cmd, char *arg)
+int ship_room_proc([[maybe_unused]] int room, P_char ch, int cmd, char *arg)
 {
 	int i, j, k;
 	P_ship ship;
@@ -2354,7 +2354,7 @@ void finish_sinking(P_ship ship)
 	}
 }
 
-void summon_ship_event(P_char ch, P_char victim, P_obj obj, void *data)
+void summon_ship_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int to_room;
 	if (sscanf((const char *)data, "%s %d", buf, &to_room) == 2)

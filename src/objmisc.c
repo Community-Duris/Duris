@@ -95,7 +95,7 @@ int get_weapon_msg(P_obj weapon)
 	}
 }
 
-void event_random_exit(P_char ch, P_char victim, P_obj obj, void *data)
+void event_random_exit(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	char buf[512];
 	char exit_name[32];

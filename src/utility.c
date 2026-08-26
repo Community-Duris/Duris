@@ -2249,7 +2249,7 @@ int exist_in_equipment(P_char ch, int bitflag)
  * This function is called about a billion times a minute (ok, so I exaggerated a little), don't even
  * THINK about doing anything to it that would make it slower, even a LITTLE bit.  JAB
  */
-bool ac_can_see(P_char sub, P_char obj, bool check_z)
+bool ac_can_see(P_char sub, P_char obj, bool /*check_z*/)
 {
 	bool globe, flame, dayblind;
 	int sroom, oroom, race;
@@ -4991,7 +4991,7 @@ int room_has_valid_exit(const int rnum)
 	return FALSE;
 }
 
-void do_introduce(P_char ch, char *arg, int level)
+void do_introduce(P_char ch, [[maybe_unused]] char *arg, int /*level*/)
 {
 #ifdef INTRO
 	P_char vict;
@@ -5077,7 +5077,7 @@ void do_introduce(P_char ch, char *arg, int level)
 	send_to_char("Pardon?\r\n", ch);
 #endif
 }
-void do_testdesc(P_char ch, char *arg, int level)
+void do_testdesc(P_char /*ch*/, char * /*arg*/, int /*level*/)
 {
 	P_desc d;
 
@@ -5137,12 +5137,12 @@ void boot_desc_data()
 	fclose(f);
 }
 
-char *generate_shape(P_char ch)
+char *generate_shape(P_char /*ch*/)
 {
 	return str_dup(shape_descs[number(0, num_shapes - 1)]);
 }
 
-char *generate_appear(P_char ch)
+char *generate_appear(P_char /*ch*/)
 {
 	return str_dup(appearance_descs[number(0, num_appearances - 1)]);
 }
@@ -5993,7 +5993,7 @@ void cast_as_area(P_char ch, int spl, int level, char *arg)
  * Used by damage area spells
  */
 int cast_as_damage_area(P_char ch, void (*spell_func)(int, P_char, char *, int, P_char, P_obj),
-			int level, P_char victim, float min_chance, float chance_step,
+			int level, P_char victim, float min_chance, float /*chance_step*/,
 			bool (*select_func)(P_char, P_char))
 {
 	P_char tch, *vict_array;
@@ -7095,7 +7095,7 @@ bool has_touch_stone(P_char ch)
 	return FALSE;
 }
 
-bool item_load_check(P_obj item, int ival, int zone_percent)
+bool item_load_check(P_obj item, int /*ival*/, int zone_percent)
 {
 	// Artifacts are more rare
 	if (IS_ARTIFACT(item))

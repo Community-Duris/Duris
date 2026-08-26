@@ -6,7 +6,9 @@
 #ifndef _SOJ_INTERP_H_
 #define _SOJ_INTERP_H_
 
-#define ACMD(c) void(c)(P_char ch, char *argument, int cmd)
+/* Expanded for several commands; whether a body reads `cmd` varies, so the
+   slot is annotated rather than unnamed. */
+#define ACMD(c) void(c)(P_char ch, char *argument, [[maybe_unused]] int cmd)
 
 #define LOCK_NONE 0
 #define LOCK_CREATION BIT_1

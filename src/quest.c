@@ -576,7 +576,7 @@ int quest_sort_comp(const void *va, const void *vb)
 		return -1;
 }
 
-void quick_sort_quest_index(int min, int max)
+void quick_sort_quest_index(int /*min*/, int /*max*/)
 {
 	qsort(quest_index, number_of_quests, sizeof(struct quest_data), quest_sort_comp);
 }

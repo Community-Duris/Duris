@@ -72,7 +72,7 @@ void mm_release(struct mm_ds *mmds, void *mem)
 #endif
 }
 
-void *_mm_get(struct mm_ds *mmds, const char *file, int line)
+void *_mm_get(struct mm_ds *mmds, const char * /*file*/, int /*line*/)
 {
 	char *mem;
 

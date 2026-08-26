@@ -67,7 +67,7 @@ int tharnrifts_portal(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int Baltazo(P_char ch, P_char victim, int cmd, char *arg)
+int Baltazo(P_char ch, P_char /*victim*/, int cmd, char *arg)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -587,7 +587,7 @@ void do_dispator_remove(P_char ch)
 		affect_from_char(ch, SPELL_VITALITY);
 }
 
-void event_zion_dispator(P_char ch, P_char victim, P_obj obj, void *data)
+void event_zion_dispator(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj obj, void * /*data*/)
 {
 	// first check to make sure the item is still on the character
 	struct affected_type af;
@@ -877,7 +877,7 @@ int zion_netheril(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-void event_zion_netheril(P_char ch, P_char victim, P_obj obj, void *data)
+void event_zion_netheril(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj obj, void * /*data*/)
 {
 	// first check to make sure the item is still on the character
 	bool has_item = false;

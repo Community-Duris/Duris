@@ -73,7 +73,7 @@ int ioun_sustenance(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int ioun_testicle(P_obj obj, P_char ch, int cmd, char *argument)
+int ioun_testicle(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int current_time = time(NULL);
 	P_char next, vict;

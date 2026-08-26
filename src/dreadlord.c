@@ -11,7 +11,7 @@
 #include "objmisc.h"
 #include "spells.h"
 
-void event_dread_wrath(P_char ch, P_char victim, P_obj obj, void *data)
+void event_dread_wrath(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type *af;
 	P_char curr_vict;

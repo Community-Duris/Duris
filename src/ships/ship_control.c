@@ -1488,7 +1488,7 @@ int claim_coffer(P_char ch, P_ship ship)
 	return TRUE;
 }
 
-int do_commands_help(P_ship ship, P_char ch)
+int do_commands_help(P_ship /*ship*/, P_char ch)
 {
 	send_to_char("Info commands:\r\n", ch);
 	send_to_char(" look commands\r\n", ch);

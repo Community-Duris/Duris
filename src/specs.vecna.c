@@ -55,7 +55,7 @@ extern struct zone_data *zone;
 extern struct zone_data *zone_table;
 extern bool has_skin_spell(P_char);
 
-int vecna_bubble_room(int room, P_char ch, int cmd, char *arg)
+int vecna_bubble_room(int room, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	P_char target, next_target;
 
@@ -86,7 +86,7 @@ int vecna_bubble_room(int room, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_black_mass(P_char ch, P_char tch, int cmd, char *arg)
+int vecna_black_mass(P_char ch, P_char /*tch*/, int cmd, char * /*arg*/)
 {
 	P_char target, next_target;
 
@@ -117,7 +117,7 @@ int vecna_black_mass(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecnas_fight_proc(P_char ch, P_char tch, int cmd, char *arg)
+int vecnas_fight_proc(P_char ch, P_char /*tch*/, int cmd, char * /*arg*/)
 {
 	P_char victim;
 	char buf[500];
@@ -190,7 +190,7 @@ int vecnas_fight_proc(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int chressan_shout(P_char ch, P_char tch, int cmd, char *arg)
+int chressan_shout(P_char ch, P_char /*tch*/, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 130017, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -205,7 +205,7 @@ int chressan_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_deathaltar(P_obj obj, P_char ch, int cmd, char *arg)
+int vecna_deathaltar(P_obj /*obj*/, P_char /*ch*/, int cmd, char *arg)
 {
 	P_char hecate;
 
@@ -272,7 +272,7 @@ int vecna_deathportal(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_torturerroom(P_obj obj, P_char ch, int cmd, char *arg)
+int vecna_torturerroom(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	P_obj corpse, next_corpse;
 	char buf[MAX_STRING_LENGTH];
@@ -310,7 +310,7 @@ int vecna_torturerroom(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_ghosthands(P_obj obj, P_char ch, int cmd, char *arg)
+int vecna_ghosthands(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	P_obj corpse, next_corpse;
 	char buf[MAX_STRING_LENGTH];
@@ -351,7 +351,7 @@ int vecna_ghosthands(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_gorge(P_obj obj, P_char ch, int cmd, char *arg)
+int vecna_gorge(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	P_char target, next_target;
 
@@ -377,7 +377,7 @@ int vecna_gorge(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_stonemist(P_obj obj, P_char ch, int cmd, char *arg)
+int vecna_stonemist(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char target;
 	struct affected_type *af;
@@ -448,7 +448,7 @@ int vecna_stonemist(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_mob_rebirth(P_char ch, P_char tch, int cmd, char *arg)
+int vecna_mob_rebirth(P_char ch, P_char /*tch*/, int cmd, char * /*arg*/)
 {
 	P_char mob;
 
@@ -467,7 +467,7 @@ int vecna_mob_rebirth(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_pestilence(P_obj obj, P_char ch, int cmd, char *arg)
+int vecna_pestilence(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char victim;
 
@@ -514,7 +514,7 @@ int vecna_pestilence(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_minifist(P_obj obj, P_char ch, int cmd, char *arg)
+int vecna_minifist(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char victim;
 
@@ -549,7 +549,7 @@ int vecna_minifist(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_dispel(P_obj obj, P_char ch, int cmd, char *arg)
+int vecna_dispel(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char victim;
 
@@ -573,7 +573,7 @@ int vecna_dispel(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int vecna_boneaxe(P_obj obj, P_char ch, int cmd, char *arg)
+int vecna_boneaxe(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char victim;
 
@@ -1162,7 +1162,7 @@ void reset_krindor(P_obj obj)
 // 1 Warrior
 // 2 Ranger
 //* 3 Psionicist
-int krindor_psionicist(P_obj obj, P_char ch, int cmd, char *arg)
+int krindor_psionicist(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd != CMD_PERIODIC)
 		return FALSE;
@@ -1196,7 +1196,7 @@ int krindor_psionicist(P_obj obj, P_char ch, int cmd, char *arg)
 // 5 Anti-Paladin
 // 6 Cleric
 // 7* Monk
-int krindor_monk(P_obj obj, P_char ch, int cmd, char *arg)
+int krindor_monk(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (!obj)
 		return FALSE;
@@ -1213,7 +1213,7 @@ int krindor_monk(P_obj obj, P_char ch, int cmd, char *arg)
 // 11 Necromancer
 // 12 Conjurer
 // 13 Rogue
-int krindor_rogue(P_obj obj, P_char ch, int cmd, char *arg)
+int krindor_rogue(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int room = ch->in_room;
 
@@ -1239,7 +1239,7 @@ int krindor_rogue(P_obj obj, P_char ch, int cmd, char *arg)
 // 14 Assassin
 // 15 Mercenary
 //* 16 Bard
-int krindor_bard(P_obj obj, P_char ch, int cmd, char *arg)
+int krindor_bard(P_obj /*obj*/, P_char /*ch*/, int /*cmd*/, char * /*arg*/)
 {
 	return FALSE;
 }
@@ -1255,7 +1255,7 @@ int krindor_bard(P_obj obj, P_char ch, int cmd, char *arg)
 //* 26 Ethermancer
 // 27 Avenger
 
-int krindor_illusionist(P_obj obj, P_char ch, int cmd, char *arg)
+int krindor_illusionist(P_obj obj, P_char ch, int /*cmd*/, char *arg)
 {
 	int random = dice(2, 3);
 	struct proc_data *data;

@@ -23,7 +23,7 @@ extern struct zone_data *zone_table;
  * **that many.
  */
 
-int clwcvrn_crys_die(P_char ch, P_char pl, int cmd, char *arg)
+int clwcvrn_crys_die(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -49,7 +49,7 @@ int clwcvrn_crys_die(P_char ch, P_char pl, int cmd, char *arg)
  * **real certain how to do it.  Should be assigned to mob 80735.
  */
 
-int clwcvrn_golem_shatter(P_char ch, P_char pl, int cmd, char *arg)
+int clwcvrn_golem_shatter(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj pile, money, obj, next_obj;
 	int pos;
@@ -142,7 +142,7 @@ int clwcvrn_golem_shatter(P_char ch, P_char pl, int cmd, char *arg)
  * ** Should be assigned to mob vnum 80739.
  */
 
-int clwcvrn_protect(P_char ch, P_char pl, int cmd, char *arg)
+int clwcvrn_protect(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls

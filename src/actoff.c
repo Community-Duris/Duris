@@ -665,7 +665,7 @@ bool is_in_safe(P_char ch)
  * Public Interface
  */
 
-void do_stance(P_char ch, char *argument, int cmd)
+void do_stance([[maybe_unused]] P_char ch, [[maybe_unused]] char *argument, int /*cmd*/)
 {
 #ifdef STANCES_ALLOWED
 	char buf1[MAX_STRING_LENGTH];
@@ -788,12 +788,12 @@ void do_hit(P_char ch, char *argument, int cmd)
 		send_to_char("You can't quite seem to reach them...\n", ch);
 }
 
-void do_murde(P_char ch, char *argument, int cmd)
+void do_murde(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	send_to_char("To prevent 'accidents', you may not abbreviate 'murder'.\n", ch);
 }
 
-void do_murder(P_char ch, char *argument, int cmd)
+void do_murder(P_char ch, char *argument, int /*cmd*/)
 {
 	/*
 	 * murder is just a 'safety measure' command, all it does is call
@@ -1216,7 +1216,7 @@ void lance_charge(P_char ch, char *argument)
 	}
 }
 
-void do_charge(P_char ch, char *argument, int cmd)
+void do_charge(P_char ch, char *argument, int /*cmd*/)
 {
 	static bool DEBUG = TRUE;
 
@@ -1692,7 +1692,7 @@ void do_charge(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_kill(P_char ch, char *argument, int cmd)
+void do_kill(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -1776,7 +1776,7 @@ void do_kill(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_backstab(P_char ch, char *argument, int cmd)
+void do_backstab(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 
@@ -1805,7 +1805,7 @@ void do_backstab(P_char ch, char *argument, int cmd)
 	backstab(ch, victim);
 }
 
-void do_circle(P_char ch, char *argument, int cmd)
+void do_circle(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	char target[128];
@@ -1847,7 +1847,7 @@ void do_circle(P_char ch, char *argument, int cmd)
 	}
 }
 
-void event_uncircle(P_char ch, P_char victim, P_obj obj, void *args)
+void event_uncircle(P_char ch, P_char victim, P_obj /*obj*/, void * /*args*/)
 {
 	unlink_char(ch, victim, LNK_CIRCLING);
 }
@@ -2064,7 +2064,7 @@ void do_circle(P_char ch, char *argument, int cmd)
 */
 #define CH_INROOM_SIZE 256
 
-void do_order(P_char ch, char *argument, int comd)
+void do_order(P_char ch, char *argument, int /*comd*/)
 {
 	char name[MAX_INPUT_LENGTH], message[MAX_INPUT_LENGTH];
 	char cmd[MAX_INPUT_LENGTH], temp[MAX_INPUT_LENGTH], lowcmd[MAX_INPUT_LENGTH];
@@ -2723,7 +2723,7 @@ char *monk_combos_messages[][2][3] = {
 	    "...then leaps into the air, delivering a crushing blow with $s foot down directly on your head!" } }
 };
 
-void event_combination(P_char ch, P_char victim, P_obj obj, void *data)
+void event_combination(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int percent = 100, skill, stage = 0, dam = 0, move, result, skill_req = 0;
 	struct damage_messages messages = {
@@ -2850,7 +2850,7 @@ void event_combination(P_char ch, P_char victim, P_obj obj, void *data)
 	CharWait(ch, 2 * PULSE_VIOLENCE);
 }
 
-void do_combination(P_char ch, char *argument, int cmd)
+void do_combination(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -2898,7 +2898,7 @@ void do_combination(P_char ch, char *argument, int cmd)
 
 // Drannak - Blade Barrage
 //  Note: this only notches if the victim lives through it.
-void event_barrage(P_char ch, P_char victim, P_obj obj, void *data)
+void event_barrage(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int percent, skill, stage, skill_req = 0;
 
@@ -3028,7 +3028,7 @@ void event_barrage(P_char ch, P_char victim, P_obj obj, void *data)
 	notch_skill(ch, SKILL_BLADE_BARRAGE, get_property("skill.notch.offensive", 7));
 }
 
-void do_consume(P_char ch, char *argument, int cmd)
+void do_consume(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	struct affected_type *af;
@@ -3110,7 +3110,7 @@ void do_consume(P_char ch, char *argument, int cmd)
 	attack_back(ch, victim, FALSE);
 }
 
-void do_barrage(P_char ch, char *argument, int cmd)
+void do_barrage(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -3162,7 +3162,7 @@ void do_barrage(P_char ch, char *argument, int cmd)
 	    TO_CHAR);
 }
 
-void do_bash(P_char ch, char *argument, int cmd)
+void do_bash(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 
@@ -3189,7 +3189,7 @@ void do_bash(P_char ch, char *argument, int cmd)
 	bash(ch, victim);
 }
 
-void do_buck(P_char ch, char *argument, int cmd)
+void do_buck(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (!ch)
 		return;
@@ -3256,7 +3256,7 @@ void rush(P_char ch, P_char victim)
 	return;
 }
 
-void do_rush(P_char ch, char *argument, int cmd)
+void do_rush(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char target = NULL;
 	char target_name[MAX_INPUT_LENGTH];
@@ -3312,7 +3312,7 @@ void do_rush(P_char ch, char *argument, int cmd)
 	rush(ch, target);
 }
 
-void do_rescue(P_char ch, char *argument, int cmd)
+void do_rescue(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char target = NULL;
 	char target_name[MAX_INPUT_LENGTH];
@@ -3386,7 +3386,7 @@ bool isMaulable(P_char ch, P_char victim)
 	return true;
 }
 
-void do_maul(P_char ch, char *argument, int cmd)
+void do_maul(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 
@@ -3414,7 +3414,7 @@ void do_maul(P_char ch, char *argument, int cmd)
 	maul(ch, victim);
 }
 
-void do_restrain(P_char ch, char *argument, int cmd)
+void do_restrain(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 
@@ -3712,7 +3712,7 @@ void kick(P_char ch, P_char victim)
 	return;
 }
 
-void do_dragon_roar(P_char ch, char *argument, int cmd)
+void do_dragon_roar(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	P_char victim = NULL, mount = NULL;
 	int skl_lvl = 0;
@@ -3945,7 +3945,7 @@ void do_dragon_roar(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_dragon_breath(P_char ch, char *argument, int cmd)
+void do_dragon_breath(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL, mount = NULL;
 	int skl_lvl = 0;
@@ -4319,7 +4319,7 @@ void do_dragon_breath(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_dragon_strike(P_char ch, char *argument, int cmd)
+void do_dragon_strike(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL, mount = NULL;
 	int knockdown_chance;
@@ -4907,7 +4907,7 @@ bool roundkick(P_char ch, P_char victim)
 	return FALSE;
 }
 
-void do_roundkick(P_char ch, char *argument, int cmd)
+void do_roundkick(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 
@@ -4999,7 +4999,7 @@ void do_assist_core(P_char ch, P_char victim)
 /*
  * Assist a person - fight the char that the person is attacking - SamIam
  */
-void do_assist(P_char ch, char *argument, int cmd)
+void do_assist(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	P_char victim;
@@ -5060,7 +5060,7 @@ void knock_out(P_char ch, int duration)
  * *   --TAM 7-1-94
  */
 
-void do_headbutt(P_char ch, char *argument, int cmd)
+void do_headbutt(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim, tch;
 	struct affected_type af;
@@ -5426,7 +5426,7 @@ void do_headbutt(P_char ch, char *argument, int cmd)
 //   and data = int* to the number of rounds left to bleed.
 // Output: victim bled one round (doesn't go below 0 hps),
 //   *data decremented 1 and another round event created if *data > 0.
-void event_garroteproc(P_char ch, P_char victim, P_obj obj, void *data)
+void event_garroteproc(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int dam;
 	int count = *((int *)data);
@@ -5475,7 +5475,7 @@ void event_garroteproc(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void event_bleedproc(P_char ch, P_char victim, P_obj obj, void *data)
+void event_bleedproc(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	int count = *((int *)data);
 
@@ -5811,9 +5811,9 @@ void sneaky_strike(P_char ch, P_char victim)
 	add_event(event_sneaky_strike, PULSE_VIOLENCE, ch, victim, 0, 0, 0, 0);
 }
 
-void do_mug(P_char ch, char *argument, int cmd) {}
+void do_mug(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 
-void do_sneaky_strike(P_char ch, char *argument, int cmd)
+void do_sneaky_strike(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	char target[128];
@@ -7151,7 +7151,7 @@ void bash(P_char ch, P_char victim, bool _debug)
 #endif
 }
 
-void do_parlay(P_char ch, char *argument, int cmd)
+void do_parlay(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 
@@ -7235,7 +7235,7 @@ void parlay(P_char ch, P_char victim)
 	}
 }
 
-void do_tackle(P_char ch, char *arg, int cmd)
+void do_tackle(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char vict = NULL, mount;
 	struct affected_type af;
@@ -7587,7 +7587,7 @@ void buck(P_char ch)
  * This stuff added by DTS 7/19/95.   * do_disengage(), do_retreat().
  */
 
-void do_disengage(P_char ch, char *arg, int cmd)
+void do_disengage(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int found;
 	P_char k;
@@ -7650,7 +7650,7 @@ void do_disengage(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_retreat(P_char ch, char *arg, int cmd)
+void do_retreat(P_char ch, char *arg, int /*cmd*/)
 {
 	int dir, found = FALSE, ct = 0;
 	char buf[MAX_INPUT_LENGTH];
@@ -8495,7 +8495,7 @@ void shieldpunch(P_char ch, P_char victim)
 	}
 }
 
-void do_shieldpunch(P_char ch, char *argument, int cmd)
+void do_shieldpunch(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 
@@ -8512,7 +8512,7 @@ void do_shieldpunch(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_sweeping_thrust(P_char ch, char *argument, int cmd)
+void do_sweeping_thrust(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	int ch_size, vict_size, percent_chance, takedown_chance, levelc, levelvict;
@@ -8783,7 +8783,7 @@ void do_sweeping_thrust(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_rearkick(P_char ch, char *argument, int cmd)
+void do_rearkick(P_char ch, char *argument, int /*cmd*/)
 {
 	int door, target_room, takedown_chance, dam, ch_size, vict_size;
 	P_char victim;
@@ -9098,7 +9098,7 @@ void do_rearkick(P_char ch, char *argument, int cmd)
   }
 */
 
-void do_trample(P_char ch, char *argument, int cmd)
+void do_trample(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL, mount = NULL;
 	int knockdown_chance;
@@ -9353,7 +9353,7 @@ void do_trample(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_bodyslam(P_char ch, char *arg, int cmd)
+void do_bodyslam(P_char ch, char *arg, int /*cmd*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 	P_char victim = NULL;
@@ -9532,7 +9532,7 @@ void bodyslam(P_char ch, P_char victim)
 	}
 }
 
-void do_springleap(P_char ch, char *argument, int cmd)
+void do_springleap(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL;
 	char name[MAX_INPUT_LENGTH];
@@ -9844,7 +9844,7 @@ void do_springleap(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_whirlwind(P_char ch, char *argument, int cmd)
+void do_whirlwind(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 	int mod = (int)(get_property("skill.whirlwind.movement.drain", 60));
@@ -9925,7 +9925,7 @@ void do_whirlwind(P_char ch, char *argument, int cmd)
 	  affect_to_char(ch, &af);*/
 }
 
-void do_trip(P_char ch, char *argument, int cmd)
+void do_trip(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL;
 	char name[MAX_INPUT_LENGTH];
@@ -10104,7 +10104,7 @@ void do_trip(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_flank(P_char ch, char *argument, int cmd)
+void do_flank(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	char target[128];
@@ -10153,7 +10153,7 @@ void do_flank(P_char ch, char *argument, int cmd)
 		flank(ch, victim);
 }
 
-void event_unflank(P_char ch, P_char victim, P_obj obj, void *args)
+void event_unflank(P_char ch, P_char victim, P_obj /*obj*/, void * /*args*/)
 {
 	unlink_char(ch, victim, LNK_FLANKING);
 }
@@ -10239,7 +10239,7 @@ bool flank(P_char ch, P_char victim)
 	return TRUE;
 }
 
-void do_call_grave(P_char ch, char *argument, int cmd)
+void do_call_grave(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	char target[128];
@@ -10290,7 +10290,7 @@ void do_call_grave(P_char ch, char *argument, int cmd)
 	notch_skill(ch, SKILL_CALL_GRAVE, get_property("skill.notch.callGrave", 10));
 }
 
-void event_call_grave(P_char ch, P_char victim, P_obj obj, void *data)
+void event_call_grave(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	int i, num, skill;
 	P_char skeleton;
@@ -10353,7 +10353,7 @@ void event_call_grave(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void event_call_grave_target(P_char ch, P_char victim, P_obj obj, void *data)
+void event_call_grave_target(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int dmg = 0;
 
@@ -10372,7 +10372,7 @@ void event_call_grave_target(P_char ch, P_char victim, P_obj obj, void *data)
 	damage(ch, victim, MAX(1, dmg), TYPE_UNDEFINED);
 }
 
-void event_bye_grave(P_char ch, P_char victim, P_obj obj, void *data)
+void event_bye_grave(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	if (ch->following && ch->in_room == ch->following->in_room)
 	{
@@ -10395,7 +10395,7 @@ void event_bye_grave(P_char ch, P_char victim, P_obj obj, void *data)
 	extract_char(ch);
 }
 
-void do_battle_orders(P_char ch, char *argument, int cmd)
+void do_battle_orders(P_char ch, char *argument, int /*cmd*/)
 {
 	char target[128];
 	P_char victim = NULL;
@@ -10495,7 +10495,7 @@ void battle_orders(P_char ch, P_char victim)
 	set_short_affected_by(ch, SKILL_BATTLE_ORDERS, (int)(5 * PULSE_VIOLENCE));
 }
 
-void do_gaze(P_char ch, char *argument, int cmd)
+void do_gaze(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	char target[128];
@@ -11069,7 +11069,7 @@ void restrain(P_char ch, P_char victim)
 }
 
 // Shriek:  skill level/2 + 1d20 area damage = 51 - 70 damage @100 skill, usable once every 5 minutes.
-void do_shriek(P_char ch, char *argument, int cmd)
+void do_shriek(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	int skl_lvl, basedamage, actualdam, savemod, count, res;
 	P_char person = 0;
@@ -11405,7 +11405,7 @@ void do_shadowstep(P_char ch, char *, int)
 	notch_skill(ch, SKILL_SHADOWSTEP, 6.67);
 }
 
-void do_garrote(P_char ch, char *argument, int cmd)
+void do_garrote(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 	int chsize, victsize;
@@ -11506,7 +11506,7 @@ void do_garrote(P_char ch, char *argument, int cmd)
 	add_event(event_garroteproc, PULSE_VIOLENCE, victim, 0, 0, 0, &numb, sizeof(numb));
 }
 
-void do_legsweep(P_char ch, char *arg, int cmd)
+void do_legsweep(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char vict = NULL;
 	float percent_chance;

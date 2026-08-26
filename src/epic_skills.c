@@ -223,7 +223,7 @@ void create_epic_skills()
 	SKILL_CREATE("ship damage control", SKILL_SHIP_DAMAGE_CONTROL, TAR_PHYS | TAR_EPIC);
 }
 
-void do_epic_skills(P_char ch, char *arg, int cmd)
+void do_epic_skills(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	char buff[MAX_STRING_LENGTH];
 	P_char teacher;
@@ -580,7 +580,7 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 	return TRUE;
 }
 
-void event_blizzard(P_char ch, P_char victim, P_obj obj, void *data)
+void event_blizzard(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	int count;
 	P_room room = &world[ch->in_room];
@@ -677,7 +677,7 @@ void event_blizzard(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void do_summon_blizzard(P_char ch, char *argument, int cmd)
+void do_summon_blizzard(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	int room = ch->in_room;
 	struct room_affect raf;
@@ -708,7 +708,7 @@ void do_summon_blizzard(P_char ch, char *argument, int cmd)
 	add_event(event_blizzard, 2, ch, 0, 0, 0, &step, sizeof(step));
 }
 
-void do_summon_familiar(P_char ch, char *argument, int cmd)
+void do_summon_familiar(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char mob;
 	char buffer[256];
@@ -1107,7 +1107,7 @@ bool silent_spell_check(P_char ch)
 	}
 }
 
-void say_silent_spell(P_char ch, int spell)
+void say_silent_spell(P_char ch, int /*spell*/)
 {
 	act("Using your expanded knowledge, you cast the spell with nothing but a gesture of the hand.",
 	    FALSE, ch, 0, 0, TO_CHAR);
@@ -1160,7 +1160,7 @@ int two_weapon_check(P_char ch)
 	return twoskl;
 }
 
-void do_infuse(P_char ch, char *arg, int cmd)
+void do_infuse(P_char ch, char *arg, int /*cmd*/)
 {
 	P_obj device, t_obj, nextobj, stone = NULL;
 	char Gbuf1[MAX_STRING_LENGTH], msg[MAX_STRING_LENGTH];

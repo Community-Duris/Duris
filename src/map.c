@@ -910,7 +910,7 @@ void set_glyphs_preset(P_char ch, int w)
 	}
 }
 
-void do_mapglyphs(P_char ch, char *argument, int cmd)
+void do_mapglyphs(P_char ch, char *argument, int /*cmd*/)
 {
 	if (!IS_PC(ch))
 		return send_to_char("Mobs have to live with the defaults.\n", ch);

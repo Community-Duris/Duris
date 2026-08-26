@@ -56,7 +56,7 @@ extern const struct class_names class_names_table[];
 
 void mobPatrol_SetupNew(P_char ch);
 
-int berserker_proc_room(int room, P_char ch, int cmd, char *arg)
+int berserker_proc_room(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	if ((cmd == CMD_SET_PERIODIC) || !IS_ALIVE(ch) || IS_NPC(ch) || IS_MORPH(ch) ||
 	    !((cmd == CMD_BATTLERAGER)))
@@ -153,7 +153,7 @@ void restore_epic_skills(P_char ch, int *skls)
 	}
 }
 
-int multiclass_proc(int room, P_char ch, int cmd, char *arg)
+int multiclass_proc(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	int i;
 	int min_level = get_property("multiclass.level.req.min", 50);
@@ -236,7 +236,7 @@ int multiclass_proc(int room, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int inn(int room, P_char ch, int cmd, char *arg)
+int inn(int room, P_char ch, int cmd, char * /*arg*/)
 {
 	char timestr[MAX_STRING_LENGTH];
 	time_t ct;
@@ -419,7 +419,7 @@ int inn(int room, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int undead_inn(int room, P_char ch, int cmd, char *arg)
+int undead_inn(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 {
 	/* check for periodic event calls */
 	if (cmd == CMD_SET_PERIODIC)
@@ -485,7 +485,7 @@ int undead_inn(int room, P_char ch, int cmd, char *arg)
 	return (TRUE);
 }
 
-int GithyankiCave(int room, P_char ch, int cmd, char *arg)
+int GithyankiCave(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -505,7 +505,7 @@ int GithyankiCave(int room, P_char ch, int cmd, char *arg)
 	return (TRUE);
 }
 
-int TiamatThrone(int room, P_char ch, int cmd, char *arg)
+int TiamatThrone(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -525,7 +525,7 @@ int TiamatThrone(int room, P_char ch, int cmd, char *arg)
 	return (TRUE);
 }
 
-int GlyphOfWarding(int room, P_char ch, int cmd, char *arg)
+int GlyphOfWarding(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 {
 	int Damage = 50;
 
@@ -567,7 +567,7 @@ int GlyphOfWarding(int room, P_char ch, int cmd, char *arg)
 	return (TRUE);
 }
 
-int akh_elamshin(int room, P_char ch, int cmd, char *arg)
+int akh_elamshin(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 {
 	char buf[MAX_INPUT_LENGTH], god[MAX_INPUT_LENGTH];
 
@@ -653,7 +653,7 @@ int akh_elamshin(int room, P_char ch, int cmd, char *arg)
    A room proc
  */
 
-int dump(int room, P_char ch, int cmd, char *arg)
+int dump(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	P_obj obj, next_obj;
 	P_char tmp_char;
@@ -742,7 +742,7 @@ int count_patrol(int vnum)
 }
 
 // Buy a patrol! mobPatrol_SetupNew(CH);
-int patrol_shops(int room, P_char ch, int cmd, char *arg)
+int patrol_shops(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	char buf[MAX_INPUT_LENGTH];
 	int pet_room, temp, count = 0;
@@ -828,7 +828,7 @@ int mount_rent_cost(P_char mount)
 	return (GET_LEVEL(mount) * 100);
 }
 
-int pet_shops(int room, P_char ch, int cmd, char *arg)
+int pet_shops(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	char buf[MAX_INPUT_LENGTH];
 	char name[MAX_STRING_LENGTH], master[MAX_STRING_LENGTH];
@@ -1061,7 +1061,7 @@ int pet_shops(int room, P_char ch, int cmd, char *arg)
 /* The (keys) must all be stored in a room which is (virtually)  */
 /* adjacent to the room of the lock smith.                       */
 
-int pray_for_items(int room, P_char ch, int cmd, char *arg)
+int pray_for_items(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 {
 	int key_room, gold;
 	bool found;
@@ -1111,7 +1111,7 @@ int pray_for_items(int room, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int kings_hall(int room, P_char ch, int cmd, char *arg)
+int kings_hall(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	/*
 	   check for periodic event calls
@@ -1140,7 +1140,7 @@ int kings_hall(int room, P_char ch, int cmd, char *arg)
 
 // A locked door that eats the key to the lock.  Must open another way heh.
 // Not currently in game. - 7/4/2015
-int feed_lock(int room, P_char ch, int cmd, char *arg)
+int feed_lock(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	P_obj obj;
 	int door;
@@ -1193,7 +1193,7 @@ int feed_lock(int room, P_char ch, int cmd, char *arg)
    * -- DTS 2/21/95
  */
 
-int automaton_trapdoor(int room, P_char ch, int cmd, char *arg)
+int automaton_trapdoor(int room, P_char ch, int cmd, char * /*arg*/)
 {
 	P_obj i;
 
@@ -1283,7 +1283,7 @@ int automaton_trapdoor(int room, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int fw_warning_room(int room, P_char ch, int cmd, char *arg)
+int fw_warning_room(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -1344,7 +1344,7 @@ int keyless_unlock(int room, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int squid_arena(int room, P_char ch, int cmd, char *arg)
+int squid_arena(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_WILL)
 	{
@@ -1354,7 +1354,7 @@ int squid_arena(int room, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int duergar_guild(int room, P_char ch, int cmd, char *arg)
+int duergar_guild(int room, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char killer;
 	hunt_data data;
@@ -1422,7 +1422,7 @@ int duergar_guild(int room, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int mortal_heaven(int room, P_char ch, int cmd, char *arg)
+int mortal_heaven(int room, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char tch, next;
 
@@ -1472,7 +1472,7 @@ int mortal_heaven(int room, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int player_council_room(int room, P_char ch, int cmd, char *argument)
+int player_council_room(int /*room*/, P_char ch, int cmd, char *argument)
 {
 	int i;
 	P_char vict;
@@ -1554,7 +1554,7 @@ void proc_knob(P_char ch)
 }
 
 // Just some sadistic fun with caged people.
-int cage_room1(int room, P_char ch, int cmd, char *argument)
+int cage_room1(int /*room*/, P_char ch, int cmd, char *argument)
 {
 	static int tries = 0;
 	int knob;
@@ -1690,7 +1690,7 @@ int cage_room2(int room, P_char ch, int cmd, char *argument)
 	return TRUE;
 }
 
-int avernus_overland(int room, P_char ch, int cmd, char *argument)
+int avernus_overland(int /*room*/, P_char /*ch*/, int cmd, char * /*argument*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{

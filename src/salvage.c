@@ -114,7 +114,7 @@ void salvage_examine_item(P_char ch, P_obj item)
 			ch);
 }
 
-void do_salvage(P_char ch, char *argument, int cmd)
+void do_salvage(P_char ch, char *argument, int /*cmd*/)
 {
 	static bool DEBUG = TRUE;
 	P_obj item, salvaged, recipe;

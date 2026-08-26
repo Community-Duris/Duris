@@ -246,7 +246,7 @@ void check_magic_doors(P_char ch, const char *word)
 	}
 }
 
-void do_petition(P_char ch, char *argument, int cmd)
+void do_petition(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc i;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
@@ -350,7 +350,7 @@ void send_to_avatar(P_char ch, const char *arg)
 	send_to_char(Gbuf, ch->desc->snoop.snooping);
 }
 
-void do_say(P_char ch, char *argument, int cmd)
+void do_say(P_char ch, char *argument, int /*cmd*/)
 {
 	SanityCheck(ch, "do_say");
 
@@ -486,7 +486,7 @@ int say(P_char ch, const char *argument)
 	return TRUE;
 }
 
-void do_channel(P_char ch, char *argument, int cmd)
+void do_channel(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	send_to_char("Use toggle command from now on!\r\n", ch);
 	return;
@@ -506,7 +506,7 @@ CAN_GCC(P_char ch)
 }
 */
 
-void do_gcc(P_char ch, char *argument, int cmd)
+void do_gcc(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc i;
 	P_char to_ch;
@@ -719,7 +719,7 @@ void send_to_guild(P_Guild guild, char *name, char *arg)
 	}
 }
 
-void do_rwc(P_char ch, char *argument, int cmd)
+void do_rwc(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc i;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -784,7 +784,7 @@ void do_rwc(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_project(P_char ch, char *argument, int cmd)
+void do_project(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc desc;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -864,7 +864,7 @@ void do_project(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_page(P_char ch, char *argument, int cmd)
+void do_page(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (GET_LEVEL(ch) < GREATER_G)
 	{
@@ -886,7 +886,7 @@ void do_page(P_char ch, char *argument, int cmd)
 	send_to_char("&+WDone.&N\r\n", ch);
 }
 
-void do_shout(P_char ch, char *argument, int cmd)
+void do_shout(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc i;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -977,7 +977,7 @@ void do_reply(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_tell(P_char ch, char *argument, int cmd)
+void do_tell(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict;
 	P_desc d;
@@ -1144,7 +1144,7 @@ void do_tell(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_whisper(P_char ch, char *argument, int cmd)
+void do_whisper(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict;
 	char name[MAX_INPUT_LENGTH], message[MAX_STRING_LENGTH];
@@ -1242,7 +1242,7 @@ void do_whisper(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_ask(P_char ch, char *argument, int cmd)
+void do_ask(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict;
 	char name[MAX_INPUT_LENGTH], message[MAX_STRING_LENGTH];
@@ -1329,7 +1329,7 @@ void do_ask(P_char ch, char *argument, int cmd)
 
 #define MAX_NOTE_LENGTH 1000 /* arbitrary */
 
-void do_write(P_char ch, char *argument, int cmd)
+void do_write(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj paper = 0, pen = 0;
 	char papername[MAX_INPUT_LENGTH], penname[MAX_INPUT_LENGTH];
@@ -1708,7 +1708,7 @@ void do_action(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_insult(P_char ch, char *argument, int cmd)
+void do_insult(P_char ch, char *argument, int /*cmd*/)
 {
 	/*  static char buf[100];*/
 	P_char victim;
@@ -1815,7 +1815,7 @@ void boot_pose_messages(void)
 	fclose(fl);
 }
 
-void do_pose(P_char ch, char *argument, int cmd)
+void do_pose(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	::byte to_pose;
 	::byte counter;
@@ -1891,7 +1891,7 @@ void do_pose(P_char ch, char *argument, int cmd)
 /*
  * Function to yell things in a zone
  */
-void do_yell(P_char ch, char *argument, int cmd)
+void do_yell(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc i;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
@@ -1992,7 +1992,7 @@ void do_yell(P_char ch, char *argument, int cmd)
 		ch->desc->last_input[0] = '\0';
 }
 
-void do_beep(P_char ch, char *argument, int cmd)
+void do_beep(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict;
 	P_desc d;

@@ -21,7 +21,7 @@ extern struct zone_data *zone_table;
  * clawed cavern golems. Thanks previous coders!
  */
 
-int mist_protect(P_char ch, P_char pl, int cmd, char *arg)
+int mist_protect(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls

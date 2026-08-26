@@ -21,7 +21,7 @@ int adjacent_room_nesw(P_char ch, int num_rooms);
 P_ship leviathan_find_ship(P_char leviathan, int room, int num_rooms);
 
 // This is an old proc for Lohrr's eq..
-int proc_lohrr(P_obj obj, P_char ch, int cmd, char *argument)
+int proc_lohrr(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int locwearing;
 
@@ -213,7 +213,7 @@ int adjacent_room_nesw(P_char ch, int num_rooms)
 }
 
 // This is a proc for the Leviathan mob.
-int leviathan(P_char ch, P_char pl, int cmd, char *arg)
+int leviathan(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch;
 	int to_room;
@@ -335,7 +335,7 @@ P_ship leviathan_find_ship(P_char leviathan, int room, int num_rooms)
 }
 
 // This is a proc for Soldon's hat which he won via winning competitive wipe: ship frags.
-int proc_soldon_hat(P_obj obj, P_char ch, int cmd, char *argument)
+int proc_soldon_hat(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	P_char mob;
 	int count;
@@ -388,7 +388,7 @@ int proc_soldon_hat(P_obj obj, P_char ch, int cmd, char *argument)
 }
 
 // This is a proc to punish people who crash the mud.
-int very_angry_npc(P_char ch, P_char pl, int cmd, char *arg)
+int very_angry_npc(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_desc d;

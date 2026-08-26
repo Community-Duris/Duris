@@ -384,7 +384,7 @@ int wand_of_wonder(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int breale_townsfolk(P_char ch, P_char pl, int cmd, char *arg)
+int breale_townsfolk(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char TmpCh, next;
 	char TmpBuf[MAX_STRING_LENGTH];
@@ -513,7 +513,7 @@ int blackness_sword(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int kearonor_hide(P_obj obj, P_char ch, int cmd, char *arg)
+int kearonor_hide(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int mob_num = 0;
 
@@ -551,7 +551,7 @@ int kearonor_hide(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int mir_spider(P_char ch, P_char pl, int cmd, char *arg)
+int mir_spider(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj web = NULL, room_junk, room_junk_temp;
 
@@ -596,7 +596,7 @@ int mir_spider(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int mir_fire(P_obj obj, P_char ch, int cmd, char *arg)
+int mir_fire(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	int i, room, factor;
 	P_obj room_junk = NULL, room_junk_temp = NULL, smoke;
@@ -669,7 +669,7 @@ int mir_fire(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-void event_smoke_to_fire(P_char ch, P_char victim, P_obj obj, void *data)
+void event_smoke_to_fire(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int room;
 	P_obj room_junk = NULL, room_junk_temp = NULL, smoke, fire;
@@ -704,7 +704,7 @@ void event_smoke_to_fire(P_char ch, P_char victim, P_obj obj, void *data)
 	return;
 }
 
-int red_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
+int red_wyrm_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 42173, 42174, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -714,7 +714,7 @@ int red_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int blue_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
+int blue_wyrm_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 42172, 42173, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -724,7 +724,7 @@ int blue_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int white_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
+int white_wyrm_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 42172, 42174, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -734,7 +734,7 @@ int white_wyrm_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int amphisbean(P_char ch, P_char tch, int cmd, char *arg)
+int amphisbean(P_char ch, P_char /*tch*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;

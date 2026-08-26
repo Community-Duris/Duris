@@ -35,7 +35,7 @@ extern P_room world;
 #define TRAP_EFF_DOWN BIT_9
 #define TRAP_EFF_OPEN BIT_10 /* trigger on open */
 
-void do_trapremove(P_char ch, char *argument, int cmd)
+void do_trapremove(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj;
 	char arg1[MAX_INPUT_LENGTH];
@@ -59,7 +59,7 @@ void do_trapremove(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_trapstat(P_char ch, char *argument, int cmd)
+void do_trapstat(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_obj obj;
@@ -146,7 +146,7 @@ void do_trapstat(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_traplist(P_char ch, char *argument, int cmd)
+void do_traplist(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	char buf[MAX_INPUT_LENGTH];
 	P_obj obj;
@@ -167,7 +167,7 @@ void do_traplist(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_trapset(P_char ch, char *argument, int cmd)
+void do_trapset(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj;
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];

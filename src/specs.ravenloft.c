@@ -50,7 +50,7 @@ extern struct class_names class_names_table[];
 int range_scan_track(P_char ch, int distance, int type_scan);
 extern P_obj object_list;
 
-int ravenloft_vistani_shout(P_char ch, P_char tch, int cmd, char *arg)
+int ravenloft_vistani_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 58382, 0 };
 	if (cmd == CMD_SET_PERIODIC)

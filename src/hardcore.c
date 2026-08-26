@@ -216,7 +216,7 @@ void insertHallEntry(char names[MAX_HALLOFFAME_SIZE][MAX_STRING_LENGTH],
 	strcpy(killers[pos], killer);
 }
 
-void displayHardCore(P_char ch, char *arg, int cmd)
+void displayHardCore(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	char name[MAX_STRING_LENGTH], buf[65536], buf2[2048];
 	float pts = 0;
@@ -310,7 +310,7 @@ long getLeaderBoardPts(P_char ch)
 	return leaderpts;
 }
 
-void displayLeader(P_char ch, char *arg, int cmd)
+void displayLeader(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	char name[MAX_STRING_LENGTH], buf[65536], buf2[2048];
 	float pts = 0;
@@ -371,19 +371,19 @@ void displayLeader(P_char ch, char *arg, int cmd)
 }
 
 // leaderboard is now computed from database on-the-fly, no need to write
-void writeLeaderBoard(P_char ch)
+void writeLeaderBoard(P_char /*ch*/)
 {
 	// no-op - leaderboard is computed from player_data table
 }
 
-void checkLeaderBoard(P_char ch)
+void checkLeaderBoard(P_char /*ch*/)
 {
 	// no-op - leaderboard is computed from player_data table
 }
 
 // Copies leaderboard file to leaderboardprod.
 // Returns TRUE iff leaderboard is copied over.
-bool newHardcoreBoard(P_char ch, char *arg, int cmd)
+bool newHardcoreBoard(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	FILE *hardcorelist, *newhardcorelist;
 	// these arrays are unused and huge, commenting out to save mem

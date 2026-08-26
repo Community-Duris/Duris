@@ -86,7 +86,7 @@ static void chaos_side(P_char ch, const char *arg)
 	send_to_char("There's no such side.\n", ch);
 }
 
-void do_chaos(P_char ch, char *arg, int cmd)
+void do_chaos(P_char ch, char *arg, int /*cmd*/)
 {
 	if (!IS_PC(ch))
 		return;

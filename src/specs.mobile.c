@@ -87,7 +87,7 @@ struct obj_cost
 	bool ok;
 };
 
-int block_up(P_char ch, P_char pl, int cmd, char *arg)
+int block_up(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int allowed = 0;
 
@@ -318,7 +318,7 @@ int gargoyle_master(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int temple_illyn(P_char ch, P_char pl, int cmd, char *arg)
+int temple_illyn(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event call
@@ -342,7 +342,7 @@ int temple_illyn(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int bs_boss(P_char ch, P_char pl, int cmd, char *arg)
+int bs_boss(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event call
@@ -377,7 +377,7 @@ int bs_boss(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int braddistock(P_char ch, P_char pl, int cmd, char *arg)
+int braddistock(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	// Check for periodic event calls
 	if (cmd == CMD_SET_PERIODIC)
@@ -406,7 +406,7 @@ int braddistock(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int kimordril_shout(P_char ch, P_char tch, int cmd, char *arg)
+int kimordril_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 95505, 95532, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -418,7 +418,7 @@ int kimordril_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int silver_lady_shout(P_char ch, P_char tch, int cmd, char *arg)
+int silver_lady_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 11302, 11303, 11304, 11305, 11307, 11308, 11310, 11312, 11314, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -429,7 +429,7 @@ int silver_lady_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int realms_master_shout(P_char ch, P_char tch, int cmd, char *arg)
+int realms_master_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 11102, 11103, 11104, 11105, 11107, 11108, 11110, 11112, 11114, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -440,7 +440,7 @@ int realms_master_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int imix_shout(P_char ch, P_char tch, int cmd, char *arg)
+int imix_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 25450, 25430, 25410, 25415, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -451,7 +451,7 @@ int imix_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int strychnesch_shout(P_char ch, P_char tch, int cmd, char *arg)
+int strychnesch_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 32830, 32829, 32831, 32832, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -464,7 +464,7 @@ int strychnesch_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int morgoor_shout(P_char ch, P_char tch, int cmd, char *arg)
+int morgoor_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 32828, 32829, 32831, 32832, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -477,7 +477,7 @@ int morgoor_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int jabulanth_shout(P_char ch, P_char tch, int cmd, char *arg)
+int jabulanth_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 32828, 32830, 32831, 32832, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -490,7 +490,7 @@ int jabulanth_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int redpal_shout(P_char ch, P_char tch, int cmd, char *arg)
+int redpal_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 32828, 32830, 32829, 32832, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -503,7 +503,7 @@ int redpal_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int cyvrand_shout(P_char ch, P_char tch, int cmd, char *arg)
+int cyvrand_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 32828, 32830, 32829, 32831, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -516,7 +516,7 @@ int cyvrand_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int overseer_shout(P_char ch, P_char tch, int cmd, char *arg)
+int overseer_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 32804, 32805, 32806, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -528,7 +528,7 @@ int overseer_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int caranthazal_shout(P_char ch, P_char tch, int cmd, char *arg)
+int caranthazal_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 32835, 32836, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -540,7 +540,7 @@ int caranthazal_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int menzellon_shout(P_char ch, P_char tch, int cmd, char *arg)
+int menzellon_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 12401, 12410, 12420, 12430, 12440, 12450, 12460, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -552,7 +552,7 @@ int menzellon_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int ogremoch_shout(P_char ch, P_char tch, int cmd, char *arg)
+int ogremoch_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 23801, 23802, 23803, 23804, 23807, 23927, 23862, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -568,7 +568,7 @@ int ogremoch_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int olhydra_shout(P_char ch, P_char tch, int cmd, char *arg)
+int olhydra_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 23200, 23210, 23215, 23220, 23230, 23250, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -580,7 +580,7 @@ int olhydra_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int yancbin_shout(P_char ch, P_char tch, int cmd, char *arg)
+int yancbin_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 24400, 24410, 24415, 24420, 24430, 24450, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -591,7 +591,7 @@ int yancbin_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int demogorgon_shout(P_char ch, P_char tch, int cmd, char *arg)
+int demogorgon_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 19830, 19850, 19860, 19880, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -604,7 +604,7 @@ int demogorgon_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int warden_shout(P_char ch, P_char tch, int cmd, char *arg)
+int warden_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 7334, 7335, 7368, 7369, 7367, 7315, 7314, 7317, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -615,7 +615,7 @@ int warden_shout(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int sister_knight(P_char ch, P_char tch, int cmd, char *arg)
+int sister_knight(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -625,7 +625,7 @@ int sister_knight(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int good_city_guard(P_char ch, P_char tch, int cmd, char *arg)
+int good_city_guard(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -775,7 +775,7 @@ void hyena_bite(P_char ch, P_char victim)
 	}
 }
 
-int yeenoghu(P_char ch, P_char tch, int cmd, char *arg)
+int yeenoghu(P_char ch, P_char /*tch*/, int cmd, char * /*arg*/)
 {
 	P_char victim;
 
@@ -879,7 +879,7 @@ void demogorgon_second_head(P_char ch)
 		hyena_bite(ch, victim);
 }
 
-int demogorgon(P_char ch, P_char tch, int cmd, char *arg)
+int demogorgon(P_char ch, P_char /*tch*/, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 19830, 19850, 19860, 19880, 19840, 19870, 19400, 19901, 19760, 0 };
 	static bool stats_increased = FALSE;
@@ -957,7 +957,7 @@ int demogorgon(P_char ch, P_char tch, int cmd, char *arg)
 	return TRUE;
 }
 
-int astral_succubus(P_char ch, P_char tch, int cmd, char *arg)
+int astral_succubus(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -967,7 +967,7 @@ int astral_succubus(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int earth_treant(P_char ch, P_char tch, int cmd, char *arg)
+int earth_treant(P_char ch, P_char /*tch*/, int cmd, char * /*arg*/)
 {
 	P_char victim;
 
@@ -1349,7 +1349,7 @@ int hunt_cat(P_char ch, P_char tch, int cmd, char *arg)
  * spec death proc for hippogriff, mob 88815
  */
 
-int hippogriff_die(P_char ch, P_char pl, int cmd, char *arg)
+int hippogriff_die(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -1367,7 +1367,7 @@ int hippogriff_die(P_char ch, P_char pl, int cmd, char *arg)
  * special death proc for crystal golem, mob 88814
  */
 
-int crystal_golem_die(P_char ch, P_char pl, int cmd, char *arg)
+int crystal_golem_die(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -1385,7 +1385,7 @@ int crystal_golem_die(P_char ch, P_char pl, int cmd, char *arg)
 #define GUILD_ITEM_END 8513
 #define GUILD_ITEM_POS GUILD_INSIGNIA
 
-int mailed_fist_guardian(P_char ch, P_char vict, int cmd, char *arg)
+int mailed_fist_guardian(P_char ch, P_char vict, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -1443,7 +1443,7 @@ int mailed_fist_guardian(P_char ch, P_char vict, int cmd, char *arg)
 #undef GUILD_ITEM_END
 #undef GUILD_ITEM_POS
 
-int seas_coral_golem(P_char ch, P_char pl, int cmd, char *arg)
+int seas_coral_golem(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int earring = 0;
 	char Gbuf3[MAX_STRING_LENGTH];
@@ -1835,7 +1835,7 @@ void exec_social(P_char npc, char *cmd, int next_line, int *cur_line, void **thi
 		(*cur_line) += next_line;
 }
 
-int poison(P_char ch, P_char pl, int cmd, char *arg)
+int poison(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -1860,7 +1860,7 @@ int poison(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int thief(P_char ch, P_char pl, int cmd, char *arg)
+int thief(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char cons, next;
 
@@ -1896,7 +1896,7 @@ int thief(P_char ch, P_char pl, int cmd, char *arg)
  * ** by Thomas Lowery 16 Jun 94
  */
 
-int shady_man(P_char ch, P_char pl, int cmd, char *arg)
+int shady_man(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -1924,7 +1924,7 @@ int shady_man(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int gate_guard(P_char ch, P_char pl, int cmd, char *arg)
+int gate_guard(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 
@@ -1953,7 +1953,7 @@ int gate_guard(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guild_guard(P_char ch, P_char pl, int cmd, char *arg)
+int guild_guard(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	bool g_prot = FALSE, block = FALSE;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -2300,7 +2300,7 @@ int guild_guard(P_char ch, P_char pl, int cmd, char *arg)
  * -JAB
  */
 
-int guardian(P_char ch, P_char pl, int cmd, char *arg)
+int guardian(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int block_dir = 0, i;
 	P_char t_ch;
@@ -2443,7 +2443,7 @@ int guardian(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int devour(P_char ch, P_char pl, int cmd, char *arg)
+int devour(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj i, temp, next_obj;
 
@@ -2478,7 +2478,7 @@ int devour(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-void event_tentacles(P_char ch, P_char victim, P_obj obj, void *data)
+void event_tentacles(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_char tch;
 
@@ -2491,7 +2491,7 @@ void event_tentacles(P_char ch, P_char victim, P_obj obj, void *data)
 		REMOVE_BIT(ch->specials.affected_by2, AFF2_MAJOR_PARALYSIS);
 }
 
-int tentacle(P_char ch, P_char pl, int cmd, char *arg)
+int tentacle(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int dam = cmd / 1000;
 
@@ -2579,7 +2579,7 @@ int charon(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int shadow_demon_of_torm(P_char ch, P_char pl, int cmd, char *arg)
+int shadow_demon_of_torm(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -2610,7 +2610,7 @@ int shadow_demon_of_torm(P_char ch, P_char pl, int cmd, char *arg)
 	return TRUE;
 }
 
-int dryad(P_char ch, P_char pl, int cmd, char *arg)
+int dryad(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char vict, tmp_ch, next_vict_ch, next_tmp_ch;
 	int InRoom, HasCharmies;
@@ -3142,7 +3142,7 @@ int ticket_taker(P_char ch, P_char pl, int cmd, char *arg)
  * order ship to sailin 10 pulses interval. -DCL
  */
 
-int navagator(P_char ch, P_char pl, int cmd, char *arg)
+int navagator(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int realms_helpers[] = { 11102, 11103, 11104, 11105, 11107, 11108, 11110, 11112, 11114, 0 };
 	int silver_helpers[] = { 11102, 11103, 11104, 11105, 11107, 11108, 11110, 11112, 11114, 0 };
@@ -3179,7 +3179,7 @@ int navagator(P_char ch, P_char pl, int cmd, char *arg)
  *    Fun procs - SAM 6-94
  */
 
-int billthecat(P_char ch, P_char pl, int cmd, char *arg)
+int billthecat(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -3231,7 +3231,7 @@ int billthecat(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int beavis(P_char ch, P_char pl, int cmd, char *arg)
+int beavis(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	char buf[255];
 
@@ -3311,7 +3311,7 @@ int beavis(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int butthead(P_char ch, P_char pl, int cmd, char *arg)
+int butthead(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	char buf[20];
 
@@ -3544,7 +3544,7 @@ int xexos(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int agthrodos(P_char ch, P_char pl, int cmd, char *arg)
+int agthrodos(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tempchar = NULL;
 	P_obj item, next_item;
@@ -3634,7 +3634,7 @@ int agthrodos(P_char ch, P_char pl, int cmd, char *arg)
  * * the door, so that more people can come into their deaths...>8^)
  * * -- DTS 2/22/95
  */
-int automaton_unblock(P_char ch, P_char pl, int cmd, char *arg)
+int automaton_unblock(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int flag = FALSE;
 	P_char i;
@@ -3671,7 +3671,7 @@ int automaton_unblock(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int menden_figurine_die(P_char ch, P_char pl, int cmd, char *arg)
+int menden_figurine_die(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -3687,7 +3687,7 @@ int menden_figurine_die(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int menden_inv_serv_die(P_char ch, P_char pl, int cmd, char *arg)
+int menden_inv_serv_die(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -3710,7 +3710,7 @@ int menden_inv_serv_die(P_char ch, P_char pl, int cmd, char *arg)
  * * -- Damon Silver, aka Fleven 1994/07/02
  */
 
-int menden_magus(P_char ch, P_char pl, int cmd, char *arg)
+int menden_magus(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -3758,7 +3758,7 @@ int menden_magus(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int menden_fisherman(P_char ch, P_char pl, int cmd, char *arg)
+int menden_fisherman(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	char buf[MAX_INPUT_LENGTH];
 
@@ -3912,7 +3912,7 @@ int menden_fisherman(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int brass_dragon(P_char ch, P_char pl, int cmd, char *arg)
+int brass_dragon(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char Gbuf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 
@@ -3937,7 +3937,7 @@ int brass_dragon(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int janitor(P_char ch, P_char pl, int cmd, char *arg)
+int janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj i;
 	/*
@@ -3965,7 +3965,7 @@ int janitor(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int cityguard(P_char ch, P_char pl, int cmd, char *arg)
+int cityguard(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, tar_ch = NULL;
 	int tar_align, a_flag, magnitude;
@@ -4457,7 +4457,7 @@ int sales_spec(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int jester(P_char ch, P_char pl, int cmd, char *arg)
+int jester(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -4491,7 +4491,7 @@ int jester(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int spiny(P_char ch, P_char pl, int cmd, char *arg)
+int spiny(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -4559,7 +4559,7 @@ int snowvulture(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int snowbeast(P_char ch, P_char pl, int cmd, char *arg)
+int snowbeast(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -4602,7 +4602,7 @@ int snowbeast(P_char ch, P_char pl, int cmd, char *arg)
  * A special for the Knife Shop Proprieter (mob-based)
  */
 
-int clyde(P_char ch, P_char pl, int cmd, char *arg)
+int clyde(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -4702,7 +4702,7 @@ int barmaid(P_char ch, P_char pl, int cmd, char *arg)
 	return (shop_keeper(ch, pl, cmd, arg));
 }
 
-int cookie(P_char ch, P_char pl, int cmd, char *arg)
+int cookie(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -4737,7 +4737,7 @@ int cookie(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int neophyte(P_char ch, P_char pl, int cmd, char *arg)
+int neophyte(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -4852,7 +4852,7 @@ int guru_anapest(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int confess_figure(P_char ch, P_char pl, int cmd, char *arg)
+int confess_figure(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -4942,7 +4942,7 @@ int taxman(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int albert(P_char ch, P_char pl, int cmd, char *arg)
+int albert(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char Gbuf4[MAX_STRING_LENGTH];
 
@@ -4988,7 +4988,7 @@ int albert(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int mage_anapest(P_char ch, P_char pl, int cmd, char *arg)
+int mage_anapest(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char i, temp;
 	char Gbuf4[MAX_STRING_LENGTH];
@@ -5117,7 +5117,7 @@ int farmer(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int phalanx(P_char ch, P_char pl, int cmd, char *arg)
+int phalanx(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_obj obj;
 	sh_int temp = 0, temp2 = 0;
@@ -5200,7 +5200,7 @@ int phalanx(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int skeleton(P_char ch, P_char pl, int cmd, char *arg)
+int skeleton(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char temp;
 
@@ -5266,7 +5266,7 @@ int skeleton(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int animated_skeleton(P_char ch, P_char pl, int cmd, char *arg)
+int animated_skeleton(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char undead, ch2;
 	struct follow_type *followers;
@@ -5377,7 +5377,7 @@ int animated_skeleton(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int spore_ball(P_char ch, P_char pl, int cmd, char *arg)
+int spore_ball(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char k, next;
 
@@ -5489,7 +5489,7 @@ int bridge_troll(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int blob(P_char ch, P_char pl, int cmd, char *arg)
+int blob(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj i, temp, next_obj;
 
@@ -5563,7 +5563,7 @@ int blob(P_char ch, P_char pl, int cmd, char *arg)
  * * -- DTS 2/8/95
  */
 
-int boulder_pusher(P_char ch, P_char t_ch, int cmd, char *arg)
+int boulder_pusher(P_char ch, P_char t_ch, int cmd, char * /*arg*/)
 {
 	int to_room = NOWHERE, dam = 0;
 	P_char victim;
@@ -5766,7 +5766,7 @@ int boulder_pusher(P_char ch, P_char t_ch, int cmd, char *arg)
  * * -- updated by DTS 2/9/95
  */
 
-int stone_crumble(P_char ch, P_char pl, int cmd, char *arg)
+int stone_crumble(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj pile, money, obj, next_obj;
 	int pos, room;
@@ -5840,7 +5840,7 @@ int stone_crumble(P_char ch, P_char pl, int cmd, char *arg)
 
 #define GUARDIAN_HELPER_LIMIT 30
 
-int goodie_guardian(P_char ch, P_char pl, int cmd, char *arg)
+int goodie_guardian(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char i;
 	int count = 0;
@@ -5908,7 +5908,7 @@ int goodie_guardian(P_char ch, P_char pl, int cmd, char *arg)
 #undef GUARDIAN_HELPER_LIMIT
 
 #define BAHAMUT_HELPER_LIMIT 3
-int bahamut(P_char ch, P_char pl, int cmd, char *arg)
+int bahamut(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char i;
 	int num, count = 0;
@@ -6007,7 +6007,7 @@ int bahamut(P_char ch, P_char pl, int cmd, char *arg)
 
 #define IMP_LIMIT 5
 
-int kobold_priest(P_char ch, P_char pl, int cmd, char *arg)
+int kobold_priest(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char i;
 	P_char imp;
@@ -6157,7 +6157,7 @@ int kobold_priest(P_char ch, P_char pl, int cmd, char *arg)
 
 #undef IMP_LIMIT
 
-int stone_golem(P_char ch, P_char pl, int cmd, char *arg)
+int stone_golem(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6184,7 +6184,7 @@ int stone_golem(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tako_demon(P_char ch, P_char pl, int cmd, char *arg)
+int tako_demon(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char k, victim = NULL;
 
@@ -6245,7 +6245,7 @@ int tako_demon(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int chicken(P_char ch, P_char pl, int cmd, char *arg)
+int chicken(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6288,7 +6288,7 @@ int chicken(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int cc_fisherffolk(P_char ch, P_char pl, int cmd, char *arg)
+int cc_fisherffolk(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6321,7 +6321,7 @@ int cc_fisherffolk(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int cc_female_ffolk(P_char ch, P_char pl, int cmd, char *arg)
+int cc_female_ffolk(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6354,7 +6354,7 @@ int cc_female_ffolk(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int cc_warehouse_man(P_char ch, P_char pl, int cmd, char *arg)
+int cc_warehouse_man(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6387,7 +6387,7 @@ int cc_warehouse_man(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int cc_warehouse_foreman(P_char ch, P_char pl, int cmd, char *arg)
+int cc_warehouse_foreman(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6422,7 +6422,7 @@ int cc_warehouse_foreman(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int barbarian_spiritist(P_char ch, P_char pl, int cmd, char *arg)
+int barbarian_spiritist(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	struct affected_type af;
@@ -6504,7 +6504,7 @@ int barbarian_spiritist(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int plant_attacks_poison(P_char ch, P_char pl, int cmd, char *arg)
+int plant_attacks_poison(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char vict, next_ch;
 	int flag = FALSE;
@@ -6535,7 +6535,7 @@ int plant_attacks_poison(P_char ch, P_char pl, int cmd, char *arg)
 	return flag;
 }
 
-int plant_attacks_blindness(P_char ch, P_char pl, int cmd, char *arg)
+int plant_attacks_blindness(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	struct affected_type af;
 	P_char vict;
@@ -6581,7 +6581,7 @@ int plant_attacks_blindness(P_char ch, P_char pl, int cmd, char *arg)
 	return flag;
 }
 
-int plant_attacks_paralysis(P_char ch, P_char pl, int cmd, char *arg)
+int plant_attacks_paralysis(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	int duration_factor, flag = FALSE;
@@ -6626,7 +6626,7 @@ int plant_attacks_paralysis(P_char ch, P_char pl, int cmd, char *arg)
  * neverwinter mob procs
  */
 
-int nw_woodelf(P_char ch, P_char pl, int cmd, char *arg)
+int nw_woodelf(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6661,7 +6661,7 @@ int nw_woodelf(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_elfhealer(P_char ch, P_char pl, int cmd, char *arg)
+int nw_elfhealer(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6696,7 +6696,7 @@ int nw_elfhealer(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_ammaster(P_char ch, P_char pl, int cmd, char *arg)
+int nw_ammaster(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6731,7 +6731,7 @@ int nw_ammaster(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_sapmaster(P_char ch, P_char pl, int cmd, char *arg)
+int nw_sapmaster(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6766,7 +6766,7 @@ int nw_sapmaster(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_diamaster(P_char ch, P_char pl, int cmd, char *arg)
+int nw_diamaster(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6801,7 +6801,7 @@ int nw_diamaster(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_rubmaster(P_char ch, P_char pl, int cmd, char *arg)
+int nw_rubmaster(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6836,7 +6836,7 @@ int nw_rubmaster(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_emmaster(P_char ch, P_char pl, int cmd, char *arg)
+int nw_emmaster(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6872,7 +6872,7 @@ int nw_emmaster(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_human(P_char ch, P_char pl, int cmd, char *arg)
+int nw_human(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6907,7 +6907,7 @@ int nw_human(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_hafbreed(P_char ch, P_char pl, int cmd, char *arg)
+int nw_hafbreed(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6932,7 +6932,7 @@ int nw_hafbreed(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_owl(P_char ch, P_char pl, int cmd, char *arg)
+int nw_owl(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -6967,7 +6967,7 @@ int nw_owl(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_golem(P_char ch, P_char pl, int cmd, char *arg)
+int nw_golem(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7002,7 +7002,7 @@ int nw_golem(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_agatha(P_char ch, P_char pl, int cmd, char *arg)
+int nw_agatha(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7039,7 +7039,7 @@ int nw_agatha(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_farmer(P_char ch, P_char pl, int cmd, char *arg)
+int nw_farmer(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7074,7 +7074,7 @@ int nw_farmer(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_chicken(P_char ch, P_char pl, int cmd, char *arg)
+int nw_chicken(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7109,7 +7109,7 @@ int nw_chicken(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_pig(P_char ch, P_char pl, int cmd, char *arg)
+int nw_pig(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7144,7 +7144,7 @@ int nw_pig(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_cow(P_char ch, P_char pl, int cmd, char *arg)
+int nw_cow(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7168,7 +7168,7 @@ int nw_cow(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_chief(P_char ch, P_char pl, int cmd, char *arg)
+int nw_chief(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7203,7 +7203,7 @@ int nw_chief(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_malchor(P_char ch, P_char pl, int cmd, char *arg)
+int nw_malchor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7238,7 +7238,7 @@ int nw_malchor(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_builder(P_char ch, P_char pl, int cmd, char *arg)
+int nw_builder(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7273,7 +7273,7 @@ int nw_builder(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_carpen(P_char ch, P_char pl, int cmd, char *arg)
+int nw_carpen(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7308,7 +7308,7 @@ int nw_carpen(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_logger(P_char ch, P_char pl, int cmd, char *arg)
+int nw_logger(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7343,7 +7343,7 @@ int nw_logger(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_cutter(P_char ch, P_char pl, int cmd, char *arg)
+int nw_cutter(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7378,7 +7378,7 @@ int nw_cutter(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_foreman(P_char ch, P_char pl, int cmd, char *arg)
+int nw_foreman(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7413,7 +7413,7 @@ int nw_foreman(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_ansal(P_char ch, P_char pl, int cmd, char *arg)
+int nw_ansal(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7448,7 +7448,7 @@ int nw_ansal(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_vitnor(P_char ch, P_char pl, int cmd, char *arg)
+int nw_vitnor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7483,7 +7483,7 @@ int nw_vitnor(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_brock(P_char ch, P_char pl, int cmd, char *arg)
+int nw_brock(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7518,7 +7518,7 @@ int nw_brock(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int nw_merthol(P_char ch, P_char pl, int cmd, char *arg)
+int nw_merthol(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -7706,7 +7706,7 @@ void nw_reset_maze(int room)
  * loop, then add the entrance/exit connection.
  */
 
-int nw_mirroid(P_char ch, P_char pl, int cmd, char *arg)
+int nw_mirroid(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char t_ch = NULL;
 	bool run_away = FALSE;
@@ -8231,7 +8231,7 @@ int ghore_paradise(P_char ch, P_char pl, int cmd, char *arg)
 /*
  * combat special for warhorses
  */
-int warhorse(P_char ch, P_char pl, int cmd, char *arg)
+int warhorse(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict, rider;
 	int i;
@@ -8411,7 +8411,7 @@ int warhorse(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int water_elemental(P_char ch, P_char pl, int cmd, char *arg)
+int water_elemental(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL, next_ch;
 	bool found = FALSE;
@@ -8467,7 +8467,7 @@ int water_elemental(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_snooty_wife(P_char ch, P_char pl, int cmd, char *arg)
+int ice_snooty_wife(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8496,7 +8496,7 @@ int ice_snooty_wife(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_cleaning_crew(P_char ch, P_char pl, int cmd, char *arg)
+int ice_cleaning_crew(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8522,7 +8522,7 @@ int ice_cleaning_crew(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_artist(P_char ch, P_char pl, int cmd, char *arg)
+int ice_artist(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8549,7 +8549,7 @@ int ice_artist(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_privates(P_char ch, P_char pl, int cmd, char *arg)
+int ice_privates(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8607,7 +8607,7 @@ int ice_masha(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_tubby_merchant(P_char ch, P_char pl, int cmd, char *arg)
+int ice_tubby_merchant(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8639,7 +8639,7 @@ int ice_tubby_merchant(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_priest(P_char ch, P_char pl, int cmd, char *arg)
+int ice_priest(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8667,7 +8667,7 @@ int ice_priest(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_garden_attendant(P_char ch, P_char pl, int cmd, char *arg)
+int ice_garden_attendant(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8696,7 +8696,7 @@ int ice_garden_attendant(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_raucous_guest(P_char ch, P_char pl, int cmd, char *arg)
+int ice_raucous_guest(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8729,7 +8729,7 @@ int ice_raucous_guest(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_tar(P_char ch, P_char pl, int cmd, char *arg)
+int ice_tar(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8755,7 +8755,7 @@ int ice_tar(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_commander(P_char ch, P_char pl, int cmd, char *arg)
+int ice_commander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8783,7 +8783,7 @@ int ice_commander(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_viscount(P_char ch, P_char pl, int cmd, char *arg)
+int ice_viscount(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8809,7 +8809,7 @@ int ice_viscount(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_masonary_crew(P_char ch, P_char pl, int cmd, char *arg)
+int ice_masonary_crew(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8830,7 +8830,7 @@ int ice_masonary_crew(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_impatient_guest(P_char ch, P_char pl, int cmd, char *arg)
+int ice_impatient_guest(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8857,7 +8857,7 @@ int ice_impatient_guest(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_privates2(P_char ch, P_char pl, int cmd, char *arg)
+int ice_privates2(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char leader;
 
@@ -8881,7 +8881,7 @@ int ice_privates2(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_bodyguards(P_char ch, P_char pl, int cmd, char *arg)
+int ice_bodyguards(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char blockee;
 
@@ -8906,7 +8906,7 @@ int ice_bodyguards(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_wolf(P_char ch, P_char pl, int cmd, char *arg)
+int ice_wolf(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char i, i_next, tempchar = NULL, tempchar2 = NULL, was_fighting = NULL;
 	P_desc d;
@@ -9077,7 +9077,7 @@ int ice_wolf(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int ice_malice(P_char ch, P_char pl, int cmd, char *arg)
+int ice_malice(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vapor, hated_one, next;
 	P_obj item, next_item;
@@ -9146,7 +9146,7 @@ int ice_malice(P_char ch, P_char pl, int cmd, char *arg)
 
 /* Negative Material */
 
-int neg_pocket(P_char ch, P_char pl, int cmd, char *arg)
+int neg_pocket(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict, next;
 	int dam;
@@ -9186,7 +9186,7 @@ int neg_pocket(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int jotun_thrym(P_char ch, P_char pl, int cmd, char *arg)
+int jotun_thrym(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	struct affected_type af;
@@ -9233,7 +9233,7 @@ int jotun_thrym(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int jotun_utgard_loki(P_char ch, P_char pl, int cmd, char *arg)
+int jotun_utgard_loki(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict, next;
 
@@ -9287,7 +9287,7 @@ int jotun_utgard_loki(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int jotun_balor(P_char ch, P_char pl, int cmd, char *arg)
+int jotun_balor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict, next;
 	int dam;
@@ -9340,7 +9340,7 @@ int jotun_balor(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int jotun_mimer(P_char ch, P_char pl, int cmd, char *arg)
+int jotun_mimer(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 
@@ -9394,7 +9394,7 @@ int jotun_mimer(P_char ch, P_char pl, int cmd, char *arg)
 #define ARCHER_NUM_DICE 2
 #define ARCHER_SIZE_DICE 5
 
-int archer(P_char ch, P_char pl, int cmd, char *arg)
+int archer(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char targ;
 	int i, j, k, gottem = FALSE;
@@ -9491,7 +9491,7 @@ int archer(P_char ch, P_char pl, int cmd, char *arg)
 }
 
 // NEWBIEGUARD
-int newbie_guard_north(P_char ch, P_char pl, int cmd, char *arg)
+int newbie_guard_north(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int allowed = 0;
 	P_char rider;
@@ -9540,7 +9540,7 @@ int newbie_guard_north(P_char ch, P_char pl, int cmd, char *arg)
 	return (TRUE);
 }
 
-int newbie_guard_east(P_char ch, P_char pl, int cmd, char *arg)
+int newbie_guard_east(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int allowed = 0;
 	P_char rider;
@@ -9589,7 +9589,7 @@ int newbie_guard_east(P_char ch, P_char pl, int cmd, char *arg)
 	return (TRUE);
 }
 
-int newbie_guard_south(P_char ch, P_char pl, int cmd, char *arg)
+int newbie_guard_south(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int allowed = 0;
 	P_char rider;
@@ -9638,7 +9638,7 @@ int newbie_guard_south(P_char ch, P_char pl, int cmd, char *arg)
 	return (TRUE);
 }
 
-int newbie_guard_west(P_char ch, P_char pl, int cmd, char *arg)
+int newbie_guard_west(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int allowed = 0;
 	P_char rider;
@@ -9829,7 +9829,7 @@ int rentacleric(P_char ch, P_char vict, int cmd, char *argument)
 /*
  *Patrol leader Mob Proc
  */
-int patrol_leader(P_char ch, P_char pl, int cmd, char *arg)
+int patrol_leader(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	int door, direction;
 	bool CombatInRoom;
@@ -9963,7 +9963,7 @@ int patrol_leader(P_char ch, P_char pl, int cmd, char *arg)
  * Patrol leader (road) Mob Proc
  * this mob should stay on road, if he get away from road he gonna try to get back asap
  */
-int patrol_leader_road(P_char ch, P_char pl, int cmd, char *arg)
+int patrol_leader_road(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	int door, i, direction;
 	bool CombatInRoom;
@@ -10335,7 +10335,7 @@ int recharm_ch(P_char master, P_char vict, bool madatOldMaster, char *charmMsg)
  * into NPC charmees..  WATCH OUT KIDS!
  */
 
-int transp_tow_acerlade(P_char ch, P_char pl, int cmd, char *arg)
+int transp_tow_acerlade(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, next;
 	char didit = FALSE;
@@ -10371,7 +10371,7 @@ int transp_tow_acerlade(P_char ch, P_char pl, int cmd, char *arg)
  * satar ghulan in obsidian citadel summons up to two flesh golems
  */
 
-int obsid_cit_satar_ghulan(P_char ch, P_char pl, int cmd, char *arg)
+int obsid_cit_satar_ghulan(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -10400,7 +10400,7 @@ int obsid_cit_satar_ghulan(P_char ch, P_char pl, int cmd, char *arg)
  * incend cloud now and then
  */
 
-int obsid_cit_death_knight(P_char ch, P_char pl, int cmd, char *arg)
+int obsid_cit_death_knight(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, vict = NULL;
 	int numbPCs = 0, luckyPC = 0, currPC = 0, numb;
@@ -10562,7 +10562,7 @@ int claw_cavern_drow_mage(P_char ch, P_char pl, int cmd, char *arg)
 
 	return FALSE;
 }
-int undeadcont_track(P_char ch, P_char pl, int cmd, char *arg)
+int undeadcont_track(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -10593,7 +10593,7 @@ int undeadcont_track(P_char ch, P_char pl, int cmd, char *arg)
 /*
  * Underdark Mob Proc
  */
-int underdark_track(P_char ch, P_char pl, int cmd, char *arg)
+int underdark_track(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -10686,7 +10686,7 @@ int jindo_ticket_master(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int fooquest_boss(P_char ch, P_char pl, int cmd, char *arg)
+int fooquest_boss(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char i;
 	P_char dragon;
@@ -11132,7 +11132,7 @@ int newbie_paladin(P_char ch, P_char pl, int cmd, char *arg)
 	return TRUE;
 }
 
-int Malevolence(P_char ch, P_char pl, int cmd, char *arg)
+int Malevolence(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, vapor, vict = NULL;
 	P_obj item, next_item;
@@ -11223,7 +11223,7 @@ int Malevolence(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int Malevolence_vapor(P_char ch, P_char pl, int cmd, char *arg)
+int Malevolence_vapor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, vict = NULL;
 
@@ -11326,7 +11326,7 @@ int Malevolence_vapor(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int celestia_pulsar(P_char ch, P_char pl, int cmd, char *arg)
+int celestia_pulsar(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event calls
@@ -11349,7 +11349,7 @@ int celestia_pulsar(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int construct(P_char ch, P_char pl, int cmd, char *arg)
+int construct(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 
@@ -11395,7 +11395,7 @@ int construct(P_char ch, P_char pl, int cmd, char *arg)
 	return TRUE;
 }
 
-int nyneth(P_char ch, P_char pl, int cmd, char *arg)
+int nyneth(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char fury;
 
@@ -11426,7 +11426,7 @@ int nyneth(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int living_stone(P_char ch, P_char pl, int cmd, char *arg)
+int living_stone(P_char ch, P_char /*pl*/, int /*cmd*/, char * /*arg*/)
 {
 	if (!ch)
 		return FALSE;
@@ -11434,7 +11434,7 @@ int living_stone(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int elemental_swarm_fire(P_char ch, P_char pl, int cmd, char *arg)
+int elemental_swarm_fire(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 
@@ -11455,7 +11455,7 @@ int elemental_swarm_fire(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int elemental_swarm_earth(P_char ch, P_char pl, int cmd, char *arg)
+int elemental_swarm_earth(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 
@@ -11476,7 +11476,7 @@ int elemental_swarm_earth(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int elemental_swarm_air(P_char ch, P_char pl, int cmd, char *arg)
+int elemental_swarm_air(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 
@@ -11497,7 +11497,7 @@ int elemental_swarm_air(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int elemental_swarm_water(P_char ch, P_char pl, int cmd, char *arg)
+int elemental_swarm_water(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 
@@ -11517,7 +11517,7 @@ int elemental_swarm_water(P_char ch, P_char pl, int cmd, char *arg)
 	}
 	return FALSE;
 }
-int shadow_monster(P_char ch, P_char pl, int cmd, char *arg)
+int shadow_monster(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -11536,7 +11536,7 @@ int shadow_monster(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int insects(P_char ch, P_char pl, int cmd, char *arg)
+int insects(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -11586,7 +11586,7 @@ int insects(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int illus_dragon(P_char ch, P_char pl, int cmd, char *arg)
+int illus_dragon(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -11605,7 +11605,7 @@ int illus_dragon(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int illus_titan(P_char ch, P_char pl, int cmd, char *arg)
+int illus_titan(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -11624,7 +11624,7 @@ int illus_titan(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int greater_living_stone(P_char ch, P_char pl, int cmd, char *arg)
+int greater_living_stone(P_char ch, P_char /*pl*/, int /*cmd*/, char * /*arg*/)
 {
 	if (!ch)
 		return FALSE;
@@ -11632,7 +11632,7 @@ int greater_living_stone(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int imageproc(P_char ch, P_char pl, int cmd, char *arg)
+int imageproc(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event call
@@ -11657,7 +11657,7 @@ int imageproc(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int undead_dragon_east(P_char ch, P_char pl, int cmd, char *arg)
+int undead_dragon_east(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int allowed = 0;
 
@@ -11786,7 +11786,7 @@ int undead_parrot(P_char ch, P_char pl, int cmd, char *arg)
 
 #define LONGJOHNSILVER_HELPER_LIMIT 4
 
-int long_john_silver_shout(P_char ch, P_char tch, int cmd, char *arg)
+int long_john_silver_shout(P_char ch, P_char /*tch*/, int cmd, char * /*arg*/)
 {
 	/* variables for summon proc */
 	P_char i;
@@ -11856,7 +11856,7 @@ int long_john_silver_shout(P_char ch, P_char tch, int cmd, char *arg)
 
 #undef LONGJOHNSILVERHELPER_LIMIT
 
-int pirate_talk(P_char ch, P_char pl, int cmd, char *arg)
+int pirate_talk(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event call
@@ -11892,7 +11892,7 @@ int pirate_talk(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int pirate_female_talk(P_char ch, P_char pl, int cmd, char *arg)
+int pirate_female_talk(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event call
@@ -11933,7 +11933,7 @@ int pirate_female_talk(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int pirate_cabinboy_talk(P_char ch, P_char pl, int cmd, char *arg)
+int pirate_cabinboy_talk(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	 * check for periodic event call
@@ -11972,7 +11972,7 @@ int pirate_cabinboy_talk(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_butler(P_char ch, P_char pl, int cmd, char *arg)
+int shabo_butler(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char i, i_next, tempchar = NULL, tempchar2 = NULL, was_fighting = NULL;
 	P_desc d;
@@ -12148,7 +12148,7 @@ int shabo_butler(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_caran(P_char ch, P_char tch, int cmd, char *arg)
+int shabo_caran(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 32835, 32836, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -12161,7 +12161,7 @@ int shabo_caran(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int cow_talk(P_char ch, P_char tch, int cmd, char *arg)
+int cow_talk(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_MOUNT)
 	{
@@ -12219,7 +12219,7 @@ int cow_talk(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int annoying_mob(P_char ch, P_char pl, int cmd, char *arg)
+int annoying_mob(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char temp;
 	static int songcounter = 0;
@@ -12275,7 +12275,7 @@ int annoying_mob(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int shabo_petre(P_char ch, P_char pl, int cmd, char *arg)
+int shabo_petre(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char i, i_next, tempchar2 = NULL;
 	P_obj item, next_item;
@@ -12370,7 +12370,7 @@ int shabo_petre(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_evilpetre(P_char ch, P_char pl, int cmd, char *arg)
+int shabo_evilpetre(P_char /*ch*/, P_char /*pl*/, int /*cmd*/, char * /*arg*/)
 {
 	return FALSE;
 }
@@ -12378,7 +12378,7 @@ int shabo_evilpetre(P_char ch, P_char pl, int cmd, char *arg)
 /* ako procs */
 
 /* mob 3715 */
-int ako_hypersquirrel(P_char ch, P_char pl, int cmd, char *arg)
+int ako_hypersquirrel(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -12447,7 +12447,7 @@ int ako_songbird(P_char ch, P_char pl, int cmd, char *arg)
 }
 
 /* mob 3716 */
-int ako_vulture(P_char ch, P_char pl, int cmd, char *arg)
+int ako_vulture(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -12472,7 +12472,7 @@ int ako_vulture(P_char ch, P_char pl, int cmd, char *arg)
 }
 
 /* mob 3721 */
-int ako_wildmare(P_char ch, P_char pl, int cmd, char *arg)
+int ako_wildmare(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -12493,7 +12493,7 @@ int ako_wildmare(P_char ch, P_char pl, int cmd, char *arg)
 }
 
 /* mob 3720 */
-int ako_cow(P_char ch, P_char pl, int cmd, char *arg)
+int ako_cow(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -12539,7 +12539,7 @@ int ako_cow(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int raoul(P_char ch, P_char pl, int cmd, char *arg)
+int raoul(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	char buf[20];
 	static int songcounter = 0;
@@ -12670,7 +12670,7 @@ int raoul(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int christine(P_char ch, P_char pl, int cmd, char *arg)
+int christine(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	char buf[20];
 
@@ -12770,7 +12770,7 @@ int christine(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int cookie_monster(P_char ch, P_char pl, int cmd, char *arg)
+int cookie_monster(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	static int songcounter = 0;
 
@@ -12822,7 +12822,7 @@ int cookie_monster(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int necro_specpet_bone(P_char ch, P_char pl, int cmd, char *arg)
+int necro_specpet_bone(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	if (cmd == CMD_SET_PERIODIC)
@@ -12838,12 +12838,12 @@ int necro_specpet_bone(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int necro_specpet_blood(P_char ch, P_char pl, int cmd, char *arg)
+int necro_specpet_blood(P_char /*ch*/, P_char /*pl*/, int /*cmd*/, char * /*arg*/)
 {
 	return 0;
 }
 
-int necro_specpet_flesh(P_char ch, P_char pl, int cmd, char *arg)
+int necro_specpet_flesh(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 
@@ -12891,7 +12891,7 @@ int necro_specpet_flesh(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int conj_specpet_xorn(P_char ch, P_char pl, int cmd, char *arg)
+int conj_specpet_xorn(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 
@@ -12970,7 +12970,7 @@ int conj_specpet_xorn(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int conj_specpet_golem(P_char ch, P_char pl, int cmd, char *arg)
+int conj_specpet_golem(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	int temp = 0;
@@ -13125,7 +13125,7 @@ int conj_specpet_golem(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int conj_specpet_djinni(P_char ch, P_char pl, int cmd, char *arg)
+int conj_specpet_djinni(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch;
 	P_char vict;
@@ -13177,7 +13177,7 @@ int conj_specpet_djinni(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int conj_specpet_slyph(P_char ch, P_char pl, int cmd, char *arg)
+int conj_specpet_slyph(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	int room;
@@ -13203,7 +13203,7 @@ int conj_specpet_slyph(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int conj_specpet_triton(P_char ch, P_char pl, int cmd, char *arg)
+int conj_specpet_triton(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL;
 	int healpoints = 432;
@@ -13230,7 +13230,7 @@ int conj_specpet_triton(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int conj_specpet_undine(P_char ch, P_char pl, int cmd, char *arg)
+int conj_specpet_undine(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	int healpoints = 50;
@@ -13261,7 +13261,7 @@ int conj_specpet_undine(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int conj_specpet_salamander(P_char ch, P_char pl, int cmd, char *arg)
+int conj_specpet_salamander(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 
@@ -13295,7 +13295,7 @@ int conj_specpet_salamander(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int conj_specpet_serpent(P_char ch, P_char pl, int cmd, char *arg)
+int conj_specpet_serpent(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 
@@ -13322,7 +13322,7 @@ int conj_specpet_serpent(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_palle(P_char ch, P_char vict, int cmd, char *arg)
+int shabo_palle(P_char ch, P_char /*vict*/, int cmd, char *arg)
 {
 	char asked[MAX_STRING_LENGTH];
 	P_char tempchar2 = NULL;
@@ -13412,7 +13412,7 @@ int shabo_palle(P_char ch, P_char vict, int cmd, char *arg)
 	return 0;
 }
 
-int shabo_derro_savant(P_char ch, P_char pl, int cmd, char *arg)
+int shabo_derro_savant(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	int allowed = 0;
 
@@ -13469,7 +13469,7 @@ int tower_data[5][6] = {
 	{ 150117, 150125, 150137, 150138, 0, 0 } // halfling
 };
 
-int outpost_captain(P_char ch, P_char pl, int cmd, char *arg)
+int outpost_captain(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	int direction;
 	bool CombatInRoom;
@@ -13711,7 +13711,7 @@ int outpost_captain(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int necro_dracolich(P_char ch, P_char pl, int cmd, char *arg)
+int necro_dracolich(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj t_obj, next;
 	int i;
@@ -13901,7 +13901,7 @@ int witch_doctor(P_char witch, P_char customer, int cmd, char *arg)
 #define INVASION_LEADER_VNUM 28975
 // When Timoro dies, a bunch of dwarven invaders led by mob vnum (above), come down
 //   from room vnum (above) to avenge the death.
-int timoro_die(P_char ch, P_char pl, int cmd, char *arg)
+int timoro_die(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char i;
 	char dir[] = "down";
@@ -13925,7 +13925,7 @@ int timoro_die(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-void reload_io_assistant(P_char, P_char, P_obj, void *data)
+void reload_io_assistant(P_char, P_char, P_obj, void * /*data*/)
 {
 	P_char ch;
 	int realroom44 = real_room0(44);
@@ -13942,7 +13942,7 @@ void reload_io_assistant(P_char, P_char, P_obj, void *data)
 	act("$n arrives in a puff of smoke.", FALSE, ch, 0, 0, TO_ROOM);
 }
 
-int io_assistant(P_char ch, P_char pl, int cmd, char *arg)
+int io_assistant(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -14061,7 +14061,7 @@ int io_assistant(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int bs_barons_mistress(P_char ch, P_char tch, int cmd, char *arg)
+int bs_barons_mistress(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 74000, 74003, 74004, 74006, 74011, 74012, 74019, 74022, 74037,
 			  74038, 74039, 74040, 74041, 74042, 74043, 74044, 74045, 74055,
@@ -14079,7 +14079,7 @@ int bs_barons_mistress(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int bs_citizen(P_char ch, P_char pl, int cmd, char *arg)
+int bs_citizen(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	     check for periodic event calls
@@ -14120,7 +14120,7 @@ int bs_citizen(P_char ch, P_char pl, int cmd, char *arg)
    *Name:Common woman
  */
 
-int bs_comwoman(P_char ch, P_char pl, int cmd, char *arg)
+int bs_comwoman(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -14161,7 +14161,7 @@ int bs_comwoman(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7102
    *Name:Little brat
  */
-int bs_brat(P_char ch, P_char pl, int cmd, char *arg)
+int bs_brat(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -14203,7 +14203,7 @@ int bs_brat(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7103
    *Name:Holyman
  */
-int bs_holyman(P_char ch, P_char pl, int cmd, char *arg)
+int bs_holyman(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -14248,7 +14248,7 @@ int bs_holyman(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7104
    *Name:merchant
  */
-int bs_merchant(P_char ch, P_char pl, int cmd, char *arg)
+int bs_merchant(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -14285,7 +14285,7 @@ int bs_merchant(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7105    7308
    *Name:wino    wino second
  */
-int bs_wino(P_char ch, P_char pl, int cmd, char *arg)
+int bs_wino(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodici event calls
@@ -14337,7 +14337,7 @@ int bs_wino(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7106
    *Name:watcher
  */
-int bs_watcher(P_char ch, P_char pl, int cmd, char *arg)
+int bs_watcher(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14372,7 +14372,7 @@ int bs_watcher(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7107
    *Name:guard
  */
-int bs_guard(P_char ch, P_char pl, int cmd, char *arg)
+int bs_guard(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14409,7 +14409,7 @@ int bs_guard(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7108
    *Name:squire
  */
-int bs_squire(P_char ch, P_char pl, int cmd, char *arg)
+int bs_squire(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14444,7 +14444,7 @@ int bs_squire(P_char ch, P_char pl, int cmd, char *arg)
 	}
 }
 
-int bs_peddler(P_char ch, P_char pl, int cmd, char *arg)
+int bs_peddler(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14513,7 +14513,7 @@ int bs_critter(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7113
    *Name:timid prisoner
  */
-int bs_timid(P_char ch, P_char pl, int cmd, char *arg)
+int bs_timid(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14555,7 +14555,7 @@ int bs_timid(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7114
    *Name:shady prisoner
  */
-int bs_shady(P_char ch, P_char pl, int cmd, char *arg)
+int bs_shady(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14594,7 +14594,7 @@ int bs_shady(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7115
    *Name:sinister prisoner
  */
-int bs_sinister(P_char ch, P_char pl, int cmd, char *arg)
+int bs_sinister(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14632,7 +14632,7 @@ int bs_sinister(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7116
    *Name:menacing prisoner
  */
-int bs_menacing(P_char ch, P_char pl, int cmd, char *arg)
+int bs_menacing(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14659,7 +14659,7 @@ int bs_menacing(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7117
    *Name:executioner
  */
-int bs_executioner(P_char ch, P_char pl, int cmd, char *arg)
+int bs_executioner(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14703,7 +14703,7 @@ int bs_executioner(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7118
    *Name:baron
  */
-int bs_baron(P_char ch, P_char pl, int cmd, char *arg)
+int bs_baron(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14752,7 +14752,7 @@ int bs_baron(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7120
    *Name:sparrow
  */
-int bs_sparrow(P_char ch, P_char pl, int cmd, char *arg)
+int bs_sparrow(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14782,7 +14782,7 @@ int bs_sparrow(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7121        7122
    *Name:squirrel    huge squirrel
  */
-int bs_squirrel(P_char ch, P_char pl, int cmd, char *arg)
+int bs_squirrel(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14811,7 +14811,7 @@ int bs_squirrel(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7123
    *Name:crow
  */
-int bs_crow(P_char ch, P_char pl, int cmd, char *arg)
+int bs_crow(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14841,7 +14841,7 @@ int bs_crow(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7124
    *Name:mountainman
  */
-int bs_mountainman(P_char ch, P_char pl, int cmd, char *arg)
+int bs_mountainman(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14879,7 +14879,7 @@ int bs_mountainman(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7125
    *Name:salesman
  */
-int bs_salesman(P_char ch, P_char pl, int cmd, char *arg)
+int bs_salesman(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14912,7 +14912,7 @@ int bs_salesman(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7126
    *Name:nomad
  */
-int bs_nomad(P_char ch, P_char pl, int cmd, char *arg)
+int bs_nomad(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14947,7 +14947,7 @@ int bs_nomad(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7127
    *Name:insane woman
  */
-int bs_insane(P_char ch, P_char pl, int cmd, char *arg)
+int bs_insane(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -14991,7 +14991,7 @@ int bs_insane(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7128
    *Name:homeless man
  */
-int bs_homeless(P_char ch, P_char pl, int cmd, char *arg)
+int bs_homeless(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -15044,7 +15044,7 @@ int bs_homeless(P_char ch, P_char pl, int cmd, char *arg)
   *Name:baron's servant
 */
 
-int bs_servant(P_char ch, P_char pl, int cmd, char *arg)
+int bs_servant(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -15122,7 +15122,7 @@ int bs_wolf(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7143
    *Name:gnoll
  */
-int bs_gnoll(P_char ch, P_char pl, int cmd, char *arg)
+int bs_gnoll(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -15151,7 +15151,7 @@ int bs_gnoll(P_char ch, P_char pl, int cmd, char *arg)
   *Mob#:7144
   *Name:ettin
 */
-int bs_ettin(P_char ch, P_char pl, int cmd, char *arg)
+int bs_ettin(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -15183,7 +15183,7 @@ int bs_ettin(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7147
    *Name:griffon
  */
-int bs_griffon(P_char ch, P_char pl, int cmd, char *arg)
+int bs_griffon(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -15218,7 +15218,7 @@ int bs_griffon(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7152
    *Name:wereboar
  */
-int bs_boar(P_char ch, P_char pl, int cmd, char *arg)
+int bs_boar(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -15250,7 +15250,7 @@ int bs_boar(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7153
    *Name:manticore cub
  */
-int bs_cub(P_char ch, P_char pl, int cmd, char *arg)
+int bs_cub(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -15324,7 +15324,7 @@ int bs_fierce(P_char ch, P_char pl, int cmd, char *arg)
    *Mob#:7160
    *Name:stirge
  */
-int bs_stirge(P_char ch, P_char pl, int cmd, char *arg)
+int bs_stirge(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event call
@@ -15617,7 +15617,7 @@ int clear_epic_task_spec(P_char npc, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int block_dir(P_char ch, P_char pl, int cmd, char *arg)
+int block_dir(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC || cmd == CMD_MOB_MUNDANE)
 		return FALSE;
@@ -15686,7 +15686,7 @@ int block_dir(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int undead_howl(P_char ch, P_char pl, int cmd, char *arg)
+int undead_howl(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char tch, vict = NULL;
 
@@ -15737,7 +15737,7 @@ int undead_howl(P_char ch, P_char pl, int cmd, char *arg)
 
 #define ELIGOTH_RIFT_VNUM 43580
 
-int eligoth_rift_spawn(P_char ch, P_char pl, int cmd, char *arg)
+int eligoth_rift_spawn(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_DEATH)
 	{
@@ -15765,7 +15765,7 @@ int eligoth_rift_spawn(P_char ch, P_char pl, int cmd, char *arg)
 
 #undef ELIGOTH_RIFT_VNUM
 
-int tentacler_death(P_char tentacler, P_char ch, int cmd, char *arg)
+int tentacler_death(P_char tentacler, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	int obj_load;
 
@@ -16310,7 +16310,7 @@ void finish_smelt(P_char ch, P_char pl, int vnum)
 	act("$n gives $p to $N.", TRUE, ch, ore, pl, TO_ROOM);
 }
 
-int unblock_on_death(P_char ch, P_char pl, int cmd, char *arg)
+int unblock_on_death(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	int rroom, dir, qi;
 	struct quest_msg_data *qdata;

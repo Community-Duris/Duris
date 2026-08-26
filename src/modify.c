@@ -183,7 +183,7 @@ int replace_str(char **string, char *pattern, char *replacement, int rep_all, in
 /* re-formats message type formatted char * */
 /* (for strings edited with d->str) (mostly olc and mail)     */
 
-void format_text(char **ptr_string, int mode, struct descriptor_data *d, int maxlen)
+void format_text(char **ptr_string, int mode, struct descriptor_data * /*d*/, int maxlen)
 {
 	int total_chars, cap_next = TRUE, cap_next_next = FALSE;
 	char *flow = NULL, *start = NULL, temp;
@@ -1364,7 +1364,7 @@ void do_string(P_char ch, char *arg, int cmd)
 }
 
 // Like string, but used for changing bogus names. Strings name, kills old pfile.
-void do_rename(P_char ch, char *arg, int cmd)
+void do_rename(P_char ch, char *arg, int /*cmd*/)
 {
 	char rest[MAX_INPUT_LENGTH];
 	char type[MAX_STRING_LENGTH];
@@ -1828,7 +1828,7 @@ char *next_page(char *str, struct descriptor_data *d)
 
 // this is a fake now, your command output will be paged automatically
 // now without you having to care about it - tharkun
-void page_string(struct descriptor_data *d, char *str, int keep_internal)
+void page_string(struct descriptor_data *d, char *str, int /*keep_internal*/)
 {
 	if (d)
 		send_to_char(str, d->character);

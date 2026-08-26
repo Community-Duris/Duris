@@ -48,7 +48,7 @@ extern struct class_names class_names_table[];
 int range_scan_track(P_char ch, int distance, int type_scan);
 extern P_obj object_list;
 
-int snogres_lich_shout(P_char ch, P_char tch, int cmd, char *arg)
+int snogres_lich_shout(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 87734, 87743, 0 };
 	if (cmd == -10)
@@ -62,7 +62,7 @@ int snogres_lich_shout(P_char ch, P_char tch, int cmd, char *arg)
 
 #define FLESH_GOLEM_HELPER_LIMIT 6
 
-int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
+int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char i;
 	P_char golem, lich = NULL;
@@ -158,14 +158,14 @@ int snogres_flesh_golem(P_char ch, P_char pl, int cmd, char *arg)
 
 #undef FLESH_GOLEM_HELPER_LIMIT
 
-void event_snogres_golem_helper(P_char ch, P_char victim, P_obj obj, void *data)
+void event_snogres_golem_helper(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	act("$n &+rdisappears as the magic holding it is too weak to support it's existence.&n",
 	    TRUE, ch, 0, 0, TO_ROOM);
 	extract_char(ch);
 }
 
-void event_hellfire(P_char ch, P_char victim, P_obj obj, void *data)
+void event_hellfire(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int dam;
 	int count = *((int *)data);
@@ -242,7 +242,7 @@ int hellfire_axe(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int berserker_toss(P_char ch, P_char vict, int cmd, char *arg)
+int berserker_toss(P_char ch, P_char vict, int cmd, char * /*arg*/)
 {
 	P_char tch, victtwo = NULL;
 	P_obj obj;
@@ -362,7 +362,7 @@ int berserker_toss(P_char ch, P_char vict, int cmd, char *arg)
 	return FALSE;
 }
 
-int remo_burn(P_char vict, P_char ch, int cmd, char *arg)
+int remo_burn(P_char vict, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -418,7 +418,7 @@ int illithid_whip(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int skull_leggings(P_obj leggings, P_char ch, int cmd, char *arg)
+int skull_leggings(P_obj leggings, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -462,7 +462,7 @@ int skull_leggings(P_obj leggings, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int flesh_golem_repop(P_obj obj, P_char ch, int cmd, char *arg)
+int flesh_golem_repop(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	int mob_vnum = 87734;
 

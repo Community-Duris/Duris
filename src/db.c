@@ -172,7 +172,7 @@ void release_acct_mem(P_obj obj);
 
 void apply_zone_modifier(P_char ch);
 
-void release_mob_mem(P_char ch, P_char victim, P_obj obj, void *data)
+void release_mob_mem(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	if (ch->in_room != NOWHERE && is_char_in_room(ch, ch->in_room))
 	{
@@ -2668,7 +2668,7 @@ P_char read_mobile(int nr, int type)
 	return (mob);
 }
 
-void event_object_proc(P_char ch, P_char victim, P_obj obj, void *data)
+void event_object_proc(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	if (obj_index[obj->R_num].func.obj)
 		(*obj_index[obj->R_num].func.obj)(obj, 0, CMD_PERIODIC, 0);

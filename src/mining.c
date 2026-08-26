@@ -247,7 +247,7 @@ int random_ore(int mine_quality)
 	*/
 }
 
-P_obj get_ore_from_mine(P_char ch, int mine_quality)
+P_obj get_ore_from_mine(P_char /*ch*/, int mine_quality)
 {
 	P_obj ore;
 	int ore_type = random_ore(mine_quality);
@@ -260,7 +260,7 @@ P_obj get_ore_from_mine(P_char ch, int mine_quality)
 	return ore;
 }
 
-P_obj get_gem_from_mine(P_char ch, int mine_quality)
+P_obj get_gem_from_mine(P_char /*ch*/, int /*mine_quality*/)
 {
 	P_obj gem = read_object(mining_config_gem_vnum(), VIRTUAL);
 	if (!gem)
@@ -269,7 +269,7 @@ P_obj get_gem_from_mine(P_char ch, int mine_quality)
 	return gem;
 }
 
-int mine(P_obj obj, P_char ch, int cmd, char *arg)
+int mine(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -368,7 +368,7 @@ int mine(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
+void event_mine_check(P_char ch, P_char /*victim*/, P_obj, void *data)
 {
 	struct mining_data *mdata = (struct mining_data *)data;
 	P_obj ore, pick;
@@ -749,7 +749,7 @@ void load_mines(bool set_event, bool load_all, int map)
 	}
 }
 
-void event_load_mines(P_char ch, P_char victim, P_obj, void *data)
+void event_load_mines(P_char /*ch*/, P_char /*victim*/, P_obj, void *data)
 {
 	struct mines_event_data *mdata = (struct mines_event_data *)data;
 
@@ -762,7 +762,7 @@ void event_load_mines(P_char ch, P_char victim, P_obj, void *data)
 	load_mines(TRUE, FALSE, mdata->map);
 }
 
-void do_mine(P_char ch, char *arg, int cmd)
+void do_mine(P_char ch, char *arg, int /*cmd*/)
 {
 	if (!ch || IS_NPC(ch))
 		return;

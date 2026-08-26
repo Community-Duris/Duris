@@ -39,7 +39,7 @@ P_nevent get_scheduled(P_char ch, event_func func);
    called from various places to start things, and from Events to schedule
    the next one.
  */
-void event_firesector(P_char ch, P_char victim, P_obj obj, void *data)
+void event_firesector(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type *af, *next;
 
@@ -110,7 +110,7 @@ void firesector(P_char ch)
 		add_event(event_firesector, 3, ch, 0, 0, 0, 0, 0);
 }
 
-void event_underwatersector(P_char ch, P_char victim, P_obj obj, void *data)
+void event_underwatersector(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	if (IS_AFFECTED(ch, AFF_WATERBREATH) || (ch->in_room == -1) || !IS_UNDERWATER(ch))
 	{
@@ -485,7 +485,7 @@ P_obj find_key(P_char ch, int key)
 /**
  * For negative plane events, similar to event_firesector. -Keja
  */
-void event_negsector(P_char ch, P_char victim, P_obj obj, void *data)
+void event_negsector(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type *af, *next;
 

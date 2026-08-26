@@ -35,7 +35,7 @@ int siege_move_wait(P_char ch)
 }
 
 // Based on chars str and agi right now.
-int siege_load_wait(P_char ch, P_obj engine)
+int siege_load_wait(P_char ch, P_obj /*engine*/)
 {
 	// Base: 100 str, 100 agi, 2 secs
 	int retval = 100 * 100 * 10 * WAIT_SEC;
@@ -46,7 +46,7 @@ int siege_load_wait(P_char ch, P_obj engine)
 	return retval;
 }
 
-void event_load_engine(P_char ch, P_char victim, P_obj obj, void *data)
+void event_load_engine(P_char ch, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	act("You finish loading $p.", FALSE, ch, obj, NULL, TO_CHAR);
 	act("$n finishes loading $p.", TRUE, ch, obj, 0, TO_ROOM);
@@ -563,7 +563,7 @@ int catapult(P_obj obj, P_char ch, int cmd, char *arg)
 }
 
 // Attempt to move the siege engine a direction.
-void event_move_engine(P_char ch, P_char victim, P_obj obj, void *data)
+void event_move_engine(P_char ch, P_char /*victim*/, P_obj obj, void *data)
 {
 	char buf[MAX_STRING_LENGTH];
 	int dir = *((int *)data);
@@ -647,7 +647,7 @@ bool check_gates(P_char ch, int room)
 }
 
 // This is the proc for castle walls.  Just a placeholder atm.
-int castlewall(P_obj obj, P_char ch, int cmd, char *arg)
+int castlewall(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -1635,7 +1635,7 @@ P_town add_findtown(char *arg)
 	return NULL;
 }
 
-void do_add(P_char ch, char *arg, int cmd)
+void do_add(P_char ch, char *arg, int /*cmd*/)
 {
 	char arg1[MAX_STRING_LENGTH];
 	char arg2[MAX_STRING_LENGTH];

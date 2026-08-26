@@ -14,7 +14,8 @@ float breath_saved_multiplier;
 int breath_save_modifier;
 
 // Same as spell_fire_breath, which should be removed eventually.
-void breath_weapon_fire(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_fire(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*obj*/)
 {
 	struct damage_messages messages = {
 		"$N is hit.",
@@ -109,7 +110,8 @@ void breath_weapon_fire(int level, P_char ch, char *arg, int type, P_char victim
 }
 
 // Same as spell_lightning_breath, which should be removed eventually.
-void breath_weapon_lightning(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_lightning(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			     P_obj /*obj*/)
 {
 	int save, dam;
 	struct damage_messages messages = { "$N is hit by your lightning breath.",
@@ -144,7 +146,8 @@ void breath_weapon_lightning(int level, P_char ch, char *arg, int type, P_char v
 }
 
 // Same as spell_frost_breath, which should be removed eventually.
-void breath_weapon_frost(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_frost(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*obj*/)
 {
 	int save, dam;
 	struct damage_messages messages = {
@@ -236,7 +239,8 @@ void breath_weapon_frost(int level, P_char ch, char *arg, int type, P_char victi
 }
 
 // Same as spell_acid_breath, which should be removed eventually.
-void breath_weapon_acid(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_acid(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*obj*/)
 {
 	int save, dam;
 	struct damage_messages messages = { "$N is partially corroded by your acid breath.",
@@ -293,7 +297,8 @@ void breath_weapon_acid(int level, P_char ch, char *arg, int type, P_char victim
 }
 
 // Same as spell_gas_breath, which should be removed eventually.
-void breath_weapon_poison(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_poison(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj /*obj*/)
 {
 	int save, dam;
 	struct damage_messages messages = { "$N is hit by your &+Ggas&N.",
@@ -345,7 +350,8 @@ void breath_weapon_paralysis(int level, P_char ch, char *arg, int type, P_char v
 }
 
 // Same as spell_shadow_breath_1, which should be removed eventually.
-void breath_weapon_shadow_1(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_shadow_1(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			    P_obj /*obj*/)
 {
 	int save, dam;
 	struct damage_messages messages = {
@@ -377,7 +383,8 @@ void breath_weapon_shadow_1(int level, P_char ch, char *arg, int type, P_char vi
 }
 
 // Same as spell_shadow_breath_2, which should be removed eventually.
-void breath_weapon_shadow_2(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_shadow_2(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			    P_obj obj)
 {
 	struct damage_messages messages = {
 		"$N &+wis enclosed in &+Lblack shadows!&n",
@@ -414,7 +421,8 @@ void breath_weapon_shadow_2(int level, P_char ch, char *arg, int type, P_char vi
 }
 
 // Same as spell_blinding_breath, which should be removed eventually.
-void breath_weapon_blind(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_blind(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			 P_obj /*obj*/)
 {
 	int save, dam;
 	struct damage_messages messages = { "$N is hit by your &+Ggas&N.",
@@ -456,7 +464,8 @@ void breath_weapon_blind(int level, P_char ch, char *arg, int type, P_char victi
 }
 
 // Same as spell_crimson_light, which should be removed eventually.
-void breath_weapon_crimson(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_crimson(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			   P_char victim, P_obj /*obj*/)
 {
 	struct damage_messages messages = {
 		"$N is hit.",
@@ -545,7 +554,8 @@ void breath_weapon_crimson(int level, P_char ch, char *arg, int type, P_char vic
 }
 
 // Same as spell_jasper_light, which should be removed eventually.
-void breath_weapon_jasper(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_jasper(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj /*obj*/)
 {
 	int save, dam;
 	struct damage_messages messages = { "$N is hit by your &+Gjasper &+glight&n.",
@@ -579,7 +589,8 @@ void breath_weapon_jasper(int level, P_char ch, char *arg, int type, P_char vict
 }
 
 // Same as spell_azure_light, which should be removed eventually.
-void breath_weapon_azure(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_azure(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			 P_obj /*obj*/)
 {
 	int save, dam;
 	struct damage_messages messages = { "$N is hit.",
@@ -615,7 +626,8 @@ void breath_weapon_azure(int level, P_char ch, char *arg, int type, P_char victi
 }
 
 // Same as spell_basalt_light, which should be removed eventually.
-void breath_weapon_basalt(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void breath_weapon_basalt(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj /*obj*/)
 {
 	int save, dam;
 	struct damage_messages messages = {

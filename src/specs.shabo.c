@@ -292,7 +292,7 @@ int finslayer_air(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int aboleth_pendant(P_obj obj, P_char ch, int cmd, char *argument)
+int aboleth_pendant(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int curr_time;
 
@@ -329,7 +329,7 @@ int aboleth_pendant(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-int tower_summoning(P_obj obj, P_char ch, int cmd, char *arg)
+int tower_summoning(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	//  P_char i;
 	P_char istalker;
@@ -423,7 +423,7 @@ int tower_summoning(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_trap_north(P_obj obj, P_char ch, int cmd, char *arg)
+int shabo_trap_north(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -458,7 +458,7 @@ int shabo_trap_north(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_trap_south(P_obj obj, P_char ch, int cmd, char *arg)
+int shabo_trap_south(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -502,7 +502,7 @@ int shabo_trap_south(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_trap_south_two(P_obj obj, P_char ch, int cmd, char *arg)
+int shabo_trap_south_two(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -537,7 +537,7 @@ int shabo_trap_south_two(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_trap_down(P_obj obj, P_char ch, int cmd, char *arg)
+int shabo_trap_down(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -572,7 +572,7 @@ int shabo_trap_down(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_trap_up(P_obj obj, P_char ch, int cmd, char *arg)
+int shabo_trap_up(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -615,7 +615,7 @@ int shabo_trap_up(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_trap_up_two(P_obj obj, P_char ch, int cmd, char *arg)
+int shabo_trap_up_two(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char trapmob;
 
@@ -661,7 +661,7 @@ int shabo_trap_up_two(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int shabo_trap_north_two(P_obj obj, P_char ch, int cmd, char *arg)
+int shabo_trap_north_two(P_obj /*obj*/, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char trapmob;
 
@@ -711,7 +711,7 @@ int shabo_trap_north_two(P_obj obj, P_char ch, int cmd, char *arg)
 
 /* MOX */
 
-int mox_totem(P_obj obj, P_char ch, int cmd, char *argument)
+int mox_totem(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	int rand;
 	int curr_time;
@@ -809,7 +809,8 @@ int mox_totem(P_obj obj, P_char ch, int cmd, char *argument)
 	return FALSE;
 }
 
-void event_shabo_racechange(P_char ch, P_char victim, P_obj obj, void *data)
+void event_shabo_racechange(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj obj,
+			    void * /*data*/)
 {
 	struct affected_type *af;
 
@@ -859,7 +860,7 @@ void event_shabo_racechange(P_char ch, P_char victim, P_obj obj, void *data)
 #define NUMBER_RACES_FOR_EVIL 9
 #define NUMBER_RACES_FOR_UNDEAD 8
 
-int shaboath_alternation_tower(int room, P_char ch, int cmd, char *argument)
+int shaboath_alternation_tower(int room, P_char /*ch*/, int cmd, char * /*argument*/)
 {
 	P_char tch, next;
 	struct affected_type *af;
@@ -946,7 +947,7 @@ int shaboath_alternation_tower(int room, P_char ch, int cmd, char *argument)
 	return did_something;
 }
 
-int shaboath_necromancy_tower(int room, P_char ch, int cmd, char *argument)
+int shaboath_necromancy_tower(int room, P_char /*ch*/, int cmd, char * /*argument*/)
 {
 	P_obj obj, next_obj;
 	int raised = 0;
@@ -986,7 +987,7 @@ int shaboath_necromancy_tower(int room, P_char ch, int cmd, char *argument)
 		return FALSE;
 }
 
-int shaboath_enchantment_tower(int room, P_char ch, int cmd, char *argument)
+int shaboath_enchantment_tower(int room, P_char /*ch*/, int cmd, char * /*argument*/)
 {
 	P_char tch, next;
 

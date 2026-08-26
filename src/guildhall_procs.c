@@ -25,7 +25,7 @@ extern P_desc descriptor_list;
 
 // Added by Gellz 02052015
 // Proc for GH golems to ONLY allow guild members to flee in their room
-int golem_noflee(P_char ch, P_char pl, int cmd, char *arg)
+int golem_noflee(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC) // events have priority (dont they alwys
 		return FALSE; // IF its an event, just go back
@@ -81,7 +81,7 @@ int guildhall_door(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
+int guildhall_golem(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char buff[MAX_STRING_LENGTH];
 
@@ -277,7 +277,7 @@ int guildhall_golem(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int guildhall_window_room(int room, P_char ch, int cmd, char *arg)
+int guildhall_window_room(int /*room*/, P_char /*ch*/, int /*cmd*/, char * /*arg*/)
 {
 	return FALSE;
 }

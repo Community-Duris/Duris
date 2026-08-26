@@ -2309,7 +2309,7 @@ int find_door(P_char ch, char *type, char *dir)
 	return (-1);
 }
 
-void do_open(P_char ch, char *argument, int cmd)
+void do_open(P_char ch, char *argument, int /*cmd*/)
 {
 	int door, other_room, retval;
 	struct room_direction_data *back;
@@ -2604,7 +2604,7 @@ void do_open(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_close(P_char ch, char *argument, int cmd)
+void do_close(P_char ch, char *argument, int /*cmd*/)
 {
 	int door, other_room, retval;
 	struct room_direction_data *back;
@@ -2722,7 +2722,7 @@ P_obj has_key(P_char ch, int key)
 
 	return NULL;
 }
-void do_lock(P_char ch, char *argument, int cmd)
+void do_lock(P_char ch, char *argument, int /*cmd*/)
 {
 	int door, other_room, retval;
 	struct room_direction_data *back;
@@ -2821,7 +2821,7 @@ void do_lock(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_unlock(P_char ch, char *argument, int cmd)
+void do_unlock(P_char ch, char *argument, int /*cmd*/)
 {
 	int door, other_room, retval;
 	struct room_direction_data *back;
@@ -3007,7 +3007,7 @@ void do_unlock(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_pick(P_char ch, char *argument, int cmd)
+void do_pick(P_char ch, char *argument, int /*cmd*/)
 {
 	int percent, door, other_room, chance, retval;
 	struct room_direction_data *back;
@@ -3222,7 +3222,7 @@ void do_pick(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_enter(P_char ch, char *argument, int cmd)
+void do_enter(P_char ch, char *argument, int /*cmd*/)
 {
 	int door;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
@@ -3312,7 +3312,7 @@ void do_enter(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_follow(P_char ch, char *argument, int cmd)
+void do_follow(P_char ch, char *argument, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	P_char leader = NULL;
@@ -3425,7 +3425,7 @@ void do_follow(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_drag(P_char ch, char *argument, int cmd)
+void do_drag(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj;
 	P_char tch;
@@ -3728,7 +3728,7 @@ void do_drag(P_char ch, char *argument, int cmd)
 	send_to_char("What/who do you want to drag?\n", ch);
 }
 
-void do_stand(P_char ch, char *argument, int cmd)
+void do_stand(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (!ch)
 		return;
@@ -3847,7 +3847,7 @@ void do_stand(P_char ch, char *argument, int cmd)
 
 // end do_stand
 
-void do_sit(P_char ch, char *argument, int cmd)
+void do_sit(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	switch (GET_STAT(ch))
 	{
@@ -3933,7 +3933,7 @@ void do_sit(P_char ch, char *argument, int cmd)
 	gmcp_char_vitals(ch);
 }
 
-void do_kneel(P_char ch, char *argument, int cmd)
+void do_kneel(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (IS_RIDING(ch))
 	{
@@ -4028,7 +4028,7 @@ void do_kneel(P_char ch, char *argument, int cmd)
 	gmcp_char_vitals(ch);
 }
 
-void do_recline(P_char ch, char *argument, int cmd)
+void do_recline(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (IS_RIDING(ch))
 	{
@@ -4123,7 +4123,7 @@ void do_recline(P_char ch, char *argument, int cmd)
 	stop_memorizing(ch);
 }
 
-void do_rest(P_char ch, char *argument, int cmd)
+void do_rest(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	/*
 	  if(IS_RIDING(ch))
@@ -4215,7 +4215,7 @@ void do_rest(P_char ch, char *argument, int cmd)
  * new, does opposite of 'rest'
  */
 
-void do_alert(P_char ch, char *argument, int cmd)
+void do_alert(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	switch (GET_STAT(ch))
 	{
@@ -4274,7 +4274,7 @@ void do_alert(P_char ch, char *argument, int cmd)
 	stop_memorizing(ch);
 }
 
-void do_sleep(P_char ch, char *argument, int cmd)
+void do_sleep(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (IS_RIDING(ch))
 	{
@@ -4358,7 +4358,7 @@ void do_sleep(P_char ch, char *argument, int cmd)
 	stop_memorizing(ch);
 }
 
-void do_wake(P_char ch, char *argument, int cmd)
+void do_wake(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char tmp_char;
 	char Gbuf1[MAX_STRING_LENGTH];

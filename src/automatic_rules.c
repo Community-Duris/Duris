@@ -56,7 +56,7 @@ extern struct zone_data *zone_table;
 
 extern struct minor_create_struct minor_create_name_list[];
 
-int is_Raidable(P_char ch, char *argument, int cmd)
+int is_Raidable(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (!IS_ALIVE(ch))
 	{
@@ -74,7 +74,7 @@ int is_Raidable(P_char ch, char *argument, int cmd)
 	return FALSE;
 }
 
-void do_raid(P_char ch, char *argument, int cmd)
+void do_raid(P_char ch, char *argument, int /*cmd*/)
 {
 	P_desc i;
 	P_char tch;

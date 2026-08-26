@@ -82,7 +82,8 @@ extern bool has_skin_spell(P_char);
 
 /* Let's do some spells yah! */
 
-void spell_phantom_armor(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_phantom_armor(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	bool shown;
@@ -130,7 +131,8 @@ void spell_phantom_armor(int level, P_char ch, char *arg, int type, P_char victi
 	}
 }
 
-void spell_shadow_monster(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_shadow_monster(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			  P_char victim, P_obj /*obj*/)
 {
 	P_char mob;
 	int summoned = 0;
@@ -194,7 +196,8 @@ void spell_shadow_monster(int level, P_char ch, char *arg, int type, P_char vict
 	MobStartFight(mob, victim);
 }
 
-void spell_insects(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_insects(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		   P_obj /*obj*/)
 {
 	P_char mob;
 	int summoned, i;
@@ -269,7 +272,7 @@ void spell_insects(int level, P_char ch, char *arg, int type, P_char victim, P_o
 	}
 }
 
-void spell_boulder(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_boulder(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -313,7 +316,8 @@ void spell_boulder(int level, P_char ch, char *arg, int type, P_char victim, P_o
 	}
 }
 
-void spell_shadow_travel(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_shadow_travel(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			 P_obj /*obj*/)
 {
 	int location;
 	char buf[256] = { 0 };
@@ -432,7 +436,8 @@ void spell_shadow_travel(int level, P_char ch, char *arg, int type, P_char victi
 	}
 }
 
-void spell_stunning_visions(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_stunning_visions(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			    P_obj /*obj*/)
 {
 	int percent = level + number(-10, 10);
 
@@ -581,7 +586,8 @@ void spell_stunning_visions(int level, P_char ch, char *arg, int type, P_char vi
 	}
 }
 
-void spell_reflection(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_reflection(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char victim, P_obj /*obj*/)
 {
 	P_char image, tch, tch2;
 	struct char_link_data *cld;
@@ -768,7 +774,8 @@ void spell_reflection(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 }
 
-void spell_mask(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_mask([[maybe_unused]] int level, P_char ch, char *arg, int /*type*/, P_char /*victim*/,
+		P_obj /*tar_obj*/)
 {
 	bool casting_on_self = FALSE;
 	P_char target = NULL;
@@ -890,7 +897,8 @@ void spell_mask(int level, P_char ch, char *arg, int type, P_char victim, P_obj 
 	return;
 }
 
-void spell_watching_wall(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void spell_watching_wall(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/,
+			 P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	int var = 0;
@@ -928,7 +936,8 @@ void spell_watching_wall(int level, P_char ch, char *arg, int type, P_char tar_c
 	}
 }
 
-void spell_illusionary_wall(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_illusionary_wall(int level, P_char ch, char *arg, int /*type*/, P_char /*victim*/,
+			    P_obj /*obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	int var = 0;
@@ -965,7 +974,8 @@ void spell_illusionary_wall(int level, P_char ch, char *arg, int type, P_char vi
 	}
 }
 
-void spell_nightmare(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_nightmare(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*obj*/)
 {
 	if (!(victim && ch))
 	{
@@ -1104,7 +1114,8 @@ void spell_nightmare(int level, P_char ch, char *arg, int type, P_char victim, P
 	}
 }
 
-void spell_shadow_shield(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_shadow_shield(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int absorb = (level / 6) + number(1, 4);
@@ -1129,7 +1140,8 @@ void spell_shadow_shield(int level, P_char ch, char *arg, int type, P_char victi
 	affect_to_char(victim, &af);
 }
 
-void spell_vanish(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_vanish(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		  P_obj obj)
 {
 	struct affected_type af;
 
@@ -1169,7 +1181,7 @@ void spell_vanish(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 		SET_BIT(ch->specials.affected_by, AFF_HIDE);
 }
 
-void spell_hammer(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_hammer(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj /*obj*/)
 {
 	struct damage_messages messages = {
 		"Your massive &+Bhammer&N causes $N to double over in pain!",
@@ -1230,7 +1242,8 @@ void spell_hammer(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 	}
 }
 
-void spell_detect_illusion(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_detect_illusion(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			   P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -1262,7 +1275,8 @@ void spell_detect_illusion(int level, P_char ch, char *arg, int type, P_char vic
 	send_to_char("&+WYour vision feels enhanced!\r\n", victim);
 }
 
-void spell_dream_travel(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_dream_travel(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj /*obj*/)
 {
 	int location;
 	P_char targ, mount;
@@ -1437,7 +1451,7 @@ int is_illusion_obj(P_obj obj)
 	// Add what ever might wanna go in here!
 }
 
-void spell_clone_form(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_clone_form(int level, P_char ch, char *arg, int /*type*/, P_char victim, P_obj /*obj*/)
 {
 	bool casting_on_self = FALSE;
 	P_char t_ch, tch, next_ch, target = NULL;
@@ -1611,7 +1625,8 @@ void spell_clone_form(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 }
 
-void spell_imprison(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_imprison(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		    P_obj /*obj*/)
 {
 	char buf[1024];
 	P_obj shell;
@@ -1766,7 +1781,8 @@ bool handle_imprison_damage(P_char ch, P_char victim, int dam)
 	return TRUE;
 }
 
-void spell_nonexistence(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_nonexistence(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj /*obj*/)
 {
 	if (!IS_ALIVE(ch))
 	{
@@ -1805,7 +1821,8 @@ void spell_nonexistence(int level, P_char ch, char *arg, int type, P_char victim
 	*/
 }
 
-void spell_dragon(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_dragon(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		  P_obj /*obj*/)
 {
 	P_char mob;
 	int summoned;
@@ -1870,7 +1887,8 @@ void spell_dragon(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 	MobStartFight(mob, victim);
 }
 
-void spell_titan(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_titan(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		 P_obj /*obj*/)
 {
 	struct follow_type *k;
 	P_char mob;
@@ -1969,7 +1987,8 @@ void spell_titan(int level, P_char ch, char *arg, int type, P_char victim, P_obj
 	MobStartFight(mob, victim);
 }
 
-void spell_delirium(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_delirium(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		    P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int percent = 0;
@@ -2023,7 +2042,7 @@ void spell_delirium(int level, P_char ch, char *arg, int type, P_char victim, P_
 	}
 }
 
-void spell_flicker(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_flicker(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj /*obj*/)
 {
 	struct group_list *gl;
 
@@ -2053,12 +2072,14 @@ void spell_flicker(int level, P_char ch, char *arg, int type, P_char victim, P_o
 	}
 }
 
-void spell_greater_flicker(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_greater_flicker(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			   P_char /*victim*/, P_obj /*obj*/)
 {
 	send_to_char("This spell is not yet implemented.\r\n", ch);
 }
 
-void spell_obscuring_mist(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_obscuring_mist(int level, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,
+			  P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -2079,7 +2100,8 @@ void spell_obscuring_mist(int level, P_char ch, char *arg, int type, P_char vict
 		send_to_char("You must are already surrounded by &+ctons of mist&n.\n", victim);
 }
 
-void spell_suppress_sound(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_suppress_sound(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
+			  P_obj /*obj*/)
 {
 	struct group_list *gl;
 	if (ch && ch->group)
@@ -2096,7 +2118,8 @@ void spell_suppress_sound(int level, P_char ch, char *arg, int type, P_char vict
 	}
 }
 
-void spell_sound_suppression(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_sound_suppression(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			     P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int counter;
@@ -2127,7 +2150,8 @@ void spell_sound_suppression(int level, P_char ch, char *arg, int type, P_char v
 	}
 }
 
-void spell_shadow_merge(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_shadow_merge(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char /*victim*/, P_obj /*obj*/)
 {
 	P_char t_ch;
 	struct affected_type af;
@@ -2162,7 +2186,8 @@ void spell_shadow_merge(int level, P_char ch, char *arg, int type, P_char victim
 	}
 }
 
-void cast_ardgral(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void cast_ardgral(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*tar_ch*/,
+		  P_obj /*tar_obj*/)
 {
 	struct portal_settings set = {
 		291, /* portal type  */
@@ -2229,7 +2254,8 @@ struct sbb_data
 	int waves;
 };
 
-void spell_shadow_burst(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_shadow_burst(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
+			P_obj /*obj*/)
 {
 	struct sbb_data sbbdata;
 
@@ -2248,7 +2274,7 @@ void spell_shadow_burst(int level, P_char ch, char *arg, int type, P_char victim
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void event_shadow_spawn(P_char ch, P_char victim, P_obj obj, void *data)
+void event_shadow_spawn(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct sbb_data *sbbdata = (struct sbb_data *)data;
 	int splat;
@@ -2302,7 +2328,8 @@ void event_shadow_spawn(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void spell_shadow_spawn(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_shadow_spawn(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj /*obj*/)
 {
 	int dam, savemod, affmod;
 	struct damage_messages messages = {
@@ -2404,7 +2431,7 @@ void spell_shadow_spawn(int level, P_char ch, char *arg, int type, P_char victim
 }
 
 // Event to handle asphyxiate spell.
-void event_asphyxiate(P_char ch, P_char victim, P_obj obj, void *data)
+void event_asphyxiate(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	int rounds = *((int *)data);
 	int dam, level;
@@ -2449,7 +2476,8 @@ void event_asphyxiate(P_char ch, P_char victim, P_obj obj, void *data)
 }
 
 // _very_ quick dot that does damage over 3 ticks.
-void spell_asphyxiate(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_asphyxiate(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		      P_obj /*obj*/)
 {
 	int rounds = 3;
 

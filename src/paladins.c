@@ -120,7 +120,7 @@ void purge_linked_auras(P_char ch)
 /*
  event that is periodically called to add auras to new group members/ppl who have just walked back in
 */
-void event_apply_group_auras(P_char ch, P_char victim, P_obj obj, void *data)
+void event_apply_group_auras(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int aura = *((int *)data);
 
@@ -219,7 +219,8 @@ void send_paladin_auras(P_char ch, P_char tar_ch)
 
 extern P_room world;
 
-void spell_vortex_of_fear(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_vortex_of_fear(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
+			  P_obj /*obj*/)
 {
 	int num_hit = 0;
 
@@ -305,7 +306,7 @@ bool cleave(P_char ch, P_char victim)
 	return FALSE;
 }
 
-void event_smite_evil(P_char ch, P_char victim, P_obj obj, void *data)
+void event_smite_evil(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_char tch;
 
@@ -335,7 +336,8 @@ void event_smite_evil(P_char ch, P_char victim, P_obj obj, void *data)
 		  0, 0, 0, 0);
 }
 
-void spell_righteous_aura(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_righteous_aura(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			  P_char /*victim*/, P_obj /*obj*/)
 {
 	if (affected_by_spell(ch, SPELL_RIGHTEOUS_AURA))
 	{
@@ -365,7 +367,7 @@ void spell_righteous_aura(int level, P_char ch, char *arg, int type, P_char vict
 	}
 }
 
-void event_righteous_aura_check(P_char ch, P_char victim, P_obj obj, void *data)
+void event_righteous_aura_check(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	struct affected_type af;
 
@@ -485,7 +487,8 @@ void event_righteous_aura_check(P_char ch, P_char victim, P_obj obj, void *data)
 	add_event(event_righteous_aura_check, WAIT_SEC, ch, 0, 0, 0, 0, 0);
 }
 
-void spell_bleak_foeman(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_bleak_foeman(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char /*victim*/, P_obj /*obj*/)
 {
 	if (affected_by_spell(ch, SPELL_BLEAK_FOEMAN))
 	{
@@ -520,7 +523,7 @@ void spell_bleak_foeman(int level, P_char ch, char *arg, int type, P_char victim
 	}
 }
 
-void event_bleak_foeman_check(P_char ch, P_char victim, P_obj obj, void *data)
+void event_bleak_foeman_check(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	if (!affected_by_spell(ch, SPELL_BLEAK_FOEMAN))
 		return;
@@ -552,7 +555,8 @@ void event_bleak_foeman_check(P_char ch, P_char victim, P_obj obj, void *data)
 	add_event(event_bleak_foeman_check, WAIT_SEC, ch, 0, 0, 0, 0, 0);
 }
 
-void spell_dread_blade(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_dread_blade(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		       P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	P_obj weap;

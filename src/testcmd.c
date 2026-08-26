@@ -93,7 +93,7 @@ void disproom(P_char ch, int x, int y)
 	send_to_char(buff, ch);
 }
 
-void display_exp_table(P_char ch, char *arg, int cmd)
+void display_exp_table(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	for (int i = 0; i < TOTALLVLS; i++)
 	{
@@ -105,7 +105,7 @@ void display_exp_table(P_char ch, char *arg, int cmd)
 
 // Checks for all lava rooms in world.
 #define START_ROOM 0
-void do_test_lava(P_char ch, char *arg, int cmd)
+void do_test_lava(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int realRoomNum = START_ROOM, count = 0;
 	char buf[MAX_STRING_LENGTH];
@@ -139,7 +139,7 @@ void do_test_lava(P_char ch, char *arg, int cmd)
 	send_to_char(buf, ch);
 }
 
-void do_test_room(P_char ch, char *arg, int cmd)
+void do_test_room(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int local_y, local_x;
 	int vroom = world[ch->in_room].number;
@@ -188,7 +188,7 @@ void do_test_room(P_char ch, char *arg, int cmd)
 	disproom(ch, -1, 0);
 }
 
-void do_test_writemap(P_char ch, char *arg, int cmd)
+void do_test_writemap(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	char buff[MAX_STRING_LENGTH];
 
@@ -229,7 +229,7 @@ void do_test_writemap(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_test_zonepvp(P_char ch, char *arg)
+void do_test_zonepvp(P_char ch, char * /*arg*/)
 {
 	P_char vict;
 	u_short reset_players[MAX_RACEWAR + 1];
@@ -282,7 +282,7 @@ void do_test_suffix(P_char ch, char *arg)
 		       YESNO(ends_with(orig, suffix)));
 }
 
-void do_test_no_track(P_char ch, char *arg)
+void do_test_no_track(P_char ch, char * /*arg*/)
 {
 	int rroom = -1, count = 0;
 
@@ -1174,7 +1174,7 @@ void do_test(P_char ch, char *arg, int cmd)
 }
 
 // Function to test the radiate message from room code.
-void do_test_radiate(P_char ch, char *arg, int cmd)
+void do_test_radiate(P_char ch, char *arg, int /*cmd*/)
 {
 	char buff[MAX_STRING_LENGTH];
 	char *message;

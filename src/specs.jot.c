@@ -120,7 +120,7 @@ int betrayal(P_obj obj, P_char ch, int cmd, char *arg)
 		return (TRUE);
 }
 
-int faith(P_obj obj, P_char ch, int cmd, char *arg)
+int faith(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int dam = cmd / 1000;
 	P_char t_vict;
@@ -325,7 +325,7 @@ int leather_vest(P_obj obj, P_char ch, int cmd, char *arg)
 	return TRUE;
 }
 
-int deva_cloak(P_obj obj, P_char ch, int cmd, char *arg)
+int deva_cloak(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int curr_time;
 	P_char tch;

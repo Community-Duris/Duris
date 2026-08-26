@@ -142,7 +142,7 @@ void Encrypt(char *text, int sizeOfText, const char *key, int sizeOfKey)
 	}
 }
 
-void do_randobj(P_char ch, char *strn, int val)
+void do_randobj(P_char ch, char *strn, int /*val*/)
 {
 	P_obj o;
 	char Gbuf5[MAX_STRING_LENGTH];
@@ -291,7 +291,7 @@ unsigned int getMonsterDiffNumber(unsigned int level, unsigned int zoneDiff)
 //
 //
 
-P_obj createMundaneItem(P_obj mundane, unsigned int monDiffNumb)
+P_obj createMundaneItem(P_obj mundane, unsigned int /*monDiffNumb*/)
 {
 	return mundane; // later that same day..
 }
@@ -482,7 +482,7 @@ P_obj createRareItem(P_obj rareI, unsigned int monDiffNumb)
 //
 //
 
-P_obj createSetItem(unsigned int mobDiffNumb)
+P_obj createSetItem(unsigned int /*mobDiffNumb*/)
 {
 	// choose from a table..
 
@@ -493,7 +493,7 @@ P_obj createSetItem(unsigned int mobDiffNumb)
 //
 //
 
-P_obj createUniqueItem(unsigned int mobDiffNumb)
+P_obj createUniqueItem(unsigned int /*mobDiffNumb*/)
 {
 	// choose from a table..
 

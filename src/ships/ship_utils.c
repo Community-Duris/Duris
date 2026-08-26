@@ -1182,7 +1182,7 @@ void ShipCrew::skill_raise(float raise, float &skill, int chief)
 	skill += raise;
 }
 
-void ShipCrew::reduce_stamina(float val, P_ship ship)
+void ShipCrew::reduce_stamina(float val, P_ship /*ship*/)
 {
 	stamina -= val;
 	// act_to_all_in_ship_f(ship, "stamina: -%f", val);

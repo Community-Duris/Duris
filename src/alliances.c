@@ -115,7 +115,7 @@ void save_alliances()
 #endif // __NO_MYSQL__
 }
 
-Alliance::Alliance(P_Guild forgers, P_Guild joiners, int tribute_owed)
+Alliance::Alliance(P_Guild forgers, P_Guild joiners, int /*tribute_owed*/)
 {
 	char buff[MAX_STRING_LENGTH];
 
@@ -166,7 +166,7 @@ void sever_alliance(P_Guild guild)
 	save_alliances();
 }
 
-void do_alliance(P_char ch, char *arg, int cmd)
+void do_alliance(P_char ch, char *arg, int /*cmd*/)
 {
 	char buff[MAX_STRING_LENGTH], sub_command_str[MAX_INPUT_LENGTH],
 		victim_str[MAX_INPUT_LENGTH];

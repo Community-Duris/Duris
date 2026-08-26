@@ -256,7 +256,7 @@ char *Deck::Display2()
 	return buf;
 }
 
-int cards_object(P_obj obj, P_char ch, int cmd, char *argument)
+int cards_object(P_obj /*obj*/, P_char ch, int cmd, char *argument)
 {
 	char arg[MAX_STRING_LENGTH];
 	char buf[MAX_STRING_LENGTH];
@@ -862,7 +862,7 @@ reset_table:
 } // End GELLZ Blackjack Table
 
 // All this does is call the object proc.
-void event_dealersturn(P_char ch, P_char victim, P_obj obj, void *data)
+void event_dealersturn(P_char ch, P_char /*victim*/, P_obj obj, void * /*data*/)
 {
 	// If the object procs...
 	if (blackjack_table(obj, ch, CMD_PERIODIC, NULL))

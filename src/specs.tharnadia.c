@@ -32,7 +32,7 @@ extern struct time_info_data time_info;
 extern struct zone_data *zone;
 extern struct zone_data *zone_table;
 
-int tharn_tall_merchant(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_tall_merchant(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -82,7 +82,7 @@ int tharn_tall_merchant(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tharn_beach_guard(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_beach_guard(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -129,7 +129,7 @@ int tharn_beach_guard(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tharn_male_commoner(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_male_commoner(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -176,7 +176,7 @@ int tharn_male_commoner(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tharn_female_commoner(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_female_commoner(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -218,7 +218,7 @@ int tharn_female_commoner(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tharn_human_merchant(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_human_merchant(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -260,7 +260,7 @@ int tharn_human_merchant(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tharn_lighthouse_attendent(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_lighthouse_attendent(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -303,7 +303,7 @@ int tharn_lighthouse_attendent(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tharn_crier_one(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_crier_one(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char buf[MAX_INPUT_LENGTH];
 
@@ -571,7 +571,7 @@ int tharn_crier_one(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tharn_shady_mercenary(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_shady_mercenary(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -614,7 +614,7 @@ int tharn_shady_mercenary(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tharn_shady_youth(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_shady_youth(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -653,7 +653,7 @@ int tharn_shady_youth(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tharn_jailor(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_jailor(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -692,7 +692,7 @@ int tharn_jailor(P_char ch, P_char pl, int cmd, char *arg)
 	return (FALSE);
 }
 
-int tharn_old_man(P_char ch, P_char pl, int cmd, char *arg)
+int tharn_old_man(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls

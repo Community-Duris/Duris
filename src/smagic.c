@@ -140,7 +140,8 @@ void guardian_spirits_messages(P_char ch, P_char victim)
 }
 
 // Only specialized shamans may cast guardian spirits.
-void spell_guardian_spirits(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_guardian_spirits(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			    P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int duration;
@@ -204,7 +205,8 @@ void spell_guardian_spirits(int level, P_char ch, char *arg, int type, P_char vi
 	affect_to_char(victim, &af);
 }
 
-void spell_lesser_guardian_ward(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_lesser_guardian_ward(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int duration, ward_amount;
@@ -240,7 +242,8 @@ void spell_lesser_guardian_ward(int level, P_char ch, char *arg, int type, P_cha
 	}
 }
 
-void spell_guardian_ward(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_guardian_ward(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int duration, ward_amount;
@@ -274,8 +277,8 @@ void spell_guardian_ward(int level, P_char ch, char *arg, int type, P_char victi
 	}
 }
 
-void spell_greater_guardian_ward(int level, P_char ch, char *arg, int type, P_char victim,
-				 P_obj obj)
+void spell_greater_guardian_ward(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				 P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int duration, ward_amount;
@@ -320,7 +323,8 @@ void essence_broken(struct char_link_data *cld)
 	    TO_VICT);
 }
 
-void spell_essence_of_the_wolf(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_essence_of_the_wolf(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			       P_char victim, P_obj /*obj*/)
 {
 	if (!ch || !victim || ch == victim)
 		return;
@@ -348,7 +352,8 @@ void spell_essence_of_the_wolf(int level, P_char ch, char *arg, int type, P_char
 	link_char(ch, victim, LNK_ESSENCE_OF_WOLF);
 }
 
-void spell_spirit_walk(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_spirit_walk(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		       P_obj /*obj*/)
 {
 	P_obj tobj;
 	int found = 0;
@@ -469,7 +474,8 @@ void spell_spirit_walk(int level, P_char ch, char *arg, int type, P_char victim,
 	}
 }
 
-void spell_elemental_affinity(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_elemental_affinity(int level, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,
+			      P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -504,7 +510,7 @@ struct fury_data
 	int round;
 };
 
-void event_elemental_fury(P_char ch, P_char victim, P_obj obj, void *data)
+void event_elemental_fury(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	P_char t, t_next;
 	struct fury_data *fdata;
@@ -610,7 +616,8 @@ void event_elemental_fury(P_char ch, P_char victim, P_obj obj, void *data)
 		  sizeof(struct fury_data));
 }
 
-void spell_elemental_fury(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_elemental_fury(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj /*tar_obj*/)
 {
 	struct fury_data fdata;
 	int room;
@@ -635,7 +642,8 @@ void spell_elemental_fury(int level, P_char ch, char *arg, int type, P_char vict
 	add_event(event_elemental_fury, PULSE_VIOLENCE, ch, 0, NULL, 0, &fdata, sizeof(fdata));
 }
 
-void spell_ice_missile(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_ice_missile(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		       P_obj /*obj*/)
 {
 	int temp;
 	int dam;
@@ -662,7 +670,8 @@ void spell_ice_missile(int level, P_char ch, char *arg, int type, P_char victim,
 		;
 }
 
-void spell_corrosive_blast(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_corrosive_blast(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			   P_char victim, P_obj obj)
 {
 	struct damage_messages messages = {
 		"&+G$N&+G screams in utter agony as your corrosive blast slams into $S body!",
@@ -716,7 +725,7 @@ void spell_corrosive_blast(int level, P_char ch, char *arg, int type, P_char vic
 	}
 }
 
-void spell_restoration(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_restoration(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj obj)
 {
 	int gain;
 
@@ -822,7 +831,7 @@ void spell_restoration(int level, P_char ch, char *arg, int type, P_char victim,
 	send_to_char("&+WYou feel &+csignificantly &+Wbetter.\r\n", victim);
 }
 
-void spell_flameburst(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_flameburst(int level, P_char ch, char * /*arg*/, int type, P_char victim, P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages;
@@ -881,7 +890,8 @@ void spell_flameburst(int level, P_char ch, char *arg, int type, P_char victim, 
 	spell_damage(ch, victim, dam, SPLDAM_FIRE, SPLDAM_ALLGLOBES, &messages);
 }
 
-void spell_scalding_blast(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_scalding_blast(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -925,7 +935,8 @@ void spell_scalding_blast(int level, P_char ch, char *arg, int type, P_char vict
 		     &messages);
 }
 
-void spell_scorching_touch(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_scorching_touch(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			   P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -945,7 +956,8 @@ void spell_scorching_touch(int level, P_char ch, char *arg, int type, P_char vic
 	spell_damage(ch, victim, dam, SPLDAM_FIRE, SPLDAM_GLOBE | SPLDAM_GRSPIRIT, &messages);
 }
 
-void spell_molten_spray(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_molten_spray(int level, P_char ch, char * /*arg*/, int type, P_char victim,
+			P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages;
@@ -1012,7 +1024,8 @@ void spell_molten_spray(int level, P_char ch, char *arg, int type, P_char victim
 	spell_damage(ch, victim, dam, SPLDAM_FIRE, SPLDAM_GLOBE, &messages);
 }
 
-void spell_soul_disturbance(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_soul_disturbance(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			    P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -1046,8 +1059,8 @@ void spell_soul_disturbance(int level, P_char ch, char *arg, int type, P_char vi
 		     SPLDAM_GLOBE | SPLDAM_GRSPIRIT | SPLDAM_NOSHRUG, &messages);
 }
 
-void spell_greater_soul_disturbance(int level, P_char ch, char *arg, int type, P_char victim,
-				    P_obj obj)
+void spell_greater_soul_disturbance(int level, P_char ch, char * /*arg*/, int /*type*/,
+				    P_char victim, P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -1080,8 +1093,8 @@ void spell_greater_soul_disturbance(int level, P_char ch, char *arg, int type, P
 	spell_damage(ch, victim, dam, SPLDAM_SPIRIT, SPLDAM_NOSHRUG, &messages);
 }
 
-void spell_greater_spirit_anguish(int level, P_char ch, char *arg, int type, P_char victim,
-				  P_obj obj)
+void spell_greater_spirit_anguish(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				  P_char victim, P_obj /*obj*/)
 {
 	int dam;
 	struct affected_type af;
@@ -1143,7 +1156,8 @@ void spell_greater_spirit_anguish(int level, P_char ch, char *arg, int type, P_c
 	}
 }
 
-void spell_spirit_anguish(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_spirit_anguish(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -1177,7 +1191,8 @@ void spell_spirit_anguish(int level, P_char ch, char *arg, int type, P_char vict
 		     SPLDAM_NODEFLECT | SPLDAM_GLOBE | SPLDAM_NOSHRUG, &messages);
 }
 
-void spell_gaseous_cloud(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_gaseous_cloud(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			 P_obj /*obj*/)
 {
 	struct damage_messages messages = {
 		"&+GWith a wave of your hand, you cause $N &+Gto choke painfully on your &+ggaseous cloud&n.",
@@ -1221,8 +1236,8 @@ void spell_gaseous_cloud(int level, P_char ch, char *arg, int type, P_char victi
 	}
 }
 
-void spell_arieks_shattering_iceball(int level, P_char ch, char *arg, int type, P_char victim,
-				     P_obj object)
+void spell_arieks_shattering_iceball(int level, P_char ch, char * /*arg*/, int /*type*/,
+				     P_char victim, P_obj /*object*/)
 {
 	int room;
 	P_obj obj;
@@ -1273,7 +1288,8 @@ void spell_arieks_shattering_iceball(int level, P_char ch, char *arg, int type, 
 
 /* owie! */
 
-void spell_single_scathing_wind(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_single_scathing_wind(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+				P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -1309,7 +1325,8 @@ void spell_single_scathing_wind(int level, P_char ch, char *arg, int type, P_cha
 	spell_damage(ch, victim, dam, SPLDAM_FIRE, 0, &messages);
 }
 
-void spell_scathing_wind(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_scathing_wind(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*obj*/)
 {
 	struct room_affect raf;
 	P_char tch;
@@ -1343,7 +1360,8 @@ void spell_scathing_wind(int level, P_char ch, char *arg, int type, P_char victi
 		}
 }
 
-void spell_single_earthen_rain(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_single_earthen_rain(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			       P_obj /*obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -1401,7 +1419,8 @@ void spell_single_earthen_rain(int level, P_char ch, char *arg, int type, P_char
 	spell_damage(ch, victim, dam, SPLDAM_EARTH, SPLDAM_NOSHRUG, &messages);
 }
 
-void spell_earthen_rain(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_earthen_rain(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj /*obj*/)
 {
 	if (!IS_ALIVE(ch))
 	{
@@ -1570,7 +1589,8 @@ void earthen_grasp(int level, P_char ch, P_char victim)
 	}
 }
 
-void spell_earthen_grasp(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_earthen_grasp(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			 P_obj /*obj*/)
 {
 	if (victim == ch)
 	{
@@ -1586,7 +1606,8 @@ void spell_earthen_grasp(int level, P_char ch, char *arg, int type, P_char victi
 	earthen_grasp(level, ch, victim);
 }
 
-void spell_single_earthen_grasp(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_single_earthen_grasp(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+				P_obj /*obj*/)
 {
 	if (!IS_ALIVE(ch) || !(ch->in_room))
 	{
@@ -1596,8 +1617,8 @@ void spell_single_earthen_grasp(int level, P_char ch, char *arg, int type, P_cha
 	earthen_grasp(level, ch, victim);
 }
 
-void spell_greater_earthen_grasp(int level, P_char ch, char *arg, int type, P_char victim,
-				 P_obj obj)
+void spell_greater_earthen_grasp(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+				 P_obj /*obj*/)
 {
 	int room;
 
@@ -1625,7 +1646,8 @@ void spell_greater_earthen_grasp(int level, P_char ch, char *arg, int type, P_ch
 			  "&+yThe ground rumbles &+Ldeeply &+yto the %s...\n");
 }
 
-void spell_pythonsting(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_pythonsting(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		       P_obj /*obj*/)
 {
 	bool was_poisoned;
 	int dam, temp;
@@ -1685,7 +1707,8 @@ void spell_pythonsting(int level, P_char ch, char *arg, int type, P_char victim,
 	}
 }
 
-void spell_greater_pythonsting(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_greater_pythonsting(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			       P_obj /*obj*/)
 {
 	if (!IS_ALIVE(ch))
 		return;
@@ -1701,7 +1724,8 @@ void spell_greater_pythonsting(int level, P_char ch, char *arg, int type, P_char
 			    get_property("spell.area.chanceStep.gPythonSting", 20));
 }
 
-void spell_bloodhound(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_bloodhound(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -1720,7 +1744,8 @@ void spell_bloodhound(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 }
 
-void spell_spirit_armor(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_spirit_armor(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int duration = level;
@@ -1792,7 +1817,8 @@ void spell_spirit_armor(int level, P_char ch, char *arg, int type, P_char victim
 	}
 }
 
-void spell_transfer_wellness(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_transfer_wellness(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			     P_obj /*obj*/)
 {
 	int to, from, pos;
 	P_obj t_obj, next_obj, money;
@@ -1917,7 +1943,8 @@ void spell_transfer_wellness(int level, P_char ch, char *arg, int type, P_char v
 	die(ch, ch);
 }
 
-void spell_sustenance(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_sustenance(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		      P_obj /*obj*/)
 {
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return;
@@ -1939,7 +1966,8 @@ void spell_sustenance(int level, P_char ch, char *arg, int type, P_char victim, 
 	send_to_char("You feel comfortably sated.\n", victim);
 }
 
-void spell_greater_sustenance(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_greater_sustenance(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			      P_obj /*obj*/)
 {
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return;
@@ -1952,7 +1980,8 @@ void spell_greater_sustenance(int level, P_char ch, char *arg, int type, P_char 
 	}
 }
 
-void spell_wolfspeed(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_wolfspeed(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		     P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -2004,7 +2033,8 @@ void spell_wolfspeed(int level, P_char ch, char *arg, int type, P_char victim, P
 	affect_to_char(victim, &af);
 }
 
-void spell_snailspeed(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_snailspeed(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int percent = 0;
@@ -2131,7 +2161,8 @@ void spell_snailspeed(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 }
 
-void spell_pantherspeed(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_pantherspeed(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -2197,7 +2228,8 @@ void spell_pantherspeed(int level, P_char ch, char *arg, int type, P_char victim
 	affect_to_char(victim, &af);
 }
 
-void spell_molevision(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_molevision(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int percent = 0, hitroll = 0;
@@ -2326,7 +2358,8 @@ void spell_molevision(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 }
 
-void spell_mousestrength(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_mousestrength(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int percent = 0;
@@ -2473,7 +2506,8 @@ void spell_mousestrength(int level, P_char ch, char *arg, int type, P_char victi
 	}
 }
 
-void spell_hawkvision(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_hawkvision(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -2523,7 +2557,8 @@ void spell_hawkvision(int level, P_char ch, char *arg, int type, P_char victim, 
 	affect_to_char(victim, &af);
 }
 
-void spell_bearstrength(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_bearstrength(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -2601,7 +2636,8 @@ void spell_bearstrength(int level, P_char ch, char *arg, int type, P_char victim
 	}
 }
 
-void spell_elephantstrength(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_elephantstrength(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			    P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -2694,7 +2730,8 @@ void spell_elephantstrength(int level, P_char ch, char *arg, int type, P_char vi
 	}
 }
 
-void spell_shrewtameness(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_shrewtameness(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int percent = 0;
@@ -2826,7 +2863,8 @@ void spell_shrewtameness(int level, P_char ch, char *arg, int type, P_char victi
 	}
 }
 
-void spell_lionrage(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_lionrage(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		    P_obj /*obj*/)
 {
 	struct affected_type af;
 	int duration;
@@ -2913,7 +2951,8 @@ void spell_lionrage(int level, P_char ch, char *arg, int type, P_char victim, P_
 	}
 }
 
-void spell_ravenflight(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_ravenflight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		       P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -2956,7 +2995,8 @@ void spell_ravenflight(int level, P_char ch, char *arg, int type, P_char victim,
 	}
 }
 
-void spell_greater_ravenflight(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_greater_ravenflight(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			       P_obj /*obj*/)
 {
 	if (!IS_ALIVE(ch))
 		return;
@@ -2965,7 +3005,8 @@ void spell_greater_ravenflight(int level, P_char ch, char *arg, int type, P_char
 		spell_ravenflight(level, ch, NULL, SPELL_TYPE_SPELL, victim, 0);
 }
 
-void spell_call_of_the_wild(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_call_of_the_wild(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			    P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	P_char new_vict;
@@ -3025,7 +3066,8 @@ void spell_call_of_the_wild(int level, P_char ch, char *arg, int type, P_char vi
 	affect_to_char(new_vict, &af);
 }
 
-void spell_malison(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_malison(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		   P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -3071,7 +3113,8 @@ void spell_malison(int level, P_char ch, char *arg, int type, P_char victim, P_o
 	act("You suddenly feel less protected.", FALSE, ch, 0, victim, TO_VICT);
 }
 
-void spell_purify_spirit(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_purify_spirit(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			 P_obj /*obj*/)
 {
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return;
@@ -3111,7 +3154,8 @@ void spell_purify_spirit(int level, P_char ch, char *arg, int type, P_char victi
 	}
 }
 
-void spell_spirit_sight(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_spirit_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -3160,7 +3204,8 @@ void spell_spirit_sight(int level, P_char ch, char *arg, int type, P_char victim
 		victim);
 }
 
-void spell_greater_spirit_sight(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_greater_spirit_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -3206,7 +3251,8 @@ void spell_greater_spirit_sight(int level, P_char ch, char *arg, int type, P_cha
 		victim);
 }
 
-void spell_sense_spirit(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_sense_spirit(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int duration;
@@ -3249,7 +3295,7 @@ void spell_sense_spirit(int level, P_char ch, char *arg, int type, P_char victim
 	}
 }
 
-int can_summon_beast(P_char ch, int level)
+int can_summon_beast(P_char ch, int /*level*/)
 {
 	struct follow_type *k;
 	int i, charisma = GET_C_CHA(ch);
@@ -3435,7 +3481,8 @@ P_char summon_beast_common(int mobnumb, P_char ch, int max_summon, int dur, cons
 	return mob;
 }
 
-void spell_summon_beast(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_summon_beast(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
+			P_obj /*obj*/)
 {
 	int rand = number(1, 3), maxsumm = (level / 15) + 1, dur = 20 + (level / 5);
 
@@ -3618,7 +3665,8 @@ void spell_summon_beast(int level, P_char ch, char *arg, int type, P_char victim
 	}
 }
 
-void spell_greater_summon_beast(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_greater_summon_beast(int level, P_char ch, char * /*arg*/, int /*type*/,
+				P_char /*victim*/, P_obj /*obj*/)
 {
 	int rand = number(1, 3), maxsumm = (level / 15) + 1, dur = level + 10;
 
@@ -3797,13 +3845,15 @@ void spell_greater_summon_beast(int level, P_char ch, char *arg, int type, P_cha
 	}
 }
 
-void spell_summon_spirit(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_summon_spirit(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
+			 P_obj /*obj*/)
 {
 	send_to_char("This spell is not yet implemented.\n", ch);
 	send_to_char("&+gLohr pops up and goes, \"Eee Hee!\"!&n", ch);
 }
 
-void spell_wellness(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_wellness(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
+		    P_obj /*obj*/)
 {
 	P_char tch;
 	int gain;
@@ -3852,7 +3902,8 @@ void spell_wellness(int level, P_char ch, char *arg, int type, P_char victim, P_
 	}
 }
 
-void spell_lesser_mending(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_lesser_mending(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj /*obj*/)
 {
 	int gain;
 
@@ -3892,7 +3943,7 @@ void spell_lesser_mending(int level, P_char ch, char *arg, int type, P_char vict
 	send_to_char("&+WYou feel a bit better.\n", victim);
 }
 
-void spell_mending(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_mending(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim, P_obj /*obj*/)
 {
 	int gain;
 
@@ -3925,7 +3976,8 @@ void spell_mending(int level, P_char ch, char *arg, int type, P_char victim, P_o
 	update_pos(victim);
 }
 
-void spell_greater_mending(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_greater_mending(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			   P_obj /*obj*/)
 {
 	int gain;
 
@@ -3991,7 +4043,8 @@ void spell_greater_mending(int level, P_char ch, char *arg, int type, P_char vic
 	    victim, TO_NOTVICT);
 }
 
-void spell_spirit_ward(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_spirit_ward(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		       P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int duration;
@@ -4039,7 +4092,8 @@ void spell_spirit_ward(int level, P_char ch, char *arg, int type, P_char victim,
 	affect_to_char(victim, &af);
 }
 
-void spell_greater_spirit_ward(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_greater_spirit_ward(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			       P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int duration;
@@ -4083,7 +4137,8 @@ void spell_greater_spirit_ward(int level, P_char ch, char *arg, int type, P_char
 	affect_to_char(victim, &af);
 }
 
-void spell_reveal_true_form(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_reveal_true_form(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			    P_char /*victim*/, P_obj /*obj*/)
 {
 	P_char tmp_victim;
 
@@ -4128,7 +4183,8 @@ void spell_reveal_true_form(int level, P_char ch, char *arg, int type, P_char vi
 	}
 }
 
-void spell_cold_ward(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_cold_ward(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		     P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -4161,7 +4217,8 @@ void spell_cold_ward(int level, P_char ch, char *arg, int type, P_char victim, P
 	}
 }
 
-void spell_fire_ward(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_fire_ward(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		     P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -4194,8 +4251,8 @@ void spell_fire_ward(int level, P_char ch, char *arg, int type, P_char victim, P
 	}
 }
 
-void spell_reveal_spirit_essence(int level, P_char ch, char *arg, int type, P_char victim,
-				 P_obj obj)
+void spell_reveal_spirit_essence(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+				 P_char victim, P_obj /*obj*/)
 {
 	int align;
 	char buff[256], buff2[256], buff3[256];
@@ -4316,7 +4373,8 @@ void spell_reveal_spirit_essence(int level, P_char ch, char *arg, int type, P_ch
 	}
 }
 
-void spell_spirit_jump(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_spirit_jump(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		       P_obj /*obj*/)
 {
 	int location, distance;
 	char buf[256] = { 0 };
@@ -4444,7 +4502,8 @@ void spell_spirit_jump(int level, P_char ch, char *arg, int type, P_char victim,
 
 /* Beastform is basicly self-only call_of_the_wild. A weak version of shapeshift */
 
-void spell_beastform(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_beastform(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		     P_obj /*obj*/)
 {
 	struct affected_type af;
 	P_char new_vict;
@@ -4497,7 +4556,8 @@ void spell_beastform(int level, P_char ch, char *arg, int type, P_char victim, P
 	affect_to_char(new_vict, &af);
 }
 
-void spell_indomitability(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_indomitability(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			  P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -4520,7 +4580,7 @@ void spell_indomitability(int level, P_char ch, char *arg, int type, P_char vict
 	}
 }
 
-void event_firebrand(P_char ch, P_char victim, P_obj obj, void *data)
+void event_firebrand(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	int level, dam;
 	struct affected_type *af;
@@ -4568,7 +4628,8 @@ void event_firebrand(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void spell_firebrand(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_firebrand(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		     P_obj /*obj*/)
 {
 	int dam;
 	struct affected_type *af;
@@ -4614,7 +4675,8 @@ void spell_firebrand(int level, P_char ch, char *arg, int type, P_char victim, P
 	}
 }
 
-void spell_etherportal(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_etherportal(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		       P_obj /*obj*/)
 {
 	struct portal_settings set = {
 		780, /* portal type  */
@@ -4676,8 +4738,8 @@ void spell_etherportal(int level, P_char ch, char *arg, int type, P_char victim,
 	spell_general_portal(level, ch, victim, &set, &msg);
 }
 
-void spell_cascading_elemental_beam(int level, P_char ch, char *arg, int type, P_char victim,
-				    P_obj object)
+void spell_cascading_elemental_beam(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				    P_char victim, P_obj /*object*/)
 {
 	int dam, damaged, mod = 0;
 	bool deflect = FALSE;
@@ -4814,7 +4876,7 @@ void spell_cascading_elemental_beam(int level, P_char ch, char *arg, int type, P
 	}
 }
 
-void event_torment_spirits(P_char ch, P_char victim, P_obj obj, void *data)
+void event_torment_spirits(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	int dam, ts;
 	struct damage_messages messages = {
@@ -4873,7 +4935,8 @@ void event_torment_spirits(P_char ch, P_char victim, P_obj obj, void *data)
 	return;
 }
 
-void spell_torment_spirits(int level, P_char ch, char *arg, int type, P_char victim, P_obj object)
+void spell_torment_spirits(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			   P_obj /*object*/)
 {
 	int ts = 0;
 

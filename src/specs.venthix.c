@@ -247,7 +247,7 @@ void get_cannon_heading(void *data)
 	return;
 }
 
-void event_super_cannon_fire(P_char ch, P_char vict, P_obj obj, void *data)
+void event_super_cannon_fire(P_char ch, P_char /*vict*/, P_obj /*obj*/, void *data)
 {
 	struct cannon_data *cdata = (struct cannon_data *)data;
 	int troom;
@@ -372,7 +372,7 @@ void event_super_cannon_fire(P_char ch, P_char vict, P_obj obj, void *data)
 	}
 }
 
-void event_super_cannon(P_char pl, P_char vict, P_obj obj, void *data)
+void event_super_cannon(P_char /*pl*/, P_char /*vict*/, P_obj obj, void *data)
 {
 	struct cannon_data *cdata = (struct cannon_data *)data;
 	P_char ch = NULL;
@@ -997,7 +997,7 @@ ZombieGame *get_zgame_from_zombie(P_char z)
 	return NULL;
 }
 
-int zgame_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
+int zgame_mob_proc(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC || cmd == CMD_PERIODIC)
 		return FALSE;

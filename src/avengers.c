@@ -11,7 +11,8 @@
 #include "objmisc.h"
 #include "spells.h"
 
-void spell_holy_sword(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_holy_sword(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char /*victim*/, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -44,7 +45,8 @@ void spell_holy_sword(int level, P_char ch, char *arg, int type, P_char victim, 
 		ch);
 }
 
-void spell_divine_power(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_divine_power(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char /*victim*/, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int healpoints = level;
@@ -81,7 +83,8 @@ void spell_divine_power(int level, P_char ch, char *arg, int type, P_char victim
 	}
 }
 
-void spell_atonement(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_atonement(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		     P_char /*victim*/, P_obj /*obj*/)
 {
 	struct affected_type af;
 	char Gbuf1[100];
@@ -106,7 +109,7 @@ void spell_atonement(int level, P_char ch, char *arg, int type, P_char victim, P
 }
 
 // some skill type stuff, thrown in here for continuty
-void do_holy_smite(P_char ch, char *argument, int cmd)
+void do_holy_smite(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL;
 	char name[100];
@@ -187,7 +190,8 @@ void do_holy_smite(P_char ch, char *argument, int cmd)
 	CharWait(ch, 2 * PULSE_VIOLENCE);
 }
 
-void spell_celestial_aura(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_celestial_aura(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			  P_char /*victim*/, P_obj /*obj*/)
 {
 	struct affected_type af;
 

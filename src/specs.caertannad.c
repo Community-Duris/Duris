@@ -24,7 +24,7 @@
 #include "spells.h"
 #include "weather.h"
 
-int caertannad_summon(P_char ch, P_char tch, int cmd, char *arg)
+int caertannad_summon(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 78478, 78480, 0 };
 	if (cmd == -10)

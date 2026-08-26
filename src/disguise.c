@@ -93,7 +93,7 @@ struct disguise_list_data_struct disguise_list_data[] = {
 	  { "&+Lan orog warrior&n", "&+ran orog berserker&n", "&+yan orog warpriest&n" } }
 };
 
-void do_disguise(P_char ch, char *arg, int cmd)
+void do_disguise(P_char ch, char *arg, int /*cmd*/)
 {
 	int skl_lvl = 0;
 	int percent = 0;

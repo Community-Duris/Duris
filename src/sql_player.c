@@ -5080,7 +5080,7 @@ bool sql_account_exists(const char *name)
 	return exists;
 }
 
-bool sql_link_player_to_account(const char *account_name, int pid)
+bool sql_link_player_to_account(const char * /*account_name*/, int /*pid*/)
 {
 	// todo: implement
 	return false;

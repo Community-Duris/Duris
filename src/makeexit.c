@@ -6,7 +6,7 @@
 extern const int rev_dir[];
 extern P_room world;
 
-void do_makeexit(P_char ch, char *arg, int cmd)
+void do_makeexit(P_char ch, char *arg, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 

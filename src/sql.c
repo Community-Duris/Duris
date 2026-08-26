@@ -784,7 +784,7 @@ void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_
 }
 
 // Returns the highest level achievable by mortals, limited by racewar side.
-int sql_level_cap(int racewar_side)
+int sql_level_cap(int /*racewar_side*/)
 {
 	int level_cap;
 	MYSQL_RES *db = NULL;
@@ -1150,7 +1150,7 @@ bool sql_soft_delete_character(long pid)
 }
 
 /* Save frags delta */
-void sql_insert_item(P_char ch, P_obj obj, char *desc)
+void sql_insert_item(P_char /*ch*/, P_obj obj, char *desc)
 {
 	char query[MAX_STRING_LENGTH];
 	char sql_desc[MAX_STRING_LENGTH * 2 + 1];
@@ -2092,7 +2092,7 @@ void log_epic_gain(int pid, int type, int type_id, int epics)
 	    pid, type, type_id, epics);
 }
 
-void log_epic_gain_event(const char *event_key, int pid, int type, int type_id, int epics)
+void log_epic_gain_event(const char * /*event_key*/, int pid, int type, int type_id, int epics)
 {
 	char line[PERSISTENCE_EVENT_MAX_LEN];
 

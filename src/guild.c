@@ -301,7 +301,8 @@ again:
 	return TRUE;
 }
 
-void spell_learning(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_learning(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		    P_char /*victim*/, P_obj /*obj*/)
 {
 	affect_from_char(ch, SPELL_LEARNING);
 
@@ -315,7 +316,7 @@ void spell_learning(int level, P_char ch, char *arg, int type, P_char victim, P_
 	act("&+cYou feel more capable of improving your skills.", FALSE, ch, 0, 0, TO_CHAR);
 }
 
-int SpellCopyCost(P_char ch, int spell)
+int SpellCopyCost(P_char /*ch*/, int /*spell*/)
 {
 	// All spells are currently free to scribe. - Lohrr
 	// Former formula, kept for reference:
@@ -542,7 +543,7 @@ int spell_cmp(const void *va, const void *vb)
 	return (str_cmp(skills[a->spell].name, skills[b->spell].name));
 }
 
-void do_spells(P_char ch, char *argument, int cmd)
+void do_spells(P_char ch, char *argument, int /*cmd*/)
 {
 	int spl, circle, i, count = 0, m_class = 0, lvl;
 	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
@@ -782,7 +783,7 @@ void do_spells(P_char ch, char *argument, int cmd)
 	page_string(ch->desc, buf1, 1);
 }
 
-void do_skills(P_char ch, char *argument, int cmd)
+void do_skills(P_char ch, char *argument, int /*cmd*/)
 {
 	int skl, skil;
 	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH];

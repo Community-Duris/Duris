@@ -1461,7 +1461,7 @@ int avernus(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int purple_worm(P_char ch, P_char pl, int cmd, char *arg)
+int purple_worm(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_obj obj, next_obj;
 	P_char vict;
@@ -1584,7 +1584,7 @@ int purple_worm(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int piercer(P_char ch, P_char pl, int cmd, char *arg)
+int piercer(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict = NULL, tmp_ch, next;
 	int dam;
@@ -2199,7 +2199,7 @@ int githpc_special_weap(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 }
 
-int tiamat(P_char ch, P_char pl, int cmd, char *arg)
+int tiamat(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char bufs[6][128];
 	struct damage_messages messages = {
@@ -2610,7 +2610,7 @@ int tiamat(P_char ch, P_char pl, int cmd, char *arg)
 	return TRUE;
 }
 
-int dranum_jurtrem(P_char ch, P_char pl, int cmd, char *arg)
+int dranum_jurtrem(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_char vict;
 
@@ -2635,7 +2635,7 @@ int dranum_jurtrem(P_char ch, P_char pl, int cmd, char *arg)
 	return TRUE;
 }
 
-int bulette(P_char ch, P_char pl, int cmd, char *arg)
+int bulette(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	/*
 	   check for periodic event calls
@@ -3021,14 +3021,14 @@ struct _BarbProcArtiData
 	bool messages_set;
 };
 
-void event_dwarven_ancestor_death(P_char ch, P_char victim, P_obj obj, void *data)
+void event_dwarven_ancestor_death(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	act("$n &+rdisappears as &+Lquickly&+r as it came, fading into the thin air!", TRUE, ch, 0,
 	    0, TO_ROOM);
 	extract_char(ch);
 }
 
-void barb_proc_dwarven_ancestor(int level, P_char ch, P_char victim)
+void barb_proc_dwarven_ancestor([[maybe_unused]] int level, P_char ch, P_char victim)
 {
 	P_char mob;
 	int duration, i;
@@ -4163,7 +4163,7 @@ int gfstone(P_obj obj, P_char ch, int cmd, char *arg)
 /* testing out code for tsunami artifact.  should not be included yet. */
 /***********************************************************************/
 
-void event_tsunamiwave(P_char ch, P_char victim, P_obj obj, void *data)
+void event_tsunamiwave(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	int room = *((int *)data);
 	bool success;
@@ -4433,7 +4433,7 @@ int sevenoaks_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int dagger_of_wind(P_obj obj, P_char ch, int cmd, char *arg)
+int dagger_of_wind(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
 	int room;

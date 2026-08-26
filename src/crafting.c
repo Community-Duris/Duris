@@ -1051,7 +1051,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 }
 
 /* Modern Forge command implementation, extracted from tradeskill.c. */
-static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
+static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/)
 {
 	int skillLevel, objVnum, commandType, iVal, invVnum;
 	int numHighQuality, numLowQuality, lowQualityMaterialVnum, highQualityMaterialVnum;

@@ -67,7 +67,7 @@ int range_scan_track(P_char ch, int distance, int type_scan);
  * EVENT PROCS
  */
 
-int wh_corpse_to_object(P_char ch, P_char pl, int cmd, char *arg)
+int wh_corpse_to_object(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_DEATH)
 	{
@@ -89,7 +89,7 @@ int wh_corpse_to_object(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int wh_corpse_decay(P_obj obj, P_char ch, int cmd, char *args)
+int wh_corpse_decay(P_obj obj, P_char ch, int cmd, char * /*args*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -144,7 +144,7 @@ int wh_corpse_decay(P_obj obj, P_char ch, int cmd, char *args)
  * MOB PROCS
  */
 
-int winterhaven_shout_one(P_char ch, P_char tch, int cmd, char *arg)
+int winterhaven_shout_one(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 55241, 55255, 55258, 55259, 132520, 132521, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -156,7 +156,7 @@ int winterhaven_shout_one(P_char ch, P_char tch, int cmd, char *arg)
 	return FALSE;
 }
 
-int winterhaven_shout_two(P_char ch, P_char tch, int cmd, char *arg)
+int winterhaven_shout_two(P_char ch, P_char tch, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 55240, 55256, 55257, 55260, 97560, 97562, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -1446,7 +1446,7 @@ int dagger_ra(P_obj obj, P_char ch, int cmd, char *arg)
 
 // Winterhaven high priest is prevented from summoning beasts in mobact.c
 
-int newbie_spellup_mob(P_char ch, P_char victim, int cmd, char *arg)
+int newbie_spellup_mob(P_char ch, P_char /*victim*/, int cmd, char * /*arg*/)
 {
 	int *spells = NULL;
 
@@ -1572,7 +1572,7 @@ int newbie_spellup_mob(P_char ch, P_char victim, int cmd, char *arg)
 	return FALSE;
 }
 
-int welfare_well(int room, P_char ch, int cmd, char *arg)
+int welfare_well(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	P_obj obj, well;
@@ -1620,7 +1620,7 @@ int welfare_well(int room, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
+int wh_janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj o, next_obj, o_1, well;
 	P_nevent ev = NULL;
@@ -1773,7 +1773,7 @@ int wh_janitor(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int wh_guard(P_char ch, P_char victim, int cmd, char *arg)
+int wh_guard(P_char ch, P_char victim, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 55240, 55241, 55255, 55256, 55257, 55258, 55259, 55260, 55022, 0 };
 	if (cmd == CMD_SET_PERIODIC)
@@ -1784,7 +1784,7 @@ int wh_guard(P_char ch, P_char victim, int cmd, char *arg)
 	return FALSE;
 }
 
-int no_kill_priest_obj(P_obj fountain, P_char ch, int cmd, char *arg)
+int no_kill_priest_obj(P_obj /*fountain*/, P_char ch, int cmd, char *arg)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return true;
@@ -3772,7 +3772,7 @@ int attribute_scroll(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int earring_powers(P_obj obj, P_char ch, int cmd, char *arg)
+int earring_powers(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int curr_time, first, second;
 
@@ -4553,7 +4553,7 @@ int key_mold(P_obj obj, P_char ch, int cmd, char *args)
 
 */
 
-int tiamat_human_to_rareloads(P_char ch, P_char pl, int cmd, char *arg)
+int tiamat_human_to_rareloads(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_DEATH)
 	{
@@ -4596,7 +4596,7 @@ int tiamat_human_to_rareloads(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int dragonnia_heart(P_char ch, P_char pl, int cmd, char *arg)
+int dragonnia_heart(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj obj;
 
@@ -4785,7 +4785,7 @@ int dragon_heart_decay(P_obj obj, P_char ch, int cmd, char *args)
 	return FALSE;
 }
 
-int lanella_heart(P_char ch, P_char pl, int cmd, char *arg)
+int lanella_heart(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_DEATH)
 	{
@@ -4946,7 +4946,7 @@ int lancer_gift(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int cerberus_load(P_char ch, P_char pl, int cmd, char *arg)
+int cerberus_load(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_DEATH)
 	{

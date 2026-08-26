@@ -203,7 +203,7 @@ static unsigned int char_sweep_slice(P_char c)
 	return (unsigned int)(h % GENERIC_CHAR_EVENT_SLICES);
 }
 
-void generic_char_event(P_char ch, P_char victim, P_obj obj, void *data)
+void generic_char_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_char i, i_next;
 	int n;
@@ -349,7 +349,7 @@ void sun_damage_check(P_char ch)
 	//   add_event(event_sundamage, 5, ch, 0, 0, 0, 0, 0);
 }
 
-void event_sundamage(P_char ch, P_char victim, P_obj obj, void *data)
+void event_sundamage(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	if (!IS_ALIVE(ch) || IS_NPC(ch) || IS_TRUSTED(ch))
 		return;
@@ -674,7 +674,7 @@ struct affected_type *poison_common(P_char victim, short int type)
  * check if poison didn't wear off since last check,
  * if not just call poison function
  */
-void event_poison(P_char ch, P_char attacker, P_obj obj, void *data)
+void event_poison(P_char ch, P_char attacker, P_obj /*obj*/, void *data)
 {
 	short int type = *((short int *)data);
 	struct affected_type *afp;
@@ -699,8 +699,8 @@ void event_poison(P_char ch, P_char attacker, P_obj obj, void *data)
 /*
  * lose 10 hitpoints every 20 seconds
  */
-void poison_lifeleak(int level, P_char ch, char *arg, int type, P_char victim,
-		     struct affected_type *af)
+void poison_lifeleak(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,
+		     P_char victim, struct affected_type *af)
 {
 	if (!af)
 	{
@@ -722,8 +722,8 @@ void poison_lifeleak(int level, P_char ch, char *arg, int type, P_char victim,
 /*
  * lose 10 moves every 10 seconds
  */
-void poison_moveleak(int level, P_char ch, char *arg, int type, P_char victim,
-		     struct affected_type *af)
+void poison_moveleak(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,
+		     P_char victim, struct affected_type *af)
 {
 	if (!af)
 	{
@@ -746,8 +746,8 @@ void poison_moveleak(int level, P_char ch, char *arg, int type, P_char victim,
  * take once 40ish damage a while after being poisoned
  * can frag with this poison
  */
-void poison_heart_toxin(int level, P_char ch, char *arg, int type, P_char victim,
-			struct affected_type *af)
+void poison_heart_toxin(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, struct affected_type *af)
 {
 	struct damage_messages messages = {
 		"$N suddenly turns &+ggreen &nas your poison reaches $S &+Wvital &norgans.",
@@ -794,8 +794,8 @@ void poison_heart_toxin(int level, P_char ch, char *arg, int type, P_char victim
 /*
  * get frozen for 1.5 seconds every half minute
  */
-void poison_neurotoxin(int level, P_char ch, char *arg, int type, P_char victim,
-		       struct affected_type *af)
+void poison_neurotoxin(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,
+		       P_char victim, struct affected_type *af)
 {
 	if (!af)
 	{
@@ -821,8 +821,8 @@ void poison_neurotoxin(int level, P_char ch, char *arg, int type, P_char victim,
 /*
  * lose strength, lost value changes randomly from 5 to 20 every minute
  */
-void poison_weakness(int level, P_char ch, char *arg, int type, P_char victim,
-		     struct affected_type *af)
+void poison_weakness(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,
+		     P_char victim, struct affected_type *af)
 {
 	if (!af)
 	{
@@ -850,8 +850,8 @@ void poison_weakness(int level, P_char ch, char *arg, int type, P_char victim,
 /*
  * applies slowness for 1 minute
  */
-void poison_slowness(int level, P_char ch, char *arg, int type, P_char victim,
-		     struct affected_type *af)
+void poison_slowness(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,
+		     P_char victim, struct affected_type *af)
 {
 	if (!af)
 	{
@@ -875,8 +875,8 @@ void poison_slowness(int level, P_char ch, char *arg, int type, P_char victim,
 /*
  * applies berserk for 2 to 10 seconds every 20 seconds for 5 minutes
  */
-void poison_madness(int level, P_char ch, char *arg, int type, P_char victim,
-		    struct affected_type *af)
+void poison_madness(int /*level*/, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,
+		    P_char victim, struct affected_type *af)
 {
 	if (!af)
 	{

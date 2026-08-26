@@ -663,7 +663,8 @@ void nq_reward_player(struct nq_action *action, struct nq_instance *instance,
  * checks whether requirements are met, if so extracts required items/cash
  */
 int nq_test_single_action(struct nq_action *action, struct nq_instance *instance,
-			  struct nq_quest *quest, P_char ch, P_char mob, char *phrase, bool kill)
+			  struct nq_quest * /*quest*/, P_char /*ch*/, P_char mob, char *phrase,
+			  bool kill)
 {
 	P_obj obj;
 	P_obj components[NQ_MAX_REQUESTED_ITEMS];
@@ -1395,14 +1396,14 @@ struct nq_quest *nq_parse_quest(char *fname)
 /*
  * saves the quest data to a file
  */
-int nq_save_quest(struct nq_quest *quest)
+int nq_save_quest(struct nq_quest * /*quest*/)
 {
 	return 0;
 }
 
-void nq_interface_mortal_list(P_char ch, char *args) {}
+void nq_interface_mortal_list(P_char /*ch*/, char * /*args*/) {}
 
-void nq_interface_mortal_show(P_char ch, char *args)
+void nq_interface_mortal_show(P_char ch, char * /*args*/)
 {
 	struct nq_quest *quest;
 	struct nq_string *log_entry;
@@ -1436,9 +1437,9 @@ void nq_interface_mortal_show(P_char ch, char *args)
 		send_to_char("There is no quest info available at this time.\r\n", ch);
 }
 
-void nq_interface_mortal_delete(P_char ch, char *args) {}
+void nq_interface_mortal_delete(P_char /*ch*/, char * /*args*/) {}
 
-void nq_interface_immo_list(P_char ch, char *args)
+void nq_interface_immo_list(P_char ch, char * /*args*/)
 {
 	struct nq_instance *instance;
 	struct nq_actor *actor;
@@ -1534,12 +1535,12 @@ void nq_interface_load(P_char ch, char *args)
 	}
 }
 
-void nq_interface_immo_show(P_char ch, char *args) {}
+void nq_interface_immo_show(P_char /*ch*/, char * /*args*/) {}
 
 /*
  * the command interface to the quest system
  */
-void do_quest2(P_char ch, char *args, int cmd)
+void do_quest2(P_char ch, char *args, int /*cmd*/)
 {
 	char *command;
 	char *arg;

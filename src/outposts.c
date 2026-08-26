@@ -490,7 +490,7 @@ void set_current_outpost_hitpoints(Building *building)
 		 building->get_id() - 1);
 }
 
-void do_outpost(P_char ch, char *arg, int cmd)
+void do_outpost(P_char ch, char *arg, int /*cmd*/)
 {
 	char buff[MAX_STRING_LENGTH];
 	char buff2[MAX_STRING_LENGTH];
@@ -911,7 +911,7 @@ void do_outpost(P_char ch, char *arg, int cmd)
 	show_outposts(ch);
 }
 
-void event_outpost_repair(P_char op, P_char vict, P_obj obj, void *data)
+void event_outpost_repair(P_char op, P_char /*vict*/, P_obj /*obj*/, void * /*data*/)
 {
 	Building *building = get_building_from_char(op);
 	int cost = (int)get_property("outpost.cost.repair", 0);
@@ -1140,7 +1140,7 @@ void reset_one_outpost(Building *building)
 	building->clear_portal_op();
 }
 
-void reset_outposts(P_char ch)
+void reset_outposts(P_char /*ch*/)
 {
 	P_char op;
 	Building *building = NULL;
@@ -1157,7 +1157,7 @@ void reset_outposts(P_char ch)
 	}
 }
 
-int outpost_rubble(P_obj obj, P_char ch, int cmd, char *arg)
+int outpost_rubble(P_obj obj, P_char /*ch*/, int cmd, char * /*arg*/)
 {
 	if (cmd == CMD_SET_PERIODIC || cmd == CMD_PERIODIC)
 		return FALSE;
@@ -1199,7 +1199,7 @@ int outpost_rubble(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-void outpost_create_wall(int location, int direction, int type)
+void outpost_create_wall(int location, int direction, int /*type*/)
 {
 	// type here more determines if we have stronger or weaker walls.. ie setting
 	// the power of the wall.  hit wall does 1 damage to WALL_OUTPOST.
@@ -1225,7 +1225,7 @@ void outpost_create_wall(int location, int direction, int type)
  * Or we can load walls of type outpost wall which we can incorporate
  * to let them break them down like wall of stone, but harder.
  */
-int outpost_generate_walls(Building *building, int type, int numgolem)
+int outpost_generate_walls(Building *building, int /*type*/, int numgolem)
 {
 	int location = 0;
 	int walllocal[10];
@@ -1327,14 +1327,14 @@ void outpost_setup_gateguards(int location, int type, int amnt, Building *buildi
 	}
 }
 
-int outpost_patrol_proc(P_char ch, P_char pl, int cmd, char *arg)
+int outpost_patrol_proc(P_char ch, P_char /*pl*/, int /*cmd*/, char * /*arg*/)
 {
 	SET_BIT(ch->specials.act, ACT_SPEC_DIE);
 
 	return FALSE;
 }
 
-int outpost_gateguard_proc(P_char ch, P_char pl, int cmd, char *arg)
+int outpost_gateguard_proc(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	char buff[MAX_STRING_LENGTH];
 
@@ -1497,7 +1497,7 @@ bool check_castle_walls(int from, int to)
 }
 
 // None of the inputs matter.
-void event_outposts_upkeep(P_char ch, P_char vict, P_obj obj, void *data)
+void event_outposts_upkeep(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*data*/)
 {
 	char buff[MAX_STRING_LENGTH];
 	int i, guild_num, k;

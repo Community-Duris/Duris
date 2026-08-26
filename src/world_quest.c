@@ -126,7 +126,7 @@ void resetQuest(P_char ch)
 	ch->only.pc->quest_map_bought = 0;
 }
 
-void quest_epic_reward(P_char ch, int type)
+void quest_epic_reward(P_char ch, int /*type*/)
 {
 	if (GET_LEVEL(ch) > 45 && ch->only.pc->quest_level > 45)
 	{
@@ -168,7 +168,7 @@ void quest_epic_reward(P_char ch, int type)
 	}
 }
 
-int quest_exp_reward(P_char ch, int type)
+int quest_exp_reward(P_char ch, int /*type*/)
 {
 	int exp_gain = 0;
 	if (GET_LEVEL(ch) <= 30)
@@ -401,7 +401,7 @@ int get_map_room(int zone_id)
 	return -1;
 }
 
-void do_quest(P_char ch, char *args, int cmd)
+void do_quest(P_char ch, char *args, int /*cmd*/)
 {
 	P_char q_mob;
 	P_char q_giver;

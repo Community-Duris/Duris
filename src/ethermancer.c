@@ -64,7 +64,8 @@ int cast_as_damage_area(P_char, void (*func)(int, P_char, char *, int, P_char, P
 int cast_as_damage_area(P_char, void (*func)(int, P_char, char *, int, P_char, P_obj), int, P_char,
 			float, float, bool (*s_func)(P_char, P_char));
 
-void spell_vapor_armor(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_vapor_armor(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		       P_char victim, P_obj /*tar_obj*/)
 {
 	struct affected_type af;
 	bool shown;
@@ -115,7 +116,8 @@ void spell_vapor_armor(int level, P_char ch, char *arg, int type, P_char victim,
 	}
 }
 
-void spell_frost_beam(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_frost_beam(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	if (!ch)
@@ -178,7 +180,8 @@ void spell_frost_beam(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 }
 
-void spell_faerie_sight(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_faerie_sight(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*tar_obj*/)
 {
 	struct affected_type af;
 	P_obj t_obj;
@@ -284,7 +287,8 @@ void spell_faerie_sight(int level, P_char ch, char *arg, int type, P_char victim
 	send_to_char("&+mYour eyes begin to twinkle.&n\r\n", ch);
 }
 
-void spell_cold_snap(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_cold_snap(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		     P_obj tar_obj)
 {
 	int num;
 	struct affected_type af, af2;
@@ -334,7 +338,8 @@ void spell_cold_snap(int level, P_char ch, char *arg, int type, P_char victim, P
 		spell_slow(level, ch, 0, 0, victim, tar_obj);
 }
 
-void spell_path_of_frost(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_path_of_frost(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char /*victim*/, P_obj /*tar_obj*/)
 {
 	struct affected_type af;
 
@@ -353,7 +358,8 @@ void spell_path_of_frost(int level, P_char ch, char *arg, int type, P_char victi
 	affect_to_char(ch, &af);
 }
 
-void spell_mass_fly(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_mass_fly(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
+		    P_obj /*tar_obj*/)
 {
 	struct group_list *gl;
 
@@ -515,7 +521,8 @@ void grant_wind_blade(P_char ch)
 		wear(ch, blade, 12, TRUE);
 }
 
-void spell_wind_blade(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_wind_blade(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
+		      P_obj /*tar_obj*/)
 {
 	P_obj obj, next_obj;
 
@@ -552,7 +559,8 @@ void spell_wind_blade(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 }
 
-void spell_windwalk(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_windwalk(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		    P_obj /*obj*/)
 {
 	int location;
 	char buf[256] = { 0 };
@@ -672,7 +680,8 @@ void spell_windwalk(int level, P_char ch, char *arg, int type, P_char victim, P_
 	}
 }
 
-void spell_frost_beacon(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_frost_beacon(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /*victim*/,
+			P_obj /*tar_obj*/)
 {
 	P_obj beacon;
 
@@ -698,7 +707,8 @@ void spell_frost_beacon(int level, P_char ch, char *arg, int type, P_char victim
 	SET_BIT(beacon->extra_flags, ITEM_SECRET);
 }
 
-void spell_vapor_strike(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_vapor_strike(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*tar_obj*/)
 {
 	struct affected_type af;
 
@@ -733,7 +743,8 @@ void spell_vapor_strike(int level, P_char ch, char *arg, int type, P_char victim
 	}
 }
 
-void spell_forked_lightning(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_forked_lightning(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			    P_obj /*tar_obj*/)
 {
 	int dam;
 	int num_missiles = 3;
@@ -774,7 +785,7 @@ struct frost_data
 	int round;
 };
 
-void event_frost_bolt(P_char ch, P_char victim, P_obj obj, void *data)
+void event_frost_bolt(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	struct frost_data *fdata;
 
@@ -806,7 +817,8 @@ void event_frost_bolt(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void spell_frost_bolt(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_frost_bolt(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+		      P_char victim, P_obj /*tar_obj*/)
 {
 	P_obj obj;
 	struct frost_data fdata;
@@ -857,7 +869,8 @@ void spell_frost_bolt(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 }
 
-void spell_ethereal_form(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_ethereal_form(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*tar_obj*/)
 {
 	struct affected_type af;
 	int duration = (int)(8 + GET_LEVEL(ch) / 10 + GET_CHAR_SKILL(ch, SKILL_DEVOTION) / 10);
@@ -888,7 +901,8 @@ void spell_ethereal_form(int level, P_char ch, char *arg, int type, P_char victi
 	affect_to_char(ch, &af);
 }
 
-void spell_conjure_air(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_conjure_air(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		       P_obj /*tar_obj*/)
 {
 	P_char mob;
 	int sum, mlvl, lvl;
@@ -1006,7 +1020,8 @@ void spell_conjure_air(int level, P_char ch, char *arg, int type, P_char victim,
 	}
 }
 
-void spell_storm_empathy(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_storm_empathy(int level, P_char /*ch*/, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*tar_obj*/)
 {
 	struct affected_type af;
 
@@ -1021,8 +1036,8 @@ void spell_storm_empathy(int level, P_char ch, char *arg, int type, P_char victi
 	send_to_char("You feel protected from the storms!\r\n", victim);
 }
 
-void spell_greater_ethereal_recharge(int level, P_char ch, char *arg, int type, P_char victim,
-				     P_obj tar_obj)
+void spell_greater_ethereal_recharge(int level, P_char ch, char * /*arg*/, int /*type*/,
+				     P_char victim, P_obj tar_obj)
 {
 	int healpoints;
 
@@ -1059,7 +1074,7 @@ void spell_greater_ethereal_recharge(int level, P_char ch, char *arg, int type, 
 	update_pos(victim);
 }
 
-void spell_ethereal_recharge(int level, P_char ch, char *arg, int type, P_char victim,
+void spell_ethereal_recharge(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
 			     P_obj tar_obj)
 {
 	int healpoints;
@@ -1095,7 +1110,8 @@ void spell_ethereal_recharge(int level, P_char ch, char *arg, int type, P_char v
 	update_pos(victim);
 }
 
-void spell_arcane_whirlwind(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_arcane_whirlwind(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			    P_char victim, P_obj /*tar_obj*/)
 {
 	int success = 0;
 	struct affected_type *aff;
@@ -1142,7 +1158,8 @@ void spell_arcane_whirlwind(int level, P_char ch, char *arg, int type, P_char vi
 	}
 }
 
-void spell_purge(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_purge(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		 P_obj /*tar_obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -1171,7 +1188,7 @@ void spell_purge(int level, P_char ch, char *arg, int type, P_char victim, P_obj
 	// Changed the damage type here from SPLDAM_NEGATIVE to SPLDAM_GENERIC, since the negative type would heal undead pets. Zion 9/28/2008
 }
 
-void event_tupor_wake(P_char ch, P_char victim, P_obj obj, void *data)
+void event_tupor_wake(P_char /*ch*/, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	if (!victim || !IS_ALIVE(victim))
 	{
@@ -1192,7 +1209,8 @@ void event_tupor_wake(P_char ch, P_char victim, P_obj obj, void *data)
 	do_alert(victim, NULL, CMD_ALERT);
 }
 
-void spell_induce_tupor(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_induce_tupor(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			P_char victim, P_obj /*tar_obj*/)
 {
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || IS_TRUSTED(victim))
 	{
@@ -1287,7 +1305,8 @@ struct tempest_data
 	int old_sect;
 };
 
-void spell_tempest_terrain(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_tempest_terrain(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+			   P_char /*victim*/, P_obj /*tar_obj*/)
 {
 	if (CHAR_IN_TOWN(ch))
 	{
@@ -1321,7 +1340,7 @@ void spell_tempest_terrain(int level, P_char ch, char *arg, int type, P_char vic
 		  sizeof(ch->in_room));
 }
 
-void event_tempest_terrain(P_char ch, P_char victim, P_obj obj, void *data)
+void event_tempest_terrain(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct tempest_data tdata;
 
@@ -1336,7 +1355,7 @@ void event_tempest_terrain(P_char ch, P_char victim, P_obj obj, void *data)
 		  sizeof(tdata));
 }
 
-void event_tempest_terrain_bye(P_char ch, P_char victim, P_obj obj, void *data)
+void event_tempest_terrain_bye(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	struct tempest_data *tdata = (struct tempest_data *)data;
 
@@ -1349,7 +1368,8 @@ void event_tempest_terrain_bye(P_char ch, P_char victim, P_obj obj, void *data)
 
 // Frost Magus spec
 
-void spell_single_tempest(int level, P_char ch, char *args, int type, P_char victim, P_obj obj)
+void spell_single_tempest(int level, P_char ch, char * /*args*/, int /*type*/, P_char victim,
+			  P_obj /*obj*/)
 {
 	double takedown_chance, dam;
 	int door, target_room;
@@ -1442,7 +1462,8 @@ void spell_single_tempest(int level, P_char ch, char *args, int type, P_char vic
 	}
 }
 
-void spell_tempest(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_tempest(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		   P_obj /*tar_obj*/)
 {
 	int room = ch->in_room;
 
@@ -1468,7 +1489,8 @@ void spell_tempest(int level, P_char ch, char *arg, int type, P_char victim, P_o
 	CharWait(ch, (int)(PULSE_SPELLCAST * 1));
 }
 
-void spell_wind_rage(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_wind_rage(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type, P_char victim,
+		     P_obj /*tar_obj*/)
 {
 	if (affected_by_spell(ch, SPELL_WIND_RAGE))
 	{
@@ -1501,8 +1523,8 @@ void spell_wind_rage(int level, P_char ch, char *arg, int type, P_char victim, P
 
 // Windtalker spec
 
-void spell_ethereal_alliance(int level, P_char ch, char *arg, int type, P_char victim,
-			     P_obj tar_obj)
+void spell_ethereal_alliance(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			     P_char victim, P_obj /*tar_obj*/)
 {
 	struct affected_type af1, af2;
 
@@ -1565,7 +1587,8 @@ void spell_ethereal_alliance(int level, P_char ch, char *arg, int type, P_char v
 
 // Cosmomancer spec
 
-void spell_comet(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_comet(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		 P_obj /*tar_obj*/)
 {
 	int dam;
 	struct damage_messages messages = {
@@ -1598,7 +1621,8 @@ void spell_comet(int level, P_char ch, char *arg, int type, P_char victim, P_obj
 	spell_damage(ch, victim, (int)dam, SPLDAM_GENERIC, 0, &messages);
 }
 
-void spell_cosmic_vacuum(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_cosmic_vacuum(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*tar_obj*/)
 {
 	int success_chance;
 	struct affected_type af;
@@ -1656,7 +1680,8 @@ void spell_cosmic_vacuum(int level, P_char ch, char *arg, int type, P_char victi
 	DamageStuff(victim, SPLDAM_NEGATIVE);
 }
 
-void spell_single_supernova(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_single_supernova(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			    P_char victim, P_obj /*tar_obj*/)
 {
 	int dam;
 	struct affected_type af;
@@ -1710,7 +1735,8 @@ void spell_single_supernova(int level, P_char ch, char *arg, int type, P_char vi
 	    TO_VICT);
 }
 
-void spell_supernova(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_supernova(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*tar_obj*/)
 {
 	int room;
 
@@ -1743,8 +1769,8 @@ void spell_supernova(int level, P_char ch, char *arg, int type, P_char victim, P
 	KnockOut(ch, (1 / 10) * WAIT_SEC);
 }
 
-void spell_ethereal_discharge(int level, P_char ch, char *arg, int type, P_char victim,
-			      P_obj tar_obj)
+void spell_ethereal_discharge(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			      P_char victim, P_obj /*tar_obj*/)
 {
 	int dam, mod;
 	P_char tch, next_tch;
@@ -1810,8 +1836,8 @@ void spell_ethereal_discharge(int level, P_char ch, char *arg, int type, P_char 
 	}
 }
 
-void spell_planetary_alignment(int level, P_char ch, char *arg, int type, P_char victim,
-			       P_obj tar_obj)
+void spell_planetary_alignment(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			       P_char victim, P_obj /*tar_obj*/)
 {
 	struct affected_type af;
 
@@ -2007,7 +2033,8 @@ void spell_planetary_alignment(int level, P_char ch, char *arg, int type, P_char
 	}
 }
 
-void spell_single_polar_vortex(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_single_polar_vortex(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			       P_char victim, P_obj /*obj*/)
 {
 	struct damage_messages messages = {
 		"$N&+C is horrendously battered by the intense vortex!&n",
@@ -2055,7 +2082,8 @@ void spell_single_polar_vortex(int level, P_char ch, char *arg, int type, P_char
 	spell_damage(ch, victim, dam, SPLDAM_COLD, 0, &messages);
 }
 
-void spell_polar_vortex(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_polar_vortex(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj /*obj*/)
 {
 	if (victim == ch)
 	{
@@ -2079,7 +2107,8 @@ void spell_polar_vortex(int level, P_char ch, char *arg, int type, P_char victim
 		"&+CA blast of &+cfreezing &+Cair from the %s swirls violently through the area.\r\n");
 }
 
-void spell_ethereal_travel(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_ethereal_travel(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			   P_obj /*obj*/)
 {
 	int from_room;
 	int location;
@@ -2183,7 +2212,8 @@ void spell_ethereal_travel(int level, P_char ch, char *arg, int type, P_char vic
 	}
 }
 
-void spell_single_cosmic_rift(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_single_cosmic_rift(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			      P_char victim, P_obj /*obj*/)
 {
 	struct damage_messages messages = {
 		"&+LThe cosmic rift bends the fabric space and time around&n $N&+L, causing $M extreme pain!&n",
@@ -2235,7 +2265,8 @@ void spell_single_cosmic_rift(int level, P_char ch, char *arg, int type, P_char 
 	spell_damage(ch, victim, dam, SPLDAM_GENERIC, 0, &messages);
 }
 
-void spell_cosmic_rift(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_cosmic_rift(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		       P_obj /*obj*/)
 {
 	cast_as_damage_area(ch, spell_single_cosmic_rift, level, victim,
 			    get_property("spell.area.minChance.cosmicRift", 0),
@@ -2293,7 +2324,7 @@ void static_discharge(P_char ch, P_char victim, int level, int intensity)
 	spell_damage(ch, victim, dam, SPLDAM_LIGHTNING, flags, &messages);
 }
 
-void event_static_discharge(P_char ch, P_char victim, P_obj obj, void *data)
+void event_static_discharge(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	struct static_discharge_data *sdata;
 
@@ -2312,7 +2343,8 @@ void event_static_discharge(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void spell_static_discharge(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_static_discharge([[maybe_unused]] int level, P_char ch, char * /*arg*/, int /*type*/,
+			    P_char victim, P_obj /*obj*/)
 {
 	struct static_discharge_data sdata;
 	struct static_discharge_data *tmpsdata;
@@ -2382,7 +2414,7 @@ void spell_static_discharge(int level, P_char ch, char *arg, int type, P_char vi
 }
 
 // victim and ch have to be backwards for the event search to work right.. *sigh*
-void event_razor_wind(P_char victim, P_char ch, P_obj obj, void *data)
+void event_razor_wind(P_char victim, P_char ch, P_obj /*obj*/, void *data)
 {
 	int dam, duration;
 
@@ -2422,7 +2454,8 @@ void event_razor_wind(P_char victim, P_char ch, P_obj obj, void *data)
 	}
 }
 
-void spell_razor_wind(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_razor_wind(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		      P_obj /*obj*/)
 {
 	int duration = 3;
 	P_nevent e1 = NULL;
@@ -2470,8 +2503,8 @@ void spell_razor_wind(int level, P_char ch, char *arg, int type, P_char victim, 
 		  sizeof(duration));
 }
 
-void spell_conjure_void_elemental(int level, P_char ch, char *arg, int type, P_char victim,
-				  P_obj tar_obj)
+void spell_conjure_void_elemental(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+				  P_obj /*tar_obj*/)
 {
 	P_char mob;
 	int mlvl, lvl;
@@ -2572,8 +2605,8 @@ void spell_conjure_void_elemental(int level, P_char ch, char *arg, int type, P_c
 	}
 }
 
-void spell_conjure_ice_elemental(int level, P_char ch, char *arg, int type, P_char victim,
-				 P_obj tar_obj)
+void spell_conjure_ice_elemental(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+				 P_obj /*tar_obj*/)
 {
 	P_char mob;
 	int mlvl, lvl;
@@ -2673,7 +2706,8 @@ void spell_conjure_ice_elemental(int level, P_char ch, char *arg, int type, P_ch
 	}
 }
 
-void spell_iceflow_armor(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_iceflow_armor(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			 P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int absorb = (level / 4) + number(1, 4);
@@ -2705,8 +2739,8 @@ void spell_iceflow_armor(int level, P_char ch, char *arg, int type, P_char victi
 	affect_to_char(victim, &af);
 }
 
-void spell_negative_feedback_barrier(int level, P_char ch, char *arg, int type, P_char victim,
-				     P_obj obj)
+void spell_negative_feedback_barrier(int level, P_char ch, char * /*arg*/,
+				     [[maybe_unused]] int type, P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	int absorb = (level / 4) + number(1, 4);
@@ -2739,7 +2773,8 @@ void spell_negative_feedback_barrier(int level, P_char ch, char *arg, int type, 
 	affect_to_char(victim, &af);
 }
 
-void spell_etheric_gust(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_etheric_gust(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj /*obj*/)
 {
 	P_char t_ch;
 	int tries = 0, to_room, dir;
@@ -2836,7 +2871,7 @@ void spell_etheric_gust(int level, P_char ch, char *arg, int type, P_char victim
 
 // Event for spec nuke
 // victim and ch have to be backwards for the event search to work right.. *sigh*
-void event_antimatter_collision(P_char victim, P_char ch, P_obj obj, void *data)
+void event_antimatter_collision(P_char victim, P_char ch, P_obj /*obj*/, void *data)
 {
 	int dam, duration;
 
@@ -2871,7 +2906,8 @@ void event_antimatter_collision(P_char victim, P_char ch, P_obj obj, void *data)
 }
 
 // Spec nuke.
-void spell_antimatter_collision(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_antimatter_collision(int /*level*/, P_char ch, char * /*arg*/, int /*type*/,
+				P_char victim, P_obj /*obj*/)
 {
 	int duration = 3;
 	P_nevent e1 = NULL;
@@ -2922,7 +2958,7 @@ void spell_antimatter_collision(int level, P_char ch, char *arg, int type, P_cha
 
 // Event for spec nuke
 // victim and ch have to be backwards for the event search to work right.. *sigh*
-void event_arctic_blast(P_char victim, P_char ch, P_obj obj, void *data)
+void event_arctic_blast(P_char victim, P_char ch, P_obj /*obj*/, void *data)
 {
 	int dam, duration;
 
@@ -2960,7 +2996,8 @@ void event_arctic_blast(P_char victim, P_char ch, P_obj obj, void *data)
 	}
 }
 
-void spell_arctic_blast(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_arctic_blast(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			P_obj /*tar_obj*/)
 {
 	int duration = 3 + (MAX(level - 40, 0) / 5);
 	P_nevent e1 = NULL;
@@ -3008,7 +3045,8 @@ void spell_arctic_blast(int level, P_char ch, char *arg, int type, P_char victim
 	add_event(event_arctic_blast, PULSE_SPELLCAST, victim, ch, NULL, 0, &duration, sizeof(int));
 }
 
-void spell_ice_spikes(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
+void spell_ice_spikes(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		      P_obj /*tar_obj*/)
 {
 	int base_dam, missile_dam;
 	int num_missiles = number(3, 4) + (level > 50 ? 1 : 0);
@@ -3045,7 +3083,8 @@ void spell_ice_spikes(int level, P_char ch, char *arg, int type, P_char victim, 
 	}
 }
 
-void spell_wall_of_air(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
+void spell_wall_of_air(int level, P_char ch, char *arg, int /*type*/, P_char /*tar_ch*/,
+		       P_obj /*tar_obj*/)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], dir_string[MAX_INPUT_LENGTH];
 	int var = 0;

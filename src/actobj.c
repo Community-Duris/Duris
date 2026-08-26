@@ -1560,7 +1560,7 @@ void do_get(P_char ch, char *argument, int cmd)
 		CharWait(ch, 10);
 }
 
-void do_junk(P_char ch, char *argument, int cmd)
+void do_junk(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj tmp_object, next_obj;
 	P_char t_ch;
@@ -1774,7 +1774,7 @@ void do_junk(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_dropalldot(P_char ch, char *name, int cmd)
+void do_dropalldot(P_char ch, char *name, int /*cmd*/)
 {
 	P_obj tmp_object, next_object;
 	int total = 0;
@@ -2257,7 +2257,7 @@ void do_drop(P_char ch, char *argument, int cmd)
 #define PUT_ALLDOT 3
 #define PUT_ITEM 4
 
-void do_put(P_char ch, char *argument, int cmd)
+void do_put(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj o_obj = NULL, s_obj = NULL, tmp_obj, next_obj;
 	P_char t_ch;
@@ -3116,7 +3116,7 @@ void name_to_drinkcon(P_obj obj, int type)
  * Improved version of "drink".  Empty transient object should now
  * vanish.  You can drink from fountain and other such places.
  */
-void do_drink(P_char ch, char *argument, int cmd)
+void do_drink(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj temp;
 	int amount, healamt;
@@ -3314,7 +3314,7 @@ void do_drink(P_char ch, char *argument, int cmd)
 	act("It's empty already.", FALSE, ch, 0, 0, TO_CHAR);
 }
 
-void do_eat(P_char ch, char *argument, int cmd)
+void do_eat(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj temp;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -3544,7 +3544,7 @@ void do_eat(P_char ch, char *argument, int cmd)
 	room_light(ch->in_room, REAL);
 }
 
-void do_pour(P_char ch, char *argument, int cmd)
+void do_pour(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj from_obj;
 	P_obj to_obj;
@@ -3692,7 +3692,7 @@ void do_pour(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_fill(P_char ch, char *argument, int cmd)
+void do_fill(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj from_obj;
 	P_obj to_obj;
@@ -3823,7 +3823,7 @@ void do_fill(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_sip(P_char ch, char *argument, int cmd)
+void do_sip(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_INPUT_LENGTH];
 	char Gbuf4[MAX_STRING_LENGTH];
@@ -3883,7 +3883,7 @@ void do_sip(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_taste(P_char ch, char *argument, int cmd)
+void do_taste(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_INPUT_LENGTH];
 	P_obj temp;
@@ -5606,7 +5606,7 @@ int equipment_pos_table[CUR_MAX_WEAR][3] = {
  * is trying to do, then passes the correct information onto the Controller
  * class: Wear().  -Sniktiorg (Nov.15.12)
  */
-void do_wear(P_char ch, char *argument, int cmd)
+void do_wear(P_char ch, char *argument, int /*cmd*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
@@ -5776,7 +5776,7 @@ void do_wear(P_char ch, char *argument, int cmd)
 	room_light(ch->in_room, REAL);
 }
 
-void do_wield(P_char ch, char *argument, int cmd)
+void do_wield(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj_object;
 	int keyword = 12;
@@ -5821,7 +5821,7 @@ void do_wield(P_char ch, char *argument, int cmd)
 	room_light(ch->in_room, REAL);
 }
 
-void do_grab(P_char ch, char *argument, int cmd)
+void do_grab(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj_object;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
@@ -5876,7 +5876,7 @@ void do_grab(P_char ch, char *argument, int cmd)
  * properly replace worn equipment.
  * - Sniktiorg 25.1.13
  */
-void do_remove(P_char ch, char *argument, int cmd)
+void do_remove(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj_object, temp_obj;
 	int j, k, ret_type;
@@ -6051,7 +6051,7 @@ bool find_chance(P_char ch)
 	return FALSE;
 }
 
-void do_search(P_char ch, char *argument, int cmd)
+void do_search(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char dummy;
 	P_obj k;
@@ -6209,7 +6209,7 @@ void do_search(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void do_apply_poison(P_char ch, char *argument, int cmd)
+void do_apply_poison(P_char ch, char *argument, int /*cmd*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	P_obj weapon, poison;
@@ -6347,7 +6347,7 @@ void list_foods()
 	}
 }
 
-void do_empty(P_char ch, char *argument, int cmd)
+void do_empty(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char unused_ch;
 	P_obj obj1, obj2, content;

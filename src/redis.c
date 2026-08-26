@@ -1128,7 +1128,7 @@ int get_dirty_player_count(void)
 #endif
 }
 
-void event_flush_dirty_players(P_char ch, P_char victim, P_obj obj, void *data)
+void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	flush_dirty_players();
 	redis_flush_floor_drops();
@@ -2147,7 +2147,7 @@ bool redis_load_world_state(void)
 #endif
 }
 
-void event_save_world_state(P_char ch, P_char victim, P_obj obj, void *data)
+void event_save_world_state(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	if (redis_enabled && redis_world_state_enabled)
 	{
@@ -2826,7 +2826,7 @@ void redis_check_donation_messages(void)
 #endif
 }
 
-void event_check_donation_messages(P_char ch, P_char victim, P_obj obj, void *data)
+void event_check_donation_messages(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	redis_check_donation_messages();
 

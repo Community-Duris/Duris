@@ -14,10 +14,9 @@ WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 	-Wshadow=compatible-local -Wcast-align=strict -Wstringop-overflow=4 \
 	-Warray-bounds=2 -Wstrict-overflow=2 -Wuse-after-free=3
 
-# Legacy command/procedure signatures intentionally leave callback parameters
-# unused, many feature-gated locals survive disabled builds, and partial C-style
-# aggregates intentionally zero-initialize their trailing fields.
-LEGACY_WARNING_EXCEPTIONS = -Wno-write-strings -Wno-unused-parameter
+# Remaining legacy exception: string literals are still assigned to writable
+# char * across the message, table, and lookup APIs.
+LEGACY_WARNING_EXCEPTIONS = -Wno-write-strings
 
 CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS) $(LEGACY_WARNING_EXCEPTIONS)
 #CFLAGS += -D__NO_MYSQL__

@@ -514,7 +514,7 @@ void new_ah_call(P_char ch, char *arguments, int cmd)
 		auction_error(ch);
 }
 
-int auction_house_room_proc(int room_num, P_char ch, int cmd, char *arguments)
+int auction_house_room_proc(int /*room_num*/, P_char ch, int cmd, char *arguments)
 {
 	if (cmd != CMD_AUCTION)
 		return FALSE;
@@ -1719,7 +1719,7 @@ bool auction_pickup(P_char ch, char *args)
 	return TRUE;
 }
 
-bool auction_help(P_char ch, char *arg)
+bool auction_help(P_char ch, char * /*arg*/)
 {
 	send_to_char(
 		"&+WAuction syntax:\r\n- auction list [help]\r\n"
@@ -1734,7 +1734,7 @@ bool auction_help(P_char ch, char *arg)
 	return TRUE;
 }
 
-bool finalize_auction(int auction_id, P_char to_ch)
+bool finalize_auction(int auction_id, P_char /*to_ch*/)
 {
 	bool success = false;
 	MYSQL_RES *res = NULL;

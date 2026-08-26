@@ -87,7 +87,7 @@ extern void event_track_move(P_char ch, P_char vict, P_obj obj, void *data);
  * allow players to 'set up camp' and rent out in the wilderness.  JAB
  */
 
-void do_terrain(P_char ch, char *arg, int cmd)
+void do_terrain(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	char out[MAX_STRING_LENGTH];
 
@@ -101,7 +101,7 @@ void do_terrain(P_char ch, char *arg, int cmd)
 
 // Actual multiclass code found in: specs.room.c in multiclass_proc.
 //  This function just tells ch what he can multi as if anything.
-void do_multiclass(P_char ch, char *arg, int cmd)
+void do_multiclass(P_char ch, char * /*arg*/, int cmd)
 {
 	char buf[MAX_STRING_LENGTH];
 	int found_one = FALSE, i;
@@ -164,7 +164,7 @@ void do_multiclass(P_char ch, char *arg, int cmd)
 
 /* used so chars can see what their color codes will look like before actually slapping them on a ship or whatnot */
 
-void do_testcolor(P_char ch, char *arg, int cmd)
+void do_testcolor(P_char ch, char *arg, int /*cmd*/)
 {
 	if (*arg == '\0')
 	{
@@ -218,7 +218,7 @@ void do_target(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_camp(P_char ch, char *arg, int cmd)
+void do_camp(P_char ch, char *arg, int /*cmd*/)
 {
 	struct affected_type af;
 	time_t ct;
@@ -653,7 +653,7 @@ void berserk(P_char ch, int duration)
 	}
 }
 
-void do_berserk(P_char ch, char *argument, int cmd)
+void do_berserk(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	int duration;
 
@@ -737,7 +737,7 @@ void do_berserk(P_char ch, char *argument, int cmd)
 		CharWait(ch, 2 * PULSE_VIOLENCE);
 }
 
-void do_rampage(P_char ch, char *argument, int cmd)
+void do_rampage(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 	int skl_lvl;
@@ -802,7 +802,7 @@ void do_rampage(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_infuriate(P_char ch, char *argument, int cmd)
+void do_infuriate(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -900,7 +900,7 @@ void do_infuriate(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_rage(P_char ch, char *argument, int cmd)
+void do_rage(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 	int dura;
@@ -1332,7 +1332,7 @@ bool forage_sect(P_char ch, int sector, bool poisoned)
 }
 
 // do_forage - look for little food items in suitable terrain
-void do_forage(P_char ch, char *arg, int cmd)
+void do_forage(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	P_obj treeobj;
 	int chance, chance2;
@@ -1587,14 +1587,14 @@ void do_forage(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_qui(P_char ch, char *argument, int cmd)
+void do_qui(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	send_to_char("You have to write quit - no less, to quit!\r\n", ch);
 	return;
 }
 
 // CMD_QUIT now goes to do_camp instead of do_quit.
-void do_quit(P_char ch, char *argument, int cmd)
+void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	int i, l;
 	P_obj obj;
@@ -1707,7 +1707,7 @@ void do_quit(P_char ch, char *argument, int cmd)
 	ch = NULL;
 }
 
-void event_autosave(P_char ch, P_char victim, P_obj obj, void *data)
+void event_autosave(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	// Not sure how this is happening, but it'll stop crashes.
 	if (!IS_ALIVE(ch))
@@ -2034,7 +2034,7 @@ bool do_save_silent(P_char ch, int type)
 	return true;
 }
 
-void do_save(P_char ch, char *argument, int cmd)
+void do_save(P_char ch, char *argument, int /*cmd*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 	char tmp_buf[MAX_STRING_LENGTH];
@@ -2086,12 +2086,12 @@ void do_save(P_char ch, char *argument, int cmd)
 	persistence_schedule_character_save(ch, 1, 2, "manual_save");
 }
 
-void do_not_here(P_char ch, char *argument, int cmd)
+void do_not_here(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	send_to_char("Sorry, but you cannot do that here!\r\n", ch);
 }
 
-void do_no_buy(P_char ch, char *argument, int cmd)
+void do_no_buy(P_char ch, char *argument, int /*cmd*/)
 {
 	if (!*argument)
 		send_to_char("Sorry, can you be a bit more explicit?\r\n", ch);
@@ -2123,7 +2123,7 @@ int test_atm_present(P_char ch)
 	return 0;
 }
 
-void do_balance(P_char ch, char *argument, int cmd)
+void do_balance(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 
@@ -2145,7 +2145,7 @@ void do_balance(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_deposit(P_char ch, char *argument, int cmd)
+void do_deposit(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -2278,7 +2278,7 @@ void do_deposit(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_withdraw(P_char ch, char *argument, int cmd)
+void do_withdraw(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -2381,7 +2381,7 @@ void do_withdraw(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_sneak(P_char ch, char *argument, int cmd)
+void do_sneak(P_char ch, char *argument, int /*cmd*/)
 {
 	struct affected_type af;
 	::byte percent;
@@ -2502,7 +2502,7 @@ void do_sneak(P_char ch, char *argument, int cmd)
 	affect_to_char(ch, &af);
 }
 
-void do_hide(P_char ch, char *argument, int cmd)
+void do_hide(P_char ch, char *argument, int /*cmd*/)
 {
 	::byte roll;
 	int skl_lvl = 0;
@@ -2800,7 +2800,7 @@ void listen(P_char ch, char *argument)
 	return;
 }
 
-void do_listen(P_char ch, char *argument, int cmd)
+void do_listen(P_char ch, char *argument, int /*cmd*/)
 {
 	int percent;
 	const char *heard_nothing = "You don't hear anything unusual.\r\n";
@@ -2879,7 +2879,7 @@ static int location_mod[] = { 75, /* light */
 			      0, /* Not used */
 			      0,   0, 0 };
 
-void do_steal(P_char ch, char *argument, int cmd)
+void do_steal(P_char ch, char *argument, int /*cmd*/)
 {
 	int skl;
 	char victim_name[MAX_INPUT_LENGTH];
@@ -3480,7 +3480,7 @@ void do_steal(P_char ch, char *argument, int cmd)
 		MobStartFight(victim, ch);
 }
 
-void do_explist(P_char ch, char *argument, int cmd)
+void do_explist(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	double result;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -3553,7 +3553,7 @@ void do_explist(P_char ch, char *argument, int cmd)
 }
 
 // Arih: for debugging exp bug
-void do_expkkk(P_char ch, char *argument, int cmd)
+void do_expkkk(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	long curr_exp = GET_EXP(ch);
@@ -3581,7 +3581,7 @@ void do_expkkk(P_char ch, char *argument, int cmd)
 	send_to_char(buf, ch);
 }
 
-void do_idea(P_char ch, char *argument, int cmd)
+void do_idea(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	int result = 0;
@@ -3621,7 +3621,7 @@ void do_idea(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_typo(P_char ch, char *argument, int cmd)
+void do_typo(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	int result = 0;
@@ -3662,7 +3662,7 @@ void do_typo(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_bug(P_char ch, char *argument, int cmd)
+void do_bug(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	long t = 0;
@@ -3709,7 +3709,7 @@ void do_bug(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_cheat(P_char ch, char *argument, int cmd)
+void do_cheat(P_char ch, char *argument, int /*cmd*/)
 {
 	FILE *fl;
 	long t;
@@ -3755,7 +3755,7 @@ void do_cheat(P_char ch, char *argument, int cmd)
 		}
 }
 
-void do_area(P_char ch, char *argument, int cmd)
+void do_area(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], *rest;
 	int zone_id;
@@ -3884,7 +3884,7 @@ void do_area(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_quaff(P_char ch, char *argument, int cmd)
+void do_quaff(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj bottle;
 	int i, j, chance;
@@ -4056,7 +4056,7 @@ void do_quaff(P_char ch, char *argument, int cmd)
 	extract_obj(bottle);
 }
 
-void do_recite(P_char ch, char *argument, int cmd)
+void do_recite(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj scroll, obj;
 	int i, j;
@@ -4183,7 +4183,7 @@ void do_recite(P_char ch, char *argument, int cmd)
 	extract_obj(scroll);
 }
 
-void do_use(P_char ch, char *argument, int cmd)
+void do_use(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char tmp_char = 0;
 	P_obj tmp_object = 0, stick;
@@ -4689,7 +4689,7 @@ static const char *tog_messages[][2] = {
 	{ "Jchat channel: -=&+ROFF&n=-\r\n", "Jchat channel: -=&+GON&n=-\r\n" }
 };
 
-void do_more(P_char ch, char *arg, int cmd)
+void do_more(P_char ch, char *arg, int /*cmd*/)
 {
 	if (!IS_SET(GET_PLYR(ch)->specials.act, PLR_PAGING_ON) && ch->desc)
 	{
@@ -4721,7 +4721,7 @@ static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int re
 #define PLR2_TOG(flag) plr_tog(PLR2_FLAGS(ch), flag, arg)
 #define PLR3_TOG(flag) plr_tog(PLR3_FLAGS(ch), flag, arg)
 
-void do_toggle(P_char ch, char *arg, int cmd)
+void do_toggle(P_char ch, char *arg, int /*cmd*/)
 {
 	int i, j, tog_nr = -1, result = -1, number;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
@@ -5225,7 +5225,7 @@ void do_toggle(P_char ch, char *arg, int cmd)
 	send_to_char(Gbuf1, send_ch);
 }
 
-void do_protocol(P_char ch, char *arg, int cmd)
+void do_protocol(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_desc d;
@@ -5305,12 +5305,12 @@ void do_protocol(P_char ch, char *arg, int cmd)
 	send_to_char(buf, send_ch);
 }
 
-void do_rub(P_char ch, char *argument, int cmd)
+void do_rub(P_char /*ch*/, char * /*argument*/, int /*cmd*/)
 {
 	return;
 }
 
-void do_split(P_char ch, char *argument, int cmd)
+void do_split(P_char ch, char *argument, int /*cmd*/)
 {
 	char gold_str[MAX_INPUT_LENGTH], typestr[MAX_INPUT_LENGTH];
 	int group_size = 0, ctype;
@@ -5478,7 +5478,7 @@ void do_split(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_bury(P_char ch, char *argument, int cmd)
+void do_bury(P_char ch, char *argument, int /*cmd*/)
 {
 	bool tried = FALSE;
 	P_obj obj_object, next_obj;
@@ -5609,7 +5609,7 @@ void try_to_bury(P_char ch, P_obj obj_object)
 	return;
 }
 
-void do_dig(P_char ch, char *argument, int cmd)
+void do_dig(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	P_obj tmp_object = NULL, k;
 	bool found_something = FALSE, have_one = FALSE;
@@ -5698,7 +5698,7 @@ void try_to_hide(P_char ch, P_obj obj_object)
 
 #define IN_WELL_ROOM(x) (world[(x)->in_room].number == WELL_ROOM)
 
-void do_donate(P_char ch, char *argument, int cmd)
+void do_donate(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj obj_object;
 	P_obj next_obj;
@@ -5934,7 +5934,7 @@ void try_to_donate(P_char ch, P_obj obj_to_put)
 	}
 }
 
-void do_fly(P_char ch, char *argument, int cmd)
+void do_fly(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_INPUT_LENGTH], Gbuf1[MAX_INPUT_LENGTH];
 	P_char mount, rider = NULL;
@@ -6116,7 +6116,7 @@ void do_fly(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_swim(P_char ch, char *argument, int cmd)
+void do_swim(P_char ch, char *argument, int /*cmd*/)
 {
 	char buf[MAX_INPUT_LENGTH];
 	P_char mount, rider = NULL;
@@ -6255,7 +6255,7 @@ void do_swim(P_char ch, char *argument, int cmd)
 	}
 }
 
-void do_suicide(P_char ch, char *argument, int cmd)
+void do_suicide(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	char buf[MAX_STRING_LENGTH];
 	struct affected_type *paf, af;
@@ -6354,7 +6354,7 @@ void do_suicide(P_char ch, char *argument, int cmd)
 	die(ch, ch);
 }
 
-void do_climb(P_char ch, char *argument, int cmd)
+void do_climb(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -6422,12 +6422,12 @@ void do_lick(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_nothing(P_char ch, char *argument, int cmd)
+void do_nothing(P_char /*ch*/, char * /*argument*/, int /*cmd*/)
 {
 	return;
 }
 
-void do_blood_scent(P_char ch, char *argument, int cmd)
+void do_blood_scent(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -6552,7 +6552,7 @@ void ascend_theurgist(P_char ch)
 	// GET_HOME(ch) = GET_BIRTHPLACE(ch) = GET_ORIG_BIRTHPLACE(ch) = ch->in_room;
 }
 
-void do_ascend(P_char ch, char *arg, int cmd)
+void do_ascend(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int spec;
 	char buffer[256];
@@ -6665,7 +6665,7 @@ void do_ascend(P_char ch, char *arg, int cmd)
 	send_to_char(buffer, ch);
 }
 
-void do_descend(P_char ch, char *arg, int cmd)
+void do_descend(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int i = 0;
 
@@ -6772,7 +6772,7 @@ void do_descend(P_char ch, char *arg, int cmd)
 		logit(LOG_DEBUG, "Failed to save %s after new character setup.", GET_NAME(ch));
 }
 
-void do_old_descend(P_char ch, char *arg, int cmd)
+void do_old_descend(P_char ch, char *arg, int /*cmd*/)
 {
 	P_char teacher;
 	int SELECTION, i = 0;

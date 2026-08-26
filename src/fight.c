@@ -6122,7 +6122,7 @@ bool monk_critic(P_char ch, P_char victim, int *damAccumulator)
 	return FALSE;
 }
 
-void event_tainted_blade(P_char ch, P_char victim, P_obj obj, void *data)
+void event_tainted_blade(P_char ch, P_char victim, P_obj /*obj*/, void * /*data*/)
 {
 	int blade_skill = GET_CLASS(ch, CLASS_AVENGER) ? SKILL_HOLY_BLADE : SKILL_TAINTED_BLADE;
 	struct affected_type *af;
@@ -7688,7 +7688,7 @@ void MoveAllAttackers(P_char ch, P_char v)
 
 /* picks a new random target for mayhem */
 
-void retarget_event(P_char ch, P_char victim, P_obj obj, void *data)
+void retarget_event(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_char target;
 	char buf[255];

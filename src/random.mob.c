@@ -450,7 +450,7 @@ struct zone_random_data
 
 extern Skill skills[];
 
-void do_namedreport(P_char ch, char *argument, int cmd)
+void do_namedreport(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	// try redis cache first
 	char *cached = redis_get_named_report();

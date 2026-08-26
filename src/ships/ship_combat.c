@@ -544,7 +544,7 @@ void attacked_by(P_ship target, P_ship attacker, int contact_counter)
 	}
 }
 
-void volley_hit_event(P_char ch, P_char victim, P_obj obj, void *data)
+void volley_hit_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	VolleyData *vd = (VolleyData *)data;
 	P_ship ship = vd->attacker;
@@ -1303,7 +1303,7 @@ int try_ram_ship(P_ship ship, P_ship target, float tbearing)
   return 0;
 }*/
 
-int weaponsight(P_ship ship, int slot, int t_contact, P_char ch)
+int weaponsight(P_ship ship, int slot, int t_contact, P_char /*ch*/)
 {
 	float max = (float)weapon_data[ship->slot[slot].index].max_range;
 	float min = (float)weapon_data[ship->slot[slot].index].min_range;

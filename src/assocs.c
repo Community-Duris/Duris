@@ -1112,7 +1112,7 @@ void supervise_list(P_char god)
 	send_to_char(buf, god);
 }
 
-void do_asclist(P_char god, char *argument, int cmd)
+void do_asclist(P_char god, char * /*argument*/, int /*cmd*/)
 {
 	if (!IS_TRUSTED(god))
 	{
@@ -1122,7 +1122,7 @@ void do_asclist(P_char god, char *argument, int cmd)
 	supervise_list(god);
 }
 
-void do_supervise(P_char god, char *argument, int cmd)
+void do_supervise(P_char god, char *argument, int /*cmd*/)
 {
 	char first[MAX_INPUT_LENGTH], second[MAX_INPUT_LENGTH], third[MAX_INPUT_LENGTH];
 	char fourth[MAX_INPUT_LENGTH], *rest, buf[MAX_STRING_LENGTH], *index;
@@ -1510,7 +1510,7 @@ void do_supervise(P_char god, char *argument, int cmd)
 	send_to_char(buf, god);
 }
 
-void do_gmotd(P_char ch, char *argument, int cmd)
+void do_gmotd(P_char ch, char *argument, int /*cmd*/)
 {
 	uint bits;
 	P_Guild guild;
@@ -1575,7 +1575,7 @@ void do_gmotd(P_char ch, char *argument, int cmd)
 	send_to_char("Guild Motd Updated.\n", ch);
 }
 
-void do_prestige(P_char ch, char *argument, int cmd)
+void do_prestige(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	MYSQL_RES *res;
 	MYSQL_ROW row;
@@ -1700,7 +1700,7 @@ bool str_to_money(char *string, int *pc, int *gc, int *sc, int *cc)
 #define SOC_CMD_TOGGLE 16
 #define SOC_CMD_WITHDRAW 17
 // Performs various society (guild/association) commands.
-void do_society(P_char member, char *argument, int cmd)
+void do_society(P_char member, char *argument, int /*cmd*/)
 {
 	time_t temp_time;
 	char *timestr, buf[MAX_STRING_LENGTH];

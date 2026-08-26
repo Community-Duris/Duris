@@ -165,7 +165,7 @@ void initialize_boards(void)
 		exit(1);
 }
 
-int board(P_obj obj, P_char ch, int cmd, char *argument)
+int board([[maybe_unused]] P_obj obj, P_char ch, int cmd, char *argument)
 {
 	int board_type;
 	static bool loaded = FALSE;

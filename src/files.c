@@ -3817,7 +3817,7 @@ int restore_wear[MAX_WEAR] = {
  * name.bad) >= 0 = rent amount charged
  */
 
-int restoreItemsOnly(P_char ch, int flatrate)
+int restoreItemsOnly(P_char ch, int /*flatrate*/)
 {
 	int wearSuccess;
 #ifndef _PFILE_

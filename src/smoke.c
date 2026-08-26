@@ -64,7 +64,7 @@ void obj_cast_spell(int spell, int level, int duration, P_char smoker)
  *   conjunction with the TYPE_HERB and TYPE_PIPE objects.  It is one of the few systems to utilize the weather
  *   code.  July 27th, 2016 Era Vulgaris.
  */
-void do_smoke(P_char ch, char *argument, int cmd)
+void do_smoke(P_char ch, char *argument, int /*cmd*/)
 {
 	int room;
 	struct weather_data *weather_info =
@@ -715,7 +715,7 @@ void herb_blue_haze(int level, int duration, P_char smoker)
  * given to a player class (and why if they emulate a spell it is usually at a weaker level).
  * - Sniktiorg Blackhaven, 7.29.16EV.
  */
-void herb_medicus(int level, int duration, P_char smoker)
+void herb_medicus(int level, [[maybe_unused]] int duration, P_char smoker)
 {
 	struct affected_type af;
 

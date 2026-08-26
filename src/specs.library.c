@@ -97,7 +97,7 @@ char *proclib_getNext_string(char *source, char *nextString)
 }
 
 // actual proc for 'hummer'
-int proclibobj_hummer(P_obj obj, P_char ch, int cmd, char *argument)
+int proclibobj_hummer(P_obj obj, P_char /*ch*/, int cmd, char * /*argument*/)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -142,7 +142,7 @@ char *proclibobj_parse_actroom(char *argument)
 }
 
 // actual proc for actroom
-int proclibobj_actroom(P_obj obj, P_char ch, int cmd, char *params)
+int proclibobj_actroom(P_obj obj, P_char /*ch*/, int cmd, char *params)
 {
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -521,19 +521,19 @@ void do_proclibObj(P_char ch, char *argument)
 }
 
 // mobile specific version of proclib cmd processing
-void do_proclibMob(P_char ch, char *argument)
+void do_proclibMob(P_char ch, char * /*argument*/)
 {
 	send_to_char("Mob proclibs not yet supported\n", ch);
 }
 
 // room specific version of proclib cmd processing
-void do_proclibRoom(P_char ch, char *argument)
+void do_proclibRoom(P_char ch, char * /*argument*/)
 {
 	send_to_char("Room proclibs not yet supported\n", ch);
 }
 
 // main proclib cmd (in mud) processer
-void do_proclib(P_char ch, char *argument, int cmd)
+void do_proclib(P_char ch, char *argument, int /*cmd*/)
 {
 	char type[MAX_STRING_LENGTH];
 

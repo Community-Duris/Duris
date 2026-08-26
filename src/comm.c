@@ -3367,7 +3367,7 @@ void send_to_outdoor(const char *messg)
 					write_to_q(messg, &i->output, 2);
 }
 
-void send_to_nearby_rooms(int from_room, const char *messg)
+void send_to_nearby_rooms([[maybe_unused]] int from_room, [[maybe_unused]] const char *messg)
 {
 	/* lags mud to hell and back */
 

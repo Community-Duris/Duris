@@ -254,7 +254,7 @@ void nuke_eq(P_char ch);
 
 // This function handles the input and routes to the correct function.
 //   Just sends a list of possible arguments to ch if arg is not valid input.
-void do_artifact_sql(P_char ch, char *arg, int cmd)
+void do_artifact_sql(P_char ch, char *arg, int /*cmd*/)
 {
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], arg3[MAX_INPUT_LENGTH];
 	char *rest;
@@ -2176,7 +2176,7 @@ void arti_files_to_sql(P_char ch, char *arg)
 	closedir(dir);
 }
 
-void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
+void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
 	P_obj arti, cont, corpse;
 	P_char owner;
@@ -2637,7 +2637,7 @@ void add_artidata_to_list(arti_data *list, int vnum, bool owned, char locType, i
 	list->next = NULL;
 }
 
-void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
+void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
 	arti_list *artilist, *nextlist;
 	arti_data *node, *next_node;
@@ -2832,7 +2832,7 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	add_event(event_artifact_wars_sql, 30 * 60 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 }
 
-void event_arti_hunt_sql(P_char ch, P_char victim, P_obj obj, void *data)
+void event_arti_hunt_sql(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	if (!IS_ALIVE(ch) || !data)
 	{
@@ -3730,7 +3730,7 @@ void arti_swap_sql(P_char ch, char *arg)
 // This function walks through the artifact_bind table, gathers its info, then compares
 //   it against where the arti is currently.  If it's not currently on the proper char
 //   the timer is set to switch owners.  If the timer is up, then the soul switches owners.
-void event_artifact_check_bind_sql(P_char ch, P_char vict, P_obj obj, void *arg)
+void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
 	bind_data *bindData, *list;
 	arti_data artidata;

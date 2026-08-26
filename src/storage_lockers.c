@@ -1994,7 +1994,7 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 }
 
 /* room proc put in guildhalls, etc to allow a person to enter their guild locker */
-int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
+int guild_locker_room_hook(int /*room*/, P_char ch, int cmd, char *arg)
 {
 	P_char chLocker = NULL;
 	char enterWhat[MAX_INPUT_LENGTH];
@@ -2257,7 +2257,7 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-void StorageLocker::event_resortLocker(P_char chLocker, P_char ch, P_obj obj, void *data)
+void StorageLocker::event_resortLocker(P_char chLocker, P_char ch, P_obj /*obj*/, void *data)
 {
 	/* always will be attached to the 'unsorted' locker...  when called, all the lockers
 	   will already be in the room.  ch will be the player, and chLocker is the locker..
@@ -2345,7 +2345,8 @@ void StorageLocker::event_resortLocker(P_char chLocker, P_char ch, P_obj obj, vo
  *
  * If the save fails, writeCharacter already has its own internal flat-file
  * fallback.  The failure is logged for staff attention. */
-static void event_deferredTerminalSave(P_char chLocker, P_char ch, P_obj obj, void *data)
+static void event_deferredTerminalSave(P_char chLocker, P_char /*ch*/, P_obj /*obj*/,
+				       void * /*data*/)
 {
 	if (!chLocker)
 		return;
@@ -4018,7 +4019,7 @@ static int locker_opencmd(P_char ch, char *arg)
 	return TRUE;
 }
 
-static int locker_closecmd(P_char ch, char *arg)
+static int locker_closecmd(P_char ch, char * /*arg*/)
 {
 	StorageLocker *pLocker = locker_current(ch);
 	if (!pLocker)
@@ -4036,7 +4037,7 @@ static int locker_closecmd(P_char ch, char *arg)
 	return TRUE;
 }
 
-static int locker_logcmd(P_char ch, char *arg)
+static int locker_logcmd(P_char ch, char * /*arg*/)
 {
 	StorageLocker *pLocker = locker_current(ch);
 	if (!pLocker)

@@ -29,7 +29,7 @@ extern struct zone_data *zone_table;
  *  Mobile Procs
  *
  */
-int halfcut_defenders(P_char ch, P_char player, int cmd, char *arg)
+int halfcut_defenders(P_char ch, P_char player, int /*cmd*/, char * /*arg*/)
 {
 	char buf[32];
 
@@ -59,7 +59,7 @@ int halfcut_defenders(P_char ch, P_char player, int cmd, char *arg)
 	return TRUE;
 }
 
-int crossbow_ambusher(P_char ch, P_char player, int cmd, char *arg)
+int crossbow_ambusher(P_char ch, P_char player, int cmd, char * /*arg*/)
 {
 	int targ_rooms[] = { 27139, 27137, 27136, 0 };
 	int x, y;
@@ -89,7 +89,7 @@ int crossbow_ambusher(P_char ch, P_char player, int cmd, char *arg)
 	}
 	return FALSE;
 }
-int blowgunner(P_char ch, P_char player, int cmd, char *arg)
+int blowgunner(P_char ch, P_char player, int cmd, char * /*arg*/)
 {
 	int targ_rooms[] = { 27146, 27144, 27131, 0 };
 	int x, y;

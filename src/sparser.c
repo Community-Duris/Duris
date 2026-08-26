@@ -417,7 +417,7 @@ int get_number_allies_within_range(P_char ch)
 	return allies;
 }
 
-P_char misfire_check(P_char ch, P_char victim, int flag)
+P_char misfire_check(P_char ch, P_char victim, int /*flag*/)
 {
 	P_char new_target, tch;
 	int oversize, chance;
@@ -1955,7 +1955,7 @@ bool check_mob_retaliate(P_char ch, P_char tar_char, int spl)
 
 extern void DelayCommune(P_char ch, int delay);
 
-void do_will(P_char ch, char *argument, int cmd)
+void do_will(P_char ch, char *argument, int /*cmd*/)
 {
 	int dura;
 	P_char kala;
@@ -2523,13 +2523,13 @@ void casting_broken(struct char_link_data *cld)
 	show_abort_casting(cld->linking);
 }
 
-void event_abort_spell(P_char ch, P_char victim, P_obj obj, void *data)
+void event_abort_spell(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	send_to_char("You lost your concentration!\n", ch);
 	StopCasting(ch);
 }
 
-void event_spellcast(P_char ch, P_char victim, P_obj obj, void *data)
+void event_spellcast(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	struct spellcast_datatype *arg = (struct spellcast_datatype *)data;
 	int skl = 0, i = 0, room = ch->in_room, chance;

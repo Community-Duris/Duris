@@ -27,7 +27,7 @@ struct epic_bonus_data ebd[] = {
 };
 
 // command interpreter for epic_bonus
-void do_epic_bonus(P_char ch, char *arg, int cmd)
+void do_epic_bonus(P_char ch, char *arg, int /*cmd*/)
 {
 	char buff[MAX_STRING_LENGTH];
 	int type = 0;

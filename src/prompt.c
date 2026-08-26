@@ -470,7 +470,7 @@ char *make_bar(long val, long max, long len)
 
 /* Keeps the infobar updated. Will look like shit if the screen has not
    been previously initialized! */
-void UpdateScreen(P_char ch, int update)
+void UpdateScreen(P_char ch, int /*update*/)
 {
 	char buf[255];
 	int size, percent;

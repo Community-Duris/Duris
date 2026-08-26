@@ -562,7 +562,7 @@ void create_randoms()
 #endif
 }
 
-P_obj create_material(int index)
+P_obj create_material(int /*index*/)
 {
 	/* char     buf1[MAX_STRING_LENGTH];
 	 char     buf2[MAX_STRING_LENGTH];
@@ -608,7 +608,7 @@ P_obj create_material(P_char killer, P_char mob)
 	return create_material(material_index);
 }
 
-P_obj create_stones(P_char ch)
+P_obj create_stones(P_char /*ch*/)
 {
 	return read_object(number(ENCRUST_VNUM_BEGIN, ENCRUST_VNUM_END), VIRTUAL);
 }

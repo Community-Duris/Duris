@@ -913,7 +913,7 @@ void setup_deck(void)
 } // End gellz Setup Deck
 
 // Just showing all cards in a hand.
-int showhand(P_obj obj, P_char ch, int cmd, char *argument, int whoscard)
+int showhand(P_obj obj, P_char ch, int /*cmd*/, char * /*argument*/, int whoscard)
 {
 	char buf[MAX_STRING_LENGTH];
 	string buftest;
@@ -977,7 +977,7 @@ int showhand(P_obj obj, P_char ch, int cmd, char *argument, int whoscard)
 //                              GELLZ ACTUAL USED PROCS
 //*****************************************************************************
 /*	Deaths Door achievment proc for all 100 base stats - gellz	*/
-void do_deaths_door(P_char ch, char *arg, int cmd)
+void do_deaths_door(P_char ch, char *arg, int /*cmd*/)
 {
 	struct affected_type af;
 	char buf[MAX_STRING_LENGTH];

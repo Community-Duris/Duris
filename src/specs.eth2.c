@@ -24,7 +24,7 @@ void transfer_inventory(P_char ch, P_char recipient);
 bool in_array(int val, int arr[]);
 int array_size(int arr[]);
 
-int eth2_forest_animal(P_char ch, P_char pl, int cmd, char *arg)
+int eth2_forest_animal(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	int replace_mobs[] = { 32636, 32630 };
 	int replace_mobs_size = 2;
@@ -69,7 +69,7 @@ int eth2_forest_animal(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int eth2_little_girl(P_char ch, P_char pl, int cmd, char *arg)
+int eth2_little_girl(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	int replace_mob_vnum = 32631;
 
@@ -111,7 +111,7 @@ int eth2_little_girl(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int eth2_demon_princess(P_char ch, P_char pl, int cmd, char *arg)
+int eth2_demon_princess(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	int forest_creatures[] = { 32624, 32625, 32626, -1 };
 
@@ -149,7 +149,7 @@ int eth2_demon_princess(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int eth2_aramus(P_char ch, P_char pl, int cmd, char *arg)
+int eth2_aramus(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	int helpers[] = { 32638, 32639, 32640, 32641, -1 };
 	int helpers_size = 4;
@@ -210,7 +210,7 @@ int eth2_aramus(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int eth2_tree_obj(P_obj obj, P_char ch, int cmd, char *arg)
+int eth2_tree_obj(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	/* first value is the object, second is the mob to replace it with */
 	int replace_objs[][2] = { { 32615, 32628 }, { 32614, 32629 }, { -1, -1 } };
@@ -375,7 +375,7 @@ int eth2_godsfury(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
+int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int curr_time;
 	struct affected_type af;
@@ -539,7 +539,7 @@ int eth2_aramus_crown(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-void event_aramus_crown_sleep_check(P_char ch, P_char vict, P_obj obj, void *data)
+void event_aramus_crown_sleep_check(P_char ch, P_char /*vict*/, P_obj /*obj*/, void * /*data*/)
 {
 	if (IS_AWAKE(ch))
 	{

@@ -63,7 +63,7 @@ extern struct zone_data *zone_table;
    DISARM
  */
 
-void do_mobdisarm(P_char ch, char *argument, int cmd)
+void do_mobdisarm(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim;
 	P_obj obj;
@@ -303,7 +303,7 @@ void call_b_lig(P_char ch, P_char vict, int showhead)
 	spell_lightning_breath(GET_LEVEL(ch), ch, 0, SPELL_TYPE_SPELL, vict, 0);
 }
 
-int demodragon(P_char ch, P_char pl, int cmd, char *arg)
+int demodragon(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	P_char temp;
@@ -391,7 +391,7 @@ int demodragon(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int room_of_sanctum(int room, P_char ch, int cmd, char *arg)
+int room_of_sanctum(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char archbishop, bishop;
 	P_obj key;
@@ -484,7 +484,7 @@ int room_of_sanctum(int room, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-int dragon_guard(P_char ch, P_char pl, int cmd, char *arg)
+int dragon_guard(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char vict, next;
 
@@ -542,7 +542,7 @@ int dragon_guard(P_char ch, P_char pl, int cmd, char *arg)
 	return FALSE;
 }
 
-int dragons_of_dragonnia(P_char ch, P_char pl, int cmd, char *arg)
+int dragons_of_dragonnia(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char vict;
 	P_char temp;
@@ -1186,7 +1186,7 @@ void make_remains(P_char ch)
 	obj_to_room(remains, ch->in_room);
 }
 
-int statue(P_char ch, P_char pl, int cmd, char *arg)
+int statue(P_char ch, P_char pl, int cmd, char * /*arg*/)
 {
 	P_char temp;
 

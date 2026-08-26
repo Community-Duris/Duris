@@ -243,7 +243,7 @@ int CountNumGreaterElementalFollowersInSameRoom(P_char ch)
 
 /* Awareness skill for assassins and rangers.   --TAM 7-8-94 */
 
-void do_awareness(P_char ch, char *argument, int cmd)
+void do_awareness(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af, *af_ptr;
 	int duration = 0, lev_aware;
@@ -515,7 +515,7 @@ int MonkNumberOfAttacks(P_char ch)
 	return BOUNDED(1, a, 5); /* 1 to 4 */
 }
 
-void do_feign_death(P_char ch, char *arg, int cmd)
+void do_feign_death(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	P_char t = NULL, t_next, tch;
 	int skl_lvl = 0;
@@ -619,7 +619,7 @@ void do_feign_death(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_first_aid(P_char ch, char *arg, int cmd)
+void do_first_aid(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	struct affected_type af;
 	int skl_lvl = 0, bonus;
@@ -665,7 +665,7 @@ void do_first_aid(P_char ch, char *arg, int cmd)
 	affect_to_char(ch, &af);
 }
 
-void chant_calm(P_char ch, char *argument, int cmd)
+void chant_calm(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	P_char d = NULL;
 	int skl_lvl = 0;
@@ -703,7 +703,7 @@ void chant_calm(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void chant_diamond_soul(P_char ch, char *argument, int cmd)
+void chant_diamond_soul(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 	char buf[100];
@@ -770,7 +770,7 @@ void chant_diamond_soul(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void chant_heroism(P_char ch, char *argument, int cmd)
+void chant_heroism(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af, af1;
 	char buf[100];
@@ -873,7 +873,7 @@ void chant_heroism(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void chant_buddha_palm(P_char ch, char *argument, int cmd)
+void chant_buddha_palm(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	P_char vict = NULL, hold = NULL;
 	int dam, num_tar;
@@ -971,7 +971,7 @@ void chant_buddha_palm(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void chant_quivering_palm(P_char ch, char *argument, int cmd)
+void chant_quivering_palm(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL;
 	char name[256];
@@ -1065,7 +1065,7 @@ void chant_quivering_palm(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void chant_jin_touch(P_char ch, char *argument, int cmd)
+void chant_jin_touch(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL;
 	char name[256];
@@ -1209,7 +1209,7 @@ void chant_jin_touch(P_char ch, char *argument, int cmd)
 	}
 }
 
-void chant_ki_strike(P_char ch, char *argument, int cmd)
+void chant_ki_strike(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL, master;
 	char name[256];
@@ -1363,7 +1363,7 @@ void chant_ki_strike(P_char ch, char *argument, int cmd)
 	}
 }
 
-void chant_regenerate(P_char ch, char *argument, int cmd)
+void chant_regenerate(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	struct affected_type af;
 
@@ -1415,7 +1415,7 @@ void chant_regenerate(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void chant_tiger_palm(P_char ch, char *arg, int cmd)
+void chant_tiger_palm(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	if (!GET_CHAR_SKILL(ch, SKILL_TIGER_PALM) && !IS_TRUSTED(ch))
 	{
@@ -1446,7 +1446,7 @@ void chant_tiger_palm(P_char ch, char *arg, int cmd)
 	    TO_ROOM);
 }
 
-void chant_fist_of_dragon(P_char ch, char *arg, int cmd)
+void chant_fist_of_dragon(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int skl_lvl;
 
@@ -1634,7 +1634,7 @@ int GetConditionModifier(P_char victim)
 	return 0;
 }
 
-void do_dragon_punch(P_char ch, char *argument, int cmd)
+void do_dragon_punch(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL;
 	int skl_lvl = 0;
@@ -1699,7 +1699,7 @@ void do_dragon_punch(P_char ch, char *argument, int cmd)
 	CharWait(ch, 2 * PULSE_VIOLENCE);
 }
 
-void do_OLD_bandage(P_char ch, char *arg, int cmd)
+void do_OLD_bandage(P_char ch, char *arg, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 
@@ -1848,7 +1848,7 @@ void do_OLD_bandage(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void event_summon_book(P_char ch, P_char victim, P_obj obj, void *data)
+void event_summon_book(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_obj book;
 	char bookname[512];
@@ -1885,13 +1885,13 @@ void event_summon_book(P_char ch, P_char victim, P_obj obj, void *data)
 	obj_to_char(book, ch);
 }
 
-void do_summon_book(P_char ch, char *arg, int cmd)
+void do_summon_book(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	send_to_char("You utter a magical formula summoning your spellbook..\r\n", ch);
 	add_event(event_summon_book, PULSE_VIOLENCE, ch, 0, 0, 0, 0, 0);
 }
 
-void event_summon_totem(P_char ch, P_char victim, P_obj obj, void *data)
+void event_summon_totem(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_obj totem;
 	char totemname[512];
@@ -1953,7 +1953,7 @@ void event_summon_totem(P_char ch, P_char victim, P_obj obj, void *data)
 	obj_to_char(totem, ch);
 }
 
-void do_summon_totem(P_char ch, char *arg, int cmd)
+void do_summon_totem(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	send_to_char(
 		"You thrust your arms skyward, uttering an incantation to &+GMaglubiyet&n.\r\n",
@@ -1961,7 +1961,7 @@ void do_summon_totem(P_char ch, char *arg, int cmd)
 	add_event(event_summon_totem, PULSE_VIOLENCE, ch, 0, 0, 0, 0, 0);
 }
 
-void mount_summoning_thing(P_char ch, P_char victim, P_obj obj, void *data)
+void mount_summoning_thing(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_char mount = NULL;
 	int factor;
@@ -2197,7 +2197,7 @@ void mount_summoning_thing(P_char ch, P_char victim, P_obj obj, void *data)
 	return;
 }
 
-void do_summon_mount(P_char ch, char *arg, int cmd)
+void do_summon_mount(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int sumtime;
 	struct follow_type *fol;
@@ -2287,7 +2287,7 @@ void do_summon_mount(P_char ch, char *arg, int cmd)
 	add_event(mount_summoning_thing, sumtime, ch, 0, 0, 0, 0, 0);
 }
 
-void do_summon_warg(P_char ch, char *arg, int cmd)
+void do_summon_warg(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int sumtime;
 	struct follow_type *fol;
@@ -2320,7 +2320,7 @@ void do_summon_warg(P_char ch, char *arg, int cmd)
 	add_event(mount_summoning_thing, sumtime, ch, 0, 0, 0, 0, 0);
 }
 
-void orc_summoning_thing(P_char ch, P_char victim, P_obj obj, void *data)
+void orc_summoning_thing(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_char orc = NULL;
 	int /*shown = FALSE, */ called, i, count = 0, max_respond;
@@ -2387,7 +2387,7 @@ void orc_summoning_thing(P_char ch, P_char victim, P_obj obj, void *data)
 	act("A horde of orcs appear, charging in from every direction!", TRUE, ch, 0, 0, TO_ROOM);
 }
 
-void do_summon_orc(P_char ch, char *arg, int cmd)
+void do_summon_orc(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	int sumtime;
 
@@ -2428,7 +2428,7 @@ void do_summon_orc(P_char ch, char *arg, int cmd)
 }
 
 /* Ogre roar: Ogre scares the wits out of enemy. Assumed to be innate2 */
-void do_ogre_roar(P_char ch, char *argument, int cmd)
+void do_ogre_roar(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL;
 	char name[MAX_INPUT_LENGTH];
@@ -2611,7 +2611,7 @@ void do_ogre_roar(P_char ch, char *argument, int cmd)
    parts are missing and then puts a (named) body part in corpse
    if the carve was successful */
 
-void do_carve(struct char_data *ch, char *argument, int cmd)
+void do_carve(struct char_data *ch, char *argument, int /*cmd*/)
 {
 	struct obj_data *corpse, *carve, *tool;
 	char cname[MAX_STRING_LENGTH];
@@ -2834,7 +2834,7 @@ void do_carve(struct char_data *ch, char *argument, int cmd)
    Can only bound player that are incapacitated or worst or major paralyse
 */
 
-void do_bind(P_char ch, char *arg, int cmd)
+void do_bind(P_char ch, char *arg, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	P_char t_char = NULL;
@@ -2936,7 +2936,7 @@ void do_bind(P_char ch, char *arg, int cmd)
 	return;
 }
 
-void do_unbind(P_char ch, char *arg, int cmd)
+void do_unbind(P_char ch, char *arg, int /*cmd*/)
 {
 	char name[MAX_INPUT_LENGTH];
 	P_char t_char = NULL;
@@ -3292,7 +3292,7 @@ void capture(P_char ch, P_char victim)
 #endif
 }
 
-void do_capture(P_char ch, char *argument, int cmd)
+void do_capture(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char victim = NULL;
 
@@ -3303,7 +3303,7 @@ void do_capture(P_char ch, char *argument, int cmd)
 	capture(ch, victim);
 }
 
-void do_appraise(P_char ch, char *argument, int cmd)
+void do_appraise(P_char ch, char *argument, int /*cmd*/)
 {
 	P_obj temp = NULL;
 	char buf[MAX_STRING_LENGTH];
@@ -3374,7 +3374,7 @@ void do_appraise(P_char ch, char *argument, int cmd)
 	return;
 }
 
-void do_chi(P_char ch, char *argument, int cmd)
+void do_chi(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[512];
 	int skl_level;
@@ -3515,7 +3515,7 @@ void do_chi(P_char ch, char *argument, int cmd)
 	}
 }
 
-void displacement_event(P_char ch, P_char victim, P_obj obj, void *data)
+void displacement_event(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	int skl_level;
 
@@ -3555,7 +3555,7 @@ void displacement_event(P_char ch, P_char victim, P_obj obj, void *data)
 	notch_skill(ch, SKILL_DISPLACEMENT, 10);
 }
 
-void do_lotus(P_char ch, char *argument, int cmd)
+void do_lotus(P_char ch, char * /*argument*/, int /*cmd*/)
 {
 	if (IS_NPC(ch))
 		return;
@@ -3595,7 +3595,7 @@ void do_lotus(P_char ch, char *argument, int cmd)
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
-void lotus_event(P_char ch, P_char victim, P_obj obj, void *data)
+void lotus_event(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	int skl_level;
 
@@ -3646,7 +3646,7 @@ void lotus_event(P_char ch, P_char victim, P_obj obj, void *data)
 	CharWait(ch, PULSE_VIOLENCE * 2);
 }
 
-void do_true_strike(P_char ch, char *argument, int cmd)
+void do_true_strike(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char vict = NULL;
 	int skl_lvl = 0;
@@ -3758,7 +3758,8 @@ void do_true_strike(P_char ch, char *argument, int cmd)
 	CharWait(ch, 2 * PULSE_VIOLENCE);
 }
 
-void chant_chi_purge(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void chant_chi_purge(int level, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+		     P_obj /*obj*/)
 {
 	int poison, curse, wither, disease, blind;
 

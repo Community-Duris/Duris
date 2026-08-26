@@ -11,7 +11,8 @@
 #include "objmisc.h"
 #include "spells.h"
 
-void spell_baladors_protection(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_baladors_protection(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			       P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -82,7 +83,8 @@ void spell_baladors_protection(int level, P_char ch, char *arg, int type, P_char
 	send_to_char("&+WYou feel Balador's protection wash over you.&n\n", victim);
 }
 
-void spell_ferrix_precision(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_ferrix_precision(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			    P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -115,7 +117,8 @@ void spell_ferrix_precision(int level, P_char ch, char *arg, int type, P_char vi
 	send_to_char("&+BYour precision in battle has increased greatly!&n\n", ch);
 }
 
-void spell_eshabalas_vitality(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_eshabalas_vitality(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			      P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	bool message = false;
@@ -166,7 +169,8 @@ void spell_eshabalas_vitality(int level, P_char ch, char *arg, int type, P_char 
 	send_to_char("&+mEshabalas vitality flows through you!&n\n", ch);
 }
 
-void spell_kanchelsis_fury(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_kanchelsis_fury(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			   P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 
@@ -220,7 +224,8 @@ void spell_kanchelsis_fury(int level, P_char ch, char *arg, int type, P_char vic
 	}
 }
 
-void spell_blood_alliance(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_blood_alliance(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P_char victim,
+			  P_obj /*obj*/)
 {
 	if (get_linking_char(victim, LNK_BLOOD_ALLIANCE))
 	{
@@ -282,7 +287,7 @@ void check_blood_alliance(P_char ch, int dam)
 	}
 }
 
-void event_blood_alliance(P_char ch, P_char victim, P_obj obj, void *data)
+void event_blood_alliance(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_char linked;
 	struct affected_type *af;
@@ -317,7 +322,8 @@ void event_blood_alliance(P_char ch, P_char victim, P_obj obj, void *data)
 	affect_remove(ch, af);
 }
 
-void spell_ilienzes_flame_sword(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_ilienzes_flame_sword(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	bool weapon = false;
@@ -487,8 +493,8 @@ void cegilunes_broken(struct char_obj_link_data *cold)
 	wear_off_message(cold->ch, cold->affect);
 }
 
-void spell_cegilunes_searing_blade(int level, P_char ch, char *arg, int type, P_char victim,
-				   P_obj obj)
+void spell_cegilunes_searing_blade(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				   P_char /*victim*/, P_obj obj)
 {
 	struct affected_type af;
 
@@ -690,7 +696,7 @@ bool cegilune_blade(P_char ch, P_char victim, P_obj wpn)
 	return FALSE;
 }
 
-void event_cegilune_searing(P_char ch, P_char vict, P_obj wpn, void *data)
+void event_cegilune_searing(P_char ch, P_char vict, P_obj wpn, void * /*data*/)
 {
 	struct damage_messages messages = {
 		"",
@@ -732,8 +738,8 @@ void event_cegilune_searing(P_char ch, P_char vict, P_obj wpn, void *data)
 	}
 }
 
-void spell_girilals_granite_hammer(int level, P_char ch, char *arg, int type, P_char victim,
-				   P_obj obj)
+void spell_girilals_granite_hammer(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				   P_char victim, P_obj /*obj*/)
 {
 	P_obj weapon = NULL;
 
@@ -818,7 +824,8 @@ void ileshs_broken(struct char_obj_link_data *cold)
 	wear_off_message(cold->ch, cold->affect);
 }
 
-void spell_ileshs_smashing_fury(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_ileshs_smashing_fury(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				P_char /*victim*/, P_obj /*obj*/)
 {
 	struct affected_type af;
 	P_obj weapon;
@@ -954,7 +961,8 @@ void event_cegilune_searing(P_char ch, P_char vict, P_obj wpn, void *data)
 }
 
 */
-void spell_thryms_icerazor(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_thryms_icerazor(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			   P_char victim, P_obj /*obj*/)
 {
 	bool weapon = false;
 
@@ -1058,7 +1066,8 @@ bool thryms_icerazor(P_char ch, P_char victim, P_obj wpn)
 	return FALSE;
 }
 
-void spell_lliendils_stormshock(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_lliendils_stormshock(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	bool weapon = false;
@@ -1145,7 +1154,8 @@ bool lliendils_stormshock(P_char ch, P_char victim, P_obj wpn)
 	return FALSE;
 }
 
-void spell_stormcallers_fury(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
+void spell_stormcallers_fury(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+			     P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	bool weapon = false;
@@ -1290,8 +1300,8 @@ bool stormcallers_fury(P_char ch, P_char victim, P_obj wpn)
 	return FALSE;
 }
 
-void spell_kostchtchies_implosion(int level, P_char ch, char *arg, int type, P_char victim,
-				  P_obj obj)
+void spell_kostchtchies_implosion(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
+				  P_char victim, P_obj /*obj*/)
 {
 	struct affected_type af;
 	bool weapon = false;

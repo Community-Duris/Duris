@@ -594,7 +594,7 @@ void do_bardcheck_action(P_char ch, char *arg, int cmd)
 	}
 }
 
-void bard_drifting(int level, P_char ch, P_char victim, int song)
+void bard_drifting(int level, P_char ch, P_char victim, int /*song*/)
 {
 	int skill = GET_CHAR_SKILL(ch, SONG_DRIFTING);
 
@@ -678,7 +678,7 @@ void bard_drifting(int level, P_char ch, P_char victim, int song)
 }
 */
 
-void bard_healing(int level, P_char ch, P_char victim, int song)
+void bard_healing(int level, P_char ch, P_char victim, int /*song*/)
 {
 	struct affected_type af;
 	int healed;
@@ -763,7 +763,7 @@ void bard_healing(int level, P_char ch, P_char victim, int song)
 	}
 }
 
-void bard_charm(int l, P_char ch, P_char victim, int song)
+void bard_charm(int /*l*/, P_char ch, P_char victim, int song)
 {
 	int i;
 	bool PC = IS_PC(ch);
@@ -952,7 +952,7 @@ void bard_sleep(int l, P_char ch, P_char victim, int song)
 	StopMercifulAttackers(victim);
 }
 
-void bard_calm(int l, P_char ch, P_char victim, int song)
+void bard_calm(int /*l*/, P_char ch, P_char victim, int song)
 {
 	if (GET_OPPONENT(victim))
 	{
@@ -1185,7 +1185,7 @@ void bard_protection(int l, P_char ch, P_char victim, int song)
 	}
 }
 
-void bard_heroism(int l, P_char ch, P_char victim, int song)
+void bard_heroism(int l, P_char ch, P_char victim, int /*song*/)
 {
 	struct affected_type af;
 	int empower = GET_CHAR_SKILL(ch, SKILL_EMPOWER_SONG);
@@ -1288,14 +1288,14 @@ void bard_cowardice(int l, P_char ch, P_char victim, int song)
 	act("$N looks visibly shakened!", TRUE, ch, 0, victim, TO_ROOM);
 }
 
-void bard_forgetfulness(int l, P_char ch, P_char victim, int song)
+void bard_forgetfulness(int /*l*/, P_char ch, P_char victim, int song)
 {
 	if (bard_saves(ch, victim, song) && !IS_TRUSTED(ch))
 		return;
 	clearMemory(victim);
 }
 
-void bard_peace(int l, P_char ch, P_char victim, int song)
+void bard_peace(int /*l*/, P_char ch, P_char victim, int song)
 {
 	struct affected_type af;
 
@@ -1311,14 +1311,14 @@ void bard_peace(int l, P_char ch, P_char victim, int song)
 	send_to_char("A sense of serenity and peace fills your heart.\r\n", victim);
 }
 
-void bard_harmony(int l, P_char ch, P_char victim, int song)
+void bard_harmony(int l, P_char ch, P_char victim, int /*song*/)
 {
 	if (ch != victim)
 		if (!grouped(ch, victim))
 			spell_dispel_evil((int)l, ch, 0, SPELL_TYPE_SPELL, victim, 0);
 }
 
-void bard_discord(int l, P_char ch, P_char victim, int song)
+void bard_discord(int l, P_char ch, P_char victim, int /*song*/)
 {
 	if (ch != victim)
 		if (!grouped(ch, victim))
@@ -1327,7 +1327,7 @@ void bard_discord(int l, P_char ch, P_char victim, int song)
 
 // Song of storms: does lightning bolts on victim.
 // Note: called once per valid target in room with the bard.
-void bard_storms(int songLevel, P_char ch, P_char victim, int song)
+void bard_storms(int songLevel, P_char ch, P_char victim, int /*song*/)
 {
 	int num_strikes, i;
 	int empower = GET_CHAR_SKILL(ch, SKILL_EMPOWER_SONG);
@@ -1522,7 +1522,7 @@ void bard_dragons(int l, P_char ch, P_char victim, int song)
 // The song has two affects. The first breaks pet links and the
 // second forces other bards to stop singing.
 
-void bard_dissonance(int l, P_char ch, P_char victim, int song)
+void bard_dissonance(int /*l*/, P_char ch, P_char /*victim*/, int /*song*/)
 {
 	P_char t, t_next;
 	int empower = GET_CHAR_SKILL(ch, SKILL_EMPOWER_SONG);
@@ -1669,7 +1669,7 @@ void sing_verses(P_char ch, int song)
 	}
 }
 
-void event_echosong(P_char ch, P_char victim, P_obj obj, void *data)
+void event_echosong(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 {
 	P_char victim2;
 	int i = 0, songLevel = 0, room = 0, song = 0;
@@ -1749,7 +1749,7 @@ void event_echosong(P_char ch, P_char victim, P_obj obj, void *data)
 	}
 }
 
-void event_bardsong(P_char ch, P_char victim, P_obj obj, void *data)
+void event_bardsong(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	int echoChance = 0, song, l, room, i, terrainType = SECT_INSIDE, song_chance,
 	    aggr_chance = 0;
@@ -1967,7 +1967,7 @@ void event_bardsong(P_char ch, P_char victim, P_obj obj, void *data)
  * Mainly copy of do_cast, with few slight differences
  */
 
-void do_play(P_char ch, char *arg, int cmd)
+void do_play(P_char ch, char *arg, int /*cmd*/)
 {
 	int s, verses, i;
 	P_obj instrument;
@@ -2147,7 +2147,7 @@ void do_play(P_char ch, char *arg, int cmd)
 	}
 }
 
-void do_riff(P_char ch, char *arg, int cmd)
+void do_riff(P_char ch, char *arg, int /*cmd*/)
 {
 	int s, i, l, room;
 	struct song_description *sd = NULL;

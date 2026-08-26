@@ -1891,7 +1891,7 @@ void studioproc_kill(P_char killer, P_char victim)
 /* the HOUR event: our own timer, so weather.c needs no hook           */
 /* ------------------------------------------------------------------ */
 
-static void sp_hour_event(P_char ch, P_char victim, P_obj obj, void *data)
+static void sp_hour_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	int h = (int)time_info.hour;
 	int t, r;
