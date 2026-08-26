@@ -66,6 +66,9 @@ comment saying why the library cannot free that allocation.
 
 ## Related
 
+- [MEMORY_CHECKING.md](MEMORY_CHECKING.md) — the project-wide standard this
+  guide sits under: which detector to reach for, when a dynamic check is
+  required, and how to report results.
 - `scripts/build-san.sh` — ASan/UBSan build. Much faster than Valgrind and
   better at stack/global overflows; Valgrind needs no rebuild and catches
   uninitialised reads that ASan misses. Use whichever fits, not both at once

@@ -118,6 +118,43 @@ Rules of thumb (enforced by repo conventions):
 | `pages`, `mud_info` | Help system content, MOTD/news/wizlist (see [HELP_SYSTEM.md](HELP_SYSTEM.md)) |
 | persistence/event tables | Async save queues consumed by the workers (boot validates their indexes) |
 | frag leaderboard tables | Auto-populated as players log in and save |
+| `corpses`, `corpse_items` | Player corpses across restarts (see below) |
+
+### Player corpses
+
+`corpses` holds the outer corpse object, `corpse_items` its normalized
+contents. `sql_save_corpse()` deletes and reinserts the row on every save, so
+`created_at` is the last save time, not the death time — the stable
+`save_id` (corpse value 6) is the incident identifier and decodes to the death
+timestamp.
+
+Beyond `player_name`, `save_id`, `room_vnum` and the display strings, the table
+stores the corpse's own `name` (owner keywords), `weight`, and values 0–5 and 7:
+death-time level, owner PID, recoverable death XP, race-war side, race, and the
+flag set including the humanoid and carved-part bits. All of it matters —
+`spell_resurrect()` reads value 4, necromancy gates on `CORPSE_LEVEL`,
+`do_carve()` requires `HUMANOID_CORPSE`, and artifact looting checks the
+race-war side before rebinding. Restoring a corpse from prototype `#2` alone
+(zero values, generic keywords, weight 200) silently changes all of those after
+a restart, which is what happened before `migrations/corpse_persistence_state.sql`
+added the columns.
+
+Those columns are nullable on purpose. The migration reconstructs only what the
+table guarantees — player-corpse classification and owner keywords — and leaves
+unknown legacy weight, level, PID, XP loss, race-war side, and race as `NULL`
+rather than inventing values; the loader has runtime fallbacks for them. New
+corpses store the complete state.
+
+Two conventions in `sql_load_all_corpses()` are worth preserving. The loader
+reads **named result columns, not numeric indexes**, and asserts the expected
+field count so a query edit cannot silently shift the mapping: the display
+fields were off by one from the day they were added (April 2026) and shifted
+again when `ci.obj_uid`/`ci.item_condition` were inserted ahead of them, which
+made every restored corpse display as the first contained item's condition
+(`100`) and then persisted that back to SQL on the next save. And when an item
+row fails to load, the loader records that `last_item_id` no longer names the
+object at `obj_map[num_objs - 1]`, so a following affect row for that item is
+not applied to a different object.
 
 ## Operational notes
 

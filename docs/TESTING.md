@@ -85,11 +85,26 @@ them at production.
 
 | Area | Tests |
 |------|-------|
-| Persistence | `run_persistence_contract_mysql.sh`, dirty-flush retry, SQL pool shutdown |
+| Persistence | `run_persistence_contract_mysql.sh`, dirty-flush retry, SQL pool shutdown, `test_player_corpse_persistence_contract.py`, `run_corpse_persistence_schema_mysql.sh` |
 | Crash regressions | wear-all, relic pickup, stuck command gate |
 | Saves | copyover save guards, ship save guards/dedup, epic save guards |
 | Help files | class/race helpfile completeness contracts |
 | Event loop | hotspot budget regression |
+| Build contract | `test_compiler_warning_profile.py`, `test_message_buffer_bounds.py` |
+| Untrusted input | `test_unicode_runtime.py`, `test_ansi_runtime.py`, `test_json_utils_runtime.py`, `test_ttype_runtime.py` |
 
-Historical context for several of these is documented under
-`docs/ongoing-projects/`.
+The four untrusted-input suites are behavioral rather than contract-style: they
+exercise the live decoders that handle network and player-visible text — UTF-8
+widths and malformed/overlong/surrogate encodings, ANSI colour parsing and
+gradients, JSON and GMCP escaping, and RFC 1091 terminal-type negotiation
+including MTTS capability parsing. That is the shape to copy when the code under
+test is a parser: every case is a real call, and every defect found while
+writing them (unbounded continuation runs, invalid UTF-8 re-encoded as `U+FFFD`
+and accepted as a map glyph, `MTTS 4JUNK` silently enabling capabilities,
+gradient application dereferencing `end()` on an empty string) stayed as a
+regression.
+
+`test_compiler_warning_profile.py` is what keeps the `-Werror` guarantee in
+[BUILDING.md](BUILDING.md#warning-profile) real: it fails if any of the six
+formerly-excepted categories is suppressed again, by flag, by a reintroduced
+exception variable, or by pragma.

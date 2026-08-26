@@ -108,6 +108,88 @@ Public API in `ships.h`. Ship index data at `lib/etc/ship_index`.
 - World data: `areas/world.*` combined files generated from `areas/{wld,mob,obj,zon,qst,shp}/`
   by the `make_*` tools (see [BUILDING.md](BUILDING.md)).
 
+## Dispatch signatures
+
+Most of the tree is reached through fixed-shape function pointers held in
+tables. These signatures are load-bearing: a parameter may be unused by a given
+implementation, but the slot cannot be removed without breaking every table it
+is registered in.
+
+| Signature | Held in | Functions |
+|---|---|---:|
+| `(int, P_char, char *, int, P_char, P_obj)` | `skills[].spell_pointer` — spell dispatch | ~690 |
+| `(P_char, char *, int)` | command handlers (`interp.c` `CMD_*` table, `ACMD()`) | ~510 |
+| `(P_char, P_char, int, char *)` | mobile and room special procedures | ~455 |
+| `(P_char, P_char, P_obj, void *)` | event callbacks | ~210 |
+| `(P_obj, P_char, int, char *)` | object special procedures | ~150 |
+| `(void *, int, char *, int, int)` | `actset.c` `ac_*` setters, in `setBitTable::sb_func` | 18 |
+| `(descriptor_data *, cJSON *)` | WebSocket command handlers (`ws_handlers.c`) | ~10 |
+
+When adding a handler to one of these families, register it in the owning table
+in the same change. A handler that compiles and is never dispatched is a silent
+defect — `ws_cmd_request_wholist` was written, authorization-guarded and
+documented, but never added to `ws_handle_command`, so backend who-list requests
+fell through to the unknown-command path until the compiler cleanup found it.
+
+## C++ conventions the warning profile enforces
+
+The build is `-Werror` with no `-Wno-*` exceptions (see
+[BUILDING.md](BUILDING.md#warning-profile)). Four conventions follow from that:
+
+- **Unused parameters in dispatch signatures** are written with the name
+  commented out — `P_obj /*obj*/` — which keeps the documentation while
+  satisfying `-Wunused-parameter`. Parameter names are not part of a function's
+  type, so this can never change table compatibility. Use `[[maybe_unused]]`
+  *instead* when the parameter's only use sits inside an `#if` that is inactive
+  in this build; unnaming it would break that configuration silently.
+  `interp.h`'s `ACMD(c)` and `dam_mods.h`'s `MAKE_DAM_MOD_PRED()` expand into
+  bodies that variously do and do not read a slot, so their slots carry
+  `[[maybe_unused]]` for the same reason.
+- **String literals into dispatch-pinned callees.** Command handlers, spell
+  functions and special procedures take a writable `char *` because their type
+  is pinned, and several tokenise the argument in place
+  (`half_chop(argument, arg, argument)`). Passing a literal is a potential write
+  to read-only memory, so `utils.h` provides `writable_arg`, a stack copy sized
+  from the literal by deduction:
+
+  ```cpp
+  do_say(ch, writable_arg("Fill me with your strength!"), CMD_SAY);
+  ```
+
+  Do not add a `const_cast` or C-style cast instead. The one deliberate
+  exception in the tree is inside `str_free`, which takes `const char *`
+  because an owning pointer to string data is normally spelled that way;
+  the cast lives in that one function rather than at every call site.
+- **Immutable message and lookup tables are `const char *`.** `damage_messages`
+  in particular is const-only, and its helpers take the caller's real buffer
+  size — `tests/async/test_message_buffer_bounds.py` pins both. It also carries
+  default member initializers, which makes it non-trivial: value-initialize it
+  with `msg = {}`, never `memset(&msg, 0, sizeof(msg))`.
+- **Set-but-unused values are evidence, not noise.** Never delete an assignment
+  whose right-hand side calls anything but a known-pure helper. `generic_find()`
+  is the canonical trap: it returns a bitmask most callers ignore while
+  depending entirely on the character/object it writes through its
+  out-parameters.
+
+## Indexing invariants
+
+Every one of these was a live crash. The guards are in place; keep them when
+touching the surrounding code.
+
+| Invariant | Why |
+|---|---|
+| `real_room()` may return `NOWHERE` (`-1`). Resolve once, check, then index `world[]`. | The random-labyrinth vnum ranges (`700000+`, `800000+`, `900000+`) are largely absent from the loaded world, so `reset_lab()` performed thousands of `world[-1]` accesses and walked the garbage pointers in `world[-1].people` / `.contents`. Same hazard in `create_lab`, `connect_lab`, `connect_other`. |
+| `obj_index[obj->R_num]` requires `obj->R_num >= 0`. | Dynamic and uninstantiated objects have `R_num = -1`. The `OBJ_VNUM()` and `GET_OBJ_PROC()` macros in `utils.h` now return `-1`/`NULL` for a negative `R_num`, and `free_obj`, `do_wear`, `do_grab`, `do_remove`, `do_search` guard it directly. |
+| There are exactly five bitvector banks, indices `0..4` (`bitvector` … `bitvector5`) in `obj_data` and `affected_type`. | `affect_modify` read `bitv[5]`, running off the array into the adjacent `affected[0]` and pointer fields. |
+| Race indices into `stat_factor[]` / `combat_by_race[]` (`[LAST_RACE + 1]`) need `BOUNDED(0, race, LAST_RACE)`. | Equipment `affected[].modifier` values are attacker-controlled data, not a validated race. Guarded in `calculate_hitpoints2`, `apply_affs`, `affect_total`, `do_score`. |
+| `wear()` must not fall back to a weapon slot for a non-weapon `ITEM_HOLD` item. | Equipping a non-weapon into `WIELD`/`WIELD3`/`WIELD4` breaks combat-round and damage invariants. `HOLD` now rejects when occupied. |
+
+Object special procedures do **not** fire for items inside a container. They fire
+from `special()` (`interp.c`), which walks `ch->carrying` *before* the typed
+command runs — so the proc for an item pulled out of a portable hole fires on the
+player's *next* command, whatever that command is. `tests/async/test_wear_all_regression.py`
+and `test_relic_lab_reset_bounds.py` cover these paths.
+
 ## Standalone tools
 
 - `src-migrate/` — offline conversion/migration binaries (`pfile_converter`,

@@ -4,8 +4,8 @@
 Each item below was a pre-existing defect noticed while resolving a compiler
 warning, and each was left alone at the time because fixing it changes behavior
 rather than tidying code.  They are repaired now; these contracts keep them
-repaired.  See docs/ongoing-projects/compiler-legacy-exceptions-cleanup-plan.md
-section "Findings recorded but deliberately not changed".
+repaired.  See docs/BUILDING.md ("Warning profile") for the compiler policy the
+cleanup established, and docs/CODEBASE.md for the conventions it enforces.
 """
 from pathlib import Path
 

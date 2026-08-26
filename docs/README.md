@@ -15,6 +15,7 @@ directory covers architecture, operations, configuration, and reference material
 | [CONFIGURATION.md](CONFIGURATION.md) | Runtime environment variables, Redis, listeners, proxy handling, and diagnostics. |
 | [RUNBOOK.md](RUNBOOK.md) | Day-to-day operations: starting/stopping, restart codes, logs, backups, crash recovery. |
 | [TESTING.md](TESTING.md) | The regression/source-contract test harness in `tests/async/` and how to run it. |
+| [MEMORY_CHECKING.md](MEMORY_CHECKING.md) | The routine memory-checking standard: which detector to reach for, when a dynamic check is required, and how to report results. |
 | [valgrind.md](valgrind.md) | Running the server under Valgrind: `scripts/valgrind_mud.sh`, suppressions, what to expect. |
 | [formatting.md](formatting.md) | The `.clang-format` style and the changed-lines and full-tree workflows in `scripts/format.sh`. |
 | [HELP_SYSTEM.md](HELP_SYSTEM.md) | How the in-game help pipeline works, from source files to the `pages` table. |
@@ -28,8 +29,12 @@ directory covers architecture, operations, configuration, and reference material
   [`src/howto_sql_win.txt`](src/howto_sql_win.txt) — legacy builder references.
 - [help/HELP_STYLE_GUIDE.md](help/HELP_STYLE_GUIDE.md) — style rules for help entries.
 - [`classes_and_races.txt`](classes_and_races.txt) — historical class/race notes.
-- `ongoing-projects/` — post-mortems and investigation write-ups (crash analyses,
-  event-loop hotspot work).
+- `ongoing-projects/ongoing/` — work currently in flight. Completed project
+  write-ups are not kept here; their durable findings are folded into the guides
+  above (see [BUILDING.md](BUILDING.md#warning-profile),
+  [CODEBASE.md](CODEBASE.md#indexing-invariants),
+  [ARCHITECTURE.md](ARCHITECTURE.md#event-wheel),
+  [DATABASE.md](DATABASE.md#player-corpses)).
 
 ## Diagrams
 

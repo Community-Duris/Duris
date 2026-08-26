@@ -3,7 +3,7 @@
 #
 # Performs a clean build with the legacy warning exception categories enabled as
 # non-fatal warnings and reports deduplicated diagnostic counts by category and
-# by file.  Used by docs/ongoing-projects/compiler-legacy-exceptions-cleanup-plan.md
+# by file.  See docs/BUILDING.md ("Warning profile").
 # to track progress; it never produces a shippable binary configuration.
 #
 # Usage: scripts/warning-inventory.sh [-j N] [-o OUTDIR]
