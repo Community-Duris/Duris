@@ -1,6 +1,9 @@
 __pycache__/
 /dms
 /dms_new
+/src/dms_new
+/src/dms_san
+/obj-san/
 /dms.*
 /temp_letterfile
 /nohup.out
