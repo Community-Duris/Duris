@@ -1,5 +1,7 @@
 # DurisMUD
 
+**Version: 0.1.0**
+
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
 ![g++ compiler][compiler-badge]
