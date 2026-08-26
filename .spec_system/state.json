@@ -12,6 +12,12 @@
       "status": "not_started",
       "session_count": 8
     },
+    "2": {
+      "name": "Transactional Gameplay Domains",
+      "description": "Move critical gameplay effects into operation-keyed transactions with ledgers, current state, revisions, and outbox publication.",
+      "status": "not_started",
+      "session_count": 12
+    },
     "0": {
       "name": "Correctness and Immediate Lag Removal",
       "description": "Remove confirmed persistence correctness defects, immediate simulation-thread lag hazards, and fail-open security behavior before the revisioned save pipeline.",

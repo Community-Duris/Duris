@@ -230,7 +230,7 @@ boundaries.
 |-------|------|----------|--------|
 | 00 | Correctness and Immediate Lag Removal | 10 | Not Started |
 | 01 | Replace Forked Full Saves | 8 | Not Started |
-| 02 | Transactional Gameplay Domains | TBD | Not Started |
+| 02 | Transactional Gameplay Domains | 12 | Not Started |
 | 03 | Load Path, Schema, and Retention | TBD | Not Started |
 
 ## Phase 00: Correctness and Immediate Lag Removal
@@ -301,6 +301,47 @@ complete or change the current executable session.
 
 Detailed scopes and verification boundaries are tracked in the Phase 01 PRD and its
 `session_NN_name.md` stubs under `.spec_system/PRD/phase_01/`.
+
+## Phase 02: Transactional Gameplay Domains
+
+Phase 02 is planned in advance while Phase 00 remains active and Phase 01 remains
+future work. It does not mark either earlier phase complete or change the current
+executable session.
+
+### Objectives
+
+1. Extend the Phase 01 typed journal and coordinator with stable non-coalescing critical
+   operation IDs, deterministic multi-key ordering, gameplay fences, and exact results.
+2. Add a generic transactional inbox/outbox contract with duplicate-result lookup,
+   ambiguous-commit reconciliation, and bounded at-least-once delivery.
+3. Make epic awards/spends and account-bank/player-wallet deltas atomic, idempotent,
+   and exactly reconcilable with immutable ledgers.
+4. Add authoritative current item ownership and an immutable ownership ledger, then
+   cut over live movement, corpses, lockers, and auctions.
+5. Batch PvP, artifact, guild, boon, reward, and zone outcomes as immutable typed
+   commands with set-based transactions and post-commit publication.
+6. Remove unrestricted raw non-idempotent SQL from durable queues and pass the Phase 02
+   crash, replay, reconciliation, and 25-to-200-client gate.
+
+### Sessions
+
+| Session | Name | Status |
+|---------|------|--------|
+| 01 | Critical Operation Identity and Coordinator | Not Started |
+| 02 | Transactional Inbox, Outbox, and Reconciliation | Not Started |
+| 03 | Epic Ledger and Balance Transactions | Not Started |
+| 04 | Account Bank and Wallet Transactions | Not Started |
+| 05 | Item Ownership Ledger and Transfer Primitive | Not Started |
+| 06 | Live Item Movement and Corpse Cutover | Not Started |
+| 07 | Locker Ownership Cutover | Not Started |
+| 08 | Auction Settlement and Claim Cutover | Not Started |
+| 09 | PvP and Combat Outcome Batching | Not Started |
+| 10 | Artifact and Guild Outcome Batching | Not Started |
+| 11 | Boon, Reward, and Zone Command Batching | Not Started |
+| 12 | Raw Event Queue Retirement and Domain Gate | Not Started |
+
+Detailed scopes and verification boundaries are tracked in the Phase 02 PRD and its
+`session_NN_name.md` stubs under `.spec_system/PRD/phase_02/`.
 
 ## Technical Stack
 

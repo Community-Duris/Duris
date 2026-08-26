@@ -13,8 +13,9 @@ Items requiring attention in upcoming phases. Review before each session.
 <!-- Max 5 items -->
 
 - [P00] **Remediation has not started**: Phase 00 has 0 completed sessions, ten session
-  stubs, and a planned Session 01 spec/checklist. Phase 01 is preplanned but not active;
-  the next executable workflow step remains `implement` for Phase 00 Session 01.
+  stubs, and a planned Session 01 spec/checklist. Phases 01 and 02 are preplanned but
+  not active; the next executable workflow step remains `implement` for Phase 00
+  Session 01.
 - [P00] **Save failures can become data loss**: Deferred-save failures strand occupied
   slots, while terminal paths can extract characters or inventory after failed SQL;
   the legacy pfile fallback is not automatically reconciled (DB-004, DB-005).
