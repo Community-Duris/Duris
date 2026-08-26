@@ -4,7 +4,7 @@
 **Sessions**: 8 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 2/8 sessions (25%)
+**Progress**: 3/8 sessions (37.5%)
 
 ---
 
@@ -33,7 +33,7 @@ failure-containment, and security contracts are prerequisites for every session 
 |---------|------|--------|-------------|-----------|
 | 01 | Player Revision and Component State Foundation | Complete | Durable revision contract, component taxonomy, and game-thread dirty state | 2026-08-27 |
 | 02 | Immutable Player Snapshot Capture | Complete | Bounded typed DTO capture for every checkpoint component without live-state mutation | 2026-08-27 |
-| 03 | Keyed Revision-Guarded Save Worker | Not Started | Ordered coalescing jobs, transactional apply, exact ACKs, and stale-result handling | - |
+| 03 | Keyed Revision-Guarded Save Worker | Complete | Ordered coalescing jobs, transactional apply, exact ACKs, and stale-result handling | 2026-08-27 |
 | 04 | Typed Persistence Journal and Replay | Not Started | Checksummed append, spill, replay, corruption handling, and idempotent checkpoints | - |
 | 05 | Nonterminal Save Pipeline Cutover | Not Started | Ordinary mutation, autosave, manual, and Redis-dirty routes moved to the coordinator | - |
 | 06 | Terminal Drain and Shutdown Safety | Not Started | Disconnect, rent, death, copyover, and shutdown promotion, drain, and durable spill | - |
@@ -46,12 +46,13 @@ failure-containment, and security contracts are prerequisites for every session 
 
 - Session 01: Player Revision and Component State Foundation (completed 2026-08-27)
 - Session 02: Immutable Player Snapshot Capture (completed 2026-08-27)
+- Session 03: Keyed Revision-Guarded Save Worker (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 03: Keyed Revision-Guarded Save Worker
+- Session 04: Typed Persistence Journal and Replay
 
 ---
 

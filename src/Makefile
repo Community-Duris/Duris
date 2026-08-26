@@ -193,6 +193,8 @@ OBJS =  $(SHIP_OBJS) \
 				 outposts.o \
 				 persistence_observability.o \
 				 player_revision_state.o \
+				 player_save_worker.o \
+				 player_snapshot_repository.o \
 				 player_snapshot_capture.o \
 				 persistence_queue.o \
 				 latency_trace.o \

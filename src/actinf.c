@@ -40,6 +40,7 @@ using namespace std;
 #include "paladins.h"
 #include "persistence_observability.h"
 #include "persistence_queue.h"
+#include "player_save_worker.h"
 #include "redis.h"
 #include "ships/ships.h"
 #include "specializations.h"
@@ -3981,6 +3982,7 @@ static void show_world_persistence(P_char ch)
 	const struct persistence_dirty_save_snapshot dirty = redis_dirty_save_snapshot_copy();
 	const struct persistence_deferred_save_snapshot deferred =
 		persistence_deferred_save_snapshot_copy();
+	const player_save_worker_health player_saves = player_save_worker_health_copy();
 	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
 	char line[MAX_STRING_LENGTH];
 
@@ -3988,6 +3990,8 @@ static void show_world_persistence(P_char ch)
 		world_persistence_max(oldest_save_age_msec, dirty.active_oldest_age_msec);
 	oldest_save_age_msec =
 		world_persistence_max(oldest_save_age_msec, dirty.inflight_oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, player_saves.oldest_age_msec);
 
 	send_to_char("Persistence health (metadata only)\n", ch);
 	if (query.total_calls == 0)
@@ -4058,6 +4062,36 @@ static void show_world_persistence(P_char ch)
 			 (unsigned long long)dirty.active_oldest_age_msec,
 			 (unsigned long long)dirty.inflight_count,
 			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "player_save state=%s queued=%llu inflight=%llu bytes=%llu oldest_age_ms=%llu "
+		 "high_water_pids=%llu high_water_bytes=%llu submitted=%llu coalesced=%llu "
+		 "applied=%llu stale=%llu retryable=%llu terminal=%llu retries_exhausted=%llu "
+		 "age_limit_exceeded=%d workers=%u/%u stop_pending=%d "
+		 "max_capture_to_apply_us=%llu max_apply_us=%llu "
+		 "max_ack_us=%llu max_revision_gap=%llu\n",
+		 !player_saves.running					? "stopped" :
+		 player_saves.queued_pids || player_saves.inflight_pids ? "pending" :
+									  "empty",
+		 (unsigned long long)player_saves.queued_pids,
+		 (unsigned long long)player_saves.inflight_pids,
+		 (unsigned long long)player_saves.queued_bytes,
+		 (unsigned long long)player_saves.oldest_age_msec,
+		 (unsigned long long)player_saves.high_water_pids,
+		 (unsigned long long)player_saves.high_water_bytes,
+		 (unsigned long long)player_saves.submitted,
+		 (unsigned long long)player_saves.coalesced,
+		 (unsigned long long)player_saves.applied, (unsigned long long)player_saves.stale,
+		 (unsigned long long)player_saves.retryable_failures,
+		 (unsigned long long)player_saves.terminal_failures,
+		 (unsigned long long)player_saves.retries_exhausted,
+		 player_saves.age_limit_exceeded, player_saves.running_workers,
+		 player_saves.worker_threads, player_saves.stop_pending,
+		 (unsigned long long)player_saves.max_capture_to_apply_usec,
+		 (unsigned long long)player_saves.max_apply_usec,
+		 (unsigned long long)player_saves.max_ack_latency_usec,
+		 (unsigned long long)player_saves.max_revision_gap);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),

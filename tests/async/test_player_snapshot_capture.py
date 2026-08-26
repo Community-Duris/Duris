@@ -128,6 +128,8 @@ assert "save_intent != RENT_CRASH && save_intent != RENT_CRASH2" in CAPTURE
 assert "pet->in_room != ch->in_room" in CAPTURE
 assert "pet_affects_seen" in CAPTURE
 assert "wear_off_message_index" in CAPTURE
+assert 'copy_string("SPELLBOOK"' in CAPTURE
+assert "spell_ids.push_back" in CAPTURE
 print("[PASS] component adapters preserve current replacement, filter, pet, and affect semantics")
 
 for mutation in (

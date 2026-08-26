@@ -149,6 +149,8 @@ struct player_item_extra_description_snapshot
 {
 	std::string keyword;
 	std::string description;
+	bool spellbook;
+	std::vector<int32_t> spell_ids;
 };
 
 struct player_item_dynamic_affect_snapshot

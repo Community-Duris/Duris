@@ -365,9 +365,26 @@ capture_item_tree(const obj_data *object, int parent_index, int equipment_slot,
 			return player_snapshot_capture_result::object_cycle;
 		if (!budget.add(sizeof(player_item_extra_description_snapshot), 1))
 			return player_snapshot_capture_result::limit_exceeded;
-		player_item_extra_description_snapshot extra;
-		if (!copy_string(description->keyword, extra.keyword, budget) ||
-		    !copy_string(description->description, extra.description, budget))
+		player_item_extra_description_snapshot extra = {};
+		const bool spellbook = description->keyword && strlen(description->keyword) == 3 &&
+				       description->keyword[0] == 3 &&
+				       description->keyword[1] == 1 && description->keyword[2] == 3;
+		if (spellbook)
+		{
+			extra.spellbook = true;
+			if (!copy_string("SPELLBOOK", extra.keyword, budget) ||
+			    !description->description)
+				return player_snapshot_capture_result::malformed_source;
+			for (int skill_id = 0; skill_id < MAX_SKILLS; ++skill_id)
+				if (description->description[skill_id / 8] & (1 << (skill_id % 8)))
+				{
+					if (!budget.add(sizeof(int32_t)))
+						return player_snapshot_capture_result::limit_exceeded;
+					extra.spell_ids.push_back(skill_id);
+				}
+		}
+		else if (!copy_string(description->keyword, extra.keyword, budget) ||
+			 !copy_string(description->description, extra.description, budget))
 			return player_snapshot_capture_result::limit_exceeded;
 		row.extra_descriptions.push_back(std::move(extra));
 	}

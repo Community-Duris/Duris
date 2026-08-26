@@ -1,7 +1,7 @@
 # Session 03: Keyed Revision-Guarded Save Worker
 
 **Session ID**: `phase01-session03-keyed-revision-guarded-save-worker`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One end-to-end in-memory player job boundary from keyed enqueue and
 coalescing through transactional apply to exact main-thread completion.
 
@@ -43,8 +43,8 @@ by a successful main-thread acknowledgement.
 
 ## Prerequisites
 
-- [ ] Session 01 revision state and Session 02 immutable snapshot capture are validated.
-- [ ] Phase 00 connection contracts and redacted observability are available.
+- [x] Session 01 revision state and Session 02 immutable snapshot capture are validated.
+- [x] Phase 00 connection contracts and redacted observability are available.
 
 ---
 
@@ -62,14 +62,14 @@ by a successful main-thread acknowledgement.
 
 ## Success Criteria
 
-- [ ] Jobs for one PID apply in revision order while independent PIDs can progress in
+- [x] Jobs for one PID apply in revision order while independent PIDs can progress in
       parallel within configured bounds.
-- [ ] Revision N cannot overwrite N or any newer durable revision.
-- [ ] A stale or failed acknowledgement clears no newer dirty component.
-- [ ] Coalescing never drops an unacknowledged component and never duplicates a
+- [x] Revision N cannot overwrite N or any newer durable revision.
+- [x] A stale or failed acknowledgement clears no newer dirty component.
+- [x] Coalescing never drops an unacknowledged component and never duplicates a
       snapshot already represented by a newer queued revision.
-- [ ] Workers traverse no live game objects and hold no game or queue lock across
+- [x] Workers traverse no live game objects and hold no game or queue lock across
       database operations.
-- [ ] Queue capacity, bytes, age, retry, worker execution, and shutdown states are
+- [x] Queue capacity, bytes, age, retry, worker execution, and shutdown states are
       bounded, observable, and truthful.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

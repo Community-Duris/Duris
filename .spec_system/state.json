@@ -3,7 +3,7 @@
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
   "current_phase": 1,
-  "current_session": "phase01-session03-keyed-revision-guarded-save-worker",
+  "current_session": "phase01-session04-typed-persistence-journal-and-replay",
   "monorepo": false,
   "phases": {
     "1": {
@@ -43,7 +43,8 @@
     "phase00-session09-private-chest-password-hardening",
     "phase00-session10-security-policy-and-dependency-baseline",
     "phase01-session01-player-revision-and-component-state-foundation",
-    "phase01-session02-immutable-player-snapshot-capture"
+    "phase01-session02-immutable-player-snapshot-capture",
+    "phase01-session03-keyed-revision-guarded-save-worker"
   ],
   "next_session_history": [
     {
@@ -239,6 +240,26 @@
     {
       "date": "2026-08-27",
       "session": "phase01-session03-keyed-revision-guarded-save-worker",
+      "status": "selected"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session03-keyed-revision-guarded-save-worker",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session03-keyed-revision-guarded-save-worker",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session03-keyed-revision-guarded-save-worker",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session04-typed-persistence-journal-and-replay",
       "status": "selected"
     }
   ]
