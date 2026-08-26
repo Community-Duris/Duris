@@ -1,0 +1,4 @@
+interface:
+  display_name: "Merge Worktree"
+  short_description: "Autonomously merge and publish a worktree"
+  default_prompt: "Use $mergetree to autonomously merge, validate, commit, and publish a worktree into the canonical branch."
