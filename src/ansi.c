@@ -263,6 +263,8 @@ void AnsiString::colorize(const std::vector<int> &grad)
 {
 	if (grad.empty())
 		return colorize(0);
+	if (empty())
+		return;
 
 	int m = grad.size();
 	int n = size();
@@ -281,8 +283,7 @@ void AnsiString::colorize(const std::vector<int> &grad)
 		{
 			d -= m;
 			*ca = GET_CHAR(*ca) | ga;
-			if (ca != end()) // running past can't happen but let's be safe
-				ca++;
+			ca++;
 		}
 
 		d += n;

@@ -434,12 +434,18 @@ eat_junk:
 #endif
 	else
 		goto eat_junk;
-	while ((*str & 0xc0) == 0x80)
-		c = (c << 6) + (*str++ & 0x3f), len--;
-	if (len)
-		return UNI_BAD; // tail too long or too short
+	for (int i = 0; i < len; i++)
+	{
+		if (!IS_UTF8_TAIL((unsigned char)*str))
+			return UNI_BAD;
+		c = (c << 6) + ((unsigned char)*str++ & 0x3f);
+	}
 	if (c < min)
 		return UNI_BAD; // overlong encoding
+	if (c >= 0xd800 && c <= 0xdfff)
+		return UNI_BAD; // UTF-16 surrogate, never a Unicode scalar value
+	if (c > 0x10ffff)
+		return UNI_BAD; // tail too long or too short
 	return c;
 }
 
@@ -455,6 +461,13 @@ void put_utf8(char *&d, int v)
 	{
 		*d++ = (uv >> 6) | 0xc0;
 		*d++ = (uv & 0x3f) | 0x80;
+	}
+	else if (uv >= 0xd800 && uv <= 0xdfff)
+	{
+		// UTF-16 surrogates are not Unicode scalar values.
+		*d++ = static_cast<char>(0xef);
+		*d++ = static_cast<char>(0xbf);
+		*d++ = static_cast<char>(0xbd);
 	}
 	else if (uv < 0x10000)
 	{
@@ -520,7 +533,9 @@ bool validate_utf8_and_dollars(char *out, const char *in)
 			continue;
 		if (c == '$')
 			*out++ = '$';
-		if (c < 127 || is_map_glyph(c)) // limited further based on command
+		if (c == UNI_BAD)
+			err = true;
+		else if (c < 127 || is_map_glyph(c)) // limited further based on command
 			put_utf8(out, c);
 		else
 			err = true; // complain
