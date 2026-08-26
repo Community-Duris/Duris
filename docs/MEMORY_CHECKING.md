@@ -77,7 +77,7 @@ For an automated check that must fail when Memcheck reports an error:
 The wrapper supplies the project's standard Memcheck options, applies
 `scripts/valgrind.supp`, and writes reports under `logs/valgrind/`. It refuses
 port 7777. Use `--trace-children` only when copyover itself is the subject of
-the test. See [the detailed Valgrind guide](../valgrind.md) for all supported
+the test. See [the detailed Valgrind guide](valgrind.md) for all supported
 tools, options, and expected baseline noise.
 
 Valgrind is much slower than a native or sanitizer run. Prefer one intentional
@@ -144,9 +144,9 @@ for future use.
 
 ## References
 
-- [Sanitizer build wrapper](../../scripts/build-san.sh)
-- [Build documentation](../BUILDING.md)
-- [Valgrind wrapper](../../scripts/valgrind_mud.sh)
-- [Valgrind project guide](../valgrind.md)
+- [Sanitizer build wrapper](../scripts/build-san.sh)
+- [Build documentation](BUILDING.md)
+- [Valgrind wrapper](../scripts/valgrind_mud.sh)
+- [Valgrind project guide](valgrind.md)
 - [GCC instrumentation options](https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html)
 - [Valgrind Memcheck manual](https://valgrind.org/docs/manual/mc-manual.html)

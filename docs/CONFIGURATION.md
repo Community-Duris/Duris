@@ -112,8 +112,27 @@ specific issue and restart the server after changing them.
 | `DURIS_CORPSE_TRACE` | any non-empty value except `0` | Corpse decay tracing. |
 | `DURIS_ACCEPT_DEBUG` | variable present, including an empty value | Connection-accept debug counters. |
 
+`SQL_TRACE` writes two log lines — each an open/append/close — for every query
+the game runs, so leaving it on is expensive as well as noisy. It was
+unconditionally enabled by a defect in `sql_trace_enabled()` until August 2026
+and accounted for the bulk of `event_write_statistic`'s cost.
+
 Use the normal log files described in [RUNBOOK.md](RUNBOOK.md) and remove
 these switches from `.env` when the investigation ends.
+
+### Event-wheel limits
+
+These are tuning knobs rather than traces, read by `nevent_config_limit()` when
+the event system initializes:
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `DURIS_NEVENT_BUDGET_USEC` | `25000` (25 ms) | Wall-clock budget for event callbacks per pulse. |
+| `DURIS_NEVENT_MAX_CALLBACKS` | `4000` | Callback count cap per pulse. |
+
+The wall-clock budget is intended to be the binding limit. Setting the callback
+cap low enough that pulses end well inside the time budget starves the wheel and
+builds a deferred backlog; see [ARCHITECTURE.md](ARCHITECTURE.md#event-wheel).
 
 ## Precedence and verification
 

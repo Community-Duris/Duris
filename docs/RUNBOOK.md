@@ -103,6 +103,16 @@ If Redis recovery fails, the server continues with a normal boot state. Check
 `logs/log/status` for `Performing redis crash recovery...` lines after any
 crash, and verify player integrity before reopening.
 
+### Known-benign log lines
+
+These are investigated and understood; they are not signs of a failed boot.
+
+| Line | Meaning |
+|---|---|
+| `Heaven has invalid number: 1 (should be 0)` | `recalc_zone_numbers()` finding and correcting a zone number that disagrees with its lowest room vnum. Self-healing; fixing the data would be zone-numbering surgery with a wide blast radius. |
+| `PERSISTENCE: worker_unavailable_flat_fallback` (a few lines at boot) | Item events fired during world load are written to the flat fallback and replayed before the workers start — followed by `replayed N fallback persistence events; 0 remain queued`. Working as designed. |
+| Mob log `RIDICULOUS damage` / `M cmd not executed` | Area data, not engine defects. |
+
 ## Backups and maintenance scripts
 
 | Script | Purpose |
@@ -134,6 +144,15 @@ from `lib/duris.properties`, falling back to per-call defaults, e.g.
 availability, random equipment). Property/config changes take effect on
 restart without recompilation; check the owning subsystem docs before
 editing.
+
+One property is a live balance switch worth knowing about:
+`artifact.wars.modifier` scales the race-war penalty applied by
+`event_artifact_wars` — each of a violating player's artifacts loses
+`modifier × punish_level` of its remaining life, clamped to the whole of it.
+The code default is `0.0` (forced drop only), but `lib/duris.properties` ships
+`artifact.wars.modifier=0.500`, so a server using that file halves the
+offender's artifact timers on a first-level violation. Set it to `0` to disable
+the timer penalty.
 
 ## Development vs production checklist
 

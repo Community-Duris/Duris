@@ -61,9 +61,10 @@ any other port uses development (`duris_dev`). See [DATABASE.md](DATABASE.md).
   (`src/config.h:84-91`): combat rounds every 16 pulses, mobile updates every
   30, ships/vehicles every 2, spellcasting every 9, etc.
 - Socket readiness comes from `select()` over input/output/exception sets.
-- A per-pulse time budget is enforced between event-wheel callbacks; slow
-  callbacks were identified and split in the event-loop hotspots work
-  (see `ongoing-projects/event-loop-hotspots.md`).
+- A per-pulse time budget is enforced between event-wheel callbacks (see
+  below). Because the check happens *between* callbacks, one slow job overruns
+  the pulse regardless of policy — an expensive callback has to be made cheaper
+  or sliced, not merely deprioritized.
 
 Descriptor structures come from a custom pooled allocator (`mm_create("SOCKET",
 ...)`) rather than raw malloc.
@@ -72,10 +73,50 @@ Descriptor structures come from a custom pooled allocator (`mm_create("SOCKET",
 
 Deferred and periodic work runs through the event system (`src/events.c`,
 `src/new_events.c`): timed callbacks stored on a wheel, executed inside the
-game loop between pulses. Character-wide maintenance (e.g. `generic_char_event`
-in `handler.c`) is deliberately sliced across invocations so no single callback
-consumes a whole pulse budget. Budget telemetry is exposed via `NEVENT BUDGET`
-log lines and `src/latency_trace.c`.
+game loop between pulses. Budget telemetry is exposed via `NEVENT BUDGET` log
+lines and `src/latency_trace.c`; `NEVENT SLOW` marks a loop over 50 ms.
+
+Each pulse is bounded by a wall-clock budget (`NEVENT_BUDGET_USEC_DEFAULT`,
+25 ms) and a callback count cap (`NEVENT_MAX_CALLBACKS_DEFAULT`). Both are
+overridable at runtime — see [CONFIGURATION.md](CONFIGURATION.md#diagnostics).
+The time budget is meant to be the binding limit; a count cap low enough to end
+pulses at half the time budget starves the wheel.
+
+Three properties of the wheel are load-bearing and were each a live incident:
+
+- **Deferral covers the whole unscanned suffix.** When a pulse runs out of
+  budget, every remaining due event moves to the next pulse, in order, and every
+  event left behind still has its timer decremented. An earlier version moved
+  only the leading contiguous run of due events, so a due event sitting behind a
+  not-yet-due one was stranded in its ring bucket for a full revolution
+  (300 pulses ≈ 75 s), repeatedly — and events the scan never reached lost a
+  whole revolution off long timers on every saturated pulse.
+- **Player-event promotion is not gated on the callback budget.** Promotion used
+  to require `executed < max_callbacks`, which made the priority mechanism inert
+  on exactly the saturated pulses it exists for. It now costs at most one
+  over-cap callback per pulse.
+- **Character-wide maintenance is sliced.** `generic_char_event` (`handler.c`)
+  swept every character in one callback (17.8 ms average, 24.1 ms peak against a
+  25 ms budget). It runs in four slices, one per invocation, rescheduled at a
+  quarter of the old delay. The slice is a hash of the character's address, so
+  it is stable for the character's lifetime: every character is still visited
+  exactly once per 20 s, none skipped or done twice.
+
+### Command gate
+
+`comm.c` will not dequeue a descriptor's input while `PLR2_WAIT` is set
+(`CAN_ACT(ch)`). The bit is set by `CharWait()` and cleared by the `event_wait`
+event it schedules — so any path where that event is not scheduled, or is
+starved, leaves the player silently unable to act with the connection still up.
+
+`CharWait()` therefore clamps a negative delay, clears `PLR2_WAIT` again if
+`add_event()` refused the event, and records `ch->specials.wait_until_pulse`, an
+absolute deadline in `ne_event_tick` pulses (the delay plus a 2 s grace). The
+gate in `comm.c` clears the bit before reading input if no `event_wait` is
+scheduled *or* the deadline has passed, and logs which case it was. A player can
+no longer be gated for longer than the wait that was actually requested,
+independently of the health of the event system. `wait_until_pulse` is
+runtime-only and never saved.
 
 ## Boot sequence
 

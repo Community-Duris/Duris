@@ -56,8 +56,8 @@ This review used:
   autosave, disconnect, combat, epic, artifact, bank, locker, and shutdown paths;
 - read-only inspection of the configured **local development database**;
 - read-only `EXPLAIN` plans for representative hot queries;
-- the measurements already recorded in
-  [event-loop-hotspots.md](event-loop-hotspots.md).
+- the event-loop hotspot measurements from August 2026, whose durable outcome is
+  recorded in [ARCHITECTURE.md](../../ARCHITECTURE.md#event-wheel).
 
 No migration, write test, production query, destructive operation, or 200-client load
 test was run. The local database contains only 4 players and 108 player items, so its

@@ -18,7 +18,8 @@ WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 
 # No legacy warning exceptions remain.  If a diagnostic in one of the six
 # categories above reappears, resolve it rather than reintroducing a -Wno- flag:
-# see docs/ongoing-projects/compiler-legacy-exceptions-cleanup-plan.md.
+# see docs/BUILDING.md ("Warning profile") and
+# tests/async/test_compiler_warning_profile.py, which fails if one is added.
 
 # EXTRA_CFLAGS / EXTRA_LDFLAGS are appended last so a wrapper such as
 # scripts/build-san.sh can add instrumentation without discarding the warning
