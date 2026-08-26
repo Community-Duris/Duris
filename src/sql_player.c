@@ -188,11 +188,6 @@ bool sql_account_exists(const char *name)
 {
 	return false;
 }
-bool sql_link_player_to_account(const char *account_name, int pid)
-{
-	return false;
-}
-
 bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 {
 	return false;
@@ -5080,12 +5075,6 @@ bool sql_account_exists(const char *name)
 	return exists;
 }
 
-bool sql_link_player_to_account(const char * /*account_name*/, int /*pid*/)
-{
-	// todo: implement
-	return false;
-}
-
 // locker functions
 
 static bool sql_save_locker_item_affects(int item_id, P_obj obj)
@@ -7442,6 +7431,10 @@ bool sql_load_all_corpses(void)
 	int container_map[MAX_CORPSE_ITEMS];
 	int num_objs = 0;
 	int last_item_id = -1;
+	// true only when last_item_id names the object now at obj_map[num_objs - 1];
+	// a row whose item failed to load must not have its affects applied to the
+	// previous, unrelated object.
+	bool last_item_stored = false;
 	int loaded = 0;
 	MYSQL_ROW row;
 
@@ -7557,6 +7550,7 @@ bool sql_load_all_corpses(void)
 			// start new corpse
 			num_objs = 0;
 			last_item_id = -1;
+			last_item_stored = false;
 			cur_corpse_id = corpse_id;
 
 			const char *player_name = row[1] ? row[1] : "";
@@ -7603,7 +7597,7 @@ bool sql_load_all_corpses(void)
 			continue;
 
 		// same item, just another affect
-		if (item_id == last_item_id && num_objs > 0)
+		if (item_id == last_item_id && last_item_stored && num_objs > 0)
 		{
 			int aff_loc = atoi(row[24]);
 			if (aff_loc >= 0)
@@ -7632,6 +7626,7 @@ bool sql_load_all_corpses(void)
 		if (rnum < 0)
 		{
 			last_item_id = item_id;
+			last_item_stored = false;
 			continue;
 		}
 
@@ -7639,6 +7634,7 @@ bool sql_load_all_corpses(void)
 		if (!obj)
 		{
 			last_item_id = item_id;
+			last_item_stored = false;
 			continue;
 		}
 
@@ -7709,6 +7705,8 @@ bool sql_load_all_corpses(void)
 							"sql_load_all_corpses"))
 		{
 			extract_obj(obj, FALSE);
+			last_item_id = item_id;
+			last_item_stored = false;
 			continue;
 		}
 
@@ -7726,6 +7724,7 @@ bool sql_load_all_corpses(void)
 		container_map[num_objs] = atoi(row[5]);
 		num_objs++;
 		last_item_id = item_id;
+		last_item_stored = true;
 	}
 
 	// finalize last corpse

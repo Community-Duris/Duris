@@ -655,26 +655,52 @@ now fails if one appears.
 Not run: a development smoke boot. This session had no development database or non-production port
 available, and the plan forbids touching production. Every check that does not need a live server was run.
 
-### Findings recorded but deliberately not changed
+### Findings recorded, then repaired (follow-up pass, August 26, 2026)
 
-These are pre-existing defects noticed while reading the code. Each is a behavior change rather than a
-cleanup, so each is left for a deliberate decision:
+These were pre-existing defects noticed while reading the code during the warning
+cleanup. Each was a behavior change rather than a cleanup, so each was recorded and
+deferred for a deliberate decision. That decision has now been made and all six are
+resolved. `tests/async/test_deferred_findings_repairs.py` pins every repair.
 
-- `actoth.c` `do_fly` and `do_swim` both test `if (!*buf)` before `buf` is initialized; `argument_interpreter`
-  and `one_argument` fill it only afterwards. Both read uninitialized stack memory on every invocation.
-- `sql_player.c` `sql_load_all_corpses` — the two `last_item_id = item_id; continue;` paths taken when an
-  object fails to load leave `num_objs` unchanged, so a following affect row for the same item can match the
-  "same item, another affect" branch and apply the affect to a different object.
-- `enhance()` rejects a material below `itemvalue(source) - enhance_material_ival_delta`; `modenhance()`
-  computed the same floor and enforced nothing. Restoring the check would start rejecting materials that are
-  accepted today.
-- `nq.c`'s `<class>` and `<race>` quest handlers are stubs, so `listedclasses` and `listedraces` are parsed
-  and ignored.
-- `event_artifact_wars` never implemented its penalty; `artifact.wars.modifier` had no effect.
-- Functions that ignore an argument their caller still supplies: `sql_link_player_to_account` (a
-  `// todo: implement` stub), `quested_spell`, `language_known`, `createSetItem`, `createUniqueItem`,
-  `create_material`, `create_stones`, `get_gem_from_mine`.
+| Finding | Disposition |
+|---|---|
+| `actoth.c` `do_fly` / `do_swim` tested `if (!*buf)` before `argument_interpreter` / `one_argument` had filled `buf`. | **Fixed.** The parse moved above the check in both. Both had read uninitialised stack memory on every invocation, so the "Fly what, where why or who?!?" guard fired at random. All three internal callers (`mobact.c`, `range.c` ×2) already pass a real argument, so only the bare `fly` / `swim` command changes: it now reliably prints the usage line. |
+| `sql_player.c` `sql_load_all_corpses` — the `last_item_id = item_id; continue;` paths taken when an object fails to load left `num_objs` unchanged, so a following affect row for that item applied to `obj_map[num_objs - 1]`, a different object. | **Fixed.** A `last_item_stored` flag now tracks whether `last_item_id` names the object actually at `obj_map[num_objs - 1]`, and the "same item, another affect" branch requires it. The owner-mismatch path, which previously set neither, now records the skip too, so its affect rows stop re-loading the object only to reject it again. |
+| `enhance()` rejects a material below `itemvalue(source) - enhance_material_ival_delta`; `modenhance()` computed the same floor and enforced nothing. | **Decided: no floor in `modenhance`, by design, and the reason is now in the code.** The floor is `enhance()`'s rule for arbitrary salvage — the material must be roughly as good as the item it feeds. `modenhance` only ever handles essences (vnums 400238–400258), purpose-built enhancement stock priced by its own three-tier platinum table keyed on the essence's own item value. Applying the salvage floor would make a cheap essence unusable on exactly the good gear it exists for. The dead `minval` local implied otherwise; a comment at that spot now says what the rule is and why. |
+| `nq.c`'s `<class>` and `<race>` quest handlers were stubs, so `listedclasses` and `listedraces` were parsed and ignored. | **Fixed.** `nq_parse_class_bit` and `nq_parse_race_index` resolve the element text against `class_names_table` and `race_names_table` (display name, unspaced name, or short code), and the handlers set or clear the bit according to the allow/deny mode, which the parse now carries into the child loop. This was not merely inert: a quest with `listedclasses="allow"` started from `allowed_classes = 0` and nothing ever added to it, so the quest was unavailable to every class. |
+| `event_artifact_wars` never implemented its penalty; `artifact.wars.modifier` had no effect. | **Fixed.** The forced-drop penalty added later was the only one running. The modifier now scales what the stale "decrement the timers" comment always described: each of a violating player's artifacts loses `modifier × punish_level` of its remaining life, clamped to the whole of it, and the new timer is written back. **The default is `0.0`, not the `1.0` the deleted code used**, so an absent property leaves timers alone and the forced drop remains the entire penalty. `lib/duris.properties` ships `artifact.wars.modifier=0.500`, so on a server using that file a first-level violation now halves the offender's artifact timers. That is a live balance change — set the property to `0` to keep today's behavior. |
+| Functions that ignored an argument their caller still supplied. | **All eight resolved,** below. |
+
+**The ignored-argument group**
+
+| Function | Disposition |
+|---|---|
+| `sql_link_player_to_account` | Removed. A `// todo: implement` stub returning `false`, with no caller anywhere in the tree — both the real definition and the no-database stub, plus the header declaration. |
+| `quested_spell(ch, spl)` | Removed. It returned `FALSE` unconditionally for every character and every spell; the hardcoded `spl == 56` prototype it was built around is commented out. Its four call sites all read `&& !quested_spell(ch, spl)`, so folding it away is a strict no-op. |
+| `language_known(ch, vict)` | **Implemented.** It returned `""` under a `// "in some strange language"?` comment while its partner `language_CRYPT` was already garbling the text. It now answers from the existing `can_understand_language(speaker, victim)`: empty when the listener understands, `"in some strange tongue "` when not. Players on the wrong side of a racewar saw scrambled letters with no explanation; they now get one. The two `bard.c` sing sites carried their own space before the quote and would have doubled it, so they were brought in line with the other eleven call sites. |
+| `createSetItem`, `createUniqueItem` | Removed, and the branch repaired. Both were `// choose from a table..` stubs returning `NULL` with no table to choose from, and they sat on the rarest roll in `createRandomItem` — a rare-of-a-rare therefore produced *nothing at all*, strictly worse than the common path. That roll now pays out at the rare tier until such a table exists. |
+| `create_material(int index)` | **Implemented.** The caller derived `index` from the killer's and mob's levels and the callee threw it away for a flat `number(400000, 400209)`. Vnums 400000–400209 are 42 material families of five quality tiers each, ascending in item value within a family, so `index` now selects the tier and chance selects the family. The obsolete commented-out `material_data[]` implementation went with it. |
+| `create_stones(P_char ch)` | Parameter dropped. Unlike `create_material`'s index, no caller ever computed anything for it and there is no quality signal to recover; the five call sites now read `create_stones()`. |
+| `get_gem_from_mine(ch, mine_quality)` | **Implemented.** Its sibling `get_ore_from_mine` scales with `mine_quality`, but the gem path discarded it, so a quality-3 gem mine paid exactly like a quality-0 one. `mining_config_gem_vnum` now takes the quality and expresses it as extra draws that keep the rarest result — one draw at quality 0, preserving the historical distribution, up to four at quality 3. The weight table it draws from is unchanged and still configurable from `lib/mining.cfg`. |
+
+**Validation of this pass**
+
+| Check | Result |
+|---|---|
+| `scripts/warning-inventory.sh` | 0 warnings in all six categories |
+| `make -C src clean && make -C src -j14` | Clean, `-Werror`, no diagnostics |
+| `tests/async/test_*.py` | All pass, including the new `test_deferred_findings_repairs.py` |
+| `./scripts/format.sh --check` | Clean |
+| `git diff --check` | Clean |
+| Compile-only sweep of every touched `.c` | Clean under `REQUIRE_EMAIL_VERIFICATION`, `CTF_MUD=1`, `SIEGE_ENABLED`, `MEMCHK` |
+
+Not run: a development smoke boot, for the same reason as the original pass — no development database or non-production port was available in this session.
+
+**Contracts updated.** `tests/async/test_mining_config_contract.py` pinned `mining_config_gem_vnum(void)` and its no-argument call; it now pins the quality-taking signature and the call that passes `mine_quality`, which is the assertion that actually matters.
+
+---
 
 The point of the project was never the number. It was to make the compiler's signal trustworthy: the six
-categories that used to hide 9,947 diagnostics now hide nothing, and the five buffer-overflow bugs above are
-the evidence that they were hiding more than noise.
+categories that used to hide 9,947 diagnostics now hide nothing, the five buffer-overflow bugs above are the
+evidence that they were hiding more than noise, and the findings the sweep could only record at the time are
+now resolved as well.

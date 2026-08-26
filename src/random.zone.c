@@ -1218,7 +1218,7 @@ int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 
 			gain_epic(pl, EPIC_RANDOM_ZONE, 0, value_pts / 100);
 
-			obj = create_stones(ch);
+			obj = create_stones();
 			obj_to_char(obj, pl);
 
 			act("$n gives $q to $N!", TRUE, ch, obj, pl, TO_NOTVICT);

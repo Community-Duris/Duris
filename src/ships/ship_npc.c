@@ -1139,7 +1139,7 @@ P_obj load_treasure_chest(P_ship ship, P_char captain, NPCShipCrewData *crew)
 	int nstones = number(2, 4 + crew->level * 2);
 	for (int i = 0; i < nstones; i++)
 	{
-		P_obj stone = create_stones(NULL);
+		P_obj stone = create_stones();
 		obj_to_obj(stone, chest);
 	}
 

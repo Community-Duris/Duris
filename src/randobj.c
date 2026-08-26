@@ -180,7 +180,7 @@ void do_randobj(P_char ch, char *strn, int /*val*/)
 	}
 	if (!str_cmp("stone", strn))
 	{
-		o = create_stones(ch);
+		o = create_stones();
 		obj_to_char(o, ch);
 		return;
 	}
@@ -479,28 +479,6 @@ P_obj createRareItem(P_obj rareI, unsigned int monDiffNumb)
 }
 
 //
-//
-//
-
-P_obj createSetItem(unsigned int /*mobDiffNumb*/)
-{
-	// choose from a table..
-
-	return NULL;
-}
-
-//
-//
-//
-
-P_obj createUniqueItem(unsigned int /*mobDiffNumb*/)
-{
-	// choose from a table..
-
-	return NULL;
-}
-
-//
 // create basic 'type' of random item, i.e. long sword, gold ring, etc
 //
 
@@ -578,15 +556,10 @@ P_obj createRandomItem(P_char pc, P_char mob, int moblvl, int zoneDiff, int crea
 	{
 		// check for unique/set (base chance 10%, lowest .1%)
 
-		if (rareUniqueCh >= number(1, 1000))
-		{
-			// we have a unique or set, choose one (50% for either)
-
-			if (number(0, 1))
-				return createSetItem(monDiffNumb);
-			else
-				return createUniqueItem(monDiffNumb);
-		}
+		// A set/unique tier was planned here but never had a table to draw
+		// from, so both branches returned NULL and the rarest roll in the
+		// whole function silently produced no item.  Until such a table
+		// exists the roll pays out at the rare tier.
 
 		return createRareItem(createRandomItemType(), monDiffNumb);
 	}

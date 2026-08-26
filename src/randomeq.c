@@ -562,33 +562,22 @@ void create_randoms()
 #endif
 }
 
-P_obj create_material(int /*index*/)
+// Salvage materials live at vnums 400000..400209: 42 material families of five
+// quality tiers each, the tiers ascending in item value within a family.
+#define MATERIAL_VNUM_BASE 400000
+#define MATERIAL_FAMILIES 42
+#define MATERIAL_TIERS 5
+
+P_obj create_material(int index)
 {
-	/* char     buf1[MAX_STRING_LENGTH];
-	 char     buf2[MAX_STRING_LENGTH];
-	 char     buf3[MAX_STRING_LENGTH];
+	// 'index' is the caller's level-derived quality on the 0..MAXMATERIAL
+	// scale.  It used to be computed and then thrown away, which made every
+	// salvaged material a flat roll over the whole range; map it onto the
+	// quality tier and leave the family to chance.
+	int tier = BOUNDED(0, index * MATERIAL_TIERS / (MAXMATERIAL + 1), MATERIAL_TIERS - 1);
+	int matnum = MATERIAL_VNUM_BASE + number(0, MATERIAL_FAMILIES - 1) * MATERIAL_TIERS + tier;
 
-	 P_obj obj = read_object(RANDOM_EQ_VNUM, VIRTUAL);
-	 obj->material = material_data[index].m_number;
-
-	 snprintf(buf1, MAX_STRING_LENGTH, "random piece %s", strip_ansi(material_data[index].m_name).c_str());
-	 snprintf(buf2, MAX_STRING_LENGTH, "a piece of %s&n", material_data[index].m_name);
-	 snprintf(buf3, MAX_STRING_LENGTH, "&+La piece of %s&n lies here.", material_data[index].m_name);
-
-	 set_keywords(obj, buf1);
-	 set_short_description(obj, buf2);
-	 set_long_description(obj, buf3);
-
-	 SET_BIT(obj->wear_flags, BIT_15);
-	 SET_BIT(obj->wear_flags, BIT_1);
-
-	 convertObj(obj);*/
-
-	int matnum = number(400000, 400209);
-
-	P_obj obj = read_object(matnum, VIRTUAL);
-
-	return obj;
+	return read_object(matnum, VIRTUAL);
 }
 
 P_obj create_material(P_char killer, P_char mob)
@@ -608,7 +597,7 @@ P_obj create_material(P_char killer, P_char mob)
 	return create_material(material_index);
 }
 
-P_obj create_stones(P_char /*ch*/)
+P_obj create_stones(void)
 {
 	return read_object(number(ENCRUST_VNUM_BEGIN, ENCRUST_VNUM_END), VIRTUAL);
 }

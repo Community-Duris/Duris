@@ -2649,6 +2649,15 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 
 	debug("event_artifact_wars: beginning...");
 
+	// Fraction of an artifact's remaining life burned off per level over the
+	// one-per-type limit.  0.0 (the default when the property is absent)
+	// leaves the timers alone and the forced drop below is the whole penalty.
+	float modifier = get_property("artifact.wars.modifier", 0.0);
+	if (modifier < 0.0f)
+		modifier = 0.0f;
+	if (modifier > 1.0f)
+		modifier = 1.0f;
+
 	// we only care about artis on a PC (online players only).
 	// corpse/npc/ground artifacts don't trigger the penalty.
 	debug("event_artifact_wars_sql: querying artifacts on pc...");
@@ -2807,6 +2816,36 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 
 				debug("artifact_wars: %s had %d artifacts forcibly dropped (punish_level=%d)",
 				      GET_NAME(owner), count[0], punish_level);
+			}
+
+			// Burn off part of each hoarded artifact's remaining life.
+			// This is what artifact.wars.modifier scales; without it the
+			// property was read and thrown away.
+			if (modifier > 0.0f)
+			{
+				float burn = modifier * (float)punish_level;
+				time_t now = time(0);
+
+				if (burn > 1.0f)
+					burn = 1.0f;
+
+				for (node = nextlist->artis; node; node = node->next)
+				{
+					if (node->timer <= now)
+						continue;
+
+					time_t remaining = node->timer - now;
+					time_t kept = (time_t)((float)remaining * (1.0f - burn));
+
+					node->timer = now + kept;
+					qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d",
+					    (unsigned long)node->timer, node->vnum);
+					logit(LOG_ARTIFACT,
+					      "artifact_wars: pid %d artifact %d timer cut by %d%% (punish_level=%d)",
+					      nextlist->pid, node->vnum, (int)(burn * 100.0f),
+					      punish_level);
+				}
+				arti_cache_invalidate();
 			}
 		}
 		nextlist = nextlist->next;

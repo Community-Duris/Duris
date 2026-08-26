@@ -247,18 +247,6 @@ void event_update_surnames(P_char /*ch*/, P_char /*victim*/, P_obj, void * /*dat
 	add_event(event_update_surnames, number(300, 600) * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 }
 
-bool quested_spell(P_char ch, int /*spl*/)
-{
-	// debug("spell: %d\r\n");
-	if (IS_NPC(ch))
-		return FALSE;
-
-	/*if(spl == 56)
-	  return TRUE;*/
-
-	return FALSE;
-}
-
 void vnum_from_inv(P_char ch, int item, int count)
 {
 	int i = count;

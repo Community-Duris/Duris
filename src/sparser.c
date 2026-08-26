@@ -1724,7 +1724,7 @@ bool parse_spell(P_char ch, char *argument, struct spell_target_data *target_dat
 		return FALSE;
 	}
 
-	if (!(circle = knows_spell(ch, spl)) && !quested_spell(ch, spl))
+	if (!(circle = knows_spell(ch, spl)))
 	{
 		send_to_char("You don't know that spell!\n", ch);
 		return FALSE;
