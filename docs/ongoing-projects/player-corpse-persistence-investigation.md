@@ -6,7 +6,7 @@
 
 **Severity:** High (self-persisting corpse corruption; resurrection and race-war behavior can change after a restart)
 
-**Status:** Fix in progress on `bugfix-corpse`; investigation baseline published as `e677a046`
+**Status:** Fix in progress on `bugfix-corpse`; display reconstruction published as `e0c3d79e`
 
 **Target subsystem:** Player-corpse SQL persistence (`files.c`, `fight.c`, `sql_player.c`)
 
@@ -288,14 +288,15 @@ real save/load round trip.
 | Checkpoint | State | Evidence |
 |---|---|---|
 | Investigation baseline | Complete and published | `e677a046`; live DB and log evidence captured above |
-| Display-field reconstruction | Complete; ready to publish | Named result columns, field-count guard, owned-string setters, and owner-keyword reconstruction; focused contract test, formatting check, and strict build pass |
-| Outer corpse state | Not started | Schema and save/load work remains |
-| Existing-row repair | Not started | Guarded compatibility repair remains |
-| Full validation | Not started | Clean build, full suite, migration test, and runtime round trip remain |
+| Display-field reconstruction | Complete and published | `e0c3d79e`; named result columns, field-count guard, owned-string setters, focused contract test, and strict build |
+| Outer corpse state | Implemented locally; ready to publish | Additive nullable columns for keywords, weight, values 0–5 and 7; `save_id` remains the canonical value 6; save/load paths preserve the complete new state |
+| Existing-row repair | Implemented locally; ready to publish | Reconstructs exact owner keywords and PC classification for legacy rows; repairs descriptions only when the numeric-short/exact-former-short signature matches |
+| Schema validation | Complete locally | Isolated MySQL test passed initial migration, guarded repair, distinct-value round trip, and replay |
+| Full validation | In progress | Clean build, full suite, local migration backup/apply, and live restart round trip remain |
 
 ## 9. Completion boundary
 
-This document records investigation findings only. It does **not** modify `src/`, add a migration, repair the
-live local corpse row, restart the service, or claim that corpse persistence is fixed. The immediate display
-root cause and the broader metadata-loss defect are both sufficiently evidenced to begin implementation on
-the `bugfix-corpse` branch.
+The display fix is published, and the outer-state schema/save/load work plus guarded legacy repair are ready
+for their next checkpoint. Completion still requires the full regression suite and a backed-up local migration
+followed by a real server restart/restore round trip. Until those checks pass, this document does not claim the
+incident is fully fixed.

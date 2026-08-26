@@ -7274,6 +7274,15 @@ bool sql_save_corpse(P_obj corpse)
 		return false;
 	}
 
+	char *esc_keywords = sql_escape_string(corpse->name ? corpse->name : "");
+	if (!esc_keywords)
+	{
+		free(esc_name);
+		free(esc_sdesc);
+		free(esc_desc);
+		return false;
+	}
+
 	// start transaction (must succeed before any writes)
 	if (!sql_begin_transaction())
 	{
@@ -7281,6 +7290,7 @@ bool sql_save_corpse(P_obj corpse)
 		free(esc_name);
 		free(esc_sdesc);
 		free(esc_desc);
+		free(esc_keywords);
 		return false;
 	}
 
@@ -7293,18 +7303,36 @@ bool sql_save_corpse(P_obj corpse)
 		free(esc_name);
 		free(esc_sdesc);
 		free(esc_desc);
+		free(esc_keywords);
 		sql_rollback();
 		return false;
 	}
 
-	char ins_query[512];
-	snprintf(
-		ins_query, sizeof(ins_query),
-		"INSERT INTO corpses (player_name, save_id, room_vnum, short_descr, description) VALUES ('%s', %d, %d, '%s', '%s')",
-		esc_name, save_id, room_vnum, esc_sdesc, esc_desc);
+	char ins_query[8192];
+	int query_length =
+		snprintf(ins_query, sizeof(ins_query),
+			 "INSERT INTO corpses ("
+			 "player_name, save_id, room_vnum, short_descr, description, name, weight, "
+			 "value0, value1, value2, value3, value4, value5, value7"
+			 ") VALUES ("
+			 "'%s', %d, %d, '%s', '%s', '%s', %d, "
+			 "%d, %d, %d, %d, %d, %d, %d"
+			 ")",
+			 esc_name, save_id, room_vnum, esc_sdesc, esc_desc, esc_keywords,
+			 corpse->weight, corpse->value[0], corpse->value[1], corpse->value[2],
+			 corpse->value[3], corpse->value[4], corpse->value[5], corpse->value[7]);
 	free(esc_name);
 	free(esc_sdesc);
 	free(esc_desc);
+	free(esc_keywords);
+
+	if (query_length < 0 || (size_t)query_length >= sizeof(ins_query))
+	{
+		logit(LOG_DEBUG, "sql_save_corpse: corpse insert query exceeded %zu bytes",
+		      sizeof(ins_query));
+		sql_rollback();
+		return false;
+	}
 
 	if (!sql_run_query(ins_query))
 	{
@@ -7446,6 +7474,15 @@ enum corpse_load_column
 	CORPSE_COL_ITEM_CONDITION,
 	CORPSE_COL_SHORT_DESCRIPTION,
 	CORPSE_COL_DESCRIPTION,
+	CORPSE_COL_NAME,
+	CORPSE_COL_WEIGHT,
+	CORPSE_COL_VALUE0,
+	CORPSE_COL_VALUE1,
+	CORPSE_COL_VALUE2,
+	CORPSE_COL_VALUE3,
+	CORPSE_COL_VALUE4,
+	CORPSE_COL_VALUE5,
+	CORPSE_COL_VALUE7,
 	CORPSE_COL_ITEM_WEAR_FLAGS,
 	CORPSE_COL_ITEM_TYPE,
 	CORPSE_COL_ITEM_MATERIAL,
@@ -7457,13 +7494,18 @@ enum corpse_load_column
 	CORPSE_COL_COUNT
 };
 
-static void sql_restore_corpse_identity(P_obj corpse, const char *player_name,
+static void sql_restore_corpse_identity(P_obj corpse, const char *player_name, const char *name,
 					const char *short_description, const char *description)
 {
 	char keywords[MAX_STRING_LENGTH];
 
-	checked_snprintf(keywords, sizeof(keywords), "%s corpse _pcorpse_", player_name);
-	set_keywords(corpse, keywords);
+	if (name && *name)
+		set_keywords(corpse, name);
+	else
+	{
+		checked_snprintf(keywords, sizeof(keywords), "%s corpse _pcorpse_", player_name);
+		set_keywords(corpse, keywords);
+	}
 
 	if (short_description && *short_description)
 		set_short_description(corpse, short_description);
@@ -7509,7 +7551,8 @@ bool sql_load_all_corpses(void)
 		"ci.value5, ci.value6, ci.value7, ci.name, ci.short_descr, ci.description, "
 		"ci.action_descr, COALESCE(cia.location, -1), COALESCE(cia.modifier, 0), "
 		"ci.obj_uid, ci.item_condition, "
-		"c.short_descr, c.description, "
+		"c.short_descr, c.description, c.name, c.weight, "
+		"c.value0, c.value1, c.value2, c.value3, c.value4, c.value5, c.value7, "
 		"ci.wear_flags, ci.item_type, ci.item_material, "
 		"ci.bitvector1, ci.bitvector2, ci.bitvector3, ci.bitvector4, ci.bitvector5 "
 		"FROM corpses c "
@@ -7642,10 +7685,20 @@ bool sql_load_all_corpses(void)
 				continue;
 
 			cur_corpse->type = ITEM_CORPSE;
-			SET_BIT(cur_corpse->value[1], PC_CORPSE);
+			if (row[CORPSE_COL_WEIGHT])
+				cur_corpse->weight = atoi(row[CORPSE_COL_WEIGHT]);
+			for (int value_index = 0; value_index <= CORPSE_RACEWAR; value_index++)
+			{
+				if (row[CORPSE_COL_VALUE0 + value_index])
+					cur_corpse->value[value_index] =
+						atoi(row[CORPSE_COL_VALUE0 + value_index]);
+			}
+			if (row[CORPSE_COL_VALUE7])
+				cur_corpse->value[CORPSE_RACE] = atoi(row[CORPSE_COL_VALUE7]);
+			SET_BIT(cur_corpse->value[CORPSE_FLAGS], PC_CORPSE);
 			cur_corpse->value[CORPSE_SAVEID] = save_id;
 
-			sql_restore_corpse_identity(cur_corpse, player_name,
+			sql_restore_corpse_identity(cur_corpse, player_name, row[CORPSE_COL_NAME],
 						    row[CORPSE_COL_SHORT_DESCRIPTION],
 						    row[CORPSE_COL_DESCRIPTION]);
 		}

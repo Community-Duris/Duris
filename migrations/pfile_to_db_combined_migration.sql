@@ -223,8 +223,17 @@ CREATE TABLE IF NOT EXISTS corpses (
     save_id BIGINT NOT NULL,
     room_vnum INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	short_descr VARCHAR(512) DEFAULT NULL,
+    short_descr VARCHAR(512) DEFAULT NULL,
     description TEXT DEFAULT NULL,
+    name VARCHAR(512) DEFAULT NULL,
+    weight INT DEFAULT NULL,
+    value0 INT DEFAULT NULL,
+    value1 INT DEFAULT NULL,
+    value2 INT DEFAULT NULL,
+    value3 INT DEFAULT NULL,
+    value4 INT DEFAULT NULL,
+    value5 INT DEFAULT NULL,
+    value7 INT DEFAULT NULL,
     INDEX idx_player_name (player_name),
     UNIQUE KEY uk_player_saveid (player_name, save_id)
 );

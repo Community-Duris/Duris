@@ -156,6 +156,7 @@ test-db:
 		exit 1; \
 	}
 	tests/async/run_account_bound_reward_schema_mysql.sh
+	tests/async/run_corpse_persistence_schema_mysql.sh
 	tests/async/run_persistence_contract_mysql.sh
 
 clean:
