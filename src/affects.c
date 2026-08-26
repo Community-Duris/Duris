@@ -3156,10 +3156,8 @@ void remove_link(P_char ch, struct char_link_data *clda)
 void update_damage_data()
 {
 	char buf[128];
-	float melee_factor, multiplier, pulse;
+	float multiplier, pulse;
 	int i;
-
-	melee_factor = get_property("damage.meleeFactor", 1.04);
 
 	for (i = 0; i <= LAST_RACE; i++)
 	{

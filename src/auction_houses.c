@@ -1192,7 +1192,6 @@ bool auction_remove(P_char ch, char *args)
 	char arg[MAX_STRING_LENGTH];
 	half_chop(args, arg, args);
 	int auction_id = atoi(arg);
-	bool removeAll = FALSE;
 	int auc_ids[100], i;
 	MYSQL_RES *res;
 	MYSQL_ROW auction_row;
@@ -1201,7 +1200,6 @@ bool auction_remove(P_char ch, char *args)
 
 	if (!strcmp(arg, "all") && GET_LEVEL(ch) == OVERLORD)
 	{
-		removeAll = TRUE;
 		if (!qry("SELECT id FROM auctions WHERE status = %d", AUCTION_STATUS_OPEN))
 			return FALSE;
 	}
@@ -1748,7 +1746,6 @@ bool finalize_auction(int auction_id, P_char to_ch)
 	int winning_bidder_pid = 0;
 	int final_price = 0;
 	string obj_short;
-	int obj_vnum = 0;
 	string winning_bidder_name;
 	int quantity = 1;
 	string seller_name;
@@ -1789,7 +1786,6 @@ bool finalize_auction(int auction_id, P_char to_ch)
 	winning_bidder_pid = auction_row[1] ? atoi(auction_row[1]) : 0;
 	final_price = auction_row[2] ? atoi(auction_row[2]) : 0;
 	obj_short = string(auction_row[3] ? auction_row[3] : "unknown item");
-	obj_vnum = auction_row[4] ? atoi(auction_row[4]) : 0;
 	winning_bidder_name = string(auction_row[5] ? auction_row[5] : "");
 	quantity = auction_row[6] ? atoi(auction_row[6]) : 1;
 	// seller_name is column 7 - only access if we have enough fields

@@ -90,7 +90,6 @@ void epic_stone_one_touch(P_obj obj, P_char ch, int epic_value);
 void epic_free_level(P_char ch);
 void epic_stone_level_char(P_obj obj, P_char ch);
 void epic_stone_set_affect(P_char ch);
-void epic_stone_feed_artifacts(P_obj obj, P_char ch);
 int epic_stone_payout(P_obj obj, P_char ch);
 void epic_stone_absorb(P_obj obj);
 

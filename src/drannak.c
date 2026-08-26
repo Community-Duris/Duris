@@ -1301,7 +1301,7 @@ bool new_summon_check(P_char ch, P_char selected)
 {
 	struct follow_type *k;
 	P_char victim;
-	int i, j, count = 0, desired = 0, greater = 0;
+	int i, count = 0, desired = 0, greater = 0;
 
 	desired = GET_LEVEL(selected);
 
@@ -1311,7 +1311,7 @@ bool new_summon_check(P_char ch, P_char selected)
 		return FALSE;
 	}
 
-	for (k = ch->followers, i = 0, j = 0; k; k = k->next)
+	for (k = ch->followers, i = 0; k; k = k->next)
 	{
 		victim = k->follower;
 

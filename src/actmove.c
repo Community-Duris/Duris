@@ -1146,13 +1146,12 @@ char *leave_message(P_char ch, P_char people, int exitnumb, char *amsg)
 void blow_char_somewhere_else(P_char ch, int dir)
 {
 	P_char t_ch = NULL;
-	int to_room, distance, zone_num, rroom;
+	int to_room, distance, rroom;
 	struct weather_data *cond;
 
 	if (!IS_MAP_ROOM(ch->in_room) || IS_TRUSTED(ch))
 		return;
 
-	zone_num = world[ch->in_room].zone;
 	cond = &sector_table[in_weather_sector(ch->in_room)].conditions;
 	distance = BOUNDED(0, (cond->windspeed - 45) / 2, 20);
 

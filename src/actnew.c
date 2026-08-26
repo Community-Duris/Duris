@@ -2553,7 +2553,6 @@ void do_lore(P_char ch, char *arg, int cmd)
 	char name[MAX_STRING_LENGTH];
 	P_obj obj = NULL;
 	P_char target = NULL;
-	bool is_in_room = FALSE;
 	//---------------------------------------------
 	// 1-only inv obj, 2-players, 3-something nice
 	int lore_power = 1;
@@ -2604,7 +2603,6 @@ void do_lore(P_char ch, char *arg, int cmd)
 			    TRUE, ch, 0, tmp_char, TO_NOTVICT);
 			act("$n gives you a quick glance, taking in your traits and features.",
 			    TRUE, ch, 0, tmp_char, TO_VICT);
-			is_in_room = TRUE;
 		}
 		//---------------------------------------
 
@@ -3514,7 +3512,7 @@ void do_hamstring(P_char ch, char *arg, int cmd)
 
 void do_arena(P_char ch, char *arg, int cmd)
 {
-	int rm, i, j, f = 0;
+	int i, j, f = 0;
 	char strn[MAX_STRING_LENGTH], out[MAX_STRING_LENGTH];
 	char arg1[256], arg2[256];
 	P_char c;
@@ -3522,7 +3520,6 @@ void do_arena(P_char ch, char *arg, int cmd)
 	if (!ch)
 		return; /* ? */
 
-	rm = world[ch->in_room].number;
 	if (!CHAR_IN_ARENA(ch) && !IS_TRUSTED(ch))
 	{
 		send_to_char("Pardon?\r\n", ch);
@@ -3737,7 +3734,7 @@ int chance_throw_potion(P_char ch, P_char victim)
 
 bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
 {
-	int i, bits, j, in_room;
+	int i, bits, j;
 	bool equipped = FALSE;
 	P_char tch = NULL;
 	P_char temp = NULL;
@@ -3880,8 +3877,6 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
 						    IS_AFFECTED2(ch, AFF2_CONCEALMENT))
 							appear(ch);
 					}
-					in_room = ch->in_room;
-
 					if (potion->value[0] > GET_LEVEL(ch))
 					{
 						send_to_char(
@@ -3968,12 +3963,10 @@ void do_throw_potion(P_char ch, char *argument, int cmd)
 {
 	P_obj scroll, obj;
 	int i, j, in_room;
-	bool equipped;
 	P_char victim = NULL;
 	char Gbuf1[MAX_STRING_LENGTH];
 	int bits = 0;
 
-	equipped = FALSE;
 	obj = 0;
 
 	if (!IS_TRUSTED(ch) && affected_by_spell(ch, SKILL_THROW_POTIONS))
@@ -3988,7 +3981,6 @@ void do_throw_potion(P_char ch, char *argument, int cmd)
 	if (!(scroll = get_obj_in_list_vis(ch, Gbuf1, ch->carrying)))
 	{
 		scroll = ch->equipment[HOLD];
-		equipped = TRUE;
 		if ((scroll == 0) || !isname(Gbuf1, scroll->name))
 		{
 			act("You do not have that item.", FALSE, ch, 0, 0, TO_CHAR);

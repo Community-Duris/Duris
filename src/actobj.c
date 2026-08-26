@@ -989,7 +989,6 @@ void do_get(P_char ch, char *argument, int cmd)
 	int looting = FALSE;
 	int wfound = FALSE;
 	int i, j;
-	P_obj t_obj;
 	int wear_order[] = { 41, 24, 40, 6,  19, 21, 22, 20, 39, 3,  4,	 5,  35, 37,
 			     12, 27, 23, 13, 28, 29, 30, 10, 31, 11, 14, 15, 33, 34,
 			     9,	 32, 1,	 2,  16, 17, 25, 26, 18, 7,  36, 8,  38, -1 };
@@ -1012,7 +1011,6 @@ void do_get(P_char ch, char *argument, int cmd)
 	{
 		if (ch->equipment[wear_order[j]])
 		{
-			t_obj = ch->equipment[wear_order[j]];
 			wfound = TRUE;
 		}
 	}
@@ -2267,7 +2265,7 @@ void do_put(P_char ch, char *argument, int cmd)
 {
 	P_obj o_obj = NULL, s_obj = NULL, tmp_obj, next_obj;
 	P_char t_ch;
-	int bits, amount, ctype, count = 0, attempted = 0;
+	int amount, ctype, count = 0, attempted = 0;
 	int plat = 0, gold = 0, silv = 0, copp = 0;
 	int p, g, s, c, type = 0;
 	char buf[MAX_STRING_LENGTH];
@@ -2346,12 +2344,12 @@ void do_put(P_char ch, char *argument, int cmd)
 
 	if (IS_TRUSTED(ch))
 	{
-		bits = generic_find(cont_name, FIND_OBJ_INV | FIND_OBJ_ROOM, ch, &t_ch, &s_obj);
+		generic_find(cont_name, FIND_OBJ_INV | FIND_OBJ_ROOM, ch, &t_ch, &s_obj);
 	}
 	else
 	{
-		bits = generic_find(cont_name, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch,
-				    &t_ch, &s_obj);
+		generic_find(cont_name, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_NO_TRACKS, ch, &t_ch,
+			     &s_obj);
 	}
 
 	if (!s_obj)

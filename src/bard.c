@@ -684,7 +684,7 @@ void bard_drifting(int level, P_char ch, P_char victim, int song)
 void bard_healing(int level, P_char ch, P_char victim, int song)
 {
 	struct affected_type af;
-	int healed, old_hits;
+	int healed;
 
 	// 12 hps for 100 cha + 14 hps at level 56 + 4 hps at level 56 = 30 total for bard... * 13 / 20 for others = 19.
 	// For lowest cha, we have 80 * .75 (75 racial con for githyanki is lowest for a bard and 80 is lowest rollable atm).
@@ -701,7 +701,6 @@ void bard_healing(int level, P_char ch, P_char victim, int song)
 	    (affected_by_spell(victim, SONG_HEALING) &&
 	     (get_linked_char(victim, LNK_SNG_HEALING) == ch)))
 	{
-		old_hits = GET_HIT(ch);
 		// healed = l * 3 * number(40, 80) / 100;
 		// spell_heal(l, ch, 0, 0, victim, NULL);
 
@@ -975,7 +974,6 @@ void bard_calm(int l, P_char ch, P_char victim, int song)
 
 void bard_revelation(int level, P_char ch, P_char victim, int song)
 {
-	bool flag = FALSE;
 	struct affected_type af;
 	int x = GET_LEVEL(ch);
 	int empower = GET_CHAR_SKILL(ch, SKILL_EMPOWER_SONG);
@@ -1001,7 +999,6 @@ void bard_revelation(int level, P_char ch, P_char victim, int song)
 		af.duration = x;
 		af.bitvector2 = AFF2_DETECT_MAGIC;
 		affect_to_char(victim, &af);
-		flag = TRUE;
 		act("&+mMagical energies are now visible.", FALSE, victim, 0, 0, TO_CHAR);
 	}
 	if (level > 13)
@@ -1013,7 +1010,6 @@ void bard_revelation(int level, P_char ch, P_char victim, int song)
 			af.duration = x;
 			af.bitvector2 = AFF2_DETECT_GOOD;
 			affect_to_char(victim, &af);
-			flag = TRUE;
 			act("&+YYour eyes tingle.&n", FALSE, victim, 0, 0, TO_CHAR);
 		}
 		if (!IS_AFFECTED2(victim, AFF2_DETECT_EVIL))
@@ -1023,7 +1019,6 @@ void bard_revelation(int level, P_char ch, P_char victim, int song)
 			af.duration = x;
 			af.bitvector2 = AFF2_DETECT_EVIL;
 			affect_to_char(victim, &af);
-			flag = TRUE;
 			act("&+rYour eyes tingle.&n", FALSE, victim, 0, 0, TO_CHAR);
 		}
 	}
@@ -1035,7 +1030,6 @@ void bard_revelation(int level, P_char ch, P_char victim, int song)
 		af.duration = x;
 		af.bitvector = AFF_DETECT_INVISIBLE;
 		affect_to_char(victim, &af);
-		flag = TRUE;
 		act("&+cYour eyes start to tingle.", FALSE, victim, 0, 0, TO_CHAR);
 	}
 	if ((level > 30) && !IS_AFFECTED(victim, AFF_SENSE_LIFE))
@@ -1045,7 +1039,6 @@ void bard_revelation(int level, P_char ch, P_char victim, int song)
 		af.duration = x;
 		af.bitvector = AFF_SENSE_LIFE;
 		affect_to_char(victim, &af);
-		flag = TRUE;
 		act("&+LYour eyes start to tingle.", FALSE, victim, 0, 0, TO_CHAR);
 	}
 	// Farsee on a 33% chance.
@@ -1056,7 +1049,6 @@ void bard_revelation(int level, P_char ch, P_char victim, int song)
 		af.duration = x;
 		af.bitvector = AFF_FARSEE;
 		affect_to_char(victim, &af);
-		flag = TRUE;
 		act("&+yYour pupils contract and expand. Your vision is enhanced.", FALSE, victim,
 		    0, 0, TO_CHAR);
 	}

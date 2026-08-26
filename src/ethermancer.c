@@ -1570,7 +1570,7 @@ void spell_ethereal_alliance(int level, P_char ch, char *arg, int type, P_char v
 
 void spell_comet(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
 {
-	int temp, dam;
+	int dam;
 	struct damage_messages messages = {
 		"&+LYou open a rift in the &+Yco&+Wsm&+Yos&+L and call forth a small &+Yco&+yme&+Yt&+L that &+Rsm&+ras&+Rhes &+Linto $N&+L!&n",
 		"&+LA rift opens in front of you, and in it you see &+Yst&+War&+Ys &+Land &+Cgalaxies&+L.  Suddenly, a &+Yco&+yme&+Yt &+Lflies out of it &+Rsm&+rash&+Ring &+Linto YOU!&n",
@@ -1583,7 +1583,6 @@ void spell_comet(int level, P_char ch, char *arg, int type, P_char victim, P_obj
 
 	if (!GET_SPEC(ch, CLASS_ETHERMANCER, SPEC_STARMAGUS))
 	{
-		temp = MIN(50, (level + 1));
 		// Fireball damage.
 		dam = dice(((int)(level / 3) + 5), 6) * 4;
 	}
@@ -2484,7 +2483,7 @@ void spell_conjure_void_elemental(int level, P_char ch, char *arg, int type, P_c
 				  P_obj tar_obj)
 {
 	P_char mob;
-	int sum, mlvl, lvl;
+	int mlvl, lvl;
 	int i, j;
 	int charisma = GET_C_CHA(ch) + (GET_LEVEL(ch) / 5);
 	struct follow_type *k;
@@ -2512,11 +2511,6 @@ void spell_conjure_void_elemental(int level, P_char ch, char *arg, int type, P_c
 		send_to_char("You cannot control any more elementals!\r\n", ch);
 		return;
 	}
-
-	if (number(0, 100) < 15 || GET_SPEC(ch, CLASS_ETHERMANCER, SPEC_STARMAGUS))
-		sum = 1;
-	else
-		sum = 0;
 
 	mob = read_mobile(real_mobile(76), REAL);
 
@@ -2591,7 +2585,7 @@ void spell_conjure_ice_elemental(int level, P_char ch, char *arg, int type, P_ch
 				 P_obj tar_obj)
 {
 	P_char mob;
-	int sum, mlvl, lvl;
+	int mlvl, lvl;
 	int i, j;
 	int charisma = GET_C_CHA(ch) + (GET_LEVEL(ch) / 5);
 	struct follow_type *k;
@@ -2619,11 +2613,6 @@ void spell_conjure_ice_elemental(int level, P_char ch, char *arg, int type, P_ch
 		send_to_char("You cannot control any more elementals!\r\n", ch);
 		return;
 	}
-
-	if (number(0, 100) < 15 || GET_SPEC(ch, CLASS_ETHERMANCER, SPEC_FROSTMAGUS))
-		sum = 1;
-	else
-		sum = 0;
 
 	mob = read_mobile(real_mobile(1157), REAL);
 

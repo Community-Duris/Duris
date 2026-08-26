@@ -2699,7 +2699,7 @@ void do_hide(P_char ch, char *argument, int cmd)
 void listen(P_char ch, char *argument)
 {
 	P_char tch, tch_next;
-	int dir, percent, found = 0;
+	int dir, found = 0;
 	const char *heard_nothing = "You don't hear anything unusual.\r\n";
 	const char *room_spiel = "$n seems to listen intently for something.";
 	char buf[MAX_STRING_LENGTH];
@@ -2712,8 +2712,6 @@ void listen(P_char ch, char *argument)
 		send_to_char("What is the sound of one hand clapping?\r\n", ch);
 		return;
 	}
-	percent = number(1, 101);
-
 	one_argument(argument, buf);
 
 	if (!*buf)
@@ -4077,7 +4075,7 @@ void do_quaff(P_char ch, char *argument, int cmd)
 void do_recite(P_char ch, char *argument, int cmd)
 {
 	P_obj scroll, obj;
-	int i, bits, j, in_room;
+	int i, bits, j;
 	bool equipped;
 	P_char victim = NULL;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -4163,7 +4161,6 @@ void do_recite(P_char ch, char *argument, int cmd)
 							continue;
 						}
 					}
-					in_room = ch->in_room;
 					((*skills[j].spell_pointer)((int)scroll->value[0], ch,
 								    argument, SPELL_TYPE_SPELL,
 								    victim, obj));
@@ -5958,10 +5955,8 @@ void do_fly(P_char ch, char *argument, int cmd)
 	char buf[MAX_INPUT_LENGTH], Gbuf1[MAX_INPUT_LENGTH];
 	P_char mount, rider = NULL;
 	struct follow_type *k, *next_dude;
-	struct zone_data *zone = 0;
 	int saw_map = 0, sect, oldz, newz;
 
-	zone = &zone_table[world[ch->in_room].zone];
 	/* mounted chars can use this to order their mounts as well */
 	if ((mount = get_linked_char(ch, LNK_RIDING)))
 	{
@@ -6142,10 +6137,8 @@ void do_swim(P_char ch, char *argument, int cmd)
 	char buf[MAX_INPUT_LENGTH];
 	P_char mount, rider = NULL;
 	struct follow_type *k, *next_dude;
-	struct zone_data *zone = 0;
 	int saw_map = 0, sect;
 
-	zone = &zone_table[world[ch->in_room].zone];
 	/* mounted chars can use this to order their mounts as well */
 	if ((mount = get_linked_char(ch, LNK_RIDING)))
 	{

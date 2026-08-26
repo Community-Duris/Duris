@@ -1863,7 +1863,7 @@ bool circle(P_char ch, P_char victim)
 {
 	P_char tch;
 	P_char t;
-	int found, skill;
+	int skill;
 
 	if (get_linked_char(ch, LNK_CIRCLING))
 	{
@@ -1888,7 +1888,7 @@ bool circle(P_char ch, P_char victim)
 	// Are they tanking?
 	if (!IS_TRUSTED(ch))
 	{
-		for (t = world[ch->in_room].people, found = FALSE; t; t = t->next_in_room)
+		for (t = world[ch->in_room].people; t; t = t->next_in_room)
 		{
 			if (GET_OPPONENT(t) == ch)
 			{
@@ -2071,7 +2071,7 @@ void do_order(P_char ch, char *argument, int comd)
 	char cmd[MAX_INPUT_LENGTH], temp[MAX_INPUT_LENGTH], lowcmd[MAX_INPUT_LENGTH];
 	char buf[256];
 	bool found = FALSE, l_delay = FALSE;
-	int org_room, i, len, org_cord, numb_ch = 0;
+	int i, len, org_cord, numb_ch = 0;
 	P_char victim, ch_inroom[CH_INROOM_SIZE], tmp_ch;
 	P_char k = NULL;
 
@@ -2236,7 +2236,6 @@ void do_order(P_char ch, char *argument, int comd)
 		else
 		{ /* This is order "followers" */
 			act("$n gives an order to $s followers.", FALSE, ch, 0, 0, TO_ROOM);
-			org_room = ch->in_room;
 			org_cord = ch->specials.z_cord;
 
 			for (i = 0; i < numb_ch; i++)
@@ -3555,7 +3554,6 @@ void kick(P_char ch, P_char victim)
 	int vsize = get_takedown_size(victim);
 	int csize = get_takedown_size(ch);
 	int percent_chance = 0;
-	bool in_gh;
 	char buf[512];
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
@@ -3653,8 +3651,6 @@ void kick(P_char ch, P_char victim)
 	{
 		takedown_chance *= 2;
 	}
-
-	in_gh = (zone_table[world[ch->in_room].zone].number == GH_ZONE_NUMBER);
 
 	if (takedown_chance > random_number && csize > (vsize + 1))
 	{
@@ -6700,7 +6696,6 @@ void bash(P_char ch, P_char victim, bool _debug)
 	float percent_chance, modifier;
 	int learned, dmg, ch_size, vict_size, skl, rolled;
 	int skewer = GET_CHAR_SKILL(ch, SKILL_SKEWER);
-	bool shieldless = FALSE;
 	char buf[512];
 	P_obj weap = ch->equipment[WIELD];
 
@@ -6863,7 +6858,6 @@ void bash(P_char ch, P_char victim, bool _debug)
 			}
 			else
 			{
-				shieldless = TRUE;
 				notch_skill(ch, SKILL_SHIELDLESS_BASH,
 					    get_property("skill.notch.offensive", 7));
 				// Minimum of 4/5 reduction.  Max no reduction.

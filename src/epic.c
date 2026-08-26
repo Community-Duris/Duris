@@ -738,28 +738,6 @@ int epic_stone_payout(P_obj obj, P_char ch)
 	return epic_value;
 }
 
-void epic_stone_feed_artifacts(P_obj obj, P_char ch)
-{
-	int feed_amount = 0;
-	switch (OBJ_VNUM(obj))
-	{
-	case EPIC_MONOLITH:
-		feed_amount = 3600 * get_property("artifact.feeding.epic.hours.monolith", 12);
-		break;
-
-	case EPIC_LARGE_STONE:
-		feed_amount = 3600 * get_property("artifact.feeding.epic.hours.large", 6);
-		break;
-
-	case EPIC_SMALL_STONE:
-		feed_amount = 3600 * get_property("artifact.feeding.epic.hours.small", 1);
-		break;
-
-	default:
-		feed_amount = 0;
-	}
-}
-
 void epic_stone_set_affect(P_char ch)
 {
 	struct affected_type af;

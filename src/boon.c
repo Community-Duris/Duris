@@ -3023,20 +3023,18 @@ void boon_maintenance()
 	return;
 }
 
+/* Currently disabled: the random-boon loader below is unfinished (create_boon()
+   is still commented out), so the routine returns before doing any work. */
 void boon_random_maintenance()
 {
 	return;
 	BoonData bdata;
 	int i, j;
-	int id[MAX_BOONS];
 	int r[MAX_BOONS];
 
 	// assure appropriate levels of random boons in game
 	for (i = 0; i < MAX_BOONS; i++)
-	{
-		id[i] = 0;
 		r[i] = 0;
-	}
 
 	if (!qry("SELECT id, random FROM boons WHERE active = '1' & random > '0'"))
 	{
@@ -3062,7 +3060,6 @@ void boon_random_maintenance()
 	i = 0;
 	while ((row = mysql_fetch_row(res)))
 	{
-		id[i] = atoi(row[0]);
 		r[i] = atoi(row[1]);
 		i++;
 	}

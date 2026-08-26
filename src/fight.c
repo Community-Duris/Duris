@@ -3161,7 +3161,6 @@ void kill_gain(P_char ch, P_char victim)
 void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *messages)
 {
 	int dam = (int)fdam;
-	P_obj wield;
 	P_obj wpn;
 	char *buf, buf_char[160], buf_vict[160], buf_notvict[160];
 	int w_percent, h_percent, max_dam = 0, w_loop, h_loop, dam2;
@@ -3201,7 +3200,6 @@ void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *
 
 	if (ch->equipment[WIELD])
 	{
-		wield = ch->equipment[WIELD];
 		max_dam = ch->equipment[WIELD]->value[1] * ch->equipment[WIELD]->value[2];
 	}
 	// else if(messages->obj)
@@ -9122,7 +9120,6 @@ void perform_violence(void)
 	int attacks[MAX_ATTACKS];
 	int number_attacks, real_attacks, div_attacks;
 	int num_hits, damAccumulator;
-	long time_now;
 	int i, room, skill;
 	std::set<int> room_rnums;
 	std::set<int>::iterator it;
@@ -9131,7 +9128,6 @@ void perform_violence(void)
 	bool melee_exp_pulse;
 	// loop through everyone fighting
 
-	time_now = time(0);
 	melee_exp_pulse = ((pulse % PULSE_VIOLENCE) == 0);
 
 	for (ch = destroying_list; ch; ch = ch->specials.next_destroying)

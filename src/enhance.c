@@ -66,7 +66,6 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	char buf[MAX_STRING_LENGTH];
 	P_obj robj;
 	int cost, searchcount, maxsearch, tries, sval, level;
-	bool validobj;
 	int newval, minval, chluck, wearflags;
 	int cascade_dir, cascade_step, cascade_ival;
 	struct enhance_index_entry *entry;
@@ -227,7 +226,6 @@ void enhance(P_char ch, P_obj source, P_obj material)
 				robj = read_object(entry->vnum, VIRTUAL);
 				if (robj)
 				{
-					validobj = TRUE;
 					break;
 				}
 			}
@@ -878,9 +876,8 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	P_obj robj;
 	long robjint;
 	int mod = 0, loctype = 0;
-	int validobj, cost = 0, searchcount = 0, tries;
+	int cost = 0, searchcount = 0, tries;
 	int sval = itemvalue(source);
-	validobj = 0;
 	int val = itemvalue(material);
 	int minval = itemvalue(source) - enhance_material_ival_delta;
 

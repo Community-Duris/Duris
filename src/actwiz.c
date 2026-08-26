@@ -1416,12 +1416,11 @@ void stat_dam(P_char ch, char *arg)
 {
 	const char *race_name;
 	char tmplate[512], buf[512], prop_name[512];
-	float pulse, multiplier, mult_mod, melee_factor, damcap;
+	float pulse, multiplier, mult_mod, damcap;
 	int race;
 
 	send_to_char("Race          &+WPulse&n  Mult  (&+WProp&n) DamCap\n", ch);
 	send_to_char("-------------------------------------------\n", ch);
-	melee_factor = get_property("damage.meleeFactor", 1.);
 	for (race = 1; race <= LAST_RACE; race++)
 	{
 		race_name = race_names_table[race].ansi;

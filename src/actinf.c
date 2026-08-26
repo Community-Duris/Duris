@@ -593,9 +593,9 @@ const char *load_to_string(P_char ch)
 
 void argument_split_2(char *argument, char *first_arg, char *second_arg)
 {
-	int look_at, found, begin;
+	int look_at, begin;
 
-	found = begin = 0;
+	begin = 0;
 
 	if (strlen(argument) >= MAX_INPUT_LENGTH)
 	{
@@ -713,7 +713,6 @@ int ageCorpse(P_char ch, P_obj obj, char *s)
 
 char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 {
-	bool found;
 	static char buf[MAX_STRING_LENGTH];
 	P_obj wpn;
 
@@ -757,22 +756,17 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 	}
 	if (IS_SET(mode, LISTOBJ_STATS))
 	{
-		found = FALSE;
-
 		if (IS_OBJ_STAT(object, ITEM_INVISIBLE))
 		{
 			strcat(buf, " (&+Linvis&n)");
-			found = TRUE;
 		}
 		if (IS_OBJ_STAT(object, ITEM_NOSHOW) && IS_TRUSTED(ch))
 		{
 			strcat(buf, " (&+LNOSHOW&n)");
-			found = TRUE;
 		}
 		if (IS_OBJ_STAT(object, ITEM_SECRET))
 		{
 			strcat(buf, " (&+Lsecret&n)");
-			found = TRUE;
 		}
 		if ((IS_AFFECTED4(ch, AFF4_DETECT_ILLUSION) ||
 		     has_innate(ch, INNATE_DET_SUBVERSION) ||
@@ -781,13 +775,11 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 		    is_illusion_obj(object))
 		{
 			strcat(buf, " (&+MIllusion&n)");
-			found = TRUE;
 		}
 
 		if (IS_OBJ_STAT(object, ITEM_BURIED))
 		{
 			strcat(buf, " (&+Lburied&n)");
-			found = TRUE;
 		}
 		if (IS_OBJ_STAT2(object, ITEM2_MAGIC) &&
 		    (IS_TRUSTED(ch) || IS_AFFECTED2(ch, AFF2_DETECT_MAGIC) ||
@@ -795,34 +787,28 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 		      GET_SPEC(ch, CLASS_DRAGOON, SPEC_DRAGON_PRIEST))))
 		{
 			strcat(buf, " (&+bmagic&n)");
-			found = TRUE;
 		}
 		if (IS_OBJ_STAT(object, ITEM_GLOW))
 		{
 			strcat(buf, " (&+Mglowing&n)");
-			found = TRUE;
 		}
 		if (IS_OBJ_STAT(object, ITEM_HUM))
 		{
 			strcat(buf, " (&+rhumming&n)");
-			found = TRUE;
 		}
 		if (get_obj_affect(object, SKILL_ENCHANT))
 		{
 			strcat(buf, " (&+mEnchanted&n)");
-			found = TRUE;
 		}
 		if (IS_OBJ_STAT(object, ITEM_LIT) ||
 		    ((object->type == ITEM_LIGHT) && (object->value[2] == -1)))
 		{
 			strcat(buf, " (&+Willuminating&n)");
-			found = TRUE;
 		}
 
 		if (IS_SET(object->extra2_flags, ITEM2_TRANSPARENT))
 		{
 			strcat(buf, " (&+Lt&+wr&+La&+wn&+Lspa&+wren&+Lt&n)");
-			found = TRUE;
 		}
 
 		/*if (OBJ_WORN(object) &&
@@ -843,7 +829,6 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 			if (object->type == ITEM_WEAPON && (IS_SWORD(object) || IS_AXE(object)))
 			{
 				strcat(buf, " &+L(&+rf&+Rl&+Ya&+Wm&+Yi&+Rn&+rg&+L)&N");
-				found = TRUE;
 			}
 		}
 
@@ -853,7 +838,6 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 			if (object->type == ITEM_WEAPON && IS_BLUDGEON(object))
 			{
 				strcat(buf, " &+L(&+Cch&+Bill&+Cing&+L)&N"); // XXX zion
-				found = TRUE;
 			}
 		}
 
@@ -863,7 +847,6 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 			if (object->type == ITEM_WEAPON && !IS_BLUDGEON(object) && !IS_AXE(object))
 			{
 				strcat(buf, " &+L(&+Bele&+Wctri&+Bfied&+L)&N"); // XXX zion
-				found = TRUE;
 			}
 		}
 
@@ -872,7 +855,6 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 			if (object->type == ITEM_WEAPON && IS_SWORD(object))
 			{
 				strcat(buf, " &+L(&+Wh&+wol&+Wy&+L)&N");
-				found = TRUE;
 			}
 		}
 
@@ -885,7 +867,6 @@ char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 		/*
 		if (IS_TRUSTED(ch)) {
 		  snprintf(buf, MAX_STRING_LENGTH, "%s (&+m%s&n)", buf, item_size_types[GET_OBJ_SIZE(object)]);
-		  found = TRUE;
 		}
 		*/
 	}
@@ -2271,7 +2252,7 @@ void ShowCharSpellBookSpells(P_char ch, P_obj obj, char *short_desc)
 {
 	struct extra_descr_data *desc;
 	char buf[MAX_STRING_LENGTH], buf3[MAX_STRING_LENGTH];
-	int i, j, k = 0, l, m = 0;
+	int j, k = 0, l, m = 0;
 
 	if (IS_NPC(ch))
 	{
@@ -2287,7 +2268,6 @@ void ShowCharSpellBookSpells(P_char ch, P_obj obj, char *short_desc)
 		act(buf, TRUE, ch, obj, 0, TO_CHAR);
 		return;
 	}
-	i = 0;
 	j = 0;
 	if (obj->value[1] && !GET_CLASS(ch, obj->value[1]))
 	{
@@ -3728,7 +3708,7 @@ void do_read(P_char ch, char *argument, int cmd)
 void do_examine(P_char ch, char *argument, int cmd)
 {
 	char name[MAX_INPUT_LENGTH], buf[MAX_INPUT_LENGTH + 4], buf2[MAX_INPUT_LENGTH];
-	int bits, wtype, craft, mat, percent;
+	int wtype, craft, mat, percent;
 	P_char tmp_char;
 	P_obj tmp_object;
 	float result_space;
@@ -3748,16 +3728,15 @@ void do_examine(P_char ch, char *argument, int cmd)
 	//   lookup once and have a function to display what we found called in each case (here and new_look).
 	if (IS_TRUSTED(ch))
 	{
-		bits = generic_find(name,
-				    FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_OBJ_EQUIP | FIND_CHAR_ROOM,
-				    ch, &tmp_char, &tmp_object);
+		generic_find(name, FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_OBJ_EQUIP | FIND_CHAR_ROOM,
+			     ch, &tmp_char, &tmp_object);
 	}
 	else
 	{
-		bits = generic_find(name,
-				    FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_OBJ_EQUIP | FIND_CHAR_ROOM |
-					    FIND_NO_TRACKS,
-				    ch, &tmp_char, &tmp_object);
+		generic_find(name,
+			     FIND_OBJ_INV | FIND_OBJ_ROOM | FIND_OBJ_EQUIP | FIND_CHAR_ROOM |
+				     FIND_NO_TRACKS,
+			     ch, &tmp_char, &tmp_object);
 	}
 
 	// check legend lore
@@ -8938,49 +8917,9 @@ void do_title(P_char ch, char *arg, int cmd)
 
 void do_artireset(P_char ch, char *arg, int cmd)
 {
-	char name[MAX_INPUT_LENGTH];
-	int bits, wtype, craft, mat;
-	P_char tmp_char;
-	P_obj tmp_object;
-	float result_space;
-
 	send_to_char(
 		"This is no longer supported.  Use the 'artifact timer <artifact name> <timer>' command instead.\n",
 		ch);
-	return;
-
-	one_argument(arg, name);
-
-	if (!*name)
-	{
-		send_to_char("Reset what arti?\n", ch);
-		return;
-	}
-
-	bits = generic_find(name, FIND_OBJ_INV, ch, &tmp_char, &tmp_object);
-
-	if (tmp_object)
-	{
-		if (!IS_ARTIFACT(tmp_object))
-		{
-			act("$p is not an artifact.", FALSE, ch, tmp_object, 0, TO_CHAR);
-			return;
-		}
-
-		//    UpdateArtiBlood(ch, tmp_object, 100);
-		tmp_object->timer[3] = time(NULL);
-		act("$p is reset.", FALSE, ch, tmp_object, 0, TO_CHAR);
-		tmp_object->value[7] = number(4, 7);
-		wizlog(GET_LEVEL(ch), "%s reset artifact '%s' in [%d]", GET_NAME(ch),
-		       tmp_object->short_description, world[ch->in_room].number);
-		logit(LOG_WIZ, "%s reset artifact ' %s' in  [%d]", GET_NAME(ch),
-		      tmp_object->short_description, world[ch->in_room].number);
-		sql_log(ch, WIZLOG, "Reset artifact %s", tmp_object->short_description);
-		return;
-	}
-
-	send_to_char("Cant find that object, make sure you have it in your inventory.\n", ch);
-	return;
 }
 
 void do_glance(P_char ch, char *argument, int cmd)

@@ -841,7 +841,7 @@ void weather_setup(void)
 /* generate random mob and obj tables */
 void init_rand_tables()
 {
-	uint mtables, otables, mentries, oentries; /* counts for tables */
+	uint mtables, otables; /* counts for tables */
 	int v, w;
 	FILE *tfile; /* table file */
 	char buf[MAX_STRING_LENGTH];
@@ -852,8 +852,6 @@ void init_rand_tables()
 	obj_tables = 0;
 	mtables = 0;
 	otables = 0;
-	mentries = 0;
-	oentries = 0;
 
 	if (!(tfile = fopen("areas/world.tab", "r")))
 	{
@@ -3083,7 +3081,7 @@ void reset_zone(int zone, int force_item_repop)
 {
 	const int respawn = get_property("artifact.respawn", 0);
 	int cmd_no, last_cmd = 1, last_mob_load = 0;
-	int temp, room, ival;
+	int temp, ival;
 	P_char mob = NULL, last_mob = NULL, tmp_mob = NULL, last_mob_followable = NULL;
 	P_obj obj, obj_to;
 	arti_data artidata;
@@ -3093,7 +3091,6 @@ void reset_zone(int zone, int force_item_repop)
 	      zone_table[zone].filename, force_item_repop);
 	for (cmd_no = 0;; cmd_no++)
 	{
-		room = 0;
 		if (ZCMD.command == 'S')
 			break;
 

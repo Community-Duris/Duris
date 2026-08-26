@@ -1975,7 +1975,7 @@ void arti_files_to_sql(P_char ch, char *arg)
 	char buf[MAX_STRING_LENGTH];
 	char pname[256], fname[256];
 	int vnum, pid, temp, type;
-	time_t lastUpdate, timer;
+	time_t timer;
 	DIR *dir;
 	struct dirent *dire;
 	FILE *f;
@@ -2045,7 +2045,9 @@ void arti_files_to_sql(P_char ch, char *arg)
 
 		// Init name to empty string.
 		pname[0] = '\0';
-		long last_update_value;
+		/* Present in the legacy file format and consumed by the fscanf
+		   below; the migration stamps lastUpdate with SYSDATE() instead. */
+		[[maybe_unused]] long last_update_value;
 		long timer_value;
 		if (fscanf(f, "%s %d %ld %d %ld\n", pname, &pid, &last_update_value, &temp,
 			   &timer_value) != 5)
@@ -2054,7 +2056,6 @@ void arti_files_to_sql(P_char ch, char *arg)
 			fclose(f);
 			continue;
 		}
-		lastUpdate = static_cast<time_t>(last_update_value);
 		timer = static_cast<time_t>(timer_value);
 		fclose(f);
 
@@ -2644,14 +2645,11 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 	P_obj arti;
 	P_char owner;
 	int pid, vnum, punish_level;
-	float punishment, modifier;
 	int count[4];
 	MYSQL_RES *res;
 	MYSQL_ROW row;
 
 	debug("event_artifact_wars: beginning...");
-
-	modifier = get_property("artifact.wars.modifier", 1.0);
 
 	// we only care about artis on a PC (online players only).
 	// corpse/npc/ground artifacts don't trigger the penalty.
@@ -4350,6 +4348,9 @@ void arti_player_sql(P_char ch, char *arg)
 		extract_obj(arti, FALSE);
 	}
 	mysql_free_result(res);
+
+	if (!shownData)
+		send_to_char("No artifacts found.\n\r", ch);
 #else
 	send_to_char("This command requires MySQL support which is not compiled in.\n", ch);
 #endif

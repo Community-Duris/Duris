@@ -104,8 +104,6 @@ void do_disguise(P_char ch, char *arg, int cmd)
 	P_obj temp = NULL;
 	bool equipped = false;
 
-	bool /*disguise_pc = FALSE, */ disguise_npc = FALSE;
-
 	if (!ch)
 		return;
 
@@ -164,11 +162,7 @@ void do_disguise(P_char ch, char *arg, int cmd)
 	one_argument(arg, name);
 
 	// Search the disguise_list to see if we're looking for an npc disguise
-	if ((i = search_block(name, disguise_list, 0)) >= 0)
-	{
-		disguise_npc = TRUE;
-	}
-	else
+	if ((i = search_block(name, disguise_list, 0)) < 0)
 	{
 		target = (struct char_data *)mm_get(dead_mob_pool);
 		ensure_pconly_pool();

@@ -2458,7 +2458,6 @@ void resolve_descriptor_hostname_async(const char *address, int descriptor)
 int new_descriptor(int s, int conn_type)
 {
 	P_desc newd;
-	bool flag = FALSE, found = FALSE, looking_up = FALSE;
 	char Gbuf3[MAX_STRING_LENGTH];
 	int desc;
 	socklen_t size;
@@ -2521,7 +2520,6 @@ int new_descriptor(int s, int conn_type)
 	{
 		perror("getpeername");
 		strcpy(newd->host, "&+RUNTRACEABLE&n");
-		flag = TRUE;
 	}
 	else
 	{
