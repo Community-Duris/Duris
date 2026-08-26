@@ -1,12 +1,22 @@
-.PHONY: all clean
+TOOL := make_qst
+BIN_ROOT ?= $(abspath ../../..)/bin
+AREA_TOOL_BIN_DIR ?= $(BIN_ROOT)/areas/tools
+AREA_TOOL_OBJ_DIR ?= $(BIN_ROOT)/objects/areas/tools
+TARGET := $(AREA_TOOL_BIN_DIR)/$(TOOL)
+OBJECT := $(AREA_TOOL_OBJ_DIR)/qst/$(TOOL).o
 
-all: ../../make_qst
+.PHONY: all $(TOOL) clean
 
-../../make_qst: make_qst.o
+all: $(TARGET)
+$(TOOL): $(TARGET)
+
+$(TARGET): $(OBJECT)
+	@mkdir -p $(dir $@)
 	gcc -o $@ $<
 
-make_qst.o : make_qst.c
-	gcc -c -g make_qst.c
+$(OBJECT): $(TOOL).c
+	@mkdir -p $(dir $@)
+	gcc -c -g $< -o $@
 
 clean:
-	$(RM) make_qst.o ../../make_qst
+	rm -f $(TARGET) $(OBJECT)

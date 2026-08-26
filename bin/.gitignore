@@ -1,0 +1,5 @@
+# All files below bin/ are generated build, runtime, diagnostic, or package
+# artifacts. Keep this rule next to the output tree so new binary kinds cannot
+# accidentally be committed.
+*
+!.gitignore

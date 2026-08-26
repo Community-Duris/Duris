@@ -5,14 +5,16 @@ SHELL := /bin/sh
 PYTHON ?= python3
 TEST_JOBS ?= 0
 TEST_MATCH ?=
+PACKAGE_DIR := bin/packages
+BUILD_DEPS_PACKAGE := $(PACKAGE_DIR)/duris-build-deps_1.0_all.deb
 
 AREA_GENERATORS := \
-	areas/make_mob \
-	areas/make_obj \
-	areas/make_qst \
-	areas/make_shp \
-	areas/make_wld \
-	areas/make_zon
+	bin/areas/tools/make_mob \
+	bin/areas/tools/make_obj \
+	bin/areas/tools/make_qst \
+	bin/areas/tools/make_shp \
+	bin/areas/tools/make_wld \
+	bin/areas/tools/make_zon
 AREA_WORLD_OUTPUTS := \
 	areas/world.mob \
 	areas/world.obj \
@@ -34,7 +36,7 @@ AREA_WORLD_DIRECT_INPUTS := \
 
 .PHONY: \
 	help all build build-server build-editor build-area-tools world \
-	test test-all test-python test-native test-list test-db clean
+	build-deps-package test test-all test-python test-native test-list test-db clean
 
 help:
 	@printf '%s\n' \
@@ -44,6 +46,7 @@ help:
 		'  make test-all        Build everything, generate world data, and test' \
 		'  make test-list       List tests discovered by the regression runner' \
 		'  make test-db         Run isolated Docker/MySQL integration tests' \
+		'  make build-deps-package  Build the Debian metapackage under bin/packages' \
 		'  make clean           Remove compiled build artifacts' \
 		'' \
 		'Test controls:' \
@@ -62,6 +65,11 @@ build-editor:
 
 build-area-tools:
 	+$(MAKE) -C areas/src
+
+build-deps-package:
+	@mkdir -p $(PACKAGE_DIR)
+	cd $(PACKAGE_DIR) && equivs-build ../../packaging/duris-build-deps.equivs
+	@test -s $(BUILD_DEPS_PACKAGE)
 
 world: build-area-tools
 	@set -eu; \
@@ -135,3 +143,5 @@ clean:
 	+$(MAKE) -C src clean
 	+$(MAKE) -C areas/de/src clean
 	+$(MAKE) -C areas/src clean
+	+$(MAKE) -C src-migrate clean
+	rm -rf bin/tests

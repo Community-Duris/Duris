@@ -65,8 +65,8 @@ repository's build-dependency manifest.
 ```bash
 sudo apt update
 sudo apt install equivs
-equivs-build packaging/duris-build-deps.equivs
-sudo apt install ./duris-build-deps_1.0_all.deb
+make build-deps-package
+sudo apt install ./bin/packages/duris-build-deps_1.0_all.deb
 ```
 
 `equivs` is only the bootstrap tool used to build the metapackage. The manifest
@@ -88,7 +88,9 @@ cp .env.example .env
 
 Edit `.env` and set `DB_HOST`, optional `DB_PORT`, `DB_USER`, `DB_PASSWD`, and
 `DB_NAME`. The server loads this file at boot, and the migration scripts use
-the same values. `.env` is ignored by Git and must never be committed.
+the same values. `.env` is ignored by Git and must never be committed. See the
+[configuration reference](docs/CONFIGURATION.md) for precedence, Redis
+recovery, proxy handling, and diagnostic switches.
 
 Set `REDIS=TRUE` with `REDIS_HOST` and `REDIS_PORT` to enable dirty-save
 buffering. If a DurisWeb backend will authenticate through WebSocket or GMCP,
@@ -137,11 +139,13 @@ make
 ./scripts/start_mud.sh
 ```
 
-The root build produces `src/dms_new`, the area editor, and the area-generation
-tools. The startup supervisor promotes the server to the runtime executable
-`./dms`, regenerates combined `areas/world.*` files, and starts it. Without a
-configured user service it runs in the background and writes console output to
-`logs/duris-console.log`.
+The root build places every compiled artifact below `bin/`: the staged server
+is `bin/server/dms_new`, the editor is `bin/areas/editor/de`, and the
+area-generation tools are under `bin/areas/tools/`. The startup supervisor
+promotes the server to `bin/server/dms`, rotates prior executables under
+`bin/server/history/`, regenerates combined `areas/world.*` files, and starts
+it. Without a configured user service it runs in the background and writes
+console output to `logs/duris-console.log`.
 
 For a foreground development session on port 4000, use this instead of
 `start_mud.sh`:
@@ -149,6 +153,27 @@ For a foreground development session on port 4000, use this instead of
 ```bash
 ./scripts/cycle_mud.sh --dev
 ```
+
+## Troubleshooting
+
+If the server stops during boot, inspect `logs/log/status` and
+`logs/duris-console.log`. The most common checks are:
+
+- **MySQL initialization failed:** confirm `.env` values, that the selected
+  database exists, and that the account can connect on `DB_HOST:DB_PORT`. The
+  server logs the effective database target during boot and aborts when the
+  required schema is missing.
+- **Redis connection failed:** Redis is optional; set `REDIS=FALSE` or remove
+  the setting to run without dirty-save buffering. If Redis is required, check
+  `REDIS_HOST`, `REDIS_PORT`, and that the service is reachable.
+- **Missing world files or tools:** run `make build-area-tools` followed by
+  `make world`, then restart. Combined `areas/world.*` files are generated
+  outputs and should not be edited by hand.
+- **Port already in use:** choose a different development port, or stop the
+  existing local instance. Keep development on a non-`7777` port.
+
+Operational log locations and restart behavior are documented in the
+[runbook](docs/RUNBOOK.md).
 
 ## Connect
 
@@ -204,7 +229,8 @@ Sanitizer and Valgrind workflows are covered in
 | Path | Purpose |
 | --- | --- |
 | `Makefile` | Root build, world-generation, and test entry points. |
-| `src/` | Server sources and `Makefile`; builds `src/dms_new` with `g++`. |
+| `bin/` | Ignored compiled artifacts: executables, objects, packages, tests, and runtime history. |
+| `src/` | Server sources and `Makefile`; builds `bin/server/dms_new` with `g++`. |
 | `areas/` | World sources, compilers, and generated `world.*` boot files. |
 | `lib/` | Runtime configuration, help, boards, descriptions, and game data. |
 | `migrations/` | Fresh schema, upgrade runner, and schema-contract tools. |
@@ -225,6 +251,7 @@ archives.
 | [Codebase](docs/CODEBASE.md) | Module-by-module map of the server sources. |
 | [Building](docs/BUILDING.md) | Build flags, areas, sanitizers, verification. |
 | [Database](docs/DATABASE.md) | Connections, async saves, schema, migrations. |
+| [Configuration](docs/CONFIGURATION.md) | Environment variables, Redis, networking, and diagnostics. |
 | [Runbook](docs/RUNBOOK.md) | Restarts, logs, backups, recovery, operations. |
 | [Testing](docs/TESTING.md) | Test layout, commands, and conventions. |
 | [Formatting](docs/formatting.md) | Style, changed-line formatting, and editors. |

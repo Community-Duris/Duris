@@ -9,14 +9,7 @@
 docs/
 
 # Build artifacts
-*.o
-*.a
-*.so
-src/dms
-src/dms_new
-src/*.o
-src/ships/*.o
-src/ships/*.a
+bin/
 
 # Player files (will be mounted as volume)
 Players/

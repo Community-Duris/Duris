@@ -12,7 +12,7 @@ a new diagnostics framework.
    development database. Check `.env` before starting a session, and never put
    credentials in commands, logs, or bug reports.
 3. Keep the normal build unsanitized. Sanitizer objects and the sanitizer binary
-   stay isolated from `obj/` and `./dms`.
+   stay isolated under `bin/objects/server-san/` and `bin/server/dms_san`.
 4. Do not run a sanitizer-instrumented binary under Valgrind. Use one detector
    at a time.
 5. Investigate the first reported error with a Duris frame. Later failures are
@@ -43,19 +43,19 @@ mkdir -p logs/log
 
 ASAN_OPTIONS='detect_leaks=1:abort_on_error=1:log_path=logs/log/asan' \
 UBSAN_OPTIONS='print_stacktrace=1:halt_on_error=1' \
-./src/dms_san 4000
+./bin/server/dms_san 4000
 ```
 
-`scripts/build-san.sh` places objects in `obj-san/` and writes
-`src/dms_san`; it does not replace the normal runtime binary. Stop any other
-local server first so that auxiliary listeners do not conflict.
+`scripts/build-san.sh` places objects in `bin/objects/server-san/` and writes
+`bin/server/dms_san`; it does not replace `bin/server/dms`. Stop any other local
+server first so that auxiliary listeners do not conflict.
 
 Exercise the smallest path that reproduces the issue, then shut the game down
 cleanly. A clean sanitizer run means only that the executed paths passed.
 
 Avoid copyover during an ASan session. The current copyover path executes
-`./dms`, so code after that transition is not guaranteed to remain under the
-sanitizer build.
+`bin/server/dms`, so code after that transition is not guaranteed to remain
+under the sanitizer build.
 
 ## Valgrind
 

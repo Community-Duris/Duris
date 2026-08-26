@@ -28,7 +28,7 @@ cd "$(dirname "$0")/.." || exit 1
 set -e  # Exit on error
 
 # Configuration
-CONVERTER="./src-migrate/pfile_converter"
+CONVERTER="./bin/migrations/pfile_converter"
 PLAYERS_DIR="Players"
 LOG_FILE="logs/conversion.log"
 BACKUP_SUFFIX=".preconvert"
@@ -101,7 +101,7 @@ check_prerequisites() {
 
     if [ ! -x "$CONVERTER" ]; then
         error "Converter not found or not executable: $CONVERTER"
-        error "Please compile it first: gcc -o src-migrate/pfile_converter src-migrate/pfile_converter.c -Wall -O2"
+        error "Please compile it first: make -C src-migrate pfile_converter"
         exit 1
     fi
 

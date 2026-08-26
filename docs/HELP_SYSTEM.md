@@ -64,6 +64,13 @@ lib/information/*          help/                      database
 
 `scripts/import_help_to_prod.sh`:
 
+> [!WARNING]
+> Despite its name, this script can write to any database selected by `.env`
+> or to a remote host supplied with `--remote`. Run `--dry-run` first, verify
+> `DB_HOST`, `DB_PORT`, and `DB_NAME`, and take a database backup before a live
+> import. `--clean` deletes all rows from `pages` before re-importing content.
+> The script prompts for confirmation for live and clean operations.
+
 - Maps files from `lib/information/` into `mud_info` (motd, news, wizmotd)
   and `pages` (help, help.1/2, guild/ship/kingdom helps, faq, rules, info,
   credits, wizlist, hints).
@@ -106,7 +113,8 @@ lib/information/*          help/                      database
 - In-game topic text lives in `pages`; the import script is the only write
   path (no in-game editor exists — nothing in `src/` inserts into or updates
   `pages`). Update the source files and re-run the import script; editing the
-  database directly would silently diverge from the flat-file sources.
+  database directly would silently diverge from the flat-file sources. See the
+  warning above before importing to a shared or remote database.
 - Command attribute changes go in
   `docs/lib/information/command_attributes.txt` and require a server restart
   (loaded once at boot).

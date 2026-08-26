@@ -1,7 +1,7 @@
 #!/bin/tcsh -f
 unlimit coredumpsize
-if (-f src/duris/dms_new) then
-  mv src/duris/dms_new dms
+if (-f bin/server/dms_new) then
+  mv bin/server/dms_new bin/server/dms
 endif
 while (1)
    if (-d logs/log) then
@@ -49,7 +49,7 @@ while (1)
       mv core core1
    endif
 
-   dms 6666 >>& DMS.ERR
+   bin/server/dms 6666 >>& DMS.ERR
 
    switch($status)
    case 0:
@@ -61,24 +61,23 @@ while (1)
       breaksw
    case 53:
       sleep 10
-      if (-f src/duris/dms_new) then
+      if (-f bin/server/dms_new) then
          echo -n 'Copyover from dms_new to dms! ' >> DMS.ERR
-         mv dms dms_old
-         cp src/duris/dms_new dms
-         rm -f src/duris/dms_new
+         mv bin/server/dms bin/server/history/dms_old
+         cp bin/server/dms_new bin/server/dms
+         rm -f bin/server/dms_new
       else
          echo -n 'Reboot! ' >> DMS.ERR
       endif
       breaksw
    default:
       echo -n 'Mud crashed again, eh? ' >> DMS.ERR
-      if (-f src/duris/dms_copy) then
-        mv dms dms_old
-        mv src/duris/dms_copy dms
+      if (-f bin/server/dms_copy) then
+        mv bin/server/dms bin/server/history/dms_old
+        mv bin/server/dms_copy bin/server/dms
       endif
       sleep 10
       breaksw
    endsw
    date >> DMS.ERR
 end
-

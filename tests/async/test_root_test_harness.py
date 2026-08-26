@@ -18,6 +18,7 @@ for target in (
     "build-server",
     "build-editor",
     "build-area-tools",
+    "build-deps-package",
     "world",
     "test",
     "test-all",
@@ -36,7 +37,12 @@ assert re.search(r"^test-all:\s*build\s*$", makefile, re.MULTILINE)
 assert "$(MAKE) test" in makefile
 
 editor_makefile = (ROOT / "areas" / "de" / "src" / "Makefile").read_text()
-assert re.search(r"^de\s*:\s*\$\(OBJS\)\s+\$\(C_OBJS\)\s+\|\s+message$", editor_makefile, re.MULTILINE), (
+assert re.search(r"^de:\s*\$\(DE_BINARY\)$", editor_makefile, re.MULTILINE)
+assert re.search(
+    r"^\$\(DE_BINARY\):\s*\$\(OBJS\)\s+\$\(C_OBJS\)\s+\|\s+message$",
+    editor_makefile,
+    re.MULTILINE,
+), (
     "the area editor status target must not force an unchanged relink"
 )
 

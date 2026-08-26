@@ -42,8 +42,17 @@ GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -
 # GENERAL_LIBS += -lcygipc
 LIBS += $(GENERAL_LIBS)
 
-# Put all .o/.d files here (Makefile lives in src/)
-OBJDIR   := ../obj
+# Keep every compiled artifact under the repository's bin/ tree.  Callers may
+# override these paths for specialized builds, such as the sanitizer wrapper.
+ROOT_DIR          := $(abspath ..)
+BIN_ROOT          ?= $(ROOT_DIR)/bin
+SERVER_BIN_DIR    ?= $(BIN_ROOT)/server
+TOOL_BIN_DIR      ?= $(BIN_ROOT)/tools
+MIGRATION_BIN_DIR ?= $(BIN_ROOT)/migrations
+OBJDIR            ?= $(BIN_ROOT)/objects/server
+DMS_BINARY        ?= $(SERVER_BIN_DIR)/dms_new
+PFILE_BINARY      ?= $(TOOL_BIN_DIR)/pfile
+MIGRATE_BINARY    ?= $(MIGRATION_BIN_DIR)/migrate_pfiles
 DEPFLAGS := -MMD -MP
 
 # files that would be compiled as dynamic libs if USE_SHARED was defined
@@ -294,16 +303,16 @@ OBJS =  $(SHIP_OBJS) \
 SHARED_PFILE_OBJS_NAMES = pf-skills.o pf-files.o
 PFILE_OBJS_NAMES        = pfile-stubs.o pfile.o
 
-MIGRATE_OBJS=../src-migrate/migrate_main.o \
-						 ../src-migrate/migrate_common.o \
-						 ../src-migrate/migrate_objects.o \
-						 ../src-migrate/migrate_accounts.o \
-						 ../src-migrate/migrate_players.o \
-						 ../src-migrate/migrate_lockers.o \
-						 ../src-migrate/migrate_ships.o \
-						 ../src-migrate/migrate_guilds.o \
-						 ../src-migrate/migrate_misc.o \
-						 ../src-migrate/migrate_stubs.o
+MIGRATE_OBJ_NAMES = migrate_main.o \
+							migrate_common.o \
+							migrate_objects.o \
+							migrate_accounts.o \
+							migrate_players.o \
+							migrate_lockers.o \
+							migrate_ships.o \
+							migrate_guilds.o \
+							migrate_misc.o \
+							migrate_stubs.o
 
 #******************************************************************************
 #******************************************************************************
@@ -311,33 +320,45 @@ MIGRATE_OBJS=../src-migrate/migrate_main.o \
 # Don't mess around below this point.  Everything past here are makefile rules,
 # and NOT dependency lists that need to be changed
 
-PROGS 	= dms_new
+PROGS = $(DMS_BINARY)
 
 # Build object paths under OBJDIR (preserve subdirs like ships/)
 DMS_OBJS = $(addprefix $(OBJDIR)/,$(OBJS))
 PFILE_OBJS        = $(addprefix $(OBJDIR)/,$(PFILE_OBJS_NAMES))
 SHARED_PFILE_OBJS = $(addprefix $(OBJDIR)/,$(SHARED_PFILE_OBJS_NAMES))
+MIGRATE_OBJS      = $(addprefix $(OBJDIR)/migrations/,$(MIGRATE_OBJ_NAMES))
 
 ifndef USE_SHARED
 	DMS_OBJS   += $(addprefix $(OBJDIR)/,$(SH_LIBS))
 	PFILE_OBJS += $(addprefix $(OBJDIR)/,$(SH_LIBS))
 else
-	PROGS += $(SH_LIBS:.o=.so)
+	PROGS += $(addprefix $(SERVER_BIN_DIR)/,$(SH_LIBS:.o=.so))
 endif
 
 all: $(PROGS)
 
-dms_new : $(DMS_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -rdynamic -g -o dms_new $(DMS_OBJS) $(LIBS)
-	chmod a+rx dms_new
+.PHONY: dms_new pfile migrate_pfiles clean clean-server debug valgrind
 
-pfile : $(PFILE_OBJS) $(SHARED_PFILE_OBJS) $(OBJDIR)/mm.o $(OBJDIR)/common.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -g -o pfile \
+dms_new: $(DMS_BINARY)
+
+$(DMS_BINARY): $(DMS_OBJS)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(LDFLAGS) -rdynamic -g -o $@ $(DMS_OBJS) $(LIBS)
+	chmod a+rx $@
+
+pfile: $(PFILE_BINARY)
+
+$(PFILE_BINARY): $(PFILE_OBJS) $(SHARED_PFILE_OBJS) $(OBJDIR)/mm.o $(OBJDIR)/common.o
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(LDFLAGS) -g -o $@ \
 		$(PFILE_OBJS) $(SHARED_PFILE_OBJS) \
 		$(OBJDIR)/common.o $(OBJDIR)/mm.o $(LIBS)
 
-migrate_pfiles : $(MIGRATE_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -g -o migrate_pfiles $(MIGRATE_OBJS) $(LIBS)
+migrate_pfiles: $(MIGRATE_BINARY)
+
+$(MIGRATE_BINARY): $(MIGRATE_OBJS)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(LDFLAGS) -g -o $@ $(MIGRATE_OBJS) $(LIBS)
 
 # Build any C object into OBJDIR, creating folders as needed.
 $(OBJDIR)/%.o: %.c
@@ -349,8 +370,9 @@ $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) $(DEPFLAGS) -c $< -o $@
 
-$(MIGRATE_OBJS): %.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) -c $< -o $@
+$(OBJDIR)/migrations/%.o: ../src-migrate/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEBUG) $(DEPFLAGS) -c $< -o $@
 
 # Shared pfile objects (pf-*.o) also go into OBJDIR
 $(OBJDIR)/pf-%.o: %.c
@@ -358,16 +380,18 @@ $(OBJDIR)/pf-%.o: %.c
 	$(CC) $(CFLAGS) -D_PFILE_ $(INCLUDES) $(DEBUG) $(DEPFLAGS) -c $< -o $@
 
 # Shared libs (if you ever use SH_LIBS / USE_SHARED)
-$(SH_LIBS:.o=.so): %.so: %.c
-	@mkdir -p $(OBJDIR)
+$(SERVER_BIN_DIR)/%.so: %.c
+	@mkdir -p $(OBJDIR) $(dir $@)
 	$(CC) $(CFLAGS) $(DEBUG) -fpic -c $< -o $(OBJDIR)/$*.o
 	ld -shared -o $@ /usr/lib/crtbeginS.o $(OBJDIR)/$*.o /usr/lib/crtendS.o
 
-clean:
-	rm -f *.o *~ dms_new pfile migrate_pfiles .depend
-	rm -f ships/*.a ships/*.o ships/*~ ships/.depend
-	rm -f ../src-migrate/*.o
+clean-server:
+	rm -f $(DMS_BINARY)
 	rm -rf $(OBJDIR)
+
+clean: clean-server
+	rm -f *~ ships/*~ .depend ships/.depend
+	rm -f $(PFILE_BINARY) $(MIGRATE_BINARY)
 
 debug: $(PROGS)
 	cd ..; ./scripts/gdbdms

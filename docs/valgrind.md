@@ -9,13 +9,13 @@ sudo apt-get install valgrind        # Debian/Ubuntu
 ```
 
 It is also listed in `packaging/duris-build-deps.equivs`, so
-`apt install ./duris-build-deps_1.0_all.deb` pulls it in.
+`apt install ./bin/packages/duris-build-deps_1.0_all.deb` pulls it in.
 
 ## Running
 
 ```bash
 ./scripts/valgrind_mud.sh                  # memcheck, port 4000
-./scripts/valgrind_mud.sh --build          # rebuild + refresh ./dms first
+./scripts/valgrind_mud.sh --build          # rebuild + refresh bin/server/dms
 ./scripts/valgrind_mud.sh --tool=helgrind  # data races
 make -C src valgrind                       # build, then the same script
 ```
@@ -29,7 +29,7 @@ about.
 | --- | --- |
 | `--tool=TOOL` | `memcheck` (default), `helgrind`, `drd`, `massif`, `callgrind` |
 | `--port N` | Bind port, default 4000. **7777 is refused**: it is `DFLT_PORT`, and `src/sql.c` only redirects to `duris_dev` on other ports. |
-| `--build` | `make -C src`, then copy `src/dms_new` to `./dms` |
+| `--build` | `make -C src`, then copy `bin/server/dms_new` to `bin/server/dms` |
 | `--gen-suppressions` | Print paste-ready suppression blocks for every error |
 | `--trace-children` | Follow `exec()` across a copyover (off by default) |
 | `-- ...` | Everything after `--` goes to valgrind verbatim |

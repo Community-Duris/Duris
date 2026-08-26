@@ -1,7 +1,7 @@
 # Codebase Guide
 
 A map of the server sources. There are ~220 `.c` files under `src/`, compiled
-individually as C++20 and linked into `src/dms_new`. File boundaries follow
+individually as C++20 and linked into `bin/server/dms_new`. File boundaries follow
 DikuMUD convention: `act*.c` files hold player commands grouped by theme,
 `do_<name>` functions are commands, `specs.*.c` files hold zone-specific
 special procedures.

@@ -235,7 +235,10 @@ void Guild::withdraw(P_char member, int p, int g, int s, int c) {}
 void Guild::name_title(P_char member, char *title_info) {}
 void Guild::initialize() {}
 void Guild::remove_member_from_list(P_char ch) {}
-void Guild::write_transaction_to_ledger(char *name, char *trans_type, char *coin_str) {}
+void Guild::write_transaction_to_ledger(const char *name, const char *trans_type,
+					const char *coin_str)
+{
+}
 void Guild::title_trim(char *raw_title, char *good_title) {}
 int Guild::max_assoc_size()
 {

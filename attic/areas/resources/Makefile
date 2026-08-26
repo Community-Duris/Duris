@@ -8,7 +8,8 @@
 
 #compiler name and flags
 CC = gcc
-MYFLAGS = -g -Wall
+# This archived pre-C99 source relies on tentative globals being coalesced.
+MYFLAGS = -g -Wall -fcommon
 
 #flags for profiling (see hacker.doc for more information)
 PROFILE = 
@@ -30,43 +31,28 @@ PROFILE =
 
 CFLAGS = $(MYFLAGS) $(PROFILE)
 
-ACTOBJ = oldconst.o actwld.o utils.o main.o random.o
+ROOT_DIR := $(abspath ../../..)
+BIN_ROOT ?= $(ROOT_DIR)/bin
+TARGET_DIR ?= $(BIN_ROOT)/attic
+OBJ_DIR ?= $(BIN_ROOT)/objects/attic/resources
+TARGET := $(TARGET_DIR)/add_resources
 
-all : act 
+ACT_SOURCES = oldconst.c actwld.c utils.c main.c random.c
+ACTOBJ = $(addprefix $(OBJ_DIR)/,$(ACT_SOURCES:.c=.o))
 
-act : $(ACTOBJ)
+.PHONY: all act clean
 
-../bin/circle : $(OBJFILES)
+all: act
+act: $(TARGET)
 
-actwld.o : actwld.c act.h
-	$(CC) -c $(CFLAGS) actwld.c
-unactwld.o : unactwld.c act.h
-	$(CC) -c $(CFLAGS) unactwld.c
+$(TARGET): $(ACTOBJ)
+	@mkdir -p $(dir $@)
+	$(CC) -o $@ $(PROFILE) $(ACTOBJ) $(LIBS)
 
-actobj.o : actobj.c act.h
-	$(CC) -c $(CFLAGS) actobj.c
-unactobj.o : unactobj.c act.h
-	$(CC) -c $(CFLAGS) unactobj.c
+$(OBJ_DIR)/%.o: %.c act.h
+	@mkdir -p $(dir $@)
+	$(CC) -c $(CFLAGS) $< -o $@
 
-actmob.o : actmob.c act.h
-	$(CC) -c $(CFLAGS) actmob.c
-unactmob.o : unactmob.c act.h
-	$(CC) -c $(CFLAGS) unactmob.c
-
-oldconst.o : oldconst.c 
-	$(CC) -c $(CFLAGS) oldconst.c
-constants.o : constants.c structs.h
-	$(CC) -c $(CFLAGS) constants.c
-
-utils.o : utils.c act.h
-	$(CC) -c $(CFLAGS) utils.c
-main.o : main.c act.h
-	$(CC) -c $(CFLAGS) main.c
-
-random.o : random.c act.h
-	$(CC) -c $(CFLAGS) random.c
-
-act :
-	$(CC) -o add_resources $(PROFILE) $(ACTOBJ) $(LIBS)
-unact :
-	$(CC) -o unact $(PROFILE) $(UNACTOBJ) $(LIBS)
+clean:
+	rm -f $(TARGET)
+	rm -rf $(OBJ_DIR)

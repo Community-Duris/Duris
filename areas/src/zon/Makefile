@@ -1,12 +1,22 @@
-.PHONY: all clean
+TOOL := make_zon
+BIN_ROOT ?= $(abspath ../../..)/bin
+AREA_TOOL_BIN_DIR ?= $(BIN_ROOT)/areas/tools
+AREA_TOOL_OBJ_DIR ?= $(BIN_ROOT)/objects/areas/tools
+TARGET := $(AREA_TOOL_BIN_DIR)/$(TOOL)
+OBJECT := $(AREA_TOOL_OBJ_DIR)/zon/$(TOOL).o
 
-all: ../../make_zon
+.PHONY: all $(TOOL) clean
 
-../../make_zon: make_zon.o
+all: $(TARGET)
+$(TOOL): $(TARGET)
+
+$(TARGET): $(OBJECT)
+	@mkdir -p $(dir $@)
 	gcc -o $@ $<
 
-make_zon.o : make_zon.c
-	gcc -c -g make_zon.c
+$(OBJECT): $(TOOL).c
+	@mkdir -p $(dir $@)
+	gcc -c -g $< -o $@
 
 clean:
-	$(RM) make_zon.o ../../make_zon
+	rm -f $(TARGET) $(OBJECT)
