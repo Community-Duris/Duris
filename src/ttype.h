@@ -29,6 +29,7 @@
 void ttype_negotiate(P_desc d);
 void ttype_handle_negotiation(P_desc d, int cmd);
 void ttype_handle_subnegotiation(P_desc d, const unsigned char *data, int len);
+void check_cp437(P_desc d);
 
 /* helper macros */
 #define HAS_UTF8(d) ((d) && ((d)->mtts_flags & MTTS_UTF8))

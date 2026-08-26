@@ -43,14 +43,24 @@ int sql_world_quest_can_do_another(struct char_data *ch);
 /* parse incoming json command */
 cJSON *json_parse_command(const char *json_str)
 {
+	cJSON *json;
+
 	if (!json_str || !*json_str)
 		return NULL;
-	return cJSON_Parse(json_str);
+	json = cJSON_ParseWithOpts(json_str, NULL, true);
+	if (json && !cJSON_IsObject(json))
+	{
+		cJSON_Delete(json);
+		return NULL;
+	}
+	return json;
 }
 
 /* get command type from parsed json */
 const char *json_get_cmd_type(cJSON *json)
 {
+	if (!json)
+		return NULL;
 	cJSON *type = cJSON_GetObjectItem(json, "type");
 	if (type && cJSON_IsString(type))
 	{
@@ -62,6 +72,8 @@ const char *json_get_cmd_type(cJSON *json)
 /* get command name from parsed json */
 const char *json_get_cmd_name(cJSON *json)
 {
+	if (!json)
+		return NULL;
 	cJSON *cmd = cJSON_GetObjectItem(json, "cmd");
 	if (cmd && cJSON_IsString(cmd))
 	{
@@ -73,6 +85,8 @@ const char *json_get_cmd_name(cJSON *json)
 /* get data object from parsed json */
 cJSON *json_get_data(cJSON *json)
 {
+	if (!json)
+		return NULL;
 	return cJSON_GetObjectItem(json, "data");
 }
 
@@ -88,6 +102,8 @@ const char *json_get_string(cJSON *data, const char *key)
 	{
 		return data->valuestring;
 	}
+	if (!key)
+		return NULL;
 
 	item = cJSON_GetObjectItem(data, key);
 	if (item && cJSON_IsString(item))
@@ -102,6 +118,8 @@ int json_get_int(cJSON *data, const char *key, int default_val)
 {
 	cJSON *item;
 	if (!data)
+		return default_val;
+	if (!key)
 		return default_val;
 
 	item = cJSON_GetObjectItem(data, key);
@@ -154,7 +172,48 @@ static int utf8_sequence_len(const char *str, size_t i)
 		}
 	}
 
+	/* Reject overlong forms, UTF-16 surrogates, and values above U+10FFFF. */
+	unsigned char second = (unsigned char)str[i + 1];
+	if ((seq_len == 2 && c < 0xc2) || (seq_len == 3 && c == 0xe0 && second < 0xa0) ||
+	    (seq_len == 3 && c == 0xed && second > 0x9f) ||
+	    (seq_len == 4 && c == 0xf0 && second < 0x90) ||
+	    (seq_len == 4 && c == 0xf4 && second > 0x8f) || (seq_len == 4 && c > 0xf4))
+	{
+		return 0;
+	}
+
 	return seq_len;
+}
+
+static bool json_is_ansi_color(char value)
+{
+	switch (tolower((unsigned char)value))
+	{
+	case 'l':
+	case 'b':
+	case 'g':
+	case 'c':
+	case 'r':
+	case 'm':
+	case 'y':
+	case 'w':
+		return true;
+	default:
+		return false;
+	}
+}
+
+static size_t json_ansi_code_length(const char *str)
+{
+	if (!str || str[0] != '&')
+		return 0;
+	if (str[1] == 'n' || str[1] == 'N')
+		return 2;
+	if ((str[1] == '+' || str[1] == '-') && json_is_ansi_color(str[2]))
+		return 3;
+	if (str[1] == '=' && json_is_ansi_color(str[2]) && json_is_ansi_color(str[3]))
+		return 4;
+	return 0;
 }
 
 /* escape string for json with utf-8 support (invalid bytes are skipped) */
@@ -292,27 +351,10 @@ char *json_escape_ansi_string(const char *str)
 	len = 0;
 	for (i = 0; str[i]; i++)
 	{
-		if (str[i] == '&' && str[i + 1])
+		size_t ansi_len = json_ansi_code_length(str + i);
+		if (ansi_len)
 		{
-			if (str[i + 1] == '+' || str[i + 1] == '-')
-			{
-				/* &+X or &-X - skip 3 chars total */
-				i += 2; /* loop will add 1 more */
-			}
-			else if (str[i + 1] == '=')
-			{
-				/* &=XY - skip 4 chars total */
-				i += 3; /* loop will add 1 more */
-			}
-			else if (str[i + 1] == 'n' || str[i + 1] == 'N')
-			{
-				/* &n or &N - skip 2 chars total */
-				i += 1; /* loop will add 1 more */
-			}
-			else
-			{
-				len++; /* Not a color code, keep the '&' */
-			}
+			i += ansi_len - 1;
 		}
 		else
 		{
@@ -328,24 +370,10 @@ char *json_escape_ansi_string(const char *str)
 	j = 0;
 	for (i = 0; str[i]; i++)
 	{
-		if (str[i] == '&' && str[i + 1])
+		size_t ansi_len = json_ansi_code_length(str + i);
+		if (ansi_len)
 		{
-			if (str[i + 1] == '+' || str[i + 1] == '-')
-			{
-				i += 2;
-			}
-			else if (str[i + 1] == '=')
-			{
-				i += 3;
-			}
-			else if (str[i + 1] == 'n' || str[i + 1] == 'N')
-			{
-				i += 1;
-			}
-			else
-			{
-				stripped[j++] = str[i];
-			}
+			i += ansi_len - 1;
 		}
 		else
 		{
@@ -447,10 +475,10 @@ char *json_build_gmcp_message(const char *package, const char *data_json)
 
 	root = cJSON_CreateObject();
 	cJSON_AddStringToObject(root, "type", MSG_TYPE_GMCP);
-	cJSON_AddStringToObject(root, "package", package);
+	cJSON_AddStringToObject(root, "package", package ? package : "");
 
 	/* Parse the data JSON and add it */
-	data = cJSON_Parse(data_json);
+	data = data_json ? cJSON_ParseWithOpts(data_json, NULL, true) : NULL;
 	if (data)
 	{
 		cJSON_AddItemToObject(root, "data", data);

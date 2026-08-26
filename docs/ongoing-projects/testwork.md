@@ -43,3 +43,46 @@ Validation completed:
 
 Next high-value targets are the JSON/WebSocket escaping boundary, terminal-type
 negotiation parser, and file-backed random-name parser.
+
+### Checkpoint 2 — JSON and terminal negotiation boundaries
+
+Added 26 more executable runtime cases, bringing the current total to 50:
+
+- `test_json_utils_runtime.py` covers null/default handling, JSON metacharacter
+  and ASCII-control escaping, valid and malformed UTF-8, ANSI removal,
+  truncated/unknown markup, strict command parsing, typed getters, and the text
+  and GMCP wrapper builders.
+- `test_ttype_runtime.py` covers the RFC 1091 negotiation bytes and state
+  transitions, WebSocket suppression, client normalization, both terminal-list
+  completion modes, MTTS capability parsing, malformed MTTS fields, control and
+  non-ASCII rejection, oversized values, and charset selection.
+
+Defects fixed while adding the coverage:
+
+- JSON escaping now rejects overlong UTF-8, surrogate encodings, and values
+  above `U+10FFFF` rather than copying structurally plausible invalid bytes.
+- ANSI removal now recognizes only complete, valid Duris color codes; truncated
+  markup no longer advances beyond the input and unknown markup is preserved.
+- Command and embedded GMCP JSON parsing now rejects trailing data, and command
+  parsing rejects non-object roots.
+- JSON typed getters handle null objects and keys explicitly, while the GMCP
+  builder safely handles null package and data inputs.
+- Terminal-type input now rejects empty, oversized, control-bearing, and
+  non-ASCII values instead of stalling, truncating, or retaining unsafe client
+  metadata.
+- MTTS bitvectors now require a complete unsigned decimal field, preventing
+  strings such as `MTTS 4JUNK` from silently enabling capabilities.
+
+Validation completed:
+
+- `python3 tests/async/test_json_utils_runtime.py`
+- `python3 tests/async/test_ttype_runtime.py`
+- regression-runner discovery/execution for both new files
+- `make -C src -j2`
+- `./scripts/format.sh --check`
+- `git diff --check`
+
+The original minimum of twelve high-value tests is exceeded. The remaining
+work is broad-suite validation and a final completion audit; the name parser is
+recorded as a strong candidate for a future expansion rather than being mixed
+into this boundary-focused series without the same validation depth.

@@ -89,9 +89,11 @@ static void parse_mtts_bitvector(P_desc d, const char *str)
 	/* expect "MTTS ###" format */
 	if (strncasecmp(str, "MTTS ", 5) != 0)
 		return;
+	if (!isdigit((unsigned char)str[5]))
+		return;
 
 	flags = strtol(str + 5, &endptr, 10);
-	if (endptr == str + 5 || flags < 0 || flags > 65535)
+	if (*endptr || flags < 0 || flags > 65535)
 		return;
 
 	d->mtts_flags = (int)flags;
@@ -128,14 +130,26 @@ void ttype_handle_subnegotiation(P_desc d, const unsigned char *data, int len)
 		copy_len = len;
 	}
 
-	if (copy_len > 127)
-		copy_len = 127;
 	if (copy_len < 1)
+	{
+		d->ttype_state = TTYPE_COMPLETE;
 		return;
+	}
+	if (copy_len >= (int)sizeof(term_type))
+	{
+		d->ttype_state = TTYPE_COMPLETE;
+		return;
+	}
 
 	for (i = 0; i < copy_len; i++)
 	{
-		term_type[i] = data[i + offset];
+		unsigned char value = data[i + offset];
+		if (value < ' ' || value > '~')
+		{
+			d->ttype_state = TTYPE_COMPLETE;
+			return;
+		}
+		term_type[i] = value;
 	}
 	term_type[copy_len] = '\0';
 
