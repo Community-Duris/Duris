@@ -912,6 +912,7 @@ CREATE TABLE `player_data` (
   `birth_time` timestamp NULL DEFAULT NULL,
   `played_time` int DEFAULT '0',
   `last_save` timestamp NULL DEFAULT NULL,
+  `save_revision` bigint unsigned NOT NULL DEFAULT '0',
   `perm_aging` smallint DEFAULT '0',
   `base_str` tinyint DEFAULT '0',
   `base_dex` tinyint DEFAULT '0',

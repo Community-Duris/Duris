@@ -3,7 +3,7 @@
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
   "current_phase": 1,
-  "current_session": "phase01-session01-player-revision-and-component-state-foundation",
+  "current_session": "phase01-session02-immutable-player-snapshot-capture",
   "monorepo": false,
   "phases": {
     "1": {
@@ -41,7 +41,8 @@
     "phase00-session07-account-bank-delta-safety",
     "phase00-session08-runtime-connection-trust-boundaries",
     "phase00-session09-private-chest-password-hardening",
-    "phase00-session10-security-policy-and-dependency-baseline"
+    "phase00-session10-security-policy-and-dependency-baseline",
+    "phase01-session01-player-revision-and-component-state-foundation"
   ],
   "next_session_history": [
     {
@@ -197,6 +198,26 @@
     {
       "date": "2026-08-27",
       "session": "phase01-session01-player-revision-and-component-state-foundation",
+      "status": "selected"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session01-player-revision-and-component-state-foundation",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session01-player-revision-and-component-state-foundation",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session01-player-revision-and-component-state-foundation",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session02-immutable-player-snapshot-capture",
       "status": "selected"
     }
   ]

@@ -5,6 +5,10 @@ source = (ROOT / "src/sql.c").read_text()
 
 assert "static bool sql_verify_boot_database(void)" in source
 assert "information_schema.columns" in source
+assert "player_revision_probe" in source
+assert "column_name='save_revision'" in source
+assert "column_type='bigint unsigned'" in source
+assert "player save revision schema is missing or incompatible at boot" in source
 assert "persistence_item_events" in source
 assert "persistence_scalar_events" in source
 assert "expected 25 required columns" in source

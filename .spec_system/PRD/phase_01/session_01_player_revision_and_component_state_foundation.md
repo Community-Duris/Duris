@@ -1,7 +1,7 @@
 # Session 01: Player Revision and Component State Foundation
 
 **Session ID**: `phase01-session01-player-revision-and-component-state-foundation`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One persistence identity boundary spanning durable player revisions,
 component taxonomy, game-thread dirty state, login hydration, and schema contracts.
 
@@ -42,9 +42,9 @@ changing the active save route yet.
 
 ## Prerequisites
 
-- [ ] All Phase 00 sessions and phase-transition checks are complete.
-- [ ] The post-Phase-00 schema and player save/load inventories are revalidated.
-- [ ] Schema tests target only an isolated development database or backed-up clone.
+- [x] All Phase 00 sessions and phase-transition checks are complete.
+- [x] The post-Phase-00 schema and player save/load inventories are revalidated.
+- [x] Schema validation used static/runtime contracts only; no configured database was touched.
 
 ---
 
@@ -63,13 +63,21 @@ changing the active save route yet.
 
 ## Success Criteria
 
-- [ ] Revisions are monotonic, never represented by pointer or wall-clock identity,
+- [x] Revisions are monotonic, never represented by pointer or wall-clock identity,
       and have explicit overflow behavior.
-- [ ] Acknowledging revision N cannot clear components dirtied again after N.
-- [ ] Coalescing carries every unacknowledged component into the next revision.
-- [ ] Existing and new player rows initialize revision state deterministically, and
+- [x] Acknowledging revision N cannot clear components dirtied again after N.
+- [x] Coalescing carries every unacknowledged component into the next revision.
+- [x] Existing and new player rows initialize revision state deterministically, and
       failed required hydration fails closed.
-- [ ] The migration is additive, guarded, re-runnable where practical, and never run
+- [x] The migration is additive, guarded, re-runnable where practical, and never run
       against production.
-- [ ] Current save behavior remains unchanged until later cutover sessions.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Current save behavior remains unchanged until later cutover sessions.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.
+
+---
+
+## Completion
+
+Validated 2026-08-27. The warning-as-error build, focused state/schema/lifecycle
+contracts, formatting, and all 178 Python regressions plus signal-handler checks pass.
+No migration was executed.

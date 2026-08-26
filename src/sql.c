@@ -848,6 +848,28 @@ static bool sql_verify_boot_database(void)
 	if (result)
 		mysql_free_result(result);
 
+	const char *player_revision_probe =
+		"SELECT COUNT(*) FROM information_schema.columns "
+		"WHERE table_schema=DATABASE() AND table_name='player_data' AND "
+		"column_name='save_revision' AND column_type='bigint unsigned' AND "
+		"is_nullable='NO' AND column_default='0'";
+	result = db_query("%s", player_revision_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: player save revision schema query failed at boot");
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(result);
+	unsigned long *lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool player_revision_ok = row && lengths && row[0] && atoi(row[0]) == 1;
+	mysql_free_result(result);
+	if (!player_revision_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: player save revision schema is missing or incompatible at boot");
+		return false;
+	}
+
 	/* The asynchronous persistence workers require these tables and their
 	 * idempotency/index contract.  Fail at boot rather than allowing a worker
 	 * to silently divert every event to an unverified fallback path. */
@@ -864,8 +886,8 @@ static bool sql_verify_boot_database(void)
 		logit(LOG_STATUS, "FATAL: persistence event schema metadata query failed at boot");
 		return false;
 	}
-	MYSQL_ROW row = mysql_fetch_row(result);
-	unsigned long *lengths = row ? mysql_fetch_lengths(result) : NULL;
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
 	bool event_columns_ok = row && lengths && row[0] && atoi(row[0]) == 25;
 	mysql_free_result(result);
 	if (!event_columns_ok)

@@ -4,7 +4,7 @@
 **Sessions**: 8 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 0/8 sessions (0%)
+**Progress**: 1/8 sessions (12.5%)
 
 ---
 
@@ -31,7 +31,7 @@ failure-containment, and security contracts are prerequisites for every session 
 
 | Session | Name | Status | Work Window | Validated |
 |---------|------|--------|-------------|-----------|
-| 01 | Player Revision and Component State Foundation | Not Started | Durable revision contract, component taxonomy, and game-thread dirty state | - |
+| 01 | Player Revision and Component State Foundation | Complete | Durable revision contract, component taxonomy, and game-thread dirty state | 2026-08-27 |
 | 02 | Immutable Player Snapshot Capture | Not Started | Bounded typed DTO capture for every checkpoint component without live-state mutation | - |
 | 03 | Keyed Revision-Guarded Save Worker | Not Started | Ordered coalescing jobs, transactional apply, exact ACKs, and stale-result handling | - |
 | 04 | Typed Persistence Journal and Replay | Not Started | Checksummed append, spill, replay, corruption handling, and idempotent checkpoints | - |
@@ -44,13 +44,13 @@ failure-containment, and security contracts are prerequisites for every session 
 
 ## Completed Sessions
 
-None yet.
+- Session 01: Player Revision and Component State Foundation (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 01: Player Revision and Component State Foundation
+- Session 02: Immutable Player Snapshot Capture
 
 ---
 

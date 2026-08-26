@@ -36,12 +36,13 @@ for workflow in sorted((ROOT / ".github/workflows").glob("*.yml")):
         if not re.fullmatch(r"[0-9a-f]{40}", reference):
             failures.append(f"{workflow.relative_to(ROOT)}:{number} has mutable action reference")
 
+private_key_markers = (b"BEGIN " + b"PRIVATE KEY", b"BEGIN RSA " + b"PRIVATE KEY")
 for path in tracked_files():
     if not path.is_file():
         continue
     data = path.read_bytes()
     relative = path.relative_to(ROOT).as_posix()
-    if b"BEGIN PRIVATE KEY" in data or b"BEGIN RSA PRIVATE KEY" in data:
+    if any(marker in data for marker in private_key_markers):
         if relative != "certs/localhost.key":
             failures.append(f"{relative} contains a tracked private key")
 

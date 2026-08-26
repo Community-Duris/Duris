@@ -23,7 +23,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=113
+TOTAL=114
 FAILED=0
 
 run_sql() {
@@ -467,6 +467,8 @@ CREATE TABLE IF NOT EXISTS player_data (
     INDEX idx_name (name),
     INDEX idx_account_name (account_name)
 );"
+
+run_sql_file "add player save revision" "$SCRIPT_DIR/player_save_revision.sql"
 
 run_sql "create account_ips table" "
 CREATE TABLE IF NOT EXISTS account_ips (

@@ -29,6 +29,7 @@
 #include "sql.h"
 #include "player_name.h"
 #include "password_hash.h"
+#include "player_revision_state.h"
 
 // external tables
 extern P_index obj_index;
@@ -923,7 +924,10 @@ bool sql_delete_player(int pid)
 	char query[128];
 	snprintf(query, sizeof(query), "DELETE FROM player_data WHERE pid=%d", pid);
 
-	return sql_run_query(query);
+	if (!sql_run_query(query))
+		return false;
+	player_revision_forget(pid);
+	return true;
 }
 
 bool sql_delete_player_by_name(const char *name)
@@ -1290,6 +1294,14 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	{
 		ch->only.pc->pid = (int)mysql_insert_id(DB);
 		pid = ch->only.pc->pid;
+		if (!player_revision_hydrate(pid, 0))
+		{
+			logit(LOG_PLAYER,
+			      "sql_save_player_status: component=revision outcome=initialize_failure");
+			if (own_txn)
+				sql_rollback();
+			return false;
+		}
 	}
 	else
 	{
@@ -3784,6 +3796,19 @@ static unsigned long sql_row_ulong(MYSQL_ROW row, int idx, unsigned long def)
 	return (row && row[idx]) ? strtoul(row[idx], NULL, 10) : def;
 }
 
+static bool sql_row_revision(MYSQL_ROW row, int idx, player_revision_t *revision_out)
+{
+	if (!row || !row[idx] || !revision_out)
+		return false;
+	char *end = NULL;
+	errno = 0;
+	const unsigned long long value = strtoull(row[idx], &end, 10);
+	if (errno || end == row[idx] || *end != '\0')
+		return false;
+	*revision_out = static_cast<player_revision_t>(value);
+	return true;
+}
+
 // helper to duplicate string from row (uses tracked memory)
 static char *sql_row_str(MYSQL_ROW row, int idx)
 {
@@ -3817,7 +3842,7 @@ bool sql_load_player_status(P_char ch, int pid)
 		"quest_active, quest_mob_vnum, quest_type, quest_accomplished, "
 		"quest_started, quest_zone_number, quest_giver, quest_level, "
 		"quest_receiver, quest_shares_left, quest_kill_how_many, "
-		"quest_kill_original, quest_map_room, quest_map_bought, last_ip "
+		"quest_kill_original, quest_map_room, quest_map_bought, last_ip, save_revision "
 		"FROM player_data WHERE pid=%d",
 		pid);
 
@@ -3996,8 +4021,16 @@ bool sql_load_player_status(P_char ch, int pid)
 	ch->only.pc->quest_map_room = sql_row_int(row, col++, 0);
 	ch->only.pc->quest_map_bought = sql_row_int(row, col++, 0);
 	ch->only.pc->last_ip = sql_row_ulong(row, col++, 0);
+	player_revision_t durable_revision = 0;
+	const bool revision_valid = sql_row_revision(row, col++, &durable_revision);
 
 	mysql_free_result(result);
+	if (!revision_valid || !player_revision_hydrate(pid, durable_revision))
+	{
+		logit(LOG_PLAYER,
+		      "sql_load_player_status: component=revision outcome=hydrate_failure");
+		return false;
+	}
 
 	// set pid
 	ch->only.pc->pid = pid;

@@ -15,6 +15,7 @@ dependabot = (ROOT / ".github/dependabot.yml").read_text()
 build_workflow = (ROOT / ".github/workflows/build.yml").read_text()
 security_workflow = (ROOT / ".github/workflows/security.yml").read_text()
 makefile = (ROOT / "Makefile").read_text()
+security_checker = (ROOT / "scripts/security_source_check.py").read_bytes()
 
 
 assert "security/advisories/new" in security
@@ -52,6 +53,10 @@ assert "Trivy did not scan a supported dependency target." in security_workflow
 assert 'TRIVY_OUTCOME: ${{ steps.trivy.outcome }}' in security_workflow
 assert "if: always()" in security_workflow
 print("[PASS] immutable CodeQL/Trivy CI preserves reports and enforces stated policy")
+
+assert b"BEGIN " + b"PRIVATE KEY" not in security_checker
+assert b"BEGIN RSA " + b"PRIVATE KEY" not in security_checker
+print("[PASS] private-key detection does not match the tracked checker itself")
 
 assert re.search(r"^security-sbom:\s*$", makefile, re.MULTILINE)
 assert re.search(r"^security-check:\s*security-sbom\s*$", makefile, re.MULTILINE)
