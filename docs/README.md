@@ -15,6 +15,7 @@ directory covers architecture, operations, configuration, and reference material
 | [CONFIGURATION.md](CONFIGURATION.md) | Runtime environment variables, Redis, listeners, proxy handling, and diagnostics. |
 | [RUNBOOK.md](RUNBOOK.md) | Day-to-day operations: starting/stopping, restart codes, logs, backups, crash recovery. |
 | [TESTING.md](TESTING.md) | The regression/source-contract test harness in `tests/async/` and how to run it. |
+| [VERSIONING.md](VERSIONING.md) | Semantic Versioning policy, compatibility surface, and release-number rules. |
 | [MEMORY_CHECKING.md](MEMORY_CHECKING.md) | The routine memory-checking standard: which detector to reach for, when a dynamic check is required, and how to report results. |
 | [valgrind.md](valgrind.md) | Running the server under Valgrind: `scripts/valgrind_mud.sh`, suppressions, what to expect. |
 | [formatting.md](formatting.md) | The `.clang-format` style and the changed-lines and full-tree workflows in `scripts/format.sh`. |
