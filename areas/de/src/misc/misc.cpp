@@ -295,56 +295,44 @@ void displayRecordSizeInfo(void)
 {
   char strn[2048];
 
-
   sprintf(strn,
-"\n"
-"\n"
-"room       : %u\n"
-"objectType : %u\n"
-"mobType    : %u\n"
-"zone       : %u\n"
-"quest      : %u\n"
-"shop       : %u\n"
-"\n"
-"roomExit   : %u\n"
-"extraDesc  : %u\n"
-"objHere    : %u\n"
-"mobHere    : %u\n"
-"\n"
-"masterNode : %u\n"
-"editNode   : %u\n"
-"stringNode : %u\n"
-"entityLoad : %u\n"
-"\n",
+	  "\n"
+	  "\n"
+	  "room       : %zu\n"
+	  "objectType : %zu\n"
+	  "mobType    : %zu\n"
+	  "zone       : %zu\n"
+	  "quest      : %zu\n"
+	  "shop       : %zu\n"
+	  "\n"
+	  "roomExit   : %zu\n"
+	  "extraDesc  : %zu\n"
+	  "objHere    : %zu\n"
+	  "mobHere    : %zu\n"
+	  "\n"
+	  "masterNode : %zu\n"
+	  "editNode   : %zu\n"
+	  "stringNode : %zu\n"
+	  "entityLoad : %zu\n"
+	  "\n",
 
-sizeof(room),
-sizeof(objectType),
-sizeof(mobType),
-sizeof(zone),
-sizeof(quest),
-sizeof(shop),
+	  sizeof(room), sizeof(objectType), sizeof(mobType), sizeof(zone), sizeof(quest),
+	  sizeof(shop),
 
-sizeof(roomExit),
-sizeof(extraDesc),
-sizeof(objectHere),
-sizeof(mobHere),
+	  sizeof(roomExit), sizeof(extraDesc), sizeof(objectHere), sizeof(mobHere),
 
-sizeof(masterKeywordListNode),
-sizeof(editableListNode),
-sizeof(stringNode),
-sizeof(entityLoaded));
+	  sizeof(masterKeywordListNode), sizeof(editableListNode), sizeof(stringNode),
+	  sizeof(entityLoaded));
 
   _outtext(strn);
 
   sprintf(strn,
-"command    : %u\n"
-"alias      : %u\n"
-"variable   : %u\n"
-"\n",
+	  "command    : %zu\n"
+	  "alias      : %zu\n"
+	  "variable   : %zu\n"
+	  "\n",
 
-sizeof(command),
-sizeof(alias),
-sizeof(variable));
+	  sizeof(command), sizeof(alias), sizeof(variable));
 
   _outtext(strn);
 }
@@ -1820,10 +1808,10 @@ void editRoomsOnly(void)
     char outstrn[512];
 
     sprintf(outstrn,
-"Error allocating memory for room lookup tables - the current size of\n"
-"%u entries will consume %u bytes - try reducing\n"
-"the size with the -ll=<loaded> command-line switch, or buy more RAM.\n",
-            g_numbLookupEntries, (g_numbLookupEntries * sizeof(room*)));
+	    "Error allocating memory for room lookup tables - the current size of\n"
+	    "%u entries will consume %zu bytes - try reducing\n"
+	    "the size with the -ll=<loaded> command-line switch, or buy more RAM.\n",
+	    g_numbLookupEntries, (g_numbLookupEntries * sizeof(room *)));
 
     _outtext(outstrn);
 
@@ -1883,10 +1871,10 @@ void editObjsOnly(void)
     char outstrn[512];
 
     sprintf(outstrn,
-"Error allocating memory for object lookup tables - the current size of\n"
-"%u entries will consume %u bytes - try reducing\n"
-"the size with the -ll=<loaded> command-line switch, or buy more RAM.\n",
-            g_numbLookupEntries, (g_numbLookupEntries * sizeof(objectType*)));
+	    "Error allocating memory for object lookup tables - the current size of\n"
+	    "%u entries will consume %zu bytes - try reducing\n"
+	    "the size with the -ll=<loaded> command-line switch, or buy more RAM.\n",
+	    g_numbLookupEntries, (g_numbLookupEntries * sizeof(objectType *)));
 
     _outtext(outstrn);
 
@@ -1943,10 +1931,10 @@ void editMobsOnly(void)
     char outstrn[512];
 
     sprintf(outstrn,
-"Error allocating memory for mob lookup tables - the current size of\n"
-"%u entries will consume %u bytes - try reducing\n"
-"the size with the -ll=<loaded> command-line switch, or buy more RAM.\n",
-            g_numbLookupEntries, (g_numbLookupEntries * sizeof(mobType*)));
+	    "Error allocating memory for mob lookup tables - the current size of\n"
+	    "%u entries will consume %zu bytes - try reducing\n"
+	    "the size with the -ll=<loaded> command-line switch, or buy more RAM.\n",
+	    g_numbLookupEntries, (g_numbLookupEntries * sizeof(mobType *)));
 
     _outtext(outstrn);
 

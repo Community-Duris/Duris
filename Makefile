@@ -22,6 +22,23 @@ AREA_WORLD_OUTPUTS := \
 	areas/world.shp \
 	areas/world.wld \
 	areas/world.zon
+AREA_WORLD_SCRATCH_OUTPUTS := \
+	areas/tworld.mob \
+	areas/tworld.obj \
+	areas/tworld.qst \
+	areas/tworld.shp \
+	areas/tworld.wld \
+	areas/tworld.zon \
+	areas/mini.mob \
+	areas/mini.obj \
+	areas/mini.wld \
+	areas/mini.zon
+AREA_LOOKUP_OUTPUTS := \
+	lib/misc/lookup.mob \
+	lib/misc/lookup.obj \
+	lib/misc/lookup.wld \
+	lib/misc/lookup.zon \
+	lib/misc/lookup_with_limits.zon
 AREA_WORLD_DIRECT_INPUTS := \
 	areas/AREA \
 	areas/RANDOM_AREA \
@@ -36,7 +53,8 @@ AREA_WORLD_DIRECT_INPUTS := \
 
 .PHONY: \
 	help all build build-server build-editor build-area-tools world \
-	build-deps-package test test-all test-python test-native test-list test-db clean
+	build-deps-package test test-all test-python test-native test-list test-db \
+	clean clean-all
 
 help:
 	@printf '%s\n' \
@@ -48,6 +66,7 @@ help:
 		'  make test-db         Run isolated Docker/MySQL integration tests' \
 		'  make build-deps-package  Build the Debian metapackage under bin/packages' \
 		'  make clean           Remove compiled build artifacts' \
+		'  make clean-all       Remove all reproducible developer artifacts' \
 		'' \
 		'Test controls:' \
 		'  TEST_JOBS=N          Worker count; 0 selects a bounded automatic value' \
@@ -145,3 +164,21 @@ clean:
 	+$(MAKE) -C areas/src clean
 	+$(MAKE) -C src-migrate clean
 	rm -rf bin/tests
+
+# Preserve repository configuration and runtime data. Everything below bin/
+# is generated; the remaining paths are reproducible build, world, or tooling
+# outputs rather than source inputs.
+clean-all: clean
+	find bin -mindepth 1 ! -path bin/.gitignore -delete
+	rm -f $(AREA_WORLD_OUTPUTS) $(AREA_WORLD_SCRATCH_OUTPUTS) areas/.world.stamp
+	rm -f $(AREA_LOOKUP_OUTPUTS)
+	rm -rf build
+	find . -path './.git' -prune -o -type d \
+		\( -name __pycache__ -o -name .pytest_cache -o -name .mypy_cache \
+		-o -name .ruff_cache -o -name htmlcov \) \
+		-prune -exec rm -rf {} +
+	find . -path './.git' -prune -o -type f \
+		\( -name '*.gcda' -o -name '*.gcno' -o -name '*.profraw' \
+		-o -name .coverage -o -name '.coverage.*' -o -name coverage.xml \
+		-o -name gmon.out -o -name cscope.out \) \
+		-exec rm -f {} +

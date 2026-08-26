@@ -6,16 +6,16 @@
 
 #define ALL_SHP "tworld.shp"
 
-void punt(char *msg)
+void punt(const char *msg)
 {
-	fprintf(stderr, "%s\n");
-	exit(-1);
+	fprintf(stderr, "%s\n", msg);
+	exit(EXIT_FAILURE);
 }
 
 int main()
 {
 	FILE *shop_list, *all_shp, *tmp_shp;
-	char shop[8192], buf[8192], shop_name[80], shp_name[80];
+	char shop[8192], buf[8192], shop_name[80], shp_name[sizeof(shop_name) + 16];
 	int shop_count, shp_count;
 
 	/*
@@ -40,13 +40,15 @@ int main()
 			break;
 		if (shop[0] == '*') /* a comment */
 			continue;
-		sscanf(shop, "%s", shop_name);
+		if (sscanf(shop, "%79s", shop_name) != 1)
+			continue;
 		fprintf(stdout, "Compiling shop file %2d : %s\n", shop_count++, shop_name);
 		/*
 	 * open up individual zon, wld, obj, mob files for each area
          */
 
-		sprintf(shp_name, "%s/%s.shp", SHP_DIR, shop_name);
+		if (snprintf(shp_name, sizeof(shp_name), "%s/%s.shp", SHP_DIR, shop_name) < 0)
+			punt("shop filename cannot be formatted");
 		tmp_shp = fopen(shp_name, "r");
 		if (tmp_shp == NULL)
 		{

@@ -26,6 +26,7 @@ for target in (
     "test-native",
     "test-list",
     "test-db",
+    "clean-all",
 ):
     assert re.search(rf"^{re.escape(target)}(?:\s*:|:)", makefile, re.MULTILINE), (
         f"root Makefile target is missing: {target}"

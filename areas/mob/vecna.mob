@@ -23,7 +23,7 @@ A &+Lghoul&N with &+revil&N eyes stands here.
 This horrible misshapen form was once a humanoid, but is now damned to
 existance as a slave of its undead master.
 ~
-1073743977 1 0 0 941097144 264384 67108864 8192 -1000 S
+1073743976 1 0 0 941097144 264384 67108864 8192 -1000 S
 u 0 256 0 3
 58 0 0 5d1000+1000 10d10+60
 0.0.0.0 0
@@ -39,7 +39,7 @@ An ugly &+gwight&N turns its  &+rhate&N filled gaze to you.
 &+wthe fighting skills it had while alive, making it a formidable opponent,
 &+wone that feels no pain and knows no fear.
 ~
-1073743945 1 0 0 8 192 0 0 -1000 S
+1073743944 1 0 0 8 192 0 0 -1000 S
 UD 0 1 0 3
 58 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -55,7 +55,7 @@ shadow _nosneak_~
 &+Lremembers nothing of its former existance, only a singleminded
 &+Ldetermination to fulfill the desires of its evil master.
 ~
-1073743945 1 0 0 524296 192 0 4096 -1000 S
+1073743944 1 0 0 524296 192 0 4096 -1000 S
 sw 0 1 0 1
 58 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -68,7 +68,7 @@ The twisted form of a &+yghast&N scrambles along the ground here.
 This misshapen creature hobbles along.  Once a humanoid of some sort, but
 now forever damned to serve its undead master.
 ~
-1073743945 1 0 0 134217728 192 0 0 -1000 S
+1073743944 1 0 0 134217728 192 0 0 -1000 S
 RE 0 1 0 4
 58 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -164,7 +164,7 @@ A &+Lghoul&N with &+revil&N eyes stands here.
 This horrible misshapen form was once a humanoid, but is now damned to
 existance as a slave of its undead master.
 ~
-1073743945 1 0 0 8 262336 0 8192 -1000 S
+1073743944 1 0 0 8 262336 0 8192 -1000 S
 RE 0 1 0 4
 58 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -177,7 +177,7 @@ The twisted form of a &+yghast&N scrambles along the ground here.
 This misshapen creature hobbles along.  Once a humanoid of some sort, but
 now forever damned to serve its undead master.
 ~
-1073743945 1 0 0 0 262336 0 8192 -1000 S
+1073743944 1 0 0 0 262336 0 8192 -1000 S
 RE 0 1 0 3
 58 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -190,7 +190,7 @@ An ugly &+gwight&N turns its &+rhate&N filled gaze to you.
 This misshapen creature hobbles along.  Once a humanoid of some sort, but
 now forever damned to serve its undead master.
 ~
-1073743945 1 0 0 8 262336 67108864 8192 -1000 S
+1073743944 1 0 0 8 262336 67108864 8192 -1000 S
 uw 0 1 0 3
 58 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -203,7 +203,7 @@ shadow crawler thing shadows~
 This misshapen creature hobbles along.  Once a humanoid of some sort, but
 now forever damned to serve its undead master.
 ~
-1140852809 1 0 0 134217768 264384 67108864 8192 -1000 S
+1140852808 1 0 0 134217768 264384 67108864 8192 -1000 S
 SW 0 1 0 1
 58 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -229,7 +229,7 @@ chressan lich~
 This misshapen creature hobbles along.  Once a humanoid of some sort, but
 now forever damned to serve its undead master.
 ~
-16783435 1 0 0 939524282 14557 8192 0 -1000 S
+16783434 1 0 0 939524282 14557 8192 0 -1000 S
 UL 0 4195328 0 3
 60 350 -250 1d1+10000 5d5+30
 0.0.0.0 0
@@ -475,7 +475,7 @@ vecna lich _nosneak_ _no_move_~
 Formerly a mage of the highest power, &+rVecna&N transformed himself into
 the immortal form of a lich.
 ~
-52656203 1 0 0 939598010 309441 128 101724160 -1000 S
+52656202 1 0 0 939598010 309441 128 101724160 -1000 S
 ul 0 2097664 0 2
 60 300 -350 1d1+44000 11d6+60
 0.0.0.500 0
@@ -501,7 +501,7 @@ A &+Wskeletal&N &+Lknight&n stands here.
 This misshapen creature hobbles along.  Once a humanoid of some sort, but
 now forever damned to serve its undead master.
 ~
-2123 1 0 0 40 264384 0 8192 0 S
+2122 1 0 0 40 264384 0 8192 0 S
 uk 0 16777232 0 5
 60 250 -250 1d1+10000 8d5+50
 0.0.0.0 0
@@ -514,7 +514,7 @@ The twisted form of a &+yghast&N stands before the gate.
 This misshapen creature hobbles along.  Once a humanoid of some sort, but
 now forever damned to serve its undead master.
 ~
-2492491 1 0 0 402653240 262336 67371008 1060864 -1000 S
+2492490 1 0 0 402653240 262336 67371008 1060864 -1000 S
 RE 0 1 0 3
 61 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -527,7 +527,7 @@ The twisted form of a &+yghast&N stands here, serving its master.
 This misshapen creature hobbles along.  Once a humanoid of some sort, but
 now forever damned to serve its undead master.
 ~
-67110987 1 0 0 16 192 67108864 8192 -1000 S
+67110986 1 0 0 16 192 67108864 8192 -1000 S
 RE 0 1 0 3
 58 -180 -200 1d1+4000 5d5+40
 0.0.0.0 0

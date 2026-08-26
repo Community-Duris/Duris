@@ -107,4 +107,63 @@ assert index(rose, "if (flow)") < index(rose, "obj_to_char(flow, t_ch);")
 assert index(rose, "if (flow)") < index(rose, "do_give(t_ch, text, CMD_GIVE);")
 
 
+# --- the exit log must not report stale errno as a shutdown failure ----------
+# LOG_EXIT is also used for normal termination messages.  perror() appended an
+# unrelated EAGAIN left by the nonblocking game loop to each of those messages.
+utility = (ROOT / "src/utility.c").read_text()
+logit = utility.split("void logit(const char *filename, const char *format, ...)", 1)[1]
+logit = logit.split("\nvoid ", 1)[0]
+assert contains(logit, "fputs(lbuf, stderr)")
+assert not contains(logit, "perror(lbuf)")
+
+
+# --- Heaven's persisted zone number must match its first room vnum -----------
+# Zone numbers are defined as first_room_vnum / 100; Heaven begins below 100.
+heaven_zone = (ROOT / "areas/zon/heavens.zon").read_text()
+assert heaven_zone.startswith("#0\n")
+
+
+# --- ACT_SPEC is derived from assigned functions -----------------------------
+# boot_mobiles() strips an unassigned source bit and sets it when a function is
+# present.  Keeping the derived bit out of active area sources prevents dormant
+# prototypes from producing configuration warnings when they eventually spawn.
+active_area_names = [
+    line.split()[0]
+    for line in (ROOT / "areas/AREA").read_text().splitlines()
+    if line.strip() and not line.lstrip().startswith(("*", "#"))
+]
+for area_name in active_area_names:
+    mob_source = (ROOT / f"areas/mob/{area_name}.mob").read_text()
+    headers = list(re.finditer(r"(?m)^#(\d+)\n", mob_source))
+    for record_number, header in enumerate(headers):
+        vnum = int(header.group(1))
+        record_end = (
+            headers[record_number + 1].start()
+            if record_number + 1 < len(headers)
+            else len(mob_source)
+        )
+        record = mob_source[header.end() : record_end]
+        if vnum == 9999999 and record == "$~\n":
+            continue
+        remainder = record
+        for _ in range(4):
+            remainder = remainder.split("~\n", 1)[1]
+        act_flags = int(remainder.split(None, 1)[0])
+        assert not act_flags & 1, f"mob {vnum} persists derived ACT_SPEC"
+
+
+# --- boot-time item events must have a live worker ---------------------------
+# Corpse restoration runs inside boot_db() and records an audit event. Starting
+# the item worker afterward forced a flat-file fallback on every clean boot.
+comm = (ROOT / "src/comm.c").read_text()
+run_game = comm.split("void run_the_game(int port, int sslport)\n{", 1)[1]
+run_game = run_game.split("\nstatic int drain_new_connections", 1)[0]
+assert index(run_game, "persistence_replay_fallback_events();") < index(
+    run_game, "persistence_start_item_event_worker();"
+)
+assert index(run_game, "persistence_start_item_event_worker();") < index(
+    run_game, "boot_db(mini_mode);"
+)
+
+
 print("boot log hygiene contracts passed")

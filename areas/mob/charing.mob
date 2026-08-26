@@ -285,7 +285,7 @@ using.  He is an experienced elf who has seen and fought
 many battles using the magic of conjuration.  He notices
 a new pupil and acknowledges his presence.
 ~
-32843 0 0 0 136 0 0 0 1000 S
+32842 0 0 0 136 0 0 0 1000 S
 PE 0 2048 0 -1
 41 0 0 0d0+0 0d0+0
 0.0.0.0 0
@@ -372,7 +372,7 @@ A dark and mysterious looking elf rogue stands here, guarding the guild.
 ~
 This elf dressed all in black eyes you with an evil glance.
 ~
-2123 0 0 0 0 0 0 0 800 S
+2122 0 0 0 0 0 0 0 800 S
 PE 5 2 0 -1
 57 -7 -117 57d143+5985 7d6+35
 2.4.8.6 230850
@@ -400,7 +400,7 @@ An elf commoner is standing here, going about his business.
 This elven male dressed in the more simple clothes of a commoner looks back at
 you with a courious glance.
 ~
-77 0 0 0 0 0 0 0 0 S
+76 0 0 0 0 0 0 0 0 S
 PE 5 0 0 -1
 7 18 77 7d18+24 2d3+1
 3.2.0.0 907
@@ -428,7 +428,7 @@ An elf noble stands here, looking at you with a smirk on his face.
 This elf has a most regale and noble baring to him.  He dresses in the finest
 clothes that one can acquire and a look of utmost pride is in his eyes.
 ~
-73 0 0 0 0 0 0 0 1000 S
+72 0 0 0 0 0 0 0 1000 S
 PE 5 512 0 -1
 45 -1 -69 45d72+1935 6d6+12
 5.9.8.4 109350
@@ -441,7 +441,7 @@ An elite elven guard stands here, guarding the city.
 This elven guard seems fast and powerful its probably not a good idea
 to mess with him too much.
 ~
-100665551 160 0 0 0 0 0 0 1000 S
+100665550 160 0 0 0 0 0 0 1000 S
 PE 5 2 0 -1
 51 -5 -98 51d131+4335 7d6+30
 6.9.4.6 206550
@@ -454,7 +454,7 @@ An elven guard stands here ready to defend the city.
 This guard dressed in the elven chainmail and brandishing a long sword and
 long bow over his back, will defend the city from all attackers.
 ~
-100665551 160 0 0 0 0 0 0 1000 S
+100665550 160 0 0 0 0 0 0 1000 S
 PE 5 2 0 -1
 42 -1 -59 42d107+1890 6d6+12
 2.8.7.3 102060
@@ -481,7 +481,7 @@ The jailkeeper is standing here, going over some files.
 This elf dressed all in black with a thick black hooded robe seems to be most
 upset all the time.
 ~
-2127 0 0 0 160 0 0 0 1000 S
+2126 0 0 0 160 0 0 0 1000 S
 PE 1 512 0 -1
 57 -7 -117 57d96+5871 7d6+35
 2.4.8.6 230850
@@ -495,7 +495,7 @@ The royal palace guard dressed in the purple and black armor of the royal guard
 looks at you with a stern gaze.  You get the feeling that doing any violence
 in this place would get you killed rather swiftly.
 ~
-33556555 160 0 0 250 0 0 0 1000 S
+33556554 160 0 0 250 0 0 0 1000 S
 PE 0 2 0 -1
 50 11 32 21d47+210 3d5+3
 4.0.5.0 18711
@@ -522,7 +522,7 @@ A &+Wguard&N is posted here, watching over the jail.
 This elf dressed in the red armor of law, makes sure that no one ever escapes
 the jail.
 ~
-2127 0 0 0 8 0 0 0 100 S
+2126 0 0 0 8 0 0 0 100 S
 PE 0 1 0 -1
 23 0 0 0d0+0 0d0+0
 0.0.0.0 0
@@ -578,7 +578,7 @@ A guardian mage is here, protecting the tower.
 This elf fairly reeks with power.  Dressed in long wizard robes, he looks as
 if he has tossed a spell or two in his day.
 ~
-2123 0 0 0 0 0 0 0 800 S
+2122 0 0 0 0 0 0 0 800 S
 PE 5 2 0 -1
 57 -7 -117 57d143+5985 7d6+35
 2.4.8.6 230850
@@ -664,7 +664,7 @@ the great oak tree~
 This mighty tree has stood in this wood for thousands of years, its branchs
 and massive trunk providing shelter and safety for all those who rest here.
 ~
-2127 0 0 0 136 0 0 0 1000 S
+2126 0 0 0 136 0 0 0 1000 S
 G 5 8 0 -1
 60 -10 -122 60d143+6600 7d6+35
 6.6.9.7 243000
@@ -946,7 +946,7 @@ The guardian to the ranger guild stands here guarding the entrance.
 ~
 This ranger seems to be rather intent on keeper non guild members out!
 ~
-2123 0 0 0 0 0 0 0 0 S
+2122 0 0 0 0 0 0 0 0 S
 PE 5 2 0 -1
 57 -7 -117 57d143+5985 7d6+35
 2.4.8.6 230850
@@ -959,7 +959,7 @@ The guardian to the tower of necromancy stands here guarding the tower door.
 This aged necromancer refused to allow anyone who is not a
 guild memeber access to the tower.
 ~
-2123 0 0 0 0 0 0 0 0 S
+2122 0 0 0 0 0 0 0 0 S
 PE 5 1 0 -1
 57 -7 -117 57d143+5985 7d6+35
 2.4.8.6 230850
@@ -975,7 +975,7 @@ huge; no everyday Half-Elf could become this tall, or be this massive.
 Even though he has a rather passive, if not friendly look, it is not too
 difficult to see that crossing him could become very dangerous.
 ~
-2123 0 0 0 0 0 0 0 0 S
+2122 0 0 0 0 0 0 0 0 S
 P2 5 1 0 -1
 57 -7 -117 57d143+5985 7d6+35
 2.4.8.6 230850
@@ -1179,7 +1179,7 @@ at juggling things of all types, and his tricks and form are an amazing
 sight. Every now and again he holds out his hat for a tip and usually
 gets at least a few coppers.
 ~
-2255 0 0 0 0 0 0 0 0 S
+2254 0 0 0 0 0 0 0 0 S
 P2 0 32768 0 -1
 10 18 67 10d19+45 2d3+1
 5.3.0.0 1296
@@ -1194,7 +1194,7 @@ insulting remarks and prejudice, one of the only avenues open is as a
 member of the Grovetree Theatre Troupe. This young boy stares at the
 stage longingly, hoping for his chance someday.
 ~
-2255 0 0 0 0 0 0 0 0 S
+2254 0 0 0 0 0 0 0 0 S
 P2 0 4096 0 -1
 4 20 87 4d15+14 1d5+0
 2.1.0.0 518
@@ -1225,7 +1225,7 @@ once, no one can help but miss he; the fact that she is also a striking
 and sun-haired half-elf does not deaden the effect any either. Answering
 to any and all requests, she changes tunes with professional fluidity.
 ~
-2123 0 0 0 34078744 2049 0 0 150 S
+2122 0 0 0 34078744 2049 0 0 150 S
 P2 0 32768 0 -1
 55 -5 -111 55d121+4620 7d6+30
 0.2.7.6 222750
@@ -1256,7 +1256,7 @@ norlan master shopkeeper~
 ~
 Norlan looks at you impatiently. "I have animals to tend to, hurry up!"
 ~
-2123 128 0 0 0 0 0 0 1000 S
+2122 128 0 0 0 0 0 0 1000 S
 PE 5 1 0 -1
 30 8 3 30d65+390 3d6+4
 0.5.7.1 26730
@@ -1272,7 +1272,7 @@ it is no wonder they call him the 'hanging judge'.  Flipping
 through some documents, he pays no particular attention to
 the noise coming from the other room.
 ~
-30795 128 0 0 248 0 0 0 1000 S
+30794 128 0 0 248 0 0 0 1000 S
 PE 0 1 0 -1
 50 0 0 0d0+0 0d0+0
 0.0.0.0 0
@@ -1287,7 +1287,7 @@ clerk justice~
 &+cHe hold in one hand a large book bound with iron and in the other a beautiful
 &+ceagle quill. He is here to take care of all the justice paper work.
 ~
-67110987 0 0 0 168 2077 0 0 0 S
+67110986 0 0 0 168 2077 0 0 0 S
 PH 1 32 0 -1
 50 -3 -95 50d80+2650 6d6+25
 0.3.1.5 121500

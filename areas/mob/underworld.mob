@@ -199,7 +199,7 @@ The worm is mammoth, standing twenty feet high and eighty feet long.  With a
 great maw of razor sharp teeth, it looks as though this beast could swallow
 just about anything.
 ~
-1082392589 1 0 0 33554728 0 0 0 -1000 S
+1082392588 1 0 0 33554728 0 0 0 -1000 S
 PW 0 0 0 -1
 60 -3 -85 5d100+8900 7d5+35
 0.3.1.5 150000
@@ -279,7 +279,7 @@ piercer stalactite~
 The piercer greatly resembles a mammoth stalactite, except that it has two
 small black eyes near its top.
 ~
-131081 0 0 0 35127328 0 0 0 0 S
+131080 0 0 0 35127328 0 0 0 0 S
 EA 0 0 0 -1
 30 11 9 25d40+200 3d5+3
 0.0.0.0 22275

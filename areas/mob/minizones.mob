@@ -23,7 +23,7 @@ eyes and hair that is the color of pure gold. Her skin is light brown, with
 an occasional hint of green, and she resembles an elf maiden in many
 respects. There is something powerfully charismatic about her..
 ~
-11 1 0 0 33554640 0 0 0 0 S
+10 1 0 0 33554640 0 0 0 0 S
 H 0 32 0 -1
 55 -5 -111 55d121+4620 7d6+30
 0.2.7.6 222750
@@ -178,7 +178,7 @@ brown hair and deep blue eyes that hold an ancient wisdom. His size and
 age make him look extremely fragile. Even though he is old, he still looks
 extremely quick and agile.
 ~
-143 0 0 0 1573082 0 0 0 1000 S
+142 0 0 0 1573082 0 0 0 1000 S
 H 0 32 0 -1
 55 -5 -111 55d121+4620 7d6+30
 0.2.7.6 222750
@@ -223,7 +223,7 @@ that could melt the resolve of many men. She is dressed partially in
 leather armor, with a thin chain coat visible beneath. From her appearance,
 this one can defend herself well.
 ~
-2063 0 0 0 8408 0 0 0 965 S
+2062 0 0 0 8408 0 0 0 965 S
 PH 0 32 0 -1
 48 -3 -78 48d110+2592 6d6+25
 8.1.0.5 116640
@@ -294,7 +294,7 @@ He is dressed in a white cooks uniform and looks to be about thirty years
 of age. His plump belly and jolly features of very stereotypical of a man
 in his station.
 ~
-143 0 0 0 0 0 0 0 750 S
+142 0 0 0 0 0 0 0 750 S
 H 0 2 0 -1
 15 15 51 15d27+90 2d5+2
 7.6.2.0 7290
@@ -336,7 +336,7 @@ He is a human male of about twenty, and looks extremely adept at what
 he does, playing cards. His face is almost devoid of emotion, which reveals
 very little about what he has up his sleeve.
 ~
-2063 0 0 0 0 0 0 0 0 S
+2062 0 0 0 0 0 0 0 0 S
 H 0 0 0 -1
 15 15 51 15d23+60 2d5+2
 7.6.2.0 7290
@@ -351,7 +351,7 @@ around his shoulders. His skin has a brownish tint to it, making him look
 like a plains native. His facial features are devoid of emotion, locked
 somewhere between a frown and an open scowl.
 ~
-2063 0 0 0 0 0 0 0 0 S
+2062 0 0 0 0 0 0 0 0 S
 H 0 0 0 -1
 15 15 51 15d23+60 2d5+2
 7.6.2.0 7290
@@ -379,7 +379,7 @@ He is well within his last quarter of life, and looks both old and happy.
 His tail wags almost constantly, and he looks about at everyone
 inquisitively.
 ~
-203 0 0 0 0 0 0 0 -200 S
+202 0 0 0 0 0 0 0 -200 S
 A 0 0 0 -1
 1 20 96 1d15+4 1d5+0
 0.0.0.0 129
@@ -1439,7 +1439,7 @@ humanoid skulk figure~
 &+Lbut you can't be sure. Upon noticing it, it quickly juts for a new hiding
 &+Lplace.
 ~
-1073744073 0 0 0 1572904 2 0 0 -1000 S
+1073744072 0 0 0 1572904 2 0 0 -1000 S
 H 0 8192 0 -1
 25 -1 -69 45d90+1935 6d6+12
 5.9.8.4 109350
@@ -1531,7 +1531,7 @@ This large &+Glight-green&N climbing plant has &+gdark green buds&N, and flowers
 like those of an orchid, &+Ybright yellow&N in color with splashes of &+Mpurple&N.
 It takes up about 20 feet of the city wall.
 ~
-2063 0 0 0 301989936 0 0 0 0 S
+2062 0 0 0 301989936 0 0 0 0 S
 VT 0 0 0 -1
 30 -3 -95 50d100+3150 6d6+25
 0.0.0.0 121500
@@ -1604,7 +1604,7 @@ large whipweed plant~
 &+gbefore you appeared has slipped its mind, as you have become its
 &+gprimary focus.
 ~
-1174407241 1 0 0 301989912 0 0 0 0 S
+1174407240 1 0 0 301989912 0 0 0 0 S
 VT 0 1 0 -1
 25 -1 -69 45d107+2475 6d6+12
 0.0.0.0 109350

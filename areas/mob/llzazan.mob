@@ -7,7 +7,7 @@ This ancient drow has spent a lifetime reading books of great lore. He looks
 as knowledgable as he is frail, and an inner power burns in his red eyes.
 His hair is yellowing with age and his black skin is deeply wrinkled.
 ~
-34827 64 0 0 33554432 2 0 0 -1000 S
+34826 64 0 0 33554432 2 0 0 -1000 S
 PL 3 512 0 -1
 31 11 26 23d32+184 3d5+3
 5.1.6.0 20493
@@ -21,7 +21,7 @@ This drow is covered in blood and reeks fully of death. Pieces of flesh
 cling to his garb and his hands are somewhat bleached from years of using
 embalming fluids. His trade seems incredibly gruesome, yet fascinating.
 ~
-34827 64 0 0 33554432 2 0 0 -1000 S
+34826 64 0 0 33554432 2 0 0 -1000 S
 PL 3 1024 0 -1
 31 11 26 23d32+184 3d5+3
 5.1.6.0 20493
@@ -36,7 +36,7 @@ the city of arachdrathos he has made himself one of the richest merchants
 in the Arachdrathos areas. He has chosen to set up shop here in the ghetto
 to exploit the local labor force.
 ~
-2059 64 0 0 33554432 2 0 0 -1000 S
+2058 64 0 0 33554432 2 0 0 -1000 S
 PL 3 8192 0 -1
 23 0 -50 1d1+1 1d1+1
 5.1.6.0 0
@@ -51,7 +51,7 @@ She is very beautiful in an icy way, as she meets your gaze with a cold
 stare as if wondering why you innterupt her rituals. She wears a rich robe
 made of spider silk.
 ~
-2059 64 0 0 33554432 2 0 0 -1000 S
+2058 64 0 0 33554432 2 0 0 -1000 S
 PL 3 32 0 -1
 23 11 26 23d44+207 3d5+3
 5.1.6.0 20493
@@ -66,7 +66,7 @@ high priestess through exceptional skill with arms. None in the ghetto
 choose to oppose him directly in combat as he is known to wield any
 weapon with the skill of a master.
 ~
-34827 64 0 0 33554432 2 0 0 -1000 S
+34826 64 0 0 33554432 2 0 0 -1000 S
 PL 3 1 0 -1
 23 11 26 23d47+230 3d5+3
 5.1.6.0 20493
@@ -97,7 +97,7 @@ only professional bounty hunter who knows the entire Llzazan cavern system.
 Her fame is legendary, having flushed out many a wanted drow for the great
 houses of Arachdrathos.
 ~
-2059 64 0 0 33554432 2 0 0 -1000 S
+2058 64 0 0 33554432 2 0 0 -1000 S
 PL 3 16384 0 -1
 23 11 26 23d47+230 3d5+3
 5.1.6.0 20493
@@ -111,7 +111,7 @@ The proprietor of the Inn of the Decapitated Dwarves stares at you blankly.
 She wonders if you want a room or just want to gawk at her. She taps her
 foot impatiently as she waits for you to make up your mind.
 ~
-11 0 0 0 33554432 2 0 0 -1000 S
+10 0 0 0 33554432 2 0 0 -1000 S
 PL 3 0 0 -1
 59 -7 -128 59d120+6077 7d6+35
 4.5.9.6 238950
@@ -188,7 +188,7 @@ has decided to visit the prime material plane. She is absolutely beautiful,
 with honey blonde hair and porcelain-white skin. She swims with effortless
 grace through the cold water of the Llzazan Lake.
 ~
-264335 0 0 0 33554432 2 0 0 -333 S
+264334 0 0 0 33554432 2 0 0 -333 S
 EW 0 32768 0 -1
 27 8 3 27d60+324 3d6+4
 0.0.0.0 24057

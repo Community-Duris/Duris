@@ -120,7 +120,7 @@ A &+rkobold&N crouches here.
 snarl escapes over his fanged teeth as you gaze at him.  His tough,
 leathery hide has a slightly reddish tint to it.
 ~
-264207 1 0 0 34078720 0 0 0 -800 S
+264206 1 0 0 34078720 0 0 0 -800 S
 HG 0 1 0 -1
 26 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -248,7 +248,7 @@ kobold rogget~
 stream of spittle drips from the edge of his mouth, and his eyes glint
 evilly as he turns to you.
 ~
-264207 0 0 0 34078728 0 0 0 -400 S
+264206 0 0 0 34078728 0 0 0 -400 S
 HG 0 16384 0 -1
 28 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -291,7 +291,7 @@ A &+rkobold&N crouches here.
 snarl escapes over his fanged teeth as you gaze at him.  His tough,
 leathery hide has a slightly reddish tint to it.
 ~
-264207 1 0 0 34078720 0 0 0 -800 S
+264206 1 0 0 34078720 0 0 0 -800 S
 HG 0 1 0 -1
 26 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -318,7 +318,7 @@ a carrion crawler~
    This arachnid is almost 6 feet long.  At the base of its head many
 long tentacles wave about, looking for some poor adventurer to devour.
 ~
-2057 1 0 0 33554432 0 0 0 -400 S
+2056 1 0 0 33554432 0 0 0 -400 S
 AS 0 0 0 3
 20 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -402,7 +402,7 @@ ghoul~
 force.  Scavenging for carrion, or live meat, its existence is a plague
 to those still blessed with life.
 ~
-1073743885 1 0 0 34144264 262144 0 0 -1000 S
+1073743884 1 0 0 34144264 262144 0 0 -1000 S
 U 0 0 0 -1
 24 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -416,7 +416,7 @@ wight~
 exists fueled by a hatred for all living things.  Its wicked claws
 bared, and a eerie hiss of air escapes between its tattered lips.
 ~
-2057 1 0 0 33554432 0 0 0 0 S
+2056 1 0 0 33554432 0 0 0 0 S
 U 0 0 0 -1
 23 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -431,7 +431,7 @@ typical wood skunk.  Black fur, with twin white stripes covers its
 body, and its nose quivers as it detects your scent.  It looks up at
 you curiously.
 ~
-2057 0 0 0 33554432 0 0 0 0 S
+2056 0 0 0 33554432 0 0 0 0 S
 A 0 0 0 4
 20 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -457,7 +457,7 @@ remi threepockets~
 wears show her to be a woman of some strong faith.  She smiles warmly
 at your approach.
 ~
-1073743881 0 0 0 301990046 2050 0 0 1000 S
+1073743880 0 0 0 301990046 2050 0 0 1000 S
 PG 0 128 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -472,7 +472,7 @@ breastplate shines with his crest of the &+rBlazing Bovine&N.  Well known
 for his adventures in the underdark, he seems out of place in an area
 as tame as the &+yHalfcut&N Hills.
 ~
-1073743881 0 0 0 301990046 2050 0 0 300 S
+1073743880 0 0 0 301990046 2050 0 0 300 S
 PH 0 1 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -486,7 +486,7 @@ a'den aden bard~
 and has a charming gleam in his eye.  Very sure of himself, he nods at
 your approach.
 ~
-1073743881 0 0 0 301990046 2050 0 0 300 S
+1073743880 0 0 0 301990046 2050 0 0 300 S
 PE 0 32768 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -500,7 +500,7 @@ silverlinks assassin~
 moves almost catlike around the area, suspicion in her every move.  Her
 pale skin flashes in the light as she passes you by.
 ~
-1073743881 0 0 0 303562910 2050 0 0 300 S
+1073743880 0 0 0 303562910 2050 0 0 300 S
 PE 0 8192 0 -1
 56 0 0 1d1+1 1d1+1
 0.0.0.0 0

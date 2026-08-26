@@ -441,6 +441,14 @@ void run_the_game(int port, int sslport)
 		logit(LOG_STATUS,
 		      "Crash recovery data found in redis, will restore world state after boot");
 	}
+	if (!mini_mode)
+	{
+		/* Start the item pipeline before boot-time corpse restoration emits
+		 * audit events. Otherwise every clean boot writes one avoidable flat
+		 * fallback record and immediately replays it after boot. */
+		persistence_replay_fallback_events();
+		persistence_start_item_event_worker();
+	}
 
 	boot_db(mini_mode);
 
@@ -583,8 +591,6 @@ void run_the_game(int port, int sslport)
 	}
 	else
 	{
-		persistence_replay_fallback_events();
-		persistence_start_item_event_worker();
 		persistence_start_scalar_event_worker();
 		persistence_start_large_event_worker();
 		locker_async_init();

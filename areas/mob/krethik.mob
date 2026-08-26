@@ -277,7 +277,7 @@ A &+Chuman&N slave stands here, looking frustrated.
 &+Cto escape. It is rumored that an&+g orc&+C attempted to break her free a month ago.
 &+CHe hasn't been seen since.
 ~
-133323 0 0 0 0 0 0 0 0 S
+133322 0 0 0 0 0 0 0 0 S
 PH 0 0 0 -1
 24 11 23 24d40+192 3d5+3
 6.1.6.0 21384
@@ -1003,7 +1003,7 @@ A huge&+W skeletal dragon&N lies here, guarding the tomb.
 &+Wof light. He swings his bony tail around, and roars at anything that dares
 &+Wto enter the tomb.
 ~
-1073742347 1 0 0 167838000 262146 0 0 -1000 S
+1073742346 1 0 0 167838000 262146 0 0 -1000 S
 D 0 1 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0

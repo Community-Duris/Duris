@@ -28,6 +28,13 @@ compiled artifact belongs below `bin/`, whose contents are gitignored:
 | `bin/packages/` | Debian package and package metadata. |
 | `bin/tests/` | Native test executables. |
 
+Use `make clean-all` to remove every reproducible developer artifact. It
+removes all generated contents below `bin/`, combined and scratch world
+outputs, generated lookup tables, diagnostic-build output, coverage/profile
+data, and Python/tool caches. It preserves `.env`, logs, player and account
+data, and the hand-maintained `areas/world.justice`, `world.tab`, and
+`world.weather` runtime inputs.
+
 ## Compile flags
 
 From the default build line:

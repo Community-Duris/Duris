@@ -751,7 +751,7 @@ void logit(const char *filename, const char *format, ...)
 	fclose(log_f);
 	if (!str_cmp(filename, LOG_EXIT))
 	{
-		perror(lbuf);
+		fputs(lbuf, stderr);
 	}
 	free(lbuf);
 }

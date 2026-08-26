@@ -20,7 +20,7 @@ iron golem _no_move_~
 &+yof the City of Brass, refuse to allow ANY to pass who arn't
 &+yfollowers of the faith.
 ~
-33556523 0 0 0 805314712 47297 0 0 -1000 S
+33556522 0 0 0 805314712 47297 0 0 -1000 S
 OG 0 160 0 -1
 60 -10 -120 100d100+25000 5d5+50
 0.0.0.0 1000000
@@ -61,7 +61,7 @@ latisia efreeti clerist _no_lure_~
 &+mmighty efreeti god Kossuth, this being is the supreme holy
 &+mfigure, and head of the efreeti church.
 ~
-100730891 0 2153768432 56832 805380120 47297 0 0 -1000 S
+100730890 0 2153768432 56832 805380120 47297 0 0 -1000 S
 e 0 416 0 -1
 61 -10 -120 100d100+10000 5d5+40
 0.0.0.1000 1000000
@@ -77,7 +77,7 @@ huge beholder~
 &+mthe great central eye flashes as it negates magic, and the many
 &+Mrows of sharp teeth insure that no one will leave unharmed.
 ~
-1107761165 760 0 0 1008279800 309441 0 0 -1000 S
+1107761164 760 0 0 1008279800 309441 0 0 -1000 S
 X 0 768 0 7
 61 150 -100 1d1+29999 20d10+90
 0.0.0.0 400000
@@ -159,7 +159,7 @@ The Sultan of all the efreeti Shadam Quilen is here sitting on his great
 throne of brass.  Shadam is well over fifty feet tall emulated in flames
 and does not seem to happy to see you here.
 ~
-1392736303 1 0 0 3087532216 4241600 68157632 38802944 -1000 S
+1392736302 1 0 0 3087532216 4241600 68157632 38802944 -1000 S
 tt 0 456 0 -1
 60 -10 -152 25000d1+500 7d7+45
 0.0.0.500 1000000
@@ -1649,7 +1649,7 @@ This massive golem stands guard over the warriors entrance allowing
 only the guild members of that discipline passage. It was created
 by the efreet engineers for this one purpose.
 ~
-67110955 0 0 0 553722008 2049 0 0 -1000 S
+67110954 0 0 0 553722008 2049 0 0 -1000 S
 og 0 1 0 -1
 60 -7 -135 58d143+6090 7d6+35
 0.0.0.0 234900
@@ -1703,7 +1703,7 @@ This massive golem stands guard over the magi entrance allowing
 only the guild members of that discipline passage. It was created
 by the efreet engineers for this one purpose.
 ~
-100665387 0 0 0 687939736 407745 0 0 0 S
+100665386 0 0 0 687939736 407745 0 0 0 S
 og 0 512 0 -1
 60 -10 -142 20d20+15000 7d6+35
 0.0.0.0 243000
@@ -1899,7 +1899,7 @@ She is a large woman standing just under twelve feet tall with reddish pink
 skin with some darkening spots on her arms and legs. Her breasts are presented
 to be inviting as she flaunts her self as a beautiful woman.
 ~
-67111055 0 0 0 536870952 0 0 0 -1000 S
+67111054 0 0 0 536870952 0 0 0 -1000 S
 e 0 512 1 -1
 60 -10 -142 60d96+6180 7d6+35
 0.0.0.0 243000
@@ -1912,7 +1912,7 @@ basilisk green~
 This large reptilian monster has glowing green eyes that
 give you an odd feeling as you stare into them.
 ~
-1073741835 1 0 0 268435516 2049 0 0 -1000 S
+1073741834 1 0 0 268435516 2049 0 0 -1000 S
 R 0 1 0 -1
 60 -5 -121 55d110+4565 7d6+30
 0.0.0.0 222750
@@ -1925,7 +1925,7 @@ a gelintinous cube~
 This monster is translustant and very hard to see, it moves along
 the floor picking up everything in its path for ingestion.
 ~
-11 0 0 0 0 0 0 0 0 S
+10 0 0 0 0 0 0 0 0 S
 EF 0 0 0 -1
 50 -3 -105 50d100+2650 6d6+25
 0.0.0.0 121500

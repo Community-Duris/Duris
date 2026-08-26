@@ -5,7 +5,7 @@ ogre guard pusher~
 ~
 This big and mean ogre guard stands ready to greet unwelcome visitors.
 ~
-1140852747 64 0 0 33554432 0 0 0 -1000 S
+1140852746 64 0 0 33554432 0 0 0 -1000 S
 PO 0 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -325,7 +325,7 @@ An ogre &+mmerchant&N watches you closely.
    This ogre looks very poor, trying to sell some stuff he has picked up
 for some extra gold. He holds his bag of good tightly, watching you carefully.
 ~
-2059 64 0 0 16 2 0 0 0 S
+2058 64 0 0 16 2 0 0 0 S
 PO 0 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -377,7 +377,7 @@ A &+Lfoul-breathed&N &+rogre&N rents cave space here.
   This large, ugly ogre is related to the chief, which explains why he is
 the only one allowed to rent any space in this cave.
 ~
-2059 64 0 0 16 2 0 0 0 S
+2058 64 0 0 16 2 0 0 0 S
 PO 0 16384 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720

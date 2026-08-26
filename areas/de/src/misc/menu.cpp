@@ -638,120 +638,125 @@ void displayMenuInline(const menu *menuDisp, const void *entityPtr)
         while (choice->choiceGroupName)
         {
           const menuChoice *activeChoice = choice;
-          char addStrn[1024];
-          bool gotMore = false;
-          uint numbChoices = 0;
-          uint intNumbExtraDisplayed = 0;
+	  char addStrn[2048];
+	  bool gotMore = false;
+	  uint numbChoices = 0;
+	  uint intNumbExtraDisplayed = 0;
 
-          // for first choice, always put 'Edit ' and value name on the first line
-          if (choice == group->choiceArr)
-          {
-            sprintf(currentLineStrn + strlen(currentLineStrn), "Edit %s", choice->choiceGroupName);
-            addStrn[0] = '\0';
-          }
-          else
-          {
-            strcpy(addStrn, choice->choiceGroupName);
-          }
+	  // for first choice, always put 'Edit ' and value name on the first line
+	  if (choice == group->choiceArr)
+	  {
+		  sprintf(currentLineStrn + strlen(currentLineStrn), "Edit %s",
+			  choice->choiceGroupName);
+		  addStrn[0] = '\0';
+	  }
+	  else
+	  {
+		  strcpy(addStrn, choice->choiceGroupName);
+	  }
 
-          // basic technique : run through each choice, as each item name and any current value are generated,
-          // determine if name+value will fit on current line, if not, display the current line and bump
-          // the new data to the next line
-          while (activeChoice && activeChoice->choiceGroupName)
-          {
-            const menuChoiceDataType dataType = activeChoice->dataType;
-            const menuChoiceListType listType = activeChoice->listType;
-            const menuChoiceDisplayType displayType = activeChoice->displayType;
-            const size_t offset = activeChoice->offset;
+	  // basic technique : run through each choice, as each item name and any current value are generated,
+	  // determine if name+value will fit on current line, if not, display the current line and bump
+	  // the new data to the next line
+	  while (activeChoice && activeChoice->choiceGroupName)
+	  {
+		  const menuChoiceDataType dataType = activeChoice->dataType;
+		  const menuChoiceListType listType = activeChoice->listType;
+		  const menuChoiceDisplayType displayType = activeChoice->displayType;
+		  const size_t offset = activeChoice->offset;
 
-            // display current value of choice, but only if allowed by menu itself and by user
-            if ((displayType != mcdDoNotDisplay) && blnDispVerbose)
-            {
-              char valstrn[512];
-              char verbosevalstrn[512];
+		  // display current value of choice, but only if allowed by menu itself and by user
+		  if ((displayType != mcdDoNotDisplay) && blnDispVerbose)
+		  {
+			  char valstrn[512];
+			  char verbosevalstrn[512];
 
-              const int val = getMenuDataTypeStrn(valstrn, dataType, offset, entityPtr, 511);
+			  const int val =
+				  getMenuDataTypeStrn(valstrn, dataType, offset, entityPtr, 511);
 
-              // if first value, add left paren, otherwise add slash
-              if (activeChoice == choice)
-              {
-                strcat(addStrn, " &+c(");
-              }
-              else if (choice->choiceMoreArr)
-              {
-                if ((displayType == mcdPipeEverySecond) && (intNumbExtraDisplayed == 2))
-                {
-                  strcat(addStrn, "|");
-                  intNumbExtraDisplayed = 0;
-                }
-                else 
-                {
-                  strcat(addStrn, "/");
-                }
-              }
+			  // if first value, add left paren, otherwise add slash
+			  if (activeChoice == choice)
+			  {
+				  strcat(addStrn, " &+c(");
+			  }
+			  else if (choice->choiceMoreArr)
+			  {
+				  if ((displayType == mcdPipeEverySecond) &&
+				      (intNumbExtraDisplayed == 2))
+				  {
+					  strcat(addStrn, "|");
+					  intNumbExtraDisplayed = 0;
+				  }
+				  else
+				  {
+					  strcat(addStrn, "/");
+				  }
+			  }
 
-              if ((listType != mclNone) && (displayType != mcdNoListInline))
-              {
-                getMenuListTypeStrn(verbosevalstrn, listType, val, entityPtr, 511);
-                sprintf(addStrn + strlen(addStrn), "%s &+c[%s]", verbosevalstrn, valstrn);
-              }
-              else
-              {
-                strcat(addStrn, valstrn);
-              }
+			  if ((listType != mclNone) && (displayType != mcdNoListInline))
+			  {
+				  getMenuListTypeStrn(verbosevalstrn, listType, val, entityPtr,
+						      511);
+				  sprintf(addStrn + strlen(addStrn), "%s &+c[%s]", verbosevalstrn,
+					  valstrn);
+			  }
+			  else
+			  {
+				  strcat(addStrn, valstrn);
+			  }
 
-              intNumbExtraDisplayed++;
-              displayedExtra = true;
-            }
+			  intNumbExtraDisplayed++;
+			  displayedExtra = true;
+		  }
 
-            if (gotMore)
-            {
-              activeChoice++;
-            }
-            else
-            {
-              activeChoice = choice->choiceMoreArr;
+		  if (gotMore)
+		  {
+			  activeChoice++;
+		  }
+		  else
+		  {
+			  activeChoice = choice->choiceMoreArr;
 
-              gotMore = true;
-            }
-          } // while (activeChoice && activeChoice->choiceGroupName)
+			  gotMore = true;
+		  }
+	  } // while (activeChoice && activeChoice->choiceGroupName)
 
-         // done with this choice and all its values, cap off list of values if there were any, add comma
-         // & 'and' based on how many there were and how many remain
+	  // done with this choice and all its values, cap off list of values if there were any, add comma
+	  // & 'and' based on how many there were and how many remain
 
-          if (displayedExtra)
-            strcat(addStrn, "&+c)");
+	  if (displayedExtra)
+		  strcat(addStrn, "&+c)");
 
-          if ((choice + 1)->choiceGroupName)
-          {
-            if ((choice + 2)->choiceGroupName)
-              strcat(addStrn, "&n, ");
-            else if (numbChoices == 1)
-              strcat(addStrn, "&n and ");
-            else
-              strcat(addStrn, "&n, and ");
-          }
+	  if ((choice + 1)->choiceGroupName)
+	  {
+		  if ((choice + 2)->choiceGroupName)
+			  strcat(addStrn, "&n, ");
+		  else if (numbChoices == 1)
+			  strcat(addStrn, "&n and ");
+		  else
+			  strcat(addStrn, "&n, and ");
+	  }
 
-         // if string being added fits on this line, add it to the current line, otherwise display the
-         // current line and put the new string on a new line
+	  // if string being added fits on this line, add it to the current line, otherwise display the
+	  // current line and put the new string on a new line
 
-          if (truestrlen(currentLineStrn) + truestrlen(addStrn) < intScreenWidth)
-          {
-            strcat(currentLineStrn, addStrn);
-          }
-          else
-          {
-            displayColorString(currentLineStrn);
-            _outtext("\n");
+	  if (truestrlen(currentLineStrn) + truestrlen(addStrn) < intScreenWidth)
+	  {
+		  strcat(currentLineStrn, addStrn);
+	  }
+	  else
+	  {
+		  displayColorString(currentLineStrn);
+		  _outtext("\n");
 
-            sprintf(currentLineStrn, "      %s", addStrn);
-          }
+		  sprintf(currentLineStrn, "      %s", addStrn);
+	  }
 
-          addStrn[0] = '\0';
+	  addStrn[0] = '\0';
 
-          choice++;
-          numbChoices++;
-        }  // while (choice->choiceGroupName)
+	  choice++;
+	  numbChoices++;
+	} // while (choice->choiceGroupName)
       }
     }
 
@@ -845,59 +850,59 @@ size_t displayMenuRightSideProcess(const menu *menuDisp, const void *entityPtr, 
           {
             char valstrn[512];
             char verbosevalstrn[512];
-            char addstrn[512];
+	    char addstrn[2048];
 
-            const int val = getMenuDataTypeStrn(valstrn, dataType, offset, entityPtr, 511);
+	    const int val = getMenuDataTypeStrn(valstrn, dataType, offset, entityPtr, 511);
 
-            if (listType != mclNone)
-            {
-              getMenuListTypeStrn(verbosevalstrn, listType, val, entityPtr, 511);
+	    if (listType != mclNone)
+	    {
+		    getMenuListTypeStrn(verbosevalstrn, listType, val, entityPtr, 511);
 
-              verbosevalstrn[0] = toupper(verbosevalstrn[0]);
+		    verbosevalstrn[0] = toupper(verbosevalstrn[0]);
 
-              if (reverseDisplayOrder(listType))
-                sprintf(addstrn, "%s &n(%s)", valstrn, verbosevalstrn);
-              else
-                sprintf(addstrn, "%s &n(%s)", verbosevalstrn, valstrn);
-            }
-            else
-            {
-              strcpy(addstrn, valstrn);
-            }
+		    if (reverseDisplayOrder(listType))
+			    sprintf(addstrn, "%s &n(%s)", valstrn, verbosevalstrn);
+		    else
+			    sprintf(addstrn, "%s &n(%s)", verbosevalstrn, valstrn);
+	    }
+	    else
+	    {
+		    strcpy(addstrn, valstrn);
+	    }
 
-            size_t i = len;
+	    size_t i = len;
 
-            for (; i < intWidth; i++)
-              strn[i] = ' ';
+	    for (; i < intWidth; i++)
+		    strn[i] = ' ';
 
-            strn[i] = '\0';
+	    strn[i] = '\0';
 
-            strcat(strn, addstrn);
-          }
-          else
-          {
-            if (len > intMaxLen)
-              intMaxLen = len;
-          }
-        }
+	    strcat(strn, addstrn);
+	  }
+	  else
+	  {
+		  if (len > intMaxLen)
+			  intMaxLen = len;
+	  }
+	}
 
-        strcat(strn, "\n");
+	strcat(strn, "\n");
 
-        if (intWidth)
-          displayColorString(strn);
+	if (intWidth)
+		displayColorString(strn);
 
-        if (gotMore)
-        {
-          choice++;
-        }
-        else
-        {
-          choice = choice->choiceMoreArr;
+	if (gotMore)
+	{
+		choice++;
+	}
+	else
+	{
+		choice = choice->choiceMoreArr;
 
-          gotMore = true;
-        }
+		gotMore = true;
+	}
 
-        key++;
+	key++;
       }
     }
 

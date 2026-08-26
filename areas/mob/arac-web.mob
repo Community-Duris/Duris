@@ -218,7 +218,7 @@ deposits and isuuing loans. Occasionally he has personally collected on the
 loans he issues. He is about as large as a drow could hope to be and well
 into his middle years.
 ~
-1073743887 64 0 0 33554432 2 0 0 -999 S
+1073743886 64 0 0 33554432 2 0 0 -999 S
 PL 3 16384 0 -1
 50 -3 -95 50d119+2750 6d6+25
 0.3.1.5 121500
@@ -580,7 +580,7 @@ asteriatorm drow mage master arch~
 &+many of the surface dwelling mages of Duris.  He is prehaps the
 &+mmost powerful magic user in all of the underdark.
 ~
-1073788939 72 0 0 136 0 0 0 -1000 S
+1073788938 72 0 0 136 0 0 0 -1000 S
 PL 5 512 0 -1
 60 -10 -132 60d96+6180 7d6+35
 6.6.9.7 243000
@@ -618,7 +618,7 @@ beligron master reaver~
 &+many of the surface dwelling mages of Duris.  He is prehaps the
 &+mmost powerful magic user in all of the underdark.
 ~
-3221272587 72 0 0 136 0 0 0 -1000 S
+3221272586 72 0 0 136 0 0 0 -1000 S
 PL 5 2097152 4 -1
 60 -10 -132 60d96+6180 7d6+35
 6.6.9.7 243000
@@ -629,7 +629,7 @@ drow bard momilion~
 &+LMomilion, the &+mdrow&+L bard stands here, singing his own song.&n
 ~
 ~
-3221276747 72 0 0 0 0 0 0 -1000 S
+3221276746 72 0 0 0 0 0 0 -1000 S
 PL 3 32768 0 -1
 55 0 0 1d1+1 1d1+1
 0.0.0.0 0

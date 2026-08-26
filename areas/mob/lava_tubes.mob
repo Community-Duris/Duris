@@ -6,7 +6,7 @@ snowbeast beast large furry~
 &+W   Not quite the tamest creature around, but it does have a certain childlike&N
 &+Winnocence between glares of ferocity.&N
 ~
-1073756289 1 0 0 8 0 0 0 200 S
+1073756288 1 0 0 8 0 0 0 200 S
 H 0 1 0 4
 10 18 67 10d18+35 2d3+1
 5.3.0.0 1296
@@ -21,7 +21,7 @@ snow vulture~
 &+Wthe body are all snow white as part of nature's effort to camouflage creatures&N
 &+Wof this region.&N
 ~
-33568897 1 0 0 33554432 0 0 0 0 S
+33568896 1 0 0 33554432 0 0 0 0 S
 B 0 0 0 -1
 3 20 90 3d15+11 1d5+0
 0.0.0.0 388
@@ -36,7 +36,7 @@ lesser spiny boccila~
 &+Lversion is a bit larger, more muscular, and covered by rows of spiny plates,&N
 &+Lwhich tend to discourage predators.&N
 ~
-33566721 1 0 0 0 0 0 0 0 S
+33566720 1 0 0 0 0 0 0 0 S
 AH 0 0 0 1
 12 15 61 12d23+48 2d5+2
 6.4.2.0 5832
@@ -51,7 +51,7 @@ greater spiny boccila~
 &+Lversion is much larger, more muscular, and covered by rows of &+yspiny &+Lplates,&N
 &+Lwhich tend to discourage predators.&N
 ~
-33568769 1 0 0 0 0 0 0 0 S
+33568768 1 0 0 0 0 0 0 0 S
 AH 0 0 0 2
 15 15 51 15d23+60 2d5+2
 7.6.2.0 7290
@@ -79,7 +79,7 @@ crystal phalanx~
 &+ci&+Cn &+ct&+Ch&+ce &+Ca&+ci&+Cr&+c, &+Cs&+co&+Cm&+cet&+Cim&+ces &+Cse&+cem&+Cin&+cg t&+Co b&+ce &+Cco&+cnn&+Ce&+cct&+Ce&+cd &+Cb&+cy &+Cf&+ci&+Cb&+ce&+Cr&+cs &+Cth&+ci&+Cnn&+ce&+Cr &+cth&+Ca&+cn &+Ca &+csp&+Ci&+cd&+Ce&+cr&+Cs&N
 &+Cw&+ce&+Cb&+cb&+Ci&+cn&+Cg&+c.&N
 ~
-8388611 0 0 0 33554432 0 0 0 0 S
+8388610 0 0 0 33554432 0 0 0 0 S
 OG 0 0 0 -1
 30 11 19 25d40+200 3d5+3
 6.2.6.1 22275
@@ -93,7 +93,7 @@ skeleton~
 &+Lthese &+Wb&+wo&+Wn&+we&+Ws &+Ltogether, yet there they are, stuck together in a disconcerting&N
 &+Lmanner.&N
 ~
-41957451 1 0 0 0 0 0 0 -500 S
+41957450 1 0 0 0 0 0 0 -500 S
 U 0 0 0 -1
 24 11 23 24d40+192 3d5+3
 0.0.0.0 21384
@@ -187,7 +187,7 @@ skeleton~
 &+Lthese &+Wb&+wo&+Wn&+we&+Ws &+Ltogether, yet there they are, stuck together in a disconcerting&N
 &+Lmanner.&N
 ~
-41957451 1 0 0 0 0 0 0 -500 S
+41957450 1 0 0 0 0 0 0 -500 S
 U 0 0 0 -1
 24 11 23 24d40+192 3d5+3
 0.0.0.0 21384
@@ -201,7 +201,7 @@ skeleton~
 &+Lthese &+Wb&+wo&+Wn&+we&+Ws &+Ltogether, yet there they are, stuck together in a disconcerting&N
 &+Lmanner.&N
 ~
-41957451 1 0 0 0 0 0 0 -500 S
+41957450 1 0 0 0 0 0 0 -500 S
 U 0 0 0 -1
 24 11 23 24d40+192 3d5+3
 0.0.0.0 21384
@@ -227,7 +227,7 @@ skeleton~
 &+Lthese &+Wb&+wo&+Wn&+we&+Ws &+Ltogether, yet there they are, stuck together in a disconcerting&N
 &+Lmanner.&N
 ~
-41957451 1 0 0 0 0 0 0 -500 S
+41957450 1 0 0 0 0 0 0 -500 S
 U 0 0 0 -1
 24 11 23 24d40+192 3d5+3
 0.0.0.0 21384
@@ -241,7 +241,7 @@ skeleton~
 &+Lthese &+Wb&+wo&+Wn&+we&+Ws &+Ltogether, yet there they are, stuck together in a disconcerting&N
 &+Lmanner.&N
 ~
-41957451 1 0 0 0 0 0 0 -500 S
+41957450 1 0 0 0 0 0 0 -500 S
 U 0 0 0 -1
 24 11 23 24d40+192 3d5+3
 0.0.0.0 21384
@@ -255,7 +255,7 @@ skeleton~
 &+Lthese &+Wb&+wo&+Wn&+we&+Ws &+Ltogether, yet there they are, stuck together in a disconcerting&N
 &+Lmanner.&N
 ~
-41957451 1 0 0 0 0 0 0 -500 S
+41957450 1 0 0 0 0 0 0 -500 S
 U 0 0 0 -1
 24 11 23 24d40+192 3d5+3
 0.0.0.0 21384
@@ -309,7 +309,7 @@ spore ball small sphere~
 &+L   It appears to be hollow and slightly transparent, with veinlike patterns on&N
 &+Lits surface.&N
 ~
-8388673 0 0 0 67108864 0 0 0 0 S
+8388672 0 0 0 67108864 0 0 0 0 S
 AP 0 0 0 -1
 9 20 87 4d15+14 1d5+0
 2.1.0.0 518
@@ -322,7 +322,7 @@ spore ball large sphere~
 &+L   It appears to be hollow and slightly transparent, with veinlike patterns on&N
 &+Lits surface.&N
 ~
-41957449 0 0 0 67108864 0 0 0 0 S
+41957448 0 0 0 67108864 0 0 0 0 S
 AP 0 0 0 3
 14 18 80 6d18+21 2d3+1
 3.2.0.0 777
@@ -336,7 +336,7 @@ skeletal skeleton snake~
 &+Lthese &+Wb&+wo&+Wn&+we&+Ws &+Ltogether, yet there they are, stuck together in a disconcerting&N
 &+Lmanner.&N
 ~
-41957451 1 0 0 0 0 0 0 -500 S
+41957450 1 0 0 0 0 0 0 -500 S
 U 0 0 0 -1
 15 15 51 15d23+60 2d5+2
 0.0.0.0 7290
@@ -350,7 +350,7 @@ xexos~
 toe in filth.  A pungent odor rises from him, of body odor and decay.  He
 is clad entirely in gray rags, and seems mostly harmless.
 ~
-33556555 0 0 0 33554488 0 0 0 -400 S
+33556554 0 0 0 33554488 0 0 0 -400 S
 G 0 256 0 -1
 18 13 52 18d33+198 3d4+2
 9.7.3.0 8748
@@ -365,7 +365,7 @@ agthrodos~
 &+Lsize of a tall &+Chuman&+L, its legs each as thick as a mighty oak.  It has no&N
 &+Ldiscernible neck.  &+LA&+rg&+Lt&+rh&+Lr&+ro&+Ld&+ro&+Li were rumored to be adept at &+bmagic&+L, too...&N
 ~
-33568843 1 0 0 33620216 192 0 0 -950 S
+33568842 1 0 0 33620216 192 0 0 -950 S
 G 0 33 0 -1
 56 -7 -104 56d132+6104 7d6+35
 1.3.8.6 226800
@@ -381,7 +381,7 @@ automaton huge mechanical~
 &+ycreaking, a testimony to the skill of its creator, and stands nearly twelve&N
 &+yfeet high.&N
 ~
-33566795 1 0 0 65724 192 0 0 -500 S
+33566794 1 0 0 65724 192 0 0 -500 S
 G 0 1 0 -1
 56 6 -2 35d83+770 4d6+7
 9.9.1.2 45360

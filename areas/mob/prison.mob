@@ -454,7 +454,7 @@ warden man gentleman~
 &+csomething. He is so fixated on finding his prize, that he notices
 &+cno one in the room, nor could he care if anyone else was there.
 ~
-1140852815 0 0 0 301989948 2 0 0 -1000 S
+1140852814 0 0 0 301989948 2 0 0 -1000 S
 UV 0 1536 0 -1
 60 -3 -95 50d80+2650 6d6+25
 0.3.1.5 121500
@@ -636,7 +636,7 @@ This bull-like creature is covered with think metallic scales. Every time
 the beast exhales, the air in the room chills and life itself seems to
 flee in terror, or die outright.
 ~
-1107298377 1 0 0 268435864 2 0 0 -1000 S
+1107298376 1 0 0 268435864 2 0 0 -1000 S
 MT 0 1 0 -1
 52 -5 -101 52d131+4420 7d6+30
 7.9.5.6 210600
@@ -727,7 +727,7 @@ robed figure~
 &+wThis odd looking form shows no skin whatsoever, if indeed it has skin.
 &+wAll that is visible is the strange robe it has adorning itself.
 ~
-41945163 0 0 0 402653338 2050 0 0 0 S
+41945162 0 0 0 402653338 2050 0 0 0 S
 U 0 1024 0 -1
 55 -5 -111 55d88+4565 7d6+30
 0.0.0.0 222750
@@ -752,7 +752,7 @@ morkoth being~
 ~
 This creature seems to be made out of a dark-liquid substance.
 ~
-1074018379 1 0 0 268437560 6210 0 0 -1000 S
+1074018378 1 0 0 268437560 6210 0 0 -1000 S
 EW 0 256 0 -1
 60 -10 -142 60d132+6240 7d6+35
 0.0.0.0 243000
@@ -777,7 +777,7 @@ amaimon king~
 &+R   This figure stand at a dwarves hieght. His skin is made of pure bronze
 &+Rand his hair is a dancing flame.
 ~
-1174419529 1 0 0 805306392 2051 0 0 0 S
+1174419528 1 0 0 805306392 2051 0 0 0 S
 EF 0 1 0 -1
 57 -7 -127 57d143+5985 7d6+35
 0.0.0.0 230850
@@ -817,7 +817,7 @@ ki-rin creature horse~
 gold as are its flowing mane and tail. It is adorned with a golden-pink
 horn and hooves.
 ~
-1174550601 0 0 0 402653208 6174 0 0 1000 S
+1174550600 0 0 0 402653208 6174 0 0 1000 S
 EA 0 512 0 -1
 60 -10 -142 60d96+6180 7d6+35
 0.0.0.0 243000
@@ -830,7 +830,7 @@ devil erinyes~
 &+L   This winged devil sports a slender form. Its hollow eyes beg for any
 &+Lsoul to give itself to eternal damnation.
 ~
-1140996169 1 0 0 939589768 10255 0 0 -1000 S
+1140996168 1 0 0 939589768 10255 0 0 -1000 S
 Y 0 1024 0 -1
 51 -5 -113 51d88+4590 7d6+30
 6.9.5.8 206550
