@@ -23,7 +23,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=112
+TOTAL=113
 FAILED=0
 
 run_sql() {

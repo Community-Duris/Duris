@@ -6,7 +6,7 @@
 
 **Severity:** High (self-persisting corpse corruption; resurrection and race-war behavior can change after a restart)
 
-**Status:** Fix in progress on `bugfix-corpse`; display reconstruction published as `e0c3d79e`
+**Status:** Fixed and fully validated on `bugfix-corpse`; implementation published through `563a9502`
 
 **Target subsystem:** Player-corpse SQL persistence (`files.c`, `fight.c`, `sql_player.c`)
 
@@ -14,10 +14,10 @@
 
 ## 1. Executive summary
 
-The `100` corpse shown in the supplied transcript is real and fully explained by an off-by-one SQL result
+The `100` corpse shown in the supplied transcript was real and is fully explained by an off-by-one SQL result
 mapping in `sql_load_all_corpses()`.
 
-The loader currently selects these adjacent fields:
+The loader at the time of the incident selected these adjacent fields:
 
 ```text
 row[26] = corpse_items.obj_uid
@@ -41,7 +41,7 @@ That produces the exact split seen in game:
 - get, inventory, drop, and wizlog messages say `100` because they use `corpse->short_description`.
 
 The corruption is not confined to memory. Looting, moving, preserving, or dropping a restored corpse calls
-`writeCorpse()`, which saves the already-shifted strings back to SQL. The current local row for Amoz is now
+`writeCorpse()`, which saves the already-shifted strings back to SQL. The pre-repair local row for Amoz was
 persisted as:
 
 ```text
@@ -56,8 +56,8 @@ item_count  = 0
 The empty corpse in the transcript is **not evidence of item loss**. The command and corpse logs show that
 Amoz successfully removed the corpse contents shortly before Zusuk inspected it.
 
-A separate, broader defect is also confirmed: the outer corpse's gameplay metadata is never stored in the
-`corpses` table and is not reconstructed on load. A restored corpse loses its death-time level, resurrection
+A separate, broader defect was also confirmed: the outer corpse's gameplay metadata was never stored in the
+`corpses` table and was not reconstructed on load. A restored corpse lost its death-time level, resurrection
 XP, owner PID, race-war side, race, humanoid/carving flags, owner-specific keywords, carved-part state, and
 true weight. This can alter resurrection, necromancy, carving, race-war artifact handling, and movement after
 any server restart.
@@ -102,10 +102,10 @@ Relevant local evidence is in:
 - `logs/log/events`
 
 The persistence event log shows the corpse's contents being serialized repeatedly while Amoz looted it.
-The database now has zero `corpse_items` rows for this corpse because those items were recovered, not because
+The database had zero `corpse_items` rows for this corpse because those items were recovered, not because
 the loader discarded them.
 
-### Live local database
+### Pre-repair live local database
 
 A read-only query against the local development database found one corpse row and one corrupt display row:
 
@@ -124,7 +124,7 @@ No database rows were changed during this investigation.
 
 ## 3. Primary root cause: shifted result columns
 
-The query in `src/sql_player.c:7442-7456` returns 38 fields. The relevant tail begins as follows:
+The pre-fix query in `src/sql_player.c:7442-7456` returned 38 fields. The relevant tail began as follows:
 
 | Index | Selected expression | Intended destination |
 |---:|---|---|
@@ -136,9 +136,9 @@ The query in `src/sql_player.c:7442-7456` returns 38 fields. The relevant tail b
 | 29 | `c.description` | corpse room description |
 | 30–37 | item diff fields | contained item fields |
 
-The corpse reconstruction at `src/sql_player.c:7583-7592` instead reads rows 27 and 28. The item loader later
-correctly uses `row[27]` for `obj->condition` at `src/sql_player.c:7680-7681`, proving that the same value is
-being used for two unrelated destinations.
+The pre-fix corpse reconstruction at `src/sql_player.c:7583-7592` instead read rows 27 and 28. The item loader later
+correctly used `row[27]` for `obj->condition` at `src/sql_player.c:7680-7681`, proving that the same value was
+used for two unrelated destinations.
 
 For a corpse with contents, the first joined item normally has condition `100`, so the defect is deterministic.
 For an empty corpse, the left join supplies `NULL` for `row[27]`; the loader leaves the prototype short text in
@@ -191,11 +191,12 @@ The mapping defect predates the current branch:
 2. Commit `4f6b5fdf` (June 14, 2026) inserted `ci.obj_uid` and `ci.item_condition` before the corpse fields,
    moving the correct corpse columns to 28 and 29. The loader indexes remained 27 and 28. This made normal
    item condition `100` become the corpse short description.
-3. The current implementation still selects corpse columns at 28/29 and assigns from 27/28.
+3. The defect remained until `e0c3d79e`, which replaced numeric indexes with named columns and corrected the
+   assignments.
 
-No existing test asserts the result-column mapping or a corpse display round trip. The focused corpse test in
-`tests/async/test_deferred_findings_repairs.py` covers a different issue: preventing affect rows belonging to a
-skipped item from being applied to the previous loaded item.
+Before this branch, no existing test asserted the result-column mapping or a corpse display round trip. The
+focused corpse test in `tests/async/test_deferred_findings_repairs.py` covers a different issue: preventing
+affect rows belonging to a skipped item from being applied to the previous loaded item.
 
 ## 6. Secondary confirmed defect: outer corpse state is not persisted
 
@@ -213,12 +214,12 @@ skipped item from being applied to the previous loaded item.
 | Corpse race | `value[CORPSE_RACE]` | corpse-form/race behavior |
 | Owner keywords | `name` | owner-specific object lookup and `_pcorpse_` classification |
 
-The `corpses` table stores only `player_name`, `save_id`, `room_vnum`, `created_at`, `short_descr`, and
-`description`. It has no outer corpse weight, keywords, flag set, or values 0–7. The contained objects are
-fully normalized in `corpse_items`, but the corpse object itself is not.
+The pre-fix `corpses` table stored only `player_name`, `save_id`, `room_vnum`, `created_at`, `short_descr`, and
+`description`. It had no outer corpse weight, keywords, flag set, or values 0–7. The contained objects were
+fully normalized in `corpse_items`, but the corpse object itself was not.
 
-On restore, `sql_load_all_corpses()` reads prototype object `#2`, sets `ITEM_CORPSE`, ORs in `PC_CORPSE`, sets
-the save ID, assigns the player name to `action_description`, and places it in the room. It does not restore
+Before the fix, `sql_load_all_corpses()` read prototype object `#2`, set `ITEM_CORPSE`, ORed in `PC_CORPSE`, set
+the save ID, assigned the player name to `action_description`, and placed it in the room. It did not restore
 the other state. Prototype `#2` has zero values, generic `corpse` keywords, and weight `200`.
 
 Consequences confirmed from current call sites include:
@@ -289,14 +290,25 @@ real save/load round trip.
 |---|---|---|
 | Investigation baseline | Complete and published | `e677a046`; live DB and log evidence captured above |
 | Display-field reconstruction | Complete and published | `e0c3d79e`; named result columns, field-count guard, owned-string setters, focused contract test, and strict build |
-| Outer corpse state | Implemented locally; ready to publish | Additive nullable columns for keywords, weight, values 0–5 and 7; `save_id` remains the canonical value 6; save/load paths preserve the complete new state |
-| Existing-row repair | Implemented locally; ready to publish | Reconstructs exact owner keywords and PC classification for legacy rows; repairs descriptions only when the numeric-short/exact-former-short signature matches |
-| Schema validation | Complete locally | Isolated MySQL test passed initial migration, guarded repair, distinct-value round trip, and replay |
-| Full validation | In progress | Clean build, full suite, local migration backup/apply, and live restart round trip remain |
+| Outer corpse state | Complete and published | `563a9502`; additive nullable columns preserve keywords, weight, values 0–5 and 7; `save_id` remains canonical value 6 |
+| Existing-row repair | Complete and published | `563a9502`; exact owner keywords and PC classification reconstructed; descriptions repaired only for the numeric-short/exact-former-short signature |
+| Schema validation | Complete | Isolated MySQL 8 migration/replay test and a production-derived database clone both passed, including double application |
+| Full validation | Complete | Clean strict build; `make test-all` 159/159; `make test-db` 3/3; real server load → preserve/save → restart → reload retained every seeded field |
+| Local deployment | Complete | `duris_dev` backed up and migrated; Amoz row repaired; service booted successfully on port 7777 and restored `the corpse of Amoz` |
 
-## 9. Completion boundary
+## 9. Completion and legacy boundary
 
-The display fix is published, and the outer-state schema/save/load work plus guarded legacy repair are ready
-for their next checkpoint. Completion still requires the full regression suite and a backed-up local migration
-followed by a real server restart/restore round trip. Until those checks pass, this document does not claim the
-incident is fully fixed.
+The display mapping, outer-state persistence, migration, and guarded legacy repair are complete and validated.
+The production-derived runtime test used deliberately distinct values: weight `913`; values
+`[401, 65537, 56, 58, -123456, 3, 1787741833, 55]`; and an extra `corpseprobe` keyword. The real server loaded
+them, a preserve spell forced `writeCorpse()`, SQL retained them, and a second boot restored them unchanged.
+
+Historical death-time state that was never stored cannot be recovered exactly. The migration therefore leaves
+unknown legacy weight, level, PID, XP loss, race-war side, and race columns NULL instead of inventing values.
+It safely reconstructs only facts guaranteed by the table: player-corpse classification and owner keywords.
+New corpses store the complete state. Legacy rows continue with safe runtime fallbacks for fields whose
+historical values are unknowable; the migration does not claim those values were recovered.
+
+Before applying the migration to local development, two mode-600 SQL backups were created in `/tmp`, including
+the final pre-apply snapshot `duris-corpse-persistence-pre-apply-20260826-2018.sql`. No production database was
+queried or modified.
