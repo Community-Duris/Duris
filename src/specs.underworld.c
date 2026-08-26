@@ -1021,8 +1021,8 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 	}
 
-	// 1/15 chance to proc.  1/3 chance to override !multiple-procs-per-round code.
-	if (!number(0, 14) && (CheckMultiProcTiming(ch) || !number(0, 2)))
+	// 1/25 chance to proc.  1/3 chance to override !multiple-procs-per-round code.
+	if (!number(0, 24) && (CheckMultiProcTiming(ch) || !number(0, 2)))
 	{
 		act("&+LYour $q blurs as it calls upon the elements of &+Blightning, &+rfire, &+Cand ice to strike $N.",
 		    FALSE, ch, obj, vict, TO_CHAR);
@@ -1067,7 +1067,7 @@ int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 		act("&+L$n's $q blurs as it strikes you.", FALSE, ch, obj, vict, TO_VICT);
 		act("&+L$n's $q blurs as it strikes $N.", FALSE, ch, obj, vict, TO_NOTVICT);
 
-		for (i = 0; i < 8 && IS_ALIVE(ch) && IS_ALIVE(vict); i++)
+		for (i = 0; i < 3 && IS_ALIVE(ch) && IS_ALIVE(vict); i++)
 		{
 			hit(ch, vict, obj);
 		}
