@@ -18,7 +18,7 @@ WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 # unused, many feature-gated locals survive disabled builds, and partial C-style
 # aggregates intentionally zero-initialize their trailing fields.
 LEGACY_WARNING_EXCEPTIONS = -Wno-write-strings -Wno-unused-parameter \
-	-Wno-unused-variable -Wno-missing-field-initializers
+	-Wno-unused-variable
 
 CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS) $(LEGACY_WARNING_EXCEPTIONS)
 #CFLAGS += -D__NO_MYSQL__

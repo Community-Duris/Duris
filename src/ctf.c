@@ -72,7 +72,7 @@ struct ctfData ctfdata[] = {
 	{ 9, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
 	{ 10, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
 	{ 11, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
-	{ 0 }
+	{}
 };
 
 int init_ctf()

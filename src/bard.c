@@ -113,7 +113,7 @@ struct song_description
 	  { "revelation", bard_revelation, INSTRUMENT_MANDOLIN, SONG_REVELATION, SONG_ALLIES },
 	  { "sleep", bard_sleep, INSTRUMENT_FLUTE, SONG_SLEEP, SONG_AGGRESSIVE },
 	  { "storms", bard_storms, INSTRUMENT_DRUMS, SONG_STORMS, SONG_AGGRESSIVE },
-	  { 0 } };
+	  {} };
 
 struct echo_details
 {
@@ -1654,7 +1654,7 @@ static struct song_text songwords[] = {
 	  "With every beat of $n's drum, the air seems to ripple a bit." },
 	{ SONG_DISSONANCE, "Your horn blares and radiates a most disharmonist noise.",
 	  "$n's horn blares and emits a most disharmonist noise." },
-	{ 0 }
+	{}
 };
 
 void sing_verses(P_char ch, int song)

@@ -55,7 +55,7 @@ static struct mine_range_data mine_data[] = {
 	{ "Tharnadia Rift", "tharnrift", 110000, 119999, VOBJ_MINE, 9, FALSE },
 	{ "Surface Map - G", "mapg", 500000, 659999, VOBJ_GEMMINE, 15, TRUE },
 	{ "Underdark - G", "udg", 700000, 859999, VOBJ_GEMMINE, 15, TRUE },
-	{ 0 }
+	{}
 };
 
 struct mines_event_data

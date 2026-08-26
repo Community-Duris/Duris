@@ -1814,16 +1814,20 @@ struct descriptor_data
 	int chargen_newbie;
 };
 
+/* Almost every construction of this type is a brace-initializer that lists only
+   the message strings it needs, relying on the remaining members being zeroed.
+   The defaults below state that contract explicitly; the type stays an aggregate,
+   so existing designated and positional initializers are unaffected. */
 struct damage_messages
 {
-	char *attacker;
-	char *victim;
-	char *room;
-	char *death_attacker;
-	char *death_victim;
-	char *death_room;
-	int type;
-	P_obj obj;
+	char *attacker = nullptr;
+	char *victim = nullptr;
+	char *room = nullptr;
+	char *death_attacker = nullptr;
+	char *death_victim = nullptr;
+	char *death_room = nullptr;
+	int type = 0;
+	P_obj obj = nullptr;
 };
 
 struct msg_type
@@ -2331,12 +2335,14 @@ struct proc_data
 	struct damage_messages *messages;
 };
 
+/* Self-targeted entries carry no adjective, so most rows stop after
+   self_only and rely on name being an empty string. */
 struct random_spells
 {
-	int s_number;
-	int spell;
-	bool self_only;
-	char name[32];
+	int s_number = 0;
+	int spell = 0;
+	bool self_only = false;
+	char name[32] = "";
 };
 
 struct random_quest

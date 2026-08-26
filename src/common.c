@@ -178,7 +178,7 @@ const struct race_names race_names_table[LAST_RACE + 2] = {
 	{ "Fire Giant", "FireGiant", "&+rFi&+Rre Gia&+rnt&n", "FG" },
 	{ "Frost Giant", "FrostGiant", "&+cFro&+Cst Gi&+cant&n", "IG" },
 	{ "Deva", "Deva", "&+wD&+Wev&+wa&n", "DV" },
-	{ 0 } /* 100 races! */
+	{} /* 100 races! */
 };
 
 int race_size(int race)
@@ -458,7 +458,7 @@ flagDef wear_bits[] = { { "TAKE", "Takeable", 1, 0 },
 			{ "WEAR_HORN", "Worn on horns", 1, 0 },
 			{ "WEAR_IOUN", "Worn as ioun stone", 1, 0 },
 			{ "SPIDER_BODY", "Worn on spider's body", 1, 0 },
-			{ 0 } };
+			{} };
 
 flagDef extra_bits[] = { { "GLOW", "Glow", 1, 0 },
 			 { "NOSHOW", "No show", 1, 0 },
@@ -492,7 +492,7 @@ flagDef extra_bits[] = { { "GLOW", "Glow", 1, 0 },
 			 { "WHOLEBODY", "Whole body", 1, 0 },
 			 { "WHOLEHEAD", "Whole head", 1, 0 },
 			 { "ENCRUSTED", "Was encrusted", 0, 0 },
-			 { 0 } };
+			 {} };
 
 flagDef extra2_bits[] = { { "SILVER", "Made of silver", 1, 0 },
 			  { "BLESS", "Blessed", 1, 0 },
@@ -511,7 +511,7 @@ flagDef extra2_bits[] = { { "SILVER", "Made of silver", 1, 0 },
 			  { "CRAFTED", "Crafted Item", 0, 0 },
 			  { "QUESTITEM", "Quest Item", 0, 0 },
 			  { "TRANSPARENT", "Transparent Item", 1, 0 },
-			  { 0 } };
+			  {} };
 
 flagDef room_bits[] = { { "DARK", "Dark", 1, 0 },
 			{ "LOCKER", "Locker", 0, 0 },
@@ -545,7 +545,7 @@ flagDef room_bits[] = { { "DARK", "Dark", 1, 0 },
 			{ "ATRIUM", "Atrium", 0, 0 },
 			{ "BLOCKS_SIGHT", "Blocks farsee/scan", 1, 0 },
 			{ "BFS_MARK", "BFS mark", 0, 0 },
-			{ 0 } };
+			{} };
 
 const char *zone_bits[] = { "SILENT", "SAFE", "TOWN", "NEW_RESET", "MAP", "CLOSED", "\n" };
 
@@ -672,7 +672,7 @@ flagDef affected1_bits[] = { { "BLIND", "Blind", 0, 0 },
 			     { "BIOFEEDBACK", "Biofeedback", 1, 0 },
 			     { "INFERNAL_FURY", "Infernal Fury", 1, 0 },
 			     { "FREEDOM_OF_MVMNT", "Freedom of Movement", 1, 0 },
-			     { 0 } };
+			     {} };
 
 flagDef affected2_bits[] = { { "FIRESHIELD", "Fireshield", 1, 0 },
 			     { "ULTRA", "Ultravision", 1, 0 },
@@ -706,7 +706,7 @@ flagDef affected2_bits[] = { { "FIRESHIELD", "Fireshield", 1, 0 },
 			     { "CASTING", "Casting", 0, 0 },
 			     { "SCRIBING", "Scribing", 0, 0 },
 			     { "HUNTING", "Hunting", 0, 0 },
-			     { 0 } };
+			     {} };
 
 flagDef affected3_bits[] = { { "TENSORS_DISC", "Tensor's disc", 1, 0 },
 			     { "TRACKING", "Tracking", 0, 0 },
@@ -740,7 +740,7 @@ flagDef affected3_bits[] = { { "TENSORS_DISC", "Tensor's disc", 1, 0 },
 			     { "PASS_WO_TRACE", "Pass w/o trace", 1, 0 },
 			     { "PAL_AURA", "Paladin aura", 1, 0 },
 			     { "FAMINE", "Famine", 0, 0 },
-			     { 0 } };
+			     {} };
 
 flagDef affected4_bits[] = { { "LOOTER", "Looter", 0, 0 },
 			     { "CARRY_PLAGUE", "Carries plague", 1, 0 },
@@ -774,7 +774,7 @@ flagDef affected4_bits[] = { { "LOOTER", "Looter", 0, 0 },
 			     { "NEG_SHIELD", "Negative shield", 1, 0 },
 			     { "TUPOR", "Tupor", 0, 0 },
 			     { "WILDMAGIC", "Wild magic", 0, 0 },
-			     { 0 } };
+			     {} };
 
 flagDef affected5_bits[] = { { "DAZZLEE", "Dazzled", 1, 0 },
 			     { "MENTAL_ANGUISH", "Mental anguish", 0, 0 },
@@ -807,7 +807,7 @@ flagDef affected5_bits[] = { { "DAZZLEE", "Dazzled", 1, 0 },
 			     { "FOLLOWING", "Following", 1, 0 },
 			     { "ORDERING", "Ordering", 1, 0 },
 			     { "STONED", "Stoned", 1, 0 },
-			     { 0 } };
+			     {} };
 
 const char *apply_types[] = {
 	"NONE", /* * 0 */
@@ -954,7 +954,7 @@ flagDef action2_bits[] = { { "COMBAT_NEARBY", "Listens for combat nearby", 1, 0 
 			   { "UNUSED2_30", "Unused", 1, 0 },
 			   { "UNUSED2_31", "Unused", 1, 0 },
 			   { "UNUSED2_32", "Unused", 1, 0 },
-			   { 0 } };
+			   {} };
 
 flagDef action_bits[] = { { "SPEC", "Special proc", 1, 0 },
 			  { "SENTINEL", "Sentinel", 1, 0 },
@@ -988,7 +988,7 @@ flagDef action_bits[] = { { "SPEC", "Special proc", 1, 0 },
 			  { "PATROL", "Map Patrol", 1, 0 },
 			  { "HUNTER", "Hunter", 1, 0 },
 			  { "SPEC_TEACHER", "Specialization teacher", 1, 0 },
-			  { 0 } };
+			  {} };
 
 flagDef aggro_bits[] = { { "AGGR_ALL", "Aggr to all", 1, 0 },
 			 { "AGGR_DAY_ONLY", ".. by day only", 1, 0 },
@@ -1022,7 +1022,7 @@ flagDef aggro_bits[] = { { "AGGR_ALL", "Aggr to all", 1, 0 },
 			 { "AGGR_GITHYANKI", ".. to githyanki", 1, 0 },
 			 { "AGGR_MINOTAUR", ".. to minotaurs", 1, 0 },
 			 { "AGGR_GOBLIN", ".. to goblins", 1, 0 },
-			 { 0 } };
+			 {} };
 
 flagDef aggro2_bits[] = { { "AGGR2_LICH", "Aggr to liches", 1, 0 },
 			  { "AGGR2_PVAMPIRE", ".. to vampires", 1, 0 },
@@ -1119,7 +1119,7 @@ flagDef missile_types[] = {
 	{ "MISSILE_HAND_CBOW_QUARREL", "hand cbow bolt", 1, MISSILE_HAND_CBOW_QUARREL },
 	{ "MISSILE_SLING_BULLET", "sling bullet", 1, MISSILE_SLING_BULLET },
 	{ "MISSILE_DART", "dart", 1, MISSILE_DART },
-	{ 0 }
+	{}
 };
 
 const char *craftsmanship_names[OBJCRAFT_HIGHEST + 1] = { "terribly made",

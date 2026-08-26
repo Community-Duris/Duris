@@ -3737,7 +3737,7 @@ bool damage(P_char ch, P_char victim, double dam, int attacktype)
 	struct damage_messages tmsg;
 	int spelltype, type, i, flags, circle;
 
-	memset(&tmsg, 0, sizeof(struct damage_messages));
+	tmsg = {};
 
 	if (IS_SPELL_S(attacktype))
 	{
@@ -3823,7 +3823,7 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 
 	if (messages == NULL)
 	{
-		memset(&dummy_messages, 0, sizeof(struct damage_messages));
+		dummy_messages = {};
 		messages = &dummy_messages;
 	}
 
@@ -4674,7 +4674,7 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 
 	if (messages == NULL)
 	{
-		memset(&dummy_messages, 0, sizeof(struct damage_messages));
+		dummy_messages = {};
 		messages = &dummy_messages;
 	}
 
@@ -7090,7 +7090,7 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	if (has_innate(ch, INNATE_MELEE_MASTER))
 		dam *= dam_factor[DF_MELEEMASTERY];
 
-	memset(&messages, 0, sizeof(struct damage_messages));
+	messages = {};
 	messages.attacker = attacker_msg;
 	messages.victim = victim_msg;
 	messages.room = room_msg;

@@ -34,7 +34,7 @@ vector<Building *> buildings;
 // building type, building mob vnum, required wood, required stone, hitpoints, generator function
 BuildingType building_types[] = { { BUILDING_OUTPOST, OUTPOST_BUILDING_MOB, 100000, 10000, 300000,
 				    outpost_generate },
-				  { 0 } };
+				  {} };
 
 P_room get_unused_building_room()
 {

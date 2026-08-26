@@ -202,7 +202,7 @@ const struct innate_data innates_data[LAST_INNATE + 1] = {
 	{ "wildmagic", NULL },
 	{ "knight", NULL },
 	{ "sense weakness", NULL },
-	{ "acid blood" },
+	{ "acid blood", NULL },
 	{ "conjure water", do_conjure_water },
 	{ "barter", NULL },
 	{ "weapon immunity", NULL },

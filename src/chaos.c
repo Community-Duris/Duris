@@ -32,7 +32,7 @@ static struct
 		 { 96537, "ix ixarkon" },
 		 { 17021, "khild khildarak" },
 		 { 36544, "arach arachdrathos drow" },
-		 { 0 } };
+		 {} };
 
 static void chaos_port(P_char ch, const char *arg)
 {
@@ -62,7 +62,7 @@ static struct
 	{ RACEWAR_EVIL, "evils" },	  { RACEWAR_UNDEAD, "undeads" },
 	{ RACEWAR_NEUTRAL, "illithids" }, { RACEWAR_NEUTRAL, "squids" },
 	{ RACEWAR_NEUTRAL, "seafood" }, // :p
-	{ RACEWAR_NEUTRAL, "neutrals" },  { 0 }
+	{ RACEWAR_NEUTRAL, "neutrals" },  {}
 };
 
 static void chaos_side(P_char ch, const char *arg)

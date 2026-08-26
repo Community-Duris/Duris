@@ -108,7 +108,7 @@ struct potion potion_data[] = {
 	{ SPELL_DISPEL_MAGIC, 11, { NIGHTSHADE, GARLIC, MANDRAKE_ROOT }, FIRST_POTION_VIRTUAL + 16 },
 	{ SPELL_FAERIE_FIRE, 11, { GREEN_HERB, GARLIC, FAERIE_DUST }, FIRST_POTION_VIRTUAL + 17 },
 	{ SPELL_NITROGEN, 6, { GREEN_HERB, GARLIC }, FIRST_POTION_VIRTUAL + 18 },
-	{ 0 }
+	{}
 };
 
 struct poison
@@ -159,7 +159,7 @@ struct poison poison_data[] = {
 	  1,
 	  { VOBJ_FORAGE_FOREST_TOADSTOOL, VOBJ_FORAGE_RASPBERRIES },
 	  VOBJ_POISON_VIAL_LIFELEAK },
-	{ 0 }
+	{}
 };
 
 int basic_ingredients[] = { VOBJ_FORAGE_NIGHTSHADE,    VOBJ_FORAGE_MANDRAKE,
@@ -213,15 +213,17 @@ struct weapon_type crafted_weapon_types[] = {
 	{ "staff", STAFF, 2, 4, -4, 4, WEAPON_STAFF },
 	{ "hammer", HAMMER, 2, 10, 3, 1, WEAPON_HAMMER },
 	{ "whip", WHIP, 2, 6, 1, 3, WEAPON_WHIP },
-	{ 0 }
+	{}
 };
 
+/* Rows stop as soon as the remaining fields are the defaults: no preferred
+   weapon (0 == NO_WEAPON) and no material adjective. */
 struct material
 {
-	int hardiness;
-	int magic_power;
-	int preferred_weapon;
-	char *adjective;
+	int hardiness = 0;
+	int magic_power = 0;
+	int preferred_weapon = 0;
+	char *adjective = nullptr;
 };
 
 char *weapon_quality[WEAPON_QUALITY_DESCRIPTIONS_NUMBER] = {

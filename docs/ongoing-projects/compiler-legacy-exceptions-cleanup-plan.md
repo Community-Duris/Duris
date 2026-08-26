@@ -312,11 +312,11 @@ Update this table at the end of each day from a clean inventory build:
 |---|---:|---:|:---:|
 | `unused-function` | 7 | 0 | **Yes** |
 | `unused-but-set-variable` | 160 | 0 | **Yes** |
-| `missing-field-initializers` | 546 | 546 | No |
+| `missing-field-initializers` | 546 | 0 | **Yes** |
 | `unused-variable` | 1,434 | 1,425 | No |
-| `unused-parameter` | 4,670 | 4,671 | No |
-| `write-strings` | 3,130 | 3,129 | No |
-| **Total** | **9,947** | **9,771** | — |
+| `unused-parameter` | 4,670 | 4,672 | No |
+| `write-strings` | 3,130 | 3,128 | No |
+| **Total** | **9,947** | **9,225** | — |
 
 ## 8. Execution Log
 
@@ -402,3 +402,30 @@ make -C src -j14` succeeds with `-Wunused-but-set-variable` fatal; all `tests/as
 enforces is worth keeping in mind for the remaining categories — never delete an assignment statement whose
 right-hand side calls anything but a known-pure helper. `generic_find()` in particular returns a bitmask that
 most callers ignore while depending entirely on the character/object it writes through its out-parameters.
+
+### Days 3-4 — `missing-field-initializers` (complete)
+
+All 546 warnings across 46 files are resolved and `-Wno-missing-field-initializers` is removed. The work was
+grouped by aggregate type rather than by call site, which is why it took far fewer edits than warnings.
+
+| Aggregate | Warnings | Resolution |
+|---|---:|---|
+| `damage_messages` | 388 | Default member initializers on the type. Nearly every construction is a brace-initializer listing only the message strings it needs; `type` and `obj` were always left zero. The defaults now say so, and the type stays an aggregate so every existing positional initializer is unaffected. |
+| `_flagDef` | 39 | Table-terminator rows written `{ 0 }` changed to `{}`, which is exactly equivalent and is not a partial initializer. |
+| `setBitTable` | 14 | Default member initializers. Only rows carrying a subtable set the `entry_size`/`entry_offset` stride members. |
+| `ferry_definition` (+ `stop_info`), `ctfData`, `BuildingType`, `epic_reward`, `boon_*`, `poison`, `potion`, `weapon_type`, `song_*`, `mine_range_data`, `continent`, `attr_names_struct`, and other one-off tables | ~90 | Terminator rows converted from `{ 0 }` / `{ 0, 0, 0 }` / `{ "\0" }` to `{}`. |
+| `random_spells`, `material`, `transport_route`, `epic_teacher_skill` | ~13 | Default member initializers, with a comment naming the optional tail: no adjective, no preferred weapon, no waypoint list, no prerequisite level. |
+| `innate_data`, `nq_interface_mapping` | 2 | Genuinely incomplete rows, filled in explicitly rather than defaulted: the "acid blood" innate has no handler, and the `quest load` command is immortal-only. |
+
+Every default introduced is the value the omitted field already received under aggregate
+initialization, so behavior is unchanged. No `{}` was substituted for a sentinel: the tables here terminate on
+a zero/NULL first member, not on `NOWHERE` or `-1`.
+
+**Defect surfaced by the change.** Giving `damage_messages` default member initializers makes it non-trivial,
+and `-Wclass-memaccess` (already fatal in this build) immediately flagged six `memset(&msg, 0, sizeof(...))`
+calls in `fight.c` and `studioproc.c`. They are now `msg = {}` value-initializations. This is the kind of
+signal the project exists to restore: the compiler could not have pointed at those lines while the aggregate
+was a bare C struct.
+
+**Validation:** `./scripts/format.sh --check` clean; `git diff --check` clean; `make -C src clean &&
+make -C src -j14` succeeds with `-Wmissing-field-initializers` fatal; all `tests/async/test_*.py` pass.

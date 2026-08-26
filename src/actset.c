@@ -85,15 +85,18 @@ char bad_on_off[MAX_INPUT_LENGTH];
 #define OFFSET_OF(Type, Field) ((int)(((char *)(&(((Type)NULL)->Field))) - ((char *)NULL)))
 
 /* Types */
+/* Most rows stop after sb_func; the subtable stride members only matter for
+   rows that carry a subtable.  The defaults state the zeroes those rows have
+   always relied on. */
 struct setBitTable
 {
-	const char *sb_flag; // Name of "flag"
-	int sb_offset; // Offset from beginning of struct
-	const char **sb_subtable; // Subtable for options
+	const char *sb_flag = nullptr; // Name of "flag"
+	int sb_offset = 0; // Offset from beginning of struct
+	const char **sb_subtable = nullptr; // Subtable for options
 
-	void (*sb_func)(void *, int, char *, int, int);
-	int entry_size;
-	int entry_offset;
+	void (*sb_func)(void *, int, char *, int, int) = nullptr;
+	int entry_size = 0;
+	int entry_offset = 0;
 };
 
 typedef struct setBitTable SetBitTable;

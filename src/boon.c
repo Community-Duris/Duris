@@ -77,7 +77,7 @@ struct boon_types_struct boon_types[MAX_BTYPE + 1] = { { "none", "No bonus exist
 							 "Notch %d attributes of your choice" },
 						       { "point", "Receive %d boon points" },
 						       { "item", "Receive '%s'" },
-						       { "\0" } };
+						       {} };
 
 struct boon_options_struct boon_options[] = {
 	// RACE		DESC					PROGRESS
@@ -95,7 +95,7 @@ struct boon_options_struct boon_options[] = {
 	{ "auction", "when you auction %d equipment.", 0 },
 	{ "ctf", "when you capture the CTF flag # %d.", 0 },
 	{ "ctfb", "when you capture the CTF flag # %d.", 0 },
-	"\0"
+	{}
 };
 
 void boon_notify(int id, P_char ch, int action);
@@ -243,7 +243,7 @@ struct boon_data_struct boon_data[] = {
 	{ BTYPE_ITEM, BOPT_FRAGS, GREATER_G },
 	{ BTYPE_ITEM, BOPT_CTF, GREATER_G },
 	{ BTYPE_ITEM, BOPT_CTFB, GREATER_G },
-	{ 0 }
+	{}
 };
 
 struct BoonRandomStandards random_std[] = {
@@ -251,7 +251,7 @@ struct BoonRandomStandards random_std[] = {
 	{ 0, 0, 0, 0, 0 },
 	{ 1, RACEWAR_GOOD, 1, 20, 0 },
 	{ 2, RACEWAR_EVIL, 1, 20, 0 },
-	{ 0 }
+	{}
 };
 
 bool check_boon_combo(int type, int option, int random)

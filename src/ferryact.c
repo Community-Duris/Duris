@@ -99,33 +99,33 @@ static struct ferry_definition::stop_info wave_dancer_stops[] = {
 	{ 76654, "&+gThe &+GJade &+gEmpire&N" },
 	{ 82686, "&+MMyrabolus&N" },
 	{ 76654, "&+gThe &+GJade &+gEmpire&N" },
-	{ 0 }
+	{}
 };
 static int seaspray_rooms[] = { 47025, 47025, 0 };
 static struct ferry_definition::stop_info seaspray_stops[] = { { 22444, "&+WSto&+Lrm Port&n" },
 							       { 550724,
 								 "&+bMenden-on-the-Deep&n" },
-							       { 0 } };
+							       {} };
 static int stalval_rooms[] = { 47073, 47132, 0 };
 static struct ferry_definition::stop_info stalval_stops[] = { { 83787, "&+WDeramuth Port&N" },
 							      { 564319, "&+rFort &+RBoyard&N" },
-							      { 0 } };
+							      {} };
 static int crimson_fulgur_rooms[] = { 47133, 47195, 0 };
 static struct ferry_definition::stop_info crimson_fulgur_stops[] = { { 83788,
 								       "&+WDeramuth Port&N" },
 								     { 9979, "&+ySarmiz'Duul&N" },
-								     { 0 } };
+								     {} };
 static int ironhold_grudge_rooms[] = { 47030, 47071, 0 };
 static struct ferry_definition::stop_info ironhold_grudge_stops[] = { { 83789,
 									"&+WDeramuth Port&N" },
 								      { 49089, "&+YVenan'Trut&N" },
-								      { 0 } };
+								      {} };
 static int rickety_ferry_rooms[] = { 47027, 47028, 0 };
 static struct ferry_definition::stop_info rickety_ferry_stops[] = {
 	{ 133052, "&+WTharnadia&N" },
 	{ 557216, "&+CMoonshae &+GIsland&N" },
 	{ 550723, "&+bMenden-of-the-Deep&N" },
-	{ 0 }
+	{}
 };
 
 static const struct ferry_definition ferries[] = {
@@ -189,7 +189,7 @@ static const struct ferry_definition ferries[] = {
 	  60, // depart notice time
 	  5000, // ticket price
 	  rickety_ferry_stops }, // stops
-	{ 0 }
+	{}
 };
 
 void init_ferries()

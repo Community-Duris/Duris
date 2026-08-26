@@ -51,7 +51,7 @@ struct continent
 		   { CONT_SCORCHED, "&+rSc&+Ro&+Yrc&+Rh&+red &+rIsland", 576166 },
 		   { CONT_TEZCAT, "&+rT&+Rez&+rca&+Rtl&+rip&+Ro&+rca", 575445 },
 		   { CONT_MOONSHAE, "&+YMoonshae &+GIsland", 556818 },
-		   { 0, 0, 0 } };
+		   {} };
 
 /*
    external variables

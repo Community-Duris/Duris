@@ -12865,7 +12865,7 @@ int skill_beacon(P_obj obj, P_char ch, int cmd, char *argument)
 			     { 34804, // 4horsemen
 			       { SKILL_RIPOSTE, SKILL_FLANK, SKILL_RAGE, SKILL_MARTIAL_ARTS,
 				 SKILL_ARCANE_RIPOSTE } },
-			     { 0 } };
+			     {} };
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;

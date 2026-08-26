@@ -1560,8 +1560,8 @@ void do_quest2(P_char ch, char *args, int cmd)
 	} interface_map[] = { { "list", nq_interface_immo_list, nq_interface_mortal_list },
 			      { "show", nq_interface_immo_show, nq_interface_mortal_show },
 			      { "delete", nq_interface_immo_delete, nq_interface_mortal_delete },
-			      { "load", nq_interface_load },
-			      { 0 } };
+			      { "load", nq_interface_load, nullptr }, // immortal-only
+			      {} };
 
 	command = (char *)strtok(args, " ");
 	arg = (char *)strtok(NULL, "\0");

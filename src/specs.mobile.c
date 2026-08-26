@@ -13853,7 +13853,7 @@ int witch_doctor(P_char witch, P_char customer, int cmd, char *arg)
 		{ "gnowsis experience exp",
 		  "a &+mrapidly vibrating vial&n labeled \"&+MGnowsis Ektaktos&n\"",
 		  (100 * GET_LEVEL(customer)), 0, TAG_RESTED },
-		{ 0 }
+		{}
 	};
 
 	if (cmd == CMD_SET_PERIODIC)

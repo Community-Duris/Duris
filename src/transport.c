@@ -44,15 +44,17 @@ extern P_obj object_list;
 
 #define TRANSPORT_SIGN_VNUM 420
 
+/* Routes without an explicit waypoint list stop before `path` and travel
+   directly; the empty vector is the documented default. */
 struct transport_route
 {
-	int origin_vnum;
-	int destination_vnum;
-	const char *name;
-	int cost_in_plat;
-	int min_level;
-	int max_level;
-	vector<int> path;
+	int origin_vnum = 0;
+	int destination_vnum = 0;
+	const char *name = nullptr;
+	int cost_in_plat = 0;
+	int min_level = 0;
+	int max_level = 0;
+	vector<int> path = {};
 } transport_routes[] = {
 	/*
      { start room vnum, destination room vnum, name of route, cost in platinum, min level (0 for none), max level (0 for none)
@@ -108,7 +110,7 @@ struct transport_route
 	{ 522247, 631413, "&+WClan Shatter Stone", 100, 0,
 	  0 }, // Helgor Outpost -> Clan Shatter Stone
 
-	{ 0 }
+	{}
 };
 
 struct transport_data
@@ -135,7 +137,7 @@ struct transport_data
 	{ 47026, 522247 }, // Helgor Outpost
 	{ 47029, 631413 }, // Clan Shatter Stone
 
-	{ 0 }
+	{}
 };
 
 bool valid_flying_edge(int from_room, int dir)

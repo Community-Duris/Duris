@@ -839,7 +839,7 @@ static void sp_attack_one(struct sp_ctx *cx, struct sp_action *a, P_char vict)
 		act(buf, TRUE, vict, 0, self, TO_ROOM);
 	}
 
-	memset(&msg, 0, sizeof(msg));
+	msg = {};
 	if (a->dtype)
 		spell_damage(self ? self : vict, vict, dam, a->dtype,
 			     RAWDAM_NOKILL | RAWDAM_NOEXP | SPLDAM_SPELL, &msg);
@@ -1137,7 +1137,7 @@ static int sp_execute(struct sp_trig *t, struct sp_ctx *cx)
 			if (dam > cap)
 				dam = cap;
 			act("&+rYou are wracked by unseen forces!&n", FALSE, actor, 0, 0, TO_CHAR);
-			memset(&tmsg, 0, sizeof(tmsg));
+			tmsg = {};
 			raw_damage(actor, actor, (double)dam, RAWDAM_NOKILL | RAWDAM_NOEXP, &tmsg);
 			break;
 

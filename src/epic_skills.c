@@ -107,7 +107,7 @@ epic_reward epic_rewards[] = {
 	{ EPIC_REWARD_SKILL, SKILL_SHIP_DAMAGE_CONTROL, 1000, 80, 8000000, 0 },
 	{ EPIC_REWARD_SKILL, SKILL_NATURES_RUIN, 100, 75, 750000, CLASS_BLIGHTER },
 	{ EPIC_REWARD_SKILL, SKILL_EPIC_WARDING_FAITH, 1000, 100, 20000, CLASS_CLERIC },
-	{ 0 }
+	{}
 };
 
 epic_teacher_skill epic_teachers[] = {
@@ -162,7 +162,7 @@ epic_teacher_skill epic_teachers[] = {
 	{ 2733, SKILL_SHIP_DAMAGE_CONTROL, 0, 100, 0, 0, 0 }, // Commodore in Headless
 	{ 402029, SKILL_NATURES_RUIN, 0, 100, 0, 0, 0 }, // Shezeera in Library zone
 	{ 55168, SKILL_EPIC_WARDING_FAITH, 0, 100, 0, 0, 0 },
-	{ 0 }
+	{}
 };
 
 void create_epic_skills()
@@ -728,7 +728,7 @@ void do_summon_familiar(P_char ch, char *argument, int cmd)
 				      { EPIC_RAVEN_VNUM, 70, "raven" },
 				      { EPIC_OWL_VNUM, 90, "owl" },
 				      { EPIC_IMP_VNUM, 100, "imp" },
-				      { 0 } };
+				      {} };
 
 	int i;
 

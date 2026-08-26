@@ -11,15 +11,16 @@ struct epic_reward
 	unsigned int classes;
 };
 
+/* Rows for skills with no prerequisite level stop before pre_req_lvl. */
 struct epic_teacher_skill
 {
-	int vnum;
-	int skill;
-	int min;
-	int max;
-	int pre_requisite;
-	int deny_skill;
-	int pre_req_lvl;
+	int vnum = 0;
+	int skill = 0;
+	int min = 0;
+	int max = 0;
+	int pre_requisite = 0;
+	int deny_skill = 0;
+	int pre_req_lvl = 0;
 };
 
 int epic_teacher(P_char ch, P_char pl, int cmd, char *arg);

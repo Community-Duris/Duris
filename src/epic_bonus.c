@@ -23,7 +23,7 @@ struct epic_bonus_data ebd[] = {
 	{ EPIC_BONUS_EPIC_POINT, "epic", "Epic Points Bonus" },
 	{ EPIC_BONUS_HEALTH_REG, "health", "Health Regen Bonus" },
 	{ EPIC_BONUS_MOVE_REG, "moves", "Movement Regen Bonus" },
-	{ 0 },
+	{},
 };
 
 // command interpreter for epic_bonus
