@@ -93,7 +93,7 @@ void make_prompt(P_desc point)
 	if (IS_SET((orig ? orig : t_ch)->specials.act, PLR_SMARTPROMPT))
 	{
 		UpdateScreen(t_ch, 0);
-		snprintf(promptbuf, MAX_INPUT_LENGTH, "&+R>&n");
+		snprintf(promptbuf, sizeof promptbuf, "&+R>&n");
 		send_to_char(promptbuf, t_ch);
 		point->prompt_mode = FALSE;
 		return;

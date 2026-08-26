@@ -56,7 +56,7 @@ check("prompt.c appends through the shared bounded helper",
       and "APPENDF(promptbuf," in prompt
       and "checked_appendf(pPrompt, pPromptCap," in prompt)
 check("prompt.c open-codes no append of its own",
-      "snprintf(promptbuf" not in prompt and "snprintf(pPrompt" not in prompt)
+      re.search(r'snprintf\(\s*(?:promptbuf2?|pPrompt)\s*\+', prompt) is None)
 check("prompt.c no longer claims MAX_STRING_LENGTH on a smaller buffer",
       "MAX_STRING_LENGTH - strlen(" not in prompt)
 check("pPrompt carries the capacity of the buffer it aliases",
