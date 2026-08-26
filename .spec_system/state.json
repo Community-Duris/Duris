@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "project_name": "DurisMUD",
+  "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
+  "current_phase": 0,
+  "current_session": null,
+  "monorepo": false,
+  "phases": {
+    "0": {
+      "name": "Correctness and Immediate Lag Removal",
+      "status": "not_started",
+      "session_count": 0
+    }
+  },
+  "completed_sessions": [],
+  "next_session_history": []
+}
