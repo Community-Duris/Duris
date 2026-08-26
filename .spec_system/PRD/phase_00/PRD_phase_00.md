@@ -4,7 +4,7 @@
 **Sessions**: 10 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 1/10 sessions (10%)
+**Progress**: 2/10 sessions (20%)
 
 ---
 
@@ -29,7 +29,7 @@ remain Phase 03 work.
 | Session | Name | Status | Work Window | Validated |
 |---------|------|--------|-------------|-----------|
 | 01 | Redacted Persistence Observability | Complete | Safe call-site timing, trace removal, and dirty/save age metrics | 2026-08-27 |
-| 02 | In-Memory Epic Bonus Hot Path | Not Started | Epic-bonus hydration, mutation updates, expiry, and hot-path regressions | - |
+| 02 | In-Memory Epic Bonus Hot Path | Complete | Epic-bonus hydration, mutation updates, expiry, and hot-path regressions | 2026-08-27 |
 | 03 | Save Failure Retry and Terminal Safety | Not Started | Deferred-save state plus all destructive terminal save boundaries | - |
 | 04 | Player Replacement State Cleanup | Not Started | Transactional delete-and-replace semantics for removable player rows | - |
 | 05 | Combat and Artifact Persistence Correctness | Not Started | Post-mutation frag publication and deterministic bind lookup outputs | - |
@@ -44,12 +44,13 @@ remain Phase 03 work.
 ## Completed Sessions
 
 - Session 01: Redacted Persistence Observability (completed 2026-08-27)
+- Session 02: In-Memory Epic Bonus Hot Path (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 02: In-Memory Epic Bonus Hot Path
+- Session 03: Save Failure Retry and Terminal Safety
 
 ---
 

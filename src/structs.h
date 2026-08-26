@@ -26,6 +26,7 @@
 #endif
 
 #include "defines.h"
+#include "epic_bonus_state.h"
 #include "map.h"
 #include "player_log.h"
 #include "ansi.h"
@@ -81,7 +82,7 @@ typedef struct combat_data *P_combat;
 	(((i) < 0) ?                                                                              \
 		 (printf("ARRAY " #arr " index %d negative at %s:%d\n", (i), __FILE__, __LINE__), \
 		  arr[0]) :                                                                       \
-	 ((i) >= ARRAY_SIZE(arr)) ? (printf("ARRAY " #arr " index %d ≥ %zu at %s:%d\n", (i),      \
+	 ((i) >= ARRAY_SIZE(arr)) ? (printf("ARRAY " #arr " index %d >= %zu at %s:%d\n", (i),     \
 					    ARRAY_SIZE(arr), __FILE__, __LINE__),                 \
 				     arr[ARRAY_SIZE(arr) - 1]) :                                  \
 				    arr[i])
@@ -1323,6 +1324,7 @@ struct pc_only_data
 	long oldfrags; /* Pkill counter                           */
 	long epics; /* # of epic points                           */
 	long epic_skill_points;
+	struct EpicBonusState epic_bonus_state;
 	long spell_bind_used; // used for skill_spellbind
 	sh_int prestige; /* commoner or lord?                       */
 	time_t time_left_guild; /* time you left guild                     */

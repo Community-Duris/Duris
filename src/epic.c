@@ -416,6 +416,7 @@ void gain_epic(P_char ch, int type, int data, int amount)
 		log_epic_gain_event("epic_bottle", GET_PID(ch), type, data, amount);
 	else
 		log_epic_gain(GET_PID(ch), type, data, amount);
+	epic_bonus_record_gain(ch, type, amount);
 	char type_str[20];
 
 	switch (type)

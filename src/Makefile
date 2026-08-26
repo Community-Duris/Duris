@@ -140,6 +140,7 @@ OBJS =  $(SHIP_OBJS) \
 				 encounters.o \
 				 epic.o \
 				 epic_bonus.o \
+				 epic_bonus_state.o \
 				 epic_skills.o \
 				 ethermancer.o \
 				 events.o \

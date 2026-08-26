@@ -75,6 +75,7 @@ int sql_get_player_pid(const char *name);
 
 // individual load functions (called by sql_load_player)
 bool sql_load_player_status(P_char ch, int pid);
+bool sql_load_player_epic_bonus(P_char ch);
 bool sql_load_player_skills(P_char ch);
 bool sql_load_player_affects(P_char ch);
 bool sql_load_player_items(P_char ch);

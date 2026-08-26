@@ -176,6 +176,30 @@ row fails to load, the loader records that `last_item_id` no longer names the
 object at `obj_map[num_objs - 1]`, so a following affect row for that item is
 not applied to a different object.
 
+## Active epic bonus read model
+
+Active player epic bonuses are hydrated into fixed-capacity player-owned memory during
+the database player load. The login query joins the selected `epic_bonus` row to
+positive, non-bottle `epic_gain` rows after both the selection time and configured
+rolling cutoff, then groups them by calendar expiry boundary. The boundary calculation
+preserves the strict cutoff for gains recorded exactly at midnight. It returns no more
+than one row per supported expiry day rather than one row per historical gain.
+
+The shipped rolling window is five days. The in-memory representation supports integer
+windows from 1 through 31 days with at most 32 daily buckets. Invalid configuration,
+malformed rows, query failure, or bucket overflow places that character's bonus state
+in an explicit unavailable state and yields a zero modifier. It never triggers a lazy
+query from regeneration, XP, shops, cargo, status, help, or award calculation.
+Cap and maximum-modifier property changes take effect from the in-memory property table
+on the next read. A rolling-window change marks existing player state unavailable until
+the next login because already-expired history cannot be reconstructed without I/O.
+
+Selection and qualifying award paths update this state on the game thread. Daily
+contributions expire locally at the same calendar boundary represented by the former
+`CURDATE()` predicate. The state is an active-player read model, not a new durability
+boundary: Phase 02 still owns atomic epic balance, ledger, operation identity, and
+ambiguous-commit reconciliation.
+
 ## Operational notes
 
 - Connection problems at boot print `MySQL initialization failed!` --
