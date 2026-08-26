@@ -1391,6 +1391,13 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	}
 
 	// timers - batch delete then batch insert
+	if (!sql_delete_player_subtable(pid, "player_timers"))
+	{
+		free(batch);
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
 	pos = snprintf(batch, 65536,
 		       "REPLACE INTO player_timers (pid, timer_id, timer_value) VALUES ");
@@ -1426,6 +1433,13 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	}
 
 	// undead spell slots - batch delete then batch insert
+	if (!sql_delete_player_subtable(pid, "player_undead_slots"))
+	{
+		free(batch);
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
 	pos = snprintf(batch, 65536,
 		       "REPLACE INTO player_undead_slots (pid, circle, slots) VALUES ");
@@ -1460,6 +1474,13 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	}
 
 	// forged items - batch delete then batch insert
+	if (!sql_delete_player_subtable(pid, "player_forged_items"))
+	{
+		free(batch);
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
 	pos = snprintf(batch, 65536,
 		       "REPLACE INTO player_forged_items (pid, forge_index, item_vnum) VALUES ");
@@ -1494,6 +1515,13 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	}
 
 	// granted commands - batch delete then batch insert
+	if (!sql_delete_player_subtable(pid, "player_granted_cmds"))
+	{
+		free(batch);
+		if (own_txn)
+			sql_rollback();
+		return false;
+	}
 
 	if (ch->only.pc->numb_gcmd > 0)
 	{

@@ -234,6 +234,20 @@ flags are cancelled and the live game loop resumes with player state available f
 retry. Phase 01 replaces this synchronous safety boundary with revisioned immutable
 workers and a typed journal.
 
+## Player replacement components
+
+`player_timers`, `player_undead_slots`, `player_forged_items`, and
+`player_granted_cmds` are full replacement sets during a player status save. Each set
+is deleted by PID inside the active player-save transaction before its current non-zero
+entries are batch inserted. An empty in-memory set therefore removes every prior row
+instead of allowing a cleared timer, slot, recipe-like forge entry, or revoked command
+to return at the next login.
+
+Every delete and insert is checked. A failure returns through the current transaction
+owner: a direct status save rolls back its own transaction, while a full player save
+rolls back the enclosing transaction. Languages and introductions use the same
+replacement contract. These are save semantics only; no table or index shape changed.
+
 ## Operational notes
 
 - Connection problems at boot print `MySQL initialization failed!` --

@@ -3,7 +3,7 @@
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
   "current_phase": 0,
-  "current_session": "phase00-session04-player-replacement-state-cleanup",
+  "current_session": "phase00-session05-combat-artifact-persistence-correctness",
   "monorepo": false,
   "phases": {
     "1": {
@@ -34,7 +34,8 @@
   "completed_sessions": [
     "phase00-session01-redacted-persistence-observability",
     "phase00-session02-in-memory-epic-bonus-hot-path",
-    "phase00-session03-save-failure-retry-and-terminal-safety"
+    "phase00-session03-save-failure-retry-and-terminal-safety",
+    "phase00-session04-player-replacement-state-cleanup"
   ],
   "next_session_history": [
     {
@@ -85,6 +86,21 @@
     {
       "date": "2026-08-27",
       "session": "phase00-session04-player-replacement-state-cleanup",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase00-session04-player-replacement-state-cleanup",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase00-session04-player-replacement-state-cleanup",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase00-session05-combat-artifact-persistence-correctness",
       "status": "planned"
     }
   ]

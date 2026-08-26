@@ -1,7 +1,7 @@
 # Session 04: Player Replacement State Cleanup
 
 **Session ID**: `phase00-session04-player-replacement-state-cleanup`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The replacement-row portion of one player-save transaction, verified by
 save-clear-save-reload behavior for every affected component.
 
@@ -38,8 +38,8 @@ the same transaction that inserts the current set.
 
 ## Prerequisites
 
-- [ ] Session 03 durable-save failure semantics are validated.
-- [ ] Database behavior tests target only an isolated development schema.
+- [x] Session 03 durable-save failure semantics are validated.
+- [x] Database behavior tests target only an isolated development schema.
 
 ---
 
@@ -54,9 +54,23 @@ the same transaction that inserts the current set.
 
 ## Success Criteria
 
-- [ ] Clearing each affected value removes its durable row and reload does not revive
+- [x] Clearing each affected value removes its durable row and reload does not revive
       it.
-- [ ] Current non-zero values still round-trip correctly.
-- [ ] Any delete or insert failure rolls back the player-save transaction.
-- [ ] No migration or write test is run against production.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Current non-zero values still round-trip correctly.
+- [x] Any delete or insert failure rolls back the player-save transaction.
+- [x] No migration or write test is run against production.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.
+
+---
+
+## Completion Summary
+
+Timers, undead spell slots, forged-item knowledge, and granted commands now delete
+their previous PID-scoped rows inside the active save transaction before inserting the
+current non-zero set. Empty sets therefore persist clears and revocations. Checked
+delete and insert failures propagate to the direct or enclosing rollback owner.
+
+A disposable MySQL regression proves replacement, complete clear, forced insert
+rollback for all four tables, and forced delete failure without reading repository
+credentials. The warning-as-error build, 171/171 Python regressions, signal-handler
+checks, formatting, and review-surface scans pass.
