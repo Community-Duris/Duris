@@ -974,9 +974,9 @@ void AddFrags(P_char ch, P_char victim)
 	else
 		loss = gain;
 
+	victim->only.pc->frags -= loss;
 	sql_modify_frags(victim, -loss);
 	redis_invalidate_fraglist();
-	victim->only.pc->frags -= loss;
 	snprintf(buffer, sizeof buffer, "You just lost %.02f frags!\r\n", ((float)loss) / 100);
 	send_to_char(buffer, victim);
 	debug("%s just fragged %s for %.02f/%.02f frags!", J_NAME(ch), J_NAME(victim),

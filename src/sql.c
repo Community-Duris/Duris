@@ -40,6 +40,8 @@
 #include "timers.h"
 #include "persistence_queue.h"
 #include "utility.h"
+#include <errno.h>
+#include <limits.h>
 
 extern P_index mob_index;
 extern const struct race_names race_names_table[];
@@ -255,7 +257,19 @@ void send_mud_info(const char *name, P_char ch) {}
 
 void sql_update_bind_data(int vnum, int *owner_pid, int *timer) {}
 
-void sql_get_bind_data(int vnum, int *owner_pid, int *timer) {}
+bool sql_get_bind_data(int vnum, int *owner_pid, int *timer)
+{
+	(void)vnum;
+	if (owner_pid)
+	{
+		*owner_pid = 0;
+	}
+	if (timer)
+	{
+		*timer = 0;
+	}
+	return false;
+}
 
 bool sql_pwipe(int code_verify)
 {
@@ -2523,34 +2537,92 @@ void send_mud_info(const char *name, P_char ch)
 	send_to_char(get_mud_info(name).c_str(), ch, LOG_NONE);
 }
 
-void sql_get_bind_data(int vnum, int *owner_pid, int *timer)
+static bool sql_parse_bind_int(const char *value, int *result)
 {
-	if (!qry("select * from artifact_bind where vnum = %d", vnum))
+	if (!value || !result || !*value)
+	{
+		return false;
+	}
+
+	const char *digits = value;
+	if (*digits == '-' || *digits == '+')
+	{
+		digits++;
+	}
+	if (!*digits)
+	{
+		return false;
+	}
+	for (const char *digit = digits; *digit; digit++)
+	{
+		if (!isdigit((unsigned char)*digit))
+		{
+			return false;
+		}
+	}
+
+	errno = 0;
+	char *end = NULL;
+	long parsed = strtol(value, &end, 10);
+	if (errno == ERANGE || !end || *end || parsed < INT_MIN || parsed > INT_MAX)
+	{
+		return false;
+	}
+
+	*result = (int)parsed;
+	return true;
+}
+
+bool sql_get_bind_data(int vnum, int *owner_pid, int *timer)
+{
+	if (owner_pid)
+	{
+		*owner_pid = 0;
+	}
+	if (timer)
+	{
+		*timer = 0;
+	}
+	if (!owner_pid || !timer)
+	{
+		logit(LOG_DEBUG, "sql_get_bind_data(): invalid output pointer");
+		return false;
+	}
+
+	if (!qry("SELECT owner_pid, timer FROM artifact_bind WHERE vnum = %d", vnum))
 	{
 		logit(LOG_DEBUG, "sql_get_bind_data(): failed to read from database");
-		return;
+		return false;
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res)
+	{
+		logit(LOG_DEBUG, "sql_get_bind_data(): mysql_store_result failed");
+		return false;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
-		// logit(LOG_DEBUG, "sql_get_bind_data(): Cannot find artifact entry, using default values.");
-		*owner_pid = 0;
-		*timer = 0;
 		mysql_free_result(res);
-		return;
+		return true;
 	}
-	else
+
+	MYSQL_ROW row = mysql_fetch_row(res);
+	int parsed_owner_pid = 0;
+	int parsed_timer = 0;
+	if (!row || !sql_parse_bind_int(row[0], &parsed_owner_pid) ||
+	    !sql_parse_bind_int(row[1], &parsed_timer))
 	{
-		MYSQL_ROW row = mysql_fetch_row(res);
-		if (row != NULL)
-		{
-			*owner_pid = atoi(row[1]);
-			*timer = atoi(row[2]);
-		}
+		logit(LOG_DEBUG, "sql_get_bind_data(): malformed database row");
+		mysql_free_result(res);
+		return false;
 	}
+
+	*owner_pid = parsed_owner_pid;
+	*timer = parsed_timer;
 	mysql_free_result(res);
+	return true;
 }
 
 void sql_update_bind_data(int vnum, int *owner_pid, int *timer)

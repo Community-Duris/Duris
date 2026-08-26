@@ -196,7 +196,7 @@ struct zone_info
 
 bool get_zone_info(int zone_number, struct zone_info *info);
 
-void sql_get_bind_data(int vnum, int *owner_pid, int *timer);
+bool sql_get_bind_data(int vnum, int *owner_pid, int *timer);
 void sql_update_bind_data(int vnum, int *owner_pid, int *timer);
 
 void sql_ship_sunk(char owner);

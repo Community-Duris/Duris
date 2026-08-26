@@ -849,7 +849,10 @@ void artifact_switch_check(P_char ch, P_obj arti)
 
 	// Load up the variables.
 	vnum = OBJ_VNUM(arti);
-	sql_get_bind_data(vnum, &owner_pid, &timer);
+	if (!sql_get_bind_data(vnum, &owner_pid, &timer))
+	{
+		return;
+	}
 
 	// If a pvp loot happened, and timeframe has passed, set to 0 for binding
 	if ((owner_pid == -1) &&
@@ -1456,7 +1459,10 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
 	}
 
 	vnum = OBJ_VNUM(arti);
-	sql_get_bind_data(vnum, &owner_pid, &timer);
+	if (!sql_get_bind_data(vnum, &owner_pid, &timer))
+	{
+		return;
+	}
 
 	// Anti artifact sharing for feeding check
 	if (soulCheck && IS_PC(owner) && (owner_pid != -1) && (owner_pid != GET_PID(owner)))
@@ -4007,7 +4013,11 @@ void arti_fixit_sql(P_char ch)
 	{
 		vnum = entry.vnum;
 		location = entry.location;
-		sql_get_bind_data(vnum, &pid, &timer);
+		if (!sql_get_bind_data(vnum, &pid, &timer))
+		{
+			send_to_char_f(ch, "Skipped artifact %d: bind lookup failed.\n\r", vnum);
+			continue;
+		}
 		timer = curr_time;
 		arti = read_object(vnum, VIRTUAL);
 		// If the arti is on a different PC, we want to update artifact_bind AND increase the timer to max in artifacts.

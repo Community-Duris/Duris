@@ -1,7 +1,7 @@
 # Session 05: Combat and Artifact Persistence Correctness
 
 **Session ID**: `phase00-session05-combat-artifact-persistence-correctness`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: Two tightly scoped deterministic-output defects in combat persistence,
 verified at their mutation-to-durable-publication boundary and failure paths.
 
@@ -37,7 +37,7 @@ failure outcomes.
 
 ## Prerequisites
 
-- [ ] Session 01 redacted query failure diagnostics are validated.
+- [x] Session 01 redacted query failure diagnostics are validated.
 
 ---
 
@@ -51,8 +51,22 @@ failure outcomes.
 
 ## Success Criteria
 
-- [ ] Durable victim frag and leaderboard state reflects the post-loss value.
-- [ ] Artifact-bind outputs are always initialized, including database failure and
+- [x] Durable victim frag and leaderboard state reflects the post-loss value.
+- [x] Artifact-bind outputs are always initialized, including database failure and
       missing-row paths.
-- [ ] Existing gain/loss formulas and player-visible messages remain unchanged.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Existing gain/loss formulas and player-visible messages remain unchanged.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.
+
+---
+
+## Completion Summary
+
+Victim frag loss now mutates in-memory state before the durable progress and
+leaderboard update reads it. Artifact-bind lookup now initializes every provided
+output, reports status explicitly, treats a genuine missing row as successful unbound
+state, and rejects database, result, fetch, null-column, malformed, and out-of-range
+failures without publishing partial values.
+
+All three artifact callers fail closed before ownership decisions. Focused and nearest
+regressions, the warning-as-error C++20 build, formatting, review, and the full 172-test
+suite plus signal-handler checks pass.
