@@ -109,7 +109,7 @@ crash, and verify player integrity before reopening.
 |--------|---------|
 | `scripts/backup_pfiles.sh` | Snapshot database or legacy player files (run automatically per cycle iteration; see the mode note below). |
 | `scripts/delete_corpses.sh` | Inspect and, after confirmation, purge corpse rows and Redis corpse state. |
-| `scripts/clear-redis.sh` | Drop the entire selected Redis database; use only on a stopped, dedicated development Redis instance. |
+| `scripts/clear-redis.sh` | Drop database `0` on `redis-cli`'s default endpoint; it does not read `.env`, so use it only on a stopped, dedicated local Redis instance. |
 | `scripts/import_help_to_prod.sh` | Import help sources to MySQL; use `--dry-run` first and treat `--clean` as destructive. |
 | `scripts/migrate_players_to_accounts.sh`, `scripts/convert_all_pfiles.sh` | One-shot legacy data conversions; back up and review their assumptions before use. |
 | `bin/migrations/*` | Offline pfile/schema conversion binaries built from `src-migrate/`. |

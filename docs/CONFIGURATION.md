@@ -65,10 +65,11 @@ REDIS_PORT=6379
 REDIS_WORLD_STATE=TRUE
 ```
 
-Stop the server before clearing Redis state. `scripts/clear-redis.sh` runs
-`FLUSHDB` against the configured/default Redis database and is destructive to
-other data in that Redis database; use a dedicated local database or inspect
-its contents first.
+Stop the server before clearing Redis state. `scripts/clear-redis.sh` runs a
+bare `redis-cli FLUSHDB`, so it uses the CLI's default endpoint and database
+(normally `127.0.0.1:6379`, database `0`) rather than reading `.env`. Use the
+script only for that exact dedicated local instance; otherwise connect and
+inspect the intended Redis database explicitly.
 
 ## Character creation and gameplay modes
 
