@@ -1,0 +1,74 @@
+name: security baseline
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        with:
+          languages: c-cpp
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes equivs
+          make build-deps-package
+          sudo apt-get install --yes ./bin/packages/duris-build-deps_1.0_all.deb
+      - name: Generate and validate security baseline
+        run: make security-check
+      - name: Build for CodeQL
+        run: make build -j"$(nproc)"
+      - name: Analyze source with CodeQL
+        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        with:
+          category: /language:c-cpp
+      - name: Scan resolved direct dependencies with Trivy
+        id: trivy
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.70.0
+          scan-type: rootfs
+          scan-ref: bin/security/scanner-rootfs
+          format: json
+          output: bin/security/trivy-results.json
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+          cache: false
+      - name: Preserve security artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: duris-security-baseline
+          path: |
+            bin/security/dependency-inventory.json
+            bin/security/duris.spdx.json
+            bin/security/trivy-results.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Enforce scan coverage and vulnerability policy
+        if: always()
+        env:
+          TRIVY_OUTCOME: ${{ steps.trivy.outcome }}
+        run: |
+          if ! python3 -c 'import json; assert len(json.load(open("bin/security/trivy-results.json"))["Results"]) > 0'; then
+            echo "Trivy did not scan a supported dependency target." >&2
+            exit 1
+          fi
+          if [ "$TRIVY_OUTCOME" = "failure" ]; then
+            echo "Trivy found a fixed HIGH or CRITICAL vulnerability; inspect the uploaded report." >&2
+            exit 1
+          fi

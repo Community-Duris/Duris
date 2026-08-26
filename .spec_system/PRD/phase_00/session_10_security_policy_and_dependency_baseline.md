@@ -1,7 +1,7 @@
 # Session 10: Security Policy and Dependency Baseline
 
 **Session ID**: `phase00-session10-security-policy-and-dependency-baseline`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One repository security-governance boundary covering vulnerability
 reporting, dependency inventory, reproducible SBOM output, and CI security checks.
 
@@ -41,9 +41,9 @@ unsupported claim that the dependency set is vulnerability-free.
 
 ## Prerequisites
 
-- [ ] Sessions 08 and 09 have validated the runtime and stored-secret findings that the
+- [x] Sessions 08 and 09 have validated the runtime and stored-secret findings that the
       policy and baseline must describe accurately.
-- [ ] Security tools can write generated artifacts only to ignored local paths.
+- [x] Security tools can write generated artifacts only to ignored local paths.
 
 ---
 
@@ -60,12 +60,21 @@ unsupported claim that the dependency set is vulnerability-free.
 
 ## Success Criteria
 
-- [ ] `SECURITY.md` gives a concrete private reporting path and response expectations
+- [x] `SECURITY.md` gives a concrete private reporting path and response expectations
       supported by the repository.
-- [ ] Dependabot configuration is valid or absent for an explicitly documented reason.
-- [ ] Dependency inventory, SBOM generation, and security checks are reproducible and
+- [x] Dependabot configuration is valid or absent for an explicitly documented reason.
+- [x] Dependency inventory, SBOM generation, and security checks are reproducible and
       place generated artifacts only in ignored paths.
-- [ ] CI actions and security checks have explicit versions, scope, and triage behavior.
-- [ ] The recorded baseline distinguishes findings, unknown coverage, and clean results
+- [x] CI actions and security checks have explicit versions, scope, and triage behavior.
+- [x] The recorded baseline distinguishes findings, unknown coverage, and clean results
       without unsupported assurance.
-- [ ] Focused regressions and the relevant repository validation commands pass.
+- [x] Focused regressions and the relevant repository validation commands pass.
+
+---
+
+## Completion
+
+Validated 2026-08-27. The local security gate, deterministic output checks,
+`actionlint`, formatting, and all 177 Python regressions plus signal-handler checks
+pass. The measured direct-package scan reports one unfixed MEDIUM advisory and no
+fixed HIGH/CRITICAL finding; transitive and deployment coverage remains `UNKNOWN`.

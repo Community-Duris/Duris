@@ -1,10 +1,10 @@
 # PRD Phase 00: Correctness and Immediate Lag Removal
 
-**Status**: In Progress
+**Status**: Complete
 **Sessions**: 10 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 9/10 sessions (90%)
+**Progress**: 10/10 sessions (100%)
 
 ---
 
@@ -37,7 +37,7 @@ remain Phase 03 work.
 | 07 | Account Bank Delta Safety | Complete | Checked delta-only shared-bank behavior and multi-character regressions | 2026-08-27 |
 | 08 | Runtime Connection Trust Boundaries | Complete | Fail-closed DB/TLS configuration and uniform connection invariants | 2026-08-27 |
 | 09 | Private Chest Password Hardening | Complete | Adaptive salted hashes with compatible legacy upgrade behavior | 2026-08-27 |
-| 10 | Security Policy and Dependency Baseline | Not Started | Actionable policy, dependency inventory, SBOM, and CI security checks | - |
+| 10 | Security Policy and Dependency Baseline | Complete | Actionable policy, dependency inventory, SBOM, and CI security checks | 2026-08-27 |
 
 ---
 
@@ -52,12 +52,13 @@ remain Phase 03 work.
 - Session 07: Account Bank Delta Safety (completed 2026-08-27)
 - Session 08: Runtime Connection Trust Boundaries (completed 2026-08-27)
 - Session 09: Private Chest Password Hardening (completed 2026-08-27)
+- Session 10: Security Policy and Dependency Baseline (completed 2026-08-27)
 
 ---
 
-## Upcoming Sessions
+## Upcoming Work
 
-- Session 10: Security Policy and Dependency Baseline
+- Phase 01 Session 01: Revision and Immutable Snapshot Foundations
 
 ---
 
@@ -182,23 +183,23 @@ operation they protect has succeeded.
 ## Success Criteria
 
 Phase complete when:
-- [ ] All 10 sessions completed and validated
-- [ ] Regeneration and XP epic-bonus paths perform no database or Redis operation
-- [ ] Failed deferred and terminal saves retain live, retryable state and report truth
-- [ ] Cleared replacement-subtable values do not return after save and reload
-- [ ] Victim frag and artifact-bind state is deterministic on success and failure
-- [ ] Redis operations have bounded deadlines and no mutation path performs a
+- [x] All 10 sessions completed and validated
+- [x] Regeneration and XP epic-bonus paths perform no database or Redis operation
+- [x] Failed deferred and terminal saves retain live, retryable state and report truth
+- [x] Cleared replacement-subtable values do not return after save and reload
+- [x] Victim frag and artifact-bind state is deterministic on success and failure
+- [x] Redis operations have bounded deadlines and no mutation path performs a
       synchronous full-player-save fallback
-- [ ] Dirty inflight state and floor deltas survive the defined child and Redis failures
-- [ ] Account-bank writes are checked and delta-only, with no stale absolute overwrite
-- [ ] Persistence failure logs contain no SQL text or bound private values and expose
+- [x] Dirty inflight state and floor deltas survive the defined child and Redis failures
+- [x] Account-bank writes are checked and delta-only, with no stale absolute overwrite
+- [x] Persistence failure logs contain no SQL text or bound private values and expose
       call-site duration plus dirty/save age
-- [ ] Database and TLS runtime configuration fails closed outside explicit safe local
+- [x] Database and TLS runtime configuration fails closed outside explicit safe local
       operation and every connection verifies required session invariants
-- [ ] New or reset private-chest passwords use adaptive salted hashes and legacy values
+- [x] New or reset private-chest passwords use adaptive salted hashes and legacy values
       have a tested transition path
-- [ ] Security policy and dependency checks are actionable and reproducible
-- [ ] Relevant focused tests, formatting checks, and `make -C src` pass for all C/C++
+- [x] Security policy and dependency checks are actionable and reproducible
+- [x] Relevant focused tests, formatting checks, and `make -C src` pass for all C/C++
       changes
 
 ---

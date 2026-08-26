@@ -1,6 +1,6 @@
 # PRD Phase 01: Replace Forked Full Saves
 
-**Status**: Not Started
+**Status**: In Progress
 **Sessions**: 8 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
@@ -22,9 +22,8 @@ with a long-lived worker that receives immutable sequence-numbered snapshots. Cr
 epic, wallet, bank, and ownership transactions remain Phase 02 work, so revisioned
 checkpoints must not be presented as exactly-once domain commands.
 
-This is an advance plan. Phase 00 remains the active phase and none of these sessions is
-executable until its correctness, observability, failure-containment, and security
-prerequisites are completed and reconciled.
+Phase 00 is complete and audited. Its correctness, observability,
+failure-containment, and security contracts are prerequisites for every session here.
 
 ---
 
@@ -78,8 +77,7 @@ None yet.
 
 ## Prerequisites
 
-- All Phase 00 sessions are completed and validated; Phase 00 currently has 0 of 10
-  completed, so this phase is planned but not active.
+- All Phase 00 sessions are completed, validated, and reconciled by the Phase 00 audit.
 - Phase 00 redacted persistence metrics and truthful dirty/save-age reporting are
   available for worker and journal validation.
 - Phase 00 failed-save, terminal-transition, Redis-containment, connection, and schema

@@ -1,10 +1,10 @@
 # Security & Compliance
 
 > Cumulative security posture and GDPR compliance record. Updated between phases via carryforward.
-> **Line budget**: 1000 max | **Last updated**: Phase 00 (2026-08-26)
+> **Line budget**: 1000 max | **Last updated**: Phase 00 audit (2026-08-27)
 >
-> Baseline scope: PRD evidence plus static repository inspection. Phase 00 remediation
-> has not started. This is an engineering readiness record, not legal advice.
+> Scope: Phase 00 implementation evidence, integrated tests, and static repository
+> inspection. This is an engineering readiness record, not legal advice.
 
 ---
 
@@ -14,31 +14,36 @@
 
 | Metric | Value |
 |--------|-------|
-| Open Findings | 10 |
-| Critical/High | 5 (0 critical, 5 high) |
-| Medium/Low | 5 (4 medium, 1 low) |
-| Phases Audited | 0 |
+| Open Findings | 3 |
+| Critical/High | 2 (0 critical, 2 high) |
+| Medium/Low | 1 (1 medium, 0 low) |
+| Phases Audited | 1 |
 | Last Clean Phase | -- |
-| Baseline Review | P00 PRD and static source review |
+| Findings Resolved | 7 |
 
 ### Existing Safeguards
 
-- [P00] New account passwords use bcrypt with cost 12, and successful legacy MD5
-  authentication upgrades the stored hash (`src/account.c:61`).
+- [P00] Account and private-chest passwords use bcrypt cost 12; valid legacy values
+  have tested upgrade paths and secret comparisons are constant-time.
 - [P00] All 124 inspected local base tables use InnoDB, and the principal player-save
   components already share a transaction (`src/sql_player.c:946`).
 - [P00] Item/scalar persistence tables have unique dedupe keys, and player item child
   tables use useful foreign keys (`migrations/bootstrap_multithread_safe.sql:797`).
-- [P00] Pooled MySQL connections are individually borrowed, select `utf8mb4`, and set
-  10-second read/write timeouts (`src/sql_pool.c:47`).
-- [P00] `.env`, root deployment certificates, runtime logs, and player/account runtime
-  paths are ignored by Git; no secret values were read during this review.
+- [P00] Every runtime MySQL connection uses one fail-closed configuration and verifies
+  bounded transport plus required session invariants.
+- [P00] Persistence failure diagnostics use stable call-site/error metadata without
+  SQL text or bound private values.
+- [P00] Redis contexts have bounded connection/command behavior and retain dirty state
+  instead of synchronously saving full players on the simulation thread.
+- [P00] `.env`, deployment certificates, runtime logs, player/account runtime paths,
+  SBOMs, and scanner reports are ignored by Git; no secret value was read in the audit.
 
 ---
 
-## Open Findings
+## Findings Register
 
-Active security, integrity, availability, or GDPR issues. Ordered by severity.
+Cumulative security, integrity, availability, and GDPR findings. Ordered by original
+severity; each entry carries its current status.
 
 ### Critical / High
 
@@ -52,7 +57,9 @@ Active security, integrity, availability, or GDPR issues. Ordered by severity.
   - Remediation: Log stable site ID, operation ID, error code, and duration only.
     Remove the ad hoc traces or make diagnostics explicit, sampled, redacted,
     non-blocking, size-bounded, permission-restricted, and rotated.
-  - Status: Open
+  - Status: Resolved in Phase 00 Session 01
+  - Resolution: Failure logging now emits categorical site, error, and timing metadata;
+    raw SQL/ad hoc trace paths are removed and protected by log-hygiene regressions.
   - Opened: P00 (2026-08-26)
 
 - **[P00-S02] Database credentials and transport fail open**
@@ -64,7 +71,9 @@ Active security, integrity, availability, or GDPR issues. Ordered by severity.
   - Remediation: Restrict local secret files to 0600, require explicit environment role
     and allow-listed DB target, fail closed when credentials are absent, and require
     verified TLS or a protected local socket/tunnel with bounded connect deadlines.
-  - Status: Open
+  - Status: Resolved in Phase 00 Session 08
+  - Resolution: Runtime roles, targets, credentials, secret-file permissions, bounded
+    transport, and required session invariants now fail closed through one connection path.
   - Opened: P00 (2026-08-26)
 
 - **[P00-S03] TLS listener can use a publicly tracked private key**
@@ -76,7 +85,9 @@ Active security, integrity, availability, or GDPR issues. Ordered by severity.
   - Remediation: Allow the fallback only in an explicit local role bound to loopback.
     Fail closed for network deployments unless an operator-supplied certificate and
     permission-restricted private key pass validation.
-  - Status: Open
+  - Status: Resolved in Phase 00 Session 08
+  - Resolution: The tracked localhost key is restricted to explicit loopback-local use;
+    network listeners require validated operator-owned certificate material.
   - Opened: P00 (2026-08-26)
 
 - **[P00-S04] Persistence can overwrite or destroy newer player state**
@@ -90,6 +101,8 @@ Active security, integrity, availability, or GDPR issues. Ordered by severity.
     exact acknowledgements, and a typed checksummed journal whose destination records
     mandatory operation IDs before replay is checkpointed.
   - Status: Open
+  - Carryforward: Session 03 retained retryable live state and Session 06 contained
+    fork/Redis failure. Phase 01 owns complete revisioned worker and journal replacement.
   - Opened: P00 (2026-08-26)
 
 - **[P00-S05] Economy and ownership updates lack atomic integrity boundaries**
@@ -102,6 +115,8 @@ Active security, integrity, availability, or GDPR issues. Ordered by severity.
     the authoritative balance or owner row, immutable ledger, both affected revisions,
     and any outbox record; publish only the committed result.
   - Status: Open
+  - Carryforward: Sessions 05 and 07 fixed frag publication, artifact output, and stale
+    absolute bank writes. Phase 02 owns operation-keyed atomic domain transactions.
   - Opened: P00 (2026-08-26)
 
 ### Medium / Low
@@ -115,7 +130,9 @@ Active security, integrity, availability, or GDPR issues. Ordered by severity.
   - Remediation: Use prepared statements or typed repositories for hot and sensitive
     paths; minimize `CLIENT_MULTI_STATEMENTS`; set and verify `utf8mb4`, time zone,
     isolation level, and SQL mode on every connection.
-  - Status: Open
+  - Status: Resolved in Phase 00 Session 08
+  - Resolution: Main, pooled, child, migration, and auxiliary connections now share and
+    verify the required character set, time zone, isolation, and SQL-mode contract.
   - Opened: P00 (2026-08-26)
 
 - **[P00-S07] Private chest passwords use unsalted SHA-256**
@@ -127,7 +144,9 @@ Active security, integrity, availability, or GDPR issues. Ordered by severity.
   - Remediation: Store a versioned adaptive password hash with a unique salt, compare in
     constant time, and rehash legacy chest secrets after successful verification or an
     explicit reset.
-  - Status: Open
+  - Status: Resolved in Phase 00 Session 09
+  - Resolution: New/reset values use unique-salt bcrypt cost 12; verified legacy SHA-256
+    values conditionally upgrade without overwriting a concurrent password change.
   - Opened: P00 (2026-08-26)
 
 - **[P00-S08] Retention and data-subject rights are not implemented end to end**
@@ -153,7 +172,9 @@ Active security, integrity, availability, or GDPR issues. Ordered by severity.
   - Remediation: Apply connect and command deadlines, guard every context before use,
     isolate cache from durability domains, retain dirty state locally, and use bounded
     retry/circuit behavior without synchronous mutation-path fallback.
-  - Status: Open
+  - Status: Resolved in Phase 00 Session 06
+  - Resolution: Connections and commands are bounded, null contexts are guarded, dirty
+    state is recovered, and mutation paths no longer synchronously full-save on failure.
   - Opened: P00 (2026-08-26)
 
 - **[P00-S10] Security policy and dependency automation are placeholders**
@@ -165,7 +186,9 @@ Active security, integrity, availability, or GDPR issues. Ordered by severity.
   - Remediation: Publish a real disclosure policy and supported-version statement,
     remove or repair invalid automation, inventory native/system dependencies, and add
     reproducible dependency and source security checks with triage ownership.
-  - Status: Open
+  - Status: Resolved in Phase 00 Session 10
+  - Resolution: Actionable reporting, direct dependency inventory/SPDX, immutable
+    CodeQL/Trivy CI, triage rules, and explicit unknown coverage are now maintained.
   - Opened: P00 (2026-08-26)
 
 ---
@@ -200,14 +223,14 @@ online identifiers as personal data in its
 | Data collection has documented purpose | FAIL | Purposes can be inferred from code, but no approved processing record or privacy notice was found. |
 | Lawful basis is documented per purpose | FAIL | No lawful-basis assessment was found; the inventory does not invent one. |
 | Consent obtained when consent is the selected basis | N/A | No processing activity is documented as relying on GDPR consent. |
-| Data minimization verified | FAIL | Duplicate identifiers, broad histories, raw-query logs, and ad hoc traces have not been minimized. |
+| Data minimization verified | FAIL | Raw-query/ad hoc persistence traces were removed, but duplicate identifiers and broad histories remain unassessed. |
 | Retention limits are defined and enforced | FAIL | Append-only and operational records lack table-by-table schedules and enforcement. |
 | Access and export path exists | FAIL | No authenticated, complete data-subject export path was found. |
 | Deletion/erasure path exists | FAIL | Account deletion is a no-op and no complete cross-store erasure workflow exists. |
-| No personal data in application logs | FAIL | Full SQL, SQL prefixes, IPs, names, PIDs, descriptions, and diagnostics can be logged. |
-| Security of processing is verified | FAIL | Five high findings remain and the PRD fault/privacy gates have not run. |
+| No personal data in application logs | FAIL | SQL and bound-value leakage is fixed, but ordinary operational/game logs still include names, IPs, and activity without an approved retention boundary. |
+| Security of processing is verified | FAIL | Two high integrity findings remain pending the Phase 01 and Phase 02 architecture. |
 | Third-party or processor transfers documented | FAIL | Deployment-specific MySQL, Redis, DurisWeb, hosting, and backup boundaries are not inventoried. |
-| Breach and vulnerability process documented | FAIL | `SECURITY.md` is an uncustomized template with no reporting route or response expectations. |
+| Breach and vulnerability process documented | PASS | `SECURITY.md` provides private intake, response targets, coordinated disclosure, and a public fallback. |
 
 ---
 
@@ -215,23 +238,32 @@ online identifiers as personal data in its
 
 ### Current Vulnerabilities
 
-Unknown. No CVE-specific dependency audit artifact was found, so this baseline makes
-no claim that the dependency set is vulnerability-free.
+The 2026-08-27 local Trivy 0.70.0 run recognized Ubuntu 24.04 and all 19 resolved
+direct packages. It reported one unfixed MEDIUM advisory (`CVE-2024-52005`) for the
+installed Git package and no fixed HIGH/CRITICAL finding. Transitive packages,
+deployment-only services, external infrastructure, and future GitHub CodeQL results
+remain `UNKNOWN`; this record does not claim the dependency set is vulnerability-free.
 
 ### Audit Status
 
 | Scope | Current State | Status |
 |-------|---------------|--------|
-| Native and system libraries | Debian/Ubuntu package names are declared without resolved versions or an SBOM | NOT AUDITED |
-| GitHub dependency updates | Dependabot has an empty `package-ecosystem` value | FAIL |
-| CI security checks | Build runs `make test-all`; no dependency or source security scanner is configured | FAIL |
-| GitHub Actions supply chain | `actions/checkout@v4` uses a moving major tag rather than an immutable commit | REVIEW |
+| Native and system libraries | Deterministic direct inventory, SPDX 2.3, and recognized minimal Ubuntu scan root | PARTIAL |
+| GitHub dependency updates | Weekly valid `github-actions` Dependabot updates | PASS |
+| CI security checks | Local contracts, CodeQL C/C++, and pinned Trivy with retained reports | PASS |
+| GitHub Actions supply chain | All third-party actions use immutable full commit SHAs | PASS |
 
 ---
 
 ## Resolved Findings
 
-No resolved findings yet.
+- P00-S01: sensitive SQL and bound-value persistence logging (Session 01).
+- P00-S02: fail-open database credentials and transport (Session 08).
+- P00-S03: network TLS fallback to the tracked localhost key (Session 08).
+- P00-S06: unenforced connection session assumptions (Session 08).
+- P00-S07: unsalted private-chest SHA-256 values (Session 09).
+- P00-S09: unbounded Redis failure behavior and synchronous fallback (Session 06).
+- P00-S10: placeholder security policy and dependency automation (Session 10).
 
 ---
 
@@ -239,32 +271,21 @@ No resolved findings yet.
 
 | Phase | Sessions | Security | GDPR | Findings Opened | Findings Closed |
 |-------|----------|----------|------|-----------------|-----------------|
-| P00 baseline | 0 | FAIL | FAIL | 10 | 0 |
+| P00 | 10 | AT RISK | FAIL | 10 | 7 |
 
 ---
 
 ## Recommendations
 
-1. [P00] Stop sensitive query and ad hoc trace logging; add regression checks that
-   failure logs contain site IDs and error metadata but no bound values.
-2. [P00] Restrict the local `.env`, fail closed on missing DB configuration, enforce an
-   explicit environment/target allow-list, and require verified transport plus session
-   invariants on every MySQL connection.
-3. [P00] Restrict the tracked TLS fallback to explicit loopback development and require
-   operator-owned certificates for every network deployment.
-4. [P00] Fail terminal transitions closed, bound Redis failure behavior, and preserve
-   exact dirty revisions until durable acknowledgement.
-5. [P02] Move bank, wallet, epic, ownership, ledger, and outbox effects into idempotent
+1. [P01] Replace forked saves with immutable revisioned jobs, exact acknowledgements,
+   and a typed checksummed journal; preserve Phase 00 terminal and dirty-state contracts.
+2. [P02] Move bank, wallet, epic, ownership, ledger, and outbox effects into idempotent
    transactions with mandatory operation IDs and reconciliation tests.
-6. [P03] Approve a real personal-data processing inventory, lawful bases, privacy
+3. [P03] Approve a real personal-data processing inventory, lawful bases, privacy
    notice, retention schedule, access/export process, and complete erasure workflow.
-7. [P00] Migrate private chest secrets to an adaptive salted hash and define legacy
-   upgrade/reset behavior.
-8. [P00] Replace the placeholder security policy and broken Dependabot configuration;
-   generate an SBOM and record reproducible dependency/CVE and source-scan results.
-9. [P00] Do not mark this posture clean until the relevant focused tests, privacy log
-   tests, non-production fault injections, and security review close every finding.
+4. [P01-P03] Do not mark this posture clean until focused tests, privacy log tests,
+   non-production fault injection, and security review close every remaining finding.
 
 ---
 
-*Initial baseline populated from the PRD and current repository state; future phases update it via carryforward.*
+*Updated from the Phase 00 audit; future phases update it via carryforward.*

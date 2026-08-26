@@ -2,14 +2,14 @@
   "version": "2.0",
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
-  "current_phase": 0,
-  "current_session": "phase00-session10-security-policy-and-dependency-baseline",
+  "current_phase": 1,
+  "current_session": "phase01-session01-player-revision-and-component-state-foundation",
   "monorepo": false,
   "phases": {
     "1": {
       "name": "Replace Forked Full Saves",
       "description": "Replace player and world persistence forks with revisioned immutable workers, exact acknowledgements, and typed journal recovery.",
-      "status": "not_started",
+      "status": "in_progress",
       "session_count": 8
     },
     "2": {
@@ -21,7 +21,7 @@
     "0": {
       "name": "Correctness and Immediate Lag Removal",
       "description": "Remove confirmed persistence correctness defects, immediate simulation-thread lag hazards, and fail-open security behavior before the revisioned save pipeline.",
-      "status": "in_progress",
+      "status": "complete",
       "session_count": 10
     },
     "3": {
@@ -40,7 +40,8 @@
     "phase00-session06-redis-failure-and-recovery-containment",
     "phase00-session07-account-bank-delta-safety",
     "phase00-session08-runtime-connection-trust-boundaries",
-    "phase00-session09-private-chest-password-hardening"
+    "phase00-session09-private-chest-password-hardening",
+    "phase00-session10-security-policy-and-dependency-baseline"
   ],
   "next_session_history": [
     {
@@ -182,6 +183,21 @@
       "date": "2026-08-27",
       "session": "phase00-session10-security-policy-and-dependency-baseline",
       "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase00-session10-security-policy-and-dependency-baseline",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase00-session10-security-policy-and-dependency-baseline",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session01-player-revision-and-component-state-foundation",
+      "status": "selected"
     }
   ]
 }
