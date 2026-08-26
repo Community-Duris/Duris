@@ -183,8 +183,8 @@ int sql_migrate_all_players(void);
 // caller must free returned string
 char *sql_escape_string(const char *str);
 
-// log sql error with context
-void sql_player_error(const char *context, const char *query);
+// log a redacted SQL failure with a stable call-site label
+void sql_player_error(const char *site);
 
 // towns
 bool sql_save_towns(void);

@@ -125,7 +125,7 @@ static int persistence_worker_timed_join(pthread_t thread)
 }
 
 /* ===================================================================
- * Dynamic queue helpers – callers MUST hold the queue mutex.
+ * Dynamic queue helpers - callers MUST hold the queue mutex.
  * =================================================================== */
 
 /* Allocate internal buffer for 'capacity' event slots.
@@ -1643,6 +1643,67 @@ int persistence_large_event_worker_stop_pending(void)
 	return stop_in_progress;
 }
 
+static struct persistence_queue_health_snapshot
+persistence_queue_health_make(const persistence_event_queue_data *queue, unsigned long written,
+			      unsigned long failures, int running, int stop_pending,
+			      time_t heartbeat)
+{
+	struct persistence_queue_health_snapshot snapshot = {};
+	snapshot.pending = queue->count > 0 ? (uint64_t)queue->count : 0;
+	snapshot.dropped = queue->dropped;
+	snapshot.written = written;
+	snapshot.failures = failures;
+	snapshot.running = running ? 1 : 0;
+	snapshot.stop_pending = stop_pending ? 1 : 0;
+	if (heartbeat > 0)
+	{
+		time_t now = time(NULL);
+		snapshot.heartbeat_available = 1;
+		if (now >= heartbeat)
+			snapshot.heartbeat_age_msec = (uint64_t)(now - heartbeat) * 1000ULL;
+	}
+	return snapshot;
+}
+
+struct persistence_queue_health_snapshot persistence_item_event_health_snapshot_copy(void)
+{
+	pthread_mutex_lock(&persistence_item_event_queue_mutex);
+	struct persistence_queue_health_snapshot snapshot = persistence_queue_health_make(
+		&persistence_item_event_queue, persistence_item_event_worker_write_count,
+		persistence_item_event_worker_failure_count,
+		persistence_item_event_worker_is_running,
+		persistence_item_event_worker_stop_pending_flag,
+		persistence_item_event_worker_last_heartbeat);
+	pthread_mutex_unlock(&persistence_item_event_queue_mutex);
+	return snapshot;
+}
+
+struct persistence_queue_health_snapshot persistence_scalar_event_health_snapshot_copy(void)
+{
+	pthread_mutex_lock(&persistence_scalar_event_queue_mutex);
+	struct persistence_queue_health_snapshot snapshot = persistence_queue_health_make(
+		&persistence_scalar_event_queue, persistence_scalar_event_worker_write_count,
+		persistence_scalar_event_worker_failure_count,
+		persistence_scalar_event_worker_is_running,
+		persistence_scalar_event_worker_stop_pending_flag,
+		persistence_scalar_event_worker_last_heartbeat);
+	pthread_mutex_unlock(&persistence_scalar_event_queue_mutex);
+	return snapshot;
+}
+
+struct persistence_queue_health_snapshot persistence_large_event_health_snapshot_copy(void)
+{
+	pthread_mutex_lock(&persistence_large_event_queue_mutex);
+	struct persistence_queue_health_snapshot snapshot = persistence_queue_health_make(
+		&persistence_large_event_queue, persistence_large_event_worker_write_count,
+		persistence_large_event_worker_failure_count,
+		persistence_large_event_worker_is_running,
+		persistence_large_event_worker_stop_pending_flag,
+		persistence_large_event_worker_last_heartbeat);
+	pthread_mutex_unlock(&persistence_large_event_queue_mutex);
+	return snapshot;
+}
+
 void persistence_item_event_worker_heartbeat_set(time_t timestamp)
 {
 	pthread_mutex_lock(&persistence_item_event_queue_mutex);
@@ -1665,7 +1726,7 @@ void persistence_large_event_worker_heartbeat_set(time_t timestamp)
 }
 
 /* =================================================================
- * persistence_sql_escape_field — SQL string escaping for safe
+ * persistence_sql_escape_field -- SQL string escaping for safe
  * embedding of player/item names in SQL queries.
  * Doubles apostrophes and backslashes; replaces pipe, CR, LF with space.
  * Returns "none" for NULL input; returns "" for NULL/bad buffer.

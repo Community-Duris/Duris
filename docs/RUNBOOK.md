@@ -91,13 +91,44 @@ tail -f logs/log/status                 # boot + DB issues
 grep -i 'NEVENT BUDGET' logs/log/syslog # event-callback latency telemetry
 ```
 
+### Persistence health
+
+A trusted character can run `world persistence` for a fresh, read-only view of
+database and save health. Repeating the command takes new snapshots; it does not
+cache output or mutate queue, Redis, deferred-save, or query state.
+
+The report includes up to eight deterministically ranked query source sites,
+total calls and failures, registry overflow, item/scalar/large queue counters,
+worker and heartbeat state, Redis active/inflight dirty counts and ages,
+deferred pending/scheduled/failed-unscheduled counts, and the oldest aggregate
+save age. Output is metadata-only and must not be copied into a workflow that
+expects SQL, player, account, item, IP, or path values.
+
+Interpret explicit states as follows:
+
+- `state=empty` means the observed subsystem currently has no pending work or
+  has recorded no query calls.
+- `state=disabled` means Redis integration is configured off.
+- `state=unavailable` means the subsystem is enabled but its local health state
+  cannot currently confirm availability. `heartbeat=unavailable` means that
+  queue worker has never published a heartbeat.
+- `failed_unscheduled` greater than zero is stranded deferred-save work, not a
+  retry-in-progress claim. Investigate the categorical persistence alerts.
+- `registry_overflow` greater than zero means additional source sites were not
+  retained; recorded totals remain bounded and should not be treated as a full
+  site inventory.
+
+The displayed query operation IDs and any `SQL_TRACE` operation IDs are scoped
+to the current process. They are correlation aids, not durable transaction or
+idempotency identifiers.
+
 ## Crash recovery
 
 Two automatic paths run at next boot after an unclean exit:
 
-1. **Redis world-state recovery** — if a snapshot exists, world state
+1. **Redis world-state recovery** -- if a snapshot exists, world state
    (including combat) is restored, then the snapshot is cleared.
-2. **Copyover recovery** — only with `-C` boot flag / copyover flow.
+2. **Copyover recovery** -- only with `-C` boot flag / copyover flow.
 
 If Redis recovery fails, the server continues with a normal boot state. Check
 `logs/log/status` for `Performing redis crash recovery...` lines after any
@@ -110,7 +141,7 @@ These are investigated and understood; they are not signs of a failed boot.
 | Line | Meaning |
 |---|---|
 | `Heaven has invalid number: 1 (should be 0)` | `recalc_zone_numbers()` finding and correcting a zone number that disagrees with its lowest room vnum. Self-healing; fixing the data would be zone-numbering surgery with a wide blast radius. |
-| `PERSISTENCE: worker_unavailable_flat_fallback` (a few lines at boot) | Item events fired during world load are written to the flat fallback and replayed before the workers start — followed by `replayed N fallback persistence events; 0 remain queued`. Working as designed. |
+| `PERSISTENCE: worker_unavailable_flat_fallback` (a few lines at boot) | Item events fired during world load are written to the flat fallback and replayed before the workers start -- followed by `replayed N fallback persistence events; 0 remain queued`. Working as designed. |
 | Mob log `RIDICULOUS damage` / `M cmd not executed` | Area data, not engine defects. |
 
 ## Backups and maintenance scripts
@@ -125,7 +156,7 @@ These are investigated and understood; they are not signs of a failed boot.
 | `bin/migrations/*` | Offline pfile/schema conversion binaries built from `src-migrate/`. |
 
 Schema operations follow the safety rules in [DATABASE.md](DATABASE.md):
-back up, clone, validate replay on the clone — never against live data.
+back up, clone, validate replay on the clone -- never against live data.
 
 `backup_pfiles.sh` chooses its database-dump branch only when `REDIS` is the
 exact lowercase value `true` or the value `1`; the server itself accepts
@@ -147,8 +178,8 @@ editing.
 
 One property is a live balance switch worth knowing about:
 `artifact.wars.modifier` scales the race-war penalty applied by
-`event_artifact_wars` — each of a violating player's artifacts loses
-`modifier × punish_level` of its remaining life, clamped to the whole of it.
+`event_artifact_wars` -- each of a violating player's artifacts loses
+`modifier x punish_level` of its remaining life, clamped to the whole of it.
 The code default is `0.0` (forced drop only), but `lib/duris.properties` ships
 `artifact.wars.modifier=0.500`, so a server using that file halves the
 offender's artifact timers on a first-level violation. Set it to `0` to disable

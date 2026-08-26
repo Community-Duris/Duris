@@ -804,27 +804,67 @@ void wizlog(int level, const char *format, ...)
 	free(lbuf);
 }
 
+static int persistence_alert_format_is_numeric(const char *format)
+{
+	if (!format)
+		return 0;
+	for (const char *p = format; *p; ++p)
+	{
+		if (*p != '%')
+			continue;
+		++p;
+		if (*p == '%')
+			continue;
+		while (*p && strchr("-+ #0'.*0123456789hljztL", *p))
+			++p;
+		if (!*p || !strchr("diouxXfFeEgGaA", *p))
+			return 0;
+	}
+	return 1;
+}
+
+static const char *persistence_alert_category(const char *value, char *out, size_t out_size)
+{
+	if (!out || out_size == 0)
+		return "unknown";
+	size_t used = 0;
+	for (const unsigned char *p = (const unsigned char *)value; p && *p && used + 1 < out_size;
+	     ++p)
+	{
+		if (isalnum(*p) || *p == '_' || *p == '-' || *p == '/')
+			out[used++] = (char)*p;
+		else
+			return "unknown";
+	}
+	out[used] = '\0';
+	return used ? out : "unknown";
+}
+
 void persistence_alert(int level, const char *domain, const char *owner, const char *item_uid,
 		       const char *event_id, const char *action, const char *format, ...)
 {
 	va_list args;
 	char details[MAX_STRING_LENGTH];
 	char alert[MAX_STRING_LENGTH * 2];
+	char safe_domain[64];
+	char safe_action[64];
+
+	(void)owner;
+	(void)item_uid;
+	(void)event_id;
 
 	details[0] = '\0';
-	if (format && *format)
+	if (format && *format && persistence_alert_format_is_numeric(format))
 	{
 		va_start(args, format);
 		vsnprintf(details, sizeof(details), format, args);
 		va_end(args);
 	}
 
-	checked_snprintf(
-		alert, sizeof(alert), "domain=%s owner=%s item_uid=%s event_id=%s action=%s%s%s",
-		(domain && *domain) ? domain : "unknown", (owner && *owner) ? owner : "unknown",
-		(item_uid && *item_uid) ? item_uid : "none",
-		(event_id && *event_id) ? event_id : "none",
-		(action && *action) ? action : "unknown", details[0] ? " detail=" : "", details);
+	checked_snprintf(alert, sizeof(alert), "domain=%s action=%s outcome=alert%s%s",
+			 persistence_alert_category(domain, safe_domain, sizeof(safe_domain)),
+			 persistence_alert_category(action, safe_action, sizeof(safe_action)),
+			 details[0] ? " detail=" : "", details);
 
 	logit(LOG_FILE, "PERSISTENCE: %s", alert);
 	logit(LOG_WIZ, "PERSISTENCE: %s", alert);
@@ -838,6 +878,7 @@ unsigned long long persistence_next_item_uid(void)
 
 void persistence_assign_item_uid(P_obj obj, const char *reason)
 {
+	(void)reason;
 	if (!obj || obj->obj_uid)
 		return;
 
@@ -845,8 +886,8 @@ void persistence_assign_item_uid(P_obj obj, const char *reason)
 
 	if (!obj->obj_uid)
 	{
-		persistence_alert(AVATAR, "item_uid", reason ? reason : "unknown", "0", "none",
-				  "assignment_failed", "object pointer=%p", obj);
+		persistence_alert(AVATAR, "item_uid", "redacted", "none", "none",
+				  "assignment_failed", NULL);
 	}
 }
 
@@ -893,11 +934,12 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 	char scalar_record[PERSISTENCE_EVENT_MAX_LEN + 64];
 	const char *record_line;
 	static unsigned long fallback_count = 0;
+	(void)owner;
 
 	if (_pwipe)
 	{
-		persistence_alert(AVATAR, domain ? domain : "persistence",
-				  owner ? owner : "fallback", "none", "none", "pwipe_rejected",
+		persistence_alert(AVATAR, domain ? domain : "persistence", "redacted", "none",
+				  "none", "pwipe_rejected",
 				  "fallback event rejected while season reset is active");
 		return 0;
 	}
@@ -914,8 +956,8 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 	if (_pwipe)
 	{
 		pthread_mutex_unlock(&persistence_fallback_log_mutex);
-		persistence_alert(AVATAR, domain ? domain : "persistence",
-				  owner ? owner : "fallback", "none", "none", "pwipe_rejected",
+		persistence_alert(AVATAR, domain ? domain : "persistence", "redacted", "none",
+				  "none", "pwipe_rejected",
 				  "fallback event rejected while season reset is active");
 		return 0;
 	}
@@ -923,10 +965,9 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 	if (!log_f)
 	{
 		pthread_mutex_unlock(&persistence_fallback_log_mutex);
-		persistence_alert(AVATAR, domain ? domain : "persistence",
-				  owner ? owner : "fallback", "none", "none",
-				  action ? action : "fallback_open_failed",
-				  "could not open %s; event not persisted", LOG_EVENT);
+		persistence_alert(AVATAR, domain ? domain : "persistence", "redacted", "none",
+				  "none", action ? action : "fallback_open_failed", "errno=%d",
+				  errno);
 		return 0;
 	}
 
@@ -948,23 +989,20 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 	fallback_count++;
 	if (!ok)
 	{
-		persistence_alert(AVATAR, domain ? domain : "persistence",
-				  owner ? owner : "fallback", "none", "none",
-				  action ? action : "fallback_write_failed",
-				  "write to %s failed; event not persisted", LOG_EVENT);
+		persistence_alert(AVATAR, domain ? domain : "persistence", "redacted", "none",
+				  "none", action ? action : "fallback_write_failed",
+				  "write_failed=%d", 1);
 		return 0;
 	}
 
 	if (fallback_count <= 5 || !(fallback_count % 1000))
 	{
-		logit(LOG_FILE,
-		      "PERSISTENCE: domain=%s owner=%s action=%s detail=wrote event to flat fallback count=%lu",
-		      domain ? domain : "persistence", owner ? owner : "fallback",
-		      action ? action : "flat_fallback", fallback_count);
-		logit(LOG_WIZ,
-		      "PERSISTENCE: domain=%s owner=%s action=%s detail=wrote event to flat fallback count=%lu",
-		      domain ? domain : "persistence", owner ? owner : "fallback",
-		      action ? action : "flat_fallback", fallback_count);
+		logit(LOG_FILE, "PERSISTENCE: domain=%s action=%s outcome=fallback_write count=%lu",
+		      domain ? domain : "persistence", action ? action : "flat_fallback",
+		      fallback_count);
+		logit(LOG_WIZ, "PERSISTENCE: domain=%s action=%s outcome=fallback_write count=%lu",
+		      domain ? domain : "persistence", action ? action : "flat_fallback",
+		      fallback_count);
 	}
 
 	return 1;
@@ -1037,9 +1075,8 @@ int persistence_flush_item_events(int max_events)
 		{
 			pthread_mutex_unlock(&persistence_fallback_log_mutex);
 			persistence_alert(AVATAR, "item_event", "queue", "none", "none",
-					  "flush_open_failed",
-					  "could not open %s; %d events remain queued", LOG_EVENT,
-					  pending);
+					  "flush_open_failed", "pending=%d errno=%d", pending,
+					  errno);
 			return 0;
 		}
 	}
@@ -1097,8 +1134,8 @@ int persistence_flush_item_events(int max_events)
 				{
 					if (ftruncate(fd, durability_offset) != 0)
 						logit(LOG_SYS,
-						      "Could not restore %s after persistence failure: %s",
-						      LOG_EVENT, strerror(errno));
+						      "Could not restore persistence fallback errno=%d",
+						      errno);
 					close(fd);
 				}
 			}
@@ -1178,9 +1215,8 @@ int persistence_flush_scalar_events(int max_events)
 		{
 			pthread_mutex_unlock(&persistence_fallback_log_mutex);
 			persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
-					  "flush_open_failed",
-					  "could not open %s; %d scalar events remain queued",
-					  LOG_EVENT, pending);
+					  "flush_open_failed", "pending=%d errno=%d", pending,
+					  errno);
 			return 0;
 		}
 	}
@@ -1241,8 +1277,8 @@ int persistence_flush_scalar_events(int max_events)
 				{
 					if (ftruncate(fd, durability_offset) != 0)
 						logit(LOG_SYS,
-						      "Could not restore %s after persistence failure: %s",
-						      LOG_EVENT, strerror(errno));
+						      "Could not restore persistence fallback errno=%d",
+						      errno);
 					close(fd);
 				}
 			}
@@ -1388,8 +1424,7 @@ int persistence_quarantine_fallback_events(void)
 			return 1;
 		}
 		persistence_alert(AVATAR, "persistence_replay", "pwipe", "none", "none",
-				  "quarantine_stat_failed",
-				  "could not inspect %s before pwipe: errno=%d", LOG_EVENT, errno);
+				  "quarantine_stat_failed", "errno=%d", errno);
 		pthread_mutex_unlock(&persistence_fallback_log_mutex);
 		return 0;
 	}
@@ -1399,16 +1434,13 @@ int persistence_quarantine_fallback_events(void)
 	if (rename(LOG_EVENT, quarantine_path))
 	{
 		persistence_alert(AVATAR, "persistence_replay", "pwipe", "none", "none",
-				  "quarantine_rename_failed",
-				  "could not quarantine %s before pwipe: errno=%d", LOG_EVENT,
-				  errno);
+				  "quarantine_rename_failed", "errno=%d", errno);
 		pthread_mutex_unlock(&persistence_fallback_log_mutex);
 		return 0;
 	}
 
 	logit(LOG_STATUS,
-	      "PERSISTENCE: domain=persistence_replay owner=pwipe action=quarantine detail=renamed %s to %s",
-	      LOG_EVENT, quarantine_path);
+	      "PERSISTENCE: domain=persistence_replay action=quarantine outcome=success");
 	pthread_mutex_unlock(&persistence_fallback_log_mutex);
 	return 1;
 }
@@ -1436,9 +1468,7 @@ int persistence_replay_fallback_events(void)
 		if (errno != ENOENT)
 		{
 			persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
-					  "open_failed",
-					  "could not open %s for fallback replay: errno=%d",
-					  LOG_EVENT, errno);
+					  "open_failed", "errno=%d", errno);
 		}
 		return 0;
 	}
@@ -1449,8 +1479,7 @@ int persistence_replay_fallback_events(void)
 	{
 		fclose(in_f);
 		persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
-				  "temp_open_failed",
-				  "could not open %s while replaying fallback events", tmp_path);
+				  "temp_open_failed", "errno=%d", errno);
 		return 0;
 	}
 
@@ -1517,10 +1546,8 @@ int persistence_replay_fallback_events(void)
 
 	if (rewrite_failed)
 	{
-		persistence_alert(
-			AVATAR, "persistence_replay", "boot", "none", "none", "rewrite_failed",
-			"fallback replay wrote SQL but could not safely rewrite %s; leaving original log for retry",
-			LOG_EVENT);
+		persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
+				  "rewrite_failed", "replayed=%d failed=%d", replayed, failed);
 		remove(tmp_path);
 		return replayed;
 	}
@@ -1529,10 +1556,9 @@ int persistence_replay_fallback_events(void)
 		 (long)time(NULL), (long)getpid());
 	if (link(LOG_EVENT, backup_path))
 	{
-		persistence_alert(
-			AVATAR, "persistence_replay", "boot", "none", "none", "backup_failed",
-			"could not link %s to %s before replay; leaving original log for retry",
-			LOG_EVENT, backup_path);
+		persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
+				  "backup_failed", "replayed=%d failed=%d errno=%d", replayed,
+				  failed, errno);
 		remove(tmp_path);
 		return replayed;
 	}
@@ -1540,24 +1566,21 @@ int persistence_replay_fallback_events(void)
 	if (rename(tmp_path, LOG_EVENT))
 	{
 		persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
-				  "replace_failed",
-				  "could not replace %s after replay; backup retained at %s",
-				  LOG_EVENT, backup_path);
+				  "replace_failed", "replayed=%d failed=%d errno=%d", replayed,
+				  failed, errno);
 		remove(tmp_path);
 		return replayed;
 	}
 
 	persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
-			  failed ? "partial_replay" : "replayed",
-			  "replayed %d fallback persistence events; %d remain queued in %s",
-			  replayed, failed, LOG_EVENT);
+			  failed ? "partial_replay" : "replayed", "replayed=%d failed=%d", replayed,
+			  failed);
 
 	if (replayed > 0 || failed > 0)
 	{
 		persistence_replay_handled = replayed + failed;
-		wizlog(AVATAR,
-		       "&+R&-LPERSISTENCE FALLBACK REPLAY:&n %d events WERE handled (replayed into SQL). %d events WILL be retried on next boot. Location: %s (rotated to backup on replay).",
-		       replayed, failed, LOG_EVENT);
+		wizlog(AVATAR, "&+R&-LPERSISTENCE FALLBACK REPLAY:&n replayed=%d retry=%d",
+		       replayed, failed);
 	}
 	else
 	{

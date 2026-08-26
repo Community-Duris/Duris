@@ -43,7 +43,9 @@ def main():
     ok &= check("worker uses pool connection",
                 "sql_persistence_connection" in files["async_c"])
     ok &= check("worker never uses live P_obj walk for apply",
-                "apply_sql_script" in files["async_c"] and "mysql_real_query" in files["async_c"])
+                "apply_sql_script" in files["async_c"]
+                and "sql_observed_execute_at" in files["async_c"]
+                and "mysql_real_query" not in files["async_c"])
     ok &= check("snapshot builds DELETE public then inserts",
                 "DELETE FROM locker_items WHERE locker_id=" in files["async_c"]
                 and "INSERT INTO locker_items" in files["async_c"])

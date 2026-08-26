@@ -1958,7 +1958,7 @@ void load_obj_to_newbies(P_char ch)
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 	{
 		char keywords[MAX_STRING_LENGTH];
-		// LATENT: sprintf without bounds — safe because obj->name is bounded
+		// LATENT: sprintf without bounds -- safe because obj->name is bounded
 		// by MAX_INPUT_LENGTH and keywords[] is MAX_STRING_LENGTH. Use
 		// snprintf for defense-in-depth if refactoring.
 		sprintf(keywords, "%s newbie", obj->name);
@@ -2462,37 +2462,14 @@ void enter_game(P_desc d)
 		}
 		else if (d->rtype == 0)
 		{
-			{
-				char trace[MAX_STRING_LENGTH];
-				snprintf(
-					trace, sizeof(trace),
-					"&+w[TRACE]&n enter_game rtype=%d -> sql_load_player_items\r\n",
-					d->rtype);
-				logit(LOG_FILE, "%s", trace);
-			}
 			// sql load - items were loaded in restoreCharOnly but reset_char cleared them
 			// reload from sql
 #ifndef __NO_MYSQL__
 			sql_load_player_items(ch);
 #endif
-			{
-				char trace[MAX_STRING_LENGTH];
-				snprintf(
-					trace, sizeof(trace),
-					"&+w[TRACE]&n enter_game after sql_load_player_items rtype=%d\r\n",
-					d->rtype);
-				logit(LOG_FILE, "%s", trace);
-			}
 		}
 		else
 		{
-			{
-				char trace[MAX_STRING_LENGTH];
-				snprintf(trace, sizeof(trace),
-					 "&+w[TRACE]&n enter_game rtype=%d -> storage branch\r\n",
-					 d->rtype);
-				logit(LOG_FILE, "%s", trace);
-			}
 			send_to_char("\r\nCouldn't find any items in storage for you...\r\n", ch);
 		}
 
@@ -2969,9 +2946,9 @@ void enter_game(P_desc d)
 	writeCharacter(ch, 1, NOWHERE);
 	if (!sql_save_player_core(ch))
 	{
-		statuslog(56, "&+RALERT&n: failed to save post-entry core for %s", GET_NAME(ch));
-		persistence_alert(AVATAR, "player", GET_NAME(ch), "none", "none", "sql_save_failed",
-				  "post-entry core save failed");
+		statuslog(56, "&+RALERT&n: post-entry player core save failed");
+		persistence_alert(AVATAR, "player", "redacted", "none", "none", "sql_save_failed",
+				  NULL);
 	}
 	sql_connectIP(ch);
 	displayShutdownMsg(ch);
@@ -3904,8 +3881,7 @@ void select_pwd(P_desc d, char *arg)
 		{
 			SEND_TO_Q("\r\nCharacter deletion failed; please contact an immortal.\r\n",
 				  d);
-			logit(LOG_DEBUG, "nanny: deleteCharacter failed in CON_DELETE for %s",
-			      GET_NAME(d->character));
+			logit(LOG_DEBUG, "nanny: deleteCharacter failed in CON_DELETE");
 			close_socket(d);
 			return;
 		}
@@ -5636,8 +5612,7 @@ void nanny(P_desc d, char *arg)
 		{
 			SEND_TO_Q("\r\nCharacter deletion failed; please contact an immortal.\r\n",
 				  d);
-			logit(LOG_DEBUG, "nanny: deleteCharacter failed in CON_DELETE for %s",
-			      GET_NAME(d->character));
+			logit(LOG_DEBUG, "nanny: deleteCharacter failed in CON_DELETE");
 			close_socket(d);
 			return;
 		}

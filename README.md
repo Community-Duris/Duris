@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 1.81.11** | [Versioning policy](docs/VERSIONING.md)
+**Version: 1.81.12** | [Versioning policy](docs/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -14,7 +14,7 @@
 [![Last commit][commit-badge]][commits]
 [![Open issues][issues-badge]][issues]
 
-![DurisMUD — a dragon circles a citadel between moonlit ruins and a volcanic fortress](docs/assets/durismud-readme-header.webp)
+![DurisMUD - a dragon circles a citadel between moonlit ruins and a volcanic fortress](docs/assets/durismud-readme-header.webp)
 
 DurisMUD is a long-running dark-fantasy MUD built around a global race war
 between good and evil. Its text world combines full player-versus-player

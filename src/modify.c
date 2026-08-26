@@ -1679,10 +1679,9 @@ bool rename_character(P_char ch, char *old_name, char *new_name)
 			send_to_char(
 				"&+RWarning:&n failed to save the renamed character to the database.\r\n",
 				ch);
-			statuslog(56, "&+RALERT&n: failed to save renamed character core for %s",
-				  GET_NAME(doofus));
-			persistence_alert(AVATAR, "player", GET_NAME(doofus), "none", "none",
-					  "sql_save_failed", "rename core save failed");
+			statuslog(56, "&+RALERT&n: renamed character core save failed");
+			persistence_alert(AVATAR, "player", "redacted", "none", "none",
+					  "sql_save_failed", NULL);
 			return FALSE;
 		}
 		writeCharacter(doofus, 1, doofus->in_room);
@@ -1698,13 +1697,9 @@ bool rename_character(P_char ch, char *old_name, char *new_name)
 				send_to_char(
 					"&+RWarning:&n failed to update the account character list.\r\n",
 					ch);
-				statuslog(
-					56,
-					"&+RALERT&n: failed to update account file after rename for %s",
-					GET_NAME(doofus));
-				persistence_alert(AVATAR, "account",
-						  doofus->desc->account->acct_name, "none", "none",
-						  "write_failed", "rename account update failed");
+				statuslog(56, "&+RALERT&n: rename account update failed");
+				persistence_alert(AVATAR, "account", "redacted", "none", "none",
+						  "write_failed", NULL);
 			}
 		}
 #endif

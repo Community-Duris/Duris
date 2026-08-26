@@ -3,7 +3,7 @@
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
   "current_phase": 0,
-  "current_session": "phase00-session01-redacted-persistence-observability",
+  "current_session": null,
   "monorepo": false,
   "phases": {
     "1": {
@@ -21,7 +21,7 @@
     "0": {
       "name": "Correctness and Immediate Lag Removal",
       "description": "Remove confirmed persistence correctness defects, immediate simulation-thread lag hazards, and fail-open security behavior before the revisioned save pipeline.",
-      "status": "not_started",
+      "status": "in_progress",
       "session_count": 10
     },
     "3": {
@@ -31,12 +31,24 @@
       "session_count": 14
     }
   },
-  "completed_sessions": [],
+  "completed_sessions": [
+    "phase00-session01-redacted-persistence-observability"
+  ],
   "next_session_history": [
     {
       "date": "2026-08-26",
       "session": "phase00-session01-redacted-persistence-observability",
       "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase00-session01-redacted-persistence-observability",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase00-session01-redacted-persistence-observability",
+      "status": "completed"
     }
   ]
 }

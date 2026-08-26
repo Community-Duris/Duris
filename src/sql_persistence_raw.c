@@ -1,5 +1,5 @@
 /*
- * sql_persistence_raw.c — raw SQL execution on the persistence DB connection.
+ * sql_persistence_raw.c -- raw SQL execution on the persistence DB connection.
  * Separated from sql.c to keep that file manageable in size.
  * Called by the large-payload event queue worker thread.
  *
@@ -33,7 +33,7 @@ extern pthread_mutex_t persistence_sql_mutex;
 bool sql_persistence_execute_raw(const char *sql)
 {
 	MYSQL *db;
-	int ret;
+	bool success;
 	bool need_repair = false;
 
 	if (!sql || !*sql)
@@ -54,8 +54,11 @@ bool sql_persistence_execute_raw(const char *sql)
 		pthread_mutex_lock(&persistence_sql_mutex);
 
 	sql_clear_results_on(db);
-	ret = mysql_real_query(db, sql, strlen(sql));
-	if (!ret)
+	uint64_t operation_id = 0;
+	success = sql_observed_execute_at(db, PERSISTENCE_QUERY_SITE,
+					  PERSISTENCE_QUERY_CONTEXT_EVENT_WORKER, sql, strlen(sql),
+					  &operation_id);
+	if (success)
 	{
 		/* Drain every result set produced by CLIENT_MULTI_STATEMENTS so the
 		 * pooled connection is clean for the next caller.  Ignore the returned
@@ -71,19 +74,16 @@ bool sql_persistence_execute_raw(const char *sql)
 		if (mysql_more_results(db))
 		{
 			logit(LOG_DEBUG,
-			      "Persistence MySQL error in sql_persistence_execute_raw(): %s",
-			      mysql_error(db));
-			logit(LOG_DEBUG, "Persistence MySQL failed query (first 200 chars): %.200s",
-			      sql);
-			ret = 1;
+			      "Persistence event worker result drain failed operation=%llu "
+			      "error_code=%u sqlstate=%.5s",
+			      (unsigned long long)operation_id, (unsigned int)mysql_errno(db),
+			      mysql_sqlstate(db));
+			success = false;
 			need_repair = (db != persistenceDB);
 		}
 	}
 	else
 	{
-		logit(LOG_DEBUG, "Persistence MySQL error in sql_persistence_execute_raw(): %s",
-		      mysql_error(db));
-		logit(LOG_DEBUG, "Persistence MySQL failed query (first 200 chars): %.200s", sql);
 		need_repair = (db != persistenceDB);
 	}
 
@@ -104,6 +104,6 @@ bool sql_persistence_execute_raw(const char *sql)
 	if (db == persistenceDB)
 		pthread_mutex_unlock(&persistence_sql_mutex);
 
-	return ret == 0;
+	return success;
 }
 #endif /* __NO_MYSQL__ */

@@ -106,16 +106,19 @@ specific issue and restart the server after changing them.
 
 | Variable | Value | Output / scope |
 | --- | --- | --- |
-| `SQL_TRACE` | any non-empty value except `0`, `false`, or `off` | SQL trace output for database execution. |
+| `SQL_TRACE` | any non-empty value except `0`, `false`, or `off` | Metadata-only SQL execution events in the normal logs. |
 | `GET_TRACE` | any non-empty value except `0`, `false`, or `off` | Debug logging for object pickup paths. |
 | `DURIS_ZONE_RESET_TRACE` | positive integer | Zone-reset tracing. |
 | `DURIS_CORPSE_TRACE` | any non-empty value except `0` | Corpse decay tracing. |
 | `DURIS_ACCEPT_DEBUG` | variable present, including an empty value | Connection-accept debug counters. |
 
-`SQL_TRACE` writes two log lines — each an open/append/close — for every query
-the game runs, so leaving it on is expensive as well as noisy. It was
-unconditionally enabled by a defect in `sql_trace_enabled()` until August 2026
-and accounted for the bulk of `event_write_statistic`'s cost.
+`SQL_TRACE` never writes query text, bound values, MySQL error prose, account or
+player values, or per-query files. Each event contains only a process-local
+operation ID, compile-time source site, execution context, statement kind,
+duration, numeric error code, and SQLSTATE. The operation ID is useful for log
+correlation within one server process; it is not a durable transaction or
+idempotency ID. Trace events still add log volume, so leave the switch disabled
+outside a focused investigation.
 
 Use the normal log files described in [RUNBOOK.md](RUNBOOK.md) and remove
 these switches from `.env` when the investigation ends.

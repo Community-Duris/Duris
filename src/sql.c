@@ -22,6 +22,7 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
 #include <pthread.h>
 #include "account.h"
 #include "account_reward.h"
@@ -59,13 +60,9 @@ extern P_room world;
 void get_pkill_player_description(P_char ch, char *buffer);
 
 static int sql_trace_burst = 0;
-static char sql_trace_last_site[64] = "";
-static char sql_trace_last_sql[240] = "";
+static const pid_t sql_main_process_id = getpid();
 static bool sql_trace_enabled(void);
 static bool sql_trace_active(void);
-static const char *sql_trace_kind(const char *sql);
-static void sql_trace_preview(const char *sql, char *out, size_t outsz);
-static void sql_trace_log(const char *phase, MYSQL *conn, const char *sql);
 static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained);
 
 #ifdef __NO_MYSQL__
@@ -129,8 +126,10 @@ int sql_find_racewar_for_ip(char *ip, int *racewar_side)
 {
 	return -1;
 }
-bool qry(const char *format, ...)
+bool qry_at(struct persistence_query_site site, const char *format, ...)
 {
+	(void)site;
+	(void)format;
 	return TRUE;
 }
 void send_to_char_offline(const char *msg, int pid) {}
@@ -285,7 +284,7 @@ static bool sql_verify_boot_database(void);
 MYSQL *DB;
 
 /* persistenceDB replaced by connection pool (sql_pool.c).
- * persistence_sql_mutex kept for backward compatibility — no longer
+ * persistence_sql_mutex kept for backward compatibility -- no longer
  * needed for connection serialisation but still referenced by
  * sql_persistence_raw.c for now. */
 MYSQL *persistenceDB = NULL;
@@ -490,7 +489,8 @@ int initialize_mysql()
 	if (!mysql_real_connect(DB, DB_HOST, DB_USER, DB_PASSWD, db_name, DB_PORT, NULL,
 				CLIENT_MULTI_STATEMENTS))
 	{
-		logit(LOG_STATUS, "Error connecting to database: %s", mysql_error(DB));
+		logit(LOG_STATUS, "Database connect failed error_code=%u sqlstate=%.5s",
+		      (unsigned int)mysql_errno(DB), mysql_sqlstate(DB));
 		return -1;
 	}
 
@@ -516,7 +516,7 @@ int initialize_mysql()
 	if (sql_pool_init(SQL_POOL_DEFAULT_SIZE) != 0)
 	{
 		logit(LOG_STATUS,
-		      "Warning: connection pool init failed — persistence workers will use sync fallback.");
+		      "Warning: connection pool init failed -- persistence workers will use sync fallback.");
 		/* Non-fatal: the main DB connection still works. */
 	}
 
@@ -524,7 +524,7 @@ int initialize_mysql()
 }
 
 /* Handle a query, log possible errors and return results (if available) */
-MYSQL_RES *db_query(const char *format, ...)
+MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...)
 {
 	va_list args;
 	int needed;
@@ -554,15 +554,13 @@ MYSQL_RES *db_query(const char *format, ...)
 		return NULL;
 	}
 
-	if (!sql_trace_exec("db_query", buf, strlen(buf), true, false))
+	if (!sql_trace_exec_at(site, "db_query", buf, strlen(buf), true, false))
 	{
 		free(buf);
 		return NULL;
 	}
 
 	res = mysql_store_result(DB);
-	if (res)
-		sql_trace_log("db_query/rows", DB, buf);
 	free(buf);
 	return res;
 }
@@ -579,8 +577,7 @@ static bool sql_verify_boot_database(void)
 	if (!sql_trace_exec("boot/accounts_probe", probe, strlen(probe), true, false))
 	{
 		logit(LOG_STATUS,
-		      "FATAL: required accounts table is missing or unreadable at boot: %s",
-		      mysql_error(DB));
+		      "FATAL: required accounts table is missing or unreadable at boot");
 		return false;
 	}
 
@@ -601,9 +598,7 @@ static bool sql_verify_boot_database(void)
 	result = db_query("%s", event_schema_probe);
 	if (!result)
 	{
-		logit(LOG_STATUS,
-		      "FATAL: persistence event schema metadata query failed at boot: %s",
-		      mysql_error(DB));
+		logit(LOG_STATUS, "FATAL: persistence event schema metadata query failed at boot");
 		return false;
 	}
 	MYSQL_ROW row = mysql_fetch_row(result);
@@ -628,9 +623,7 @@ static bool sql_verify_boot_database(void)
 	result = db_query("%s", event_index_probe);
 	if (!result)
 	{
-		logit(LOG_STATUS,
-		      "FATAL: persistence event index metadata query failed at boot: %s",
-		      mysql_error(DB));
+		logit(LOG_STATUS, "FATAL: persistence event index metadata query failed at boot");
 		return false;
 	}
 	row = mysql_fetch_row(result);
@@ -654,8 +647,7 @@ static bool sql_verify_boot_database(void)
 	result = db_query("%s", auction_engine_probe);
 	if (!result)
 	{
-		logit(LOG_STATUS, "FATAL: auction storage-engine metadata query failed at boot: %s",
-		      mysql_error(DB));
+		logit(LOG_STATUS, "FATAL: auction storage-engine metadata query failed at boot");
 		return false;
 	}
 	row = mysql_fetch_row(result);
@@ -672,7 +664,7 @@ static bool sql_verify_boot_database(void)
 }
 
 /* Same as above, but won't log failed queries, ie when key restrictions suffice */
-MYSQL_RES *db_query_nolog(const char *format, ...)
+MYSQL_RES *db_query_nolog_at(struct persistence_query_site site, const char *format, ...)
 {
 	va_list args;
 	int needed;
@@ -692,7 +684,7 @@ MYSQL_RES *db_query_nolog(const char *format, ...)
 	vsnprintf(buf, (size_t)needed + 1, format, args);
 	va_end(args);
 
-	if (!sql_trace_exec("db_query_nolog", buf, strlen(buf), true, false))
+	if (!sql_trace_exec_at(site, "db_query_nolog", buf, strlen(buf), true, false))
 	{
 		free(buf);
 		return NULL;
@@ -1193,7 +1185,6 @@ unsigned long new_pkill_event(P_char ch)
 	if (!sql_trace_exec("new_pkill_event", query.c_str(), query.size(), false, false))
 	{
 		logit(LOG_DEBUG, "MYSQL: Failed to create pkill event");
-		logit(LOG_DEBUG, "MYSQL: Query was: %s", query.c_str());
 		return 0;
 	}
 
@@ -1721,80 +1712,14 @@ static bool sql_trace_active(void)
 	return sql_trace_enabled() || sql_trace_burst > 0;
 }
 
-static const char *sql_trace_kind(const char *sql)
+static enum persistence_query_context sql_current_context(void)
 {
-	while (sql && *sql && isspace((unsigned char)*sql))
-		++sql;
-
-	if (!sql || !*sql)
-		return "EMPTY";
-	if (!strncasecmp(sql, "SELECT", 6))
-		return "SELECT";
-	if (!strncasecmp(sql, "UPDATE", 6))
-		return "UPDATE";
-	if (!strncasecmp(sql, "INSERT", 6))
-		return "INSERT";
-	if (!strncasecmp(sql, "DELETE", 6))
-		return "DELETE";
-	if (!strncasecmp(sql, "REPLACE", 7))
-		return "REPLACE";
-	if (!strncasecmp(sql, "START TRANSACTION", 17))
-		return "TXN_BEGIN";
-	if (!strncasecmp(sql, "COMMIT", 6))
-		return "COMMIT";
-	if (!strncasecmp(sql, "ROLLBACK", 8))
-		return "ROLLBACK";
-	return "OTHER";
-}
-
-static void sql_trace_preview(const char *sql, char *out, size_t outsz)
-{
-	size_t j = 0;
-
-	if (!out || outsz == 0)
-		return;
-	out[0] = '\0';
-	if (!sql)
-		return;
-
-	for (size_t i = 0; sql[i] && j + 1 < outsz; ++i)
-	{
-		unsigned char c = (unsigned char)sql[i];
-		if (c == '\n' || c == '\r' || c == '	')
-			c = ' ';
-		out[j++] = (char)c;
-		if (j + 4 >= outsz)
-			break;
-	}
-	out[j] = '\0';
-	if (sql[j] != '\0' && outsz > 4)
-		strcat(out, "...");
-}
-
-static void sql_trace_log(const char *phase, MYSQL *conn, const char *sql)
-{
-	if (!conn)
-		return;
-	const bool trace_on = sql_trace_enabled();
-	const bool burst_on = (sql_trace_burst > 0 && !trace_on);
-	if (!trace_on && !burst_on)
-		return;
-	if (burst_on)
-		--sql_trace_burst;
-
-	char preview[240];
-	sql_trace_preview(sql, preview, sizeof(preview));
-	logit(LOG_DEBUG,
-	      "[SQLTRACE] phase=%s conn=%lu kind=%s burst=%d errno=%u field_count=%u more_results=%d sql=\"%s\"",
-	      phase, (unsigned long)mysql_thread_id(conn), sql_trace_kind(sql), sql_trace_burst,
-	      (unsigned int)mysql_errno(conn), (unsigned int)mysql_field_count(conn),
-	      mysql_more_results(conn), preview);
+	return getpid() == sql_main_process_id ? PERSISTENCE_QUERY_CONTEXT_MAIN :
+						 PERSISTENCE_QUERY_CONTEXT_CHILD;
 }
 
 static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained)
 {
-	char preview[240];
-
 	if (!conn)
 		return;
 	if (drained)
@@ -1802,13 +1727,12 @@ static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained)
 	if (!sql_trace_active() && !drained)
 		return;
 
-	sql_trace_preview(sql_trace_last_sql, preview, sizeof(preview));
 	logit(LOG_DEBUG,
-	      "[SQLTRACE] phase=%s conn=%lu drained=%d burst=%d errno=%u field_count=%u more_results=%d site=%s sql=\"%s\"",
-	      phase, (unsigned long)mysql_thread_id(conn), drained ? 1 : 0, sql_trace_burst,
-	      (unsigned int)mysql_errno(conn), (unsigned int)mysql_field_count(conn),
-	      mysql_more_results(conn), *sql_trace_last_site ? sql_trace_last_site : "unknown",
-	      preview);
+	      "[SQLTRACE] phase=%s drained=%d burst=%d error_code=%u sqlstate=%.5s "
+	      "field_count=%u more_results=%d",
+	      phase, drained ? 1 : 0, sql_trace_burst, (unsigned int)mysql_errno(conn),
+	      mysql_sqlstate(conn), (unsigned int)mysql_field_count(conn),
+	      mysql_more_results(conn));
 }
 
 void sql_trace_panic(void)
@@ -1816,30 +1740,65 @@ void sql_trace_panic(void)
 	sql_trace_burst = 100;
 }
 
-bool sql_trace_exec(const char *site, const char *sql, size_t len, bool drain_before,
-		    bool drain_after)
+bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
+			     enum persistence_query_context context, const char *sql, size_t len,
+			     uint64_t *operation_id)
+{
+	if (!conn || !sql)
+		return false;
+
+	const enum persistence_statement_kind kind = persistence_statement_kind_from_sql(sql);
+	const uint64_t started_at = persistence_observability_now_usec();
+	const int status = mysql_real_query(conn, sql, len);
+	const uint64_t finished_at = persistence_observability_now_usec();
+	const uint64_t duration = finished_at >= started_at ? finished_at - started_at : 0;
+	const unsigned int error_code = status == 0 ? 0 : (unsigned int)mysql_errno(conn);
+	const char *mysql_state = status == 0 ? "00000" : mysql_sqlstate(conn);
+	const uint64_t recorded_id = persistence_query_record(site, context, kind, duration,
+							      status == 0, error_code, mysql_state);
+	if (operation_id)
+		*operation_id = recorded_id;
+
+	if (status != 0 || sql_trace_active())
+	{
+		struct persistence_query_event event = {};
+		char diagnostic[512];
+		event.operation_id = recorded_id;
+		event.site = site;
+		event.context = context;
+		event.kind = kind;
+		event.duration_usec = duration;
+		event.error_code = error_code;
+		event.success = status == 0;
+		snprintf(event.sqlstate, sizeof(event.sqlstate), "%.5s", mysql_state);
+		if (persistence_query_event_format(diagnostic, sizeof(diagnostic), &event) >= 0)
+			logit(status == 0 ? LOG_DEBUG : LOG_STATUS, "%s", diagnostic);
+		if (sql_trace_burst > 0 && !sql_trace_enabled())
+			--sql_trace_burst;
+	}
+	return status == 0;
+}
+
+bool sql_trace_exec_at(struct persistence_query_site source_site, const char *label,
+		       const char *sql, size_t len, bool drain_before, bool drain_after)
 {
 	if (!DB || !sql)
 		return false;
-
-	snprintf(sql_trace_last_site, sizeof(sql_trace_last_site), "%s", site ? site : "unknown");
-	sql_trace_preview(sql, sql_trace_last_sql, sizeof(sql_trace_last_sql));
-
+	const struct persistence_query_site semantic_site = {
+		source_site.file, label && *label ? label : source_site.function, source_site.line
+	};
 	if (drain_before)
 		sql_clear_results_on(DB);
-	sql_trace_log(site, DB, sql);
-	if (mysql_real_query(DB, sql, len) != 0)
+	uint64_t operation_id = 0;
+	if (!sql_observed_execute_at(DB, semantic_site, sql_current_context(), sql, len,
+				     &operation_id))
 	{
-		logit(LOG_STATUS, "MySQL error: %s", mysql_error(DB));
-		logit(LOG_STATUS, "on MySQL query: %s", sql);
 		sql_trace_panic();
-		sql_trace_log("exec/fail", DB, sql);
 		return false;
 	}
 
 	if (drain_after)
 		sql_clear_results_on(DB);
-	sql_trace_log("exec/ok", DB, sql);
 	return true;
 }
 
@@ -1878,7 +1837,6 @@ void sql_clear_results_on(MYSQL *conn)
 			}
 			else /* actual error occurred */
 			{
-				logit(LOG_DEBUG, "MySQL error: %s", mysql_error(conn));
 				sql_trace_log_drain(conn, "clear/error", true);
 				break;
 			}
@@ -1886,7 +1844,6 @@ void sql_clear_results_on(MYSQL *conn)
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((status = mysql_next_result(conn)) > 0)
 		{
-			logit(LOG_DEBUG, "MySQL error: %s", mysql_error(conn));
 			sql_trace_log_drain(conn, "clear/next_result_error", true);
 			break;
 		}
@@ -1902,11 +1859,8 @@ void sql_clear_results()
 }
 
 /* Execute a semicolon-separated multi-statement query.
- * Uses mysql_real_query (supports multi-statement with
- * CLIENT_MULTI_STATEMENTS) and drains all result sets. */
-/* Execute a semicolon-separated multi-statement query.
- * Uses mysql_real_query (supports multi-statement with
- * CLIENT_MULTI_STATEMENTS) and drains all result sets. */
+ * Uses the observed executor with CLIENT_MULTI_STATEMENTS and drains all
+ * result sets. */
 bool sql_run_multi_query(const char *query)
 {
 	if (!DB || !query || !*query)
@@ -1914,7 +1868,7 @@ bool sql_run_multi_query(const char *query)
 
 	if (!sql_trace_exec("sql_run_multi_query", query, strlen(query), true, false))
 	{
-		sql_player_error("sql_run_multi_query", query);
+		sql_player_error("sql_run_multi_query");
 		// Drain any partial result sets from statements that succeeded
 		// before the failing one (multi-statement with CLIENT_MULTI_STATEMENTS).
 		sql_clear_results();
@@ -1925,7 +1879,7 @@ bool sql_run_multi_query(const char *query)
 	return true;
 }
 
-bool qry(const char *format, ...)
+bool qry_at(struct persistence_query_site site, const char *format, ...)
 {
 	char buf[MAX_STRING_LENGTH];
 	va_list args;
@@ -1950,10 +1904,8 @@ bool qry(const char *format, ...)
 		return FALSE;
 	}
 
-	if (!sql_trace_exec("qry/direct", buf, strlen(buf), true, false))
+	if (!sql_trace_exec_at(site, "qry/direct", buf, strlen(buf), true, false))
 	{
-		logit(LOG_DEBUG, "MySQL error: %s", mysql_error(DB));
-		logit(LOG_DEBUG, "on MySQL query: %s", buf);
 		return FALSE;
 	}
 
@@ -2156,9 +2108,8 @@ void do_sql(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	wizlog(56, "SQL (%s): '%s'", GET_TRUE_NAME(ch), argument);
-	logit(LOG_WIZ, "SQL (%s): '%s'", GET_TRUE_NAME(ch), argument);
-	sql_log(ch, WIZLOG, "SQL: '%s'", argument);
+	wizlog(56, "SQL command executed");
+	logit(LOG_WIZ, "SQL command executed");
 
 	rest = one_argument(argument, first);
 	rest = one_argument(rest, second);
@@ -2285,8 +2236,8 @@ void do_sql(P_char ch, char *argument, int cmd)
 	sql_clear_results_on(DB);
 	if (!sql_trace_exec("do_sql", argument, strlen(argument), false, false))
 	{
-		snprintf(result, MAX_STRING_LENGTH, "%s", mysql_error(DB));
-		logit(LOG_DEBUG, "MySQL error(sql command): %s", mysql_error(DB));
+		snprintf(result, MAX_STRING_LENGTH, "Database operation failed.\r\n");
+		logit(LOG_DEBUG, "Database admin command failed");
 		send_to_char(result, ch);
 		return;
 	}
@@ -2900,7 +2851,7 @@ bool sql_pwipe(int code_verify)
 	logit(LOG_DEBUG, "sql_pwipe: STARTED!");
 	if (code_verify == 1723699)
 	{
-		/* ── Preflight: verify critical tables exist and have correct engines ── */
+		/* -- Preflight: verify critical tables exist and have correct engines -- */
 		logit(LOG_DEBUG, "sql_pwipe: Preflight schema check... .. .");
 		send_to_all("Preflight schema check... .. .");
 		if (!sql_verify_persistence_schema())
@@ -3180,7 +3131,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: player-owned item graphs ── */
+		/* -- Season-reset manifest: player-owned item graphs -- */
 		/* Child tables (affects, extra_descr) must be cleared before parent item tables. */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing player item subtable data... .. .");
 		send_to_all("Clearing player item subtable data... .. .");
@@ -3209,7 +3160,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: player pet graphs ── */
+		/* -- Season-reset manifest: player pet graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing player pet subtable data... .. .");
 		send_to_all("Clearing player pet subtable data... .. .");
 		if (qry("DELETE FROM player_pet_item_affects") &&
@@ -3238,7 +3189,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: player character state ── */
+		/* -- Season-reset manifest: player character state -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing player character state data... .. .");
 		send_to_all("Clearing player character state data... .. .");
 		if (qry("DELETE FROM player_affects") && qry("DELETE FROM player_skills") &&
@@ -3258,7 +3209,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: locker/chest graphs ── */
+		/* -- Season-reset manifest: locker/chest graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing locker subtable data... .. .");
 		send_to_all("Clearing locker subtable data... .. .");
 		if (qry("DELETE FROM locker_item_affects") &&
@@ -3288,7 +3239,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: account locker graphs ── */
+		/* -- Season-reset manifest: account locker graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing account locker data... .. .");
 		send_to_all("Clearing account locker data... .. .");
 		if (qry("DELETE FROM account_locker_item_affects") &&
@@ -3305,7 +3256,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: private chests ── */
+		/* -- Season-reset manifest: private chests -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing private chest data... .. .");
 		send_to_all("Clearing private chest data... .. .");
 		if (qry("DELETE FROM private_chest_log") && qry("DELETE FROM private_chests"))
@@ -3319,7 +3270,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: corpse graphs ── */
+		/* -- Season-reset manifest: corpse graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing corpse subtable data... .. .");
 		send_to_all("Clearing corpse subtable data... .. .");
 		if (qry("DELETE FROM corpse_item_affects") &&
@@ -3347,7 +3298,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: saved item graphs ── */
+		/* -- Season-reset manifest: saved item graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing saved item data... .. .");
 		send_to_all("Clearing saved item data... .. .");
 		if (qry("DELETE FROM saved_item_affects") &&
@@ -3362,7 +3313,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: ship graphs ── */
+		/* -- Season-reset manifest: ship graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing ship subtable data... .. .");
 		send_to_all("Clearing ship subtable data... .. .");
 		if (qry("DELETE FROM ship_armor") && qry("DELETE FROM ship_crew") &&
@@ -3390,7 +3341,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: guild membership ── */
+		/* -- Season-reset manifest: guild membership -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing guild membership data... .. .");
 		send_to_all("Clearing guild membership data... .. .");
 		if (qry("DELETE FROM guild_members") && qry("DELETE FROM guild_ranks") &&
@@ -3405,7 +3356,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: world/competitive state ── */
+		/* -- Season-reset manifest: world/competitive state -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing artifact data... .. .");
 		send_to_all("Clearing artifact data... .. .");
 		if (qry("DELETE FROM artifacts") && qry("DELETE FROM artifacts_mortal"))
@@ -3434,7 +3385,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: siege and shopkeeper graphs ── */
+		/* -- Season-reset manifest: siege and shopkeeper graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing siege and shopkeeper data... .. .");
 		send_to_all("Clearing siege and shopkeeper data... .. .");
 		if (qry("DELETE FROM siege_item_affects") &&
@@ -3453,7 +3404,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: polls and boon shop ── */
+		/* -- Season-reset manifest: polls and boon shop -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing poll and boon shop data... .. .");
 		send_to_all("Clearing poll and boon shop data... .. .");
 		if (qry("DELETE FROM poll_votes") && qry("DELETE FROM poll_options") &&
@@ -3468,7 +3419,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: soft-delete account characters ── */
+		/* -- Season-reset manifest: soft-delete account characters -- */
 		logit(LOG_DEBUG, "sql_pwipe: Soft-deleting account characters... .. .");
 		send_to_all("Soft-deleting account characters... .. .");
 		if (qry("UPDATE account_characters SET deleted_at = COALESCE(deleted_at, NOW()) WHERE deleted_at IS NULL"))
@@ -3528,7 +3479,7 @@ bool sql_pwipe(int code_verify)
 			logit(LOG_DEBUG, "sql_pwipe: Redis pwipe invalidation failed.");
 			return FALSE;
 		}
-		/* ── Postflight: verify critical season-scoped tables are empty ── */
+		/* -- Postflight: verify critical season-scoped tables are empty -- */
 		logit(LOG_DEBUG, "sql_pwipe: Postflight invariant check... .. .");
 		send_to_all("Postflight invariant check... .. .");
 		{
@@ -3735,8 +3686,10 @@ MYSQL *sql_persistence_connection(void)
 						sql_persistence_db_name(), DB_PORT, NULL, 0))
 			{
 				logit(LOG_DEBUG,
-				      "Persistence MySQL: sql_persistence_connection failed: %s",
-				      mysql_error(persistenceDB));
+				      "Persistence database connection failed error_code=%u "
+				      "sqlstate=%.5s",
+				      (unsigned int)mysql_errno(persistenceDB),
+				      mysql_sqlstate(persistenceDB));
 				mysql_close(persistenceDB);
 				persistenceDB = NULL;
 				pthread_mutex_unlock(&persistence_sql_mutex);
@@ -3759,7 +3712,7 @@ void sql_persistence_release_connection(MYSQL *conn)
 
 	/* If this connection came from the pool, release it.  The pool
 	 * checks pointer equality against its slots, so passing a
-	 * non-pool connection is harmless — it simply won't match. */
+	 * non-pool connection is harmless -- it simply won't match. */
 	sql_pool_release(conn);
 }
 

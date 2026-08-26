@@ -9,7 +9,6 @@
 #include "utils.h"
 #include "sql_player.h"
 #include <dirent.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,18 +40,6 @@ extern unsigned long next_obj_uid;
 extern P_Guild guild_list;
 extern Skill skills[];
 void ensure_pconly_pool(void);
-
-static void trace_append_file(const char *fmt, ...)
-{
-	FILE *fp = fopen("/tmp/garp-item-trace.log", "a");
-	if (!fp)
-		return;
-	va_list ap;
-	va_start(ap, fmt);
-	vfprintf(fp, fmt, ap);
-	va_end(ap);
-	fclose(fp);
-}
 
 #ifdef __NO_MYSQL__
 
@@ -234,7 +221,7 @@ char *sql_escape_string(const char *str)
 {
 	return NULL;
 }
-void sql_player_error(const char *context, const char *query) {}
+void sql_player_error(const char *site) {}
 
 bool sql_save_corpse(P_obj corpse)
 {
@@ -408,7 +395,7 @@ bool sql_begin_transaction(void)
 	sql_clear_results();
 	if (!sql_trace_exec("sql_begin_transaction", "START TRANSACTION", 17, false, false))
 	{
-		logit(LOG_DEBUG, "sql_begin_transaction: failed: %s", mysql_error(DB));
+		logit(LOG_DEBUG, "sql_begin_transaction: failed");
 		return false;
 	}
 
@@ -432,7 +419,7 @@ bool sql_commit(void)
 
 	if (!sql_trace_exec("sql_commit", "COMMIT", 6, false, false))
 	{
-		logit(LOG_DEBUG, "sql_commit: failed: %s", mysql_error(DB));
+		logit(LOG_DEBUG, "sql_commit: failed");
 		/* Keep transaction ownership and pending cache state intact so the
 		 * caller can attempt an explicit rollback.  A failed COMMIT leaves
 		 * server-side durability uncertain; claiming the transaction ended
@@ -467,7 +454,7 @@ bool sql_rollback(void)
 
 	if (!sql_trace_exec("sql_rollback", "ROLLBACK", 8, false, false))
 	{
-		logit(LOG_DEBUG, "sql_rollback: failed: %s", mysql_error(DB));
+		logit(LOG_DEBUG, "sql_rollback: failed");
 		in_transaction = false;
 		sql_clear_account_character_cache_sync();
 		return false;
@@ -679,23 +666,16 @@ char *sql_escape_string(const char *str)
 	return escaped;
 }
 
-// log sql error with context
-void sql_player_error(const char *context, const char *query)
+// log SQL failure by stable call-site label only
+void sql_player_error(const char *site)
 {
 	if (!DB)
 	{
-		logit(LOG_DEBUG, "sql_player: %s: db not initialized", context);
+		logit(LOG_DEBUG, "sql_player: site=%s outcome=unavailable", site);
 		return;
 	}
-
-	logit(LOG_DEBUG, "sql_player: %s: %s", context, mysql_error(DB));
-	if (query)
-	{
-		// log first 200 chars of query for debugging
-		//char truncated[201];
-		//strlcpy(truncated, query, sizeof truncated);
-		logit(LOG_DEBUG, "sql_player: query: %s...", query);
-	}
+	logit(LOG_DEBUG, "sql_player: site=%s outcome=failure error_code=%u sqlstate=%.5s", site,
+	      (unsigned int)mysql_errno(DB), mysql_sqlstate(DB));
 }
 
 // helper to run query and free result
@@ -706,7 +686,7 @@ static bool sql_run_query(const char *query)
 
 	if (!sql_trace_exec("sql_run_query", query, strlen(query), false, false))
 	{
-		sql_player_error("sql_run_query", query);
+		sql_player_error("sql_run_query");
 		return false;
 	}
 
@@ -908,7 +888,7 @@ static bool sql_try_get_player_pid(const char *name, int *pid_out)
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
 	{
-		sql_player_error("sql_try_get_player_pid", query);
+		sql_player_error("sql_try_get_player_pid");
 		return false;
 	}
 
@@ -951,9 +931,6 @@ bool sql_save_player(P_char ch, int type, int room)
 		return false;
 	}
 
-	trace_append_file("sql_save_player begin name=%s pid=%d type=%d room=%d\n", GET_NAME(ch),
-			  GET_PID(ch), type, room);
-
 	if (!DB)
 	{
 		logit(LOG_DEBUG, "sql_save_player: db not initialized");
@@ -975,43 +952,42 @@ bool sql_save_player(P_char ch, int type, int room)
 	// save all components
 	if (!sql_save_player_status(ch, type, room))
 	{
-		logit(LOG_DEBUG, "sql_save_player: failed to save status for %s", GET_NAME(ch));
+		logit(LOG_DEBUG, "sql_save_player: component=status outcome=failure");
 		sql_rollback();
 		return false;
 	}
 
 	if (!sql_save_player_skills(ch))
 	{
-		logit(LOG_DEBUG, "sql_save_player: failed to save skills for %s", GET_NAME(ch));
+		logit(LOG_DEBUG, "sql_save_player: component=skills outcome=failure");
 		sql_rollback();
 		return false;
 	}
 
 	if (!sql_save_player_affects(ch))
 	{
-		logit(LOG_DEBUG, "sql_save_player: failed to save affects for %s", GET_NAME(ch));
+		logit(LOG_DEBUG, "sql_save_player: component=affects outcome=failure");
 		sql_rollback();
 		return false;
 	}
 
 	if (!sql_save_player_items(ch))
 	{
-		logit(LOG_DEBUG, "sql_save_player: failed to save items for %s", GET_NAME(ch));
+		logit(LOG_DEBUG, "sql_save_player: component=items outcome=failure");
 		sql_rollback();
 		return false;
 	}
 
 	if (!sql_save_player_pets(ch, type))
 	{
-		logit(LOG_DEBUG, "sql_save_player: failed to save pets for %s", GET_NAME(ch));
+		logit(LOG_DEBUG, "sql_save_player: component=pets outcome=failure");
 		sql_rollback();
 		return false;
 	}
 
 	if (!sql_save_player_shapechanges(ch))
 	{
-		logit(LOG_DEBUG, "sql_save_player: failed to save shapechanges for %s",
-		      GET_NAME(ch));
+		logit(LOG_DEBUG, "sql_save_player: component=shapechanges outcome=failure");
 		sql_rollback();
 		return false;
 	}
@@ -1020,11 +996,8 @@ bool sql_save_player(P_char ch, int type, int room)
 	{
 		if (!sql_commit())
 		{
-			logit(LOG_DEBUG, "sql_save_player: failed to commit for %s", GET_NAME(ch));
+			logit(LOG_DEBUG, "sql_save_player: component=commit outcome=failure");
 			sql_rollback();
-			trace_append_file(
-				"sql_save_player commit failed name=%s pid=%d type=%d room=%d\n",
-				GET_NAME(ch), GET_PID(ch), type, room);
 			return false;
 		}
 	}
@@ -1032,9 +1005,6 @@ bool sql_save_player(P_char ch, int type, int room)
 	clear_player_dirty_container_flags(ch);
 	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
-
-	trace_append_file("sql_save_player done name=%s pid=%d type=%d room=%d\n", GET_NAME(ch),
-			  GET_PID(ch), type, room);
 
 	return true;
 }
@@ -1285,8 +1255,9 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	if (written < 0 || written >= remaining)
 	{
 		logit(LOG_PLAYER,
-		      "sql_save_player_status: query for %s truncated (%d bytes needed, %d available)",
-		      GET_NAME(ch), written, remaining);
+		      "sql_save_player_status: component=query outcome=truncated needed=%d "
+		      "available=%d",
+		      written, remaining);
 		if (own_txn)
 			sql_rollback();
 		return false;
@@ -1295,7 +1266,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	// run the main query
 	if (!sql_run_query(query))
 	{
-		sql_player_error("sql_save_player_status", query);
+		sql_player_error("sql_save_player_status");
 		if (own_txn)
 			sql_rollback();
 		return false;
@@ -2218,7 +2189,7 @@ static int sql_save_single_item_get_id(int pid, P_obj obj, int equip_slot, int c
 
 	if (!sql_run_query(query))
 	{
-		sql_player_error("sql_save_single_item", query);
+		sql_player_error("sql_save_single_item");
 		return 0;
 	}
 
@@ -2386,7 +2357,7 @@ static bool resave_dirty_containers(int pid, P_obj obj)
 	return true;
 }
 
-// Batched player item save — flattens entire item tree into one
+// Batched player item save -- flattens entire item tree into one
 // multi-row INSERT, then fixes up container_id relationships and saves
 // affects/extra_descrs.  Replaces the per-item INSERT loop, reducing
 // ~170 individual queries to ~3 per save.
@@ -2413,7 +2384,7 @@ static bool flatten_item_tree(P_obj obj, P_obj parent, int equip_slot, struct fl
 		struct flat_item *tmp =
 			(struct flat_item *)realloc(*list, new_cap * sizeof(struct flat_item));
 		if (!tmp)
-			return false; // old *list still valid — caller can inspect count
+			return false; // old *list still valid -- caller can inspect count
 		*list = tmp;
 		*capacity = new_cap;
 	}
@@ -2437,13 +2408,13 @@ static bool flatten_item_tree(P_obj obj, P_obj parent, int equip_slot, struct fl
 static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipment,
 					    bool save_inventory)
 {
-	// ——— Step 1: flatten item tree ———————————————————————————————————————————————————————————————
+	// ------ Step 1: flatten item tree ------------------------------------------------------------------------------------------------------------------------------
 	int cap = 128;
 	struct flat_item *flat = (struct flat_item *)malloc(cap * sizeof(struct flat_item));
 	if (!flat)
 	{
 		logit(LOG_DEBUG,
-		      "[real-persistence-test] sql_save_player_items_batch_all: malloc(flat) failed\n");
+		      "sql_save_player_items_batch_all: allocation=flat outcome=failure");
 		return false;
 	}
 
@@ -2458,8 +2429,8 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 			if (eq && !flatten_item_tree(eq, NULL, i + 1, &flat, &count, &cap))
 			{
 				logit(LOG_DEBUG,
-				      "[real-persistence-test] sql_save_player_items_batch_all: flatten equipment failed at slot=%d\n",
-				      i);
+				      "sql_save_player_items_batch_all: component=equipment_flatten "
+				      "outcome=failure");
 				free(flat);
 				return false;
 			}
@@ -2473,7 +2444,8 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 			if (!flatten_item_tree(obj, NULL, 0, &flat, &count, &cap))
 			{
 				logit(LOG_DEBUG,
-				      "[real-persistence-test] sql_save_player_items_batch_all: flatten inventory failed\n");
+				      "sql_save_player_items_batch_all: component=inventory_flatten "
+				      "outcome=failure");
 				free(flat);
 				return false;
 			}
@@ -2485,7 +2457,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 		return true; // nothing to save
 	}
 
-	// ——— Step 2 & 3: build multi-row INSERTs in sub-batches —————————————————————————————
+	// ------ Step 2 & 3: build multi-row INSERTs in sub-batches ----------------------------------------------------------
 	// Use 1MB buffer to respect MySQL max_allowed_packet (4MB default on 5.7).
 	// Large inventories automatically split across multiple INSERT statements.
 	const size_t BATCH_BUF_SIZE = 1048576; // 1 MB
@@ -2494,7 +2466,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 	if (!batch)
 	{
 		logit(LOG_DEBUG,
-		      "[real-persistence-test] sql_save_player_items_batch_all: malloc(batch) failed\n");
+		      "sql_save_player_items_batch_all: allocation=batch outcome=failure");
 		free(flat);
 		return false;
 	}
@@ -2589,11 +2561,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 		if (row_len >= (int)sizeof(row_buf) - 1 || row_len < 0)
 		{
 			logit(LOG_DEBUG,
-			      "[real-persistence-test] sql_save_player_items_batch_all: row too large at item %d/%d vnum=%d\n",
-			      i, count, vnum);
-			logit(LOG_DEBUG,
-			      "sql_save_player_items_batch_all: item vnum %d row too large, using single-insert fallback",
-			      vnum);
+			      "sql_save_player_items_batch_all: row=oversize action=single_insert");
 
 			// Temporarily detach contents so sql_save_single_item_get_id
 			// doesn't recurse (tree is already flattened).  Restore after.
@@ -2615,14 +2583,14 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 			continue;
 		}
 
-		// Sub-batch flush: approaching 1 MB — execute current batch and restart.
+		// Sub-batch flush: approaching 1 MB -- execute current batch and restart.
 		if (items_in_batch > 0 && pos + row_len > FLUSH_THRESHOLD)
 		{
 			if (!sql_run_query(batch))
 			{
 				logit(LOG_DEBUG,
-				      "[real-persistence-test] sql_save_player_items_batch_all: sub-batch query failed at item %d/%d\n",
-				      i, count);
+				      "sql_save_player_items_batch_all: component=sub_batch "
+				      "outcome=failure");
 				free(batch);
 				free(flat);
 				return false;
@@ -2658,8 +2626,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 		if (new_pos < 0)
 		{
 			logit(LOG_DEBUG,
-			      "[real-persistence-test] sql_save_player_items_batch_all: row append failed at item %d/%d\n",
-			      i, count);
+			      "sql_save_player_items_batch_all: component=row_append outcome=failure");
 			free(batch);
 			free(flat);
 			return false;
@@ -2673,9 +2640,8 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 	{
 		if (!sql_run_query(batch))
 		{
-			logit(LOG_DEBUG,
-			      "[real-persistence-test] sql_save_player_items_batch_all: final batch query failed\nQUERY=%s\n",
-			      batch);
+			logit(LOG_DEBUG, "sql_save_player_items_batch_all: component=final_batch "
+					 "outcome=failure");
 			free(batch);
 			free(flat);
 			return false;
@@ -2693,7 +2659,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 		}
 	}
 
-	// ——— Step 4: fix up container_id for items inside containers —————————————————————————
+	// ------ Step 4: fix up container_id for items inside containers --------------------------------------------------
 	int container_child_count = 0;
 	for (int i = 0; i < count; i++)
 	{
@@ -2717,7 +2683,8 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 				if (new_pos < 0)
 				{
 					logit(LOG_DEBUG,
-					      "[real-persistence-test] sql_save_player_items_batch_all: container UPDATE build failed (case 2)\n");
+					      "sql_save_player_items_batch_all: component=container_update "
+					      "outcome=build_failure");
 					free(batch);
 					free(flat);
 					return false;
@@ -2738,7 +2705,8 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 				if (new_pos < 0)
 				{
 					logit(LOG_DEBUG,
-					      "[real-persistence-test] sql_save_player_items_batch_all: container UPDATE build failed (case 2)\n");
+					      "sql_save_player_items_batch_all: component=container_update_ids "
+					      "outcome=build_failure");
 					free(batch);
 					free(flat);
 					return false;
@@ -2751,7 +2719,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 
 		if (!sql_run_query(batch))
 		{
-			sql_player_error("sql_save_player_items_batch_all container UPDATE", batch);
+			sql_player_error("sql_save_player_items_batch_all/container_update");
 			free(batch);
 			free(flat);
 			return false;
@@ -2760,7 +2728,7 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 
 	free(batch);
 
-	// ——— Step 5: save affects and extra descriptions per item ————————————————————————————
+	// ------ Step 5: save affects and extra descriptions per item --------------------------------------------------------
 	for (int i = 0; i < count; i++)
 	{
 		// Items saved via per-item fallback already had affects/descr handled
@@ -2795,9 +2763,6 @@ bool sql_save_player_items(P_char ch)
 	if (!ch || !IS_PC(ch) || !DB)
 		return false;
 
-	trace_append_file("sql_save_player_items begin name=%s pid=%d eq0=%p carrying=%p\n",
-			  GET_NAME(ch), GET_PID(ch), ch->equipment[0], ch->carrying);
-
 	// Start own transaction if not already in one
 	bool own_txn = false;
 	if (!sql_in_transaction())
@@ -2818,10 +2783,6 @@ bool sql_save_player_items(P_char ch)
 	bool save_equipment = IS_SET(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 	bool save_inventory = IS_SET(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
 	bool use_incremental = all_items_have_db_ids(ch) && !save_equipment && !save_inventory;
-
-	logit(LOG_DEBUG,
-	      "[real-persistence-test] sql_save_player_items debug: pid=%d save_equipment=%d save_inventory=%d use_incremental=%d carrying=%p eq0=%p\n",
-	      pid, save_equipment, save_inventory, use_incremental, ch->carrying, ch->equipment[0]);
 
 	if (use_incremental)
 	{
@@ -2876,19 +2837,13 @@ bool sql_save_player_items(P_char ch)
 	{
 		if (own_txn)
 			sql_rollback();
-		trace_append_file("sql_save_player_items delete failed name=%s pid=%d query=%s\n",
-				  GET_NAME(ch), GET_PID(ch), del_query);
+		logit(LOG_DEBUG, "sql_save_player_items: component=delete outcome=failure");
 		return false;
 	}
 
 	bool success = sql_save_player_items_batch_all(pid, ch, save_equipment, save_inventory);
 	if (!success)
-		logit(LOG_DEBUG,
-		      "[real-persistence-test] sql_save_player_items debug: batch_all failed for pid=%d\n",
-		      pid);
-	trace_append_file(
-		"sql_save_player_items batch result name=%s pid=%d success=%d save_equipment=%d save_inventory=%d\n",
-		GET_NAME(ch), pid, success ? 1 : 0, save_equipment, save_inventory);
+		logit(LOG_DEBUG, "sql_save_player_items: component=batch outcome=failure");
 
 	if (own_txn)
 	{
@@ -2907,7 +2862,6 @@ bool sql_save_player_items(P_char ch)
 		}
 	}
 
-	trace_append_file("sql_save_player_items done name=%s pid=%d\n", GET_NAME(ch), pid);
 	return success;
 }
 
@@ -3043,8 +2997,7 @@ static int sql_save_single_pet_item(int pet_id, P_obj obj, int equip_slot, int c
 
 	if (!sql_run_query(query))
 	{
-		logit(LOG_DEBUG, "sql_save_item: insert failed errno=%u sqlerr=%s", mysql_errno(DB),
-		      mysql_error(DB));
+		logit(LOG_DEBUG, "sql_save_pet_item: component=insert outcome=failure");
 		if (own_txn)
 			sql_rollback();
 		return 0;
@@ -3193,8 +3146,7 @@ bool sql_save_player_pets(P_char ch, int save_type)
 
 		if (!sql_run_query(ins_query))
 		{
-			logit(LOG_DEBUG, "sql_save_player_pets: failed to save pet %s for %s",
-			      GET_NAME(pet), GET_NAME(ch));
+			logit(LOG_DEBUG, "sql_save_player_pets: component=pet outcome=failure");
 			if (own_txn)
 				sql_rollback();
 			return false;
@@ -3233,8 +3185,6 @@ bool sql_save_player_pets(P_char ch, int save_type)
 		}
 
 		pet_order++;
-		logit(LOG_DEBUG, "sql_save_player_pets: saved pet %s (vnum %d) for %s with %d hp",
-		      GET_NAME(pet), mob_vnum, GET_NAME(ch), GET_HIT(pet));
 	}
 
 	if (own_txn)
@@ -3285,16 +3235,16 @@ bool sql_load_player_pets(P_char ch)
 		int pet_rnum = real_mobile(mob_vnum);
 		if (pet_rnum < 0)
 		{
-			logit(LOG_DEBUG, "sql_load_player_pets: bad vnum %d for %s", mob_vnum,
-			      GET_NAME(ch));
+			logit(LOG_DEBUG,
+			      "sql_load_player_pets: component=prototype outcome=invalid");
 			continue;
 		}
 
 		P_char pet = read_mobile(pet_rnum, REAL);
 		if (!pet)
 		{
-			logit(LOG_DEBUG, "sql_load_player_pets: failed to create mob %d for %s",
-			      mob_vnum, GET_NAME(ch));
+			logit(LOG_DEBUG,
+			      "sql_load_player_pets: component=prototype outcome=create_failure");
 			continue;
 		}
 
@@ -3522,10 +3472,6 @@ bool sql_load_player_pets(P_char ch)
 				}
 			}
 		}
-
-		logit(LOG_DEBUG,
-		      "sql_load_player_pets: restored pet %s (vnum %d) for %s with %d/%d hp",
-		      GET_NAME(pet), mob_vnum, GET_NAME(ch), GET_HIT(pet), GET_MAX_HIT(pet));
 	}
 
 	mysql_free_result(result);
@@ -3900,11 +3846,7 @@ bool sql_load_player_status(P_char ch, int pid)
 		if (exit_room != NOWHERE)
 		{
 			logit(LOG_DEBUG,
-			      "sql_load_player_status: redirecting %s out of locker room %d(%s) to %d(%s)",
-			      GET_NAME(ch), locker_room,
-			      (world[locker_room].name) ? world[locker_room].name : "<unnamed>",
-			      exit_room,
-			      (world[exit_room].name) ? world[exit_room].name : "<unnamed>");
+			      "sql_load_player_status: location=locker outcome=redirected");
 			ch->specials.was_in_room = world[exit_room].number;
 			ch->in_room = exit_room;
 		}
@@ -4246,10 +4188,6 @@ bool sql_load_player_items(P_char ch)
 	char owner_ref[32];
 	snprintf(owner_ref, sizeof(owner_ref), "%d", pid);
 
-	trace_append_file("sql_load_player_items begin name=%s pid=%d\n", GET_NAME(ch), pid);
-
-	logit(LOG_FILE, "[sql_load_player_items] begin name=%s pid=%d", GET_NAME(ch), pid);
-
 	// first, load all items into a temp array indexed by db id
 	// then resolve container relationships
 
@@ -4267,8 +4205,7 @@ bool sql_load_player_items(P_char ch)
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
 	{
-		logit(LOG_FILE, "[sql_load_player_items] query failed name=%s pid=%d", GET_NAME(ch),
-		      pid);
+		logit(LOG_FILE, "sql_load_player_items: component=items outcome=query_failure");
 		return false;
 	}
 
@@ -4295,25 +4232,12 @@ bool sql_load_player_items(P_char ch)
 		int vnum = sql_row_int(row, col++, 0);
 		int equip_slot = sql_row_int(row, col++, 0);
 		int container_id = sql_row_int(row, col++, 0);
-		if (idx < 12 || equip_slot > 0)
-		{
-			char trace[MAX_STRING_LENGTH];
-			snprintf(
-				trace, sizeof(trace),
-				"&+w[TRACE]&n row idx=%d db_id=%d vnum=%d equip=%d container=%d\r\n",
-				idx, db_id, vnum, equip_slot, container_id);
-			logit(LOG_FILE, "%s", trace);
-		}
-		logit(LOG_FILE,
-		      "[sql_load_player_items] row pid=%d db_id=%d vnum=%d equip=%d container=%d",
-		      pid, db_id, vnum, equip_slot, container_id);
-
 		// create object from prototype
 		P_obj obj = read_object(vnum, VIRTUAL);
 		if (!obj)
 		{
-			logit(LOG_DEBUG, "sql_load_player_items: failed to load vnum %d for %s",
-			      vnum, GET_NAME(ch));
+			logit(LOG_DEBUG,
+			      "sql_load_player_items: component=prototype outcome=load_failure");
 			idx++;
 			continue;
 		}
@@ -4379,17 +4303,8 @@ bool sql_load_player_items(P_char ch)
 		if (!sql_persistence_item_owner_matches(saved_uid, "player", owner_ref,
 							"sql_load_player_items"))
 		{
-			{
-				char trace[MAX_STRING_LENGTH];
-				snprintf(
-					trace, sizeof(trace),
-					"&+w[TRACE]&n skip db_id=%d vnum=%d uid=%lu owner_mismatch\r\n",
-					db_id, vnum, saved_uid);
-				logit(LOG_FILE, "%s", trace);
-			}
 			logit(LOG_FILE,
-			      "[sql_load_player_items] skip db_id=%d vnum=%d uid=%lu owner_mismatch",
-			      db_id, vnum, saved_uid);
+			      "sql_load_player_items: component=ownership outcome=mismatch");
 			extract_obj(obj, FALSE);
 			continue;
 		}
@@ -4402,17 +4317,6 @@ bool sql_load_player_items(P_char ch)
 		item_ids[idx] = db_id;
 		container_ids[idx] = container_id;
 		equip_slots[idx] = equip_slot;
-		if (idx < 12 || equip_slot > 0)
-		{
-			char trace[MAX_STRING_LENGTH];
-			snprintf(trace, sizeof(trace),
-				 "&+w[TRACE]&n loaded db_id=%d vnum=%d short=%s\r\n", db_id, vnum,
-				 obj->short_description ? obj->short_description : "(null)");
-			logit(LOG_FILE, "%s", trace);
-		}
-		logit(LOG_FILE, "[sql_load_player_items] loaded db_id=%d vnum=%d uid=%lu short=%s",
-		      db_id, vnum, saved_uid,
-		      obj->short_description ? obj->short_description : "(null)");
 		idx++;
 	}
 	mysql_free_result(result);
@@ -4579,59 +4483,19 @@ bool sql_load_player_items(P_char ch)
 			int slot = equip_slots[i] - 1;
 			if (!ch->equipment[slot])
 			{
-				{
-					char trace[MAX_STRING_LENGTH];
-					snprintf(trace, sizeof(trace),
-						 "&+w[TRACE]&n equip db_id=%d vnum=%d slot=%d\r\n",
-						 item_ids[i], OBJ_VNUM(items[i]), slot);
-					logit(LOG_FILE, "%s", trace);
-				}
-				logit(LOG_FILE,
-				      "[sql_load_player_items] equip db_id=%d vnum=%d slot=%d",
-				      item_ids[i], OBJ_VNUM(items[i]), slot);
 				equip_char(ch, items[i], slot, 0);
 			}
 			else
 			{
-				{
-					char trace[MAX_STRING_LENGTH];
-					snprintf(
-						trace, sizeof(trace),
-						"&+w[TRACE]&n carry-instead-of-equip db_id=%d vnum=%d slot=%d occupied\r\n",
-						item_ids[i], OBJ_VNUM(items[i]), slot);
-					logit(LOG_FILE, "%s", trace);
-				}
-				logit(LOG_FILE,
-				      "[sql_load_player_items] carry-instead-of-equip db_id=%d vnum=%d slot=%d occupied",
-				      item_ids[i], OBJ_VNUM(items[i]), slot);
 				obj_to_char(items[i], ch);
 			}
 		}
 		else
 		{
 			// inventory
-			if (i < 12)
-			{
-				char trace[MAX_STRING_LENGTH];
-				snprintf(trace, sizeof(trace),
-					 "&+w[TRACE]&n carry db_id=%d vnum=%d\r\n", item_ids[i],
-					 OBJ_VNUM(items[i]));
-				logit(LOG_FILE, "%s", trace);
-			}
-			logit(LOG_FILE, "[sql_load_player_items] carry db_id=%d vnum=%d",
-			      item_ids[i], OBJ_VNUM(items[i]));
 			obj_to_char(items[i], ch);
 		}
 	}
-	{
-		char trace[MAX_STRING_LENGTH];
-		snprintf(trace, sizeof(trace),
-			 "&+w[TRACE]&n load items done num_rows=%d kept=%d\r\n", num_rows,
-			 loaded_count);
-		logit(LOG_FILE, "%s", trace);
-	}
-	logit(LOG_FILE, "[sql_load_player_items] done name=%s loaded=%d kept=%d", GET_NAME(ch),
-	      num_rows, loaded_count);
 
 	free(items);
 	free(item_ids);
@@ -4650,7 +4514,7 @@ P_char sql_load_player(const char *name)
 	int pid = sql_get_player_pid(name);
 	if (pid <= 0)
 	{
-		logit(LOG_DEBUG, "sql_load_player: player %s not found in db", name);
+		logit(LOG_DEBUG, "sql_load_player: outcome=not_found");
 		return NULL;
 	}
 
@@ -4675,7 +4539,7 @@ P_char sql_load_player(const char *name)
 	// load all components
 	if (!sql_load_player_status(ch, pid))
 	{
-		logit(LOG_DEBUG, "sql_load_player: failed to load status for %s", name);
+		logit(LOG_DEBUG, "sql_load_player: component=status outcome=failure");
 		free(ch->only.pc);
 		free(ch);
 		return NULL;
@@ -4683,19 +4547,19 @@ P_char sql_load_player(const char *name)
 
 	if (!sql_load_player_skills(ch))
 	{
-		logit(LOG_DEBUG, "sql_load_player: failed to load skills for %s", name);
+		logit(LOG_DEBUG, "sql_load_player: component=skills outcome=failure");
 		// continue anyway, skills aren't fatal
 	}
 
 	if (!sql_load_player_affects(ch))
 	{
-		logit(LOG_DEBUG, "sql_load_player: failed to load affects for %s", name);
+		logit(LOG_DEBUG, "sql_load_player: component=affects outcome=failure");
 		// continue anyway
 	}
 
 	if (!sql_load_player_items(ch))
 	{
-		logit(LOG_DEBUG, "sql_load_player: failed to load items for %s", name);
+		logit(LOG_DEBUG, "sql_load_player: component=items outcome=failure");
 		// continue anyway
 	}
 
@@ -4772,7 +4636,7 @@ bool sql_save_account(struct acct_entry *acc)
 	// save ips
 	if (!sql_save_account_ips(acc->acct_name, acc->acct_unique_ips))
 	{
-		logit(LOG_DEBUG, "sql_save_account: failed to save ips for %s", acc->acct_name);
+		logit(LOG_DEBUG, "sql_save_account: component=ips outcome=failure");
 		if (own_txn)
 			sql_rollback();
 		return false;
@@ -4781,8 +4645,7 @@ bool sql_save_account(struct acct_entry *acc)
 	// save characters
 	if (!sql_save_account_characters(acc))
 	{
-		logit(LOG_DEBUG, "sql_save_account: failed to save characters for %s",
-		      acc->acct_name);
+		logit(LOG_DEBUG, "sql_save_account: component=characters outcome=failure");
 		if (own_txn)
 			sql_rollback();
 		return false;
@@ -4836,8 +4699,7 @@ static bool sql_save_account_characters(struct acct_entry *acc)
 			   mapping is written by sql_update_account_character() on the
 			   first player save, once the pid exists. */
 			logit(LOG_DEBUG,
-			      "sql_save_account_characters: no pid yet for %s, deferring mapping row",
-			      ch->charname);
+			      "sql_save_account_characters: component=mapping outcome=deferred");
 			free(esc_char);
 			continue;
 		}
@@ -5014,7 +4876,7 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
 	if (!result)
 	{
 		sql_account_chars_query_failed = true;
-		logit(LOG_DEBUG, "sql_load_account_characters: query failed for %s", account_name);
+		logit(LOG_DEBUG, "sql_load_account_characters: outcome=query_failure");
 		return NULL;
 	}
 
@@ -5177,12 +5039,6 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 	if (!obj || !DB || locker_id <= 0)
 		return 0;
 
-	logit(LOG_DEBUG,
-	      "sql_save_locker_item: begin locker_id=%d chest_id=%d container_id=%d vnum=%d uid=%lu short=%s",
-	      locker_id, chest_id, container_id,
-	      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1, obj->obj_uid,
-	      obj->short_description ? obj->short_description : "(null)");
-
 	// Own_txn wrapper for standalone-call safety
 	bool own_txn = false;
 	if (!sql_in_transaction())
@@ -5279,26 +5135,16 @@ static int sql_save_locker_item(int locker_id, int chest_id, P_obj obj, int cont
 
 	if (!sql_run_query(query))
 	{
-		logit(LOG_DEBUG, "sql_save_item: insert failed errno=%u sqlerr=%s", mysql_errno(DB),
-		      mysql_error(DB));
+		logit(LOG_DEBUG, "sql_save_locker_item: component=insert outcome=failure");
 		if (own_txn)
 			sql_rollback();
 		return 0;
 	}
 
 	int item_id = (int)mysql_insert_id(DB);
-	logit(LOG_DEBUG,
-	      "sql_save_locker_item: saved item_id=%d locker_id=%d chest_id=%d container_id=%d vnum=%d uid=%lu contains=%s",
-	      item_id, locker_id, chest_id, container_id,
-	      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1, obj->obj_uid,
-	      obj->contains ? "yes" : "no");
-
 	if (!sql_save_locker_item_affects(item_id, obj))
 	{
-		logit(LOG_DEBUG,
-		      "sql_save_locker_item: affects save failed item_id=%d locker_id=%d chest_id=%d container_id=%d vnum=%d uid=%lu",
-		      item_id, locker_id, chest_id, container_id,
-		      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1, obj->obj_uid);
+		logit(LOG_DEBUG, "sql_save_locker_item: component=affects outcome=failure");
 		if (own_txn)
 			sql_rollback();
 		return 0;
@@ -5340,17 +5186,15 @@ static bool sql_save_locker_upsert(P_char locker_ch, const char *locker_name, ch
 		int carrying_count = 0;
 		for (P_obj cur = locker_ch->carrying; cur; cur = cur->next_content)
 			carrying_count++;
-		logit(LOG_DEBUG,
-		      "sql_save_locker: locker_id=%d name=%s saving %d top-level items to public chest",
-		      existing_locker_id, locker_name, carrying_count);
+		logit(LOG_DEBUG, "sql_save_locker: component=public_chest items=%d",
+		      carrying_count);
 
 		// locker exists - delete only PUBLIC chest items, keep private chest items
 		int public_id = sql_get_or_create_public_chest(existing_locker_id);
 		if (public_id <= 0)
 		{
 			logit(LOG_DEBUG,
-			      "sql_save_locker: failed to get/create public chest for %s",
-			      locker_name);
+			      "sql_save_locker: component=public_chest outcome=lookup_failure");
 			sql_rollback();
 			return false;
 		}
@@ -5361,8 +5205,8 @@ static bool sql_save_locker_upsert(P_char locker_ch, const char *locker_name, ch
 			existing_locker_id, public_id);
 		if (!sql_run_query(del_query))
 		{
-			logit(LOG_DEBUG, "sql_save_locker: failed to delete old items for %s",
-			      locker_name);
+			logit(LOG_DEBUG,
+			      "sql_save_locker: component=old_items outcome=delete_failure");
 			sql_rollback();
 			return false;
 		}
@@ -5390,7 +5234,7 @@ static bool sql_save_locker_upsert(P_char locker_ch, const char *locker_name, ch
 
 	if (!sql_run_query(ins_query))
 	{
-		logit(LOG_DEBUG, "sql_save_locker: failed to insert new locker %s", locker_name);
+		logit(LOG_DEBUG, "sql_save_locker: component=insert outcome=failure");
 		sql_rollback();
 		return false;
 	}
@@ -5400,20 +5244,14 @@ static bool sql_save_locker_upsert(P_char locker_ch, const char *locker_name, ch
 }
 
 static bool sql_save_locker_items(P_char locker_ch, int locker_id, int public_chest_id,
-				  const char *locker_name, bool own_txn)
+				  bool own_txn)
 {
 	// save all items the locker char is carrying to public chest - any failure rolls back the whole locker save
 	for (P_obj obj = locker_ch->carrying; obj; obj = obj->next_content)
 	{
-		logit(LOG_DEBUG,
-		      "sql_save_locker: saving top-level item vnum=%d uid=%lu to locker_id=%d chest_id=%d",
-		      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1, obj->obj_uid,
-		      locker_id, public_chest_id);
 		if (sql_save_locker_item(locker_id, public_chest_id, obj, 0) == 0)
 		{
-			logit(LOG_DEBUG,
-			      "sql_save_locker: failed to save item, rolling back for %s",
-			      locker_name);
+			logit(LOG_DEBUG, "sql_save_locker: component=item outcome=failure");
 			if (own_txn)
 				sql_rollback();
 			return false;
@@ -5422,7 +5260,7 @@ static bool sql_save_locker_items(P_char locker_ch, int locker_id, int public_ch
 
 	if (own_txn && !sql_commit())
 	{
-		logit(LOG_DEBUG, "sql_save_locker: failed to commit for %s", locker_name);
+		logit(LOG_DEBUG, "sql_save_locker: component=commit outcome=failure");
 		sql_rollback();
 		return false;
 	}
@@ -5434,8 +5272,7 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 {
 	if (!locker_ch || !DB)
 	{
-		logit(LOG_DEBUG, "sql_save_locker: cannot save locker (locker_ch=%p, db=%s)",
-		      (void *)locker_ch, DB ? "ready" : "null");
+		logit(LOG_DEBUG, "sql_save_locker: outcome=unavailable");
 		return false;
 	}
 
@@ -5449,8 +5286,7 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 	char *esc_name = sql_escape_string(locker_name);
 	if (!esc_name)
 	{
-		logit(LOG_DEBUG, "sql_save_locker: failed to escape locker name for %s",
-		      locker_name);
+		logit(LOG_DEBUG, "sql_save_locker: component=name_escape outcome=failure");
 		return false;
 	}
 
@@ -5460,8 +5296,7 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 		// start transaction (must succeed before any writes)
 		if (!sql_begin_transaction())
 		{
-			logit(LOG_DEBUG, "sql_save_locker: failed to start transaction for %s",
-			      locker_name);
+			logit(LOG_DEBUG, "sql_save_locker: component=transaction outcome=failure");
 			free(esc_name);
 			return false;
 		}
@@ -5482,14 +5317,12 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 	int public_chest_id = sql_get_or_create_public_chest(locker_id);
 	if (public_chest_id <= 0)
 	{
-		logit(LOG_DEBUG,
-		      "sql_save_locker: failed to get/create public chest after insert for %s",
-		      locker_name);
+		logit(LOG_DEBUG, "sql_save_locker: component=public_chest outcome=create_failure");
 		sql_rollback();
 		return false;
 	}
 
-	return sql_save_locker_items(locker_ch, locker_id, public_chest_id, locker_name, own_txn);
+	return sql_save_locker_items(locker_ch, locker_id, public_chest_id, own_txn);
 }
 
 static P_obj sql_load_locker_items(int locker_id, int container_id, const char *owner_ref);
@@ -5509,8 +5342,7 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 	if (depth > MAX_CONTAINER_LOAD_DEPTH)
 	{
 		logit(LOG_DEBUG,
-		      "sql_load_locker_items_filtered: container depth exceeded for locker %d container %d",
-		      locker_id, container_id);
+		      "sql_load_locker_items_filtered: component=container outcome=depth_limit");
 		return NULL;
 	}
 
@@ -5641,9 +5473,8 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 								"sql_load_locker_items"))
 			{
 				logit(LOG_DEBUG,
-				      "sql_load_locker_items_filtered: owner mismatch item_id=%d vnum=%d uid=%lu locker_id=%d chest_id=%d container_id=%d owner_ref=%s",
-				      item_id, vnum, obj->obj_uid, locker_id, chest_id,
-				      container_id, owner_ref ? owner_ref : "(null)");
+				      "sql_load_locker_items_filtered: component=ownership "
+				      "outcome=mismatch");
 				extract_obj(obj, FALSE);
 				continue;
 			}
@@ -5660,29 +5491,18 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			int child_count = 0;
 			for (P_obj c = obj->contains; c; c = c->next_content)
 				child_count++;
-			logit(LOG_DEBUG,
-			      "sql_load_locker_items_filtered: loaded %d children for item_id=%d vnum=%d uid=%lu locker_id=%d chest_id=%d container_id=%d",
-			      child_count, item_id, vnum, obj->obj_uid, locker_id, chest_id,
-			      container_id);
+			logit(LOG_DEBUG, "sql_load_locker_items_filtered: children=%d",
+			      child_count);
 		}
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			if (!obj_can_nest(c, obj))
 			{
 				logit(LOG_DEBUG,
-				      "sql_load_locker_items_filtered: skipping malformed container link child_db_id=%d parent_db_id=%d child_vnum=%d parent_vnum=%d child_uid=%lu parent_uid=%lu",
-				      c->db_item_id, obj->db_item_id,
-				      (c->R_num >= 0) ? obj_index[c->R_num].virtual_number : -1,
-				      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
-				      c->obj_uid, obj->obj_uid);
+				      "sql_load_locker_items_filtered: component=container_link "
+				      "outcome=malformed");
 				continue;
 			}
-			logit(LOG_DEBUG,
-			      "sql_load_locker_items_filtered: linked child_db_id=%d to parent_db_id=%d child_vnum=%d parent_vnum=%d child_uid=%lu parent_uid=%lu",
-			      c->db_item_id, obj->db_item_id,
-			      (c->R_num >= 0) ? obj_index[c->R_num].virtual_number : -1,
-			      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
-			      c->obj_uid, obj->obj_uid);
 			c->loc_p = LOC_INSIDE;
 			c->loc.inside = obj;
 		}
@@ -5772,8 +5592,7 @@ P_char sql_load_locker(int owner_pid, int owner_assoc_id)
 		int carry_count = 0;
 		for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 			carry_count++;
-		logit(LOG_DEBUG, "sql_load_locker: locker_id=%d name=%s loaded %d top-level items",
-		      locker_id, locker_name, carry_count);
+		logit(LOG_DEBUG, "sql_load_locker: outcome=success items=%d", carry_count);
 	}
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 	{
@@ -6205,12 +6024,6 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	if (!DB || locker_id <= 0 || chest_id <= 0 || !chest_obj)
 		return false;
 
-	logit(LOG_DEBUG,
-	      "sql_save_private_chest_items: begin locker_id=%d chest_id=%d chest_vnum=%d chest_uid=%lu contains=%d in_txn=%d",
-	      locker_id, chest_id,
-	      (chest_obj->R_num >= 0) ? obj_index[chest_obj->R_num].virtual_number : -1,
-	      chest_obj->obj_uid, sql_count_obj_contents(chest_obj), sql_in_transaction() ? 1 : 0);
-
 	bool own_txn = false;
 	if (!sql_in_transaction())
 	{
@@ -6233,9 +6046,6 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	}
 
 	// delete existing items for this chest
-	logit(LOG_DEBUG,
-	      "sql_save_private_chest_items: deleting old rows locker_id=%d chest_id=%d chest_uid=%lu contains=%d",
-	      locker_id, chest_id, chest_obj->obj_uid, sql_count_obj_contents(chest_obj));
 	char del_query[256];
 	snprintf(del_query, sizeof(del_query),
 		 "DELETE FROM locker_items WHERE locker_id=%d AND chest_id=%d", locker_id,
@@ -6243,8 +6053,7 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	if (!sql_run_query(del_query))
 	{
 		logit(LOG_DEBUG,
-		      "sql_save_private_chest_items: failed to delete old items for chest %d",
-		      chest_id);
+		      "sql_save_private_chest_items: component=old_items outcome=delete_failure");
 		if (own_txn)
 			sql_rollback();
 		return false;
@@ -6253,18 +6062,10 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 	// save all items in the chest - any failure rolls back the DELETE above
 	for (P_obj obj = chest_obj->contains; obj; obj = obj->next_content)
 	{
-		logit(LOG_DEBUG,
-		      "sql_save_private_chest_items: saving child locker_id=%d chest_id=%d obj_vnum=%d uid=%lu contains=%d type=%d container_id=NULL",
-		      locker_id, chest_id,
-		      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1, obj->obj_uid,
-		      sql_count_obj_contents(obj), obj->type);
 		if (sql_save_locker_item(locker_id, chest_id, obj, 0) == 0)
 		{
 			logit(LOG_DEBUG,
-			      "sql_save_private_chest_items: failed to save item locker_id=%d chest_id=%d obj_vnum=%d uid=%lu errno=%u sqlerr=%s",
-			      locker_id, chest_id,
-			      (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : -1,
-			      obj->obj_uid, mysql_errno(DB), mysql_error(DB));
+			      "sql_save_private_chest_items: component=item outcome=failure");
 			if (own_txn)
 				sql_rollback();
 			return false;
@@ -6482,12 +6283,12 @@ bool sql_migrate_player(const char *name)
 	if (!name || !*name)
 		return false;
 
-	logit(LOG_DEBUG, "sql_migrate_player: migrating %s", name);
+	logit(LOG_DEBUG, "sql_migrate_player: outcome=started");
 
 	// check if already in db
 	if (sql_player_exists(name))
 	{
-		logit(LOG_DEBUG, "sql_migrate_player: %s already exists in db, skipping", name);
+		logit(LOG_DEBUG, "sql_migrate_player: outcome=already_exists");
 		return true;
 	}
 
@@ -6495,7 +6296,8 @@ bool sql_migrate_player(const char *name)
 	P_char ch = alloc_temp_char();
 	if (!ch)
 	{
-		logit(LOG_FILE, "sql_migrate_player: failed to allocate char for %s", name);
+		logit(LOG_FILE,
+		      "sql_migrate_player: component=character outcome=allocation_failure");
 		return false;
 	}
 
@@ -6503,8 +6305,8 @@ bool sql_migrate_player(const char *name)
 	int status = restoreCharOnly(ch, (char *)name);
 	if (status < 0)
 	{
-		logit(LOG_FILE, "sql_migrate_player: failed to load pfile for %s (status %d)", name,
-		      status);
+		logit(LOG_FILE,
+		      "sql_migrate_player: component=pfile outcome=load_failure status=%d", status);
 		free_temp_char(ch);
 		return false;
 	}
@@ -6515,7 +6317,7 @@ bool sql_migrate_player(const char *name)
 		ch->equipment[i] = NULL;
 	if (restoreItemsOnly(ch, 0) < 0)
 	{
-		logit(LOG_FILE, "sql_migrate_player: failed to load items for %s", name);
+		logit(LOG_FILE, "sql_migrate_player: component=items outcome=load_failure");
 		free_temp_char(ch);
 		return false;
 	}
@@ -6525,12 +6327,12 @@ bool sql_migrate_player(const char *name)
 	bool result = sql_save_player(ch, status, 0);
 	if (!result)
 	{
-		logit(LOG_FILE, "sql_migrate_player: failed to save %s to db", name);
+		logit(LOG_FILE, "sql_migrate_player: component=database outcome=save_failure");
 		free_temp_char(ch);
 		return false;
 	}
 
-	logit(LOG_DEBUG, "sql_migrate_player: successfully migrated %s", name);
+	logit(LOG_DEBUG, "sql_migrate_player: outcome=success");
 	free_temp_char(ch);
 	return true;
 }
@@ -6556,7 +6358,7 @@ bool sql_verify_player(const char *name)
 	P_char db_ch = sql_load_player(name);
 	if (!db_ch)
 	{
-		logit(LOG_FILE, "sql_verify_player: %s not found in db", name);
+		logit(LOG_FILE, "sql_verify_player: outcome=not_found");
 		free_temp_char(pfile_ch);
 		return false;
 	}
@@ -6566,34 +6368,32 @@ bool sql_verify_player(const char *name)
 
 	if (strcmp(GET_NAME(pfile_ch), GET_NAME(db_ch)) != 0)
 	{
-		logit(LOG_FILE, "sql_verify_player: %s name mismatch", name);
+		logit(LOG_FILE, "sql_verify_player: component=name outcome=mismatch");
 		match = false;
 	}
 	if (GET_LEVEL(pfile_ch) != GET_LEVEL(db_ch))
 	{
-		logit(LOG_FILE, "sql_verify_player: %s level mismatch (%d vs %d)", name,
-		      GET_LEVEL(pfile_ch), GET_LEVEL(db_ch));
+		logit(LOG_FILE, "sql_verify_player: component=level outcome=mismatch");
 		match = false;
 	}
 	if (GET_RACE(pfile_ch) != GET_RACE(db_ch))
 	{
-		logit(LOG_FILE, "sql_verify_player: %s race mismatch", name);
+		logit(LOG_FILE, "sql_verify_player: component=race outcome=mismatch");
 		match = false;
 	}
 	if (pfile_ch->player.m_class != db_ch->player.m_class)
 	{
-		logit(LOG_FILE, "sql_verify_player: %s class mismatch", name);
+		logit(LOG_FILE, "sql_verify_player: component=class outcome=mismatch");
 		match = false;
 	}
 	if (GET_EXP(pfile_ch) != GET_EXP(db_ch))
 	{
-		logit(LOG_FILE, "sql_verify_player: %s exp mismatch (%ld vs %ld)", name,
-		      GET_EXP(pfile_ch), GET_EXP(db_ch));
+		logit(LOG_FILE, "sql_verify_player: component=experience outcome=mismatch");
 		match = false;
 	}
 	if (GET_GOLD(pfile_ch) != GET_GOLD(db_ch))
 	{
-		logit(LOG_FILE, "sql_verify_player: %s gold mismatch", name);
+		logit(LOG_FILE, "sql_verify_player: component=gold outcome=mismatch");
 		match = false;
 	}
 
@@ -6601,7 +6401,7 @@ bool sql_verify_player(const char *name)
 	free_temp_char(db_ch);
 
 	if (match)
-		logit(LOG_DEBUG, "sql_verify_player: %s verified OK", name);
+		logit(LOG_DEBUG, "sql_verify_player: outcome=verified");
 
 	return match;
 }
@@ -6795,7 +6595,7 @@ bool sql_load_towns(void)
 		}
 
 		if (!found)
-			logit(LOG_DEBUG, "sql_load_towns: zone '%s' not found", zone_filename);
+			logit(LOG_DEBUG, "sql_load_towns: component=zone outcome=not_found");
 	}
 
 	mysql_free_result(result);
@@ -6892,7 +6692,7 @@ struct acct_ip *sql_load_account_ips(const char *account_name)
 	if (!result)
 	{
 		sql_account_ips_query_failed = true;
-		logit(LOG_DEBUG, "sql_load_account_ips: query failed for %s", account_name);
+		logit(LOG_DEBUG, "sql_load_account_ips: outcome=query_failure");
 		return NULL;
 	}
 
@@ -7179,8 +6979,7 @@ static int sql_save_corpse_item(int corpse_id, int save_id, P_obj obj, int conta
 
 	if (!sql_run_query(query))
 	{
-		logit(LOG_DEBUG, "sql_save_item: insert failed errno=%u sqlerr=%s", mysql_errno(DB),
-		      mysql_error(DB));
+		logit(LOG_DEBUG, "sql_save_corpse_item: component=insert outcome=failure");
 		if (own_txn)
 			sql_rollback();
 		return 0;
@@ -7299,7 +7098,7 @@ bool sql_save_corpse(P_obj corpse)
 		 "DELETE FROM corpses WHERE player_name='%s' AND save_id=%d", esc_name, save_id);
 	if (!sql_run_query(del_query))
 	{
-		logit(LOG_DEBUG, "sql_save_corpse: failed to delete old corpse for %s", esc_name);
+		logit(LOG_DEBUG, "sql_save_corpse: component=old_corpse outcome=delete_failure");
 		free(esc_name);
 		free(esc_sdesc);
 		free(esc_desc);
@@ -7336,7 +7135,7 @@ bool sql_save_corpse(P_obj corpse)
 
 	if (!sql_run_query(ins_query))
 	{
-		logit(LOG_DEBUG, "sql_save_corpse: failed to insert corpse for %s", player_name);
+		logit(LOG_DEBUG, "sql_save_corpse: component=insert outcome=failure");
 		sql_rollback();
 		return false;
 	}
@@ -7357,7 +7156,7 @@ bool sql_save_corpse(P_obj corpse)
 
 	if (!sql_commit())
 	{
-		logit(LOG_DEBUG, "sql_save_corpse: failed to commit for %s", player_name);
+		logit(LOG_DEBUG, "sql_save_corpse: component=commit outcome=failure");
 		sql_rollback();
 		return false;
 	}
@@ -9341,8 +9140,7 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
 	if (depth > MAX_CONTAINER_LOAD_DEPTH)
 	{
 		logit(LOG_DEBUG,
-		      "sql_load_saved_item_contents: container depth exceeded for %s container %d",
-		      item_key, container_id);
+		      "sql_load_saved_item_contents: component=container outcome=depth_limit");
 		return NULL;
 	}
 
@@ -9519,8 +9317,7 @@ void sql_restore_saved_items(void)
 		int room = real_room(room_vnum);
 		if (room == NOWHERE)
 		{
-			logit(LOG_DEBUG, "sql_restore_saved_items: bad room %d for %s", room_vnum,
-			      item_key);
+			logit(LOG_DEBUG, "sql_restore_saved_items: location=room outcome=invalid");
 			continue;
 		}
 
@@ -9632,8 +9429,7 @@ void sql_restore_saved_items(void)
 		{
 			if (!sql_save_saved_item(entry->item, entry->item_key))
 				logit(LOG_DEBUG,
-				      "sql_restore_saved_items: failed to rewrite %s after delete failure",
-				      entry->item_key ? entry->item_key : "<null>");
+				      "sql_restore_saved_items: component=rewrite outcome=failure");
 		}
 	}
 
@@ -10067,7 +9863,7 @@ bool sql_save_ship(P_ship ship)
 		// new ship
 		if (!sql_run_query(initQuery))
 		{
-			sql_player_error("sql_save_ship", initQuery);
+			sql_player_error("sql_save_ship/init");
 			free(batch);
 			free(esc_owner);
 			if (esc_name)
@@ -10088,7 +9884,7 @@ bool sql_save_ship(P_ship ship)
 
 		if (!result)
 		{
-			sql_player_error("sql_save_ship_2", query);
+			sql_player_error("sql_save_ship/update");
 			free(batch);
 			if (own_transaction)
 				sql_rollback();
@@ -10129,7 +9925,7 @@ bool sql_save_ship(P_ship ship)
 	    !sql_save_ship_crew(ship, batch, batchSize, pos) ||
 	    !sql_save_ship_slots(ship, batch, batchSize, pos))
 	{
-		sql_player_error("sql_save_ship_3", NULL);
+		sql_player_error("sql_save_ship/transaction");
 		free(batch);
 		if (own_transaction)
 			sql_rollback();
@@ -10140,13 +9936,12 @@ bool sql_save_ship(P_ship ship)
 	MYSQL_RES *result = NULL;
 	if (!sql_trace_exec("sql_save_ship_batch", batch, strlen(batch), false, true))
 	{
-		sql_player_error("sql_save_ship_4", batch);
+		sql_player_error("sql_save_ship/batch");
 		free(batch);
 		sql_clear_results();
 		if (own_transaction)
 			sql_rollback();
 		ship->db_id = -1;
-		logit(LOG_DEBUG, "sql_save_ship: mysql_real_query failed for ship %d", ship->db_id);
 		return false;
 	}
 	result = mysql_store_result(DB);
@@ -10329,8 +10124,7 @@ P_ship sql_load_ship(const char *owner_name)
 	if (!sql_load_ship_armor(ship_id, ship) || !sql_load_ship_crew(ship_id, ship) ||
 	    !sql_load_ship_slots(ship_id, ship))
 	{
-		logit(LOG_DEBUG, "sql_load_ship: failed to load dependent ship rows for %s",
-		      ship->ownername ? ship->ownername : "<unknown>");
+		logit(LOG_DEBUG, "sql_load_ship: component=dependent_rows outcome=failure");
 		delete_ship(ship, true);
 		return NULL;
 	}
@@ -10371,16 +10165,14 @@ bool sql_load_all_ships()
 		P_ship ship = sql_load_ship(owner_names[i]);
 		if (!ship)
 		{
-			logit(LOG_FILE, "sql_load_all_ships: failed to load ship rows for %s",
-			      owner_names[i]);
+			logit(LOG_FILE, "sql_load_all_ships: component=rows outcome=failure");
 			continue;
 		}
 
 		name_ship(ship->name, ship);
 		if (!load_ship(ship, real_room0(ship->anchor)))
 		{
-			logit(LOG_FILE, "sql_load_all_ships: failed to load ship for %s",
-			      owner_names[i]);
+			logit(LOG_FILE, "sql_load_all_ships: component=ship outcome=failure");
 			continue;
 		}
 

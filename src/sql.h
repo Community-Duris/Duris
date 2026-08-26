@@ -2,6 +2,7 @@
 #define __SQL_H_INCLUDED__
 
 #include "structs.h"
+#include "persistence_observability.h"
 #include <stdlib.h>
 
 /* default database credentials (fallback if env vars not set) */
@@ -63,7 +64,11 @@ static inline int get_db_port(void)
 #ifndef __NO_MYSQL__
 #include <mysql.h>
 extern MYSQL *DB;
-MYSQL_RES *db_query(const char *format, ...);
+MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...);
+MYSQL_RES *db_query_nolog_at(struct persistence_query_site site, const char *format, ...);
+bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
+			     enum persistence_query_context context, const char *sql, size_t len,
+			     uint64_t *operation_id);
 #endif
 
 int load_env_file(void);
@@ -94,12 +99,12 @@ const char *sql_select_IP_info(P_char ch, char *buf, size_t bufSize, time_t *las
 int sql_find_racewar_for_ip(char *ip, int *racewar_side);
 // to log disconnect times...
 void sql_disconnectIP(P_char ch);
-bool qry(const char *format, ...);
+bool qry_at(struct persistence_query_site site, const char *format, ...);
 bool sql_persistence_write_item_event_line(const char *line);
 bool sql_persistence_write_scalar_event_line(const char *line);
 bool sql_persistence_write_large_event_line(const char *line);
-bool sql_trace_exec(const char *site, const char *sql, size_t len, bool drain_before,
-		    bool drain_after);
+bool sql_trace_exec_at(struct persistence_query_site source_site, const char *label,
+		       const char *sql, size_t len, bool drain_before, bool drain_after);
 void sql_trace_panic(void);
 
 /* Resolve which database name to connect to based on the current
@@ -124,6 +129,11 @@ void sql_zone_touch_finished(const char *event_key, int boot_time, int touched_a
 			     int toucher_pid, int group_size, int epic_value, int alignment_delta);
 void sql_clear_results();
 bool sql_run_multi_query(const char *query);
+
+#define db_query(...) db_query_at(PERSISTENCE_QUERY_SITE, __VA_ARGS__)
+#define db_query_nolog(...) db_query_nolog_at(PERSISTENCE_QUERY_SITE, __VA_ARGS__)
+#define qry(...) qry_at(PERSISTENCE_QUERY_SITE, __VA_ARGS__)
+#define sql_trace_exec(label, ...) sql_trace_exec_at(PERSISTENCE_QUERY_SITE, label, __VA_ARGS__)
 
 void send_to_pid_offline(const char *msg, int pid);
 void send_offline_messages(P_char ch);

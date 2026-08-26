@@ -67,6 +67,75 @@ static volatile pid_t dirty_flush_pid = 0;
 static redisContext *donation_sub_ctx = NULL;
 static volatile bool donation_sub_connected = false;
 
+#define REDIS_DIRTY_METRIC_CAPACITY 512
+struct redis_dirty_metric
+{
+	int pid;
+	uint64_t active_first_usec;
+	uint64_t inflight_first_usec;
+};
+static struct redis_dirty_metric redis_dirty_metrics[REDIS_DIRTY_METRIC_CAPACITY];
+
+static struct redis_dirty_metric *redis_dirty_metric_for_pid(int pid, bool create)
+{
+	struct redis_dirty_metric *empty = NULL;
+	for (int i = 0; i < REDIS_DIRTY_METRIC_CAPACITY; ++i)
+	{
+		if (redis_dirty_metrics[i].pid == pid)
+			return &redis_dirty_metrics[i];
+		if (!empty && !redis_dirty_metrics[i].pid)
+			empty = &redis_dirty_metrics[i];
+	}
+	if (empty && create)
+		empty->pid = pid;
+	return create ? empty : NULL;
+}
+
+static void redis_dirty_metric_mark_active(int pid)
+{
+	struct redis_dirty_metric *metric = redis_dirty_metric_for_pid(pid, true);
+	if (metric && !metric->active_first_usec)
+		metric->active_first_usec = persistence_observability_now_usec();
+}
+
+static void redis_dirty_metrics_move_active_to_inflight(void)
+{
+	for (int i = 0; i < REDIS_DIRTY_METRIC_CAPACITY; ++i)
+	{
+		struct redis_dirty_metric *metric = &redis_dirty_metrics[i];
+		if (!metric->active_first_usec)
+			continue;
+		if (!metric->inflight_first_usec ||
+		    metric->active_first_usec < metric->inflight_first_usec)
+			metric->inflight_first_usec = metric->active_first_usec;
+		metric->active_first_usec = 0;
+	}
+}
+
+static void redis_dirty_metrics_restore_inflight(void)
+{
+	for (int i = 0; i < REDIS_DIRTY_METRIC_CAPACITY; ++i)
+	{
+		struct redis_dirty_metric *metric = &redis_dirty_metrics[i];
+		if (!metric->inflight_first_usec)
+			continue;
+		if (!metric->active_first_usec ||
+		    metric->inflight_first_usec < metric->active_first_usec)
+			metric->active_first_usec = metric->inflight_first_usec;
+		metric->inflight_first_usec = 0;
+	}
+}
+
+static void redis_dirty_metrics_clear_inflight(void)
+{
+	for (int i = 0; i < REDIS_DIRTY_METRIC_CAPACITY; ++i)
+	{
+		redis_dirty_metrics[i].inflight_first_usec = 0;
+		if (!redis_dirty_metrics[i].active_first_usec)
+			redis_dirty_metrics[i].pid = 0;
+	}
+}
+
 /* Scan-and-delete with MATCH pattern. Fail closed if SCAN/DEL misshape. */
 static bool redis_clear_scan_match(const char *pattern)
 {
@@ -843,6 +912,7 @@ static void redis_restore_dirty_snapshot(const char *inflight_key)
 		freeReplyObject(restore);
 		if (restored)
 		{
+			redis_dirty_metrics_restore_inflight();
 			redisReply *del =
 				(redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
 			if (del)
@@ -870,7 +940,10 @@ void mark_player_dirty(int pid)
 				(queued->type == REDIS_REPLY_INTEGER && queued->integer == 1);
 			freeReplyObject(queued);
 			if (already_queued)
+			{
+				redis_dirty_metric_mark_active(pid);
 				return;
+			}
 		}
 	}
 
@@ -914,6 +987,8 @@ void mark_player_dirty(int pid)
 		}
 		return;
 	}
+	if (reply->type != REDIS_REPLY_ERROR)
+		redis_dirty_metric_mark_active(pid);
 	freeReplyObject(reply);
 #endif
 }
@@ -940,7 +1015,11 @@ void flush_dirty_players(void)
 				redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s",
 									     inflight_key);
 				if (del)
+				{
+					if (del->type != REDIS_REPLY_ERROR)
+						redis_dirty_metrics_clear_inflight();
 					freeReplyObject(del);
+				}
 			}
 			else
 			{
@@ -971,6 +1050,7 @@ void flush_dirty_players(void)
 		return;
 	}
 	freeReplyObject(rename);
+	redis_dirty_metrics_move_active_to_inflight();
 
 	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SMEMBERS %s", inflight_key);
 	if (!reply)
@@ -1011,7 +1091,11 @@ void flush_dirty_players(void)
 		free(pids);
 		redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
 		if (del)
+		{
+			if (del->type != REDIS_REPLY_ERROR)
+				redis_dirty_metrics_clear_inflight();
 			freeReplyObject(del);
+		}
 		return;
 	}
 
@@ -1044,7 +1128,11 @@ void flush_dirty_players(void)
 		free(pids);
 		redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
 		if (del)
+		{
+			if (del->type != REDIS_REPLY_ERROR)
+				redis_dirty_metrics_clear_inflight();
 			freeReplyObject(del);
+		}
 		return;
 	}
 
@@ -1126,6 +1214,40 @@ int get_dirty_player_count(void)
 #else
 	return 0;
 #endif
+}
+
+struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy(void)
+{
+	struct persistence_dirty_save_snapshot snapshot = {};
+	const uint64_t now = persistence_observability_now_usec();
+	uint64_t active_oldest = 0;
+	uint64_t inflight_oldest = 0;
+
+	snapshot.enabled = redis_enabled ? 1 : 0;
+#ifndef __NO_MYSQL__
+	snapshot.available = redis_enabled && redis_ctx && !redis_ctx->err ? 1 : 0;
+#endif
+	for (int i = 0; i < REDIS_DIRTY_METRIC_CAPACITY; ++i)
+	{
+		const struct redis_dirty_metric *metric = &redis_dirty_metrics[i];
+		if (metric->active_first_usec)
+		{
+			persistence_counter_saturating_add(&snapshot.active_count, 1);
+			if (!active_oldest || metric->active_first_usec < active_oldest)
+				active_oldest = metric->active_first_usec;
+		}
+		if (metric->inflight_first_usec)
+		{
+			persistence_counter_saturating_add(&snapshot.inflight_count, 1);
+			if (!inflight_oldest || metric->inflight_first_usec < inflight_oldest)
+				inflight_oldest = metric->inflight_first_usec;
+		}
+	}
+	if (active_oldest && now >= active_oldest)
+		snapshot.active_oldest_age_msec = (now - active_oldest) / 1000ULL;
+	if (inflight_oldest && now >= inflight_oldest)
+		snapshot.inflight_oldest_age_msec = (now - inflight_oldest) / 1000ULL;
+	return snapshot;
 }
 
 void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
@@ -3334,6 +3456,7 @@ char *redis_get_string(const char *key)
 
 void redis_clear_dirty_players(void)
 {
+	memset(redis_dirty_metrics, 0, sizeof(redis_dirty_metrics));
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_ctx)
 		return;

@@ -38,6 +38,9 @@ using namespace std;
 #include "nexus_stones.h"
 #include "objmisc.h"
 #include "paladins.h"
+#include "persistence_observability.h"
+#include "persistence_queue.h"
+#include "redis.h"
 #include "ships/ships.h"
 #include "specializations.h"
 #include "spells.h"
@@ -3912,20 +3915,165 @@ void show_vnums(P_char ch)
 #define WORLD_MOBILES 5
 #define WORLD_DEBUG 6
 #define WORLD_VNUMS 7
+#define WORLD_PERSISTENCE 8
 #define WORLD_QUESTS 9
 #define WORLD_CARGO 10
 #define WORLD_DEBUG_E 11
 #define MAX_WORLD 11
 
-const char *world_keywords[MAX_WORLD + 2] = { "stats",	 "zones",   "events",	    "rooms",
-					      "objects", "mobiles", "debug",	    "vnums",
-					      "quests",	 "cargo",   "debug_events", "\n" };
+const char *world_keywords[MAX_WORLD + 2] = { "stats",	     "zones",	"events", "rooms",
+					      "objects",     "mobiles", "debug",  "vnums",
+					      "persistence", "quests",	"cargo",  "debug_events",
+					      "\n" };
 
-const int world_values[] = { WORLD_STATS,   WORLD_ZONES,   WORLD_EVENTS,  WORLD_ROOMS,
-			     WORLD_OBJECTS, WORLD_MOBILES, WORLD_DEBUG,	  WORLD_VNUMS,
-			     WORLD_QUESTS,  WORLD_CARGO,   WORLD_DEBUG_E, -1 };
+const int world_values[] = {
+	WORLD_STATS, WORLD_ZONES, WORLD_EVENTS,	     WORLD_ROOMS,  WORLD_OBJECTS, WORLD_MOBILES,
+	WORLD_DEBUG, WORLD_VNUMS, WORLD_PERSISTENCE, WORLD_QUESTS, WORLD_CARGO,	  WORLD_DEBUG_E,
+	-1
+};
 
 extern const char *get_function_name(void *);
+
+static uint64_t world_persistence_max(uint64_t left, uint64_t right)
+{
+	return left > right ? left : right;
+}
+
+static void show_world_persistence_queue(P_char ch, const char *name,
+					 const struct persistence_queue_health_snapshot *snapshot)
+{
+	char line[MAX_STRING_LENGTH];
+	const char *state = snapshot->pending == 0 ? "empty" : "pending";
+
+	if (!snapshot->heartbeat_available)
+		snprintf(line, sizeof(line),
+			 "queue name=%s state=%s pending=%llu dropped=%llu written=%llu "
+			 "failures=%llu running=%d stop_pending=%d heartbeat=unavailable\n",
+			 name, state, (unsigned long long)snapshot->pending,
+			 (unsigned long long)snapshot->dropped,
+			 (unsigned long long)snapshot->written,
+			 (unsigned long long)snapshot->failures, snapshot->running,
+			 snapshot->stop_pending);
+	else
+		snprintf(line, sizeof(line),
+			 "queue name=%s state=%s pending=%llu dropped=%llu written=%llu "
+			 "failures=%llu running=%d stop_pending=%d heartbeat_age_ms=%llu\n",
+			 name, state, (unsigned long long)snapshot->pending,
+			 (unsigned long long)snapshot->dropped,
+			 (unsigned long long)snapshot->written,
+			 (unsigned long long)snapshot->failures, snapshot->running,
+			 snapshot->stop_pending, (unsigned long long)snapshot->heartbeat_age_msec);
+	send_to_char(line, ch);
+}
+
+static void show_world_persistence(P_char ch)
+{
+	static const size_t top_site_limit = 8;
+	struct persistence_query_metric metrics[PERSISTENCE_QUERY_SITE_CAPACITY];
+	const struct persistence_query_snapshot query =
+		persistence_query_snapshot_copy(metrics, PERSISTENCE_QUERY_SITE_CAPACITY);
+	const struct persistence_queue_health_snapshot item_queue =
+		persistence_item_event_health_snapshot_copy();
+	const struct persistence_queue_health_snapshot scalar_queue =
+		persistence_scalar_event_health_snapshot_copy();
+	const struct persistence_queue_health_snapshot large_queue =
+		persistence_large_event_health_snapshot_copy();
+	const struct persistence_dirty_save_snapshot dirty = redis_dirty_save_snapshot_copy();
+	const struct persistence_deferred_save_snapshot deferred =
+		persistence_deferred_save_snapshot_copy();
+	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
+	char line[MAX_STRING_LENGTH];
+
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, dirty.active_oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, dirty.inflight_oldest_age_msec);
+
+	send_to_char("Persistence health (metadata only)\n", ch);
+	if (query.total_calls == 0)
+		snprintf(line, sizeof(line),
+			 "queries state=empty calls=0 failures=0 registry_overflow=%llu\n",
+			 (unsigned long long)query.registry_overflow);
+	else
+		snprintf(line, sizeof(line),
+			 "queries state=active calls=%llu failures=%llu sites=%llu "
+			 "registry_overflow=%llu\n",
+			 (unsigned long long)query.total_calls,
+			 (unsigned long long)query.total_failures, (unsigned long long)query.count,
+			 (unsigned long long)query.registry_overflow);
+	send_to_char(line, ch);
+
+	const size_t rendered_sites = query.count < top_site_limit ? query.count : top_site_limit;
+	for (size_t site_index = 0; site_index < rendered_sites; ++site_index)
+	{
+		const struct persistence_query_metric *metric = &metrics[site_index];
+		snprintf(line, sizeof(line),
+			 "query_site rank=%llu site=%s context=%s kind=%s calls=%llu "
+			 "failures=%llu total_us=%llu max_us=%llu "
+			 "buckets=%llu/%llu/%llu/%llu/%llu/%llu/%llu/%llu\n",
+			 (unsigned long long)(site_index + 1), metric->site,
+			 persistence_query_context_name(metric->context),
+			 persistence_statement_kind_name(metric->kind),
+			 (unsigned long long)metric->calls, (unsigned long long)metric->failures,
+			 (unsigned long long)metric->total_usec,
+			 (unsigned long long)metric->max_usec,
+			 (unsigned long long)metric->latency_buckets[0],
+			 (unsigned long long)metric->latency_buckets[1],
+			 (unsigned long long)metric->latency_buckets[2],
+			 (unsigned long long)metric->latency_buckets[3],
+			 (unsigned long long)metric->latency_buckets[4],
+			 (unsigned long long)metric->latency_buckets[5],
+			 (unsigned long long)metric->latency_buckets[6],
+			 (unsigned long long)metric->latency_buckets[7]);
+		send_to_char(line, ch);
+	}
+
+	show_world_persistence_queue(ch, "item", &item_queue);
+	show_world_persistence_queue(ch, "scalar", &scalar_queue);
+	show_world_persistence_queue(ch, "large", &large_queue);
+
+	if (!dirty.enabled)
+		snprintf(line, sizeof(line),
+			 "dirty state=disabled active=%llu active_oldest_age_ms=%llu "
+			 "inflight=%llu inflight_oldest_age_ms=%llu\n",
+			 (unsigned long long)dirty.active_count,
+			 (unsigned long long)dirty.active_oldest_age_msec,
+			 (unsigned long long)dirty.inflight_count,
+			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	else if (!dirty.available)
+		snprintf(line, sizeof(line),
+			 "dirty state=unavailable active=%llu active_oldest_age_ms=%llu "
+			 "inflight=%llu inflight_oldest_age_ms=%llu\n",
+			 (unsigned long long)dirty.active_count,
+			 (unsigned long long)dirty.active_oldest_age_msec,
+			 (unsigned long long)dirty.inflight_count,
+			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	else if (dirty.active_count == 0 && dirty.inflight_count == 0)
+		snprintf(line, sizeof(line), "dirty state=empty active=0 inflight=0\n");
+	else
+		snprintf(line, sizeof(line),
+			 "dirty state=pending active=%llu active_oldest_age_ms=%llu "
+			 "inflight=%llu inflight_oldest_age_ms=%llu\n",
+			 (unsigned long long)dirty.active_count,
+			 (unsigned long long)dirty.active_oldest_age_msec,
+			 (unsigned long long)dirty.inflight_count,
+			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "deferred state=%s pending=%llu scheduled=%llu failed_unscheduled=%llu "
+		 "attempts=%llu failures=%llu oldest_age_ms=%llu\n",
+		 deferred.pending == 0 ? "empty" : "pending", (unsigned long long)deferred.pending,
+		 (unsigned long long)deferred.scheduled,
+		 (unsigned long long)deferred.failed_unscheduled,
+		 (unsigned long long)deferred.attempts, (unsigned long long)deferred.failures,
+		 (unsigned long long)deferred.oldest_age_msec);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line), "oldest_save_age_ms=%llu\n",
+		 (unsigned long long)oldest_save_age_msec);
+	send_to_char(line, ch);
+}
 
 void do_world(P_char ch, char *argument, int /*cmd*/)
 {
@@ -4259,6 +4407,10 @@ void do_world(P_char ch, char *argument, int /*cmd*/)
 
 	case WORLD_VNUMS:
 		show_vnums(ch);
+		break;
+
+	case WORLD_PERSISTENCE:
+		show_world_persistence(ch);
 		break;
 
 	case WORLD_CARGO:
@@ -7338,8 +7490,7 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 		if (d && d->z_str)
 		{
 			mccp_ratio = compress_get_ratio(d);
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 " C:%s%3d%%&n", mccp_ratio > 0 ? "&n" : "&+R", mccp_ratio);
+			APPENDF(line, " C:%s%3d%%&n", mccp_ratio > 0 ? "&n" : "&+R", mccp_ratio);
 			num_mccp++;
 		}
 		else
@@ -7348,21 +7499,19 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 		if (d && strlen(d->client_str) > 2)
 		{
 			one_argument(d->client_str, temp_buf);
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 " Client:&+C%s&n", temp_buf);
+			APPENDF(line, " Client:&+C%s&n", temp_buf);
 			num_client++;
 		}
 		else
 			strcat(line, " Client:  - ");
 
 		if (t_ch && t_ch->player.name)
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 "     %-15s", GET_NAME(t_ch));
+			APPENDF(line, "     %-15s", GET_NAME(t_ch));
 		else
 			strcat(line, "     &+mNONE&n           ");
 
 		sprinttype(d->connected, connected_types, buf2);
-		snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "  %11s", buf2);
+		APPENDF(line, "  %11s", buf2);
 
 		/*
 		 * Get IP Address
@@ -7384,13 +7533,12 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 					fclose(f);
 				}
 			}
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y", d->host2);
+			APPENDF(line, "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y",
+				d->host2);
 		}
 		else
 		{
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 " &+CUNKNOWN&n        ");
+			APPENDF(line, " &+CUNKNOWN&n        ");
 		}
 
 		strcat(line, "\n");
@@ -7453,9 +7601,9 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 			strcpy(line, "   ");
 
 		if (t_ch->player.name)
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "%-15s",
-				 (d && d->original) ? (d->original->player.name) :
-						      (t_ch->player.name));
+			APPENDF(line, "%-15s",
+				(d && d->original) ? (d->original->player.name) :
+						     (t_ch->player.name));
 		else
 			strcpy(line, "&+RUNDEFINED&n          ");
 
@@ -7464,18 +7612,15 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 		                               */
 
 		if (t_ch->in_room > NOWHERE)
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), " [%6d] ",
-				 world[t_ch->in_room].number);
+			APPENDF(line, " [%6d] ", world[t_ch->in_room].number);
 		else
 			strcat(line, "  ??????  ");
 
 		if (d && d->original && IS_PC(d->original) &&
 		    (d->original->only.pc->wiz_invis != 0))
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "%2d ",
-				 d->original->only.pc->wiz_invis);
+			APPENDF(line, "%2d ", d->original->only.pc->wiz_invis);
 		else if (IS_PC(t_ch) && (t_ch->only.pc->wiz_invis != 0))
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "%2d ",
-				 t_ch->only.pc->wiz_invis);
+			APPENDF(line, "%2d ", t_ch->only.pc->wiz_invis);
 		else
 			strcat(line, "   ");
 
@@ -7503,14 +7648,12 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 						fclose(f);
 					}
 				}
-				snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-					 "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y",
-					 d->host2);
+				APPENDF(line, "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y",
+					d->host2);
 			}
 			else
 			{
-				snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-					 " &+CUNKNOWN&n        ");
+				APPENDF(line, " &+CUNKNOWN&n        ");
 			}
 		}
 		else
@@ -7523,14 +7666,12 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 		{
 			snoop_by_ptr = d->snoop.snoop_by_list;
 
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 " &+g(S: %s", GET_NAME(snoop_by_ptr->snoop_by));
+			APPENDF(line, " &+g(S: %s", GET_NAME(snoop_by_ptr->snoop_by));
 
 			snoop_by_ptr = snoop_by_ptr->next;
 			while (snoop_by_ptr)
 			{
-				snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-					 ", %s", GET_NAME(snoop_by_ptr->snoop_by));
+				APPENDF(line, ", %s", GET_NAME(snoop_by_ptr->snoop_by));
 
 				snoop_by_ptr = snoop_by_ptr->next;
 			}

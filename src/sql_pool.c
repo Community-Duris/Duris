@@ -1,5 +1,5 @@
 /*
- * sql_pool.c — MySQL connection pool implementation.
+ * sql_pool.c -- MySQL connection pool implementation.
  *
  * Fixed-size pool of MYSQL* connections shared by the
  * 3 async persistence worker threads (item, scalar, large-payload).
@@ -65,8 +65,9 @@ static MYSQL *sql_pool_create_connection(const char *site, int slot)
 				DB_PORT, NULL, /* unix_socket */
 				CLIENT_MULTI_STATEMENTS))
 	{
-		logit(LOG_DEBUG, "%s: mysql_real_connect failed for slot %d: %s", site, slot,
-		      mysql_error(conn));
+		logit(LOG_DEBUG,
+		      "%s: database connect failed for slot %d error_code=%u sqlstate=%.5s", site,
+		      slot, (unsigned int)mysql_errno(conn), mysql_sqlstate(conn));
 		mysql_close(conn);
 		return NULL;
 	}
@@ -212,7 +213,7 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 
 	while (1)
 	{
-		/* Linear scan for a free slot — pool is small (4–16), so O(n)
+		/* Linear scan for a free slot -- pool is small (4-16), so O(n)
 		 * is fine. */
 		for (int i = 0; i < pool_size; i++)
 		{
@@ -225,7 +226,7 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 			}
 		}
 
-		/* All busy — wait only until the fixed acquisition deadline. */
+		/* All busy -- wait only until the fixed acquisition deadline. */
 		wait_result = pthread_cond_timedwait(&pool_cond, &pool_mutex, &deadline);
 		if (wait_result == ETIMEDOUT)
 		{
@@ -242,8 +243,8 @@ MYSQL *sql_pool_acquire_with_status(int *pool_was_active)
 		if (wait_result != 0)
 		{
 			pthread_mutex_unlock(&pool_mutex);
-			logit(LOG_STATUS, "SQL pool acquisition wait failed: %s",
-			      strerror(wait_result));
+			logit(LOG_STATUS, "SQL pool acquisition wait failed error_code=%d",
+			      wait_result);
 			return NULL;
 		}
 
@@ -398,7 +399,7 @@ int sql_pool_total(void)
 
 #else /* __NO_MYSQL__ */
 
-/* Stubs — no MySQL available.  The pool is a no-op. */
+/* Stubs -- no MySQL available.  The pool is a no-op. */
 
 int sql_pool_init(int size)
 {

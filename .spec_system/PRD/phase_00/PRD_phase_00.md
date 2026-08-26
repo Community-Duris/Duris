@@ -1,10 +1,10 @@
 # PRD Phase 00: Correctness and Immediate Lag Removal
 
-**Status**: Not Started
+**Status**: In Progress
 **Sessions**: 10 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 0/10 sessions (0%)
+**Progress**: 1/10 sessions (10%)
 
 ---
 
@@ -28,7 +28,7 @@ remain Phase 03 work.
 
 | Session | Name | Status | Work Window | Validated |
 |---------|------|--------|-------------|-----------|
-| 01 | Redacted Persistence Observability | Not Started | Safe call-site timing, trace removal, and dirty/save age metrics | - |
+| 01 | Redacted Persistence Observability | Complete | Safe call-site timing, trace removal, and dirty/save age metrics | 2026-08-27 |
 | 02 | In-Memory Epic Bonus Hot Path | Not Started | Epic-bonus hydration, mutation updates, expiry, and hot-path regressions | - |
 | 03 | Save Failure Retry and Terminal Safety | Not Started | Deferred-save state plus all destructive terminal save boundaries | - |
 | 04 | Player Replacement State Cleanup | Not Started | Transactional delete-and-replace semantics for removable player rows | - |
@@ -43,13 +43,13 @@ remain Phase 03 work.
 
 ## Completed Sessions
 
-None yet.
+- Session 01: Redacted Persistence Observability (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 01: Redacted Persistence Observability
+- Session 02: In-Memory Epic Bonus Hot Path
 
 ---
 

@@ -1368,9 +1368,9 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 
 	if ((int)(buf - fallback_buff) > SAV_MAXSIZE)
 	{
-		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none", "none",
-				  "fallback_too_large", "type=%d room=%d size=%d max=%d", type,
-				  room, (int)(buf - fallback_buff), SAV_MAXSIZE);
+		persistence_alert(AVATAR, "player_flat_fallback", "redacted", "none", "none",
+				  "fallback_too_large", "type=%d size=%d max=%d", type,
+				  (int)(buf - fallback_buff), SAV_MAXSIZE);
 		return 0;
 	}
 
@@ -1387,9 +1387,8 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 	{
 		if (rename(Gbuf1, Gbuf2) == -1)
 		{
-			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
-					  "none", "backup_failed", "path=%s errno=%d", Gbuf1,
-					  errno);
+			persistence_alert(AVATAR, "player_flat_fallback", "redacted", "none",
+					  "none", "backup_failed", "errno=%d", errno);
 			return 0;
 		}
 		bak = 1;
@@ -1398,8 +1397,8 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 	{
 		if (errno != ENOENT)
 		{
-			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
-					  "none", "stat_failed", "path=%s errno=%d", Gbuf1, errno);
+			persistence_alert(AVATAR, "player_flat_fallback", "redacted", "none",
+					  "none", "stat_failed", "errno=%d", errno);
 			return 0;
 		}
 		bak = 0;
@@ -1408,8 +1407,8 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 	f = fopen(Gbuf1, "wb");
 	if (!f)
 	{
-		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none", "none",
-				  "open_failed", "path=%s errno=%d", Gbuf1, errno);
+		persistence_alert(AVATAR, "player_flat_fallback", "redacted", "none", "none",
+				  "open_failed", "errno=%d", errno);
 		bak -= 2;
 	}
 	else
@@ -1417,15 +1416,15 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 		if (fwrite(fallback_buff, 1, (unsigned)(buf - fallback_buff), f) !=
 		    (size_t)(buf - fallback_buff))
 		{
-			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
-					  "none", "write_failed", "path=%s errno=%d", Gbuf1, errno);
+			persistence_alert(AVATAR, "player_flat_fallback", "redacted", "none",
+					  "none", "write_failed", "errno=%d", errno);
 			fclose(f);
 			bak -= 2;
 		}
 		else if (fclose(f))
 		{
-			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
-					  "none", "close_failed", "path=%s errno=%d", Gbuf1, errno);
+			persistence_alert(AVATAR, "player_flat_fallback", "redacted", "none",
+					  "none", "close_failed", "errno=%d", errno);
 			bak -= 2;
 		}
 	}
@@ -1434,21 +1433,20 @@ static int persistence_write_character_flat_fallback(P_char ch, int type, int ro
 	{
 	case 1:
 		if (unlink(Gbuf2) == -1)
-			logit(LOG_FILE, "Could not delete backup pfile %s after fallback save.",
-			      Gbuf2);
+			logit(LOG_FILE,
+			      "Could not delete backup pfile after fallback save errno=%d", errno);
 		[[fallthrough]];
 	case 0:
-		persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none", "none",
-				  "fallback_saved", "type=%d room=%d path=%s size=%d", type, room,
-				  Gbuf1, (int)(buf - fallback_buff));
+		persistence_alert(AVATAR, "player_flat_fallback", "redacted", "none", "none",
+				  "fallback_saved", "type=%d size=%d", type,
+				  (int)(buf - fallback_buff));
 		return 1;
 
 	case -1:
 		if (rename(Gbuf2, Gbuf1) == -1)
 		{
-			persistence_alert(AVATAR, "player_flat_fallback", GET_NAME(ch), "none",
-					  "none", "restore_failed", "path=%s backup=%s errno=%d",
-					  Gbuf1, Gbuf2, errno);
+			persistence_alert(AVATAR, "player_flat_fallback", "redacted", "none",
+					  "none", "restore_failed", "errno=%d", errno);
 		}
 		return 0;
 
@@ -1477,9 +1475,7 @@ void writeShapechangeData(P_char ch)
 	if (IS_PC(ch) && has_innate(ch, INNATE_SHAPECHANGE))
 	{
 		if (!sql_save_player_shapechanges(ch))
-			logit(LOG_FILE,
-			      "writeShapechangeData: failed to save shapechange data for %s",
-			      GET_NAME(ch));
+			logit(LOG_FILE, "writeShapechangeData: shapechange save failed");
 	}
 }
 
@@ -1587,7 +1583,7 @@ int writeCharacter(P_char ch, int type, int room)
 	{
 		if (!sql_save_player_shapechanges(ch))
 		{
-			logit(LOG_FILE, "sql_save_player_shapechanges failed for %s", GET_NAME(ch));
+			logit(LOG_FILE, "sql_save_player_shapechanges failed");
 			result = 0;
 		}
 		room = calculate_save_room(ch, type, room);
@@ -1647,17 +1643,14 @@ int writeCharacter(P_char ch, int type, int room)
 
 		if (!sql_save_locker(ch, owner_pid, owner_assoc_id))
 		{
-			logit(LOG_FILE, "sql_save_locker failed for %s", GET_NAME(ch));
-			wizlog(AVATAR, "&+RERROR&N sql_save_locker failed for %s", GET_NAME(ch));
-			persistence_alert(AVATAR, "locker", GET_NAME(ch), "none", "none",
-					  "sql_save_failed", "owner_pid=%d owner_assoc_id=%d",
-					  owner_pid, owner_assoc_id);
+			logit(LOG_FILE, "sql_save_locker failed");
+			wizlog(AVATAR, "&+RERROR&N sql_save_locker failed");
+			persistence_alert(AVATAR, "locker", "redacted", "none", "none",
+					  "sql_save_failed", NULL);
 			if (!persistence_write_character_flat_fallback(ch, type, room))
 			{
-				persistence_alert(AVATAR, "locker", GET_NAME(ch), "none", "none",
-						  "flat_fallback_failed",
-						  "owner_pid=%d owner_assoc_id=%d", owner_pid,
-						  owner_assoc_id);
+				persistence_alert(AVATAR, "locker", "redacted", "none", "none",
+						  "flat_fallback_failed", NULL);
 			}
 			result = 0;
 		}
@@ -1666,15 +1659,14 @@ int writeCharacter(P_char ch, int type, int room)
 	{
 		if (!sql_save_player(ch, type, room))
 		{
-			logit(LOG_FILE, "sql_save_player failed for %s", GET_NAME(ch));
-			wizlog(AVATAR, "&+RERROR&N sql_save_player failed for %s", GET_NAME(ch));
-			persistence_alert(AVATAR, "player", GET_NAME(ch), "none", "none",
-					  "sql_save_failed", "type=%d room=%d", type, room);
+			logit(LOG_FILE, "sql_save_player failed");
+			wizlog(AVATAR, "&+RERROR&N sql_save_player failed");
+			persistence_alert(AVATAR, "player", "redacted", "none", "none",
+					  "sql_save_failed", "type=%d", type);
 			if (!persistence_write_character_flat_fallback(ch, type, room))
 			{
-				persistence_alert(AVATAR, "player", GET_NAME(ch), "none", "none",
-						  "flat_fallback_failed", "type=%d room=%d", type,
-						  room);
+				persistence_alert(AVATAR, "player", "redacted", "none", "none",
+						  "flat_fallback_failed", "type=%d", type);
 			}
 			result = 0;
 		}
@@ -1736,8 +1728,7 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 	remove_all_artifacts_sql(ch);
 	if (!remove_all_locker_access(ch))
 	{
-		logit(LOG_DEBUG, "deleteCharacter(): failed to clear locker access for %s",
-		      GET_NAME(ch));
+		logit(LOG_DEBUG, "deleteCharacter(): locker access cleanup failed");
 		ok = FALSE;
 	}
 	if (GET_ASSOC(ch) != NULL)
@@ -4404,7 +4395,7 @@ void writeSavedItem(P_obj item)
 	if (!OBJ_ROOM(item))
 	{
 		if (!sql_delete_saved_item(item_key))
-			logit(LOG_FILE, "sql_delete_saved_item failed for %s", item_key);
+			logit(LOG_FILE, "sql_delete_saved_item failed");
 		return;
 	}
 
@@ -4412,7 +4403,7 @@ void writeSavedItem(P_obj item)
 		return;
 
 	if (!sql_save_saved_item(item, item_key))
-		logit(LOG_FILE, "sql_save_saved_item failed for %s", item_key);
+		logit(LOG_FILE, "sql_save_saved_item failed");
 }
 
 void restoreSavedItems(void)

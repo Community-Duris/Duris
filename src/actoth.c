@@ -1738,6 +1738,11 @@ struct deferred_save_slot
 	int pid;
 	int type;
 	int level_dirty;
+	int scheduled;
+	uint64_t first_pending_usec;
+	uint64_t latest_pending_usec;
+	uint64_t attempts;
+	uint64_t failures;
 	char reason[64];
 };
 
@@ -1785,13 +1790,13 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 		return;
 
 	pending = *slot;
+	slot->scheduled = 0;
+	persistence_counter_saturating_add(&slot->attempts, 1);
 
 	if (!ch || IS_NPC(ch))
 	{
 		persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
-				  "deferred_save_character_missing",
-				  "discarded deferred save slot for pid=%d reason=%s", pending.pid,
-				  pending.reason);
+				  "deferred_save_character_missing", "discarded=1");
 		memset(slot, 0, sizeof(*slot));
 		return;
 	}
@@ -1799,9 +1804,7 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 	if (!IS_ALIVE(ch))
 	{
 		persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
-				  "deferred_save_character_not_alive",
-				  "discarded deferred save slot for pid=%d reason=%s", pending.pid,
-				  pending.reason);
+				  "deferred_save_character_not_alive", "discarded=1");
 		memset(slot, 0, sizeof(*slot));
 		return;
 	}
@@ -1811,6 +1814,8 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 
 	if (do_save_silent(ch, pending.type ? pending.type : 1))
 		memset(slot, 0, sizeof(*slot));
+	else
+		persistence_counter_saturating_add(&slot->failures, 1);
 }
 
 static void persistence_schedule_checkpoint(P_char ch, int type, int delay, const char *reason,
@@ -1826,27 +1831,29 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay, cons
 	{
 		slot->type = type ? type : slot->type;
 		slot->level_dirty = slot->level_dirty || level_dirty;
+		slot->latest_pending_usec = persistence_observability_now_usec();
 		return;
 	}
 
 	slot = find_empty_deferred_save_slot();
 	if (!slot)
 	{
-		persistence_alert(AVATAR, "player_save", GET_NAME(ch), "none", "none",
-				  "deferred_save_full",
-				  "deferred save table full; saving synchronously for %s",
-				  reason ? reason : "unknown");
+		persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
+				  "deferred_save_full", "capacity=%d",
+				  PERSISTENCE_DEFERRED_SAVE_SLOTS);
 		if (level_dirty)
 			sql_update_level(ch);
 		if (!do_save_silent(ch, type ? type : 1))
-			logit(LOG_DEBUG, "Failed to flush deferred save for %s (pid=%d reason=%s).",
-			      GET_NAME(ch), GET_PID(ch), reason ? reason : "unknown");
+			logit(LOG_DEBUG, "Deferred player save synchronous fallback failed");
 		return;
 	}
 
 	slot->pid = GET_PID(ch);
 	slot->type = type ? type : 1;
 	slot->level_dirty = level_dirty;
+	slot->scheduled = 1;
+	slot->first_pending_usec = persistence_observability_now_usec();
+	slot->latest_pending_usec = slot->first_pending_usec;
 	snprintf(slot->reason, sizeof(slot->reason), "%s", reason ? reason : "unknown");
 
 	add_event(event_deferred_character_save, delay > 0 ? delay : 1, ch, 0, 0, 0, &slot->pid,
@@ -1870,11 +1877,10 @@ void persistence_schedule_level_checkpoint(P_char ch, int type, int delay, const
  * applied before the character is saved with the disconnect-time RENT_* type
  * or before the character is extracted.
  *
- * Mechanism: find the slot for ch's PID, copy its pending state, clear the
- * slot (memset to 0) so the still-queued event_deferred_character_save will
- * be a no-op when it fires, then run the synchronous save.  This is safe
- * because event_deferred_character_save checks find_deferred_save_slot(pid)
- * and bails on NULL.
+ * Mechanism: find the slot for ch's PID, copy its pending state, and run the
+ * synchronous save. Clear the slot only on success; on failure it remains
+ * visible and retryable. A still-queued event becomes a no-op after a
+ * successful clear because it rechecks find_deferred_save_slot(pid).
  */
 void persistence_flush_character_saves(P_char ch)
 {
@@ -1889,19 +1895,25 @@ void persistence_flush_character_saves(P_char ch)
 		return;
 
 	pending = *slot;
+	persistence_counter_saturating_add(&slot->attempts, 1);
+	uint64_t attempts = slot->attempts;
 
 	if (pending.level_dirty)
 		sql_update_level(ch);
 
-	if (do_save_silent(ch, pending.type ? pending.type : 1))
+	bool saved = do_save_silent(ch, pending.type ? pending.type : 1);
+	if (saved)
 		memset(slot, 0, sizeof(*slot));
 	else
-		logit(LOG_DEBUG, "Failed to flush deferred save for %s (pid=%d reason=%s).",
-		      GET_NAME(ch), pending.pid, pending.reason);
+	{
+		persistence_counter_saturating_add(&slot->failures, 1);
+		logit(LOG_DEBUG, "Deferred player save flush failed");
+	}
 
-	persistence_alert(AVATAR, "player_save", GET_NAME(ch), "none", "none",
-			  "deferred_save_flushed", "flushed deferred save for pid=%d reason=%s",
-			  pending.pid, pending.reason);
+	persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
+			  saved ? "deferred_save_flushed" : "deferred_save_flush_failed",
+			  "attempts=%llu failures=%llu", (unsigned long long)attempts,
+			  (unsigned long long)(saved ? pending.failures : slot->failures));
 }
 
 /*
@@ -1932,11 +1944,8 @@ void persistence_flush_all_character_saves(void)
 
 		if (!ch || !IS_ALIVE(ch))
 		{
-			persistence_alert(
-				AVATAR, "player_save", "none", "none", "none",
-				"deferred_save_discard_global",
-				"discarded deferred save pid=%d reason=%s (char not in list)",
-				pending.pid, pending.reason);
+			persistence_alert(AVATAR, "player_save", "none", "none", "none",
+					  "deferred_save_discard_global", "discarded=1");
 			memset(slot, 0, sizeof(*slot));
 			continue;
 		}
@@ -1944,9 +1953,38 @@ void persistence_flush_all_character_saves(void)
 		if (pending.level_dirty)
 			sql_update_level(ch);
 
+		persistence_counter_saturating_add(&slot->attempts, 1);
 		if (do_save_silent(ch, pending.type ? pending.type : 1))
 			memset(slot, 0, sizeof(*slot));
+		else
+			persistence_counter_saturating_add(&slot->failures, 1);
 	}
+}
+
+struct persistence_deferred_save_snapshot persistence_deferred_save_snapshot_copy(void)
+{
+	struct persistence_deferred_save_snapshot snapshot = {};
+	const uint64_t now = persistence_observability_now_usec();
+	uint64_t oldest = 0;
+
+	for (int i = 0; i < PERSISTENCE_DEFERRED_SAVE_SLOTS; ++i)
+	{
+		const struct deferred_save_slot *slot = &deferred_saves[i];
+		if (!slot->pid)
+			continue;
+		persistence_counter_saturating_add(&snapshot.pending, 1);
+		if (slot->scheduled)
+			persistence_counter_saturating_add(&snapshot.scheduled, 1);
+		else if (slot->failures > 0)
+			persistence_counter_saturating_add(&snapshot.failed_unscheduled, 1);
+		persistence_counter_saturating_add(&snapshot.attempts, slot->attempts);
+		persistence_counter_saturating_add(&snapshot.failures, slot->failures);
+		if (slot->first_pending_usec && (!oldest || slot->first_pending_usec < oldest))
+			oldest = slot->first_pending_usec;
+	}
+	if (oldest && now >= oldest)
+		snapshot.oldest_age_msec = (now - oldest) / 1000ULL;
+	return snapshot;
 }
 
 bool do_save_silent(P_char ch, int type)
@@ -1956,11 +1994,6 @@ bool do_save_silent(P_char ch, int type)
 
 	if (!ch || !GET_NAME(ch) || (IS_NPC(ch) && !IS_MORPH(ch)))
 		return false;
-
-	logit(LOG_FILE,
-	      "[TRACE] do_save_silent begin name=%s pid=%d type=%d room=%d desc=%p connected=%d",
-	      GET_NAME(ch), GET_PID(ch), type, ch->in_room, (void *)ch->desc,
-	      ch->desc ? ch->desc->connected : -1);
 
 	if (IS_HARDCORE(ch) && hardcore_config_get()->death_hall_of_fame)
 	{
@@ -2007,18 +2040,11 @@ bool do_save_silent(P_char ch, int type)
 		}
 		if (!writeCharacter(ch, type, ch->in_room))
 		{
-			logit(LOG_DEBUG, "Problem saving player %s in do_save_silent()",
-			      GET_NAME(ch));
+			logit(LOG_DEBUG, "do_save_silent: component=character outcome=failure");
 			send_to_char("Danger -- cannot save your character!\r\n", ch);
 			send_to_char("Better contact an Implementor ASAP.\r\n", ch);
-			logit(LOG_FILE,
-			      "[TRACE] do_save_silent writeCharacter FAILED name=%s pid=%d type=%d room=%d",
-			      GET_NAME(ch), GET_PID(ch), type, ch->in_room);
 			return false;
 		}
-		logit(LOG_FILE,
-		      "[TRACE] do_save_silent writeCharacter OK name=%s pid=%d type=%d room=%d",
-		      GET_NAME(ch), GET_PID(ch), type, ch->in_room);
 	}
 
 	/* Also save player's ship if they have one */

@@ -1,5 +1,5 @@
 /*
- * locker_async.c — main-thread walk+snapshot, worker SQL apply.
+ * locker_async.c -- main-thread walk+snapshot, worker SQL apply.
  *
  * Design:
  *  - Per-locker dirty slots coalesce many save triggers into one generation.
@@ -518,7 +518,7 @@ static void locker_owner_ids(P_char chLocker, int *owner_pid, int *owner_assoc_i
 }
 
 /* Ensure the locker row + public chest exist; return locker_id and public_chest_id.
- * Only metadata — no item walk. Returns 0 on failure. */
+ * Only metadata -- no item walk. Returns 0 on failure. */
 static int ensure_locker_ids(P_char chLocker, int owner_pid, int owner_assoc_id, int *out_locker_id,
 			     int *out_public_id)
 {
@@ -645,8 +645,10 @@ static int repair_failed_connection(MYSQL **conn_io)
 	 * sync and cannot be safely reused. */
 	sql_clear_results_on(conn);
 	if (mysql_rollback(conn) != 0)
-		logit(LOG_FILE, "locker_async: rollback after failed snapshot failed: %s",
-		      mysql_error(conn));
+		logit(LOG_FILE,
+		      "locker_async: rollback after failed snapshot failed error_code=%u "
+		      "sqlstate=%.5s",
+		      (unsigned int)mysql_errno(conn), mysql_sqlstate(conn));
 
 	/* The connection may still have an unknown server-side state (for
 	 * example, a dropped socket or a failed statement in a batch).  Discard
@@ -679,10 +681,11 @@ static int apply_sql_script(MYSQL **conn_io, const char *sql)
 	 * CLIENT_MULTI_STATEMENTS. Do not retry a partially executed batch by
 	 * splitting it: that can duplicate successful statements and leaves the
 	 * transaction boundary ambiguous. */
-	if (mysql_real_query(conn, sql, (unsigned long)strlen(sql)) != 0)
+	uint64_t operation_id = 0;
+	if (!sql_observed_execute_at(conn, PERSISTENCE_QUERY_SITE,
+				     PERSISTENCE_QUERY_CONTEXT_LOCKER_WORKER, sql, strlen(sql),
+				     &operation_id))
 	{
-		logit(LOG_FILE, "locker_async: multi-statement snapshot failed: %s",
-		      mysql_error(conn));
 		return repair_failed_connection(conn_io);
 	}
 
@@ -694,7 +697,11 @@ static int apply_sql_script(MYSQL **conn_io, const char *sql)
 		status = mysql_next_result(conn);
 		if (status > 0)
 		{
-			logit(LOG_FILE, "locker_async: multi result error: %s", mysql_error(conn));
+			logit(LOG_FILE,
+			      "locker_async: multi result failed operation=%llu error_code=%u "
+			      "sqlstate=%.5s",
+			      (unsigned long long)operation_id, (unsigned int)mysql_errno(conn),
+			      mysql_sqlstate(conn));
 			return repair_failed_connection(conn_io);
 		}
 	} while (status == 0);
@@ -1020,7 +1027,7 @@ static int start_one_snapshot(struct locker_async_slot *s)
 	chUser = s->chUser ? s->chUser : find_char_by_pid(s->user_pid);
 	if (!chLocker)
 	{
-		logit(LOG_FILE, "locker_async: dirty locker char missing for %s — clearing",
+		logit(LOG_FILE, "locker_async: dirty locker char missing for %s -- clearing",
 		      s->locker_name);
 		slot_clear(s);
 		return 0;

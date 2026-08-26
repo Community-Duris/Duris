@@ -188,6 +188,7 @@ OBJS =  $(SHIP_OBJS) \
 				 objconv.o \
 				 objmisc.o \
 				 outposts.o \
+				 persistence_observability.o \
 				 persistence_queue.o \
 				 latency_trace.o \
 				 sql_persistence_raw.o \
