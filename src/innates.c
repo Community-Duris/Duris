@@ -35,6 +35,7 @@
 #include "paladins.h"
 #include "spells.h"
 #include "weather.h"
+#include "safe_format.h"
 
 #define ADD_RACIAL_INNATE(innate, race, level) (racial_innates[(innate)][(race)] = (level))
 #define ADD_CLASS_INNATE(innate, ch_class, level, spec)                              \
@@ -3399,8 +3400,7 @@ void do_innate(P_char ch, char *arg, int cmd)
 
 			if (!has_innate(ch, i))
 			{
-				checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 " (unlocks at level %d)\n", unlock_lvl);
+				APPENDF(buf, " (unlocks at level %d)\n", unlock_lvl);
 			}
 			else if (can_use_innate(ch, i))
 			{

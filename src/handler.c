@@ -35,6 +35,7 @@
 #include "vnum.obj.h"
 #include "weather.h"
 #include "ws_handlers.h"
+#include "safe_format.h"
 
 /*
  *
@@ -4359,26 +4360,19 @@ void add_coins(P_obj pile, int copper, int silver, int gold, int platinum)
 			{
 				p = (pile->value[i] * 100) / num;
 				if (p > 99)
-					snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 "%s coins, ", coin_names[i]);
+					APPENDF(buf, "%s coins, ", coin_names[i]);
 				else if (p >= 85)
-					snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 "mostly %s coins, ", coin_names[i]);
+					APPENDF(buf, "mostly %s coins, ", coin_names[i]);
 				else if (p >= 65)
-					snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 "3/4 %s coins, ", coin_names[i]);
+					APPENDF(buf, "3/4 %s coins, ", coin_names[i]);
 				else if (p >= 40)
-					snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 "half %s coins, ", coin_names[i]);
+					APPENDF(buf, "half %s coins, ", coin_names[i]);
 				else if (p >= 20)
-					snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 "1/4 %s coins, ", coin_names[i]);
+					APPENDF(buf, "1/4 %s coins, ", coin_names[i]);
 				else if (p >= 10)
-					snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 "some %s coins, ", coin_names[i]);
+					APPENDF(buf, "some %s coins, ", coin_names[i]);
 				else if (p >= 1)
-					snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 "a few %s coins, ", coin_names[i]);
+					APPENDF(buf, "a few %s coins, ", coin_names[i]);
 			}
 			buf[strlen(buf) - 2] = '.';
 			buf[strlen(buf) - 1] = 0;

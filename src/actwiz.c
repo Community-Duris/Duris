@@ -47,6 +47,7 @@
 #include "vnum.obj.h"
 #include "weather.h"
 #include "ws_handlers.h"
+#include "safe_format.h"
 
 /*
  * external variables
@@ -1547,40 +1548,34 @@ void stat_game(P_char ch)
 	{
 		if (i < LAST_RACE && race[i + 1])
 		{
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "%2d%%/%3d  %s", (int)((race[i + 1] / x) * 100 + .5),
-					 (int)race[i + 1],
-					 pad_ansi(race_names_table[i + 1].ansi, 15).c_str());
+			APPENDF(buf, "%2d%%/%3d  %s", (int)((race[i + 1] / x) * 100 + .5),
+				(int)race[i + 1],
+				pad_ansi(race_names_table[i + 1].ansi, 15).c_str());
 		}
 		else if (i < (LAST_RACE - 1))
 		{
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 " 0%%/  0  %s",
-					 pad_ansi(race_names_table[i + 1].ansi, 15).c_str());
+			APPENDF(buf, " 0%%/  0  %s",
+				pad_ansi(race_names_table[i + 1].ansi, 15).c_str());
 		}
 		else
 			strcat(buf + strlen(buf), "               ");
 
 		if (i < CLASS_COUNT && m_class[i + 1])
 		{
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "      %10d%%/%3d  %s\n",
-					 (int)((m_class[i + 1] / x) * 100 + .5),
-					 (int)m_class[i + 1], class_names_table[i + 1].ansi);
+			APPENDF(buf, "      %10d%%/%3d  %s\n",
+				(int)((m_class[i + 1] / x) * 100 + .5), (int)m_class[i + 1],
+				class_names_table[i + 1].ansi);
 		}
 		else if (i < (CLASS_COUNT - 1))
 		{
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "      %10d%%/%3d  %s \n", 0, 0,
-					 class_names_table[i + 1].ansi);
+			APPENDF(buf, "      %10d%%/%3d  %s \n", 0, 0,
+				class_names_table[i + 1].ansi);
 		}
 		else
 			strcat(buf + strlen(buf), "\n");
 	}
-	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-			 "\nGood/Evil/Undead -raced players: %3d/%3d/%3d", goods, evils, pundeads);
-	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-			 "\nTotal playing          : %3d\n", used_descs);
+	APPENDF(buf, "\nGood/Evil/Undead -raced players: %3d/%3d/%3d", goods, evils, pundeads);
+	APPENDF(buf, "\nTotal playing          : %3d\n", used_descs);
 	send_to_char(buf, ch);
 }
 
@@ -2109,13 +2104,9 @@ void do_stat(P_char ch, char *argument, int cmd)
 				if (skills[spells[0]].name)
 					strcpy(spell_list, skills[spells[0]].name);
 				if (spells[1] && skills[spells[1]].name)
-					snprintf(spell_list + strlen(spell_list),
-						 MAX_STRING_LENGTH - strlen(spell_list),
-						 "&n, &+W%s", skills[spells[1]].name);
+					APPENDF(spell_list, "&n, &+W%s", skills[spells[1]].name);
 				if (spells[2] && skills[spells[2]].name)
-					snprintf(spell_list + strlen(spell_list),
-						 MAX_STRING_LENGTH - strlen(spell_list),
-						 "&n, &+W%s", skills[spells[2]].name);
+					APPENDF(spell_list, "&n, &+W%s", skills[spells[2]].name);
 
 				if (j->value[5] / 1000000000)
 					snprintf(
@@ -2499,18 +2490,14 @@ void do_stat(P_char ch, char *argument, int cmd)
 			 race_names_table[k->player.race].ansi);
 		get_class_string(k, buf2);
 		strcat(buf, buf2);
-		checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 " &+YRacewar: ");
+		APPENDF(buf, " &+YRacewar: ");
 		if (IS_NPC(k))
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "&+wNPC&n");
+			APPENDF(buf, "&+wNPC&n");
 		else if (GET_RACEWAR(k) >= 0 && GET_RACEWAR(k) <= MAX_RACEWAR)
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "&+%c%s&N", racewar_color[GET_RACEWAR(k)].color,
-					 racewar_color[GET_RACEWAR(k)].name);
+			APPENDF(buf, "&+%c%s&N", racewar_color[GET_RACEWAR(k)].color,
+				racewar_color[GET_RACEWAR(k)].name);
 		else
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "&+RINVALID&n");
+			APPENDF(buf, "&+RINVALID&n");
 
 		snprintf(
 			buf2, MAX_STRING_LENGTH,
@@ -2845,20 +2832,15 @@ void do_stat(P_char ch, char *argument, int cmd)
 				 k->only.npc->spec[2]);
 			strcat(o_buf, buf);
 			sprintbitde(k->specials.act, action_bits, buf2);
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "&+YACT flags: &N%s\n", buf2);
+			APPENDF(buf, "&+YACT flags: &N%s\n", buf2);
 			sprintbitde(k->specials.act2, action2_bits, buf2);
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "&+YACT2 flags: &N%s\n", buf2);
+			APPENDF(buf, "&+YACT2 flags: &N%s\n", buf2);
 			sprintbitde(k->only.npc->aggro_flags, aggro_bits, buf2);
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "&+YAggro    : &n%s\n", buf2);
+			APPENDF(buf, "&+YAggro    : &n%s\n", buf2);
 			sprintbitde(k->only.npc->aggro2_flags, aggro2_bits, buf2);
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "&+YAggro2   : &n%s\n", buf2);
+			APPENDF(buf, "&+YAggro2   : &n%s\n", buf2);
 			sprintbitde(k->only.npc->aggro3_flags, aggro3_bits, buf2);
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "&+YAggro3   : &n%s\n", buf2);
+			APPENDF(buf, "&+YAggro3   : &n%s\n", buf2);
 			strcat(o_buf, buf);
 		}
 		else
@@ -8669,13 +8651,14 @@ void concat_which_flags(const char *flagType, const char **flagNames, char *buf)
     if(j && !(j % 3))
       strcat(buf, "\n");
 
-    snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "%-20s", flagNames[j]);
+    APPENDF(buf, "%-20s", flagNames[j]);
   }
 
   strcat(buf, "\n\n");
 }
 */
 
+/* buf is caller-owned and every caller passes a MAX_STRING_LENGTH buffer. */
 void concat_which_flagsde(const char *flagType, const flagDef flagNames[], char *buf)
 {
 	int j;
@@ -8821,9 +8804,7 @@ void do_which(P_char ch, char *args, int /*cmd*/)
 				if (j && !(j % 3))
 					strcat(buf1, "\n");
 
-				checked_snprintf(buf1 + strlen(buf1),
-						 MAX_STRING_LENGTH - strlen(buf1), "%-20s",
-						 room_bits[j].flagShort);
+				APPENDF(buf1, "%-20s", room_bits[j].flagShort);
 			}
 			strcat(buf1, "\n");
 			send_to_char(buf1, ch);
@@ -8862,9 +8843,7 @@ void do_which(P_char ch, char *args, int /*cmd*/)
 				if (j && !(j % 3))
 					strcat(buf1, "\n");
 
-				checked_snprintf(buf1 + strlen(buf1),
-						 MAX_STRING_LENGTH - strlen(buf1), "%-20s",
-						 zone_bits[j]);
+				APPENDF(buf1, "%-20s", zone_bits[j]);
 			}
 			strcat(buf1, "\n");
 			send_to_char(buf1, ch);
@@ -9083,9 +9062,7 @@ void do_which(P_char ch, char *args, int /*cmd*/)
 					if (j && !(j % 3))
 						strcat(buf1, "\n");
 
-					checked_snprintf(buf1 + strlen(buf1),
-							 MAX_STRING_LENGTH - strlen(buf1), "%-20s",
-							 action_bits[j].flagShort);
+					APPENDF(buf1, "%-20s", action_bits[j].flagShort);
 				}
 				strcat(buf1, "\n");
 
@@ -9094,9 +9071,7 @@ void do_which(P_char ch, char *args, int /*cmd*/)
 					if (j && !(j % 3))
 						strcat(buf1, "\n");
 
-					checked_snprintf(buf1 + strlen(buf1),
-							 MAX_STRING_LENGTH - strlen(buf1), "%-20s",
-							 player_bits[j]);
+					APPENDF(buf1, "%-20s", player_bits[j]);
 				}
 				strcat(buf1, "\n");
 

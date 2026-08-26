@@ -45,6 +45,7 @@
 #include "vnum.obj.h"
 #include "crafting.h"
 #include "weather.h"
+#include "safe_format.h"
 
 #define SMITH_MAX_ITEMS 20
 
@@ -272,8 +273,8 @@ void forge_describe(int choice, P_char ch)
 
 	snprintf(buffer, 1024, "To create %s you need:\n", forge_item_list[choice].short_desc);
 	for (i = 0; i < 5 && forge_item_list[choice].ore_needed[i]; i++)
-		snprintf(buffer + strlen(buffer), MAX_STRING_LENGTH - strlen(buffer), "%s\n",
-			 obj_index[real_object(forge_item_list[choice].ore_needed[i])].desc2);
+		APPENDF(buffer, "%s\n",
+			obj_index[real_object(forge_item_list[choice].ore_needed[i])].desc2);
 
 	send_to_char(buffer, ch);
 	if (i <= 0 || i > (int)(sizeof(forge_prices) / sizeof(forge_prices[0])))

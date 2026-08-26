@@ -41,6 +41,7 @@
 #include "sql_player.h"
 #include "vnum.room.h"
 #include "ws_handlers.h"
+#include "safe_format.h"
 
 /* external variables */
 
@@ -4732,8 +4733,7 @@ void display_classtable(P_desc d)
 			    creation_class_align(GET_RACE(d->character), cls) != 5 &&
 			    !creation_class_normally_available(GET_RACE(d->character), cls))
 			{
-				checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 "      %s\r\n", class_names_table[cls].ansi);
+				APPENDF(buf, "      %s\r\n", class_names_table[cls].ansi);
 				shown++;
 			}
 		}

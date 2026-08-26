@@ -18,6 +18,7 @@
 #include "nexus_stones.h"
 #include "sql.h"
 #include "sql_player.h"
+#include "safe_format.h"
 
 // External variables & functions
 extern P_index mob_index;
@@ -954,28 +955,25 @@ void Guild::display(P_char member)
 	{
 		for (unsigned int i = 0; i < ASC_NUM_RANKS; i++)
 		{
-			checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-					 "%-8s : %s&n\n", standard_names[i], titles[i]);
+			APPENDF(buf, "%-8s : %s&n\n", standard_names[i], titles[i]);
 		}
 		strcat(buf, "\n");
 	}
 
-	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf), "Type: %s%s%s%s.\n",
-			 ((gbits == 0) ? "normal " : ""), ((gbits & A_CHALL) ? "challenge " : ""),
-			 ((gbits & A_HIDETITLE) ? "hidden_titles " : ""),
-			 ((gbits & A_HIDESUBTITLE) ? "hidden_subtitles " : ""));
+	APPENDF(buf, "Type: %s%s%s%s.\n", ((gbits == 0) ? "normal " : ""),
+		((gbits & A_CHALL) ? "challenge " : ""),
+		((gbits & A_HIDETITLE) ? "hidden_titles " : ""),
+		((gbits & A_HIDESUBTITLE) ? "hidden_subtitles " : ""));
 
-	checked_snprintf(
-		buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+	APPENDF(buf,
 		"Prestige:            &+W%lu&n.\nConstruction points: &+W%lu&n.\n"
 		"Maximum members:     &+W%u&n.\nCurrent members:     &+W%u&n.\n"
 		"Cash:                &+W%u platinum&n, &+Y%u gold&n, &+w%u silver&n, &+y%u copper&n.\n",
 		prestige, construction, get_max_members(), member_count, platinum, gold, silver,
 		copper);
 
-	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-			 "Total Frags: &+W%.2f&N, Top Fragger: '&+W%s&N' with &+W%.2f&N frags.\n",
-			 frags.frags / 100., frags.topfragger, frags.top_frags / 100.);
+	APPENDF(buf, "Total Frags: &+W%.2f&N, Top Fragger: '&+W%s&N' with &+W%.2f&N frags.\n",
+		frags.frags / 100., frags.topfragger, frags.top_frags / 100.);
 
 	strcat(buf, "Members:\n");
 	if (members != NULL)
@@ -992,9 +990,7 @@ void Guild::display(P_char member)
 			{
 				if (NR_RANK(pMembers->bits) == static_cast<unsigned int>(i))
 				{
-					checked_snprintf(
-						buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						" %s | %-12s | %s | %s\n",
+					APPENDF(buf, " %s | %-12s | %s | %s\n",
 						(pMembers->online_status == GSTAT_ONLINE) ?
 							"&+Go&n" :
 						(pMembers->online_status == GSTAT_LINKDEAD) ?

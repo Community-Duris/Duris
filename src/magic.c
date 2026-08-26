@@ -43,6 +43,7 @@
 #include "sql.h"
 #include "vnum.obj.h"
 #include "weather.h"
+#include "safe_format.h"
 
 /*
  * external variables
@@ -10311,13 +10312,9 @@ void spell_identify(int level, P_char ch, char * /*arg*/, int /*type*/, P_char /
 				if (skills[spells[0]].name)
 					strcpy(spell_list, skills[spells[0]].name);
 				if (spells[1] && skills[spells[1]].name)
-					snprintf(spell_list + strlen(spell_list),
-						 MAX_STRING_LENGTH - strlen(spell_list),
-						 "&n and &+W%s", skills[spells[1]].name);
+					APPENDF(spell_list, "&n and &+W%s", skills[spells[1]].name);
 				if (spells[2] && skills[spells[2]].name)
-					snprintf(spell_list + strlen(spell_list),
-						 MAX_STRING_LENGTH - strlen(spell_list),
-						 "&n and &+W%s", skills[spells[2]].name);
+					APPENDF(spell_list, "&n and &+W%s", skills[spells[2]].name);
 
 				snprintf(
 					Gbuf1, MAX_STRING_LENGTH,

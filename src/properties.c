@@ -17,6 +17,7 @@
 #include <string.h>
 #include <strings.h>
 #include "sql.h"
+#include "safe_format.h"
 
 #define PROPERTIES_FILE "lib/duris.properties"
 #define MAX_PROPERTIES 3000
@@ -205,10 +206,8 @@ void save_properties(P_char ch)
 			{
 				if (property.value != result->value)
 				{
-					snprintf(changes + strlen(changes),
-						 MAX_STRING_LENGTH - strlen(changes),
-						 "%s from %.3f to %.3f, ", property.key,
-						 property.value, result->value);
+					APPENDF(changes, "%s from %.3f to %.3f, ", property.key,
+						property.value, result->value);
 					result->old_value = result->value;
 				}
 				snprintf(buf, 4096, "%s=%.3f\n", property.key, result->value);

@@ -29,6 +29,7 @@ TO ADD A NEW BOARD, simply follow our easy 3-step program:
 #include "interp.h"
 #include "utils.h"
 #include "boards.h"
+#include "safe_format.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -313,16 +314,12 @@ int Board_show_board(int board_type, struct char_data *ch, char *arg)
 		strcat(buf, "The board is empty.\r\n");
 	else
 	{
-		checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-				 "There are %d messages on the board.\r\n",
-				 num_of_msgs[board_type]);
+		APPENDF(buf, "There are %d messages on the board.\r\n", num_of_msgs[board_type]);
 		/*   for (i = 0; i < num_of_msgs[board_type]; i++) {  */
 		for (i = num_of_msgs[board_type] - 1; i >= 0; i--)
 		{
 			if (MSG_HEADING(board_type, i))
-				checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						 "%-2d : %s\r\n", i + 1,
-						 MSG_HEADING(board_type, i));
+				APPENDF(buf, "%-2d : %s\r\n", i + 1, MSG_HEADING(board_type, i));
 			else
 			{
 				logit(LOG_BOARD, " The board is fubar'd.");

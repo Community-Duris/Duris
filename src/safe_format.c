@@ -68,3 +68,22 @@ int checked_snprintf_runtime(char *destination, size_t destination_size, const c
 	va_end(args);
 	return required;
 }
+
+int checked_appendf(char *buffer, size_t capacity, const char *format, ...)
+{
+	size_t used;
+	va_list args;
+	int required;
+
+	if (!buffer || !capacity || !format)
+		return -1;
+
+	used = strnlen(buffer, capacity);
+	if (used + 1 >= capacity)
+		return 0; /* no room left; leave the buffer as it is */
+
+	va_start(args, format);
+	required = vsnprintf(buffer + used, capacity - used, format, args);
+	va_end(args);
+	return required;
+}
