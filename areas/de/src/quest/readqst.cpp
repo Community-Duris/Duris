@@ -95,11 +95,10 @@ void readQuestFileQuestNumbArgsError(const uint questNumb, const char *strn, con
 {
   char outstrn[512];
 
-
   sprintf(outstrn,
-"Error: %c-line for quest info in mob #%u's quest contains an\n"
-"              invalid number of fields (%u).  String read was '",
-          ch, questNumb, numbArgs(strn));
+	  "Error: %c-line for quest info in mob #%u's quest contains an\n"
+	  "              invalid number of fields (%zu).  String read was '",
+	  ch, questNumb, numbArgs(strn));
 
   _outtext(outstrn);
   _outtext(strn);

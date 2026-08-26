@@ -287,12 +287,11 @@ void setTemplateArgs(const char *args, const bool updateChanges, const bool disp
 
   if (displayStuff)
   {
-    char strn[256];
+	  char strn[1024];
 
-    sprintf(strn, "\nTemplate #%u's %s value set to %u.\n\n",
-            tempNumb, flagname, value);
+	  sprintf(strn, "\nTemplate #%u's %s value set to %u.\n\n", tempNumb, flagname, value);
 
-    _outtext(strn);
+	  _outtext(strn);
   }
 
   if (updateChanges) 

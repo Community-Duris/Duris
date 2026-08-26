@@ -48,7 +48,7 @@ skeleton skeletal knight~
 &+WA dangerous looking skeleton shambles about here.&n
 ~
 ~
-1074141257 1 0 402653240 1 0 0 -1000 S
+1074141256 1 0 402653240 1 0 0 -1000 S
 U 0 1 5
 55 0 0 10d10+25000 5d10+30
 0.0.0.100 0
@@ -59,7 +59,7 @@ powerful figure lich~
 &+LA powerful looking figure wanders the land.&n
 ~
 ~
-1074141257 1 0 402653212 262144 0 0 -1000 S
+1074141256 1 0 402653212 262144 0 0 -1000 S
 U 0 512 4
 50 170 -100 10d10+25000 5d10+20
 0.0.0.100 150000
@@ -70,7 +70,7 @@ shade form~
 &+LAn outline of a humanoid form can barely be seen here.&n
 ~
 ~
-1074137417 1 0 403177500 0 69206016 0 -1000 S
+1074137416 1 0 403177500 0 69206016 0 -1000 S
 U 0 8192 4
 50 170 -100 10d10+20000 5d10+30
 0.0.0.100 200000
@@ -81,7 +81,7 @@ charon boatman~
 &+WCharon, the boatman of the &+LRiver Styx&+W awaits his cargo.&n
 ~
 ~
-34043979 0 0 402653228 262144 67108864 0 0 S
+34043978 0 0 402653228 262144 67108864 0 0 S
 U 0 20 3
 60 190 -100 10d10+29000 10d10+50
 0.0.0.0 1000000

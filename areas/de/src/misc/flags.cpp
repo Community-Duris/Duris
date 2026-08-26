@@ -836,23 +836,22 @@ void which(const char *args)
 
 void massSet(const char *args)
 {
-  char flagName[256], strn[256];
-  const char *whatStrn;
-  bool setOn;
-  bool setRoom = false, setObj = false, setMob = false;
-  uint matched;
+	char flagName[256], strn[512];
+	const char *whatStrn;
+	bool setOn;
+	bool setRoom = false, setObj = false, setMob = false;
+	uint matched;
 
-  const uint highRoomNumb = getHighestRoomNumber();
-  const uint highObjNumb = getHighestObjNumber();
-  const uint highMobNumb = getHighestMobNumber();
+	const uint highRoomNumb = getHighestRoomNumber();
+	const uint highObjNumb = getHighestObjNumber();
+	const uint highMobNumb = getHighestMobNumber();
 
+	if (strlen(args) == 0)
+	{
+		_outtext(MASSSET_ARG_ERROR);
 
-  if (strlen(args) == 0)
-  {
-    _outtext(MASSSET_ARG_ERROR);
-
-    return;
-  }
+		return;
+	}
 
   getArg(args, 1, flagName, 255);
 

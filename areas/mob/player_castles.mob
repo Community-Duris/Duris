@@ -15,7 +15,7 @@ a &+Lpowerful guard&n~
 A &+Lpowerful guard&N stands here.
 ~
 ~
-100743243 0 0 0 301990328 2050 0 0 0 S
+100743242 0 0 0 301990328 2050 0 0 0 S
 OG 0 1 0 6
 40 0 0 1d10+4800 2d13+59
 0.0.0.0 0
@@ -29,7 +29,7 @@ This once inanimate piece of iron has been given life through
 a powerful magical means.  It stands here impassivly, guarding the
 entrance to the castle.
 ~
-101416811 0 0 0 973111736 269760514 84279488 101199872 0 S
+101416810 0 0 0 973111736 269760514 84279488 101199872 0 S
 OG 0 1 0 4
 60 160 -500 2000d10+10000 12d8+99
 0.0.0.0 1
@@ -43,7 +43,7 @@ This once inanimate piece of iron has been given life through
 a powerful magical means.  It stands here impassivly, guarding the
 entrance to the castle.
 ~
-369852267 0 0 0 3120671160 268712130 68419808 105394176 0 S
+369852266 0 0 0 3120671160 268712130 68419808 105394176 0 S
 OG 0 32 0 7
 60 200 -500 2000d10+10000 12d8+99
 0.0.0.0 1
@@ -57,7 +57,7 @@ This once inanimate piece of iron has been given life through
 a powerful magical means.  It stands here impassivly, guarding the
 entrance to the castle.
 ~
-101285739 0 0 0 436314552 268712130 85197024 105387520 0 S
+101285738 0 0 0 436314552 268712130 85197024 105387520 0 S
 OG 0 512 0 7
 60 200 -500 2000d10+8000 12d8+99
 0.0.0.0 1
@@ -71,7 +71,7 @@ This merchant stands cloaked in &+Lmystery&N.  A dark robe hides
 his features, and his quiet voice seems to emenate from the walls around
 you.
 ~
-100669515 0 0 0 301990312 2050 0 0 0 S
+100669514 0 0 0 301990312 2050 0 0 0 S
 H 0 1 0 -1
 1 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -84,7 +84,7 @@ dalvik~
 Dalvik is a weathered old man, skin dried by the sun and salt of
 the sea.  His garb has the look of an experienced seaman.
 ~
-100669515 0 0 0 301990312 2050 0 0 0 S
+100669514 0 0 0 301990312 2050 0 0 0 S
 OG 0 1 0 -1
 59 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -98,7 +98,7 @@ This once inanimate piece of iron has been given life through
 a powerful magical means.  It stands here impassivly, guarding the
 entrance to the castle.
 ~
-101285739 0 0 0 301990328 2050 0 0 0 S
+101285738 0 0 0 301990328 2050 0 0 0 S
 U 0 1 0 7
 60 200 -100 2d100+12000 2d30+99
 0.0.0.0 50000
@@ -112,7 +112,7 @@ This once inanimate piece of iron has been given life through
 a powerful magical means.  It stands here impassivly, guarding the
 entrance to the castle.
 ~
-101285739 0 0 0 301990328 2050 0 0 0 S
+101285738 0 0 0 301990328 2050 0 0 0 S
 U 0 32 0 7
 60 200 -100 2d100+12000 2d20+99
 0.0.0.0 50000
@@ -126,7 +126,7 @@ This once inanimate piece of iron has been given life through
 a powerful magical means.  It stands here impassivly, guarding the
 entrance to the castle.
 ~
-101285739 0 0 0 301990328 2050 0 0 0 S
+101285738 0 0 0 301990328 2050 0 0 0 S
 U 0 512 0 7
 59 200 -100 2d100+12000 2d20+99
 0.0.0.0 50000

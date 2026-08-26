@@ -235,7 +235,7 @@ spider brown~
 &+yNothing impressive, but still an opponent that could cause some harm in fight.
 &+yIt eyes you carefully, looking for a right moment to strike.
 ~
-137 0 0 0 34111488 0 0 0 0 S
+136 0 0 0 34111488 0 0 0 0 S
 AS 0 1 0 -1
 25 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -250,7 +250,7 @@ deer large~
 &+yThe one noticeable thing about this one particular deer is that it has a spot&n
 &+yof &+Ggreen&+y fur just under its throat, which is rather unusual.&n
 ~
-33818761 0 0 0 32 0 0 0 0 S
+33818760 0 0 0 32 0 0 0 0 S
 AE 0 1 0 4
 50 0 0 1d1+1 1d1+1
 0.0.0.0 0

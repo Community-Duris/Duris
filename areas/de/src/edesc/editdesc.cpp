@@ -74,19 +74,19 @@ void editDesc(stringNode **descHead)
 
 void displayEditExtraDescMenu(const extraDesc *extraDescNode)
 {
-  char keywords[1536], outStrn[1024];
+	char keywords[1536], outStrn[2048];
 
- // turn the keyword list into something that's readable by mere mortals
+	// turn the keyword list into something that's readable by mere mortals
 
-  getReadableKeywordStrn(extraDescNode->keywordListHead, keywords, 1023);
+	getReadableKeywordStrn(extraDescNode->keywordListHead, keywords, 1023);
 
- // display the menu
+	// display the menu
 
-  sprintf(outStrn, "extra desc &+L\"&n%s&+L\"", keywords);
+	sprintf(outStrn, "extra desc &+L\"&n%s&+L\"", keywords);
 
-  displaySimpleMenuHeader(outStrn);
+	displaySimpleMenuHeader(outStrn);
 
-  displayMenu(&g_edescMenu, extraDescNode);
+	displayMenu(&g_edescMenu, extraDescNode);
 }
 
 

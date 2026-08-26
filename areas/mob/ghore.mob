@@ -83,7 +83,7 @@ troll scavenger~
 ~
 This troll walks around with a big bag for holding goodies he finds.
 ~
-1073744005 0 0 0 0 2 0 0 -1000 S
+1073744004 0 0 0 0 2 0 0 -1000 S
 PT 10 0 0 -1
 1 20 96 1d15+4 1d5+0
 1.0.0.0 129
@@ -251,7 +251,7 @@ crimson color, which isn't all that common amongst his kin.  He readily jumps
 to the occasion when customers arrive, constantly showing them new things he has
 acquired and needs to sell.
 ~
-2051 64 0 0 16 2 0 0 -1000 S
+2050 64 0 0 16 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -267,7 +267,7 @@ reputation for salesmanship as well as brutality.  Most of his wares have
 become mundane of late however, as he has had little time to travel to find
 more merchants to kill.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -283,7 +283,7 @@ battle as some of his counterparts, but on the other hand, he doesn't seem like
 much of a fighter either.  His life has been one of making people happy, and
 fighting just doesn't seem like something he would enjoy.
 ~
-2051 64 0 0 536879312 2 0 0 -1000 S
+2050 64 0 0 536879312 2 0 0 -1000 S
 PT 10 32 0 -1
 55 -5 -111 55d121+4620 7d6+30
 0.2.7.6 222750
@@ -316,7 +316,7 @@ has a nasty disposition and has been known to outright kill visitors to his
 throne upon a bad day.  His size and overall looks are very typical for a Troll,
 except for a strange aura of crimson that encircles his eyes.
 ~
-100665347 56 0 0 536879312 2 0 0 -1000 S
+100665346 56 0 0 536879312 2 0 0 -1000 S
 PT 10 32 0 -1
 55 -5 -111 55d121+4620 7d6+30
 0.2.7.6 222750
@@ -330,7 +330,7 @@ Ruxurrk is a typical male troll in every way.  Having killed the previous owner
 of this shop, he has taken over and now does business himself.  There is a smell
 lingering about him that doesn't rekindle memories of freshly bathed skin.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -345,7 +345,7 @@ status amongst the people.  Her armory is very well stocked and has become
 a sort of meeting place for the guards.  Whether this is due merely to the
 armor, or perhaps to Lurgot herself remains a secret they will not divulge.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 32 0 -1
 20 13 35 20d33+120 3d4+2
 0.9.3.0 9720
@@ -362,7 +362,7 @@ this troll is the one to see; at least in this town.  His eyes speak of a grave
 life, but he grunts and smiles at each new student that comes to see him.
 Akol emanates an aura of respect. You know it is best to listen and learn.
 ~
-33589251 64 0 0 536879312 2 0 0 -1000 S
+33589250 64 0 0 536879312 2 0 0 -1000 S
 PT 10 16384 0 -1
 30 8 3 30d65+390 3d6+4
 0.5.7.1 26730
@@ -375,7 +375,7 @@ troll shopkeeper~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 64 0 0 0 2 0 0 -1000 S
+2050 64 0 0 0 2 0 0 -1000 S
 PT 10 256 0 -1
 20 13 35 20d33+120 3d4+2
 0.9.3.0 9720
@@ -388,7 +388,7 @@ officer troll~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -401,7 +401,7 @@ troll guardian guard~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 1 0 0 536879312 2 0 0 -1000 S
+2050 1 0 0 536879312 2 0 0 -1000 S
 PT 10 16384 0 -1
 35 6 -12 35d83+595 4d6+7
 9.9.1.2 45360
@@ -418,7 +418,7 @@ chukth troll~
 &+Lhis right eye depicts a scene of battle in intricate detail.  The item
 &+Lwas most likely stolen or "recovered" from a dead body.&N
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -433,7 +433,7 @@ hands make quick work of nearly every small task in the creation, and
 before too long, the barrel is complete.  He glances about the area looking
 for customers, but generally there isn't too much of a rush on his goods.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 32 0 -1
 20 13 35 20d33+120 3d4+2
 0.9.3.0 9720
@@ -446,7 +446,7 @@ thagtrk troll~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone. His feet are stained purple from stomping grapes.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -459,7 +459,7 @@ troll guard paradise~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 64 0 0 50331664 2 0 0 -1000 S
+2050 64 0 0 50331664 2 0 0 -1000 S
 PT 10 1 0 -1
 50 -3 -95 50d119+2750 6d6+25
 0.3.1.5 121500
@@ -472,7 +472,7 @@ troll shopkeeper~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-3 0 0 0 0 2 0 0 -1000 S
+2 0 0 0 0 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -485,7 +485,7 @@ troll brew master~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-1073743875 1 0 0 536879312 2 0 0 -1000 S
+1073743874 1 0 0 536879312 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -498,7 +498,7 @@ troll vault guard~
 The wild look of a seasoned warrior who hasn't seen blood in a long time is
 plastered all over this troll's face.
 ~
-2051 1 0 0 33554448 2 0 0 -1000 S
+2050 1 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 50 6 -12 35d83+595 4d6+7
 9.9.1.2 45360
@@ -524,7 +524,7 @@ bartender troll~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -641,7 +641,7 @@ troll mrutt~
 Mrutt has been the banker for some time, which is evident by the
 rather outlandish get up he wears.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -653,7 +653,7 @@ troll kuur guildmaster shaman~
 ~
 Kuur has huge, bulging muscles, plus the aura of magic of a shaman.
 ~
-34819 64 0 0 536879312 2 0 0 -1000 S
+34818 64 0 0 536879312 2 0 0 -1000 S
 PT 10 256 0 -1
 30 8 3 30d60+360 3d6+4
 0.5.7.1 26730
@@ -665,7 +665,7 @@ ghoutk troll guildmaster~
 ~
 Ghoutk is huge and fearsome looking, a true warrior in every respect.
 ~
-34819 64 0 0 33554448 2 0 0 -1000 S
+34818 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 30 8 3 30d65+390 3d6+4
 0.5.7.1 26730
@@ -924,7 +924,7 @@ troll mercenary~
 This mercenary looks like he could handle anyone, with no problem. Its no wonder
 he is the chosen guard of this proud guild.
 ~
-67110915 64 0 0 33554448 2 0 0 -1000 S
+67110914 64 0 0 33554448 2 0 0 -1000 S
 PT 10 16384 0 -1
 40 2 -28 40d95+920 4d7+10
 3.3.3.3 51840
@@ -936,7 +936,7 @@ A &+rtroll shaman&N guards the entrance to the guild.
 ~
 This guy leaves no doubt as to why he was chosen to guard this guild.
 ~
-67110915 64 0 0 33554448 2 0 0 -1000 S
+67110914 64 0 0 33554448 2 0 0 -1000 S
 PT 10 256 0 -1
 40 2 -28 40d88+880 4d7+10
 3.3.3.3 51840
@@ -948,7 +948,7 @@ A &+rtroll warrior&N guards the entrance to the guild.
 ~
 This guy leaves no doubt as to why he was chosen to guard this guild.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 40 2 -28 40d95+920 4d7+10
 3.3.3.3 51840
@@ -985,7 +985,7 @@ bartender troll~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -998,7 +998,7 @@ bartender troll~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 32 0 -1
 20 13 35 20d33+120 3d4+2
 0.9.3.0 9720
@@ -1011,7 +1011,7 @@ bartender troll~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -1024,7 +1024,7 @@ bartender troll~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 32 0 -1
 20 13 35 20d33+120 3d4+2
 0.9.3.0 9720
@@ -1037,7 +1037,7 @@ troll shopkeeper~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -1050,7 +1050,7 @@ troll shopkeeper~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-2051 64 0 0 33554448 2 0 0 -1000 S
+2050 64 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -1063,7 +1063,7 @@ troll shopkeeper~
 This troll looks like he could handle himself many times over. Its best to leave
 him alone.
 ~
-3 0 0 0 0 2 0 0 -1000 S
+2 0 0 0 0 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -1076,7 +1076,7 @@ troll receptionist~
 This troll looks like she could handle himself many times over. Its best to leave
 her alone.
 ~
-3 0 0 0 33554448 2 0 0 -1000 S
+2 0 0 0 33554448 2 0 0 -1000 S
 PT 10 1 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720

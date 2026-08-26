@@ -6,16 +6,16 @@
 
 #define ALL_QST "tworld.qst"
 
-void punt(char *msg)
+void punt(const char *msg)
 {
-	fprintf(stderr, "%s\n");
-	exit(-1);
+	fprintf(stderr, "%s\n", msg);
+	exit(EXIT_FAILURE);
 }
 
 int main()
 {
 	FILE *quest_list, *all_qst, *tmp_qst;
-	char quest[8192], buf[8192], quest_name[80], qst_name[80];
+	char quest[8192], buf[8192], quest_name[80], qst_name[sizeof(quest_name) + 16];
 	int quest_count, qst_count;
 
 	/*
@@ -40,13 +40,15 @@ int main()
 			break;
 		if (quest[0] == '*') /* a comment */
 			continue;
-		sscanf(quest, "%s", quest_name);
+		if (sscanf(quest, "%79s", quest_name) != 1)
+			continue;
 		fprintf(stdout, "Compiling quest file %2d : %s\n", quest_count++, quest_name);
 		/*
 	 * open up individual zon, wld, obj, mob files for each area
          */
 
-		sprintf(qst_name, "%s/%s.qst", QST_DIR, quest_name);
+		if (snprintf(qst_name, sizeof(qst_name), "%s/%s.qst", QST_DIR, quest_name) < 0)
+			punt("quest filename cannot be formatted");
 		tmp_qst = fopen(qst_name, "r");
 		if (tmp_qst == NULL)
 		{

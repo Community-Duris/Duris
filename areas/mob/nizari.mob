@@ -49,7 +49,7 @@ nizarine thief shady rogue~
 The nimble thief isn't nimble enough to avoid being seen by you.  He is
 dressed in a tight black body suit, and has a bag of his tools at his belt.
 ~
-2189 0 0 0 524288 0 0 0 -800 S
+2188 0 0 0 524288 0 0 0 -800 S
 PH 0 1 0 -1
 25 11 19 25d40+200 3d5+3
 6.2.6.1 22275
@@ -63,7 +63,7 @@ The nimble thief isn't nimble enough to avoid being seen by you.  He is
 dressed in a tight black body suit, and is muttering something about dropping
 his keys to the door somewhere.
 ~
-2191 1 0 0 524288 0 0 0 -800 S
+2190 1 0 0 524288 0 0 0 -800 S
 PH 0 4096 0 -1
 30 8 3 30d55+330 3d6+4
 0.5.7.1 26730
@@ -173,7 +173,7 @@ A &+rr&+Ra&+Yi&+Gn&+Bb&+Mo&+mw &ndances in the air, a refraction off a large, ru
 The shimmering colors in the air seem to have solidified at this point.  The
 air fluctuates and undulates like a breathing, living creature.
 ~
-8388619 0 0 0 152 0 0 0 0 S
+8388618 0 0 0 152 0 0 0 0 S
 OG 0 0 0 -1
 12 15 61 12d23+48 2d5+2
 6.4.2.0 5832
@@ -354,7 +354,7 @@ nizarine thief~
 The nimble thief isn't nimble enough to avoid being seen by you.  He is
 dressed in a tight black body suit, and has a bag of his tools at his belt.
 ~
-2189 0 0 0 524288 0 0 0 -800 S
+2188 0 0 0 524288 0 0 0 -800 S
 H 0 4096 0 -1
 15 15 51 15d23+60 2d5+2
 7.6.2.0 7290

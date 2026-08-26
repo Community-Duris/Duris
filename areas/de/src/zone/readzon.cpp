@@ -302,8 +302,8 @@ void loadObj(const char *strn, lastObjHereLoaded **lastObjLoadedHead, limitSpeci
   {
     char outstrn[512];
 
-    sprintf(outstrn, "Error in obj load (line #%u) - wrong number of args (%u)\n", 
-            linesRead, numbArgs(strn));
+    sprintf(outstrn, "Error in obj load (line #%u) - wrong number of args (%zu)\n", linesRead,
+	    numbArgs(strn));
 
     _outtext(outstrn);
 
@@ -452,8 +452,8 @@ void loadMob(const char *strn, mobHere **lastMob, mobHere **lastMobEquippable, l
   {
     char outstrn[512];
 
-    sprintf(outstrn, "Error in mob load (line #%u) - wrong number of args (%u)\n",
-            linesRead, numbArgs(strn));
+    sprintf(outstrn, "Error in mob load (line #%u) - wrong number of args (%zu)\n", linesRead,
+	    numbArgs(strn));
 
     _outtext(outstrn);
 
@@ -590,8 +590,8 @@ void setDoorState(const char *strn, const uint linesRead)
   {
     char outstrn[512];
 
-    sprintf(outstrn, "Error in door state command (line #%u) - wrong number of args (%u)\n",
-            linesRead, numbArgs(strn));
+    sprintf(outstrn, "Error in door state command (line #%u) - wrong number of args (%zu)\n",
+	    linesRead, numbArgs(strn));
 
     _outtext(outstrn);
 
@@ -770,8 +770,8 @@ void putObjObj(const char *strn, lastObjHereLoaded **lastObjLoaded, limitSpecifi
   {
     char outstrn[512];
 
-    sprintf(outstrn, "Error in obj load (line #%u) - wrong number of args (%u)\n",
-            linesRead, numbArgs(strn));
+    sprintf(outstrn, "Error in obj load (line #%u) - wrong number of args (%zu)\n", linesRead,
+	    numbArgs(strn));
 
     _outtext(outstrn);
 
@@ -961,8 +961,8 @@ void equipMobObj(const char *strn, mobHere *lastMobRead, lastObjHereLoaded **las
   {
     char outstrn[512];
 
-    sprintf(outstrn, "Error in mob equip (line #%u) - wrong number of args (%u)\n",
-            linesRead, numbArgs(strn));
+    sprintf(outstrn, "Error in mob equip (line #%u) - wrong number of args (%zu)\n", linesRead,
+	    numbArgs(strn));
 
     _outtext(outstrn);
 
@@ -1158,8 +1158,8 @@ void giveMobObj(const char *strn, mobHere *lastMobRead, lastObjHereLoaded **last
   {
     char outstrn[512];
 
-    sprintf(outstrn, "Error in obj load (line #%u) - wrong number of args (%u)\n",
-            linesRead, numbArgs(strn));
+    sprintf(outstrn, "Error in obj load (line #%u) - wrong number of args (%zu)\n", linesRead,
+	    numbArgs(strn));
 
     _outtext(outstrn);
 
@@ -1313,8 +1313,8 @@ void mountMob(const char *strn, mobHere **lastMobRead, limitSpecified **limitSpe
   {
     char outstrn[512];
 
-    sprintf(outstrn, "Error in mob load (line #%u) - wrong number of args (%u)\n",
-            linesRead, numbArgs(strn));
+    sprintf(outstrn, "Error in mob load (line #%u) - wrong number of args (%zu)\n", linesRead,
+	    numbArgs(strn));
 
     _outtext(outstrn);
 
@@ -1526,8 +1526,8 @@ void followMob(const char *strn, mobHere *lastMobRead, mobHere **lastMobEquippab
   {
     char outstrn[512];
 
-    sprintf(outstrn, "Error in mob load (line #%u) - wrong number of args (%u)\n",
-            linesRead, numbArgs(strn));
+    sprintf(outstrn, "Error in mob load (line #%u) - wrong number of args (%zu)\n", linesRead,
+	    numbArgs(strn));
     _outtext(outstrn);
 
     exit(1);

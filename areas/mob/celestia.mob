@@ -53,7 +53,7 @@ seraphim angel~
 &+cand not to be taken lightly.  She is equipped in holy armor and wields
 &+can an angelic weapon.&n
 ~
-2059 128 0 0 2056 0 0 0 1000 S
+2058 128 0 0 2056 0 0 0 1000 S
 AN 0 8 0 3
 51 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -317,7 +317,7 @@ seraphim angel~
 &+cattacks of the devilkin.  Her armor seems to glow with holiness, a
 &+cwhite radiant so pure it can almost blind those with a dark heart.&n
 ~
-1073743881 128 0 0 8 0 0 0 1000 S
+1073743880 128 0 0 8 0 0 0 1000 S
 AN 0 8 0 3
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0

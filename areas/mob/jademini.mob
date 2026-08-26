@@ -246,7 +246,7 @@ archer pirate~
 &+LAn archer for the Lace&+wdon&+L fires arrows at the enemy crew here.&n
 ~
 ~
-11 0 0 0 0 0 0 0 -1000 S
+10 0 0 0 0 0 0 0 -1000 S
 PH 0 65536 0 -1
 48 0 0 1d1+1 1d1+1
 0.0.0.0 0

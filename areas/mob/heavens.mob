@@ -454,7 +454,7 @@ Beavis is a teenager who hasnt quite reached puberty, and seems
 to get horny over anything with two legs. Him and his friend Butthead
 are morons, but we love em anyways.
 ~
-1 0 0 0 8 0 0 0 -1000 S
+0 0 0 0 8 0 0 0 -1000 S
 B 0 0 0 -1
 1 20 96 1d15+4 1d5+0
 0.0.0.0 129
@@ -1310,7 +1310,7 @@ dark shadow demon shape~
 The being is made entirely of shadow, and is here propably entirely
 by accident. It seems fairly mad at someone, tho.
 ~
-41945089 1 0 0 167772410 12352 0 0 -500 S
+41945088 1 0 0 167772410 12352 0 0 -500 S
 sw 0 0 0 -1
 30 8 -12 30d55+540 3d6+4
 0.5.3.2 40095
@@ -1638,7 +1638,7 @@ assistant~
 &+LIo's &+CAssistant&n is here, waiting for something to do.
 ~
 ~
-159755 0 0 0 839461308 47324 1073741824 67109120 1000 S
+159754 0 0 0 839461308 47324 1073741824 67109120 1000 S
 PH 0 8 0 3
 61 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -1683,7 +1683,7 @@ wolf black~
 &+LA huge black wolf stands here, growling at you.&N
 ~
 ~
-1107560457 1 0 0 33554728 0 0 0 0 S
+1107560456 1 0 0 33554728 0 0 0 0 S
 AC 0 1 0 4
 25 -10 -150 5d100+9000 6d6+35
 0.0.0.0 200000
@@ -1694,7 +1694,7 @@ roc~
 &+yA huge roc flies here, waiting for a prey.&N
 ~
 ~
-1107429385 1 0 0 167772456 0 0 0 0 S
+1107429384 1 0 0 167772456 0 0 0 0 S
 AC 0 1 0 5
 30 -10 -150 5d100+9500 6d7+35
 0.0.0.0 200000
@@ -2571,7 +2571,7 @@ salesman is at the top of his trade. He wears fine silks dyed in very
 stylish colors. He seems to be telling his newest victim about his latest
 and greatest product.
 ~
-137 0 0 0 0 0 0 0 350 S
+136 0 0 0 0 0 0 0 350 S
 H 0 1 0 -1
 14 15 55 14d27+84 2d5+2
 7.5.2.0 6804
@@ -2599,7 +2599,7 @@ chamber pot upon which he sits. His face is flushed a bright red and it
 is obvious he is having quite alot of trouble using the facilties. Once
 in a while he lets out a soft wimper or moan of agony.
 ~
-2051 0 0 0 553656376 12480 0 0 0 S
+2050 0 0 0 553656376 12480 0 0 0 S
 PH 0 1 0 -1
 54 -5 -107 54d131+4590 7d6+30
 9.1.7.6 218700
@@ -2631,7 +2631,7 @@ Beavis is a teenager who hasnt quite reached puberty, and seems
 to get horny over anything with two legs. Him and his friend Butthead
 are morons, but we love em anyways.
 ~
-11 0 0 0 8 0 0 0 -1000 S
+10 0 0 0 8 0 0 0 -1000 S
 H 0 0 0 -1
 54 -5 -107 54d110+4482 7d6+30
 9.1.7.6 218700
@@ -2645,7 +2645,7 @@ Butthead really wishes he was cool, but because he is so dumb he
 really can only pretend to be cool. He makes up for his lack of thinking
 with talking about stuff that really makes no sense.
 ~
-11 0 0 0 8 0 0 0 -1000 S
+10 0 0 0 8 0 0 0 -1000 S
 H 0 0 0 -1
 54 -5 -107 54d110+4482 7d6+30
 9.1.7.6 218700
@@ -2659,7 +2659,7 @@ Bill the Cat had a surgery a while back, and never really recovered. He
 spends his days drooling, and commenting ont he social injustices endured by
 minoritys.
 ~
-11 0 0 0 8 0 0 0 0 S
+10 0 0 0 8 0 0 0 0 S
 H 0 0 0 -1
 54 -5 -107 54d110+4482 7d6+30
 9.1.7.6 218700
@@ -2673,7 +2673,7 @@ nightmare horse mount anti-paladinmount~
 &+LHe seems to have been reborn after some tragic death overtook him in a
 &+Lprevious life.
 ~
-134481923 0 0 0 65536 8 0 4096 -1000 S
+134481922 0 0 0 65536 8 0 4096 -1000 S
 AE 0 1 0 -1
 10 18 67 10d21+55 2d3+1
 0.0.0.0 1296
@@ -2688,7 +2688,7 @@ warhorse horse heavy mount paladinmount~
 &+Wother equines.  He stands over 18 hands at the shoulder, and fairly ripples
 &+Wwith controlled power.
 ~
-134481923 0 0 0 8192 4 0 0 1000 S
+134481922 0 0 0 8192 4 0 0 1000 S
 AE 0 2 0 -1
 10 18 67 10d21+55 2d3+1
 0.0.0.0 1296
@@ -2700,7 +2700,7 @@ An ancient prismatic treant towers into the heavens.
 ~
 A gentleness and warmth radiate from this many-hued, serene, ageless observer.
 ~
-133131 0 0 0 856269052 14557 0 0 1000 S
+133130 0 0 0 856269052 14557 0 0 1000 S
 VT 0 8 0 -1
 59 -7 -128 59d143+6785 7d6+35
 0.0.0.0 238950
@@ -2714,7 +2714,7 @@ hellhound hell hound beast winged~
 &+LHe seems to have been reborn after some tragic death overtook him in a
 &+Lprevious life.
 ~
-134481923 0 0 0 134283272 10 0 4096 -1000 S
+134481922 0 0 0 134283272 10 0 4096 -1000 S
 AE 0 1 0 -1
 10 18 67 10d21+55 2d3+1
 0.0.0.0 1296
@@ -2729,7 +2729,7 @@ pegasus beautiful~
 &+Wother equines.  He stands over 18 hands at the shoulder, and fairly ripples
 &+Wwith controlled power.
 ~
-134481923 0 0 0 134225928 32772 0 4096 1000 S
+134481922 0 0 0 134225928 32772 0 4096 1000 S
 AE 0 2 0 -1
 10 18 67 10d21+55 2d3+1
 0.0.0.0 1296
@@ -2744,7 +2744,7 @@ hawk eyed hawkeyed ranger archer~
 &+gglare of the sun out of his eyes, and notched up on one side to keep
 &+gout of the way of the longbow he wields.
 ~
-2123 640 0 0 8204 0 0 0 1000 S
+2122 640 0 0 8204 0 0 0 1000 S
 PH 1 2 0 -1
 30 8 3 30d65+390 3d6+4
 0.5.7.1 26730
@@ -2759,7 +2759,7 @@ vigilant at his post as an archer of Verzanan Equipped with a 4 ft tall
 long bow and wearing a full quiver of arrows, he is ready to fill a
 raiding orc, or unwanted outcast with them.
 ~
-67110987 640 0 0 268435460 0 0 0 750 S
+67110986 640 0 0 268435460 0 0 0 750 S
 PH 1 2 0 -1
 20 13 35 20d35+140 3d4+2
 0.9.3.0 9720
@@ -2772,7 +2772,7 @@ gnomish archer gnome~
    &+rDressed in colorful attire, this gnome is equipped with a small long bow
 &+rand quiver full of sharp arrows to pierce the enemies of Ashrumite.
 ~
-67110987 640 0 0 33554440 0 0 0 500 S
+67110986 640 0 0 33554440 0 0 0 500 S
 PG 8 16384 0 -1
 23 11 26 23d47+230 3d5+3
 5.1.6.0 20493
@@ -2786,7 +2786,7 @@ elven elf archer~
 &+gwould not be one to tangle with from a distance, having the ability to shoot
 &+gan orc between the eyes at 200 feet.
 ~
-67110987 640 0 0 33562684 0 0 0 900 S
+67110986 640 0 0 33562684 0 0 0 900 S
 PE 4 2 0 -1
 35 6 -12 35d83+595 4d6+7
 9.9.1.2 45360
@@ -2800,7 +2800,7 @@ A dark, hooded man is here protecting his Baron's home.&n
 &+Lman wields a longbow and a quiver full of arrows, ready to shoot down any
 &+Lwho dare to threaten Bloodstones citizens.
 ~
-1174407243 0 0 0 65588 0 0 0 0 S
+1174407242 0 0 0 65588 0 0 0 0 S
 PH 12 16 0 -1
 25 11 19 25d47+250 3d5+3
 6.2.6.1 22275
@@ -2815,7 +2815,7 @@ random mob prototype~
 &+Lin a massive cloak that is heavily stained and soiled. This cloak also disguises
 &+Lwhat &+rbattlefield&+L capabilities or &+bmagical&+L prowess he possesses if any.
 ~
-1174407241 0 0 0 65588 0 0 0 0 S
+1174407240 0 0 0 65588 0 0 0 0 S
 PH 12 16 0 -1
 25 11 19 25d47+250 3d5+3
 6.2.6.1 22275
@@ -2830,7 +2830,7 @@ random zone mob prototype~
 &+Lin a massive cloak that is heavily stained and soiled. This cloak also disguises
 &+Lwhat &+rbattlefield&+L capabilities or &+bmagical&+L prowess he possesses if any.
 ~
-1107298377 0 0 0 65588 0 0 0 0 S
+1107298376 0 0 0 65588 0 0 0 0 S
 PH 12 16 0 -1
 25 11 19 25d47+250 3d5+3
 6.2.6.1 22275

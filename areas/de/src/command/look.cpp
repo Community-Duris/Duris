@@ -791,7 +791,7 @@ void displayCurrentRoom(void)
 {
   const objectHere *objPtr;
   const mobHere *mobPtr;
-  char strn[2048], strn2[2048];
+  char strn[2048], strn2[64];
   bool foundExit = false;
   bool map;
   size_t numbLines = 0;
@@ -847,17 +847,17 @@ void displayCurrentRoom(void)
   {
     if (g_currentRoom->exits[i])
     {
-      strncpy(strn2, g_exitnames[i], 2047);
-      strn2[2047] = '\0';
+	    strncpy(strn2, g_exitnames[i], sizeof(strn2) - 1);
+	    strn2[sizeof(strn2) - 1] = '\0';
 
-      strn2[0] = toupper(strn2[0]);
+	    strn2[0] = toupper(strn2[0]);
 
-      sprintf(strn + strlen(strn), "&+c-%s ", strn2);
+	    sprintf(strn + strlen(strn), "&+c-%s ", strn2);
 
-      if (getShowExitFlagsVal()) 
-      {
-        strcat(strn, getDoorStateStrn(g_currentRoom->exits[i], strn2));
-      }
+	    if (getShowExitFlagsVal())
+	    {
+		    strcat(strn, getDoorStateStrn(g_currentRoom->exits[i], strn2));
+	    }
 
       if (getShowExitDestVal()) 
       {

@@ -6,16 +6,16 @@
 
 #define ALL_MOB "tworld.mob"
 
-void punt(char *msg)
+void punt(const char *msg)
 {
 	fprintf(stderr, "%s\n", msg);
-	exit(0);
+	exit(EXIT_FAILURE);
 }
 
 int main()
 {
 	FILE *area_list, *all_mob, *tmp_mob;
-	char area[8192], buf[8192], area_name[80], mob_name[80];
+	char area[8192], buf[8192], area_name[80], mob_name[sizeof(area_name) + 16];
 	int area_count, mob_count;
 
 	/*
@@ -40,13 +40,15 @@ int main()
 			break;
 		if (area[0] == '*') /* a comment */
 			continue;
-		sscanf(area, "%s", area_name);
+		if (sscanf(area, "%79s", area_name) != 1)
+			continue;
 		fprintf(stdout, "Area[%2d] : %s\n", area_count++, area_name);
 		/*
 	 * open up individual mob for each area
          */
 
-		sprintf(mob_name, "%s/%s.mob", MOB_DIR, area_name);
+		if (snprintf(mob_name, sizeof(mob_name), "%s/%s.mob", MOB_DIR, area_name) < 0)
+			punt("mob filename cannot be formatted");
 		tmp_mob = fopen(mob_name, "r");
 		if (tmp_mob == NULL)
 		{

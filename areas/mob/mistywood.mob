@@ -35,7 +35,7 @@ The battle scarred giant~
 &+wcauses him to look years beyone his age. Giving you hardly a notice he &N
 &+wsimply states, &+W'Go away warrior, my battling days are behind me.'&N
 ~
-33556559 0 0 0 0 0 0 0 -400 S
+33556558 0 0 0 0 0 0 0 -400 S
 G 0 1 0 -1
 35 6 -2 35d83+770 4d6+7
 9.9.1.2 45360
@@ -292,7 +292,7 @@ Ascuren~
 &+Wapparently communicating with the trees. Once he notices you enter he turns&N
 &+Wquietly and smiles.&N
 ~
-33585161 0 0 0 8 0 0 0 300 S
+33585160 0 0 0 8 0 0 0 300 S
 PH 0 128 0 -1
 48 -3 -78 48d110+2592 6d6+25
 8.1.0.5 116640
@@ -307,7 +307,7 @@ Daumis the sage~
 &+Walthough he kneels in the dirt. His hair is pulled back behind him as he&N
 &+Wprays. &+rIt is obvious that he's distressed about something.&N
 ~
-33556491 0 0 0 0 0 0 0 500 S
+33556490 0 0 0 0 0 0 0 500 S
 PH 0 32 0 -1
 45 -1 -69 45d99+1980 6d6+12
 5.9.8.4 109350
@@ -336,7 +336,7 @@ The korred~
 &+rappearing to be that of a goat. As you look at him he begins laughing, then&N
 &+rstops suddenly and grins.&N
 ~
-33556495 0 0 0 0 0 0 0 -300 S
+33556494 0 0 0 0 0 0 0 -300 S
 H 0 1 0 -1
 44 2 -15 36d95+828 4d7+10
 0.1.2.2 46656
@@ -350,7 +350,7 @@ The deer~
 &+wespecially green. Noticing you it turns its head in your direction, &N
 &+wears raising up as it watches to make sure you pose no threat.&N
 ~
-2057 0 0 0 0 0 0 0 0 S
+2056 0 0 0 0 0 0 0 0 S
 A 0 0 0 -1
 7 18 77 7d18+24 2d3+1
 0.0.0.0 907
@@ -364,7 +364,7 @@ The rabbit~
 &+wslightly. The rabbit's fur is white, a few patches of black mixing in to &N
 &+whelp protect it from being spotted easily.&N
 ~
-2057 0 0 0 0 0 0 0 0 S
+2056 0 0 0 0 0 0 0 0 S
 A 0 0 0 -1
 4 20 87 4d15+14 1d5+0
 0.0.0.0 518

@@ -8,7 +8,7 @@ ocean floor.  Its five spiny looking arms search
 around for food. It's a quiet creature, but will
 fight back if provoked.
 ~
-264265 0 0 0 2112 0 0 0 0 S
+264264 0 0 0 2112 0 0 0 0 S
 F 0 1 0 -1
 15 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -23,7 +23,7 @@ ocean floor. Its five spiny looking arms search
 around for food. It's a quiet creature, but will
 fight back if provoked.
 ~
-264265 1 0 0 2112 0 0 0 0 S
+264264 1 0 0 2112 0 0 0 0 S
 F 0 128 0 -1
 20 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -38,7 +38,7 @@ on the bottom of the ocean floor. Its five spiny looking
 arms search around for food. It's a quiet creature, but
 will fight back if provoked
 ~
-264265 0 0 0 2112 0 0 0 0 S
+264264 0 0 0 2112 0 0 0 0 S
 F 0 2 0 -1
 25 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -53,7 +53,7 @@ of the ocean floor. Its five spiny looking arms search
 search around for food. It's a timid quiet creature,
 but will fight if provoked.
 ~
-264265 0 0 0 0 0 0 0 0 S
+264264 0 0 0 0 0 0 0 0 S
 F 0 1 0 -1
 30 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -68,7 +68,7 @@ of the ocean floor. Its five spiny looking arms search
 around for food. It's a quiet creature, but will fight
 back if provoked.
 ~
-264265 0 0 0 2112 0 0 0 0 S
+264264 0 0 0 2112 0 0 0 0 S
 F 0 32 0 3
 35 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -113,7 +113,7 @@ They are of various shapes, sizes, and &+Rc&+Yo&+Wl&+Go&+Cr&+Ws.
 Some are timid and shy while others seem to be
 more aggresive.
 ~
-264267 0 0 0 2048 0 0 0 -1000 S
+264266 0 0 0 2048 0 0 0 -1000 S
 F 0 0 0 -1
 30 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -146,7 +146,7 @@ This squid is another creature sworn to
 protect this kingdom of all who enter the
 realm.
 ~
-264267 1 0 0 537954312 0 131072 0 -1000 S
+264266 1 0 0 537954312 0 131072 0 -1000 S
 F 0 32768 0 -1
 45 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -192,7 +192,7 @@ ranks to become the advisor to the king and won't let anyone get in his
 way. His cunning and speed has helped him as well. He has a scars all
 over from many battles.
 ~
-67381323 1 0 0 2048 0 0 0 -1000 S
+67381322 1 0 0 2048 0 0 0 -1000 S
 F 0 512 0 -1
 50 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -272,7 +272,7 @@ It loves to show off its &+Rc&+Yo&+Bl&+ro&+Gr&+Wf&+Ru&+Gl &+Cshell. &+WIt also
 loves to cause trouble wherever it goes. Be warned
 to stay clear of these or you could have a big surprize.
 ~
-1074006089 0 0 0 2128 0 0 0 1000 S
+1074006088 0 0 0 2128 0 0 0 1000 S
 F 0 128 0 -1
 10 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -334,7 +334,7 @@ long flowing silver hair and &+Cicy blue eyes. &+wShe looks at you as you
 enter her domain and smiles widely. She motions you to come closer if
 you dare.
 ~
-67373131 0 0 0 2120 0 0 0 -1000 S
+67373130 0 0 0 2120 0 0 0 -1000 S
 UV 0 0 0 -1
 45 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -364,7 +364,7 @@ a shocking experience. He is a outcast to this realm
 but stays here in hopes to be invited back into the
 Kingdom someday.
 ~
-1074006089 0 0 0 1050624 0 0 0 -1000 S
+1074006088 0 0 0 1050624 0 0 0 -1000 S
 F 0 2 0 -1
 25 0 0 1d1+1 1d1+1
 0.0.0.0 0

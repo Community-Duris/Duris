@@ -5,7 +5,7 @@ spider large~
 ~
    This spider is quite large, about 2' in diameter..
 ~
-75 1 0 0 1605664 0 0 0 -1000 S
+74 1 0 0 1605664 0 0 0 -1000 S
 AS 0 0 0 -1
 30 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -18,7 +18,7 @@ spider huge~
   This spider is quite huge, around 6' in diameter. It looks quite able to
 swallow a cow whole.
 ~
-67108937 1 0 0 1605664 0 0 0 -1000 S
+67108936 1 0 0 1605664 0 0 0 -1000 S
 AS 0 0 0 -1
 35 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -31,7 +31,7 @@ spider giant~
   This giant spider is at least 12' in diameter! It towers above you, almost
 reaching the canopy level of the forest.
 ~
-73 1 0 0 1605664 0 0 0 -1000 S
+72 1 0 0 1605664 0 0 0 -1000 S
 AS 0 0 0 -1
 40 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -45,7 +45,7 @@ spider phase~
 plane. The poison that drips from its fangs, leaves little burnt spots in the
 leaves below.
 ~
-73 1 0 0 1605664 0 0 0 -1000 S
+72 1 0 0 1605664 0 0 0 -1000 S
 AS 0 0 0 -1
 45 0 0 1d1+1 1d1+1
 0.0.0.0 0

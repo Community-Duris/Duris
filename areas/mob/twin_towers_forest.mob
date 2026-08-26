@@ -80,7 +80,7 @@ mother fox~
 &+rlooks quite vicious, and she is very upset that you have disturbed her
 &+rnest.
 ~
-75497537 0 0 0 0 0 0 0 0 S
+75497536 0 0 0 0 0 0 0 0 S
 A 0 0 0 -1
 8 18 74 8d18+28 2d3+1
 0.0.0.0 1036
@@ -121,7 +121,7 @@ A mother wolf is here growling viciously at you, trying to protect her pups.
 coat.  She looks extremely vicious as she leans back in a position to
 spring if she thinks her pups are in danger.
 ~
-8388673 0 0 0 0 0 0 0 0 S
+8388672 0 0 0 0 0 0 0 0 S
 A 0 0 0 -1
 9 18 71 9d18+31 2d3+1
 0.0.0.0 1166
@@ -160,7 +160,7 @@ bunny rabbit~
    The little bunny seems almost tame, and looks at you as if it thinks you
 might have some food to offer it.
 ~
-8388801 0 0 0 0 0 0 0 0 S
+8388800 0 0 0 0 0 0 0 0 S
 A 0 0 0 -1
 1 20 96 1d15+4 1d5+0
 0.0.0.0 129
@@ -190,7 +190,7 @@ raccoon~
 &+ylike like a little bandit.  Its ringed tail is nice and bushy.  It seems
 &+yunconcerned about anything but looking for food.&N
 ~
-8388801 0 0 0 0 0 0 0 0 S
+8388800 0 0 0 0 0 0 0 0 S
 A 0 0 0 -1
 3 20 90 3d15+11 1d5+0
 0.0.0.0 388
@@ -219,7 +219,7 @@ buck~
 &+yhead, which indicates it is a mature animal, who has won many a battle
 &+yfor supremacy.&N
 ~
-8390849 0 0 0 32 0 0 0 0 S
+8390848 0 0 0 32 0 0 0 0 S
 A 0 0 0 -1
 11 15 64 11d23+44 2d5+2
 0.0.0.0 5346
@@ -234,7 +234,7 @@ deer~
 &+yyoung male deer, but one who has been around long enough to have seen
 &+ya few battles.&N
 ~
-8390851 0 0 0 0 0 0 0 0 S
+8390850 0 0 0 0 0 0 0 0 S
 A 0 0 0 -1
 9 18 71 9d18+31 2d3+1
 0.0.0.0 1166
@@ -247,7 +247,7 @@ doe~
 &+y   This beautiful creature is brown, with a touch of white under her
 &+yneck.  She appears to be fairly mature.
 ~
-8390851 0 0 0 0 0 0 0 0 S
+8390850 0 0 0 0 0 0 0 0 S
 A 0 0 0 -1
 8 18 74 8d18+28 2d3+1
 0.0.0.0 1036
@@ -262,7 +262,7 @@ snake rattlesnake~
 &+y4 feet when uncoiled.  Right now, however, it is coiled up tightly and
 &+yready to strike.&N
 ~
-8388673 0 0 0 1048576 0 0 0 0 S
+8388672 0 0 0 1048576 0 0 0 0 S
 RS 0 0 0 -1
 5 20 83 5d15+17 1d5+0
 0.0.0.0 648
@@ -275,7 +275,7 @@ bluejay bird~
 &+y   The bluejay flutters from tree to tree, sometimes hopping onto the
 &+yground, making small squaking noises.
 ~
-8519875 0 0 0 0 0 0 0 0 S
+8519874 0 0 0 0 0 0 0 0 S
 B 0 0 0 -1
 2 20 93 2d15+7 1d5+0
 0.0.0.0 259

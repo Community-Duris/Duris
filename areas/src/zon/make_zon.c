@@ -6,16 +6,16 @@
 
 #define ALL_ZON "tworld.zon"
 
-void punt(char *msg)
+void punt(const char *msg)
 {
-	fprintf(stderr, "%s\n");
-	exit(-1);
+	fprintf(stderr, "%s\n", msg);
+	exit(EXIT_FAILURE);
 }
 
 int main()
 {
 	FILE *area_list, *all_zon, *tmp_zon;
-	char area[8192], buf[8192], area_name[80], zon_name[80];
+	char area[8192], buf[8192], area_name[80], zon_name[sizeof(area_name) + 16];
 	int area_count, zon_count, do_it = 0;
 
 	/*
@@ -40,13 +40,15 @@ int main()
 			break;
 		if (area[0] == '*') /* a comment */
 			continue;
-		sscanf(area, "%s", area_name);
+		if (sscanf(area, "%79s", area_name) != 1)
+			continue;
 		fprintf(stdout, "Area[%2d] : %s\n", area_count++, area_name);
 		/*
 	 * open up individual zon for each area
          */
 
-		sprintf(zon_name, "%s/%s.zon", ZON_DIR, area_name);
+		if (snprintf(zon_name, sizeof(zon_name), "%s/%s.zon", ZON_DIR, area_name) < 0)
+			punt("zone filename cannot be formatted");
 		tmp_zon = fopen(zon_name, "r");
 		if (tmp_zon == NULL)
 		{

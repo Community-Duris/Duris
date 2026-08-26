@@ -185,7 +185,7 @@ spider large black~
    &+LThis large black spider has bright &+Rred&N &+Leyes and its fangs
 &+Lgleam brightly in the dull light of the shack.
 ~
-6155 1 0 0 32 0 0 0 -500 S
+6154 1 0 0 32 0 0 0 -500 S
 AS 0 1 0 -1
 7 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -198,7 +198,7 @@ little black spider~
    &+wThis little &+Lblack&N &+wspider seems to dance over its web as
 &+wit weaves even more tangles onto the mass.
 ~
-75 0 0 0 0 0 0 0 -250 S
+74 0 0 0 0 0 0 0 -250 S
 AS 0 1 0 -1
 5 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -284,7 +284,7 @@ blue snake~
 ~
    &+bThis snake's scales glitter with a brilliant&N &+Bblue&N &+bsheen.&N
 ~
-2121 0 0 0 524320 0 0 2 0 S
+2120 0 0 0 524320 0 0 2 0 S
 RS 0 1 0 1
 10 0 0 1d1+1 1d1+1
 0.0.0.0 0

@@ -141,11 +141,12 @@ bool readAreaFileLineAllowEOF(FILE *file, char *strn, const size_t intMaxLen,
       
       char outstrn[512];
 
-      sprintf(outstrn, ".\n"
-"       The maximum length that can be read is %u.\n"
-"       The text that could be read was '",
-              intMaxLen);
-      
+      sprintf(outstrn,
+	      ".\n"
+	      "       The maximum length that can be read is %zu.\n"
+	      "       The text that could be read was '",
+	      intMaxLen);
+
       _outtext(outstrn);
 
       _outtext(strn);
@@ -202,7 +203,7 @@ bool readAreaFileLineAllowEOF(FILE *file, char *strn, const size_t intMaxLen,
       if (numb == intNumbArgs)
         gotOne = true;
       else
-        sprintf(argStrn, "%u", intNumbArgs);
+	      sprintf(argStrn, "%zu", intNumbArgs);
     }
     else
     {
@@ -216,19 +217,19 @@ bool readAreaFileLineAllowEOF(FILE *file, char *strn, const size_t intMaxLen,
           break;
         }
 
-        sprintf(argStrn + strlen(argStrn), "%u", *argptr);
+	sprintf(argStrn + strlen(argStrn), "%zu", *argptr);
 
-        argptr++;
+	argptr++;
 
-        if (*argptr)
-        {
-          if (*(argptr + 1))
-            strcat(argStrn, ", ");
-          else if (argptr == (intNumbArgsArr + 1))
-            strcat(argStrn, " or ");
-          else
-            strcat(argStrn, ", or ");
-        }
+	if (*argptr)
+	{
+		if (*(argptr + 1))
+			strcat(argStrn, ", ");
+		else if (argptr == (intNumbArgsArr + 1))
+			strcat(argStrn, " or ");
+		else
+			strcat(argStrn, ", or ");
+	}
       }
     }
 
@@ -246,9 +247,9 @@ bool readAreaFileLineAllowEOF(FILE *file, char *strn, const size_t intMaxLen,
       char outstrn[1024];
 
       sprintf(outstrn,
-"\n       is incorrect (%u instead of %s).\n"
-"       The string read was '",
-              numbArgs(strn), argStrn);
+	      "\n       is incorrect (%zu instead of %s).\n"
+	      "       The string read was '",
+	      numbArgs(strn), argStrn);
 
       _outtext(outstrn);
 

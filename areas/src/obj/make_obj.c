@@ -6,16 +6,16 @@
 
 #define ALL_OBJ "tworld.obj"
 
-void punt(char *msg)
+void punt(const char *msg)
 {
-	fprintf(stderr, "%s\n");
-	exit(-1);
+	fprintf(stderr, "%s\n", msg);
+	exit(EXIT_FAILURE);
 }
 
 int main()
 {
 	FILE *area_list, *all_obj, *tmp_obj;
-	char area[8192], buf[8192], area_name[80], obj_name[80];
+	char area[8192], buf[8192], area_name[80], obj_name[sizeof(area_name) + 16];
 	int area_count, obj_count;
 
 	/*
@@ -40,13 +40,15 @@ int main()
 			break;
 		if (area[0] == '*') /* a comment */
 			continue;
-		sscanf(area, "%s", area_name);
+		if (sscanf(area, "%79s", area_name) != 1)
+			continue;
 		fprintf(stdout, "Area[%2d] : %s\n", area_count++, area_name);
 		/*
 	 * open up individual obj for each area
          */
 
-		sprintf(obj_name, "%s/%s.obj", OBJ_DIR, area_name);
+		if (snprintf(obj_name, sizeof(obj_name), "%s/%s.obj", OBJ_DIR, area_name) < 0)
+			punt("object filename cannot be formatted");
 		tmp_obj = fopen(obj_name, "r");
 		if (tmp_obj == NULL)
 		{

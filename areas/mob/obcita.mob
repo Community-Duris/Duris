@@ -67,7 +67,7 @@ citidel is beyond you, but chances are that if he can survive it he is either
 extremely powerfull, a servant of the evil here or something besides what
 he appears to be.  Perhaps all 3...
 ~
-1073743947 0 0 0 33620028 28 0 0 -1000 S
+1073743946 0 0 0 33620028 28 0 0 -1000 S
 UV 0 1024 0 -1
 45 -1 -69 45d72+1935 6d6+12
 5.9.8.4 109350
@@ -234,7 +234,7 @@ virtuos of them all, and this is why he is probably the weakest of the death
 knights of the citadel.  His soul has partially resisted the taint of the
 negative plane magic used to animate him and his breathen.
 ~
-2063 0 0 0 33620024 64 0 0 -1000 S
+2062 0 0 0 33620024 64 0 0 -1000 S
 U 0 16 0 -1
 40 2 -28 40d95+920 4d7+10
 0.0.0.0 51840
@@ -352,7 +352,7 @@ pest to any adventurer, and is probably also seriously damaging the small
 stock the armory has.  If Lord Ghulan knew about the rust monster, it would
 most likely be dead within a few seconds.
 ~
-203 0 0 0 1572864 1024 0 0 0 S
+202 0 0 0 1572864 1024 0 0 0 S
 AS 0 0 0 -1
 25 11 19 25d40+200 3d5+3
 0.0.0.0 22275
@@ -477,7 +477,7 @@ a holy sword located to the south.  Irronically, he guards against what would
 bring him peace.  Unfortunately for him, he doesn't know this, even as a free-
 willed undead.
 ~
-67110923 32 0 0 33554472 0 0 0 -1000 S
+67110922 32 0 0 33554472 0 0 0 -1000 S
 U 0 16 0 -1
 51 -5 -98 51d131+4335 7d6+30
 0.0.0.0 206550
@@ -491,7 +491,7 @@ Kyrix, now a death knight, was once a noble paladin.  Always with his
 brother Kyrir in life, Kyrix continues to stand by his brother, ready to
 attack anything living.  The two make a formidable opponent.
 ~
-67119115 1 0 0 33554472 0 0 0 -1000 S
+67119114 1 0 0 33554472 0 0 0 -1000 S
 U 0 16 0 -1
 51 -5 -98 51d131+4335 7d6+30
 0.0.0.0 206550
@@ -507,7 +507,7 @@ at the hands of Satar Ghulan not too long ago.  Now a death knight, an
 abomidable hater of the living, Falas uses all his knowledge and skill to
 destroy anything living in a misguided attempt to "elevate" them.
 ~
-10315 1 0 0 33554472 92 0 0 -1000 S
+10314 1 0 0 33554472 92 0 0 -1000 S
 U 0 16 0 -1
 48 -1 -62 43d107+1935 6d6+12
 0.0.0.0 104490
@@ -524,7 +524,7 @@ across the realms.  Right now, he is guarding the entrance to the spires
 leading up to the abode of a man he holds as his idol, Satar Ghulan,
 Vampire necromancer of the 10th circle.
 ~
-10251 1 0 0 33554472 0 0 0 -1000 S
+10250 1 0 0 33554472 0 0 0 -1000 S
 U 0 16 0 -1
 46 -3 -72 46d119+2530 6d6+25
 0.0.0.0 111780
@@ -543,7 +543,7 @@ ressurected by Lord Ghulan as a death knight.  Now Rileas slays all living,
 and rather than conning you out of your equipment, wishes to simply kill you
 and take it.
 ~
-10319 1 0 0 33554488 64 0 0 -1000 S
+10318 1 0 0 33554488 64 0 0 -1000 S
 U 0 16 0 -1
 52 -5 -101 52d131+4420 7d6+30
 0.0.0.0 210600
@@ -558,7 +558,7 @@ knight, rather than a paladin.  He stands here guarding the skeletal warlord,
 even though the skeletal warlord is much mightier than he.  Nonethless,
 the two put together are a deadly duo.
 ~
-67110987 1 0 0 33554472 0 0 0 -1000 S
+67110986 1 0 0 33554472 0 0 0 -1000 S
 U 0 16 0 -1
 50 -3 -95 50d119+2750 6d6+25
 0.0.0.0 121500
@@ -589,7 +589,7 @@ sheer skill and speed.  The fact that he fell to the undead legions of Lord
 Ghulan is a testament to the power of them.  Now he is a death knight,
 and guards Lord Ghulan from any intruders.
 ~
-1140860939 1 0 0 33554472 0 0 0 -1000 S
+1140860938 1 0 0 33554472 0 0 0 -1000 S
 U 0 16 0 -1
 53 -5 -104 53d131+4505 7d6+30
 0.0.0.0 214650
@@ -604,7 +604,7 @@ of being less than true to the faith. This could explain why he is so
 powerfull in undeath as a death knight.  He patrols the second floor of
 the central spire, ready to protect Lord Ghulan.
 ~
-1073743945 1 0 0 33554488 0 0 0 -1000 S
+1073743944 1 0 0 33554488 0 0 0 -1000 S
 U 0 16 0 -1
 55 -5 -111 55d131+4675 7d6+30
 0.0.0.0 222750
@@ -638,7 +638,7 @@ for blood, just like her ally Lord Ghulan.  Existing in both the negative plane
 and the prime material plane at once, Kaketkralix can not be destroyed, but
 only banished from here for a few dozen years.
 ~
-1075841097 1 0 0 436207964 12352 0 0 -1000 S
+1075841096 1 0 0 436207964 12352 0 0 -1000 S
 D 0 1 0 -1
 60 -7 -137 57d143+6555 7d6+35
 2.4.6.19 461700

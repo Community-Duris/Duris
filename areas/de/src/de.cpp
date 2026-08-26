@@ -325,12 +325,13 @@ int __cdecl main(const int argc, const char *argv[])
   {
     char outstrn[512];
 
-    sprintf(outstrn, "\n" 
-"Error allocating memory for room, object, and/or mob lookup tables - the\n"
-"current size of %u entries will consume %u bytes - try reducing\n"
-"the size with the -ll=<max vnum> command-line switch, or buy more RAM.\n",
-            g_numbLookupEntries,
-            (g_numbLookupEntries * (sizeof(room*) + sizeof(objectType*) + sizeof(mobType*))));
+    sprintf(outstrn,
+	    "\n"
+	    "Error allocating memory for room, object, and/or mob lookup tables - the\n"
+	    "current size of %u entries will consume %zu bytes - try reducing\n"
+	    "the size with the -ll=<max vnum> command-line switch, or buy more RAM.\n",
+	    g_numbLookupEntries,
+	    (g_numbLookupEntries * (sizeof(room *) + sizeof(objectType *) + sizeof(mobType *))));
 
     _outtext(outstrn);
 

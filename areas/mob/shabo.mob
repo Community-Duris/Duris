@@ -7,7 +7,7 @@ Grongor is a hulking, enormous man clad in plate mail.  He is fully 6'11",
 and massive, covered in black body hair, and always refers to himself in the
 third person.
 ~
-33900555 1 0 0 939526584 2050 0 0 0 S
+33900554 1 0 0 939526584 2050 0 0 0 S
 OG 0 17 0 -1
 60 0 0 100d10+3000 10d10+54
 0.0.0.0 0
@@ -34,7 +34,7 @@ illithid overseer~
 This illithid is dressed in the traditional black and purple of his race.
 His milky eyes stare at you in an alien manner.
 ~
-1107327051 1 0 0 2281703480 2 18350080 0 -1000 S
+1107327050 1 0 0 2281703480 2 18350080 0 -1000 S
 MF 0 4 0 7
 60 0 0 10d10+30000 15d20+40
 0.0.0.0 0
@@ -248,7 +248,7 @@ illithid slavemaster master~
 This illithid is dressed in the traditional black and purple of his race.
 His milky eyes stare at you in an alien manner.
 ~
-1073760331 1 0 0 2281703480 2 18350080 0 -1000 S
+1073760330 1 0 0 2281703480 2 18350080 0 -1000 S
 MF 0 4 0 -1
 58 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -388,7 +388,7 @@ Tall, dark, handsome, and psychopathic, &+WStrychnesch&N adorns himself
 with all mannor of jewelry.  His helm, with yellow gem-lenses set into
 the eyes is pulled down over his face.
 ~
-1174681677 1 0 0 939592120 0 0 0 -1000 S
+1174681676 1 0 0 939592120 0 0 0 -1000 S
 PH 0 1 0 -1
 58 0 0 10d10+25000 10d15+30
 0.0.0.0 0
@@ -403,7 +403,7 @@ flaxen-haired half-elf is, quite simply, a homocidal lunatic.
 He has green eyes, tattooed serpents on his forearms and forehead,
 and only half a right ear.
 ~
-1174681677 1 0 0 939592120 0 262144 0 -1000 S
+1174681676 1 0 0 939592120 0 262144 0 -1000 S
 P2 0 16384 0 -1
 58 0 0 10d10+25000 15d15+40
 0.0.0.0 0
@@ -416,7 +416,7 @@ The human anti-paladin &+RMorgoor&N stands here.
 Morgoor is a fearsome enemy, her average height and only slightly
 stronger than average build belie her magical strength.
 ~
-1174681677 1 0 0 939592120 0 0 0 -1000 S
+1174681676 1 0 0 939592120 0 0 0 -1000 S
 PH 0 16 0 -1
 58 0 0 10d10+30000 10d15+40
 0.0.0.0 0
@@ -429,7 +429,7 @@ redpal human wizard~
 Redpal is just over five feet in height, and has an unremarkable
 appearence, being mousy and dumpy.
 ~
-1174681677 1 0 0 939592120 0 0 0 -1000 S
+1174681676 1 0 0 939592120 0 0 0 -1000 S
 PH 0 512 0 -1
 58 0 0 10d10+20000 10d10+20
 0.0.0.0 0
@@ -440,7 +440,7 @@ cyvrand aa~
 The human priest &+GCyvrand&N stands here.&N
 ~
 ~
-1174681677 1 0 0 939592120 0 0 0 -1000 S
+1174681676 1 0 0 939592120 0 0 0 -1000 S
 PH 0 288 0 -1
 58 0 0 10d10+25000 10d10+40
 0.0.0.0 0
@@ -519,7 +519,7 @@ caranthazal _multiclass_ _sorcerer_ _psionicist_~
 This illithid is dressed in the traditional black and purple of his race.
 His milky eyes stare at you in an alien manner.
 ~
-1108367439 1 0 0 3087009850 2 18350080 0 -1000 S
+1108367438 1 0 0 3087009850 2 18350080 0 -1000 S
 MF 0 516 0 -1
 58 0 0 10d10+20000 10d10+10
 0.0.0.0 0
@@ -543,7 +543,7 @@ A tall, gaunt butler stands here.
 The butler stands very tall for a human.  He is frail, and his sunken
 eyes show a dark light within them.
 ~
-14351 1 0 0 134220072 0 0 0 0 S
+14350 1 0 0 134220072 0 0 0 0 S
 PH 0 1 0 -1
 49 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -555,7 +555,7 @@ A servant of the &+rbaatezu&N stands here.&N
 ~
 The servant is a tall, thin human, dressed in a tidy white uniform.
 ~
-14409 0 0 0 134220072 0 0 0 0 S
+14408 0 0 0 134220072 0 0 0 0 S
 PH 0 1 0 -1
 41 -100 -30 5d5+10000 5d5+30
 0.0.0.0 50000
@@ -568,7 +568,7 @@ pallistren representative~
 Pallistren, a strikingly handsome man.  He stands about six feet tall,
 and is dressed in fine clothes.  He has an arrogant smirk on his face.
 ~
-30733 0 0 0 134220072 0 0 0 0 S
+30732 0 0 0 134220072 0 0 0 0 S
 PH 0 1 0 -1
 58 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -581,7 +581,7 @@ petrechella~
 Petrechella is a young woman with exquisite auburn hair and perfect
 ivory skin.
 ~
-1073903695 0 0 0 671615416 0 0 0 -1000 S
+1073903694 0 0 0 671615416 0 0 0 -1000 S
 Y 0 528 0 -1
 55 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -605,7 +605,7 @@ gargoyle golem~
 &+WA huge gargoyle golem stands here.&N
 ~
 ~
-1140996201 1 0 0 134220184 0 0 0 0 S
+1140996200 1 0 0 134220184 0 0 0 0 S
 OG 0 1 0 -1
 59 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -618,7 +618,7 @@ petrechella secretary _no_tk_~
 Petrechella is a young woman with exquisite auburn hair and perfect
 ivory skin.
 ~
-14349 1 0 0 134220072 0 0 0 -1000 S
+14348 1 0 0 134220072 0 0 0 -1000 S
 Y 0 80 0 -1
 59 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -629,7 +629,7 @@ pallistren pit fiend~
 &+RPallistren&N, the pit fiend stands here cackling maniacly.
 ~
 ~
-1140996173 1 0 0 671615420 309441 0 0 -1000 S
+1140996172 1 0 0 671615420 309441 0 0 -1000 S
 Y 0 4160 0 -1
 60 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -706,7 +706,7 @@ illithid overseer~
 This illithid is dressed in the traditional black and purple of his race.
 His milky eyes stare at you in an alien manner.
 ~
-1073743883 1 0 0 134219832 2 0 0 -1000 S
+1073743882 1 0 0 134219832 2 0 0 -1000 S
 MF 0 20 0 -1
 55 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -734,7 +734,7 @@ Aboleths are eel-like creatures of immense size and power.  They are three-eyed,
 aquatic beasts with several tentacles and four mucus-producing glands on their
 soft underside.
 ~
-1074006027 1 0 0 402655672 14400 0 0 -1000 S
+1074006026 1 0 0 402655672 14400 0 0 -1000 S
 GI 0 20 0 -1
 60 0 0 10d10+25000 10d15+20
 0.0.0.0 0
@@ -1002,7 +1002,7 @@ Aboleths are eel-like creatures of immense size and power.  They are three-eyed,
 aquatic beasts with several tentacles and four mucus-producing glands on their
 soft underside.
 ~
-1082411531 1 0 0 402655672 14400 0 0 -1000 S
+1082411530 1 0 0 402655672 14400 0 0 -1000 S
 MF 0 33 0 -1
 59 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -1073,7 +1073,7 @@ the front of its head. Four pulsating blue-black orificices line the bottom of
 its body and secrete gray slime that smells like rancid grease. Four leathery
 tentacles dripping secrete, each 15 feet in length, grow from its head.
 ~
-1083471883 1 0 0 939600312 47324 0 0 -1000 S
+1083471882 1 0 0 939600312 47324 0 0 -1000 S
 X 0 37 0 -1
 60 150 -200 100d10+3500 15d15+50
 0.0.0.0 0

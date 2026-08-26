@@ -314,7 +314,7 @@ A &+Yleperous&n rat &+rglares&n at you, while waiting to be the &+Lgibberlings&n
 &+Lglare comes over its eyes, seeing its first real meal in days.  The obvious&n
 &+Leffects of leprosy can be seen as the flesh falls from its scrawny body.&n
 ~
-1073743947 0 0 0 288 0 0 0 0 S
+1073743946 0 0 0 288 0 0 0 0 S
 AC 0 1 0 -1
 13 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -329,7 +329,7 @@ missing a limb.  The stump of the limb appears to have been chewed off by one
 of its hungry companions.  Puss at the end of the limb leads you to believe
 that disease will soon end its life.
 ~
-1073752139 0 0 0 256 0 0 0 0 S
+1073752138 0 0 0 256 0 0 0 0 S
 AC 0 1 0 -1
 14 0 0 1d1+1 1d1+1
 0.0.0.0 0
@@ -839,7 +839,7 @@ catfish large~
 &+Llong years of survival in the subterranean depths. Even the sharks tend to&n
 &+Lleave this foul tempered fish alone.&n
 ~
-8265 0 0 0 2320 0 131072 0 -1000 S
+8264 0 0 0 2320 0 131072 0 -1000 S
 F 0 1 0 -1
 35 0 0 1d1+1 1d1+1
 0.0.0.0 0

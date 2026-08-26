@@ -104,7 +104,7 @@ The chicken is bright and healthy.  She has no weapons but her beak.
 Any loser and his grandma can beat up a chicken, why not go pick on
 someone your own size.
 ~
-75 0 0 0 0 0 0 0 0 S
+74 0 0 0 0 0 0 0 0 S
 A 0 0 0 -1
 2 20 93 2d15+7 1d5+0
 0.0.0.0 259
@@ -192,7 +192,7 @@ A kobold maid is here offering refreshments to those assembled here.
 She is none too pretty to look at, and she's not about to offer her
 refreshments for free!
 ~
-2123 0 0 0 0 0 0 0 -1000 S
+2122 0 0 0 0 0 0 0 -1000 S
 H 0 1 0 -1
 12 15 61 12d27+72 2d5+2
 6.4.2.0 5832
@@ -279,7 +279,7 @@ life off adventuring to unknown places.  Now he has retired among from the
 roving kobold clans and has settled here in Gwark's settlement to bake
 bread and live out the rest of his life in peace.
 ~
-11 0 0 0 128 0 0 0 -1000 S
+10 0 0 0 128 0 0 0 -1000 S
 H 0 1 0 -1
 28 8 10 28d65+364 3d6+4
 8.3.7.1 24948
@@ -440,7 +440,7 @@ Grumbiter is a burly looking kobold, and doesn't take any nonsense.  If
 any fighting goes on in his inn, he'll gladly make sure the cause of
 the problem gets hurt.
 ~
-67110987 0 0 0 0 0 0 0 -1000 S
+67110986 0 0 0 0 0 0 0 -1000 S
 H 0 0 0 -1
 15 15 51 15d23+60 2d5+2
 7.6.2.0 7290
@@ -487,7 +487,7 @@ imobile granite of the statue becomes vague, almost blurry.  The only thing
 about the statue which stands out are the jeweled eyes; red and fiery, they
 seem to shine with an inner light.
 ~
-41943051 0 0 0 33554624 0 0 0 -1000 S
+41943050 0 0 0 33554624 0 0 0 -1000 S
 X 0 32 0 -1
 32 6 -17 32d77+736 4d6+7
 6.8.9.2 62208
@@ -538,7 +538,7 @@ as rewards for the hapless souls the priest offers in sacrifice.  The
 creature makes an awful screeching sound, perhaps laughter, and then
 attacks you with a powerful force.
 ~
-2059 1 0 0 34668792 0 0 0 -1000 S
+2058 1 0 0 34668792 0 0 0 -1000 S
 X 0 256 0 -1
 59 -7 -143 59d132+6549 7d6+35
 4.5.4.9 358425
@@ -557,7 +557,7 @@ let some offhand adventurer destroy the temple and power he has acquired
 through the years... you shiver in fear as you wonder what fate he is
 pondering for you.
 ~
-100665419 1 0 0 33620204 0 0 0 -1000 S
+100665418 1 0 0 33620204 0 0 0 -1000 S
 H 0 32 0 -1
 42 -1 -59 42d99+1848 6d6+12
 2.8.7.3 102060
@@ -571,7 +571,7 @@ The golem stands nearly twenty feet tall and looks to be made of dark granite.
 The soul purpose of the golems creation was to make sure that none leave
 the tomb of Tyxru if they are so unlucky to find it...
 ~
-8390667 1 0 0 33554616 0 0 0 -1000 S
+8390666 1 0 0 33554616 0 0 0 -1000 S
 OG 0 1 0 -1
 48 -3 -72 46d119+2530 6d6+25
 6.0.9.4 111780

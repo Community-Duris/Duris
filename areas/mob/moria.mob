@@ -64,7 +64,7 @@ The rune master emanates a white aura. Magic flows from nature and into his
 body. Nature acts as a conduit for him, and he acts as a conduit for it.
 Magic is his life. He has studied it since he was a young lad.
 ~
-2251 128 0 0 33562664 0 0 0 800 S
+2250 128 0 0 33562664 0 0 0 800 S
 P2 0 512 0 -1
 40 2 -28 40d64+840 4d7+10
 3.3.3.3 51840
@@ -204,7 +204,7 @@ other parts of his leg look like swamp tree bark. His feet look as though
 they are rooted to the ground. He looks at you, expecting you to give him
 something.
 ~
-2059 0 0 0 33554472 0 0 0 0 S
+2058 0 0 0 33554472 0 0 0 0 S
 OG 0 16384 0 -1
 24 11 23 24d47+240 3d5+3
 6.1.6.0 21384
@@ -219,7 +219,7 @@ transparent blob contorting all over the place. Your own reflection looks
 stretched horizontally and vertically within the torso of the being. The miroid
 moves in a slow, mechanical fashion.
 ~
-1073741899 1 0 0 1048608 0 0 0 -500 S
+1073741898 1 0 0 1048608 0 0 0 -500 S
 AC 0 0 0 -1
 25 11 19 25d40+200 3d5+3
 0.0.0.0 22275
@@ -236,7 +236,7 @@ instant. Her garments look old, but shimmer magically. The creases in her
 face show great age and wisdom, yet, you can't help but notice that at
 times, you see a glimmer of youth in her face-- but only very briefly.
 ~
-6155 0 0 0 33554472 0 0 0 -200 S
+6154 0 0 0 33554472 0 0 0 -200 S
 PF 0 2048 0 -1
 43 6 -12 35d56+525 4d6+7
 9.9.1.2 45360
@@ -388,7 +388,7 @@ about what he does for a living. Malchor's expressions never seem to
 stray from happiness. He pats you on the back as though you and he were
 lifelong friends.
 ~
-6155 0 0 0 8232 0 0 0 600 S
+6154 0 0 0 8232 0 0 0 600 S
 PH 0 512 0 -1
 45 -1 -69 45d72+1935 6d6+12
 5.9.8.4 109350
@@ -493,7 +493,7 @@ Brock is a heavy-set man who paces the store with his rug. As he hits the
 rugs, dust flies everywhere. He seems to be used to this, as he does not
 choke from the constant dust.
 ~
-4107 0 0 0 0 0 0 0 500 S
+4106 0 0 0 0 0 0 0 500 S
 PH 0 0 0 -1
 20 13 35 20d30+100 3d4+2
 0.9.3.0 9720
@@ -507,7 +507,7 @@ Merthol is a small and plump man about 5'2". He takes great pride in his
 furs and automatically points you in the direction of one of his finest
 pieces.
 ~
-4107 0 0 0 0 0 0 0 450 S
+4106 0 0 0 0 0 0 0 450 S
 PH 0 0 0 -1
 20 13 35 20d30+100 3d4+2
 0.9.3.0 9720
@@ -522,7 +522,7 @@ ale in his right hand. He laughs at a joke one of his patrons has just told
 him and then takes another swig of his ale. His hair is oily and messy, his
 garments stained with countless foodstuffs and drink.
 ~
-4107 0 0 0 0 0 0 0 350 S
+4106 0 0 0 0 0 0 0 350 S
 PH 0 0 0 -1
 20 13 35 20d30+100 3d4+2
 0.9.3.0 9720
