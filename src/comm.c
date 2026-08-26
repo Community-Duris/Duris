@@ -141,7 +141,7 @@ extern unsigned long long ne_event_tick;
 long unsigned int ip2ul(const char *ip);
 void load_alliances();
 void initialize_transport();
-bool newHardcoreBoard(P_char ch, char *arg, int cmd);
+bool newHardcoreBoard(P_char ch, const char *arg, int cmd);
 void format_to_snoopers(char *from_string, char *to_string);
 extern void update_breath_weapon_properties();
 extern void update_regen_properties();
@@ -1460,7 +1460,7 @@ void game_loop(int port, int sslport)
 					/* For MSP clients, display text group output */
 					if (t_ch->desc->term_type == TERM_MSP)
 					{
-						do_group(t_ch, "", 0);
+						do_group(t_ch, writable_arg(""), 0);
 					}
 					t_ch->desc->last_group_update = 0;
 				}

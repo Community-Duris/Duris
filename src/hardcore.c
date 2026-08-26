@@ -383,7 +383,7 @@ void checkLeaderBoard(P_char /*ch*/)
 
 // Copies leaderboard file to leaderboardprod.
 // Returns TRUE iff leaderboard is copied over.
-bool newHardcoreBoard(P_char ch, char * /*arg*/, int /*cmd*/)
+bool newHardcoreBoard(P_char ch, const char * /*arg*/, int /*cmd*/)
 {
 	FILE *hardcorelist, *newhardcorelist;
 	// these arrays are unused and huge, commenting out to save mem

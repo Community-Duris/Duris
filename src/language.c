@@ -50,7 +50,7 @@ void do_speak(P_char ch, char * /*argument*/, int /*cmd*/)
 	send_to_char("You mean, 'say'?\n", ch);
 }
 
-char *language_known(P_char /*ch*/, P_char /*vict*/)
+const char *language_known(P_char /*ch*/, P_char /*vict*/)
 {
 	// "in some strange language"?
 	return "";

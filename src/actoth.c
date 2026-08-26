@@ -982,7 +982,8 @@ void do_rage(P_char ch, char * /*argument*/, int /*cmd*/)
 // Returns TRUE iff we found a forage item to give to ch, and FALSE if we couldn't find an item for the sector.
 bool forage_sect(P_char ch, int sector, bool poisoned)
 {
-	char *text, buf[MAX_STRING_LENGTH];
+	const char *text;
+	char buf[MAX_STRING_LENGTH];
 	P_obj forage_obj;
 
 	forage_obj = NULL;
@@ -1336,7 +1337,8 @@ void do_forage(P_char ch, char * /*arg*/, int /*cmd*/)
 {
 	P_obj treeobj;
 	int chance, chance2;
-	char *sectmessage, buf[512];
+	const char *sectmessage;
+	char buf[512];
 	bool poisoned;
 
 	if (!SanityCheck(ch, "do_forage"))

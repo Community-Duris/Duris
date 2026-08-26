@@ -177,7 +177,7 @@ int multiclass_proc(int /*room*/, P_char ch, int cmd, char *arg)
 	}
 	else if (GET_LEVEL(ch) < min_level)
 	{
-		do_multiclass(ch, "", -1); // show list of available secondary classes
+		do_multiclass(ch, writable_arg(""), -1); // show list of available secondary classes
 	}
 	else
 	{
@@ -191,7 +191,8 @@ int multiclass_proc(int /*room*/, P_char ch, int cmd, char *arg)
 		}
 		if (!*arg)
 		{
-			do_multiclass(ch, "", -1); // show list of available secondary classes
+			do_multiclass(ch, writable_arg(""),
+				      -1); // show list of available secondary classes
 		}
 		else
 		{

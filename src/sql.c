@@ -2167,7 +2167,9 @@ void do_sql(P_char ch, char *argument, int cmd)
 	{
 		if (strstr(second, "list"))
 		{
-			do_sql(ch, "SELECT id, description FROM prepstatement_duris_sql", 0);
+			do_sql(ch,
+			       writable_arg("SELECT id, description FROM prepstatement_duris_sql"),
+			       0);
 		}
 		if (!is_number(second))
 		{

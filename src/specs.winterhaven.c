@@ -1692,7 +1692,7 @@ int wh_janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 
 		if (ch->carrying)
 		{
-			do_donate(ch, "all", CMD_DONATE);
+			do_donate(ch, writable_arg("all"), CMD_DONATE);
 			dumped = TRUE;
 		}
 

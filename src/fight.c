@@ -87,7 +87,7 @@ extern struct wis_app_type wis_app[];
 
 int pv_common(P_char, P_char, const P_obj, int *);
 bool monk_superhit(P_char, P_char, int *);
-extern char *arena_death_msg(P_obj p_weapon);
+extern const char *arena_death_msg(P_obj p_weapon);
 extern void send_to_arena(const char *msg, int race);
 extern int get_numb_chars_in_group(struct group_list *group);
 extern int get_number_allies_in_room(P_char ch, int room_index);
@@ -8721,7 +8721,8 @@ int calculate_attacks(P_char ch, int attacks[])
 					    FALSE, ch, 0, 0, TO_CHAR);
 					act("&n$n gasps suddenly as their body is &+Benhanced&n by some &+Wother-worldly &npower!&n",
 					    FALSE, ch, 0, 0, TO_ROOM);
-					do_say(ch, "Fill me with your strength!", CMD_SAY);
+					do_say(ch, writable_arg("Fill me with your strength!"),
+					       CMD_SAY);
 					break;
 				case 2:
 					act("&+WYour devotion to your god causes you to unleash a &+rF&+Rlurr&+ry&+W of attacks against $N!&n",
@@ -8731,7 +8732,8 @@ int calculate_attacks(P_char ch, int attacks[])
 					ADD_ATTACK(PRIMARY_WEAPON);
 					ADD_ATTACK(PRIMARY_WEAPON);
 					do_say(ch,
-					       "What once was lost, is now found upon your skull!",
+					       writable_arg(
+						       "What once was lost, is now found upon your skull!"),
 					       CMD_SAY);
 					break;
 				case 3:
@@ -8752,7 +8754,9 @@ int calculate_attacks(P_char ch, int attacks[])
 					    FALSE, ch, 0, 0, TO_NOTVICT);
 					act("&+WYour devotion to your god causes you to unleash a &+rF&+Rlurr&+ry&+W of attacks against $N!&n",
 					    FALSE, ch, 0, GET_OPPONENT(ch), TO_CHAR);
-					do_say(ch, "The non-believer must be punished!", CMD_SAY);
+					do_say(ch,
+					       writable_arg("The non-believer must be punished!"),
+					       CMD_SAY);
 					ADD_ATTACK(PRIMARY_WEAPON);
 					ADD_ATTACK(PRIMARY_WEAPON);
 					break;
@@ -8760,13 +8764,17 @@ int calculate_attacks(P_char ch, int attacks[])
 					act("&+WYour devotion to your god causes you to unleash a &+rF&+Rlurr&+ry&+W of attacks against $N!&n",
 					    FALSE, ch, 0, GET_OPPONENT(ch), TO_CHAR);
 					ADD_ATTACK(PRIMARY_WEAPON);
-					do_say(ch, "Beg for forgiveness and be saved!", CMD_SAY);
+					do_say(ch,
+					       writable_arg("Beg for forgiveness and be saved!"),
+					       CMD_SAY);
 					ADD_ATTACK(PRIMARY_WEAPON);
 					break;
 				case 5:
 					act("&+WYour devotion to your god causes you to unleash a &+rF&+Rlurr&+ry&+W of attacks against $N!&n",
 					    FALSE, ch, 0, GET_OPPONENT(ch), TO_CHAR);
-					do_say(ch, "May your bloodshed be a willing sacrifice!",
+					do_say(ch,
+					       writable_arg(
+						       "May your bloodshed be a willing sacrifice!"),
 					       CMD_SAY);
 					ADD_ATTACK(PRIMARY_WEAPON);
 					ADD_ATTACK(PRIMARY_WEAPON);

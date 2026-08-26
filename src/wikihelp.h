@@ -2,6 +2,7 @@
 #define __WIKIHELP_H__
 
 #define WIKIHELP_RESULTS_LIMIT 100
+#define CMD_ATTRIB_MAX 1024
 
 string wiki_help(string str);
 string wiki_help_single(string str);

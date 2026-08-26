@@ -18,6 +18,31 @@
 #endif
 #endif
 #include "ships/ships.h"
+
+#include <cstddef>
+#include <cstring>
+
+/*
+ * Command handlers, spell functions and special procedures all take a writable
+ * `char *` argument, because their types are pinned by the dispatch tables and
+ * several of them tokenise the argument in place (half_chop and friends write
+ * back into it).  Passing a string literal to one is therefore not merely a
+ * const violation, it is a potential write to read-only memory.
+ *
+ * writable_arg hands such a callee a private, writable copy of a literal, sized
+ * exactly from the literal and live for the duration of the call:
+ *
+ *     do_say(ch, writable_arg("Fill me with your strength!"), CMD_SAY);
+ */
+template <std::size_t N> struct writable_arg
+{
+	char text[N];
+
+	explicit writable_arg(const char (&source)[N]) { std::memcpy(text, source, N); }
+
+	operator char *() { return text; }
+};
+
 #define str_cmp(a, b) ((!(a) && !(b)) ? 0 : !(a) ? -1 : !(b) ? 1 : strcasecmp((a), (b)))
 
 #define LOWER(c) (((c) >= 'A' && (c) <= 'Z') ? ((c) + ('a' - 'A')) : (c))

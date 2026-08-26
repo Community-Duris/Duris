@@ -68,7 +68,7 @@ struct undead_description
 
 struct golem_description
 {
-	char *name;
+	const char *name;
 	int vnum;
 	int corpse_lvl;
 	float hps;

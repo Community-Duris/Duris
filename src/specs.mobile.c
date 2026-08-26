@@ -11035,7 +11035,7 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 
 		if (createQuest(pl, ch))
 		{
-			do_quest(pl, "", 0);
+			do_quest(pl, writable_arg(""), 0);
 			mobsay(ch,
 			       "Remember, you can always type 'quest' to see your current quest.");
 			gmcp_quest_status(pl);
@@ -13136,7 +13136,7 @@ int conj_specpet_djinni(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 	if (cmd == CMD_PERIODIC && (tch = get_linked_char(ch, LNK_PET)) != NULL && IS_PC(tch) &&
 	    !strcmp(tch->player.name, "Orthyn") && !number(0, 500))
 	{
-		do_say(ch, "AIDS!", CMD_SAY);
+		do_say(ch, writable_arg("AIDS!"), CMD_SAY);
 	}
 
 	if (IS_FIGHTING(ch) && (cmd == 0) && (number(1, 10) == 1))
@@ -14002,7 +14002,7 @@ int io_assistant(P_char ch, P_char pl, int cmd, char * /*arg*/)
 		if (obj)
 		{
 			obj_to_char(obj, ch);
-			do_give(ch, " rose vareena", CMD_GIVE);
+			do_give(ch, writable_arg(" rose vareena"), CMD_GIVE);
 		}
 		return TRUE;
 	}
@@ -15384,8 +15384,9 @@ int llyren(P_char ch, P_char pl, int cmd, char *arg)
 	}
 	else
 	{
-		do_say(ch, "I'm not quite sure what you meant by that...", CMD_SAY);
-		do_say(ch, "What type of artifacts did you want me to show you?", CMD_SAY);
+		do_say(ch, writable_arg("I'm not quite sure what you meant by that..."), CMD_SAY);
+		do_say(ch, writable_arg("What type of artifacts did you want me to show you?"),
+		       CMD_SAY);
 		return TRUE;
 	}
 
@@ -15854,7 +15855,8 @@ int monk_remort(P_char ch, P_char pl, int cmd, char *arg)
 			if (!number(0, 3) && GET_CLASS(tch, CLASS_CLERIC) && !IS_MULTICLASS_PC(tch))
 			{
 				do_say(ch,
-				       "A cleric eh?  Have you heard the rumors of clerics becoming powerful monks?",
+				       writable_arg(
+					       "A cleric eh?  Have you heard the rumors of clerics becoming powerful monks?"),
 				       -4);
 				return FALSE;
 			}
@@ -15873,13 +15875,14 @@ int monk_remort(P_char ch, P_char pl, int cmd, char *arg)
 	if (!strcmp(msg, "monk"))
 	{
 		do_say(ch,
-		       "Yes Monks are a powerful kind indeed.  If you seek to become one, I can teach you for a price.",
+		       writable_arg(
+			       "Yes Monks are a powerful kind indeed.  If you seek to become one, I can teach you for a price."),
 		       -4);
 		snprintf(Gbuf, MAX_STRING_LENGTH,
 			 "It will cost you %s, and you must posses %d epics.", coin_stringv(plat),
 			 epiccost);
 		do_say(ch, Gbuf, -4);
-		do_say(ch, "Ask me 'remort' to confirm.", -4);
+		do_say(ch, writable_arg("Ask me 'remort' to confirm."), -4);
 		return TRUE;
 	}
 	if (!strcmp(msg, "remort"))
@@ -15975,13 +15978,15 @@ int smelter(P_char ch, P_char pl, int cmd, char *argument)
 			    0, pl, TO_ROOM);
 			act("&n$n claps his hands, smiling.", FALSE, ch, 0, NULL, TO_ROOM);
 			do_say(ch,
-			       "I can take two small pieces of the same ore and make them a medium.  I can also take"
-			       " two medium pieces of the same ore and make it a large.  Same price for either smelt!  &+W10"
-			       " platinum &Nfor &+ciron&n, &+Ctin&N, &+ycopper&N, or silver.  &+W50 platinum &Nfor &+Ygold&N,"
-			       " &+Wplatinum&n, or &+mmithril&n, and &+W100 platinum&N for &+Madamantium&n.",
+			       writable_arg(
+				       "I can take two small pieces of the same ore and make them a medium.  I can also take"
+				       " two medium pieces of the same ore and make it a large.  Same price for either smelt!  &+W10"
+				       " platinum &Nfor &+ciron&n, &+Ctin&N, &+ycopper&N, or silver.  &+W50 platinum &Nfor &+Ygold&N,"
+				       " &+Wplatinum&n, or &+mmithril&n, and &+W100 platinum&N for &+Madamantium&n."),
 			       CMD_SAY);
 			do_say(ch,
-			       "Remember, I only deal in &+Wplatinum&n now, so keep your other coins.",
+			       writable_arg(
+				       "Remember, I only deal in &+Wplatinum&n now, so keep your other coins."),
 			       CMD_SAY);
 			return TRUE;
 		}

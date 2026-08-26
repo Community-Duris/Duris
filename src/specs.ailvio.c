@@ -174,10 +174,10 @@ int bandage_reward_mob(P_char ch, P_char tch, int cmd, char * /*arg*/)
 				act("&+wOverwhelmed by the act of selflessness, you sob openly.  Then you say, 'THANK YOU!!!'",
 				    FALSE, ch, 0, tch, TO_CHAR);
 
-				do_stand(man, "", CMD_STAND);
-				do_say(man, "Thank you for reviving me.", CMD_SAY);
+				do_stand(man, writable_arg(""), CMD_STAND);
+				do_say(man, writable_arg("Thank you for reviving me."), CMD_SAY);
 				gain_exp(tch, NULL, 1000, EXP_QUEST);
-				do_say(man, "Time for us to go.", CMD_SAY);
+				do_say(man, writable_arg("Time for us to go."), CMD_SAY);
 				act("$N and $n disappear deeper into the woods.", TRUE, ch, 0, man,
 				    TO_NOTVICT);
 				extract_char(man);

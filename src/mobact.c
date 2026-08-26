@@ -5314,7 +5314,7 @@ bool MobMonk(P_char ch)
 		     affected_by_spell(ch, SPELL_BLINDNESS) || IS_AFFECTED(ch, AFF_BLIND) ||
 		     affected_by_spell(ch, SPELL_DISEASE)))
 		{
-			do_chant(ch, " cell adjustment", 0);
+			do_chant(ch, writable_arg(" cell adjustment"), 0);
 			return TRUE;
 		}
 		else if (GET_CHAR_SKILL(ch, SKILL_REGENERATE) && GET_HIT(ch) < GET_MAX_HIT(ch) &&
@@ -5322,14 +5322,14 @@ bool MobMonk(P_char ch)
 			 !affected_by_spell(ch, SPELL_REGENERATION) &&
 			 !affected_by_spell(ch, SPELL_ACCEL_HEALING))
 		{
-			do_chant(ch, " regen", 0);
+			do_chant(ch, writable_arg(" regen"), 0);
 			return TRUE;
 		}
 		else if (!number(0, 3) && GET_CHAR_SKILL(ch, SKILL_HEROISM) &&
 			 !affected_by_skill(ch, SKILL_HEROISM) &&
 			 !affected_by_spell(ch, SONG_HEROISM))
 		{
-			do_chant(ch, " heroism", 0);
+			do_chant(ch, writable_arg(" heroism"), 0);
 			return TRUE;
 		}
 	}
@@ -5340,7 +5340,7 @@ bool MobMonk(P_char ch)
 		{
 			if (!number(0, 1) && !affected_by_skill(ch, SKILL_FLURRY_OF_BLOWS))
 			{
-				do_flurry_of_blows(ch, " all");
+				do_flurry_of_blows(ch, writable_arg(" all"));
 				return TRUE;
 			}
 		}
@@ -5387,7 +5387,7 @@ bool MobMonk(P_char ch)
 		{
 			if (!number(0, 1) && !affected_by_skill(ch, SKILL_JIN_TOUCH))
 			{
-				do_chant(ch, " jin touch", 0);
+				do_chant(ch, writable_arg(" jin touch"), 0);
 				return TRUE;
 			}
 		}
@@ -5624,13 +5624,13 @@ bool MobBard(P_char ch)
 		{
 		case 1:
 		{
-			do_play(ch, " harming", CMD_PLAY);
+			do_play(ch, writable_arg(" harming"), CMD_PLAY);
 			return TRUE;
 		}
 		case 2:
 			if (!IS_ROOM(ch->in_room, ROOM_NO_TELEPORT) || !IS_HOMETOWN(ch->in_room))
 			{
-				do_play(ch, " chaos", CMD_PLAY);
+				do_play(ch, writable_arg(" chaos"), CMD_PLAY);
 				return TRUE;
 			}
 			[[fallthrough]];
@@ -5644,14 +5644,14 @@ bool MobBard(P_char ch)
 		case 4:
 			if (OUTSIDE(ch) && !number(0, 1))
 			{
-				do_play(ch, " storms", CMD_PLAY);
+				do_play(ch, writable_arg(" storms"), CMD_PLAY);
 				return TRUE;
 			}
 			[[fallthrough]];
 		case 5:
 		{
 			if (GET_LEVEL(ch) > 55 && IS_ELITE(ch))
-				do_play(ch, " charming", CMD_PLAY);
+				do_play(ch, writable_arg(" charming"), CMD_PLAY);
 			return TRUE;
 		}
 		default:
@@ -5670,26 +5670,26 @@ bool MobBard(P_char ch)
 	if (dam > 400)
 	{
 		do_flee(ch, 0, 0);
-		do_play(ch, " healing", CMD_PLAY);
+		do_play(ch, writable_arg(" healing"), CMD_PLAY);
 		return TRUE;
 	}
 
 	if (!affected_by_spell(ch, SPELL_STONE_SKIN) && (GET_LEVEL(ch) > 50) && !number(0, 1) &&
 	    !has_skin_spell(ch))
 	{
-		do_play(ch, " protection", CMD_PLAY);
+		do_play(ch, writable_arg(" protection"), CMD_PLAY);
 		return TRUE;
 	}
 
 	if (!IS_AFFECTED(ch, AFF_FLY) && !number(0, 1))
 	{
-		do_play(ch, " flight", CMD_PLAY);
+		do_play(ch, writable_arg(" flight"), CMD_PLAY);
 		return TRUE;
 	}
 
 	if (!affected_by_spell(ch, SPELL_HASTE) && !number(0, 2))
 	{
-		do_play(ch, " heroism", CMD_PLAY);
+		do_play(ch, writable_arg(" heroism"), CMD_PLAY);
 		return TRUE;
 	}
 
@@ -8216,7 +8216,7 @@ bool MobDestroyWall(P_char ch, P_obj wall, bool bTryHit)
 	{
 		if (bIsSecret)
 		{
-			do_search(ch, "", CMD_SEARCH);
+			do_search(ch, writable_arg(""), CMD_SEARCH);
 		}
 		else if (npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC) && !IS_FIGHTING(ch))
 		{

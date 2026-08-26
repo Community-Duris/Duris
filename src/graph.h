@@ -188,6 +188,7 @@ extern const int distance_array[MAX_AXIS_INDEX][MAX_AXIS_INDEX][MAX_AXIS_INDEX];
 #define IS_OUTSIDE(room) (!IS_ROOM(room, ROOM_INDOORS))
 #define IS_INSIDE(room) (IS_ROOM(room, ROOM_INDOORS))
 
-void radiate_message_from_room(int room, char *message, int radius, RMFR_FLAGS flags, int pcbase);
+void radiate_message_from_room(int room, const char *message, int radius, RMFR_FLAGS flags,
+			       int pcbase);
 
 #endif

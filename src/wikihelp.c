@@ -639,7 +639,7 @@ string wiki_help_single(string str)
 
 #endif
 
-struct cmd_attrib_data cmd_attribs[400];
+struct cmd_attrib_data cmd_attribs[CMD_ATTRIB_MAX];
 
 void load_cmd_attributes()
 {
@@ -650,7 +650,7 @@ void load_cmd_attributes()
 	bool ch_attributes[ATT_MAX];
 	bool vi_attributes[ATT_MAX];
 
-	for (count = 0; count < 400; count++)
+	for (count = 0; count < CMD_ATTRIB_MAX; count++)
 	{
 		cmd_attribs[count].name = cmd_attribs[count].attributes = NULL;
 	}
@@ -665,6 +665,12 @@ void load_cmd_attributes()
 	count = 0;
 	while (fgets(line, sizeof line, cmd_file) != NULL)
 	{
+		if (count >= CMD_ATTRIB_MAX)
+		{
+			logit(LOG_DEBUG,
+			      "command_attributes.txt: entry limit reached, remaining entries skipped.");
+			break;
+		}
 		// First line is the name.
 		cmd_attribs[count].name = strdup(line);
 		attributes[0] = '\0';
@@ -804,9 +810,9 @@ void load_cmd_attributes()
 			APPEND_ATTR("Char's Karma.\n");
 		if (vi_attributes[ATT_KAR])
 			APPEND_ATTR("Victim's Karma.\n");
-		if (ch_attributes[ATT_STR])
+		if (ch_attributes[ATT_LUK])
 			APPEND_ATTR("Char's Luck.\n");
-		if (vi_attributes[ATT_STR])
+		if (vi_attributes[ATT_LUK])
 			APPEND_ATTR("Victim's Luck.\n");
 
 		// add list to the array.

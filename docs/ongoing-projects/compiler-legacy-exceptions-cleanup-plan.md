@@ -1,7 +1,7 @@
 # Compiler Legacy-Exception Cleanup Plan
 
 - **Date:** August 26, 2026
-- **Status:** In progress
+- **Status:** Complete — all six exceptions removed
 - **Estimated Duration:** 12 working days, plus 2–3 contingency days if const propagation exposes
   behavior-sensitive interfaces
 - **Target:** Remove every flag in `LEGACY_WARNING_EXCEPTIONS` from `src/Makefile` while preserving a clean
@@ -315,8 +315,8 @@ Update this table at the end of each day from a clean inventory build:
 | `missing-field-initializers` | 546 | 0 | **Yes** |
 | `unused-variable` | 1,434 | 0 | **Yes** |
 | `unused-parameter` | 4,670 | 0 | **Yes** |
-| `write-strings` | 3,130 | 3,077 | No |
-| **Total** | **9,947** | **3,077** | — |
+| `write-strings` | 3,130 | 0 | **Yes** |
+| **Total** | **9,947** | **0** | — |
 
 ## 8. Execution Log
 
@@ -529,3 +529,152 @@ difficulty or character arguments.
 
 **Validation:** `./scripts/format.sh --check` clean; `git diff --check` clean; `make -C src clean &&
 make -C src -j14` succeeds with `-Wunused-parameter` fatal; all `tests/async/test_*.py` pass.
+
+### Days 10-12 — `write-strings`, exception removal, final validation (complete)
+
+All 3,130 warnings across 94 files are resolved. `-Wno-write-strings` is gone, `LEGACY_WARNING_EXCEPTIONS`
+is gone, and the six categories are now named explicitly in `WARNING_FLAGS` — four of them are not in
+`-Wall -Wextra`, so listing them is what makes the guarantee real rather than incidental.
+
+The work went outward from the highest-fan-out boundaries, exactly as the plan intended: each tranche below
+removed call-site diagnostics by fixing a type, never by casting one away.
+
+| Tranche | Warnings | What changed |
+|---|---:|---|
+| Damage messages and memory metadata | 3,130 → 1,348 | `damage_messages` members; allocation metadata (`getmem`/`changemem`/`delmem`, `__malloc`/`__realloc`/`__free`, `ALLOCATION_HEADER::tag` and `::file`, `mem_usage::tag`); `str_free`. |
+| Immutable tables | 1,348 → 567 | ~20 table types built entirely from literals. |
+| Message, logging and link APIs | 567 → 337 | `sql_log`, `send_to_guild`, `send_to_arena`, `affect_to_char_with_messages`, `define_link`/`define_olink`, `create_walls`, `coins_to_string`, `world_echo`, `radiate_message_from_room`. |
+| Lookup helpers and remaining tables | 337 → 134 | `generic_find`, `get_obj_in_list_vis`, ship helpers, the last literal arrays. |
+| Dispatch-pinned call sites | 134 → 0 | `writable_arg` (below), plus const on the non-dispatch callees that only read. |
+
+**The one thing that could not be fixed by constness.** Command handlers, spell functions and special
+procedures take a writable `char *` because their types are pinned by the dispatch tables, and several of them
+tokenise the argument in place — `half_chop(argument, arg, argument)` writes back into it. Passing a string
+literal to one is not merely a const violation; it is a potential write to read-only memory. Rule 4 says the
+caller must supply a mutable buffer, so `utils.h` grew:
+
+```cpp
+template <std::size_t N>
+struct writable_arg
+{
+	char text[N];
+	explicit writable_arg(const char (&source)[N]) { std::memcpy(text, source, N); }
+	operator char *() { return text; }
+};
+```
+
+It is sized exactly from the literal by deduction, lives for the duration of the call, and reads as what it is
+at the 83 call sites that use it: `do_say(ch, writable_arg("Fill me with your strength!"), CMD_SAY)`.
+
+**Where a cast was kept, and why.** Exactly one: inside `str_free`, which now takes `const char *`. An owning
+pointer to string data is normally spelled `const char *`, and releasing the allocation is not a write through
+the pointer; the single `const_cast` that needs lives in that one function instead of at every call site. No
+`const_cast` or C-style cast was added anywhere else to satisfy this category, and the `(char *)` casts that
+existed only to feed `damage_messages` in `kick.c` were deleted along with the reason for them.
+
+**Where constness was correctly refused.** `found_asc` writes a terminator into `asc_name`; `auction_pickup`
+and `StorageLocker::MakeChests` `half_chop` their argument in place. Those parameters stayed writable and
+their callers now pass a `writable_arg`. `arti_hunt_sql` was lower-casing the first character of the caller's
+buffer as a side effect; it now computes the lower-cased initial into a local instead, and takes `const char *`.
+
+---
+
+## 9. Final Result
+
+`LEGACY_WARNING_EXCEPTIONS` no longer exists. `src/Makefile` names all six categories in `WARNING_FLAGS`
+under `-Werror`, and a clean `make -C src` produces no diagnostics.
+
+### Defects found and repaired
+
+The five buffer-overflow bugs were all found the same way: making a message struct `const` forced the
+functions that were formatting *through* it into the open, and each turned out to be formatting with a
+`MAX_STRING_LENGTH` (65,536) bound into a much smaller caller buffer.
+
+| Defect | Impact |
+|---|---|
+| `fight.c` `anatomy_strike` | Formatted with a 65,536 bound into `hit()`'s three 512-byte buffers. |
+| `reavers.c` `ilienze_sword_proc_messages` | Same, into `ilienze_sword()`'s three 256-byte buffers. |
+| `magic.c` `prepare_ray_messages` | Same, into three 512-byte buffers. |
+| `specs.object.c` `prepare_wall_messages` | Same, into two 512-byte buffers. |
+| `sql_player.c` `sql_save_player_status` | Discarded the `snprintf` return for the player `INSERT`/`UPDATE`, so a query over the 16 KB buffer was truncated and handed to MySQL as malformed SQL. |
+| `ws_handlers.c` `ws_cmd_request_wholist` | Written, authorization-guarded and documented, but never added to the dispatcher, so backend who-list requests fell through to the unknown-command path. |
+| `artifact.c` `arti_player_sql` | Printed nothing at all when the query returned rows that were all filtered out by `locType`. |
+| `new_events.c` `show_world_events` | Appended at `buf + strlen(buf)` with a bound the compiler could not narrow; rewritten to format each row into its own bounded buffer. |
+
+Two further defects were *created* by the cleanup and caught immediately, which is the point: giving
+`damage_messages` default member initializers made it non-trivial, and the already-fatal `-Wclass-memaccess`
+pointed at six `memset(&msg, 0, sizeof(...))` calls in `fight.c` and `studioproc.c` that had been invisible
+while the aggregate was a bare C struct.
+
+### Deliberately retained annotations
+
+| Annotation | Count | Why |
+|---|---:|---|
+| `[[maybe_unused]]` on parameters | 329 | The parameter's only use sits inside an `#if` that is inactive in this build. Unnaming them would break that configuration silently. |
+| `[[maybe_unused]]` in two macros | 7 | `interp.h`'s `ACMD(c)` and `dam_mods.h`'s `MAKE_DAM_MOD_PRED()` expand into bodies that variously do and do not read a given slot. |
+| `[[maybe_unused]]` on locals | 12 | `files.c` pfile-header fields whose reads must stay to keep the save-file cursor aligned. |
+| Unnamed parameters `/*name*/` | 4,337 | Fixed dispatch signatures. Parameter names are not part of a function's type, so nothing here can change table compatibility. |
+
+No `-Wno-*` flag, warning pragma, or file-wide suppression was introduced anywhere. `tests/async/test_compiler_warning_profile.py`
+now fails if one appears.
+
+### Tests added or updated
+
+| Test | Purpose |
+|---|---|
+| `test_message_buffer_bounds.py` (new) | Pins `damage_messages` as const-only and both message helpers as taking the caller's real buffer size. |
+| `test_compiler_warning_profile.py` (new) | Fails if any of the six is suppressed again — by flag, by `LEGACY_WARNING_EXCEPTIONS`, or by pragma — and pins the inventory helper and the isolated sanitizer build. |
+| `test_crafting_enhancement_regressions.py` | Pinned a `minval` computation that lived in `modenhance()`, where nothing compares against it. Now pins the live computation in `enhance()` *and* its comparison. |
+| `test_auction_persistence.py`, `test_event_loop_hotspots.py`, `test_eqrate_contract.py`, `test_dragoon_spellcasting.py` | Pinned full signature or call text that now carries `/*name*/` or `writable_arg(...)`. Each matches on the parts that carry meaning. |
+
+### Tooling left behind
+
+- `scripts/warning-inventory.sh` — clean non-fatal build across all six categories, deduplicated counts by
+  category and by file, compiler version and full flag set recorded. It clears
+  `LEGACY_WARNING_EXCEPTIONS` itself, so a reintroduced exception cannot hide from the report, and asks for
+  byte-accurate warning columns.
+- `scripts/build-san.sh` — rewritten. It previously `export`ed `CFLAGS`, which a Makefile assignment
+  overrides, so the sanitizer flags never reached the compiler and the "sanitizer build" was not sanitized;
+  and it copied its output over the runtime `dms` binary. It now appends through `EXTRA_CFLAGS`/`EXTRA_LDFLAGS`
+  (new Makefile hooks) so the full warning profile is kept, builds into `obj-san/`, and leaves its result at
+  `src/dms_san` without touching `dms`.
+
+### Validation
+
+| Check | Result |
+|---|---|
+| `scripts/warning-inventory.sh` | 0 warnings in all six categories |
+| `make -C src clean && make -C src -j14` | Clean, `-Werror`, no diagnostics |
+| `tests/async/test_*.py` | All pass |
+| `./scripts/format.sh --check` | Clean |
+| `git diff --check` | Clean |
+| Compile-only sweep of every `.c`, per configuration | Clean under `REQUIRE_EMAIL_VERIFICATION`, `CTF_MUD=1`, `SIEGE_ENABLED`, `MEMCHK` |
+| `scripts/build-san.sh` | Builds clean with ASan + UBSan |
+| Worktree | No build artifacts; `obj/`, `obj-san/`, `src/dms_new`, `src/dms_san` all removed |
+
+Not run: a development smoke boot. This session had no development database or non-production port
+available, and the plan forbids touching production. Every check that does not need a live server was run.
+
+### Findings recorded but deliberately not changed
+
+These are pre-existing defects noticed while reading the code. Each is a behavior change rather than a
+cleanup, so each is left for a deliberate decision:
+
+- `actoth.c` `do_fly` and `do_swim` both test `if (!*buf)` before `buf` is initialized; `argument_interpreter`
+  and `one_argument` fill it only afterwards. Both read uninitialized stack memory on every invocation.
+- `sql_player.c` `sql_load_all_corpses` — the two `last_item_id = item_id; continue;` paths taken when an
+  object fails to load leave `num_objs` unchanged, so a following affect row for the same item can match the
+  "same item, another affect" branch and apply the affect to a different object.
+- `enhance()` rejects a material below `itemvalue(source) - enhance_material_ival_delta`; `modenhance()`
+  computed the same floor and enforced nothing. Restoring the check would start rejecting materials that are
+  accepted today.
+- `nq.c`'s `<class>` and `<race>` quest handlers are stubs, so `listedclasses` and `listedraces` are parsed
+  and ignored.
+- `event_artifact_wars` never implemented its penalty; `artifact.wars.modifier` had no effect.
+- Functions that ignore an argument their caller still supplies: `sql_link_player_to_account` (a
+  `// todo: implement` stub), `quested_spell`, `language_known`, `createSetItem`, `createUniqueItem`,
+  `create_material`, `create_stones`, `get_gem_from_mine`.
+
+The point of the project was never the number. It was to make the compiler's signal trustworthy: the six
+categories that used to hide 9,947 diagnostics now hide nothing, and the five buffer-overflow bugs above are
+the evidence that they were hiding more than noise.

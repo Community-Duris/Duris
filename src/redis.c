@@ -506,7 +506,7 @@ void redis_flush_floor_drops(void)
 		{
 			if (floor_drop_batch[i].values[j] != 0)
 			{
-				char key[4];
+				char key[16];
 				snprintf(key, sizeof(key), "v%d", j);
 				cJSON_AddNumberToObject(o, key, floor_drop_batch[i].values[j]);
 			}
@@ -710,7 +710,7 @@ int redis_restore_floor_drops(void)
 
 		for (int j = 0; j < NUMB_OBJ_VALS; j++)
 		{
-			char key[4];
+			char key[16];
 			snprintf(key, sizeof(key), "v%d", j);
 			cJSON *val = cJSON_GetObjectItem(obj_json, key);
 			if (val && cJSON_IsNumber(val))
@@ -1215,7 +1215,7 @@ static bool redis_save_world_state_json(redisContext *ctx)
 		{
 			if (ch->equipment[w])
 			{
-				char slot[8];
+				char slot[16];
 				snprintf(slot, sizeof(slot), "%d", w);
 				cJSON_AddNumberToObject(eq, slot, OBJ_VNUM(ch->equipment[w]));
 				has_eq = true;
@@ -1308,7 +1308,7 @@ static bool redis_save_world_state_json(redisContext *ctx)
 		{
 			if (obj->value[i] != 0)
 			{
-				char key[4];
+				char key[16];
 				snprintf(key, sizeof(key), "v%d", i);
 				cJSON_AddNumberToObject(o, key, obj->value[i]);
 			}
@@ -1946,7 +1946,7 @@ static bool redis_load_world_state_json(const char *json)
 			// restore values
 			for (int i = 0; i < NUMB_OBJ_VALS; i++)
 			{
-				char key[4];
+				char key[16];
 				snprintf(key, sizeof(key), "v%d", i);
 				cJSON *val = cJSON_GetObjectItem(obj_json, key);
 				if (val && cJSON_IsNumber(val))

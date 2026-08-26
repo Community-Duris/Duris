@@ -293,7 +293,7 @@ void show_guild_frags(P_char ch)
  *  too many associations or if leader is already member somewhere
  *  else, or problem with the file
  */
-bool found_asc(P_char god, P_char leader, char *bits, char *asc_name)
+bool found_asc(P_char god, P_char leader, const char *bits, char *asc_name)
 {
 	char buf[MAX_STRING_LENGTH];
 	ush_int i;
@@ -315,7 +315,8 @@ bool found_asc(P_char god, P_char leader, char *bits, char *asc_name)
 		if (IS_TRUSTED(god))
 			send_to_char("That person is unable to found an association...\n", god);
 		else
-			do_say(god, "You are unable to found an association.", CMD_SAY);
+			do_say(god, writable_arg("You are unable to found an association."),
+			       CMD_SAY);
 		return FALSE;
 	}
 	/* no associations under level ASC_MIN_LEVE */
@@ -2193,7 +2194,8 @@ void Guild::challenge(P_char member, P_char victim)
 	save();
 }
 
-void Guild::write_transaction_to_ledger(char *name, char *trans_type, char *coin_str)
+void Guild::write_transaction_to_ledger(const char *name, const char *trans_type,
+					const char *coin_str)
 {
 	qry("INSERT INTO guild_transactions (date, soc_id, transaction_info) VALUES (unix_timestamp(), %d, '&+y%s %s %s&+y.&n')",
 	    id_number, name, trans_type, coin_str);

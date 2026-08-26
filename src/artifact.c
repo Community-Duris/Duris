@@ -220,7 +220,7 @@ void arti_redis_cache(int type, bool Godlist) {}
 void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis);
 void arti_clear_sql(P_char ch, char *arg);
 void arti_files_to_sql(P_char ch, char *arg);
-void arti_hunt_sql(P_char ch, char *arg);
+void arti_hunt_sql(P_char ch, const char *arg);
 void arti_player_sql(P_char ch, char *arg);
 void arti_poof_sql(P_char ch, char *arg);
 void arti_remove_sql(int vnum, bool mortalToo);
@@ -1635,7 +1635,7 @@ void poof_artifact(P_obj arti)
 		    TO_CHAR);
 		act("$n's $p suddenly vanishes in a bright flash of light!", FALSE, owner, arti, 0,
 		    TO_ROOM);
-		do_shout(owner, "Ouch!", 0);
+		do_shout(owner, writable_arg("Ouch!"), 0);
 		break;
 	case LOC_WORN:
 		owner = cont->loc.wearing;
@@ -1648,7 +1648,7 @@ void poof_artifact(P_obj arti)
 		    TO_CHAR);
 		act("$n's $p suddenly vanishes in a bright flash of light!", FALSE, owner, arti, 0,
 		    TO_ROOM);
-		do_shout(owner, "Ouch!", 0);
+		do_shout(owner, writable_arg("Ouch!"), 0);
 		break;
 	case LOC_INSIDE:
 		logit(LOG_ARTIFACT, "poof_artifact: Bad loc arti(%d)-container(%d) inside nothing.",
@@ -2847,7 +2847,7 @@ void event_arti_hunt_sql(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data
 }
 
 // Searches through all pfiles with initial *arg for artis.
-void arti_hunt_sql(P_char ch, char *arg)
+void arti_hunt_sql(P_char ch, const char *arg)
 {
 	char buf[MAX_STRING_LENGTH];
 	char dname[256];
@@ -2881,14 +2881,12 @@ void arti_hunt_sql(P_char ch, char *arg)
 			ch);
 		return;
 	}
-	if (*arg >= 'A' && *arg <= 'Z')
-	{
-		*arg = *arg + 'a' - 'A';
-	}
+	// Save directories are lower case; don't lower-case the caller's buffer.
+	initial = (*arg >= 'A' && *arg <= 'Z') ? (char)(*arg + 'a' - 'A') : *arg;
 
 	// Read & loop through the directory..
 	// Open the directory!
-	snprintf(dname, 256, "%s/%c", SAVE_DIR, *arg);
+	snprintf(dname, 256, "%s/%c", SAVE_DIR, initial);
 	dir = opendir(dname);
 	if (!dir)
 	{

@@ -47,7 +47,10 @@ all_ok &= check("sparser.c checks undead_spell_slots under USES_SPELL_SLOTS",
 # 6. Verify mount.c triggers commune upon mounting
 mount = (SRC / "mount.c").read_text()
 all_ok &= check("mount.c triggers do_assimilate when Dragoon mounts",
-	"if (is_dragoon_mounted(ch))" in mount and "do_assimilate(ch, \"nl\", CMD_COMMUNE);" in mount)
+	# The literal is wrapped in writable_arg(): command handlers take a writable
+	# char * because their type is pinned by the command table.
+	"if (is_dragoon_mounted(ch))" in mount and
+	"do_assimilate(ch, writable_arg(\"nl\"), CMD_COMMUNE);" in mount)
 
 if all_ok:
 	print("\nAll Dragoon spellcasting contract checks passed.")

@@ -328,7 +328,7 @@ void do_mount(P_char ch, char *argument, int /*cmd*/)
 	if (is_dragoon_mounted(ch))
 	{
 		// restart commune
-		do_assimilate(ch, "nl", CMD_COMMUNE);
+		do_assimilate(ch, writable_arg("nl"), CMD_COMMUNE);
 	}
 }
 

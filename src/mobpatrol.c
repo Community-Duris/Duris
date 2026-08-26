@@ -154,7 +154,9 @@ void event_patrol_move(P_char ch, P_char vict, P_obj obj, void *data)
 	{
 		if (huntData->curActivity != PatrolData::PATROL_FIGHTING)
 		{
-			do_yell(ch, "Guards!  Come destroy this trash which threatens our road!",
+			do_yell(ch,
+				writable_arg(
+					"Guards!  Come destroy this trash which threatens our road!"),
 				CMD_SHOUT);
 			huntData->curActivity = PatrolData::PATROL_FIGHTING;
 		}

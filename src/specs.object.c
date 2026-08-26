@@ -8880,7 +8880,7 @@ int newbie_sign1(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 	{
 		if (!isname(arg, "sign"))
 			return FALSE;
-		do_look(ch, "sign", -4);
+		do_look(ch, writable_arg("sign"), -4);
 		spell_armor(50, ch, 0, 0, ch, 0);
 		return TRUE;
 	}
@@ -8910,7 +8910,7 @@ int newbie_sign2(P_obj /*obj*/, P_char ch, int cmd, char *arg)
 		if (!isname(arg, "sign"))
 			return FALSE;
 
-		do_look(ch, "sign", -4);
+		do_look(ch, writable_arg("sign"), -4);
 		spell_bless(50, ch, 0, 0, ch, 0);
 		return TRUE;
 	}
@@ -14264,7 +14264,7 @@ int mentality_mace(P_obj obj, P_char ch, int cmd, char *arg)
 				act("$p hums loudly, and shatters $n's psyche!", FALSE, ch, obj, 0,
 				    TO_ROOM);
 
-				spell_reflection(50, ch, "", 0, ch, 0);
+				spell_reflection(50, ch, writable_arg(""), 0, ch, 0);
 
 				obj->timer[0] = curr_time;
 

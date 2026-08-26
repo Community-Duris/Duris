@@ -2496,10 +2496,10 @@ void conjure_specialized(P_char ch, [[maybe_unused]] int level)
 	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 	int charisma = GET_C_CHA(ch) + (GET_LEVEL(ch) / 5);
 	int good_terrain = 0;
-	char *summons[] = { "&+CA HUGE gust of wind solidifies into&n $n.",
-			    "$n &+Bforms from a nearby lake in front of you.",
-			    "$n &+Rarrives in a HUGE burst of flames!",
-			    "$n &+yforms from a HUGE chunk of earth!" };
+	const char *summons[] = { "&+CA HUGE gust of wind solidifies into&n $n.",
+				  "$n &+Bforms from a nearby lake in front of you.",
+				  "$n &+Rarrives in a HUGE burst of flames!",
+				  "$n &+yforms from a HUGE chunk of earth!" };
 	static struct
 	{
 		int vnum;

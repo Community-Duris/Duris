@@ -1434,7 +1434,7 @@ bool auction_bid(P_char ch, char *args)
 				ch);
 			return FALSE;
 		}
-		auction_pickup(ch, "");
+		auction_pickup(ch, writable_arg(""));
 		logit(LOG_STATUS, "%s buys-it-now auction %d for %s", ch->player.name, auction_id,
 		      coin_stringv(to_pay));
 	}
@@ -1719,7 +1719,7 @@ bool auction_pickup(P_char ch, char *args)
 	return TRUE;
 }
 
-bool auction_help(P_char ch, char * /*arg*/)
+bool auction_help(P_char ch, const char * /*arg*/)
 {
 	send_to_char(
 		"&+WAuction syntax:\r\n- auction list [help]\r\n"

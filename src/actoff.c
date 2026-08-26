@@ -4268,33 +4268,33 @@ void do_dragon_breath(P_char ch, char *argument, int /*cmd*/)
 			{
 			case 1:
 			case 2:
-				spell_burning_hands(GET_LEVEL(mount), mount, "", 1 + is_priest,
-						    victim, 0);
+				spell_burning_hands(GET_LEVEL(mount), mount, writable_arg(""),
+						    1 + is_priest, victim, 0);
 				break;
 			case 3:
 			case 4:
-				spell_flameburst(GET_LEVEL(mount), mount, "", 1 + is_priest, victim,
-						 0);
+				spell_flameburst(GET_LEVEL(mount), mount, writable_arg(""),
+						 1 + is_priest, victim, 0);
 				break;
 			case 5:
 			case 6:
-				spell_molten_spray(GET_LEVEL(mount), mount, "", 1 + is_priest,
-						   victim, 0);
+				spell_molten_spray(GET_LEVEL(mount), mount, writable_arg(""),
+						   1 + is_priest, victim, 0);
 				break;
 			case 7:
 			case 8:
-				spell_fireball(GET_LEVEL(mount), mount, "", 1 + is_priest, victim,
-					       0);
+				spell_fireball(GET_LEVEL(mount), mount, writable_arg(""),
+					       1 + is_priest, victim, 0);
 				break;
 			case 9:
 			case 10:
-				spell_magma_burst(GET_LEVEL(mount), mount, "", 1 + is_priest,
-						  victim, 0);
+				spell_magma_burst(GET_LEVEL(mount), mount, writable_arg(""),
+						  1 + is_priest, victim, 0);
 				break;
 			case 11:
 			case 12:
-				spell_immolate(GET_LEVEL(mount), mount, "", 1 + is_priest, victim,
-					       0);
+				spell_immolate(GET_LEVEL(mount), mount, writable_arg(""),
+					       1 + is_priest, victim, 0);
 				break;
 			}
 

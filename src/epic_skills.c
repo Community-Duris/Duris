@@ -718,7 +718,7 @@ void do_summon_familiar(P_char ch, char *argument, int /*cmd*/)
 	{
 		int vnum;
 		int skill;
-		char *name;
+		const char *name;
 	} familiar_data;
 
 	familiar_data familiars[] = { { EPIC_CAT_VNUM, 5, "cat" },

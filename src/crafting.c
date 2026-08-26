@@ -557,7 +557,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 	if (is_abbrev(first, "list"))
 	{
 		free(recipes);
-		crafting_handle_craft_command(ch, "", cmd);
+		crafting_handle_craft_command(ch, writable_arg(""), cmd);
 		return;
 	}
 	choice2 = atoi(second);

@@ -1788,7 +1788,9 @@ void bite(P_char ch, P_char victim)
 					    FALSE, ch, 0, victim, TO_VICT);
 					act("&+LA glazed look sweeps over $N's face...&n", FALSE,
 					    ch, 0, victim, TO_NOTVICT);
-					do_say(victim, "I do your bidding, my master.", CMD_SAY);
+					do_say(victim,
+					       writable_arg("I do your bidding, my master."),
+					       CMD_SAY);
 					if (IS_FIGHTING(victim))
 						stop_fighting(victim);
 					if (IS_DESTROYING(victim))
@@ -1933,7 +1935,7 @@ void do_shift_astral(P_char ch, char * /*arg*/, int /*cmd*/)
 		return;
 	}
 
-	cast_plane_shift(GET_LEVEL(ch), ch, "astral", SPELL_TYPE_SPELL, NULL, NULL);
+	cast_plane_shift(GET_LEVEL(ch), ch, writable_arg("astral"), SPELL_TYPE_SPELL, NULL, NULL);
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
@@ -1959,7 +1961,7 @@ void do_shift_ethereal(P_char ch, char * /*arg*/, int /*cmd*/)
 		return;
 	}
 
-	cast_plane_shift(GET_LEVEL(ch), ch, "ethereal", SPELL_TYPE_SPELL, NULL, NULL);
+	cast_plane_shift(GET_LEVEL(ch), ch, writable_arg("ethereal"), SPELL_TYPE_SPELL, NULL, NULL);
 	CharWait(ch, PULSE_VIOLENCE);
 }
 
@@ -4797,49 +4799,49 @@ void do_squidrage(P_char ch, char * /*arg*/, int /*cmd*/)
 	affect_to_char(ch, &af);
 
 	// 1st
-	spell_adrenaline_control(level, ch, "", 0, ch, NULL);
-	spell_combat_mind(level, ch, "", 0, ch, NULL);
+	spell_adrenaline_control(level, ch, writable_arg(""), 0, ch, NULL);
+	spell_combat_mind(level, ch, writable_arg(""), 0, ch, NULL);
 	if (level < 42)
 	{
 		return;
 	}
 	// 2nd
-	spell_enhanced_agility(level, ch, "", 0, ch, NULL);
-	spell_enhanced_constitution(level, ch, "", 0, ch, NULL);
-	spell_enhanced_dexterity(level, ch, "", 0, ch, NULL);
-	spell_enhanced_strength(level, ch, "", 0, ch, NULL);
+	spell_enhanced_agility(level, ch, writable_arg(""), 0, ch, NULL);
+	spell_enhanced_constitution(level, ch, writable_arg(""), 0, ch, NULL);
+	spell_enhanced_dexterity(level, ch, writable_arg(""), 0, ch, NULL);
+	spell_enhanced_strength(level, ch, writable_arg(""), 0, ch, NULL);
 	if (level < 43)
 	{
 		return;
 	}
 	// 3rd
-	spell_aura_sight(level, ch, "", 0, ch, NULL);
+	spell_aura_sight(level, ch, writable_arg(""), 0, ch, NULL);
 	if (level < 44)
 	{
 		return;
 	}
 	// 4th
-	spell_energy_containment(level, ch, "", 0, ch, NULL);
+	spell_energy_containment(level, ch, writable_arg(""), 0, ch, NULL);
 	if (level < 45)
 	{
 		return;
 	}
 	// 5th
-	spell_flesh_armor(level, ch, "", 0, ch, NULL);
-	spell_fly(level, ch, "", 0, ch, NULL);
-	spell_intellect_fortress(level, ch, "", 0, ch, NULL);
+	spell_flesh_armor(level, ch, writable_arg(""), 0, ch, NULL);
+	spell_fly(level, ch, writable_arg(""), 0, ch, NULL);
+	spell_intellect_fortress(level, ch, writable_arg(""), 0, ch, NULL);
 	if (level < 46)
 	{
 		return;
 	}
 	// 6th
-	spell_enhance_armor(level, ch, "", 0, ch, NULL);
+	spell_enhance_armor(level, ch, writable_arg(""), 0, ch, NULL);
 	if (level < 48)
 	{
 		return;
 	}
 	// 8th
-	spell_displacement(level, ch, "", 0, ch, NULL);
+	spell_displacement(level, ch, writable_arg(""), 0, ch, NULL);
 }
 
 void update_regen_properties()

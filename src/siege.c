@@ -955,7 +955,9 @@ int warmaster(P_char ch, P_char pl, int cmd, char *arg)
 		rank = GET_SURNAME(pl);
 		if (rank == 0)
 		{
-			do_say(ch, "Get out of here whelp! Earn a title before you come to me",
+			do_say(ch,
+			       writable_arg(
+				       "Get out of here whelp! Earn a title before you come to me"),
 			       CMD_SAY);
 			return TRUE;
 		}

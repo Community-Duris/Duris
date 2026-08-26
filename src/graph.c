@@ -1582,7 +1582,8 @@ bool rmfr_valid_exit(int room, int dir, int radius, RMFR_FLAGS flags, RMFR_Q_TYP
 	return true;
 }
 
-void radiate_message_from_room(int room, char *message, int radius, RMFR_FLAGS flags, int pcbase)
+void radiate_message_from_room(int room, const char *message, int radius, RMFR_FLAGS flags,
+			       int pcbase)
 {
 	int curr_dir;
 	int src = room;

@@ -2524,7 +2524,8 @@ static int locker_grantcmd(P_char ch, char *arg)
 						       arg2);
 					storage_locker(ch->in_room, ch, (-81),
 						       NULL); // saves the locker
-					storage_locker(ch->in_room, ch, CMD_GRANT, "list");
+					storage_locker(ch->in_room, ch, CMD_GRANT,
+						       writable_arg("list"));
 				}
 				else
 				{
@@ -2562,7 +2563,7 @@ static int locker_grantcmd(P_char ch, char *arg)
 			{
 				send_to_char_f(ch, "'%s' lost access to your locker.\n", arg2);
 				storage_locker(ch->in_room, ch, (-81), NULL); // saves the locker
-				storage_locker(ch->in_room, ch, CMD_GRANT, "list");
+				storage_locker(ch->in_room, ch, CMD_GRANT, writable_arg("list"));
 			}
 			else
 			{
@@ -3040,7 +3041,7 @@ static int create_new_locker(P_char ch, P_char locker)
 			sql_get_or_create_public_chest(locker_id);
 		}
 
-		pLocker->MakeChests(ch, "none");
+		pLocker->MakeChests(ch, writable_arg("none"));
 		create_private_chest_objects(pLocker);
 
 		for (dir = 1; dir < NUM_EXITS; dir++)

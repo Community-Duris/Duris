@@ -182,7 +182,7 @@ char stat_to_ansi2(int);
 const char *stat_to_string_damage_pulse(float);
 const char *stat_to_string_spell_pulse(float);
 void ShowCharSpellBookSpells(P_char, P_obj, char *);
-void argument_split_2(char *, char *, char *);
+void argument_split_2(const char *, char *, char *);
 void do_attributes(P_char, char *, int);
 void do_consider(P_char, char *, int);
 void do_credits(P_char, char *, int);
@@ -224,7 +224,7 @@ void do_wizlist(P_char, char *, int);
 void do_world(P_char, char *, int);
 void list_char_to_char(P_char, P_char, int);
 void list_obj_to_char(P_obj, P_char, int, bool);
-void new_look(P_char, char *, int, int);
+void new_look(P_char, const char *, int, int);
 void show_exits_to_char(P_char, int, int);
 void list_scanned_chars(P_char, P_char, int, int);
 void do_scan(P_char, char *, int);
@@ -1333,7 +1333,7 @@ void clean_town_justice(void);
 /* languages.c */
 
 char *language_CRYPT(P_char, P_char, char *);
-char *language_known(P_char, P_char);
+const char *language_known(P_char, P_char);
 int can_understand_language(P_char speaker, P_char victim);
 
 /* limits.c */
@@ -1968,7 +1968,7 @@ void select_pwd(P_desc, char *);
 void select_race(P_desc, char *);
 void select_reroll(P_desc, char *);
 void select_sex(P_desc, char *);
-void select_terminal(P_desc, char *);
+void select_terminal(P_desc, const char *);
 void set_char_size(P_char);
 void set_char_height_weight(P_char);
 void show_avail_classes(P_desc);

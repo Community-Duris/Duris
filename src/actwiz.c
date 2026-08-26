@@ -4561,7 +4561,7 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 			// do restoreall here...
 			int old_level = GET_LEVEL(issuer);
 			issuer->player.level = MAXLVL;
-			do_restore(issuer, " all", CMD_RESTORE);
+			do_restore(issuer, writable_arg(" all"), CMD_RESTORE);
 			issuer->player.level = old_level;
 
 			// setting the reboot_time to 0 forces the reboot to occur next event

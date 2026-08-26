@@ -613,7 +613,7 @@ void do_quest(P_char ch, char *args, int /*cmd*/)
 			victim->only.pc->quest_receiver = ch->only.pc->quest_receiver;
 			victim->only.pc->quest_kill_how_many = ch->only.pc->quest_kill_how_many;
 			victim->only.pc->quest_kill_original = ch->only.pc->quest_kill_original;
-			do_quest(victim, "", 0);
+			do_quest(victim, writable_arg(""), 0);
 			gmcp_quest_status(victim);
 
 			return;

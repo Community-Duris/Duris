@@ -35,16 +35,18 @@ for c in $CATEGORIES; do
     ENABLE="$ENABLE -W$c"
 done
 
-# Drop -Werror so the inventory build links, and turn the legacy exceptions into
-# explicit enables.
+# Drop -Werror so the inventory build links even when a category is dirty, and
+# make sure all six categories are enabled regardless of what the Makefile
+# currently sets.  LEGACY_WARNING_EXCEPTIONS is emptied so an exception
+# reintroduced there cannot hide a diagnostic from this report.
 BASE_WARNINGS=$(sed -n '/^WARNING_FLAGS/,/[^\\]$/p' src/Makefile \
     | sed 's/^WARNING_FLAGS[[:space:]]*=//' | tr -d '\\' | tr '\n' ' ' \
     | sed 's/-Werror//')
 
 make -C src clean >/dev/null 2>&1
 make -C src -j"$JOBS" \
-    WARNING_FLAGS="$BASE_WARNINGS -fdiagnostics-column-unit=byte" \
-    LEGACY_WARNING_EXCEPTIONS="$ENABLE" \
+    WARNING_FLAGS="$BASE_WARNINGS $ENABLE -fdiagnostics-column-unit=byte" \
+    LEGACY_WARNING_EXCEPTIONS= \
     >"$RAW" 2>&1
 BUILD_STATUS=$?
 

@@ -1019,7 +1019,7 @@ P_char create_random_mob(int theme, int mob_level)
 			o = create_random_eq_new(random_mob, random_mob, -1, -1);
 			obj_to_char(o, random_mob);
 		}
-		do_wear(random_mob, "all", 0);
+		do_wear(random_mob, writable_arg("all"), 0);
 	}
 
 	if (theme == -1)

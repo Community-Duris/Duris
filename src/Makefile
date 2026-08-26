@@ -12,16 +12,26 @@ WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 	-Wnull-dereference -Wduplicated-cond -Wduplicated-branches -Wlogical-op \
 	-Wimplicit-fallthrough=5 -Walloca -Wvla -Wdate-time -Wundef \
 	-Wshadow=compatible-local -Wcast-align=strict -Wstringop-overflow=4 \
-	-Warray-bounds=2 -Wstrict-overflow=2 -Wuse-after-free=3
+	-Warray-bounds=2 -Wstrict-overflow=2 -Wuse-after-free=3 \
+	-Wwrite-strings -Wunused-parameter -Wunused-variable \
+	-Wunused-but-set-variable -Wmissing-field-initializers -Wunused-function
 
-# Remaining legacy exception: string literals are still assigned to writable
-# char * across the message, table, and lookup APIs.
-LEGACY_WARNING_EXCEPTIONS = -Wno-write-strings
+# No legacy warning exceptions remain.  If a diagnostic in one of the six
+# categories above reappears, resolve it rather than reintroducing a -Wno- flag:
+# see docs/ongoing-projects/compiler-legacy-exceptions-cleanup-plan.md.
 
-CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS) $(LEGACY_WARNING_EXCEPTIONS)
+# EXTRA_CFLAGS / EXTRA_LDFLAGS are appended last so a wrapper such as
+# scripts/build-san.sh can add instrumentation without discarding the warning
+# profile or the feature defines below.
+EXTRA_CFLAGS =
+EXTRA_LDFLAGS =
+
+CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS)
 #CFLAGS += -D__NO_MYSQL__
 CFLAGS += -DTEST_MUD
 CFLAGS += -D__NO_TESTS__    # exclude test suite from production build
+CFLAGS += $(EXTRA_CFLAGS)
+LDFLAGS += $(EXTRA_LDFLAGS)
 
 #CFLAGS += -DCTF_MUD=1
 

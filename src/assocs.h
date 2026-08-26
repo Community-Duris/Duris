@@ -300,7 +300,8 @@ class Guild
     protected:
 	static bool load_guild(int guild_num);
 	void remove_member_from_list(P_char ch);
-	void write_transaction_to_ledger(char *name, char *trans_type, char *coin_str);
+	void write_transaction_to_ledger(const char *name, const char *trans_type,
+					 const char *coin_str);
 	void title_trim(char *raw_title, char *good_title);
 	int max_assoc_size();
 	void default_title(P_char ch);
@@ -326,7 +327,7 @@ void prestige_update();
 void show_prestige_list(P_char ch);
 void show_guild_frags(P_char ch);
 P_Guild get_guild_from_id(int id_num);
-bool found_asc(P_char god, P_char leader, char *bits, char *asc_name);
+bool found_asc(P_char god, P_char leader, const char *bits, char *asc_name);
 
 void do_supervise(P_char, char *, int);
 void do_asclist(P_char, char *, int);

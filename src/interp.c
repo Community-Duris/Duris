@@ -3427,7 +3427,7 @@ void check_aggro_from_command(P_char exec_char)
 		// Stand if need be.
 		if (GET_POS(mob) < POS_STANDING)
 		{
-			do_stand(mob, "", CMD_STAND);
+			do_stand(mob, writable_arg(""), CMD_STAND);
 		}
 
 		// If the mob is too hurt to attack.
@@ -3440,7 +3440,7 @@ void check_aggro_from_command(P_char exec_char)
 		if (exec_master && CAN_SEE(mob, exec_master) && aggressive_to(mob, exec_master) &&
 		    (number(1, 100) < GET_C_INT(mob) / 2))
 		{
-			do_action(mob, "", CMD_SNEER);
+			do_action(mob, writable_arg(""), CMD_SNEER);
 			MobStartFight(mob, exec_master);
 			// Just return if we kill the master, no need to pound on the charmie.
 			// If we don't return, we need to set master to NULL.

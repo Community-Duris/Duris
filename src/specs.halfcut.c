@@ -52,8 +52,9 @@ int halfcut_defenders(P_char ch, P_char player, int /*cmd*/, char * /*arg*/)
 	/* get here only if not fighting, and pc is 44+ level, attack them */
 
 	do_consider(ch, GET_NAME(player), CMD_CONSIDER);
-	do_say(ch, "Hah!  You think you can challenge me for the treasures here?!?", 0);
-	do_say(ch, "&+WHave at thee!&N", 0);
+	do_say(ch, writable_arg("Hah!  You think you can challenge me for the treasures here?!?"),
+	       0);
+	do_say(ch, writable_arg("&+WHave at thee!&N"), 0);
 	MobStartFight(ch, player);
 
 	return TRUE;

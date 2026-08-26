@@ -720,7 +720,7 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str,
 
 	// Flee if no help can get to ch.
 	if (has_help && !found_help)
-		do_flee(ch, "", CMD_FLEE);
+		do_flee(ch, writable_arg(""), CMD_FLEE);
 
 	/*
 	 * okay... last thing to do is add this "tank" to the mobs justice

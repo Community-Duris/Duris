@@ -1805,23 +1805,26 @@ void show_world_events(P_char ch, const char *arg)
 			{
 				if (strcmp(get_function_name((void *)ev->func), arg))
 					continue;
+				char line[128];
+
 				count++;
-				if ((strlen(buf) + 80) < sizeof(buf))
-				{
-					snprintf(
-						buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
-						//                    "    %-5d | %-5d | %-12.12s | %-12.12s | %-8d | 0x%08.8x\n",
-						"    %-5d | %-5d | %-12.12s | %-12.12s | %-8d | %p\n",
-						ev->element, ev->timer,
-						ev->ch ? GET_NAME(ev->ch) : "   none",
-						ev->victim ? GET_NAME(ev->victim) : "   none",
-						ev->obj ? OBJ_VNUM(ev->obj) : 0, ev->data);
-				}
-				else
+				/* Format one row into its own bounded buffer and
+				   append it, rather than writing at buf + strlen(buf)
+				   with a size the compiler cannot narrow. */
+				checked_snprintf(
+					line, sizeof line,
+					"    %-5d | %-5d | %-12.12s | %-12.12s | %-8d | %p\n",
+					ev->element, ev->timer,
+					ev->ch ? GET_NAME(ev->ch) : "   none",
+					ev->victim ? GET_NAME(ev->victim) : "   none",
+					ev->obj ? OBJ_VNUM(ev->obj) : 0, ev->data);
+
+				if (strlen(buf) + sizeof line >= sizeof buf)
 				{
 					i = PULSES_IN_TICK;
 					break;
 				}
+				strlcat(buf, line, sizeof buf);
 			}
 		}
 	if (!count)

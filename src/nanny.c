@@ -2752,7 +2752,7 @@ void enter_game(P_desc d)
 		guild->update_member(ch);
 		if (IS_MEMBER(GET_A_BITS(ch)))
 		{
-			do_gmotd(ch, "", CMD_GMOTD);
+			do_gmotd(ch, writable_arg(""), CMD_GMOTD);
 		}
 	}
 
@@ -3080,11 +3080,11 @@ void enter_game(P_desc d)
 
 	if (has_innate(ch, INNATE_SUMMON_BOOK))
 	{
-		do_summon_book(ch, "", 0);
+		do_summon_book(ch, writable_arg(""), 0);
 	}
 }
 
-void select_terminal(P_desc d, char *arg)
+void select_terminal(P_desc d, const char *arg)
 {
 	int term;
 	int temp = 1;
@@ -5982,7 +5982,7 @@ void nanny(P_desc d, char *arg)
 		/* Prepare for the mighty disclaimer */
 	case CON_GET_RETURN:
 
-		do_help(d->character, "rules", -4);
+		do_help(d->character, writable_arg("rules"), -4);
 		SEND_TO_Q("\r\n", d);
 
 		SEND_TO_Q(

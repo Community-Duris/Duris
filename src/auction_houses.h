@@ -31,7 +31,7 @@ bool auction_list(P_char ch, char *arg);
 bool auction_info(P_char ch, char *arg);
 bool auction_bid(P_char ch, char *arg);
 bool auction_pickup(P_char ch, char *arg);
-bool auction_help(P_char ch, char *arg);
+bool auction_help(P_char ch, const char *arg);
 bool auction_remove(P_char ch, char *arg);
 bool auction_resort(P_char ch, char *arg);
 

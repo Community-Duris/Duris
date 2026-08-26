@@ -591,7 +591,7 @@ const char *load_to_string(P_char ch)
  * Procedures related to 'look'
  */
 
-void argument_split_2(char *argument, char *first_arg, char *second_arg)
+void argument_split_2(const char *argument, char *first_arg, char *second_arg)
 {
 	int look_at, begin;
 
@@ -2428,7 +2428,7 @@ void display_room_auras(P_char ch, int room_no)
 
 // Where's the desc for this AWFUL function?!?
 // new_look(ch, 0, CMD_LOOKOUT, ship->location) == 'look out' while on ship.
-void new_look(P_char ch, char *argument, int cmd, int room_no)
+void new_look(P_char ch, const char *argument, int cmd, int room_no)
 {
 	char buffer[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH], *short_desc;
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
@@ -8176,7 +8176,7 @@ void do_wizlist(P_char ch, char * /*argument*/, int /*cmd*/)
 
 void do_rules(P_char ch, char * /*argument*/, int /*cmd*/)
 {
-	do_help(ch, "rules", -4);
+	do_help(ch, writable_arg("rules"), -4);
 	//  page_string(ch->desc, rules, 0);
 }
 

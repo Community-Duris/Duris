@@ -3585,7 +3585,7 @@ void do_lotus(P_char ch, char * /*argument*/, int /*cmd*/)
 	}
 
 	if (GET_POS(ch) != POS_SITTING)
-		do_sit(ch, "", CMD_LOTUS);
+		do_sit(ch, writable_arg(""), CMD_LOTUS);
 
 	send_to_char("You bend your legs with your hands on your knees.\n\r", ch);
 	act("$n bends his legs and rests his hands on his knees.", FALSE, ch, 0, 0, TO_ROOM);

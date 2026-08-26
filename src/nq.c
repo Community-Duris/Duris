@@ -1547,7 +1547,7 @@ void do_quest2(P_char ch, char *args, int /*cmd*/)
 	int i;
 	struct nq_interface_mapping
 	{
-		char *command;
+		const char *command;
 		void (*immo_func)(P_char, char *);
 		void (*mortal_func)(P_char, char *);
 	} interface_map[] = { { "list", nq_interface_immo_list, nq_interface_mortal_list },
