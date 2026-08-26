@@ -31,7 +31,7 @@ remains materially ambiguous after tracing it.
 Enforce these invariants:
 
 - Read the applicable `AGENTS.md` first. Recheck it if work crosses into a nested scope.
-- Inspect only `APP_ENV` in `lib/.env` without printing the file or any credentials. Stop on a
+- Inspect only `APP_ENV` in `lib/.env` or `.env` without printing the file or any credentials. Stop on a
   production environment; do not modify code or create refs or worktrees there.
 - Never delete a branch or worktree, rebase the target, rewrite history, force-update a ref,
   bypass hooks, run `git reset --hard` or `git clean -fd`, or use force-push variants. Ordinary
@@ -42,7 +42,7 @@ Enforce these invariants:
 - Modify only conflicts and files directly required for semantic integration, compilation,
   tests, documentation, or help. Do not hide failures with stubs, TODOs, or disabled tests.
 - Never modify `src/campaign.h`, `src/mud_options.h`, or `src/vnums.h`; use the corresponding
-  example header when a template change is genuinely required. Never modify `lib/.env` or
+  example header when a template change is genuinely required. Never modify `lib/.env` or `.env` or
   `lib/mysql_config` without explicit permission; prefer their example files.
 - Do not hand-merge generated output. Resolve its inputs, determine the repository's generator,
   and regenerate. `unittests/CuTest/AllTests.c` is generated from `Test*` functions.
