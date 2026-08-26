@@ -88,7 +88,9 @@ cp .env.example .env
 
 Edit `.env` and set `DB_HOST`, optional `DB_PORT`, `DB_USER`, `DB_PASSWD`, and
 `DB_NAME`. The server loads this file at boot, and the migration scripts use
-the same values. `.env` is ignored by Git and must never be committed.
+the same values. `.env` is ignored by Git and must never be committed. See the
+[configuration reference](docs/CONFIGURATION.md) for precedence, Redis
+recovery, proxy handling, and diagnostic switches.
 
 Set `REDIS=TRUE` with `REDIS_HOST` and `REDIS_PORT` to enable dirty-save
 buffering. If a DurisWeb backend will authenticate through WebSocket or GMCP,
@@ -148,6 +150,27 @@ For a foreground development session on port 4000, use this instead of
 ```bash
 ./scripts/cycle_mud.sh --dev
 ```
+
+## Troubleshooting
+
+If the server stops during boot, inspect `logs/log/status` and
+`logs/duris-console.log`. The most common checks are:
+
+- **MySQL initialization failed:** confirm `.env` values, that the selected
+  database exists, and that the account can connect on `DB_HOST:DB_PORT`. The
+  server logs the effective database target during boot and aborts when the
+  required schema is missing.
+- **Redis connection failed:** Redis is optional; set `REDIS=FALSE` or remove
+  the setting to run without dirty-save buffering. If Redis is required, check
+  `REDIS_HOST`, `REDIS_PORT`, and that the service is reachable.
+- **Missing world files or tools:** run `make build-area-tools` followed by
+  `make world`, then restart. Combined `areas/world.*` files are generated
+  outputs and should not be edited by hand.
+- **Port already in use:** choose a different development port, or stop the
+  existing local instance. Keep development on a non-`7777` port.
+
+Operational log locations and restart behavior are documented in the
+[runbook](docs/RUNBOOK.md).
 
 ## Connect
 
@@ -216,6 +239,7 @@ archives.
 | [Codebase](docs/CODEBASE.md) | Module-by-module map of the server sources. |
 | [Building](docs/BUILDING.md) | Build flags, areas, sanitizers, verification. |
 | [Database](docs/DATABASE.md) | Connections, async saves, schema, migrations. |
+| [Configuration](docs/CONFIGURATION.md) | Environment variables, Redis, networking, and diagnostics. |
 | [Runbook](docs/RUNBOOK.md) | Restarts, logs, backups, recovery, operations. |
 | [Testing](docs/TESTING.md) | Test layout, commands, and conventions. |
 | [Formatting](docs/formatting.md) | Style, changed-line formatting, and editors. |

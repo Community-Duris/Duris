@@ -3,27 +3,36 @@
 DurisMUD stores all durable state in MySQL/MariaDB. This document covers how
 the server talks to the database, what tables matter, and how schema changes
 are managed. Setup steps (creating users/databases) are in
-[README.md](../README.md#database-setup). An entity-relationship diagram of
-the core tables is in
+[README.md](../README.md#3-create-a-development-database). An entity-relationship
+diagram of the core tables is in
 [diagrams/duris-database-model.html](diagrams/duris-database-model.html);
 column details there are verified against
 `migrations/bootstrap_multithread_safe.sql`.
 
 ## Connections and selection
 
-Credentials are compile-time constants in `src/sql.h` (`DB_HOST`, `DB_USER`,
-`DB_PASSWD`, `DB_NAME`) under `#ifdef TEST_MUD`. Changing them requires a
-rebuild.
+See [CONFIGURATION.md](CONFIGURATION.md) for the complete environment-variable
+reference. In particular, `DB_NAME` is the requested name, while the runtime
+port safety rule can redirect an implicit production name to `duris_dev` on a
+non-`7777` port.
 
-The listen port selects the database at runtime (`initialize_mysql()` in
-`src/sql.c`):
+The server reads `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWD`, and `DB_NAME`
+from the process environment after loading `.env`; `src/sql.h` supplies
+compiled fallback defaults. `TEST_MUD` changes the fallback database from
+`duris` to `duris_dev`, but it does not override explicit environment values.
+See [CONFIGURATION.md](CONFIGURATION.md) for parsing and precedence details.
 
-| Port | Database |
+The listen port applies a production safety redirect in
+`sql_persistence_db_name()` (`src/sql.c`):
+
+| Condition | Effective database |
 |------|----------|
-| 7777 (production default) | `duris` |
-| any other port | `duris_dev` |
+| Port `7777` | Requested `DB_NAME` (normally `duris`) |
+| Any other port, requested name `duris` or `duris_prod` | `duris_dev` |
+| Any other port, another requested name | Requested `DB_NAME` |
 
-Never point a test run at production: use a non-7777 port for all development.
+Never point a test run at production: use a non-7777 port, a development
+credential, and a disposable database for all development.
 
 Connection architecture:
 
@@ -112,7 +121,9 @@ Rules of thumb (enforced by repo conventions):
 
 ## Operational notes
 
-- Connection problems at boot print `MySQL initialization failed! Dying!` —
-  troubleshooting steps in [README.md](../README.md#troubleshooting).
+- Connection problems at boot print `MySQL initialization failed!` —
+  troubleshooting steps are in [README.md](../README.md#troubleshooting), and
+  the effective database host, port, and selected database are logged before
+  the connection is opened.
 - The cycle script records boot/shutdown timestamps and stop reasons into the
   database for reboot tracking ([RUNBOOK.md](RUNBOOK.md)).

@@ -2,7 +2,7 @@
 
 Documentation for the DurisMUD server. Setup instructions (installing dependencies,
 creating databases, first boot) live in the root [README.md](../README.md); this
-directory covers architecture, operations, and reference material.
+directory covers architecture, operations, configuration, and reference material.
 
 ## Guides
 
@@ -12,6 +12,7 @@ directory covers architecture, operations, and reference material.
 | [CODEBASE.md](CODEBASE.md) | Module map of `src/` — where to find what, and the key files for each subsystem. |
 | [BUILDING.md](BUILDING.md) | Build system details: flags, targets, area-file generation, sanitizer builds. |
 | [DATABASE.md](DATABASE.md) | Database layer: connection handling, async persistence, schema, migrations. |
+| [CONFIGURATION.md](CONFIGURATION.md) | Runtime environment variables, Redis, listeners, proxy handling, and diagnostics. |
 | [RUNBOOK.md](RUNBOOK.md) | Day-to-day operations: starting/stopping, restart codes, logs, backups, crash recovery. |
 | [TESTING.md](TESTING.md) | The regression/source-contract test harness in `tests/async/` and how to run it. |
 | [valgrind.md](valgrind.md) | Running the server under Valgrind: `scripts/valgrind_mud.sh`, suppressions, what to expect. |

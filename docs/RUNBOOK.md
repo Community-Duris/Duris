@@ -48,6 +48,29 @@ Graceful shutdown from inside the game: immortal `shutdown` command
 and then removes. Copyover (`copyover` command) execs a fresh binary while
 keeping player connections alive via `copyover.dat`.
 
+### Stopping a local instance
+
+Use the same mode that started the instance:
+
+```bash
+# systemd user service, when installed
+systemctl --user stop duris-mud.service
+
+# foreground cycle_mud.sh session
+Ctrl-C
+```
+
+For the fallback background mode started by `start_mud.sh`, use the in-game
+immortal `shutdown` command when possible. The fallback does not create a PID
+file; do not guess with a broad `kill` or `pkill` command. Check
+`logs/duris-console.log`, the listener port, and the process command line before
+stopping a specific local process. A normal shutdown lets the supervisor write
+its reboot record and rotate logs.
+
+Do not use the `pwipe` shutdown path for ordinary restarts: exit code `55`
+causes `cycle_mud.sh` to run the filesystem player wipe artifact after the
+server exits.
+
 ## Logs
 
 All under `logs/`; rotated per-run into `logs/old-logs/<timestamp>/`.
@@ -83,14 +106,22 @@ crash, and verify player integrity before reopening.
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/backup_pfiles.sh` | Snapshot player files (run automatically per cycle iteration). |
-| `scripts/delete_corpses.sh` | Purge stale corpse files. |
-| `scripts/clear-redis.sh` | Drop Redis dirty-save/world-state keys (use on a stopped server). |
-| `scripts/migrate_players_to_accounts.sh`, `scripts/convert_all_pfiles.sh` | One-shot legacy data conversions. |
+| `scripts/backup_pfiles.sh` | Snapshot database or legacy player files (run automatically per cycle iteration; see the mode note below). |
+| `scripts/delete_corpses.sh` | Inspect and, after confirmation, purge corpse rows and Redis corpse state. |
+| `scripts/clear-redis.sh` | Drop the entire selected Redis database; use only on a stopped, dedicated development Redis instance. |
+| `scripts/import_help_to_prod.sh` | Import help sources to MySQL; use `--dry-run` first and treat `--clean` as destructive. |
+| `scripts/migrate_players_to_accounts.sh`, `scripts/convert_all_pfiles.sh` | One-shot legacy data conversions; back up and review their assumptions before use. |
 | `src-migrate/*` | Offline pfile/schema conversion binaries. |
 
 Schema operations follow the safety rules in [DATABASE.md](DATABASE.md):
 back up, clone, validate replay on the clone — never against live data.
+
+`backup_pfiles.sh` chooses its database-dump branch only when `REDIS` is the
+exact lowercase value `true` or the value `1`; the server itself accepts
+case-insensitive `TRUE`. If the automatic backup must use `mysqldump`, set
+`REDIS=true` in the environment used by the script and verify the resulting
+`db/Backup/` file. Otherwise it falls back to the legacy `Players/Backup/`
+layout.
 
 ## Runtime tuning
 
