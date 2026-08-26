@@ -23,6 +23,12 @@
       "description": "Remove confirmed persistence correctness defects, immediate simulation-thread lag hazards, and fail-open security behavior before the revisioned save pipeline.",
       "status": "not_started",
       "session_count": 10
+    },
+    "3": {
+      "name": "Load Path, Schema, and Retention",
+      "description": "Make login and read paths bounded and consistent, enforce schema and data lifecycle contracts, reconcile documentation, and prove integrated 200-player readiness.",
+      "status": "not_started",
+      "session_count": 14
     }
   },
   "completed_sessions": [],

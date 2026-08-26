@@ -231,7 +231,7 @@ boundaries.
 | 00 | Correctness and Immediate Lag Removal | 10 | Not Started |
 | 01 | Replace Forked Full Saves | 8 | Not Started |
 | 02 | Transactional Gameplay Domains | 12 | Not Started |
-| 03 | Load Path, Schema, and Retention | TBD | Not Started |
+| 03 | Load Path, Schema, and Retention | 14 | Not Started |
 
 ## Phase 00: Correctness and Immediate Lag Removal
 
@@ -342,6 +342,52 @@ executable session.
 
 Detailed scopes and verification boundaries are tracked in the Phase 02 PRD and its
 `session_NN_name.md` stubs under `.spec_system/PRD/phase_02/`.
+
+## Phase 03: Load Path, Schema, and Retention
+
+Phase 03 is planned in advance while Phase 00 remains active and Phases 01 and 02 remain
+future work. It does not mark any earlier phase complete or change the current
+executable session. This is the final phase currently defined by the remediation plan.
+
+### Objectives
+
+1. Load players and pets from one bounded consistent read transaction, batch item
+   ownership and metadata, and assemble object graphs in O(N) time without silent
+   truncation or partial publication.
+2. Replace recent-PvP-death and epic-task read fan-out with set-based or in-memory paths
+   that preserve gameplay semantics.
+3. Measure final query shapes and write costs on a representative development clone,
+   then apply only evidence-backed indexes and sargable query changes.
+4. Stagger and bound scheduled maintenance with typed jobs, row/time budgets,
+   continuation cursors, and no simulation-thread external I/O.
+5. Define and enforce approved retention, archival, export, erasure, and restore-
+   tombstone rules for every database and non-database record class.
+6. Establish an immutable checksummed migration ledger and verify the complete schema,
+   connection, and versioned lookup contract before boot writes data.
+7. Reconcile README and operator/developer documentation to the implemented system and
+   pass the integrated eight-profile 25-to-200-client workload and fault matrix.
+
+### Sessions
+
+| Session | Name | Status |
+|---------|------|--------|
+| 01 | Consistent Player Load Transaction | Not Started |
+| 02 | Batched Item Ownership and Linear Assembly | Not Started |
+| 03 | Batched Pet Graph Hydration | Not Started |
+| 04 | Set-Based PvP and Epic Task Reads | Not Started |
+| 05 | Production-Clone Query Plan and Index Gate | Not Started |
+| 06 | Bounded Maintenance Scheduler | Not Started |
+| 07 | Data Processing and Retention Contract | Not Started |
+| 08 | Retention and Archival Execution | Not Started |
+| 09 | Authenticated Personal Data Export | Not Started |
+| 10 | Account Erasure and Backup Propagation | Not Started |
+| 11 | Immutable Migration Ledger and Runner | Not Started |
+| 12 | Boot Schema and Lookup Compatibility | Not Started |
+| 13 | Documentation and Operator Contract | Not Started |
+| 14 | Final 200-Player and Compliance Gate | Not Started |
+
+Detailed scopes and verification boundaries are tracked in the Phase 03 PRD and its
+`session_NN_name.md` stubs under `.spec_system/PRD/phase_03/`.
 
 ## Technical Stack
 
