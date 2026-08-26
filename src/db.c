@@ -4234,22 +4234,20 @@ char *file_to_string(const char *name)
 		}
 	}
 
-	do
+	/* End of file is this loop's exit condition, so a NULL return from fgets()
+	   is expected and must not be treated as a missing required line. */
+	while (fgets(tmp, 255, fl))
 	{
-		REQUIRED_FGETS(tmp, 255, fl);
-
-		if (!feof(fl))
+		if (strlen(Gbuf1) + strlen(tmp) + 2 > MAX_STRING_LENGTH * 20)
 		{
-			if (strlen(Gbuf1) + strlen(tmp) + 2 > MAX_STRING_LENGTH * 20)
-			{
-				logit(LOG_FILE, "file_to_string(): file (%s) too long.", name);
-				return (NULL);
-			}
-			strcat(Gbuf1, tmp);
-			*(Gbuf1 + strlen(Gbuf1) + 1) = '\0';
-			*(Gbuf1 + strlen(Gbuf1)) = '\r';
+			logit(LOG_FILE, "file_to_string(): file (%s) too long.", name);
+			fclose(fl);
+			return (NULL);
 		}
-	} while (!feof(fl));
+		strcat(Gbuf1, tmp);
+		*(Gbuf1 + strlen(Gbuf1) + 1) = '\0';
+		*(Gbuf1 + strlen(Gbuf1)) = '\r';
+	}
 
 	fclose(fl);
 	CREATE(ptr, char, strlen(Gbuf1) + 1, MEM_TAG_STRING);
