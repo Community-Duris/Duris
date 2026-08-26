@@ -89,7 +89,6 @@ int vecna_bubble_room(int room, P_char ch, int cmd, char *arg)
 int vecna_black_mass(P_char ch, P_char tch, int cmd, char *arg)
 {
 	P_char target, next_target;
-	char buf[500];
 
 	if (cmd == CMD_SET_PERIODIC || cmd == CMD_PERIODIC)
 		return FALSE;
@@ -451,7 +450,6 @@ int vecna_stonemist(P_obj obj, P_char ch, int cmd, char *arg)
 
 int vecna_mob_rebirth(P_char ch, P_char tch, int cmd, char *arg)
 {
-	int helpers[] = { 77713 };
 	P_char mob;
 
 	if (cmd == CMD_SET_PERIODIC || cmd == CMD_PERIODIC || !ch)
@@ -603,7 +601,7 @@ int vecna_staffoaken(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char victim;
 	P_obj obj_lose, obj_next;
-	int dam, pos, curr_time;
+	int dam, curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{

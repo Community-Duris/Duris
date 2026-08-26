@@ -445,11 +445,10 @@ void add_track(P_char ch, int dir)
 {
 	P_char mount;
 	P_obj track, obj, next_obj;
-	int counter, found, dura, zon;
+	int counter, dura;
 	char buf1[MAX_STRING_LENGTH];
 	//  char    buf2[MAX_STRING_LENGTH];
 	char buf3[MAX_STRING_LENGTH];
-	struct extra_descr_data *ed;
 
 	// Gods don't leave tracks.
 	if (IS_TRUSTED(ch))
@@ -684,7 +683,7 @@ char *sickprocess(const char *arg)
 void show_tracks(P_char ch, int room)
 {
 	P_obj obj, next_obj;
-	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
+	char Gbuf3[MAX_STRING_LENGTH];
 	int chance, percent, skill, race;
 	bool outside, forest_check;
 

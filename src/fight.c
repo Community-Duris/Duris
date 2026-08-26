@@ -505,7 +505,6 @@ int vamp(P_char ch, double fhits, double fcap)
 {
 	struct affected_type *af;
 	static char buf[100];
-	P_char tch;
 	int hits = (int)fhits, cap = (int)fcap, blocked;
 
 	if (!IS_ALIVE(ch))
@@ -582,9 +581,6 @@ int vamp(P_char ch, double fhits, double fcap)
 
 void heal(P_char ch, P_char healer, int hits, int cap)
 {
-	P_char victim;
-	int exp;
-
 	if (!IS_ALIVE(ch))
 		return;
 
@@ -1404,10 +1400,9 @@ bool AdjacentInRoom(P_char ch, P_char ch2)
 
 P_obj make_corpse(P_char ch, int loss)
 {
-	P_obj corpse, o, money;
+	P_obj corpse, o;
 	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-	int i, e_time;
-	int random_zone_map_room = 0;
+	int e_time;
 
 	corpse = read_object(2, VIRTUAL);
 	if (!corpse)
@@ -1728,8 +1723,7 @@ void make_bloodstain(P_char ch)
  */
 void change_alignment(P_char ch, P_char victim)
 {
-	int i, a_al, v_al, change = 0;
-	P_obj obj;
+	int a_al, v_al, change = 0;
 
 	if (CHAR_IN_ARENA(ch) || CHAR_IN_ARENA(victim) || IS_NPC(ch))
 		return;
@@ -2256,12 +2250,12 @@ bool in_their_zone(P_char mob)
 void kill_gain(P_char ch, P_char victim);
 void die(P_char ch, P_char killer)
 {
-	char buf[MAX_STRING_LENGTH], abuf[10], buf2[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	P_char tmp_ch;
 	P_obj tempobj;
 	struct affected_type *af, *next_af;
 	P_obj corpse = NULL;
-	int loss = 0, diff, x, i, j;
+	int loss = 0, i;
 
 	if (!ch)
 	{
@@ -2275,8 +2269,6 @@ void die(P_char ch, P_char killer)
 	// Upon death, we want to kill followers.
 	if (IS_PC(ch) && ch->followers)
 		do_dismiss(ch, NULL, CMD_DEATH);
-
-	int oldlev = GET_LEVEL(ch);
 
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	if (affected_by_spell(ch, TAG_CTF))
@@ -2857,7 +2849,6 @@ void die(P_char ch, P_char killer)
 	}
 	else
 	{
-		int arena_index, arena_room;
 		char strn[MAX_STRING_LENGTH];
 
 		if (ch == killer)
@@ -2987,7 +2978,6 @@ void kill_gain(P_char ch, P_char victim)
 	struct group_list *gl;
 	int group_size = 0;
 	int highest_level = 0;
-	struct affected_type *afp;
 
 	if (IS_PC(victim))
 		if ((GOOD_RACE(ch) && GOOD_RACE(victim)) || (EVIL_RACE(ch) && EVIL_RACE(victim)))
@@ -3128,7 +3118,6 @@ void kill_gain(P_char ch, P_char victim)
 					send_to_char(
 						"&+cAs your body absorbs the &+Cexperience&+c, you seem to feel a bit more epic!\r\n",
 						gl->ch);
-					P_char recipient = gl->ch;
 					gain_epic(gl->ch, EPIC_RANDOMMOB, 0, 1);
 				}
 			}
@@ -3161,9 +3150,8 @@ void kill_gain(P_char ch, P_char victim)
 void dam_message(double fdam, P_char ch, P_char victim, struct damage_messages *messages)
 {
 	int dam = (int)fdam;
-	P_obj wpn;
-	char *buf, buf_char[160], buf_vict[160], buf_notvict[160];
-	int w_percent, h_percent, max_dam = 0, w_loop, h_loop, dam2;
+	char buf_char[160], buf_vict[160], buf_notvict[160];
+	int w_percent, h_percent, max_dam = 0, w_loop, h_loop;
 	int msg_flags = messages->type;
 	static int dam_ref[] = { 0, 2, 7, 10, 15, 25, 40, 55, 70, 85, 9999 };
 	const char *weapon_damage[] = {
@@ -3735,7 +3723,7 @@ bool can_hit_target(P_char ch, P_char vict)
 bool damage(P_char ch, P_char victim, double dam, int attacktype)
 {
 	struct damage_messages tmsg;
-	int spelltype, type, i, flags, circle;
+	int type, flags, circle;
 
 	tmsg = {};
 
@@ -3812,10 +3800,8 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 	struct damage_messages dummy_messages;
 	struct affected_type *af;
 	struct proc_data data;
-	P_char vict_group_member, next, eth_ch;
-	P_obj vict_weapon, item;
-	int result, circle, awe, i;
-	double levelmod = 1.0;
+	P_obj item;
+	int result, circle;
 
 	// Just making sure.
 	if (!ch || !victim)
@@ -4662,9 +4648,8 @@ int melee_damage(P_char ch, P_char victim, double dam, int flags, struct damage_
 {
 	struct damage_messages dummy_messages;
 	unsigned int skin;
-	int vamp_dam, i, result, shld_result, ac;
+	int result, shld_result, ac;
 	float reduction;
-	char buffer[MAX_STRING_LENGTH];
 	bool dragonfist;
 
 	// float    f_cur_hit, f_max_hit, f_skill = 0;  <-- ill use those for max_str later
@@ -5311,13 +5296,10 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 	       int *damAccumulator)
 {
 	struct affected_type *af, *next_af;
-	struct group_list *gl;
 	char buffer[MAX_STRING_LENGTH];
 	P_char tch, orig;
-	int i, nr, max_hit, diff, room, act_flag, soulWasTrapped = 0;
+	int max_hit, room, act_flag;
 	unsigned int new_stat;
-	int group_size = num_group_members_in_room(victim);
-	float mod, hpperc, zerkmod;
 
 	if (!ch)
 	{
@@ -5985,7 +5967,6 @@ int calculate_thac_zero(P_char ch, int skill)
 int chance_to_hit(P_char ch, P_char victim, int skill, P_obj weapon)
 {
 	int to_hit, victim_ac;
-	struct affected_type *af;
 
 	if (!IS_ALIVE(ch))
 		return 0;
@@ -6479,18 +6460,16 @@ int required_weapon_skill(P_obj wpn)
 bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 {
 	P_char tch, mount, gvict;
-	int msg, victim_ac, to_hit, diceroll, wpn_skill, sic, tmp, wpn_skill_num;
+	int msg, to_hit, diceroll, wpn_skill, sic, tmp, wpn_skill_num;
 	double dam;
 	int room, pos;
 	int vs_skill = GET_CHAR_SKILL(ch, SKILL_VICIOUS_STRIKE);
-	struct affected_type aff, ir;
-	struct affected_type *af;
+	struct affected_type ir;
 	char attacker_msg[512];
 	char victim_msg[512];
 	char room_msg[512];
 	struct damage_messages messages;
-	struct obj_affect *o_af;
-	int i, blade_skill, chance;
+	int blade_skill, chance;
 	static bool vicious_hit = false;
 	int devcrit = number(1, 100);
 
@@ -7431,7 +7410,6 @@ void StopMercifulAttackers(P_char ch)
 void set_fighting(P_char ch, P_char vict)
 {
 	P_char victim = vict;
-	P_char tch;
 	char Gbuf[10];
 
 	if ((ch == victim) || !SanityCheck(ch, "set_fighting - ch") ||
@@ -7614,9 +7592,6 @@ void set_fighting(P_char ch, P_char vict)
 // Attack that object!
 void set_destroying(P_char ch, P_obj obj)
 {
-	P_char tch;
-	char Gbuf[10];
-
 	if (!SanityCheck(ch, "set_destroying - ch"))
 		return;
 
@@ -9115,12 +9090,10 @@ void perform_violence(void)
 {
 	P_char ch, opponent;
 	char GBuf1[MAX_STRING_LENGTH];
-	struct affected_type *af, *next_af;
-	struct affected_type aff;
 	int attacks[MAX_ATTACKS];
 	int number_attacks, real_attacks, div_attacks;
 	int num_hits, damAccumulator;
-	int i, room, skill;
+	int i, room;
 	std::set<int> room_rnums;
 	std::set<int>::iterator it;
 	int door, nearby_room;
@@ -9591,7 +9564,7 @@ bool monk_superhit(P_char ch, P_char victim, int *damAccumulator)
 
 int pv_common(P_char ch, P_char opponent, const P_obj wpn, int *damAccumulator)
 {
-	int i, room, success = FALSE, wpn_skill, spell;
+	int room, success = FALSE, wpn_skill, spell;
 	P_obj item;
 	struct proc_data data;
 
@@ -9770,7 +9743,6 @@ bool is_nopoof(P_obj obj)
 
 void DestroyStuff(P_char victim, int type)
 {
-	int poofed = 0, worn = 0;
 	P_obj item;
 	int poof_chance = get_property("pvp.eq.poof.chance", 10);
 	//  int poof_chance_niceq_multiplier = (int)(get_property("pvp.eq.poof.niceeq.chance.multiplier", 2));

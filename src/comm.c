@@ -424,7 +424,6 @@ void run_the_game(int port, int sslport)
 {
 	long time_before = 0;
 	long time_after = 0;
-	char buf[MAX_STRING_LENGTH];
 
 	descriptor_list = NULL;
 
@@ -719,10 +718,9 @@ void game_loop(int port, int sslport)
 	P_desc point, next_point;
 	char buf[MAX_STRING_LENGTH];
 	char comm[MAX_INPUT_LENGTH];
-	char Debug[MAX_INPUT_LENGTH];
 	int player_count;
 	static struct timeval opt_time;
-	struct timeval last_time, now, timespent, timeout, null_time;
+	struct timeval last_time, timeout, null_time;
 	struct host_answer host_ans_buf;
 	sigset_t mask, oldset;
 	int s, S;
@@ -1891,10 +1889,7 @@ int bannedsite(char *name, int flag)
 int init_socket(int port)
 {
 	int s, bind_error;
-	char *opt;
-	char hostname[MAX_HOSTNAME + 1];
 	sockaddr_in6 sa;
-	struct hostent *hp;
 	int value = 1;
 	struct linger linger_values;
 
@@ -2458,11 +2453,9 @@ void resolve_descriptor_hostname_async(const char *address, int descriptor)
 int new_descriptor(int s, int conn_type)
 {
 	P_desc newd;
-	char Gbuf3[MAX_STRING_LENGTH];
 	int desc;
 	socklen_t size;
 	sockaddr_in6 sock;
-	FILE *f;
 	gnutls_session_t sslses = 0;
 
 	if ((desc = new_connection(s)) < 0)
@@ -2660,7 +2653,6 @@ static void greet(P_desc newd)
 
 void append_prompt(P_char ch, char *promptbuf)
 {
-	char t_buf[512];
 	P_char t_ch_f;
 	P_obj t_obj_f;
 	P_char tank;
@@ -3061,7 +3053,7 @@ int process_output(P_desc t)
 int process_input(P_desc t)
 {
 	int thisround, begin;
-	char tmp[MAX_INPUT_LENGTH + 3], *buf, *bp;
+	char *buf, *bp;
 
 	/* WebSocket connections use their own input processing */
 	if (t->websocket)
@@ -3491,14 +3483,11 @@ void send_to_room_except_two(const char *messg, int room, P_char ch1, P_char ch2
 void act_convert(char *buf, const char *str, P_char ch, P_char to, P_obj obj, void *vict_obj,
 		 int type)
 {
-	P_char vict;
 	char tbuf[MAX_STRING_LENGTH];
 	bool found;
-	int j, tbp, skip, which_z, sil = FALSE, ig_zc = FALSE;
+	int j, tbp, skip;
 	char *point;
 	const char *strp, *i;
-	int terseonly = FALSE;
-	int notterse = FALSE;
 	bool no_eol = FALSE;
 
 	for (strp = str, point = buf;;)
@@ -3857,14 +3846,13 @@ void escape_act_dollars(char *dst, size_t dst_size, const char *src)
 void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type)
 {
 	P_char to, vict;
-	bool found;
 	// The array buf contains our primary string (final to be sent to target).
 	char buf[MAX_STRING_LENGTH], tbuf[MAX_STRING_LENGTH], tbuf2[MAX_STRING_LENGTH];
 	/* Debugging
 	char     mybuf[MAX_STRING_LENGTH];
 	int      mycheck;
 	 */
-	int j, tbp, skip, which_z, sil = type & ACT_SILENCEABLE;
+	int j, tbp, which_z, sil = type & ACT_SILENCEABLE;
 	bool ignore_zcoord = type & ACT_IGNORE_ZCOORD;
 	char *point;
 	const char *strp, *i;

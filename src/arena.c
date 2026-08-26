@@ -80,8 +80,7 @@ int loadmap(int map)
 
 void send_to_arena(char *msg, int race)
 {
-	int i, j, room;
-	P_char ch;
+	int i;
 	P_desc d;
 
 	for (d = descriptor_list; d; d = d->next)
@@ -256,7 +255,7 @@ void players_to_map()
 
 void players_from_map()
 {
-	int i, j;
+	int i;
 	P_char ch, next_ch = NULL;
 
 	for (i = arena.map.startroom; i <= arena.map.endroom; i++)
@@ -469,10 +468,10 @@ void show_stats_to_char(P_char ch)
 
 int arenaobj_proc(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	char name[MAX_INPUT_LENGTH], tbuf[MAX_STRING_LENGTH];
+	char name[MAX_INPUT_LENGTH];
 	P_obj obj_entered;
 	P_char temp;
-	int race = RACEWAR_NEUTRAL, i, j, count = 0;
+	int race = RACEWAR_NEUTRAL, i, count = 0;
 
 	/* check for periodic event calls */
 	if (cmd == CMD_SET_PERIODIC)

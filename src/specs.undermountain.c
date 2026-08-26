@@ -866,7 +866,6 @@ int staff_of_power(P_obj obj, P_char ch, int cmd, char *arg)
 int staff_of_blue_flames(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
-	bool staff = false;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -1246,7 +1245,7 @@ bool trident_charm(P_char ch, P_char victim)
 
 int undead_trident(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, tmp_vict;
+	P_char vict;
 	char e_pos;
 	bool bad_owner;
 
@@ -1740,7 +1739,6 @@ int um_kevlar(P_char ch, P_char pl, int cmd, char *arg)
 int um_thorn(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char leader;
-	struct affected_type af;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1791,7 +1789,6 @@ int um_thorn(P_char ch, P_char pl, int cmd, char *arg)
 int um_korelar(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char leader;
-	struct affected_type af;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -1876,7 +1873,6 @@ int um_mezzoloth(P_char ch, P_char pl, int cmd, char *arg)
 {
 	static int hired;
 	int gold;
-	struct affected_type af;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -2204,8 +2200,6 @@ void event_flame_of_north(P_char ch, P_char victim, P_obj obj, void *data);
 
 int flame_of_north(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict;
-
 	if (cmd == CMD_SET_PERIODIC)
 	{
 		return FALSE;
@@ -2252,7 +2246,6 @@ void event_flame_of_north(P_char ch, P_char victim, P_obj obj, void *data)
 	// first check to make sure the item is still on the character
 	bool has_item = FALSE;
 	int dam;
-	char buf[256];
 
 	if (!ch)
 		return;

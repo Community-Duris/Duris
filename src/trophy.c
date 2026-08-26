@@ -131,11 +131,9 @@ float modify_exp_by_zone_trophy(P_char ch, int type, float XP)
 
 void do_trophy(P_char ch, char *arg, int cmd)
 {
-	int real, clear_it = FALSE;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	char Gbuf3[MAX_STRING_LENGTH];
 	P_char who, rch;
-	struct trophy_data *tr;
 
 	rch = GET_PLYR(ch);
 

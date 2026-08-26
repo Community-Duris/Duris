@@ -874,7 +874,6 @@ char *json_build_char_status(struct char_data *ch)
 	cJSON *root;
 	char *result;
 	int race;
-	const char *class_name;
 
 	if (!ch)
 		return strdup("{}");

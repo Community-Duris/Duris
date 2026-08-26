@@ -591,8 +591,6 @@ P_char create_random_mob(int theme, int mob_level)
 	int prefix = 0;
 	int class_idx = 0;
 	int to_room = 0;
-	int map_room = 0;
-	int tries = 0;
 	int i;
 	char race_name[256], class_name[256], temp_name[256];
 	char t_buf[MAX_STRING_LENGTH];

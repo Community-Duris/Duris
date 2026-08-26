@@ -27,7 +27,6 @@ extern struct material_data materials[];
 
 char *item_condition(P_obj obj)
 {
-	int value;
 	// I can't imagine anything longer than "&N&=LR\0" which is only 7 chars.
 	char bufCOLOR[8];
 	// I can't imagine having a condition string longer than " [&N&=LR100%%&N]\0" which is only 16 chars.. 32 def safe.
@@ -296,7 +295,6 @@ void DamageAllStuff(P_char ch, int dam_type)
 void DamageStuff(P_char v, int type)
 {
 	int slot;
-	P_obj obj;
 
 	slot = number(2, CUR_MAX_WEAR);
 	if (v->equipment[slot] && slot != WIELD && slot != WIELD2)

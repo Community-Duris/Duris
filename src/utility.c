@@ -2540,7 +2540,6 @@ bool ac_can_see(P_char sub, P_char obj, bool check_z)
 bool ac_can_see_obj(P_char sub, P_obj obj, int zrange)
 {
 	int rroom, zcord;
-	P_char tmp_char;
 	int vis_mode;
 
 	/* wraiths can't see any objects */
@@ -3166,7 +3165,6 @@ int get_multicast_chars(P_char leader, int m_class, int min_level)
 
 int move_cost(P_char ch, int dir)
 {
-	P_char mount;
 	int moves, a, b;
 
 	if ((dir < 0) || (dir > (NUM_EXITS - 1)))
@@ -3455,7 +3453,6 @@ bool aggressive_to_class(P_char ch, P_char target)
 
 bool aggressive_to(P_char ch, P_char target)
 {
-	int tmp_race = 0;
 	int chance;
 	struct affected_type *af;
 
@@ -3679,8 +3676,6 @@ bool aggressive_to(P_char ch, P_char target)
  */
 bool is_aggr_to(P_char ch, P_char target)
 {
-	int tmp_race = 0;
-	int chance;
 	P_char master;
 
 	if (ch == target || !IS_ALIVE(ch) || !IS_ALIVE(target))
@@ -5244,7 +5239,6 @@ void remove_plushit_bits(P_char mob)
 int is_introd(P_char viewee, P_char viewer)
 {
 	/* binary search of introd array */
-	int hi, lo, mid, nr;
 
 	if (viewer == viewee)
 		return TRUE;
@@ -5399,7 +5393,7 @@ void purge_old_intros(P_char ch)
 
 void broadcast_to_arena(const char *msg, P_char ch, P_char vict, int rm)
 {
-	int i, j, pos;
+	int i, j;
 	char strn[MAX_STRING_LENGTH];
 	P_char c;
 
@@ -5456,7 +5450,6 @@ void broadcast_to_arena(const char *msg, P_char ch, P_char vict, int rm)
 char *get_class_string(P_char ch, char *strn)
 {
 	int i = 0;
-	char *t;
 	bool found;
 
 	strn[0] = 0;
@@ -5932,7 +5925,6 @@ bool should_area_hit(P_char ch, P_char victim)
 void cast_as_area(P_char ch, int spl, int level, char *arg)
 {
 	P_char tch, nch;
-	P_obj tobj, nobj;
 	void (*spell_func)(int, P_char, char *, int, P_char, P_obj);
 
 	if (!ch)
@@ -6774,7 +6766,7 @@ void connect_rooms(int v1, int v2, int to_dir, int from_dir)
 {
 	/* create exits from room1<->room2 */
 
-	int r1, r2, rdir;
+	int r1, r2;
 
 	r1 = real_room0(v1);
 	r2 = real_room0(v2);

@@ -33,8 +33,6 @@ extern struct zone_data *zone_table;
 int roulette_pistol(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	// The local of the live round in the pistol, 0 if none exist (fired)
-	int position;
-	int dieval = 0;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -378,8 +376,7 @@ void event_super_cannon(P_char pl, P_char vict, P_obj obj, void *data)
 {
 	struct cannon_data *cdata = (struct cannon_data *)data;
 	P_char ch = NULL;
-	double slope, x, y;
-	int dir, offsetaim;
+	int offsetaim;
 
 	if (!cdata)
 	{

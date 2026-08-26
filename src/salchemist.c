@@ -428,7 +428,6 @@ int got_all_ingredients(P_char ch, int required[])
 {
 	int found[MAX_INGREDIENTS + 1];
 	int i;
-	int temp;
 	P_obj t_obj, next_obj;
 	int object_id;
 
@@ -469,7 +468,6 @@ int got_all_poison_ingredients(P_char ch, int required[])
 {
 	int found[MAX_INGREDIENTS + 1];
 	int i;
-	int temp;
 	P_obj t_obj, next_obj;
 	int object_id;
 
@@ -643,8 +641,6 @@ void do_mixpoison(P_char ch, char *argument, int cmd)
 	P_obj vial;
 	char arg[MAX_STRING_LENGTH];
 	int i;
-	int x = 1;
-	char Gbuf2[MAX_STRING_LENGTH];
 	int skl_lvl;
 
 	if (!(skl_lvl = GET_CHAR_SKILL(ch, SKILL_MIXPOISON)))
@@ -733,8 +729,6 @@ void do_mix(P_char ch, char *argument, int cmd)
 	P_obj bottle;
 	char arg[MAX_STRING_LENGTH];
 	int i;
-	int x = 1;
-	char Gbuf2[MAX_STRING_LENGTH];
 
 	if (!GET_CHAR_SKILL(ch, SKILL_MIX))
 	{
@@ -846,7 +840,6 @@ void do_spellbind(P_char ch, char *argument, int cmd)
 	char arg[MAX_STRING_LENGTH];
 	char buf[MAX_STRING_LENGTH];
 	char tempbuf[MAX_STRING_LENGTH];
-	struct affected_type *afp;
 	P_obj item;
 	bool neggood;
 	int total_epic_points = GET_EPIC_POINTS(ch);
@@ -1272,8 +1265,6 @@ int encrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 void do_fix(P_char ch, char *argument, int cmd)
 {
 	char arg[MAX_STRING_LENGTH];
-	char arg2[MAX_STRING_LENGTH];
-	char buf1[MAX_STRING_LENGTH];
 	int skill = 0;
 
 	P_obj item;
@@ -1642,12 +1633,7 @@ bool randomize_potion_non_damage(P_obj potion, int slot)
 // Random eq enchant proc (cure crit).
 int thrusted_eq_proc(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int rand;
-	int curr_time;
-	P_char kala;
-	P_obj ingred;
 	P_char i;
-	int j = 0;
 	bool found;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -1759,13 +1745,8 @@ extern const char *class_names[];
 void do_enchant(P_char ch, char *argument, int cmd)
 {
 	char arg[MAX_STRING_LENGTH];
-	char arg2[MAX_STRING_LENGTH];
-	char buf1[MAX_STRING_LENGTH];
 	int skill = 0, qend, circle = 0, t_circle = 0, i = 0;
 	P_obj item;
-	P_obj jewel;
-
-	P_obj temp_obj;
 
 	common_target_data.ttype = 0;
 	common_target_data.t_obj = 0;

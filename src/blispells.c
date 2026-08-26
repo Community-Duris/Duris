@@ -972,7 +972,6 @@ void event_drain_nature(P_char ch, P_char vict, P_obj obj, void *data)
 // Heals the target/cures blind.
 void spell_drain_nature(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	struct affected_type af;
 	int healpoints;
 
 	if (!IS_ALIVE(victim) || !IS_ALIVE(ch))

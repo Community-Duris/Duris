@@ -491,22 +491,6 @@ const struct randomeq_slots slot_data[MAX_SLOT + 1] = {
 
 void create_randoms()
 {
-	int theme = 0;
-	int map_room1 = 0;
-	int map_room2 = 0;
-	int level_range = 0;
-	int rooms = 0;
-	int map_room = 0;
-	int x = 0;
-	int tries = 0;
-	long time_before = 0;
-	long time_after = 0;
-	int i = 0;
-	char fname[256];
-	char buf2[MAX_STRING_LENGTH];
-	FILE *f;
-	P_obj fountain;
-
 #ifndef RANDOM_ZONES
 	fprintf(stderr, "Boot random zones -- BEGIN.\r\n");
 
@@ -632,7 +616,6 @@ P_obj create_stones(P_char ch)
 // Returns TRUE iff a random item should be created from ch killing the mob.
 bool check_random_drop(P_char ch, P_char mob, bool piece)
 {
-	int i;
 	// Normally, we'd do char_lvl and mob_lvl as ints, but that would require a lot of casting.
 	float char_lvl, mob_lvl, chance, char_mob_lvl_div, luck_divisor;
 	const struct random_equipment_config *config = random_equipment_config_get();
@@ -1591,7 +1574,6 @@ int random_eq_proc(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	P_char kala;
 	int j;
-	int dam = cmd / 1000;
 	P_obj t_obj;
 	long curr_time;
 	int numNamed = 0;

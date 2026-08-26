@@ -307,8 +307,6 @@ int vnum_in_inv(P_char ch, int vnum)
 int pvp_store(P_char ch, P_char pl, int cmd, char *arg)
 {
 	char buffer[MAX_STRING_LENGTH];
-	char buf[256], *buff;
-	char Gbuf1[MAX_STRING_LENGTH], *c;
 	P_obj orb;
 
 	if (cmd == CMD_LIST)
@@ -431,7 +429,7 @@ bool lightbringer_proc(P_char ch, P_char victim, bool phys)
 // The 'merc' is the mercenary being hit on by the 'hitter'.
 bool intercept_defensiveproc(P_char merc, P_char hitter)
 {
-	int num, room, save, pos;
+	int room;
 
 	// If !( both are alive and hitter hitting merc )
 	if (!IS_ALIVE(hitter) || !IS_FIGHTING(hitter) || !(merc == GET_OPPONENT(hitter)) ||
@@ -484,7 +482,7 @@ bool intercept_defensiveproc(P_char merc, P_char hitter)
 // Modified this so it doesn't stack and lasts PULSE_VIOLENCE * 2.
 bool minotaur_race_proc(P_char ch, P_char victim)
 {
-	int num, room = ch->in_room, save, pos, cmd;
+	int room = ch->in_room;
 	int class_chance = 0;
 	struct affected_type af;
 
@@ -542,11 +540,9 @@ bool minotaur_race_proc(P_char ch, P_char victim)
 	return TRUE;
 }
 
-static FILE *aliaslist;
-
 char get_alias(P_char ch, char *argument)
 {
-	char buf[256], aliasword[MAX_STRING_LENGTH], rbuf[MAX_STRING_LENGTH], *bufx;
+	char buf[256], rbuf[MAX_STRING_LENGTH], *bufx;
 	char gbuf1[MAX_STRING_LENGTH], charalias[MAX_STRING_LENGTH], bufbug[256];
 	FILE *aliaslist;
 
@@ -696,11 +692,8 @@ void newbie_reincarnate(P_char ch)
 
 int equipped_value(P_char ch)
 {
-	P_obj obj_object, temp_obj;
-	int total, k, ret_type;
-	bool was_invis, naked;
-	char Gbuf1[MAX_STRING_LENGTH];
-	struct affected_type af;
+	P_obj temp_obj;
+	int total, k;
 
 	total = 0;
 
@@ -718,7 +711,6 @@ void create_recipe(P_char ch, P_obj temp)
 	/***RECIPE CREATE***/
 	P_obj objrecipe;
 	char buffer[256], old_name[256];
-	char *c;
 	int recipenumber = obj_index[temp->R_num].virtual_number;
 
 	if ((temp->type == ITEM_CONTAINER || temp->type == ITEM_STORAGE) && temp->contains)
@@ -846,9 +838,8 @@ void do_conjure(P_char ch, char *argument, int cmd)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], rest[MAX_INPUT_LENGTH];
-	char filename[256], *buff, short_buf[256];
+	char filename[256], short_buf[256];
 	P_char t_ch;
-	FILE *f;
 	FILE *recipefile;
 	int duration, choice2, chance, counter;
 	long selected = 0, recnum;
@@ -1351,13 +1342,6 @@ bool new_summon_check(P_char ch, P_char selected)
 
 void learn_conjure_recipe(P_char ch, P_char victim)
 {
-	char buf[256], *buff;
-	char Gbuf1[MAX_STRING_LENGTH], *c;
-	FILE *f;
-	FILE *recipelist;
-
-	int recnum;
-
 	if (!ch)
 		return;
 
@@ -1438,8 +1422,8 @@ void do_dismiss(P_char ch, char *argument, int cmd)
 {
 	struct follow_type *k;
 	struct follow_type *x;
-	P_char victim, next_vict;
-	int i, j, count = 0, desired = 0;
+	P_char victim;
+	int count = 0;
 
 	if (cmd != CMD_DEATH)
 	{

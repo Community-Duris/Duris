@@ -776,7 +776,6 @@ void string_add(struct descriptor_data *d, char *str)
 	int terminator = 0, num = 0;
 	int i = 2, j = 0;
 	char actions[MAX_INPUT_LENGTH], *ch_ptr;
-	FILE *fl;
 
 	actions[0] = '\0';
 
@@ -1521,7 +1520,6 @@ bool rename_spellbook(char *old_name, char *new_name)
 {
 	char old_book[MAX_STRING_LENGTH];
 	char new_book[MAX_STRING_LENGTH];
-	char command[MAX_STRING_LENGTH];
 	FILE *file;
 
 	snprintf(old_book, MAX_STRING_LENGTH, "%s/%c/%s.spellbook", SAVE_DIR, LOWER(*old_name),
@@ -1544,7 +1542,6 @@ bool rename_craftlist(char *old_name, char *new_name)
 {
 	char old_book[MAX_STRING_LENGTH];
 	char new_book[MAX_STRING_LENGTH];
-	char command[MAX_STRING_LENGTH];
 	FILE *file;
 
 	snprintf(old_book, MAX_STRING_LENGTH, "%s/Tradeskills/%c/%s.crafting", SAVE_DIR,
@@ -1568,7 +1565,7 @@ bool rename_craftlist(char *old_name, char *new_name)
 /* ------------------------------------------------------------------------------ */
 bool rename_character(P_char ch, char *old_name, char *new_name)
 {
-	char buf[256], *buff;
+	char buf[256];
 	struct acct_chars *c = NULL;
 	P_char doofus;
 
@@ -1885,7 +1882,6 @@ void free_paging_data(struct descriptor_data *d)
 void show_string(struct descriptor_data *d, const char *input)
 {
 	char buffer[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
-	int diff;
 
 	buffer[0] = '\0';
 	buf[0] = '\0';

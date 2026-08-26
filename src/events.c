@@ -263,9 +263,6 @@ void interaction_to_new_wrapper(P_char, P_char, char *);
 // The type is an artifact of old event code.  It's ignored now.
 void clear_char_nevents(P_char ch, int type, void *func)
 {
-	P_char tch;
-	struct char_link_data *cld;
-
 	if (!ch)
 	{
 		logit(LOG_DEBUG, "clear_char_nevents: NULL ch");
@@ -575,7 +572,6 @@ void DelayCommune(P_char ch, int delay)
 void CharWait(P_char ch, int delay)
 {
 	P_nevent e = NULL;
-	int i, old_time;
 
 	if (!ch)
 	{

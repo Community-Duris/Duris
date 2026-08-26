@@ -1591,7 +1591,6 @@ P_obj get_object_from_char(P_char owner, int vnum)
 
 void poof_artifact(P_obj arti)
 {
-	int room;
 	P_char owner;
 	P_obj cont;
 
@@ -2179,7 +2178,7 @@ void arti_files_to_sql(P_char ch, char *arg)
 
 void event_artifact_check_poof_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 {
-	P_obj arti, cont, content, corpse;
+	P_obj arti, cont, corpse;
 	P_char owner;
 	P_desc desc;
 	int vnum, locType, location;
@@ -2642,7 +2641,6 @@ void event_artifact_wars_sql(P_char ch, P_char vict, P_obj obj, void *arg)
 {
 	arti_list *artilist, *nextlist;
 	arti_data *node, *next_node;
-	P_obj arti;
 	P_char owner;
 	int pid, vnum, punish_level;
 	int count[4];
@@ -3088,7 +3086,6 @@ void arti_hunt_sql(P_char ch, char *arg)
 
 void arti_clear_sql(P_char ch, char *arg)
 {
-	char buf[MAX_STRING_LENGTH];
 	int vnum;
 	P_obj arti;
 
@@ -3975,7 +3972,6 @@ void arti_fixit_sql(P_char ch)
 void arti_sync_sql(P_char ch)
 {
 	P_obj obj;
-	P_char owner;
 	int counter = 0;
 
 	send_to_char("Syncing all in-game artifacts to database...\n\r", ch);

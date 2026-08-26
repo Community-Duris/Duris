@@ -313,10 +313,10 @@ Update this table at the end of each day from a clean inventory build:
 | `unused-function` | 7 | 0 | **Yes** |
 | `unused-but-set-variable` | 160 | 0 | **Yes** |
 | `missing-field-initializers` | 546 | 0 | **Yes** |
-| `unused-variable` | 1,434 | 1,425 | No |
-| `unused-parameter` | 4,670 | 4,672 | No |
-| `write-strings` | 3,130 | 3,128 | No |
-| **Total** | **9,947** | **9,225** | — |
+| `unused-variable` | 1,434 | 0 | **Yes** |
+| `unused-parameter` | 4,670 | 4,673 | No |
+| `write-strings` | 3,130 | 3,077 | No |
+| **Total** | **9,947** | **7,750** | — |
 
 ## 8. Execution Log
 
@@ -429,3 +429,43 @@ was a bare C struct.
 
 **Validation:** `./scripts/format.sh --check` clean; `git diff --check` clean; `make -C src clean &&
 make -C src -j14` succeeds with `-Wmissing-field-initializers` fatal; all `tests/async/test_*.py` pass.
+
+### Days 5-6 — `unused-variable` (complete)
+
+All 1,434 warnings across 123 files are resolved and `-Wno-unused-variable` is removed.
+
+Unlike the set-but-unused category, these are declarations with no reads *and* no writes, so the judgment is
+narrower: the only real question is whether the declaration's initializer does work that must survive. The
+sweep was therefore mechanised, with the tool refusing anything it could not prove safe.
+
+**Method.** A scratch helper consumed the inventory's warnings (the inventory build now passes
+`-fdiagnostics-column-unit=byte`, so each warning's column is an exact byte offset) and removed the named
+declarator. It works one whole declaration statement at a time so that pointer decorations move with their
+declarator and a statement whose declarators are *all* dead is dropped entirely. It scans a copy of the file
+with comments and string literals blanked, so a `;` inside `/* ... */` cannot be mistaken for a statement end.
+It refuses, and reports for manual handling, any declarator whose initializer calls a function not on an
+explicit pure list, and any declaration inside `( )` — a `for`-init or an `if (T x = ...)` condition.
+
+1,254 declarators were removed automatically over three passes; 12 were handled by hand:
+
+- `magic.c`: `int duration = setup_pet(...)` — the call places the pet and must stay; only the variable went.
+- `new_skills.c` (two sites): `if (P_char mount = get_linked_char(...))` where the body's only use of `mount`
+  is commented out. Rewritten as a plain condition rather than annotated.
+- `assocs.c`, `magic.c`, `mobcombat.c`: declarators the tool declined on a false "inside ( )" reading.
+- Five file-scope statics with no reader anywhere in the tree: a shadowed `buf` in `affects.c`, a shadowed
+  `aliaslist` in `drannak.c`, `songcounter` in `specs.mobile.c`, `recipefile` in `tradeskill.c`, and the
+  65-line halfling social-thievery `steal_chance` table in `innates.c`.
+
+**Contract updated.** `tests/async/test_crafting_enhancement_regressions.py` pinned the exact text
+`int minval = itemvalue(source) - enhance_material_ival_delta;`, and that text lived in `modenhance()`, where
+the value is computed and then never compared against anything. The tunable it exists to protect is used in
+`enhance()`. The contract now pins the live computation *and* its comparison, which is a stronger assertion
+than before.
+
+**Behavioral difference recorded, deliberately not changed:** `enhance()` rejects a material whose item value
+is below `itemvalue(source) - enhance_material_ival_delta`; `modenhance()` computes the same floor and
+enforces nothing. Restoring the check would start rejecting materials that are accepted today, which is a
+balance decision rather than a cleanup.
+
+**Validation:** `./scripts/format.sh --check` clean; `git diff --check` clean; `make -C src clean &&
+make -C src -j14` succeeds with `-Wunused-variable` fatal; all `tests/async/test_*.py` pass.

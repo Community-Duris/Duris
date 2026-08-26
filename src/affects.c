@@ -70,7 +70,6 @@ extern const struct racial_data_type racial_data[];
 extern struct zone_data *zone_table;
 extern struct time_info_data time_info;
 extern struct arena_data arena;
-static char buf[MAX_INPUT_LENGTH];
 extern Skill skills[];
 extern bool innate_two_daggers(P_char);
 extern const char *event_names[];
@@ -327,7 +326,6 @@ int calculate_mana(P_char ch)
 //   normal race.  (As it should be imo).
 int calculate_hitpoints2(P_char ch)
 {
-	char buf[128];
 	int i, j;
 	int level, race, age_mod = 0, curr_con, toughness, newbie, hardcore;
 	float old_bonus, new_bonus, class_mod, racial_con, maxconbonus;
@@ -527,8 +525,6 @@ void add_racial_stat_bonus(P_char ch, struct hold_data *affs)
 void apply_affs(P_char ch, int mode)
 {
 	int t1, t2, t3, temp;
-	float max_con_bonus;
-	char buf1[256];
 
 	if (!ch)
 	{
@@ -1514,7 +1510,7 @@ void get_epic_stat_affects(P_char ch)
 
 void all_affects(P_char ch, int mode)
 {
-	struct affected_type *af, *next;
+	struct affected_type *af;
 	int i, j;
 
 	if (ch == NULL) /* replaced call to SanityCheck with this */
@@ -2578,8 +2574,6 @@ int affect_from_obj(P_obj obj, sh_int spell)
 {
 	struct obj_affect *af, *next;
 
-	struct affected_type *hjp, *tmp;
-
 	for (af = obj->affects; af; af = next)
 	{
 		next = af->next;
@@ -2950,7 +2944,6 @@ void clear_all_links(P_char ch)
 //---------------------------------------------------------------------------------
 void clear_links(P_char ch, ush_int type)
 {
-	struct char_link_data *cld;
 	P_char tch;
 
 	while ((tch = get_linked_char(ch, type)))
@@ -2961,7 +2954,6 @@ void clear_links(P_char ch, ush_int type)
 void clear_links(P_char ch, P_obj obj, int flag)
 {
 	struct char_obj_link_data *cold, *cold_prev, *cold_next;
-	P_obj tobj;
 
 	// Remove all those at the head of the list.
 	while (((cold = ch->obj_linked) != NULL) && (cold->obj == obj) &&
@@ -4347,7 +4339,6 @@ void short_affect_update(void)
 {
 	bool killed;
 	P_char i, i_next, killer;
-	struct affected_type *af, *next_af_dude;
 
 	for (i = character_list; i; i = i_next)
 	{

@@ -219,7 +219,7 @@ P_char get_char_on_ship_bridge(P_char ch, const char *name)
 {
 	P_desc d;
 	P_char vict = NULL;
-	P_ship ship, ship_ch = NULL, ship_vict = NULL;
+	P_ship ship_ch = NULL, ship_vict = NULL;
 
 	for (d = descriptor_list; d; d = d->next)
 	{
@@ -990,7 +990,7 @@ void remove_aura_message(P_char ch, P_char commander)
 
 bool group_remove_member(P_char ch)
 {
-	struct group_list *gl, *elem, *temp_gl;
+	struct group_list *gl, *elem;
 
 	/* remove 'ch' from a group.  Deal with removing the group leader,
 	   and deal with what happens when less then 2 people left in the

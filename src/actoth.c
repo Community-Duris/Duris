@@ -488,7 +488,6 @@ void do_camp(P_char ch, char *arg, int cmd)
 
 		if (aff)
 		{
-			char buf[100];
 			int i = 0;
 			int j = 0;
 
@@ -806,7 +805,6 @@ void do_rampage(P_char ch, char *argument, int cmd)
 void do_infuriate(P_char ch, char *argument, int cmd)
 {
 	struct affected_type af;
-	P_char victim;
 
 	if (!IS_ALIVE(ch))
 		return;
@@ -1953,9 +1951,6 @@ bool do_save_silent(P_char ch, int type)
 {
 	FILE *f;
 	char tmp_buf[MAX_STRING_LENGTH], tmp_buf2[MAX_STRING_LENGTH];
-	int count, i;
-	P_char random_mob;
-	P_obj obj;
 
 	if (!ch || !GET_NAME(ch) || (IS_NPC(ch) && !IS_MORPH(ch)))
 		return false;
@@ -2042,12 +2037,7 @@ bool do_save_silent(P_char ch, int type)
 void do_save(P_char ch, char *argument, int cmd)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
-	float blood = 0;
-	int i;
-	char buf[MAX_STRING_LENGTH];
-	int count;
 	char tmp_buf[MAX_STRING_LENGTH];
-	P_obj obj;
 
 	if (!ch)
 		return;
@@ -2515,7 +2505,7 @@ void do_sneak(P_char ch, char *argument, int cmd)
 void do_hide(P_char ch, char *argument, int cmd)
 {
 	::byte roll;
-	int skl_lvl = 0, vis_mode;
+	int skl_lvl = 0;
 	bool tried = FALSE;
 	P_obj obj_object, next_obj, tobj, next_tobj;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
@@ -2812,7 +2802,7 @@ void listen(P_char ch, char *argument)
 
 void do_listen(P_char ch, char *argument, int cmd)
 {
-	int dir, percent;
+	int percent;
 	const char *heard_nothing = "You don't hear anything unusual.\r\n";
 
 	if (!ch->desc || IS_NPC(ch))
@@ -3494,7 +3484,6 @@ void do_explist(P_char ch, char *argument, int cmd)
 {
 	double result;
 	char Gbuf1[MAX_STRING_LENGTH];
-	char Gbuf2[MAX_STRING_LENGTH];
 	/*
 	 * exp tables at immortal levels are just toooo gross, not even gonna
 	 * THINK about including them, meaningless anyway -JAB
@@ -3594,7 +3583,6 @@ void do_expkkk(P_char ch, char *argument, int cmd)
 
 void do_idea(P_char ch, char *argument, int cmd)
 {
-	FILE *fl = 0;
 	char buf[MAX_STRING_LENGTH];
 	int result = 0;
 
@@ -3635,7 +3623,6 @@ void do_idea(P_char ch, char *argument, int cmd)
 
 void do_typo(P_char ch, char *argument, int cmd)
 {
-	FILE *fl = 0;
 	char buf[MAX_STRING_LENGTH];
 	int result = 0;
 
@@ -3728,7 +3715,6 @@ void do_cheat(P_char ch, char *argument, int cmd)
 	long t;
 	char Gbuf1[MAX_STRING_LENGTH];
 	P_desc i;
-	char Gbuf3[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
 	if (IS_NPC(ch))
 	{
@@ -3904,8 +3890,6 @@ void do_quaff(P_char ch, char *argument, int cmd)
 	int i, j, chance;
 	bool equipped;
 	char Gbuf1[MAX_STRING_LENGTH];
-	int secs;
-	int potiontimeleft;
 	struct affected_type *af2;
 	struct affected_type *next;
 
@@ -4043,7 +4027,7 @@ void do_quaff(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
-		struct affected_type af, *afp;
+		struct affected_type af;
 		memset(&af, 0, sizeof(af));
 		af.type = TAG_POTION_TIMER;
 		af.duration = 3;
@@ -4075,7 +4059,7 @@ void do_quaff(P_char ch, char *argument, int cmd)
 void do_recite(P_char ch, char *argument, int cmd)
 {
 	P_obj scroll, obj;
-	int i, bits, j;
+	int i, j;
 	bool equipped;
 	P_char victim = NULL;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -4201,9 +4185,9 @@ void do_recite(P_char ch, char *argument, int cmd)
 
 void do_use(P_char ch, char *argument, int cmd)
 {
-	P_char tmp_char = 0, next_ch;
-	P_obj tmp_object = 0, stick, next_obj;
-	int bits, i = 0;
+	P_char tmp_char = 0;
+	P_obj tmp_object = 0, stick;
+	int i = 0;
 	char Gbuf1[MAX_STRING_LENGTH];
 	struct spell_target_data target_data;
 	int spl;
@@ -4740,7 +4724,7 @@ static int plr_tog(unsigned int &var, unsigned int flag, const char *arg, int re
 void do_toggle(P_char ch, char *arg, int cmd)
 {
 	int i, j, tog_nr = -1, result = -1, number;
-	char Gbuf1[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH], buf[80];
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
 	P_char send_ch = ch;
 
 	if (IS_NPC(ch))
@@ -5955,7 +5939,7 @@ void do_fly(P_char ch, char *argument, int cmd)
 	char buf[MAX_INPUT_LENGTH], Gbuf1[MAX_INPUT_LENGTH];
 	P_char mount, rider = NULL;
 	struct follow_type *k, *next_dude;
-	int saw_map = 0, sect, oldz, newz;
+	int sect, oldz, newz;
 
 	/* mounted chars can use this to order their mounts as well */
 	if ((mount = get_linked_char(ch, LNK_RIDING)))
@@ -6683,11 +6667,7 @@ void do_ascend(P_char ch, char *arg, int cmd)
 
 void do_descend(P_char ch, char *arg, int cmd)
 {
-	P_char teacher;
-	int SELECTION, i = 0;
-	int cost = 0;
-	char second_arg[MAX_INPUT_LENGTH], third_arg[MAX_INPUT_LENGTH];
-	char buff[64];
+	int i = 0;
 
 	if (!GET_CLASS(ch, CLASS_NECROMANCER))
 	{
@@ -6796,7 +6776,6 @@ void do_old_descend(P_char ch, char *arg, int cmd)
 {
 	P_char teacher;
 	int SELECTION, i = 0;
-	const int INVALID = 0;
 	const int WARRIOR = 1;
 	const int MERC = 2;
 	const int SORC = 3;

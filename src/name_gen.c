@@ -42,20 +42,16 @@
 /****************************************************************************/
 int get_name(char return_namn[256], int SEX, uint64_t id)
 {
-	time_t t;
-	int loop;
 	int antal_start = 0;
 	int antal_mitt = 0;
 	int antal_slut = 0;
 	char tempstring[151];
 	tempstring[0] = '\0';
-	char filnamn[256];
 	char start[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* start syllable               */
 	char mitt[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* middle syllable              */
 	char slut[SYLLABLES_PER_SECTION][SYLLABLE_LENGTH]; /* ending syllable              */
 	char namn[NAME_LENGTH]; /* name                         */
 	FILE *infil = NULL;
-	int cgi = 0;
 
 	memset(start, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);
 	memset(mitt, 0, SYLLABLES_PER_SECTION * SYLLABLE_LENGTH);

@@ -364,7 +364,6 @@ int get_map_room(int zone_id)
 	int i2;
 	int i;
 	struct zone_data *zone = 0;
-	char buf[MAX_STRING_LENGTH], o_buf[MAX_STRING_LENGTH];
 
 	if (zone_id < 0)
 		return -1;
@@ -412,7 +411,6 @@ void do_quest(P_char ch, char *args, int cmd)
 	char q_name[MAX_STRING_LENGTH];
 
 	char name[MAX_INPUT_LENGTH], who[MAX_STRING_LENGTH];
-	char Gbuf1[MAX_STRING_LENGTH];
 
 	if (IS_NPC(ch))
 	{
@@ -905,12 +903,9 @@ int getItemFromZone(int zone)
 	/* For debugging...
 	char     buf[MAX_STRING_LENGTH];
 	*/
-	long ct, diff_time;
-	char *tmstr;
-	int count, i, choice, zone_count, world_index, room_count;
+	int i;
 	struct zone_data *z_num = &zone_table[zone];
 	P_obj t_obj;
-	P_char t_mob;
 
 	int valid_items[1000];
 	int list = 0;
@@ -1125,7 +1120,7 @@ void getQuestZoneList(P_char ch, vector<int> &valid_zones)
 int suggestQuestMob(int zone_num, P_char ch, int QUEST_TYPE)
 {
 	P_char t_mob;
-	int count, i;
+	int i;
 	int valid_mobs[300];
 	int list = 0;
 	int KIND_OF_QUEST = -1;

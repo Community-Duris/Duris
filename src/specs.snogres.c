@@ -202,8 +202,6 @@ void event_hellfire(P_char ch, P_char victim, P_obj obj, void *data)
 int hellfire_axe(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict = NULL;
-	struct proc_data *data = NULL;
-	struct affected_type af;
 	int dam = cmd / 1000;
 	struct damage_messages messages = {
 		"&+mYour &+Maxe &N&+mvibrates as it strikes $N&N&+m, causing a &+rsevere &+Rgash &N&+mand great &+Rblood &N&+rloss.&n",
@@ -248,7 +246,7 @@ int berserker_toss(P_char ch, P_char vict, int cmd, char *arg)
 {
 	P_char tch, victtwo = NULL;
 	P_obj obj;
-	int numbPCs = 0, luckyPC = 0, currPC = 0, numb;
+	int numbPCs = 0, luckyPC = 0, currPC = 0;
 
 	/*
 	 * check for periodic event calls
@@ -386,7 +384,6 @@ int remo_burn(P_char vict, P_char ch, int cmd, char *arg)
 int illithid_whip(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict = NULL;
-	struct proc_data *data = NULL;
 	int dam = cmd / 1000;
 
 	if (cmd == CMD_SET_PERIODIC)

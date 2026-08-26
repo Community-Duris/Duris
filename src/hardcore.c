@@ -82,7 +82,6 @@ void writeHallOfFame(P_char ch, char thekiller[1024])
 		//       lowHardcore[MAX_HALLOFFAME_SIZE], // unused
 		phalloffames, i;
 	static char killerName[MAX_HALLOFFAME_SIZE][MAX_STRING_LENGTH];
-	char buffer[1024], *ptr;
 	int actualrecords = 0;
 
 	if (!ch)
@@ -386,18 +385,16 @@ void checkLeaderBoard(P_char ch)
 // Returns TRUE iff leaderboard is copied over.
 bool newHardcoreBoard(P_char ch, char *arg, int cmd)
 {
-	FILE *hardcorelist, *f, *newhardcorelist;
+	FILE *hardcorelist, *newhardcorelist;
 	// these arrays are unused and huge, commenting out to save mem
 	// char     highPlayerName[MAX_HALLOFFAME_SIZE][MAX_STRING_LENGTH],
 	//          lowPlayerName[MAX_HALLOFFAME_SIZE][MAX_STRING_LENGTH];
 	char name[MAX_STRING_LENGTH], killedby[MAX_STRING_LENGTH];
-	bool change = FALSE;
 	// int      highHardcore[MAX_LEADERBOARD_SIZE],
 	//          lowHardcore[MAX_LEADERBOARD_SIZE], i;
-	int halloffames, x;
-	long phalloffames;
+	int halloffames;
 	float pts = 0;
-	char buf[MAX_STRING_LENGTH], buffer[1024], *ptr;
+	char buf[MAX_STRING_LENGTH];
 
 	newhardcorelist = fopen(mort_halloffame_file, "w");
 	if (!newhardcorelist)

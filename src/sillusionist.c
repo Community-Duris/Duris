@@ -585,7 +585,6 @@ void spell_reflection(int level, P_char ch, char *arg, int type, P_char victim, 
 {
 	P_char image, tch, tch2;
 	struct char_link_data *cld;
-	struct affected_type af;
 	char Gbuf1[MAX_STRING_LENGTH];
 	int numb, i, spot, room, targ;
 	struct follow_type *k, *p, *l, *q;
@@ -771,13 +770,8 @@ void spell_reflection(int level, P_char ch, char *arg, int type, P_char victim, 
 
 void spell_mask(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
 {
-	bool loss_flag = FALSE;
 	bool casting_on_self = FALSE;
-	int chance, l, found, clevel, ss_save, ss_roll, the_size;
-	long resu_exp;
-	P_obj obj_in_corpse, next_obj, t_obj, money;
-	struct affected_type *af, *next_af;
-	P_char t_ch, target = NULL;
+	P_char target = NULL;
 	char tbuf[MAX_STRING_LENGTH];
 
 	if (IS_NPC(ch))
@@ -973,9 +967,6 @@ void spell_illusionary_wall(int level, P_char ch, char *arg, int type, P_char vi
 
 void spell_nightmare(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int dam;
-	int temp;
-
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");
@@ -1141,7 +1132,6 @@ void spell_shadow_shield(int level, P_char ch, char *arg, int type, P_char victi
 void spell_vanish(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	struct affected_type af;
-	int room;
 
 	if (!((victim || obj) && ch))
 	{
@@ -1189,7 +1179,7 @@ void spell_hammer(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 		"$n's massive &+Bhammer&N is the last thing you ever see.",
 		"$n's &+Bhammer&N strikes $N smashing $M into the ground!"
 	};
-	int dam, temp, result;
+	int dam;
 	bool stunself = false;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
@@ -1276,7 +1266,6 @@ void spell_dream_travel(int level, P_char ch, char *arg, int type, P_char victim
 {
 	int location;
 	P_char targ, mount;
-	P_desc i;
 	struct group_list *group;
 
 	if (!IS_ALIVE(ch) || ch->in_room < 0)
@@ -1450,12 +1439,7 @@ int is_illusion_obj(P_obj obj)
 
 void spell_clone_form(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	bool loss_flag = FALSE;
 	bool casting_on_self = FALSE;
-	int chance, l, found, clevel, ss_save, ss_roll, the_size;
-	long resu_exp;
-	P_obj obj_in_corpse, next_obj, t_obj, money;
-	struct affected_type *af, *next_af;
 	P_char t_ch, tch, next_ch, target = NULL;
 	char tbuf[MAX_STRING_LENGTH];
 
@@ -1784,8 +1768,6 @@ bool handle_imprison_damage(P_char ch, P_char victim, int dam)
 
 void spell_nonexistence(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int room;
-
 	if (!IS_ALIVE(ch))
 	{
 		return;
@@ -2322,7 +2304,7 @@ void event_shadow_spawn(P_char ch, P_char victim, P_obj obj, void *data)
 
 void spell_shadow_spawn(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int dam, savemod, affmod, waves;
+	int dam, savemod, affmod;
 	struct damage_messages messages = {
 		"&+LYou conjure up the worst &+Rfears&+L of your foes and hurl it at them!",
 		"&+LMaddening &+Cvisions &+Lfrom your worst n&+Ri&+Lghtm&+Ra&+Lr&+Re&+Ls sweep over you!",

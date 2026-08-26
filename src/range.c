@@ -366,7 +366,7 @@ void do_fire(P_char ch, char *argument, int cmd)
 	int shots, speed_per_shot;
 	double dam = 0;
 	int wallcheck = 0, weight = 0;
-	int speed, strength, carrow, maxluck, actual;
+	int speed, strength, carrow, actual;
 	float delay;
 	char buf[256];
 	char vict_msg[256];
@@ -1177,7 +1177,7 @@ void do_throw(P_char ch, char *argument, int cmd)
 	char death_attacker[MAX_STRING_LENGTH];
 	char death_victim[MAX_STRING_LENGTH];
 	char death_room[MAX_STRING_LENGTH];
-	P_obj weapon, t_obj;
+	P_obj weapon;
 	P_char vict = NULL, tch;
 	int target_room = -1;
 	int /*source_room = -1, */ victroom = -1;
@@ -1638,7 +1638,7 @@ int range_scan_track(P_char ch, int distance, int type_scan)
 {
 	int i, door;
 	int source_room, target_room;
-	P_char t_ch, vict;
+	P_char t_ch;
 
 	if (!ch)
 		return FALSE;

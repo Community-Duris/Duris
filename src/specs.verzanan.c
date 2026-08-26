@@ -4068,9 +4068,6 @@ int verzanan_guard_two(P_char ch, P_char pl, int cmd, char *arg)
 
 int verzanan_guard_three(P_char ch, P_char pl, int cmd, char *arg)
 {
-	char tbuf[40];
-	int i;
-
 	/*
 	   check for periodic event calls
 	 */
@@ -4629,8 +4626,6 @@ int verzanan_portal(P_obj obj, P_char ch, int cmd, char *arg)
 
 int guild_protection(P_char ch, P_char pl)
 {
-	int Experience, Loss;
-
 	if (!SanityCheck(ch, "guild_protection - guard") ||
 	    !SanityCheck(pl, "guild_protection - vict") || !IS_FIGHTING(ch) ||
 	    (GET_OPPONENT(ch) != pl))

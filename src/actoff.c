@@ -1221,7 +1221,7 @@ void do_charge(P_char ch, char *argument, int cmd)
 	static bool DEBUG = TRUE;
 
 	P_char victim;
-	int dir = -1, a, i;
+	int dir = -1, a;
 	int level = GET_LEVEL(ch);
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
 	float percent_chance;
@@ -1695,7 +1695,6 @@ void do_charge(P_char ch, char *argument, int cmd)
 void do_kill(P_char ch, char *argument, int cmd)
 {
 	P_char victim;
-	int loss;
 	char Gbuf1[MAX_STRING_LENGTH];
 
 	if (!IS_ALIVE(ch))
@@ -2363,14 +2362,12 @@ static bool restore_equipment_sneak_after_flee(P_char ch)
 
 void do_flee(P_char ch, char *argument, int cmd)
 {
-	int i, attempted_dir, start_room, atts, fight_pc = FALSE, j;
+	int i, attempted_dir, start_room, atts;
 	char buf[MAX_INPUT_LENGTH];
-	P_char tch, was_fighting = NULL;
+	P_char was_fighting = NULL;
 	struct affected_type af;
-	char *arg1;
 	char arg[512];
 	arg[0] = '\0';
-	char amsg[512];
 	int available_exits, stun_chance_flee;
 	int chance_when_engaged, succeded;
 	int percent_chance;
@@ -2904,17 +2901,6 @@ void do_combination(P_char ch, char *argument, int cmd)
 void event_barrage(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	int percent, skill, stage, skill_req = 0;
-	struct damage_messages messages = {
-		0,
-		0,
-		0,
-		"...then you feign low and in a blur of speed leap into the air landing a swift roundkick to $S head.\n"
-		"$N topples to the ground, $S neck broken.",
-		"...then feigns low and in a blur of speed leaps into the air landing a swift roundkick to your head.\n"
-		"Your visions blurs as you topple to the ground, your neck broken.",
-		"...then feigns low and in a blur of speed leaps into the air and lands a swift roundkick to $S head.\n"
-		"$N topples to the ground, $S neck broken."
-	};
 
 	victim = GET_OPPONENT(ch);
 	victim = guard_check(ch, victim);
@@ -3048,16 +3034,6 @@ void do_consume(P_char ch, char *argument, int cmd)
 	struct affected_type *af;
 	victim = ParseTarget(ch, argument);
 
-	struct damage_messages messages = {
-		"The &=LBlightning bolt&N hits $N with full impact.",
-		"YOU'RE HIT!  A &=LBlightning bolt&N from $n has reached its goal.",
-		"$N wavers under the impact of the &=LBlightning bolt&N sent by $n.",
-		"Your &=LBlightning bolt&N shatters $N to pieces.",
-		"You feel enlightened by the &=LBlightning bolt&N $n sends, and then all is dark - RIP.",
-		"$N receives the full &+yblast&N of a &=LBlightning bolt&+B from $n ... and is no more.",
-		0
-	};
-
 	if (!ch)
 		return;
 
@@ -3082,8 +3058,6 @@ void do_consume(P_char ch, char *argument, int cmd)
 	}
 	else
 	{
-		int spell;
-		int dam;
 		act("&+L$n &nmakes a gesture, and chunks of &+R$N&n's &+grotten &+yflesh&n fall to the ground with a dull &+Lthud&n...&n",
 		    FALSE, ch, 0, victim, TO_NOTVICT);
 		act("&+L$n &nmakes a gesture, and chunks of your &+grotten &+yflesh&n fall to the ground with a dull &+Lthud&n...&n",
@@ -3743,11 +3717,9 @@ void do_dragon_roar(P_char ch, char *argument, int cmd)
 	P_char victim = NULL, mount = NULL;
 	int skl_lvl = 0;
 	int hpoints = (GET_CHAR_SKILL(ch, SKILL_DRAGON_ROAR) / 2);
-	struct group_list *gl;
 	int dampoints = (GET_CHAR_SKILL(ch, SKILL_DRAGON_ROAR) / 20);
 	int percent_chance;
 	bool is_hunter = FALSE;
-	int skl;
 	struct affected_type af;
 	char buf[MAX_STRING_LENGTH];
 
@@ -4356,7 +4328,6 @@ void do_dragon_strike(P_char ch, char *argument, int cmd)
 	int skl_lvl = 0;
 	int ch_size, vict_size;
 	bool is_lancer;
-	char buf[512];
 	char name[MAX_INPUT_LENGTH];
 	struct damage_messages messages = {
 		"Your &+Gdr&+Lag&+Gon&N hearkens your call and sweeps $s tail into $N with a magnificent &-L&+RSWOOSH&n!",
@@ -4757,7 +4728,7 @@ void do_kick(P_char ch, char *argument, int cmd)
 
 int chance_roundkick(P_char ch, P_char victim)
 {
-	int percent_chance, dam;
+	int percent_chance;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
@@ -4939,7 +4910,6 @@ bool roundkick(P_char ch, P_char victim)
 void do_roundkick(P_char ch, char *argument, int cmd)
 {
 	P_char victim = NULL;
-	int dam;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -5095,7 +5065,7 @@ void do_headbutt(P_char ch, char *argument, int cmd)
 	P_char victim, tch;
 	struct affected_type af;
 	int chsize, victsize, chance, roll;
-	float dam, lvldiff;
+	float dam;
 
 	struct damage_messages messages_humanoid = {
 		"You leave a huge, &+rred&N swollen lump on $N's temple.",
@@ -5547,9 +5517,9 @@ void event_sneaky_strike(P_char ch, P_char victim, P_obj obj, void *data)
 	int dam = 0;
 	int skill = 0;
 	P_obj weapon;
-	int skl_lvl = 0, sect;
+	int skl_lvl = 0;
 	int i = 0;
-	struct affected_type *af, afs;
+	struct affected_type afs;
 
 	struct damage_messages messages = {
 		"You find weakness in $N's defenses and land a sneaky surprise attack!",
@@ -6175,8 +6145,6 @@ bool backstab(P_char ch, P_char victim)
 	// Note this DEBUG should match the one in single_stab always!
 	static bool DEBUG = TRUE;
 
-	struct affected_type af, *af_ptr;
-	int learned, old_pos, old_victhp, duergarcrit = 0;
 	P_obj first_w, second_w;
 	int percent_chance;
 	bool stabbed = FALSE;
@@ -6630,7 +6598,7 @@ bool isKickable(P_char ch, P_char victim)
 // Expanding this function to check basher status, race, etc... Jan08 -Lucrot
 bool isBashable(P_char ch, P_char victim, bool ignoreImmaterial)
 {
-	int vrace, crace, vsize, csize;
+	int vsize, csize;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
@@ -6694,9 +6662,8 @@ void bash(P_char ch, P_char victim, bool _debug)
 {
 	static bool DEBUG = TRUE;
 	float percent_chance, modifier;
-	int learned, dmg, ch_size, vict_size, skl, rolled;
+	int dmg, ch_size, vict_size, rolled;
 	int skewer = GET_CHAR_SKILL(ch, SKILL_SKEWER);
-	char buf[512];
 	P_obj weap = ch->equipment[WIELD];
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
@@ -7272,7 +7239,7 @@ void do_tackle(P_char ch, char *arg, int cmd)
 {
 	P_char vict = NULL, mount;
 	struct affected_type af;
-	int i, door, target_room, percent_chance;
+	int door, target_room, percent_chance;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -7688,7 +7655,7 @@ void do_retreat(P_char ch, char *arg, int cmd)
 	int dir, found = FALSE, ct = 0;
 	char buf[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
-	P_char k, newvict;
+	P_char k;
 
 	int retc = 0, expdr = 0;
 
@@ -8122,15 +8089,6 @@ void maul(P_char ch, P_char victim)
 	int percentroll = number(1, 100);
 	bool too_big;
 	struct affected_type af;
-	struct damage_messages messages = {
-		"You ferociously &+yMAUL&N $N!",
-		"$n ferociously &+yMAULS&N YOU!",
-		"$n ferociously &+yMAULS&N $N!",
-		"Grasping $N your maul shreds through $S flesh, sending blood splattering into the wind.",
-		"Your vision and life fade in a bloody mist of red as $n's maul shreds through your flesh.",
-		"$n's maul grasps $N shredding $S flesh and sending blood splattering into the wind.",
-		0
-	};
 
 	if (!IS_ALIVE(ch))
 	{
@@ -8557,19 +8515,8 @@ void do_shieldpunch(P_char ch, char *argument, int cmd)
 void do_sweeping_thrust(P_char ch, char *argument, int cmd)
 {
 	P_char victim = NULL;
-	P_char tch, next;
 	int ch_size, vict_size, percent_chance, takedown_chance, levelc, levelvict;
 	int sweepthrustaffect = 4;
-	double mod;
-	struct damage_messages messages = {
-		"You feign and sweep downward slashing $N at the back of the knee.",
-		"With incredible skill $n sweeps low and strikes you at the back of the knee.",
-		"$n does a sweeping motion and strikes $N at the back of the knee.",
-		"Your thrust tears through the body of $N leaving nothing but a bloody corpse.",
-		"Blood gurgles up through your throat as $n's thrust rips your body to pieces.",
-		"$n's thrust tears through the body of $N completely dismembering it.",
-		0
-	};
 
 	if (!IS_ALIVE(ch))
 	{
@@ -8838,7 +8785,7 @@ void do_sweeping_thrust(P_char ch, char *argument, int cmd)
 
 void do_rearkick(P_char ch, char *argument, int cmd)
 {
-	int door, target_room, takedown_chance, dam, vict_lag, ch_size, vict_size;
+	int door, target_room, takedown_chance, dam, ch_size, vict_size;
 	P_char victim;
 	double percent_chance;
 	char buf[512];
@@ -9159,7 +9106,6 @@ void do_trample(P_char ch, char *argument, int cmd)
 	int dam, vict_lag;
 	int ch_size, vict_size;
 	bool is_knight;
-	char buf[512];
 	char name[MAX_INPUT_LENGTH];
 	struct damage_messages messages = {
 		"You shift your weight and viciously slam your rear hooves into $N with a &+Wstunning&n force!",
@@ -9593,7 +9539,7 @@ void do_springleap(P_char ch, char *argument, int cmd)
 	int percent_chance;
 	int SUPER_SPRINGLEAP = GET_SPEC(ch, CLASS_MONK, SPEC_WAYOFDRAGON);
 	int RANGED_LEAP = 0;
-	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
+	char arg2[MAX_INPUT_LENGTH];
 	int dir = -1;
 	int a;
 
@@ -10297,7 +10243,6 @@ void do_call_grave(P_char ch, char *argument, int cmd)
 {
 	P_char victim = NULL;
 	char target[128];
-	char buf[MAX_STRING_LENGTH];
 
 	if (!GET_CHAR_SKILL(ch, SKILL_CALL_GRAVE) && !has_innate(ch, INNATE_CALL_GRAVE))
 	{
@@ -10347,7 +10292,7 @@ void do_call_grave(P_char ch, char *argument, int cmd)
 
 void event_call_grave(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int i, room, num, skill;
+	int i, num, skill;
 	P_char skeleton;
 
 	if (IS_ROOM(ch->in_room, ROOM_SINGLE_FILE))
@@ -10596,7 +10541,6 @@ void do_gaze(P_char ch, char *argument, int cmd)
 void gaze(P_char ch, P_char victim)
 {
 	int percent_chance, anatomy_skill, standing = 1, battling = 1;
-	bool death_door;
 	P_char temp_ch;
 
 	if (!IS_ALIVE(ch))
@@ -10881,8 +10825,6 @@ void gaze(P_char ch, P_char victim)
 void restrain(P_char ch, P_char victim)
 {
 	int percent_chance, anatomy_skill, standing = 1, battling = 1;
-	bool death_door;
-	P_char temp_ch;
 	struct affected_type af;
 
 	if (!ch)
@@ -11567,8 +11509,6 @@ void do_garrote(P_char ch, char *argument, int cmd)
 void do_legsweep(P_char ch, char *arg, int cmd)
 {
 	P_char vict = NULL;
-	struct affected_type af;
-	int i, door, target_room;
 	float percent_chance;
 
 	if (!IS_ALIVE(ch))

@@ -625,7 +625,7 @@ void do_mail(P_char ch, char *arg, int cmd)
 
 	int curr_time = time(NULL);
 
-	P_obj furnace, new_obj;
+	P_obj new_obj;
 	if (curr_time < (1135362289 + 60 * 60 * 24 * 2))
 	{
 		if (ch->only.pc->vote == 1)

@@ -221,8 +221,7 @@ void do_aggr(P_char ch, char *arg, int cmd)
 void do_gsay(P_char ch, char *arg, int cmd)
 {
 	struct group_list *gl;
-	int *rm_checked;
-	int i, j, k, numb, skip;
+	int i;
 	char Gbuf1[MAX_STRING_LENGTH];
 	char escaped_text[MAX_STRING_LENGTH];
 
@@ -511,7 +510,6 @@ void do_war_cry(P_char ch, char *arg, int cmd)
 	int hpoints = (GET_CHAR_SKILL(ch, SKILL_WAR_CRY) / 2);
 	struct group_list *gl;
 	int dampoints = (GET_CHAR_SKILL(ch, SKILL_WAR_CRY) / 20);
-	int skl;
 	struct affected_type af;
 
 	if (!IS_ALIVE(ch))
@@ -2434,7 +2432,6 @@ void do_dirttoss(P_char ch, char *arg, int cmd)
 {
 	P_char vict = NULL;
 	int skl_lvl = 0, sect;
-	int i = 0;
 
 	if (!ch)
 		return;
@@ -2535,7 +2532,6 @@ void do_dirttoss(P_char ch, char *arg, int cmd)
 
 char *get_str_zone(P_obj obj)
 {
-	static char buffer[200];
 	int zone = 0;
 
 	while (zone < top_of_zone_table &&
@@ -2547,9 +2543,8 @@ char *get_str_zone(P_obj obj)
 
 void do_lore(P_char ch, char *arg, int cmd)
 {
-	int i, percent = 0, skl_lvl;
-	bool found;
-	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[256];
+	int percent = 0, skl_lvl;
+	char Gbuf1[MAX_STRING_LENGTH], Gbuf3[256];
 	char name[MAX_STRING_LENGTH];
 	P_obj obj = NULL;
 	P_char target = NULL;
@@ -3512,10 +3507,9 @@ void do_hamstring(P_char ch, char *arg, int cmd)
 
 void do_arena(P_char ch, char *arg, int cmd)
 {
-	int i, j, f = 0;
-	char strn[MAX_STRING_LENGTH], out[MAX_STRING_LENGTH];
+	int i;
+	char strn[MAX_STRING_LENGTH];
 	char arg1[256], arg2[256];
-	P_char c;
 
 	if (!ch)
 		return; /* ? */
@@ -3734,7 +3728,7 @@ int chance_throw_potion(P_char ch, P_char victim)
 
 bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
 {
-	int i, bits, j;
+	int i, j;
 	bool equipped = FALSE;
 	P_char tch = NULL;
 	P_char temp = NULL;
@@ -3962,7 +3956,6 @@ bool throw_potion(P_char ch, P_obj potion, P_char victim, P_obj obj)
 void do_throw_potion(P_char ch, char *argument, int cmd)
 {
 	P_obj scroll, obj;
-	int i, j, in_room;
 	P_char victim = NULL;
 	char Gbuf1[MAX_STRING_LENGTH];
 	int bits = 0;

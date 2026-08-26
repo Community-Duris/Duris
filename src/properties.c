@@ -188,7 +188,6 @@ void save_properties(P_char ch)
 	struct property property, *result;
 	char buf[4096];
 	char changes[4096];
-	float old_value, new_value;
 
 	f_old = fopen(PROPERTIES_FILE, "r");
 	f_new = fopen(PROPERTIES_FILE ".new", "w");

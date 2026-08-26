@@ -468,8 +468,6 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 	char second[MAX_INPUT_LENGTH];
 	char rest[MAX_INPUT_LENGTH];
 	int i = 0;
-	int choice = 0;
-	P_obj hammer, foundry;
 
 	/***DISPLAYRECIPES STUFF***/
 	char tempdesc[MAX_INPUT_LENGTH];
@@ -629,7 +627,6 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 			extract_obj(tobj);
 			return;
 		}
-		int iVal = plan.item_value;
 		int lowQualityMaterialVnum = plan.low_material_vnum;
 
 		if (lowQualityMaterialVnum <= 0)
@@ -1056,7 +1053,7 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 /* Modern Forge command implementation, extracted from tradeskill.c. */
 static void crafting_handle_forge_command(P_char ch, char *argument, int cmd)
 {
-	int skillLevel, objVnum, recipeNumber, commandType, iVal, invVnum;
+	int skillLevel, objVnum, commandType, iVal, invVnum;
 	int numHighQuality, numLowQuality, lowQualityMaterialVnum, highQualityMaterialVnum;
 	int invLowMats, invHighMats, invEssences;
 	char buf[256];

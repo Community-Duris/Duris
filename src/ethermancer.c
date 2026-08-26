@@ -181,9 +181,7 @@ void spell_frost_beam(int level, P_char ch, char *arg, int type, P_char victim, 
 void spell_faerie_sight(int level, P_char ch, char *arg, int type, P_char victim, P_obj tar_obj)
 {
 	struct affected_type af;
-	int count;
-	P_obj t_obj, next_obj;
-	P_obj used_obj[32];
+	P_obj t_obj;
 	bool refreshed;
 	struct affected_type *pAff;
 
@@ -1506,7 +1504,6 @@ void spell_wind_rage(int level, P_char ch, char *arg, int type, P_char victim, P
 void spell_ethereal_alliance(int level, P_char ch, char *arg, int type, P_char victim,
 			     P_obj tar_obj)
 {
-	P_char tch, target;
 	struct affected_type af1, af2;
 
 	bzero(&af1, sizeof(af1));
@@ -2085,9 +2082,6 @@ void spell_polar_vortex(int level, P_char ch, char *arg, int type, P_char victim
 void spell_ethereal_travel(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	int from_room;
-	int to_room;
-	P_char targetChar;
-	int tries = 0;
 	int location;
 	struct group_list *gl = 0;
 
@@ -2302,7 +2296,6 @@ void static_discharge(P_char ch, P_char victim, int level, int intensity)
 void event_static_discharge(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	struct static_discharge_data *sdata;
-	struct affected_type afp;
 
 	sdata = (struct static_discharge_data *)data;
 
@@ -2323,10 +2316,8 @@ void spell_static_discharge(int level, P_char ch, char *arg, int type, P_char vi
 {
 	struct static_discharge_data sdata;
 	struct static_discharge_data *tmpsdata;
-	struct affected_type af, afp;
 	P_nevent e1 = 0;
 	int delay = 0;
-	int charges_active = 0;
 
 	sdata.level = GET_LEVEL(ch);
 	sdata.intensity = 1;
@@ -2393,7 +2384,7 @@ void spell_static_discharge(int level, P_char ch, char *arg, int type, P_char vi
 // victim and ch have to be backwards for the event search to work right.. *sigh*
 void event_razor_wind(P_char victim, P_char ch, P_obj obj, void *data)
 {
-	int temp, dam, duration;
+	int dam, duration;
 
 	struct damage_messages messages = {
 		"&+CThe &+Wwi&+wnd&+Wst&+wor&+Wm &+csends &+Ldebris &+cflying into $N&+c at high speed causing $M to &+Rb&+rle&+Red&+c.&n",
@@ -2847,7 +2838,7 @@ void spell_etheric_gust(int level, P_char ch, char *arg, int type, P_char victim
 // victim and ch have to be backwards for the event search to work right.. *sigh*
 void event_antimatter_collision(P_char victim, P_char ch, P_obj obj, void *data)
 {
-	int temp, dam, duration;
+	int dam, duration;
 
 	struct damage_messages messages = {
 		"&+LThe black dots swarm and COLLIDE with $N&+L absorbing his &+Mfl&+mes&+Mh&+L!&n",
@@ -2933,7 +2924,7 @@ void spell_antimatter_collision(int level, P_char ch, char *arg, int type, P_cha
 // victim and ch have to be backwards for the event search to work right.. *sigh*
 void event_arctic_blast(P_char victim, P_char ch, P_obj obj, void *data)
 {
-	int temp, dam, duration;
+	int dam, duration;
 
 	struct damage_messages messages = {
 		"&+C$N&+C &+Wsh&+wud&+Wde&+wrs &+Cviolently as the &+Wi&+Cc&+we &+Bcold &+Wwinds &+Cslice through $M.&n",

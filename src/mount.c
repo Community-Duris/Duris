@@ -790,7 +790,6 @@ int wagon(P_obj obj, P_char ch, int cmd, char *arg)
 int wagon_exit_room(int room, P_char ch, int cmd, char *arg)
 {
 	P_obj obj;
-	int rroom;
 
 	if ((cmd != CMD_LOOK) && (cmd != CMD_DISEMBARK) && (cmd != CMD_EXITS))
 		return (FALSE);

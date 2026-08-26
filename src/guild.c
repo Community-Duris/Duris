@@ -55,7 +55,7 @@ bool avail_prac[MAX_SKILLS];
 
 void update_skills(P_char ch)
 {
-	int skl, spec, skllvl, maxlearn, minlearn;
+	int skl, spec, skllvl, minlearn;
 	bool chaos_mode;
 
 	spec = ch->player.spec;
@@ -544,11 +544,10 @@ int spell_cmp(const void *va, const void *vb)
 
 void do_spells(P_char ch, char *argument, int cmd)
 {
-	int spl, circle, i, count = 0, m_class = 0, god_mode = 0, memmed = 0, to_mem = 0, lvl, qend;
+	int spl, circle, i, count = 0, m_class = 0, lvl;
 	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
 	P_char target = NULL;
 	struct spl_list spell_list[LAST_SPELL + 1];
-	struct memorize_data *ptr;
 
 	if (IS_NPC(ch))
 	{
@@ -785,8 +784,8 @@ void do_spells(P_char ch, char *argument, int cmd)
 
 void do_skills(P_char ch, char *argument, int cmd)
 {
-	int skl, passes, skil;
-	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH], buf2[256];
+	int skl, skil;
+	char buf[MAX_STRING_LENGTH], buf1[MAX_STRING_LENGTH];
 	P_char target;
 
 	if (IS_NPC(ch))

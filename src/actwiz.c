@@ -435,7 +435,6 @@ void test_load_all_chars(P_char ch)
 #ifdef TEST_MUD
 	FILE *flist;
 	size_t i;
-	P_char locker;
 	char filename[MAX_STRING_LENGTH];
 	char name[MAX_STRING_LENGTH];
 	const char *alphabet[] = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
@@ -1010,7 +1009,7 @@ void do_goto(P_char ch, char *argument, int cmd)
 	char buf[MAX_STRING_LENGTH], output[MAX_STRING_LENGTH];
 	int location = NOWHERE, old_room, bits, zcoord = 0;
 	size_t i;
-	P_char target_mob = NULL, pers;
+	P_char target_mob = NULL;
 	P_obj target_obj = NULL;
 
 	if (IS_NPC(ch))
@@ -1600,7 +1599,7 @@ void do_stat(P_char ch, char *argument, int cmd)
 	char buf[MAX_STRING_LENGTH], o_buf[MAX_STRING_LENGTH];
 	char *timestr;
 	char time_left[128], showed_vals = FALSE;
-	int i = 0, i2, i3, i4, m_virtual, num_tr, num_pr, count, x, qi;
+	int i = 0, i2, i3, i4, m_virtual, num_tr, num_pr, x, qi;
 	Memory *mem;
 	struct affected_type *aff;
 	struct extra_descr_data *desc;
@@ -1608,7 +1607,6 @@ void do_stat(P_char ch, char *argument, int cmd)
 	struct time_info_data playing_time;
 	float fragnum = 0;
 	time_t now;
-	static int class_mod[17] = { 0, 12, 12, 12, 12, 12, 8, 10, 8, 8, 4, 4, 4, 6, 6, 9, 6 };
 
 	if (IS_NPC(ch))
 		return;
@@ -2340,7 +2338,6 @@ void do_stat(P_char ch, char *argument, int cmd)
 			}
 			if (IS_ARTIFACT(j))
 			{
-				long ct = time(0);
 				strcat(buf, "&+YIn game since: &n");
 				strcat(buf, asctime(localtime(&(j->timer[5]))));
 				strcat(buf, "\n");
@@ -5704,7 +5701,6 @@ void NewbySkillSet(P_char ch, bool fullReset)
 void do_start(P_char ch, int nomsg)
 {
 	int i;
-	P_obj tempobj;
 
 	if (IS_NPC(ch))
 	{
@@ -7306,8 +7302,8 @@ void do_lookup(P_char ch, char *argument, int cmd)
 			return;
 		}
 
-		FILE *flist, *f;
-		char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
+		FILE *flist;
+		char Gbuf2[MAX_STRING_LENGTH];
 		char Gbuf3[MAX_STRING_LENGTH];
 		char buffer[MAX_STRING_LENGTH];
 		char tbuf[MAX_STRING_LENGTH];
@@ -7493,7 +7489,6 @@ void read_wizconnect_file(void)
 {
 	FILE *f;
 	char buf[MAX_STRING_LENGTH];
-	int tmp;
 	struct wizban_t *ban;
 
 	f = fopen(WIZCONNECT_FILE, "r");
@@ -7670,7 +7665,6 @@ void do_ptell(P_char ch, char *arg, int cmd)
 void GetMIA(char *playerName, char *returned)
 {
 	unsigned long laston, minutesgone;
-	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[512];
 	P_char finger_foo;
 
 	if (!playerName || !*playerName)
@@ -9333,8 +9327,7 @@ void do_grant(P_char ch, char *args, int cmd)
 
 void do_revoke(P_char ch, char *args, int cmd)
 {
-	char victname[MAX_INPUT_LENGTH], cmdname[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH],
-		buf2[MAX_STRING_LENGTH];
+	char victname[MAX_INPUT_LENGTH], cmdname[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH];
 	int *new_arr, i, j, s;
 	P_char vict;
 
@@ -10099,7 +10092,6 @@ int vnum_room(char *searchname, struct char_data *ch)
 
 void do_unspec(P_char ch, char *argument, int cmd)
 {
-	int i;
 	P_char victim = NULL;
 	char buf[MAX_STRING_LENGTH];
 
@@ -10247,7 +10239,7 @@ void do_tranquilize(P_char ch, char *argument, int cmd)
 
 void do_storage(P_char ch, char *arg, int cmd)
 {
-	char buf[MAX_STRING_LENGTH], subcmd[MAX_STRING_LENGTH], objarg[MAX_STRING_LENGTH];
+	char subcmd[MAX_STRING_LENGTH], objarg[MAX_STRING_LENGTH];
 	P_obj s_obj, tmpobj, next_obj;
 
 	arg = one_argument(arg, subcmd);
@@ -10629,7 +10621,6 @@ bool is_quested_item(P_obj obj)
 	struct goal_data *gp;
 	int vnum = obj_index[obj->R_num].virtual_number;
 	int count = 0;
-	static int count2 = 0;
 
 	// For each quest on the mud.
 	for (qcp = quest_index[0].quest_complete; count < number_of_quests;
@@ -11865,7 +11856,6 @@ void do_whois(P_char ch, char *arg, int cmd)
 	char ip_address[MAX_STRING_LENGTH];
 	char name[MAX_INPUT_LENGTH];
 	int pid;
-	P_char targ;
 #ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row;
@@ -12965,7 +12955,7 @@ void do_where(P_char ch, char *argument, int cmd)
 // This looks through each mob type for the supplied class-spec.
 void which_spec(P_char ch, char *argument)
 {
-	char buf[MAX_STRING_LENGTH], specname[MAX_STRING_LENGTH], *tmp;
+	char specname[MAX_STRING_LENGTH], *tmp;
 	int mclass, spec, R_num, count;
 	bool found;
 	P_char mob;

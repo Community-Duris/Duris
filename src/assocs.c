@@ -71,9 +71,7 @@ P_Guild get_guild_from_id(int id_num)
 
 void sql_update_assoc_table()
 {
-	char buf[MAX_STRING_LENGTH];
 	int i, j;
-	FILE *f;
 	P_Guild guild;
 	string name;
 
@@ -297,7 +295,7 @@ void show_guild_frags(P_char ch)
  */
 bool found_asc(P_char god, P_char leader, char *bits, char *asc_name)
 {
-	char file_name[MAX_STR_NORMAL], buf[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	ush_int i;
 	P_Guild pNewGuild;
 	int asc_bits;
@@ -604,7 +602,6 @@ Guild::~Guild()
 bool Guild::add_member(P_char ch, int rank)
 {
 	long new_frags = GET_FRAGS(ch);
-	int length;
 	P_member last_member;
 
 	if (GET_ASSOC(ch) != NULL)
@@ -681,7 +678,7 @@ void Guild::default_title(P_char ch)
 void Guild::update_member(P_char ch)
 {
 	Guildhall *gh;
-	char home_string[100], title[ASC_MAX_STR_TITLE];
+	char home_string[100];
 	P_member pMembers;
 
 	// Check level.
@@ -1641,7 +1638,7 @@ void do_prestige(P_char ch, char *argument, int cmd)
 bool str_to_money(char *string, int *pc, int *gc, int *sc, int *cc)
 {
 	char buf[MAX_INPUT_LENGTH], *rest;
-	int amount, type;
+	int amount;
 
 	*pc = *gc = *sc = *cc = 0;
 
@@ -1707,8 +1704,8 @@ void do_society(P_char member, char *argument, int cmd)
 {
 	time_t temp_time;
 	char *timestr, buf[MAX_STRING_LENGTH];
-	char first[MAX_INPUT_LENGTH], second[MAX_INPUT_LENGTH], third[MAX_INPUT_LENGTH];
-	char fourth[MAX_INPUT_LENGTH], *rest;
+	char first[MAX_INPUT_LENGTH], second[MAX_INPUT_LENGTH];
+	char *rest;
 	int command, platinum, gold, silver, copper;
 	P_char victim = NULL;
 	P_Guild guild;
@@ -2098,7 +2095,7 @@ void do_society(P_char member, char *argument, int cmd)
 // Assumes member and victim are in the same guild (checked in do_society).
 void Guild::challenge(P_char member, P_char victim)
 {
-	int mem_bits = GET_A_BITS(member), old_member_rank = A_GET_RANK(member);
+	int mem_bits = GET_A_BITS(member);
 	char *char_name;
 	P_member pMembers;
 
@@ -2273,7 +2270,7 @@ void Guild::deposit(P_char member, int p, int g, int s, int c)
 // We know that member is a member of the guild that victim is applying for via checks in do_society.
 void Guild::enroll(P_char member, P_char victim)
 {
-	int mem_bits = GET_A_BITS(member), vict_bits;
+	int mem_bits = GET_A_BITS(member);
 	// Only those "greater than" normal rank can enroll.
 	if (!GT_NORMAL(mem_bits))
 	{
@@ -3025,9 +3022,6 @@ void Guild::title_trim(char *raw_title, char *good_title)
 
 void Guild::withdraw(P_char member, int p, int g, int s, int c)
 {
-	char *char_name;
-	P_member pMembers;
-
 	// Verify they have enough money.
 	if (p < 0 || g < 0 || s < 0 || c < 0 || platinum < static_cast<unsigned int>(p) ||
 	    gold < static_cast<unsigned int>(g) || silver < static_cast<unsigned int>(s) ||

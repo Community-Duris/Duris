@@ -87,8 +87,6 @@ struct obj_cost
 	bool ok;
 };
 
-static int songcounter = 0;
-
 int block_up(P_char ch, P_char pl, int cmd, char *arg)
 {
 	int allowed = 0;
@@ -739,7 +737,6 @@ int do_fetid_breath(P_char ch)
 int whirlwind_of_teetch(P_char ch, int targets)
 {
 	P_char victim;
-	int hit = 0;
 
 	if (!IS_FIGHTING(ch))
 		return 0;
@@ -884,7 +881,6 @@ void demogorgon_second_head(P_char ch)
 
 int demogorgon(P_char ch, P_char tch, int cmd, char *arg)
 {
-	P_char victim;
 	int helpers[] = { 19830, 19850, 19860, 19880, 19840, 19870, 19400, 19901, 19760, 0 };
 	static bool stats_increased = FALSE;
 	static bool demogorgon_shouted = FALSE;
@@ -1531,7 +1527,6 @@ int seas_coral_golem(P_char ch, P_char pl, int cmd, char *arg)
 
 int money_changer(P_char me, P_char ch, int cmd, char *arg)
 {
-	P_char rider;
 	long amount, from, to, n, rate = 0;
 	char Gbuf1[MAX_STRING_LENGTH];
 
@@ -2617,7 +2612,6 @@ int shadow_demon_of_torm(P_char ch, P_char pl, int cmd, char *arg)
 
 int dryad(P_char ch, P_char pl, int cmd, char *arg)
 {
-	struct affected_type af;
 	P_char vict, tmp_ch, next_vict_ch, next_tmp_ch;
 	int InRoom, HasCharmies;
 	bool princess = FALSE;
@@ -3946,7 +3940,6 @@ int brass_dragon(P_char ch, P_char pl, int cmd, char *arg)
 int janitor(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_obj i;
-	P_char rider;
 	/*
 	 * check for periodic event calls
 	 */
@@ -5850,9 +5843,8 @@ int stone_crumble(P_char ch, P_char pl, int cmd, char *arg)
 int goodie_guardian(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char i;
-	int num, count = 0;
+	int count = 0;
 	P_char guardian;
-	P_obj t_obj, next;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -9698,7 +9690,7 @@ int newbie_guard_west(P_char ch, P_char pl, int cmd, char *arg)
 // END NEWBIE GUARD
 int rentacleric(P_char ch, P_char vict, int cmd, char *argument)
 {
-	int i, diff, cost, spl;
+	int i, cost, spl;
 	P_obj obj = NULL, next_obj;
 	char buf[MAX_STRING_LENGTH];
 	struct price_info
@@ -10209,7 +10201,6 @@ int patrol_leader_road(P_char ch, P_char pl, int cmd, char *arg)
 P_char summon_creature(int mobnumb, P_char master, int max_summon, int dur, const char *appearsC,
 		       const char *appears)
 {
-	struct affected_type af;
 	P_char mob;
 	struct follow_type *k;
 	int i;
@@ -10573,10 +10564,6 @@ int claw_cavern_drow_mage(P_char ch, P_char pl, int cmd, char *arg)
 }
 int undeadcont_track(P_char ch, P_char pl, int cmd, char *arg)
 {
-	int door, direction;
-	P_char tmp_ch;
-	char buf[256];
-
 	/*
 	   check for periodic event calls
 	 */
@@ -10608,10 +10595,6 @@ int undeadcont_track(P_char ch, P_char pl, int cmd, char *arg)
  */
 int underdark_track(P_char ch, P_char pl, int cmd, char *arg)
 {
-	int door, direction;
-	P_char tmp_ch;
-	char buf[256];
-
 	/*
 	   check for periodic event calls
 	 */
@@ -10764,9 +10747,8 @@ int fooquest_boss(P_char ch, P_char pl, int cmd, char *arg)
 }
 int fooquest_mob(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tempchar = NULL, was_fighting = NULL;
-	P_obj item, next_item;
-	int pos;
+	P_char tempchar = NULL;
+	P_obj item;
 
 	/*
 	 * check for periodic event calls
@@ -11154,7 +11136,7 @@ int Malevolence(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char tch, vapor, vict = NULL;
 	P_obj item, next_item;
-	int numbPCs = 0, luckyPC = 0, currPC = 0, numb, pos, room;
+	int pos;
 	int randroom;
 
 	/*
@@ -11244,8 +11226,6 @@ int Malevolence(P_char ch, P_char pl, int cmd, char *arg)
 int Malevolence_vapor(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char tch, vict = NULL;
-	int numbPCs = 0, luckyPC = 0, currPC = 0, numb, pos;
-	int randroom;
 
 	/*
 	 * check for periodic event calls
@@ -11371,7 +11351,7 @@ int celestia_pulsar(P_char ch, P_char pl, int cmd, char *arg)
 
 int construct(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch, next, vict = NULL;
+	P_char vict = NULL;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -11418,7 +11398,6 @@ int construct(P_char ch, P_char pl, int cmd, char *arg)
 int nyneth(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char fury;
-	char buf[256];
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -11457,10 +11436,7 @@ int living_stone(P_char ch, P_char pl, int cmd, char *arg)
 
 int elemental_swarm_fire(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch, next, fury;
 	P_char vict = NULL;
-	char didit = FALSE;
-	char buf[256];
 
 	if (!ch)
 		return FALSE;
@@ -11481,10 +11457,7 @@ int elemental_swarm_fire(P_char ch, P_char pl, int cmd, char *arg)
 
 int elemental_swarm_earth(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch, next, fury;
 	P_char vict = NULL;
-	char didit = FALSE;
-	char buf[256];
 
 	if (!ch)
 		return FALSE;
@@ -11505,10 +11478,7 @@ int elemental_swarm_earth(P_char ch, P_char pl, int cmd, char *arg)
 
 int elemental_swarm_air(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch, next, fury;
 	P_char vict = NULL;
-	char didit = FALSE;
-	char buf[256];
 
 	if (!ch)
 		return FALSE;
@@ -11529,10 +11499,7 @@ int elemental_swarm_air(P_char ch, P_char pl, int cmd, char *arg)
 
 int elemental_swarm_water(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch, next, fury;
 	P_char vict = NULL;
-	char didit = FALSE;
-	char buf[256];
 
 	if (!ch)
 		return FALSE;
@@ -11692,18 +11659,7 @@ int imageproc(P_char ch, P_char pl, int cmd, char *arg)
 
 int undead_dragon_east(P_char ch, P_char pl, int cmd, char *arg)
 {
-	ush_int assoc;
-	uint bits;
-	char *tmp;
-	int dir = -1;
-	int badge = 0;
 	int allowed = 0;
-	P_char tch, next_ch;
-	char buf[MAX_STRING_LENGTH];
-	char temp[MAX_STRING_LENGTH];
-	char tmp2[MAX_STRING_LENGTH];
-	int is_avatar = FALSE;
-	int virt = 0;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -11741,8 +11697,6 @@ int undead_dragon_east(P_char ch, P_char pl, int cmd, char *arg)
 /* this is hack n slashed from the pet baby dragon in dragonnia */
 int undead_parrot(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tmp_ch;
-	P_char attacker;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
 	/*
@@ -12323,12 +12277,10 @@ int annoying_mob(P_char ch, P_char pl, int cmd, char *arg)
 
 int shabo_petre(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char i, i_next, tempchar = NULL, tempchar2 = NULL;
-	P_desc d;
+	P_char i, i_next, tempchar2 = NULL;
 	P_obj item, next_item;
 	P_char gunnadie;
 	int pos;
-	int helpers[] = { 32841, 32844, 32840, 0 };
 
 	/*
 	 * check for periodic event calls
@@ -12522,9 +12474,6 @@ int ako_vulture(P_char ch, P_char pl, int cmd, char *arg)
 /* mob 3721 */
 int ako_wildmare(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char mount;
-	int movescost;
-
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
 
@@ -12823,7 +12772,6 @@ int christine(P_char ch, P_char pl, int cmd, char *arg)
 
 int cookie_monster(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char temp;
 	static int songcounter = 0;
 
 	/*
@@ -12876,7 +12824,6 @@ int cookie_monster(P_char ch, P_char pl, int cmd, char *arg)
 
 int necro_specpet_bone(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch;
 	P_char vict;
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -12898,10 +12845,7 @@ int necro_specpet_blood(P_char ch, P_char pl, int cmd, char *arg)
 
 int necro_specpet_flesh(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch;
 	P_char vict;
-	int curr_time;
-	int proctimer;
 
 	struct damage_messages acid_blood = {
 		"&+L$N &+Lwrithes in agony the black blood greedily eats into $S &+rflesh.&n",
@@ -12949,10 +12893,7 @@ int necro_specpet_flesh(P_char ch, P_char pl, int cmd, char *arg)
 
 int conj_specpet_xorn(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch;
 	P_char vict;
-	int curr_time;
-	int proctimer;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -13031,10 +12972,9 @@ int conj_specpet_xorn(P_char ch, P_char pl, int cmd, char *arg)
 
 int conj_specpet_golem(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch;
 	P_char vict;
 	int temp = 0;
-	int healpoints, door, target_room, in_room;
+	int healpoints, door, target_room;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -13189,7 +13129,6 @@ int conj_specpet_djinni(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char tch;
 	P_char vict;
-	int in_room;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -13240,9 +13179,8 @@ int conj_specpet_djinni(P_char ch, P_char pl, int cmd, char *arg)
 
 int conj_specpet_slyph(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch;
 	P_char vict;
-	int room, in_room;
+	int room;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -13267,9 +13205,8 @@ int conj_specpet_slyph(P_char ch, P_char pl, int cmd, char *arg)
 
 int conj_specpet_triton(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch;
 	P_char vict = NULL;
-	int healpoints = 432, in_room;
+	int healpoints = 432;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -13295,7 +13232,6 @@ int conj_specpet_triton(P_char ch, P_char pl, int cmd, char *arg)
 
 int conj_specpet_undine(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch;
 	P_char vict;
 	int healpoints = 50;
 
@@ -13327,9 +13263,7 @@ int conj_specpet_undine(P_char ch, P_char pl, int cmd, char *arg)
 
 int conj_specpet_salamander(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch;
 	P_char vict;
-	int in_room;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -13363,7 +13297,6 @@ int conj_specpet_salamander(P_char ch, P_char pl, int cmd, char *arg)
 
 int conj_specpet_serpent(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch;
 	P_char vict;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -13391,17 +13324,9 @@ int conj_specpet_serpent(P_char ch, P_char pl, int cmd, char *arg)
 
 int shabo_palle(P_char ch, P_char vict, int cmd, char *arg)
 {
-	int found;
-	P_char tempch;
-	P_obj tempobj, next_obj;
-	int r_room, rand;
-	char Gbuf1[MAX_STRING_LENGTH];
-	char Gbuf2[MAX_STRING_LENGTH];
 	char asked[MAX_STRING_LENGTH];
-	P_char i, i_next, tempchar = NULL, tempchar2 = NULL, was_fighting = NULL;
-	P_desc d;
+	P_char tempchar2 = NULL;
 	P_obj item, next_item;
-	P_char gunnadie;
 	static bool askedquestion = FALSE;
 	static int timerr = 0;
 	int pos, rr;
@@ -13546,8 +13471,7 @@ int tower_data[5][6] = {
 
 int outpost_captain(P_char ch, P_char pl, int cmd, char *arg)
 {
-	int door, direction;
-	int source_room, target_room;
+	int direction;
 	bool CombatInRoom;
 	int distance = 10;
 	int helpers_1[6]; // 4 Elites lvl 50
@@ -13559,7 +13483,7 @@ int outpost_captain(P_char ch, P_char pl, int cmd, char *arg)
 	// return 0;
 	int how_many;
 	P_char tmp_ch;
-	P_char t_ch, vict;
+	P_char t_ch;
 	struct follow_type *k, *next_dude;
 	char buf[256];
 
@@ -15764,7 +15688,7 @@ int block_dir(P_char ch, P_char pl, int cmd, char *arg)
 
 int undead_howl(P_char ch, P_char pl, int cmd, char *arg)
 {
-	P_char tch, next, vict = NULL;
+	P_char tch, vict = NULL;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;

@@ -156,7 +156,6 @@ void restore_epic_skills(P_char ch, int *skls)
 int multiclass_proc(int room, P_char ch, int cmd, char *arg)
 {
 	int i;
-	int skls[MAX_SKILLS];
 	int min_level = get_property("multiclass.level.req.min", 50);
 
 	if ((cmd == CMD_SET_PERIODIC) || (ch == NULL) || IS_NPC(ch) || IS_MORPH(ch) ||
@@ -239,7 +238,6 @@ int multiclass_proc(int room, P_char ch, int cmd, char *arg)
 
 int inn(int room, P_char ch, int cmd, char *arg)
 {
-	P_char tch, next_ch;
 	char timestr[MAX_STRING_LENGTH];
 	time_t ct;
 
@@ -731,7 +729,6 @@ int dump(int room, P_char ch, int cmd, char *arg)
 int count_patrol(int vnum)
 {
 	P_char patrol;
-	int i = 0;
 	int count = 0;
 
 	for (patrol = character_list; patrol; patrol = patrol->next)
@@ -748,10 +745,8 @@ int count_patrol(int vnum)
 int patrol_shops(int room, P_char ch, int cmd, char *arg)
 {
 	char buf[MAX_INPUT_LENGTH];
-	char name[MAX_STRING_LENGTH], master[MAX_STRING_LENGTH];
-	int pet_room, val, temp, count = 0;
-	P_char pet = NULL, mount = NULL;
-	P_obj ticket;
+	int pet_room, temp, count = 0;
+	P_char pet = NULL;
 
 	/* check for periodic event calls */
 	if (cmd == CMD_SET_PERIODIC)
@@ -1697,8 +1692,6 @@ int cage_room2(int room, P_char ch, int cmd, char *argument)
 
 int avernus_overland(int room, P_char ch, int cmd, char *argument)
 {
-	int knob;
-
 	if (cmd == CMD_SET_PERIODIC)
 	{
 		return TRUE;

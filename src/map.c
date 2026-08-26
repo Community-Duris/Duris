@@ -244,7 +244,7 @@ const char *glyph_names[NUM_GLYPHS] = {
 unsigned int calculate_relative_room(unsigned int rroom, int x, int y)
 {
 	int local_y, local_x;
-	int vroom = world[rroom].number, local_map;
+	int vroom = world[rroom].number;
 
 	struct zone_data *zone = &zone_table[world[rroom].zone];
 
@@ -277,7 +277,7 @@ unsigned int calculate_relative_room(unsigned int rroom, int x, int y)
  */
 int calculate_map_distance(int room1, int room2)
 {
-	int v1, v2, map1, map2, x1, dx, y1, dy, x2, y2;
+	int v1, v2, x1, dx, y1, dy, x2, y2;
 
 	if (&zone_table[world[room1].zone] != &zone_table[world[room2].zone])
 		return -1;
@@ -309,7 +309,7 @@ int calculate_map_distance(int room1, int room2)
  */
 bool calculate_map_coords(int room1, int room2, int &x, int &y)
 {
-	int v1, v2, map1, map2, x1, dx, y1, dy, x2, y2;
+	int v1, v2, x1, y1, x2, y2;
 
 	if (&zone_table[world[room1].zone] != &zone_table[world[room2].zone])
 		return false;
@@ -342,7 +342,7 @@ int whats_in_maproom(P_char ch, int room, int distance, int show_regardless)
 {
 	P_obj obj; // For looping through objs in a room.
 	P_char who; // For looping through chars in a room.
-	int portal = FALSE, val = CONTAINS_MAX + 1;
+	int val = CONTAINS_MAX + 1;
 	int from_room = ch->in_room;
 
 	if (!IS_ALIVE(ch) || room <= 0)
@@ -698,10 +698,9 @@ static inline void append_fmt(char (&dst)[N], int shift, const char *fmt, Args..
 
 void display_map_room(P_char ch, int from_room, int n, int show_map_regardless, int gmcp_pkg_type)
 {
-	int x, y, where, what, heading;
+	int x, y, what, heading;
 	int whats_in;
-	bool hadbg = false, map_tile;
-	char buf[MAX_STRING_LENGTH], minibuf[10];
+	char buf[MAX_STRING_LENGTH];
 	char gmcp_map_buf[MAX_STRING_LENGTH * 4]; /* Buffer for GMCP map */
 	float horizontal_factor, vertical_factor;
 	P_ship ship = get_ship_from_char(ch);
@@ -1145,7 +1144,6 @@ int map_view_distance(P_char ch, int room)
 // ch = person to show the map to, room = the center of the map, show_map_regardless = ignore the PLR_MAP toggle.
 void map_look_room(P_char ch, int room, int show_map_regardless)
 {
-	char tot_buf[MAX_STRING_LENGTH];
 	int n;
 
 	// If don't have a living char with a desc to send the map to.

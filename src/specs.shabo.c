@@ -333,7 +333,6 @@ int tower_summoning(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	//  P_char i;
 	P_char istalker;
-	P_char vict;
 	P_char smob, next_mob;
 	int scount = 0;
 	int count = 0;
@@ -619,7 +618,6 @@ int shabo_trap_up(P_obj obj, P_char ch, int cmd, char *arg)
 int shabo_trap_up_two(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char trapmob;
-	int dam, kala, kala2, kala3;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -715,7 +713,6 @@ int shabo_trap_north_two(P_obj obj, P_char ch, int cmd, char *arg)
 
 int mox_totem(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char *arg;
 	int rand;
 	int curr_time;
 	P_char kala;
@@ -867,7 +864,7 @@ int shaboath_alternation_tower(int room, P_char ch, int cmd, char *argument)
 	P_char tch, next;
 	struct affected_type *af;
 	bool did_something = FALSE;
-	int k, i = 0;
+	int k;
 
 	int goodie_races[NUMBER_RACES_FOR_GOOD] = { RACE_HUMAN,	    RACE_GREY,	   RACE_MOUNTAIN,
 						    RACE_BARBARIAN, RACE_GNOME,	   RACE_HALFLING,
@@ -952,8 +949,7 @@ int shaboath_alternation_tower(int room, P_char ch, int cmd, char *argument)
 int shaboath_necromancy_tower(int room, P_char ch, int cmd, char *argument)
 {
 	P_obj obj, next_obj;
-	P_char necro_teacher;
-	int was_in_room, raised = 0;
+	int raised = 0;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;

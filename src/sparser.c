@@ -295,9 +295,6 @@ bool is_ally(P_char ch, P_char other)
 int get_weight_allies_in_room(P_char ch, int room_index)
 {
 	P_char t_char = world[room_index].people;
-	char buf[250];
-	int allies = 0;
-	int weights = 0;
 	::byte chrace;
 
 	int chweight = 0;
@@ -554,7 +551,6 @@ bool circle_follow(P_char ch, P_char victim)
 void stop_follower(P_char ch)
 {
 	struct follow_type *j, *k;
-	int i;
 
 	if (!(ch && ch->following))
 	{
@@ -710,7 +706,6 @@ void petrestore(P_char ch, char *id)
 
 void add_follower(P_char ch, P_char leader)
 {
-	int i;
 	struct follow_type *k;
 
 	if (!(ch && leader))
@@ -1655,13 +1650,8 @@ int lookup_spell(const char *name, int len)
 bool parse_spell(P_char ch, char *argument, struct spell_target_data *target_data, int cmd)
 {
 	int qend;
-	int free_slots;
 	int circle;
-	char Gbuf1[MAX_STRING_LENGTH], ranged_arg[MAX_STRING_LENGTH];
 	int spl = 0;
-	P_obj tar_obj = 0;
-	P_char tar_char = 0;
-	char *tar_arg = 0;
 
 	argument = skip_spaces(argument);
 
@@ -1967,8 +1957,8 @@ extern void DelayCommune(P_char ch, int delay);
 
 void do_will(P_char ch, char *argument, int cmd)
 {
-	int dura, fail;
-	P_char kala, kala2;
+	int dura;
+	P_char kala;
 	struct spellcast_datatype tmp_spl;
 	int spl;
 	P_char tar_char;
@@ -2212,13 +2202,11 @@ bool check_disruptive_blow(P_char ch)
 
 void do_cast(P_char ch, char *argument, int cmd)
 {
-	int dura, fail;
-	P_char kala, kala2;
+	int dura;
+	P_char kala;
 	struct spellcast_datatype tmp_spl;
 	bool is_tank = FALSE, weaved = false;
-	int virt, spl;
-	int skl, chant_bonus = 0;
-	char buffer[256];
+	int spl;
 	P_char tar_char;
 	struct affected_type *weave_af;
 
@@ -2544,12 +2532,10 @@ void event_abort_spell(P_char ch, P_char victim, P_obj obj, void *data)
 void event_spellcast(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	struct spellcast_datatype *arg = (struct spellcast_datatype *)data;
-	int skl = 0, i = 0, num = 0, manacost, room = ch->in_room, chance;
+	int skl = 0, i = 0, room = ch->in_room, chance;
 	char buf[1024];
 	char args[128];
-	P_obj room_junk = NULL, room_junk_temp = NULL;
 	P_char tmpch, tmpch2, gvict;
-	struct affected_type af;
 	P_char tar_char;
 	P_obj tar_obj;
 	bool weaving = (arg->flags & CST_SPELLWEAVE) != 0;

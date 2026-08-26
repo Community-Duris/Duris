@@ -1325,7 +1325,7 @@ void check_deploy(struct zone_data *zone)
 {
 	P_town town = towns;
 	P_char mob;
-	int i, vnum, rnum;
+	int i, rnum;
 	char buf[MAX_STRING_LENGTH];
 
 	// Search for town data corresponding to zone.
@@ -1399,8 +1399,6 @@ bool has_gates(int room)
 
 void kill_siege(P_char ch, P_obj obj)
 {
-	char buf[MAX_STRING_LENGTH];
-
 	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
 	{
 		send_to_char("You are already fighting.\n", ch);
@@ -1587,8 +1585,6 @@ void list_towns(P_char ch)
 
 void add_troopresources(P_char ch, P_town town, int amount)
 {
-	char buf[MAX_STRING_LENGTH];
-
 	/* For debugging...
 	  snprintf(buf, MAX_STRING_LENGTH, "add_trooplevel: '%s' amount: '%d'.\n", town->zone->name, amount );
 	  send_to_char( buf, ch );

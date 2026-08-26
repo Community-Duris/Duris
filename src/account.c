@@ -203,9 +203,6 @@ bool is_email_taken(const char *email)
 void select_accountname(P_desc d, char *arg)
 {
 	char tmp_name[MAX_INPUT_LENGTH];
-	char Gbuf1[MAX_STRING_LENGTH];
-	P_desc t_d = NULL;
-	char acct_in_game = 0;
 
 	for (; isspace(*arg); arg++)
 		;
@@ -686,8 +683,6 @@ void verify_new_account_email(P_desc d, char *arg)
 
 void get_new_account_password(P_desc d, char *arg)
 {
-	char password[256];
-
 	if (!arg)
 	{
 		echo_on(d);
@@ -878,7 +873,6 @@ void add_ip_entry(P_acct acct, P_desc d)
 {
 	char host[512];
 	struct acct_ip *a = NULL;
-	struct acct_ip *b = NULL;
 
 	snprintf(host, 512, "%s", d->host);
 
@@ -900,7 +894,6 @@ void account_select_char(P_desc d, char *arg)
 	struct acct_chars *c = NULL;
 	struct acct_chars *sorted_chars[MAX_CHARS_PER_ACCOUNT];
 	struct acct_chars *temp;
-	P_char ch = NULL;
 	int selection = -1;
 	int count = 0, i, j;
 
@@ -1795,9 +1788,7 @@ int can_connect(struct acct_chars *c, P_desc d)
 int is_char_in_game(struct acct_chars *c, P_desc d)
 {
 	P_desc k = descriptor_list;
-	P_desc x = NULL;
 	P_char ch = character_list;
-	int racewarSwitchTimer = get_property("account.timer.racewarSwitch", 3600);
 
 	for (; k; k = k->next)
 	{
@@ -1859,8 +1850,6 @@ int is_char_in_game(struct acct_chars *c, P_desc d)
 
 struct acct_chars *find_char_in_list(struct acct_chars *list, char *arg)
 {
-	struct acct_chars *c = NULL;
-
 	if (!list)
 		return NULL;
 
@@ -2500,7 +2489,6 @@ void read_character_list(P_acct acct, FILE *f)
 void generate_account_confirmation_code(P_desc d, char *arg)
 {
 	char a[256], b[256];
-	FILE *f = NULL;
 
 	snprintf(a, 256, "%d%d", number(0, 32767), number(0, 2147483647));
 	snprintf(b, 256, "%s", CRYPT2(a, d->account->acct_name));
@@ -2688,8 +2676,6 @@ P_acct allocate_account(void)
 
 void add_account_to_list(P_acct acct)
 {
-	P_acct i = NULL;
-
 	if (!acct)
 		return;
 

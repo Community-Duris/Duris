@@ -525,7 +525,6 @@ bool get_boon_shop_data(int pid, BoonShop *bshop)
 //   retval % 100 = true retval for diagnosing problem
 int validate_boon_data(BoonData *bdata, int flag)
 {
-	char buff[MAX_STRING_LENGTH];
 	int i, j, z, retval = 0, iCriteria;
 	double dCriteria;
 	Guildhall *gh;
@@ -2609,8 +2608,6 @@ int boon_display(P_char ch, char *argument)
 
 int create_boon(BoonData *bdata)
 {
-	int id;
-
 	if (!bdata)
 	{
 		debug("create_boon(): NULL bdata passed to function");
@@ -2791,7 +2788,6 @@ void boon_notify(int id, P_char ch, int action)
 {
 	char buff[MAX_STRING_LENGTH];
 	P_desc d;
-	int pid = 0;
 
 	if (!action)
 	{

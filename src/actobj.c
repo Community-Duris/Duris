@@ -124,10 +124,9 @@ static bool get_trace_enabled(void)
 void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 {
 	int got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
-	char Gbuf3[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
+	char Gbuf3[MAX_STRING_LENGTH];
 	P_obj corpse = NULL;
 	bool slip = FALSE;
-	P_char rider = NULL;
 
 	if (!o_obj || !ch)
 	{
@@ -831,7 +830,6 @@ static bool do_get_try_container_item(P_char ch, P_char hood, P_obj s_obj, P_obj
 				      bool report_carry_limit)
 {
 	const bool local_container = source_is_local;
-	P_char rider = NULL;
 
 	if (!CAN_SEE_OBJ(ch, o_obj) && !local_container)
 	{
@@ -983,7 +981,6 @@ void do_get(P_char ch, char *argument, int cmd)
 	bool found = FALSE, fail = FALSE, corpse_flag = FALSE, alldot = FALSE, carried,
 	     stop_bulk = FALSE;
 	char Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
-	char Gbuf4[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH];
 	int type = 0, total = 0;
 	int looting = FALSE;
@@ -1779,8 +1776,7 @@ void do_junk(P_char ch, char *argument, int cmd)
 
 void do_dropalldot(P_char ch, char *name, int cmd)
 {
-	P_obj tmp_object, next_object, remember = NULL;
-	P_char tmp_ch;
+	P_obj tmp_object, next_object;
 	int total = 0;
 	int plat, silv, gold, copp;
 	char Gbuf1[MAX_STRING_LENGTH];
@@ -4443,7 +4439,7 @@ int remove_and_wear(P_char ch, P_obj obj_object, int position, int keyword, bool
 int wear(P_char ch, P_obj obj_object, int keyword, bool showit)
 {
 	char Gbuf3[MAX_STRING_LENGTH];
-	int free_hands, wield_to_where, o_size, hands_needed;
+	int free_hands, wield_to_where, hands_needed;
 
 	// Kill on !Object or !Character or dead char.
 	if (!obj_object || !IS_ALIVE(ch))
@@ -5612,7 +5608,6 @@ int equipment_pos_table[CUR_MAX_WEAR][3] = {
  */
 void do_wear(P_char ch, char *argument, int cmd)
 {
-	struct obj_affect *o_af;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	char Gbuf3[MAX_STRING_LENGTH], Gbuf4[MAX_STRING_LENGTH];
 	P_obj obj_object, next_obj = NULL;
@@ -6061,7 +6056,7 @@ void do_search(P_char ch, char *argument, int cmd)
 	P_char dummy;
 	P_obj k;
 	bool found_something = FALSE;
-	char name[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	char name[MAX_INPUT_LENGTH];
 	int door;
 	bool proc_handled = FALSE;
 

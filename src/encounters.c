@@ -35,7 +35,6 @@ void random_encounters(P_char ch)
 	int mobs_vnum = 0, num_to_load = 0, num_loaded = 0, done = 0, total = 0;
 	int chance = 0;
 	P_char mob, tch;
-	struct group_list *gl;
 
 	/* only activates in map world */
 	if (!IS_MAP_ROOM(ch->in_room))

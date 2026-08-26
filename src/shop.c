@@ -873,7 +873,7 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 	char argm[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
 	P_obj temp1, gem = NULL;
-	int found_obj, sale, i = 0;
+	int sale, i = 0;
 
 	if (!(is_ok(keeper, ch, shop_nr)))
 		return;
@@ -1098,7 +1098,7 @@ void shopping_kill(char *arg, P_char ch, P_char keeper, int shop_nr)
 void shopping_repair(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
 	char buf[MAX_INPUT_LENGTH], argm[MAX_INPUT_LENGTH];
-	int cond, cost, ave;
+	int cost, ave;
 	P_obj obj, gem = NULL, wpn = NULL;
 
 	if (!(is_ok(keeper, ch, shop_nr)))
@@ -1402,7 +1402,7 @@ int add_to_list(struct shop_buy_data *list, int type, int *len, int *val)
 
 int read_type_list(FILE *shop_f, struct shop_buy_data *list, int max)
 {
-	int i, num, len = 0, error = 0;
+	int num, len = 0, error = 0;
 	char *ptr, buf[MAX_STRING_LENGTH];
 
 	bzero(buf, MAX_STRING_LENGTH);

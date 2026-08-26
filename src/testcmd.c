@@ -141,7 +141,6 @@ void do_test_lava(P_char ch, char *arg, int cmd)
 
 void do_test_room(P_char ch, char *arg, int cmd)
 {
-	int x = 0, y = 0;
 	int local_y, local_x;
 	int vroom = world[ch->in_room].number;
 	struct zone_data *zone = &zone_table[world[ch->in_room].zone];
@@ -206,8 +205,6 @@ void do_test_writemap(P_char ch, char *arg, int cmd)
 	int rroom = zone->real_bottom;
 
 	int what = 0;
-	bool hadbg = false;
-	int prev = -1;
 	int where_rnum;
 
 	int width = zone->mapx;
@@ -1022,7 +1019,6 @@ void do_test(P_char ch, char *arg, int cmd)
 	else if (isname("randomzones", buff))
 	{
 		int i, j;
-		char buf[MAX_STRING_LENGTH];
 		FILE *pf;
 
 		if (!(pf = fopen("logs/log/randomzones", "w")))

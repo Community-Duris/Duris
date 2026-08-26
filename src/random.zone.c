@@ -132,7 +132,7 @@ void add_quest_data(char *map)
 
 void create_zone(int theme, int map_room1, int map_room2, int level_range, int rooms)
 {
-	int room_nr = 0, room2_nr = 0;
+	int room_nr = 0;
 	int temp_room = 0;
 	int i = 0;
 	int map_room = 0;
@@ -611,12 +611,9 @@ void display_random_zones(P_char ch)
 	char buf[20000];
 	char temp_buf[20000];
 	char color_buf[20];
-	int start_room = 0;
-	int end_room = 0;
 	int j = 0;
 	int mob = 0;
 	int player = 0;
-	int unknown = 0;
 	P_char temp_ch, next;
 
 	snprintf(buf, 20000, "\t\t\t\t&+L-=&+WInitialized &+Lrandom&+W zones&+L=-&n\r\n\r\n");
@@ -895,12 +892,8 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 	P_char kala;
 	int dicea = 0;
 	int diceb = 0;
-	int proc = 0;
-	int somone_fighting = 0;
 	int j = 0;
 	char Gbuf2[256];
-	struct spell_target_data target_data;
-	P_char t_char = NULL;
 	P_desc d;
 	P_obj potion = NULL;
 
@@ -1109,9 +1102,7 @@ int relic_proc(P_obj obj, P_char ch, int cmd, char *arg)
 int random_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char kala;
-	int proc = 0;
 	int j = 0;
-	struct spell_target_data target_data;
 
 	if (cmd == CMD_MELEE_HIT)
 	{
@@ -1155,12 +1146,10 @@ int random_quest_mob_proc(P_char ch, P_char pl, int cmd, char *arg)
 	P_obj obj;
 	int x = 0;
 	int y = 0;
-	int valuediff = 0;
 	char Gbuf2[MAX_STRING_LENGTH];
 	char obj_name[MAX_INPUT_LENGTH], *argument;
-	int group_fact = 1, fragdiff = 0;
+	int group_fact = 1;
 	int value_pts = 0;
-	char buffer[1024];
 	struct group_list *gl;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -1459,10 +1448,6 @@ int create_lab(int type)
 	P_obj obj;
 	int i = 0;
 	int j = 0;
-	int N = -100;
-	int E = 1;
-	int S = 100;
-	int W = -1;
 	int theme_to_use = 0;
 	int RELIC = 0;
 	int ENDMOBS = 5;
@@ -1648,7 +1633,6 @@ int connect_lab(int room, int dir)
 int connect_other(int room)
 {
 	int dir = 0;
-	int i = 0;
 
 	while (dir < 4)
 	{
@@ -1669,11 +1653,6 @@ int connect_other(int room)
 
 int dir_to_num(int dir)
 {
-	int N = -100;
-	int E = 1;
-	int S = 100;
-	int W = -1;
-
 	if (dir == DIR_NORTH)
 		return -100;
 

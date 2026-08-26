@@ -630,15 +630,6 @@ void spell_beholder_damage(int level, P_char ch, P_char victim, P_obj obj)
 
 void spell_beholder_dispelmagic(int level, P_char ch, P_char victim, P_obj obj)
 {
-	struct damage_messages messages = {
-		"$N&n &+Wshimmers &+wafter being slammed by your beam.",
-		"&+wYou &+Wshimmer &+was you're hit by&n $n's&n &+wbeam.",
-		"$N's &+wentire body &+Wshimmers &+wupon&n $n's&n &+wbeam's collision!",
-		"",
-		"",
-		""
-	};
-
 	if (!(victim && ch))
 	{
 		logit(LOG_EXIT, "assert: bogus parms");

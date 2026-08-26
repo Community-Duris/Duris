@@ -27,7 +27,6 @@ using namespace std;
 int deliverer_hammer(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char victim;
-	P_char temp;
 	int dam;
 
 	if (cmd == CMD_SET_PERIODIC)

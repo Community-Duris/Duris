@@ -206,8 +206,7 @@ static unsigned int char_sweep_slice(P_char c)
 void generic_char_event(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	P_char i, i_next;
-	int n, x;
-	int dam;
+	int n;
 	unsigned int phase = generic_char_event_phase++ % GENERIC_CHAR_EVENT_SLICES;
 
 	for (i = character_list; i; i = i_next)
@@ -418,9 +417,7 @@ void event_sundamage(P_char ch, P_char victim, P_obj obj, void *data)
 
 int char_light(P_char ch)
 {
-	P_obj t_obj = NULL;
-	int i, amt = 0, dark = 0, mf_l;
-	struct affected_type *af;
+	int i, amt = 0;
 
 	if (!ch)
 	{
@@ -510,7 +507,7 @@ int room_light(int room_nr, int flag)
 {
 	P_char t_ch = NULL;
 	P_obj t_obj = NULL;
-	int amt = 0, dark = 0, rroom = -1;
+	int amt = 0, rroom = -1;
 
 	if (room_nr < 0)
 	{
@@ -1115,9 +1112,6 @@ bool char_to_room(P_char ch, int room, int dir)
 	bool was_in_arena;
 	struct zone_data *zone = 0;
 	P_room rm = 0;
-	struct group_list *gl;
-	int x_distance = 0;
-	int y_distance = 0;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -1903,7 +1897,6 @@ void money_to_inventory(P_char ch)
 
 void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 {
-	struct affected_type af;
 	struct obj_affect *o_af;
 
 	if (!(ch && obj && (pos >= 0) && (pos < MAX_WEAR) && !ch->equipment[pos]))
@@ -1968,7 +1961,6 @@ void equip_char(P_char ch, P_obj obj, int pos, int nodrop)
 P_obj unequip_char(P_char ch, int pos, bool saving)
 {
 	P_obj obj;
-	struct obj_affect *o_af;
 
 	if (!(ch && (pos >= 0) && (pos < MAX_WEAR) && ch->equipment[pos]))
 	{
@@ -2435,7 +2427,6 @@ P_char get_char_num(int nr)
 void obj_to_room(P_obj object, int room)
 {
 	P_char i;
-	P_nevent e1;
 	P_obj o;
 
 	if (!OBJ_NOWHERE(object))
@@ -2714,9 +2705,7 @@ bool obj_can_nest(P_obj obj, P_obj obj_to)
 
 void obj_to_obj(P_obj obj, P_obj obj_to)
 {
-	P_char owner;
-	P_obj tmp_obj, o;
-	int wgt = 0, t_wgt = 0;
+	P_obj o;
 	char buf[MAX_STRING_LENGTH];
 
 	if (!obj_can_nest(obj, obj_to))
@@ -2891,9 +2880,7 @@ void obj_to_char_at_end(P_obj object, P_char ch)
 
 void obj_from_obj(P_obj obj)
 {
-	P_char owner;
 	P_obj tmp, obj_from;
-	int wgt;
 
 	if (!obj)
 	{
@@ -3399,8 +3386,7 @@ void extract_char(P_char ch)
 	P_obj obj;
 	P_char k;
 	P_desc t_desc;
-	int l, i;
-	char buf[MAX_STRING_LENGTH];
+	int l;
 	snoop_by_data *snoop_by_ptr, *next;
 	struct affected_type *af, *nextaf;
 

@@ -579,11 +579,9 @@ bool In_Adjacent_Room(P_char ch, P_char vict)
 
 bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 {
-	int dura, skl;
-	P_char tch, tch2, kala, kala2;
+	P_char tch, tch2;
 	struct spellcast_datatype castdata; /* for SpellCastProcess() */
 	int circle = 0, duration = 0;
-	char buf[MAX_STRING_LENGTH];
 
 	// Crash iff: No caster, no target (and not area), or invalid spell.
 	if (!ch || !(victim || object || IS_SET(skills[spl].targets, TAR_AREA | TAR_OFFAREA)) ||
@@ -839,7 +837,6 @@ bool MobCastSpell(P_char ch, P_char victim, P_obj object, int spl, int lvl)
 bool CastIllusionistSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL, tmp = NULL;
-	P_obj obj = NULL;
 
 	int n_attk = 0, lvl = 0, spl = 0;
 
@@ -1045,9 +1042,7 @@ bool CastMageSpell(P_char ch, P_char victim, int helping)
 	P_obj obj = NULL, best_corpse = NULL;
 
 	int dam = 0, lvl = 0, spl = 0, high_corpse = 0, pets;
-	int att_num_adjust[] = { 100, 50, 15, 0 };
 	int n_attk = 0;
-	struct follow_type *k;
 
 	lvl = GET_LEVEL(ch);
 
@@ -1984,7 +1979,6 @@ bool CastReaverSpell(P_char ch, P_char victim, int helping)
 bool CastRangerSpell(P_char ch, P_char victim, int helping)
 {
 	P_char target = NULL;
-	P_obj wpn;
 	int dam = 0, lvl = 0, spl = 0;
 
 	if (IS_CASTING(ch))
@@ -3164,8 +3158,7 @@ bool CastShamanSpell(P_char ch, P_char victim, int helping)
 
 bool CastEtherSpell(P_char ch, P_char victim, int helping)
 {
-	P_char target = NULL, tempch;
-	int sect;
+	P_char target = NULL;
 
 	/*
 	 * P_obj   obj=NULL;
@@ -4168,7 +4161,7 @@ bool CastPaladinSpell(P_char ch, P_char victim, int helping)
 
 bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 {
-	P_char target = NULL, tempch;
+	P_char target = NULL;
 	int lvl = 0, spl = 0;
 
 	lvl = GET_LEVEL(ch);
@@ -4407,7 +4400,7 @@ bool CastAntiPaladinSpell(P_char ch, P_char victim, int helping)
 bool WillPsionicistSpell(P_char ch, P_char victim)
 {
 	P_char target = NULL;
-	int dam = 0, lvl = 0, spl = 0;
+	int lvl = 0, spl = 0;
 
 	if (IS_PC_PET(ch) && GET_MASTER(ch)->in_room != ch->in_room)
 		return false;
@@ -4605,7 +4598,6 @@ void BreathWeapon(P_char ch, int dir)
 {
 	int breath_possibilities, breath_type, attempts, room, i, distance;
 	char buf[MAX_STRING_LENGTH], waited = FALSE;
-	P_char tchar1 = NULL, tchar2 = NULL;
 	void (*funct)(int, P_char, char *, int, P_char, P_obj);
 	P_char victim;
 
@@ -5114,12 +5106,10 @@ void SweepAttack(P_char ch)
 
 bool MobAlchemist(P_char ch)
 {
-	P_char tch, next_ch;
+	P_char tch;
 	P_obj t_obj;
-	char Gbuf2[MAX_STRING_LENGTH];
 	int level, i = 0;
-	int type, number_potions, potions = 0;
-	int n_atkr;
+	int number_potions, potions = 0;
 
 	level = GET_LEVEL(ch);
 
@@ -5530,7 +5520,6 @@ bool GOOD_FOR_FLANKING(P_char ch)
 
 bool MobDreadlord(P_char ch)
 {
-	char buf[MAX_INPUT_LENGTH];
 	P_char tch;
 
 	if (!IS_ALIVE(ch))
@@ -5619,7 +5608,6 @@ bool MobBerserker(P_char ch)
 /* Lets try our hand at making bards a bit more intuitive in combat */
 bool MobBard(P_char ch)
 {
-	P_char victim;
 	int dam;
 
 	dam = GET_MAX_HIT(ch) - GET_HIT(ch);
@@ -5830,9 +5818,7 @@ bool MobWarrior(P_char ch)
 
 bool MobRanger(P_char ch)
 {
-	P_obj t_obj;
-	P_char vict;
-	P_char tch, next_ch;
+	P_char tch;
 	int n_atkr;
 
 	n_atkr = NumAttackers(ch);
@@ -5893,9 +5879,8 @@ bool MobRanger(P_char ch)
 
 bool MobMercenary(P_char ch)
 {
-	P_obj t_obj;
 	P_char vict;
-	P_char tch, next_ch;
+	P_char tch;
 	int n_atkr;
 	struct affected_type *af;
 
@@ -5974,9 +5959,8 @@ bool MobMercenary(P_char ch)
 
 bool MobReaver(P_char ch)
 {
-	P_obj t_obj;
 	P_char vict;
-	P_char tch, next_ch;
+	P_char tch;
 	int n_atkr;
 
 	n_atkr = NumAttackers(ch);
@@ -6757,7 +6741,6 @@ P_char PickTarget(P_char ch)
 
 void MobStartFight(P_char ch, P_char vict)
 {
-	char buf[MAX_INPUT_LENGTH];
 	bool fudge_flag = FALSE;
 	P_char mount;
 
@@ -7490,13 +7473,11 @@ bool MobSpellUp(P_char ch)
 
 void event_mob_mundane(P_char ch, P_char victim, P_obj object, void *data)
 {
-	P_char tmp_ch, rider;
+	P_char tmp_ch;
 	P_obj obj, obj2, best_obj, next_obj;
 	char Gbuf1[MAX_STRING_LENGTH];
 	int door, max, i;
-	struct follow_type *fol, *k;
 	bool CombatInRoom;
-	int rnum;
 
 	if (!IS_ALIVE(ch) || IS_PC(ch))
 	{
@@ -8891,7 +8872,7 @@ void send_to_zone_func(int z, int mask, const char *msg)
 static char buf[MAX_STRING_LENGTH];
 void zone_spellmessage(int room, bool hide_deaf, const char *msg, const char *msg_dir)
 {
-	int z, mask;
+	int z;
 	struct remember_data *chars_in_zone;
 
 	if ((room < 0) || (room > top_of_world))
@@ -10097,7 +10078,6 @@ P_char find_protector_target(P_char ch)
 
 void MobRetaliateRange(P_char ch, P_char vict)
 {
-	char /*buf[MAX_INPUT_LENGTH], */ result;
 	P_nevent ev = NULL;
 	int dummy;
 	hunt_data data;
@@ -10526,8 +10506,6 @@ void try_wield_weapon(P_char ch)
 
 	if (empty_slot_for_weapon(ch) == -1)
 		return;
-
-	P_obj obj = NULL;
 
 	/* find a weapon */
 	// Find artifact weapon and wield it.

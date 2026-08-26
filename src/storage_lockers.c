@@ -649,7 +649,7 @@ StorageLocker::~StorageLocker(void)
 
 void StorageLocker::NukeLockerChests(void)
 {
-	LockerChest *p, *next;
+	LockerChest *p;
 	LockerChest *privateChests = NULL;
 	LockerChest *lastPrivate = NULL;
 
@@ -1762,7 +1762,6 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 	char enterWhat[MAX_INPUT_LENGTH];
 	char enterWho[MAX_INPUT_LENGTH];
 	int locker_room;
-	struct zone_data *zone;
 	int is_guild_locker = 0;
 
 	char lockerName[500];
@@ -2001,7 +2000,6 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 	char enterWhat[MAX_INPUT_LENGTH];
 	char enterWho[MAX_INPUT_LENGTH];
 	int locker_room;
-	struct zone_data *zone;
 
 	char lockerName[500];
 	int bValidate = 0;
@@ -2104,7 +2102,6 @@ int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 	char_to_room(ch, locker_room, 0);
 
 	bool is_guild_owner = esc_locker_name_matches_player(GET_NAME(chLocker), ch);
-	int temp = pLocker ? (1 + (3 * pLocker->m_itemCount)) : 1;
 
 	// warn them that they can't idle in the locker...
 	if (!is_guild_owner)
@@ -2132,11 +2129,9 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 		return FALSE;
 
 	troom = locker_exit_room(ch, room);
-	int wtype, craft, mat;
 	P_char tmp_char;
 	P_obj tmp_object;
-	float result_space;
-	char name[MAX_INPUT_LENGTH], buf[MAX_INPUT_LENGTH + 4];
+	char name[MAX_INPUT_LENGTH];
 
 	if ((cmd == CMD_SHAPECHANGE) || (cmd == CMD_DISGUISE) || (cmd == CMD_SWITCH) ||
 	    (cmd == CMD_AT) || (cmd == CMD_CAMP) || (cmd == CMD_QUIT) || cmd == CMD_USE ||
@@ -2401,7 +2396,6 @@ static int locker_equipcmd(P_char ch, char *arg)
 {
 	P_char chLocker = NULL;
 	char arg1[MAX_INPUT_LENGTH];
-	char arg2[MAX_INPUT_LENGTH];
 
 	StorageLocker *pLocker = locker_current_or_error(ch, "Error: no locker found.\r\n");
 
@@ -2434,8 +2428,6 @@ static int locker_equipcmd(P_char ch, char *arg)
 	{
 		return FALSE;
 	}
-	int nChestsLoaded = 0;
-	P_obj chestObj = NULL;
 
 	if (pLocker->MakeChests(ch, arg))
 	{
@@ -2924,7 +2916,6 @@ static int create_new_locker(P_char ch, P_char locker)
 	int roomNum = -1;
 	int realNum = -1;
 	int dir;
-	int exitDir;
 
 	/* find a room to use... */
 	roomNum = LOCKERS_START + 1;
@@ -3067,8 +3058,6 @@ static int create_new_locker(P_char ch, P_char locker)
 
 static void free_locker(int roomNum)
 {
-	P_obj tmp_object;
-
 	/* perform cleanup - basically just frees a couple pointers and marks the room as
 	   available for reuse */
 
@@ -3679,7 +3668,6 @@ bool rename_locker(P_char ch, char *old_charname, char *new_charname)
 void StorageLocker::SortIValues(void)
 {
 	P_obj object, rest, pObjList;
-	char buf[MAX_STRING_LENGTH];
 	LockerChest *pChests = m_pChestList;
 	int value;
 

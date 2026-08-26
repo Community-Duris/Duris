@@ -52,10 +52,8 @@ void event_write_statistic(P_char ch, P_char victim, P_obj obj, void *data)
 	vector<const char *> seen_ips;
 
 	long ct;
-	char *tmstr;
 	struct tm *lt;
 	FILE *f;
-	char *buf = 0;
 
 	ct = time(0);
 	lt = localtime(&ct);
@@ -193,13 +191,10 @@ void do_statistic(P_char ch, char *argument, int val)
 	int j = 0;
 	int hour = 0;
 	struct statistics_day day[24];
-	int x, args;
 	long ct;
-	char *tmstr;
 	struct tm *lt;
 	char mdate[15];
 	FILE *f;
-	int k = 0;
 
 	ct = time(0);
 	lt = localtime(&ct);
@@ -502,11 +497,8 @@ void do_statistic(P_char ch, char *argument, int val)
 int show_moth_stati(P_char ch, char *stati_date, char *argument)
 {
 	char Gbuf0[MAX_STRING_LENGTH];
-	char Gbuf1[MAX_STRING_LENGTH];
-	char Gbuf2[MAX_STRING_LENGTH];
 	char Gbuf3[MAX_STRING_LENGTH];
 	char Gbuf4[MAX_STRING_LENGTH];
-	char Gbuf5[MAX_STRING_LENGTH];
 
 	char buf2[MAX_STRING_LENGTH];
 	char buf[MAX_STRING_LENGTH * 30];
@@ -527,9 +519,6 @@ int show_moth_stati(P_char ch, char *stati_date, char *argument)
 	int hour = 0;
 	struct statistics_day day[24];
 	struct statistics_day month[31];
-	int x, args;
-	char *tmstr;
-	char mdate[15];
 	FILE *f;
 	int k = 0;
 

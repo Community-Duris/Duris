@@ -336,7 +336,6 @@ void send_to_gods(char *argument)
 
 void send_to_avatar(P_char ch, const char *arg)
 {
-	P_char i;
 	char Gbuf[MAX_STRING_LENGTH];
 
 	if (!ch)
@@ -515,7 +514,6 @@ void do_gcc(P_char ch, char *argument, int cmd)
 	char Gbuf1[MAX_STRING_LENGTH];
 	char guild_name[MAX_INPUT_LENGTH];
 	int guild_number;
-	FILE *f;
 
 	from_guild = GET_ASSOC(ch);
 
@@ -868,8 +866,6 @@ void do_project(P_char ch, char *argument, int cmd)
 
 void do_page(P_char ch, char *argument, int cmd)
 {
-	char *buf;
-
 	if (GET_LEVEL(ch) < GREATER_G)
 	{
 		send_to_char("No, dammit, you can't!\r\n", ch);

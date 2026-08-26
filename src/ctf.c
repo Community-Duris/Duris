@@ -88,8 +88,7 @@ int init_ctf()
 int load_ctf()
 {
 	char buff[MAX_STRING_LENGTH];
-	P_obj flag;
-	int i, r_num, boon = 0;
+	int i, r_num;
 
 	ctf_populate_boons();
 
@@ -140,7 +139,6 @@ int ctf_flag_proc(P_obj flag, P_char ch, int cmd, char *argument)
 {
 	char arg[MAX_STRING_LENGTH];
 	char buff[MAX_STRING_LENGTH], buff2[MAX_STRING_LENGTH];
-	P_obj tobj;
 	int i;
 	int reset = (int)get_property("ctf.reset", 5);
 	int block_cmd = 0;

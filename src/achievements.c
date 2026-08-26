@@ -246,10 +246,7 @@ void do_achievements(P_char ch, char *arg, int cmd)
 //
 void update_achievements(P_char ch, P_char victim, int cmd, int ach)
 {
-	char argument[MAX_STRING_LENGTH];
-	struct affected_type af;
-	struct affected_type *paf, *afp;
-	int required = 1;
+	struct affected_type *paf;
 	P_obj gift;
 
 	/* Achievement int ach list:

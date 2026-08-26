@@ -802,8 +802,6 @@ bool Mob_Furious(P_char ch, P_char victim, int chance)
 		return false;
 	}
 
-	long furious = (long)get_property("dragon.Furious.DamageMod", 2.000);
-
 	act("$n&n appears &+RFURIOUS&n and gains mass and ferocity!&n", 1, ch, 0, 0, TO_ROOM);
 
 	if (GET_C_STR(ch) < 100 && !number(0, 3))
@@ -839,9 +837,8 @@ bool Mob_Furious(P_char ch, P_char victim, int chance)
 
 bool DragonCombat(P_char ch, int awe)
 {
-	int i, breath_chance, attacktype = 0;
-	P_char tchar1 = NULL, tchar2 = NULL, vict, next_ch;
-	void (*funct)(int, P_char, char *, int, P_char, P_obj);
+	int breath_chance;
+	P_char tchar1 = NULL, tchar2 = NULL;
 	bool bIsPet = false;
 	P_char chMaster = NULL;
 

@@ -57,7 +57,7 @@ int drowcrusher(P_obj obj, P_char ch, int cmd, char *arg)
 	//  struct group_list *gl = NULL;
 	P_char ch2;
 	P_obj obj2;
-	int i, from_room, to_room;
+	int from_room, to_room;
 
 	if (cmd != CMD_HIT)
 		return FALSE;

@@ -507,9 +507,7 @@ struct fury_data
 void event_elemental_fury(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	P_char t, t_next;
-	int in_room;
 	struct fury_data *fdata;
-	struct affected_type af;
 
 	fdata = (struct fury_data *)data;
 
@@ -641,7 +639,6 @@ void spell_ice_missile(int level, P_char ch, char *arg, int type, P_char victim,
 {
 	int temp;
 	int dam;
-	struct affected_type af;
 	struct damage_messages messages = {
 		"Your &+Cice missile&n slams into $N&n with a soft thud.",
 		"You wince in pain as an &+Cice missile&n sent by $n&n hits you.",
@@ -1182,7 +1179,6 @@ void spell_spirit_anguish(int level, P_char ch, char *arg, int type, P_char vict
 
 void spell_gaseous_cloud(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	struct affected_type af;
 	struct damage_messages messages = {
 		"&+GWith a wave of your hand, you cause $N &+Gto choke painfully on your &+ggaseous cloud&n.",
 		"$n &+Gconjures a &+ggaseous cloud &+Gand directs it at you!  A painful bout of choking is your reward.&N",
@@ -1603,7 +1599,6 @@ void spell_single_earthen_grasp(int level, P_char ch, char *arg, int type, P_cha
 void spell_greater_earthen_grasp(int level, P_char ch, char *arg, int type, P_char victim,
 				 P_obj obj)
 {
-	P_char tch, next;
 	int room;
 
 	// We need room because ch might die in the middle of the spell (via deflect or such).
@@ -1692,8 +1687,6 @@ void spell_pythonsting(int level, P_char ch, char *arg, int type, P_char victim,
 
 void spell_greater_pythonsting(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	P_char tch, next;
-
 	if (!IS_ALIVE(ch))
 		return;
 
@@ -1802,9 +1795,8 @@ void spell_spirit_armor(int level, P_char ch, char *arg, int type, P_char victim
 void spell_transfer_wellness(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	int to, from, pos;
-	P_obj corpse, t_obj, next_obj, money;
+	P_obj t_obj, next_obj, money;
 	int room;
-	int char_number;
 	bool explode = FALSE;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
@@ -3081,8 +3073,6 @@ void spell_malison(int level, P_char ch, char *arg, int type, P_char victim, P_o
 
 void spell_purify_spirit(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	struct affected_type *af, *next;
-
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 		return;
 
@@ -3262,7 +3252,7 @@ void spell_sense_spirit(int level, P_char ch, char *arg, int type, P_char victim
 int can_summon_beast(P_char ch, int level)
 {
 	struct follow_type *k;
-	int i, room, charisma = GET_C_CHA(ch);
+	int i, charisma = GET_C_CHA(ch);
 	P_char victim;
 
 	if (!IS_ALIVE(ch) || !(ch->in_room) || IS_PC_PET(ch))
@@ -3316,9 +3306,8 @@ int can_summon_beast(P_char ch, int level)
 P_char summon_beast_common(int mobnumb, P_char ch, int max_summon, int dur, const char *appearsC,
 			   const char *appears, int level, bool is_greater)
 {
-	struct affected_type af;
 	P_char mob;
-	int j, sum, numb;
+	int sum;
 	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 
 	if (!ch || (mobnumb < 0) || (dur <= 0) || (max_summon <= 0))
@@ -3817,7 +3806,7 @@ void spell_summon_spirit(int level, P_char ch, char *arg, int type, P_char victi
 void spell_wellness(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	P_char tch;
-	int gain, in_room;
+	int gain;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -4329,7 +4318,7 @@ void spell_reveal_spirit_essence(int level, P_char ch, char *arg, int type, P_ch
 
 void spell_spirit_jump(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int location, in_room, distance;
+	int location, distance;
 	char buf[256] = { 0 };
 	P_char tmp = NULL;
 

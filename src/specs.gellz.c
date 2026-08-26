@@ -31,7 +31,6 @@ using namespace std;
 // *****************************************************************
 int gellz_test_obj_procs(P_obj obj, P_char ch, int cmd, char *argument)
 { // PLACEHOLDER ONLY
-	int curr_time;
 	char argstring1[MAX_STRING_LENGTH];
 	char argstring2[MAX_STRING_LENGTH];
 	char argstring3[MAX_STRING_LENGTH];
@@ -211,7 +210,6 @@ int magic_deck(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	static int game_on = BJ_PREBID;
 	static bool lock_game = FALSE;
-	int curr_time;
 	char arg[MAX_INPUT_LENGTH];
 	char buf[MAX_STRING_LENGTH];
 	char betbuf2[MAX_STRING_LENGTH];

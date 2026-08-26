@@ -17,8 +17,7 @@ WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 # Legacy command/procedure signatures intentionally leave callback parameters
 # unused, many feature-gated locals survive disabled builds, and partial C-style
 # aggregates intentionally zero-initialize their trailing fields.
-LEGACY_WARNING_EXCEPTIONS = -Wno-write-strings -Wno-unused-parameter \
-	-Wno-unused-variable
+LEGACY_WARNING_EXCEPTIONS = -Wno-write-strings -Wno-unused-parameter
 
 CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS) $(LEGACY_WARNING_EXCEPTIONS)
 #CFLAGS += -D__NO_MYSQL__

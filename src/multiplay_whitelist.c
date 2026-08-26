@@ -114,7 +114,6 @@ bool is_connected(const char *pattern)
 
 void do_whitelist(P_char ch, char *argument, int cmd)
 {
-	P_char victim;
 	char argbuf[MAX_STRING_LENGTH], linebuf[MAX_STRING_LENGTH];
 
 	if (IS_NPC(ch) || !IS_TRUSTED(ch))

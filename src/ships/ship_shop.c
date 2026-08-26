@@ -2224,7 +2224,6 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 	int cost, buildtime, hull_type, oldhull;
 	struct affected_type *paf = get_spell_from_char(ch, AIP_CARGOCOUNT);
 	bool quickbuild = (paf && paf->modifier >= 10000) ? TRUE : FALSE;
-	char buf[32];
 
 	hull_type = atoi(arg1) - 1;
 	// Note: hull_type MAXSHIPCLASS - 1 is a NPC - Only ship class.

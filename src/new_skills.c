@@ -105,7 +105,7 @@ int CanDoFightMove(P_char ch, P_char victim)
 		return FALSE;
 	}
 
-	if (P_char mount = get_linked_char(ch, LNK_RIDING))
+	if (get_linked_char(ch, LNK_RIDING))
 	{
 		if (!GET_CHAR_SKILL(ch, SKILL_MOUNTED_COMBAT) /*&& !is_natural_mount(ch, mount)*/)
 		{
@@ -1069,7 +1069,7 @@ void chant_jin_touch(P_char ch, char *argument, int cmd)
 {
 	P_char vict = NULL;
 	char name[256];
-	int dam, damdice, percent, skl_lvl;
+	int dam, percent, skl_lvl;
 
 	if (!IS_ALIVE(ch) || IS_IMMOBILE(ch))
 	{
@@ -1213,9 +1213,8 @@ void chant_ki_strike(P_char ch, char *argument, int cmd)
 {
 	P_char vict = NULL, master;
 	char name[256];
-	int dam, percent;
+	int percent;
 	int skl_lvl = 0;
-	int level = GET_LEVEL(ch);
 	P_nevent combo_event;
 
 	if (!GET_CLASS(ch, CLASS_MONK))
@@ -1418,8 +1417,6 @@ void chant_regenerate(P_char ch, char *argument, int cmd)
 
 void chant_tiger_palm(P_char ch, char *arg, int cmd)
 {
-	struct affected_type af;
-
 	if (!GET_CHAR_SKILL(ch, SKILL_TIGER_PALM) && !IS_TRUSTED(ch))
 	{
 		send_to_char("You wouldnt know where to begin.\r\n", ch);
@@ -1451,7 +1448,6 @@ void chant_tiger_palm(P_char ch, char *arg, int cmd)
 
 void chant_fist_of_dragon(P_char ch, char *arg, int cmd)
 {
-	struct affected_type af;
 	int skl_lvl;
 
 	skl_lvl = IS_TRUSTED(ch) ? 100 : GET_CHAR_SKILL(ch, SKILL_FIST_OF_DRAGON);
@@ -1493,10 +1489,6 @@ void do_chant(P_char ch, char *argument, int cmd)
 				       "fist of dragon", "chi purge",	 "ki strike",
 				       "tiger palm",	 "diamond soul", "\n" };
 
-	const int chant_skillno[] = { SKILL_QUIVERING_PALM, SKILL_BUDDHA_PALM,	SKILL_HEROISM,
-				      SKILL_CALM,	    SKILL_REGENERATE,	SKILL_JIN_TOUCH,
-				      SKILL_FIST_OF_DRAGON, SKILL_CHI_PURGE,	SKILL_KI_STRIKE,
-				      SKILL_TIGER_PALM,	    SKILL_DIAMOND_SOUL, 0 };
 	int skl_lvl = 0;
 
 	if (!GET_CLASS(ch, CLASS_MONK) && !IS_TRUSTED(ch))
@@ -1629,7 +1621,7 @@ int GetConditionModifier(P_char victim)
 	if (IS_AFFECTED(victim, AFF_BOUND))
 		return 20;
 
-	if (P_char mount = get_linked_char(victim, LNK_RIDING))
+	if (get_linked_char(victim, LNK_RIDING))
 	{
 		if (!GET_CHAR_SKILL(victim,
 				    SKILL_MOUNTED_COMBAT) /*&& !is_natural_mount(victim, mount)*/)
@@ -1645,7 +1637,6 @@ int GetConditionModifier(P_char victim)
 void do_dragon_punch(P_char ch, char *argument, int cmd)
 {
 	P_char vict = NULL;
-	char name[100];
 	int skl_lvl = 0;
 	int dam = 0;
 	struct damage_messages messages = {
@@ -1973,7 +1964,7 @@ void do_summon_totem(P_char ch, char *arg, int cmd)
 void mount_summoning_thing(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	P_char mount = NULL;
-	int factor, align, in_room;
+	int factor;
 	struct follow_type *fol;
 
 	if ((ch->in_room == NOWHERE) || !IS_ALIVE(ch))
@@ -3046,7 +3037,7 @@ void do_unbind(P_char ch, char *arg, int cmd)
 
 void capture(P_char ch, P_char victim)
 {
-	int percent, ch_chance, town;
+	int percent, ch_chance;
 
 	if (!SanityCheck(ch, "capture"))
 		return;
@@ -3385,7 +3376,7 @@ void do_appraise(P_char ch, char *argument, int cmd)
 
 void do_chi(P_char ch, char *argument, int cmd)
 {
-	char str[512], arg[512];
+	char arg[512];
 	int skl_level;
 	struct affected_type af;
 
@@ -3658,7 +3649,6 @@ void lotus_event(P_char ch, P_char victim, P_obj obj, void *data)
 void do_true_strike(P_char ch, char *argument, int cmd)
 {
 	P_char vict = NULL;
-	char name[100];
 	int skl_lvl = 0;
 	int x;
 

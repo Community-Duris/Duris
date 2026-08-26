@@ -171,9 +171,6 @@ void stop_singing(P_char ch)
 
 void bard_aggro(P_char ch, P_char victim)
 {
-	char Gbuf1[MAX_STRING_LENGTH];
-	int in_room;
-
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
 		return;
@@ -773,9 +770,7 @@ void bard_charm(int l, P_char ch, P_char victim, int song)
 	char buf[256];
 	P_obj tmp_obj;
 	P_char follower;
-	struct affected_type af;
-	struct char_link_data *cld;
-	struct follow_type *k, *fol, *next_fol;
+	struct follow_type *fol, *next_fol;
 
 	if (GET_MASTER(victim) || GET_MASTER(ch))
 		return;
@@ -1056,7 +1051,6 @@ void bard_revelation(int level, P_char ch, P_char victim, int song)
 
 void bard_harming(int lvl, P_char ch, P_char victim, int song)
 {
-	struct affected_type af;
 	struct damage_messages messages = { 0, 0, 0, 0, 0, 0, 0 };
 	int dam;
 	int empower = GET_CHAR_SKILL(ch, SKILL_EMPOWER_SONG);
@@ -1532,7 +1526,7 @@ void bard_dissonance(int l, P_char ch, P_char victim, int song)
 {
 	P_char t, t_next;
 	int empower = GET_CHAR_SKILL(ch, SKILL_EMPOWER_SONG);
-	int in_room, c_roll, t_roll;
+	int c_roll, t_roll;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -1759,7 +1753,6 @@ void event_bardsong(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	int echoChance = 0, song, l, room, i, terrainType = SECT_INSIDE, song_chance,
 	    aggr_chance = 0;
-	P_obj instrument = NULL;
 	struct affected_type *af, *af2;
 	struct char_link_data *cld, *next_cld;
 	struct echo_details echoDetails;
@@ -2156,10 +2149,7 @@ void do_play(P_char ch, char *arg, int cmd)
 
 void do_riff(P_char ch, char *arg, int cmd)
 {
-	int s, level, i, l, room;
-	struct affected_type *af, *af2;
-	struct char_link_data *cld, *next_cld;
-	struct echo_details echoDetails;
+	int s, i, l, room;
 	struct song_description *sd = NULL;
 	P_char tch, next;
 

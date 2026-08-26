@@ -251,7 +251,6 @@ int check_nexus_bonus(P_char ch, int amount, int type)
 	MYSQL_ROW row = mysql_fetch_row(res);
 
 	int align = atoi(row[0]);
-	int bonus = atoi(row[1]);
 	int racewar, newamnt;
 
 	mysql_free_result(res);

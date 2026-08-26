@@ -296,7 +296,7 @@ int writeStatus(char *buf, P_char ch, bool updateTime)
 	char *start = buf;
 	int tmp, i;
 	long tmpl = ch->player.time.saved;
-	struct affected_type *af = NULL, *next_af = NULL;
+	struct affected_type *af = NULL;
 	/*  sh_int dummy_short = 0; */
 
 	ADD_BYTE(buf, (char)SAV_STATVERS);
@@ -615,7 +615,6 @@ int writeSkills(char *buf, P_char ch, int num)
 {
 	char *start = buf;
 	int i;
-	struct memorize_data *tmp;
 
 	ADD_BYTE(buf, (char)SAV_SKILLVERS);
 
@@ -1725,9 +1724,6 @@ int deleteCharacter(P_char ch, bool bDeleteLocker)
 {
 	char *tmp;
 	char name[MAX_STRING_LENGTH];
-	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	P_obj obj;
-	FILE *f;
 	bool ok = TRUE;
 
 	strcpy(name, GET_NAME(ch));
@@ -1892,10 +1888,8 @@ int restoreStatus(char *buf, P_char ch)
 	[[maybe_unused]] long dummy_long;
 	[[maybe_unused]] int dummy_int;
 	char *start = buf, *str;
-	int tmp, tmp2, tmp3, i;
+	int tmp, tmp2, i;
 	unsigned short s; /*, dummy_short; */
-	struct trophy_data *tr, *tr2;
-	char buffer[2056];
 
 	stat_vers = GET_BYTE(buf);
 
@@ -2554,7 +2548,6 @@ int restorePasswdOnly(P_char ch, char *name)
 	[[maybe_unused]] int room;
 	char Gbuf1[MAX_STRING_LENGTH];
 	char b_savevers; /* TASFALEN */
-	char buffer[2056];
 
 	if (!name || !ch)
 		return 0;
@@ -2958,11 +2951,10 @@ P_obj restoreObjects(char *buf, P_char ch, int not_room)
 	::byte o_f_flag;
 	/* Deprecated item-format field; the read advances the cursor. */
 	[[maybe_unused]] ::byte dummy_byte;
-	int tmp, count, i, loc, obj_count = 0, V_num, i_count, ignore = 0, k;
+	int tmp, count, i, loc, obj_count = 0, V_num, i_count, ignore = 0;
 	struct extra_descr_data *t_desc;
 	static struct obj_data d_obj; // dummy object
 	ulong o_u_flag;
-	int new_vnum = 0;
 	P_obj root_obj = NULL;
 
 	obj_vers = (int)GET_BYTE(buf);
@@ -3377,7 +3369,6 @@ P_obj read_one_object(char *read_buf)
 	[[maybe_unused]] int count;
 	int tmp, V_num, i_count;
 	struct extra_descr_data *t_desc;
-	struct obj_data d_obj;
 	ulong o_u_flag;
 
 	obj_vers = (int)GET_BYTE(buf);
@@ -3843,7 +3834,6 @@ int restoreItemsOnly(P_char ch, int flatrate)
 	[[maybe_unused]] ::byte dummy_byte;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	char b_savevers;
-	char buf1[256];
 
 	if (!ch)
 		return -2;

@@ -116,7 +116,6 @@ int is_wearing_necroplasm(P_char ch)
 {
 	// loop thru ch's equip'd slots, and return 'true' if
 	// any of them is the necroplasm object
-	int i;
 	int plasmID;
 
 	if (!IS_ALIVE(ch) || !affected_by_spell(ch, SPELL_VAMPIRE))
@@ -360,8 +359,7 @@ void raise_undead(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	P_obj obj_in_corpse, next_obj;
 	P_obj globe;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
-	int num, i, j, l, clevel, tmp, typ, sum, cap;
-	struct affected_type af;
+	int num, j, clevel, typ, sum, cap;
 	bool corpselog = FALSE;
 	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 
@@ -973,8 +971,7 @@ void spell_call_titan(int level, P_char ch, char *arg, int type, P_char victim, 
 	P_char mob;
 	P_obj obj_in_corpse = NULL, next_obj = NULL;
 	P_obj globe;
-	struct follow_type *k;
-	int i, sum, num_undead = 0;
+	int sum;
 	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 	bool corpselog = FALSE;
 	static struct
@@ -1241,8 +1238,7 @@ void spell_create_dracolich(int level, P_char ch, char *arg, int type, P_char vi
 	P_char mob;
 	P_obj obj_in_corpse = NULL, next_obj = NULL;
 	P_obj globe;
-	struct follow_type *k;
-	int i, sum, num_undead = 0;
+	int sum;
 	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 	bool corpselog = FALSE;
 	static struct
@@ -1537,8 +1533,7 @@ void create_golem(int level, P_char ch, P_char victim, P_obj obj, int which_type
 	bool corpselog = FALSE;
 	P_obj obj_in_corpse = NULL, next_obj = NULL;
 	P_obj globe;
-	struct follow_type *k;
-	int num, clevel, i, cap, sum, num_undead = 0;
+	int num, clevel, cap, sum;
 	int life = GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE);
 	int percent;
 
@@ -1732,8 +1727,7 @@ void spell_call_avatar(int level, P_char ch, char *arg, int type, P_char victim,
 	bool corpselog = FALSE;
 	P_obj obj_in_corpse = NULL, next_obj = NULL;
 	P_obj globe;
-	struct follow_type *k;
-	int i, sum, num_undead = 0;
+	int sum;
 	int life;
 	static struct
 	{
@@ -1963,8 +1957,7 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 	bool corpselog = FALSE;
 	P_obj obj_in_corpse = NULL, next_obj = NULL;
 	P_obj globe;
-	struct follow_type *k;
-	int i, sum, num_undead = 0;
+	int sum;
 	int life;
 	static struct
 	{
@@ -2206,9 +2199,9 @@ void spell_create_greater_dracolich(int level, P_char ch, char *arg, int type, P
 
 void do_exhume(P_char ch, char *argument, int cmd)
 {
-	int now, skl;
+	int skl;
 	P_obj obj1 = NULL, obj2 = NULL;
-	bool found_something = FALSE, have_one = FALSE;
+	bool have_one = FALSE;
 
 	if (((skl = GET_CHAR_SKILL(ch, SKILL_EXHUME)) == 0) && !IS_TRUSTED(ch))
 	{
@@ -2312,9 +2305,8 @@ void do_spawn(P_char ch, char *argument, int cmd)
 
 void do_summon_host(P_char ch, char *argument, int cmd)
 {
-	int now, skl;
-	P_obj obj1 = NULL, obj2 = NULL;
-	bool found_something = FALSE, have_one = FALSE;
+	int skl;
+	P_obj obj1 = NULL;
 
 	if (!has_innate(ch, INNATE_SUMMON_HOST) && !IS_TRUSTED(ch))
 	{
@@ -2418,12 +2410,9 @@ void do_remort(P_char ch, char *arg, int cmd)
 
 void spell_corpseform(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	bool loss_flag = FALSE;
-	int chance, l, found, clevel, ss_save, ss_roll, the_size;
-	long resu_exp;
-	P_obj obj_in_corpse, next_obj, t_obj, money;
-	struct affected_type *af, *afcf, *afrc, *next_af;
-	P_char t_ch, folpet, target = NULL;
+	P_obj obj_in_corpse, next_obj;
+	struct affected_type *afcf, *afrc;
+	P_char folpet;
 	char tbuf[MAX_STRING_LENGTH];
 	struct follow_type *foll, *next_foll;
 

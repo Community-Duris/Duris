@@ -464,7 +464,6 @@ int move_regen(P_char ch, bool display_only)
 int ward_regen(P_char ch, bool display_only)
 {
 	int gain;
-	struct affected_type *af;
 
 	if (affected_by_spell(ch, TAG_BUILDING))
 	{
@@ -597,7 +596,7 @@ void illithid_advance_level(P_char ch)
 void advance_level(P_char ch)
 {
 	/*  struct time_info_data playing_time;*/
-	int add_mana = 0, i;
+	int i;
 	/* level normally, please
 	 *
 	 *
@@ -764,7 +763,6 @@ void clear_title(P_char ch)
 void display_gain(P_char ch, int gain, int type)
 {
 	char buffer[MAX_STRING_LENGTH];
-	P_char tch;
 
 	// only display PC's
 	if (IS_NPC(ch) || ch->in_room < 0 || ch->in_room > top_of_world)
@@ -1472,7 +1470,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 
 int gain_condition(P_char ch, int condition, int value)
 {
-	int intoxicated = 0, i, num;
+	int intoxicated = 0, i;
 
 	GET_COND(ch, FULL) = -1;
 	GET_COND(ch, THIRST) = -1;

@@ -176,7 +176,6 @@ int get_max_circle(P_char ch)
 inline int max_spells_in_circle(P_char ch, int circ, int max_circ)
 {
 	int j;
-	int m_class;
 	if (circ > max_circ)
 		return 0;
 
@@ -235,8 +234,8 @@ int get_next_dragoon_circle(P_char ch)
 // This works for PCs and NPCs?  Does now.
 int get_spell_circle(P_char ch, int spl)
 {
-	int i, ch_circle = (GET_LEVEL(ch) - 1) / 5 + 1;
-	int lowest, class_idx, spec;
+	int i;
+	int lowest, spec;
 	lowest = MAX_CIRCLE + 1;
 	spec = ch->player.spec;
 
@@ -927,7 +926,7 @@ void balance_align(P_char ch)
 
 void handle_undead_mem(P_char ch)
 {
-	int max = 0, i = 1, j = 1, time;
+	int i = 1, time;
 	int memorized = FALSE, highest_empty = 0;
 	char gbuf[MAX_STRING_LENGTH];
 
@@ -1883,8 +1882,7 @@ int forget_spells(P_char ch, int spell)
 
 void do_forget(P_char ch, char *argument, int cmd)
 {
-	int spl, i;
-	struct memorize_data *mem_ptr, *ptr;
+	int spl;
 
 	if (!ch || IS_NPC(ch))
 		return;
@@ -2472,7 +2470,6 @@ void do_scribe(P_char ch, char *arg, int cmd)
 {
 	int spl = 0;
 	P_obj o1, o2, o3;
-	struct scribing_data_type *tmp_s;
 	P_char teacher;
 
 	// No scribing services, at least of now. we'll see later tho.

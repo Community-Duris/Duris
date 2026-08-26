@@ -350,8 +350,6 @@ void load_obj_to_newbies(P_char ch)
 	int *class_kit;
 	int *newbie_kits[LAST_RACE][CLASS_COUNT + 1];
 
-	static int torch[] = { 1134, -1 };
-
 	/*Thrikreen Basics*/
 	static int thrikreen_good_eq[] = { 677, 283, 285, 1112, 286,  288, 290,
 					   613, 398, 398, 1176, 1167, -1 };
@@ -2151,7 +2149,6 @@ void perform_eq_wipe(P_char ch)
 	struct time_info_data playing_time;
 	int i;
 	P_obj obj, obj2;
-	P_ship ship;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
 	send_to_char("&+ROh shit, it seems we have misplaced your items...\n", ch);
@@ -2295,7 +2292,6 @@ void schedule_pc_events(P_char ch)
  */
 void enter_game(P_desc d)
 {
-	struct zone_data *zone;
 	struct affected_type af1, *afp1, *afp2;
 	int cost;
 	int r_room = NOWHERE;
@@ -2986,8 +2982,6 @@ void enter_game(P_desc d)
 		REMOVE_BIT(ch->specials.act, PLR_SMARTPROMPT);
 
 	schedule_pc_events(ch);
-
-	struct affected_type *af;
 
 	if (IS_AFFECTED5(ch, AFF5_HOLY_DHARMA))
 	{
@@ -4851,7 +4845,6 @@ void select_hometown(P_desc d, char *arg)
 	home = -1;
 	for (int i = 0; i <= LAST_HOME; i++)
 	{
-		char town_letter = LOWER(town_name_list[i][0]);
 		// if (i == HOME_SHADY)
 		// town_letter = 'a';
 		// else if (i == HOME_GOBLIN)
@@ -5631,9 +5624,6 @@ void wimps_in_approve_queue(void)
 
 void nanny(P_desc d, char *arg)
 {
-	char Gbuf1[MAX_STRING_LENGTH];
-	char Gbuf2[MAX_STRING_LENGTH];
-
 	switch (STATE(d))
 	{
 		/* Character deleted by a Forger */

@@ -145,9 +145,7 @@ void Encrypt(char *text, int sizeOfText, const char *key, int sizeOfKey)
 void do_randobj(P_char ch, char *strn, int val)
 {
 	P_obj o;
-	int tmp = 0;
 	char Gbuf5[MAX_STRING_LENGTH];
-	extern const struct class_names class_names_table[];
 
 	if (!IS_TRUSTED(ch))
 	{
@@ -486,8 +484,6 @@ P_obj createRareItem(P_obj rareI, unsigned int monDiffNumb)
 
 P_obj createSetItem(unsigned int mobDiffNumb)
 {
-	P_obj setItem;
-
 	// choose from a table..
 
 	return NULL;

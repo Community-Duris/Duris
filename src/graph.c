@@ -601,7 +601,6 @@ static void bfs_clear_queue(void)
 static signed char FFS_ship(int src, int target, int *ttl_steps)
 {
 	int curr_dir;
-	int curr_room;
 	ulong i = 0U;
 
 	if (!dead_bfs_pool)
@@ -663,7 +662,6 @@ static signed char FFS_ship(int src, int target, int *ttl_steps)
 static signed char FFS_wagon(int src, int target, int *ttl_steps)
 {
 	int curr_dir;
-	int curr_room;
 	ulong i = 0U;
 
 	if (!dead_bfs_pool)
@@ -720,7 +718,6 @@ extern const int rev_dir[];
 static signed char FFS_flying(int src, int target, int *ttl_steps)
 {
 	int curr_dir;
-	int curr_room;
 	ulong i = 0U;
 
 	if (!dead_bfs_pool)
@@ -962,7 +959,6 @@ signed char find_first_step(int src, int target, long hunt_flags, int is_ship, i
 int how_close(int src, int target, int max_steps)
 {
 	int curr_dir;
-	int curr_room;
 	ulong i = 0U;
 
 	if (max_steps < 0)
@@ -1099,7 +1095,6 @@ ubyte *find_the_path(int from, int to, int *max_steps, long hunt_flags)
 signed char line_of_sight_dir(int src, int target)
 {
 	int curr_dir;
-	int curr_room;
 	ulong i = 0U;
 
 	if (!dead_bfs_pool)
@@ -1590,7 +1585,6 @@ bool rmfr_valid_exit(int room, int dir, int radius, RMFR_FLAGS flags, RMFR_Q_TYP
 void radiate_message_from_room(int room, char *message, int radius, RMFR_FLAGS flags, int pcbase)
 {
 	int curr_dir;
-	int curr_room;
 	int src = room;
 	ulong i = 0U;
 	int chance;

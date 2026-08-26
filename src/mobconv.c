@@ -44,7 +44,7 @@ void set_npc_multi(P_char ch)
 void convertMob(P_char ch)
 {
 	float xp, copp, silv, gold, plat;
-	int damN, damS, damA, hits, level, x;
+	int damN, damS, damA, hits, level;
 
 	if (!ch || IS_PC(ch))
 		return;

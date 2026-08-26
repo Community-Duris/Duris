@@ -79,7 +79,6 @@ int is_ice(P_char ch, int room)
 int load_modifier(P_char ch)
 {
 	int p;
-	P_char rider;
 
 	if (IS_TRUSTED(ch))
 		return 75;
@@ -217,8 +216,6 @@ int leave_by_exit(P_char ch, int exitnumb)
 	P_char k = NULL, block1 = NULL, block2 = NULL, t_ch = NULL;
 	char j, exit1 = -1, exit2 = -1, exit3 = -1;
 	int room_to;
-	P_char target_head = NULL;
-	int num_in_room = 0, room_limit = 0;
 	P_char rider = NULL;
 
 	/*
@@ -1215,9 +1212,8 @@ int do_simple_move_skipping_procs(P_char ch, int exitnumb, unsigned int flags)
 {
 	P_char tch, t_ch;
 	char amsg[MAX_STRING_LENGTH];
-	int need_movement, was_in, new_room, count, i, cmd, cmd2, current, following;
+	int need_movement, was_in, new_room, cmd, cmd2, current, following;
 	int deceptnum, noise_var, calming;
-	struct weather_data *cond;
 	struct follow_type *k, *next_dude;
 	P_char mount, rider, moving;
 	struct zone_data *zone;
@@ -2097,8 +2093,6 @@ void send_movement_noise(P_char ch, int num)
 
 int do_simple_move(P_char ch, int exitnumb, unsigned int flags)
 {
-	struct affected_type *af;
-
 	if (ch->in_room == NOWHERE)
 		return 0;
 
@@ -2439,7 +2433,6 @@ void do_open(P_char ch, char *argument, int cmd)
 					    FALSE, ch, obj, 0, TO_ROOM);
 				}
 
-				char buf[MAX_STRING_LENGTH];
 				P_obj robj;
 				long robjint;
 				bool validobj;
@@ -3435,7 +3428,7 @@ void do_follow(P_char ch, char *argument, int cmd)
 void do_drag(P_char ch, char *argument, int cmd)
 {
 	P_obj obj;
-	P_char tch, owner = NULL;
+	P_char tch;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 	char Gbuf4[MAX_STRING_LENGTH];
 	int dragCommand;

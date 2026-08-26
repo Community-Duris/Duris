@@ -714,7 +714,6 @@ int ageCorpse(P_char ch, P_obj obj, char *s)
 char *show_obj_to_char(P_obj object, P_char ch, int mode, bool print)
 {
 	static char buf[MAX_STRING_LENGTH];
-	P_obj wpn;
 
 	if (IS_TRUSTED(ch) && IS_SET(ch->specials.act, PLR_VNUM))
 		snprintf(buf, MAX_STRING_LENGTH, "[&+B%5d&N] ",
@@ -1293,9 +1292,9 @@ void create_in_room_status(P_char ch, P_char i, char buffer[])
    ch is char looking, i is target */
 void show_char_to_char(P_char i, P_char ch, int mode)
 {
-	char buffer[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
-	int j, found, percent, lt_lvl;
-	P_obj tmp_obj, wpn;
+	char buffer[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	int j, found, lt_lvl;
+	P_obj tmp_obj;
 	int wear_order[] = {
 		41, 24, 40, 6,	19, 21, 22, 20, 39, 3,	4,  5,	35, 12, 27,
 		42, 37, 23, 13, 28, 29, 30, 10, 31, 11, 14, 15, 33, 34, 9,
@@ -1303,7 +1302,6 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 	}; // Also defined in get_equipment_list
 	int diff, race, qi;
 	struct affected_type *af;
-	int quester_id;
 	bool visobj, higher, lower;
 
 	*buffer = '\0';
@@ -2149,10 +2147,9 @@ void show_char_to_char(P_char i, P_char ch, int mode)
 // mode argument is unused?
 void list_char_to_char(P_char list, P_char ch, int mode)
 {
-	P_char i, j;
+	P_char i;
 	char buf[MAX_STRING_LENGTH];
 	int higher, lower, vis_mode;
-	bool globe, flame;
 
 	if (list == NULL)
 		return;
@@ -2251,7 +2248,7 @@ void do_do(P_char ch, char *argument, int cmd)
 void ShowCharSpellBookSpells(P_char ch, P_obj obj, char *short_desc)
 {
 	struct extra_descr_data *desc;
-	char buf[MAX_STRING_LENGTH], buf3[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	int j, k = 0, l, m = 0;
 
 	if (IS_NPC(ch))
@@ -3276,7 +3273,6 @@ void show_exits_to_char(P_char ch, int room_no, int mode)
 	int i, vis_mode, count = 0;
 	struct room_direction_data *exit;
 	bool brief_mode;
-	P_char tmp_char;
 	char buffer[MAX_STRING_LENGTH];
 
 	const char *short_exits[] = { "N", "E", "S", "W", "U", "D", "NW", "SW", "NE", "SE" };
@@ -3711,7 +3707,6 @@ void do_examine(P_char ch, char *argument, int cmd)
 	int wtype, craft, mat, percent;
 	P_char tmp_char;
 	P_obj tmp_object;
-	float result_space;
 
 	one_argument(argument, name);
 
@@ -3973,8 +3968,6 @@ void show_vnums(P_char ch)
 {
 	char buff[MAX_STRING_LENGTH];
 
-	int last_top = 0;
-
 	int unused_vnums = 0;
 
 	send_to_char(
@@ -4051,7 +4044,7 @@ extern const char *get_function_name(void *);
 
 void do_world(P_char ch, char *argument, int cmd)
 {
-	char buf[MAX_STRING_LENGTH], buff[MAX_STRING_LENGTH], buff2[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH], buff[MAX_STRING_LENGTH];
 	char arg[MAX_INPUT_LENGTH];
 	long ct, diff_time;
 	char *tmstr;
@@ -4952,7 +4945,6 @@ void do_score(P_char ch, char *argument, int cmd)
 	struct affected_type *aff;
 	bool found = FALSE;
 	int i, last, percent, secs;
-	float frags;
 	char buffer[1024];
 	float fragnum, hardcorepts = 0;
 	P_nevent ne;
@@ -5971,7 +5963,7 @@ void do_score(P_char ch, char *argument, int cmd)
 		send_to_char("\n", ch);
 	}
 
-	struct affected_type af, *afp;
+	struct affected_type *afp;
 	buf2[0] = 0;
 	buf[0] = 0;
 	for (afp = ch->affected; afp; afp = afp->next)
@@ -6685,8 +6677,7 @@ void do_who(P_char ch, char *argument, int cmd)
 	char buf[MAX_STRING_LENGTH], buf3[MAX_STRING_LENGTH];
 	char buf4[MAX_STRING_LENGTH], buf5[MAX_STRING_LENGTH];
 	char pattern[256], arg[256];
-	int i, j, k, nr_args_now = 0, who_list_size = 0, who_gods_size = 0,
-		     total_ingame_connections = 0, surname;
+	int j, k, who_list_size = 0, who_gods_size = 0, total_ingame_connections = 0, surname;
 	long timer = 0;
 	snoop_by_data *snoop_by_ptr;
 	int align = RACEWAR_NONE, min_level = MAXLVL + 1, max_level = -1;
@@ -7728,7 +7719,6 @@ void do_users_DEPRECATED(P_char ch, char *argument, int cmd)
 void do_inventory(P_char ch, char *argument, int cmd)
 {
 	char buf[MAX_STRING_LENGTH];
-	int i;
 
 	if (IS_AFFECTED(ch, AFF_WRAITHFORM))
 	{
@@ -7898,10 +7888,9 @@ bool has_eq_slot(P_char ch, int wear_slot)
 bool get_equipment_list(P_char ch, char *buf, int list_only)
 {
 	int j;
-	int blood = 0;
 	bool found;
 	char tempbuf[MAX_STRING_LENGTH];
-	P_obj t_obj, wpn;
+	P_obj t_obj;
 	int free_hands;
 	int wear_order[] = {
 		41, 24, 40, 6,	19, 21, 22, 20, 39, 3,	4,  5,	35, 12, 27,
@@ -8925,9 +8914,8 @@ void do_artireset(P_char ch, char *arg, int cmd)
 void do_glance(P_char ch, char *argument, int cmd)
 {
 	char name[MAX_INPUT_LENGTH];
-	char Gbuf1[MAX_STRING_LENGTH];
 	P_char tar_char = NULL;
-	int percent, j, vis_mode;
+	int j;
 	int wear_order[] = { 24, 40, 6,	 19, 21, 22, 20, 39, 3,	 4,  5,	 35, 37, 12,
 			     27, 23, 13, 28, 29, 30, 10, 31, 11, 14, 15, 33, 34, 9,
 			     32, 1,  2,	 16, 17, 25, 26, 18, 7,	 36, 8,	 38, -1 };
@@ -9046,13 +9034,12 @@ const char *dir_desc[] = { "to your north",	"to your east",	     "to your south"
 
 void do_scan(P_char ch, char *argument, int cmd)
 {
-	char buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
+	char buf[MAX_STRING_LENGTH];
 	int dir, distance, visibility /*= 4*/;
 	bool found;
 	P_char vict, vict_next;
 	int was_in_room, percent, basemod = 0, dirmod = 0;
 	int obscurmist = 0, vis_mode;
-	char buf3[20];
 
 	if (!IS_ALIVE(ch))
 	{
@@ -9408,7 +9395,6 @@ void web_info(void)
 
 void do_recall(P_char ch, char *argument, int cmd)
 {
-	int index, i;
 	char arg[256];
 	char buf[2048];
 	int size = 10;
@@ -9763,7 +9749,6 @@ void do_mlist(P_char ch, char *argument, int cmd)
 	std::vector<std::string> t;
 	char tmp[MAX_INPUT_LENGTH];
 	bool haveRange = false;
-	int zone = -1;
 	int vmin = INT_MIN, vmax = INT_MAX;
 	size_t i = 0;
 	char buf[MAX_STRING_LENGTH];

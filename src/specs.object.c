@@ -256,7 +256,7 @@ int artifact_monolith(P_obj monolith, P_char ch, int cmd, char *arg)
 
 int guildwindow(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int old_room, new_room;
+	int old_room;
 
 	if (cmd == CMD_PERIODIC)
 		return (FALSE);
@@ -281,7 +281,6 @@ int guildwindow(P_obj obj, P_char ch, int cmd, char *arg)
 int guildhome(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	char *arg;
-	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -353,7 +352,6 @@ int illithid_sack(P_obj obj, P_char ch, int cmd, char *argument)
 
 int artifact_biofeedback(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char *arg;
 	int curr_time;
 	P_char temp_ch;
 
@@ -407,7 +405,6 @@ int artifact_biofeedback(P_obj obj, P_char ch, int cmd, char *argument)
 // This works just fine but I don't see any reference to -1 in the code anywhere?
 int artifact_stone(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char *arg;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -459,7 +456,6 @@ int artifact_stone(P_obj obj, P_char ch, int cmd, char *argument)
 
 int artifact_shadow_shield(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char *arg;
 	int curr_time, i;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -529,7 +525,7 @@ int death_proc(P_obj obj, P_char ch, int cmd, char *argument)
 int charon_ship(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	int curr_time, boat_room = real_room0(VROOM_UNDEAD_FERRY);
-	int to_room, old_room, dir, dist, spill = 0, look_out = 0;
+	int to_room, old_room, spill = 0, look_out = 0;
 	int galleon_route[] = { 600586, 600986, 600987, 600988, 601388, 601389, 601789, 601790,
 				602190, 602191, 602192, 602193, 602194, 602195, 602196, 602197,
 				602198, 602199, 602200, 602600, 602601, 602602, 602603, 602604,
@@ -858,7 +854,6 @@ int artifact_invisible(P_obj obj, P_char ch, int cmd, char *argument)
 
 int transp_tow_misty_gloves(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char e_pos;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -2104,7 +2099,6 @@ int xmas_cap(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	struct proc_data *data;
 	P_char victim;
-	int curr_time = time(NULL);
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -2466,7 +2460,7 @@ void event_dragonlord_check(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	struct affected_type *af;
 	P_obj armor = ch->equipment[WEAR_BODY];
-	int temp, dragonlord_slot = MAX_WEAR;
+	int dragonlord_slot = MAX_WEAR;
 	bool bHasOtherArti = false;
 
 	if (GET_RACE(ch) != RACE_DRAGONKIN)
@@ -2565,7 +2559,7 @@ int dragonlord_plate_old(P_obj obj, P_char ch, int cmd, char *arg)
 	P_obj temp_obj;
 	P_char temp_ch;
 	struct affected_type af;
-	int k = 0, temp_age = 1, secs;
+	int k = 0;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -2795,7 +2789,7 @@ int olympus_portal(P_obj obj, P_char ch, int cmd, char *arg)
 
 int living_necroplasm(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char temp_ch, i;
+	P_char i;
 	int slot;
 	struct affected_type af;
 	bool bHasOtherArti;
@@ -2960,9 +2954,7 @@ int living_necroplasm(P_obj obj, P_char ch, int cmd, char *arg)
 // VAPOR
 int vapor(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char temp_ch, i;
 	P_char vict;
-	struct affected_type af;
 	int slot, curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -3137,8 +3129,6 @@ int vapor(P_obj obj, P_char ch, int cmd, char *arg)
 
 int dragon_helm(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int curr_time;
-
 	/*
 	   check for periodic event calls
 	 */
@@ -3610,8 +3600,6 @@ void good_evil_spellUp(P_char ch)
 
 void good_evil_startBigFight(P_char attacker, P_char defender, int goodieStarted, P_obj obj)
 {
-	char buf[MAX_STRING_LENGTH];
-
 	statuslog(AVATAR, "Mayhem and Symmetry are facing off at [%d]!",
 		  world[attacker->in_room].number);
 
@@ -4029,9 +4017,7 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 
 int dranum_mask(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int cur_time;
 	P_char vict;
-	struct affected_type *af;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -4073,7 +4059,7 @@ int dranum_mask(P_obj obj, P_char ch, int cmd, char *arg)
 
 int sunblade(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int curr_time, rand;
+	int curr_time;
 	P_char victim;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -4145,7 +4131,6 @@ int sunblade(P_obj obj, P_char ch, int cmd, char *arg)
 
 int vigor_mask(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int cur_time;
 	P_char vict;
 	struct affected_type *af;
 
@@ -4545,7 +4530,6 @@ int sanguine(P_obj obj, P_char ch, int cmd, char *argument)
 
 int treasure_chest(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char *arg;
 	int found, chance1, chance2;
 	P_obj potion;
 
@@ -4940,10 +4924,9 @@ int labelas(P_obj obj, P_char ch, int cmd, char *arg)
 int holy_weapon(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char tch, vict, attacker;
-	struct proc_data *data = NULL;
 	struct affected_type aff, *af;
 	bool should_jump;
-	int pcnt, curr_time, tmpper, alignment; // 0 == good, 1 == evil, -1 == neutral
+	int pcnt, tmpper, alignment; // 0 == good, 1 == evil, -1 == neutral
 	struct damage_messages goodmessages = {
 		"&+wThe power of your &+WGod&+w rains down pain and suffering upon $N&+w!&n",
 		"&+wPain unlike you have ever felt before permeates your body.&n",
@@ -5327,7 +5310,7 @@ int holy_weapon(P_obj obj, P_char ch, int cmd, char *arg)
 int menden_figurine(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char tempchar = NULL;
-	int i, pos = -1;
+	int pos = -1;
 	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH];
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -5479,7 +5462,6 @@ int banana(P_obj obj, P_char ch, int cmd, char *arg)
 	 */
 	P_obj new_obj;
 	char Gbuf1[MAX_STRING_LENGTH];
-	struct affected_type af;
 
 	/*
 	 * peel:   v-num 1234
@@ -7818,8 +7800,6 @@ int sword_named_magik(P_obj obj, P_char ch, int cmd, char *arg)
 
 int yuan_ti_stone(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict = NULL, vict_next = NULL;
-
 	/* check for periodic event calls */
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -8576,9 +8556,7 @@ int church_door(P_obj obj, P_char ch, int cmd, char *arg)
 
 int earthquake_gauntlet(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int cur_time;
 	P_char vict = NULL;
-	struct affected_type *af;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -8611,9 +8589,7 @@ int earthquake_gauntlet(P_obj obj, P_char ch, int cmd, char *arg)
 
 int blind_boots(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int cur_time;
 	P_char vict = NULL;
-	struct affected_type af;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -8878,10 +8854,6 @@ int stream_of_life(P_obj obj, P_char ch, int cmd, char *arg)
 
 int newbie_sign1(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int bits;
-	P_char tempch;
-	P_obj tempobj;
-	int r_room, rand;
 	char Gbuf1[MAX_STRING_LENGTH];
 
 	/*
@@ -8911,10 +8883,6 @@ int newbie_sign1(P_obj obj, P_char ch, int cmd, char *arg)
 // Second Sign
 int newbie_sign2(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int bits;
-	P_char tempch;
-	P_obj tempobj;
-	int r_room, rand;
 	char Gbuf1[MAX_STRING_LENGTH];
 
 	/*
@@ -9058,10 +9026,8 @@ int madman_mangler(P_obj obj, P_char ch, int cmd, char *arg)
 // Thanks giving procs -Kvark
 int tripboots(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int cur_time;
 	P_char vict = NULL;
 	int rand;
-	struct affected_type af;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -9111,7 +9077,6 @@ int tripboots(P_obj obj, P_char ch, int cmd, char *arg)
 
 int blindbadge(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int cur_time;
 	P_char vict = NULL;
 	struct affected_type af;
 	int rand;
@@ -9228,9 +9193,7 @@ int confusionsword(P_obj obj, P_char ch, int cmd, char *arg)
 
 int fumblegaunts(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int cur_time;
 	P_char vict = NULL;
-	struct affected_type af;
 	int rand;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -9357,7 +9320,6 @@ int stormbringer(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int dam = cmd / 1000;
 	P_char victim;
-	int rand;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -9427,7 +9389,6 @@ int hammer_titans(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int dam = cmd / 1000;
 	P_char victim;
-	int rand;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -9463,13 +9424,9 @@ int hammer_titans(P_obj obj, P_char ch, int cmd, char *arg)
  */
 int guild_badge(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int cur_time;
-	P_obj tempobj;
-	struct affected_type af;
 	int affects_bonus;
 	int i, count, weekday;
 	char buf1[MAX_STRING_LENGTH];
-	P_obj item, next_item;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -9901,7 +9858,6 @@ void event_lifereaver(P_char ch, P_char victim, P_obj obj, void *data)
 int lifereaver(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
-	char buf[MAX_STRING_LENGTH];
 	int numb;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -10058,7 +10014,6 @@ int totem_of_mastery(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
 	char e_pos;
-	int working, curr_time;
 
 	vict = legacy_proc_arg<P_char>(arg);
 
@@ -10286,8 +10241,7 @@ int totem_of_mastery(P_obj obj, P_char ch, int cmd, char *arg)
 int circlet_of_light(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
-	char e_pos;
-	int in_battle, working, curr_time;
+	int in_battle;
 
 	vict = legacy_proc_arg<P_char>(arg);
 
@@ -10501,7 +10455,6 @@ int alch_rod(P_obj obj, P_char ch, int cmd, char *arg)
 
 int dragon_skull_helm(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char *arg;
 	int rand;
 	int curr_time;
 	P_char victim = NULL;
@@ -10594,7 +10547,6 @@ int dragon_skull_helm(P_obj obj, P_char ch, int cmd, char *argument)
 
 int priest_rudder(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char *arg;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -10632,11 +10584,7 @@ int priest_rudder(P_obj obj, P_char ch, int cmd, char *argument)
 
 int ljs_armor(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int dam = cmd / 1000;
-	int cur_time;
-
 	P_char vict;
-	struct affected_type *af;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -10702,9 +10650,7 @@ int ljs_armor(P_obj obj, P_char ch, int cmd, char *arg)
 
 int alch_bag(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int rand;
 	int curr_time;
-	P_char victim;
 	P_obj ingred;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -11041,9 +10987,8 @@ int imprison_armor(P_obj obj, P_char ch, int cmd, char *arg)
 
 int god_bp(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char victim, tch;
-	P_obj object;
-	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	P_char tch;
+	char Gbuf1[MAX_STRING_LENGTH];
 	char getname[MAX_STRING_LENGTH];
 	int rr;
 
@@ -11107,9 +11052,8 @@ int god_bp(P_obj obj, P_char ch, int cmd, char *arg)
 
 int out_of_god_bp(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char victim = NULL, tch = NULL;
-	P_obj object;
-	char Gbuf1[MAX_STRING_LENGTH], Gbuf2[MAX_STRING_LENGTH], Gbuf3[MAX_STRING_LENGTH];
+	P_char tch = NULL;
+	char Gbuf1[MAX_STRING_LENGTH];
 	char whee[MAX_STRING_LENGTH];
 	int rr, target;
 
@@ -11296,7 +11240,7 @@ int glowing_necklace(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time;
 	P_char watermental;
-	int i, j, sum, elesize;
+	int sum, elesize;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -11464,8 +11408,8 @@ int glowing_necklace(P_obj obj, P_char ch, int cmd, char *arg)
 int staff_shadow_summoning(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time;
-	P_char shadow, aggshadow;
-	int i, j, sum, elesize;
+	P_char shadow;
+	int sum;
 	bool summoned = FALSE;
 	bool aggsummoned = FALSE;
 
@@ -11817,12 +11761,8 @@ int frost_beacon(P_obj obj, P_char ch, int cmd, char *argument)
 
 int random_tomb(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int bits;
-	int to_room;
-	P_char dummy;
-	P_obj obj2 = NULL;
-	P_obj tmp_object = NULL, k;
-	bool found_something = FALSE, have_one = FALSE;
+	P_obj tmp_object = NULL;
+	bool have_one = FALSE;
 
 	/*
 	   check for periodic event calls
@@ -11883,12 +11823,8 @@ int random_tomb(P_obj obj, P_char ch, int cmd, char *arg)
 
 int random_glass(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int bits;
-	int to_room;
-	P_char dummy;
-	P_obj obj2 = NULL;
-	P_obj tmp_object = NULL, k;
-	bool found_something = FALSE, have_one = FALSE;
+	P_obj tmp_object = NULL;
+	bool have_one = FALSE;
 
 	/*
 	   check for periodic event calls
@@ -11949,12 +11885,8 @@ int random_glass(P_obj obj, P_char ch, int cmd, char *arg)
 
 int random_slab(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int bits;
-	int to_room;
-	P_char dummy;
-	P_obj obj2 = NULL;
-	P_obj tmp_object = NULL, k;
-	bool found_something = FALSE, have_one = FALSE;
+	P_obj tmp_object = NULL;
+	bool have_one = FALSE;
 
 	/*
 	   check for periodic event calls
@@ -12013,12 +11945,10 @@ int random_slab(P_obj obj, P_char ch, int cmd, char *arg)
 
 int lyrical_instrument_of_time(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char *arg;
 	int rand;
 	int curr_time;
 	P_char temp_ch;
 	P_char vict;
-	char e_pos;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -12248,8 +12178,6 @@ int mrinlor_whip(P_obj obj, P_char ch, int cmd, char *arg)
 
 int khildarak_warhammer(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char tmp_ch, vict;
-
 	if (cmd == CMD_SET_PERIODIC)
 	{
 		return TRUE;
@@ -12305,7 +12233,6 @@ int mace_dragondeath(P_obj obj, P_char ch, int cmd, char *arg)
 	P_char temp_ch;
 	P_char vict;
 	int dam, curr_time;
-	char e_pos;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -12435,7 +12362,6 @@ int lucky_weapon(P_obj obj, P_char ch, int cmd, char *arg)
 int glades_dagger(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict = ch;
-	int i;
 	int dam = cmd / 1000;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -12602,7 +12528,6 @@ int cold_hammer(P_obj obj, P_char ch, int cmd, char *arg)
 int refreshing_fountain(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	struct affected_type af;
-	char Gbuf4[MAX_STRING_LENGTH];
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -13083,8 +13008,8 @@ int disarm_pick_gloves(P_obj obj, P_char ch, int cmd, char *arg)
 
 int doom_blade_Proc(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int rand, i, dam = cmd / 1000, lvl = 1;
-	P_char vict, tar_ch, next;
+	int rand, dam = cmd / 1000, lvl = 1;
+	P_char vict;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -13473,7 +13398,6 @@ int random_set(P_char ch, P_obj obj, int count, int cmd, char *arg)
 	struct affected_type af, *afp;
 	char *zone_name, buffer[256];
 	struct random_set_wear_off rdata;
-	P_nevent e;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -14546,8 +14470,7 @@ int harpy_gate(P_obj obj, P_char ch, int cmd, char *arg)
 
 int blue_sword_armor(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int dam = cmd / 1000, curr_time;
-	P_char vict;
+	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -14601,8 +14524,7 @@ int blue_sword_armor(P_obj obj, P_char ch, int cmd, char *arg)
 
 int jet_black_maul(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int dam = cmd / 1000, curr_time;
-	P_char vict;
+	int curr_time;
 
 	/*
 	   check for periodic event calls
@@ -14666,7 +14588,7 @@ int jet_black_maul(P_obj obj, P_char ch, int cmd, char *arg)
 int toe_chamber_switch(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int correct_button = 0, button_guess = 0;
-	P_char summoned, target;
+	P_char summoned;
 	P_obj s_obj, t_obj;
 	int mobiles[] = { 43540, 43539, 43538, 43550, 0 };
 
@@ -14937,7 +14859,6 @@ int miners_helmet(P_obj obj, P_char ch, int cmd, char *argument)
 
 int thanksgiving_wings(P_obj obj, P_char ch, int cmd, char *argument)
 {
-	char *arg;
 	int curr_time;
 	P_char temp_ch;
 

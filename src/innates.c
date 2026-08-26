@@ -1076,7 +1076,7 @@ int get_innate_property(int innate, const char *prefix, int default_value)
 // an additional function, for when one needs to check the innate timer without altering it
 bool can_use_innate(P_char ch, int innate)
 {
-	struct affected_type af, *afp;
+	struct affected_type *afp;
 
 	for (afp = ch->affected; afp; afp = afp->next)
 	{
@@ -1218,8 +1218,6 @@ bool check_reincarnate(P_char ch)
 
 void do_disappear(P_char ch, char *arg, int cmd)
 {
-	struct affected_type af;
-
 	if (has_innate(ch, INNATE_DISAPPEAR))
 	{
 		if (!fight_in_room(ch))
@@ -1677,15 +1675,6 @@ int parasitebite(P_char ch, P_char victim)
 					    "You leap towards $N and bite $M savagely.",
 					    "$n leaps towards you and bites you savagely!",
 					    "$n leaps towards $N and bites $M savagely!" };
-
-	struct damage_messages messages_with_latch = {
-		"You leap towards $N and bite $M savagely, attempting to latch to $S body.",
-		"$n leaps towards you and bites you savagely, attempting to latch to your body!",
-		"$n leaps towards $N and bites $M savagely, attempting to latch to $S body!",
-		"You leap towards $N and bite $M savagely, tearing off a big chunk of $S body.",
-		"$n leaps towards you and bites you savagely, tearing off a big chunk of your body!",
-		"$n leaps towards $N and bites $M savagely, tearing off a big chunk of $S body"
-	};
 
 	level = GET_LEVEL(ch);
 
@@ -2205,7 +2194,6 @@ void do_enlarge(P_char ch, char *arg, int cmd)
 
 void do_wall_climbing(P_char ch, char *arg, int cmd)
 {
-	struct affected_type af;
 	act("&+LThis &+Wability &+Lis always active.", TRUE, ch, 0, 0, TO_CHAR);
 }
 
@@ -2592,7 +2580,7 @@ void event_tempus(P_char ch, P_char victim, P_obj obj, void *args)
 	struct affected_type af;
 	struct affected_type af1;
 	char buf[256];
-	int level, dura, room;
+	int level, dura;
 
 	if (!IS_ALIVE(ch) || ch->in_room == NOWHERE)
 		return;
@@ -3183,70 +3171,6 @@ void do_doorkick(P_char ch, char *arg, int cmd)
 	CharWait(ch, 2 * PULSE_VIOLENCE);
 }
 
-/*
- * This is halfling dreaded social-thievery table.  otherwise usual
- * WEAR-flags, except 0 = random instead of WEAR_LIGHT
- */
-
-static int steal_chance[][21] = { { 9, WEAR_FACE, 50, WEAR_EYES, 70, WEAR_EARRING_L, 80,
-				    WEAR_EARRING_R, 90, WEAR_NECK_1, 95, WEAR_NECK_2, 100 },
-				  { 24, WEAR_HANDS, 20, WEAR_FINGER_L, 30, WEAR_FINGER_R, 40,
-				    WEAR_WAIST, 60, WEAR_WRIST_L, 70, WEAR_WRIST_R, 80,
-				    PRIMARY_WEAPON, 100 },
-				  { 29, WEAR_HANDS, 30, WEAR_FINGER_L, 45, WEAR_FINGER_R, 60,
-				    WEAR_WRIST_L, 80, WEAR_WRIST_R, 100 },
-				  { CMD_HUG, 0, 100 },
-				  { CMD_POKE, 0, 100 },
-				  { CMD_GROPE, 0, 100 },
-				  { CMD_NIBBLE, 0, 100 },
-				  { CMD_RUFFLE, 0, 100 },
-				  { CMD_SLAP, 0, 100 },
-				  { CMD_SQUEEZE, 0, 100 },
-				  { CMD_KISS, 0, 100 },
-				  { CMD_COMB, 0, 100 },
-				  { CMD_MASSAGE, 0, 100 },
-				  { CMD_TICKLE, 0, 100 },
-				  { CMD_PAT, 0, 100 },
-				  { CMD_NUDGE, 0, 100 },
-				  { CMD_PUNCH, 0, 100 },
-				  { CMD_SPANK, 0, 100 },
-				  { CMD_TACKLE, 0, 100 },
-				  { CMD_BONK, 0, 100 },
-				  { CMD_PINCH, 0, 100 },
-				  { CMD_PUSH, 0, 100 },
-				  { CMD_SHOVE, 0, 100 },
-				  { CMD_STRANGLE, 0, 100 },
-				  { CMD_TAP, 0, 100 },
-				  { CMD_TWEAK, 0, 100 },
-				  { CMD_CARESS, 0, 100 },
-				  { CMD_SWEEP, 0, 100 },
-				  { CMD_TOUCH, 0, 100 },
-				  { CMD_SCRATCH, 0, 100 },
-				  { CMD_BATHE, 0, 100 },
-				  { CMD_EMBRACE, 0, 100 },
-				  { CMD_TUG, 0, 100 },
-				  { CMD_HI5, 0, 100 },
-				  { CMD_WHAP, 0, 100 },
-				  { CMD_ROLL, 0, 100 },
-				  { CMD_DROPKICK, 0, 100 },
-				  { CMD_NOOGIE, 0, 100 },
-				  { CMD_MELT, 0, 100 },
-				  { CMD_BIRD, 0, 100 },
-				  { CMD_BITE, 0, 100 },
-				  { CMD_SULK, 0, 100 },
-				  { CMD_SWAT, 0, 100 },
-				  { CMD_CHEEK, 0, 100 },
-				  { CMD_HUG, 0, 100 },
-				  { CMD_TANGO, 0, 100 },
-				  { CMD_CUDDLE, 0, 100 },
-				  { CMD_NUZZLE, 0, 100 },
-				  { CMD_FONDLE, 0, 100 },
-				  { CMD_HAND, 0, 100 },
-				  { CMD_COMFORT, 0, 100 },
-				  { CMD_SNUGGLE, 0, 100 },
-				  { CMD_SNAP, 0, 100 },
-				  { 0 } };
-
 void do_tupor(P_char ch, char *arg, int cmd)
 {
 	if (!IS_ALIVE(ch))
@@ -3674,7 +3598,7 @@ int attuned_to_terrain(P_char ch)
 
 int get_innate_regeneration(P_char ch)
 {
-	int mult = 1, terr;
+	int mult = 1;
 
 	switch (GET_RACE(ch))
 	{
@@ -3707,7 +3631,6 @@ int get_innate_regeneration(P_char ch)
 int get_innate_resistance(P_char ch)
 {
 	int res, lvl = GET_LEVEL(ch);
-	char buf[128];
 
 	if (!IS_ALIVE(ch))
 		return 0;
@@ -4409,17 +4332,9 @@ void do_fade(P_char ch, char *argument, int cmd)
 
 void do_layhand(P_char ch, char *argument, int cmd)
 {
-	struct affected_type *afp;
-	time_t now;
-	int tmp_time, healamt;
 	P_char vict = NULL;
-	char Gbuf1[MAX_STRING_LENGTH];
 	char name[MAX_INPUT_LENGTH];
-	P_nevent ne;
-	int time = -1;
-	int timer = get_property("innate.timer.layHands", 16 * 60 * WAIT_SEC);
 	int healpoints = ((GET_LEVEL(ch) / 10) * GET_C_CHA(ch) + number(1, 100));
-	float rested;
 
 	/* Okay, lets change layhands a bit to make it more charisma based,
 	 * like D&D
@@ -4685,8 +4600,6 @@ void do_divine_force(P_char ch, char *arg, int cmd)
 
 bool has_divine_force(P_char ch)
 {
-	struct affected_type *afp;
-
 	if (affected_by_spell(ch, TAG_DIVINE_FORCE_AFFECT))
 	{
 		return true;

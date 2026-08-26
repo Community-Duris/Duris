@@ -186,7 +186,7 @@ void *getmem(size_t size, char *tag, char *file, int line)
 
 void *changemem(void *p, size_t size, char *file, int line)
 {
-	ALLOCATION_HEADER *l, *m;
+	ALLOCATION_HEADER *m;
 
 #if MEMCHK > 1
 	/* open the memory log if not already */
@@ -255,7 +255,7 @@ void *changemem(void *p, size_t size, char *file, int line)
 /* removes a memory entry from the list */
 void delmem(void *p, char *file, int line)
 {
-	ALLOCATION_HEADER *l, *m;
+	ALLOCATION_HEADER *m;
 
 #if MEMCHK > 1
 	/* open the memory log if not already */

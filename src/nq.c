@@ -534,7 +534,6 @@ int nq_find_actor(P_char mob, struct nq_quest **quest, struct nq_instance **inst
 P_obj nq_find_item(struct nq_item *item, P_char ch, P_obj components[])
 {
 	P_obj tobj;
-	char buf[128];
 	int i;
 
 	for (tobj = ch->carrying; tobj; tobj = tobj->next_content)
@@ -669,8 +668,6 @@ int nq_test_single_action(struct nq_action *action, struct nq_instance *instance
 	P_obj obj;
 	P_obj components[NQ_MAX_REQUESTED_ITEMS];
 	struct nq_item *item;
-	struct nq_reward *reward;
-	struct nq_instance *t_inst, *prev;
 	struct nq_string *act_tag, *pc_tag, *string, *t_tag;
 	int found;
 	int mob_cash;
@@ -773,8 +770,7 @@ int nq_test_single_action(struct nq_action *action, struct nq_instance *instance
 struct nq_instance *nq_accept_quest(struct nq_quest *quest, P_char ch)
 {
 	struct nq_instance *instance;
-	struct nq_actor *actor, *actor_template;
-	struct nq_action *action, *newact;
+	struct nq_actor *actor;
 	int i;
 
 	CREATE(instance, nq_instance, 1, MEM_TAG_NQINST);
@@ -979,7 +975,6 @@ struct nq_reward *nq_parse_reward(xmlNodePtr node)
 struct nq_action *nq_parse_action(xmlNodePtr node)
 {
 	struct nq_action *action;
-	struct nq_reward *reward;
 	struct nq_string *string, *tag;
 	struct nq_item *item;
 	xmlChar *att, *content;
@@ -1283,8 +1278,6 @@ struct nq_quest *nq_parse_quest(char *fname)
 	xmlNodePtr node;
 	xmlChar *att;
 	struct nq_quest *quest;
-	struct nq_actor_template *actor_template;
-	struct nq_actor *actor;
 	struct nq_instance *instance;
 	int actor_templates = 0;
 	int i;
@@ -1551,7 +1544,6 @@ void do_quest2(P_char ch, char *args, int cmd)
 	char *command;
 	char *arg;
 	int i;
-	struct nq_quest *quest, *prev;
 	struct nq_interface_mapping
 	{
 		char *command;

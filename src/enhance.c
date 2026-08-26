@@ -65,7 +65,7 @@ void enhance(P_char ch, P_obj source, P_obj material)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_obj robj;
-	int cost, searchcount, maxsearch, tries, sval, level;
+	int cost, searchcount, maxsearch, sval;
 	int newval, minval, chluck, wearflags;
 	int cascade_dir, cascade_step, cascade_ival;
 	struct enhance_index_entry *entry;
@@ -873,13 +873,9 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 
 	char buf[MAX_STRING_LENGTH];
 	const char *modstring;
-	P_obj robj;
-	long robjint;
 	int mod = 0, loctype = 0;
-	int cost = 0, searchcount = 0, tries;
-	int sval = itemvalue(source);
+	int cost = 0;
 	int val = itemvalue(material);
-	int minval = itemvalue(source) - enhance_material_ival_delta;
 
 	if (val <= 20)
 	{

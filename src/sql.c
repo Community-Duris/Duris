@@ -1172,9 +1172,6 @@ void sql_insert_item(P_char ch, P_obj obj, char *desc)
 void sql_insert_new_item(P_char ch, P_obj obj)
 {
 	char item_id[MAX_STRING_LENGTH];
-	int m_virtual = (obj->R_num >= 0) ? obj_index[obj->R_num].virtual_number : 0;
-	int i = ch->in_room;
-	P_room rm = &world[i];
 
 	snprintf(item_id, MAX_STRING_LENGTH, "o %s", obj->name);
 	do_stat(ch, item_id, 555);
@@ -1260,7 +1257,6 @@ void store_pkill_info(unsigned long pkill_event, P_char ch, const char *type, in
 /* Save racewr pkill information */
 void sql_save_pkill(P_char ch, P_char victim)
 {
-	P_char tch;
 	unsigned long pkill_event;
 
 	// NPCs can't be pkilled.
@@ -1375,7 +1371,6 @@ void manual_log(P_char ch)
 {
 	char a[256], b[256];
 	char buf[MAX_STRING_LENGTH];
-	char equip_sql[MAX_STRING_LENGTH * 2 + 1];
 	char log_sql[MAX_LOG_LEN * 2 + 1];
 	char buf2[MAX_LOG_LEN];
 	int space = MAX_LOG_LEN;
@@ -1629,7 +1624,6 @@ void perform_wiki_search(P_char ch, const char *query)
 	buf[0] = '\0';
 	buf2[0] = '\0';
 	MYSQL_ROW row;
-	MYSQL_ROW row2;
 
 	// SECURITY FIX: Sanitize user input to prevent SQL injection
 	// Escape the query string using MySQL's built-in escape function
@@ -2063,7 +2057,6 @@ int sql_quest_finish(P_char ch, P_char giver, int type, int value)
 {
 	int m_virtual = GET_VNUM(giver);
 	// GET_PID(ch), ch->only.pc->quest_giver, GET_NAME(ch), GET_LEVEL(ch), ch->only.pc->quest_mob_vnum, m_virtual ,reward->short_description );
-	char buff[MAX_STRING_LENGTH];
 	qry("INSERT INTO quest_trophy (mob_vnum, pid, type, reward_value, timestamp) VALUES ('%d', '%d', %d, %d ,now())",
 	    m_virtual, GET_PID(ch), type, value);
 	return 1;
@@ -2135,12 +2128,11 @@ void do_sql(P_char ch, char *argument, int cmd)
 	char first[MAX_INPUT_LENGTH];
 	char second[MAX_INPUT_LENGTH];
 	char third[MAX_INPUT_LENGTH];
-	char fourth[MAX_INPUT_LENGTH];
 	char *rest;
 	char buf[MAX_STRING_LENGTH];
 	int limited_result = 0;
 	int prep_statement;
-	int num_fields, num_rows, i;
+	int num_fields, i;
 
 	char result[MAX_STRING_LENGTH * 10];
 	char tmp[MAX_STRING_LENGTH];

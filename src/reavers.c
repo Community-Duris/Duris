@@ -491,7 +491,6 @@ void spell_cegilunes_searing_blade(int level, P_char ch, char *arg, int type, P_
 				   P_obj obj)
 {
 	struct affected_type af;
-	bool weapon = FALSE;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -540,7 +539,6 @@ void spell_cegilunes_searing_blade(int level, P_char ch, char *arg, int type, P_
 // Called by reaver_hit_proc, this function handles the cegilune's proc.
 bool cegilune_blade(P_char ch, P_char victim, P_obj wpn)
 {
-	int dam, wave;
 	struct affected_type *afp, *af2p, af;
 	struct damage_messages tiers_messages[6] = {
 		{ "&+LThe &+Rs&+re&+Ra&+rr&+Ri&+rn&+Rg &+Lblade slices into $N, causing $m to scream in pain!&n",
@@ -785,7 +783,6 @@ void spell_girilals_granite_hammer(int level, P_char ch, char *arg, int type, P_
 bool girilals_granite_hammer(P_char ch, P_char victim, P_obj wpn)
 {
 	int dam;
-	struct affected_type *afp, af;
 
 	struct damage_messages messages = {
 		"&+LThe &+ydust&+L surrounding $p &+Lscratches at $N&+L!&n",
@@ -1006,8 +1003,7 @@ void spell_thryms_icerazor(int level, P_char ch, char *arg, int type, P_char vic
 bool thryms_icerazor(P_char ch, P_char victim, P_obj wpn)
 {
 	int dam;
-	char ch_msg[256], vict_msg[256], room_msg[256];
-	struct affected_type *afp, af;
+	struct affected_type af;
 
 	struct damage_messages messages = {
 		"&+CThe shards of &+Bice&+C surrounding $q &+Csplinter off as they strike $N&+C!&n",
@@ -1111,7 +1107,6 @@ void spell_lliendils_stormshock(int level, P_char ch, char *arg, int type, P_cha
 bool lliendils_stormshock(P_char ch, P_char victim, P_obj wpn)
 {
 	int dam;
-	struct affected_type *afp, af;
 
 	struct damage_messages messages = {
 		"&+BSearing &+Yb&+Colt&+Ys &+Bof &+Lblack &+Blig&+Whtn&+Bing &+Bflow forth from your $q, &+Bstriking $N!&n",
@@ -1202,7 +1197,7 @@ void spell_stormcallers_fury(int level, P_char ch, char *arg, int type, P_char v
 bool stormcallers_fury(P_char ch, P_char victim, P_obj wpn)
 {
 	int pid;
-	struct affected_type *afp, af;
+	struct affected_type *afp;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || !(wpn) || !SHOCK_REAVER_WEAPONS(wpn))
 	{
@@ -1348,7 +1343,7 @@ void spell_kostchtchies_implosion(int level, P_char ch, char *arg, int type, P_c
 bool kostchtchies_implosion(P_char ch, P_char victim, P_obj wpn)
 {
 	int pid;
-	struct affected_type *afp, af;
+	struct affected_type *afp;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim) || !(wpn) || !FROST_REAVER_WEAPONS(wpn))
 	{

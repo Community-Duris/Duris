@@ -186,9 +186,6 @@ void give_reward(struct quest_complete_data *qcp, P_char mob, P_char pl)
 	P_obj obj;
 	int i;
 	char Gbuf1[MAX_STRING_LENGTH];
-	int value_pts = 0;
-	char buffer[1024];
-	int group_fact = 1;
 	int temp = 1;
 
 	wizlog(58, "%s has completed quest from %s [%d].", GET_NAME(pl), mob->player.short_descr,
@@ -581,8 +578,6 @@ int quest_sort_comp(const void *va, const void *vb)
 
 void quick_sort_quest_index(int min, int max)
 {
-	int q;
-
 	qsort(quest_index, number_of_quests, sizeof(struct quest_data), quest_sort_comp);
 }
 
@@ -854,10 +849,8 @@ int addQuestTropy(int questID)
 	int found = 0;
 	int t_id = 0;
 	int t_trophy = 0;
-	int i = 0;
 	FILE *f;
 	FILE *temp_f;
-	char sys[200];
 
 	f = fopen(QUEST_FILE_TROPHY, "r");
 	temp_f = fopen(TEMP_QUEST_FILE_TROPHY, "w+");

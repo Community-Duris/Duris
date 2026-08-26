@@ -349,8 +349,6 @@ void Ferry::add_to_passenger_list(P_char p)
 
 void Ferry::move()
 {
-	int dummy;
-
 	if (!obj || !obj->loc.room || !world)
 	{
 		logit(LOG_DEBUG, "ferry %s wants to move but room is invalid.", name.c_str());

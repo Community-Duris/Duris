@@ -258,7 +258,7 @@ int compress_end(P_desc player, int flush)
  screw up compression */
 int write_to_descriptor(P_desc player, const char *txt)
 {
-	int len, total, status, i, j;
+	int total, i, j;
 	char conv_buf[MAX_STRING_LENGTH * 2];
 
 	if (!player || !txt)

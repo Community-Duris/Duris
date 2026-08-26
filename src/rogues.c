@@ -23,7 +23,6 @@ extern P_room world;
 void do_slip(P_char ch, char *argument, int cmd)
 {
 	char obj_name[MAX_INPUT_LENGTH], vict_name[MAX_INPUT_LENGTH];
-	char arg[MAX_INPUT_LENGTH];
 	P_char vict;
 	P_obj obj, container;
 	P_char t_ch = NULL;

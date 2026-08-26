@@ -24,7 +24,6 @@ P_ship leviathan_find_ship(P_char leviathan, int room, int num_rooms);
 int proc_lohrr(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	int locwearing;
-	char buf[MAX_STRING_LENGTH];
 
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
@@ -130,7 +129,6 @@ void dagger_of_wind( P_obj obj, P_char ch, int cmd, char *argument )
 int sphinx_prefect_crown(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time;
-	char first_arg[256];
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -307,7 +305,6 @@ P_ship leviathan_find_ship(P_char leviathan, int room, int num_rooms)
 	P_obj obj;
 	P_ship ship;
 	room_direction_data *exit;
-	char msg[100];
 
 	if (!leviathan)
 		return NULL;

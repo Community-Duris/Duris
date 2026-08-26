@@ -604,7 +604,6 @@ void do_outpost(P_char ch, char *arg, int cmd)
 	// BEGIN REPAIR
 	if (!str_cmp("repair", buff2))
 	{
-		int cost = (int)get_property("outpost.cost.repair", 0);
 		if (!CAN_CONSTRUCT_CMD(ch) && !IS_TRUSTED(ch))
 		{
 			send_to_char(
@@ -953,7 +952,6 @@ void event_outpost_repair(P_char op, P_char vict, P_obj obj, void *data)
 void outpost_death(P_char outpost, P_char killer)
 {
 	Building *building = get_building_from_char(outpost);
-	int ownerid = 0;
 
 	/* Not using outpost resources
 	//handle materials from old outpost
@@ -1120,7 +1118,6 @@ void update_outpost_golems(Building *building, int amount)
 
 void reset_one_outpost(Building *building)
 {
-	P_char op;
 	int id;
 
 	if (!building->get_id())
@@ -1162,11 +1159,6 @@ void reset_outposts(P_char ch)
 
 int outpost_rubble(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	char buff[MAX_STRING_LENGTH], buff2[MAX_STRING_LENGTH];
-	P_obj t_obj;
-	int wood = 0;
-	int stone = 0;
-
 	if (cmd == CMD_SET_PERIODIC || cmd == CMD_PERIODIC)
 		return FALSE;
 

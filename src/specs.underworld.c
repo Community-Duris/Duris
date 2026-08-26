@@ -84,9 +84,7 @@ void hammer_berserk_check(P_char ch)
 int hammer(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int dam = cmd / 1000;
-	P_char t_vict;
 	P_char vict;
-	P_char temp;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -187,10 +185,8 @@ int dragonkind(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char tchar1 = NULL, tchar2 = NULL;
 	int dam = cmd / 1000, curr_time;
-	P_char tch, tch_next;
 	P_char vict;
 	P_char temp;
-	bool chance = 0;
 	int rand;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -628,7 +624,7 @@ int orb_of_the_sea(P_obj obj, P_char ch, int cmd, char *arg)
 	//  static int num_drops = 0;
 	static int count = 0;
 	struct proc_data *data;
-	int dam = cmd / 1000, loc;
+	int loc;
 	P_char victim;
 	int new_room;
 
@@ -747,8 +743,7 @@ int orb_of_the_sea(P_obj obj, P_char ch, int cmd, char *arg)
 
 int platemail_of_defense(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int dam = cmd / 1000, curr_time;
-	P_char vict;
+	int curr_time;
 
 	// Check for periodic event calls
 	if (cmd == CMD_SET_PERIODIC)
@@ -969,7 +964,7 @@ int flamberge(P_obj obj, P_char ch, int cmd, char *arg)
 
 int doombringer(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int dam = cmd / 1000, curr_time, i, room;
+	int curr_time, i, room;
 	P_char vict;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -3036,7 +3031,7 @@ void event_dwarven_ancestor_death(P_char ch, P_char victim, P_obj obj, void *dat
 void barb_proc_dwarven_ancestor(int level, P_char ch, P_char victim)
 {
 	P_char mob;
-	int duration, lvl, i;
+	int duration, i;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
@@ -3132,7 +3127,6 @@ void barb_proc_dwarven_ancestor(int level, P_char ch, P_char victim)
 int barb(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
-	char buf1[MAX_STRING_LENGTH];
 	time_t curr_time;
 	int damage, type, flags, result;
 	struct proc_data *data;
@@ -3980,8 +3974,8 @@ void gfstone_event(P_char ch, P_char vict, P_obj obj, void *data)
 int gfstone(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time, gf, count, i;
-	char params[MAX_STRING_LENGTH], owner[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH],
-		buf2[MAX_STRING_LENGTH], buf3[MAX_STRING_LENGTH];
+	char owner[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH],
+		buf3[MAX_STRING_LENGTH];
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -4217,8 +4211,6 @@ void event_tsunamiwave(P_char ch, P_char victim, P_obj obj, void *data)
 
 int SeaKingdom_Tsunami(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int dam = cmd / 1000;
-	struct affected_type *af;
 	P_char vict = NULL;
 
 	/* check for periodic event calls */
@@ -4444,17 +4436,7 @@ int sevenoaks_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 int dagger_of_wind(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
-	int i, room;
-	struct damage_messages messages = {
-		"Your $q &+ccalls forth the &+Cessen&+Wce of the Wind &+cas you strike at $N...",
-		"$n's $q &+ccalls forth the &+Cessen&+Wce of the Wind &+cas they strike at you...",
-		"$n's $q &+ccalls forth the &+Cessen&+Wce of the Wind &+cas they strike at $N...",
-		"",
-		"",
-		"",
-		0,
-		obj
-	};
+	int room;
 
 	if (cmd != CMD_MELEE_HIT || !IS_ALIVE(ch))
 	{
@@ -4541,9 +4523,6 @@ int sevenoaks_mace(P_obj obj, P_char ch, int cmd, char *arg)
 int tendrils(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	struct proc_data *data;
-	char w_align, e_pos;
-	int t_align = -99999;
-	P_char t_vict;
 	P_char vict = NULL;
 
 	if (cmd == CMD_SET_PERIODIC)

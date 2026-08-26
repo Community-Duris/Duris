@@ -76,7 +76,7 @@ int ioun_sustenance(P_obj obj, P_char ch, int cmd, char *argument)
 int ioun_testicle(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	int current_time = time(NULL);
-	P_char next, target, vict;
+	P_char next, vict;
 	P_obj pobj, x;
 	int i;
 
@@ -181,8 +181,7 @@ int ioun_warp(P_obj obj, P_char ch, int cmd, char *argument)
 {
 	char Gbuf[MAX_STRING_LENGTH];
 	char Gbuf2[MAX_STRING_LENGTH];
-	P_char next, target, vict;
-	int dam;
+	P_char target;
 
 	int curr_time = time(NULL);
 	;

@@ -119,8 +119,6 @@ char *language_CRYPT(P_char ch, P_char victim, char *message)
 {
 	char translation[MAX_INPUT_LENGTH];
 	static char string[MAX_INPUT_LENGTH];
-	int len, learned, i, ch_skill, vict_skill;
-	ulong ttl;
 
 	strlcpy(string, message, MAX_INPUT_LENGTH);
 	makedrunk(string, ch);

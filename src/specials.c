@@ -169,8 +169,6 @@ void underwatersector(P_char ch)
 
 void swimming_char(P_char ch)
 {
-	int swim_timer = 0;
-
 	if (!ch)
 	{
 		logit(LOG_DEBUG, "NULL ch in call to swimming_char");

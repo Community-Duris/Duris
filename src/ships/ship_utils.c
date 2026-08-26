@@ -752,8 +752,7 @@ void setcontact(int i, P_ship target, P_ship ship, int x, int y)
 
 int getcontacts(P_ship ship, bool limit_range)
 {
-	int i, j, counter = 0;
-	P_obj obj;
+	int counter = 0;
 	float max_range = 35 + ship->crew.get_contact_range_mod();
 
 	ShipVisitor svs;

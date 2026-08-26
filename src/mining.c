@@ -372,10 +372,8 @@ void event_mine_check(P_char ch, P_char victim, P_obj, void *data)
 {
 	struct mining_data *mdata = (struct mining_data *)data;
 	P_obj ore, pick;
-	char buf[MAX_STRING_LENGTH], dbug[MAX_STRING_LENGTH];
 	float newcost;
 	bool randommob, gem;
-	P_char mob;
 
 	pick = get_pick(ch);
 

@@ -40,8 +40,7 @@ extern const char *spells[];
  */
 bool checkTotem(P_char ch, P_obj obj, int skill)
 {
-	char strn[MAX_STRING_LENGTH];
-	int sph, val0;
+	int val0;
 
 	if (!obj || (obj->type != ITEM_TOTEM) || (skill < 0) || !ch)
 		return FALSE;

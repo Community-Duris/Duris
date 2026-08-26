@@ -446,7 +446,6 @@ void event_flying_transport_move(P_char ch, P_char victim, P_obj obj, void *data
 		return;
 
 	int dir = BFS_ERROR;
-	int dist = 0;
 
 	int path_size = transport_routes[TRANSPORT_ROUTE(ch)].path.size();
 
@@ -556,7 +555,6 @@ void event_flying_transport_return(P_char ch, P_char victim, P_obj obj, void *da
 		return;
 
 	int dir = BFS_ERROR;
-	int dist = 0;
 
 	int path_size = transport_routes[TRANSPORT_ROUTE(ch)].path.size();
 

@@ -26,7 +26,6 @@ void breath_weapon_fire(int level, P_char ch, char *arg, int type, P_char victim
 		0
 	};
 	int save, dam;
-	P_obj burn = NULL;
 
 	if (!IS_ALIVE(ch) || !IS_ALIVE(victim))
 	{
@@ -147,9 +146,7 @@ void breath_weapon_lightning(int level, P_char ch, char *arg, int type, P_char v
 // Same as spell_frost_breath, which should be removed eventually.
 void breath_weapon_frost(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int save, dam, mod;
-	P_obj frozen = NULL;
-	struct affected_type af;
+	int save, dam;
 	struct damage_messages messages = {
 		"$N is partially turned to ice.",
 		"$n freezes you.",
@@ -419,7 +416,6 @@ void breath_weapon_shadow_2(int level, P_char ch, char *arg, int type, P_char vi
 // Same as spell_blinding_breath, which should be removed eventually.
 void breath_weapon_blind(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	struct affected_type af;
 	int save, dam;
 	struct damage_messages messages = { "$N is hit by your &+Ggas&N.",
 					    "$n gases you.",

@@ -174,8 +174,7 @@ int winterhaven_shout_two(P_char ch, P_char tch, int cmd, char *arg)
 
 int storm_legplates(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
-	int room;
+	P_char vict;
 	int curr_time;
 	struct proc_data *data;
 
@@ -316,7 +315,7 @@ int storm_legplates(P_obj obj, P_char ch, int cmd, char *arg)
 
 int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
+	P_char vict;
 	int curr_time, rand;
 	struct proc_data *data;
 
@@ -510,7 +509,7 @@ int blur_shortsword(P_obj obj, P_char ch, int cmd, char *arg)
 
 int volo_longsword(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
+	P_char vict;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -640,7 +639,6 @@ int snowogre_warhammer(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict = NULL;
 	int rand, curr_time;
-	struct affected_type af;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -1182,8 +1180,7 @@ int illithid_axe(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	char Command[MAX_STRING_LENGTH];
 	char Toperson[MAX_STRING_LENGTH];
-	P_char next, target, vict = NULL;
-	int dam;
+	P_char target, vict = NULL;
 	int curr_time;
 	int room;
 
@@ -1318,7 +1315,6 @@ int illithid_axe(P_obj obj, P_char ch, int cmd, char *arg)
 int dagger_ra(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict = NULL;
-	struct affected_type af;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -1806,7 +1802,7 @@ int no_kill_priest_obj(P_obj fountain, P_char ch, int cmd, char *arg)
 
 int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict = NULL, target;
+	P_char vict = NULL;
 	int rand;
 	int curr_time;
 
@@ -2219,9 +2215,8 @@ int demon_slayer(P_obj obj, P_char ch, int cmd, char *arg)
 
 int helmet_vampires(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict = NULL, target, necropet;
-	P_obj corpse;
-	int room, dam;
+	P_char vict = NULL, necropet;
+	int dam;
 	int curr_time;
 	int necropets[] = { 55027, 55028, 50029, 0 };
 
@@ -2432,8 +2427,7 @@ int helmet_vampires(P_obj obj, P_char ch, int cmd, char *arg)
 
 int buckler_saints(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict = NULL, target;
-	int room, max_hp;
+	P_char vict = NULL;
 	int curr_time = time(NULL);
 	int curr_time2 = time(NULL);
 	struct proc_data *data;
@@ -3110,10 +3104,9 @@ int sword_random(P_obj obj, P_char ch, int cmd, char *arg)
 
 int gauntlets_legend(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict = NULL, target;
+	P_char vict = NULL;
 	int curr_time = time(NULL);
 	int curr_time2 = time(NULL);
-	struct proc_data *data;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -3974,9 +3967,8 @@ int lorekeeper_scroll(P_obj obj, P_char ch, int cmd, char *arg)
 
 int gladius_backstabber(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
+	P_char vict;
 	P_obj first_w, second_w;
-	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -4034,9 +4026,7 @@ int gladius_backstabber(P_obj obj, P_char ch, int cmd, char *arg)
 
 int damnation_staff(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
-	int room;
-	int curr_time;
+	P_char vict;
 	struct proc_data *data;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -4127,9 +4117,7 @@ int elemental_wand(P_obj obj, P_char ch, int cmd, char *arg)
 
 int nuke_damnation(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char vict, target;
-	int room;
-	int curr_time;
+	P_char vict;
 	struct proc_data *data;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -4186,7 +4174,7 @@ int collar_frost(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time;
 	P_char icemental = NULL;
-	int i, j, sum, elesize, chance;
+	int sum, elesize;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
@@ -4353,7 +4341,7 @@ int collar_flames(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time;
 	P_char firemental = NULL;
-	int i, j, sum, elesize, chance;
+	int sum, elesize;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{

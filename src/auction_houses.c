@@ -1003,14 +1003,12 @@ bool auction_list(P_char ch, char *args)
 	while ((row = mysql_fetch_row(res)))
 	{
 		char *auction_id = row[0];
-		char *seller_name = row[1];
 		long secs_remaining = atol(row[2]);
 		int cur_price = atoi(row[3]);
 		int buy_price = atoi(row[4]);
 		char *obj_short = row[5];
 		int obj_vnum = atoi(row[6]);
 		int winning_bidder_pid = row[7] ? atoi(row[7]) : 0;
-		char *winning_bidder_name = row[8];
 		int seller_pid = atoi(row[9]);
 		int quantity = atoi(row[10]);
 

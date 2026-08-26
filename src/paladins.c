@@ -32,7 +32,6 @@ struct aura_description
 void aura_broken(struct char_link_data *cld)
 {
 	P_char ch = cld->linking;
-	P_char target = cld->linked;
 	int aura_type = (cld->affect ? cld->affect->type : -1);
 
 	if (aura_type >= FIRST_AURA && aura_type <= LAST_AURA)
@@ -110,7 +109,6 @@ void do_aura(P_char ch, int aura)
 */
 void purge_linked_auras(P_char ch)
 {
-	struct affected_type *af, *next_af;
 	P_char tch;
 
 	while ((tch = get_linking_char(ch, LNK_PALADIN_AURA)))

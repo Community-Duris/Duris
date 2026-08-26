@@ -32,7 +32,6 @@ extern int sql_level_cap(int racewar_side);
 int fragWorthy(P_char ch, P_char victim)
 {
 	int racew;
-	P_char tch;
 
 	if (IS_NPC(victim))
 		return FALSE;

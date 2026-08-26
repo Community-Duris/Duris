@@ -66,7 +66,6 @@ int ravenloft_bell(P_obj bell, P_char ch, int cmd, char *arg)
 {
 	P_obj weapon = NULL;
 	P_obj swordcase = NULL;
-	P_room room = NULL;
 	char buf[MAX_STRING_LENGTH];
 	int roomIndex;
 

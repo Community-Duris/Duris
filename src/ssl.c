@@ -24,7 +24,6 @@ void ssl_read_cert(void)
 	static timespec cert_time = { 0, 0 };
 	struct stat st;
 	gnutls_certificate_credentials_t cred = 0;
-	const char *errfunc = 0;
 	int err;
 	const char *certfile = CERTFILE;
 	const char *keyfile = KEYFILE;

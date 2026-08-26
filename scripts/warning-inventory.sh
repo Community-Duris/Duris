@@ -43,7 +43,7 @@ BASE_WARNINGS=$(sed -n '/^WARNING_FLAGS/,/[^\\]$/p' src/Makefile \
 
 make -C src clean >/dev/null 2>&1
 make -C src -j"$JOBS" \
-    WARNING_FLAGS="$BASE_WARNINGS" \
+    WARNING_FLAGS="$BASE_WARNINGS -fdiagnostics-column-unit=byte" \
     LEGACY_WARNING_EXCEPTIONS="$ENABLE" \
     >"$RAW" 2>&1
 BUILD_STATUS=$?

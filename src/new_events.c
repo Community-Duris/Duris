@@ -572,7 +572,7 @@ void disarm_char_nevents(P_char ch, event_func_type func)
 // If func != NULL, then neuter events of type func.
 void disarm_obj_nevents(P_obj obj, event_func_type func)
 {
-	P_nevent e1, t_e;
+	P_nevent e1;
 
 	// If NULL function, then remove all events.
 	if (func == NULL)
@@ -611,7 +611,6 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 	       void *data, int data_size)
 {
 	P_nevent event, e;
-	struct char_link_data *cld;
 	char *data_buf;
 	int loc;
 
@@ -1180,9 +1179,7 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 void ne_events(void)
 {
 	static long count = 0;
-	P_nevent temp_event, next_event;
-	P_char ch;
-	P_obj obj;
+	P_nevent next_event;
 	struct timespec loop_started, callback_started, callback_finished, loop_finished;
 	long scanned = 0, executed = 0, catchup_executed = 0, max_deferral_seen = 0;
 	long max_late_ticks = 0, max_late_deferral = 0, slowest_us = 0, deferred = 0;

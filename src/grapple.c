@@ -70,8 +70,6 @@ int grapple_check_hands(P_char ch)
 
 int grapple_flee_check(P_char ch)
 {
-	P_char grappler, victim;
-
 	if (!IS_FIGHTING(ch))
 	{
 		return FALSE;
@@ -134,7 +132,7 @@ void do_bearhug(P_char ch, char *argument, int cmd)
 {
 	P_char victim;
 	struct affected_type af;
-	int percent, duration, type, gclvl;
+	int percent, type, gclvl;
 
 	if (!GET_CHAR_SKILL(ch, SKILL_BEARHUG))
 	{
@@ -411,7 +409,7 @@ void do_headlock(P_char ch, char *argument, int cmd)
 {
 	P_char victim;
 	struct affected_type af;
-	int percent, duration, mod;
+	int percent, mod;
 
 	if (!GET_CHAR_SKILL(ch, SKILL_HEADLOCK))
 	{
@@ -621,7 +619,7 @@ void do_headlock(P_char ch, char *argument, int cmd)
 
 void event_headlock(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int type = HOLD_NONE, percent, mod, gclvl;
+	int type = HOLD_NONE, percent, gclvl;
 	float damage = 0.0;
 	bool knockedout = FALSE;
 	struct affected_type af, *aft;
@@ -955,7 +953,7 @@ void do_leglock(P_char ch, char *argument, int cmd)
 {
 	P_char victim;
 	struct affected_type af;
-	int percent, duration, mod, lag;
+	int percent, mod, lag;
 
 	if (!GET_CHAR_SKILL(ch, SKILL_LEGLOCK))
 	{
@@ -1146,9 +1144,8 @@ void do_leglock(P_char ch, char *argument, int cmd)
 
 void event_leglock(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int type = HOLD_NONE, percent, mod, gclvl, str, legbreak;
+	int type = HOLD_NONE, percent, gclvl, str, legbreak;
 	float damage = 0.0;
-	bool legbroke = FALSE;
 	struct affected_type af, *aft;
 
 	struct damage_messages messages = {

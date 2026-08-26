@@ -63,8 +63,6 @@ int master_set(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	struct affected_type af;
 	int numb_items = 0;
-	int old_numb_items = 0;
-	int i = 0;
 	int j = 0;
 	int k = 0;
 	P_obj t_obj;

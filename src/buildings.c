@@ -198,7 +198,7 @@ void do_build(P_char ch, char *argument, int cmd)
 	}
 
 	// TODO: implement buildings
-	char arg[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
+	char arg[MAX_STRING_LENGTH];
 	int level;
 
 	one_argument(argument, arg);
@@ -679,9 +679,6 @@ bool Building::proc(P_char ch, P_char pl, int cmd, char *arg)
 
 void Building::update_outpost_owner(P_Guild new_guild)
 {
-	P_char op;
-	struct affected_type *afp;
-
 	if (!id)
 	{
 		debug("error calling update_outpost_owner, no building ID available");

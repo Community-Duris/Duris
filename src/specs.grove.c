@@ -232,7 +232,6 @@ int orcish_woman(P_char ch, P_char pl, int cmd, char *arg)
 
 int topless_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 {
-	struct affected_type af;
 	int gold;
 	P_char k;
 	P_char c_obj = 0;
@@ -439,7 +438,6 @@ int topless_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 
 int sex_crazed_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 {
-	struct affected_type af;
 	int gold;
 	P_char k;
 	P_char c_obj = 0;
@@ -646,7 +644,6 @@ int sex_crazed_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 
 int well_built_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 {
-	struct affected_type af;
 	int gold;
 	P_char k;
 	P_char c_obj = 0;
@@ -854,7 +851,6 @@ int well_built_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 
 int sleezy_prostitute(P_char ch, P_char pl, int cmd, char *arg)
 {
-	struct affected_type af;
 	int gold;
 	P_char k;
 	P_char c_obj = 0;

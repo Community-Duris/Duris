@@ -1058,7 +1058,6 @@ void boot_world(int mini_mode)
 	size_t fsize = ftell(fl);
 
 	char *memBuf = (char *)malloc(fsize + 1);
-	char *seekPtr = memBuf;
 	if (!memBuf)
 	{
 		fatal_boot_error("db", "boot_world: could not allocate memory for world file");
@@ -1865,8 +1864,8 @@ P_char read_mobile(int nr, int type)
 {
 	P_char mob = NULL;
 	char Gbuf1[MAX_STRING_LENGTH], buf[MAX_INPUT_LENGTH], letter = 0;
-	int foo, bar, i, j, min_stat;
-	long tmp, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmp9;
+	int foo, bar, i, j;
+	long tmp, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
 	unsigned utmp1, utmp2, utmp3, utmp4, utmp5, utmp6, utmp7, utmp8, utmp9;
 	int stmp, stmp3, stmp4, level;
 	static int idnum = 0;
@@ -2688,7 +2687,7 @@ void event_object_proc(P_char ch, P_char victim, P_obj obj, void *data)
 P_obj read_object(int nr, int type)
 {
 	P_obj obj;
-	int tmp, i, j, k;
+	int tmp, i, j;
 	unsigned long int utmp;
 	char chk[MAX_STRING_LENGTH];
 	struct extra_descr_data *new_descr;
@@ -4305,8 +4304,6 @@ void reset_char(P_char ch)
 /* clear ALL the working variables of a char & NOT free any space alloc'ed */
 void clear_char(P_char ch)
 {
-	int i;
-
 	bzero(ch, sizeof(struct char_data));
 
 	ch->in_room = NOWHERE;

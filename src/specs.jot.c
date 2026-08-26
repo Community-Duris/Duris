@@ -34,7 +34,6 @@ extern P_index mob_index;
 int icicle_cloak(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int curr_time;
-	P_char vict;
 
 	/*
 	   check for periodic event calls
@@ -328,7 +327,6 @@ int leather_vest(P_obj obj, P_char ch, int cmd, char *arg)
 
 int deva_cloak(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	int rand;
 	int curr_time;
 	P_char tch;
 

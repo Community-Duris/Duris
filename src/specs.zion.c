@@ -69,8 +69,6 @@ int tharnrifts_portal(P_obj obj, P_char ch, int cmd, char *arg)
 
 int Baltazo(P_char ch, P_char victim, int cmd, char *arg)
 {
-	int j, i, devil2load;
-
 	if (cmd == CMD_SET_PERIODIC)
 		return TRUE;
 
@@ -140,10 +138,8 @@ int Baltazo(P_char ch, P_char victim, int cmd, char *arg)
 
 int zion_shield_absorb_proc(P_obj obj, P_char ch, int cmd, char *arg)
 {
-	P_char tch;
 	P_char vict = NULL;
 	struct proc_data *data = NULL;
-	struct affected_type af;
 	int percent = number(1, 10);
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -259,7 +255,6 @@ int generic_shield_block_proc(P_obj obj, P_char ch, int cmd, char *arg)
 int zion_fnf(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_char vict;
-	int room;
 	int curr_time;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -945,16 +940,6 @@ int zion_mace_of_earth(P_obj obj, P_char ch, int cmd, char *arg)
 	int curr_time;
 	P_char vict;
 	struct proc_data *data;
-	struct damage_messages messages = {
-		"Your $q &+Wslams &+L$N with a &+yhuge boulder&+L!&N",
-		"$n's $q &+Wslams &+Lyou with a &+yhuge boulder&+L!&N",
-		"$n's $q &+Wslams &+L$N with a &+yhuge boulder&+L!&N",
-		"A &+yhuge boulder&+L from your $q &+Wsmashes &n$N to a &+rbloody&n pulp!",
-		"A &+yhuge boulder&+L from $n's $q shoots right towards your face!",
-		"A &+yhuge boulder&+L from $n's $q &+Wsmashes &n$N to a &+rbloody&n pulp!",
-		0,
-		obj
-	};
 
 	if (cmd == CMD_SET_PERIODIC)
 	{

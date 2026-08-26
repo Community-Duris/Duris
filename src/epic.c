@@ -170,7 +170,7 @@ void epic_choose_new_epic_task(P_char ch)
 {
 	char buffer[512];
 	P_obj nexus;
-	struct affected_type af, *afp;
+	struct affected_type af;
 	int zone_number = -1;
 
 	if (!IS_ALIVE(ch))
@@ -353,8 +353,7 @@ void group_gain_epic(P_char ch, int type, int data, int amount)
 void gain_epic(P_char ch, int type, int data, int amount)
 {
 	char buffer[256];
-	struct affected_type af, *afp;
-	int notch = get_property("epic.skillPointStep", 100);
+	struct affected_type *afp;
 
 	// If invalid ch or bad load of errand_notch (don't care about notch as we don't use skillpoints anymore).
 	if (!IS_ALIVE(ch) || errand_notch < 1)
@@ -1594,8 +1593,6 @@ bool epic_zone_done(int zone_number)
 
 int epic_zone_data::displayed_alignment() const
 {
-	int delta = 0;
-
 	for (vector<epic_zone_completion>::iterator it = epic_zone_completions.begin();
 	     it != epic_zone_completions.end(); it++)
 	{

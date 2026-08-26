@@ -634,7 +634,6 @@ void event_blizzard(P_char ch, P_char victim, P_obj obj, void *data)
 	else
 	{
 		struct room_affect *faf;
-		struct affected_type af;
 
 		count = 1;
 		for (victim = room->people; victim; victim = next_ch)

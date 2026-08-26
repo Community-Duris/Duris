@@ -458,7 +458,6 @@ void spell_awe(int level, P_char ch, char *arg, int type, P_char victim, P_obj o
 	int max_level = 0;
 	int total_levels = 0;
 	int max_total_levels = 0;
-	struct affected_type af;
 	struct follow_type *followers;
 
 	if (!victim)
@@ -1909,7 +1908,7 @@ void spell_confuse(int level, P_char ch, char *arg, int type, P_char victim, P_o
 {
 	int temp, max_level = 0;
 	P_char tch, next;
-	P_char cht, next_ch;
+	P_char cht;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -2010,7 +2009,6 @@ void spell_confuse(int level, P_char ch, char *arg, int type, P_char victim, P_o
 
 void spell_pyrokinesis(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	char buf[256];
 	struct affected_type af;
 	struct damage_messages messages = {
 		"&+mYou ignite a &+rpersonal &+ri&+Rn&+rf&+Re&+rr&+Rn&+ro &+mwithin &N$N's &+mbody.",
@@ -2246,16 +2244,6 @@ void spell_depart(int level, P_char ch, char *arg, int type, P_char victim, P_ob
 
 void spell_psionic_wave_blast(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	struct damage_messages messages = {
-		"You begin your mental assault upon $N.&n",
-		"Something invades your mind. You feel at odds with yourself. Another entity is attempting to dominate you!&n",
-		"$N begins to look wild, disheveled, and completely discombobulated!&n",
-		"&n",
-		"",
-		"",
-		0
-	};
-
 	int dam;
 	struct affected_type *af;
 
@@ -2308,7 +2296,7 @@ void spell_psionic_wave_blast(int level, P_char ch, char *arg, int type, P_char 
 
 void event_psionic_wave_blast(P_char ch, P_char victim, P_obj obj, void *data)
 {
-	int level, dam, in_room;
+	int level, dam;
 	struct affected_type *af;
 	struct damage_messages messages = { "", "", "", "", "", "", 0 };
 
@@ -2718,9 +2706,7 @@ void spell_radial_navigation(int level, P_char ch, char *arg, int type, P_char v
 
 void spell_ethereal_rift(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
-	int to_room, dam, temp, found = 0;
-	int z, room, mask;
-	struct remember_data *chars_in_zone;
+	int to_room, dam, found = 0;
 	P_char tmp, tmp_next;
 
 	if (!ch)
@@ -3010,7 +2996,6 @@ void spell_wormhole(int level, P_char ch, char *arg, int type, P_char victim, P_
 	P_obj beacon;
 	struct affected_type *afp;
 	int to_room = ch ? ch->in_room : NOWHERE;
-	int count;
 	int distance;
 	bool success = true;
 

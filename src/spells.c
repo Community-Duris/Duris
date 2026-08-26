@@ -679,7 +679,7 @@ int char_is_on_plane(P_char ch)
 void cast_plane_shift(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
 {
 	char Gbuf4[MAX_STRING_LENGTH];
-	int to_room, plane_id, from_zone, from_room;
+	int to_room, plane_id, from_zone;
 
 	if (!IS_ALIVE(ch))
 	{
@@ -835,7 +835,6 @@ void cast_plane_shift(int level, P_char ch, char *arg, int type, P_char tar_ch, 
 void cast_area_resurrect(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
 {
 	P_obj t_obj;
-	P_desc d;
 	P_obj obj;
 	int i = 0;
 
@@ -1132,7 +1131,7 @@ void cast_web(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj ta
 void cast_prismatic_cube(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
 {
 	char buf1[MAX_STRING_LENGTH], buf2[MAX_STRING_LENGTH];
-	int dir, room, in_room;
+	int dir, room;
 
 	if (!IS_ALIVE(ch) || (room = ch->in_room) == NOWHERE)
 		return;
@@ -1418,7 +1417,6 @@ void event_ethereal_grounds(P_char ch, P_char victim, P_obj obj, void *data)
 void spell_ethereal_grounds(int level, P_char ch, char *arg, int type, P_char victim, P_obj obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	if (!require_char(ch, "spell_ethereal_grounds", "called with no ch"))
 		return;
@@ -1474,7 +1472,6 @@ void cast_transmute_mud_rock(int level, P_char ch, char *arg, int type, P_char t
 			     P_obj tar_obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	seconds = 5 + dice(2, 5);
 	terrain_type = world[ch->in_room].sector_type;
@@ -1530,7 +1527,6 @@ void cast_transmute_rock_mud(int level, P_char ch, char *arg, int type, P_char t
 			     P_obj tar_obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	seconds = 5 + dice(2, 5);
 	terrain_type = world[ch->in_room].sector_type;
@@ -1596,7 +1592,6 @@ void cast_transmute_mud_water(int level, P_char ch, char *arg, int type, P_char 
 			      P_obj tar_obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	seconds = 5 + dice(2, 5);
 	terrain_type = world[ch->in_room].sector_type;
@@ -1654,7 +1649,6 @@ void cast_transmute_water_mud(int level, P_char ch, char *arg, int type, P_char 
 			      P_obj tar_obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	seconds = 5 + dice(2, 5);
 	terrain_type = world[ch->in_room].sector_type;
@@ -1714,7 +1708,6 @@ void cast_transmute_water_air(int level, P_char ch, char *arg, int type, P_char 
 			      P_obj tar_obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	seconds = 5 + dice(2, 5);
 	terrain_type = world[ch->in_room].sector_type;
@@ -1775,7 +1768,6 @@ void cast_transmute_air_water(int level, P_char ch, char *arg, int type, P_char 
 			      P_obj tar_obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	seconds = 5 + dice(2, 5);
 	terrain_type = world[ch->in_room].sector_type;
@@ -1829,7 +1821,6 @@ void cast_transmute_rock_lava(int level, P_char ch, char *arg, int type, P_char 
 			      P_obj tar_obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	if (CHAR_IN_TOWN(ch))
 	{
@@ -1897,7 +1888,6 @@ void cast_transmute_lava_rock(int level, P_char ch, char *arg, int type, P_char 
 			      P_obj tar_obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	seconds = 5 + dice(2, 5);
 	terrain_type = world[ch->in_room].sector_type;
@@ -1952,7 +1942,6 @@ void event_depressed_earth(P_char ch, P_char victim, P_obj obj, void *data)
 void cast_depressed_earth(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	seconds = 5 + dice(2, 5);
 	terrain_type = world[ch->in_room].sector_type;
@@ -2027,7 +2016,6 @@ void event_grow(P_char ch, P_char victim, P_obj obj, void *data)
 void cast_grow(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
 {
 	int terrain_type, seconds;
-	struct room_affect af;
 
 	seconds = 5 + dice(2, 5);
 
@@ -2391,7 +2379,6 @@ awaken_next:
 
 void cast_spike_growth(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
 {
-	int duration = 0;
 	struct spike_growth_data sgd;
 
 	memset(&sgd, 0, sizeof(sgd));
@@ -2430,7 +2417,6 @@ void cast_spike_growth(int level, P_char ch, char *arg, int type, P_char tar_ch,
 
 void cast_awaken_forest(int level, P_char ch, char *arg, int type, P_char tar_ch, P_obj tar_obj)
 {
-	int duration = 0;
 	struct awaken_forest_data awd;
 
 	memset(&awd, 0, sizeof(awd));

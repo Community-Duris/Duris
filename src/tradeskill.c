@@ -544,7 +544,6 @@ void event_fish_check(P_char ch, P_char victim, P_obj, void *data)
 {
 	struct fishing_data *fdata = (struct fishing_data *)data;
 	P_obj pole, fish;
-	char buf[MAX_STRING_LENGTH], dbug[MAX_STRING_LENGTH];
 	const int fishes[12] = { 293, 294, 295, 318, 319, 330, 332, 333, 334, 335, 355, 356 };
 	int random = number(0, 11);
 	pole = get_pole(ch);
@@ -862,7 +861,6 @@ struct bandage_data
 void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 {
 	struct bandage_data *mdata = (struct bandage_data *)data;
-	P_obj bandage;
 	char buf[MAX_STRING_LENGTH];
 	int healed = 0;
 
@@ -940,13 +938,9 @@ void event_bandage_check(P_char ch, P_char victim, P_obj, void *data)
 void do_bandage(P_char ch, char *arg, int cmd)
 {
 	struct affected_type af;
-	char name[MAX_INPUT_LENGTH];
 	struct bandage_data data;
-	char buf1[MAX_STRING_LENGTH];
 	P_char victim = NULL;
 	P_obj bandage;
-
-	P_char t_char = NULL;
 
 	if (!SanityCheck(ch, "do_bandage"))
 		return;
@@ -1042,8 +1036,6 @@ void do_bandage(P_char ch, char *arg, int cmd)
 }
 
 // Drannak Stuff
-static FILE *recipefile;
-
 void create_recipes_file(const char *dir, char *name)
 {
 	char buf[256], *buff;
@@ -1067,15 +1059,10 @@ void create_recipes_name(char *name)
 int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	P_obj tobj;
-	char buf[256], *buff;
-	char Gbuf1[MAX_STRING_LENGTH], *c;
-	FILE *f;
-	FILE *recipelist;
 	int recipenumber = obj->value[6];
 	int recnum;
 	bool forge = FALSE;
 	bool craft = FALSE;
-	P_char temp_ch;
 
 	// If not reciting, bad char, or char doesn't have obj.
 	if (cmd != CMD_RECITE || !IS_ALIVE(ch) ||
@@ -1246,8 +1233,6 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 {
 	char buffer[MAX_STRING_LENGTH];
-	char buf[256], *buff;
-	char Gbuf1[MAX_STRING_LENGTH], *c;
 	P_obj obj;
 
 	if (cmd == CMD_LIST)
@@ -1558,10 +1543,6 @@ int epic_store(P_char ch, P_char pl, int cmd, char *arg)
 int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 {
 	char buffer[MAX_STRING_LENGTH];
-	char buf[256], *buff;
-	char Gbuf1[MAX_STRING_LENGTH], *c;
-	FILE *f;
-	FILE *recipelist;
 
 	if (cmd == CMD_PRACTICE)
 	{
@@ -2472,8 +2453,7 @@ void do_refine(P_char ch, char *arg, int cmd)
 	int i = 0, o = 0, vnum;
 	int orechance = 0;
 	bool plat = FALSE;
-	char gbuf1[MAX_STRING_LENGTH], gbuf2[MAX_STRING_LENGTH], buffer[MAX_STRING_LENGTH],
-		gbuf3[MAX_STRING_LENGTH];
+	char gbuf1[MAX_STRING_LENGTH], gbuf3[MAX_STRING_LENGTH];
 
 	argument_interpreter(arg, gbuf1, gbuf3);
 
@@ -2614,7 +2594,6 @@ void do_refine(P_char ch, char *arg, int cmd)
 void do_dice(P_char ch, char *arg, int cmd)
 {
 	char first_arg[MAX_INPUT_LENGTH], second_arg[MAX_INPUT_LENGTH], gbuf[MAX_STRING_LENGTH];
-	char Gbuf1[MAX_STRING_LENGTH];
 	int numdice, dice;
 
 	arg = one_argument(arg, first_arg);
@@ -2669,7 +2648,6 @@ void do_dice(P_char ch, char *arg, int cmd)
 int assoc_founder(P_char mob, P_char pl, int cmd, char *arg)
 {
 	char buffer[MAX_STRING_LENGTH], buffer2[MAX_STRING_LENGTH], guild_name[MAX_INPUT_LENGTH];
-	int qend;
 
 	if (cmd == CMD_LIST)
 	{

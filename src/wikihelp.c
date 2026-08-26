@@ -350,7 +350,7 @@ string wiki_specs(string title)
 string wiki_innates(string title, int type)
 {
 	string return_str;
-	int i = 0, j = 0, innate, found = 0;
+	int i = 0, j = 0, found = 0;
 
 	if (type == WIKI_RACE)
 	{
@@ -518,7 +518,7 @@ string wiki_races(string title, int type)
 string wiki_help_single(string str)
 {
 	string return_str, title;
-	int category, dashes;
+	int dashes;
 
 	// Arih: Security fix - Escape user input to prevent SQL injection.
 	// Using escape_str() wraps mysql_real_escape_string() to sanitize special chars like quotes.
@@ -833,7 +833,7 @@ char *attrib_help(char *arg)
 string wiki_spells(string title, int type)
 {
 	string return_str;
-	int i, j, innate;
+	int i, j;
 	bool found = FALSE;
 
 	if (type == WIKI_CLASS)
@@ -902,7 +902,7 @@ string wiki_spells(string title, int type)
 string wiki_skills(string title, int type)
 {
 	string return_str;
-	int i, j, innate;
+	int i, j;
 	bool found = FALSE;
 
 	if (type == WIKI_CLASS)
@@ -959,7 +959,7 @@ string wiki_multiclass(string title)
 {
 	string return_str;
 	int i, j, k;
-	bool found, allowed;
+	bool found;
 
 	return_str = "\n\r\n\rHere are the options available to each class:";
 	for (i = 1; i <= CLASS_COUNT; i++)
