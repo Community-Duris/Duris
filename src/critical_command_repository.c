@@ -12,6 +12,8 @@
 #include "boon_reward_repository.h"
 #include "zone_touch_command.h"
 #include "zone_touch_repository.h"
+#include "session_audit_command.h"
+#include "session_audit_repository.h"
 #include "item_transfer_repository.h"
 #include "sql_pool.h"
 
@@ -926,6 +928,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	artifact_guild_payload artifact_payload = {};
 	boon_reward_payload boon_payload = {};
 	zone_touch_payload zone_payload = {};
+	session_audit_payload audit_payload = {};
 	const bool test_command = command.type == critical_command_type::test &&
 				  command.payload.size() == 8;
 	const bool epic_command = epic_command_decode_payload(command, &epic_payload);
@@ -937,10 +940,11 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 		artifact_guild_command_decode_payload(command, &artifact_payload);
 	const bool boon_command = boon_reward_command_decode_payload(command, &boon_payload);
 	const bool zone_command = zone_touch_command_decode_payload(command, &zone_payload);
+	const bool audit_command = session_audit_command_decode_payload(command, &audit_payload);
 	if (!connection ||
 	    (!test_command && !epic_command && !currency_command && !item_command &&
 	     !auction_command && !combat_command && !artifact_guild_command && !boon_command &&
-	     !zone_command) ||
+	     !zone_command && !audit_command) ||
 	    !critical_command_valid(command))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
@@ -1347,6 +1351,42 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 							  critical_apply_outcome::terminal_failure :
 							  critical_apply_outcome::applied,
 						  0, result_code };
+		applied.result_size = result_payload.size();
+		std::copy(result_payload.begin(), result_payload.end(),
+			  applied.result_payload.begin());
+		return applied;
+	}
+	if (audit_command)
+	{
+		session_audit_result audit_result = {};
+		if (!session_audit_repository_execute(connection, command, &audit_result))
+		{
+			const unsigned int database_failure = database_error(connection);
+			const unsigned int error = database_failure ? database_failure : errno;
+			rollback(connection);
+			return failure(error);
+		}
+		std::array<uint8_t, SESSION_AUDIT_RESULT_BYTES> result_payload = {};
+		if (!session_audit_command_encode_result(audit_result, &result_payload) ||
+		    !finish_inbox(connection, command, 0, 0, result_payload.data(),
+				  result_payload.size()))
+		{
+			const unsigned int database_failure = database_error(connection);
+			const unsigned int error = database_failure ? database_failure : errno;
+			rollback(connection);
+			return failure(error);
+		}
+		if (!execute(connection, "COMMIT"))
+		{
+			const unsigned int error = mysql_errno(connection);
+			if (!connection_error(error))
+				rollback(connection);
+			return { connection_error(error) ?
+					 critical_apply_outcome::ambiguous_commit :
+					 failure(error).outcome,
+				 0, error };
+		}
+		critical_apply_result applied = { critical_apply_outcome::applied, 0, 0 };
 		applied.result_size = result_payload.size();
 		std::copy(result_payload.begin(), result_payload.end(),
 			  applied.result_payload.begin());

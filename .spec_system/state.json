@@ -2,8 +2,8 @@
   "version": "2.0",
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
-  "current_phase": 2,
-  "current_session": "phase02-session12-raw-event-queue-retirement-and-domain-gate",
+  "current_phase": 3,
+  "current_session": "phase03-session01-consistent-player-load-transaction",
   "monorepo": false,
   "phases": {
     "1": {
@@ -15,7 +15,7 @@
     "2": {
       "name": "Transactional Gameplay Domains",
       "description": "Move critical gameplay effects into operation-keyed transactions with ledgers, current state, revisions, and outbox publication.",
-      "status": "in_progress",
+      "status": "complete",
       "session_count": 12
     },
     "0": {
@@ -27,7 +27,7 @@
     "3": {
       "name": "Load Path, Schema, and Retention",
       "description": "Make login and read paths bounded and consistent, enforce schema and data lifecycle contracts, reconcile documentation, and prove integrated 200-player readiness.",
-      "status": "not_started",
+      "status": "in_progress",
       "session_count": 14
     }
   },
@@ -60,7 +60,8 @@
     "phase02-session08-auction-settlement-and-claim-cutover",
     "phase02-session09-pvp-and-combat-outcome-batching",
     "phase02-session10-artifact-and-guild-outcome-batching",
-    "phase02-session11-boon-reward-and-zone-command-batching"
+    "phase02-session11-boon-reward-and-zone-command-batching",
+    "phase02-session12-raw-event-queue-retirement-and-domain-gate"
   ],
   "next_session_history": [
     {
@@ -596,6 +597,26 @@
     {
       "date": "2026-08-27",
       "session": "phase02-session12-raw-event-queue-retirement-and-domain-gate",
+      "status": "selected"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session12-raw-event-queue-retirement-and-domain-gate",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session12-raw-event-queue-retirement-and-domain-gate",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session12-raw-event-queue-retirement-and-domain-gate",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session01-consistent-player-load-transaction",
       "status": "selected"
     }
   ]

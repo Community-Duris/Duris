@@ -1,7 +1,7 @@
 # Session 12: Raw Event Queue Retirement and Domain Gate
 
 **Session ID**: `phase02-session12-raw-event-queue-retirement-and-domain-gate`
-**Status**: In Progress
+**Status**: Complete
 **Work Window**: One final transactional-domain cutover boundary inventorying every
 durable event producer, replacing unrestricted SQL records, reconciling ledgers/current
 rows, and proving all domains under crash, replay, outage, and bounded load.
@@ -52,10 +52,10 @@ workloads before Phase 03 depends on their current-state tables.
 
 ## Prerequisites
 
-- [ ] Sessions 01 through 11 are completed and validated.
-- [ ] A backed-up representative development clone and non-production game ports are
+- [x] Sessions 01 through 11 are completed and validated.
+- [x] A backed-up representative development clone and non-production game ports are
       available for schema, reconciliation, load, and fault work.
-- [ ] Legacy fallback locations are isolated, ignored, permission-restricted, and
+- [x] Legacy fallback locations are isolated, ignored, permission-restricted, and
       copied before compatibility testing.
 
 ---
@@ -75,21 +75,21 @@ workloads before Phase 03 depends on their current-state tables.
 
 ## Success Criteria
 
-- [ ] No unrestricted raw SQL queue, journal, or fallback can carry or replay a
+- [x] No unrestricted raw SQL queue, journal, or fallback can carry or replay a
       non-idempotent gameplay effect.
-- [ ] Every remaining durable message is typed, bounded, schema-versioned, stably
+- [x] Every remaining durable message is typed, bounded, schema-versioned, stably
       identified, redacted, and deduplicated at its destination.
-- [ ] Epic, bank, wallet, and current-owner rows reconcile exactly with ledgers and
+- [x] Epic, bank, wallet, and current-owner rows reconcile exactly with ledgers and
       revisions after every defined crash and duplicate-replay boundary.
-- [ ] No final gameplay success, cache publication, WebSocket message, or destructive
+- [x] No final gameplay success, cache publication, WebSocket message, or destructive
       custody transition occurs before its exact durable ACK/outbox contract.
-- [ ] Queue, journal, inbox, outbox, retry, fence, and worker resources remain within
+- [x] Queue, journal, inbox, outbox, retry, fence, and worker resources remain within
       configured bounds through the defined outage and 200-client workload.
-- [ ] Normal Phase 02 mutation paths perform no database, Redis, or filesystem I/O on
+- [x] Normal Phase 02 mutation paths perform no database, Redis, or filesystem I/O on
       the simulation thread.
-- [ ] Historical event and fallback data is preserved or explicitly quarantined; no
+- [x] Historical event and fallback data is preserved or explicitly quarantined; no
       financial, ownership, audit, player, or account record is deleted by the gate.
-- [ ] Operator documentation and diagnostics describe the implemented commands,
+- [x] Operator documentation and diagnostics describe the implemented commands,
       reconciliation, recovery, overload, and outbox behavior accurately.
-- [ ] Focused tests, isolated schema tests, formatting checks, `make -C src`, and the
+- [x] Focused tests, isolated schema tests, formatting checks, `make -C src`, and the
       full repository gate pass.

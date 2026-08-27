@@ -1,7 +1,7 @@
 # Session 01: Consistent Player Load Transaction
 
 **Session ID**: `phase03-session01-consistent-player-load-transaction`
-**Status**: Not Started
+**Status**: In Progress
 **Work Window**: One login read boundary from authenticated player selection through a
 bounded worker-owned consistent snapshot, typed result staging, exact revision checks,
 and all-or-nothing game-thread publication.
@@ -48,10 +48,10 @@ thread or allowing an optional-looking query failure to create a partial charact
 
 ## Prerequisites
 
-- [ ] Phases 00 through 02 and their transition evidence are complete.
-- [ ] Phase 01 worker, completion, revision, journal, and shutdown contracts are
+- [x] Phases 00 through 02 and their transition evidence are complete.
+- [x] Phase 01 worker, completion, revision, journal, and shutdown contracts are
       authoritative.
-- [ ] Phase 02 domain-owned values and revisions cannot be overwritten by player
+- [x] Phase 02 domain-owned values and revisions cannot be overwritten by player
       snapshots.
 
 ---

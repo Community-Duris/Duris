@@ -1262,8 +1262,7 @@ void persistence_refresh_restored_corpse(P_obj corpse, const char *source)
 	set_obj_affected(corpse, restored_decay, TAG_OBJ_DECAY, 0);
 
 	snprintf(target, sizeof(target), "corpse:%d", corpse->value[CORPSE_SAVEID]);
-	persistence_record_item_event("owner_corpse_restored", corpse, NULL, "corpse_file", target,
-				      "restore_corpse_timer_refreshed");
+	logit(LOG_CORPSE, "Restored corpse custody from typed owner state: %s", target);
 	logit(LOG_CORPSE,
 	      "Restored player corpse %s from %s with decay timer refreshed to %d pulses.",
 	      OBJ_SHORT(corpse) ? OBJ_SHORT(corpse) : "unknown corpse",

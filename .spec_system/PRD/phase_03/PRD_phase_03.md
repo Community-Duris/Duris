@@ -1,6 +1,6 @@
 # PRD Phase 03: Load Path, Schema, and Retention
 
-**Status**: Not Started
+**Status**: In Progress
 **Sessions**: 14 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
@@ -36,7 +36,7 @@ and their transition evidence are complete.
 
 | Session | Name | Status | Work Window | Validated |
 |---------|------|--------|-------------|-----------|
-| 01 | Consistent Player Load Transaction | Not Started | Async typed login read, one snapshot, required components, and fail-closed publication | - |
+| 01 | Consistent Player Load Transaction | In Progress | Async typed login read, one snapshot, required components, and fail-closed publication | - |
 | 02 | Batched Item Ownership and Linear Assembly | Not Started | Set-based item/owner metadata and O(N) object graph materialization | - |
 | 03 | Batched Pet Graph Hydration | Not Started | Set-based pet items/metadata, explicit bounds, staged publication, and recovery semantics | - |
 | 04 | Set-Based PvP and Epic Task Reads | Not Started | Recent-death aggregation, in-memory task selection, and remaining read fan-out removal | - |

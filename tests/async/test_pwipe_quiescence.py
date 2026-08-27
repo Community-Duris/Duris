@@ -25,8 +25,9 @@ assert terminal_gate in comm
 assert comm.index(terminal_gate) < comm.index("if (!_copyover && !_pwipe)\n\t{")
 main_shutdown = comm[comm.index("game_loop(port, sslport);"):comm.index("/* Don't need this anymore")]
 assert main_shutdown.index("game_loop(port, sslport);") < main_shutdown.index(
-    "persistence_stop_scalar_event_worker();"
+    "critical_command_coordinator_shutdown();"
 )
+assert "persistence_stop_scalar_event_worker();" not in main_shutdown
 assert "if (!_pwipe)" in comm[comm.index("game_loop(port, sslport);"):comm.index("/* Don't need this anymore")]
 
 print("pwipe quiescence checks passed")

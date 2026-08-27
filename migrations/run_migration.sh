@@ -23,7 +23,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=131
+TOTAL=133
 FAILED=0
 
 run_sql() {
@@ -2922,6 +2922,8 @@ run_sql_file "apply artifact/guild outcome schema" "$SCRIPT_DIR/artifact_guild_o
 run_check "verify artifact/guild outcome schema" "$SCRIPT_DIR/verify_artifact_guild_outcome_schema.sh"
 run_sql_file "apply boon reward and zone-touch outcome schema" "$SCRIPT_DIR/boon_reward_zone_outcome.sql"
 run_check "verify boon reward and zone-touch outcome schema" "$SCRIPT_DIR/verify_boon_reward_zone_schema.sh"
+run_sql_file "apply typed session audit outcome schema" "$SCRIPT_DIR/session_audit_outcome.sql"
+run_check "verify typed session audit outcome schema" "$SCRIPT_DIR/verify_session_audit_schema.sh"
 run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_ledger.sql"
 run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 run_sql_file "normalize stable corpse ownership identity" "$SCRIPT_DIR/live_item_movement_cutover.sql"

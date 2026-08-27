@@ -485,11 +485,8 @@ void run_the_game(int port, int sslport)
 	}
 	if (!mini_mode)
 	{
-		/* Start the item pipeline before boot-time corpse restoration emits
-		 * audit events. Otherwise every clean boot writes one avoidable flat
-		 * fallback record and immediately replays it after boot. */
-		persistence_replay_fallback_events();
-		persistence_start_item_event_worker();
+		/* Legacy raw event queues are retired. Historical fallback records are
+		 * inspected or quarantined by the explicit operator tool only. */
 	}
 
 	boot_db(mini_mode);
@@ -631,13 +628,10 @@ void run_the_game(int port, int sslport)
 	logit(LOG_STATUS, "Entering game loop.");
 	if (mini_mode)
 	{
-		persistence_replay_fallback_events();
 		logit(LOG_STATUS, "Skipping persistence worker startup in mini mode.");
 	}
 	else
 	{
-		persistence_start_scalar_event_worker();
-		persistence_start_large_event_worker();
 		locker_async_init();
 		const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
 		if (!player_save_pipeline_init(journal_directory))
@@ -691,9 +685,6 @@ void run_the_game(int port, int sslport)
 	critical_outbox_shutdown();
 	if (!_pwipe)
 	{
-		persistence_stop_scalar_event_worker();
-		persistence_stop_large_event_worker();
-		persistence_stop_item_event_worker();
 		locker_async_shutdown();
 		player_save_pipeline_shutdown();
 	}

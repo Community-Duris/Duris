@@ -1,10 +1,10 @@
 # PRD Phase 02: Transactional Gameplay Domains
 
-**Status**: In Progress
+**Status**: Complete
 **Sessions**: 12 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 10/12 sessions (83%)
+**Progress**: 12/12 sessions (100%)
 
 ---
 
@@ -47,7 +47,7 @@ prerequisites for every Phase 02 session.
 | 09 | PvP and Combat Outcome Batching | Complete | Immutable battle outcome capture and transactional group, frag, ledger, and outbox apply | 2026-08-27 |
 | 10 | Artifact and Guild Outcome Batching | Complete | Set-based artifact deltas and ordered guild prestige/construction commands | 2026-08-27 |
 | 11 | Boon, Reward, and Zone Command Batching | Complete | Typed progress, reward, and zone-touch commands with domain delegation and batch apply | 2026-08-27 |
-| 12 | Raw Event Queue Retirement and Domain Gate | Not Started | Producer inventory, unrestricted SQL removal, crash/replay reconciliation, and load gate | - |
+| 12 | Raw Event Queue Retirement and Domain Gate | Complete | Producer inventory, unrestricted SQL removal, crash/replay reconciliation, and load gate | 2026-08-27 |
 
 ---
 
@@ -64,12 +64,13 @@ prerequisites for every Phase 02 session.
 - Session 09: PvP and Combat Outcome Batching (completed 2026-08-27)
 - Session 10: Artifact and Guild Outcome Batching (completed 2026-08-27)
 - Session 11: Boon, Reward, and Zone Command Batching (completed 2026-08-27)
+- Session 12: Raw Event Queue Retirement and Domain Gate (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 12: Raw Event Queue Retirement and Domain Gate
+None; Phase 02 is complete.
 
 ---
 
@@ -248,32 +249,32 @@ snapshots must not later overwrite domain-owned epic, wallet, bank, or ownership
 ## Success Criteria
 
 Phase complete when:
-- [ ] All 12 sessions completed and validated
-- [ ] Every accepted critical gameplay command has one stable operation ID reused by
+- [x] All 12 sessions completed and validated
+- [x] Every accepted critical gameplay command has one stable operation ID reused by
       queueing, journal replay, database inbox, ledger, outbox, completion, and logs
-- [ ] Duplicate submission or replay at every crash point produces one durable domain
+- [x] Duplicate submission or replay at every crash point produces one durable domain
       effect and one logical outbox event set
-- [ ] Ambiguous commit responses are reconciled by operation ID without blind reapply
-- [ ] Epic opening balance plus immutable deltas reconciles exactly to every current
+- [x] Ambiguous commit responses are reconciled by operation ID without blind reapply
+- [x] Epic opening balance plus immutable deltas reconciles exactly to every current
       player epic balance, and every award or spend is recorded once
-- [ ] Bank and wallet denomination deltas, both relevant revisions, ledger, and outbox
+- [x] Bank and wallet denomination deltas, both relevant revisions, ledger, and outbox
       commit atomically, and every online account character receives committed balances
-- [ ] Every transferable durable item has one authoritative current owner, and each
+- [x] Every transferable durable item has one authoritative current owner, and each
       transfer commits its ownership ledger, all affected inventory revisions, and
       outbox rows atomically
-- [ ] Player, floor, trade, corpse, locker, and auction failures retain the pre-command
+- [x] Player, floor, trade, corpse, locker, and auction failures retain the pre-command
       live or durable custody state until exact successful completion
-- [ ] PvP, artifact, guild, boon, reward, and zone outcomes use bounded immutable typed
+- [x] PvP, artifact, guild, boon, reward, and zone outcomes use bounded immutable typed
       commands and set-based apply without per-recipient raw-query fan-out
-- [ ] No unrestricted raw SQL queue or fallback can carry a non-idempotent gameplay
+- [x] No unrestricted raw SQL queue or fallback can carry a non-idempotent gameplay
       effect, and legacy event records remain preserved according to compatibility rules
-- [ ] Normal critical mutation paths perform no database, Redis, or filesystem I/O on
+- [x] Normal critical mutation paths perform no database, Redis, or filesystem I/O on
       the simulation thread and publish no final success before durable ACK
-- [ ] Queue, journal, inbox, outbox, retry, deadlock, operation age, reconciliation, and
+- [x] Queue, journal, inbox, outbox, retry, deadlock, operation age, reconciliation, and
       domain-fence health are bounded, redacted, and observable
-- [ ] Epic, currency, and current-owner rows reconcile exactly with their ledgers after
+- [x] Epic, currency, and current-owner rows reconcile exactly with their ledgers after
       every duplicate, outage, worker-crash, game-crash, and 25-to-200-client workload
-- [ ] Relevant focused tests, formatting checks, `make -C src`, and the full repository
+- [x] Relevant focused tests, formatting checks, `make -C src`, and the full repository
       gate pass on non-production systems
 
 ---

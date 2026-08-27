@@ -23,6 +23,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/artifact_guild_command.c src/artifact_guild_repository.c \
     src/boon_reward_command.c src/boon_reward_repository.c \
     src/zone_touch_command.c src/zone_touch_repository.c \
+    src/session_audit_command.c src/session_audit_repository.c \
     src/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/combat_outcome_mysql_harness"
 "$ROOT/bin/tests/combat_outcome_mysql_harness"

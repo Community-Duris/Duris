@@ -1011,7 +1011,7 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 	return 1;
 }
 
-static const char *persistence_clean_field(const char *in, char *buf, int buf_size)
+[[maybe_unused]] static const char *persistence_clean_field(const char *in, char *buf, int buf_size)
 {
 	int i;
 
@@ -1035,7 +1035,7 @@ static const char *persistence_clean_field(const char *in, char *buf, int buf_si
 	return buf;
 }
 
-static unsigned long long persistence_event_time_usec(void)
+[[maybe_unused]] static unsigned long long persistence_event_time_usec(void)
 {
 	struct timeval tv;
 
@@ -1394,12 +1394,12 @@ void persistence_worker_heartbeat_check(int threshold_secs)
 		}
 	}
 }
-static int persistence_line_has_prefix(const char *line, const char *prefix)
+[[maybe_unused]] static int persistence_line_has_prefix(const char *line, const char *prefix)
 {
 	return line && prefix && !strncmp(line, prefix, strlen(prefix));
 }
 
-static void persistence_trim_record_line(char *line)
+[[maybe_unused]] static void persistence_trim_record_line(char *line)
 {
 	int len;
 
@@ -1450,6 +1450,11 @@ int persistence_quarantine_fallback_events(void)
 
 int persistence_replay_fallback_events(void)
 {
+	persistence_alert(AVATAR, "persistence_replay", "retired", "none", "none",
+			  "raw_execution_disabled",
+			  "legacy fallback records are quarantined without execution");
+	return persistence_quarantine_fallback_events();
+#if 0
 	FILE *in_f;
 	FILE *out_f;
 	/* Sized to the largest event type we replay (large = 128KB). The scalar
@@ -1591,9 +1596,10 @@ int persistence_replay_fallback_events(void)
 	}
 
 	return replayed;
+#endif
 }
 
-static int persistence_item_event_log_writer(const char *line, void *context)
+[[maybe_unused]] static int persistence_item_event_log_writer(const char *line, void *context)
 {
 	static unsigned long fallback_count = 0;
 
@@ -1638,6 +1644,10 @@ void utility_latency_reset(void)
 
 int persistence_start_item_event_worker(void)
 {
+	persistence_alert(AVATAR, "item_event", "retired", "none", "none", "raw_execution_disabled",
+			  "legacy raw event worker is retired");
+	return 0;
+#if 0
 	if (!sql_pool_is_active())
 	{
 		persistence_alert(AVATAR, "item_event", "worker", "none", "none",
@@ -1654,9 +1664,10 @@ int persistence_start_item_event_worker(void)
 
 	logit(LOG_STATUS, "Started item persistence worker.");
 	return 1;
+#endif
 }
 
-static int persistence_scalar_event_log_writer(const char *line, void *context)
+[[maybe_unused]] static int persistence_scalar_event_log_writer(const char *line, void *context)
 {
 	static unsigned long fallback_count = 0;
 
@@ -1687,6 +1698,10 @@ static int persistence_scalar_event_log_writer(const char *line, void *context)
 
 int persistence_start_scalar_event_worker(void)
 {
+	persistence_alert(AVATAR, "scalar_event", "retired", "none", "none",
+			  "raw_execution_disabled", "legacy raw event worker is retired");
+	return 0;
+#if 0
 	if (!sql_pool_is_active())
 	{
 		persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
@@ -1703,6 +1718,7 @@ int persistence_start_scalar_event_worker(void)
 
 	logit(LOG_STATUS, "Started scalar persistence worker.");
 	return 1;
+#endif
 }
 
 int persistence_prepare_pwipe(void)
@@ -1840,6 +1856,14 @@ unsigned long persistence_dropped_item_events(void)
 void persistence_record_item_event(const char *event_type, P_obj obj, P_char actor,
 				   const char *source, const char *target, const char *note)
 {
+	(void)event_type;
+	(void)obj;
+	(void)actor;
+	(void)source;
+	(void)target;
+	(void)note;
+	return;
+#if 0
 	char uid[32];
 	char line[MAX_STRING_LENGTH];
 	char event_buf[128];
@@ -1884,6 +1908,7 @@ void persistence_record_item_event(const char *event_type, P_obj obj, P_char act
 	}
 
 	persistence_worker_heartbeat_check(0);
+#endif
 }
 
 void debug(const char *format, ...)
@@ -7799,7 +7824,7 @@ int yes_no(const char *str)
 	return -1;
 }
 
-static int persistence_large_event_log_writer(const char *line, void *context)
+[[maybe_unused]] static int persistence_large_event_log_writer(const char *line, void *context)
 {
 	char *fallback_line;
 	size_t line_len;
@@ -7834,6 +7859,10 @@ static int persistence_large_event_log_writer(const char *line, void *context)
 
 int persistence_start_large_event_worker(void)
 {
+	persistence_alert(AVATAR, "large_event", "retired", "none", "none",
+			  "raw_execution_disabled", "legacy raw event worker is retired");
+	return 0;
+#if 0
 	if (!persistence_large_event_worker_start(persistence_large_event_log_writer, NULL))
 	{
 		persistence_alert(
@@ -7844,6 +7873,7 @@ int persistence_start_large_event_worker(void)
 
 	logit(LOG_STATUS, "Started large-event persistence worker.");
 	return 1;
+#endif
 }
 
 void persistence_stop_large_event_worker(void)

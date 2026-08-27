@@ -2109,5 +2109,14 @@ CREATE TABLE `zone_touch_outcome_participant` (
   KEY `idx_zone_touch_participant_pid` (`pid`,`operation_id`),
   CONSTRAINT `zone_touch_participant_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `zone_touch_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `session_audit_outcome` (
+  `operation_id` binary(16) NOT NULL, `pid` int unsigned NOT NULL,
+  `event_type` tinyint unsigned NOT NULL, `occurred_at` timestamp NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`), KEY `idx_session_audit_player_time` (`pid`,`occurred_at`),
+  KEY `idx_session_audit_event_time` (`event_type`,`occurred_at`),
+  CONSTRAINT `session_audit_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_session_audit_event` CHECK (`event_type` IN (1,2))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

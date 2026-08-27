@@ -7135,8 +7135,7 @@ static int sql_save_corpse_item(int corpse_id, int save_id, P_obj obj, int conta
 	int vnum = obj_index[obj->R_num].virtual_number;
 	char corpse_owner[64];
 	snprintf(corpse_owner, sizeof(corpse_owner), "corpse:%d", save_id);
-	persistence_record_item_event("owner_corpse", obj, NULL, "nowhere", corpse_owner,
-				      "sql_save_corpse_item");
+	logit(LOG_CORPSE, "Saved corpse custody through typed owner state: %s", corpse_owner);
 
 	char *esc_name = NULL;
 	char *esc_short = NULL;

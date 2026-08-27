@@ -20,6 +20,8 @@ directory covers architecture, operations, configuration, and reference material
 | [PLAYER_SAVE_PIPELINE.md](PLAYER_SAVE_PIPELINE.md) | Nonterminal revisioned save coordinator, cutover, health, and compatibility boundaries. |
 | [WORLD_RECOVERY_PIPELINE.md](WORLD_RECOVERY_PIPELINE.md) | Incremental world capture, immutable Redis generations, exact ACK, restore validation, and floor-delta boundaries. |
 | [CRITICAL_COMMAND_PIPELINE.md](CRITICAL_COMMAND_PIPELINE.md) | Stable operation identity, non-coalescing journal, multi-key ordering, fences, replay, and diagnostics. |
+| [PHASE02_DOMAIN_GATE.md](PHASE02_DOMAIN_GATE.md) | Authoritative transactional-domain inventory, reconciliation, and legacy fallback handling. |
+| [PHASE02_CRASH_MATRIX.md](PHASE02_CRASH_MATRIX.md) | Phase 02 crash, replay, overload, and recovery verification matrix. |
 | [MEMORY_CHECKING.md](MEMORY_CHECKING.md) | The routine memory-checking standard: which detector to reach for, when a dynamic check is required, and how to report results. |
 | [valgrind.md](valgrind.md) | Running the server under Valgrind: `scripts/valgrind_mud.sh`, suppressions, what to expect. |
 | [formatting.md](formatting.md) | The `.clang-format` style and the changed-lines and full-tree workflows in `scripts/format.sh`. |

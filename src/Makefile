@@ -222,6 +222,9 @@ OBJS =  $(SHIP_OBJS) \
 				 zone_touch_command.o \
 				 zone_touch_repository.o \
 				 zone_touch_transaction.o \
+				 session_audit_command.o \
+				 session_audit_repository.o \
+				 session_audit_transaction.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
 				 player_save_worker.o \

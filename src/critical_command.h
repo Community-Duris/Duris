@@ -53,6 +53,7 @@ enum class critical_command_type : uint16_t
 	guild,
 	boon_reward,
 	zone,
+	session_audit,
 };
 
 enum class critical_source_site : uint16_t

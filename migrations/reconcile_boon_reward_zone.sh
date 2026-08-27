@@ -13,7 +13,7 @@ export MYSQL_PWD="$DB_PASSWD"
 if mysql --help 2>&1 | grep -- '--ssl-mode' >/dev/null; then MYSQL_SSL=(--ssl-mode=PREFERRED); else MYSQL_SSL=(--skip-ssl); fi
 MYSQL=(mysql "${MYSQL_SSL[@]}" -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" -N -B "$DB_NAME")
 
-"${MYSQL[@]}" -e "
+output=$("${MYSQL[@]}" -e "
 SELECT 'boon_entry_count_mismatch', COUNT(*)
 FROM boon_reward_outcome o
 LEFT JOIN (SELECT operation_id,COUNT(*) count FROM boon_reward_outcome_entry GROUP BY operation_id) e USING(operation_id)
@@ -28,4 +28,6 @@ SELECT 'missing_committed_inbox', COUNT(*)
 FROM (
   SELECT operation_id FROM boon_reward_outcome UNION ALL SELECT operation_id FROM zone_touch_outcome
 ) outcomes LEFT JOIN critical_operation_inbox i USING(operation_id)
-WHERE i.operation_id IS NULL OR i.status<>1;"
+WHERE i.operation_id IS NULL OR i.status<>1;")
+printf '%s\n' "$output"
+awk 'BEGIN { ok=1 } $2 != 0 { ok=0 } END { exit ok ? 0 : 1 }' <<< "$output"

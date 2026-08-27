@@ -162,7 +162,7 @@ bool critical_command_valid(const critical_command &command)
 	if (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
 	    critical_operation_id_is_zero(command.operation_id) || !command.payload_version ||
 	    command.type < critical_command_type::test ||
-	    command.type > critical_command_type::zone ||
+	    command.type > critical_command_type::session_audit ||
 	    command.source_site < critical_source_site::command ||
 	    command.source_site > critical_source_site::operator_repair ||
 	    command.deadline_class < critical_deadline_class::interactive ||

@@ -152,18 +152,17 @@ for area_name in active_area_names:
         assert not act_flags & 1, f"mob {vnum} persists derived ACT_SPEC"
 
 
-# --- boot-time item events must have a live worker ---------------------------
-# Corpse restoration runs inside boot_db() and records an audit event. Starting
-# the item worker afterward forced a flat-file fallback on every clean boot.
+# --- boot must not activate retired raw SQL queues ----------------------------
 comm = (ROOT / "src/comm.c").read_text()
 run_game = comm.split("void run_the_game(int port, int sslport)\n{", 1)[1]
 run_game = run_game.split("\nstatic int drain_new_connections", 1)[0]
-assert index(run_game, "persistence_replay_fallback_events();") < index(
-    run_game, "persistence_start_item_event_worker();"
-)
-assert index(run_game, "persistence_start_item_event_worker();") < index(
-    run_game, "boot_db(mini_mode);"
-)
+for retired in (
+    "persistence_replay_fallback_events();",
+    "persistence_start_item_event_worker();",
+    "persistence_start_scalar_event_worker();",
+    "persistence_start_large_event_worker();",
+):
+    assert retired not in run_game
 
 
 print("boot log hygiene contracts passed")

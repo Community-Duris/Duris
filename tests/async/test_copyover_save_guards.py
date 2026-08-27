@@ -37,8 +37,10 @@ checks = {
     "failure says server remains live": "server remains live" in body,
     "copyover runs inside live game loop": "copyover_save(s, S, WS)" in
                                            comm[comm.index("void game_loop("):],
-    "workers stop only after game loop returns": comm.index("game_loop(port, sslport);") <
-                                                 comm.index("persistence_stop_scalar_event_worker"),
+    "typed workers stop only after game loop returns": "critical_command_coordinator_shutdown();" in
+                                                       comm[comm.index("game_loop(port, sslport);"):],
+    "legacy raw workers are not stopped at shutdown": "persistence_stop_scalar_event_worker();" not in
+                                                       comm,
     "failure resumes game loop": "goto resume_game_loop;" in comm,
     "shutdown drain is fail closed": "!player_save_pipeline_drain(3000)" in comm and
                                       "pipeline_drain_failed" in comm,

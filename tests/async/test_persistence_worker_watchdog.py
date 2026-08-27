@@ -33,8 +33,10 @@ checks.append(("worker loop marks in_write around callbacks",
 checks.append(("item event producer refreshes watchdog heartbeat",
                contains(utility_c, "persistence_worker_heartbeat_check(0);") and
                contains(utility_c, "persistence_record_item_event")))
-checks.append(("raw SQL executor drains multi-statement result sets",
-               contains(raw_c, "mysql_more_results") and contains(raw_c, "mysql_next_result") and contains(raw_c, "mysql_store_result")))
+checks.append(("raw SQL executor is retired fail closed",
+               contains(raw_c, "return false;") and
+               not contains(raw_c, "mysql_real_query") and
+               not contains(raw_c, "sql_observed_execute_at")))
 checks.append(("scalar stale-heartbeat regression test is present",
                contains(test_c, "worker_scalar_stale_heartbeat_shutdown_fallback") and
                contains(test_c, "stale-heartbeat helper should report a stuck worker before stop") and

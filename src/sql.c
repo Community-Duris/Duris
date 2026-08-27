@@ -16,6 +16,7 @@
 #include "sql.h"
 #include "item_ownership_runtime.h"
 #include "sql_pool.h"
+#include "session_audit_transaction.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -2667,30 +2668,18 @@ int sql_quest_trophy(P_char giver)
 
 void log_epic_gain(int pid, int type, int type_id, int epics)
 {
-	qry("INSERT INTO epic_gain (pid, time, type, type_id, epics) values ('%d', now(), '%d', '%d', '%d')",
-	    pid, type, type_id, epics);
+	(void)pid;
+	(void)type;
+	(void)type_id;
+	(void)epics;
 }
 
 void log_epic_gain_event(const char * /*event_key*/, int pid, int type, int type_id, int epics)
 {
-	char line[PERSISTENCE_EVENT_MAX_LEN];
-
-	snprintf(
-		line, sizeof(line),
-		"INSERT INTO epic_gain (pid, time, type, type_id, epics) VALUES ('%d', NOW(), '%d', '%d', '%d')",
-		pid, type, type_id, epics);
-
-	if (persistence_scalar_event_worker_running())
-	{
-		if (persistence_scalar_event_queue_enqueue(line))
-			return;
-		if (persistence_write_fallback_event_line(line, "scalar_event", "epic_gain",
-							  "queue_full_flat_fallback"))
-			return;
-	}
-
-	qry("INSERT INTO epic_gain (pid, time, type, type_id, epics) VALUES ('%d', NOW(), '%d', '%d', '%d')",
-	    pid, type, type_id, epics);
+	(void)pid;
+	(void)type;
+	(void)type_id;
+	(void)epics;
 }
 
 /* The prepstatement_duris_sql table looks like:
@@ -4297,43 +4286,16 @@ bool sql_pwipe(int code_verify)
 
 void sql_log_player_login(P_char ch, const char *status)
 {
-	if (!ch || IS_NPC(ch) || !ch->desc)
+	if (!ch || IS_NPC(ch) || !status)
 		return;
-
-	// Async scalar-event queue replaces fork().
-	// Escape all user-supplied strings then build the INSERT line.
-	char line[PERSISTENCE_EVENT_MAX_LEN];
-	char esc_name[128], esc_ip[128], esc_account[128], esc_client[256];
-	char esc_status[64], esc_client_ver[128];
-
-	const char *acct = get_account_name_safe(ch);
-
-	persistence_sql_escape_field(GET_NAME(ch), esc_name, sizeof(esc_name));
-	persistence_sql_escape_field(ch->desc->host, esc_ip, sizeof(esc_ip));
-	persistence_sql_escape_field(acct ? acct : "", esc_account, sizeof(esc_account));
-	persistence_sql_escape_field(ch->desc->client_name[0] ? ch->desc->client_name : "",
-				     esc_client, sizeof(esc_client));
-	persistence_sql_escape_field(ch->desc->client_version[0] ? ch->desc->client_version : "",
-				     esc_client_ver, sizeof(esc_client_ver));
-	persistence_sql_escape_field(status, esc_status, sizeof(esc_status));
-
-	snprintf(
-		line, sizeof(line),
-		"INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) "
-		"VALUES (NOW(), '%s', '%s', %d, '%s', 0, 0, 'account=%s client=%s %s')",
-		esc_status, esc_ip, GET_PID(ch), esc_name, esc_account, esc_client, esc_client_ver);
-
-	if (persistence_scalar_event_worker_running())
-	{
-		if (persistence_scalar_event_queue_enqueue(line))
-			return;
-		if (persistence_write_fallback_event_line(line, "scalar_event", "player_login",
-							  "queue_full_fallback"))
-			return;
-	}
-
-	// Fallback: execute synchronously
-	qry("%s", line);
+	const session_audit_event event = !strcasecmp(status, "login") ?
+						  session_audit_event::login :
+						  session_audit_event::logout;
+	if (strcasecmp(status, "login") && strcasecmp(status, "logout"))
+		return;
+	if (!session_audit_transaction_submit(ch, event))
+		logit(LOG_FILE,
+		      "session_audit: component=submit outcome=unavailable actor=redacted");
 }
 
 /* ---- Persistence DB connection ---- */
@@ -4642,41 +4604,13 @@ bool sql_hydrate_item_owner_revisions(void)
 void sql_zone_touch_finished(const char *event_key, int boot_time, int touched_at, int zone_number,
 			     int toucher_pid, int group_size, int epic_value, int alignment_delta)
 {
-	char line[PERSISTENCE_EVENT_MAX_LEN];
-	const char *safe_key;
-
-	safe_key = (event_key && *event_key) ? event_key : "none";
-
-	snprintf(line, sizeof(line),
-		 "INSERT INTO persistence_scalar_events "
-		 "(event_type, event_key, boot_time, touched_at, zone_number, "
-		 "toucher_pid, group_size, epic_value, alignment_delta, dedupe_key, created_at) "
-		 "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, "
-		 "SHA2(CONCAT('zone_touch', '|', '%s', '|', %d, '|', %d, '|', %d, '|', "
-		 "%d, '|', %d, '|', %d, '|', %d), 256), NOW()) "
-		 "ON DUPLICATE KEY UPDATE id=id",
-		 safe_key, boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value,
-		 alignment_delta, safe_key, boot_time, touched_at, zone_number, toucher_pid,
-		 group_size, epic_value, alignment_delta);
-
-	if (persistence_scalar_event_worker_running())
-	{
-		if (persistence_scalar_event_queue_enqueue(line))
-			return;
-		if (persistence_write_fallback_event_line(line, "scalar_event", "zone_touch",
-							  "queue_full_fallback"))
-			return;
-	}
-
-	qry("INSERT INTO persistence_scalar_events "
-	    "(event_type, event_key, boot_time, touched_at, zone_number, "
-	    "toucher_pid, group_size, epic_value, alignment_delta, dedupe_key, created_at) "
-	    "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, "
-	    "SHA2(CONCAT('zone_touch', '|', '%s', '|', %d, '|', %d, '|', %d, '|', "
-	    "%d, '|', %d, '|', %d, '|', %d), 256), NOW()) "
-	    "ON DUPLICATE KEY UPDATE id=id",
-	    safe_key, boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value,
-	    alignment_delta, safe_key, boot_time, touched_at, zone_number, toucher_pid, group_size,
-	    epic_value, alignment_delta);
+	(void)event_key;
+	(void)boot_time;
+	(void)touched_at;
+	(void)zone_number;
+	(void)toucher_pid;
+	(void)group_size;
+	(void)epic_value;
+	(void)alignment_delta;
 }
 #endif
