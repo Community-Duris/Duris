@@ -1,6 +1,6 @@
 # Persistence & Death Recovery Defects
 
-**Date:** 2026-08-28  
+**Date:** 2026-08-28
 **Components:** Character Creation, Save Pipeline, Death Handler (`die`)
 
 ---
