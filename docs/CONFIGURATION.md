@@ -117,10 +117,13 @@ for production.
 | Variable | Meaning |
 | --- | --- |
 | `LISTEN_ADDRESS` | Numeric IPv4 or IPv6 address applied to telnet, TLS telnet, and WebSocket listeners. Use `127.0.0.1` or `::1` for local development. |
+| `DURIS_WEBSOCKET_PORT` | WebSocket and HTTP health-listener port. It defaults to `4050`; values must be decimal ports from 1 through 65535. |
 | `DURISWEB_SECRET` | Shared secret for DurisWeb HMAC authentication. The client signature is a 64-character SHA-256 hex digest for the current Unix minute; the server accepts the adjacent minute on either side to tolerate clock skew. Keep this secret private and use the same value in the backend. |
 | `DURIS_TRUSTED_PROXY_IP` | One immediate proxy IP address whose `X-Forwarded-For` header may be trusted for WebSocket and telnet connections. If unset, forwarded addresses are ignored. This is an address allow-list, not a CIDR range. |
 
-WebSocket listens on `4050`. Plain telnet defaults to `7777` and TLS telnet to
+WebSocket and `GET /health` listen on `DURIS_WEBSOCKET_PORT` (default `4050`).
+The health response reports only process and in-memory database-pool readiness and
+performs no blocking database query. Plain telnet defaults to `7777` and TLS telnet to
 `7778`; a custom plain-telnet port uses the following port for TLS. Configure a
 real `duris.crt` and `duris.key` in the repository root for networked TLS. The
 operator key must be owner-controlled and mode `0600` or stricter. The tracked

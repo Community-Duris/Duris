@@ -12,12 +12,20 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[2]
 GUIDES = (
     ROOT / "README.md",
-    ROOT / "docs/README.md",
+    ROOT / "CONTRIBUTING.md",
+    ROOT / "docs/README_docs.md",
+    ROOT / "docs/onboarding.md",
+    ROOT / "docs/development.md",
+    ROOT / "docs/environments.md",
+    ROOT / "docs/deployment.md",
     ROOT / "docs/ARCHITECTURE.md",
     ROOT / "docs/DATABASE.md",
     ROOT / "docs/CONFIGURATION.md",
     ROOT / "docs/RUNBOOK.md",
     ROOT / "docs/TESTING.md",
+    ROOT / "docs/adr/0000-template.md",
+    ROOT / "docs/api/health.md",
+    ROOT / "docs/runbooks/incident-response.md",
 )
 DIAGRAMS = (
     ROOT / "docs/diagrams/duris-server-architecture.html",
@@ -138,6 +146,7 @@ class DocumentationContractTest(unittest.TestCase):
             "DB_NAME",
             "DB_ALLOWED_TARGETS",
             "DB_SSL_CA",
+            "DURIS_WEBSOCKET_PORT",
             "PLAYER_SAVE_JOURNAL_DIR",
             "CRITICAL_COMMAND_JOURNAL_DIR",
             "MAINTENANCE_STATE_FILE",

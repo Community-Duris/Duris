@@ -191,6 +191,14 @@
 | Integration | not configured | - |
 | Operations | not configured | `.github/dependabot.yml` provides dependency updates only |
 
+## Infrastructure
+
+| Component | Provider | Details |
+|-----------|----------|---------|
+| Hosting | externally managed | No repository-owned production target is declared |
+| Database | MySQL/MariaDB | Required at boot; pooled readiness is exposed without a blocking query |
+| Health | DurisMUD WebSocket listener | `GET /health` on `DURIS_WEBSOCKET_PORT` (default 4050); JSON status; `scripts/healthcheck.sh` probe |
+
 ## When In Doubt
 
 - Decide from repository and measured development-clone evidence and record material assumptions.

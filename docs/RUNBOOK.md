@@ -101,6 +101,19 @@ Do not start the game if the target name, role, host, allow-list, TLS posture, o
 backup status is uncertain. Qualify the exact target first; never probe a migration
 script against a configured database to discover its command-line behavior.
 
+### HTTP health probe
+
+After startup, verify process and database-pool readiness without logging in:
+
+```bash
+scripts/healthcheck.sh
+```
+
+The probe targets `http://127.0.0.1:4050/health` by default. For an isolated local
+instance, set `DURIS_WEBSOCKET_PORT` on the server and the matching
+`DURIS_HEALTH_URL` for the probe. A healthy response is HTTP 200 with only
+`status=healthy` and `database=ready`; the handler performs no database round trip.
+
 ## Logs
 
 All under `logs/`; rotated per-run into `logs/old-logs/<timestamp>/`.

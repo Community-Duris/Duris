@@ -1,189 +1,130 @@
 # Considerations
 
 > Institutional memory for AI assistants. Updated between phases via carryforward.
-> **Line budget**: 600 max | **Last updated**: Phase 00 (2026-08-26)
+> **Line budget**: 600 max | **Last updated**: Phase 03 (2026-08-27)
 
 ---
 
 ## Active Concerns
 
-Items requiring attention in upcoming phases. Review before each session.
+Items that still constrain any future work or release claim.
 
 ### Technical Debt
-<!-- Max 5 items -->
 
-- [P00] **Remediation has not started**: Phase 00 has 0 completed sessions, ten session
-  stubs, and a planned Session 01 spec/checklist. Phases 01, 02, and 03 are preplanned
-  but not active; the next executable workflow step remains `implement` for Phase 00
-  Session 01.
-- [P00] **Save failures can become data loss**: Deferred-save failures strand occupied
-  slots, while terminal paths can extract characters or inventory after failed SQL;
-  the legacy pfile fallback is not automatically reconciled (DB-004, DB-005).
-- [P00] **Removed or failed state can reappear**: Timers, undead slots, forged-item
-  knowledge, and granted commands lack replacement deletes; victim frag publication
-  and artifact-bind outputs also have ordering or initialization defects (DB-008, DB-012).
-- [P00] **Player save and load are over-broad and inconsistent**: Full saves rewrite
-  mostly unchanged state and mutate equipment to snapshot it; login uses N+1 queries,
-  mixed revisions, partial-success semantics, and fixed pet-item truncation (DB-009 to DB-011).
-- [P00] **Runtime and schema contracts have drifted**: Unsafe DB defaults, pre-validation
-  boot writes, an incomplete migration ledger, and outdated database documentation mean
-  compatibility cannot currently be inferred from a successful boot (DB-020 to DB-022).
+- [P03] **Representative capacity proof is deferred**: The strict eight-profile gate is
+  implemented, but the 200-account/four-hour run was postponed. Do not claim 200-player
+  readiness until that exact run passes on a qualified non-production clone.
+- [P03] **Lifecycle activation is policy-blocked**: Archive, export, and erasure
+  mechanisms are validated with synthetic data, but canonical mutation remains disabled
+  until controller-approved purposes, disclosure rules, retention periods, and actions exist.
+- [P03] **Query plans remain unqualified**: The available fixture missed every
+  representative-size threshold, so no index candidate was accepted. Re-run the plan
+  gate on a backed-up representative development clone before tuning.
 
 ### External Dependencies
-<!-- Max 5 items -->
 
-- [P00] **MySQL/MariaDB is the durable authority**: Preserve InnoDB and validate all
-  migrations, query plans, and write amplification only on a backed-up development
-  clone; never use production for exploratory schema or load work.
-- [P00] **Redis has mixed reliability roles**: Cache loss may degrade performance, but
-  dirty-player and world-recovery loss affects durability. Treat Redis as optional and
-  reconstructible until those domains are separated and independently monitored.
-- [P00] **Filesystem fallback is not a recovery protocol**: Current event logs and
-  binary pfiles have different replay guarantees. Do not promise recovery until typed,
-  checksummed, versioned, idempotent journal and reconciliation paths exist.
-- [P00] **Capacity evidence is not representative**: The reviewed local DB has 4 players,
-  108 player items, and no usable Performance Schema histograms. Index selection and the
-  200-player claim require production-sized cloned histories and non-production ports.
-- [P00] **Operational choices remain open**: Gameplay and operations owners still need
-  to finalize the checkpoint RPO, queue limits, epic authority, world-worker topology,
-  retention policy, pfile retirement, and non-local DB transport mechanism.
+- [P03] **MySQL and MariaDB are both supported authorities**: Preserve the normalized
+  runtime fingerprints and run compatibility checks on both engines after schema changes.
+- [P03] **Production topology is not repository-defined**: The health endpoint is locally
+  proven, but hosting, platform probes, WAF, external backup storage, and deployment
+  triggers require the actual deployment owner and target.
+- [P03] **Controller decisions are external**: Engineering must not invent legal basis,
+  disclosure, retention, or erasure exceptions. Missing approval must continue to fail closed.
 
 ### Performance / Security
-<!-- Max 5 items -->
 
-- [P00] **Per-pulse epic lookups exceed the event budget**: At 200 damaged players, hit
-  regeneration alone can issue about 800 main-thread reads per second; movement regen
-  and XP add more work against a 25 ms per-pulse event budget (DB-001).
-- [P00] **External I/O can stop the simulation**: Most of roughly 500 direct SQL call
-  sites use the main connection, and primary Redis commands have no command timeout;
-  aligned maintenance callbacks add predictable whole-game latency spikes (DB-003).
-- [P00] **Queue capacity hides outages**: Maximum fixed payload storage is roughly
-  512 MiB before allocation overhead, growth occurs under producer locks, and worker
-  health checks treat a blocked database write as healthy (DB-013, DB-014).
-- [P00] **Capacity telemetry is incomplete**: Query-site latency, main-thread external
-  I/O time, oldest work age, revision lag, journal age, retries, circuit state,
-  deadlocks, and lock waits are missing, so current counters cannot prove readiness.
-- [P00] **Failure logging can disclose private data**: Raw SQL, bounded SQL prefixes,
-  PIDs, pointer values, and unconditional `/tmp/garp-item-trace.log` writes combine
-  privacy exposure with synchronous filesystem work (DB-019).
+- [P03] **Five-minute recovery objective is approved but capacity-unproven**: Local and
+  synthetic recovery contracts pass; only the deferred integrated run can prove the
+  objective under representative 200-player load and injected faults.
+- [P03] **Health is a readiness signal, not full diagnostics**: `GET /health` checks the
+  live process and in-memory database-pool readiness without blocking the game thread or
+  exposing configuration, player, or database values.
 
 ### Architecture
-<!-- Max 5 items -->
 
-- [P00] **The game thread owns mutable objects**: Build immutable typed snapshots on
-  that thread; workers must never traverse live `P_char` or `P_obj` graphs or hold game
-  locks across database, Redis, filesystem, or allocator-heavy work.
-- [P00] **Revision and acknowledgement identity are mandatory**: Order work per entity,
-  apply only newer revisions, acknowledge the exact revision, and clear a dirty
-  component only when no newer mutation supersedes that acknowledgement.
-- [P00] **Critical domains need one durability boundary**: Epic, wallet/bank, item
-  ownership, ledger, audit, and outbox changes require unique operation IDs and one
-  idempotent transaction before final gameplay success is reported (DB-006, DB-007).
-- [P00] **Queues and recovery must be typed and bounded**: Use byte and age limits,
-  backpressure or durable spill, checksums, schema versions, retry classification, and
-  idempotent replay; unrestricted raw SQL is not a durable message format.
-- [P00] **Both forked snapshot paths are transitional hazards**: Player saves can apply
-  stale copies, and player/world children can deadlock after forking a multithreaded
-  process. Replace them with long-lived workers or an independently started sidecar.
+- [P03] **The game thread remains the publication owner**: Database workers return bounded
+  pointer-free values; player, inventory, pet, and follower graphs publish only after the
+  complete snapshot validates.
+- [P03] **Schema history and boot compatibility are one boundary**: Keep immutable
+  migration checksums, lifecycle coverage, runtime fingerprints, and compiled lookup
+  identity synchronized; drift must abort before any boot write or listener opens.
+- [P03] **Lifecycle policy is data, not ad hoc SQL**: All archive, export, erasure, season,
+  restore, and backup behavior must consume the shared manifest and preserve protected
+  reconciliation and audit records.
 
 ---
 
 ## Lessons Learned
 
-Proven patterns and anti-patterns. Reference during implementation.
-
 ### What Worked
-<!-- Max 15 items -->
 
-- [P00] **Trace code before trusting architecture prose**: Static tracing exposed that
-  full player saves and most gameplay SQL bypass the documented worker pipeline; use
-  source behavior as evidence and update documentation with the implementation.
-- [P00] **Preserve the InnoDB baseline**: All 124 inspected local base tables use
-  InnoDB, and the core `sql_save_player()` path already groups principal components in
-  a transaction.
-- [P00] **Reuse enforced dedupe contracts**: Persistence item/scalar event tables have
-  uniqueness and index contracts checked at boot, and player item child tables already
-  provide useful foreign keys and indexes.
-- [P00] **Retain failed queue heads**: Existing event workers keep the head until the
-  writer reports durable success. Extend this acknowledgement discipline to typed
-  player and critical-domain commands.
-- [P00] **Follow the locker worker boundary**: `locker_async.c` snapshots immutable
-  values on the game thread, coalesces generations, and applies completion later; it is
-  the closest existing model for the new persistence pipeline.
-- [P00] **Keep connection ownership explicit**: Pool connections are individually owned
-  while borrowed, select `utf8mb4`, and have bounded read/write calls. Add async healing,
-  operation deadlines, and bounded shutdown without weakening those properties.
-- [P00] **Keep payload bounds visible**: Query truncation checks and 1 MiB item
-  sub-batches already avoid some fixed-buffer and packet-size failures; preserve
-  explicit limits and turn silent truncation into a validated error.
-- [P00] **Use focused source-contract regressions**: `tests/async/` already checks save
-  failures, queue generations, fallback preservation, schema contracts, and locker
-  terminal behavior; extend the nearest test with each behavior change.
-- [P00] **Fail closed around destructive operations**: The migration runner and newer
-  locker terminal paths demonstrate the desired bias: retain retryable state and do not
-  publish destructive completion without durable success.
+- [P03] **One consistent load snapshot**: A worker-owned repeatable-read transaction plus
+  exact request/account identity prevents mixed revisions and partial login publication.
+- [P03] **Validate, stage, then publish**: Indexed graph validation before relationship
+  linking makes inventory and pet failures clean, linear, and exactly reclaimable.
+- [P03] **Retain recovery checkpoints on read**: Durable rows should not be consumed before
+  an in-memory publication that cannot share their database transaction.
+- [P03] **Use last-good in-memory catalogs**: Set-based refresh plus validated publication
+  removes callback SQL and random database sorts without turning refresh failure into bad state.
+- [P03] **Make evidence gates fail closed**: Under-sized fixtures, missing cases, shortened
+  holds, unsafe targets, malformed metrics, and pending policy correctly produce no claim.
+- [P03] **Separate engineering completion from capacity evidence**: Complete tooling can
+  be reviewed and shipped while the report honestly records that the representative run
+  has not happened.
+- [P03] **Normalize cross-engine metadata deliberately**: MySQL 8 and MariaDB expose
+  equivalent schema through different declarations and metadata formatting; public client
+  headers and normalized fingerprints keep clean builds portable.
+- [P03] **Check live lookup rows on no-op boot**: A stored version/checksum alone cannot
+  prove the authoritative table still matches the compiled dataset.
+- [P03] **Document command side effects from source**: Legacy scripts may not honor
+  conventional flags; executable contracts are more reliable than assumed CLI behavior.
+- [P03] **Keep operational evidence aggregate-only**: Stable IDs, counts, timing, checksums,
+  and outcomes support diagnosis without logging player values, SQL, credentials, or targets.
 
 ### What to Avoid
-<!-- Max 10 items -->
 
-- [P00] **Do not fork the running server for persistence**: Threads, allocators, client
-  libraries, mutable snapshots, and unbounded child lifetimes make both player and
-  world fork paths unsafe.
-- [P00] **Do not put external I/O in mutation or pulse callbacks**: A Redis or database
-  failure must retain dirty work for retry, never trigger a synchronous full save in
-  the caller.
-- [P00] **Do not clear or destroy before an exact durable ACK**: Dirty flags, floor
-  deltas, inventory, characters, and journal records must survive failure and stale
-  acknowledgements.
-- [P00] **Do not absolute-save shared balances**: Cached account-bank values from one
-  character can overwrite another character's update; use checked delta commands and
-  publish the authoritative committed result.
-- [P00] **Do not split balance, ownership, ledger, and audit writes**: Relative timing
-  across independent saves or queues cannot provide atomicity or exactly-once effects.
-- [P00] **Do not treat raw SQL as a queue or journal contract**: It is hard to version,
-  redact, classify, and deduplicate after an ambiguous commit or replay.
-- [P00] **Do not equate large buffers with resilience**: Unbounded recovery time and
-  producer-side allocation merely postpone visible failure while increasing memory and
-  latency risk.
-- [P00] **Do not accept partial or silently truncated loads**: Required player
-  components must come from one consistent revision or login must fail cleanly with an
-  explicit bounded error.
-- [P00] **Do not tune from tiny local plans**: Candidate indexes, partitioning, and
-  retention require representative clone measurements plus reconciliation and audit
-  ownership before migration.
-- [P00] **Do not broaden fixes into legacy modernization**: Keep each session to one
-  persistence objective, change nearby code narrowly, and preserve gameplay semantics.
+- [P03] **Do not tune from a tiny fixture**: Correctness fixtures cannot justify indexes,
+  write amplification, lock cost, or a capacity claim.
+- [P03] **Do not delete recovery rows on load**: Cross-system publication cannot make
+  delete-on-read atomic and can lose retryable state.
+- [P03] **Do not perform a blocking database ping in health handling**: Use bounded
+  in-memory pool state so a probe cannot stall the simulation thread.
+- [P03] **Do not fabricate migration history**: Adopt one verified legacy baseline and
+  record only future immutable steps whose apply and verifier both succeed.
+- [P03] **Do not enable policy-dependent mutation from technical completeness alone**:
+  Synthetic archive/export/erasure proof is not controller approval or legal compliance.
+- [P03] **Do not infer script help or dry-run support**: Inspect argument handling before
+  invoking operational scripts, even on development databases.
 
 ### Tool/Library Notes
-<!-- Max 5 items -->
 
-- [P00] **C++20 build despite `.c` suffixes**: Compile server changes with
-  `make -C src`; format touched C/C++ lines with `./scripts/format.sh` and verify with
-  `./scripts/format.sh --check`.
-- [P00] **Spec state is script-derived**: Use
-  `.spec_system/scripts/analyze-project.sh --json` instead of manually interpreting
-  `state.json`; it currently reports Phase 00 as not started with Session 01 planned and
-  no completed sessions.
-- [P00] **Database tests require isolation**: Start with the smallest relevant Python or
-  shell regression, use `make test-db` only for isolated DB suites, and reserve
-  `make test-all` for the complete handoff gate.
-- [P00] **Runtime configuration is local and sensitive**: Use `.env` and
-  `scripts/start_mud.sh`, never print or commit credentials, and keep development away
-  from production data and ports.
-- [P00] **MySQL and hiredis defaults are insufficient**: New connections must verify
-  charset, time zone, isolation level, SQL mode, TLS or protected transport, connect
-  and operation deadlines, and null/error context handling.
+- [P03] **Public MySQL declarations are the portability boundary**: Repository headers
+  include `mysql/mysql.h`; statement null-indicator types derive from `MYSQL_BIND` rather
+  than naming MariaDB-only `my_bool`.
+- [P03] **Strict clean builds expose local dependency assumptions**: Keep the GitHub code
+  quality workflow and the compiler warning contract aligned with a fresh Ubuntu build.
+- [P03] **Local WebSocket ports are configurable**: `DURIS_WEBSOCKET_PORT` allows isolated
+  development probes; production defaults to 4050 unless explicitly configured.
+- [P03] **Spec state is script-derived**: Use
+  `.spec_system/scripts/analyze-project.sh --json`; it reports all four defined phases
+  complete and no active session.
 
 ---
 
 ## Resolved
 
-Recently closed items (buffer - rotates out after 2 phases).
+Recently closed items from the persistence program.
 
 | Phase | Item | Resolution |
 |-------|------|------------|
-| - | *No resolved items yet* | Phase 00 implementation has not started. |
+| P03 | Partial and N+1 player loads | One bounded consistent snapshot now stages and atomically publishes player, item, pet, PvP, and epic-task read state. |
+| P03 | Runtime/schema drift | Immutable migration history and dual-engine compatibility abort before boot mutation or service publication. |
+| P03 | Aligned unbounded maintenance | Eleven typed jobs use deterministic staggering, budgets, cursors, retries, and durable completion state. |
+| P03 | Missing lifecycle inventory | Every declared database and non-database store is covered by one fail-closed manifest. |
+| P02 | Split critical-domain writes | Operation-keyed transactions now couple authoritative rows, ledgers, results, and outbox state. |
+| P01 | Forked persistence and stale saves | Revisioned workers, exact acknowledgements, typed journals, and bounded recovery replaced the unsafe fork paths. |
+| P00 | Sensitive persistence logging | Stable metadata-only diagnostics and log-hygiene regressions removed raw SQL and ad hoc private traces. |
 
 ---
 
-*Initial baseline populated from the PRD and current repository state; future phases update it via carryforward.*
+*Auto-generated by carryforward. Direct edits allowed but may be overwritten.*

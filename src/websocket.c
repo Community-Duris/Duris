@@ -9,6 +9,7 @@
 #include "structs.h"
 #include "comm.h"
 #include "db.h"
+#include "sql_pool.h"
 #include "utils.h"
 #include "websocket.h"
 #include <arpa/inet.h>
@@ -214,6 +215,27 @@ static int websocket_send_all(int fd, const void *buf, size_t len)
 	return 0;
 }
 
+static int websocket_send_health_response(struct descriptor_data *d)
+{
+	const int database_ready = sql_pool_is_active();
+	const char *status = database_ready ? "200 OK" : "503 Service Unavailable";
+	const char *body = database_ready ?
+				   "{\"status\":\"healthy\",\"database\":\"ready\"}\n" :
+				   "{\"status\":\"unhealthy\",\"database\":\"unavailable\"}\n";
+	char response[WS_RESPONSE_BUFFER_SIZE];
+	int response_len = snprintf(response, sizeof(response),
+				    "HTTP/1.1 %s\r\n"
+				    "Content-Type: application/json\r\n"
+				    "Cache-Control: no-store\r\n"
+				    "Connection: close\r\n"
+				    "Content-Length: %zu\r\n\r\n%s",
+				    status, strlen(body), body);
+	if (!d || response_len < 0 || (size_t)response_len >= sizeof(response))
+		return -1;
+	const int descriptor = d->descriptor;
+	return websocket_send_all(descriptor, response, (size_t)response_len);
+}
+
 /* base64 encoding helper */
 static char *base64_encode(const unsigned char *input, int length)
 {
@@ -285,6 +307,19 @@ int websocket_init(int port)
 {
 	sockaddr_in6 sa;
 	int opt = 1;
+	const char *configured_port = getenv("DURIS_WEBSOCKET_PORT");
+	if (configured_port && *configured_port)
+	{
+		char *end = NULL;
+		errno = 0;
+		long parsed_port = strtol(configured_port, &end, 10);
+		if (errno || !end || *end || parsed_port < 1 || parsed_port > 65535)
+		{
+			logit(LOG_STATUS, "DURIS_WEBSOCKET_PORT is invalid");
+			return -1;
+		}
+		port = (int)parsed_port;
+	}
 
 	ws_listen_fd = socket(AF_INET6, SOCK_STREAM, 0);
 	if (ws_listen_fd < 0)
@@ -427,6 +462,7 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 	int duplicate_invalid = 0;
 	int malformed_header = 0;
 	int first_line = 1;
+	int health_request = 0;
 
 	if (!d || !buf || len > WS_MAX_HANDSHAKE_SIZE)
 		return -1;
@@ -455,6 +491,8 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 		if (first_line)
 		{
 			first_line = 0;
+			if (strcmp(line, "GET /health HTTP/1.1") == 0)
+				health_request = 1;
 			if (strncmp(line, "GET ", 4) == 0)
 			{
 				/* RFC 6455 handshake uses an HTTP/1.1 GET request. */
@@ -562,6 +600,14 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 		}
 
 		line = strtok_r(NULL, "\r\n", &saveptr);
+	}
+
+	if (health_request && !malformed_header)
+	{
+		int sent = websocket_send_health_response(d);
+		free(request);
+		/* The HTTP health response is complete; the caller closes the probe socket. */
+		return sent < 0 ? -1 : -2;
 	}
 
 	/* Sec-WebSocket-Key must decode to exactly 16 bytes (RFC 6455 section 4.2.1). */

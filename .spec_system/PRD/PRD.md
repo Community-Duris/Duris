@@ -4,7 +4,7 @@
 
 - **Requirements baseline:** Database Integration and 200-Player Scalability Review
 - **Date:** August 26, 2026
-- **Status:** Investigation complete; remediation not started
+- **Status:** Phases 00-03 complete; representative 200-account/four-hour capacity run deferred
 - **Scope:** MySQL/MariaDB, Redis, player load/save, event persistence, epic points,
   combat-triggered queries, shared currency, lockers, and operational failure behavior
 - **Canonicality:** This PRD incorporates the complete review, including its method,
@@ -228,9 +228,9 @@ boundaries.
 
 | Phase | Name | Sessions | Status |
 |-------|------|----------|--------|
-| 00 | Correctness and Immediate Lag Removal | 10 | Not Started |
-| 01 | Replace Forked Full Saves | 8 | Not Started |
-| 02 | Transactional Gameplay Domains | 12 | Not Started |
+| 00 | Correctness and Immediate Lag Removal | 10 | Complete |
+| 01 | Replace Forked Full Saves | 8 | Complete |
+| 02 | Transactional Gameplay Domains | 12 | Complete |
 | 03 | Load Path, Schema, and Retention | 14 | Complete |
 
 ## Phase 00: Correctness and Immediate Lag Removal
@@ -255,24 +255,24 @@ boundaries.
 
 | Session | Name | Status |
 |---------|------|--------|
-| 01 | Redacted Persistence Observability | Not Started |
-| 02 | In-Memory Epic Bonus Hot Path | Not Started |
-| 03 | Save Failure Retry and Terminal Safety | Not Started |
-| 04 | Player Replacement State Cleanup | Not Started |
-| 05 | Combat and Artifact Persistence Correctness | Not Started |
-| 06 | Redis Failure and Recovery Containment | Not Started |
-| 07 | Account Bank Delta Safety | Not Started |
-| 08 | Runtime Connection Trust Boundaries | Not Started |
-| 09 | Private Chest Password Hardening | Not Started |
-| 10 | Security Policy and Dependency Baseline | Not Started |
+| 01 | Redacted Persistence Observability | Complete |
+| 02 | In-Memory Epic Bonus Hot Path | Complete |
+| 03 | Save Failure Retry and Terminal Safety | Complete |
+| 04 | Player Replacement State Cleanup | Complete |
+| 05 | Combat and Artifact Persistence Correctness | Complete |
+| 06 | Redis Failure and Recovery Containment | Complete |
+| 07 | Account Bank Delta Safety | Complete |
+| 08 | Runtime Connection Trust Boundaries | Complete |
+| 09 | Private Chest Password Hardening | Complete |
+| 10 | Security Policy and Dependency Baseline | Complete |
 
 Detailed scopes and verification boundaries are tracked in the Phase 00 PRD and its
 `session_NN_name.md` stubs under `.spec_system/PRD/phase_00/`.
 
 ## Phase 01: Replace Forked Full Saves
 
-Phase 01 is planned in advance while Phase 00 remains active. It does not mark Phase 00
-complete or change the current executable session.
+Phase 01 is complete and archived. Its revisioned save and recovery contracts remain
+the foundation for later transactional and load work.
 
 ### Objectives
 
@@ -290,23 +290,22 @@ complete or change the current executable session.
 
 | Session | Name | Status |
 |---------|------|--------|
-| 01 | Player Revision and Component State Foundation | Not Started |
-| 02 | Immutable Player Snapshot Capture | Not Started |
-| 03 | Keyed Revision-Guarded Save Worker | Not Started |
-| 04 | Typed Persistence Journal and Replay | Not Started |
-| 05 | Nonterminal Save Pipeline Cutover | Not Started |
-| 06 | Terminal Drain and Shutdown Safety | Not Started |
-| 07 | Immutable World Recovery Worker | Not Started |
-| 08 | Legacy Fork Removal and Recovery Gate | Not Started |
+| 01 | Player Revision and Component State Foundation | Complete |
+| 02 | Immutable Player Snapshot Capture | Complete |
+| 03 | Keyed Revision-Guarded Save Worker | Complete |
+| 04 | Typed Persistence Journal and Replay | Complete |
+| 05 | Nonterminal Save Pipeline Cutover | Complete |
+| 06 | Terminal Drain and Shutdown Safety | Complete |
+| 07 | Immutable World Recovery Worker | Complete |
+| 08 | Legacy Fork Removal and Recovery Gate | Complete |
 
 Detailed scopes and verification boundaries are tracked in the Phase 01 PRD and its
 `session_NN_name.md` stubs under `.spec_system/PRD/phase_01/`.
 
 ## Phase 02: Transactional Gameplay Domains
 
-Phase 02 is planned in advance while Phase 00 remains active and Phase 01 remains
-future work. It does not mark either earlier phase complete or change the current
-executable session.
+Phase 02 is complete and archived. Its operation-keyed transactional domains and
+reconciliation contracts are the authority used by Phase 03.
 
 ### Objectives
 
@@ -327,27 +326,26 @@ executable session.
 
 | Session | Name | Status |
 |---------|------|--------|
-| 01 | Critical Operation Identity and Coordinator | Not Started |
-| 02 | Transactional Inbox, Outbox, and Reconciliation | Not Started |
-| 03 | Epic Ledger and Balance Transactions | Not Started |
-| 04 | Account Bank and Wallet Transactions | Not Started |
-| 05 | Item Ownership Ledger and Transfer Primitive | Not Started |
-| 06 | Live Item Movement and Corpse Cutover | Not Started |
-| 07 | Locker Ownership Cutover | Not Started |
-| 08 | Auction Settlement and Claim Cutover | Not Started |
-| 09 | PvP and Combat Outcome Batching | Not Started |
-| 10 | Artifact and Guild Outcome Batching | Not Started |
-| 11 | Boon, Reward, and Zone Command Batching | Not Started |
-| 12 | Raw Event Queue Retirement and Domain Gate | Not Started |
+| 01 | Critical Operation Identity and Coordinator | Complete |
+| 02 | Transactional Inbox, Outbox, and Reconciliation | Complete |
+| 03 | Epic Ledger and Balance Transactions | Complete |
+| 04 | Account Bank and Wallet Transactions | Complete |
+| 05 | Item Ownership Ledger and Transfer Primitive | Complete |
+| 06 | Live Item Movement and Corpse Cutover | Complete |
+| 07 | Locker Ownership Cutover | Complete |
+| 08 | Auction Settlement and Claim Cutover | Complete |
+| 09 | PvP and Combat Outcome Batching | Complete |
+| 10 | Artifact and Guild Outcome Batching | Complete |
+| 11 | Boon, Reward, and Zone Command Batching | Complete |
+| 12 | Raw Event Queue Retirement and Domain Gate | Complete |
 
 Detailed scopes and verification boundaries are tracked in the Phase 02 PRD and its
 `session_NN_name.md` stubs under `.spec_system/PRD/phase_02/`.
 
 ## Phase 03: Load Path, Schema, and Retention
 
-Phase 03 is planned in advance while Phase 00 remains active and Phases 01 and 02 remain
-future work. It does not mark any earlier phase complete or change the current
-executable session. This is the final phase currently defined by the remediation plan.
+Phase 03 is complete and archived. It is the final phase defined by this remediation
+plan; no later phase is defined or active.
 
 ### Objectives
 
@@ -371,20 +369,20 @@ executable session. This is the final phase currently defined by the remediation
 
 | Session | Name | Status |
 |---------|------|--------|
-| 01 | Consistent Player Load Transaction | Not Started |
-| 02 | Batched Item Ownership and Linear Assembly | Not Started |
-| 03 | Batched Pet Graph Hydration | Not Started |
-| 04 | Set-Based PvP and Epic Task Reads | Not Started |
-| 05 | Production-Clone Query Plan and Index Gate | Not Started |
-| 06 | Bounded Maintenance Scheduler | Not Started |
-| 07 | Data Processing and Retention Contract | Not Started |
-| 08 | Retention and Archival Execution | Not Started |
-| 09 | Authenticated Personal Data Export | Not Started |
-| 10 | Account Erasure and Backup Propagation | Not Started |
-| 11 | Immutable Migration Ledger and Runner | Not Started |
-| 12 | Boot Schema and Lookup Compatibility | Not Started |
-| 13 | Documentation and Operator Contract | Not Started |
-| 14 | Final 200-Player and Compliance Gate | Not Started |
+| 01 | Consistent Player Load Transaction | Complete |
+| 02 | Batched Item Ownership and Linear Assembly | Complete |
+| 03 | Batched Pet Graph Hydration | Complete |
+| 04 | Set-Based PvP and Epic Task Reads | Complete |
+| 05 | Production-Clone Query Plan and Index Gate | Complete - local fixture unqualified |
+| 06 | Bounded Maintenance Scheduler | Complete |
+| 07 | Data Processing and Retention Contract | Complete - policy pending |
+| 08 | Retention and Archival Execution | Complete - canonical mutation disabled |
+| 09 | Authenticated Personal Data Export | Complete - canonical activation disabled |
+| 10 | Account Erasure and Backup Propagation | Complete - canonical mutation disabled |
+| 11 | Immutable Migration Ledger and Runner | Complete |
+| 12 | Boot Schema and Lookup Compatibility | Complete |
+| 13 | Documentation and Operator Contract | Complete |
+| 14 | Final 200-Player and Compliance Gate | Complete - representative run deferred |
 
 Detailed scopes and verification boundaries are tracked in the Phase 03 PRD and its
 `session_NN_name.md` stubs under `.spec_system/PRD/phase_03/`.

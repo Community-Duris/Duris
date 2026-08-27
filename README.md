@@ -70,6 +70,13 @@ to reconstructible caches plus validated world-recovery generations. See the ful
 The maintained setup path is Debian/Ubuntu, matching the CI workflow and the
 repository's build-dependency manifest.
 
+After setup, one command builds every maintained target and runs the complete safe
+regression gate:
+
+```bash
+make test-all
+```
+
 ### 1. Install dependencies
 
 ```bash
@@ -209,7 +216,10 @@ telnet localhost 7777
 | --- | ---: | ---: |
 | Plain telnet | 7777 | 4000 |
 | TLS telnet | 7778 | 4001 |
-| WebSocket | 4050 | 4050 |
+| WebSocket and HTTP health | 4050 | 4050 |
+
+The WebSocket port can be overridden with `DURIS_WEBSOCKET_PORT`. Once the game is
+running, `scripts/healthcheck.sh` verifies both process and database-pool readiness.
 
 The tracked self-signed certificate in `certs/` is available only when
 `ENVIRONMENT=local` and `LISTEN_ADDRESS` is exactly `127.0.0.1` or `::1`. For a
@@ -280,6 +290,10 @@ archives.
 | [Configuration](docs/CONFIGURATION.md) | Environment variables, Redis, networking, and diagnostics. |
 | [Runbook](docs/RUNBOOK.md) | Restarts, logs, backups, recovery, operations. |
 | [Testing](docs/TESTING.md) | Test layout, commands, and conventions. |
+| [Onboarding](docs/onboarding.md) | Setup and first verification checklist. |
+| [Development](docs/development.md) | Daily build, test, format, and health commands. |
+| [Environments](docs/environments.md) | Local and network-deployment trust boundaries. |
+| [Deployment](docs/deployment.md) | CI, local probes, and external release boundary. |
 | [Immutable migrations](docs/IMMUTABLE_MIGRATIONS.md) | Baseline adoption, ordered checksums, exact resume. |
 | [Runtime compatibility](docs/RUNTIME_COMPATIBILITY.md) | Pre-mutation boot verification and lookup publication. |
 | [Data lifecycle](docs/DATA_LIFECYCLE.md) | Store inventory, pending policy, archive/export/erasure boundaries. |
@@ -288,7 +302,7 @@ archives.
 | [Help system](docs/HELP_SYSTEM.md) | Help sources, database import, and rendering. |
 
 The complete index, including builder references and standalone diagrams, is
-in [`docs/README.md`](docs/README.md).
+in [`docs/README_docs.md`](docs/README_docs.md).
 
 [build]: https://github.com/LuminariMUD/DurisMUD/actions/workflows/build.yml
 [build-badge]: https://img.shields.io/github/actions/workflow/status/LuminariMUD/DurisMUD/build.yml?branch=master&style=flat-square&logo=githubactions&logoColor=white&label=build
