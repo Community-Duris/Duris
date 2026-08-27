@@ -17,6 +17,10 @@
 #include <utility>
 #include <vector>
 
+#ifndef __NO_MYSQL__
+#include <mysql/mysql.h>
+#endif
+
 namespace
 {
 struct queued_snapshot
@@ -110,6 +114,10 @@ void update_depth_health_locked()
 
 void worker_main()
 {
+#ifndef __NO_MYSQL__
+	if (mysql_thread_init() != 0)
+		return;
+#endif
 	{
 		std::lock_guard<std::mutex> lock(worker_mutex);
 		++health.running_workers;
@@ -193,6 +201,9 @@ void worker_main()
 	}
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	--health.running_workers;
+#ifndef __NO_MYSQL__
+	mysql_thread_end();
+#endif
 }
 
 bool promote_pending_locked(int pid, pid_slot &slot)
@@ -299,7 +310,7 @@ void player_save_worker_shutdown(void)
 bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
 					  player_save_journal_ack_fn acknowledge, void *context)
 {
-	if ((append && !acknowledge) || (!append && acknowledge))
+	if (append && !acknowledge)
 		return false;
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	if (!slots.empty())
@@ -310,8 +321,11 @@ bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
 	return true;
 }
 
-player_save_submit_result player_save_worker_submit(player_snapshot snapshot)
+player_save_submit_result player_save_worker_submit_retained(player_snapshot *snapshot_pointer)
 {
+	if (!snapshot_pointer)
+		return player_save_submit_result::invalid;
+	player_snapshot &snapshot = *snapshot_pointer;
 	if (!valid_snapshot(snapshot))
 		return player_save_submit_result::invalid;
 	player_save_journal_append_fn append = nullptr;
@@ -417,6 +431,11 @@ player_save_submit_result player_save_worker_submit(player_snapshot snapshot)
 	saturating_increment(health.coalesced);
 	update_depth_health_locked();
 	return player_save_submit_result::coalesced;
+}
+
+player_save_submit_result player_save_worker_submit(player_snapshot snapshot)
+{
+	return player_save_worker_submit_retained(&snapshot);
 }
 
 size_t player_save_worker_pulse(player_save_completion *completions_out, size_t capacity)

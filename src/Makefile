@@ -195,6 +195,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player_revision_state.o \
 				 player_save_worker.o \
 				 player_save_journal.o \
+				 player_save_pipeline.o \
 				 player_snapshot_repository.o \
 				 player_snapshot_capture.o \
 				 player_snapshot_codec.o \

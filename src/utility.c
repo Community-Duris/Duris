@@ -2897,7 +2897,7 @@ void ADD_MONEY(P_char ch, int amount)
 		GET_COPPER(ch) += amount;
 
 	if (IS_PC(ch))
-		mark_player_dirty(GET_PID(ch));
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 
 	/* Update web client */
 	gmcp_char_vitals(ch);
@@ -3007,7 +3007,7 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 	{
 		GET_COPPER(ch) -= amount;
 		if (IS_PC(ch))
-			mark_player_dirty(GET_PID(ch));
+			mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 		gmcp_char_vitals(ch);
 		return 0;
 	}
@@ -3062,7 +3062,7 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 	else
 	{
 		if (IS_PC(ch))
-			mark_player_dirty(GET_PID(ch));
+			mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 		gmcp_char_vitals(ch);
 	}
 

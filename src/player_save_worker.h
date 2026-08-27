@@ -94,6 +94,7 @@ void player_save_worker_shutdown(void);
 bool player_save_worker_set_journal_hooks(player_save_journal_append_fn append,
 					  player_save_journal_ack_fn acknowledge, void *context);
 player_save_submit_result player_save_worker_submit(player_snapshot snapshot);
+player_save_submit_result player_save_worker_submit_retained(player_snapshot *snapshot);
 size_t player_save_worker_pulse(player_save_completion *completions_out, size_t capacity);
 player_save_worker_health player_save_worker_health_copy(void);
 void player_save_worker_reset_for_tests(void);

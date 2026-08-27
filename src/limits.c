@@ -1403,7 +1403,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			      GET_EXP(ch) < (2 * new_exp_table[GET_LEVEL(ch) + 1]))))
 	{
 		GET_EXP(ch) += (int)XP_final;
-		mark_player_dirty(GET_PID(ch));
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 	}
 	display_gain(ch, (int)XP_final, type);
 	if (GET_LEVEL(ch) >= MINLVLIMMORTAL)

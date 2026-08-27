@@ -2646,7 +2646,8 @@ void event_scribe(P_char ch, P_char /*victim*/, [[maybe_unused]] P_obj obj, void
 			send_to_char("Hmm, you have that spell in your spellbook already???\n", ch);
 			return;
 		}
-		mark_player_dirty(GET_PID(ch));
+		mark_player_dirty_components(GET_PID(ch),
+					     PLAYER_COMPONENT_SKILLS | PLAYER_COMPONENT_INVENTORY);
 		if (s_data->book->value[2] - s_data->book->value[3])
 		{
 			snprintf(Gbuf1, MAX_STRING_LENGTH,

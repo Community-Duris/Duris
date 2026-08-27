@@ -1,7 +1,7 @@
 # Session 05: Nonterminal Save Pipeline Cutover
 
 **Session ID**: `phase01-session05-nonterminal-save-pipeline-cutover`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The complete ordinary player checkpoint route from mutation and save
 request through revisioned capture, journal handoff, worker ACK, and compatibility
 reporting, excluding destructive terminal transitions.
@@ -46,8 +46,8 @@ perform no database, Redis, or filesystem I/O on the simulation thread.
 
 ## Prerequisites
 
-- [ ] Sessions 01 through 04 are validated, including journal failure behavior.
-- [ ] Phase 00 non-blocking Redis and truthful save diagnostics remain enforced.
+- [x] Sessions 01 through 04 are validated, including journal failure behavior.
+- [x] Phase 00 non-blocking Redis and truthful save diagnostics remain enforced.
 
 ---
 
@@ -66,16 +66,16 @@ perform no database, Redis, or filesystem I/O on the simulation thread.
 
 ## Success Criteria
 
-- [ ] Every audited ordinary mutation and player checkpoint marks the correct component
+- [x] Every audited ordinary mutation and player checkpoint marks the correct component
       set and reaches the revisioned coordinator.
-- [ ] Autosave of an unchanged player performs no database write and creates no journal
+- [x] Autosave of an unchanged player performs no database write and creates no journal
       or worker job.
-- [ ] Normal mutation and checkpoint callers execute no database, Redis, or filesystem
+- [x] Normal mutation and checkpoint callers execute no database, Redis, or filesystem
       I/O on the simulation thread.
-- [ ] Redis disabled, unavailable, restarted, or missing volatile keys cannot lose or
+- [x] Redis disabled, unavailable, restarted, or missing volatile keys cannot lose or
       force a synchronous player checkpoint.
-- [ ] Manual and repeated save requests coalesce without losing later component changes
+- [x] Manual and repeated save requests coalesce without losing later component changes
       or creating duplicate snapshots.
-- [ ] The player-save fork is disabled and all nonterminal parity tests pass before its
+- [x] The player-save fork is disabled and all nonterminal parity tests pass before its
       final code removal.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

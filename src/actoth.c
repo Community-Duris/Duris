@@ -34,6 +34,7 @@
 #include "justice.h"
 #include "map.h"
 #include "mccp.h"
+#include "player_save_pipeline.h"
 #include "redis.h"
 #include "ships/ships.h"
 #include "specializations.h"
@@ -2100,6 +2101,19 @@ bool do_save_silent(P_char ch, int type)
 
 	update_achievements(ch, 0, 0, 0);
 
+	if (GET_PID(ch) > 0 && player_save_pipeline_is_nonterminal_type(type))
+	{
+		const int room_vnum = ch->in_room == NOWHERE ? NOWHERE : world[ch->in_room].number;
+		const player_save_pipeline_result queued = player_save_pipeline_request(
+			ch, PLAYER_CHECKPOINT_COMPONENT_ALL, type, room_vnum);
+		extern P_ship get_ship_from_char(P_char ch);
+		P_ship ship = get_ship_from_char(ch);
+		if (ship)
+			queue_ship_save(ship, "player checkpoint");
+		return queued == player_save_pipeline_result::queued ||
+		       queued == player_save_pipeline_result::coalesced;
+	}
+
 	if ((ch->desc && !ch->desc->connected) || !ch->desc)
 	{
 		if (IS_SET(GET_PLYR(ch)->specials.act, PLR_SNOTIFY))
@@ -2311,7 +2325,7 @@ static bool deposit_carried_coin(P_char ch, const char *account_name, int racewa
 
 	change_carried_coin(ch, coin_type, -amount);
 	publish_account_bank_balance(account_name, racewar, coin_type, (int)committed);
-	mark_player_dirty(GET_PID(ch));
+	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 	return true;
 }
 
@@ -2468,7 +2482,7 @@ void do_withdraw(P_char ch, char *argument, int /*cmd*/)
 				publish_account_bank_balance(acct, racewar, ctype,
 							     (int)bank_result);
 				change_carried_coin(ch, ctype, money);
-				mark_player_dirty(GET_PID(ch));
+				mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 				ok = 1;
 			}
 			break;

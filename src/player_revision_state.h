@@ -65,5 +65,6 @@ bool player_revision_snapshot_copy(int pid, struct player_revision_snapshot *sna
 void player_revision_forget(int pid);
 void player_revision_reset_for_tests(void);
 size_t player_revision_state_count(void);
+size_t player_revision_dirty_count(void);
 
 #endif

@@ -39,42 +39,29 @@ init = section("bool redis_init(void)", "bool redis_clear_pwipe_state")
 assert init.index("redis_enabled = true;") < init.index("redis_connect_bounded")
 connect_failure = init[init.index("if (!redis_ctx)"):init.index("// check for world state")]
 assert "redis_enabled = false;" not in connect_failure
-assert 'redis_restore_dirty_snapshot("mud:dirty_players:flushing")' in init
+assert "redis_clear_dirty_players();" in init
 snapshot = section(
     "struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy",
     "void event_flush_dirty_players",
 )
-assert "snapshot.enabled = redis_enabled" in snapshot
-assert "redis_ctx && !redis_ctx->err" in snapshot
+assert "player_save_pipeline_health_copy" in snapshot
+assert "snapshot.available = pipeline.initialized" in snapshot
 dirty_count = section("int get_dirty_player_count(void)", "struct persistence_dirty_save_snapshot")
-assert dirty_count.count("return redis_local_dirty_count;") >= 2
-assert "count += (int)reply->integer;" in dirty_count
-print("[PASS] enabled and transient availability states remain truthful")
+assert "player_save_pipeline_dirty_count()" in dirty_count
+assert "redis_command" not in dirty_count
+print("[PASS] dirty health and count use local revisioned pipeline state")
 
 mark = section("void mark_player_dirty(int pid)", "void flush_dirty_players(void)")
-assert "if (!redis_enabled || pid <= 0)" in mark
-assert mark.index("redis_local_dirty_add(pid);") < mark.index("redis_reconnect()")
-assert mark.index("redis_dirty_metric_mark_active(pid);") < mark.index("redis_reconnect()")
+assert "mark_player_dirty_components(pid, PLAYER_CHECKPOINT_COMPONENT_ALL)" in mark
+assert "player_save_pipeline_mark(pid, components)" in mark
 assert "sql_save_player" not in mark
 assert "sql_begin_transaction" not in mark
-assert "redis_enabled = false" not in mark
-local_flush = section("static bool redis_flush_local_dirty", "enum redis_child_poll_result")
-assert "redis_local_dirty_remove(pid);" in local_flush
-assert local_flush.index("redis_command(") < local_flush.index("redis_local_dirty_remove(pid);")
-print("[PASS] null/reconnect/command failures retain local dirty intent without SQL stalls")
-
-restore = section("static bool redis_restore_dirty_snapshot", "void mark_player_dirty")
-assert "SUNIONSTORE mud:dirty_players 2 mud:dirty_players %s" in restore
-assert restore.index("SUNIONSTORE") < restore.index('redis_command(redis_ctx, "DEL %s"')
+assert "redis_command" not in mark and "redis_reconnect" not in mark
 flush = section("void flush_dirty_players(void)", "int get_dirty_player_count(void)")
-assert flush.index("if (!redis_restore_dirty_snapshot(inflight_key))") < flush.index(
-    '"RENAME mud:dirty_players %s"'
-)
-assert flush.count("redis_restore_dirty_snapshot(inflight_key);") >= 6
-fork_failure = flush[flush.index("if (pid < 0)"):flush.index("if (pid == 0)")]
-assert "sql_save_player" not in fork_failure
-assert "redis_restore_dirty_snapshot(inflight_key);" in fork_failure
-print("[PASS] boot, stale inflight, pre-fork, fork, and child failures merge without overwrite")
+assert "player_save_pipeline_checkpoint_dirty" in flush
+for forbidden in ("redis_command", "redis_reconnect", "sql_save_player", "fork("):
+    assert forbidden not in flush
+print("[PASS] dirty marking and checkpoint capture do no Redis, SQL, filesystem, or fork work")
 
 watchdog = section(
     "static enum redis_child_poll_result redis_poll_child", "static void redis_terminate_child"
@@ -85,10 +72,6 @@ assert "kill(pid, SIGKILL)" in watchdog
 assert "waitpid(pid, &status, 0)" in watchdog
 assert "WIFEXITED(status) && WEXITSTATUS(status) == 0" in watchdog
 assert watchdog.count("take_reaped_child_status(") >= 2
-assert "alarm(REDIS_DIRTY_CHILD_TIMEOUT_SEC);" in flush
-assert flush.index("signal(SIGALRM, SIG_DFL);") < flush.index(
-    "alarm(REDIS_DIRTY_CHILD_TIMEOUT_SEC);"
-)
 world = section("bool redis_save_world_state(void)", "bool redis_has_world_state(void)")
 assert "alarm(REDIS_WORLD_CHILD_TIMEOUT_SEC);" in world
 assert world.index("signal(SIGALRM, SIG_DFL);") < world.index(
@@ -96,10 +79,10 @@ assert world.index("signal(SIGALRM, SIG_DFL);") < world.index(
 )
 assert "redis_poll_child(" in world
 cleanup = section("void redis_cleanup(void)", "bool redis_ping(void)")
-assert cleanup.count("redis_terminate_child(") == 2
+assert cleanup.count("redis_terminate_child(") == 1
 assert "waitpid(-1, &status, WNOHANG)" in signals
 assert "bool take_reaped_child_status(pid_t pid, int *status)" in signals
-print("[PASS] dirty-save and world-snapshot children are bounded, reaped, and status-checked")
+print("[PASS] dirty-save child is removed; world-snapshot child remains bounded and reaped")
 
 world_json = section(
     "static bool redis_save_world_state_json", "static bool redis_save_world_state_sync"

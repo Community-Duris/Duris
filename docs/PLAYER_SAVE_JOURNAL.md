@@ -1,8 +1,10 @@
 # Player Save Journal
 
-The revisioned player-save pipeline uses `runtime/player-journal/` as its local durable
-handoff location. The directory is intentionally ignored by Git and must contain only
-runtime records; never copy journal or quarantine files into commits, tickets, or logs.
+The revisioned player-save pipeline uses the absolute `PLAYER_SAVE_JOURNAL_DIR` path as
+its local durable handoff location. A typical checkout uses
+`runtime/player-journal/`; that directory is intentionally ignored by Git and must
+contain only runtime records. Never copy journal or quarantine files into commits,
+tickets, or logs. Startup fails closed when the variable is absent or not absolute.
 
 ## Safety Contract
 

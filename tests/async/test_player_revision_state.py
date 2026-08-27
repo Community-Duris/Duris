@@ -174,9 +174,12 @@ production_sources = [
     if path.name != "player_revision_state.c"
 ]
 mark_callers = [path.name for path in production_sources if "player_revision_mark(" in path.read_text()]
-assert not mark_callers, f"premature production cutover: {mark_callers}"
+assert sorted(mark_callers) == ["player_save_pipeline.c", "sql_player.c"], (
+    f"uncontrolled production marks: {mark_callers}"
+)
 assert "writeCharacter" not in SOURCE
 assert "sql_save_player" not in SOURCE
-print("[PASS] current save and mutation routes are not cut over")
+assert "player_save_pipeline_mark" in (ROOT / "src/redis.c").read_text()
+print("[PASS] production marks are limited to the pipeline and fenced legacy compatibility")
 
 print("player revision and component state contracts passed")

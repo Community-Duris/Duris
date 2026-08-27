@@ -23,6 +23,7 @@
 #include "justice.h"
 #include "mm.h"
 #include "necromancy.h"
+#include "player_save_pipeline.h"
 #include "random.zone.h"
 #include "ships.h"
 #include "spells.h"
@@ -1579,6 +1580,16 @@ int writeCharacter(P_char ch, int type, int room)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
 	    (world[ch->in_room].funct))
 		room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
+
+	if (!is_locker_char && GET_PID(ch) > 0 && !sql_in_transaction() &&
+	    player_save_pipeline_is_nonterminal_type(type))
+	{
+		room = calculate_save_room(ch, type, room);
+		const player_save_pipeline_result queued = player_save_pipeline_request(
+			ch, PLAYER_CHECKPOINT_COMPONENT_ALL, type, room);
+		return queued == player_save_pipeline_result::queued ||
+		       queued == player_save_pipeline_result::coalesced;
+	}
 
 	if (!is_locker_char)
 	{

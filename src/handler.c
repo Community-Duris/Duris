@@ -1704,12 +1704,17 @@ bool char_to_room(P_char ch, int room, int dir)
 static void mark_char_or_owner_dirty(P_char ch)
 {
 	if (IS_PC(ch))
-		mark_player_dirty(GET_PID(ch));
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_EQUIPMENT |
+								  PLAYER_COMPONENT_INVENTORY |
+								  PLAYER_COMPONENT_PETS);
 	else if (IS_PC_PET(ch))
 	{
 		P_char owner = GET_MASTER(ch);
 		if (owner && IS_PC(owner))
-			mark_player_dirty(GET_PID(owner));
+			mark_player_dirty_components(GET_PID(owner),
+						     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY |
+							     PLAYER_COMPONENT_PETS);
 	}
 }
 
@@ -2643,7 +2648,9 @@ static void mark_container_dirty(P_obj container)
 		owner = top->loc.wearing;
 
 	if (owner && IS_PC(owner))
-		mark_player_dirty(GET_PID(owner));
+		mark_player_dirty_components(GET_PID(owner), PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY |
+								     PLAYER_COMPONENT_PETS);
 }
 
 // recursively clear dirty flags on object and contents
@@ -3436,7 +3443,7 @@ void extract_char(P_char ch)
 	{
 		P_char owner = GET_MASTER(ch);
 		if (owner && IS_PC(owner))
-			mark_player_dirty(GET_PID(owner));
+			mark_player_dirty_components(GET_PID(owner), PLAYER_COMPONENT_PETS);
 	}
 
 	if (ch->followers || ch->following)

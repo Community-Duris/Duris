@@ -80,6 +80,7 @@
 #include "latency_trace.h"
 #include "persistence_queue.h"
 #include "locker_async.h"
+#include "player_save_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "test_async.h"
 #endif
@@ -594,6 +595,14 @@ void run_the_game(int port, int sslport)
 		persistence_start_scalar_event_worker();
 		persistence_start_large_event_worker();
 		locker_async_init();
+		const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
+		if (!player_save_pipeline_init(journal_directory))
+		{
+			logit(LOG_STATUS,
+			      "Player save pipeline unavailable; nonterminal saves fail closed.");
+			persistence_alert(AVATAR, "player_save", "pipeline", "none", "none",
+					  "start_failed", "check PLAYER_SAVE_JOURNAL_DIR");
+		}
 	}
 
 	/* Boot-time scalar queue flood test: overflows the queue so the
@@ -624,6 +633,7 @@ void run_the_game(int port, int sslport)
 		persistence_stop_large_event_worker();
 		persistence_stop_item_event_worker();
 		locker_async_shutdown();
+		player_save_pipeline_shutdown();
 	}
 
 	/* Don't need this anymore, as dropped artis are handled in real time on the DB.
@@ -1339,6 +1349,7 @@ resume_game_loop:
 			gmcp_flush_dirty_ship_info();
 			flush_pending_ship_saves();
 			locker_async_pulse();
+			player_save_pipeline_pulse();
 			latency_trace_record("gmcp_flush",
 					     (long)((clock() - _gmcp) * 1000000.0 / CLOCKS_PER_SEC),
 					     pulse);

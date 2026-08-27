@@ -533,7 +533,8 @@ bool nexus_stone_touch(P_obj stone, P_char ch)
 			  0, 0, 0);
 	}
 
-	mark_player_dirty(GET_PID(ch));
+	mark_player_dirty_components(GET_PID(ch),
+				     PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TIMERS);
 
 	return TRUE;
 }

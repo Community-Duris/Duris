@@ -254,6 +254,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-save-worker-") as temp_dir
             "src/player_save_worker.c",
             "src/player_revision_state.c",
             "src/persistence_observability.c",
+            "-lmysqlclient",
             "-o",
             str(binary),
         ],

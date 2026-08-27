@@ -23,6 +23,8 @@
 #include "copyover.h"
 #include "epic.h"
 #include "files.h"
+#include "player_save_pipeline.h"
+#include "player_save_worker.h"
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
@@ -69,18 +71,11 @@ int crash_recovery_boot = 0;
 static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
 static volatile pid_t world_state_save_pid = 0;
-static volatile pid_t dirty_flush_pid = 0;
 static time_t world_state_save_started = 0;
-static time_t dirty_flush_started = 0;
 static bool world_state_snapshot_pending_ack = false;
 static redisContext *donation_sub_ctx = NULL;
 static volatile bool donation_sub_connected = false;
-static bool redis_restore_dirty_snapshot(const char *inflight_key);
 static void donation_sub_drop(const char *reason);
-
-#define REDIS_LOCAL_DIRTY_CAPACITY 512
-static int redis_local_dirty[REDIS_LOCAL_DIRTY_CAPACITY];
-static int redis_local_dirty_count = 0;
 
 #ifndef __NO_MYSQL__
 static void redis_log_command_failure(const char *outcome)
@@ -149,66 +144,6 @@ static bool redis_reply_status_ok(redisReply *reply)
 	       strcasecmp(reply->str, "OK") == 0;
 }
 #endif
-
-static bool redis_local_dirty_contains(int pid)
-{
-	for (int i = 0; i < redis_local_dirty_count; ++i)
-	{
-		if (redis_local_dirty[i] == pid)
-			return true;
-	}
-	return false;
-}
-
-static void redis_local_dirty_add(int pid)
-{
-	if (pid <= 0 || redis_local_dirty_contains(pid))
-		return;
-	if (redis_local_dirty_count >= REDIS_LOCAL_DIRTY_CAPACITY)
-	{
-		logit(LOG_SYS, "redis dirty retry set is full; pid retained only in metrics");
-		return;
-	}
-	redis_local_dirty[redis_local_dirty_count++] = pid;
-}
-
-static void redis_local_dirty_remove(int pid)
-{
-	for (int i = 0; i < redis_local_dirty_count; ++i)
-	{
-		if (redis_local_dirty[i] != pid)
-			continue;
-		redis_local_dirty[i] = redis_local_dirty[--redis_local_dirty_count];
-		return;
-	}
-}
-
-static bool redis_flush_local_dirty(void)
-{
-#ifdef __NO_MYSQL__
-	return false;
-#else
-	if (!redis_enabled || !redis_ctx || redis_ctx->err)
-		return false;
-
-	int index = 0;
-	while (index < redis_local_dirty_count)
-	{
-		int pid = redis_local_dirty[index];
-		redisReply *reply =
-			(redisReply *)redis_command(redis_ctx, "SADD mud:dirty_players %d", pid);
-		if (!reply || reply->type != REDIS_REPLY_INTEGER)
-		{
-			if (reply)
-				freeReplyObject(reply);
-			return false;
-		}
-		freeReplyObject(reply);
-		redis_local_dirty_remove(pid);
-	}
-	return true;
-#endif
-}
 
 enum redis_child_poll_result
 {
@@ -292,75 +227,6 @@ static void redis_terminate_child(volatile pid_t *pid_slot, time_t *started, con
 	}
 	*pid_slot = 0;
 	*started = 0;
-}
-
-#define REDIS_DIRTY_METRIC_CAPACITY 512
-struct redis_dirty_metric
-{
-	int pid;
-	uint64_t active_first_usec;
-	uint64_t inflight_first_usec;
-};
-static struct redis_dirty_metric redis_dirty_metrics[REDIS_DIRTY_METRIC_CAPACITY];
-
-static struct redis_dirty_metric *redis_dirty_metric_for_pid(int pid, bool create)
-{
-	struct redis_dirty_metric *empty = NULL;
-	for (int i = 0; i < REDIS_DIRTY_METRIC_CAPACITY; ++i)
-	{
-		if (redis_dirty_metrics[i].pid == pid)
-			return &redis_dirty_metrics[i];
-		if (!empty && !redis_dirty_metrics[i].pid)
-			empty = &redis_dirty_metrics[i];
-	}
-	if (empty && create)
-		empty->pid = pid;
-	return create ? empty : NULL;
-}
-
-static void redis_dirty_metric_mark_active(int pid)
-{
-	struct redis_dirty_metric *metric = redis_dirty_metric_for_pid(pid, true);
-	if (metric && !metric->active_first_usec)
-		metric->active_first_usec = persistence_observability_now_usec();
-}
-
-static void redis_dirty_metrics_move_active_to_inflight(void)
-{
-	for (int i = 0; i < REDIS_DIRTY_METRIC_CAPACITY; ++i)
-	{
-		struct redis_dirty_metric *metric = &redis_dirty_metrics[i];
-		if (!metric->active_first_usec)
-			continue;
-		if (!metric->inflight_first_usec ||
-		    metric->active_first_usec < metric->inflight_first_usec)
-			metric->inflight_first_usec = metric->active_first_usec;
-		metric->active_first_usec = 0;
-	}
-}
-
-static void redis_dirty_metrics_restore_inflight(void)
-{
-	for (int i = 0; i < REDIS_DIRTY_METRIC_CAPACITY; ++i)
-	{
-		struct redis_dirty_metric *metric = &redis_dirty_metrics[i];
-		if (!metric->inflight_first_usec)
-			continue;
-		if (!metric->active_first_usec ||
-		    metric->inflight_first_usec < metric->active_first_usec)
-			metric->active_first_usec = metric->inflight_first_usec;
-		metric->inflight_first_usec = 0;
-	}
-}
-
-static void redis_dirty_metrics_clear_inflight(void)
-{
-	for (int i = 0; i < REDIS_DIRTY_METRIC_CAPACITY; ++i)
-	{
-		redis_dirty_metrics[i].inflight_first_usec = 0;
-		if (!redis_dirty_metrics[i].active_first_usec)
-			redis_dirty_metrics[i].pid = 0;
-	}
 }
 
 /* Scan-and-delete with MATCH pattern. Fail closed if SCAN/DEL misshape. */
@@ -542,7 +408,7 @@ bool redis_init(void)
 
 	if (redis_ctx)
 	{
-		redis_restore_dirty_snapshot("mud:dirty_players:flushing");
+		redis_clear_dirty_players();
 		redis_load_obj_uid_counter();
 		redis_donation_subscribe_init();
 	}
@@ -576,7 +442,6 @@ bool redis_clear_pwipe_state(void)
 void redis_cleanup(void)
 {
 #ifndef __NO_MYSQL__
-	redis_terminate_child(&dirty_flush_pid, &dirty_flush_started, "dirty-save");
 	redis_terminate_child(&world_state_save_pid, &world_state_save_started, "world-snapshot");
 	if (redis_ctx)
 	{
@@ -1123,358 +988,42 @@ int redis_restore_floor_drops(void)
 #endif
 }
 
-// debounce dirty marks - skip if already marked this pid recently
-#define MAX_DIRTY_DEBOUNCE 64
-static struct
-{
-	int pid;
-	time_t last_mark;
-} dirty_debounce[MAX_DIRTY_DEBOUNCE];
-static int dirty_debounce_count = 0;
-
-// returns true if we should proceed, false if debounced
-static bool check_dirty_debounce(int pid)
-{
-	time_t now = time(NULL);
-
-	for (int i = 0; i < dirty_debounce_count; i++)
-	{
-		if (dirty_debounce[i].pid == pid)
-		{
-			if (now - dirty_debounce[i].last_mark < 1) // 1 second debounce
-				return false;
-			dirty_debounce[i].last_mark = now;
-			return true;
-		}
-	}
-
-	// not found, add it
-	if (dirty_debounce_count < MAX_DIRTY_DEBOUNCE)
-	{
-		dirty_debounce[dirty_debounce_count].pid = pid;
-		dirty_debounce[dirty_debounce_count].last_mark = now;
-		dirty_debounce_count++;
-	}
-	return true;
-}
-
-static bool redis_restore_dirty_snapshot(const char *inflight_key)
-{
-	if (!redis_enabled || !redis_ctx || !inflight_key)
-		return false;
-
-	redisReply *restore = (redisReply *)redis_command(
-		redis_ctx, "SUNIONSTORE mud:dirty_players 2 mud:dirty_players %s", inflight_key);
-	if (!restore || restore->type != REDIS_REPLY_INTEGER)
-	{
-		if (restore)
-			freeReplyObject(restore);
-		return false;
-	}
-	freeReplyObject(restore);
-	redis_dirty_metrics_restore_inflight();
-
-	redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %s", inflight_key);
-	if (!del || del->type != REDIS_REPLY_INTEGER)
-	{
-		if (del)
-			freeReplyObject(del);
-		return false;
-	}
-	freeReplyObject(del);
-	return true;
-}
-
 void mark_player_dirty(int pid)
 {
 	if (_pwipe)
 		return;
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || pid <= 0)
+	mark_player_dirty_components(pid, PLAYER_CHECKPOINT_COMPONENT_ALL);
+}
+
+void mark_player_dirty_components(int pid, player_component_mask_t components)
+{
+	if (_pwipe)
 		return;
-	redis_dirty_metric_mark_active(pid);
-	redis_local_dirty_add(pid);
-
-	// debounce - skip if we marked this pid dirty within the last second
-	if (!check_dirty_debounce(pid))
-	{
-		if (!redis_ctx || redis_ctx->err)
-			return;
-		redisReply *queued = (redisReply *)redis_command(
-			redis_ctx, "SISMEMBER mud:dirty_players %d", pid);
-		if (queued)
-		{
-			bool already_queued =
-				(queued->type == REDIS_REPLY_INTEGER && queued->integer == 1);
-			freeReplyObject(queued);
-			if (already_queued)
-			{
-				redis_local_dirty_remove(pid);
-				return;
-			}
-		}
-	}
-
-	if (!redis_ctx || redis_ctx->err)
-	{
-		if (!redis_reconnect())
-		{
-			return;
-		}
-	}
-
-	redisReply *reply =
-		(redisReply *)redis_command(redis_ctx, "SADD mud:dirty_players %d", pid);
-	if (!reply || reply->type != REDIS_REPLY_INTEGER)
-	{
-		if (reply)
-			freeReplyObject(reply);
-		return;
-	}
-	freeReplyObject(reply);
-	redis_local_dirty_remove(pid);
-#endif
+	player_save_pipeline_mark(pid, components);
 }
 
 void flush_dirty_players(void)
 {
-#ifndef __NO_MYSQL__
-	if (!redis_enabled)
-		return;
-
-	const char *inflight_key = "mud:dirty_players:flushing";
-
-	enum redis_child_poll_result child_result =
-		redis_poll_child(&dirty_flush_pid, &dirty_flush_started,
-				 REDIS_DIRTY_CHILD_TIMEOUT_SEC, "dirty-save");
-	if (child_result == REDIS_CHILD_RUNNING)
-		return;
-	if (child_result == REDIS_CHILD_SUCCEEDED)
-	{
-		redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %s", inflight_key);
-		if (del && del->type == REDIS_REPLY_INTEGER)
-		{
-			redis_dirty_metrics_clear_inflight();
-			freeReplyObject(del);
-		}
-		else
-		{
-			if (del)
-				freeReplyObject(del);
-			redis_restore_dirty_snapshot(inflight_key);
-		}
-	}
-	else if (child_result == REDIS_CHILD_FAILED)
-	{
-		logit(LOG_SYS, "flush_dirty: async save failed, restoring dirty set for retry");
-		redis_restore_dirty_snapshot(inflight_key);
-	}
-
-	if (!redis_ctx || redis_ctx->err)
-	{
-		if (!redis_reconnect())
-			return;
-	}
-	if (!redis_flush_local_dirty())
-		return;
-	if (!redis_restore_dirty_snapshot(inflight_key))
-		return;
-
-	redisReply *rename =
-		(redisReply *)redis_command(redis_ctx, "RENAME mud:dirty_players %s", inflight_key);
-	if (!rename)
-		return;
-	if (rename->type == REDIS_REPLY_ERROR)
-	{
-		freeReplyObject(rename);
-		return;
-	}
-	freeReplyObject(rename);
-	redis_dirty_metrics_move_active_to_inflight();
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "SMEMBERS %s", inflight_key);
-	if (!reply)
-	{
-		redis_restore_dirty_snapshot(inflight_key);
-		return;
-	}
-
-	if (reply->type != REDIS_REPLY_ARRAY)
-	{
-		freeReplyObject(reply);
-		redis_restore_dirty_snapshot(inflight_key);
-		return;
-	}
-	if (reply->elements == 0)
-	{
-		freeReplyObject(reply);
-		redis_restore_dirty_snapshot(inflight_key);
-		return;
-	}
-
-	// copy pids to array
-	int count = (int)reply->elements;
-	int *pids = (int *)malloc(count * sizeof(int));
-	if (!pids)
-	{
-		freeReplyObject(reply);
-		redis_restore_dirty_snapshot(inflight_key);
-		return;
-	}
-
-	int valid = 0;
-	for (size_t i = 0; i < reply->elements; i++)
-	{
-		if (reply->element[i]->type == REDIS_REPLY_STRING)
-		{
-			int pid = atoi(reply->element[i]->str);
-			// only keep pids of players actually online
-			P_char ch = find_player_by_pid(pid);
-			if (ch && IS_PC(ch))
-				pids[valid++] = pid;
-		}
-	}
-	freeReplyObject(reply);
-
-	if (valid == 0)
-	{
-		free(pids);
-		redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %s", inflight_key);
-		if (del)
-		{
-			if (del->type != REDIS_REPLY_ERROR)
-				redis_dirty_metrics_clear_inflight();
-			freeReplyObject(del);
-		}
-		return;
-	}
-
-	// fork for async save
-	logit(LOG_SYS, "flush_dirty: saving %d online players async", valid);
-	pid_t pid = fork();
-	if (pid < 0)
-	{
-		logit(LOG_SYS, "flush_dirty: fork failed, restoring dirty set for retry");
-		free(pids);
-		redis_restore_dirty_snapshot(inflight_key);
-		return;
-	}
-
-	if (pid == 0)
-	{
-		// child
-		signal(SIGALRM, SIG_DFL);
-		alarm(REDIS_DIRTY_CHILD_TIMEOUT_SEC);
-		MYSQL *child_conn = sql_create_child_connection();
-		if (!child_conn)
-		{
-			free(pids);
-			_exit(1);
-		}
-		sql_reset_for_child(child_conn);
-
-		bool all_ok = true;
-		for (int i = 0; i < valid; i++)
-		{
-			P_char ch = find_player_by_pid(pids[i]);
-			if (ch && IS_PC(ch))
-			{
-				// Wrap save in transaction
-				if (sql_begin_transaction())
-				{
-					if (!sql_save_player(ch, RENT_CRASH, get_room_vnum(ch)))
-						all_ok = false;
-					if (!sql_commit())
-					{
-						sql_rollback();
-						all_ok = false;
-					}
-				}
-				else if (!sql_save_player(ch, RENT_CRASH, get_room_vnum(ch)))
-				{
-					all_ok = false;
-				}
-			}
-		}
-
-		mysql_close(child_conn);
-		free(pids);
-		alarm(0);
-		_exit(all_ok ? 0 : 1);
-	}
-
-	// parent - gremlin events wont work in forked child so do it here
-	// also clear dirty container flags since child has snapshot of them
-	for (int i = 0; i < valid; i++)
-	{
-		P_char ch = find_player_by_pid(pids[i]);
-		if (ch && IS_PC(ch))
-		{
-			clear_player_dirty_container_flags(ch);
-			if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-			    world[ch->in_room].funct)
-				(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
-		}
-	}
-
-	dirty_flush_pid = pid;
-	dirty_flush_started = time(NULL);
-	free(pids);
-#endif
+	for (P_char ch = character_list; ch; ch = ch->next)
+		if (IS_PC(ch) && GET_PID(ch) > 0)
+			player_save_pipeline_checkpoint_dirty(ch, RENT_CRASH, get_room_vnum(ch));
 }
 
 int get_dirty_player_count(void)
 {
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx)
-		return redis_local_dirty_count;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "SCARD mud:dirty_players");
-	if (!reply)
-		return redis_local_dirty_count;
-
-	int count = redis_local_dirty_count;
-	if (reply->type == REDIS_REPLY_INTEGER)
-		count += (int)reply->integer;
-
-	freeReplyObject(reply);
-	return count;
-#else
-	return 0;
-#endif
+	return static_cast<int>(player_save_pipeline_dirty_count());
 }
 
 struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy(void)
 {
 	struct persistence_dirty_save_snapshot snapshot = {};
-	const uint64_t now = persistence_observability_now_usec();
-	uint64_t active_oldest = 0;
-	uint64_t inflight_oldest = 0;
-
-	snapshot.enabled = redis_enabled ? 1 : 0;
-#ifndef __NO_MYSQL__
-	snapshot.available = redis_enabled && redis_ctx && !redis_ctx->err ? 1 : 0;
-#endif
-	for (int i = 0; i < REDIS_DIRTY_METRIC_CAPACITY; ++i)
-	{
-		const struct redis_dirty_metric *metric = &redis_dirty_metrics[i];
-		if (metric->active_first_usec)
-		{
-			persistence_counter_saturating_add(&snapshot.active_count, 1);
-			if (!active_oldest || metric->active_first_usec < active_oldest)
-				active_oldest = metric->active_first_usec;
-		}
-		if (metric->inflight_first_usec)
-		{
-			persistence_counter_saturating_add(&snapshot.inflight_count, 1);
-			if (!inflight_oldest || metric->inflight_first_usec < inflight_oldest)
-				inflight_oldest = metric->inflight_first_usec;
-		}
-	}
-	if (active_oldest && now >= active_oldest)
-		snapshot.active_oldest_age_msec = (now - active_oldest) / 1000ULL;
-	if (inflight_oldest && now >= inflight_oldest)
-		snapshot.inflight_oldest_age_msec = (now - inflight_oldest) / 1000ULL;
+	const player_save_pipeline_health pipeline = player_save_pipeline_health_copy();
+	const player_save_worker_health worker = player_save_worker_health_copy();
+	snapshot.enabled = 1;
+	snapshot.available = pipeline.initialized ? 1 : 0;
+	snapshot.active_count = player_save_pipeline_dirty_count();
+	snapshot.inflight_count = worker.inflight_pids;
+	snapshot.inflight_oldest_age_msec = worker.oldest_age_msec;
 	return snapshot;
 }
 
@@ -3720,8 +3269,6 @@ char *redis_get_string(const char *key)
 
 void redis_clear_dirty_players(void)
 {
-	memset(redis_dirty_metrics, 0, sizeof(redis_dirty_metrics));
-	redis_local_dirty_count = 0;
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_ctx)
 		return;

@@ -17,6 +17,7 @@ directory covers architecture, operations, configuration, and reference material
 | [TESTING.md](TESTING.md) | The regression/source-contract test harness in `tests/async/` and how to run it. |
 | [VERSIONING.md](VERSIONING.md) | Semantic Versioning policy, compatibility surface, and release-number rules. |
 | [PLAYER_SAVE_JOURNAL.md](PLAYER_SAVE_JOURNAL.md) | Revisioned player-save journal permissions, bounds, diagnostics, and recovery. |
+| [PLAYER_SAVE_PIPELINE.md](PLAYER_SAVE_PIPELINE.md) | Nonterminal revisioned save coordinator, cutover, health, and compatibility boundaries. |
 | [MEMORY_CHECKING.md](MEMORY_CHECKING.md) | The routine memory-checking standard: which detector to reach for, when a dynamic check is required, and how to report results. |
 | [valgrind.md](valgrind.md) | Running the server under Valgrind: `scripts/valgrind_mud.sh`, suppressions, what to expect. |
 | [formatting.md](formatting.md) | The `.clang-format` style and the changed-lines and full-tree workflows in `scripts/format.sh`. |

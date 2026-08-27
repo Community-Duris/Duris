@@ -214,3 +214,15 @@ size_t player_revision_state_count(void)
 {
 	return revision_states.size();
 }
+
+size_t player_revision_dirty_count(void)
+{
+	size_t count = 0;
+	for (const auto &[pid, state] : revision_states)
+	{
+		(void)pid;
+		if (state.unacknowledged_components)
+			++count;
+	}
+	return count;
+}

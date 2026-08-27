@@ -42,6 +42,7 @@ using namespace std;
 #include "persistence_queue.h"
 #include "player_save_worker.h"
 #include "player_save_journal.h"
+#include "player_save_pipeline.h"
 #include "redis.h"
 #include "ships/ships.h"
 #include "specializations.h"
@@ -3985,6 +3986,7 @@ static void show_world_persistence(P_char ch)
 		persistence_deferred_save_snapshot_copy();
 	const player_save_worker_health player_saves = player_save_worker_health_copy();
 	const player_save_journal_health player_journal = player_save_journal_health_copy();
+	const player_save_pipeline_health player_pipeline = player_save_pipeline_health_copy();
 	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
 	char line[MAX_STRING_LENGTH];
 
@@ -4066,6 +4068,35 @@ static void show_world_persistence(P_char ch)
 			 (unsigned long long)dirty.active_oldest_age_msec,
 			 (unsigned long long)dirty.inflight_count,
 			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "player_pipeline state=%s pending_append=%llu durable_ready=%llu bytes=%llu "
+		 "high_water=%llu/%llu marked=%llu captured=%llu coalesced=%llu unchanged=%llu "
+		 "capture_failures=%llu append_failures=%llu overloads=%llu dispatched=%llu "
+		 "durable_spills=%llu completions=%llu replay=%s\n",
+		 !player_pipeline.initialized					 ? "stopped" :
+		 player_pipeline.replay_blocked					 ? "degraded" :
+		 player_pipeline.pending_append || player_pipeline.durable_ready ? "pending" :
+										   "ready",
+		 (unsigned long long)player_pipeline.pending_append,
+		 (unsigned long long)player_pipeline.durable_ready,
+		 (unsigned long long)player_pipeline.retained_bytes,
+		 (unsigned long long)player_pipeline.high_water_snapshots,
+		 (unsigned long long)player_pipeline.high_water_bytes,
+		 (unsigned long long)player_pipeline.marked,
+		 (unsigned long long)player_pipeline.captured,
+		 (unsigned long long)player_pipeline.coalesced,
+		 (unsigned long long)player_pipeline.unchanged,
+		 (unsigned long long)player_pipeline.capture_failures,
+		 (unsigned long long)player_pipeline.append_failures,
+		 (unsigned long long)player_pipeline.overloads,
+		 (unsigned long long)player_pipeline.dispatched,
+		 (unsigned long long)player_pipeline.durable_spills,
+		 (unsigned long long)player_pipeline.completions,
+		 player_pipeline.replay_complete ? "complete" :
+		 player_pipeline.replay_blocked	 ? "blocked" :
+						   "pending");
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),

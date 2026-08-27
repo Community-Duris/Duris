@@ -1009,6 +1009,33 @@ bool sql_save_player(P_char ch, int type, int room)
 		return false;
 	}
 
+	/* A legacy synchronous compatibility save must fence any older immutable job.
+	 * Phase 02 will replace these critical callers with operation-keyed transactions. */
+	player_revision_snapshot revision_state = {};
+	player_revision_t compatibility_revision = 0;
+	if (GET_PID(ch) > 0)
+	{
+		if (!player_revision_snapshot_copy(GET_PID(ch), &revision_state) ||
+		    !player_revision_mark(GET_PID(ch), PLAYER_CHECKPOINT_COMPONENT_ALL,
+					  &compatibility_revision))
+		{
+			sql_rollback();
+			return false;
+		}
+		char revision_query[256];
+		const int written = snprintf(
+			revision_query, sizeof(revision_query),
+			"UPDATE player_data SET save_revision=%llu WHERE pid=%d AND save_revision<%llu",
+			(unsigned long long)compatibility_revision, GET_PID(ch),
+			(unsigned long long)compatibility_revision);
+		if (written < 0 || static_cast<size_t>(written) >= sizeof(revision_query) ||
+		    !sql_run_query(revision_query) || mysql_affected_rows(DB) != 1)
+		{
+			sql_rollback();
+			return false;
+		}
+	}
+
 	if (own_txn)
 	{
 		if (!sql_commit())

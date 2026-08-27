@@ -23,7 +23,7 @@ checks = [
     ("top output is bounded with latency buckets", "top_site_limit = 8" in actinf and "site_index < rendered_sites" in actinf and "latency_buckets[7]" in actinf),
     ("status states are explicit", all(token in actinf for token in ["state=empty", "state=disabled", "state=unavailable", "heartbeat=unavailable", "registry_overflow", "failed_unscheduled", "oldest_save_age_ms"])),
     ("deferred retry state remains observable", "slot->retry_delay" in actoth and "snapshot.failures" in actoth),
-    ("dirty timestamps cover active and inflight", all(token in redis for token in ["active_oldest_age_msec", "inflight_oldest_age_msec", "redis_dirty_metrics_move_active_to_inflight", "redis_dirty_metrics_restore_inflight"])),
+    ("dirty state comes from revisioned pipeline and worker age", all(token in redis for token in ["player_save_pipeline_health_copy", "player_save_pipeline_dirty_count", "player_save_worker_health_copy", "inflight_oldest_age_msec = worker.oldest_age_msec"])),
     ("all queue snapshots lock", all([function_has_lock("persistence_item_event_health_snapshot_copy", "persistence_item_event_queue_mutex"), function_has_lock("persistence_scalar_event_health_snapshot_copy", "persistence_scalar_event_queue_mutex"), function_has_lock("persistence_large_event_health_snapshot_copy", "persistence_large_event_queue_mutex")])),
     ("operator output contains no entity labels", all(token not in actinf[actinf.index("static void show_world_persistence(P_char ch)"):actinf.index("void do_world", actinf.index("static void show_world_persistence(P_char ch)"))] for token in ["player=", "account=", "item=", "ip=", "path=", "%p", "query="])),
 ]

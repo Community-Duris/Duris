@@ -1737,7 +1737,7 @@ void sql_world_quest_finished(P_char ch, P_obj reward)
 		GET_PID(ch), ch->only.pc->quest_giver, GET_NAME(ch), GET_LEVEL(ch),
 		ch->only.pc->quest_mob_vnum, reward_vnum, reward_desc);
 
-	mark_player_dirty(GET_PID(ch));
+	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 }
 
 int sql_world_quest_can_do_another(P_char ch)
