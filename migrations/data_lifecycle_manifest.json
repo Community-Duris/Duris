@@ -4698,6 +4698,98 @@
       ]
     },
     {
+      "id": "database:account_erasure_requests",
+      "kind": "database_table",
+      "locator": "account_erasure_requests",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "account_scope_hash",
+      "technical_purpose": "authenticated erasure request fence, progress, and reconciliation state",
+      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": { "status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION" },
+        "excluded_fields": ["account_scope_hash", "subject_token"],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:account_erasure_stores",
+      "kind": "database_table",
+      "locator": "account_erasure_stores",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "erasure_request_id",
+      "technical_purpose": "per-store erasure ordering, action, and exact remaining-identifier evidence",
+      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "dependency",
+        "decision": { "status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION" },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:account_erasure_requests"]
+    },
+    {
+      "id": "database:account_erasure_evidence",
+      "kind": "database_table",
+      "locator": "account_erasure_evidence",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "erasure_request_id",
+      "technical_purpose": "minimal redacted erasure transition and reconciliation evidence",
+      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "dependency",
+        "decision": { "status": "pending", "reference": "PENDING-SHARED-DISCLOSURE-DECISION" },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:account_erasure_requests"]
+    },
+    {
+      "id": "database:account_erasure_tombstones",
+      "kind": "database_table",
+      "locator": "account_erasure_tombstones",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "non_reversible_subject_token",
+      "technical_purpose": "durable no-resurrection marker applied before restore, replay, import, or publication",
+      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "lifecycle_metadata",
+        "decision": { "status": "not_required", "reference": "TECHNICAL-SECURITY-EXCLUSION" },
+        "excluded_fields": ["account_scope_hash", "subject_token"],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": ["database:account_erasure_requests"]
+    },
+    {
       "id": "database:personal_data_export_requests",
       "kind": "database_table",
       "locator": "personal_data_export_requests",

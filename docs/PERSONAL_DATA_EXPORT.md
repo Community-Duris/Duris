@@ -2,7 +2,7 @@
 
 The repository defines a bounded, authenticated personal-data export packaging and
 delivery contract, but canonical export is **not enabled**. The lifecycle manifest's
-shared-record disclosure decision is pending, and all 106 subject-bearing mappings
+shared-record disclosure decision is pending, and all 109 subject-bearing mappings
 therefore remain `pending`. The inspection command reports `blocked_by_policy` and has
 no database, account-file, or live collector surface.
 
@@ -13,7 +13,7 @@ store-by-store review of subject selectors and shared-field rules.
 ## Policy and schema
 
 `migrations/data_lifecycle_manifest.json` assigns exactly one `export_rule` to every
-one of the 180 lifecycle stores. Each rule states its disposition, subject route,
+one of the 184 lifecycle stores. Each rule states its disposition, subject route,
 decision, excluded fields, and any explicitly shareable fields. Validation rejects
 unknown or missing mappings, pending-to-active shortcuts, overlaps between excluded
 and shared fields, and omission of known credential, delivery-token, journal, command,

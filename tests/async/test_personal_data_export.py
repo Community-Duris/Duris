@@ -84,7 +84,7 @@ class PersonalDataExportTest(unittest.TestCase):
 
     def test_canonical_policy_is_blocked_and_exactly_covered(self) -> None:
         canonical = export.load_policy()
-        self.assertEqual(len(canonical.entries), 180)
+        self.assertEqual(len(canonical.entries), 184)
         with self.assertRaisesRegex(export.ExportContractError, "not approved"):
             export.validate_export_ready(canonical)
         self.assertEqual(
@@ -119,7 +119,7 @@ class PersonalDataExportTest(unittest.TestCase):
         request, token = self.create()
         payload = self.complete(request, token)
         bundle = export.verify_bundle(payload)
-        self.assertEqual(bundle["section_count"], 180)
+        self.assertEqual(bundle["section_count"], 184)
         self.assertEqual(bundle["record_count"], 2)
         accounts = next(section for section in bundle["sections"]
                         if section["store_id"] == "database:accounts")

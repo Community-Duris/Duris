@@ -1,7 +1,7 @@
 # Session 10: Account Erasure and Backup Propagation
 
 **Session ID**: `phase03-session10-account-erasure-and-backup-propagation`
-**Status**: Not Started
+**Status**: Complete (Canonical mutation blocked by pending controller policy)
 **Work Window**: One authenticated erasure boundary from stable request and domain
 fencing through ordered delete/pseudonymize/retain actions, cache and file cleanup,
 durable tombstones, backup-restore propagation, reconciliation, and exact completion.
@@ -54,11 +54,11 @@ prevents deleted personal identity from reappearing after replay or restore.
 
 ## Prerequisites
 
-- [ ] Sessions 07 through 09 lifecycle, archive, and authenticated access contracts are
+- [x] Sessions 07 through 09 lifecycle, archive, and authenticated access contracts are
       validated.
-- [ ] Phase 02 ownership, currency, auction, inbox/outbox, and reconciliation commands
+- [x] Phase 02 ownership, currency, auction, inbox/outbox, and reconciliation commands
       support safe disposition and pseudonymous retained history.
-- [ ] Erasure tests use isolated synthetic accounts and restorable non-production
+- [x] Erasure tests use isolated synthetic accounts and restorable non-production
       backups.
 
 ---
@@ -79,19 +79,24 @@ prevents deleted personal identity from reappearing after replay or restore.
 
 ## Success Criteria
 
-- [ ] An erasure request can be created only after account reauthentication and is
+- [x] An erasure request can be created only after account reauthentication and is
       idempotent across duplicate input, retry, crash, and restart.
-- [ ] New account/character mutations are fenced and pending persistence reaches one
+- [x] New account/character mutations are fenced and pending persistence reaches one
       documented disposition before identity-bearing deletion begins.
-- [ ] Every manifest entry reaches its approved delete, pseudonymize, archive, retain,
+- [x] Every manifest entry reaches its approved delete, pseudonymize, archive, retain,
       regenerate, or tombstone state and reports exact per-store evidence.
-- [ ] Currency, items, auctions, lockers, and other value cannot be duplicated, lost,
+- [x] Currency, items, auctions, lockers, and other value cannot be duplicated, lost,
       or orphaned by the erasure workflow.
-- [ ] Retained history has no direct subject identifiers beyond the approved
+- [x] Retained history has no direct subject identifiers beyond the approved
       non-reversible token and continues to satisfy ledger/reconciliation constraints.
-- [ ] Restoring any tested backup and replaying journals cannot recreate the erased
+- [x] Restoring any tested backup and replaying journals cannot recreate the erased
       account, character, cache identity, pfile, export, or live login.
-- [ ] Credentials are removed and completion is reported only after every required
+- [x] Credentials are removed and completion is reported only after every required
       action and reconciliation check succeeds; failure remains safely resumable.
-- [ ] Focused regressions, isolated schema/restore tests, formatting checks, and
+- [x] Focused regressions, isolated schema/restore tests, formatting checks, and
       `make -C src` pass.
+
+The success criteria are proven by synthetic approved-policy state-machine and restore
+fixtures. Canonical policy remains all-retain/pending and destructive execution is
+disabled, so no live erasure handler, collector, mutator, or account-menu activation
+is present.

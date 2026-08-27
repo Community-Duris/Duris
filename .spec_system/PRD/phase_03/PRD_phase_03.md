@@ -44,7 +44,7 @@ The final sessions reconcile documentation to the implemented system and run the
 | 07 | Data Processing and Retention Contract | Complete | Complete technical inventory, pending decision markers, subject mapping, and fail-closed policy | 2026-08-27 |
 | 08 | Retention and Archival Execution | Complete | Idempotent archive state machine, schema, verification, reconciliation gates, dry-run controls, and policy-disabled scheduler slot | 2026-08-27 |
 | 09 | Authenticated Personal Data Export | Complete | Guarded schema, exact manifest mapping, reauthentication/package/spool contract; canonical activation blocked by pending disclosure policy | 2026-08-27 |
-| 10 | Account Erasure and Backup Propagation | Not Started | Idempotent erasure workflow across live state, durable stores, recovery data, and restores | - |
+| 10 | Account Erasure and Backup Propagation | Complete | Guarded request/store/tombstone schema and restore preflight; canonical mutation blocked by pending policy | 2026-08-27 |
 | 11 | Immutable Migration Ledger and Runner | Not Started | Stable IDs, checksums, baseline adoption, exact replay, and partial-failure recovery | - |
 | 12 | Boot Schema and Lookup Compatibility | Not Started | Pre-write manifest verification, connection invariants, and transactional lookup publication | - |
 | 13 | Documentation and Operator Contract | Not Started | Source-traced architecture, database, configuration, lifecycle, testing, and recovery guidance | - |
@@ -63,12 +63,13 @@ The final sessions reconcile documentation to the implemented system and run the
 - Session 07: Data Processing and Retention Contract (completed 2026-08-27; destructive rules disabled)
 - Session 08: Retention and Archival Execution (completed 2026-08-27; canonical mutation disabled)
 - Session 09: Authenticated Personal Data Export (completed 2026-08-27; canonical activation disabled)
+- Session 10: Account Erasure and Backup Propagation (completed 2026-08-27; canonical mutation disabled)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 10: Account Erasure and Backup Propagation
+- Session 11: Immutable Migration Ledger and Runner
 
 ---
 

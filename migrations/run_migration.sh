@@ -23,7 +23,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=137
+TOTAL=139
 FAILED=0
 
 run_sql() {
@@ -2928,6 +2928,8 @@ run_sql_file "apply lifecycle archive execution schema" "$SCRIPT_DIR/lifecycle_a
 run_check "verify lifecycle archive execution schema" "$SCRIPT_DIR/verify_lifecycle_archive_schema.sh"
 run_sql_file "apply personal data export schema" "$SCRIPT_DIR/personal_data_export.sql"
 run_check "verify personal data export schema" "$SCRIPT_DIR/verify_personal_data_export_schema.sh"
+run_sql_file "apply account erasure schema" "$SCRIPT_DIR/account_erasure.sql"
+run_check "verify account erasure schema" "$SCRIPT_DIR/verify_account_erasure_schema.sh"
 run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_ledger.sql"
 run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 run_sql_file "normalize stable corpse ownership identity" "$SCRIPT_DIR/live_item_movement_cutover.sql"

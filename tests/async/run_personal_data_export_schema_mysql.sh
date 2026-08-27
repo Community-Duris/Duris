@@ -45,7 +45,7 @@ INSERT INTO personal_data_export_requests(
  policy_schema_version,manifest_checksum,status,expected_sections,expires_at)
 VALUES(
  UNHEX('00000000000000000000000000000001'),UNHEX(REPEAT('01',32)),'Tester',
- UNHEX(REPEAT('02',32)),'duris-lifecycle-v1',1,UNHEX(REPEAT('03',32)),1,180,
+ UNHEX(REPEAT('02',32)),'duris-lifecycle-v1',1,UNHEX(REPEAT('03',32)),1,184,
  TIMESTAMPADD(HOUR,1,CURRENT_TIMESTAMP(6)));
 INSERT INTO personal_data_export_sections(
  request_id,store_id,disposition,status,snapshot_id,record_count,byte_count)
@@ -57,7 +57,7 @@ INSERT INTO personal_data_export_audit(
 VALUES(UNHEX('00000000000000000000000000000001'),1,2,1,1,128);"
 
 [[ $("${MYSQL[@]}" -e "SELECT COUNT(*) FROM personal_data_export_requests r JOIN personal_data_export_sections s USING(request_id) JOIN personal_data_export_audit a USING(request_id) WHERE r.account_name='Tester' AND s.store_id='database:accounts';") == "1" ]]
-if "${MYSQL[@]}" -e "INSERT INTO personal_data_export_requests(request_id,request_key,account_name,account_scope_hash,policy_id,policy_schema_version,manifest_checksum,status,expected_sections,expires_at) VALUES(UNHEX('00000000000000000000000000000002'),UNHEX(REPEAT('01',32)),'Tester',UNHEX(REPEAT('02',32)),'duris-lifecycle-v1',1,UNHEX(REPEAT('03',32)),1,180,TIMESTAMPADD(HOUR,1,CURRENT_TIMESTAMP(6)));" >/dev/null 2>&1; then
+if "${MYSQL[@]}" -e "INSERT INTO personal_data_export_requests(request_id,request_key,account_name,account_scope_hash,policy_id,policy_schema_version,manifest_checksum,status,expected_sections,expires_at) VALUES(UNHEX('00000000000000000000000000000002'),UNHEX(REPEAT('01',32)),'Tester',UNHEX(REPEAT('02',32)),'duris-lifecycle-v1',1,UNHEX(REPEAT('03',32)),1,184,TIMESTAMPADD(HOUR,1,CURRENT_TIMESTAMP(6)));" >/dev/null 2>&1; then
     echo "duplicate export request identity was accepted" >&2
     exit 1
 fi

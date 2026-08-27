@@ -169,6 +169,7 @@ test-db:
 	tests/async/run_persistence_contract_mysql.sh
 	tests/async/run_lifecycle_archive_schema_mysql.sh
 	tests/async/run_personal_data_export_schema_mysql.sh
+	tests/async/run_account_erasure_schema_mysql.sh
 
 clean:
 	+$(MAKE) -C src clean

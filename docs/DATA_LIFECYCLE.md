@@ -1,7 +1,7 @@
 # Data Lifecycle Contract
 
 DurisMUD maintains one machine-readable technical inventory at
-`migrations/data_lifecycle_manifest.json`. It currently covers 163 final bootstrap
+`migrations/data_lifecycle_manifest.json`. It currently covers 167 final bootstrap
 tables plus
 declared Redis, journal, fallback, quarantine, runtime-file, log, export-spool, and
 backup classes. Season reset, archive, export, erasure, restore, and documentation
@@ -75,3 +75,5 @@ archive, purge, export, erasure, backup rewrite, or production operation is enab
 The authenticated export packaging boundary and its separate pending shared-record
 decision are documented in
 [`PERSONAL_DATA_EXPORT.md`](PERSONAL_DATA_EXPORT.md).
+The separately disabled erasure coordinator and restore-time tombstone propagation
+contract are documented in [`ACCOUNT_ERASURE.md`](ACCOUNT_ERASURE.md).

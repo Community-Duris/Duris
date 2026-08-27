@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 1.81.50** | [Versioning policy](docs/VERSIONING.md)
+**Version: 1.81.51** | [Versioning policy](docs/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]

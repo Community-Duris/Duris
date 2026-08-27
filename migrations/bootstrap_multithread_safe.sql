@@ -2245,5 +2245,63 @@ CREATE TABLE `personal_data_export_audit` (
   CONSTRAINT `chk_personal_export_audit_event` CHECK (`event_type` between 1 and 9),
   CONSTRAINT `chk_personal_export_audit_status` CHECK (`status` between 1 and 9)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_erasure_requests` (
+  `request_id` binary(16) NOT NULL, `request_key` binary(32) NOT NULL,
+  `account_scope_hash` binary(32) NOT NULL, `subject_token` binary(32) NOT NULL,
+  `policy_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `policy_schema_version` int unsigned NOT NULL, `manifest_checksum` binary(32) NOT NULL,
+  `status` tinyint unsigned NOT NULL, `fence_revision` bigint unsigned DEFAULT NULL,
+  `expected_stores` smallint unsigned NOT NULL,
+  `completed_stores` smallint unsigned NOT NULL DEFAULT '0',
+  `retained_stores` smallint unsigned NOT NULL DEFAULT '0',
+  `reconciliation_checksum` binary(32) DEFAULT NULL,
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `requested_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `confirmed_at` timestamp(6) NULL DEFAULT NULL,
+  `fenced_at` timestamp(6) NULL DEFAULT NULL, `completed_at` timestamp(6) NULL DEFAULT NULL,
+  `cancelled_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`request_id`),
+  UNIQUE KEY `uq_account_erasure_request_key` (`request_key`),
+  KEY `idx_account_erasure_scope_rate` (`account_scope_hash`,`requested_at`,`request_id`),
+  KEY `idx_account_erasure_work` (`status`,`requested_at`,`request_id`),
+  CONSTRAINT `chk_account_erasure_status` CHECK (`status` between 1 and 10),
+  CONSTRAINT `chk_account_erasure_counts` CHECK ((`completed_stores` + `retained_stores`) <= `expected_stores`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_erasure_stores` (
+  `request_id` binary(16) NOT NULL, `store_id` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action` tinyint unsigned NOT NULL, `status` tinyint unsigned NOT NULL,
+  `sequence_number` smallint unsigned NOT NULL,
+  `affected_count` bigint unsigned NOT NULL DEFAULT '0',
+  `remaining_direct_identifiers` bigint unsigned NOT NULL DEFAULT '0',
+  `evidence_checksum` binary(32) DEFAULT NULL, `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `completed_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`request_id`,`store_id`),
+  UNIQUE KEY `uq_account_erasure_store_sequence` (`request_id`,`sequence_number`),
+  KEY `idx_account_erasure_store_work` (`request_id`,`status`,`sequence_number`),
+  CONSTRAINT `account_erasure_store_request_fk` FOREIGN KEY (`request_id`) REFERENCES `account_erasure_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_account_erasure_action` CHECK (`action` between 1 and 6),
+  CONSTRAINT `chk_account_erasure_store_status` CHECK (`status` between 1 and 10)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_erasure_evidence` (
+  `evidence_id` bigint unsigned NOT NULL AUTO_INCREMENT, `request_id` binary(16) NOT NULL,
+  `store_id` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `event_type` tinyint unsigned NOT NULL, `status` tinyint unsigned NOT NULL,
+  `affected_count` bigint unsigned NOT NULL DEFAULT '0',
+  `remaining_count` bigint unsigned NOT NULL DEFAULT '0',
+  `error_code` int unsigned NOT NULL DEFAULT '0',
+  `occurred_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`evidence_id`), KEY `idx_account_erasure_evidence_request` (`request_id`,`evidence_id`),
+  CONSTRAINT `account_erasure_evidence_request_fk` FOREIGN KEY (`request_id`) REFERENCES `account_erasure_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_account_erasure_evidence_event` CHECK (`event_type` between 1 and 10),
+  CONSTRAINT `chk_account_erasure_evidence_status` CHECK (`status` between 1 and 10)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_erasure_tombstones` (
+  `subject_token` binary(32) NOT NULL, `request_id` binary(16) NOT NULL,
+  `account_scope_hash` binary(32) NOT NULL, `policy_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `policy_schema_version` int unsigned NOT NULL, `manifest_checksum` binary(32) NOT NULL,
+  `completed_at` timestamp(6) NOT NULL, `last_restore_generation` binary(32) DEFAULT NULL,
+  `restore_apply_count` int unsigned NOT NULL DEFAULT '0', PRIMARY KEY (`subject_token`),
+  UNIQUE KEY `uq_account_erasure_tombstone_request` (`request_id`),
+  KEY `idx_account_erasure_tombstone_scope` (`account_scope_hash`),
+  CONSTRAINT `account_erasure_tombstone_request_fk` FOREIGN KEY (`request_id`) REFERENCES `account_erasure_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
