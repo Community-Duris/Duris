@@ -103,6 +103,30 @@ check("statement null indicator follows the installed client library",
 check("statement null indicator does not name MariaDB-only my_bool",
       not re.search(r"\bmy_bool\b", item_transfer_repository))
 
+# MYSQL_OPT_SSL_ENFORCE and MYSQL_OPT_SSL_VERIFY_SERVER_CERT were removed in
+# MySQL 8; MYSQL_OPT_SSL_MODE replaces them and MariaDB Connector/C does not
+# ship it. Both spellings are enum values rather than macros, so neither can be
+# probed with #ifdef -- the arms have to be selected on the client library. The
+# MySQL arm must ask for SSL_MODE_VERIFY_IDENTITY: the weaker modes would drop
+# CA or hostname verification that the MariaDB arm performs.
+sql_c = (src / "sql.c").read_text()
+check("remote TLS options are selected per client library",
+      "#if defined(MARIADB_BASE_VERSION) || defined(MARIADB_PACKAGE_VERSION)" in sql_c)
+check("MariaDB arm keeps enforcement and server certificate verification",
+      "MYSQL_OPT_SSL_ENFORCE" in sql_c and "MYSQL_OPT_SSL_VERIFY_SERVER_CERT" in sql_c)
+check("MySQL arm uses the replacement option",
+      "MYSQL_OPT_SSL_MODE" in sql_c)
+check("MySQL arm does not weaken verification",
+      "SSL_MODE_VERIFY_IDENTITY" in sql_c and
+      not re.search(r"SSL_MODE_(DISABLED|PREFERRED|REQUIRED)\b", sql_c))
+mysql_arm = re.search(
+    r"#if defined\(MARIADB_BASE_VERSION\).*?\n#else\n(.*?)\n#endif", sql_c, re.S)
+check("the client-library guard has a MySQL arm", mysql_arm is not None)
+if mysql_arm:
+    check("MySQL arm does not name options MySQL 8 removed",
+          "MYSQL_OPT_SSL_ENFORCE" not in mysql_arm.group(1) and
+          "MYSQL_OPT_SSL_VERIFY_SERVER_CERT" not in mysql_arm.group(1))
+
 if failures:
     print("\nFailed regression checks:")
     for f in failures:

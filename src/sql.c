@@ -538,11 +538,25 @@ MYSQL *sql_open_configured_connection(unsigned long client_flags)
 	bool protected_local = sql_host_is_loopback(DB_HOST) || (socket_path && *socket_path);
 	if (RUNTIME_DB_REMOTE_TLS_REQUIRED && !protected_local)
 	{
-		bool enabled = true;
 		const char *ca = getenv("DB_SSL_CA");
+		/* Both arms demand the same thing: TLS is mandatory, the server
+		 * certificate must chain to the CA, and the name on it must match the
+		 * host we asked for.  MySQL deprecated MYSQL_OPT_SSL_ENFORCE and
+		 * MYSQL_OPT_SSL_VERIFY_SERVER_CERT in 5.7 and removed them in 8.0,
+		 * folding both into MYSQL_OPT_SSL_MODE; MariaDB Connector/C ships only
+		 * the original pair.  Build against either without weakening the
+		 * requirement -- a downgrade here is silent until someone is on the
+		 * wrong end of it. */
+#if defined(MARIADB_BASE_VERSION) || defined(MARIADB_PACKAGE_VERSION)
+		bool enabled = true;
 		if (mysql_options(conn, MYSQL_OPT_SSL_ENFORCE, &enabled) ||
 		    mysql_options(conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &enabled) ||
 		    mysql_options(conn, MYSQL_OPT_SSL_CA, ca))
+#else
+		unsigned int ssl_mode = SSL_MODE_VERIFY_IDENTITY;
+		if (mysql_options(conn, MYSQL_OPT_SSL_MODE, &ssl_mode) ||
+		    mysql_options(conn, MYSQL_OPT_SSL_CA, ca))
+#endif
 		{
 			mysql_close(conn);
 			return NULL;
