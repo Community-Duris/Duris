@@ -2259,7 +2259,7 @@ int guild_guard(P_char ch, P_char pl, int cmd, char * /*arg*/)
 			}
 		}
 		if ((ev) && ((hunt_data *)(ev->data))->hunt_type == HUNT_ROOM &&
-		    ((hunt_data *)(ev->data))->targ.room == real_room(pl->player.birthplace))
+		    ((hunt_data *)(ev->data))->target_room == real_room(pl->player.birthplace))
 			block = FALSE;
 	}
 	if (g_prot && IS_FIGHTING(ch) && (cmd == 0))

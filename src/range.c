@@ -2186,7 +2186,7 @@ void do_cover(P_char ch, char * /*argument*/, int /*cmd*/)
 void return_home(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	P_nevent ev;
-	hunt_data h_data;
+	hunt_data h_data = {};
 
 	if (!IS_ALIVE(ch))
 		return;
@@ -2219,12 +2219,12 @@ void return_home(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 	}
 
 	h_data.hunt_type = HUNT_JUSTICE_SPECROOM;
-	h_data.targ.room = real_room(GET_BIRTHPLACE(ch));
+	h_data.target_room = real_room(GET_BIRTHPLACE(ch));
 	h_data.huntFlags = 0;
 	h_data.retry = 0;
 	h_data.retry_dir = 0;
 	h_data.path_step = -1;
-	add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &h_data, sizeof(hunt_data));
+	schedule_mob_hunt(ch, h_data);
 	// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, ch, h_data);
 	add_event(return_home, 30, ch, 0, 0, 0, 0, 0);
 }

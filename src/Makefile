@@ -124,6 +124,7 @@ OBJS =  $(SHIP_OBJS) \
 				 ctf.o \
 				 dam_mods.o \
 				 db.o \
+				 character_identity.o \
 				 debug.o \
 				 disguise.o \
 				 drannak.o \

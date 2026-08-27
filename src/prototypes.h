@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include "account.h"
 #include "mail.h"
 #include "safe_format.h"
@@ -832,6 +834,8 @@ void boot_pose_messages(void);
 void boot_world(int);
 void boot_zones(int);
 void clear_char(P_char);
+uint64_t allocate_character_runtime_id();
+P_char find_character_by_runtime_id(uint64_t);
 void clear_object(P_obj);
 void ensure_pconly_pool(void);
 void free_char(P_char);
@@ -913,11 +917,34 @@ void clear_events_type(P_char, int);
 void StartRegen(P_char, int);
 void Stun(P_char, P_char, int, bool);
 typedef void (*event_func)(P_char ch, P_char victim, P_obj obj, void *data);
-void add_event(event_func, int, P_char, P_char, P_obj, int, void *, int);
+void add_event(event_func, int, P_char, P_char, P_obj, int, const void *, int);
+void add_event_owned_payload(event_func, int, P_char, P_char, P_obj, int, void *,
+			     nevent_payload_destroy_type);
+
+template <typename T>
+	requires(!std::is_void_v<T>)
+inline void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int flag,
+		      T *data, int data_size)
+{
+	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
+		      "raw event payloads must be trivially copyable; use add_event_owned");
+	add_event(func, delay, ch, victim, obj, flag, static_cast<const void *>(data), data_size);
+}
+
+template <typename T> inline void add_event_owned(event_func func, int delay, P_char ch,
+						  P_char victim, P_obj obj, int flag, T data)
+{
+	using payload_type = std::remove_cv_t<T>;
+	payload_type *payload = new payload_type(std::move(data));
+	add_event_owned_payload(func, delay, ch, victim, obj, flag, payload,
+				[](void *stored_payload)
+				{ delete static_cast<payload_type *>(stored_payload); });
+}
 
 P_nevent get_scheduled(P_char, event_func_type);
 P_nevent get_scheduled(P_obj, event_func_type);
 P_nevent get_scheduled(event_func_type);
+P_nevent get_scheduled_excluding_current(P_char, event_func_type);
 P_nevent get_next_scheduled_char(P_nevent, event_func_type);
 P_nevent get_next_scheduled_obj(P_nevent, event_func_type);
 void disarm_char_nevents(P_char, event_func_type);
@@ -1806,6 +1833,7 @@ bool MobAlchemist(P_char);
 bool MobBerserker(P_char);
 bool NewMobAct(P_char, int);
 void event_mob_hunt(P_char ch, P_char victim, P_obj obj, void *data);
+void schedule_mob_hunt(P_char ch, hunt_data data);
 bool NewMobHunt(void);
 bool MobDestroyWall(P_char ch, int dir, bool bTryHit = false);
 bool MobDestroyWall(P_char ch, P_obj wall, bool bTryHit = false);

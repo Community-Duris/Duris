@@ -4308,6 +4308,7 @@ void reset_char(P_char ch)
 void clear_char(P_char ch)
 {
 	bzero(ch, sizeof(struct char_data));
+	ch->runtime_id = allocate_character_runtime_id();
 
 	ch->in_room = NOWHERE;
 	ch->specials.was_in_room = NOWHERE;

@@ -21,6 +21,7 @@ HARNESS = r'''
 static mm_ds test_pool = {};
 static int release_calls = 0;
 static int payload_frees = 0;
+static int typed_payload_destroys = 0;
 static int link_removals = 0;
 P_index mob_index = nullptr;
 
@@ -63,6 +64,15 @@ void remove_link(P_char, char_link_data *link)
 static void callback(P_char, P_char, P_obj, void *)
 {
 }
+
+struct typed_payload
+{
+	std::vector<int> path;
+	~typed_payload()
+	{
+		typed_payload_destroys++;
+	}
+};
 
 static void require(bool condition, int code)
 {
@@ -110,6 +120,7 @@ static void reset_scheduler()
 	ne_dead_event_pool = &test_pool;
 	release_calls = 0;
 	payload_frees = 0;
+	typed_payload_destroys = 0;
 	link_removals = 0;
 }
 
@@ -159,6 +170,7 @@ static void test_immediate_and_idempotent_cancel()
 	for (nevent_data &event : events)
 		schedule_event(&event, 17);
 	events[1].data = std::malloc(8);
+	events[1].data_destroy = nevent_destroy_raw_payload;
 
 	const nevent_handle middle = nevent_handle_from_event(&events[1]);
 	require(nevent_cancel(middle) == nevent_cancel_result::canceled, 1);
@@ -176,6 +188,45 @@ static void test_immediate_and_idempotent_cancel()
 		11);
 	require_balanced(0, 0, 12);
 	require(nevent_cancel({nullptr, 0}) == nevent_cancel_result::invalid_handle, 16);
+}
+
+static void test_typed_payload_destruction()
+{
+	reset_scheduler();
+	nevent_data event = {};
+	schedule_event(&event, 18);
+	auto *payload = new typed_payload;
+	payload->path = { 1, 2, 3, 4 };
+	event.data = payload;
+	event.data_destroy = [](void *data) { delete static_cast<typed_payload *>(data); };
+
+	require(nevent_cancel(nevent_handle_from_event(&event)) ==
+			nevent_cancel_result::canceled,
+		80);
+	require(typed_payload_destroys == 1, 81);
+	require_balanced(0, 0, 82);
+}
+
+static void test_lookup_excluding_current()
+{
+	reset_scheduler();
+	char_data owner = {};
+	nevent_data events[2] = {};
+	schedule_event(&events[0], 61, &owner);
+	current_nevent = &events[0];
+	require(get_scheduled(&owner, callback) == &events[0], 90);
+	require(get_scheduled_excluding_current(&owner, callback) == nullptr, 91);
+
+	schedule_event(&events[1], 62, &owner);
+	require(get_scheduled_excluding_current(&owner, callback) == &events[1], 92);
+	current_nevent = nullptr;
+	require(nevent_cancel(nevent_handle_from_event(&events[0])) ==
+			nevent_cancel_result::canceled,
+		93);
+	require(nevent_cancel(nevent_handle_from_event(&events[1])) ==
+			nevent_cancel_result::canceled,
+		94);
+	require_balanced(0, 0, 95);
 }
 
 static void test_debt_and_stale_handle()
@@ -281,6 +332,8 @@ int main()
 	test_active_iteration_cancel();
 	test_owner_and_victim_cleanup();
 	test_bulk_disarm();
+	test_typed_payload_destruction();
+	test_lookup_excluding_current();
 	std::puts("nevent cancellation runtime invariants passed");
 	return 0;
 }

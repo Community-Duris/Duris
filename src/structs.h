@@ -72,6 +72,7 @@ typedef unsigned char ubyte;
 typedef unsigned short int ush_int;
 typedef struct acct_entry *P_acct;
 typedef void (*event_func_type)(P_char, P_char, P_obj, void *);
+typedef void (*nevent_payload_destroy_type)(void *);
 
 #ifdef REALTIME_COMBAT
 typedef struct combat_data *P_combat;
@@ -1563,6 +1564,7 @@ struct char_data
 	struct char_link_data *linking; // Master links to other characters
 	struct char_obj_link_data *obj_linked;
 	unsigned int runtime_flags;
+	uint64_t runtime_id; /* process-local identity; changes whenever storage is reused */
 };
 
 /* ======================================================================== */
@@ -2022,11 +2024,8 @@ struct hunt_data
 	                    don't work */
 	ubyte retry_dir; /* last failed direction I tried moving */
 	long huntFlags; // hunt flags passed to find_first_step
-	union
-	{
-		P_char victim; /* who am I hunting? */
-		int room; /* what room am I hunting? */
-	} targ;
+	uint64_t target_runtime_id; /* process-local identity of a character target */
+	int target_room; /* real room number for a room target */
 	vector<int> path; /* path returned by dijkstra */
 	int path_step;
 };
@@ -2038,6 +2037,7 @@ struct nevent_data
 	P_char victim;
 	event_func_type func; // What function is called when event fires.
 	void *data; // Data argument to func
+	nevent_payload_destroy_type data_destroy; // Releases data according to its actual type.
 	unsigned int timer; // How much time in the row.
 	unsigned int element; // Which row of ne_schedule array
 	unsigned int priority;

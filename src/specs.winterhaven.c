@@ -1624,7 +1624,7 @@ int wh_janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 {
 	P_obj o, next_obj, o_1, well;
 	P_nevent ev = NULL;
-	hunt_data data;
+	hunt_data data = {};
 	bool found_well, dumped;
 	bool loaded = FALSE;
 
@@ -1760,13 +1760,12 @@ int wh_janitor(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 				}
 			}
 			data.hunt_type = HUNT_ROOM;
-			data.targ.room = well_room;
+			data.target_room = well_room;
 			data.huntFlags = BFS_STAY_ZONE;
 			data.retry = 0;
 			data.retry_dir = 0;
 			data.path_step = -1;
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, data);
 		}
 	}
 

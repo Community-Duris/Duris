@@ -105,6 +105,11 @@ static std::vector<nevent_handle> nevent_pending_cancellations;
 
 static void nevent_complete_deferred(P_nevent event);
 
+static void nevent_destroy_raw_payload(void *data)
+{
+	FREE(data);
+}
+
 /*
  * this code was majorly redone by Tharkun, look for original events description
  * in events.c file
@@ -418,7 +423,15 @@ static bool nevent_destroy(P_nevent event)
 	nevent_detach_owners(event);
 	nevent_unlink_schedule(event);
 	if (event->data)
-		FREE(event->data);
+	{
+		if (!event->data_destroy)
+			panic_corruption("nevent",
+					 "event sequence %llu has data without a destructor",
+					 event->sequence);
+		event->data_destroy(event->data);
+		event->data = NULL;
+		event->data_destroy = NULL;
+	}
 	if (event->deferral_count > 0)
 	{
 		nevent_complete_deferred(event);
@@ -554,22 +567,30 @@ void disarm_obj_nevents(P_obj obj, event_func_type func)
 	}
 }
 
-void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int /*flag*/,
-	       void *data, int data_size)
+static void add_event_internal(event_func func, int delay, P_char ch, P_char victim, P_obj obj,
+			       const void *data, int data_size, void *owned_payload,
+			       nevent_payload_destroy_type owned_payload_destroy)
 {
 	P_nevent event, e;
 	char *data_buf;
 	int loc;
+	auto discard_owned_payload = [&]()
+	{
+		if (owned_payload && owned_payload_destroy)
+			owned_payload_destroy(owned_payload);
+	};
 
 	if (!func)
 	{
 		debug("add_event: No function!");
+		discard_owned_payload();
 		return;
 	}
 
 	if (delay < 0)
 	{
 		debug("add_event: Delay (%d) les than zero?!", delay);
+		discard_owned_payload();
 		return;
 	}
 
@@ -580,6 +601,7 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 		      get_function_name((void *)func));
 		debug("add_event: dead ch '%s' in room r%d/v%d function %s", GET_NAME(ch),
 		      ch->in_room, ROOM_VNUM(ch->in_room), get_function_name((void *)func));
+		discard_owned_payload();
 		return;
 	}
 
@@ -604,6 +626,7 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 		debug("add_event: victim '%s' & !ch, func: %s, obj: %s %d.", J_NAME(victim),
 		      (func == NULL) ? "NULL" : get_function_name((void *)func),
 		      obj ? OBJ_SHORT(obj) : "NULL", obj ? OBJ_VNUM(obj) : -1);
+		discard_owned_payload();
 		return;
 	}
 
@@ -620,6 +643,8 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 	event->victim = victim;
 	event->obj = obj;
 	event->func = func;
+	event->data = NULL;
+	event->data_destroy = NULL;
 	event->priority = nevent_priority(func, ch);
 	event->scheduled_tick = ne_event_tick + (unsigned long long)delay;
 	event->sequence = ++ne_event_sequence;
@@ -630,11 +655,20 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 	else
 		event->cld = NULL;
 
-	if (data && data_size > 0)
+	if (owned_payload)
+	{
+		if (!owned_payload_destroy)
+			panic_corruption("nevent", "owned payload for %s has no destructor",
+					 get_function_name((void *)func));
+		event->data = owned_payload;
+		event->data_destroy = owned_payload_destroy;
+	}
+	else if (data && data_size > 0)
 	{
 		CREATE(data_buf, char, data_size, MEM_TAG_EVTBUF);
 		// data_buf = (char*)malloc(data_size);
 		event->data = memcpy(data_buf, data, data_size);
+		event->data_destroy = nevent_destroy_raw_payload;
 	}
 
 	loc = (delay + pulse) % PULSES_IN_TICK;
@@ -677,6 +711,19 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 	}
 
 	return;
+}
+
+void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int /*flag*/,
+	       const void *data, int data_size)
+{
+	add_event_internal(func, delay, ch, victim, obj, data, data_size, NULL, NULL);
+}
+
+void add_event_owned_payload(event_func func, int delay, P_char ch, P_char victim, P_obj obj,
+			     int /*flag*/, void *payload,
+			     nevent_payload_destroy_type payload_destroy)
+{
+	add_event_internal(func, delay, ch, victim, obj, NULL, 0, payload, payload_destroy);
 }
 
 // Returns the time left (in pulses) in the e1 event
@@ -1336,6 +1383,19 @@ P_nevent get_scheduled(P_char ch, event_func func)
 		{
 			return e;
 		}
+	}
+
+	return NULL;
+}
+
+P_nevent get_scheduled_excluding_current(P_char ch, event_func func)
+{
+	P_nevent event;
+
+	LOOP_EVENTS_CH(event, ch->nevents)
+	{
+		if (event != current_nevent && event->func == func)
+			return event;
 	}
 
 	return NULL;

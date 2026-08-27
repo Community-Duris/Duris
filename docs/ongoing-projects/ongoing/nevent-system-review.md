@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 2 complete
+Status: Implementation in progress; checkpoint 3 complete
 
-Last implementation update: 2026-08-27 21:51 IDT
+Last implementation update: 2026-08-27 22:09 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -20,8 +20,8 @@ contracts, formatting, and the server build pass.
 |---|---|---|---|
 | 1 | NEV-01 event-name loader safety | Complete | ASan/UBSan boundary harness, 12 existing nevent contracts, format check, server build |
 | 2 | NEV-05 and NEV-10 cancellation/lifetime invariants | Complete | ASan/UBSan cancellation harness, 221 Python regressions, native signal test, format check, server build |
-| 3 | NEV-02 and NEV-08 typed/POD hunt payload | Next | Not started |
-| 4 | NEV-03 stable ship-volley references | Pending | Not started |
+| 3 | NEV-02 and NEV-08 typed/POD hunt payload | Complete | ASan/UBSan ownership and stable-ID harnesses, raw-type compile rejection, 222 Python regressions, native signal test, format check, server build |
+| 4 | NEV-03 stable ship-volley references | Next | Not started |
 | 5 | NEV-06 and NEV-07 periodic rearm safety | Pending | Not started |
 | 6 | NEV-04, NEV-11, and NEV-22 absolute due-tick core and harness | Pending | Not started |
 | 7 | NEV-09 and NEV-13 priority, aging, and catch-up policy | Pending | Not started |
@@ -48,6 +48,19 @@ of retaining a stale target until its original due time. The executable harness
 checks head, middle, tail, current, next, future, deferred, repeated, stale,
 character, object, and victim-link cancellation while reconciling wheel, pool,
 counter, and debt totals after every case.
+
+Checkpoint 3 added a typed payload path that copy/move-constructs event state and
+destroys it through scheduler-owned type erasure; the raw overload now rejects
+non-trivially-copyable pointee types at compile time. Every mob-hunt producer and
+rearm path uses the typed API, so its cached Dijkstra vector has independent
+ownership and a real destructor. Character hunts now store a monotonic,
+process-local character identity rather than a raw target pointer, and resolve it
+through the live character list, preventing allocator-address reuse from
+retargeting an old hunt. A current-excluding lookup makes unable-to-act, wake,
+stand, and alert callbacks rearm without mistaking the executing event for a
+successor. The regressions exercise payload copy/move/destruction, cancellation
+cleanup, stable-ID reuse, raw-type compile rejection, and current-event exclusion
+under ASan/UBSan, and audit every hunt call site for the typed path.
 
 ## Executive assessment
 
@@ -263,6 +276,13 @@ Recommendation:
 
 ### NEV-02: Byte-copy payload ABI violates C++ object lifetime
 
+Implementation status (2026-08-27): Fixed and verified in checkpoint 3. Raw
+typed calls are constrained to trivially copyable payloads, while non-trivial
+payloads use scheduler-owned copy/move construction and typed destruction.
+`hunt_data` and all of its producers/rearm paths use the owned API, and character
+targets use process-local runtime identities. The evidence below describes the
+pre-fix implementation.
+
 Evidence:
 
 - `add_event` allocates `data_size` bytes and uses `memcpy` to copy arbitrary
@@ -451,6 +471,12 @@ Recommendation:
   branches and use a shorter bounded retry after DB failure.
 
 ### NEV-08: Mob-hunt retry logic is defeated by current-event visibility
+
+Implementation status (2026-08-27): Fixed and verified in checkpoint 3. Hunt
+fallbacks use a lookup that excludes the executing event, and all initial and
+successor schedules go through the correctly typed mob-hunt helper. The four
+historical stack-pointer payload mistakes are no longer present. The evidence
+below describes the pre-fix implementation.
 
 The executing event remains on the character list until its callback returns.
 `get_scheduled(ch, event_mob_hunt)` therefore returns the currently executing

@@ -1363,7 +1363,7 @@ int squid_arena(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 int duergar_guild(int room, P_char ch, int cmd, char * /*arg*/)
 {
 	P_char killer;
-	hunt_data data;
+	hunt_data data = {};
 	int i;
 
 	if (cmd == CMD_SET_PERIODIC)
@@ -1411,13 +1411,12 @@ int duergar_guild(int room, P_char ch, int cmd, char * /*arg*/)
 	{
 		killer->player.m_class = CLASS_WARRIOR;
 		data.hunt_type = HUNT_HUNTER;
-		data.targ.victim = ch;
+		data.target_runtime_id = ch->runtime_id;
 		data.huntFlags = 0;
 		data.retry = 0;
 		data.retry_dir = 0;
 		data.path_step = -1;
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, killer, NULL, NULL, 0, &data,
-			  sizeof(hunt_data));
+		schedule_mob_hunt(killer, data);
 		// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, killer, data);
 	}
 	act("$N jumps from the shadows, surprising you!", FALSE, ch, 0, killer, TO_CHAR);
