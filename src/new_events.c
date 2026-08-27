@@ -589,9 +589,15 @@ void disarm_obj_nevents(P_obj obj, event_func_type func)
 	}
 }
 
-static void add_event_internal(event_func func, int delay, P_char ch, P_char victim, P_obj obj,
-			       const void *data, int data_size, void *owned_payload,
-			       nevent_payload_destroy_type owned_payload_destroy)
+static nevent_schedule_result nevent_schedule_failure(nevent_schedule_status status)
+{
+	return { status, { NULL, 0 } };
+}
+
+static nevent_schedule_result add_event_internal(event_func func, int delay, P_char ch,
+						 P_char victim, P_obj obj, const void *data,
+						 int data_size, void *owned_payload,
+						 nevent_payload_destroy_type owned_payload_destroy)
 {
 	P_nevent event, e;
 	char *data_buf;
@@ -606,14 +612,14 @@ static void add_event_internal(event_func func, int delay, P_char ch, P_char vic
 	{
 		debug("add_event: No function!");
 		discard_owned_payload();
-		return;
+		return nevent_schedule_failure(nevent_schedule_status::null_callback);
 	}
 
 	if (delay < 0)
 	{
 		debug("add_event: Delay (%d) les than zero?!", delay);
 		discard_owned_payload();
-		return;
+		return nevent_schedule_failure(nevent_schedule_status::negative_delay);
 	}
 
 	if (ch && !IS_ALIVE(ch) && func != release_mob_mem)
@@ -624,7 +630,7 @@ static void add_event_internal(event_func func, int delay, P_char ch, P_char vic
 		debug("add_event: dead ch '%s' in room r%d/v%d function %s", GET_NAME(ch),
 		      ch->in_room, ROOM_VNUM(ch->in_room), get_function_name((void *)func));
 		discard_owned_payload();
-		return;
+		return nevent_schedule_failure(nevent_schedule_status::dead_owner);
 	}
 
 	// No reason an event can't have an object and a ch/victim. - Lohrr
@@ -649,7 +655,20 @@ static void add_event_internal(event_func func, int delay, P_char ch, P_char vic
 		      (func == NULL) ? "NULL" : get_function_name((void *)func),
 		      obj ? OBJ_SHORT(obj) : "NULL", obj ? OBJ_VNUM(obj) : -1);
 		discard_owned_payload();
-		return;
+		return nevent_schedule_failure(nevent_schedule_status::victim_without_owner);
+	}
+	if (data_size < 0 || (data_size > 0 && !data) || (owned_payload && !owned_payload_destroy))
+	{
+		debug("add_event: invalid payload for function %s",
+		      get_function_name((void *)func));
+		discard_owned_payload();
+		return nevent_schedule_failure(nevent_schedule_status::invalid_payload);
+	}
+	if (ne_event_sequence == ULLONG_MAX)
+	{
+		logit(LOG_EXIT, "add_event: scheduler sequence space exhausted");
+		discard_owned_payload();
+		return nevent_schedule_failure(nevent_schedule_status::sequence_exhausted);
 	}
 
 	event = (P_nevent)mm_get(ne_dead_event_pool);
@@ -729,20 +748,66 @@ static void add_event_internal(event_func func, int delay, P_char ch, P_char vic
 		check_nevents();
 	}
 
-	return;
+	return { nevent_schedule_status::scheduled, nevent_handle_from_event(event) };
 }
 
-void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int /*flag*/,
-	       const void *data, int data_size)
+nevent_schedule_result add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj,
+				 int /*flag*/, const void *data, int data_size)
 {
-	add_event_internal(func, delay, ch, victim, obj, data, data_size, NULL, NULL);
+	return add_event_internal(func, delay, ch, victim, obj, data, data_size, NULL, NULL);
 }
 
-void add_event_owned_payload(event_func func, int delay, P_char ch, P_char victim, P_obj obj,
-			     int /*flag*/, void *payload,
-			     nevent_payload_destroy_type payload_destroy)
+nevent_schedule_result add_event_owned_payload(event_func func, int delay, P_char ch, P_char victim,
+					       P_obj obj, int /*flag*/, void *payload,
+					       nevent_payload_destroy_type payload_destroy)
 {
-	add_event_internal(func, delay, ch, victim, obj, NULL, 0, payload, payload_destroy);
+	return add_event_internal(func, delay, ch, victim, obj, NULL, 0, payload, payload_destroy);
+}
+
+static bool nevent_replace_target_is_active(nevent_handle existing)
+{
+	return existing.event && existing.sequence != 0 &&
+	       existing.event->sequence == existing.sequence &&
+	       existing.event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE;
+}
+
+static nevent_schedule_result nevent_finish_replace(nevent_handle existing,
+						    nevent_schedule_result scheduled)
+{
+	if (!scheduled)
+		return scheduled;
+	const nevent_cancel_result canceled = nevent_cancel(existing);
+	if (canceled == nevent_cancel_result::canceled ||
+	    canceled == nevent_cancel_result::deferred)
+		return scheduled;
+	nevent_cancel(scheduled.handle);
+	return nevent_schedule_failure(nevent_schedule_status::invalid_replace_target);
+}
+
+nevent_schedule_result nevent_replace(nevent_handle existing, event_func func, int delay, P_char ch,
+				      P_char victim, P_obj obj, int flag, const void *data,
+				      int data_size)
+{
+	if (!nevent_replace_target_is_active(existing))
+		return nevent_schedule_failure(nevent_schedule_status::invalid_replace_target);
+	return nevent_finish_replace(existing, add_event(func, delay, ch, victim, obj, flag, data,
+							 data_size));
+}
+
+nevent_schedule_result nevent_replace_owned_payload(nevent_handle existing, event_func func,
+						    int delay, P_char ch, P_char victim, P_obj obj,
+						    int flag, void *payload,
+						    nevent_payload_destroy_type payload_destroy)
+{
+	if (!nevent_replace_target_is_active(existing))
+	{
+		if (payload && payload_destroy)
+			payload_destroy(payload);
+		return nevent_schedule_failure(nevent_schedule_status::invalid_replace_target);
+	}
+	return nevent_finish_replace(existing,
+				     add_event_owned_payload(func, delay, ch, victim, obj, flag,
+							     payload, payload_destroy));
 }
 
 // Returns the time left (in pulses) in the e1 event
@@ -1450,102 +1515,100 @@ void nevent_advance_tick()
 	after_events_call = FALSE;
 }
 
-// Returns the first instance of an event with func as the event function.
-// Note: This is only useful if there is only one such event, since the first instance
-//   may not be the next to occur.
-P_nevent get_scheduled(event_func func)
+static P_nevent nevent_earlier_match(P_nevent best, P_nevent candidate, event_func func,
+				     P_nevent excluded)
 {
-	P_nevent pEvent;
+	if (!candidate || candidate == excluded || candidate->func != func ||
+	    candidate->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE)
+		return best;
+	return !best || nevent_sorts_before(candidate, best) ? candidate : best;
+}
+
+nevent_handle nevent_find_next(event_func func)
+{
+	P_nevent best = NULL;
 
 	for (int i = 0; i < PULSES_IN_TICK; i++)
-	{
-		pEvent = ne_schedule[i];
-		while (pEvent != NULL)
-		{
-			if (pEvent->func == func)
-			{
-				return pEvent;
-			}
-			pEvent = pEvent->next_sched;
-		}
-	}
-	return NULL;
+		for (P_nevent event = ne_schedule[i]; event; event = event->next_sched)
+			best = nevent_earlier_match(best, event, func, NULL);
+	return nevent_handle_from_event(best);
+}
+
+nevent_handle nevent_find_next(P_char ch, event_func func)
+{
+	P_nevent best = NULL;
+
+	if (!ch)
+		return { NULL, 0 };
+	for (P_nevent event = ch->nevents; event; event = event->next_char_nev)
+		best = nevent_earlier_match(best, event, func, NULL);
+	return nevent_handle_from_event(best);
+}
+
+nevent_handle nevent_find_next_excluding_current(P_char ch, event_func func)
+{
+	P_nevent best = NULL;
+
+	if (!ch)
+		return { NULL, 0 };
+	for (P_nevent event = ch->nevents; event; event = event->next_char_nev)
+		best = nevent_earlier_match(best, event, func, current_nevent);
+	return nevent_handle_from_event(best);
+}
+
+nevent_handle nevent_find_next(P_obj obj, event_func func)
+{
+	P_nevent best = NULL;
+
+	if (!obj)
+		return { NULL, 0 };
+	for (P_nevent event = obj->nevents; event; event = event->next_obj_nev)
+		best = nevent_earlier_match(best, event, func, NULL);
+	return nevent_handle_from_event(best);
+}
+
+P_nevent get_scheduled(event_func func)
+{
+	return nevent_find_next(func).event;
 }
 
 P_nevent get_scheduled(P_char ch, event_func func)
 {
-	P_nevent e;
-
-	LOOP_EVENTS_CH(e, ch->nevents)
-	{
-		if (e->func == func)
-		{
-			return e;
-		}
-	}
-
-	return NULL;
+	return nevent_find_next(ch, func).event;
 }
 
 P_nevent get_scheduled_excluding_current(P_char ch, event_func func)
 {
-	P_nevent event;
-
-	LOOP_EVENTS_CH(event, ch->nevents)
-	{
-		if (event != current_nevent && event->func == func)
-			return event;
-	}
-
-	return NULL;
+	return nevent_find_next_excluding_current(ch, func).event;
 }
 
 P_nevent get_scheduled(P_obj obj, event_func func)
 {
-	P_nevent e;
-
-	LOOP_EVENTS_OBJ(e, obj->nevents)
-	{
-		if (e->func == func)
-		{
-			return e;
-		}
-	}
-
-	return NULL;
+	return nevent_find_next(obj, func).event;
 }
 
 P_nevent get_next_scheduled_char(P_nevent e, event_func func)
 {
-	if (!e)
-	{
+	P_nevent best = NULL;
+
+	if (!e || !e->ch)
 		return NULL;
-	}
-	// Start with the next event in ch's list and look for func.
-	LOOP_EVENTS_CH(e, e->next_char_nev)
-	{
-		if (e->func == func)
-		{
-			return e;
-		}
-	}
-	return NULL;
+	for (P_nevent candidate = e->ch->nevents; candidate; candidate = candidate->next_char_nev)
+		if (candidate != e && nevent_sorts_before(e, candidate))
+			best = nevent_earlier_match(best, candidate, func, NULL);
+	return best;
 }
 
 P_nevent get_next_scheduled_obj(P_nevent e, event_func func)
 {
-	if (!e)
-	{
+	P_nevent best = NULL;
+
+	if (!e || !e->obj)
 		return NULL;
-	}
-	LOOP_EVENTS_OBJ(e, e->next_obj_nev)
-	{
-		if (e->func == func)
-		{
-			return e;
-		}
-	}
-	return NULL;
+	for (P_nevent candidate = e->obj->nevents; candidate; candidate = candidate->next_obj_nev)
+		if (candidate != e && nevent_sorts_before(e, candidate))
+			best = nevent_earlier_match(best, candidate, func, NULL);
+	return best;
 }
 
 void ne_init_event_pool(void)

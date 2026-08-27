@@ -7,6 +7,7 @@
  * ***************************************************************************
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -560,9 +561,16 @@ void DelayCommune(P_char ch, int delay)
 		P_nevent e = get_scheduled(ch, event_memorize);
 		if (e)
 		{
-			int old_time = ne_event_time(e);
-			disarm_char_nevents(ch, event_memorize);
-			add_event(event_memorize, (old_time + delay), ch, 0, 0, 0, 0, 0);
+			const unsigned long long old_time =
+				static_cast<unsigned long long>(ne_event_time(e));
+			const unsigned long long extension =
+				delay > 0 ? static_cast<unsigned long long>(delay) : 0;
+			const unsigned long long new_delay = extension > ULLONG_MAX - old_time ?
+								     ULLONG_MAX :
+								     old_time + extension;
+			if (!nevent_reschedule_after(nevent_handle_from_event(e), new_delay))
+				logit(LOG_EXIT,
+				      "DelayCommune: failed to reschedule memorize event");
 		}
 	}
 }
@@ -570,6 +578,8 @@ void DelayCommune(P_char ch, int delay)
 void CharWait(P_char ch, int delay)
 {
 	P_nevent e = NULL;
+	nevent_schedule_result scheduled = { nevent_schedule_status::invalid_replace_target,
+					     { NULL, 0 } };
 
 	if (!ch)
 	{
@@ -603,11 +613,6 @@ void CharWait(P_char ch, int delay)
 			{
 				return;
 			}
-			else
-			{
-				// Replace the shorter deadline with the longer requested wait.
-				disarm_char_nevents(ch, event_wait);
-			}
 		}
 	}
 	// An absurd delay is almost always a caller bug, and it gates the character for
@@ -618,23 +623,31 @@ void CharWait(P_char ch, int delay)
 		      delay / WAIT_SEC);
 	}
 
+	if (e)
+		scheduled = nevent_replace(nevent_handle_from_event(e), event_wait, delay, ch, NULL,
+					   NULL, 0, NULL, 0);
+	else
+		scheduled = add_event(event_wait, delay, ch, NULL, NULL, 0, NULL, 0);
+
+	if (!scheduled)
+	{
+		debug("CharWait: event_wait schedule failed for %s (status %u)", J_NAME(ch),
+		      static_cast<unsigned int>(scheduled.status));
+		if (!e)
+			REMOVE_BIT(ch->specials.act2, PLR2_WAIT);
+		return;
+	}
+
 	if (!IS_TRUSTED(ch))
 	{
+		const unsigned long long grace = static_cast<unsigned long long>(2 * WAIT_SEC);
 		SET_BIT(ch->specials.act2, PLR2_WAIT);
-		// Hard deadline for the command gate.  event_wait normally clears it well
-		//   before this, but if the event is lost, delayed or starved the gate must
-		//   still come down on its own -- a player who cannot type is unrecoverable.
-		ch->specials.wait_until_pulse = ne_event_tick + (unsigned long long)delay +
-						(unsigned long long)(2 * WAIT_SEC);
-	}
-	add_event(event_wait, delay, ch, 0, 0, 0, 0, 0);
-
-	// add_event() can refuse the event (bad arguments, dead ch).  If nothing is
-	//   scheduled to clear the gate, don't leave it up.
-	if (!CAN_ACT(ch) && !get_scheduled(ch, event_wait))
-	{
-		debug("CharWait: event_wait not scheduled for %s, clearing wait.", J_NAME(ch));
-		REMOVE_BIT(ch->specials.act2, PLR2_WAIT);
+		// Hard deadline for the command gate.  event_wait normally clears it first,
+		// but the gate must still recover if the event is lost or delayed.
+		ch->specials.wait_until_pulse = scheduled.handle.event->due_tick >
+								ULLONG_MAX - grace ?
+							ULLONG_MAX :
+							scheduled.handle.event->due_tick + grace;
 	}
 }
 

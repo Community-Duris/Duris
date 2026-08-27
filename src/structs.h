@@ -2052,6 +2052,36 @@ struct nevent_data
 	P_nevent next_sched;
 };
 
+struct nevent_handle
+{
+	P_nevent event;
+	unsigned long long sequence;
+};
+
+enum class nevent_schedule_status : ubyte
+{
+	scheduled,
+	null_callback,
+	negative_delay,
+	dead_owner,
+	victim_without_owner,
+	invalid_payload,
+	sequence_exhausted,
+	invalid_replace_target
+};
+
+struct nevent_schedule_result
+{
+	nevent_schedule_status status;
+	nevent_handle handle;
+
+	constexpr bool was_scheduled() const noexcept
+	{
+		return status == nevent_schedule_status::scheduled;
+	}
+	constexpr explicit operator bool() const noexcept { return was_scheduled(); }
+};
+
 enum class nevent_cancel_result : ubyte
 {
 	canceled,
@@ -2059,12 +2089,6 @@ enum class nevent_cancel_result : ubyte
 	already_inactive,
 	stale_handle,
 	invalid_handle
-};
-
-struct nevent_handle
-{
-	P_nevent event;
-	unsigned long long sequence;
 };
 
 /* structure used for grouping.. */

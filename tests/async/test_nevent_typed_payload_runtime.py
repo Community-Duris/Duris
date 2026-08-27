@@ -19,11 +19,13 @@ OWNED_PAYLOAD_HARNESS = r'''
 static void *captured_payload = nullptr;
 static nevent_payload_destroy_type captured_destroy = nullptr;
 
-void add_event_owned_payload(event_func, int, P_char, P_char, P_obj, int, void *payload,
-			     nevent_payload_destroy_type destroy)
+nevent_schedule_result add_event_owned_payload(event_func, int, P_char, P_char, P_obj, int,
+					       void *payload,
+					       nevent_payload_destroy_type destroy)
 {
 	captured_payload = payload;
 	captured_destroy = destroy;
+	return { nevent_schedule_status::scheduled, { nullptr, 0 } };
 }
 
 static void callback(P_char, P_char, P_obj, void *)

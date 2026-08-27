@@ -9,8 +9,9 @@ happened the player could not act again for the rest of the session.
 
 Verifies:
 1. CharWait() clamps a negative delay instead of handing it to add_event().
-2. CharWait() clears PLR2_WAIT when the event did not get scheduled.
-3. CharWait() records an absolute deadline for the gate.
+2. CharWait() atomically replaces a shorter event_wait with a longer one.
+3. CharWait() only publishes the gate bit and absolute deadline after the
+   scheduler accepts the request.
 4. comm.c self-heals a gate with no event_wait scheduled OR past its deadline.
 5. The event wheel does not strand due events: authoritative ordering keeps old
    debt ahead of future work, and deferral reinserts through the same path.
@@ -37,20 +38,28 @@ if m:
         contains(char_wait, "if (delay < 0)") and contains(char_wait, "delay = 0;")
     ))
     checks.append((
-        "CharWait clears PLR2_WAIT when event_wait was not scheduled",
-        contains(char_wait, "!CAN_ACT(ch) && !get_scheduled(ch, event_wait)") and
-        contains(char_wait, "REMOVE_BIT(ch->specials.act2, PLR2_WAIT);")
+        "CharWait atomically replaces an existing event_wait",
+        contains(char_wait, "nevent_replace(nevent_handle_from_event(e), event_wait, delay")
     ))
     checks.append((
-        "CharWait still schedules event_wait",
-        contains(char_wait, "add_event(event_wait, delay, ch, 0, 0, 0, 0, 0);")
+        "CharWait schedules a new event_wait when none exists",
+        contains(char_wait, "scheduled = add_event(event_wait, delay, ch, NULL, NULL, 0, NULL, 0);")
+    ))
+    checks.append((
+        "CharWait clears a newly requested gate when scheduling fails",
+        contains(char_wait, "if (!scheduled)") and
+        contains(char_wait, "if (!e)\n\t\t\tREMOVE_BIT(ch->specials.act2, PLR2_WAIT);")
+    ))
+    checks.append((
+        "CharWait publishes the gate only after scheduling succeeds",
+        char_wait.find("if (!scheduled)") < char_wait.find("SET_BIT(ch->specials.act2, PLR2_WAIT);")
     ))
 else:
     checks.append(("CharWait function present", False))
 
 checks.append((
-    "CharWait records an absolute gate deadline",
-    contains(events, "ch->specials.wait_until_pulse = ne_event_tick")
+    "CharWait records the accepted event's absolute gate deadline",
+    contains(events, "ch->specials.wait_until_pulse = scheduled.handle.event->due_tick")
 ))
 checks.append((
     "CharWait logs absurd delays so the caller can be found",

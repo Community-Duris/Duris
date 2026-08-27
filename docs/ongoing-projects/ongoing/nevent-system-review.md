@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 7 complete
+Status: Implementation in progress; checkpoint 8 complete
 
-Last implementation update: 2026-08-27 23:07 IDT
+Last implementation update: 2026-08-27 23:18 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -25,8 +25,8 @@ contracts, formatting, and the server build pass.
 | 5 | NEV-06 and NEV-07 periodic rearm safety | Complete | ASan/UBSan multi-interval/retry harness, 224 Python regressions, native signal test, format check, server build |
 | 6 | NEV-04, NEV-11, NEV-12, and NEV-22 absolute due-tick core, rescheduling, and harness foundation | Complete | ASan/UBSan three-phase boundary matrix and 1,200-tick oracle, 225 Python regressions, native signal test, format check, server build |
 | 7 | NEV-09, NEV-13, NEV-15, and NEV-22 priority, aging, catch-up, and range safety | Complete | ASan/UBSan priority-on/off, mixed-deferral, continuous-arrival, convergence, unlimited, and invalid-range modes; 225 Python regressions; native signal test; format check; server build |
-| 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Next | Not started |
-| 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | Pending | Not started |
+| 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Complete | Typed rejection/success/replace and global/owner chronology in the ASan/UBSan scheduler harness; 225 Python regressions; native signal test; format check; server build |
+| 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | Next | Not started |
 | 10 | NEV-21 documentation and legacy cleanup | Pending | Not started |
 
 Checkpoint 1 replaced the fixed 6,000-entry array and sentinel scan with a
@@ -119,6 +119,20 @@ harness runs separate processes for priority on/off, bounded aging under player
 load, steady arrivals equal to base capacity, four-pulse debt convergence,
 unlimited settings, and invalid-range fallback. The server build, native signal
 test, focused contracts, and all 225 Python regressions pass.
+
+Checkpoint 8 made scheduling outcomes explicit. `add_event` and the typed owned
+payload path now return a status plus a sequence-validated handle for every
+accepted event, and distinguish null callbacks, negative delays, dead owners,
+invalid victim relationships, malformed payloads, and exhausted sequence space.
+The new replace operation schedules a validated successor before canceling its
+predecessor, so a rejected request leaves the existing event armed and an
+accepted request cannot expose a gap. `CharWait` uses that operation and only
+publishes its command gate/deadline after success; commune delay extension uses
+the scheduler reschedule API. Global, character, and object lookup now choose the
+first event in scheduler order instead of bucket or owner insertion order, with
+handle-returning and current-excluding variants. The sanitizer harness exercises
+every result status, successful and rejected replacement, chronological global
+and owner lookup across buckets/revolutions, and current-event exclusion.
 
 The executive assessment and finding evidence below preserve the original
 pre-remediation review. Per-finding implementation status and the checkpoint
@@ -865,6 +879,12 @@ rendering use stable IDs and liveness validation.
 
 ### NEV-19: Scheduling and lookup APIs hide failure and ambiguity
 
+Implementation status (2026-08-27): Fixed and verified in checkpoint 8.
+Scheduling returns a typed status and sequence-validated handle, replacement is
+atomic with respect to rejected successors, and lookup chooses the chronological
+scheduler-order match globally or per owner. Current-excluding lookup remains an
+explicit operation. The evidence below describes the pre-fix implementation.
+
 `add_event` returns `void`. It can reject a null callback, negative delay, dead
 owner, or invalid victim relationship without giving the caller a handle or
 machine-readable failure. Callers cannot reliably roll back state that assumed a
@@ -1088,7 +1108,7 @@ tests/async/test_item_event_parser.py
 tests/async/test_scalar_event_idempotency.py
 ```
 
-Checkpoint 6 additionally passed
+Checkpoints 6 through 8 additionally passed
 `tests/async/test_nevent_scheduler_runtime.py` under ASan/UBSan, the complete
 225-test Python regression suite, and `tests/async/run_signal_handlers.sh`.
 
@@ -1099,7 +1119,7 @@ against current artifacts.
 
 No live server or database was used. No migrations, production operations, or
 game-data mutations were performed. Implementation and verification are current
-through checkpoint 6 in the ledger above.
+through checkpoint 8 in the ledger above.
 
 ## Suggested implementation-session boundaries
 

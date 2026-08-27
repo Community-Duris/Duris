@@ -917,28 +917,59 @@ void clear_events_type(P_char, int);
 void StartRegen(P_char, int);
 void Stun(P_char, P_char, int, bool);
 typedef void (*event_func)(P_char ch, P_char victim, P_obj obj, void *data);
-void add_event(event_func, int, P_char, P_char, P_obj, int, const void *, int);
-void add_event_owned_payload(event_func, int, P_char, P_char, P_obj, int, void *,
-			     nevent_payload_destroy_type);
+nevent_schedule_result add_event(event_func, int, P_char, P_char, P_obj, int, const void *, int);
+nevent_schedule_result add_event_owned_payload(event_func, int, P_char, P_char, P_obj, int, void *,
+					       nevent_payload_destroy_type);
 
 template <typename T>
 	requires(!std::is_void_v<T>)
-inline void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int flag,
-		      T *data, int data_size)
+inline nevent_schedule_result add_event(event_func func, int delay, P_char ch, P_char victim,
+					P_obj obj, int flag, T *data, int data_size)
 {
 	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
 		      "raw event payloads must be trivially copyable; use add_event_owned");
-	add_event(func, delay, ch, victim, obj, flag, static_cast<const void *>(data), data_size);
+	return add_event(func, delay, ch, victim, obj, flag, static_cast<const void *>(data),
+			 data_size);
 }
 
-template <typename T> inline void add_event_owned(event_func func, int delay, P_char ch,
-						  P_char victim, P_obj obj, int flag, T data)
+template <typename T> inline nevent_schedule_result
+add_event_owned(event_func func, int delay, P_char ch, P_char victim, P_obj obj, int flag, T data)
 {
 	using payload_type = std::remove_cv_t<T>;
 	payload_type *payload = new payload_type(std::move(data));
-	add_event_owned_payload(func, delay, ch, victim, obj, flag, payload,
-				[](void *stored_payload)
-				{ delete static_cast<payload_type *>(stored_payload); });
+	return add_event_owned_payload(func, delay, ch, victim, obj, flag, payload,
+				       [](void *stored_payload)
+				       { delete static_cast<payload_type *>(stored_payload); });
+}
+
+nevent_schedule_result nevent_replace(nevent_handle, event_func, int, P_char, P_char, P_obj, int,
+				      const void *, int);
+nevent_schedule_result nevent_replace_owned_payload(nevent_handle, event_func, int, P_char, P_char,
+						    P_obj, int, void *,
+						    nevent_payload_destroy_type);
+
+template <typename T>
+	requires(!std::is_void_v<T>)
+inline nevent_schedule_result nevent_replace(nevent_handle existing, event_func func, int delay,
+					     P_char ch, P_char victim, P_obj obj, int flag, T *data,
+					     int data_size)
+{
+	static_assert(std::is_trivially_copyable_v<std::remove_cv_t<T>>,
+		      "raw event payloads must be trivially copyable; use nevent_replace_owned");
+	return nevent_replace(existing, func, delay, ch, victim, obj, flag,
+			      static_cast<const void *>(data), data_size);
+}
+
+template <typename T>
+inline nevent_schedule_result nevent_replace_owned(nevent_handle existing, event_func func,
+						   int delay, P_char ch, P_char victim, P_obj obj,
+						   int flag, T data)
+{
+	using payload_type = std::remove_cv_t<T>;
+	payload_type *payload = new payload_type(std::move(data));
+	return nevent_replace_owned_payload(
+		existing, func, delay, ch, victim, obj, flag, payload,
+		[](void *stored_payload) { delete static_cast<payload_type *>(stored_payload); });
 }
 
 class nevent_rearm_guard
@@ -966,6 +997,10 @@ P_nevent get_scheduled(P_char, event_func_type);
 P_nevent get_scheduled(P_obj, event_func_type);
 P_nevent get_scheduled(event_func_type);
 P_nevent get_scheduled_excluding_current(P_char, event_func_type);
+nevent_handle nevent_find_next(P_char, event_func_type);
+nevent_handle nevent_find_next(P_obj, event_func_type);
+nevent_handle nevent_find_next(event_func_type);
+nevent_handle nevent_find_next_excluding_current(P_char, event_func_type);
 P_nevent get_next_scheduled_char(P_nevent, event_func_type);
 P_nevent get_next_scheduled_obj(P_nevent, event_func_type);
 void disarm_char_nevents(P_char, event_func_type);

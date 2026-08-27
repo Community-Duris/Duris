@@ -32,7 +32,8 @@ bool after_events_call = FALSE;
 P_char character_list = nullptr;
 P_index mob_index = nullptr;
 P_index obj_index = nullptr;
-P_room world = nullptr;
+static room_data test_world[1] = {};
+P_room world = test_world;
 extern const int top_of_world = 0;
 
 static mm_ds test_pool = {};
@@ -557,6 +558,91 @@ static void test_unbounded_warning()
 	require(unbounded_warnings == 1, 150);
 }
 
+static void test_schedule_results_and_lookup()
+{
+	reset_scheduler();
+	char_data dead_owner = {};
+	dead_owner.in_room = 0;
+	dead_owner.specials.position = STAT_DEAD;
+	char_data victim = {};
+	victim.in_room = 0;
+	victim.specials.position = STAT_NORMAL | POS_STANDING;
+	record_payload payload = { 9000, ULLONG_MAX };
+
+	auto result = add_event(nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr, 0);
+	require(result.status == nevent_schedule_status::null_callback && !result.handle.event, 170);
+	result = add_event(record_callback, -1, nullptr, nullptr, nullptr, 0, &payload,
+			   sizeof(payload));
+	require(result.status == nevent_schedule_status::negative_delay, 171);
+	result = add_event(record_callback, 0, &dead_owner, nullptr, nullptr, 0, &payload,
+			   sizeof(payload));
+	require(result.status == nevent_schedule_status::dead_owner, 172);
+	result = add_event(record_callback, 0, nullptr, &victim, nullptr, 0, &payload,
+			   sizeof(payload));
+	require(result.status == nevent_schedule_status::victim_without_owner, 173);
+	result = add_event(record_callback, 0, nullptr, nullptr, nullptr, 0,
+			   static_cast<const void *>(nullptr), sizeof(payload));
+	require(result.status == nevent_schedule_status::invalid_payload, 174);
+	ne_event_sequence = ULLONG_MAX;
+	result = add_event(record_callback, 0, nullptr, nullptr, nullptr, 0, &payload,
+			   sizeof(payload));
+	require(result.status == nevent_schedule_status::sequence_exhausted, 175);
+	ne_event_sequence = 0;
+	require_balanced(176);
+
+	auto late = add_event(record_callback, 300, nullptr, nullptr, nullptr, 0, &payload,
+			      sizeof(payload));
+	payload.id = 9001;
+	auto early = add_event(record_callback, 1, nullptr, nullptr, nullptr, 0, &payload,
+			       sizeof(payload));
+	payload.id = 9002;
+	auto middle = add_event(record_callback, 299, nullptr, nullptr, nullptr, 0, &payload,
+				sizeof(payload));
+	require(late && early && middle, 177);
+	require(nevent_find_next(record_callback).sequence == early.handle.sequence, 178);
+	require(get_scheduled(record_callback) == early.handle.event, 179);
+	cancel_all_events();
+	require_balanced(180);
+
+	reset_scheduler();
+	char_data player = {};
+	player.specials.position = STAT_NORMAL | POS_STANDING;
+	add_player_record(&player, event_wait, 9010, 10);
+	add_player_record(&player, event_wait, 9011, 2);
+	const nevent_handle owner_first = nevent_find_next(&player, event_wait);
+	require(owner_first.event && owner_first.event->due_tick == 2, 181);
+	P_nevent owner_second = get_next_scheduled_char(owner_first.event, event_wait);
+	require(owner_second && owner_second->due_tick == 10, 182);
+	current_nevent = owner_first.event;
+	require(nevent_find_next_excluding_current(&player, event_wait).event == owner_second, 183);
+	current_nevent = nullptr;
+	cancel_all_events();
+	require_balanced(184);
+
+	reset_scheduler();
+	payload = { 9020, ULLONG_MAX };
+	auto existing = add_event(record_callback, 10, nullptr, nullptr, nullptr, 0, &payload,
+				  sizeof(payload));
+	payload.id = 9021;
+	auto rejected = nevent_replace(existing.handle, record_callback, -1, nullptr, nullptr,
+				       nullptr, 0, &payload, sizeof(payload));
+	require(rejected.status == nevent_schedule_status::negative_delay && ne_event_counter == 1,
+		185);
+	require(nevent_find_next(record_callback).sequence == existing.handle.sequence, 186);
+	auto replacement = nevent_replace(existing.handle, record_callback, 2, nullptr, nullptr,
+					  nullptr, 0, &payload, sizeof(payload));
+	require(replacement && ne_event_counter == 1, 187);
+	require(nevent_find_next(record_callback).sequence == replacement.handle.sequence, 188);
+	auto invalid = nevent_replace({ nullptr, 0 }, record_callback, 1, nullptr, nullptr, nullptr, 0,
+				      &payload, sizeof(payload));
+	require(invalid.status == nevent_schedule_status::invalid_replace_target &&
+			ne_event_counter == 1,
+		189);
+	while (ne_event_counter > 0)
+		run_one_heartbeat();
+	require(fired.size() == 1 && fired[0] == std::pair<int, unsigned long long>{ 9021, 2 }, 190);
+}
+
 static void test_invalid_config_fallback()
 {
 	require(nevent_budget_usec() == NEVENT_BUDGET_USEC_DEFAULT, 155);
@@ -668,6 +754,8 @@ int main(int argc, char **argv)
 		test_unbounded_warning();
 	else if (std::strcmp(argv[1], "invalid-config") == 0)
 		test_invalid_config_fallback();
+	else if (std::strcmp(argv[1], "api") == 0)
+		test_schedule_results_and_lookup();
 	else
 		require(false, 161);
 	std::printf("nevent scheduler runtime mode passed: %s\n", argv[1]);
@@ -731,6 +819,7 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-scheduler-") as directory:
     )
     run_mode("unbounded")
     run_mode("invalid-config", DURIS_NEVENT_BUDGET_USEC="9" * 100)
+    run_mode("api")
 
 source = (SRC / "new_events.c").read_text(encoding="ascii")
 comm = (SRC / "comm.c").read_text(encoding="ascii")
@@ -740,6 +829,8 @@ assert "current_nevent->due_tick > ne_event_tick" in source
 assert "pass_sequence = ne_event_sequence" in source
 assert "nevent_sorts_before" in source
 assert "NEVENT_NORMAL_AGING_DEFERRALS" in source
+assert "nevent_schedule_status" in source
+assert "nevent_find_next" in source
 assert "nevent_advance_tick();" in comm
 
 print("nevent scheduler timing, priority, aging, and catch-up passed under ASan/UBSan")

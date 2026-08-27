@@ -31,10 +31,12 @@ static int redis_flushes = 0;
 static int artifact_run = 0;
 static int artifact_successes = 0;
 
-void add_event(event_func callback, int delay, P_char, P_char, P_obj, int, const void *, int)
+nevent_schedule_result add_event(event_func callback, int delay, P_char, P_char, P_obj, int,
+				 const void *, int)
 {
 	queue.push_back({ callback, delay });
 	scheduled_delays.push_back(delay);
+	return { nevent_schedule_status::scheduled, { nullptr, 0 } };
 }
 
 static void require(bool condition, int code)
