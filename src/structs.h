@@ -2038,12 +2038,11 @@ struct nevent_data
 	event_func_type func; // What function is called when event fires.
 	void *data; // Data argument to func
 	nevent_payload_destroy_type data_destroy; // Releases data according to its actual type.
-	unsigned int timer; // How much time in the row.
 	unsigned int element; // Which row of ne_schedule array
 	unsigned int priority;
 	unsigned int deferral_count;
 	unsigned int lifecycle_state;
-	unsigned long long scheduled_tick;
+	unsigned long long due_tick; // Absolute scheduler tick when this event becomes eligible.
 	unsigned long long sequence;
 	struct char_link_data *cld;
 	P_nevent next_char_nev;

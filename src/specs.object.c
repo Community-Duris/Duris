@@ -14983,10 +14983,13 @@ int moonstone(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 				{
 					continue;
 				}
-				// If event found, set it's timer to 1 min.
+				// If found, move decay one full scheduler-wheel interval from now.
 				if (*((struct obj_affect **)e->data) == aff)
 				{
-					e->timer = 1;
+					if (!nevent_reschedule_after(nevent_handle_from_event(e),
+								     PULSES_IN_TICK))
+						logit(LOG_EXIT,
+						      "moonstone: failed to reschedule decay event");
 				}
 			}
 		}

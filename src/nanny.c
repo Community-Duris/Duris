@@ -99,9 +99,6 @@ extern int top_of_mobt;
 extern P_index mob_index;
 extern void GetMIA(char *playerName, char *returned);
 extern void GetMIA2(char *playerName, char *returned);
-extern int pulse;
-extern P_nevent ne_schedule[PULSES_IN_TICK];
-extern P_nevent ne_schedule_tail[PULSES_IN_TICK];
 extern struct time_info_data time_info;
 
 #define PLR_FLAGS(ch) ((ch)->specials.act)
@@ -2591,121 +2588,24 @@ void enter_game(P_desc d)
 					    ((struct event_short_affect_data *)(evp->data))->af ==
 						    afp1)
 					{
-						/* The following is my thinking through how this works (You can ignore this if you already know):
-						 * So, the math goes: multiply event->timer * PULSES_IN_TICK so we have the number of 'rounds'
-						 *   we make through the ne_schedule[] array until the event actually fires.  I had to modify this
-						 *   calculation to take into account whether the current pulse has passed the current event or not.
-						 * Then, we have to add event->element - pulse.  This correlates to which row of ne_schedule[]
-						 *   we're currently executing (global variable pulse) vs which row the event is in.
-						 * Once we do this math, we have a positive value of pulses that corresponds to how long it will be
-						 *   before the event fires (in it's old position).
-						 * Now we need to subtract the number of seconds of offline time * the number of pulses in a second.
-						 *   This is the local variable rest (number of secs) * WAIT_SEC (pulses in a sec = 4 on 6/16/2015).
-						 * Now, if our new number of pulses left before the event expires is negative or 0, it's time to
-						 *   poof *afp1.  We do this via wear_off_messages (so they know it poofed), and affect_remove.
-						 * If our new number of pulses left is positive, we need to move the event from it's old row to a new
-						 *   one. So, we pull the event from it's row in ne_schedule[], updating the head/tail if necessary.
-						 *   Then we update evp->timer (pulses left / number of rows + 1).  The + 1 to make it range from 1..
-						 *   instead of 0.., which is important because the first thing ne_events() does is decrement evp->timer.
-						 *   Now we update evp->element ((pulses left + pulse) % number of rows).  The + pulse is because that's
-						 *   where the mud is currently executing.
-						 *   Finally, we add evp to the tail of ne_schedule[evp->element] (since that's easy) and handles properly
-						 *   for when evp->element == pulse.
-						 * I probably should've just written pull_event_from_schedule, and add_event_to_schedule functions, but
-						 *   hey, this is where I wrote it and I'm lazy. (You can break the code into functions if you want).  Perhaps
-						 *   an event_warp_time_left( P_nevent event, int pulses_lost ) or such would work. *shrug*
-						 */
-						long total_pulses =
-							(evp->timer -
-							 ((evp->element <
-							   static_cast<unsigned int>(pulse)) ?
-								  0 :
-								  1)) *
-								PULSES_IN_TICK +
-							evp->element - pulse;
-						/* Debugging:
-						snprintf(Gbuf1, MAX_STRING_LENGTH, "enter_game: short afp '%s': timer: %d, element: %d, pulse: %d, rest(pulses): &+Y%ld&n.\n\r"
-						  "enter_game: timer(pulses): %d, element - pulse: %d, total pulses: &+Y%ld&n, total pulses - rest: &+Y%ld&n\n\r"
-						  "enter_game: old time left on event(pulses/sec): %d/%d, old timer: &+B%d&n, old element: &+B%d&n.\n\r",
-						  skills[afp1->type].name, evp->timer, evp->element, pulse, rest * WAIT_SEC,
-						  (evp->timer - ((evp->element < pulse) ? 0 : 1)) * PULSES_IN_TICK, evp->element - pulse, total_pulses,
-						  total_pulses - rest * WAIT_SEC,
-						  ne_event_time(evp), ne_event_time(evp) / WAIT_SEC, evp->timer, evp->element );
-						SEND_TO_Q( Gbuf1, d);
-						*/
-						// Calculate the new number of pulses we want the event to last.
-						if ((total_pulses =
-							     total_pulses - rest * WAIT_SEC) < 1)
+						const unsigned long long elapsed_pulses =
+							static_cast<unsigned long long>(
+								MAX(0L, rest)) *
+							WAIT_SEC;
+						if (!nevent_advance_by(nevent_handle_from_event(evp),
+								       elapsed_pulses))
+						{
+							logit(LOG_EXIT,
+							      "enter_game: failed to advance offline short affect event");
+							break;
+						}
+						if (ne_event_time(evp) < 1)
 						{
 							// If the event would've fired while they were logged off, fire it now.
 							wear_off_message(ch, afp1);
 							affect_remove(ch, afp1);
 							break;
 						}
-
-						// Pull evp from ne_schedule[] list.
-						// If we're not at the end.
-						if (evp->next_sched)
-						{
-							evp->next_sched->prev_sched =
-								evp->prev_sched;
-						}
-						else if (evp == ne_schedule_tail[evp->element])
-						{
-							ne_schedule_tail[evp->element] =
-								evp->prev_sched;
-						}
-						else
-						{
-							logit(LOG_EXIT,
-							      "enter_game: missing ne_schedule tail link while rescheduling offline affect");
-							break;
-						}
-
-						// If we're not at the beginning.
-						if (evp->prev_sched)
-						{
-							evp->prev_sched->next_sched =
-								evp->next_sched;
-						}
-						else if (evp == ne_schedule[evp->element])
-						{
-							ne_schedule[evp->element] = evp->next_sched;
-						}
-						else
-						{
-							logit(LOG_EXIT,
-							      "enter_game: missing ne_schedule head link while rescheduling offline affect");
-							break;
-						}
-
-						// Update the timer.  The +1 is because we want the range from 1..MAX not 0..MAX,
-						//   since the first thing ne_events() does is decrement the timer.
-						evp->timer = (total_pulses) / PULSES_IN_TICK + 1;
-
-						// total_pulses + pulse because our starting point is ne_schedule[pulse].
-						evp->element =
-							(total_pulses + pulse) % PULSES_IN_TICK;
-
-						// Add evp to the end of the new row.
-						evp->next_sched = NULL;
-						evp->prev_sched = ne_schedule_tail[evp->element];
-						// If there was a previous element.
-						if (evp->prev_sched != NULL)
-						{
-							evp->prev_sched->next_sched = evp;
-						}
-						// Otherwise, this is the only element in the list, so add it to the head.
-						else
-						{
-							ne_schedule[evp->element] = evp;
-						}
-						ne_schedule_tail[evp->element] = evp;
-						/* Debugging:
-						snprintf(Gbuf1, MAX_STRING_LENGTH, "enter_game: new time left on event(pulses/sec): %d/%d, new timer: &+B%d&n, new element: &+B%d&n.\n\r",
-						  ne_event_time(evp), ne_event_time(evp) / WAIT_SEC, evp->timer, evp->element );
-						SEND_TO_Q( Gbuf1, d);
-						*/
 						break;
 					}
 				}

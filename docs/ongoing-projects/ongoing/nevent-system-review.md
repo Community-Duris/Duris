@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 5 complete
+Status: Implementation in progress; checkpoint 6 complete
 
-Last implementation update: 2026-08-27 22:24 IDT
+Last implementation update: 2026-08-27 22:49 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -23,9 +23,9 @@ contracts, formatting, and the server build pass.
 | 3 | NEV-02 and NEV-08 typed/POD hunt payload | Complete | ASan/UBSan ownership and stable-ID harnesses, raw-type compile rejection, 222 Python regressions, native signal test, format check, server build |
 | 4 | NEV-03 stable ship-volley references | Complete | ASan/UBSan live, deleted-endpoint, and ABA harness, 223 Python regressions, native signal test, format check, server build |
 | 5 | NEV-06 and NEV-07 periodic rearm safety | Complete | ASan/UBSan multi-interval/retry harness, 224 Python regressions, native signal test, format check, server build |
-| 6 | NEV-04, NEV-11, and NEV-22 absolute due-tick core and harness | Next | Not started |
-| 7 | NEV-09 and NEV-13 priority, aging, and catch-up policy | Pending | Not started |
-| 8 | NEV-12 and NEV-19 reschedule, lookup, and handle APIs | Pending | Not started |
+| 6 | NEV-04, NEV-11, NEV-12, and NEV-22 absolute due-tick core, rescheduling, and harness foundation | Complete | ASan/UBSan three-phase boundary matrix and 1,200-tick oracle, 225 Python regressions, native signal test, format check, server build |
+| 7 | NEV-09 and NEV-13 priority, aging, and catch-up policy | Next | Not started |
+| 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Pending | Not started |
 | 9 | NEV-14 through NEV-20 load control, observability, durability, and thread boundary | Pending | Not started |
 | 10 | NEV-21 documentation and legacy cleanup | Pending | Not started |
 
@@ -82,6 +82,26 @@ harness advances through repeated Redis-off and Redis-on checkpoints and through
 artifact query failure, result failure, empty result, and recovery without
 losing the job. Unique periodic keys and richer health state remain part of the
 NEV-17 registry work in checkpoint 9.
+
+Checkpoint 6 made the monotonic `due_tick` authoritative and removed the
+relative revolution counter. The scheduler derives physical buckets,
+eligibility, remaining time, and lateness from the same absolute clock; a stable
+sequence cutoff prevents callback-created records from joining the active pass.
+Tick `N` now remains unchanged for the whole heartbeat: `ne_events` closes its
+pre-pass window, and `nevent_advance_tick` advances the absolute tick and bucket
+together at the end. Delay zero can run on `N` only when scheduled before the
+pass and is otherwise staged for `N+1`. Scheduler-owned `reschedule_at`,
+`reschedule_after`, and `advance_by` operations also replaced the offline-affect,
+moonstone, and short-affect timer/link mutations, completing NEV-12 early. The
+new deterministic harness uses a fake scheduler/profiling clock and the real
+insertion, execution, destruction, and rescheduling paths. Under ASan/UBSan it
+covers delays 0, 1, 299, 300, 301, 599, 600, and 601 in all three phases;
+empty/head/middle/tail and callback-created current-bucket records; multiple
+revolutions in one bucket; link/counter/pool balance; and a 1,200-tick randomized
+comparison against an absolute-due priority-queue oracle. Priority, deferral,
+and catch-up portions of the larger NEV-22 matrix remain assigned to checkpoint
+7. The complete 225-test Python regression suite and native signal-handler test
+also pass with the new timing model.
 
 ## Executive assessment
 
@@ -200,43 +220,47 @@ not require production reproduction to justify correction.
 `ne_schedule` is a 300-bucket timing wheel. `pulse` advances every 250 ms, so one
 wheel revolution is 75 seconds. An event stores:
 
-- its callback and byte payload;
+- its callback and scheduler-owned payload (raw copies are restricted to
+  trivially copyable types, with a typed ownership path for C++ objects);
 - optional `ch`, `victim`, and `obj` owners/targets;
-- a bucket (`element`) and revolution count (`timer`);
+- an absolute `due_tick` and physical bucket (`element`);
 - priority and deferral metadata;
-- a diagnostic absolute `scheduled_tick` and sequence number;
+- a stable insertion sequence and lifecycle state;
 - intrusive links for the wheel, character list, object list, and victim link.
 
 `add_event` calculates:
 
 ```text
-bucket = (pulse + delay) % 300
-timer  = (delay / 300) + 1
-due    = ne_event_tick + delay
+first eligible tick = ne_event_tick + (event pass already started ? 1 : 0)
+due tick            = max(ne_event_tick + delay, first eligible tick)
+bucket              = due tick % 300
 ```
 
-The current bucket is scanned once per heartbeat. Each visited record decrements
-`timer`; a callback runs when it reaches zero. The event remains linked and is
-visible through lookup APIs while its callback executes. After the callback,
-`clear_nevent` unlinks it, the memory-manager pool record is released, and the
-global pending count is decremented.
+The current bucket is scanned once per heartbeat. A stable sequence cutoff is
+captured when the pass begins, and a callback runs only when its record belonged
+to that snapshot and `due_tick <= ne_event_tick`. Future revolutions can share a
+bucket without being mutated during earlier scans. The event remains linked and
+visible through lookup APIs while its callback executes. Scheduler-owned
+destruction then unlinks owners and wheel state, destroys the payload, releases
+the memory-manager pool record, and decrements the global pending count.
 
 ### Heartbeat phase
 
-The main loop sets `after_events_call = TRUE` immediately before calling
-`ne_events` (`src/comm.c:1503-1508`). Substantial game work follows. Near the end
-of the heartbeat, `pulse` is incremented and `after_events_call` is reset
-(`src/comm.c:1688-1689`). `ne_event_tick`, however, increments at the end of
-`ne_events` (`src/new_events.c:1355-1360`). Consequently, the two clock values are
-not a single coherent scheduler timestamp for most of the heartbeat.
+`ne_event_tick` is sampled once for the whole heartbeat, and `pulse` is its
+modulo-300 bucket. Calling `ne_events` changes the phase from pre-pass to
+during/after-pass without advancing time. Substantial activity and combat work
+therefore observe the same tick as the event pass. Near the end of the heartbeat,
+`nevent_advance_tick` increments the absolute tick, derives the next bucket, and
+reopens the pre-pass phase as one operation.
 
 ### Ownership and cancellation
 
 Character-owned events are appended to `ch->nevents`; object-owned events are
 prepended to `obj->nevents`. A distinct victim can be protected with a
-`char_link_data` link. Destruction generally neuters linked events and lets the
-wheel reclaim them later. Payload-embedded pointers, such as pointers inside
-`hunt_data` or `VolleyData`, are invisible to this ownership model.
+`char_link_data` link. Cancellation uses sequence-validated handles and defers
+reclamation only while an event pass is active. Hunt targets and delayed ship
+volleys use stable process-local identities rather than unowned embedded target
+pointers.
 
 ### Boot and persistence
 
@@ -373,6 +397,11 @@ Recommendation:
   destroyed before the callback; top-level owner links do not protect these.
 
 ### NEV-04: Exact-multiple delays depend on scheduling phase
+
+Implementation status (2026-08-27): Fixed and verified in checkpoint 6. Absolute
+deadlines now control both bucket placement and execution, and the sanitizer
+matrix covers every listed boundary in all heartbeat phases. The historical
+evidence below describes the pre-fix wheel arithmetic.
 
 The wheel arithmetic assumes the event will receive a decrement when its target
 bucket is next encountered. That assumption is false when the target bucket is
@@ -634,6 +663,11 @@ original arbitrary delay.
 
 ### NEV-11: Split clock phase makes due-time telemetry inaccurate
 
+Implementation status (2026-08-27): Fixed and verified in checkpoint 6.
+`ne_event_tick` is stable throughout a heartbeat, `pulse` is derived from it, and
+the scheduler advances both at the end of the heartbeat. The historical evidence
+below describes the pre-fix split phase.
+
 `ne_event_tick` increments at the end of `ne_events`, while `pulse` increments
 near the end of the heartbeat. Events created during activity/combat and other
 post-event work use the old wheel bucket phase but the next diagnostic tick.
@@ -647,6 +681,12 @@ due comparisons, lateness, and remaining time from that value and a documented
 phase.
 
 ### NEV-12: Callers bypass scheduling invariants
+
+Implementation status (2026-08-27): Fixed and verified in checkpoint 6, ahead of
+the original checkpoint 8 allocation. The three known direct-mutation paths now
+use cancellation or scheduler-owned `reschedule_at`, `reschedule_after`, and
+`advance_by` operations; no caller outside `new_events.c` writes wheel links,
+buckets, or deadlines. The historical evidence below describes the old paths.
 
 Two direct mutation patterns were confirmed:
 
@@ -833,6 +873,15 @@ material, and remove or quarantine unused legacy interfaces.
 
 ### NEV-22: Tests assert source strings, not scheduler behavior
 
+Implementation status (2026-08-27): In progress. Checkpoint 6 added the
+ASan/UBSan deterministic runtime harness and completed the phase/boundary,
+current-bucket, shared-revolution, reschedule/accounting, and randomized
+absolute-due oracle portions below. Existing executable regressions cover the
+listed cancellation, ownership, payload, lifetime, name-loading, and periodic
+rearm cases. Priority, mixed deferral, continuous-arrival fairness, and catch-up
+convergence are intentionally added with checkpoint 7; periodic uniqueness is
+part of checkpoint 9.
+
 The focused nevent tests passed, but inspection shows they mainly read source
 files and assert that particular identifiers or snippets exist. These tests can
 remain green while:
@@ -996,14 +1045,18 @@ tests/async/test_item_event_parser.py
 tests/async/test_scalar_event_idempotency.py
 ```
 
+Checkpoint 6 additionally passed
+`tests/async/test_nevent_scheduler_runtime.py` under ASan/UBSan, the complete
+225-test Python regression suite, and `tests/async/run_signal_handlers.sh`.
+
 `make -C src -j2` completed and linked `bin/server/dms_new` successfully. The
 built binary is a 64-bit PIE. A symbol/data probe found 6,220 text symbols in the
 built executable and 6,220 rows in `lib/misc/event_names`, confirming NEV-01
 against current artifacts.
 
 No live server or database was used. No migrations, production operations, or
-game-data mutations were performed. No source behavior was changed as part of
-this analysis.
+game-data mutations were performed. Implementation and verification are current
+through checkpoint 6 in the ledger above.
 
 ## Suggested implementation-session boundaries
 

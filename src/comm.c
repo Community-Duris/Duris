@@ -898,7 +898,6 @@ void game_loop(int port, int sslport)
 	opt_time.tv_usec = OPT_USEC; /* Init time values */
 	opt_time.tv_sec = 0;
 	gettimeofday(&last_time, (struct timezone *)0);
-	pulse = 0;
 
 	avail_descs = MAX_CONNECTIONS;
 
@@ -1501,8 +1500,7 @@ resume_game_loop:
 		latency_trace_record("prompts", (long)(prompts_time * 1000000.0), pulse);
 
 		/* handle heartbeat stuff */
-		/* Note: pulse now changes every 1/4 sec  */
-		after_events_call = TRUE;
+		/* ne_events() closes the current tick's pre-event scheduling phase. */
 		clock_t ne_events_begin = clock();
 		ne_events();
 		clock_t ne_events_end = clock();
@@ -1685,13 +1683,10 @@ resume_game_loop:
 			debug("Huge value for tics, resetting to 1.");
 			logit(LOG_SYS, "Huge value for tics, resetting to 1.");
 		}
-		pulse++;
-		after_events_call = FALSE;
+		nevent_advance_tick();
 		clock_t affect_and_points_begin = clock();
-		if (pulse >= PULSES_IN_TICK)
+		if (!pulse)
 		{
-			pulse = 0;
-
 			affect_update();
 			point_update();
 		}

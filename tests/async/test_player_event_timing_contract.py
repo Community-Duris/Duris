@@ -7,7 +7,7 @@ structs = (ROOT / "src" / "structs.h").read_text(encoding="utf-8", errors="repla
 
 assert contains(source, "nevent_is_player_timed")
 assert contains(source, "NEVENT_PRIORITY_PLAYER")
-assert contains(structs, "scheduled_tick")
+assert contains(structs, "due_tick")
 assert contains(source, "event->priority")
 assert contains(source, "PLAYER EVENT TIMING:")
 assert contains(source, "nevent_link_schedule")

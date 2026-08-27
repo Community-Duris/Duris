@@ -43,8 +43,6 @@ extern Skill skills[];
 /* needed for StartRegen() */
 extern int pulse;
 
-/* if true, we have called Events() from the main loop this pulse already */
-extern bool after_events_call;
 extern unsigned long long ne_event_tick;
 extern P_nevent current_nevent;
 
@@ -601,15 +599,13 @@ void CharWait(P_char ch, int delay)
 		if (e)
 		{
 			// If the new delay is shorter than the current, ignore new.
-			//   Note: If you want delays to stack, change this to to e->timer += delay (I think that'll work).
 			if (ne_event_time(e) >= delay)
 			{
 				return;
 			}
 			else
 			{
-				// Kill the shorter event and add a new one.. why not just update e->timer??
-				// Because we bucket-sort events and this is faster than moving the event to a new bucket.
+				// Replace the shorter deadline with the longer requested wait.
 				disarm_char_nevents(ch, event_wait);
 			}
 		}
@@ -651,14 +647,13 @@ void event_reset_zone(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *dat
 
 	if (zone_reset_trace_enabled())
 		logit(LOG_STATUS,
-		      "ZONE RESET TRACE: zone_rnum=%d zone_vnum=%d name=%s fired_tick=%llu scheduled_tick=%llu lateness_ticks=%lld event_element=%d event_timer=%d sequence=%llu age_before=%d lifespan=%d age_after=%d will_reset=%d reset_mode=%d pulse=%d",
+		      "ZONE RESET TRACE: zone_rnum=%d zone_vnum=%d name=%s fired_tick=%llu due_tick=%llu lateness_ticks=%lld event_bucket=%d sequence=%llu age_before=%d lifespan=%d age_after=%d will_reset=%d reset_mode=%d pulse=%d",
 		      zone, zone_table[zone].number, zone_table[zone].name, ne_event_tick,
-		      current_nevent ? current_nevent->scheduled_tick : 0,
+		      current_nevent ? current_nevent->due_tick : 0,
 		      current_nevent ?
-			      (long long)ne_event_tick - (long long)current_nevent->scheduled_tick :
+			      (long long)ne_event_tick - (long long)current_nevent->due_tick :
 			      0,
 		      current_nevent ? current_nevent->element : -1,
-		      current_nevent ? current_nevent->timer : -1,
 		      current_nevent ? current_nevent->sequence : 0, age_before,
 		      zone_table[zone].lifespan, age_before + 1, will_reset ? 1 : 0,
 		      zone_table[zone].reset_mode, pulse);

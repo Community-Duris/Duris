@@ -2055,9 +2055,7 @@ void affect_remove(P_char ch, struct affected_type *af)
 			if (pnev->func == event_short_affect && pnev->data != NULL &&
 			    ((struct event_short_affect_data *)(pnev->data))->af == af)
 			{
-				FREE(pnev->data);
-				pnev->data = NULL;
-				pnev->timer = 1;
+				nevent_cancel(nevent_handle_from_event(pnev));
 				break;
 			}
 		}

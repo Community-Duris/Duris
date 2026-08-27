@@ -90,8 +90,9 @@ defer = re.search(
 if defer:
     defer_body = defer.group(0)
     checks.append((
-        "deferral credits the revolution to events it skips",
-        contains(defer_body, "event->timer--;")
+        "deferral leaves future absolute deadlines untouched",
+        contains(defer_body, "event->due_tick > ne_event_tick") and
+        not contains(defer_body, "event->timer")
     ))
     checks.append((
         "deferral no longer stops at the first not-due event",
@@ -99,8 +100,9 @@ if defer:
     ))
     checks.append((
         "deferral keeps both bucket ends consistent",
-        contains(defer_body, "ne_schedule_tail[pulse] = event->prev_sched;") and
-        contains(defer_body, "ne_schedule[next_pulse] = moved_head;")
+        contains(defer_body, "nevent_unlink_schedule(event);") and
+        contains(defer_body, "ne_schedule[next_bucket] = moved_head;") and
+        contains(defer_body, "ne_schedule_tail[next_bucket] = moved_tail;")
     ))
 else:
     checks.append(("nevent_defer_suffix present", False))

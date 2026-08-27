@@ -973,6 +973,10 @@ void disarm_obj_nevents(P_obj, event_func_type);
 int ne_event_time(P_nevent);
 nevent_handle nevent_handle_from_event(P_nevent);
 nevent_cancel_result nevent_cancel(nevent_handle);
+bool nevent_reschedule_at(nevent_handle, unsigned long long);
+bool nevent_reschedule_after(nevent_handle, unsigned long long);
+bool nevent_advance_by(nevent_handle, unsigned long long);
+void nevent_advance_tick();
 void zone_purge(int);
 
 /* new_events.c */
