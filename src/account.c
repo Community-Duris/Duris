@@ -23,7 +23,14 @@
 #include "spells.h"
 #include "sql_player.h"
 #include "player_name.h"
+#include "player_load_materialize.h"
+#include "player_load_pipeline.h"
+#include "persistence_observability.h"
 #include "ws_handlers.h"
+
+#include <unordered_map>
+#include <new>
+#include <utility>
 
 // External Stuff
 extern P_index obj_index;
@@ -38,6 +45,11 @@ extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 
 struct acct_entry *account_list = NULL;
+
+namespace
+{
+std::unordered_map<uint64_t, player_load_result> ready_player_loads;
+} // namespace
 
 #define ACCT_SERIAL 1
 #define ACCOUNT_EMAIL_DB "Accounts/email.db"
@@ -1089,6 +1101,8 @@ void account_confirm_char(P_desc d, char *arg)
 
 		if (!ch)
 		{
+			if (STATE(d) == CON_PLAYER_LOAD)
+				return;
 			SEND_TO_Q("&+RSorry, I couldn't load that character!&n\r\n", d);
 			if (d->selected_char_name)
 			{
@@ -1798,9 +1812,52 @@ struct acct_chars *find_char_in_list(struct acct_chars *list, char *arg)
 P_char load_char_into_game(struct acct_chars *c, P_desc d)
 {
 	P_char player = NULL;
-	int status = 0;
+	player_load_result loaded = {};
+	if (!c || !d || c->pid <= 0 || !d->account || !d->account->acct_name)
+		return NULL;
+	if (!d->player_load_request_id)
+	{
+		player_load_request request = {};
+		request.request_id = player_load_pipeline_next_request_id();
+		request.pid = c->pid;
+		request.account_name = d->account->acct_name;
+		request.deadline_usec =
+			persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+		if (STATE(d) == CON_ACCT_CONFIRM_CHAR)
+		{
+			if (player_load_pipeline_submit(request) !=
+			    player_load_submit_outcome::accepted)
+				return NULL;
+			d->player_load_request_id = request.request_id;
+			d->player_load_pid = c->pid;
+			d->player_load_mode = PLAYER_LOAD_MODE_ACCOUNT;
+			STATE(d) = CON_PLAYER_LOAD;
+			SEND_TO_Q("Loading character...\r\n", d);
+			return NULL;
+		}
+		player_load_result blocking = {};
+		if (!player_load_pipeline_wait(request, &blocking, PLAYER_LOAD_TIMEOUT_USEC / 1000))
+			return NULL;
+		loaded = std::move(blocking);
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+	}
+	else
+	{
+		auto ready = ready_player_loads.find(d->player_load_request_id);
+		if (ready == ready_player_loads.end())
+			return NULL;
+		loaded = std::move(ready->second);
+		ready_player_loads.erase(ready);
+		d->player_load_request_id = 0;
+		d->player_load_pid = 0;
+	}
 
 	player = (P_char)mm_get(dead_mob_pool);
+	if (!player)
+	{
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		return NULL;
+	}
 
 	clear_char(player);
 
@@ -1811,34 +1868,67 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 				  mm_find_best_chunk(sizeof(struct pc_only_data), 10, 25));
 
 	player->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
+	if (!player->only.pc)
+	{
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		mm_release(dead_mob_pool, player);
+		return NULL;
+	}
 	player->desc = d;
 
-	status = restoreCharOnly(player, c->charname);
+	if (!player_load_materialize(player, loaded))
+	{
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		free_char(player);
+		return NULL;
+	}
+	// fixing racewar assignment on character list
+	c->racewar = GET_RACEWAR(player) == RACEWAR_EVIL ? ACCT_EVIL : ACCT_GOOD;
+	d->rtype = 0;
+	return player;
+}
 
-	if (status == -1)
+void account_player_load_complete(P_desc d, player_load_result result)
+{
+	if (!d || STATE(d) != CON_PLAYER_LOAD || d->player_load_mode != PLAYER_LOAD_MODE_ACCOUNT ||
+	    !d->player_load_request_id || result.request_id != d->player_load_request_id)
 	{
-		SEND_TO_Q("Couldn't find that pfile!\r\n", d);
-		STATE(d) = CON_DISPLAY_ACCT_MENU;
-		display_account_menu(d, NULL);
-		if (player)
-			free_char(player);
-		return NULL;
+		player_load_pipeline_note_stale();
+		return;
 	}
-	else if (status == -2)
+	if (result.pid != d->player_load_pid)
 	{
-		SEND_TO_Q("There was an error reading your pfile!\r\n", d);
-		STATE(d) = CON_DISPLAY_ACCT_MENU;
-		display_account_menu(d, NULL);
-		if (player)
-			free_char(player);
-		return NULL;
+		player_load_pipeline_note_stale();
+		result.pid = d->player_load_pid;
+		result.outcome = player_load_outcome::stale;
 	}
-	else
+	const uint64_t completed_request_id = result.request_id;
+	try
 	{
-		// fixing racewar assignment on character list
-		c->racewar = GET_RACEWAR(player) == RACEWAR_EVIL ? ACCT_EVIL : ACCT_GOOD;
-		d->rtype = status;
-		return player;
+		ready_player_loads.emplace(completed_request_id, std::move(result));
+	}
+	catch (const std::bad_alloc &)
+	{
+		d->player_load_request_id = 0;
+		d->player_load_pid = 0;
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		SEND_TO_Q("&+RSorry, I couldn't prepare that character!&n\r\n", d);
+		if (d->selected_char_name)
+		{
+			str_free(d->selected_char_name);
+			d->selected_char_name = NULL;
+		}
+		STATE(d) = CON_ACCT_SELECT_CHAR;
+		display_character_list(d);
+		return;
+	}
+	STATE(d) = CON_ACCT_CONFIRM_CHAR;
+	account_confirm_char(d, writable_arg("Y"));
+	if (ready_player_loads.erase(completed_request_id))
+	{
+		d->player_load_request_id = 0;
+		d->player_load_pid = 0;
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
 	}
 }
 
@@ -1975,6 +2065,7 @@ void add_char_to_account(P_desc d)
 	if (!c)
 		return;
 
+	c->pid = GET_PID(player);
 	c->charname = str_dup(player->player.name);
 	c->count = 1;
 	c->last = time(NULL);

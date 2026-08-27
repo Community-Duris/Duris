@@ -225,6 +225,9 @@ OBJS =  $(SHIP_OBJS) \
 				 session_audit_command.o \
 				 session_audit_repository.o \
 				 session_audit_transaction.o \
+				 player_load_repository.o \
+				 player_load_pipeline.o \
+				 player_load_materialize.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
 				 player_save_worker.o \

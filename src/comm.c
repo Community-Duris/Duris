@@ -32,6 +32,7 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <utility>
 #include <zlib.h>
 #include "assocs.h"
 #include "auction_houses.h"
@@ -92,9 +93,13 @@
 #include "zone_touch_transaction.h"
 #include "epic_transaction.h"
 #include "player_save_pipeline.h"
+#include "player_load_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "test_async.h"
 #endif
+
+void account_player_load_complete(P_desc d, player_load_result result);
+void nanny_player_load_complete(P_desc d, player_load_result result);
 
 /* external variables */
 
@@ -473,6 +478,9 @@ void run_the_game(int port, int sslport)
 
 	logit(LOG_STATUS, "Signal trapping.");
 	signal_setup();
+	if (!player_load_pipeline_init())
+		logit(LOG_STATUS,
+		      "Player load pipeline unavailable; existing-character login fails closed.");
 
 	SetSpellCircles(); /* spells circlewise done with pure math */
 
@@ -681,6 +689,7 @@ void run_the_game(int port, int sslport)
 
 	game_loop(port, sslport);
 	redis_cleanup();
+	player_load_pipeline_shutdown();
 	critical_command_coordinator_shutdown();
 	critical_outbox_shutdown();
 	if (!_pwipe)
@@ -1417,6 +1426,32 @@ resume_game_loop:
 							  "none", "none", "integrity_failure",
 							  "operation metadata redacted");
 			player_save_pipeline_pulse();
+			player_load_result load_completions[32] = {};
+			const size_t load_completion_count =
+				player_load_pipeline_pulse(load_completions, 32);
+			for (size_t index = 0; index < load_completion_count; ++index)
+			{
+				bool delivered = false;
+				for (P_desc descriptor = descriptor_list; descriptor;
+				     descriptor = descriptor->next)
+					if (descriptor->player_load_request_id ==
+					    load_completions[index].request_id)
+					{
+						if (descriptor->player_load_mode ==
+						    PLAYER_LOAD_MODE_LEGACY)
+							nanny_player_load_complete(
+								descriptor,
+								std::move(load_completions[index]));
+						else
+							account_player_load_complete(
+								descriptor,
+								std::move(load_completions[index]));
+						delivered = true;
+						break;
+					}
+				if (!delivered)
+					player_load_pipeline_note_stale();
+			}
 			redis_world_recovery_pulse();
 			latency_trace_record("gmcp_flush",
 					     (long)((clock() - _gmcp) * 1000000.0 / CLOCKS_PER_SEC),
@@ -2205,6 +2240,8 @@ void close_socket(struct descriptor_data *d)
 	int is_morphed = d->character ? IS_MORPH(d->character) : 0;
 	char Gbuf1[MAX_STRING_LENGTH];
 	time_t ct;
+	if (d && d->player_load_request_id)
+		player_load_pipeline_cancel(d->player_load_request_id);
 
 	compress_end(d, TRUE); /* does flushing out all output break anything ? */
 

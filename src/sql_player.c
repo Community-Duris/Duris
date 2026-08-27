@@ -5005,13 +5005,14 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
 		return NULL;
 
 	char query[512];
-	snprintf(query, sizeof(query),
-		 "select ac.char_name, ac.login_count, ac.last_login, ac.blocked, ac.racewar, "
-		 "pd.level, pd.race, pd.m_class, pd.secondary_class, pd.last_room, pd.last_save "
-		 "from account_characters ac "
-		 "left join player_data pd on ac.pid = pd.pid "
-		 "where LOWER(ac.account_name)=LOWER('%s') and ac.deleted_at is null",
-		 esc_name);
+	snprintf(
+		query, sizeof(query),
+		"select ac.pid, ac.char_name, ac.login_count, ac.last_login, ac.blocked, ac.racewar, "
+		"pd.level, pd.race, pd.m_class, pd.secondary_class, pd.last_room, pd.last_save "
+		"from account_characters ac "
+		"left join player_data pd on ac.pid = pd.pid "
+		"where LOWER(ac.account_name)=LOWER('%s') and ac.deleted_at is null",
+		esc_name);
 	free(esc_name);
 
 	MYSQL_RES *result = db_query("%s", query);
@@ -5032,17 +5033,18 @@ static struct acct_chars *sql_load_account_characters(const char *account_name)
 		struct acct_chars *ch;
 		CREATE(ch, struct acct_chars, 1, MEM_TAG_OTHER);
 
-		ch->charname = str_dup(row[0] ? row[0] : "");
-		ch->count = row[1] ? strtoul(row[1], NULL, 10) : 0;
-		ch->last = row[2] ? atol(row[2]) : 0;
-		ch->blocked = row[3] ? atoi(row[3]) : 0;
-		ch->racewar = row[4] ? atoi(row[4]) : 0;
-		ch->level = row[5] ? atoi(row[5]) : 0;
-		ch->race = row[6] ? atoi(row[6]) : 0;
-		ch->m_class = row[7] ? (unsigned int)strtoul(row[7], NULL, 10) : 0;
-		ch->secondary_class = row[8] ? (unsigned int)strtoul(row[8], NULL, 10) : 0;
-		ch->last_room = row[9] ? atoi(row[9]) : 0;
-		ch->last_save = row[10] ? atol(row[10]) : 0;
+		ch->pid = row[0] ? atoi(row[0]) : 0;
+		ch->charname = str_dup(row[1] ? row[1] : "");
+		ch->count = row[2] ? strtoul(row[2], NULL, 10) : 0;
+		ch->last = row[3] ? atol(row[3]) : 0;
+		ch->blocked = row[4] ? atoi(row[4]) : 0;
+		ch->racewar = row[5] ? atoi(row[5]) : 0;
+		ch->level = row[6] ? atoi(row[6]) : 0;
+		ch->race = row[7] ? atoi(row[7]) : 0;
+		ch->m_class = row[8] ? (unsigned int)strtoul(row[8], NULL, 10) : 0;
+		ch->secondary_class = row[9] ? (unsigned int)strtoul(row[9], NULL, 10) : 0;
+		ch->last_room = row[10] ? atoi(row[10]) : 0;
+		ch->last_save = row[11] ? atol(row[11]) : 0;
 		ch->next = NULL;
 
 		if (!head)

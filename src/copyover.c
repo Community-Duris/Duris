@@ -33,6 +33,9 @@
 #include "critical_command_coordinator.h"
 #include "critical_outbox.h"
 #include "player_save_pipeline.h"
+#include "player_load_materialize.h"
+#include "player_load_pipeline.h"
+#include "persistence_observability.h"
 #include "redis.h"
 
 #define DMS_STAGED_BINARY "bin/server/dms_new"
@@ -58,7 +61,6 @@ extern int used_descs;
 
 extern void nonblock(int s);
 
-extern int restoreCharOnly(P_char ch, char *name);
 extern void clear_char(P_char ch);
 
 static int copyover_in_progress = 0;
@@ -778,7 +780,20 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 static P_char copyover_load_player(const char *name, P_desc d)
 {
 	P_char player;
-	int status;
+	player_load_request request = {};
+	player_load_result result = {};
+	const uint64_t now = persistence_observability_now_usec();
+	request.request_id = player_load_pipeline_next_request_id();
+	request.player_name = name ? name : "";
+	request.deadline_usec = now + PLAYER_LOAD_TIMEOUT_USEC;
+	if (!player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000) ||
+	    result.request_id != request.request_id ||
+	    result.outcome != player_load_outcome::applied)
+	{
+		logit(LOG_STATUS, "copyover: worker load failed (request=%llu outcome=%u)",
+		      (unsigned long long)request.request_id, (unsigned int)result.outcome);
+		return NULL;
+	}
 
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
@@ -793,13 +808,19 @@ static P_char copyover_load_player(const char *name, P_desc d)
 				  mm_find_best_chunk(sizeof(struct pc_only_data), 10, 25));
 
 	player->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
+	if (!player->only.pc)
+	{
+		mm_release(dead_mob_pool, player);
+		return NULL;
+	}
 
 	player->desc = d;
 
-	status = restoreCharOnly(player, (char *)name);
-	if (status < 0)
+	if (!player_load_materialize(player, result))
 	{
-		logit(LOG_STATUS, "copyover: failed to restore %s (status %d)", name, status);
+		logit(LOG_STATUS, "copyover: failed to materialize worker result (request=%llu)",
+		      (unsigned long long)request.request_id);
+		free_char(player);
 		return NULL;
 	}
 

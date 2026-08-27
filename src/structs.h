@@ -1689,8 +1689,13 @@ struct txt_q
 // lower layer but meh...
 #define CON_SSLNEGO 87 // connected but not yet ready for sends
 #define CON_TTYPE_NEGO 88 // waiting for ttype response
+#define CON_PLAYER_LOAD 89 // waiting for exact async player-load completion
 
-#define TOTAL_CON 88
+#define PLAYER_LOAD_MODE_NONE 0
+#define PLAYER_LOAD_MODE_ACCOUNT 1
+#define PLAYER_LOAD_MODE_LEGACY 2
+
+#define TOTAL_CON 89
 
 /* modes of confirmation- SAM 7-94 */
 #define CONFIRM_NONE 0
@@ -1745,6 +1750,9 @@ struct descriptor_data
 	char last_command[MAX_INPUT_LENGTH];
 	P_acct account;
 	char *selected_char_name; /* temporary storage for character selection confirmation */
+	uint64_t player_load_request_id;
+	int player_load_pid;
+	unsigned char player_load_mode;
 	/* SAM 7-94, used to allow confirming commands */
 	char old_pwd[40]; /* old password held here when
 	                                       changing SAM 7-94 */

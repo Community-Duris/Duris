@@ -116,6 +116,7 @@ class CurrencyTransactionContractTests(unittest.TestCase):
             "files.c",                 # format-compatible import parsing
             "nanny.c",                 # new-character initialization
             "sql_player.c",            # authoritative hydration
+            "player_load_materialize.c",  # authoritative worker snapshot hydration
             "utility.c",               # NPC fallback in central adapters
             "mobconv.c",               # NPC construction
             "db.c",                    # NPC construction

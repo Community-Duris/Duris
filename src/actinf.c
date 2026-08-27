@@ -47,6 +47,7 @@ using namespace std;
 #include "player_save_worker.h"
 #include "player_save_journal.h"
 #include "player_save_pipeline.h"
+#include "player_load_pipeline.h"
 #include "world_recovery_pipeline.h"
 #include "redis.h"
 #include "ships/ships.h"
@@ -3992,6 +3993,7 @@ static void show_world_persistence(P_char ch)
 	const player_save_worker_health player_saves = player_save_worker_health_copy();
 	const player_save_journal_health player_journal = player_save_journal_health_copy();
 	const player_save_pipeline_health player_pipeline = player_save_pipeline_health_copy();
+	const player_load_pipeline_health player_loads = player_load_pipeline_health_copy();
 	const critical_coordinator_health critical = critical_command_coordinator_health_copy();
 	const critical_command_journal_health critical_journal =
 		critical_command_journal_health_copy();
@@ -4015,6 +4017,8 @@ static void show_world_persistence(P_char ch)
 		world_persistence_max(oldest_save_age_msec, critical_journal.oldest_age_msec);
 	oldest_save_age_msec =
 		world_persistence_max(oldest_save_age_msec, critical_outbox.oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, player_loads.oldest_age_msec);
 
 	send_to_char("Persistence health (metadata only)\n", ch);
 	if (query.total_calls == 0)
@@ -4028,6 +4032,36 @@ static void show_world_persistence(P_char ch)
 			 (unsigned long long)query.total_calls,
 			 (unsigned long long)query.total_failures, (unsigned long long)query.count,
 			 (unsigned long long)query.registry_overflow);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "player_load state=%s queued=%llu inflight=%llu completions=%llu "
+		 "oldest_age_ms=%llu high_water=%llu submitted=%llu applied=%llu "
+		 "cancelled=%llu stale=%llu failures=%llu/%llu limits=%llu timeouts=%llu "
+		 "last_query_rows=%u/%u last_bytes=%llu snapshot_age_sec=%llu last_txn_us=%llu "
+		 "completion_us=%llu/%llu\n",
+		 !player_loads.running			      ? "stopped" :
+		 player_loads.queued || player_loads.inflight ? "pending" :
+		 player_loads.retryable_failures || player_loads.component_failures ||
+				 player_loads.limit_exceeded || player_loads.timed_out ?
+								"degraded" :
+								"ready",
+		 (unsigned long long)player_loads.queued, (unsigned long long)player_loads.inflight,
+		 (unsigned long long)player_loads.completions,
+		 (unsigned long long)player_loads.oldest_age_msec,
+		 (unsigned long long)player_loads.high_water,
+		 (unsigned long long)player_loads.submitted,
+		 (unsigned long long)player_loads.applied,
+		 (unsigned long long)player_loads.cancelled, (unsigned long long)player_loads.stale,
+		 (unsigned long long)player_loads.retryable_failures,
+		 (unsigned long long)player_loads.component_failures,
+		 (unsigned long long)player_loads.limit_exceeded,
+		 (unsigned long long)player_loads.timed_out, player_loads.last_query_count,
+		 player_loads.last_row_count, (unsigned long long)player_loads.last_snapshot_bytes,
+		 (unsigned long long)player_loads.last_snapshot_age_sec,
+		 (unsigned long long)player_loads.last_transaction_usec,
+		 (unsigned long long)player_loads.last_completion_latency_usec,
+		 (unsigned long long)player_loads.max_completion_latency_usec);
 	send_to_char(line, ch);
 
 	const size_t rendered_sites = query.count < top_site_limit ? query.count : top_site_limit;

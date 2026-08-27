@@ -95,6 +95,8 @@ const char *persistence_query_context_name(enum persistence_query_context contex
 		return "locker-worker";
 	case PERSISTENCE_QUERY_CONTEXT_PLAYER_SAVE_WORKER:
 		return "player-save-worker";
+	case PERSISTENCE_QUERY_CONTEXT_PLAYER_LOAD_WORKER:
+		return "player-load-worker";
 	case PERSISTENCE_QUERY_CONTEXT_COUNT:
 		break;
 	}

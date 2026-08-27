@@ -80,6 +80,7 @@ class EpicTransactionContractTests(unittest.TestCase):
             "epic_transaction.c",
             "nanny.c",       # new-character initialization only
             "sql_player.c",  # authoritative hydration only
+            "player_load_materialize.c",  # authoritative worker snapshot hydration
         }
         violations = []
         for path in SRC.rglob("*.c"):

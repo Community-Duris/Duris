@@ -26,6 +26,7 @@ struct acct_ip
 
 struct acct_chars
 { // Account Character Entry
+	int pid;
 	char *charname;
 	unsigned long int count;
 	long int last;

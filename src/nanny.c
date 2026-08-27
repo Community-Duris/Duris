@@ -37,6 +37,9 @@
 #include "mm.h"
 #include "multiplay_whitelist.h"
 #include "paladins.h"
+#include "player_load_materialize.h"
+#include "player_load_pipeline.h"
+#include "persistence_observability.h"
 #include "redis.h"
 #include "ships.h"
 #include "specializations.h"
@@ -2404,13 +2407,13 @@ void enter_game(P_desc d)
 	if (GET_LEVEL(ch))
 	{
 		ch->desc = d;
-
-		// load account bank
-		const char *acct = get_account_name_safe(ch);
-		if (acct && strcmp(acct, "Unknown") != 0)
+		if (d->player_load_mode == PLAYER_LOAD_MODE_NONE)
 		{
-			sql_load_account_bank(acct, GET_RACEWAR(ch), ch);
+			const char *acct = get_account_name_safe(ch);
+			if (acct && strcmp(acct, "Unknown") != 0)
+				sql_load_account_bank(acct, GET_RACEWAR(ch), ch);
 		}
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
 
 		reset_char(ch);
 
@@ -3579,6 +3582,133 @@ void reconnect(P_desc d, P_char tmp_ch)
 	send_offline_messages(d->character);
 }
 
+static void finish_legacy_player_login(P_desc d)
+{
+	char buf[MAX_STRING_LENGTH];
+	if ((used_descs >= avail_descs) && (GET_LEVEL(d->character) < AVATAR))
+	{
+		SEND_TO_Q("Sorry, the game is almost full and the last slot is reserved...\r\n", d);
+		STATE(d) = CON_FLUSH;
+		return;
+	}
+	if (IS_SET(game_locked, LOCK_CONNECTIONS) && !IS_TRUSTED(d->character))
+	{
+		SEND_TO_Q("\r\nGame is temporarily closed to additional players.\r\n", d);
+		SEND_TO_Q("Please try again later.  -The Mgt\r\n", d);
+		STATE(d) = CON_FLUSH;
+		return;
+	}
+	if (IS_SET(game_locked, LOCK_MAX_PLAYERS) && !IS_TRUSTED(d->character) &&
+	    static_cast<unsigned int>(number_of_players()) > game_locked_players)
+	{
+		snprintf(buf, sizeof(buf), "Game is temporarily locked to %u chars.\n",
+			 game_locked_players);
+		SEND_TO_Q(buf, d);
+		SEND_TO_Q("\r\nGame is currently full.  Please try again later.\r\n", d);
+		STATE(d) = CON_FLUSH;
+		return;
+	}
+	if (IS_SET(game_locked, LOCK_LEVEL) &&
+	    static_cast<unsigned int>(GET_LEVEL(d->character)) < game_locked_level)
+	{
+		snprintf(
+			buf, sizeof(buf),
+			"Game is temporarily locked to your level (levels below %u).  Please try again later.\r\n",
+			game_locked_level);
+		SEND_TO_Q(buf, d);
+		STATE(d) = CON_FLUSH;
+		return;
+	}
+	if (is_multiplaying(d))
+	{
+		STATE(d) = CON_FLUSH;
+		return;
+	}
+
+	logit(LOG_COMM, "%s [%s] has connected.", GET_NAME(d->character), d->host);
+	sql_log(d->character, CONNECTLOG, "Connected");
+	if (IS_TRUSTED(d->character))
+	{
+		if (!wizconnectsite(d->host, GET_NAME(d->character), 0))
+		{
+			wizlog(AVATAR, "WARNING: %s connected from an invalid site: %s",
+			       GET_NAME(d->character), d->host);
+			SEND_TO_Q(
+				"Sorry, that host is not allowed to connect to this character.\r\n",
+				d);
+			STATE(d) = CON_FLUSH;
+			return;
+		}
+		SEND_TO_Q(wizmotd.c_str(), d);
+	}
+	else
+		SEND_TO_Q(motd.c_str(), d);
+	SEND_TO_Q("\r\n*** PRESS RETURN: ", d);
+	STATE(d) = CON_RMOTD;
+	echo_on(d);
+}
+
+void nanny_player_load_complete(P_desc d, player_load_result result)
+{
+	if (!d || STATE(d) != CON_PLAYER_LOAD || d->player_load_mode != PLAYER_LOAD_MODE_LEGACY ||
+	    !d->player_load_request_id || result.request_id != d->player_load_request_id)
+	{
+		player_load_pipeline_note_stale();
+		return;
+	}
+	d->player_load_request_id = 0;
+	d->player_load_pid = 0;
+	if (result.outcome != player_load_outcome::applied || result.pid <= 0)
+	{
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		SEND_TO_Q(
+			"Seems to be a problem reading that player. Please choose another name.\r\n",
+			d);
+		if (d->character)
+		{
+			free_char(d->character);
+			d->character = NULL;
+		}
+		STATE(d) = CON_NAME;
+		return;
+	}
+
+	char password[sizeof(d->character->only.pc->pwd)] = {};
+	strlcpy(password, d->character->only.pc->pwd, sizeof(password));
+	P_char loaded = (P_char)mm_get(dead_mob_pool);
+	if (loaded)
+	{
+		clear_char(loaded);
+		ensure_pconly_pool();
+		loaded->only.pc = (struct pc_only_data *)mm_get(dead_pconly_pool);
+	}
+	if (!loaded || !loaded->only.pc || !player_load_materialize(loaded, result))
+	{
+		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
+		if (loaded)
+		{
+			if (loaded->only.pc)
+				free_char(loaded);
+			else
+				mm_release(dead_mob_pool, loaded);
+		}
+		SEND_TO_Q(
+			"Seems to be a problem preparing that player. Please choose another name.\r\n",
+			d);
+		free_char(d->character);
+		d->character = NULL;
+		STATE(d) = CON_NAME;
+		return;
+	}
+	strlcpy(loaded->only.pc->pwd, password, sizeof(loaded->only.pc->pwd));
+	loaded->desc = d;
+	d->character->desc = NULL;
+	free_char(d->character);
+	d->character = loaded;
+	d->rtype = 0;
+	finish_legacy_player_login(d);
+}
+
 void select_pwd(P_desc d, char *arg)
 {
 	P_char tmp_ch;
@@ -3656,117 +3786,35 @@ void select_pwd(P_desc d, char *arg)
 				}
 			}
 
-			if ((d->rtype = restoreCharOnly(d->character, GET_NAME(d->character))) >= 0)
-			{
-				/* by reserving the last available socket for an immort, gods should
-					   almost always be able to connect.  JAB */
-				if ((used_descs >= avail_descs) &&
-				    (GET_LEVEL(d->character) < AVATAR))
-				{
-					SEND_TO_Q(
-						"Sorry, the game is almost full and the last slot is reserved...\r\n",
-						d);
-					STATE(d) = CON_FLUSH;
-					return;
-				}
-			}
-			else if (d->rtype == -2)
-			{
-				/* player file exists, but there is a problem reading it */
-				SEND_TO_Q(
-					"Seems to be a problem reading that player file.  Please choose another\r\n"
-					"name and report this problem to an Immortal.\r\n\r\n",
-					d);
-				if (d->character)
-				{
-					free_char(d->character);
-					d->character = NULL;
-				}
-				STATE(d) = CON_NAME;
-				return;
-			}
-
-			if (IS_SET(game_locked, LOCK_CONNECTIONS) && !IS_TRUSTED(d->character))
-			{
-				SEND_TO_Q(
-					"\r\nGame is temporarily closed to additional players.\r\n",
-					d);
-				SEND_TO_Q("Please try again later.  -The Mgt\r\n", d);
-				STATE(d) = CON_FLUSH;
-				return;
-			}
-
-			if ((IS_SET(game_locked, LOCK_MAX_PLAYERS)) && !IS_TRUSTED(d->character) &&
-			    (static_cast<unsigned int>(number_of_players()) > game_locked_players))
-			{
-				snprintf(Gbuf1, MAX_STRING_LENGTH,
-					 "Game is temporarily locked to %u chars.\n",
-					 game_locked_players);
-				SEND_TO_Q(Gbuf1, d);
-				SEND_TO_Q(
-					"\r\nGame is currently full.  Please try again later.\r\n",
-					d);
-				//        SEND_TO_Q("Note 5pm - 8am EST there are no limits on connections.\r\n", d);
-				STATE(d) = CON_FLUSH;
-				return;
-			}
-
-			if (((IS_SET(game_locked, LOCK_LEVEL)) &&
-			     (static_cast<unsigned int>(GET_LEVEL(d->character)) <
-			      game_locked_level)))
-			{
-				snprintf(
-					Gbuf1, MAX_STRING_LENGTH,
-					"Game is temporarily locked to your level (levels below %u).  Please try again later.\r\n",
-					game_locked_level);
-				SEND_TO_Q(Gbuf1, d);
-				STATE(d) = CON_FLUSH;
-				return;
-			}
-
-			// multiplay check: if the user already has another character in game, don't let them connect a new character
-			if (is_multiplaying(d))
-			{
-				STATE(d) = CON_FLUSH;
-				return;
-			}
-
-			logit(LOG_COMM, "%s [%s] has connected.", GET_NAME(d->character), d->host);
-			sql_log(d->character, CONNECTLOG, "Connected");
-
-			if (IS_TRUSTED(d->character))
-			{
-				if (!wizconnectsite(d->host, GET_NAME(d->character), 0))
-				{
-					wizlog(AVATAR,
-					       "WARNING: %s connected from an invalid site: %s",
-					       GET_NAME(d->character), d->host);
-					SEND_TO_Q(
-						"Sorry, that host is not allowed to connect to this character.\r\n",
-						d);
-					STATE(d) = CON_FLUSH;
-					return;
-				}
-				SEND_TO_Q(wizmotd.c_str(), d);
-			}
-			else
-			{
-				SEND_TO_Q(motd.c_str(), d);
-			}
-
-			// Use better passwords now.
 			if (d->character->only.pc->pwd[0] != '$')
 			{
 				SEND_TO_Q(
 					"\n\r\n\r&=LRUpgrading password - All characters now in use!&n\n\r\n\r",
 					d);
-				strcpy(d->character->only.pc->pwd,
-				       CRYPT2(arg, GET_NAME(d->character)));
+				strlcpy(d->character->only.pc->pwd,
+					CRYPT2(arg, GET_NAME(d->character)),
+					sizeof(d->character->only.pc->pwd));
 			}
-
-			SEND_TO_Q("\r\n*** PRESS RETURN: ", d);
-			STATE(d) = CON_RMOTD;
-			echo_on(d);
+			player_load_request request = {};
+			request.request_id = player_load_pipeline_next_request_id();
+			request.player_name = GET_NAME(d->character);
+			request.deadline_usec =
+				persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+			if (player_load_pipeline_submit(request) !=
+			    player_load_submit_outcome::accepted)
+			{
+				SEND_TO_Q(
+					"Player loading is temporarily unavailable. Please try again.\r\n",
+					d);
+				STATE(d) = CON_FLUSH;
+				return;
+			}
+			d->player_load_request_id = request.request_id;
+			d->player_load_pid = 0;
+			d->player_load_mode = PLAYER_LOAD_MODE_LEGACY;
+			STATE(d) = CON_PLAYER_LOAD;
+			SEND_TO_Q("Loading character...\r\n", d);
+			return;
 		}
 		break;
 
@@ -6083,6 +6131,10 @@ void nanny(P_desc d, char *arg)
 		SEND_TO_Q(
 			"You cannot do anything during this period. If the time you have waited is\r\ntoo long (by your point of view), you can come back later on.\r\n",
 			d);
+		break;
+
+	case CON_PLAYER_LOAD:
+		SEND_TO_Q("Your character is still loading.\r\n", d);
 		break;
 
 	case CON_WELCOME:
