@@ -72,6 +72,94 @@ the three scripts at the root of `tests/` require explicitly named disposable
 or read-only databases and are manual migration-verification tools. Never point
 them at production.
 
+## Validation matrix
+
+No single command proves release readiness. Use the narrowest applicable row while
+iterating, then run every row required by the session or release gate.
+
+| Evidence boundary | Command | What it proves | What it does not prove |
+|---|---|---|---|
+| Documentation | `python3 tests/async/test_documentation_contract.py` | Maintained links, paths, commands, configuration names, safety language, and diagram contracts | Runtime or database behavior |
+| Focused source/runtime | `python3 tests/async/test_<feature>.py` | One named invariant or compiled harness | Unrelated domains or integrated load |
+| Server build | `make -C src` | C++20 server compiles under the warning profile | Schema compatibility or runtime readiness |
+| Repository gate | `make test-all` | Maintained builds, generated world inputs, all discovered Python tests, and native signal tests | Docker database suites, representative data, or a 200-player hold |
+| Disposable schema | `make test-db` | Listed schema contracts on isolated Docker MySQL | MariaDB parity or configured database state |
+| Dual-engine boot contract | `tests/async/run_runtime_compatibility_mysql.sh` and `RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh` | Fresh bootstrap, immutable head, drift rejection, and boot compatibility on MySQL 8 and MariaDB 10.11 | A configured or production upgrade |
+| Lifecycle/privacy | commands below | Pending-policy fail-closed behavior, synthetic archive/export/erasure contracts, and disposable schemas | Controller approval, legal compliance, or enabled canonical mutation |
+| Capacity/fault precursors | commands below | Bounded 25/50/100/200 logical-client codecs and named crash/fault invariants | Representative eight-profile 30-minute 200-player readiness |
+| Final Phase 03 gate | Session 14 specification and its future sanitized report | Only the complete qualified workload, fault, reconciliation, privacy, migration, and restore evidence can support readiness | Nothing until every criterion is executed and recorded |
+
+### Load, recovery, and fault contracts
+
+These focused tests use source inspection, compiled local harnesses, or synthetic
+state. They do not connect to the configured database:
+
+```bash
+python3 tests/async/test_player_load_pipeline.py
+python3 tests/async/test_player_load_items.py
+python3 tests/async/test_player_load_pets.py
+python3 tests/async/test_player_save_pipeline.py
+python3 tests/async/test_player_save_journal.py
+python3 tests/async/test_critical_command_coordinator.py
+python3 tests/async/test_critical_transaction_contract.py
+python3 tests/async/test_world_recovery_pipeline.py
+python3 tests/async/test_maintenance_scheduler.py
+python3 tests/async/test_worker_fault_injection.py
+python3 tests/async/test_phase01_recovery_gate.py
+python3 tests/async/test_phase02_capacity_and_crash_gate.py
+```
+
+The Phase 01 and Phase 02 gates include 25/50/100/200 logical-client waves and bounded
+codec/crash coverage. They are precursor evidence only. They do not perform the eight
+representative workload profiles, 30-minute 200-player holds, production-clone query
+measurements, or complete fault/reconciliation matrix required by Session 14.
+
+### Lifecycle and privacy contracts
+
+Run the source/synthetic controls first:
+
+```bash
+python3 scripts/validate_data_lifecycle.py --json
+python3 tests/async/test_data_lifecycle_manifest.py
+python3 tests/async/test_season_reset_manifest.py
+python3 tests/async/test_lifecycle_archive_execution.py
+python3 tests/async/test_personal_data_export.py
+python3 tests/async/test_account_erasure.py
+python3 tests/async/test_immutable_migration_runner.py
+python3 tests/async/test_runtime_boot_compatibility.py
+```
+
+Then run schema behavior only through the self-contained disposable wrappers:
+
+```bash
+tests/async/run_lifecycle_archive_schema_mysql.sh
+tests/async/run_personal_data_export_schema_mysql.sh
+tests/async/run_account_erasure_schema_mysql.sh
+tests/async/run_immutable_migration_ledger_mysql.sh
+tests/async/run_runtime_compatibility_mysql.sh
+RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh
+```
+
+Each wrapper must create and destroy its own isolated container. Never replace its
+target with `.env` values or use a configured, shared, restored, or production
+database. The checked-in lifecycle policy keeps canonical archive, export, and erasure
+mutation disabled; passing tests prove the guard and synthetic contract, not policy
+approval.
+
+## Phase 03 readiness boundary
+
+Session 14 owns the final readiness claim. Its authoritative specification is
+`.spec_system/PRD/phase_03/session_14_final_200_player_and_compliance_gate.md`.
+Until that session qualifies isolated representative data, runs all eight profiles at
+25/50/100/200 clients with each 200-client hold lasting at least 30 minutes, injects
+the complete fault matrix, reconciles every durable domain after every run, validates
+privacy/restore behavior, and publishes sanitized evidence, the repository is not qualified
+as 200-player ready. That limitation remains explicit until the complete Session 14 evidence
+exists.
+
+Neither `make test-all`, `make test-db`, the Phase 01/02 logical-client gates, nor a
+successful server boot may be used as a substitute for that evidence.
+
 ## Conventions for new tests
 
 - One concern per file; name it after the feature/regression

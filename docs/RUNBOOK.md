@@ -9,14 +9,16 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
 ./scripts/start_mud.sh     # preferred: systemd user service if installed,
                            # otherwise nohup cycle_mud.sh -> logs/duris-console.log
 ./scripts/cycle_mud.sh     # foreground supervised run (what start_mud wraps)
-./scripts/cycle_mud.sh --dev   # development: port 4000, duris_dev database
+./scripts/cycle_mud.sh --dev   # development listener/build role on port 4000
 ```
 
 `cycle_mud.sh`:
 
 - Anchors itself to the repository root; loads `.env` if present.
-- Raises core dump limits (`ulimit -c unlimited`) and extracts DB credentials
-  from `src/sql.h` as fallback defaults.
+- Requires `ENVIRONMENT`, `DB_HOST`, `DB_USER`, `DB_PASSWD`, `DB_NAME`, and
+  `DB_ALLOWED_TARGETS` from the environment or a securely permissioned `.env`.
+  It has no source-code credential fallback.
+- Raises core dump limits (`ulimit -c unlimited`).
 - Rebuilds area tools and regenerates `areas/world.*` when the `make_*`
   helpers are missing.
 - Regenerates `lib/misc/event_names` (demangled symbol list used by crash
@@ -71,6 +73,33 @@ its reboot record and rotate logs.
 Do not use the `pwipe` shutdown path for ordinary restarts: exit code `55`
 causes `cycle_mud.sh` to run the filesystem player wipe artifact after the
 server exits.
+
+## Pre-service safety gate
+
+Before a development start, confirm the intended role and target without printing
+credentials:
+
+```bash
+# Inspect names only. Do not print or copy secret values.
+sed -n 's/^\(ENVIRONMENT\|DB_HOST\|DB_PORT\|DB_NAME\|DB_ALLOWED_TARGETS\)=.*/\1=<set>/p' .env
+
+# Source-only contract checks; these do not connect to a configured database.
+python3 tests/async/test_runtime_connection_trust.py
+python3 tests/async/test_runtime_boot_compatibility.py
+```
+
+`DB_NAME` selects the database. `DB_ALLOWED_TARGETS` must explicitly allow that
+name. The listener port is only a secondary safety guard: a non-production port
+redirects a production-like name to the configured development target, but it is not
+the primary database selector. A production role also requires the configured TLS CA
+and a non-loopback database transport; a local/development/test role requires a
+loopback target. The runtime applies a 10-second connection deadline before listeners
+or persistence workers start and fails closed on identity, session-mode, schema, or
+migration incompatibility.
+
+Do not start the game if the target name, role, host, allow-list, TLS posture, or
+backup status is uncertain. Qualify the exact target first; never probe a migration
+script against a configured database to discover its command-line behavior.
 
 ## Logs
 
@@ -201,6 +230,117 @@ These are investigated and understood; they are not signs of a failed boot.
 Schema operations follow the safety rules in [DATABASE.md](DATABASE.md):
 back up, clone, validate replay on the clone -- never against live data.
 
+### Migration procedure
+
+All migration qualification is offline work on a disposable database or a restored,
+backed-up development clone. Stop every writer before cloning. Record the source
+backup identity, restore it under an explicitly non-production name on a loopback
+host, and set `ENVIRONMENT`, `DB_HOST`, `DB_NAME`, and `DB_ALLOWED_TARGETS` so the
+clone is the only permitted target. Keep the original backup untouched.
+
+The legacy runner is mutation-capable and has no help, inspect, or dry-run mode. Any
+invocation, including one with an unknown argument, begins work immediately. Read the
+script source to inspect it; never run it merely to test its command line. After its
+database gates it calls `redis-cli FLUSHDB` against the CLI default endpoint and does
+not read `.env` for Redis. Run it only with a stopped, dedicated disposable Redis
+default endpoint; a qualified database clone does not make a shared Redis safe.
+
+On the qualified clone only, use this order:
+
+```bash
+# 1. Legacy additive upgrade and exact verified adoption. This mutates immediately.
+./migrations/run_migration.sh
+
+# 2. Inspect the checked-in manifest identity without opening the database.
+python3 scripts/migration_runner.py inspect
+
+# 3. Apply the immutable post-baseline prefix and verify boot compatibility.
+python3 scripts/migration_runner.py run
+./migrations/verify_runtime_compatibility.sh
+```
+
+For a fresh disposable bootstrap, import `migrations/bootstrap_multithread_safe.sql`
+and use `adopt --kind fresh_bootstrap` instead. The immutable runner rejects
+production roles, non-loopback hosts, production-like names, unapproved targets,
+manifest drift, incomplete baselines, or broken history. The compatibility verifier
+is read-only but database-connected and must receive the same qualified clone target.
+Never use production for migration qualification, compatibility probing, or replay.
+
+If any step fails, keep writers stopped and preserve the database, command output,
+manifest, and backup. Do not edit ledger rows, skip a verifier, rerun a partial legacy
+bundle blindly, or guess a reverse DDL. MySQL DDL may already have committed. Recovery
+is to investigate on another clone or discard the failed clone and restore the known
+backup, then repeat the entire qualification. See
+[IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md) and
+[RUNTIME_COMPATIBILITY.md](RUNTIME_COMPATIBILITY.md).
+
+### Domain reconciliation
+
+The reconciliation scripts below are read-only reports, but they connect to the
+selected database. Run them only after repeating the exact clone target qualification
+above; never use production as a development or validation target.
+
+```bash
+./migrations/reconcile_epic_balances.sh
+./migrations/reconcile_currency_balances.sh
+./migrations/reconcile_item_ownership.sh
+./migrations/reconcile_auction_transactions.sh
+./migrations/reconcile_combat_frags.sh
+./migrations/reconcile_artifact_guild_outcomes.sh
+./migrations/reconcile_boon_reward_zone.sh
+./migrations/reconcile_phase02_domains.sh
+```
+
+A nonzero mismatch is an integrity incident, not permission to edit current rows.
+Stop the affected domain, preserve its journal, inbox, outbox, ledger, and report,
+then trace the stable operation identity. Use only the domain's guarded retry or
+repair interface after the cause is known.
+
+### Maintenance, lifecycle, export, and erasure
+
+The maintenance scheduler is bounded and persistent. Use `world persistence` to
+inspect slot state, lag, errors, and deferred work. A disabled lifecycle slot is the
+expected checked-in state, not a fault. Do not enable it by editing state files.
+
+These commands are local inspection or source-contract checks and do not connect to
+the configured database:
+
+```bash
+python3 scripts/lifecycle_archive.py inspect
+python3 scripts/lifecycle_archive.py plan \
+  --store database:accounts --action archive \
+  --cutoff 2025-01-01T00:00:00Z --upper-bound 999
+python3 scripts/personal_data_export.py inspect
+python3 scripts/account_erasure.py inspect
+python3 scripts/validate_data_lifecycle.py --json
+python3 tests/async/test_data_lifecycle_manifest.py
+```
+
+Under the checked-in policy, archive planning reports blocked, export and erasure
+inspection report `blocked_by_policy`, and canonical mutation remains disabled. These
+are engineering controls, not controller approval. They are not a claim of legal
+compliance. Do not invent policy references, selectors, retention periods,
+shared-record decisions, or destructive adapters. Follow
+[DATA_LIFECYCLE.md](DATA_LIFECYCLE.md),
+[LIFECYCLE_ARCHIVE.md](LIFECYCLE_ARCHIVE.md),
+[PERSONAL_DATA_EXPORT.md](PERSONAL_DATA_EXPORT.md), and
+[ACCOUNT_ERASURE.md](ACCOUNT_ERASURE.md).
+
+### Restore and tombstone preflight
+
+Never reopen a restored environment immediately. Keep listeners, login, replay,
+imports, cache publication, and export release disabled while qualifying the restore.
+Restore the backup into an isolated non-production target, load the newer erasure
+tombstone ledger separately, verify its policy and generation identity, then scan
+database rows, pfiles, conversion backups, journals, cache rebuild inputs, and export
+spools by stable account-scope hash. Unscoped identities fail closed.
+
+Only a future approved adapter may strip a tombstoned scope, and it must do so before
+any restored service is published. Verify that every completed tombstone remains
+uncredentialed and unloadable and that all domain reconciliation reports pass. If a
+tombstone set is missing, stale, unverifiable, or cannot cover a source class, abandon
+that restore candidate; do not reopen it and do not alter historical backups in place.
+
 ### Epic ledger cutover and reconciliation
 
 Before enabling transactional epic producers on a guarded development clone, apply
@@ -244,8 +384,13 @@ the timer penalty.
 
 ## Development vs production checklist
 
-- Development: non-7777 port (e.g. 4000 via `--dev`), `duris_dev` database,
-  `TEST_MUD` build.
-- Production: port 7777, real TLS certificate linked as `duris.crt`/
-  `duris.key`, hardened DB credentials in `src/sql.h` (requires rebuild),
-  regular backups of MySQL + `Players/` + `Accounts/`.
+- Development: local/development/test `ENVIRONMENT`, loopback database host,
+  explicit non-production `DB_NAME` in `DB_ALLOWED_TARGETS`, non-7777 listener
+  (for example port 4000 via `--dev`), and a `TEST_MUD` build. The port does not
+  select the database.
+- Production: production `ENVIRONMENT`, non-loopback database transport with an
+  absolute trusted `DB_SSL_CA`, explicit allow-listed database name, real listener
+  TLS certificate linked as `duris.crt`/`duris.key`, secrets supplied through the
+  protected environment or secret store, mode-0700 journal/state directories, and
+  regularly restored and verified backups of MySQL, legacy player/account material,
+  journals, and erasure tombstones. Credentials never belong in source files.

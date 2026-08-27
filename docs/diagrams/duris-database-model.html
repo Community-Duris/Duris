@@ -3,209 +3,210 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DurisMUD Database Model</title>
-  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Alegreya+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>DurisMUD Database Authority Model</title>
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&amp;family=Alegreya+Sans:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
     :root {
-      --color-paper:   #f4ecd9;   /* aged parchment */
-      --color-ink:     #2e2418;
-      --color-muted:   #5f5138;
-      --color-soft:    #8c7b58;
-      --color-accent:  #9e3b25;
-      --font-sans:     'Alegreya Sans', system-ui, sans-serif;
-      --font-serif:    'IM Fell English', serif;
-      --font-mono:     'IBM Plex Mono', ui-monospace, monospace;
+      --paper: #f4ecd9;
+      --paper-node: #fffdf6;
+      --ink: #2e2418;
+      --muted: #5f5138;
+      --soft: #8c7b58;
+      --accent: #9e3b25;
+      --sans: 'Alegreya Sans', system-ui, sans-serif;
+      --serif: 'IM Fell English', serif;
+      --mono: 'IBM Plex Mono', ui-monospace, monospace;
     }
-
     body {
-      font-family: var(--font-sans);
-      background: var(--color-paper);
-      color: var(--color-ink);
+      margin: 0;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 3rem 2rem;
+      padding: 48px 32px;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
     }
-
-    .frame { max-width: 1280px; width: 100%; }
-
+    main { width: min(1280px, 100%); margin: 0 auto; overflow-x: auto; }
     .eyebrow {
-      font-family: var(--font-mono);
-      font-size: 0.66rem;
-      font-weight: 500;
+      margin: 0 0 8px;
+      color: var(--muted);
+      font: 500 0.66rem/1 var(--mono);
       letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: var(--color-muted);
-      margin-bottom: 0.5rem;
     }
-
-    h1 {
-      font-family: var(--font-serif);
-      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
-      font-weight: 400;
-      letter-spacing: -0.01em;
-      line-height: 1.15;
-      color: var(--color-ink);
-      margin-bottom: 1.5rem;
-    }
-
-    svg { width: 100%; min-width: 900px; display: block; }
+    h1 { margin: 0 0 24px; font: 400 2rem/1.15 var(--serif); }
+    svg { display: block; width: 100%; min-width: 960px; }
   </style>
 </head>
 <body>
-  <div class="frame">
-    <p class="eyebrow">DurisMUD · Engineering</p>
-    <h1>Database Model</h1>
+  <main>
+    <p class="eyebrow">DurisMUD Engineering</p>
+    <h1>Database Authority Model</h1>
+    <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="duris-database-model-title duris-database-model-desc">
+      <title id="duris-database-model-title">DurisMUD database authority model</title>
+      <desc id="duris-database-model-desc">Data model showing account-scoped player revisions and components, idempotent critical operations, current balance and ownership rows reconciled to ledgers, disabled pending-policy lifecycle metadata, and immutable schema and lookup history.</desc>
+      <defs>
+        <marker id="duris-database-model-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#5f5138"/>
+        </marker>
+        <marker id="duris-database-model-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#9e3b25"/>
+        </marker>
+        <marker id="duris-database-model-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#33587d"/>
+        </marker>
+      </defs>
 
-    <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="duris-db-title duris-db-desc">
-      <title id="duris-db-title">DurisMUD database model</title>
-      <desc id="duris-db-desc">Entity-relationship diagram of the core DurisMUD MySQL tables: accounts link to characters through account_characters, the frag leaderboard ranks one record per character by player id, persistence event tables feed the async save workers, and the pages and mud_info tables carry help and message content.</desc>
-      <defs></defs>
+      <rect width="1280" height="720" fill="#f4ecd9"/>
 
-      <!-- parchment ground -->
-      <rect width="100%" height="100%" fill="#f4ecd9"/>
+      <rect x="40" y="96" width="400" height="504" rx="8" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
+      <rect x="56" y="104" width="184" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="148" y="112" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.16em">PLAYER AUTHORITY</text>
 
-      <!-- ===== zones ===== -->
-      <rect x="40" y="96" width="432" height="504" rx="8" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
-      <rect x="56" y="104" width="120" height="12" rx="2" fill="#f4ecd9"/>
-      <text x="116" y="113" fill="rgba(46,36,24,0.40)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.14em">PLAYER STATE</text>
+      <rect x="464" y="96" width="400" height="504" rx="8" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
+      <rect x="480" y="104" width="216" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="588" y="112" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.16em">TRANSACTIONAL AUTHORITY</text>
 
-      <rect x="496" y="96" width="312" height="504" rx="8" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
-      <rect x="512" y="104" width="184" height="12" rx="2" fill="#f4ecd9"/>
-      <text x="604" y="113" fill="rgba(46,36,24,0.40)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.14em">ASYNC PERSISTENCE EVENTS</text>
+      <rect x="888" y="96" width="352" height="504" rx="8" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
+      <rect x="904" y="104" width="216" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="1012" y="112" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.16em">GOVERNANCE AND HISTORY</text>
 
-      <rect x="832" y="96" width="408" height="320" rx="8" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
-      <rect x="848" y="104" width="132" height="12" rx="2" fill="#f4ecd9"/>
-      <text x="914" y="113" fill="rgba(46,36,24,0.40)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.14em">HELP &amp; MESSAGE CONTENT</text>
+      <line x1="224" y1="200" x2="248" y2="200" stroke="#5f5138" stroke-width="1.2"/>
+      <text x="228" y="188" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">1</text>
+      <text x="244" y="188" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="end">N</text>
 
-      <!-- ===== relationship lines (before entity boxes) ===== -->
-      <!-- accounts 1 - N account_characters -->
-      <line x1="224" y1="196" x2="272" y2="196" stroke="#5f5138" stroke-width="1.2"/>
-      <text x="232" y="188" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">1</text>
-      <text x="252" y="188" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="end">N</text>
+      <line x1="332" y1="272" x2="332" y2="352" stroke="#5f5138" stroke-width="1.2"/>
+      <text x="344" y="288" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">1</text>
+      <text x="344" y="344" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">N</text>
+      <rect x="348" y="304" width="72" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="384" y="312" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">REVISION</text>
 
-      <!-- account_characters 1 - 0..1 frag_leaderboard -->
-      <line x1="364" y1="268" x2="364" y2="344" stroke="#5f5138" stroke-width="1.2"/>
-      <text x="372" y="282" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">1</text>
-      <text x="372" y="338" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">0..1</text>
+      <path d="M144,256 V320 H472 Q480,320 480,312 V264 Q480,256 488,256" fill="none" stroke="#5f5138" stroke-width="1.2"/>
+      <text x="132" y="276" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">1</text>
+      <text x="476" y="248" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">N</text>
+      <rect x="272" y="300" width="80" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="312" y="308" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">SCOPES</text>
 
-      <!-- ===== entities ===== -->
-      <!-- accounts -->
-      <rect x="56" y="144" width="168" height="124" rx="6" fill="#f4ecd9"/>
-      <rect x="56" y="144" width="168" height="124" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <rect x="64" y="152" width="38" height="12" rx="2" fill="transparent" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
-      <text x="83" y="161" fill="rgba(46,36,24,0.80)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TABLE</text>
-      <text x="140" y="161" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">accounts</text>
-      <line x1="56" y1="170" x2="224" y2="170" stroke="rgba(46,36,24,0.12)" stroke-width="0.8"/>
-      <text x="68" y="186" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace"># account_name</text>
-      <text x="68" y="200" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">email</text>
-      <text x="68" y="214" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">password</text>
-      <text x="68" y="228" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">confirmed · blocked</text>
-      <text x="68" y="242" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">last_login</text>
-      <text x="68" y="256" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">flags1..4</text>
+      <line x1="656" y1="220" x2="680" y2="220" stroke="#9e3b25" stroke-width="1.2"/>
+      <text x="660" y="208" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace">1</text>
+      <text x="676" y="208" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="end">N</text>
 
-      <!-- account_characters : FOCAL -->
-      <rect x="272" y="128" width="184" height="140" rx="6" fill="#f4ecd9"/>
-      <rect x="272" y="128" width="184" height="140" rx="6" fill="rgba(158,59,37,0.09)" stroke="#9e3b25" stroke-width="1.2"/>
-      <rect x="280" y="136" width="38" height="12" rx="2" fill="transparent" stroke="rgba(158,59,37,0.50)" stroke-width="0.8"/>
-      <text x="299" y="145" fill="rgba(158,59,37,0.85)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TABLE</text>
-      <text x="372" y="145" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">account_characters</text>
-      <line x1="272" y1="154" x2="456" y2="154" stroke="rgba(46,36,24,0.12)" stroke-width="0.8"/>
-      <text x="284" y="170" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace"># id</text>
-      <text x="284" y="184" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">→ account_name</text>
-      <text x="284" y="198" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">pid</text>
-      <text x="284" y="212" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">char_name</text>
-      <text x="284" y="226" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">login_count · last_login</text>
-      <text x="284" y="240" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">blocked</text>
-      <text x="284" y="254" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">deleted_at</text>
+      <path d="M572,296 V344 H752 Q760,344 760,352 V384" fill="none" stroke="#5f5138" stroke-width="1.2"/>
+      <text x="584" y="312" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">1</text>
+      <text x="772" y="376" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">N</text>
+      <rect x="624" y="324" width="88" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="668" y="332" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">RECORDS</text>
 
-      <!-- frag_leaderboard -->
-      <rect x="272" y="344" width="184" height="152" rx="6" fill="#f4ecd9"/>
-      <rect x="272" y="344" width="184" height="152" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <rect x="280" y="352" width="38" height="12" rx="2" fill="transparent" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
-      <text x="299" y="361" fill="rgba(46,36,24,0.80)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TABLE</text>
-      <text x="372" y="361" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">frag_leaderboard</text>
-      <line x1="272" y1="370" x2="456" y2="370" stroke="rgba(46,36,24,0.12)" stroke-width="0.8"/>
-      <text x="284" y="386" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace"># id</text>
-      <text x="284" y="400" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">→ pid (unique)</text>
-      <text x="284" y="414" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">char_name · account_name</text>
-      <text x="284" y="428" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">total_frags</text>
-      <text x="284" y="442" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">racewar · race · class</text>
-      <text x="284" y="456" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">level</text>
-      <text x="284" y="470" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">deleted_at</text>
+      <line x1="800" y1="296" x2="800" y2="384" stroke="#9e3b25" stroke-width="1.2"/>
+      <text x="812" y="312" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace">1</text>
+      <text x="812" y="376" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace">N</text>
+      <rect x="816" y="328" width="64" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="848" y="336" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">RECONCILE</text>
 
-      <!-- persistence_item_events -->
-      <rect x="520" y="144" width="264" height="140" rx="6" fill="#f4ecd9"/>
-      <rect x="520" y="144" width="264" height="140" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <rect x="528" y="152" width="72" height="12" rx="2" fill="transparent" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
-      <text x="564" y="161" fill="rgba(46,36,24,0.80)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EVENT QUEUE</text>
-      <text x="652" y="161" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">persistence_item_events</text>
-      <line x1="520" y1="170" x2="784" y2="170" stroke="rgba(46,36,24,0.12)" stroke-width="0.8"/>
-      <text x="532" y="186" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace"># id</text>
-      <text x="532" y="200" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">event_type · ts_usec</text>
-      <text x="532" y="214" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">item_uid · vnum · item</text>
-      <text x="532" y="228" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">actor · actor_id</text>
-      <text x="532" y="242" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">source · target · note</text>
-      <text x="532" y="256" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">created_at</text>
+      <line x1="840" y1="264" x2="912" y2="264" stroke="#8c7b58" stroke-width="1" stroke-dasharray="4,4"/>
+      <rect x="844" y="244" width="64" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="876" y="252" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">BLOCKED</text>
 
-      <!-- persistence_scalar_events -->
-      <rect x="520" y="344" width="264" height="124" rx="6" fill="#f4ecd9"/>
-      <rect x="520" y="344" width="264" height="124" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <rect x="528" y="352" width="72" height="12" rx="2" fill="transparent" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
-      <text x="564" y="361" fill="rgba(46,36,24,0.80)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EVENT QUEUE</text>
-      <text x="652" y="361" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">persistence_scalar_events</text>
-      <line x1="520" y1="370" x2="784" y2="370" stroke="rgba(46,36,24,0.12)" stroke-width="0.8"/>
-      <text x="532" y="386" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace"># id</text>
-      <text x="532" y="400" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">event_type · event_key</text>
-      <text x="532" y="414" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">dedupe_key (unique)</text>
-      <text x="532" y="428" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">zone_number · touched_at</text>
-      <text x="532" y="442" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">created_at</text>
+      <rect x="64" y="144" width="160" height="112" rx="6" fill="#f4ecd9"/>
+      <rect x="64" y="144" width="160" height="112" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <rect x="72" y="152" width="48" height="12" rx="2" fill="none" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
+      <text x="96" y="160" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">ROOT</text>
+      <text x="144" y="180" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Account Identity</text>
+      <line x1="64" y1="192" x2="224" y2="192" stroke="rgba(46,36,24,0.14)" stroke-width="0.8"/>
+      <text x="76" y="212" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace"># accounts.account_name</text>
+      <text x="76" y="228" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">account_characters.pid</text>
+      <text x="76" y="244" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">credentials / status</text>
 
-      <!-- pages -->
-      <rect x="856" y="144" width="176" height="124" rx="6" fill="#f4ecd9"/>
-      <rect x="856" y="144" width="176" height="124" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <rect x="864" y="152" width="38" height="12" rx="2" fill="transparent" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
-      <text x="883" y="161" fill="rgba(46,36,24,0.80)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TABLE</text>
-      <text x="952" y="161" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">pages</text>
-      <line x1="856" y1="170" x2="1032" y2="170" stroke="rgba(46,36,24,0.12)" stroke-width="0.8"/>
-      <text x="868" y="186" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace"># id</text>
-      <text x="868" y="200" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">title</text>
-      <text x="868" y="214" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">text (wiki format)</text>
-      <text x="868" y="228" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">category_id</text>
-      <text x="868" y="242" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">last_update · _by</text>
+      <rect x="248" y="144" width="168" height="128" rx="6" fill="#f4ecd9"/>
+      <rect x="248" y="144" width="168" height="128" rx="6" fill="rgba(158,59,37,0.09)" stroke="#9e3b25" stroke-width="1.2"/>
+      <rect x="256" y="152" width="48" height="12" rx="2" fill="none" stroke="rgba(158,59,37,0.50)" stroke-width="0.8"/>
+      <text x="280" y="160" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">CURRENT</text>
+      <text x="332" y="180" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Player Revision</text>
+      <line x1="248" y1="192" x2="416" y2="192" stroke="rgba(46,36,24,0.14)" stroke-width="0.8"/>
+      <text x="260" y="212" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace"># player_data.pid</text>
+      <text x="260" y="228" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">save_revision</text>
+      <text x="260" y="244" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">saved_at / metadata</text>
+      <text x="260" y="260" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">one published revision</text>
 
-      <!-- mud_info -->
-      <rect x="1064" y="144" width="152" height="82" rx="6" fill="#f4ecd9"/>
-      <rect x="1064" y="144" width="152" height="82" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <rect x="1072" y="152" width="38" height="12" rx="2" fill="transparent" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
-      <text x="1091" y="161" fill="rgba(46,36,24,0.80)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TABLE</text>
-      <text x="1152" y="161" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">mud_info</text>
-      <line x1="1064" y1="170" x2="1216" y2="170" stroke="rgba(46,36,24,0.12)" stroke-width="0.8"/>
-      <text x="1076" y="186" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace"># name</text>
-      <text x="1076" y="200" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">content (motd,</text>
-      <text x="1076" y="214" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace">news, wizlist…)</text>
+      <rect x="248" y="352" width="168" height="152" rx="6" fill="#f4ecd9"/>
+      <rect x="248" y="352" width="168" height="152" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <rect x="256" y="360" width="48" height="12" rx="2" fill="none" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
+      <text x="280" y="368" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">ROWS</text>
+      <text x="332" y="388" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Player Components</text>
+      <line x1="248" y1="400" x2="416" y2="400" stroke="rgba(46,36,24,0.14)" stroke-width="0.8"/>
+      <text x="260" y="420" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">player_items / pets</text>
+      <text x="260" y="436" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">skills / affects / timers</text>
+      <text x="260" y="452" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">revision-bound assembly</text>
+      <text x="260" y="468" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">linear materialization</text>
 
-      <!-- editorial aside : content cluster -->
-      <text x="856" y="472" fill="#5f5138" font-size="14" font-style="italic" font-family="'IM Fell English', serif">No foreign keys here — wiki_help()</text>
-      <text x="856" y="492" fill="#5f5138" font-size="14" font-style="italic" font-family="'IM Fell English', serif">queries pages by title at runtime;</text>
-      <text x="856" y="512" fill="#5f5138" font-size="14" font-style="italic" font-family="'IM Fell English', serif">mud_info serves motd and news.</text>
+      <rect x="488" y="144" width="168" height="152" rx="6" fill="#f4ecd9"/>
+      <rect x="488" y="144" width="168" height="152" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <rect x="496" y="152" width="64" height="12" rx="2" fill="none" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
+      <text x="528" y="160" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">OPERATION</text>
+      <text x="572" y="180" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Critical Inbox/Outbox</text>
+      <line x1="488" y1="192" x2="656" y2="192" stroke="rgba(46,36,24,0.14)" stroke-width="0.8"/>
+      <text x="500" y="212" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace"># operation_id</text>
+      <text x="500" y="228" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">critical_operation_inbox</text>
+      <text x="500" y="244" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">critical_outbox</text>
+      <text x="500" y="260" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">status / result hash</text>
+      <text x="500" y="276" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">exact retry identity</text>
 
-      <!-- editorial aside : persistence queues -->
-      <text x="520" y="516" fill="#5f5138" font-size="14" font-style="italic" font-family="'IM Fell English', serif">Drained by the async workers; boot</text>
-      <text x="520" y="536" fill="#5f5138" font-size="14" font-style="italic" font-family="'IM Fell English', serif">refuses to start if they are missing.</text>
+      <rect x="680" y="144" width="160" height="152" rx="6" fill="#f4ecd9"/>
+      <rect x="680" y="144" width="160" height="152" rx="6" fill="rgba(158,59,37,0.09)" stroke="#9e3b25" stroke-width="1.2"/>
+      <rect x="688" y="152" width="48" height="12" rx="2" fill="none" stroke="rgba(158,59,37,0.50)" stroke-width="0.8"/>
+      <text x="712" y="160" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">CURRENT</text>
+      <text x="760" y="180" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Current Authority</text>
+      <line x1="680" y1="192" x2="840" y2="192" stroke="rgba(46,36,24,0.14)" stroke-width="0.8"/>
+      <text x="692" y="212" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">epic / currency balance</text>
+      <text x="692" y="228" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">item_current_owner</text>
+      <text x="692" y="244" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">item_owner_revision</text>
+      <text x="692" y="260" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">auction / frag results</text>
+      <text x="692" y="276" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">atomic current rows</text>
 
-      <!-- ===== legend ===== -->
+      <rect x="680" y="384" width="160" height="152" rx="6" fill="#f4ecd9"/>
+      <rect x="680" y="384" width="160" height="152" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <rect x="688" y="392" width="48" height="12" rx="2" fill="none" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
+      <text x="712" y="400" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">LEDGER</text>
+      <text x="760" y="420" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Domain Ledgers</text>
+      <line x1="680" y1="432" x2="840" y2="432" stroke="rgba(46,36,24,0.14)" stroke-width="0.8"/>
+      <text x="692" y="452" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">epic / currency / auction</text>
+      <text x="692" y="468" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">item_ownership_ledger</text>
+      <text x="692" y="484" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">combat / artifact / guild</text>
+      <text x="692" y="500" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">operation-bound history</text>
+
+      <rect x="912" y="144" width="304" height="176" rx="6" fill="#f4ecd9"/>
+      <rect x="912" y="144" width="304" height="176" rx="6" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.30)" stroke-width="1" stroke-dasharray="4,4"/>
+      <rect x="920" y="152" width="64" height="12" rx="2" fill="none" stroke="rgba(46,36,24,0.30)" stroke-width="0.8"/>
+      <text x="952" y="160" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">DISABLED</text>
+      <text x="1064" y="184" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Lifecycle and Privacy Metadata</text>
+      <line x1="912" y1="196" x2="1216" y2="196" stroke="rgba(46,36,24,0.14)" stroke-width="0.8"/>
+      <text x="928" y="216" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">lifecycle_archive_jobs / batches / rows</text>
+      <text x="928" y="232" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">personal_data_export_requests / sections</text>
+      <text x="928" y="248" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">account_erasure_requests / tombstones</text>
+      <text x="928" y="264" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">policy checksum / redacted evidence</text>
+      <text x="928" y="280" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace">PENDING CONTROLLER DECISIONS</text>
+      <text x="928" y="296" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">no canonical mutation adapter</text>
+
+      <rect x="912" y="384" width="304" height="152" rx="6" fill="#f4ecd9"/>
+      <rect x="912" y="384" width="304" height="152" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <rect x="920" y="392" width="56" height="12" rx="2" fill="none" stroke="rgba(46,36,24,0.40)" stroke-width="0.8"/>
+      <text x="948" y="400" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">HISTORY</text>
+      <text x="1064" y="424" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Schema and Dataset Identity</text>
+      <line x1="912" y1="436" x2="1216" y2="436" stroke="rgba(46,36,24,0.14)" stroke-width="0.8"/>
+      <text x="928" y="456" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">mud_schema_baselines</text>
+      <text x="928" y="472" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">mud_schema_history / migration_state</text>
+      <text x="928" y="488" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">lookup_dataset_state</text>
+      <text x="928" y="504" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">immutable prefix / exact checksums</text>
+      <text x="928" y="520" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">verified before service availability</text>
+
       <line x1="40" y1="652" x2="1240" y2="652" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
-      <text x="40" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.14em">LEGEND</text>
-      <rect x="128" y="666" width="12" height="12" rx="2" fill="rgba(158,59,37,0.09)" stroke="#9e3b25" stroke-width="1"/>
-      <text x="148" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.08em">FOCAL</text>
-      <rect x="232" y="666" width="12" height="12" rx="2" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <text x="252" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.08em">TABLE / QUEUE</text>
-      <text x="400" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.08em"># PK   → FK/REFERENCE</text>
-      <text x="1240" y="676" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="end" letter-spacing="0.08em">docs/DATABASE.md · migrations/bootstrap_multithread_safe.sql</text>
+      <text x="40" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.16em">LEGEND</text>
+      <text x="128" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace"># PRIMARY KEY</text>
+      <text x="248" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">1 / N CARDINALITY</text>
+      <line x1="400" y1="672" x2="448" y2="672" stroke="#8c7b58" stroke-width="1" stroke-dasharray="4,4"/>
+      <text x="460" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">POLICY-BLOCKED ROUTE</text>
+      <text x="1240" y="676" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="end">docs/DATABASE.md</text>
     </svg>
-  </div>
+  </main>
 </body>
 </html>

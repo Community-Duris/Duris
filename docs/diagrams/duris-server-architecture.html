@@ -4,201 +4,165 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DurisMUD Server Architecture</title>
-  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Alegreya+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&amp;family=Alegreya+Sans:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
     :root {
-      --color-paper:   #f4ecd9;   /* aged parchment */
-      --color-paper-2: #eadfc3;
-      --color-ink:     #2e2418;   /* iron-gall sepia */
-      --color-muted:   #5f5138;   /* weathered umber */
-      --color-soft:    #8c7b58;
-      --color-accent:  #9e3b25;   /* dragon-fire crimson */
-      --font-sans:     'Alegreya Sans', system-ui, sans-serif;
-      --font-serif:    'IM Fell English', serif;
-      --font-mono:     'IBM Plex Mono', ui-monospace, monospace;
+      --paper: #f4ecd9;
+      --paper-node: #fffdf6;
+      --ink: #2e2418;
+      --muted: #5f5138;
+      --soft: #8c7b58;
+      --accent: #9e3b25;
+      --link: #33587d;
+      --sans: 'Alegreya Sans', system-ui, sans-serif;
+      --serif: 'IM Fell English', serif;
+      --mono: 'IBM Plex Mono', ui-monospace, monospace;
     }
-
     body {
-      font-family: var(--font-sans);
-      background: var(--color-paper);
-      color: var(--color-ink);
+      margin: 0;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 3rem 2rem;
+      padding: 48px 32px;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
     }
-
-    .frame { max-width: 1280px; width: 100%; }
-
+    main { width: min(1280px, 100%); margin: 0 auto; overflow-x: auto; }
     .eyebrow {
-      font-family: var(--font-mono);
-      font-size: 0.66rem;
-      font-weight: 500;
+      margin: 0 0 8px;
+      color: var(--muted);
+      font: 500 0.66rem/1 var(--mono);
       letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: var(--color-muted);
-      margin-bottom: 0.5rem;
     }
-
     h1 {
-      font-family: var(--font-serif);
-      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
-      font-weight: 400;
-      letter-spacing: -0.01em;
-      line-height: 1.15;
-      color: var(--color-ink);
-      margin-bottom: 1.5rem;
+      margin: 0 0 24px;
+      font: 400 2rem/1.15 var(--serif);
     }
-
-    svg { width: 100%; min-width: 900px; display: block; }
+    svg { display: block; width: 100%; min-width: 960px; }
   </style>
 </head>
 <body>
-  <div class="frame">
-    <p class="eyebrow">DurisMUD · Engineering</p>
+  <main>
+    <p class="eyebrow">DurisMUD Engineering</p>
     <h1>Server Architecture</h1>
-
-    <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="duris-arch-title duris-arch-desc">
-      <title id="duris-arch-title">DurisMUD server architecture</title>
-      <desc id="duris-arch-desc">Diagram of the DurisMUD server: telnet, TLS and WebSocket clients connect to a single-process pulse-driven game loop that runs the event wheel, studio procs and ship simulation, and enqueues saves through an async persistence queue and connection pool into MySQL, with Redis holding crash-recovery snapshots.</desc>
+    <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="duris-server-architecture-title duris-server-architecture-desc">
+      <title id="duris-server-architecture-title">DurisMUD server persistence architecture</title>
+      <desc id="duris-server-architecture-desc">DurisMUD admits clients only after a fail-closed boot compatibility gate, keeps gameplay on one game loop, routes consistent loads and typed asynchronous writes to MySQL or MariaDB authority, and uses Redis only for optional cache and bounded world recovery.</desc>
       <defs>
-        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5f5138"/></marker>
-        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#9e3b25"/></marker>
-        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#33587d"/></marker>
+        <marker id="duris-server-architecture-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#5f5138"/>
+        </marker>
+        <marker id="duris-server-architecture-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#9e3b25"/>
+        </marker>
+        <marker id="duris-server-architecture-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#33587d"/>
+        </marker>
       </defs>
 
-      <!-- parchment ground -->
-      <rect width="100%" height="100%" fill="#f4ecd9"/>
+      <rect width="1280" height="720" fill="#f4ecd9"/>
 
-      <!-- ===== zones (painted first) ===== -->
-      <!-- zone: dms process -->
-      <rect x="272" y="96" width="776" height="504" rx="8" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
-      <rect x="288" y="104" width="312" height="12" rx="2" fill="#f4ecd9"/>
-      <text x="444" y="113" fill="rgba(46,36,24,0.40)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.14em">DMS PROCESS · SINGLE PROCESS · PULSE-DRIVEN</text>
-      <!-- zone: durable state -->
-      <rect x="1080" y="248" width="152" height="288" rx="8" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
-      <rect x="1092" y="256" width="104" height="12" rx="2" fill="#f4ecd9"/>
-      <text x="1144" y="265" fill="rgba(46,36,24,0.40)" font-size="7" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.14em">DURABLE STATE</text>
+      <rect x="240" y="88" width="560" height="520" rx="8" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
+      <rect x="256" y="96" width="176" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="344" y="104" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.16em">DMS PROCESS</text>
 
-      <!-- ===== connectors (before nodes) ===== -->
-      <!-- clients -> game loop : shared axis y=188 -->
-      <line x1="232" y1="188" x2="368" y2="188" stroke="#5f5138" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="252" y="170" width="92" height="12" rx="2" fill="#f4ecd9"/>
-      <text x="298" y="180" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CONNECTIONS</text>
+      <rect x="880" y="208" width="320" height="360" rx="8" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
+      <rect x="896" y="216" width="184" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="988" y="224" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.16em">DATA AUTHORITY</text>
 
-      <!-- game loop -> event wheel : shared axis y=188 -->
-      <line x1="528" y1="188" x2="568" y2="188" stroke="#5f5138" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="200" y1="312" x2="280" y2="312" stroke="#5f5138" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow)"/>
+      <rect x="212" y="292" width="56" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="240" y="300" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">SESSIONS</text>
 
-      <!-- game loop -> studio procs : straight vertical x=448 -->
-      <line x1="448" y1="224" x2="448" y2="304" stroke="#5f5138" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="380" y1="192" x2="380" y2="272" stroke="#9e3b25" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow-accent)"/>
+      <rect x="392" y="224" width="72" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="428" y="232" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">OPENS LOOP</text>
 
-      <!-- game loop -> ships : elbow -->
-      <path d="M512,224 V264 Q512,272 520,272 H632 Q640,272 640,280 V304"
-            fill="none" stroke="#5f5138" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M420,120 V72 H1040 V240" fill="none" stroke="#9e3b25" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow-accent)"/>
+      <rect x="672" y="52" width="96" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="720" y="60" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">VERIFY FIRST</text>
 
-      <!-- game loop -> persistence queue : elbow with bridge over studio-proc line -->
-      <path d="M400,224 V232 Q400,240 408,240 H440 a8,8 0 0,1 16,0 H912 Q920,240 920,248 V256"
-            fill="none" stroke="#5f5138" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="668" y="222" width="88" height="12" rx="2" fill="#f4ecd9"/>
-      <text x="712" y="231" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ENQUEUES</text>
+      <path d="M480,288 H500 Q508,288 508,280 V164 Q508,156 516,156 H560" fill="none" stroke="#5f5138" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow)"/>
+      <path d="M480,304 H512 Q520,304 520,296 V284 Q520,276 528,276 H560" fill="none" stroke="#5f5138" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow)"/>
+      <path d="M480,320 H524 Q532,320 532,328 V388 Q532,396 540,396 H560" fill="none" stroke="#5f5138" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow)"/>
+      <path d="M480,336 H536 Q544,336 544,344 V508 Q544,516 552,516 H560" fill="none" stroke="#5f5138" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow)"/>
 
-      <!-- studio procs trigger label (beside its vertical segment) -->
-      <rect x="456" y="252" width="56" height="12" rx="2" fill="#f4ecd9"/>
-      <text x="484" y="261" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TRIGGERS</text>
+      <path d="M680,192 V208 H980 V240" fill="none" stroke="#5f5138" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow)"/>
+      <rect x="816" y="188" width="88" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="860" y="196" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">CONSISTENT</text>
+      <line x1="760" y1="276" x2="920" y2="276" stroke="#5f5138" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow)"/>
+      <path d="M760,396 H832 Q840,396 840,388 V316 Q840,308 848,308 H920" fill="none" stroke="#5f5138" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow)"/>
+      <path d="M760,516 H848 Q856,516 856,508 V340 Q856,332 864,332 H920" fill="none" stroke="#5f5138" stroke-width="1.2" marker-end="url(#duris-server-architecture-arrow)"/>
 
-      <!-- ships -> persistence queue : shared axis y=336 -->
-      <line x1="704" y1="336" x2="816" y2="336" stroke="#5f5138" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="724" y="318" width="64" height="12" rx="2" fill="#f4ecd9"/>
-      <text x="756" y="327" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SHIP SAVES</text>
+      <path d="M400,352 V580 H1040 V520" fill="none" stroke="#33587d" stroke-width="1" stroke-dasharray="4,4" marker-end="url(#duris-server-architecture-arrow-link)"/>
+      <rect x="648" y="560" width="112" height="12" rx="2" fill="#f4ecd9"/>
+      <text x="704" y="568" fill="#33587d" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">CACHE / RECOVERY</text>
 
-      <!-- queue -> pool : straight vertical x=920 -->
-      <line x1="920" y1="320" x2="920" y2="384" stroke="#5f5138" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="40" y="280" width="160" height="64" rx="6" fill="#f4ecd9"/>
+      <rect x="40" y="280" width="160" height="64" rx="6" fill="rgba(95,81,56,0.10)" stroke="#8c7b58" stroke-width="1"/>
+      <text x="120" y="308" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">MUD Clients</text>
+      <text x="120" y="328" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">TELNET / TLS / WS</text>
 
-      <!-- pool -> mysql : elbow -->
-      <path d="M1008,412 H1056 Q1064,412 1064,404 V332 Q1064,324 1072,324 H1088"
-            fill="none" stroke="#5f5138" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="984" y="352" width="60" height="12" rx="2" fill="#f4ecd9"/>
-      <text x="1040" y="361" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="end" letter-spacing="0.06em">SQL WRITES</text>
+      <rect x="280" y="120" width="200" height="72" rx="6" fill="#f4ecd9"/>
+      <rect x="280" y="120" width="200" height="72" rx="6" fill="rgba(158,59,37,0.09)" stroke="#9e3b25" stroke-width="1.2"/>
+      <text x="380" y="148" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Boot Compatibility Gate</text>
+      <text x="380" y="168" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">TARGET / SESSION / SCHEMA</text>
+      <text x="380" y="180" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">BEFORE LISTENERS OR WRITES</text>
 
-      <!-- ===== nodes ===== -->
-      <!-- MUD Clients : input -->
-      <rect x="40" y="156" width="192" height="64" rx="6" fill="#f4ecd9"/>
-      <rect x="40" y="156" width="192" height="64" rx="6" fill="rgba(95,81,56,0.10)" stroke="#8c7b58" stroke-width="1"/>
-      <text x="136" y="180" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">MUD Clients</text>
-      <text x="136" y="196" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">telnet :7777 · tls :7778</text>
-      <text x="136" y="210" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">websocket :4050 · gmcp</text>
+      <rect x="280" y="272" width="200" height="80" rx="6" fill="#f4ecd9"/>
+      <rect x="280" y="272" width="200" height="80" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <text x="380" y="304" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Single Game Loop</text>
+      <text x="380" y="324" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">GAMEPLAY / CAPTURE / ADMISSION</text>
+      <text x="380" y="336" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">NO EXTERNAL IO ON PULSE</text>
 
-      <!-- Game Loop : FOCAL -->
-      <rect x="368" y="152" width="160" height="72" rx="6" fill="#f4ecd9"/>
-      <rect x="368" y="152" width="160" height="72" rx="6" fill="rgba(158,59,37,0.09)" stroke="#9e3b25" stroke-width="1.2"/>
-      <text x="448" y="182" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Game Loop</text>
-      <text x="448" y="200" fill="#9e3b25" fill-opacity="0.75" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">select() · 4 pulses/s</text>
-      <text x="448" y="214" fill="#9e3b25" fill-opacity="0.75" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">comm.c</text>
+      <rect x="560" y="120" width="200" height="72" rx="6" fill="#f4ecd9"/>
+      <rect x="560" y="120" width="200" height="72" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <text x="660" y="148" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Consistent Player Load</text>
+      <text x="660" y="168" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">READ-ONLY TRANSACTION</text>
+      <text x="660" y="180" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">COMPLETE REVISION OR FAIL</text>
 
-      <!-- Event Wheel -->
-      <rect x="568" y="152" width="144" height="64" rx="6" fill="#f4ecd9"/>
-      <rect x="568" y="152" width="144" height="64" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <text x="640" y="180" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Event Wheel</text>
-      <text x="640" y="196" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">timed callbacks</text>
+      <rect x="560" y="240" width="200" height="72" rx="6" fill="#f4ecd9"/>
+      <rect x="560" y="240" width="200" height="72" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <text x="660" y="268" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Revisioned Snapshots</text>
+      <text x="660" y="288" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">IMMUTABLE CAPTURE / JOURNAL</text>
+      <text x="660" y="300" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">KEYED SAVE WORKERS</text>
 
-      <!-- Studio Procs -->
-      <rect x="376" y="304" width="144" height="64" rx="6" fill="#f4ecd9"/>
-      <rect x="376" y="304" width="144" height="64" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <text x="448" y="332" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Studio Procs</text>
-      <text x="448" y="348" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">areas/world.trg</text>
+      <rect x="560" y="360" width="200" height="72" rx="6" fill="#f4ecd9"/>
+      <rect x="560" y="360" width="200" height="72" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <text x="660" y="388" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Critical Commands</text>
+      <text x="660" y="408" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">IDENTITY / JOURNAL / FENCE</text>
+      <text x="660" y="420" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">INBOX / OUTBOX / LEDGERS</text>
 
-      <!-- Ships -->
-      <rect x="576" y="304" width="128" height="64" rx="6" fill="#f4ecd9"/>
-      <rect x="576" y="304" width="128" height="64" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <text x="640" y="332" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Ships</text>
-      <text x="640" y="348" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">src/ships · pulse 2</text>
+      <rect x="560" y="480" width="200" height="72" rx="6" fill="#f4ecd9"/>
+      <rect x="560" y="480" width="200" height="72" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <text x="660" y="508" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Bounded Support Work</text>
+      <text x="660" y="528" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">MAINTENANCE / LEGACY QUEUES</text>
+      <text x="660" y="540" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">LIFECYCLE SLOT DISABLED</text>
 
-      <!-- Persistence Queue -->
-      <rect x="816" y="256" width="208" height="64" rx="6" fill="#f4ecd9"/>
-      <rect x="816" y="256" width="208" height="64" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <text x="920" y="284" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Persistence Queue</text>
-      <text x="920" y="300" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">item · scalar · large-payload</text>
+      <rect x="920" y="240" width="240" height="104" rx="6" fill="#f4ecd9"/>
+      <rect x="920" y="240" width="240" height="104" rx="6" fill="rgba(158,59,37,0.09)" stroke="#9e3b25" stroke-width="1.2"/>
+      <text x="1040" y="272" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">MySQL / MariaDB</text>
+      <text x="1040" y="292" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">DURABLE AUTHORITY</text>
+      <text x="1040" y="308" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">CURRENT ROWS / LEDGERS</text>
+      <text x="1040" y="324" fill="#9e3b25" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">HISTORY / POLICY METADATA</text>
 
-      <!-- SQL Pool -->
-      <rect x="832" y="384" width="176" height="56" rx="6" fill="#f4ecd9"/>
-      <rect x="832" y="384" width="176" height="56" rx="6" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <text x="920" y="408" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">SQL Connection Pool</text>
-      <text x="920" y="424" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">utf8mb4 · multi-stmt</text>
+      <rect x="920" y="440" width="240" height="80" rx="6" fill="#f4ecd9"/>
+      <rect x="920" y="440" width="240" height="80" rx="6" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.30)" stroke-width="1" stroke-dasharray="4,4"/>
+      <text x="1040" y="472" fill="#2e2418" font-size="12" font-weight="700" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Optional Redis</text>
+      <text x="1040" y="492" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">RECONSTRUCTIBLE CACHE</text>
+      <text x="1040" y="504" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="middle">BOUNDED WORLD RECOVERY</text>
 
-      <!-- MySQL : FOCAL store -->
-      <rect x="1088" y="288" width="128" height="72" rx="6" fill="#f4ecd9"/>
-      <rect x="1088" y="288" width="128" height="72" rx="6" fill="rgba(158,59,37,0.09)" stroke="#9e3b25" stroke-width="1.2"/>
-      <text x="1152" y="318" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">MySQL</text>
-      <text x="1152" y="336" fill="#9e3b25" fill-opacity="0.75" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">all durable state</text>
-
-      <!-- Redis : store -->
-      <rect x="1096" y="448" width="112" height="64" rx="6" fill="#f4ecd9"/>
-      <rect x="1096" y="448" width="112" height="64" rx="6" fill="rgba(46,36,24,0.05)" stroke="#5f5138" stroke-width="1"/>
-      <text x="1152" y="476" fill="#2e2418" font-size="12" font-weight="600" font-family="'Alegreya Sans', sans-serif" text-anchor="middle">Redis</text>
-      <text x="1152" y="492" fill="#5f5138" font-size="9" font-family="'IBM Plex Mono', monospace" text-anchor="middle">dirty saves</text>
-
-      <!-- editorial aside : redis recovery -->
-      <text x="1048" y="580" fill="#5f5138" font-size="14" font-style="italic" font-family="'IM Fell English', serif">After an unclean exit the next boot</text>
-      <text x="1048" y="600" fill="#5f5138" font-size="14" font-style="italic" font-family="'IM Fell English', serif">reloads world state from the Redis</text>
-      <text x="1048" y="620" fill="#5f5138" font-size="14" font-style="italic" font-family="'IM Fell English', serif">snapshot, then clears it.</text>
-
-      <!-- ===== legend ===== -->
       <line x1="40" y1="652" x2="1240" y2="652" stroke="rgba(46,36,24,0.10)" stroke-width="0.8"/>
-      <text x="40" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.14em">LEGEND</text>
-      <rect x="128" y="666" width="12" height="12" rx="2" fill="rgba(158,59,37,0.09)" stroke="#9e3b25" stroke-width="1"/>
-      <text x="148" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.08em">FOCAL</text>
-      <rect x="232" y="666" width="12" height="12" rx="2" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
-      <text x="252" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.08em">COMPONENT</text>
-      <rect x="372" y="666" width="12" height="12" rx="2" fill="rgba(46,36,24,0.05)" stroke="#5f5138" stroke-width="1"/>
-      <text x="392" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.08em">STORE</text>
-      <rect x="480" y="666" width="12" height="12" rx="2" fill="rgba(95,81,56,0.10)" stroke="#8c7b58" stroke-width="1"/>
-      <text x="500" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.08em">CLIENTS</text>
-      <rect x="596" y="666" width="12" height="12" rx="2" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.10)" stroke-width="1"/>
-      <text x="616" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.08em">PROCESS BOUNDARY</text>
-      <text x="1240" y="676" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="end" letter-spacing="0.08em">docs/ARCHITECTURE.md</text>
+      <text x="40" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace" letter-spacing="0.16em">LEGEND</text>
+      <rect x="128" y="664" width="12" height="12" rx="2" fill="rgba(158,59,37,0.09)" stroke="#9e3b25" stroke-width="1"/>
+      <text x="148" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">FAIL-CLOSED / AUTHORITY</text>
+      <rect x="320" y="664" width="12" height="12" rx="2" fill="#fffdf6" stroke="#2e2418" stroke-width="1"/>
+      <text x="340" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">PROCESS</text>
+      <rect x="420" y="664" width="12" height="12" rx="2" fill="rgba(46,36,24,0.02)" stroke="rgba(46,36,24,0.30)" stroke-width="1" stroke-dasharray="4,4"/>
+      <text x="440" y="676" fill="#5f5138" font-size="8" font-family="'IBM Plex Mono', monospace">OPTIONAL / RECONSTRUCTIBLE</text>
+      <text x="1240" y="676" fill="#8c7b58" font-size="8" font-family="'IBM Plex Mono', monospace" text-anchor="end">docs/ARCHITECTURE.md</text>
     </svg>
-  </div>
+  </main>
 </body>
 </html>

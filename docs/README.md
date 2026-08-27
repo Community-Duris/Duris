@@ -8,10 +8,10 @@ directory covers architecture, operations, configuration, and reference material
 
 | Document | Purpose |
 |----------|---------|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | How the server works: process model, boot sequence, game loop, event wheel, persistence, networking. |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Process model, pre-service boot gate, game loop, typed persistence topology, recovery, and networking. |
 | [CODEBASE.md](CODEBASE.md) | Module map of `src/` — where to find what, and the key files for each subsystem. |
 | [BUILDING.md](BUILDING.md) | Build system details: flags, targets, area-file generation, sanitizer builds. |
-| [DATABASE.md](DATABASE.md) | Database layer: connection handling, async persistence, schema, migrations. |
+| [DATABASE.md](DATABASE.md) | Database authority: connection contract, consistent reads, typed transactions, schema, reconciliation, and migrations. |
 | [IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md) | Honest schema baseline adoption, immutable post-baseline manifest, tamper-evident history, and exact resume. |
 | [RUNTIME_COMPATIBILITY.md](RUNTIME_COMPATIBILITY.md) | Pre-mutation migration/schema verification and atomic versioned race/class lookup publication. |
 | [DATA_LIFECYCLE.md](DATA_LIFECYCLE.md) | Versioned durable-store inventory, season classifications, protected exceptions, and fail-closed lifecycle validation. |
@@ -19,8 +19,8 @@ directory covers architecture, operations, configuration, and reference material
 | [PERSONAL_DATA_EXPORT.md](PERSONAL_DATA_EXPORT.md) | Authenticated export policy mapping, package verification, protected spool, and pending-activation boundary. |
 | [ACCOUNT_ERASURE.md](ACCOUNT_ERASURE.md) | Disabled erasure coordinator, ordered reconciliation, durable tombstones, and restore-time no-resurrection preflight. |
 | [CONFIGURATION.md](CONFIGURATION.md) | Runtime environment variables, Redis, listeners, proxy handling, and diagnostics. |
-| [RUNBOOK.md](RUNBOOK.md) | Day-to-day operations: starting/stopping, restart codes, logs, backups, crash recovery. |
-| [TESTING.md](TESTING.md) | The regression/source-contract test harness in `tests/async/` and how to run it. |
+| [RUNBOOK.md](RUNBOOK.md) | Safe operations: lifecycle, migration, diagnosis, reconciliation, backup, restore, and recovery procedures. |
+| [TESTING.md](TESTING.md) | Focused, full, disposable-database, workload, fault, and privacy verification boundaries. |
 | [VERSIONING.md](VERSIONING.md) | Semantic Versioning policy, compatibility surface, and release-number rules. |
 | [PLAYER_SAVE_JOURNAL.md](PLAYER_SAVE_JOURNAL.md) | Revisioned player-save journal permissions, bounds, diagnostics, and recovery. |
 | [PLAYER_SAVE_PIPELINE.md](PLAYER_SAVE_PIPELINE.md) | Nonterminal revisioned save coordinator, cutover, health, and compatibility boundaries. |
@@ -53,11 +53,12 @@ directory covers architecture, operations, configuration, and reference material
 
 Self-contained HTML figures under [`diagrams/`](diagrams/):
 
-- [Server architecture](diagrams/duris-server-architecture.html) — process zones,
-  game loop, persistence pipeline, durable state.
-- [Database model](diagrams/duris-database-model.html) — core MySQL tables and
-  their relationships, verified against
-  `migrations/bootstrap_multithread_safe.sql`.
+- [Server architecture](diagrams/duris-server-architecture.html) - game-thread
+  ownership, typed snapshot and command pipelines, maintenance, MySQL authority,
+  optional Redis cache/recovery, and operator gates.
+- [Database model](diagrams/duris-database-model.html) - authoritative revision,
+  operation, ownership, migration, and lifecycle groups verified against the
+  bootstrap, immutable migrations, and runtime manifests.
 
 ## Historical/archival material
 

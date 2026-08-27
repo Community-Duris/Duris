@@ -33,19 +33,29 @@ beyond owner read/write (`0600`).
 | `DB_SOCKET` | Optional, local role only | Protected local Unix socket used instead of remote transport. |
 | `DB_TLS` | Required as `TRUE` for non-loopback hosts | Enforce encrypted database transport. |
 | `DB_SSL_CA` | Required for non-loopback hosts | Regular CA file used to verify the database server certificate. |
+| `PLAYER_SAVE_JOURNAL_DIR` | Required outside mini mode | Absolute server-user-owned `0700` directory for revisioned player snapshots. |
 | `CRITICAL_COMMAND_JOURNAL_DIR` | Required outside mini mode | Absolute server-user-owned `0700` directory for non-coalescing critical commands. |
+| `MAINTENANCE_STATE_FILE` | Optional; `bin/server/maintenance-scheduler.state` | Durable scheduler cursor/completion state; parent directory must be server-user controlled. |
 
-The server selects the database through the listen port as a final safety
-check. Port `7777` is the production default; on any other port an explicitly
-production-like name (`duris` or `duris_prod`) is redirected to `duris_dev`.
-Use a separate database account and a non-`7777` port for development. This
+`DB_NAME` selects the requested database and `DB_ALLOWED_TARGETS` authorizes the
+resolved target. The listen port is an additional guard, not the primary selector.
+Production role requires port `7777`; on any other port an explicitly production-like
+name (`duris` or `duris_prod`) is redirected to `duris_dev` before the allow-list check.
+Use a separate database account, target, and non-`7777` port for development. The
 redirect does not make a production credential safe to reuse locally.
 
-Every connection has bounded connect/read/write deadlines, disables automatic
-reconnect, and must establish the same verified session contract: `utf8mb4`,
-UTC, READ COMMITTED, and strict transactional SQL mode. Loopback TCP and an
-explicit local socket are treated as protected local transport. Any other host
-requires enforced TLS, CA verification, and a negotiated cipher.
+Every connection has 10-second connect/read/write deadlines, disables automatic
+reconnect, and must establish the same verified session contract: `utf8mb4`, time zone
+`+00:00`, `READ-COMMITTED`, and `STRICT_TRANS_TABLES`,
+`ERROR_FOR_DIVISION_BY_ZERO`, and `NO_ENGINE_SUBSTITUTION`. Loopback TCP and an
+explicit local-role socket are treated as protected local transport. Any other host
+requires enforced TLS, CA verification, and a negotiated cipher. Boot also requires a
+supported MySQL 8.0 or MariaDB 10.11 normalized metadata fingerprint before mutation.
+
+Both journal directories are mandatory for normal operation. They must be absolute,
+owned by the server user, and mode `0700` or stricter; their files are permission
+checked, checksummed, size bounded, and fail closed on corruption or quota exhaustion.
+Do not place either directory under a shared or automatically cleaned temporary path.
 
 ## Redis
 
@@ -83,6 +93,10 @@ bare `redis-cli FLUSHDB`, so it uses the CLI's default endpoint and database
 (normally `127.0.0.1:6379`, database `0`) rather than reading `.env`. Use the
 script only for that exact dedicated local instance; otherwise connect and
 inspect the intended Redis database explicitly.
+
+Redis uses a 250 ms connect timeout and 100 ms command timeout. A cache failure may
+degrade a report, while a world-generation failure preserves the prior generation and
+floor deltas. Neither case authorizes a synchronous player save or journal deletion.
 
 ## Character creation and gameplay modes
 
@@ -163,6 +177,8 @@ builds a deferred backlog; see [ARCHITECTURE.md](ARCHITECTURE.md#event-wheel).
 4. The resolved database target must be present in `DB_ALLOWED_TARGETS` before
    a connection is attempted. Logs report validation categories without
    printing credentials or target values.
+5. Boot verifies the connection and complete schema/migration contract before lookup
+   publication, UID reservation, workers, listeners, or gameplay.
 
 A configuration change generally requires a restart. Database credentials and
 Redis settings are read before normal gameplay initialization; creation flags

@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 1.81.53** | [Versioning policy](docs/VERSIONING.md)
+**Version: 1.81.54** | [Versioning policy](docs/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -33,29 +33,37 @@ flowchart LR
     subgraph Server["DurisMUD server process"]
         Network["Telnet / TLS / WebSocket"]
         Loop["Single event loop<br/>commands, combat, world ticks"]
-        Workers["Async persistence workers<br/>item, scalar, large, player, world"]
+        Snapshots["Revisioned snapshots<br/>player and world"]
+        Commands["Critical commands<br/>economy, ownership, outcomes"]
+        Legacy["Bounded compatibility queues<br/>item, scalar, large payload"]
 
         Network <--> Loop
-        Loop -->|enqueue saves| Workers
+        Loop -->|immutable jobs| Snapshots
+        Loop -->|operation IDs| Commands
+        Loop -->|remaining events| Legacy
     end
 
     Content["World + runtime data<br/>areas/ and lib/"]
     Content -->|boot and reset data| Loop
-    Loop -->|synchronous queries| Database[("MySQL / MariaDB<br/>durable state")]
-    Workers -->|asynchronous writes| Database
-    Loop -.-|optional immutable world recovery| Redis[("Redis")]
+    Loop -->|boot, bounded reads, legacy routes| Database[("MySQL / MariaDB<br/>durable authority")]
+    Snapshots -->|revision guarded| Database
+    Commands -->|inbox, ledger, outbox| Database
+    Legacy -->|deduplicated events| Database
+    Snapshots -.-|optional immutable world recovery| Redis[("Redis cache / recovery")]
     Player <-->|game protocol| Network
 
     classDef focal fill:#f4ecd9,stroke:#9e3b25,color:#2e2418,stroke-width:2px;
     class Loop focal;
 ```
 
-The C-style sources under `src/` are compiled as C++20. Network I/O and game
-updates run in a single `select()`-driven pulse loop. Background workers handle item,
-scalar, large-payload, revisioned player, and immutable world-recovery persistence.
-MySQL or MariaDB stores durable game state, while Redis can optionally retain validated
-world-recovery generations. See the full [architecture guide](docs/ARCHITECTURE.md)
-and [database guide](docs/DATABASE.md).
+The C-style sources under `src/` are compiled as C++20. Network I/O and mutable game
+state remain on one `select()`-driven pulse loop. Immutable revisioned snapshots and
+non-coalescing operation-ID commands cross typed worker boundaries; the older item,
+scalar, and large-payload queues retain only bounded compatibility roles. MySQL or
+MariaDB is the durable authority for snapshots, ledgers, current rows, inbox/results,
+outbox state, migration history, and lifecycle evidence. Redis is optional and limited
+to reconstructible caches plus validated world-recovery generations. See the full
+[architecture guide](docs/ARCHITECTURE.md) and [database guide](docs/DATABASE.md).
 
 ## Quick start
 
@@ -265,13 +273,17 @@ archives.
 
 | Guide | Covers |
 | --- | --- |
-| [Architecture](docs/ARCHITECTURE.md) | Process model, boot, game loop, networking, persistence. |
+| [Architecture](docs/ARCHITECTURE.md) | Process model, boot gate, game loop, typed persistence, recovery. |
 | [Codebase](docs/CODEBASE.md) | Module-by-module map of the server sources. |
 | [Building](docs/BUILDING.md) | Build flags, areas, sanitizers, verification. |
-| [Database](docs/DATABASE.md) | Connections, async saves, schema, migrations. |
+| [Database](docs/DATABASE.md) | Connections, reads, typed writes, reconciliation, schema, migrations. |
 | [Configuration](docs/CONFIGURATION.md) | Environment variables, Redis, networking, and diagnostics. |
 | [Runbook](docs/RUNBOOK.md) | Restarts, logs, backups, recovery, operations. |
 | [Testing](docs/TESTING.md) | Test layout, commands, and conventions. |
+| [Immutable migrations](docs/IMMUTABLE_MIGRATIONS.md) | Baseline adoption, ordered checksums, exact resume. |
+| [Runtime compatibility](docs/RUNTIME_COMPATIBILITY.md) | Pre-mutation boot verification and lookup publication. |
+| [Data lifecycle](docs/DATA_LIFECYCLE.md) | Store inventory, pending policy, archive/export/erasure boundaries. |
+| [Critical commands](docs/CRITICAL_COMMAND_PIPELINE.md) | Operation identity, journal, inbox/results, outbox, replay, fences. |
 | [Formatting](docs/formatting.md) | Style, changed-line formatting, and editors. |
 | [Help system](docs/HELP_SYSTEM.md) | Help sources, database import, and rendering. |
 

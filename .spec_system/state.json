@@ -73,26 +73,12 @@
     "phase03-session09-authenticated-personal-data-export",
     "phase03-session10-account-erasure-and-backup-propagation",
     "phase03-session11-immutable-migration-ledger-and-runner",
-    "phase03-session12-boot-schema-and-lookup-compatibility"
+    "phase03-session12-boot-schema-and-lookup-compatibility",
+    "phase03-session13-documentation-and-operator-contract"
   ],
   "next_session_history": [
     {
       "date": "2026-08-27",
-      "session": "phase03-session06-bounded-maintenance-scheduler",
-      "status": "validated"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session06-bounded-maintenance-scheduler",
-      "status": "completed"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session07-data-processing-and-retention-contract",
-      "status": "planned"
-    },
-    {
-      "date": "2026-08-27",
       "session": "phase03-session07-data-processing-and-retention-contract",
       "status": "validated"
     },
@@ -174,6 +160,21 @@
     {
       "date": "2026-08-27",
       "session": "phase03-session12-boot-schema-and-lookup-compatibility",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session13-documentation-and-operator-contract",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session13-documentation-and-operator-contract",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session13-documentation-and-operator-contract",
       "status": "completed"
     }
   ]
