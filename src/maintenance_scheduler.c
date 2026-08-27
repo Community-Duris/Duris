@@ -15,6 +15,7 @@
 #include <mutex>
 #include <new>
 #include <string>
+#include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
 
@@ -32,6 +33,7 @@ constexpr std::array<maintenance_job_definition, MAINTENANCE_JOB_COUNT> registry
 	{ maintenance_job_id::web_status, 300, 6, 1, 25000, true },
 	{ maintenance_job_id::cargo_market, 240, 4, 100, 50000, true },
 	{ maintenance_job_id::operational_statistics, 300, 6, 1, 50000, true },
+	{ maintenance_job_id::lifecycle_archive, 2400, 7, 64, 25000, false },
 } };
 
 struct queued_job
@@ -77,6 +79,15 @@ struct durable_scheduler_state
 	uint64_t checksum;
 };
 
+struct durable_scheduler_state_v2
+{
+	char magic[8];
+	uint32_t version;
+	uint32_t job_count;
+	std::array<durable_job_state, 11> jobs;
+	uint64_t checksum;
+};
+
 durable_scheduler_state durable_state = {};
 bool durable_state_dirty = false;
 
@@ -84,6 +95,19 @@ uint64_t state_checksum(const durable_scheduler_state &state)
 {
 	const auto *bytes = reinterpret_cast<const uint8_t *>(&state);
 	const size_t length = offsetof(durable_scheduler_state, checksum);
+	uint64_t hash = 1469598103934665603ULL;
+	for (size_t index = 0; index < length; ++index)
+	{
+		hash ^= bytes[index];
+		hash *= 1099511628211ULL;
+	}
+	return hash;
+}
+
+uint64_t state_checksum(const durable_scheduler_state_v2 &state)
+{
+	const auto *bytes = reinterpret_cast<const uint8_t *>(&state);
+	const size_t length = offsetof(durable_scheduler_state_v2, checksum);
 	uint64_t hash = 1469598103934665603ULL;
 	for (size_t index = 0; index < length; ++index)
 	{
@@ -134,35 +158,71 @@ bool persist_state(const durable_scheduler_state &state)
 bool load_state()
 {
 	durable_state = {};
-	memcpy(durable_state.magic, "DMSMNT2", 7);
-	durable_state.version = 2;
+	memcpy(durable_state.magic, "DMSMNT3", 7);
+	durable_state.version = 3;
 	durable_state.job_count = MAINTENANCE_JOB_COUNT;
 	if (state_path.empty())
 		return true;
 	const int descriptor = open(state_path.c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
 	if (descriptor < 0)
 		return errno == ENOENT;
-	durable_scheduler_state loaded = {};
-	auto *bytes = reinterpret_cast<uint8_t *>(&loaded);
-	size_t remaining = sizeof(loaded);
-	while (remaining)
+	struct stat metadata = {};
+	if (fstat(descriptor, &metadata) != 0 || !S_ISREG(metadata.st_mode))
 	{
-		const ssize_t count = read(descriptor, bytes, remaining);
-		if (count < 0 && errno == EINTR)
-			continue;
-		if (count <= 0)
-			break;
-		bytes += count;
-		remaining -= static_cast<size_t>(count);
-	}
-	uint8_t extra = 0;
-	const ssize_t trailing = read(descriptor, &extra, 1);
-	const bool closed = close(descriptor) == 0;
-	if (remaining || trailing != 0 || !closed || memcmp(loaded.magic, "DMSMNT2", 7) != 0 ||
-	    loaded.version != 2 || loaded.job_count != MAINTENANCE_JOB_COUNT ||
-	    loaded.checksum != state_checksum(loaded))
+		close(descriptor);
 		return false;
-	for (const auto &job : loaded.jobs)
+	}
+	if (metadata.st_size == static_cast<off_t>(sizeof(durable_scheduler_state_v2)))
+	{
+		durable_scheduler_state_v2 loaded_v2 = {};
+		auto *old_bytes = reinterpret_cast<uint8_t *>(&loaded_v2);
+		size_t old_remaining = sizeof(loaded_v2);
+		while (old_remaining)
+		{
+			const ssize_t count = read(descriptor, old_bytes, old_remaining);
+			if (count < 0 && errno == EINTR)
+				continue;
+			if (count <= 0)
+				break;
+			old_bytes += count;
+			old_remaining -= static_cast<size_t>(count);
+		}
+		const bool closed = close(descriptor) == 0;
+		if (old_remaining || !closed || memcmp(loaded_v2.magic, "DMSMNT2", 7) != 0 ||
+		    loaded_v2.version != 2 || loaded_v2.job_count != 11 ||
+		    loaded_v2.checksum != state_checksum(loaded_v2))
+			return false;
+		for (size_t index = 0; index < loaded_v2.jobs.size(); ++index)
+			durable_state.jobs[index] = loaded_v2.jobs[index];
+	}
+	else if (metadata.st_size == static_cast<off_t>(sizeof(durable_scheduler_state)))
+	{
+		durable_scheduler_state loaded = {};
+		auto *bytes = reinterpret_cast<uint8_t *>(&loaded);
+		size_t remaining = sizeof(loaded);
+		while (remaining)
+		{
+			const ssize_t count = read(descriptor, bytes, remaining);
+			if (count < 0 && errno == EINTR)
+				continue;
+			if (count <= 0)
+				break;
+			bytes += count;
+			remaining -= static_cast<size_t>(count);
+		}
+		const bool closed = close(descriptor) == 0;
+		if (remaining || !closed || memcmp(loaded.magic, "DMSMNT3", 7) != 0 ||
+		    loaded.version != 3 || loaded.job_count != MAINTENANCE_JOB_COUNT ||
+		    loaded.checksum != state_checksum(loaded))
+			return false;
+		durable_state = loaded;
+	}
+	else
+	{
+		close(descriptor);
+		return false;
+	}
+	for (const auto &job : durable_state.jobs)
 		if ((!job.work_id &&
 		     (job.cursor || job.request_pending || job.completion_pending)) ||
 		    (job.request_pending &&
@@ -172,7 +232,6 @@ bool load_state()
 		     (job.completion.work_id != job.work_id ||
 		      static_cast<size_t>(job.completion.job_id) >= MAINTENANCE_JOB_COUNT)))
 			return false;
-	durable_state = loaded;
 	return true;
 }
 
@@ -434,11 +493,18 @@ const maintenance_job_definition *maintenance_registry(size_t *count)
 
 const char *maintenance_job_name(maintenance_job_id id)
 {
-	constexpr const char *names[] = {
-		"auction_due_scan", "poll_expiration", "epic_task_catalog",	"epic_zone_balance",
-		"level_cap",	    "zone_trophy",     "epic_zone_modifiers",	"boon_scan",
-		"web_status",	    "cargo_market",    "operational_statistics"
-	};
+	constexpr const char *names[] = { "auction_due_scan",
+					  "poll_expiration",
+					  "epic_task_catalog",
+					  "epic_zone_balance",
+					  "level_cap",
+					  "zone_trophy",
+					  "epic_zone_modifiers",
+					  "boon_scan",
+					  "web_status",
+					  "cargo_market",
+					  "operational_statistics",
+					  "lifecycle_archive" };
 	const size_t index = index_of(id);
 	return index < MAINTENANCE_JOB_COUNT ? names[index] : "invalid";
 }
@@ -503,6 +569,7 @@ bool maintenance_scheduler_init(uint64_t instance_seed, maintenance_execute_fn e
 	for (const auto &definition : registry)
 	{
 		auto &job = health.jobs[index_of(definition.id)];
+		job.enabled = definition.enabled;
 		job.offset_ticks =
 			maintenance_job_offset(definition.id, definition.cadence_ticks, instance);
 		job.next_due_tick = job.offset_ticks;

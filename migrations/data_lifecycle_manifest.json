@@ -3000,6 +3000,85 @@
       "dependencies": []
     },
     {
+      "id": "database:lifecycle_archive_jobs",
+      "kind": "database_table",
+      "locator": "lifecycle_archive_jobs",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "store_id_and_policy_identity",
+      "technical_purpose": "durable lifecycle job identity, approval, cursor, verification, and recovery state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:lifecycle_archive_batches",
+      "kind": "database_table",
+      "locator": "lifecycle_archive_batches",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "lifecycle_job_id",
+      "technical_purpose": "idempotent lifecycle batch cursor, count, checksum, and crash recovery state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:lifecycle_archive_jobs"]
+    },
+    {
+      "id": "database:lifecycle_archive_rows",
+      "kind": "database_table",
+      "locator": "lifecycle_archive_rows",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "derived_from_source_store",
+      "technical_purpose": "verified same-database archive envelope for approved lifecycle batches",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:lifecycle_archive_batches"]
+    },
+    {
+      "id": "database:lifecycle_archive_evidence",
+      "kind": "database_table",
+      "locator": "lifecycle_archive_evidence",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "lifecycle_job_id",
+      "technical_purpose": "redacted lifecycle operator and executor evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:lifecycle_archive_batches",
+        "database:lifecycle_archive_jobs"
+      ]
+    },
+    {
       "id": "redis:world_recovery",
       "kind": "redis_keyspace",
       "locator": "redis world recovery generations",

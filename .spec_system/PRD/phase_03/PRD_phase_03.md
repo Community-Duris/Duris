@@ -4,7 +4,7 @@
 **Sessions**: 14 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 5/14 sessions (36%)
+**Progress**: 8/14 sessions (57%)
 
 ---
 
@@ -25,10 +25,9 @@ propagation without inventing legal conclusions or deleting protected economy,
 ownership, moderation, or audit evidence outside an approved policy.
 
 The final sessions reconcile documentation to the implemented system and run the full
-25-to-200-client workload and fault matrix on a backed-up non-production clone. This is
-an advance plan: Phase 00 remains active with 0 of 10 sessions completed, and Phases 01
-and 02 remain future work. No Phase 03 session is executable until all earlier phases
-and their transition evidence are complete.
+25-to-200-client workload and fault matrix on a backed-up non-production clone. Phases
+00 through 02 and Phase 03 Sessions 01 through 07 are complete and validated; Session
+08 is the next bounded work window.
 
 ---
 
@@ -42,8 +41,8 @@ and their transition evidence are complete.
 | 04 | Set-Based PvP and Epic Task Reads | Complete | Recent-death aggregation, in-memory task selection, and remaining read fan-out removal | 2026-08-27 |
 | 05 | Production-Clone Query Plan and Index Gate | Complete | Fail-closed qualification harness; local fixture unqualified and no candidate applied | 2026-08-27 |
 | 06 | Bounded Maintenance Scheduler | Complete | Staggered cadences, async jobs, row/time budgets, durable cursors/completions, and pulse isolation | 2026-08-27 |
-| 07 | Data Processing and Retention Contract | Not Started | Complete data inventory, approved lifecycle rules, subject mapping, and fail-closed policy | - |
-| 08 | Retention and Archival Execution | Not Started | Idempotent archive batches, verification, purge eligibility, reconciliation, and dry-run operations | - |
+| 07 | Data Processing and Retention Contract | Complete | Complete technical inventory, pending decision markers, subject mapping, and fail-closed policy | 2026-08-27 |
+| 08 | Retention and Archival Execution | Complete | Idempotent archive state machine, schema, verification, reconciliation gates, dry-run controls, and policy-disabled scheduler slot | 2026-08-27 |
 | 09 | Authenticated Personal Data Export | Not Started | Account-scoped request, consistent collection, safe packaging, delivery, expiry, and audit | - |
 | 10 | Account Erasure and Backup Propagation | Not Started | Idempotent erasure workflow across live state, durable stores, recovery data, and restores | - |
 | 11 | Immutable Migration Ledger and Runner | Not Started | Stable IDs, checksums, baseline adoption, exact replay, and partial-failure recovery | - |
@@ -61,12 +60,14 @@ and their transition evidence are complete.
 - Session 04: Set-Based PvP and Epic Task Reads (completed 2026-08-27)
 - Session 05: Production-Clone Query Plan and Index Gate (completed 2026-08-27; local target unqualified)
 - Session 06: Bounded Maintenance Scheduler (completed 2026-08-27)
+- Session 07: Data Processing and Retention Contract (completed 2026-08-27; destructive rules disabled)
+- Session 08: Retention and Archival Execution (completed 2026-08-27; canonical mutation disabled)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 07: Data Processing and Retention Contract
+- Session 09: Authenticated Personal Data Export
 
 ---
 
@@ -99,8 +100,7 @@ and their transition evidence are complete.
 
 ## Prerequisites
 
-- All Phase 00, Phase 01, and Phase 02 sessions are completed and validated; the
-  analyzer currently reports Phase 00 as active with 0 of 10 sessions completed.
+- All Phase 00, Phase 01, and Phase 02 sessions are completed and validated.
 - Phase 01 provides revisioned typed workers, exact acknowledgements, bounded journals,
   and fork-free player/world recovery.
 - Phase 02 provides authoritative epic, bank, wallet, and item-owner rows plus immutable
@@ -146,11 +146,9 @@ and their transition evidence are complete.
 
 ### Conflict Resolutions
 
-- Normal `phasebuild` advances `current_phase`, but the user explicitly requested
-  one-phase-at-a-time advance planning before Phase 00 implementation. The analyzer
-  reports Phase 00 Session 01 planned and no completed sessions. Phase 03 is therefore
-  added as future tracked work while `current_phase` and `current_session` remain on
-  Phase 00 so no earlier session is skipped.
+- Phase 03 became active only after Phases 00 through 02 and their transition evidence
+  completed. The user boundary remains explicit: complete Phase 03 and stop before any
+  Phase 04 planning or implementation.
 - The master Phase 03 outline names login, read queries, indexes, retention, migration
   compatibility, and documentation, while `SECURITY-COMPLIANCE.md` assigns personal
   data inventory, access/export, erasure, and backup propagation to P03. Both are

@@ -1,7 +1,8 @@
 # Data Lifecycle Contract
 
 DurisMUD maintains one machine-readable technical inventory at
-`migrations/data_lifecycle_manifest.json`. It covers the final bootstrap schema plus
+`migrations/data_lifecycle_manifest.json`. It currently covers 160 final bootstrap
+tables plus
 declared Redis, journal, fallback, quarantine, runtime-file, log, export-spool, and
 backup classes. Season reset, archive, export, erasure, restore, and documentation
 work must consume this inventory instead of introducing independent store lists.
@@ -66,7 +67,8 @@ perform their own preflight and postflight checks.
 
 ## Current boundary
 
-The manifest provides inventory and fail-closed policy loading only. It does not run
-archives, purges, exports, erasure, backup rewriting, or production operations. Those
-workflows require their own authenticated, resumable, auditable implementations and
-must preserve replay, reconciliation, and restore invariants.
+The manifest provides inventory and fail-closed policy loading. The bounded archive
+schema and state-machine boundary are documented in
+[`LIFECYCLE_ARCHIVE.md`](LIFECYCLE_ARCHIVE.md), but canonical policy approval and
+table-specific selectors are pending, so its scheduler slot remains disabled. No
+archive, purge, export, erasure, backup rewrite, or production operation is enabled.

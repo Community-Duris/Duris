@@ -160,9 +160,10 @@ severity; each entry carries its current status.
     exception rules, then implement authenticated export and deletion workflows with
     complete table, cache, journal, log, and backup coverage plus auditable outcomes.
   - Status: Open
-  - Progress: Phase 03 Session 07 adds a complete technical lifecycle inventory and
-    fail-closed validation. Controller decisions remain pending, destructive rules are
-    disabled, and archive/export/erasure execution is not yet implemented.
+  - Progress: Phase 03 Sessions 07-08 add a complete technical lifecycle inventory,
+    fail-closed validation, guarded archive schema/state machine, dry-run controls, and
+    a policy-disabled scheduler slot. Controller decisions remain pending; no archive,
+    export, or erasure mutation is enabled.
   - Opened: P00 (2026-08-26)
 
 - **[P00-S09] Redis failures can compromise availability and persistence behavior**

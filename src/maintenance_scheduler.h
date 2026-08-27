@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <array>
 
-constexpr size_t MAINTENANCE_JOB_COUNT = 11;
+constexpr size_t MAINTENANCE_JOB_COUNT = 12;
 constexpr size_t MAINTENANCE_QUEUE_MAX = MAINTENANCE_JOB_COUNT;
 constexpr size_t MAINTENANCE_COMPLETION_MAX = MAINTENANCE_JOB_COUNT;
 constexpr uint32_t MAINTENANCE_ROW_BUDGET_MAX = 256;
@@ -27,6 +27,7 @@ enum class maintenance_job_id : uint8_t
 	web_status,
 	cargo_market,
 	operational_statistics,
+	lifecycle_archive,
 };
 
 enum class maintenance_outcome : uint8_t
@@ -90,6 +91,7 @@ struct maintenance_job_health
 	uint64_t rows;
 	uint64_t last_run_usec;
 	bool active;
+	bool enabled;
 };
 
 struct maintenance_scheduler_health

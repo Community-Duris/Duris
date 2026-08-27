@@ -2119,4 +2119,78 @@ CREATE TABLE `session_audit_outcome` (
   CONSTRAINT `chk_session_audit_event` CHECK (`event_type` IN (1,2))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `lifecycle_archive_jobs` (
+  `job_id` binary(16) NOT NULL, `job_key` binary(32) NOT NULL,
+  `policy_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `policy_schema_version` int unsigned NOT NULL, `manifest_checksum` binary(32) NOT NULL,
+  `store_id` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action` tinyint unsigned NOT NULL, `dry_run` tinyint unsigned NOT NULL DEFAULT '1',
+  `target_environment` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `approval_reference` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` tinyint unsigned NOT NULL, `source_cursor` varbinary(512) NOT NULL,
+  `source_upper_bound` varbinary(512) NOT NULL, `row_budget` smallint unsigned NOT NULL,
+  `byte_budget` int unsigned NOT NULL, `time_budget_usec` int unsigned NOT NULL,
+  `attempt_count` int unsigned NOT NULL DEFAULT '0',
+  `source_count` bigint unsigned NOT NULL DEFAULT '0',
+  `archive_count` bigint unsigned NOT NULL DEFAULT '0',
+  `source_checksum` binary(32) DEFAULT NULL, `archive_checksum` binary(32) DEFAULT NULL,
+  `reconciliation_before` tinyint unsigned NOT NULL DEFAULT '0',
+  `reconciliation_after` tinyint unsigned NOT NULL DEFAULT '0',
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  `completed_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`job_id`),
+  UNIQUE KEY `uq_lifecycle_archive_job_key` (`job_key`),
+  KEY `idx_lifecycle_archive_job_claim` (`status`,`updated_at`,`job_id`),
+  KEY `idx_lifecycle_archive_job_store` (`store_id`,`status`,`job_id`),
+  CONSTRAINT `chk_lifecycle_archive_job_action` CHECK (`action` between 1 and 5),
+  CONSTRAINT `chk_lifecycle_archive_job_status` CHECK (`status` between 1 and 8),
+  CONSTRAINT `chk_lifecycle_archive_job_dry_run` CHECK (`dry_run` in (0,1)),
+  CONSTRAINT `chk_lifecycle_archive_job_budgets` CHECK ((`row_budget` between 1 and 256) and (`byte_budget` between 1 and 1048576) and (`time_budget_usec` between 1 and 500000))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `lifecycle_archive_batches` (
+  `batch_id` binary(16) NOT NULL, `batch_key` binary(32) NOT NULL,
+  `job_id` binary(16) NOT NULL, `sequence_number` bigint unsigned NOT NULL,
+  `status` tinyint unsigned NOT NULL, `cursor_start` varbinary(512) NOT NULL,
+  `cursor_end` varbinary(512) NOT NULL, `source_count` int unsigned NOT NULL DEFAULT '0',
+  `archive_count` int unsigned NOT NULL DEFAULT '0',
+  `source_bytes` int unsigned NOT NULL DEFAULT '0',
+  `source_checksum` binary(32) DEFAULT NULL, `archive_checksum` binary(32) DEFAULT NULL,
+  `reconciliation_before` tinyint unsigned NOT NULL DEFAULT '0',
+  `reconciliation_after` tinyint unsigned NOT NULL DEFAULT '0',
+  `attempt_count` int unsigned NOT NULL DEFAULT '0',
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `started_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `verified_at` timestamp(6) NULL DEFAULT NULL,
+  `completed_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`batch_id`),
+  UNIQUE KEY `uq_lifecycle_archive_batch_key` (`batch_key`),
+  UNIQUE KEY `uq_lifecycle_archive_batch_sequence` (`job_id`,`sequence_number`),
+  UNIQUE KEY `uq_lifecycle_archive_batch_job_id` (`job_id`,`batch_id`),
+  KEY `idx_lifecycle_archive_batch_resume` (`job_id`,`status`,`sequence_number`),
+  CONSTRAINT `lifecycle_archive_batch_job_fk` FOREIGN KEY (`job_id`) REFERENCES `lifecycle_archive_jobs` (`job_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_lifecycle_archive_batch_status` CHECK (`status` between 1 and 8)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `lifecycle_archive_rows` (
+  `batch_id` binary(16) NOT NULL, `source_key` varbinary(512) NOT NULL,
+  `source_checksum` binary(32) NOT NULL, `payload` longblob NOT NULL,
+  `payload_bytes` int unsigned NOT NULL,
+  `archived_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`batch_id`,`source_key`),
+  CONSTRAINT `lifecycle_archive_row_batch_fk` FOREIGN KEY (`batch_id`) REFERENCES `lifecycle_archive_batches` (`batch_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_lifecycle_archive_row_size` CHECK (`payload_bytes` between 1 and 1048576)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `lifecycle_archive_evidence` (
+  `evidence_id` bigint unsigned NOT NULL AUTO_INCREMENT, `job_id` binary(16) NOT NULL,
+  `batch_id` binary(16) DEFAULT NULL, `event_type` tinyint unsigned NOT NULL,
+  `status` tinyint unsigned NOT NULL, `row_count` int unsigned NOT NULL DEFAULT '0',
+  `byte_count` int unsigned NOT NULL DEFAULT '0',
+  `error_code` int unsigned NOT NULL DEFAULT '0',
+  `occurred_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`evidence_id`), KEY `idx_lifecycle_archive_evidence_job` (`job_id`,`evidence_id`),
+  CONSTRAINT `lifecycle_archive_evidence_job_fk` FOREIGN KEY (`job_id`) REFERENCES `lifecycle_archive_jobs` (`job_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `lifecycle_archive_evidence_batch_fk` FOREIGN KEY (`job_id`,`batch_id`) REFERENCES `lifecycle_archive_batches` (`job_id`,`batch_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_lifecycle_archive_evidence_event` CHECK (`event_type` between 1 and 8),
+  CONSTRAINT `chk_lifecycle_archive_evidence_status` CHECK (`status` between 1 and 8)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

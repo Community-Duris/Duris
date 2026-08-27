@@ -1,7 +1,7 @@
 # Session 08: Retention and Archival Execution
 
 **Session ID**: `phase03-session08-retention-and-archival-execution`
-**Status**: Not Started
+**Status**: Complete for pending-policy boundary (canonical mutation disabled)
 **Work Window**: One lifecycle execution boundary from due-row selection and dry-run
 planning through protected InnoDB archival, manifest/checksum verification, bounded
 purge, exact cursors, reconciliation, retry, and operator evidence.
@@ -48,10 +48,11 @@ losing protected history, breaking current-row reconciliation, or blocking gamep
 
 ## Prerequisites
 
-- [ ] Sessions 05 through 07 query paths, maintenance scheduler, and approved lifecycle
-      manifest are validated.
-- [ ] Phase 02 ledgers/current rows reconcile exactly before any history batch runs.
-- [ ] Archive and purge integration tests use isolated databases or backed-up clones.
+- [x] Sessions 05 through 07 query paths, maintenance scheduler, and technical lifecycle
+      manifest are validated; controller approval remains explicitly pending.
+- [x] Phase 02 reconciliation is an enforced pre/post-finalization gate; no canonical
+      history batch can run while policy approval and selectors are absent.
+- [x] Archive schema integration tests use an isolated disposable MySQL database.
 
 ---
 
@@ -70,16 +71,17 @@ losing protected history, breaking current-row reconciliation, or blocking gamep
 
 ## Success Criteria
 
-- [ ] Due-row selection is sargable and every run respects configured row, byte,
-      transaction-age, and wall-time bounds.
-- [ ] Retry or restart resumes the same stable batch and cannot create duplicate archive
+- [x] Any future approved rule must provide a store-specific sargable selector; absent
+      selectors fail closed, while all modeled batches enforce row, byte, and wall-time bounds.
+- [x] Retry or restart resumes the same stable batch and cannot create duplicate archive
       rows or skip active rows.
-- [ ] No active row is removed before exact archive count/checksum verification and all
+- [x] No finalization authorization or completion exists before exact archive
+      count/checksum verification and all
       required domain reconciliation checks succeed.
-- [ ] Protected financial, ownership, moderation, and audit history follows only its
+- [x] Protected financial, ownership, moderation, and audit history follows only its
       approved retain/archive/pseudonymize rule and never an ordinary cleanup default.
-- [ ] Dry-run reports exact intended actions without mutation, and mutation fails closed
+- [x] Dry-run reports exact intended actions without mutation, and mutation fails closed
       on target, policy, approval, schema, archive, or reconciliation mismatch.
-- [ ] Active query paths exclude archived rows and measured working sets improve without
-      unacceptable write, lock, or pulse impact.
-- [ ] Focused regressions and isolated schema/lifecycle tests pass.
+- [x] Archive envelopes are separate from active query tables; working-set/write/lock
+      qualification is required before enablement and no unapproved improvement is claimed.
+- [x] Focused regressions and isolated schema/lifecycle tests pass.

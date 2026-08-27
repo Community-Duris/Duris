@@ -4053,19 +4053,21 @@ static void show_world_persistence(P_char ch)
 	for (size_t job_index = 0; job_index < MAINTENANCE_JOB_COUNT; ++job_index)
 	{
 		const auto &job = maintenance.jobs[job_index];
-		const uint64_t due_lag =
-			ne_event_tick > job.next_due_tick ? ne_event_tick - job.next_due_tick : 0;
-		snprintf(line, sizeof(line),
-			 "maintenance_job name=%s active=%d due_lag_ticks=%llu cursor=%llu "
-			 "submitted=%llu completed=%llu retries=%llu suppressed=%llu "
-			 "failures=%llu rows=%llu last_run_us=%llu\n",
-			 maintenance_job_name(static_cast<maintenance_job_id>(job_index)),
-			 job.active, (unsigned long long)due_lag, (unsigned long long)job.cursor,
-			 (unsigned long long)job.submitted, (unsigned long long)job.completed,
-			 (unsigned long long)job.retries,
-			 (unsigned long long)job.overlap_suppressed,
-			 (unsigned long long)job.failures, (unsigned long long)job.rows,
-			 (unsigned long long)job.last_run_usec);
+		const uint64_t due_lag = job.enabled && ne_event_tick > job.next_due_tick ?
+						 ne_event_tick - job.next_due_tick :
+						 0;
+		snprintf(
+			line, sizeof(line),
+			"maintenance_job name=%s enabled=%d active=%d due_lag_ticks=%llu cursor=%llu "
+			"submitted=%llu completed=%llu retries=%llu suppressed=%llu "
+			"failures=%llu rows=%llu last_run_us=%llu\n",
+			maintenance_job_name(static_cast<maintenance_job_id>(job_index)),
+			job.enabled, job.active, (unsigned long long)due_lag,
+			(unsigned long long)job.cursor, (unsigned long long)job.submitted,
+			(unsigned long long)job.completed, (unsigned long long)job.retries,
+			(unsigned long long)job.overlap_suppressed,
+			(unsigned long long)job.failures, (unsigned long long)job.rows,
+			(unsigned long long)job.last_run_usec);
 		send_to_char(line, ch);
 	}
 

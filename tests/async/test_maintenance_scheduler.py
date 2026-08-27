@@ -4,6 +4,7 @@
 import subprocess
 import tempfile
 import shlex
+import struct
 from pathlib import Path
 
 
@@ -92,6 +93,8 @@ int main(int argc, char **argv)
     size_t count = 0;
     const auto *registry = maintenance_registry(&count);
     assert(registry && count == MAINTENANCE_JOB_COUNT);
+    const size_t lifecycle = static_cast<size_t>(maintenance_job_id::lifecycle_archive);
+    assert(lifecycle < count && !registry[lifecycle].enabled);
     for (size_t index = 0; index < count; ++index)
     {
         assert(registry[index].row_budget <= MAINTENANCE_ROW_BUDGET_MAX);
@@ -113,6 +116,7 @@ int main(int argc, char **argv)
     assert(maintenance_scheduler_set_state_path(argv[1]));
     assert(maintenance_scheduler_init(9, execute, &state));
     auto health = maintenance_scheduler_health_copy(0);
+    assert(!health.jobs[lifecycle].enabled);
     const size_t auction = static_cast<size_t>(maintenance_job_id::auction_due_scan);
     const uint64_t first_tick = health.jobs[auction].next_due_tick;
     maintenance_result results[MAINTENANCE_COMPLETION_MAX] = {};
@@ -218,6 +222,18 @@ with tempfile.TemporaryDirectory(prefix="duris-maintenance-scheduler-") as temp_
         cwd=ROOT, check=True,
     )
     state_file = Path(temp_dir) / "scheduler.state"
+    subprocess.run([str(binary), str(state_file)], check=True, timeout=10)
+    current = state_file.read_bytes()
+    job_size = (len(current) - 24) // 12
+    assert 16 + job_size * 12 + 8 == len(current)
+    legacy = bytearray(b"DMSMNT2\0" + struct.pack("=II", 2, 11))
+    legacy.extend(current[16:16 + job_size * 11])
+    checksum = 1469598103934665603
+    for byte in legacy:
+        checksum ^= byte
+        checksum = (checksum * 1099511628211) & ((1 << 64) - 1)
+    legacy.extend(struct.pack("=Q", checksum))
+    state_file.write_bytes(legacy)
     subprocess.run([str(binary), str(state_file)], check=True, timeout=10)
 
 for contract in (
