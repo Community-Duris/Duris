@@ -12,6 +12,10 @@ schedule_checkpoint = actoth[
     actoth.index("void persistence_schedule_character_save")
 ]
 fresh_slot = schedule_checkpoint[schedule_checkpoint.index("slot->pid = GET_PID(ch);"):]
+terminal_helper = actoth[
+    actoth.index("bool persistence_save_character_terminal"):
+    actoth.index("bool persistence_save_all_characters_terminal")
+]
 
 harness = r'''
 #include "deferred_save_policy.h"
@@ -58,9 +62,11 @@ checks = {
     "level intent coalesced": "slot->level_dirty = slot->level_dirty || level_dirty;" in actoth,
     "direct flush is truthful": "bool persistence_flush_character_saves(P_char ch)" in actoth,
     "global flush is truthful": "bool persistence_flush_all_character_saves(void)" in actoth,
-    "terminal helper consumes slot": "slot->type = type;" in actoth and
-                                     "bool saved = persistence_flush_character_saves(ch);" in actoth,
-    "failed terminal restores retry type": "slot->type = pending_type ? pending_type : RENT_CRASH;" in actoth,
+    "terminal helper consumes slot only after durability": "if (saved && slot)" in terminal_helper and
+                                                            "memset(slot, 0" in terminal_helper,
+    "failed terminal retains safe retry": "if (!saved)" in terminal_helper and
+                                           "persistence_schedule_character_save" in terminal_helper and
+                                           "RENT_CRASH" in terminal_helper,
     "terminal failure queues safe retry": '"terminal-save-retry"' in actoth,
     "dead pc retry remains eligible": "if (!ch || IS_NPC(ch) || !GET_NAME(ch))" in schedule_checkpoint,
 }

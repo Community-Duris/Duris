@@ -156,4 +156,32 @@ assert "player_save_pipeline_shutdown();" in COMM
 assert "PLAYER_SAVE_JOURNAL_DIR" in (ROOT / ".env.example").read_text()
 print("[PASS] production lifecycle and explicit absolute journal configuration are wired")
 
+terminal = section(
+    PIPELINE,
+    "player_save_terminal_result player_save_pipeline_terminal",
+    "void player_save_pipeline_pulse",
+)
+assert "std::array<terminal_fence, PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS>" in PIPELINE
+assert "fence->revision == durable_ready.back().revision" in dispatcher
+assert "fence->revision == completions[index].revision" in pulse
+assert "completions[index].durable_revision >= fence->revision" in pulse
+assert "std::chrono::steady_clock::now()" in terminal
+assert "current.unacknowledged_components == PLAYER_CHECKPOINT_COMPONENT_ALL" in terminal
+assert "revision = current.current_revision" in terminal
+assert "snapshot_is_journaled_locked(current)" in terminal
+assert terminal.index("if (fence->acknowledged)") < terminal.index("if (allow_journal_handoff")
+assert "*fence = {};" in terminal
+assert "++health.terminal_timeouts" in terminal
+mark_body = section(
+    PIPELINE, "bool player_save_pipeline_mark", "player_save_pipeline_result player_save_pipeline_checkpoint_dirty"
+)
+assert "if (!accepting)" in mark_body
+assert "fence->revision = revision" in mark_body
+assert "fence->journaled = false" in mark_body
+drain = section(PIPELINE, "bool player_save_pipeline_drain", "player_save_pipeline_health")
+assert "pending_append.empty() && !append_inflight" in drain
+assert "std::chrono::steady_clock::now()" in drain
+assert "++health.drain_failures" in drain
+print("[PASS] terminal fences, exact durability outcomes, retry tracking, and bounded drain are wired")
+
 print("nonterminal player save pipeline contracts passed")

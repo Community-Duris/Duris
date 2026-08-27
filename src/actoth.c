@@ -2017,21 +2017,14 @@ bool persistence_save_character_terminal(P_char ch, int type)
 	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
 		return false;
 
+	const int room = calculate_save_room(ch, type, ch->in_room);
+	const player_save_terminal_result terminal =
+		player_save_pipeline_terminal(ch, type, room, 2000, true);
+	const bool saved = terminal == player_save_terminal_result::database_acknowledged ||
+			   terminal == player_save_terminal_result::journal_durable;
 	slot = find_deferred_save_slot(GET_PID(ch));
-	if (slot)
-	{
-		int pending_type = slot->type;
-		slot->type = type;
-		bool saved = persistence_flush_character_saves(ch);
-		if (!saved)
-		{
-			slot = find_deferred_save_slot(GET_PID(ch));
-			if (slot)
-				slot->type = pending_type ? pending_type : RENT_CRASH;
-		}
-		return saved;
-	}
-	bool saved = do_save_silent(ch, type);
+	if (saved && slot)
+		memset(slot, 0, sizeof(*slot));
 	if (!saved)
 		persistence_schedule_character_save(
 			ch, RENT_CRASH, PERSISTENCE_DEFERRED_RETRY_INITIAL, "terminal-save-retry");

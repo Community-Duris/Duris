@@ -4074,7 +4074,8 @@ static void show_world_persistence(P_char ch)
 		 "player_pipeline state=%s pending_append=%llu durable_ready=%llu bytes=%llu "
 		 "high_water=%llu/%llu marked=%llu captured=%llu coalesced=%llu unchanged=%llu "
 		 "capture_failures=%llu append_failures=%llu overloads=%llu dispatched=%llu "
-		 "durable_spills=%llu completions=%llu replay=%s\n",
+		 "durable_spills=%llu completions=%llu accepting=%d append_inflight=%d "
+		 "terminal=%llu/%llu/%llu timeouts=%llu drain_failures=%llu replay=%s\n",
 		 !player_pipeline.initialized					 ? "stopped" :
 		 player_pipeline.replay_blocked					 ? "degraded" :
 		 player_pipeline.pending_append || player_pipeline.durable_ready ? "pending" :
@@ -4093,7 +4094,13 @@ static void show_world_persistence(P_char ch)
 		 (unsigned long long)player_pipeline.overloads,
 		 (unsigned long long)player_pipeline.dispatched,
 		 (unsigned long long)player_pipeline.durable_spills,
-		 (unsigned long long)player_pipeline.completions,
+		 (unsigned long long)player_pipeline.completions, player_pipeline.accepting ? 1 : 0,
+		 player_pipeline.append_inflight ? 1 : 0,
+		 (unsigned long long)player_pipeline.terminal_fences,
+		 (unsigned long long)player_pipeline.terminal_database_acks,
+		 (unsigned long long)player_pipeline.terminal_journal_handoffs,
+		 (unsigned long long)player_pipeline.terminal_timeouts,
+		 (unsigned long long)player_pipeline.drain_failures,
 		 player_pipeline.replay_complete ? "complete" :
 		 player_pipeline.replay_blocked	 ? "blocked" :
 						   "pending");

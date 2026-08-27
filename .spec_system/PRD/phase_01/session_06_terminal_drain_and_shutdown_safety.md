@@ -1,7 +1,7 @@
 # Session 06: Terminal Drain and Shutdown Safety
 
 **Session ID**: `phase01-session06-terminal-drain-and-shutdown-safety`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One terminal persistence contract covering player extraction, bounded
 promotion and wait, durable spill, copyover/shutdown drain, and legacy fallback
 transition.
@@ -46,9 +46,9 @@ acknowledgement nor the permitted durable journal handoff succeeds.
 
 ## Prerequisites
 
-- [ ] Session 05 nonterminal cutover is validated.
-- [ ] Phase 00 terminal failure paths retain live character and inventory state.
-- [ ] Journal replay has passed every Session 04 crash-point test.
+- [x] Session 05 nonterminal cutover is validated.
+- [x] Phase 00 terminal failure paths retain live character and inventory state.
+- [x] Journal replay has passed every Session 04 crash-point test.
 
 ---
 
@@ -67,13 +67,13 @@ acknowledgement nor the permitted durable journal handoff succeeds.
 
 ## Success Criteria
 
-- [ ] A terminal request promotes one latest player revision and never issues a second
+- [x] A terminal request promotes one latest player revision and never issues a second
       snapshot for the same state.
-- [ ] Failed or timed-out DB and journal handoff leaves the character and inventory live,
+- [x] Failed or timed-out DB and journal handoff leaves the character and inventory live,
       fenced, and retryable instead of extracting them.
-- [ ] Copyover and shutdown stop new mutations, drain or durably spill all accepted
+- [x] Copyover and shutdown stop new mutations, drain or durably spill all accepted
       jobs by a bounded deadline, and replay every spill after restart.
-- [ ] Stale completions cannot release a newer terminal fence or clear newer dirty state.
-- [ ] No new player state is written to the unreconciled legacy pfile format, and no
+- [x] Stale completions cannot release a newer terminal fence or clear newer dirty state.
+- [x] No new player state is written to the unreconciled legacy pfile format, and no
       existing pfile is deleted.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

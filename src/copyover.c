@@ -30,6 +30,7 @@
 #include "ttype.h"
 #include "websocket.h"
 #include "locker_async.h"
+#include "player_save_pipeline.h"
 
 #define DMS_STAGED_BINARY "bin/server/dms_new"
 #define DMS_RUNTIME_BINARY "bin/server/dms"
@@ -83,6 +84,7 @@ static void raw_write_to_fd(int fd, const char *msg);
 static void notify_copyover_failure(const char *message)
 {
 	P_desc d;
+	player_save_pipeline_resume();
 
 	for (d = descriptor_list; d; d = d->next)
 	{
@@ -488,6 +490,14 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	if (!persistence_flush_all_character_saves())
 	{
 		logit(LOG_STATUS, "copyover: pending character flush failed, aborting copyover");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+	player_save_pipeline_quiesce();
+	if (!player_save_pipeline_drain(3000))
+	{
+		player_save_pipeline_resume();
+		logit(LOG_STATUS, "copyover: player pipeline drain failed, aborting copyover");
 		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		return false;
 	}

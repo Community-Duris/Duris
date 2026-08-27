@@ -4,7 +4,7 @@
 **Sessions**: 8 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 5/8 sessions (62.5%)
+**Progress**: 6/8 sessions (75%)
 
 ---
 
@@ -36,7 +36,7 @@ failure-containment, and security contracts are prerequisites for every session 
 | 03 | Keyed Revision-Guarded Save Worker | Complete | Ordered coalescing jobs, transactional apply, exact ACKs, and stale-result handling | 2026-08-27 |
 | 04 | Typed Persistence Journal and Replay | Complete | Checksummed append, spill, replay, corruption handling, and idempotent checkpoints | 2026-08-27 |
 | 05 | Nonterminal Save Pipeline Cutover | Complete | Ordinary mutation, autosave, manual, and Redis-dirty routes moved to the coordinator | 2026-08-27 |
-| 06 | Terminal Drain and Shutdown Safety | Not Started | Disconnect, rent, death, copyover, and shutdown promotion, drain, and durable spill | - |
+| 06 | Terminal Drain and Shutdown Safety | Complete | Disconnect, rent, death, copyover, and shutdown promotion, drain, and durable spill | 2026-08-27 |
 | 07 | Immutable World Recovery Worker | Not Started | Sequence-numbered world snapshots, background publication, ACKs, and floor-delta retention | - |
 | 08 | Legacy Fork Removal and Recovery Gate | Not Started | Dead-path removal, end-to-end fault/load verification, and operational documentation | - |
 
@@ -49,12 +49,13 @@ failure-containment, and security contracts are prerequisites for every session 
 - Session 03: Keyed Revision-Guarded Save Worker (completed 2026-08-27)
 - Session 04: Typed Persistence Journal and Replay (completed 2026-08-27)
 - Session 05: Nonterminal Save Pipeline Cutover (completed 2026-08-27)
+- Session 06: Terminal Drain and Shutdown Safety (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 06: Terminal Drain and Shutdown Safety
+- Session 07: Immutable World Recovery Worker
 
 ---
 

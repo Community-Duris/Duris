@@ -1675,11 +1675,8 @@ int writeCharacter(P_char ch, int type, int room)
 			wizlog(AVATAR, "&+RERROR&N sql_save_player failed");
 			persistence_alert(AVATAR, "player", "redacted", "none", "none",
 					  "sql_save_failed", "type=%d", type);
-			if (!persistence_write_character_flat_fallback(ch, type, room))
-			{
-				persistence_alert(AVATAR, "player", "redacted", "none", "none",
-						  "flat_fallback_failed", "type=%d", type);
-			}
+			persistence_alert(AVATAR, "player", "redacted", "none", "none",
+					  "flat_fallback_retired", "journal_required=1");
 			result = 0;
 		}
 	}

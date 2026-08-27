@@ -12,6 +12,7 @@ body = copyover[copyover.index("bool copyover_save("):copyover.index(
 )]
 save = body.index("persistence_save_character_terminal")
 flush = body.index("persistence_flush_all_character_saves")
+drain = body.index("player_save_pipeline_drain")
 publish = body.index("rename(copyover_tmp, COPYOVER_FILE)")
 close = body.index("close(d->descriptor)")
 prepare_client = body.index("copyover_prepare_socket(d->descriptor)")
@@ -24,6 +25,11 @@ checks = {
     "lockers precede characters": body.index("locker_async_drain") < save,
     "connected saves precede remaining flush": save < flush,
     "all saves precede publication": flush < publish,
+    "pipeline drain precedes publication": flush < drain < publish,
+    "pipeline drain is bounded": "player_save_pipeline_drain(3000)" in body,
+    "copyover abort reopens pipeline": "player_save_pipeline_resume();" in
+                                       copyover[copyover.index("static void notify_copyover_failure"):
+                                                copyover.index("static void raw_write_to_fd", copyover.index("static void notify_copyover_failure"))],
     "publication precedes descriptor close": publish < close,
     "publication precedes client fd mutation": publish < prepare_client,
     "publication precedes progress notice": publish < progress_notice,
@@ -34,6 +40,8 @@ checks = {
     "workers stop only after game loop returns": comm.index("game_loop(port, sslport);") <
                                                  comm.index("persistence_stop_scalar_event_worker"),
     "failure resumes game loop": "goto resume_game_loop;" in comm,
+    "shutdown drain is fail closed": "!player_save_pipeline_drain(3000)" in comm and
+                                      "pipeline_drain_failed" in comm,
     "no destructive restart fallback": "refusing fallback exit" in comm,
 }
 

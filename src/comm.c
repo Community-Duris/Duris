@@ -1596,6 +1596,16 @@ resume_game_loop:
 		_autoboot = 0;
 		goto resume_game_loop;
 	}
+	if (!_pwipe && !player_save_pipeline_drain(3000))
+	{
+		player_save_pipeline_resume();
+		persistence_alert(AVATAR, "player_save", "shutdown", "none", "none",
+				  "pipeline_drain_failed", "shutdown_cancelled=1");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
 
 	PROFILES(SAVE);
 #ifdef DO_PROFILE

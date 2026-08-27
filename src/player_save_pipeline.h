@@ -24,6 +24,15 @@ enum class player_save_pipeline_result : uint8_t
 	unavailable,
 };
 
+enum class player_save_terminal_result : uint8_t
+{
+	database_acknowledged,
+	journal_durable,
+	invalid,
+	unavailable,
+	timed_out,
+};
+
 struct player_save_pipeline_health
 {
 	uint64_t pending_append;
@@ -41,7 +50,14 @@ struct player_save_pipeline_health
 	uint64_t dispatched;
 	uint64_t durable_spills;
 	uint64_t completions;
+	uint64_t terminal_fences;
+	uint64_t terminal_database_acks;
+	uint64_t terminal_journal_handoffs;
+	uint64_t terminal_timeouts;
+	uint64_t drain_failures;
 	bool initialized;
+	bool accepting;
+	bool append_inflight;
 	bool dispatcher_running;
 	bool replay_complete;
 	bool replay_blocked;
@@ -55,7 +71,13 @@ player_save_pipeline_result player_save_pipeline_checkpoint_dirty(P_char ch, int
 player_save_pipeline_result player_save_pipeline_request(P_char ch,
 							 player_component_mask_t components,
 							 int save_intent, int room_vnum);
+player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_intent, int room_vnum,
+							  uint64_t timeout_msec,
+							  bool allow_journal_handoff);
 void player_save_pipeline_pulse(void);
+void player_save_pipeline_quiesce(void);
+void player_save_pipeline_resume(void);
+bool player_save_pipeline_drain(uint64_t timeout_msec);
 player_save_pipeline_health player_save_pipeline_health_copy(void);
 size_t player_save_pipeline_dirty_count(void);
 bool player_save_pipeline_is_nonterminal_type(int save_intent);

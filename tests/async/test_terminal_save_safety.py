@@ -57,6 +57,29 @@ checks = {
     "missing locker character vetoes leave": "return false;" in locker_missing_character,
 }
 
+terminal_helper = actoth[
+    actoth.index("bool persistence_save_character_terminal"):
+    actoth.index("bool persistence_save_all_characters_terminal")
+]
+checks["terminal helper uses typed coordinator outcome"] = all(
+    token in terminal_helper
+    for token in (
+        "player_save_pipeline_terminal",
+        "database_acknowledged",
+        "journal_durable",
+        "terminal-save-retry",
+    )
+) and "do_save_silent" not in terminal_helper and "writeCharacter" not in terminal_helper
+
+player_sql_failure = files[
+    files.index("else\n\t{\n\t\tif (!sql_save_player"):
+    files.index("const bool terminal_type", files.index("else\n\t{\n\t\tif (!sql_save_player"))
+]
+checks["new player flat fallback writes retired"] = (
+    "flat_fallback_retired" in player_sql_failure
+    and "persistence_write_character_flat_fallback" not in player_sql_failure
+)
+
 # Ghost extraction lives in actwiz.c and uses the shared terminal helper twice.
 actwiz = read("actwiz.c")
 checks["ghost extraction gate"] = actwiz.count(

@@ -3,7 +3,7 @@
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
   "current_phase": 1,
-  "current_session": "phase01-session06-terminal-drain-and-shutdown-safety",
+  "current_session": "phase01-session07-immutable-world-recovery-worker",
   "monorepo": false,
   "phases": {
     "1": {
@@ -46,7 +46,8 @@
     "phase01-session02-immutable-player-snapshot-capture",
     "phase01-session03-keyed-revision-guarded-save-worker",
     "phase01-session04-typed-persistence-journal-and-replay",
-    "phase01-session05-nonterminal-save-pipeline-cutover"
+    "phase01-session05-nonterminal-save-pipeline-cutover",
+    "phase01-session06-terminal-drain-and-shutdown-safety"
   ],
   "next_session_history": [
     {
@@ -302,6 +303,26 @@
     {
       "date": "2026-08-27",
       "session": "phase01-session06-terminal-drain-and-shutdown-safety",
+      "status": "selected"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session06-terminal-drain-and-shutdown-safety",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session06-terminal-drain-and-shutdown-safety",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session06-terminal-drain-and-shutdown-safety",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session07-immutable-world-recovery-worker",
       "status": "selected"
     }
   ]

@@ -93,6 +93,8 @@
 #define RENT_POOFARTI 8
 #define RENT_SWAPARTI 9
 #define RENT_FIGHTARTI 10
+
+int calculate_save_room(P_char ch, int type, int room);
 /*
  * these macros are a very good idea, I salute whoever thought of it.
  * -JAB
