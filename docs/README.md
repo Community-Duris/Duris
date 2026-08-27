@@ -9,6 +9,7 @@ directory covers architecture, operations, configuration, and reference material
 | Document | Purpose |
 |----------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | How the server works: process model, boot sequence, game loop, event wheel, persistence, networking. |
+| [EVENTS.md](EVENTS.md) | The `nevent` deferred-work scheduler: the timer wheel, scheduling, cancellation, the per-pulse budget, and catch-up. |
 | [CODEBASE.md](CODEBASE.md) | Module map of `src/` — where to find what, and the key files for each subsystem. |
 | [BUILDING.md](BUILDING.md) | Build system details: flags, targets, area-file generation, sanitizer builds. |
 | [DATABASE.md](DATABASE.md) | Database layer: connection handling, async persistence, schema, migrations. |

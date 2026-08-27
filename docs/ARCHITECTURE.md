@@ -76,6 +76,11 @@ Deferred and periodic work runs through the event system (`src/events.c`,
 game loop between pulses. Budget telemetry is exposed via `NEVENT BUDGET` log
 lines and `src/latency_trace.c`; `NEVENT SLOW` marks a loop over 50 ms.
 
+[EVENTS.md](EVENTS.md) is the mechanism reference — bucket and revolution
+scheduling, the three intrusive lists, cancellation semantics, catch-up debt,
+and the configuration knobs. The rest of this section records the invariants
+that were each a live incident.
+
 Each pulse is bounded by a wall-clock budget (`NEVENT_BUDGET_USEC_DEFAULT`,
 25 ms) and a callback count cap (`NEVENT_MAX_CALLBACKS_DEFAULT`). Both are
 overridable at runtime — see [CONFIGURATION.md](CONFIGURATION.md#diagnostics).
