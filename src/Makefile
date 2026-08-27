@@ -146,6 +146,7 @@ OBJS =  $(SHIP_OBJS) \
 				 epic_skills.o \
 				 ethermancer.o \
 				 events.o \
+				 event_names.o \
 				 new_events.o \
 				 fight.o \
 				 files.o \

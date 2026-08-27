@@ -2,11 +2,40 @@
 
 Date: 2026-08-27
 
-Status: Analysis complete; implementation not started
+Status: Implementation in progress; checkpoint 1 complete
+
+Last implementation update: 2026-08-27 21:38 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
 documentation, and tests.
+
+## Implementation progress
+
+This section is the continuation ledger for the remediation work. A checkpoint
+is marked complete only after its focused regression, the existing nevent
+contracts, formatting, and the server build pass.
+
+| Checkpoint | Scope | State | Verification |
+|---|---|---|---|
+| 1 | NEV-01 event-name loader safety | Complete | ASan/UBSan boundary harness, 12 existing nevent contracts, format check, server build |
+| 2 | NEV-05 cancellation/destruction invariants | Next | Not started |
+| 3 | NEV-02 and NEV-08 typed/POD hunt payload | Pending | Not started |
+| 4 | NEV-03 stable ship-volley references | Pending | Not started |
+| 5 | NEV-06 and NEV-07 periodic rearm safety | Pending | Not started |
+| 6 | NEV-04, NEV-11, and NEV-22 absolute due-tick core and harness | Pending | Not started |
+| 7 | NEV-09 and NEV-13 priority, aging, and catch-up policy | Pending | Not started |
+| 8 | NEV-12 and NEV-19 reschedule, lookup, and handle APIs | Pending | Not started |
+| 9 | NEV-14 through NEV-20 load control, observability, durability, and thread boundary | Pending | Not started |
+| 10 | NEV-21 documentation and legacy cleanup | Pending | Not started |
+
+Checkpoint 1 replaced the fixed 6,000-entry array and sentinel scan with a
+dynamically sized, validated address-to-name registry. Duplicate addresses are
+coalesced, malformed records and address overflow are reported, failed reloads
+preserve the last valid registry, lookup is bounded, and the profiling table now
+sizes itself from the loaded registry. The executable regression covers 0,
+5,999, 6,000, 6,001, and 6,220 records, unknown lookup, duplicates, malformed
+input, overflow, reload failure, and cleanup under ASan/UBSan.
 
 ## Executive assessment
 
@@ -182,7 +211,10 @@ already in progress cannot be preempted.
 
 ## Detailed findings
 
-### NEV-01: Event-name table overflows in the current tree
+### NEV-01: Event-name table overflows in the reviewed tree
+
+Implementation status (2026-08-27): Fixed and verified in checkpoint 1. The
+historical evidence below describes the pre-fix implementation.
 
 Evidence:
 

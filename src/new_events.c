@@ -13,6 +13,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <vector>
 #ifndef _LINUX_SOURCE
 #include <sys/types.h>
 #endif
@@ -22,6 +23,7 @@
 #include "comm.h"
 #include "db.h"
 #include "events.h"
+#include "event_names.h"
 #include "interp.h"
 #include "utils.h"
 #include "copyover.h"
@@ -36,7 +38,6 @@
 #include "spells.h"
 #include "vnum.obj.h"
 
-#define MAX_FUNCTIONS 6000
 #define FUNCTION_NAMES_FILE "lib/misc/event_names"
 #define NEVENT_BUDGET_USEC_DEFAULT 25000L
 #define NEVENT_MAX_CALLBACKS_DEFAULT 4000L
@@ -96,12 +97,6 @@ static long nevent_avg_callback_us = 50;
 static long nevent_catchup_quota = 0;
 static long nevent_catchup_extension_us = 0;
 static long nevent_catchup_extra_callbacks = 0;
-
-struct nevent_funcs_name_data
-{
-	void *func;
-	char *func_name;
-} function_names[MAX_FUNCTIONS];
 
 /*
  * this code was majorly redone by Tharkun, look for original events description
@@ -1722,18 +1717,16 @@ void *get_executable_base_address()
 
 const char *get_function_name(void *func)
 {
-	int i;
+	const char *name;
 
 	if (func == NULL)
 	{
 		return "NULL";
 	}
 
-	for (i = 0; function_names[i].func; i++)
-	{
-		if (function_names[i].func == func)
-			return function_names[i].func_name;
-	}
+	name = event_name_registry_lookup(func);
+	if (name)
+		return name;
 
 	// Shouldn't this event be in the function_names array?
 	if ((void *)event_autosave == func)
@@ -1747,28 +1740,29 @@ const char *get_function_name(void *func)
 // preferably with a mainboot script
 void load_event_names()
 {
-	FILE *f;
-	void *func;
-	char func_name[256];
-	char c;
-	int i = 0;
-
 	void *base_address = get_executable_base_address();
+	event_name_load_result result = event_name_registry_load(
+		FUNCTION_NAMES_FILE, reinterpret_cast<uintptr_t>(base_address));
 
-	f = fopen(FUNCTION_NAMES_FILE, "r");
-
-	if (f)
+	if (!result.opened)
 	{
-		while (fscanf(f, "%p %c %s", &func, &c, func_name) == 3 && i < MAX_FUNCTIONS)
-		{
-			function_names[i].func = (void *)((ulong)func + (ulong)base_address);
-			function_names[i].func_name = str_dup(func_name);
-			i++;
-		}
-
-		fclose(f);
+		logit(LOG_SYS, "load_event_names: could not open %s: %s", FUNCTION_NAMES_FILE,
+		      strerror(result.error_number));
+		return;
 	}
-	function_names[i].func = 0;
+	if (result.read_error)
+	{
+		logit(LOG_SYS, "load_event_names: read failed for %s: %s", FUNCTION_NAMES_FILE,
+		      strerror(result.error_number));
+		return;
+	}
+	if (result.malformed_lines > 0)
+	{
+		logit(LOG_SYS, "load_event_names: ignored %zu malformed record(s) in %s",
+		      result.malformed_lines, FUNCTION_NAMES_FILE);
+	}
+	logit(LOG_STATUS, "Loaded %zu event callback names (%zu duplicate addresses).",
+	      result.symbols_loaded, result.duplicate_addresses);
 }
 
 void show_world_events(P_char ch, const char *arg)
@@ -1863,34 +1857,43 @@ struct FuncCallInfo
 	double time;
 	FuncCallInfo *next;
 	FuncCallInfo *prev;
-} funcCallInfo[MAX_FUNCTIONS + 1];
+};
+
+static std::vector<FuncCallInfo> func_call_info;
+
+static void add_func_call_info(const void *func, const char *name, void *context)
+{
+	auto *entries = static_cast<std::vector<FuncCallInfo> *>(context);
+	entries->push_back({ name, func, 0, 0, nullptr, nullptr });
+}
 
 void reset_func_call_info()
 {
-	FuncCallInfo *curr = funcCallInfo;
+	if (func_call_info.empty())
+		return;
+	FuncCallInfo *curr = func_call_info.data();
 	do
 	{
 		curr->calls = 0;
 		curr->time = 0;
 		curr = curr->next;
-	} while (curr != funcCallInfo);
+	} while (curr != func_call_info.data());
 }
 
 void init_func_call_info()
 {
-	funcCallInfo[0].addr = 0;
-	funcCallInfo[0].name = "Zero or unknown";
-	int i;
+	func_call_info.clear();
+	func_call_info.reserve(event_name_registry_size() + 1);
+	func_call_info.push_back({ "Zero or unknown", nullptr, 0, 0, nullptr, nullptr });
+	event_name_registry_visit(add_func_call_info, &func_call_info);
 
-	for (i = 1; function_names[i - 1].func; i++)
+	for (size_t i = 0; i < func_call_info.size(); i++)
 	{
-		funcCallInfo[i].name = function_names[i - 1].func_name;
-		funcCallInfo[i].addr = function_names[i - 1].func;
-		funcCallInfo[i - 1].next = &(funcCallInfo[i]);
-		funcCallInfo[i].prev = &(funcCallInfo[i - 1]);
+		const size_t next = (i + 1) % func_call_info.size();
+		const size_t prev = (i + func_call_info.size() - 1) % func_call_info.size();
+		func_call_info[i].next = &func_call_info[next];
+		func_call_info[i].prev = &func_call_info[prev];
 	}
-	funcCallInfo[i - 1].next = &(funcCallInfo[0]);
-	funcCallInfo[0].prev = &(funcCallInfo[i - 1]);
 	reset_func_call_info();
 }
 
@@ -1899,15 +1902,17 @@ void save_func_call_info()
 	unsigned total_calls = 0;
 	double total_time = 0;
 
-	FuncCallInfo *curr = funcCallInfo;
+	if (func_call_info.empty())
+		return;
+	FuncCallInfo *curr = func_call_info.data();
 	do
 	{
 		total_calls += curr->calls;
 		total_time += curr->time;
 		curr = curr->next;
-	} while (curr != funcCallInfo);
+	} while (curr != func_call_info.data());
 
-	curr = funcCallInfo;
+	curr = func_call_info.data();
 	do
 	{
 		logit(LOG_FILE,
@@ -1925,7 +1930,7 @@ void save_func_call_info()
 			curr->time / 1000.,
 			(total_time != 0) ? (curr->time / total_time * 100.0) : 0);
 		curr = curr->next;
-	} while (curr != funcCallInfo && curr->calls != 0);
+	} while (curr != func_call_info.data() && curr->calls != 0);
 
 	logit(LOG_FILE,
 	      "Profile info for function \"%-30s\": total calls = %9d (%7.3f%%)  total time = %9.0f (%7.3f%%)",
@@ -1934,7 +1939,10 @@ void save_func_call_info()
 
 void register_func_call(void *func, double time)
 {
-	for (FuncCallInfo *curr = funcCallInfo->next; curr != funcCallInfo; curr = curr->next)
+	if (func_call_info.empty())
+		return;
+	FuncCallInfo *unknown = func_call_info.data();
+	for (FuncCallInfo *curr = unknown->next; curr != unknown; curr = curr->next)
 	{
 		if (curr->addr == func)
 		{
@@ -1947,9 +1955,9 @@ void register_func_call(void *func, double time)
 			curr->calls++;
 			curr->time += time;
 			FuncCallInfo *prev = curr->prev;
-			if (prev != funcCallInfo && curr->calls > prev->calls)
+			if (prev != unknown && curr->calls > prev->calls)
 			{
-				while (prev != funcCallInfo && prev->calls < curr->calls)
+				while (prev != unknown && prev->calls < curr->calls)
 					prev = prev->prev;
 				curr->next->prev = curr->prev;
 				curr->prev->next = curr->next;
@@ -1961,8 +1969,8 @@ void register_func_call(void *func, double time)
 			return;
 		}
 	}
-	funcCallInfo[0].calls++;
-	funcCallInfo[0].time += time;
+	unknown->calls++;
+	unknown->time += time;
 }
 
 #endif
