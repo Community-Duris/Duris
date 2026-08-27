@@ -1,0 +1,35 @@
+#ifndef RUNTIME_COMPATIBILITY_CONTRACT_H
+#define RUNTIME_COMPATIBILITY_CONTRACT_H
+
+#include <cstddef>
+
+constexpr unsigned RUNTIME_COMPATIBILITY_MANIFEST_VERSION = 1;
+constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
+constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
+	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
+constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 171;
+constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
+	"31fa28cd8b9847adb028c67a0b29236cb0a9644c207ba8355b2537fba2ba105a";
+constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
+	"ee300ee4a5d60a1a84408491887cf0e4af8926379c04f697355e721fe45904e1";
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0001_lookup_dataset_state";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 1;
+constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
+	"e39db8df5bd7a8d71d5cc9c177919b8117d6fed77a9318f79610ed9413de4ccb";
+constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
+	"90fc6de3aa449ef9b5b77fc96032314e129dfdd631e9760af86dc40329d7f0ca";
+constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
+	"31b2670946d2cd0cb96c9ec63399095a62abdc45408e3928268ee7698ef59a9f";
+constexpr const char *LOOKUP_DATASET_NAME = "race_class";
+constexpr unsigned LOOKUP_DATASET_VERSION = 1;
+constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";
+constexpr const char *RUNTIME_DB_TIME_ZONE = "+00:00";
+constexpr const char *RUNTIME_DB_ISOLATION = "READ-COMMITTED";
+constexpr const char *RUNTIME_DB_SQL_MODE =
+	"STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION";
+constexpr unsigned RUNTIME_DB_TIMEOUT_SECONDS = 10;
+constexpr bool RUNTIME_DB_REMOTE_TLS_REQUIRED = true;
+constexpr size_t RUNTIME_METADATA_MAX_BYTES = 4 * 1024 * 1024;
+
+#endif

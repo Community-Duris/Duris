@@ -62,8 +62,8 @@ class AccountErasureTest(unittest.TestCase):
 
     def test_canonical_policy_is_blocked_with_exact_ordered_coverage(self) -> None:
         canonical = erasure.load_policy()
-        self.assertEqual(len(canonical.entries), 187)
-        self.assertEqual(len(erasure.ordered_actions(canonical)), 187)
+        self.assertEqual(len(canonical.entries), 188)
+        self.assertEqual(len(erasure.ordered_actions(canonical)), 188)
         with self.assertRaisesRegex(erasure.ErasureContractError, "disabled"):
             erasure.validate_ready(canonical)
 

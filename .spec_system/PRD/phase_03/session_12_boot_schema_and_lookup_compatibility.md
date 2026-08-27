@@ -1,7 +1,7 @@
 # Session 12: Boot Schema and Lookup Compatibility
 
 **Session ID**: `phase03-session12-boot-schema-and-lookup-compatibility`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One pre-service compatibility boundary from connection/session checks
 through migration and schema manifest verification, versioned static lookup comparison,
 transactional publication, worker startup, and fail-closed diagnostics.
@@ -48,10 +48,10 @@ compiled version changes.
 
 ## Prerequisites
 
-- [ ] Session 11 immutable migration ledger and baseline identities are validated.
-- [ ] All Phase 03 schema/index/lifecycle changes are reflected in fresh bootstrap and
+- [x] Session 11 immutable migration ledger and baseline identities are validated.
+- [x] All Phase 03 schema/index/lifecycle changes are reflected in fresh bootstrap and
       migration verification.
-- [ ] Phase 00 connection trust-boundary controls remain authoritative.
+- [x] Phase 00 connection trust-boundary controls remain authoritative.
 
 ---
 
@@ -70,16 +70,16 @@ compiled version changes.
 
 ## Success Criteria
 
-- [ ] Boot validates the current migration identity and every required schema and
+- [x] Boot validates the current migration identity and every required schema and
       connection invariant before its first database mutation.
-- [ ] A missing or incompatible table, column, type, key, engine, charset, collation, or
+- [x] A missing or incompatible table, column, type, key, engine, charset, collation, or
       connection setting aborts safely with a stable redacted reason.
-- [ ] Lookup rows are unchanged when the compiled dataset version/checksum matches.
-- [ ] A changed lookup dataset publishes atomically and readers can observe only the
+- [x] Lookup rows are unchanged when the compiled dataset version/checksum matches.
+- [x] A changed lookup dataset publishes atomically and readers can observe only the
       prior complete version or the new complete version, never an empty/partial table.
-- [ ] Failed lookup publication rolls back and cannot leave a falsely advanced dataset
+- [x] Failed lookup publication rolls back and cannot leave a falsely advanced dataset
       identity.
-- [ ] Fresh bootstrap, migrated clone, standalone verifier, and runtime boot agree on
+- [x] Fresh bootstrap, migrated clone, standalone verifier, and runtime boot agree on
       the same manifest and migration version on supported MySQL/MariaDB variants.
-- [ ] Focused regressions, isolated boot/schema tests, formatting checks, and
+- [x] Focused regressions, isolated boot/schema tests, formatting checks, and
       `make -C src` pass.

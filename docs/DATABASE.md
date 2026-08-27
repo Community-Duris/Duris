@@ -115,18 +115,28 @@ transaction, replay, or idempotency identifiers.
 - `migrations/migration_manifest.json` and `scripts/migration_runner.py` -- the
   immutable manifest-driven path for every migration after the verified Session 11
   baseline. See [IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md).
+- `migrations/runtime_compatibility_manifest.json` and
+  `migrations/verify_runtime_compatibility.sh` -- the read-only pre-boot contract for
+  migration history, full metadata shape, storage engine, collation, and supported
+  MySQL 8.0/MariaDB 10.11 variants. See
+  [RUNTIME_COMPATIBILITY.md](RUNTIME_COMPATIBILITY.md).
 
 ### Applying schema changes
 
 ```bash
 # Fresh database:
 mysql -u duris -p duris_dev < migrations/bootstrap_multithread_safe.sql
+python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
+python3 scripts/migration_runner.py run
 
 # Existing populated database:
 ./migrations/run_migration.sh
 
 # After an adopted baseline, apply immutable post-baseline migrations:
 python3 scripts/migration_runner.py run
+
+# Read-only verification before starting the server:
+./migrations/verify_runtime_compatibility.sh
 ```
 
 Scoped persistence/auction repair tools exist for archive-restored clones:

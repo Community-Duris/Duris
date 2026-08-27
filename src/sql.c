@@ -17,6 +17,8 @@
 #include "item_ownership_runtime.h"
 #include "sql_pool.h"
 #include "session_audit_transaction.h"
+#include "runtime_compatibility_contract.h"
+#include <openssl/sha.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -28,6 +30,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <vector>
 #include "account.h"
 #include "account_reward.h"
 #include "assocs.h"
@@ -70,6 +73,7 @@ static const pid_t sql_main_process_id = getpid();
 static bool sql_trace_enabled(void);
 static bool sql_trace_active(void);
 static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained);
+static bool sql_verify_metadata_fingerprint(void);
 
 #ifdef __NO_MYSQL__
 int initialize_mysql()
@@ -417,7 +421,7 @@ static bool sql_runtime_config_valid(void)
 		logit(LOG_STATUS, "Database configuration rejected: DB_SOCKET is local-mode only");
 		return false;
 	}
-	if (!protected_local)
+	if (RUNTIME_DB_REMOTE_TLS_REQUIRED && !protected_local)
 	{
 		const char *ca = getenv("DB_SSL_CA");
 		struct stat ca_stat;
@@ -467,8 +471,8 @@ static bool sql_verify_session_contract(MYSQL *conn)
 		return false;
 	MYSQL_RES *result = mysql_store_result(conn);
 	MYSQL_ROW row = result ? mysql_fetch_row(result) : NULL;
-	bool valid = row && row[0] && !strcmp(row[0], "utf8mb4") && row[1] &&
-		     !strcmp(row[1], "+00:00") && row[2] &&
+	bool valid = row && row[0] && !strcmp(row[0], RUNTIME_DB_CHARACTER_SET) && row[1] &&
+		     !strcmp(row[1], RUNTIME_DB_TIME_ZONE) && row[2] &&
 		     sql_mode_has(row[2], "STRICT_TRANS_TABLES") &&
 		     sql_mode_has(row[2], "ERROR_FOR_DIVISION_BY_ZERO") &&
 		     sql_mode_has(row[2], "NO_ENGINE_SUBSTITUTION");
@@ -485,7 +489,7 @@ static bool sql_verify_session_contract(MYSQL *conn)
 			continue;
 		result = mysql_store_result(conn);
 		row = result ? mysql_fetch_row(result) : NULL;
-		valid = row && row[0] && !strcasecmp(row[0], "READ-COMMITTED");
+		valid = row && row[0] && !strcasecmp(row[0], RUNTIME_DB_ISOLATION);
 		if (result)
 			mysql_free_result(result);
 		if (valid)
@@ -496,13 +500,13 @@ static bool sql_verify_session_contract(MYSQL *conn)
 
 static bool sql_apply_session_contract(MYSQL *conn)
 {
-	if (mysql_set_character_set(conn, "utf8mb4"))
+	if (mysql_set_character_set(conn, RUNTIME_DB_CHARACTER_SET))
 		return false;
-	const char *statements[] = {
-		"SET SESSION time_zone='+00:00'",
-		"SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED",
-		"SET SESSION sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
-	};
+	std::string sql_mode_statement =
+		"SET SESSION sql_mode='" + std::string(RUNTIME_DB_SQL_MODE) + "'";
+	const char *statements[] = { "SET SESSION time_zone='+00:00'",
+				     "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED",
+				     sql_mode_statement.c_str() };
 	for (const char *statement : statements)
 		if (!sql_connection_execute(conn, statement))
 			return false;
@@ -518,13 +522,13 @@ MYSQL *sql_open_configured_connection(unsigned long client_flags)
 	if (!conn)
 		return NULL;
 
-	unsigned int timeout = 10;
+	unsigned int timeout = RUNTIME_DB_TIMEOUT_SECONDS;
 	bool reconnect = false;
 	if (mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) ||
 	    mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &timeout) ||
 	    mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &timeout) ||
 	    mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect) ||
-	    mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8mb4"))
+	    mysql_options(conn, MYSQL_SET_CHARSET_NAME, RUNTIME_DB_CHARACTER_SET))
 	{
 		mysql_close(conn);
 		return NULL;
@@ -532,7 +536,7 @@ MYSQL *sql_open_configured_connection(unsigned long client_flags)
 
 	const char *socket_path = getenv("DB_SOCKET");
 	bool protected_local = sql_host_is_loopback(DB_HOST) || (socket_path && *socket_path);
-	if (!protected_local)
+	if (RUNTIME_DB_REMOTE_TLS_REQUIRED && !protected_local)
 	{
 		bool enabled = true;
 		const char *ca = getenv("DB_SSL_CA");
@@ -594,91 +598,231 @@ string escape_str(const char *str)
 	return escaped;
 }
 
-/* populate races and classes lookup tables on boot */
-void sql_populate_lookup_tables()
+static void lookup_append(std::string *output, const std::string &value)
 {
-	char buf[MAX_STRING_LENGTH];
-	char esc_name[256], esc_ansi[256], esc_short[64], esc_abbrev[16];
-	int i;
+	uint64_t size = value.size();
+	for (int shift = 56; shift >= 0; shift -= 8)
+		output->push_back((char)((size >> shift) & 0xff));
+	output->append(value);
+}
 
-	logit(LOG_STATUS, "Populating lookup tables...");
+static std::string lookup_escape(const char *value)
+{
+	if (!value)
+		value = "";
+	std::string escaped(strlen(value) * 2 + 1, '\0');
+	unsigned long length = mysql_real_escape_string(DB, &escaped[0], value, strlen(value));
+	escaped.resize(length);
+	return escaped;
+}
 
-	// clear existing data
-	qry("DELETE FROM races");
-	qry("DELETE FROM classes");
+static bool lookup_checksum(const std::string &canonical, char *encoded, size_t size)
+{
+	if (size < SHA256_DIGEST_LENGTH * 2 + 1)
+		return false;
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	if (!SHA256((const unsigned char *)canonical.data(), canonical.size(), digest))
+		return false;
+	for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i)
+		snprintf(encoded + i * 2, 3, "%02x", digest[i]);
+	encoded[SHA256_DIGEST_LENGTH * 2] = '\0';
+	return true;
+}
 
-	// populate races table
-	for (i = 0; i <= LAST_RACE; i++)
+static bool lookup_rows_match(const char *checksum, size_t race_count, size_t class_count)
+{
+	const char *queries[] = { "SELECT id,name,COALESCE(short_name,''),COALESCE(ansi_name,''),"
+				  "COALESCE(abbrev,''),racewar,playable FROM races ORDER BY id",
+				  "SELECT id,name,COALESCE(ansi_name,''),COALESCE(short_name,''),"
+				  "COALESCE(menu_char,'') FROM classes ORDER BY id" };
+	const size_t widths[] = { 7, 5 };
+	const char *tags[] = { "race", "class" };
+	const size_t expected[] = { race_count, class_count };
+	std::string canonical;
+	for (size_t query_index = 0; query_index < 2; ++query_index)
+	{
+		if (mysql_real_query(DB, queries[query_index], strlen(queries[query_index])))
+			return false;
+		MYSQL_RES *result = mysql_store_result(DB);
+		if (!result || mysql_num_fields(result) != widths[query_index] ||
+		    mysql_num_rows(result) != expected[query_index])
+		{
+			if (result)
+				mysql_free_result(result);
+			return false;
+		}
+		MYSQL_ROW row;
+		while ((row = mysql_fetch_row(result)) != NULL)
+		{
+			lookup_append(&canonical, tags[query_index]);
+			for (size_t column = 0; column < widths[query_index]; ++column)
+			{
+				if (!row[column])
+				{
+					mysql_free_result(result);
+					return false;
+				}
+				lookup_append(&canonical, row[column]);
+			}
+		}
+		mysql_free_result(result);
+	}
+	char actual[SHA256_DIGEST_LENGTH * 2 + 1];
+	return lookup_checksum(canonical, actual, sizeof actual) && !strcmp(actual, checksum);
+}
+
+static bool lookup_state_matches(const char *checksum, size_t race_count, size_t class_count)
+{
+	char query[256];
+	snprintf(query, sizeof query,
+		 "SELECT dataset_version,LOWER(HEX(dataset_checksum)),race_count,class_count "
+		 "FROM lookup_dataset_state WHERE dataset_name='%s'",
+		 LOOKUP_DATASET_NAME);
+	if (mysql_real_query(DB, query, strlen(query)))
+		return false;
+	MYSQL_RES *result = mysql_store_result(DB);
+	MYSQL_ROW row = result ? mysql_fetch_row(result) : NULL;
+	bool matches = row && row[0] && atoi(row[0]) == (int)LOOKUP_DATASET_VERSION && row[1] &&
+		       !strcmp(row[1], checksum) && row[2] &&
+		       strtoul(row[2], NULL, 10) == race_count && row[3] &&
+		       strtoul(row[3], NULL, 10) == class_count;
+	if (result)
+		mysql_free_result(result);
+	return matches;
+}
+
+static std::string lookup_id_list(const std::vector<int> &ids)
+{
+	std::string list;
+	for (int id : ids)
+	{
+		if (!list.empty())
+			list += ',';
+		list += std::to_string(id);
+	}
+	return list;
+}
+
+/* Publish the compiled race/class dataset atomically. Unchanged boots do no writes. */
+bool sql_populate_lookup_tables()
+{
+	std::vector<std::string> race_sql, class_sql;
+	std::vector<int> race_ids, class_ids;
+	std::string canonical;
+
+	for (int i = 0; i <= LAST_RACE; ++i)
 	{
 		if (!race_names_table[i].normal || !race_names_table[i].normal[0])
 			continue;
-
-		mysql_real_escape_string(DB, esc_name, race_names_table[i].normal,
-					 strlen(race_names_table[i].normal));
-		mysql_real_escape_string(
-			DB, esc_ansi, race_names_table[i].ansi ? race_names_table[i].ansi : "",
-			race_names_table[i].ansi ? strlen(race_names_table[i].ansi) : 0);
-		mysql_real_escape_string(
-			DB, esc_short,
-			race_names_table[i].no_spaces ? race_names_table[i].no_spaces : "",
-			race_names_table[i].no_spaces ? strlen(race_names_table[i].no_spaces) : 0);
-		mysql_real_escape_string(
-			DB, esc_abbrev, race_names_table[i].code ? race_names_table[i].code : "",
-			race_names_table[i].code ? strlen(race_names_table[i].code) : 0);
-
-		// check if this is a playable race and get racewar side
-		int racewar = 0;
-		int playable = 0;
-		for (int j = 0; playable_races[j].race_id >= 0; j++)
-		{
+		int racewar = 0, playable = 0;
+		for (int j = 0; playable_races[j].race_id >= 0; ++j)
 			if (playable_races[j].race_id == i)
 			{
 				playable = 1;
-				if (strcmp(playable_races[j].faction, "good") == 0)
+				if (!strcmp(playable_races[j].faction, "good"))
 					racewar = RACEWAR_GOOD;
-				else if (strcmp(playable_races[j].faction, "evil") == 0)
+				else if (!strcmp(playable_races[j].faction, "evil"))
 					racewar = RACEWAR_EVIL;
-				else if (strcmp(playable_races[j].faction, "undead") == 0)
+				else if (!strcmp(playable_races[j].faction, "undead"))
 					racewar = RACEWAR_UNDEAD;
-				else if (strcmp(playable_races[j].faction, "neutral") == 0)
+				else if (!strcmp(playable_races[j].faction, "neutral"))
 					racewar = RACEWAR_NEUTRAL;
 				break;
 			}
-		}
-
-		snprintf(
-			buf, sizeof(buf),
-			"INSERT INTO races (id, name, short_name, ansi_name, abbrev, racewar, playable) "
-			"VALUES (%d, '%s', '%s', '%s', '%s', %d, %d)",
-			i, esc_name, esc_short, esc_ansi, esc_abbrev, racewar, playable);
-		qry("%s", buf);
+		const char *raw[] = { race_names_table[i].normal,
+				      race_names_table[i].no_spaces ?
+					      race_names_table[i].no_spaces :
+					      "",
+				      race_names_table[i].ansi ? race_names_table[i].ansi : "",
+				      race_names_table[i].code ? race_names_table[i].code : "" };
+		lookup_append(&canonical, "race");
+		lookup_append(&canonical, std::to_string(i));
+		for (const char *value : raw)
+			lookup_append(&canonical, value);
+		lookup_append(&canonical, std::to_string(racewar));
+		lookup_append(&canonical, std::to_string(playable));
+		race_ids.push_back(i);
+		race_sql.push_back(
+			"INSERT INTO races(id,name,short_name,ansi_name,abbrev,racewar,playable) VALUES(" +
+			std::to_string(i) + ",'" + lookup_escape(raw[0]) + "','" +
+			lookup_escape(raw[1]) + "','" + lookup_escape(raw[2]) + "','" +
+			lookup_escape(raw[3]) + "'," + std::to_string(racewar) + "," +
+			std::to_string(playable) +
+			") ON DUPLICATE KEY UPDATE name=VALUES(name),"
+			"short_name=VALUES(short_name),ansi_name=VALUES(ansi_name),abbrev=VALUES(abbrev),"
+			"racewar=VALUES(racewar),playable=VALUES(playable)");
 	}
 
-	// populate classes table
-	for (i = 0; i <= CLASS_COUNT; i++)
+	for (int i = 0; i <= CLASS_COUNT; ++i)
 	{
 		if (!class_names_table[i].normal || !class_names_table[i].normal[0])
 			continue;
-
-		mysql_real_escape_string(DB, esc_name, class_names_table[i].normal,
-					 strlen(class_names_table[i].normal));
-		mysql_real_escape_string(
-			DB, esc_ansi, class_names_table[i].ansi ? class_names_table[i].ansi : "",
-			class_names_table[i].ansi ? strlen(class_names_table[i].ansi) : 0);
-		mysql_real_escape_string(
-			DB, esc_short, class_names_table[i].code ? class_names_table[i].code : "",
-			class_names_table[i].code ? strlen(class_names_table[i].code) : 0);
-
-		char letter[2] = { class_names_table[i].letter, '\0' };
-
-		snprintf(buf, sizeof(buf),
-			 "INSERT INTO classes (id, name, ansi_name, short_name, menu_char) "
-			 "VALUES (%d, '%s', '%s', '%s', '%s')",
-			 i, esc_name, esc_ansi, esc_short, letter);
-		qry("%s", buf);
+		const char *raw[] = { class_names_table[i].normal,
+				      class_names_table[i].ansi ? class_names_table[i].ansi : "",
+				      class_names_table[i].code ? class_names_table[i].code : "" };
+		char letter[] = { class_names_table[i].letter, '\0' };
+		lookup_append(&canonical, "class");
+		lookup_append(&canonical, std::to_string(i));
+		for (const char *value : raw)
+			lookup_append(&canonical, value);
+		lookup_append(&canonical, letter);
+		class_ids.push_back(i);
+		class_sql.push_back(
+			"INSERT INTO classes(id,name,ansi_name,short_name,menu_char) VALUES(" +
+			std::to_string(i) + ",'" + lookup_escape(raw[0]) + "','" +
+			lookup_escape(raw[1]) + "','" + lookup_escape(raw[2]) + "','" +
+			lookup_escape(letter) +
+			"') ON DUPLICATE KEY UPDATE name=VALUES(name),"
+			"ansi_name=VALUES(ansi_name),short_name=VALUES(short_name),"
+			"menu_char=VALUES(menu_char)");
 	}
 
-	logit(LOG_STATUS, "Lookup tables populated.");
+	char checksum[SHA256_DIGEST_LENGTH * 2 + 1];
+	if (!lookup_checksum(canonical, checksum, sizeof checksum))
+		return false;
+
+	if (lookup_state_matches(checksum, race_sql.size(), class_sql.size()) &&
+	    lookup_rows_match(checksum, race_sql.size(), class_sql.size()))
+	{
+		logit(LOG_STATUS, "Lookup dataset unchanged; publication skipped.");
+		return true;
+	}
+
+	if (!sql_connection_execute(DB, "START TRANSACTION"))
+		return false;
+	auto rollback = []()
+	{
+		sql_connection_execute(DB, "ROLLBACK");
+		return false;
+	};
+	for (const std::string &query : race_sql)
+		if (!sql_connection_execute(DB, query.c_str()))
+			return rollback();
+	for (const std::string &query : class_sql)
+		if (!sql_connection_execute(DB, query.c_str()))
+			return rollback();
+	std::string delete_races =
+		"DELETE FROM races WHERE id NOT IN (" + lookup_id_list(race_ids) + ")";
+	std::string delete_classes =
+		"DELETE FROM classes WHERE id NOT IN (" + lookup_id_list(class_ids) + ")";
+	if (!sql_connection_execute(DB, delete_races.c_str()) ||
+	    !sql_connection_execute(DB, delete_classes.c_str()))
+		return rollback();
+	if (!lookup_rows_match(checksum, race_sql.size(), class_sql.size()))
+		return rollback();
+	std::string state =
+		"INSERT INTO lookup_dataset_state(dataset_name,dataset_version,dataset_checksum,"
+		"race_count,class_count) VALUES('" +
+		std::string(LOOKUP_DATASET_NAME) + "'," + std::to_string(LOOKUP_DATASET_VERSION) +
+		",UNHEX('" + checksum + "')," + std::to_string(race_sql.size()) + "," +
+		std::to_string(class_sql.size()) +
+		") ON DUPLICATE KEY UPDATE dataset_version=VALUES(dataset_version),"
+		"dataset_checksum=VALUES(dataset_checksum),race_count=VALUES(race_count),"
+		"class_count=VALUES(class_count)";
+	if (!sql_connection_execute(DB, state.c_str()) || !sql_connection_execute(DB, "COMMIT"))
+		return rollback();
+	logit(LOG_STATUS, "Lookup dataset published atomically.");
+	return true;
 }
 
 /* Resolve the requested database while retaining the non-default-port
@@ -775,7 +919,6 @@ int initialize_mysql()
 	logit(LOG_STATUS, "Connection established.");
 
 	sql_resetConnectTimes();
-	sql_populate_lookup_tables();
 
 	if (!sql_verify_boot_database())
 	{
@@ -786,6 +929,14 @@ int initialize_mysql()
 			mysql_close(DB);
 			DB = NULL;
 		}
+		return -1;
+	}
+	if (!sql_populate_lookup_tables())
+	{
+		logit(LOG_STATUS,
+		      "FATAL: COMPAT-E007 lookup dataset publication failed or commit outcome is ambiguous");
+		mysql_close(DB);
+		DB = NULL;
 		return -1;
 	}
 	if (!item_uid_allocator_reserve(DB, ITEM_UID_BOOT_RESERVATION))
@@ -859,6 +1010,54 @@ static bool sql_verify_boot_database(void)
 		return false;
 	}
 
+	char compatibility_probe[4096];
+	snprintf(
+		compatibility_probe, sizeof compatibility_probe,
+		"SELECT "
+		"(SELECT COUNT(*) FROM mud_schema_baselines WHERE baseline_id='%s' AND "
+		"LOWER(HEX(schema_fingerprint))='%s' AND manifest_version=%u AND runner_version=1),"
+		"(SELECT COUNT(*) FROM mud_schema_history WHERE migration_id='%s' AND "
+		"sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' AND "
+		"LOWER(HEX(verify_checksum))='%s' AND runner_version=1),"
+		"(SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 AND "
+		"applied_count=%u AND LOWER(HEX(history_checksum))='%s'),"
+		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+		"AND table_type='BASE TABLE'),"
+		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+		"AND table_type='BASE TABLE' AND engine='InnoDB' AND "
+		"table_collation='utf8mb4_unicode_ci')",
+		RUNTIME_BASELINE_ID, RUNTIME_BASELINE_FINGERPRINT,
+		RUNTIME_COMPATIBILITY_MANIFEST_VERSION, RUNTIME_MIGRATION_HEAD_ID,
+		RUNTIME_MIGRATION_HEAD_SEQUENCE, RUNTIME_MIGRATION_APPLY_CHECKSUM,
+		RUNTIME_MIGRATION_VERIFY_CHECKSUM, RUNTIME_MIGRATION_HEAD_SEQUENCE,
+		RUNTIME_MIGRATION_HISTORY_CHECKSUM);
+	MYSQL_RES *result = db_query("%s", compatibility_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: COMPAT-E001 compatibility metadata query failed");
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(result);
+	unsigned long *lengths = row ? mysql_fetch_lengths(result) : NULL;
+	bool compatibility_ok = row && lengths && row[0] && atoi(row[0]) == 1 && row[1] &&
+				atoi(row[1]) == 1 && row[2] && atoi(row[2]) == 1 && row[3] &&
+				atoi(row[3]) == (int)RUNTIME_CURRENT_TABLE_COUNT && row[4] &&
+				atoi(row[4]) == (int)RUNTIME_CURRENT_TABLE_COUNT;
+	mysql_free_result(result);
+	if (!compatibility_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: COMPAT-E002 migration, table, engine, or collation identity mismatch expected_baseline=%s expected_head=%s expected_tables=%u",
+		      RUNTIME_BASELINE_ID, RUNTIME_MIGRATION_HEAD_ID, RUNTIME_CURRENT_TABLE_COUNT);
+		return false;
+	}
+	if (!sql_verify_metadata_fingerprint())
+	{
+		logit(LOG_STATUS,
+		      "FATAL: COMPAT-E003 normalized table/column/index/foreign-key fingerprint mismatch");
+		return false;
+	}
+
 	const char *probe = "SELECT 1 FROM accounts LIMIT 1";
 	if (!sql_trace_exec("boot/accounts_probe", probe, strlen(probe), true, false))
 	{
@@ -867,7 +1066,7 @@ static bool sql_verify_boot_database(void)
 		return false;
 	}
 
-	MYSQL_RES *result = mysql_store_result(DB);
+	result = mysql_store_result(DB);
 	if (result)
 		mysql_free_result(result);
 
@@ -882,8 +1081,8 @@ static bool sql_verify_boot_database(void)
 		logit(LOG_STATUS, "FATAL: player save revision schema query failed at boot");
 		return false;
 	}
-	MYSQL_ROW row = mysql_fetch_row(result);
-	unsigned long *lengths = row ? mysql_fetch_lengths(result) : NULL;
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
 	const bool player_revision_ok = row && lengths && row[0] && atoi(row[0]) == 1;
 	mysql_free_result(result);
 	if (!player_revision_ok)
@@ -1289,6 +1488,68 @@ static bool sql_verify_boot_database(void)
 		return false;
 	}
 	return true;
+}
+
+static bool sql_verify_metadata_fingerprint(void)
+{
+	const char *query =
+		"SELECT CONCAT('T',CHAR(9),table_name,CHAR(9),engine,CHAR(9),table_collation) "
+		"FROM information_schema.tables WHERE table_schema=DATABASE() AND "
+		"table_type='BASE TABLE' UNION ALL SELECT CONCAT('C',CHAR(9),table_name,CHAR(9),"
+		"column_name,CHAR(9),ordinal_position,CHAR(9),data_type,CHAR(9),is_nullable,CHAR(9),"
+		"COALESCE(character_maximum_length,0),CHAR(9),COALESCE(numeric_precision,0),CHAR(9),"
+		"COALESCE(numeric_scale,0),CHAR(9),COALESCE(datetime_precision,0),CHAR(9),CASE "
+		"WHEN column_default IS NULL THEN '<NULL>' WHEN UPPER(column_default) LIKE "
+		"'CURRENT_TIMESTAMP%' THEN 'CURRENT_TIMESTAMP' ELSE TRIM(BOTH '\\'' FROM "
+		"column_default) END,CHAR(9),CONCAT(IF(LOWER(extra) LIKE '%auto_increment%','A',''),"
+		"IF(LOWER(extra) LIKE '%on update%','U',''),IF(LOWER(extra) LIKE "
+		"'%generated%','G',''))) FROM information_schema.columns WHERE table_schema=DATABASE() "
+		"UNION ALL SELECT CONCAT('I',CHAR(9),table_name,CHAR(9),index_name,CHAR(9),"
+		"non_unique,CHAR(9),seq_in_index,CHAR(9),column_name,CHAR(9),COALESCE(sub_part,0)) "
+		"FROM information_schema.statistics WHERE table_schema=DATABASE() UNION ALL SELECT "
+		"CONCAT('F',CHAR(9),k.table_name,CHAR(9),k.constraint_name,CHAR(9),k.column_name,"
+		"CHAR(9),k.referenced_table_name,CHAR(9),k.referenced_column_name,CHAR(9),"
+		"k.ordinal_position,CHAR(9),r.update_rule,CHAR(9),r.delete_rule) FROM "
+		"information_schema.key_column_usage k JOIN information_schema.referential_constraints "
+		"r ON r.constraint_schema=k.constraint_schema AND "
+		"r.constraint_name=k.constraint_name WHERE k.constraint_schema=DATABASE() AND "
+		"k.referenced_table_name IS NOT NULL ORDER BY 1";
+	if (mysql_real_query(DB, query, strlen(query)))
+		return false;
+	MYSQL_RES *result = mysql_store_result(DB);
+	if (!result)
+		return false;
+	std::string canonical;
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(result)) != NULL)
+	{
+		if (!row[0])
+		{
+			mysql_free_result(result);
+			return false;
+		}
+		size_t row_length = strlen(row[0]);
+		if (row_length >= RUNTIME_METADATA_MAX_BYTES - canonical.size())
+		{
+			mysql_free_result(result);
+			return false;
+		}
+		canonical += row[0];
+		canonical += '\n';
+	}
+	mysql_free_result(result);
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	if (!SHA256((const unsigned char *)canonical.data(), canonical.size(), digest))
+		return false;
+	char encoded[SHA256_DIGEST_LENGTH * 2 + 1];
+	for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i)
+		snprintf(encoded + i * 2, 3, "%02x", digest[i]);
+	encoded[SHA256_DIGEST_LENGTH * 2] = '\0';
+	const char *server = mysql_get_server_info(DB);
+	const char *expected = server && strstr(server, "MariaDB") ?
+				       RUNTIME_MARIADB10_11_METADATA_FINGERPRINT :
+				       RUNTIME_MYSQL8_METADATA_FINGERPRINT;
+	return !strcmp(encoded, expected);
 }
 
 /* Same as above, but won't log failed queries, ie when key restrictions suffice */

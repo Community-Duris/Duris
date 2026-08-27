@@ -4,7 +4,7 @@
 **Sessions**: 14 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 8/14 sessions (57%)
+**Progress**: 12/14 sessions (86%)
 
 ---
 
@@ -26,8 +26,8 @@ ownership, moderation, or audit evidence outside an approved policy.
 
 The final sessions reconcile documentation to the implemented system and run the full
 25-to-200-client workload and fault matrix on a backed-up non-production clone. Phases
-00 through 02 and Phase 03 Sessions 01 through 07 are complete and validated; Session
-08 is the next bounded work window.
+00 through 02 and Phase 03 Sessions 01 through 12 are complete and validated; Session
+13 is the next bounded work window.
 
 ---
 
@@ -46,7 +46,7 @@ The final sessions reconcile documentation to the implemented system and run the
 | 09 | Authenticated Personal Data Export | Complete | Guarded schema, exact manifest mapping, reauthentication/package/spool contract; canonical activation blocked by pending disclosure policy | 2026-08-27 |
 | 10 | Account Erasure and Backup Propagation | Complete | Guarded request/store/tombstone schema and restore preflight; canonical mutation blocked by pending policy | 2026-08-27 |
 | 11 | Immutable Migration Ledger and Runner | Complete | Honest 170-table baseline, immutable manifest, success-last history, chain-head tamper evidence, and exact resume | 2026-08-27 |
-| 12 | Boot Schema and Lookup Compatibility | Not Started | Pre-write manifest verification, connection invariants, and transactional lookup publication | - |
+| 12 | Boot Schema and Lookup Compatibility | Complete | Exact pre-write schema/history/connection gate and transactional checksummed lookup publication | 2026-08-27 |
 | 13 | Documentation and Operator Contract | Not Started | Source-traced architecture, database, configuration, lifecycle, testing, and recovery guidance | - |
 | 14 | Final 200-Player and Compliance Gate | Not Started | Integrated workloads, fault matrix, reconciliation, privacy checks, repair, and readiness evidence | - |
 
@@ -65,12 +65,13 @@ The final sessions reconcile documentation to the implemented system and run the
 - Session 09: Authenticated Personal Data Export (completed 2026-08-27; canonical activation disabled)
 - Session 10: Account Erasure and Backup Propagation (completed 2026-08-27; canonical mutation disabled)
 - Session 11: Immutable Migration Ledger and Runner (completed 2026-08-27)
+- Session 12: Boot Schema and Lookup Compatibility (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 12: Boot Schema and Lookup Compatibility
+- Session 13: Documentation and Operator Contract
 
 ---
 

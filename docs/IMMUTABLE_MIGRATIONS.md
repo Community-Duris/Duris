@@ -6,7 +6,7 @@ Duris has two deliberately separate histories:
   steps and `mud_schema_migrations` data-copy markers are not complete historical
   execution evidence and are never backfilled as if they were.
 - `migrations/migration_manifest.json` is the authoritative immutable history after
-  the Session 11 baseline. Every future step receives one ordered ID, apply file,
+  the Session 11 baseline. Every post-baseline step receives one ordered ID, apply file,
   verifier, compatibility label, and exact SHA-256 hashes.
 
 ## Honest baseline adoption
@@ -33,7 +33,11 @@ python3 scripts/migration_runner.py run
 The runner requires `ENVIRONMENT` to be local/development/test, a loopback `DB_HOST`,
 a non-production database name, and explicit credentials. Never point it at production.
 
-## Future migration contract
+The current immutable head is `0001_lookup_dataset_state`. After it is applied, the
+runtime schema contains 171 tables and the history singleton records applied count 1
+plus the exact history checksum.
+
+## Post-baseline migration contract
 
 Files live under `migrations/immutable/` and are listed explicitly in the manifest.
 Before opening a database, the runner reads every file with no-follow and fixed-size
@@ -56,6 +60,8 @@ reclassifying it as pending. Exact replay with a complete prefix performs no wor
 ```sh
 python3 tests/async/test_immutable_migration_runner.py
 tests/async/run_immutable_migration_ledger_mysql.sh
+tests/async/run_runtime_compatibility_mysql.sh
+RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh
 ```
 
 The isolated MySQL test verifies schema replay, ordered uniqueness, honest baseline

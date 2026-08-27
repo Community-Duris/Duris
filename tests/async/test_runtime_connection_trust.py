@@ -6,6 +6,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[2]
 sql_h = (root / "src/sql.h").read_text()
 sql = (root / "src/sql.c").read_text()
+runtime_contract = (root / "src/runtime_compatibility_contract.h").read_text()
 pool = (root / "src/sql_pool.c").read_text()
 player = (root / "src/sql_player.c").read_text()
 comm = (root / "src/comm.c").read_text()
@@ -89,13 +90,14 @@ print("[PASS] database connection deadlines and verified remote TLS are canonica
 
 session = section(sql, "static bool sql_apply_session_contract", "MYSQL *sql_open_configured_connection")
 verify = section(sql, "static bool sql_verify_session_contract", "static bool sql_apply_session_contract")
-assert 'mysql_set_character_set(conn, "utf8mb4")' in session
+assert "mysql_set_character_set(conn, RUNTIME_DB_CHARACTER_SET)" in session
 assert "SET SESSION time_zone='+00:00'" in session
 assert "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED" in session
-assert "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION" in session
+assert "RUNTIME_DB_SQL_MODE" in session
+assert "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION" in runtime_contract
 assert "@@character_set_connection,@@time_zone,@@sql_mode" in verify
 assert "@@transaction_isolation" in verify and "@@tx_isolation" in verify
-assert 'strcasecmp(row[0], "READ-COMMITTED")' in verify
+assert "strcasecmp(row[0], RUNTIME_DB_ISOLATION)" in verify
 print("[PASS] charset, UTC, isolation, and SQL mode are set and verified")
 
 assert sql.count("mysql_real_connect(") == 1

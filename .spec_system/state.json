@@ -6,6 +6,12 @@
   "current_session": null,
   "monorepo": false,
   "phases": {
+    "0": {
+      "name": "Correctness and Immediate Lag Removal",
+      "description": "Remove confirmed persistence correctness defects, immediate simulation-thread lag hazards, and fail-open security behavior before the revisioned save pipeline.",
+      "status": "complete",
+      "session_count": 10
+    },
     "1": {
       "name": "Replace Forked Full Saves",
       "description": "Replace player and world persistence forks with revisioned immutable workers, exact acknowledgements, and typed journal recovery.",
@@ -17,12 +23,6 @@
       "description": "Move critical gameplay effects into operation-keyed transactions with ledgers, current state, revisions, and outbox publication.",
       "status": "complete",
       "session_count": 12
-    },
-    "0": {
-      "name": "Correctness and Immediate Lag Removal",
-      "description": "Remove confirmed persistence correctness defects, immediate simulation-thread lag hazards, and fail-open security behavior before the revisioned save pipeline.",
-      "status": "complete",
-      "session_count": 10
     },
     "3": {
       "name": "Load Path, Schema, and Retention",
@@ -72,141 +72,12 @@
     "phase03-session08-retention-and-archival-execution",
     "phase03-session09-authenticated-personal-data-export",
     "phase03-session10-account-erasure-and-backup-propagation",
-    "phase03-session11-immutable-migration-ledger-and-runner"
+    "phase03-session11-immutable-migration-ledger-and-runner",
+    "phase03-session12-boot-schema-and-lookup-compatibility"
   ],
   "next_session_history": [
     {
       "date": "2026-08-27",
-      "session": "phase02-session10-artifact-and-guild-outcome-batching",
-      "status": "validated"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase02-session10-artifact-and-guild-outcome-batching",
-      "status": "completed"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase02-session11-boon-reward-and-zone-command-batching",
-      "status": "selected"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase02-session11-boon-reward-and-zone-command-batching",
-      "status": "planned"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase02-session11-boon-reward-and-zone-command-batching",
-      "status": "validated"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase02-session11-boon-reward-and-zone-command-batching",
-      "status": "completed"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase02-session12-raw-event-queue-retirement-and-domain-gate",
-      "status": "selected"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase02-session12-raw-event-queue-retirement-and-domain-gate",
-      "status": "planned"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase02-session12-raw-event-queue-retirement-and-domain-gate",
-      "status": "validated"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase02-session12-raw-event-queue-retirement-and-domain-gate",
-      "status": "completed"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session01-consistent-player-load-transaction",
-      "status": "selected"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session01-consistent-player-load-transaction",
-      "status": "validated"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session01-consistent-player-load-transaction",
-      "status": "completed"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session02-batched-item-ownership-and-linear-assembly",
-      "status": "planned"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session02-batched-item-ownership-and-linear-assembly",
-      "status": "validated"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session02-batched-item-ownership-and-linear-assembly",
-      "status": "completed"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session03-batched-pet-graph-hydration",
-      "status": "planned"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session03-batched-pet-graph-hydration",
-      "status": "validated"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session03-batched-pet-graph-hydration",
-      "status": "completed"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session04-set-based-pvp-and-epic-task-reads",
-      "status": "planned"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session04-set-based-pvp-and-epic-task-reads",
-      "status": "validated"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session04-set-based-pvp-and-epic-task-reads",
-      "status": "completed"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session05-production-clone-query-plan-and-index-gate",
-      "status": "planned"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session05-production-clone-query-plan-and-index-gate",
-      "status": "validated"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session05-production-clone-query-plan-and-index-gate",
-      "status": "completed"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase03-session06-bounded-maintenance-scheduler",
-      "status": "planned"
-    },
-    {
-      "date": "2026-08-27",
       "session": "phase03-session06-bounded-maintenance-scheduler",
       "status": "validated"
     },
@@ -288,6 +159,21 @@
     {
       "date": "2026-08-27",
       "session": "phase03-session11-immutable-migration-ledger-and-runner",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session12-boot-schema-and-lookup-compatibility",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session12-boot-schema-and-lookup-compatibility",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session12-boot-schema-and-lookup-compatibility",
       "status": "completed"
     }
   ]

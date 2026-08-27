@@ -13,6 +13,7 @@ directory covers architecture, operations, configuration, and reference material
 | [BUILDING.md](BUILDING.md) | Build system details: flags, targets, area-file generation, sanitizer builds. |
 | [DATABASE.md](DATABASE.md) | Database layer: connection handling, async persistence, schema, migrations. |
 | [IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md) | Honest schema baseline adoption, immutable post-baseline manifest, tamper-evident history, and exact resume. |
+| [RUNTIME_COMPATIBILITY.md](RUNTIME_COMPATIBILITY.md) | Pre-mutation migration/schema verification and atomic versioned race/class lookup publication. |
 | [DATA_LIFECYCLE.md](DATA_LIFECYCLE.md) | Versioned durable-store inventory, season classifications, protected exceptions, and fail-closed lifecycle validation. |
 | [LIFECYCLE_ARCHIVE.md](LIFECYCLE_ARCHIVE.md) | Bounded archive job/batch schema, verification state machine, dry-run controls, and pending-policy scheduler gate. |
 | [PERSONAL_DATA_EXPORT.md](PERSONAL_DATA_EXPORT.md) | Authenticated export policy mapping, package verification, protected spool, and pending-activation boundary. |

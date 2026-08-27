@@ -56,7 +56,7 @@ bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
 
 int load_env_file(void);
 int initialize_mysql();
-void sql_populate_lookup_tables();
+bool sql_populate_lookup_tables();
 int sql_save_player_core(P_char ch);
 bool sql_load_player_items(P_char ch);
 int sql_level_cap(int racewar_side);

@@ -4790,6 +4790,24 @@
       "dependencies": ["database:account_erasure_requests"]
     },
     {
+      "id": "database:lookup_dataset_state",
+      "kind": "database_table",
+      "locator": "lookup_dataset_state",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "atomic compiled race and class dataset version, checksum, and counts",
+      "controller_decision": { "status": "not_required", "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION" },
+      "export_rule": {
+        "disposition": "exclude", "subject_route": "not_subject_scoped",
+        "decision": { "status": "not_required", "reference": "TECHNICAL-NON-SUBJECT-DATA" },
+        "excluded_fields": [], "shared_fields": []
+      },
+      "season_action": "retain", "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
+      "exception": "none", "protected_record": false,
+      "dependencies": []
+    },
+    {
       "id": "database:mud_schema_baselines",
       "kind": "database_table",
       "locator": "mud_schema_baselines",

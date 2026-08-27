@@ -17,6 +17,7 @@ DEFAULT_MANIFEST = ROOT / "migrations" / "data_lifecycle_manifest.json"
 DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "bootstrap_multithread_safe.sql",
     ROOT / "migrations" / "bootstrap_legacy_baseline.sql",
+    ROOT / "migrations" / "immutable" / "0001_lookup_dataset_state.sql",
 )
 
 ROOT_FIELDS = {

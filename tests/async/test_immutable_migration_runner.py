@@ -75,18 +75,21 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         path.write_text(json.dumps(manifest))
         return path
 
-    def test_canonical_manifest_is_valid_honest_baseline_with_no_future_steps(self):
+    def test_canonical_manifest_keeps_baseline_and_adds_first_immutable_step(self):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
-        self.assertEqual(manifest.migrations, ())
+        self.assertEqual(len(manifest.migrations), 1)
+        self.assertEqual(manifest.migrations[0].migration_id,
+                         "0001_lookup_dataset_state")
         self.assertEqual(len(manifest.required_table_fingerprint), 64)
         lifecycle = json.loads(
             (ROOT / "migrations/data_lifecycle_manifest.json").read_text()
         )
         tables = [entry["locator"] for entry in lifecycle["entries"]
                   if entry["kind"] == "database_table"]
-        self.assertEqual(len(tables), manifest.required_table_count)
-        self.assertEqual(runner.table_fingerprint(tables),
+        baseline_tables = [table for table in tables if table != "lookup_dataset_state"]
+        self.assertEqual(len(baseline_tables), manifest.required_table_count)
+        self.assertEqual(runner.table_fingerprint(baseline_tables),
                          manifest.required_table_fingerprint)
 
     def test_manifest_rejects_duplicate_reorder_checksum_and_symlink(self):

@@ -30,8 +30,8 @@ closing-pool checks are present. These need no database and no build.
 regression coverage for past crashes is contract-style because full boots are
 expensive.
 
-**Schema tests** — verify migrations/persistence contracts against a real
-MySQL instance (development database only).
+**Schema tests** - verify migrations/persistence contracts against disposable
+MySQL or MariaDB instances (development databases only).
 
 ## Running
 
@@ -55,6 +55,10 @@ tests/async/run_sql_pool_shutdown.sh
 
 # Isolated Docker/MySQL schema suites (Docker is an optional prerequisite):
 make test-db
+
+# Runtime schema compatibility on both supported variants:
+tests/async/run_runtime_compatibility_mysql.sh
+RUNTIME_DB_IMAGE=mariadb:10.11 tests/async/run_runtime_compatibility_mysql.sh
 ```
 
 `TEST_JOBS=0` is the default and selects up to eight workers based on available

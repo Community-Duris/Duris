@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 1.81.52** | [Versioning policy](docs/VERSIONING.md)
+**Version: 1.81.53** | [Versioning policy](docs/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -132,6 +132,13 @@ MYSQL_PWD="$DB_PASSWD" mysql \
   --port="${DB_PORT:-3306}" \
   --user="$DB_USER" \
   "$DB_NAME" < migrations/bootstrap_multithread_safe.sql
+
+# Record the exact sealed baseline, then apply immutable post-baseline steps.
+python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
+python3 scripts/migration_runner.py run
+
+# Confirm the exact runtime contract before first boot.
+./migrations/verify_runtime_compatibility.sh
 ```
 
 > [!IMPORTANT]

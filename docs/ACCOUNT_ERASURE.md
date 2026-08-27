@@ -2,7 +2,7 @@
 
 Canonical account erasure is **not enabled**. The lifecycle manifest has no approved
 destructive actions, every store's controller decision remains pending, and inspection
-reports all 187 stores as `retain` with `request_state=blocked_by_policy`. No live
+reports all 188 stores as `retain` with `request_state=blocked_by_policy`. No live
 database/file mutator or account-menu erasure hook exists.
 
 Session 10 defines the safety boundary that any future approved adapter must satisfy.
