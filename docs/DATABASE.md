@@ -68,16 +68,16 @@ Properties of the pipeline:
 - Retry/backoff exists for transient MySQL failures (see the dirty-flush and
   shopkeeper retry regression tests in `tests/async/`).
 
-Redis complements MySQL: it buffers dirty-save state and holds periodic
-world-state snapshots used for crash recovery after an unclean exit
-(`src/redis.c`). Snapshots are cleared after successful recovery.
+Redis is not an authority for player dirty state. It holds floor-delta recovery data
+and optional sequence-numbered world generations used after an unclean exit
+(`src/redis.c`). A generation is cleared only after successful validated recovery.
 
 ## Persistence observability
 
 All shared MySQL execution paths record bounded, metadata-only metrics. Wrapper
 calls receive a compile-time `file:function:line` site; worker executors use an
-explicit semantic site. Context distinguishes the main process, a fork child,
-an event worker, and the locker worker. Statement classification records only a
+explicit semantic site. Context distinguishes the main thread and the relevant
+event, locker, or player-save worker. Statement classification records only a
 kind such as `select`, `insert`, or `transaction`, never SQL bytes or values.
 
 The fixed-capacity registry aggregates calls, failures, total and maximum
@@ -202,39 +202,26 @@ contributions expire locally at the same calendar boundary represented by the fo
 boundary: Phase 02 still owns atomic epic balance, ledger, operation identity, and
 ambiguous-commit reconciliation.
 
-## Deferred and terminal player saves
+## Revisioned player checkpoints and terminal saves
 
-Deferred player checkpoints use a fixed 512-slot game-thread table. Requests for the
-same PID coalesce the newest save type, level-checkpoint intent, reason, and request
-time. A failed attempt remains pending and owns exactly one retry event. Retry delay
-starts at four pulses, doubles after each failure, and stops growing at 240 pulses.
-Attempts and failures saturate instead of wrapping. A later request repairs an
-unscheduled occupied slot rather than leaving it stranded.
+Each player owns a monotonic revision plus per-component dirty, queued, inflight, and
+acknowledged state. The game thread captures a bounded immutable snapshot without
+unequipping objects or removing affects. A private append dispatcher writes typed,
+checksummed journal records with restrictive permissions; only journaled snapshots are
+submitted to the bounded 256-PID keyed worker queue. Same-PID work is ordered and
+coalesced, while different PIDs may apply concurrently.
 
-Direct and global flush functions return a real result. Successful flush clears the
-slot, so its already queued event becomes a no-op. Failure retains and re-arms live
-work. A terminal request consumes an existing slot after replacing its save type, so
-the same player is not fully serialized once for the checkpoint and again for the
-terminal transition.
+The repository locks the durable revision before replacing component rows. A stale
+revision cannot replace a newer one. Ambiguous commits are reconciled by rereading the
+durable revision, and exact completion alone clears the matching component state and
+journal record. Replay suppresses duplicate PID/revision records, quarantines corrupt
+frames, and stops fail-closed when durable application cannot proceed.
 
-`writeCharacter()` treats the MySQL/MariaDB result as the terminal durability gate.
-On failure it re-equips the original objects, leaves carried inventory reachable,
-reapplies affects, and returns false. A successfully written legacy binary pfile is
-reported as a fallback record, but it is not automatically reconciled and does not
-authorize character, inventory, offline artifact owner, or locker extraction.
-The shared terminal helper queues a safe non-destructive crash-save retry when a
-direct terminal attempt fails; it never retries an inventory-extracting rent type in
-the background.
-
-Camp, rent, death, idle/link-loss cleanup, ghost extraction, copyover, shutdown, and
-reboot callers check this result before irreversible completion. Copyover validates
-all player saves and publishes its complete state file before closing transports.
-Locker departure is vetoed before room release when its character is absent or a
-coherent snapshot cannot be prepared.
-Shutdown/reboot uses non-destructive crash saves as a preflight; if any fail, terminal
-flags are cancelled and the live game loop resumes with player state available for
-retry. Phase 01 replaces this synchronous safety boundary with revisioned immutable
-workers and a typed journal.
+Camp, rent, death, idle/link-loss cleanup, ghost extraction, locker departure,
+copyover, shutdown, and reboot use the same terminal fence. Live state may be released
+only after the exact database ACK or an explicit durable journal handoff. Copyover and
+shutdown quiesce and drain both player and world pipelines; failure cancels the
+transition and resumes the live game loop.
 
 ## Player replacement components
 

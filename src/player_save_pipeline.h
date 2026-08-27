@@ -9,7 +9,7 @@
 struct char_data;
 typedef struct char_data *P_char;
 
-constexpr size_t PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS = 128;
+constexpr size_t PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS = 256;
 constexpr size_t PLAYER_SAVE_PIPELINE_MAX_BYTES = 32 * 1024 * 1024;
 constexpr size_t PLAYER_SAVE_PIPELINE_PULSE_BUDGET = 32;
 

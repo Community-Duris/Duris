@@ -118,7 +118,7 @@ assert "fork()" not in save and "world_recovery_pipeline_request" in save
 publisher = section(REDIS, "static bool redis_publish_world_generation", "static bool redis_world_recovery_ensure_initialized")
 for token in ("MULTI", "SET mud:world_state:generation:%llu %b", "world_state:current",
               "world_state:timestamp", "world_state:sequence",
-              "world_state:checksum", "world_state:complete 1", "world_state:valid 1", "EXEC"):
+              "world_state:checksum", "world_state:complete 1", "EXEC"):
     assert token in publisher
 assert publisher.index("SET mud:world_state:generation:%llu %b") < publisher.index("MULTI") < publisher.index("EXEC")
 assert "header.sequence == sequence" in section(REDIS, "bool redis_has_world_state", "time_t redis_world_state_timestamp")

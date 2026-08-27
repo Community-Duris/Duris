@@ -91,7 +91,6 @@ long redis_get_ttl(const char *key);
 long redis_hlen(const char *key);
 long redis_scard(const char *key);
 char *redis_get_string(const char *key);
-void redis_clear_dirty_players(void);
 bool redis_clear_pwipe_state(void);
 
 // ship snapshot cache (read-through cache for ship DB rows)

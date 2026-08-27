@@ -49,22 +49,24 @@ requires enforced TLS, CA verification, and a negotiated cipher.
 ## Redis
 
 Redis is optional. It is disabled unless `REDIS=TRUE` (case-insensitive).
-When enabled, it stores dirty-player queues, floor-drop recovery data, object
-UID state, and optional world-state snapshots.
+When enabled, it stores floor-drop recovery data, object UID state, caches, and
+optional immutable world-recovery generations. Player dirty state remains local to the
+revisioned player-save pipeline and typed journal.
 
 | Variable | Default | Accepted values / range | Meaning |
 | --- | --- | --- | --- |
 | `REDIS` | disabled | `TRUE` enables it | Enable Redis integration. |
 | `REDIS_HOST` | `127.0.0.1` | hostname or IP | Redis host. |
 | `REDIS_PORT` | `6379` | `1`-`65535` | Redis TCP port; invalid values fall back to `6379`. |
-| `REDIS_WORLD_STATE` | disabled | `TRUE` enables it | Save a crash-recovery world snapshot in a child process. |
+| `REDIS_WORLD_STATE` | disabled | `TRUE` enables it | Enable bounded capture and background publication of crash-recovery world generations. |
 | `REDIS_WORLD_STATE_INTERVAL` | `10` seconds | `5`-`300` | Snapshot interval when world-state recovery is enabled. |
 | `REDIS_WORLD_STATE_MAX_AGE` | `300` seconds | `60`-`3600` | Maximum snapshot age accepted during recovery. |
 
-World-state recovery is intentionally separate from ordinary dirty saves. A
-snapshot is marked valid only after it has been written; a valid, non-expired
-snapshot is restored once at boot and then cleared. A failed or stale snapshot
-is ignored and the server continues with a normal boot.
+World recovery is intentionally separate from player saves and reconstructible caches.
+The publisher writes an immutable sequence-keyed payload, then atomically advances the
+current pointer and diagnostic metadata. Boot accepts only a complete, non-expired
+generation whose schema, sequence, size, and checksum validate. A failed or stale
+generation is ignored and the server continues with a normal boot.
 
 For a local development session, the following is a reasonable starting point:
 

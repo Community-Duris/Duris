@@ -1,10 +1,10 @@
 # PRD Phase 01: Replace Forked Full Saves
 
-**Status**: In Progress
+**Status**: Complete
 **Sessions**: 8 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 7/8 sessions (87.5%)
+**Progress**: 8/8 sessions (100%)
 
 ---
 
@@ -38,7 +38,7 @@ failure-containment, and security contracts are prerequisites for every session 
 | 05 | Nonterminal Save Pipeline Cutover | Complete | Ordinary mutation, autosave, manual, and Redis-dirty routes moved to the coordinator | 2026-08-27 |
 | 06 | Terminal Drain and Shutdown Safety | Complete | Disconnect, rent, death, copyover, and shutdown promotion, drain, and durable spill | 2026-08-27 |
 | 07 | Immutable World Recovery Worker | Complete | Sequence-numbered world snapshots, background publication, ACKs, and floor-delta retention | 2026-08-27 |
-| 08 | Legacy Fork Removal and Recovery Gate | Not Started | Dead-path removal, end-to-end fault/load verification, and operational documentation | - |
+| 08 | Legacy Fork Removal and Recovery Gate | Complete | Dead-path removal, end-to-end fault/load verification, and operational documentation | 2026-08-27 |
 
 ---
 
@@ -51,12 +51,13 @@ failure-containment, and security contracts are prerequisites for every session 
 - Session 05: Nonterminal Save Pipeline Cutover (completed 2026-08-27)
 - Session 06: Terminal Drain and Shutdown Safety (completed 2026-08-27)
 - Session 07: Immutable World Recovery Worker (completed 2026-08-27)
+- Session 08: Legacy Fork Removal and Recovery Gate (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 08: Legacy Fork Removal and Recovery Gate
+Phase 01 is complete. Phase 02 begins with Critical Operation Identity and Coordinator.
 
 ---
 

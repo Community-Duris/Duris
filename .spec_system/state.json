@@ -2,20 +2,20 @@
   "version": "2.0",
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
-  "current_phase": 1,
-  "current_session": "phase01-session08-legacy-fork-removal-and-recovery-gate",
+  "current_phase": 2,
+  "current_session": "phase02-session01-critical-operation-identity-and-coordinator",
   "monorepo": false,
   "phases": {
     "1": {
       "name": "Replace Forked Full Saves",
       "description": "Replace player and world persistence forks with revisioned immutable workers, exact acknowledgements, and typed journal recovery.",
-      "status": "in_progress",
+      "status": "complete",
       "session_count": 8
     },
     "2": {
       "name": "Transactional Gameplay Domains",
       "description": "Move critical gameplay effects into operation-keyed transactions with ledgers, current state, revisions, and outbox publication.",
-      "status": "not_started",
+      "status": "in_progress",
       "session_count": 12
     },
     "0": {
@@ -48,7 +48,8 @@
     "phase01-session04-typed-persistence-journal-and-replay",
     "phase01-session05-nonterminal-save-pipeline-cutover",
     "phase01-session06-terminal-drain-and-shutdown-safety",
-    "phase01-session07-immutable-world-recovery-worker"
+    "phase01-session07-immutable-world-recovery-worker",
+    "phase01-session08-legacy-fork-removal-and-recovery-gate"
   ],
   "next_session_history": [
     {
@@ -344,6 +345,26 @@
     {
       "date": "2026-08-27",
       "session": "phase01-session08-legacy-fork-removal-and-recovery-gate",
+      "status": "selected"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session08-legacy-fork-removal-and-recovery-gate",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session08-legacy-fork-removal-and-recovery-gate",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase01-session08-legacy-fork-removal-and-recovery-gate",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session01-critical-operation-identity-and-coordinator",
       "status": "selected"
     }
   ]

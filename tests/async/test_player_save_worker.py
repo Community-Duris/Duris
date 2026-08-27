@@ -266,7 +266,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-save-worker-") as temp_dir
     subprocess.run([str(binary)], check=True, timeout=10)
 
 for contract in (
-    "PLAYER_SAVE_WORKER_MAX_PIDS = 128",
+    "PLAYER_SAVE_WORKER_MAX_PIDS = 256",
     "PLAYER_SAVE_WORKER_MAX_RESULTS = 256",
     "PLAYER_SAVE_WORKER_MAX_BYTES = 32 * 1024 * 1024",
     "PLAYER_SAVE_WORKER_MAX_AGE_MSEC",

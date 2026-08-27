@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 1.81.28** | [Versioning policy](docs/VERSIONING.md)
+**Version: 1.81.29** | [Versioning policy](docs/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -33,7 +33,7 @@ flowchart LR
     subgraph Server["DurisMUD server process"]
         Network["Telnet / TLS / WebSocket"]
         Loop["Single event loop<br/>commands, combat, world ticks"]
-        Workers["3 persistence workers<br/>item, scalar, large payload"]
+        Workers["Async persistence workers<br/>item, scalar, large, player, world"]
 
         Network <--> Loop
         Loop -->|enqueue saves| Workers
@@ -43,7 +43,7 @@ flowchart LR
     Content -->|boot and reset data| Loop
     Loop -->|synchronous queries| Database[("MySQL / MariaDB<br/>durable state")]
     Workers -->|asynchronous writes| Database
-    Loop -.-|optional dirty saves and recovery| Redis[("Redis")]
+    Loop -.-|optional immutable world recovery| Redis[("Redis")]
     Player <-->|game protocol| Network
 
     classDef focal fill:#f4ecd9,stroke:#9e3b25,color:#2e2418,stroke-width:2px;
@@ -51,10 +51,10 @@ flowchart LR
 ```
 
 The C-style sources under `src/` are compiled as C++20. Network I/O and game
-updates run in a single `select()`-driven pulse loop; three worker threads
-handle item, scalar, and large-payload persistence. MySQL or MariaDB stores
-durable game state, while Redis can optionally buffer dirty saves and retain
-crash-recovery snapshots. See the full [architecture guide](docs/ARCHITECTURE.md)
+updates run in a single `select()`-driven pulse loop. Background workers handle item,
+scalar, large-payload, revisioned player, and immutable world-recovery persistence.
+MySQL or MariaDB stores durable game state, while Redis can optionally retain validated
+world-recovery generations. See the full [architecture guide](docs/ARCHITECTURE.md)
 and [database guide](docs/DATABASE.md).
 
 ## Quick start
@@ -98,8 +98,9 @@ Git and must never be committed. See the
 [configuration reference](docs/CONFIGURATION.md) for precedence, Redis
 recovery, proxy handling, and diagnostic switches.
 
-Set `REDIS=TRUE` with `REDIS_HOST` and `REDIS_PORT` to enable dirty-save
-buffering. If a DurisWeb backend will authenticate through WebSocket or GMCP,
+Set `REDIS=TRUE` with `REDIS_HOST` and `REDIS_PORT` to enable caches and recovery
+integration; `REDIS_WORLD_STATE=TRUE` additionally enables immutable world recovery.
+Player saves do not depend on Redis. If a DurisWeb backend will authenticate through WebSocket or GMCP,
 give it a private `DURISWEB_SECRET`. The remaining switches in `.env.example`
 are documented inline and are intended primarily for local gameplay testing.
 
@@ -171,7 +172,8 @@ If the server stops during boot, inspect `logs/log/status` and
   server logs the effective database target during boot and aborts when the
   required schema is missing.
 - **Redis connection failed:** Redis is optional; set `REDIS=FALSE` or remove
-  the setting to run without dirty-save buffering. If Redis is required, check
+  the setting to run without Redis caches and world recovery. Player checkpoints remain
+  available through their local coordinator and journal. If Redis is required, check
   `REDIS_HOST`, `REDIS_PORT`, and that the service is reachable.
 - **Missing world files or tools:** run `make build-area-tools` followed by
   `make world`, then restart. Combined `areas/world.*` files are generated

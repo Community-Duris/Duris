@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 
-constexpr size_t PLAYER_SAVE_WORKER_MAX_PIDS = 128;
+constexpr size_t PLAYER_SAVE_WORKER_MAX_PIDS = 256;
 constexpr size_t PLAYER_SAVE_WORKER_MAX_RESULTS = 256;
 constexpr size_t PLAYER_SAVE_WORKER_MAX_BYTES = 32 * 1024 * 1024;
 constexpr uint64_t PLAYER_SAVE_WORKER_MAX_AGE_MSEC = 5 * 60 * 1000;

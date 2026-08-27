@@ -2,8 +2,8 @@
 
 DurisMUD is a single-process, event-driven MUD server derived from the DikuMUD
 lineage, compiled as C++20 (`g++ -std=c++20`) from C-style sources. It serves
-players over plain telnet, TLS telnet, and WebSocket; all persistent state lives
-in MySQL with Redis used for dirty-save buffering and crash-recovery snapshots.
+players over plain telnet, TLS telnet, and WebSocket; durable player state lives
+in MySQL, while Redis optionally holds immutable crash-recovery world generations.
 
 Related reading: [CODEBASE.md](CODEBASE.md) for the module map,
 [DATABASE.md](DATABASE.md) for persistence details, [RUNBOOK.md](RUNBOOK.md)
@@ -12,12 +12,18 @@ for operations. A visual overview lives in
 
 ## Process model
 
-One process (`bin/server/dms`, staged as `bin/server/dms_new`). There is no fork-per-connection;
-all I/O is multiplexed in a single `select()` loop. Concurrency exists only in:
+One process (`bin/server/dms`, staged as `bin/server/dms_new`). There is no
+fork-per-connection, player-save fork, or world-save fork; all socket I/O is
+multiplexed in a single `select()` loop. Concurrency includes:
 
 - Three asynchronous MySQL persistence worker threads (see [DATABASE.md](DATABASE.md)).
+- A private player-journal append dispatcher and keyed player-save workers.
+- One immutable world-recovery publisher worker when Redis recovery is enabled.
 - The main game loop blocking signals (including `SIGSEGV`, handled internally)
   around each iteration so workers cannot interrupt pulse processing.
+
+Legacy hostname lookup may still use a short-lived child. It is unrelated to
+persistence and never receives player or world snapshot work.
 
 `main()` (`src/comm.c:205`) parses flags, then `game_loop()` (`src/comm.c:704`)
 runs until shutdown. Exit codes are meaningful — `scripts/cycle_mud.sh`
@@ -147,8 +153,18 @@ back to synchronous execution rather than refusing to start. Required tables
 are verified at boot; missing schema aborts startup instead of silently losing
 saves.
 
-Redis complements MySQL: dirty-save buffering and periodic world-state
-snapshots used for crash recovery (`src/redis.c`, hiredis client).
+Player checkpoints are captured into immutable, revisioned DTOs on the game thread.
+A bounded append dispatcher durably frames them in the typed journal, then keyed
+workers apply them transactionally with per-PID ordering and exact revision ACKs.
+Ordinary mutation and checkpoint routes perform no MySQL, Redis, or filesystem I/O on
+the simulation thread. Terminal transitions require either the matching database ACK
+or a successful journal handoff before live state may be destroyed.
+
+Redis complements MySQL with floor-delta tracking and immutable world-recovery
+generations (`src/world_recovery_pipeline.c`, `src/redis.c`). World graph capture is
+incremental and bounded on the game thread; the publisher receives owned bytes only.
+It writes a sequence-keyed payload before atomically advancing the current pointer and
+metadata. Restore validates schema, completeness, checksum, sequence, and age.
 
 Details and schema management: [DATABASE.md](DATABASE.md).
 

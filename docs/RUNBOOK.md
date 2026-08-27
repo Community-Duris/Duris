@@ -99,10 +99,10 @@ cache output or mutate queue, Redis, deferred-save, or query state.
 
 The report includes up to eight deterministically ranked query source sites,
 total calls and failures, registry overflow, item/scalar/large queue counters,
-worker and heartbeat state, Redis active/inflight dirty counts and ages,
-deferred pending/scheduled/failed-unscheduled counts, and the oldest aggregate
-save age. Output is metadata-only and must not be copied into a workflow that
-expects SQL, player, account, item, IP, or path values.
+player capture/journal/worker depths and ages, exact revision progress, world capture
+and publication health, and the oldest aggregate save age. Output is metadata-only and
+must not be copied into a workflow that expects SQL, player, account, item, IP, or path
+values.
 
 Interpret explicit states as follows:
 
@@ -149,13 +149,19 @@ only; it does not mean MySQL committed and is not automatically replayed.
 
 Two automatic paths run at next boot after an unclean exit:
 
-1. **Redis world-state recovery** -- if a snapshot exists, world state
-   (including combat) is restored, then the snapshot is cleared.
+1. **Redis world-state recovery** -- the current immutable generation is accepted only
+   if schema, completeness, sequence, checksum, size, and age validate. Floor deltas are
+   reconciled with the matching generation, then recovery keys are cleared.
 2. **Copyover recovery** -- only with `-C` boot flag / copyover flow.
 
 If Redis recovery fails, the server continues with a normal boot state. Check
 `logs/log/status` for `Performing redis crash recovery...` lines after any
 crash, and verify player integrity before reopening.
+
+For queue or dependency incidents, use `world persistence` and the detailed `redis`
+status command. Do not clear a player save queue: player state is owned by the local
+revision coordinator and journal, not a Redis dirty set. A world generation publish
+failure preserves the prior current generation and retains floor deltas for retry.
 
 ### Known-benign log lines
 

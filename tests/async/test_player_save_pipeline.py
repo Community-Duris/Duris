@@ -75,7 +75,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-save-pipeline-") as temp_d
 print("[PASS] unchanged, dirty, queued, inflight, and exact ACK counts are deterministic")
 
 for contract in (
-    "PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS = 128",
+    "PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS = 256",
     "PLAYER_SAVE_PIPELINE_MAX_BYTES = 32 * 1024 * 1024",
     "PLAYER_SAVE_PIPELINE_PULSE_BUDGET = 32",
     "pending_append",

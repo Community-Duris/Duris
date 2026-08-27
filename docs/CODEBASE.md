@@ -41,7 +41,7 @@ Related: [ARCHITECTURE.md](ARCHITECTURE.md), [DATABASE.md](DATABASE.md).
 | `sql_persistence_raw.c` | Raw SQL execution for the large-payload worker. |
 | `sql_player.c` | Character row mapping (players table). |
 | `files.c` | Legacy binary playerfile I/O and pfile utilities. |
-| `redis.c`, `wizredis.c` | Dirty-save buffering and world-state snapshots for crash recovery (hiredis). |
+| `redis.c`, `wizredis.c` | Redis caches, floor deltas, and immutable world-recovery generations (hiredis). |
 | `persistence_queue.h`, `sql_pool.h` | Queue/pool APIs. |
 
 See [DATABASE.md](DATABASE.md) for behavior and migrations.

@@ -1,7 +1,7 @@
 # Session 08: Legacy Fork Removal and Recovery Gate
 
 **Session ID**: `phase01-session08-legacy-fork-removal-and-recovery-gate`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One final cutover boundary removing disabled persistence forks and
 proving the player and world pipelines together under bounded load, crash, dependency,
 and restart scenarios.
@@ -46,8 +46,8 @@ simulation-thread isolation criteria before Phase 02 builds on them.
 
 ## Prerequisites
 
-- [ ] Sessions 01 through 07 are completed and validated.
-- [ ] A backed-up representative development clone and non-production game ports are
+- [x] Sessions 01 through 07 are completed and validated.
+- [x] A backed-up representative development clone and non-production game ports are
       available for database and load/fault work.
 
 ---
@@ -66,18 +66,18 @@ simulation-thread isolation criteria before Phase 02 builds on them.
 
 ## Success Criteria
 
-- [ ] No player or world persistence route calls `fork()` or lets a worker traverse live
+- [x] No player or world persistence route calls `fork()` or lets a worker traverse live
       mutable game state.
-- [ ] An older player or world revision never replaces a newer acknowledged generation
+- [x] An older player or world revision never replaces a newer acknowledged generation
       across every ordering and duplicate-replay test.
-- [ ] Every defined crash point converges without lost accepted work, duplicate durable
+- [x] Every defined crash point converges without lost accepted work, duplicate durable
       application, premature dirty clearing, or premature character/floor destruction.
-- [ ] Normal player mutation and snapshot paths perform no database, Redis, or
+- [x] Normal player mutation and snapshot paths perform no database, Redis, or
       filesystem I/O on the simulation thread.
-- [ ] Queue and journal bytes/age remain within configured limits, overload is explicit,
+- [x] Queue and journal bytes/age remain within configured limits, overload is explicit,
       and dependency outages do not OOM or strand shutdown.
-- [ ] The 25-to-200-client Phase 01 workload stays within the PRD pulse/event budgets or
+- [x] The 25-to-200-client Phase 01 workload stays within the PRD pulse/event budgets or
       records a concrete failed gate without claiming readiness.
-- [ ] Operator documentation and diagnostics distinguish cache, player queue, journal,
+- [x] Operator documentation and diagnostics distinguish cache, player queue, journal,
       database worker, and world recovery health accurately.
-- [ ] Focused tests, formatting checks, `make -C src`, and the full repository gate pass.
+- [x] Focused tests, formatting checks, `make -C src`, and the full repository gate pass.

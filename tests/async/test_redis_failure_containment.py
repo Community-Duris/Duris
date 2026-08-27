@@ -20,7 +20,7 @@ assert "redisConnect(" not in text
 assert text.count("redisConnectWithTimeout(") == 1
 assert text.count("redisvCommand(") == 1
 connect = section("static redisContext *redis_connect_bounded", "static redisReply *redis_command")
-command = section("static redisReply *redis_command", "static bool redis_reply_status_ok")
+command = section("static redisReply *redis_command", "/* Scan-and-delete with MATCH pattern.")
 assert "REDIS_CONNECT_TIMEOUT_MSEC" in connect
 assert "REDIS_COMMAND_TIMEOUT_MSEC" in connect
 assert "redisSetTimeout" in connect
@@ -39,7 +39,7 @@ init = section("bool redis_init(void)", "bool redis_clear_pwipe_state")
 assert init.index("redis_enabled = true;") < init.index("redis_connect_bounded")
 connect_failure = init[init.index("if (!redis_ctx)"):init.index("// check for world state")]
 assert "redis_enabled = false;" not in connect_failure
-assert "redis_clear_dirty_players();" in init
+assert "mud:dirty_players" not in init
 snapshot = section(
     "struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy",
     "void event_flush_dirty_players",
@@ -68,11 +68,11 @@ assert "fork(" not in world
 assert "world_recovery_pipeline_request" in world
 assert "world_recovery_pipeline_busy" in world
 cleanup = section("void redis_cleanup(void)", "bool redis_ping(void)")
-assert cleanup.count("redis_terminate_child(") == 1
+assert "redis_terminate_child" not in cleanup
 assert "world_recovery_pipeline_shutdown" in cleanup
 assert "waitpid(-1, &status, WNOHANG)" in signals
 assert "bool take_reaped_child_status(pid_t pid, int *status)" in signals
-print("[PASS] player and world save forks are retired from active paths; legacy child cleanup remains bounded")
+print("[PASS] player and world persistence child paths are fully retired")
 
 publisher = section(
     "static bool redis_publish_world_generation", "static bool redis_world_recovery_ensure_initialized"
