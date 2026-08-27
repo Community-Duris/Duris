@@ -413,7 +413,7 @@ bool Guildhall::valid()
 
 	if (this->rooms.size() > this->max_rooms)
 	{
-		logit(LOG_GUILDHALLS, "Guildhall::init(%d): too many rooms! (%zu, max %zu)",
+		logit(LOG_GUILDHALLS, "Guildhall::init(%d): too many rooms! (%zu, max %d)",
 		      this->id, this->rooms.size(), this->max_rooms);
 		return FALSE;
 	}
