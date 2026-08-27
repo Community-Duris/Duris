@@ -23,7 +23,7 @@
    *
    * so only FOUR one-line hooks are added to existing files, for the
    * four things the engine genuinely never dispatches: boot, speech, give
-   * and on-kill.  See docs/src/howto_trg.txt for the builder-facing walkthrough.
+   * and on-kill.  See docs/legacy/src/howto_trg.txt for the builder-facing walkthrough.
    *
    * FILE FORMAT (areas/world.trg, framing mirrors world.qst)
    * --------------------------------------------------------

@@ -14,7 +14,7 @@ comm_h = (root / "src/comm.h").read_text()
 websocket = (root / "src/websocket.c").read_text()
 ssl = (root / "src/ssl.c").read_text()
 example = (root / ".env.example").read_text()
-config = (root / "docs/CONFIGURATION.md").read_text()
+config = (root / "docs/operations/CONFIGURATION.md").read_text()
 readme = (root / "README.md").read_text()
 cycle = (root / "scripts/cycle_mud.sh").read_text()
 

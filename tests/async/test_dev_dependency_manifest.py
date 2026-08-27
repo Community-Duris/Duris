@@ -55,6 +55,6 @@ assert "./bin/packages/duris-build-deps_1.0_all.deb" in workflow
 assert "sudo apt install equivs dos2unix" not in workflow
 
 assert "dos2unix" in (ROOT / "areas/make_lookup").read_text()
-assert "python3" in (ROOT / "docs/TESTING.md").read_text()
+assert "python3" in (ROOT / "docs/guides/TESTING.md").read_text()
 
 print("developer dependency manifest contracts OK")

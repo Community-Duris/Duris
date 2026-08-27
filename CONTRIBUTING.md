@@ -33,5 +33,5 @@ Never run migration, wipe, load, or fault tooling against production.
 - Do not add co-author, attribution, session, or signed-off-by trailers.
 - Address review and CI findings without weakening existing safety or test contracts.
 
-See [Development](docs/development.md), [Testing](docs/TESTING.md), and the
-[Operations Runbook](docs/RUNBOOK.md) for the verified commands and safety boundaries.
+See [Building](docs/guides/BUILDING.md), [Testing](docs/guides/TESTING.md), and the
+[Operations Runbook](docs/operations/RUNBOOK.md) for the verified commands and safety boundaries.

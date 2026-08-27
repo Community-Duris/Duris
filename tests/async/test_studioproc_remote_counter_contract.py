@@ -7,7 +7,7 @@ from contract_text import contains, index
 ROOT = Path(__file__).resolve().parents[2]
 source = (ROOT / "src/studioproc.c").read_text()
 header = (ROOT / "src/studioproc.h").read_text()
-guide = (ROOT / "docs/src/howto_trg.txt").read_text()
+guide = (ROOT / "docs/legacy/src/howto_trg.txt").read_text()
 
 assert contains(header, "#define SP_A_RSET 22")
 assert contains(header, "#define SP_A_RADD 23")

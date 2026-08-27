@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 security = (ROOT / "SECURITY.md").read_text()
-baseline = (ROOT / "docs/SECURITY_BASELINE.md").read_text()
+baseline = (ROOT / "docs/operations/SECURITY_BASELINE.md").read_text()
 dependabot = (ROOT / ".github/dependabot.yml").read_text()
 build_workflow = (ROOT / ".github/workflows/build.yml").read_text()
 security_workflow = (ROOT / ".github/workflows/security.yml").read_text()

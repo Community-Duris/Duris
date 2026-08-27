@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / ".clang-format"
 SCRIPT = ROOT / "scripts/format.sh"
-DOC = ROOT / "docs/formatting.md"
+DOC = ROOT / "docs/guides/formatting.md"
 
 # --------------------------------------------------------------------------
 # 1. The config must be loadable by the installed clang-format.  This is the
@@ -301,11 +301,11 @@ if clang_format:
 # --------------------------------------------------------------------------
 # 4. Documentation and dependency declarations.
 # --------------------------------------------------------------------------
-assert DOC.is_file(), "docs/formatting.md is missing"
+assert DOC.is_file(), "docs/guides/formatting.md is missing"
 doc = DOC.read_text()
-assert "scripts/format.sh" in doc, "docs/formatting.md does not document the runner"
-assert "install-hooks.sh" in doc, "docs/formatting.md does not document the hook"
-assert "clang-format off" in doc, "docs/formatting.md does not explain the fences"
+assert "scripts/format.sh" in doc, "docs/guides/formatting.md does not document the runner"
+assert "install-hooks.sh" in doc, "docs/guides/formatting.md does not document the hook"
+assert "clang-format off" in doc, "docs/guides/formatting.md does not explain the fences"
 assert "tabs" in doc and "Allman" in doc
 
 agents = (ROOT / "AGENTS.md").read_text()
@@ -316,7 +316,7 @@ readme = (ROOT / "README.md").read_text()
 assert "2 spaces" not in readme, (
     "README.md still claims 2-space indentation, contradicting .clang-format"
 )
-assert "clang-format" in readme and "docs/formatting.md" in readme
+assert "clang-format" in readme and "docs/guides/formatting.md" in readme
 
 equivs = (ROOT / "packaging/duris-build-deps.equivs").read_text()
 depends = equivs.split("Depends:", 1)[1].split("Suggests:", 1)[0]

@@ -51,5 +51,5 @@ will coordinate advisory publication and credit reporters who request it. Securi
 advisories may omit exploit details until supported users have had time to update.
 
 Repository scans and the dependency baseline are engineering controls, not assurance
-that no vulnerability exists. See [the security baseline](docs/SECURITY_BASELINE.md)
+that no vulnerability exists. See [the security baseline](docs/operations/SECURITY_BASELINE.md)
 for scope, ownership, and current limitations.

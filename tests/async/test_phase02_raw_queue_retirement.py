@@ -102,7 +102,7 @@ class Phase02RawQueueRetirementTests(unittest.TestCase):
             ("migrations/bootstrap_multithread_safe.sql", "session_audit_outcome"),
             ("migrations/run_migration.sh", "verify_session_audit_schema.sh"),
             ("migrations/reconcile_phase02_domains.sh", "reconcile_item_ownership.sh"),
-            ("docs/PHASE02_DOMAIN_GATE.md", "Never execute a legacy fallback record"),
+            ("docs/gates/PHASE02_DOMAIN_GATE.md", "Never execute a legacy fallback record"),
         ):
             self.assertIn(token, (ROOT / path).read_text())
 

@@ -57,7 +57,7 @@ This review used:
 - read-only inspection of the configured **local development database**;
 - read-only `EXPLAIN` plans for representative hot queries;
 - the event-loop hotspot measurements from August 2026, whose durable outcome is
-  recorded in [ARCHITECTURE.md](../../ARCHITECTURE.md#event-wheel).
+  recorded in [ARCHITECTURE.md](../../reference/ARCHITECTURE.md#event-wheel).
 
 No migration, write test, production query, destructive operation, or 200-client load
 test was run. The local database contains only 4 players and 108 player items, so its
@@ -89,7 +89,7 @@ condition that was not reproduced here.
 | Redis world recovery | Forked child, every 10 seconds by default | NPCs, floor objects, doors, and zone timers serialized as one JSON value | Parent counts the world and manipulates floor-drop keys; child has no timeout or reliable completion check |
 | Flat fallback log/pfile | Synchronous local file writes | Event SQL lines or a binary character snapshot | Event fallback calls `fsync`; character fallback is not automatically reconciled |
 
-The description in [docs/DATABASE.md](../DATABASE.md) is materially out of date. Full
+The description in [docs/reference/DATABASE.md](../../reference/DATABASE.md) is materially out of date. Full
 player/object/ship persistence does not all flow through the three workers, and the
 large queue is not the normal `pkill_info` path. The code contains about 500
 direct `qry()`/`db_query()` call sites; the largest concentrations are `sql.c`,
@@ -114,20 +114,20 @@ helper its caller happens to use:
 
 Evidence for these cadences and routes:
 
-- [`nanny.c:2273`](../../src/nanny.c#L2273) and
-  [`actoth.c:1710`](../../src/actoth.c#L1710) for the five-minute autosave;
-- [`actoth.c:2086`](../../src/actoth.c#L2086) and
-  [`limits.c:708`](../../src/limits.c#L708) for two-pulse manual/level checkpoints;
-- [`new_events.c:1568`](../../src/new_events.c#L1568),
-  [`redis.c:59`](../../src/redis.c#L59), and
-  [`redis.c:921`](../../src/redis.c#L921) for dirty-save startup and cadence;
-- [`comm.c:2157`](../../src/comm.c#L2157),
-  [`copyover.c:472`](../../src/copyover.c#L472), and
-  [`comm.c:1618`](../../src/comm.c#L1618) for terminal saves; and
+- [`nanny.c:2273`](../../../src/nanny.c#L2273) and
+  [`actoth.c:1710`](../../../src/actoth.c#L1710) for the five-minute autosave;
+- [`actoth.c:2086`](../../../src/actoth.c#L2086) and
+  [`limits.c:708`](../../../src/limits.c#L708) for two-pulse manual/level checkpoints;
+- [`new_events.c:1568`](../../../src/new_events.c#L1568),
+  [`redis.c:59`](../../../src/redis.c#L59), and
+  [`redis.c:921`](../../../src/redis.c#L921) for dirty-save startup and cadence;
+- [`comm.c:2157`](../../../src/comm.c#L2157),
+  [`copyover.c:472`](../../../src/copyover.c#L472), and
+  [`comm.c:1618`](../../../src/comm.c#L1618) for terminal saves; and
 - representative immediate action saves at
-  [`tradeskill.c:1319`](../../src/tradeskill.c#L1319),
-  [`account_reward.c:733`](../../src/account_reward.c#L733), and
-  [`epic.c:2259`](../../src/epic.c#L2259).
+  [`tradeskill.c:1319`](../../../src/tradeskill.c#L1319),
+  [`account_reward.c:733`](../../../src/account_reward.c#L733), and
+  [`epic.c:2259`](../../../src/epic.c#L2259).
 
 This mixed trigger model is itself a correctness and capacity problem. Two mutations
 of the same player can enter different paths, reach SQL in a different order, and save
@@ -145,14 +145,14 @@ All inspected epic sources converge on `gain_epic(ch, type, type_id, amount)`:
 | PvP combat | Ground PvP reaches `epic_frag()` and can add a 500-point task bonus before `gain_epic()`; ship PvP awards the captain based on frags. |
 | Quests, boons, achievement, and consumable | World quests scale the award by quest level; boons carry a configured amount; the Strahd achievement awards 1,000; an epic bottle awards 75. |
 
-Evidence: [`epic.c:335`](../../src/epic.c#L335),
-[`epic.c:558`](../../src/epic.c#L558),
-[`fight.c:2395`](../../src/fight.c#L2395),
-[`fight.c:3013`](../../src/fight.c#L3013),
-[`random.zone.c:1212`](../../src/random.zone.c#L1212),
-[`world_quest.c:137`](../../src/world_quest.c#L137),
-[`nexus_stones.c:633`](../../src/nexus_stones.c#L633), and
-[`ships/ship_combat.c:285`](../../src/ships/ship_combat.c#L285).
+Evidence: [`epic.c:335`](../../../src/epic.c#L335),
+[`epic.c:558`](../../../src/epic.c#L558),
+[`fight.c:2395`](../../../src/fight.c#L2395),
+[`fight.c:3013`](../../../src/fight.c#L3013),
+[`random.zone.c:1212`](../../../src/random.zone.c#L1212),
+[`world_quest.c:137`](../../../src/world_quest.c#L137),
+[`nexus_stones.c:633`](../../../src/nexus_stones.c#L633), and
+[`ships/ship_combat.c:285`](../../../src/ships/ship_combat.c#L285).
 
 For each non-bottle award, the current order is:
 
@@ -182,9 +182,9 @@ detailed in DB-012.
 Duris runs four pulses per second (`OPT_USEC=250000`, `WAIT_SEC=4`). The new-event
 scheduler normally allows 25 ms of callback work per pulse. A blocking callback can
 still overrun that budget because the budget is checked between callbacks. These
-constants are defined at [`config.h:82`](../../src/config.h#L82),
-[`config.h:105`](../../src/config.h#L105), and
-[`new_events.c:41`](../../src/new_events.c#L41).
+constants are defined at [`config.h:82`](../../../src/config.h#L82),
+[`config.h:105`](../../../src/config.h#L105), and
+[`new_events.c:41`](../../../src/new_events.c#L41).
 
 ### Scale-driving hot work
 
@@ -244,10 +244,10 @@ in one `activities` slice. At 120-second multiples, epic-zone work joins them. T
 callbacks are not isolated by the new-event 25 ms budget and can therefore create
 predictable whole-game latency spikes. Stagger them with deterministic jitter, put SQL
 work behind bounded jobs, and cap each maintenance pass by rows/time with a continuation
-cursor. Evidence: [`comm.c:1354`](../../src/comm.c#L1354),
-[`new_events.c:1547`](../../src/new_events.c#L1547),
-[`statistics.c:35`](../../src/statistics.c#L35), and
-[`redis.c:1468`](../../src/redis.c#L1468).
+cursor. Evidence: [`comm.c:1354`](../../../src/comm.c#L1354),
+[`new_events.c:1547`](../../../src/new_events.c#L1547),
+[`statistics.c:35`](../../../src/statistics.c#L35), and
+[`redis.c:1468`](../../../src/redis.c#L1468).
 
 ## P0 findings
 
@@ -264,14 +264,14 @@ matches, it runs a rolling aggregate over `epic_gain`.
 
 Evidence:
 
-- [`events.c:441`](../../src/events.c#L441)
-- [`limits.c:269`](../../src/limits.c#L269)
-- [`epic_bonus.c:132`](../../src/epic_bonus.c#L132)
-- [`epic_bonus.c:167`](../../src/epic_bonus.c#L167)
+- [`events.c:441`](../../../src/events.c#L441)
+- [`limits.c:269`](../../../src/limits.c#L269)
+- [`epic_bonus.c:132`](../../../src/epic_bonus.c#L132)
+- [`epic_bonus.c:167`](../../../src/epic_bonus.c#L167)
 
 Movement regeneration and XP calculation repeat the same DB-backed lookup at
-[`limits.c:443`](../../src/limits.c#L443) and
-[`limits.c:1134`](../../src/limits.c#L1134).
+[`limits.c:443`](../../../src/limits.c#L443) and
+[`limits.c:1134`](../../../src/limits.c#L1134).
 
 **Recommendation:** Hydrate an `EpicBonusState` into `pc_only_data` during login:
 selected type, selection timestamp, qualifying rolling gain, computed modifier, and
@@ -297,9 +297,9 @@ per-player lock shared with the child, or other ordering check in SQL. Therefore
 3. the child reaches that PID later and commits A;
 4. A becomes durable even though it is older.
 
-Evidence: [`redis.c:921`](../../src/redis.c#L921),
-[`redis.c:1020`](../../src/redis.c#L1020), and
-[`sql_player.c:951`](../../src/sql_player.c#L951).
+Evidence: [`redis.c:921`](../../../src/redis.c#L921),
+[`redis.c:1020`](../../../src/redis.c#L1020), and
+[`sql_player.c:951`](../../../src/sql_player.c#L951).
 
 Additional problems in this path:
 
@@ -307,7 +307,7 @@ Additional problems in this path:
   logging, MySQL, and game code after `fork()` in a multithreaded process; inherited
   library or allocator locks can deadlock;
 - the child connection has no connect/read/write timeout
-  ([`sql_player.c:798`](../../src/sql_player.c#L798));
+  ([`sql_player.c:798`](../../../src/sql_player.c#L798));
 - while a child is hung, every later flush is skipped and there is no child deadline or
   kill/recovery policy;
 - the parent clears container dirty flags immediately, before child success; if the
@@ -327,8 +327,8 @@ child's exit status. The serializer also ignores errors when writing the timesta
 `valid=1` marker and treats non-null Redis error replies for the main snapshot as
 success, while the parent clears the floor-drop set immediately after forking regardless
 of child success. A failed snapshot can therefore silently degrade the next crash
-recovery. Evidence: [`redis.c:1468`](../../src/redis.c#L1468) and
-[`redis.c:2150`](../../src/redis.c#L2150).
+recovery. Evidence: [`redis.c:1468`](../../../src/redis.c#L1468) and
+[`redis.c:2150`](../../../src/redis.c#L2150).
 
 **Recommendation:** Remove both fork paths. Use a long-lived worker (or sidecar process
 started independently) that accepts immutable snapshots. Assign every player mutation a
@@ -356,11 +356,11 @@ which is also a potential null-context crash.
 
 Evidence:
 
-- [`sql.c:470`](../../src/sql.c#L470)
-- [`sql.c:1819`](../../src/sql.c#L1819)
-- [`redis.c:133`](../../src/redis.c#L133)
-- [`redis.c:174`](../../src/redis.c#L174)
-- [`redis.c:854`](../../src/redis.c#L854)
+- [`sql.c:470`](../../../src/sql.c#L470)
+- [`sql.c:1819`](../../../src/sql.c#L1819)
+- [`redis.c:133`](../../../src/redis.c#L133)
+- [`redis.c:174`](../../../src/redis.c#L174)
+- [`redis.c:854`](../../../src/redis.c#L854)
 
 On Redis reconnect or `SADD` failure, `mark_player_dirty()` performs a full SQL player
 save synchronously in the caller. At scale, a cache/coordinator outage therefore turns
@@ -388,9 +388,9 @@ callback.
 save failed. Disconnect and shutdown paths often flush a pending save and then perform
 another full save, creating duplicate work in the successful case.
 
-Evidence: [`actoth.c:1766`](../../src/actoth.c#L1766),
-[`actoth.c:1814`](../../src/actoth.c#L1814), and
-[`actoth.c:1877`](../../src/actoth.c#L1877).
+Evidence: [`actoth.c:1766`](../../../src/actoth.c#L1766),
+[`actoth.c:1814`](../../../src/actoth.c#L1814), and
+[`actoth.c:1877`](../../../src/actoth.c#L1877).
 
 **Recommendation:** Implement an explicit state machine with `dirty_revision`,
 `queued_revision`, `inflight_revision`, retry count, next retry time, and last error.
@@ -417,11 +417,11 @@ ignore the false return and extract the character. Thus a transient SQL failure 
 leave the only new snapshot in the non-reconciled pfile while destroying the in-process
 objects that could otherwise have been retried.
 
-Evidence: [`files.c:1315`](../../src/files.c#L1315),
-[`files.c:1667`](../../src/files.c#L1667),
-[`files.c:1684`](../../src/files.c#L1684),
-[`files.c:2691`](../../src/files.c#L2691), and
-[`affects.c:3571`](../../src/affects.c#L3571).
+Evidence: [`files.c:1315`](../../../src/files.c#L1315),
+[`files.c:1667`](../../../src/files.c#L1667),
+[`files.c:1684`](../../../src/files.c#L1684),
+[`files.c:2691`](../../../src/files.c#L2691), and
+[`affects.c:3571`](../../../src/affects.c#L3571).
 
 **Recommendation:** Choose one honest policy:
 
@@ -455,11 +455,11 @@ succeeds.
 
 Evidence:
 
-- [`actoth.c:2148`](../../src/actoth.c#L2148)
-- [`sql_player.c:10698`](../../src/sql_player.c#L10698)
-- [`sql_player.c:10722`](../../src/sql_player.c#L10722)
-- [`sql_player.c:10780`](../../src/sql_player.c#L10780)
-- [`utility.c:2959`](../../src/utility.c#L2959)
+- [`actoth.c:2148`](../../../src/actoth.c#L2148)
+- [`sql_player.c:10698`](../../../src/sql_player.c#L10698)
+- [`sql_player.c:10722`](../../../src/sql_player.c#L10722)
+- [`sql_player.c:10780`](../../../src/sql_player.c#L10780)
+- [`utility.c:2959`](../../../src/utility.c#L2959)
 
 **Recommendation:** Treat account bank as a DB-authoritative ledger, never as an
 absolute cached field saved from a character. Use one idempotent transaction to apply
@@ -483,9 +483,9 @@ The queued bottle helper accepts an `event_key` but ignores it and inserts a raw
 without a unique idempotency key. Fallback replay or an ambiguous connection failure
 can duplicate that award in the ledger and in the rolling bonus calculation.
 
-Evidence: [`epic.c:353`](../../src/epic.c#L353),
-[`epic.c:414`](../../src/epic.c#L414), and
-[`sql.c:2089`](../../src/sql.c#L2089).
+Evidence: [`epic.c:353`](../../../src/epic.c#L353),
+[`epic.c:414`](../../../src/epic.c#L414), and
+[`sql.c:2089`](../../../src/sql.c#L2089).
 
 **Recommendation:** Give every award/spend a unique event ID. In one transaction,
 insert the immutable epic ledger event with `INSERT ... ON DUPLICATE KEY`, update the
@@ -506,10 +506,10 @@ entries; their “batch delete then insert” comments are not implemented. A va
 to zero or a command removed from the array leaves the old DB row behind, and the login
 loader restores it.
 
-Evidence: [`sql_player.c:1420`](../../src/sql_player.c#L1420) through
-[`sql_player.c:1523`](../../src/sql_player.c#L1523), and the corresponding loaders at
-[`sql_player.c:4070`](../../src/sql_player.c#L4070) through
-[`sql_player.c:4116`](../../src/sql_player.c#L4116).
+Evidence: [`sql_player.c:1420`](../../../src/sql_player.c#L1420) through
+[`sql_player.c:1523`](../../../src/sql_player.c#L1523), and the corresponding loaders at
+[`sql_player.c:4070`](../../../src/sql_player.c#L4070) through
+[`sql_player.c:4116`](../../../src/sql_player.c#L4116).
 
 **Recommendation:** Delete all replacement-style subtables in the same player-save
 transaction before inserting current rows, or issue precise deletes for cleared dirty
@@ -537,10 +537,10 @@ Inventory dirty flags help only some cases. Ordinary transfers frequently mark w
 inventory/equipment sets dirty. The clean-inventory path still saves every other player
 component.
 
-Evidence: [`files.c:1560`](../../src/files.c#L1560),
-[`sql_player.c:951`](../../src/sql_player.c#L951),
-[`sql_player.c:2798`](../../src/sql_player.c#L2798), and
-[`trophy.c:377`](../../src/trophy.c#L377).
+Evidence: [`files.c:1560`](../../../src/files.c#L1560),
+[`sql_player.c:951`](../../../src/sql_player.c#L951),
+[`sql_player.c:2798`](../../../src/sql_player.c#L2798), and
+[`trophy.c:377`](../../../src/trophy.c#L377).
 
 **Recommendation:** Track dirty component groups and snapshot only changed groups.
 Use set-based multi-row upserts/deletes, and make trophy changes write-through or dirty-
@@ -566,11 +566,11 @@ transient DB failure.
 
 Evidence:
 
-- [`sql_player.c:3813`](../../src/sql_player.c#L3813)
-- [`sql_player.c:4241`](../../src/sql_player.c#L4241)
-- [`sql.c:3891`](../../src/sql.c#L3891)
-- [`sql_player.c:3257`](../../src/sql_player.c#L3257)
-- [`sql_player.c:4649`](../../src/sql_player.c#L4649)
+- [`sql_player.c:3813`](../../../src/sql_player.c#L3813)
+- [`sql_player.c:4241`](../../../src/sql_player.c#L4241)
+- [`sql.c:3891`](../../../src/sql.c#L3891)
+- [`sql_player.c:3257`](../../../src/sql_player.c#L3257)
+- [`sql_player.c:4649`](../../../src/sql_player.c#L4649)
 
 **Recommendation:** Load a player in one consistent read transaction and fail the login
 closed if required components fail. Batch current ownership for all item UIDs in one
@@ -590,9 +590,9 @@ The owner validator also deliberately keeps an item when its query fails or no e
 found. That favors availability, but during an outage or queue lag it cannot prevent a
 duplicate/stale snapshot from loading.
 
-Evidence: [`actoth.c:1710`](../../src/actoth.c#L1710),
-[`utility.c:1009`](../../src/utility.c#L1009), and
-[`sql.c:3902`](../../src/sql.c#L3902).
+Evidence: [`actoth.c:1710`](../../../src/actoth.c#L1710),
+[`utility.c:1009`](../../../src/utility.c#L1009), and
+[`sql.c:3902`](../../../src/sql.c#L3902).
 
 **Recommendation:** Put ownership transfer and both owners' inventory revisions in one
 idempotent transaction. If audit is an outbox side effect, commit it in that transaction
@@ -617,11 +617,11 @@ Confirmed examples include:
 - a qualifying guild award calls `Guild::save()` synchronously for each recipient, and
   threshold-earned construction points are added only after that save.
 
-Evidence: [`fight.c:769`](../../src/fight.c#L769),
-[`sql.c:1258`](../../src/sql.c#L1258),
-[`fight.c:839`](../../src/fight.c#L839), and
-[`artifact.c:1432`](../../src/artifact.c#L1432), plus the guild sequence at
-[`assocs.c:121`](../../src/assocs.c#L121).
+Evidence: [`fight.c:769`](../../../src/fight.c#L769),
+[`sql.c:1258`](../../../src/sql.c#L1258),
+[`fight.c:839`](../../../src/fight.c#L839), and
+[`artifact.c:1432`](../../../src/artifact.c#L1432), plus the guild sequence at
+[`assocs.c:121`](../../../src/assocs.c#L121).
 
 `sql_get_bind_data()` also returns on query failure without initializing its output
 arguments, so artifact decisions can use indeterminate values during an outage.
@@ -646,8 +646,8 @@ Workers execute one SQL string at a time. There is no batching, rate adaptation,
 oldest-event-age SLO, retry classification, or circuit breaker. A large capacity makes
 an outage less visible while recovery time and memory grow.
 
-Evidence: [`persistence_queue.h:4`](../../src/persistence_queue.h#L4) and
-[`persistence_queue.c:133`](../../src/persistence_queue.c#L133).
+Evidence: [`persistence_queue.h:4`](../../../src/persistence_queue.h#L4) and
+[`persistence_queue.c:133`](../../../src/persistence_queue.c#L133).
 
 **Recommendation:** Use bounded typed queues with byte limits, high/low watermarks, age
 metrics, and explicit overload policy. Preallocate compact ring storage outside the hot
@@ -667,11 +667,11 @@ repeatedly failing connection can still cause long queue age. If connection repl
 fails, that pool slot is set to null and never healed, permanently shrinking the pool.
 `sql_pool_shutdown()` waits indefinitely for borrowers and currently has no call site.
 
-Evidence: [`persistence_queue.c:604`](../../src/persistence_queue.c#L604),
-[`persistence_queue.c:1497`](../../src/persistence_queue.c#L1497),
-[`utility.c:1294`](../../src/utility.c#L1294),
-[`sql_pool.c:292`](../../src/sql_pool.c#L292), and
-[`sql_pool.c:130`](../../src/sql_pool.c#L130).
+Evidence: [`persistence_queue.c:604`](../../../src/persistence_queue.c#L604),
+[`persistence_queue.c:1497`](../../../src/persistence_queue.c#L1497),
+[`utility.c:1294`](../../../src/utility.c#L1294),
+[`sql_pool.c:292`](../../../src/sql_pool.c#L292), and
+[`sql_pool.c:130`](../../../src/sql_pool.c#L130).
 
 **Recommendation:** Enforce deadlines at the operation layer, expose worker state as
 `idle/acquiring/executing/retrying`, and alert on both execution age and oldest queue
@@ -690,8 +690,8 @@ link, or rename fails after SQL succeeds, the original remains and is replayed a
 next boot. Item events use a dedupe key, but arbitrary scalar/large raw SQL—such as
 bottle epic inserts and login log rows—does not consistently have one.
 
-Evidence: [`utility.c:888`](../../src/utility.c#L888) and
-[`utility.c:1416`](../../src/utility.c#L1416).
+Evidence: [`utility.c:888`](../../../src/utility.c#L888) and
+[`utility.c:1416`](../../../src/utility.c#L1416).
 
 **Recommendation:** Persist typed journal records with a mandatory unique event ID and
 schema version. The destination table or an inbox table must atomically record that ID.
@@ -779,10 +779,10 @@ There are also ungated development traces in the normal persistence path. Both
 `do_save_silent()` emits begin/result records, and every item save emits a
 `[real-persistence-test]` debug record containing PIDs and pointer values. At 200-player
 cadence this adds synchronous filesystem work, unbounded log growth, and unnecessary
-identity/address disclosure. Evidence: [`sql_player.c:45`](../../src/sql_player.c#L45),
-[`account.c:41`](../../src/account.c#L41),
-[`actoth.c:1959`](../../src/actoth.c#L1959), and
-[`sql_player.c:2828`](../../src/sql_player.c#L2828).
+identity/address disclosure. Evidence: [`sql_player.c:45`](../../../src/sql_player.c#L45),
+[`account.c:41`](../../../src/account.c#L41),
+[`actoth.c:1959`](../../../src/actoth.c#L1959), and
+[`sql_player.c:2828`](../../../src/sql_player.c#L2828).
 
 **Recommendation:** Introduce prepared statements/typed repositories for hot and
 sensitive domains. Log query site, error code, duration, and a generated operation ID,
@@ -805,7 +805,7 @@ transport security.
 
 The local `.env` itself is mode 0600 and ignored by Git, which is good.
 
-Evidence: [`sql.h:7`](../../src/sql.h#L7) and [`sql.c:410`](../../src/sql.c#L410).
+Evidence: [`sql.h:7`](../../../src/sql.h#L7) and [`sql.c:410`](../../../src/sql.c#L410).
 
 **Recommendation:** Fail closed when required DB settings are absent, require an
 explicit environment role and allow-listed database name, and refuse production-like
@@ -819,7 +819,7 @@ Boot deletes and individually reinserts every race and class before the general 
 probe. The replacement is not one transaction, errors are ignored, and readers can see
 empty/partial lookup tables if another service uses the DB during boot.
 
-Evidence: [`sql.c:323`](../../src/sql.c#L323) and [`sql.c:570`](../../src/sql.c#L570).
+Evidence: [`sql.c:323`](../../../src/sql.c#L323) and [`sql.c:570`](../../../src/sql.c#L570).
 
 **Recommendation:** Validate first, then upsert changed rows in one transaction. Better,
 version the static lookup dataset and update only when the compiled version changes.
@@ -835,8 +835,8 @@ the player/epic/frag/locker schema, collation, SQL mode, or migration version.
 The runner is fail-closed, which is good, but its many DDL/data operations cannot be one
 transaction and a failure can leave a partially migrated schema.
 
-Evidence: [`migrations/run_migration.sh`](../../migrations/run_migration.sh) and
-[`sql.c:570`](../../src/sql.c#L570).
+Evidence: [`migrations/run_migration.sh`](../../../migrations/run_migration.sh) and
+[`sql.c:570`](../../../src/sql.c#L570).
 
 **Recommendation:** Give every migration a unique immutable ID and checksum, record it
 only after success, and expose expected/current schema versions. Run a read-only
@@ -897,7 +897,7 @@ Required properties:
 
 The current locker worker is a useful partial model because it snapshots on the main
 thread, gives the worker sealed data, coalesces generations, and handles completion on a
-later pulse ([`locker_async.c:1`](../../src/locker_async.c#L1)). General player
+later pulse ([`locker_async.c:1`](../../../src/locker_async.c#L1)). General player
 persistence still needs durable queuing, DB-side revision guards, per-component dirty
 masks, and no synchronous fallback.
 
@@ -976,7 +976,7 @@ masks, and no synchronous fallback.
 3. Measure production-clone plans, then add the validated composite indexes.
 4. Define season/time retention and archival per append-only table.
 5. Establish complete migration ledger/checksum and boot compatibility contract.
-6. Correct `docs/DATABASE.md`, `docs/ARCHITECTURE.md`, and README configuration guidance.
+6. Correct `docs/reference/DATABASE.md`, `docs/reference/ARCHITECTURE.md`, and README configuration guidance.
 
 ## 200-player validation plan
 

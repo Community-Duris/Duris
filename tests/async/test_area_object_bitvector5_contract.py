@@ -6,7 +6,7 @@ from contract_text import contains, index
 
 ROOT = Path(__file__).resolve().parents[2]
 db = (ROOT / "src/db.c").read_text()
-docs = (ROOT / "docs/AREA_OBJECT_FORMAT.md").read_text()
+docs = (ROOT / "docs/content/AREA_OBJECT_FORMAT.md").read_text()
 
 loader_start = index(db, "P_obj read_object(int nr, int type)")
 numeric_start = index(db, "/* *** numeric data *** */", loader_start)

@@ -1,5 +1,0 @@
-
-   Mob quests are now somewhat more sophisticated than they once were.
-   In addition to messages being echoable to all, you can use the magical
-   keywords $n and $N, which will be replaced with the name of the quest
-   mob and the player talking to the mob, respectively.

@@ -10,23 +10,49 @@ from urllib.parse import unquote
 
 
 ROOT = Path(__file__).resolve().parents[2]
-GUIDES = (
+
+# Documents that later assertions address by name, or that the repository is
+# expected to publish at a fixed location. Only these are required to exist.
+# Everything else is discovered, so documentation can be reorganized, merged, or
+# renamed without editing this list.
+ANCHORS = (
     ROOT / "README.md",
     ROOT / "CONTRIBUTING.md",
     ROOT / "docs/README_docs.md",
-    ROOT / "docs/onboarding.md",
-    ROOT / "docs/development.md",
-    ROOT / "docs/environments.md",
-    ROOT / "docs/deployment.md",
-    ROOT / "docs/ARCHITECTURE.md",
-    ROOT / "docs/DATABASE.md",
-    ROOT / "docs/CONFIGURATION.md",
-    ROOT / "docs/RUNBOOK.md",
-    ROOT / "docs/TESTING.md",
+    ROOT / "docs/reference/ARCHITECTURE.md",
+    ROOT / "docs/reference/DATABASE.md",
+    ROOT / "docs/operations/CONFIGURATION.md",
+    ROOT / "docs/operations/RUNBOOK.md",
+    ROOT / "docs/guides/TESTING.md",
     ROOT / "docs/adr/0000-template.md",
-    ROOT / "docs/api/health.md",
-    ROOT / "docs/runbooks/incident-response.md",
+    ROOT / "docs/reference/api/health.md",
+    ROOT / "docs/operations/incident-response.md",
 )
+
+# Trees excluded from the maintained corpus. `ongoing-projects` is in-flight
+# working notes rather than contract documentation; `legacy` is inherited
+# upstream reference text this repository does not maintain; `lib` is game data
+# the server reads at runtime (see src/wikihelp.c and src/nanny.c) and is not
+# documentation at all.
+UNMAINTAINED = (
+    "ongoing-projects",
+    "legacy",
+    "lib",
+)
+
+
+def maintained_documents() -> tuple[Path, ...]:
+    """Every maintained Markdown document, discovered rather than enumerated."""
+    found = [ROOT / "README.md", ROOT / "CONTRIBUTING.md"]
+    for path in sorted((ROOT / "docs").rglob("*.md")):
+        relative = path.relative_to(ROOT / "docs")
+        if relative.parts and relative.parts[0] in UNMAINTAINED:
+            continue
+        found.append(path)
+    return tuple(found)
+
+
+GUIDES = maintained_documents()
 DIAGRAMS = (
     ROOT / "docs/diagrams/duris-server-architecture.html",
     ROOT / "docs/diagrams/duris-database-model.html",
@@ -59,6 +85,14 @@ def github_anchors(markdown: str) -> set[str]:
 class DocumentationContractTest(unittest.TestCase):
     def setUp(self) -> None:
         self.text = {path: path.read_text() for path in GUIDES}
+
+    def test_anchor_documents_exist_and_are_discovered(self) -> None:
+        for path in ANCHORS:
+            self.assertTrue(path.is_file(), f"missing required document: {path}")
+            self.assertIn(path, self.text, f"anchor not in maintained corpus: {path}")
+        # Guard the discovery itself: an over-broad exclude would silently empty
+        # the corpus and turn every content assertion below into a no-op.
+        self.assertGreater(len(GUIDES), len(ANCHORS))
 
     def test_maintained_markdown_links_and_anchors_resolve(self) -> None:
         failures: list[str] = []
@@ -122,8 +156,8 @@ class DocumentationContractTest(unittest.TestCase):
             "tests/async/run_account_erasure_schema_mysql.sh",
             "tests/async/run_immutable_migration_ledger_mysql.sh",
         )
-        runbook_and_testing = self.text[ROOT / "docs/RUNBOOK.md"] + self.text[
-            ROOT / "docs/TESTING.md"
+        runbook_and_testing = self.text[ROOT / "docs/operations/RUNBOOK.md"] + self.text[
+            ROOT / "docs/guides/TESTING.md"
         ]
         for relative in paths:
             self.assertTrue((ROOT / relative).is_file(), relative)
@@ -134,7 +168,7 @@ class DocumentationContractTest(unittest.TestCase):
             self.assertRegex(makefile, rf"(?m)^{re.escape(target)}:")
 
     def test_configuration_names_match_runtime_surface(self) -> None:
-        configuration = self.text[ROOT / "docs/CONFIGURATION.md"]
+        configuration = self.text[ROOT / "docs/operations/CONFIGURATION.md"]
         example = (ROOT / ".env.example").read_text()
         runtime = (ROOT / "src/sql.c").read_text() + (ROOT / "src/comm.c").read_text()
         required = (
@@ -189,7 +223,7 @@ class DocumentationContractTest(unittest.TestCase):
             self.assertIsNone(re.search(pattern, maintained, re.I | re.S), pattern)
 
     def test_mutation_guidance_is_clone_bound_and_fail_closed(self) -> None:
-        runbook = self.text[ROOT / "docs/RUNBOOK.md"]
+        runbook = self.text[ROOT / "docs/operations/RUNBOOK.md"]
         migration = runbook[runbook.index("### Migration procedure"):
                             runbook.index("### Domain reconciliation")]
         normalized = re.sub(r"\s+", " ", migration).lower()
@@ -211,7 +245,7 @@ class DocumentationContractTest(unittest.TestCase):
         ):
             self.assertIn(token.lower(), normalized, token)
 
-        database = self.text[ROOT / "docs/DATABASE.md"]
+        database = self.text[ROOT / "docs/reference/DATABASE.md"]
         self.assertIn("never use production", database.lower())
         self.assertIn("backed-up development clone", database)
         self.assertIn("Stop the game and every other", database)
@@ -224,7 +258,7 @@ class DocumentationContractTest(unittest.TestCase):
         self.assertIn("configured REDIS_HOST and REDIS_PORT", applying)
 
     def test_named_authority_tables_exist_in_schema_sources(self) -> None:
-        database = self.text[ROOT / "docs/DATABASE.md"]
+        database = self.text[ROOT / "docs/reference/DATABASE.md"]
         schema = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text()
         immutable = (ROOT / "migrations/immutable/0001_lookup_dataset_state.sql").read_text()
         required = (

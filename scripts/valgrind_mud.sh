@@ -6,7 +6,7 @@
 #   ./scripts/valgrind_mud.sh --tool=helgrind # data-race hunt
 #   ./scripts/valgrind_mud.sh --build --port 4321 -- --fair-sched=yes
 #
-# See docs/valgrind.md.
+# See docs/guides/valgrind.md.
 set -euo pipefail
 
 # Always run from the repository root so relative paths resolve correctly.

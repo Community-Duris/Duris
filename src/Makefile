@@ -18,7 +18,7 @@ WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 
 # No legacy warning exceptions remain.  If a diagnostic in one of the six
 # categories above reappears, resolve it rather than reintroducing a -Wno- flag:
-# see docs/BUILDING.md ("Warning profile") and
+# see docs/guides/BUILDING.md ("Warning profile") and
 # tests/async/test_compiler_warning_profile.py, which fails if one is added.
 
 # EXTRA_CFLAGS / EXTRA_LDFLAGS are appended last so a wrapper such as
@@ -453,7 +453,7 @@ clean: clean-server
 debug: $(PROGS)
 	cd ..; ./scripts/gdbdms
 
-# Memory/thread checking; see docs/valgrind.md.
+# Memory/thread checking; see docs/guides/valgrind.md.
 valgrind: $(PROGS)
 	cd ..; ./scripts/valgrind_mud.sh
 

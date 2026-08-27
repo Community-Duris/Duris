@@ -70,7 +70,7 @@ workflow = (ROOT / ".github" / "workflows" / "build.yml").read_text()
 assert "make test-all" in workflow, "CI does not exercise the root test gate"
 assert "make -j`nproc` -C src" not in workflow, "CI duplicates the root build harness"
 
-testing_doc = (ROOT / "docs" / "TESTING.md").read_text()
+testing_doc = (ROOT / "docs" / "guides" / "TESTING.md").read_text()
 assert "make test-all" in testing_doc
 assert "TEST_MATCH" in testing_doc
 

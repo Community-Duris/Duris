@@ -1,6 +1,6 @@
 """Source contracts for command_attributes.txt coverage of registered commands.
 
-Guarantees, per docs/HELP_SYSTEM.md:
+Guarantees, per docs/content/HELP_SYSTEM.md:
   1. every command name registered in src/interp.c has an attribute entry
   2. every entry parses cleanly under load_cmd_attributes() semantics
      (name line, zero or more canonical GET_C_<STAT>(ch|vi lines, '~' terminator)

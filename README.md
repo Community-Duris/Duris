@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 1.81.55** | [Versioning policy](docs/VERSIONING.md)
+**Version: 1.81.55** | [Versioning policy](docs/guides/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -63,7 +63,7 @@ scalar, and large-payload queues retain only bounded compatibility roles. MySQL 
 MariaDB is the durable authority for snapshots, ledgers, current rows, inbox/results,
 outbox state, migration history, and lifecycle evidence. Redis is optional and limited
 to reconstructible caches plus validated world-recovery generations. See the full
-[architecture guide](docs/ARCHITECTURE.md) and [database guide](docs/DATABASE.md).
+[architecture guide](docs/reference/ARCHITECTURE.md) and [database guide](docs/reference/DATABASE.md).
 
 ## Quick start
 
@@ -110,7 +110,7 @@ no database credential defaults. The server rejects a `.env` that is not an
 owner-controlled regular file with mode `0600` or stricter. It loads this file
 at boot, and the migration scripts use the same values. `.env` is ignored by
 Git and must never be committed. See the
-[configuration reference](docs/CONFIGURATION.md) for precedence, Redis
+[configuration reference](docs/operations/CONFIGURATION.md) for precedence, Redis
 recovery, proxy handling, and diagnostic switches.
 
 Set `REDIS=TRUE` with `REDIS_HOST` and `REDIS_PORT` to enable caches and recovery
@@ -204,7 +204,7 @@ If the server stops during boot, inspect `logs/log/status` and
   existing local instance. Keep development on a non-`7777` port.
 
 Operational log locations and restart behavior are documented in the
-[runbook](docs/RUNBOOK.md).
+[runbook](docs/operations/RUNBOOK.md).
 
 ## Connect
 
@@ -246,7 +246,7 @@ Tests under `tests/async/` are focused Python regression or source-contract
 checks. The root harness generates required world data and runs these tests in
 bounded parallel workers. Docker/MySQL suites remain an explicit `make test-db`
 step, while externally provisioned migration checks must target a development
-clone. See [Testing](docs/TESTING.md) for target details and focused-test
+clone. See [Testing](docs/guides/TESTING.md) for target details and focused-test
 controls.
 
 Format only touched C/C++ lines so legacy diffs stay reviewable:
@@ -258,7 +258,7 @@ Format only touched C/C++ lines so legacy diffs stay reviewable:
 
 Install the repository's pre-commit hook with `./scripts/install-hooks.sh`.
 Sanitizer and Valgrind workflows are covered in
-[Building](docs/BUILDING.md) and [Valgrind](docs/valgrind.md).
+[Building](docs/guides/BUILDING.md) and [Valgrind](docs/guides/valgrind.md).
 
 ## Repository map
 
@@ -283,23 +283,19 @@ archives.
 
 | Guide | Covers |
 | --- | --- |
-| [Architecture](docs/ARCHITECTURE.md) | Process model, boot gate, game loop, typed persistence, recovery. |
-| [Codebase](docs/CODEBASE.md) | Module-by-module map of the server sources. |
-| [Building](docs/BUILDING.md) | Build flags, areas, sanitizers, verification. |
-| [Database](docs/DATABASE.md) | Connections, reads, typed writes, reconciliation, schema, migrations. |
-| [Configuration](docs/CONFIGURATION.md) | Environment variables, Redis, networking, and diagnostics. |
-| [Runbook](docs/RUNBOOK.md) | Restarts, logs, backups, recovery, operations. |
-| [Testing](docs/TESTING.md) | Test layout, commands, and conventions. |
-| [Onboarding](docs/onboarding.md) | Setup and first verification checklist. |
-| [Development](docs/development.md) | Daily build, test, format, and health commands. |
-| [Environments](docs/environments.md) | Local and network-deployment trust boundaries. |
-| [Deployment](docs/deployment.md) | CI, local probes, and external release boundary. |
-| [Immutable migrations](docs/IMMUTABLE_MIGRATIONS.md) | Baseline adoption, ordered checksums, exact resume. |
-| [Runtime compatibility](docs/RUNTIME_COMPATIBILITY.md) | Pre-mutation boot verification and lookup publication. |
-| [Data lifecycle](docs/DATA_LIFECYCLE.md) | Store inventory, pending policy, archive/export/erasure boundaries. |
-| [Critical commands](docs/CRITICAL_COMMAND_PIPELINE.md) | Operation identity, journal, inbox/results, outbox, replay, fences. |
-| [Formatting](docs/formatting.md) | Style, changed-line formatting, and editors. |
-| [Help system](docs/HELP_SYSTEM.md) | Help sources, database import, and rendering. |
+| [Architecture](docs/reference/ARCHITECTURE.md) | Process model, boot gate, game loop, typed persistence, recovery. |
+| [Codebase](docs/reference/CODEBASE.md) | Module-by-module map of the server sources. |
+| [Building](docs/guides/BUILDING.md) | Build flags, areas, sanitizers, verification. |
+| [Database](docs/reference/DATABASE.md) | Connections, reads, typed writes, reconciliation, schema, migrations. |
+| [Configuration](docs/operations/CONFIGURATION.md) | Environment variables, Redis, networking, and diagnostics. |
+| [Runbook](docs/operations/RUNBOOK.md) | Restarts, logs, backups, recovery, operations. |
+| [Testing](docs/guides/TESTING.md) | Test layout, commands, and conventions. |
+| [Immutable migrations](docs/persistence/IMMUTABLE_MIGRATIONS.md) | Baseline adoption, ordered checksums, exact resume. |
+| [Runtime compatibility](docs/persistence/RUNTIME_COMPATIBILITY.md) | Pre-mutation boot verification and lookup publication. |
+| [Data lifecycle](docs/persistence/DATA_LIFECYCLE.md) | Store inventory, pending policy, archive/export/erasure boundaries. |
+| [Critical commands](docs/persistence/CRITICAL_COMMAND_PIPELINE.md) | Operation identity, journal, inbox/results, outbox, replay, fences. |
+| [Formatting](docs/guides/formatting.md) | Style, changed-line formatting, and editors. |
+| [Help system](docs/content/HELP_SYSTEM.md) | Help sources, database import, and rendering. |
 
 The complete index, including builder references and standalone diagrams, is
 in [`docs/README_docs.md`](docs/README_docs.md).
@@ -312,7 +308,7 @@ in [`docs/README_docs.md`](docs/README_docs.md).
 [cpp20-badge]: https://img.shields.io/badge/C%2B%2B-20-00599C?style=flat-square&logo=cplusplus&logoColor=white
 [database-badge]: https://img.shields.io/badge/database-MySQL%20%2F%20MariaDB-4479A1?style=flat-square&logo=mysql&logoColor=white
 [format-badge]: https://img.shields.io/badge/style-clang--format-262D3A?style=flat-square&logo=llvm&logoColor=white
-[formatting]: docs/formatting.md
+[formatting]: docs/guides/formatting.md
 [issues]: https://github.com/LuminariMUD/DurisMUD/issues
 [issues-badge]: https://img.shields.io/github/issues/LuminariMUD/DurisMUD?style=flat-square&logo=github
 [linux-badge]: https://img.shields.io/badge/platform-Linux-FCC624?style=flat-square&logo=linux&logoColor=black

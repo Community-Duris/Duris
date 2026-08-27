@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/valgrind_mud.sh"
 SUPP = ROOT / "scripts/valgrind.supp"
-DOC = ROOT / "docs/valgrind.md"
+DOC = ROOT / "docs/guides/valgrind.md"
 
 # --------------------------------------------------------------------------
 # 1. The runner exists, is executable, and defaults to a development port.
@@ -103,9 +103,9 @@ assert re.search(r"^\s*gdb,?$", depends, re.MULTILINE), (
 
 readme = (ROOT / "README.md").read_text()
 assert "valgrind" in readme.lower(), "README.md does not mention valgrind"
-assert "docs/valgrind.md" in readme, "README.md does not link docs/valgrind.md"
+assert "docs/guides/valgrind.md" in readme, "README.md does not link docs/guides/valgrind.md"
 
-assert DOC.is_file(), "docs/valgrind.md is missing"
+assert DOC.is_file(), "docs/guides/valgrind.md is missing"
 doc = DOC.read_text()
 assert "scripts/valgrind_mud.sh" in doc and "scripts/valgrind.supp" in doc
 

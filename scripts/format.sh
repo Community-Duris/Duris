@@ -13,7 +13,7 @@
 #   ./scripts/format.sh --all           # every tracked C/C++ file, to a fixpoint
 #   ./scripts/format.sh --file src/foo.c   # one whole file
 #
-# See docs/formatting.md.
+# See docs/guides/formatting.md.
 set -euo pipefail
 
 # Always run from the repository root so relative paths resolve correctly.

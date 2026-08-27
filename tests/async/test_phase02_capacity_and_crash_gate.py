@@ -73,7 +73,7 @@ class Phase02CapacityCrashGateTests(unittest.TestCase):
                       (SRC / "boon_reward_command.h").read_text())
 
     def test_crash_matrix_covers_every_required_boundary(self):
-        matrix = (ROOT / "docs/PHASE02_CRASH_MATRIX.md").read_text().lower()
+        matrix = (ROOT / "docs/gates/PHASE02_CRASH_MATRIX.md").read_text().lower()
         for boundary in ("admission", "journal append", "journal replay", "db acquire",
                          "db apply", "db commit", "completion", "outbox", "checkpoint",
                          "copyover", "shutdown", "legacy fallback"):

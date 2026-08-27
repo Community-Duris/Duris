@@ -4,7 +4,7 @@
 # cannot free, or reads that libraries perform deliberately.  Never suppress
 # a Duris frame -- fix the bug instead.
 #
-# Used automatically by scripts/valgrind_mud.sh.  See docs/valgrind.md.
+# Used automatically by scripts/valgrind_mud.sh.  See docs/guides/valgrind.md.
 
 # ---------------------------------------------------------------------------
 # glibc / dynamic loader

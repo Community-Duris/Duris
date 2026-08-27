@@ -4,7 +4,7 @@
 #
 # Duris style: Linux-kernel derived -- hard tabs at width 8, Allman braces,
 # 100-column lines.  Apply it to code you touch, never to whole files:
-# see docs/formatting.md.
+# see docs/guides/formatting.md.
 #
 # For more information, see:
 #
