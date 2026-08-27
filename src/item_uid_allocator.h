@@ -3,8 +3,7 @@
 
 #include <cstdint>
 
-struct st_mysql;
-typedef struct st_mysql MYSQL;
+#include <mysql/mysql.h>
 
 constexpr uint64_t ITEM_UID_BOOT_RESERVATION = UINT64_C(1000000);
 

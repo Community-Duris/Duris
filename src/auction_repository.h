@@ -3,8 +3,7 @@
 
 #include "auction_command.h"
 
-struct st_mysql;
-typedef struct st_mysql MYSQL;
+#include <mysql/mysql.h>
 
 bool auction_repository_execute(MYSQL *connection, const critical_command &command,
 				auction_command_result *result, unsigned int *result_code,

@@ -2,9 +2,7 @@
 #define PLAYER_SNAPSHOT_REPOSITORY_H
 
 #include "player_save_worker.h"
-
-struct st_mysql;
-typedef struct st_mysql MYSQL;
+#include <mysql/mysql.h>
 
 player_save_apply_result player_snapshot_repository_apply(MYSQL *connection,
 							  const player_snapshot &snapshot);

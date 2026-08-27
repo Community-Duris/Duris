@@ -3,8 +3,7 @@
 
 #include "item_transfer_command.h"
 
-struct st_mysql;
-typedef struct st_mysql MYSQL;
+#include <mysql/mysql.h>
 
 bool item_transfer_repository_execute(MYSQL *connection, const critical_command &command,
 				      item_transfer_result *result, unsigned int *result_code,

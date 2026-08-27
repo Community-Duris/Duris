@@ -3,8 +3,7 @@
 
 #include "zone_touch_command.h"
 
-struct st_mysql;
-typedef struct st_mysql MYSQL;
+#include <mysql/mysql.h>
 
 bool zone_touch_repository_execute(MYSQL *connection, const critical_command &command,
 				   zone_touch_result *result, unsigned int *result_code,

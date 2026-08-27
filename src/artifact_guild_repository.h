@@ -3,8 +3,7 @@
 
 #include "artifact_guild_command.h"
 
-struct st_mysql;
-typedef struct st_mysql MYSQL;
+#include <mysql/mysql.h>
 
 bool artifact_guild_repository_execute(MYSQL *connection, const critical_command &command,
 				       artifact_guild_result *result, unsigned int *result_code,

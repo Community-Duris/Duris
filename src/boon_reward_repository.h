@@ -3,8 +3,7 @@
 
 #include "boon_reward_command.h"
 
-struct st_mysql;
-typedef struct st_mysql MYSQL;
+#include <mysql/mysql.h>
 
 bool boon_reward_repository_execute(MYSQL *connection, const critical_command &command,
 				    boon_reward_result *result, unsigned int *result_code,

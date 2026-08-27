@@ -73,6 +73,28 @@ check("sanitizer build appends to the warning profile rather than replacing it",
 check("Makefile honours EXTRA_CFLAGS/EXTRA_LDFLAGS",
       "CFLAGS += $(EXTRA_CFLAGS)" in makefile and "LDFLAGS += $(EXTRA_LDFLAGS)" in makefile)
 
+# Repository API headers must use the client library's public MYSQL declaration.
+# MySQL 8 and MariaDB intentionally expose different internal struct tags, so a
+# local forward declaration can compile on one engine and conflict on the other.
+repository_headers = [
+    "artifact_guild_repository.h",
+    "auction_repository.h",
+    "boon_reward_repository.h",
+    "combat_outcome_repository.h",
+    "critical_command_repository.h",
+    "item_transfer_repository.h",
+    "item_uid_allocator.h",
+    "player_load_repository.h",
+    "player_snapshot_repository.h",
+    "session_audit_repository.h",
+    "zone_touch_repository.h",
+]
+for name in repository_headers:
+    header = (src / name).read_text()
+    check(f"{name} uses the public MYSQL header", "#include <mysql/mysql.h>" in header)
+    check(f"{name} does not guess the MYSQL struct tag",
+          "typedef struct st_mysql MYSQL" not in header)
+
 if failures:
     print("\nFailed regression checks:")
     for f in failures:

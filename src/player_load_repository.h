@@ -7,10 +7,8 @@
 
 #include <array>
 #include <cstdint>
+#include <mysql/mysql.h>
 #include <string>
-
-struct st_mysql;
-typedef struct st_mysql MYSQL;
 
 constexpr uint32_t PLAYER_LOAD_SCHEMA_VERSION = 1;
 constexpr size_t PLAYER_LOAD_ACCOUNT_MAX = 50;

@@ -3,8 +3,7 @@
 
 #include "critical_command_coordinator.h"
 
-struct st_mysql;
-typedef struct st_mysql MYSQL;
+#include <mysql/mysql.h>
 
 constexpr size_t CRITICAL_COMMAND_RESULT_MAX_BYTES = 4096;
 constexpr size_t CRITICAL_OUTBOX_PAYLOAD_MAX_BYTES = 65535;
