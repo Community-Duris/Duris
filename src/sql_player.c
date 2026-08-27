@@ -9406,7 +9406,7 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 		 "name, short_descr, description, action_descr, "
 		 "wear_flags, item_type, item_material, "
 		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
-		 "obj_uid, item_condition "
+		 "obj_uid "
 		 "FROM saved_items WHERE item_key='%s' AND container_id=%d",
 		 esc_key, container_id);
 	free(esc_key);
@@ -9498,8 +9498,6 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, i
 			extract_obj(obj, FALSE);
 			continue;
 		}
-		if (row[27])
-			obj->condition = atoi(row[27]);
 		obj->db_item_id = item_id;
 
 		char aff_query[128];
@@ -9566,7 +9564,7 @@ void sql_restore_saved_items(void)
 	MYSQL_RES *result = db_query(
 		"SELECT DISTINCT item_key, room_vnum, id, vnum, weight, cost, timer, extra_flags, "
 		"value0, value1, value2, value3, value4, value5, value6, value7, "
-		"name, short_descr, description, action_descr, obj_uid, item_condition "
+		"name, short_descr, description, action_descr, obj_uid "
 		"FROM saved_items WHERE container_id IS NULL");
 	if (!result)
 		return;
@@ -9645,8 +9643,6 @@ void sql_restore_saved_items(void)
 			extract_obj(obj, FALSE);
 			continue;
 		}
-		if (row[21])
-			obj->condition = atoi(row[21]);
 		obj->db_item_id = item_id;
 
 		char aff_query[128];
