@@ -4,7 +4,7 @@
 **Sessions**: 12 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 6/12 sessions (50%)
+**Progress**: 7/12 sessions (58%)
 
 ---
 
@@ -42,7 +42,7 @@ prerequisites for every Phase 02 session.
 | 04 | Account Bank and Wallet Transactions | Complete | Atomic denomination deltas, wallet revisions, online-alt publication, and reconciliation | 2026-08-27 |
 | 05 | Item Ownership Ledger and Transfer Primitive | Complete | Durable item identity, current-owner row, subtree transfer, revisions, ledger, and outbox | 2026-08-27 |
 | 06 | Live Item Movement and Corpse Cutover | Complete | Player, container, floor, trade, corpse creation, and corpse-loot ownership routes | 2026-08-27 |
-| 07 | Locker Ownership Cutover | Not Started | Public/private locker custody, immutable snapshots, exact transfer ACKs, and failure retention | - |
+| 07 | Locker Ownership Cutover | Complete | Public/private locker custody, immutable snapshots, exact transfer ACKs, and failure retention | 2026-08-27 |
 | 08 | Auction Settlement and Claim Cutover | Not Started | Listing custody, bid funds, settlement, refunds, claims, ownership, and publication | - |
 | 09 | PvP and Combat Outcome Batching | Not Started | Immutable battle outcome capture and transactional group, frag, ledger, and outbox apply | - |
 | 10 | Artifact and Guild Outcome Batching | Not Started | Set-based artifact deltas and ordered guild prestige/construction commands | - |
@@ -59,12 +59,13 @@ prerequisites for every Phase 02 session.
 - Session 04: Account Bank and Wallet Transactions (completed 2026-08-27)
 - Session 05: Item Ownership Ledger and Transfer Primitive (completed 2026-08-27)
 - Session 06: Live Item Movement and Corpse Cutover (completed 2026-08-27)
+- Session 07: Locker Ownership Cutover (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 07: Locker Ownership Cutover
+- Session 08: Auction Settlement and Claim Cutover
 
 ---
 

@@ -11,7 +11,7 @@ SRC = ROOT / "src"
 class LiveItemMovementContractTests(unittest.TestCase):
     def test_runtime_hydrates_authoritative_rows_not_relative_events(self):
         sql = (SRC / "sql.c").read_text()
-        owner_check = sql[sql.rindex("bool sql_persistence_item_owner_matches"):]
+        owner_check = sql[sql.rindex("bool sql_persistence_item_owner_matches_identity"):]
         owner_check = owner_check[:owner_check.index("bool sql_hydrate_item_owner_revisions")]
         self.assertIn("FROM item_current_owner", owner_check)
         self.assertIn("item_owner_revision", owner_check)

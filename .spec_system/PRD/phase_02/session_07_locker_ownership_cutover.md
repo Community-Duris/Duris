@@ -1,7 +1,7 @@
 # Session 07: Locker Ownership Cutover
 
 **Session ID**: `phase02-session07-locker-ownership-cutover`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One locker custody boundary spanning public and private chest entry,
 item movement, immutable locker snapshots, terminal exit, ownership ACK, failure
 retention, and restart reconciliation.
@@ -45,10 +45,10 @@ or destroying uncommitted custody.
 
 ## Prerequisites
 
-- [ ] Sessions 05 and 06 ownership contracts are validated.
-- [ ] Phase 01 terminal drain and immutable locker/player worker lifecycles are
+- [x] Sessions 05 and 06 ownership contracts are validated.
+- [x] Phase 01 terminal drain and immutable locker/player worker lifecycles are
       authoritative.
-- [ ] Phase 00 private-chest password migration and terminal failure tests pass.
+- [x] Phase 00 private-chest password migration and terminal failure tests pass.
 
 ---
 
@@ -65,15 +65,15 @@ or destroying uncommitted custody.
 
 ## Success Criteria
 
-- [ ] Every player/locker item crossing commits one current-owner transition, ledger
+- [x] Every player/locker item crossing commits one current-owner transition, ledger
       event, both affected revisions, inbox result, and outbox set atomically.
-- [ ] Locker snapshot coalescing cannot omit or reverse an unacknowledged transfer.
-- [ ] A failed or stale transfer leaves the item in its prior player or locker custody
+- [x] Locker snapshot coalescing cannot omit or reverse an unacknowledged transfer.
+- [x] A failed or stale transfer leaves the item in its prior player or locker custody
       and releases no terminal gate incorrectly.
-- [ ] Terminal locker exit, disconnect, copyover, and shutdown drain or durably spill
+- [x] Terminal locker exit, disconnect, copyover, and shutdown drain or durably spill
       accepted work without duplicate snapshots or item loss.
-- [ ] Restart reconciliation converges live locker objects, durable locker rows, and
+- [x] Restart reconciliation converges live locker objects, durable locker rows, and
       current-owner rows or reports a quarantined conflict.
-- [ ] Worker and diagnostic paths expose no live pointers, chest passwords, or private
+- [x] Worker and diagnostic paths expose no live pointers, chest passwords, or private
       item payloads.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

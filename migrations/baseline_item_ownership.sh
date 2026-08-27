@@ -35,9 +35,12 @@ FROM corpse_items i JOIN corpses c ON c.id=i.corpse_id
 JOIN player_data pd ON LOWER(pd.name)=LOWER(c.player_name)
 LEFT JOIN corpse_items p ON p.id=i.container_id;
 INSERT INTO item_custody_evidence
-SELECT 'locker_items',i.id,COALESCE(i.obj_uid,0),p.obj_uid,COALESCE(i.obj_uid,0),5,i.locker_id,COALESCE(i.chest_id,0),i.vnum,
+SELECT 'locker_items',i.id,COALESCE(i.obj_uid,0),p.obj_uid,COALESCE(i.obj_uid,0),5,i.locker_id,
+       COALESCE(i.chest_id,public_chest.id,0),i.vnum,
        IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0)
-FROM locker_items i LEFT JOIN locker_items p ON p.id=i.container_id;
+FROM locker_items i LEFT JOIN locker_items p ON p.id=i.container_id
+LEFT JOIN private_chests public_chest
+  ON public_chest.locker_id=i.locker_id AND public_chest.is_public=1;
 INSERT INTO item_custody_evidence
 SELECT 'account_locker_items',i.id,COALESCE(i.obj_uid,0),p.obj_uid,COALESCE(i.obj_uid,0),5,i.chest_id,0,i.vnum,
        IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0)

@@ -98,7 +98,7 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 bool valid_reason(item_transfer_reason reason)
 {
 	return reason > item_transfer_reason::unknown &&
-	       reason <= item_transfer_reason::corpse_loot;
+	       reason <= item_transfer_reason::locker_withdraw;
 }
 
 bool validate_payload(const item_transfer_payload &payload)

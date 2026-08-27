@@ -33,6 +33,7 @@
 #include "vnum.obj.h"
 #include "item_movement_transaction.h"
 #include "item_ownership_runtime.h"
+#include "storage_lockers.h"
 
 /*
  * external variables
@@ -137,6 +138,7 @@ struct drop_movement_context
 {
 	uint64_t item_uid;
 	int32_t room;
+	int32_t floor_hint;
 };
 
 struct give_movement_context
@@ -225,7 +227,8 @@ void item_drop_completion(P_char actor, bool committed, const item_transfer_resu
 		act("$n drops $p.", FALSE, actor, object, 0, TO_ROOM);
 	obj_from_char(object);
 	obj_to_room(object, context.room);
-	redis_log_floor_drop(object, world[context.room].number);
+	if (context.floor_hint)
+		redis_log_floor_drop(object, world[context.room].number);
 	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
 							     PLAYER_COMPONENT_EQUIPMENT |
 							     PLAYER_COMPONENT_INVENTORY);
@@ -301,6 +304,25 @@ bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int show
 		return false;
 	item_ownership_runtime_entry item_runtime = {}, container_runtime = {};
 	const bool item_known = item_ownership_runtime_lookup(object->obj_uid, &item_runtime);
+	item_owner_identity locker_destination = {};
+	if (locker_owner_for_container(actor, container, &locker_destination))
+	{
+		const item_owner_identity source =
+			item_known ?
+				item_runtime.owner :
+				item_owner_identity{ item_owner_type::player,
+						     static_cast<uint64_t>(GET_PID(actor)), 0 };
+		if (item_owner_identity_equal(source, locker_destination))
+			return false;
+		const put_movement_context context = { object->obj_uid, container->obj_uid,
+						       showit };
+		if (!item_movement_transaction_submit(
+			    actor, object, NULL, source, locker_destination,
+			    item_transfer_reason::locker_deposit, locker_destination.context_id,
+			    item_put_completion, &context, sizeof(context)))
+			send_to_char("That item is busy or its ownership changed.\r\n", actor);
+		return true;
+	}
 	if (!item_ownership_runtime_lookup(container->obj_uid, &container_runtime))
 	{
 		if (OBJ_CARRIED_BY(container, actor))
@@ -474,7 +496,9 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 							  static_cast<uint64_t>(GET_PID(ch)), 0 };
 		const get_movement_context context = { o_obj->obj_uid, s_obj ? s_obj->obj_uid : 0,
 						       s_obj ? NOWHERE : o_obj->loc.room, showit };
-		const item_transfer_reason reason = s_obj && GET_ITEM_TYPE(s_obj) == ITEM_CORPSE ?
+		const item_transfer_reason reason = source.type == item_owner_type::locker ?
+							    item_transfer_reason::locker_withdraw :
+						    s_obj && GET_ITEM_TYPE(s_obj) == ITEM_CORPSE ?
 							    item_transfer_reason::corpse_loot :
 							    item_transfer_reason::player_get;
 		if (!item_owner_identity_valid(source) ||
@@ -2486,20 +2510,28 @@ void do_drop(P_char ch, char *argument, int cmd)
 							item_owner_type::player,
 							static_cast<uint64_t>(GET_PID(ch)), 0
 						};
-						const item_owner_identity destination = {
+						item_owner_identity destination = {
 							item_owner_type::room,
 							static_cast<uint64_t>(
 								world[ch->in_room].number),
 							0
 						};
+						const bool locker_deposit =
+							locker_owner_for_room(ch, &destination);
 						const drop_movement_context context = {
-							tmp_object->obj_uid, ch->in_room
+							tmp_object->obj_uid, ch->in_room,
+							locker_deposit ? 0 : 1
 						};
 						if (!item_movement_transaction_submit(
 							    ch, tmp_object, NULL, source,
 							    destination,
-							    item_transfer_reason::player_drop,
-							    world[ch->in_room].number,
+							    locker_deposit ?
+								    item_transfer_reason::
+									    locker_deposit :
+								    item_transfer_reason::player_drop,
+							    locker_deposit ?
+								    0 :
+								    world[ch->in_room].number,
 							    item_drop_completion, &context,
 							    sizeof(context)))
 							send_to_char(

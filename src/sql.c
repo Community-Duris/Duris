@@ -146,6 +146,14 @@ bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char 
 {
 	return true;
 }
+bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
+						 const char *owner_type,
+						 unsigned long long owner_id,
+						 unsigned long long owner_context_id,
+						 const char *context)
+{
+	return true;
+}
 bool sql_hydrate_item_owner_revisions(void)
 {
 	return true;
@@ -4507,12 +4515,15 @@ bool sql_persistence_write_large_event_line(const char *line)
 	return sql_persistence_execute_raw(line);
 }
 
-bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
-					const char *owner_ref, const char *context)
+bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
+						 const char *owner_type,
+						 unsigned long long expected_id,
+						 unsigned long long expected_context_id,
+						 const char *context)
 {
 	if (item_uid == 0)
 		return true;
-	if (!owner_type || !owner_ref || !context || !DB)
+	if (!owner_type || !context || !DB)
 		return false;
 	item_owner_type expected_type = item_owner_type::unknown;
 	if (!strcmp(owner_type, "player"))
@@ -4529,10 +4540,7 @@ bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char 
 		expected_type = item_owner_type::auction;
 	if (expected_type == item_owner_type::unknown)
 		return false;
-	char *owner_end = NULL;
-	errno = 0;
-	const unsigned long long expected_id = strtoull(owner_ref, &owner_end, 10);
-	if (errno || !owner_end || *owner_end || !expected_id)
+	if (!expected_id)
 		return false;
 	char query[512];
 	snprintf(
@@ -4568,15 +4576,15 @@ bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char 
 		.state = static_cast<item_custody_state>(strtoul(row[7], NULL, 10)),
 	};
 	const bool matches = entry.owner.type == expected_type && entry.owner.id == expected_id &&
-			     entry.owner.context_id == 0 &&
+			     entry.owner.context_id == expected_context_id &&
 			     entry.state == item_custody_state::active;
 	if (!matches)
 	{
 		logit(LOG_DEBUG,
 		      "sql_persistence: OWNERSHIP MISMATCH item_uid=%llu "
-		      "expected=%u:%llu:0 actual=%u:%llu:%llu context=%s",
+		      "expected=%u:%llu:%llu actual=%u:%llu:%llu context=%s",
 		      item_uid, static_cast<unsigned int>(expected_type), expected_id,
-		      static_cast<unsigned int>(entry.owner.type),
+		      expected_context_id, static_cast<unsigned int>(entry.owner.type),
 		      (unsigned long long)entry.owner.id,
 		      (unsigned long long)entry.owner.context_id, context);
 		mysql_free_result(result);
@@ -4585,6 +4593,22 @@ bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char 
 	const bool hydrated = item_ownership_runtime_hydrate(entry);
 	mysql_free_result(result);
 	return hydrated;
+}
+
+bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
+					const char *owner_ref, const char *context)
+{
+	if (item_uid == 0)
+		return true;
+	if (!owner_ref)
+		return false;
+	char *owner_end = NULL;
+	errno = 0;
+	const unsigned long long owner_id = strtoull(owner_ref, &owner_end, 10);
+	if (errno || !owner_end || *owner_end || !owner_id)
+		return false;
+	return sql_persistence_item_owner_matches_identity(item_uid, owner_type, owner_id, 0,
+							   context);
 }
 
 bool sql_hydrate_item_owner_revisions(void)

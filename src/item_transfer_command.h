@@ -42,6 +42,8 @@ enum class item_transfer_reason : uint16_t
 	corpse_create,
 	corpse_restore,
 	corpse_loot,
+	locker_deposit,
+	locker_withdraw,
 };
 
 enum class item_custody_state : uint8_t

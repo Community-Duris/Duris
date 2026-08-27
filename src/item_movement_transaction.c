@@ -291,6 +291,15 @@ void item_movement_transaction_player_ready(P_char actor)
 	}
 }
 
+bool item_movement_transaction_player_busy(P_char actor)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
+		return false;
+	return std::any_of(
+		pending.begin(), pending.end(), [&](const auto &entry)
+		{ return entry.second.actor_pid == static_cast<uint32_t>(GET_PID(actor)); });
+}
+
 item_movement_health item_movement_transaction_health_copy(void)
 {
 	account_health();

@@ -13,11 +13,14 @@
 #define __STORAGE_LOCKERS_H__
 
 #include <string.h>
+#include "item_transfer_command.h"
 
 // Type-specific locker chests only accept matching items.  Containers and
 // corpses are rejected by the unsorted chest so they remain visible on the
 // locker room floor rather than being hidden inside a sorting chest.
 bool locker_eq_type_fits_for_storage(::byte eqType, P_obj obj);
+bool locker_owner_for_room(P_char actor, item_owner_identity *owner);
+bool locker_owner_for_container(P_char actor, P_obj container, item_owner_identity *owner);
 
 int guild_locker_room_hook(int room, P_char ch, int cmd, char *arg);
 bool remove_all_locker_access(P_char ch);
@@ -57,6 +60,8 @@ class StorageLocker
 	void SetCurrentChestId(int id) { m_currentChestId = id; };
 	int GetLockerId(void) { return m_lockerId; };
 	void SetLockerId(int id) { m_lockerId = id; };
+	int GetPublicChestId(void) { return m_publicChestId; };
+	void SetPublicChestId(int id) { m_publicChestId = id; };
 	void AddPrivateChest(LockerChest *chest) { AddLockerChest(chest); };
 	int GetRealRoom(void) { return m_realRoom; };
 
@@ -70,6 +75,7 @@ class StorageLocker
 	bool m_bIValue;
 	int m_currentChestId;
 	int m_lockerId;
+	int m_publicChestId;
 };
 
 class LockerChest

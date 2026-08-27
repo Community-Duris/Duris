@@ -39,6 +39,7 @@
 #include "sql_player.h"
 #include "vnum.room.h"
 #include "locker_async.h"
+#include "item_movement_transaction.h"
 
 extern P_index obj_index;
 extern P_index mob_index;
@@ -319,6 +320,13 @@ static bool locker_handle_leave(P_char ch, StorageLocker *pLocker, int room, int
 
 	if (!ch || !pLocker || (ch != pLocker->GetLockerUser()))
 		return true;
+	if (item_movement_transaction_player_busy(ch))
+	{
+		send_to_char(
+			"Your last item movement is still being secured. Please wait before leaving.\r\n",
+			ch);
+		return false;
+	}
 
 	/* Move items from room/chests to the locker character for saving. */
 	P_char chLocker = pLocker->GetLockerChar();
@@ -575,6 +583,7 @@ StorageLocker::StorageLocker(int rroom, P_char chLocker, P_char chUser)
 	, m_bIValue(false)
 	, m_currentChestId(0)
 	, m_lockerId(0)
+	, m_publicChestId(0)
 {
 	if (!world[rroom].ex_description)
 	{
@@ -591,6 +600,39 @@ StorageLocker::StorageLocker(int rroom, P_char chLocker, P_char chUser)
 	world[rroom].ex_description->next->description = NULL;
 	world[rroom].ex_description->next->next = NULL;
 };
+
+bool locker_owner_for_room(P_char actor, item_owner_identity *owner)
+{
+	if (!actor || !owner || actor->in_room == NOWHERE || !IS_ROOM(actor->in_room, ROOM_LOCKER))
+		return false;
+	StorageLocker *locker = GetChestList(actor->in_room);
+	if (!locker || locker->GetLockerUser() != actor || locker->GetLockerId() <= 0 ||
+	    locker->GetPublicChestId() <= 0)
+		return false;
+	*owner = { item_owner_type::locker, static_cast<uint64_t>(locker->GetLockerId()),
+		   static_cast<uint64_t>(locker->GetPublicChestId()) };
+	return true;
+}
+
+bool locker_owner_for_container(P_char actor, P_obj container, item_owner_identity *owner)
+{
+	if (!actor || !container || !owner || actor->in_room == NOWHERE ||
+	    !IS_ROOM(actor->in_room, ROOM_LOCKER))
+		return false;
+	StorageLocker *locker = GetChestList(actor->in_room);
+	if (!locker || locker->GetLockerUser() != actor || locker->GetLockerId() <= 0)
+		return false;
+	LockerChest *chest = locker->FindChestForObject(container);
+	if (!chest)
+		return false;
+	const int chest_id = chest->IsPrivateChest() ? chest->GetChestId() :
+						       locker->GetPublicChestId();
+	if (chest_id <= 0)
+		return false;
+	*owner = { item_owner_type::locker, static_cast<uint64_t>(locker->GetLockerId()),
+		   static_cast<uint64_t>(chest_id) };
+	return true;
+}
 
 StorageLocker::~StorageLocker(void)
 {
@@ -2988,7 +3030,7 @@ static int create_new_locker(P_char ch, P_char locker)
 		if (locker_id > 0)
 		{
 			pLocker->SetLockerId(locker_id);
-			sql_get_or_create_public_chest(locker_id);
+			pLocker->SetPublicChestId(sql_get_or_create_public_chest(locker_id));
 		}
 
 		pLocker->MakeChests(ch, writable_arg("none"));
@@ -3257,6 +3299,13 @@ static int save_locker_char(P_char ch, int bTerminal)
 		logit(LOG_OBJ, "Locker save failed: no locker context for %s", GET_NAME(ch));
 		logit(LOG_FILE, "Locker save failed: no locker context for %s", GET_NAME(ch));
 		return 0;
+	}
+	if (item_movement_transaction_player_busy(ch))
+	{
+		logit(LOG_DEBUG,
+		      "Locker save deferred: ownership movement pending user=%s locker_id=%d",
+		      GET_NAME(ch), pLocker->GetLockerId());
+		return 1;
 	}
 
 	P_char chLocker = pLocker->GetLockerChar();

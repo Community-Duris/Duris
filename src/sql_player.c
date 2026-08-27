@@ -5467,19 +5467,19 @@ bool sql_save_locker(P_char locker_ch, int owner_pid, int owner_assoc_id)
 	return sql_save_locker_items(locker_ch, locker_id, public_chest_id, own_txn);
 }
 
-static P_obj sql_load_locker_items(int locker_id, int container_id, const char *owner_ref);
+static P_obj sql_load_locker_items(int locker_id, int public_chest_id, int container_id);
 
 #define MAX_CONTAINER_LOAD_DEPTH 64
 
 static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int chest_id,
-					    const char *owner_ref, int depth)
+					    int depth)
 {
 	if (!DB || locker_id <= 0)
 		return NULL;
 
 	logit(LOG_DEBUG,
-	      "sql_load_locker_items_filtered: begin locker_id=%d container_id=%d chest_id=%d owner_ref=%s depth=%d",
-	      locker_id, container_id, chest_id, owner_ref ? owner_ref : "(null)", depth);
+	      "sql_load_locker_items_filtered: begin locker_id=%d container_id=%d chest_id=%d depth=%d",
+	      locker_id, container_id, chest_id, depth);
 
 	if (depth > MAX_CONTAINER_LOAD_DEPTH)
 	{
@@ -5611,8 +5611,11 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 			unsigned long saved_uid = strtoul(row[20], NULL, 10);
 			if (saved_uid > 0)
 				obj->obj_uid = saved_uid;
-			if (!sql_persistence_item_owner_matches(obj->obj_uid, "locker", owner_ref,
-								"sql_load_locker_items"))
+			if (!sql_persistence_item_owner_matches_identity(
+				    obj->obj_uid, "locker",
+				    static_cast<unsigned long long>(locker_id),
+				    static_cast<unsigned long long>(chest_id),
+				    "sql_load_locker_items"))
 			{
 				logit(LOG_DEBUG,
 				      "sql_load_locker_items_filtered: component=ownership "
@@ -5627,8 +5630,8 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 		sql_load_item_affects_from_table(item_id, obj, "locker_item_affects");
 		sql_load_item_extra_descr_from_table(item_id, obj, "locker_item_extra_descr");
 
-		obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id,
-							       owner_ref, depth + 1);
+		obj->contains =
+			sql_load_locker_items_filtered(locker_id, item_id, chest_id, depth + 1);
 		{
 			int child_count = 0;
 			for (P_obj c = obj->contains; c; c = c->next_content)
@@ -5660,9 +5663,9 @@ static P_obj sql_load_locker_items_filtered(int locker_id, int container_id, int
 	mysql_free_result(result);
 	return first_obj;
 }
-static P_obj sql_load_locker_items(int locker_id, int container_id, const char *owner_ref)
+static P_obj sql_load_locker_items(int locker_id, int public_chest_id, int container_id)
 {
-	return sql_load_locker_items_filtered(locker_id, container_id, 0, owner_ref, 0);
+	return sql_load_locker_items_filtered(locker_id, container_id, public_chest_id, 0);
 }
 
 P_char sql_load_locker(int owner_pid, int owner_assoc_id)
@@ -5696,8 +5699,6 @@ P_char sql_load_locker(int owner_pid, int owner_assoc_id)
 
 	int locker_id = atoi(row[0]);
 	const char *locker_name = row[1];
-	char owner_ref[MAX_INPUT_LENGTH] = "";
-	snprintf(owner_ref, sizeof(owner_ref), "%s", locker_name);
 	int racewar = atoi(row[2]);
 	int race = atoi(row[3]);
 
@@ -5729,7 +5730,13 @@ P_char sql_load_locker(int owner_pid, int owner_assoc_id)
 	mysql_free_result(result);
 
 	// load items
-	ch->carrying = sql_load_locker_items(locker_id, 0, owner_ref);
+	const int public_chest_id = sql_get_or_create_public_chest(locker_id);
+	if (public_chest_id <= 0)
+	{
+		free_char(ch);
+		return NULL;
+	}
+	ch->carrying = sql_load_locker_items(locker_id, public_chest_id, 0);
 	{
 		int carry_count = 0;
 		for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
@@ -5775,8 +5782,6 @@ P_char sql_load_locker_by_name(const char *locker_name)
 	int racewar = atoi(row[1]);
 	int race = atoi(row[2]);
 	mysql_free_result(result);
-	char owner_ref[MAX_INPUT_LENGTH] = "";
-	snprintf(owner_ref, sizeof(owner_ref), "%s", locker_name);
 
 	// allocate locker character
 	P_char ch = (P_char)mm_get(dead_mob_pool);
@@ -5800,7 +5805,13 @@ P_char sql_load_locker_by_name(const char *locker_name)
 	GET_RACE(ch) = race;
 
 	// load items
-	ch->carrying = sql_load_locker_items(locker_id, 0, owner_ref);
+	const int public_chest_id = sql_get_or_create_public_chest(locker_id);
+	if (public_chest_id <= 0)
+	{
+		free_char(ch);
+		return NULL;
+	}
+	ch->carrying = sql_load_locker_items(locker_id, public_chest_id, 0);
 	for (P_obj obj = ch->carrying; obj; obj = obj->next_content)
 	{
 		obj->loc_p = LOC_CARRIED;
@@ -6330,18 +6341,6 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 		return;
 
 	char query[1024];
-	char owner_ref[MAX_INPUT_LENGTH] = "";
-	snprintf(query, sizeof(query), "SELECT locker_name FROM lockers WHERE id=%d LIMIT 1",
-		 locker_id);
-	MYSQL_RES *locker_result = db_query("%s", query);
-	if (locker_result)
-	{
-		MYSQL_ROW locker_row = mysql_fetch_row(locker_result);
-		if (locker_row && locker_row[0])
-			snprintf(owner_ref, sizeof(owner_ref), "%s", locker_row[0]);
-		mysql_free_result(locker_result);
-	}
-
 	snprintf(query, sizeof(query),
 		 "SELECT id, vnum, weight, cost, timer, extra_flags, wear_flags, item_type, "
 		 "value0, value1, value2, value3, value4, value5, value6, value7, "
@@ -6420,8 +6419,10 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 		if (row[21] && strlen(row[21]) > 0)
 			obj->condition = atoi(row[21]);
 
-		if (!sql_persistence_item_owner_matches(obj->obj_uid, "locker", owner_ref,
-							"sql_load_private_chest_items"))
+		if (!sql_persistence_item_owner_matches_identity(
+			    obj->obj_uid, "locker", static_cast<unsigned long long>(locker_id),
+			    static_cast<unsigned long long>(chest_id),
+			    "sql_load_private_chest_items"))
 		{
 			extract_obj(obj, FALSE);
 			continue;
@@ -6434,8 +6435,7 @@ void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj)
 		obj_to_obj(obj, chest_obj);
 
 		// load contained items (bags inside the chest)
-		obj->contains =
-			sql_load_locker_items_filtered(locker_id, item_id, chest_id, owner_ref, 1);
+		obj->contains = sql_load_locker_items_filtered(locker_id, item_id, chest_id, 1);
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			if (!obj_can_nest(c, obj))

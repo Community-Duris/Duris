@@ -36,6 +36,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 void item_movement_transaction_handle_completions(const critical_completion *completions,
 						  size_t count);
 void item_movement_transaction_player_ready(P_char actor);
+bool item_movement_transaction_player_busy(P_char actor);
 item_movement_health item_movement_transaction_health_copy(void);
 void item_movement_transaction_reset_for_tests(void);
 
