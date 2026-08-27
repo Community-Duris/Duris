@@ -25,7 +25,8 @@ struct combat_outcome_health
 };
 
 bool combat_outcome_transaction_submit(const combat_outcome_payload &payload,
-				       combat_outcome_completion_fn completion);
+				       combat_outcome_completion_fn completion,
+				       critical_operation_id *submitted_operation_id = nullptr);
 void combat_outcome_transaction_handle_completions(const critical_completion *completions,
 						   size_t count);
 critical_outbox_delivery_result

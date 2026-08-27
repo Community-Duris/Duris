@@ -61,7 +61,7 @@ checks = [
     ("login hydrates after status", load_body.index("sql_load_player_status") < load_body.index("sql_load_player_epic_bonus")),
     ("selection persists before cache publication", selection_body.index("if (!qry(") < selection_body.index("epic_bonus_state_select")),
     ("selection write is idempotent", "ON DUPLICATE KEY UPDATE" in selection_body),
-    ("award submits immutable final amount", "epic_transaction_submit(ch, amount" in gain_body),
+    ("award submits immutable final amount", "epic_transaction_submit_identified(" in gain_body),
     ("award cache updates only from committed ack", "if (!committed" in award_ack_body and "epic_bonus_record_gain(ch, context.type, context.amount);" in award_ack_body),
     ("live gain preserves strict selection cutoff", "now <= state->selected_at" in record_body),
 ]

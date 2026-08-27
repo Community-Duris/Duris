@@ -5,6 +5,8 @@
 #include <vector>
 using namespace std;
 
+struct critical_operation_id;
+
 #define EPIC_SMALL_STONE 358
 #define EPIC_LARGE_STONE 359
 #define EPIC_MONOLITH 360

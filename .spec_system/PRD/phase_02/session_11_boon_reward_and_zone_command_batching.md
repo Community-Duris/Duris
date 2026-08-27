@@ -1,7 +1,7 @@
 # Session 11: Boon, Reward, and Zone Command Batching
 
 **Session ID**: `phase02-session11-boon-reward-and-zone-command-batching`
-**Status**: Not Started
+**Status**: In Progress
 **Work Window**: One progress-and-reward boundary covering in-memory eligibility,
 immutable group fan-out, typed boon progress, account/gameplay rewards, zone-touch
 records, delegation to critical domains, and bounded batch completion.
@@ -47,10 +47,10 @@ epic, currency, and item results to their authoritative domains.
 
 ## Prerequisites
 
-- [ ] Sessions 03 through 05 authoritative epic, currency, and ownership adapters are
+- [x] Sessions 03 through 05 authoritative epic, currency, and ownership adapters are
       validated.
-- [ ] Session 02 outbox and reconciliation contracts are authoritative.
-- [ ] Account-bound reward snapshot and claim regressions remain passing.
+- [x] Session 02 outbox and reconciliation contracts are authoritative.
+- [x] Account-bound reward snapshot and claim regressions remain passing.
 
 ---
 

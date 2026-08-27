@@ -4,7 +4,7 @@
 **Sessions**: 12 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 7/12 sessions (58%)
+**Progress**: 10/12 sessions (83%)
 
 ---
 
@@ -44,8 +44,8 @@ prerequisites for every Phase 02 session.
 | 06 | Live Item Movement and Corpse Cutover | Complete | Player, container, floor, trade, corpse creation, and corpse-loot ownership routes | 2026-08-27 |
 | 07 | Locker Ownership Cutover | Complete | Public/private locker custody, immutable snapshots, exact transfer ACKs, and failure retention | 2026-08-27 |
 | 08 | Auction Settlement and Claim Cutover | Complete | Listing custody, bid funds, settlement, refunds, claims, ownership, and publication | 2026-08-27 |
-| 09 | PvP and Combat Outcome Batching | Not Started | Immutable battle outcome capture and transactional group, frag, ledger, and outbox apply | - |
-| 10 | Artifact and Guild Outcome Batching | Not Started | Set-based artifact deltas and ordered guild prestige/construction commands | - |
+| 09 | PvP and Combat Outcome Batching | Complete | Immutable battle outcome capture and transactional group, frag, ledger, and outbox apply | 2026-08-27 |
+| 10 | Artifact and Guild Outcome Batching | Complete | Set-based artifact deltas and ordered guild prestige/construction commands | 2026-08-27 |
 | 11 | Boon, Reward, and Zone Command Batching | Not Started | Typed progress, reward, and zone-touch commands with domain delegation and batch apply | - |
 | 12 | Raw Event Queue Retirement and Domain Gate | Not Started | Producer inventory, unrestricted SQL removal, crash/replay reconciliation, and load gate | - |
 
@@ -62,12 +62,13 @@ prerequisites for every Phase 02 session.
 - Session 07: Locker Ownership Cutover (completed 2026-08-27)
 - Session 08: Auction Settlement and Claim Cutover (completed 2026-08-27)
 - Session 09: PvP and Combat Outcome Batching (completed 2026-08-27)
+- Session 10: Artifact and Guild Outcome Batching (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 10: Artifact and Guild Outcome Batching
+- Session 11: Boon, Reward, and Zone Command Batching
 
 ---
 

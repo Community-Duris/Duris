@@ -30,6 +30,12 @@ bool epic_transaction_submit(P_char character, int64_t delta, epic_reason_type r
 			     int64_t reason_id, uint16_t flags, critical_source_site source_site,
 			     critical_deadline_class deadline_class, epic_completion_fn completion,
 			     const void *context, size_t context_size);
+bool epic_transaction_submit_identified(P_char character, const critical_operation_id &operation_id,
+					int64_t delta, epic_reason_type reason, int64_t reason_id,
+					uint16_t flags, critical_source_site source_site,
+					critical_deadline_class deadline_class,
+					epic_completion_fn completion, const void *context,
+					size_t context_size);
 void epic_transaction_handle_completions(const critical_completion *completions, size_t count);
 void epic_transaction_player_ready(P_char character);
 epic_transaction_health epic_transaction_health_copy(void);

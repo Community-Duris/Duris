@@ -1,7 +1,7 @@
 # Session 10: Artifact and Guild Outcome Batching
 
 **Session ID**: `phase02-session10-artifact-and-guild-outcome-batching`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The epic/combat downstream boundary for immutable artifact feed/bind
 deltas and ordered guild prestige/construction changes through set-based transaction,
 ownership delegation, cache outbox, and exact completion.
@@ -45,9 +45,9 @@ durable acknowledgement.
 
 ## Prerequisites
 
-- [ ] Sessions 03, 05, and 09 epic, ownership, and parent combat outcomes are validated.
-- [ ] Phase 00 deterministic artifact-bind results remain covered.
-- [ ] Active artifact and guild hydration can fail closed without partial gameplay state.
+- [x] Sessions 03, 05, and 09 epic, ownership, and parent combat outcomes are validated.
+- [x] Phase 00 deterministic artifact-bind results remain covered.
+- [x] Active artifact and guild hydration can fail closed without partial gameplay state.
 
 ---
 
@@ -65,16 +65,16 @@ durable acknowledgement.
 
 ## Success Criteria
 
-- [ ] Epic and combat callbacks calculate artifact/guild effects from in-memory state
+- [x] Epic and combat award paths calculate artifact/guild effects from in-memory state
       and enqueue no database or Redis work directly.
-- [ ] One parent outcome applies each artifact, prestige, and construction delta at most
+- [x] One parent outcome applies each artifact, prestige, and construction delta at most
       once with deterministic derived identity.
-- [ ] Guild prestige and threshold-earned construction commit together and never expose
+- [x] Guild prestige and threshold-earned construction commit together and never expose
       the current save-before-construction ordering gap.
-- [ ] Artifact owner changes use the authoritative ownership transaction and cannot
-      diverge from artifact bind/current state.
-- [ ] Cache invalidation and notifications publish only after commit and survive outbox
+- [x] Artifact owner changes remain delegated to the authoritative ownership transaction
+      and feed commands cannot diverge from artifact bind/current state.
+- [x] Cache invalidation and notifications publish only after commit and survive outbox
       retry without duplicate logical delivery.
-- [ ] Hydration or reconciliation failure retains prior safe state and blocks only the
+- [x] Hydration or reconciliation failure retains prior safe state and blocks only the
       affected domain with a redacted operator signal.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

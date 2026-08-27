@@ -552,6 +552,7 @@ CREATE TABLE `guilds` (
   `bits` int unsigned NOT NULL DEFAULT '0',
   `prestige` bigint unsigned NOT NULL DEFAULT '0',
   `construction` bigint unsigned NOT NULL DEFAULT '0',
+  `outcome_revision` bigint unsigned NOT NULL DEFAULT '0',
   `platinum` int unsigned NOT NULL DEFAULT '0',
   `gold` int unsigned NOT NULL DEFAULT '0',
   `silver` int unsigned NOT NULL DEFAULT '0',
@@ -2011,6 +2012,67 @@ CREATE TABLE `combat_frag_ledger` (
   UNIQUE KEY `uq_combat_frag_pid_revision` (`pid`,`frag_revision`),
   KEY `idx_combat_frag_pid_created` (`pid`,`created_at`),
   CONSTRAINT `combat_frag_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `combat_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `artifact_domain_state` (
+  `vnum` int NOT NULL, `owned` tinyint unsigned NOT NULL DEFAULT '0',
+  `loc_type` tinyint unsigned NOT NULL DEFAULT '1', `location` int NOT NULL DEFAULT '0',
+  `timer_epoch` bigint NOT NULL DEFAULT '0', `artifact_type` tinyint unsigned NOT NULL DEFAULT '0',
+  `bind_owner_pid` int NOT NULL DEFAULT '0', `bind_timer_epoch` bigint NOT NULL DEFAULT '0',
+  `item_uid` bigint unsigned DEFAULT NULL, `item_revision` bigint unsigned DEFAULT NULL,
+  `revision` bigint unsigned NOT NULL DEFAULT '0',
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`vnum`), KEY `idx_artifact_domain_owner` (`loc_type`,`location`,`vnum`),
+  KEY `idx_artifact_domain_item` (`item_uid`),
+  CONSTRAINT `artifact_domain_item_fk` FOREIGN KEY (`item_uid`) REFERENCES `item_current_owner` (`item_uid`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `artifact_domain_baseline` (
+  `vnum` int NOT NULL, `opening_timer_epoch` bigint NOT NULL,
+  `opening_bind_owner_pid` int NOT NULL, `opening_bind_timer_epoch` bigint NOT NULL,
+  `opening_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`vnum`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `artifact_guild_outcome` (
+  `operation_id` binary(16) NOT NULL, `parent_operation_id` binary(16) NOT NULL,
+  `actor_pid` int unsigned NOT NULL, `guild_id` int unsigned NOT NULL DEFAULT '0',
+  `prestige_delta` bigint NOT NULL DEFAULT '0', `construction_delta` bigint NOT NULL DEFAULT '0',
+  `artifact_count` smallint unsigned NOT NULL DEFAULT '0',
+  `guild_prestige_after` bigint unsigned NOT NULL DEFAULT '0',
+  `guild_construction_after` bigint unsigned NOT NULL DEFAULT '0',
+  `guild_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_artifact_guild_parent_actor` (`parent_operation_id`,`actor_pid`),
+  KEY `idx_artifact_guild_actor_created` (`actor_pid`,`created_at`),
+  CONSTRAINT `artifact_guild_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `artifact_guild_parent_fk` FOREIGN KEY (`parent_operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `artifact_guild_outcome_delta` (
+  `operation_id` binary(16) NOT NULL, `artifact_index` smallint unsigned NOT NULL,
+  `vnum` int NOT NULL, `flags` tinyint unsigned NOT NULL, `timer_before` bigint NOT NULL,
+  `timer_after` bigint NOT NULL, `bind_owner_before` int NOT NULL, `bind_owner_after` int NOT NULL,
+  `bind_timer_before` bigint NOT NULL, `bind_timer_after` bigint NOT NULL,
+  `revision` bigint unsigned NOT NULL, PRIMARY KEY (`operation_id`,`artifact_index`),
+  UNIQUE KEY `uq_artifact_outcome_vnum` (`operation_id`,`vnum`),
+  CONSTRAINT `artifact_outcome_delta_fk` FOREIGN KEY (`operation_id`) REFERENCES `artifact_guild_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `artifact_delta_ledger` (
+  `operation_id` binary(16) NOT NULL, `artifact_index` smallint unsigned NOT NULL,
+  `vnum` int NOT NULL, `timer_delta` bigint NOT NULL, `bind_owner_pid` int NOT NULL,
+  `bind_timer_epoch` bigint NOT NULL, `revision` bigint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`,`artifact_index`), UNIQUE KEY `uq_artifact_delta_revision` (`vnum`,`revision`),
+  KEY `idx_artifact_delta_created` (`vnum`,`created_at`),
+  CONSTRAINT `artifact_delta_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `artifact_guild_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `guild_outcome_ledger` (
+  `operation_id` binary(16) NOT NULL, `guild_id` int unsigned NOT NULL,
+  `prestige_delta` bigint NOT NULL, `construction_delta` bigint NOT NULL,
+  `prestige_after` bigint unsigned NOT NULL, `construction_after` bigint unsigned NOT NULL,
+  `guild_revision` bigint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_guild_outcome_revision` (`guild_id`,`guild_revision`),
+  KEY `idx_guild_outcome_created` (`guild_id`,`created_at`),
+  CONSTRAINT `guild_outcome_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `artifact_guild_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

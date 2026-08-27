@@ -16,6 +16,7 @@ using namespace std;
 #include "utils.h"
 #include "achievements.h"
 #include "assocs.h"
+#include "artifact_guild_transaction.h"
 #include "auction_houses.h"
 #include "boon.h"
 #include "damage.h"
@@ -164,8 +165,6 @@ void epic_award_committed(P_char ch, bool committed, const epic_command_result &
 		send_to_char("You have not completed the task given to you by the Gods, \n"
 			     "so you are not able to progress at usual pace.\n",
 			     ch);
-	if (GET_ASSOC(ch))
-		GET_ASSOC(ch)->add_points_from_epics(ch, context.amount, context.type);
 	char buffer[256];
 	snprintf(buffer, sizeof(buffer), "You have gained %d epic point%s.\n", context.amount,
 		 context.amount == 1 ? "" : "s");
@@ -180,7 +179,6 @@ void epic_award_committed(P_char ch, bool committed, const epic_command_result &
 
 	if (context.type == EPIC_BOTTLE)
 		return;
-	epic_feed_artifacts(ch, context.amount, context.type);
 	struct affected_type *afp = get_spell_from_char(ch, TAG_EPICS_GAINED);
 	if (afp)
 		afp->modifier += context.amount;
@@ -631,11 +629,24 @@ void gain_epic(P_char ch, int type, int data, int amount)
 		logit(LOG_DEBUG, "gain_epic: unsupported award type %d for %s", type, J_NAME(ch));
 		return;
 	}
-	const epic_award_context context = { type, data, amount, blessing, task_penalty };
-	if (!epic_transaction_submit(ch, amount, reason, data, 0, epic_award_source(type),
-				     critical_deadline_class::interactive, epic_award_committed,
-				     &context, sizeof(context)))
+	critical_operation_id operation_id = {};
+	if (!critical_operation_id_generate(&operation_id))
+	{
 		send_to_char("The epic award service is busy. Please try again.\n", ch);
+		return;
+	}
+	const epic_award_context context = { type, data, amount, blessing, task_penalty };
+	if (!epic_transaction_submit_identified(ch, operation_id, amount, reason, data, 0,
+						epic_award_source(type),
+						critical_deadline_class::interactive,
+						epic_award_committed, &context, sizeof(context)))
+	{
+		send_to_char("The epic award service is busy. Please try again.\n", ch);
+		return;
+	}
+	if (!artifact_guild_transaction_submit(ch, operation_id, amount, type))
+		logit(LOG_FILE,
+		      "artifact_guild: component=epic_capture outcome=deferred_effect_unavailable actor=redacted");
 }
 
 struct affected_type *get_epic_task(P_char ch)
@@ -697,8 +708,6 @@ void epic_publish_pvp_award(P_char ch, int amount)
 {
 	if (!ch || IS_NPC(ch) || amount < 1)
 		return;
-	if (GET_ASSOC(ch))
-		GET_ASSOC(ch)->add_points_from_epics(ch, amount, EPIC_PVP);
 	char buffer[256];
 	snprintf(buffer, sizeof(buffer), "You have gained %d epic point%s.\n", amount,
 		 amount == 1 ? "" : "s");
@@ -709,7 +718,6 @@ void epic_publish_pvp_award(P_char ch, int amount)
 	if (GET_LEVEL(ch) >= get_property("exp.maxExpLevel", 46) &&
 	    GET_LEVEL(ch) < get_property("epic.maxFreeLevel", 50))
 		epic_free_level(ch);
-	epic_feed_artifacts(ch, amount, EPIC_PVP);
 	struct affected_type *afp = get_spell_from_char(ch, TAG_EPICS_GAINED);
 	if (afp)
 		afp->modifier += amount;

@@ -110,12 +110,11 @@ auction_command_result apply(const critical_command &command,
 	return result;
 }
 
-uint32_t insert_player(const char *name, const char *account)
+uint32_t insert_player(uint32_t pid, const char *name, const char *account)
 {
-	execute("INSERT INTO player_data(name,account_name,racewar,copper,silver,gold,platinum) "
-		"VALUES('" +
-		std::string(name) + "','" + account + "',1,0,0,0,10)");
-	const uint32_t pid = static_cast<uint32_t>(mysql_insert_id(connection));
+	execute("INSERT INTO player_data(pid,name,account_name,racewar,copper,silver,gold,platinum) "
+		"VALUES(" +
+		std::to_string(pid) + ",'" + name + "','" + account + "',1,0,0,0,10)");
 	execute("INSERT INTO account_banks(account_name,racewar,bank_copper,bank_silver,bank_gold,"
 		"bank_platinum) VALUES('" +
 		std::string(account) + "',1,0,0,0,0)");
@@ -145,9 +144,9 @@ int main()
 		execute("INSERT INTO accounts(account_name,password) VALUES('" +
 			std::string(account) + "','')");
 	}
-	const uint32_t seller = insert_player("AuctionSeller", seller_account);
-	const uint32_t bidder = insert_player("AuctionBidder", bidder_account);
-	const uint32_t buyer = insert_player("AuctionBuyer", buyer_account);
+	const uint32_t seller = insert_player(2147000301U, "AuctionSeller", seller_account);
+	const uint32_t bidder = insert_player(2147000302U, "AuctionBidder", bidder_account);
+	const uint32_t buyer = insert_player(2147000303U, "AuctionBuyer", buyer_account);
 	const uint64_t item_uid = 990000001;
 	execute("DELETE FROM item_current_owner WHERE item_uid=" + std::to_string(item_uid));
 	execute("DELETE FROM item_owner_revision WHERE owner_type IN (1,7) AND owner_id IN (" +

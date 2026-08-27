@@ -6,6 +6,8 @@
 #include "auction_repository.h"
 #include "combat_outcome_command.h"
 #include "combat_outcome_repository.h"
+#include "artifact_guild_command.h"
+#include "artifact_guild_repository.h"
 #include "item_transfer_repository.h"
 #include "sql_pool.h"
 
@@ -37,6 +39,8 @@ constexpr uint16_t OUTBOX_DESTINATION_AUCTION = 5;
 constexpr uint16_t OUTBOX_EVENT_AUCTION_MUTATED = 1;
 constexpr uint16_t OUTBOX_DESTINATION_COMBAT = 6;
 constexpr uint16_t OUTBOX_EVENT_COMBAT_OUTCOME = 1;
+constexpr uint16_t OUTBOX_DESTINATION_ARTIFACT_GUILD = 7;
+constexpr uint16_t OUTBOX_EVENT_ARTIFACT_GUILD_MUTATED = 1;
 thread_local unsigned int last_statement_error = 0;
 
 struct stored_operation
@@ -402,6 +406,11 @@ bool insert_outbox(MYSQL *connection, const critical_command &command, const uin
 	{
 		destination = OUTBOX_DESTINATION_COMBAT;
 		event_type = OUTBOX_EVENT_COMBAT_OUTCOME;
+	}
+	else if (command.type == critical_command_type::artifact)
+	{
+		destination = OUTBOX_DESTINATION_ARTIFACT_GUILD;
+		event_type = OUTBOX_EVENT_ARTIFACT_GUILD_MUTATED;
 	}
 	unsigned long operation_length = command.operation_id.bytes.size(),
 		      payload_length = payload_size;
@@ -896,6 +905,7 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	item_transfer_payload item_payload = {};
 	auction_command_payload auction_payload = {};
 	combat_outcome_payload combat_payload = {};
+	artifact_guild_payload artifact_payload = {};
 	const bool test_command = command.type == critical_command_type::test &&
 				  command.payload.size() == 8;
 	const bool epic_command = epic_command_decode_payload(command, &epic_payload);
@@ -903,9 +913,11 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	const bool item_command = item_transfer_command_decode_payload(command, &item_payload);
 	const bool auction_command = auction_command_decode_payload(command, &auction_payload);
 	const bool combat_command = combat_outcome_command_decode_payload(command, &combat_payload);
+	const bool artifact_guild_command =
+		artifact_guild_command_decode_payload(command, &artifact_payload);
 	if (!connection ||
 	    (!test_command && !epic_command && !currency_command && !item_command &&
-	     !auction_command && !combat_command) ||
+	     !auction_command && !combat_command && !artifact_guild_command) ||
 	    !critical_command_valid(command))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
@@ -1152,6 +1164,54 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 					   combat_result.participants[index].wallet_revision,
 					   combat_result.participants[index].bank_revision }));
 		if (!combat_outcome_command_encode_result(combat_result, &result_payload) ||
+		    (mutation_applied && !insert_outbox(connection, command, result_payload.data(),
+							result_payload.size())) ||
+		    !finish_inbox(connection, command, durable_revision, result_code,
+				  result_payload.data(), result_payload.size()))
+		{
+			const unsigned int database_failure = database_error(connection);
+			const unsigned int error = database_failure ? database_failure : errno;
+			rollback(connection);
+			return failure(error);
+		}
+		if (!execute(connection, "COMMIT"))
+		{
+			const unsigned int error = mysql_errno(connection);
+			if (!connection_error(error))
+				rollback(connection);
+			return { connection_error(error) ?
+					 critical_apply_outcome::ambiguous_commit :
+					 failure(error).outcome,
+				 durable_revision, error };
+		}
+		critical_apply_result applied = { result_code ?
+							  critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::applied,
+						  durable_revision, result_code };
+		applied.result_size = result_payload.size();
+		std::copy(result_payload.begin(), result_payload.end(),
+			  applied.result_payload.begin());
+		return applied;
+	}
+	if (artifact_guild_command)
+	{
+		artifact_guild_result outcome_result = {};
+		unsigned int result_code = 0;
+		bool mutation_applied = false;
+		if (!artifact_guild_repository_execute(connection, command, &outcome_result,
+						       &result_code, &mutation_applied))
+		{
+			const unsigned int database_failure = database_error(connection);
+			const unsigned int error = database_failure ? database_failure : errno;
+			rollback(connection);
+			return failure(error);
+		}
+		std::array<uint8_t, ARTIFACT_GUILD_RESULT_BYTES> result_payload = {};
+		uint64_t durable_revision = outcome_result.guild_revision;
+		for (size_t index = 0; index < outcome_result.artifact_count; ++index)
+			durable_revision = std::max(durable_revision,
+						    outcome_result.artifacts[index].revision);
+		if (!artifact_guild_command_encode_result(outcome_result, &result_payload) ||
 		    (mutation_applied && !insert_outbox(connection, command, result_payload.data(),
 							result_payload.size())) ||
 		    !finish_inbox(connection, command, durable_revision, result_code,

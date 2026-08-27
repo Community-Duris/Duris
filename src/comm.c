@@ -87,6 +87,7 @@
 #include "item_movement_transaction.h"
 #include "auction_transaction.h"
 #include "combat_outcome_transaction.h"
+#include "artifact_guild_transaction.h"
 #include "epic_transaction.h"
 #include "player_save_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
@@ -124,6 +125,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	item_movement_transaction_handle_completions(completions, count);
 	auction_transaction_handle_completions(completions, count);
 	combat_outcome_transaction_handle_completions(completions, count);
+	artifact_guild_transaction_handle_completions(completions, count);
 }
 
 static critical_outbox_delivery_result
@@ -131,6 +133,8 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 {
 	if (record.destination == 6)
 		return combat_outcome_transaction_outbox_delivery(record, context);
+	if (record.destination == 7)
+		return artifact_guild_transaction_outbox_delivery(record, context);
 	return auction_transaction_outbox_delivery(record, context);
 }
 
@@ -543,6 +547,9 @@ void run_the_game(int port, int sslport)
 
 		Guild::initialize();
 		fprintf(stderr, "-- Done loading guilds\r\n");
+		if (!artifact_guild_state_hydrate())
+			logit(LOG_FILE,
+			      "artifact_guild: component=hydration outcome=unavailable state=retained");
 
 		Guildhall::initialize();
 		fprintf(stderr, "-- Done loading guildhalls\r\n");
@@ -1403,6 +1410,7 @@ resume_game_loop:
 							     critical_completion_count);
 			auction_transaction_publish_outbox();
 			combat_outcome_transaction_publish_outbox();
+			artifact_guild_transaction_publish_outbox();
 			for (size_t index = 0; index < critical_completion_count; ++index)
 				if (critical_completions[index].outcome ==
 				    critical_apply_outcome::terminal_failure)

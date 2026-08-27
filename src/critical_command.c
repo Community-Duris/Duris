@@ -5,6 +5,7 @@
 #include <cstring>
 #include <limits>
 #include <new>
+#include <openssl/sha.h>
 #include <sys/random.h>
 #include <utility>
 
@@ -14,7 +15,7 @@ constexpr unsigned char COMMAND_MAGIC[4] = { 'C', 'C', 'M', '1' };
 
 bool valid_entity_type(critical_entity_type type)
 {
-	return type >= critical_entity_type::player && type <= critical_entity_type::system;
+	return type >= critical_entity_type::player && type <= critical_entity_type::artifact;
 }
 
 template <typename T> void append_le(std::vector<uint8_t> &output, T value)
@@ -62,6 +63,26 @@ bool critical_operation_id_generate(critical_operation_id *operation_id)
 			return false;
 		offset += static_cast<size_t>(result);
 	}
+	return !critical_operation_id_is_zero(*operation_id);
+}
+
+bool critical_operation_id_derive(const critical_operation_id &parent, uint32_t domain,
+				  uint64_t discriminator, critical_operation_id *operation_id)
+{
+	if (!operation_id || critical_operation_id_is_zero(parent) || !domain)
+		return false;
+	std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES + sizeof(domain) + sizeof(discriminator)>
+		input = {};
+	std::copy(parent.bytes.begin(), parent.bytes.end(), input.begin());
+	for (size_t byte = 0; byte < sizeof(domain); ++byte)
+		input[CRITICAL_COMMAND_ID_BYTES + byte] =
+			static_cast<uint8_t>(domain >> (byte * 8));
+	for (size_t byte = 0; byte < sizeof(discriminator); ++byte)
+		input[CRITICAL_COMMAND_ID_BYTES + sizeof(domain) + byte] =
+			static_cast<uint8_t>(discriminator >> (byte * 8));
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(input.data(), input.size(), digest.data());
+	std::copy_n(digest.begin(), operation_id->bytes.size(), operation_id->bytes.begin());
 	return !critical_operation_id_is_zero(*operation_id);
 }
 

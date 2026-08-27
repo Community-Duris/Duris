@@ -22,7 +22,7 @@ add_frags = function(fight_text, "void AddFrags(P_char ch, P_char victim)\n{", "
 assert "submit_pvp_outcome(ch, victim, true)" in add_frags
 for forbidden in ("sql_modify_frags", "redis_invalidate_fraglist", "ADD_MONEY", "epic_frag"):
     assert forbidden not in add_frags
-assert "combat_outcome_transaction_submit(payload, combat_outcome_committed)" in fight_text
+assert "combat_outcome_transaction_submit(payload, combat_outcome_committed, &operation_id)" in fight_text
 print("[PASS] combat mutations publish only through the transactional outcome command")
 
 assert "bool sql_get_bind_data(int vnum, int *owner_pid, int *timer);" in sql_header

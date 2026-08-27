@@ -220,6 +220,11 @@ class Guild
 	void add_points_from_epics(P_char ch, int epics, int epic_type);
 
 	unsigned long get_construction() { return construction; }
+	void publish_outcome_totals(unsigned long new_prestige, unsigned long new_construction)
+	{
+		prestige = new_prestige;
+		construction = new_construction;
+	}
 	void add_construction(int cps)
 	{
 		construction += cps;

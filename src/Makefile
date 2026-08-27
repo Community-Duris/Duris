@@ -212,6 +212,10 @@ OBJS =  $(SHIP_OBJS) \
 				 combat_outcome_command.o \
 				 combat_outcome_repository.o \
 				 combat_outcome_transaction.o \
+				 artifact_guild_command.o \
+				 artifact_guild_repository.o \
+				 artifact_guild_state.o \
+				 artifact_guild_transaction.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
 				 player_save_worker.o \

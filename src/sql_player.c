@@ -10500,15 +10500,15 @@ bool sql_save_guild(Guild *guild)
 		 "insert into guilds (id, name, racewar, bits, prestige, construction, "
 		 "platinum, gold, silver, copper, frags, top_frags, topfragger) "
 		 "values (%u, '%s', %u, %u, %lu, %lu, %u, %u, %u, %u, %ld, %ld, '%s') "
-		 "on duplicate key update name='%s', racewar=%u, bits=%u, prestige=%lu, "
-		 "construction=%lu, platinum=%u, gold=%u, silver=%u, copper=%u, "
+		 "on duplicate key update name='%s', racewar=%u, bits=%u, prestige=prestige, "
+		 "construction=construction, platinum=%u, gold=%u, silver=%u, copper=%u, "
 		 "frags=%ld, top_frags=%ld, topfragger='%s'",
 		 gid, esc_name ? esc_name : "", guild->racewar, guild->bits, guild->prestige,
 		 guild->construction, guild->platinum, guild->gold, guild->silver, guild->copper,
 		 guild->frags.frags, guild->frags.top_frags, esc_fragger ? esc_fragger : "",
-		 esc_name ? esc_name : "", guild->racewar, guild->bits, guild->prestige,
-		 guild->construction, guild->platinum, guild->gold, guild->silver, guild->copper,
-		 guild->frags.frags, guild->frags.top_frags, esc_fragger ? esc_fragger : "");
+		 esc_name ? esc_name : "", guild->racewar, guild->bits, guild->platinum,
+		 guild->gold, guild->silver, guild->copper, guild->frags.frags,
+		 guild->frags.top_frags, esc_fragger ? esc_fragger : "");
 
 	if (esc_name)
 		free(esc_name);

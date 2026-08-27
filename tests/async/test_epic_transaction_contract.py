@@ -97,7 +97,7 @@ class EpicTransactionContractTests(unittest.TestCase):
         bonus = (SRC / "epic_bonus.c").read_text()
         transaction = (SRC / "epic_transaction.c").read_text()
         comm = (SRC / "comm.c").read_text()
-        self.assertIn("epic_transaction_submit(ch, amount", epic)
+        self.assertIn("epic_transaction_submit_identified(", epic)
         self.assertIn("epic_award_committed", epic)
         self.assertIn("FROM epic_ledger", bonus)
         self.assertIn("find_player_by_pid", transaction)

@@ -22,7 +22,9 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/currency_transaction_mysql_harness.cpp \
     src/critical_command.c src/currency_command.c src/epic_command.c \
     src/item_transfer_command.c src/item_transfer_repository.c src/auction_command.c \
-    src/auction_repository.c src/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
+    src/auction_repository.c src/combat_outcome_command.c src/combat_outcome_repository.c \
+    src/artifact_guild_command.c src/artifact_guild_repository.c \
+    src/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/currency_transaction_mysql_harness"
 "$ROOT/bin/tests/currency_transaction_mysql_harness"
 printf 'currency deposit-all, withdrawal, rejection, stale, overflow, duplicate, ledger, and baseline checks passed\n'

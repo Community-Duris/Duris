@@ -55,6 +55,7 @@
 #include "weather.h"
 #include "world_quest.h"
 #include "ws_handlers.h"
+#include "artifact_guild_transaction.h"
 #include "item_movement_transaction.h"
 #include "item_ownership_runtime.h"
 #include "combat_outcome_transaction.h"
@@ -1082,7 +1083,23 @@ static bool submit_pvp_outcome(P_char ch, P_char victim, bool award_frags)
 		if (task && abs(task->modifier) == SPILL_BLOOD && loss > 0)
 			victim_entry->flags |= COMBAT_PARTICIPANT_SPILL_BLOOD;
 	}
-	return combat_outcome_transaction_submit(payload, combat_outcome_committed);
+	critical_operation_id operation_id = {};
+	if (!combat_outcome_transaction_submit(payload, combat_outcome_committed, &operation_id))
+		return false;
+	for (size_t index = 0; index < payload.participant_count; ++index)
+	{
+		const auto &entry = payload.participants[index];
+		if (entry.epic_delta <= 0)
+			continue;
+		P_char participant = find_player_by_pid(entry.pid);
+		if (!participant || IS_NPC(participant) ||
+		    !artifact_guild_transaction_submit(participant, operation_id,
+						       static_cast<int>(entry.epic_delta),
+						       EPIC_PVP))
+			logit(LOG_FILE,
+			      "artifact_guild: component=combat_capture outcome=deferred_effect_unavailable actor=redacted");
+	}
+	return true;
 }
 
 void AddFrags(P_char ch, P_char victim)

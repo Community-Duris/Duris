@@ -37,6 +37,13 @@ critical_operation_id operation(uint8_t value)
 	return id;
 }
 
+std::string operation_hex(uint8_t value)
+{
+	char output[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+	assert(critical_operation_id_to_hex(operation(value), output, sizeof(output)));
+	return output;
+}
+
 void execute(MYSQL *connection, const char *sql)
 {
 	assert(mysql_real_query(connection, sql, strlen(sql)) == 0);
@@ -308,6 +315,18 @@ int main()
 	assert(item_uid_allocator_reserve(connection, 2));
 	assert(item_uid_allocator_next() == allocator_start + 5);
 	assert(item_uid_allocator_next() == allocator_start + 6);
+	for (uint8_t id = 1; id <= 12; ++id)
+	{
+		const std::string hex = operation_hex(id);
+		execute(connection,
+			("DELETE d FROM critical_outbox_delivery_dedupe d JOIN critical_outbox o ON "
+			 "o.outbox_id=d.outbox_id WHERE o.operation_id=UNHEX('" +
+			 hex + "')")
+				.c_str());
+		execute(connection,
+			("DELETE FROM critical_outbox WHERE operation_id=UNHEX('" + hex + "')")
+				.c_str());
+	}
 	mysql_close(connection);
 	return 0;
 }

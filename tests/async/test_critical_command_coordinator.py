@@ -348,7 +348,7 @@ with tempfile.TemporaryDirectory(prefix="duris-critical-command-") as temporary:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
             "-pthread", "-Isrc", str(source), "src/critical_command.c",
             "src/critical_command_journal.c", "src/critical_command_coordinator.c",
-            "-lz", "-o", str(binary),
+            "-lz", "-lcrypto", "-o", str(binary),
         ],
         cwd=ROOT,
         check=True,

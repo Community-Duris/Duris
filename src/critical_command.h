@@ -29,6 +29,7 @@ enum class critical_entity_type : uint8_t
 	auction,
 	room,
 	system,
+	artifact,
 };
 
 struct critical_entity_key
@@ -102,6 +103,8 @@ enum class critical_command_codec_result : uint8_t
 };
 
 bool critical_operation_id_generate(critical_operation_id *operation_id);
+bool critical_operation_id_derive(const critical_operation_id &parent, uint32_t domain,
+				  uint64_t discriminator, critical_operation_id *operation_id);
 bool critical_operation_id_is_zero(const critical_operation_id &operation_id);
 bool critical_operation_id_equal(const critical_operation_id &left,
 				 const critical_operation_id &right);

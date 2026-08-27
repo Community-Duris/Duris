@@ -73,19 +73,19 @@ bool epic_transaction_publish_balance(P_char character, int64_t balance, uint64_
 	return true;
 }
 
-bool epic_transaction_submit(P_char character, int64_t delta, epic_reason_type reason,
-			     int64_t reason_id, uint16_t flags, critical_source_site source_site,
-			     critical_deadline_class deadline_class, epic_completion_fn completion,
-			     const void *context, size_t context_size)
+bool epic_transaction_submit_identified(P_char character, const critical_operation_id &operation_id,
+					int64_t delta, epic_reason_type reason, int64_t reason_id,
+					uint16_t flags, critical_source_site source_site,
+					critical_deadline_class deadline_class,
+					epic_completion_fn completion, const void *context,
+					size_t context_size)
 {
 	if (!character || IS_NPC(character) || GET_PID(character) <= 0 || !delta ||
 	    context_size > EPIC_PENDING_CONTEXT_MAX_BYTES || (context_size && !context) ||
-	    pending.size() >= EPIC_PENDING_MAX)
+	    pending.size() >= EPIC_PENDING_MAX || critical_operation_id_is_zero(operation_id))
 		return false;
-	critical_operation_id operation_id = {};
 	critical_command command = {};
-	if (!critical_operation_id_generate(&operation_id) ||
-	    !epic_command_build(&command, operation_id,
+	if (!epic_command_build(&command, operation_id,
 				{ .pid = static_cast<uint32_t>(GET_PID(character)),
 				  .delta = delta,
 				  .reason = reason,
@@ -122,6 +122,18 @@ bool epic_transaction_submit(P_char character, int64_t delta, epic_reason_type r
 	++health.submitted;
 	health.pending = pending.size();
 	return true;
+}
+
+bool epic_transaction_submit(P_char character, int64_t delta, epic_reason_type reason,
+			     int64_t reason_id, uint16_t flags, critical_source_site source_site,
+			     critical_deadline_class deadline_class, epic_completion_fn completion,
+			     const void *context, size_t context_size)
+{
+	critical_operation_id operation_id = {};
+	return critical_operation_id_generate(&operation_id) &&
+	       epic_transaction_submit_identified(character, operation_id, delta, reason, reason_id,
+						  flags, source_site, deadline_class, completion,
+						  context, context_size);
 }
 
 void epic_transaction_handle_completions(const critical_completion *completions, size_t count)
