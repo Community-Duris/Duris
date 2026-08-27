@@ -61,12 +61,13 @@ prerequisites for every Phase 02 session.
 - Session 06: Live Item Movement and Corpse Cutover (completed 2026-08-27)
 - Session 07: Locker Ownership Cutover (completed 2026-08-27)
 - Session 08: Auction Settlement and Claim Cutover (completed 2026-08-27)
+- Session 09: PvP and Combat Outcome Batching (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 09: PvP and Combat Outcome Batching
+- Session 10: Artifact and Guild Outcome Batching
 
 ---
 

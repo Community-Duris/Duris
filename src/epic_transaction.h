@@ -34,5 +34,6 @@ void epic_transaction_handle_completions(const critical_completion *completions,
 void epic_transaction_player_ready(P_char character);
 epic_transaction_health epic_transaction_health_copy(void);
 void epic_transaction_reset_for_tests(void);
+bool epic_transaction_publish_balance(P_char character, int64_t balance, uint64_t revision);
 
 #endif

@@ -5458,6 +5458,7 @@ void init_char(P_char ch)
 	ch->only.pc->frags = 0;
 	ch->only.pc->epics = 0;
 	ch->only.pc->epic_revision = 0;
+	ch->only.pc->frag_revision = 0;
 	ch->only.pc->numb_deaths = 0;
 
 	/* Initialize bank balances (spare1-spare4 map to copper/silver/gold/platinum) */

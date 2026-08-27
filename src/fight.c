@@ -18,6 +18,7 @@
 #include "enhance.h"
 #include "utility.h"
 #include "utils.h"
+#include <algorithm>
 #include <math.h>
 #include <set>
 #include <stdio.h>
@@ -56,6 +57,7 @@
 #include "ws_handlers.h"
 #include "item_movement_transaction.h"
 #include "item_ownership_runtime.h"
+#include "combat_outcome_transaction.h"
 /*
  * external variables //
  */
@@ -838,175 +840,256 @@ void setHeavenTime(P_char victim)
 	      counter);
 }
 
-void AddFrags(P_char ch, P_char victim)
+static combat_outcome_participant *combat_outcome_add_participant(combat_outcome_payload *payload,
+								  P_char ch,
+								  combat_participant_role role,
+								  bool in_room, bool leader)
 {
-	P_char tch;
-	int allies, recfrag, frag_gain; //, loss;
-	char buffer[1024];
-	struct affected_type af, *afp, *next_af;
-
-	float gain, real_gain = 0.0, loss;
-
-	if (IS_NPC(ch))
+	if (!payload || !ch || IS_NPC(ch) || GET_PID(ch) <= 0)
+		return nullptr;
+	for (size_t index = 0; index < payload->participant_count; ++index)
 	{
-		if (ch->following && IS_PC(ch->following) &&
-		    ch->in_room == ch->following->in_room && grouped(ch, ch->following))
-		{
-			ch = ch->following;
-		}
-		else
-		{
-			return;
-		}
+		auto &entry = payload->participants[index];
+		if (entry.pid != static_cast<uint32_t>(GET_PID(ch)))
+			continue;
+		if (role == combat_participant_role::killer ||
+		    role == combat_participant_role::victim)
+			entry.role = role;
+		if (in_room)
+			entry.flags |= COMBAT_PARTICIPANT_IN_ROOM;
+		if (leader)
+			entry.flags |= COMBAT_PARTICIPANT_LEADER;
+		return &entry;
 	}
+	if (payload->participant_count >= payload->participants.size())
+		return nullptr;
+	auto &entry = payload->participants[payload->participant_count++];
+	entry.pid = static_cast<uint32_t>(GET_PID(ch));
+	entry.role = role;
+	entry.flags = (in_room ? COMBAT_PARTICIPANT_IN_ROOM : 0) |
+		      (leader ? COMBAT_PARTICIPANT_LEADER : 0);
+	entry.level = static_cast<uint16_t>(std::max(0, GET_LEVEL(ch)));
+	entry.racewar = static_cast<uint8_t>(GET_RACEWAR(ch));
+	entry.expected_frag_revision = ch->only.pc->frag_revision;
+	entry.expected_epic_revision = ch->only.pc->epic_revision;
+	entry.expected_wallet_revision = ch->only.pc->wallet_revision;
+	entry.expected_bank_revision = ch->only.pc->bank_revision;
+	strlcpy(entry.account_name.data(), get_account_name_safe(ch), entry.account_name.size());
+	strlcpy(entry.description.data(), GET_NAME(ch), entry.description.size());
+	return &entry;
+}
 
-	for (tch = world[ch->in_room].people, allies = 0; tch; tch = tch->next_in_room)
-		if (IS_PC(tch) && !opposite_racewar(ch, tch) && !IS_TRUSTED(tch))
-			allies++;
-
-	gain = 100.0 / allies;
-
-	if (EVIL_RACE(ch) && GOOD_RACE(victim))
-		gain = gain * get_property("frag.evil.penalty", 0.666);
-
-	for (tch = world[ch->in_room].people; tch; tch = tch->next_in_room)
+static void combat_outcome_committed(bool committed, const combat_outcome_result &, unsigned int,
+				     const combat_outcome_payload &payload)
+{
+	if (!committed)
 	{
-		if ((IS_PC(tch) && grouped(ch, tch)) || ch == tch)
+		P_char victim = find_player_by_pid(payload.victim_pid);
+		if (victim)
+			send_to_char(
+				"The PvP outcome could not be recorded; no rewards were applied.\r\n",
+				victim);
+		return;
+	}
+	P_char victim = find_player_by_pid(payload.victim_pid);
+	for (size_t index = 0; index < payload.participant_count; ++index)
+	{
+		const auto &entry = payload.participants[index];
+		P_char ch = find_player_by_pid(entry.pid);
+		if (!ch || IS_NPC(ch))
+			continue;
+		if (entry.frag_delta > 0)
 		{
-			/*  Code for recent frags to allow blood task to be fulfilled within a set
-			 *   period of time indicated in epic.frag.thrill.duration.  This allows for
-			 *   multiple frags to add up to enough to fulfill blood task - Jexni 12/1/08
-			 */
-			recfrag = 0;
-			for (afp = tch->affected; afp; afp = next_af)
+			char buffer[512];
+			snprintf(buffer, sizeof(buffer), "You just gained %.02f frags!\r\n",
+				 static_cast<double>(entry.frag_delta) / 100.0);
+			send_to_char(buffer, ch, LOG_PUBLIC);
+			int recent = 0;
+			for (struct affected_type *afp = ch->affected; afp; afp = afp->next)
 			{
-				next_af = afp->next;
 				if (afp->type == TAG_PLR_RECENT_FRAG)
 				{
-					recfrag = afp->modifier;
+					recent = afp->modifier;
 					break;
 				}
 			}
-
-			if (fragWorthy(tch, victim))
+			struct affected_type af = {};
+			af.type = TAG_PLR_RECENT_FRAG;
+			af.flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY;
+			af.modifier = recent + static_cast<int>(entry.frag_delta);
+			af.duration = get_property("epic.frag.thrill.duration", 45) * WAIT_SEC;
+			affect_from_char(ch, TAG_PLR_RECENT_FRAG);
+			affect_to_char(ch, &af);
+			if (entry.epic_delta)
+				epic_publish_pvp_award(ch, static_cast<int>(entry.epic_delta));
+			if (entry.wallet_delta_copper)
 			{
-				if (GET_LEVEL(tch) > GET_LEVEL(victim) + 5)
-					real_gain =
-						(gain * get_property("frag.leveldiff.modifier.low",
-								     0.500));
-				else if (GET_LEVEL(tch) + 5 < GET_LEVEL(victim))
-					real_gain =
-						(gain * get_property("frag.leveldiff.modifier.high",
-								     1.200));
-				else
-					real_gain = gain;
-
-				snprintf(buffer, 1024, "You just gained %.02f frags!\r\n",
-					 real_gain / 100.0);
-				send_to_char(buffer, tch, LOG_PUBLIC);
-
-				tch->only.pc->oldfrags = tch->only.pc->frags;
-				tch->only.pc->frags += (long)real_gain;
-				sql_modify_frags(tch, (int)real_gain);
-				redis_invalidate_fraglist();
-
-				memset(&af, 0, sizeof(af));
-				af.type = TAG_PLR_RECENT_FRAG;
-				af.flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY;
-				af.modifier = recfrag + (int)real_gain;
-				af.duration =
-					get_property("epic.frag.thrill.duration", 45) * WAIT_SEC;
-
-				// affect_from_char doesn't care if ch has the spell or not, so just attempt to remove.
-				affect_from_char(tch, TAG_PLR_RECENT_FRAG);
-				// Then reapply the new af.
-				affect_to_char(tch, &af);
-
-				if (real_gain + recfrag >=
-				    get_property("epic.frag.threshold", 0.10) * 100)
-				{
-					frag_gain = (int)((real_gain / 100.00) *
-							  (float)(get_property("epic.frag.amount",
-									       20.000)));
-
-					// Apply bonuses based on the victim's number of frags -- Eikel.
-					frag_gain += GET_FRAGS(victim);
-					if (frag_gain <
-					    get_property("epic.frag.minimum.epics", 100))
-						epic_frag(tch, GET_PID(victim),
-							  get_property("epic.frag.minimum.epics",
-								       100));
-					else if (frag_gain >
-						 get_property("epic.frag.maximum.epics", 1500))
-						epic_frag(tch, GET_PID(victim),
-							  get_property("epic.frag.maximum.epics",
-								       1500));
-					else
-						epic_frag(tch, GET_PID(victim), frag_gain);
-				}
-
-				if (GET_RACE(tch) == RACE_HALFLING ||
-				    GET_CLASS(tch, CLASS_MERCENARY))
-				{
-					char tmp[1024];
-					snprintf(tmp, 1024, "You get %s in blood money.\r\n",
-						 coin_stringv(10000 * real_gain));
-					send_to_char(tmp, tch);
-					ADD_MONEY(tch, 10000 * real_gain);
-				}
-
-				if ((tch->only.pc->frags / 100) > (tch->only.pc->oldfrags / 100))
-					checkFragList(tch);
-
-				if (IS_ILLITHID(tch))
-					illithid_advance_level(tch);
-
-				check_boon_completion(tch, victim, ((double)(real_gain / 100)),
+				snprintf(buffer, sizeof(buffer), "You get %s in blood money.\r\n",
+					 coin_stringv(entry.wallet_delta_copper));
+				send_to_char(buffer, ch);
+			}
+			if (entry.flags & COMBAT_PARTICIPANT_SPILL_BLOOD)
+			{
+				struct affected_type *task = get_epic_task(ch);
+				if (task && abs(task->modifier) == SPILL_BLOOD)
+					affect_remove(ch, task);
+			}
+			if (IS_ILLITHID(ch))
+				illithid_advance_level(ch);
+			if (victim)
+			{
+				check_boon_completion(ch, victim, entry.frag_delta / 100.0,
 						      BOPT_FRAG);
-				check_boon_completion(tch, victim, ((double)(real_gain / 100)),
+				check_boon_completion(ch, victim, entry.frag_delta / 100.0,
 						      BOPT_FRAGS);
 			}
 		}
-	}
-
-	if (GET_LEVEL(ch) > GET_LEVEL(victim) + 5)
-		loss = (int)(gain * get_property("frag.leveldiff.modifier.low", 0.500));
-	else if (GET_LEVEL(ch) + 5 < GET_LEVEL(victim))
-		loss = (int)(gain * get_property("frag.leveldiff.modifier.high", 1.200));
-	else
-		loss = gain;
-
-	victim->only.pc->frags -= loss;
-	sql_modify_frags(victim, -loss);
-	redis_invalidate_fraglist();
-	snprintf(buffer, sizeof buffer, "You just lost %.02f frags!\r\n", ((float)loss) / 100);
-	send_to_char(buffer, victim);
-	debug("%s just fragged %s for %.02f/%.02f frags!", J_NAME(ch), J_NAME(victim),
-	      ((float)real_gain) / 100, ((float)loss) / 100);
-	checkFragList(victim);
-
-	if (IS_PC(victim))
-	{
-		memset(&af, 0, sizeof(af));
-		af.type = TAG_RECENTLY_FRAGGED;
-		af.flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY;
-		af.duration = 60 * WAIT_SEC;
-		affect_to_char(victim, &af);
-	}
-
-	// When a player with a blood tasks dies, they now satisfy the pvp spill blood task.
-	if ((afp = get_epic_task(victim)))
-	{
-		if ((abs(afp->modifier) == SPILL_BLOOD) && (loss > 0))
+		else if (entry.frag_delta < 0)
 		{
-			send_to_char(
-				"The &+yGods of Duris&n are very pleased with YOUR &+Rblood&n, too!!!\n",
-				victim);
-			send_to_char("You can now progress further in your quest for epic power!\n",
-				     victim);
-			affect_remove(victim, afp);
+			char buffer[512];
+			snprintf(buffer, sizeof(buffer), "You just lost %.02f frags!\r\n",
+				 static_cast<double>(-entry.frag_delta) / 100.0);
+			send_to_char(buffer, ch);
+			struct affected_type af = {};
+			af.type = TAG_RECENTLY_FRAGGED;
+			af.flags = AFFTYPE_SHORT | AFFTYPE_NODISPEL | AFFTYPE_NOAPPLY;
+			af.duration = 60 * WAIT_SEC;
+			affect_to_char(ch, &af);
+			if (entry.flags & COMBAT_PARTICIPANT_SPILL_BLOOD)
+			{
+				send_to_char("The &+yGods of Duris&n are very pleased with YOUR "
+					     "&+Rblood&n, too!!!\n",
+					     ch);
+				send_to_char(
+					"You can now progress further in your quest for epic power!\n",
+					ch);
+				struct affected_type *task = get_epic_task(ch);
+				if (task && abs(task->modifier) == SPILL_BLOOD)
+					affect_remove(ch, task);
+			}
 		}
 	}
+}
+
+static bool submit_pvp_outcome(P_char ch, P_char victim, bool award_frags)
+{
+	if (!ch || !victim || IS_NPC(victim))
+		return false;
+	if (IS_NPC(ch))
+	{
+		if (!ch->following || IS_NPC(ch->following) ||
+		    ch->in_room != ch->following->in_room || !grouped(ch, ch->following))
+			return false;
+		ch = ch->following;
+	}
+	combat_outcome_payload payload = {};
+	payload.victim_pid = static_cast<uint32_t>(GET_PID(victim));
+	payload.room_vnum = world[ch->in_room].number;
+	strlcpy(payload.room_name.data(), world[ch->in_room].name, payload.room_name.size());
+	if (!combat_outcome_add_participant(&payload, ch, combat_participant_role::killer, true,
+					    ch->group && ch->group->ch == ch))
+		return false;
+	if (ch->group)
+		for (struct group_list *gl = ch->group; gl; gl = gl->next)
+			if (gl->ch != ch &&
+			    !combat_outcome_add_participant(&payload, gl->ch,
+							    combat_participant_role::killer_group,
+							    gl->ch->in_room == ch->in_room, false))
+				return false;
+	if (!combat_outcome_add_participant(&payload, victim, combat_participant_role::victim, true,
+					    victim->group && victim->group->ch == victim))
+		return false;
+	if (victim->group)
+		for (struct group_list *gl = victim->group; gl; gl = gl->next)
+			if (gl->ch != victim &&
+			    !combat_outcome_add_participant(
+				    &payload, gl->ch, combat_participant_role::victim_group,
+				    gl->ch->in_room == victim->in_room, false))
+				return false;
+	if (award_frags)
+	{
+		int allies = 0;
+		for (P_char current = world[ch->in_room].people; current;
+		     current = current->next_in_room)
+			if (IS_PC(current) && !opposite_racewar(ch, current) &&
+			    !IS_TRUSTED(current))
+				++allies;
+		if (allies < 1)
+			return false;
+		float gain = 100.0F / allies;
+		if (EVIL_RACE(ch) && GOOD_RACE(victim))
+			gain *= get_property("frag.evil.penalty", 0.666);
+		for (P_char current = world[ch->in_room].people; current;
+		     current = current->next_in_room)
+		{
+			if (!IS_PC(current) || (current != ch && !grouped(ch, current)) ||
+			    !fragWorthy(current, victim))
+				continue;
+			auto *entry = combat_outcome_add_participant(
+				&payload, current,
+				current == ch ? combat_participant_role::killer :
+						combat_participant_role::killer_group,
+				true, current->group && current->group->ch == current);
+			if (!entry)
+				return false;
+			float real_gain = gain;
+			if (GET_LEVEL(current) > GET_LEVEL(victim) + 5)
+				real_gain *= get_property("frag.leveldiff.modifier.low", 0.500);
+			else if (GET_LEVEL(current) + 5 < GET_LEVEL(victim))
+				real_gain *= get_property("frag.leveldiff.modifier.high", 1.200);
+			entry->frag_delta = static_cast<int64_t>(real_gain);
+			int recent = 0;
+			for (struct affected_type *afp = current->affected; afp; afp = afp->next)
+				if (afp->type == TAG_PLR_RECENT_FRAG)
+				{
+					recent = afp->modifier;
+					break;
+				}
+			if (real_gain + recent >= get_property("epic.frag.threshold", 0.10) * 100)
+			{
+				int epic_gain =
+					static_cast<int>((real_gain / 100.0F) *
+							 get_property("epic.frag.amount", 20.000));
+				epic_gain += GET_FRAGS(victim);
+				epic_gain = std::clamp(
+					epic_gain, get_property("epic.frag.minimum.epics", 100),
+					get_property("epic.frag.maximum.epics", 1500));
+				struct affected_type *task = get_epic_task(current);
+				if (task && abs(task->modifier) == SPILL_BLOOD)
+				{
+					epic_gain += 500;
+					entry->flags |= COMBAT_PARTICIPANT_SPILL_BLOOD;
+				}
+				entry->epic_delta = epic_calculate_pvp_award(current, epic_gain);
+			}
+			if (GET_RACE(current) == RACE_HALFLING ||
+			    GET_CLASS(current, CLASS_MERCENARY))
+				entry->wallet_delta_copper =
+					static_cast<int64_t>(10000 * real_gain);
+		}
+		float loss = gain;
+		if (GET_LEVEL(ch) > GET_LEVEL(victim) + 5)
+			loss *= get_property("frag.leveldiff.modifier.low", 0.500);
+		else if (GET_LEVEL(ch) + 5 < GET_LEVEL(victim))
+			loss *= get_property("frag.leveldiff.modifier.high", 1.200);
+		auto *victim_entry = combat_outcome_add_participant(
+			&payload, victim, combat_participant_role::victim, true,
+			victim->group && victim->group->ch == victim);
+		if (!victim_entry)
+			return false;
+		victim_entry->frag_delta = -static_cast<int64_t>(loss);
+		struct affected_type *task = get_epic_task(victim);
+		if (task && abs(task->modifier) == SPILL_BLOOD && loss > 0)
+			victim_entry->flags |= COMBAT_PARTICIPANT_SPILL_BLOOD;
+	}
+	return combat_outcome_transaction_submit(payload, combat_outcome_committed);
+}
+
+void AddFrags(P_char ch, P_char victim)
+{
+	if (!submit_pvp_outcome(ch, victim, true))
+		send_to_char("The PvP outcome service is busy; no rewards were applied.\r\n",
+			     victim);
 }
 
 unsigned int calculate_ch_state(P_char ch)
@@ -2516,34 +2599,18 @@ void die(P_char ch, P_char killer)
 		{
 			// It's important that this is before sql_save_pkill, 'cause we don't want to count this death as recent.
 			setHeavenTime(ch);
-			if (IS_PC_PET(killer))
+			P_char credited_killer = IS_PC_PET(killer) ? GET_MASTER(killer) : killer;
+			if (opposite_racewar(ch, credited_killer))
 			{
-				if (opposite_racewar(ch, GET_MASTER(killer)))
-				{
-					debug("die: ch: %s, killer %s, MASTER %s.", J_NAME(ch),
-					      J_NAME(killer), J_NAME(GET_MASTER(killer)));
-					sql_save_pkill(GET_MASTER(killer), ch);
-				}
+				const bool award = !CHAR_IN_ARENA(ch) &&
+						   fragWorthy(credited_killer, ch) &&
+						   !affected_by_spell(ch, TAG_RECENTLY_FRAGGED);
+				if (!submit_pvp_outcome(credited_killer, ch, award))
+					send_to_char(
+						"The PvP outcome service is busy; no rewards were "
+						"applied.\r\n",
+						ch);
 			}
-			else
-			{
-				if (opposite_racewar(ch, killer))
-					sql_save_pkill(killer, ch);
-			}
-		}
-		if (CHAR_IN_ARENA(ch))
-		{
-			;
-		}
-		else if (IS_PC(killer) && fragWorthy(killer, ch) &&
-			 !affected_by_spell(ch, TAG_RECENTLY_FRAGGED))
-		{
-			AddFrags(killer, ch);
-		}
-		else if (IS_PC_PET(killer) && fragWorthy(GET_MASTER(killer), ch) &&
-			 !affected_by_spell(ch, TAG_RECENTLY_FRAGGED))
-		{
-			AddFrags(killer, ch);
 		}
 	}
 

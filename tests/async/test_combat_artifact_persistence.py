@@ -18,23 +18,12 @@ def function(text: str, signature: str, next_signature: str) -> str:
     return text[start:end]
 
 
-add_frags = function(fight_text, "void AddFrags(P_char ch, P_char victim)\n{", "void update_pos")
-loss_calc = "loss = gain;"
-loss_mutation = "victim->only.pc->frags -= loss;"
-loss_write = "sql_modify_frags(victim, -loss);"
-loss_cache = "redis_invalidate_fraglist();"
-loss_message = (
-    'snprintf(buffer, sizeof buffer, "You just lost %.02f frags!\\r\\n", '
-    "((float)loss) / 100);"
-)
-victim_loss = add_frags[add_frags.rindex(loss_calc):]
-assert victim_loss.index(loss_calc) < victim_loss.index(loss_mutation)
-assert victim_loss.index(loss_mutation) < victim_loss.index(loss_write)
-assert victim_loss.index(loss_write) < victim_loss.index(loss_cache)
-assert victim_loss.index(loss_cache) < victim_loss.index(loss_message)
-assert add_frags.count(loss_mutation) == 1
-assert add_frags.count(loss_write) == 1
-print("[PASS] victim frag mutation precedes durable publication and cache invalidation")
+add_frags = function(fight_text, "void AddFrags(P_char ch, P_char victim)\n{", "unsigned int calculate_ch_state")
+assert "submit_pvp_outcome(ch, victim, true)" in add_frags
+for forbidden in ("sql_modify_frags", "redis_invalidate_fraglist", "ADD_MONEY", "epic_frag"):
+    assert forbidden not in add_frags
+assert "combat_outcome_transaction_submit(payload, combat_outcome_committed)" in fight_text
+print("[PASS] combat mutations publish only through the transactional outcome command")
 
 assert "bool sql_get_bind_data(int vnum, int *owner_pid, int *timer);" in sql_header
 bind_lookup = function(

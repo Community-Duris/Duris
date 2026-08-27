@@ -965,6 +965,7 @@ CREATE TABLE `player_data` (
   `time_unspecced` timestamp NULL DEFAULT NULL,
   `frags` bigint DEFAULT '0',
   `oldfrags` bigint DEFAULT '0',
+  `frag_revision` bigint unsigned NOT NULL DEFAULT '0',
   `numb_deaths` bigint unsigned DEFAULT '0',
   `killed_by` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `condition_0` tinyint DEFAULT '0',
@@ -1975,6 +1976,41 @@ CREATE TABLE `auction_reconciliation_quarantine` (
   `repaired_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`quarantine_id`),
   UNIQUE KEY `uq_auction_quarantine` (`auction_id`,`item_uid`,`conflict_code`),
   KEY `idx_auction_quarantine_open` (`repaired_at`,`auction_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `combat_frag_baseline` (
+  `pid` int unsigned NOT NULL, `opening_frags` bigint NOT NULL,
+  `opening_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `combat_outcome` (
+  `operation_id` binary(16) NOT NULL, `pkill_event_id` int unsigned NOT NULL,
+  `victim_pid` int unsigned NOT NULL, `room_vnum` int NOT NULL,
+  `participant_count` smallint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_combat_pkill_event` (`pkill_event_id`),
+  KEY `idx_combat_victim_created` (`victim_pid`,`created_at`),
+  CONSTRAINT `combat_outcome_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `combat_outcome_participant` (
+  `operation_id` binary(16) NOT NULL, `participant_index` smallint unsigned NOT NULL,
+  `pid` int unsigned NOT NULL, `role` tinyint unsigned NOT NULL, `flags` tinyint unsigned NOT NULL,
+  `frag_delta` bigint NOT NULL, `epic_delta` bigint NOT NULL, `wallet_delta_copper` bigint NOT NULL,
+  `frag_after` bigint NOT NULL, `frag_revision` bigint unsigned NOT NULL,
+  `epic_revision` bigint unsigned NOT NULL, `wallet_revision` bigint unsigned NOT NULL,
+  `bank_revision` bigint unsigned NOT NULL, PRIMARY KEY (`operation_id`,`participant_index`),
+  UNIQUE KEY `uq_combat_participant` (`operation_id`,`pid`),
+  KEY `idx_combat_participant_pid` (`pid`,`operation_id`),
+  CONSTRAINT `combat_participant_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `combat_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `combat_frag_ledger` (
+  `operation_id` binary(16) NOT NULL, `participant_index` smallint unsigned NOT NULL,
+  `pid` int unsigned NOT NULL, `delta` bigint NOT NULL, `frags_after` bigint NOT NULL,
+  `frag_revision` bigint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`,`participant_index`),
+  UNIQUE KEY `uq_combat_frag_pid_revision` (`pid`,`frag_revision`),
+  KEY `idx_combat_frag_pid_created` (`pid`,`created_at`),
+  CONSTRAINT `combat_frag_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `combat_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

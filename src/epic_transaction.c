@@ -64,6 +64,15 @@ bool publish(std::unordered_map<std::string, pending_epic>::iterator found, P_ch
 }
 } // namespace
 
+bool epic_transaction_publish_balance(P_char character, int64_t balance, uint64_t revision)
+{
+	if (!character || IS_NPC(character))
+		return false;
+	character->only.pc->epics = balance;
+	character->only.pc->epic_revision = revision;
+	return true;
+}
+
 bool epic_transaction_submit(P_char character, int64_t delta, epic_reason_type reason,
 			     int64_t reason_id, uint16_t flags, critical_source_site source_site,
 			     critical_deadline_class deadline_class, epic_completion_fn completion,

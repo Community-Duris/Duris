@@ -23,7 +23,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=125
+TOTAL=127
 FAILED=0
 
 run_sql() {
@@ -2916,6 +2916,8 @@ run_sql_file "apply epic ledger and balance schema" "$SCRIPT_DIR/epic_ledger_bal
 run_check "verify epic ledger and balance schema" "$SCRIPT_DIR/verify_epic_ledger_schema.sh"
 run_sql_file "apply currency ledger schema" "$SCRIPT_DIR/currency_ledger.sql"
 run_check "verify currency ledger schema" "$SCRIPT_DIR/verify_currency_ledger_schema.sh"
+run_sql_file "apply combat outcome schema" "$SCRIPT_DIR/combat_outcome.sql"
+run_check "verify combat outcome schema" "$SCRIPT_DIR/verify_combat_outcome_schema.sh"
 run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_ledger.sql"
 run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 run_sql_file "normalize stable corpse ownership identity" "$SCRIPT_DIR/live_item_movement_cutover.sql"

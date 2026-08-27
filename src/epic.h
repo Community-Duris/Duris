@@ -76,6 +76,8 @@ int modify_by_epic_trophy(P_char ch, int amount, int zone_number);
 void gain_epic(P_char, int type, int data, int amount);
 void group_gain_epic(P_char, int type, int data, int amount);
 void epic_frag(P_char, int victim_pid, int amount);
+int epic_calculate_pvp_award(P_char ch, int amount);
+void epic_publish_pvp_award(P_char ch, int amount);
 const char *epic_prestige(P_char);
 void init_guild_frags();
 void epic_feed_artifacts(P_char ch, int epics, int epic_type);

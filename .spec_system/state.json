@@ -3,7 +3,7 @@
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
   "current_phase": 2,
-  "current_session": "phase02-session09-pvp-and-combat-outcome-batching",
+  "current_session": "phase02-session10-artifact-and-guild-outcome-batching",
   "monorepo": false,
   "phases": {
     "1": {
@@ -57,7 +57,8 @@
     "phase02-session05-item-ownership-ledger-and-transfer-primitive",
     "phase02-session06-live-item-movement-and-corpse-cutover",
     "phase02-session07-locker-ownership-cutover",
-    "phase02-session08-auction-settlement-and-claim-cutover"
+    "phase02-session08-auction-settlement-and-claim-cutover",
+    "phase02-session09-pvp-and-combat-outcome-batching"
   ],
   "next_session_history": [
     {
@@ -533,6 +534,26 @@
     {
       "date": "2026-08-27",
       "session": "phase02-session09-pvp-and-combat-outcome-batching",
+      "status": "selected"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session09-pvp-and-combat-outcome-batching",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session09-pvp-and-combat-outcome-batching",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session09-pvp-and-combat-outcome-batching",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session10-artifact-and-guild-outcome-batching",
       "status": "selected"
     }
   ]

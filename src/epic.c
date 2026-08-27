@@ -678,6 +678,51 @@ void epic_frag(P_char ch, int victim_pid, int amount)
 	gain_epic(ch, EPIC_PVP, victim_pid, amount);
 }
 
+int epic_calculate_pvp_award(P_char ch, int amount)
+{
+	if (!ch || IS_NPC(ch) || amount < 1 || errand_notch < 1)
+		return 0;
+	if (IS_AFFECTED4(ch, AFF4_EPIC_INCREASE))
+		amount = static_cast<int>(amount * get_property("epic.witch.multiplier", 1.5));
+	amount = check_nexus_bonus(ch, amount, NEXUS_BONUS_EPICS);
+	amount += static_cast<int>(amount * get_epic_bonus(ch, EPIC_BONUS_EPIC_POINT));
+	if (GET_RACEWAR(ch) == RACEWAR_GOOD)
+		amount = static_cast<int>(amount * get_property("epic.gain.modifier.good", 1.000));
+	if (GET_RACEWAR(ch) == RACEWAR_EVIL)
+		amount = static_cast<int>(amount * get_property("epic.gain.modifier.evil", 1.000));
+	return amount;
+}
+
+void epic_publish_pvp_award(P_char ch, int amount)
+{
+	if (!ch || IS_NPC(ch) || amount < 1)
+		return;
+	if (GET_ASSOC(ch))
+		GET_ASSOC(ch)->add_points_from_epics(ch, amount, EPIC_PVP);
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer), "You have gained %d epic point%s.\n", amount,
+		 amount == 1 ? "" : "s");
+	send_to_char(buffer, ch);
+	epic_bonus_record_gain(ch, EPIC_PVP, amount);
+	epiclog(56, "%s received %d epic points (%s)", ch->player.name, amount,
+		epic_award_name(EPIC_PVP));
+	if (GET_LEVEL(ch) >= get_property("exp.maxExpLevel", 46) &&
+	    GET_LEVEL(ch) < get_property("epic.maxFreeLevel", 50))
+		epic_free_level(ch);
+	epic_feed_artifacts(ch, amount, EPIC_PVP);
+	struct affected_type *afp = get_spell_from_char(ch, TAG_EPICS_GAINED);
+	if (afp)
+		afp->modifier += amount;
+	else
+	{
+		afp = apply_achievement(ch, TAG_EPICS_GAINED);
+		afp->modifier = amount;
+	}
+	if ((afp->modifier - amount) / errand_notch < afp->modifier / errand_notch &&
+	    !has_epic_task(ch))
+		epic_choose_new_epic_task(ch);
+}
+
 void epic_feed_artifacts(P_char ch, int epics, int epic_type)
 {
 	P_obj obj;

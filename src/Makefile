@@ -209,6 +209,9 @@ OBJS =  $(SHIP_OBJS) \
 				 auction_command.o \
 				 auction_repository.o \
 				 auction_transaction.o \
+				 combat_outcome_command.o \
+				 combat_outcome_repository.o \
+				 combat_outcome_transaction.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
 				 player_save_worker.o \

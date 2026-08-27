@@ -169,6 +169,8 @@ query_result apply_status(MYSQL *connection, const player_snapshot &snapshot)
 	for (const player_snapshot_integer &row : snapshot.status_integers)
 	{
 		if (row.field == player_status_field::epics ||
+		    row.field == player_status_field::frags ||
+		    row.field == player_status_field::old_frags ||
 		    row.field == player_status_field::copper ||
 		    row.field == player_status_field::silver ||
 		    row.field == player_status_field::gold ||

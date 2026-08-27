@@ -1,7 +1,7 @@
 # Session 09: PvP and Combat Outcome Batching
 
 **Session ID**: `phase02-session09-pvp-and-combat-outcome-batching`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One immutable battle-outcome boundary from participant capture through
 set-based PvP rows, frag/progress changes, composed epic/currency effects, revisions,
 outbox publication, and exact game-thread completion.
@@ -46,9 +46,9 @@ save calls from the combat path.
 
 ## Prerequisites
 
-- [ ] Sessions 03 and 04 epic/currency command APIs are validated.
-- [ ] Session 02 outbox and Session 01 multi-key command ordering are authoritative.
-- [ ] Phase 00 post-mutation victim-frag correctness remains covered.
+- [x] Sessions 03 and 04 epic/currency command APIs are validated.
+- [x] Session 02 outbox and Session 01 multi-key command ordering are authoritative.
+- [x] Phase 00 post-mutation victim-frag correctness remains covered.
 
 ---
 
@@ -66,16 +66,16 @@ save calls from the combat path.
 
 ## Success Criteria
 
-- [ ] One qualifying battle outcome has one stable parent operation and a deterministic
+- [x] One qualifying battle outcome has one stable parent operation and a deterministic
       complete participant/effect set.
-- [ ] PvP event rows, participant rows, frag/progress state, required domain deltas,
+- [x] PvP event rows, participant rows, frag/progress state, required domain deltas,
       revisions, inbox result, and outbox rows commit consistently or not at all.
-- [ ] Duplicate callback or ambiguous replay cannot duplicate frags, epics, money, or
+- [x] Duplicate callback or ambiguous replay cannot duplicate frags, epics, money, or
       participant audit rows.
-- [ ] Participant disconnect or group mutation after capture cannot alter the immutable
+- [x] Participant disconnect or group mutation after capture cannot alter the immutable
       command or redirect its result.
-- [ ] Combat callbacks enqueue bounded typed values and perform no database, Redis, or
+- [x] Combat callbacks enqueue bounded typed values and perform no database, Redis, or
       filesystem I/O on the simulation thread.
-- [ ] Private descriptions and player logs are either excluded or explicitly bounded
+- [x] Private descriptions and player logs are either excluded or explicitly bounded
       and never exposed in failure logs or unrestricted SQL payloads.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

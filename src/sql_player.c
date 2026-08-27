@@ -1158,7 +1158,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			"act=%u, act2=%u, act3=%u, vote=%lu, alignment=%d,"
 			"prestige=%d, assoc_id=%d, guild_status=%u, "
 			"time_left_guild=FROM_UNIXTIME(NULLIF(%ld,0)), nb_left_guild=%d, time_unspecced=FROM_UNIXTIME(NULLIF(%ld,0)),"
-			"frags=%ld, oldfrags=%ld, numb_deaths=%lu, "
+			"frags=frags, oldfrags=oldfrags, numb_deaths=%lu, "
 			"condition_0=%d, condition_1=%d, condition_2=%d, condition_3=%d, condition_4=%d, "
 			"poof_in='%s', poof_out='%s', poof_in_sound='%s', poof_out_sound='%s', "
 			"echo_toggle=%d, prompt=%d, wiz_invis=%d, law_flags=%lu, "
@@ -1187,21 +1187,21 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			ch->specials.act3, ch->only.pc->vote, ch->specials.alignment,
 			ch->only.pc->prestige, GET_ASSOC_ID(ch), ch->specials.guild_status,
 			ch->only.pc->time_left_guild, ch->only.pc->nb_left_guild,
-			ch->only.pc->time_unspecced, ch->only.pc->frags, ch->only.pc->oldfrags,
-			ch->only.pc->numb_deaths, ch->specials.conditions[0],
-			ch->specials.conditions[1], ch->specials.conditions[2],
-			ch->specials.conditions[3], ch->specials.conditions[4], esc_poofin,
-			esc_poofout, esc_poofinsnd, esc_poofoutsnd, ch->only.pc->echo_toggle,
-			ch->only.pc->prompt, ch->only.pc->wiz_invis, 0UL, ch->only.pc->wimpy,
-			ch->only.pc->aggressive, ch->only.pc->highest_level,
-			ch->only.pc->screen_length, ch->only.pc->quest_active,
-			ch->only.pc->quest_mob_vnum, ch->only.pc->quest_type,
-			ch->only.pc->quest_accomplished, ch->only.pc->quest_started,
-			ch->only.pc->quest_zone_number, ch->only.pc->quest_giver,
-			ch->only.pc->quest_level, ch->only.pc->quest_receiver,
-			ch->only.pc->quest_shares_left, ch->only.pc->quest_kill_how_many,
-			ch->only.pc->quest_kill_original, ch->only.pc->quest_map_room,
-			ch->only.pc->quest_map_bought, ch->only.pc->last_ip, pid);
+			ch->only.pc->time_unspecced, ch->only.pc->numb_deaths,
+			ch->specials.conditions[0], ch->specials.conditions[1],
+			ch->specials.conditions[2], ch->specials.conditions[3],
+			ch->specials.conditions[4], esc_poofin, esc_poofout, esc_poofinsnd,
+			esc_poofoutsnd, ch->only.pc->echo_toggle, ch->only.pc->prompt,
+			ch->only.pc->wiz_invis, 0UL, ch->only.pc->wimpy, ch->only.pc->aggressive,
+			ch->only.pc->highest_level, ch->only.pc->screen_length,
+			ch->only.pc->quest_active, ch->only.pc->quest_mob_vnum,
+			ch->only.pc->quest_type, ch->only.pc->quest_accomplished,
+			ch->only.pc->quest_started, ch->only.pc->quest_zone_number,
+			ch->only.pc->quest_giver, ch->only.pc->quest_level,
+			ch->only.pc->quest_receiver, ch->only.pc->quest_shares_left,
+			ch->only.pc->quest_kill_how_many, ch->only.pc->quest_kill_original,
+			ch->only.pc->quest_map_room, ch->only.pc->quest_map_bought,
+			ch->only.pc->last_ip, pid);
 	}
 	else
 	{
@@ -3890,7 +3890,7 @@ bool sql_load_player_status(P_char ch, int pid)
 		"copper, silver, gold, platinum, wallet_revision, bank_copper, bank_silver, bank_gold, bank_platinum, "
 		"exp, epics, epic_revision, epic_skill_points, skillpoints, spell_bind_used, "
 		"act, act2, act3, vote, alignment,prestige, assoc_id, guild_status, "
-		"UNIX_TIMESTAMP(time_left_guild), nb_left_guild, UNIX_TIMESTAMP(time_unspecced), frags, oldfrags, numb_deaths,"
+		"UNIX_TIMESTAMP(time_left_guild), nb_left_guild, UNIX_TIMESTAMP(time_unspecced), frags, oldfrags, frag_revision, numb_deaths,"
 		"condition_0, condition_1, condition_2, condition_3, condition_4, "
 		"poof_in, poof_out, poof_in_sound, poof_out_sound, "
 		"echo_toggle, prompt, wiz_invis, law_flags, wimpy, aggressive, highest_level, screen_length, "
@@ -4040,6 +4040,7 @@ bool sql_load_player_status(P_char ch, int pid)
 	ch->only.pc->time_unspecced = sql_row_long(row, col++, 0);
 	ch->only.pc->frags = sql_row_long(row, col++, 0);
 	ch->only.pc->oldfrags = sql_row_long(row, col++, 0);
+	ch->only.pc->frag_revision = sql_row_ulong(row, col++, 0);
 	ch->only.pc->numb_deaths = sql_row_ulong(row, col++, 0);
 
 	// conditions

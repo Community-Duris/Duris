@@ -1324,6 +1324,7 @@ struct pc_only_data
 
 	long frags; /* Pkill counter                           */
 	long oldfrags; /* Pkill counter                           */
+	uint64_t frag_revision; /* Transactional PvP frag-domain revision. */
 	long epics; /* # of epic points                           */
 	uint64_t epic_revision; /* Transactional epic domain revision. */
 	long epic_skill_points;
