@@ -4,7 +4,7 @@ Date: 2026-08-27
 
 Status: Implementation complete; post-completion audit validation pending
 
-Last implementation update: 2026-08-28 01:12 IDT
+Last implementation update: 2026-08-28 01:13 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -28,7 +28,7 @@ contracts, formatting, and the server build pass.
 | 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Complete | Typed rejection/success/replace and global/owner chronology in the ASan/UBSan scheduler harness; 225 Python regressions; native signal test; format check; server build |
 | 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | Complete | ASan/UBSan owner-link, corruption, thread-boundary, unique-key, cadence, retry, continuation, missed-run, conditional-enable, and watchdog cases; bounded-maintenance contracts; 226 Python regressions; native signal test; format check; server build |
 | 10 | NEV-21 documentation and legacy cleanup | Complete | Current-reference and retired-interface source contract; 227 Python regressions; native signal test; format check; strict server build |
-| 11 | Independent completion audit: rejected callers, alternate ship teardown, final legacy and durability closure | In progress | Focused ASan/UBSan runtime and source contracts, formatting, strict build, and security gate pass; full maintained regression gate and final publication pending |
+| 11 | Independent completion audit: rejected callers, alternate ship teardown, final legacy and durability closure | In progress | Focused ASan/UBSan runtime and source contracts, formatting, strict server build, and security gate pass; full gate exposed and is validating an area-editor C++20 flag repair |
 
 Checkpoint 1 replaced the fixed 6,000-entry array and sentinel scan with a
 dynamically sized, validated address-to-name registry. Duplicate addresses are
@@ -209,7 +209,11 @@ raw path, calls `nevent_cancel` directly, and explicitly documents restart and
 copyover behavior. The scheduler, cancellation, typed-payload, ship-volley, and
 periodic ASan/UBSan harnesses pass, as do the maintenance, command-gate, source
 contract, formatting, strict-build, and security checks. The full maintained
-regression gate remains before this checkpoint is marked complete.
+regression gate then exposed that the area editor compiled shared server headers
+without the server's C++20 language flag. Its two compilation paths now use
+`-std=c++20`, with a root-build contract preventing drift. A clean forced editor
+build passes; the restarted full gate remains before this checkpoint is
+complete.
 
 ### Completion evidence matrix
 
