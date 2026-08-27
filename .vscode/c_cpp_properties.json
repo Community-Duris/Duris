@@ -11,7 +11,7 @@
                 "/usr/include/mysql"
             ],
             "defines": [],
-            "cppStandard": "gnu++14",
+            "cppStandard": "gnu++20",
             "intelliSenseMode": "linux-gcc-x64",
             "compilerPath": "/usr/bin/g++",
             "cStandard": "gnu17"

@@ -8,7 +8,7 @@
             "name": "Debug Duris",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/dms",
+            "program": "${workspaceFolder}/bin/server/dms",
             "args": [
                 "7788"
             ],
