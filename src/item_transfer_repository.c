@@ -6,10 +6,13 @@
 #include <limits>
 #include <mysql.h>
 #include <new>
+#include <type_traits>
 #include <vector>
 
 namespace
 {
+using mysql_null_indicator = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+
 struct current_item
 {
 	uint64_t item_uid;
@@ -139,7 +142,7 @@ bool load_root(MYSQL *connection, uint64_t root_item_uid, std::vector<current_it
 	    mysql_stmt_execute(statement) != 0 || mysql_stmt_store_result(statement) != 0)
 		return statement_ok(statement, false);
 	current_item item = {};
-	my_bool parent_null = 0;
+	mysql_null_indicator parent_null = 0;
 	MYSQL_BIND output[9] = {};
 	output[0].buffer_type = MYSQL_TYPE_LONGLONG;
 	output[0].buffer = &item.item_uid;
@@ -231,7 +234,7 @@ bool load_item(MYSQL *connection, uint64_t item_uid, current_item *item, bool *f
 	parameter.is_unsigned = true;
 	if (mysql_stmt_bind_param(statement, &parameter) != 0 || mysql_stmt_execute(statement) != 0)
 		return statement_ok(statement, false);
-	my_bool parent_null = 0;
+	mysql_null_indicator parent_null = 0;
 	MYSQL_BIND output[9] = {};
 	output[0].buffer_type = MYSQL_TYPE_LONGLONG;
 	output[0].buffer = &item->item_uid;

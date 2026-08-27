@@ -95,6 +95,14 @@ for name in repository_headers:
     check(f"{name} does not guess the MYSQL struct tag",
           "typedef struct st_mysql MYSQL" not in header)
 
+# MYSQL 8 uses bool for statement null indicators while MariaDB retains
+# my_bool. Derive the type from MYSQL_BIND so both client libraries compile.
+item_transfer_repository = (src / "item_transfer_repository.c").read_text()
+check("statement null indicator follows the installed client library",
+      "std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>" in item_transfer_repository)
+check("statement null indicator does not name MariaDB-only my_bool",
+      not re.search(r"\bmy_bool\b", item_transfer_repository))
+
 if failures:
     print("\nFailed regression checks:")
     for f in failures:
