@@ -4,6 +4,8 @@
 #include "structs.h"
 #include "defines.h"
 
+#include <stdint.h>
+
 #define VOBJ_PANEL 60000
 #define VOBJ_ALL_SHIPS 60001
 #define VOBJ_CARGO_CRATE 60002
@@ -193,6 +195,12 @@
 #define CCF_NONE 0
 
 typedef struct ShipData *P_ship;
+
+struct ShipRuntimeRef
+{
+	uint64_t slot;
+	uint64_t generation;
+};
 
 struct ShipTypeData
 {
@@ -469,6 +477,7 @@ struct ShipData
 	time_t save_retry_after; /* transient retry gate for failed ship saves */
 	bool save_pending; /* queued for deferred persistence */
 	unsigned long long save_saved_signature; /* signature of last persisted state */
+	ShipRuntimeRef runtime_ref; /* process-local slot and reuse generation */
 };
 
 struct ContactData
@@ -545,8 +554,8 @@ extern const EquipmentData equipment_data[MAXEQUIPMENT];
 
 struct VolleyData
 {
-	P_ship target;
-	P_ship attacker;
+	ShipRuntimeRef target;
+	ShipRuntimeRef attacker;
 	int weapon_index;
 	int hit_chance;
 };
@@ -651,6 +660,10 @@ void flush_pending_ship_saves(void);
 bool drain_pending_ship_saves(void);
 
 struct ShipData *new_ship(int m_class, bool npc = false);
+ShipRuntimeRef register_ship_runtime(P_ship ship);
+void unregister_ship_runtime(P_ship ship);
+P_ship find_ship_by_runtime_ref(ShipRuntimeRef ref);
+bool resolve_volley_endpoints(const VolleyData *volley, P_ship *attacker, P_ship *target);
 void name_ship(const char *name, P_ship ship);
 bool rename_ship(P_char ch, char *owner_name, char *new_name);
 bool rename_ship_owner(char *old_name, char *new_name);

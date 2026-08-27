@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 3 complete
+Status: Implementation in progress; checkpoint 4 complete
 
-Last implementation update: 2026-08-27 22:09 IDT
+Last implementation update: 2026-08-27 22:18 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -21,8 +21,8 @@ contracts, formatting, and the server build pass.
 | 1 | NEV-01 event-name loader safety | Complete | ASan/UBSan boundary harness, 12 existing nevent contracts, format check, server build |
 | 2 | NEV-05 and NEV-10 cancellation/lifetime invariants | Complete | ASan/UBSan cancellation harness, 221 Python regressions, native signal test, format check, server build |
 | 3 | NEV-02 and NEV-08 typed/POD hunt payload | Complete | ASan/UBSan ownership and stable-ID harnesses, raw-type compile rejection, 222 Python regressions, native signal test, format check, server build |
-| 4 | NEV-03 stable ship-volley references | Next | Not started |
-| 5 | NEV-06 and NEV-07 periodic rearm safety | Pending | Not started |
+| 4 | NEV-03 stable ship-volley references | Complete | ASan/UBSan live, deleted-endpoint, and ABA harness, 223 Python regressions, native signal test, format check, server build |
+| 5 | NEV-06 and NEV-07 periodic rearm safety | Next | Not started |
 | 6 | NEV-04, NEV-11, and NEV-22 absolute due-tick core and harness | Pending | Not started |
 | 7 | NEV-09 and NEV-13 priority, aging, and catch-up policy | Pending | Not started |
 | 8 | NEV-12 and NEV-19 reschedule, lookup, and handle APIs | Pending | Not started |
@@ -61,6 +61,16 @@ stand, and alert callbacks rearm without mistaking the executing event for a
 successor. The regressions exercise payload copy/move/destruction, cancellation
 cleanup, stable-ID reuse, raw-type compile rejection, and current-event exclusion
 under ASan/UBSan, and audit every hunt call site for the typed path.
+
+Checkpoint 4 replaced each delayed volley's raw ship pointers with a
+process-local registry slot and monotonic reuse generation. Successful ship
+construction registers the identity, deletion invalidates it before any ship
+storage is released, and the impact callback resolves both endpoints before its
+first dereference. A missing attacker, missing target, or reused registry slot
+now discards the volley. The sanitizer regression copies a scheduled payload,
+advances its clock after deleting each endpoint independently, verifies live
+delivery, and forces slot reuse to prove that a stale generation cannot resolve
+to the replacement ship.
 
 ## Executive assessment
 
@@ -317,6 +327,13 @@ Recommendation:
   internal pointers, and ownership-sensitive buffers.
 
 ### NEV-03: Delayed ship volleys can dereference deleted ships
+
+Implementation status (2026-08-27): Fixed and verified in checkpoint 4.
+`VolleyData` now stores slot-and-generation handles, ship deletion invalidates
+the registry entry before freeing storage, and the callback safely returns when
+either endpoint no longer resolves. The sanitizer harness covers both deletion
+orders and same-slot generation reuse. The evidence below describes the pre-fix
+implementation.
 
 Evidence:
 

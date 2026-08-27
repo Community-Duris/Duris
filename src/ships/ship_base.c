@@ -348,6 +348,7 @@ struct ShipData *new_ship(int m_class, bool /*npc*/)
 
 	init_ship_layout(ship);
 	set_ship_layout(ship, m_class);
+	register_ship_runtime(ship);
 	return ship;
 }
 
@@ -684,6 +685,7 @@ void delete_ship(P_ship ship, bool npc)
 #endif
 	}
 
+	unregister_ship_runtime(ship);
 	clear_ship_layout(ship);
 	clear_references_to_ship(ship);
 

@@ -69,6 +69,7 @@ SHIP_SRCS = \
 	ship_cargo.c \
 	ship_combat.c \
 	ship_control.c \
+	ship_identity.c \
 	ship_npc.c \
 	ship_npc_ai.c \
 	ship_shop.c \
