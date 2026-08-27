@@ -29,6 +29,7 @@
 #include "map.h"
 #include "mm.h"
 #include "redis.h"
+#include "world_recovery_pipeline.h"
 #include "ships/ships.h"
 #include "spells.h"
 #include "sql.h"
@@ -2988,6 +2989,7 @@ void extract_obj(P_obj obj, int gone_for_good)
 		logit(LOG_EXIT, "extract_obj: NULL obj!");
 		return;
 	}
+	world_recovery_capture_forget_object(obj);
 
 	// remove from floor_drops if it was tracked
 	if (obj->obj_uid > 0)
@@ -3403,6 +3405,7 @@ void extract_char(P_char ch)
 		logit(LOG_EXIT, "No ch in extract_char");
 		return;
 	}
+	world_recovery_capture_forget_character(ch);
 	if (!(*ch->player.name))
 	{
 		logit(LOG_EXIT, "No name in extract_char");

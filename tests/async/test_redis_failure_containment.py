@@ -63,50 +63,35 @@ for forbidden in ("redis_command", "redis_reconnect", "sql_save_player", "fork("
     assert forbidden not in flush
 print("[PASS] dirty marking and checkpoint capture do no Redis, SQL, filesystem, or fork work")
 
-watchdog = section(
-    "static enum redis_child_poll_result redis_poll_child", "static void redis_terminate_child"
-)
-assert "waitpid(pid, &status, WNOHANG)" in watchdog
-assert "time(NULL) - *started >= timeout_sec" in watchdog
-assert "kill(pid, SIGKILL)" in watchdog
-assert "waitpid(pid, &status, 0)" in watchdog
-assert "WIFEXITED(status) && WEXITSTATUS(status) == 0" in watchdog
-assert watchdog.count("take_reaped_child_status(") >= 2
 world = section("bool redis_save_world_state(void)", "bool redis_has_world_state(void)")
-assert "alarm(REDIS_WORLD_CHILD_TIMEOUT_SEC);" in world
-assert world.index("signal(SIGALRM, SIG_DFL);") < world.index(
-    "alarm(REDIS_WORLD_CHILD_TIMEOUT_SEC);"
-)
-assert "redis_poll_child(" in world
+assert "fork(" not in world
+assert "world_recovery_pipeline_request" in world
+assert "world_recovery_pipeline_busy" in world
 cleanup = section("void redis_cleanup(void)", "bool redis_ping(void)")
 assert cleanup.count("redis_terminate_child(") == 1
+assert "world_recovery_pipeline_shutdown" in cleanup
 assert "waitpid(-1, &status, WNOHANG)" in signals
 assert "bool take_reaped_child_status(pid_t pid, int *status)" in signals
-print("[PASS] dirty-save child is removed; world-snapshot child remains bounded and reaped")
+print("[PASS] player and world save forks are retired from active paths; legacy child cleanup remains bounded")
 
-world_json = section(
-    "static bool redis_save_world_state_json", "static bool redis_save_world_state_sync"
+publisher = section(
+    "static bool redis_publish_world_generation", "static bool redis_world_recovery_ensure_initialized"
 )
-assert world_json.count("redis_reply_status_ok(reply)") == 3
-world_sync = section("static bool redis_save_world_state_sync", "// forks child")
-assert "redis_reply_status_ok(valid_reply)" in world_sync
-assert "_exit(success ? 0 : 1);" in world
-print("[PASS] null, timeout, error reply, or incomplete world writes force child failure")
+assert "MULTI" in publisher and "EXEC" in publisher and "DISCARD" in publisher
+assert "world_state:sequence" in publisher and "world_state:checksum" in publisher
+print("[PASS] null, timeout, error reply, or incomplete world transaction forces worker failure")
 
 floor_flush = section("bool redis_flush_floor_drops(void)", "void redis_remove_floor_drop")
-assert "world_state_save_pid > 0 || world_state_snapshot_pending_ack" in floor_flush
+assert "world_recovery_floor_ack_pending || world_recovery_pipeline_busy()" in floor_flush
 assert floor_flush.index("return false;") < floor_flush.index("floor_drop_remove_count = 0;")
 assert floor_flush.index("return false;") < floor_flush.index("floor_drop_batch_count = 0;")
 assert "bool redis_flush_floor_drops(void);" in header
-assert world.index("child_result == REDIS_CHILD_SUCCEEDED") < world.index(
-    "world_state_snapshot_pending_ack = true;"
+ack = section("void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
+assert ack.index("completion.sequence == recovery.last_acknowledged_sequence") < ack.index(
+    "redis_clear_floor_drops_checked()"
 )
-ack = world[world.index("if (world_state_snapshot_pending_ack)"):]
 assert ack.index("redis_clear_floor_drops_checked()") < ack.index(
-    "world_state_snapshot_pending_ack = false;"
-)
-assert ack.index("world_state_snapshot_pending_ack = false;") < ack.index(
-    "redis_flush_floor_drops()"
+    "world_recovery_floor_ack_pending = false;"
 )
 event = section("void event_save_world_state", "bool redis_cache_set")
 assert "redis_clear_floor_drops" not in event

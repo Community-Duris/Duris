@@ -31,6 +31,7 @@
 #include "websocket.h"
 #include "locker_async.h"
 #include "player_save_pipeline.h"
+#include "redis.h"
 
 #define DMS_STAGED_BINARY "bin/server/dms_new"
 #define DMS_RUNTIME_BINARY "bin/server/dms"
@@ -498,6 +499,12 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 	{
 		player_save_pipeline_resume();
 		logit(LOG_STATUS, "copyover: player pipeline drain failed, aborting copyover");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+	if (!redis_world_recovery_drain(3000))
+	{
+		logit(LOG_STATUS, "copyover: world recovery drain failed, aborting copyover");
 		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
 		return false;
 	}
@@ -1399,7 +1406,13 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 
 	entry.num_affects = 0;
 	for (af = mob->affected; af; af = af->next)
+	{
+		if (sizeof(entry) +
+			    (static_cast<size_t>(entry.num_affects) + 1) * sizeof(aff_entry) >
+		    max_len)
+			return -1;
 		entry.num_affects++;
+	}
 
 	for (int w = 0; w < MAX_WEAR; w++)
 	{
@@ -1411,7 +1424,13 @@ int copyover_write_mob_to_buffer(P_char mob, char *buf, size_t max_len)
 
 	entry.num_carrying = 0;
 	for (obj = mob->carrying; obj; obj = obj->next_content)
+	{
+		if (sizeof(entry) + static_cast<size_t>(entry.num_affects) * sizeof(aff_entry) +
+			    (static_cast<size_t>(entry.num_carrying) + 1) * sizeof(inv_entry) >
+		    max_len)
+			return -1;
 		entry.num_carrying++;
+	}
 
 	entry.gold = GET_GOLD(mob);
 
@@ -1486,7 +1505,13 @@ int copyover_write_obj_to_buffer(P_obj obj, char *buf, size_t max_len)
 
 	entry.num_contents = 0;
 	for (content = obj->contains; content; content = content->next_content)
+	{
+		if (sizeof(entry) +
+			    (static_cast<size_t>(entry.num_contents) + 1) * sizeof(cont_entry) >
+		    max_len)
+			return -1;
 		entry.num_contents++;
+	}
 
 	memcpy(buf + offset, &entry, sizeof(entry));
 	offset += sizeof(entry);

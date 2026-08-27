@@ -627,6 +627,7 @@ void run_the_game(int port, int sslport)
 #endif
 
 	game_loop(port, sslport);
+	redis_cleanup();
 	if (!_pwipe)
 	{
 		persistence_stop_scalar_event_worker();
@@ -1350,6 +1351,7 @@ resume_game_loop:
 			flush_pending_ship_saves();
 			locker_async_pulse();
 			player_save_pipeline_pulse();
+			redis_world_recovery_pulse();
 			latency_trace_record("gmcp_flush",
 					     (long)((clock() - _gmcp) * 1000000.0 / CLOCKS_PER_SEC),
 					     pulse);
@@ -1600,6 +1602,16 @@ resume_game_loop:
 	{
 		player_save_pipeline_resume();
 		persistence_alert(AVATAR, "player_save", "shutdown", "none", "none",
+				  "pipeline_drain_failed", "shutdown_cancelled=1");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
+	if (!_pwipe && !redis_world_recovery_drain(3000))
+	{
+		player_save_pipeline_resume();
+		persistence_alert(AVATAR, "world_recovery", "shutdown", "none", "none",
 				  "pipeline_drain_failed", "shutdown_cancelled=1");
 		shutdownflag = 0;
 		_reboot = 0;

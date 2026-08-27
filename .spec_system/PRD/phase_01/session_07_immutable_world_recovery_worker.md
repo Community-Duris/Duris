@@ -1,7 +1,7 @@
 # Session 07: Immutable World Recovery Worker
 
 **Session ID**: `phase01-session07-immutable-world-recovery-worker`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The complete world recovery generation from bounded main-thread
 capture through background serialization and publication to exact completion and floor-
 delta acknowledgement.
@@ -48,9 +48,9 @@ and clears floor deltas only after the matching acknowledgement.
 
 ## Prerequisites
 
-- [ ] Phase 00 Redis deadlines, child containment, and floor-delta retention are
+- [x] Phase 00 Redis deadlines, child containment, and floor-delta retention are
       validated.
-- [ ] Sessions 03 and 04 worker lifecycle, bounded queue, checksum, and ACK patterns are
+- [x] Sessions 03 and 04 worker lifecycle, bounded queue, checksum, and ACK patterns are
       available for reuse where their contracts fit.
 
 ---
@@ -70,13 +70,13 @@ and clears floor deltas only after the matching acknowledgement.
 
 ## Success Criteria
 
-- [ ] No world worker or serializer traverses live `P_char`, `P_obj`, room, door, or zone
+- [x] No world worker or serializer traverses live `P_char`, `P_obj`, room, door, or zone
       pointers after the main-thread capture step.
-- [ ] Main-thread capture obeys explicit per-pulse work and memory bounds and can resume
+- [x] Main-thread capture obeys explicit per-pulse work and memory bounds and can resume
       without mixing two world generations.
-- [ ] A recovery generation is valid only when payload, checksum, timestamp, sequence,
+- [x] A recovery generation is valid only when payload, checksum, timestamp, sequence,
       and completion metadata are published consistently.
-- [ ] Floor deltas survive every failed, stale, timed-out, or superseded snapshot and
+- [x] Floor deltas survive every failed, stale, timed-out, or superseded snapshot and
       clear only for the exact successful generation that includes them.
-- [ ] Worker queue, runtime, restart, and shutdown behavior is bounded and observable.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Worker queue, runtime, restart, and shutdown behavior is bounded and observable.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include "config.h"
 #include "copyover.h"
+#include "world_recovery_pipeline.h"
 #include "epic.h"
 #include "files.h"
 #include "player_save_pipeline.h"
@@ -29,6 +30,9 @@
 #include "sql.h"
 #include "sql_player.h"
 #include "ships/ships.h"
+
+#include <chrono>
+#include <thread>
 
 #ifndef __NO_MYSQL__
 #include <cjson/cJSON.h>
@@ -73,11 +77,14 @@ static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
 static volatile pid_t world_state_save_pid = 0;
 static time_t world_state_save_started = 0;
 static bool world_state_snapshot_pending_ack = false;
+static bool world_recovery_floor_ack_pending = false;
 static redisContext *donation_sub_ctx = NULL;
 static volatile bool donation_sub_connected = false;
 static void donation_sub_drop(const char *reason);
 
 #ifndef __NO_MYSQL__
+static redisReply *redis_command(redisContext *ctx, const char *format, ...);
+
 static void redis_log_command_failure(const char *outcome)
 {
 	static time_t last_log = 0;
@@ -103,6 +110,121 @@ static redisContext *redis_connect_bounded(const char *host, int port)
 		return NULL;
 	}
 	return ctx;
+}
+
+static bool redis_publish_world_generation(const unsigned char *data, size_t size,
+					   const world_recovery_header *header, void * /*context*/)
+{
+	if (!data || !size || !header)
+		return false;
+	const char *redis_host = getenv("REDIS_HOST");
+	if (!redis_host || !*redis_host)
+		redis_host = "127.0.0.1";
+	int redis_port = 6379;
+	const char *redis_port_str = getenv("REDIS_PORT");
+	if (redis_port_str && *redis_port_str)
+	{
+		const int configured = atoi(redis_port_str);
+		if (configured > 0 && configured <= 65535)
+			redis_port = configured;
+	}
+	redisContext *ctx = redis_connect_bounded(redis_host, redis_port);
+	if (!ctx || ctx->err)
+	{
+		if (ctx)
+			redisFree(ctx);
+		return false;
+	}
+	auto command_ok = [ctx](const char *command, auto... args)
+	{
+		redisReply *reply = (redisReply *)redis_command(ctx, command, args...);
+		const bool ok = reply && reply->type != REDIS_REPLY_ERROR;
+		if (reply)
+			freeReplyObject(reply);
+		return ok;
+	};
+	uint64_t previous_sequence = 0;
+	redisReply *current_reply = (redisReply *)redis_command(ctx, "GET mud:world_state:current");
+	if (current_reply && current_reply->type == REDIS_REPLY_STRING && current_reply->str)
+		previous_sequence = strtoull(current_reply->str, NULL, 10);
+	if (current_reply)
+		freeReplyObject(current_reply);
+	bool ok = command_ok("SET mud:world_state:generation:%llu %b",
+			     static_cast<unsigned long long>(header->sequence), data, size) &&
+		  command_ok("MULTI") &&
+		  command_ok("SET mud:world_state:current %llu",
+			     static_cast<unsigned long long>(header->sequence)) &&
+		  command_ok("SET mud:world_state:timestamp %lld",
+			     static_cast<long long>(header->timestamp)) &&
+		  command_ok("SET mud:world_state:sequence %llu",
+			     static_cast<unsigned long long>(header->sequence)) &&
+		  command_ok("SET mud:world_state:checksum %u", header->checksum) &&
+		  command_ok("SET mud:world_state:complete 1") &&
+		  command_ok("SET mud:world_state:valid 1");
+	if (ok)
+	{
+		redisReply *reply = (redisReply *)redis_command(ctx, "EXEC");
+		ok = reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 6;
+		if (ok)
+			for (size_t index = 0; index < reply->elements; ++index)
+				if (!reply->element[index] ||
+				    reply->element[index]->type == REDIS_REPLY_ERROR)
+					ok = false;
+		if (reply)
+			freeReplyObject(reply);
+	}
+	else
+	{
+		redisReply *reply = (redisReply *)redis_command(ctx, "DISCARD");
+		if (reply)
+			freeReplyObject(reply);
+	}
+	if (!ok)
+	{
+		redisReply *reply = (redisReply *)redis_command(ctx, "GET mud:world_state:current");
+		ok = reply && reply->type == REDIS_REPLY_STRING && reply->str &&
+		     strtoull(reply->str, NULL, 10) == header->sequence;
+		if (reply)
+			freeReplyObject(reply);
+	}
+	if (ok && previous_sequence && previous_sequence != header->sequence)
+	{
+		redisReply *reply = (redisReply *)redis_command(
+			ctx, "DEL mud:world_state:generation:%llu",
+			static_cast<unsigned long long>(previous_sequence));
+		if (reply)
+			freeReplyObject(reply);
+	}
+	if (!ok)
+	{
+		redisReply *reply = (redisReply *)redis_command(
+			ctx, "DEL mud:world_state:generation:%llu",
+			static_cast<unsigned long long>(header->sequence));
+		if (reply)
+			freeReplyObject(reply);
+	}
+	redisFree(ctx);
+	return ok;
+}
+
+static bool redis_world_recovery_ensure_initialized(void)
+{
+	if (world_recovery_pipeline_health_copy().initialized)
+		return true;
+	if (!world_recovery_pipeline_init(redis_publish_world_generation, NULL))
+		return false;
+	if (redis_ctx)
+	{
+		redisReply *sequence_reply =
+			(redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
+		if (sequence_reply && sequence_reply->type == REDIS_REPLY_STRING &&
+		    sequence_reply->str)
+			world_recovery_pipeline_set_sequence_floor(
+				strtoull(sequence_reply->str, NULL, 10));
+		if (sequence_reply)
+			freeReplyObject(sequence_reply);
+	}
+	return true;
 }
 
 static redisReply *redis_command(redisContext *ctx, const char *format, ...)
@@ -153,8 +275,8 @@ enum redis_child_poll_result
 	REDIS_CHILD_FAILED
 };
 
-static enum redis_child_poll_result redis_poll_child(volatile pid_t *pid_slot, time_t *started,
-						     int timeout_sec, const char *label)
+[[maybe_unused]] static enum redis_child_poll_result
+redis_poll_child(volatile pid_t *pid_slot, time_t *started, int timeout_sec, const char *label)
 {
 	pid_t pid = *pid_slot;
 	if (pid <= 0)
@@ -442,6 +564,14 @@ bool redis_clear_pwipe_state(void)
 void redis_cleanup(void)
 {
 #ifndef __NO_MYSQL__
+	if (redis_world_state_enabled)
+	{
+		if (world_recovery_pipeline_health_copy().initialized &&
+		    !redis_world_recovery_drain(REDIS_WORLD_CHILD_TIMEOUT_SEC * 1000))
+			logit(LOG_SYS, "redis: world recovery drain timed out during shutdown");
+		if (world_recovery_pipeline_health_copy().initialized)
+			world_recovery_pipeline_shutdown();
+	}
 	redis_terminate_child(&world_state_save_pid, &world_state_save_started, "world-snapshot");
 	if (redis_ctx)
 	{
@@ -640,7 +770,8 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 bool redis_flush_floor_drops(void)
 {
 #ifndef __NO_MYSQL__
-	if (world_state_save_pid > 0 || world_state_snapshot_pending_ack)
+	if (world_state_save_pid > 0 || world_state_snapshot_pending_ack ||
+	    world_recovery_floor_ack_pending || world_recovery_pipeline_busy())
 		return false;
 	if (!redis_enabled || !redis_ctx)
 		return false;
@@ -1040,7 +1171,7 @@ void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, 
 #define REDIS_WORLD_STATE_VER 6
 
 // json world state save - v2 format with short keys for compactness
-static bool redis_save_world_state_json(redisContext *ctx)
+[[maybe_unused]] static bool redis_save_world_state_json(redisContext *ctx)
 {
 #ifdef __NO_MYSQL__
 	return false;
@@ -1340,7 +1471,7 @@ static bool redis_save_world_state_json(redisContext *ctx)
 }
 
 // sync version, called by forked child - needs own redis connection
-static bool redis_save_world_state_sync(void)
+[[maybe_unused]] static bool redis_save_world_state_sync(void)
 {
 #ifdef __NO_MYSQL__
 	return false;
@@ -1383,7 +1514,7 @@ static bool redis_save_world_state_sync(void)
 #endif
 }
 
-// forks child to avoid blocking main loop
+// Starts one bounded incremental capture for the long-lived recovery publisher.
 bool redis_save_world_state(void)
 {
 #ifdef __NO_MYSQL__
@@ -1391,58 +1522,80 @@ bool redis_save_world_state(void)
 #else
 	if (!redis_enabled || !redis_world_state_enabled)
 		return false;
-
-	enum redis_child_poll_result child_result =
-		redis_poll_child(&world_state_save_pid, &world_state_save_started,
-				 REDIS_WORLD_CHILD_TIMEOUT_SEC, "world-snapshot");
-	if (child_result == REDIS_CHILD_RUNNING)
+	if (!redis_world_recovery_ensure_initialized())
 	{
-		logit(LOG_DEBUG, "redis: world state save still in progress, skipping");
+		logit(LOG_SYS, "redis: world recovery worker unavailable");
+		return false;
+	}
+	redis_world_recovery_pulse();
+	if (world_recovery_pipeline_busy())
 		return true;
-	}
-	if (child_result == REDIS_CHILD_SUCCEEDED)
-		world_state_snapshot_pending_ack = true;
-
-	if (world_state_snapshot_pending_ack)
-	{
-		if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
-			return false;
-		if (!redis_clear_floor_drops_checked())
-			return false;
-		world_state_snapshot_pending_ack = false;
-	}
-
+	if (world_recovery_floor_ack_pending)
+		return false;
 	if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
 		return false;
 	if (!redis_flush_floor_drops())
 		return false;
+	logit(LOG_SYS, "redis: starting bounded world recovery capture");
+	return world_recovery_pipeline_request();
+#endif
+}
 
-	int num_mobs, num_objs, num_rooms;
-	copyover_count_items(&num_mobs, &num_objs, &num_rooms);
-	int num_zones = top_of_zone_table + 1;
-
-	logit(LOG_SYS, "redis: saving world state (async, %d mobs, %d objs, %d doors, %d zones)",
-	      num_mobs, num_objs, num_rooms, num_zones);
-
-	pid_t pid = fork();
-	if (pid < 0)
+void redis_world_recovery_pulse(void)
+{
+#ifndef __NO_MYSQL__
+	if (!redis_world_state_enabled)
+		return;
+	if (!world_recovery_pipeline_health_copy().initialized)
+		return;
+	world_recovery_pipeline_pulse();
+	world_recovery_completion completion = {};
+	while (world_recovery_pipeline_take_completion(&completion))
 	{
-		logit(LOG_SYS, "redis: fork failed for world state save");
-		return false;
+		const world_recovery_health recovery = world_recovery_pipeline_health_copy();
+		if (completion.published &&
+		    completion.sequence == recovery.last_acknowledged_sequence)
+		{
+			world_recovery_floor_ack_pending = true;
+			logit(LOG_SYS,
+			      "redis: world recovery generation acknowledged sequence=%llu attempts=%u",
+			      (unsigned long long)completion.sequence, completion.attempts);
+		}
+		else if (!completion.published)
+			logit(LOG_SYS,
+			      "redis: world recovery generation publish failed sequence=%llu attempts=%u",
+			      (unsigned long long)completion.sequence, completion.attempts);
 	}
-
-	if (pid == 0)
+	if (world_recovery_floor_ack_pending)
 	{
-		signal(SIGALRM, SIG_DFL);
-		alarm(REDIS_WORLD_CHILD_TIMEOUT_SEC);
-		bool success = redis_save_world_state_sync();
-		alarm(0);
-		_exit(success ? 0 : 1);
+		if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
+			return;
+		if (redis_clear_floor_drops_checked())
+			world_recovery_floor_ack_pending = false;
 	}
+#endif
+}
 
-	world_state_save_pid = pid;
-	world_state_save_started = time(NULL);
+bool redis_world_recovery_drain(uint64_t timeout_msec)
+{
+#ifdef __NO_MYSQL__
+	(void)timeout_msec;
 	return true;
+#else
+	if (!redis_world_state_enabled)
+		return true;
+	if (!world_recovery_pipeline_health_copy().initialized)
+		return true;
+	const auto deadline =
+		std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_msec);
+	while (std::chrono::steady_clock::now() < deadline)
+	{
+		redis_world_recovery_pulse();
+		if (!world_recovery_pipeline_busy() && !world_recovery_floor_ack_pending)
+			return true;
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+	return false;
 #endif
 }
 
@@ -1460,51 +1613,28 @@ bool redis_has_world_state(void)
 			return false;
 	}
 
-	// check valid flag
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:valid");
+	// The atomic current pointer and self-validating framed blob are authoritative.
+	// Other metadata keys are operator diagnostics and cannot invalidate a good blob.
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
 	if (!reply)
 		return false;
-
-	bool valid = false;
-	if (reply->type == REDIS_REPLY_STRING && reply->str && strcmp(reply->str, "1") == 0)
-		valid = true;
-
-	freeReplyObject(reply);
-
-	if (!valid)
-		return false;
-
-	// check timestamp
-	reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:timestamp");
-	if (!reply)
-		return false;
-
-	time_t saved_time = 0;
+	uint64_t sequence = 0;
 	if (reply->type == REDIS_REPLY_STRING && reply->str)
-		saved_time = (time_t)atol(reply->str);
-
+		sequence = strtoull(reply->str, NULL, 10);
 	freeReplyObject(reply);
-
-	if (saved_time == 0)
+	if (!sequence)
 		return false;
-
-	time_t now = time(NULL);
-	if (now - saved_time > world_state_max_age)
-	{
-		logit(LOG_SYS, "redis: world state too old (%ld seconds), ignoring",
-		      (long)(now - saved_time));
-		redis_clear_world_state();
-		return false;
-	}
-
-	// check data exists
-	reply = (redisReply *)redis_command(redis_ctx, "EXISTS mud:world_state");
+	reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:generation:%llu",
+					    (unsigned long long)sequence);
 	if (!reply)
 		return false;
-
-	bool exists = (reply->type == REDIS_REPLY_INTEGER && reply->integer > 0);
+	world_recovery_header header = {};
+	const bool exists =
+		reply->type == REDIS_REPLY_STRING && reply->str && reply->len > 0 &&
+		world_recovery_validate(reinterpret_cast<const unsigned char *>(reply->str),
+					reply->len, world_state_max_age, sequence, &header) &&
+		header.sequence == sequence;
 	freeReplyObject(reply);
-
 	return exists;
 #endif
 }
@@ -1535,9 +1665,25 @@ void redis_clear_world_state(void)
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_ctx)
 		return;
+	uint64_t current_sequence = 0;
+	redisReply *current_reply =
+		(redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
+	if (current_reply && current_reply->type == REDIS_REPLY_STRING && current_reply->str)
+		current_sequence = strtoull(current_reply->str, NULL, 10);
+	if (current_reply)
+		freeReplyObject(current_reply);
+	if (current_sequence)
+	{
+		redisReply *generation_reply = (redisReply *)redis_command(
+			redis_ctx, "DEL mud:world_state:generation:%llu",
+			(unsigned long long)current_sequence);
+		if (generation_reply)
+			freeReplyObject(generation_reply);
+	}
 
 	redisReply *reply = (redisReply *)redis_command(
-		redis_ctx, "DEL mud:world_state mud:world_state:timestamp mud:world_state:valid");
+		redis_ctx,
+		"DEL mud:world_state mud:world_state:current mud:world_state:timestamp mud:world_state:sequence mud:world_state:checksum mud:world_state:complete mud:world_state:valid");
 	if (reply)
 		freeReplyObject(reply);
 
@@ -1546,7 +1692,7 @@ void redis_clear_world_state(void)
 }
 
 // json world state load - parses v2 format saved by redis_save_world_state_json
-static bool redis_load_world_state_json(const char *json)
+[[maybe_unused]] static bool redis_load_world_state_json(const char *json)
 {
 #ifdef __NO_MYSQL__
 	return false;
@@ -2037,8 +2183,20 @@ bool redis_load_world_state(void)
 
 	// restore floor drops first - has most recent data
 	redis_restore_floor_drops();
+	redisReply *sequence_reply =
+		(redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
+	if (!sequence_reply)
+		return false;
+	uint64_t expected_sequence = 0;
+	if (sequence_reply->type == REDIS_REPLY_STRING && sequence_reply->str)
+		expected_sequence = strtoull(sequence_reply->str, NULL, 10);
+	freeReplyObject(sequence_reply);
+	if (!expected_sequence)
+		return false;
 
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx,
+							"GET mud:world_state:generation:%llu",
+							(unsigned long long)expected_sequence);
 	if (!reply || redis_ctx->err)
 	{
 		if (reply)
@@ -2052,33 +2210,23 @@ bool redis_load_world_state(void)
 		return false;
 	}
 
-	const char *buffer = reply->str;
-	size_t len = reply->len;
-
-	// detect format: json starts with '{', binary starts with 'COPY'
-	if (len > 0 && buffer[0] == '{')
+	world_recovery_header header = {};
+	const bool result =
+		world_recovery_restore(reinterpret_cast<const unsigned char *>(reply->str),
+				       reply->len, world_state_max_age, expected_sequence, &header);
+	freeReplyObject(reply);
+	if (!result || header.sequence != expected_sequence)
 	{
-		// json format
-		bool result = redis_load_world_state_json(buffer);
-		freeReplyObject(reply);
-		return result;
-	}
-	else if (len >= 4 && memcmp(buffer, COPYOVER_MAGIC, 4) == 0)
-	{
-		// old binary format - no longer supported
-		logit(LOG_SYS, "redis: detected old binary world state format, clearing");
-		freeReplyObject(reply);
-		redis_clear_world_state();
+		logit(LOG_SYS, "redis: rejected invalid world recovery generation");
 		return false;
 	}
-	else
-	{
-		// unknown format
-		logit(LOG_SYS, "redis: unknown world state format, clearing");
-		freeReplyObject(reply);
-		redis_clear_world_state();
-		return false;
-	}
+	redis_clear_floor_pickups();
+	redis_clear_floor_drops();
+	logit(LOG_SYS,
+	      "redis: restored world recovery generation sequence=%llu mobs=%u objs=%u doors=%u zones=%u",
+	      (unsigned long long)header.sequence, header.mob_count, header.object_count,
+	      header.door_count, header.zone_count);
+	return true;
 #endif
 }
 

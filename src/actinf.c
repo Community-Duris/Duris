@@ -43,6 +43,7 @@ using namespace std;
 #include "player_save_worker.h"
 #include "player_save_journal.h"
 #include "player_save_pipeline.h"
+#include "world_recovery_pipeline.h"
 #include "redis.h"
 #include "ships/ships.h"
 #include "specializations.h"
@@ -3987,6 +3988,7 @@ static void show_world_persistence(P_char ch)
 	const player_save_worker_health player_saves = player_save_worker_health_copy();
 	const player_save_journal_health player_journal = player_save_journal_health_copy();
 	const player_save_pipeline_health player_pipeline = player_save_pipeline_health_copy();
+	const world_recovery_health world_recovery = world_recovery_pipeline_health_copy();
 	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
 	char line[MAX_STRING_LENGTH];
 
@@ -4068,6 +4070,34 @@ static void show_world_persistence(P_char ch)
 			 (unsigned long long)dirty.active_oldest_age_msec,
 			 (unsigned long long)dirty.inflight_count,
 			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "world_recovery state=%s capture=%d worker=%d queue=%llu records=%llu bytes=%llu "
+		 "high_water_bytes=%llu requested=%llu coalesced=%llu capture_failures=%llu "
+		 "submitted=%llu published=%llu publish_failures=%llu stale=%llu "
+		 "sequence=%llu/%llu capture_age_ms=%llu worker_runtime_ms=%llu\n",
+		 !world_recovery.initialized	 ? "stopped" :
+		 world_recovery.capture_active	 ? "capturing" :
+		 world_recovery.worker_busy	 ? "publishing" :
+		 world_recovery.publish_failures ? "degraded" :
+						   "ready",
+		 world_recovery.capture_active ? 1 : 0, world_recovery.worker_running ? 1 : 0,
+		 (unsigned long long)world_recovery.queued_generations,
+		 (unsigned long long)world_recovery.captured_records,
+		 (unsigned long long)world_recovery.captured_bytes,
+		 (unsigned long long)world_recovery.high_water_bytes,
+		 (unsigned long long)world_recovery.requested,
+		 (unsigned long long)world_recovery.coalesced,
+		 (unsigned long long)world_recovery.capture_failures,
+		 (unsigned long long)world_recovery.submitted,
+		 (unsigned long long)world_recovery.published,
+		 (unsigned long long)world_recovery.publish_failures,
+		 (unsigned long long)world_recovery.stale_completions,
+		 (unsigned long long)world_recovery.last_submitted_sequence,
+		 (unsigned long long)world_recovery.last_acknowledged_sequence,
+		 (unsigned long long)world_recovery.capture_age_msec,
+		 (unsigned long long)world_recovery.worker_runtime_msec);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),
