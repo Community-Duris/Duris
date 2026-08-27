@@ -73,8 +73,9 @@ int migrate_guilds_from_files(void)
 		{
 			fgets(lbuf, ASC_MAX_STR_RANK + 1, file);
 			// cut the carriage return off
-			lbuf[strlen(lbuf) - 1] = '\0';
-			snprintf(new_guild->titles[i], ASC_MAX_STR_RANK, "%s", lbuf);
+			lbuf[strcspn(lbuf, "\r\n")] = '\0';
+			snprintf(new_guild->titles[i], sizeof(new_guild->titles[i]), "%.*s",
+				 (int)(sizeof(new_guild->titles[i]) - 1), lbuf);
 		}
 
 		// then get the guild bits, prestige and construction

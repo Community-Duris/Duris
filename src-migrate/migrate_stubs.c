@@ -352,8 +352,9 @@ static void reconnect_db(void)
 	initialize_mysql();
 }
 
-MYSQL_RES *db_query(const char *format, ...)
+MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...)
 {
+	(void)site;
 	static char query[65536];
 	va_list args;
 
@@ -380,8 +381,9 @@ MYSQL_RES *db_query(const char *format, ...)
 	return mysql_store_result(DB);
 }
 
-bool qry(const char *format, ...)
+bool qry_at(struct persistence_query_site site, const char *format, ...)
 {
+	(void)site;
 	static char query[65536];
 	va_list args;
 

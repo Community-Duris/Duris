@@ -818,6 +818,9 @@ static int convert_skills_section(unsigned char **in, unsigned char **out,
 	uint8_t version;
 	int i;
 
+	/* The section converters share one signature; skills needs no header field. */
+	(void)header;
+
 	if (verbose_mode)
 	{
 		printf("\n=== Converting Skills Section ===\n");

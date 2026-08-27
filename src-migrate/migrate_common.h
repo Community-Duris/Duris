@@ -241,8 +241,6 @@ extern MYSQL *DB;
 extern char *str_dup(const char *source);
 extern void __free(void *p, char *file, int line);
 extern char *sql_escape_string(const char *str);
-extern MYSQL_RES *db_query(const char *format, ...);
-extern bool qry(const char *format, ...);
 
 // global vars
 extern P_Guild guild_list;
