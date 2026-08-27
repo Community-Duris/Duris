@@ -9564,7 +9564,10 @@ void sql_restore_saved_items(void)
 	MYSQL_RES *result = db_query(
 		"SELECT DISTINCT item_key, room_vnum, id, vnum, weight, cost, timer, extra_flags, "
 		"value0, value1, value2, value3, value4, value5, value6, value7, "
-		"name, short_descr, description, action_descr, obj_uid "
+		"name, short_descr, description, action_descr, "
+		"wear_flags, item_type, item_material, "
+		"bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+		"obj_uid "
 		"FROM saved_items WHERE container_id IS NULL");
 	if (!result)
 		return;
@@ -9632,7 +9635,25 @@ void sql_restore_saved_items(void)
 			obj->action_description = str_dup(row[19]);
 			obj->str_mask |= STRUNG_DESC3;
 		}
-		const unsigned long saved_uid = row[20] ? strtoul(row[20], NULL, 10) : 0;
+		// v19 diff columns - NULL means use prototype value from read_object()
+		if (row[20])
+			obj->wear_flags = atoi(row[20]);
+		if (row[21])
+			obj->type = sql_validate_loaded_item_type(obj, atoi(row[21]),
+								  "sql_restore_saved_items");
+		if (row[22])
+			obj->material = atoi(row[22]);
+		if (row[23])
+			obj->bitvector = strtoul(row[23], NULL, 10);
+		if (row[24])
+			obj->bitvector2 = strtoul(row[24], NULL, 10);
+		if (row[25])
+			obj->bitvector3 = strtoul(row[25], NULL, 10);
+		if (row[26])
+			obj->bitvector4 = strtoul(row[26], NULL, 10);
+		if (row[27])
+			obj->bitvector5 = strtoul(row[27], NULL, 10);
+		const unsigned long saved_uid = row[28] ? strtoul(row[28], NULL, 10) : 0;
 		if (saved_uid)
 			obj->obj_uid = saved_uid;
 		char owner_ref[32];
