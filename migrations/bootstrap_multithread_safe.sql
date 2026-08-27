@@ -254,6 +254,7 @@ CREATE TABLE `auction_item_pickups` (
 CREATE TABLE `auction_money_pickups` (
   `pid` int unsigned NOT NULL DEFAULT '0',
   `money` int unsigned NOT NULL DEFAULT '0',
+	`claim_revision` bigint unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`pid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `auctions` (
@@ -273,9 +274,13 @@ CREATE TABLE `auctions` (
   `quantity` int NOT NULL DEFAULT '1',
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL,
+	`auction_revision` bigint unsigned NOT NULL DEFAULT '0',
+	`custody_state` tinyint unsigned NOT NULL DEFAULT '0',
+	`listing_operation_id` binary(16) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `seller_pid` (`seller_pid`),
-  KEY `status` (`status`)
+	KEY `status` (`status`),
+	UNIQUE KEY `uq_auction_listing_operation` (`listing_operation_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `boons` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -1939,6 +1944,37 @@ CREATE TABLE `item_ownership_ledger` (
   KEY `idx_item_ledger_from_owner` (`from_owner_type`,`from_owner_id`,`from_owner_context_id`,`created_at`),
   KEY `idx_item_ledger_to_owner` (`to_owner_type`,`to_owner_id`,`to_owner_context_id`,`created_at`),
   CONSTRAINT `item_ownership_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `auction_item_custody` (
+  `auction_id` int unsigned NOT NULL, `slot` smallint unsigned NOT NULL,
+  `item_uid` bigint unsigned NOT NULL, `item_revision` bigint unsigned NOT NULL,
+  `vnum` int NOT NULL, `obj_blob` longblob NOT NULL, `claim_pid` int unsigned DEFAULT NULL,
+  `claim_operation_id` binary(16) DEFAULT NULL, `claimed_at` timestamp(6) NULL DEFAULT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`auction_id`,`slot`), UNIQUE KEY `uq_auction_custody_item` (`item_uid`),
+  KEY `idx_auction_custody_claim_operation` (`claim_operation_id`),
+  KEY `idx_auction_custody_claim` (`claim_pid`,`claimed_at`,`auction_id`),
+  CONSTRAINT `auction_custody_item_fk` FOREIGN KEY (`item_uid`) REFERENCES `item_current_owner` (`item_uid`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `auction_ledger` (
+  `operation_id` binary(16) NOT NULL, `event_type` tinyint unsigned NOT NULL,
+  `auction_id` int unsigned NOT NULL, `auction_revision` bigint unsigned NOT NULL,
+  `actor_pid` int unsigned NOT NULL DEFAULT '0', `counterparty_pid` int unsigned NOT NULL DEFAULT '0',
+  `value_delta` bigint NOT NULL DEFAULT '0', `final_price` bigint NOT NULL DEFAULT '0',
+  `item_count` smallint unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`operation_id`),
+  KEY `idx_auction_ledger_revision` (`auction_id`,`auction_revision`),
+  KEY `idx_auction_ledger_actor` (`actor_pid`,`created_at`),
+  CONSTRAINT `auction_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `auction_reconciliation_quarantine` (
+  `quarantine_id` bigint unsigned NOT NULL AUTO_INCREMENT, `auction_id` int unsigned NOT NULL,
+  `item_uid` bigint unsigned NOT NULL DEFAULT '0', `conflict_code` smallint unsigned NOT NULL,
+  `evidence` varchar(255) NOT NULL, `detected_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `repaired_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`quarantine_id`),
+  UNIQUE KEY `uq_auction_quarantine` (`auction_id`,`item_uid`,`conflict_code`),
+  KEY `idx_auction_quarantine_open` (`repaired_at`,`auction_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

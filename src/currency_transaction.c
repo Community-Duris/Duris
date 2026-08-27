@@ -54,42 +54,20 @@ bool publish(std::unordered_map<std::string, pending_currency>::iterator found, 
 		pending.erase(found);
 		return false;
 	}
-	for (int64_t amount : result.wallet.amount)
-		if (amount < 0 || amount > INT_MAX)
-		{
-			++health.malformed_completions;
-			if (entry.completion)
-				entry.completion(character, false, {}, ERANGE, entry.context.data(),
-						 entry.context_size);
-			++health.rejected;
-			pending.erase(found);
-			return false;
-		}
-	for (int64_t amount : result.bank.amount)
-		if (amount < 0 || amount > INT_MAX)
-		{
-			++health.malformed_completions;
-			if (entry.completion)
-				entry.completion(character, false, {}, ERANGE, entry.context.data(),
-						 entry.context_size);
-			++health.rejected;
-			pending.erase(found);
-			return false;
-		}
 	const bool committed = completion.outcome == critical_apply_outcome::applied ||
 			       completion.outcome == critical_apply_outcome::already_applied;
-	GET_COPPER(character) = static_cast<int>(result.wallet.amount[0]);
-	GET_SILVER(character) = static_cast<int>(result.wallet.amount[1]);
-	GET_GOLD(character) = static_cast<int>(result.wallet.amount[2]);
-	GET_PLATINUM(character) = static_cast<int>(result.wallet.amount[3]);
-	character->only.pc->wallet_revision = result.wallet_revision;
-	const AccountBankBalances balances = { static_cast<int>(result.bank.amount[0]),
-					       static_cast<int>(result.bank.amount[1]),
-					       static_cast<int>(result.bank.amount[2]),
-					       static_cast<int>(result.bank.amount[3]) };
-	publish_account_bank_balances_revision(entry.account_name.data(), entry.racewar, &balances,
-					       result.bank_revision);
-	gmcp_char_vitals(character);
+	if (!currency_transaction_publish_balances(character, entry.account_name.data(),
+						   entry.racewar, result.wallet, result.bank,
+						   result.wallet_revision, result.bank_revision))
+	{
+		++health.malformed_completions;
+		if (entry.completion)
+			entry.completion(character, false, {}, ERANGE, entry.context.data(),
+					 entry.context_size);
+		++health.rejected;
+		pending.erase(found);
+		return false;
+	}
 	if (entry.completion)
 		entry.completion(character, committed, result, completion.error_code,
 				 entry.context.data(), entry.context_size);
@@ -126,6 +104,33 @@ currency_vector canonical_value(int64_t value)
 	return result;
 }
 } // namespace
+
+bool currency_transaction_publish_balances(P_char character, const char *account_name,
+					   uint8_t racewar, const currency_vector &wallet,
+					   const currency_vector &bank, uint64_t wallet_revision,
+					   uint64_t bank_revision)
+{
+	if (!character || !character->only.pc || !account_name)
+		return false;
+	for (int64_t amount : wallet.amount)
+		if (amount < 0 || amount > INT_MAX)
+			return false;
+	for (int64_t amount : bank.amount)
+		if (amount < 0 || amount > INT_MAX)
+			return false;
+	GET_COPPER(character) = static_cast<int>(wallet.amount[0]);
+	GET_SILVER(character) = static_cast<int>(wallet.amount[1]);
+	GET_GOLD(character) = static_cast<int>(wallet.amount[2]);
+	GET_PLATINUM(character) = static_cast<int>(wallet.amount[3]);
+	character->only.pc->wallet_revision = wallet_revision;
+	const AccountBankBalances balances = { static_cast<int>(bank.amount[0]),
+					       static_cast<int>(bank.amount[1]),
+					       static_cast<int>(bank.amount[2]),
+					       static_cast<int>(bank.amount[3]) };
+	publish_account_bank_balances_revision(account_name, racewar, &balances, bank_revision);
+	gmcp_char_vitals(character);
+	return true;
+}
 
 bool currency_transaction_can_submit(P_char character)
 {

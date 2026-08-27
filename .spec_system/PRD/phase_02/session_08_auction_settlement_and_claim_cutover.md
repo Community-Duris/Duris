@@ -1,7 +1,7 @@
 # Session 08: Auction Settlement and Claim Cutover
 
 **Session ID**: `phase02-session08-auction-settlement-and-claim-cutover`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The full auction economic and custody lifecycle from listing and bid
 escrow through close, refund, item/money claim, committed publication, and replay-safe
 offline settlement.
@@ -47,9 +47,9 @@ notifications.
 
 ## Prerequisites
 
-- [ ] Sessions 04 and 05 currency and ownership transactions are validated.
-- [ ] Session 02 outbox delivery and consumer dedupe are available.
-- [ ] Existing auction InnoDB and row-lock regressions remain passing.
+- [x] Sessions 04 and 05 currency and ownership transactions are validated.
+- [x] Session 02 outbox delivery and consumer dedupe are available.
+- [x] Existing auction InnoDB and row-lock regressions remain passing.
 
 ---
 
@@ -68,16 +68,16 @@ notifications.
 
 ## Success Criteria
 
-- [ ] Listing can neither charge a fee without durable auction custody nor remove an
+- [x] Listing can neither charge a fee without durable auction custody nor remove an
       item without the corresponding committed auction row.
-- [ ] Bid, outbid, buy-now, expiration, settlement, and claim retries change wallet,
+- [x] Bid, outbid, buy-now, expiration, settlement, and claim retries change wallet,
       claim, item owner, and auction status at most once per operation ID.
-- [ ] One item or money claim can be consumed successfully once under concurrent calls.
-- [ ] Offline seller/buyer results survive restart and publish from durable outbox state.
-- [ ] WebSocket and player notifications occur only after commit and dedupe on retry.
-- [ ] Existing open auctions reconcile to one owner/claim state or remain safely
+- [x] One item or money claim can be consumed successfully once under concurrent calls.
+- [x] Offline seller/buyer results survive restart and publish from durable outbox state.
+- [x] WebSocket and player notifications occur only after commit and dedupe on retry.
+- [x] Existing open auctions reconcile to one owner/claim state or remain safely
       quarantined without item or currency deletion.
-- [ ] Generic player checkpoints cannot overwrite auction-related wallet or ownership
+- [x] Generic player checkpoints cannot overwrite auction-related wallet or ownership
       results.
-- [ ] Focused regressions, isolated schema tests, formatting checks, and `make -C src`
+- [x] Focused regressions, isolated schema tests, formatting checks, and `make -C src`
       pass.

@@ -44,6 +44,8 @@ enum class item_transfer_reason : uint16_t
 	corpse_loot,
 	locker_deposit,
 	locker_withdraw,
+	auction_list,
+	auction_claim,
 };
 
 enum class item_custody_state : uint8_t

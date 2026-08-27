@@ -15,7 +15,7 @@ constexpr size_t CRITICAL_COORDINATOR_COMPLETED_CACHE_MAX = 256;
 constexpr size_t CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES = 8 * 1024 * 1024;
 constexpr unsigned int CRITICAL_COORDINATOR_MAX_RETRIES = 8;
 constexpr unsigned int CRITICAL_COORDINATOR_DEFAULT_WORKERS = 2;
-constexpr size_t CRITICAL_COMPLETION_RESULT_MAX_BYTES = 128;
+constexpr size_t CRITICAL_COMPLETION_RESULT_MAX_BYTES = 512;
 
 enum class critical_apply_outcome : uint8_t
 {

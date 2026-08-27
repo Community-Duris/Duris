@@ -40,9 +40,12 @@ static unsigned long long scalar(const char *sql)
 
 static void clear_rows()
 {
-	execute("DELETE FROM critical_outbox_delivery_dedupe");
-	execute("DELETE FROM critical_outbox");
-	execute("DELETE FROM critical_operation_inbox");
+	execute("DELETE d FROM critical_outbox_delivery_dedupe d JOIN critical_outbox o ON "
+		"o.outbox_id=d.outbox_id JOIN critical_operation_inbox i ON "
+		"i.operation_id=o.operation_id WHERE i.command_type=1");
+	execute("DELETE o FROM critical_outbox o JOIN critical_operation_inbox i ON "
+		"i.operation_id=o.operation_id WHERE i.command_type=1");
+	execute("DELETE FROM critical_operation_inbox WHERE command_type=1");
 	execute("DELETE FROM critical_test_state");
 }
 
@@ -133,6 +136,8 @@ int main()
 	       1);
 
 	clear_rows();
+	critical_reconciliation_report baseline = {};
+	assert(critical_outbox_reconcile(&baseline));
 	insert_record(3);
 	state = { .calls = 0, .retry_first = false, .terminal = true };
 	assert(critical_outbox_init(deliver, &state));
@@ -145,8 +150,10 @@ int main()
 	       1);
 	critical_reconciliation_report report = {};
 	assert(critical_outbox_reconcile(&report));
-	assert(report.incomplete_inbox == 0 && report.committed_without_outbox == 0 &&
-	       report.pending_outbox == 1 && report.dead_letter_outbox == 0);
+	assert(report.incomplete_inbox == baseline.incomplete_inbox &&
+	       report.committed_without_outbox == baseline.committed_without_outbox &&
+	       report.pending_outbox == baseline.pending_outbox + 1 &&
+	       report.dead_letter_outbox == baseline.dead_letter_outbox);
 
 	clear_rows();
 	mysql_close(database_connection);

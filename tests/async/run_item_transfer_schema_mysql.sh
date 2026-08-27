@@ -22,6 +22,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/item_transfer_mysql_harness.cpp \
     src/critical_command.c src/epic_command.c src/currency_command.c \
     src/item_transfer_command.c src/item_transfer_repository.c \
+	 src/auction_command.c src/auction_repository.c \
     src/item_uid_allocator.c \
     src/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/item_transfer_mysql_harness"

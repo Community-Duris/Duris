@@ -85,6 +85,7 @@
 #include "critical_outbox.h"
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
+#include "auction_transaction.h"
 #include "epic_transaction.h"
 #include "player_save_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
@@ -120,6 +121,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	epic_transaction_handle_completions(completions, count);
 	currency_transaction_handle_completions(completions, count);
 	item_movement_transaction_handle_completions(completions, count);
+	auction_transaction_handle_completions(completions, count);
 }
 
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
@@ -621,7 +623,7 @@ void run_the_game(int port, int sslport)
 					  "start_failed", "check PLAYER_SAVE_JOURNAL_DIR");
 		}
 		const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
-		if (!critical_outbox_init(critical_outbox_test_destination, NULL) ||
+		if (!critical_outbox_init(auction_transaction_outbox_delivery, NULL) ||
 		    !critical_command_coordinator_init(critical_journal_directory,
 						       critical_command_repository_apply_from_pool,
 						       NULL))
@@ -1389,6 +1391,7 @@ resume_game_loop:
 				critical_command_coordinator_pulse(critical_completions, 64);
 			critical_gameplay_handle_completions(critical_completions,
 							     critical_completion_count);
+			auction_transaction_publish_outbox();
 			for (size_t index = 0; index < critical_completion_count; ++index)
 				if (critical_completions[index].outcome ==
 				    critical_apply_outcome::terminal_failure)

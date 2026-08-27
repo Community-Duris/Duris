@@ -23,7 +23,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=124
+TOTAL=125
 FAILED=0
 
 run_sql() {
@@ -2920,6 +2920,7 @@ run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_le
 run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 run_sql_file "normalize stable corpse ownership identity" "$SCRIPT_DIR/live_item_movement_cutover.sql"
 run_sql_file "normalize locker chest ownership identity" "$SCRIPT_DIR/locker_ownership_cutover.sql"
+run_sql_file "apply transactional auction custody" "$SCRIPT_DIR/auction_transactional_cutover.sql"
 
 # Production dumps predate the full item-diff schema. CREATE TABLE IF NOT EXISTS
 # above cannot repair existing tables, but current save/load and pwipe SQL requires

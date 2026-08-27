@@ -206,6 +206,9 @@ OBJS =  $(SHIP_OBJS) \
 				 epic_command.o \
 				 epic_transaction.o \
 				 currency_command.o \
+				 auction_command.o \
+				 auction_repository.o \
+				 auction_transaction.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
 				 player_save_worker.o \

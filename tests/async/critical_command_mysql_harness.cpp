@@ -67,20 +67,28 @@ static MYSQL *connect_database()
 int main()
 {
 	MYSQL *connection = connect_database();
-	assert(mysql_real_query(connection, "DELETE FROM critical_outbox_delivery_dedupe",
-				strlen("DELETE FROM critical_outbox_delivery_dedupe")) == 0);
-	assert(mysql_real_query(connection, "DELETE FROM critical_outbox",
-				strlen("DELETE FROM critical_outbox")) == 0);
-	assert(mysql_real_query(connection, "DELETE FROM critical_operation_inbox",
-				strlen("DELETE FROM critical_operation_inbox")) == 0);
+	const char *delete_dedupe =
+		"DELETE d FROM critical_outbox_delivery_dedupe d JOIN critical_outbox o ON "
+		"o.outbox_id=d.outbox_id JOIN critical_operation_inbox i ON "
+		"i.operation_id=o.operation_id WHERE i.command_type=1";
+	const char *delete_outbox =
+		"DELETE o FROM critical_outbox o JOIN critical_operation_inbox i ON "
+		"i.operation_id=o.operation_id WHERE i.command_type=1";
+	const char *delete_inbox = "DELETE FROM critical_operation_inbox WHERE command_type=1";
+	assert(mysql_real_query(connection, delete_dedupe, strlen(delete_dedupe)) == 0);
+	assert(mysql_real_query(connection, delete_outbox, strlen(delete_outbox)) == 0);
+	assert(mysql_real_query(connection, delete_inbox, strlen(delete_inbox)) == 0);
 	assert(mysql_real_query(connection, "DELETE FROM critical_test_state",
 				strlen("DELETE FROM critical_test_state")) == 0);
 
 	critical_command first = command(1, 5);
 	critical_apply_result applied = critical_command_repository_apply(connection, first);
 	assert(applied.outcome == critical_apply_outcome::applied && applied.durable_revision == 1);
-	assert(scalar(connection, "SELECT COUNT(*) FROM critical_operation_inbox") == 1);
-	assert(scalar(connection, "SELECT COUNT(*) FROM critical_outbox") == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_operation_inbox WHERE command_type=1") == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_outbox o JOIN critical_operation_inbox i "
+		      "ON i.operation_id=o.operation_id WHERE i.command_type=1") == 1);
 	assert(scalar(connection,
 		      "SELECT COUNT(*) FROM critical_test_state WHERE value=5 AND revision=1") ==
 	       2);
@@ -88,8 +96,11 @@ int main()
 	applied = critical_command_repository_apply(connection, first);
 	assert(applied.outcome == critical_apply_outcome::already_applied &&
 	       applied.durable_revision == 1);
-	assert(scalar(connection, "SELECT COUNT(*) FROM critical_operation_inbox") == 1);
-	assert(scalar(connection, "SELECT COUNT(*) FROM critical_outbox") == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_operation_inbox WHERE command_type=1") == 1);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_outbox o JOIN critical_operation_inbox i "
+		      "ON i.operation_id=o.operation_id WHERE i.command_type=1") == 1);
 	assert(scalar(connection, "SELECT SUM(value) FROM critical_test_state") == 10);
 	applied = critical_command_repository_reconcile(connection, first);
 	assert(applied.outcome == critical_apply_outcome::already_applied &&
@@ -108,8 +119,11 @@ int main()
 	critical_command second = command(33, 2);
 	applied = critical_command_repository_apply(connection, second);
 	assert(applied.outcome == critical_apply_outcome::applied && applied.durable_revision == 2);
-	assert(scalar(connection, "SELECT COUNT(*) FROM critical_operation_inbox") == 2);
-	assert(scalar(connection, "SELECT COUNT(*) FROM critical_outbox") == 2);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_operation_inbox WHERE command_type=1") == 2);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_outbox o JOIN critical_operation_inbox i "
+		      "ON i.operation_id=o.operation_id WHERE i.command_type=1") == 2);
 	assert(scalar(connection,
 		      "SELECT COUNT(*) FROM critical_test_state WHERE value=7 AND revision=2") ==
 	       2);
@@ -145,8 +159,11 @@ int main()
 	assert(scalar(connection,
 		      "SELECT COUNT(*) FROM critical_test_state WHERE value=9 AND revision=4") ==
 	       2);
-	assert(scalar(connection, "SELECT COUNT(*) FROM critical_operation_inbox") == 4);
-	assert(scalar(connection, "SELECT COUNT(*) FROM critical_outbox") == 4);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_operation_inbox WHERE command_type=1") == 4);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_outbox o JOIN critical_operation_inbox i "
+		      "ON i.operation_id=o.operation_id WHERE i.command_type=1") == 4);
 
 	assert(mysql_real_query(
 		       connection,
@@ -158,14 +175,14 @@ int main()
 	applied = critical_command_repository_apply(connection, overflow);
 	assert(applied.outcome == critical_apply_outcome::terminal_failure &&
 	       applied.error_code == ERANGE);
-	assert(scalar(connection, "SELECT COUNT(*) FROM critical_operation_inbox") == 4);
-	assert(scalar(connection, "SELECT COUNT(*) FROM critical_outbox") == 4);
-	assert(mysql_real_query(connection, "DELETE FROM critical_outbox_delivery_dedupe",
-				strlen("DELETE FROM critical_outbox_delivery_dedupe")) == 0);
-	assert(mysql_real_query(connection, "DELETE FROM critical_outbox",
-				strlen("DELETE FROM critical_outbox")) == 0);
-	assert(mysql_real_query(connection, "DELETE FROM critical_operation_inbox",
-				strlen("DELETE FROM critical_operation_inbox")) == 0);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_operation_inbox WHERE command_type=1") == 4);
+	assert(scalar(connection,
+		      "SELECT COUNT(*) FROM critical_outbox o JOIN critical_operation_inbox i "
+		      "ON i.operation_id=o.operation_id WHERE i.command_type=1") == 4);
+	assert(mysql_real_query(connection, delete_dedupe, strlen(delete_dedupe)) == 0);
+	assert(mysql_real_query(connection, delete_outbox, strlen(delete_outbox)) == 0);
+	assert(mysql_real_query(connection, delete_inbox, strlen(delete_inbox)) == 0);
 	assert(mysql_real_query(connection, "DELETE FROM critical_test_state",
 				strlen("DELETE FROM critical_test_state")) == 0);
 

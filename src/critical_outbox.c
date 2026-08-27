@@ -450,7 +450,11 @@ critical_outbox_test_destination(const critical_outbox_record &record, void *con
 				 record.payload_version == 1 && record.payload.size() == 24;
 	const bool currency_record = record.destination == 3 && record.event_type == 1 &&
 				     record.payload_version == 1 && record.payload.size() == 80;
-	return test_record || epic_record || currency_record ?
+	const bool item_record = record.destination == 4 && record.event_type == 1 &&
+				 record.payload_version == 1 && !record.payload.empty();
+	const bool auction_record = record.destination == 5 && record.event_type == 1 &&
+				    record.payload_version == 1 && !record.payload.empty();
+	return test_record || epic_record || currency_record || item_record || auction_record ?
 		       critical_outbox_delivery_result::delivered :
 		       critical_outbox_delivery_result::terminal_failure;
 }
