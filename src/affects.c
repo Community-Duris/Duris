@@ -72,7 +72,6 @@ extern struct time_info_data time_info;
 extern struct arena_data arena;
 extern Skill skills[];
 extern bool innate_two_daggers(P_char);
-extern const char *event_names[];
 int get_honing(P_obj);
 extern float spell_pulse_data[LAST_RACE + 1];
 
@@ -1776,13 +1775,13 @@ char affect_total(P_char ch, int kill_ch)
 	if (ch->desc && !ch->desc->connected && (GET_STAT(ch) != STAT_DEAD))
 	{
 		if (GET_HIT(ch) != GET_MAX_HIT(ch) || ch->points.hit_reg < 0)
-			StartRegen(ch, EVENT_HIT_REGEN);
+			StartRegen(ch, regen_resource::hit);
 		if (GET_VITALITY(ch) != GET_MAX_VITALITY(ch) || ch->points.move_reg < 0)
-			StartRegen(ch, EVENT_MOVE_REGEN);
+			StartRegen(ch, regen_resource::vitality);
 		if (GET_MANA(ch) != GET_MAX_MANA(ch) || ch->points.mana_reg < 0)
-			StartRegen(ch, EVENT_MANA_REGEN);
+			StartRegen(ch, regen_resource::mana);
 		if (GET_WARD(ch) != GET_MAX_WARD(ch) || ch->points.ward_reg < 0)
-			StartRegen(ch, EVENT_WARD_REGEN);
+			StartRegen(ch, regen_resource::ward);
 	}
 
 	return FALSE;
@@ -2055,9 +2054,7 @@ void affect_remove(P_char ch, struct affected_type *af)
 			if (pnev->func == event_short_affect && pnev->data != NULL &&
 			    ((struct event_short_affect_data *)(pnev->data))->af == af)
 			{
-				FREE(pnev->data);
-				pnev->data = NULL;
-				pnev->timer = 1;
+				nevent_cancel(nevent_handle_from_event(pnev));
 				break;
 			}
 		}
@@ -2422,7 +2419,7 @@ void obj_affect_remove(P_obj obj, struct obj_affect *af)
 			continue;
 		if (*((struct obj_affect **)e->data) == af)
 		{
-			disarm_single_event(e);
+			nevent_cancel(nevent_handle_from_event(e));
 			break;
 		}
 	}
@@ -4211,17 +4208,17 @@ void affect_update(void)
 		if (IS_NPC(i) || (racial_data[GET_RACE(i)].max_age > GET_AGE(i)) || IS_TRUSTED(i))
 		{
 			if (GET_HIT(i) < GET_MAX_HIT(i))
-				StartRegen(i, EVENT_HIT_REGEN);
+				StartRegen(i, regen_resource::hit);
 
 			if (GET_VITALITY(i) < GET_MAX_VITALITY(i))
-				StartRegen(i, EVENT_MOVE_REGEN);
+				StartRegen(i, regen_resource::vitality);
 
 			if (GET_CLASS(i, CLASS_PSIONICIST) || GET_CLASS(i, CLASS_MINDFLAYER))
 				if (GET_MANA(i) < GET_MAX_MANA(i))
-					StartRegen(i, EVENT_MANA_REGEN);
+					StartRegen(i, regen_resource::mana);
 
 			if (GET_WARD(i) < GET_MAX_WARD(i))
-				StartRegen(i, EVENT_WARD_REGEN);
+				StartRegen(i, regen_resource::ward);
 		}
 
 		if (IS_DISGUISE(i))

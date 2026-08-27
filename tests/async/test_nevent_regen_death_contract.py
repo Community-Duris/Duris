@@ -10,8 +10,9 @@ new_events = (ROOT / "src" / "new_events.c").read_text()
 
 assert contains(limits, "else if (GET_STAT(ch) > STAT_INCAP)")
 assert contains(limits, "if (IS_FIGHTING(ch) || IS_DESTROYING(ch))")
-assert contains(new_events, "static_assert(NEVENT_MAX_DEFERRALS == 0U")
-assert contains(new_events, "return event != NULL;")
-assert contains(new_events, "ordinary events")
+assert contains(new_events, "NEVENT_NORMAL_AGING_DEFERRALS")
+assert contains(new_events, "NEVENT_NORMAL_AGING_TICKS")
+assert contains(new_events, "NEVENT_PRIORITY_AGED_NORMAL")
+assert contains(new_events, "func == event_ward_regen")
 
 print("nevent regen/death and bounded-deferral contracts passed")

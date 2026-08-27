@@ -38,6 +38,11 @@ assert re.search(r"^test-all:\s*build\s*$", makefile, re.MULTILINE)
 assert "$(MAKE) test" in makefile
 
 editor_makefile = (ROOT / "areas" / "de" / "src" / "Makefile").read_text()
+assert re.search(r"^CXX_STANDARD\s*=\s*-std=c\+\+20$", editor_makefile, re.MULTILINE)
+for flags in ("CCFLAGS", "CFLAGS"):
+    assert re.search(rf"^{flags}\s*=.*\$\(CXX_STANDARD\)", editor_makefile, re.MULTILINE), (
+        f"the area editor {flags} must compile shared server headers as C++20"
+    )
 assert re.search(r"^de:\s*\$\(DE_BINARY\)$", editor_makefile, re.MULTILINE)
 assert re.search(
     r"^\$\(DE_BINARY\):\s*\$\(OBJS\)\s+\$\(C_OBJS\)\s+\|\s+message$",

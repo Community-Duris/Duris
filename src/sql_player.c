@@ -10423,6 +10423,7 @@ P_ship sql_load_ship(const char *owner_name)
 	    !sql_load_ship_slots(ship_id, ship))
 	{
 		logit(LOG_DEBUG, "sql_load_ship: component=dependent_rows outcome=failure");
+		shipObjHash.erase(ship);
 		delete_ship(ship, true);
 		return NULL;
 	}

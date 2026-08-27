@@ -2618,7 +2618,7 @@ void do_flee(P_char ch, char *argument, int cmd)
 		if (IS_PC(ch) && !GET_CLASS(ch, CLASS_ROGUE) &&
 		    !has_innate(ch, INNATE_IMPROVED_FLEE))
 		{
-			StartRegen(ch, EVENT_MOVE_REGEN);
+			StartRegen(ch, regen_resource::vitality);
 
 			if (GET_VITALITY(ch) > 0)
 				GET_VITALITY(ch) = MAX(0, (GET_VITALITY(ch) - (number(20, 30))));
@@ -5730,7 +5730,7 @@ void event_sneaky_strike(P_char ch, P_char victim, P_obj obj, void *data)
 				{
 					GET_VITALITY(victim) -= i;
 				}
-				StartRegen(victim, EVENT_MOVE_REGEN);
+				StartRegen(victim, regen_resource::vitality);
 
 				if (!affected_by_spell(victim, SKILL_AWARENESS))
 				{

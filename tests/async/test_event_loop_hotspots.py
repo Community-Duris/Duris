@@ -11,9 +11,9 @@ even with SQL_TRACE explicitly set to off.  That was the bulk of the 24ms spent 
 event_write_statistic (the INSERT itself measures ~1.3ms).
 
 Verifies:
-1. generic_char_event splits its sweep into stable slices and reschedules itself at
-   the matching fraction of the period, so each character is still visited once per
-   full period.
+1. generic_char_event splits its sweep into stable slices and its registry-owned
+   cadence uses the matching fraction of the period, so each character is still
+   visited once per full period.
 2. The mob sanity check still runs on every pass.
 3. sql_trace_enabled() only turns tracing on when the environment asks for it.
 """
@@ -25,6 +25,7 @@ from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 handler = (ROOT / "src" / "handler.c").read_text(encoding="utf-8", errors="replace")
+events = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8", errors="replace")
 sql = (ROOT / "src" / "sql.c").read_text(encoding="utf-8", errors="replace")
 
 checks = []
@@ -51,8 +52,10 @@ if m:
         body.index("without only.npc struct") < body.index("char_sweep_slice(i) != phase")
     ))
     checks.append((
-        "reschedules at period / slices so cadence per character is unchanged",
-        contains(body, "add_event(generic_char_event, GENERIC_CHAR_EVENT_PERIOD / GENERIC_CHAR_EVENT_SLICES")
+        "registry cadence preserves the period / slices interval",
+        "add_event(generic_char_event" not in body and
+        contains(events, '"generic-character-sweep", generic_char_event, 20 * WAIT_SEC') and
+        contains(events, "5 * WAIT_SEC, nevent_periodic_policy::fixed_delay")
     ))
 else:
     checks.append(("generic_char_event present", False))

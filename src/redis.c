@@ -30,7 +30,9 @@
 #include "ships/ships.h"
 
 #include <chrono>
+#include <new>
 #include <thread>
+#include <vector>
 
 #ifndef __NO_MYSQL__
 #include <cjson/cJSON.h>
@@ -60,7 +62,6 @@ bool redis_enabled = false;
 bool redis_world_state_enabled = false;
 int crash_recovery_boot = 0;
 
-#define REDIS_FLUSH_INTERVAL (30 * WAIT_SEC)
 #define REDIS_WORLD_STATE_INTERVAL_DEFAULT 10
 #define REDIS_WORLD_STATE_MAX_AGE_DEFAULT 300
 #define REDIS_CONNECT_TIMEOUT_MSEC 250
@@ -1058,12 +1059,50 @@ struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy(void)
 
 void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
-	flush_dirty_players();
-	redis_flush_floor_drops();
+	constexpr size_t DIRTY_PLAYER_BATCH_SIZE = 8;
+	static std::vector<uint64_t> character_ids;
+	static size_t cursor = 0;
 
+	if (character_ids.empty())
+	{
+		try
+		{
+			for (P_char character = character_list; character;
+			     character = character->next)
+				if (IS_PC(character) && GET_PID(character) > 0 &&
+				    character->runtime_id)
+					character_ids.push_back(character->runtime_id);
+		}
+		catch (const std::bad_alloc &)
+		{
+			character_ids.clear();
+			cursor = 0;
+			nevent_periodic_retry_after(WAIT_SEC,
+						    "dirty-player snapshot allocation failed");
+			return;
+		}
+	}
+
+	size_t processed = 0;
+	while (cursor < character_ids.size() && processed < DIRTY_PLAYER_BATCH_SIZE)
+	{
+		P_char character = find_character_by_runtime_id(character_ids[cursor++]);
+		processed++;
+		if (character && IS_PC(character) && GET_PID(character) > 0)
+			player_save_pipeline_checkpoint_dirty(character, RENT_CRASH,
+							      get_room_vnum(character));
+	}
+
+	if (cursor < character_ids.size())
+	{
+		nevent_periodic_continue_after(1);
+		return;
+	}
+
+	character_ids.clear();
+	cursor = 0;
 	if (redis_enabled)
-		add_event(event_flush_dirty_players, REDIS_FLUSH_INTERVAL, NULL, NULL, NULL, 0,
-			  NULL, 0);
+		redis_flush_floor_drops();
 }
 
 bool redis_save_world_state(void)
@@ -1310,10 +1349,12 @@ void event_save_world_state(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, voi
 	if (redis_enabled && redis_world_state_enabled)
 	{
 		redis_flush_floor_drops();
-		redis_save_world_state();
-		add_event(event_save_world_state, world_state_interval * WAIT_SEC, NULL, NULL, NULL,
-			  0, NULL, 0);
+		if (!redis_save_world_state())
+			nevent_periodic_mark_failure("world-state persistence did not complete");
 	}
+	else
+		nevent_periodic_mark_failure("world-state persistence is disabled");
+	nevent_periodic_next_after(world_state_interval * WAIT_SEC);
 }
 
 bool redis_cache_set(const char *key, const char *value)
@@ -1667,11 +1708,8 @@ struct ShipData *redis_load_ship_snapshot(const char *owner_name)
 	if (!redis_ship_snapshot_from_json(root, ship))
 	{
 		cJSON_Delete(root);
-		if (ship->ownername)
-			FREE(ship->ownername);
-		if (ship->name)
-			FREE(ship->name);
-		FREE(ship);
+		shipObjHash.erase(ship);
+		delete_ship(ship, true);
 		return NULL;
 	}
 
@@ -1987,10 +2025,6 @@ void redis_check_donation_messages(void)
 void event_check_donation_messages(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	redis_check_donation_messages();
-
-	if (redis_enabled)
-		add_event(event_check_donation_messages, 1 * WAIT_SEC, NULL, NULL, NULL, 0, NULL,
-			  0);
 }
 
 // forward declare from random.mob.c

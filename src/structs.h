@@ -72,6 +72,7 @@ typedef unsigned char ubyte;
 typedef unsigned short int ush_int;
 typedef struct acct_entry *P_acct;
 typedef void (*event_func_type)(P_char, P_char, P_obj, void *);
+typedef void (*nevent_payload_destroy_type)(void *);
 
 #ifdef REALTIME_COMBAT
 typedef struct combat_data *P_combat;
@@ -565,6 +566,7 @@ struct obj_data
 
 	P_char hitched_to; /* Who are we hitched to?           */
 	P_nevent nevents;
+	P_nevent nevents_tail;
 	P_obj contains; /* Contains objects                 */
 	P_obj next_content; /* For 'contains' lists             */
 	P_obj prev, next; /* For the object list              */
@@ -1540,6 +1542,7 @@ struct char_data
 	P_char next; /* For either mobile | p-list    */
 
 	P_nevent nevents;
+	P_nevent nevents_tail;
 
 	struct char_player_data player; /* Normal data               */
 	struct player_disguise_data disguise;
@@ -1563,6 +1566,7 @@ struct char_data
 	struct char_link_data *linking; // Master links to other characters
 	struct char_obj_link_data *obj_linked;
 	unsigned int runtime_flags;
+	uint64_t runtime_id; /* process-local identity; changes whenever storage is reused */
 };
 
 /* ======================================================================== */
@@ -2022,11 +2026,8 @@ struct hunt_data
 	                    don't work */
 	ubyte retry_dir; /* last failed direction I tried moving */
 	long huntFlags; // hunt flags passed to find_first_step
-	union
-	{
-		P_char victim; /* who am I hunting? */
-		int room; /* what room am I hunting? */
-	} targ;
+	uint64_t target_runtime_id; /* process-local identity of a character target */
+	int target_room; /* real room number for a room target */
 	vector<int> path; /* path returned by dijkstra */
 	int path_step;
 };
@@ -2038,17 +2039,129 @@ struct nevent_data
 	P_char victim;
 	event_func_type func; // What function is called when event fires.
 	void *data; // Data argument to func
-	unsigned int timer; // How much time in the row.
+	nevent_payload_destroy_type data_destroy; // Releases data according to its actual type.
 	unsigned int element; // Which row of ne_schedule array
 	unsigned int priority;
 	unsigned int deferral_count;
-	unsigned long long scheduled_tick;
+	unsigned int lifecycle_state;
+	unsigned int periodic_job_id; // One-based registry slot, or zero for ordinary events.
+	unsigned long long due_tick; // Absolute scheduler tick when this event becomes eligible.
+	unsigned long long deferred_cost_us; // Cost estimate registered with catch-up debt.
 	unsigned long long sequence;
+	uint64_t owner_runtime_id; // Stable diagnostic identity; never dereference ch to render it.
+	uint64_t victim_runtime_id; // Stable diagnostic identity for the optional target.
+	int diagnostic_obj_vnum; // Captured while the object owner is known to be live.
 	struct char_link_data *cld;
+	P_nevent prev_char_nev;
 	P_nevent next_char_nev;
+	P_nevent prev_obj_nev;
 	P_nevent next_obj_nev;
 	P_nevent prev_sched;
 	P_nevent next_sched;
+};
+
+struct nevent_handle
+{
+	P_nevent event;
+	unsigned long long sequence;
+};
+
+enum class nevent_schedule_status : ubyte
+{
+	scheduled,
+	null_callback,
+	negative_delay,
+	dead_owner,
+	victim_without_owner,
+	invalid_payload,
+	sequence_exhausted,
+	invalid_replace_target,
+	wrong_thread
+};
+
+struct nevent_schedule_result
+{
+	nevent_schedule_status status;
+	nevent_handle handle;
+
+	constexpr bool was_scheduled() const noexcept
+	{
+		return status == nevent_schedule_status::scheduled;
+	}
+	constexpr explicit operator bool() const noexcept { return was_scheduled(); }
+};
+
+enum class nevent_cancel_result : ubyte
+{
+	canceled,
+	deferred,
+	already_inactive,
+	stale_handle,
+	invalid_handle,
+	wrong_thread
+};
+
+#define NEVENT_PERIODIC_KEY_LENGTH 48
+#define NEVENT_PERIODIC_FAILURE_LENGTH 96
+
+enum class nevent_periodic_policy : ubyte
+{
+	fixed_delay,
+	fixed_rate
+};
+
+enum class nevent_periodic_result : ubyte
+{
+	registered,
+	duplicate_suppressed,
+	enabled,
+	disabled,
+	unknown_key,
+	invalid_definition,
+	capacity_exhausted,
+	schedule_failed,
+	wrong_thread
+};
+
+struct nevent_periodic_health
+{
+	char key[NEVENT_PERIODIC_KEY_LENGTH];
+	char last_failure[NEVENT_PERIODIC_FAILURE_LENGTH];
+	event_func_type callback;
+	nevent_periodic_policy policy;
+	bool enabled;
+	bool armed;
+	bool running;
+	bool has_started;
+	bool has_succeeded;
+	unsigned long long initial_delay;
+	unsigned long long interval;
+	unsigned long long next_due_tick;
+	unsigned long long last_started_tick;
+	unsigned long long last_success_tick;
+	unsigned long long total_runs;
+	unsigned long long completed_runs;
+	unsigned long long continuation_slices;
+	unsigned long long callback_failures;
+	unsigned long long consecutive_failures;
+	unsigned long long schedule_failures;
+	unsigned long long missed_runs;
+	unsigned long long watchdog_rearms;
+	unsigned long long duplicates_suppressed;
+};
+
+struct nevent_periodic_summary
+{
+	unsigned long registered;
+	unsigned long enabled;
+	unsigned long armed;
+	unsigned long running;
+	unsigned long unhealthy;
+	unsigned long long callback_failures;
+	unsigned long long schedule_failures;
+	unsigned long long missed_runs;
+	unsigned long long watchdog_rearms;
+	unsigned long long duplicates_suppressed;
 };
 
 /* structure used for grouping.. */
@@ -2520,41 +2633,6 @@ struct mem_usage
 	const char *tag;
 	size_t size;
 	size_t allocs;
-};
-
-// this is stub for possible array-based event manager, not used yet  - Odorf
-struct EventsFactory
-{
-	void init_event(nevent_data *event, event_func_type func, P_char ch, P_char victim,
-			P_obj obj, void *data, int data_size);
-	P_nevent add_event(nevent_data *&table, nevent_data *&size, nevent_data *&tail,
-			   event_func_type func, P_char ch, P_char victim, P_obj obj, void *data,
-			   int data_size);
-	P_nevent add_global_event(event_func_type func, P_char ch, P_char victim, P_obj obj,
-				  void *data, int data_size);
-	P_nevent add_local_event(event_func_type func, P_char ch, P_char victim, P_obj obj,
-				 void *data, int data_size);
-	void expand(nevent_data *&table, nevent_data *&last, nevent_data *&tail);
-	void init_table(P_nevent &table, P_nevent &last, P_nevent &tail, int size);
-	void init_global_table(int size);
-	void init_local_table(int size);
-
-	int get_count() { return (global_tail - global_table) + (local_tail - local_table); }
-	int get_size() { return (global_last - global_table) + (local_last - local_table); }
-	int get_global_count() { return (global_tail - global_table); }
-	int get_global_size() { return (global_last - global_table); }
-	int get_local_count() { return (local_tail - local_table); }
-	int get_local_size() { return (local_last - local_table); }
-
-	P_nevent get_first_event();
-	P_nevent get_next_event(P_nevent);
-
-	nevent_data *global_table;
-	nevent_data *global_last;
-	nevent_data *global_tail;
-	nevent_data *local_table;
-	nevent_data *local_last;
-	nevent_data *local_tail;
 };
 
 // For the shutdown command.

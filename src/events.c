@@ -1,12 +1,13 @@
 /*
  * ***************************************************************************
  * *  File: events.c                                           Part of Duris *
- * *  Usage: manipulate various event lists
+ * *  Usage: nevent callbacks and callback-specific helpers
  * * *  Copyright  1994, 1995 - John Bashaw and Duris Systems Ltd.
  * *
  * ***************************************************************************
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,23 +31,12 @@
 #include "spells.h"
 
 void event_memorize(P_char, P_char, P_obj, void *);
-void disarm_char_nevents(P_char ch, event_func_type func);
-void disarm_obj_nevents(P_obj obj, event_func_type func);
-P_nevent get_scheduled(P_char, event_func_type);
-void ne_init_events();
-int ne_event_time(P_nevent);
 
-bool do_reporting = FALSE;
-
-extern Skill skills[];
-
-/* needed for StartRegen() */
 extern int pulse;
-
-/* if true, we have called Events() from the main loop this pulse already */
-extern bool after_events_call;
 extern unsigned long long ne_event_tick;
 extern P_nevent current_nevent;
+extern P_room world;
+extern struct zone_data *zone_table;
 
 struct regen_event_state
 {
@@ -84,227 +74,6 @@ static bool zone_reset_trace_enabled(void)
 		enabled = getenv("DURIS_ZONE_RESET_TRACE") &&
 			  atoi(getenv("DURIS_ZONE_RESET_TRACE")) > 0;
 	return enabled > 0;
-}
-
-/*
- * event_loading holds the number of pending events for each pulse, used
- * by ReSchedule to balance the loading of events so we don't get
- * everything happening at once.
- */
-
-uint event_loading[PULSES_IN_TICK];
-
-/*
- * event_counter is a diagnostic tool more than anything else, each
- * element of this array holds the total number of pending events of that
- * type. event_counter[LAST_EVENT] holds the number of elements in
- * event_list (ie. all pending events).  event_counter[LAST_EVENT + 1]
- * holds the number of elements in avail_events (ie. how many event
- * elements are sitting around taking up space and not doing anything.)
- */
-
-uint event_counter[LAST_EVENT + 2];
-
-/*
- * names of event types, used in log messages and by 'world events'
- */
-
-const char *event_names[] = { "NULL",
-			      "Deferred",
-			      "Wait",
-			      "Regen Hits",
-			      "Regen Moves",
-			      "Regen Mana",
-			      "Mob Mundane",
-			      "Mob Special",
-			      "Object",
-			      "Room",
-			      "Falling Char", // 10
-			      "Falling Obj",
-			      "Zone Reset",
-			      "Obj affect",
-			      "Skill Reset",
-			      "Special",
-			      "Ship Move",
-			      "Fire Plane",
-			      "Auto Save",
-			      "Track Decay",
-			      "Spell Scribe", // 20
-			      "Spell Mem",
-			      "Spellcast",
-			      "Melee combat",
-			      "Bard singing",
-			      "Bard fx-decay",
-			      "Delayed func",
-			      "Stunned",
-			      "Knocked Out",
-			      "Brain Drain",
-			      "AggAttack", // 30
-			      "Berserk",
-			      "Affect Bal",
-			      "Hunter",
-			      "Underwater",
-			      "Swimming",
-			      "Brain Absorb",
-			      "Gith neckbite",
-			      "Reset zone complete",
-			      "Disguise",
-			      "Damage Char", // 40
-			      "Immolate Char",
-			      "Balance Effects NoDie",
-			      "Dazzle",
-			      "Throat Crush",
-			      "Acid immolate",
-			      "Short affect",
-			      "Room affect",
-			      "Order Troop",
-			      "Combination",
-			      "Undead Mem", // 50
-			      "Flurry",
-			      "Artifact",
-			      "Sacking",
-			      "Displacement",
-			      "Lotus",
-			      "Spec Timer",
-			      "CDOOM",
-			      "Reconstruction"
-			      "Phantasmal form",
-			      "Magma burst", // 60
-			      "Dread wave",
-			      "Piper singing",
-			      "Piper fx-decay",
-			      "Short affect",
-			      "Room affect",
-			      "Interaction",
-			      "Interaction-peer",
-			      "Barrage" };
-
-/*
- * The way this works:
- *
- * There are only 2 lists of struct event_data elements, event_list, and
- * avail_events, event_list holds the events that are pending,
- * avail_events holds the elements that are not currently in use.
- * event_list is doubly- linked, avail_events is a FIFO stack.
- *
- * schedule[] is 240 lists of pointers to events (one for each pulse in a
- * real minute), elements in these lists are also doubly-linked.
- *
- * event_type_list[] is (LAST_EVENT) lists of pointers to events, also
- * doubly- linked to facilitate finding an event of a given type.
- *
- * current_event is just a pointer to the 'active' event, or NULL, if
- * event processing is not being done.  Can be used as a flag to see if
- * current call is the result of an event or not.
- *
- * For almost ALL purposes, the only things you need to know is what the
- * various EVENT_ types are, and what arguments to give the AddEvent()
- * macro.
- *
- * schedule array is used to segregate event timing, as pulses are
- * advanced, they step down this array, each index represents a 1/4 second
- * timing pulse. If an event is supposed to take place 30 minutes in the
- * future, we add an event_data element to the list pointed to by
- * schedule[pulse], with a timer value of 30.  Then every 240th pulse, the
- * timer value of all events in that element's list are decremented, when
- * they hit 0, they are triggered (and deleted from the schedule list if
- * one_shot is TRUE).  Periodic events will just reset the timer value
- * (things like the clock tower in WD spring to mind) which is why
- * current_event exists (and will always point to the active event).  All
- * specials (mob/obj/room/global) will use this event queue.
- *
- * Advantages to doing this?  Speed.  Flexibility.  Efficiency.  It
- * eliminates LOTS of redundant and repetitious processing.  Why speed up
- * something that's already damn fast?  Because it frees up MANY processor
- * cycles we can use creatively (want to set a bunch of guards patrolling
- * an area with a fixed schedule?  Want a spell effect delayed by 10 real
- * minutes?  Want combat blow timing to be settable based on character's
- * speed and condition? Want to have regen rates set so that they get one
- * point at a time, at various times, rather than everyone getting a bunch
- * on the tick, every tick?  No problem.
- *
- * Key to this working, list of EVENT_TYPEs, there is room for (ubyte)255
- * different TYPES of events, that should be more than enough for any
- * foreseeable future.
- *
- * event_type_list has the list of pending events, (by event type)
- * avail_events holds the list of allocated, but not pending event
- * elements.  When a one_shot event is triggered and removed, it's added
- * to the head of this list.  When a new event needs to be added, it
- * checks this list and reuses the elements, only if no unused event
- * elements are available does it allocate a new one.  No mechanism for
- * freeing elements on these lists currently, if this becomes a problem,
- * I'll add an event to periodically free excess event elements.
- */
-
-struct mm_ds *dead_event_pool = NULL;
-
-/*
- * external variables
- */
-
-extern P_char character_list;
-extern P_index mob_index;
-extern P_index obj_index;
-extern P_obj object_list;
-extern P_room world;
-extern int errno;
-extern int pulse;
-extern int top_of_mobt;
-extern int top_of_objt;
-extern int top_of_zone_table;
-extern struct time_info_data time_info;
-extern struct zone_data *zone;
-extern struct zone_data *zone_table;
-extern struct sector_data *sector_table;
-extern const struct racial_data_type racial_data[LAST_RACE + 1];
-void interaction_to_new_wrapper(P_char, P_char, char *);
-
-// The type is an artifact of old event code.  It's ignored now.
-void clear_char_nevents(P_char ch, int /*type*/, void *func)
-{
-	if (!ch)
-	{
-		logit(LOG_DEBUG, "clear_char_nevents: NULL ch");
-		return;
-	}
-
-	disarm_char_nevents(ch, (event_func_type)func);
-	ch->nevents = NULL;
-}
-
-void clear_events_type(P_char ch, int type)
-{
-	clear_char_nevents(ch, type, NULL);
-}
-
-/*
- * remove all events associated with the target char.  Called from
- * extract_char so that we don't wind up with bogus pointers for events.
- */
-
-void ClearCharEvents(P_char target)
-{
-	clear_char_nevents(target, -1, NULL);
-}
-
-/*
- * remove all events associated with the target object.  Called from
- * extract_obj so that we don't wind up with bogus pointers for events.
- */
-
-void ClearObjEvents(P_obj target)
-{
-	if (!target)
-	{
-		logit(LOG_DEBUG, "ClearObjEvents called with NULL target");
-		return;
-	}
-	/*
-	 * code copied from ClearCharEvents
-	 */
-
-	disarm_obj_nevents(target, 0);
 }
 
 void calculate_regen_values(int reg, int *per_pulse, int *delay)
@@ -484,12 +253,12 @@ void event_hit_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 	add_event(event_hit_regen, 1, ch, 0, 0, 0, &state, sizeof(state));
 }
 
-void StartRegen(P_char ch, int type)
+void StartRegen(P_char ch, regen_resource resource)
 {
 	event_func_type func;
 	int delay, per_tick;
 
-	if (type == EVENT_MOVE_REGEN)
+	if (resource == regen_resource::vitality)
 	{
 		func = event_move_regen;
 		if (get_scheduled(ch, func))
@@ -497,7 +266,7 @@ void StartRegen(P_char ch, int type)
 		per_tick = move_regen(ch, FALSE);
 		delay = IS_PC(ch) ? 1 : MOB_MOVE_REGEN_DELAY;
 	}
-	else if (type == EVENT_HIT_REGEN)
+	else if (resource == regen_resource::hit)
 	{
 		func = event_hit_regen;
 		if (get_scheduled(ch, func))
@@ -505,7 +274,7 @@ void StartRegen(P_char ch, int type)
 		per_tick = hit_regen(ch, FALSE);
 		delay = 1;
 	}
-	else if (type == EVENT_MANA_REGEN)
+	else if (resource == regen_resource::mana)
 	{
 		func = event_mana_regen;
 		if (get_scheduled(ch, func))
@@ -515,7 +284,7 @@ void StartRegen(P_char ch, int type)
 
 		delay = IS_PC(ch) ? 1 : MOB_MANA_REGEN_DELAY;
 	}
-	else if (type == EVENT_WARD_REGEN)
+	else if (resource == regen_resource::ward)
 	{
 		func = event_ward_regen;
 		if (get_scheduled(ch, func))
@@ -562,9 +331,16 @@ void DelayCommune(P_char ch, int delay)
 		P_nevent e = get_scheduled(ch, event_memorize);
 		if (e)
 		{
-			int old_time = ne_event_time(e);
-			disarm_char_nevents(ch, event_memorize);
-			add_event(event_memorize, (old_time + delay), ch, 0, 0, 0, 0, 0);
+			const unsigned long long old_time =
+				static_cast<unsigned long long>(ne_event_time(e));
+			const unsigned long long extension =
+				delay > 0 ? static_cast<unsigned long long>(delay) : 0;
+			const unsigned long long new_delay = extension > ULLONG_MAX - old_time ?
+								     ULLONG_MAX :
+								     old_time + extension;
+			if (!nevent_reschedule_after(nevent_handle_from_event(e), new_delay))
+				logit(LOG_EXIT,
+				      "DelayCommune: failed to reschedule memorize event");
 		}
 	}
 }
@@ -572,6 +348,8 @@ void DelayCommune(P_char ch, int delay)
 void CharWait(P_char ch, int delay)
 {
 	P_nevent e = NULL;
+	nevent_schedule_result scheduled = { nevent_schedule_status::invalid_replace_target,
+					     { NULL, 0 } };
 
 	if (!ch)
 	{
@@ -601,16 +379,9 @@ void CharWait(P_char ch, int delay)
 		if (e)
 		{
 			// If the new delay is shorter than the current, ignore new.
-			//   Note: If you want delays to stack, change this to to e->timer += delay (I think that'll work).
 			if (ne_event_time(e) >= delay)
 			{
 				return;
-			}
-			else
-			{
-				// Kill the shorter event and add a new one.. why not just update e->timer??
-				// Because we bucket-sort events and this is faster than moving the event to a new bucket.
-				disarm_char_nevents(ch, event_wait);
 			}
 		}
 	}
@@ -622,23 +393,31 @@ void CharWait(P_char ch, int delay)
 		      delay / WAIT_SEC);
 	}
 
+	if (e)
+		scheduled = nevent_replace(nevent_handle_from_event(e), event_wait, delay, ch, NULL,
+					   NULL, 0, NULL, 0);
+	else
+		scheduled = add_event(event_wait, delay, ch, NULL, NULL, 0, NULL, 0);
+
+	if (!scheduled)
+	{
+		debug("CharWait: event_wait schedule failed for %s (status %u)", J_NAME(ch),
+		      static_cast<unsigned int>(scheduled.status));
+		if (!e)
+			REMOVE_BIT(ch->specials.act2, PLR2_WAIT);
+		return;
+	}
+
 	if (!IS_TRUSTED(ch))
 	{
+		const unsigned long long grace = static_cast<unsigned long long>(2 * WAIT_SEC);
 		SET_BIT(ch->specials.act2, PLR2_WAIT);
-		// Hard deadline for the command gate.  event_wait normally clears it well
-		//   before this, but if the event is lost, delayed or starved the gate must
-		//   still come down on its own -- a player who cannot type is unrecoverable.
-		ch->specials.wait_until_pulse = ne_event_tick + (unsigned long long)delay +
-						(unsigned long long)(2 * WAIT_SEC);
-	}
-	add_event(event_wait, delay, ch, 0, 0, 0, 0, 0);
-
-	// add_event() can refuse the event (bad arguments, dead ch).  If nothing is
-	//   scheduled to clear the gate, don't leave it up.
-	if (!CAN_ACT(ch) && !get_scheduled(ch, event_wait))
-	{
-		debug("CharWait: event_wait not scheduled for %s, clearing wait.", J_NAME(ch));
-		REMOVE_BIT(ch->specials.act2, PLR2_WAIT);
+		// Hard deadline for the command gate.  event_wait normally clears it first,
+		// but the gate must still recover if the event is lost or delayed.
+		ch->specials.wait_until_pulse = scheduled.handle.event->due_tick >
+								ULLONG_MAX - grace ?
+							ULLONG_MAX :
+							scheduled.handle.event->due_tick + grace;
 	}
 }
 
@@ -651,14 +430,13 @@ void event_reset_zone(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *dat
 
 	if (zone_reset_trace_enabled())
 		logit(LOG_STATUS,
-		      "ZONE RESET TRACE: zone_rnum=%d zone_vnum=%d name=%s fired_tick=%llu scheduled_tick=%llu lateness_ticks=%lld event_element=%d event_timer=%d sequence=%llu age_before=%d lifespan=%d age_after=%d will_reset=%d reset_mode=%d pulse=%d",
+		      "ZONE RESET TRACE: zone_rnum=%d zone_vnum=%d name=%s fired_tick=%llu due_tick=%llu lateness_ticks=%lld event_bucket=%d sequence=%llu age_before=%d lifespan=%d age_after=%d will_reset=%d reset_mode=%d pulse=%d",
 		      zone, zone_table[zone].number, zone_table[zone].name, ne_event_tick,
-		      current_nevent ? current_nevent->scheduled_tick : 0,
+		      current_nevent ? current_nevent->due_tick : 0,
 		      current_nevent ?
-			      (long long)ne_event_tick - (long long)current_nevent->scheduled_tick :
+			      (long long)ne_event_tick - (long long)current_nevent->due_tick :
 			      0,
 		      current_nevent ? current_nevent->element : -1,
-		      current_nevent ? current_nevent->timer : -1,
 		      current_nevent ? current_nevent->sequence : 0, age_before,
 		      zone_table[zone].lifespan, age_before + 1, will_reset ? 1 : 0,
 		      zone_table[zone].reset_mode, pulse);

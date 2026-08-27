@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <vector>
 #include "files.h"
 #include "mm.h"
 #include "necromancy.h"
@@ -53,23 +54,12 @@ extern P_obj object_list;
 extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 
-struct arti_list
-{
-	int pid;
-	arti_data *artis;
-	arti_list *next;
-};
-
-struct bind_data
-{
-	int vnum;
-	int owner_pid;
-	long timer;
-	bind_data *next;
-};
-
 // Internal globals
 bool updateArtis = TRUE;
+constexpr int ARTIFACT_MAINTENANCE_RETRY_DELAY = 30 * WAIT_SEC;
+constexpr size_t ARTIFACT_BIND_BATCH_SIZE = 8;
+constexpr size_t ARTIFACT_EXPIRY_BATCH_SIZE = 1;
+constexpr size_t ARTIFACT_WARS_OWNER_BATCH_SIZE = 4;
 
 // forward declarations for redis cache
 P_char load_dummy_char(char *name);
@@ -2196,6 +2186,7 @@ void arti_files_to_sql(P_char ch, char *arg)
 
 void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
+	static int cursor_vnum = 0;
 	P_obj arti, cont, corpse;
 	P_char owner;
 	P_desc desc;
@@ -2206,27 +2197,42 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	char *name;
 	MYSQL_RES *res;
 	MYSQL_ROW row = NULL;
+	size_t row_count;
+	int page_last_vnum = cursor_vnum;
 
 	if (!updateArtis)
 	{
+		cursor_vnum = 0;
 		return;
 	}
 
-	// Pull all the artis we're gonna poof (one's that are owned and time's up).  The
-	//   predicate deliberately matches the clearing UPDATE at the end of this function,
-	//   so an empty result means that UPDATE has nothing to do either: this runs every
-	//   12 seconds and the write was costing a commit each time for nothing.
-	qry("SELECT vnum, locType, location FROM artifacts WHERE owned='Y' AND timer < now()");
+	// Each expired artifact can require global object scans or an offline player save.
+	// Page by vnum so only a fixed amount of that work runs in one game pulse.
+	if (!qry("SELECT vnum, locType, location FROM artifacts WHERE owned='Y' AND timer < now() AND vnum > %d ORDER BY vnum LIMIT %zu",
+		 cursor_vnum, ARTIFACT_EXPIRY_BATCH_SIZE))
+	{
+		logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: failed to read from database.");
+		nevent_periodic_mark_failure("artifact-expiry query failed");
+		return;
+	}
 	res = mysql_store_result(DB);
+	if (!res)
+	{
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		nevent_periodic_mark_failure("artifact-expiry result failed");
+		return;
+	}
+	row_count = static_cast<size_t>(mysql_num_rows(res));
 
 	// If there were any artis to pull
-	if (res && mysql_num_rows(res) > 0)
+	if (row_count > 0)
 	{
 		expired = TRUE;
 		while ((row = mysql_fetch_row(res)))
 		{
 			bool owner_terminal_saved = TRUE;
 			vnum = atoi(row[0]);
+			page_last_vnum = vnum;
 			locType = atoi(row[1]);
 			location = atoi(row[2]);
 
@@ -2612,69 +2618,59 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 
 	mysql_free_result(res);
 
-	// Clear the artis from the list.  Note: doing it after the loop intentionally.
+	// Clear only the page that was processed.  Keeping this after the loop preserves
+	// the all-or-nothing behavior for offline owner saves within the page.
 	if (expired && !save_failed)
 	{
-		qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()",
-		    ARTIFACT_NOTINGAME);
-		arti_cache_invalidate();
-	}
-
-	add_event(event_artifact_check_poof_sql, 12 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
-}
-
-// Looks through list, and adds entry to the end of list.
-// Assumes list is not NULL (has at least one entry).
-void add_artidata_to_list(arti_data *list, int vnum, bool owned, char locType, int location,
-			  time_t timer, int type)
-{
-	if (!updateArtis)
-	{
-		return;
-	}
-
-	// This is bad.. vnum is already on list.
-	if (list->vnum == vnum)
-	{
-		logit(LOG_ARTIFACT,
-		      "add_artidata_to_list: vnum %d already on list!? (at head location: %d).",
-		      list->location);
-		return;
-	}
-	// Go to the last node.
-	while (list->next)
-	{
-		list = list->next;
-		// This is bad.. vnum is already on list.
-		if (list->vnum == vnum)
+		if (qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now() AND vnum = %d",
+			ARTIFACT_NOTINGAME, page_last_vnum))
+			arti_cache_invalidate();
+		else
 		{
-			logit(LOG_ARTIFACT,
-			      "add_artidata_to_list: vnum %d already on list!? (location: %d).",
-			      list->location);
+			nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+						    "artifact-expiry update failed");
 			return;
 		}
 	}
-	// And create a new one.
-	list->next = new arti_data;
-	list = list->next;
-	list->vnum = vnum;
-	list->owned = owned;
-	list->locType = locType;
-	list->location = location;
-	list->timer = timer;
-	list->type = type;
-	list->next = NULL;
+	else if (save_failed)
+	{
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-expiry player save failed");
+		return;
+	}
+
+	if (row_count == ARTIFACT_EXPIRY_BATCH_SIZE)
+	{
+		cursor_vnum = page_last_vnum;
+		nevent_periodic_continue_after(1);
+		return;
+	}
+	cursor_vnum = 0;
 }
 
 void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
-	arti_list *artilist, *nextlist;
-	arti_data *node, *next_node;
-	P_char owner;
-	int pid, vnum, punish_level;
-	int count[4];
+	struct artifact_wars_owner
+	{
+		int pid;
+		int total;
+		int major;
+		int unique;
+		int ioun;
+	};
+	static int cursor_pid = 0;
+	artifact_wars_owner owners[ARTIFACT_WARS_OWNER_BATCH_SIZE] = {};
+	size_t owner_count = 0;
+	bool timers_updated = false;
+	bool update_failed = false;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+
+	if (!updateArtis)
+	{
+		cursor_pid = 0;
+		return;
+	}
 
 	debug("event_artifact_wars: beginning...");
 
@@ -2687,217 +2683,148 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 	if (modifier > 1.0f)
 		modifier = 1.0f;
 
-	// we only care about artis on a PC (online players only).
-	// corpse/npc/ground artifacts don't trigger the penalty.
-	debug("event_artifact_wars_sql: querying artifacts on pc...");
-	qry("SELECT vnum, locType, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE locType=%d",
-	    ARTIFACT_ON_PC);
+	// Aggregate only violating owners and page them by pid.  Timer updates are one
+	// statement per owner, so the callback never materializes the whole artifact table.
+	debug("event_artifact_wars_sql: querying artifact owners after pid %d...", cursor_pid);
+	if (!qry("SELECT location, COUNT(*), SUM(type=%d), SUM(type=%d), SUM(type=%d) FROM artifacts WHERE locType=%d AND location > %d GROUP BY location HAVING SUM(type=%d) > 1 OR SUM(type=%d) > 1 OR SUM(type=%d) > 1 ORDER BY location LIMIT %zu",
+		 ARTIFACT_MAJOR, ARTIFACT_UNIQUE, ARTIFACT_IOUN, ARTIFACT_ON_PC, cursor_pid,
+		 ARTIFACT_MAJOR, ARTIFACT_UNIQUE, ARTIFACT_IOUN, ARTIFACT_WARS_OWNER_BATCH_SIZE))
+	{
+		logit(LOG_ARTIFACT, "event_artifact_wars_sql: failed to read from database.");
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-wars query failed");
+		return;
+	}
 	res = mysql_store_result(DB);
 
-	if (!res || mysql_num_rows(res) < 1)
+	if (!res)
 	{
-		mysql_free_result(res);
-		debug("event_artifact_wars_sql: No artifacts found.");
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-wars result failed");
 		return;
 	}
 
-	debug("event_artifact_wars_sql: Found %d artifacts, processing...", mysql_num_rows(res));
-	artilist = NULL;
-	// First, build a list of those with multiple artifacts.
-	// The list needs to be of a format: pid of char, then some sort of list of owned artifact vnum+type
-	while ((row = mysql_fetch_row(res)))
+	while (owner_count < ARTIFACT_WARS_OWNER_BATCH_SIZE && (row = mysql_fetch_row(res)))
 	{
-		// Since locType is on PC or on PC corpse, location will always be the PID of the PC.
-		pid = atoi(row[2]);
-		vnum = atoi(row[0]);
-		debug("event_artifact_wars_sql: Processing artifact vnum=%d, locType=%s, pid=%d, timer=%s, type=%s",
-		      vnum, row[1], pid, row[3], row[4]);
-		if (artilist == NULL)
-		{
-			artilist = new arti_list;
-			artilist->pid = pid;
-			artilist->next = NULL;
-			artilist->artis = new arti_data;
-			node = artilist->artis;
-			node->vnum = vnum;
-			node->owned = TRUE;
-			node->locType = atoi(row[1]);
-			node->location = pid;
-			node->timer = row[3] ? atol(row[3]) : 0;
-			node->type = atoi(row[4]);
-			node->next = NULL;
-		}
-		else
-		{
-			nextlist = artilist;
-			while (nextlist->pid != pid && nextlist->next != NULL)
-			{
-				nextlist = nextlist->next;
-			}
-			if (nextlist->pid == pid)
-			{
-				add_artidata_to_list(nextlist->artis, vnum, TRUE, atoi(row[1]), pid,
-						     row[3] ? atol(row[3]) : 0, atoi(row[4]));
-			}
-			else
-			{
-				nextlist->next = new arti_list;
-				nextlist = nextlist->next;
-				nextlist->pid = pid;
-				nextlist->next = NULL;
-				nextlist->artis = new arti_data;
-				node = nextlist->artis;
-				node->vnum = vnum;
-				node->owned = TRUE;
-				node->locType = atoi(row[1]);
-				node->location = pid;
-				node->timer = row[3] ? atol(row[3]) : 0;
-				node->type = atoi(row[4]);
-				node->next = NULL;
-			}
-		}
+		artifact_wars_owner &entry = owners[owner_count++];
+		entry.pid = atoi(row[0]);
+		entry.total = atoi(row[1]);
+		entry.major = row[2] ? atoi(row[2]) : 0;
+		entry.unique = row[3] ? atoi(row[3]) : 0;
+		entry.ioun = row[4] ? atoi(row[4]) : 0;
 	}
 	mysql_free_result(res);
 
-	// Second, decrement the timers on those with multiple of the same type.
-	nextlist = artilist;
-	while (nextlist)
+	if (owner_count == 0)
 	{
-		// Count up the artis.
-		count[0] = count[ARTIFACT_MAJOR] = count[ARTIFACT_UNIQUE] = count[ARTIFACT_IOUN] =
-			0;
-		node = nextlist->artis;
-		while (node)
+		cursor_pid = 0;
+		debug("event_artifact_wars_sql: No violating artifact owners found.");
+		return;
+	}
+
+	debug("event_artifact_wars_sql: Found %zu violating owners, processing...", owner_count);
+	for (size_t index = 0; index < owner_count; ++index)
+	{
+		const artifact_wars_owner &entry = owners[index];
+		int punish_level = entry.major > 1 ? entry.major - 1 : 0;
+		punish_level += entry.unique > 1 ? entry.unique - 1 : 0;
+		punish_level += entry.ioun > 1 ? entry.ioun - 1 : 0;
+
+		// Burn time while the rows still identify their owner; dropping the objects may
+		// immediately update their database location.
+		if (modifier > 0.0f)
 		{
-			// Count[0] holds total number of artis.. to punish those who go 1 over with 4 artis.
-			count[0]++;
-			if (node->type >= ARTIFACT_MAJOR && node->type <= ARTIFACT_IOUN)
-				count[(unsigned char)node->type]++;
+			float burn = modifier * (float)punish_level;
+			const time_t now = time(NULL);
+			if (burn > 1.0f)
+				burn = 1.0f;
+			const float retained = 1.0f - burn;
+			if (qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu + FLOOR((UNIX_TIMESTAMP(timer) - %lu) * %.9f)), lastUpdate=SYSDATE() WHERE locType=%d AND location=%d AND timer > FROM_UNIXTIME(%lu)",
+				(unsigned long)now, (unsigned long)now, retained, ARTIFACT_ON_PC,
+				entry.pid, (unsigned long)now))
+			{
+				timers_updated = true;
+				logit(LOG_ARTIFACT,
+				      "artifact_wars: pid %d artifact timers cut by %d%% (punish_level=%d)",
+				      entry.pid, (int)(burn * 100.0f), punish_level);
+			}
 			else
-				logit(LOG_ARTIFACT, "Ignoring artifact with invalid type %d",
-				      node->type);
-			node = node->next;
+				update_failed = true;
 		}
-		// Count up how much over limit (1 of each is limit).
-		punish_level = (count[ARTIFACT_MAJOR] > 1) ? count[ARTIFACT_MAJOR] - 1 : 0;
-		punish_level += (count[ARTIFACT_UNIQUE] > 1) ? count[ARTIFACT_UNIQUE] - 1 : 0;
-		punish_level += (count[ARTIFACT_IOUN] > 1) ? count[ARTIFACT_IOUN] - 1 : 0;
-		// if they're in violation (more than one arti of the same type), drop all their artifacts.
-		if (punish_level > 0)
+
+		P_char owner = find_player_by_pid(entry.pid);
+		if (owner && owner->in_room != NOWHERE)
 		{
-			owner = find_player_by_pid(nextlist->pid);
+			P_obj carried_obj, next_obj;
+			bool first = TRUE;
 
-			if (owner && owner->in_room != NOWHERE)
+			for (int pos = 0; pos < MAX_WEAR; pos++)
 			{
-				P_obj carried_obj, next_obj;
-				bool first = TRUE;
-
-				for (int pos = 0; pos < MAX_WEAR; pos++)
+				if (owner->equipment[pos] && IS_ARTIFACT(owner->equipment[pos]))
 				{
-					if (owner->equipment[pos] &&
-					    IS_ARTIFACT(owner->equipment[pos]))
+					carried_obj = unequip_char(owner, pos, FALSE);
+					if (first)
 					{
-						carried_obj = unequip_char(owner, pos, FALSE);
-						if (first)
-						{
-							act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n",
-							    FALSE, owner, carried_obj, 0, TO_CHAR);
-							act("&+R$n screams as $p burns $m and falls to the ground!&n",
-							    FALSE, owner, carried_obj, 0, TO_ROOM);
-							first = FALSE;
-						}
-						else
-						{
-							act("&+R$p falls to the ground!&n", FALSE,
-							    owner, carried_obj, 0, TO_CHAR);
-							act("&+R$p falls to the ground!&n", FALSE,
-							    owner, carried_obj, 0, TO_ROOM);
-						}
-						obj_to_room(carried_obj, owner->in_room);
+						act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n",
+						    FALSE, owner, carried_obj, 0, TO_CHAR);
+						act("&+R$n screams as $p burns $m and falls to the ground!&n",
+						    FALSE, owner, carried_obj, 0, TO_ROOM);
+						first = FALSE;
 					}
-				}
-
-				for (carried_obj = owner->carrying; carried_obj;
-				     carried_obj = next_obj)
-				{
-					next_obj = carried_obj->next_content;
-					if (IS_ARTIFACT(carried_obj))
+					else
 					{
-						if (first)
-						{
-							act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n",
-							    FALSE, owner, carried_obj, 0, TO_CHAR);
-							act("&+R$n screams as $p burns $m and falls to the ground!&n",
-							    FALSE, owner, carried_obj, 0, TO_ROOM);
-							first = FALSE;
-						}
-						else
-						{
-							act("&+R$p falls to the ground!&n", FALSE,
-							    owner, carried_obj, 0, TO_CHAR);
-							act("&+R$p falls to the ground!&n", FALSE,
-							    owner, carried_obj, 0, TO_ROOM);
-						}
-						obj_from_char(carried_obj);
-						obj_to_room(carried_obj, owner->in_room);
+						act("&+R$p falls to the ground!&n", FALSE, owner,
+						    carried_obj, 0, TO_CHAR);
+						act("&+R$p falls to the ground!&n", FALSE, owner,
+						    carried_obj, 0, TO_ROOM);
 					}
+					obj_to_room(carried_obj, owner->in_room);
 				}
-
-				debug("artifact_wars: %s had %d artifacts forcibly dropped (punish_level=%d)",
-				      GET_NAME(owner), count[0], punish_level);
 			}
 
-			// Burn off part of each hoarded artifact's remaining life.
-			// This is what artifact.wars.modifier scales; without it the
-			// property was read and thrown away.
-			if (modifier > 0.0f)
+			for (carried_obj = owner->carrying; carried_obj; carried_obj = next_obj)
 			{
-				float burn = modifier * (float)punish_level;
-				time_t now = time(0);
-
-				if (burn > 1.0f)
-					burn = 1.0f;
-
-				for (node = nextlist->artis; node; node = node->next)
+				next_obj = carried_obj->next_content;
+				if (!IS_ARTIFACT(carried_obj))
+					continue;
+				if (first)
 				{
-					if (node->timer <= now)
-						continue;
-
-					time_t remaining = node->timer - now;
-					time_t kept = (time_t)((float)remaining * (1.0f - burn));
-
-					node->timer = now + kept;
-					qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu), lastUpdate=SYSDATE() WHERE vnum = %d",
-					    (unsigned long)node->timer, node->vnum);
-					logit(LOG_ARTIFACT,
-					      "artifact_wars: pid %d artifact %d timer cut by %d%% (punish_level=%d)",
-					      nextlist->pid, node->vnum, (int)(burn * 100.0f),
-					      punish_level);
+					act("&+RThe gods frown upon your greed! $p burns your flesh and falls to the ground!&n",
+					    FALSE, owner, carried_obj, 0, TO_CHAR);
+					act("&+R$n screams as $p burns $m and falls to the ground!&n",
+					    FALSE, owner, carried_obj, 0, TO_ROOM);
+					first = FALSE;
 				}
-				arti_cache_invalidate();
+				else
+				{
+					act("&+R$p falls to the ground!&n", FALSE, owner,
+					    carried_obj, 0, TO_CHAR);
+					act("&+R$p falls to the ground!&n", FALSE, owner,
+					    carried_obj, 0, TO_ROOM);
+				}
+				obj_from_char(carried_obj);
+				obj_to_room(carried_obj, owner->in_room);
 			}
+
+			debug("artifact_wars: %s had %d artifacts forcibly dropped (punish_level=%d)",
+			      GET_NAME(owner), entry.total, punish_level);
 		}
-		nextlist = nextlist->next;
 	}
 
-	// Third, free up the artilist object.
-	while (artilist)
+	if (timers_updated)
+		arti_cache_invalidate();
+	if (update_failed)
+		nevent_periodic_mark_failure("artifact-wars timer update failed");
+
+	cursor_pid = owners[owner_count - 1].pid;
+	if (owner_count == ARTIFACT_WARS_OWNER_BATCH_SIZE)
 	{
-		nextlist = artilist->next;
-		node = artilist->artis;
-		while (node)
-		{
-			next_node = node->next;
-			delete node;
-			node = next_node;
-		}
-		delete artilist;
-		artilist = nextlist;
+		nevent_periodic_continue_after(1);
+		return;
 	}
-
+	cursor_pid = 0;
 	debug("event_artifact_wars: ended.");
-
-	add_event(event_artifact_wars_sql, 30 * 60 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 }
 
 void event_arti_hunt_sql(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
@@ -3802,22 +3729,34 @@ void arti_swap_sql(P_char ch, char *arg)
 //   the timer is set to switch owners.  If the timer is up, then the soul switches owners.
 void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
-	bind_data *bindData, *list;
-	arti_data artidata;
-	P_char owner;
-	P_obj arti;
-	int timer_length, counter;
-	long curr_time;
+	struct artifact_bind_row
+	{
+		int vnum;
+		int owner_pid;
+		long timer;
+	};
+	static int cursor_vnum = 0;
+	artifact_bind_row rows[ARTIFACT_BIND_BATCH_SIZE] = {};
+	size_t row_count = 0;
 	MYSQL_RES *res;
 	MYSQL_ROW row = NULL;
 
+	if (!updateArtis)
+	{
+		cursor_vnum = 0;
+		return;
+	}
+
 	debug("event_artifact_check_bind_sql(): beginning...");
 
-	if (!qry("select vnum, owner_pid, timer from artifact_bind"))
+	if (!qry("SELECT vnum, owner_pid, timer FROM artifact_bind WHERE vnum > %d ORDER BY vnum LIMIT %zu",
+		 cursor_vnum, ARTIFACT_BIND_BATCH_SIZE))
 	{
 		debug("event_artifact_check_bind_sql(): Failed initial query.");
 		logit(LOG_ARTIFACT,
 		      "event_artifact_check_bind_sql(): failed to read from database.");
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-bind query failed");
 		return;
 	}
 
@@ -3825,50 +3764,46 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	if (!res)
 	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-bind result failed");
 		return;
 	}
 
-	if (mysql_num_rows(res) < 1)
+	while (row_count < ARTIFACT_BIND_BATCH_SIZE && (row = mysql_fetch_row(res)))
 	{
-		debug("event_artifact_check_bind_sql(): 0 rows in artifact_bind.");
-		logit(LOG_ARTIFACT, "event_artifact_check_bind_sql(): 0 rows in artifact_bind.");
-		mysql_free_result(res);
-		return;
+		artifact_bind_row &entry = rows[row_count++];
+		entry.vnum = atoi(row[0]);
+		entry.owner_pid = atoi(row[1]);
+		entry.timer = row[2] ? atol(row[2]) : 0;
 	}
-
-	timer_length = 60 * get_property("artifact.feeding.switch.lootallowance.min", 15);
-	curr_time = time(NULL);
-
-	bindData = list = NULL;
-	while ((row = mysql_fetch_row(res)))
-	{
-		bindData = new bind_data;
-		bindData->vnum = atoi(row[0]);
-		bindData->owner_pid = atoi(row[1]);
-		bindData->timer = row[2] ? atol(row[2]) : 0;
-
-		bindData->next = list;
-		list = bindData;
-		bindData = NULL;
-	}
-
 	mysql_free_result(res);
 
-	counter = 0;
-	while (list != NULL)
+	if (row_count == 0)
 	{
-		bindData = list->next;
+		cursor_vnum = 0;
+		debug("event_artifact_check_bind_sql(): no rows after cursor.");
+		return;
+	}
 
-		arti = read_object(list->vnum, VIRTUAL);
-		if (get_artifact_data_sql(list->vnum, &artidata))
+	const int timer_length = 60 * get_property("artifact.feeding.switch.lootallowance.min", 15);
+	const long curr_time = time(NULL);
+	int counter = 0;
+	for (size_t index = 0; index < row_count; ++index)
+	{
+		const artifact_bind_row &entry = rows[index];
+		arti_data artidata;
+		P_char owner;
+		P_obj arti = read_object(entry.vnum, VIRTUAL);
+
+		if (get_artifact_data_sql(entry.vnum, &artidata))
 		{
 			if (artidata.locType == ARTIFACT_ON_PC)
 			{
 				// If we're on a new owner.
-				if (list->owner_pid != artidata.location)
+				if (entry.owner_pid != artidata.location)
 				{
 					// If the timer has expired
-					if (list->timer + timer_length < curr_time)
+					if (entry.timer + timer_length < curr_time)
 					{
 						// If the owner isn't online, the soul can not merge.
 						if ((owner = get_char_online(
@@ -3879,11 +3814,11 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 							    FALSE, owner, arti, 0, TO_CHAR);
 							qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d",
 							    artidata.location, curr_time,
-							    list->vnum);
+							    entry.vnum);
 							logit(LOG_ARTIFACT,
 							      "event_artifact_check_bind_sql(): artifact '%s' %d merged with '%s' %d's soul.",
 							      arti ? OBJ_SHORT(arti) : "NULL",
-							      list->vnum, J_NAME(owner),
+							      entry.vnum, J_NAME(owner),
 							      artidata.location);
 							debug("%3d: '%s&n'%6d merged with '%s' %d's soul.",
 							      ++counter,
@@ -3891,7 +3826,7 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 									      "NULL",
 								       35, TRUE)
 								      .c_str(),
-							      list->vnum, J_NAME(owner),
+							      entry.vnum, J_NAME(owner),
 							      artidata.location);
 						}
 						else
@@ -3902,64 +3837,64 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 									      "NULL",
 								       35, TRUE)
 								      .c_str(),
-							      list->vnum,
+							      entry.vnum,
 							      get_player_name_from_pid(
 								      artidata.location),
 							      artidata.location);
 						}
 					}
-					else if (list->timer > curr_time)
+					else if (entry.timer > curr_time)
 					{
 						debug("%3d: artifact '%s&n'%6d's timer is later than curr_time.",
 						      ++counter,
 						      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35,
 							       TRUE)
 							      .c_str(),
-						      list->vnum,
+						      entry.vnum,
 						      get_player_name_from_pid(artidata.location),
 						      artidata.location);
 						qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d",
-						    artidata.location, curr_time, list->vnum);
+						    artidata.location, curr_time, entry.vnum);
 					}
 				}
 			}
 			// Display artis that are on the corpse of new owner.
 			else if (artidata.locType == ARTIFACT_ONCORPSE &&
-				 artidata.location != list->owner_pid)
+				 artidata.location != entry.owner_pid)
 			{
 				debug("%3d: artifact '%s&n'%6d on corpse of '%s' %d.", ++counter,
 				      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
-				      list->vnum, get_player_name_from_pid(artidata.location),
+				      entry.vnum, get_player_name_from_pid(artidata.location),
 				      artidata.location);
 			}
 		}
-		else if (list->owner_pid > 0)
+		else if (entry.owner_pid > 0)
 		{
 			logit(LOG_ARTIFACT,
 			      "event_artifact_check_bind_sql(): artifact '%s' %d is unowned, but bound to '%s' %d.",
-			      arti ? OBJ_SHORT(arti) : "NULL", list->vnum,
-			      get_player_name_from_pid(list->owner_pid), list->owner_pid);
+			      arti ? OBJ_SHORT(arti) : "NULL", entry.vnum,
+			      get_player_name_from_pid(entry.owner_pid), entry.owner_pid);
 			debug("%3d: artifact '%s&n' %d is unowned, but bound.  Setting owner_pid = -1 and timer = 0.",
 			      ++counter,
 			      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
-			      list->vnum);
+			      entry.vnum);
 			qry("UPDATE artifact_bind SET owner_pid = -1, timer = 0 WHERE vnum = %d",
-			    list->vnum);
+			    entry.vnum);
 		}
 		if (arti)
 		{
 			extract_obj(arti);
 		}
-
-		// Delete and move to next.
-		list->next = NULL;
-		delete list;
-		list = bindData;
 	}
 
+	cursor_vnum = rows[row_count - 1].vnum;
+	if (row_count == ARTIFACT_BIND_BATCH_SIZE)
+	{
+		nevent_periodic_continue_after(1);
+		return;
+	}
+	cursor_vnum = 0;
 	debug("event_artifact_check_bind_sql(): completed.");
-	// Checks every 7 minutes.
-	add_event(event_artifact_check_bind_sql, 7 * 60 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 }
 
 // Resets the timers on artifacts that weren't properly bound.

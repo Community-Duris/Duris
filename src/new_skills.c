@@ -1310,7 +1310,7 @@ void chant_ki_strike(P_char ch, char *argument, int /*cmd*/)
 	{
 		act("&+LYou abandon your combination to make your move...&n", FALSE, ch, 0, vict,
 		    TO_CHAR);
-		disarm_single_event(combo_event);
+		nevent_cancel(nevent_handle_from_event(combo_event));
 		affect_from_char(ch, SKILL_COMBINATION);
 	}
 

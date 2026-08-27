@@ -164,10 +164,19 @@ the event system initializes:
 | --- | --- | --- |
 | `DURIS_NEVENT_BUDGET_USEC` | `25000` (25 ms) | Wall-clock budget for event callbacks per pulse. |
 | `DURIS_NEVENT_MAX_CALLBACKS` | `4000` | Callback count cap per pulse. |
+| `DURIS_NEVENT_CATCHUP_MAX_EXTENSION_USEC` | `5000` | Maximum time-budget extension while repaying deferred work. |
+| `DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS` | `4000` | Maximum callback-cap extension while repaying deferred work. |
+| `DURIS_NEVENT_PLAYER_PRIORITY` | `1` | Set to `0` to disable player-timed priority. |
+| `DURIS_NEVENT_TRACE_PLAYER` | `0` | Set to `1` for per-player deadline timing logs. |
+| `DURIS_NEVENT_ANALYTICS` | `0` | Set to `1` for 300-pulse scheduler and callback analytics. |
 
 The wall-clock budget is intended to be the binding limit. Setting the callback
 cap low enough that pulses end well inside the time budget starves the wheel and
-builds a deferred backlog; see [ARCHITECTURE.md](../reference/ARCHITECTURE.md#event-wheel).
+builds a deferred backlog. A zero budget or callback cap disables that one
+limit; zeroing both makes the scheduler intentionally unbounded and emits a
+warning. Budget and callback values are limited to `0..1000000`, and boolean
+switches to `0..1`; invalid values fall back to their defaults. See
+[ARCHITECTURE.md](../reference/ARCHITECTURE.md#event-wheel).
 
 ## Precedence and verification
 

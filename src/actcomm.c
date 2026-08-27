@@ -1081,7 +1081,7 @@ void do_tell(P_char ch, char *argument, int /*cmd*/)
 
 		    if (!IS_TRUSTED (ch) && !IS_TRUSTED (vict)) GET_MANA (ch) -= 5;
 		    if (GET_MANA (ch) < GET_MAX_MANA(ch))
-		     StartRegen(ch, EVENT_MANA_REGEN);
+		     StartRegen(ch, regen_resource::mana);
 		*/
 
 		if (ch->desc)

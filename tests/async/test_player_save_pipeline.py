@@ -145,8 +145,8 @@ assert "player_save_pipeline_checkpoint_dirty" in flush
 for retired in ("redis_command", "redis_reconnect", "sql_save_player", "fork("):
     assert retired not in mark and retired not in flush
 event_init = section(EVENTS, "void ne_init_events", "void zone_purge")
-assert "add_event(event_flush_dirty_players" in event_init
-assert "if (redis_enabled)\n\t\tadd_event(event_flush_dirty_players" not in event_init
+assert '"dirty-player-checkpoint", event_flush_dirty_players' in event_init
+assert "nevent_periodic_policy::fixed_delay, true" in event_init
 print("[PASS] autosave durability is local and the Redis dirty-save fork is retired")
 
 assert 'getenv("PLAYER_SAVE_JOURNAL_DIR")' in COMM

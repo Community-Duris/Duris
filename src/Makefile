@@ -69,6 +69,7 @@ SHIP_SRCS = \
 	ship_cargo.c \
 	ship_combat.c \
 	ship_control.c \
+	ship_identity.c \
 	ship_npc.c \
 	ship_npc_ai.c \
 	ship_shop.c \
@@ -124,6 +125,7 @@ OBJS =  $(SHIP_OBJS) \
 				 ctf.o \
 				 dam_mods.o \
 				 db.o \
+				 character_identity.o \
 				 debug.o \
 				 disguise.o \
 				 drannak.o \
@@ -146,7 +148,9 @@ OBJS =  $(SHIP_OBJS) \
 				 epic_skills.o \
 				 ethermancer.o \
 				 events.o \
+				 event_names.o \
 				 new_events.o \
+				 nevent_periodic.o \
 				 fight.o \
 				 files.o \
 				 fraglist.o \

@@ -67,7 +67,6 @@ extern bool has_skin_spell(P_char);
 extern bool has_wind_blade_wielded(P_char);
 extern void event_wait(P_char ch, P_char victim, P_obj obj, void *data);
 extern P_nevent ne_schedule[PULSES_IN_TICK];
-extern void clear_nevent(P_nevent e);
 extern struct misfire_properties_struct misfire_properties;
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
 
@@ -8652,7 +8651,7 @@ void MobHuntCheck(P_char ch, P_char vict)
 bool TryToGetHome(P_char ch)
 {
 	int rr_birth;
-	hunt_data data;
+	hunt_data data = {};
 	P_nevent ev;
 
 	if (IS_PC(ch))
@@ -8692,7 +8691,7 @@ bool TryToGetHome(P_char ch)
 		}
 	}
 	data.hunt_type = HUNT_ROOM;
-	data.targ.room = rr_birth;
+	data.target_room = rr_birth;
 	data.huntFlags = BFS_BREAK_WALLS | BFS_AVOID_NOMOB;
 	if (npc_has_spell_slot(ch, SPELL_DISPEL_MAGIC))
 		data.huntFlags |= BFS_CAN_DISPEL;
@@ -8703,8 +8702,7 @@ bool TryToGetHome(P_char ch)
 	data.path_step = -1;
 	if (!get_scheduled(ch, event_mob_hunt))
 	{
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
-			  sizeof(hunt_data));
+		schedule_mob_hunt(ch, data);
 	}
 	// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, ch, data);
 
@@ -8797,7 +8795,7 @@ void event_remove_misfire_cooldown(int zn, int racewar_side)
 				if ((info->racewar_side == racewar_side) &&
 				    (info->zone_number == zn))
 				{
-					clear_nevent(e1);
+					nevent_cancel(nevent_handle_from_event(e1));
 					return;
 				}
 			}
@@ -9225,7 +9223,7 @@ bool InitNewMobHunt(P_char ch)
 	struct remember_data *a;
 	P_char tmpch = NULL;
 	int dummy;
-	hunt_data data;
+	hunt_data data = {};
 	struct affected_type *af = NULL;
 
 	if (!ch)
@@ -9317,12 +9315,11 @@ bool InitNewMobHunt(P_char ch)
 			{
 				data.huntFlags = hunt_flags;
 				data.hunt_type = HUNT_HUNTER;
-				data.targ.victim = tmpch;
+				data.target_runtime_id = tmpch->runtime_id;
 				data.retry = 0;
 				data.retry_dir = 0;
 				data.path_step = -1;
-				add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
-					  sizeof(hunt_data));
+				schedule_mob_hunt(ch, data);
 
 				// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, ch, data);
 				return TRUE;
@@ -9341,6 +9338,11 @@ bool InitNewMobHunt(P_char ch)
 bool valid_mob_hunt_edge(int from_room, int dir)
 {
 	return VALID_TRACK_EDGE(from_room, dir);
+}
+
+void schedule_mob_hunt(P_char ch, hunt_data data)
+{
+	add_event_owned(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, std::move(data));
 }
 
 /*
@@ -9380,23 +9382,15 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 
 	if (data->hunt_type <= HUNT_LAST_VICTIM_TARGET)
 	{
-		vict = data->targ.victim;
-		if (!vict)
-			return;
-
-		// validate victim pointer against character_list to catch stale pointers
-		P_char valid_check;
-		for (valid_check = character_list; valid_check; valid_check = valid_check->next)
-			if (valid_check == vict)
-				break;
-		if (!valid_check || !IS_ALIVE(vict))
+		vict = find_character_by_runtime_id(data->target_runtime_id);
+		if (!vict || !IS_ALIVE(vict))
 			return;
 
 		targ_room = vict->in_room;
 	}
 	else
 	{
-		targ_room = data->targ.room;
+		targ_room = data->target_room;
 		if (targ_room < 0 || targ_room > top_of_world)
 		{
 			int maliciousPID = GET_MEMORY(ch) ? GET_MEMORY(ch)->pcID : -1;
@@ -9485,10 +9479,9 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 		 * Okay.. if anything falls in here, they can't move right now, but
 		 * they should try later...
 		 */
-		if (!get_scheduled(ch, event_mob_hunt))
+		if (!get_scheduled_excluding_current(ch, event_mob_hunt))
 		{
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 		}
 		return;
 	}
@@ -9500,29 +9493,26 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 	{
 		do_wake(ch, NULL, 0);
 	}
-	if (!get_scheduled(ch, event_mob_hunt))
+	if (!get_scheduled_excluding_current(ch, event_mob_hunt))
 	{
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
-			  sizeof(hunt_data));
+		schedule_mob_hunt(ch, *data);
 		return;
 	}
 	if (GET_POS(ch) != POS_STANDING)
 	{
 		do_stand(ch, NULL, 0);
 	}
-	if (!get_scheduled(ch, event_mob_hunt))
+	if (!get_scheduled_excluding_current(ch, event_mob_hunt))
 	{
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
-			  sizeof(hunt_data));
+		schedule_mob_hunt(ch, *data);
 		return;
 	}
 	if (GET_STAT(ch) != STAT_NORMAL)
 	{
 		do_alert(ch, NULL, 0);
-		if (!get_scheduled(ch, event_mob_hunt))
+		if (!get_scheduled_excluding_current(ch, event_mob_hunt))
 		{
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 		}
 		return;
 	}
@@ -9553,37 +9543,32 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 		if (npc_has_spell_slot(ch, SPELL_GREATER_RAVENFLIGHT))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_GREATER_RAVENFLIGHT, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 			return;
 		}
 
 		if (npc_has_spell_slot(ch, SPELL_FLY))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_FLY, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 			return;
 		}
 		else if (npc_has_spell_slot(ch, SPELL_POWERCAST_FLY))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_POWERCAST_FLY, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 			return;
 		}
 		else if (npc_has_spell_slot(ch, SPELL_LEVITATE))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_LEVITATE, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 			return;
 		}
 		else if (npc_has_spell_slot(ch, SPELL_RAVENFLIGHT))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_RAVENFLIGHT, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 			return;
 		}
 		/*
@@ -9602,8 +9587,7 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 		if (npc_has_spell_slot(ch, SPELL_INVIGORATE))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_INVIGORATE, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 			return;
 		}
 	}
@@ -9617,7 +9601,7 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 		next_step = BFS_ALREADY_THERE;
 		data->path_step = -1;
 		debug("event_mob_hunt: %s finished hunting %s", J_NAME(ch),
-		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) :
+		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(vict) :
 								  world[targ_room].name);
 	}
 	else if (data->path_step >= 0 && (size_t)data->path_step < data->path.size())
@@ -9627,9 +9611,8 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 		if (world[(cur_room)].dir_option[(int)next_step] != NULL)
 		{
 			debug("event_mob_hunt: %s hunting %s, step %d of %d", J_NAME(ch),
-			      data->hunt_type < HUNT_LAST_VICTIM_TARGET ?
-				      J_NAME(data->targ.victim) :
-				      world[targ_room].name,
+			      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(vict) :
+									  world[targ_room].name,
 			      data->path_step, data->path.size());
 			data->path_step++;
 		}
@@ -9638,9 +9621,8 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 			// this can happen when something moves a mob other than hunting, treat like no path, mob will try again
 			debug("event_mob_hunt: %s hunting %s, step %d is invalid (room %s (%d) exit %s)",
 			      J_NAME(ch),
-			      data->hunt_type < HUNT_LAST_VICTIM_TARGET ?
-				      J_NAME(data->targ.victim) :
-				      world[targ_room].name,
+			      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(vict) :
+									  world[targ_room].name,
 			      data->path_step, world[(cur_room)].name, cur_room,
 			      next_step >= 0 && next_step < NUM_EXITS ? dirs[next_step] :
 									"unknown");
@@ -9654,7 +9636,7 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 		next_step = data->path[data->path_step];
 		dummy = data->path.size();
 		debug("event_mob_hunt: %s starting hunting %s, step %d of %d", J_NAME(ch),
-		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) :
+		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(vict) :
 								  world[targ_room].name,
 		      data->path_step, data->path.size());
 		data->path_step++;
@@ -9664,7 +9646,7 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 		next_step = BFS_NO_PATH;
 		data->path_step = -1;
 		debug("event_mob_hunt: %s no hunt path to %s", J_NAME(ch),
-		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(data->targ.victim) :
+		      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(vict) :
 								  world[targ_room].name);
 	}
 	PROFILE_END(mobhunt_dijkstra);
@@ -9732,8 +9714,7 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 			/*
 			 * they flee?  whatever happened, stay on them...
 			 */
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 			return;
 		}
 		return;
@@ -9749,8 +9730,7 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 			next_step = number(0, NUM_EXITS - 1);
 			if (!world[ch->in_room].dir_option[(int)next_step])
 			{
-				add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-					  sizeof(hunt_data));
+				schedule_mob_hunt(ch, *data);
 				return;
 			}
 		}
@@ -9789,24 +9769,21 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 				{
 					MobCastSpell(ch, vict, 0, SPELL_DIMENSION_DOOR,
 						     GET_LEVEL(ch));
-					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0,
-						  data, sizeof(hunt_data));
+					schedule_mob_hunt(ch, *data);
 					return;
 				}
 				else if (world[cur_room].zone != world[vict->in_room].zone &&
 					 npc_has_spell_slot(ch, SPELL_SPIRIT_JUMP))
 				{
 					MobCastSpell(ch, vict, 0, SPELL_SPIRIT_JUMP, GET_LEVEL(ch));
-					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0,
-						  data, sizeof(hunt_data));
+					schedule_mob_hunt(ch, *data);
 					return;
 				}
 				else if (world[cur_room].zone != world[vict->in_room].zone &&
 					 npc_has_spell_slot(ch, SPELL_RELOCATE))
 				{
 					MobCastSpell(ch, vict, 0, SPELL_RELOCATE, GET_LEVEL(ch));
-					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0,
-						  data, sizeof(hunt_data));
+					schedule_mob_hunt(ch, *data);
 					return;
 				}
 				else if (world[cur_room].zone != world[vict->in_room].zone &&
@@ -9814,16 +9791,14 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 				{
 					MobCastSpell(ch, vict, 0, SPELL_SHADOW_TRAVEL,
 						     GET_LEVEL(ch));
-					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0,
-						  data, sizeof(hunt_data));
+					schedule_mob_hunt(ch, *data);
 					return;
 				}
 				else if (world[cur_room].zone != world[vict->in_room].zone &&
 					 npc_has_spell_slot(ch, SPELL_ETHER_WARP))
 				{
 					MobCastSpell(ch, vict, 0, SPELL_ETHER_WARP, GET_LEVEL(ch));
-					add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0,
-						  data, sizeof(hunt_data));
+					schedule_mob_hunt(ch, *data);
 					return;
 				}
 			}
@@ -9852,8 +9827,7 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 		if ((dummy2 < dummy) && npc_has_spell_slot(ch, SPELL_WORD_OF_RECALL))
 		{
 			MobCastSpell(ch, ch, 0, SPELL_WORD_OF_RECALL, GET_LEVEL(ch));
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 			return;
 		}
 	}
@@ -9879,16 +9853,14 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 		snprintf(buf, MAX_STRING_LENGTH, "%s", dirs[(int)next_step]);
 		do_open(ch, buf, 0);
 
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-			  sizeof(hunt_data));
+		schedule_mob_hunt(ch, *data);
 		return;
 	}
 
 	if (IS_WALLED(cur_room, next_step))
 	{
 		if (MobDestroyWall(ch, next_step, IS_SET(data->huntFlags, BFS_BREAK_WALLS)))
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, *data);
 		return;
 	}
 
@@ -9921,7 +9893,7 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 			data->retry = 0;
 		}
 	}
-	add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, data, sizeof(hunt_data));
+	schedule_mob_hunt(ch, *data);
 	return;
 }
 
@@ -10080,7 +10052,7 @@ void MobRetaliateRange(P_char ch, P_char vict)
 {
 	P_nevent ev = NULL;
 	int dummy;
-	hunt_data data;
+	hunt_data data = {};
 
 	/*  P_char hunter = NULL;
 	   int no_range_attack = TRUE; */
@@ -10175,15 +10147,14 @@ void MobRetaliateRange(P_char ch, P_char vict)
 				    0, 0, &dummy) >= 0)
 		{
 			data.hunt_type = HUNT_JUSTICE_INVADER;
-			data.targ.victim = vict;
+			data.target_runtime_id = vict->runtime_id;
 			data.huntFlags = (IS_MAGE(ch) || IS_AFFECTED(ch, AFF_FLY)) ? BFS_CAN_FLY :
 										     0;
 			data.huntFlags |= BFS_AVOID_NOMOB;
 			data.retry = 0;
 			data.retry_dir = 0;
 			data.path_step = -1;
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, ch, NULL, NULL, 0, &data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(ch, data);
 			// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, ch, data);
 			add_event(return_home, 30, ch, 0, 0, 0, 0, 0);
 			return;

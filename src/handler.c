@@ -284,15 +284,13 @@ void generic_char_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * 
 		/* since fights stop healing, lets make sure we restart it */
 		if (GET_HIT(i) < GET_MAX_HIT(i))
 		{
-			StartRegen(i, EVENT_HIT_REGEN);
+			StartRegen(i, regen_resource::hit);
 		}
 		if (GET_WARD(i) < GET_MAX_WARD(i))
 		{
-			StartRegen(i, EVENT_WARD_REGEN);
+			StartRegen(i, regen_resource::ward);
 		}
 	}
-	add_event(generic_char_event, GENERIC_CHAR_EVENT_PERIOD / GENERIC_CHAR_EVENT_SLICES, NULL,
-		  NULL, NULL, 0, NULL, 0);
 	// AddEvent(EVENT_SPECIAL, 20 * WAIT_SEC, TRUE, generic_char_event, 0);
 }
 
@@ -1452,7 +1450,7 @@ bool char_to_room(P_char ch, int room, int dir)
 		send_to_char("You leave the waters.\r\n", ch);
 		ch->specials.z_cord = 0;
 		if (GET_VITALITY(ch) != GET_MAX_VITALITY(ch))
-			StartRegen(ch, EVENT_MOVE_REGEN);
+			StartRegen(ch, regen_resource::vitality);
 	}
 	/* Underwater stuff */
 	if (IS_ROOM(room, ROOM_UNDERWATER) || ch->specials.z_cord < 0)
@@ -3035,9 +3033,8 @@ void extract_obj(P_obj obj, int gone_for_good)
 	/*
 	 * leaves nothing !
 	 */
-	// clear New events as well as old ones!
-	disarm_obj_nevents(obj, 0);
-	ClearObjEvents(obj);
+	// Clear every event owned by this object before extracting it.
+	disarm_obj_nevents(obj, NULL);
 
 	/* We don't want to do this because extract_obj( obj, TRUE ) gets called when
 	 *   someone rents.  We need to handle this in the next function one step up in the stack.
@@ -3576,8 +3573,7 @@ void extract_char(P_char ch)
 		affect_remove(ch, af);
 	}
 
-	disarm_char_nevents(ch, NULL); // clear new events system
-	ClearCharEvents(ch);
+	disarm_char_nevents(ch, NULL);
 
 	/* clear equipment_list */
 	for (l = 0; l < MAX_WEAR; l++)

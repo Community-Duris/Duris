@@ -348,6 +348,7 @@ struct ShipData *new_ship(int m_class, bool /*npc*/)
 
 	init_ship_layout(ship);
 	set_ship_layout(ship, m_class);
+	register_ship_runtime(ship);
 	return ship;
 }
 
@@ -684,6 +685,7 @@ void delete_ship(P_ship ship, bool npc)
 #endif
 	}
 
+	unregister_ship_runtime(ship);
 	clear_ship_layout(ship);
 	clear_references_to_ship(ship);
 
@@ -2604,30 +2606,25 @@ int read_ships()
 //--------------------------------------------------------------------
 void update_shipfrags()
 {
-	for (int i = 0; i < 20; i++)
+	for (int index = 0; index < 20; ++index)
+		shipfrags[index].ship = NULL;
+
+	ShipVisitor visitor;
+	for (bool found = shipObjHash.get_first(visitor); found;
+	     found = shipObjHash.get_next(visitor))
 	{
-		int max = 0;
-		shipfrags[i].ship = 0;
-		ShipVisitor svs;
-		for (bool fn = shipObjHash.get_first(svs); fn; fn = shipObjHash.get_next(svs))
-		{
-			if (IS_NPC_SHIP(svs))
-				continue;
-			if (svs->frags >= max)
-			{
-				int exists = 0;
-				for (int p = i - 1; p >= 0; p--)
-				{
-					if (shipfrags[p].ship == svs)
-						exists = 1;
-				}
-				if (exists != 1)
-				{
-					max = svs->frags;
-					shipfrags[i].ship = svs;
-				}
-			}
-		}
+		if (IS_NPC_SHIP(visitor) || visitor->frags < 0)
+			continue;
+
+		int insertion = 0;
+		while (insertion < 20 && shipfrags[insertion].ship &&
+		       shipfrags[insertion].ship->frags > visitor->frags)
+			insertion++;
+		if (insertion == 20)
+			continue;
+		for (int index = 19; index > insertion; --index)
+			shipfrags[index] = shipfrags[index - 1];
+		shipfrags[insertion].ship = visitor;
 	}
 }
 

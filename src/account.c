@@ -1202,7 +1202,7 @@ void cleanup_temp_char(P_char ch)
 	}
 
 	// clear any scheduled events
-	clear_char_nevents(ch, -1, NULL);
+	disarm_char_nevents(ch, NULL);
 
 	// free strings allocated by sql_row_str/getString
 	if (ch->player.name)

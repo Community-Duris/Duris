@@ -1841,7 +1841,7 @@ int magic_pool(P_obj obj, P_char ch, int cmd, char *arg)
 			GET_HIT(ch) -= dam;
 		else
 			GET_HIT(ch) = 1;
-		StartRegen(ch, EVENT_HIT_REGEN);
+		StartRegen(ch, regen_resource::hit);
 	}
 	teleport_to(ch, real_room(obj->value[0]), 0);
 
@@ -1900,7 +1900,7 @@ int magic_map_pool(P_obj obj, P_char ch, int cmd, char *arg)
 	{
 		// Tighter like this.
 		GET_HIT(ch) = (GET_HIT(ch) > dam) ? GET_HIT(ch) - dam : 1;
-		StartRegen(ch, EVENT_HIT_REGEN);
+		StartRegen(ch, regen_resource::hit);
 	}
 	teleport_to(ch, target_room, 0);
 

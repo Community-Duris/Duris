@@ -118,7 +118,7 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
 	int best_room = NOWHERE;
 	int i, town;
 	int hunt_type;
-	hunt_data data;
+	hunt_data data = {};
 	int ht = CHAR_IN_TOWN(victim);
 
 	// WIPE2013 - Drannak
@@ -214,9 +214,9 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
 
 		data.hunt_type = hunt_type;
 		if (victim)
-			data.targ.victim = victim;
+			data.target_runtime_id = victim->runtime_id;
 		else
-			data.targ.room = to_rroom;
+			data.target_room = to_rroom;
 
 		data.huntFlags = BFS_CAN_FLY | BFS_BREAK_WALLS;
 		if (npc_has_spell_slot(tch, SPELL_DISPEL_MAGIC))
@@ -225,8 +225,7 @@ int justice_send_guards(int to_rroom, P_char victim, int how_many)
 		data.retry_dir = 0;
 		data.path_step = -1;
 
-		add_event(event_mob_hunt, PULSE_MOB_HUNT, tch, NULL, NULL, 0, &data,
-			  sizeof(hunt_data));
+		schedule_mob_hunt(tch, data);
 		// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, tch, data);
 		how_many--;
 
@@ -522,7 +521,7 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str,
 	P_char target;
 	P_nevent ev;
 	char buffer[MAX_STRING_LENGTH], buffer2[MAX_STRING_LENGTH];
-	hunt_data data;
+	hunt_data data = {};
 	int dummy;
 	int i;
 	bool has_help = FALSE;
@@ -699,12 +698,12 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str,
 			if (CAN_SEE(ch, GET_OPPONENT(ch)))
 			{
 				data.hunt_type = HUNT_JUSTICE_INVADER;
-				data.targ.victim = GET_OPPONENT(ch);
+				data.target_runtime_id = GET_OPPONENT(ch)->runtime_id;
 			}
 			else
 			{
 				data.hunt_type = HUNT_ROOM;
-				data.targ.room = ch->in_room;
+				data.target_room = ch->in_room;
 			}
 			data.huntFlags = 0;
 			data.retry = 0;
@@ -712,8 +711,7 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str,
 			data.path_step = -1;
 			found_help = TRUE;
 			//    debug( "shout_and_hunt: adding hunt event mob (%s) to room (%d).", J_NAME(target), ch->in_room);
-			add_event(event_mob_hunt, PULSE_MOB_HUNT, target, NULL, NULL, 0, &data,
-				  sizeof(hunt_data));
+			schedule_mob_hunt(target, data);
 			// AddEvent(EVENT_MOB_HUNT, PULSE_MOB_HUNT, TRUE, target, data);
 		}
 	}

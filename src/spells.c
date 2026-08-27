@@ -1394,7 +1394,7 @@ void finish_room_transmute(P_char ch, struct grow_data *data)
 		{
 			g_data.old_sect = tmp_data->old_sect;
 			g_data.flags = tmp_data->flags;
-			disarm_single_event(e);
+			nevent_cancel(nevent_handle_from_event(e));
 			break;
 		}
 	}
@@ -2587,7 +2587,7 @@ void cast_bloodstone(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 	debug("blood to stone: duration: %f, dur: %d", duration, dur);
 
 	GET_VITALITY(victim) -= 3;
-	StartRegen(victim, EVENT_MOVE_REGEN);
+	StartRegen(victim, regen_resource::vitality);
 
 	bzero(&af, sizeof(af));
 	af.type = SPELL_BLOODTOSTONE;
@@ -3053,7 +3053,7 @@ void event_change_yzar_race(P_char ch, P_char victim, P_obj /*obj*/, void * /*da
 
 	// Add 3 sec after 3am to change.
 	add_event(event_change_yzar_race, time_to_witching_hour + 12, victim, victim, NULL, 0, NULL,
-		  sizeof(NULL));
+		  0);
 }
 
 void spell_curse_of_yzar(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unused]] int type,
@@ -3081,8 +3081,7 @@ void spell_curse_of_yzar(int /*level*/, P_char ch, char * /*arg*/, [[maybe_unuse
 
 	affect_to_char(victim, &af);
 	// First race change in 5 sec.
-	add_event(event_change_yzar_race, 5 * WAIT_SEC, victim, victim, NULL, 0, NULL,
-		  sizeof(NULL));
+	add_event(event_change_yzar_race, 5 * WAIT_SEC, victim, victim, NULL, 0, NULL, 0);
 
 	send_to_char("You feel absolutely exhausted all of a sudden.  You begin to sweat.\n",
 		     victim);

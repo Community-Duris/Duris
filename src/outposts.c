@@ -1581,8 +1581,6 @@ void event_outposts_upkeep(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void *
 			}
 		}
 	}
-	add_event(event_outposts_upkeep, SECS_PER_REAL_HOUR * WAIT_SEC, NULL, NULL, NULL, 0, NULL,
-		  0);
 }
 
 int outpost_archer_attack(P_char ch, P_char vict)
@@ -1619,7 +1617,7 @@ int outpost_archer_attack(P_char ch, P_char vict)
 			die(vict, ch);
 			return TRUE;
 		}
-		StartRegen(vict, EVENT_HIT_REGEN);
+		StartRegen(vict, regen_resource::hit);
 		update_pos(vict);
 		return TRUE;
 	}
@@ -1690,7 +1688,7 @@ int outpost_meurtriere_attack(P_char ch)
 				die(vict, ch);
 				continue;
 			}
-			StartRegen(vict, EVENT_HIT_REGEN);
+			StartRegen(vict, regen_resource::hit);
 			update_pos(vict);
 			continue;
 		}

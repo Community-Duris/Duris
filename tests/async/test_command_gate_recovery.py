@@ -9,17 +9,18 @@ happened the player could not act again for the rest of the session.
 
 Verifies:
 1. CharWait() clamps a negative delay instead of handing it to add_event().
-2. CharWait() clears PLR2_WAIT when the event did not get scheduled.
-3. CharWait() records an absolute deadline for the gate.
+2. CharWait() atomically replaces a shorter event_wait with a longer one.
+3. CharWait() only publishes the gate bit and absolute deadline after the
+   scheduler accepts the request.
 4. comm.c self-heals a gate with no event_wait scheduled OR past its deadline.
-5. The event wheel does not strand due events, and overdue events can be promoted
-   even on a pulse that has already spent its callback budget.
+5. The event wheel does not strand due events: authoritative ordering keeps old
+   debt ahead of future work, and deferral reinserts through the same path.
 """
 
 from pathlib import Path
 import re
 import sys
-from contract_text import contains, count
+from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 events = (ROOT / "src" / "events.c").read_text(encoding="utf-8", errors="replace")
@@ -37,20 +38,28 @@ if m:
         contains(char_wait, "if (delay < 0)") and contains(char_wait, "delay = 0;")
     ))
     checks.append((
-        "CharWait clears PLR2_WAIT when event_wait was not scheduled",
-        contains(char_wait, "!CAN_ACT(ch) && !get_scheduled(ch, event_wait)") and
-        contains(char_wait, "REMOVE_BIT(ch->specials.act2, PLR2_WAIT);")
+        "CharWait atomically replaces an existing event_wait",
+        contains(char_wait, "nevent_replace(nevent_handle_from_event(e), event_wait, delay")
     ))
     checks.append((
-        "CharWait still schedules event_wait",
-        contains(char_wait, "add_event(event_wait, delay, ch, 0, 0, 0, 0, 0);")
+        "CharWait schedules a new event_wait when none exists",
+        contains(char_wait, "scheduled = add_event(event_wait, delay, ch, NULL, NULL, 0, NULL, 0);")
+    ))
+    checks.append((
+        "CharWait clears a newly requested gate when scheduling fails",
+        contains(char_wait, "if (!scheduled)") and
+        contains(char_wait, "if (!e)\n\t\t\tREMOVE_BIT(ch->specials.act2, PLR2_WAIT);")
+    ))
+    checks.append((
+        "CharWait publishes the gate only after scheduling succeeds",
+        char_wait.find("if (!scheduled)") < char_wait.find("SET_BIT(ch->specials.act2, PLR2_WAIT);")
     ))
 else:
     checks.append(("CharWait function present", False))
 
 checks.append((
-    "CharWait records an absolute gate deadline",
-    contains(events, "ch->specials.wait_until_pulse = ne_event_tick")
+    "CharWait records the accepted event's absolute gate deadline",
+    contains(events, "ch->specials.wait_until_pulse = scheduled.handle.event->due_tick")
 ))
 checks.append((
     "CharWait logs absurd delays so the caller can be found",
@@ -90,8 +99,9 @@ defer = re.search(
 if defer:
     defer_body = defer.group(0)
     checks.append((
-        "deferral credits the revolution to events it skips",
-        contains(defer_body, "event->timer--;")
+        "deferral leaves future absolute deadlines untouched",
+        contains(defer_body, "event->due_tick > ne_event_tick") and
+        not contains(defer_body, "event->timer")
     ))
     checks.append((
         "deferral no longer stops at the first not-due event",
@@ -99,16 +109,17 @@ if defer:
     ))
     checks.append((
         "deferral keeps both bucket ends consistent",
-        contains(defer_body, "ne_schedule_tail[pulse] = event->prev_sched;") and
-        contains(defer_body, "ne_schedule[next_pulse] = moved_head;")
+        contains(defer_body, "nevent_unlink_schedule(event);") and
+        contains(defer_body, "nevent_link_schedule(event, static_cast<int>(next_bucket));")
     ))
 else:
     checks.append(("nevent_defer_suffix present", False))
 
 checks.append((
-    "overdue event promotion is not blocked by an exhausted callback cap",
-    not contains(new_events, "(max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used") and
-    count(new_events, "!priority_promotion_used && nevent_promote_overdue_event") == 2
+    "due and aged work sort ahead of future work without ad hoc promotion",
+    contains(new_events, "left->due_tick < right->due_tick") and
+    contains(new_events, "left_priority > right_priority") and
+    not contains(new_events, "nevent_promote_overdue_event")
 ))
 
 failed = [name for name, ok in checks if not ok]

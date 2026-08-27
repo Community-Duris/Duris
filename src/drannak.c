@@ -37,6 +37,9 @@
 #include "vnum.obj.h"
 #include "weather.h"
 
+#include <new>
+#include <vector>
+
 /*
  * external variables
  */
@@ -79,9 +82,28 @@ extern const surname_struct feudal_surnames[7];
  *   Inbetween King and Lightbringer there's an intentionally skipped spot such that the first 3 bits contain feudal,
  *   and the rest are achievement based.
  */
+static void update_feudal_surname(P_char ch, int points)
+{
+	int curr_surname;
+
+	// By dividing by SURNAME_SERF, we convert to an index.
+	curr_surname = GET_SURNAME(ch) / SURNAME_SERF;
+	// Do not update a feudal surname past 6 (6 is King and is not updatable since it's the highest possible).
+	while ((curr_surname < 6) &&
+	       (points > feudal_surnames[curr_surname + 1].achievement_number))
+	{
+		curr_surname++;
+		send_to_char_f(ch, "You have ranked up to %s.\n",
+			       feudal_surnames[curr_surname].color_name);
+		CLEAR_SURNAME(ch);
+		// Multiply by SURNAME_SERF to convert from index to flag.
+		SET_SURNAME(ch, curr_surname * SURNAME_SERF);
+	}
+}
+
 void set_surname(P_char ch, int num)
 {
-	int points, curr_surname;
+	int points;
 
 	if (!IS_ALIVE(ch) || !IS_PC(ch))
 	{
@@ -90,20 +112,7 @@ void set_surname(P_char ch, int num)
 
 	if (num == 0)
 	{
-		// By dividing by SURNAME_SERF, we convert to an index.
-		curr_surname = GET_SURNAME(ch) / SURNAME_SERF;
-		// Do not update a feudal surname past 6 (6 is King and is not updatable since it's the highest possible).
-		points = getLeaderBoardPts(ch) / 100;
-		while ((curr_surname < 6) &&
-		       (points > feudal_surnames[curr_surname + 1].achievement_number))
-		{
-			curr_surname++;
-			send_to_char_f(ch, "You have ranked up to %s.\n",
-				       feudal_surnames[curr_surname].color_name);
-			CLEAR_SURNAME(ch);
-			// Multiply by SURNAME_SERF to convert from index to flag.
-			SET_SURNAME(ch, curr_surname * SURNAME_SERF);
-		}
+		update_feudal_surname(ch, getLeaderBoardPts(ch) / 100);
 		return;
 	}
 
@@ -231,20 +240,83 @@ void do_surname(P_char ch, char *argument, int /*cmd*/)
 
 void event_update_surnames(P_char /*ch*/, P_char /*victim*/, P_obj, void * /*data*/)
 {
-	P_desc d;
-
-	// For each descriptor
-	for (d = descriptor_list; d; d = d->next)
+	constexpr size_t SURNAME_UPDATE_BATCH_SIZE = 4;
+	struct ship_frag_snapshot
 	{
-		// If it's not in-game, skip it.
-		if (STATE(d) != CON_PLAYING)
+		char owner[MAX_NAME_LENGTH + 1];
+		int frags;
+	};
+	static std::vector<uint64_t> character_ids;
+	static std::vector<ship_frag_snapshot> ship_frags;
+	static size_t cursor = 0;
+
+	if (character_ids.empty())
+	{
+		try
 		{
-			continue;
+			update_shipfrags();
+			ship_frags.clear();
+			ship_frags.reserve(20);
+			for (size_t index = 0; index < 20 && shipfrags[index].ship; ++index)
+			{
+				ship_frag_snapshot snapshot = {};
+				snprintf(snapshot.owner, sizeof(snapshot.owner), "%s",
+					 shipfrags[index].ship->ownername);
+				snapshot.frags = shipfrags[index].ship->frags;
+				ship_frags.push_back(snapshot);
+			}
+
+			for (P_desc descriptor = descriptor_list; descriptor;
+			     descriptor = descriptor->next)
+			{
+				if (STATE(descriptor) != CON_PLAYING)
+					continue;
+				P_char character = GET_TRUE_CHAR_D(descriptor);
+				if (character && character->runtime_id)
+					character_ids.push_back(character->runtime_id);
+			}
 		}
-		set_surname(GET_TRUE_CHAR_D(d), 0);
+		catch (const std::bad_alloc &)
+		{
+			character_ids.clear();
+			ship_frags.clear();
+			cursor = 0;
+			nevent_periodic_retry_after(WAIT_SEC, "surname snapshot allocation failed");
+			return;
+		}
 	}
+
+	size_t processed = 0;
+	while (cursor < character_ids.size() && processed < SURNAME_UPDATE_BATCH_SIZE)
+	{
+		P_char character = find_character_by_runtime_id(character_ids[cursor++]);
+		processed++;
+		if (!IS_ALIVE(character) || !IS_PC(character))
+			continue;
+
+		int character_ship_frags = 0;
+		for (const ship_frag_snapshot &snapshot : ship_frags)
+			if (!strcmp(snapshot.owner, GET_NAME(character)))
+			{
+				character_ship_frags = snapshot.frags;
+				break;
+			}
+		update_feudal_surname(
+			character,
+			getLeaderBoardPtsWithShipFrags(character, character_ship_frags) / 100);
+	}
+
+	if (cursor < character_ids.size())
+	{
+		nevent_periodic_continue_after(1);
+		return;
+	}
+
+	character_ids.clear();
+	ship_frags.clear();
+	cursor = 0;
 	// Check every 5 to 10 minutes.
-	add_event(event_update_surnames, number(300, 600) * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_periodic_next_after(number(300, 600) * WAIT_SEC);
 }
 
 void vnum_from_inv(P_char ch, int item, int count)
@@ -1501,7 +1573,7 @@ void do_dismiss(P_char ch, char *argument, int cmd)
 
 int calculate_shipfrags(P_char ch)
 {
-	for (int i = 0; i < 2000; i++)
+	for (int i = 0; i < 20; i++)
 	{
 		if (shipfrags[i].ship == NULL)
 		{

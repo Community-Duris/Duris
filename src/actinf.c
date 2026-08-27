@@ -84,7 +84,6 @@ extern const char *command[];
 extern const char *connected_types[];
 extern const char *craftsmanship_names[];
 extern const char *dirs[];
-extern const char *event_names[];
 extern const char *fullness[];
 extern struct material_data materials[];
 extern const char *month_name[];
@@ -127,7 +126,6 @@ extern struct str_app_type str_app[];
 extern struct time_info_data time_info;
 extern struct zone_data *zone_table;
 extern struct sector_data *sector_table;
-extern uint event_counter[];
 extern char *specdata[][MAX_SPEC];
 extern const char *sector_types[];
 extern long sentbytes;
@@ -7136,7 +7134,7 @@ void do_who(P_char ch, char *argument, int /*cmd*/)
 	    }
 	    GET_MANA(ch) -= i;
 	    if (GET_MANA(ch) < GET_MAX_MANA(ch))
-	      StartRegen(ch, EVENT_MANA_REGEN);
+	      StartRegen(ch, regen_resource::mana);
 	  }
 	} */
 

@@ -547,8 +547,11 @@ void attacked_by(P_ship target, P_ship attacker, int contact_counter)
 void volley_hit_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
 	VolleyData *vd = (VolleyData *)data;
-	P_ship ship = vd->attacker;
-	P_ship target = vd->target;
+	P_ship ship;
+	P_ship target;
+
+	if (!resolve_volley_endpoints(vd, &ship, &target))
+		return;
 	int w_num = vd->weapon_index;
 	int hit_chance = vd->hit_chance;
 
@@ -1464,13 +1467,12 @@ int fire_weapon(P_ship ship, int w_num, int t_contact, int hit_chance, P_char ch
 	if (volley_time < 1.0)
 		volley_time = 1.0;
 
-	VolleyData vd;
-	vd.attacker = ship;
-	vd.target = target;
+	VolleyData vd = {};
+	vd.attacker = ship->runtime_ref;
+	vd.target = target->runtime_ref;
 	vd.weapon_index = w_num;
 	vd.hit_chance = hit_chance;
-	add_event(volley_hit_event, (int)volley_time, NULL, NULL, NULL, 0, (void *)&vd,
-		  sizeof(VolleyData));
+	add_event(volley_hit_event, (int)volley_time, NULL, NULL, NULL, 0, &vd, sizeof(VolleyData));
 
 	ship->timer[T_BSTATION] = BSTATION;
 

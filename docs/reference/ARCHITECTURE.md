@@ -85,15 +85,17 @@ Descriptor structures come from a custom pooled allocator (`mm_create("SOCKET",
 
 ## Event wheel
 
-Deferred and periodic work runs through the event system (`src/events.c`,
-`src/new_events.c`): timed callbacks stored on a wheel, executed inside the
-game loop between pulses. Budget telemetry is exposed via `NEVENT BUDGET` log
-lines and `src/latency_trace.c`; `NEVENT SLOW` marks a loop over 50 ms.
+Deferred and periodic work runs through the event system (`src/new_events.c`,
+`src/nevent_periodic.c`, and the callbacks in `src/events.c`): timed callbacks
+with absolute deadlines are stored on a 300-bucket wheel and executed inside
+the game loop between pulses. Budget telemetry is exposed via `NEVENT BUDGET`
+log lines and `src/latency_trace.c`; `NEVENT SLOW` marks total scheduler work of
+at least 50 ms.
 
-[EVENTS.md](EVENTS.md) is the mechanism reference — bucket and revolution
-scheduling, the three intrusive lists, cancellation semantics, catch-up debt,
-and the configuration knobs. The rest of this section records the invariants
-that were each a live incident.
+[EVENTS.md](EVENTS.md) is the mechanism reference — absolute scheduling, the
+three intrusive lists, typed payloads and handles, cancellation semantics,
+periodic ownership, catch-up debt, and configuration. The rest of this section
+records incident-derived constraints.
 
 Each pulse is bounded by a wall-clock budget (`NEVENT_BUDGET_USEC_DEFAULT`,
 25 ms) and a callback count cap (`NEVENT_MAX_CALLBACKS_DEFAULT`). Both are
@@ -101,25 +103,24 @@ overridable at runtime - see [CONFIGURATION.md](../operations/CONFIGURATION.md#d
 The time budget is meant to be the binding limit; a count cap low enough to end
 pulses at half the time budget starves the wheel.
 
-Three properties of the wheel are load-bearing and were each a live incident:
+These properties of the wheel are load-bearing:
 
 - **Deferral covers the whole unscanned suffix.** When a pulse runs out of
-  budget, every remaining due event moves to the next pulse, in order, and every
-  event left behind still has its timer decremented. An earlier version moved
-  only the leading contiguous run of due events, so a due event sitting behind a
-  not-yet-due one was stranded in its ring bucket for a full revolution
-  (300 pulses, approximately 75 s), repeatedly - and events the scan never reached lost a
-  whole revolution off long timers on every saturated pulse.
-- **Player-event promotion is not gated on the callback budget.** Promotion used
-  to require `executed < max_callbacks`, which made the priority mechanism inert
-  on exactly the saturated pulses it exists for. It now costs at most one
-  over-cap callback per pulse.
+  budget, every remaining due event moves to the next pulse. Future-revolution
+  records stay in place. All records retain their absolute `due_tick`, so an
+  overload cannot silently add a 75-second revolution to a long timer.
+- **Ordering is stable and starvation-resistant.** Records sort by absolute
+  deadline, effective priority, and sequence. Player-timed work has priority by
+  default, while ordinary work ages above it after two deferrals or two late
+  ticks. Deferred count, estimated cost, and oldest deadline are repaid through
+  bounded catch-up quotas.
 - **Character-wide maintenance is sliced.** `generic_char_event` (`handler.c`)
   swept every character in one callback (17.8 ms average, 24.1 ms peak against a
   25 ms budget). It runs in four slices, one per invocation, rescheduled at a
   quarter of the old delay. The slice is a hash of the character's address, so
   it is stable for the character's lifetime: every character is still visited
-  exactly once per 20 s, none skipped or done twice.
+  exactly once per 20 s, none skipped or done twice. Other heavy periodic jobs
+  use one-tick continuations with stable cursors or runtime-ID snapshots.
 
 ### Command gate
 
