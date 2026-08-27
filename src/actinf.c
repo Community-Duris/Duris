@@ -42,6 +42,7 @@ using namespace std;
 #include "persistence_queue.h"
 #include "critical_command_coordinator.h"
 #include "critical_command_journal.h"
+#include "critical_outbox.h"
 #include "player_save_worker.h"
 #include "player_save_journal.h"
 #include "player_save_pipeline.h"
@@ -3993,6 +3994,7 @@ static void show_world_persistence(P_char ch)
 	const critical_coordinator_health critical = critical_command_coordinator_health_copy();
 	const critical_command_journal_health critical_journal =
 		critical_command_journal_health_copy();
+	const critical_outbox_health critical_outbox = critical_outbox_health_copy();
 	const world_recovery_health world_recovery = world_recovery_pipeline_health_copy();
 	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
 	char line[MAX_STRING_LENGTH];
@@ -4009,6 +4011,8 @@ static void show_world_persistence(P_char ch)
 		world_persistence_max(oldest_save_age_msec, critical.oldest_age_msec);
 	oldest_save_age_msec =
 		world_persistence_max(oldest_save_age_msec, critical_journal.oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, critical_outbox.oldest_age_msec);
 
 	send_to_char("Persistence health (metadata only)\n", ch);
 	if (query.total_calls == 0)
@@ -4079,6 +4083,32 @@ static void show_world_persistence(P_char ch)
 			 (unsigned long long)dirty.active_oldest_age_msec,
 			 (unsigned long long)dirty.inflight_count,
 			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	send_to_char(line, ch);
+
+	snprintf(
+		line, sizeof(line),
+		"critical_outbox state=%s pending=%llu dead_letter=%llu oldest_age_ms=%llu "
+		"incomplete_inbox=%llu committed_without_outbox=%llu fetched=%llu delivered=%llu "
+		"duplicates=%llu retries=%llu terminal=%llu db_failures=%llu high_water=%llu/%llu\n",
+		!critical_outbox.initialized ? "stopped" :
+		critical_outbox.dead_letter || critical_outbox.incomplete_inbox ||
+				critical_outbox.committed_without_outbox ?
+					       "degraded" :
+		critical_outbox.pending ? "pending" :
+					  "ready",
+		(unsigned long long)critical_outbox.pending,
+		(unsigned long long)critical_outbox.dead_letter,
+		(unsigned long long)critical_outbox.oldest_age_msec,
+		(unsigned long long)critical_outbox.incomplete_inbox,
+		(unsigned long long)critical_outbox.committed_without_outbox,
+		(unsigned long long)critical_outbox.fetched,
+		(unsigned long long)critical_outbox.delivered,
+		(unsigned long long)critical_outbox.duplicates,
+		(unsigned long long)critical_outbox.retries,
+		(unsigned long long)critical_outbox.terminal_failures,
+		(unsigned long long)critical_outbox.db_failures,
+		(unsigned long long)critical_outbox.high_water_records,
+		(unsigned long long)critical_outbox.high_water_bytes);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),

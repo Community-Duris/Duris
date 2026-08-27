@@ -130,6 +130,13 @@ transition. Restore the storage or destination and preserve the journal for repl
 Never delete or edit the journal to clear a fence. See
 [CRITICAL_COMMAND_PIPELINE.md](CRITICAL_COMMAND_PIPELINE.md).
 
+For `critical_outbox`, pending age may briefly rise during destination recovery.
+`dead_letter>0`, `incomplete_inbox>0`, or `committed_without_outbox>0` is an integrity
+incident. Preserve the journal and database rows, stop affected domain cutovers, and run
+the typed reconciliation report. After correcting the destination, retry only the
+specific numeric dead-letter ID through the guarded repair API; never edit payloads or
+execute SQL copied from a command.
+
 ### Retained terminal-save failures
 
 `deferred_save_retry_scheduled` means the live character remains the recovery source;

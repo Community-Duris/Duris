@@ -171,8 +171,12 @@ Non-idempotent Phase 02 gameplay effects use a separate critical-command coordin
 stable 128-bit operation ID and sorted entity-key set. Conflicting key sets execute in
 acceptance order, unrelated sets may run concurrently, and exact typed completion is
 required to release a gameplay fence. A checksummed local journal preserves accepted
-commands through retry and restart. The coordinator currently has only a fake test
-destination; the transactional database adapter is introduced in Phase 02 Session 02.
+commands through retry and restart. A typed prepared-statement repository applies each
+operation through one InnoDB inbox/state/outbox transaction, resolves duplicate or
+ambiguous commits by stable operation ID, and classifies retryable database errors. A
+bounded at-least-once dispatcher retains typed outbox rows through delivery, retry,
+dead-letter, restart, and operator reconciliation. The generic mutation and destination
+remain deliberately test-only until later Phase 02 sessions add gameplay domains.
 
 Details and schema management: [DATABASE.md](DATABASE.md).
 

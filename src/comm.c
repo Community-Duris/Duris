@@ -81,6 +81,8 @@
 #include "persistence_queue.h"
 #include "locker_async.h"
 #include "critical_command_coordinator.h"
+#include "critical_command_repository.h"
+#include "critical_outbox.h"
 #include "player_save_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "test_async.h"
@@ -604,6 +606,19 @@ void run_the_game(int port, int sslport)
 			persistence_alert(AVATAR, "player_save", "pipeline", "none", "none",
 					  "start_failed", "check PLAYER_SAVE_JOURNAL_DIR");
 		}
+		const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
+		if (!critical_outbox_init(critical_outbox_test_destination, NULL) ||
+		    !critical_command_coordinator_init(critical_journal_directory,
+						       critical_command_repository_apply_from_pool,
+						       NULL))
+		{
+			critical_command_coordinator_shutdown();
+			critical_outbox_shutdown();
+			logit(LOG_STATUS,
+			      "Critical command pipeline unavailable; critical gameplay fails closed.");
+			persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
+					  "start_failed", "check critical schema and journal");
+		}
 	}
 
 	/* Boot-time scalar queue flood test: overflows the queue so the
@@ -630,6 +645,7 @@ void run_the_game(int port, int sslport)
 	game_loop(port, sslport);
 	redis_cleanup();
 	critical_command_coordinator_shutdown();
+	critical_outbox_shutdown();
 	if (!_pwipe)
 	{
 		persistence_stop_scalar_event_worker();
@@ -1353,7 +1369,14 @@ resume_game_loop:
 			flush_pending_ship_saves();
 			locker_async_pulse();
 			critical_completion critical_completions[64] = {};
-			critical_command_coordinator_pulse(critical_completions, 64);
+			const size_t critical_completion_count =
+				critical_command_coordinator_pulse(critical_completions, 64);
+			for (size_t index = 0; index < critical_completion_count; ++index)
+				if (critical_completions[index].outcome ==
+				    critical_apply_outcome::terminal_failure)
+					persistence_alert(AVATAR, "critical_command", "completion",
+							  "none", "none", "integrity_failure",
+							  "operation metadata redacted");
 			player_save_pipeline_pulse();
 			redis_world_recovery_pulse();
 			latency_trace_record("gmcp_flush",
@@ -1588,10 +1611,23 @@ resume_game_loop:
 	}
 
 	critical_command_coordinator_quiesce();
+	critical_outbox_quiesce();
 	if (!_pwipe && !critical_command_coordinator_drain(3000))
 	{
 		critical_command_coordinator_resume();
+		critical_outbox_resume();
 		persistence_alert(AVATAR, "critical_command", "shutdown", "none", "none",
+				  "pipeline_drain_failed", "shutdown_cancelled=1");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
+	if (!_pwipe && !critical_outbox_drain(3000))
+	{
+		critical_command_coordinator_resume();
+		critical_outbox_resume();
+		persistence_alert(AVATAR, "critical_outbox", "shutdown", "none", "none",
 				  "pipeline_drain_failed", "shutdown_cancelled=1");
 		shutdownflag = 0;
 		_reboot = 0;
@@ -1601,6 +1637,7 @@ resume_game_loop:
 	if (!_pwipe && !persistence_save_all_characters_terminal(RENT_CRASH))
 	{
 		critical_command_coordinator_resume();
+		critical_outbox_resume();
 		persistence_alert(AVATAR, "player_save", "shutdown", "none", "none",
 				  "terminal_save_failed", "shutdown_cancelled=1");
 		for (P_desc pending_desc = descriptor_list; pending_desc;
@@ -1617,6 +1654,7 @@ resume_game_loop:
 	if (!_pwipe && !player_save_pipeline_drain(3000))
 	{
 		critical_command_coordinator_resume();
+		critical_outbox_resume();
 		player_save_pipeline_resume();
 		persistence_alert(AVATAR, "player_save", "shutdown", "none", "none",
 				  "pipeline_drain_failed", "shutdown_cancelled=1");
@@ -1628,6 +1666,7 @@ resume_game_loop:
 	if (!_pwipe && !redis_world_recovery_drain(3000))
 	{
 		critical_command_coordinator_resume();
+		critical_outbox_resume();
 		player_save_pipeline_resume();
 		persistence_alert(AVATAR, "world_recovery", "shutdown", "none", "none",
 				  "pipeline_drain_failed", "shutdown_cancelled=1");

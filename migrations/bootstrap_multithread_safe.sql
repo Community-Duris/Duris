@@ -1736,5 +1736,61 @@ CREATE TABLE `mud_schema_migrations` (
   PRIMARY KEY (`migration_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `critical_operation_inbox` (
+  `operation_id` binary(16) NOT NULL,
+  `command_hash` binary(32) NOT NULL,
+  `keys_hash` binary(32) NOT NULL,
+  `command_type` smallint unsigned NOT NULL,
+  `schema_version` int unsigned NOT NULL,
+  `payload_version` smallint unsigned NOT NULL,
+  `status` tinyint unsigned NOT NULL,
+  `result_code` int unsigned NOT NULL DEFAULT '0',
+  `durable_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `result_payload` varbinary(4096) NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `committed_at` timestamp(6) NULL DEFAULT NULL,
+  PRIMARY KEY (`operation_id`),
+  KEY `idx_critical_inbox_status_created` (`status`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `critical_test_state` (
+  `entity_type` tinyint unsigned NOT NULL,
+  `entity_id` bigint unsigned NOT NULL,
+  `value` bigint NOT NULL DEFAULT '0',
+  `revision` bigint unsigned NOT NULL DEFAULT '0',
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`entity_type`,`entity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `critical_outbox` (
+  `outbox_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `operation_id` binary(16) NOT NULL,
+  `event_index` smallint unsigned NOT NULL,
+  `destination` smallint unsigned NOT NULL,
+  `event_type` smallint unsigned NOT NULL,
+  `payload_version` smallint unsigned NOT NULL,
+  `payload` blob NOT NULL,
+  `status` tinyint unsigned NOT NULL DEFAULT '0',
+  `attempt_count` smallint unsigned NOT NULL DEFAULT '0',
+  `next_attempt_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `delivered_at` timestamp(6) NULL DEFAULT NULL,
+  `dead_lettered_at` timestamp(6) NULL DEFAULT NULL,
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`outbox_id`),
+  UNIQUE KEY `uq_critical_outbox_operation_event` (`operation_id`,`event_index`),
+  KEY `idx_critical_outbox_claim` (`status`,`next_attempt_at`,`outbox_id`),
+  KEY `idx_critical_outbox_age` (`status`,`created_at`),
+  CONSTRAINT `critical_outbox_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `critical_outbox_delivery_dedupe` (
+  `consumer_id` smallint unsigned NOT NULL,
+  `outbox_id` bigint unsigned NOT NULL,
+  `delivered_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`consumer_id`,`outbox_id`),
+  CONSTRAINT `critical_outbox_delivery_fk` FOREIGN KEY (`outbox_id`) REFERENCES `critical_outbox` (`outbox_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -945,6 +945,62 @@ static bool sql_verify_boot_database(void)
 		      "FATAL: transactional auction tables are not all InnoDB at boot (expected 4).");
 		return false;
 	}
+
+	const char *critical_schema_probe =
+		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+		"AND ((table_name='critical_operation_inbox' AND column_name IN "
+		"('operation_id','command_hash','keys_hash','command_type','schema_version',"
+		"'payload_version','status','result_code','durable_revision','result_payload',"
+		"'created_at','committed_at')) OR (table_name='critical_test_state' AND "
+		"column_name IN ('entity_type','entity_id','value','revision','updated_at')) OR "
+		"(table_name='critical_outbox' AND column_name IN "
+		"('outbox_id','operation_id','event_index','destination','event_type',"
+		"'payload_version','payload','status','attempt_count','next_attempt_at',"
+		"'created_at','delivered_at','dead_lettered_at','last_error_code')) OR "
+		"(table_name='critical_outbox_delivery_dedupe' AND column_name IN "
+		"('consumer_id','outbox_id','delivered_at')))";
+	result = db_query("%s", critical_schema_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: critical command schema metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool critical_columns_ok = row && lengths && row[0] && atoi(row[0]) == 34;
+	mysql_free_result(result);
+	if (!critical_columns_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: critical command schema is incomplete at boot (expected 34 required columns).");
+		return false;
+	}
+	const char *critical_index_probe =
+		"SELECT COUNT(*) FROM (SELECT DISTINCT table_name,index_name FROM "
+		"information_schema.statistics WHERE table_schema=DATABASE() AND "
+		"((table_name='critical_operation_inbox' AND index_name IN "
+		"('PRIMARY','idx_critical_inbox_status_created')) OR "
+		"(table_name='critical_test_state' AND index_name='PRIMARY') OR "
+		"(table_name='critical_outbox' AND index_name IN "
+		"('PRIMARY','uq_critical_outbox_operation_event','idx_critical_outbox_claim',"
+		"'idx_critical_outbox_age')) OR (table_name='critical_outbox_delivery_dedupe' "
+		"AND index_name='PRIMARY'))) AS critical_required_indexes";
+	result = db_query("%s", critical_index_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: critical command index metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool critical_indexes_ok = row && lengths && row[0] && atoi(row[0]) == 8;
+	mysql_free_result(result);
+	if (!critical_indexes_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: critical command indexes are incomplete at boot (expected 8 entries).");
+		return false;
+	}
 	return true;
 }
 

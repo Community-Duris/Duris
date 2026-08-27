@@ -24,5 +24,12 @@ assert "uq_scalar_dedupe" in source
 assert "auction_engine_probe" in source
 assert "COUNT(DISTINCT table_name)" in source
 assert "transactional auction tables are not all InnoDB" in source
+assert "critical_schema_probe" in source
+assert "critical_operation_inbox" in source
+assert "critical_outbox_delivery_dedupe" in source
+assert "expected 34 required columns" in source
+assert "critical_index_probe" in source
+assert "critical_required_indexes" in source
+assert "expected 8 entries" in source
 
 print("boot persistence schema preflight checks passed")

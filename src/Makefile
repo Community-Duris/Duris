@@ -195,6 +195,8 @@ OBJS =  $(SHIP_OBJS) \
 				 critical_command.o \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \
+				 critical_command_repository.o \
+				 critical_outbox.o \
 				 player_revision_state.o \
 				 player_save_worker.o \
 				 player_save_journal.o \

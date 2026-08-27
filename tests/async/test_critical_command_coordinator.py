@@ -389,7 +389,11 @@ assert "critical_command_coordinator_drain(3000)" in COPYOVER
 assert COPYOVER.index("critical_command_coordinator_drain(3000)") < COPYOVER.index(
     "player_save_pipeline_quiesce()"
 )
-assert "critical_command_coordinator_resume();\n\tplayer_save_pipeline_resume();" in COPYOVER
+assert (
+    "critical_command_coordinator_resume();\n"
+    "\tcritical_outbox_resume();\n"
+    "\tplayer_save_pipeline_resume();"
+) in COPYOVER
 assert '\"critical_commands state=%s' in ACTINF
 assert "command.payload" not in ACTINF and "operation_id" not in ACTINF
 assert "critical_command_equal" in COORDINATOR and "identity_conflict" in COORDINATOR

@@ -33,6 +33,7 @@ beyond owner read/write (`0600`).
 | `DB_SOCKET` | Optional, local role only | Protected local Unix socket used instead of remote transport. |
 | `DB_TLS` | Required as `TRUE` for non-loopback hosts | Enforce encrypted database transport. |
 | `DB_SSL_CA` | Required for non-loopback hosts | Regular CA file used to verify the database server certificate. |
+| `CRITICAL_COMMAND_JOURNAL_DIR` | Required outside mini mode | Absolute server-user-owned `0700` directory for non-coalescing critical commands. |
 
 The server selects the database through the listen port as a final safety
 check. Port `7777` is the production default; on any other port an explicitly

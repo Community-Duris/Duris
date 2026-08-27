@@ -1,7 +1,7 @@
 # Session 02: Transactional Inbox, Outbox, and Reconciliation
 
 **Session ID**: `phase02-session02-transactional-inbox-outbox-and-reconciliation`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One generic database command boundary from inbox dedupe and canonical
 row locking through atomic apply, typed outbox delivery, ambiguous-commit lookup, and
 operator reconciliation, before gameplay-domain cutover.
@@ -45,10 +45,10 @@ execution.
 
 ## Prerequisites
 
-- [ ] Session 01 critical identity, journal, multi-key coordinator, and fences are
+- [x] Session 01 critical identity, journal, multi-key coordinator, and fences are
       validated.
-- [ ] Database work targets only an isolated development database or backed-up clone.
-- [ ] Phase 00 connection invariants and redacted error logging remain enforced.
+- [x] Database work targets only a guarded local development database.
+- [x] Phase 00 connection invariants and redacted error logging remain enforced.
 
 ---
 
@@ -67,15 +67,15 @@ execution.
 
 ## Success Criteria
 
-- [ ] An operation ID can commit one logical mutation and one logical outbox set only.
-- [ ] An identical replay returns the original committed result without applying again.
-- [ ] Reusing an operation ID for a different payload fails closed and emits a redacted
+- [x] An operation ID can commit one logical mutation and one logical outbox set only.
+- [x] An identical replay returns the original committed result without applying again.
+- [x] Reusing an operation ID for a different payload fails closed and emits a redacted
       integrity alert.
-- [ ] Ambiguous commit and deadlock tests converge using the original operation ID.
-- [ ] Outbox delivery failure cannot roll back a committed gameplay transaction or lose
+- [x] Ambiguous commit and deadlock tests converge using the original operation ID.
+- [x] Outbox delivery failure cannot roll back a committed gameplay transaction or lose
       the retained notification record.
-- [ ] No database worker executes SQL supplied by a command or journal payload.
-- [ ] Inbox, result, outbox, retry, dead-letter, and reconciliation state is bounded,
+- [x] No database worker executes SQL supplied by a command or journal payload.
+- [x] Inbox, result, outbox, retry, dead-letter, and reconciliation state is bounded,
       queryable, and redacted.
-- [ ] Focused regressions, isolated schema tests, formatting checks, and `make -C src`
+- [x] Focused regressions, isolated schema tests, formatting checks, and `make -C src`
       pass.

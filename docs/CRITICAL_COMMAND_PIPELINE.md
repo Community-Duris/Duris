@@ -6,10 +6,11 @@ categorical source site and deadline, sorted affected entity keys, optional expe
 revisions, and owned payload bytes. It contains no live game pointers, SQL, Redis keys,
 paths, account names, or character names.
 
-This first implementation is the coordinator foundation and deliberately has no
-production destination adapter or gameplay producers. The transactional database
-inbox/outbox introduced by the next session will initialize it. Until then its health
-line reports `state=stopped` and lifecycle calls are safe no-ops.
+The generic destination stores command identity and result in an InnoDB inbox, applies
+a typed test-domain mutation, and creates its notification in the same transaction.
+Production gameplay producers remain disabled until their individual Phase 02 domain
+sessions. Outside mini mode, startup requires `CRITICAL_COMMAND_JOURNAL_DIR` and the
+verified critical-command schema; failure leaves critical gameplay stopped.
 
 ## Acceptance and execution
 
@@ -61,9 +62,29 @@ marks, accepts, attachments, outcomes, retries, ambiguous results, stale complet
 overloads, oldest age, and journal counts/bytes/status. It never prints command payloads
 or entity identities.
 
+The database inbox stores the canonical command/key hashes and authoritative result.
+An identical duplicate returns that result; different bytes under the same operation ID
+fail closed. Connection loss after `COMMIT` is reconciled by rereading the inbox before
+the original immutable command can retry. Test-state rows are locked in normalized key
+order. Deadlocks and lock waits are retryable with the same operation ID.
+
+Each transaction also writes a bounded typed outbox record. The dispatcher reads at
+most 64 records/4 MiB at a time, passes the stable outbox ID to a typed consumer, and
+records consumer dedupe plus delivered state together. Retryable delivery uses bounded
+backoff; the eighth failure or a terminal result retains a dead-letter row. Copyover and
+shutdown drain commands first and outbox records second.
+
+`world persistence` adds cached `critical_outbox` counts for pending age, dead letters,
+incomplete inbox rows, committed operations missing outbox rows, delivery/retry/error
+totals, and high-water records/bytes. `critical_outbox_reconcile()` is the typed
+read-only discrepancy interface. `critical_outbox_retry_dead_letter(id)` is the sole
+repair action: it can only reset one numeric dead-letter ID and never accepts SQL.
+
 Treat `blocked>0`, growing oldest age, `journal=corrupt`, `journal=io_failure`, or
 `journal_quota=1` as a stop condition for copyover/shutdown and affected gameplay.
 Restore the underlying storage or destination, preserve the journal, and investigate
 before restarting. Never delete or edit the journal to clear a fence.
 
-Focused validation is `python3 tests/async/test_critical_command_coordinator.py`.
+Focused validation is `python3 tests/async/test_critical_command_coordinator.py`,
+`python3 tests/async/test_critical_transaction_contract.py`, and, on an explicitly
+guarded local development database, `tests/async/run_critical_command_schema_mysql.sh`.

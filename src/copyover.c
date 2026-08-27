@@ -31,6 +31,7 @@
 #include "websocket.h"
 #include "locker_async.h"
 #include "critical_command_coordinator.h"
+#include "critical_outbox.h"
 #include "player_save_pipeline.h"
 #include "redis.h"
 
@@ -87,6 +88,7 @@ static void notify_copyover_failure(const char *message)
 {
 	P_desc d;
 	critical_command_coordinator_resume();
+	critical_outbox_resume();
 	player_save_pipeline_resume();
 
 	for (d = descriptor_list; d; d = d->next)
@@ -463,6 +465,20 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 			"\r\n*** Copyover cancelled: a pending locker save failed. ***\r\n");
 		return false;
 	}
+	critical_command_coordinator_quiesce();
+	critical_outbox_quiesce();
+	if (!critical_command_coordinator_drain(3000))
+	{
+		logit(LOG_STATUS, "copyover: critical command drain failed, aborting copyover");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
+	if (!critical_outbox_drain(3000))
+	{
+		logit(LOG_STATUS, "copyover: critical outbox drain failed, aborting copyover");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
 
 	// Prove every connected player save before closing any descriptor or
 	// publishing copyover state. The terminal helper consumes a pending slot
@@ -489,14 +505,6 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 				"\r\n*** Copyover FAILED - server remains live. ***\r\n");
 			return false;
 		}
-	}
-	critical_command_coordinator_quiesce();
-	if (!critical_command_coordinator_drain(3000))
-	{
-		critical_command_coordinator_resume();
-		logit(LOG_STATUS, "copyover: critical command drain failed, aborting copyover");
-		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
-		return false;
 	}
 	if (!persistence_flush_all_character_saves())
 	{

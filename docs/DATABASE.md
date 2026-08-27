@@ -74,9 +74,12 @@ and optional sequence-numbered world generations used after an unclean exit
 
 Critical gameplay commands are distinct from coalesced checkpoints. Each accepted
 command is independently journaled with one stable operation ID and remains fenced
-through retry or ambiguous completion. The Session 01 coordinator intentionally has no
-database destination; the inbox/outbox transaction and reconciliation contract arrive
-in Phase 02 Session 02. See [CRITICAL_COMMAND_PIPELINE.md](CRITICAL_COMMAND_PIPELINE.md).
+through retry or ambiguous completion. The generic transaction stores canonical
+identity/result metadata in `critical_operation_inbox`, applies typed state, and inserts
+`critical_outbox` rows before one commit. Duplicate and ambiguous execution reread the
+inbox. Delivery is at least once with `(consumer_id,outbox_id)` dedupe, bounded retry,
+and retained dead letters. See
+[CRITICAL_COMMAND_PIPELINE.md](CRITICAL_COMMAND_PIPELINE.md).
 
 ## Persistence observability
 
