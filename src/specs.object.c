@@ -26,6 +26,7 @@
 #include "assocs.h"
 #include "blispells.h"
 #include "ctf.h"
+#include "currency_transaction.h"
 #include "damage.h"
 #include "graph.h"
 #include "handler.h"
@@ -1700,6 +1701,7 @@ int slot_machine(P_obj obj, P_char ch, int cmd, char *arg)
 	int gpayoff, epayoff, upayoff, tpayoff, ipayoff, gggpayoff, eeepayoff, uuupayoff,
 		blankpayoff = 0;
 	int coinamt;
+	int64_t payout_value = 0;
 
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
@@ -1766,23 +1768,24 @@ int slot_machine(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 	else
 	{
+		if (type < 0 || type > 3 || !currency_transaction_can_submit(ch))
+		{
+			send_to_char("The slot machine could not accept that wager.\n", ch);
+			return TRUE;
+		}
 		act("You insert your coin(s) into $p.", FALSE, ch, obj, 0, TO_CHAR);
 		switch (type)
 		{
 		case 0:
-			GET_COPPER(ch) -= coinamt;
 			obj->value[1] += coinamt;
 			break;
 		case 1:
-			GET_SILVER(ch) -= coinamt;
 			obj->value[1] += (10 * coinamt);
 			break;
 		case 2:
-			GET_GOLD(ch) -= coinamt;
 			obj->value[1] += (100 * coinamt);
 			break;
 		case 3:
-			GET_PLATINUM(ch) -= coinamt;
 			obj->value[1] += (1000 * coinamt);
 			break;
 		}
@@ -2071,26 +2074,37 @@ int slot_machine(P_obj obj, P_char ch, int cmd, char *arg)
 
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "You win %d %s coin(s)!", coins,
 			 coin_names[type]);
+		static const int coin_values[] = { 1, 10, 100, 1000 };
+		payout_value = (int64_t)coins * coin_values[type];
 		switch (type)
 		{
 		case 0:
-			GET_COPPER(ch) += coins;
 			break;
 		case 1:
-			GET_SILVER(ch) += coins;
 			coins *= 10;
 			break;
 		case 2:
-			GET_GOLD(ch) += coins;
 			coins *= 100;
 			break;
 		case 3:
-			GET_PLATINUM(ch) += coins;
 			coins *= 1000;
 			break;
 		}
 		act(Gbuf1, FALSE, ch, 0, 0, TO_CHAR);
 		obj->value[3] += coins;
+	}
+	static const int coin_values[] = { 1, 10, 100, 1000 };
+	const int64_t net_value = payout_value - (int64_t)coinamt * coin_values[type];
+	if (net_value != 0 && !currency_transaction_submit_wallet_value(
+				      ch, net_value,
+				      net_value > 0 ? currency_reason_type::wallet_reward :
+						      currency_reason_type::wallet_spend,
+				      OBJ_VNUM(obj), critical_source_site::command,
+				      critical_deadline_class::interactive, nullptr, nullptr, 0))
+	{
+		logit(LOG_WIZ, "slot_machine: net wallet submission failed for pid %d",
+		      GET_PID(ch));
+		send_to_char("The slot result could not be recorded. Please contact staff.\n", ch);
 	}
 	return TRUE;
 }
@@ -6268,16 +6282,16 @@ int llyms_altar(P_obj obj, P_char ch, int cmd, char *arg)
 		switch (money)
 		{
 		case 1:
-			GET_PLATINUM(ch) += number(1, 10);
+			ADD_MONEY(ch, number(1, 10) * 1000);
 			break;
 		case 2:
-			GET_GOLD(ch) += number(1, 10);
+			ADD_MONEY(ch, number(1, 10) * 100);
 			break;
 		case 3:
-			GET_SILVER(ch) += number(1, 10);
+			ADD_MONEY(ch, number(1, 10) * 10);
 			break;
 		case 4:
-			GET_COPPER(ch) += number(1, 10);
+			ADD_MONEY(ch, number(1, 10));
 			break;
 		default:
 			break;

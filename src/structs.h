@@ -1319,6 +1319,8 @@ struct pc_only_data
 	int spare2;
 	int spare3;
 	int spare4;
+	uint64_t bank_revision; /* Transactional shared account-bank domain revision. */
+	uint64_t wallet_revision; /* Transactional carried-wallet domain revision. */
 
 	long frags; /* Pkill counter                           */
 	long oldfrags; /* Pkill counter                           */

@@ -83,6 +83,7 @@
 #include "critical_command_coordinator.h"
 #include "critical_command_repository.h"
 #include "critical_outbox.h"
+#include "currency_transaction.h"
 #include "epic_transaction.h"
 #include "player_save_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
@@ -111,6 +112,13 @@ extern void checkpointing(void);
 long sentbytes = 0;
 long receivedbytes = 0;
 bool game_booted = FALSE;
+
+static void critical_gameplay_handle_completions(const critical_completion *completions,
+						 size_t count)
+{
+	epic_transaction_handle_completions(completions, count);
+	currency_transaction_handle_completions(completions, count);
+}
 
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 {
@@ -621,7 +629,7 @@ void run_the_game(int port, int sslport)
 					  "start_failed", "check critical schema and journal");
 		}
 		critical_command_coordinator_set_drain_observer(
-			epic_transaction_handle_completions);
+			critical_gameplay_handle_completions);
 	}
 
 	/* Boot-time scalar queue flood test: overflows the queue so the
@@ -1374,8 +1382,8 @@ resume_game_loop:
 			critical_completion critical_completions[64] = {};
 			const size_t critical_completion_count =
 				critical_command_coordinator_pulse(critical_completions, 64);
-			epic_transaction_handle_completions(critical_completions,
-							    critical_completion_count);
+			critical_gameplay_handle_completions(critical_completions,
+							     critical_completion_count);
 			for (size_t index = 0; index < critical_completion_count; ++index)
 				if (critical_completions[index].outcome ==
 				    critical_apply_outcome::terminal_failure)

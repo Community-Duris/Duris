@@ -448,6 +448,9 @@ critical_outbox_test_destination(const critical_outbox_record &record, void *con
 	const bool epic_record = record.destination == OUTBOX_DESTINATION_EPIC &&
 				 record.event_type == OUTBOX_EVENT_EPIC_BALANCE &&
 				 record.payload_version == 1 && record.payload.size() == 24;
-	return test_record || epic_record ? critical_outbox_delivery_result::delivered :
-					    critical_outbox_delivery_result::terminal_failure;
+	const bool currency_record = record.destination == 3 && record.event_type == 1 &&
+				     record.payload_version == 1 && record.payload.size() == 80;
+	return test_record || epic_record || currency_record ?
+		       critical_outbox_delivery_result::delivered :
+		       critical_outbox_delivery_result::terminal_failure;
 }

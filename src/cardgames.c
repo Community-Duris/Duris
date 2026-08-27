@@ -577,25 +577,29 @@ int blackjack_table(P_obj obj, P_char ch, int cmd, char *argument)
 		}
 
 		// Remove cash from player and put it on the table!
+		static const int coin_values[] = { 1, 10, 100, 1000 };
+		if (bettype < 0 || bettype > 3 ||
+		    SUB_MONEY(ch, betamt * coin_values[bettype], 0) != 0)
+		{
+			send_to_char("The wager could not be accepted.\r\n", ch);
+			obj->value[0] = BJ_PREBID;
+			return TRUE;
+		}
 		send_to_char_f(ch, "\n&+yYou toss &n%d ", betamt);
 		if (bettype == 0)
 		{
-			GET_COPPER(ch) -= betamt;
 			send_to_char_f(ch, STR_COPP);
 		}
 		else if (bettype == 1)
 		{
-			GET_SILVER(ch) -= betamt;
 			send_to_char_f(ch, STR_SILV);
 		}
 		else if (bettype == 2)
 		{
-			GET_GOLD(ch) -= betamt;
 			send_to_char_f(ch, STR_GOLD);
 		}
 		else if (bettype == 3)
 		{
-			GET_PLATINUM(ch) -= betamt;
 			send_to_char_f(ch, STR_PLAT);
 		}
 		else

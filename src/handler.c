@@ -1890,12 +1890,11 @@ void money_to_inventory(P_char ch)
 		return;
 
 	/* make a 'pile of coins' object to hold ch's cash */
-	GET_COPPER(ch) = BOUNDED(0, GET_COPPER(ch), 32000);
-	GET_SILVER(ch) = BOUNDED(0, GET_SILVER(ch), 32000);
-	GET_GOLD(ch) = BOUNDED(0, GET_GOLD(ch), 32000);
-	GET_PLATINUM(ch) = BOUNDED(0, GET_PLATINUM(ch), 32000);
-
-	P_obj money = create_money(GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch), GET_PLATINUM(ch));
+	const int copper = BOUNDED(0, GET_COPPER(ch), 32000);
+	const int silver = BOUNDED(0, GET_SILVER(ch), 32000);
+	const int gold = BOUNDED(0, GET_GOLD(ch), 32000);
+	const int platinum = BOUNDED(0, GET_PLATINUM(ch), 32000);
+	P_obj money = create_money(copper, silver, gold, platinum);
 
 	SUB_MONEY(ch, GET_MONEY(ch), 0);
 

@@ -9,6 +9,7 @@
 #include "interp.h"
 #include "utility.h"
 #include "auction_houses.h"
+#include "currency_transaction.h"
 #include <string.h>
 #include <string>
 #include <vector>
@@ -74,6 +75,36 @@ bool check_db_active();
 // backfill state - static so it persists between calls
 static int backfill_state = 0; // 0=pending, 1=done, -1=skip (no column)
 static int backfill_total = 0;
+
+struct auction_money_pickup_context
+{
+	int money;
+};
+
+static void auction_money_pickup_committed(P_char ch, bool committed,
+					   const currency_command_result & /*result*/,
+					   unsigned int /*error_code*/, const uint8_t *raw_context,
+					   size_t context_size)
+{
+	if (!ch || context_size != sizeof(auction_money_pickup_context))
+		return;
+	auction_money_pickup_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (!committed)
+	{
+		if (!qry("UPDATE auction_money_pickups SET money=money+%d WHERE pid='%d'",
+			 context.money, GET_PID(ch)))
+			logit(LOG_WIZ, "Failed to restore rejected auction pickup for pid %d",
+			      GET_PID(ch));
+		send_to_char(
+			"Your auction money pickup was not credited; it has been restored.\r\n",
+			ch);
+		return;
+	}
+	logit(LOG_PLAYER, "%s picked up %s from the auction house.", GET_NAME(ch),
+	      coin_stringv(context.money));
+	send_to_char_f(ch, "&+WYou pick up &n%s&+W.&n\r\n", coin_stringv(context.money));
+}
 
 // backfill obj_info_text for existing auctions, processes small batch per tick
 // fails silently if column doesnt exist - not all devs have full schema
@@ -1618,13 +1649,20 @@ bool auction_pickup(P_char ch, char *args)
 			return FALSE;
 		}
 
-		ADD_MONEY(ch, money);
-		logit(LOG_PLAYER, "%s picked up %s from the auction house.", GET_NAME(ch),
-		      coin_stringv(money));
-
-		snprintf(buff, MAX_STRING_LENGTH, "&+WYou pick up &n%s&+W.&n\r\n",
-			 coin_stringv(money));
-		send_to_char(buff, ch);
+		const auction_money_pickup_context context = { money };
+		if (!currency_transaction_submit_wallet_value(
+			    ch, money, currency_reason_type::auction_pickup, GET_PID(ch),
+			    critical_source_site::command, critical_deadline_class::interactive,
+			    auction_money_pickup_committed, &context, sizeof(context)))
+		{
+			if (!qry("UPDATE auction_money_pickups SET money=money+%d WHERE pid='%d'",
+				 money, GET_PID(ch)))
+				logit(LOG_WIZ,
+				      "Failed to restore unsubmitted auction pickup for pid %d",
+				      GET_PID(ch));
+			send_to_char("The auction house is busy; your money remains staged.\r\n",
+				     ch);
+		}
 	}
 	mysql_free_result(res);
 

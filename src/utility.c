@@ -32,6 +32,8 @@ using namespace std;
 #include "utility.h"
 #include "utils.h"
 #include "assocs.h"
+#include "auction_houses.h"
+#include "currency_transaction.h"
 #include "defines.h"
 #include "epic.h"
 #include "gmcp.h"
@@ -2861,6 +2863,11 @@ char *coin_stringv(int amount, int padfront)
  * adds flat amount (in copper), to ch, using smallest number of coins
  */
 
+static void currency_adjustment_committed(P_char ch, bool committed,
+					  const currency_command_result &result,
+					  unsigned int error_code, const uint8_t *context,
+					  size_t context_size);
+
 void ADD_MONEY(P_char ch, int amount)
 {
 	int t = 0;
@@ -2873,6 +2880,24 @@ void ADD_MONEY(P_char ch, int amount)
 
 	if (amount == 0)
 		return;
+	if (IS_PC(ch) && GET_PID(ch) > 0)
+	{
+		if (!currency_transaction_submit_wallet_value(
+			    ch, amount, currency_reason_type::wallet_reward, 0,
+			    critical_source_site::command, critical_deadline_class::interactive,
+			    currency_adjustment_committed, nullptr, 0))
+		{
+			logit(LOG_WIZ, "ADD_MONEY: wallet transaction submission failed for pid %d",
+			      GET_PID(ch));
+			if (insert_money_pickup(GET_PID(ch), amount))
+				send_to_char(
+					"Your coin credit is waiting at the auction house.\r\n",
+					ch);
+			else
+				send_to_char("Your coin credit is pending staff review.\r\n", ch);
+		}
+		return;
+	}
 
 	/* plat is a bit rarer, and thus is returned as change less often */
 	if (amount > 999)
@@ -2945,6 +2970,13 @@ void publish_account_bank_balance(const char *account_name, int racewar, int coi
 void publish_account_bank_balances(const char *account_name, int racewar,
 				   const AccountBankBalances *balances)
 {
+	publish_account_bank_balances_revision(account_name, racewar, balances, UINT64_MAX);
+}
+
+void publish_account_bank_balances_revision(const char *account_name, int racewar,
+					    const AccountBankBalances *balances,
+					    uint64_t bank_revision)
+{
 	if (!account_name || !*account_name || !balances || balances->copper < 0 ||
 	    balances->silver < 0 || balances->gold < 0 || balances->platinum < 0)
 		return;
@@ -2962,28 +2994,32 @@ void publish_account_bank_balances(const char *account_name, int racewar,
 		GET_BALANCE_SILVER(target) = balances->silver;
 		GET_BALANCE_GOLD(target) = balances->gold;
 		GET_BALANCE_PLATINUM(target) = balances->platinum;
+		if (bank_revision != UINT64_MAX)
+			target->only.pc->bank_revision = bank_revision;
 		gmcp_char_vitals(target);
 	}
+}
+
+static void currency_adjustment_committed(P_char ch, bool committed,
+					  const currency_command_result & /*result*/,
+					  unsigned int /*error_code*/, const uint8_t * /*context*/,
+					  size_t /*context_size*/)
+{
+	if (!committed && ch)
+		send_to_char(
+			"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
+			ch);
 }
 
 int SUB_BALANCE(P_char ch, int amount, int mode)
 {
 	if (!ch || amount <= 0 || mode != 0)
 		return -1;
-
-	const char *account_name = get_account_name_safe(ch);
-	if (!account_name || !strcmp(account_name, "Unknown"))
+	if (!currency_transaction_submit_bank_payment(
+		    ch, amount, currency_reason_type::bank_payment, 0,
+		    critical_source_site::command, critical_deadline_class::interactive,
+		    currency_adjustment_committed, nullptr, 0))
 		return -1;
-
-	AccountBankBalances committed = {};
-	int change = 0;
-	if (sql_account_bank_withdraw_value(account_name, GET_RACEWAR(ch), amount, &committed,
-					    &change) != 0)
-		return -1;
-
-	publish_account_bank_balances(account_name, GET_RACEWAR(ch), &committed);
-	if (change > 0)
-		ADD_MONEY(ch, change);
 	return 0;
 }
 
@@ -2997,6 +3033,13 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 		return -1;
 	if (mode != 0)
 		return -1;
+	if (IS_PC(ch) && GET_PID(ch) > 0)
+		return currency_transaction_submit_wallet_value(
+			       ch, -(int64_t)amount, currency_reason_type::wallet_spend, 0,
+			       critical_source_site::command, critical_deadline_class::interactive,
+			       currency_adjustment_committed, nullptr, 0) ?
+			       0 :
+			       -1;
 
 	if (amount > GET_COPPER(ch))
 	{

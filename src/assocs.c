@@ -2213,13 +2213,14 @@ void Guild::deposit(P_char member, int p, int g, int s, int c)
 	}
 
 	// Move the money.
-	GET_PLATINUM(member) -= p;
+	if (SUB_MONEY(member, p * 1000 + g * 100 + s * 10 + c, 0) != 0)
+	{
+		send_to_char("Your guild deposit could not be completed.\n", member);
+		return;
+	}
 	platinum += p;
-	GET_GOLD(member) -= g;
 	gold += g;
-	GET_SILVER(member) -= s;
 	silver += s;
-	GET_COPPER(member) -= c;
 	copper += c;
 
 	send_to_char_f(
@@ -3040,13 +3041,10 @@ void Guild::withdraw(P_char member, int p, int g, int s, int c)
 	}
 
 	// Move the money.
-	GET_PLATINUM(member) += p;
+	ADD_MONEY(member, p * 1000 + g * 100 + s * 10 + c);
 	platinum -= p;
-	GET_GOLD(member) += g;
 	gold -= g;
-	GET_SILVER(member) += s;
 	silver -= s;
-	GET_COPPER(member) += c;
 	copper -= c;
 
 	send_to_char_f(

@@ -36,9 +36,11 @@ using namespace std;
 #include "utility.h"
 #include "utils.h"
 #include "assocs.h"
+#include "auction_houses.h"
 #include "boon.h"
 #include "buildings.h"
 #include "ctf.h"
+#include "currency_transaction.h"
 #include "epic.h"
 #include "guildhall.h"
 #include "nexus_stones.h"
@@ -101,6 +103,37 @@ struct boon_options_struct boon_options[] = {
 void boon_notify(int id, P_char ch, int action);
 static void boon_mob_label(int criteria2, char *buf, size_t len, int for_list);
 static void boon_race_label(int criteria2, char *buf, size_t len);
+
+struct cash_boon_context
+{
+	int boon_id;
+	int cash;
+};
+
+static void cash_boon_committed(P_char ch, bool committed,
+				const currency_command_result & /*result*/,
+				unsigned int /*error_code*/, const uint8_t *raw_context,
+				size_t context_size)
+{
+	if (!ch || context_size != sizeof(cash_boon_context))
+		return;
+	cash_boon_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (!committed)
+	{
+		logit(LOG_DEBUG, "Cash boon bank transaction rejected for pid %d", GET_PID(ch));
+		if (insert_money_pickup(GET_PID(ch), context.cash))
+			send_to_char("Your cash boon is waiting at the auction house instead.\r\n",
+				     ch);
+		else
+			send_to_char(
+				"Your cash boon could not be deposited. Please contact staff.\r\n",
+				ch);
+		return;
+	}
+	boon_notify(context.boon_id, ch, BN_COMPLETE);
+	send_to_char_f(ch, "Your bank receives a deposit of %s&n.\r\n", coin_stringv(context.cash));
+}
 
 static MYSQL_RES *boon_store_result(const char *where)
 {
@@ -3350,27 +3383,26 @@ void check_boon_completion(P_char ch, P_char victim, double data, int option)
 		case BTYPE_CASH:
 		{
 			int cash = (int)bdata.bonus;
-			AccountBankBalances amounts = { cash % 10, (cash % 100) / 10,
-							(cash % 1000) / 100, cash / 1000 };
-			AccountBankBalances committed = {};
-			const char *account_name = get_account_name_safe(ch);
-			if (cash > 0 && account_name && strcmp(account_name, "Unknown") &&
-			    sql_account_bank_deposit_balances(account_name, GET_RACEWAR(ch),
-							      &amounts, &committed))
+			const cash_boon_context context = { bdata.id, cash };
+			if (cash <= 0 || !currency_transaction_submit_bank_reward(
+						 ch, cash, currency_reason_type::boon_reward,
+						 bdata.id, critical_source_site::combat,
+						 critical_deadline_class::background,
+						 cash_boon_committed, &context, sizeof(context)))
 			{
-				boon_notify(bdata.id, ch, BN_COMPLETE);
-				publish_account_bank_balances(account_name, GET_RACEWAR(ch),
-							      &committed);
-				send_to_char_f(ch, "Your bank receives a deposit of %s&n.\r\n",
-					       coin_stringv(bdata.bonus));
-			}
-			else
-			{
-				logit(LOG_DEBUG, "Cash boon bank deposit failed for pid %d",
+				logit(LOG_DEBUG, "Cash boon bank submission failed for pid %d",
 				      GET_PID(ch));
-				send_to_char(
-					"Your cash boon could not be deposited. Please contact staff.\r\n",
-					ch);
+				if (cash > 0 && insert_money_pickup(GET_PID(ch), cash))
+				{
+					boon_notify(bdata.id, ch, BN_COMPLETE);
+					send_to_char(
+						"Your cash boon is waiting at the auction house instead.\r\n",
+						ch);
+				}
+				else
+					send_to_char(
+						"Your cash boon could not be deposited. Please contact staff.\r\n",
+						ch);
 			}
 			break;
 		}

@@ -1151,7 +1151,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			"base_int=%d, base_wis=%d, base_cha=%d, base_kar=%d, base_luk=%d, "
 			"mana=%d, base_mana=%d, hit_diff=%d, base_hit=%d, "
 			"vitality=%d, base_vitality=%d, spells_memmed_extra=%d, "
-			"copper=%d, silver=%d, gold=%d, platinum=%d, "
+			"copper=copper, silver=silver, gold=gold, platinum=platinum, "
 			"bank_copper=0, bank_silver=0, bank_gold=0, bank_platinum=0,"
 			"exp=%d, epics=epics, epic_skill_points=%ld, skillpoints=%d, spell_bind_used=%ld, "
 			"act=%u, act2=%u, act3=%u, vote=%lu, alignment=%d,"
@@ -1180,14 +1180,14 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			ch->base_stats.Luk, GET_MANA(ch), ch->points.base_mana,
 			MAX(0, GET_MAX_HIT(ch) - GET_HIT(ch)), ch->points.base_hit,
 			GET_VITALITY(ch), ch->points.base_vitality,
-			ch->only.pc->spells_memmed[MAX_CIRCLE], GET_COPPER(ch), GET_SILVER(ch),
-			GET_GOLD(ch), GET_PLATINUM(ch), GET_EXP(ch), ch->only.pc->epic_skill_points,
-			ch->only.pc->skillpoints, ch->only.pc->spell_bind_used, ch->specials.act,
-			ch->specials.act2, ch->specials.act3, ch->only.pc->vote,
-			ch->specials.alignment, ch->only.pc->prestige, GET_ASSOC_ID(ch),
-			ch->specials.guild_status, ch->only.pc->time_left_guild,
-			ch->only.pc->nb_left_guild, ch->only.pc->time_unspecced, ch->only.pc->frags,
-			ch->only.pc->oldfrags, ch->only.pc->numb_deaths, ch->specials.conditions[0],
+			ch->only.pc->spells_memmed[MAX_CIRCLE], GET_EXP(ch),
+			ch->only.pc->epic_skill_points, ch->only.pc->skillpoints,
+			ch->only.pc->spell_bind_used, ch->specials.act, ch->specials.act2,
+			ch->specials.act3, ch->only.pc->vote, ch->specials.alignment,
+			ch->only.pc->prestige, GET_ASSOC_ID(ch), ch->specials.guild_status,
+			ch->only.pc->time_left_guild, ch->only.pc->nb_left_guild,
+			ch->only.pc->time_unspecced, ch->only.pc->frags, ch->only.pc->oldfrags,
+			ch->only.pc->numb_deaths, ch->specials.conditions[0],
 			ch->specials.conditions[1], ch->specials.conditions[2],
 			ch->specials.conditions[3], ch->specials.conditions[4], esc_poofin,
 			esc_poofout, esc_poofinsnd, esc_poofoutsnd, ch->only.pc->echo_toggle,
@@ -1330,6 +1330,20 @@ bool sql_save_player_status(P_char ch, int type, int room)
 		{
 			logit(LOG_PLAYER,
 			      "sql_save_player_status: component=epic_baseline outcome=initialize_failure");
+			if (own_txn)
+				sql_rollback();
+			return false;
+		}
+		const int wallet_baseline_written = snprintf(
+			query, sizeof(query),
+			"INSERT INTO currency_wallet_baseline(pid,opening_copper,opening_silver,"
+			"opening_gold,opening_platinum,opening_revision) VALUES(%d,%d,%d,%d,%d,0)",
+			pid, GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch), GET_PLATINUM(ch));
+		if (wallet_baseline_written < 0 || wallet_baseline_written >= (int)sizeof(query) ||
+		    !sql_run_query(query))
+		{
+			logit(LOG_PLAYER,
+			      "sql_save_player_status: component=wallet_baseline outcome=initialize_failure");
 			if (own_txn)
 				sql_rollback();
 			return false;
@@ -3872,7 +3886,7 @@ bool sql_load_player_status(P_char ch, int pid)
 		"base_str, base_dex, base_agi, base_con, base_pow, "
 		"base_int, base_wis, base_cha, base_kar, base_luk, "
 		"mana, base_mana, hit_diff, base_hit, vitality, base_vitality, spells_memmed_extra, "
-		"copper, silver, gold, platinum, bank_copper, bank_silver, bank_gold, bank_platinum, "
+		"copper, silver, gold, platinum, wallet_revision, bank_copper, bank_silver, bank_gold, bank_platinum, "
 		"exp, epics, epic_revision, epic_skill_points, skillpoints, spell_bind_used, "
 		"act, act2, act3, vote, alignment,prestige, assoc_id, guild_status, "
 		"UNIX_TIMESTAMP(time_left_guild), nb_left_guild, UNIX_TIMESTAMP(time_unspecced), frags, oldfrags, numb_deaths,"
@@ -3991,6 +4005,7 @@ bool sql_load_player_status(P_char ch, int pid)
 	GET_SILVER(ch) = sql_row_int(row, col++, 0);
 	GET_GOLD(ch) = sql_row_int(row, col++, 0);
 	GET_PLATINUM(ch) = sql_row_int(row, col++, 0);
+	ch->only.pc->wallet_revision = sql_row_ulong(row, col++, 0);
 	// skip old player bank columns (still in db for backup)
 	// bank is loaded from account_banks after descriptor is set
 	col += 4;
@@ -3998,6 +4013,7 @@ bool sql_load_player_status(P_char ch, int pid)
 	GET_BALANCE_SILVER(ch) = 0;
 	GET_BALANCE_GOLD(ch) = 0;
 	GET_BALANCE_PLATINUM(ch) = 0;
+	ch->only.pc->bank_revision = 0;
 
 	// experience
 	GET_EXP(ch) = sql_row_int(row, col++, 0);
@@ -10776,13 +10792,23 @@ bool sql_ensure_account_bank(const char *account_name, int racewar)
 	if (!esc_name)
 		return false;
 
-	char query[512];
+	char query[768];
 	snprintf(query, sizeof(query),
 		 "insert ignore into account_banks (account_name, racewar) values ('%s', %d)",
 		 esc_name, racewar);
-
+	if (!sql_run_query(query))
+	{
+		free(esc_name);
+		return false;
+	}
+	snprintf(
+		query, sizeof(query),
+		"insert ignore into currency_bank_baseline(bank_id,opening_copper,opening_silver,"
+		"opening_gold,opening_platinum,opening_revision) select id,bank_copper,bank_silver,"
+		"bank_gold,bank_platinum,bank_revision from account_banks where account_name='%s' "
+		"and racewar=%d",
+		esc_name, racewar);
 	free(esc_name);
-
 	return sql_run_query(query);
 }
 
@@ -10796,6 +10822,7 @@ bool sql_load_account_bank(const char *account_name, int racewar, P_char ch)
 	GET_BALANCE_SILVER(ch) = 0;
 	GET_BALANCE_GOLD(ch) = 0;
 	GET_BALANCE_PLATINUM(ch) = 0;
+	ch->only.pc->bank_revision = 0;
 
 	char *esc_name = sql_escape_string(account_name);
 	if (!esc_name)
@@ -10803,7 +10830,7 @@ bool sql_load_account_bank(const char *account_name, int racewar, P_char ch)
 
 	char query[512];
 	snprintf(query, sizeof(query),
-		 "select bank_copper, bank_silver, bank_gold, bank_platinum "
+		 "select bank_copper, bank_silver, bank_gold, bank_platinum, bank_revision "
 		 "from account_banks where account_name='%s' and racewar=%d",
 		 esc_name, racewar);
 
@@ -10821,6 +10848,7 @@ bool sql_load_account_bank(const char *account_name, int racewar, P_char ch)
 			     sql_parse_account_bank_balance(row[1], &parsed.silver) &&
 			     sql_parse_account_bank_balance(row[2], &parsed.gold) &&
 			     sql_parse_account_bank_balance(row[3], &parsed.platinum);
+		const uint64_t bank_revision = sql_row_ulong(row, 4, 0);
 		mysql_free_result(result);
 		if (!valid)
 			return false;
@@ -10828,6 +10856,7 @@ bool sql_load_account_bank(const char *account_name, int racewar, P_char ch)
 		GET_BALANCE_SILVER(ch) = parsed.silver;
 		GET_BALANCE_GOLD(ch) = parsed.gold;
 		GET_BALANCE_PLATINUM(ch) = parsed.platinum;
+		ch->only.pc->bank_revision = bank_revision;
 		return true;
 	}
 

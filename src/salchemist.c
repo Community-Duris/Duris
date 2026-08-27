@@ -1965,7 +1965,11 @@ void do_enchant(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	GET_PLATINUM(ch) = GET_PLATINUM(ch) - (circle * 10);
+	if (SUB_MONEY(ch, circle * 10000, 0) != 0)
+	{
+		send_to_char("Your payment could not be completed.\r\n", ch);
+		return;
+	}
 	// notch_skill(ch, SKILL_ENCHANT, 7.7);
 
 	act("&+L$n melts some &+Wplatinum &+Lcoins in a vial of &+gacid &+Land then&n\n"

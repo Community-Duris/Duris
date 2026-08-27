@@ -19,6 +19,7 @@ using namespace std;
 #include "auction_houses.h"
 #include "boon.h"
 #include "damage.h"
+#include "currency_transaction.h"
 #include "epic.h"
 #include "epic_bonus.h"
 #include "epic_transaction.h"
@@ -224,6 +225,21 @@ void epic_level_committed(P_char ch, bool committed, const epic_command_result &
 	wizlog(56, "%s has attained epic level &+W%d&n!", GET_NAME(ch), GET_LEVEL(ch));
 }
 
+void epic_coin_refund_committed(P_char ch, bool committed,
+				const currency_command_result & /*result*/,
+				unsigned int /*error_code*/, const uint8_t * /*context*/,
+				size_t /*context_size*/)
+{
+	if (committed)
+		send_to_char("&+WYour staged coin refund was credited directly.&n\n", ch);
+	else
+	{
+		logit(LOG_WIZ, "epic_coin_refund_committed: transaction rejected for pid %d",
+		      GET_PID(ch));
+		send_to_char("Your coin refund could not be credited. Please contact staff.\n", ch);
+	}
+}
+
 void epic_skill_refund_committed(P_char ch, bool committed, const epic_command_result &,
 				 unsigned int, const uint8_t *raw_context, size_t context_size)
 {
@@ -242,10 +258,13 @@ void epic_skill_refund_committed(P_char ch, bool committed, const epic_command_r
 		logit(LOG_WIZ,
 		      "epic_skill_refund_committed: failed to stage coin refund for pid %d",
 		      GET_PID(ch));
-		ADD_MONEY(ch, context.coins);
-		send_to_char(
-			"&+WYour coin refund could not be staged, so it was credited directly instead.&n\n",
-			ch);
+		if (!currency_transaction_submit_wallet_value(
+			    ch, context.coins, currency_reason_type::refund, context.points,
+			    critical_source_site::recovery, critical_deadline_class::recovery,
+			    epic_coin_refund_committed, nullptr, 0))
+			send_to_char(
+				"Your coin refund could not be queued. Please contact staff.\n",
+				ch);
 	}
 	send_to_char_f(ch, "&+WYour epic skills have been reset and %d epics were refunded.&n\n",
 		       context.points);

@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "ctf.h"
+#include "currency_transaction.h"
 #include "gmcp.h"
 #include "graph.h"
 #include "map.h"
@@ -33,6 +34,46 @@
 extern char buf[MAX_STRING_LENGTH];
 extern bool insert_money_pickup(int pid, int money);
 extern const char *rude_ass[];
+
+struct ship_insurance_context
+{
+	char owner[MAX_NAME_LENGTH];
+	int pid;
+	int platinum;
+};
+
+static void ship_insurance_committed(P_char owner, bool committed,
+				     const currency_command_result & /*result*/,
+				     unsigned int /*error_code*/, const uint8_t *raw_context,
+				     size_t context_size)
+{
+	if (context_size != sizeof(ship_insurance_context))
+		return;
+	ship_insurance_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (!committed)
+	{
+		logit(LOG_SHIP, "Ship insurance transaction rejected for account of %s: %d",
+		      context.owner, context.platinum);
+		if (!insert_money_pickup(context.pid, context.platinum * 1000))
+		{
+			logit(LOG_WIZ, "Failed to stage rejected ship insurance for pid %d",
+			      context.pid);
+			if (owner)
+				send_to_char(
+					"Your ship insurance deposit failed. Please contact staff.\r\n",
+					owner);
+		}
+		else if (owner)
+			send_to_char(
+				"Your ship insurance is waiting at the auction house instead.\r\n",
+				owner);
+		return;
+	}
+	wizlog(56, "Ship insurance to account of %s: %d", context.owner, context.platinum);
+	logit(LOG_SHIP, "Ship insurance deposit to account of %s: %d", context.owner,
+	      context.platinum);
+}
 
 static unsigned long long ship_save_signature_mix(unsigned long long hash, const void *data,
 						  size_t len)
@@ -2297,21 +2338,15 @@ void finish_sinking(P_ship ship)
 		bool insurance_deposited = insurance_platinum == 0;
 		if (owner && insurance_platinum > 0)
 		{
-			const char *account_name = get_account_name_safe(owner);
-			long long committed = -1;
-			if (account_name && strcmp(account_name, "Unknown"))
-				committed = sql_account_bank_deposit(
-					account_name, GET_RACEWAR(owner), 3, insurance_platinum);
-			if (committed >= 0)
-			{
-				publish_account_bank_balance(account_name, GET_RACEWAR(owner), 3,
-							     (int)committed);
-				insurance_deposited = true;
-				wizlog(56, "Ship insurance to account of %s: %d", ship->ownername,
-				       insurance_platinum);
-				logit(LOG_SHIP, "Ship insurance deposit to account of %s: %d",
-				      ship->ownername, insurance_platinum);
-			}
+			ship_insurance_context context = {};
+			strncpy(context.owner, ship->ownername, sizeof(context.owner) - 1);
+			context.pid = GET_PID(owner);
+			context.platinum = insurance_platinum;
+			insurance_deposited = currency_transaction_submit_bank_reward(
+				owner, (int64_t)insurance_platinum * 1000,
+				currency_reason_type::ship_insurance, 0,
+				critical_source_site::combat, critical_deadline_class::background,
+				ship_insurance_committed, &context, sizeof(context));
 		}
 		if (!insurance_deposited)
 		{

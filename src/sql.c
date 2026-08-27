@@ -1067,6 +1067,102 @@ static bool sql_verify_boot_database(void)
 		      "FATAL: epic balance baseline does not cover every player at boot.");
 		return false;
 	}
+	const char *currency_schema_probe =
+		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+		"AND ((table_name='player_data' AND column_name='wallet_revision') OR "
+		"(table_name='account_banks' AND column_name='bank_revision') OR "
+		"(table_name='currency_wallet_baseline' AND column_name IN "
+		"('pid','opening_copper','opening_silver','opening_gold','opening_platinum',"
+		"'opening_revision','captured_at')) OR (table_name='currency_bank_baseline' AND "
+		"column_name IN ('bank_id','opening_copper','opening_silver','opening_gold',"
+		"'opening_platinum','opening_revision','captured_at')) OR "
+		"(table_name='currency_ledger' AND column_name IN "
+		"('operation_id','pid','bank_id','wallet_delta_copper','wallet_delta_silver',"
+		"'wallet_delta_gold','wallet_delta_platinum','bank_delta_copper',"
+		"'bank_delta_silver','bank_delta_gold','bank_delta_platinum',"
+		"'wallet_after_copper','wallet_after_silver','wallet_after_gold',"
+		"'wallet_after_platinum','bank_after_copper','bank_after_silver','bank_after_gold',"
+		"'bank_after_platinum','wallet_revision','bank_revision','reason_type','reason_id',"
+		"'source_site','created_at')))";
+	result = db_query("%s", currency_schema_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: currency ledger schema metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool currency_columns_ok = row && lengths && row[0] && atoi(row[0]) == 41;
+	mysql_free_result(result);
+	if (!currency_columns_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: currency ledger schema is incomplete at boot (expected 41 required columns).");
+		return false;
+	}
+	const char *currency_index_probe =
+		"SELECT COUNT(*) FROM (SELECT DISTINCT table_name,index_name FROM "
+		"information_schema.statistics WHERE table_schema=DATABASE() AND "
+		"((table_name='currency_wallet_baseline' AND index_name='PRIMARY') OR "
+		"(table_name='currency_bank_baseline' AND index_name='PRIMARY') OR "
+		"(table_name='currency_ledger' AND index_name IN "
+		"('PRIMARY','uq_currency_wallet_revision','uq_currency_bank_revision',"
+		"'idx_currency_pid_created','idx_currency_bank_created',"
+		"'idx_currency_reason_created')))) AS currency_required_indexes";
+	result = db_query("%s", currency_index_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: currency ledger index metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool currency_indexes_ok = row && lengths && row[0] && atoi(row[0]) == 8;
+	mysql_free_result(result);
+	if (!currency_indexes_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: currency ledger indexes are incomplete at boot (expected 8 entries).");
+		return false;
+	}
+	const char *currency_wallet_baseline_coverage_probe =
+		"SELECT COUNT(*) FROM player_data AS player LEFT JOIN currency_wallet_baseline AS "
+		"baseline ON baseline.pid=player.pid WHERE baseline.pid IS NULL";
+	result = db_query("%s", currency_wallet_baseline_coverage_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: currency wallet baseline coverage query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool currency_wallet_coverage_ok = row && lengths && row[0] && atoll(row[0]) == 0;
+	mysql_free_result(result);
+	if (!currency_wallet_coverage_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: currency wallet baseline does not cover every player at boot.");
+		return false;
+	}
+	const char *currency_bank_baseline_coverage_probe =
+		"SELECT COUNT(*) FROM account_banks AS bank LEFT JOIN currency_bank_baseline AS "
+		"baseline ON baseline.bank_id=bank.id WHERE baseline.bank_id IS NULL";
+	result = db_query("%s", currency_bank_baseline_coverage_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: currency bank baseline coverage query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool currency_bank_coverage_ok = row && lengths && row[0] && atoll(row[0]) == 0;
+	mysql_free_result(result);
+	if (!currency_bank_coverage_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: currency bank baseline does not cover every account bank at boot.");
+		return false;
+	}
 	return true;
 }
 

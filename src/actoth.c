@@ -17,6 +17,7 @@
 #include "interp.h"
 #include "utility.h"
 #include "utils.h"
+#include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,6 +25,7 @@
 #include "achievements.h"
 #include "assocs.h"
 #include "damage.h"
+#include "currency_transaction.h"
 #include "deferred_save_policy.h"
 #include "epic.h"
 #include "epic_transaction.h"
@@ -2291,36 +2293,42 @@ static int carried_coin_count(P_char ch, int coin_type)
 	}
 }
 
-static void change_carried_coin(P_char ch, int coin_type, int amount)
+enum class atm_transaction_type : uint8_t
 {
-	switch (coin_type)
+	deposit,
+	withdraw,
+};
+
+static void atm_transaction_complete(P_char ch, bool committed,
+				     const currency_command_result & /*result*/,
+				     unsigned int error_code, const uint8_t *context,
+				     size_t context_size)
+{
+	if (!ch || context_size != sizeof(atm_transaction_type))
+		return;
+	atm_transaction_type type = atm_transaction_type::deposit;
+	memcpy(&type, context, sizeof(type));
+	if (!committed)
 	{
-	case 0:
-		GET_COPPER(ch) += amount;
-		break;
-	case 1:
-		GET_SILVER(ch) += amount;
-		break;
-	case 2:
-		GET_GOLD(ch) += amount;
-		break;
-	case 3:
-		GET_PLATINUM(ch) += amount;
-		break;
+		if (error_code == ENOSPC)
+			send_to_char(type == atm_transaction_type::deposit ?
+					     "You haven't got that much!\r\n" :
+					     "You haven't got that much in your account!\r\n",
+				     ch);
+		else if (error_code == ESTALE)
+			send_to_char(
+				"Your balances changed; please try that transaction again.\r\n",
+				ch);
+		else
+			send_to_char(
+				type == atm_transaction_type::deposit ?
+					"The bank could not complete that deposit. Your coins were retained.\r\n" :
+					"The bank could not complete that withdrawal.\r\n",
+				ch);
+		return;
 	}
-}
-
-static bool deposit_carried_coin(P_char ch, const char *account_name, int racewar, int coin_type,
-				 int amount)
-{
-	long long committed = sql_account_bank_deposit(account_name, racewar, coin_type, amount);
-	if (committed < 0)
-		return false;
-
-	change_carried_coin(ch, coin_type, -amount);
-	publish_account_bank_balance(account_name, racewar, coin_type, (int)committed);
-	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
-	return true;
+	if (test_atm_present(ch))
+		do_balance(ch, nullptr, -4);
 }
 
 void do_deposit(P_char ch, char *argument, int /*cmd*/)
@@ -2338,31 +2346,32 @@ void do_deposit(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	const char *acct = get_account_name_safe(ch);
-	int racewar = GET_RACEWAR(ch);
-
-	if (!acct || !strcmp(acct, "Unknown"))
-	{
-		send_to_char("Your account could not be determined.\r\n", ch);
-		return;
-	}
-
 	if (strstr("all", argument))
 	{
-		bool failed = false;
+		currency_vector wallet_delta = {};
+		currency_vector bank_delta = {};
+		bool has_money = false;
 		for (int coin_type = 0; coin_type < 4; ++coin_type)
 		{
 			money = carried_coin_count(ch, coin_type);
-			if (money > 0 && !deposit_carried_coin(ch, acct, racewar, coin_type, money))
-				failed = true;
+			if (money > 0)
+			{
+				wallet_delta.amount[coin_type] = -money;
+				bank_delta.amount[coin_type] = money;
+				has_money = true;
+			}
 		}
-		if (failed)
-			send_to_char(
-				"Some coins could not be deposited; each failed denomination was retained.\r\n",
-				ch);
-		do_balance(ch, 0, -4);
-		/* Send GMCP update for deposit all */
-		gmcp_char_vitals(ch);
+		if (!has_money)
+		{
+			send_to_char("You have no coins to deposit.\r\n", ch);
+			return;
+		}
+		const atm_transaction_type type = atm_transaction_type::deposit;
+		if (!currency_transaction_submit(
+			    ch, wallet_delta, bank_delta, currency_reason_type::atm_deposit, 0,
+			    critical_source_site::command, critical_deadline_class::interactive,
+			    atm_transaction_complete, &type, sizeof(type)))
+			send_to_char("The bank is busy; please try that deposit again.\r\n", ch);
 		return;
 	}
 
@@ -2404,18 +2413,18 @@ void do_deposit(P_char ch, char *argument, int /*cmd*/)
 		}
 		else
 		{
-			if (!deposit_carried_coin(ch, acct, racewar, ctype, money))
-			{
-				send_to_char(
-					"The bank could not complete that deposit. Your coins were retained.\r\n",
-					ch);
-			}
-			else
-			{
-				do_balance(ch, 0, -4);
-				/* Send GMCP update for deposit */
-				gmcp_char_vitals(ch);
-			}
+			currency_vector wallet_delta = {};
+			currency_vector bank_delta = {};
+			wallet_delta.amount[ctype] = -money;
+			bank_delta.amount[ctype] = money;
+			const atm_transaction_type type = atm_transaction_type::deposit;
+			if (!currency_transaction_submit(
+				    ch, wallet_delta, bank_delta, currency_reason_type::atm_deposit,
+				    0, critical_source_site::command,
+				    critical_deadline_class::interactive, atm_transaction_complete,
+				    &type, sizeof(type)))
+				send_to_char("The bank is busy; please try that deposit again.\r\n",
+					     ch);
 		}
 	}
 }
@@ -2425,7 +2434,6 @@ void do_withdraw(P_char ch, char *argument, int /*cmd*/)
 	char arg[MAX_INPUT_LENGTH];
 	char Gbuf1[MAX_STRING_LENGTH];
 	int money, ctype, ok;
-	long long bank_result = -1;
 
 	ok = 0;
 
@@ -2435,15 +2443,6 @@ void do_withdraw(P_char ch, char *argument, int /*cmd*/)
 	if (!test_atm_present(ch))
 	{
 		send_to_char("I don't see a bank around here.\r\n", ch);
-		return;
-	}
-
-	const char *acct = get_account_name_safe(ch);
-	int racewar = GET_RACEWAR(ch);
-
-	if (!acct || !strcmp(acct, "Unknown"))
-	{
-		send_to_char("Your account could not be determined.\r\n", ch);
 		return;
 	}
 
@@ -2470,30 +2469,20 @@ void do_withdraw(P_char ch, char *argument, int /*cmd*/)
 		case 1:
 		case 2:
 		case 3:
-			bank_result = sql_account_bank_withdraw(acct, racewar, ctype, money);
-			if (bank_result >= 0)
-			{
-				publish_account_bank_balance(acct, racewar, ctype,
-							     (int)bank_result);
-				change_carried_coin(ch, ctype, money);
-				mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
-				ok = 1;
-			}
+			currency_vector wallet_delta = {};
+			currency_vector bank_delta = {};
+			wallet_delta.amount[ctype] = money;
+			bank_delta.amount[ctype] = -money;
+			const atm_transaction_type type = atm_transaction_type::withdraw;
+			ok = currency_transaction_submit(
+				ch, wallet_delta, bank_delta, currency_reason_type::atm_withdraw, 0,
+				critical_source_site::command, critical_deadline_class::interactive,
+				atm_transaction_complete, &type, sizeof(type));
 			break;
 		}
 		if (!ok)
 		{
-			if (bank_result == -2)
-				send_to_char("You haven't got that much in your account!\r\n", ch);
-			else
-				send_to_char("The bank could not complete that withdrawal.\r\n",
-					     ch);
-		}
-		else
-		{
-			do_balance(ch, 0, -4);
-			/* Send GMCP update for bank withdraw */
-			gmcp_char_vitals(ch);
+			send_to_char("The bank is busy; please try that withdrawal again.\r\n", ch);
 		}
 	}
 }
@@ -3427,10 +3416,8 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 					} while (ncoins == i);
 				}
 
-				GET_COPPER(ch) += gold[0];
-				GET_SILVER(ch) += gold[1];
-				GET_GOLD(ch) += gold[2];
-				GET_PLATINUM(ch) += gold[3];
+				ADD_MONEY(ch,
+					  gold[0] + gold[1] * 10 + gold[2] * 100 + gold[3] * 1000);
 
 				snprintf(
 					Gbuf1, MAX_STRING_LENGTH,
@@ -5551,25 +5538,11 @@ void do_split(P_char ch, char *argument, int /*cmd*/)
 		if ((ch->in_room == gl->ch->in_room) && CAN_SEE(ch, gl->ch) && (ch != gl->ch) &&
 		    (IS_PC(gl->ch) || IS_MORPH(gl->ch)))
 		{
-			switch (ctype)
-			{
-			case 0:
-				GET_COPPER(gl->ch) += share;
-				GET_COPPER(ch) -= share;
-				break;
-			case 1:
-				GET_SILVER(gl->ch) += share;
-				GET_SILVER(ch) -= share;
-				break;
-			case 2:
-				GET_GOLD(gl->ch) += share;
-				GET_GOLD(ch) -= share;
-				break;
-			case 3:
-				GET_PLATINUM(gl->ch) += share;
-				GET_PLATINUM(ch) -= share;
-				break;
-			}
+			const int coin_value = ctype == 0 ? 1 :
+					       ctype == 1 ? 10 :
+					       ctype == 2 ? 100 :
+							    1000;
+			ADD_MONEY(gl->ch, (int)(share * coin_value));
 			given += share;
 			snprintf(Gbuf1, MAX_STRING_LENGTH,
 				 "$n gives you your share:  %ld %s coins.", share,
@@ -5583,6 +5556,9 @@ void do_split(P_char ch, char *argument, int /*cmd*/)
 			                          */
 		}
 	}
+	const int split_coin_value = ctype == 0 ? 1 : ctype == 1 ? 10 : ctype == 2 ? 100 : 1000;
+	if (given > 0 && SUB_MONEY(ch, (int)(given * split_coin_value), 0) != 0)
+		logit(LOG_WIZ, "do_split: debit submission failed for pid %d", GET_PID(ch));
 
 	if (given == 0)
 	{

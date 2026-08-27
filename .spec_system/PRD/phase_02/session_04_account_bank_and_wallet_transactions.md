@@ -1,7 +1,7 @@
 # Session 04: Account Bank and Wallet Transactions
 
 **Session ID**: `phase02-session04-account-bank-and-wallet-transactions`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The complete shared-currency boundary across one account bank, one
 player wallet, multi-denomination commands, online alternate characters, revisions,
 ledger, outbox, and reconciliation.
@@ -48,10 +48,10 @@ to the initiating character and every online alternate on that account.
 
 ## Prerequisites
 
-- [ ] Sessions 01 and 02 are validated.
-- [ ] Phase 00 account-bank delta-only containment is complete and its call-site
+- [x] Sessions 01 and 02 are validated.
+- [x] Phase 00 account-bank delta-only containment is complete and its call-site
       inventory is available.
-- [ ] Currency schema and fault tests use isolated non-production databases.
+- [x] Currency schema and fault tests use isolated non-production databases.
 
 ---
 
@@ -70,16 +70,16 @@ to the initiating character and every online alternate on that account.
 
 ## Success Criteria
 
-- [ ] Wallet delta plus bank delta nets to the intended command value and commits with
+- [x] Wallet delta plus bank delta nets to the intended command value and commits with
       one ledger row set, both revisions, inbox result, and outbox set.
-- [ ] Duplicate or ambiguous replay cannot create or destroy currency.
-- [ ] Insufficient funds, overflow, invalid denomination, or revision conflict changes
+- [x] Duplicate or ambiguous replay cannot create or destroy currency.
+- [x] Insufficient funds, overflow, invalid denomination, or revision conflict changes
       no durable or published balance.
-- [ ] `deposit all` is atomic across its complete denomination vector.
-- [ ] Every online account character receives the committed shared balance, while stale
+- [x] `deposit all` is atomic across its complete denomination vector.
+- [x] Every online account character receives the committed shared balance, while stale
       cached values can never be absolute-saved back to SQL.
-- [ ] Generic checkpoints cannot overwrite transaction-owned wallet or bank values.
-- [ ] Current wallet and bank rows reconcile exactly with the operation ledger after
+- [x] Generic checkpoints cannot overwrite transaction-owned wallet or bank values.
+- [x] Current wallet and bank rows reconcile exactly with the operation ledger after
       concurrent, crash, retry, and restart tests.
-- [ ] Focused regressions, isolated schema tests, formatting checks, and `make -C src`
+- [x] Focused regressions, isolated schema tests, formatting checks, and `make -C src`
       pass.

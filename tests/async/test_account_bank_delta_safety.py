@@ -123,45 +123,41 @@ assert all(
 )
 print("[PASS] committed results reach every playing same-account/same-side character")
 
-deposit_caller = section(actoth, "static bool deposit_carried_coin(", "void do_deposit(")
-assert deposit_caller.index("sql_account_bank_deposit(") < deposit_caller.index(
-    "change_carried_coin(ch, coin_type, -amount);"
-)
-assert "publish_account_bank_balance" in deposit_caller
-assert "mark_player_dirty" in deposit_caller
 do_deposit = section(actoth, "void do_deposit(", "void do_withdraw(")
-assert "GET_BALANCE_COPPER(ch) +=" not in do_deposit
-assert "coins were retained" in do_deposit and "failed denomination was retained" in do_deposit
+assert "sql_account_bank_deposit" not in do_deposit
+assert "currency_reason_type::atm_deposit" in do_deposit
+deposit_all = section(do_deposit, 'if (strstr("all", argument))', "half_chop")
+assert deposit_all.count("currency_transaction_submit(") == 1
+assert "wallet_delta.amount[coin_type] = -money" in deposit_all
+assert "bank_delta.amount[coin_type] = money" in deposit_all
 do_withdraw = section(actoth, "void do_withdraw(", "void do_sneak(")
-assert do_withdraw.index("sql_account_bank_withdraw(") < do_withdraw.index(
-    "change_carried_coin(ch, ctype, money);"
-)
-assert "bank_result == -2" in do_withdraw
-assert "The bank could not complete that withdrawal" in do_withdraw
-print("[PASS] ATM callers mutate wallets and report success only after durable success")
+assert "sql_account_bank_withdraw" not in do_withdraw
+assert "currency_reason_type::atm_withdraw" in do_withdraw
+assert "wallet_delta.amount[ctype] = money" in do_withdraw
+assert "bank_delta.amount[ctype] = -money" in do_withdraw
+assert "The bank could not complete that withdrawal" in actoth
+assert "atm_transaction_complete" in actoth
+print("[PASS] ATM callers submit atomic vectors and publish only completion results")
 
 sub_balance = section(utility, "int SUB_BALANCE(", "int SUB_MONEY(")
 assert "GET_BALANCE(ch)" not in sub_balance
-assert "sql_account_bank_withdraw_value" in sub_balance
-assert sub_balance.index("sql_account_bank_withdraw_value") < sub_balance.index(
-    "publish_account_bank_balances"
-)
-assert "ADD_MONEY(ch, change);" in sub_balance
+assert "sql_account_bank_withdraw_value" not in sub_balance
+assert "currency_transaction_submit_bank_payment" in sub_balance
 assert "sql_save_account_bank" not in sub_balance
-print("[PASS] aggregate payments do not trust or absolute-save a character cache")
+print("[PASS] aggregate payments use the typed transaction boundary")
 
 cash_boon = section(boon, "case BTYPE_CASH:", "case BTYPE_LEVEL:")
-assert "sql_account_bank_deposit_balances" in cash_boon
-assert cash_boon.index("sql_account_bank_deposit_balances") < cash_boon.index(
-    "Your bank receives a deposit"
-)
+assert "sql_account_bank_deposit_balances" not in cash_boon
+assert "currency_transaction_submit_bank_reward" in cash_boon
+assert "currency_reason_type::boon_reward" in cash_boon
 assert "GET_BALANCE_" not in cash_boon
 insurance = section(ships, "int insurance = 0;", "int old_class = ship->m_class;")
-assert "sql_account_bank_deposit" in insurance
-assert "publish_account_bank_balance" in insurance
+assert "sql_account_bank_deposit" not in insurance
+assert "currency_transaction_submit_bank_reward" in insurance
+assert "currency_reason_type::ship_insurance" in insurance
 assert "GET_BALANCE_PLATINUM(owner) +=" not in insurance
 assert "insert_money_pickup" in insurance
-print("[PASS] boon and ship reward paths use checked deltas without false success")
+print("[PASS] boon and ship rewards use transactional credits with staged fallbacks")
 
 stub = sql[: sql.index("#else")]
 assert "sql_account_bank_deposit_balances" in stub

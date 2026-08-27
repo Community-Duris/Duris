@@ -4,7 +4,7 @@
 **Sessions**: 12 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 2/12 sessions (17%)
+**Progress**: 4/12 sessions (33%)
 
 ---
 
@@ -38,8 +38,8 @@ prerequisites for every Phase 02 session.
 |---------|------|--------|-------------|-----------|
 | 01 | Critical Operation Identity and Coordinator | Complete | Stable operation IDs, multi-key admission, journal handoff, fences, and exact completions | 2026-08-27 |
 | 02 | Transactional Inbox, Outbox, and Reconciliation | Complete | Generic dedupe transaction, outbox delivery, ambiguous-commit lookup, and repair tooling | 2026-08-27 |
-| 03 | Epic Ledger and Balance Transactions | Not Started | Award and spend commands, opening baseline, balance publication, and bonus-state ACKs | - |
-| 04 | Account Bank and Wallet Transactions | Not Started | Atomic denomination deltas, wallet revisions, online-alt publication, and reconciliation | - |
+| 03 | Epic Ledger and Balance Transactions | Complete | Award and spend commands, opening baseline, balance publication, and bonus-state ACKs | 2026-08-27 |
+| 04 | Account Bank and Wallet Transactions | Complete | Atomic denomination deltas, wallet revisions, online-alt publication, and reconciliation | 2026-08-27 |
 | 05 | Item Ownership Ledger and Transfer Primitive | Not Started | Durable item identity, current-owner row, subtree transfer, revisions, ledger, and outbox | - |
 | 06 | Live Item Movement and Corpse Cutover | Not Started | Player, container, floor, trade, corpse creation, and corpse-loot ownership routes | - |
 | 07 | Locker Ownership Cutover | Not Started | Public/private locker custody, immutable snapshots, exact transfer ACKs, and failure retention | - |
@@ -55,12 +55,14 @@ prerequisites for every Phase 02 session.
 
 - Session 01: Critical Operation Identity and Coordinator (completed 2026-08-27)
 - Session 02: Transactional Inbox, Outbox, and Reconciliation (completed 2026-08-27)
+- Session 03: Epic Ledger and Balance Transactions (completed 2026-08-27)
+- Session 04: Account Bank and Wallet Transactions (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 03: Epic Ledger and Balance Transactions
+- Session 05: Item Ownership Ledger and Transfer Primitive
 
 ---
 

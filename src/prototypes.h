@@ -2872,6 +2872,9 @@ void publish_account_bank_balance(const char *account_name, int racewar, int coi
 				  int balance);
 void publish_account_bank_balances(const char *account_name, int racewar,
 				   const AccountBankBalances *balances);
+void publish_account_bank_balances_revision(const char *account_name, int racewar,
+					    const AccountBankBalances *balances,
+					    uint64_t bank_revision);
 bool ac_can_see(P_char, P_char, bool);
 bool ac_can_see_obj(P_char sub, P_obj obj, int zrange = 0);
 int get_vis_mode(P_char, int);

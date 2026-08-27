@@ -38,5 +38,12 @@ assert "baseline.pid IS NULL" in source
 assert "epic balance baseline does not cover every player at boot" in source
 assert "critical_required_indexes" in source
 assert "expected 8 entries" in source
+assert "currency_schema_probe" in source
+assert "expected 41 required columns" in source
+assert "currency_required_indexes" in source
+assert "currency_wallet_baseline_coverage_probe" in source
+assert "currency_bank_baseline_coverage_probe" in source
+assert "currency wallet baseline does not cover every player at boot" in source
+assert "currency bank baseline does not cover every account bank at boot" in source
 
 print("boot persistence schema preflight checks passed")

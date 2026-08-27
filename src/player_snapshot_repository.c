@@ -168,7 +168,11 @@ query_result apply_status(MYSQL *connection, const player_snapshot &snapshot)
 	sql << "UPDATE player_data SET last_room=" << snapshot.room_vnum << ",last_save=NOW()";
 	for (const player_snapshot_integer &row : snapshot.status_integers)
 	{
-		if (row.field == player_status_field::epics)
+		if (row.field == player_status_field::epics ||
+		    row.field == player_status_field::copper ||
+		    row.field == player_status_field::silver ||
+		    row.field == player_status_field::gold ||
+		    row.field == player_status_field::platinum)
 			continue;
 		const char *column = status_column(row.field);
 		if (!column)

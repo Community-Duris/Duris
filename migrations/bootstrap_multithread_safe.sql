@@ -12,6 +12,7 @@ CREATE TABLE `account_banks` (
   `bank_silver` bigint unsigned DEFAULT '0',
   `bank_gold` bigint unsigned DEFAULT '0',
   `bank_platinum` bigint unsigned DEFAULT '0',
+  `bank_revision` bigint unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -935,6 +936,7 @@ CREATE TABLE `player_data` (
   `silver` bigint DEFAULT '0',
   `gold` bigint DEFAULT '0',
   `platinum` bigint DEFAULT '0',
+  `wallet_revision` bigint unsigned NOT NULL DEFAULT '0',
   `bank_copper` bigint DEFAULT '0',
   `bank_silver` bigint DEFAULT '0',
   `bank_gold` bigint DEFAULT '0',
@@ -1815,6 +1817,60 @@ CREATE TABLE `epic_ledger` (
   KEY `idx_epic_ledger_pid_created` (`pid`,`created_at`),
   KEY `idx_epic_ledger_reason_created` (`reason_type`,`created_at`),
   CONSTRAINT `epic_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `currency_wallet_baseline` (
+  `pid` int unsigned NOT NULL,
+  `opening_copper` bigint NOT NULL,
+  `opening_silver` bigint NOT NULL,
+  `opening_gold` bigint NOT NULL,
+  `opening_platinum` bigint NOT NULL,
+  `opening_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `currency_bank_baseline` (
+  `bank_id` int unsigned NOT NULL,
+  `opening_copper` bigint unsigned NOT NULL,
+  `opening_silver` bigint unsigned NOT NULL,
+  `opening_gold` bigint unsigned NOT NULL,
+  `opening_platinum` bigint unsigned NOT NULL,
+  `opening_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`bank_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `currency_ledger` (
+  `operation_id` binary(16) NOT NULL,
+  `pid` int unsigned NOT NULL,
+  `bank_id` int unsigned NOT NULL,
+  `wallet_delta_copper` bigint NOT NULL,
+  `wallet_delta_silver` bigint NOT NULL,
+  `wallet_delta_gold` bigint NOT NULL,
+  `wallet_delta_platinum` bigint NOT NULL,
+  `bank_delta_copper` bigint NOT NULL,
+  `bank_delta_silver` bigint NOT NULL,
+  `bank_delta_gold` bigint NOT NULL,
+  `bank_delta_platinum` bigint NOT NULL,
+  `wallet_after_copper` bigint NOT NULL,
+  `wallet_after_silver` bigint NOT NULL,
+  `wallet_after_gold` bigint NOT NULL,
+  `wallet_after_platinum` bigint NOT NULL,
+  `bank_after_copper` bigint unsigned NOT NULL,
+  `bank_after_silver` bigint unsigned NOT NULL,
+  `bank_after_gold` bigint unsigned NOT NULL,
+  `bank_after_platinum` bigint unsigned NOT NULL,
+  `wallet_revision` bigint unsigned NOT NULL,
+  `bank_revision` bigint unsigned NOT NULL,
+  `reason_type` smallint unsigned NOT NULL,
+  `reason_id` bigint NOT NULL DEFAULT '0',
+  `source_site` smallint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_currency_wallet_revision` (`pid`,`wallet_revision`),
+  UNIQUE KEY `uq_currency_bank_revision` (`bank_id`,`bank_revision`),
+  KEY `idx_currency_pid_created` (`pid`,`created_at`),
+  KEY `idx_currency_bank_created` (`bank_id`,`created_at`),
+  KEY `idx_currency_reason_created` (`reason_type`,`created_at`),
+  CONSTRAINT `currency_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

@@ -472,10 +472,11 @@ int writeStatus(char *buf, P_char ch, bool updateTime)
 	ADD_SHORT(buf, ch->only.pc->wimpy);
 	ADD_SHORT(buf, ch->only.pc->aggressive);
 	ADD_BYTE(buf, ch->only.pc->highest_level);
-	ADD_INT(buf, GET_BALANCE_COPPER(ch)); /* bank account */
-	ADD_INT(buf, GET_BALANCE_SILVER(ch)); /* bank account */
-	ADD_INT(buf, GET_BALANCE_GOLD(ch)); /* bank account */
-	ADD_INT(buf, GET_BALANCE_PLATINUM(ch)); /* bank account */
+	/* Shared account-bank state is SQL/ledger-owned. Preserve the legacy slots only. */
+	ADD_INT(buf, 0);
+	ADD_INT(buf, 0);
+	ADD_INT(buf, 0);
+	ADD_INT(buf, 0);
 	ADD_LONG(buf, ch->only.pc->numb_deaths);
 
 	ADD_INT(buf, ch->only.pc->quest_active);
@@ -2255,10 +2256,11 @@ int restoreStatus(char *buf, P_char ch)
 
 	ch->only.pc->highest_level = GET_BYTE(buf);
 
-	GET_BALANCE_COPPER(ch) = GET_INTE(buf);
-	GET_BALANCE_SILVER(ch) = GET_INTE(buf);
-	GET_BALANCE_GOLD(ch) = GET_INTE(buf);
-	GET_BALANCE_PLATINUM(ch) = GET_INTE(buf);
+	/* Legacy bank values are parsed for format compatibility but are not authoritative. */
+	GET_INTE(buf);
+	GET_INTE(buf);
+	GET_INTE(buf);
+	GET_INTE(buf);
 
 	ch->only.pc->numb_deaths = GET_LONG(buf);
 

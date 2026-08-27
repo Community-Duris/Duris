@@ -246,16 +246,16 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if ((o_obj->type == ITEM_MONEY) && ((o_obj->value[0] > 0) || (o_obj->value[1] > 0) ||
 					    (o_obj->value[2] > 0) || (o_obj->value[3] > 0)))
 	{
-		GET_PLATINUM(ch) += (got_p = o_obj->value[3]);
+		got_p = o_obj->value[3];
 		o_obj->value[3] = 0;
 
-		GET_GOLD(ch) += (got_g = o_obj->value[2]);
+		got_g = o_obj->value[2];
 		o_obj->value[2] = 0;
 
-		GET_SILVER(ch) += (got_s = o_obj->value[1]);
+		got_s = o_obj->value[1];
 		o_obj->value[1] = 0;
 
-		GET_COPPER(ch) += (got_c = o_obj->value[0]);
+		got_c = o_obj->value[0];
 		o_obj->value[0] = 0;
 
 		int total_value = (got_p * 1000 + got_g * 100 + got_s * 10 + got_c);
@@ -282,7 +282,8 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			send_to_char("You can't carry any of the coins.\r\n", ch);
 			return;
 		}
-		else if (total_value > 999999)
+		ADD_MONEY(ch, total_value);
+		if (total_value > 999999)
 		{
 			GETDBG_LOG(
 				"GETDBG[get-coins-partial]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
@@ -1659,7 +1660,7 @@ void do_junk(P_char ch, char *argument, int /*cmd*/)
 							    FALSE, ch, 0, 0, TO_CHAR);
 							act("$n has been awarded for being a good citizen.",
 							    TRUE, ch, 0, 0, TO_ROOM);
-							GET_SILVER(ch) += 1;
+							ADD_MONEY(ch, 10);
 						}
 						else
 						{
@@ -1693,7 +1694,7 @@ void do_junk(P_char ch, char *argument, int /*cmd*/)
 						tmp_object,
 						TRUE); // Just in case someone enables junking artis.
 					tmp_object = NULL;
-					GET_SILVER(ch) += 1;
+					ADD_MONEY(ch, 10);
 					test = TRUE;
 				}
 				else
@@ -1737,7 +1738,7 @@ void do_junk(P_char ch, char *argument, int /*cmd*/)
 							tmp_object,
 							TRUE); // Just in case someone enables junking artis.
 						tmp_object = NULL;
-						GET_SILVER(ch) += 1;
+						ADD_MONEY(ch, 10);
 					}
 					else
 					{
@@ -2039,7 +2040,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 				}
 				act("$n drops some &+ycopper&N coins.", FALSE, ch, 0, 0, TO_ROOM);
 				tmp_object = create_money(amount, 0, 0, 0);
-				GET_COPPER(ch) -= amount;
+				if (SUB_MONEY(ch, amount, 0) != 0)
+					return;
 				break;
 			case 1:
 				if (IS_TRUSTED(ch))
@@ -2050,7 +2052,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 				}
 				act("$n drops some &+wsilver&n coins.", FALSE, ch, 0, 0, TO_ROOM);
 				tmp_object = create_money(0, amount, 0, 0);
-				GET_SILVER(ch) -= amount;
+				if (SUB_MONEY(ch, amount * 10, 0) != 0)
+					return;
 				break;
 			case 2:
 				if (IS_TRUSTED(ch))
@@ -2061,7 +2064,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 				}
 				act("$n drops some &+Ygold&N coins.", FALSE, ch, 0, 0, TO_ROOM);
 				tmp_object = create_money(0, 0, amount, 0);
-				GET_GOLD(ch) -= amount;
+				if (SUB_MONEY(ch, amount * 100, 0) != 0)
+					return;
 				break;
 			case 3:
 				if (IS_TRUSTED(ch))
@@ -2072,7 +2076,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 				}
 				act("$n drops some &+Wplatinum&N coins.", FALSE, ch, 0, 0, TO_ROOM);
 				tmp_object = create_money(0, 0, 0, amount);
-				GET_PLATINUM(ch) -= amount;
+				if (SUB_MONEY(ch, amount * 1000, 0) != 0)
+					return;
 				break;
 			}
 

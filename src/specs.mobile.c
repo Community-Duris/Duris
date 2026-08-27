@@ -16084,7 +16084,8 @@ int smelter(P_char ch, P_char pl, int cmd, char *argument)
 				// Otherwise we have the cash and the ore so finish.
 				else
 				{
-					GET_PLATINUM(ch) -= amount;
+					if (SUB_MONEY(ch, amount * 1000, 0) != 0)
+						return TRUE;
 					finish_smelt(ch, pl, OBJ_VNUM(obj));
 					return TRUE;
 				}
@@ -16118,7 +16119,8 @@ int smelter(P_char ch, P_char pl, int cmd, char *argument)
 					// If the smelter doesn't need more cash.
 					if (amount - GET_PLATINUM(ch) <= 0)
 					{
-						GET_PLATINUM(ch) -= amount;
+						if (SUB_MONEY(ch, amount * 1000, 0) != 0)
+							return TRUE;
 						finish_smelt(ch, pl, OBJ_VNUM(obj));
 						return TRUE;
 					}
@@ -16242,7 +16244,8 @@ void finish_smelt(P_char ch, P_char pl, int vnum)
 			do_say(ch, buf, CMD_SAY);
 			return;
 		}
-		GET_PLATINUM(ch) -= price;
+		if (SUB_MONEY(ch, price * 1000, 0) != 0)
+			return;
 	}
 	else
 	{
