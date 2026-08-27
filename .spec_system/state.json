@@ -69,7 +69,8 @@
     "phase03-session05-production-clone-query-plan-and-index-gate",
     "phase03-session06-bounded-maintenance-scheduler",
     "phase03-session07-data-processing-and-retention-contract",
-    "phase03-session08-retention-and-archival-execution"
+    "phase03-session08-retention-and-archival-execution",
+    "phase03-session09-authenticated-personal-data-export"
   ],
   "next_session_history": [
     {
@@ -240,6 +241,21 @@
     {
       "date": "2026-08-27",
       "session": "phase03-session08-retention-and-archival-execution",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session09-authenticated-personal-data-export",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session09-authenticated-personal-data-export",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session09-authenticated-personal-data-export",
       "status": "completed"
     }
   ]

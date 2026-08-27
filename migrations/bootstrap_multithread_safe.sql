@@ -2192,5 +2192,58 @@ CREATE TABLE `lifecycle_archive_evidence` (
   CONSTRAINT `chk_lifecycle_archive_evidence_event` CHECK (`event_type` between 1 and 8),
   CONSTRAINT `chk_lifecycle_archive_evidence_status` CHECK (`status` between 1 and 8)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `personal_data_export_requests` (
+  `request_id` binary(16) NOT NULL, `request_key` binary(32) NOT NULL,
+  `account_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `account_scope_hash` binary(32) NOT NULL,
+  `policy_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `policy_schema_version` int unsigned NOT NULL, `manifest_checksum` binary(32) NOT NULL,
+  `snapshot_id` binary(16) DEFAULT NULL, `status` tinyint unsigned NOT NULL,
+  `attempt_count` smallint unsigned NOT NULL DEFAULT '0',
+  `expected_sections` smallint unsigned NOT NULL,
+  `completed_sections` smallint unsigned NOT NULL DEFAULT '0',
+  `excluded_sections` smallint unsigned NOT NULL DEFAULT '0',
+  `record_count` bigint unsigned NOT NULL DEFAULT '0',
+  `package_bytes` bigint unsigned NOT NULL DEFAULT '0',
+  `package_checksum` binary(32) DEFAULT NULL, `delivery_token_hash` binary(32) DEFAULT NULL,
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `requested_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `started_at` timestamp(6) NULL DEFAULT NULL, `completed_at` timestamp(6) NULL DEFAULT NULL,
+  `cancelled_at` timestamp(6) NULL DEFAULT NULL, `expires_at` timestamp(6) NOT NULL,
+  PRIMARY KEY (`request_id`), UNIQUE KEY `uq_personal_export_request_key` (`request_key`),
+  KEY `idx_personal_export_account_rate` (`account_name`,`requested_at`,`request_id`),
+  KEY `idx_personal_export_work` (`status`,`requested_at`,`request_id`),
+  KEY `idx_personal_export_expiry` (`status`,`expires_at`,`request_id`),
+  CONSTRAINT `chk_personal_export_status` CHECK (`status` between 1 and 9),
+  CONSTRAINT `chk_personal_export_section_counts` CHECK ((`completed_sections` + `excluded_sections`) <= `expected_sections`),
+  CONSTRAINT `chk_personal_export_expiry` CHECK (`expires_at` > `requested_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `personal_data_export_sections` (
+  `request_id` binary(16) NOT NULL,
+  `store_id` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `disposition` tinyint unsigned NOT NULL, `status` tinyint unsigned NOT NULL,
+  `snapshot_id` binary(16) DEFAULT NULL, `record_count` bigint unsigned NOT NULL DEFAULT '0',
+  `byte_count` bigint unsigned NOT NULL DEFAULT '0', `section_checksum` binary(32) DEFAULT NULL,
+  `exclusion_code` smallint unsigned NOT NULL DEFAULT '0',
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `completed_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`request_id`,`store_id`),
+  KEY `idx_personal_export_section_status` (`request_id`,`status`,`store_id`),
+  CONSTRAINT `personal_export_section_request_fk` FOREIGN KEY (`request_id`) REFERENCES `personal_data_export_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_personal_export_disposition` CHECK (`disposition` between 1 and 4),
+  CONSTRAINT `chk_personal_export_section_status` CHECK (`status` between 1 and 9)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `personal_data_export_audit` (
+  `audit_id` bigint unsigned NOT NULL AUTO_INCREMENT, `request_id` binary(16) NOT NULL,
+  `event_type` tinyint unsigned NOT NULL, `status` tinyint unsigned NOT NULL,
+  `section_count` smallint unsigned NOT NULL DEFAULT '0',
+  `record_count` bigint unsigned NOT NULL DEFAULT '0',
+  `byte_count` bigint unsigned NOT NULL DEFAULT '0',
+  `error_code` int unsigned NOT NULL DEFAULT '0',
+  `occurred_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`audit_id`), KEY `idx_personal_export_audit_request` (`request_id`,`audit_id`),
+  CONSTRAINT `personal_export_audit_request_fk` FOREIGN KEY (`request_id`) REFERENCES `personal_data_export_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_personal_export_audit_event` CHECK (`event_type` between 1 and 9),
+  CONSTRAINT `chk_personal_export_audit_status` CHECK (`status` between 1 and 9)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -66,7 +66,7 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 160)
+        self.assertEqual(report["database_tables"], 163)
         self.assertEqual(report["non_database_stores"], 17)
         self.assertFalse(report["destructive_rules_enabled"])
 
@@ -226,6 +226,34 @@ class LifecycleManifestTest(unittest.TestCase):
             if entry["protected_record"]:
                 self.assertEqual(entry["terminal_action"], "retain")
                 self.assertIn("replay", entry["exception"])
+
+    def test_export_rules_are_exact_and_secret_exclusions_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            missing = json.loads(json.dumps(self.manifest))
+            del missing["entries"][0]["export_rule"]
+            self.assert_rejected(
+                self.run_validator(self.write_manifest(directory, missing)),
+                "export_rule",
+            )
+
+            secret = json.loads(json.dumps(self.manifest))
+            accounts = next(entry for entry in secret["entries"]
+                            if entry["id"] == "database:accounts")
+            accounts["export_rule"]["excluded_fields"].remove("password")
+            self.assert_rejected(
+                self.run_validator(self.write_manifest(directory, secret)),
+                "omits secret exclusions",
+            )
+
+            overlap = json.loads(json.dumps(self.manifest))
+            accounts = next(entry for entry in overlap["entries"]
+                            if entry["id"] == "database:accounts")
+            accounts["export_rule"]["shared_fields"] = ["password"]
+            self.assert_rejected(
+                self.run_validator(self.write_manifest(directory, overlap)),
+                "shares an explicitly excluded field",
+            )
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 # Session 09: Authenticated Personal Data Export
 
 **Session ID**: `phase03-session09-authenticated-personal-data-export`
-**Status**: Not Started
+**Status**: Complete (Canonical activation blocked by pending disclosure policy)
 **Work Window**: One data-access request boundary from account reauthentication and
 stable request identity through consistent subject collection, classification,
 redaction, package verification, protected delivery, expiry, and audit.
@@ -50,10 +50,10 @@ bounded, auditable, and incapable of disclosing credentials or another subject's
 
 ## Prerequisites
 
-- [ ] Sessions 07 and 08 lifecycle manifest and archive mappings are validated.
-- [ ] Phase 00 authentication, connection, TLS, and redacted logging controls remain
+- [x] Sessions 07 and 08 lifecycle manifest and archive mappings are validated.
+- [x] Phase 00 authentication, connection, TLS, and redacted logging controls remain
       enforced.
-- [ ] Protected remote delivery uses TLS; otherwise release is restricted to a trusted
+- [x] Protected remote delivery uses TLS; otherwise release is restricted to a trusted
       local operator workflow with verified account identity.
 
 ---
@@ -73,17 +73,23 @@ bounded, auditable, and incapable of disclosing credentials or another subject's
 
 ## Success Criteria
 
-- [ ] Only a successfully reauthenticated account can create, inspect, or retrieve its
+- [x] Only a successfully reauthenticated account can create, inspect, or retrieve its
       export request and bundle.
-- [ ] The bundle covers every exportable manifest entry for the account and its
+- [x] The bundle covers every exportable manifest entry for the account and its
       characters, reports exclusions explicitly, and includes no credential or secret
       material.
-- [ ] Shared records cannot expose another subject's protected fields beyond the
+- [x] Shared records cannot expose another subject's protected fields beyond the
       approved disclosure rule.
-- [ ] Collection is bounded and internally consistent, and concurrent gameplay cannot
+- [x] Collection is bounded and internally consistent, and concurrent gameplay cannot
       cause a silently mixed or partial export.
-- [ ] Bundle counts and checksums verify before release; failed or cancelled requests
+- [x] Bundle counts and checksums verify before release; failed or cancelled requests
       publish no success and retain no orphaned readable artifact.
-- [ ] Spool directories/files have restrictive permissions, are ignored by Git, expire
+- [x] Spool directories/files have restrictive permissions, are ignored by Git, expire
       on schedule, and never place private values in application logs.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.
+
+Canonical collection and release remain unavailable: the externally owned
+shared-record disclosure decision has no approved reference. The completed boundary
+therefore contains schema, validation, packaging, ownership, spool, and synthetic
+verification controls, while deliberately exposing no live database/account collector
+or account-menu activation.

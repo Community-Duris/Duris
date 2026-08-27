@@ -22,16 +22,29 @@ DEFAULT_SCHEMA_FILES = (
 ROOT_FIELDS = {
     "schema_version", "policy_id", "status", "technical_owner_default",
     "decision_semantics", "allowed_actions", "destructive_actions",
-    "controller_approval", "entries",
+    "controller_approval", "export_policy", "entries",
 }
 ENTRY_FIELDS = {
     "id", "kind", "locator", "data_category", "data_subject_key",
     "technical_purpose", "controller_decision", "season_action",
     "active_retention", "archive_retention", "terminal_action", "exception",
-    "protected_record", "dependencies",
+    "protected_record", "dependencies", "export_rule",
+}
+EXPORT_RULE_FIELDS = {
+    "disposition", "subject_route", "decision", "excluded_fields", "shared_fields",
+}
+EXPORT_DISPOSITIONS = {"include", "exclude", "shared_redacted", "pending"}
+EXPORT_ROUTES = {
+    "direct_account", "direct_player", "dependency", "operation_domain", "aggregate",
+    "not_subject_scoped", "non_database", "lifecycle_metadata", "shared_security",
+    "archive_source",
 }
 APPROVAL_FIELDS = {"status", "reference"}
 GLOBAL_APPROVAL_FIELDS = {"status", "reference", "destructive_rules_enabled"}
+EXPORT_POLICY_FIELDS = {
+    "status", "reference", "shared_disclosure_enabled", "bundle_ttl_seconds",
+    "row_budget", "byte_budget",
+}
 SEASON_ACTIONS = {"retain", "deactivate", "reset_delete", "reset_update", "regenerate"}
 ALLOWED_ACTIONS = {
     "retain", "regenerate", "deactivate", "reset_delete", "reset_update",
@@ -68,6 +81,17 @@ MAX_SCHEMA_BYTES = 8 * 1024 * 1024
 PROTECTED_EXCEPTIONS = {
     "protected_reconciliation_or_replay_horizon",
     "protected_recovery_replay_or_restore_horizon",
+}
+REQUIRED_SECRET_EXCLUSIONS = {
+    "database:accounts": {"password", "confirmation_code"},
+    "database:private_chests": {"password_hash"},
+    "database:critical_operation_inbox": {"command_hash", "keys_hash", "result_payload"},
+    "database:critical_outbox": {"payload"},
+    "database:personal_data_export_requests": {"delivery_token_hash"},
+    "file:runtime_accounts": {"password", "confirmation_code"},
+    "file:server_logs": {"raw_security_events"},
+    "file:player_logs": {"raw_security_events"},
+    "file:critical_command_journal": {"command_payload"},
 }
 
 
@@ -228,6 +252,19 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
             global_approval["reference"] != "PENDING-CONTROLLER-DECISION" or \
             global_approval["destructive_rules_enabled"] is not False:
         raise ValidationError("controller approval must keep destructive rules disabled")
+    require_exact_fields(manifest["export_policy"], EXPORT_POLICY_FIELDS,
+                         "export_policy")
+    export_policy = manifest["export_policy"]
+    if export_policy["status"] != "pending" or \
+            export_policy["reference"] != "PENDING-SHARED-DISCLOSURE-DECISION" or \
+            export_policy["shared_disclosure_enabled"] is not False or \
+            type(export_policy["bundle_ttl_seconds"]) is not int or \
+            not 300 <= export_policy["bundle_ttl_seconds"] <= 86400 or \
+            type(export_policy["row_budget"]) is not int or \
+            not 1 <= export_policy["row_budget"] <= 256 or \
+            type(export_policy["byte_budget"]) is not int or \
+            not 1 <= export_policy["byte_budget"] <= 1048576:
+        raise ValidationError("export policy must remain bounded and disclosure-disabled")
     raw_entries = manifest["entries"]
     if not isinstance(raw_entries, list) or not raw_entries:
         raise ValidationError("entries must be a non-empty list")
@@ -260,6 +297,44 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
         if not isinstance(entry["controller_decision"]["reference"], str) or \
                 not entry["controller_decision"]["reference"]:
             raise ValidationError(f"{entry_id} is missing an approval reference")
+        export_rule = entry["export_rule"]
+        require_exact_fields(export_rule, EXPORT_RULE_FIELDS, f"{entry_id}.export_rule")
+        require_exact_fields(export_rule["decision"], APPROVAL_FIELDS,
+                             f"{entry_id}.export_rule.decision")
+        if not isinstance(export_rule["disposition"], str) or \
+                export_rule["disposition"] not in EXPORT_DISPOSITIONS or \
+                not isinstance(export_rule["subject_route"], str) or \
+                export_rule["subject_route"] not in EXPORT_ROUTES:
+            raise ValidationError(f"{entry_id} has unknown export disposition or route")
+        if not isinstance(export_rule["decision"]["status"], str) or \
+                export_rule["decision"]["status"] not in {
+            "approved", "pending", "not_required",
+        } or not isinstance(export_rule["decision"]["reference"], str) or \
+                not export_rule["decision"]["reference"]:
+            raise ValidationError(f"{entry_id} has invalid export decision")
+        for export_field in ("excluded_fields", "shared_fields"):
+            values = export_rule[export_field]
+            if not isinstance(values, list) or \
+                not all(isinstance(value, str) and value for value in values) or \
+                    not all(re.fullmatch(r"[a-z0-9_.*-]+", value) for value in values) or \
+                    len(set(values)) != len(values):
+                raise ValidationError(f"{entry_id} has invalid {export_field}")
+        if export_rule["disposition"] in {"include", "shared_redacted"} and \
+                export_rule["decision"]["status"] != "approved":
+            raise ValidationError(f"{entry_id} has unapproved export disclosure rule")
+        if export_rule["disposition"] == "pending" and \
+                export_rule["decision"]["status"] != "pending":
+            raise ValidationError(f"{entry_id} pending export rule lacks pending decision")
+        if export_rule["disposition"] == "exclude" and \
+                export_rule["decision"]["status"] != "not_required":
+            raise ValidationError(f"{entry_id} excluded export rule has invalid decision")
+        if set(export_rule["excluded_fields"]) & set(export_rule["shared_fields"]):
+            raise ValidationError(f"{entry_id} shares an explicitly excluded field")
+        required_secrets = REQUIRED_SECRET_EXCLUSIONS.get(entry_id, set())
+        if not required_secrets <= set(export_rule["excluded_fields"]):
+            raise ValidationError(
+                f"{entry_id} omits secret exclusions {sorted(required_secrets - set(export_rule['excluded_fields']))}"
+            )
         if not isinstance(entry["season_action"], str) or \
                 entry["season_action"] not in SEASON_ACTIONS:
             raise ValidationError(f"{entry_id} has unknown season action")

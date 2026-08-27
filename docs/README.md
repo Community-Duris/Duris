@@ -14,6 +14,7 @@ directory covers architecture, operations, configuration, and reference material
 | [DATABASE.md](DATABASE.md) | Database layer: connection handling, async persistence, schema, migrations. |
 | [DATA_LIFECYCLE.md](DATA_LIFECYCLE.md) | Versioned durable-store inventory, season classifications, protected exceptions, and fail-closed lifecycle validation. |
 | [LIFECYCLE_ARCHIVE.md](LIFECYCLE_ARCHIVE.md) | Bounded archive job/batch schema, verification state machine, dry-run controls, and pending-policy scheduler gate. |
+| [PERSONAL_DATA_EXPORT.md](PERSONAL_DATA_EXPORT.md) | Authenticated export policy mapping, package verification, protected spool, and pending-activation boundary. |
 | [CONFIGURATION.md](CONFIGURATION.md) | Runtime environment variables, Redis, listeners, proxy handling, and diagnostics. |
 | [RUNBOOK.md](RUNBOOK.md) | Day-to-day operations: starting/stopping, restart codes, logs, backups, crash recovery. |
 | [TESTING.md](TESTING.md) | The regression/source-contract test harness in `tests/async/` and how to run it. |

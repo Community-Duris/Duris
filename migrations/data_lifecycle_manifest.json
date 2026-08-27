@@ -28,6 +28,14 @@
     "reference": "PENDING-CONTROLLER-DECISION",
     "destructive_rules_enabled": false
   },
+  "export_policy": {
+    "status": "pending",
+    "reference": "PENDING-SHARED-DISCLOSURE-DECISION",
+    "shared_disclosure_enabled": false,
+    "bundle_ttl_seconds": 3600,
+    "row_budget": 256,
+    "byte_budget": 1048576
+  },
   "entries": [
     {
       "id": "database:account_banks",
@@ -39,6 +47,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -59,6 +77,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -77,6 +105,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -100,6 +138,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -118,6 +166,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "deactivate",
       "active_retention": "pending_controller_decision",
@@ -138,6 +196,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "shared_security",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -156,6 +224,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -176,6 +254,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -194,6 +282,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -214,6 +312,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -232,6 +340,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -252,6 +370,19 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "password",
+          "confirmation_code"
+        ],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -270,6 +401,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -290,6 +431,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -308,6 +459,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -328,6 +489,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -346,6 +517,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "current_season_or_operational_need",
@@ -366,6 +547,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -384,6 +575,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -404,6 +605,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -422,6 +633,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -442,6 +663,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -460,6 +691,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -480,6 +721,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -498,6 +749,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -518,6 +779,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -536,6 +807,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -556,6 +837,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -574,6 +865,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -594,6 +895,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -612,6 +923,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -632,6 +953,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -650,6 +981,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -670,6 +1011,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -688,6 +1039,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "service_lifetime",
@@ -708,6 +1069,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "service_lifetime",
       "archive_retention": "pending_controller_decision",
@@ -726,6 +1097,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "service_lifetime",
@@ -746,6 +1127,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -764,6 +1155,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -784,6 +1185,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -802,6 +1213,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -822,6 +1243,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -840,6 +1271,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -860,6 +1301,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -878,6 +1329,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -898,6 +1359,20 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "command_hash",
+          "keys_hash",
+          "result_payload"
+        ],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -916,6 +1391,18 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "payload"
+        ],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -936,6 +1423,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -954,6 +1451,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "current_season_or_operational_need",
@@ -974,6 +1481,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -992,6 +1509,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -1012,6 +1539,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1030,6 +1567,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -1050,6 +1597,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1068,6 +1625,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -1088,6 +1655,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -1106,6 +1683,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -1126,6 +1713,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -1144,6 +1741,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -1164,6 +1771,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1182,6 +1799,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -1202,6 +1829,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -1220,6 +1857,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -1240,6 +1887,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -1258,6 +1915,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -1278,6 +1945,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -1296,6 +1973,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "shared_security",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -1316,6 +2003,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1334,6 +2031,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -1354,6 +2061,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1372,6 +2089,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -1392,6 +2119,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1410,6 +2147,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -1430,6 +2177,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "service_lifetime",
       "archive_retention": "pending_controller_decision",
@@ -1448,6 +2205,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "service_lifetime",
@@ -1468,6 +2235,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_update",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -1486,6 +2263,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -1506,6 +2293,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1524,6 +2321,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -1544,6 +2351,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1562,6 +2379,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -1582,6 +2409,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1601,6 +2438,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1619,6 +2466,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -1642,6 +2499,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1660,6 +2527,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "shared_security",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -1680,6 +2557,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "service_lifetime",
       "archive_retention": "pending_controller_decision",
@@ -1698,6 +2585,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -1718,6 +2615,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "shared_security",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1736,6 +2643,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_update",
       "active_retention": "current_season_or_operational_need",
@@ -1756,6 +2673,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1774,6 +2701,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_update",
       "active_retention": "current_season_or_operational_need",
@@ -1794,6 +2731,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "service_lifetime",
       "archive_retention": "pending_controller_decision",
@@ -1812,6 +2759,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -1832,6 +2789,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -1850,6 +2817,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "service_lifetime",
@@ -1870,6 +2847,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1888,6 +2875,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -1908,6 +2905,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1926,6 +2933,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "deactivate",
       "active_retention": "pending_controller_decision",
@@ -1946,6 +2963,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -1964,6 +2991,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -1984,6 +3021,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2002,6 +3049,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -2022,6 +3079,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2040,6 +3107,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -2060,6 +3137,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2078,6 +3165,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -2098,6 +3195,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2116,6 +3223,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -2136,6 +3253,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2154,6 +3281,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -2174,6 +3311,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2192,6 +3339,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -2212,6 +3369,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2230,6 +3397,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -2250,6 +3427,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2268,6 +3455,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -2288,6 +3485,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2306,6 +3513,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2326,6 +3543,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2344,6 +3571,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "service_lifetime",
@@ -2364,6 +3601,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2382,6 +3629,18 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "password_hash"
+        ],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -2402,6 +3661,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2420,6 +3689,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -2440,6 +3719,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "service_lifetime",
       "archive_retention": "pending_controller_decision",
@@ -2458,6 +3747,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2478,6 +3777,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2496,6 +3805,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2516,6 +3835,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2534,6 +3863,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -2554,6 +3893,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2572,6 +3921,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2592,6 +3951,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2610,6 +3979,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2630,6 +4009,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2648,6 +4037,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2668,6 +4067,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2686,6 +4095,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2706,6 +4125,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2724,6 +4153,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2744,6 +4183,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2762,6 +4211,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2782,6 +4241,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2800,6 +4269,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2820,6 +4299,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2838,6 +4327,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "aggregate",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
@@ -2858,6 +4357,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_update",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2876,6 +4385,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "service_lifetime",
@@ -2896,6 +4415,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
       "archive_retention": "pending_controller_decision",
@@ -2914,6 +4443,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -2934,6 +4473,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2952,6 +4501,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "reset_delete",
       "active_retention": "current_season_or_operational_need",
@@ -2972,6 +4531,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_player",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "reset_delete",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -2990,6 +4559,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "service_lifetime",
@@ -3010,6 +4589,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "lifecycle_metadata",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -3028,6 +4617,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "lifecycle_metadata",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -3048,6 +4647,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "archive_source",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -3067,6 +4676,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "lifecycle_metadata",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -3079,6 +4698,95 @@
       ]
     },
     {
+      "id": "database:personal_data_export_requests",
+      "kind": "database_table",
+      "locator": "personal_data_export_requests",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authenticated account export request ownership, verification, delivery, and expiry state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "direct_account",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "delivery_token_hash"
+        ],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:personal_data_export_sections",
+      "kind": "database_table",
+      "locator": "personal_data_export_sections",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "export_request_id",
+      "technical_purpose": "per-store export coverage, count, checksum, and exclusion evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "dependency",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:personal_data_export_requests"]
+    },
+    {
+      "id": "database:personal_data_export_audit",
+      "kind": "database_table",
+      "locator": "personal_data_export_audit",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "export_request_id",
+      "technical_purpose": "minimal redacted export request audit evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "dependency",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:personal_data_export_requests"]
+    },
+    {
       "id": "redis:world_recovery",
       "kind": "redis_keyspace",
       "locator": "redis world recovery generations",
@@ -3088,6 +4796,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "regenerate",
       "active_retention": "pending_controller_decision",
@@ -3108,6 +4826,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -3126,6 +4854,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -3146,6 +4884,18 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "command_payload"
+        ],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -3164,6 +4914,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -3184,6 +4944,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -3202,6 +4972,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -3222,6 +5002,19 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "password",
+          "confirmation_code"
+        ],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -3240,6 +5033,18 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "raw_security_events"
+        ],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -3260,6 +5065,18 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [
+          "raw_security_events"
+        ],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -3278,6 +5095,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "operational_need",
@@ -3298,6 +5125,16 @@
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
       },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "operational_need",
       "archive_retention": "pending_controller_decision",
@@ -3316,6 +5153,16 @@
       "controller_decision": {
         "status": "not_required",
         "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "export_rule": {
+        "disposition": "exclude",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "not_required",
+          "reference": "TECHNICAL-NON-SUBJECT-DATA"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "regenerate",
       "active_retention": "operational_need",
@@ -3336,6 +5183,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -3354,6 +5211,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
@@ -3374,6 +5241,16 @@
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
       },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
       "archive_retention": "pending_controller_decision",
@@ -3392,6 +5269,16 @@
       "controller_decision": {
         "status": "pending",
         "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
       },
       "season_action": "retain",
       "active_retention": "pending_controller_decision",
