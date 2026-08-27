@@ -39,6 +39,22 @@ It performs:
    equivalent SPDX document as the portable SBOM;
 4. 30-day artifact retention for inventory, SPDX, and Trivy JSON.
 
+### Repository Prerequisite
+
+This workflow is an *advanced* CodeQL configuration, so the repository must have
+CodeQL **default setup** turned off. With default setup enabled GitHub refuses the
+upload -- "CodeQL analyses from advanced configurations cannot be processed when the
+default setup is enabled" -- the analyze step fails, and every step after it is
+skipped, which takes the Trivy scan and its policy gate down with it. Check the
+current state with:
+
+```
+gh api repos/<owner>/<repo>/code-scanning/default-setup
+```
+
+`state` must read `not-configured`. Settings -> Code security -> Code scanning is the
+same switch in the web UI.
+
 Valid GitHub Actions Dependabot updates propose reviewed changes to these pinned
 references. Native packages remain distribution-managed; the generated inventory is
 the review input because Dependabot has no ecosystem for an `equivs` control file.
@@ -62,7 +78,8 @@ rationale, compensating control, and expiry date.
 - Direct manifest inventory and SPDX generation: completed locally.
 - Repository-specific source/configuration gate: passed locally.
 - Workflow syntax (`actionlint` 1.7.10): passed locally.
-- CodeQL findings for this branch: unknown until the workflow runs in GitHub.
+- CodeQL C/C++ analysis: ran clean in GitHub once default setup was turned off
+  (see Repository Prerequisite above); the run reported no failing alert.
 - Trivy `v0.70.0` with the 2026-08-26 vulnerability database recognized Ubuntu 24.04
   and scanned all 19 resolved direct packages. It reported one unfixed MEDIUM advisory
   (`CVE-2024-52005`) for the installed Ubuntu Git package and no fixed HIGH/CRITICAL
