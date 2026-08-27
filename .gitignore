@@ -1,75 +1,94 @@
-__pycache__/
+# ==============================================================================
+# DurisMUD - Repository Ignore Rules
+# ==============================================================================
+# Generated artifacts, runtime data, credentials, and machine-local state stay
+# outside version control. Rules are grouped by purpose and sorted by path.
+# Negation rules remain directly below the parent rule they override.
+
+# ------------------------------------------------------------------------------
+# Build outputs and generated toolchain artifacts
+# ------------------------------------------------------------------------------
+/areas/de/src/cscope.out
 /bin/*
 !/bin/.gitignore
-/temp_letterfile
-/nohup.out
-/Duris.xcodeproj
 /build
 /gmon.out
-/areas/de/src/cscope.out
+__pycache__/
 cscope.out
-*.backup
-*~
-lib/information/leaderboard
-lib/information/leaderboardprod
-lib/information/hardcore_hall_of_fame
-lib/information/hardcore_hall_of_fameprod
-lib/information/leaderboardprod
-lib/etc/help
-lib/etc/vote.undead
-lib/etc/vote.miniwipe
-lib/ban_sites
-lib/relic_highscore
-Ships/ship_index
-arih/
-Accounts/email.db
-Accounts/*/*
-!Accounts/*/.gitkeep
-/Accounts/mail
-/Players/pc_idnumb
+durismud-launcher
+migrate_pfiles
+
+# ------------------------------------------------------------------------------
+# Environment, credentials, and host-specific files
+# ------------------------------------------------------------------------------
+.bash_history
+.c*
+.env
+/Duris.xcodeproj
 duris.crt
 duris.key
-
-# environment files (may contain secrets)
-.env
-logs/shutdown_info.txt
-/logs/duris-console.log
-.c*
-
-# log files
-logs/log/*
-logs/valgrind/
-/runtime/player-journal/
-/runtime/personal-data-exports/
-
-durismud-launcher
-Accounts.old.*
-Players.old.*
-backup/
-.bash_history
 etc/group
 etc/passwd
 etc/resolv.conf
-migrate_pfiles
-# Throwaway refactor scripts in project root (one-off Python scripts and
-# dumps used during large refactors; keep them out of git status).
-# Leading slash anchors to project root so legitimate files like
-# tests/fixtures/tmp_input.txt are not accidentally ignored.
+
+# ------------------------------------------------------------------------------
+# Account, player, ship, and backup runtime data
+# ------------------------------------------------------------------------------
+Accounts/*/*
+!Accounts/*/.gitkeep
+Accounts/email.db
+/Accounts/mail
+Accounts.old.*
+arih/
+backup/
+/Players/Backup/
+/Players/pc_idnumb
+Players.old.*
+Ships/ship_index
+
+# ------------------------------------------------------------------------------
+# Generated game data and mutable library state
+# ------------------------------------------------------------------------------
+lib/ban_sites
+lib/etc/help
+lib/etc/vote.miniwipe
+lib/etc/vote.undead
+lib/information/hardcore_hall_of_fame
+lib/information/hardcore_hall_of_fameprod
+lib/information/leaderboard
+lib/information/leaderboardprod
+lib/information/leaderboardprod
+lib/relic_highscore
+
+# ------------------------------------------------------------------------------
+# Logs, journals, exports, and recovery state
+# ------------------------------------------------------------------------------
+/logs/duris-console.log
+logs/log/*
+logs/shutdown_info.txt
+logs/valgrind/
+/runtime/personal-data-exports/
+/runtime/player-journal/
+
+# ------------------------------------------------------------------------------
+# Temporary files, editor leftovers, and local analysis artifacts
+# ------------------------------------------------------------------------------
+*.backup
+*~
+.hermes/
+/nohup.out
+/temp_letterfile
+/tmp/
+/tmp/query-plan-gate/
 /tmp_*.py
 /tmp_*.txt
-# Test suite — not included in production PRs
+
+# ------------------------------------------------------------------------------
+# Local-only Docker and database test fixtures
+# ------------------------------------------------------------------------------
+/Dockerfile
 tests/db_write/*.c
 tests/db_write/*.h
 tests/db_write/Dockerfile.*
 tests/db_write/Makefile*
 tests/db_write/schema.sql
-
-# Docker build files — not part of production PR
-/Dockerfile
-
-# Hermes analysis/session artifacts — never track in this repository
-.hermes/
-
-# Local/manual test helpers and temporary artifacts
-/tmp/
-/tmp/query-plan-gate/
