@@ -493,6 +493,120 @@ bool load_bank(MYSQL *connection, const player_load_request &request, player_loa
 	return true;
 }
 
+bool parse_item_payload(MYSQL_ROW row, player_load_result *result, player_item_snapshot *item,
+			player_load_item_identity *identity)
+{
+	if (!row || !result || !item || !identity)
+		return false;
+	int64_t signed_field = 0;
+	uint64_t unsigned_field = 0;
+	if (!parse_unsigned(row[0], UINT64_MAX, &identity->database_id) || !identity->database_id ||
+	    !parse_signed(row[1], INT32_MIN, INT32_MAX, &signed_field))
+		return false;
+	item->vnum = static_cast<int32_t>(signed_field);
+	if (!parse_signed(row[2], INT16_MIN, INT16_MAX, &signed_field))
+		return false;
+	item->equipment_slot = static_cast<int16_t>(signed_field);
+	if (row[3] && !parse_unsigned(row[3], UINT64_MAX, &identity->serialized_parent_id))
+		return false;
+	if (!parse_unsigned(row[4], UINT32_MAX, &unsigned_field) || unsigned_field != 1)
+		return false;
+	identity->quantity = static_cast<uint32_t>(unsigned_field);
+	if (!parse_signed(row[5], INT32_MIN, INT32_MAX, &signed_field))
+		return false;
+	item->weight = static_cast<int32_t>(signed_field);
+	if (!parse_signed(row[6], INT32_MIN, INT32_MAX, &signed_field))
+		return false;
+	item->cost = static_cast<int32_t>(signed_field);
+	if (!parse_signed(row[7], INT64_MIN, INT64_MAX, &item->timers[0]) ||
+	    !parse_unsigned(row[8], UINT32_MAX, &unsigned_field))
+		return false;
+	item->extra_flags = static_cast<uint32_t>(unsigned_field);
+	if (row[9])
+	{
+		if (!parse_unsigned(row[9], UINT32_MAX, &unsigned_field))
+			return false;
+		item->wear_flags = static_cast<uint32_t>(unsigned_field);
+		identity->override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_WEAR_FLAGS;
+	}
+	if (row[10])
+	{
+		if (!parse_signed(row[10], INT8_MIN, INT8_MAX, &signed_field))
+			return false;
+		item->type = static_cast<int8_t>(signed_field);
+		identity->override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_TYPE;
+	}
+	for (size_t index = 0; index < item->values.size(); ++index)
+	{
+		if (!parse_signed(row[11 + index], INT32_MIN, INT32_MAX, &signed_field))
+			return false;
+		item->values[index] = static_cast<int32_t>(signed_field);
+	}
+	constexpr std::array<uint8_t, 4> string_masks = { 1, 4, 2, 8 };
+	std::array<std::string *, 4> strings = {
+		&item->name,
+		&item->short_description,
+		&item->description,
+		&item->action_description,
+	};
+	for (size_t index = 0; index < strings.size(); ++index)
+		if (row[19 + index])
+		{
+			if (strlen(row[19 + index]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+			{
+				result->outcome = player_load_outcome::limit_exceeded;
+				return false;
+			}
+			*strings[index] = row[19 + index];
+			item->string_mask |= string_masks[index];
+		}
+	constexpr std::array<uint16_t, 5> bitvector_masks = {
+		PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR1, PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR2,
+		PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR3, PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR4,
+		PLAYER_LOAD_ITEM_OVERRIDE_BITVECTOR5,
+	};
+	for (size_t index = 0; index < item->bitvectors.size(); ++index)
+		if (row[23 + index])
+		{
+			if (!parse_unsigned(row[23 + index], UINT64_MAX, &item->bitvectors[index]))
+				return false;
+			identity->override_mask |= bitvector_masks[index];
+		}
+	if (row[28])
+	{
+		if (!parse_signed(row[28], INT8_MIN, INT8_MAX, &signed_field))
+			return false;
+		item->material = static_cast<int8_t>(signed_field);
+		identity->override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_MATERIAL;
+	}
+	if (!parse_unsigned(row[29], UINT64_MAX, &item->object_uid) || !item->object_uid ||
+	    !parse_signed(row[30], INT16_MIN, INT16_MAX, &signed_field))
+		return false;
+	item->condition = static_cast<int16_t>(signed_field);
+	if (!parse_unsigned(row[31], UINT64_MAX, &identity->item_uid) ||
+	    identity->item_uid != item->object_uid ||
+	    !parse_unsigned(row[32], UINT64_MAX, &identity->root_item_uid) ||
+	    !identity->root_item_uid)
+		return false;
+	if (row[33] && !parse_unsigned(row[33], UINT64_MAX, &identity->parent_item_uid))
+		return false;
+	if (!parse_unsigned(row[34], UINT8_MAX, &unsigned_field))
+		return false;
+	identity->owner.type = static_cast<item_owner_type>(unsigned_field);
+	if (!parse_unsigned(row[35], UINT64_MAX, &identity->owner.id) ||
+	    !parse_unsigned(row[36], UINT64_MAX, &identity->owner.context_id) ||
+	    !parse_unsigned(row[37], UINT64_MAX, &identity->item_revision) ||
+	    !parse_signed(row[38], INT32_MIN, INT32_MAX, &signed_field) ||
+	    signed_field != item->vnum || !parse_unsigned(row[39], UINT8_MAX, &unsigned_field))
+		return false;
+	identity->state = static_cast<item_custody_state>(unsigned_field);
+	return parse_unsigned(row[40], UINT64_MAX, &identity->owner_revision) &&
+	       identity->owner.type == item_owner_type::player &&
+	       identity->owner.id == static_cast<uint64_t>(result->pid) &&
+	       identity->owner.context_id == 0 && identity->state == item_custody_state::active &&
+	       !(identity->override_mask & ~PLAYER_LOAD_ITEM_OVERRIDE_ALL);
+}
+
 bool load_items(MYSQL *connection, player_load_result *result)
 {
 	const std::string pid = std::to_string(result->pid);
@@ -699,8 +813,9 @@ bool load_items(MYSQL *connection, player_load_result *result)
 
 	const std::string ownership_summary_sql =
 		"SELECT COALESCE(owner_revision.revision,0),COUNT(own.item_uid),"
-		"COALESCE(SUM(CASE WHEN own.item_uid IS NOT NULL AND pi.id IS NULL THEN 1 ELSE 0 "
-		"END),0),owner_revision.owner_id IS NOT NULL FROM (SELECT 1) singleton LEFT JOIN "
+		"COALESCE(SUM(CASE WHEN own.item_uid IS NOT NULL AND payload.obj_uid IS NULL THEN 1 "
+		"ELSE 0 END),0),owner_revision.owner_id IS NOT NULL,COUNT(payload.obj_uid) FROM "
+		"(SELECT 1) singleton LEFT JOIN "
 		"item_owner_revision owner_revision ON owner_revision.owner_type=" +
 		std::to_string(static_cast<unsigned int>(item_owner_type::player)) +
 		" AND owner_revision.owner_id=" + pid +
@@ -709,27 +824,33 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		std::to_string(static_cast<unsigned int>(item_owner_type::player)) +
 		" AND own.owner_id=" + pid + " AND own.owner_context_id=0 AND own.state=" +
 		std::to_string(static_cast<unsigned int>(item_custody_state::active)) +
-		" LEFT JOIN player_items pi ON pi.obj_uid=own.item_uid AND pi.pid=" + pid +
+		" LEFT JOIN (SELECT pi.obj_uid FROM player_items pi WHERE pi.pid=" + pid +
+		" UNION ALL SELECT ppi.obj_uid FROM player_pet_items ppi JOIN player_pets pp ON "
+		"pp.id=ppi.pet_id WHERE pp.owner_pid=" +
+		pid + ") payload ON payload.obj_uid=own.item_uid" +
 		" GROUP BY owner_revision.revision,owner_revision.owner_id";
 	size_t ownership_summary_rows = 0;
-	if (!load_rows(connection, ownership_summary_sql, result,
-		       [&](MYSQL_ROW row)
-		       {
-			       uint64_t owned_count = 0;
-			       uint64_t missing_count = 0;
-			       uint64_t owner_revision_present = 0;
-			       ++ownership_summary_rows;
-			       return ownership_summary_rows == 1 &&
-				      parse_unsigned(row[0], UINT64_MAX,
-						     &result->item_owner_revision) &&
-				      parse_unsigned(row[1], PLAYER_LOAD_ITEM_MAX, &owned_count) &&
-				      parse_unsigned(row[2], PLAYER_LOAD_ITEM_MAX,
-						     &missing_count) &&
-				      parse_unsigned(row[3], 1, &owner_revision_present) &&
-				      missing_count == 0 &&
-				      (owner_revision_present || owned_count == 0) &&
-				      owned_count == result->snapshot.items.size();
-		       }) ||
+	if (!load_rows(
+		    connection, ownership_summary_sql, result,
+		    [&](MYSQL_ROW row)
+		    {
+			    uint64_t owned_count = 0;
+			    uint64_t missing_count = 0;
+			    uint64_t owner_revision_present = 0;
+			    uint64_t payload_count = 0;
+			    ++ownership_summary_rows;
+			    return ownership_summary_rows == 1 &&
+				   parse_unsigned(row[0], UINT64_MAX,
+						  &result->item_owner_revision) &&
+				   parse_unsigned(row[1], PLAYER_LOAD_ITEM_MAX, &owned_count) &&
+				   parse_unsigned(row[2], PLAYER_LOAD_ITEM_MAX, &missing_count) &&
+				   parse_unsigned(row[3], 1, &owner_revision_present) &&
+				   parse_unsigned(row[4], PLAYER_LOAD_ITEM_MAX, &payload_count) &&
+				   missing_count == 0 &&
+				   (owner_revision_present || owned_count == 0) &&
+				   owned_count == payload_count &&
+				   ((result->authoritative_item_count = payload_count), true);
+		    }) ||
 	    ownership_summary_rows != 1)
 		return false;
 	for (const player_load_item_identity &identity : result->item_identities)
@@ -830,6 +951,288 @@ bool load_items(MYSQL *connection, player_load_result *result)
 		return false;
 	return result->snapshot.items.size() == result->item_identities.size();
 }
+
+bool load_pets(MYSQL *connection, player_load_result *result)
+{
+	const std::string pid = std::to_string(result->pid);
+	std::unordered_map<uint64_t, size_t> pet_indices;
+	std::unordered_set<int32_t> pet_orders;
+	try
+	{
+		pet_indices.reserve(PLAYER_LOAD_PET_MAX);
+		pet_orders.reserve(PLAYER_LOAD_PET_MAX);
+	}
+	catch (const std::bad_alloc &)
+	{
+		result->outcome = player_load_outcome::retryable_failure;
+		return false;
+	}
+	const std::string pet_sql =
+		"SELECT id,mob_vnum,pet_order,hit,max_hit,mana,max_mana,vitality,max_vitality,"
+		"charm_duration,room_vnum FROM player_pets WHERE owner_pid=" +
+		pid + " ORDER BY pet_order,id";
+	if (!load_rows(
+		    connection, pet_sql, result,
+		    [&](MYSQL_ROW row)
+		    {
+			    if (result->snapshot.pets.size() >= PLAYER_LOAD_PET_MAX)
+			    {
+				    result->outcome = player_load_outcome::limit_exceeded;
+				    return false;
+			    }
+			    uint64_t database_id = 0;
+			    int64_t values[10] = {};
+			    if (!parse_unsigned(row[0], UINT64_MAX, &database_id) || !database_id)
+				    return false;
+			    for (size_t index = 0; index < std::size(values); ++index)
+				    if (!parse_signed(row[index + 1], INT32_MIN, INT32_MAX,
+						      &values[index]))
+					    return false;
+			    if (values[0] <= 0 || values[1] < 0 ||
+				values[1] >= static_cast<int64_t>(PLAYER_LOAD_PET_MAX) ||
+				values[9] <= 0)
+				    return false;
+			    try
+			    {
+				    const size_t index = result->snapshot.pets.size();
+				    if (!pet_indices.emplace(database_id, index).second ||
+					!pet_orders.insert(static_cast<int32_t>(values[1])).second)
+					    return false;
+				    player_pet_snapshot pet = {};
+				    pet.mob_vnum = static_cast<int32_t>(values[0]);
+				    pet.order = static_cast<int32_t>(values[1]);
+				    pet.hit = static_cast<int32_t>(values[2]);
+				    pet.max_hit = static_cast<int32_t>(values[3]);
+				    pet.mana = static_cast<int32_t>(values[4]);
+				    pet.max_mana = static_cast<int32_t>(values[5]);
+				    pet.vitality = static_cast<int32_t>(values[6]);
+				    pet.max_vitality = static_cast<int32_t>(values[7]);
+				    pet.charm_duration = static_cast<int32_t>(values[8]);
+				    pet.room_vnum = static_cast<int32_t>(values[9]);
+				    result->snapshot.pets.push_back(std::move(pet));
+				    result->pet_identities.push_back({ database_id, {} });
+			    }
+			    catch (const std::bad_alloc &)
+			    {
+				    result->outcome = player_load_outcome::retryable_failure;
+				    return false;
+			    }
+			    return true;
+		    }))
+		return false;
+
+	std::vector<std::unordered_map<uint64_t, size_t>> database_indices;
+	std::vector<std::unordered_map<uint64_t, size_t>> uid_indices;
+	std::unordered_map<uint64_t, std::pair<size_t, size_t>> metadata_indices;
+	std::unordered_set<uint64_t> aggregate_uids;
+	try
+	{
+		database_indices.resize(result->snapshot.pets.size());
+		uid_indices.resize(result->snapshot.pets.size());
+		metadata_indices.reserve(PLAYER_LOAD_ITEM_MAX);
+		aggregate_uids.reserve(PLAYER_LOAD_ITEM_MAX);
+		for (const player_load_item_identity &identity : result->item_identities)
+			aggregate_uids.insert(identity.item_uid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		result->outcome = player_load_outcome::retryable_failure;
+		return false;
+	}
+	const std::string item_sql =
+		"SELECT ppi.id,ppi.vnum,ppi.equip_slot,ppi.container_id,1,ppi.weight,ppi.cost,"
+		"ppi.timer,ppi.extra_flags,ppi.wear_flags,ppi.item_type,ppi.value0,ppi.value1,"
+		"ppi.value2,ppi.value3,ppi.value4,ppi.value5,ppi.value6,ppi.value7,ppi.name,"
+		"ppi.short_descr,ppi.description,ppi.action_descr,ppi.bitvector1,ppi.bitvector2,"
+		"ppi.bitvector3,ppi.bitvector4,ppi.bitvector5,ppi.item_material,ppi.obj_uid,"
+		"ppi.item_condition,own.item_uid,own.root_item_uid,own.parent_item_uid,"
+		"own.owner_type,own.owner_id,own.owner_context_id,own.item_revision,own.vnum,"
+		"own.state,owner_revision.revision,ppi.pet_id FROM player_pet_items ppi JOIN "
+		"player_pets pp ON pp.id=ppi.pet_id LEFT JOIN item_current_owner own ON "
+		"own.item_uid=ppi.obj_uid LEFT JOIN item_owner_revision owner_revision ON "
+		"owner_revision.owner_type=own.owner_type AND owner_revision.owner_id=own.owner_id "
+		"AND owner_revision.owner_context_id=own.owner_context_id WHERE pp.owner_pid=" +
+		pid + " ORDER BY ppi.pet_id,ppi.id";
+	size_t total_items = result->snapshot.items.size();
+	if (!load_rows(connection, item_sql, result,
+		       [&](MYSQL_ROW row)
+		       {
+			       if (total_items >= PLAYER_LOAD_ITEM_MAX)
+			       {
+				       result->outcome = player_load_outcome::limit_exceeded;
+				       return false;
+			       }
+			       uint64_t pet_database_id = 0;
+			       if (!parse_unsigned(row[41], UINT64_MAX, &pet_database_id))
+				       return false;
+			       const auto pet_found = pet_indices.find(pet_database_id);
+			       if (pet_found == pet_indices.end())
+				       return false;
+			       player_item_snapshot item = {};
+			       player_load_item_identity identity = {};
+			       if (!parse_item_payload(row, result, &item, &identity) ||
+				   identity.owner_revision != result->item_owner_revision)
+				       return false;
+			       const size_t pet_index = pet_found->second;
+			       try
+			       {
+				       const size_t item_index =
+					       result->snapshot.pets[pet_index].items.size();
+				       if (!database_indices[pet_index]
+						    .emplace(identity.database_id, item_index)
+						    .second ||
+					   !uid_indices[pet_index]
+						    .emplace(identity.item_uid, item_index)
+						    .second ||
+					   !aggregate_uids.insert(identity.item_uid).second ||
+					   !metadata_indices
+						    .emplace(identity.database_id,
+							     std::make_pair(pet_index, item_index))
+						    .second)
+					       return false;
+				       result->snapshot.pets[pet_index].items.push_back(
+					       std::move(item));
+				       result->pet_identities[pet_index].item_identities.push_back(
+					       identity);
+			       }
+			       catch (const std::bad_alloc &)
+			       {
+				       result->outcome = player_load_outcome::retryable_failure;
+				       return false;
+			       }
+			       ++total_items;
+			       return true;
+		       }))
+		return false;
+
+	for (size_t pet_index = 0; pet_index < result->snapshot.pets.size(); ++pet_index)
+		for (size_t item_index = 0;
+		     item_index < result->pet_identities[pet_index].item_identities.size();
+		     ++item_index)
+		{
+			player_load_item_identity &identity =
+				result->pet_identities[pet_index].item_identities[item_index];
+			player_item_snapshot &item =
+				result->snapshot.pets[pet_index].items[item_index];
+			if (!identity.serialized_parent_id && !identity.parent_item_uid)
+			{
+				item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+				continue;
+			}
+			const auto database_parent =
+				database_indices[pet_index].find(identity.serialized_parent_id);
+			const auto uid_parent =
+				uid_indices[pet_index].find(identity.parent_item_uid);
+			if (!identity.serialized_parent_id || !identity.parent_item_uid ||
+			    database_parent == database_indices[pet_index].end() ||
+			    uid_parent == uid_indices[pet_index].end() ||
+			    database_parent->second != uid_parent->second ||
+			    database_parent->second == item_index ||
+			    database_parent->second > static_cast<size_t>(INT32_MAX))
+				return false;
+			item.parent_index = static_cast<int32_t>(database_parent->second);
+		}
+
+	std::vector<std::vector<std::unordered_set<uint64_t>>> affects;
+	try
+	{
+		affects.resize(result->snapshot.pets.size());
+		for (size_t pet_index = 0; pet_index < result->snapshot.pets.size(); ++pet_index)
+			affects[pet_index].resize(result->snapshot.pets[pet_index].items.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		result->outcome = player_load_outcome::retryable_failure;
+		return false;
+	}
+	const std::string metadata_sql =
+		"SELECT 0,ia.id,ia.item_id,ia.location,ia.modifier,NULL,NULL FROM "
+		"player_pet_item_affects ia JOIN player_pet_items ppi ON ppi.id=ia.item_id JOIN "
+		"player_pets pp ON pp.id=ppi.pet_id WHERE pp.owner_pid=" +
+		pid +
+		" UNION ALL SELECT 1,ed.id,ed.item_id,0,0,ed.keyword,ed.description FROM "
+		"player_pet_item_extra_descr ed JOIN player_pet_items ppi ON ppi.id=ed.item_id "
+		"JOIN player_pets pp ON pp.id=ppi.pet_id WHERE pp.owner_pid=" +
+		pid + " ORDER BY 1,2,3";
+	if (!load_rows(
+		    connection, metadata_sql, result,
+		    [&](MYSQL_ROW row)
+		    {
+			    uint64_t row_kind = 0;
+			    uint64_t database_id = 0;
+			    if (!parse_unsigned(row[0], 1, &row_kind) ||
+				!parse_unsigned(row[2], UINT64_MAX, &database_id))
+				    return false;
+			    const auto found = metadata_indices.find(database_id);
+			    if (found == metadata_indices.end())
+				    return false;
+			    const size_t pet_index = found->second.first;
+			    const size_t item_index = found->second.second;
+			    player_item_snapshot &item =
+				    result->snapshot.pets[pet_index].items[item_index];
+			    player_load_item_identity &identity =
+				    result->pet_identities[pet_index].item_identities[item_index];
+			    if (row_kind == 0)
+			    {
+				    int64_t location = 0;
+				    int64_t modifier = 0;
+				    if (!parse_signed(row[3], 0, UINT8_MAX, &location) ||
+					!parse_signed(row[4], INT8_MIN, INT8_MAX, &modifier))
+					    return false;
+				    const uint64_t key =
+					    (static_cast<uint64_t>(static_cast<uint16_t>(location))
+					     << 32) |
+					    static_cast<uint8_t>(modifier);
+				    auto &item_affects = affects[pet_index][item_index];
+				    try
+				    {
+					    if (!item_affects.insert(key).second)
+						    return true;
+				    }
+				    catch (const std::bad_alloc &)
+				    {
+					    result->outcome =
+						    player_load_outcome::retryable_failure;
+					    return false;
+				    }
+				    if (item_affects.size() > PLAYER_LOAD_ITEM_AFFECT_MAX)
+				    {
+					    result->outcome = player_load_outcome::limit_exceeded;
+					    return false;
+				    }
+				    item.affects[item_affects.size() - 1] = {
+					    static_cast<int16_t>(location),
+					    static_cast<int16_t>(modifier),
+				    };
+				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS;
+				    return true;
+			    }
+			    if (!row[5] || strlen(row[5]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+				(row[6] && strlen(row[6]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES) ||
+				item.extra_descriptions.size() >= PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
+			    {
+				    result->outcome = player_load_outcome::limit_exceeded;
+				    return false;
+			    }
+			    try
+			    {
+				    item.extra_descriptions.push_back(
+					    { row[5],
+					      row[6] ? row[6] : "",
+					      row[5] == std::string("SPELLBOOK"),
+					      {} });
+			    }
+			    catch (const std::bad_alloc &)
+			    {
+				    result->outcome = player_load_outcome::retryable_failure;
+				    return false;
+			    }
+			    return true;
+		    }))
+		return false;
+	return result->snapshot.pets.size() == result->pet_identities.size() &&
+	       total_items == result->authoritative_item_count;
+}
 } // namespace
 
 bool player_load_request_valid(const player_load_request &request, uint64_t now_usec)
@@ -840,7 +1243,8 @@ bool player_load_request_valid(const player_load_request &request, uint64_t now_
 				   request.player_name.size() <= PLAYER_LOAD_NAME_MAX;
 	return request.schema_version == PLAYER_LOAD_SCHEMA_VERSION && request.request_id > 0 &&
 	       (pid_identity || name_identity) && request.deadline_usec > now_usec &&
-	       request.deadline_usec - now_usec <= PLAYER_LOAD_TIMEOUT_USEC;
+	       request.deadline_usec - now_usec <= PLAYER_LOAD_TIMEOUT_USEC &&
+	       (!request.include_pets || request.include_items);
 }
 
 player_load_result player_load_repository_execute(MYSQL *connection,
@@ -865,11 +1269,13 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 		return result;
 	}
 	result.snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
-	result.snapshot.components = request.include_items ? PLAYER_LOAD_SESSION02_COMPONENTS :
+	result.snapshot.components = request.include_pets  ? PLAYER_LOAD_SESSION03_COMPONENTS :
+				     request.include_items ? PLAYER_LOAD_SESSION02_COMPONENTS :
 							     PLAYER_LOAD_SESSION01_COMPONENTS;
 	bool ok = load_status(connection, request, &result) &&
 		  load_components(connection, request, &result) &&
 		  (!request.include_items || load_items(connection, &result)) &&
+		  (!request.include_pets || load_pets(connection, &result)) &&
 		  load_bank(connection, request, &result) && before_deadline(request) &&
 		  within_budget(result);
 	result.snapshot.pid = result.pid;

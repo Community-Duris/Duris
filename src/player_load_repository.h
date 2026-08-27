@@ -20,6 +20,8 @@ constexpr size_t PLAYER_LOAD_ITEM_MAX = PLAYER_SNAPSHOT_MAX_OBJECTS;
 constexpr size_t PLAYER_LOAD_ITEM_AFFECT_MAX = 4;
 constexpr size_t PLAYER_LOAD_ITEM_DESCRIPTION_MAX = 64;
 constexpr size_t PLAYER_LOAD_ITEM_OPERATIONS_PER_ITEM = 96;
+constexpr size_t PLAYER_LOAD_PET_MAX = 64;
+constexpr size_t PLAYER_LOAD_PET_OPERATIONS_PER_PET = 16;
 
 constexpr player_component_mask_t PLAYER_LOAD_SESSION01_COMPONENTS =
 	PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_LANGUAGES | PLAYER_COMPONENT_INTRODUCTIONS |
@@ -28,6 +30,8 @@ constexpr player_component_mask_t PLAYER_LOAD_SESSION01_COMPONENTS =
 	PLAYER_COMPONENT_SHAPECHANGES;
 constexpr player_component_mask_t PLAYER_LOAD_SESSION02_COMPONENTS =
 	PLAYER_LOAD_SESSION01_COMPONENTS | PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY;
+constexpr player_component_mask_t PLAYER_LOAD_SESSION03_COMPONENTS =
+	PLAYER_LOAD_SESSION02_COMPONENTS | PLAYER_COMPONENT_PETS;
 
 enum player_load_item_override : uint16_t
 {
@@ -64,6 +68,12 @@ struct player_load_item_identity
 	item_custody_state state = item_custody_state::absent;
 };
 
+struct player_load_pet_identity
+{
+	uint64_t database_id = 0;
+	std::vector<player_load_item_identity> item_identities;
+};
+
 enum class player_load_outcome : uint8_t
 {
 	applied,
@@ -85,6 +95,7 @@ struct player_load_request
 	uint64_t deadline_usec = 0;
 	std::string player_name;
 	bool include_items = true;
+	bool include_pets = true;
 };
 
 struct player_load_domain_state
@@ -117,7 +128,9 @@ struct player_load_result
 	player_snapshot snapshot = {};
 	player_load_domain_state domains = {};
 	uint64_t item_owner_revision = 0;
+	size_t authoritative_item_count = 0;
 	std::vector<player_load_item_identity> item_identities;
+	std::vector<player_load_pet_identity> pet_identities;
 	player_load_metrics metrics = {};
 	int64_t saved_at = 0;
 	std::string account_name;

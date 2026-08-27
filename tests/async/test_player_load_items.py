@@ -16,6 +16,7 @@ COPYOVER = (ROOT / "src/copyover.c").read_text()
 HARNESS = r'''
 #include "item_ownership_runtime.h"
 #include "player_load_items.h"
+#include "player_load_pets.h"
 #include "prototypes.h"
 #include "spells.h"
 #include "structs.h"
@@ -34,6 +35,7 @@ size_t extracts = 0;
 size_t balance_calls = 0;
 size_t fail_read_at = static_cast<size_t>(-1);
 size_t enchant_activations = 0;
+size_t pet_extracts = 0;
 
 void release_tree(P_obj object)
 {
@@ -76,6 +78,55 @@ struct test_character
         character.player.level = 40;
     }
 };
+
+void add_pet(player_load_result &result, uint64_t database_id, int vnum, int order = 0)
+{
+    player_pet_snapshot pet = {};
+    pet.mob_vnum = vnum;
+    pet.order = order;
+    pet.hit = 10;
+    pet.max_hit = 20;
+    pet.mana = 3;
+    pet.max_mana = 5;
+    pet.vitality = 4;
+    pet.max_vitality = 6;
+    pet.charm_duration = 12;
+    pet.room_vnum = result.snapshot.room_vnum;
+    result.snapshot.pets.push_back(pet);
+    result.pet_identities.push_back({ database_id, {} });
+}
+
+void add_pet_item(player_load_result &result, size_t pet_index, uint64_t database_id,
+                  uint64_t uid, int vnum, int32_t parent_index, int16_t equipment_slot)
+{
+    player_item_snapshot item = {};
+    item.parent_index = parent_index;
+    item.equipment_slot = equipment_slot;
+    item.object_uid = uid;
+    item.vnum = vnum;
+    item.weight = vnum == 100 ? 2 : 3;
+    item.condition = 100;
+    player_load_item_identity identity = {};
+    identity.database_id = database_id;
+    identity.quantity = 1;
+    identity.item_uid = uid;
+    identity.owner = { item_owner_type::player, static_cast<uint64_t>(result.pid), 0 };
+    identity.item_revision = 1;
+    identity.owner_revision = result.item_owner_revision;
+    identity.state = item_custody_state::active;
+    if (parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+        identity.root_item_uid = uid;
+    else
+    {
+        const auto &parent =
+            result.pet_identities[pet_index].item_identities[parent_index];
+        identity.serialized_parent_id = parent.database_id;
+        identity.parent_item_uid = parent.item_uid;
+        identity.root_item_uid = parent.root_item_uid;
+    }
+    result.snapshot.pets[pet_index].items.push_back(item);
+    result.pet_identities[pet_index].item_identities.push_back(identity);
+}
 
 player_load_result base_result(int pid = 42)
 {
@@ -125,6 +176,7 @@ void reset_test_state()
     balance_calls = 0;
     fail_read_at = static_cast<size_t>(-1);
     enchant_activations = 0;
+    pet_extracts = 0;
     item_ownership_runtime_reset();
 }
 
@@ -180,6 +232,51 @@ P_obj read_object(int rnum, int)
     object->type = rnum == 100 ? ITEM_CONTAINER : ITEM_OTHER;
     object->weight = rnum == 100 ? 2 : 3;
     return object;
+}
+
+int real_mobile(int vnum)
+{
+    return vnum == 999 ? -1 : vnum;
+}
+
+P_char read_mobile(int rnum, int)
+{
+    P_char pet = static_cast<P_char>(std::calloc(1, sizeof(char_data)));
+    assert(pet);
+    pet->only.npc = static_cast<npc_only_data *>(std::calloc(1, sizeof(npc_only_data)));
+    assert(pet->only.npc);
+    pet->only.npc->R_num = rnum;
+    SET_BIT(pet->specials.act, ACT_ISNPC);
+    pet->in_room = NOWHERE;
+    return pet;
+}
+
+void extract_char(P_char pet)
+{
+    ++pet_extracts;
+    std::free(pet->only.npc);
+    std::free(pet);
+}
+
+int setup_pet(P_char, P_char, int duration, int)
+{
+    return duration;
+}
+
+void add_follower(P_char pet, P_char owner)
+{
+    follow_type *follow = static_cast<follow_type *>(std::calloc(1, sizeof(follow_type)));
+    assert(follow);
+    follow->follower = pet;
+    follow->next = owner->followers;
+    owner->followers = follow;
+    pet->following = owner;
+}
+
+bool char_to_room(P_char pet, int room, int)
+{
+    pet->in_room = room;
+    return true;
 }
 
 void extract_obj(P_obj object, int)
@@ -441,6 +538,74 @@ int main()
         result.item_identities.resize(PLAYER_LOAD_ITEM_MAX + 1);
         invalid(result);
     }
+    {
+        reset_test_state();
+        test_character owner(42);
+        owner.character.in_room = 5;
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        add_pet(result, 3001, 200);
+        add_pet_item(result, 0, 3101, 20, 100, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        add_pet_item(result, 0, 3102, 21, 101, 0, 0);
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.size() == 1 && pets[0]->carrying &&
+               pets[0]->carrying->contains);
+        assert(item_ownership_runtime_size() == 0 && owner.character.followers == nullptr);
+        player_load_pets_commit(&owner.character, &pets, result);
+        assert(pets.empty() && owner.character.followers &&
+               owner.character.followers->follower->in_room == NOWHERE);
+        player_load_pets_place(&owner.character);
+        P_char pet = owner.character.followers->follower;
+        assert(pet->in_room == 5 && metrics.pet_count == 1 && metrics.item_count == 2);
+        player_load_items_discard(pet);
+        std::free(owner.character.followers);
+        owner.character.followers = nullptr;
+        extract_char(pet);
+    }
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        add_pet(result, 3001, 200, 0);
+        add_pet(result, 3002, 999, 1);
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(!player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.empty() && pet_extracts == 1 && !owner.character.followers);
+    }
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        add_pet(result, 3001, 200);
+        for (size_t index = 0; index < 300; ++index)
+            add_pet_item(result, 0, 4000 + index, 1000 + index, 101,
+                         PLAYER_SNAPSHOT_NO_PARENT, 0);
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(metrics.item_count == 300 && metrics.operation_count <=
+               PLAYER_LOAD_ITEM_OPERATIONS_PER_ITEM * 300 +
+                   PLAYER_LOAD_PET_OPERATIONS_PER_PET);
+        player_load_pets_discard(&pets);
+        assert(pet_extracts == 1 && extracts == 300);
+    }
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        result.snapshot.room_vnum = 123;
+        add_pet(result, 3001, 200, 0);
+        add_pet(result, 3002, 201, 0);
+        std::vector<P_char> pets;
+        player_load_pet_materialize_metrics metrics = {};
+        assert(!player_load_pets_stage(&owner.character, result, &pets, &metrics));
+        assert(pets.empty() && pet_extracts == 1);
+    }
     return 0;
 }
 '''
@@ -460,6 +625,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-load-items-") as temp_dir:
             "-Isrc",
             str(source),
             "src/player_load_items.c",
+            "src/player_load_pets.c",
             "src/item_ownership_runtime.c",
             "-o",
             str(binary),

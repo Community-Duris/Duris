@@ -1,6 +1,8 @@
 #include "player_load_materialize.h"
 
+#include "item_ownership_runtime.h"
 #include "player_load_items.h"
+#include "player_load_pets.h"
 #include "prototypes.h"
 #include "structs.h"
 #include "db.h"
@@ -10,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unordered_set>
+#include <vector>
 
 #include "assocs.h"
 #include "player_revision_state.h"
@@ -28,7 +31,8 @@ bool valid_snapshot(const player_load_result &result)
 	    result.snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION ||
 	    result.snapshot.pid != result.pid ||
 	    (result.snapshot.components != PLAYER_LOAD_SESSION01_COMPONENTS &&
-	     result.snapshot.components != PLAYER_LOAD_SESSION02_COMPONENTS) ||
+	     result.snapshot.components != PLAYER_LOAD_SESSION02_COMPONENTS &&
+	     result.snapshot.components != PLAYER_LOAD_SESSION03_COMPONENTS) ||
 	    result.snapshot.status_strings.size() != 7 ||
 	    result.snapshot.status_integers.size() != 63 ||
 	    result.metrics.query_count > PLAYER_LOAD_QUERY_MAX ||
@@ -79,10 +83,18 @@ bool valid_snapshot(const player_load_result &result)
 			return false;
 	if (result.snapshot.components == PLAYER_LOAD_SESSION01_COMPONENTS &&
 	    (!result.snapshot.items.empty() || !result.item_identities.empty() ||
-	     result.item_owner_revision))
+	     result.item_owner_revision || !result.snapshot.pets.empty() ||
+	     !result.pet_identities.empty()))
 		return false;
 	if (result.snapshot.components == PLAYER_LOAD_SESSION02_COMPONENTS &&
-	    result.snapshot.items.size() != result.item_identities.size())
+	    (result.snapshot.items.size() != result.item_identities.size() ||
+	     !result.snapshot.pets.empty() || !result.pet_identities.empty() ||
+	     result.authoritative_item_count != result.item_identities.size()))
+		return false;
+	if (result.snapshot.components == PLAYER_LOAD_SESSION03_COMPONENTS &&
+	    (result.snapshot.items.size() != result.item_identities.size() ||
+	     result.snapshot.pets.size() != result.pet_identities.size() ||
+	     result.authoritative_item_count > PLAYER_LOAD_ITEM_MAX))
 		return false;
 	return true;
 }
@@ -445,6 +457,78 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 			      metrics.operation_count, metrics.maximum_depth);
 			return false;
 		}
+	}
+	else if (result.snapshot.components == PLAYER_LOAD_SESSION03_COMPONENTS)
+	{
+		std::vector<P_char> pets;
+		player_load_pet_materialize_metrics pet_metrics = {};
+		if (!player_load_pets_stage(ch, result, &pets, &pet_metrics))
+		{
+			logit(LOG_DEBUG,
+			      "player_load_materialize: component=pets outcome=%u pets=%zu items=%zu operations=%zu depth=%zu",
+			      static_cast<unsigned int>(pet_metrics.outcome), pet_metrics.pet_count,
+			      pet_metrics.item_count, pet_metrics.operation_count,
+			      pet_metrics.maximum_depth);
+			return false;
+		}
+		player_load_item_materialize_metrics item_metrics = {};
+		if (!player_load_item_graph_materialize(
+			    ch, result.snapshot.items, result.item_identities, result.pid,
+			    result.item_owner_revision, false, &item_metrics))
+		{
+			player_load_pets_discard(&pets);
+			return false;
+		}
+		std::vector<item_ownership_runtime_entry> ownership;
+		try
+		{
+			ownership.reserve(result.authoritative_item_count);
+			auto append = [&](const std::vector<player_item_snapshot> &items,
+					  const std::vector<player_load_item_identity> &identities)
+			{
+				for (size_t index = 0; index < identities.size(); ++index)
+				{
+					const player_load_item_identity &identity =
+						identities[index];
+					ownership.push_back(
+						{ identity.item_uid, identity.root_item_uid,
+						  identity.parent_item_uid, identity.owner,
+						  identity.item_revision, identity.owner_revision,
+						  items[index].vnum, identity.state });
+				}
+			};
+			append(result.snapshot.items, result.item_identities);
+			for (size_t index = 0; index < result.snapshot.pets.size(); ++index)
+				append(result.snapshot.pets[index].items,
+				       result.pet_identities[index].item_identities);
+		}
+		catch (const std::bad_alloc &)
+		{
+			player_load_items_discard(ch);
+			player_load_pets_discard(&pets);
+			return false;
+		}
+		const item_owner_identity owner = { item_owner_type::player,
+						    static_cast<uint64_t>(result.pid), 0 };
+		if (ownership.size() != result.authoritative_item_count)
+		{
+			player_load_items_discard(ch);
+			player_load_pets_discard(&pets);
+			return false;
+		}
+		const bool ownership_applied =
+			ownership.empty() ?
+				item_ownership_runtime_hydrate_owner(owner,
+								     result.item_owner_revision) :
+				item_ownership_runtime_hydrate_batch(ownership.data(),
+								     ownership.size());
+		if (!ownership_applied)
+		{
+			player_load_items_discard(ch);
+			player_load_pets_discard(&pets);
+			return false;
+		}
+		player_load_pets_commit(ch, &pets, result);
 	}
 	return true;
 }

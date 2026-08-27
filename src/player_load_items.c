@@ -57,6 +57,15 @@ bool fail(player_load_item_materialize_metrics *metrics,
 	return false;
 }
 
+void clear_item_uids(P_obj object)
+{
+	if (!object)
+		return;
+	object->obj_uid = 0;
+	for (P_obj child = object->contains; child; child = child->next_content)
+		clear_item_uids(child);
+}
+
 bool count_operation(player_load_item_materialize_metrics *metrics, size_t item_count,
 		     size_t amount = 1)
 {
@@ -258,7 +267,7 @@ void attach_loaded_inventory(P_char character, const std::vector<P_obj> &objects
 			object->z_cord = 0;
 			GET_CARRYING_W(character) += GET_OBJ_WEIGHT(object);
 			IS_CARRYING_N(character)++;
-			if (!object->g_key && GET_LEVEL(character) < 57 &&
+			if (IS_PC(character) && !object->g_key && GET_LEVEL(character) < 57 &&
 			    GET_PID(character) < 10000000)
 				object->g_key = 1;
 		}
@@ -267,27 +276,31 @@ void attach_loaded_inventory(P_char character, const std::vector<P_obj> &objects
 }
 }
 
-bool player_load_items_materialize(P_char character, const player_load_result &result,
-				   player_load_item_materialize_metrics *metrics)
+bool player_load_item_graph_materialize(P_char character,
+					const std::vector<player_item_snapshot> &items,
+					const std::vector<player_load_item_identity> &identities,
+					int32_t pid, uint64_t owner_revision,
+					bool hydrate_ownership,
+					player_load_item_materialize_metrics *metrics)
 {
 	player_load_item_materialize_metrics local_metrics = {};
 	if (!metrics)
 		metrics = &local_metrics;
 	*metrics = {};
-	const size_t item_count = result.snapshot.items.size();
+	const size_t item_count = items.size();
 	metrics->item_count = item_count;
-	if (!character || !character->only.pc || result.pid <= 0 ||
-	    result.item_identities.size() != item_count || item_count > PLAYER_LOAD_ITEM_MAX)
+	if (!character || pid <= 0 || identities.size() != item_count ||
+	    item_count > PLAYER_LOAD_ITEM_MAX)
 		return fail(metrics,
 			    item_count > PLAYER_LOAD_ITEM_MAX ?
 				    player_load_item_materialize_outcome::limit_exceeded :
 				    player_load_item_materialize_outcome::invalid_snapshot);
 	const item_owner_identity expected_owner = { item_owner_type::player,
-						     static_cast<uint64_t>(result.pid), 0 };
+						     static_cast<uint64_t>(pid), 0 };
 	if (!item_count)
 	{
-		if (!item_ownership_runtime_hydrate_owner(expected_owner,
-							  result.item_owner_revision))
+		if (hydrate_ownership &&
+		    !item_ownership_runtime_hydrate_owner(expected_owner, owner_revision))
 			return fail(metrics,
 				    player_load_item_materialize_outcome::ownership_failure);
 		metrics->outcome = player_load_item_materialize_outcome::applied;
@@ -315,8 +328,8 @@ bool player_load_items_materialize(P_char character, const player_load_result &r
 
 	for (size_t index = 0; index < item_count; ++index)
 	{
-		const player_item_snapshot &item = result.snapshot.items[index];
-		const player_load_item_identity &identity = result.item_identities[index];
+		const player_item_snapshot &item = items[index];
+		const player_load_item_identity &identity = identities[index];
 		const size_t metadata_operations =
 			item.extra_descriptions.size() +
 			((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_AFFECTS) ?
@@ -327,7 +340,7 @@ bool player_load_items_materialize(P_char character, const player_load_result &r
 		    identity.item_uid != item.object_uid || !identity.root_item_uid ||
 		    identity.quantity != 1 || identity.state != item_custody_state::active ||
 		    !item_owner_identity_equal(identity.owner, expected_owner) ||
-		    identity.owner_revision != result.item_owner_revision ||
+		    identity.owner_revision != owner_revision ||
 		    identity.override_mask & ~PLAYER_LOAD_ITEM_OVERRIDE_ALL)
 			return fail(metrics,
 				    player_load_item_materialize_outcome::invalid_snapshot);
@@ -374,8 +387,7 @@ bool player_load_items_materialize(P_char character, const player_load_result &r
 				return fail(metrics,
 					    player_load_item_materialize_outcome::invalid_snapshot);
 			const size_t parent = static_cast<size_t>(item.parent_index);
-			const player_load_item_identity &parent_identity =
-				result.item_identities[parent];
+			const player_load_item_identity &parent_identity = identities[parent];
 			if (identity.serialized_parent_id != parent_identity.database_id ||
 			    identity.parent_item_uid != parent_identity.item_uid ||
 			    identity.root_item_uid != parent_identity.root_item_uid)
@@ -446,8 +458,8 @@ bool player_load_items_materialize(P_char character, const player_load_result &r
 	}
 	for (size_t index = 0; index < item_count; ++index)
 	{
-		const player_item_snapshot &item = result.snapshot.items[index];
-		const player_load_item_identity &identity = result.item_identities[index];
+		const player_item_snapshot &item = items[index];
+		const player_load_item_identity &identity = identities[index];
 		const int object_number = real_object(item.vnum);
 		if (object_number < 0)
 			return fail(metrics,
@@ -521,7 +533,7 @@ bool player_load_items_materialize(P_char character, const player_load_result &r
 	}
 	for (size_t index = 0; index < item_count; ++index)
 	{
-		const int32_t parent_index = result.snapshot.items[index].parent_index;
+		const int32_t parent_index = items[index].parent_index;
 		if (parent_index == PLAYER_SNAPSHOT_NO_PARENT)
 		{
 			staged.roots[index] = true;
@@ -534,7 +546,7 @@ bool player_load_items_materialize(P_char character, const player_load_result &r
 	}
 	for (size_t index = 0; index < item_count; ++index)
 	{
-		const int32_t parent_index = result.snapshot.items[index].parent_index;
+		const int32_t parent_index = items[index].parent_index;
 		if (parent_index == PLAYER_SNAPSHOT_NO_PARENT)
 			continue;
 		P_obj child = staged.objects[index];
@@ -558,12 +570,21 @@ bool player_load_items_materialize(P_char character, const player_load_result &r
 			return fail(metrics, player_load_item_materialize_outcome::limit_exceeded);
 	}
 
-	if (!item_ownership_runtime_hydrate_batch(ownership.data(), ownership.size()))
+	if (hydrate_ownership &&
+	    !item_ownership_runtime_hydrate_batch(ownership.data(), ownership.size()))
 		return fail(metrics, player_load_item_materialize_outcome::ownership_failure);
-	attach_loaded_inventory(character, staged.objects, roots, result.snapshot.items);
+	attach_loaded_inventory(character, staged.objects, roots, items);
 	staged.published = true;
 	metrics->outcome = player_load_item_materialize_outcome::applied;
 	return true;
+}
+
+bool player_load_items_materialize(P_char character, const player_load_result &result,
+				   player_load_item_materialize_metrics *metrics)
+{
+	return player_load_item_graph_materialize(character, result.snapshot.items,
+						  result.item_identities, result.pid,
+						  result.item_owner_revision, true, metrics);
 }
 
 void player_load_items_activate_equipment(P_char character)
@@ -582,4 +603,32 @@ void player_load_items_activate_equipment(P_char character)
 						       character, 0, SPELL_TYPE_SPELL, character,
 						       0));
 	}
+}
+
+void player_load_items_discard(P_char character)
+{
+	if (!character)
+		return;
+	for (int slot = 0; slot < MAX_WEAR; ++slot)
+		if (character->equipment[slot])
+		{
+			P_obj object = character->equipment[slot];
+			character->equipment[slot] = nullptr;
+			object->loc_p = LOC_NOWHERE;
+			object->loc.wearing = nullptr;
+			clear_item_uids(object);
+			extract_obj(object, FALSE);
+		}
+	while (character->carrying)
+	{
+		P_obj object = character->carrying;
+		character->carrying = object->next_content;
+		object->next_content = nullptr;
+		object->loc_p = LOC_NOWHERE;
+		object->loc.carrying = nullptr;
+		clear_item_uids(object);
+		extract_obj(object, FALSE);
+	}
+	GET_CARRYING_W(character) = 0;
+	IS_CARRYING_N(character) = 0;
 }

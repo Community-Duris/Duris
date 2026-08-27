@@ -39,6 +39,7 @@
 #include "paladins.h"
 #include "player_load_materialize.h"
 #include "player_load_items.h"
+#include "player_load_pets.h"
 #include "player_load_pipeline.h"
 #include "persistence_observability.h"
 #include "redis.h"
@@ -2421,7 +2422,10 @@ void enter_game(P_desc d)
 		if (!snapshot_load)
 			reset_char(ch);
 		else
+		{
 			player_load_items_activate_equipment(ch);
+			player_load_pets_place(ch);
+		}
 
 		cost = 0;
 
@@ -2481,14 +2485,6 @@ void enter_game(P_desc d)
 		{
 			send_to_char("\r\nCouldn't find any items in storage for you...\r\n", ch);
 		}
-
-		// only restore pets on crash recovery
-#ifndef __NO_MYSQL__
-		if (d->rtype == RENT_CRASH || d->rtype == RENT_CRASH2)
-		{
-			sql_load_player_pets(ch);
-		}
-#endif
 
 		if (cost == -2)
 		{

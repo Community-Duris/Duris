@@ -228,6 +228,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player_load_repository.o \
 				 player_load_pipeline.o \
 				 player_load_items.o \
+				 player_load_pets.o \
 				 player_load_materialize.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
