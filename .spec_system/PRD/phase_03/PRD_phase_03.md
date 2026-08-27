@@ -4,7 +4,7 @@
 **Sessions**: 14 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 1/14 sessions (7%)
+**Progress**: 2/14 sessions (14%)
 
 ---
 
@@ -37,7 +37,7 @@ and their transition evidence are complete.
 | Session | Name | Status | Work Window | Validated |
 |---------|------|--------|-------------|-----------|
 | 01 | Consistent Player Load Transaction | Complete | Async typed login read, one snapshot, required components, and fail-closed publication | 2026-08-27 |
-| 02 | Batched Item Ownership and Linear Assembly | Not Started | Set-based item/owner metadata and O(N) object graph materialization | - |
+| 02 | Batched Item Ownership and Linear Assembly | Complete | Set-based item/owner metadata and O(N) object graph materialization | 2026-08-27 |
 | 03 | Batched Pet Graph Hydration | Not Started | Set-based pet items/metadata, explicit bounds, staged publication, and recovery semantics | - |
 | 04 | Set-Based PvP and Epic Task Reads | Not Started | Recent-death aggregation, in-memory task selection, and remaining read fan-out removal | - |
 | 05 | Production-Clone Query Plan and Index Gate | Not Started | Reproducible plan evidence, write-cost measurement, and validated schema changes | - |
@@ -56,12 +56,13 @@ and their transition evidence are complete.
 ## Completed Sessions
 
 - Session 01: Consistent Player Load Transaction (completed 2026-08-27)
+- Session 02: Batched Item Ownership and Linear Assembly (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 02: Batched Item Ownership and Linear Assembly
+- Session 03: Batched Pet Graph Hydration
 
 ---
 

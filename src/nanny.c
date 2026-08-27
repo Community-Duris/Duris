@@ -38,6 +38,7 @@
 #include "multiplay_whitelist.h"
 #include "paladins.h"
 #include "player_load_materialize.h"
+#include "player_load_items.h"
 #include "player_load_pipeline.h"
 #include "persistence_observability.h"
 #include "redis.h"
@@ -2406,6 +2407,8 @@ void enter_game(P_desc d)
 
 	if (GET_LEVEL(ch))
 	{
+		const bool snapshot_load = d->rtype == 0 &&
+					   d->player_load_mode != PLAYER_LOAD_MODE_NONE;
 		ch->desc = d;
 		if (d->player_load_mode == PLAYER_LOAD_MODE_NONE)
 		{
@@ -2415,7 +2418,10 @@ void enter_game(P_desc d)
 		}
 		d->player_load_mode = PLAYER_LOAD_MODE_NONE;
 
-		reset_char(ch);
+		if (!snapshot_load)
+			reset_char(ch);
+		else
+			player_load_items_activate_equipment(ch);
 
 		cost = 0;
 
@@ -2469,11 +2475,7 @@ void enter_game(P_desc d)
 		}
 		else if (d->rtype == 0)
 		{
-			// sql load - items were loaded in restoreCharOnly but reset_char cleared them
-			// reload from sql
-#ifndef __NO_MYSQL__
-			sql_load_player_items(ch);
-#endif
+			// The consistent worker snapshot already materialized SQL inventory.
 		}
 		else
 		{

@@ -786,6 +786,7 @@ static P_char copyover_load_player(const char *name, P_desc d)
 	request.request_id = player_load_pipeline_next_request_id();
 	request.player_name = name ? name : "";
 	request.deadline_usec = now + PLAYER_LOAD_TIMEOUT_USEC;
+	request.include_items = false;
 	if (!player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000) ||
 	    result.request_id != request.request_id ||
 	    result.outcome != player_load_outcome::applied)

@@ -1,5 +1,6 @@
 #include "player_load_materialize.h"
 
+#include "player_load_items.h"
 #include "prototypes.h"
 #include "structs.h"
 #include "db.h"
@@ -26,7 +27,8 @@ bool valid_snapshot(const player_load_result &result)
 	if (result.outcome != player_load_outcome::applied || result.pid <= 0 ||
 	    result.snapshot.schema_version != PLAYER_SNAPSHOT_SCHEMA_VERSION ||
 	    result.snapshot.pid != result.pid ||
-	    result.snapshot.components != PLAYER_LOAD_SESSION01_COMPONENTS ||
+	    (result.snapshot.components != PLAYER_LOAD_SESSION01_COMPONENTS &&
+	     result.snapshot.components != PLAYER_LOAD_SESSION02_COMPONENTS) ||
 	    result.snapshot.status_strings.size() != 7 ||
 	    result.snapshot.status_integers.size() != 63 ||
 	    result.metrics.query_count > PLAYER_LOAD_QUERY_MAX ||
@@ -75,6 +77,13 @@ bool valid_snapshot(const player_load_result &result)
 	for (uint64_t balance : result.domains.bank)
 		if (balance > INT_MAX)
 			return false;
+	if (result.snapshot.components == PLAYER_LOAD_SESSION01_COMPONENTS &&
+	    (!result.snapshot.items.empty() || !result.item_identities.empty() ||
+	     result.item_owner_revision))
+		return false;
+	if (result.snapshot.components == PLAYER_LOAD_SESSION02_COMPONENTS &&
+	    result.snapshot.items.size() != result.item_identities.size())
+		return false;
 	return true;
 }
 
@@ -299,6 +308,7 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 {
 	if (!ch || !ch->only.pc || !valid_snapshot(result))
 		return false;
+	reset_char(ch);
 	int hit_difference = 0;
 	for (const player_snapshot_string &entry : result.snapshot.status_strings)
 		if (!apply_string(ch, entry))
@@ -422,5 +432,19 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	}
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 	GET_HIT(ch) = GET_MAX_HIT(ch) - hit_difference;
-	return player_revision_hydrate(result.pid, result.snapshot.revision);
+	if (!player_revision_hydrate(result.pid, result.snapshot.revision))
+		return false;
+	if (result.snapshot.components == PLAYER_LOAD_SESSION02_COMPONENTS)
+	{
+		player_load_item_materialize_metrics metrics = {};
+		if (!player_load_items_materialize(ch, result, &metrics))
+		{
+			logit(LOG_DEBUG,
+			      "player_load_materialize: component=items outcome=%u count=%zu operations=%zu depth=%zu",
+			      static_cast<unsigned int>(metrics.outcome), metrics.item_count,
+			      metrics.operation_count, metrics.maximum_depth);
+			return false;
+		}
+	}
+	return true;
 }

@@ -1882,6 +1882,7 @@ P_char load_char_into_game(struct acct_chars *c, P_desc d)
 		free_char(player);
 		return NULL;
 	}
+	d->player_load_mode = PLAYER_LOAD_MODE_ACCOUNT;
 	// fixing racewar assignment on character list
 	c->racewar = GET_RACEWAR(player) == RACEWAR_EVIL ? ACCT_EVIL : ACCT_GOOD;
 	d->rtype = 0;
