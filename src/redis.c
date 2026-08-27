@@ -60,7 +60,6 @@ bool redis_enabled = false;
 bool redis_world_state_enabled = false;
 int crash_recovery_boot = 0;
 
-#define REDIS_FLUSH_INTERVAL (30 * WAIT_SEC)
 #define REDIS_WORLD_STATE_INTERVAL_DEFAULT 10
 #define REDIS_WORLD_STATE_MAX_AGE_DEFAULT 300
 #define REDIS_CONNECT_TIMEOUT_MSEC 250
@@ -1058,8 +1057,6 @@ struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy(void)
 
 void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
-	nevent_rearm_guard rearm(event_flush_dirty_players, REDIS_FLUSH_INTERVAL);
-
 	flush_dirty_players();
 	if (redis_enabled)
 		redis_flush_floor_drops();
@@ -1309,10 +1306,12 @@ void event_save_world_state(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, voi
 	if (redis_enabled && redis_world_state_enabled)
 	{
 		redis_flush_floor_drops();
-		redis_save_world_state();
-		add_event(event_save_world_state, world_state_interval * WAIT_SEC, NULL, NULL, NULL,
-			  0, NULL, 0);
+		if (!redis_save_world_state())
+			nevent_periodic_mark_failure("world-state persistence did not complete");
 	}
+	else
+		nevent_periodic_mark_failure("world-state persistence is disabled");
+	nevent_periodic_next_after(world_state_interval * WAIT_SEC);
 }
 
 bool redis_cache_set(const char *key, const char *value)
@@ -1986,10 +1985,6 @@ void redis_check_donation_messages(void)
 void event_check_donation_messages(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
 	redis_check_donation_messages();
-
-	if (redis_enabled)
-		add_event(event_check_donation_messages, 1 * WAIT_SEC, NULL, NULL, NULL, 0, NULL,
-			  0);
 }
 
 // forward declare from random.mob.c

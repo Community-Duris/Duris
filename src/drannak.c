@@ -244,7 +244,7 @@ void event_update_surnames(P_char /*ch*/, P_char /*victim*/, P_obj, void * /*dat
 		set_surname(GET_TRUE_CHAR_D(d), 0);
 	}
 	// Check every 5 to 10 minutes.
-	add_event(event_update_surnames, number(300, 600) * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_periodic_next_after(number(300, 600) * WAIT_SEC);
 }
 
 void vnum_from_inv(P_char ch, int item, int count)

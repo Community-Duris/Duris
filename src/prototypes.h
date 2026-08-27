@@ -972,27 +972,6 @@ inline nevent_schedule_result nevent_replace_owned(nevent_handle existing, event
 		[](void *stored_payload) { delete static_cast<payload_type *>(stored_payload); });
 }
 
-class nevent_rearm_guard
-{
-    public:
-	explicit nevent_rearm_guard(event_func callback, int delay)
-		: callback_(callback)
-		, delay_(delay)
-	{
-	}
-
-	~nevent_rearm_guard() { add_event(callback_, delay_, NULL, NULL, NULL, 0, NULL, 0); }
-
-	nevent_rearm_guard(const nevent_rearm_guard &) = delete;
-	nevent_rearm_guard &operator=(const nevent_rearm_guard &) = delete;
-
-	void retry_after(int delay) { delay_ = delay; }
-
-    private:
-	event_func callback_;
-	int delay_;
-};
-
 P_nevent get_scheduled(P_char, event_func_type);
 P_nevent get_scheduled(P_obj, event_func_type);
 P_nevent get_scheduled(event_func_type);
@@ -1013,8 +992,25 @@ bool nevent_reschedule_after(nevent_handle, unsigned long long);
 bool nevent_advance_by(nevent_handle, unsigned long long);
 void nevent_bind_game_thread();
 bool nevent_is_game_thread();
+bool nevent_require_game_thread(const char *operation);
+bool nevent_handle_is_active(nevent_handle);
 void nevent_advance_tick();
 void zone_purge(int);
+
+nevent_periodic_result nevent_periodic_register(const char *, event_func_type, unsigned long long,
+						unsigned long long, nevent_periodic_policy, bool);
+nevent_periodic_result nevent_periodic_set_enabled(const char *, bool, unsigned long long);
+void nevent_periodic_reset();
+bool nevent_periodic_begin(P_nevent);
+void nevent_periodic_complete(P_nevent);
+void nevent_periodic_mark_failure(const char *);
+void nevent_periodic_retry_after(unsigned long long, const char *);
+void nevent_periodic_next_after(unsigned long long);
+void nevent_periodic_watchdog();
+size_t nevent_periodic_copy_health(nevent_periodic_health *, size_t);
+nevent_periodic_summary nevent_periodic_summary_copy();
+long nevent_periodic_integrity_errors(bool);
+bool nevent_periodic_event_is_valid(P_nevent);
 
 /* new_events.c */
 

@@ -105,8 +105,6 @@ void event_another_hour(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * 
 
 	// save dirty shopkeepers periodically
 	save_dirty_shopkeepers();
-
-	add_event(event_another_hour, PULSES_IN_TICK, NULL, NULL, NULL, 0, NULL, 0);
 }
 const char *astralMsgs[] = {
 	NULL,
@@ -251,7 +249,6 @@ void event_astral_clock(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * 
 			}
 		}
 	}
-	add_event(event_astral_clock, PULSES_IN_TICK, NULL, NULL, NULL, 0, NULL, 0);
 }
 
 void event_weather_change(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void *data)

@@ -2044,6 +2044,7 @@ struct nevent_data
 	unsigned int priority;
 	unsigned int deferral_count;
 	unsigned int lifecycle_state;
+	unsigned int periodic_job_id; // One-based registry slot, or zero for ordinary events.
 	unsigned long long due_tick; // Absolute scheduler tick when this event becomes eligible.
 	unsigned long long deferred_cost_us; // Cost estimate registered with catch-up debt.
 	unsigned long long sequence;
@@ -2098,6 +2099,67 @@ enum class nevent_cancel_result : ubyte
 	stale_handle,
 	invalid_handle,
 	wrong_thread
+};
+
+#define NEVENT_PERIODIC_KEY_LENGTH 48
+#define NEVENT_PERIODIC_FAILURE_LENGTH 96
+
+enum class nevent_periodic_policy : ubyte
+{
+	fixed_delay,
+	fixed_rate
+};
+
+enum class nevent_periodic_result : ubyte
+{
+	registered,
+	duplicate_suppressed,
+	enabled,
+	disabled,
+	unknown_key,
+	invalid_definition,
+	capacity_exhausted,
+	schedule_failed,
+	wrong_thread
+};
+
+struct nevent_periodic_health
+{
+	char key[NEVENT_PERIODIC_KEY_LENGTH];
+	char last_failure[NEVENT_PERIODIC_FAILURE_LENGTH];
+	event_func_type callback;
+	nevent_periodic_policy policy;
+	bool enabled;
+	bool armed;
+	bool running;
+	bool has_started;
+	bool has_succeeded;
+	unsigned long long initial_delay;
+	unsigned long long interval;
+	unsigned long long next_due_tick;
+	unsigned long long last_started_tick;
+	unsigned long long last_success_tick;
+	unsigned long long total_runs;
+	unsigned long long callback_failures;
+	unsigned long long consecutive_failures;
+	unsigned long long schedule_failures;
+	unsigned long long missed_runs;
+	unsigned long long watchdog_rearms;
+	unsigned long long duplicates_suppressed;
+};
+
+struct nevent_periodic_summary
+{
+	unsigned long registered;
+	unsigned long enabled;
+	unsigned long armed;
+	unsigned long running;
+	unsigned long unhealthy;
+	unsigned long long callback_failures;
+	unsigned long long schedule_failures;
+	unsigned long long missed_runs;
+	unsigned long long watchdog_rearms;
+	unsigned long long duplicates_suppressed;
 };
 
 /* structure used for grouping.. */

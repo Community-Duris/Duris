@@ -147,7 +147,7 @@ bool nevent_is_game_thread()
 	return nevent_game_thread_bound && nevent_game_thread == std::this_thread::get_id();
 }
 
-static bool nevent_require_game_thread(const char *operation)
+bool nevent_require_game_thread(const char *operation)
 {
 	if (nevent_is_game_thread())
 		return true;
@@ -796,6 +796,7 @@ static nevent_schedule_result add_event_internal(event_func func, int delay, P_c
 	event->data_destroy = NULL;
 	event->priority = nevent_priority(func, ch);
 	event->deferral_count = 0;
+	event->periodic_job_id = 0;
 	event->deferred_cost_us = 0;
 	event->due_tick = nevent_add_ticks(ne_event_tick, static_cast<unsigned long long>(delay));
 	if (event->due_tick < nevent_first_eligible_tick())
@@ -872,8 +873,10 @@ nevent_schedule_result add_event_owned_payload(event_func func, int delay, P_cha
 	return add_event_internal(func, delay, ch, victim, obj, NULL, 0, payload, payload_destroy);
 }
 
-static bool nevent_replace_target_is_active(nevent_handle existing)
+bool nevent_handle_is_active(nevent_handle existing)
 {
+	if (!nevent_require_game_thread("nevent_handle_is_active"))
+		return false;
 	return existing.event && existing.sequence != 0 &&
 	       existing.event->sequence == existing.sequence &&
 	       existing.event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE;
@@ -898,7 +901,7 @@ nevent_schedule_result nevent_replace(nevent_handle existing, event_func func, i
 {
 	if (!nevent_require_game_thread("nevent_replace"))
 		return nevent_schedule_failure(nevent_schedule_status::wrong_thread);
-	if (!nevent_replace_target_is_active(existing))
+	if (!nevent_handle_is_active(existing))
 		return nevent_schedule_failure(nevent_schedule_status::invalid_replace_target);
 	return nevent_finish_replace(existing, add_event(func, delay, ch, victim, obj, flag, data,
 							 data_size));
@@ -915,7 +918,7 @@ nevent_schedule_result nevent_replace_owned_payload(nevent_handle existing, even
 			payload_destroy(payload);
 		return nevent_schedule_failure(nevent_schedule_status::wrong_thread);
 	}
-	if (!nevent_replace_target_is_active(existing))
+	if (!nevent_handle_is_active(existing))
 	{
 		if (payload && payload_destroy)
 			payload_destroy(payload);
@@ -1512,17 +1515,22 @@ void ne_events(void)
 		{
 			event_func_type callback_func = current_nevent->func;
 			const char *callback_name = nevent_callback_label(callback_func);
+			const bool periodic_callback = nevent_periodic_begin(current_nevent);
 			clock_gettime(CLOCK_MONOTONIC, &callback_started);
 #ifdef DO_PROFILE
 			PROFILE_START(event_func);
 			(callback_func)(current_nevent->ch, current_nevent->victim,
 					current_nevent->obj, current_nevent->data);
+			if (periodic_callback)
+				nevent_periodic_complete(current_nevent);
 			PROFILE_END(event_func);
 			PROFILE_REGISTER_CALL(callback_func,
 					      event_func_profile_end - event_func_profile_beg)
 #else
 			(callback_func)(current_nevent->ch, current_nevent->victim,
 					current_nevent->obj, current_nevent->data);
+			if (periodic_callback)
+				nevent_periodic_complete(current_nevent);
 #endif
 			clock_gettime(CLOCK_MONOTONIC, &callback_finished);
 			executed++;
@@ -1569,6 +1577,7 @@ void ne_events(void)
 	}
 	current_nevent = NULL;
 	nevent_process_pending_cancellations();
+	nevent_periodic_watchdog();
 	PROFILE_END(event_loop);
 	clock_gettime(CLOCK_MONOTONIC, &loop_finished);
 	long loop_us = nevent_elapsed_us(&loop_started, &loop_finished);
@@ -1758,11 +1767,24 @@ void ne_init_event_pool(void)
 	nevent_catchup_debt_estimated_us = 0;
 	nevent_deferred_due_counts.clear();
 	nevent_pending_cancellations.clear();
+	nevent_periodic_reset();
 	memset(ne_schedule, 0, sizeof(ne_schedule));
 	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
 	ne_dead_event_pool = mm_create("NEVENTS", sizeof(struct nevent_data),
 				       offsetof(struct nevent_data, next_sched), 11);
 	nevent_assert_pool_accounting("ne_init_event_pool");
+}
+
+static void nevent_register_periodic_job(const char *key, event_func_type callback,
+					 unsigned long long initial_delay,
+					 unsigned long long interval, nevent_periodic_policy policy,
+					 bool enabled)
+{
+	const nevent_periodic_result result =
+		nevent_periodic_register(key, callback, initial_delay, interval, policy, enabled);
+	if (result != nevent_periodic_result::registered)
+		logit(LOG_EXIT, "NEVENT PERIODIC: registration failed for %s (status=%u)", key,
+		      static_cast<unsigned int>(result));
 }
 
 void ne_init_events(void)
@@ -1826,7 +1848,8 @@ void ne_init_events(void)
 
 	/* game clock */
 	// This is where we set the initial hour mud-tick.
-	add_event(event_another_hour, 125 * WAIT_SEC - pulse, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_register_periodic_job("game-clock", event_another_hour, 125 * WAIT_SEC - pulse,
+				     PULSES_IN_TICK, nevent_periodic_policy::fixed_rate, true);
 	// AddEvent(EVENT_SPECIAL, 500 - pulse, FALSE, another_hour, 0);
 
 	/* timed house control stuff */
@@ -1835,7 +1858,8 @@ void ne_init_events(void)
 	// AddEvent(EVENT_SPECIAL, 500 - pulse, FALSE, do_housekeeping, 0);
 
 	/* sunrise, sunset, etc informer */
-	add_event(event_astral_clock, 125 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_register_periodic_job("astral-clock", event_astral_clock, 125 * WAIT_SEC,
+				     PULSES_IN_TICK, nevent_periodic_policy::fixed_rate, true);
 	// AddEvent(EVENT_SPECIAL, 500, TRUE, astral_clock, NULL);
 
 	/* sector weather */
@@ -1852,36 +1876,47 @@ void ne_init_events(void)
 	// AddEvent(EVENT_SPECIAL, 60, TRUE, write_statistic, NULL);
 
 	/* miscellaneous character looping */
-	add_event(generic_char_event, 20 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_register_periodic_job("generic-character-sweep", generic_char_event, 20 * WAIT_SEC,
+				     5 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true);
 	// AddEvent(EVENT_SPECIAL, 20 * 4, FALSE, generic_char_event, 0);
 
 	// Checks to see if artifact souls are ready to merge.
-	add_event(event_artifact_check_bind_sql, 15 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_register_periodic_job("artifact-bind", event_artifact_check_bind_sql, 15 * WAIT_SEC,
+				     7 * 60 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true);
 
 	// Makes artifacts fight and lose time on timers (penalty for multiple artis).
-	add_event(event_artifact_wars_sql, 20 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_register_periodic_job("artifact-wars", event_artifact_wars_sql, 20 * WAIT_SEC,
+				     30 * 60 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true);
 
 	// Checks ALL artis rented and non for negative timers..
-	add_event(event_artifact_check_poof_sql, 35 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_register_periodic_job("artifact-expiry", event_artifact_check_poof_sql,
+				     35 * WAIT_SEC, 12 * WAIT_SEC,
+				     nevent_periodic_policy::fixed_delay, true);
 
 	// Upkeep costs for outposts
-	add_event(event_outposts_upkeep, SECS_PER_MUD_HOUR * WAIT_SEC, NULL, NULL, NULL, 0, NULL,
-		  0);
+	nevent_register_periodic_job("outpost-upkeep", event_outposts_upkeep,
+				     SECS_PER_MUD_HOUR * WAIT_SEC, SECS_PER_REAL_HOUR * WAIT_SEC,
+				     nevent_periodic_policy::fixed_delay, true);
 
 	// Increases and notifies people if they've ranked up in feudal surname.
-	add_event(event_update_surnames, 45 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_register_periodic_job("surname-update", event_update_surnames, 45 * WAIT_SEC,
+				     300 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true);
 
 	// Revisioned local player checkpoints do not depend on Redis availability.
-	add_event(event_flush_dirty_players, 5 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_register_periodic_job("dirty-player-checkpoint", event_flush_dirty_players,
+				     5 * WAIT_SEC, 30 * WAIT_SEC,
+				     nevent_periodic_policy::fixed_delay, true);
 
 	// redis donation message polling
-	if (redis_enabled)
-		add_event(event_check_donation_messages, 1 * WAIT_SEC, NULL, NULL, NULL, 0, NULL,
-			  0);
+	nevent_register_periodic_job("donation-message-poll", event_check_donation_messages,
+				     1 * WAIT_SEC, 1 * WAIT_SEC,
+				     nevent_periodic_policy::fixed_delay, redis_enabled);
 
 	// redis world state saves for crash recovery
-	if (redis_enabled && redis_world_state_enabled && !crash_recovery_boot)
-		add_event(event_save_world_state, 30 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
+	nevent_register_periodic_job("world-state-save", event_save_world_state, 30 * WAIT_SEC,
+				     30 * WAIT_SEC, nevent_periodic_policy::fixed_delay,
+				     redis_enabled && redis_world_state_enabled &&
+					     !crash_recovery_boot);
 
 	logit(LOG_STATUS, "Done scheduling events.\n");
 }
@@ -1932,6 +1967,7 @@ struct nevent_integrity_report
 	long character_links;
 	long object_links;
 	long deferred_count;
+	long periodic_errors;
 	unsigned long long deferred_cost_us;
 	long errors;
 };
@@ -2024,6 +2060,11 @@ static nevent_integrity_report nevent_inspect_invariants(bool emit_summary)
 			if ((event->data == NULL) != (event->data_destroy == NULL))
 				nevent_integrity_problem(
 					&report, "sequence %llu has mismatched payload ownership",
+					event->sequence);
+			if (!nevent_periodic_event_is_valid(event))
+				nevent_integrity_problem(
+					&report,
+					"sequence %llu has invalid periodic registry metadata",
 					event->sequence);
 			if (event->deferral_count > 0)
 			{
@@ -2203,13 +2244,15 @@ static nevent_integrity_report nevent_inspect_invariants(bool emit_summary)
 			"deferred metadata disagrees with live records (count=%ld/%ld cost=%llu/%llu)",
 			report.deferred_count, nevent_catchup_debt, report.deferred_cost_us,
 			nevent_catchup_debt_estimated_us);
+	report.periodic_errors = nevent_periodic_integrity_errors(emit_summary);
+	report.errors += report.periodic_errors;
 
 	if (emit_summary || report.errors)
-		debug("check_nevents: errors=%ld wheel=%ld pool=%zu counter=%ld character_links=%ld object_links=%ld deferred=%ld at %ld",
+		debug("check_nevents: errors=%ld wheel=%ld pool=%zu counter=%ld character_links=%ld object_links=%ld deferred=%ld periodic_errors=%ld at %ld",
 		      report.errors, report.wheel_count,
 		      ne_dead_event_pool ? ne_dead_event_pool->objs_used : 0, ne_event_counter,
 		      report.character_links, report.object_links, report.deferred_count,
-		      time(NULL));
+		      report.periodic_errors, time(NULL));
 	return report;
 }
 
@@ -2331,6 +2374,54 @@ void load_event_names()
 	      result.symbols_loaded, result.duplicate_addresses);
 }
 
+static void show_world_periodic_events(P_char ch)
+{
+	nevent_periodic_health jobs[32];
+	char output[MAX_STRING_LENGTH];
+	const size_t total = nevent_periodic_copy_health(jobs, ARRAY_SIZE(jobs));
+	const size_t shown = MIN(total, ARRAY_SIZE(jobs));
+
+	snprintf(
+		output, sizeof(output),
+		"Periodic nevent jobs: %zu\n\n key                         | state    | policy | next due   | remain | last ok    | runs | fail | missed | watch | dup\n"
+		"-----------------------------|----------|--------|------------|--------|------------|------|------|--------|-------|----\n",
+		total);
+	for (size_t index = 0; index < shown; ++index)
+	{
+		const nevent_periodic_health &job = jobs[index];
+		const char *state = !job.enabled ? "disabled" :
+				    job.running	 ? "running" :
+				    job.armed	 ? "armed" :
+						   "missing";
+		const char *policy = job.policy == nevent_periodic_policy::fixed_rate ? "rate" :
+											"delay";
+		const unsigned long long remaining = job.enabled && job.next_due_tick >
+									     ne_event_tick ?
+							     job.next_due_tick - ne_event_tick :
+							     0;
+		char line[384];
+		char last_success[32];
+		if (job.has_succeeded)
+			snprintf(last_success, sizeof(last_success), "%llu", job.last_success_tick);
+		else
+			snprintf(last_success, sizeof(last_success), "-");
+		checked_snprintf(
+			line, sizeof(line),
+			" %-28s | %-8s | %-6s | %-10llu | %-6llu | %-10s | %-4llu | %-4llu | %-6llu | %-5llu | %-3llu\n",
+			job.key, state, policy, job.next_due_tick, remaining, last_success,
+			job.total_runs, job.callback_failures + job.schedule_failures,
+			job.missed_runs, job.watchdog_rearms, job.duplicates_suppressed);
+		strlcat(output, line, sizeof(output));
+		if (job.last_failure[0])
+		{
+			checked_snprintf(line, sizeof(line), "   last failure: %s\n",
+					 job.last_failure);
+			strlcat(output, line, sizeof(output));
+		}
+	}
+	page_string(ch->desc, output, 1);
+}
+
 void show_world_events(P_char ch, const char *arg)
 {
 	long count = 0;
@@ -2340,13 +2431,23 @@ void show_world_events(P_char ch, const char *arg)
 	if (!arg || arg[0] == '\0')
 	{
 		const nevent_integrity_report integrity = nevent_inspect_invariants(false);
+		const nevent_periodic_summary periodic = nevent_periodic_summary_copy();
 		snprintf(
 			buf, MAX_STRING_LENGTH,
-			"NEvent health: wheel=%ld counter=%ld pool=%zu integrity_errors=%ld last_pulse_total_us=%ld.\nSpecify a function name to inspect matching events.\n",
+			"NEvent health: wheel=%ld counter=%ld pool=%zu integrity_errors=%ld last_pulse_total_us=%ld.\nPeriodic jobs: registered=%lu enabled=%lu armed=%lu running=%lu unhealthy=%lu failures=%llu missed=%llu watchdog_rearms=%llu duplicates_suppressed=%llu.\nSpecify a function name, or 'periodic' for job health.\n",
 			integrity.wheel_count, ne_event_counter,
 			ne_dead_event_pool ? ne_dead_event_pool->objs_used : 0, integrity.errors,
-			nevent_last_pulse_total_us);
+			nevent_last_pulse_total_us, periodic.registered, periodic.enabled,
+			periodic.armed, periodic.running, periodic.unhealthy,
+			periodic.callback_failures + periodic.schedule_failures,
+			periodic.missed_runs, periodic.watchdog_rearms,
+			periodic.duplicates_suppressed);
 		send_to_char(buf, ch);
+		return;
+	}
+	if (!str_cmp(arg, "periodic"))
+	{
+		show_world_periodic_events(ch);
 		return;
 	}
 

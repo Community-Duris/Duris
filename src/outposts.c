@@ -1581,8 +1581,6 @@ void event_outposts_upkeep(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void *
 			}
 		}
 	}
-	add_event(event_outposts_upkeep, SECS_PER_REAL_HOUR * WAIT_SEC, NULL, NULL, NULL, 0, NULL,
-		  0);
 }
 
 int outpost_archer_attack(P_char ch, P_char vict)

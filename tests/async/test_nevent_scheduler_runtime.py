@@ -46,6 +46,29 @@ static unsigned long long fake_clock_ns = 0;
 static int unbounded_warnings = 0;
 static int invalid_config_warnings = 0;
 
+bool nevent_periodic_begin(P_nevent)
+{
+	return false;
+}
+
+void nevent_periodic_complete(P_nevent)
+{
+}
+
+void nevent_periodic_watchdog()
+{
+}
+
+bool nevent_periodic_event_is_valid(P_nevent)
+{
+	return true;
+}
+
+long nevent_periodic_integrity_errors(bool)
+{
+	return 0;
+}
+
 struct panic_signal
 {
 };

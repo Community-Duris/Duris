@@ -291,8 +291,6 @@ void generic_char_event(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * 
 			StartRegen(i, EVENT_WARD_REGEN);
 		}
 	}
-	add_event(generic_char_event, GENERIC_CHAR_EVENT_PERIOD / GENERIC_CHAR_EVENT_SLICES, NULL,
-		  NULL, NULL, 0, NULL, 0);
 	// AddEvent(EVENT_SPECIAL, 20 * WAIT_SEC, TRUE, generic_char_event, 0);
 }
 

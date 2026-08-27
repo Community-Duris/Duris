@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 9 core hardening complete
+Status: Implementation in progress; checkpoint 9 periodic registry complete
 
-Last implementation update: 2026-08-27 23:59 IDT
+Last implementation update: 2026-08-28 00:20 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -26,7 +26,7 @@ contracts, formatting, and the server build pass.
 | 6 | NEV-04, NEV-11, NEV-12, and NEV-22 absolute due-tick core, rescheduling, and harness foundation | Complete | ASan/UBSan three-phase boundary matrix and 1,200-tick oracle, 225 Python regressions, native signal test, format check, server build |
 | 7 | NEV-09, NEV-13, NEV-15, and NEV-22 priority, aging, catch-up, and range safety | Complete | ASan/UBSan priority-on/off, mixed-deferral, continuous-arrival, convergence, unlimited, and invalid-range modes; 225 Python regressions; native signal test; format check; server build |
 | 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Complete | Typed rejection/success/replace and global/owner chronology in the ASan/UBSan scheduler harness; 225 Python regressions; native signal test; format check; server build |
-| 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | In progress | Core hardening complete: ASan/UBSan owner-link, non-mutating corruption, and worker-thread boundary cases; 225 Python regressions; native signal test; format check; server build |
+| 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | In progress | Core hardening and NEV-17 registry complete: ASan/UBSan owner-link, corruption, thread-boundary, unique-key, cadence, retry, missed-run, conditional-enable, and watchdog cases; 225 Python regressions; native signal test; format check; server build |
 | 10 | NEV-21 documentation and legacy cleanup | Pending | Not started |
 
 Checkpoint 1 replaced the fixed 6,000-entry array and sentinel scan with a
@@ -150,6 +150,21 @@ boundaries bind and enforce the game thread. The sanitizer harness deliberately
 corrupts character, object, and victim links, proves inspection detects but does
 not repair them, exercises constant-time middle removal, and verifies worker
 thread add, cancel, reschedule, and lookup attempts assert before mutation.
+
+The second checkpoint 9 slice superseded callback-owned rearm guards with a
+keyed registry for all eleven operational global jobs: game and astral clocks,
+the sliced character sweep, three artifact tasks, outpost upkeep, surname
+updates, dirty-player checkpoints, donation polling, and world-state saves. The
+registry owns the sole successor while preserving each original callback for
+name and profiling attribution. It supports fixed-delay and fixed-rate cadence,
+explicit retry or next-delay overrides, conditional enablement, callback and
+scheduling failure history, consecutive failures, last success, next deadline,
+missed runs, duplicate suppression, and a watchdog that restores a missing
+successor without creating a second live job. Registry metadata participates in
+the non-mutating integrity pass and is exposed through `world events periodic`.
+The sanitizer harness covers uniqueness, conflicting definitions, both cadence
+policies, retries, recovery, missed intervals, conditional enablement, and
+deliberate successor loss.
 
 The executive assessment and finding evidence below preserve the original
 pre-remediation review. Per-finding implementation status and the checkpoint
@@ -871,6 +886,16 @@ unlink directly through validated intrusive links.
 
 ### NEV-17: Durability and recurring uniqueness are implicit
 
+Implementation status (2026-08-28): Fixed and verified in the second checkpoint
+9 slice. Operational recurring work is registry-owned, uniquely keyed,
+watchdog-rearmed, and health-reporting. Ephemeral combat, animation, and
+owner-bound timers remain intentionally process-local; zone, weather, and
+loaded-owner timers are reconstructible from authoritative boot/player/world
+state. Persistence-critical work already uses journaled save/recovery pipelines
+rather than relying on a one-shot nevent deadline, so the audit found no
+remaining genuinely durable one-shot that should persist scheduler internals.
+The evidence below describes the pre-fix implementation.
+
 The queue is memory-only. Crash/copyover loses remaining delay and ordering;
 selected events are recreated ad hoc at boot or from loaded state. This is fine
 for ephemeral animation/combat events but not automatically fine for persistence
@@ -1153,6 +1178,10 @@ Checkpoints 6 through 8 additionally passed
 The first checkpoint 9 slice extended that harness with reciprocal owner/victim
 link checks, non-mutating corruption detection, constant-time middle unlinking,
 and debug game-thread ownership cases; the same full validation set passed.
+The second slice replaced the earlier rearm harness with
+`tests/async/test_nevent_periodic_rearm_runtime.py`, which exercises the real
+registry under ASan/UBSan. The complete validation set passed again after all
+eleven operational callbacks were migrated.
 
 `make -C src -j2` completed and linked `bin/server/dms_new` successfully. The
 built binary is a 64-bit PIE. A symbol/data probe found 6,220 text symbols in the
@@ -1161,7 +1190,7 @@ against current artifacts.
 
 No live server or database was used. No migrations, production operations, or
 game-data mutations were performed. Implementation and verification are current
-through the first checkpoint 9 slice in the ledger above.
+through the periodic-registry checkpoint 9 slice in the ledger above.
 
 ## Suggested implementation-session boundaries
 

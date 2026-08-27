@@ -150,6 +150,7 @@ OBJS =  $(SHIP_OBJS) \
 				 events.o \
 				 event_names.o \
 				 new_events.o \
+				 nevent_periodic.o \
 				 fight.o \
 				 files.o \
 				 fraglist.o \

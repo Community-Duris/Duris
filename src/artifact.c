@@ -2197,7 +2197,6 @@ void arti_files_to_sql(P_char ch, char *arg)
 
 void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
-	nevent_rearm_guard rearm(event_artifact_check_poof_sql, 12 * WAIT_SEC);
 	P_obj arti, cont, corpse;
 	P_char owner;
 	P_desc desc;
@@ -2221,12 +2220,14 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	if (!qry("SELECT vnum, locType, location FROM artifacts WHERE owned='Y' AND timer < now()"))
 	{
 		logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: failed to read from database.");
+		nevent_periodic_mark_failure("artifact-expiry query failed");
 		return;
 	}
 	res = mysql_store_result(DB);
 	if (!res)
 	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		nevent_periodic_mark_failure("artifact-expiry result failed");
 		return;
 	}
 
@@ -2626,10 +2627,14 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	// Clear the artis from the list.  Note: doing it after the loop intentionally.
 	if (expired && !save_failed)
 	{
-		qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()",
-		    ARTIFACT_NOTINGAME);
-		arti_cache_invalidate();
+		if (qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now()",
+			ARTIFACT_NOTINGAME))
+			arti_cache_invalidate();
+		else
+			nevent_periodic_mark_failure("artifact-expiry update failed");
 	}
+	else if (save_failed)
+		nevent_periodic_mark_failure("artifact-expiry player save failed");
 }
 
 // Looks through list, and adds entry to the end of list.
@@ -2677,7 +2682,6 @@ void add_artidata_to_list(arti_data *list, int vnum, bool owned, char locType, i
 
 void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
-	nevent_rearm_guard rearm(event_artifact_wars_sql, 30 * 60 * WAIT_SEC);
 	arti_list *artilist, *nextlist;
 	arti_data *node, *next_node;
 	P_char owner;
@@ -2704,7 +2708,8 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 		 ARTIFACT_ON_PC))
 	{
 		logit(LOG_ARTIFACT, "event_artifact_wars_sql: failed to read from database.");
-		rearm.retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY);
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-wars query failed");
 		return;
 	}
 	res = mysql_store_result(DB);
@@ -2712,7 +2717,8 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 	if (!res)
 	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		rearm.retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY);
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-wars result failed");
 		return;
 	}
 	if (mysql_num_rows(res) < 1)
@@ -3821,7 +3827,6 @@ void arti_swap_sql(P_char ch, char *arg)
 //   the timer is set to switch owners.  If the timer is up, then the soul switches owners.
 void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
-	nevent_rearm_guard rearm(event_artifact_check_bind_sql, 7 * 60 * WAIT_SEC);
 	bind_data *bindData, *list;
 	arti_data artidata;
 	P_char owner;
@@ -3838,7 +3843,8 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 		debug("event_artifact_check_bind_sql(): Failed initial query.");
 		logit(LOG_ARTIFACT,
 		      "event_artifact_check_bind_sql(): failed to read from database.");
-		rearm.retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY);
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-bind query failed");
 		return;
 	}
 
@@ -3846,7 +3852,8 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	if (!res)
 	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		rearm.retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY);
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-bind result failed");
 		return;
 	}
 
