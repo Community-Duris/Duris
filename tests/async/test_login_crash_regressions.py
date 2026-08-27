@@ -27,6 +27,7 @@ from pathlib import Path
 import re
 
 root = Path(__file__).resolve().parents[2]
+account = (root / "src/account.c").read_text()
 comm = (root / "src/comm.c").read_text()
 websocket = (root / "src/websocket.c").read_text()
 prompt = (root / "src/prompt.c").read_text()
@@ -38,6 +39,22 @@ def check(name, ok):
     print(("[PASS] " if ok else "[FAIL] ") + name)
     if not ok:
         failures.append(name)
+
+
+# Account state handlers use NULL to request that a prompt or menu be displayed.
+# display_account_menu has many such callers, including the post-MOTD login path.
+menu = account[account.index("void display_account_menu("):]
+menu = menu[:menu.index("\n}\n")]
+check("account menu preserves its NULL display sentinel",
+      re.search(r"void display_account_menu\([^)]*\)\s*\{\s*if \(!arg\)", menu) is not None)
+
+# Once NULL has been handled, an empty or whitespace-only new password must be
+# rejected by inspecting the pointed-to character, not the pointer again.
+new_password = account[account.index("void get_new_account_password("):]
+new_password = new_password[:new_password.index("\n}\n")]
+trim = new_password.index("for (; isspace(*arg); arg++)")
+check("new account password rejects empty input after trimming",
+      "if (!*arg)" in new_password[trim:])
 
 
 # 1. No self-overlapping copy on either accept path.

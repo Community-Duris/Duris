@@ -353,7 +353,7 @@ void get_account_password(P_desc d, char *arg)
 
 void display_account_menu(P_desc d, char *arg)
 {
-	if (!*arg)
+	if (!arg)
 	{
 		char buf[256];
 
@@ -636,7 +636,7 @@ void get_new_account_password(P_desc d, char *arg)
 	for (; isspace(*arg); arg++)
 		;
 
-	if (!arg)
+	if (!*arg)
 	{
 		SEND_TO_Q("Invalid Password, try again.\r\n", d);
 		get_new_account_password(d, NULL);
