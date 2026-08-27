@@ -1,4 +1,5 @@
 #include "critical_outbox.h"
+#include "sql_thread_init.h"
 
 #include "sql_pool.h"
 
@@ -250,7 +251,7 @@ bool record_delivery(const critical_outbox_record &record,
 
 void worker_main(std::promise<bool> startup)
 {
-	if (mysql_thread_init() != 0)
+	if (sql_worker_thread_init() != 0)
 	{
 		startup.set_value(false);
 		return;

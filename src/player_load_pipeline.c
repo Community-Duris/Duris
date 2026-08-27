@@ -1,4 +1,5 @@
 #include "player_load_pipeline.h"
+#include "sql_thread_init.h"
 
 #include "persistence_observability.h"
 #include "sql_pool.h"
@@ -146,7 +147,7 @@ void record_delivery_locked(uint64_t request_id)
 
 void worker_main()
 {
-	if (mysql_thread_init() != 0)
+	if (sql_worker_thread_init() != 0)
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		health.running = false;

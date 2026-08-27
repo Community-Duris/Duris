@@ -1,4 +1,5 @@
 #include "player_save_pipeline.h"
+#include "sql_thread_init.h"
 
 #include "prototypes.h"
 #include "files.h"
@@ -117,7 +118,7 @@ void dispatcher_main()
 	}
 	player_save_journal_result replay = player_save_journal_result::replay_blocked;
 #ifndef __NO_MYSQL__
-	const bool mysql_ready = mysql_thread_init() == 0;
+	const bool mysql_ready = sql_worker_thread_init() == 0;
 #else
 	const bool mysql_ready = true;
 #endif

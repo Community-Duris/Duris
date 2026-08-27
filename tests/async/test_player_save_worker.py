@@ -114,11 +114,7 @@ player_snapshot next_snapshot(int pid, player_component_mask_t newly_dirty)
 
 template <typename Predicate> void wait_until(Predicate predicate)
 {
-    /* Liveness budget, not a performance target: the assertion exists to fail a
-     * worker that never drains rather than one that drains slowly.  CI runs four
-     * of these thread-spawning harnesses at once on a four-vCPU runner, where a
-     * tight budget reports contention as a hang -- keep the headroom. */
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
     while (!predicate())
     {
         assert(std::chrono::steady_clock::now() < deadline);
@@ -267,7 +263,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-save-worker-") as temp_dir
         capture_output=True,
         text=True,
     )
-    subprocess.run([str(binary)], check=True, timeout=90)
+    subprocess.run([str(binary)], check=True, timeout=10)
 
 for contract in (
     "PLAYER_SAVE_WORKER_MAX_PIDS = 256",

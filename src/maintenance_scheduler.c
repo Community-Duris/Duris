@@ -1,4 +1,5 @@
 #include "maintenance_scheduler.h"
+#include "sql_thread_init.h"
 
 #include "persistence_observability.h"
 
@@ -261,7 +262,7 @@ void refresh_health_locked()
 
 void worker_main()
 {
-	if (mysql_thread_init() != 0)
+	if (sql_worker_thread_init() != 0)
 	{
 		std::lock_guard<std::mutex> lock(scheduler_mutex);
 		health.running = false;

@@ -15,6 +15,7 @@
 #endif
 
 #include "persistence_queue.h"
+#include "sql_thread_init.h"
 #include "latency_trace.h"
 #include "safe_format.h"
 
@@ -29,7 +30,7 @@ extern void logit(const char *filename, const char *format, ...);
 #ifndef __NO_MYSQL__
 static int persistence_worker_mysql_thread_init(const char *worker_name)
 {
-	if (mysql_thread_init() != 0)
+	if (sql_worker_thread_init() != 0)
 	{
 		logit("logs/log/status", "%s: mysql_thread_init failed; worker will not start",
 		      worker_name);

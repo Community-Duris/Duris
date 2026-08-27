@@ -16,6 +16,7 @@
  */
 
 #include "prototypes.h"
+#include "sql_thread_init.h"
 #include "structs.h"
 #include "utils.h"
 #include "utility.h"
@@ -712,7 +713,7 @@ static void *locker_async_worker_main(void *arg)
 {
 	(void)arg;
 #ifndef __NO_MYSQL__
-	if (mysql_thread_init() != 0)
+	if (sql_worker_thread_init() != 0)
 	{
 		logit(LOG_FILE, "locker_async: mysql_thread_init failed");
 		pthread_mutex_lock(&g_q_mu);

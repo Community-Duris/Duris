@@ -79,11 +79,7 @@ maintenance_result execute(const maintenance_request &request, void *raw)
 
 template <typename Predicate> void wait_until(Predicate predicate)
 {
-    /* Liveness budget, not a performance target: the assertion exists to fail a
-     * worker that never drains rather than one that drains slowly.  CI runs four
-     * of these thread-spawning harnesses at once on a four-vCPU runner, where a
-     * tight budget reports contention as a hang -- keep the headroom. */
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
     while (!predicate())
     {
         assert(std::chrono::steady_clock::now() < deadline);
@@ -226,7 +222,7 @@ with tempfile.TemporaryDirectory(prefix="duris-maintenance-scheduler-") as temp_
         cwd=ROOT, check=True,
     )
     state_file = Path(temp_dir) / "scheduler.state"
-    subprocess.run([str(binary), str(state_file)], check=True, timeout=90)
+    subprocess.run([str(binary), str(state_file)], check=True, timeout=10)
     current = state_file.read_bytes()
     job_size = (len(current) - 24) // 12
     assert 16 + job_size * 12 + 8 == len(current)
@@ -238,7 +234,7 @@ with tempfile.TemporaryDirectory(prefix="duris-maintenance-scheduler-") as temp_
         checksum = (checksum * 1099511628211) & ((1 << 64) - 1)
     legacy.extend(struct.pack("=Q", checksum))
     state_file.write_bytes(legacy)
-    subprocess.run([str(binary), str(state_file)], check=True, timeout=90)
+    subprocess.run([str(binary), str(state_file)], check=True, timeout=10)
 
 for contract in (
     "MAINTENANCE_QUEUE_MAX", "maintenance_job_offset", "overlap_suppressed",

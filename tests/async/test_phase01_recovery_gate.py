@@ -90,11 +90,7 @@ void run_wave(int clients)
         const auto health = player_save_worker_health_copy();
         if (health.applied == static_cast<uint64_t>(clients))
             break;
-        /* Liveness budget, not a performance target: the assertion exists to fail a
-         * worker that never drains rather than one that drains slowly.  CI runs four
-         * of these thread-spawning harnesses at once on a four-vCPU runner, where a
-         * tight budget reports contention as a hang -- keep the headroom. */
-        assert(std::chrono::steady_clock::now() - started < std::chrono::seconds(30));
+        assert(std::chrono::steady_clock::now() - started < std::chrono::seconds(5));
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
     const auto health = player_save_worker_health_copy();
@@ -148,7 +144,7 @@ with tempfile.TemporaryDirectory(prefix="duris-phase01-gate-") as temp_dir:
         cwd=ROOT,
         check=True,
     )
-    subprocess.run([str(binary)], check=True, timeout=90)
+    subprocess.run([str(binary)], check=True, timeout=20)
 
 
 for retired in (

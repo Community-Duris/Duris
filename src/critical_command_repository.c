@@ -1,4 +1,5 @@
 #include "critical_command_repository.h"
+#include "sql_thread_init.h"
 
 #include "currency_command.h"
 #include "epic_command.h"
@@ -1447,7 +1448,7 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 								  void *context)
 {
 	(void)context;
-	if (mysql_thread_init() != 0)
+	if (sql_worker_thread_init() != 0)
 		return { critical_apply_outcome::retryable_failure, 0, EIO };
 	MYSQL *connection = sql_pool_acquire();
 	if (!connection)

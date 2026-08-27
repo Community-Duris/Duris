@@ -100,11 +100,7 @@ player_load_request request(uint64_t id, int pid)
 
 template <typename Predicate> void wait_until(Predicate predicate)
 {
-    /* Liveness budget, not a performance target: the assertion exists to fail a
-     * worker that never drains rather than one that drains slowly.  CI runs four
-     * of these thread-spawning harnesses at once on a four-vCPU runner, where a
-     * tight budget reports contention as a hang -- keep the headroom. */
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
     while (!predicate())
     {
         assert(std::chrono::steady_clock::now() < deadline);
@@ -218,7 +214,7 @@ with tempfile.TemporaryDirectory(prefix="duris-player-load-pipeline-") as temp_d
         cwd=ROOT,
         check=True,
     )
-    subprocess.run([str(binary)], check=True, timeout=90)
+    subprocess.run([str(binary)], check=True, timeout=10)
 
 for contract in (
     "PLAYER_LOAD_MAX_PENDING = 256",
@@ -234,7 +230,7 @@ for contract in (
     "std::unordered_set<uint64_t> cancelled_ids",
     "player_load_outcome::stale",
     "sql_pool_acquire()",
-    "mysql_thread_init()",
+    "sql_worker_thread_init()",
     "pool_connection_guard guard",
     "mysql_rollback(connection)",
 ):

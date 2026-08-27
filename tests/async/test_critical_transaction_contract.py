@@ -47,7 +47,9 @@ assert REPOSITORY.index("insert_outbox(connection") < REPOSITORY.index('execute(
 assert REPOSITORY.index("finish_inbox(connection") < REPOSITORY.index('execute(connection, "COMMIT")')
 assert "critical_apply_outcome::ambiguous_commit" in REPOSITORY
 assert "critical_command_repository_reconcile(connection, command)" in REPOSITORY
-assert "mysql_thread_init()" in REPOSITORY and "mysql_thread_end()" in REPOSITORY
+# The per-thread setup goes through the shared helper so the client library
+# is initialised first; MySQL 8 fails mysql_thread_init() without it.
+assert "sql_worker_thread_init()" in REPOSITORY and "mysql_thread_end()" in REPOSITORY
 assert "read_operation(connection, command.operation_id, false" in REPOSITORY
 assert "error == 1205 || error == 1213" in REPOSITORY
 assert "EEXIST" in REPOSITORY and "ERANGE" in REPOSITORY
@@ -63,7 +65,7 @@ assert "dead_lettered_at" in OUTBOX
 assert "critical_outbox_reconcile" in OUTBOX
 assert "critical_outbox_retry_dead_letter" in OUTBOX
 assert "sql_pool_replace_connection" in OUTBOX
-assert "mysql_thread_init()" in OUTBOX and "mysql_thread_end()" in OUTBOX
+assert "sql_worker_thread_init()" in OUTBOX and "mysql_thread_end()" in OUTBOX
 assert "critical_command_repository_apply_from_pool" in COMM
 assert '"integrity_failure"' in COMM and '"operation metadata redacted"' in COMM
 assert 'getenv("CRITICAL_COMMAND_JOURNAL_DIR")' in COMM

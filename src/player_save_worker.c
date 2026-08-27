@@ -1,4 +1,5 @@
 #include "player_save_worker.h"
+#include "sql_thread_init.h"
 
 #include "persistence_observability.h"
 #include "player_revision_state.h"
@@ -115,7 +116,7 @@ void update_depth_health_locked()
 void worker_main()
 {
 #ifndef __NO_MYSQL__
-	if (mysql_thread_init() != 0)
+	if (sql_worker_thread_init() != 0)
 		return;
 #endif
 	{
