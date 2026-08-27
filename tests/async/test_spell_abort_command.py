@@ -55,9 +55,25 @@ if cmd_block:
     all_ok &= check("MAX_CMD matches size of command array", len(cmds) == max_cmd_num)
 
 # 3. Verify casting whitelist in interp.c
-casting_block = re.search(r"if \(IS_AFFECTED2\(ch, AFF2_CASTING\)\)\s*\{(.*?)\n\t\}", interp_c, re.S)
-all_ok &= check("casting guard in interp.c allows CMD_ABORT",
-                casting_block is not None and "cmd != CMD_ABORT" in casting_block.group(1))
+whitelist = re.search(r"bool cmd_allowed_while_casting\(int cmd\)\s*\{(.*?)\n\}", interp_c, re.S)
+all_ok &= check("cmd_allowed_while_casting() defined in interp.c", whitelist is not None)
+if whitelist:
+    for name in ("CMD_ABORT", "CMD_PETITION", "CMD_RETURN"):
+        all_ok &= check(f"cmd_allowed_while_casting() whitelists {name}", name in whitelist.group(1))
+
+all_ok &= check("casting guard in interp.c uses cmd_allowed_while_casting()",
+                "IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(cmd)" in interp_c)
+
+# 3b. The casting guard must run before the falling / water-current checks, which
+#     have side effects (falling_char, do_move) and would otherwise fire on a
+#     command that is about to be rejected -- including moving a casting player.
+gate_pos = interp_c.find("IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(cmd)")
+fall_pos = interp_c.find("if (world[ch->in_room].chance_fall")
+current_pos = interp_c.find("The current sweeps you away!")
+all_ok &= check("casting guard precedes the falling check",
+                -1 < gate_pos < fall_pos)
+all_ok &= check("casting guard precedes the water-current sweep",
+                -1 < gate_pos < current_pos)
 
 # 4. Verify assign_command_pointers binding
 all_ok &= check("assign_command_pointers registers CMD_ABORT",
@@ -66,7 +82,33 @@ all_ok &= check("assign_command_pointers registers CMD_ABORT",
 # 5. Verify comm.c input queue pump for casting characters
 comm_c = (SRC / "comm.c").read_text(encoding="utf-8", errors="replace")
 all_ok &= check("comm.c pumps input when IS_AFFECTED2(t_ch, AFF2_CASTING)",
-                "CAN_ACT(t_ch) || IS_AFFECTED2(t_ch, AFF2_CASTING)" in comm_c)
+                re.search(r"casting_input =\s*\(t_ch && !CAN_ACT\(t_ch\) &&\s*IS_AFFECTED2\(t_ch, AFF2_CASTING\)",
+                          comm_c) is not None)
+all_ok &= check("comm.c only reads a casting character's queue through the casting path",
+                re.search(r"casting_input \? get_casting_cmd_from_q\(&point->input, comm\) :\s*get_from_q\(&point->input, comm\)",
+                          comm_c) is not None)
+# Type-ahead must survive: only a command the casting gate will actually run is
+# dequeued, so everything else stays queued instead of being drained and rejected.
+q = re.search(r"int get_casting_cmd_from_q\(struct txt_q \*queue, char \*dest\)\s*\{(.*?)\n\}", comm_c, re.S)
+all_ok &= check("get_casting_cmd_from_q() defined in comm.c", q is not None)
+if q:
+    body = q.group(1)
+    all_ok &= check("get_casting_cmd_from_q() filters with input_allowed_while_casting()",
+                    "input_allowed_while_casting(tmp->text)" in body)
+    # An 'abort' typed after other type-ahead must not sit behind it, and
+    # unlinking a middle/tail entry must keep queue->tail valid for write_to_q().
+    all_ok &= check("get_casting_cmd_from_q() extracts out of order",
+                    "prev->next = tmp->next;" in body and "queue->head = tmp->next;" in body)
+    all_ok &= check("get_casting_cmd_from_q() keeps queue->tail valid",
+                    "queue->tail == tmp" in body and "queue->tail = prev;" in body)
+all_ok &= check("get_casting_cmd_from_q declared in prototypes.h",
+                "int get_casting_cmd_from_q(struct txt_q *, char *);" in
+                (SRC / "prototypes.h").read_text(encoding="utf-8", errors="replace"))
+all_ok &= check("input_allowed_while_casting() defined in interp.c",
+                "bool input_allowed_while_casting(const char *input)" in interp_c)
+all_ok &= check("input_allowed_while_casting() declared in prototypes.h",
+                "bool input_allowed_while_casting(const char *);" in
+                (SRC / "prototypes.h").read_text(encoding="utf-8", errors="replace"))
 
 # 6. Verify prototypes.h declaration
 proto_h = (SRC / "prototypes.h").read_text(encoding="utf-8", errors="replace")

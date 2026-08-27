@@ -1218,6 +1218,46 @@ int old_search_block(const char *argument, const uint begin, uint length, const 
 }
 
 /*
+ * Commands the casting gate in command_interpreter() lets through while
+ * AFF2_CASTING is set.  Kept in one place so comm.c and the gate cannot drift.
+ */
+bool cmd_allowed_while_casting(int cmd)
+{
+	return (cmd == CMD_PETITION || cmd == CMD_RETURN || cmd == CMD_ABORT);
+}
+
+/*
+ * comm.c pumps a casting player's input queue so 'abort' can reach the
+ * interpreter, and peeks at the head of that queue with this first: anything
+ * the gate would only reject stays queued as type-ahead and runs when the cast
+ * finishes, the way it did before 'abort' existed.
+ */
+bool input_allowed_while_casting(const char *input)
+{
+	char word[MAX_INPUT_LENGTH];
+	uint begin = 0;
+	uint len = 0;
+
+	if (!input)
+		return FALSE;
+
+	while (input[begin] == ' ')
+		begin++;
+
+	while (input[begin + len] > ' ' && len < sizeof(word) - 1)
+	{
+		word[len] = LOWER(input[begin + len]);
+		len++;
+	}
+	word[len] = '\0';
+
+	if (!len)
+		return FALSE;
+
+	return cmd_allowed_while_casting(old_search_block(word, 0, len, command, 2));
+}
+
+/*
  * SAM 7-94, command confirmation
  */
 void do_confirm(P_char ch, bool yes)
@@ -1391,6 +1431,23 @@ void command_interpreter(P_char ch, char *argument)
 		REMOVE_BIT(ch->specials.act, PLR_AFK);
 	}
 
+	/* The casting gate must run before anything with a side effect: comm.c now
+	 * pumps input while AFF2_CASTING is set so 'abort' can reach us, and the
+	 * falling and water-current checks below would otherwise roll the dice --
+	 * and even move the character out of the room -- on a command that is about
+	 * to be rejected anyway. */
+	if (IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(cmd))
+	{
+		send_to_char("You're busy spellcasting!\r\n", ch);
+		if (IS_TRUSTED(ch))
+			send_to_char(
+				"&+YTry 'return' or you can petition other gods for help if you're stuck.&n\r\n",
+				ch);
+		else
+			send_to_char("If you think you're stuck, you can still petition.\r\n", ch);
+		return;
+	}
+
 	if (world[ch->in_room].chance_fall && number(1, 100) <= world[ch->in_room].chance_fall)
 	{
 		// Starting speed 0, and do not kill.
@@ -1417,22 +1474,6 @@ void command_interpreter(P_char ch, char *argument)
 					return;
 				}
 			}
-		}
-	}
-	if (IS_AFFECTED2(ch, AFF2_CASTING))
-	{
-		if (cmd != CMD_PETITION && cmd != CMD_RETURN && cmd != CMD_ABORT)
-		{
-			send_to_char("You're busy spellcasting!\r\n", ch);
-			if (IS_TRUSTED(ch))
-				send_to_char(
-					"&+YTry 'return' or you can petition other gods for help if you're stuck.&n\r\n",
-					ch);
-			else
-				send_to_char(
-					"If you think you're stuck, you can still petition.\r\n",
-					ch);
-			return;
 		}
 	}
 	if (IS_AFFECTED(ch, AFF_KNOCKED_OUT))
