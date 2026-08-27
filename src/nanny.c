@@ -27,6 +27,7 @@
 #include "epic.h"
 #include "epic_transaction.h"
 #include "currency_transaction.h"
+#include "item_movement_transaction.h"
 #include "files.h"
 #include "gmcp.h"
 #include "guildhall.h"
@@ -2947,6 +2948,7 @@ void enter_game(P_desc d)
 
 	epic_transaction_player_ready(ch);
 	currency_transaction_player_ready(ch);
+	item_movement_transaction_player_ready(ch);
 	writeCharacter(ch, 1, NOWHERE);
 	if (!sql_save_player_core(ch))
 	{
@@ -3543,6 +3545,7 @@ void reconnect(P_desc d, P_char tmp_ch)
 	STATE(d) = CON_PLAYING;
 	epic_transaction_player_ready(tmp_ch);
 	currency_transaction_player_ready(tmp_ch);
+	item_movement_transaction_player_ready(tmp_ch);
 	act("$n has reconnected.", TRUE, tmp_ch, 0, 0, TO_ROOM);
 	logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
 	loginlog(d->character->player.level, "%s [%s] has reconnected.", GET_NAME(d->character),

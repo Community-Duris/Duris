@@ -4,7 +4,7 @@
 **Sessions**: 12 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 5/12 sessions (42%)
+**Progress**: 6/12 sessions (50%)
 
 ---
 
@@ -41,7 +41,7 @@ prerequisites for every Phase 02 session.
 | 03 | Epic Ledger and Balance Transactions | Complete | Award and spend commands, opening baseline, balance publication, and bonus-state ACKs | 2026-08-27 |
 | 04 | Account Bank and Wallet Transactions | Complete | Atomic denomination deltas, wallet revisions, online-alt publication, and reconciliation | 2026-08-27 |
 | 05 | Item Ownership Ledger and Transfer Primitive | Complete | Durable item identity, current-owner row, subtree transfer, revisions, ledger, and outbox | 2026-08-27 |
-| 06 | Live Item Movement and Corpse Cutover | Not Started | Player, container, floor, trade, corpse creation, and corpse-loot ownership routes | - |
+| 06 | Live Item Movement and Corpse Cutover | Complete | Player, container, floor, trade, corpse creation, and corpse-loot ownership routes | 2026-08-27 |
 | 07 | Locker Ownership Cutover | Not Started | Public/private locker custody, immutable snapshots, exact transfer ACKs, and failure retention | - |
 | 08 | Auction Settlement and Claim Cutover | Not Started | Listing custody, bid funds, settlement, refunds, claims, ownership, and publication | - |
 | 09 | PvP and Combat Outcome Batching | Not Started | Immutable battle outcome capture and transactional group, frag, ledger, and outbox apply | - |
@@ -58,12 +58,13 @@ prerequisites for every Phase 02 session.
 - Session 03: Epic Ledger and Balance Transactions (completed 2026-08-27)
 - Session 04: Account Bank and Wallet Transactions (completed 2026-08-27)
 - Session 05: Item Ownership Ledger and Transfer Primitive (completed 2026-08-27)
+- Session 06: Live Item Movement and Corpse Cutover (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 06: Live Item Movement and Corpse Cutover
+- Session 07: Locker Ownership Cutover
 
 ---
 

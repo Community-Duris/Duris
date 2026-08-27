@@ -84,6 +84,7 @@
 #include "critical_command_repository.h"
 #include "critical_outbox.h"
 #include "currency_transaction.h"
+#include "item_movement_transaction.h"
 #include "epic_transaction.h"
 #include "player_save_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
@@ -118,6 +119,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 {
 	epic_transaction_handle_completions(completions, count);
 	currency_transaction_handle_completions(completions, count);
+	item_movement_transaction_handle_completions(completions, count);
 }
 
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
@@ -367,6 +369,9 @@ int main(int argc, char **argv)
 	{
 		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
+	if (!sql_hydrate_item_owner_revisions())
+		logit(LOG_STATUS,
+		      "Authoritative item owner revisions unavailable; movement fails closed.");
 
 	redis_init();
 

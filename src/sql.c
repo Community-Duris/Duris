@@ -14,6 +14,7 @@
 #include "item_uid_allocator.h"
 #include "utils.h"
 #include "sql.h"
+#include "item_ownership_runtime.h"
 #include "sql_pool.h"
 #include <math.h>
 #include <stdarg.h>
@@ -142,6 +143,10 @@ void log_epic_gain(int pid, int zone_id, int type, int epics) {}
 void log_epic_gain_event(const char *event_key, int pid, int type, int type_id, int epics) {}
 bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
 					const char *owner_ref, const char *context)
+{
+	return true;
+}
+bool sql_hydrate_item_owner_revisions(void)
 {
 	return true;
 }
@@ -4502,82 +4507,110 @@ bool sql_persistence_write_large_event_line(const char *line)
 	return sql_persistence_execute_raw(line);
 }
 
-/* Validates that an item's persistence_event log matches its expected
- * owner.  Queries persistence_item_events for the most recent event
- * involving item_uid and checks that the target field matches the
- * expected owner_type:owner_ref.
- *
- * Returns true if:
- *   - item_uid == 0 (no ownership data, keep item)
- *   - No recent event found (safe default, keep item)
- *   - Most recent event target matches expected owner
- * Returns false if the item was last seen at a different owner (stolen item)
- */
 bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
 					const char *owner_ref, const char *context)
 {
-	/* No ownership data to validate */
 	if (item_uid == 0)
 		return true;
-
-	if (!owner_type || !owner_ref || !context)
-		return true;
-
-	if (!DB)
-		return true;
-
-	/* Build the expected target prefix, e.g. "player:", "locker:", "corpse:" */
-	char expected_prefix[64];
-	snprintf(expected_prefix, sizeof(expected_prefix), "%s:", owner_type);
-	size_t prefix_len = strlen(expected_prefix);
-
-	/* Query the most recent persistence event for this item_uid.
-	 * ORDER BY ts_usec DESC, id DESC gives us the latest event. */
+	if (!owner_type || !owner_ref || !context || !DB)
+		return false;
+	item_owner_type expected_type = item_owner_type::unknown;
+	if (!strcmp(owner_type, "player"))
+		expected_type = item_owner_type::player;
+	else if (!strcmp(owner_type, "container"))
+		expected_type = item_owner_type::container;
+	else if (!strcmp(owner_type, "room"))
+		expected_type = item_owner_type::room;
+	else if (!strcmp(owner_type, "corpse"))
+		expected_type = item_owner_type::corpse;
+	else if (!strcmp(owner_type, "locker"))
+		expected_type = item_owner_type::locker;
+	else if (!strcmp(owner_type, "auction"))
+		expected_type = item_owner_type::auction;
+	if (expected_type == item_owner_type::unknown)
+		return false;
+	char *owner_end = NULL;
+	errno = 0;
+	const unsigned long long expected_id = strtoull(owner_ref, &owner_end, 10);
+	if (errno || !owner_end || *owner_end || !expected_id)
+		return false;
 	char query[512];
-	snprintf(query, sizeof(query),
-		 "SELECT target FROM persistence_item_events "
-		 "WHERE item_uid=%llu "
-		 "ORDER BY ts_usec DESC, id DESC LIMIT 1",
-		 item_uid);
-
+	snprintf(
+		query, sizeof(query),
+		"SELECT current_item.root_item_uid,COALESCE(current_item.parent_item_uid,0),"
+		"current_item.owner_type,current_item.owner_id,current_item.owner_context_id,"
+		"current_item.item_revision,current_item.vnum,current_item.state,owner.revision "
+		"FROM item_current_owner current_item JOIN item_owner_revision owner ON "
+		"owner.owner_type=current_item.owner_type AND owner.owner_id=current_item.owner_id "
+		"AND owner.owner_context_id=current_item.owner_context_id WHERE current_item.item_uid=%llu",
+		item_uid);
 	MYSQL_RES *result = db_query("%s", query);
 	if (!result)
-		return true; /* query failed, keep item (conservative) */
-
+		return false;
 	MYSQL_ROW row = mysql_fetch_row(result);
-	if (!row || !row[0])
+	if (!row)
 	{
 		mysql_free_result(result);
-		return true; /* no events found, keep item (conservative) */
+		logit(LOG_FILE,
+		      "sql_persistence: authoritative owner missing item_uid=%llu context=%s",
+		      item_uid, context);
+		return false;
 	}
-
-	const char *target = row[0];
-
-	/* Check that the target starts with the expected owner_type prefix */
-	if (strncmp(target, expected_prefix, prefix_len) != 0)
+	item_ownership_runtime_entry entry = {
+		.item_uid = item_uid,
+		.root_item_uid = strtoull(row[0], NULL, 10),
+		.parent_item_uid = strtoull(row[1], NULL, 10),
+		.owner = { static_cast<item_owner_type>(strtoul(row[2], NULL, 10)),
+			   strtoull(row[3], NULL, 10), strtoull(row[4], NULL, 10) },
+		.item_revision = strtoull(row[5], NULL, 10),
+		.owner_revision = strtoull(row[8], NULL, 10),
+		.vnum = static_cast<int32_t>(strtol(row[6], NULL, 10)),
+		.state = static_cast<item_custody_state>(strtoul(row[7], NULL, 10)),
+	};
+	const bool matches = entry.owner.type == expected_type && entry.owner.id == expected_id &&
+			     entry.owner.context_id == 0 &&
+			     entry.state == item_custody_state::active;
+	if (!matches)
 	{
 		logit(LOG_DEBUG,
 		      "sql_persistence: OWNERSHIP MISMATCH item_uid=%llu "
-		      "expected=%s%s actual_target=%s context=%s",
-		      item_uid, expected_prefix, owner_ref, target, context);
+		      "expected=%u:%llu:0 actual=%u:%llu:%llu context=%s",
+		      item_uid, static_cast<unsigned int>(expected_type), expected_id,
+		      static_cast<unsigned int>(entry.owner.type),
+		      (unsigned long long)entry.owner.id,
+		      (unsigned long long)entry.owner.context_id, context);
 		mysql_free_result(result);
 		return false;
 	}
-
-	/* Extract the owner ref from target (after the prefix) and compare */
-	const char *actual_ref = target + prefix_len;
-	if (strcmp(actual_ref, owner_ref) != 0)
-	{
-		logit(LOG_DEBUG,
-		      "sql_persistence: OWNERSHIP MISMATCH item_uid=%llu "
-		      "expected=%s%s actual_target=%s context=%s",
-		      item_uid, expected_prefix, owner_ref, target, context);
-		mysql_free_result(result);
-		return false;
-	}
-
+	const bool hydrated = item_ownership_runtime_hydrate(entry);
 	mysql_free_result(result);
-	return true;
+	return hydrated;
+}
+
+bool sql_hydrate_item_owner_revisions(void)
+{
+	if (!DB)
+		return false;
+	MYSQL_RES *result = db_query(
+		"SELECT owner_type,owner_id,owner_context_id,revision FROM item_owner_revision");
+	if (!result)
+		return false;
+	bool ok = true;
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(result)))
+	{
+		const item_owner_identity owner = {
+			static_cast<item_owner_type>(strtoul(row[0], NULL, 10)),
+			strtoull(row[1], NULL, 10), strtoull(row[2], NULL, 10)
+		};
+		if (!item_ownership_runtime_hydrate_owner(owner, strtoull(row[3], NULL, 10)))
+		{
+			ok = false;
+			break;
+		}
+	}
+	mysql_free_result(result);
+	return ok;
 }
 
 /* Logs zone touch events to persistence_scalar_events for epic analysis.

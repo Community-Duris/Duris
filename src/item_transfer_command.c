@@ -17,6 +17,10 @@ constexpr size_t COUNT_OFFSET = 36;
 constexpr size_t REASON_ID_OFFSET = 40;
 constexpr size_t FROM_REVISION_OFFSET = 48;
 constexpr size_t TO_REVISION_OFFSET = 56;
+constexpr size_t SELECTED_ITEM_OFFSET = 64;
+constexpr size_t TARGET_ROOT_OFFSET = 72;
+constexpr size_t TARGET_PARENT_OFFSET = 80;
+constexpr size_t TARGET_PARENT_REVISION_OFFSET = 88;
 
 void put_u16(uint8_t *output, uint16_t value)
 {
@@ -94,58 +98,66 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 bool valid_reason(item_transfer_reason reason)
 {
 	return reason > item_transfer_reason::unknown &&
-	       reason <= item_transfer_reason::operator_repair;
+	       reason <= item_transfer_reason::corpse_loot;
 }
 
 bool validate_payload(const item_transfer_payload &payload)
 {
 	if (!item_owner_identity_valid(payload.from_owner) ||
-	    !item_owner_identity_valid(payload.to_owner) ||
-	    item_owner_identity_equal(payload.from_owner, payload.to_owner) ||
-	    !valid_reason(payload.reason) || !payload.item_count ||
-	    payload.item_count > ITEM_TRANSFER_MAX_ITEMS)
+	    !item_owner_identity_valid(payload.to_owner) || !valid_reason(payload.reason) ||
+	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS)
 		return false;
 	const bool creation = payload.from_owner.type == item_owner_type::system;
 	const bool destruction = payload.to_owner.type == item_owner_type::destruction;
 	if (payload.to_owner.type == item_owner_type::system ||
 	    payload.from_owner.type == item_owner_type::destruction ||
 	    (payload.reason == item_transfer_reason::creation) != creation ||
-	    (payload.reason == item_transfer_reason::destruction) != destruction)
+	    (payload.reason == item_transfer_reason::destruction) != destruction ||
+	    ((creation || destruction) &&
+	     item_owner_identity_equal(payload.from_owner, payload.to_owner)))
 		return false;
-	uint64_t root = payload.items[0].root_item_uid;
-	if (!root)
+	const uint64_t source_root = payload.items[0].root_item_uid;
+	const uint64_t selected = payload.selected_item_uid ? payload.selected_item_uid :
+							      source_root;
+	const uint64_t target_root = payload.target_root_item_uid ? payload.target_root_item_uid :
+								    selected;
+	if (!source_root || !selected || !target_root ||
+	    (!payload.target_parent_item_uid && target_root != selected))
 		return false;
-	bool found_root = false;
+	bool found_selected = false;
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const item_transfer_entry &entry = payload.items[index];
-		if (!entry.item_uid || entry.root_item_uid != root || entry.vnum <= 0 ||
+		if (!entry.item_uid || entry.root_item_uid != source_root || entry.vnum <= 0 ||
 		    entry.expected_state !=
 			    (creation ? item_custody_state::absent : item_custody_state::active) ||
 		    (creation && entry.expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION))
 			return false;
 		if (index && payload.items[index - 1].item_uid >= entry.item_uid)
 			return false;
-		if (entry.item_uid == root)
+		if (entry.item_uid == payload.target_parent_item_uid)
+			return false;
+		if (entry.item_uid == selected)
 		{
-			if (entry.parent_item_uid || found_root)
+			if (found_selected)
 				return false;
-			found_root = true;
+			found_selected = true;
 		}
 		else if (!entry.parent_item_uid)
 			return false;
 	}
-	if (!found_root)
+	if (!found_selected ||
+	    (creation && (selected != source_root || payload.target_parent_item_uid)))
 		return false;
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
-		if (payload.items[index].item_uid == root)
+		if (payload.items[index].item_uid == selected)
 			continue;
 		uint64_t ancestor_uid = payload.items[index].parent_item_uid;
 		bool reaches_root = false;
 		for (size_t depth = 0; depth < payload.item_count; ++depth)
 		{
-			if (ancestor_uid == root)
+			if (ancestor_uid == selected)
 			{
 				reaches_root = true;
 				break;
@@ -178,6 +190,13 @@ bool item_owner_identity_equal(const item_owner_identity &left, const item_owner
 {
 	return left.type == right.type && left.id == right.id &&
 	       left.context_id == right.context_id;
+}
+
+uint64_t item_corpse_owner_id(uint32_t player_pid, uint32_t corpse_save_id)
+{
+	if (!player_pid || !corpse_save_id)
+		return 0;
+	return (static_cast<uint64_t>(player_pid) << 32) | corpse_save_id;
 }
 
 bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key)
@@ -213,6 +232,14 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 	put_u64(encoded->data() + REASON_ID_OFFSET, static_cast<uint64_t>(payload.reason_id));
 	put_u64(encoded->data() + FROM_REVISION_OFFSET, payload.expected_from_revision);
 	put_u64(encoded->data() + TO_REVISION_OFFSET, payload.expected_to_revision);
+	const uint64_t selected = payload.selected_item_uid ? payload.selected_item_uid :
+							      payload.items[0].root_item_uid;
+	put_u64(encoded->data() + SELECTED_ITEM_OFFSET, selected);
+	put_u64(encoded->data() + TARGET_ROOT_OFFSET,
+		payload.target_root_item_uid ? payload.target_root_item_uid : selected);
+	put_u64(encoded->data() + TARGET_PARENT_OFFSET, payload.target_parent_item_uid);
+	put_u64(encoded->data() + TARGET_PARENT_REVISION_OFFSET,
+		payload.expected_target_parent_revision);
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const item_transfer_entry &entry = payload.items[index];
@@ -245,6 +272,11 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 		static_cast<int64_t>(get_u64(command.payload.data() + REASON_ID_OFFSET));
 	payload->expected_from_revision = get_u64(command.payload.data() + FROM_REVISION_OFFSET);
 	payload->expected_to_revision = get_u64(command.payload.data() + TO_REVISION_OFFSET);
+	payload->selected_item_uid = get_u64(command.payload.data() + SELECTED_ITEM_OFFSET);
+	payload->target_root_item_uid = get_u64(command.payload.data() + TARGET_ROOT_OFFSET);
+	payload->target_parent_item_uid = get_u64(command.payload.data() + TARGET_PARENT_OFFSET);
+	payload->expected_target_parent_revision =
+		get_u64(command.payload.data() + TARGET_PARENT_REVISION_OFFSET);
 	if (!payload->item_count || payload->item_count > ITEM_TRANSFER_MAX_ITEMS)
 		return false;
 	for (size_t index = 0; index < ITEM_TRANSFER_MAX_ITEMS; ++index)
@@ -265,9 +297,7 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 		if (input[37] || input[38] || input[39])
 			return false;
 	}
-	if (!validate_payload(*payload) ||
-	    command.keys.size() != static_cast<size_t>(payload->item_count) + 2 ||
-	    command.expected_revisions.size() != command.keys.size())
+	if (!validate_payload(*payload) || command.expected_revisions.size() != command.keys.size())
 		return false;
 	critical_command expected = {};
 	if (!item_transfer_command_build(&expected, command.operation_id, *payload,
@@ -336,6 +366,13 @@ bool item_transfer_command_build(critical_command *command, critical_operation_i
 		     .expected_revisions = { { from_key, payload.expected_from_revision },
 					     { to_key, payload.expected_to_revision } },
 		     .payload = std::move(encoded) };
+	if (item_owner_identity_equal(payload.from_owner, payload.to_owner))
+	{
+		if (payload.expected_from_revision != payload.expected_to_revision)
+			return false;
+		command->keys.pop_back();
+		command->expected_revisions.pop_back();
+	}
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		critical_entity_key item_key = { critical_entity_type::item,
@@ -343,6 +380,14 @@ bool item_transfer_command_build(critical_command *command, critical_operation_i
 		command->keys.push_back(item_key);
 		command->expected_revisions.push_back(
 			{ item_key, payload.items[index].expected_item_revision });
+	}
+	if (payload.target_parent_item_uid)
+	{
+		critical_entity_key parent_key = { critical_entity_type::item,
+						   payload.target_parent_item_uid };
+		command->keys.push_back(parent_key);
+		command->expected_revisions.push_back(
+			{ parent_key, payload.expected_target_parent_revision });
 	}
 	std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
 	if (std::adjacent_find(command->keys.begin(), command->keys.end(),

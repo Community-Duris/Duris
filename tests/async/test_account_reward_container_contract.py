@@ -26,13 +26,17 @@ assert contains(summon, "obj->type==ITEM_CONTAINER")
 assert contains(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)")
 assert index(summon, "REMOVE_BIT(obj->value[1],CONT_CLOSED)") < index(summon, "obj_to_char(obj,ch)")
 
-# Account reward code owns one public pre-persistence corpse hook. fight.c invokes
-# it after inventory becomes corpse contents and before writeCorpse persists it.
+# Account reward code owns one public pre-persistence corpse hook. ACK-staged death
+# invokes it before the first empty corpse snapshot and ownership submission; player
+# inventory remains visible until each transfer commits.
 assert contains(header, "void account_bound_reward_prepare_player_corpse(P_char ch, P_obj corpse);")
 assert contains(fight, '#include "account_reward.h"')
 hook = "account_bound_reward_prepare_player_corpse(ch, corpse);"
 assert hook in fight
-assert index(fight, "corpse->contains = ch->carrying;") < fight.index(hook) < index(fight, "writeCorpse(corpse);")
+make_corpse = fight[index(fight, "P_obj make_corpse"):]
+assert index(make_corpse, hook) < index(make_corpse, "writeCorpse(corpse);")
+assert "item_transfer_reason::corpse_create" in fight
+assert index(make_corpse, "if (IS_NPC(ch))") < index(make_corpse, "corpse->contains = ch->carrying;")
 
 # Forced disappearance promotes direct children to the same parent, traverses
 # nested containers first, and extracts only after the reward container is empty.

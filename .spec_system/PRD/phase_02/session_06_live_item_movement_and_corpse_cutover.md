@@ -1,7 +1,7 @@
 # Session 06: Live Item Movement and Corpse Cutover
 
 **Session ID**: `phase02-session06-live-item-movement-and-corpse-cutover`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The complete live movement boundary for player, container, floor,
 trade, corpse creation/restoration, and corpse loot routes through ownership ACK and
 world/player revision publication.
@@ -45,9 +45,9 @@ commit.
 
 ## Prerequisites
 
-- [ ] Session 05 transfer primitive and baseline reconciliation are validated.
-- [ ] Phase 01 player and world revision/ACK paths are authoritative.
-- [ ] Phase 00 terminal death and recovery failures retain live state safely.
+- [x] Session 05 transfer primitive and baseline reconciliation are validated.
+- [x] Phase 01 player and world revision/ACK paths are authoritative.
+- [x] Phase 00 terminal death and recovery failures retain live state safely.
 
 ---
 
@@ -66,15 +66,15 @@ commit.
 
 ## Success Criteria
 
-- [ ] Every audited cross-owner live movement supplies one operation ID and reaches the
+- [x] Every audited cross-owner live movement supplies one operation ID and reaches the
       authoritative transfer primitive.
-- [ ] Same-owner rearrangement advances only the intended inventory component/revision
+- [x] Same-owner rearrangement advances only the intended inventory component/revision
       and does not create a false ownership transfer.
-- [ ] A failed, stale, timed-out, or overloaded command leaves the item and subtree in
+- [x] A failed, stale, timed-out, or overloaded command leaves the item and subtree in
       their prior visible and durable custody.
-- [ ] Simultaneous pickup, trade, or corpse-loot attempts can produce at most one
+- [x] Simultaneous pickup, trade, or corpse-loot attempts can produce at most one
       successful owner transition.
-- [ ] Corpse creation and restore cannot duplicate an item already owned elsewhere.
-- [ ] Floor recovery hints and legacy item events no longer decide current ownership.
-- [ ] Workers traverse no live object, player, corpse, room, or container pointers.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Corpse creation and restore cannot duplicate an item already owned elsewhere.
+- [x] Floor recovery hints and legacy item events no longer decide current ownership.
+- [x] Workers traverse no live object, player, corpse, room, or container pointers.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

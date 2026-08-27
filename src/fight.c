@@ -54,6 +54,8 @@
 #include "weather.h"
 #include "world_quest.h"
 #include "ws_handlers.h"
+#include "item_movement_transaction.h"
+#include "item_ownership_runtime.h"
 /*
  * external variables //
  */
@@ -1398,6 +1400,107 @@ bool AdjacentInRoom(P_char ch, P_char ch2)
 	return FALSE;
 }
 
+namespace
+{
+struct corpse_transfer_context
+{
+	uint64_t corpse_uid;
+	uint64_t item_uid;
+	uint64_t corpse_save_id;
+};
+
+P_obj corpse_live_item(uint64_t uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == uid)
+			return object;
+	return NULL;
+}
+
+bool submit_next_corpse_item(P_char character, P_obj corpse);
+
+void corpse_item_completion(P_char character, bool committed, const item_transfer_result &,
+			    unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	if (!character || !encoded || encoded_size != sizeof(corpse_transfer_context))
+		return;
+	corpse_transfer_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	P_obj corpse = corpse_live_item(context.corpse_uid);
+	P_obj item = corpse_live_item(context.item_uid);
+	if (!committed)
+	{
+		persistence_alert(AVATAR, "corpse", "ownership_transfer", "none", "none",
+				  "rejected_preserved", "item_uid=%llu", context.item_uid);
+		return;
+	}
+	if (!corpse || !item || !OBJ_CARRIED_BY(item, character) ||
+	    corpse->value[CORPSE_SAVEID] != static_cast<int>(context.corpse_save_id))
+	{
+		persistence_alert(AVATAR, "corpse", "ownership_publish", "none", "none",
+				  "stale_live_topology", "item_uid=%llu", context.item_uid);
+		return;
+	}
+	obj_from_char(item);
+	obj_to_obj(item, corpse);
+	mark_player_dirty_components(GET_PID(character), PLAYER_COMPONENT_STATUS |
+								 PLAYER_COMPONENT_EQUIPMENT |
+								 PLAYER_COMPONENT_INVENTORY);
+	writeCorpse(corpse);
+	(void)submit_next_corpse_item(character, corpse);
+}
+
+bool submit_next_corpse_item(P_char character, P_obj corpse)
+{
+	if (!character || !corpse || !IS_PC(character) || !corpse->value[CORPSE_SAVEID])
+		return false;
+	const item_owner_identity source = { item_owner_type::player,
+					     static_cast<uint64_t>(GET_PID(character)), 0 };
+	for (P_obj candidate = character->carrying, next = NULL; candidate; candidate = next)
+	{
+		next = candidate->next_content;
+		if (GET_ITEM_TYPE(candidate) != ITEM_MONEY)
+			continue;
+		obj_from_char(candidate);
+		obj_to_obj(candidate, corpse);
+	}
+	P_obj item = NULL;
+	item_ownership_runtime_entry runtime = {};
+	for (P_obj candidate = character->carrying; candidate; candidate = candidate->next_content)
+		if (candidate->obj_uid &&
+		    (!item_ownership_runtime_lookup(candidate->obj_uid, &runtime) ||
+		     item_owner_identity_equal(runtime.owner, source)))
+		{
+			item = candidate;
+			break;
+		}
+	if (!item)
+	{
+		writeCorpse(corpse);
+		return true;
+	}
+	const item_owner_identity destination = {
+		item_owner_type::corpse,
+		item_corpse_owner_id(static_cast<uint32_t>(GET_PID(character)),
+				     static_cast<uint32_t>(corpse->value[CORPSE_SAVEID])),
+		0
+	};
+	const corpse_transfer_context context = {
+		corpse->obj_uid, item->obj_uid, static_cast<uint64_t>(corpse->value[CORPSE_SAVEID])
+	};
+	if (!item_movement_transaction_submit(character, item, NULL, source, destination,
+					      item_transfer_reason::corpse_create,
+					      corpse->value[CORPSE_SAVEID], corpse_item_completion,
+					      &context, sizeof(context)))
+	{
+		persistence_alert(AVATAR, "corpse", "ownership_submit", "none", "none",
+				  "failed_preserved", "item_uid=%llu", item->obj_uid);
+		return false;
+	}
+	return true;
+}
+}
+
 P_obj make_corpse(P_char ch, int loss)
 {
 	P_obj corpse, o;
@@ -1462,8 +1565,11 @@ P_obj make_corpse(P_char ch, int loss)
 	 * for the whole object list, else ugly problems occur later.
 	 */
 	unequip_all(ch);
-	corpse->contains = ch->carrying;
-	ch->carrying = NULL;
+	if (IS_NPC(ch))
+	{
+		corpse->contains = ch->carrying;
+		ch->carrying = NULL;
+	}
 
 	for (o = corpse->contains; o; o = o->next_content)
 	{
@@ -1502,7 +1608,7 @@ P_obj make_corpse(P_char ch, int loss)
 			corpse->value[CORPSE_RACEWAR] = 1;
 
 		/* value[6] is reserved for saved file id - Tharkun */
-		corpse->value[CORPSE_SAVEID] = 0;
+		corpse->value[CORPSE_SAVEID] = static_cast<int>(time(NULL));
 
 		if (IS_HUMANOID(ch))
 			corpse->value[CORPSE_FLAGS] |= HUMANOID_CORPSE; /* for carving */
@@ -1517,8 +1623,11 @@ P_obj make_corpse(P_char ch, int loss)
 
 	corpse->value[CORPSE_RACE] = GET_RACE(ch);
 
-	IS_CARRYING_N(ch) = 0;
-	GET_CARRYING_W(ch) = 0;
+	if (IS_NPC(ch))
+	{
+		IS_CARRYING_N(ch) = 0;
+		GET_CARRYING_W(ch) = 0;
+	}
 
 	set_obj_affected(corpse, e_time, TAG_OBJ_DECAY, 0);
 
@@ -1638,17 +1747,11 @@ P_obj make_corpse(P_char ch, int loss)
 	}
 	if (corpse && IS_PC(ch))
 	{
-		if (!sql_delete_player_items(GET_PID(ch)))
-		{
-			logit(LOG_DEBUG, "make_corpse: failed to clear items for %s", GET_NAME(ch));
-			obj_from_room(corpse);
-			extract_obj(corpse);
-			corpse = NULL;
-		}
-		else
-		{
-			writeCorpse(corpse);
-		}
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
+								  PLAYER_COMPONENT_EQUIPMENT |
+								  PLAYER_COMPONENT_INVENTORY);
+		writeCorpse(corpse);
+		(void)submit_next_corpse_item(ch, corpse);
 	}
 
 	return corpse;

@@ -28,9 +28,12 @@ SELECT 'player_items',i.id,COALESCE(i.obj_uid,0),p.obj_uid,COALESCE(i.obj_uid,0)
        IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0)
 FROM player_items i LEFT JOIN player_items p ON p.id=i.container_id;
 INSERT INTO item_custody_evidence
-SELECT 'corpse_items',i.id,COALESCE(i.obj_uid,0),p.obj_uid,COALESCE(i.obj_uid,0),4,i.corpse_id,0,i.vnum,
+SELECT 'corpse_items',i.id,COALESCE(i.obj_uid,0),p.obj_uid,COALESCE(i.obj_uid,0),4,
+       ((CAST(pd.pid AS UNSIGNED) << 32) | (CAST(c.save_id AS UNSIGNED) & 4294967295)),0,i.vnum,
        IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0)
-FROM corpse_items i LEFT JOIN corpse_items p ON p.id=i.container_id;
+FROM corpse_items i JOIN corpses c ON c.id=i.corpse_id
+JOIN player_data pd ON LOWER(pd.name)=LOWER(c.player_name)
+LEFT JOIN corpse_items p ON p.id=i.container_id;
 INSERT INTO item_custody_evidence
 SELECT 'locker_items',i.id,COALESCE(i.obj_uid,0),p.obj_uid,COALESCE(i.obj_uid,0),5,i.locker_id,COALESCE(i.chest_id,0),i.vnum,
        IF(i.container_id IS NOT NULL AND p.obj_uid IS NULL,1,0)

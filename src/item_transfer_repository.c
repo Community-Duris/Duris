@@ -213,6 +213,64 @@ bool item_exists(MYSQL *connection, uint64_t item_uid, bool *found)
 	return statement_ok(statement, true);
 }
 
+bool load_item(MYSQL *connection, uint64_t item_uid, current_item *item, bool *found)
+{
+	static const char SQL[] =
+		"SELECT item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,"
+		"item_revision,vnum,state FROM item_current_owner WHERE item_uid=? FOR UPDATE";
+	if (!item || !found)
+		return false;
+	*item = {};
+	*found = false;
+	MYSQL_STMT *statement = nullptr;
+	if (!prepare(&statement, connection, SQL))
+		return false;
+	MYSQL_BIND parameter = {};
+	parameter.buffer_type = MYSQL_TYPE_LONGLONG;
+	parameter.buffer = &item_uid;
+	parameter.is_unsigned = true;
+	if (mysql_stmt_bind_param(statement, &parameter) != 0 || mysql_stmt_execute(statement) != 0)
+		return statement_ok(statement, false);
+	my_bool parent_null = 0;
+	MYSQL_BIND output[9] = {};
+	output[0].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[0].buffer = &item->item_uid;
+	output[0].is_unsigned = true;
+	output[1].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[1].buffer = &item->root_item_uid;
+	output[1].is_unsigned = true;
+	output[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[2].buffer = &item->parent_item_uid;
+	output[2].is_unsigned = true;
+	output[2].is_null = &parent_null;
+	output[3].buffer_type = MYSQL_TYPE_TINY;
+	output[3].buffer = &item->owner_type;
+	output[3].is_unsigned = true;
+	output[4].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[4].buffer = &item->owner_id;
+	output[4].is_unsigned = true;
+	output[5].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[5].buffer = &item->owner_context_id;
+	output[5].is_unsigned = true;
+	output[6].buffer_type = MYSQL_TYPE_LONGLONG;
+	output[6].buffer = &item->item_revision;
+	output[6].is_unsigned = true;
+	output[7].buffer_type = MYSQL_TYPE_LONG;
+	output[7].buffer = &item->vnum;
+	output[8].buffer_type = MYSQL_TYPE_TINY;
+	output[8].buffer = &item->state;
+	output[8].is_unsigned = true;
+	if (mysql_stmt_bind_result(statement, output) != 0)
+		return statement_ok(statement, false);
+	const int fetched = mysql_stmt_fetch(statement);
+	if (fetched != 0 && fetched != MYSQL_NO_DATA)
+		return statement_ok(statement, false);
+	*found = fetched == 0;
+	if (*found && parent_null)
+		item->parent_item_uid = 0;
+	return statement_ok(statement, true);
+}
+
 bool insert_created_item(MYSQL *connection, const item_transfer_entry &entry,
 			 const item_owner_identity &owner)
 {
@@ -245,45 +303,49 @@ bool insert_created_item(MYSQL *connection, const item_transfer_entry &entry,
 					       mysql_stmt_execute(statement) == 0);
 }
 
-bool update_item(MYSQL *connection, const item_transfer_entry &entry,
-		 const item_owner_identity &owner, uint64_t prior_revision,
-		 item_custody_state state)
+bool update_item(MYSQL *connection, const item_transfer_entry &entry, uint64_t target_root_item_uid,
+		 uint64_t target_parent_item_uid, const item_owner_identity &owner,
+		 uint64_t prior_revision, item_custody_state state)
 {
 	static const char SQL[] =
-		"UPDATE item_current_owner SET parent_item_uid=IF(?=0,NULL,?),owner_type=?,owner_id=?,"
-		"owner_context_id=?,item_revision=?,state=? WHERE item_uid=? AND item_revision=?";
+		"UPDATE item_current_owner SET root_item_uid=?,parent_item_uid=IF(?=0,NULL,?),"
+		"owner_type=?,owner_id=?,owner_context_id=?,item_revision=?,state=? "
+		"WHERE item_uid=? AND item_revision=?";
 	MYSQL_STMT *statement = nullptr;
 	if (!prepare(&statement, connection, SQL))
 		return false;
 	uint8_t type = static_cast<uint8_t>(owner.type);
 	uint8_t state_value = static_cast<uint8_t>(state);
 	uint64_t revision = prior_revision + 1;
-	MYSQL_BIND bindings[9] = {};
+	MYSQL_BIND bindings[10] = {};
 	bindings[0].buffer_type = MYSQL_TYPE_LONGLONG;
-	bindings[0].buffer = const_cast<uint64_t *>(&entry.parent_item_uid);
+	bindings[0].buffer = &target_root_item_uid;
 	bindings[0].is_unsigned = true;
-	bindings[1] = bindings[0];
-	bindings[2].buffer_type = MYSQL_TYPE_TINY;
-	bindings[2].buffer = &type;
-	bindings[2].is_unsigned = true;
-	bindings[3].buffer_type = MYSQL_TYPE_LONGLONG;
-	bindings[3].buffer = const_cast<uint64_t *>(&owner.id);
+	bindings[1].buffer_type = MYSQL_TYPE_LONGLONG;
+	bindings[1].buffer = &target_parent_item_uid;
+	bindings[1].is_unsigned = true;
+	bindings[2] = bindings[1];
+	bindings[3].buffer_type = MYSQL_TYPE_TINY;
+	bindings[3].buffer = &type;
 	bindings[3].is_unsigned = true;
 	bindings[4].buffer_type = MYSQL_TYPE_LONGLONG;
-	bindings[4].buffer = const_cast<uint64_t *>(&owner.context_id);
+	bindings[4].buffer = const_cast<uint64_t *>(&owner.id);
 	bindings[4].is_unsigned = true;
 	bindings[5].buffer_type = MYSQL_TYPE_LONGLONG;
-	bindings[5].buffer = &revision;
+	bindings[5].buffer = const_cast<uint64_t *>(&owner.context_id);
 	bindings[5].is_unsigned = true;
-	bindings[6].buffer_type = MYSQL_TYPE_TINY;
-	bindings[6].buffer = &state_value;
+	bindings[6].buffer_type = MYSQL_TYPE_LONGLONG;
+	bindings[6].buffer = &revision;
 	bindings[6].is_unsigned = true;
-	bindings[7].buffer_type = MYSQL_TYPE_LONGLONG;
-	bindings[7].buffer = const_cast<uint64_t *>(&entry.item_uid);
+	bindings[7].buffer_type = MYSQL_TYPE_TINY;
+	bindings[7].buffer = &state_value;
 	bindings[7].is_unsigned = true;
 	bindings[8].buffer_type = MYSQL_TYPE_LONGLONG;
-	bindings[8].buffer = &prior_revision;
+	bindings[8].buffer = const_cast<uint64_t *>(&entry.item_uid);
 	bindings[8].is_unsigned = true;
+	bindings[9].buffer_type = MYSQL_TYPE_LONGLONG;
+	bindings[9].buffer = &prior_revision;
+	bindings[9].is_unsigned = true;
 	return statement_ok(statement, mysql_stmt_bind_param(statement, bindings) == 0 &&
 					       mysql_stmt_execute(statement) == 0 &&
 					       mysql_stmt_affected_rows(statement) == 1);
@@ -334,6 +396,9 @@ bool insert_ledger(MYSQL *connection, const critical_command &command,
 	if (!prepare(&statement, connection, SQL))
 		return false;
 	const item_transfer_entry &entry = payload.items[index];
+	const uint64_t target_parent = entry.item_uid == payload.selected_item_uid ?
+					       payload.target_parent_item_uid :
+					       entry.parent_item_uid;
 	uint16_t event_index = static_cast<uint16_t>(index);
 	uint8_t from_type = static_cast<uint8_t>(payload.from_owner.type);
 	uint8_t to_type = static_cast<uint8_t>(payload.to_owner.type);
@@ -350,9 +415,9 @@ bool insert_ledger(MYSQL *connection, const critical_command &command,
 	bindings[1].is_unsigned = true;
 	uint64_t *unsigned_values[] = {
 		const_cast<uint64_t *>(&entry.item_uid),
-		const_cast<uint64_t *>(&entry.root_item_uid),
-		const_cast<uint64_t *>(&entry.parent_item_uid),
-		const_cast<uint64_t *>(&entry.parent_item_uid),
+		const_cast<uint64_t *>(&payload.target_root_item_uid),
+		const_cast<uint64_t *>(&target_parent),
+		const_cast<uint64_t *>(&target_parent),
 	};
 	for (size_t value = 0; value < 4; ++value)
 	{
@@ -411,11 +476,19 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		errno = EINVAL;
 		return false;
 	}
-	*result = { payload.items[0].root_item_uid, payload.item_count, 0, 0, 0 };
+	*result = { payload.selected_item_uid, payload.item_count, 0, 0, 0 };
 	*result_code = 0;
 	*mutation_applied = false;
 	uint64_t from_revision = 0, to_revision = 0;
-	if (owner_less(payload.from_owner, payload.to_owner))
+	const bool same_owner = item_owner_identity_equal(payload.from_owner, payload.to_owner);
+	if (same_owner)
+	{
+		if (!ensure_owner(connection, payload.from_owner) ||
+		    !lock_owner(connection, payload.from_owner, &from_revision))
+			return false;
+		to_revision = from_revision;
+	}
+	else if (owner_less(payload.from_owner, payload.to_owner))
 	{
 		if (!ensure_owner(connection, payload.from_owner) ||
 		    !ensure_owner(connection, payload.to_owner) ||
@@ -457,15 +530,44 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 				return true;
 			}
 		}
-	if (!creation && current.size() != payload.item_count)
-	{
-		*result_code = EMSGSIZE;
-		return true;
-	}
+	std::vector<current_item> selected;
 	if (!creation)
+	{
+		try
+		{
+			selected.reserve(payload.item_count);
+		}
+		catch (const std::bad_alloc &)
+		{
+			errno = ENOMEM;
+			return false;
+		}
+		for (const current_item &candidate : current)
+		{
+			uint64_t ancestor = candidate.item_uid;
+			for (size_t depth = 0; depth <= current.size(); ++depth)
+			{
+				if (ancestor == payload.selected_item_uid)
+				{
+					selected.push_back(candidate);
+					break;
+				}
+				auto parent = std::find_if(current.begin(), current.end(),
+							   [&](const current_item &entry)
+							   { return entry.item_uid == ancestor; });
+				if (parent == current.end() || !parent->parent_item_uid)
+					break;
+				ancestor = parent->parent_item_uid;
+			}
+		}
+		if (selected.size() != payload.item_count)
+		{
+			*result_code = EMSGSIZE;
+			return true;
+		}
 		for (size_t index = 0; index < payload.item_count; ++index)
 		{
-			const current_item &stored = current[index];
+			const current_item &stored = selected[index];
 			const item_transfer_entry &expected = payload.items[index];
 			result->max_item_revision =
 				std::max(result->max_item_revision, stored.item_revision);
@@ -483,15 +585,42 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 				return true;
 			}
 		}
+	}
+	if (payload.target_parent_item_uid)
+	{
+		current_item parent = {};
+		bool parent_found = false;
+		auto in_current =
+			std::find_if(current.begin(), current.end(), [&](const current_item &entry)
+				     { return entry.item_uid == payload.target_parent_item_uid; });
+		if (in_current != current.end())
+		{
+			parent = *in_current;
+			parent_found = true;
+		}
+		else if (!load_item(connection, payload.target_parent_item_uid, &parent,
+				    &parent_found))
+			return false;
+		if (!parent_found || parent.root_item_uid != payload.target_root_item_uid ||
+		    parent.owner_type != static_cast<uint8_t>(payload.to_owner.type) ||
+		    parent.owner_id != payload.to_owner.id ||
+		    parent.owner_context_id != payload.to_owner.context_id ||
+		    parent.item_revision != payload.expected_target_parent_revision ||
+		    parent.state != static_cast<uint8_t>(item_custody_state::active))
+		{
+			*result_code = ESTALE;
+			return true;
+		}
+	}
 	if (from_revision == std::numeric_limits<uint64_t>::max() ||
-	    to_revision == std::numeric_limits<uint64_t>::max())
+	    (!same_owner && to_revision == std::numeric_limits<uint64_t>::max()))
 	{
 		*result_code = ERANGE;
 		return true;
 	}
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
-		const uint64_t prior_revision = creation ? 0 : current[index].item_revision;
+		const uint64_t prior_revision = creation ? 0 : selected[index].item_revision;
 		if (prior_revision == std::numeric_limits<uint64_t>::max())
 		{
 			*result_code = ERANGE;
@@ -500,7 +629,12 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		if (creation &&
 		    !insert_created_item(connection, payload.items[index], payload.to_owner))
 			return false;
-		if (!update_item(connection, payload.items[index], payload.to_owner, prior_revision,
+		const uint64_t target_parent = payload.items[index].item_uid ==
+							       payload.selected_item_uid ?
+						       payload.target_parent_item_uid :
+						       payload.items[index].parent_item_uid;
+		if (!update_item(connection, payload.items[index], payload.target_root_item_uid,
+				 target_parent, payload.to_owner, prior_revision,
 				 payload.to_owner.type == item_owner_type::destruction ?
 					 item_custody_state::destroyed :
 					 item_custody_state::active))
@@ -508,14 +642,15 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 		const uint64_t item_revision = prior_revision + 1;
 		result->max_item_revision = std::max(result->max_item_revision, item_revision);
 		if (!insert_ledger(connection, command, payload, index, item_revision,
-				   from_revision + 1, to_revision + 1))
+				   from_revision + 1,
+				   same_owner ? from_revision + 1 : to_revision + 1))
 			return false;
 	}
 	if (!update_owner_revision(connection, payload.from_owner, from_revision) ||
-	    !update_owner_revision(connection, payload.to_owner, to_revision))
+	    (!same_owner && !update_owner_revision(connection, payload.to_owner, to_revision)))
 		return false;
 	result->from_owner_revision = from_revision + 1;
-	result->to_owner_revision = to_revision + 1;
+	result->to_owner_revision = same_owner ? from_revision + 1 : to_revision + 1;
 	*mutation_applied = true;
 	return true;
 }

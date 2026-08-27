@@ -234,10 +234,80 @@ int main()
 			ITEM_TRANSFER_ABSENT_REVISION));
 	assert(collision.outcome == critical_apply_outcome::terminal_failure &&
 	       collision.error_code == EEXIST);
+
+	item_uid_allocator_reset_for_tests();
+	assert(item_uid_allocator_reserve(connection, 3));
+	root_uid = item_uid_allocator_next();
+	child_uid = item_uid_allocator_next();
+	const uint64_t container_uid = item_uid_allocator_next();
+	system_revision = owner_revision(connection, system);
+	player_one_revision = owner_revision(connection, player_one);
+	critical_apply_result reparent_items_created =
+		apply(connection, 9,
+		      payload(system, player_one, item_transfer_reason::creation, system_revision,
+			      player_one_revision, ITEM_TRANSFER_ABSENT_REVISION));
+	assert(reparent_items_created.outcome == critical_apply_outcome::applied);
+	item_transfer_result reparent_items_result = {};
+	assert(item_transfer_command_decode_result(reparent_items_created.result_payload.data(),
+						   reparent_items_created.result_size,
+						   &reparent_items_result));
+	root_uid = container_uid;
+	critical_apply_result container_created = apply(
+		connection, 10,
+		payload(system, player_one, item_transfer_reason::creation,
+			reparent_items_result.from_owner_revision,
+			reparent_items_result.to_owner_revision, ITEM_TRANSFER_ABSENT_REVISION, 1));
+	assert(container_created.outcome == critical_apply_outcome::applied);
+	item_transfer_result container_result = {};
+	assert(item_transfer_command_decode_result(container_created.result_payload.data(),
+						   container_created.result_size,
+						   &container_result));
+
+	root_uid = container_uid - 2;
+	child_uid = container_uid - 1;
+	auto reparent = payload(player_one, player_one, item_transfer_reason::player_put,
+				container_result.to_owner_revision,
+				container_result.to_owner_revision, 1);
+	reparent.selected_item_uid = root_uid;
+	reparent.target_root_item_uid = container_uid;
+	reparent.target_parent_item_uid = container_uid;
+	reparent.expected_target_parent_revision = 1;
+	critical_apply_result reparented = apply(connection, 11, reparent);
+	assert(reparented.outcome == critical_apply_outcome::applied);
+	item_transfer_result reparented_result = {};
+	assert(item_transfer_command_decode_result(reparented.result_payload.data(),
+						   reparented.result_size, &reparented_result));
+	assert(reparented_result.from_owner_revision == reparented_result.to_owner_revision);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+				   std::to_string(root_uid) +
+				   " AND root_item_uid=" + std::to_string(container_uid) +
+				   " AND parent_item_uid=" + std::to_string(container_uid))
+					  .c_str()) == 1);
+
+	item_transfer_payload detach = {};
+	detach.from_owner = player_one;
+	detach.to_owner = player_one;
+	detach.reason = item_transfer_reason::player_get;
+	detach.reason_id = 78;
+	detach.expected_from_revision = reparented_result.to_owner_revision;
+	detach.expected_to_revision = reparented_result.to_owner_revision;
+	detach.selected_item_uid = child_uid;
+	detach.target_root_item_uid = child_uid;
+	detach.item_count = 1;
+	detach.items[0] = {
+		child_uid, container_uid, root_uid, 2, 1002, item_custody_state::active
+	};
+	critical_apply_result detached = apply(connection, 12, detach);
+	assert(detached.outcome == critical_apply_outcome::applied);
+	assert(scalar(connection, ("SELECT COUNT(*) FROM item_current_owner WHERE item_uid=" +
+				   std::to_string(child_uid) + " AND root_item_uid=" +
+				   std::to_string(child_uid) + " AND parent_item_uid IS NULL")
+					  .c_str()) == 1);
+
 	item_uid_allocator_reset_for_tests();
 	assert(item_uid_allocator_reserve(connection, 2));
-	assert(item_uid_allocator_next() == allocator_start + 2);
-	assert(item_uid_allocator_next() == allocator_start + 3);
+	assert(item_uid_allocator_next() == allocator_start + 5);
+	assert(item_uid_allocator_next() == allocator_start + 6);
 	mysql_close(connection);
 	return 0;
 }

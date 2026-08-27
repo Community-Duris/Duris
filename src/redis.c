@@ -887,13 +887,6 @@ int redis_restore_floor_drops(void)
 		if (uid == 0)
 			continue;
 
-		// already picked up? skip
-		if (redis_check_floor_pickup(uid))
-		{
-			skipped++;
-			continue;
-		}
-
 		cJSON *obj_json = cJSON_Parse(json_str);
 		if (!obj_json)
 			continue;
@@ -911,6 +904,15 @@ int redis_restore_floor_drops(void)
 		int rnum = real_room(room_vnum);
 		if (rnum < 0 || rnum > top_of_world)
 		{
+			cJSON_Delete(obj_json);
+			continue;
+		}
+		char room_ref[32];
+		snprintf(room_ref, sizeof(room_ref), "%d", room_vnum);
+		if (!sql_persistence_item_owner_matches(uid, "room", room_ref,
+							"redis_restore_floor_drops"))
+		{
+			skipped++;
 			cJSON_Delete(obj_json);
 			continue;
 		}
@@ -1002,7 +1004,7 @@ int redis_restore_floor_drops(void)
 	freeReplyObject(reply);
 
 	if (skipped > 0)
-		logit(LOG_SYS, "redis: floor drops: skipped %d picked-up items", skipped);
+		logit(LOG_SYS, "redis: floor drops: skipped %d non-authoritative items", skipped);
 	if (restored > 0)
 		logit(LOG_SYS, "redis: floor drops: restored %d items", restored);
 

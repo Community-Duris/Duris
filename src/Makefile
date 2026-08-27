@@ -197,6 +197,8 @@ OBJS =  $(SHIP_OBJS) \
 				 critical_command_coordinator.o \
 				 critical_command_repository.o \
 				 item_transfer_command.o \
+				 item_ownership_runtime.o \
+				 item_movement_transaction.o \
 				 item_transfer_repository.o \
 				 item_transfer_synthetic.o \
 				 item_uid_allocator.o \

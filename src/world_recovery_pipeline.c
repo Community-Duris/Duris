@@ -26,6 +26,8 @@ extern P_char character_list;
 extern P_obj object_list;
 extern int top_of_world;
 extern int top_of_zone_table;
+extern bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
+					       const char *owner_ref, const char *context);
 
 namespace
 {
@@ -616,8 +618,11 @@ bool world_recovery_restore(const unsigned char *data, size_t size, int max_age_
 				return false;
 			copyover_obj entry = {};
 			memcpy(&entry, data + offset, sizeof(entry));
-			if (entry.obj_uid && (redis_check_floor_pickup(entry.obj_uid) ||
-					      redis_check_floor_drop(entry.obj_uid)))
+			char room_ref[32];
+			snprintf(room_ref, sizeof(room_ref), "%d", entry.room);
+			if (entry.obj_uid &&
+			    !sql_persistence_item_owner_matches(entry.obj_uid, "room", room_ref,
+								"world_recovery_restore"))
 			{
 				consumed = record.size;
 				++objects;

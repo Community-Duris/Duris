@@ -6,9 +6,9 @@
 #include <array>
 #include <cstdint>
 
-constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 1;
+constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 2;
 constexpr size_t ITEM_TRANSFER_MAX_ITEMS = 12;
-constexpr size_t ITEM_TRANSFER_HEADER_BYTES = 64;
+constexpr size_t ITEM_TRANSFER_HEADER_BYTES = 96;
 constexpr size_t ITEM_TRANSFER_ENTRY_BYTES = 40;
 constexpr size_t ITEM_TRANSFER_PAYLOAD_BYTES =
 	ITEM_TRANSFER_HEADER_BYTES + ITEM_TRANSFER_MAX_ITEMS * ITEM_TRANSFER_ENTRY_BYTES;
@@ -35,6 +35,13 @@ enum class item_transfer_reason : uint16_t
 	creation,
 	destruction,
 	operator_repair,
+	player_get,
+	player_drop,
+	player_put,
+	player_give,
+	corpse_create,
+	corpse_restore,
+	corpse_loot,
 };
 
 enum class item_custody_state : uint8_t
@@ -70,6 +77,10 @@ struct item_transfer_payload
 	int64_t reason_id;
 	uint64_t expected_from_revision;
 	uint64_t expected_to_revision;
+	uint64_t selected_item_uid;
+	uint64_t target_root_item_uid;
+	uint64_t target_parent_item_uid;
+	uint64_t expected_target_parent_revision;
 	uint16_t item_count;
 	std::array<item_transfer_entry, ITEM_TRANSFER_MAX_ITEMS> items;
 };
@@ -85,6 +96,7 @@ struct item_transfer_result
 
 bool item_owner_identity_valid(const item_owner_identity &owner);
 bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right);
+uint64_t item_corpse_owner_id(uint32_t player_pid, uint32_t corpse_save_id);
 bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key);
 bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 					  std::vector<uint8_t> *encoded);

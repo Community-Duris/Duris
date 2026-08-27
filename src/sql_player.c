@@ -30,6 +30,7 @@
 #include "player_name.h"
 #include "password_hash.h"
 #include "player_revision_state.h"
+#include "item_transfer_command.h"
 
 // external tables
 extern P_index obj_index;
@@ -7487,6 +7488,7 @@ enum corpse_load_column
 	CORPSE_COL_PLAYER_NAME,
 	CORPSE_COL_SAVE_ID,
 	CORPSE_COL_ROOM_VNUM,
+	CORPSE_COL_OWNER_PID,
 	CORPSE_COL_ITEM_ID,
 	CORPSE_COL_ITEM_CONTAINER_ID,
 	CORPSE_COL_ITEM_VNUM,
@@ -7569,6 +7571,7 @@ bool sql_load_all_corpses(void)
 	int cur_corpse_id = -1;
 	P_obj cur_corpse = NULL;
 	int cur_room = 0;
+	uint64_t cur_corpse_owner_id = 0;
 	P_obj obj_map[MAX_CORPSE_ITEMS];
 	int id_map[MAX_CORPSE_ITEMS];
 	int container_map[MAX_CORPSE_ITEMS];
@@ -7583,7 +7586,7 @@ bool sql_load_all_corpses(void)
 
 	// one query gets everything: corpses + items + affects
 	result = db_query(
-		"SELECT c.id, c.player_name, c.save_id, c.room_vnum, "
+		"SELECT c.id, c.player_name, c.save_id, c.room_vnum, COALESCE(pd.pid,0), "
 		"ci.id, COALESCE(ci.container_id, 0), ci.vnum, COALESCE(ci.item_type, 0), "
 		"ci.weight, ci.cost, ci.timer, "
 		"ci.extra_flags, ci.value0, ci.value1, ci.value2, ci.value3, ci.value4, "
@@ -7595,6 +7598,7 @@ bool sql_load_all_corpses(void)
 		"ci.wear_flags, ci.item_type, ci.item_material, "
 		"ci.bitvector1, ci.bitvector2, ci.bitvector3, ci.bitvector4, ci.bitvector5 "
 		"FROM corpses c "
+		"LEFT JOIN player_data pd ON LOWER(pd.name)=LOWER(c.player_name) "
 		"LEFT JOIN corpse_items ci ON ci.corpse_id = c.id "
 		"LEFT JOIN corpse_item_affects cia ON cia.item_id = ci.id "
 		"ORDER BY c.id, ci.id, cia.id");
@@ -7707,6 +7711,9 @@ bool sql_load_all_corpses(void)
 				row[CORPSE_COL_PLAYER_NAME] ? row[CORPSE_COL_PLAYER_NAME] : "";
 			int save_id = atoi(row[CORPSE_COL_SAVE_ID]);
 			int room_vnum = atoi(row[CORPSE_COL_ROOM_VNUM]);
+			cur_corpse_owner_id = item_corpse_owner_id(
+				static_cast<uint32_t>(strtoul(row[CORPSE_COL_OWNER_PID], NULL, 10)),
+				static_cast<uint32_t>(save_id));
 
 			cur_room = real_room(room_vnum);
 			if (cur_room == NOWHERE)
@@ -7856,7 +7863,8 @@ bool sql_load_all_corpses(void)
 			obj->bitvector5 = strtoul(row[CORPSE_COL_ITEM_BITVECTOR5], NULL, 10);
 
 		char owner_ref[32];
-		snprintf(owner_ref, sizeof(owner_ref), "%d", cur_corpse->value[CORPSE_SAVEID]);
+		snprintf(owner_ref, sizeof(owner_ref), "%llu",
+			 (unsigned long long)cur_corpse_owner_id);
 		if (!sql_persistence_item_owner_matches(saved_uid, "corpse", owner_ref,
 							"sql_load_all_corpses"))
 		{
@@ -9372,7 +9380,8 @@ void sql_save_dirty_shopkeepers(void)
 		logit(LOG_DEBUG, "sql_save_dirty_shopkeepers: saved %d shopkeepers", saved);
 }
 
-static P_obj sql_load_saved_item_contents(const char *item_key, int container_id, int depth)
+static P_obj sql_load_saved_item_contents(const char *item_key, int room_vnum, int container_id,
+					  int depth)
 {
 	if (!DB || !item_key)
 		return NULL;
@@ -9394,7 +9403,8 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
 		 "value0, value1, value2, value3, value4, value5, value6, value7, "
 		 "name, short_descr, description, action_descr, "
 		 "wear_flags, item_type, item_material, "
-		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5 "
+		 "bitvector1, bitvector2, bitvector3, bitvector4, bitvector5, "
+		 "obj_uid, item_condition "
 		 "FROM saved_items WHERE item_key='%s' AND container_id=%d",
 		 esc_key, container_id);
 	free(esc_key);
@@ -9475,6 +9485,20 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
 			obj->bitvector4 = strtoul(row[24], NULL, 10);
 		if (row[25])
 			obj->bitvector5 = strtoul(row[25], NULL, 10);
+		const unsigned long saved_uid = row[26] ? strtoul(row[26], NULL, 10) : 0;
+		if (saved_uid)
+			obj->obj_uid = saved_uid;
+		char owner_ref[32];
+		snprintf(owner_ref, sizeof(owner_ref), "%d", room_vnum);
+		if (!sql_persistence_item_owner_matches(obj->obj_uid, "room", owner_ref,
+							"sql_load_saved_item_contents"))
+		{
+			extract_obj(obj, FALSE);
+			continue;
+		}
+		if (row[27])
+			obj->condition = atoi(row[27]);
+		obj->db_item_id = item_id;
 
 		char aff_query[128];
 		snprintf(aff_query, sizeof(aff_query),
@@ -9494,7 +9518,8 @@ static P_obj sql_load_saved_item_contents(const char *item_key, int container_id
 			mysql_free_result(aff_result);
 		}
 
-		obj->contains = sql_load_saved_item_contents(item_key, item_id, 0);
+		obj->contains =
+			sql_load_saved_item_contents(item_key, room_vnum, item_id, depth + 1);
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			if (!obj_can_nest(c, obj))
@@ -9539,7 +9564,7 @@ void sql_restore_saved_items(void)
 	MYSQL_RES *result = db_query(
 		"SELECT DISTINCT item_key, room_vnum, id, vnum, weight, cost, timer, extra_flags, "
 		"value0, value1, value2, value3, value4, value5, value6, value7, "
-		"name, short_descr, description, action_descr "
+		"name, short_descr, description, action_descr, obj_uid, item_condition "
 		"FROM saved_items WHERE container_id IS NULL");
 	if (!result)
 		return;
@@ -9607,6 +9632,20 @@ void sql_restore_saved_items(void)
 			obj->action_description = str_dup(row[19]);
 			obj->str_mask |= STRUNG_DESC3;
 		}
+		const unsigned long saved_uid = row[20] ? strtoul(row[20], NULL, 10) : 0;
+		if (saved_uid)
+			obj->obj_uid = saved_uid;
+		char owner_ref[32];
+		snprintf(owner_ref, sizeof(owner_ref), "%d", room_vnum);
+		if (!sql_persistence_item_owner_matches(obj->obj_uid, "room", owner_ref,
+							"sql_restore_saved_items"))
+		{
+			extract_obj(obj, FALSE);
+			continue;
+		}
+		if (row[21])
+			obj->condition = atoi(row[21]);
+		obj->db_item_id = item_id;
 
 		char aff_query[128];
 		snprintf(aff_query, sizeof(aff_query),
@@ -9626,7 +9665,7 @@ void sql_restore_saved_items(void)
 			mysql_free_result(aff_result);
 		}
 
-		obj->contains = sql_load_saved_item_contents(item_key, item_id, 0);
+		obj->contains = sql_load_saved_item_contents(item_key, room_vnum, item_id, 0);
 		for (P_obj c = obj->contains; c; c = c->next_content)
 		{
 			if (!obj_can_nest(c, obj))
