@@ -43,6 +43,10 @@
 #define NEVENT_MAX_CALLBACKS_DEFAULT 4000L
 #define NEVENT_PRIORITY_NORMAL 0U
 #define NEVENT_PRIORITY_PLAYER 1U
+#define NEVENT_LIFECYCLE_ACTIVE 1U
+#define NEVENT_LIFECYCLE_CANCEL_PENDING 2U
+#define NEVENT_LIFECYCLE_DESTROYING 3U
+#define NEVENT_LIFECYCLE_RELEASED 4U
 #define NEVENT_MAX_DEFERRALS 0U
 #define NEVENT_CATCHUP_WINDOW_PULSES 4
 #define NEVENT_CATCHUP_MAX_EXTENSION_USEC_DEFAULT 5000L
@@ -97,6 +101,9 @@ static long nevent_avg_callback_us = 50;
 static long nevent_catchup_quota = 0;
 static long nevent_catchup_extension_us = 0;
 static long nevent_catchup_extra_callbacks = 0;
+static std::vector<nevent_handle> nevent_pending_cancellations;
+
+static void nevent_complete_deferred(P_nevent event);
 
 /*
  * this code was majorly redone by Tharkun, look for original events description
@@ -299,164 +306,178 @@ static bool nevent_promote_overdue_event(P_nevent *next_event, P_nevent anchor)
 	return FALSE;
 }
 
-// This function clears up everything in e and gets it ready for mm_release.
-// This includes removing it from the obj's list, ch's list, and ne_schedule[] list.
-void clear_nevent(P_nevent e)
+static void nevent_detach_character(P_nevent event)
 {
-	P_nevent e1;
-	P_obj obj;
-	P_char ch;
+	P_char ch = event->ch;
+	P_nevent cursor;
 
-	if (!e)
+	if (!ch)
+		return;
+	if (ch->nevents == event)
 	{
-		debug("clear_nevent: bad event e: %ld", e);
-	}
-
-	if (e->cld && e->ch)
-	{
-		remove_link(e->ch, e->cld);
-	}
-	e->cld = NULL;
-
-	if (e->data)
-	{
-		FREE(e->data);
-		e->data = NULL;
-	}
-
-	// If event has an obj, remove e from obj's event list.
-	if ((obj = e->obj) != NULL)
-	{
-		// If e is the first in the list, move to next.
-		if (obj->nevents == e)
-		{
-			obj->nevents = obj->nevents->next_obj_nev;
-		}
-		// Otherwise, look for event and pull it.
-		else
-		{
-			LOOP_EVENTS_OBJ(e1, obj->nevents)
-			{
-				if (e1->next_obj_nev == e)
-				{
-					e1->next_obj_nev = e->next_obj_nev;
-					break;
-				}
-				else if (e1->obj != obj)
-				{
-					debug("clear_nevent: event '%s': event->obj '%s' != obj '%s' in obj's event list.",
-					      (e->func != NULL) ?
-						      get_function_name((void *)e->func) :
-						      "NULL",
-					      (e1->obj == NULL) ? "NULL" : OBJ_SHORT(e1->obj),
-					      OBJ_SHORT(obj));
-				}
-			}
-			if (!e1)
-			{
-				debug("clear_nevent: obj '%s' does not have event '%s' in its event list head(%s).",
-				      OBJ_SHORT(obj),
-				      (e->func != NULL) ? get_function_name((void *)e->func) :
-							  "NoFunc",
-				      (obj->nevents != NULL) ?
-					      ((obj->nevents->func != NULL) ?
-						       get_function_name(
-							       (void *)obj->nevents->func) :
-						       "NoFunc") :
-					      "NULL");
-			}
-		}
-		e->obj = NULL;
-		e->next_obj_nev = NULL;
-	}
-
-	// If event has a ch,
-	if ((ch = e->ch) != NULL)
-	{
-		// If event is first on ch's list of events, just move list to 2nd.
-		if (ch->nevents == e)
-		{
-			ch->nevents = ch->nevents->next_char_nev;
-		}
-		else
-		{
-			// Otherwise, find the event before e in ch's event list.
-			LOOP_EVENTS_CH(e1, ch->nevents)
-			{
-				// If we find the previous, sent previous->next to e->next.
-				if (e1->next_char_nev == e)
-				{
-					e1->next_char_nev = e1->next_char_nev->next_char_nev;
-					break;
-				}
-				// Otherwise, do some debugging.
-				else if (e1->ch && ch != e1->ch)
-				{
-					debug("clear_nevent: event->ch '%s' %d != ch '%s' %d in char's event list. %ld",
-					      J_NAME(e1->ch),
-					      IS_ALIVE(e1->ch) ? GET_ID(e1->ch) : -1, J_NAME(ch),
-					      IS_ALIVE(ch) ? GET_ID(ch) : -1, e1);
-				}
-			}
-			// If we reached the end of the list, or our assignment failed (can that even happen?)
-			if (!e1 || e1->next_char_nev != e->next_char_nev)
-			{
-				debug("clear_nevent: event '%s' not in char '%s' %d event list.",
-				      (e->func != NULL) ? get_function_name((void *)e->func) :
-							  "NoFunc",
-				      J_NAME(ch), IS_ALIVE(ch) ? GET_ID(ch) : -1);
-			}
-		}
-		e->ch = NULL;
-		e->next_char_nev = NULL;
-	}
-
-	// If e is the last element, back the last element up one.
-	if (ne_schedule_tail[e->element] == e)
-	{
-		ne_schedule_tail[e->element] = e->prev_sched;
-	}
-
-	e1 = ne_schedule[e->element];
-	// If at head of list
-	if (e1 == e)
-	{
-		ne_schedule[e->element] = e1->next_sched;
-		if (e1->next_sched)
-			e1->next_sched->prev_sched = NULL;
-		e1->next_sched = NULL;
-		// e1->prev_sched already NULL, since it was head of list.
+		ch->nevents = event->next_char_nev;
 	}
 	else
 	{
-		// Otherwise find it in list
-		while (e1 && e1->next_sched != e)
-		{
-			e1 = e1->next_sched;
-		}
-		// If not in list!?
-		if (!e1)
-		{
-			debug("Event e '%s' not in ne_schedule[e->element] list.",
-			      (e->func != NULL) ? get_function_name((void *)e->func) : "NoFunc");
-			e->next_sched = e->prev_sched = NULL;
-		}
-		// Remove from list.
+		for (cursor = ch->nevents; cursor && cursor->next_char_nev != event;
+		     cursor = cursor->next_char_nev)
+			;
+		if (cursor)
+			cursor->next_char_nev = event->next_char_nev;
 		else
-		{
-			e1->next_sched = e->next_sched;
-			if (e1->next_sched)
-			{
-				e1->next_sched->prev_sched = e1;
-			}
-			e->next_sched = e->prev_sched = NULL;
-		}
+			debug("nevent_detach_character: event sequence %llu is absent from its owner list",
+			      event->sequence);
+	}
+	event->ch = NULL;
+	event->next_char_nev = NULL;
+}
+
+static void nevent_detach_object(P_nevent event)
+{
+	P_obj obj = event->obj;
+	P_nevent cursor;
+
+	if (!obj)
+		return;
+	if (obj->nevents == event)
+	{
+		obj->nevents = event->next_obj_nev;
+	}
+	else
+	{
+		for (cursor = obj->nevents; cursor && cursor->next_obj_nev != event;
+		     cursor = cursor->next_obj_nev)
+			;
+		if (cursor)
+			cursor->next_obj_nev = event->next_obj_nev;
+		else
+			debug("nevent_detach_object: event sequence %llu is absent from its owner list",
+			      event->sequence);
+	}
+	event->obj = NULL;
+	event->next_obj_nev = NULL;
+}
+
+static void nevent_detach_owners(P_nevent event)
+{
+	if (event->cld && event->ch)
+		remove_link(event->ch, event->cld);
+	event->cld = NULL;
+	event->victim = NULL;
+	nevent_detach_object(event);
+	nevent_detach_character(event);
+}
+
+static void nevent_unlink_schedule(P_nevent event)
+{
+	const unsigned int element = event->element;
+
+	if (element >= PULSES_IN_TICK)
+		panic_corruption("nevent", "event sequence %llu has invalid bucket %u",
+				 event->sequence, element);
+	if (event->prev_sched)
+	{
+		if (event->prev_sched->next_sched != event)
+			panic_corruption("nevent", "event sequence %llu has a broken previous link",
+					 event->sequence);
+		event->prev_sched->next_sched = event->next_sched;
+	}
+	else
+	{
+		if (ne_schedule[element] != event)
+			panic_corruption("nevent", "event sequence %llu is not its bucket head",
+					 event->sequence);
+		ne_schedule[element] = event->next_sched;
 	}
 
-	e->func = NULL;
-	e->timer = 1;
-	e->element = 0;
-	e->victim = NULL;
+	if (event->next_sched)
+	{
+		if (event->next_sched->prev_sched != event)
+			panic_corruption("nevent", "event sequence %llu has a broken next link",
+					 event->sequence);
+		event->next_sched->prev_sched = event->prev_sched;
+	}
+	else
+	{
+		if (ne_schedule_tail[element] != event)
+			panic_corruption("nevent", "event sequence %llu is not its bucket tail",
+					 event->sequence);
+		ne_schedule_tail[element] = event->prev_sched;
+	}
+	event->prev_sched = NULL;
+	event->next_sched = NULL;
+}
+
+static bool nevent_destroy(P_nevent event)
+{
+	if (!event || (event->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE &&
+		       event->lifecycle_state != NEVENT_LIFECYCLE_CANCEL_PENDING))
+		return FALSE;
+
+	event->lifecycle_state = NEVENT_LIFECYCLE_DESTROYING;
+	nevent_detach_owners(event);
+	nevent_unlink_schedule(event);
+	if (event->data)
+		FREE(event->data);
+	if (event->deferral_count > 0)
+	{
+		nevent_complete_deferred(event);
+		event->deferral_count = 0;
+	}
+	if (ne_event_counter <= 0)
+		panic_corruption("nevent", "destroying sequence %llu with counter %ld",
+				 event->sequence, ne_event_counter);
+	ne_event_counter--;
+	event->func = NULL;
+	event->timer = 0;
+	event->lifecycle_state = NEVENT_LIFECYCLE_RELEASED;
+	mm_release(ne_dead_event_pool, event);
+	return TRUE;
+}
+
+nevent_handle nevent_handle_from_event(P_nevent event)
+{
+	return { event, event ? event->sequence : 0 };
+}
+
+nevent_cancel_result nevent_cancel(nevent_handle handle)
+{
+	P_nevent event = handle.event;
+
+	if (!event || handle.sequence == 0)
+		return nevent_cancel_result::invalid_handle;
+	if (event->sequence != handle.sequence)
+		return nevent_cancel_result::stale_handle;
+	if (event->lifecycle_state == NEVENT_LIFECYCLE_CANCEL_PENDING ||
+	    event->lifecycle_state == NEVENT_LIFECYCLE_DESTROYING ||
+	    event->lifecycle_state == NEVENT_LIFECYCLE_RELEASED)
+		return nevent_cancel_result::already_inactive;
+	if (event->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE)
+		return nevent_cancel_result::invalid_handle;
+
+	event->lifecycle_state = NEVENT_LIFECYCLE_CANCEL_PENDING;
+	event->func = NULL;
+	if (current_nevent)
+	{
+		nevent_detach_owners(event);
+		nevent_pending_cancellations.push_back(handle);
+		return nevent_cancel_result::deferred;
+	}
+
+	nevent_destroy(event);
+	return nevent_cancel_result::canceled;
+}
+
+static void nevent_process_pending_cancellations()
+{
+	std::vector<nevent_handle> pending;
+	pending.swap(nevent_pending_cancellations);
+	for (const nevent_handle &handle : pending)
+	{
+		if (handle.event && handle.event->sequence == handle.sequence &&
+		    handle.event->lifecycle_state == NEVENT_LIFECYCLE_CANCEL_PENDING)
+			nevent_destroy(handle.event);
+	}
 }
 
 // Returns true iff all the events in ch->nevents belong to ch.
@@ -499,106 +520,37 @@ bool check_obj_nevents(P_obj obj)
 	return TRUE;
 }
 
-// Make this event not do anything when it executes and make it execute asap.
-void disarm_single_event(P_nevent e)
+// Compatibility wrappers now use the scheduler-owned cancellation lifecycle.
+void disarm_single_event(P_nevent event)
 {
-	if (e->cld && e->ch)
-	{
-		remove_link(e->ch, e->cld);
-	}
-	e->cld = NULL;
-	e->func = NULL;
-	e->timer = 1;
+	nevent_cancel(nevent_handle_from_event(event));
 }
 
-// This function neuters ch's events. (They fire but do nothing).
-// If func == NULL, all events neutered, otherwise just events of type func.
-// If we're neutering all of ch's events, it's fine to set e->ch = NULL and
-//   ch->nevents = NULL.  However, if we're not disarming all events, we need
-//   to leave e->ch unless we pull the events from the ch->nevents list.
 void disarm_char_nevents(P_char ch, event_func_type func)
 {
-	P_nevent e1;
+	P_nevent event, next;
 
-	if (func == NULL)
+	if (!ch)
+		return;
+	for (event = ch->nevents; event; event = next)
 	{
-		LOOP_EVENTS_CH(e1, ch->nevents)
-		{
-			if (e1->cld)
-			{
-				remove_link(ch, e1->cld);
-			}
-			e1->cld = NULL;
-			e1->func = NULL;
-			e1->timer = 1;
-		}
-		// Now clear the 'next_char_nev' list.
-		while (ch->nevents)
-		{
-			// Save the next event.
-			e1 = ch->nevents->next_char_nev;
-			// Erase the next_char_nev & ch.
-			ch->nevents->next_char_nev = NULL;
-			ch->nevents->ch = NULL;
-			// Move to the next event.
-			ch->nevents = e1;
-		}
-	}
-	else
-	{
-		LOOP_EVENTS_CH(e1, ch->nevents)
-		{
-			if (e1->func == func)
-			{
-				if (e1->cld)
-				{
-					remove_link(ch, e1->cld);
-				}
-				e1->cld = NULL;
-				e1->func = NULL;
-				e1->timer = 1;
-			}
-		}
+		next = event->next_char_nev;
+		if (!func || event->func == func)
+			nevent_cancel(nevent_handle_from_event(event));
 	}
 }
 
-// Sets objects events to NULL, so they fire blanks.
-// If func == NULL, then neuter all events.
-// If func != NULL, then neuter events of type func.
 void disarm_obj_nevents(P_obj obj, event_func_type func)
 {
-	P_nevent e1;
+	P_nevent event, next;
 
-	// If NULL function, then remove all events.
-	if (func == NULL)
+	if (!obj)
+		return;
+	for (event = obj->nevents; event; event = next)
 	{
-		LOOP_EVENTS_OBJ(e1, obj->nevents)
-		{
-			e1->func = NULL;
-			e1->timer = 1;
-		}
-		// Now clear the 'next_obj_nev' list.
-		while (obj->nevents)
-		{
-			// Save the next event.
-			e1 = obj->nevents->next_obj_nev;
-			// Erase the next_obj_nev & obj.
-			obj->nevents->next_obj_nev = NULL;
-			obj->nevents->obj = NULL;
-			// Move to the next event.
-			obj->nevents = e1;
-		}
-	}
-	else
-	{
-		LOOP_EVENTS_OBJ(e1, obj->nevents)
-		{
-			if (e1->func == func)
-			{
-				e1->func = NULL;
-				e1->timer = 1;
-			}
-		}
+		next = event->next_obj_nev;
+		if (!func || event->func == func)
+			nevent_cancel(nevent_handle_from_event(event));
 	}
 }
 
@@ -671,6 +623,7 @@ void add_event(event_func func, int delay, P_char ch, P_char victim, P_obj obj, 
 	event->priority = nevent_priority(func, ch);
 	event->scheduled_tick = ne_event_tick + (unsigned long long)delay;
 	event->sequence = ++ne_event_sequence;
+	event->lifecycle_state = NEVENT_LIFECYCLE_ACTIVE;
 
 	if (ch && victim && ch != victim)
 		event->cld = link_char(ch, victim, LNK_EVENT);
@@ -1289,13 +1242,8 @@ void ne_events(void)
 		}
 
 		if (current_nevent->deferral_count > 0)
-		{
-			nevent_complete_deferred(current_nevent);
 			catchup_executed++;
-		}
-		clear_nevent(current_nevent);
-		mm_release(ne_dead_event_pool, current_nevent);
-		ne_event_counter--;
+		nevent_destroy(current_nevent);
 
 		if (max_callbacks > 0 && executed >= max_callbacks)
 			budget_exhausted = TRUE;
@@ -1319,6 +1267,7 @@ void ne_events(void)
 		}
 	}
 	current_nevent = NULL;
+	nevent_process_pending_cancellations();
 	PROFILE_END(event_loop);
 	clock_gettime(CLOCK_MONOTONIC, &loop_finished);
 	long loop_us = nevent_elapsed_us(&loop_started, &loop_finished);
@@ -1443,8 +1392,13 @@ P_nevent get_next_scheduled_obj(P_nevent e, event_func func)
 void ne_init_event_pool(void)
 {
 	pulse = 0;
+	current_nevent = NULL;
+	ne_event_counter = 0;
 	ne_event_tick = 0;
 	ne_event_sequence = 0;
+	nevent_catchup_debt = 0;
+	nevent_catchup_remaining = 0;
+	nevent_pending_cancellations.clear();
 	memset(ne_schedule, 0, sizeof(ne_schedule));
 	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
 	ne_dead_event_pool = mm_create("NEVENTS", sizeof(struct nevent_data),
@@ -1674,8 +1628,11 @@ void event_broken(struct char_link_data *cld)
 	{
 		if (e->cld == cld)
 		{
-			e->func = NULL;
+			nevent_handle handle = nevent_handle_from_event(e);
 			e->cld = NULL;
+			e->victim = NULL;
+			if (e->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
+				nevent_cancel(handle);
 			return;
 		}
 	}

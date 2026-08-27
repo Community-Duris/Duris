@@ -923,6 +923,8 @@ P_nevent get_next_scheduled_obj(P_nevent, event_func_type);
 void disarm_char_nevents(P_char, event_func_type);
 void disarm_obj_nevents(P_obj, event_func_type);
 int ne_event_time(P_nevent);
+nevent_handle nevent_handle_from_event(P_nevent);
+nevent_cancel_result nevent_cancel(nevent_handle);
 void zone_purge(int);
 
 /* new_events.c */

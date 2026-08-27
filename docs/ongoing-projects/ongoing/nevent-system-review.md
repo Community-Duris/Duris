@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 1 complete
+Status: Implementation in progress; checkpoint 2 complete
 
-Last implementation update: 2026-08-27 21:38 IDT
+Last implementation update: 2026-08-27 21:51 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -19,8 +19,8 @@ contracts, formatting, and the server build pass.
 | Checkpoint | Scope | State | Verification |
 |---|---|---|---|
 | 1 | NEV-01 event-name loader safety | Complete | ASan/UBSan boundary harness, 12 existing nevent contracts, format check, server build |
-| 2 | NEV-05 cancellation/destruction invariants | Next | Not started |
-| 3 | NEV-02 and NEV-08 typed/POD hunt payload | Pending | Not started |
+| 2 | NEV-05 and NEV-10 cancellation/lifetime invariants | Complete | ASan/UBSan cancellation harness, 221 Python regressions, native signal test, format check, server build |
+| 3 | NEV-02 and NEV-08 typed/POD hunt payload | Next | Not started |
 | 4 | NEV-03 stable ship-volley references | Pending | Not started |
 | 5 | NEV-06 and NEV-07 periodic rearm safety | Pending | Not started |
 | 6 | NEV-04, NEV-11, and NEV-22 absolute due-tick core and harness | Pending | Not started |
@@ -36,6 +36,18 @@ preserve the last valid registry, lookup is bounded, and the profiling table now
 sizes itself from the loaded registry. The executable regression covers 0,
 5,999, 6,000, 6,001, and 6,220 records, unknown lookup, duplicates, malformed
 input, overflow, reload failure, and cleanup under ASan/UBSan.
+
+Checkpoint 2 made event destruction scheduler-owned and removed the public raw
+teardown primitive. Cancellation now uses sequence-validated handles, reports a
+typed result, is idempotent for repeated or stale handles, reconciles deferral
+debt, releases the pool record, decrements the pending counter, and preserves
+current-iteration safety by deferring reclamation until the callback pass is
+safe. Character/object disarm paths and misfire cancellation use this API.
+Broken victim links now null the victim immediately and cancel the event instead
+of retaining a stale target until its original due time. The executable harness
+checks head, middle, tail, current, next, future, deferred, repeated, stale,
+character, object, and victim-link cancellation while reconciling wheel, pool,
+counter, and debt totals after every case.
 
 ## Executive assessment
 
@@ -367,7 +379,11 @@ Recommendation:
   scheduled before, during, and after the event pass, including empty, head,
   middle, and tail insertion cases.
 
-### NEV-05: External use of `clear_nevent` permanently leaks records
+### NEV-05: External use of `clear_nevent` leaked records in the reviewed tree
+
+Implementation status (2026-08-27): Fixed and verified in checkpoint 2. The raw
+teardown function is no longer public or called directly; the historical
+evidence below describes the pre-fix implementation.
 
 `clear_nevent` is a teardown primitive. It unlinks owners and the wheel and frees
 the payload, but it does not call `mm_release`, decrement `ne_event_counter`, or
@@ -514,7 +530,11 @@ Recommendation:
 - Test priority enabled/disabled, mixed revolutions in one bucket, deferred
   suffixes, continuous player load, and debt convergence.
 
-### NEV-10: Broken victim links retain stale target pointers
+### NEV-10: Broken victim links retained stale target pointers
+
+Implementation status (2026-08-27): Fixed and verified in checkpoint 2. Broken
+links now clear the target and enter the centralized cancellation lifecycle,
+with callback-time reclamation deferred only until iteration is safe.
 
 When a character link breaks, `event_broken` clears the callback and link pointer
 but leaves `event->victim` intact and does not expedite cleanup

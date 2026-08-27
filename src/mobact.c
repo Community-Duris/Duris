@@ -67,7 +67,6 @@ extern bool has_skin_spell(P_char);
 extern bool has_wind_blade_wielded(P_char);
 extern void event_wait(P_char ch, P_char victim, P_obj obj, void *data);
 extern P_nevent ne_schedule[PULSES_IN_TICK];
-extern void clear_nevent(P_nevent e);
 extern struct misfire_properties_struct misfire_properties;
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
 
@@ -8797,7 +8796,7 @@ void event_remove_misfire_cooldown(int zn, int racewar_side)
 				if ((info->racewar_side == racewar_side) &&
 				    (info->zone_number == zn))
 				{
-					clear_nevent(e1);
+					nevent_cancel(nevent_handle_from_event(e1));
 					return;
 				}
 			}

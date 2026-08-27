@@ -2042,6 +2042,7 @@ struct nevent_data
 	unsigned int element; // Which row of ne_schedule array
 	unsigned int priority;
 	unsigned int deferral_count;
+	unsigned int lifecycle_state;
 	unsigned long long scheduled_tick;
 	unsigned long long sequence;
 	struct char_link_data *cld;
@@ -2049,6 +2050,21 @@ struct nevent_data
 	P_nevent next_obj_nev;
 	P_nevent prev_sched;
 	P_nevent next_sched;
+};
+
+enum class nevent_cancel_result : ubyte
+{
+	canceled,
+	deferred,
+	already_inactive,
+	stale_handle,
+	invalid_handle
+};
+
+struct nevent_handle
+{
+	P_nevent event;
+	unsigned long long sequence;
 };
 
 /* structure used for grouping.. */
