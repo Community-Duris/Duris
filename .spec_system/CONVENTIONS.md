@@ -171,13 +171,25 @@
 | Category | Tool | Config or Command |
 |----------|------|-------------------|
 | Formatter | clang-format | `.clang-format`, `./scripts/format.sh` |
-| Compiler | g++ C++20 | `make -C src` |
+| Linter | g++ strict warning profile | `src/Makefile`, `tests/async/test_compiler_warning_profile.py` |
+| Type safety and compiler | g++ C++20 with `-Werror` | `make -C src` |
 | Focused tests | Python/Bash | `tests/async/test_*.py`, `tests/async/run_*.sh` |
 | Full tests | Make | `make test-all` |
+| Observability | Bounded persistence telemetry and redacted logs | `src/persistence_observability.*`, log-hygiene regressions |
 | Database tests | Isolated MySQL/Docker | `make test-db` and DB-specific wrappers |
 | Git hooks | Repository hook installer | `./scripts/install-hooks.sh` |
 | Database | MySQL/MariaDB | `.env`, `migrations/run_migration.sh` |
-| Runtime | DurisMUD supervisor | `scripts/start_mud.sh` |
+| Dev server | DurisMUD supervisor | `scripts/start_mud.sh --dev` |
+
+## CI/CD
+
+| Bundle | Status | Workflow |
+|--------|--------|----------|
+| Code Quality | configured | `.github/workflows/quality.yml` |
+| Build & Test | configured | `.github/workflows/build.yml` |
+| Security | configured | `.github/workflows/security.yml` |
+| Integration | not configured | - |
+| Operations | not configured | `.github/dependabot.yml` provides dependency updates only |
 
 ## When In Doubt
 

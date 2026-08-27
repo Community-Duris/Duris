@@ -1,0 +1,39 @@
+name: code quality
+
+on:
+  push:
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install build and formatting dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes equivs clang-format
+          make build-deps-package
+          sudo apt-get install --yes ./bin/packages/duris-build-deps_1.0_all.deb
+      - name: Check formatting
+        run: ./scripts/format.sh --check
+      - name: Check strict warning profile
+        run: python3 tests/async/test_compiler_warning_profile.py
+      - name: Compile C++20 with warnings as errors
+        run: make -C src -j"$(nproc)"
+      - name: Check Session 14 Python and shell entry points
+        run: |
+          python3 -m py_compile \
+            scripts/session14_gate.py \
+            tests/async/session14_fault_adapter.py \
+            tests/async/session14_load_client.py \
+            tests/async/session14_reconcile.py
+          bash -n \
+            migrations/adopt_migration_baseline.sh \
+            migrations/run_migration.sh \
+            scripts/clear-redis.sh \
+            scripts/start_mud.sh
