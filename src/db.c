@@ -2997,6 +2997,7 @@ P_obj read_object(int nr, int type)
 	}
 
 	obj->nevents = NULL;
+	obj->nevents_tail = NULL;
 
 	if (obj_index[nr].func.obj)
 	{

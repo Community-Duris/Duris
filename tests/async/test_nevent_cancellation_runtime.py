@@ -114,6 +114,7 @@ static void require_balanced(long expected_events, long expected_debt, int code)
 
 static void reset_scheduler()
 {
+	nevent_bind_game_thread();
 	std::memset(ne_schedule, 0, sizeof(ne_schedule));
 	std::memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
 	current_nevent = nullptr;
@@ -156,15 +157,21 @@ static void schedule_event(P_nevent event, unsigned int bucket, P_char ch = null
 	ne_schedule_tail[bucket] = event;
 	if (ch)
 	{
-		P_nevent *tail = &ch->nevents;
-		while (*tail)
-			tail = &(*tail)->next_char_nev;
-		*tail = event;
+		event->prev_char_nev = ch->nevents_tail;
+		if (ch->nevents_tail)
+			ch->nevents_tail->next_char_nev = event;
+		else
+			ch->nevents = event;
+		ch->nevents_tail = event;
 	}
 	if (obj)
 	{
-		event->next_obj_nev = obj->nevents;
-		obj->nevents = event;
+		event->prev_obj_nev = obj->nevents_tail;
+		if (obj->nevents_tail)
+			obj->nevents_tail->next_obj_nev = event;
+		else
+			obj->nevents = event;
+		obj->nevents_tail = event;
 	}
 	ne_event_counter++;
 	test_pool.objs_used++;
@@ -301,7 +308,9 @@ static void test_owner_and_victim_cleanup()
 	require(nevent_cancel(nevent_handle_from_event(&event)) ==
 			nevent_cancel_result::canceled,
 		60);
-	require(owner.nevents == nullptr && object.nevents == nullptr, 61);
+	require(owner.nevents == nullptr && owner.nevents_tail == nullptr &&
+			object.nevents == nullptr && object.nevents_tail == nullptr,
+		61);
 	require(event.ch == nullptr && event.obj == nullptr && event.victim == nullptr &&
 			event.cld == nullptr,
 		62);
@@ -316,7 +325,9 @@ static void test_owner_and_victim_cleanup()
 	link.linked = &victim;
 	schedule_event(&event, 42, &owner, nullptr, &victim, &link);
 	event_broken(&link);
-	require(owner.nevents == nullptr && event.victim == nullptr && event.cld == nullptr, 68);
+	require(owner.nevents == nullptr && owner.nevents_tail == nullptr &&
+			event.victim == nullptr && event.cld == nullptr,
+		68);
 	require_balanced(0, 0, 69);
 }
 
@@ -330,10 +341,10 @@ static void test_bulk_disarm()
 	schedule_event(&events[1], 52, &owner);
 	schedule_event(&events[2], 53, nullptr, &object);
 	disarm_char_nevents(&owner, nullptr);
-	require(owner.nevents == nullptr, 73);
+	require(owner.nevents == nullptr && owner.nevents_tail == nullptr, 73);
 	require_balanced(1, 0, 74);
 	disarm_obj_nevents(&object, nullptr);
-	require(object.nevents == nullptr, 78);
+	require(object.nevents == nullptr && object.nevents_tail == nullptr, 78);
 	require_balanced(0, 0, 79);
 }
 

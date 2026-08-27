@@ -1011,12 +1011,14 @@ nevent_cancel_result nevent_cancel(nevent_handle);
 bool nevent_reschedule_at(nevent_handle, unsigned long long);
 bool nevent_reschedule_after(nevent_handle, unsigned long long);
 bool nevent_advance_by(nevent_handle, unsigned long long);
+void nevent_bind_game_thread();
+bool nevent_is_game_thread();
 void nevent_advance_tick();
 void zone_purge(int);
 
 /* new_events.c */
 
-void check_nevents();
+bool check_nevents();
 void disarm_single_event(P_nevent);
 
 // epic.c

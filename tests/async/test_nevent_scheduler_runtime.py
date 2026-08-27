@@ -30,6 +30,7 @@ HARNESS = r'''
 int pulse = 0;
 bool after_events_call = FALSE;
 P_char character_list = nullptr;
+P_obj object_list = nullptr;
 P_index mob_index = nullptr;
 P_index obj_index = nullptr;
 static room_data test_world[1] = {};
@@ -44,6 +45,10 @@ static int failure_code = 0;
 static unsigned long long fake_clock_ns = 0;
 static int unbounded_warnings = 0;
 static int invalid_config_warnings = 0;
+
+struct panic_signal
+{
+};
 
 struct oracle_record
 {
@@ -100,7 +105,7 @@ void statuslog(int, const char *, ...)
 
 void panic_corruption(const char *, const char *, ...)
 {
-	std::abort();
+	throw panic_signal{};
 }
 
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
@@ -131,9 +136,18 @@ void mm_release(mm_ds *pool, void *memory)
 	std::free(memory);
 }
 
-char_link_data *link_char(P_char, P_char, ush_int)
+char_link_data *link_char(P_char owner, P_char victim, ush_int type)
 {
-	return nullptr;
+	auto *link = static_cast<char_link_data *>(std::calloc(1, sizeof(char_link_data)));
+	require(link != nullptr, 11);
+	link->type = type;
+	link->linking = owner;
+	link->linked = victim;
+	link->next_linking = owner->linking;
+	link->next_linked = victim->linked;
+	owner->linking = link;
+	victim->linked = link;
+	return link;
 }
 
 P_char get_linked_char(P_char, ush_int)
@@ -141,8 +155,19 @@ P_char get_linked_char(P_char, ush_int)
 	return nullptr;
 }
 
-void remove_link(P_char, char_link_data *)
+void remove_link(P_char owner, char_link_data *target)
 {
+	char_link_data **owner_cursor = &owner->linking;
+	while (*owner_cursor && *owner_cursor != target)
+		owner_cursor = &(*owner_cursor)->next_linking;
+	require(*owner_cursor == target, 12);
+	*owner_cursor = target->next_linking;
+	char_link_data **victim_cursor = &target->linked->linked;
+	while (*victim_cursor && *victim_cursor != target)
+		victim_cursor = &(*victim_cursor)->next_linked;
+	require(*victim_cursor == target, 13);
+	*victim_cursor = target->next_linked;
+	std::free(target);
 }
 
 const char *event_name_registry_lookup(const void *)
@@ -255,11 +280,12 @@ static void require_balanced(int code)
 
 static void reset_scheduler()
 {
+	nevent_bind_game_thread();
 	require(test_pool.objs_used == 0, 40);
 	std::memset(ne_schedule, 0, sizeof(ne_schedule));
 	std::memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
 	std::memset(&test_pool, 0, sizeof(test_pool));
-	std::memset(&nevent_analytics, 0, sizeof(nevent_analytics));
+	nevent_analytics = {};
 	current_nevent = nullptr;
 	ne_dead_event_pool = &test_pool;
 	ne_event_counter = 0;
@@ -477,7 +503,7 @@ static void test_priority_order(bool enabled)
 		enabled ? std::vector<int>{ 6001, 6002, 6000 } :
 			  std::vector<int>{ 6000, 6001, 6002 };
 	require(fired_this_tick == expected, 110);
-	require(player.nevents == nullptr, 111);
+	require(player.nevents == nullptr && player.nevents_tail == nullptr, 111);
 	nevent_advance_tick();
 	require_balanced(112);
 }
@@ -643,6 +669,179 @@ static void test_schedule_results_and_lookup()
 	require(fired.size() == 1 && fired[0] == std::pair<int, unsigned long long>{ 9021, 2 }, 190);
 }
 
+static void test_integrity_and_owner_links()
+{
+	reset_scheduler();
+	char_data player = {};
+	player.runtime_id = 10001;
+	player.specials.position = STAT_NORMAL | POS_STANDING;
+	character_list = &player;
+	record_payload payload = { 9100, ULLONG_MAX };
+	auto first = add_event(record_callback, 10, &player, nullptr, nullptr, 0, &payload,
+			       sizeof(payload));
+	payload.id = 9101;
+	auto second = add_event(record_callback, 30, &player, nullptr, nullptr, 0, &payload,
+				sizeof(payload));
+	payload.id = 9102;
+	auto third = add_event(record_callback, 20, &player, nullptr, nullptr, 0, &payload,
+			       sizeof(payload));
+	require(first && second && third, 200);
+	require(player.nevents == first.handle.event && player.nevents_tail == third.handle.event &&
+			first.handle.event->next_char_nev == second.handle.event &&
+			second.handle.event->prev_char_nev == first.handle.event &&
+			second.handle.event->next_char_nev == third.handle.event &&
+			third.handle.event->prev_char_nev == second.handle.event,
+		201);
+	require(check_nevents(), 202);
+
+	const long before_counter = ne_event_counter;
+	const size_t before_pool = test_pool.objs_used;
+	second.handle.event->prev_char_nev = nullptr;
+	require(!check_nevents(), 203);
+	require(player.nevents == first.handle.event && player.nevents_tail == third.handle.event &&
+			first.handle.event->next_char_nev == second.handle.event &&
+			second.handle.event->prev_char_nev == nullptr &&
+			second.handle.event->next_char_nev == third.handle.event &&
+			third.handle.event->prev_char_nev == second.handle.event &&
+			ne_event_counter == before_counter && test_pool.objs_used == before_pool,
+		204);
+	second.handle.event->prev_char_nev = first.handle.event;
+	require(check_nevents(), 205);
+	require(nevent_cancel(second.handle) == nevent_cancel_result::canceled, 206);
+	require(player.nevents == first.handle.event && player.nevents_tail == third.handle.event &&
+			first.handle.event->next_char_nev == third.handle.event &&
+			third.handle.event->prev_char_nev == first.handle.event,
+		207);
+	require(check_nevents(), 208);
+	cancel_all_events();
+	require(player.nevents == nullptr && player.nevents_tail == nullptr, 209);
+	character_list = nullptr;
+
+	reset_scheduler();
+	obj_data object = {};
+	object.R_num = -1;
+	object_list = &object;
+	auto object_first =
+		add_event(noop_callback, 10, nullptr, nullptr, &object, 0, nullptr, 0);
+	auto object_second =
+		add_event(noop_callback, 30, nullptr, nullptr, &object, 0, nullptr, 0);
+	auto object_third =
+		add_event(noop_callback, 20, nullptr, nullptr, &object, 0, nullptr, 0);
+	require(object_first && object_second && object_third, 210);
+	require(object.nevents == object_first.handle.event &&
+			object.nevents_tail == object_third.handle.event &&
+			object_first.handle.event->next_obj_nev == object_second.handle.event &&
+			object_second.handle.event->prev_obj_nev == object_first.handle.event &&
+			object_second.handle.event->next_obj_nev == object_third.handle.event &&
+			object_third.handle.event->prev_obj_nev == object_second.handle.event,
+		211);
+	require(check_nevents(), 212);
+	object_second.handle.event->prev_obj_nev = nullptr;
+	require(!check_nevents(), 213);
+	require(object.nevents == object_first.handle.event &&
+			object.nevents_tail == object_third.handle.event &&
+			object_first.handle.event->next_obj_nev == object_second.handle.event &&
+			object_second.handle.event->prev_obj_nev == nullptr &&
+			object_second.handle.event->next_obj_nev == object_third.handle.event,
+		214);
+	object_second.handle.event->prev_obj_nev = object_first.handle.event;
+	require(nevent_cancel(object_second.handle) == nevent_cancel_result::canceled, 215);
+	require(object.nevents == object_first.handle.event &&
+			object.nevents_tail == object_third.handle.event &&
+			object_first.handle.event->next_obj_nev == object_third.handle.event &&
+			object_third.handle.event->prev_obj_nev == object_first.handle.event,
+		216);
+	require(check_nevents(), 217);
+	cancel_all_events();
+	require(object.nevents == nullptr && object.nevents_tail == nullptr, 218);
+	object_list = nullptr;
+	require_balanced(219);
+
+	reset_scheduler();
+	char_data owner = {};
+	char_data victim = {};
+	owner.runtime_id = 10002;
+	victim.runtime_id = 10003;
+	owner.specials.position = STAT_NORMAL | POS_STANDING;
+	victim.specials.position = STAT_NORMAL | POS_STANDING;
+	owner.next = &victim;
+	character_list = &owner;
+	auto victim_event =
+		add_event(noop_callback, 10, &owner, &victim, nullptr, 0, nullptr, 0);
+	require(victim_event.was_scheduled() && victim_event.handle.event->cld != nullptr, 225);
+	require(check_nevents(), 226);
+	char_link_data *victim_link = victim.linked;
+	victim.linked = nullptr;
+	require(!check_nevents(), 227);
+	require(victim_event.handle.event->cld == victim_link && owner.linking == victim_link &&
+			victim.linked == nullptr,
+		228);
+	victim.linked = victim_link;
+	require(check_nevents(), 229);
+	require(nevent_cancel(victim_event.handle) == nevent_cancel_result::canceled, 230);
+	require(owner.nevents == nullptr && owner.nevents_tail == nullptr &&
+			owner.linking == nullptr && victim.linked == nullptr,
+		231);
+	character_list = nullptr;
+	require_balanced(232);
+}
+
+static void test_thread_ownership()
+{
+	reset_scheduler();
+	record_payload payload = { 9200, ULLONG_MAX };
+	auto scheduled = add_event(record_callback, 10, nullptr, nullptr, nullptr, 0, &payload,
+				   sizeof(payload));
+	require(scheduled.was_scheduled(), 220);
+	bool add_asserted = false;
+	bool cancel_asserted = false;
+	bool reschedule_asserted = false;
+	bool lookup_asserted = false;
+	std::thread worker(
+		[&]()
+		{
+			try
+			{
+				add_event(noop_callback, 0, nullptr, nullptr, nullptr, 0, nullptr, 0);
+			}
+			catch (const panic_signal &)
+			{
+				add_asserted = true;
+			}
+			try
+			{
+				nevent_cancel(scheduled.handle);
+			}
+			catch (const panic_signal &)
+			{
+				cancel_asserted = true;
+			}
+			try
+			{
+				nevent_reschedule_after(scheduled.handle, 1);
+			}
+			catch (const panic_signal &)
+			{
+				reschedule_asserted = true;
+			}
+			try
+			{
+				nevent_find_next(record_callback);
+			}
+			catch (const panic_signal &)
+			{
+				lookup_asserted = true;
+			}
+		});
+	worker.join();
+	require(add_asserted && cancel_asserted && reschedule_asserted && lookup_asserted, 221);
+	require(ne_event_counter == 1 && scheduled.handle.event->due_tick == 10 &&
+			scheduled.handle.event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE,
+		222);
+	require(nevent_cancel(scheduled.handle) == nevent_cancel_result::canceled, 223);
+	require_balanced(224);
+}
+
 static void test_invalid_config_fallback()
 {
 	require(nevent_budget_usec() == NEVENT_BUDGET_USEC_DEFAULT, 155);
@@ -756,6 +955,11 @@ int main(int argc, char **argv)
 		test_invalid_config_fallback();
 	else if (std::strcmp(argv[1], "api") == 0)
 		test_schedule_results_and_lookup();
+	else if (std::strcmp(argv[1], "integrity-thread") == 0)
+	{
+		test_integrity_and_owner_links();
+		test_thread_ownership();
+	}
 	else
 		require(false, 161);
 	std::printf("nevent scheduler runtime mode passed: %s\n", argv[1]);
@@ -777,6 +981,7 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-scheduler-") as directory:
             "-fdata-sections",
             "-fsanitize=address,undefined",
             "-fno-omit-frame-pointer",
+            "-pthread",
             f"-I{SRC}",
             str(harness),
             "-Wl,--gc-sections",
@@ -820,6 +1025,7 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-scheduler-") as directory:
     run_mode("unbounded")
     run_mode("invalid-config", DURIS_NEVENT_BUDGET_USEC="9" * 100)
     run_mode("api")
+    run_mode("integrity-thread")
 
 source = (SRC / "new_events.c").read_text(encoding="ascii")
 comm = (SRC / "comm.c").read_text(encoding="ascii")

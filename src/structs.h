@@ -566,6 +566,7 @@ struct obj_data
 
 	P_char hitched_to; /* Who are we hitched to?           */
 	P_nevent nevents;
+	P_nevent nevents_tail;
 	P_obj contains; /* Contains objects                 */
 	P_obj next_content; /* For 'contains' lists             */
 	P_obj prev, next; /* For the object list              */
@@ -1541,6 +1542,7 @@ struct char_data
 	P_char next; /* For either mobile | p-list    */
 
 	P_nevent nevents;
+	P_nevent nevents_tail;
 
 	struct char_player_data player; /* Normal data               */
 	struct player_disguise_data disguise;
@@ -2045,8 +2047,13 @@ struct nevent_data
 	unsigned long long due_tick; // Absolute scheduler tick when this event becomes eligible.
 	unsigned long long deferred_cost_us; // Cost estimate registered with catch-up debt.
 	unsigned long long sequence;
+	uint64_t owner_runtime_id; // Stable diagnostic identity; never dereference ch to render it.
+	uint64_t victim_runtime_id; // Stable diagnostic identity for the optional target.
+	int diagnostic_obj_vnum; // Captured while the object owner is known to be live.
 	struct char_link_data *cld;
+	P_nevent prev_char_nev;
 	P_nevent next_char_nev;
+	P_nevent prev_obj_nev;
 	P_nevent next_obj_nev;
 	P_nevent prev_sched;
 	P_nevent next_sched;
@@ -2067,7 +2074,8 @@ enum class nevent_schedule_status : ubyte
 	victim_without_owner,
 	invalid_payload,
 	sequence_exhausted,
-	invalid_replace_target
+	invalid_replace_target,
+	wrong_thread
 };
 
 struct nevent_schedule_result
@@ -2088,7 +2096,8 @@ enum class nevent_cancel_result : ubyte
 	deferred,
 	already_inactive,
 	stale_handle,
-	invalid_handle
+	invalid_handle,
+	wrong_thread
 };
 
 /* structure used for grouping.. */

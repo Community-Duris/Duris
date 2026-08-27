@@ -269,7 +269,6 @@ void clear_char_nevents(P_char ch, int /*type*/, void *func)
 	}
 
 	disarm_char_nevents(ch, (event_func_type)func);
-	ch->nevents = NULL;
 }
 
 void clear_events_type(P_char ch, int type)

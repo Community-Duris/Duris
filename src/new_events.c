@@ -10,12 +10,16 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
 #include <map>
+#include <new>
+#include <thread>
+#include <unordered_set>
 #include <vector>
 #ifndef _LINUX_SOURCE
 #include <sys/types.h>
@@ -60,7 +64,6 @@
 #define NEVENT_CATCHUP_MAX_EXTENSION_USEC_DEFAULT 5000L
 #define NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS_DEFAULT 4000L
 #define NEVENT_CALLBACK_EWMA_SHIFT 4
-#define NEVENT_ANALYTICS_CALLBACK_SLOTS 128
 #define NEVENT_ANALYTICS_CALLBACK_NAME 96
 
 /*
@@ -98,13 +101,13 @@ struct nevent_analytics_data
 	unsigned long long peak_executed_tick;
 	unsigned long long peak_total_us_tick;
 	long budget_exhausted_pulses;
-	long callback_overflow;
+	long callback_allocation_failures;
 	long long lateness_on_time;
 	long long lateness_one_tick;
 	long long lateness_two_to_three;
 	long long lateness_four_to_fifteen;
 	long long lateness_sixteen_plus;
-	struct nevent_callback_analytics callbacks[NEVENT_ANALYTICS_CALLBACK_SLOTS];
+	std::map<void *, struct nevent_callback_analytics> callbacks;
 };
 
 static struct nevent_analytics_data nevent_analytics;
@@ -117,9 +120,44 @@ static long nevent_catchup_extra_callbacks = 0;
 static unsigned long long nevent_catchup_debt_estimated_us = 0;
 static std::map<unsigned long long, long> nevent_deferred_due_counts;
 static std::vector<nevent_handle> nevent_pending_cancellations;
+static std::thread::id nevent_game_thread;
+static bool nevent_game_thread_bound = false;
+static long nevent_last_pulse_total_us = 0;
 
 static void nevent_register_deferred(P_nevent event);
 static void nevent_complete_deferred(P_nevent event);
+
+void nevent_bind_game_thread()
+{
+	const std::thread::id caller = std::this_thread::get_id();
+
+	if (!nevent_game_thread_bound)
+	{
+		nevent_game_thread = caller;
+		nevent_game_thread_bound = true;
+		return;
+	}
+	if (nevent_game_thread != caller)
+		panic_corruption("nevent",
+				 "attempted to rebind scheduler ownership from another thread");
+}
+
+bool nevent_is_game_thread()
+{
+	return nevent_game_thread_bound && nevent_game_thread == std::this_thread::get_id();
+}
+
+static bool nevent_require_game_thread(const char *operation)
+{
+	if (nevent_is_game_thread())
+		return true;
+#ifndef NDEBUG
+	panic_corruption("nevent", "%s called outside the bound game thread", operation);
+#else
+	logit(LOG_EXIT, "nevent: %s rejected outside the bound game thread", operation);
+#endif
+	return false;
+}
 
 static void nevent_destroy_raw_payload(void *data)
 {
@@ -131,6 +169,15 @@ static void nevent_destroy_raw_payload(void *data)
  * in events.c file
  */
 struct mm_ds *ne_dead_event_pool = NULL;
+
+static void nevent_assert_pool_accounting(const char *operation)
+{
+	if (!ne_dead_event_pool || ne_event_counter < 0 ||
+	    static_cast<size_t>(ne_event_counter) != ne_dead_event_pool->objs_used)
+		panic_corruption("nevent", "%s left counter=%ld but pool usage=%zu", operation,
+				 ne_event_counter,
+				 ne_dead_event_pool ? ne_dead_event_pool->objs_used : 0);
+}
 
 /*
  * main array of pointers to lists, schedule is the 'master' controller,
@@ -299,52 +346,86 @@ static void nevent_link_schedule(P_nevent event, int loc)
 static void nevent_detach_character(P_nevent event)
 {
 	P_char ch = event->ch;
-	P_nevent cursor;
 
 	if (!ch)
 		return;
-	if (ch->nevents == event)
+	if (event->prev_char_nev)
 	{
-		ch->nevents = event->next_char_nev;
+		if (event->prev_char_nev->next_char_nev != event)
+			panic_corruption("nevent",
+					 "event sequence %llu has a broken character previous link",
+					 event->sequence);
+		event->prev_char_nev->next_char_nev = event->next_char_nev;
 	}
 	else
 	{
-		for (cursor = ch->nevents; cursor && cursor->next_char_nev != event;
-		     cursor = cursor->next_char_nev)
-			;
-		if (cursor)
-			cursor->next_char_nev = event->next_char_nev;
-		else
-			debug("nevent_detach_character: event sequence %llu is absent from its owner list",
-			      event->sequence);
+		if (ch->nevents != event)
+			panic_corruption("nevent",
+					 "event sequence %llu is not its character-list head",
+					 event->sequence);
+		ch->nevents = event->next_char_nev;
+	}
+	if (event->next_char_nev)
+	{
+		if (event->next_char_nev->prev_char_nev != event)
+			panic_corruption("nevent",
+					 "event sequence %llu has a broken character next link",
+					 event->sequence);
+		event->next_char_nev->prev_char_nev = event->prev_char_nev;
+	}
+	else
+	{
+		if (ch->nevents_tail != event)
+			panic_corruption("nevent",
+					 "event sequence %llu is not its character-list tail",
+					 event->sequence);
+		ch->nevents_tail = event->prev_char_nev;
 	}
 	event->ch = NULL;
+	event->prev_char_nev = NULL;
 	event->next_char_nev = NULL;
 }
 
 static void nevent_detach_object(P_nevent event)
 {
 	P_obj obj = event->obj;
-	P_nevent cursor;
 
 	if (!obj)
 		return;
-	if (obj->nevents == event)
+	if (event->prev_obj_nev)
 	{
-		obj->nevents = event->next_obj_nev;
+		if (event->prev_obj_nev->next_obj_nev != event)
+			panic_corruption("nevent",
+					 "event sequence %llu has a broken object previous link",
+					 event->sequence);
+		event->prev_obj_nev->next_obj_nev = event->next_obj_nev;
 	}
 	else
 	{
-		for (cursor = obj->nevents; cursor && cursor->next_obj_nev != event;
-		     cursor = cursor->next_obj_nev)
-			;
-		if (cursor)
-			cursor->next_obj_nev = event->next_obj_nev;
-		else
-			debug("nevent_detach_object: event sequence %llu is absent from its owner list",
-			      event->sequence);
+		if (obj->nevents != event)
+			panic_corruption("nevent",
+					 "event sequence %llu is not its object-list head",
+					 event->sequence);
+		obj->nevents = event->next_obj_nev;
+	}
+	if (event->next_obj_nev)
+	{
+		if (event->next_obj_nev->prev_obj_nev != event)
+			panic_corruption("nevent",
+					 "event sequence %llu has a broken object next link",
+					 event->sequence);
+		event->next_obj_nev->prev_obj_nev = event->prev_obj_nev;
+	}
+	else
+	{
+		if (obj->nevents_tail != event)
+			panic_corruption("nevent",
+					 "event sequence %llu is not its object-list tail",
+					 event->sequence);
+		obj->nevents_tail = event->prev_obj_nev;
 	}
 	event->obj = NULL;
+	event->prev_obj_nev = NULL;
 	event->next_obj_nev = NULL;
 }
 
@@ -429,11 +510,14 @@ static bool nevent_destroy(P_nevent event)
 	event->func = NULL;
 	event->lifecycle_state = NEVENT_LIFECYCLE_RELEASED;
 	mm_release(ne_dead_event_pool, event);
+	nevent_assert_pool_accounting("nevent_destroy");
 	return TRUE;
 }
 
 nevent_handle nevent_handle_from_event(P_nevent event)
 {
+	if (!nevent_require_game_thread("nevent_handle_from_event"))
+		return { NULL, 0 };
 	return { event, event ? event->sequence : 0 };
 }
 
@@ -441,6 +525,8 @@ nevent_cancel_result nevent_cancel(nevent_handle handle)
 {
 	P_nevent event = handle.event;
 
+	if (!nevent_require_game_thread("nevent_cancel"))
+		return nevent_cancel_result::wrong_thread;
 	if (!event || handle.sequence == 0)
 		return nevent_cancel_result::invalid_handle;
 	if (event->sequence != handle.sequence)
@@ -480,8 +566,10 @@ static void nevent_process_pending_cancellations()
 bool nevent_reschedule_at(nevent_handle handle, unsigned long long due_tick)
 {
 	P_nevent event = handle.event;
-	const unsigned long long first_eligible_tick = nevent_first_eligible_tick();
 
+	if (!nevent_require_game_thread("nevent_reschedule_at"))
+		return FALSE;
+	const unsigned long long first_eligible_tick = nevent_first_eligible_tick();
 	if (!event || handle.sequence == 0 || event->sequence != handle.sequence ||
 	    event->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE || current_nevent)
 		return FALSE;
@@ -503,6 +591,8 @@ bool nevent_reschedule_at(nevent_handle handle, unsigned long long due_tick)
 
 bool nevent_reschedule_after(nevent_handle handle, unsigned long long delay)
 {
+	if (!nevent_require_game_thread("nevent_reschedule_after"))
+		return FALSE;
 	return nevent_reschedule_at(handle, nevent_add_ticks(ne_event_tick, delay));
 }
 
@@ -510,6 +600,8 @@ bool nevent_advance_by(nevent_handle handle, unsigned long long ticks)
 {
 	P_nevent event = handle.event;
 
+	if (!nevent_require_game_thread("nevent_advance_by"))
+		return FALSE;
 	if (!event || handle.sequence == 0 || event->sequence != handle.sequence)
 		return FALSE;
 	return nevent_reschedule_at(handle, ticks >= event->due_tick ? 0 : event->due_tick - ticks);
@@ -518,8 +610,10 @@ bool nevent_advance_by(nevent_handle handle, unsigned long long ticks)
 // Returns true iff all the events in ch->nevents belong to ch.
 bool check_ch_nevents(P_char ch)
 {
-	P_nevent e;
+	P_nevent e, previous = NULL;
 
+	if (!nevent_require_game_thread("check_ch_nevents"))
+		return FALSE;
 	if (!IS_ALIVE(ch))
 	{
 		return TRUE;
@@ -527,19 +621,22 @@ bool check_ch_nevents(P_char ch)
 
 	LOOP_EVENTS_CH(e, ch->nevents)
 	{
-		if (e->ch != NULL && e->ch != ch)
+		if ((e->ch != NULL && e->ch != ch) || e->prev_char_nev != previous)
 		{
 			return FALSE;
 		}
+		previous = e;
 	}
-	return TRUE;
+	return ch->nevents_tail == previous;
 }
 
 // Returns true iff all the events in obj->nevents belong to obj.
 bool check_obj_nevents(P_obj obj)
 {
-	P_nevent e;
+	P_nevent e, previous = NULL;
 
+	if (!nevent_require_game_thread("check_obj_nevents"))
+		return FALSE;
 	if (obj == NULL)
 	{
 		return TRUE;
@@ -547,17 +644,20 @@ bool check_obj_nevents(P_obj obj)
 
 	LOOP_EVENTS_OBJ(e, obj->nevents)
 	{
-		if (e->obj != obj)
+		if (e->obj != obj || e->prev_obj_nev != previous)
 		{
 			return FALSE;
 		}
+		previous = e;
 	}
-	return TRUE;
+	return obj->nevents_tail == previous;
 }
 
 // Compatibility wrappers now use the scheduler-owned cancellation lifecycle.
 void disarm_single_event(P_nevent event)
 {
+	if (!nevent_require_game_thread("disarm_single_event"))
+		return;
 	nevent_cancel(nevent_handle_from_event(event));
 }
 
@@ -565,6 +665,8 @@ void disarm_char_nevents(P_char ch, event_func_type func)
 {
 	P_nevent event, next;
 
+	if (!nevent_require_game_thread("disarm_char_nevents"))
+		return;
 	if (!ch)
 		return;
 	for (event = ch->nevents; event; event = next)
@@ -579,6 +681,8 @@ void disarm_obj_nevents(P_obj obj, event_func_type func)
 {
 	P_nevent event, next;
 
+	if (!nevent_require_game_thread("disarm_obj_nevents"))
+		return;
 	if (!obj)
 		return;
 	for (event = obj->nevents; event; event = next)
@@ -599,7 +703,7 @@ static nevent_schedule_result add_event_internal(event_func func, int delay, P_c
 						 int data_size, void *owned_payload,
 						 nevent_payload_destroy_type owned_payload_destroy)
 {
-	P_nevent event, e;
+	P_nevent event;
 	char *data_buf;
 	int loc;
 	auto discard_owned_payload = [&]()
@@ -607,6 +711,11 @@ static nevent_schedule_result add_event_internal(event_func func, int delay, P_c
 		if (owned_payload && owned_payload_destroy)
 			owned_payload_destroy(owned_payload);
 	};
+	if (!nevent_require_game_thread("add_event"))
+	{
+		discard_owned_payload();
+		return nevent_schedule_failure(nevent_schedule_status::wrong_thread);
+	}
 
 	if (!func)
 	{
@@ -674,10 +783,14 @@ static nevent_schedule_result add_event_internal(event_func func, int delay, P_c
 	event = (P_nevent)mm_get(ne_dead_event_pool);
 
 	event->prev_sched = event->next_sched = NULL;
-	event->next_char_nev = event->next_obj_nev = NULL;
+	event->prev_char_nev = event->next_char_nev = NULL;
+	event->prev_obj_nev = event->next_obj_nev = NULL;
 	event->ch = ch;
 	event->victim = victim;
 	event->obj = obj;
+	event->owner_runtime_id = ch ? ch->runtime_id : 0;
+	event->victim_runtime_id = victim ? victim->runtime_id : 0;
+	event->diagnostic_obj_vnum = obj ? OBJ_VNUM(obj) : 0;
 	event->func = func;
 	event->data = NULL;
 	event->data_destroy = NULL;
@@ -716,32 +829,27 @@ static nevent_schedule_result add_event_internal(event_func func, int delay, P_c
 
 	if (ch)
 	{
-		if (ch->nevents != NULL)
-		{
-			// Put event at the end.
-			// Loop through ch's events and find the last one.
-			LOOP_EVENTS_CH(e, ch->nevents)
-			{
-				if (e->next_char_nev == NULL)
-					break;
-			}
-			// Put last->next to event.
-			e->next_char_nev = event;
-		}
+		event->prev_char_nev = ch->nevents_tail;
+		if (ch->nevents_tail)
+			ch->nevents_tail->next_char_nev = event;
 		else
 			ch->nevents = event;
-		// Event at end of ch->nevents, so terminate list.
-		event->next_char_nev = NULL;
+		ch->nevents_tail = event;
 	}
 
 	if (obj)
 	{
-		event->next_obj_nev = obj->nevents;
-		obj->nevents = event;
+		event->prev_obj_nev = obj->nevents_tail;
+		if (obj->nevents_tail)
+			obj->nevents_tail->next_obj_nev = event;
+		else
+			obj->nevents = event;
+		obj->nevents_tail = event;
 	}
 
 	nevent_link_schedule(event, loc);
 	ne_event_counter++;
+	nevent_assert_pool_accounting("add_event");
 
 	if (debug_event_list)
 	{
@@ -788,6 +896,8 @@ nevent_schedule_result nevent_replace(nevent_handle existing, event_func func, i
 				      P_char victim, P_obj obj, int flag, const void *data,
 				      int data_size)
 {
+	if (!nevent_require_game_thread("nevent_replace"))
+		return nevent_schedule_failure(nevent_schedule_status::wrong_thread);
 	if (!nevent_replace_target_is_active(existing))
 		return nevent_schedule_failure(nevent_schedule_status::invalid_replace_target);
 	return nevent_finish_replace(existing, add_event(func, delay, ch, victim, obj, flag, data,
@@ -799,6 +909,12 @@ nevent_schedule_result nevent_replace_owned_payload(nevent_handle existing, even
 						    int flag, void *payload,
 						    nevent_payload_destroy_type payload_destroy)
 {
+	if (!nevent_require_game_thread("nevent_replace_owned_payload"))
+	{
+		if (payload && payload_destroy)
+			payload_destroy(payload);
+		return nevent_schedule_failure(nevent_schedule_status::wrong_thread);
+	}
 	if (!nevent_replace_target_is_active(existing))
 	{
 		if (payload && payload_destroy)
@@ -815,6 +931,8 @@ int ne_event_time(P_nevent e1)
 {
 	unsigned long long time_left;
 
+	if (!nevent_require_game_thread("ne_event_time"))
+		return 0;
 	if (!e1 || e1->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE || e1->due_tick <= ne_event_tick)
 		return 0;
 	time_left = e1->due_tick - ne_event_tick;
@@ -1077,7 +1195,8 @@ static void nevent_finish_catchup_pulse(void)
 
 static bool nevent_trace_player(void)
 {
-	return nevent_config_limit("DURIS_NEVENT_TRACE_PLAYER", 0, 1) > 0;
+	static const bool enabled = nevent_config_limit("DURIS_NEVENT_TRACE_PLAYER", 0, 1) > 0;
+	return enabled;
 }
 
 static bool nevent_analytics_enabled(void)
@@ -1090,40 +1209,30 @@ static bool nevent_analytics_enabled(void)
 
 static void nevent_analytics_reset(unsigned long long start_tick)
 {
-	memset(&nevent_analytics, 0, sizeof(nevent_analytics));
+	nevent_analytics = {};
 	nevent_analytics.window_start_tick = start_tick;
 }
 
 static struct nevent_callback_analytics *nevent_analytics_callback_slot(void *func,
 									const char *name)
 {
-	int free_slot = -1;
-	int i;
-
 	if (!func)
 		return NULL;
-	for (i = 0; i < NEVENT_ANALYTICS_CALLBACK_SLOTS; i++)
+	try
 	{
-		if (nevent_analytics.callbacks[i].func == func)
-		{
-			if (name && !nevent_analytics.callbacks[i].name[0])
-				snprintf(nevent_analytics.callbacks[i].name,
-					 sizeof(nevent_analytics.callbacks[i].name), "%s", name);
-			return &nevent_analytics.callbacks[i];
-		}
-		if ((free_slot < 0) && !nevent_analytics.callbacks[i].func)
-			free_slot = i;
+		auto [entry, inserted] = nevent_analytics.callbacks.try_emplace(func);
+		struct nevent_callback_analytics &callback = entry->second;
+		if (inserted)
+			callback.func = func;
+		if (name && !callback.name[0])
+			snprintf(callback.name, sizeof(callback.name), "%s", name);
+		return &callback;
 	}
-	if (free_slot < 0)
+	catch (const std::bad_alloc &)
 	{
-		nevent_analytics.callback_overflow++;
+		nevent_analytics.callback_allocation_failures++;
 		return NULL;
 	}
-	nevent_analytics.callbacks[free_slot].func = func;
-	if (name)
-		snprintf(nevent_analytics.callbacks[free_slot].name,
-			 sizeof(nevent_analytics.callbacks[free_slot].name), "%s", name);
-	return &nevent_analytics.callbacks[free_slot];
 }
 
 static void nevent_analytics_record_callback(event_func_type func, const char *name,
@@ -1171,39 +1280,42 @@ static void nevent_analytics_record_lateness(unsigned long long lateness)
 
 static void nevent_analytics_emit_callbacks(void)
 {
-	int i;
-
-	for (i = 0; i < NEVENT_ANALYTICS_CALLBACK_SLOTS; i++)
+	for (auto &[func, callback] : nevent_analytics.callbacks)
 	{
-		struct nevent_callback_analytics *callback = &nevent_analytics.callbacks[i];
 		const char *callback_name;
-		if (!callback->func)
-			continue;
-		callback_name = callback->name[0] ? callback->name :
-						    get_function_name(callback->func);
+		callback_name = callback.name[0] ? callback.name : get_function_name(func);
 		logit(LOG_STATUS,
 		      "NEVENT ANALYTICS CALLBACK: window_start_tick=%llu func=%p name=%s calls=%lld total_us=%lld avg_us=%.2f max_us=%ld deferred=%lld",
-		      nevent_analytics.window_start_tick, callback->func,
-		      callback_name ? callback_name : "unknown", callback->calls,
-		      callback->total_us,
-		      callback->calls ? (double)callback->total_us / (double)callback->calls : 0.0,
-		      callback->max_us, callback->deferred);
+		      nevent_analytics.window_start_tick, func,
+		      callback_name ? callback_name : "unknown", callback.calls, callback.total_us,
+		      callback.calls ? (double)callback.total_us / (double)callback.calls : 0.0,
+		      callback.max_us, callback.deferred);
 	}
-	if (nevent_analytics.callback_overflow > 0)
-		logit(LOG_STATUS,
-		      "NEVENT ANALYTICS CALLBACK OVERFLOW: window_start_tick=%llu dropped=%ld slots=%d",
-		      nevent_analytics.window_start_tick, nevent_analytics.callback_overflow,
-		      NEVENT_ANALYTICS_CALLBACK_SLOTS);
 }
 
-static void nevent_analytics_record(long scanned, long executed, long deferred,
-				    long catchup_executed, long max_deferral_seen,
-				    long max_late_ticks, const char *max_late_name,
-				    unsigned long long max_late_due, long max_late_deferral,
-				    long loop_us, bool budget_exhausted)
+static void nevent_analytics_emit_window()
+{
+	const double pulses = (double)nevent_analytics.pulses;
+
+	logit(LOG_STATUS,
+	      "NEVENT ANALYTICS WINDOW: start_tick=%llu end_tick=%llu pulses=%ld avg_scanned=%.2f avg_executed=%.2f avg_deferred=%.2f avg_total_us=%.2f peak_scanned=%ld peak_executed=%ld peak_executed_tick=%llu peak_deferred=%ld peak_total_us=%ld peak_total_us_tick=%llu peak_pending=%ld budget_exhausted_pulses=%ld callback_allocation_failures=%ld lateness_on_time=%lld lateness_1=%lld lateness_2_3=%lld lateness_4_15=%lld lateness_16_plus=%lld",
+	      nevent_analytics.window_start_tick, ne_event_tick, nevent_analytics.pulses,
+	      nevent_analytics.total_scanned / pulses, nevent_analytics.total_executed / pulses,
+	      nevent_analytics.total_deferred / pulses, nevent_analytics.total_us / pulses,
+	      nevent_analytics.peak_scanned, nevent_analytics.peak_executed,
+	      nevent_analytics.peak_executed_tick, nevent_analytics.peak_deferred,
+	      nevent_analytics.peak_total_us, nevent_analytics.peak_total_us_tick,
+	      nevent_analytics.peak_pending, nevent_analytics.budget_exhausted_pulses,
+	      nevent_analytics.callback_allocation_failures, nevent_analytics.lateness_on_time,
+	      nevent_analytics.lateness_one_tick, nevent_analytics.lateness_two_to_three,
+	      nevent_analytics.lateness_four_to_fifteen, nevent_analytics.lateness_sixteen_plus);
+}
+
+static bool nevent_analytics_record(long scanned, long executed, long deferred, long loop_us,
+				    bool budget_exhausted)
 {
 	if (!nevent_analytics_enabled())
-		return;
+		return false;
 
 	if (nevent_analytics.pulses == 0)
 		nevent_analytics.window_start_tick = ne_event_tick;
@@ -1233,33 +1345,18 @@ static void nevent_analytics_record(long scanned, long executed, long deferred,
 	if (ne_event_counter > nevent_analytics.peak_pending)
 		nevent_analytics.peak_pending = ne_event_counter;
 
-	logit(LOG_STATUS,
-	      "NEVENT ANALYTICS PULSE: tick=%llu scanned=%ld executed=%ld deferred=%ld pending=%ld budget_exhausted=%d catchup_debt=%ld catchup_debt_estimated_us=%llu catchup_oldest_due=%llu catchup_quota=%ld catchup_executed=%ld max_deferral=%ld max_late_ticks=%ld max_late_name=%s max_late_due=%llu max_late_deferral=%ld catchup_extension_us=%ld avg_callback_us=%ld total_us=%ld",
-	      ne_event_tick, scanned, executed, deferred, ne_event_counter,
-	      budget_exhausted ? 1 : 0, nevent_catchup_debt, nevent_catchup_debt_estimated_us,
-	      nevent_oldest_deferred_due_tick(), nevent_catchup_quota, catchup_executed,
-	      max_deferral_seen, max_late_ticks, max_late_name, max_late_due, max_late_deferral,
-	      nevent_catchup_extension_us, nevent_avg_callback_us, loop_us);
+	return nevent_analytics.pulses >= PULSES_IN_TICK;
+}
 
-	if (nevent_analytics.pulses >= PULSES_IN_TICK)
+static void nevent_analytics_extend_last_pulse(long recorded_us, long measured_us)
+{
+	if (!nevent_analytics_enabled() || measured_us <= recorded_us)
+		return;
+	nevent_analytics.total_us += measured_us - recorded_us;
+	if (measured_us > nevent_analytics.peak_total_us)
 	{
-		double pulses = (double)nevent_analytics.pulses;
-		logit(LOG_STATUS,
-		      "NEVENT ANALYTICS WINDOW: start_tick=%llu end_tick=%llu pulses=%ld avg_scanned=%.2f avg_executed=%.2f avg_deferred=%.2f avg_total_us=%.2f peak_scanned=%ld peak_executed=%ld peak_executed_tick=%llu peak_deferred=%ld peak_total_us=%ld peak_total_us_tick=%llu peak_pending=%ld budget_exhausted_pulses=%ld lateness_on_time=%lld lateness_1=%lld lateness_2_3=%lld lateness_4_15=%lld lateness_16_plus=%lld",
-		      nevent_analytics.window_start_tick, ne_event_tick, nevent_analytics.pulses,
-		      nevent_analytics.total_scanned / pulses,
-		      nevent_analytics.total_executed / pulses,
-		      nevent_analytics.total_deferred / pulses, nevent_analytics.total_us / pulses,
-		      nevent_analytics.peak_scanned, nevent_analytics.peak_executed,
-		      nevent_analytics.peak_executed_tick, nevent_analytics.peak_deferred,
-		      nevent_analytics.peak_total_us, nevent_analytics.peak_total_us_tick,
-		      nevent_analytics.peak_pending, nevent_analytics.budget_exhausted_pulses,
-		      nevent_analytics.lateness_on_time, nevent_analytics.lateness_one_tick,
-		      nevent_analytics.lateness_two_to_three,
-		      nevent_analytics.lateness_four_to_fifteen,
-		      nevent_analytics.lateness_sixteen_plus);
-		nevent_analytics_emit_callbacks();
-		nevent_analytics_reset(ne_event_tick + 1);
+		nevent_analytics.peak_total_us = measured_us;
+		nevent_analytics.peak_total_us_tick = ne_event_tick;
 	}
 }
 
@@ -1326,6 +1423,8 @@ static void nevent_warn_if_unbounded(long base_budget_usec, long base_max_callba
 void ne_events(void)
 {
 	static long count = 0;
+	if (!nevent_require_game_thread("ne_events"))
+		return;
 	P_nevent next_event;
 	struct timespec loop_started, callback_started, callback_finished, loop_finished;
 	long scanned = 0, executed = 0, catchup_executed = 0, max_deferral_seen = 0;
@@ -1334,13 +1433,18 @@ void ne_events(void)
 	const char *max_late_name = "none";
 	unsigned long long max_late_due = 0;
 	unsigned long long pass_sequence;
-	long base_budget_usec = nevent_budget_usec();
-	long base_max_callbacks = nevent_max_callbacks();
-	long budget_usec = base_budget_usec;
-	long max_callbacks = base_max_callbacks;
+	long base_budget_usec;
+	long base_max_callbacks;
+	long budget_usec;
+	long max_callbacks;
 	bool budget_exhausted = FALSE;
 	const char *slowest_name = "none";
 
+	clock_gettime(CLOCK_MONOTONIC, &loop_started);
+	base_budget_usec = nevent_budget_usec();
+	base_max_callbacks = nevent_max_callbacks();
+	budget_usec = base_budget_usec;
+	max_callbacks = base_max_callbacks;
 	if ((pulse < 0) || (pulse >= PULSES_IN_TICK))
 	{
 		panic_corruption("ne_events", "pulse (%d) out of range", pulse);
@@ -1361,7 +1465,6 @@ void ne_events(void)
 	}
 
 	nevent_prepare_catchup(base_budget_usec, base_max_callbacks, &budget_usec, &max_callbacks);
-	clock_gettime(CLOCK_MONOTONIC, &loop_started);
 	PROFILE_START(event_loop);
 	for (current_nevent = ne_schedule[pulse]; current_nevent; current_nevent = next_event)
 	{
@@ -1489,22 +1592,40 @@ void ne_events(void)
 		      nevent_catchup_quota, nevent_catchup_extra_callbacks, catchup_executed,
 		      nevent_catchup_extension_us, nevent_avg_callback_us, new_debt);
 	}
-	if (loop_us >= 50000)
+	nevent_finish_catchup_pulse();
+	/* Include scheduler preparation, cleanup, and diagnostics already emitted
+	 * above in the observed wall time. */
+	clock_gettime(CLOCK_MONOTONIC, &loop_finished);
+	loop_us = nevent_elapsed_us(&loop_started, &loop_finished);
+	const bool analytics_window_ready =
+		nevent_analytics_record(scanned, executed, deferred, loop_us, budget_exhausted);
+	if (analytics_window_ready)
+	{
+		nevent_analytics_emit_callbacks();
+		clock_gettime(CLOCK_MONOTONIC, &loop_finished);
+		const long callback_diagnostic_us =
+			nevent_elapsed_us(&loop_started, &loop_finished);
+		nevent_analytics_extend_last_pulse(loop_us, callback_diagnostic_us);
+		nevent_analytics_emit_window();
+		nevent_analytics_reset(ne_event_tick + 1);
+	}
+	clock_gettime(CLOCK_MONOTONIC, &loop_finished);
+	nevent_last_pulse_total_us = nevent_elapsed_us(&loop_started, &loop_finished);
+	if (nevent_last_pulse_total_us >= 50000)
 	{
 		logit(LOG_STATUS,
 		      "NEVENT SLOW: pulse=%d total_us=%ld scanned=%ld executed=%ld slowest=%s slowest_us=%ld scheduled=%ld",
-		      pulse, loop_us, scanned, executed, slowest_name ? slowest_name : "unknown",
-		      slowest_us, ne_event_counter);
+		      pulse, nevent_last_pulse_total_us, scanned, executed,
+		      slowest_name ? slowest_name : "unknown", slowest_us, ne_event_counter);
 	}
-	nevent_analytics_record(scanned, executed, deferred, catchup_executed, max_deferral_seen,
-				max_late_ticks, max_late_name, max_late_due, max_late_deferral,
-				loop_us, budget_exhausted);
-	nevent_finish_catchup_pulse();
+	nevent_assert_pool_accounting("ne_events");
 	count++;
 }
 
 void nevent_advance_tick()
 {
+	if (!nevent_require_game_thread("nevent_advance_tick"))
+		return;
 	if (!after_events_call)
 		panic_corruption("nevent_advance_tick",
 				 "scheduler tick %llu has not run its event pass", ne_event_tick);
@@ -1528,6 +1649,8 @@ nevent_handle nevent_find_next(event_func func)
 {
 	P_nevent best = NULL;
 
+	if (!nevent_require_game_thread("nevent_find_next"))
+		return { NULL, 0 };
 	for (int i = 0; i < PULSES_IN_TICK; i++)
 		for (P_nevent event = ne_schedule[i]; event; event = event->next_sched)
 			best = nevent_earlier_match(best, event, func, NULL);
@@ -1538,6 +1661,8 @@ nevent_handle nevent_find_next(P_char ch, event_func func)
 {
 	P_nevent best = NULL;
 
+	if (!nevent_require_game_thread("nevent_find_next_character"))
+		return { NULL, 0 };
 	if (!ch)
 		return { NULL, 0 };
 	for (P_nevent event = ch->nevents; event; event = event->next_char_nev)
@@ -1549,6 +1674,8 @@ nevent_handle nevent_find_next_excluding_current(P_char ch, event_func func)
 {
 	P_nevent best = NULL;
 
+	if (!nevent_require_game_thread("nevent_find_next_excluding_current"))
+		return { NULL, 0 };
 	if (!ch)
 		return { NULL, 0 };
 	for (P_nevent event = ch->nevents; event; event = event->next_char_nev)
@@ -1560,6 +1687,8 @@ nevent_handle nevent_find_next(P_obj obj, event_func func)
 {
 	P_nevent best = NULL;
 
+	if (!nevent_require_game_thread("nevent_find_next_object"))
+		return { NULL, 0 };
 	if (!obj)
 		return { NULL, 0 };
 	for (P_nevent event = obj->nevents; event; event = event->next_obj_nev)
@@ -1591,6 +1720,8 @@ P_nevent get_next_scheduled_char(P_nevent e, event_func func)
 {
 	P_nevent best = NULL;
 
+	if (!nevent_require_game_thread("get_next_scheduled_char"))
+		return NULL;
 	if (!e || !e->ch)
 		return NULL;
 	for (P_nevent candidate = e->ch->nevents; candidate; candidate = candidate->next_char_nev)
@@ -1603,6 +1734,8 @@ P_nevent get_next_scheduled_obj(P_nevent e, event_func func)
 {
 	P_nevent best = NULL;
 
+	if (!nevent_require_game_thread("get_next_scheduled_obj"))
+		return NULL;
 	if (!e || !e->obj)
 		return NULL;
 	for (P_nevent candidate = e->obj->nevents; candidate; candidate = candidate->next_obj_nev)
@@ -1613,6 +1746,7 @@ P_nevent get_next_scheduled_obj(P_nevent e, event_func func)
 
 void ne_init_event_pool(void)
 {
+	nevent_bind_game_thread();
 	pulse = 0;
 	current_nevent = NULL;
 	ne_event_counter = 0;
@@ -1628,6 +1762,7 @@ void ne_init_event_pool(void)
 	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));
 	ne_dead_event_pool = mm_create("NEVENTS", sizeof(struct nevent_data),
 				       offsetof(struct nevent_data, next_sched), 11);
+	nevent_assert_pool_accounting("ne_init_event_pool");
 }
 
 void ne_init_events(void)
@@ -1791,56 +1926,305 @@ void zone_purge(int zone_number)
 	}
 }
 
-// This function is very CPU intensive.  Do _NOT_ leave it toggled on if you're not having issues.
-void check_nevents()
+struct nevent_integrity_report
 {
-	P_char ch;
-	bool shown = FALSE;
-	P_nevent e1, e2;
+	long wheel_count;
+	long character_links;
+	long object_links;
+	long deferred_count;
+	unsigned long long deferred_cost_us;
+	long errors;
+};
 
-	// For each event in the game,
-	for (int i = 0; i < PULSES_IN_TICK; i++)
+static void nevent_integrity_problem(nevent_integrity_report *report, const char *format, ...)
+{
+	char message[512];
+	va_list arguments;
+
+	if (!report)
+		return;
+	report->errors++;
+	va_start(arguments, format);
+	vsnprintf(message, sizeof(message), format, arguments);
+	va_end(arguments);
+	debug("check_nevents: %s", message);
+}
+
+static bool nevent_character_link_present(P_char character, struct char_link_data *expected,
+					  bool linking_list)
+{
+	std::unordered_set<struct char_link_data *> visited;
+	struct char_link_data *link = linking_list ? character->linking : character->linked;
+
+	for (; link; link = linking_list ? link->next_linking : link->next_linked)
 	{
-		for (e1 = ne_schedule[i]; e1; e1 = e1->next_sched)
+		if (!visited.insert(link).second)
+			return false;
+		if (link == expected)
+			return true;
+	}
+	return false;
+}
+
+static nevent_integrity_report nevent_inspect_invariants(bool emit_summary)
+{
+	nevent_integrity_report report = {};
+	std::unordered_set<P_nevent> wheel_events;
+	std::unordered_set<unsigned long long> sequences;
+	std::unordered_set<P_char> live_characters;
+	std::unordered_set<P_obj> live_objects;
+	std::unordered_set<P_nevent> character_events;
+	std::unordered_set<P_nevent> object_events;
+	std::map<unsigned long long, long> deferred_due_counts;
+
+	for (P_char character = character_list; character; character = character->next)
+		live_characters.insert(character);
+	for (P_obj object = object_list; object; object = object->next)
+		live_objects.insert(object);
+
+	for (int bucket = 0; bucket < PULSES_IN_TICK; ++bucket)
+	{
+		P_nevent previous = NULL;
+		for (P_nevent event = ne_schedule[bucket]; event; event = event->next_sched)
 		{
-			// If the event has a ch,
-			if ((ch = e1->ch))
+			if (!wheel_events.insert(event).second)
 			{
-				// If the head of the list isn't equal to the second.
-				if (ch->nevents && ch->nevents->ch && ch->nevents->ch != ch)
-				{
-					debug("check_nevents: ch '%s' %d not ch in ch->nevents, func %s.",
-					      IS_ALIVE(ch) ? J_NAME(ch) : GET_NAME(ch), GET_ID(ch),
-					      get_function_name((void *)ch->nevents->func));
-					shown = TRUE;
-					ch->nevents = NULL;
-					continue;
-				}
-				// Make sure all of ch's events belong to ch.
-				LOOP_EVENTS_CH(e2, ch->nevents)
-				{
-					if (e2->next_char_nev && e2->next_char_nev->ch &&
-					    e2->next_char_nev->ch != ch)
-					{
-						debug("check_nevents: ch '%s' %d is not ch in sub-event e->next_char_nev, func %s.",
-						      IS_ALIVE(ch) ? J_NAME(ch) : GET_NAME(ch),
-						      GET_ID(ch),
-						      get_function_name(
-							      (void *)e2->next_char_nev->func));
-						shown = TRUE;
-						e2->next_char_nev = NULL;
-						break;
-					}
-				}
+				nevent_integrity_problem(
+					&report,
+					"event pointer %p appears more than once in the wheel",
+					(void *)event);
+				break;
+			}
+			report.wheel_count++;
+			if (event->prev_sched != previous)
+				nevent_integrity_problem(
+					&report,
+					"sequence %llu has a non-reciprocal wheel previous link",
+					event->sequence);
+			if (event->element != static_cast<unsigned int>(bucket))
+				nevent_integrity_problem(
+					&report, "sequence %llu claims bucket %u but is in %d",
+					event->sequence, event->element, bucket);
+			if (event->deferral_count == 0 && nevent_bucket_for_tick(event->due_tick) !=
+								  static_cast<unsigned int>(bucket))
+				nevent_integrity_problem(
+					&report,
+					"sequence %llu due tick %llu disagrees with bucket %d",
+					event->sequence, event->due_tick, bucket);
+			if (!event->sequence || !sequences.insert(event->sequence).second)
+				nevent_integrity_problem(
+					&report, "event has a zero or duplicate sequence %llu",
+					event->sequence);
+			if (event->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE &&
+			    event->lifecycle_state != NEVENT_LIFECYCLE_CANCEL_PENDING)
+				nevent_integrity_problem(
+					&report,
+					"sequence %llu has invalid live lifecycle state %u",
+					event->sequence, event->lifecycle_state);
+			if ((event->data == NULL) != (event->data_destroy == NULL))
+				nevent_integrity_problem(
+					&report, "sequence %llu has mismatched payload ownership",
+					event->sequence);
+			if (event->deferral_count > 0)
+			{
+				report.deferred_count++;
+				report.deferred_cost_us = nevent_saturating_add_ull(
+					report.deferred_cost_us, event->deferred_cost_us);
+				deferred_due_counts[event->due_tick]++;
+			}
+			previous = event;
+		}
+		if (ne_schedule_tail[bucket] != previous)
+			nevent_integrity_problem(&report, "bucket %d has an inconsistent tail",
+						 bucket);
+	}
+
+	for (P_char character : live_characters)
+	{
+		P_nevent previous = NULL;
+		std::unordered_set<P_nevent> local;
+		for (P_nevent owned = character->nevents; owned; owned = owned->next_char_nev)
+		{
+			if (!wheel_events.count(owned) || !local.insert(owned).second)
+			{
+				nevent_integrity_problem(
+					&report,
+					"character owner id %llu has an unknown or cyclic event link",
+					character->runtime_id);
+				break;
+			}
+			report.character_links++;
+			character_events.insert(owned);
+			if (owned->ch != character || owned->prev_char_nev != previous)
+				nevent_integrity_problem(
+					&report,
+					"sequence %llu has inconsistent character ownership links",
+					owned->sequence);
+			previous = owned;
+		}
+		if (character->nevents_tail != previous)
+			nevent_integrity_problem(
+				&report, "character owner id %llu has an inconsistent event tail",
+				character->runtime_id);
+	}
+
+	for (P_obj object : live_objects)
+	{
+		P_nevent previous = NULL;
+		std::unordered_set<P_nevent> local;
+		for (P_nevent owned = object->nevents; owned; owned = owned->next_obj_nev)
+		{
+			if (!wheel_events.count(owned) || !local.insert(owned).second)
+			{
+				nevent_integrity_problem(
+					&report,
+					"object owner vnum %d has an unknown or cyclic event link",
+					object->R_num >= 0 ? OBJ_VNUM(object) : -1);
+				break;
+			}
+			report.object_links++;
+			object_events.insert(owned);
+			if (owned->obj != object || owned->prev_obj_nev != previous)
+				nevent_integrity_problem(
+					&report,
+					"sequence %llu has inconsistent object ownership links",
+					owned->sequence);
+			previous = owned;
+		}
+		if (object->nevents_tail != previous)
+			nevent_integrity_problem(
+				&report, "object owner vnum %d has an inconsistent event tail",
+				object->R_num >= 0 ? OBJ_VNUM(object) : -1);
+	}
+
+	for (P_nevent event : wheel_events)
+	{
+		if (event->ch)
+		{
+			if (!live_characters.count(event->ch) && event->func != release_mob_mem)
+				nevent_integrity_problem(
+					&report,
+					"sequence %llu has a non-live character owner id %llu",
+					event->sequence, event->owner_runtime_id);
+			else if (live_characters.count(event->ch) && event->owner_runtime_id &&
+				 event->ch->runtime_id != event->owner_runtime_id)
+			{
+				nevent_integrity_problem(
+					&report,
+					"sequence %llu character identity changed from %llu to %llu",
+					event->sequence, event->owner_runtime_id,
+					event->ch->runtime_id);
 			}
 		}
+		if (event->obj)
+		{
+			if (!live_objects.count(event->obj))
+				nevent_integrity_problem(
+					&report,
+					"sequence %llu has a non-live object owner vnum %d",
+					event->sequence, event->diagnostic_obj_vnum);
+		}
+		if (event->victim)
+		{
+			const bool victim_live =
+				live_characters.count(event->victim) &&
+				(!event->victim_runtime_id ||
+				 event->victim->runtime_id == event->victim_runtime_id);
+			if (!victim_live)
+				nevent_integrity_problem(
+					&report,
+					"sequence %llu has a non-live or reused victim id %llu",
+					event->sequence, event->victim_runtime_id);
+			else if (event->ch == event->victim)
+			{
+				if (event->cld)
+					nevent_integrity_problem(
+						&report,
+						"sequence %llu has a self-target victim link",
+						event->sequence);
+			}
+			else if (!event->ch)
+				nevent_integrity_problem(
+					&report, "sequence %llu has a victim without an owner",
+					event->sequence);
+			else if (live_characters.count(event->ch))
+			{
+				const bool owner_has_link =
+					event->cld &&
+					nevent_character_link_present(event->ch, event->cld, true);
+				const bool victim_has_link =
+					event->cld && nevent_character_link_present(
+							      event->victim, event->cld, false);
+				if (!owner_has_link || !victim_has_link)
+					nevent_integrity_problem(
+						&report,
+						"sequence %llu is absent from a victim-link list",
+						event->sequence);
+				else if (event->cld->type != LNK_EVENT ||
+					 event->cld->linking != event->ch ||
+					 event->cld->linked != event->victim)
+					nevent_integrity_problem(
+						&report,
+						"sequence %llu has inconsistent victim-link ownership",
+						event->sequence);
+			}
+		}
+		else if (event->cld)
+			nevent_integrity_problem(&report,
+						 "sequence %llu has a victim link without a victim",
+						 event->sequence);
 	}
-	if (shown)
-		debug("%ld is current time.", time(NULL));
+
+	for (P_nevent event : wheel_events)
+	{
+		if (event->ch && live_characters.count(event->ch) && !character_events.count(event))
+			nevent_integrity_problem(
+				&report, "sequence %llu is absent from its character owner list",
+				event->sequence);
+		if (event->obj && live_objects.count(event->obj) && !object_events.count(event))
+			nevent_integrity_problem(
+				&report, "sequence %llu is absent from its object owner list",
+				event->sequence);
+	}
+
+	if (report.wheel_count != ne_event_counter)
+		nevent_integrity_problem(&report, "wheel count %ld differs from counter %ld",
+					 report.wheel_count, ne_event_counter);
+	if (!ne_dead_event_pool ||
+	    report.wheel_count != static_cast<long>(ne_dead_event_pool->objs_used))
+		nevent_integrity_problem(&report, "wheel count %ld differs from pool usage %zu",
+					 report.wheel_count,
+					 ne_dead_event_pool ? ne_dead_event_pool->objs_used : 0);
+	if (report.deferred_count != nevent_catchup_debt ||
+	    report.deferred_cost_us != nevent_catchup_debt_estimated_us ||
+	    deferred_due_counts != nevent_deferred_due_counts)
+		nevent_integrity_problem(
+			&report,
+			"deferred metadata disagrees with live records (count=%ld/%ld cost=%llu/%llu)",
+			report.deferred_count, nevent_catchup_debt, report.deferred_cost_us,
+			nevent_catchup_debt_estimated_us);
+
+	if (emit_summary || report.errors)
+		debug("check_nevents: errors=%ld wheel=%ld pool=%zu counter=%ld character_links=%ld object_links=%ld deferred=%ld at %ld",
+		      report.errors, report.wheel_count,
+		      ne_dead_event_pool ? ne_dead_event_pool->objs_used : 0, ne_event_counter,
+		      report.character_links, report.object_links, report.deferred_count,
+		      time(NULL));
+	return report;
+}
+
+// Expensive by design, but observation-only: diagnostics never sever or repair links.
+bool check_nevents()
+{
+	if (!nevent_require_game_thread("check_nevents"))
+		return false;
+	return nevent_inspect_invariants(true).errors == 0;
 }
 
 void event_broken(struct char_link_data *cld)
 {
+	if (!nevent_require_game_thread("event_broken"))
+		return;
 	P_char ch = cld->linking;
 	P_nevent e;
 
@@ -1949,31 +2333,28 @@ void load_event_names()
 
 void show_world_events(P_char ch, const char *arg)
 {
-	int count = 0;
+	long count = 0;
 	char buf[MAX_STRING_LENGTH];
+	if (!nevent_require_game_thread("show_world_events"))
+		return;
 	if (!arg || arg[0] == '\0')
 	{
-		for (int i = 0; i < PULSES_IN_TICK; i++)
-			if (ne_schedule[i])
-			{
-				for (P_nevent ev = ne_schedule[i]; ev; ev = ev->next_sched)
-				{
-					count++;
-				}
-			}
+		const nevent_integrity_report integrity = nevent_inspect_invariants(false);
 		snprintf(
 			buf, MAX_STRING_LENGTH,
-			"There are currently %d events scheduled on the system.\nSpecify a function name to see more information about that particular event.\n",
-			count);
+			"NEvent health: wheel=%ld counter=%ld pool=%zu integrity_errors=%ld last_pulse_total_us=%ld.\nSpecify a function name to inspect matching events.\n",
+			integrity.wheel_count, ne_event_counter,
+			ne_dead_event_pool ? ne_dead_event_pool->objs_used : 0, integrity.errors,
+			nevent_last_pulse_total_us);
 		send_to_char(buf, ch);
 		return;
 	}
 
 	snprintf(buf, MAX_STRING_LENGTH, "Event function: %s\n\n", arg);
 	strcat(buf,
-	       "   bucket | due tick   | remaining |  char name   |  vict name   | obj vnum\n");
+	       " bucket | due tick   | remain | late | pri | defer | sequence   | owner id/live | victim id/live | obj vnum/live\n");
 	strcat(buf,
-	       "   -------|------------|-----------|--------------|--------------|---------\n");
+	       "--------|------------|--------|------|-----|-------|------------|---------------|----------------|--------------\n");
 	for (int i = 0; i < PULSES_IN_TICK; i++)
 		if (ne_schedule[i])
 		{
@@ -1981,19 +2362,38 @@ void show_world_events(P_char ch, const char *arg)
 			{
 				if (strcmp(get_function_name((void *)ev->func), arg))
 					continue;
-				char line[128];
+				char line[256];
+				const unsigned long long lateness =
+					ne_event_tick > ev->due_tick ?
+						ne_event_tick - ev->due_tick :
+						0;
+				const bool owner_live = ev->owner_runtime_id &&
+							find_character_by_runtime_id(
+								ev->owner_runtime_id) == ev->ch;
+				const bool victim_live =
+					ev->victim_runtime_id &&
+					find_character_by_runtime_id(ev->victim_runtime_id) ==
+						ev->victim;
+				bool object_live = false;
+				for (P_obj object = object_list; object; object = object->next)
+					if (object == ev->obj)
+					{
+						object_live = true;
+						break;
+					}
 
 				count++;
-				/* Format one row into its own bounded buffer and
-				   append it, rather than writing at buf + strlen(buf)
-				   with a size the compiler cannot narrow. */
 				checked_snprintf(
 					line, sizeof line,
-					"    %-5u | %-10llu | %-9d | %-12.12s | %-12.12s | %-8d\n",
-					ev->element, ev->due_tick, ne_event_time(ev),
-					ev->ch ? GET_NAME(ev->ch) : "   none",
-					ev->victim ? GET_NAME(ev->victim) : "   none",
-					ev->obj ? OBJ_VNUM(ev->obj) : 0);
+					" %-6u | %-10llu | %-6d | %-4llu | %-3u | %-5u | %-10llu | %8llu/%-4s | %9llu/%-4s | %8d/%-4s\n",
+					ev->element, ev->due_tick, ne_event_time(ev), lateness,
+					nevent_effective_priority(ev), ev->deferral_count,
+					ev->sequence,
+					static_cast<unsigned long long>(ev->owner_runtime_id),
+					owner_live ? "yes" : "no",
+					static_cast<unsigned long long>(ev->victim_runtime_id),
+					victim_live ? "yes" : "no", ev->diagnostic_obj_vnum,
+					object_live ? "yes" : "no");
 
 				if (strlen(buf) + sizeof line >= sizeof buf)
 				{

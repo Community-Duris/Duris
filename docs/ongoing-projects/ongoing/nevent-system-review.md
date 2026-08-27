@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 8 complete
+Status: Implementation in progress; checkpoint 9 core hardening complete
 
-Last implementation update: 2026-08-27 23:18 IDT
+Last implementation update: 2026-08-27 23:59 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -26,7 +26,7 @@ contracts, formatting, and the server build pass.
 | 6 | NEV-04, NEV-11, NEV-12, and NEV-22 absolute due-tick core, rescheduling, and harness foundation | Complete | ASan/UBSan three-phase boundary matrix and 1,200-tick oracle, 225 Python regressions, native signal test, format check, server build |
 | 7 | NEV-09, NEV-13, NEV-15, and NEV-22 priority, aging, catch-up, and range safety | Complete | ASan/UBSan priority-on/off, mixed-deferral, continuous-arrival, convergence, unlimited, and invalid-range modes; 225 Python regressions; native signal test; format check; server build |
 | 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Complete | Typed rejection/success/replace and global/owner chronology in the ASan/UBSan scheduler harness; 225 Python regressions; native signal test; format check; server build |
-| 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | Next | Not started |
+| 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | In progress | Core hardening complete: ASan/UBSan owner-link, non-mutating corruption, and worker-thread boundary cases; 225 Python regressions; native signal test; format check; server build |
 | 10 | NEV-21 documentation and legacy cleanup | Pending | Not started |
 
 Checkpoint 1 replaced the fixed 6,000-entry array and sentinel scan with a
@@ -133,6 +133,23 @@ first event in scheduler order instead of bucket or owner insertion order, with
 handle-returning and current-excluding variants. The sanitizer harness exercises
 every result status, successful and rejected replacement, chronological global
 and owner lookup across buckets/revolutions, and current-event exclusion.
+
+The first checkpoint 9 slice completed the scheduler's core hardening. Callback
+analytics now grow with the observed callback set, aggregate allocation
+failures, emit only window summaries, include diagnostic logging in measured
+wall time, and cache player-tracing configuration. Character and object owner
+lists retain their insertion order through explicit tails and reciprocal links,
+making both append and known-record cancellation constant-time. Integrity
+inspection is observation-only and checks wheel uniqueness, reciprocal links
+and tails, owner and victim-link membership, stable character identities,
+object/victim liveness, payload state, deferred metadata, and wheel/pool/counter
+agreement. Admin output reports authoritative timing,
+priority, deferral, sequence, stable identity, liveness, and the last fully
+measured scheduler cost without dereferencing unvalidated owners. Scheduler API
+boundaries bind and enforce the game thread. The sanitizer harness deliberately
+corrupts character, object, and victim links, proves inspection detects but does
+not repair them, exercises constant-time middle removal, and verifies worker
+thread add, cancel, reschedule, and lookup attempts assert before mutation.
 
 The executive assessment and finding evidence below preserve the original
 pre-remediation review. Per-finding implementation status and the checkpoint
@@ -818,6 +835,14 @@ budget math.
 
 ### NEV-16: Several hot paths scale unnecessarily
 
+Implementation status (2026-08-27): Fixed and verified in the first checkpoint
+9 slice. Name lookup was already made hash-based in checkpoint 1. Analytics is
+dynamically attributed with explicit allocation-failure accounting and no
+per-pulse log, its full logging cost is sampled, player tracing is cached, and
+owner/schedule unlinking plus owner insertion use reciprocal links without
+predecessor or tail scans. The evidence below describes the pre-fix
+implementation.
+
 - `get_function_name` is a linear scan of up to 6,000 entries. Callback label
   lookup occurs before every executed callback (`src/new_events.c:1254-1256`).
   For names outside any small fast path, bursts can perform millions of pointer
@@ -862,6 +887,13 @@ periodic jobs into a registry that enforces uniqueness and exposes health.
 
 ### NEV-18: Integrity checks and admin diagnostics are unsafe/incomplete
 
+Implementation status (2026-08-27): Fixed and verified in the first checkpoint
+9 slice. Full validation is non-mutating and reconciles wheel, pool, counters,
+owners, links, payloads, and deferred metadata. Admin summaries use those same
+totals, while detailed rows use captured identities and explicit liveness checks
+before rendering owner state. The evidence below describes the pre-fix
+implementation.
+
 - `clear_nevent(NULL)` logs but continues and dereferences the null pointer
   (`src/new_events.c:315-320`). It should return immediately.
 - `check_nevents` attempts repair by severing character-list heads/links. It does
@@ -900,6 +932,13 @@ operations for find-next-by-due, find-other-than-current, unique replace,
 reschedule, and cancel.
 
 ### NEV-20: Main-thread ownership is assumed, not enforced
+
+Implementation status (2026-08-27): Fixed and verified in the first checkpoint
+9 slice. Event-pool initialization binds the game thread, and scheduler
+schedule, cancel, reschedule, execution, lookup, diagnostic, and compatibility
+boundaries reject off-thread access (with corruption assertions in debug
+builds). The sanitizer harness verifies representative worker calls leave the
+wheel unchanged. The evidence below describes the pre-fix implementation.
 
 Global wheel state, intrusive links, counters, and memory pools have no locking.
 The current main-loop call pattern makes this workable only if every add,
@@ -1111,6 +1150,9 @@ tests/async/test_scalar_event_idempotency.py
 Checkpoints 6 through 8 additionally passed
 `tests/async/test_nevent_scheduler_runtime.py` under ASan/UBSan, the complete
 225-test Python regression suite, and `tests/async/run_signal_handlers.sh`.
+The first checkpoint 9 slice extended that harness with reciprocal owner/victim
+link checks, non-mutating corruption detection, constant-time middle unlinking,
+and debug game-thread ownership cases; the same full validation set passed.
 
 `make -C src -j2` completed and linked `bin/server/dms_new` successfully. The
 built binary is a 64-bit PIE. A symbol/data probe found 6,220 text symbols in the
@@ -1119,7 +1161,7 @@ against current artifacts.
 
 No live server or database was used. No migrations, production operations, or
 game-data mutations were performed. Implementation and verification are current
-through checkpoint 8 in the ledger above.
+through the first checkpoint 9 slice in the ledger above.
 
 ## Suggested implementation-session boundaries
 
