@@ -1,0 +1,3326 @@
+{
+  "schema_version": 1,
+  "policy_id": "duris-lifecycle-v1",
+  "status": "technical_inventory_destructive_rules_disabled",
+  "technical_owner_default": "DurisMUD repository operators",
+  "decision_semantics": "Controller decisions and lawful-basis references remain pending unless an entry records an externally approved reference.",
+  "allowed_actions": [
+    "retain",
+    "regenerate",
+    "deactivate",
+    "reset_delete",
+    "reset_update",
+    "archive",
+    "purge",
+    "pseudonymize",
+    "cascade",
+    "restore_tombstone"
+  ],
+  "destructive_actions": [
+    "archive",
+    "purge",
+    "pseudonymize",
+    "cascade",
+    "restore_tombstone"
+  ],
+  "controller_approval": {
+    "status": "pending",
+    "reference": "PENDING-CONTROLLER-DECISION",
+    "destructive_rules_enabled": false
+  },
+  "entries": [
+    {
+      "id": "database:account_banks",
+      "kind": "database_table",
+      "locator": "account_banks",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:accounts"]
+    },
+    {
+      "id": "database:account_bound_reward_pwipe_state",
+      "kind": "database_table",
+      "locator": "account_bound_reward_pwipe_state",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:account_bound_reward_summons",
+      "kind": "database_table",
+      "locator": "account_bound_reward_summons",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": [
+        "database:account_bound_rewards",
+        "database:player_data"
+      ]
+    },
+    {
+      "id": "database:account_bound_rewards",
+      "kind": "database_table",
+      "locator": "account_bound_rewards",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:accounts"]
+    },
+    {
+      "id": "database:account_characters",
+      "kind": "database_table",
+      "locator": "account_characters",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "deactivate",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:account_ips",
+      "kind": "database_table",
+      "locator": "account_ips",
+      "data_category": "network_or_operational_identifier",
+      "data_subject_key": "account_or_network_identifier",
+      "technical_purpose": "connection safety, abuse investigation, and aggregate operations",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:accounts"]
+    },
+    {
+      "id": "database:account_locker_access",
+      "kind": "database_table",
+      "locator": "account_locker_access",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:account_lockers"]
+    },
+    {
+      "id": "database:account_locker_item_affects",
+      "kind": "database_table",
+      "locator": "account_locker_item_affects",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:account_locker_items"]
+    },
+    {
+      "id": "database:account_locker_item_extra_descr",
+      "kind": "database_table",
+      "locator": "account_locker_item_extra_descr",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:account_locker_items"]
+    },
+    {
+      "id": "database:account_locker_items",
+      "kind": "database_table",
+      "locator": "account_locker_items",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:locker_chests"]
+    },
+    {
+      "id": "database:account_lockers",
+      "kind": "database_table",
+      "locator": "account_lockers",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:accounts"]
+    },
+    {
+      "id": "database:accounts",
+      "kind": "database_table",
+      "locator": "accounts",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:alliances",
+      "kind": "database_table",
+      "locator": "alliances",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:artifact_bind",
+      "kind": "database_table",
+      "locator": "artifact_bind",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:artifact_delta_ledger",
+      "kind": "database_table",
+      "locator": "artifact_delta_ledger",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:artifact_guild_outcome"]
+    },
+    {
+      "id": "database:artifact_domain_baseline",
+      "kind": "database_table",
+      "locator": "artifact_domain_baseline",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:artifact_domain_state",
+      "kind": "database_table",
+      "locator": "artifact_domain_state",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:item_current_owner"]
+    },
+    {
+      "id": "database:artifact_guild_outcome",
+      "kind": "database_table",
+      "locator": "artifact_guild_outcome",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:artifact_guild_outcome_delta",
+      "kind": "database_table",
+      "locator": "artifact_guild_outcome_delta",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:artifact_guild_outcome"]
+    },
+    {
+      "id": "database:artifacts",
+      "kind": "database_table",
+      "locator": "artifacts",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:artifacts_mortal",
+      "kind": "database_table",
+      "locator": "artifacts_mortal",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:associations",
+      "kind": "database_table",
+      "locator": "associations",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:auction_bid_history",
+      "kind": "database_table",
+      "locator": "auction_bid_history",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:auction_item_custody",
+      "kind": "database_table",
+      "locator": "auction_item_custody",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:item_current_owner"]
+    },
+    {
+      "id": "database:auction_item_pickups",
+      "kind": "database_table",
+      "locator": "auction_item_pickups",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:auction_ledger",
+      "kind": "database_table",
+      "locator": "auction_ledger",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:auction_money_pickups",
+      "kind": "database_table",
+      "locator": "auction_money_pickups",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:auction_reconciliation_quarantine",
+      "kind": "database_table",
+      "locator": "auction_reconciliation_quarantine",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:auctions",
+      "kind": "database_table",
+      "locator": "auctions",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:boon_reward_outcome",
+      "kind": "database_table",
+      "locator": "boon_reward_outcome",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:boon_reward_outcome_entry",
+      "kind": "database_table",
+      "locator": "boon_reward_outcome_entry",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:boon_reward_outcome"]
+    },
+    {
+      "id": "database:boons",
+      "kind": "database_table",
+      "locator": "boons",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:boons_progress",
+      "kind": "database_table",
+      "locator": "boons_progress",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:boons_shop",
+      "kind": "database_table",
+      "locator": "boons_shop",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:categories",
+      "kind": "database_table",
+      "locator": "categories",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:changes",
+      "kind": "database_table",
+      "locator": "changes",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:classes",
+      "kind": "database_table",
+      "locator": "classes",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:combat_frag_baseline",
+      "kind": "database_table",
+      "locator": "combat_frag_baseline",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:combat_frag_ledger",
+      "kind": "database_table",
+      "locator": "combat_frag_ledger",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:combat_outcome"]
+    },
+    {
+      "id": "database:combat_outcome",
+      "kind": "database_table",
+      "locator": "combat_outcome",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:combat_outcome_participant",
+      "kind": "database_table",
+      "locator": "combat_outcome_participant",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:combat_outcome"]
+    },
+    {
+      "id": "database:corpse_item_affects",
+      "kind": "database_table",
+      "locator": "corpse_item_affects",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:corpse_items"]
+    },
+    {
+      "id": "database:corpse_item_extra_descr",
+      "kind": "database_table",
+      "locator": "corpse_item_extra_descr",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:corpse_items"]
+    },
+    {
+      "id": "database:corpse_items",
+      "kind": "database_table",
+      "locator": "corpse_items",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:corpses"]
+    },
+    {
+      "id": "database:corpses",
+      "kind": "database_table",
+      "locator": "corpses",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:critical_operation_inbox",
+      "kind": "database_table",
+      "locator": "critical_operation_inbox",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:critical_outbox",
+      "kind": "database_table",
+      "locator": "critical_outbox",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:critical_outbox_delivery_dedupe",
+      "kind": "database_table",
+      "locator": "critical_outbox_delivery_dedupe",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_outbox"]
+    },
+    {
+      "id": "database:critical_test_state",
+      "kind": "database_table",
+      "locator": "critical_test_state",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:ctf_data",
+      "kind": "database_table",
+      "locator": "ctf_data",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:currency_bank_baseline",
+      "kind": "database_table",
+      "locator": "currency_bank_baseline",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:currency_ledger",
+      "kind": "database_table",
+      "locator": "currency_ledger",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:currency_wallet_baseline",
+      "kind": "database_table",
+      "locator": "currency_wallet_baseline",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:epic_balance_baseline",
+      "kind": "database_table",
+      "locator": "epic_balance_baseline",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:epic_bonus",
+      "kind": "database_table",
+      "locator": "epic_bonus",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:epic_gain",
+      "kind": "database_table",
+      "locator": "epic_gain",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:epic_ledger",
+      "kind": "database_table",
+      "locator": "epic_ledger",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:eq_drop",
+      "kind": "database_table",
+      "locator": "eq_drop",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:frag_leaderboard",
+      "kind": "database_table",
+      "locator": "frag_leaderboard",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:guild_members",
+      "kind": "database_table",
+      "locator": "guild_members",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:guilds"]
+    },
+    {
+      "id": "database:guild_outcome_ledger",
+      "kind": "database_table",
+      "locator": "guild_outcome_ledger",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:artifact_guild_outcome"]
+    },
+    {
+      "id": "database:guild_ranks",
+      "kind": "database_table",
+      "locator": "guild_ranks",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:guilds"]
+    },
+    {
+      "id": "database:guild_transactions",
+      "kind": "database_table",
+      "locator": "guild_transactions",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:guildhall_rooms",
+      "kind": "database_table",
+      "locator": "guildhall_rooms",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:guildhalls",
+      "kind": "database_table",
+      "locator": "guildhalls",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:guilds",
+      "kind": "database_table",
+      "locator": "guilds",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:ip_info",
+      "kind": "database_table",
+      "locator": "ip_info",
+      "data_category": "network_or_operational_identifier",
+      "data_subject_key": "account_or_network_identifier",
+      "technical_purpose": "connection safety, abuse investigation, and aggregate operations",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:item_current_owner",
+      "kind": "database_table",
+      "locator": "item_current_owner",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:item_owner_revision",
+      "kind": "database_table",
+      "locator": "item_owner_revision",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:item_ownership_baseline",
+      "kind": "database_table",
+      "locator": "item_ownership_baseline",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:item_ownership_ledger",
+      "kind": "database_table",
+      "locator": "item_ownership_ledger",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:item_ownership_quarantine",
+      "kind": "database_table",
+      "locator": "item_ownership_quarantine",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:item_uid_allocator",
+      "kind": "database_table",
+      "locator": "item_uid_allocator",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:items",
+      "kind": "database_table",
+      "locator": "items",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:kingdom_land",
+      "kind": "database_table",
+      "locator": "kingdom_land",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:level_cap",
+      "kind": "database_table",
+      "locator": "level_cap",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_update",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:locker_access",
+      "kind": "database_table",
+      "locator": "locker_access",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:locker_activity_log",
+      "kind": "database_table",
+      "locator": "locker_activity_log",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:account_lockers"]
+    },
+    {
+      "id": "database:locker_chests",
+      "kind": "database_table",
+      "locator": "locker_chests",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:account_lockers"]
+    },
+    {
+      "id": "database:locker_item_affects",
+      "kind": "database_table",
+      "locator": "locker_item_affects",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:locker_items"]
+    },
+    {
+      "id": "database:locker_item_extra_descr",
+      "kind": "database_table",
+      "locator": "locker_item_extra_descr",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:locker_items"]
+    },
+    {
+      "id": "database:locker_items",
+      "kind": "database_table",
+      "locator": "locker_items",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:lockers"]
+    },
+    {
+      "id": "database:locker_kickouts",
+      "kind": "database_table",
+      "locator": "locker_kickouts",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:account_lockers"]
+    },
+    {
+      "id": "database:locker_session_state",
+      "kind": "database_table",
+      "locator": "locker_session_state",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": [
+        "database:account_lockers",
+        "database:locker_chests"
+      ]
+    },
+    {
+      "id": "database:lockers",
+      "kind": "database_table",
+      "locator": "lockers",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:log_entries",
+      "kind": "database_table",
+      "locator": "log_entries",
+      "data_category": "network_or_operational_identifier",
+      "data_subject_key": "account_or_network_identifier",
+      "technical_purpose": "connection safety, abuse investigation, and aggregate operations",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:mud_info",
+      "kind": "database_table",
+      "locator": "mud_info",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:mud_schema_migrations",
+      "kind": "database_table",
+      "locator": "mud_schema_migrations",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:multiplay_whitelist",
+      "kind": "database_table",
+      "locator": "multiplay_whitelist",
+      "data_category": "network_or_operational_identifier",
+      "data_subject_key": "account_or_network_identifier",
+      "technical_purpose": "connection safety, abuse investigation, and aggregate operations",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:nexus_stones",
+      "kind": "database_table",
+      "locator": "nexus_stones",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_update",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:offline_messages",
+      "kind": "database_table",
+      "locator": "offline_messages",
+      "data_category": "account_state",
+      "data_subject_key": "account_id",
+      "technical_purpose": "authentication, account administration, and account-owned gameplay state",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:outposts",
+      "kind": "database_table",
+      "locator": "outposts",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_update",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:pages",
+      "kind": "database_table",
+      "locator": "pages",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:persistence_item_events",
+      "kind": "database_table",
+      "locator": "persistence_item_events",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:persistence_scalar_events",
+      "kind": "database_table",
+      "locator": "persistence_scalar_events",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:ping",
+      "kind": "database_table",
+      "locator": "ping",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:pkill_event",
+      "kind": "database_table",
+      "locator": "pkill_event",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:pkill_info",
+      "kind": "database_table",
+      "locator": "pkill_info",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:player_affects",
+      "kind": "database_table",
+      "locator": "player_affects",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_data",
+      "kind": "database_table",
+      "locator": "player_data",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "deactivate",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:player_forged_items",
+      "kind": "database_table",
+      "locator": "player_forged_items",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_granted_cmds",
+      "kind": "database_table",
+      "locator": "player_granted_cmds",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_intros",
+      "kind": "database_table",
+      "locator": "player_intros",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_item_affects",
+      "kind": "database_table",
+      "locator": "player_item_affects",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_items"]
+    },
+    {
+      "id": "database:player_item_extra_descr",
+      "kind": "database_table",
+      "locator": "player_item_extra_descr",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_items"]
+    },
+    {
+      "id": "database:player_items",
+      "kind": "database_table",
+      "locator": "player_items",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_languages",
+      "kind": "database_table",
+      "locator": "player_languages",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_pet_item_affects",
+      "kind": "database_table",
+      "locator": "player_pet_item_affects",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_pet_items"]
+    },
+    {
+      "id": "database:player_pet_item_extra_descr",
+      "kind": "database_table",
+      "locator": "player_pet_item_extra_descr",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_pet_items"]
+    },
+    {
+      "id": "database:player_pet_items",
+      "kind": "database_table",
+      "locator": "player_pet_items",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_pets"]
+    },
+    {
+      "id": "database:player_pets",
+      "kind": "database_table",
+      "locator": "player_pets",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_recipes",
+      "kind": "database_table",
+      "locator": "player_recipes",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:player_shapechanges",
+      "kind": "database_table",
+      "locator": "player_shapechanges",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:player_skills",
+      "kind": "database_table",
+      "locator": "player_skills",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_spellbooks",
+      "kind": "database_table",
+      "locator": "player_spellbooks",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_timers",
+      "kind": "database_table",
+      "locator": "player_timers",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_undead_slots",
+      "kind": "database_table",
+      "locator": "player_undead_slots",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:player_witnesses",
+      "kind": "database_table",
+      "locator": "player_witnesses",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:player_data"]
+    },
+    {
+      "id": "database:poll_options",
+      "kind": "database_table",
+      "locator": "poll_options",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:poll_votes",
+      "kind": "database_table",
+      "locator": "poll_votes",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:polls",
+      "kind": "database_table",
+      "locator": "polls",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:prepstatement_duris_sql",
+      "kind": "database_table",
+      "locator": "prepstatement_duris_sql",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:private_chest_log",
+      "kind": "database_table",
+      "locator": "private_chest_log",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:lockers"]
+    },
+    {
+      "id": "database:private_chests",
+      "kind": "database_table",
+      "locator": "private_chests",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:lockers"]
+    },
+    {
+      "id": "database:progress",
+      "kind": "database_table",
+      "locator": "progress",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:quest_trophy",
+      "kind": "database_table",
+      "locator": "quest_trophy",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:races",
+      "kind": "database_table",
+      "locator": "races",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:racewar_stat_mods",
+      "kind": "database_table",
+      "locator": "racewar_stat_mods",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:saved_item_affects",
+      "kind": "database_table",
+      "locator": "saved_item_affects",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:saved_items"]
+    },
+    {
+      "id": "database:saved_item_extra_descr",
+      "kind": "database_table",
+      "locator": "saved_item_extra_descr",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:saved_items"]
+    },
+    {
+      "id": "database:saved_items",
+      "kind": "database_table",
+      "locator": "saved_items",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:session_audit_outcome",
+      "kind": "database_table",
+      "locator": "session_audit_outcome",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:ship_armor",
+      "kind": "database_table",
+      "locator": "ship_armor",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:ships"]
+    },
+    {
+      "id": "database:ship_cargo_market_mods",
+      "kind": "database_table",
+      "locator": "ship_cargo_market_mods",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:ship_cargo_prices",
+      "kind": "database_table",
+      "locator": "ship_cargo_prices",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:ship_crew",
+      "kind": "database_table",
+      "locator": "ship_crew",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:ships"]
+    },
+    {
+      "id": "database:ship_slots",
+      "kind": "database_table",
+      "locator": "ship_slots",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:ships"]
+    },
+    {
+      "id": "database:ships",
+      "kind": "database_table",
+      "locator": "ships",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:shop_trophy",
+      "kind": "database_table",
+      "locator": "shop_trophy",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:shopkeeper_affects",
+      "kind": "database_table",
+      "locator": "shopkeeper_affects",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:shopkeepers"]
+    },
+    {
+      "id": "database:shopkeeper_item_affects",
+      "kind": "database_table",
+      "locator": "shopkeeper_item_affects",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:shopkeeper_items"]
+    },
+    {
+      "id": "database:shopkeeper_item_extra_descr",
+      "kind": "database_table",
+      "locator": "shopkeeper_item_extra_descr",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:shopkeeper_items"]
+    },
+    {
+      "id": "database:shopkeeper_items",
+      "kind": "database_table",
+      "locator": "shopkeeper_items",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:shopkeepers"]
+    },
+    {
+      "id": "database:shopkeepers",
+      "kind": "database_table",
+      "locator": "shopkeepers",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:siege_item_affects",
+      "kind": "database_table",
+      "locator": "siege_item_affects",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:siege_items"]
+    },
+    {
+      "id": "database:siege_item_extra_descr",
+      "kind": "database_table",
+      "locator": "siege_item_extra_descr",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": ["database:siege_items"]
+    },
+    {
+      "id": "database:siege_items",
+      "kind": "database_table",
+      "locator": "siege_items",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:statistics",
+      "kind": "database_table",
+      "locator": "statistics",
+      "data_category": "network_or_operational_identifier",
+      "data_subject_key": "aggregate_only",
+      "technical_purpose": "connection safety, abuse investigation, and aggregate operations",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:timers",
+      "kind": "database_table",
+      "locator": "timers",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_update",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:towns",
+      "kind": "database_table",
+      "locator": "towns",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:world_quest_accomplished",
+      "kind": "database_table",
+      "locator": "world_quest_accomplished",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:zone_touch_outcome",
+      "kind": "database_table",
+      "locator": "zone_touch_outcome",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:critical_operation_inbox"]
+    },
+    {
+      "id": "database:zone_touch_outcome_participant",
+      "kind": "database_table",
+      "locator": "zone_touch_outcome_participant",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "idempotent replay, reconciliation, auditability, and balance or ownership correctness",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": ["database:zone_touch_outcome"]
+    },
+    {
+      "id": "database:zone_touches",
+      "kind": "database_table",
+      "locator": "zone_touches",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "shared world simulation, economy, competition, and season state",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:zone_trophy",
+      "kind": "database_table",
+      "locator": "zone_trophy",
+      "data_category": "player_or_character_state",
+      "data_subject_key": "player_id",
+      "technical_purpose": "character gameplay, inventory, progression, communication, and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "reset_delete",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "database:zones",
+      "kind": "database_table",
+      "locator": "zones",
+      "data_category": "reference_or_configuration",
+      "data_subject_key": "none",
+      "technical_purpose": "game rules, lookup publication, and operator configuration",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "redis:world_recovery",
+      "kind": "redis_keyspace",
+      "locator": "redis world recovery generations",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "crash recovery and exact world restoration",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "regenerate",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:player_save_journal",
+      "kind": "journal",
+      "locator": "PLAYER_SAVE_JOURNAL_DIR/player-save.journal",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "revisioned player-save retry and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:player_save_quarantine",
+      "kind": "quarantine",
+      "locator": "PLAYER_SAVE_JOURNAL_DIR/player-save.journal.quarantine",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "corrupt player-save evidence and operator repair",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:critical_command_journal",
+      "kind": "journal",
+      "locator": "CRITICAL_COMMAND_JOURNAL_DIR",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "operation_id_with_domain_subject",
+      "technical_purpose": "critical command replay and reconciliation",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:persistence_fallback",
+      "kind": "fallback",
+      "locator": "legacy persistence fallback file",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "retired failure evidence pending explicit quarantine",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:persistence_fallback_quarantine",
+      "kind": "quarantine",
+      "locator": "legacy persistence fallback quarantine",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "operator inspection and repair evidence",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:runtime_pfiles",
+      "kind": "runtime_file",
+      "locator": "lib/players",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "legacy character runtime compatibility",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "file:runtime_accounts",
+      "kind": "runtime_file",
+      "locator": "lib/accounts",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "account_id",
+      "technical_purpose": "legacy account runtime compatibility",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "file:player_logs",
+      "kind": "log",
+      "locator": "logs/player-log",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "player-visible and operator event history",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "file:server_logs",
+      "kind": "log",
+      "locator": "logs",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "mixed_or_none",
+      "technical_purpose": "operations, security monitoring, and fault diagnosis",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "file:statistics_history",
+      "kind": "report",
+      "locator": "lib/statistics/statistics_general*",
+      "data_category": "operational_or_nonpersonal",
+      "data_subject_key": "aggregate_only",
+      "technical_purpose": "aggregate population and level history",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "file:web_status",
+      "kind": "report",
+      "locator": "lib/reports/status",
+      "data_category": "operational_or_nonpersonal",
+      "data_subject_key": "none",
+      "technical_purpose": "public server status publication",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "retain",
+      "active_retention": "operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "file:maintenance_scheduler_state",
+      "kind": "recovery_state",
+      "locator": "MAINTENANCE_STATE_FILE",
+      "data_category": "operational_or_nonpersonal",
+      "data_subject_key": "none",
+      "technical_purpose": "exact maintenance retry and completion recovery",
+      "controller_decision": {
+        "status": "not_required",
+        "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION"
+      },
+      "season_action": "regenerate",
+      "active_retention": "operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "file:export_spool",
+      "kind": "export_spool",
+      "locator": "operator-configured export spool",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "account_id",
+      "technical_purpose": "temporary authenticated personal-data export packaging",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "backup:database",
+      "kind": "backup",
+      "locator": "mysqldump backup class",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "mixed",
+      "technical_purpose": "disaster recovery and restore",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "backup:pfiles",
+      "kind": "backup",
+      "locator": "Players/Backup",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "legacy pfile disaster recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "backup:conversion",
+      "kind": "backup",
+      "locator": "*.preconvert and *.backup conversion artifacts",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_or_account_id",
+      "technical_purpose": "migration rollback",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": []
+    }
+  ]
+}

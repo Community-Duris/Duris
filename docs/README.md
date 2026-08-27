@@ -12,6 +12,7 @@ directory covers architecture, operations, configuration, and reference material
 | [CODEBASE.md](CODEBASE.md) | Module map of `src/` — where to find what, and the key files for each subsystem. |
 | [BUILDING.md](BUILDING.md) | Build system details: flags, targets, area-file generation, sanitizer builds. |
 | [DATABASE.md](DATABASE.md) | Database layer: connection handling, async persistence, schema, migrations. |
+| [DATA_LIFECYCLE.md](DATA_LIFECYCLE.md) | Versioned durable-store inventory, season classifications, protected exceptions, and fail-closed lifecycle validation. |
 | [CONFIGURATION.md](CONFIGURATION.md) | Runtime environment variables, Redis, listeners, proxy handling, and diagnostics. |
 | [RUNBOOK.md](RUNBOOK.md) | Day-to-day operations: starting/stopping, restart codes, logs, backups, crash recovery. |
 | [TESTING.md](TESTING.md) | The regression/source-contract test harness in `tests/async/` and how to run it. |

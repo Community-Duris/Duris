@@ -1,7 +1,7 @@
 # Session 07: Data Processing and Retention Contract
 
 **Session ID**: `phase03-session07-data-processing-and-retention-contract`
-**Status**: Not Started
+**Status**: Complete (destructive rules remain disabled pending controller decisions)
 **Work Window**: One governance-to-runtime contract covering the complete data-store
 inventory, subject keys, purpose and approval evidence, season/time rules, archive and
 erasure actions, exceptions, validation, and fail-closed policy loading.
@@ -50,11 +50,11 @@ export, erasure, and restore behavior.
 
 ## Prerequisites
 
-- [ ] Phase 02 final schema and reconciliation contracts are available.
+- [x] Phase 02 final schema and reconciliation contracts are available.
 - [ ] The designated data controller or repository owner supplies or approves purpose,
       lawful-basis, retention, archive, and exception decisions before destructive rules
       can be enabled.
-- [ ] Session 05 schema inventory and Session 06 maintenance identities are stable.
+- [x] Session 05 schema inventory and Session 06 maintenance identities are stable.
 
 ---
 
@@ -73,16 +73,16 @@ export, erasure, and restore behavior.
 
 ## Success Criteria
 
-- [ ] Every active schema table and every declared journal, cache, file, log, export,
+- [x] Every active schema table and every declared journal, cache, file, log, export,
       and backup class appears exactly once in the lifecycle inventory.
-- [ ] Each personal-data class has a subject key, purpose, approval reference,
+- [x] Each personal-data class has a subject key, purpose, approval reference,
       retention, archive/terminal action, and documented exception state.
-- [ ] Financial, ownership, moderation, inbox/outbox, and audit records cannot receive a
+- [x] Financial, ownership, moderation, inbox/outbox, and audit records cannot receive a
       purge rule that violates reconciliation, replay, or approved exception constraints.
-- [ ] An unknown store, missing dependency, invalid action, stale policy version, or
+- [x] An unknown store, missing dependency, invalid action, stale policy version, or
       unapproved destructive rule fails closed before mutation.
-- [ ] Season reset, retention, export, erasure, and restore code can consume the same
+- [x] Season reset, retention, export, erasure, and restore code can consume the same
       manifest without maintaining contradictory table lists.
-- [ ] Documentation distinguishes engineering controls and recorded decisions from a
+- [x] Documentation distinguishes engineering controls and recorded decisions from a
       legal compliance conclusion.
-- [ ] Focused policy, schema-coverage, and safety regressions pass.
+- [x] Focused policy, schema-coverage, and safety regressions pass.

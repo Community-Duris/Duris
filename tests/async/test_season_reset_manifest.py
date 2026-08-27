@@ -11,6 +11,7 @@ DELETE FROM / UPDATE statements in sql_pwipe() and compares them against
 the full table inventory from the bootstrap SQL.
 """
 
+import json
 import re
 import os
 import sys
@@ -19,27 +20,27 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 SQL_C = os.path.join(REPO_ROOT, "src", "sql.c")
 BOOTSTRAP_SQL = os.path.join(REPO_ROOT, "migrations", "bootstrap_multithread_safe.sql")
 DURIS_SQL = os.path.join(REPO_ROOT, "migrations", "bootstrap_legacy_baseline.sql")
+LIFECYCLE_MANIFEST = os.path.join(
+    REPO_ROOT, "migrations", "data_lifecycle_manifest.json"
+)
 
-# Tables that must NOT be reset (RETAIN or REBUILD)
-RETAIN_TABLES = {
-    "accounts", "account_banks", "account_ips", "multiplay_whitelist",
-    "races", "classes", "zones", "items", "mud_info", "pages",
-    "categories", "changes", "engine", "ping", "uses",
-    "prepstatment_duris_sql",
-    "towns",  # REBUILD
-    "kingdom_land",  # REBUILD
-}
+with open(LIFECYCLE_MANIFEST, "r") as manifest_file:
+    lifecycle_entries = json.load(manifest_file)["entries"]
 
-# Tables that are DEACTIVATED (not deleted) by pwipe
-DEACTIVATE_TABLES = {
-    "account_characters",
-    "player_data",  # active = 0
-}
 
-# Tables that are handled by UPDATE (not DELETE) in pwipe
-UPDATE_TABLES = {
-    "outposts", "nexus_stones", "level_cap",
-}
+def database_tables_for(action):
+    """Return canonical database-table classifications for a season action."""
+    return {
+        entry["locator"]
+        for entry in lifecycle_entries
+        if entry["kind"] == "database_table" and entry["season_action"] == action
+    }
+
+
+RETAIN_TABLES = database_tables_for("retain")
+DEACTIVATE_TABLES = database_tables_for("deactivate")
+UPDATE_TABLES = database_tables_for("reset_update")
+RESET_TABLES = database_tables_for("reset_delete")
 
 errors = []
 checks_passed = 0
@@ -126,38 +127,17 @@ for t in DEACTIVATE_TABLES:
         checks_passed += 1
         print(f"DEACTIVATE table {t}: ok (uses UPDATE)")
 
-# ── Test 4: Critical season-scoped tables must be in DELETE FROM ──
-critical_reset_tables = [
-    "player_items", "player_affects", "player_skills", "player_spellbooks",
-    "player_languages", "player_timers", "player_pets",
-    "player_pet_items", "player_pet_item_affects", "player_pet_item_extra_descr",
-    "player_item_affects", "player_item_extra_descr",
-    "lockers", "locker_items", "locker_item_affects", "locker_item_extra_descr",
-    "private_chests", "private_chest_log",
-    "corpses", "corpse_items", "corpse_item_affects", "corpse_item_extra_descr",
-    "saved_items", "saved_item_affects", "saved_item_extra_descr",
-    "ships", "ship_slots", "ship_crew", "ship_armor",
-    "guilds", "guild_members", "guild_ranks",
-    "artifacts", "artifacts_mortal",
-    "frag_leaderboard", "statistics", "pkill_event", "pkill_info",
-    "shopkeepers", "shopkeeper_items", "shopkeeper_affects",
-    "siege_items", "siege_item_affects", "siege_item_extra_descr",
-    "polls", "poll_options", "poll_votes",
-    "boons_shop",
-    "eq_drop", "racewar_stat_mods",
-    "player_recipes", "player_shapechanges", "player_undead_slots",
-    "player_witnesses", "player_forged_items", "player_granted_cmds", "player_intros",
-    "account_lockers", "account_locker_items", "account_locker_access",
-    "account_locker_item_affects", "account_locker_item_extra_descr",
-    "locker_chests", "locker_activity_log", "locker_kickouts", "locker_session_state",
-]
-
-missing_critical = [t for t in critical_reset_tables if t not in delete_tables]
-if missing_critical:
-    errors.append(f"Critical RESET tables missing from DELETE FROM: {sorted(missing_critical)}")
+# ── Test 4: Every canonical RESET table must be in DELETE FROM ──
+missing_reset = RESET_TABLES - delete_tables
+unknown_reset = delete_tables - RESET_TABLES
+if missing_reset or unknown_reset:
+    errors.append(
+        "Lifecycle RESET classification differs from DELETE FROM: "
+        f"missing={sorted(missing_reset)} unknown={sorted(unknown_reset)}"
+    )
 else:
     checks_passed += 1
-    print(f"Critical RESET tables in DELETE FROM: ok ({len(critical_reset_tables)} tables)")
+    print(f"Canonical RESET tables in DELETE FROM: ok ({len(RESET_TABLES)} tables)")
 
 # ── Test 5: Dependency ordering - child tables before parent tables ──
 # Check that affects/extra_descr are deleted before their parent item tables
