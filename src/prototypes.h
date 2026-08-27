@@ -1006,6 +1006,7 @@ void nevent_periodic_complete(P_nevent);
 void nevent_periodic_mark_failure(const char *);
 void nevent_periodic_retry_after(unsigned long long, const char *);
 void nevent_periodic_next_after(unsigned long long);
+void nevent_periodic_continue_after(unsigned long long);
 void nevent_periodic_watchdog();
 size_t nevent_periodic_copy_health(nevent_periodic_health *, size_t);
 nevent_periodic_summary nevent_periodic_summary_copy();
@@ -1194,6 +1195,7 @@ void writeHallOfFame(P_char ch, char thekiller[1024]);
 /* leaderboard.c */
 void checkLeaderBoard(P_char ch);
 long getLeaderBoardPts(P_char ch);
+long getLeaderBoardPtsWithShipFrags(P_char ch, int ship_frags);
 
 /* graph.c */
 

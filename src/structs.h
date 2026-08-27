@@ -2140,6 +2140,8 @@ struct nevent_periodic_health
 	unsigned long long last_started_tick;
 	unsigned long long last_success_tick;
 	unsigned long long total_runs;
+	unsigned long long completed_runs;
+	unsigned long long continuation_slices;
 	unsigned long long callback_failures;
 	unsigned long long consecutive_failures;
 	unsigned long long schedule_failures;

@@ -2383,8 +2383,8 @@ static void show_world_periodic_events(P_char ch)
 
 	snprintf(
 		output, sizeof(output),
-		"Periodic nevent jobs: %zu\n\n key                         | state    | policy | next due   | remain | last ok    | runs | fail | missed | watch | dup\n"
-		"-----------------------------|----------|--------|------------|--------|------------|------|------|--------|-------|----\n",
+		"Periodic nevent jobs: %zu\n\n key                         | state    | policy | next due   | remain | last ok    | calls | done | slice | fail | missed | watch | dup\n"
+		"-----------------------------|----------|--------|------------|--------|------------|-------|------|-------|------|--------|-------|----\n",
 		total);
 	for (size_t index = 0; index < shown; ++index)
 	{
@@ -2407,10 +2407,11 @@ static void show_world_periodic_events(P_char ch)
 			snprintf(last_success, sizeof(last_success), "-");
 		checked_snprintf(
 			line, sizeof(line),
-			" %-28s | %-8s | %-6s | %-10llu | %-6llu | %-10s | %-4llu | %-4llu | %-6llu | %-5llu | %-3llu\n",
+			" %-28s | %-8s | %-6s | %-10llu | %-6llu | %-10s | %-5llu | %-4llu | %-5llu | %-4llu | %-6llu | %-5llu | %-3llu\n",
 			job.key, state, policy, job.next_due_tick, remaining, last_success,
-			job.total_runs, job.callback_failures + job.schedule_failures,
-			job.missed_runs, job.watchdog_rearms, job.duplicates_suppressed);
+			job.total_runs, job.completed_runs, job.continuation_slices,
+			job.callback_failures + job.schedule_failures, job.missed_runs,
+			job.watchdog_rearms, job.duplicates_suppressed);
 		strlcat(output, line, sizeof(output));
 		if (job.last_failure[0])
 		{

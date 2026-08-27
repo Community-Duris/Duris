@@ -21,6 +21,7 @@ struct nevent_periodic_job_state
 	bool disarming;
 	bool running;
 	bool run_failed;
+	bool run_continuation;
 	bool next_delay_overridden;
 	bool has_started;
 	bool has_succeeded;
@@ -32,6 +33,8 @@ struct nevent_periodic_job_state
 	unsigned long long last_started_tick;
 	unsigned long long last_success_tick;
 	unsigned long long total_runs;
+	unsigned long long completed_runs;
+	unsigned long long continuation_slices;
 	unsigned long long callback_failures;
 	unsigned long long consecutive_failures;
 	unsigned long long schedule_failures;
@@ -260,6 +263,7 @@ bool nevent_periodic_begin(P_nevent event)
 	job->running = true;
 	job->running_event = event;
 	job->run_failed = false;
+	job->run_continuation = false;
 	job->next_delay_overridden = false;
 	job->has_started = true;
 	job->last_started_tick = ne_event_tick;
@@ -277,16 +281,19 @@ void nevent_periodic_complete(P_nevent event)
 		panic_corruption("nevent_periodic", "completion does not match the running job");
 
 	nevent_periodic_job_state *job = periodic_current_job;
+	if (job->run_continuation)
+		job->continuation_slices++;
 	if (job->run_failed)
 	{
 		job->callback_failures++;
 		job->consecutive_failures++;
 	}
-	else
+	else if (!job->run_continuation)
 	{
 		job->has_succeeded = true;
 		job->last_success_tick = ne_event_tick;
 		job->consecutive_failures = 0;
+		job->completed_runs++;
 	}
 
 	if (!job->enabled)
@@ -338,6 +345,18 @@ void nevent_periodic_next_after(unsigned long long delay)
 		return;
 	if (!periodic_current_job || delay == 0 || delay > INT_MAX)
 		panic_corruption("nevent_periodic", "invalid periodic successor delay %llu", delay);
+	periodic_current_job->next_delay = delay;
+	periodic_current_job->next_delay_overridden = true;
+}
+
+void nevent_periodic_continue_after(unsigned long long delay)
+{
+	if (!nevent_require_game_thread("nevent_periodic_continue_after"))
+		return;
+	if (!periodic_current_job || delay == 0 || delay > INT_MAX)
+		panic_corruption("nevent_periodic", "invalid periodic continuation delay %llu",
+				 delay);
+	periodic_current_job->run_continuation = true;
 	periodic_current_job->next_delay = delay;
 	periodic_current_job->next_delay_overridden = true;
 }
@@ -424,6 +443,8 @@ size_t nevent_periodic_copy_health(nevent_periodic_health *health, size_t capaci
 		item->last_started_tick = job->last_started_tick;
 		item->last_success_tick = job->last_success_tick;
 		item->total_runs = job->total_runs;
+		item->completed_runs = job->completed_runs;
+		item->continuation_slices = job->continuation_slices;
 		item->callback_failures = job->callback_failures;
 		item->consecutive_failures = job->consecutive_failures;
 		item->schedule_failures = job->schedule_failures;

@@ -30,7 +30,9 @@
 #include "ships/ships.h"
 
 #include <chrono>
+#include <new>
 #include <thread>
+#include <vector>
 
 #ifndef __NO_MYSQL__
 #include <cjson/cJSON.h>
@@ -1057,7 +1059,48 @@ struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy(void)
 
 void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
-	flush_dirty_players();
+	constexpr size_t DIRTY_PLAYER_BATCH_SIZE = 8;
+	static std::vector<uint64_t> character_ids;
+	static size_t cursor = 0;
+
+	if (character_ids.empty())
+	{
+		try
+		{
+			for (P_char character = character_list; character;
+			     character = character->next)
+				if (IS_PC(character) && GET_PID(character) > 0 &&
+				    character->runtime_id)
+					character_ids.push_back(character->runtime_id);
+		}
+		catch (const std::bad_alloc &)
+		{
+			character_ids.clear();
+			cursor = 0;
+			nevent_periodic_retry_after(WAIT_SEC,
+						    "dirty-player snapshot allocation failed");
+			return;
+		}
+	}
+
+	size_t processed = 0;
+	while (cursor < character_ids.size() && processed < DIRTY_PLAYER_BATCH_SIZE)
+	{
+		P_char character = find_character_by_runtime_id(character_ids[cursor++]);
+		processed++;
+		if (character && IS_PC(character) && GET_PID(character) > 0)
+			player_save_pipeline_checkpoint_dirty(character, RENT_CRASH,
+							      get_room_vnum(character));
+	}
+
+	if (cursor < character_ids.size())
+	{
+		nevent_periodic_continue_after(1);
+		return;
+	}
+
+	character_ids.clear();
+	cursor = 0;
 	if (redis_enabled)
 		redis_flush_floor_drops();
 }

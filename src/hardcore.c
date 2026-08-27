@@ -288,13 +288,10 @@ void checkHallOfFame(P_char ch, char killer[1024])
 	return;
 }
 
-long getLeaderBoardPts(P_char ch)
+long getLeaderBoardPtsWithShipFrags(P_char ch, int ship_frags)
 {
 	if (!IS_PC(ch))
 		return 0;
-
-	update_shipfrags();
-	int sf = calculate_shipfrags(ch);
 
 	const struct hardcore_config *config = hardcore_config_get();
 
@@ -303,11 +300,20 @@ long getLeaderBoardPts(P_char ch)
 
 	long leaderpts = (GET_LEVEL(ch) * config->score_level_points) +
 			 (ch->points.curr_exp / config->score_experience_divisor) +
-			 (sf * config->score_frag_points) +
+			 (ship_frags * config->score_frag_points) +
 			 (ch->only.pc->frags * config->score_frag_points) -
 			 (ch->only.pc->numb_deaths * config->score_death_penalty_points);
 
 	return leaderpts;
+}
+
+long getLeaderBoardPts(P_char ch)
+{
+	if (!IS_PC(ch))
+		return 0;
+
+	update_shipfrags();
+	return getLeaderBoardPtsWithShipFrags(ch, calculate_shipfrags(ch));
 }
 
 void displayLeader(P_char ch, char * /*arg*/, int /*cmd*/)

@@ -79,6 +79,8 @@ static void periodic_callback(P_char, P_char, P_obj, void *)
 		nevent_periodic_retry_after(3, "transient database failure");
 	else if (callback_mode == 1 && callback_runs == 2)
 		nevent_periodic_next_after(7);
+	else if (callback_mode == 2 && callback_runs == 1)
+		nevent_periodic_continue_after(1);
 }
 
 static void second_callback(P_char, P_char, P_obj, void *)
@@ -206,6 +208,26 @@ static void test_fixed_rate_and_missed_runs()
 	require(item.next_due_tick == 45 && item.missed_runs == 2, 32);
 }
 
+static void test_continuation_is_not_a_completed_run()
+{
+	reset();
+	callback_mode = 2;
+	require(nevent_periodic_register("sliced", periodic_callback, 2, 10,
+					 nevent_periodic_policy::fixed_delay, true) ==
+			nevent_periodic_result::registered,
+		35);
+	execute(only_active_event(), 2);
+	nevent_periodic_health item = health();
+	require(item.next_due_tick == 3 && item.total_runs == 1 && item.completed_runs == 0 &&
+			item.continuation_slices == 1 && !item.has_succeeded,
+		36);
+	execute(only_active_event(), 3);
+	item = health();
+	require(item.next_due_tick == 13 && item.total_runs == 2 && item.completed_runs == 1 &&
+			item.continuation_slices == 1 && item.last_success_tick == 3,
+		37);
+}
+
 static void test_watchdog_rearms_missing_successor()
 {
 	reset();
@@ -261,6 +283,7 @@ int main()
 	test_unique_fixed_delay_job();
 	test_retry_and_success_override();
 	test_fixed_rate_and_missed_runs();
+	test_continuation_is_not_a_completed_run();
 	test_watchdog_rearms_missing_successor();
 	test_disabled_job_enablement();
 	reset();

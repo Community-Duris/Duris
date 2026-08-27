@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 9 periodic registry complete
+Status: Implementation in progress; checkpoint 9 complete
 
-Last implementation update: 2026-08-28 00:20 IDT
+Last implementation update: 2026-08-28 00:37 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -26,7 +26,7 @@ contracts, formatting, and the server build pass.
 | 6 | NEV-04, NEV-11, NEV-12, and NEV-22 absolute due-tick core, rescheduling, and harness foundation | Complete | ASan/UBSan three-phase boundary matrix and 1,200-tick oracle, 225 Python regressions, native signal test, format check, server build |
 | 7 | NEV-09, NEV-13, NEV-15, and NEV-22 priority, aging, catch-up, and range safety | Complete | ASan/UBSan priority-on/off, mixed-deferral, continuous-arrival, convergence, unlimited, and invalid-range modes; 225 Python regressions; native signal test; format check; server build |
 | 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Complete | Typed rejection/success/replace and global/owner chronology in the ASan/UBSan scheduler harness; 225 Python regressions; native signal test; format check; server build |
-| 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | In progress | Core hardening and NEV-17 registry complete: ASan/UBSan owner-link, corruption, thread-boundary, unique-key, cadence, retry, missed-run, conditional-enable, and watchdog cases; 225 Python regressions; native signal test; format check; server build |
+| 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | Complete | ASan/UBSan owner-link, corruption, thread-boundary, unique-key, cadence, retry, continuation, missed-run, conditional-enable, and watchdog cases; bounded-maintenance contracts; 226 Python regressions; native signal test; format check; server build |
 | 10 | NEV-21 documentation and legacy cleanup | Pending | Not started |
 
 Checkpoint 1 replaced the fixed 6,000-entry array and sentinel scan with a
@@ -165,6 +165,24 @@ the non-mutating integrity pass and is exposed through `world events periodic`.
 The sanitizer harness covers uniqueness, conflicting definitions, both cadence
 policies, retries, recovery, missed intervals, conditional enablement, and
 deliberate successor loss.
+
+The third checkpoint 9 slice added registry-owned continuation slices, with
+separate callback, completed-cycle, and continuation counters in health and
+admin output. Artifact expiry now processes one row per pulse, artifact wars
+uses a bounded aggregate page of four violating owners and one timer update per
+owner, and artifact binding pages eight rows at a time. Dirty-player checkpoints
+snapshot stable character identities and capture at most eight players per
+pulse. Surname updates likewise use stable identities, process four players per
+pulse, snapshot the ship-frag contribution once per cycle, and replace the
+twenty full ship scans with one bounded top-twenty pass. The legacy database
+handle and world mutations remain game-thread-only; bounded `LIMIT`/aggregate
+queries avoid transferring an unbounded result while continuation cursors keep
+the expensive per-row application work below the scheduler boundary. Cheap
+identity snapshot walks remain linear and are included in the already-corrected
+full callback timing. The continuation path is exercised under ASan/UBSan, the
+new maintenance contract covers every sliced callback, and all 226 Python
+regressions, the native signal test, formatting, and the strict server build
+pass.
 
 The executive assessment and finding evidence below preserve the original
 pre-remediation review. Per-finding implementation status and the checkpoint
@@ -809,6 +827,13 @@ a convergence property under a bounded arrival rate.
 
 ### NEV-14: Heavy callbacks can monopolize the game thread
 
+Implementation status (2026-08-28): Fixed and verified in the third checkpoint
+9 slice. Database result sets and heavyweight application work are bounded per
+pulse, continuations retain stable identities or ordered SQL cursors, full-cycle
+success is distinct from an intermediate slice, and ship-frag preparation is a
+single pass shared by the surname cycle. The evidence below describes the
+pre-fix implementation.
+
 The pulse budget is checked between callbacks. It cannot interrupt a callback
 that performs synchronous database work or large global scans. Representative
 callbacks include:
@@ -1000,14 +1025,15 @@ material, and remove or quarantine unused legacy interfaces.
 
 ### NEV-22: Tests assert source strings, not scheduler behavior
 
-Implementation status (2026-08-27): In progress. Checkpoints 6 and 7 added the
-ASan/UBSan deterministic runtime harness and completed the phase/boundary,
-current-bucket, shared-revolution, reschedule/accounting, randomized
-absolute-due oracle, priority-on/off, mixed-deferral, continuous-arrival
-fairness, and catch-up convergence portions below. Existing executable
-regressions cover the listed cancellation, ownership, payload, lifetime,
-name-loading, and periodic rearm cases. Periodic uniqueness remains part of
-checkpoint 9.
+Implementation status (2026-08-28): Fixed and verified across checkpoints 1
+through 9. The ASan/UBSan deterministic harness covers the phase/boundary,
+current-bucket, shared-revolution, reschedule/accounting, randomized absolute-due
+oracle, priority-on/off, mixed-deferral, continuous-arrival fairness, catch-up
+convergence, cancellation, ownership, stable lifetimes, and typed payload cases.
+Separate executable harnesses cover name saturation, ship generations, periodic
+uniqueness, cadence, retries, watchdog recovery, and continuation completion.
+Source contracts remain supplemental checks for production wiring and bounded
+maintenance query shapes. The evidence below describes the pre-fix test suite.
 
 The focused nevent tests passed, but inspection shows they mainly read source
 files and assert that particular identifiers or snippets exist. These tests can
@@ -1182,6 +1208,11 @@ The second slice replaced the earlier rearm harness with
 `tests/async/test_nevent_periodic_rearm_runtime.py`, which exercises the real
 registry under ASan/UBSan. The complete validation set passed again after all
 eleven operational callbacks were migrated.
+The third slice extended that executable harness with continuation-cycle health
+semantics and added `tests/async/test_nevent_maintenance_slicing.py` for the
+production callback budgets, stable-ID resolution, SQL cursors, shared
+ship-frag snapshot, and operator counters. The complete 226-test Python suite,
+native signal test, strict server build, and formatting check passed.
 
 `make -C src -j2` completed and linked `bin/server/dms_new` successfully. The
 built binary is a 64-bit PIE. A symbol/data probe found 6,220 text symbols in the
