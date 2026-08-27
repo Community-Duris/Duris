@@ -1708,11 +1708,8 @@ struct ShipData *redis_load_ship_snapshot(const char *owner_name)
 	if (!redis_ship_snapshot_from_json(root, ship))
 	{
 		cJSON_Delete(root);
-		if (ship->ownername)
-			FREE(ship->ownername);
-		if (ship->name)
-			FREE(ship->name);
-		FREE(ship);
+		shipObjHash.erase(ship);
+		delete_ship(ship, true);
 		return NULL;
 	}
 

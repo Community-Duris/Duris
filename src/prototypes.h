@@ -1013,7 +1013,6 @@ bool nevent_periodic_event_is_valid(P_nevent);
 /* new_events.c */
 
 bool check_nevents();
-void disarm_single_event(P_nevent);
 
 // epic.c
 void refund_epic_skills(P_char ch);

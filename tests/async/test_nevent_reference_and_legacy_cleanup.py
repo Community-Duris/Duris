@@ -21,6 +21,7 @@ structs = read("src/structs.h")
 reference = read("docs/reference/EVENTS.md")
 architecture = read("docs/reference/ARCHITECTURE.md")
 configuration = read("docs/operations/CONFIGURATION.md")
+review = read("docs/ongoing-projects/ongoing/nevent-system-review.md")
 all_source = "\n".join(
     path.read_text(encoding="utf-8", errors="replace")
     for path in SRC.rglob("*")
@@ -50,6 +51,7 @@ for retired in (
     "ClearObjEvents",
     "clear_char_nevents",
     "clear_events_type",
+    "disarm_single_event",
     "EVENT_HIT_REGEN",
     "EVENT_MOVE_REGEN",
     "EVENT_MANA_REGEN",
@@ -64,6 +66,7 @@ assert re.search(r"\bevent_counter\b", events_callbacks) is None
 assert re.search(r"\bdead_event_pool\b", events_callbacks) is None
 assert "const char *event_names[]" not in events_callbacks
 assert "extern const char *event_names[]" not in all_source
+assert "sizeof(NULL)" not in all_source
 assert "File: new_events.c" in scheduler
 
 # The reference describes the scheduler that exists today and rejects the
@@ -77,6 +80,9 @@ for current_contract in (
     "game thread",
     "dynamic callback map",
     "observation-only",
+    "process-local and are never persisted",
+    "durable one-shot nevents",
+    "authoritative MySQL, journal, or Redis recovery pipeline",
 ):
     assert current_contract in reference
 
@@ -90,6 +96,16 @@ for stale_contract in (
 
 assert "timer decremented" not in architecture
 assert "Player-event promotion" not in architecture
+
+current_architecture = review[
+    review.index("## Current architecture") : review.index("## Detailed findings")
+]
+assert "object-owned events are\nprepended" not in current_architecture
+assert "attempts one promotion" not in current_architecture
+assert "object-owned events are\nappended" in current_architecture
+assert "There are currently no durable one-shot nevents." in current_architecture
+assert "four-pulse repayment window" in current_architecture
+
 for setting in (
     "DURIS_NEVENT_CATCHUP_MAX_EXTENSION_USEC",
     "DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS",

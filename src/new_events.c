@@ -646,14 +646,6 @@ bool check_obj_nevents(P_obj obj)
 	return obj->nevents_tail == previous;
 }
 
-// Compatibility wrappers now use the scheduler-owned cancellation lifecycle.
-void disarm_single_event(P_nevent event)
-{
-	if (!nevent_require_game_thread("disarm_single_event"))
-		return;
-	nevent_cancel(nevent_handle_from_event(event));
-}
-
 void disarm_char_nevents(P_char ch, event_func_type func)
 {
 	P_nevent event, next;

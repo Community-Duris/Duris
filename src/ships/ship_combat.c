@@ -1472,8 +1472,7 @@ int fire_weapon(P_ship ship, int w_num, int t_contact, int hit_chance, P_char ch
 	vd.target = target->runtime_ref;
 	vd.weapon_index = w_num;
 	vd.hit_chance = hit_chance;
-	add_event(volley_hit_event, (int)volley_time, NULL, NULL, NULL, 0, (void *)&vd,
-		  sizeof(VolleyData));
+	add_event(volley_hit_event, (int)volley_time, NULL, NULL, NULL, 0, &vd, sizeof(VolleyData));
 
 	ship->timer[T_BSTATION] = BSTATION;
 

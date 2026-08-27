@@ -2930,8 +2930,7 @@ void enter_game(P_desc d)
 		if (!affected_by_spell(ch, TAG_RACE_CHANGE))
 		{
 			// First race change in 5 sec.
-			add_event(event_change_yzar_race, 5 * WAIT_SEC, ch, ch, NULL, 0, NULL,
-				  sizeof(NULL));
+			add_event(event_change_yzar_race, 5 * WAIT_SEC, ch, ch, NULL, 0, NULL, 0);
 		}
 		else
 		{
@@ -2945,7 +2944,7 @@ void enter_game(P_desc d)
 				(300 - ne_event_time(get_scheduled(event_another_hour)));
 
 			add_event(event_change_yzar_race, time_to_witching_hour, ch, ch, NULL, 0,
-				  NULL, sizeof(NULL));
+				  NULL, 0);
 		}
 	}
 

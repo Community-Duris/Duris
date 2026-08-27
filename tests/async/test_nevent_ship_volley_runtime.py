@@ -173,6 +173,8 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-volley-") as directory:
 ships = (SRC / "ships" / "ships.h").read_text(encoding="ascii")
 base = (SRC / "ships" / "ship_base.c").read_text(encoding="ascii")
 combat = (SRC / "ships" / "ship_combat.c").read_text(encoding="ascii")
+redis = (SRC / "redis.c").read_text(encoding="ascii")
+sql_player = (SRC / "sql_player.c").read_text(encoding="ascii")
 
 volley = ships[ships.index("struct VolleyData") : ships.index("extern struct ShipMap")]
 assert "P_ship" not in volley
@@ -185,10 +187,33 @@ callback = combat[
 assert callback.index("resolve_volley_endpoints") < callback.index("SHIP_DOCKED(target)")
 assert "vd->attacker" not in callback
 assert "vd->target" not in callback
+volley_schedule = combat[
+    combat.index("VolleyData vd = {}") : combat.index(
+        "ship->timer[T_BSTATION]", combat.index("VolleyData vd = {}")
+    )
+]
+assert "(void *)&vd" not in volley_schedule
+assert "&vd" in volley_schedule
 
 constructor = base[base.index("struct ShipData *new_ship") : base.index("void name_ship")]
 destructor = base[base.index("void delete_ship(P_ship") : base.index("void clear_references_to_ship")]
 assert "register_ship_runtime(ship);" in constructor
 assert destructor.index("unregister_ship_runtime(ship);") < destructor.index("FREE(ship);")
+
+redis_loader = redis[
+    redis.index("struct ShipData *redis_load_ship_snapshot") : redis.index(
+        "void redis_invalidate_ship_snapshot"
+    )
+]
+assert "FREE(ship);" not in redis_loader
+assert redis_loader.index("shipObjHash.erase(ship);") < redis_loader.index("delete_ship(ship, true);")
+
+sql_loader = sql_player[
+    sql_player.index("P_ship sql_load_ship(") : sql_player.index(
+        "bool sql_load_all_ships()"
+    )
+]
+failure = sql_loader[sql_loader.index('component=dependent_rows outcome=failure') :]
+assert failure.index("shipObjHash.erase(ship);") < failure.index("delete_ship(ship, true);")
 
 print("ship volley stable-reference tests passed under ASan/UBSan")

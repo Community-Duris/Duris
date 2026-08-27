@@ -8,8 +8,8 @@ The implementation is split by responsibility:
 
 - `src/new_events.c` owns the timer wheel, scheduling, ordering, execution,
   cancellation, overload recovery, diagnostics, and invariant checks.
-- `src/nevent_periodic.c` owns durable in-process registration and health for
-  recurring jobs.
+- `src/nevent_periodic.c` owns the process-local registry, uniqueness, cadence,
+  and health of recurring jobs.
 - `src/events.c` contains callbacks and callback-specific helpers such as
   regeneration, command waits, room events, and zone resets. It is not a
   second scheduler.
@@ -184,6 +184,33 @@ slice caps are eight artifact-bind rows, one artifact-expiry row, four
 artifact-war owners, eight dirty-player checkpoints, and four surname players.
 Each logical scan uses stable cursors or runtime-ID snapshots so entity removal
 between slices cannot invalidate traversal state.
+
+## Restart and copyover durability
+
+The wheel, its records, payloads, handles, and absolute deadlines are
+process-local and are never persisted. The event contract has three explicit
+durability classes:
+
+- Ephemeral gameplay events include combat actions, casts, regeneration,
+  command waits, animation, and similar owner-bound timers. A process restart
+  may discard them; continued gameplay and owner-loading paths create new
+  records as needed.
+- Reconstructible events include room, zone, weather, and loaded-owner timers.
+  Boot and load paths rebuild them from authoritative world or player state.
+  Copyover combat restoration is a separate recovery path; it does not restore
+  old wheel records or their remaining delay.
+- Operational periodic jobs are registered on every boot. The registry
+  guarantees uniqueness, cadence, and watchdog recovery only within the
+  running process. Redis-dependent jobs remain registered but disabled until
+  their dependency and recovery phase permit enablement.
+
+Persistence-critical player, ship, artifact, and world state uses its
+authoritative MySQL, journal, or Redis recovery pipeline. Those pipelines do
+not depend on a one-shot nevent record surviving a restart. There are currently
+no durable one-shot nevents. A future deadline that must survive restart must
+persist domain state plus the deadline and reconstruct a new process-local
+callback after recovery; persisting a wheel pointer, payload address, or
+`nevent_handle` is invalid.
 
 ## Game-thread ownership
 

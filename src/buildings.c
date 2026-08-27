@@ -249,25 +249,6 @@ int check_outpost_death(P_char ch, P_char killer)
 		}
 	}
 
-	/*  and this doesn't work...
-	// hack to clear event damage spells killing outpost multiple times
-	if (current_event && current_event->actor.a_ch == ch)
-	  current_event = NULL;
-	while (get_linking_char(ch, LNK_EVENT))
-	{
-	  if (P_char evch = get_linking_char(ch, LNK_EVENT))
-	  {
-	    P_nevent nevent = NULL;
-	    LOOP_EVENTS(nevent, evch->nevents)
-	  if (nevent->victim == ch)
-	  {
-	    nevent->victim = NULL;
-	    disarm_single_event(nevent);
-	  }
-	  }
-	}
-	*/
-
 	clear_all_links(ch);
 	disarm_char_nevents(ch, NULL);
 

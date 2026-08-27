@@ -2419,7 +2419,7 @@ void obj_affect_remove(P_obj obj, struct obj_affect *af)
 			continue;
 		if (*((struct obj_affect **)e->data) == af)
 		{
-			disarm_single_event(e);
+			nevent_cancel(nevent_handle_from_event(e));
 			break;
 		}
 	}

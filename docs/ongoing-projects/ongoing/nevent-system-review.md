@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation complete; final validation complete
+Status: Implementation complete; post-completion audit validation pending
 
-Last implementation update: 2026-08-28 00:53 IDT
+Last implementation update: 2026-08-28 01:12 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -28,6 +28,7 @@ contracts, formatting, and the server build pass.
 | 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Complete | Typed rejection/success/replace and global/owner chronology in the ASan/UBSan scheduler harness; 225 Python regressions; native signal test; format check; server build |
 | 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | Complete | ASan/UBSan owner-link, corruption, thread-boundary, unique-key, cadence, retry, continuation, missed-run, conditional-enable, and watchdog cases; bounded-maintenance contracts; 226 Python regressions; native signal test; format check; server build |
 | 10 | NEV-21 documentation and legacy cleanup | Complete | Current-reference and retired-interface source contract; 227 Python regressions; native signal test; format check; strict server build |
+| 11 | Independent completion audit: rejected callers, alternate ship teardown, final legacy and durability closure | In progress | Focused ASan/UBSan runtime and source contracts, formatting, strict build, and security gate pass; full maintained regression gate and final publication pending |
 
 Checkpoint 1 replaced the fixed 6,000-entry array and sentinel scan with a
 dynamically sized, validated address-to-name registry. Duplicate addresses are
@@ -196,6 +197,47 @@ new reference/legacy source contract prevents those surfaces and stale timing
 claims from returning. All 227 Python regressions, the native signal test,
 formatting check, and strict server build pass.
 
+Checkpoint 11 is an independent completion audit of all 22 findings rather than
+a new scheduler design. It found four no-payload Yzar timers that the typed
+result API rejected as `NULL, sizeof(NULL)`, two failed ship-load paths that
+bypassed hash/identity-aware teardown, one call-site cast that bypassed the raw
+payload type check, the last single-event compatibility wrapper, and stale
+prepend/promotion/durability prose in this review. The implementation now uses
+valid zero-length payloads, routes every constructed-ship failure through
+registered deletion after hash removal, keeps the volley payload on the typed
+raw path, calls `nevent_cancel` directly, and explicitly documents restart and
+copyover behavior. The scheduler, cancellation, typed-payload, ship-volley, and
+periodic ASan/UBSan harnesses pass, as do the maintenance, command-gate, source
+contract, formatting, strict-build, and security checks. The full maintained
+regression gate remains before this checkpoint is marked complete.
+
+### Completion evidence matrix
+
+| Finding | Primary implementation evidence | Regression or contract evidence |
+|---|---|---|
+| NEV-01 | Dynamic validated registry in `src/event_names.c` | `test_event_name_registry.py` saturation/reload ASan/UBSan harness |
+| NEV-02 | Trivial raw-payload guard and owned destructor path | `test_nevent_typed_payload_runtime.py` construction/destruction and compile rejection |
+| NEV-03 | Slot-generation ship identities and registered teardown | `test_nevent_ship_volley_runtime.py` deletion/ABA harness plus alternate-load teardown contract |
+| NEV-04 | Absolute `due_tick`, phase clamp, and sequence cutoff | `test_nevent_scheduler_runtime.py` three-phase boundary matrix and oracle |
+| NEV-05 | Sequence-validated centralized cancellation/destruction | `test_nevent_cancellation_runtime.py` pool/counter/debt balance |
+| NEV-06 | Unconditional registry-owned dirty-player job | Periodic runtime harness and `test_player_save_pipeline.py` |
+| NEV-07 | Registry successor, retries, and watchdog for artifact jobs | Periodic runtime harness success/failure/empty-result modes |
+| NEV-08 | Owned `hunt_data`, stable character IDs, current exclusion | Typed-payload runtime harness and all-call-site contract |
+| NEV-09 | `(due_tick, effective_priority, sequence)` ordering with aging | Scheduler priority-off/on, aging, and continuous-arrival modes |
+| NEV-10 | Link break clears target and enters cancellation lifecycle | Cancellation victim-link ASan/UBSan cases |
+| NEV-11 | One heartbeat tick advanced atomically after the pass | Scheduler phase matrix and main-loop source contract |
+| NEV-12 | Scheduler-owned reschedule/advance operations | Reschedule runtime cases and no-external-link-mutation audit |
+| NEV-13 | Count/cost/oldest-deadline debt with bounded repayment quota | Scheduler steady-arrival convergence mode |
+| NEV-14 | Bounded SQL pages and stable-ID continuation slices | `test_nevent_maintenance_slicing.py` |
+| NEV-15 | Checked configuration and saturating tick/budget arithmetic | Invalid-range and unlimited scheduler modes |
+| NEV-16 | Hash name lookup, dynamic analytics, owner tails, reciprocal links | Analytics contract and scheduler middle-removal cases |
+| NEV-17 | Unique boot registry and explicit restart/copyover classes | Periodic runtime harness and `docs/reference/EVENTS.md` contract |
+| NEV-18 | Observation-only full invariant inspection and safe admin rows | Scheduler deliberate-corruption cases |
+| NEV-19 | Typed results/handles, atomic replace, chronological lookup | Scheduler API mode and rejected-caller source contract |
+| NEV-20 | Bound game-thread checks on scheduler and registry APIs | Scheduler worker-thread rejection mode |
+| NEV-21 | Current reference plus retired numeric/wrapper surfaces | `test_nevent_reference_and_legacy_cleanup.py` |
+| NEV-22 | Deterministic real-code sanitizer harnesses and randomized oracle | Scheduler, cancellation, payload, ship, name, and periodic executable tests |
+
 The executive assessment and finding evidence below preserve the original
 pre-remediation review. Per-finding implementation status and the checkpoint
 ledger above are authoritative for the current tree.
@@ -353,28 +395,33 @@ reopens the pre-pass phase as one operation.
 ### Ownership and cancellation
 
 Character-owned events are appended to `ch->nevents`; object-owned events are
-prepended to `obj->nevents`. A distinct victim can be protected with a
-`char_link_data` link. Cancellation uses sequence-validated handles and defers
-reclamation only while an event pass is active. Hunt targets and delayed ship
-volleys use stable process-local identities rather than unowned embedded target
-pointers.
+appended to `obj->nevents`. Both lists keep reciprocal links and explicit tails,
+so insertion and removal of a known record are constant-time. A distinct victim
+can be protected with a `char_link_data` link. Cancellation uses
+sequence-validated handles and defers reclamation only while an event pass is
+active. Hunt targets and delayed ship volleys use stable process-local
+identities rather than unowned embedded target pointers.
 
 ### Boot and persistence
 
 `ne_init_events` creates the pool, clears the wheel, resets scheduler clocks,
-schedules room/zone work, and creates global recurring jobs. The wheel itself is
-not persisted. Boot and object/character reconstruction recreate selected event
-classes through bespoke paths. This gives three de facto durability classes -
-ephemeral, reconstructible, and operationally durable - but the API does not
-declare or enforce them.
+schedules room/zone work, and registers global recurring jobs. The wheel,
+payload addresses, handles, and deadlines are process-local and are not
+persisted. Ephemeral gameplay timers may be lost at restart, reconstructible
+room/zone/weather/loaded-owner timers are recreated from authoritative state,
+and operational jobs are uniquely registered on every boot. Persistence-critical
+state uses the MySQL, journal, or Redis recovery pipelines rather than relying
+on a one-shot wheel record. There are currently no durable one-shot nevents.
 
 ### Overload behavior
 
 The default pulse budget is 25 ms and 4,000 executed callbacks. When exhausted,
-the scheduler attempts one promotion, moves the remaining suffix to the next
-bucket, records deferral debt, and permits a limited catch-up extension on later
-pulses. The design protects the main loop from a callback burst, but a callback
-already in progress cannot be preempted.
+the scheduler reinserts every remaining due event in the unscanned suffix into
+the next bucket using the authoritative ordering tuple while preserving its
+original deadline. It records count, estimated-cost, and oldest-deadline debt,
+then grants bounded catch-up capacity over a four-pulse repayment window. The
+design protects the main loop from a callback burst, but a callback already in
+progress cannot be preempted.
 
 ## Detailed findings
 
