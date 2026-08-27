@@ -200,6 +200,8 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertNotIn("DROP TABLE mud_schema_migrations", ledger)
         adoption = (ROOT / "migrations/adopt_migration_baseline.sh").read_text()
         self.assertIn("verified_legacy_adoption", adoption)
+        self.assertIn("migration_runner.py\" run", adoption)
+        self.assertIn("verify_runtime_compatibility.sh", adoption)
         self.assertIn("TOTAL=141", legacy)
 
 

@@ -1073,7 +1073,8 @@ static bool sql_verify_boot_database(void)
 	const char *player_revision_probe =
 		"SELECT COUNT(*) FROM information_schema.columns "
 		"WHERE table_schema=DATABASE() AND table_name='player_data' AND "
-		"column_name='save_revision' AND column_type='bigint unsigned' AND "
+		"column_name='save_revision' AND data_type='bigint' AND "
+		"column_type LIKE '%unsigned' AND "
 		"is_nullable='NO' AND column_default='0'";
 	result = db_query("%s", player_revision_probe);
 	if (!result)
@@ -1495,15 +1496,19 @@ static bool sql_verify_metadata_fingerprint(void)
 	const char *query =
 		"SELECT CONCAT('T',CHAR(9),table_name,CHAR(9),engine,CHAR(9),table_collation) "
 		"FROM information_schema.tables WHERE table_schema=DATABASE() AND "
-		"table_type='BASE TABLE' UNION ALL SELECT CONCAT('C',CHAR(9),table_name,CHAR(9),"
-		"column_name,CHAR(9),ordinal_position,CHAR(9),data_type,CHAR(9),is_nullable,CHAR(9),"
-		"COALESCE(character_maximum_length,0),CHAR(9),COALESCE(numeric_precision,0),CHAR(9),"
-		"COALESCE(numeric_scale,0),CHAR(9),COALESCE(datetime_precision,0),CHAR(9),CASE "
-		"WHEN column_default IS NULL THEN '<NULL>' WHEN UPPER(column_default) LIKE "
+		"table_type='BASE TABLE' UNION ALL SELECT CONCAT('C',CHAR(9),c.table_name,CHAR(9),"
+		"c.column_name,CHAR(9),c.ordinal_position,CHAR(9),c.data_type,CHAR(9),c.is_nullable,"
+		"CHAR(9),COALESCE(c.character_maximum_length,0),CHAR(9),"
+		"COALESCE(c.numeric_precision,0),CHAR(9),COALESCE(c.numeric_scale,0),CHAR(9),"
+		"COALESCE(c.datetime_precision,0),CHAR(9),CASE WHEN c.column_default IS NULL THEN "
+		"'<NULL>' WHEN UPPER(c.column_default) LIKE "
 		"'CURRENT_TIMESTAMP%' THEN 'CURRENT_TIMESTAMP' ELSE TRIM(BOTH '\\'' FROM "
-		"column_default) END,CHAR(9),CONCAT(IF(LOWER(extra) LIKE '%auto_increment%','A',''),"
-		"IF(LOWER(extra) LIKE '%on update%','U',''),IF(LOWER(extra) LIKE "
-		"'%generated%','G',''))) FROM information_schema.columns WHERE table_schema=DATABASE() "
+		"c.column_default) END,CHAR(9),CONCAT(IF(LOWER(c.extra) LIKE "
+		"'%auto_increment%','A',''),IF(LOWER(c.extra) LIKE '%on update%','U',''),"
+		"IF(LOWER(c.extra) LIKE '%generated%','G',''))) FROM information_schema.columns c "
+		"JOIN information_schema.tables t ON t.table_schema=c.table_schema AND "
+		"t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE "
+		"c.table_schema=DATABASE() "
 		"UNION ALL SELECT CONCAT('I',CHAR(9),table_name,CHAR(9),index_name,CHAR(9),"
 		"non_unique,CHAR(9),seq_in_index,CHAR(9),column_name,CHAR(9),COALESCE(sub_part,0)) "
 		"FROM information_schema.statistics WHERE table_schema=DATABASE() UNION ALL SELECT "

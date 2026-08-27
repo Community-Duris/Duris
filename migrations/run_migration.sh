@@ -4,6 +4,19 @@
 # so continuing would make the remaining steps unsafe to reason about.
 set -e
 
+case "${1:-}" in
+    "") ;;
+    -h|--help)
+        printf 'usage: %s\n' "$0"
+        printf 'Applies the additive legacy migration to the configured local development database.\n'
+        exit 0
+        ;;
+    *)
+        printf 'unknown argument: %s\n' "$1" >&2
+        exit 2
+        ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 if [[ -f "$SCRIPT_DIR/.env" ]]; then
@@ -17,6 +30,9 @@ else
         "$SCRIPT_DIR/.env" "$PROJECT_ROOT/.env" >&2
     exit 2
 fi
+
+: "${REDIS_HOST:?REDIS_HOST is required}"
+: "${REDIS_PORT:?REDIS_PORT is required}"
 
 MYSQL_PWD="$DB_PASSWD"
 export MYSQL_PWD
@@ -194,7 +210,6 @@ ALTER TABLE outposts ENGINE=InnoDB;
 ALTER TABLE ping ENGINE=InnoDB;
 ALTER TABLE pkill_event ENGINE=InnoDB;
 ALTER TABLE pkill_info ENGINE=InnoDB;
-ALTER TABLE players_core ENGINE=InnoDB;
 ALTER TABLE poll_options ENGINE=InnoDB;
 ALTER TABLE poll_votes ENGINE=InnoDB;
 ALTER TABLE polls ENGINE=InnoDB;
@@ -3019,7 +3034,12 @@ run_check "adopt verified legacy migration baseline" "$SCRIPT_DIR/adopt_migratio
 STEP=$((STEP + 1))
 printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "flush redis cache"
 if command -v redis-cli &> /dev/null; then
-    redis-cli FLUSHDB > /dev/null 2>&1 && echo "ok" || echo "FAILED"
+    if redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" FLUSHDB > /dev/null 2>&1; then
+        echo "ok"
+    else
+        echo "FAILED"
+        FAILED=$((FAILED + 1))
+    fi
 else
     echo "skipped (redis-cli not found)"
 fi

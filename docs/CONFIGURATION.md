@@ -88,11 +88,10 @@ REDIS_PORT=6379
 REDIS_WORLD_STATE=TRUE
 ```
 
-Stop the server before clearing Redis state. `scripts/clear-redis.sh` runs a
-bare `redis-cli FLUSHDB`, so it uses the CLI's default endpoint and database
-(normally `127.0.0.1:6379`, database `0`) rather than reading `.env`. Use the
-script only for that exact dedicated local instance; otherwise connect and
-inspect the intended Redis database explicitly.
+Stop the server before clearing Redis state. `scripts/clear-redis.sh` loads `.env` and
+runs `redis-cli FLUSHDB` with the configured `REDIS_HOST` and `REDIS_PORT` (database
+`0`). Use the script only for that exact dedicated local instance; otherwise connect
+and inspect the intended Redis database explicitly.
 
 Redis uses a 250 ms connect timeout and 100 ms command timeout. A cache failure may
 degrade a report, while a world-generation failure preserves the prior generation and

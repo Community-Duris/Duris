@@ -188,11 +188,13 @@ class DocumentationContractTest(unittest.TestCase):
             "disposable database",
             "backed-up development clone",
             "Stop every writer",
-            "no help, inspect, or dry-run mode",
-            "begins work immediately",
-            "never run it merely to test",
+            "no dry-run mode",
+            "`--help` is safe",
+            "unknown argument is rejected",
+            "normal no-argument run begins work immediately",
             "redis-cli FLUSHDB",
-            "default endpoint",
+            "REDIS_HOST",
+            "REDIS_PORT",
             "does not make a shared Redis safe",
             "never use production",
             "MySQL DDL may already have committed",
@@ -210,7 +212,7 @@ class DocumentationContractTest(unittest.TestCase):
         self.assertNotIn("adopt --kind verified_legacy_adoption", applying)
         self.assertIn("records verified legacy adoption", applying)
         self.assertIn("redis-cli FLUSHDB", applying)
-        self.assertIn("dedicated disposable Redis default endpoint", applying)
+        self.assertIn("configured REDIS_HOST and REDIS_PORT", applying)
 
     def test_named_authority_tables_exist_in_schema_sources(self) -> None:
         database = self.text[ROOT / "docs/DATABASE.md"]

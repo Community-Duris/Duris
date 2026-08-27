@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "gate_id": "PHASE03_FINAL_200_PLAYER_V1",
+  "ramps": [25, 50, 100, 200],
+  "hold_clients": 200,
+  "minimum_hold_seconds": 1800,
+  "profiles": [
+    {"id": "idle_scheduled", "commands": ["look", "score"]},
+    {"id": "movement_regeneration", "commands": ["north", "south", "score"]},
+    {"id": "group_pve", "commands": ["group", "assist gate-target", "get all corpse"]},
+    {"id": "epic_artifact_rewards", "commands": ["score", "inventory", "equipment"]},
+    {"id": "pvp_groups", "commands": ["group", "assist gate-target", "score"]},
+    {"id": "two_character_banking", "commands": ["balance", "deposit 1", "withdraw 1"]},
+    {"id": "trade_locker_auction", "commands": ["inventory", "look", "auction"]},
+    {"id": "reconnect_copyover_large_graph", "commands": ["inventory", "followers", "save"]}
+  ],
+  "metrics": {
+    "pulse_p99_msec_max": 250,
+    "event_p99_msec_max": 25,
+    "critical_oldest_msec_max": 1000,
+    "sustained_event_debt_max": 0,
+    "main_thread_external_io_max": 0
+  },
+  "required_true_metrics": [
+    "queue_within_bounds", "journal_within_bounds", "inbox_within_bounds",
+    "outbox_within_bounds", "maintenance_within_bounds", "retry_within_bounds",
+    "lock_within_bounds", "revision_ordering_valid", "checkpoint_valid",
+    "login_complete_or_failed_cleanly", "linear_load_complexity"
+  ],
+  "representative_tables": {
+    "player_data": 10000,
+    "player_items": 250000,
+    "pkill_event": 25000,
+    "pkill_info": 100000,
+    "epic_gain": 100000,
+    "epic_ledger": 100000,
+    "frag_leaderboard": 25000,
+    "quest_trophy": 100000,
+    "zone_touches": 100000,
+    "critical_outbox": 100000
+  },
+  "faults": [
+    "db_latency_50ms", "db_latency_200ms", "db_latency_1000ms",
+    "db_connection_reset", "db_outage_30s", "db_deadlock",
+    "db_ambiguous_commit", "redis_latency", "redis_disconnect",
+    "redis_restart", "redis_volatile_key_loss", "worker_crash_queued",
+    "worker_crash_committing", "game_kill_before_enqueue",
+    "game_kill_after_journal", "game_kill_during_commit",
+    "game_kill_before_ack", "disk_full", "disk_read_only",
+    "terminal_camp_failure", "terminal_inn_failure", "terminal_death_failure",
+    "terminal_idle_rent_failure", "stale_revision",
+    "duplicate_critical_replay", "archive_failure", "migration_drift",
+    "backup_restore_after_erasure"
+  ],
+  "reconciliations": [
+    "player_revisions", "epic_balances", "account_banks", "player_wallets",
+    "current_item_owners", "immutable_ledgers", "critical_inbox_results",
+    "critical_outbox_delivery", "archive_batches", "migration_history",
+    "lifecycle_actions"
+  ],
+  "privacy_cases": [
+    "complete_login", "failed_login", "export_account_isolation",
+    "export_secret_exclusion", "erasure_manifest_coverage",
+    "erasure_replay_protection", "erasure_restore_protection",
+    "retention_dry_run", "retention_synthetic_mutation",
+    "boot_drift_prewrite_rejection"
+  ],
+  "forbidden_report_keys": [
+    "password", "passwd", "credential", "token", "email", "ip", "hostname",
+    "account_name", "character_name", "sql", "row_value"
+  ]
+}

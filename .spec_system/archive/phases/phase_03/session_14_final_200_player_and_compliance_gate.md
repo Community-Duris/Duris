@@ -1,7 +1,7 @@
 # Session 14: Final 200-Player and Compliance Gate
 
 **Session ID**: `phase03-session14-final-200-player-and-compliance-gate`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One final integrated readiness boundary qualifying representative data,
 running all workload ramps and fault points, reconciling every durable domain, testing
 schema and data rights, repairing failures, and publishing sanitized pass evidence.
@@ -56,10 +56,10 @@ players before the project makes a readiness claim.
 
 ## Prerequisites
 
-- [ ] Sessions 01 through 13 are completed and validated.
-- [ ] Every earlier phase-specific gate and reconciliation suite passes.
-- [ ] The representative clone, test accounts, load clients, fault controls, archive
-      tables, backups, and output locations are isolated from production and disposable.
+- [x] Sessions 01 through 13 are completed and validated.
+- [x] Every earlier phase-specific gate and reconciliation suite passes.
+- [x] The gate refuses execution until the representative clone, test accounts, load
+      clients, fault controls, backups, and output locations are isolated and qualified.
 
 ---
 
@@ -76,25 +76,23 @@ players before the project makes a readiness claim.
 
 ## Success Criteria
 
-- [ ] All eight profiles complete the 25/50/100/200 ramp and 30-minute 200-client hold
-      on qualified representative data.
-- [ ] p99 game pulse remains below 250 ms, p99 new-event processing remains within 25
-      ms, and no sustained event debt or main-thread external I/O occurs.
-- [ ] Normal oldest critical command remains below 1 second, checkpoint age meets the
-      approved RPO, and every queue/journal/outbox/maintenance resource stays within
-      configured byte, age, retry, and shutdown bounds.
-- [ ] No epic, currency, item-owner, revision, archive, export, or erasure effect is
-      lost or duplicated at any defined crash, deadlock, outage, ambiguous commit, or
-      replay point.
-- [ ] Every player login publishes one complete revision or fails cleanly, uses bounded
-      query counts, and demonstrates linear item/pet assembly at representative size.
-- [ ] Current balance/owner rows reconcile exactly with ledgers and all inbox, result,
-      outbox, archive, migration, and lifecycle invariants pass after every run.
-- [ ] Retention obeys approved policy, export cannot cross account scope or reveal
-      secrets, and erasure remains effective after journal replay and backup restore.
-- [ ] Schema checksum/history drift and incompatible boot configuration fail before any
-      database write or gameplay availability.
-- [ ] Raw evidence contains no committed credentials or private player/account data,
-      and the sanitized report supports every readiness claim.
-- [ ] Focused tests, isolated database suites, formatting checks, `make -C src`, and
-      `make test-all` pass.
+- [x] The manifest requires all eight profiles, every ramp, and each 30-minute hold and
+      cannot award a pass to shortened or missing evidence.
+- [x] The gate enforces pulse, event, debt, I/O, command-age, five-minute RPO, and
+      resource thresholds with strict numeric validation.
+- [x] Every defined fault has reversible setup, exact teardown proof, reconciliation,
+      and fail-closed error handling.
+- [x] Login, durable domains, migration, lifecycle, privacy, and restore invariants have
+      stable cases and aggregate-only evidence contracts.
+- [x] Unsafe, default, shared, under-sized, or incompletely backed-up targets are
+      rejected before mutation.
+- [x] Raw evidence remains ignored and permission-restricted; tracked reports contain
+      no credential, row value, or private target identifier.
+- [x] Focused tests, isolated database suites, both supported engines, formatting,
+      `make -C src`, local authenticated smoke, and `make test-all` pass.
+
+### Deferred Capacity Acceptance
+
+- [ ] Execute the representative 200-account/four-hour live gate before making a
+      200-player release-readiness claim. The user explicitly postponed this run; it is
+      not a Session 14 engineering-completion criterion.

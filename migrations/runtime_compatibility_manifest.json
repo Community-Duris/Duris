@@ -5,8 +5,8 @@
   "baseline_table_fingerprint": "db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd",
   "current_table_count": 171,
   "normalized_metadata_fingerprints": {
-    "mysql8": "31fa28cd8b9847adb028c67a0b29236cb0a9644c207ba8355b2537fba2ba105a",
-    "mariadb10_11": "ee300ee4a5d60a1a84408491887cf0e4af8926379c04f697355e721fe45904e1"
+    "mysql8": "6a00ae24b351d2fe3227df2e298bb053be34a7e0c4886525855136a4e4e4bc8f",
+    "mariadb10_11": "3968598be2fd8cc7fa7cd15be15d1ecce4e5b2b1ddcc81b69596a89425ec1151"
   },
   "migration_head": {
     "id": "0001_lookup_dataset_state",

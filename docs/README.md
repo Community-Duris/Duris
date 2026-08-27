@@ -21,6 +21,7 @@ directory covers architecture, operations, configuration, and reference material
 | [CONFIGURATION.md](CONFIGURATION.md) | Runtime environment variables, Redis, listeners, proxy handling, and diagnostics. |
 | [RUNBOOK.md](RUNBOOK.md) | Safe operations: lifecycle, migration, diagnosis, reconciliation, backup, restore, and recovery procedures. |
 | [TESTING.md](TESTING.md) | Focused, full, disposable-database, workload, fault, and privacy verification boundaries. |
+| [PHASE03_READINESS.md](PHASE03_READINESS.md) | Qualified final 200-player workload, fault, reconciliation, privacy, migration, and restore gate. |
 | [VERSIONING.md](VERSIONING.md) | Semantic Versioning policy, compatibility surface, and release-number rules. |
 | [PLAYER_SAVE_JOURNAL.md](PLAYER_SAVE_JOURNAL.md) | Revisioned player-save journal permissions, bounds, diagnostics, and recovery. |
 | [PLAYER_SAVE_PIPELINE.md](PLAYER_SAVE_PIPELINE.md) | Nonterminal revisioned save coordinator, cutover, health, and compatibility boundaries. |

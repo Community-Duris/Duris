@@ -138,11 +138,10 @@ MYSQL_PWD="$DB_PASSWD" mysql --host="$DB_HOST" --port="${DB_PORT:-3306}" \
 python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
 python3 scripts/migration_runner.py run
 
-# Backed-up development clone only. This legacy runner has no --help/dry-run mode,
-# starts mutating immediately, records verified legacy adoption as its final database
-# gate, then calls redis-cli FLUSHDB on the CLI default endpoint. It does not read .env
-# for Redis. Use only a stopped, dedicated disposable Redis default endpoint and inspect
-# the script source rather than invoking it for discovery.
+# Local development database only. --help is safe; there is no dry-run mode.
+# A normal invocation mutates immediately, records verified legacy adoption as its final
+# database gate, then calls redis-cli FLUSHDB on configured REDIS_HOST and REDIS_PORT.
+# Stop the game first and ensure those variables select its dedicated local Redis.
 ./migrations/run_migration.sh
 
 # After an adopted baseline, apply immutable post-baseline migrations:

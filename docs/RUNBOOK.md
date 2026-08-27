@@ -238,17 +238,17 @@ backup identity, restore it under an explicitly non-production name on a loopbac
 host, and set `ENVIRONMENT`, `DB_HOST`, `DB_NAME`, and `DB_ALLOWED_TARGETS` so the
 clone is the only permitted target. Keep the original backup untouched.
 
-The legacy runner is mutation-capable and has no help, inspect, or dry-run mode. Any
-invocation, including one with an unknown argument, begins work immediately. Read the
-script source to inspect it; never run it merely to test its command line. After its
-database gates it calls `redis-cli FLUSHDB` against the CLI default endpoint and does
-not read `.env` for Redis. Run it only with a stopped, dedicated disposable Redis
-default endpoint; a qualified database clone does not make a shared Redis safe.
+The legacy runner is mutation-capable and has no dry-run mode. `--help` is safe, and an
+unknown argument is rejected before configuration is loaded. A normal no-argument run
+begins work immediately. After its database gates it calls `redis-cli FLUSHDB` against
+the `REDIS_HOST` and `REDIS_PORT` loaded from `.env`. Run it only with the game stopped
+and those variables pointing to its dedicated local Redis; a qualified database does
+not make a shared Redis safe.
 
 On the qualified clone only, use this order:
 
 ```bash
-# 1. Legacy additive upgrade and exact verified adoption. This mutates immediately.
+# 1. Legacy additive upgrade and exact verified adoption. No arguments; mutates immediately.
 ./migrations/run_migration.sh
 
 # 2. Inspect the checked-in manifest identity without opening the database.
@@ -361,6 +361,26 @@ case-insensitive `TRUE`. If the automatic backup must use `mysqldump`, set
 `REDIS=true` in the environment used by the script and verify the resulting
 `db/Backup/` file. Otherwise it falls back to the legacy `Players/Backup/`
 layout.
+
+## Phase 03 final readiness gate
+
+The integrated 200-player gate requires a separately configured, backed-up,
+production-unreachable representative clone, approved RPO/lifecycle policy identities,
+200 sanitized test identities, isolated non-default ports, and reversible deployment
+adapters. It never reads `.env` implicitly.
+
+Run preflight before any workload:
+
+```bash
+python3 scripts/session14_gate.py \
+  --config tmp/session14-gate/config.json \
+  --preflight-only
+```
+
+Follow [`PHASE03_READINESS.md`](PHASE03_READINESS.md) only after preflight is
+`QUALIFIED`. Treat `QUALIFIED` as permission to begin the isolated gate, not as a
+readiness result. Every injected fault must be torn down and the target restored before
+retry. A repair invalidates affected evidence and requires affected plus complete reruns.
 
 ## Runtime tuning
 

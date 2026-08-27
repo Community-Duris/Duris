@@ -160,6 +160,20 @@ exists.
 Neither `make test-all`, `make test-db`, the Phase 01/02 logical-client gates, nor a
 successful server boot may be used as a substitute for that evidence.
 
+The checked-in contract and exact execution procedure are in
+[`PHASE03_READINESS.md`](PHASE03_READINESS.md). Qualification uses a separate ignored
+configuration and never reads `.env` implicitly:
+
+```bash
+python3 scripts/session14_gate.py \
+  --config tmp/session14-gate/config.json \
+  --preflight-only
+```
+
+`UNQUALIFIED` is a safe refusal, not a failed workload. `QUALIFIED` is also not
+readiness evidence; only a complete `PASS` after every minimum-duration case can
+support the claim.
+
 ## Conventions for new tests
 
 - One concern per file; name it after the feature/regression
