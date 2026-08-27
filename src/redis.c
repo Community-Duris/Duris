@@ -1058,12 +1058,11 @@ struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy(void)
 
 void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
-	flush_dirty_players();
-	redis_flush_floor_drops();
+	nevent_rearm_guard rearm(event_flush_dirty_players, REDIS_FLUSH_INTERVAL);
 
+	flush_dirty_players();
 	if (redis_enabled)
-		add_event(event_flush_dirty_players, REDIS_FLUSH_INTERVAL, NULL, NULL, NULL, 0,
-			  NULL, 0);
+		redis_flush_floor_drops();
 }
 
 bool redis_save_world_state(void)

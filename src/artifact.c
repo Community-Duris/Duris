@@ -70,6 +70,7 @@ struct bind_data
 
 // Internal globals
 bool updateArtis = TRUE;
+constexpr int ARTIFACT_MAINTENANCE_RETRY_DELAY = 30 * WAIT_SEC;
 
 // forward declarations for redis cache
 P_char load_dummy_char(char *name);
@@ -2196,6 +2197,7 @@ void arti_files_to_sql(P_char ch, char *arg)
 
 void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
+	nevent_rearm_guard rearm(event_artifact_check_poof_sql, 12 * WAIT_SEC);
 	P_obj arti, cont, corpse;
 	P_char owner;
 	P_desc desc;
@@ -2216,11 +2218,20 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	//   predicate deliberately matches the clearing UPDATE at the end of this function,
 	//   so an empty result means that UPDATE has nothing to do either: this runs every
 	//   12 seconds and the write was costing a commit each time for nothing.
-	qry("SELECT vnum, locType, location FROM artifacts WHERE owned='Y' AND timer < now()");
+	if (!qry("SELECT vnum, locType, location FROM artifacts WHERE owned='Y' AND timer < now()"))
+	{
+		logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: failed to read from database.");
+		return;
+	}
 	res = mysql_store_result(DB);
+	if (!res)
+	{
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		return;
+	}
 
 	// If there were any artis to pull
-	if (res && mysql_num_rows(res) > 0)
+	if (mysql_num_rows(res) > 0)
 	{
 		expired = TRUE;
 		while ((row = mysql_fetch_row(res)))
@@ -2619,8 +2630,6 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 		    ARTIFACT_NOTINGAME);
 		arti_cache_invalidate();
 	}
-
-	add_event(event_artifact_check_poof_sql, 12 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 }
 
 // Looks through list, and adds entry to the end of list.
@@ -2668,6 +2677,7 @@ void add_artidata_to_list(arti_data *list, int vnum, bool owned, char locType, i
 
 void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
+	nevent_rearm_guard rearm(event_artifact_wars_sql, 30 * 60 * WAIT_SEC);
 	arti_list *artilist, *nextlist;
 	arti_data *node, *next_node;
 	P_char owner;
@@ -2690,11 +2700,22 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 	// we only care about artis on a PC (online players only).
 	// corpse/npc/ground artifacts don't trigger the penalty.
 	debug("event_artifact_wars_sql: querying artifacts on pc...");
-	qry("SELECT vnum, locType, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE locType=%d",
-	    ARTIFACT_ON_PC);
+	if (!qry("SELECT vnum, locType, location, UNIX_TIMESTAMP(timer), type FROM artifacts WHERE locType=%d",
+		 ARTIFACT_ON_PC))
+	{
+		logit(LOG_ARTIFACT, "event_artifact_wars_sql: failed to read from database.");
+		rearm.retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY);
+		return;
+	}
 	res = mysql_store_result(DB);
 
-	if (!res || mysql_num_rows(res) < 1)
+	if (!res)
+	{
+		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		rearm.retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY);
+		return;
+	}
+	if (mysql_num_rows(res) < 1)
 	{
 		mysql_free_result(res);
 		debug("event_artifact_wars_sql: No artifacts found.");
@@ -2896,8 +2917,6 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 	}
 
 	debug("event_artifact_wars: ended.");
-
-	add_event(event_artifact_wars_sql, 30 * 60 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 }
 
 void event_arti_hunt_sql(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
@@ -3802,6 +3821,7 @@ void arti_swap_sql(P_char ch, char *arg)
 //   the timer is set to switch owners.  If the timer is up, then the soul switches owners.
 void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*arg*/)
 {
+	nevent_rearm_guard rearm(event_artifact_check_bind_sql, 7 * 60 * WAIT_SEC);
 	bind_data *bindData, *list;
 	arti_data artidata;
 	P_char owner;
@@ -3818,6 +3838,7 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 		debug("event_artifact_check_bind_sql(): Failed initial query.");
 		logit(LOG_ARTIFACT,
 		      "event_artifact_check_bind_sql(): failed to read from database.");
+		rearm.retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY);
 		return;
 	}
 
@@ -3825,6 +3846,7 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	if (!res)
 	{
 		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		rearm.retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY);
 		return;
 	}
 
@@ -3958,8 +3980,6 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	}
 
 	debug("event_artifact_check_bind_sql(): completed.");
-	// Checks every 7 minutes.
-	add_event(event_artifact_check_bind_sql, 7 * 60 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 }
 
 // Resets the timers on artifacts that weren't properly bound.

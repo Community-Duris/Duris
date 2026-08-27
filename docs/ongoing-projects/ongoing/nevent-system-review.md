@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 4 complete
+Status: Implementation in progress; checkpoint 5 complete
 
-Last implementation update: 2026-08-27 22:18 IDT
+Last implementation update: 2026-08-27 22:24 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -22,8 +22,8 @@ contracts, formatting, and the server build pass.
 | 2 | NEV-05 and NEV-10 cancellation/lifetime invariants | Complete | ASan/UBSan cancellation harness, 221 Python regressions, native signal test, format check, server build |
 | 3 | NEV-02 and NEV-08 typed/POD hunt payload | Complete | ASan/UBSan ownership and stable-ID harnesses, raw-type compile rejection, 222 Python regressions, native signal test, format check, server build |
 | 4 | NEV-03 stable ship-volley references | Complete | ASan/UBSan live, deleted-endpoint, and ABA harness, 223 Python regressions, native signal test, format check, server build |
-| 5 | NEV-06 and NEV-07 periodic rearm safety | Next | Not started |
-| 6 | NEV-04, NEV-11, and NEV-22 absolute due-tick core and harness | Pending | Not started |
+| 5 | NEV-06 and NEV-07 periodic rearm safety | Complete | ASan/UBSan multi-interval/retry harness, 224 Python regressions, native signal test, format check, server build |
+| 6 | NEV-04, NEV-11, and NEV-22 absolute due-tick core and harness | Next | Not started |
 | 7 | NEV-09 and NEV-13 priority, aging, and catch-up policy | Pending | Not started |
 | 8 | NEV-12 and NEV-19 reschedule, lookup, and handle APIs | Pending | Not started |
 | 9 | NEV-14 through NEV-20 load control, observability, durability, and thread boundary | Pending | Not started |
@@ -71,6 +71,17 @@ now discards the volley. The sanitizer regression copies a scheduled payload,
 advances its clock after deleting each endpoint independently, verifies live
 delivery, and forces slot reuse to prove that a stale generation cannot resolve
 to the replacement ship.
+
+Checkpoint 5 added a scope-bound, fixed-delay rearm guard so a periodic callback
+creates exactly one successor when it leaves through any normal return path.
+Dirty-player checkpoints now recur independently of Redis, while only the Redis
+floor-drop flush remains conditional. All three artifact maintenance callbacks
+use the guard; artifact-war and binding query/result failures select a bounded
+30-second retry, while empty results retain the normal interval. The sanitizer
+harness advances through repeated Redis-off and Redis-on checkpoints and through
+artifact query failure, result failure, empty result, and recovery without
+losing the job. Unique periodic keys and richer health state remain part of the
+NEV-17 registry work in checkpoint 9.
 
 ## Executive assessment
 
@@ -447,6 +458,12 @@ Recommendation:
 
 ### NEV-06: Dirty-player checkpointing stops without Redis
 
+Implementation status (2026-08-27): Fixed and verified in checkpoint 5. Local
+checkpointing has an unconditional fixed-delay rearm, and the Redis setting now
+guards only Redis floor-drop work. The regression advances three intervals with
+Redis disabled and enabled. The evidence below describes the pre-fix
+implementation.
+
 Boot explicitly states that revisioned local checkpoints do not depend on Redis
 and schedules `event_flush_dirty_players` unconditionally
 (`src/new_events.c:1565-1566`). The callback performs the local checkpoint, then
@@ -464,6 +481,13 @@ Recommendation:
   and assert continued local checkpoint calls.
 
 ### NEV-07: Artifact maintenance silently loses recurrence
+
+Implementation status (2026-08-27): Fixed and verified in checkpoint 5. A
+scope-bound rearm guard covers every normal return from artifact poof, war, and
+binding maintenance. Database failures use a bounded retry for the two long
+jobs, while empty results preserve their normal cadence. The first-class keyed
+registry and health telemetry remain tracked by NEV-17. The evidence below
+describes the pre-fix implementation.
 
 Recurring callbacks are responsible for scheduling their successor. Early
 returns before that final call permanently remove the job from the system.

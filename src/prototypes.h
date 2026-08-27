@@ -941,6 +941,27 @@ template <typename T> inline void add_event_owned(event_func func, int delay, P_
 				{ delete static_cast<payload_type *>(stored_payload); });
 }
 
+class nevent_rearm_guard
+{
+    public:
+	explicit nevent_rearm_guard(event_func callback, int delay)
+		: callback_(callback)
+		, delay_(delay)
+	{
+	}
+
+	~nevent_rearm_guard() { add_event(callback_, delay_, NULL, NULL, NULL, 0, NULL, 0); }
+
+	nevent_rearm_guard(const nevent_rearm_guard &) = delete;
+	nevent_rearm_guard &operator=(const nevent_rearm_guard &) = delete;
+
+	void retry_after(int delay) { delay_ = delay; }
+
+    private:
+	event_func callback_;
+	int delay_;
+};
+
 P_nevent get_scheduled(P_char, event_func_type);
 P_nevent get_scheduled(P_obj, event_func_type);
 P_nevent get_scheduled(event_func_type);
