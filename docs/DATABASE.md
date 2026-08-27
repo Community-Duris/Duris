@@ -72,6 +72,12 @@ Redis is not an authority for player dirty state. It holds floor-delta recovery 
 and optional sequence-numbered world generations used after an unclean exit
 (`src/redis.c`). A generation is cleared only after successful validated recovery.
 
+Critical gameplay commands are distinct from coalesced checkpoints. Each accepted
+command is independently journaled with one stable operation ID and remains fenced
+through retry or ambiguous completion. The Session 01 coordinator intentionally has no
+database destination; the inbox/outbox transaction and reconciliation contract arrive
+in Phase 02 Session 02. See [CRITICAL_COMMAND_PIPELINE.md](CRITICAL_COMMAND_PIPELINE.md).
+
 ## Persistence observability
 
 All shared MySQL execution paths record bounded, metadata-only metrics. Wrapper

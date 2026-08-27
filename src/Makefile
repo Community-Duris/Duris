@@ -192,6 +192,9 @@ OBJS =  $(SHIP_OBJS) \
 				 objmisc.o \
 				 outposts.o \
 				 persistence_observability.o \
+				 critical_command.o \
+				 critical_command_journal.o \
+				 critical_command_coordinator.o \
 				 player_revision_state.o \
 				 player_save_worker.o \
 				 player_save_journal.o \

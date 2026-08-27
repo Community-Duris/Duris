@@ -166,6 +166,14 @@ incremental and bounded on the game thread; the publisher receives owned bytes o
 It writes a sequence-keyed payload before atomically advancing the current pointer and
 metadata. Restore validates schema, completeness, checksum, sequence, and age.
 
+Non-idempotent Phase 02 gameplay effects use a separate critical-command coordinator
+(`src/critical_command_coordinator.c`). Its immutable, non-coalescing commands carry a
+stable 128-bit operation ID and sorted entity-key set. Conflicting key sets execute in
+acceptance order, unrelated sets may run concurrently, and exact typed completion is
+required to release a gameplay fence. A checksummed local journal preserves accepted
+commands through retry and restart. The coordinator currently has only a fake test
+destination; the transactional database adapter is introduced in Phase 02 Session 02.
+
 Details and schema management: [DATABASE.md](DATABASE.md).
 
 ## Networking

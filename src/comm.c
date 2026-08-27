@@ -80,6 +80,7 @@
 #include "latency_trace.h"
 #include "persistence_queue.h"
 #include "locker_async.h"
+#include "critical_command_coordinator.h"
 #include "player_save_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "test_async.h"
@@ -628,6 +629,7 @@ void run_the_game(int port, int sslport)
 
 	game_loop(port, sslport);
 	redis_cleanup();
+	critical_command_coordinator_shutdown();
 	if (!_pwipe)
 	{
 		persistence_stop_scalar_event_worker();
@@ -1350,6 +1352,8 @@ resume_game_loop:
 			gmcp_flush_dirty_ship_info();
 			flush_pending_ship_saves();
 			locker_async_pulse();
+			critical_completion critical_completions[64] = {};
+			critical_command_coordinator_pulse(critical_completions, 64);
 			player_save_pipeline_pulse();
 			redis_world_recovery_pulse();
 			latency_trace_record("gmcp_flush",
@@ -1583,8 +1587,20 @@ resume_game_loop:
 		return;
 	}
 
+	critical_command_coordinator_quiesce();
+	if (!_pwipe && !critical_command_coordinator_drain(3000))
+	{
+		critical_command_coordinator_resume();
+		persistence_alert(AVATAR, "critical_command", "shutdown", "none", "none",
+				  "pipeline_drain_failed", "shutdown_cancelled=1");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
 	if (!_pwipe && !persistence_save_all_characters_terminal(RENT_CRASH))
 	{
+		critical_command_coordinator_resume();
 		persistence_alert(AVATAR, "player_save", "shutdown", "none", "none",
 				  "terminal_save_failed", "shutdown_cancelled=1");
 		for (P_desc pending_desc = descriptor_list; pending_desc;
@@ -1600,6 +1616,7 @@ resume_game_loop:
 	}
 	if (!_pwipe && !player_save_pipeline_drain(3000))
 	{
+		critical_command_coordinator_resume();
 		player_save_pipeline_resume();
 		persistence_alert(AVATAR, "player_save", "shutdown", "none", "none",
 				  "pipeline_drain_failed", "shutdown_cancelled=1");
@@ -1610,6 +1627,7 @@ resume_game_loop:
 	}
 	if (!_pwipe && !redis_world_recovery_drain(3000))
 	{
+		critical_command_coordinator_resume();
 		player_save_pipeline_resume();
 		persistence_alert(AVATAR, "world_recovery", "shutdown", "none", "none",
 				  "pipeline_drain_failed", "shutdown_cancelled=1");

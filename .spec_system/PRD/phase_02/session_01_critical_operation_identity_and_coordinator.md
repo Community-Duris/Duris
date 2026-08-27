@@ -1,7 +1,7 @@
 # Session 01: Critical Operation Identity and Coordinator
 
 **Session ID**: `phase02-session01-critical-operation-identity-and-coordinator`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One accepted-command boundary from stable operation identity and
 immutable capture through multi-key admission, typed journal handoff, gameplay fencing,
 and exact main-thread completion, using a fake destination before database integration.
@@ -47,9 +47,9 @@ effect.
 
 ## Prerequisites
 
-- [ ] Phase 00 and Phase 01 are complete and their carryforward evidence is reconciled.
-- [ ] Phase 01 journal replay and shutdown spill pass their crash-point gate.
-- [ ] The implemented Phase 01 operation identity is inspected before extending it.
+- [x] Phase 00 and Phase 01 are complete and their carryforward evidence is reconciled.
+- [x] Phase 01 journal replay and shutdown spill pass their crash-point gate.
+- [x] The implemented Phase 01 operation identity is inspected before extending it.
 
 ---
 
@@ -67,14 +67,14 @@ effect.
 
 ## Success Criteria
 
-- [ ] One accepted gameplay intent has one operation ID across every retry and restart.
-- [ ] Critical records are never coalesced, dropped, or replaced by a newer snapshot.
-- [ ] Conflicting key sets execute in deterministic order without deadlock, while
+- [x] One accepted gameplay intent has one operation ID across every retry and restart.
+- [x] Critical records are never coalesced, dropped, or replaced by a newer snapshot.
+- [x] Conflicting key sets execute in deterministic order without deadlock, while
       independent key sets can progress within configured bounds.
-- [ ] A stale, duplicate, or mismatched completion cannot release a newer fence or
+- [x] A stale, duplicate, or mismatched completion cannot release a newer fence or
       publish success for another operation.
-- [ ] The game thread performs no database, Redis, or filesystem work after the bounded
+- [x] The game thread performs no database, Redis, or filesystem work after the bounded
       journal acceptance contract defined by Phase 01.
-- [ ] Payload, queue, journal, operation age, retry, and fence states are bounded and
+- [x] Payload, queue, journal, operation age, retry, and fence states are bounded and
       observable without private values.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

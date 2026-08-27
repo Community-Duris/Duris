@@ -40,6 +40,8 @@ using namespace std;
 #include "paladins.h"
 #include "persistence_observability.h"
 #include "persistence_queue.h"
+#include "critical_command_coordinator.h"
+#include "critical_command_journal.h"
 #include "player_save_worker.h"
 #include "player_save_journal.h"
 #include "player_save_pipeline.h"
@@ -3988,6 +3990,9 @@ static void show_world_persistence(P_char ch)
 	const player_save_worker_health player_saves = player_save_worker_health_copy();
 	const player_save_journal_health player_journal = player_save_journal_health_copy();
 	const player_save_pipeline_health player_pipeline = player_save_pipeline_health_copy();
+	const critical_coordinator_health critical = critical_command_coordinator_health_copy();
+	const critical_command_journal_health critical_journal =
+		critical_command_journal_health_copy();
 	const world_recovery_health world_recovery = world_recovery_pipeline_health_copy();
 	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
 	char line[MAX_STRING_LENGTH];
@@ -4000,6 +4005,10 @@ static void show_world_persistence(P_char ch)
 		world_persistence_max(oldest_save_age_msec, player_saves.oldest_age_msec);
 	oldest_save_age_msec =
 		world_persistence_max(oldest_save_age_msec, player_journal.oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, critical.oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, critical_journal.oldest_age_msec);
 
 	send_to_char("Persistence health (metadata only)\n", ch);
 	if (query.total_calls == 0)
@@ -4070,6 +4079,42 @@ static void show_world_persistence(P_char ch)
 			 (unsigned long long)dirty.active_oldest_age_msec,
 			 (unsigned long long)dirty.inflight_count,
 			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "critical_commands state=%s queued=%llu inflight=%llu blocked=%llu bytes=%llu "
+		 "fences=%llu completed_cache=%llu high_water=%llu/%llu accepted=%llu "
+		 "attached=%llu completed=%llu retries=%llu ambiguous=%llu terminal=%llu "
+		 "stale=%llu overloads=%llu oldest_age_ms=%llu journal=%s "
+		 "journal_records=%llu journal_bytes=%llu journal_corrupt=%llu journal_io=%llu "
+		 "journal_quota=%d\n",
+		 !critical.initialized		      ? "stopped" :
+		 critical.blocked		      ? "blocked" :
+		 critical.queued || critical.inflight ? "pending" :
+							"ready",
+		 (unsigned long long)critical.queued, (unsigned long long)critical.inflight,
+		 (unsigned long long)critical.blocked, (unsigned long long)critical.retained_bytes,
+		 (unsigned long long)critical.fenced_keys,
+		 (unsigned long long)critical.completed_cache,
+		 (unsigned long long)critical.high_water_operations,
+		 (unsigned long long)critical.high_water_bytes,
+		 (unsigned long long)critical.accepted, (unsigned long long)critical.attached,
+		 (unsigned long long)critical.completed, (unsigned long long)critical.retries,
+		 (unsigned long long)critical.ambiguous,
+		 (unsigned long long)critical.terminal_failures,
+		 (unsigned long long)critical.stale_completions,
+		 (unsigned long long)critical.overloads,
+		 (unsigned long long)critical.oldest_age_msec,
+		 critical_journal.initialized ?
+			 (critical_journal.quota_exceeded ? "full" : "ready") :
+			 (critical_journal.last_result == critical_command_journal_result::ok ?
+				  "stopped" :
+				  critical_command_journal_result_name(
+					  critical_journal.last_result)),
+		 (unsigned long long)critical_journal.records,
+		 (unsigned long long)critical_journal.bytes,
+		 (unsigned long long)critical_journal.corrupt_records,
+		 (unsigned long long)critical_journal.io_failures, critical_journal.quota_exceeded);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),

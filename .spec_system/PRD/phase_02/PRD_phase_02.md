@@ -4,7 +4,7 @@
 **Sessions**: 12 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 0/12 sessions (0%)
+**Progress**: 1/12 sessions (8%)
 
 ---
 
@@ -36,7 +36,7 @@ prerequisites for every Phase 02 session.
 
 | Session | Name | Status | Work Window | Validated |
 |---------|------|--------|-------------|-----------|
-| 01 | Critical Operation Identity and Coordinator | Not Started | Stable operation IDs, multi-key admission, journal handoff, fences, and exact completions | - |
+| 01 | Critical Operation Identity and Coordinator | Complete | Stable operation IDs, multi-key admission, journal handoff, fences, and exact completions | 2026-08-27 |
 | 02 | Transactional Inbox, Outbox, and Reconciliation | Not Started | Generic dedupe transaction, outbox delivery, ambiguous-commit lookup, and repair tooling | - |
 | 03 | Epic Ledger and Balance Transactions | Not Started | Award and spend commands, opening baseline, balance publication, and bonus-state ACKs | - |
 | 04 | Account Bank and Wallet Transactions | Not Started | Atomic denomination deltas, wallet revisions, online-alt publication, and reconciliation | - |
@@ -53,13 +53,13 @@ prerequisites for every Phase 02 session.
 
 ## Completed Sessions
 
-None yet.
+- Session 01: Critical Operation Identity and Coordinator (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 01: Critical Operation Identity and Coordinator
+- Session 02: Transactional Inbox, Outbox, and Reconciliation
 
 ---
 

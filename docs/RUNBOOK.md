@@ -100,7 +100,8 @@ cache output or mutate queue, Redis, deferred-save, or query state.
 The report includes up to eight deterministically ranked query source sites,
 total calls and failures, registry overflow, item/scalar/large queue counters,
 player capture/journal/worker depths and ages, exact revision progress, world capture
-and publication health, and the oldest aggregate save age. Output is metadata-only and
+and publication health, critical-command queue/journal/fence health, and the oldest
+aggregate save age. Output is metadata-only and
 must not be copied into a workflow that expects SQL, player, account, item, IP, or path
 values.
 
@@ -122,6 +123,12 @@ Interpret explicit states as follows:
 The displayed query operation IDs and any `SQL_TRACE` operation IDs are scoped
 to the current process. They are correlation aids, not durable transaction or
 idempotency identifiers.
+
+For `critical_commands`, `blocked>0`, a growing oldest age, journal corruption or I/O
+failure, or journal quota exhaustion must stop the affected gameplay and any process
+transition. Restore the storage or destination and preserve the journal for replay.
+Never delete or edit the journal to clear a fence. See
+[CRITICAL_COMMAND_PIPELINE.md](CRITICAL_COMMAND_PIPELINE.md).
 
 ### Retained terminal-save failures
 

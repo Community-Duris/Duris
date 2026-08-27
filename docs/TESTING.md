@@ -89,6 +89,7 @@ them at production.
 | Crash regressions | wear-all, relic pickup, stuck command gate |
 | Saves | copyover save guards, ship save guards/dedup, epic save guards |
 | Phase 01 recovery gate | `test_phase01_recovery_gate.py` drives 25/50/100/200 logical-client waves with ambiguous-commit retries and enforces fork/ownership/route contracts |
+| Critical commands | `test_critical_command_coordinator.py` exercises identity, codec, journal corruption/replay, multi-key ordering, duplicate attachment, exact completion, retries, fences, bounds, and lifecycle |
 | Help files | class/race helpfile completeness contracts |
 | Event loop | hotspot budget regression |
 | Build contract | `test_compiler_warning_profile.py`, `test_message_buffer_bounds.py` |
