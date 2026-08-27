@@ -23,7 +23,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=116
+TOTAL=118
 FAILED=0
 
 run_sql() {
@@ -2912,6 +2912,8 @@ run_sql_file "apply persistence and auction schema contract" "$SCRIPT_DIR/persis
 run_sql_file "apply player corpse persistence state" "$SCRIPT_DIR/corpse_persistence_state.sql"
 run_sql_file "apply critical command inbox and outbox" "$SCRIPT_DIR/critical_command_inbox_outbox.sql"
 run_check "verify critical command inbox and outbox" "$SCRIPT_DIR/verify_critical_command_schema.sh"
+run_sql_file "apply epic ledger and balance schema" "$SCRIPT_DIR/epic_ledger_balance.sql"
+run_check "verify epic ledger and balance schema" "$SCRIPT_DIR/verify_epic_ledger_schema.sh"
 
 # Production dumps predate the full item-diff schema. CREATE TABLE IF NOT EXISTS
 # above cannot repair existing tables, but current save/load and pwipe SQL requires

@@ -34,6 +34,7 @@ hydration_body = function_body(bonus, "bool epic_bonus_hydrate(P_char ch)")
 record_body = function_body(bonus, "void epic_bonus_record_gain(P_char ch, int type, int amount)")
 load_body = function_body(player, "P_char sql_load_player(const char *name)", last=True)
 gain_body = function_body(epic, "void gain_epic(P_char ch, int type, int data, int amount)")
+award_ack_body = function_body(epic, "void epic_award_committed(")
 
 forbidden = ["qry(", "db_query(", "mysql_", "redis", "fopen", "open(", "malloc",
              "new ", "pthread_", "epic_bonus_hydrate"]
@@ -53,15 +54,15 @@ checks = [
     ("read refreshes cap and rejects window drift", "contribution_cap" in read_body and "state->window_days != window_days" in read_body),
     ("all active caller files inventoried", caller_files == expected_callers),
     ("hydration is one grouped query", hydration_body.count("db_query(") == 1 and "GROUP BY" in hydration_body and "ORDER BY" in hydration_body),
-    ("hydration excludes bottles and non-positive gains", "eg.type != %d" in hydration_body and "eg.epics > 0" in hydration_body and "EPIC_BOTTLE" in hydration_body),
-    ("hydration uses selection and rolling cutoffs", "eg.time > eb.time" in hydration_body and "DATE_SUB(CURDATE()" in hydration_body),
-    ("midnight expiry preserves strict cutoff", "TIME(eg.time) = '00:00:00'" in hydration_body and "exact_midnight" in bonus),
+    ("hydration includes legacy and ledger non-bottle positive gains", "type != %d AND epics > 0" in hydration_body and "reason_type != %d AND delta > 0" in hydration_body and "EPIC_BOTTLE" in hydration_body),
+    ("hydration uses selection and rolling cutoffs", "gained.time > eb.time" in hydration_body and "DATE_SUB(CURDATE()" in hydration_body),
+    ("midnight expiry preserves strict cutoff", "TIME(gained.time) = '00:00:00'" in hydration_body and "exact_midnight" in bonus),
     ("hydration has explicit unavailable outcomes", hydration_body.count("epic_bonus_state_mark_unavailable") >= 5),
     ("login hydrates after status", load_body.index("sql_load_player_status") < load_body.index("sql_load_player_epic_bonus")),
     ("selection persists before cache publication", selection_body.index("if (!qry(") < selection_body.index("epic_bonus_state_select")),
     ("selection write is idempotent", "ON DUPLICATE KEY UPDATE" in selection_body),
-    ("award publishes before cache update", gain_body.index("log_epic_gain(GET_PID(ch)") < gain_body.index("epic_bonus_record_gain")),
-    ("award helper receives final amount", "epic_bonus_record_gain(ch, type, amount);" in gain_body),
+    ("award submits immutable final amount", "epic_transaction_submit(ch, amount" in gain_body),
+    ("award cache updates only from committed ack", "if (!committed" in award_ack_body and "epic_bonus_record_gain(ch, context.type, context.amount);" in award_ack_body),
     ("live gain preserves strict selection cutoff", "now <= state->selected_at" in record_body),
 ]
 

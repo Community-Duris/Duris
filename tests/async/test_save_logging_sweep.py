@@ -25,7 +25,7 @@ checks = [
         'src/tradeskill.c',
         'Failed to save %s after tradeskill change.',
         'if (!do_save_silent(pl, 1))',
-        10,
+        5,
     ),
     (
         'src/epic_skills.c',

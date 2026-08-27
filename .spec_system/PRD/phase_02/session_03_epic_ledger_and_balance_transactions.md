@@ -1,7 +1,7 @@
 # Session 03: Epic Ledger and Balance Transactions
 
 **Session ID**: `phase02-session03-epic-ledger-and-balance-transactions`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: The complete epic value boundary across legacy-baseline capture, every
 award and spend producer, one balance/ledger transaction, post-ACK in-memory state, and
 exact reconciliation.
@@ -45,10 +45,10 @@ after normal execution, retry, and crash recovery.
 
 ## Prerequisites
 
-- [ ] Sessions 01 and 02 critical command, inbox, outbox, and reconciliation contracts
+- [x] Sessions 01 and 02 critical command, inbox, outbox, and reconciliation contracts
       are validated.
-- [ ] Phase 00 in-memory epic-bonus behavior is understood and covered by regressions.
-- [ ] Baseline and migration tests use only isolated non-production databases.
+- [x] Phase 00 in-memory epic-bonus behavior is understood and covered by regressions.
+- [x] Baseline and migration tests use only guarded non-production databases.
 
 ---
 
@@ -67,16 +67,16 @@ after normal execution, retry, and crash recovery.
 
 ## Success Criteria
 
-- [ ] Opening balance plus every committed delta equals the materialized epic balance
+- [x] Opening balance plus every committed delta equals the materialized epic balance
       for each migrated player.
-- [ ] Every award and spend call site supplies one stable operation ID and reason/type
+- [x] Every award and spend call site supplies one stable operation ID and reason/type
       metadata, including bottle and administrative paths.
-- [ ] Duplicate or ambiguous replay changes the balance and ledger exactly once.
-- [ ] A rejected or failed spend publishes no purchase, level, skill, item, or other
+- [x] Duplicate or ambiguous replay changes the balance and ledger exactly once.
+- [x] A rejected or failed spend publishes no purchase, level, skill, item, or other
       success and leaves the prior balance authoritative.
-- [ ] Epic bonus state and user-visible balance update only from the committed ACK.
-- [ ] Generic player checkpoints cannot overwrite the transactional epic balance.
-- [ ] Reconciliation reports legacy discrepancies without fabricating historical
+- [x] Epic bonus state and user-visible balance update only from the committed ACK.
+- [x] Generic player checkpoints cannot overwrite the transactional epic balance.
+- [x] Reconciliation reports legacy discrepancies without fabricating historical
       operations or deleting `epic_gain` rows.
-- [ ] Focused regressions, isolated schema tests, formatting checks, and `make -C src`
+- [x] Focused regressions, isolated schema tests, formatting checks, and `make -C src`
       pass.

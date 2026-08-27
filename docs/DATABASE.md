@@ -190,9 +190,10 @@ not applied to a different object.
 ## Active epic bonus read model
 
 Active player epic bonuses are hydrated into fixed-capacity player-owned memory during
-the database player load. The login query joins the selected `epic_bonus` row to
-positive, non-bottle `epic_gain` rows after both the selection time and configured
-rolling cutoff, then groups them by calendar expiry boundary. The boundary calculation
+the database player load. The login query joins the selected `epic_bonus` row to the
+union of historical positive, non-bottle `epic_gain` rows and committed positive,
+non-bottle `epic_ledger` rows after both the selection time and configured rolling
+cutoff, then groups them by calendar expiry boundary. The boundary calculation
 preserves the strict cutoff for gains recorded exactly at midnight. It returns no more
 than one row per supported expiry day rather than one row per historical gain.
 
@@ -205,11 +206,12 @@ Cap and maximum-modifier property changes take effect from the in-memory propert
 on the next read. A rolling-window change marks existing player state unavailable until
 the next login because already-expired history cannot be reconstructed without I/O.
 
-Selection and qualifying award paths update this state on the game thread. Daily
+Selection and qualifying award ACK paths update this state on the game thread. Daily
 contributions expire locally at the same calendar boundary represented by the former
 `CURDATE()` predicate. The state is an active-player read model, not a new durability
-boundary: Phase 02 still owns atomic epic balance, ledger, operation identity, and
-ambiguous-commit reconciliation.
+boundary. The materialized balance is `epic_balance_baseline.opening_balance` plus all
+committed `epic_ledger.delta` values. `player_data.epics` and `epic_revision` are updated
+atomically with each ledger row and are authoritative at login.
 
 ## Revisioned player checkpoints and terminal saves
 

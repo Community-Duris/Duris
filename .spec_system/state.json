@@ -3,7 +3,7 @@
   "project_name": "DurisMUD",
   "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
   "current_phase": 2,
-  "current_session": "phase02-session03-epic-ledger-and-balance-transactions",
+  "current_session": "phase02-session04-account-bank-and-wallet-transactions",
   "monorepo": false,
   "phases": {
     "1": {
@@ -51,7 +51,8 @@
     "phase01-session07-immutable-world-recovery-worker",
     "phase01-session08-legacy-fork-removal-and-recovery-gate",
     "phase02-session01-critical-operation-identity-and-coordinator",
-    "phase02-session02-transactional-inbox-outbox-and-reconciliation"
+    "phase02-session02-transactional-inbox-outbox-and-reconciliation",
+    "phase02-session03-epic-ledger-and-balance-transactions"
   ],
   "next_session_history": [
     {
@@ -407,6 +408,26 @@
     {
       "date": "2026-08-27",
       "session": "phase02-session03-epic-ledger-and-balance-transactions",
+      "status": "selected"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session03-epic-ledger-and-balance-transactions",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session03-epic-ledger-and-balance-transactions",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session03-epic-ledger-and-balance-transactions",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase02-session04-account-bank-and-wallet-transactions",
       "status": "selected"
     }
   ]

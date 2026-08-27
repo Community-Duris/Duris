@@ -1001,6 +1001,72 @@ static bool sql_verify_boot_database(void)
 		      "FATAL: critical command indexes are incomplete at boot (expected 8 entries).");
 		return false;
 	}
+	const char *epic_schema_probe =
+		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+		"AND ((table_name='player_data' AND column_name='epic_revision') OR "
+		"(table_name='epic_balance_baseline' AND column_name IN "
+		"('pid','opening_balance','opening_revision','captured_at')) OR "
+		"(table_name='epic_ledger' AND column_name IN "
+		"('operation_id','pid','delta','balance_after','epic_revision','reason_type',"
+		"'reason_id','source_site','created_at')))";
+	result = db_query("%s", epic_schema_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: epic ledger schema metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool epic_columns_ok = row && lengths && row[0] && atoi(row[0]) == 14;
+	mysql_free_result(result);
+	if (!epic_columns_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: epic ledger schema is incomplete at boot (expected 14 required columns).");
+		return false;
+	}
+	const char *epic_index_probe =
+		"SELECT COUNT(*) FROM (SELECT DISTINCT table_name,index_name FROM "
+		"information_schema.statistics WHERE table_schema=DATABASE() AND "
+		"((table_name='epic_balance_baseline' AND index_name='PRIMARY') OR "
+		"(table_name='epic_ledger' AND index_name IN "
+		"('PRIMARY','uq_epic_ledger_pid_revision','idx_epic_ledger_pid_created',"
+		"'idx_epic_ledger_reason_created')))) AS epic_required_indexes";
+	result = db_query("%s", epic_index_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: epic ledger index metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool epic_indexes_ok = row && lengths && row[0] && atoi(row[0]) == 5;
+	mysql_free_result(result);
+	if (!epic_indexes_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: epic ledger indexes are incomplete at boot (expected 5 entries).");
+		return false;
+	}
+	const char *epic_baseline_coverage_probe =
+		"SELECT COUNT(*) FROM player_data AS player LEFT JOIN epic_balance_baseline AS baseline "
+		"ON baseline.pid=player.pid WHERE baseline.pid IS NULL";
+	result = db_query("%s", epic_baseline_coverage_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: epic balance baseline coverage query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool epic_baseline_coverage_ok = row && lengths && row[0] && atoll(row[0]) == 0;
+	mysql_free_result(result);
+	if (!epic_baseline_coverage_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: epic balance baseline does not cover every player at boot.");
+		return false;
+	}
 	return true;
 }
 

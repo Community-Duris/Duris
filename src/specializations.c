@@ -10,6 +10,7 @@ using namespace std;
 #include "interp.h"
 #include "utils.h"
 #include "epic.h"
+#include "epic_transaction.h"
 #include "specializations.h"
 #include "spells.h"
 #include "sql.h"
@@ -729,6 +730,23 @@ void do_specialize(P_char ch, char *argument, int /*cmd*/)
 	mobsay(teacher, "I'm sorry, but that specialization isn't available to you.");
 }
 
+namespace
+{
+void unspecialize_committed(P_char ch, bool committed, const epic_command_result &, unsigned int,
+			    const uint8_t *, size_t)
+{
+	if (!committed)
+	{
+		send_to_char("The Water Goddess does not accept your offering.\n", ch);
+		return;
+	}
+	send_to_char("Your old habits fall away and you feel ready to learn new ways.\n", ch);
+	ch->player.spec = 0;
+	update_skills(ch);
+	forget_spells(ch, -1);
+}
+} // namespace
+
 void unspecialize(P_char ch, P_obj obj)
 {
 	if (!IS_SPECIALIZED(ch))
@@ -741,18 +759,14 @@ void unspecialize(P_char ch, P_obj obj)
 	}
 	else
 	{
-		act("You kneel in front of $p and pray to the \n"
-		    "&+bWater Goddess&n. As you continue your meditation, you begin\n"
-		    "to feel your mind is breaking free from the old habits and you\n"
-		    "feel ready to learn new ways.\n",
+		act("You kneel in front of $p and offer 10 epic points to the Water Goddess.\n",
 		    FALSE, ch, obj, 0, TO_CHAR);
-		act("$n kneels before $p and sinks in prayers.\n"
-		    "After few moments of silence $e smiles and stands up looking reborn.\n",
-		    FALSE, ch, obj, 0, TO_ROOM);
-		ch->player.spec = 0;
-		update_skills(ch);
-		// epic_gain_skillpoints(ch, -1);
-		ch->only.pc->epics -= 10;
-		forget_spells(ch, -1);
+		if (!epic_transaction_submit(ch, -10, epic_reason_type::specialization_purchase, 0,
+					     EPIC_COMMAND_REQUIRE_FUNDS,
+					     critical_source_site::command,
+					     critical_deadline_class::interactive,
+					     unspecialize_committed, nullptr, 0))
+			send_to_char("The epic transaction service is busy. Please try again.\n",
+				     ch);
 	}
 }

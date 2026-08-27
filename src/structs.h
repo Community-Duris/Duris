@@ -1323,6 +1323,7 @@ struct pc_only_data
 	long frags; /* Pkill counter                           */
 	long oldfrags; /* Pkill counter                           */
 	long epics; /* # of epic points                           */
+	uint64_t epic_revision; /* Transactional epic domain revision. */
 	long epic_skill_points;
 	struct EpicBonusState epic_bonus_state;
 	long spell_bind_used; // used for skill_spellbind

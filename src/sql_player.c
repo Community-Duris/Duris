@@ -1153,7 +1153,7 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			"vitality=%d, base_vitality=%d, spells_memmed_extra=%d, "
 			"copper=%d, silver=%d, gold=%d, platinum=%d, "
 			"bank_copper=0, bank_silver=0, bank_gold=0, bank_platinum=0,"
-			"exp=%d, epics=%ld, epic_skill_points=%ld, skillpoints=%d, spell_bind_used=%ld, "
+			"exp=%d, epics=epics, epic_skill_points=%ld, skillpoints=%d, spell_bind_used=%ld, "
 			"act=%u, act2=%u, act3=%u, vote=%lu, alignment=%d,"
 			"prestige=%d, assoc_id=%d, guild_status=%u, "
 			"time_left_guild=FROM_UNIXTIME(NULLIF(%ld,0)), nb_left_guild=%d, time_unspecced=FROM_UNIXTIME(NULLIF(%ld,0)),"
@@ -1181,14 +1181,13 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			MAX(0, GET_MAX_HIT(ch) - GET_HIT(ch)), ch->points.base_hit,
 			GET_VITALITY(ch), ch->points.base_vitality,
 			ch->only.pc->spells_memmed[MAX_CIRCLE], GET_COPPER(ch), GET_SILVER(ch),
-			GET_GOLD(ch), GET_PLATINUM(ch), GET_EXP(ch), ch->only.pc->epics,
-			ch->only.pc->epic_skill_points, ch->only.pc->skillpoints,
-			ch->only.pc->spell_bind_used, ch->specials.act, ch->specials.act2,
-			ch->specials.act3, ch->only.pc->vote, ch->specials.alignment,
-			ch->only.pc->prestige, GET_ASSOC_ID(ch), ch->specials.guild_status,
-			ch->only.pc->time_left_guild, ch->only.pc->nb_left_guild,
-			ch->only.pc->time_unspecced, ch->only.pc->frags, ch->only.pc->oldfrags,
-			ch->only.pc->numb_deaths, ch->specials.conditions[0],
+			GET_GOLD(ch), GET_PLATINUM(ch), GET_EXP(ch), ch->only.pc->epic_skill_points,
+			ch->only.pc->skillpoints, ch->only.pc->spell_bind_used, ch->specials.act,
+			ch->specials.act2, ch->specials.act3, ch->only.pc->vote,
+			ch->specials.alignment, ch->only.pc->prestige, GET_ASSOC_ID(ch),
+			ch->specials.guild_status, ch->only.pc->time_left_guild,
+			ch->only.pc->nb_left_guild, ch->only.pc->time_unspecced, ch->only.pc->frags,
+			ch->only.pc->oldfrags, ch->only.pc->numb_deaths, ch->specials.conditions[0],
 			ch->specials.conditions[1], ch->specials.conditions[2],
 			ch->specials.conditions[3], ch->specials.conditions[4], esc_poofin,
 			esc_poofout, esc_poofinsnd, esc_poofoutsnd, ch->only.pc->echo_toggle,
@@ -1321,6 +1320,20 @@ bool sql_save_player_status(P_char ch, int type, int room)
 	{
 		ch->only.pc->pid = (int)mysql_insert_id(DB);
 		pid = ch->only.pc->pid;
+		const int baseline_written = snprintf(
+			query, sizeof(query),
+			"INSERT INTO epic_balance_baseline(pid,opening_balance,opening_revision) "
+			"VALUES(%d,%ld,0)",
+			pid, ch->only.pc->epics);
+		if (baseline_written < 0 || baseline_written >= (int)sizeof(query) ||
+		    !sql_run_query(query))
+		{
+			logit(LOG_PLAYER,
+			      "sql_save_player_status: component=epic_baseline outcome=initialize_failure");
+			if (own_txn)
+				sql_rollback();
+			return false;
+		}
 		if (!player_revision_hydrate(pid, 0))
 		{
 			logit(LOG_PLAYER,
@@ -3860,7 +3873,7 @@ bool sql_load_player_status(P_char ch, int pid)
 		"base_int, base_wis, base_cha, base_kar, base_luk, "
 		"mana, base_mana, hit_diff, base_hit, vitality, base_vitality, spells_memmed_extra, "
 		"copper, silver, gold, platinum, bank_copper, bank_silver, bank_gold, bank_platinum, "
-		"exp, epics, epic_skill_points, skillpoints, spell_bind_used, "
+		"exp, epics, epic_revision, epic_skill_points, skillpoints, spell_bind_used, "
 		"act, act2, act3, vote, alignment,prestige, assoc_id, guild_status, "
 		"UNIX_TIMESTAMP(time_left_guild), nb_left_guild, UNIX_TIMESTAMP(time_unspecced), frags, oldfrags, numb_deaths,"
 		"condition_0, condition_1, condition_2, condition_3, condition_4, "
@@ -3989,6 +4002,7 @@ bool sql_load_player_status(P_char ch, int pid)
 	// experience
 	GET_EXP(ch) = sql_row_int(row, col++, 0);
 	ch->only.pc->epics = sql_row_long(row, col++, 0);
+	ch->only.pc->epic_revision = sql_row_ulong(row, col++, 0);
 	ch->only.pc->epic_skill_points = sql_row_long(row, col++, 0);
 	ch->only.pc->skillpoints = sql_row_int(row, col++, 0);
 	ch->only.pc->spell_bind_used = sql_row_long(row, col++, 0);

@@ -29,6 +29,13 @@ assert "critical_operation_inbox" in source
 assert "critical_outbox_delivery_dedupe" in source
 assert "expected 34 required columns" in source
 assert "critical_index_probe" in source
+assert "epic_schema_probe" in source
+assert "expected 14 required columns" in source
+assert "epic_index_probe" in source
+assert "expected 5 entries" in source
+assert "epic_baseline_coverage_probe" in source
+assert "baseline.pid IS NULL" in source
+assert "epic balance baseline does not cover every player at boot" in source
 assert "critical_required_indexes" in source
 assert "expected 8 entries" in source
 

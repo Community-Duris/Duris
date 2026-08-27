@@ -9,6 +9,7 @@
 #include <string.h>
 #include "damage.h"
 #include "epic.h"
+#include "epic_transaction.h"
 #include "skills.h"
 #include "spells.h"
 
@@ -17,6 +18,49 @@ extern P_index obj_index;
 extern Skill skills[];
 extern P_room world;
 extern struct race_names race_names_table[];
+
+namespace
+{
+struct epic_skill_purchase_context
+{
+	int skill;
+	int epic_cost;
+	int coins_cost;
+	int expected_skill;
+};
+
+void epic_skill_purchase_committed(P_char pl, bool committed, const epic_command_result &,
+				   unsigned int, const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed || context_size != sizeof(epic_skill_purchase_context))
+	{
+		send_to_char("Your epic skill purchase was declined.\n", pl);
+		return;
+	}
+	epic_skill_purchase_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (GET_MONEY(pl) < context.coins_cost ||
+	    GET_CHAR_SKILL(pl, context.skill) != context.expected_skill)
+	{
+		send_to_char("Your training state changed; your epics are being refunded.\n", pl);
+		epic_transaction_submit(pl, context.epic_cost, epic_reason_type::epic_skill_refund,
+					context.skill, 0, critical_source_site::recovery,
+					critical_deadline_class::recovery, nullptr, nullptr, 0);
+		return;
+	}
+	SUB_MONEY(pl, context.coins_cost, 0);
+	const int learned = MIN(100, context.expected_skill + get_property("epic.skillGain", 10));
+	pl->only.pc->skills[context.skill].taught = learned;
+	pl->only.pc->skills[context.skill].learned = learned;
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer), "You improve your mastery of &+W%s&n.\n",
+		 skills[context.skill].name);
+	send_to_char(buffer, pl);
+	if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after epic skill purchase.", GET_NAME(pl));
+	CharWait(pl, PULSE_VIOLENCE);
+}
+} // namespace
 
 epic_reward epic_rewards[] = {
 	{ EPIC_REWARD_SKILL, SKILL_ANATOMY, 25, 25, 250000,
@@ -534,49 +578,13 @@ int epic_teacher(P_char ch, P_char pl, int cmd, char *arg)
 		return TRUE;
 	}
 
-	int old_plat = pl->points.cash[0];
-	int old_gold = pl->points.cash[1];
-	int old_silver = pl->points.cash[2];
-	int old_copper = pl->points.cash[3];
-	int old_epics = pl->only.pc->epics;
-	int old_skill = pl->only.pc->skills[skl].learned;
-	int old_taught = pl->only.pc->skills[skl].taught;
-
-	snprintf(buffer, sizeof buffer,
-		 "$n takes you aside and teaches you the finer points of &+W%s&n.\n"
-		 "&+cYou feel your skill in %s improving.&n\n",
-		 skills[skl].name, skills[skl].name);
-	act(buffer, FALSE, ch, 0, pl, TO_VICT);
-
-	SUB_MONEY(pl, coins_cost, 0);
-
-	// Ditching this, since we'll just use straight epic points now. Zion 4/8/2014
-	// epic_gain_skillpoints(pl, -1 * points_cost);
-	pl->only.pc->epics -= epics_cost;
-
-	pl->only.pc->skills[skl].taught = pl->only.pc->skills[skl].learned =
-		pl->only.pc->skills[skl].learned + get_property("epic.skillGain", 10);
-	if (pl->only.pc->skills[skl].taught > 100)
-		pl->only.pc->skills[skl].taught = pl->only.pc->skills[skl].learned = 100;
-	if (pl->only.pc->skills[skl].taught == 100)
-	{
-		snprintf(buffer, sizeof buffer, "You have mastered &+W%s&N.\n", skills[skl].name);
-		send_to_char(buffer, pl);
-	}
-	if (!do_save_silent(pl, 1))
-	{
-		pl->points.cash[0] = old_plat;
-		pl->points.cash[1] = old_gold;
-		pl->points.cash[2] = old_silver;
-		pl->points.cash[3] = old_copper;
-		pl->only.pc->epics = old_epics;
-		pl->only.pc->skills[skl].learned = old_skill;
-		pl->only.pc->skills[skl].taught = old_taught;
-		send_to_char("Your purchase could not be recorded. Please try again later.\n", pl);
-		logit(LOG_WIZ, "Failed to save %s after epic skill purchase.", GET_NAME(pl));
-		return TRUE;
-	}
-	CharWait(pl, PULSE_VIOLENCE);
+	const epic_skill_purchase_context context = { skl, epics_cost, coins_cost,
+						      GET_CHAR_SKILL(pl, skl) };
+	if (!epic_transaction_submit(pl, -epics_cost, epic_reason_type::epic_skill_purchase, skl,
+				     EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
+				     critical_deadline_class::interactive,
+				     epic_skill_purchase_committed, &context, sizeof(context)))
+		send_to_char("The epic transaction service is busy. Please try again.\n", pl);
 	return TRUE;
 }
 

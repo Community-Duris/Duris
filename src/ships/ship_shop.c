@@ -15,6 +15,7 @@
 #include "epic.h"
 #include "epic_bonus.h"
 #include "epic_skills.h"
+#include "epic_transaction.h"
 #include "map.h"
 #include "nexus_stones.h"
 #include "ships.h"
@@ -28,6 +29,133 @@ extern P_char character_list;
 extern const int davy_jones_locker_rnum;
 extern const int ship_transit_rnum;
 extern struct affected_type *get_spell_from_char(P_char ch, int spell, void *context);
+
+namespace
+{
+struct ship_hull_purchase_context
+{
+	int hull_type;
+	int old_hull;
+	int coin_delta;
+	int epic_cost;
+	int room;
+	bool owned;
+	bool quickbuild;
+	bool free_sloop;
+	char name[32];
+};
+
+void refund_ship_epics(P_char ch, const ship_hull_purchase_context &context)
+{
+	if (context.epic_cost > 0)
+		epic_transaction_submit(ch, context.epic_cost, epic_reason_type::ship_purchase,
+					context.hull_type, 0, critical_source_site::recovery,
+					critical_deadline_class::recovery, nullptr, nullptr, 0);
+}
+
+void ship_hull_purchase_committed(P_char ch, bool committed, const epic_command_result &,
+				  unsigned int, const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed || context_size != sizeof(ship_hull_purchase_context))
+	{
+		send_to_char("Your ship purchase was declined.\n", ch);
+		return;
+	}
+	ship_hull_purchase_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	P_ship ship = nullptr;
+	if (context.owned)
+	{
+		ship = get_ship_from_owner(ch->player.name);
+		if (!ship || ship->m_class != context.old_hull ||
+		    SHIP_CONTRA(ship) + SHIP_CARGO(ship) > 0)
+		{
+			send_to_char(
+				"Your ship changed while the purchase was pending; your epics are being refunded.\n",
+				ch);
+			refund_ship_epics(ch, context);
+			return;
+		}
+	}
+	if (context.coin_delta > 0 && GET_MONEY(ch) < context.coin_delta)
+	{
+		send_to_char(
+			"You no longer have the required coins; your epics are being refunded.\n",
+			ch);
+		refund_ship_epics(ch, context);
+		return;
+	}
+	if (!context.owned)
+	{
+		ship = new_ship(context.hull_type);
+		if (!ship)
+		{
+			send_to_char(
+				"The shipyard could not create your ship; your epics are being refunded.\n",
+				ch);
+			refund_ship_epics(ch, context);
+			return;
+		}
+		ship->ownername = str_dup(GET_NAME(ch));
+		ship->anchor = world[context.room].number;
+		name_ship(context.name, ship);
+		if (!load_ship(ship, context.room))
+		{
+			send_to_char(
+				"The shipyard could not load your ship; your epics are being refunded.\n",
+				ch);
+			refund_ship_epics(ch, context);
+			return;
+		}
+	}
+	if (context.coin_delta > 0)
+		SUB_MONEY(ch, context.coin_delta, 0);
+	else if (context.coin_delta < 0)
+		ADD_MONEY(ch, -context.coin_delta);
+	if (context.free_sloop)
+		affect_from_char(ch, AIP_FREESLOOP);
+	int buildtime = context.owned ?
+				75 * (context.hull_type > context.old_hull ?
+					      context.hull_type / 2 - context.old_hull / 3 :
+					      context.old_hull / 2 - context.hull_type / 3) :
+				75 * SHIPTYPE_ID(context.hull_type) / 4;
+	if (ocean_pvp_state())
+		buildtime *= 5;
+	if (context.quickbuild)
+		buildtime /= 2;
+	if (context.owned)
+	{
+		kick_everyone_off(ship);
+		ship->m_class = context.hull_type;
+		reset_ship(ship, false);
+	}
+	if (!IS_TRUSTED(ch) && BUILDTIME)
+		ship->timer[T_MAINTENANCE] += buildtime;
+	update_ship_status(ship);
+	queue_ship_save(ship, "committed ship hull purchase");
+	send_to_char_f(ch, "&+gYour committed hull purchase will take &n%d&+g hours.&n\n",
+		       buildtime / 75);
+}
+
+bool submit_ship_hull_purchase(P_char ch, const ship_hull_purchase_context &context)
+{
+	if (context.epic_cost == 0)
+	{
+		ship_hull_purchase_committed(ch, true, {}, 0,
+					     reinterpret_cast<const uint8_t *>(&context),
+					     sizeof(context));
+		return true;
+	}
+	if (epic_transaction_submit(ch, -context.epic_cost, epic_reason_type::ship_purchase,
+				    context.hull_type, EPIC_COMMAND_REQUIRE_FUNDS,
+				    critical_source_site::command,
+				    critical_deadline_class::interactive,
+				    ship_hull_purchase_committed, &context, sizeof(context)))
+		return true;
+	send_to_char("The epic transaction service is busy. Please try again.\n", ch);
+	return false;
+}
+} // namespace
 
 int list_cargo(P_char ch, P_ship ship, bool owned)
 {
@@ -2224,6 +2352,7 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 	int cost, buildtime, hull_type, oldhull;
 	struct affected_type *paf = get_spell_from_char(ch, AIP_CARGOCOUNT);
 	bool quickbuild = (paf && paf->modifier >= 10000) ? TRUE : FALSE;
+	bool free_sloop = false;
 
 	hull_type = atoi(arg1) - 1;
 	// Note: hull_type MAXSHIPCLASS - 1 is a NPC - Only ship class.
@@ -2310,12 +2439,18 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 				}
 				return TRUE;
 			}
-			SUB_MONEY(ch, cost,
-				  0); /* OKay, they have the plat, deduct it and build the ship */
-			if (SHIPTYPE_EPIC_COST(hull_type) > 0)
-			{
-				ch->only.pc->epics -= SHIPTYPE_EPIC_COST(hull_type);
-			}
+			ship_hull_purchase_context context = { .hull_type = hull_type,
+							       .old_hull = oldhull,
+							       .coin_delta = cost,
+							       .epic_cost = SHIPTYPE_EPIC_COST(
+								       hull_type),
+							       .room = ch->in_room,
+							       .owned = true,
+							       .quickbuild = quickbuild,
+							       .free_sloop = false,
+							       .name = {} };
+			submit_ship_hull_purchase(ch, context);
+			return TRUE;
 		}
 		else
 		{
@@ -2325,15 +2460,18 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 					       SHIPTYPE_EPIC_COST(hull_type));
 				return TRUE;
 			}
-			cost *= -1;
-			send_to_char_f(ch,
-				       "&+gYou receive &n%s&+g for the remaining materials.&n\n",
-				       coin_stringv(cost));
-			ADD_MONEY(ch, cost);
-			if (SHIPTYPE_EPIC_COST(hull_type) > 0)
-			{
-				ch->only.pc->epics -= SHIPTYPE_EPIC_COST(hull_type);
-			}
+			ship_hull_purchase_context context = { .hull_type = hull_type,
+							       .old_hull = oldhull,
+							       .coin_delta = cost,
+							       .epic_cost = SHIPTYPE_EPIC_COST(
+								       hull_type),
+							       .room = ch->in_room,
+							       .owned = true,
+							       .quickbuild = quickbuild,
+							       .free_sloop = false,
+							       .name = {} };
+			submit_ship_hull_purchase(ch, context);
+			return TRUE;
 		}
 
 		kick_everyone_off(ship);
@@ -2370,6 +2508,11 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 		{
 			return TRUE;
 		}
+		if (strlen(arg2) >= sizeof(ship_hull_purchase_context{}.name))
+		{
+			send_to_char("That ship name is too long for a pending purchase.\n", ch);
+			return TRUE;
+		}
 		if (affected_by_spell(ch, AIP_FREESLOOP))
 		{
 			if ((GET_MONEY(ch) >= SHIPTYPE_COST(hull_type) - 100000) &&
@@ -2378,13 +2521,11 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 				send_to_char(
 					"You show your &+ysmall &+bS&+Ba&+bi&+Bl&+bo&+Br&+b'&+Bs&n &+yTattoo&n for a discount.&n\n\r",
 					ch);
-				ADD_MONEY(ch, 100000);
-				// Remove the flag for free sloop.
-				affect_from_char(ch, AIP_FREESLOOP);
+				free_sloop = true;
 			}
 		}
 
-		if (GET_MONEY(ch) < SHIPTYPE_COST(hull_type) ||
+		if (GET_MONEY(ch) + (free_sloop ? 100000 : 0) < SHIPTYPE_COST(hull_type) ||
 		    GET_EPIC_POINTS(ch) < SHIPTYPE_EPIC_COST(hull_type))
 		{
 			if (SHIPTYPE_EPIC_COST(hull_type) > 0)
@@ -2401,6 +2542,19 @@ int buy_hull(P_char ch, P_ship ship, int owned, char *arg1, char *arg2)
 			}
 			return TRUE;
 		}
+		ship_hull_purchase_context context = { .hull_type = hull_type,
+						       .old_hull = -1,
+						       .coin_delta = SHIPTYPE_COST(hull_type) -
+								     (free_sloop ? 100000 : 0),
+						       .epic_cost = SHIPTYPE_EPIC_COST(hull_type),
+						       .room = ch->in_room,
+						       .owned = false,
+						       .quickbuild = quickbuild,
+						       .free_sloop = free_sloop,
+						       .name = {} };
+		snprintf(context.name, sizeof(context.name), "%s", arg2);
+		submit_ship_hull_purchase(ch, context);
+		return TRUE;
 
 		// Now, create the ship object
 		ship = new_ship(hull_type);

@@ -20,6 +20,8 @@ namespace
 {
 constexpr uint16_t OUTBOX_DESTINATION_TEST = 1;
 constexpr uint16_t OUTBOX_EVENT_TEST_MUTATED = 1;
+constexpr uint16_t OUTBOX_DESTINATION_EPIC = 2;
+constexpr uint16_t OUTBOX_EVENT_EPIC_BALANCE = 1;
 std::mutex outbox_mutex;
 std::condition_variable outbox_changed;
 std::thread outbox_worker;
@@ -86,7 +88,8 @@ bool refresh_counts(MYSQL *connection)
 		"COALESCE(TIMESTAMPDIFF(MICROSECOND,MIN(CASE WHEN status=0 THEN created_at END),"
 		"CURRENT_TIMESTAMP(6)) DIV 1000,0),"
 		"(SELECT COUNT(*) FROM critical_operation_inbox WHERE status<>1),"
-		"(SELECT COUNT(*) FROM critical_operation_inbox i WHERE status=1 AND NOT EXISTS "
+		"(SELECT COUNT(*) FROM critical_operation_inbox i WHERE status=1 AND result_code=0 "
+		"AND NOT EXISTS "
 		"(SELECT 1 FROM critical_outbox o WHERE o.operation_id=i.operation_id)) "
 		"FROM critical_outbox";
 	if (!execute(connection, SQL))
@@ -439,9 +442,12 @@ critical_outbox_delivery_result
 critical_outbox_test_destination(const critical_outbox_record &record, void *context)
 {
 	(void)context;
-	return record.destination == OUTBOX_DESTINATION_TEST &&
-			       record.event_type == OUTBOX_EVENT_TEST_MUTATED &&
-			       record.payload_version == 1 && record.payload.size() == 16 ?
-		       critical_outbox_delivery_result::delivered :
-		       critical_outbox_delivery_result::terminal_failure;
+	const bool test_record = record.destination == OUTBOX_DESTINATION_TEST &&
+				 record.event_type == OUTBOX_EVENT_TEST_MUTATED &&
+				 record.payload_version == 1 && record.payload.size() == 16;
+	const bool epic_record = record.destination == OUTBOX_DESTINATION_EPIC &&
+				 record.event_type == OUTBOX_EVENT_EPIC_BALANCE &&
+				 record.payload_version == 1 && record.payload.size() == 24;
+	return test_record || epic_record ? critical_outbox_delivery_result::delivered :
+					    critical_outbox_delivery_result::terminal_failure;
 }

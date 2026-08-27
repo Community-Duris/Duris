@@ -941,6 +941,7 @@ CREATE TABLE `player_data` (
   `bank_platinum` bigint DEFAULT '0',
   `exp` bigint DEFAULT '0',
   `epics` bigint DEFAULT '0',
+  `epic_revision` bigint unsigned NOT NULL DEFAULT '0',
   `epic_skill_points` bigint DEFAULT '0',
   `skillpoints` int DEFAULT '0',
   `spell_bind_used` bigint DEFAULT '0',
@@ -1790,6 +1791,30 @@ CREATE TABLE `critical_outbox_delivery_dedupe` (
   `delivered_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`consumer_id`,`outbox_id`),
   CONSTRAINT `critical_outbox_delivery_fk` FOREIGN KEY (`outbox_id`) REFERENCES `critical_outbox` (`outbox_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `epic_balance_baseline` (
+  `pid` int unsigned NOT NULL,
+  `opening_balance` bigint NOT NULL,
+  `opening_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `epic_ledger` (
+  `operation_id` binary(16) NOT NULL,
+  `pid` int unsigned NOT NULL,
+  `delta` bigint NOT NULL,
+  `balance_after` bigint NOT NULL,
+  `epic_revision` bigint unsigned NOT NULL,
+  `reason_type` smallint unsigned NOT NULL,
+  `reason_id` bigint NOT NULL DEFAULT '0',
+  `source_site` smallint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_epic_ledger_pid_revision` (`pid`,`epic_revision`),
+  KEY `idx_epic_ledger_pid_created` (`pid`,`created_at`),
+  KEY `idx_epic_ledger_reason_created` (`reason_type`,`created_at`),
+  CONSTRAINT `epic_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

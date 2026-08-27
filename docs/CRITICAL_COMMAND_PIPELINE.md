@@ -88,3 +88,24 @@ before restarting. Never delete or edit the journal to clear a fence.
 Focused validation is `python3 tests/async/test_critical_command_coordinator.py`,
 `python3 tests/async/test_critical_transaction_contract.py`, and, on an explicitly
 guarded local development database, `tests/async/run_critical_command_schema_mysql.sh`.
+
+## Epic balance destination
+
+Epic awards and spends use command type `epic` with one player key, a signed delta,
+typed reason, optional reason ID, and a funds-required flag. The repository creates a
+baseline lazily when needed, locks `player_data`, validates the revision and funds,
+updates balance/revision, inserts one immutable ledger row, stores the exact result,
+and emits its outbox row in the same transaction. Duplicate and ambiguous replay return
+the stored balance/revision without another delta.
+
+The game thread owns a bounded operation-keyed continuation table. It publishes the
+exact committed balance and revision before invoking a typed staged effect. Offline
+completions remain retained until the player enters or reconnects. `world persistence`
+reports aggregate `epic_transactions` pending, retained, outcome, submission-failure,
+and malformed-completion counters without operation or player identity.
+
+Player checkpoints, legacy flat-file replay, and ordinary status updates do not write
+the epic balance. New-character initialization and authoritative SQL hydration are the
+only non-transactional in-memory assignments. Focused validation is
+`python3 tests/async/test_epic_transaction_contract.py` and, on a guarded development
+database, `tests/async/run_epic_transaction_schema_mysql.sh`.

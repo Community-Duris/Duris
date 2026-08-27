@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "epic.h"
 #include "epic_bonus.h"
+#include "epic_command.h"
 #include <string.h>
 #include "config.h"
 #include "sql.h"
@@ -272,15 +273,18 @@ bool epic_bonus_hydrate(P_char ch)
 
 	MYSQL_RES *res = db_query(
 		"SELECT eb.type, UNIX_TIMESTAMP(eb.time), "
-		"UNIX_TIMESTAMP(CASE WHEN TIME(eg.time) = '00:00:00' "
-		"THEN DATE_ADD(DATE(eg.time), INTERVAL %d DAY) "
-		"ELSE DATE_ADD(DATE(eg.time), INTERVAL %d DAY) END) AS expires_at, "
-		"SUM(eg.epics) "
-		"FROM epic_bonus eb LEFT JOIN epic_gain eg ON eg.pid=eb.pid AND eg.type != %d "
-		"AND eg.epics > 0 AND eg.time > DATE_SUB(CURDATE(), INTERVAL %d DAY) "
-		"AND eg.time > eb.time WHERE eb.pid=%d "
+		"UNIX_TIMESTAMP(CASE WHEN TIME(gained.time) = '00:00:00' "
+		"THEN DATE_ADD(DATE(gained.time), INTERVAL %d DAY) "
+		"ELSE DATE_ADD(DATE(gained.time), INTERVAL %d DAY) END) AS expires_at, "
+		"SUM(gained.amount) FROM epic_bonus eb LEFT JOIN ("
+		"SELECT pid,epics AS amount,time FROM epic_gain WHERE type != %d AND epics > 0 "
+		"UNION ALL SELECT pid,delta AS amount,created_at AS time FROM epic_ledger "
+		"WHERE reason_type != %d AND delta > 0) gained ON gained.pid=eb.pid "
+		"AND gained.time > DATE_SUB(CURDATE(), INTERVAL %d DAY) "
+		"AND gained.time > eb.time WHERE eb.pid=%d "
 		"GROUP BY eb.type, eb.time, expires_at ORDER BY expires_at",
-		window_days, window_days + 1, EPIC_BOTTLE, window_days, GET_PID(ch));
+		window_days, window_days + 1, EPIC_BOTTLE, (int)epic_reason_type::bottle_award,
+		window_days, GET_PID(ch));
 	if (!res)
 	{
 		epic_bonus_state_mark_unavailable(state);

@@ -47,6 +47,7 @@ size_t completed_cache_bytes = 0;
 std::vector<std::thread> workers;
 critical_apply_fn apply_callback = nullptr;
 void *apply_context = nullptr;
+critical_drain_observer_fn drain_observer = nullptr;
 critical_coordinator_health health = {};
 bool stop_requested = false;
 
@@ -327,7 +328,9 @@ void worker_main()
 						   .attempt = attempt,
 						   .queued_at_usec = queued_at,
 						   .started_at_usec = started,
-						   .completed_at_usec = now_usec() };
+						   .completed_at_usec = now_usec(),
+						   .result_size = applied.result_size,
+						   .result_payload = applied.result_payload };
 		std::unique_lock<std::mutex> lock(coordinator_mutex);
 		result_available.wait(lock,
 				      [] {
@@ -605,7 +608,14 @@ bool critical_command_coordinator_drain(uint64_t timeout_msec)
 	critical_completion completions[64] = {};
 	for (;;)
 	{
-		critical_command_coordinator_pulse(completions, 64);
+		const size_t completed = critical_command_coordinator_pulse(completions, 64);
+		critical_drain_observer_fn observer = nullptr;
+		{
+			std::lock_guard<std::mutex> lock(coordinator_mutex);
+			observer = drain_observer;
+		}
+		if (completed && observer)
+			observer(completions, completed);
 		const critical_coordinator_health snapshot =
 			critical_command_coordinator_health_copy();
 		if (!snapshot.queued && !snapshot.inflight && !snapshot.blocked)
@@ -614,6 +624,12 @@ bool critical_command_coordinator_drain(uint64_t timeout_msec)
 			return false;
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
+}
+
+void critical_command_coordinator_set_drain_observer(critical_drain_observer_fn observer)
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	drain_observer = observer;
 }
 
 critical_coordinator_health critical_command_coordinator_health_copy(void)
@@ -635,5 +651,6 @@ bool critical_command_coordinator_inject_completion_for_tests(const critical_com
 void critical_command_coordinator_reset_for_tests(void)
 {
 	critical_command_coordinator_shutdown();
+	critical_command_coordinator_set_drain_observer(nullptr);
 	critical_command_journal_reset_for_tests();
 }

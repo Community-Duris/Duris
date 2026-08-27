@@ -4,6 +4,7 @@
 #include "critical_command.h"
 #include "critical_command_journal.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 
@@ -14,6 +15,7 @@ constexpr size_t CRITICAL_COORDINATOR_COMPLETED_CACHE_MAX = 256;
 constexpr size_t CRITICAL_COORDINATOR_COMPLETED_CACHE_BYTES = 8 * 1024 * 1024;
 constexpr unsigned int CRITICAL_COORDINATOR_MAX_RETRIES = 8;
 constexpr unsigned int CRITICAL_COORDINATOR_DEFAULT_WORKERS = 2;
+constexpr size_t CRITICAL_COMPLETION_RESULT_MAX_BYTES = 32;
 
 enum class critical_apply_outcome : uint8_t
 {
@@ -29,6 +31,8 @@ struct critical_apply_result
 	critical_apply_outcome outcome;
 	uint64_t durable_revision;
 	unsigned int error_code;
+	uint16_t result_size = 0;
+	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result_payload = {};
 };
 
 struct critical_completion
@@ -41,6 +45,8 @@ struct critical_completion
 	uint64_t queued_at_usec;
 	uint64_t started_at_usec;
 	uint64_t completed_at_usec;
+	uint16_t result_size = 0;
+	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result_payload = {};
 };
 
 enum class critical_submit_result : uint8_t
@@ -79,6 +85,7 @@ struct critical_coordinator_health
 };
 
 using critical_apply_fn = critical_apply_result (*)(const critical_command &command, void *context);
+using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
 
 bool critical_command_coordinator_init(const char *journal_directory, critical_apply_fn apply,
 				       void *context,
@@ -91,6 +98,7 @@ bool critical_command_coordinator_is_fenced(const critical_entity_key &key,
 void critical_command_coordinator_quiesce(void);
 void critical_command_coordinator_resume(void);
 bool critical_command_coordinator_drain(uint64_t timeout_msec);
+void critical_command_coordinator_set_drain_observer(critical_drain_observer_fn observer);
 critical_coordinator_health critical_command_coordinator_health_copy(void);
 bool critical_command_coordinator_inject_completion_for_tests(const critical_completion &completion);
 void critical_command_coordinator_reset_for_tests(void);

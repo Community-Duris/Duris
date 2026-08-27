@@ -168,6 +168,8 @@ query_result apply_status(MYSQL *connection, const player_snapshot &snapshot)
 	sql << "UPDATE player_data SET last_room=" << snapshot.room_vnum << ",last_save=NOW()";
 	for (const player_snapshot_integer &row : snapshot.status_integers)
 	{
+		if (row.field == player_status_field::epics)
+			continue;
 		const char *column = status_column(row.field);
 		if (!column)
 			return { false, EINVAL };

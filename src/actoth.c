@@ -26,6 +26,7 @@
 #include "damage.h"
 #include "deferred_save_policy.h"
 #include "epic.h"
+#include "epic_transaction.h"
 #include "files.h"
 #include "gmcp.h"
 #include "guard.h"
@@ -6593,11 +6594,74 @@ void do_blood_scent(P_char ch, char * /*argument*/, int /*cmd*/)
 	}*/
 }
 
+namespace
+{
+enum class ascend_kind : int
+{
+	theurgist,
+	avenger_specialization,
+	paladin_transformation,
+};
+
+struct ascend_context
+{
+	ascend_kind kind;
+	int specialization;
+};
+
+void ascend_committed(P_char ch, bool committed, const epic_command_result &, unsigned int,
+		      const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed || context_size != sizeof(ascend_context))
+	{
+		send_to_char("Your ascension offering was not accepted.\n", ch);
+		return;
+	}
+	ascend_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (context.kind == ascend_kind::theurgist)
+	{
+		for (int skill = 0; skill < MAX_SKILLS; ++skill)
+			if (!IS_TRADESKILL(skill) && !IS_EPIC_SKILL(skill))
+				ch->only.pc->skills[skill].learned = 0;
+		NewbySkillSet(ch, FALSE);
+		ch->points.max_mana = 0;
+		do_start(ch, 1);
+		for (int wear = 0; wear < MAX_WEAR; ++wear)
+			if (ch->equipment[wear])
+				obj_to_char(unequip_char(ch, wear), ch);
+		GET_SIZE(ch) = SIZE_MEDIUM;
+		GET_RACE(ch) = RACE_ELADRIN;
+		ch->player.m_class = CLASS_THEURGIST;
+		GET_VITALITY(ch) = GET_MAX_VITALITY(ch) = 120;
+	}
+	else
+	{
+		ch->player.spec = context.specialization;
+		if (context.kind == ascend_kind::paladin_transformation)
+		{
+			forget_spells(ch, -1);
+			ch->player.secondary_class = 0;
+			GET_SIZE(ch) = SIZE_MEDIUM;
+			GET_RACE(ch) = RACE_AGATHINON;
+			ch->player.m_class = CLASS_AVENGER;
+			do_start(ch, 1);
+		}
+	}
+	generate_desc(ch);
+	ch->player.time.birth = time(NULL) - 500 * SECS_PER_MUD_YEAR;
+	forget_spells(ch, -1);
+	ch->player.spec = context.kind == ascend_kind::theurgist ? 0 : context.specialization;
+	if (context.kind == ascend_kind::theurgist)
+		ch->player.secondary_class = 0;
+	send_to_char("Your offering is accepted and your ascension is complete.\n", ch);
+}
+} // namespace
+
 void ascend_theurgist(P_char ch)
 {
 	P_char teacher;
 	char buff[64];
-	int i;
 
 	if (!ch)
 		return;
@@ -6631,44 +6695,13 @@ void ascend_theurgist(P_char ch)
 		return;
 	}
 
-	for (i = 0; i < MAX_SKILLS; i++)
-	{
-		if (!IS_TRADESKILL(i) && !IS_EPIC_SKILL(i))
-		{
-			ch->only.pc->skills[i].learned = 0;
-		}
-	}
-	NewbySkillSet(ch, FALSE);
-	ch->points.max_mana = 0;
-	do_start(ch, 1);
-
-	int k = 0;
-	P_obj temp_obj;
-	for (k = 0; k < MAX_WEAR; k++)
-	{
-		temp_obj = ch->equipment[k];
-		if (temp_obj)
-			obj_to_char(unequip_char(ch, k), ch);
-	}
-
-	GET_SIZE(ch) = SIZE_MEDIUM;
-	GET_RACE(ch) = RACE_ELADRIN;
-	ch->player.m_class = CLASS_THEURGIST;
-
-	send_to_char("You feel a chill and realize that you are naked.\r\n", ch);
-	generate_desc(ch);
-
-	// GET_AGE does not return a changeable variable.
-	ch->player.time.birth = time(NULL) - 500 * SECS_PER_MUD_YEAR;
-
-	GET_VITALITY(ch) = GET_MAX_VITALITY(ch) = 120;
-	forget_spells(ch, -1);
-	ch->player.spec = 0;
-	ch->player.secondary_class = 0;
-	ch->only.pc->epics =
-		MAX(0, ch->only.pc->epics - (int)get_property("ascend.epicCost.Eladrin", 10));
-	// Lets not home them on the map.
-	// GET_HOME(ch) = GET_BIRTHPLACE(ch) = GET_ORIG_BIRTHPLACE(ch) = ch->in_room;
+	const int cost = (int)get_property("ascend.epicCost.Eladrin", 250);
+	const ascend_context context = { ascend_kind::theurgist, 0 };
+	if (!epic_transaction_submit(ch, -cost, epic_reason_type::ascend_descend, 0,
+				     EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
+				     critical_deadline_class::interactive, ascend_committed,
+				     &context, sizeof(context)))
+		send_to_char("The epic transaction service is busy. Please try again.\n", ch);
 }
 
 void do_ascend(P_char ch, char * /*arg*/, int /*cmd*/)
@@ -6723,22 +6756,15 @@ void do_ascend(P_char ch, char * /*arg*/, int /*cmd*/)
 
 	if (GET_CLASS(ch, CLASS_AVENGER))
 	{
-		ch->player.spec = spec;
-		send_to_char("You pray to your god, asking for judgement over your past deeds,\n"
-			     "seeking further enlightment. A &+Wholy glow&n seems to encase you,\n"
-			     "lifting your spirits and heightening your awareness.\n"
-			     "Your prayers have been answered, as you ascend into the ranks of\n"
-			     "the holy army, from this day on you will be an "
-			     "&+WAvenger&n of divine law.\n\n",
-			     ch);
-		snprintf(buffer, 256,
-			 "You hear a loud voice exclaiming, '&+WWelcome my child, you shall\n"
-			 "&+Wnow be the avenging hand of %s,\n"
-			 "&+Wthe %s &+Wfor his enemies!'",
-			 get_god_name(ch), GET_SPEC_NAME(ch->player.m_class, spec - 1));
-		send_to_char(buffer, ch);
-		ch->only.pc->epics =
-			MAX(0, ch->only.pc->epics - (int)get_property("ascend.epicCost", 250));
+		const int cost = (int)get_property("ascend.epicCost", 250);
+		const ascend_context context = { ascend_kind::avenger_specialization, spec };
+		if (!epic_transaction_submit(ch, -cost, epic_reason_type::ascend_descend, spec,
+					     EPIC_COMMAND_REQUIRE_FUNDS,
+					     critical_source_site::command,
+					     critical_deadline_class::interactive, ascend_committed,
+					     &context, sizeof(context)))
+			send_to_char("The epic transaction service is busy. Please try again.\n",
+				     ch);
 		return;
 	}
 
@@ -6748,40 +6774,23 @@ void do_ascend(P_char ch, char * /*arg*/, int /*cmd*/)
 			     ch);
 		return;
 	}
-	if (ch->only.pc->epics < (int)get_property("ascend.epicCost", 10))
+	const int ascend_cost = (int)get_property("ascend.epicCost", 250);
+	if (ch->only.pc->epics < ascend_cost)
 	{
 		snprintf(
 			buffer, 256,
 			"&+WYou must first prove yourself worthy! The transformation will consume &n%d&+W epic points.\n",
-			(int)get_property("ascend.epicCost", 10));
+			ascend_cost);
 		send_to_char(buffer, ch);
 		return;
 	}
 
-	forget_spells(ch, -1);
-	ch->player.spec = spec;
-	ch->player.secondary_class = 0;
-	GET_SIZE(ch) = SIZE_MEDIUM;
-	GET_RACE(ch) = RACE_AGATHINON;
-	generate_desc(ch);
-	// GET_AGE does not return a changeable variable.
-	ch->player.time.birth = time(NULL) - 500 * SECS_PER_MUD_YEAR;
-	ch->player.m_class = CLASS_AVENGER;
-	do_start(ch, 1);
-	ch->only.pc->epics = MAX(0, ch->only.pc->epics - (int)get_property("ascend.epicCost", 250));
-	send_to_char("You pray to your god, asking for judgement over your past deeds,\n"
-		     "seeking further enlightment. A &+Wholy glow&n seems to encase you,\n"
-		     "lifting your spirits and heightening your awareness.\n"
-		     "Your prayers have been answered, as you ascend into the ranks of\n"
-		     "the holy army, from this day on you will be an "
-		     "&+WAvenger&n of divine law.\n\n",
-		     ch);
-	snprintf(buffer, sizeof buffer,
-		 "You hear a loud voice exclaiming, '&+WWelcome my child, you shall\n"
-		 "&+Wnow be the avenging hand of %s,\n"
-		 "&+Wthe %s &+Wfor his enemies!'",
-		 get_god_name(ch), GET_SPEC_NAME(ch->player.m_class, spec - 1));
-	send_to_char(buffer, ch);
+	const ascend_context context = { ascend_kind::paladin_transformation, spec };
+	if (!epic_transaction_submit(ch, -ascend_cost, epic_reason_type::ascend_descend, spec,
+				     EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
+				     critical_deadline_class::interactive, ascend_committed,
+				     &context, sizeof(context)))
+		send_to_char("The epic transaction service is busy. Please try again.\n", ch);
 }
 
 void do_descend(P_char ch, char * /*arg*/, int /*cmd*/)
@@ -6874,7 +6883,7 @@ void do_descend(P_char ch, char * /*arg*/, int /*cmd*/)
 	if (GET_ASSOC(ch) != NULL)
 		GET_ASSOC(ch)->secede(ch);
 	ch->only.pc->frags = 0;
-	ch->only.pc->epics = 0;
+	/* Epic reset is intentionally unreachable while this legacy command is disabled. */
 
 	for (i = 0; i < MAX_SKILLS; i++)
 	{
@@ -6904,7 +6913,6 @@ void do_old_descend(P_char ch, char *arg, int /*cmd*/)
 	const int THIEF = 7;
 	const int CONJ = 8;
 	const int ILLU = 9;
-	int cost = 0;
 	char second_arg[MAX_INPUT_LENGTH], third_arg[MAX_INPUT_LENGTH];
 	char buff[64];
 
@@ -6963,12 +6971,10 @@ void do_old_descend(P_char ch, char *arg, int /*cmd*/)
 		if (GET_CLASS(ch, CLASS_ANTIPALADIN))
 		{
 			SELECTION = DREAD;
-			cost = get_property("descend.epicCost", 2500);
 		}
 		if (GET_CLASS(ch, CLASS_NECROMANCER))
 		{
 			SELECTION = NECRO;
-			cost = get_property("descent.epicCost.Lich", 250);
 		}
 		/*
 	   if (!str_cmp(second_arg,  "Warrior")){
@@ -7217,7 +7223,7 @@ void do_old_descend(P_char ch, char *arg, int /*cmd*/)
 		forget_spells(ch, -1);
 		ch->player.spec = 0;
 		ch->player.secondary_class = 0;
-		ch->only.pc->epics = MAX(0, ch->only.pc->epics - cost);
+		/* This obsolete NPC-only path does not mutate transactional epic balances. */
 
 		if (IS_RACEWAR_EVIL(ch))
 		{

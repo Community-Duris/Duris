@@ -139,7 +139,6 @@ bool capture_status(P_char ch, player_snapshot &snapshot, capture_budget &budget
 	ADD_STATUS(gold, GET_GOLD(ch));
 	ADD_STATUS(platinum, GET_PLATINUM(ch));
 	ADD_STATUS(experience, GET_EXP(ch));
-	ADD_STATUS(epics, ch->only.pc->epics);
 	ADD_STATUS(epic_skill_points, ch->only.pc->epic_skill_points);
 	ADD_STATUS(skill_points, ch->only.pc->skillpoints);
 	ADD_STATUS(spell_bind_used, ch->only.pc->spell_bind_used);

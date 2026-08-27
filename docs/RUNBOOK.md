@@ -201,6 +201,20 @@ These are investigated and understood; they are not signs of a failed boot.
 Schema operations follow the safety rules in [DATABASE.md](DATABASE.md):
 back up, clone, validate replay on the clone -- never against live data.
 
+### Epic ledger cutover and reconciliation
+
+Before enabling transactional epic producers on a guarded development clone, apply
+`migrations/epic_ledger_balance.sql`, run `migrations/verify_epic_ledger_schema.sh`,
+then capture opening balances once with `migrations/baseline_epic_balances.sh --apply`.
+The baseline command refuses when any ledger row or advanced epic revision exists and
+preserves existing baseline rows.
+
+`migrations/reconcile_epic_balances.sh` is read-only. A healthy result reports zero
+missing baselines, balance mismatches, and latest-result mismatches. Stop affected epic
+gameplay if any count is nonzero, preserve the inbox/outbox/ledger rows, and investigate
+the operation history. Do not edit the ledger, invent historical operation IDs, or
+rerun the baseline against an active ledger.
+
 `backup_pfiles.sh` chooses its database-dump branch only when `REDIS` is the
 exact lowercase value `true` or the value `1`; the server itself accepts
 case-insensitive `TRUE`. If the automatic backup must use `mysqldump`, set

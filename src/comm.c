@@ -83,6 +83,7 @@
 #include "critical_command_coordinator.h"
 #include "critical_command_repository.h"
 #include "critical_outbox.h"
+#include "epic_transaction.h"
 #include "player_save_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "test_async.h"
@@ -619,6 +620,8 @@ void run_the_game(int port, int sslport)
 			persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
 					  "start_failed", "check critical schema and journal");
 		}
+		critical_command_coordinator_set_drain_observer(
+			epic_transaction_handle_completions);
 	}
 
 	/* Boot-time scalar queue flood test: overflows the queue so the
@@ -1371,6 +1374,8 @@ resume_game_loop:
 			critical_completion critical_completions[64] = {};
 			const size_t critical_completion_count =
 				critical_command_coordinator_pulse(critical_completions, 64);
+			epic_transaction_handle_completions(critical_completions,
+							    critical_completion_count);
 			for (size_t index = 0; index < critical_completion_count; ++index)
 				if (critical_completions[index].outcome ==
 				    critical_apply_outcome::terminal_failure)

@@ -2112,7 +2112,8 @@ int restoreStatus(char *buf, P_char ch)
 	GET_EXP(ch) = GET_INTE(buf);
 	//  ch->points.max_exp =
 	GET_INTE(buf);
-	ch->only.pc->epics = GET_INTE(buf); // Used for lvl withouth potion
+	GET_INTE(
+		buf); // Legacy flat-file epic balance is parsed but SQL ledger state is authoritative.
 
 	if (stat_vers >= 44)
 	{

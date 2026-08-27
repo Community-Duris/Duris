@@ -30,6 +30,7 @@ using namespace std;
 #include "ctf.h"
 #include "epic.h"
 #include "epic_bonus.h"
+#include "epic_transaction.h"
 #include "grapple.h"
 #include "guard.h"
 #include "hardcore_config.h"
@@ -3995,6 +3996,7 @@ static void show_world_persistence(P_char ch)
 	const critical_command_journal_health critical_journal =
 		critical_command_journal_health_copy();
 	const critical_outbox_health critical_outbox = critical_outbox_health_copy();
+	const epic_transaction_health epic_transactions = epic_transaction_health_copy();
 	const world_recovery_health world_recovery = world_recovery_pipeline_health_copy();
 	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
 	char line[MAX_STRING_LENGTH];
@@ -4109,6 +4111,22 @@ static void show_world_persistence(P_char ch)
 		(unsigned long long)critical_outbox.db_failures,
 		(unsigned long long)critical_outbox.high_water_records,
 		(unsigned long long)critical_outbox.high_water_bytes);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "epic_transactions state=%s pending=%llu retained_offline=%llu submitted=%llu "
+		 "committed=%llu rejected=%llu submit_failures=%llu malformed=%llu\n",
+		 epic_transactions.malformed_completions || epic_transactions.submission_failures ?
+			 "degraded" :
+		 epic_transactions.pending ? "pending" :
+					     "ready",
+		 (unsigned long long)epic_transactions.pending,
+		 (unsigned long long)epic_transactions.retained_offline,
+		 (unsigned long long)epic_transactions.submitted,
+		 (unsigned long long)epic_transactions.committed,
+		 (unsigned long long)epic_transactions.rejected,
+		 (unsigned long long)epic_transactions.submission_failures,
+		 (unsigned long long)epic_transactions.malformed_completions);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),
@@ -5699,11 +5717,6 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 
 	if (GET_LEVEL(ch) > 19)
 	{
-		if (IS_PC(ch) && ch->only.pc->epics < 0)
-		{
-			ch->only.pc->epics = 0;
-		}
-
 		if (IS_PC(ch))
 		{
 			struct affected_type *afp, *afp2;
@@ -9677,6 +9690,24 @@ void do_recall(P_char ch, char *argument, int /*cmd*/)
 		}
 }
 
+namespace
+{
+void unmulti_committed(P_char ch, bool committed, const epic_command_result &, unsigned int,
+		       const uint8_t *, size_t)
+{
+	if (!committed)
+	{
+		send_to_char("Your meditation fails to consume the required epic points.\n", ch);
+		return;
+	}
+	ch->player.secondary_class = 0;
+	ch->player.spec = 0;
+	forget_spells(ch, -1);
+	update_skills(ch);
+	send_to_char("Your recent knowledge falls away and your old ways return.\n", ch);
+}
+} // namespace
+
 void unmulti(P_char ch, P_obj obj)
 {
 	if (!IS_MULTICLASS_PC(ch))
@@ -9698,12 +9729,11 @@ void unmulti(P_char ch, P_obj obj)
 	    "After a few moments, $e stands up quietly.\n",
 	    FALSE, ch, obj, 0, TO_ROOM);
 
-	ch->player.secondary_class = 0;
-	ch->player.spec = 0;
-	forget_spells(ch, -1);
-	update_skills(ch);
-	// epic_gain_skillpoints(ch, -1);
-	ch->only.pc->epics -= 100;
+	if (!epic_transaction_submit(ch, -100, epic_reason_type::ascend_descend, 0,
+				     EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
+				     critical_deadline_class::interactive, unmulti_committed,
+				     nullptr, 0))
+		send_to_char("The epic transaction service is busy. Please try again.\n", ch);
 }
 
 // Making ships visible 24-7 to dayblind/nightblind.

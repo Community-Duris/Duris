@@ -26,6 +26,7 @@
 #include "arena.h"
 #include "arenadef.h"
 #include "assocs.h"
+#include "epic_transaction.h"
 #include "guildhall.h"
 #include "justice.h"
 #include "map.h"
@@ -53,6 +54,86 @@
  * external variables
  */
 extern Skill skills[];
+
+namespace
+{
+struct epic_store_context
+{
+	int object_vnum;
+	int cost;
+	bool forest_sight;
+};
+
+void epic_store_committed(P_char pl, bool committed, const epic_command_result &, unsigned int,
+			  const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed || context_size != sizeof(epic_store_context))
+	{
+		send_to_char("Kannard says, 'Your epic purchase was declined.'\n", pl);
+		return;
+	}
+	epic_store_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	P_obj obj = read_object(context.object_vnum, VIRTUAL);
+	if (!obj)
+	{
+		send_to_char("Kannard cannot find that item; your epics are being refunded.\n", pl);
+		epic_transaction_submit(pl, context.cost, epic_reason_type::store_purchase,
+					context.object_vnum, 0, critical_source_site::recovery,
+					critical_deadline_class::recovery, nullptr, nullptr, 0);
+		return;
+	}
+	if (context.forest_sight)
+		SET_BIT(obj->bitvector5, AFF5_FOREST_SIGHT);
+	send_to_char("Kannard says, 'Ah, good choice! Quite a rare item!'\n", pl);
+	act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
+	obj_to_char(obj, pl);
+	if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after epic store purchase.", GET_NAME(pl));
+	epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.", J_NAME(pl),
+		obj->short_description, context.object_vnum, context.cost);
+}
+
+bool submit_epic_store_purchase(P_char pl, int object_vnum, int cost, bool forest_sight = false)
+{
+	const epic_store_context context = { object_vnum, cost, forest_sight };
+	if (epic_transaction_submit(pl, -cost, epic_reason_type::store_purchase, object_vnum,
+				    EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
+				    critical_deadline_class::interactive, epic_store_committed,
+				    &context, sizeof(context)))
+		return true;
+	send_to_char("The epic transaction service is busy. Please try again.\n", pl);
+	return false;
+}
+
+void tradeskill_reset_committed(P_char pl, bool committed, const epic_command_result &,
+				unsigned int, const uint8_t *, size_t)
+{
+	if (!committed)
+	{
+		send_to_char("Your tradeskill reset was declined.\n", pl);
+		return;
+	}
+	if (!sql_delete_player_recipes(GET_PID(pl)))
+	{
+		send_to_char("Your reset could not be recorded; your epics are being refunded.\n",
+			     pl);
+		epic_transaction_submit(pl, 200, epic_reason_type::tradeskill_reset, 0, 0,
+					critical_source_site::recovery,
+					critical_deadline_class::recovery, nullptr, nullptr, 0);
+		return;
+	}
+	for (int skill : { SKILL_FORGE, SKILL_MINE, SKILL_CRAFT })
+	{
+		pl->only.pc->skills[skill].taught = 0;
+		pl->only.pc->skills[skill].learned = 0;
+	}
+	send_to_char("Your teacher cleanses your mind; you feel renewed.\n", pl);
+	if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after tradeskill reset.", GET_NAME(pl));
+	CharWait(pl, PULSE_VIOLENCE);
+}
+} // namespace
 extern struct zone_data *zone_table;
 extern const char *material_names[];
 extern P_char character_list;
@@ -1234,7 +1315,6 @@ int learn_recipe(P_obj obj, P_char ch, int cmd, char *arg)
 int epic_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 {
 	char buffer[MAX_STRING_LENGTH];
-	P_obj obj;
 
 	if (cmd == CMD_LIST)
 	{
@@ -1307,23 +1387,7 @@ int epic_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 					pl);
 				return TRUE;
 			}
-			pl->only.pc->epics -= COST_EPIC_MUSHROOM;
-			obj = read_object(VOBJ_EPIC_MUSHROOM, VIRTUAL);
-			send_to_char(
-				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
-				pl);
-			send_to_char(
-				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
-				pl);
-			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
-			obj_to_char(obj, pl);
-			if (!do_save_silent(pl, 1))
-				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
-				      GET_NAME(pl));
-			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
-				J_NAME(pl), obj->short_description, VOBJ_EPIC_MUSHROOM,
-				COST_EPIC_MUSHROOM);
+			submit_epic_store_purchase(pl, VOBJ_EPIC_MUSHROOM, COST_EPIC_MUSHROOM);
 			return TRUE;
 		}
 		// 2 - fix scroll
@@ -1337,23 +1401,7 @@ int epic_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 					pl);
 				return TRUE;
 			}
-			pl->only.pc->epics -= COST_EPIC_FIX_SCROLL;
-			obj = read_object(VOBJ_EPIC_FIX_SCROLL, VIRTUAL);
-			send_to_char(
-				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
-				pl);
-			send_to_char(
-				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
-				pl);
-			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
-			obj_to_char(obj, pl);
-			if (!do_save_silent(pl, 1))
-				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
-				      GET_NAME(pl));
-			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
-				J_NAME(pl), obj->short_description, VOBJ_EPIC_FIX_SCROLL,
-				COST_EPIC_FIX_SCROLL);
+			submit_epic_store_purchase(pl, VOBJ_EPIC_FIX_SCROLL, COST_EPIC_FIX_SCROLL);
 			return TRUE;
 		}
 		// 3 - faerie bag
@@ -1367,23 +1415,7 @@ int epic_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 					pl);
 				return TRUE;
 			}
-			pl->only.pc->epics -= COST_EPIC_FAERIE_BAG;
-			obj = read_object(VOBJ_EPIC_FAERIE_BAG, VIRTUAL);
-			send_to_char(
-				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
-				pl);
-			send_to_char(
-				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
-				pl);
-			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
-			obj_to_char(obj, pl);
-			if (!do_save_silent(pl, 1))
-				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
-				      GET_NAME(pl));
-			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
-				J_NAME(pl), obj->short_description, VOBJ_EPIC_FAERIE_BAG,
-				COST_EPIC_FAERIE_BAG);
+			submit_epic_store_purchase(pl, VOBJ_EPIC_FAERIE_BAG, COST_EPIC_FAERIE_BAG);
 			return TRUE;
 		}
 		// 4 - netheril robe
@@ -1397,23 +1429,7 @@ int epic_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 					pl);
 				return TRUE;
 			}
-			pl->only.pc->epics -= COST_EPIC_BATTLEROBE;
-			obj = read_object(VOBJ_EPIC_BATTLEROBE, VIRTUAL);
-			send_to_char(
-				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
-				pl);
-			send_to_char(
-				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
-				pl);
-			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
-			obj_to_char(obj, pl);
-			if (!do_save_silent(pl, 1))
-				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
-				      GET_NAME(pl));
-			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
-				J_NAME(pl), obj->short_description, VOBJ_EPIC_BATTLEROBE,
-				COST_EPIC_BATTLEROBE);
+			submit_epic_store_purchase(pl, VOBJ_EPIC_BATTLEROBE, COST_EPIC_BATTLEROBE);
 			return TRUE;
 		}
 		// 5 - corpse portal potion
@@ -1427,23 +1443,8 @@ int epic_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 					pl);
 				return TRUE;
 			}
-			obj = read_object(VOBJ_EPIC_TOCORPSE_POTION, VIRTUAL);
-			pl->only.pc->epics -= COST_EPIC_TOCORPSE_POTION;
-			send_to_char(
-				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
-				pl);
-			send_to_char(
-				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
-				pl);
-			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
-			obj_to_char(obj, pl);
-			if (!do_save_silent(pl, 1))
-				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
-				      GET_NAME(pl));
-			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
-				J_NAME(pl), obj->short_description, VOBJ_EPIC_TOCORPSE_POTION,
-				COST_EPIC_TOCORPSE_POTION);
+			submit_epic_store_purchase(pl, VOBJ_EPIC_TOCORPSE_POTION,
+						   COST_EPIC_TOCORPSE_POTION);
 			return TRUE;
 		}
 		// 6 - lantan tools
@@ -1457,23 +1458,8 @@ int epic_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 					pl);
 				return TRUE;
 			}
-			obj = read_object(VOBJ_EPIC_LANTAN_TOOLS, VIRTUAL);
-			pl->only.pc->epics -= COST_EPIC_LANTAN_TOOLS;
-			send_to_char(
-				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
-				pl);
-			send_to_char(
-				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
-				pl);
-			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
-			obj_to_char(obj, pl);
-			if (!do_save_silent(pl, 1))
-				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
-				      GET_NAME(pl));
-			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
-				J_NAME(pl), obj->short_description, VOBJ_EPIC_LANTAN_TOOLS,
-				COST_EPIC_LANTAN_TOOLS);
+			submit_epic_store_purchase(pl, VOBJ_EPIC_LANTAN_TOOLS,
+						   COST_EPIC_LANTAN_TOOLS);
 			return TRUE;
 		}
 		// 7 - forest sight
@@ -1487,25 +1473,8 @@ int epic_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 					pl);
 				return TRUE;
 			}
-			obj = read_object(VOBJ_EPIC_FOREST_EYES, VIRTUAL);
-			pl->only.pc->epics -= COST_EPIC_FOREST_EYES;
-			send_to_char(
-				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
-				pl);
-			send_to_char(
-				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
-				pl);
-			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
-			// Why isn't this set in the zone files?  How peculiar.
-			SET_BIT(obj->bitvector5, AFF5_FOREST_SIGHT);
-			obj_to_char(obj, pl);
-			if (!do_save_silent(pl, 1))
-				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
-				      GET_NAME(pl));
-			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
-				J_NAME(pl), obj->short_description, VOBJ_EPIC_FOREST_EYES,
-				COST_EPIC_FOREST_EYES);
+			submit_epic_store_purchase(pl, VOBJ_EPIC_FOREST_EYES, COST_EPIC_FOREST_EYES,
+						   true);
 			return TRUE;
 		}
 		else if (strstr(arg, "8"))
@@ -1518,23 +1487,8 @@ int epic_store(P_char /*ch*/, P_char pl, int cmd, char *arg)
 					pl);
 				return TRUE;
 			}
-			obj = read_object(VOBJ_EPIC_BOTTLE_EPICS, VIRTUAL);
-			pl->only.pc->epics -= COST_EPIC_BOTTLE_EPICS;
-			send_to_char(
-				"&+WKannard&+L &+wsays '&nAh, good choice! Quite a rare item!'\n",
-				pl);
-			send_to_char(
-				"&+WKannard &+Lthe &+ctra&+Cvell&+cer &nmakes a strange gesture about your body, and hands you your item.\r\n&n",
-				pl);
-			act("You now have $p!\r\n", FALSE, pl, obj, 0, TO_CHAR);
-			obj_to_char(obj, pl);
-			if (!do_save_silent(pl, 1))
-				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
-				      GET_NAME(pl));
-			// Log the transaction in epic log file.
-			epiclog(56, "%s bought '%s' (%d) at the epic store for %d epics.",
-				J_NAME(pl), obj->short_description, VOBJ_EPIC_BOTTLE_EPICS,
-				COST_EPIC_BOTTLE_EPICS);
+			submit_epic_store_purchase(pl, VOBJ_EPIC_BOTTLE_EPICS,
+						   COST_EPIC_BOTTLE_EPICS);
 			return TRUE;
 		}
 	}
@@ -1596,34 +1550,14 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 						pl);
 				return TRUE;
 			}
-			// wipe their learned recipes from database
-			if (!sql_delete_player_recipes(GET_PID(pl)))
-			{
+			if (!epic_transaction_submit(pl, -200, epic_reason_type::tradeskill_reset,
+						     0, EPIC_COMMAND_REQUIRE_FUNDS,
+						     critical_source_site::command,
+						     critical_deadline_class::interactive,
+						     tradeskill_reset_committed, nullptr, 0))
 				send_to_char(
-					"Your tradeskill reset could not be recorded. Please try again later.\r\n",
+					"The epic transaction service is busy. Please try again.\n",
 					pl);
-				logit(LOG_WIZ,
-				      "Failed to delete learned recipes for %s during tradeskill reset.",
-				      GET_NAME(pl));
-				return TRUE;
-			}
-
-			pl->only.pc->epics -= 200;
-			snprintf(
-				buffer, MAX_STRING_LENGTH,
-				"Your teacher takes you aside, and performs a cleansing geasture about your body&n. Your mind feels &+Wrenewed&n!\n");
-			act(buffer, FALSE, ch, 0, pl, TO_VICT);
-			pl->only.pc->skills[SKILL_FORGE].taught = 0;
-			pl->only.pc->skills[SKILL_FORGE].learned = 0;
-			pl->only.pc->skills[SKILL_MINE].taught = 0;
-			pl->only.pc->skills[SKILL_MINE].learned = 0;
-			pl->only.pc->skills[SKILL_CRAFT].taught = 0;
-			pl->only.pc->skills[SKILL_CRAFT].learned = 0;
-
-			if (!do_save_silent(pl, 1))
-				logit(LOG_WIZ, "Failed to save %s after tradeskill change.",
-				      GET_NAME(pl)); // tradeskills require a save.
-			CharWait(pl, PULSE_VIOLENCE);
 
 			return TRUE;
 		}

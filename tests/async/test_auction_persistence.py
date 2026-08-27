@@ -118,7 +118,7 @@ else:
         print('[PASS] auction_bid logs refund staging failures')
 
 # other insert_money_pickup callers should also check failures and use safe fallbacks
-if 'ADD_MONEY(ch, coins_refund)' in epic_text and 'could not be staged, so it was credited directly instead' in epic_text:
+if 'ADD_MONEY(ch, context.coins)' in epic_text and 'could not be staged, so it was credited directly instead' in epic_text:
     print('[PASS] epic.c falls back to direct credit when pickup staging fails')
 else:
     print('[FAIL] epic.c does not fall back to direct credit on refund staging failure')
