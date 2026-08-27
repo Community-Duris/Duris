@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "raw_output": "tmp/query-plan-gate",
+  "queries": [
+    {
+      "id": "PL_NAME_001",
+      "owner": "player-load identity",
+      "source": "src/player_load_repository.c",
+      "tables": {"player_data": 10000},
+      "parameter_types": ["varchar(64)"],
+      "ordering": "single row",
+      "acceptance": "indexed equality, at most one row examined",
+      "candidate": "player_data(name)",
+      "explain_sql": "SELECT pid FROM player_data WHERE name=(SELECT MIN(name) FROM player_data) LIMIT 1"
+    },
+    {
+      "id": "PL_PVP_001",
+      "owner": "recent PvP hydration",
+      "source": "src/player_load_repository.c",
+      "tables": {"pkill_info": 100000, "pkill_event": 25000},
+      "parameter_types": ["uint32 pid", "enum victim"],
+      "ordering": "event stamp descending, participation ID descending; limit 20",
+      "acceptance": "no full scan, no temporary table, bounded ordered result",
+      "candidate": "pkill_info(pid,pk_type-prefix,event_id,id)",
+      "explain_sql": "SELECT pe.stamp FROM pkill_info pi JOIN pkill_event pe ON pe.id=pi.event_id WHERE pi.pid=(SELECT MIN(pid) FROM player_data) AND pi.pk_type='VICTIM' ORDER BY pe.stamp DESC,pi.id DESC LIMIT 20"
+    },
+    {
+      "id": "PL_EPIC_001",
+      "owner": "epic completion hydration",
+      "source": "src/player_load_repository.c",
+      "tables": {"epic_gain": 100000, "epic_ledger": 100000},
+      "parameter_types": ["uint32 pid", "smallint reason"],
+      "ordering": "zone number ascending unique",
+      "acceptance": "PID-range reads; bounded union work",
+      "candidate": "epic_gain(pid,type,type_id), epic_ledger(pid,reason_type,reason_id)",
+      "explain_sql": "SELECT type_id FROM epic_gain WHERE pid=(SELECT MIN(pid) FROM player_data) AND type=0 UNION SELECT reason_id FROM epic_ledger WHERE pid=(SELECT MIN(pid) FROM player_data) AND reason_type=1"
+    },
+    {
+      "id": "LOAD_ITEMS_001",
+      "owner": "player item hydration",
+      "source": "src/player_load_repository.c",
+      "tables": {"player_items": 250000},
+      "parameter_types": ["uint32 pid"],
+      "ordering": "database ID ascending",
+      "acceptance": "PID range with ordered rows and no filesort",
+      "candidate": "player_items(pid,id)",
+      "explain_sql": "SELECT id FROM player_items WHERE pid=(SELECT MIN(pid) FROM player_data) ORDER BY id"
+    },
+    {
+      "id": "ZONE_TOUCH_001",
+      "owner": "zone lifecycle cursor",
+      "source": "src/epic.c",
+      "tables": {"zone_touches": 100000},
+      "parameter_types": ["int zone", "timestamp cursor"],
+      "ordering": "touched time then ID",
+      "acceptance": "bounded zone/time range",
+      "candidate": "zone_touches(zone_number,touched_at,id)",
+      "explain_sql": "SELECT id FROM zone_touches WHERE zone_number=(SELECT MIN(number) FROM zones) ORDER BY touched_at DESC,id DESC LIMIT 100"
+    },
+    {
+      "id": "FRAG_RACE_001",
+      "owner": "active race leaderboard",
+      "source": "src/fraglist.c",
+      "tables": {"frag_leaderboard": 25000},
+      "parameter_types": ["varchar race", "nullable deletion"],
+      "ordering": "total frags descending",
+      "acceptance": "active race range uses covering order",
+      "candidate": "existing race_leaderboard",
+      "explain_sql": "SELECT char_name,total_frags FROM frag_leaderboard WHERE deleted_at IS NULL AND race=(SELECT MIN(race) FROM frag_leaderboard) ORDER BY total_frags DESC LIMIT 100"
+    },
+    {
+      "id": "QUEST_TROPHY_001",
+      "owner": "quest trophy window",
+      "source": "src/sql.c",
+      "tables": {"quest_trophy": 100000},
+      "parameter_types": ["int mob vnum", "timestamp cutoff"],
+      "ordering": "aggregate",
+      "acceptance": "sargable mob/time range",
+      "candidate": "quest_trophy(mob_vnum,timestamp)",
+      "explain_sql": "SELECT COUNT(id) FROM quest_trophy WHERE mob_vnum=(SELECT MIN(mob_vnum) FROM quest_trophy) AND timestamp>=CURRENT_DATE-INTERVAL 14 DAY"
+    },
+    {
+      "id": "OUTBOX_CLAIM_001",
+      "owner": "critical outbox delivery",
+      "source": "src/critical_outbox.c",
+      "tables": {"critical_outbox": 100000},
+      "parameter_types": ["tinyint status", "timestamp due", "uint64 cursor"],
+      "ordering": "next attempt then outbox ID",
+      "acceptance": "covering bounded claim range",
+      "candidate": "existing idx_critical_outbox_claim",
+      "explain_sql": "SELECT outbox_id FROM critical_outbox WHERE status=0 AND next_attempt_at<=CURRENT_TIMESTAMP ORDER BY next_attempt_at,outbox_id LIMIT 100"
+    }
+  ]
+}

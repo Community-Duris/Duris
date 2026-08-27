@@ -1,5 +1,7 @@
 # DurisMUD
 
+**Version: 1.81.55** | [Versioning policy](docs/VERSIONING.md)
+
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
 ![g++ compiler][compiler-badge]
@@ -12,7 +14,7 @@
 [![Last commit][commit-badge]][commits]
 [![Open issues][issues-badge]][issues]
 
-![DurisMUD — a dragon circles a citadel between moonlit ruins and a volcanic fortress](docs/assets/durismud-readme-header.webp)
+![DurisMUD - a dragon circles a citadel between moonlit ruins and a volcanic fortress](docs/assets/durismud-readme-header.webp)
 
 DurisMUD is a long-running dark-fantasy MUD built around a global race war
 between good and evil. Its text world combines full player-versus-player
@@ -31,34 +33,49 @@ flowchart LR
     subgraph Server["DurisMUD server process"]
         Network["Telnet / TLS / WebSocket"]
         Loop["Single event loop<br/>commands, combat, world ticks"]
-        Workers["3 persistence workers<br/>item, scalar, large payload"]
+        Snapshots["Revisioned snapshots<br/>player and world"]
+        Commands["Critical commands<br/>economy, ownership, outcomes"]
+        Legacy["Bounded compatibility queues<br/>item, scalar, large payload"]
 
         Network <--> Loop
-        Loop -->|enqueue saves| Workers
+        Loop -->|immutable jobs| Snapshots
+        Loop -->|operation IDs| Commands
+        Loop -->|remaining events| Legacy
     end
 
     Content["World + runtime data<br/>areas/ and lib/"]
     Content -->|boot and reset data| Loop
-    Loop -->|synchronous queries| Database[("MySQL / MariaDB<br/>durable state")]
-    Workers -->|asynchronous writes| Database
-    Loop -.-|optional dirty saves and recovery| Redis[("Redis")]
+    Loop -->|boot, bounded reads, legacy routes| Database[("MySQL / MariaDB<br/>durable authority")]
+    Snapshots -->|revision guarded| Database
+    Commands -->|inbox, ledger, outbox| Database
+    Legacy -->|deduplicated events| Database
+    Snapshots -.-|optional immutable world recovery| Redis[("Redis cache / recovery")]
     Player <-->|game protocol| Network
 
     classDef focal fill:#f4ecd9,stroke:#9e3b25,color:#2e2418,stroke-width:2px;
     class Loop focal;
 ```
 
-The C-style sources under `src/` are compiled as C++20. Network I/O and game
-updates run in a single `select()`-driven pulse loop; three worker threads
-handle item, scalar, and large-payload persistence. MySQL or MariaDB stores
-durable game state, while Redis can optionally buffer dirty saves and retain
-crash-recovery snapshots. See the full [architecture guide](docs/ARCHITECTURE.md)
-and [database guide](docs/DATABASE.md).
+The C-style sources under `src/` are compiled as C++20. Network I/O and mutable game
+state remain on one `select()`-driven pulse loop. Immutable revisioned snapshots and
+non-coalescing operation-ID commands cross typed worker boundaries; the older item,
+scalar, and large-payload queues retain only bounded compatibility roles. MySQL or
+MariaDB is the durable authority for snapshots, ledgers, current rows, inbox/results,
+outbox state, migration history, and lifecycle evidence. Redis is optional and limited
+to reconstructible caches plus validated world-recovery generations. See the full
+[architecture guide](docs/ARCHITECTURE.md) and [database guide](docs/DATABASE.md).
 
 ## Quick start
 
 The maintained setup path is Debian/Ubuntu, matching the CI workflow and the
 repository's build-dependency manifest.
+
+After setup, one command builds every maintained target and runs the complete safe
+regression gate:
+
+```bash
+make test-all
+```
 
 ### 1. Install dependencies
 
@@ -84,23 +101,29 @@ authoritative dependency list.
 
 ```bash
 cp .env.example .env
+chmod 600 .env
 ```
 
-Edit `.env` and set `DB_HOST`, optional `DB_PORT`, `DB_USER`, `DB_PASSWD`, and
-`DB_NAME`. The server loads this file at boot, and the migration scripts use
-the same values. `.env` is ignored by Git and must never be committed. See the
+Edit `.env` and set the explicit environment role, listener address, database
+host/port, user, password, name, and exact `DB_ALLOWED_TARGETS` entry. There are
+no database credential defaults. The server rejects a `.env` that is not an
+owner-controlled regular file with mode `0600` or stricter. It loads this file
+at boot, and the migration scripts use the same values. `.env` is ignored by
+Git and must never be committed. See the
 [configuration reference](docs/CONFIGURATION.md) for precedence, Redis
 recovery, proxy handling, and diagnostic switches.
 
-Set `REDIS=TRUE` with `REDIS_HOST` and `REDIS_PORT` to enable dirty-save
-buffering. If a DurisWeb backend will authenticate through WebSocket or GMCP,
+Set `REDIS=TRUE` with `REDIS_HOST` and `REDIS_PORT` to enable caches and recovery
+integration; `REDIS_WORLD_STATE=TRUE` additionally enables immutable world recovery.
+Player saves do not depend on Redis. If a DurisWeb backend will authenticate through WebSocket or GMCP,
 give it a private `DURISWEB_SECRET`. The remaining switches in `.env.example`
 are documented inline and are intended primarily for local gameplay testing.
 
 ### 3. Create a development database
 
-The following matches the names in `.env.example`. Replace
-`CHOOSE_A_PASSWORD` in both the SQL and `.env`.
+The following uses `duris_dev` as an example. Set that database name, the new
+user password, and `DB_ALLOWED_TARGETS=127.0.0.1/duris_dev` explicitly in
+`.env`.
 
 ```sql
 CREATE DATABASE IF NOT EXISTS duris_dev
@@ -124,6 +147,13 @@ MYSQL_PWD="$DB_PASSWD" mysql \
   --port="${DB_PORT:-3306}" \
   --user="$DB_USER" \
   "$DB_NAME" < migrations/bootstrap_multithread_safe.sql
+
+# Record the exact sealed baseline, then apply immutable post-baseline steps.
+python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
+python3 scripts/migration_runner.py run
+
+# Confirm the exact runtime contract before first boot.
+./migrations/verify_runtime_compatibility.sh
 ```
 
 > [!IMPORTANT]
@@ -164,7 +194,8 @@ If the server stops during boot, inspect `logs/log/status` and
   server logs the effective database target during boot and aborts when the
   required schema is missing.
 - **Redis connection failed:** Redis is optional; set `REDIS=FALSE` or remove
-  the setting to run without dirty-save buffering. If Redis is required, check
+  the setting to run without Redis caches and world recovery. Player checkpoints remain
+  available through their local coordinator and journal. If Redis is required, check
   `REDIS_HOST`, `REDIS_PORT`, and that the service is reachable.
 - **Missing world files or tools:** run `make build-area-tools` followed by
   `make world`, then restart. Combined `areas/world.*` files are generated
@@ -185,11 +216,16 @@ telnet localhost 7777
 | --- | ---: | ---: |
 | Plain telnet | 7777 | 4000 |
 | TLS telnet | 7778 | 4001 |
-| WebSocket | 4050 | 4050 |
+| WebSocket and HTTP health | 4050 | 4050 |
 
-The tracked self-signed certificate in `certs/` is an automatic local fallback.
-For a networked deployment, point the ignored root files `duris.crt` and
-`duris.key` at a real certificate and private key, usually with symlinks.
+The WebSocket port can be overridden with `DURIS_WEBSOCKET_PORT`. Once the game is
+running, `scripts/healthcheck.sh` verifies both process and database-pool readiness.
+
+The tracked self-signed certificate in `certs/` is available only when
+`ENVIRONMENT=local` and `LISTEN_ADDRESS` is exactly `127.0.0.1` or `::1`. For a
+networked deployment, provide the ignored root files `duris.crt` and
+`duris.key`; the key must be owned by the server user and mode `0600` or
+stricter. Startup fails if that deployment certificate boundary is not met.
 
 ## Development workflow
 
@@ -247,18 +283,26 @@ archives.
 
 | Guide | Covers |
 | --- | --- |
-| [Architecture](docs/ARCHITECTURE.md) | Process model, boot, game loop, networking, persistence. |
+| [Architecture](docs/ARCHITECTURE.md) | Process model, boot gate, game loop, typed persistence, recovery. |
 | [Codebase](docs/CODEBASE.md) | Module-by-module map of the server sources. |
 | [Building](docs/BUILDING.md) | Build flags, areas, sanitizers, verification. |
-| [Database](docs/DATABASE.md) | Connections, async saves, schema, migrations. |
+| [Database](docs/DATABASE.md) | Connections, reads, typed writes, reconciliation, schema, migrations. |
 | [Configuration](docs/CONFIGURATION.md) | Environment variables, Redis, networking, and diagnostics. |
 | [Runbook](docs/RUNBOOK.md) | Restarts, logs, backups, recovery, operations. |
 | [Testing](docs/TESTING.md) | Test layout, commands, and conventions. |
+| [Onboarding](docs/onboarding.md) | Setup and first verification checklist. |
+| [Development](docs/development.md) | Daily build, test, format, and health commands. |
+| [Environments](docs/environments.md) | Local and network-deployment trust boundaries. |
+| [Deployment](docs/deployment.md) | CI, local probes, and external release boundary. |
+| [Immutable migrations](docs/IMMUTABLE_MIGRATIONS.md) | Baseline adoption, ordered checksums, exact resume. |
+| [Runtime compatibility](docs/RUNTIME_COMPATIBILITY.md) | Pre-mutation boot verification and lookup publication. |
+| [Data lifecycle](docs/DATA_LIFECYCLE.md) | Store inventory, pending policy, archive/export/erasure boundaries. |
+| [Critical commands](docs/CRITICAL_COMMAND_PIPELINE.md) | Operation identity, journal, inbox/results, outbox, replay, fences. |
 | [Formatting](docs/formatting.md) | Style, changed-line formatting, and editors. |
 | [Help system](docs/HELP_SYSTEM.md) | Help sources, database import, and rendering. |
 
 The complete index, including builder references and standalone diagrams, is
-in [`docs/README.md`](docs/README.md).
+in [`docs/README_docs.md`](docs/README_docs.md).
 
 [build]: https://github.com/LuminariMUD/DurisMUD/actions/workflows/build.yml
 [build-badge]: https://img.shields.io/github/actions/workflow/status/LuminariMUD/DurisMUD/build.yml?branch=master&style=flat-square&logo=githubactions&logoColor=white&label=build

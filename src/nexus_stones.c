@@ -20,6 +20,7 @@ using namespace std;
 #include "damage.h"
 #include "defines.h"
 #include "epic.h"
+#include "epic_transaction.h"
 #include "nexus_stones.h"
 #include "racewar_stat_mods.h"
 #include "redis.h"
@@ -533,7 +534,8 @@ bool nexus_stone_touch(P_obj stone, P_char ch)
 			  0, 0, 0);
 	}
 
-	mark_player_dirty(GET_PID(ch));
+	mark_player_dirty_components(GET_PID(ch),
+				     PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_TIMERS);
 
 	return TRUE;
 }
@@ -1069,10 +1071,65 @@ int nexus_sage_ask(P_char ch, P_char pl, char *arg)
 	return TRUE;
 }
 
+namespace
+{
+struct nexus_training_context
+{
+	int stone_id;
+	int stat_affect;
+	int expected_stat;
+	int stat_add;
+	int epic_cost;
+	int room;
+	int teacher_vnum;
+};
+
+void nexus_training_committed(P_char pl, bool committed, const epic_command_result &, unsigned int,
+			      const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed || context_size != sizeof(nexus_training_context))
+	{
+		send_to_char("The sage cannot complete your training.\n", pl);
+		return;
+	}
+	nexus_training_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	sh_int *stat = char_stat(pl, context.stat_affect);
+	if (!stat || *stat != context.expected_stat)
+	{
+		send_to_char(
+			"Your abilities changed while training was pending; your epics are being refunded.\n",
+			pl);
+		epic_transaction_submit(pl, context.epic_cost, epic_reason_type::store_purchase,
+					context.stone_id, 0, critical_source_site::recovery,
+					critical_deadline_class::recovery, nullptr, nullptr, 0);
+		return;
+	}
+	*stat = BOUNDED(1, context.expected_stat + context.stat_add, 100);
+	char buff[MAX_STRING_LENGTH];
+	snprintf(buff, sizeof(buff), "&+WYou feel your %s increasing!\r\n",
+		 apply_names[context.stat_affect]);
+	send_to_char(buff, pl);
+	if (!do_save_silent(pl, 1))
+		logit(LOG_WIZ, "Failed to save %s after nexus sage training.", GET_NAME(pl));
+	if (context.room >= 0 && pl->in_room == context.room)
+	{
+		for (P_char teacher = world[context.room].people; teacher;
+		     teacher = teacher->next_in_room)
+			if (IS_NPC(teacher) && GET_VNUM(teacher) == context.teacher_vnum)
+			{
+				extract_char(teacher);
+				break;
+			}
+	}
+	P_obj stone = get_nexus_stone(context.stone_id);
+	if (stone)
+		STONE_SAGE_TIMER(stone) = time(NULL);
+}
+} // namespace
+
 int nexus_sage_train(P_char ch, P_char pl, char * /*arg*/)
 {
-	char buff[MAX_STRING_LENGTH];
-
 	int stone_id = guardian_stone_id(ch);
 	NexusStoneInfo info;
 
@@ -1102,28 +1159,15 @@ int nexus_sage_train(P_char ch, P_char pl, char * /*arg*/)
 		return TRUE;
 	}
 
-	ch->only.pc->epics -= cost;
-	(*char_stat(pl, info.stat_affect)) = BOUNDED(1, (current_stat + stat_add), 100);
-
-	act("You sit at the feet of $n&n and learn, gaining something of $s ability.", FALSE, ch, 0,
-	    pl, TO_VICT);
-
-	snprintf(buff, MAX_STRING_LENGTH, "&+WYou feel your %s increasing!\r\n",
-		 apply_names[info.stat_affect]);
-	send_to_char(buff, pl);
-
-	if (!do_save_silent(pl, 1))
-		logit(LOG_WIZ, "Failed to save %s after nexus sage training.", GET_NAME(pl));
-
-	act("\nAfter imparting you with $s knowledge, $n&n utters a word and disappears completely.",
-	    FALSE, ch, 0, pl, TO_VICT);
-
-	extract_char(ch);
-
-	P_obj ns = get_nexus_stone(stone_id);
-
-	if (ns)
-		STONE_SAGE_TIMER(ns) = time(NULL);
+	act("You sit at the feet of $n&n while your epic offering is considered.", FALSE, ch, 0, pl,
+	    TO_VICT);
+	const nexus_training_context context = { stone_id, info.stat_affect, current_stat, stat_add,
+						 cost,	   pl->in_room,	     GET_VNUM(ch) };
+	if (!epic_transaction_submit(pl, -cost, epic_reason_type::store_purchase, stone_id,
+				     EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
+				     critical_deadline_class::interactive, nexus_training_committed,
+				     &context, sizeof(context)))
+		send_to_char("The epic transaction service is busy. Please try again.\n", pl);
 
 	return TRUE;
 }

@@ -28,6 +28,7 @@
 #include "sql.h"
 #include "sql_player.h"
 #include "player_name.h"
+#include "password_hash.h"
 #include "websocket.h"
 #include "ws_auth.h"
 
@@ -36,9 +37,6 @@ extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 extern struct room_data *world;
 extern int top_of_world;
-extern int is_bcrypt_hash(const char *hash);
-extern int bcrypt_verify_password(const char *password, const char *hash);
-extern char *bcrypt_hash_password(const char *password);
 extern bool account_exists(const char *dir, char *name);
 extern int read_account(P_acct acct);
 extern int write_account(P_acct acct);
@@ -1246,12 +1244,12 @@ void ws_cmd_register(struct descriptor_data *d, cJSON *data)
 	if (write_account(d->account) == -1)
 	{
 		ws_send_auth_failed(d, "Failed to save account - server error");
-		statuslog(56, "&+RALERT&n: WebSocket failed to write account for %s", tmp_name);
+		statuslog(56, "&+RALERT&n: WebSocket account write failed");
 		d->account = free_account(d->account);
 		return;
 	}
 
-	statuslog(56, "WebSocket: New account created: %s", tmp_name);
+	statuslog(56, "WebSocket: New account created");
 
 	ws_send_auth_success(d, "registered");
 }
@@ -2346,14 +2344,13 @@ void ws_cmd_change_email(struct descriptor_data *d, cJSON *data)
 	if (-1 == write_account(d->account))
 	{
 		ws_send_account_message(d, "error", NULL, "Failed to save email change");
-		statuslog(56, "&+RALERT&n: failed to save email change for %s",
-			  d->account->acct_name);
-		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
-				  "write_failed", "email change save failed");
+		statuslog(56, "&+RALERT&n: account email-change save failed");
+		persistence_alert(AVATAR, "account", "redacted", "none", "none", "write_failed",
+				  NULL);
 		return;
 	}
 
-	statuslog(56, "Account %s changed email to %s", d->account->acct_name, new_email);
+	statuslog(56, "Account email changed");
 
 	result_data = cJSON_CreateObject();
 	cJSON_AddStringToObject(result_data, "email", new_email);
@@ -2424,14 +2421,13 @@ void ws_cmd_change_password(struct descriptor_data *d, cJSON *data)
 	if (-1 == write_account(d->account))
 	{
 		ws_send_account_message(d, "error", NULL, "Failed to save password change");
-		statuslog(56, "&+RALERT&n: failed to save password change for %s",
-			  d->account->acct_name);
-		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
-				  "write_failed", "password change save failed");
+		statuslog(56, "&+RALERT&n: account password-change save failed");
+		persistence_alert(AVATAR, "account", "redacted", "none", "none", "write_failed",
+				  NULL);
 		return;
 	}
 
-	statuslog(56, "Account %s changed password", d->account->acct_name);
+	statuslog(56, "Account password changed");
 
 	ws_send_account_message(d, "password_changed", NULL, NULL);
 }
@@ -2569,10 +2565,9 @@ void ws_cmd_delete_character(struct descriptor_data *d, cJSON *data)
 
 	if (-1 == write_account(d->account))
 	{
-		statuslog(56, "&+RALERT&n: failed to save deleted-character account update for %s",
-			  d->account->acct_name);
-		persistence_alert(AVATAR, "account", d->account->acct_name, "none", "none",
-				  "write_failed", "character deletion save failed");
+		statuslog(56, "&+RALERT&n: deleted-character account update failed");
+		persistence_alert(AVATAR, "account", "redacted", "none", "none", "write_failed",
+				  NULL);
 	}
 
 	/* send success with updated character list */
@@ -2832,11 +2827,9 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 		{
 			ws_send_admin_delete_progress(d, request_id,
 						      "Failed to update account file", "error");
-			statuslog(56,
-				  "&+RALERT&n: failed to update account file for %s after delete",
-				  account_name);
-			persistence_alert(AVATAR, "account", account_name, "none", "none",
-					  "write_failed", "character delete account update failed");
+			statuslog(56, "&+RALERT&n: character-delete account update failed");
+			persistence_alert(AVATAR, "account", "redacted", "none", "none",
+					  "write_failed", NULL);
 			free_account(target_acct);
 			return;
 		}
@@ -2903,10 +2896,9 @@ void ws_cmd_admin_delete_character(struct descriptor_data *d, cJSON *data)
 	{
 		ws_send_admin_delete_progress(d, request_id, "Failed to update account file",
 					      "error");
-		statuslog(56, "&+RALERT&n: failed to update account file for %s after delete",
-			  account_name);
-		persistence_alert(AVATAR, "account", account_name, "none", "none", "write_failed",
-				  "character delete account update failed");
+		statuslog(56, "&+RALERT&n: character-delete account update failed");
+		persistence_alert(AVATAR, "account", "redacted", "none", "none", "write_failed",
+				  NULL);
 		free_account(target_acct);
 		return;
 	}

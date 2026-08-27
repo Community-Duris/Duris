@@ -73,6 +73,60 @@ check("sanitizer build appends to the warning profile rather than replacing it",
 check("Makefile honours EXTRA_CFLAGS/EXTRA_LDFLAGS",
       "CFLAGS += $(EXTRA_CFLAGS)" in makefile and "LDFLAGS += $(EXTRA_LDFLAGS)" in makefile)
 
+# Repository API headers must use the client library's public MYSQL declaration.
+# MySQL 8 and MariaDB intentionally expose different internal struct tags, so a
+# local forward declaration can compile on one engine and conflict on the other.
+repository_headers = [
+    "artifact_guild_repository.h",
+    "auction_repository.h",
+    "boon_reward_repository.h",
+    "combat_outcome_repository.h",
+    "critical_command_repository.h",
+    "item_transfer_repository.h",
+    "item_uid_allocator.h",
+    "player_load_repository.h",
+    "player_snapshot_repository.h",
+    "session_audit_repository.h",
+    "zone_touch_repository.h",
+]
+for name in repository_headers:
+    header = (src / name).read_text()
+    check(f"{name} uses the public MYSQL header", "#include <mysql/mysql.h>" in header)
+    check(f"{name} does not guess the MYSQL struct tag",
+          "typedef struct st_mysql MYSQL" not in header)
+
+# MYSQL 8 uses bool for statement null indicators while MariaDB retains
+# my_bool. Derive the type from MYSQL_BIND so both client libraries compile.
+item_transfer_repository = (src / "item_transfer_repository.c").read_text()
+check("statement null indicator follows the installed client library",
+      "std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>" in item_transfer_repository)
+check("statement null indicator does not name MariaDB-only my_bool",
+      not re.search(r"\bmy_bool\b", item_transfer_repository))
+
+# MYSQL_OPT_SSL_ENFORCE and MYSQL_OPT_SSL_VERIFY_SERVER_CERT were removed in
+# MySQL 8; MYSQL_OPT_SSL_MODE replaces them and MariaDB Connector/C does not
+# ship it. Both spellings are enum values rather than macros, so neither can be
+# probed with #ifdef -- the arms have to be selected on the client library. The
+# MySQL arm must ask for SSL_MODE_VERIFY_IDENTITY: the weaker modes would drop
+# CA or hostname verification that the MariaDB arm performs.
+sql_c = (src / "sql.c").read_text()
+check("remote TLS options are selected per client library",
+      "#if defined(MARIADB_BASE_VERSION) || defined(MARIADB_PACKAGE_VERSION)" in sql_c)
+check("MariaDB arm keeps enforcement and server certificate verification",
+      "MYSQL_OPT_SSL_ENFORCE" in sql_c and "MYSQL_OPT_SSL_VERIFY_SERVER_CERT" in sql_c)
+check("MySQL arm uses the replacement option",
+      "MYSQL_OPT_SSL_MODE" in sql_c)
+check("MySQL arm does not weaken verification",
+      "SSL_MODE_VERIFY_IDENTITY" in sql_c and
+      not re.search(r"SSL_MODE_(DISABLED|PREFERRED|REQUIRED)\b", sql_c))
+mysql_arm = re.search(
+    r"#if defined\(MARIADB_BASE_VERSION\).*?\n#else\n(.*?)\n#endif", sql_c, re.S)
+check("the client-library guard has a MySQL arm", mysql_arm is not None)
+if mysql_arm:
+    check("MySQL arm does not name options MySQL 8 removed",
+          "MYSQL_OPT_SSL_ENFORCE" not in mysql_arm.group(1) and
+          "MYSQL_OPT_SSL_VERIFY_SERVER_CERT" not in mysql_arm.group(1))
+
 if failures:
     print("\nFailed regression checks:")
     for f in failures:

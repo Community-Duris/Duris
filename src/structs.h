@@ -26,6 +26,8 @@
 #endif
 
 #include "defines.h"
+#include "epic_bonus_state.h"
+#include "gameplay_read_state.h"
 #include "map.h"
 #include "player_log.h"
 #include "ansi.h"
@@ -81,7 +83,7 @@ typedef struct combat_data *P_combat;
 	(((i) < 0) ?                                                                              \
 		 (printf("ARRAY " #arr " index %d negative at %s:%d\n", (i), __FILE__, __LINE__), \
 		  arr[0]) :                                                                       \
-	 ((i) >= ARRAY_SIZE(arr)) ? (printf("ARRAY " #arr " index %d ≥ %zu at %s:%d\n", (i),      \
+	 ((i) >= ARRAY_SIZE(arr)) ? (printf("ARRAY " #arr " index %d >= %zu at %s:%d\n", (i),     \
 					    ARRAY_SIZE(arr), __FILE__, __LINE__),                 \
 				     arr[ARRAY_SIZE(arr) - 1]) :                                  \
 				    arr[i])
@@ -1318,11 +1320,17 @@ struct pc_only_data
 	int spare2;
 	int spare3;
 	int spare4;
+	uint64_t bank_revision; /* Transactional shared account-bank domain revision. */
+	uint64_t wallet_revision; /* Transactional carried-wallet domain revision. */
 
 	long frags; /* Pkill counter                           */
 	long oldfrags; /* Pkill counter                           */
+	uint64_t frag_revision; /* Transactional PvP frag-domain revision. */
 	long epics; /* # of epic points                           */
+	uint64_t epic_revision; /* Transactional epic domain revision. */
 	long epic_skill_points;
+	struct EpicBonusState epic_bonus_state;
+	struct gameplay_read_state gameplay_reads;
 	long spell_bind_used; // used for skill_spellbind
 	sh_int prestige; /* commoner or lord?                       */
 	time_t time_left_guild; /* time you left guild                     */
@@ -1683,8 +1691,13 @@ struct txt_q
 // lower layer but meh...
 #define CON_SSLNEGO 87 // connected but not yet ready for sends
 #define CON_TTYPE_NEGO 88 // waiting for ttype response
+#define CON_PLAYER_LOAD 89 // waiting for exact async player-load completion
 
-#define TOTAL_CON 88
+#define PLAYER_LOAD_MODE_NONE 0
+#define PLAYER_LOAD_MODE_ACCOUNT 1
+#define PLAYER_LOAD_MODE_LEGACY 2
+
+#define TOTAL_CON 89
 
 /* modes of confirmation- SAM 7-94 */
 #define CONFIRM_NONE 0
@@ -1739,6 +1752,9 @@ struct descriptor_data
 	char last_command[MAX_INPUT_LENGTH];
 	P_acct account;
 	char *selected_char_name; /* temporary storage for character selection confirmation */
+	uint64_t player_load_request_id;
+	int player_load_pid;
+	unsigned char player_load_mode;
 	/* SAM 7-94, used to allow confirming commands */
 	char old_pwd[40]; /* old password held here when
 	                                       changing SAM 7-94 */

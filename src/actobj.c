@@ -31,6 +31,9 @@
 #include "tradeskill.h"
 #include "crafting.h"
 #include "vnum.obj.h"
+#include "item_movement_transaction.h"
+#include "item_ownership_runtime.h"
+#include "storage_lockers.h"
 
 /*
  * external variables
@@ -121,12 +124,243 @@ static bool get_trace_enabled(void)
 			logit(LOG_DEBUG, __VA_ARGS__); \
 	} while (0)
 
+namespace
+{
+struct get_movement_context
+{
+	uint64_t item_uid;
+	uint64_t container_uid;
+	int32_t room;
+	int32_t showit;
+};
+
+struct drop_movement_context
+{
+	uint64_t item_uid;
+	int32_t room;
+	int32_t floor_hint;
+};
+
+struct give_movement_context
+{
+	uint64_t item_uid;
+	uint32_t recipient_pid;
+	int32_t room;
+};
+
+struct put_movement_context
+{
+	uint64_t item_uid;
+	uint64_t container_uid;
+	int32_t showit;
+};
+
+bool item_get_ack_publication = false;
+bool item_get_deferred = false;
+bool item_put_ack_publication = false;
+
+P_obj find_live_item_uid(uint64_t item_uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return NULL;
+}
+
+void item_get_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
+			 const uint8_t *encoded, size_t encoded_size)
+{
+	if (!actor || !committed || !encoded || encoded_size != sizeof(get_movement_context))
+	{
+		if (actor)
+			send_to_char(
+				"The item remains where it was; its ownership did not commit.\r\n",
+				actor);
+		return;
+	}
+	get_movement_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	P_obj object = find_live_item_uid(context.item_uid);
+	P_obj container = context.container_uid ? find_live_item_uid(context.container_uid) : NULL;
+	const bool source_matches =
+		object &&
+		(context.container_uid ?
+			 (container && OBJ_INSIDE(object) && object->loc.inside == container) :
+			 (OBJ_ROOM(object) && object->loc.room == context.room));
+	if (!source_matches)
+	{
+		send_to_char(
+			"The committed item move could not be published; staff have been alerted.\r\n",
+			actor);
+		persistence_alert(AVATAR, "item_movement", "get_publish", "none", "none",
+				  "stale_live_topology", "item_uid=%llu", context.item_uid);
+		return;
+	}
+	item_get_ack_publication = true;
+	get(actor, object, container, context.showit);
+	item_get_ack_publication = false;
+}
+
+void item_drop_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
+			  const uint8_t *encoded, size_t encoded_size)
+{
+	if (!actor || !committed || !encoded || encoded_size != sizeof(drop_movement_context))
+	{
+		if (actor)
+			send_to_char(
+				"The item remains in your inventory; its drop did not commit.\r\n",
+				actor);
+		return;
+	}
+	drop_movement_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	P_obj object = find_live_item_uid(context.item_uid);
+	if (!object || !OBJ_CARRIED_BY(object, actor) || context.room < 0 ||
+	    context.room > top_of_world)
+	{
+		persistence_alert(AVATAR, "item_movement", "drop_publish", "none", "none",
+				  "stale_live_topology", "item_uid=%llu", context.item_uid);
+		return;
+	}
+	act("You drop $p.", FALSE, actor, object, 0, TO_CHAR);
+	if (actor->in_room == context.room)
+		act("$n drops $p.", FALSE, actor, object, 0, TO_ROOM);
+	obj_from_char(object);
+	obj_to_room(object, context.room);
+	if (context.floor_hint)
+		redis_log_floor_drop(object, world[context.room].number);
+	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+							     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
+}
+
+void item_give_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
+			  const uint8_t *encoded, size_t encoded_size)
+{
+	if (!actor || !committed || !encoded || encoded_size != sizeof(give_movement_context))
+	{
+		if (actor)
+			send_to_char(
+				"The item remains in your inventory; its transfer did not commit.\r\n",
+				actor);
+		return;
+	}
+	give_movement_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	P_obj object = find_live_item_uid(context.item_uid);
+	P_char recipient = find_player_by_pid(context.recipient_pid);
+	if (!object || !recipient || !OBJ_CARRIED_BY(object, actor))
+	{
+		persistence_alert(AVATAR, "item_movement", "give_publish", "none", "none",
+				  "stale_live_topology", "item_uid=%llu", context.item_uid);
+		return;
+	}
+	obj_from_char(object);
+	act("$n gives $p to $N.", TRUE, actor, object, recipient, TO_NOTVICT);
+	act("$n gives you $p.", FALSE, actor, object, recipient, TO_VICT);
+	send_to_char("Ok.\r\n", actor);
+	obj_to_char(object, recipient);
+	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+							     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
+	mark_player_dirty_components(GET_PID(recipient), PLAYER_COMPONENT_STATUS |
+								 PLAYER_COMPONENT_EQUIPMENT |
+								 PLAYER_COMPONENT_INVENTORY);
+	char_light(actor);
+	room_light(actor->in_room, REAL);
+	nq_action_check(actor, recipient, NULL);
+	studioproc_give(recipient, object, actor);
+}
+
+void item_put_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
+			 const uint8_t *encoded, size_t encoded_size)
+{
+	if (!actor || !committed || !encoded || encoded_size != sizeof(put_movement_context))
+	{
+		if (actor)
+			send_to_char(
+				"The item remains where it was; its container move did not commit.\r\n",
+				actor);
+		return;
+	}
+	put_movement_context context = {};
+	memcpy(&context, encoded, sizeof(context));
+	P_obj object = find_live_item_uid(context.item_uid);
+	P_obj container = find_live_item_uid(context.container_uid);
+	if (!object || !container || !OBJ_CARRIED_BY(object, actor))
+	{
+		persistence_alert(AVATAR, "item_movement", "put_publish", "none", "none",
+				  "stale_live_topology", "item_uid=%llu", context.item_uid);
+		return;
+	}
+	item_put_ack_publication = true;
+	put(actor, object, container, context.showit);
+	item_put_ack_publication = false;
+}
+
+bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int showit)
+{
+	if (item_put_ack_publication || !IS_PC(actor) || !object->obj_uid || !container->obj_uid)
+		return false;
+	item_ownership_runtime_entry item_runtime = {}, container_runtime = {};
+	const bool item_known = item_ownership_runtime_lookup(object->obj_uid, &item_runtime);
+	item_owner_identity locker_destination = {};
+	if (locker_owner_for_container(actor, container, &locker_destination))
+	{
+		const item_owner_identity source =
+			item_known ?
+				item_runtime.owner :
+				item_owner_identity{ item_owner_type::player,
+						     static_cast<uint64_t>(GET_PID(actor)), 0 };
+		if (item_owner_identity_equal(source, locker_destination))
+			return false;
+		const put_movement_context context = { object->obj_uid, container->obj_uid,
+						       showit };
+		if (!item_movement_transaction_submit(
+			    actor, object, NULL, source, locker_destination,
+			    item_transfer_reason::locker_deposit, locker_destination.context_id,
+			    item_put_completion, &context, sizeof(context)))
+			send_to_char("That item is busy or its ownership changed.\r\n", actor);
+		return true;
+	}
+	if (!item_ownership_runtime_lookup(container->obj_uid, &container_runtime))
+	{
+		if (OBJ_CARRIED_BY(container, actor))
+			return false;
+		send_to_char("That container lacks authoritative ownership.\r\n", actor);
+		return true;
+	}
+	const item_owner_identity source =
+		item_known ? item_runtime.owner :
+			     item_owner_identity{ item_owner_type::player,
+						  static_cast<uint64_t>(GET_PID(actor)), 0 };
+	if (item_owner_identity_equal(source, container_runtime.owner))
+		return false;
+	const item_owner_identity destination = container_runtime.owner;
+	const put_movement_context context = { object->obj_uid, container->obj_uid, showit };
+	if (!item_movement_transaction_submit(actor, object, container, source, destination,
+					      item_transfer_reason::player_put, container->obj_uid,
+					      item_put_completion, &context, sizeof(context)))
+		send_to_char("That item is busy or its ownership changed.\r\n", actor);
+	return true;
+}
+}
+
 void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 {
 	int got_p = 0, got_g = 0, got_s = 0, got_c = 0, notall = 0;
 	char Gbuf3[MAX_STRING_LENGTH];
 	P_obj corpse = NULL;
 	bool slip = FALSE;
+	item_get_deferred = false;
+	if (item_get_ack_publication)
+	{
+		if (s_obj && s_obj->type == ITEM_CORPSE && IS_SET(s_obj->value[1], PC_CORPSE))
+			corpse = s_obj;
+		if (s_obj && IS_OBJ_STAT(s_obj, ITEM_NOSHOW))
+			showit = TRUE;
+		goto publish_after_ack;
+	}
 
 	if (!o_obj || !ch)
 	{
@@ -243,19 +477,57 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 	if (s_obj && IS_OBJ_STAT(s_obj, ITEM_NOSHOW))
 		showit = TRUE;
 
+	if (IS_PC(ch) && o_obj->obj_uid > 0 && o_obj->type != ITEM_MONEY)
+	{
+		item_ownership_runtime_entry runtime = {};
+		item_owner_identity source = {};
+		if (item_ownership_runtime_lookup(o_obj->obj_uid, &runtime))
+			source = runtime.owner;
+		else if (s_obj)
+		{
+			item_ownership_runtime_entry container_runtime = {};
+			if (item_ownership_runtime_lookup(s_obj->obj_uid, &container_runtime))
+				source = container_runtime.owner;
+		}
+		else
+			source = { item_owner_type::room,
+				   static_cast<uint64_t>(world[ch->in_room].number), 0 };
+		const item_owner_identity destination = { item_owner_type::player,
+							  static_cast<uint64_t>(GET_PID(ch)), 0 };
+		const get_movement_context context = { o_obj->obj_uid, s_obj ? s_obj->obj_uid : 0,
+						       s_obj ? NOWHERE : o_obj->loc.room, showit };
+		const item_transfer_reason reason = source.type == item_owner_type::locker ?
+							    item_transfer_reason::locker_withdraw :
+						    s_obj && GET_ITEM_TYPE(s_obj) == ITEM_CORPSE ?
+							    item_transfer_reason::corpse_loot :
+							    item_transfer_reason::player_get;
+		if (!item_owner_identity_valid(source) ||
+		    !item_movement_transaction_submit(ch, o_obj, NULL, source, destination, reason,
+						      o_obj->obj_uid, item_get_completion, &context,
+						      sizeof(context)))
+		{
+			send_to_char("That item is busy or lacks authoritative ownership.\r\n", ch);
+			return;
+		}
+		item_get_deferred = true;
+		return;
+	}
+
+publish_after_ack:
+
 	if ((o_obj->type == ITEM_MONEY) && ((o_obj->value[0] > 0) || (o_obj->value[1] > 0) ||
 					    (o_obj->value[2] > 0) || (o_obj->value[3] > 0)))
 	{
-		GET_PLATINUM(ch) += (got_p = o_obj->value[3]);
+		got_p = o_obj->value[3];
 		o_obj->value[3] = 0;
 
-		GET_GOLD(ch) += (got_g = o_obj->value[2]);
+		got_g = o_obj->value[2];
 		o_obj->value[2] = 0;
 
-		GET_SILVER(ch) += (got_s = o_obj->value[1]);
+		got_s = o_obj->value[1];
 		o_obj->value[1] = 0;
 
-		GET_COPPER(ch) += (got_c = o_obj->value[0]);
+		got_c = o_obj->value[0];
 		o_obj->value[0] = 0;
 
 		int total_value = (got_p * 1000 + got_g * 100 + got_s * 10 + got_c);
@@ -282,7 +554,8 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 			send_to_char("You can't carry any of the coins.\r\n", ch);
 			return;
 		}
-		else if (total_value > 999999)
+		ADD_MONEY(ch, total_value);
+		if (total_value > 999999)
 		{
 			GETDBG_LOG(
 				"GETDBG[get-coins-partial]: ch=%s room=%d obj=%s [%d] uid=%lu total=%d showit=%d slip=%d container=%s [%d]",
@@ -478,7 +751,9 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		{
 			redis_log_floor_pickup(o_obj->obj_uid);
 			redis_remove_floor_drop(o_obj->obj_uid);
-			mark_player_dirty(GET_PID(ch));
+			mark_player_dirty_components(
+				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+						     PLAYER_COMPONENT_INVENTORY);
 		}
 
 		obj_from_room(o_obj);
@@ -509,17 +784,21 @@ int fight_in_room(P_char ch)
 	return FALSE;
 }
 
-static void do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found)
+static bool do_get_commit_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found)
 {
-	found = TRUE;
 	get(ch, o_obj, s_obj, TRUE);
+	if (item_get_deferred)
+		return false;
+	found = TRUE;
+	return true;
 }
 
 static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, bool &found,
 					int &total)
 {
-	do_get_commit_pickup_core(ch, s_obj, o_obj, found);
-	total++;
+	if (!do_get_commit_pickup_core(ch, s_obj, o_obj, found))
+		return;
+	++total;
 	if (s_obj && (GET_ITEM_TYPE(s_obj) == ITEM_QUIVER))
 		if (s_obj->value[3] > 0)
 			s_obj->value[3]--;
@@ -1101,6 +1380,12 @@ void do_get(P_char ch, char *argument, int cmd)
 	/* get all */
 	if (type == 1)
 	{
+		if (IS_PC(ch))
+		{
+			send_to_char("Durable floor items must be collected one at a time.\r\n",
+				     ch);
+			return;
+		}
 		s_obj = 0;
 		found = FALSE;
 		fail = FALSE;
@@ -1346,6 +1631,12 @@ void do_get(P_char ch, char *argument, int cmd)
 	/* get all ??? */
 	if (type == 4)
 	{
+		if (IS_PC(ch))
+		{
+			send_to_char("Durable container items must be collected one at a time.\r\n",
+				     ch);
+			return;
+		}
 		found = FALSE;
 		fail = FALSE;
 
@@ -1546,7 +1837,9 @@ void do_get(P_char ch, char *argument, int cmd)
 	}
 
 	if (IS_PC(ch))
-		mark_player_dirty(GET_PID(ch));
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
+								  PLAYER_COMPONENT_EQUIPMENT |
+								  PLAYER_COMPONENT_INVENTORY);
 
 	GETDBG_LOG(
 		"GETDBG[do_get end]: ch=%s room=%d type=%d found=%d fail=%d total=%d corpse_flag=%d looting=%d",
@@ -1655,7 +1948,7 @@ void do_junk(P_char ch, char *argument, int /*cmd*/)
 							    FALSE, ch, 0, 0, TO_CHAR);
 							act("$n has been awarded for being a good citizen.",
 							    TRUE, ch, 0, 0, TO_ROOM);
-							GET_SILVER(ch) += 1;
+							ADD_MONEY(ch, 10);
 						}
 						else
 						{
@@ -1689,7 +1982,7 @@ void do_junk(P_char ch, char *argument, int /*cmd*/)
 						tmp_object,
 						TRUE); // Just in case someone enables junking artis.
 					tmp_object = NULL;
-					GET_SILVER(ch) += 1;
+					ADD_MONEY(ch, 10);
 					test = TRUE;
 				}
 				else
@@ -1733,7 +2026,7 @@ void do_junk(P_char ch, char *argument, int /*cmd*/)
 							tmp_object,
 							TRUE); // Just in case someone enables junking artis.
 						tmp_object = NULL;
-						GET_SILVER(ch) += 1;
+						ADD_MONEY(ch, 10);
 					}
 					else
 					{
@@ -1781,6 +2074,11 @@ void do_dropalldot(P_char ch, char *name, int /*cmd*/)
 	int plat, silv, gold, copp;
 	char Gbuf1[MAX_STRING_LENGTH];
 	char Gbuf3[MAX_STRING_LENGTH];
+	if (IS_PC(ch) && strcmp(name, "coins"))
+	{
+		send_to_char("Durable items must be dropped one at a time.\r\n", ch);
+		return;
+	}
 
 	if (!strcmp(name, "coins"))
 	{
@@ -1833,7 +2131,9 @@ void do_dropalldot(P_char ch, char *name, int /*cmd*/)
 		{
 			if (tmp_object->obj_uid > 0)
 				redis_log_floor_drop(tmp_object, world[ch->in_room].number);
-			mark_player_dirty(GET_PID(ch));
+			mark_player_dirty_components(
+				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+						     PLAYER_COMPONENT_INVENTORY);
 		}
 
 		return;
@@ -1907,7 +2207,9 @@ void do_dropalldot(P_char ch, char *name, int /*cmd*/)
 		}
 
 		if (IS_PC(ch))
-			mark_player_dirty(GET_PID(ch));
+			mark_player_dirty_components(
+				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+						     PLAYER_COMPONENT_INVENTORY);
 	}
 	else
 	{
@@ -2031,7 +2333,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 				}
 				act("$n drops some &+ycopper&N coins.", FALSE, ch, 0, 0, TO_ROOM);
 				tmp_object = create_money(amount, 0, 0, 0);
-				GET_COPPER(ch) -= amount;
+				if (SUB_MONEY(ch, amount, 0) != 0)
+					return;
 				break;
 			case 1:
 				if (IS_TRUSTED(ch))
@@ -2042,7 +2345,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 				}
 				act("$n drops some &+wsilver&n coins.", FALSE, ch, 0, 0, TO_ROOM);
 				tmp_object = create_money(0, amount, 0, 0);
-				GET_SILVER(ch) -= amount;
+				if (SUB_MONEY(ch, amount * 10, 0) != 0)
+					return;
 				break;
 			case 2:
 				if (IS_TRUSTED(ch))
@@ -2053,7 +2357,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 				}
 				act("$n drops some &+Ygold&N coins.", FALSE, ch, 0, 0, TO_ROOM);
 				tmp_object = create_money(0, 0, amount, 0);
-				GET_GOLD(ch) -= amount;
+				if (SUB_MONEY(ch, amount * 100, 0) != 0)
+					return;
 				break;
 			case 3:
 				if (IS_TRUSTED(ch))
@@ -2064,7 +2369,8 @@ void do_drop(P_char ch, char *argument, int cmd)
 				}
 				act("$n drops some &+Wplatinum&N coins.", FALSE, ch, 0, 0, TO_ROOM);
 				tmp_object = create_money(0, 0, 0, amount);
-				GET_PLATINUM(ch) -= amount;
+				if (SUB_MONEY(ch, amount * 1000, 0) != 0)
+					return;
 				break;
 			}
 
@@ -2077,7 +2383,9 @@ void do_drop(P_char ch, char *argument, int cmd)
 			}
 		}
 		if (IS_PC(ch))
-			mark_player_dirty(GET_PID(ch));
+			mark_player_dirty_components(
+				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+						     PLAYER_COMPONENT_INVENTORY);
 
 		/* Send GMCP update for dropped coins */
 		gmcp_char_vitals(ch);
@@ -2093,6 +2401,12 @@ void do_drop(P_char ch, char *argument, int cmd)
 		}
 		else if (!str_cmp(Gbuf1, "all"))
 		{
+			if (IS_PC(ch))
+			{
+				send_to_char("Durable items must be dropped one at a time.\r\n",
+					     ch);
+				return;
+			}
 			bool dropped_any = false;
 			for (tmp_object = ch->carrying; tmp_object; tmp_object = next_obj)
 			{
@@ -2171,7 +2485,10 @@ void do_drop(P_char ch, char *argument, int cmd)
 			}
 
 			if (dropped_any && IS_PC(ch))
-				mark_player_dirty(GET_PID(ch));
+				mark_player_dirty_components(GET_PID(ch),
+							     PLAYER_COMPONENT_STATUS |
+								     PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY);
 		}
 		else
 		{
@@ -2187,6 +2504,41 @@ void do_drop(P_char ch, char *argument, int cmd)
 				else if (!IS_SET(tmp_object->extra_flags, ITEM_NODROP) ||
 					 IS_TRUSTED(ch))
 				{
+					if (IS_PC(ch) && tmp_object->obj_uid > 0)
+					{
+						const item_owner_identity source = {
+							item_owner_type::player,
+							static_cast<uint64_t>(GET_PID(ch)), 0
+						};
+						item_owner_identity destination = {
+							item_owner_type::room,
+							static_cast<uint64_t>(
+								world[ch->in_room].number),
+							0
+						};
+						const bool locker_deposit =
+							locker_owner_for_room(ch, &destination);
+						const drop_movement_context context = {
+							tmp_object->obj_uid, ch->in_room,
+							locker_deposit ? 0 : 1
+						};
+						if (!item_movement_transaction_submit(
+							    ch, tmp_object, NULL, source,
+							    destination,
+							    locker_deposit ?
+								    item_transfer_reason::
+									    locker_deposit :
+								    item_transfer_reason::player_drop,
+							    locker_deposit ?
+								    0 :
+								    world[ch->in_room].number,
+							    item_drop_completion, &context,
+							    sizeof(context)))
+							send_to_char(
+								"That item is busy or lacks authoritative ownership.\r\n",
+								ch);
+						return;
+					}
 					snprintf(Gbuf3, MAX_STRING_LENGTH, "You drop %s.\r\n",
 						 tmp_object->short_description);
 					send_to_char(Gbuf3, ch);
@@ -2224,7 +2576,11 @@ void do_drop(P_char ch, char *argument, int cmd)
 							redis_log_floor_drop(
 								tmp_object,
 								world[ch->in_room].number);
-						mark_player_dirty(GET_PID(ch));
+						mark_player_dirty_components(
+							GET_PID(ch),
+							PLAYER_COMPONENT_STATUS |
+								PLAYER_COMPONENT_EQUIPMENT |
+								PLAYER_COMPONENT_INVENTORY);
 					}
 
 					/*
@@ -2405,6 +2761,11 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 	}
 	else if (type == PUT_ALL || type == PUT_ALLDOT)
 	{
+		if (IS_PC(ch))
+		{
+			send_to_char("Durable items must be put away one at a time.\r\n", ch);
+			return;
+		}
 		for (o_obj = ch->carrying; o_obj; o_obj = next_obj)
 		{
 			next_obj = o_obj->next_content;
@@ -2460,7 +2821,9 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 		char_light(ch);
 		room_light(ch->in_room, REAL);
 		if (IS_PC(ch))
-			mark_player_dirty(GET_PID(ch));
+			mark_player_dirty_components(
+				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+						     PLAYER_COMPONENT_INVENTORY);
 		if (GET_ITEM_TYPE(s_obj) == ITEM_STORAGE)
 			writeSavedItem(s_obj);
 	}
@@ -2518,6 +2881,8 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 				}
 				if (s_obj->value[0] > s_obj->value[3])
 				{
+					if (defer_cross_owner_put(ch, o_obj, s_obj, showit))
+						return TRUE;
 					if (showit)
 						send_to_char("Ok.\r\n", ch);
 					if (OBJ_CARRIED(o_obj))
@@ -2564,7 +2929,11 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 					}
 
 					if (IS_PC(ch))
-						mark_player_dirty(GET_PID(ch));
+						mark_player_dirty_components(
+							GET_PID(ch),
+							PLAYER_COMPONENT_STATUS |
+								PLAYER_COMPONENT_EQUIPMENT |
+								PLAYER_COMPONENT_INVENTORY);
 
 					if (GET_ITEM_TYPE(o_obj) == ITEM_STORAGE)
 						writeSavedItem(o_obj);
@@ -2620,6 +2989,8 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 					      GET_ITEM_TYPE(s_obj) == ITEM_CONTAINER)))
 					{
 #endif
+						if (defer_cross_owner_put(ch, o_obj, s_obj, showit))
+							return TRUE;
 						if (showit)
 							send_to_char("Ok.\r\n", ch);
 						if (OBJ_CARRIED(o_obj))
@@ -2674,7 +3045,11 @@ bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 
 						if (GET_ITEM_TYPE(o_obj) == ITEM_STORAGE)
 							if (IS_PC(ch))
-								mark_player_dirty(GET_PID(ch));
+								mark_player_dirty_components(
+									GET_PID(ch),
+									PLAYER_COMPONENT_STATUS |
+										PLAYER_COMPONENT_EQUIPMENT |
+										PLAYER_COMPONENT_INVENTORY);
 
 						return (TRUE);
 #if USE_SPACE
@@ -2817,9 +3192,15 @@ void do_give(P_char ch, char *argument, int cmd)
 		if (ch != vict)
 		{
 			if (IS_PC(ch))
-				mark_player_dirty(GET_PID(ch));
+				mark_player_dirty_components(GET_PID(ch),
+							     PLAYER_COMPONENT_STATUS |
+								     PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY);
 			if (IS_PC(vict))
-				mark_player_dirty(GET_PID(vict));
+				mark_player_dirty_components(GET_PID(vict),
+							     PLAYER_COMPONENT_STATUS |
+								     PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY);
 		}
 
 		/* Send GMCP updates for coin transfer */
@@ -2905,6 +3286,21 @@ void do_give(P_char ch, char *argument, int cmd)
 		       vict->player.name);
 		return;
 	}
+	if (IS_PC(ch) && IS_PC(vict) && ch != vict && obj->obj_uid > 0)
+	{
+		const item_owner_identity source = { item_owner_type::player,
+						     static_cast<uint64_t>(GET_PID(ch)), 0 };
+		const item_owner_identity destination = { item_owner_type::player,
+							  static_cast<uint64_t>(GET_PID(vict)), 0 };
+		const give_movement_context context = { obj->obj_uid,
+							static_cast<uint32_t>(GET_PID(vict)),
+							ch->in_room };
+		if (!item_movement_transaction_submit(
+			    ch, obj, NULL, source, destination, item_transfer_reason::player_give,
+			    GET_PID(vict), item_give_completion, &context, sizeof(context)))
+			send_to_char("That item is busy or lacks authoritative ownership.\r\n", ch);
+		return;
+	}
 	obj_from_char(obj);
 	act("$n gives $p to $N.", 1, ch, obj, vict, TO_NOTVICT);
 	act("$n gives you $p.", 0, ch, obj, vict, TO_VICT);
@@ -2928,9 +3324,14 @@ void do_give(P_char ch, char *argument, int cmd)
 	if (ch != vict)
 	{
 		if (IS_PC(ch))
-			mark_player_dirty(GET_PID(ch));
+			mark_player_dirty_components(
+				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+						     PLAYER_COMPONENT_INVENTORY);
 		if (IS_PC(vict))
-			mark_player_dirty(GET_PID(vict));
+			mark_player_dirty_components(GET_PID(vict),
+						     PLAYER_COMPONENT_STATUS |
+							     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
 #ifndef __NO_MYSQL__
 		artifact_switch_check(ch, obj);
 #endif

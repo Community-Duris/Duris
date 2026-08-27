@@ -17,6 +17,7 @@
 #include "interp.h"
 #include "utility.h"
 #include "utils.h"
+#include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,7 +25,10 @@
 #include "achievements.h"
 #include "assocs.h"
 #include "damage.h"
+#include "currency_transaction.h"
+#include "deferred_save_policy.h"
 #include "epic.h"
+#include "epic_transaction.h"
 #include "files.h"
 #include "gmcp.h"
 #include "guard.h"
@@ -33,6 +37,7 @@
 #include "justice.h"
 #include "map.h"
 #include "mccp.h"
+#include "player_save_pipeline.h"
 #include "redis.h"
 #include "ships/ships.h"
 #include "specializations.h"
@@ -301,15 +306,20 @@ void do_camp(P_char ch, char *arg, int /*cmd*/)
 		*(timestr + strlen(timestr) - 1) = '\0';
 		strcat(timestr, " EST");
 
+		if (!persistence_save_character_terminal(ch, RENT_INN))
+		{
+			send_to_char(
+				"Your character could not be saved, so you remain in the game.\r\n",
+				ch);
+			return;
+		}
+
 		logit(LOG_COMM, "%s has quit in [%d] @ %s.", GET_NAME(ch),
 		      world[ch->in_room].number, timestr);
 		loginlog(GET_LEVEL(ch), "%s has quit in [%d] @ %s.", GET_NAME(ch),
 			 ROOM_VNUM(ch->in_room), timestr);
 		sql_log(ch, CONNECTLOG, "Quit Game");
 		act("$n has left the game.", TRUE, ch, 0, 0, TO_ROOM);
-
-		writeCharacter(ch, RENT_INN, ch->in_room);
-
 		sql_log_player_login(ch, "logout");
 		redis_player_offline(ch);
 		extract_char(ch);
@@ -1637,15 +1647,10 @@ void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 		return;
 	}
 
-	act("Goodbye, friend.. Come back soon!", FALSE, ch, 0, 0, TO_CHAR);
-	act("$n has quit the game.", TRUE, ch, 0, 0, TO_ROOM);
 	/* ugly, could get stuck in wraithform. JAB */
 	if (IS_AFFECTED(ch, AFF_WRAITHFORM))
 		BackToUsualForm(ch);
 	i = ch->in_room;
-	logit(LOG_COMM, "%s has quit in [%d].", GET_NAME(ch), world[ch->in_room].number);
-	loginlog(GET_LEVEL(ch), "%s has quit in [%d].", GET_NAME(ch), world[ch->in_room].number);
-	sql_log(ch, CONNECTLOG, "Quit Game");
 
 	/*
 	 * Mortals: drop everything but nodrop items, write char, then extract
@@ -1693,8 +1698,20 @@ void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 	{
 		ch->specials.was_in_room = world[i].number;
 		ch->in_room = i;
-		writeCharacter(ch, 3, i);
 	}
+
+	if (!persistence_save_character_terminal(ch, RENT_INN))
+	{
+		send_to_char("Your character could not be saved, so you remain in the game.\r\n",
+			     ch);
+		return;
+	}
+
+	act("Goodbye, friend.. Come back soon!", FALSE, ch, 0, 0, TO_CHAR);
+	act("$n has quit the game.", TRUE, ch, 0, 0, TO_ROOM);
+	logit(LOG_COMM, "%s has quit in [%d].", GET_NAME(ch), world[ch->in_room].number);
+	loginlog(GET_LEVEL(ch), "%s has quit in [%d].", GET_NAME(ch), world[ch->in_room].number);
+	sql_log(ch, CONNECTLOG, "Quit Game");
 
 	// If it's not an immortal.
 	if (IS_PC(ch) && (GET_LEVEL(ch) < MINLVLIMMORTAL))
@@ -1703,7 +1720,6 @@ void do_quit(P_char ch, char * /*argument*/, int /*cmd*/)
 	}
 
 	sql_log_player_login(ch, "logout");
-	persistence_flush_character_saves(ch);
 	redis_player_offline(ch);
 	extract_char(ch);
 	ch = NULL;
@@ -1738,10 +1754,18 @@ struct deferred_save_slot
 	int pid;
 	int type;
 	int level_dirty;
+	int scheduled;
+	uint64_t first_pending_usec;
+	uint64_t latest_pending_usec;
+	uint64_t attempts;
+	uint64_t failures;
+	int retry_delay;
 	char reason[64];
 };
 
 static struct deferred_save_slot deferred_saves[PERSISTENCE_DEFERRED_SAVE_SLOTS];
+
+static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, void *data);
 
 static struct deferred_save_slot *find_deferred_save_slot(int pid)
 {
@@ -1765,6 +1789,16 @@ static struct deferred_save_slot *find_empty_deferred_save_slot(void)
 	return NULL;
 }
 
+static void schedule_deferred_save_event(struct deferred_save_slot *slot, P_char ch, int delay)
+{
+	if (!slot || !slot->pid || slot->scheduled || !ch || IS_NPC(ch) || !GET_NAME(ch))
+		return;
+
+	slot->scheduled = 1;
+	add_event(event_deferred_character_save, delay > 0 ? delay : 1, ch, 0, 0, 0, &slot->pid,
+		  sizeof(slot->pid));
+}
+
 static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, void *data)
 {
 	struct deferred_save_slot pending;
@@ -1785,23 +1819,21 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 		return;
 
 	pending = *slot;
+	slot->scheduled = 0;
+	persistence_counter_saturating_add(&slot->attempts, 1);
 
 	if (!ch || IS_NPC(ch))
 	{
 		persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
-				  "deferred_save_character_missing",
-				  "discarded deferred save slot for pid=%d reason=%s", pending.pid,
-				  pending.reason);
+				  "deferred_save_character_missing", "discarded=1");
 		memset(slot, 0, sizeof(*slot));
 		return;
 	}
 
-	if (!IS_ALIVE(ch))
+	if (!GET_NAME(ch))
 	{
 		persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
-				  "deferred_save_character_not_alive",
-				  "discarded deferred save slot for pid=%d reason=%s", pending.pid,
-				  pending.reason);
+				  "deferred_save_character_invalid", "discarded=1");
 		memset(slot, 0, sizeof(*slot));
 		return;
 	}
@@ -1811,6 +1843,17 @@ static void event_deferred_character_save(P_char ch, P_char victim, P_obj obj, v
 
 	if (do_save_silent(ch, pending.type ? pending.type : 1))
 		memset(slot, 0, sizeof(*slot));
+	else
+	{
+		persistence_counter_saturating_add(&slot->failures, 1);
+		slot->retry_delay = deferred_save_next_retry_delay(slot->retry_delay);
+		persistence_alert(AVATAR, "player_save", "deferred_save", "none", "none",
+				  "deferred_save_retry_scheduled",
+				  "delay=%d attempts=%llu failures=%llu", slot->retry_delay,
+				  (unsigned long long)slot->attempts,
+				  (unsigned long long)slot->failures);
+		schedule_deferred_save_event(slot, ch, slot->retry_delay);
+	}
 }
 
 static void persistence_schedule_checkpoint(P_char ch, int type, int delay, const char *reason,
@@ -1818,7 +1861,7 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay, cons
 {
 	struct deferred_save_slot *slot;
 
-	if (!IS_ALIVE(ch) || IS_NPC(ch))
+	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
 		return;
 
 	slot = find_deferred_save_slot(GET_PID(ch));
@@ -1826,31 +1869,36 @@ static void persistence_schedule_checkpoint(P_char ch, int type, int delay, cons
 	{
 		slot->type = type ? type : slot->type;
 		slot->level_dirty = slot->level_dirty || level_dirty;
+		slot->latest_pending_usec = persistence_observability_now_usec();
+		snprintf(slot->reason, sizeof(slot->reason), "%s", reason ? reason : "unknown");
+		if (!slot->scheduled)
+			schedule_deferred_save_event(slot, ch,
+						     slot->retry_delay ? slot->retry_delay : delay);
 		return;
 	}
 
 	slot = find_empty_deferred_save_slot();
 	if (!slot)
 	{
-		persistence_alert(AVATAR, "player_save", GET_NAME(ch), "none", "none",
-				  "deferred_save_full",
-				  "deferred save table full; saving synchronously for %s",
-				  reason ? reason : "unknown");
+		persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
+				  "deferred_save_full", "capacity=%d",
+				  PERSISTENCE_DEFERRED_SAVE_SLOTS);
 		if (level_dirty)
 			sql_update_level(ch);
 		if (!do_save_silent(ch, type ? type : 1))
-			logit(LOG_DEBUG, "Failed to flush deferred save for %s (pid=%d reason=%s).",
-			      GET_NAME(ch), GET_PID(ch), reason ? reason : "unknown");
+			logit(LOG_DEBUG, "Deferred player save synchronous fallback failed");
 		return;
 	}
 
 	slot->pid = GET_PID(ch);
 	slot->type = type ? type : 1;
 	slot->level_dirty = level_dirty;
+	slot->first_pending_usec = persistence_observability_now_usec();
+	slot->latest_pending_usec = slot->first_pending_usec;
+	slot->retry_delay = 0;
 	snprintf(slot->reason, sizeof(slot->reason), "%s", reason ? reason : "unknown");
 
-	add_event(event_deferred_character_save, delay > 0 ? delay : 1, ch, 0, 0, 0, &slot->pid,
-		  sizeof(slot->pid));
+	schedule_deferred_save_event(slot, ch, delay);
 }
 
 void persistence_schedule_character_save(P_char ch, int type, int delay, const char *reason)
@@ -1870,48 +1918,57 @@ void persistence_schedule_level_checkpoint(P_char ch, int type, int delay, const
  * applied before the character is saved with the disconnect-time RENT_* type
  * or before the character is extracted.
  *
- * Mechanism: find the slot for ch's PID, copy its pending state, clear the
- * slot (memset to 0) so the still-queued event_deferred_character_save will
- * be a no-op when it fires, then run the synchronous save.  This is safe
- * because event_deferred_character_save checks find_deferred_save_slot(pid)
- * and bails on NULL.
+ * Mechanism: find the slot for ch's PID, copy its pending state, and run the
+ * synchronous save. Clear the slot only on success; on failure it remains
+ * visible and retryable. A still-queued event becomes a no-op after a
+ * successful clear because it rechecks find_deferred_save_slot(pid).
  */
-void persistence_flush_character_saves(P_char ch)
+bool persistence_flush_character_saves(P_char ch)
 {
 	struct deferred_save_slot pending;
 	struct deferred_save_slot *slot;
 
-	if (!ch || IS_NPC(ch) || !IS_ALIVE(ch))
-		return;
+	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
+		return false;
 
 	slot = find_deferred_save_slot(GET_PID(ch));
 	if (!slot)
-		return;
+		return true;
 
 	pending = *slot;
+	persistence_counter_saturating_add(&slot->attempts, 1);
+	uint64_t attempts = slot->attempts;
 
 	if (pending.level_dirty)
 		sql_update_level(ch);
 
-	if (do_save_silent(ch, pending.type ? pending.type : 1))
+	bool saved = do_save_silent(ch, pending.type ? pending.type : 1);
+	if (saved)
 		memset(slot, 0, sizeof(*slot));
 	else
-		logit(LOG_DEBUG, "Failed to flush deferred save for %s (pid=%d reason=%s).",
-		      GET_NAME(ch), pending.pid, pending.reason);
+	{
+		persistence_counter_saturating_add(&slot->failures, 1);
+		slot->retry_delay = deferred_save_next_retry_delay(slot->retry_delay);
+		schedule_deferred_save_event(slot, ch, slot->retry_delay);
+		logit(LOG_DEBUG, "Deferred player save flush failed");
+	}
 
-	persistence_alert(AVATAR, "player_save", GET_NAME(ch), "none", "none",
-			  "deferred_save_flushed", "flushed deferred save for pid=%d reason=%s",
-			  pending.pid, pending.reason);
+	persistence_alert(AVATAR, "player_save", "redacted", "none", "none",
+			  saved ? "deferred_save_flushed" : "deferred_save_flush_failed",
+			  "attempts=%llu failures=%llu", (unsigned long long)attempts,
+			  (unsigned long long)(saved ? pending.failures : slot->failures));
+	return saved;
 }
 
 /*
  * persistence_flush_all_character_saves: flush every pending deferred save.
  * Intended for global shutdown / copyover so no scheduled save is lost.
  */
-void persistence_flush_all_character_saves(void)
+bool persistence_flush_all_character_saves(void)
 {
 	int i;
 	P_char ch;
+	bool all_saved = true;
 	struct deferred_save_slot pending;
 	struct deferred_save_slot *slot;
 
@@ -1930,23 +1987,94 @@ void persistence_flush_all_character_saves(void)
 
 		pending = *slot;
 
-		if (!ch || !IS_ALIVE(ch))
+		if (!ch || !GET_NAME(ch))
 		{
-			persistence_alert(
-				AVATAR, "player_save", "none", "none", "none",
-				"deferred_save_discard_global",
-				"discarded deferred save pid=%d reason=%s (char not in list)",
-				pending.pid, pending.reason);
+			persistence_alert(AVATAR, "player_save", "none", "none", "none",
+					  "deferred_save_discard_global", "discarded=1");
 			memset(slot, 0, sizeof(*slot));
+			all_saved = false;
 			continue;
 		}
 
 		if (pending.level_dirty)
 			sql_update_level(ch);
 
+		persistence_counter_saturating_add(&slot->attempts, 1);
 		if (do_save_silent(ch, pending.type ? pending.type : 1))
 			memset(slot, 0, sizeof(*slot));
+		else
+		{
+			persistence_counter_saturating_add(&slot->failures, 1);
+			slot->retry_delay = deferred_save_next_retry_delay(slot->retry_delay);
+			schedule_deferred_save_event(slot, ch, slot->retry_delay);
+			all_saved = false;
+		}
 	}
+	return all_saved;
+}
+
+bool persistence_save_character_terminal(P_char ch, int type)
+{
+	struct deferred_save_slot *slot;
+
+	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
+		return false;
+
+	const int room = calculate_save_room(ch, type, ch->in_room);
+	const player_save_terminal_result terminal =
+		player_save_pipeline_terminal(ch, type, room, 2000, true);
+	const bool saved = terminal == player_save_terminal_result::database_acknowledged ||
+			   terminal == player_save_terminal_result::journal_durable;
+	slot = find_deferred_save_slot(GET_PID(ch));
+	if (saved && slot)
+		memset(slot, 0, sizeof(*slot));
+	if (!saved)
+		persistence_schedule_character_save(
+			ch, RENT_CRASH, PERSISTENCE_DEFERRED_RETRY_INITIAL, "terminal-save-retry");
+	return saved;
+}
+
+bool persistence_save_all_characters_terminal(int type)
+{
+	P_char ch;
+	bool all_saved = true;
+
+	for (ch = character_list; ch; ch = ch->next)
+	{
+		if (!IS_PC(ch) || !GET_NAME(ch))
+			continue;
+		if (!persistence_save_character_terminal(ch, type))
+		{
+			all_saved = false;
+		}
+	}
+	return all_saved;
+}
+
+struct persistence_deferred_save_snapshot persistence_deferred_save_snapshot_copy(void)
+{
+	struct persistence_deferred_save_snapshot snapshot = {};
+	const uint64_t now = persistence_observability_now_usec();
+	uint64_t oldest = 0;
+
+	for (int i = 0; i < PERSISTENCE_DEFERRED_SAVE_SLOTS; ++i)
+	{
+		const struct deferred_save_slot *slot = &deferred_saves[i];
+		if (!slot->pid)
+			continue;
+		persistence_counter_saturating_add(&snapshot.pending, 1);
+		if (slot->scheduled)
+			persistence_counter_saturating_add(&snapshot.scheduled, 1);
+		else if (slot->failures > 0)
+			persistence_counter_saturating_add(&snapshot.failed_unscheduled, 1);
+		persistence_counter_saturating_add(&snapshot.attempts, slot->attempts);
+		persistence_counter_saturating_add(&snapshot.failures, slot->failures);
+		if (slot->first_pending_usec && (!oldest || slot->first_pending_usec < oldest))
+			oldest = slot->first_pending_usec;
+	}
+	if (oldest && now >= oldest)
+		snapshot.oldest_age_msec = (now - oldest) / 1000ULL;
+	return snapshot;
 }
 
 bool do_save_silent(P_char ch, int type)
@@ -1956,11 +2084,6 @@ bool do_save_silent(P_char ch, int type)
 
 	if (!ch || !GET_NAME(ch) || (IS_NPC(ch) && !IS_MORPH(ch)))
 		return false;
-
-	logit(LOG_FILE,
-	      "[TRACE] do_save_silent begin name=%s pid=%d type=%d room=%d desc=%p connected=%d",
-	      GET_NAME(ch), GET_PID(ch), type, ch->in_room, (void *)ch->desc,
-	      ch->desc ? ch->desc->connected : -1);
 
 	if (IS_HARDCORE(ch) && hardcore_config_get()->death_hall_of_fame)
 	{
@@ -1973,6 +2096,19 @@ bool do_save_silent(P_char ch, int type)
 	}
 
 	update_achievements(ch, 0, 0, 0);
+
+	if (GET_PID(ch) > 0 && player_save_pipeline_is_nonterminal_type(type))
+	{
+		const int room_vnum = ch->in_room == NOWHERE ? NOWHERE : world[ch->in_room].number;
+		const player_save_pipeline_result queued = player_save_pipeline_request(
+			ch, PLAYER_CHECKPOINT_COMPONENT_ALL, type, room_vnum);
+		extern P_ship get_ship_from_char(P_char ch);
+		P_ship ship = get_ship_from_char(ch);
+		if (ship)
+			queue_ship_save(ship, "player checkpoint");
+		return queued == player_save_pipeline_result::queued ||
+		       queued == player_save_pipeline_result::coalesced;
+	}
 
 	if ((ch->desc && !ch->desc->connected) || !ch->desc)
 	{
@@ -2007,18 +2143,11 @@ bool do_save_silent(P_char ch, int type)
 		}
 		if (!writeCharacter(ch, type, ch->in_room))
 		{
-			logit(LOG_DEBUG, "Problem saving player %s in do_save_silent()",
-			      GET_NAME(ch));
+			logit(LOG_DEBUG, "do_save_silent: component=character outcome=failure");
 			send_to_char("Danger -- cannot save your character!\r\n", ch);
 			send_to_char("Better contact an Implementor ASAP.\r\n", ch);
-			logit(LOG_FILE,
-			      "[TRACE] do_save_silent writeCharacter FAILED name=%s pid=%d type=%d room=%d",
-			      GET_NAME(ch), GET_PID(ch), type, ch->in_room);
 			return false;
 		}
-		logit(LOG_FILE,
-		      "[TRACE] do_save_silent writeCharacter OK name=%s pid=%d type=%d room=%d",
-		      GET_NAME(ch), GET_PID(ch), type, ch->in_room);
 	}
 
 	/* Also save player's ship if they have one */
@@ -2147,6 +2276,61 @@ void do_balance(P_char ch, char * /*argument*/, int /*cmd*/)
 	}
 }
 
+static int carried_coin_count(P_char ch, int coin_type)
+{
+	switch (coin_type)
+	{
+	case 0:
+		return GET_COPPER(ch);
+	case 1:
+		return GET_SILVER(ch);
+	case 2:
+		return GET_GOLD(ch);
+	case 3:
+		return GET_PLATINUM(ch);
+	default:
+		return 0;
+	}
+}
+
+enum class atm_transaction_type : uint8_t
+{
+	deposit,
+	withdraw,
+};
+
+static void atm_transaction_complete(P_char ch, bool committed,
+				     const currency_command_result & /*result*/,
+				     unsigned int error_code, const uint8_t *context,
+				     size_t context_size)
+{
+	if (!ch || context_size != sizeof(atm_transaction_type))
+		return;
+	atm_transaction_type type = atm_transaction_type::deposit;
+	memcpy(&type, context, sizeof(type));
+	if (!committed)
+	{
+		if (error_code == ENOSPC)
+			send_to_char(type == atm_transaction_type::deposit ?
+					     "You haven't got that much!\r\n" :
+					     "You haven't got that much in your account!\r\n",
+				     ch);
+		else if (error_code == ESTALE)
+			send_to_char(
+				"Your balances changed; please try that transaction again.\r\n",
+				ch);
+		else
+			send_to_char(
+				type == atm_transaction_type::deposit ?
+					"The bank could not complete that deposit. Your coins were retained.\r\n" :
+					"The bank could not complete that withdrawal.\r\n",
+				ch);
+		return;
+	}
+	if (test_atm_present(ch))
+		do_balance(ch, nullptr, -4);
+}
+
 void do_deposit(P_char ch, char *argument, int /*cmd*/)
 {
 	char arg[MAX_INPUT_LENGTH];
@@ -2162,52 +2346,32 @@ void do_deposit(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	const char *acct = get_account_name_safe(ch);
-	int racewar = GET_RACEWAR(ch);
-
-	if (!acct || !strcmp(acct, "Unknown"))
-	{
-		send_to_char("Your account could not be determined.\r\n", ch);
-		return;
-	}
-
 	if (strstr("all", argument))
 	{
-		ok = (GET_COPPER(ch));
-		money = ok;
-		if (ok)
+		currency_vector wallet_delta = {};
+		currency_vector bank_delta = {};
+		bool has_money = false;
+		for (int coin_type = 0; coin_type < 4; ++coin_type)
 		{
-			GET_COPPER(ch) -= money;
-			GET_BALANCE_COPPER(ch) += money;
-			sql_account_bank_deposit(acct, racewar, 0, money);
+			money = carried_coin_count(ch, coin_type);
+			if (money > 0)
+			{
+				wallet_delta.amount[coin_type] = -money;
+				bank_delta.amount[coin_type] = money;
+				has_money = true;
+			}
 		}
-		ok = (GET_SILVER(ch));
-		money = ok;
-		if (ok)
+		if (!has_money)
 		{
-			GET_SILVER(ch) -= money;
-			GET_BALANCE_SILVER(ch) += money;
-			sql_account_bank_deposit(acct, racewar, 1, money);
+			send_to_char("You have no coins to deposit.\r\n", ch);
+			return;
 		}
-		ok = (GET_GOLD(ch));
-		money = ok;
-		if (ok)
-		{
-			GET_GOLD(ch) -= money;
-			GET_BALANCE_GOLD(ch) += money;
-			sql_account_bank_deposit(acct, racewar, 2, money);
-		}
-		ok = (GET_PLATINUM(ch));
-		money = ok;
-		if (ok)
-		{
-			GET_PLATINUM(ch) -= money;
-			GET_BALANCE_PLATINUM(ch) += money;
-			sql_account_bank_deposit(acct, racewar, 3, money);
-		}
-		do_balance(ch, 0, -4);
-		/* Send GMCP update for deposit all */
-		gmcp_char_vitals(ch);
+		const atm_transaction_type type = atm_transaction_type::deposit;
+		if (!currency_transaction_submit(
+			    ch, wallet_delta, bank_delta, currency_reason_type::atm_deposit, 0,
+			    critical_source_site::command, critical_deadline_class::interactive,
+			    atm_transaction_complete, &type, sizeof(type)))
+			send_to_char("The bank is busy; please try that deposit again.\r\n", ch);
 		return;
 	}
 
@@ -2232,39 +2396,15 @@ void do_deposit(P_char ch, char *argument, int /*cmd*/)
 		{
 		case 0:
 			ok = (money <= GET_COPPER(ch));
-			if (ok)
-			{
-				GET_COPPER(ch) -= money;
-				GET_BALANCE_COPPER(ch) += money;
-				sql_account_bank_deposit(acct, racewar, 0, money);
-			}
 			break;
 		case 1:
 			ok = (money <= GET_SILVER(ch));
-			if (ok)
-			{
-				GET_SILVER(ch) -= money;
-				GET_BALANCE_SILVER(ch) += money;
-				sql_account_bank_deposit(acct, racewar, 1, money);
-			}
 			break;
 		case 2:
 			ok = (money <= GET_GOLD(ch));
-			if (ok)
-			{
-				GET_GOLD(ch) -= money;
-				GET_BALANCE_GOLD(ch) += money;
-				sql_account_bank_deposit(acct, racewar, 2, money);
-			}
 			break;
 		case 3:
 			ok = (money <= GET_PLATINUM(ch));
-			if (ok)
-			{
-				GET_PLATINUM(ch) -= money;
-				GET_BALANCE_PLATINUM(ch) += money;
-				sql_account_bank_deposit(acct, racewar, 3, money);
-			}
 			break;
 		}
 		if (!ok)
@@ -2273,9 +2413,18 @@ void do_deposit(P_char ch, char *argument, int /*cmd*/)
 		}
 		else
 		{
-			do_balance(ch, 0, -4);
-			/* Send GMCP update for deposit */
-			gmcp_char_vitals(ch);
+			currency_vector wallet_delta = {};
+			currency_vector bank_delta = {};
+			wallet_delta.amount[ctype] = -money;
+			bank_delta.amount[ctype] = money;
+			const atm_transaction_type type = atm_transaction_type::deposit;
+			if (!currency_transaction_submit(
+				    ch, wallet_delta, bank_delta, currency_reason_type::atm_deposit,
+				    0, critical_source_site::command,
+				    critical_deadline_class::interactive, atm_transaction_complete,
+				    &type, sizeof(type)))
+				send_to_char("The bank is busy; please try that deposit again.\r\n",
+					     ch);
 		}
 	}
 }
@@ -2294,15 +2443,6 @@ void do_withdraw(P_char ch, char *argument, int /*cmd*/)
 	if (!test_atm_present(ch))
 	{
 		send_to_char("I don't see a bank around here.\r\n", ch);
-		return;
-	}
-
-	const char *acct = get_account_name_safe(ch);
-	int racewar = GET_RACEWAR(ch);
-
-	if (!acct || !strcmp(acct, "Unknown"))
-	{
-		send_to_char("Your account could not be determined.\r\n", ch);
 		return;
 	}
 
@@ -2326,59 +2466,23 @@ void do_withdraw(P_char ch, char *argument, int /*cmd*/)
 		switch (ctype)
 		{
 		case 0:
-		{
-			long long result = sql_account_bank_withdraw(acct, racewar, 0, money);
-			if (result >= 0)
-			{
-				GET_BALANCE_COPPER(ch) = (int)result;
-				GET_COPPER(ch) += money;
-				ok = 1;
-			}
-		}
-		break;
 		case 1:
-		{
-			long long result = sql_account_bank_withdraw(acct, racewar, 1, money);
-			if (result >= 0)
-			{
-				GET_BALANCE_SILVER(ch) = (int)result;
-				GET_SILVER(ch) += money;
-				ok = 1;
-			}
-		}
-		break;
 		case 2:
-		{
-			long long result = sql_account_bank_withdraw(acct, racewar, 2, money);
-			if (result >= 0)
-			{
-				GET_BALANCE_GOLD(ch) = (int)result;
-				GET_GOLD(ch) += money;
-				ok = 1;
-			}
-		}
-		break;
 		case 3:
-		{
-			long long result = sql_account_bank_withdraw(acct, racewar, 3, money);
-			if (result >= 0)
-			{
-				GET_BALANCE_PLATINUM(ch) = (int)result;
-				GET_PLATINUM(ch) += money;
-				ok = 1;
-			}
-		}
-		break;
+			currency_vector wallet_delta = {};
+			currency_vector bank_delta = {};
+			wallet_delta.amount[ctype] = money;
+			bank_delta.amount[ctype] = -money;
+			const atm_transaction_type type = atm_transaction_type::withdraw;
+			ok = currency_transaction_submit(
+				ch, wallet_delta, bank_delta, currency_reason_type::atm_withdraw, 0,
+				critical_source_site::command, critical_deadline_class::interactive,
+				atm_transaction_complete, &type, sizeof(type));
+			break;
 		}
 		if (!ok)
 		{
-			send_to_char("You haven't got that much in your account!\r\n", ch);
-		}
-		else
-		{
-			do_balance(ch, 0, -4);
-			/* Send GMCP update for bank withdraw */
-			gmcp_char_vitals(ch);
+			send_to_char("The bank is busy; please try that withdrawal again.\r\n", ch);
 		}
 	}
 }
@@ -3312,10 +3416,8 @@ void do_steal(P_char ch, char *argument, int /*cmd*/)
 					} while (ncoins == i);
 				}
 
-				GET_COPPER(ch) += gold[0];
-				GET_SILVER(ch) += gold[1];
-				GET_GOLD(ch) += gold[2];
-				GET_PLATINUM(ch) += gold[3];
+				ADD_MONEY(ch,
+					  gold[0] + gold[1] * 10 + gold[2] * 100 + gold[3] * 1000);
 
 				snprintf(
 					Gbuf1, MAX_STRING_LENGTH,
@@ -5436,25 +5538,11 @@ void do_split(P_char ch, char *argument, int /*cmd*/)
 		if ((ch->in_room == gl->ch->in_room) && CAN_SEE(ch, gl->ch) && (ch != gl->ch) &&
 		    (IS_PC(gl->ch) || IS_MORPH(gl->ch)))
 		{
-			switch (ctype)
-			{
-			case 0:
-				GET_COPPER(gl->ch) += share;
-				GET_COPPER(ch) -= share;
-				break;
-			case 1:
-				GET_SILVER(gl->ch) += share;
-				GET_SILVER(ch) -= share;
-				break;
-			case 2:
-				GET_GOLD(gl->ch) += share;
-				GET_GOLD(ch) -= share;
-				break;
-			case 3:
-				GET_PLATINUM(gl->ch) += share;
-				GET_PLATINUM(ch) -= share;
-				break;
-			}
+			const int coin_value = ctype == 0 ? 1 :
+					       ctype == 1 ? 10 :
+					       ctype == 2 ? 100 :
+							    1000;
+			ADD_MONEY(gl->ch, (int)(share * coin_value));
 			given += share;
 			snprintf(Gbuf1, MAX_STRING_LENGTH,
 				 "$n gives you your share:  %ld %s coins.", share,
@@ -5468,6 +5556,9 @@ void do_split(P_char ch, char *argument, int /*cmd*/)
 			                          */
 		}
 	}
+	const int split_coin_value = ctype == 0 ? 1 : ctype == 1 ? 10 : ctype == 2 ? 100 : 1000;
+	if (given > 0 && SUB_MONEY(ch, (int)(given * split_coin_value), 0) != 0)
+		logit(LOG_WIZ, "do_split: debit submission failed for pid %d", GET_PID(ch));
 
 	if (given == 0)
 	{
@@ -6479,11 +6570,74 @@ void do_blood_scent(P_char ch, char * /*argument*/, int /*cmd*/)
 	}*/
 }
 
+namespace
+{
+enum class ascend_kind : int
+{
+	theurgist,
+	avenger_specialization,
+	paladin_transformation,
+};
+
+struct ascend_context
+{
+	ascend_kind kind;
+	int specialization;
+};
+
+void ascend_committed(P_char ch, bool committed, const epic_command_result &, unsigned int,
+		      const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed || context_size != sizeof(ascend_context))
+	{
+		send_to_char("Your ascension offering was not accepted.\n", ch);
+		return;
+	}
+	ascend_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (context.kind == ascend_kind::theurgist)
+	{
+		for (int skill = 0; skill < MAX_SKILLS; ++skill)
+			if (!IS_TRADESKILL(skill) && !IS_EPIC_SKILL(skill))
+				ch->only.pc->skills[skill].learned = 0;
+		NewbySkillSet(ch, FALSE);
+		ch->points.max_mana = 0;
+		do_start(ch, 1);
+		for (int wear = 0; wear < MAX_WEAR; ++wear)
+			if (ch->equipment[wear])
+				obj_to_char(unequip_char(ch, wear), ch);
+		GET_SIZE(ch) = SIZE_MEDIUM;
+		GET_RACE(ch) = RACE_ELADRIN;
+		ch->player.m_class = CLASS_THEURGIST;
+		GET_VITALITY(ch) = GET_MAX_VITALITY(ch) = 120;
+	}
+	else
+	{
+		ch->player.spec = context.specialization;
+		if (context.kind == ascend_kind::paladin_transformation)
+		{
+			forget_spells(ch, -1);
+			ch->player.secondary_class = 0;
+			GET_SIZE(ch) = SIZE_MEDIUM;
+			GET_RACE(ch) = RACE_AGATHINON;
+			ch->player.m_class = CLASS_AVENGER;
+			do_start(ch, 1);
+		}
+	}
+	generate_desc(ch);
+	ch->player.time.birth = time(NULL) - 500 * SECS_PER_MUD_YEAR;
+	forget_spells(ch, -1);
+	ch->player.spec = context.kind == ascend_kind::theurgist ? 0 : context.specialization;
+	if (context.kind == ascend_kind::theurgist)
+		ch->player.secondary_class = 0;
+	send_to_char("Your offering is accepted and your ascension is complete.\n", ch);
+}
+} // namespace
+
 void ascend_theurgist(P_char ch)
 {
 	P_char teacher;
 	char buff[64];
-	int i;
 
 	if (!ch)
 		return;
@@ -6517,44 +6671,13 @@ void ascend_theurgist(P_char ch)
 		return;
 	}
 
-	for (i = 0; i < MAX_SKILLS; i++)
-	{
-		if (!IS_TRADESKILL(i) && !IS_EPIC_SKILL(i))
-		{
-			ch->only.pc->skills[i].learned = 0;
-		}
-	}
-	NewbySkillSet(ch, FALSE);
-	ch->points.max_mana = 0;
-	do_start(ch, 1);
-
-	int k = 0;
-	P_obj temp_obj;
-	for (k = 0; k < MAX_WEAR; k++)
-	{
-		temp_obj = ch->equipment[k];
-		if (temp_obj)
-			obj_to_char(unequip_char(ch, k), ch);
-	}
-
-	GET_SIZE(ch) = SIZE_MEDIUM;
-	GET_RACE(ch) = RACE_ELADRIN;
-	ch->player.m_class = CLASS_THEURGIST;
-
-	send_to_char("You feel a chill and realize that you are naked.\r\n", ch);
-	generate_desc(ch);
-
-	// GET_AGE does not return a changeable variable.
-	ch->player.time.birth = time(NULL) - 500 * SECS_PER_MUD_YEAR;
-
-	GET_VITALITY(ch) = GET_MAX_VITALITY(ch) = 120;
-	forget_spells(ch, -1);
-	ch->player.spec = 0;
-	ch->player.secondary_class = 0;
-	ch->only.pc->epics =
-		MAX(0, ch->only.pc->epics - (int)get_property("ascend.epicCost.Eladrin", 10));
-	// Lets not home them on the map.
-	// GET_HOME(ch) = GET_BIRTHPLACE(ch) = GET_ORIG_BIRTHPLACE(ch) = ch->in_room;
+	const int cost = (int)get_property("ascend.epicCost.Eladrin", 250);
+	const ascend_context context = { ascend_kind::theurgist, 0 };
+	if (!epic_transaction_submit(ch, -cost, epic_reason_type::ascend_descend, 0,
+				     EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
+				     critical_deadline_class::interactive, ascend_committed,
+				     &context, sizeof(context)))
+		send_to_char("The epic transaction service is busy. Please try again.\n", ch);
 }
 
 void do_ascend(P_char ch, char * /*arg*/, int /*cmd*/)
@@ -6609,22 +6732,15 @@ void do_ascend(P_char ch, char * /*arg*/, int /*cmd*/)
 
 	if (GET_CLASS(ch, CLASS_AVENGER))
 	{
-		ch->player.spec = spec;
-		send_to_char("You pray to your god, asking for judgement over your past deeds,\n"
-			     "seeking further enlightment. A &+Wholy glow&n seems to encase you,\n"
-			     "lifting your spirits and heightening your awareness.\n"
-			     "Your prayers have been answered, as you ascend into the ranks of\n"
-			     "the holy army, from this day on you will be an "
-			     "&+WAvenger&n of divine law.\n\n",
-			     ch);
-		snprintf(buffer, 256,
-			 "You hear a loud voice exclaiming, '&+WWelcome my child, you shall\n"
-			 "&+Wnow be the avenging hand of %s,\n"
-			 "&+Wthe %s &+Wfor his enemies!'",
-			 get_god_name(ch), GET_SPEC_NAME(ch->player.m_class, spec - 1));
-		send_to_char(buffer, ch);
-		ch->only.pc->epics =
-			MAX(0, ch->only.pc->epics - (int)get_property("ascend.epicCost", 250));
+		const int cost = (int)get_property("ascend.epicCost", 250);
+		const ascend_context context = { ascend_kind::avenger_specialization, spec };
+		if (!epic_transaction_submit(ch, -cost, epic_reason_type::ascend_descend, spec,
+					     EPIC_COMMAND_REQUIRE_FUNDS,
+					     critical_source_site::command,
+					     critical_deadline_class::interactive, ascend_committed,
+					     &context, sizeof(context)))
+			send_to_char("The epic transaction service is busy. Please try again.\n",
+				     ch);
 		return;
 	}
 
@@ -6634,40 +6750,23 @@ void do_ascend(P_char ch, char * /*arg*/, int /*cmd*/)
 			     ch);
 		return;
 	}
-	if (ch->only.pc->epics < (int)get_property("ascend.epicCost", 10))
+	const int ascend_cost = (int)get_property("ascend.epicCost", 250);
+	if (ch->only.pc->epics < ascend_cost)
 	{
 		snprintf(
 			buffer, 256,
 			"&+WYou must first prove yourself worthy! The transformation will consume &n%d&+W epic points.\n",
-			(int)get_property("ascend.epicCost", 10));
+			ascend_cost);
 		send_to_char(buffer, ch);
 		return;
 	}
 
-	forget_spells(ch, -1);
-	ch->player.spec = spec;
-	ch->player.secondary_class = 0;
-	GET_SIZE(ch) = SIZE_MEDIUM;
-	GET_RACE(ch) = RACE_AGATHINON;
-	generate_desc(ch);
-	// GET_AGE does not return a changeable variable.
-	ch->player.time.birth = time(NULL) - 500 * SECS_PER_MUD_YEAR;
-	ch->player.m_class = CLASS_AVENGER;
-	do_start(ch, 1);
-	ch->only.pc->epics = MAX(0, ch->only.pc->epics - (int)get_property("ascend.epicCost", 250));
-	send_to_char("You pray to your god, asking for judgement over your past deeds,\n"
-		     "seeking further enlightment. A &+Wholy glow&n seems to encase you,\n"
-		     "lifting your spirits and heightening your awareness.\n"
-		     "Your prayers have been answered, as you ascend into the ranks of\n"
-		     "the holy army, from this day on you will be an "
-		     "&+WAvenger&n of divine law.\n\n",
-		     ch);
-	snprintf(buffer, sizeof buffer,
-		 "You hear a loud voice exclaiming, '&+WWelcome my child, you shall\n"
-		 "&+Wnow be the avenging hand of %s,\n"
-		 "&+Wthe %s &+Wfor his enemies!'",
-		 get_god_name(ch), GET_SPEC_NAME(ch->player.m_class, spec - 1));
-	send_to_char(buffer, ch);
+	const ascend_context context = { ascend_kind::paladin_transformation, spec };
+	if (!epic_transaction_submit(ch, -ascend_cost, epic_reason_type::ascend_descend, spec,
+				     EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
+				     critical_deadline_class::interactive, ascend_committed,
+				     &context, sizeof(context)))
+		send_to_char("The epic transaction service is busy. Please try again.\n", ch);
 }
 
 void do_descend(P_char ch, char * /*arg*/, int /*cmd*/)
@@ -6760,7 +6859,7 @@ void do_descend(P_char ch, char * /*arg*/, int /*cmd*/)
 	if (GET_ASSOC(ch) != NULL)
 		GET_ASSOC(ch)->secede(ch);
 	ch->only.pc->frags = 0;
-	ch->only.pc->epics = 0;
+	/* Epic reset is intentionally unreachable while this legacy command is disabled. */
 
 	for (i = 0; i < MAX_SKILLS; i++)
 	{
@@ -6790,7 +6889,6 @@ void do_old_descend(P_char ch, char *arg, int /*cmd*/)
 	const int THIEF = 7;
 	const int CONJ = 8;
 	const int ILLU = 9;
-	int cost = 0;
 	char second_arg[MAX_INPUT_LENGTH], third_arg[MAX_INPUT_LENGTH];
 	char buff[64];
 
@@ -6849,12 +6947,10 @@ void do_old_descend(P_char ch, char *arg, int /*cmd*/)
 		if (GET_CLASS(ch, CLASS_ANTIPALADIN))
 		{
 			SELECTION = DREAD;
-			cost = get_property("descend.epicCost", 2500);
 		}
 		if (GET_CLASS(ch, CLASS_NECROMANCER))
 		{
 			SELECTION = NECRO;
-			cost = get_property("descent.epicCost.Lich", 250);
 		}
 		/*
 	   if (!str_cmp(second_arg,  "Warrior")){
@@ -7103,7 +7199,7 @@ void do_old_descend(P_char ch, char *arg, int /*cmd*/)
 		forget_spells(ch, -1);
 		ch->player.spec = 0;
 		ch->player.secondary_class = 0;
-		ch->only.pc->epics = MAX(0, ch->only.pc->epics - cost);
+		/* This obsolete NPC-only path does not mutate transactional epic balances. */
 
 		if (IS_RACEWAR_EVIL(ch))
 		{

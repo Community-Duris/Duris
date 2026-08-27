@@ -2,49 +2,32 @@
 #define __SQL_H_INCLUDED__
 
 #include "structs.h"
+#include "persistence_observability.h"
 #include <stdlib.h>
 
-/* default database credentials (fallback if env vars not set) */
-#ifdef TEST_MUD
-#define DB_HOST_DEFAULT "localhost"
-#define DB_USER_DEFAULT "duris"
-#define DB_PASSWD_DEFAULT "duris"
-#define DB_NAME_DEFAULT "duris_dev"
-#else
-#define DB_HOST_DEFAULT "localhost"
-#define DB_USER_DEFAULT "duris"
-#define DB_PASSWD_DEFAULT "duris"
-#define DB_NAME_DEFAULT "duris"
-#endif
-
-#ifdef __CYGWIN_BUILD__
-#undef DB_HOST_DEFAULT
-#define DB_HOST_DEFAULT "localhost"
-#endif
-
-/* get database credentials from env vars with fallback */
+/* Database connection fields are explicit. Runtime validation rejects missing values. */
 static inline const char *get_db_host(void)
 {
 	const char *val = getenv("DB_HOST");
-	return (val && *val) ? val : DB_HOST_DEFAULT;
+	return val ? val : "";
 }
 
 static inline const char *get_db_user(void)
 {
 	const char *val = getenv("DB_USER");
-	return (val && *val) ? val : DB_USER_DEFAULT;
+	return val ? val : "";
 }
 
 static inline const char *get_db_passwd(void)
 {
 	const char *val = getenv("DB_PASSWD");
-	return (val && *val) ? val : DB_PASSWD_DEFAULT;
+	return val ? val : "";
 }
 
 static inline const char *get_db_name(void)
 {
 	const char *val = getenv("DB_NAME");
-	return (val && *val) ? val : DB_NAME_DEFAULT;
+	return val ? val : "";
 }
 
 static inline int get_db_port(void)
@@ -63,12 +46,17 @@ static inline int get_db_port(void)
 #ifndef __NO_MYSQL__
 #include <mysql.h>
 extern MYSQL *DB;
-MYSQL_RES *db_query(const char *format, ...);
+MYSQL *sql_open_configured_connection(unsigned long client_flags);
+MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...);
+MYSQL_RES *db_query_nolog_at(struct persistence_query_site site, const char *format, ...);
+bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
+			     enum persistence_query_context context, const char *sql, size_t len,
+			     uint64_t *operation_id);
 #endif
 
 int load_env_file(void);
 int initialize_mysql();
-void sql_populate_lookup_tables();
+bool sql_populate_lookup_tables();
 int sql_save_player_core(P_char ch);
 bool sql_load_player_items(P_char ch);
 int sql_level_cap(int racewar_side);
@@ -94,12 +82,12 @@ const char *sql_select_IP_info(P_char ch, char *buf, size_t bufSize, time_t *las
 int sql_find_racewar_for_ip(char *ip, int *racewar_side);
 // to log disconnect times...
 void sql_disconnectIP(P_char ch);
-bool qry(const char *format, ...);
+bool qry_at(struct persistence_query_site site, const char *format, ...);
 bool sql_persistence_write_item_event_line(const char *line);
 bool sql_persistence_write_scalar_event_line(const char *line);
 bool sql_persistence_write_large_event_line(const char *line);
-bool sql_trace_exec(const char *site, const char *sql, size_t len, bool drain_before,
-		    bool drain_after);
+bool sql_trace_exec_at(struct persistence_query_site source_site, const char *label,
+		       const char *sql, size_t len, bool drain_before, bool drain_after);
 void sql_trace_panic(void);
 
 /* Resolve which database name to connect to based on the current
@@ -117,6 +105,12 @@ void sql_persistence_release_connection(MYSQL *conn);
 bool sql_persistence_execute_raw(const char *sql);
 bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
 					const char *owner_ref, const char *context);
+bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
+						 const char *owner_type,
+						 unsigned long long owner_id,
+						 unsigned long long owner_context_id,
+						 const char *context);
+bool sql_hydrate_item_owner_revisions(void);
 void sql_world_quest_finished(P_char ch, P_obj obj);
 int sql_world_quest_done_already(P_char ch, int number);
 int sql_world_quest_can_do_another(P_char ch);
@@ -124,6 +118,11 @@ void sql_zone_touch_finished(const char *event_key, int boot_time, int touched_a
 			     int toucher_pid, int group_size, int epic_value, int alignment_delta);
 void sql_clear_results();
 bool sql_run_multi_query(const char *query);
+
+#define db_query(...) db_query_at(PERSISTENCE_QUERY_SITE, __VA_ARGS__)
+#define db_query_nolog(...) db_query_nolog_at(PERSISTENCE_QUERY_SITE, __VA_ARGS__)
+#define qry(...) qry_at(PERSISTENCE_QUERY_SITE, __VA_ARGS__)
+#define sql_trace_exec(label, ...) sql_trace_exec_at(PERSISTENCE_QUERY_SITE, label, __VA_ARGS__)
 
 void send_to_pid_offline(const char *msg, int pid);
 void send_offline_messages(P_char ch);
@@ -186,7 +185,7 @@ struct zone_info
 
 bool get_zone_info(int zone_number, struct zone_info *info);
 
-void sql_get_bind_data(int vnum, int *owner_pid, int *timer);
+bool sql_get_bind_data(int vnum, int *owner_pid, int *timer);
 void sql_update_bind_data(int vnum, int *owner_pid, int *timer);
 
 void sql_ship_sunk(char owner);

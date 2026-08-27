@@ -3,7 +3,10 @@
 
 #include <string>
 #include <vector>
+#include "zone_touch_command.h"
 using namespace std;
+
+struct critical_operation_id;
 
 #define EPIC_SMALL_STONE 358
 #define EPIC_LARGE_STONE 359
@@ -76,9 +79,12 @@ int modify_by_epic_trophy(P_char ch, int amount, int zone_number);
 void gain_epic(P_char, int type, int data, int amount);
 void group_gain_epic(P_char, int type, int data, int amount);
 void epic_frag(P_char, int victim_pid, int amount);
+int epic_calculate_pvp_award(P_char ch, int amount);
+void epic_publish_pvp_award(P_char ch, int amount);
 const char *epic_prestige(P_char);
 void init_guild_frags();
 void epic_feed_artifacts(P_char ch, int epics, int epic_type);
+void epic_publish_zone_touch(const zone_touch_result &result);
 void do_epic_reset(P_char ch, char *arg, int cmd);
 void do_epic_reset_norefund(P_char ch, char *arg, int cmd);
 void do_infuse(P_char ch, char *arg, int cmd);
@@ -104,6 +110,7 @@ void epic_zone_erase_touch(int);
 bool epic_zone_done_now(int zone_number);
 bool epic_zone_done(int zone_number);
 void epic_zone_balance();
+size_t epic_zone_completion_snapshot(int64_t *values, size_t capacity);
 int zone2saveable(int zone_index);
 int saveable2zone(int saved_zone);
 void epic_choose_new_epic_task(P_char ch);

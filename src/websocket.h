@@ -93,7 +93,7 @@ int websocket_accept(int listen_fd, struct descriptor_data *d);
 int websocket_process_input(struct descriptor_data *d);
 int websocket_has_pending(struct descriptor_data *d);
 
-/* http upgrade handshake */
+/* HTTP health request or upgrade handshake; health responses return -2 and close. */
 int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t len);
 int websocket_complete_handshake(struct descriptor_data *d, const char *key);
 

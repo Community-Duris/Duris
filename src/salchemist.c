@@ -24,6 +24,7 @@
 #include "damage.h"
 #include "defines.h"
 #include "epic.h"
+#include "epic_transaction.h"
 #include "justice.h"
 #include "mm.h"
 #include "objmisc.h"
@@ -53,6 +54,92 @@ extern const struct stat_data stat_factor[];
 extern float fake_sqrt_table[];
 extern int pulse;
 extern int arena_hometown_location[];
+bool is_neg_good(sbyte location);
+
+namespace
+{
+struct spellbind_context
+{
+	unsigned long object_uid;
+	int skill;
+};
+
+P_obj carried_object_by_uid(P_char ch, unsigned long uid)
+{
+	for (P_obj item = object_list; item; item = item->next)
+		if (item->obj_uid == uid && OBJ_CARRIED(item) && item->loc.carrying == ch)
+			return item;
+	return nullptr;
+}
+
+void spellbind_committed(P_char ch, bool committed, const epic_command_result &, unsigned int,
+			 const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed || context_size != sizeof(spellbind_context))
+	{
+		send_to_char("Your spellbind offering was declined.\n", ch);
+		return;
+	}
+	spellbind_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	P_obj item = carried_object_by_uid(ch, context.object_uid);
+	if (!item || IS_SET(item->extra_flags, ITEM_NOREPAIR) || item->condition <= 99)
+	{
+		send_to_char(
+			"The item changed while spellbinding was pending; your epic is being refunded.\n",
+			ch);
+		epic_transaction_submit(ch, 1, epic_reason_type::epic_skill_refund,
+					static_cast<int64_t>(context.object_uid), 0,
+					critical_source_site::recovery,
+					critical_deadline_class::recovery, nullptr, nullptr, 0);
+		return;
+	}
+	act("You successfully bind some magic to the item...", FALSE, ch, 0, 0, TO_CHAR);
+	int total = 0;
+	if (!number(0, 2) && !IS_TRUSTED(ch))
+	{
+		item->condition -= number(1, 20);
+		act("...however, you damaged it a bit...", FALSE, ch, 0, 0, TO_CHAR);
+	}
+	else if (!number(0, 40) || IS_TRUSTED(ch))
+	{
+		setsuffix_obj_new(item);
+		act("...you feel &+YSTRONG&n magic flowing this time...", FALSE, ch, 0, 0, TO_CHAR);
+		total = 1;
+	}
+	SET_BIT(item->extra_flags, ITEM_NOREPAIR | ITEM_NOLOCATE);
+	for (int index = 0; index < 3; ++index)
+	{
+		if (item->affected[index].location >= APPLY_LUCK_MAX ||
+		    item->affected[index].modifier == 0 || item->affected[index].modifier >= 120 ||
+		    item->affected[index].modifier <= -120)
+			continue;
+		const int bonus = context.skill / 20;
+		if (is_stat_max(item->affected[index].location))
+			total += item->affected[index].modifier + context.skill / 50;
+		else if (is_neg_good(item->affected[index].location))
+		{
+			if (item->affected[index].location >= APPLY_SAVING_PARA &&
+			    item->affected[index].location <= APPLY_SAVING_SPELL)
+				total = item->affected[index].modifier - total - context.skill / 50;
+			else if (item->affected[index].location == APPLY_ARMOR)
+				total = item->affected[index].modifier *
+					(context.skill / 50 + total);
+			else
+				total = item->affected[index].modifier + total + bonus;
+		}
+		else
+			total = item->affected[index].modifier + total + bonus;
+		item->affected[index].modifier = total;
+	}
+	char description[MAX_STRING_LENGTH];
+	snprintf(description, sizeof(description), "%s %s", item->name, GET_NAME(ch));
+	set_keywords(item, description);
+	snprintf(description, sizeof(description), "%s enchanted by %s", item->short_description,
+		 GET_NAME(ch));
+	set_short_description(item, description);
+}
+} // namespace
 extern struct arena_data arena;
 extern struct agi_app_type agi_app[];
 extern struct dex_app_type dex_app[];
@@ -918,10 +1005,21 @@ void do_spellbind(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	act("You successfully bind some magic to the item...", FALSE, ch, 0, 0, TO_CHAR);
-
-	// epic_gain_skillpoints(ch, -1);
-	ch->only.pc->epics -= 1;
+	persistence_assign_item_uid(item, "spellbind pending continuation");
+	if (!item->obj_uid)
+	{
+		send_to_char("The item has no persistent identity; spellbinding was cancelled.\n",
+			     ch);
+		return;
+	}
+	const spellbind_context context = { item->obj_uid, skill };
+	if (!epic_transaction_submit(ch, -1, epic_reason_type::epic_skill_purchase,
+				     static_cast<int64_t>(item->obj_uid),
+				     EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
+				     critical_deadline_class::interactive, spellbind_committed,
+				     &context, sizeof(context)))
+		send_to_char("The epic transaction service is busy. Please try again.\n", ch);
+	return;
 
 	if (!number(0, 2) && !IS_TRUSTED(ch))
 	{
@@ -1867,7 +1965,11 @@ void do_enchant(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	GET_PLATINUM(ch) = GET_PLATINUM(ch) - (circle * 10);
+	if (SUB_MONEY(ch, circle * 10000, 0) != 0)
+	{
+		send_to_char("Your payment could not be completed.\r\n", ch);
+		return;
+	}
 	// notch_skill(ch, SKILL_ENCHANT, 7.7);
 
 	act("&+L$n melts some &+Wplatinum &+Lcoins in a vial of &+gacid &+Land then&n\n"

@@ -34,6 +34,9 @@ extern P_desc descriptor_list;
 
 void event_write_statistic(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
+	/* Recurring statistics are captured by the bounded maintenance scheduler. */
+	return;
+#if 0
 	P_desc d;
 	P_char t_ch;
 	char fname[256];
@@ -132,8 +135,9 @@ void event_write_statistic(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void
 	    illithids_lvl, unique_ips);
 #endif
 
-	add_event(event_write_statistic, PULSES_IN_TICK, NULL, NULL, NULL, 0, NULL, 0);
+	/* Legacy self-rescheduling removed; maintenance scheduler owns cadence. */
 	// AddEvent(EVENT_SPECIAL, 500, TRUE, write_statistic, NULL);
+#endif
 }
 
 struct statistics_day

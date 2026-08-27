@@ -1,0 +1,182 @@
+{
+  "version": "2.0",
+  "project_name": "DurisMUD",
+  "description": "Remediate DurisMUD persistence so 200 active players can be supported without lost updates, duplicate or lost critical state, or simulation-thread stalls from MySQL, Redis, filesystem, or fork-based persistence work.",
+  "current_phase": 3,
+  "current_session": null,
+  "monorepo": false,
+  "phases": {
+    "0": {
+      "name": "Correctness and Immediate Lag Removal",
+      "description": "Remove confirmed persistence correctness defects, immediate simulation-thread lag hazards, and fail-open security behavior before the revisioned save pipeline.",
+      "status": "complete",
+      "session_count": 10
+    },
+    "1": {
+      "name": "Replace Forked Full Saves",
+      "description": "Replace player and world persistence forks with revisioned immutable workers, exact acknowledgements, and typed journal recovery.",
+      "status": "complete",
+      "session_count": 8
+    },
+    "2": {
+      "name": "Transactional Gameplay Domains",
+      "description": "Move critical gameplay effects into operation-keyed transactions with ledgers, current state, revisions, and outbox publication.",
+      "status": "complete",
+      "session_count": 12
+    },
+    "3": {
+      "name": "Load Path, Schema, and Retention",
+      "description": "Make login and read paths bounded and consistent, enforce schema and data lifecycle contracts, reconcile documentation, and prove integrated 200-player readiness.",
+      "status": "complete",
+      "session_count": 14
+    }
+  },
+  "completed_sessions": [
+    "phase00-session01-redacted-persistence-observability",
+    "phase00-session02-in-memory-epic-bonus-hot-path",
+    "phase00-session03-save-failure-retry-and-terminal-safety",
+    "phase00-session04-player-replacement-state-cleanup",
+    "phase00-session05-combat-artifact-persistence-correctness",
+    "phase00-session06-redis-failure-and-recovery-containment",
+    "phase00-session07-account-bank-delta-safety",
+    "phase00-session08-runtime-connection-trust-boundaries",
+    "phase00-session09-private-chest-password-hardening",
+    "phase00-session10-security-policy-and-dependency-baseline",
+    "phase01-session01-player-revision-and-component-state-foundation",
+    "phase01-session02-immutable-player-snapshot-capture",
+    "phase01-session03-keyed-revision-guarded-save-worker",
+    "phase01-session04-typed-persistence-journal-and-replay",
+    "phase01-session05-nonterminal-save-pipeline-cutover",
+    "phase01-session06-terminal-drain-and-shutdown-safety",
+    "phase01-session07-immutable-world-recovery-worker",
+    "phase01-session08-legacy-fork-removal-and-recovery-gate",
+    "phase02-session01-critical-operation-identity-and-coordinator",
+    "phase02-session02-transactional-inbox-outbox-and-reconciliation",
+    "phase02-session03-epic-ledger-and-balance-transactions",
+    "phase02-session04-account-bank-and-wallet-transactions",
+    "phase02-session05-item-ownership-ledger-and-transfer-primitive",
+    "phase02-session06-live-item-movement-and-corpse-cutover",
+    "phase02-session07-locker-ownership-cutover",
+    "phase02-session08-auction-settlement-and-claim-cutover",
+    "phase02-session09-pvp-and-combat-outcome-batching",
+    "phase02-session10-artifact-and-guild-outcome-batching",
+    "phase02-session11-boon-reward-and-zone-command-batching",
+    "phase02-session12-raw-event-queue-retirement-and-domain-gate",
+    "phase03-session01-consistent-player-load-transaction",
+    "phase03-session02-batched-item-ownership-and-linear-assembly",
+    "phase03-session03-batched-pet-graph-hydration",
+    "phase03-session04-set-based-pvp-and-epic-task-reads",
+    "phase03-session05-production-clone-query-plan-and-index-gate",
+    "phase03-session06-bounded-maintenance-scheduler",
+    "phase03-session07-data-processing-and-retention-contract",
+    "phase03-session08-retention-and-archival-execution",
+    "phase03-session09-authenticated-personal-data-export",
+    "phase03-session10-account-erasure-and-backup-propagation",
+    "phase03-session11-immutable-migration-ledger-and-runner",
+    "phase03-session12-boot-schema-and-lookup-compatibility",
+    "phase03-session13-documentation-and-operator-contract",
+    "phase03-session14-final-200-player-and-compliance-gate"
+  ],
+  "next_session_history": [
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session08-retention-and-archival-execution",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session08-retention-and-archival-execution",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session09-authenticated-personal-data-export",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session09-authenticated-personal-data-export",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session09-authenticated-personal-data-export",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session10-account-erasure-and-backup-propagation",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session10-account-erasure-and-backup-propagation",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session10-account-erasure-and-backup-propagation",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session11-immutable-migration-ledger-and-runner",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session11-immutable-migration-ledger-and-runner",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session11-immutable-migration-ledger-and-runner",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session12-boot-schema-and-lookup-compatibility",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session12-boot-schema-and-lookup-compatibility",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session12-boot-schema-and-lookup-compatibility",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session13-documentation-and-operator-contract",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session13-documentation-and-operator-contract",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session13-documentation-and-operator-contract",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session14-final-200-player-and-compliance-gate",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session14-final-200-player-and-compliance-gate",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session14-final-200-player-and-compliance-gate",
+      "status": "completed"
+    }
+  ]
+}

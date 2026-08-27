@@ -1,0 +1,21 @@
+{
+  "manifest_version": 1,
+  "runner_version": 1,
+  "baseline": {
+    "id": "duris-schema-2026-08-27-session11",
+    "required_table_count": 170,
+    "required_table_fingerprint": "db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd"
+  },
+  "migrations": [
+    {
+      "id": "0001_lookup_dataset_state",
+      "sequence": 1,
+      "description": "Add atomic race and class lookup dataset state",
+      "apply": "immutable/0001_lookup_dataset_state.sql",
+      "apply_checksum": "e39db8df5bd7a8d71d5cc9c177919b8117d6fed77a9318f79610ed9413de4ccb",
+      "verify": "immutable/0001_lookup_dataset_state.sh",
+      "verify_checksum": "90fc6de3aa449ef9b5b77fc96032314e129dfdd631e9760af86dc40329d7f0ca",
+      "compatibility": "mysql8-mariadb10"
+    }
+  ]
+}

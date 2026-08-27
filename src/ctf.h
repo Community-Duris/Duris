@@ -59,4 +59,5 @@ void ctf_delete_flag(int);
 int ctf_get_random_room(int);
 int ctf_carrying_flag(P_char);
 void ctf_update_bonus(P_char);
+size_t ctf_boon_state_snapshot(int64_t *values, size_t capacity);
 #endif

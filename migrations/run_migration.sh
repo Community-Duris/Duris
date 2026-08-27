@@ -4,6 +4,19 @@
 # so continuing would make the remaining steps unsafe to reason about.
 set -e
 
+case "${1:-}" in
+    "") ;;
+    -h|--help)
+        printf 'usage: %s\n' "$0"
+        printf 'Applies the additive legacy migration to the configured local development database.\n'
+        exit 0
+        ;;
+    *)
+        printf 'unknown argument: %s\n' "$1" >&2
+        exit 2
+        ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 if [[ -f "$SCRIPT_DIR/.env" ]]; then
@@ -18,12 +31,15 @@ else
     exit 2
 fi
 
+: "${REDIS_HOST:?REDIS_HOST is required}"
+: "${REDIS_PORT:?REDIS_PORT is required}"
+
 MYSQL_PWD="$DB_PASSWD"
 export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=113
+TOTAL=141
 FAILED=0
 
 run_sql() {
@@ -194,7 +210,6 @@ ALTER TABLE outposts ENGINE=InnoDB;
 ALTER TABLE ping ENGINE=InnoDB;
 ALTER TABLE pkill_event ENGINE=InnoDB;
 ALTER TABLE pkill_info ENGINE=InnoDB;
-ALTER TABLE players_core ENGINE=InnoDB;
 ALTER TABLE poll_options ENGINE=InnoDB;
 ALTER TABLE poll_votes ENGINE=InnoDB;
 ALTER TABLE polls ENGINE=InnoDB;
@@ -467,6 +482,8 @@ CREATE TABLE IF NOT EXISTS player_data (
     INDEX idx_name (name),
     INDEX idx_account_name (account_name)
 );"
+
+run_sql_file "add player save revision" "$SCRIPT_DIR/player_save_revision.sql"
 
 run_sql "create account_ips table" "
 CREATE TABLE IF NOT EXISTS account_ips (
@@ -2908,6 +2925,32 @@ run_sql_file "apply account-bound reward schema" "$SCRIPT_DIR/account_bound_rewa
 run_check "verify account-bound reward schema" "$SCRIPT_DIR/verify_account_bound_rewards.sh"
 run_sql_file "apply persistence and auction schema contract" "$SCRIPT_DIR/persistence_contract.sql"
 run_sql_file "apply player corpse persistence state" "$SCRIPT_DIR/corpse_persistence_state.sql"
+run_sql_file "apply critical command inbox and outbox" "$SCRIPT_DIR/critical_command_inbox_outbox.sql"
+run_check "verify critical command inbox and outbox" "$SCRIPT_DIR/verify_critical_command_schema.sh"
+run_sql_file "apply epic ledger and balance schema" "$SCRIPT_DIR/epic_ledger_balance.sql"
+run_check "verify epic ledger and balance schema" "$SCRIPT_DIR/verify_epic_ledger_schema.sh"
+run_sql_file "apply currency ledger schema" "$SCRIPT_DIR/currency_ledger.sql"
+run_check "verify currency ledger schema" "$SCRIPT_DIR/verify_currency_ledger_schema.sh"
+run_sql_file "apply combat outcome schema" "$SCRIPT_DIR/combat_outcome.sql"
+run_check "verify combat outcome schema" "$SCRIPT_DIR/verify_combat_outcome_schema.sh"
+run_sql_file "apply artifact/guild outcome schema" "$SCRIPT_DIR/artifact_guild_outcome.sql"
+run_check "verify artifact/guild outcome schema" "$SCRIPT_DIR/verify_artifact_guild_outcome_schema.sh"
+run_sql_file "apply boon reward and zone-touch outcome schema" "$SCRIPT_DIR/boon_reward_zone_outcome.sql"
+run_check "verify boon reward and zone-touch outcome schema" "$SCRIPT_DIR/verify_boon_reward_zone_schema.sh"
+run_sql_file "apply typed session audit outcome schema" "$SCRIPT_DIR/session_audit_outcome.sql"
+run_check "verify typed session audit outcome schema" "$SCRIPT_DIR/verify_session_audit_schema.sh"
+run_sql_file "apply lifecycle archive execution schema" "$SCRIPT_DIR/lifecycle_archive_execution.sql"
+run_check "verify lifecycle archive execution schema" "$SCRIPT_DIR/verify_lifecycle_archive_schema.sh"
+run_sql_file "apply personal data export schema" "$SCRIPT_DIR/personal_data_export.sql"
+run_check "verify personal data export schema" "$SCRIPT_DIR/verify_personal_data_export_schema.sh"
+run_sql_file "apply account erasure schema" "$SCRIPT_DIR/account_erasure.sql"
+run_check "verify account erasure schema" "$SCRIPT_DIR/verify_account_erasure_schema.sh"
+run_sql_file "apply immutable migration ledger" "$SCRIPT_DIR/immutable_migration_ledger.sql"
+run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_ledger.sql"
+run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
+run_sql_file "normalize stable corpse ownership identity" "$SCRIPT_DIR/live_item_movement_cutover.sql"
+run_sql_file "normalize locker chest ownership identity" "$SCRIPT_DIR/locker_ownership_cutover.sql"
+run_sql_file "apply transactional auction custody" "$SCRIPT_DIR/auction_transactional_cutover.sql"
 
 # Production dumps predate the full item-diff schema. CREATE TABLE IF NOT EXISTS
 # above cannot repair existing tables, but current save/load and pwipe SQL requires
@@ -2985,11 +3028,18 @@ run_sql "convert ship cargo tables to InnoDB" "
 ALTER TABLE ship_cargo_prices ENGINE=InnoDB;
 ALTER TABLE ship_cargo_market_mods ENGINE=InnoDB;"
 
+run_check "adopt verified legacy migration baseline" "$SCRIPT_DIR/adopt_migration_baseline.sh"
+
 # flush redis cache (migration invalidates all cached data)
 STEP=$((STEP + 1))
 printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "flush redis cache"
 if command -v redis-cli &> /dev/null; then
-    redis-cli FLUSHDB > /dev/null 2>&1 && echo "ok" || echo "FAILED"
+    if redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" FLUSHDB > /dev/null 2>&1; then
+        echo "ok"
+    else
+        echo "FAILED"
+        FAILED=$((FAILED + 1))
+    fi
 else
     echo "skipped (redis-cli not found)"
 fi

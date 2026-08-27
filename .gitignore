@@ -39,6 +39,8 @@ logs/shutdown_info.txt
 # log files
 logs/log/*
 logs/valgrind/
+/runtime/player-journal/
+/runtime/personal-data-exports/
 
 durismud-launcher
 Accounts.old.*
@@ -70,3 +72,4 @@ tests/db_write/schema.sql
 
 # Local/manual test helpers and temporary artifacts
 /tmp/
+/tmp/query-plan-gate/

@@ -75,6 +75,27 @@ struct ctfData ctfdata[] = {
 	{}
 };
 
+size_t ctf_boon_state_snapshot(int64_t *values, size_t capacity)
+{
+	if (!values)
+		return 0;
+	size_t total = 0;
+	while (ctfdata[total + 1].id)
+		++total;
+	if (total > capacity / 3)
+		return SIZE_MAX;
+	size_t count = 0;
+	for (size_t index = 1; ctfdata[index].id; ++index)
+	{
+		if (count + 3 > capacity)
+			break;
+		values[count++] = ctfdata[index].id;
+		values[count++] = ctfdata[index].type;
+		values[count++] = ctfdata[index].room;
+	}
+	return count;
+}
+
 int init_ctf()
 {
 #if defined(CTF_MUD) && (CTF_MUD == 1)

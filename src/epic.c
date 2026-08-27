@@ -16,11 +16,16 @@ using namespace std;
 #include "utils.h"
 #include "achievements.h"
 #include "assocs.h"
+#include "artifact_guild_transaction.h"
+#include "zone_touch_transaction.h"
 #include "auction_houses.h"
 #include "boon.h"
 #include "damage.h"
+#include "currency_transaction.h"
 #include "epic.h"
 #include "epic_bonus.h"
+#include "epic_task_catalog.h"
+#include "epic_transaction.h"
 #include "epic_skills.h"
 #include "nexus_stones.h"
 #include "objmisc.h"
@@ -48,13 +53,251 @@ extern epic_reward epic_rewards[];
 extern epic_teacher_skill epic_teachers[];
 
 vector<epic_zone_completion> epic_zone_completions;
+int errand_notch;
+
+size_t epic_zone_completion_snapshot(int64_t *values, size_t capacity)
+{
+	if (!values)
+		return 0;
+	if (epic_zone_completions.size() > capacity / 2)
+		return SIZE_MAX;
+	size_t count = 0;
+	for (const auto &completion : epic_zone_completions)
+	{
+		if (count + 2 > capacity)
+			break;
+		values[count++] = completion.number;
+		values[count++] = completion.done_at;
+	}
+	return count;
+}
+
+namespace
+{
+struct epic_award_context
+{
+	int type;
+	int data;
+	int amount;
+	bool blessing;
+	bool task_penalty;
+};
+
+struct epic_level_context
+{
+	int expected_level;
+	long experience_cost;
+	int epic_cost;
+};
+
+struct epic_skill_refund_context
+{
+	int points;
+	int coins;
+};
+
+epic_reason_type epic_award_reason(int type)
+{
+	switch (type)
+	{
+	case EPIC_ZONE:
+		return epic_reason_type::zone_award;
+	case EPIC_PVP:
+		return epic_reason_type::pvp_award;
+	case EPIC_SHIP_PVP:
+		return epic_reason_type::ship_pvp_award;
+	case EPIC_ELITE_MOB:
+		return epic_reason_type::elite_mob_award;
+	case EPIC_QUEST:
+		return epic_reason_type::quest_award;
+	case EPIC_RANDOM_ZONE:
+		return epic_reason_type::random_zone_award;
+	case EPIC_NEXUS_STONE:
+		return epic_reason_type::nexus_award;
+	case EPIC_BOON:
+		return epic_reason_type::boon_award;
+	case EPIC_BOTTLE:
+		return epic_reason_type::bottle_award;
+	case EPIC_STRAHDME:
+		return epic_reason_type::achievement_award;
+	case EPIC_RANDOMMOB:
+		return epic_reason_type::random_mob_award;
+	default:
+		return epic_reason_type::unknown;
+	}
+}
+
+critical_source_site epic_award_source(int type)
+{
+	if (type == EPIC_PVP || type == EPIC_SHIP_PVP || type == EPIC_ELITE_MOB ||
+	    type == EPIC_RANDOMMOB)
+		return critical_source_site::combat;
+	return critical_source_site::zone_event;
+}
+
+const char *epic_award_name(int type)
+{
+	switch (type)
+	{
+	case EPIC_ZONE:
+		return "ZONE";
+	case EPIC_PVP:
+		return "PVP";
+	case EPIC_SHIP_PVP:
+		return "PVP_SHIP";
+	case EPIC_ELITE_MOB:
+		return "ELITE_MOB";
+	case EPIC_QUEST:
+		return "QUEST";
+	case EPIC_RANDOM_ZONE:
+		return "RANDOM_ZONE";
+	case EPIC_NEXUS_STONE:
+		return "NEXUS_STONE";
+	case EPIC_BOON:
+		return "BOON";
+	case EPIC_BOTTLE:
+		return "BOTTLE";
+	case EPIC_STRAHDME:
+		return "STRAHD_ME";
+	case EPIC_RANDOMMOB:
+		return "RANDOM_MOB";
+	default:
+		return "UNKNOWN";
+	}
+}
+
+void epic_award_committed(P_char ch, bool committed, const epic_command_result &result,
+			  unsigned int, const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed || context_size != sizeof(epic_award_context))
+	{
+		if (ch)
+			send_to_char("Your epic award could not be completed. Please try again.\n",
+				     ch);
+		return;
+	}
+	epic_award_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (context.blessing)
+		send_to_char("You feel the &+cblessing&n of the &+WGods&n wash over you.\n", ch);
+	if (context.task_penalty)
+		send_to_char("You have not completed the task given to you by the Gods, \n"
+			     "so you are not able to progress at usual pace.\n",
+			     ch);
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer), "You have gained %d epic point%s.\n", context.amount,
+		 context.amount == 1 ? "" : "s");
+	send_to_char(buffer, ch);
+	epic_bonus_record_gain(ch, context.type, context.amount);
+	if (context.type == EPIC_ZONE && context.data > 0 &&
+	    !gameplay_read_state_add_completed_zone(&ch->only.pc->gameplay_reads, context.data))
+		logit(LOG_DEBUG,
+		      "epic_award_committed: component=completed_zone outcome=unavailable actor=redacted");
+	epiclog(56, "%s received %d epic points (%s)", ch->player.name, context.amount,
+		epic_award_name(context.type));
+
+	if (GET_LEVEL(ch) >= get_property("exp.maxExpLevel", 46) &&
+	    GET_LEVEL(ch) < get_property("epic.maxFreeLevel", 50))
+		epic_free_level(ch);
+
+	if (context.type == EPIC_BOTTLE)
+		return;
+	struct affected_type *afp = get_spell_from_char(ch, TAG_EPICS_GAINED);
+	if (afp)
+		afp->modifier += context.amount;
+	else
+	{
+		afp = apply_achievement(ch, TAG_EPICS_GAINED);
+		afp->modifier = context.amount;
+	}
+	if ((afp->modifier - context.amount) / errand_notch < afp->modifier / errand_notch &&
+	    !has_epic_task(ch))
+	{
+		debug("%s got new task after committed epic award.", J_NAME(ch));
+		epic_choose_new_epic_task(ch);
+	}
+	(void)result;
+}
+
+void epic_level_committed(P_char ch, bool committed, const epic_command_result &, unsigned int,
+			  const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed || context_size != sizeof(epic_level_context))
+	{
+		if (ch)
+			send_to_char("Your epic level purchase could not be completed.\n", ch);
+		return;
+	}
+	epic_level_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	if (GET_LEVEL(ch) != context.expected_level || GET_EXP(ch) < context.experience_cost)
+	{
+		send_to_char(
+			"Your level changed while the purchase was pending; your epics are being refunded.\n",
+			ch);
+		epic_transaction_submit(ch, context.epic_cost, epic_reason_type::level_purchase,
+					context.expected_level + 1, 0,
+					critical_source_site::recovery,
+					critical_deadline_class::recovery, nullptr, nullptr, 0);
+		return;
+	}
+	GET_EXP(ch) -= context.experience_cost;
+	advance_level(ch);
+	wizlog(56, "%s has attained epic level &+W%d&n!", GET_NAME(ch), GET_LEVEL(ch));
+}
+
+void epic_coin_refund_committed(P_char ch, bool committed,
+				const currency_command_result & /*result*/,
+				unsigned int /*error_code*/, const uint8_t * /*context*/,
+				size_t /*context_size*/)
+{
+	if (committed)
+		send_to_char("&+WYour staged coin refund was credited directly.&n\n", ch);
+	else
+	{
+		logit(LOG_WIZ, "epic_coin_refund_committed: transaction rejected for pid %d",
+		      GET_PID(ch));
+		send_to_char("Your coin refund could not be credited. Please contact staff.\n", ch);
+	}
+}
+
+void epic_skill_refund_committed(P_char ch, bool committed, const epic_command_result &,
+				 unsigned int, const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed || context_size != sizeof(epic_skill_refund_context))
+	{
+		send_to_char("Your epic skill refund could not be completed.\n", ch);
+		return;
+	}
+	epic_skill_refund_context context = {};
+	memcpy(&context, raw_context, sizeof(context));
+	for (int skill = FIRST_SKILL; skill <= LAST_SKILL; ++skill)
+		if (IS_EPIC_SKILL(skill) && !isname(skills[skill].name, "forge mine craft"))
+			ch->only.pc->skills[skill].learned = ch->only.pc->skills[skill].taught = 0;
+	if (!insert_money_pickup(GET_PID(ch), context.coins))
+	{
+		logit(LOG_WIZ,
+		      "epic_skill_refund_committed: failed to stage coin refund for pid %d",
+		      GET_PID(ch));
+		if (!currency_transaction_submit_wallet_value(
+			    ch, context.coins, currency_reason_type::refund, context.points,
+			    critical_source_site::recovery, critical_deadline_class::recovery,
+			    epic_coin_refund_committed, nullptr, 0))
+			send_to_char(
+				"Your coin refund could not be queued. Please contact staff.\n",
+				ch);
+	}
+	send_to_char_f(ch, "&+WYour epic skills have been reset and %d epics were refunded.&n\n",
+		       context.points);
+	if (!do_save_silent(ch, 1))
+		logit(LOG_WIZ, "Failed to save %s after epic skill refund.", GET_NAME(ch));
+}
+} // namespace
 
 const char *prestige_names[EPIC_MAX_PRESTIGE] = {
 	"Unknown", "Serf",   "Peasant", "Commoner", "Citizen",	"Squire",
 	"Noble",   "Knight", "Hero",	"Lord",	    "Champion", "Living Legend"
 };
-
-int errand_notch;
 
 int epic_points(P_char /*ch*/)
 {
@@ -136,34 +379,9 @@ void epic_complete_errand(P_char ch, int zone)
 
 int epic_random_task_zone(P_char ch)
 {
-	int zone_number = -1;
-#ifdef __NO_MYSQL__
-	return zone_number;
-#else
-	if (!qry("select number, name from zones where task_zone = 1 and number not in "
-		 "(select type_id from epic_gain where pid = '%d' and type = '%d') "
-		 "order by rand() limit 1",
-		 GET_PID(ch), EPIC_ZONE))
+	if (!ch || IS_NPC(ch))
 		return -1;
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return FALSE;
-	}
-
-	if (mysql_num_rows(res) > 0)
-	{
-		MYSQL_ROW row = mysql_fetch_row(res);
-		zone_number = atoi(row[0]);
-	}
-
-	mysql_free_result(res);
-
-	return zone_number;
-
-#endif
+	return epic_task_catalog_select(&ch->only.pc->gameplay_reads);
 }
 
 void epic_choose_new_epic_task(P_char ch)
@@ -231,8 +449,10 @@ vector<epic_trophy_data> get_epic_zone_trophy(P_char ch)
 	debug("get_epic_zone_trophy(): __NO_MYSQL__, returning 0");
 	return trophy;
 #else
-	if (!qry("select type_id from epic_gain where pid = '%d' and type = '%d' order by time asc",
-		 GET_PID(ch), EPIC_ZONE))
+	if (!qry("select type_id,time from epic_gain where pid = '%d' and type = '%d' union all "
+		 "select reason_id,created_at from epic_ledger where pid = '%d' and reason_type = '%d' "
+		 "order by time asc",
+		 GET_PID(ch), EPIC_ZONE, GET_PID(ch), (int)epic_reason_type::zone_award))
 		return trophy;
 
 	MYSQL_RES *res = mysql_store_result(DB);
@@ -352,9 +572,6 @@ void group_gain_epic(P_char ch, int type, int data, int amount)
 
 void gain_epic(P_char ch, int type, int data, int amount)
 {
-	char buffer[256];
-	struct affected_type *afp;
-
 	// If invalid ch or bad load of errand_notch (don't care about notch as we don't use skillpoints anymore).
 	if (!IS_ALIVE(ch) || errand_notch < 1)
 	{
@@ -370,20 +587,19 @@ void gain_epic(P_char ch, int type, int data, int amount)
 	}
 
 	// Epic bonus from witch potion.
-	if (IS_AFFECTED4(ch, AFF4_EPIC_INCREASE) && type != EPIC_BOTTLE)
+	bool blessing = IS_AFFECTED4(ch, AFF4_EPIC_INCREASE) && type != EPIC_BOTTLE;
+	if (blessing)
 	{
-		send_to_char("You feel the &+cblessing&n of the &+WGods&n wash over you.\n", ch);
 		amount = (int)(amount * get_property("epic.witch.multiplier", 1.5));
 	}
 
 	// These don't get hacked by being tasked: randommob (only 1 epic to start with), strahdme (super acheivement),
 	//   bottle (epic bottles), PvP, ship PvP, or boons.
-	if (type != EPIC_RANDOMMOB && type != EPIC_STRAHDME && type != EPIC_BOTTLE &&
-	    type != EPIC_PVP && type != EPIC_SHIP_PVP && type != EPIC_BOON && has_epic_task(ch))
+	bool task_penalty = type != EPIC_RANDOMMOB && type != EPIC_STRAHDME &&
+			    type != EPIC_BOTTLE && type != EPIC_PVP && type != EPIC_SHIP_PVP &&
+			    type != EPIC_BOON && has_epic_task(ch);
+	if (task_penalty)
 	{
-		send_to_char("You have not completed the task given to you by the Gods, \n"
-			     "so you are not able to progress at usual pace.\n",
-			     ch);
 		amount = MAX(1, (int)(amount * get_property("epic.errand.penaltyMod", 0.25)));
 	}
 
@@ -404,118 +620,30 @@ void gain_epic(P_char ch, int type, int data, int amount)
 		}
 	}
 
-	// add guild prestige
-	if (GET_ASSOC(ch))
-		GET_ASSOC(ch)->add_points_from_epics(ch, amount, type);
-
-	//  int old = ch->only.pc->epics; - Disabled epic skill points.
-	snprintf(buffer, 256, "You have gained %d epic point%s.\n", amount, amount == 1 ? "" : "s");
-	send_to_char(buffer, ch);
-	ch->only.pc->epics += amount;
-	if (type == EPIC_BOTTLE)
-		log_epic_gain_event("epic_bottle", GET_PID(ch), type, data, amount);
-	else
-		log_epic_gain(GET_PID(ch), type, data, amount);
-	char type_str[20];
-
-	switch (type)
+	const epic_reason_type reason = epic_award_reason(type);
+	if (reason == epic_reason_type::unknown)
 	{
-	case EPIC_ZONE:
-		strcpy(type_str, "ZONE");
-		break;
-	case EPIC_PVP:
-		strcpy(type_str, "PVP");
-		break;
-	case EPIC_SHIP_PVP:
-		strcpy(type_str, "PVP_SHIP");
-		break;
-	case EPIC_ELITE_MOB:
-		strcpy(type_str, "ELITE_MOB");
-		break;
-	case EPIC_QUEST:
-		strcpy(type_str, "QUEST");
-		break;
-	case EPIC_RANDOM_ZONE:
-		strcpy(type_str, "RANDOM_ZONE");
-		break;
-	case EPIC_NEXUS_STONE:
-		strcpy(type_str, "NEXUS_STONE");
-		break;
-	case EPIC_BOON:
-		strcpy(type_str, "BOON");
-		break;
-	case EPIC_BOTTLE:
-		strcpy(type_str, "BOTTLE");
-		break;
-	case EPIC_STRAHDME:
-		strcpy(type_str, "STRAHD_ME");
-		break;
-	case EPIC_RANDOMMOB:
-		strcpy(type_str, "RANDOM_MOB");
-		break;
-	default:
-		strcpy(type_str, "UNKNOWN");
-		break;
-	}
-
-	epiclog(56, "%s received %d epic points (%s)", ch->player.name, amount, type_str);
-
-	/*
-	  exp.maxExpLevel means the highest level you can reach with just experience (i.e., without epics)
-	  epic.maxFreeLevel means the highest level you can reach by touching any stone. higher levels you have
-	  to touch specific stones to level.
-	*/
-
-	if (GET_LEVEL(ch) >= get_property("exp.maxExpLevel", 46) &&
-	    GET_LEVEL(ch) < get_property("epic.maxFreeLevel", 50))
-	{
-		epic_free_level(ch);
-		// advance_level(ch);//, FALSE); handles leveling for wipe2011
-	}
-
-	// Feed artifacts, and add to sum of epics gained (epic bottles don't count towards total epics).
-	if (type != EPIC_BOTTLE)
-	{
-		epic_feed_artifacts(ch, amount, type);
-
-		// Handle the total number of epics ch has gained.
-		if ((afp = get_spell_from_char(ch, TAG_EPICS_GAINED)))
-		{
-			afp->modifier += amount;
-		}
-		else
-		{
-			afp = apply_achievement(ch, TAG_EPICS_GAINED);
-			afp->modifier = amount;
-		}
-	}
-	// Epic bottles no longer task you.
-	else
-	{
+		logit(LOG_DEBUG, "gain_epic: unsupported award type %d for %s", type, J_NAME(ch));
 		return;
 	}
-
-	/* Lets do away with skill points---we don't need them at all with the new system.
-	  int skill_notches = MAX(0, (int) ((old+amount)/notch) - (old/notch));
-	  //if(skill_notches)
-	  if( add_epiccount(ch, amount) )
-	  {
-	    send_to_char("&+WYou have gained an epic skill point!&n\n", ch);
-	    epic_gain_skillpoints(ch, skill_notches);
-	  }
-	*/
-	if ((afp->modifier - amount) / errand_notch < afp->modifier / errand_notch &&
-	    !has_epic_task(ch))
+	critical_operation_id operation_id = {};
+	if (!critical_operation_id_generate(&operation_id))
 	{
-		debug("%s got new task: old epics: %d, new epics: %d, errand_notch: %d, %d < %d.",
-		      J_NAME(ch), afp->modifier - amount, afp->modifier, errand_notch,
-		      (afp->modifier - amount) / errand_notch, afp->modifier / errand_notch);
-		epiclog(56,
-			"%s got new task: old epics: %d, new epics: %d, errand_notch: %d, %d < %d.",
-			J_NAME(ch), afp->modifier - amount, afp->modifier, errand_notch,
-			(afp->modifier - amount) / errand_notch, afp->modifier / errand_notch);
-		epic_choose_new_epic_task(ch);
+		send_to_char("The epic award service is busy. Please try again.\n", ch);
+		return;
 	}
+	const epic_award_context context = { type, data, amount, blessing, task_penalty };
+	if (!epic_transaction_submit_identified(ch, operation_id, amount, reason, data, 0,
+						epic_award_source(type),
+						critical_deadline_class::interactive,
+						epic_award_committed, &context, sizeof(context)))
+	{
+		send_to_char("The epic award service is busy. Please try again.\n", ch);
+		return;
+	}
+	if (!artifact_guild_transaction_submit(ch, operation_id, amount, type))
+		logit(LOG_FILE,
+		      "artifact_guild: component=epic_capture outcome=deferred_effect_unavailable actor=redacted");
 }
 
 struct affected_type *get_epic_task(P_char ch)
@@ -556,6 +684,48 @@ void epic_frag(P_char ch, int victim_pid, int amount)
 		}
 	}
 	gain_epic(ch, EPIC_PVP, victim_pid, amount);
+}
+
+int epic_calculate_pvp_award(P_char ch, int amount)
+{
+	if (!ch || IS_NPC(ch) || amount < 1 || errand_notch < 1)
+		return 0;
+	if (IS_AFFECTED4(ch, AFF4_EPIC_INCREASE))
+		amount = static_cast<int>(amount * get_property("epic.witch.multiplier", 1.5));
+	amount = check_nexus_bonus(ch, amount, NEXUS_BONUS_EPICS);
+	amount += static_cast<int>(amount * get_epic_bonus(ch, EPIC_BONUS_EPIC_POINT));
+	if (GET_RACEWAR(ch) == RACEWAR_GOOD)
+		amount = static_cast<int>(amount * get_property("epic.gain.modifier.good", 1.000));
+	if (GET_RACEWAR(ch) == RACEWAR_EVIL)
+		amount = static_cast<int>(amount * get_property("epic.gain.modifier.evil", 1.000));
+	return amount;
+}
+
+void epic_publish_pvp_award(P_char ch, int amount)
+{
+	if (!ch || IS_NPC(ch) || amount < 1)
+		return;
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer), "You have gained %d epic point%s.\n", amount,
+		 amount == 1 ? "" : "s");
+	send_to_char(buffer, ch);
+	epic_bonus_record_gain(ch, EPIC_PVP, amount);
+	epiclog(56, "%s received %d epic points (%s)", ch->player.name, amount,
+		epic_award_name(EPIC_PVP));
+	if (GET_LEVEL(ch) >= get_property("exp.maxExpLevel", 46) &&
+	    GET_LEVEL(ch) < get_property("epic.maxFreeLevel", 50))
+		epic_free_level(ch);
+	struct affected_type *afp = get_spell_from_char(ch, TAG_EPICS_GAINED);
+	if (afp)
+		afp->modifier += amount;
+	else
+	{
+		afp = apply_achievement(ch, TAG_EPICS_GAINED);
+		afp->modifier = amount;
+	}
+	if ((afp->modifier - amount) / errand_notch < afp->modifier / errand_notch &&
+	    !has_epic_task(ch))
+		epic_choose_new_epic_task(ch);
 }
 
 void epic_feed_artifacts(P_char ch, int epics, int epic_type)
@@ -757,10 +927,15 @@ __attribute__((deprecated)) void epic_free_level(P_char ch)
 	if (GET_EXP(ch) >= new_exp_table[GET_LEVEL(ch) + 1] &&
 	    ch->only.pc->epics >= epics_for_level)
 	{
-		GET_EXP(ch) -= new_exp_table[GET_LEVEL(ch) + 1];
-		ch->only.pc->epics -= epics_for_level;
-		advance_level(ch); //, FALSE); wipe2011
-		wizlog(56, "%s has attained epic level &+W%d&n!", GET_NAME(ch), GET_LEVEL(ch));
+		const epic_level_context context = { GET_LEVEL(ch),
+						     new_exp_table[GET_LEVEL(ch) + 1],
+						     epics_for_level };
+		if (!epic_transaction_submit(ch, -epics_for_level, epic_reason_type::level_purchase,
+					     GET_LEVEL(ch) + 1, EPIC_COMMAND_REQUIRE_FUNDS,
+					     critical_source_site::zone_event,
+					     critical_deadline_class::interactive,
+					     epic_level_committed, &context, sizeof(context)))
+			send_to_char("The epic level service is busy. Please try again.\n", ch);
 	}
 }
 
@@ -836,10 +1011,15 @@ void epic_stone_level_char(P_obj obj, P_char ch)
 	    ((ch->only.pc->epics >= epics_for_level && GET_LEVEL(ch) == obj->value[3] - 1) ||
 	     ch->only.pc->epics >= anystone_epics_for_level))
 	{
-		GET_EXP(ch) -= new_exp_table[GET_LEVEL(ch) + 1];
-		ch->only.pc->epics -= epics_for_level;
-		advance_level(ch);
-		wizlog(56, "%s has attained epic level &+W%d&n!", GET_NAME(ch), GET_LEVEL(ch));
+		const epic_level_context context = { GET_LEVEL(ch),
+						     new_exp_table[GET_LEVEL(ch) + 1],
+						     epics_for_level };
+		if (!epic_transaction_submit(ch, -epics_for_level, epic_reason_type::level_purchase,
+					     GET_LEVEL(ch) + 1, EPIC_COMMAND_REQUIRE_FUNDS,
+					     critical_source_site::zone_event,
+					     critical_deadline_class::interactive,
+					     epic_level_committed, &context, sizeof(context)))
+			send_to_char("The epic level service is busy. Please try again.\n", ch);
 	}
 }
 
@@ -1025,50 +1205,49 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 				thanksgiving_proc(ch);
 		}
 
-		epic_stone_one_touch(obj, ch, epic_value);
-
-		/* go through all members of group */
-		int group_size = 1;
-
+		vector<P_char> participants = { ch };
 		if (ch->group)
 		{
 			for (struct group_list *gl = ch->group; gl; gl = gl->next)
-			{
 				if (gl->ch != ch && IS_PC(gl->ch) && !IS_TRUSTED(gl->ch) &&
 				    gl->ch->in_room == ch->in_room)
-				{
-					group_size++;
-					epic_stone_one_touch(obj, gl->ch, epic_value);
-				}
-			}
+					participants.push_back(gl->ch);
 		}
-
+		if (participants.size() > ZONE_TOUCH_MAX_PARTICIPANTS)
+		{
+			send_to_char("Too many participants are touching the stone.\r\n", ch);
+			return TRUE;
+		}
 		if (zone_number > 0 && zone_number != RANDOM_ZONE_ID)
 		{
 			int delta = GET_RACEWAR(ch);
 			delta = (delta == RACEWAR_EVIL) ? -1 : (delta == RACEWAR_GOOD ? 1 : 0);
-			if (delta != 0)
-				update_epic_zone_alignment(zone_number, delta);
-
-			// set completed flag
-			epic_zone_completions.push_back(
-				epic_zone_completion(zone_number, time(NULL), delta));
-			redis_invalidate_epic_zones();
-			db_query("UPDATE zones SET last_touch = NOW() WHERE number = '%d'",
-				 zone_number);
-			db_query(
-				"INSERT INTO zone_touches (boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value, alignment_delta) VALUES (FROM_UNIXTIME(%d), NOW(), %d, %d, %d, %d, %d);",
-				boot_time, zone_number, GET_PID(ch), group_size, epic_value, delta);
-
-			//  Allow !reset zones to possibly reset somewhere down the line...  - Jexni 11/7/11
-			if (!zone_table[zone_number].reset_mode)
+			zone_touch_payload touch = {
+				.zone_number = static_cast<uint32_t>(zone_number),
+				.toucher_pid = static_cast<uint32_t>(GET_PID(ch)),
+				.boot_time = static_cast<int32_t>(boot_time),
+				.touched_at = static_cast<int32_t>(time(nullptr)),
+				.group_size = static_cast<uint16_t>(participants.size()),
+				.participant_pids = {},
+				.epic_value = epic_value,
+				.alignment_delta = static_cast<int16_t>(delta),
+				.reset_requested = static_cast<uint8_t>(
+					!zone_table[real_zone0(zone_number)].reset_mode)
+			};
+			for (size_t index = 0; index < participants.size(); ++index)
+				touch.participant_pids[index] =
+					static_cast<uint32_t>(GET_PID(participants[index]));
+			if (!zone_touch_transaction_submit(touch))
 			{
-				int x = real_zone(zone_number);
-				add_event(event_reset_zone, 1, 0, 0, 0, 0, &x, sizeof(x));
-				db_query("UPDATE zones SET reset_perc = 1 WHERE number = '%d'",
-					 zone_number);
+				send_to_char(
+					"The zone-touch service is busy. Please try again.\r\n",
+					ch);
+				return TRUE;
 			}
 		}
+
+		for (P_char participant : participants)
+			epic_stone_one_touch(obj, participant, epic_value);
 
 		act("$p flashes brightly then blurs, and remains still and powerless.", FALSE, 0,
 		    obj, 0, TO_ROOM);
@@ -1078,6 +1257,18 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	return FALSE;
+}
+
+void epic_publish_zone_touch(const zone_touch_result &result)
+{
+	epic_zone_completions.push_back(epic_zone_completion(
+		static_cast<int>(result.zone_number), result.touched_at, result.alignment_delta));
+	if (result.reset_requested)
+	{
+		int zone = real_zone(static_cast<int>(result.zone_number));
+		if (zone >= 0)
+			add_event(event_reset_zone, 1, 0, 0, 0, 0, &zone, sizeof(zone));
+	}
 }
 
 void epic_zone_balance()
@@ -2423,29 +2614,13 @@ void refund_epic_skills(P_char ch)
 			point_refund += cost_multiplier * epic_rewards[er_skl].points_cost * 3;
 			coins_refund += cost_multiplier * epic_rewards[er_skl].coins * 2;
 		}
-		ch->only.pc->skills[skl].learned = ch->only.pc->skills[skl].taught = 0;
 	}
-	if (!insert_money_pickup(GET_PID(ch), coins_refund))
-	{
-		logit(LOG_WIZ, "do_epic_reset(): failed to stage refund pickup for pid %d",
-		      GET_PID(ch));
-		ADD_MONEY(ch, coins_refund);
-		send_to_char(
-			"&+WEpic refund could not be staged, so it was credited directly instead.&n\r\n",
-			ch);
-	}
-	ch->only.pc->epics += point_refund;
-	debug("%s getting epic-skill refund of %d epics and %s.", GET_NAME(ch), point_refund,
-	      coin_stringv(coins_refund));
-	logit(LOG_EPIC, "%s getting epic-skill refund of %d epics and %s coins.", GET_NAME(ch),
-	      point_refund, comma_string(coins_refund));
-	send_to_char_f(
-		ch,
-		"&+WYour epic skills have been reset.&n\n&+WYou are refunded %d epics.&N\n&+WYou are refunded %s.&n\n",
-		point_refund,
-		coins_to_string(coins_refund / 1000, (coins_refund / 100) % 10,
-				(coins_refund / 10) % 10, coins_refund % 10, "&+W"));
-
-	if (!do_save_silent(ch, 1))
-		logit(LOG_WIZ, "Failed to save %s after clearing racial skills.", GET_NAME(ch));
+	if (!point_refund)
+		return;
+	const epic_skill_refund_context context = { point_refund, coins_refund };
+	if (!epic_transaction_submit(ch, point_refund, epic_reason_type::epic_skill_refund, 0, 0,
+				     critical_source_site::command,
+				     critical_deadline_class::interactive,
+				     epic_skill_refund_committed, &context, sizeof(context)))
+		send_to_char("The epic transaction service is busy. Please try again.\n", ch);
 }

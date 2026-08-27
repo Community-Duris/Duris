@@ -1,6 +1,8 @@
 #ifndef __PERSISTENCE_QUEUE_H_INCLUDED__
 #define __PERSISTENCE_QUEUE_H_INCLUDED__
 
+#include "persistence_observability.h"
+
 #define PERSISTENCE_EVENT_QUEUE_CAPACITY 4096
 #define PERSISTENCE_EVENT_QUEUE_MAX_CAPACITY 131072
 #define PERSISTENCE_EVENT_MAX_LEN 1024
@@ -12,7 +14,7 @@
  * running, the main-thread watchdog flags it as stuck. */
 #define PERSISTENCE_WORKER_HEARTBEAT_STUCK_SECS 30
 
-/* Large-payload event queue — for events that exceed the 1024-byte limit
+/* Large-payload event queue -- for events that exceed the 1024-byte limit
  * (e.g. pkill_info with full equipment list and player log).
  * 64 slots x 128KB = 8MB total.
  */
@@ -36,6 +38,7 @@ int persistence_item_event_worker_running(void);
 int persistence_item_event_worker_stop_pending(void);
 unsigned long persistence_item_event_worker_written(void);
 unsigned long persistence_item_event_worker_write_failures(void);
+struct persistence_queue_health_snapshot persistence_item_event_health_snapshot_copy(void);
 
 int persistence_scalar_event_queue_enqueue(const char *line);
 int persistence_scalar_event_queue_dequeue(char *out, int out_size);
@@ -50,6 +53,7 @@ int persistence_scalar_event_worker_running(void);
 int persistence_scalar_event_worker_stop_pending(void);
 unsigned long persistence_scalar_event_worker_written(void);
 unsigned long persistence_scalar_event_worker_write_failures(void);
+struct persistence_queue_health_snapshot persistence_scalar_event_health_snapshot_copy(void);
 
 /* Large-payload event queue */
 int persistence_large_event_queue_enqueue(const char *line);
@@ -65,6 +69,7 @@ int persistence_large_event_worker_running(void);
 int persistence_large_event_worker_stop_pending(void);
 unsigned long persistence_large_event_worker_written(void);
 unsigned long persistence_large_event_worker_write_failures(void);
+struct persistence_queue_health_snapshot persistence_large_event_health_snapshot_copy(void);
 
 int persistence_item_event_worker_stuck(int threshold_secs);
 int persistence_scalar_event_worker_stuck(int threshold_secs);
@@ -77,7 +82,7 @@ int persistence_item_event_worker_heartbeat_age(void);
 int persistence_scalar_event_worker_heartbeat_age(void);
 int persistence_large_event_worker_heartbeat_age(void);
 
-/* Test helpers – set the heartbeat timestamp to simulate a stale worker.
+/* Test helpers - set the heartbeat timestamp to simulate a stale worker.
  * These can be used by tests to avoid waiting for the real timeout.
  * Pass time(NULL) - age_secs to set the heartbeat to `age_secs` seconds ago. */
 void persistence_item_event_worker_heartbeat_set(time_t timestamp);

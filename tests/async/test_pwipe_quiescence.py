@@ -20,7 +20,14 @@ assert "persistence_item_event_queue_reset();" in utility
 assert utility.index("persistence_large_event_worker_stop(0)") < utility.index("persistence_large_event_queue_reset()")
 assert utility.index("persistence_large_event_queue_reset()") < utility.index("PWipe persistence workers quiesced")
 
-assert "if (!_copyover && !_pwipe)\n\t{\n\t\tpersistence_flush_all_character_saves();" in comm
+terminal_gate = "if (!_pwipe && !persistence_save_all_characters_terminal(RENT_CRASH))"
+assert terminal_gate in comm
+assert comm.index(terminal_gate) < comm.index("if (!_copyover && !_pwipe)\n\t{")
+main_shutdown = comm[comm.index("game_loop(port, sslport);"):comm.index("/* Don't need this anymore")]
+assert main_shutdown.index("game_loop(port, sslport);") < main_shutdown.index(
+    "critical_command_coordinator_shutdown();"
+)
+assert "persistence_stop_scalar_event_worker();" not in main_shutdown
 assert "if (!_pwipe)" in comm[comm.index("game_loop(port, sslport);"):comm.index("/* Don't need this anymore")]
 
 print("pwipe quiescence checks passed")

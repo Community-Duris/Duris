@@ -15666,10 +15666,9 @@ void spell_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 		obj_from_obj(obj_in_corpse);
 		if (obj_in_corpse->type == ITEM_MONEY)
 		{
-			GET_COPPER(t_ch) += obj_in_corpse->value[0];
-			GET_SILVER(t_ch) += obj_in_corpse->value[1];
-			GET_GOLD(t_ch) += obj_in_corpse->value[2];
-			GET_PLATINUM(t_ch) += obj_in_corpse->value[3];
+			ADD_MONEY(t_ch, obj_in_corpse->value[0] + obj_in_corpse->value[1] * 10 +
+						obj_in_corpse->value[2] * 100 +
+						obj_in_corpse->value[3] * 1000);
 			extract_obj(obj_in_corpse);
 			obj_in_corpse = NULL;
 		}
@@ -16069,10 +16068,9 @@ void spell_lesser_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused
 		obj_from_obj(obj_in_corpse);
 		if (obj_in_corpse->type == ITEM_MONEY)
 		{
-			GET_COPPER(t_ch) += obj_in_corpse->value[0];
-			GET_SILVER(t_ch) += obj_in_corpse->value[1];
-			GET_GOLD(t_ch) += obj_in_corpse->value[2];
-			GET_PLATINUM(t_ch) += obj_in_corpse->value[3];
+			ADD_MONEY(t_ch, obj_in_corpse->value[0] + obj_in_corpse->value[1] * 10 +
+						obj_in_corpse->value[2] * 100 +
+						obj_in_corpse->value[3] * 1000);
 			extract_obj(obj_in_corpse);
 			obj_in_corpse = NULL;
 		}

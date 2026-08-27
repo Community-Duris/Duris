@@ -13,8 +13,9 @@ assert 'help.cooldown.secs' in help_body.group(0)
 assert 'CharWait(' not in help_body.group(0), "help must not impose command lag"
 assert 'help.lag.pulses' not in properties, "obsolete help lag property remains active"
 
-assert 'if (type == EPIC_BOTTLE)' in epic
-assert 'log_epic_gain_event("epic_bottle"' in epic
+assert 'case EPIC_BOTTLE:' in epic
+assert 'return epic_reason_type::bottle_award;' in epic
+assert 'if (context.type == EPIC_BOTTLE)' in epic
 assert 'func == event_wait' in new_events
 assert 'return ch != NULL && (IS_PC(ch)' in new_events
 

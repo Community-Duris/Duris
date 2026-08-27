@@ -29,9 +29,12 @@ using namespace std;
 #include "db.h"
 #include "events.h"
 #include "interp.h"
+#include "item_uid_allocator.h"
 #include "utility.h"
 #include "utils.h"
 #include "assocs.h"
+#include "auction_houses.h"
+#include "currency_transaction.h"
 #include "defines.h"
 #include "epic.h"
 #include "gmcp.h"
@@ -804,27 +807,67 @@ void wizlog(int level, const char *format, ...)
 	free(lbuf);
 }
 
+static int persistence_alert_format_is_numeric(const char *format)
+{
+	if (!format)
+		return 0;
+	for (const char *p = format; *p; ++p)
+	{
+		if (*p != '%')
+			continue;
+		++p;
+		if (*p == '%')
+			continue;
+		while (*p && strchr("-+ #0'.*0123456789hljztL", *p))
+			++p;
+		if (!*p || !strchr("diouxXfFeEgGaA", *p))
+			return 0;
+	}
+	return 1;
+}
+
+static const char *persistence_alert_category(const char *value, char *out, size_t out_size)
+{
+	if (!out || out_size == 0)
+		return "unknown";
+	size_t used = 0;
+	for (const unsigned char *p = (const unsigned char *)value; p && *p && used + 1 < out_size;
+	     ++p)
+	{
+		if (isalnum(*p) || *p == '_' || *p == '-' || *p == '/')
+			out[used++] = (char)*p;
+		else
+			return "unknown";
+	}
+	out[used] = '\0';
+	return used ? out : "unknown";
+}
+
 void persistence_alert(int level, const char *domain, const char *owner, const char *item_uid,
 		       const char *event_id, const char *action, const char *format, ...)
 {
 	va_list args;
 	char details[MAX_STRING_LENGTH];
 	char alert[MAX_STRING_LENGTH * 2];
+	char safe_domain[64];
+	char safe_action[64];
+
+	(void)owner;
+	(void)item_uid;
+	(void)event_id;
 
 	details[0] = '\0';
-	if (format && *format)
+	if (format && *format && persistence_alert_format_is_numeric(format))
 	{
 		va_start(args, format);
 		vsnprintf(details, sizeof(details), format, args);
 		va_end(args);
 	}
 
-	checked_snprintf(
-		alert, sizeof(alert), "domain=%s owner=%s item_uid=%s event_id=%s action=%s%s%s",
-		(domain && *domain) ? domain : "unknown", (owner && *owner) ? owner : "unknown",
-		(item_uid && *item_uid) ? item_uid : "none",
-		(event_id && *event_id) ? event_id : "none",
-		(action && *action) ? action : "unknown", details[0] ? " detail=" : "", details);
+	checked_snprintf(alert, sizeof(alert), "domain=%s action=%s outcome=alert%s%s",
+			 persistence_alert_category(domain, safe_domain, sizeof(safe_domain)),
+			 persistence_alert_category(action, safe_action, sizeof(safe_action)),
+			 details[0] ? " detail=" : "", details);
 
 	logit(LOG_FILE, "PERSISTENCE: %s", alert);
 	logit(LOG_WIZ, "PERSISTENCE: %s", alert);
@@ -833,11 +876,12 @@ void persistence_alert(int level, const char *domain, const char *owner, const c
 
 unsigned long long persistence_next_item_uid(void)
 {
-	return (unsigned long long)next_obj_uid++;
+	return item_uid_allocator_next();
 }
 
 void persistence_assign_item_uid(P_obj obj, const char *reason)
 {
+	(void)reason;
 	if (!obj || obj->obj_uid)
 		return;
 
@@ -845,8 +889,8 @@ void persistence_assign_item_uid(P_obj obj, const char *reason)
 
 	if (!obj->obj_uid)
 	{
-		persistence_alert(AVATAR, "item_uid", reason ? reason : "unknown", "0", "none",
-				  "assignment_failed", "object pointer=%p", obj);
+		persistence_alert(AVATAR, "item_uid", "redacted", "none", "none",
+				  "assignment_failed", NULL);
 	}
 }
 
@@ -893,11 +937,12 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 	char scalar_record[PERSISTENCE_EVENT_MAX_LEN + 64];
 	const char *record_line;
 	static unsigned long fallback_count = 0;
+	(void)owner;
 
 	if (_pwipe)
 	{
-		persistence_alert(AVATAR, domain ? domain : "persistence",
-				  owner ? owner : "fallback", "none", "none", "pwipe_rejected",
+		persistence_alert(AVATAR, domain ? domain : "persistence", "redacted", "none",
+				  "none", "pwipe_rejected",
 				  "fallback event rejected while season reset is active");
 		return 0;
 	}
@@ -914,8 +959,8 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 	if (_pwipe)
 	{
 		pthread_mutex_unlock(&persistence_fallback_log_mutex);
-		persistence_alert(AVATAR, domain ? domain : "persistence",
-				  owner ? owner : "fallback", "none", "none", "pwipe_rejected",
+		persistence_alert(AVATAR, domain ? domain : "persistence", "redacted", "none",
+				  "none", "pwipe_rejected",
 				  "fallback event rejected while season reset is active");
 		return 0;
 	}
@@ -923,10 +968,9 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 	if (!log_f)
 	{
 		pthread_mutex_unlock(&persistence_fallback_log_mutex);
-		persistence_alert(AVATAR, domain ? domain : "persistence",
-				  owner ? owner : "fallback", "none", "none",
-				  action ? action : "fallback_open_failed",
-				  "could not open %s; event not persisted", LOG_EVENT);
+		persistence_alert(AVATAR, domain ? domain : "persistence", "redacted", "none",
+				  "none", action ? action : "fallback_open_failed", "errno=%d",
+				  errno);
 		return 0;
 	}
 
@@ -948,29 +992,26 @@ int persistence_write_fallback_event_line(const char *line, const char *domain, 
 	fallback_count++;
 	if (!ok)
 	{
-		persistence_alert(AVATAR, domain ? domain : "persistence",
-				  owner ? owner : "fallback", "none", "none",
-				  action ? action : "fallback_write_failed",
-				  "write to %s failed; event not persisted", LOG_EVENT);
+		persistence_alert(AVATAR, domain ? domain : "persistence", "redacted", "none",
+				  "none", action ? action : "fallback_write_failed",
+				  "write_failed=%d", 1);
 		return 0;
 	}
 
 	if (fallback_count <= 5 || !(fallback_count % 1000))
 	{
-		logit(LOG_FILE,
-		      "PERSISTENCE: domain=%s owner=%s action=%s detail=wrote event to flat fallback count=%lu",
-		      domain ? domain : "persistence", owner ? owner : "fallback",
-		      action ? action : "flat_fallback", fallback_count);
-		logit(LOG_WIZ,
-		      "PERSISTENCE: domain=%s owner=%s action=%s detail=wrote event to flat fallback count=%lu",
-		      domain ? domain : "persistence", owner ? owner : "fallback",
-		      action ? action : "flat_fallback", fallback_count);
+		logit(LOG_FILE, "PERSISTENCE: domain=%s action=%s outcome=fallback_write count=%lu",
+		      domain ? domain : "persistence", action ? action : "flat_fallback",
+		      fallback_count);
+		logit(LOG_WIZ, "PERSISTENCE: domain=%s action=%s outcome=fallback_write count=%lu",
+		      domain ? domain : "persistence", action ? action : "flat_fallback",
+		      fallback_count);
 	}
 
 	return 1;
 }
 
-static const char *persistence_clean_field(const char *in, char *buf, int buf_size)
+[[maybe_unused]] static const char *persistence_clean_field(const char *in, char *buf, int buf_size)
 {
 	int i;
 
@@ -994,7 +1035,7 @@ static const char *persistence_clean_field(const char *in, char *buf, int buf_si
 	return buf;
 }
 
-static unsigned long long persistence_event_time_usec(void)
+[[maybe_unused]] static unsigned long long persistence_event_time_usec(void)
 {
 	struct timeval tv;
 
@@ -1037,9 +1078,8 @@ int persistence_flush_item_events(int max_events)
 		{
 			pthread_mutex_unlock(&persistence_fallback_log_mutex);
 			persistence_alert(AVATAR, "item_event", "queue", "none", "none",
-					  "flush_open_failed",
-					  "could not open %s; %d events remain queued", LOG_EVENT,
-					  pending);
+					  "flush_open_failed", "pending=%d errno=%d", pending,
+					  errno);
 			return 0;
 		}
 	}
@@ -1097,8 +1137,8 @@ int persistence_flush_item_events(int max_events)
 				{
 					if (ftruncate(fd, durability_offset) != 0)
 						logit(LOG_SYS,
-						      "Could not restore %s after persistence failure: %s",
-						      LOG_EVENT, strerror(errno));
+						      "Could not restore persistence fallback errno=%d",
+						      errno);
 					close(fd);
 				}
 			}
@@ -1178,9 +1218,8 @@ int persistence_flush_scalar_events(int max_events)
 		{
 			pthread_mutex_unlock(&persistence_fallback_log_mutex);
 			persistence_alert(AVATAR, "scalar_event", "queue", "none", "none",
-					  "flush_open_failed",
-					  "could not open %s; %d scalar events remain queued",
-					  LOG_EVENT, pending);
+					  "flush_open_failed", "pending=%d errno=%d", pending,
+					  errno);
 			return 0;
 		}
 	}
@@ -1241,8 +1280,8 @@ int persistence_flush_scalar_events(int max_events)
 				{
 					if (ftruncate(fd, durability_offset) != 0)
 						logit(LOG_SYS,
-						      "Could not restore %s after persistence failure: %s",
-						      LOG_EVENT, strerror(errno));
+						      "Could not restore persistence fallback errno=%d",
+						      errno);
 					close(fd);
 				}
 			}
@@ -1355,12 +1394,12 @@ void persistence_worker_heartbeat_check(int threshold_secs)
 		}
 	}
 }
-static int persistence_line_has_prefix(const char *line, const char *prefix)
+[[maybe_unused]] static int persistence_line_has_prefix(const char *line, const char *prefix)
 {
 	return line && prefix && !strncmp(line, prefix, strlen(prefix));
 }
 
-static void persistence_trim_record_line(char *line)
+[[maybe_unused]] static void persistence_trim_record_line(char *line)
 {
 	int len;
 
@@ -1388,8 +1427,7 @@ int persistence_quarantine_fallback_events(void)
 			return 1;
 		}
 		persistence_alert(AVATAR, "persistence_replay", "pwipe", "none", "none",
-				  "quarantine_stat_failed",
-				  "could not inspect %s before pwipe: errno=%d", LOG_EVENT, errno);
+				  "quarantine_stat_failed", "errno=%d", errno);
 		pthread_mutex_unlock(&persistence_fallback_log_mutex);
 		return 0;
 	}
@@ -1399,22 +1437,24 @@ int persistence_quarantine_fallback_events(void)
 	if (rename(LOG_EVENT, quarantine_path))
 	{
 		persistence_alert(AVATAR, "persistence_replay", "pwipe", "none", "none",
-				  "quarantine_rename_failed",
-				  "could not quarantine %s before pwipe: errno=%d", LOG_EVENT,
-				  errno);
+				  "quarantine_rename_failed", "errno=%d", errno);
 		pthread_mutex_unlock(&persistence_fallback_log_mutex);
 		return 0;
 	}
 
 	logit(LOG_STATUS,
-	      "PERSISTENCE: domain=persistence_replay owner=pwipe action=quarantine detail=renamed %s to %s",
-	      LOG_EVENT, quarantine_path);
+	      "PERSISTENCE: domain=persistence_replay action=quarantine outcome=success");
 	pthread_mutex_unlock(&persistence_fallback_log_mutex);
 	return 1;
 }
 
 int persistence_replay_fallback_events(void)
 {
+	persistence_alert(AVATAR, "persistence_replay", "retired", "none", "none",
+			  "raw_execution_disabled",
+			  "legacy fallback records are quarantined without execution");
+	return persistence_quarantine_fallback_events();
+#if 0
 	FILE *in_f;
 	FILE *out_f;
 	/* Sized to the largest event type we replay (large = 128KB). The scalar
@@ -1436,9 +1476,7 @@ int persistence_replay_fallback_events(void)
 		if (errno != ENOENT)
 		{
 			persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
-					  "open_failed",
-					  "could not open %s for fallback replay: errno=%d",
-					  LOG_EVENT, errno);
+					  "open_failed", "errno=%d", errno);
 		}
 		return 0;
 	}
@@ -1449,8 +1487,7 @@ int persistence_replay_fallback_events(void)
 	{
 		fclose(in_f);
 		persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
-				  "temp_open_failed",
-				  "could not open %s while replaying fallback events", tmp_path);
+				  "temp_open_failed", "errno=%d", errno);
 		return 0;
 	}
 
@@ -1517,10 +1554,8 @@ int persistence_replay_fallback_events(void)
 
 	if (rewrite_failed)
 	{
-		persistence_alert(
-			AVATAR, "persistence_replay", "boot", "none", "none", "rewrite_failed",
-			"fallback replay wrote SQL but could not safely rewrite %s; leaving original log for retry",
-			LOG_EVENT);
+		persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
+				  "rewrite_failed", "replayed=%d failed=%d", replayed, failed);
 		remove(tmp_path);
 		return replayed;
 	}
@@ -1529,10 +1564,9 @@ int persistence_replay_fallback_events(void)
 		 (long)time(NULL), (long)getpid());
 	if (link(LOG_EVENT, backup_path))
 	{
-		persistence_alert(
-			AVATAR, "persistence_replay", "boot", "none", "none", "backup_failed",
-			"could not link %s to %s before replay; leaving original log for retry",
-			LOG_EVENT, backup_path);
+		persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
+				  "backup_failed", "replayed=%d failed=%d errno=%d", replayed,
+				  failed, errno);
 		remove(tmp_path);
 		return replayed;
 	}
@@ -1540,24 +1574,21 @@ int persistence_replay_fallback_events(void)
 	if (rename(tmp_path, LOG_EVENT))
 	{
 		persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
-				  "replace_failed",
-				  "could not replace %s after replay; backup retained at %s",
-				  LOG_EVENT, backup_path);
+				  "replace_failed", "replayed=%d failed=%d errno=%d", replayed,
+				  failed, errno);
 		remove(tmp_path);
 		return replayed;
 	}
 
 	persistence_alert(AVATAR, "persistence_replay", "boot", "none", "none",
-			  failed ? "partial_replay" : "replayed",
-			  "replayed %d fallback persistence events; %d remain queued in %s",
-			  replayed, failed, LOG_EVENT);
+			  failed ? "partial_replay" : "replayed", "replayed=%d failed=%d", replayed,
+			  failed);
 
 	if (replayed > 0 || failed > 0)
 	{
 		persistence_replay_handled = replayed + failed;
-		wizlog(AVATAR,
-		       "&+R&-LPERSISTENCE FALLBACK REPLAY:&n %d events WERE handled (replayed into SQL). %d events WILL be retried on next boot. Location: %s (rotated to backup on replay).",
-		       replayed, failed, LOG_EVENT);
+		wizlog(AVATAR, "&+R&-LPERSISTENCE FALLBACK REPLAY:&n replayed=%d retry=%d",
+		       replayed, failed);
 	}
 	else
 	{
@@ -1565,9 +1596,10 @@ int persistence_replay_fallback_events(void)
 	}
 
 	return replayed;
+#endif
 }
 
-static int persistence_item_event_log_writer(const char *line, void *context)
+[[maybe_unused]] static int persistence_item_event_log_writer(const char *line, void *context)
 {
 	static unsigned long fallback_count = 0;
 
@@ -1612,6 +1644,10 @@ void utility_latency_reset(void)
 
 int persistence_start_item_event_worker(void)
 {
+	persistence_alert(AVATAR, "item_event", "retired", "none", "none", "raw_execution_disabled",
+			  "legacy raw event worker is retired");
+	return 0;
+#if 0
 	if (!sql_pool_is_active())
 	{
 		persistence_alert(AVATAR, "item_event", "worker", "none", "none",
@@ -1628,9 +1664,10 @@ int persistence_start_item_event_worker(void)
 
 	logit(LOG_STATUS, "Started item persistence worker.");
 	return 1;
+#endif
 }
 
-static int persistence_scalar_event_log_writer(const char *line, void *context)
+[[maybe_unused]] static int persistence_scalar_event_log_writer(const char *line, void *context)
 {
 	static unsigned long fallback_count = 0;
 
@@ -1661,6 +1698,10 @@ static int persistence_scalar_event_log_writer(const char *line, void *context)
 
 int persistence_start_scalar_event_worker(void)
 {
+	persistence_alert(AVATAR, "scalar_event", "retired", "none", "none",
+			  "raw_execution_disabled", "legacy raw event worker is retired");
+	return 0;
+#if 0
 	if (!sql_pool_is_active())
 	{
 		persistence_alert(AVATAR, "scalar_event", "worker", "none", "none",
@@ -1677,6 +1718,7 @@ int persistence_start_scalar_event_worker(void)
 
 	logit(LOG_STATUS, "Started scalar persistence worker.");
 	return 1;
+#endif
 }
 
 int persistence_prepare_pwipe(void)
@@ -1814,6 +1856,14 @@ unsigned long persistence_dropped_item_events(void)
 void persistence_record_item_event(const char *event_type, P_obj obj, P_char actor,
 				   const char *source, const char *target, const char *note)
 {
+	(void)event_type;
+	(void)obj;
+	(void)actor;
+	(void)source;
+	(void)target;
+	(void)note;
+	return;
+#if 0
 	char uid[32];
 	char line[MAX_STRING_LENGTH];
 	char event_buf[128];
@@ -1858,6 +1908,7 @@ void persistence_record_item_event(const char *event_type, P_obj obj, P_char act
 	}
 
 	persistence_worker_heartbeat_check(0);
+#endif
 }
 
 void debug(const char *format, ...)
@@ -2838,6 +2889,11 @@ char *coin_stringv(int amount, int padfront)
  * adds flat amount (in copper), to ch, using smallest number of coins
  */
 
+static void currency_adjustment_committed(P_char ch, bool committed,
+					  const currency_command_result &result,
+					  unsigned int error_code, const uint8_t *context,
+					  size_t context_size);
+
 void ADD_MONEY(P_char ch, int amount)
 {
 	int t = 0;
@@ -2850,6 +2906,24 @@ void ADD_MONEY(P_char ch, int amount)
 
 	if (amount == 0)
 		return;
+	if (IS_PC(ch) && GET_PID(ch) > 0)
+	{
+		if (!currency_transaction_submit_wallet_value(
+			    ch, amount, currency_reason_type::wallet_reward, 0,
+			    critical_source_site::command, critical_deadline_class::interactive,
+			    currency_adjustment_committed, nullptr, 0))
+		{
+			logit(LOG_WIZ, "ADD_MONEY: wallet transaction submission failed for pid %d",
+			      GET_PID(ch));
+			if (insert_money_pickup(GET_PID(ch), amount))
+				send_to_char(
+					"Your coin credit is waiting at the auction house.\r\n",
+					ch);
+			else
+				send_to_char("Your coin credit is pending staff review.\r\n", ch);
+		}
+		return;
+	}
 
 	/* plat is a bit rarer, and thus is returned as change less often */
 	if (amount > 999)
@@ -2874,7 +2948,7 @@ void ADD_MONEY(P_char ch, int amount)
 		GET_COPPER(ch) += amount;
 
 	if (IS_PC(ch))
-		mark_player_dirty(GET_PID(ch));
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 
 	/* Update web client */
 	gmcp_char_vitals(ch);
@@ -2886,78 +2960,92 @@ void ADD_MONEY(P_char ch, int amount)
  * mode 2 = subtract as close as possible without going over, return amount short
  * modes 1 & 2 not supported yet
  */
+void publish_account_bank_balance(const char *account_name, int racewar, int coin_type, int balance)
+{
+	if (!account_name || !*account_name || balance < 0 || coin_type < 0 || coin_type > 3)
+		return;
+
+	for (P_desc desc = descriptor_list; desc; desc = desc->next)
+	{
+		P_char target = desc->original ? desc->original : desc->character;
+		if (desc->connected != CON_PLAYING || !target || IS_NPC(target) || !desc->account ||
+		    !desc->account->acct_name ||
+		    strcasecmp(desc->account->acct_name, account_name) ||
+		    GET_RACEWAR(target) != racewar)
+			continue;
+
+		switch (coin_type)
+		{
+		case 0:
+			GET_BALANCE_COPPER(target) = balance;
+			break;
+		case 1:
+			GET_BALANCE_SILVER(target) = balance;
+			break;
+		case 2:
+			GET_BALANCE_GOLD(target) = balance;
+			break;
+		case 3:
+			GET_BALANCE_PLATINUM(target) = balance;
+			break;
+		}
+		gmcp_char_vitals(target);
+	}
+}
+
+void publish_account_bank_balances(const char *account_name, int racewar,
+				   const AccountBankBalances *balances)
+{
+	publish_account_bank_balances_revision(account_name, racewar, balances, UINT64_MAX);
+}
+
+void publish_account_bank_balances_revision(const char *account_name, int racewar,
+					    const AccountBankBalances *balances,
+					    uint64_t bank_revision)
+{
+	if (!account_name || !*account_name || !balances || balances->copper < 0 ||
+	    balances->silver < 0 || balances->gold < 0 || balances->platinum < 0)
+		return;
+
+	for (P_desc desc = descriptor_list; desc; desc = desc->next)
+	{
+		P_char target = desc->original ? desc->original : desc->character;
+		if (desc->connected != CON_PLAYING || !target || IS_NPC(target) || !desc->account ||
+		    !desc->account->acct_name ||
+		    strcasecmp(desc->account->acct_name, account_name) ||
+		    GET_RACEWAR(target) != racewar)
+			continue;
+
+		GET_BALANCE_COPPER(target) = balances->copper;
+		GET_BALANCE_SILVER(target) = balances->silver;
+		GET_BALANCE_GOLD(target) = balances->gold;
+		GET_BALANCE_PLATINUM(target) = balances->platinum;
+		if (bank_revision != UINT64_MAX)
+			target->only.pc->bank_revision = bank_revision;
+		gmcp_char_vitals(target);
+	}
+}
+
+static void currency_adjustment_committed(P_char ch, bool committed,
+					  const currency_command_result & /*result*/,
+					  unsigned int /*error_code*/, const uint8_t * /*context*/,
+					  size_t /*context_size*/)
+{
+	if (!committed && ch)
+		send_to_char(
+			"Your coin transaction could not be completed. Please contact staff if goods were delivered.\r\n",
+			ch);
+}
+
 int SUB_BALANCE(P_char ch, int amount, int mode)
 {
-	int t = 0;
-
-	if (amount <= 0)
+	if (!ch || amount <= 0 || mode != 0)
 		return -1;
-	if (amount > GET_BALANCE(ch))
+	if (!currency_transaction_submit_bank_payment(
+		    ch, amount, currency_reason_type::bank_payment, 0,
+		    critical_source_site::command, critical_deadline_class::interactive,
+		    currency_adjustment_committed, nullptr, 0))
 		return -1;
-	if (mode != 0)
-		return -1;
-
-	if (amount > GET_BALANCE_COPPER(ch))
-	{
-		amount -= GET_BALANCE_COPPER(ch);
-		GET_BALANCE_COPPER(ch) = 0;
-	}
-	else
-	{
-		GET_BALANCE_COPPER(ch) -= amount;
-		return 0;
-	}
-
-	if (amount > 0)
-	{
-		t = GET_BALANCE_SILVER(ch) * 10;
-		if (amount >= t)
-		{
-			amount -= t;
-			GET_BALANCE_SILVER(ch) = 0;
-		}
-		else
-		{
-			t = (int)(amount / 10) + 1;
-			GET_BALANCE_SILVER(ch) -= t;
-			amount -= t * 10;
-		}
-	}
-	if (amount > 0)
-	{
-		t = GET_BALANCE_GOLD(ch) * 100;
-		if (amount >= t)
-		{
-			amount -= t;
-			GET_BALANCE_GOLD(ch) = 0;
-		}
-		else
-		{
-			t = (int)(amount / 100) + 1;
-			GET_BALANCE_GOLD(ch) -= t;
-			amount -= t * 100;
-		}
-	}
-	if (amount > 0)
-	{
-		t = GET_BALANCE_PLATINUM(ch) * 1000;
-		if (amount >= t)
-		{
-			amount -= t;
-			GET_BALANCE_PLATINUM(ch) = 0;
-		}
-		else
-		{
-			t = (int)(amount / 1000) + 1;
-			GET_BALANCE_PLATINUM(ch) -= t;
-			amount -= t * 1000;
-		}
-	}
-	if (amount < 0)
-		ADD_MONEY(ch, -(amount));
-
-	sql_save_account_bank(get_account_name_safe(ch), GET_RACEWAR(ch), ch);
-
 	return 0;
 }
 
@@ -2971,6 +3059,13 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 		return -1;
 	if (mode != 0)
 		return -1;
+	if (IS_PC(ch) && GET_PID(ch) > 0)
+		return currency_transaction_submit_wallet_value(
+			       ch, -(int64_t)amount, currency_reason_type::wallet_spend, 0,
+			       critical_source_site::command, critical_deadline_class::interactive,
+			       currency_adjustment_committed, nullptr, 0) ?
+			       0 :
+			       -1;
 
 	if (amount > GET_COPPER(ch))
 	{
@@ -2981,7 +3076,7 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 	{
 		GET_COPPER(ch) -= amount;
 		if (IS_PC(ch))
-			mark_player_dirty(GET_PID(ch));
+			mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 		gmcp_char_vitals(ch);
 		return 0;
 	}
@@ -3036,7 +3131,7 @@ int SUB_MONEY(P_char ch, int amount, int mode)
 	else
 	{
 		if (IS_PC(ch))
-			mark_player_dirty(GET_PID(ch));
+			mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 		gmcp_char_vitals(ch);
 	}
 
@@ -7729,7 +7824,7 @@ int yes_no(const char *str)
 	return -1;
 }
 
-static int persistence_large_event_log_writer(const char *line, void *context)
+[[maybe_unused]] static int persistence_large_event_log_writer(const char *line, void *context)
 {
 	char *fallback_line;
 	size_t line_len;
@@ -7764,6 +7859,10 @@ static int persistence_large_event_log_writer(const char *line, void *context)
 
 int persistence_start_large_event_worker(void)
 {
+	persistence_alert(AVATAR, "large_event", "retired", "none", "none",
+			  "raw_execution_disabled", "legacy raw event worker is retired");
+	return 0;
+#if 0
 	if (!persistence_large_event_worker_start(persistence_large_event_log_writer, NULL))
 	{
 		persistence_alert(
@@ -7774,6 +7873,7 @@ int persistence_start_large_event_worker(void)
 
 	logit(LOG_STATUS, "Started large-event persistence worker.");
 	return 1;
+#endif
 }
 
 void persistence_stop_large_event_worker(void)

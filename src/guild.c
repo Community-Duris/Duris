@@ -493,28 +493,19 @@ int RobCash(P_char ch, int cost)
 {
 	char buf[MAX_STRING_LENGTH];
 
-	if (cost > (GET_MONEY(ch) + GET_BALANCE(ch)))
+	if (!ch || cost <= 0)
 		return FALSE;
 	if (cost > GET_MONEY(ch))
 	{
-		GET_COPPER(ch) += GET_BALANCE_COPPER(ch);
-		GET_SILVER(ch) += GET_BALANCE_SILVER(ch);
-		GET_GOLD(ch) += GET_BALANCE_GOLD(ch);
-		GET_PLATINUM(ch) += GET_BALANCE_PLATINUM(ch);
-		SUB_MONEY(ch, cost, 0);
-		snprintf(
-			buf, MAX_STRING_LENGTH,
-			"Withdrawing &+W%d p&n, &+Y%d g&n, %d s and &+y%d c&N from the bank for training.\n",
-			GET_BALANCE_PLATINUM(ch) - GET_PLATINUM(ch),
-			GET_BALANCE_GOLD(ch) - GET_GOLD(ch),
-			GET_BALANCE_SILVER(ch) - GET_SILVER(ch),
-			GET_BALANCE_COPPER(ch) - GET_COPPER(ch));
+		int wallet = GET_MONEY(ch);
+		int bank_cost = cost - wallet;
+		if (SUB_BALANCE(ch, bank_cost, 0) != 0)
+			return FALSE;
+		if (wallet > 0)
+			SUB_MONEY(ch, wallet, 0);
+		snprintf(buf, MAX_STRING_LENGTH, "Withdrawing %s&N from the bank for training.\n",
+			 coin_stringv(bank_cost));
 		send_to_char(buf, ch);
-		GET_BALANCE_COPPER(ch) = GET_COPPER(ch);
-		GET_BALANCE_SILVER(ch) = GET_SILVER(ch);
-		GET_BALANCE_GOLD(ch) = GET_GOLD(ch);
-		GET_BALANCE_PLATINUM(ch) = GET_PLATINUM(ch);
-		GET_COPPER(ch) = GET_SILVER(ch) = GET_GOLD(ch) = GET_PLATINUM(ch) = 0;
 	}
 	else
 		SUB_MONEY(ch, cost, 0);

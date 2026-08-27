@@ -29,6 +29,7 @@
 #include "map.h"
 #include "mm.h"
 #include "redis.h"
+#include "world_recovery_pipeline.h"
 #include "ships/ships.h"
 #include "spells.h"
 #include "sql.h"
@@ -1704,12 +1705,17 @@ bool char_to_room(P_char ch, int room, int dir)
 static void mark_char_or_owner_dirty(P_char ch)
 {
 	if (IS_PC(ch))
-		mark_player_dirty(GET_PID(ch));
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_EQUIPMENT |
+								  PLAYER_COMPONENT_INVENTORY |
+								  PLAYER_COMPONENT_PETS);
 	else if (IS_PC_PET(ch))
 	{
 		P_char owner = GET_MASTER(ch);
 		if (owner && IS_PC(owner))
-			mark_player_dirty(GET_PID(owner));
+			mark_player_dirty_components(GET_PID(owner),
+						     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY |
+							     PLAYER_COMPONENT_PETS);
 	}
 }
 
@@ -1884,12 +1890,11 @@ void money_to_inventory(P_char ch)
 		return;
 
 	/* make a 'pile of coins' object to hold ch's cash */
-	GET_COPPER(ch) = BOUNDED(0, GET_COPPER(ch), 32000);
-	GET_SILVER(ch) = BOUNDED(0, GET_SILVER(ch), 32000);
-	GET_GOLD(ch) = BOUNDED(0, GET_GOLD(ch), 32000);
-	GET_PLATINUM(ch) = BOUNDED(0, GET_PLATINUM(ch), 32000);
-
-	P_obj money = create_money(GET_COPPER(ch), GET_SILVER(ch), GET_GOLD(ch), GET_PLATINUM(ch));
+	const int copper = BOUNDED(0, GET_COPPER(ch), 32000);
+	const int silver = BOUNDED(0, GET_SILVER(ch), 32000);
+	const int gold = BOUNDED(0, GET_GOLD(ch), 32000);
+	const int platinum = BOUNDED(0, GET_PLATINUM(ch), 32000);
+	P_obj money = create_money(copper, silver, gold, platinum);
 
 	SUB_MONEY(ch, GET_MONEY(ch), 0);
 
@@ -2643,7 +2648,9 @@ static void mark_container_dirty(P_obj container)
 		owner = top->loc.wearing;
 
 	if (owner && IS_PC(owner))
-		mark_player_dirty(GET_PID(owner));
+		mark_player_dirty_components(GET_PID(owner), PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY |
+								     PLAYER_COMPONENT_PETS);
 }
 
 // recursively clear dirty flags on object and contents
@@ -2981,6 +2988,7 @@ void extract_obj(P_obj obj, int gone_for_good)
 		logit(LOG_EXIT, "extract_obj: NULL obj!");
 		return;
 	}
+	world_recovery_capture_forget_object(obj);
 
 	// remove from floor_drops if it was tracked
 	if (obj->obj_uid > 0)
@@ -3396,6 +3404,7 @@ void extract_char(P_char ch)
 		logit(LOG_EXIT, "No ch in extract_char");
 		return;
 	}
+	world_recovery_capture_forget_character(ch);
 	if (!(*ch->player.name))
 	{
 		logit(LOG_EXIT, "No name in extract_char");
@@ -3436,7 +3445,7 @@ void extract_char(P_char ch)
 	{
 		P_char owner = GET_MASTER(ch);
 		if (owner && IS_PC(owner))
-			mark_player_dirty(GET_PID(owner));
+			mark_player_dirty_components(GET_PID(owner), PLAYER_COMPONENT_PETS);
 	}
 
 	if (ch->followers || ch->following)

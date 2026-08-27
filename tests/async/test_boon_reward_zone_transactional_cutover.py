@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""Codec, hot-path, schema, and transactional contracts for boon/zone batching."""
+
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "src"
+
+HARNESS = r'''
+#include "boon_reward_command.h"
+#include "zone_touch_command.h"
+#include <cassert>
+
+int main()
+{
+    critical_operation_id operation = {};
+    assert(critical_operation_id_generate(&operation));
+    boon_reward_payload boon = {42, 1, 55, 100, 3, 1.5, 700, 9, 3};
+    critical_command boon_command = {};
+    assert(boon_reward_command_build(&boon_command, operation, boon));
+    boon_reward_payload decoded_boon = {};
+    assert(boon_reward_command_decode_payload(boon_command, &decoded_boon));
+    assert(decoded_boon.pid == 42 && decoded_boon.data == 1.5);
+    boon_reward_result boon_result = {};
+    boon_result.pid = 42;
+    boon_result.entry_count = 1;
+    boon_result.entries[0] = {5, 10, 3, 3, 0, 2, 700, 4, 0, -1};
+    std::array<uint8_t, BOON_REWARD_RESULT_BYTES> boon_bytes = {};
+    assert(boon_reward_command_encode_result(boon_result, &boon_bytes));
+    boon_reward_result decoded_result = {};
+    assert(boon_reward_command_decode_result(boon_bytes.data(), boon_bytes.size(),
+                                             &decoded_result));
+    assert(decoded_result.entries[0].boon_id == 5);
+
+    zone_touch_payload zone = {};
+    zone.zone_number = 900;
+    zone.toucher_pid = 42;
+    zone.boot_time = 1000;
+    zone.touched_at = 1100;
+    zone.group_size = 3;
+    zone.participant_pids[0] = 42;
+    zone.participant_pids[1] = 43;
+    zone.participant_pids[2] = 44;
+    zone.epic_value = 12;
+    zone.alignment_delta = 1;
+    zone.reset_requested = 1;
+    critical_command zone_command = {};
+    assert(zone_touch_command_build(&zone_command, operation, zone));
+    assert(zone_command.keys.size() == 4);
+    zone_touch_payload decoded_zone = {};
+    assert(zone_touch_command_decode_payload(zone_command, &decoded_zone));
+    assert(decoded_zone.participant_pids[2] == 44);
+    std::array<uint8_t, ZONE_TOUCH_RESULT_BYTES> zone_bytes = {};
+    assert(zone_touch_command_encode_result(zone, &zone_bytes));
+    assert(zone_touch_command_decode_result(zone_bytes.data(), zone_bytes.size(), &decoded_zone));
+    assert(decoded_zone.group_size == 3);
+    zone.participant_pids[2] = 42;
+    assert(!zone_touch_command_build(&zone_command, operation, zone));
+}
+'''
+
+
+class BoonRewardZoneCutoverTests(unittest.TestCase):
+    def test_bounded_canonical_codecs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            harness = Path(directory) / "boon_zone_codec.cpp"
+            binary = Path(directory) / "boon_zone_codec"
+            harness.write_text(HARNESS)
+            subprocess.run([
+                "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", f"-I{SRC}",
+                str(harness), str(SRC / "critical_command.c"),
+                str(SRC / "boon_reward_command.c"), str(SRC / "zone_touch_command.c"),
+                "-lcrypto", "-o", str(binary),
+            ], check=True)
+            subprocess.run([str(binary)], check=True)
+
+    def test_boon_callback_has_no_synchronous_io(self):
+        source = (SRC / "boon.c").read_text()
+        start = source.index("void check_boon_completion(P_char")
+        end = source.index("void boon_publish_transaction_result", start)
+        callback = source[start:end]
+        self.assertIn("boon_reward_transaction_submit", callback)
+        for forbidden in ("qry(", "db_query", "mysql_", "redis_", "fopen("):
+            self.assertNotIn(forbidden, callback)
+
+    def test_epic_touch_uses_one_immutable_zone_batch(self):
+        source = (SRC / "epic.c").read_text()
+        start = source.index("int epic_stone(P_obj")
+        end = source.index("void epic_publish_zone_touch", start)
+        touch = source[start:end]
+        self.assertIn("participant_pids", touch)
+        self.assertIn("zone_touch_transaction_submit", touch)
+        for forbidden in ("zone_touches", "redis_invalidate_epic_zones", "UPDATE zones"):
+            self.assertNotIn(forbidden, touch)
+        publish = source[end:source.index("void epic_zone_balance", end)]
+        self.assertNotIn("update_epic_zone_alignment", publish)
+        self.assertNotIn("db_query", publish)
+
+    def test_repository_schema_and_dispatch_contracts(self):
+        boon = (SRC / "boon_reward_repository.c").read_text()
+        zone = (SRC / "zone_touch_repository.c").read_text()
+        generic = (SRC / "critical_command_repository.c").read_text()
+        for token in ("FOR UPDATE", "boons_progress", "boons_shop",
+                      "boon_reward_outcome_entry"):
+            self.assertIn(token, boon)
+        for token in ("FOR UPDATE", "zone_touches", "zone_touch_outcome_participant",
+                      "alignment=LEAST"):
+            self.assertIn(token, zone)
+        self.assertIn("critical_command_type::boon_reward", generic)
+        self.assertIn("critical_command_type::zone", generic)
+        migration = (ROOT / "migrations/boon_reward_zone_outcome.sql").read_text()
+        bootstrap = (ROOT / "migrations/bootstrap_multithread_safe.sql").read_text()
+        runner = (ROOT / "migrations/run_migration.sh").read_text()
+        for token in ("boon_reward_outcome", "boon_reward_outcome_entry",
+                      "zone_touch_outcome", "zone_touch_outcome_participant"):
+            self.assertIn(token, migration)
+            self.assertIn(token, bootstrap)
+        self.assertIn("verify_boon_reward_zone_schema.sh", runner)
+
+    def test_account_bound_reward_boundary_remains_covered(self):
+        contracts = "\n".join((ROOT / path).read_text() for path in (
+            "tests/async/test_account_bound_reward_contract.py",
+            "tests/async/test_account_reward_exact_contract.py",
+            "tests/async/run_account_bound_reward_schema_mysql.sh",
+        ))
+        reward = (SRC / "account_reward.c").read_text()
+        for token in ("DIVINECLAIM", "cooldown", "recovery_ready"):
+            self.assertIn(token.lower(), contracts.lower())
+        self.assertIn("FOR UPDATE", reward)
+        self.assertIn("sql_begin_transaction", reward)
+
+
+if __name__ == "__main__":
+    unittest.main()

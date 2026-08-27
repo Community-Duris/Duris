@@ -31,6 +31,7 @@
 #include "justice.h"
 #include "mm.h"
 #include "objmisc.h"
+#include "password_hash.h"
 #include "ships.h"
 #include "specs.winterhaven.h"
 #include "spells.h"
@@ -38,6 +39,7 @@
 #include "sql_player.h"
 #include "vnum.room.h"
 #include "locker_async.h"
+#include "item_movement_transaction.h"
 
 extern P_index obj_index;
 extern P_index mob_index;
@@ -212,7 +214,7 @@ bool locker_eq_type_fits_for_storage(::byte eqType, P_obj obj)
 
 	// Containers and corpses are handled by the unsorted chest rejection
 	// and remain on the locker room floor.  For type-specific chests, a
-	// matching type is sufficient — the save/load path preserves nested
+	// matching type is sufficient - the save/load path preserves nested
 	// contents for containers of the correct type.
 	return true;
 }
@@ -318,77 +320,41 @@ static bool locker_handle_leave(P_char ch, StorageLocker *pLocker, int room, int
 
 	if (!ch || !pLocker || (ch != pLocker->GetLockerUser()))
 		return true;
-
-	/* Eject every other occupant while preserving the next pointer before
-	 * char_from_room()/char_to_room() mutate the current room list. */
-	tmpChar = world[ch->in_room].people;
-	while (tmpChar)
+	if (item_movement_transaction_player_busy(ch))
 	{
-		nextChar = tmpChar->next_in_room;
-		if (tmpChar != ch)
-		{
-			/* this person isn't the proper occupant, so kick them the hell out */
-			send_to_char(
-				"You feel yourself being (ungracefully) ejected from the locker.\r\n",
-				tmpChar);
-			char_from_room(tmpChar);
-			char_to_room(tmpChar, locker_exit_room(ch, room), 0);
-		}
-		tmpChar = nextChar;
-	} /* while */
+		send_to_char(
+			"Your last item movement is still being secured. Please wait before leaving.\r\n",
+			ch);
+		return false;
+	}
 
 	/* Move items from room/chests to the locker character for saving. */
 	P_char chLocker = pLocker->GetLockerChar();
 	if (!chLocker)
 	{
-		logit(LOG_OBJ, "Locker leave: no locker char for %s, proceeding without save",
+		logit(LOG_OBJ, "Locker leave: no locker char for %s; refusing departure",
 		      GET_NAME(ch));
+		persistence_alert(AVATAR, "locker", "leave_prepare", "none", "none",
+				  "terminal_not_durable", "leave_vetoed=1");
+		send_to_char(
+			"&+RYour locker could not be prepared for saving, so you remain inside. Staff have been notified.&n\r\n",
+			ch);
+		return false;
 	}
 	else if (!pLocker->LockerToPFile())
 	{
-		/* LockerToPFile failed — items may be partially on the locker char
-		 * and partially still in chests.  We cannot leave items on the
-		 * room floor because free_locker() below will orphan them.
-		 * Attempt an immediate synchronous terminal save as a fallback.
-		 * If that also fails, items are lost but the failure is logged. */
-		pLocker->PFileToLocker(); /* restore items to locker char */
-
-		bool started_txn = false;
-		if (!sql_in_transaction())
-		{
-			if (sql_begin_transaction())
-				started_txn = true;
-		}
-		if (!writeCharacter(chLocker, 3, NOWHERE))
-		{
-			logit(LOG_OBJ,
-			      "Locker leave: writeCharacter fallback FAILED for %s, items may be lost",
-			      GET_NAME(chLocker));
-			if (started_txn)
-				sql_rollback();
-		}
-		else if (started_txn)
-		{
-			if (!sql_commit())
-			{
-				logit(LOG_OBJ, "Locker leave: fallback commit FAILED for %s",
-				      GET_NAME(chLocker));
-				sql_rollback();
-			}
-		}
-		else
-		{
-			logit(LOG_OBJ, "Locker leave: fallback save succeeded for %s",
-			      GET_NAME(chLocker));
-		}
-		chLocker->specials.timer = 0;
-		extract_char(chLocker);
+		/* The snapshot is not coherent, so neither a terminal save nor
+		 * free_locker() is safe. Keep the player, locker character, chests,
+		 * and room live for a later retry. */
 		locker_log_save_failure(
 			pLocker, ch, chLocker, "leave-locker-to-pfile",
-			"LockerToPFile failed during leave; attempted synchronous fallback save");
+			"LockerToPFile failed during leave; departure vetoed with live state retained");
+		persistence_alert(AVATAR, "locker", "leave_prepare", "none", "none",
+				  "terminal_not_durable", "leave_vetoed=1");
 		send_to_char(
-			"&+RA locker save error occurred during departure. Staff have been notified.\\r\\n",
+			"&+RYour locker could not be saved, so you remain inside. Staff have been notified.&n\r\n",
 			ch);
+		return false;
 	}
 	else
 	{
@@ -398,7 +364,7 @@ static bool locker_handle_leave(P_char ch, StorageLocker *pLocker, int room, int
 		 * until the worker completes and extracts the locker char. */
 		if (!locker_async_mark_dirty(chLocker, ch, 1, "leave-terminal"))
 		{
-			/* async path down — keep legacy 1-tick deferred terminal event */
+			/* async path down - keep legacy 1-tick deferred terminal event */
 			if (!get_scheduled(chLocker, event_deferredTerminalSave))
 				add_event(event_deferredTerminalSave, 1, chLocker, ch, NULL, 0,
 					  NULL, 0);
@@ -413,6 +379,23 @@ static bool locker_handle_leave(P_char ch, StorageLocker *pLocker, int room, int
 			      GET_NAME(ch), GET_NAME(chLocker), pLocker->GetLockerId(), room,
 			      locker_room_name(room));
 		}
+	}
+
+	/* Persistence preparation succeeded. It is now safe to eject every other
+	 * occupant before the room is released. */
+	tmpChar = world[ch->in_room].people;
+	while (tmpChar)
+	{
+		nextChar = tmpChar->next_in_room;
+		if (tmpChar != ch)
+		{
+			send_to_char(
+				"You feel yourself being (ungracefully) ejected from the locker.\r\n",
+				tmpChar);
+			char_from_room(tmpChar);
+			char_to_room(tmpChar, locker_exit_room(ch, room), 0);
+		}
+		tmpChar = nextChar;
 	}
 
 	/* throw any corpses out as well */
@@ -600,6 +583,7 @@ StorageLocker::StorageLocker(int rroom, P_char chLocker, P_char chUser)
 	, m_bIValue(false)
 	, m_currentChestId(0)
 	, m_lockerId(0)
+	, m_publicChestId(0)
 {
 	if (!world[rroom].ex_description)
 	{
@@ -616,6 +600,39 @@ StorageLocker::StorageLocker(int rroom, P_char chLocker, P_char chUser)
 	world[rroom].ex_description->next->description = NULL;
 	world[rroom].ex_description->next->next = NULL;
 };
+
+bool locker_owner_for_room(P_char actor, item_owner_identity *owner)
+{
+	if (!actor || !owner || actor->in_room == NOWHERE || !IS_ROOM(actor->in_room, ROOM_LOCKER))
+		return false;
+	StorageLocker *locker = GetChestList(actor->in_room);
+	if (!locker || locker->GetLockerUser() != actor || locker->GetLockerId() <= 0 ||
+	    locker->GetPublicChestId() <= 0)
+		return false;
+	*owner = { item_owner_type::locker, static_cast<uint64_t>(locker->GetLockerId()),
+		   static_cast<uint64_t>(locker->GetPublicChestId()) };
+	return true;
+}
+
+bool locker_owner_for_container(P_char actor, P_obj container, item_owner_identity *owner)
+{
+	if (!actor || !container || !owner || actor->in_room == NOWHERE ||
+	    !IS_ROOM(actor->in_room, ROOM_LOCKER))
+		return false;
+	StorageLocker *locker = GetChestList(actor->in_room);
+	if (!locker || locker->GetLockerUser() != actor || locker->GetLockerId() <= 0)
+		return false;
+	LockerChest *chest = locker->FindChestForObject(container);
+	if (!chest)
+		return false;
+	const int chest_id = chest->IsPrivateChest() ? chest->GetChestId() :
+						       locker->GetPublicChestId();
+	if (chest_id <= 0)
+		return false;
+	*owner = { item_owner_type::locker, static_cast<uint64_t>(locker->GetLockerId()),
+		   static_cast<uint64_t>(chest_id) };
+	return true;
+}
 
 StorageLocker::~StorageLocker(void)
 {
@@ -1944,22 +1961,20 @@ int storage_locker_room_hook(int room, P_char ch, int cmd, char *arg)
 		 pLocker ? pLocker->m_itemCount : 0, coin_stringv(temp));
 	send_to_char(money_string, ch);
 
-	if (GET_MONEY(ch) < temp && GET_BALANCE(ch) < temp)
-	{
-		send_to_char(
-			"..but you don't have the money not even in your bank account!, GET OUT!\r\n\r\n",
-			ch);
-		room = ch->in_room;
-		char_from_room(ch);
-		char_to_room(ch, locker_exit_room(ch, room), 0);
-		free_locker(room);
-		extract_char(chLocker);
-		return TRUE;
-	}
-
 	if (GET_MONEY(ch) < temp)
 	{
-		SUB_BALANCE(ch, temp, 0);
+		if (SUB_BALANCE(ch, temp, 0) != 0)
+		{
+			send_to_char(
+				"..but you don't have the money or the bank could not complete the payment, GET OUT!\r\n\r\n",
+				ch);
+			room = ch->in_room;
+			char_from_room(ch);
+			char_to_room(ch, locker_exit_room(ch, room), 0);
+			free_locker(room);
+			extract_char(chLocker);
+			return TRUE;
+		}
 	}
 	else
 	{
@@ -2177,33 +2192,29 @@ int storage_locker(int room, P_char ch, int cmd, char *arg)
 		if (tmp_object)
 		{
 			CharWait(ch, (int)(PULSE_VIOLENCE * 1.5));
-			if (GET_MONEY(ch) < cost && GET_BALANCE(ch) < cost)
+			if (GET_MONEY(ch) < cost)
 			{
-				send_to_char(
-					"The member of the &+YStorage Locker Safety Commission&n says 'Bring me 1 &+Ygold&n and ill give you the stats.'\r\n",
-					ch);
-				return (TRUE);
+				if (SUB_BALANCE(ch, cost, 0) != 0)
+				{
+					send_to_char(
+						"The member of the &+YStorage Locker Safety Commission&n says 'Bring me 1 &+Ygold&n and ill give you the stats.'\r\n",
+						ch);
+					return (TRUE);
+				}
 			}
 			else
 			{
-				send_to_char(
-					"The member of the &+YStorage Locker Safety Commission&n takes 1 &+Ygold.&n\r\n",
-					ch);
-				send_to_char(
-					"The member of the &+YStorage Locker Safety Commission&n says 'This is:'\r\n",
-					ch);
-				if (GET_MONEY(ch) < cost)
-				{
-					SUB_BALANCE(ch, cost, 0);
-				}
-				else
-				{
-					SUB_MONEY(ch, cost, 0);
-				}
-
-				do_lore(ch, arg, 999);
-				return TRUE;
+				SUB_MONEY(ch, cost, 0);
 			}
+			send_to_char(
+				"The member of the &+YStorage Locker Safety Commission&n takes 1 &+Ygold.&n\r\n",
+				ch);
+			send_to_char(
+				"The member of the &+YStorage Locker Safety Commission&n says 'This is:'\r\n",
+				ch);
+
+			do_lore(ch, arg, 999);
+			return TRUE;
 		}
 		else
 		{
@@ -2337,7 +2348,7 @@ void StorageLocker::event_resortLocker(P_char chLocker, P_char ch, P_obj /*obj*/
 	}
 }
 
-/* Deferred terminal save event — fires 1 tick after the player leaves the
+/* Deferred terminal save event - fires 1 tick after the player leaves the
  * locker.  By this point the player has already departed and the locker room
  * has been freed.  The locker character (chLocker) still holds all items in
  * memory.  This function performs the actual SQL serialization and then
@@ -2354,36 +2365,17 @@ static void event_deferredTerminalSave(P_char chLocker, P_char /*ch*/, P_obj /*o
 	logit(LOG_DEBUG, "Deferred terminal save: locker_char=%s carried=%d", GET_NAME(chLocker),
 	      locker_count_carried_objects(chLocker));
 
-	/* writeCharacter internally calls sql_save_locker and has a flat-file
-	 * fallback if the SQL save fails.  We pass type=3 (terminal) so it
-	 * extracts equipment and inventory after saving. */
-	bool started_txn = false;
-	if (!sql_in_transaction())
-	{
-		if (sql_begin_transaction())
-			started_txn = true;
-		else
-			logit(LOG_OBJ, "Deferred terminal save: failed to begin transaction for %s",
-			      GET_NAME(chLocker));
-	}
-
+	/* sql_save_locker owns and commits its transaction when called through
+	 * writeCharacter. A false result preserves the locker character and all
+	 * inventory for an operator retry. */
 	if (!writeCharacter(chLocker, 3, NOWHERE))
 	{
 		logit(LOG_OBJ,
 		      "Deferred terminal save: writeCharacter failed for %s (flat fallback may have been attempted)",
 		      GET_NAME(chLocker));
-		if (started_txn)
-			sql_rollback();
-		started_txn = false;
-	}
-	else if (started_txn)
-	{
-		if (!sql_commit())
-		{
-			logit(LOG_OBJ, "Deferred terminal save: commit failed for %s",
-			      GET_NAME(chLocker));
-			sql_rollback();
-		}
+		persistence_alert(AVATAR, "locker", "deferred_terminal", "none", "none",
+				  "terminal_not_durable", "extract_refused=1");
+		return;
 	}
 
 	chLocker->specials.timer = 0;
@@ -2474,7 +2466,7 @@ static int locker_grantcmd(P_char ch, char *arg)
 		return TRUE;
 	}
 
-	/* Guild locker access is managed through guild membership — you're
+	/* Guild locker access is managed through guild membership - you're
 	 * either in the guild or you're not.  The grant command's add/remove/
 	 * list/transfer subcommands are personal-locker features and don't
 	 * apply here. */
@@ -2734,7 +2726,7 @@ static int locker_access_CanAdd(P_char locker, char *ch_name)
 	}
 	else
 	{
-		// character not found — free the allocated temp char before falling
+		// character not found - free the allocated temp char before falling
 		// through to the account-name lookup path.
 		free_char(vict);
 		// character not found, try as account name
@@ -3038,7 +3030,7 @@ static int create_new_locker(P_char ch, P_char locker)
 		if (locker_id > 0)
 		{
 			pLocker->SetLockerId(locker_id);
-			sql_get_or_create_public_chest(locker_id);
+			pLocker->SetPublicChestId(sql_get_or_create_public_chest(locker_id));
 		}
 
 		pLocker->MakeChests(ch, writable_arg("none"));
@@ -3128,14 +3120,14 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 			{
 				send_to_char(
 					"&+YSlow your roll.&n  The locker is still finishing its save from your last visit. "
-					"This is exactly why you kept having issues before — let it finish and try again in a moment.\r\n",
+					"This is exactly why you kept having issues before - let it finish and try again in a moment.\r\n",
 					ch);
 			}
 			else
 			{
 				// An active occupant is inside.  If the requesting player
 				// doesn't have access, don't reveal that the locker is in
-				// use at all — just deny access.
+				// use at all - just deny access.
 
 				// Find the locker char in memory to check access.
 				P_char active_locker_char = NULL;
@@ -3162,7 +3154,7 @@ static P_char load_locker_char(P_char ch, char *esc_locker_name, int bValidateAc
 					    !locker_access_canAccess(active_locker_char,
 								     GET_NAME(ch)))
 					{
-						// No access — don't reveal anything about the
+						// No access - don't reveal anything about the
 						// locker's state or its occupant.
 						send_to_char(
 							"You don't have access to that locker!\r\n",
@@ -3308,6 +3300,13 @@ static int save_locker_char(P_char ch, int bTerminal)
 		logit(LOG_FILE, "Locker save failed: no locker context for %s", GET_NAME(ch));
 		return 0;
 	}
+	if (item_movement_transaction_player_busy(ch))
+	{
+		logit(LOG_DEBUG,
+		      "Locker save deferred: ownership movement pending user=%s locker_id=%d",
+		      GET_NAME(ch), pLocker->GetLockerId());
+		return 1;
+	}
 
 	P_char chLocker = pLocker->GetLockerChar();
 	if (!chLocker)
@@ -3345,7 +3344,7 @@ static int save_locker_char(P_char ch, int bTerminal)
 		 * locker_handle_leave). Keep fail-closed: mark terminal async. */
 		if (!locker_async_mark_dirty(chLocker, ch, 1, "save_locker_char-terminal"))
 		{
-			/* async unavailable — sync terminal save */
+			/* async unavailable - sync terminal save */
 			if (!writeCharacter(chLocker, 3, NOWHERE))
 			{
 				locker_log_save_failure(
@@ -3364,7 +3363,7 @@ static int save_locker_char(P_char ch, int bTerminal)
 	/* Non-terminal: coalesce on dirty slot; one snapshot per pulse globally. */
 	if (!locker_async_mark_dirty(chLocker, ch, 0, "save_locker_char-nonterminal"))
 	{
-		/* async unavailable — fall back to synchronous public save */
+		/* async unavailable - fall back to synchronous public save */
 		if (!writeCharacter(chLocker, 0, NOWHERE))
 		{
 			locker_log_save_failure(pLocker, ch, chLocker,
@@ -3571,7 +3570,7 @@ static int lockerName_is_inuse(char *lockerName)
 			}
 			else if (get_scheduled(chLocker, event_deferredTerminalSave))
 			{
-				/* Legacy deferred save pending — locker char is still active. */
+				/* Legacy deferred save pending - locker char is still active. */
 				nCnt++;
 				logit(LOG_DEBUG,
 				      "lockerName_is_inuse: counting locker char %s with pending deferred save (room=%d)",
@@ -3655,7 +3654,7 @@ bool rename_locker(P_char ch, char *old_charname, char *new_charname)
 		return FALSE;
 	}
 
-	/* New locker saved successfully — now safe to delete the old one.
+	/* New locker saved successfully - now safe to delete the old one.
 	 * Reset the name to the old one so deleteCharacter targets the right
 	 * record, then free with the new name still allocated. */
 	if (GET_NAME(chLocker))
@@ -3868,14 +3867,13 @@ static int locker_chestcmd(P_char ch, char *arg)
 			send_to_char("Usage: eq chest create <name> [password]\r\n", ch);
 			return TRUE;
 		}
-
-		int chest_cost = 500000;
-		if (GET_MONEY(ch) < chest_cost && GET_BALANCE(ch) < chest_cost)
+		if (strlen(arg3) > BCRYPT_PASSWORD_MAX_BYTES)
 		{
-			send_to_char("You need 500 platinum to create a private chest.\r\n", ch);
+			send_to_char("Chest passwords must be at most 72 bytes.\r\n", ch);
 			return TRUE;
 		}
 
+		int chest_cost = 500000;
 		int result = sql_create_private_chest(locker_id, arg2, arg3[0] ? arg3 : NULL);
 		if (result == -1)
 		{
@@ -3889,7 +3887,18 @@ static int locker_chestcmd(P_char ch, char *arg)
 		}
 
 		if (GET_MONEY(ch) < chest_cost)
-			SUB_BALANCE(ch, chest_cost, 0);
+		{
+			if (SUB_BALANCE(ch, chest_cost, 0) != 0)
+			{
+				if (!sql_delete_private_chest(result))
+					logit(LOG_DEBUG,
+					      "Failed to remove unpaid private chest id %d",
+					      result);
+				send_to_char("The bank could not complete the chest payment.\r\n",
+					     ch);
+				return TRUE;
+			}
+		}
 		else
 			SUB_MONEY(ch, chest_cost, 0);
 		send_to_char_f(ch, "Private chest '%s' created for 500 platinum.%s\r\n", arg2,
@@ -3943,8 +3952,7 @@ static int locker_chestcmd(P_char ch, char *arg)
 
 		if (!arg3[0] || !strcasecmp(arg3, "none"))
 		{
-			if (!qry("UPDATE private_chests SET password_hash=NULL WHERE id=%d",
-				 chest_id))
+			if (!sql_set_chest_password(chest_id, NULL))
 			{
 				send_to_char("Failed to remove chest password.\r\n", ch);
 				return TRUE;
@@ -3953,17 +3961,12 @@ static int locker_chestcmd(P_char ch, char *arg)
 		}
 		else
 		{
-			char *esc_pass = sql_escape_string(arg3);
-			if (!esc_pass)
+			if (strlen(arg3) > BCRYPT_PASSWORD_MAX_BYTES)
 			{
-				send_to_char("Failed to set chest password.\r\n", ch);
+				send_to_char("Chest passwords must be at most 72 bytes.\r\n", ch);
 				return TRUE;
 			}
-			bool updated = qry(
-				"UPDATE private_chests SET password_hash=SHA2('%s', 256) WHERE id=%d",
-				esc_pass, chest_id);
-			free(esc_pass);
-			if (!updated)
+			if (!sql_set_chest_password(chest_id, arg3))
 			{
 				send_to_char("Failed to set chest password.\r\n", ch);
 				return TRUE;

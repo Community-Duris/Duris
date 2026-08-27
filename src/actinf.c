@@ -30,6 +30,7 @@ using namespace std;
 #include "ctf.h"
 #include "epic.h"
 #include "epic_bonus.h"
+#include "epic_transaction.h"
 #include "grapple.h"
 #include "guard.h"
 #include "hardcore_config.h"
@@ -38,6 +39,18 @@ using namespace std;
 #include "nexus_stones.h"
 #include "objmisc.h"
 #include "paladins.h"
+#include "persistence_observability.h"
+#include "persistence_queue.h"
+#include "critical_command_coordinator.h"
+#include "critical_command_journal.h"
+#include "critical_outbox.h"
+#include "player_save_worker.h"
+#include "player_save_journal.h"
+#include "player_save_pipeline.h"
+#include "player_load_pipeline.h"
+#include "maintenance_scheduler.h"
+#include "world_recovery_pipeline.h"
+#include "redis.h"
 #include "ships/ships.h"
 #include "specializations.h"
 #include "spells.h"
@@ -52,6 +65,7 @@ using namespace std;
 /* * external variables */
 
 extern bool debug_event_list;
+extern unsigned long long ne_event_tick;
 extern float spell_pulse_data[LAST_RACE + 1];
 extern char *target_locs[];
 extern char *set_master_text[];
@@ -3912,20 +3926,449 @@ void show_vnums(P_char ch)
 #define WORLD_MOBILES 5
 #define WORLD_DEBUG 6
 #define WORLD_VNUMS 7
+#define WORLD_PERSISTENCE 8
 #define WORLD_QUESTS 9
 #define WORLD_CARGO 10
 #define WORLD_DEBUG_E 11
 #define MAX_WORLD 11
 
-const char *world_keywords[MAX_WORLD + 2] = { "stats",	 "zones",   "events",	    "rooms",
-					      "objects", "mobiles", "debug",	    "vnums",
-					      "quests",	 "cargo",   "debug_events", "\n" };
+const char *world_keywords[MAX_WORLD + 2] = { "stats",	     "zones",	"events", "rooms",
+					      "objects",     "mobiles", "debug",  "vnums",
+					      "persistence", "quests",	"cargo",  "debug_events",
+					      "\n" };
 
-const int world_values[] = { WORLD_STATS,   WORLD_ZONES,   WORLD_EVENTS,  WORLD_ROOMS,
-			     WORLD_OBJECTS, WORLD_MOBILES, WORLD_DEBUG,	  WORLD_VNUMS,
-			     WORLD_QUESTS,  WORLD_CARGO,   WORLD_DEBUG_E, -1 };
+const int world_values[] = {
+	WORLD_STATS, WORLD_ZONES, WORLD_EVENTS,	     WORLD_ROOMS,  WORLD_OBJECTS, WORLD_MOBILES,
+	WORLD_DEBUG, WORLD_VNUMS, WORLD_PERSISTENCE, WORLD_QUESTS, WORLD_CARGO,	  WORLD_DEBUG_E,
+	-1
+};
 
 extern const char *get_function_name(void *);
+
+static uint64_t world_persistence_max(uint64_t left, uint64_t right)
+{
+	return left > right ? left : right;
+}
+
+static void show_world_persistence_queue(P_char ch, const char *name,
+					 const struct persistence_queue_health_snapshot *snapshot)
+{
+	char line[MAX_STRING_LENGTH];
+	const char *state = snapshot->pending == 0 ? "empty" : "pending";
+
+	if (!snapshot->heartbeat_available)
+		snprintf(line, sizeof(line),
+			 "queue name=%s state=%s pending=%llu dropped=%llu written=%llu "
+			 "failures=%llu running=%d stop_pending=%d heartbeat=unavailable\n",
+			 name, state, (unsigned long long)snapshot->pending,
+			 (unsigned long long)snapshot->dropped,
+			 (unsigned long long)snapshot->written,
+			 (unsigned long long)snapshot->failures, snapshot->running,
+			 snapshot->stop_pending);
+	else
+		snprintf(line, sizeof(line),
+			 "queue name=%s state=%s pending=%llu dropped=%llu written=%llu "
+			 "failures=%llu running=%d stop_pending=%d heartbeat_age_ms=%llu\n",
+			 name, state, (unsigned long long)snapshot->pending,
+			 (unsigned long long)snapshot->dropped,
+			 (unsigned long long)snapshot->written,
+			 (unsigned long long)snapshot->failures, snapshot->running,
+			 snapshot->stop_pending, (unsigned long long)snapshot->heartbeat_age_msec);
+	send_to_char(line, ch);
+}
+
+static void show_world_persistence(P_char ch)
+{
+	static const size_t top_site_limit = 8;
+	struct persistence_query_metric metrics[PERSISTENCE_QUERY_SITE_CAPACITY];
+	const struct persistence_query_snapshot query =
+		persistence_query_snapshot_copy(metrics, PERSISTENCE_QUERY_SITE_CAPACITY);
+	const struct persistence_queue_health_snapshot item_queue =
+		persistence_item_event_health_snapshot_copy();
+	const struct persistence_queue_health_snapshot scalar_queue =
+		persistence_scalar_event_health_snapshot_copy();
+	const struct persistence_queue_health_snapshot large_queue =
+		persistence_large_event_health_snapshot_copy();
+	const struct persistence_dirty_save_snapshot dirty = redis_dirty_save_snapshot_copy();
+	const struct persistence_deferred_save_snapshot deferred =
+		persistence_deferred_save_snapshot_copy();
+	const player_save_worker_health player_saves = player_save_worker_health_copy();
+	const player_save_journal_health player_journal = player_save_journal_health_copy();
+	const player_save_pipeline_health player_pipeline = player_save_pipeline_health_copy();
+	const player_load_pipeline_health player_loads = player_load_pipeline_health_copy();
+	const critical_coordinator_health critical = critical_command_coordinator_health_copy();
+	const critical_command_journal_health critical_journal =
+		critical_command_journal_health_copy();
+	const critical_outbox_health critical_outbox = critical_outbox_health_copy();
+	const epic_transaction_health epic_transactions = epic_transaction_health_copy();
+	const world_recovery_health world_recovery = world_recovery_pipeline_health_copy();
+	const maintenance_scheduler_health maintenance =
+		maintenance_scheduler_health_copy(ne_event_tick);
+	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
+	char line[MAX_STRING_LENGTH];
+
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, dirty.active_oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, dirty.inflight_oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, player_saves.oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, player_journal.oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, critical.oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, critical_journal.oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, critical_outbox.oldest_age_msec);
+	oldest_save_age_msec =
+		world_persistence_max(oldest_save_age_msec, player_loads.oldest_age_msec);
+
+	send_to_char("Persistence health (metadata only)\n", ch);
+	if (query.total_calls == 0)
+		snprintf(line, sizeof(line),
+			 "queries state=empty calls=0 failures=0 registry_overflow=%llu\n",
+			 (unsigned long long)query.registry_overflow);
+	else
+		snprintf(line, sizeof(line),
+			 "queries state=active calls=%llu failures=%llu sites=%llu "
+			 "registry_overflow=%llu\n",
+			 (unsigned long long)query.total_calls,
+			 (unsigned long long)query.total_failures, (unsigned long long)query.count,
+			 (unsigned long long)query.registry_overflow);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "maintenance state=%s queued=%llu inflight=%llu completions=%llu "
+		 "queue_age_ticks=%llu run_age_ticks=%llu high_water=%llu stop_pending=%d\n",
+		 !maintenance.running			    ? "stopped" :
+		 maintenance.queued || maintenance.inflight ? "pending" :
+							      "ready",
+		 (unsigned long long)maintenance.queued, (unsigned long long)maintenance.inflight,
+		 (unsigned long long)maintenance.completions,
+		 (unsigned long long)maintenance.oldest_queue_age_ticks,
+		 (unsigned long long)maintenance.inflight_age_ticks,
+		 (unsigned long long)maintenance.high_water, maintenance.stop_pending);
+	send_to_char(line, ch);
+	for (size_t job_index = 0; job_index < MAINTENANCE_JOB_COUNT; ++job_index)
+	{
+		const auto &job = maintenance.jobs[job_index];
+		const uint64_t due_lag = job.enabled && ne_event_tick > job.next_due_tick ?
+						 ne_event_tick - job.next_due_tick :
+						 0;
+		snprintf(
+			line, sizeof(line),
+			"maintenance_job name=%s enabled=%d active=%d due_lag_ticks=%llu cursor=%llu "
+			"submitted=%llu completed=%llu retries=%llu suppressed=%llu "
+			"failures=%llu rows=%llu last_run_us=%llu\n",
+			maintenance_job_name(static_cast<maintenance_job_id>(job_index)),
+			job.enabled, job.active, (unsigned long long)due_lag,
+			(unsigned long long)job.cursor, (unsigned long long)job.submitted,
+			(unsigned long long)job.completed, (unsigned long long)job.retries,
+			(unsigned long long)job.overlap_suppressed,
+			(unsigned long long)job.failures, (unsigned long long)job.rows,
+			(unsigned long long)job.last_run_usec);
+		send_to_char(line, ch);
+	}
+
+	snprintf(line, sizeof(line),
+		 "player_load state=%s queued=%llu inflight=%llu completions=%llu "
+		 "oldest_age_ms=%llu high_water=%llu submitted=%llu applied=%llu "
+		 "cancelled=%llu stale=%llu failures=%llu/%llu limits=%llu timeouts=%llu "
+		 "last_query_rows=%u/%u last_bytes=%llu snapshot_age_sec=%llu last_txn_us=%llu "
+		 "completion_us=%llu/%llu\n",
+		 !player_loads.running			      ? "stopped" :
+		 player_loads.queued || player_loads.inflight ? "pending" :
+		 player_loads.retryable_failures || player_loads.component_failures ||
+				 player_loads.limit_exceeded || player_loads.timed_out ?
+								"degraded" :
+								"ready",
+		 (unsigned long long)player_loads.queued, (unsigned long long)player_loads.inflight,
+		 (unsigned long long)player_loads.completions,
+		 (unsigned long long)player_loads.oldest_age_msec,
+		 (unsigned long long)player_loads.high_water,
+		 (unsigned long long)player_loads.submitted,
+		 (unsigned long long)player_loads.applied,
+		 (unsigned long long)player_loads.cancelled, (unsigned long long)player_loads.stale,
+		 (unsigned long long)player_loads.retryable_failures,
+		 (unsigned long long)player_loads.component_failures,
+		 (unsigned long long)player_loads.limit_exceeded,
+		 (unsigned long long)player_loads.timed_out, player_loads.last_query_count,
+		 player_loads.last_row_count, (unsigned long long)player_loads.last_snapshot_bytes,
+		 (unsigned long long)player_loads.last_snapshot_age_sec,
+		 (unsigned long long)player_loads.last_transaction_usec,
+		 (unsigned long long)player_loads.last_completion_latency_usec,
+		 (unsigned long long)player_loads.max_completion_latency_usec);
+	send_to_char(line, ch);
+
+	const size_t rendered_sites = query.count < top_site_limit ? query.count : top_site_limit;
+	for (size_t site_index = 0; site_index < rendered_sites; ++site_index)
+	{
+		const struct persistence_query_metric *metric = &metrics[site_index];
+		snprintf(line, sizeof(line),
+			 "query_site rank=%llu site=%s context=%s kind=%s calls=%llu "
+			 "failures=%llu total_us=%llu max_us=%llu "
+			 "buckets=%llu/%llu/%llu/%llu/%llu/%llu/%llu/%llu\n",
+			 (unsigned long long)(site_index + 1), metric->site,
+			 persistence_query_context_name(metric->context),
+			 persistence_statement_kind_name(metric->kind),
+			 (unsigned long long)metric->calls, (unsigned long long)metric->failures,
+			 (unsigned long long)metric->total_usec,
+			 (unsigned long long)metric->max_usec,
+			 (unsigned long long)metric->latency_buckets[0],
+			 (unsigned long long)metric->latency_buckets[1],
+			 (unsigned long long)metric->latency_buckets[2],
+			 (unsigned long long)metric->latency_buckets[3],
+			 (unsigned long long)metric->latency_buckets[4],
+			 (unsigned long long)metric->latency_buckets[5],
+			 (unsigned long long)metric->latency_buckets[6],
+			 (unsigned long long)metric->latency_buckets[7]);
+		send_to_char(line, ch);
+	}
+
+	show_world_persistence_queue(ch, "item", &item_queue);
+	show_world_persistence_queue(ch, "scalar", &scalar_queue);
+	show_world_persistence_queue(ch, "large", &large_queue);
+
+	if (!dirty.enabled)
+		snprintf(line, sizeof(line),
+			 "dirty state=disabled active=%llu active_oldest_age_ms=%llu "
+			 "inflight=%llu inflight_oldest_age_ms=%llu\n",
+			 (unsigned long long)dirty.active_count,
+			 (unsigned long long)dirty.active_oldest_age_msec,
+			 (unsigned long long)dirty.inflight_count,
+			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	else if (!dirty.available)
+		snprintf(line, sizeof(line),
+			 "dirty state=unavailable active=%llu active_oldest_age_ms=%llu "
+			 "inflight=%llu inflight_oldest_age_ms=%llu\n",
+			 (unsigned long long)dirty.active_count,
+			 (unsigned long long)dirty.active_oldest_age_msec,
+			 (unsigned long long)dirty.inflight_count,
+			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	else if (dirty.active_count == 0 && dirty.inflight_count == 0)
+		snprintf(line, sizeof(line), "dirty state=empty active=0 inflight=0\n");
+	else
+		snprintf(line, sizeof(line),
+			 "dirty state=pending active=%llu active_oldest_age_ms=%llu "
+			 "inflight=%llu inflight_oldest_age_ms=%llu\n",
+			 (unsigned long long)dirty.active_count,
+			 (unsigned long long)dirty.active_oldest_age_msec,
+			 (unsigned long long)dirty.inflight_count,
+			 (unsigned long long)dirty.inflight_oldest_age_msec);
+	send_to_char(line, ch);
+
+	snprintf(
+		line, sizeof(line),
+		"critical_outbox state=%s pending=%llu dead_letter=%llu oldest_age_ms=%llu "
+		"incomplete_inbox=%llu committed_without_outbox=%llu fetched=%llu delivered=%llu "
+		"duplicates=%llu retries=%llu terminal=%llu db_failures=%llu high_water=%llu/%llu\n",
+		!critical_outbox.initialized ? "stopped" :
+		critical_outbox.dead_letter || critical_outbox.incomplete_inbox ||
+				critical_outbox.committed_without_outbox ?
+					       "degraded" :
+		critical_outbox.pending ? "pending" :
+					  "ready",
+		(unsigned long long)critical_outbox.pending,
+		(unsigned long long)critical_outbox.dead_letter,
+		(unsigned long long)critical_outbox.oldest_age_msec,
+		(unsigned long long)critical_outbox.incomplete_inbox,
+		(unsigned long long)critical_outbox.committed_without_outbox,
+		(unsigned long long)critical_outbox.fetched,
+		(unsigned long long)critical_outbox.delivered,
+		(unsigned long long)critical_outbox.duplicates,
+		(unsigned long long)critical_outbox.retries,
+		(unsigned long long)critical_outbox.terminal_failures,
+		(unsigned long long)critical_outbox.db_failures,
+		(unsigned long long)critical_outbox.high_water_records,
+		(unsigned long long)critical_outbox.high_water_bytes);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "epic_transactions state=%s pending=%llu retained_offline=%llu submitted=%llu "
+		 "committed=%llu rejected=%llu submit_failures=%llu malformed=%llu\n",
+		 epic_transactions.malformed_completions || epic_transactions.submission_failures ?
+			 "degraded" :
+		 epic_transactions.pending ? "pending" :
+					     "ready",
+		 (unsigned long long)epic_transactions.pending,
+		 (unsigned long long)epic_transactions.retained_offline,
+		 (unsigned long long)epic_transactions.submitted,
+		 (unsigned long long)epic_transactions.committed,
+		 (unsigned long long)epic_transactions.rejected,
+		 (unsigned long long)epic_transactions.submission_failures,
+		 (unsigned long long)epic_transactions.malformed_completions);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "critical_commands state=%s queued=%llu inflight=%llu blocked=%llu bytes=%llu "
+		 "fences=%llu completed_cache=%llu high_water=%llu/%llu accepted=%llu "
+		 "attached=%llu completed=%llu retries=%llu ambiguous=%llu terminal=%llu "
+		 "stale=%llu overloads=%llu oldest_age_ms=%llu journal=%s "
+		 "journal_records=%llu journal_bytes=%llu journal_corrupt=%llu journal_io=%llu "
+		 "journal_quota=%d\n",
+		 !critical.initialized		      ? "stopped" :
+		 critical.blocked		      ? "blocked" :
+		 critical.queued || critical.inflight ? "pending" :
+							"ready",
+		 (unsigned long long)critical.queued, (unsigned long long)critical.inflight,
+		 (unsigned long long)critical.blocked, (unsigned long long)critical.retained_bytes,
+		 (unsigned long long)critical.fenced_keys,
+		 (unsigned long long)critical.completed_cache,
+		 (unsigned long long)critical.high_water_operations,
+		 (unsigned long long)critical.high_water_bytes,
+		 (unsigned long long)critical.accepted, (unsigned long long)critical.attached,
+		 (unsigned long long)critical.completed, (unsigned long long)critical.retries,
+		 (unsigned long long)critical.ambiguous,
+		 (unsigned long long)critical.terminal_failures,
+		 (unsigned long long)critical.stale_completions,
+		 (unsigned long long)critical.overloads,
+		 (unsigned long long)critical.oldest_age_msec,
+		 critical_journal.initialized ?
+			 (critical_journal.quota_exceeded ? "full" : "ready") :
+			 (critical_journal.last_result == critical_command_journal_result::ok ?
+				  "stopped" :
+				  critical_command_journal_result_name(
+					  critical_journal.last_result)),
+		 (unsigned long long)critical_journal.records,
+		 (unsigned long long)critical_journal.bytes,
+		 (unsigned long long)critical_journal.corrupt_records,
+		 (unsigned long long)critical_journal.io_failures, critical_journal.quota_exceeded);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "world_recovery state=%s capture=%d worker=%d queue=%llu records=%llu bytes=%llu "
+		 "high_water_bytes=%llu requested=%llu coalesced=%llu capture_failures=%llu "
+		 "submitted=%llu published=%llu publish_failures=%llu stale=%llu "
+		 "sequence=%llu/%llu capture_age_ms=%llu worker_runtime_ms=%llu\n",
+		 !world_recovery.initialized	 ? "stopped" :
+		 world_recovery.capture_active	 ? "capturing" :
+		 world_recovery.worker_busy	 ? "publishing" :
+		 world_recovery.publish_failures ? "degraded" :
+						   "ready",
+		 world_recovery.capture_active ? 1 : 0, world_recovery.worker_running ? 1 : 0,
+		 (unsigned long long)world_recovery.queued_generations,
+		 (unsigned long long)world_recovery.captured_records,
+		 (unsigned long long)world_recovery.captured_bytes,
+		 (unsigned long long)world_recovery.high_water_bytes,
+		 (unsigned long long)world_recovery.requested,
+		 (unsigned long long)world_recovery.coalesced,
+		 (unsigned long long)world_recovery.capture_failures,
+		 (unsigned long long)world_recovery.submitted,
+		 (unsigned long long)world_recovery.published,
+		 (unsigned long long)world_recovery.publish_failures,
+		 (unsigned long long)world_recovery.stale_completions,
+		 (unsigned long long)world_recovery.last_submitted_sequence,
+		 (unsigned long long)world_recovery.last_acknowledged_sequence,
+		 (unsigned long long)world_recovery.capture_age_msec,
+		 (unsigned long long)world_recovery.worker_runtime_msec);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "player_pipeline state=%s pending_append=%llu durable_ready=%llu bytes=%llu "
+		 "high_water=%llu/%llu marked=%llu captured=%llu coalesced=%llu unchanged=%llu "
+		 "capture_failures=%llu append_failures=%llu overloads=%llu dispatched=%llu "
+		 "durable_spills=%llu completions=%llu accepting=%d append_inflight=%d "
+		 "terminal=%llu/%llu/%llu timeouts=%llu drain_failures=%llu replay=%s\n",
+		 !player_pipeline.initialized					 ? "stopped" :
+		 player_pipeline.replay_blocked					 ? "degraded" :
+		 player_pipeline.pending_append || player_pipeline.durable_ready ? "pending" :
+										   "ready",
+		 (unsigned long long)player_pipeline.pending_append,
+		 (unsigned long long)player_pipeline.durable_ready,
+		 (unsigned long long)player_pipeline.retained_bytes,
+		 (unsigned long long)player_pipeline.high_water_snapshots,
+		 (unsigned long long)player_pipeline.high_water_bytes,
+		 (unsigned long long)player_pipeline.marked,
+		 (unsigned long long)player_pipeline.captured,
+		 (unsigned long long)player_pipeline.coalesced,
+		 (unsigned long long)player_pipeline.unchanged,
+		 (unsigned long long)player_pipeline.capture_failures,
+		 (unsigned long long)player_pipeline.append_failures,
+		 (unsigned long long)player_pipeline.overloads,
+		 (unsigned long long)player_pipeline.dispatched,
+		 (unsigned long long)player_pipeline.durable_spills,
+		 (unsigned long long)player_pipeline.completions, player_pipeline.accepting ? 1 : 0,
+		 player_pipeline.append_inflight ? 1 : 0,
+		 (unsigned long long)player_pipeline.terminal_fences,
+		 (unsigned long long)player_pipeline.terminal_database_acks,
+		 (unsigned long long)player_pipeline.terminal_journal_handoffs,
+		 (unsigned long long)player_pipeline.terminal_timeouts,
+		 (unsigned long long)player_pipeline.drain_failures,
+		 player_pipeline.replay_complete ? "complete" :
+		 player_pipeline.replay_blocked	 ? "blocked" :
+						   "pending");
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "player_journal state=%s bytes=%llu records=%llu oldest_age_ms=%llu "
+		 "appended=%llu append_failures=%llu checkpoints=%llu checkpoint_failures=%llu "
+		 "replayed=%llu duplicates=%llu corrupt=%llu unsupported=%llu "
+		 "quarantined_bytes=%llu backpressure=%llu quota_exceeded=%d "
+		 "age_limit_exceeded=%d\n",
+		 !player_journal.initialized ? "stopped" :
+		 player_journal.records	     ? "pending" :
+					       "empty",
+		 (unsigned long long)player_journal.bytes,
+		 (unsigned long long)player_journal.records,
+		 (unsigned long long)player_journal.oldest_age_msec,
+		 (unsigned long long)player_journal.appended,
+		 (unsigned long long)player_journal.append_failures,
+		 (unsigned long long)player_journal.checkpoints,
+		 (unsigned long long)player_journal.checkpoint_failures,
+		 (unsigned long long)player_journal.replayed,
+		 (unsigned long long)player_journal.duplicates,
+		 (unsigned long long)player_journal.corrupt_records,
+		 (unsigned long long)player_journal.unsupported_records,
+		 (unsigned long long)player_journal.quarantined_bytes,
+		 (unsigned long long)player_journal.backpressure, player_journal.quota_exceeded,
+		 player_journal.age_limit_exceeded);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "player_save state=%s queued=%llu inflight=%llu bytes=%llu oldest_age_ms=%llu "
+		 "high_water_pids=%llu high_water_bytes=%llu submitted=%llu coalesced=%llu "
+		 "applied=%llu stale=%llu retryable=%llu terminal=%llu retries_exhausted=%llu "
+		 "age_limit_exceeded=%d workers=%u/%u stop_pending=%d "
+		 "max_capture_to_apply_us=%llu max_apply_us=%llu "
+		 "max_ack_us=%llu max_revision_gap=%llu\n",
+		 !player_saves.running					? "stopped" :
+		 player_saves.queued_pids || player_saves.inflight_pids ? "pending" :
+									  "empty",
+		 (unsigned long long)player_saves.queued_pids,
+		 (unsigned long long)player_saves.inflight_pids,
+		 (unsigned long long)player_saves.queued_bytes,
+		 (unsigned long long)player_saves.oldest_age_msec,
+		 (unsigned long long)player_saves.high_water_pids,
+		 (unsigned long long)player_saves.high_water_bytes,
+		 (unsigned long long)player_saves.submitted,
+		 (unsigned long long)player_saves.coalesced,
+		 (unsigned long long)player_saves.applied, (unsigned long long)player_saves.stale,
+		 (unsigned long long)player_saves.retryable_failures,
+		 (unsigned long long)player_saves.terminal_failures,
+		 (unsigned long long)player_saves.retries_exhausted,
+		 player_saves.age_limit_exceeded, player_saves.running_workers,
+		 player_saves.worker_threads, player_saves.stop_pending,
+		 (unsigned long long)player_saves.max_capture_to_apply_usec,
+		 (unsigned long long)player_saves.max_apply_usec,
+		 (unsigned long long)player_saves.max_ack_latency_usec,
+		 (unsigned long long)player_saves.max_revision_gap);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "deferred state=%s pending=%llu scheduled=%llu failed_unscheduled=%llu "
+		 "attempts=%llu failures=%llu oldest_age_ms=%llu\n",
+		 deferred.pending == 0 ? "empty" : "pending", (unsigned long long)deferred.pending,
+		 (unsigned long long)deferred.scheduled,
+		 (unsigned long long)deferred.failed_unscheduled,
+		 (unsigned long long)deferred.attempts, (unsigned long long)deferred.failures,
+		 (unsigned long long)deferred.oldest_age_msec);
+	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line), "oldest_save_age_ms=%llu\n",
+		 (unsigned long long)oldest_save_age_msec);
+	send_to_char(line, ch);
+}
 
 void do_world(P_char ch, char *argument, int /*cmd*/)
 {
@@ -4259,6 +4702,10 @@ void do_world(P_char ch, char *argument, int /*cmd*/)
 
 	case WORLD_VNUMS:
 		show_vnums(ch);
+		break;
+
+	case WORLD_PERSISTENCE:
+		show_world_persistence(ch);
 		break;
 
 	case WORLD_CARGO:
@@ -5341,11 +5788,6 @@ void do_score(P_char ch, char * /*argument*/, int /*cmd*/)
 
 	if (GET_LEVEL(ch) > 19)
 	{
-		if (IS_PC(ch) && ch->only.pc->epics < 0)
-		{
-			ch->only.pc->epics = 0;
-		}
-
 		if (IS_PC(ch))
 		{
 			struct affected_type *afp, *afp2;
@@ -7338,8 +7780,7 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 		if (d && d->z_str)
 		{
 			mccp_ratio = compress_get_ratio(d);
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 " C:%s%3d%%&n", mccp_ratio > 0 ? "&n" : "&+R", mccp_ratio);
+			APPENDF(line, " C:%s%3d%%&n", mccp_ratio > 0 ? "&n" : "&+R", mccp_ratio);
 			num_mccp++;
 		}
 		else
@@ -7348,21 +7789,19 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 		if (d && strlen(d->client_str) > 2)
 		{
 			one_argument(d->client_str, temp_buf);
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 " Client:&+C%s&n", temp_buf);
+			APPENDF(line, " Client:&+C%s&n", temp_buf);
 			num_client++;
 		}
 		else
 			strcat(line, " Client:  - ");
 
 		if (t_ch && t_ch->player.name)
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 "     %-15s", GET_NAME(t_ch));
+			APPENDF(line, "     %-15s", GET_NAME(t_ch));
 		else
 			strcat(line, "     &+mNONE&n           ");
 
 		sprinttype(d->connected, connected_types, buf2);
-		snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "  %11s", buf2);
+		APPENDF(line, "  %11s", buf2);
 
 		/*
 		 * Get IP Address
@@ -7384,13 +7823,12 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 					fclose(f);
 				}
 			}
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y", d->host2);
+			APPENDF(line, "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y",
+				d->host2);
 		}
 		else
 		{
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 " &+CUNKNOWN&n        ");
+			APPENDF(line, " &+CUNKNOWN&n        ");
 		}
 
 		strcat(line, "\n");
@@ -7453,9 +7891,9 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 			strcpy(line, "   ");
 
 		if (t_ch->player.name)
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "%-15s",
-				 (d && d->original) ? (d->original->player.name) :
-						      (t_ch->player.name));
+			APPENDF(line, "%-15s",
+				(d && d->original) ? (d->original->player.name) :
+						     (t_ch->player.name));
 		else
 			strcpy(line, "&+RUNDEFINED&n          ");
 
@@ -7464,18 +7902,15 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 		                               */
 
 		if (t_ch->in_room > NOWHERE)
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), " [%6d] ",
-				 world[t_ch->in_room].number);
+			APPENDF(line, " [%6d] ", world[t_ch->in_room].number);
 		else
 			strcat(line, "  ??????  ");
 
 		if (d && d->original && IS_PC(d->original) &&
 		    (d->original->only.pc->wiz_invis != 0))
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "%2d ",
-				 d->original->only.pc->wiz_invis);
+			APPENDF(line, "%2d ", d->original->only.pc->wiz_invis);
 		else if (IS_PC(t_ch) && (t_ch->only.pc->wiz_invis != 0))
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line), "%2d ",
-				 t_ch->only.pc->wiz_invis);
+			APPENDF(line, "%2d ", t_ch->only.pc->wiz_invis);
 		else
 			strcat(line, "   ");
 
@@ -7503,14 +7938,12 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 						fclose(f);
 					}
 				}
-				snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-					 "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y",
-					 d->host2);
+				APPENDF(line, "         %s%s&n", got_dupe_host(d) ? "&+R" : "&+Y",
+					d->host2);
 			}
 			else
 			{
-				snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-					 " &+CUNKNOWN&n        ");
+				APPENDF(line, " &+CUNKNOWN&n        ");
 			}
 		}
 		else
@@ -7523,14 +7956,12 @@ void do_users_DEPRECATED(P_char ch, char *argument, int /*cmd*/)
 		{
 			snoop_by_ptr = d->snoop.snoop_by_list;
 
-			snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-				 " &+g(S: %s", GET_NAME(snoop_by_ptr->snoop_by));
+			APPENDF(line, " &+g(S: %s", GET_NAME(snoop_by_ptr->snoop_by));
 
 			snoop_by_ptr = snoop_by_ptr->next;
 			while (snoop_by_ptr)
 			{
-				snprintf(line + strlen(line), MAX_STRING_LENGTH - strlen(line),
-					 ", %s", GET_NAME(snoop_by_ptr->snoop_by));
+				APPENDF(line, ", %s", GET_NAME(snoop_by_ptr->snoop_by));
 
 				snoop_by_ptr = snoop_by_ptr->next;
 			}
@@ -9330,6 +9761,24 @@ void do_recall(P_char ch, char *argument, int /*cmd*/)
 		}
 }
 
+namespace
+{
+void unmulti_committed(P_char ch, bool committed, const epic_command_result &, unsigned int,
+		       const uint8_t *, size_t)
+{
+	if (!committed)
+	{
+		send_to_char("Your meditation fails to consume the required epic points.\n", ch);
+		return;
+	}
+	ch->player.secondary_class = 0;
+	ch->player.spec = 0;
+	forget_spells(ch, -1);
+	update_skills(ch);
+	send_to_char("Your recent knowledge falls away and your old ways return.\n", ch);
+}
+} // namespace
+
 void unmulti(P_char ch, P_obj obj)
 {
 	if (!IS_MULTICLASS_PC(ch))
@@ -9351,12 +9800,11 @@ void unmulti(P_char ch, P_obj obj)
 	    "After a few moments, $e stands up quietly.\n",
 	    FALSE, ch, obj, 0, TO_ROOM);
 
-	ch->player.secondary_class = 0;
-	ch->player.spec = 0;
-	forget_spells(ch, -1);
-	update_skills(ch);
-	// epic_gain_skillpoints(ch, -1);
-	ch->only.pc->epics -= 100;
+	if (!epic_transaction_submit(ch, -100, epic_reason_type::ascend_descend, 0,
+				     EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::command,
+				     critical_deadline_class::interactive, unmulti_committed,
+				     nullptr, 0))
+		send_to_char("The epic transaction service is busy. Please try again.\n", ch);
 }
 
 // Making ships visible 24-7 to dayblind/nightblind.

@@ -437,29 +437,22 @@ void npc_steal(P_char ch, P_char vict)
 	else
 	{
 		/* Steal some coins */
+		int stolen_value = 0;
 		gold = (int)((GET_PLATINUM(vict) * number(1, 10)) / 100);
 		if (gold > 0)
-		{
-			GET_PLATINUM(ch) += gold;
-			GET_PLATINUM(vict) -= gold;
-		}
+			stolen_value += gold * 1000;
 		gold = (int)((GET_GOLD(vict) * number(1, 10)) / 100);
 		if (gold > 0)
-		{
-			GET_GOLD(ch) += gold;
-			GET_GOLD(vict) -= gold;
-		}
+			stolen_value += gold * 100;
 		gold = (int)((GET_SILVER(vict) * number(1, 10)) / 100);
 		if (gold > 0)
-		{
-			GET_SILVER(ch) += gold;
-			GET_SILVER(vict) -= gold;
-		}
+			stolen_value += gold * 10;
 		gold = (int)((GET_COPPER(vict) * number(1, 10)) / 100);
 		if (gold > 0)
+			stolen_value += gold;
+		if (stolen_value > 0 && SUB_MONEY(vict, stolen_value, 0) == 0)
 		{
-			GET_COPPER(ch) += gold;
-			GET_COPPER(vict) -= gold;
+			ADD_MONEY(ch, stolen_value);
 		}
 	}
 }

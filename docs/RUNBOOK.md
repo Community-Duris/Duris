@@ -9,14 +9,16 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
 ./scripts/start_mud.sh     # preferred: systemd user service if installed,
                            # otherwise nohup cycle_mud.sh -> logs/duris-console.log
 ./scripts/cycle_mud.sh     # foreground supervised run (what start_mud wraps)
-./scripts/cycle_mud.sh --dev   # development: port 4000, duris_dev database
+./scripts/cycle_mud.sh --dev   # development listener/build role on port 4000
 ```
 
 `cycle_mud.sh`:
 
 - Anchors itself to the repository root; loads `.env` if present.
-- Raises core dump limits (`ulimit -c unlimited`) and extracts DB credentials
-  from `src/sql.h` as fallback defaults.
+- Requires `ENVIRONMENT`, `DB_HOST`, `DB_USER`, `DB_PASSWD`, `DB_NAME`, and
+  `DB_ALLOWED_TARGETS` from the environment or a securely permissioned `.env`.
+  It has no source-code credential fallback.
+- Raises core dump limits (`ulimit -c unlimited`).
 - Rebuilds area tools and regenerates `areas/world.*` when the `make_*`
   helpers are missing.
 - Regenerates `lib/misc/event_names` (demangled symbol list used by crash
@@ -72,6 +74,46 @@ Do not use the `pwipe` shutdown path for ordinary restarts: exit code `55`
 causes `cycle_mud.sh` to run the filesystem player wipe artifact after the
 server exits.
 
+## Pre-service safety gate
+
+Before a development start, confirm the intended role and target without printing
+credentials:
+
+```bash
+# Inspect names only. Do not print or copy secret values.
+sed -n 's/^\(ENVIRONMENT\|DB_HOST\|DB_PORT\|DB_NAME\|DB_ALLOWED_TARGETS\)=.*/\1=<set>/p' .env
+
+# Source-only contract checks; these do not connect to a configured database.
+python3 tests/async/test_runtime_connection_trust.py
+python3 tests/async/test_runtime_boot_compatibility.py
+```
+
+`DB_NAME` selects the database. `DB_ALLOWED_TARGETS` must explicitly allow that
+name. The listener port is only a secondary safety guard: a non-production port
+redirects a production-like name to the configured development target, but it is not
+the primary database selector. A production role also requires the configured TLS CA
+and a non-loopback database transport; a local/development/test role requires a
+loopback target. The runtime applies a 10-second connection deadline before listeners
+or persistence workers start and fails closed on identity, session-mode, schema, or
+migration incompatibility.
+
+Do not start the game if the target name, role, host, allow-list, TLS posture, or
+backup status is uncertain. Qualify the exact target first; never probe a migration
+script against a configured database to discover its command-line behavior.
+
+### HTTP health probe
+
+After startup, verify process and database-pool readiness without logging in:
+
+```bash
+scripts/healthcheck.sh
+```
+
+The probe targets `http://127.0.0.1:4050/health` by default. For an isolated local
+instance, set `DURIS_WEBSOCKET_PORT` on the server and the matching
+`DURIS_HEALTH_URL` for the probe. A healthy response is HTTP 200 with only
+`status=healthy` and `database=ready`; the handler performs no database round trip.
+
 ## Logs
 
 All under `logs/`; rotated per-run into `logs/old-logs/<timestamp>/`.
@@ -91,17 +133,91 @@ tail -f logs/log/status                 # boot + DB issues
 grep -i 'NEVENT BUDGET' logs/log/syslog # event-callback latency telemetry
 ```
 
+### Persistence health
+
+A trusted character can run `world persistence` for a fresh, read-only view of
+database and save health. Repeating the command takes new snapshots; it does not
+cache output or mutate queue, Redis, deferred-save, or query state.
+
+The report includes up to eight deterministically ranked query source sites,
+total calls and failures, registry overflow, item/scalar/large queue counters,
+player capture/journal/worker depths and ages, exact revision progress, world capture
+and publication health, critical-command queue/journal/fence health, and the oldest
+aggregate save age. Output is metadata-only and
+must not be copied into a workflow that expects SQL, player, account, item, IP, or path
+values.
+
+Interpret explicit states as follows:
+
+- `state=empty` means the observed subsystem currently has no pending work or
+  has recorded no query calls.
+- `state=disabled` means Redis integration is configured off.
+- `state=unavailable` means the subsystem is enabled but its local health state
+  cannot currently confirm availability. `heartbeat=unavailable` means that
+  queue worker has never published a heartbeat.
+- Failed deferred work normally remains in `scheduled` while its bounded retry is
+  pending. `failed_unscheduled` should remain zero; a non-zero value means scheduling
+  invariants were violated and requires investigation.
+- `registry_overflow` greater than zero means additional source sites were not
+  retained; recorded totals remain bounded and should not be treated as a full
+  site inventory.
+
+The displayed query operation IDs and any `SQL_TRACE` operation IDs are scoped
+to the current process. They are correlation aids, not durable transaction or
+idempotency identifiers.
+
+For `critical_commands`, `blocked>0`, a growing oldest age, journal corruption or I/O
+failure, or journal quota exhaustion must stop the affected gameplay and any process
+transition. Restore the storage or destination and preserve the journal for replay.
+Never delete or edit the journal to clear a fence. See
+[CRITICAL_COMMAND_PIPELINE.md](CRITICAL_COMMAND_PIPELINE.md).
+
+For `critical_outbox`, pending age may briefly rise during destination recovery.
+`dead_letter>0`, `incomplete_inbox>0`, or `committed_without_outbox>0` is an integrity
+incident. Preserve the journal and database rows, stop affected domain cutovers, and run
+the typed reconciliation report. After correcting the destination, retry only the
+specific numeric dead-letter ID through the guarded repair API; never edit payloads or
+execute SQL copied from a command.
+
+### Retained terminal-save failures
+
+`deferred_save_retry_scheduled` means the live character remains the recovery source;
+the alert includes only delay and aggregate counters. Let the bounded retry run and
+watch `world persistence` for pending age and failure growth.
+
+`terminal_save_failed` or `terminal_not_durable` with `extract_refused=1` means camp,
+rent, death cleanup, ghost extraction, an offline artifact transition, or a locker
+transition deliberately kept its live object graph. Do not manually extract that
+character or locker. Restore database availability, retry the originating action or a
+trusted save, and verify the pending count clears.
+
+`terminal_not_durable` with `leave_vetoed=1` means locker snapshot preparation did
+not complete. The occupant and dynamic locker room remain live; do not purge either.
+Restore database availability and have the occupant retry departure.
+
+A copyover or shutdown alert with `shutdown_cancelled=1` means the process deliberately
+returned to the live game loop. No fallback restart should be forced. Correct the
+database failure, confirm every pending age is falling or stable, then request the
+copyover/shutdown again. A `fallback_saved` player-pfile alert is recovery evidence
+only; it does not mean MySQL committed and is not automatically replayed.
+
 ## Crash recovery
 
 Two automatic paths run at next boot after an unclean exit:
 
-1. **Redis world-state recovery** — if a snapshot exists, world state
-   (including combat) is restored, then the snapshot is cleared.
-2. **Copyover recovery** — only with `-C` boot flag / copyover flow.
+1. **Redis world-state recovery** -- the current immutable generation is accepted only
+   if schema, completeness, sequence, checksum, size, and age validate. Floor deltas are
+   reconciled with the matching generation, then recovery keys are cleared.
+2. **Copyover recovery** -- only with `-C` boot flag / copyover flow.
 
 If Redis recovery fails, the server continues with a normal boot state. Check
 `logs/log/status` for `Performing redis crash recovery...` lines after any
 crash, and verify player integrity before reopening.
+
+For queue or dependency incidents, use `world persistence` and the detailed `redis`
+status command. Do not clear a player save queue: player state is owned by the local
+revision coordinator and journal, not a Redis dirty set. A world generation publish
+failure preserves the prior current generation and retains floor deltas for retry.
 
 ### Known-benign log lines
 
@@ -110,7 +226,7 @@ These are investigated and understood; they are not signs of a failed boot.
 | Line | Meaning |
 |---|---|
 | `Heaven has invalid number: 1 (should be 0)` | `recalc_zone_numbers()` finding and correcting a zone number that disagrees with its lowest room vnum. Self-healing; fixing the data would be zone-numbering surgery with a wide blast radius. |
-| `PERSISTENCE: worker_unavailable_flat_fallback` (a few lines at boot) | Item events fired during world load are written to the flat fallback and replayed before the workers start — followed by `replayed N fallback persistence events; 0 remain queued`. Working as designed. |
+| `PERSISTENCE: worker_unavailable_flat_fallback` (a few lines at boot) | Item events fired during world load are written to the flat fallback and replayed before the workers start -- followed by `replayed N fallback persistence events; 0 remain queued`. Working as designed. |
 | Mob log `RIDICULOUS damage` / `M cmd not executed` | Area data, not engine defects. |
 
 ## Backups and maintenance scripts
@@ -125,7 +241,132 @@ These are investigated and understood; they are not signs of a failed boot.
 | `bin/migrations/*` | Offline pfile/schema conversion binaries built from `src-migrate/`. |
 
 Schema operations follow the safety rules in [DATABASE.md](DATABASE.md):
-back up, clone, validate replay on the clone — never against live data.
+back up, clone, validate replay on the clone -- never against live data.
+
+### Migration procedure
+
+All migration qualification is offline work on a disposable database or a restored,
+backed-up development clone. Stop every writer before cloning. Record the source
+backup identity, restore it under an explicitly non-production name on a loopback
+host, and set `ENVIRONMENT`, `DB_HOST`, `DB_NAME`, and `DB_ALLOWED_TARGETS` so the
+clone is the only permitted target. Keep the original backup untouched.
+
+The legacy runner is mutation-capable and has no dry-run mode. `--help` is safe, and an
+unknown argument is rejected before configuration is loaded. A normal no-argument run
+begins work immediately. After its database gates it calls `redis-cli FLUSHDB` against
+the `REDIS_HOST` and `REDIS_PORT` loaded from `.env`. Run it only with the game stopped
+and those variables pointing to its dedicated local Redis; a qualified database does
+not make a shared Redis safe.
+
+On the qualified clone only, use this order:
+
+```bash
+# 1. Legacy additive upgrade and exact verified adoption. No arguments; mutates immediately.
+./migrations/run_migration.sh
+
+# 2. Inspect the checked-in manifest identity without opening the database.
+python3 scripts/migration_runner.py inspect
+
+# 3. Apply the immutable post-baseline prefix and verify boot compatibility.
+python3 scripts/migration_runner.py run
+./migrations/verify_runtime_compatibility.sh
+```
+
+For a fresh disposable bootstrap, import `migrations/bootstrap_multithread_safe.sql`
+and use `adopt --kind fresh_bootstrap` instead. The immutable runner rejects
+production roles, non-loopback hosts, production-like names, unapproved targets,
+manifest drift, incomplete baselines, or broken history. The compatibility verifier
+is read-only but database-connected and must receive the same qualified clone target.
+Never use production for migration qualification, compatibility probing, or replay.
+
+If any step fails, keep writers stopped and preserve the database, command output,
+manifest, and backup. Do not edit ledger rows, skip a verifier, rerun a partial legacy
+bundle blindly, or guess a reverse DDL. MySQL DDL may already have committed. Recovery
+is to investigate on another clone or discard the failed clone and restore the known
+backup, then repeat the entire qualification. See
+[IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md) and
+[RUNTIME_COMPATIBILITY.md](RUNTIME_COMPATIBILITY.md).
+
+### Domain reconciliation
+
+The reconciliation scripts below are read-only reports, but they connect to the
+selected database. Run them only after repeating the exact clone target qualification
+above; never use production as a development or validation target.
+
+```bash
+./migrations/reconcile_epic_balances.sh
+./migrations/reconcile_currency_balances.sh
+./migrations/reconcile_item_ownership.sh
+./migrations/reconcile_auction_transactions.sh
+./migrations/reconcile_combat_frags.sh
+./migrations/reconcile_artifact_guild_outcomes.sh
+./migrations/reconcile_boon_reward_zone.sh
+./migrations/reconcile_phase02_domains.sh
+```
+
+A nonzero mismatch is an integrity incident, not permission to edit current rows.
+Stop the affected domain, preserve its journal, inbox, outbox, ledger, and report,
+then trace the stable operation identity. Use only the domain's guarded retry or
+repair interface after the cause is known.
+
+### Maintenance, lifecycle, export, and erasure
+
+The maintenance scheduler is bounded and persistent. Use `world persistence` to
+inspect slot state, lag, errors, and deferred work. A disabled lifecycle slot is the
+expected checked-in state, not a fault. Do not enable it by editing state files.
+
+These commands are local inspection or source-contract checks and do not connect to
+the configured database:
+
+```bash
+python3 scripts/lifecycle_archive.py inspect
+python3 scripts/lifecycle_archive.py plan \
+  --store database:accounts --action archive \
+  --cutoff 2025-01-01T00:00:00Z --upper-bound 999
+python3 scripts/personal_data_export.py inspect
+python3 scripts/account_erasure.py inspect
+python3 scripts/validate_data_lifecycle.py --json
+python3 tests/async/test_data_lifecycle_manifest.py
+```
+
+Under the checked-in policy, archive planning reports blocked, export and erasure
+inspection report `blocked_by_policy`, and canonical mutation remains disabled. These
+are engineering controls, not controller approval. They are not a claim of legal
+compliance. Do not invent policy references, selectors, retention periods,
+shared-record decisions, or destructive adapters. Follow
+[DATA_LIFECYCLE.md](DATA_LIFECYCLE.md),
+[LIFECYCLE_ARCHIVE.md](LIFECYCLE_ARCHIVE.md),
+[PERSONAL_DATA_EXPORT.md](PERSONAL_DATA_EXPORT.md), and
+[ACCOUNT_ERASURE.md](ACCOUNT_ERASURE.md).
+
+### Restore and tombstone preflight
+
+Never reopen a restored environment immediately. Keep listeners, login, replay,
+imports, cache publication, and export release disabled while qualifying the restore.
+Restore the backup into an isolated non-production target, load the newer erasure
+tombstone ledger separately, verify its policy and generation identity, then scan
+database rows, pfiles, conversion backups, journals, cache rebuild inputs, and export
+spools by stable account-scope hash. Unscoped identities fail closed.
+
+Only a future approved adapter may strip a tombstoned scope, and it must do so before
+any restored service is published. Verify that every completed tombstone remains
+uncredentialed and unloadable and that all domain reconciliation reports pass. If a
+tombstone set is missing, stale, unverifiable, or cannot cover a source class, abandon
+that restore candidate; do not reopen it and do not alter historical backups in place.
+
+### Epic ledger cutover and reconciliation
+
+Before enabling transactional epic producers on a guarded development clone, apply
+`migrations/epic_ledger_balance.sql`, run `migrations/verify_epic_ledger_schema.sh`,
+then capture opening balances once with `migrations/baseline_epic_balances.sh --apply`.
+The baseline command refuses when any ledger row or advanced epic revision exists and
+preserves existing baseline rows.
+
+`migrations/reconcile_epic_balances.sh` is read-only. A healthy result reports zero
+missing baselines, balance mismatches, and latest-result mismatches. Stop affected epic
+gameplay if any count is nonzero, preserve the inbox/outbox/ledger rows, and investigate
+the operation history. Do not edit the ledger, invent historical operation IDs, or
+rerun the baseline against an active ledger.
 
 `backup_pfiles.sh` chooses its database-dump branch only when `REDIS` is the
 exact lowercase value `true` or the value `1`; the server itself accepts
@@ -133,6 +374,26 @@ case-insensitive `TRUE`. If the automatic backup must use `mysqldump`, set
 `REDIS=true` in the environment used by the script and verify the resulting
 `db/Backup/` file. Otherwise it falls back to the legacy `Players/Backup/`
 layout.
+
+## Phase 03 final readiness gate
+
+The integrated 200-player gate requires a separately configured, backed-up,
+production-unreachable representative clone, approved RPO/lifecycle policy identities,
+200 sanitized test identities, isolated non-default ports, and reversible deployment
+adapters. It never reads `.env` implicitly.
+
+Run preflight before any workload:
+
+```bash
+python3 scripts/session14_gate.py \
+  --config tmp/session14-gate/config.json \
+  --preflight-only
+```
+
+Follow [`PHASE03_READINESS.md`](PHASE03_READINESS.md) only after preflight is
+`QUALIFIED`. Treat `QUALIFIED` as permission to begin the isolated gate, not as a
+readiness result. Every injected fault must be torn down and the target restored before
+retry. A repair invalidates affected evidence and requires affected plus complete reruns.
 
 ## Runtime tuning
 
@@ -147,8 +408,8 @@ editing.
 
 One property is a live balance switch worth knowing about:
 `artifact.wars.modifier` scales the race-war penalty applied by
-`event_artifact_wars` — each of a violating player's artifacts loses
-`modifier × punish_level` of its remaining life, clamped to the whole of it.
+`event_artifact_wars` -- each of a violating player's artifacts loses
+`modifier x punish_level` of its remaining life, clamped to the whole of it.
 The code default is `0.0` (forced drop only), but `lib/duris.properties` ships
 `artifact.wars.modifier=0.500`, so a server using that file halves the
 offender's artifact timers on a first-level violation. Set it to `0` to disable
@@ -156,8 +417,13 @@ the timer penalty.
 
 ## Development vs production checklist
 
-- Development: non-7777 port (e.g. 4000 via `--dev`), `duris_dev` database,
-  `TEST_MUD` build.
-- Production: port 7777, real TLS certificate linked as `duris.crt`/
-  `duris.key`, hardened DB credentials in `src/sql.h` (requires rebuild),
-  regular backups of MySQL + `Players/` + `Accounts/`.
+- Development: local/development/test `ENVIRONMENT`, loopback database host,
+  explicit non-production `DB_NAME` in `DB_ALLOWED_TARGETS`, non-7777 listener
+  (for example port 4000 via `--dev`), and a `TEST_MUD` build. The port does not
+  select the database.
+- Production: production `ENVIRONMENT`, non-loopback database transport with an
+  absolute trusted `DB_SSL_CA`, explicit allow-listed database name, real listener
+  TLS certificate linked as `duris.crt`/`duris.key`, secrets supplied through the
+  protected environment or secret store, mode-0700 journal/state directories, and
+  regularly restored and verified backups of MySQL, legacy player/account material,
+  journals, and erasure tombstones. Credentials never belong in source files.

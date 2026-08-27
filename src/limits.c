@@ -1403,7 +1403,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			      GET_EXP(ch) < (2 * new_exp_table[GET_LEVEL(ch) + 1]))))
 	{
 		GET_EXP(ch) += (int)XP_final;
-		mark_player_dirty(GET_PID(ch));
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 	}
 	display_gain(ch, (int)XP_final, type);
 	if (GET_LEVEL(ch) >= MINLVLIMMORTAL)
@@ -1671,8 +1671,13 @@ void point_update(void)
 				if (i->desc)
 					close_socket(i->desc);
 				// writeCharacter(i, 5, reloghere);
-				persistence_flush_character_saves(i);
-				writeCharacter(i, RENT_LINKDEAD, i->in_room);
+				if (!persistence_save_character_terminal(i, RENT_LINKDEAD))
+				{
+					persistence_alert(AVATAR, "player_save", "idle_rent",
+							  "none", "none", "terminal_save_failed",
+							  "extract_refused=1");
+					continue;
+				}
 				// If it's not an immortal.
 				if (GET_LEVEL(i) < MINLVLIMMORTAL)
 				{

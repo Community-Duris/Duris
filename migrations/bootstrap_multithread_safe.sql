@@ -12,6 +12,7 @@ CREATE TABLE `account_banks` (
   `bank_silver` bigint unsigned DEFAULT '0',
   `bank_gold` bigint unsigned DEFAULT '0',
   `bank_platinum` bigint unsigned DEFAULT '0',
+  `bank_revision` bigint unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -253,6 +254,7 @@ CREATE TABLE `auction_item_pickups` (
 CREATE TABLE `auction_money_pickups` (
   `pid` int unsigned NOT NULL DEFAULT '0',
   `money` int unsigned NOT NULL DEFAULT '0',
+	`claim_revision` bigint unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`pid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `auctions` (
@@ -272,9 +274,13 @@ CREATE TABLE `auctions` (
   `quantity` int NOT NULL DEFAULT '1',
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL,
+	`auction_revision` bigint unsigned NOT NULL DEFAULT '0',
+	`custody_state` tinyint unsigned NOT NULL DEFAULT '0',
+	`listing_operation_id` binary(16) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `seller_pid` (`seller_pid`),
-  KEY `status` (`status`)
+	KEY `status` (`status`),
+	UNIQUE KEY `uq_auction_listing_operation` (`listing_operation_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE `boons` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -546,6 +552,7 @@ CREATE TABLE `guilds` (
   `bits` int unsigned NOT NULL DEFAULT '0',
   `prestige` bigint unsigned NOT NULL DEFAULT '0',
   `construction` bigint unsigned NOT NULL DEFAULT '0',
+  `outcome_revision` bigint unsigned NOT NULL DEFAULT '0',
   `platinum` int unsigned NOT NULL DEFAULT '0',
   `gold` int unsigned NOT NULL DEFAULT '0',
   `silver` int unsigned NOT NULL DEFAULT '0',
@@ -912,6 +919,7 @@ CREATE TABLE `player_data` (
   `birth_time` timestamp NULL DEFAULT NULL,
   `played_time` int DEFAULT '0',
   `last_save` timestamp NULL DEFAULT NULL,
+  `save_revision` bigint unsigned NOT NULL DEFAULT '0',
   `perm_aging` smallint DEFAULT '0',
   `base_str` tinyint DEFAULT '0',
   `base_dex` tinyint DEFAULT '0',
@@ -934,12 +942,14 @@ CREATE TABLE `player_data` (
   `silver` bigint DEFAULT '0',
   `gold` bigint DEFAULT '0',
   `platinum` bigint DEFAULT '0',
+  `wallet_revision` bigint unsigned NOT NULL DEFAULT '0',
   `bank_copper` bigint DEFAULT '0',
   `bank_silver` bigint DEFAULT '0',
   `bank_gold` bigint DEFAULT '0',
   `bank_platinum` bigint DEFAULT '0',
   `exp` bigint DEFAULT '0',
   `epics` bigint DEFAULT '0',
+  `epic_revision` bigint unsigned NOT NULL DEFAULT '0',
   `epic_skill_points` bigint DEFAULT '0',
   `skillpoints` int DEFAULT '0',
   `spell_bind_used` bigint DEFAULT '0',
@@ -956,6 +966,7 @@ CREATE TABLE `player_data` (
   `time_unspecced` timestamp NULL DEFAULT NULL,
   `frags` bigint DEFAULT '0',
   `oldfrags` bigint DEFAULT '0',
+  `frag_revision` bigint unsigned NOT NULL DEFAULT '0',
   `numb_deaths` bigint unsigned DEFAULT '0',
   `killed_by` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `condition_0` tinyint DEFAULT '0',
@@ -1735,5 +1746,590 @@ CREATE TABLE `mud_schema_migrations` (
   PRIMARY KEY (`migration_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `critical_operation_inbox` (
+  `operation_id` binary(16) NOT NULL,
+  `command_hash` binary(32) NOT NULL,
+  `keys_hash` binary(32) NOT NULL,
+  `command_type` smallint unsigned NOT NULL,
+  `schema_version` int unsigned NOT NULL,
+  `payload_version` smallint unsigned NOT NULL,
+  `status` tinyint unsigned NOT NULL,
+  `result_code` int unsigned NOT NULL DEFAULT '0',
+  `durable_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `result_payload` varbinary(4096) NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `committed_at` timestamp(6) NULL DEFAULT NULL,
+  PRIMARY KEY (`operation_id`),
+  KEY `idx_critical_inbox_status_created` (`status`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `critical_test_state` (
+  `entity_type` tinyint unsigned NOT NULL,
+  `entity_id` bigint unsigned NOT NULL,
+  `value` bigint NOT NULL DEFAULT '0',
+  `revision` bigint unsigned NOT NULL DEFAULT '0',
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`entity_type`,`entity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `critical_outbox` (
+  `outbox_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `operation_id` binary(16) NOT NULL,
+  `event_index` smallint unsigned NOT NULL,
+  `destination` smallint unsigned NOT NULL,
+  `event_type` smallint unsigned NOT NULL,
+  `payload_version` smallint unsigned NOT NULL,
+  `payload` blob NOT NULL,
+  `status` tinyint unsigned NOT NULL DEFAULT '0',
+  `attempt_count` smallint unsigned NOT NULL DEFAULT '0',
+  `next_attempt_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `delivered_at` timestamp(6) NULL DEFAULT NULL,
+  `dead_lettered_at` timestamp(6) NULL DEFAULT NULL,
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`outbox_id`),
+  UNIQUE KEY `uq_critical_outbox_operation_event` (`operation_id`,`event_index`),
+  KEY `idx_critical_outbox_claim` (`status`,`next_attempt_at`,`outbox_id`),
+  KEY `idx_critical_outbox_age` (`status`,`created_at`),
+  CONSTRAINT `critical_outbox_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `critical_outbox_delivery_dedupe` (
+  `consumer_id` smallint unsigned NOT NULL,
+  `outbox_id` bigint unsigned NOT NULL,
+  `delivered_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`consumer_id`,`outbox_id`),
+  CONSTRAINT `critical_outbox_delivery_fk` FOREIGN KEY (`outbox_id`) REFERENCES `critical_outbox` (`outbox_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `epic_balance_baseline` (
+  `pid` int unsigned NOT NULL,
+  `opening_balance` bigint NOT NULL,
+  `opening_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `epic_ledger` (
+  `operation_id` binary(16) NOT NULL,
+  `pid` int unsigned NOT NULL,
+  `delta` bigint NOT NULL,
+  `balance_after` bigint NOT NULL,
+  `epic_revision` bigint unsigned NOT NULL,
+  `reason_type` smallint unsigned NOT NULL,
+  `reason_id` bigint NOT NULL DEFAULT '0',
+  `source_site` smallint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_epic_ledger_pid_revision` (`pid`,`epic_revision`),
+  KEY `idx_epic_ledger_pid_created` (`pid`,`created_at`),
+  KEY `idx_epic_ledger_reason_created` (`reason_type`,`created_at`),
+  CONSTRAINT `epic_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `currency_wallet_baseline` (
+  `pid` int unsigned NOT NULL,
+  `opening_copper` bigint NOT NULL,
+  `opening_silver` bigint NOT NULL,
+  `opening_gold` bigint NOT NULL,
+  `opening_platinum` bigint NOT NULL,
+  `opening_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `currency_bank_baseline` (
+  `bank_id` int unsigned NOT NULL,
+  `opening_copper` bigint unsigned NOT NULL,
+  `opening_silver` bigint unsigned NOT NULL,
+  `opening_gold` bigint unsigned NOT NULL,
+  `opening_platinum` bigint unsigned NOT NULL,
+  `opening_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`bank_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `currency_ledger` (
+  `operation_id` binary(16) NOT NULL,
+  `pid` int unsigned NOT NULL,
+  `bank_id` int unsigned NOT NULL,
+  `wallet_delta_copper` bigint NOT NULL,
+  `wallet_delta_silver` bigint NOT NULL,
+  `wallet_delta_gold` bigint NOT NULL,
+  `wallet_delta_platinum` bigint NOT NULL,
+  `bank_delta_copper` bigint NOT NULL,
+  `bank_delta_silver` bigint NOT NULL,
+  `bank_delta_gold` bigint NOT NULL,
+  `bank_delta_platinum` bigint NOT NULL,
+  `wallet_after_copper` bigint NOT NULL,
+  `wallet_after_silver` bigint NOT NULL,
+  `wallet_after_gold` bigint NOT NULL,
+  `wallet_after_platinum` bigint NOT NULL,
+  `bank_after_copper` bigint unsigned NOT NULL,
+  `bank_after_silver` bigint unsigned NOT NULL,
+  `bank_after_gold` bigint unsigned NOT NULL,
+  `bank_after_platinum` bigint unsigned NOT NULL,
+  `wallet_revision` bigint unsigned NOT NULL,
+  `bank_revision` bigint unsigned NOT NULL,
+  `reason_type` smallint unsigned NOT NULL,
+  `reason_id` bigint NOT NULL DEFAULT '0',
+  `source_site` smallint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_currency_wallet_revision` (`pid`,`wallet_revision`),
+  UNIQUE KEY `uq_currency_bank_revision` (`bank_id`,`bank_revision`),
+  KEY `idx_currency_pid_created` (`pid`,`created_at`),
+  KEY `idx_currency_bank_created` (`bank_id`,`created_at`),
+  KEY `idx_currency_reason_created` (`reason_type`,`created_at`),
+  CONSTRAINT `currency_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE `item_uid_allocator` (
+  `allocator_id` tinyint unsigned NOT NULL,
+  `next_uid` bigint unsigned NOT NULL,
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`allocator_id`),
+  CONSTRAINT `chk_item_uid_allocator_singleton` CHECK ((`allocator_id` = 1)),
+  CONSTRAINT `chk_item_uid_allocator_nonzero` CHECK ((`next_uid` > 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `item_uid_allocator` (`allocator_id`,`next_uid`) VALUES (1,1);
+CREATE TABLE `item_owner_revision` (
+  `owner_type` tinyint unsigned NOT NULL, `owner_id` bigint unsigned NOT NULL,
+  `owner_context_id` bigint unsigned NOT NULL DEFAULT '0', `revision` bigint unsigned NOT NULL DEFAULT '0',
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`owner_type`,`owner_id`,`owner_context_id`), KEY `idx_item_owner_revision_updated` (`updated_at`),
+  CONSTRAINT `chk_item_owner_revision_type` CHECK ((`owner_type` between 1 and 8))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `item_current_owner` (
+  `item_uid` bigint unsigned NOT NULL, `root_item_uid` bigint unsigned NOT NULL,
+  `parent_item_uid` bigint unsigned DEFAULT NULL, `owner_type` tinyint unsigned NOT NULL,
+  `owner_id` bigint unsigned NOT NULL, `owner_context_id` bigint unsigned NOT NULL DEFAULT '0',
+  `item_revision` bigint unsigned NOT NULL DEFAULT '0', `vnum` int NOT NULL DEFAULT '0',
+  `state` tinyint unsigned NOT NULL DEFAULT '1',
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`item_uid`), KEY `idx_item_current_root_uid` (`root_item_uid`,`item_uid`),
+  KEY `idx_item_current_owner` (`owner_type`,`owner_id`,`owner_context_id`,`item_uid`),
+  KEY `idx_item_current_parent` (`parent_item_uid`),
+  CONSTRAINT `chk_item_current_uid_nonzero` CHECK (((`item_uid` > 0) and (`root_item_uid` > 0))),
+  CONSTRAINT `chk_item_current_owner_type` CHECK ((`owner_type` between 1 and 8)),
+  CONSTRAINT `chk_item_current_state` CHECK ((`state` between 1 and 3)),
+  CONSTRAINT `item_current_parent_fk` FOREIGN KEY (`parent_item_uid`) REFERENCES `item_current_owner` (`item_uid`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `item_ownership_baseline` (
+  `item_uid` bigint unsigned NOT NULL, `root_item_uid` bigint unsigned NOT NULL,
+  `parent_item_uid` bigint unsigned DEFAULT NULL, `owner_type` tinyint unsigned NOT NULL,
+  `owner_id` bigint unsigned NOT NULL, `owner_context_id` bigint unsigned NOT NULL DEFAULT '0',
+  `opening_item_revision` bigint unsigned NOT NULL DEFAULT '0', `vnum` int NOT NULL DEFAULT '0',
+  `source_table` varchar(32) NOT NULL, `source_row_id` bigint unsigned NOT NULL,
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`item_uid`),
+  UNIQUE KEY `uq_item_baseline_source` (`source_table`,`source_row_id`),
+  KEY `idx_item_baseline_owner` (`owner_type`,`owner_id`,`owner_context_id`),
+  CONSTRAINT `chk_item_baseline_owner_type` CHECK ((`owner_type` between 1 and 8))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `item_ownership_quarantine` (
+  `quarantine_id` bigint unsigned NOT NULL AUTO_INCREMENT, `item_uid` bigint unsigned NOT NULL,
+  `source_table` varchar(32) NOT NULL, `source_row_id` bigint unsigned NOT NULL,
+  `conflict_code` smallint unsigned NOT NULL, `evidence` varchar(255) NOT NULL,
+  `detected_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), `repaired_at` timestamp(6) NULL DEFAULT NULL,
+  PRIMARY KEY (`quarantine_id`), UNIQUE KEY `uq_item_quarantine_evidence` (`item_uid`,`source_table`,`source_row_id`,`conflict_code`),
+  KEY `idx_item_quarantine_open` (`repaired_at`,`item_uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `item_ownership_ledger` (
+  `operation_id` binary(16) NOT NULL, `event_index` smallint unsigned NOT NULL,
+  `item_uid` bigint unsigned NOT NULL, `root_item_uid` bigint unsigned NOT NULL,
+  `parent_item_uid` bigint unsigned DEFAULT NULL, `from_owner_type` tinyint unsigned NOT NULL,
+  `from_owner_id` bigint unsigned NOT NULL, `from_owner_context_id` bigint unsigned NOT NULL,
+  `to_owner_type` tinyint unsigned NOT NULL, `to_owner_id` bigint unsigned NOT NULL,
+  `to_owner_context_id` bigint unsigned NOT NULL, `item_revision` bigint unsigned NOT NULL,
+  `from_owner_revision` bigint unsigned NOT NULL, `to_owner_revision` bigint unsigned NOT NULL,
+  `reason_type` smallint unsigned NOT NULL, `reason_id` bigint NOT NULL DEFAULT '0',
+  `source_site` smallint unsigned NOT NULL, `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`,`event_index`), UNIQUE KEY `uq_item_ledger_item_revision` (`item_uid`,`item_revision`),
+  KEY `idx_item_ledger_item_created` (`item_uid`,`created_at`),
+  KEY `idx_item_ledger_from_owner` (`from_owner_type`,`from_owner_id`,`from_owner_context_id`,`created_at`),
+  KEY `idx_item_ledger_to_owner` (`to_owner_type`,`to_owner_id`,`to_owner_context_id`,`created_at`),
+  CONSTRAINT `item_ownership_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `auction_item_custody` (
+  `auction_id` int unsigned NOT NULL, `slot` smallint unsigned NOT NULL,
+  `item_uid` bigint unsigned NOT NULL, `item_revision` bigint unsigned NOT NULL,
+  `vnum` int NOT NULL, `obj_blob` longblob NOT NULL, `claim_pid` int unsigned DEFAULT NULL,
+  `claim_operation_id` binary(16) DEFAULT NULL, `claimed_at` timestamp(6) NULL DEFAULT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`auction_id`,`slot`), UNIQUE KEY `uq_auction_custody_item` (`item_uid`),
+  KEY `idx_auction_custody_claim_operation` (`claim_operation_id`),
+  KEY `idx_auction_custody_claim` (`claim_pid`,`claimed_at`,`auction_id`),
+  CONSTRAINT `auction_custody_item_fk` FOREIGN KEY (`item_uid`) REFERENCES `item_current_owner` (`item_uid`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `auction_ledger` (
+  `operation_id` binary(16) NOT NULL, `event_type` tinyint unsigned NOT NULL,
+  `auction_id` int unsigned NOT NULL, `auction_revision` bigint unsigned NOT NULL,
+  `actor_pid` int unsigned NOT NULL DEFAULT '0', `counterparty_pid` int unsigned NOT NULL DEFAULT '0',
+  `value_delta` bigint NOT NULL DEFAULT '0', `final_price` bigint NOT NULL DEFAULT '0',
+  `item_count` smallint unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`operation_id`),
+  KEY `idx_auction_ledger_revision` (`auction_id`,`auction_revision`),
+  KEY `idx_auction_ledger_actor` (`actor_pid`,`created_at`),
+  CONSTRAINT `auction_ledger_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `auction_reconciliation_quarantine` (
+  `quarantine_id` bigint unsigned NOT NULL AUTO_INCREMENT, `auction_id` int unsigned NOT NULL,
+  `item_uid` bigint unsigned NOT NULL DEFAULT '0', `conflict_code` smallint unsigned NOT NULL,
+  `evidence` varchar(255) NOT NULL, `detected_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `repaired_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`quarantine_id`),
+  UNIQUE KEY `uq_auction_quarantine` (`auction_id`,`item_uid`,`conflict_code`),
+  KEY `idx_auction_quarantine_open` (`repaired_at`,`auction_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `combat_frag_baseline` (
+  `pid` int unsigned NOT NULL, `opening_frags` bigint NOT NULL,
+  `opening_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`pid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `combat_outcome` (
+  `operation_id` binary(16) NOT NULL, `pkill_event_id` int unsigned NOT NULL,
+  `victim_pid` int unsigned NOT NULL, `room_vnum` int NOT NULL,
+  `participant_count` smallint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_combat_pkill_event` (`pkill_event_id`),
+  KEY `idx_combat_victim_created` (`victim_pid`,`created_at`),
+  CONSTRAINT `combat_outcome_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `combat_outcome_participant` (
+  `operation_id` binary(16) NOT NULL, `participant_index` smallint unsigned NOT NULL,
+  `pid` int unsigned NOT NULL, `role` tinyint unsigned NOT NULL, `flags` tinyint unsigned NOT NULL,
+  `frag_delta` bigint NOT NULL, `epic_delta` bigint NOT NULL, `wallet_delta_copper` bigint NOT NULL,
+  `frag_after` bigint NOT NULL, `frag_revision` bigint unsigned NOT NULL,
+  `epic_revision` bigint unsigned NOT NULL, `wallet_revision` bigint unsigned NOT NULL,
+  `bank_revision` bigint unsigned NOT NULL, PRIMARY KEY (`operation_id`,`participant_index`),
+  UNIQUE KEY `uq_combat_participant` (`operation_id`,`pid`),
+  KEY `idx_combat_participant_pid` (`pid`,`operation_id`),
+  CONSTRAINT `combat_participant_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `combat_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `combat_frag_ledger` (
+  `operation_id` binary(16) NOT NULL, `participant_index` smallint unsigned NOT NULL,
+  `pid` int unsigned NOT NULL, `delta` bigint NOT NULL, `frags_after` bigint NOT NULL,
+  `frag_revision` bigint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`,`participant_index`),
+  UNIQUE KEY `uq_combat_frag_pid_revision` (`pid`,`frag_revision`),
+  KEY `idx_combat_frag_pid_created` (`pid`,`created_at`),
+  CONSTRAINT `combat_frag_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `combat_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `artifact_domain_state` (
+  `vnum` int NOT NULL, `owned` tinyint unsigned NOT NULL DEFAULT '0',
+  `loc_type` tinyint unsigned NOT NULL DEFAULT '1', `location` int NOT NULL DEFAULT '0',
+  `timer_epoch` bigint NOT NULL DEFAULT '0', `artifact_type` tinyint unsigned NOT NULL DEFAULT '0',
+  `bind_owner_pid` int NOT NULL DEFAULT '0', `bind_timer_epoch` bigint NOT NULL DEFAULT '0',
+  `item_uid` bigint unsigned DEFAULT NULL, `item_revision` bigint unsigned DEFAULT NULL,
+  `revision` bigint unsigned NOT NULL DEFAULT '0',
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`vnum`), KEY `idx_artifact_domain_owner` (`loc_type`,`location`,`vnum`),
+  KEY `idx_artifact_domain_item` (`item_uid`),
+  CONSTRAINT `artifact_domain_item_fk` FOREIGN KEY (`item_uid`) REFERENCES `item_current_owner` (`item_uid`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `artifact_domain_baseline` (
+  `vnum` int NOT NULL, `opening_timer_epoch` bigint NOT NULL,
+  `opening_bind_owner_pid` int NOT NULL, `opening_bind_timer_epoch` bigint NOT NULL,
+  `opening_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`vnum`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `artifact_guild_outcome` (
+  `operation_id` binary(16) NOT NULL, `parent_operation_id` binary(16) NOT NULL,
+  `actor_pid` int unsigned NOT NULL, `guild_id` int unsigned NOT NULL DEFAULT '0',
+  `prestige_delta` bigint NOT NULL DEFAULT '0', `construction_delta` bigint NOT NULL DEFAULT '0',
+  `artifact_count` smallint unsigned NOT NULL DEFAULT '0',
+  `guild_prestige_after` bigint unsigned NOT NULL DEFAULT '0',
+  `guild_construction_after` bigint unsigned NOT NULL DEFAULT '0',
+  `guild_revision` bigint unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_artifact_guild_parent_actor` (`parent_operation_id`,`actor_pid`),
+  KEY `idx_artifact_guild_actor_created` (`actor_pid`,`created_at`),
+  CONSTRAINT `artifact_guild_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `artifact_guild_parent_fk` FOREIGN KEY (`parent_operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `artifact_guild_outcome_delta` (
+  `operation_id` binary(16) NOT NULL, `artifact_index` smallint unsigned NOT NULL,
+  `vnum` int NOT NULL, `flags` tinyint unsigned NOT NULL, `timer_before` bigint NOT NULL,
+  `timer_after` bigint NOT NULL, `bind_owner_before` int NOT NULL, `bind_owner_after` int NOT NULL,
+  `bind_timer_before` bigint NOT NULL, `bind_timer_after` bigint NOT NULL,
+  `revision` bigint unsigned NOT NULL, PRIMARY KEY (`operation_id`,`artifact_index`),
+  UNIQUE KEY `uq_artifact_outcome_vnum` (`operation_id`,`vnum`),
+  CONSTRAINT `artifact_outcome_delta_fk` FOREIGN KEY (`operation_id`) REFERENCES `artifact_guild_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `artifact_delta_ledger` (
+  `operation_id` binary(16) NOT NULL, `artifact_index` smallint unsigned NOT NULL,
+  `vnum` int NOT NULL, `timer_delta` bigint NOT NULL, `bind_owner_pid` int NOT NULL,
+  `bind_timer_epoch` bigint NOT NULL, `revision` bigint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`,`artifact_index`), UNIQUE KEY `uq_artifact_delta_revision` (`vnum`,`revision`),
+  KEY `idx_artifact_delta_created` (`vnum`,`created_at`),
+  CONSTRAINT `artifact_delta_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `artifact_guild_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `guild_outcome_ledger` (
+  `operation_id` binary(16) NOT NULL, `guild_id` int unsigned NOT NULL,
+  `prestige_delta` bigint NOT NULL, `construction_delta` bigint NOT NULL,
+  `prestige_after` bigint unsigned NOT NULL, `construction_after` bigint unsigned NOT NULL,
+  `guild_revision` bigint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`operation_id`),
+  UNIQUE KEY `uq_guild_outcome_revision` (`guild_id`,`guild_revision`),
+  KEY `idx_guild_outcome_created` (`guild_id`,`created_at`),
+  CONSTRAINT `guild_outcome_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `artifact_guild_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `boon_reward_outcome` (
+  `operation_id` binary(16) NOT NULL, `pid` int unsigned NOT NULL,
+  `option` tinyint unsigned NOT NULL, `event_value` double NOT NULL,
+  `entry_count` smallint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`), KEY `idx_boon_reward_player_created` (`pid`,`created_at`),
+  CONSTRAINT `boon_reward_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `boon_reward_outcome_entry` (
+  `operation_id` binary(16) NOT NULL, `entry_index` smallint unsigned NOT NULL,
+  `boon_id` int NOT NULL, `counter_after` double NOT NULL,
+  `completed` tinyint unsigned NOT NULL, `reward_type` tinyint unsigned NOT NULL,
+  `reward_value` double NOT NULL, PRIMARY KEY (`operation_id`,`entry_index`),
+  UNIQUE KEY `uq_boon_reward_operation_boon` (`operation_id`,`boon_id`),
+  KEY `idx_boon_reward_boon` (`boon_id`,`operation_id`),
+  CONSTRAINT `boon_reward_entry_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `boon_reward_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `zone_touch_outcome` (
+  `operation_id` binary(16) NOT NULL, `zone_number` int NOT NULL,
+  `toucher_pid` int unsigned NOT NULL, `boot_time` int NOT NULL, `touched_at` int NOT NULL,
+  `group_size` smallint unsigned NOT NULL, `epic_value` int NOT NULL,
+  `alignment_delta` smallint NOT NULL, `reset_requested` tinyint unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`), KEY `idx_zone_touch_outcome_zone_created` (`zone_number`,`created_at`),
+  CONSTRAINT `zone_touch_outcome_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `zone_touch_outcome_participant` (
+  `operation_id` binary(16) NOT NULL, `participant_index` smallint unsigned NOT NULL,
+  `pid` int unsigned NOT NULL, `epic_value` int NOT NULL,
+  PRIMARY KEY (`operation_id`,`participant_index`),
+  UNIQUE KEY `uq_zone_touch_operation_pid` (`operation_id`,`pid`),
+  KEY `idx_zone_touch_participant_pid` (`pid`,`operation_id`),
+  CONSTRAINT `zone_touch_participant_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `zone_touch_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `session_audit_outcome` (
+  `operation_id` binary(16) NOT NULL, `pid` int unsigned NOT NULL,
+  `event_type` tinyint unsigned NOT NULL, `occurred_at` timestamp NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`), KEY `idx_session_audit_player_time` (`pid`,`occurred_at`),
+  KEY `idx_session_audit_event_time` (`event_type`,`occurred_at`),
+  CONSTRAINT `session_audit_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_session_audit_event` CHECK (`event_type` IN (1,2))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `lifecycle_archive_jobs` (
+  `job_id` binary(16) NOT NULL, `job_key` binary(32) NOT NULL,
+  `policy_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `policy_schema_version` int unsigned NOT NULL, `manifest_checksum` binary(32) NOT NULL,
+  `store_id` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action` tinyint unsigned NOT NULL, `dry_run` tinyint unsigned NOT NULL DEFAULT '1',
+  `target_environment` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `approval_reference` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` tinyint unsigned NOT NULL, `source_cursor` varbinary(512) NOT NULL,
+  `source_upper_bound` varbinary(512) NOT NULL, `row_budget` smallint unsigned NOT NULL,
+  `byte_budget` int unsigned NOT NULL, `time_budget_usec` int unsigned NOT NULL,
+  `attempt_count` int unsigned NOT NULL DEFAULT '0',
+  `source_count` bigint unsigned NOT NULL DEFAULT '0',
+  `archive_count` bigint unsigned NOT NULL DEFAULT '0',
+  `source_checksum` binary(32) DEFAULT NULL, `archive_checksum` binary(32) DEFAULT NULL,
+  `reconciliation_before` tinyint unsigned NOT NULL DEFAULT '0',
+  `reconciliation_after` tinyint unsigned NOT NULL DEFAULT '0',
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  `completed_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`job_id`),
+  UNIQUE KEY `uq_lifecycle_archive_job_key` (`job_key`),
+  KEY `idx_lifecycle_archive_job_claim` (`status`,`updated_at`,`job_id`),
+  KEY `idx_lifecycle_archive_job_store` (`store_id`,`status`,`job_id`),
+  CONSTRAINT `chk_lifecycle_archive_job_action` CHECK (`action` between 1 and 5),
+  CONSTRAINT `chk_lifecycle_archive_job_status` CHECK (`status` between 1 and 8),
+  CONSTRAINT `chk_lifecycle_archive_job_dry_run` CHECK (`dry_run` in (0,1)),
+  CONSTRAINT `chk_lifecycle_archive_job_budgets` CHECK ((`row_budget` between 1 and 256) and (`byte_budget` between 1 and 1048576) and (`time_budget_usec` between 1 and 500000))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `lifecycle_archive_batches` (
+  `batch_id` binary(16) NOT NULL, `batch_key` binary(32) NOT NULL,
+  `job_id` binary(16) NOT NULL, `sequence_number` bigint unsigned NOT NULL,
+  `status` tinyint unsigned NOT NULL, `cursor_start` varbinary(512) NOT NULL,
+  `cursor_end` varbinary(512) NOT NULL, `source_count` int unsigned NOT NULL DEFAULT '0',
+  `archive_count` int unsigned NOT NULL DEFAULT '0',
+  `source_bytes` int unsigned NOT NULL DEFAULT '0',
+  `source_checksum` binary(32) DEFAULT NULL, `archive_checksum` binary(32) DEFAULT NULL,
+  `reconciliation_before` tinyint unsigned NOT NULL DEFAULT '0',
+  `reconciliation_after` tinyint unsigned NOT NULL DEFAULT '0',
+  `attempt_count` int unsigned NOT NULL DEFAULT '0',
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `started_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `verified_at` timestamp(6) NULL DEFAULT NULL,
+  `completed_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`batch_id`),
+  UNIQUE KEY `uq_lifecycle_archive_batch_key` (`batch_key`),
+  UNIQUE KEY `uq_lifecycle_archive_batch_sequence` (`job_id`,`sequence_number`),
+  UNIQUE KEY `uq_lifecycle_archive_batch_job_id` (`job_id`,`batch_id`),
+  KEY `idx_lifecycle_archive_batch_resume` (`job_id`,`status`,`sequence_number`),
+  CONSTRAINT `lifecycle_archive_batch_job_fk` FOREIGN KEY (`job_id`) REFERENCES `lifecycle_archive_jobs` (`job_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_lifecycle_archive_batch_status` CHECK (`status` between 1 and 8)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `lifecycle_archive_rows` (
+  `batch_id` binary(16) NOT NULL, `source_key` varbinary(512) NOT NULL,
+  `source_checksum` binary(32) NOT NULL, `payload` longblob NOT NULL,
+  `payload_bytes` int unsigned NOT NULL,
+  `archived_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`batch_id`,`source_key`),
+  CONSTRAINT `lifecycle_archive_row_batch_fk` FOREIGN KEY (`batch_id`) REFERENCES `lifecycle_archive_batches` (`batch_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_lifecycle_archive_row_size` CHECK (`payload_bytes` between 1 and 1048576)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `lifecycle_archive_evidence` (
+  `evidence_id` bigint unsigned NOT NULL AUTO_INCREMENT, `job_id` binary(16) NOT NULL,
+  `batch_id` binary(16) DEFAULT NULL, `event_type` tinyint unsigned NOT NULL,
+  `status` tinyint unsigned NOT NULL, `row_count` int unsigned NOT NULL DEFAULT '0',
+  `byte_count` int unsigned NOT NULL DEFAULT '0',
+  `error_code` int unsigned NOT NULL DEFAULT '0',
+  `occurred_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`evidence_id`), KEY `idx_lifecycle_archive_evidence_job` (`job_id`,`evidence_id`),
+  CONSTRAINT `lifecycle_archive_evidence_job_fk` FOREIGN KEY (`job_id`) REFERENCES `lifecycle_archive_jobs` (`job_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `lifecycle_archive_evidence_batch_fk` FOREIGN KEY (`job_id`,`batch_id`) REFERENCES `lifecycle_archive_batches` (`job_id`,`batch_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_lifecycle_archive_evidence_event` CHECK (`event_type` between 1 and 8),
+  CONSTRAINT `chk_lifecycle_archive_evidence_status` CHECK (`status` between 1 and 8)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `personal_data_export_requests` (
+  `request_id` binary(16) NOT NULL, `request_key` binary(32) NOT NULL,
+  `account_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `account_scope_hash` binary(32) NOT NULL,
+  `policy_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `policy_schema_version` int unsigned NOT NULL, `manifest_checksum` binary(32) NOT NULL,
+  `snapshot_id` binary(16) DEFAULT NULL, `status` tinyint unsigned NOT NULL,
+  `attempt_count` smallint unsigned NOT NULL DEFAULT '0',
+  `expected_sections` smallint unsigned NOT NULL,
+  `completed_sections` smallint unsigned NOT NULL DEFAULT '0',
+  `excluded_sections` smallint unsigned NOT NULL DEFAULT '0',
+  `record_count` bigint unsigned NOT NULL DEFAULT '0',
+  `package_bytes` bigint unsigned NOT NULL DEFAULT '0',
+  `package_checksum` binary(32) DEFAULT NULL, `delivery_token_hash` binary(32) DEFAULT NULL,
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `requested_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `started_at` timestamp(6) NULL DEFAULT NULL, `completed_at` timestamp(6) NULL DEFAULT NULL,
+  `cancelled_at` timestamp(6) NULL DEFAULT NULL, `expires_at` timestamp(6) NOT NULL,
+  PRIMARY KEY (`request_id`), UNIQUE KEY `uq_personal_export_request_key` (`request_key`),
+  KEY `idx_personal_export_account_rate` (`account_name`,`requested_at`,`request_id`),
+  KEY `idx_personal_export_work` (`status`,`requested_at`,`request_id`),
+  KEY `idx_personal_export_expiry` (`status`,`expires_at`,`request_id`),
+  CONSTRAINT `chk_personal_export_status` CHECK (`status` between 1 and 9),
+  CONSTRAINT `chk_personal_export_section_counts` CHECK ((`completed_sections` + `excluded_sections`) <= `expected_sections`),
+  CONSTRAINT `chk_personal_export_expiry` CHECK (`expires_at` > `requested_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `personal_data_export_sections` (
+  `request_id` binary(16) NOT NULL,
+  `store_id` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `disposition` tinyint unsigned NOT NULL, `status` tinyint unsigned NOT NULL,
+  `snapshot_id` binary(16) DEFAULT NULL, `record_count` bigint unsigned NOT NULL DEFAULT '0',
+  `byte_count` bigint unsigned NOT NULL DEFAULT '0', `section_checksum` binary(32) DEFAULT NULL,
+  `exclusion_code` smallint unsigned NOT NULL DEFAULT '0',
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `completed_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`request_id`,`store_id`),
+  KEY `idx_personal_export_section_status` (`request_id`,`status`,`store_id`),
+  CONSTRAINT `personal_export_section_request_fk` FOREIGN KEY (`request_id`) REFERENCES `personal_data_export_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_personal_export_disposition` CHECK (`disposition` between 1 and 4),
+  CONSTRAINT `chk_personal_export_section_status` CHECK (`status` between 1 and 9)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `personal_data_export_audit` (
+  `audit_id` bigint unsigned NOT NULL AUTO_INCREMENT, `request_id` binary(16) NOT NULL,
+  `event_type` tinyint unsigned NOT NULL, `status` tinyint unsigned NOT NULL,
+  `section_count` smallint unsigned NOT NULL DEFAULT '0',
+  `record_count` bigint unsigned NOT NULL DEFAULT '0',
+  `byte_count` bigint unsigned NOT NULL DEFAULT '0',
+  `error_code` int unsigned NOT NULL DEFAULT '0',
+  `occurred_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`audit_id`), KEY `idx_personal_export_audit_request` (`request_id`,`audit_id`),
+  CONSTRAINT `personal_export_audit_request_fk` FOREIGN KEY (`request_id`) REFERENCES `personal_data_export_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_personal_export_audit_event` CHECK (`event_type` between 1 and 9),
+  CONSTRAINT `chk_personal_export_audit_status` CHECK (`status` between 1 and 9)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_erasure_requests` (
+  `request_id` binary(16) NOT NULL, `request_key` binary(32) NOT NULL,
+  `account_scope_hash` binary(32) NOT NULL, `subject_token` binary(32) NOT NULL,
+  `policy_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `policy_schema_version` int unsigned NOT NULL, `manifest_checksum` binary(32) NOT NULL,
+  `status` tinyint unsigned NOT NULL, `fence_revision` bigint unsigned DEFAULT NULL,
+  `expected_stores` smallint unsigned NOT NULL,
+  `completed_stores` smallint unsigned NOT NULL DEFAULT '0',
+  `retained_stores` smallint unsigned NOT NULL DEFAULT '0',
+  `reconciliation_checksum` binary(32) DEFAULT NULL,
+  `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `requested_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `confirmed_at` timestamp(6) NULL DEFAULT NULL,
+  `fenced_at` timestamp(6) NULL DEFAULT NULL, `completed_at` timestamp(6) NULL DEFAULT NULL,
+  `cancelled_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`request_id`),
+  UNIQUE KEY `uq_account_erasure_request_key` (`request_key`),
+  KEY `idx_account_erasure_scope_rate` (`account_scope_hash`,`requested_at`,`request_id`),
+  KEY `idx_account_erasure_work` (`status`,`requested_at`,`request_id`),
+  CONSTRAINT `chk_account_erasure_status` CHECK (`status` between 1 and 10),
+  CONSTRAINT `chk_account_erasure_counts` CHECK ((`completed_stores` + `retained_stores`) <= `expected_stores`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_erasure_stores` (
+  `request_id` binary(16) NOT NULL, `store_id` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action` tinyint unsigned NOT NULL, `status` tinyint unsigned NOT NULL,
+  `sequence_number` smallint unsigned NOT NULL,
+  `affected_count` bigint unsigned NOT NULL DEFAULT '0',
+  `remaining_direct_identifiers` bigint unsigned NOT NULL DEFAULT '0',
+  `evidence_checksum` binary(32) DEFAULT NULL, `last_error_code` int unsigned NOT NULL DEFAULT '0',
+  `completed_at` timestamp(6) NULL DEFAULT NULL, PRIMARY KEY (`request_id`,`store_id`),
+  UNIQUE KEY `uq_account_erasure_store_sequence` (`request_id`,`sequence_number`),
+  KEY `idx_account_erasure_store_work` (`request_id`,`status`,`sequence_number`),
+  CONSTRAINT `account_erasure_store_request_fk` FOREIGN KEY (`request_id`) REFERENCES `account_erasure_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_account_erasure_action` CHECK (`action` between 1 and 6),
+  CONSTRAINT `chk_account_erasure_store_status` CHECK (`status` between 1 and 10)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_erasure_evidence` (
+  `evidence_id` bigint unsigned NOT NULL AUTO_INCREMENT, `request_id` binary(16) NOT NULL,
+  `store_id` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `event_type` tinyint unsigned NOT NULL, `status` tinyint unsigned NOT NULL,
+  `affected_count` bigint unsigned NOT NULL DEFAULT '0',
+  `remaining_count` bigint unsigned NOT NULL DEFAULT '0',
+  `error_code` int unsigned NOT NULL DEFAULT '0',
+  `occurred_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`evidence_id`), KEY `idx_account_erasure_evidence_request` (`request_id`,`evidence_id`),
+  CONSTRAINT `account_erasure_evidence_request_fk` FOREIGN KEY (`request_id`) REFERENCES `account_erasure_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `chk_account_erasure_evidence_event` CHECK (`event_type` between 1 and 10),
+  CONSTRAINT `chk_account_erasure_evidence_status` CHECK (`status` between 1 and 10)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `account_erasure_tombstones` (
+  `subject_token` binary(32) NOT NULL, `request_id` binary(16) NOT NULL,
+  `account_scope_hash` binary(32) NOT NULL, `policy_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `policy_schema_version` int unsigned NOT NULL, `manifest_checksum` binary(32) NOT NULL,
+  `completed_at` timestamp(6) NOT NULL, `last_restore_generation` binary(32) DEFAULT NULL,
+  `restore_apply_count` int unsigned NOT NULL DEFAULT '0', PRIMARY KEY (`subject_token`),
+  UNIQUE KEY `uq_account_erasure_tombstone_request` (`request_id`),
+  KEY `idx_account_erasure_tombstone_scope` (`account_scope_hash`),
+  CONSTRAINT `account_erasure_tombstone_request_fk` FOREIGN KEY (`request_id`) REFERENCES `account_erasure_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `mud_schema_baselines` (
+  `baseline_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `baseline_kind` enum('fresh_bootstrap','verified_legacy_adoption') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `schema_fingerprint` binary(32) NOT NULL, `manifest_version` int unsigned NOT NULL,
+  `runner_version` int unsigned NOT NULL,
+  `adopted_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`baseline_id`), UNIQUE KEY `uq_mud_schema_baseline_kind` (`baseline_kind`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `mud_schema_history` (
+  `migration_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sequence_number` int unsigned NOT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `apply_checksum` binary(32) NOT NULL, `verify_checksum` binary(32) NOT NULL,
+  `compatibility` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `runner_version` int unsigned NOT NULL,
+  `applied_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`migration_id`),
+  UNIQUE KEY `uq_mud_schema_history_sequence` (`sequence_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `mud_schema_migration_state` (
+  `state_id` tinyint unsigned NOT NULL, `applied_count` int unsigned NOT NULL,
+  `history_checksum` binary(32) NOT NULL,
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`state_id`),
+  CONSTRAINT `chk_mud_schema_migration_state_id` CHECK (`state_id` = 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `mud_schema_migration_state` (`state_id`,`applied_count`,`history_checksum`)
+VALUES (1,0,UNHEX(SHA2('',256)));
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "configuration_id": "example-unqualified-v1",
+  "environment": "test",
+  "target_kind": "isolated_representative_clone",
+  "production_unreachable": false,
+  "backup_evidence_id": "example-backup-evidence",
+  "restore_evidence_id": "example-restore-evidence",
+  "rpo_policy_id": "example-rpo-pending",
+  "rpo_max_msec": 0,
+  "lifecycle_policy_id": "example-lifecycle-pending",
+  "lifecycle_policy_status": "pending",
+  "identity_count": 0,
+  "qualification_evidence_id": "example-qualification-evidence",
+  "aggregate_table_counts": {},
+  "ports": {
+    "database": 3306,
+    "redis": 6379,
+    "game": 7777
+  },
+  "qualification_adapter_argv": [
+    "/opt/duris-session14/bin/qualification-adapter"
+  ],
+  "workload_adapter_argv": [
+    "/opt/duris-session14/bin/workload-adapter"
+  ],
+  "fault_adapter_argv": [
+    "/opt/duris-session14/bin/fault-adapter"
+  ],
+  "reconcile_adapter_argv": [
+    "/opt/duris-session14/bin/reconcile-adapter"
+  ]
+}

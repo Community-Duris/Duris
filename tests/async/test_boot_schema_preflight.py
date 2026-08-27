@@ -5,6 +5,11 @@ source = (ROOT / "src/sql.c").read_text()
 
 assert "static bool sql_verify_boot_database(void)" in source
 assert "information_schema.columns" in source
+assert "player_revision_probe" in source
+assert "column_name='save_revision'" in source
+assert "data_type='bigint'" in source
+assert "column_type LIKE '%unsigned'" in source
+assert "player save revision schema is missing or incompatible at boot" in source
 assert "persistence_item_events" in source
 assert "persistence_scalar_events" in source
 assert "expected 25 required columns" in source
@@ -20,5 +25,26 @@ assert "uq_scalar_dedupe" in source
 assert "auction_engine_probe" in source
 assert "COUNT(DISTINCT table_name)" in source
 assert "transactional auction tables are not all InnoDB" in source
+assert "critical_schema_probe" in source
+assert "critical_operation_inbox" in source
+assert "critical_outbox_delivery_dedupe" in source
+assert "expected 34 required columns" in source
+assert "critical_index_probe" in source
+assert "epic_schema_probe" in source
+assert "expected 14 required columns" in source
+assert "epic_index_probe" in source
+assert "expected 5 entries" in source
+assert "epic_baseline_coverage_probe" in source
+assert "baseline.pid IS NULL" in source
+assert "epic balance baseline does not cover every player at boot" in source
+assert "critical_required_indexes" in source
+assert "expected 8 entries" in source
+assert "currency_schema_probe" in source
+assert "expected 41 required columns" in source
+assert "currency_required_indexes" in source
+assert "currency_wallet_baseline_coverage_probe" in source
+assert "currency_bank_baseline_coverage_probe" in source
+assert "currency wallet baseline does not cover every player at boot" in source
+assert "currency bank baseline does not cover every account bank at boot" in source
 
 print("boot persistence schema preflight checks passed")

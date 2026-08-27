@@ -2719,7 +2719,7 @@ P_obj read_object(int nr, int type)
 
 	memset(obj, 0, sizeof(struct obj_data));
 
-	obj->obj_uid = next_obj_uid++;
+	obj->obj_uid = static_cast<unsigned long>(persistence_next_item_uid());
 	obj->R_num = -1;
 	obj->loc_p = LOC_NOWHERE;
 	obj->loc.room = NOWHERE;

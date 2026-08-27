@@ -31,6 +31,7 @@
 #include "achievements.h"
 #include "damage.h"
 #include "epic.h"
+#include "epic_transaction.h"
 #include "files.h"
 #include "gmcp.h"
 #include "justice.h"
@@ -6521,13 +6522,49 @@ void do_vis(P_char ch, char *argument, int /*cmd*/)
 
 /* Used to demote player to level 1 (and level 1 only) */
 
+namespace
+{
+struct demote_context
+{
+	uint32_t administrator_pid;
+};
+
+void demote_committed(P_char victim, bool committed, const epic_command_result &, unsigned int,
+		      const uint8_t *raw_context, size_t context_size)
+{
+	if (!committed)
+	{
+		send_to_char("The administrative epic reset failed; demotion was not applied.\n",
+			     victim);
+		return;
+	}
+	for (int skill = 0; skill < MAX_SKILLS; ++skill)
+		victim->only.pc->skills[skill].learned = 0;
+	NewbySkillSet(victim, TRUE);
+	victim->points.max_mana = 0;
+	victim->points.max_vitality = 0;
+	victim->specials.conditions[0] = 24;
+	victim->specials.conditions[1] = 24;
+	victim->specials.conditions[2] = 0;
+	do_start(victim, 0);
+	send_to_char("You have just been demoted to level one... oh well.\n", victim);
+	logit(LOG_WIZ, "%s was demoted to level 1 after a committed epic reset", GET_NAME(victim));
+	if (context_size == sizeof(demote_context))
+	{
+		demote_context context = {};
+		memcpy(&context, raw_context, sizeof(context));
+		P_char administrator = find_player_by_pid(context.administrator_pid);
+		if (administrator)
+			send_to_char("The demotion and epic reset committed successfully.\n",
+				     administrator);
+	}
+}
+} // namespace
+
 void do_demote(P_char ch, char *argument, int /*cmd*/)
 {
 	char person[MAX_STRING_LENGTH];
-	char buf[MAX_STRING_LENGTH];
 	P_char victim;
-	int i;
-	uint old_time;
 
 	if (IS_NPC(ch))
 		return;
@@ -6555,48 +6592,20 @@ void do_demote(P_char ch, char *argument, int /*cmd*/)
 		return;
 	}
 
-	victim->only.pc->epics = 0;
-	//  gain_exp_regardless(victim, (int) -(GET_EXP(victim)));
-
-	/* Unlearn all skill */
-
-	for (i = 0; i < MAX_SKILLS; i++)
+	const demote_context context = { static_cast<uint32_t>(GET_PID(ch)) };
+	if (victim->only.pc->epics > 0 &&
+	    !epic_transaction_submit(
+		    victim, -victim->only.pc->epics, epic_reason_type::admin_adjustment,
+		    GET_PID(ch), EPIC_COMMAND_REQUIRE_FUNDS, critical_source_site::operator_repair,
+		    critical_deadline_class::terminal, demote_committed, &context, sizeof(context)))
 	{
-		victim->only.pc->skills[i].learned = 0;
+		send_to_char("The epic transaction service is busy; demotion was not applied.\n",
+			     ch);
+		return;
 	}
-	NewbySkillSet(victim, TRUE);
-
-	/* Restore other attributes */
-
-	victim->points.max_mana = 0;
-	victim->points.max_vitality = 0;
-
-	/* Set hunger and thirst to 24 (instead of -1)  */
-
-	victim->specials.conditions[0] = 24;
-	victim->specials.conditions[1] = 24;
-	victim->specials.conditions[2] = 0;
-
-	old_time = ch->player.time.played;
-	do_start(victim, 0);
-	ch->player.time.played = old_time;
-
-	/* LOG */
-
-	wizlog(GET_LEVEL(ch), "%s has just demoted %s to level 1...Bummer\n", GET_NAME(ch),
-	       GET_NAME(victim));
-	logit(LOG_WIZ, "%s has just demoted %s to level 1\n", GET_NAME(ch), GET_NAME(victim));
-	sql_log(ch, WIZLOG, "Demoted %s to level 1", GET_NAME(victim));
-
-	/* Tell caster */
-
-	snprintf(buf, MAX_STRING_LENGTH,
-		 "You have just demoted %s to level 1!  Ain't they hating..\n", GET_NAME(victim));
-	send_to_char(buf, ch);
-
-	/* Tell victim  */
-
-	send_to_char("You have just been demoted to level one... oh well.\n", victim);
+	if (victim->only.pc->epics == 0)
+		demote_committed(victim, true, {}, 0, reinterpret_cast<const uint8_t *>(&context),
+				 sizeof(context));
 }
 
 /*
@@ -13430,25 +13439,7 @@ void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-			persistence_flush_character_saves(vict);
-			/* Wrap final save in transaction (flush already completed above) */
-			bool saved = false;
-			if (sql_begin_transaction())
-			{
-				if (writeCharacter(vict, RENT_LINKDEAD, vict->in_room))
-				{
-					if (sql_commit())
-						saved = true;
-					else
-						sql_rollback();
-				}
-				else
-					sql_rollback();
-			}
-			else
-			{
-				saved = writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-			}
+			bool saved = persistence_save_character_terminal(vict, RENT_LINKDEAD);
 			if (!saved)
 			{
 				send_to_char(
@@ -13505,25 +13496,7 @@ void do_extractlink(P_char ch, char *argument, int /*cmd*/)
 			if (vict->desc && !is_desc_valid(vict->desc))
 				vict->desc = NULL;
 
-			persistence_flush_character_saves(vict);
-			/* Wrap final save in transaction (flush already completed above) */
-			bool saved = false;
-			if (sql_begin_transaction())
-			{
-				if (writeCharacter(vict, RENT_LINKDEAD, vict->in_room))
-				{
-					if (sql_commit())
-						saved = true;
-					else
-						sql_rollback();
-				}
-				else
-					sql_rollback();
-			}
-			else
-			{
-				saved = writeCharacter(vict, RENT_LINKDEAD, vict->in_room);
-			}
+			bool saved = persistence_save_character_terminal(vict, RENT_LINKDEAD);
 			if (!saved)
 			{
 				send_to_char(

@@ -718,7 +718,7 @@ const char *item_size_types[] = { "none",	  "tiny",	  "small",   "medium",
 				  "small-medium", "medium-large", "magical", "\n" };
 
 // Total Connection types + "\n"
-const char *connected_types[TOTAL_CON + 1] = { "PLAYING",
+const char *connected_types[TOTAL_CON + 2] = { "PLAYING",
 					       "GET_NAME",
 					       "CONF_NAME",
 					       "GET_PWD",
@@ -803,6 +803,11 @@ const char *connected_types[TOTAL_CON + 1] = { "PLAYING",
 					       "NEWBIE",
 					       "SWAPSTATYN",
 					       "SWAPSTAT",
+					       "ACCT_CONFIRM_CHAR",
+					       "ACCT_RMOTD",
+					       "SSLNEGO",
+					       "TTYPE_NEGO",
+					       "PLAYER_LOAD",
 					       "\n" };
 
 /*

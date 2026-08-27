@@ -59,20 +59,17 @@ static void redis_status_simple(P_char ch)
 
 	// world state
 	time_t ws_ts = redis_world_state_timestamp();
-	char *valid_str = redis_cache_get("mud:world_state:valid");
-	bool is_valid = (valid_str && strcmp(valid_str, "1") == 0);
-	if (valid_str)
-		free(valid_str);
+	bool is_valid = redis_has_world_state();
 
 	format_time_ago(ws_ts, time_buf, sizeof(time_buf));
 	pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cworld_state&n      %s%-5s&n    %s\r\n",
 			is_valid ? "&+G" : "&+R", is_valid ? "VALID" : "NONE",
 			ws_ts > 0 ? time_buf : "");
 
-	// dirty players
+	// revisioned player save queue
 	int dirty = get_dirty_player_count();
 	pos += snprintf(buf + pos, sizeof(buf) - pos,
-			"  &+cdirty_players&n    &+Y%-5d&n    pending saves\r\n", dirty);
+			"  &+cplayer_queue&n     &+Y%-5d&n    pending saves\r\n", dirty);
 
 	// floor drops
 	long floor_count = redis_hlen("mud:floor_drops");
@@ -128,10 +125,7 @@ static void redis_status_detailed(P_char ch)
 
 	// world state with full timestamp
 	time_t ws_ts = redis_world_state_timestamp();
-	char *valid_str = redis_cache_get("mud:world_state:valid");
-	bool is_valid = (valid_str && strcmp(valid_str, "1") == 0);
-	if (valid_str)
-		free(valid_str);
+	bool is_valid = redis_has_world_state();
 
 	if (ws_ts > 0)
 	{
@@ -161,10 +155,10 @@ static void redis_status_detailed(P_char ch)
 			"  &+cfloor_pickups&n    &+Y%-5ld&n    uids in dedup set\r\n",
 			floor_pickups);
 
-	// dirty players
+	// revisioned player save queue
 	int dirty = get_dirty_player_count();
 	pos += snprintf(buf + pos, sizeof(buf) - pos,
-			"  &+cdirty_players&n    &+Y%-5d&n    pending async saves\r\n", dirty);
+			"  &+cplayer_queue&n     &+Y%-5d&n    pending async saves\r\n", dirty);
 
 	// obj uid counter
 	char *uid_str = redis_cache_get("mud:next_obj_uid");
@@ -222,16 +216,15 @@ static void redis_status_detailed(P_char ch)
 	send_to_char(buf, ch);
 }
 
-static void redis_clear_cache(P_char ch, const char *cache, bool force)
+static void redis_clear_cache(P_char ch, const char *cache)
 {
 	char buf[MAX_STRING_LENGTH];
 
 	if (!*cache)
 	{
-		send_to_char("Usage: redis clear <cache> [force]\r\n", ch);
-		send_to_char(
-			"&+cValid:&n world, floor, dirty, artifacts, fraglist, epic, named, all\r\n",
-			ch);
+		send_to_char("Usage: redis clear <cache>\r\n", ch);
+		send_to_char("&+cValid:&n world, floor, artifacts, fraglist, epic, named, all\r\n",
+			     ch);
 		return;
 	}
 
@@ -247,30 +240,6 @@ static void redis_clear_cache(P_char ch, const char *cache, bool force)
 		redis_clear_floor_drops();
 		redis_clear_floor_pickups();
 		send_to_char("&+GCleared:&n floor_drops, floor_pickups\r\n", ch);
-		return;
-	}
-
-	if (is_abbrev(cache, "dirty"))
-	{
-		int count = get_dirty_player_count();
-		if (count > 0 && !force)
-		{
-			snprintf(
-				buf, sizeof(buf),
-				"&+RCannot clear:&n %d players pending save. Use 'redis clear dirty force' to discard.\r\n",
-				count);
-			send_to_char(buf, ch);
-			return;
-		}
-		redis_clear_dirty_players();
-		if (count > 0)
-			snprintf(
-				buf, sizeof(buf),
-				"&+YForce cleared:&n dirty_players (%d pending saves discarded)\r\n",
-				count);
-		else
-			snprintf(buf, sizeof(buf), "&+GCleared:&n dirty_players\r\n");
-		send_to_char(buf, ch);
 		return;
 	}
 
@@ -304,49 +273,23 @@ static void redis_clear_cache(P_char ch, const char *cache, bool force)
 
 	snprintf(buf, sizeof(buf), "&+RUnknown cache:&n %s\r\n", cache);
 	send_to_char(buf, ch);
-	send_to_char("&+cValid:&n world, floor, dirty, artifacts, fraglist, epic, named, all\r\n",
-		     ch);
+	send_to_char("&+cValid:&n world, floor, artifacts, fraglist, epic, named, all\r\n", ch);
 }
 
-static void redis_clear_all(P_char ch, bool force, bool confirmed)
+static void redis_clear_all(P_char ch, bool confirmed)
 {
-	char buf[MAX_STRING_LENGTH];
-
 	if (!confirmed)
 	{
-		if (force)
-			send_to_char(
-				"&+RUse 'redis clear all force confirm' to clear all caches including pending saves.&n\r\n",
-				ch);
-		else
-			send_to_char("&+RUse 'redis clear all confirm' to clear all caches.&n\r\n",
-				     ch);
+		send_to_char("&+RUse 'redis clear all confirm' to clear all caches.&n\r\n", ch);
 		return;
 	}
-
-	int dirty = get_dirty_player_count();
 
 	// world recovery
 	redis_clear_world_state();
 	redis_clear_floor_drops();
 	redis_clear_floor_pickups();
 
-	// dirty players - only if force or empty
-	if (force || dirty == 0)
-	{
-		redis_clear_dirty_players();
-		send_to_char(
-			"&+GCleared:&n world_state, floor_drops, floor_pickups, dirty_players\r\n",
-			ch);
-	}
-	else
-	{
-		snprintf(buf, sizeof(buf),
-			 "&+GCleared:&n world_state, floor_drops, floor_pickups\r\n"
-			 "&+YSkipped:&n dirty_players (%d pending) - use 'force' to include\r\n",
-			 dirty);
-		send_to_char(buf, ch);
-	}
+	send_to_char("&+GCleared:&n world_state, floor_drops, floor_pickups\r\n", ch);
 
 	// content caches
 	redis_invalidate_artifact_cache();
@@ -362,7 +305,6 @@ void do_redis(P_char ch, char *argument, int /*cmd*/)
 	char arg1[MAX_INPUT_LENGTH];
 	char arg2[MAX_INPUT_LENGTH];
 	char arg3[MAX_INPUT_LENGTH];
-	char arg4[MAX_INPUT_LENGTH];
 
 	if (IS_NPC(ch))
 		return;
@@ -376,7 +318,6 @@ void do_redis(P_char ch, char *argument, int /*cmd*/)
 	argument = one_argument(argument, arg1);
 	argument = one_argument(argument, arg2);
 	argument = one_argument(argument, arg3);
-	argument = one_argument(argument, arg4);
 
 	// no args - simple status
 	if (!*arg1)
@@ -397,9 +338,9 @@ void do_redis(P_char ch, char *argument, int /*cmd*/)
 	{
 		if (!*arg2)
 		{
-			send_to_char("Usage: redis clear <cache> [force]\r\n", ch);
+			send_to_char("Usage: redis clear <cache>\r\n", ch);
 			send_to_char(
-				"&+cValid:&n world, floor, dirty, artifacts, fraglist, epic, named, all\r\n",
+				"&+cValid:&n world, floor, artifacts, fraglist, epic, named, all\r\n",
 				ch);
 			return;
 		}
@@ -407,30 +348,12 @@ void do_redis(P_char ch, char *argument, int /*cmd*/)
 		// all needs special handling
 		if (is_abbrev(arg2, "all"))
 		{
-			bool force = false;
-			bool confirmed = false;
-
-			// check for force and confirm in any order
-			if (is_abbrev(arg3, "force"))
-			{
-				force = true;
-				if (is_abbrev(arg4, "confirm"))
-					confirmed = true;
-			}
-			else if (is_abbrev(arg3, "confirm"))
-			{
-				confirmed = true;
-				if (is_abbrev(arg4, "force"))
-					force = true;
-			}
-
-			redis_clear_all(ch, force, confirmed);
+			redis_clear_all(ch, is_abbrev(arg3, "confirm"));
 			return;
 		}
 
 		// single cache clear
-		bool force = is_abbrev(arg3, "force");
-		redis_clear_cache(ch, arg2, force);
+		redis_clear_cache(ch, arg2);
 		return;
 	}
 

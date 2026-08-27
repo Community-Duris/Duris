@@ -9,22 +9,28 @@
 #include "redis.h"
 #include <ctype.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <sys/poll.h> /* local src/poll.h shadows <poll.h> via -I. */
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/time.h>
-#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 #include "config.h"
 #include "copyover.h"
+#include "world_recovery_pipeline.h"
 #include "epic.h"
 #include "files.h"
+#include "player_save_pipeline.h"
+#include "player_save_worker.h"
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
 #include "ships/ships.h"
+
+#include <chrono>
+#include <thread>
 
 #ifndef __NO_MYSQL__
 #include <cjson/cJSON.h>
@@ -36,8 +42,6 @@ extern int top_of_zone_table;
 extern struct zone_data *zone_table;
 extern struct room_data *world;
 extern P_char character_list;
-extern P_obj object_list;
-extern P_index obj_index;
 extern const struct race_names race_names_table[];
 extern P_desc descriptor_list;
 
@@ -59,13 +63,195 @@ int crash_recovery_boot = 0;
 #define REDIS_FLUSH_INTERVAL (30 * WAIT_SEC)
 #define REDIS_WORLD_STATE_INTERVAL_DEFAULT 10
 #define REDIS_WORLD_STATE_MAX_AGE_DEFAULT 300
+#define REDIS_CONNECT_TIMEOUT_MSEC 250
+#define REDIS_COMMAND_TIMEOUT_MSEC 100
+#define REDIS_WORLD_DRAIN_TIMEOUT_MSEC 30000
 
 static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
-static volatile pid_t world_state_save_pid = 0;
-static volatile pid_t dirty_flush_pid = 0;
+static bool world_recovery_floor_ack_pending = false;
 static redisContext *donation_sub_ctx = NULL;
 static volatile bool donation_sub_connected = false;
+static void donation_sub_drop(const char *reason);
+
+#ifndef __NO_MYSQL__
+static redisReply *redis_command(redisContext *ctx, const char *format, ...);
+
+static void redis_log_command_failure(const char *outcome)
+{
+	static time_t last_log = 0;
+	time_t now = time(NULL);
+	if (now == last_log)
+		return;
+	last_log = now;
+	logit(LOG_DEBUG, "redis command failed: outcome=%s", outcome);
+}
+
+static redisContext *redis_connect_bounded(const char *host, int port)
+{
+	struct timeval connect_timeout = { REDIS_CONNECT_TIMEOUT_MSEC / 1000,
+					   (REDIS_CONNECT_TIMEOUT_MSEC % 1000) * 1000 };
+	struct timeval command_timeout = { REDIS_COMMAND_TIMEOUT_MSEC / 1000,
+					   (REDIS_COMMAND_TIMEOUT_MSEC % 1000) * 1000 };
+	redisContext *ctx = redisConnectWithTimeout(host, port, connect_timeout);
+	if (!ctx || ctx->err)
+		return ctx;
+	if (redisSetTimeout(ctx, command_timeout) != REDIS_OK)
+	{
+		redisFree(ctx);
+		return NULL;
+	}
+	return ctx;
+}
+
+static bool redis_publish_world_generation(const unsigned char *data, size_t size,
+					   const world_recovery_header *header, void * /*context*/)
+{
+	if (!data || !size || !header)
+		return false;
+	const char *redis_host = getenv("REDIS_HOST");
+	if (!redis_host || !*redis_host)
+		redis_host = "127.0.0.1";
+	int redis_port = 6379;
+	const char *redis_port_str = getenv("REDIS_PORT");
+	if (redis_port_str && *redis_port_str)
+	{
+		const int configured = atoi(redis_port_str);
+		if (configured > 0 && configured <= 65535)
+			redis_port = configured;
+	}
+	redisContext *ctx = redis_connect_bounded(redis_host, redis_port);
+	if (!ctx || ctx->err)
+	{
+		if (ctx)
+			redisFree(ctx);
+		return false;
+	}
+	auto command_ok = [ctx](const char *command, auto... args)
+	{
+		redisReply *reply = (redisReply *)redis_command(ctx, command, args...);
+		const bool ok = reply && reply->type != REDIS_REPLY_ERROR;
+		if (reply)
+			freeReplyObject(reply);
+		return ok;
+	};
+	uint64_t previous_sequence = 0;
+	redisReply *current_reply = (redisReply *)redis_command(ctx, "GET mud:world_state:current");
+	if (current_reply && current_reply->type == REDIS_REPLY_STRING && current_reply->str)
+		previous_sequence = strtoull(current_reply->str, NULL, 10);
+	if (current_reply)
+		freeReplyObject(current_reply);
+	bool ok = command_ok("SET mud:world_state:generation:%llu %b",
+			     static_cast<unsigned long long>(header->sequence), data, size) &&
+		  command_ok("MULTI") &&
+		  command_ok("SET mud:world_state:current %llu",
+			     static_cast<unsigned long long>(header->sequence)) &&
+		  command_ok("SET mud:world_state:timestamp %lld",
+			     static_cast<long long>(header->timestamp)) &&
+		  command_ok("SET mud:world_state:sequence %llu",
+			     static_cast<unsigned long long>(header->sequence)) &&
+		  command_ok("SET mud:world_state:checksum %u", header->checksum) &&
+		  command_ok("SET mud:world_state:complete 1");
+	if (ok)
+	{
+		redisReply *reply = (redisReply *)redis_command(ctx, "EXEC");
+		ok = reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 5;
+		if (ok)
+			for (size_t index = 0; index < reply->elements; ++index)
+				if (!reply->element[index] ||
+				    reply->element[index]->type == REDIS_REPLY_ERROR)
+					ok = false;
+		if (reply)
+			freeReplyObject(reply);
+	}
+	else
+	{
+		redisReply *reply = (redisReply *)redis_command(ctx, "DISCARD");
+		if (reply)
+			freeReplyObject(reply);
+	}
+	if (!ok)
+	{
+		redisReply *reply = (redisReply *)redis_command(ctx, "GET mud:world_state:current");
+		ok = reply && reply->type == REDIS_REPLY_STRING && reply->str &&
+		     strtoull(reply->str, NULL, 10) == header->sequence;
+		if (reply)
+			freeReplyObject(reply);
+	}
+	if (ok && previous_sequence && previous_sequence != header->sequence)
+	{
+		redisReply *reply = (redisReply *)redis_command(
+			ctx, "DEL mud:world_state:generation:%llu",
+			static_cast<unsigned long long>(previous_sequence));
+		if (reply)
+			freeReplyObject(reply);
+	}
+	if (!ok)
+	{
+		redisReply *reply = (redisReply *)redis_command(
+			ctx, "DEL mud:world_state:generation:%llu",
+			static_cast<unsigned long long>(header->sequence));
+		if (reply)
+			freeReplyObject(reply);
+	}
+	redisFree(ctx);
+	return ok;
+}
+
+static bool redis_world_recovery_ensure_initialized(void)
+{
+	if (world_recovery_pipeline_health_copy().initialized)
+		return true;
+	if (!world_recovery_pipeline_init(redis_publish_world_generation, NULL))
+		return false;
+	if (redis_ctx)
+	{
+		redisReply *sequence_reply =
+			(redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
+		if (sequence_reply && sequence_reply->type == REDIS_REPLY_STRING &&
+		    sequence_reply->str)
+			world_recovery_pipeline_set_sequence_floor(
+				strtoull(sequence_reply->str, NULL, 10));
+		if (sequence_reply)
+			freeReplyObject(sequence_reply);
+	}
+	return true;
+}
+
+static redisReply *redis_command(redisContext *ctx, const char *format, ...)
+{
+	if (!ctx)
+	{
+		redis_log_command_failure("unavailable");
+		return NULL;
+	}
+	if (ctx->err)
+	{
+		redis_log_command_failure(ctx->err == REDIS_ERR_IO ? "timeout_or_io" :
+								     "context_error");
+		return NULL;
+	}
+
+	va_list args;
+	va_start(args, format);
+	redisReply *reply = (redisReply *)redisvCommand(ctx, format, args);
+	va_end(args);
+
+	if (!reply)
+	{
+		redis_log_command_failure(ctx->err == REDIS_ERR_IO ? "timeout_or_io" : "no_reply");
+		return NULL;
+	}
+	if (reply->type == REDIS_REPLY_ERROR)
+	{
+		redis_log_command_failure("error_reply");
+		freeReplyObject(reply);
+		return NULL;
+	}
+	return reply;
+}
+
+#endif
 
 /* Scan-and-delete with MATCH pattern. Fail closed if SCAN/DEL misshape. */
 static bool redis_clear_scan_match(const char *pattern)
@@ -78,7 +264,7 @@ static bool redis_clear_scan_match(const char *pattern)
 
 	do
 	{
-		redisReply *scan = (redisReply *)redisCommand(
+		redisReply *scan = (redisReply *)redis_command(
 			redis_ctx, "SCAN %s MATCH %s COUNT 256", cursor, pattern);
 		if (!scan || scan->type != REDIS_REPLY_ARRAY || scan->elements != 2 ||
 		    !scan->element[0] || !scan->element[1] || !scan->element[0]->str ||
@@ -100,8 +286,8 @@ static bool redis_clear_scan_match(const char *pattern)
 				freeReplyObject(scan);
 				return false;
 			}
-			redisReply *del =
-				(redisReply *)redisCommand(redis_ctx, "DEL %b", key->str, key->len);
+			redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %b", key->str,
+								      key->len);
 			if (!del ||
 			    (del->type != REDIS_REPLY_INTEGER && del->type != REDIS_REPLY_NIL))
 			{
@@ -154,7 +340,7 @@ static bool redis_reconnect(void)
 			redis_port = 6379;
 	}
 
-	redis_ctx = redisConnect(redis_host, redis_port);
+	redis_ctx = redis_connect_bounded(redis_host, redis_port);
 	if (!redis_ctx || redis_ctx->err)
 	{
 		if (redis_ctx)
@@ -184,6 +370,7 @@ bool redis_init(void)
 		redis_enabled = false;
 		return true;
 	}
+	redis_enabled = true;
 
 	const char *redis_host = getenv("REDIS_HOST");
 	if (!redis_host || !*redis_host)
@@ -198,25 +385,21 @@ bool redis_init(void)
 			redis_port = 6379;
 	}
 
-	redis_ctx = redisConnect(redis_host, redis_port);
+	redis_ctx = redis_connect_bounded(redis_host, redis_port);
 	if (!redis_ctx)
 	{
 		logit(LOG_SYS, "redis: failed to allocate context");
-		redis_enabled = false;
-		return false;
 	}
-
-	if (redis_ctx->err)
+	else if (redis_ctx->err)
 	{
-		logit(LOG_SYS, "redis connect failed: %s", redis_ctx->errstr);
+		logit(LOG_SYS, "redis connect failed: outcome=unavailable");
 		redisFree(redis_ctx);
 		redis_ctx = NULL;
-		redis_enabled = false;
-		return false;
 	}
-
-	redis_enabled = true;
-	logit(LOG_SYS, "redis connected to %s:%d, dirty saves enabled", redis_host, redis_port);
+	else
+	{
+		logit(LOG_SYS, "redis connected to %s:%d", redis_host, redis_port);
+	}
 
 	// check for world state persistence
 	const char *world_state_env = getenv("REDIS_WORLD_STATE");
@@ -246,10 +429,11 @@ bool redis_init(void)
 
 	// note: flush event scheduled in ne_init_events() after event system is ready
 
-	// load obj_uid counter from redis
-	redis_load_obj_uid_counter();
-
-	redis_donation_subscribe_init();
+	if (redis_ctx)
+	{
+		redis_load_obj_uid_counter();
+		redis_donation_subscribe_init();
+	}
 
 	return true;
 #endif
@@ -263,7 +447,6 @@ bool redis_clear_pwipe_state(void)
 	redis_clear_world_state();
 	redis_clear_floor_drops();
 	redis_clear_floor_pickups();
-	redis_clear_dirty_players();
 	redis_clear_online_players();
 	/* Explicit season caches: leave no online-scoreboard / list bleed into new season. */
 	redis_invalidate_fraglist();
@@ -280,21 +463,27 @@ bool redis_clear_pwipe_state(void)
 void redis_cleanup(void)
 {
 #ifndef __NO_MYSQL__
+	if (redis_world_state_enabled)
+	{
+		if (world_recovery_pipeline_health_copy().initialized &&
+		    !redis_world_recovery_drain(REDIS_WORLD_DRAIN_TIMEOUT_MSEC))
+			logit(LOG_SYS, "redis: world recovery drain timed out during shutdown");
+		if (world_recovery_pipeline_health_copy().initialized)
+			world_recovery_pipeline_shutdown();
+	}
 	if (redis_ctx)
 	{
 		// save obj_uid counter before disconnect
 		redis_save_obj_uid_counter();
-
-		if (donation_sub_ctx)
-		{
-			redisFree(donation_sub_ctx);
-			donation_sub_ctx = NULL;
-			donation_sub_connected = false;
-		}
-
 		redisFree(redis_ctx);
 		redis_ctx = NULL;
 	}
+	if (donation_sub_ctx)
+	{
+		redisFree(donation_sub_ctx);
+		donation_sub_ctx = NULL;
+	}
+	donation_sub_connected = false;
 	redis_enabled = false;
 #endif
 }
@@ -305,7 +494,7 @@ bool redis_ping(void)
 	if (!redis_enabled || !redis_ctx)
 		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "PING");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "PING");
 	if (!reply)
 	{
 		logit(LOG_DEBUG, "redis ping failed: no reply");
@@ -328,7 +517,7 @@ void redis_save_obj_uid_counter(void)
 		return;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "SET mud:next_obj_uid %lu", next_obj_uid);
+		(redisReply *)redis_command(redis_ctx, "SET mud:next_obj_uid %lu", next_obj_uid);
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -340,15 +529,14 @@ void redis_load_obj_uid_counter(void)
 	if (!redis_enabled || !redis_ctx)
 		return;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET mud:next_obj_uid");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:next_obj_uid");
 	if (reply && reply->type == REDIS_REPLY_STRING && reply->str)
 	{
 		unsigned long loaded = strtoul(reply->str, NULL, 10);
 		if (loaded > next_obj_uid)
-		{
-			next_obj_uid = loaded;
-			logit(LOG_SYS, "redis: loaded obj_uid counter = %lu", next_obj_uid);
-		}
+			logit(LOG_SYS,
+			      "redis: ignored legacy obj_uid counter %lu; SQL allocator is authoritative",
+			      loaded);
 	}
 	if (reply)
 		freeReplyObject(reply);
@@ -364,7 +552,7 @@ void redis_log_floor_pickup(unsigned long obj_uid)
 		return;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "SADD mud:floor_pickups %lu", obj_uid);
+		(redisReply *)redis_command(redis_ctx, "SADD mud:floor_pickups %lu", obj_uid);
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -377,7 +565,7 @@ bool redis_check_floor_pickup(unsigned long obj_uid)
 		return false;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "SISMEMBER mud:floor_pickups %lu", obj_uid);
+		(redisReply *)redis_command(redis_ctx, "SISMEMBER mud:floor_pickups %lu", obj_uid);
 	bool found = (reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
 	if (reply)
 		freeReplyObject(reply);
@@ -393,13 +581,13 @@ void redis_clear_floor_pickups(void)
 	if (!redis_enabled || !redis_ctx)
 		return;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:floor_pickups");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL mud:floor_pickups");
 	if (reply)
 		freeReplyObject(reply);
 #endif
 }
 
-#define MAX_FLOOR_DROP_BATCH 64
+#define MAX_FLOOR_DROP_BATCH 1024
 
 static struct
 {
@@ -439,6 +627,11 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 	if (floor_drop_batch_count >= MAX_FLOOR_DROP_BATCH)
 	{
 		redis_flush_floor_drops();
+		if (floor_drop_batch_count >= MAX_FLOOR_DROP_BATCH)
+		{
+			logit(LOG_SYS, "redis: floor delta retry buffer is full");
+			return;
+		}
 	}
 
 	int idx = floor_drop_batch_count++;
@@ -471,31 +664,37 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 #endif
 }
 
-void redis_flush_floor_drops(void)
+bool redis_flush_floor_drops(void)
 {
 #ifndef __NO_MYSQL__
+	if (world_recovery_floor_ack_pending || world_recovery_pipeline_busy())
+		return false;
 	if (!redis_enabled || !redis_ctx)
-		goto cleanup;
+		return false;
 
 	if (floor_drop_batch_count == 0 && floor_drop_remove_count == 0)
-		return;
+		return true;
 
 	// process removes first
 	for (int i = 0; i < floor_drop_remove_count; i++)
 	{
-		redisReply *reply = (redisReply *)redisCommand(
+		redisReply *reply = (redisReply *)redis_command(
 			redis_ctx, "HDEL mud:floor_drops %lu", floor_drop_removes[i]);
-		if (reply)
-			freeReplyObject(reply);
+		if (!reply || reply->type != REDIS_REPLY_INTEGER)
+		{
+			if (reply)
+				freeReplyObject(reply);
+			return false;
+		}
+		freeReplyObject(reply);
 	}
-	floor_drop_remove_count = 0;
 
 	// process adds
 	for (int i = 0; i < floor_drop_batch_count; i++)
 	{
 		cJSON *o = cJSON_CreateObject();
 		if (!o)
-			continue;
+			return false;
 
 		cJSON_AddNumberToObject(o, "uid", (double)floor_drop_batch[i].uid);
 		cJSON_AddNumberToObject(o, "v", floor_drop_batch[i].vnum);
@@ -550,18 +749,23 @@ void redis_flush_floor_drops(void)
 
 		char *json_str = cJSON_PrintUnformatted(o);
 		cJSON_Delete(o);
-		if (json_str)
+		if (!json_str)
+			return false;
+
+		redisReply *reply = (redisReply *)redis_command(redis_ctx,
+								"HSET mud:floor_drops %lu %s",
+								floor_drop_batch[i].uid, json_str);
+		free(json_str);
+		if (!reply || reply->type != REDIS_REPLY_INTEGER)
 		{
-			redisReply *reply =
-				(redisReply *)redisCommand(redis_ctx, "HSET mud:floor_drops %lu %s",
-							   floor_drop_batch[i].uid, json_str);
-			free(json_str);
 			if (reply)
 				freeReplyObject(reply);
+			return false;
 		}
+		freeReplyObject(reply);
 	}
 
-cleanup:
+	floor_drop_remove_count = 0;
 	for (int i = 0; i < floor_drop_batch_count; i++)
 	{
 		if (floor_drop_batch[i].name)
@@ -575,6 +779,9 @@ cleanup:
 		floor_drop_batch[i].long_desc = NULL;
 	}
 	floor_drop_batch_count = 0;
+	return true;
+#else
+	return false;
 #endif
 }
 
@@ -610,16 +817,29 @@ void redis_remove_floor_drop(unsigned long obj_uid)
 #endif
 }
 
-void redis_clear_floor_drops(void)
+static bool redis_clear_floor_drops_checked(void)
 {
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_ctx)
-		return;
+		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:floor_drops");
-	if (reply)
-		freeReplyObject(reply);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL mud:floor_drops");
+	if (!reply || reply->type != REDIS_REPLY_INTEGER)
+	{
+		if (reply)
+			freeReplyObject(reply);
+		return false;
+	}
+	freeReplyObject(reply);
+	return true;
+#else
+	return false;
 #endif
+}
+
+void redis_clear_floor_drops(void)
+{
+	redis_clear_floor_drops_checked();
 }
 
 bool redis_check_floor_drop(unsigned long obj_uid)
@@ -629,7 +849,7 @@ bool redis_check_floor_drop(unsigned long obj_uid)
 		return false;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "HEXISTS mud:floor_drops %lu", obj_uid);
+		(redisReply *)redis_command(redis_ctx, "HEXISTS mud:floor_drops %lu", obj_uid);
 	bool found = (reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
 	if (reply)
 		freeReplyObject(reply);
@@ -645,7 +865,7 @@ int redis_restore_floor_drops(void)
 	if (!redis_enabled || !redis_ctx)
 		return 0;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "HGETALL mud:floor_drops");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HGETALL mud:floor_drops");
 	if (!reply || reply->type != REDIS_REPLY_ARRAY)
 	{
 		if (reply)
@@ -667,13 +887,6 @@ int redis_restore_floor_drops(void)
 		if (uid == 0)
 			continue;
 
-		// already picked up? skip
-		if (redis_check_floor_pickup(uid))
-		{
-			skipped++;
-			continue;
-		}
-
 		cJSON *obj_json = cJSON_Parse(json_str);
 		if (!obj_json)
 			continue;
@@ -691,6 +904,15 @@ int redis_restore_floor_drops(void)
 		int rnum = real_room(room_vnum);
 		if (rnum < 0 || rnum > top_of_world)
 		{
+			cJSON_Delete(obj_json);
+			continue;
+		}
+		char room_ref[32];
+		snprintf(room_ref, sizeof(room_ref), "%d", room_vnum);
+		if (!sql_persistence_item_owner_matches(uid, "room", room_ref,
+							"redis_restore_floor_drops"))
+		{
+			skipped++;
 			cJSON_Delete(obj_json);
 			continue;
 		}
@@ -782,7 +1004,7 @@ int redis_restore_floor_drops(void)
 	freeReplyObject(reply);
 
 	if (skipped > 0)
-		logit(LOG_SYS, "redis: floor drops: skipped %d picked-up items", skipped);
+		logit(LOG_SYS, "redis: floor drops: skipped %d non-authoritative items", skipped);
 	if (restored > 0)
 		logit(LOG_SYS, "redis: floor drops: restored %d items", restored);
 
@@ -795,337 +1017,43 @@ int redis_restore_floor_drops(void)
 #endif
 }
 
-// debounce dirty marks - skip if already marked this pid recently
-#define MAX_DIRTY_DEBOUNCE 64
-static struct
-{
-	int pid;
-	time_t last_mark;
-} dirty_debounce[MAX_DIRTY_DEBOUNCE];
-static int dirty_debounce_count = 0;
-
-// returns true if we should proceed, false if debounced
-static bool check_dirty_debounce(int pid)
-{
-	time_t now = time(NULL);
-
-	for (int i = 0; i < dirty_debounce_count; i++)
-	{
-		if (dirty_debounce[i].pid == pid)
-		{
-			if (now - dirty_debounce[i].last_mark < 1) // 1 second debounce
-				return false;
-			dirty_debounce[i].last_mark = now;
-			return true;
-		}
-	}
-
-	// not found, add it
-	if (dirty_debounce_count < MAX_DIRTY_DEBOUNCE)
-	{
-		dirty_debounce[dirty_debounce_count].pid = pid;
-		dirty_debounce[dirty_debounce_count].last_mark = now;
-		dirty_debounce_count++;
-	}
-	return true;
-}
-
-static void redis_restore_dirty_snapshot(const char *inflight_key)
-{
-	if (!redis_enabled || !redis_ctx || !inflight_key)
-		return;
-
-	redisReply *restore = (redisReply *)redisCommand(
-		redis_ctx, "SUNIONSTORE mud:dirty_players 2 mud:dirty_players %s", inflight_key);
-	if (restore)
-	{
-		bool restored = (restore->type != REDIS_REPLY_ERROR);
-		freeReplyObject(restore);
-		if (restored)
-		{
-			redisReply *del =
-				(redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
-			if (del)
-				freeReplyObject(del);
-		}
-	}
-}
-
 void mark_player_dirty(int pid)
 {
 	if (_pwipe)
 		return;
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || pid <= 0)
+	mark_player_dirty_components(pid, PLAYER_CHECKPOINT_COMPONENT_ALL);
+}
+
+void mark_player_dirty_components(int pid, player_component_mask_t components)
+{
+	if (_pwipe)
 		return;
-
-	// debounce - skip if we marked this pid dirty within the last second
-	if (!check_dirty_debounce(pid))
-	{
-		redisReply *queued = (redisReply *)redisCommand(
-			redis_ctx, "SISMEMBER mud:dirty_players %d", pid);
-		if (queued)
-		{
-			bool already_queued =
-				(queued->type == REDIS_REPLY_INTEGER && queued->integer == 1);
-			freeReplyObject(queued);
-			if (already_queued)
-				return;
-		}
-	}
-
-	if (!redis_ctx || redis_ctx->err)
-	{
-		if (!redis_reconnect())
-		{
-			redis_enabled = false;
-			P_char ch = find_player_by_pid(pid);
-			if (ch && IS_PC(ch))
-			{
-				// Wrap save in transaction
-				if (sql_begin_transaction())
-				{
-					sql_save_player(ch, RENT_CRASH, 0);
-					if (!sql_commit())
-						sql_rollback();
-				}
-				else
-					sql_save_player(ch, RENT_CRASH, 0);
-			}
-			return;
-		}
-	}
-
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SADD mud:dirty_players %d", pid);
-	if (!reply)
-	{
-		P_char ch = find_player_by_pid(pid);
-		if (ch && IS_PC(ch))
-		{
-			// Wrap save in transaction
-			if (sql_begin_transaction())
-			{
-				sql_save_player(ch, RENT_CRASH, 0);
-				if (!sql_commit())
-					sql_rollback();
-			}
-			else
-				sql_save_player(ch, RENT_CRASH, 0);
-		}
-		return;
-	}
-	freeReplyObject(reply);
-#endif
+	player_save_pipeline_mark(pid, components);
 }
 
 void flush_dirty_players(void)
 {
-#ifndef __NO_MYSQL__
-	if (!redis_enabled)
-		return;
-
-	const char *inflight_key = "mud:dirty_players:flushing";
-
-	// skip if previous async save still running
-	if (dirty_flush_pid > 0)
-	{
-		int status;
-		pid_t result = waitpid(dirty_flush_pid, &status, WNOHANG);
-		if (result == 0)
-			return;
-		if (result > 0)
-		{
-			if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-			{
-				redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s",
-									     inflight_key);
-				if (del)
-					freeReplyObject(del);
-			}
-			else
-			{
-				logit(LOG_SYS,
-				      "flush_dirty: previous async save failed, restoring dirty set for retry");
-				redis_restore_dirty_snapshot(inflight_key);
-			}
-		}
-		dirty_flush_pid = 0;
-	}
-
-	if (!redis_ctx || redis_ctx->err)
-	{
-		if (!redis_reconnect())
-		{
-			redis_enabled = false;
-			return;
-		}
-	}
-
-	redisReply *rename =
-		(redisReply *)redisCommand(redis_ctx, "RENAME mud:dirty_players %s", inflight_key);
-	if (!rename)
-		return;
-	if (rename->type == REDIS_REPLY_ERROR)
-	{
-		freeReplyObject(rename);
-		return;
-	}
-	freeReplyObject(rename);
-
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SMEMBERS %s", inflight_key);
-	if (!reply)
-		return;
-
-	if (reply->type != REDIS_REPLY_ARRAY || reply->elements == 0)
-	{
-		freeReplyObject(reply);
-		return;
-	}
-
-	// copy pids to array
-	int count = (int)reply->elements;
-	int *pids = (int *)malloc(count * sizeof(int));
-	if (!pids)
-	{
-		freeReplyObject(reply);
-		redis_restore_dirty_snapshot(inflight_key);
-		return;
-	}
-
-	int valid = 0;
-	for (size_t i = 0; i < reply->elements; i++)
-	{
-		if (reply->element[i]->type == REDIS_REPLY_STRING)
-		{
-			int pid = atoi(reply->element[i]->str);
-			// only keep pids of players actually online
-			P_char ch = find_player_by_pid(pid);
-			if (ch && IS_PC(ch))
-				pids[valid++] = pid;
-		}
-	}
-	freeReplyObject(reply);
-
-	if (valid == 0)
-	{
-		free(pids);
-		redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
-		if (del)
-			freeReplyObject(del);
-		return;
-	}
-
-	// fork for async save
-	logit(LOG_SYS, "flush_dirty: saving %d online players async", valid);
-	pid_t pid = fork();
-	if (pid < 0)
-	{
-		// fork failed, sync fallback
-		logit(LOG_SYS, "flush_dirty: fork failed, saving sync");
-		for (int i = 0; i < valid; i++)
-		{
-			P_char ch = find_player_by_pid(pids[i]);
-			if (!ch || !IS_PC(ch))
-				continue;
-			// Wrap save in transaction
-			if (sql_begin_transaction())
-			{
-				sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
-				if (!sql_commit())
-					sql_rollback();
-			}
-			else
-				sql_save_player(ch, RENT_CRASH, get_room_vnum(ch));
-			// gremlin needs to run in main process
-			if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-			    world[ch->in_room].funct)
-				(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
-		}
-		free(pids);
-		redisReply *del = (redisReply *)redisCommand(redis_ctx, "DEL %s", inflight_key);
-		if (del)
-			freeReplyObject(del);
-		return;
-	}
-
-	if (pid == 0)
-	{
-		// child
-		MYSQL *child_conn = sql_create_child_connection();
-		if (!child_conn)
-		{
-			free(pids);
-			_exit(1);
-		}
-		sql_reset_for_child(child_conn);
-
-		bool all_ok = true;
-		for (int i = 0; i < valid; i++)
-		{
-			P_char ch = find_player_by_pid(pids[i]);
-			if (ch && IS_PC(ch))
-			{
-				// Wrap save in transaction
-				if (sql_begin_transaction())
-				{
-					if (!sql_save_player(ch, RENT_CRASH, get_room_vnum(ch)))
-						all_ok = false;
-					if (!sql_commit())
-					{
-						sql_rollback();
-						all_ok = false;
-					}
-				}
-				else if (!sql_save_player(ch, RENT_CRASH, get_room_vnum(ch)))
-				{
-					all_ok = false;
-				}
-			}
-		}
-
-		mysql_close(child_conn);
-		free(pids);
-		_exit(all_ok ? 0 : 1);
-	}
-
-	// parent - gremlin events wont work in forked child so do it here
-	// also clear dirty container flags since child has snapshot of them
-	for (int i = 0; i < valid; i++)
-	{
-		P_char ch = find_player_by_pid(pids[i]);
-		if (ch && IS_PC(ch))
-		{
-			clear_player_dirty_container_flags(ch);
-			if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
-			    world[ch->in_room].funct)
-				(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
-		}
-	}
-
-	dirty_flush_pid = pid;
-	free(pids);
-#endif
+	for (P_char ch = character_list; ch; ch = ch->next)
+		if (IS_PC(ch) && GET_PID(ch) > 0)
+			player_save_pipeline_checkpoint_dirty(ch, RENT_CRASH, get_room_vnum(ch));
 }
 
 int get_dirty_player_count(void)
 {
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx)
-		return 0;
+	return static_cast<int>(player_save_pipeline_dirty_count());
+}
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SCARD mud:dirty_players");
-	if (!reply)
-		return 0;
-
-	int count = 0;
-	if (reply->type == REDIS_REPLY_INTEGER)
-		count = (int)reply->integer;
-
-	freeReplyObject(reply);
-	return count;
-#else
-	return 0;
-#endif
+struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy(void)
+{
+	struct persistence_dirty_save_snapshot snapshot = {};
+	const player_save_pipeline_health pipeline = player_save_pipeline_health_copy();
+	const player_save_worker_health worker = player_save_worker_health_copy();
+	snapshot.enabled = 1;
+	snapshot.available = pipeline.initialized ? 1 : 0;
+	snapshot.active_count = player_save_pipeline_dirty_count();
+	snapshot.inflight_count = worker.inflight_pids;
+	snapshot.inflight_oldest_age_msec = worker.oldest_age_msec;
+	return snapshot;
 }
 
 void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
@@ -1138,333 +1066,6 @@ void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, 
 			  NULL, 0);
 }
 
-#define REDIS_WORLD_STATE_VER 6
-
-// json world state save - v2 format with short keys for compactness
-static bool redis_save_world_state_json(redisContext *ctx)
-{
-#ifdef __NO_MYSQL__
-	return false;
-#else
-	struct timeval start, end;
-	gettimeofday(&start, NULL);
-
-	cJSON *root = cJSON_CreateObject();
-	if (!root)
-		return false;
-
-	cJSON_AddNumberToObject(root, "ver", REDIS_WORLD_STATE_VER);
-	cJSON_AddNumberToObject(root, "ts", (double)time(NULL));
-
-	// mobs array
-	cJSON *mobs = cJSON_CreateArray();
-	cJSON_AddItemToObject(root, "mobs", mobs);
-
-	for (P_char ch = character_list; ch; ch = ch->next)
-	{
-		if (!IS_NPC(ch) || ch->in_room < 0 || IS_PC_PET(ch))
-			continue;
-
-		cJSON *mob = cJSON_CreateObject();
-		cJSON_AddNumberToObject(mob, "v", GET_VNUM(ch));
-		cJSON_AddNumberToObject(mob, "id", GET_IDNUM(ch));
-		cJSON_AddNumberToObject(mob, "rm", world[ch->in_room].number);
-		cJSON_AddNumberToObject(mob, "bp", ch->player.birthplace);
-		cJSON_AddNumberToObject(mob, "hp", GET_HIT(ch));
-		cJSON_AddNumberToObject(mob, "mhp", GET_MAX_HIT(ch));
-		cJSON_AddNumberToObject(mob, "mn", GET_MANA(ch));
-		cJSON_AddNumberToObject(mob, "mmn", GET_MAX_MANA(ch));
-		cJSON_AddNumberToObject(mob, "vt", GET_VITALITY(ch));
-		cJSON_AddNumberToObject(mob, "mvt", GET_MAX_VITALITY(ch));
-		cJSON_AddNumberToObject(mob, "act", (int)ch->specials.act);
-		cJSON_AddNumberToObject(mob, "act2", (int)ch->specials.act2);
-		cJSON_AddNumberToObject(mob, "act3", (int)ch->specials.act3);
-		if (GET_GOLD(ch) > 0)
-			cJSON_AddNumberToObject(mob, "gld", GET_GOLD(ch));
-
-		if (IS_SET(ch->only.npc->str_mask, STRUNG_KEYS))
-		{
-			cJSON_AddStringToObject(mob, "nm", GET_NAME(ch));
-		}
-
-		if (IS_SET(ch->only.npc->str_mask, STRUNG_DESC1))
-		{
-			cJSON_AddStringToObject(mob, "ld", ch->player.long_descr);
-		}
-
-		if (IS_SET(ch->only.npc->str_mask, STRUNG_DESC2))
-		{
-			cJSON_AddStringToObject(mob, "sd", ch->player.short_descr);
-		}
-
-		if (ch->following)
-		{
-			cJSON_AddNumberToObject(mob, "fid", GET_IDNUM(ch->following));
-		}
-
-		if (get_linking_char(ch, LNK_RIDING) != NULL)
-		{
-			cJSON_AddNumberToObject(mob, "rid",
-						GET_IDNUM(get_linking_char(ch, LNK_RIDING)));
-		}
-
-		// equipment as slot:vnum object (only non-empty slots)
-		cJSON *eq = cJSON_CreateObject();
-		bool has_eq = false;
-		for (int w = 0; w < MAX_WEAR; w++)
-		{
-			if (ch->equipment[w])
-			{
-				char slot[16];
-				snprintf(slot, sizeof(slot), "%d", w);
-				cJSON_AddNumberToObject(eq, slot, OBJ_VNUM(ch->equipment[w]));
-				has_eq = true;
-			}
-		}
-		if (has_eq)
-			cJSON_AddItemToObject(mob, "eq", eq);
-		else
-			cJSON_Delete(eq);
-
-		// inventory as vnum array
-		P_obj obj;
-		int inv_count = 0;
-		for (obj = ch->carrying; obj; obj = obj->next_content)
-			inv_count++;
-		if (inv_count > 0)
-		{
-			cJSON *inv = cJSON_CreateArray();
-			for (obj = ch->carrying; obj; obj = obj->next_content)
-				cJSON_AddItemToArray(inv, cJSON_CreateNumber(OBJ_VNUM(obj)));
-			cJSON_AddItemToObject(mob, "inv", inv);
-		}
-
-		// affects array
-		struct affected_type *af;
-		int aff_count = 0;
-		for (af = ch->affected; af; af = af->next)
-			aff_count++;
-		if (aff_count > 0)
-		{
-			cJSON *affs = cJSON_CreateArray();
-			for (af = ch->affected; af; af = af->next)
-			{
-				cJSON *a = cJSON_CreateObject();
-				cJSON_AddNumberToObject(a, "t", af->type);
-				cJSON_AddNumberToObject(a, "d", af->duration);
-				if (af->modifier != 0)
-					cJSON_AddNumberToObject(a, "m", af->modifier);
-				if (af->location != 0)
-					cJSON_AddNumberToObject(a, "l", af->location);
-				if (af->level != 0)
-					cJSON_AddNumberToObject(a, "lv", af->level);
-				if (af->bitvector != 0)
-					cJSON_AddNumberToObject(a, "b1", (double)af->bitvector);
-				if (af->bitvector2 != 0)
-					cJSON_AddNumberToObject(a, "b2", (double)af->bitvector2);
-				if (af->bitvector3 != 0)
-					cJSON_AddNumberToObject(a, "b3", (double)af->bitvector3);
-				if (af->bitvector4 != 0)
-					cJSON_AddNumberToObject(a, "b4", (double)af->bitvector4);
-				if (af->bitvector5 != 0)
-					cJSON_AddNumberToObject(a, "b5", (double)af->bitvector5);
-				cJSON_AddItemToArray(affs, a);
-			}
-			cJSON_AddItemToObject(mob, "aff", affs);
-		}
-
-		cJSON_AddItemToArray(mobs, mob);
-	}
-
-	// floor objects array
-	cJSON *objs = cJSON_CreateArray();
-	cJSON_AddItemToObject(root, "objs", objs);
-
-	for (P_obj obj = object_list; obj; obj = obj->next)
-	{
-		if (!OBJ_ROOM(obj))
-			continue;
-
-		int vnum = OBJ_VNUM(obj);
-		if (vnum == VOBJ_PANEL || vnum == VOBJ_ALL_SHIPS || vnum == VOBJ_CARGO_CRATE)
-			continue;
-
-		// skip old corpses (value[6] is CORPSE_SAVEID timestamp) - older than 24h
-		if (vnum == 2 && obj->value[6] > 0)
-		{
-			time_t corpse_time = (time_t)obj->value[6];
-			if (time(NULL) - corpse_time > 86400)
-				continue;
-		}
-
-		cJSON *o = cJSON_CreateObject();
-		cJSON_AddNumberToObject(o, "uid", (double)obj->obj_uid);
-		cJSON_AddNumberToObject(o, "v", vnum);
-		cJSON_AddNumberToObject(o, "rm", world[obj->loc.room].number);
-		cJSON_AddNumberToObject(o, "tp", obj->type);
-
-		// values - only non-zero
-		for (int i = 0; i < NUMB_OBJ_VALS; i++)
-		{
-			if (obj->value[i] != 0)
-			{
-				char key[16];
-				snprintf(key, sizeof(key), "v%d", i);
-				cJSON_AddNumberToObject(o, key, obj->value[i]);
-			}
-		}
-
-		// timer - only if any non-zero
-		bool has_timer = false;
-		for (int i = 0; i < 6; i++)
-		{
-			if (obj->timer[i] != 0)
-			{
-				has_timer = true;
-				break;
-			}
-		}
-		if (has_timer)
-		{
-			cJSON *tmr = cJSON_CreateArray();
-			for (int i = 0; i < 6; i++)
-				cJSON_AddItemToArray(tmr,
-						     cJSON_CreateNumber((double)obj->timer[i]));
-			cJSON_AddItemToObject(o, "tmr", tmr);
-		}
-
-		// strung strings (corpses etc)
-		if (IS_SET(obj->str_mask, STRUNG_KEYS) && obj->name && obj->name[0])
-			cJSON_AddStringToObject(o, "nm", obj->name);
-		if (IS_SET(obj->str_mask, STRUNG_DESC2) && obj->short_description &&
-		    obj->short_description[0])
-			cJSON_AddStringToObject(o, "sd", obj->short_description);
-		if (IS_SET(obj->str_mask, STRUNG_DESC1) && obj->description && obj->description[0])
-			cJSON_AddStringToObject(o, "ld", obj->description);
-
-		// contents
-		P_obj content;
-		int cont_count = 0;
-		for (content = obj->contains; content; content = content->next_content)
-			cont_count++;
-		if (cont_count > 0)
-		{
-			cJSON *contents = cJSON_CreateArray();
-			for (content = obj->contains; content; content = content->next_content)
-				cJSON_AddItemToArray(contents,
-						     cJSON_CreateNumber(OBJ_VNUM(content)));
-			cJSON_AddItemToObject(o, "con", contents);
-		}
-
-		cJSON_AddItemToArray(objs, o);
-	}
-
-	// doors array
-	cJSON *doors = cJSON_CreateArray();
-	cJSON_AddItemToObject(root, "doors", doors);
-
-	for (int room = 0; room <= top_of_world; room++)
-	{
-		for (int dir = 0; dir < NUM_EXITS; dir++)
-		{
-			if (world[room].dir_option[dir] &&
-			    IS_SET(world[room].dir_option[dir]->exit_info, EX_ISDOOR))
-			{
-				cJSON *d = cJSON_CreateObject();
-				cJSON_AddNumberToObject(d, "rm", world[room].number);
-				cJSON_AddNumberToObject(d, "dr", dir);
-				cJSON_AddNumberToObject(d, "st",
-							world[room].dir_option[dir]->exit_info);
-				cJSON_AddItemToArray(doors, d);
-			}
-		}
-	}
-
-	// zones array
-	cJSON *zones = cJSON_CreateArray();
-	cJSON_AddItemToObject(root, "zones", zones);
-
-	for (int z = 0; z <= top_of_zone_table; z++)
-	{
-		cJSON *zn = cJSON_CreateObject();
-		cJSON_AddNumberToObject(zn, "rn", z);
-		cJSON_AddNumberToObject(zn, "age", zone_table[z].age);
-		cJSON_AddNumberToObject(zn, "ls", zone_table[z].lifespan);
-		cJSON_AddItemToArray(zones, zn);
-	}
-
-	// output to redis
-	char *json = cJSON_PrintUnformatted(root);
-	cJSON_Delete(root);
-
-	if (!json)
-		return false;
-
-	size_t json_len = strlen(json);
-	redisReply *reply = (redisReply *)redisCommand(ctx, "SET mud:world_state %s", json);
-	free(json);
-
-	if (!reply)
-		return false;
-	freeReplyObject(reply);
-
-	char timestamp_str[32];
-	snprintf(timestamp_str, sizeof(timestamp_str), "%ld", (long)time(NULL));
-	reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:timestamp %s", timestamp_str);
-	if (reply)
-		freeReplyObject(reply);
-
-	reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:valid 1");
-	if (reply)
-		freeReplyObject(reply);
-
-	gettimeofday(&end, NULL);
-	long ms = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_usec - start.tv_usec) / 1000;
-	logit(LOG_SYS, "redis: world state json saved in %ldms (%.1fMB)", ms, json_len / 1048576.0);
-
-	return true;
-#endif
-}
-
-// sync version, called by forked child - needs own redis connection
-static bool redis_save_world_state_sync(void)
-{
-#ifdef __NO_MYSQL__
-	return false;
-#else
-	const char *redis_host = getenv("REDIS_HOST");
-	if (!redis_host || !*redis_host)
-		redis_host = "127.0.0.1";
-
-	const char *redis_port_str = getenv("REDIS_PORT");
-	int redis_port = 6379;
-	if (redis_port_str && *redis_port_str)
-	{
-		redis_port = atoi(redis_port_str);
-		if (redis_port <= 0 || redis_port > 65535)
-			redis_port = 6379;
-	}
-
-	redisContext *ctx = redisConnect(redis_host, redis_port);
-	if (!ctx || ctx->err)
-	{
-		if (ctx)
-			redisFree(ctx);
-		return false;
-	}
-
-	redisReply *valid_reply = (redisReply *)redisCommand(ctx, "SET mud:world_state:valid 0");
-	if (valid_reply)
-		freeReplyObject(valid_reply);
-
-	// use json format instead of binary
-	bool result = redis_save_world_state_json(ctx);
-	redisFree(ctx);
-	return result;
-#endif
-}
-
-// forks child to avoid blocking main loop
 bool redis_save_world_state(void)
 {
 #ifdef __NO_MYSQL__
@@ -1472,42 +1073,80 @@ bool redis_save_world_state(void)
 #else
 	if (!redis_enabled || !redis_world_state_enabled)
 		return false;
-
-	if (world_state_save_pid > 0)
+	if (!redis_world_recovery_ensure_initialized())
 	{
-		int status;
-		pid_t result = waitpid(world_state_save_pid, &status, WNOHANG);
-		if (result == 0)
-		{
-			// still running
-			logit(LOG_DEBUG, "redis: world state save still in progress, skipping");
-			return true;
-		}
-		world_state_save_pid = 0;
-	}
-
-	int num_mobs, num_objs, num_rooms;
-	copyover_count_items(&num_mobs, &num_objs, &num_rooms);
-	int num_zones = top_of_zone_table + 1;
-
-	logit(LOG_SYS, "redis: saving world state (async, %d mobs, %d objs, %d doors, %d zones)",
-	      num_mobs, num_objs, num_rooms, num_zones);
-
-	pid_t pid = fork();
-	if (pid < 0)
-	{
-		logit(LOG_SYS, "redis: fork failed for world state save");
+		logit(LOG_SYS, "redis: world recovery worker unavailable");
 		return false;
 	}
+	redis_world_recovery_pulse();
+	if (world_recovery_pipeline_busy())
+		return true;
+	if (world_recovery_floor_ack_pending)
+		return false;
+	if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
+		return false;
+	if (!redis_flush_floor_drops())
+		return false;
+	logit(LOG_SYS, "redis: starting bounded world recovery capture");
+	return world_recovery_pipeline_request();
+#endif
+}
 
-	if (pid == 0)
+void redis_world_recovery_pulse(void)
+{
+#ifndef __NO_MYSQL__
+	if (!redis_world_state_enabled)
+		return;
+	if (!world_recovery_pipeline_health_copy().initialized)
+		return;
+	world_recovery_pipeline_pulse();
+	world_recovery_completion completion = {};
+	while (world_recovery_pipeline_take_completion(&completion))
 	{
-		bool success = redis_save_world_state_sync();
-		_exit(success ? 0 : 1);
+		const world_recovery_health recovery = world_recovery_pipeline_health_copy();
+		if (completion.published &&
+		    completion.sequence == recovery.last_acknowledged_sequence)
+		{
+			world_recovery_floor_ack_pending = true;
+			logit(LOG_SYS,
+			      "redis: world recovery generation acknowledged sequence=%llu attempts=%u",
+			      (unsigned long long)completion.sequence, completion.attempts);
+		}
+		else if (!completion.published)
+			logit(LOG_SYS,
+			      "redis: world recovery generation publish failed sequence=%llu attempts=%u",
+			      (unsigned long long)completion.sequence, completion.attempts);
 	}
+	if (world_recovery_floor_ack_pending)
+	{
+		if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
+			return;
+		if (redis_clear_floor_drops_checked())
+			world_recovery_floor_ack_pending = false;
+	}
+#endif
+}
 
-	world_state_save_pid = pid;
+bool redis_world_recovery_drain(uint64_t timeout_msec)
+{
+#ifdef __NO_MYSQL__
+	(void)timeout_msec;
 	return true;
+#else
+	if (!redis_world_state_enabled)
+		return true;
+	if (!world_recovery_pipeline_health_copy().initialized)
+		return true;
+	const auto deadline =
+		std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_msec);
+	while (std::chrono::steady_clock::now() < deadline)
+	{
+		redis_world_recovery_pulse();
+		if (!world_recovery_pipeline_busy() && !world_recovery_floor_ack_pending)
+			return true;
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+	return false;
 #endif
 }
 
@@ -1525,51 +1164,28 @@ bool redis_has_world_state(void)
 			return false;
 	}
 
-	// check valid flag
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET mud:world_state:valid");
+	// The atomic current pointer and self-validating framed blob are authoritative.
+	// Other metadata keys are operator diagnostics and cannot invalidate a good blob.
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
 	if (!reply)
 		return false;
-
-	bool valid = false;
-	if (reply->type == REDIS_REPLY_STRING && reply->str && strcmp(reply->str, "1") == 0)
-		valid = true;
-
-	freeReplyObject(reply);
-
-	if (!valid)
-		return false;
-
-	// check timestamp
-	reply = (redisReply *)redisCommand(redis_ctx, "GET mud:world_state:timestamp");
-	if (!reply)
-		return false;
-
-	time_t saved_time = 0;
+	uint64_t sequence = 0;
 	if (reply->type == REDIS_REPLY_STRING && reply->str)
-		saved_time = (time_t)atol(reply->str);
-
+		sequence = strtoull(reply->str, NULL, 10);
 	freeReplyObject(reply);
-
-	if (saved_time == 0)
+	if (!sequence)
 		return false;
-
-	time_t now = time(NULL);
-	if (now - saved_time > world_state_max_age)
-	{
-		logit(LOG_SYS, "redis: world state too old (%ld seconds), ignoring",
-		      (long)(now - saved_time));
-		redis_clear_world_state();
-		return false;
-	}
-
-	// check data exists
-	reply = (redisReply *)redisCommand(redis_ctx, "EXISTS mud:world_state");
+	reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:generation:%llu",
+					    (unsigned long long)sequence);
 	if (!reply)
 		return false;
-
-	bool exists = (reply->type == REDIS_REPLY_INTEGER && reply->integer > 0);
+	world_recovery_header header = {};
+	const bool exists =
+		reply->type == REDIS_REPLY_STRING && reply->str && reply->len > 0 &&
+		world_recovery_validate(reinterpret_cast<const unsigned char *>(reply->str),
+					reply->len, world_state_max_age, sequence, &header) &&
+		header.sequence == sequence;
 	freeReplyObject(reply);
-
 	return exists;
 #endif
 }
@@ -1582,7 +1198,7 @@ time_t redis_world_state_timestamp(void)
 	if (!redis_enabled || !redis_ctx)
 		return 0;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET mud:world_state:timestamp");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:timestamp");
 	if (!reply)
 		return 0;
 
@@ -1600,489 +1216,29 @@ void redis_clear_world_state(void)
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_ctx)
 		return;
+	uint64_t current_sequence = 0;
+	redisReply *current_reply =
+		(redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
+	if (current_reply && current_reply->type == REDIS_REPLY_STRING && current_reply->str)
+		current_sequence = strtoull(current_reply->str, NULL, 10);
+	if (current_reply)
+		freeReplyObject(current_reply);
+	if (current_sequence)
+	{
+		redisReply *generation_reply = (redisReply *)redis_command(
+			redis_ctx, "DEL mud:world_state:generation:%llu",
+			(unsigned long long)current_sequence);
+		if (generation_reply)
+			freeReplyObject(generation_reply);
+	}
 
-	redisReply *reply = (redisReply *)redisCommand(
-		redis_ctx, "DEL mud:world_state mud:world_state:timestamp mud:world_state:valid");
+	redisReply *reply = (redisReply *)redis_command(
+		redis_ctx,
+		"DEL mud:world_state:current mud:world_state:timestamp mud:world_state:sequence mud:world_state:checksum mud:world_state:complete");
 	if (reply)
 		freeReplyObject(reply);
 
 	logit(LOG_SYS, "redis: cleared world state snapshot");
-#endif
-}
-
-// json world state load - parses v2 format saved by redis_save_world_state_json
-static bool redis_load_world_state_json(const char *json)
-{
-#ifdef __NO_MYSQL__
-	return false;
-#else
-	cJSON *root = cJSON_Parse(json);
-	if (!root)
-	{
-		logit(LOG_SYS, "redis: json parse failed");
-		return false;
-	}
-
-	// check version
-	cJSON *ver = cJSON_GetObjectItem(root, "ver");
-	if (!ver || !cJSON_IsNumber(ver) || ver->valueint != REDIS_WORLD_STATE_VER)
-	{
-		logit(LOG_SYS, "redis: json version mismatch (expected %d, got %d)",
-		      REDIS_WORLD_STATE_VER, ver ? ver->valueint : 0);
-		cJSON_Delete(root);
-		return false;
-	}
-
-	int mobs_restored = 0, objs_restored = 0, objs_skipped = 0;
-	int doors_restored = 0, zones_restored = 0;
-
-	struct follow_riding_data
-	{
-		P_char mob;
-		int followingID;
-		int ridingID;
-		struct follow_riding_data *next;
-	} *frdHead = NULL;
-
-	// restore mobs
-	cJSON *mobs = cJSON_GetObjectItem(root, "mobs");
-	if (mobs && cJSON_IsArray(mobs))
-	{
-		cJSON *mob_json;
-		cJSON_ArrayForEach(mob_json, mobs)
-		{
-			cJSON *v = cJSON_GetObjectItem(mob_json, "v");
-			cJSON *rm = cJSON_GetObjectItem(mob_json, "rm");
-			if (!v || !rm)
-				continue;
-
-			int vnum = v->valueint;
-			int room_vnum = rm->valueint;
-
-			int mob_rnum = real_mobile(vnum);
-			if (mob_rnum < 0)
-				continue;
-
-			int rnum = real_room(room_vnum);
-			if (rnum < 0 || rnum > top_of_world)
-				continue;
-
-			P_char mob = read_mobile(mob_rnum, REAL);
-			if (!mob)
-				continue;
-
-			// restore idnum
-			cJSON *id = cJSON_GetObjectItem(mob_json, "id");
-			if (id && cJSON_IsNumber(id))
-				GET_IDNUM(mob) = id->valueint;
-
-			char_to_room(mob, rnum, -2);
-
-			// restore stats
-			cJSON *hp = cJSON_GetObjectItem(mob_json, "hp");
-			cJSON *mhp = cJSON_GetObjectItem(mob_json, "mhp");
-			cJSON *mn = cJSON_GetObjectItem(mob_json, "mn");
-			cJSON *mmn = cJSON_GetObjectItem(mob_json, "mmn");
-			cJSON *vt = cJSON_GetObjectItem(mob_json, "vt");
-			cJSON *mvt = cJSON_GetObjectItem(mob_json, "mvt");
-			cJSON *gld = cJSON_GetObjectItem(mob_json, "gld");
-			cJSON *bp = cJSON_GetObjectItem(mob_json, "bp");
-			cJSON *act = cJSON_GetObjectItem(mob_json, "act");
-			cJSON *act2 = cJSON_GetObjectItem(mob_json, "act2");
-			cJSON *act3 = cJSON_GetObjectItem(mob_json, "act3");
-
-			if (hp && cJSON_IsNumber(hp))
-				GET_HIT(mob) = hp->valueint;
-			if (mhp && cJSON_IsNumber(mhp))
-				GET_MAX_HIT(mob) = mhp->valueint;
-			if (mn && cJSON_IsNumber(mn))
-				GET_MANA(mob) = mn->valueint;
-			if (mmn && cJSON_IsNumber(mmn))
-				GET_MAX_MANA(mob) = mmn->valueint;
-			if (vt && cJSON_IsNumber(vt))
-				GET_VITALITY(mob) = vt->valueint;
-			if (mvt && cJSON_IsNumber(mvt))
-				GET_MAX_VITALITY(mob) = mvt->valueint;
-			if (gld && cJSON_IsNumber(gld))
-				GET_GOLD(mob) = gld->valueint;
-			if (bp && cJSON_IsNumber(bp))
-				GET_BIRTHPLACE(mob) = bp->valueint;
-			if (act && cJSON_IsNumber(act))
-				mob->specials.act = (uint)act->valueint;
-			if (act2 && cJSON_IsNumber(act2))
-				mob->specials.act2 = (uint)act2->valueint;
-			if (act3 && cJSON_IsNumber(act3))
-				mob->specials.act3 = (uint)act3->valueint;
-
-			SET_POS(mob, POS_STANDING + STAT_NORMAL);
-
-			// handle restrung mobs (like randoms)
-			cJSON *name = cJSON_GetObjectItem(mob_json, "nm");
-			cJSON *shortD = cJSON_GetObjectItem(mob_json, "sd");
-			cJSON *longD = cJSON_GetObjectItem(mob_json, "ld");
-			if (name && cJSON_IsString(name))
-			{
-				mob->only.npc->str_mask |= STRUNG_KEYS;
-				GET_NAME(mob) = str_dup(name->valuestring);
-			}
-			if (shortD && cJSON_IsString(shortD))
-			{
-				mob->only.npc->str_mask |= STRUNG_DESC2;
-				mob->player.short_descr = str_dup(shortD->valuestring);
-			}
-			if (longD && cJSON_IsString(longD))
-			{
-				mob->only.npc->str_mask |= STRUNG_DESC1;
-				mob->player.long_descr = str_dup(longD->valuestring);
-			}
-
-			// restore equipment
-			cJSON *eq = cJSON_GetObjectItem(mob_json, "eq");
-			if (eq && cJSON_IsObject(eq))
-			{
-				cJSON *slot_obj;
-				cJSON_ArrayForEach(slot_obj, eq)
-				{
-					if (!cJSON_IsNumber(slot_obj))
-						continue;
-					int slot = atoi(slot_obj->string);
-					int eq_vnum = slot_obj->valueint;
-					if (slot >= 0 && slot < MAX_WEAR && eq_vnum > 0)
-					{
-						P_obj obj = read_object(eq_vnum, VIRTUAL);
-						if (obj)
-							equip_char(mob, obj, slot, 0);
-					}
-				}
-			}
-
-			// restore inventory
-			cJSON *inv = cJSON_GetObjectItem(mob_json, "inv");
-			if (inv && cJSON_IsArray(inv))
-			{
-				cJSON *inv_vnum;
-				cJSON_ArrayForEach(inv_vnum, inv)
-				{
-					if (!cJSON_IsNumber(inv_vnum))
-						continue;
-					int item_vnum = inv_vnum->valueint;
-					if (item_vnum > 0)
-					{
-						P_obj obj = read_object(item_vnum, VIRTUAL);
-						if (obj)
-							obj_to_char(obj, mob);
-					}
-				}
-			}
-
-			// restore affects
-			cJSON *affs = cJSON_GetObjectItem(mob_json, "aff");
-			if (affs && cJSON_IsArray(affs))
-			{
-				cJSON *aff_json;
-				cJSON_ArrayForEach(aff_json, affs)
-				{
-					struct affected_type af;
-					memset(&af, 0, sizeof(af));
-
-					cJSON *t = cJSON_GetObjectItem(aff_json, "t");
-					cJSON *d = cJSON_GetObjectItem(aff_json, "d");
-					cJSON *m = cJSON_GetObjectItem(aff_json, "m");
-					cJSON *l = cJSON_GetObjectItem(aff_json, "l");
-					cJSON *lv = cJSON_GetObjectItem(aff_json, "lv");
-					cJSON *b1 = cJSON_GetObjectItem(aff_json, "b1");
-					cJSON *b2 = cJSON_GetObjectItem(aff_json, "b2");
-					cJSON *b3 = cJSON_GetObjectItem(aff_json, "b3");
-					cJSON *b4 = cJSON_GetObjectItem(aff_json, "b4");
-					cJSON *b5 = cJSON_GetObjectItem(aff_json, "b5");
-
-					if (t && cJSON_IsNumber(t))
-						af.type = t->valueint;
-					if (d && cJSON_IsNumber(d))
-						af.duration = d->valueint;
-					if (m && cJSON_IsNumber(m))
-						af.modifier = m->valueint;
-					if (l && cJSON_IsNumber(l))
-						af.location = l->valueint;
-					if (lv && cJSON_IsNumber(lv))
-						af.level = lv->valueint;
-					if (b1 && cJSON_IsNumber(b1))
-						af.bitvector = (unsigned long)b1->valuedouble;
-					if (b2 && cJSON_IsNumber(b2))
-						af.bitvector2 = (unsigned long)b2->valuedouble;
-					if (b3 && cJSON_IsNumber(b3))
-						af.bitvector3 = (unsigned long)b3->valuedouble;
-					if (b4 && cJSON_IsNumber(b4))
-						af.bitvector4 = (unsigned long)b4->valuedouble;
-					if (b5 && cJSON_IsNumber(b5))
-						af.bitvector5 = (unsigned long)b5->valuedouble;
-
-					affect_to_char(mob, &af);
-				}
-			}
-
-			cJSON *fid = cJSON_GetObjectItem(mob_json, "fid");
-			cJSON *rid = cJSON_GetObjectItem(mob_json, "rid");
-
-			struct follow_riding_data *frd = NULL;
-
-			if (fid)
-			{
-				if (!frd)
-				{
-					CREATE(frd, struct follow_riding_data, 1, "MFRD");
-					frd->next = frdHead;
-					frdHead = frd;
-					frd->mob = mob;
-				}
-				frd->followingID = fid->valueint;
-			}
-
-			if (rid)
-			{
-				if (!frd)
-				{
-					CREATE(frd, struct follow_riding_data, 1, "MFRD");
-					frd->next = frdHead;
-					frdHead = frd;
-					frd->mob = mob;
-				}
-				frd->ridingID = rid->valueint;
-			}
-
-			mobs_restored++;
-		}
-
-		for (struct follow_riding_data *it = frdHead; it;)
-		{
-			if (it->followingID != 0)
-			{
-				for (P_char tmp_ch = character_list; tmp_ch; tmp_ch = tmp_ch->next)
-				{
-					if (GET_IDNUM(tmp_ch) == it->followingID)
-					{
-						add_follower(it->mob, tmp_ch);
-						char buf[10];
-						strcpy(buf, "group all");
-						command_interpreter(tmp_ch, buf);
-						break;
-					}
-				}
-			}
-
-			if (it->ridingID != 0)
-			{
-				for (P_char tmp_ch = character_list; tmp_ch; tmp_ch = tmp_ch->next)
-				{
-					if (GET_IDNUM(tmp_ch) == it->ridingID)
-					{
-						char buf[MAX_STRING_LENGTH];
-						snprintf(buf, MAX_STRING_LENGTH, "%s",
-							 FirstWord(GET_NAME(it->mob)));
-						do_mount(tmp_ch, buf, 0);
-						add_follower(it->mob, tmp_ch);
-						break;
-					}
-				}
-			}
-
-			struct follow_riding_data *toFree = it;
-			it = it->next;
-			FREE(toFree);
-		}
-	}
-
-	// restore floor objects
-	cJSON *objs = cJSON_GetObjectItem(root, "objs");
-	if (objs && cJSON_IsArray(objs))
-	{
-		cJSON *obj_json;
-		cJSON_ArrayForEach(obj_json, objs)
-		{
-			cJSON *uid_json = cJSON_GetObjectItem(obj_json, "uid");
-			cJSON *v = cJSON_GetObjectItem(obj_json, "v");
-			cJSON *rm = cJSON_GetObjectItem(obj_json, "rm");
-			if (!v || !rm)
-				continue;
-
-			unsigned long uid = 0;
-			if (uid_json && cJSON_IsNumber(uid_json))
-				uid = (unsigned long)uid_json->valuedouble;
-
-			// skip if picked up before crash
-			if (uid > 0 && redis_check_floor_pickup(uid))
-			{
-				objs_skipped++;
-				continue;
-			}
-
-			// skip if already restored from floor_drops (has fresher data)
-			if (uid > 0 && redis_check_floor_drop(uid))
-			{
-				objs_skipped++;
-				continue;
-			}
-
-			int vnum = v->valueint;
-			int room_vnum = rm->valueint;
-
-			int rnum = real_room(room_vnum);
-			if (rnum < 0 || rnum > top_of_world)
-				continue;
-
-			P_obj obj = read_object(vnum, VIRTUAL);
-			if (!obj)
-				continue;
-
-			// restore uid
-			if (uid > 0)
-				obj->obj_uid = uid;
-
-			// restore type
-			cJSON *tp = cJSON_GetObjectItem(obj_json, "tp");
-			if (tp && cJSON_IsNumber(tp))
-				obj->type = tp->valueint;
-
-			// restore values
-			for (int i = 0; i < NUMB_OBJ_VALS; i++)
-			{
-				char key[16];
-				snprintf(key, sizeof(key), "v%d", i);
-				cJSON *val = cJSON_GetObjectItem(obj_json, key);
-				if (val && cJSON_IsNumber(val))
-					obj->value[i] = val->valueint;
-			}
-
-			// restore timers
-			cJSON *tmr = cJSON_GetObjectItem(obj_json, "tmr");
-			if (tmr && cJSON_IsArray(tmr))
-			{
-				int idx = 0;
-				cJSON *t;
-				cJSON_ArrayForEach(t, tmr)
-				{
-					if (idx < 6 && cJSON_IsNumber(t))
-						obj->timer[idx] = (time_t)t->valuedouble;
-					idx++;
-				}
-			}
-
-			// restore strings (for corpses etc) - must set str_mask to avoid leak
-			cJSON *nm = cJSON_GetObjectItem(obj_json, "nm");
-			cJSON *sd = cJSON_GetObjectItem(obj_json, "sd");
-			cJSON *ld = cJSON_GetObjectItem(obj_json, "ld");
-			if (nm && cJSON_IsString(nm) && nm->valuestring[0])
-			{
-				if ((obj->str_mask & STRUNG_KEYS) && obj->name)
-					str_free(obj->name);
-				obj->name = str_dup(nm->valuestring);
-				obj->str_mask |= STRUNG_KEYS;
-			}
-			if (sd && cJSON_IsString(sd) && sd->valuestring[0])
-			{
-				if ((obj->str_mask & STRUNG_DESC2) && obj->short_description)
-					str_free(obj->short_description);
-				obj->short_description = str_dup(sd->valuestring);
-				obj->str_mask |= STRUNG_DESC2;
-			}
-			if (ld && cJSON_IsString(ld) && ld->valuestring[0])
-			{
-				if ((obj->str_mask & STRUNG_DESC1) && obj->description)
-					str_free(obj->description);
-				obj->description = str_dup(ld->valuestring);
-				obj->str_mask |= STRUNG_DESC1;
-			}
-
-			obj_to_room(obj, rnum);
-
-			// restore contents (only if object is a container type)
-			cJSON *con = cJSON_GetObjectItem(obj_json, "con");
-			if (con && cJSON_IsArray(con) &&
-			    (obj->type == ITEM_CONTAINER || obj->type == ITEM_QUIVER ||
-			     obj->type == ITEM_STORAGE || obj->type == ITEM_CORPSE))
-			{
-				cJSON *cont_vnum;
-				cJSON_ArrayForEach(cont_vnum, con)
-				{
-					if (!cJSON_IsNumber(cont_vnum))
-						continue;
-					int content_vnum = cont_vnum->valueint;
-					if (content_vnum > 0)
-					{
-						P_obj content = read_object(content_vnum, VIRTUAL);
-						if (content)
-							obj_to_obj(content, obj);
-					}
-				}
-			}
-
-			objs_restored++;
-		}
-	}
-
-	// clear pickup and drop logs after restore
-	if (objs_skipped > 0)
-		logit(LOG_SYS, "redis: skipped %d items (picked up or already restored)",
-		      objs_skipped);
-	redis_clear_floor_pickups();
-	redis_clear_floor_drops();
-
-	// restore doors
-	cJSON *doors = cJSON_GetObjectItem(root, "doors");
-	if (doors && cJSON_IsArray(doors))
-	{
-		cJSON *door_json;
-		cJSON_ArrayForEach(door_json, doors)
-		{
-			cJSON *rm = cJSON_GetObjectItem(door_json, "rm");
-			cJSON *dr = cJSON_GetObjectItem(door_json, "dr");
-			cJSON *st = cJSON_GetObjectItem(door_json, "st");
-			if (!rm || !dr || !st)
-				continue;
-
-			int room_vnum = rm->valueint;
-			int dir = dr->valueint;
-			int state = st->valueint;
-
-			int rnum = real_room(room_vnum);
-			if (rnum >= 0 && rnum <= top_of_world && dir >= 0 && dir < NUM_EXITS &&
-			    world[rnum].dir_option[dir])
-			{
-				world[rnum].dir_option[dir]->exit_info = state;
-				doors_restored++;
-			}
-		}
-	}
-
-	// restore zones
-	cJSON *zones = cJSON_GetObjectItem(root, "zones");
-	if (zones && cJSON_IsArray(zones))
-	{
-		cJSON *zone_json;
-		cJSON_ArrayForEach(zone_json, zones)
-		{
-			cJSON *rn = cJSON_GetObjectItem(zone_json, "rn");
-			cJSON *age = cJSON_GetObjectItem(zone_json, "age");
-			cJSON *ls = cJSON_GetObjectItem(zone_json, "ls");
-			if (!rn || !age || !ls)
-				continue;
-
-			int zone_rnum = rn->valueint;
-			if (zone_rnum >= 0 && zone_rnum <= top_of_zone_table)
-			{
-				zone_table[zone_rnum].age = age->valueint;
-				zone_table[zone_rnum].lifespan = ls->valueint;
-				zones_restored++;
-			}
-		}
-	}
-
-	cJSON_Delete(root);
-
-	logit(LOG_SYS, "redis: json world state restored (%d mobs, %d objs, %d doors, %d zones)",
-	      mobs_restored, objs_restored, doors_restored, zones_restored);
-
-	return true;
 #endif
 }
 
@@ -2102,8 +1258,20 @@ bool redis_load_world_state(void)
 
 	// restore floor drops first - has most recent data
 	redis_restore_floor_drops();
+	redisReply *sequence_reply =
+		(redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
+	if (!sequence_reply)
+		return false;
+	uint64_t expected_sequence = 0;
+	if (sequence_reply->type == REDIS_REPLY_STRING && sequence_reply->str)
+		expected_sequence = strtoull(sequence_reply->str, NULL, 10);
+	freeReplyObject(sequence_reply);
+	if (!expected_sequence)
+		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET mud:world_state");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx,
+							"GET mud:world_state:generation:%llu",
+							(unsigned long long)expected_sequence);
 	if (!reply || redis_ctx->err)
 	{
 		if (reply)
@@ -2117,33 +1285,23 @@ bool redis_load_world_state(void)
 		return false;
 	}
 
-	const char *buffer = reply->str;
-	size_t len = reply->len;
-
-	// detect format: json starts with '{', binary starts with 'COPY'
-	if (len > 0 && buffer[0] == '{')
+	world_recovery_header header = {};
+	const bool result =
+		world_recovery_restore(reinterpret_cast<const unsigned char *>(reply->str),
+				       reply->len, world_state_max_age, expected_sequence, &header);
+	freeReplyObject(reply);
+	if (!result || header.sequence != expected_sequence)
 	{
-		// json format
-		bool result = redis_load_world_state_json(buffer);
-		freeReplyObject(reply);
-		return result;
-	}
-	else if (len >= 4 && memcmp(buffer, COPYOVER_MAGIC, 4) == 0)
-	{
-		// old binary format - no longer supported
-		logit(LOG_SYS, "redis: detected old binary world state format, clearing");
-		freeReplyObject(reply);
-		redis_clear_world_state();
+		logit(LOG_SYS, "redis: rejected invalid world recovery generation");
 		return false;
 	}
-	else
-	{
-		// unknown format
-		logit(LOG_SYS, "redis: unknown world state format, clearing");
-		freeReplyObject(reply);
-		redis_clear_world_state();
-		return false;
-	}
+	redis_clear_floor_pickups();
+	redis_clear_floor_drops();
+	logit(LOG_SYS,
+	      "redis: restored world recovery generation sequence=%llu mobs=%u objs=%u doors=%u zones=%u",
+	      (unsigned long long)header.sequence, header.mob_count, header.object_count,
+	      header.door_count, header.zone_count);
+	return true;
 #endif
 }
 
@@ -2153,9 +1311,6 @@ void event_save_world_state(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, voi
 	{
 		redis_flush_floor_drops();
 		redis_save_world_state();
-		// clear floor_drops - items now in world_state snapshot
-		// this prevents purged/decayed items from coming back as zombies
-		redis_clear_floor_drops();
 		add_event(event_save_world_state, world_state_interval * WAIT_SEC, NULL, NULL, NULL,
 			  0, NULL, 0);
 	}
@@ -2170,7 +1325,7 @@ bool redis_cache_set(const char *key, const char *value)
 		return false;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "SET %s %b", key, value, strlen(value));
+		(redisReply *)redis_command(redis_ctx, "SET %s %b", key, value, strlen(value));
 	if (!reply)
 		return false;
 
@@ -2188,8 +1343,8 @@ bool redis_cache_set_ex(const char *key, int seconds, const char *value)
 	if (!redis_enabled || !redis_ctx || !key || !value || seconds <= 0)
 		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SETEX %s %d %b", key, seconds,
-						       value, strlen(value));
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "SETEX %s %d %b", key, seconds,
+							value, strlen(value));
 	if (!reply)
 		return false;
 
@@ -2207,7 +1362,7 @@ char *redis_cache_get(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return NULL;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", key);
 	if (!reply)
 		return NULL;
 
@@ -2226,7 +1381,7 @@ void redis_cache_del(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s", key);
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -2546,7 +1701,7 @@ bool redis_clear_ship_snapshots(void)
 	char cursor[64] = "0";
 	do
 	{
-		redisReply *scan = (redisReply *)redisCommand(
+		redisReply *scan = (redisReply *)redis_command(
 			redis_ctx, "SCAN %s MATCH ship:snapshot:* COUNT 256", cursor);
 		if (!scan || scan->type != REDIS_REPLY_ARRAY || scan->elements != 2 ||
 		    !scan->element[0] || !scan->element[1] || !scan->element[0]->str ||
@@ -2568,8 +1723,8 @@ bool redis_clear_ship_snapshots(void)
 				freeReplyObject(scan);
 				return false;
 			}
-			redisReply *del =
-				(redisReply *)redisCommand(redis_ctx, "DEL %b", key->str, key->len);
+			redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %b", key->str,
+								      key->len);
 			if (!del ||
 			    (del->type != REDIS_REPLY_INTEGER && del->type != REDIS_REPLY_NIL))
 			{
@@ -2595,8 +1750,8 @@ bool redis_publish(const char *channel, const char *message)
 	if (!redis_enabled || !redis_ctx || !channel || !message)
 		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "PUBLISH %s %b", channel, message,
-						       strlen(message));
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "PUBLISH %s %b", channel,
+							message, strlen(message));
 	if (!reply)
 		return false;
 
@@ -2625,7 +1780,7 @@ void redis_donation_subscribe_init(void)
 			redis_port = 6379;
 	}
 
-	donation_sub_ctx = redisConnect(redis_host, redis_port);
+	donation_sub_ctx = redis_connect_bounded(redis_host, redis_port);
 	if (!donation_sub_ctx || donation_sub_ctx->err)
 	{
 		if (donation_sub_ctx)
@@ -2637,12 +1792,15 @@ void redis_donation_subscribe_init(void)
 		return;
 	}
 
-	struct timeval tv = { 0, 100000 };
-	redisSetTimeout(donation_sub_ctx, tv);
-
-	redisReply *reply = (redisReply *)redisCommand(donation_sub_ctx, "SUBSCRIBE mud:nchat");
-	if (reply)
-		freeReplyObject(reply);
+	redisReply *reply = (redisReply *)redis_command(donation_sub_ctx, "SUBSCRIBE mud:nchat");
+	if (!reply || reply->type != REDIS_REPLY_ARRAY)
+	{
+		if (reply)
+			freeReplyObject(reply);
+		donation_sub_drop("subscribe failed");
+		return;
+	}
+	freeReplyObject(reply);
 
 	donation_sub_connected = true;
 	logit(LOG_SYS, "redis: donation subscriber connected to mud:nchat");
@@ -3125,7 +2283,7 @@ static void redis_publish_player_event(int pid, const char *event)
 	snprintf(json, sizeof(json), "{\"event\":\"%s\",\"pid\":%d}", event, pid);
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "PUBLISH mud:player %b", json, strlen(json));
+		(redisReply *)redis_command(redis_ctx, "PUBLISH mud:player %b", json, strlen(json));
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -3156,8 +2314,8 @@ void redis_player_online(P_char ch)
 		class_str ? class_str : "", GET_RACEWAR(ch), ip, client, client_ver,
 		(long)login_time);
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "HSET mud:online %d %b",
-						       GET_PID(ch), json, strlen(json));
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HSET mud:online %d %b",
+							GET_PID(ch), json, strlen(json));
 	if (reply)
 		freeReplyObject(reply);
 
@@ -3172,7 +2330,7 @@ void redis_player_offline(P_char ch)
 		return;
 
 	redisReply *reply =
-		(redisReply *)redisCommand(redis_ctx, "HDEL mud:online %d", GET_PID(ch));
+		(redisReply *)redis_command(redis_ctx, "HDEL mud:online %d", GET_PID(ch));
 	if (reply)
 		freeReplyObject(reply);
 
@@ -3186,7 +2344,7 @@ void redis_clear_online_players(void)
 	if (!redis_enabled || !redis_ctx)
 		return;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:online");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL mud:online");
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -3238,7 +2396,7 @@ bool redis_key_exists(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return false;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "EXISTS %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "EXISTS %s", key);
 	if (!reply)
 		return false;
 
@@ -3256,7 +2414,7 @@ long redis_get_ttl(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return -1;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "TTL %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "TTL %s", key);
 	if (!reply)
 		return -1;
 
@@ -3277,7 +2435,7 @@ long redis_hlen(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return 0;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "HLEN %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HLEN %s", key);
 	if (!reply)
 		return 0;
 
@@ -3298,7 +2456,7 @@ long redis_scard(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return 0;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "SCARD %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "SCARD %s", key);
 	if (!reply)
 		return 0;
 
@@ -3319,7 +2477,7 @@ char *redis_get_string(const char *key)
 	if (!redis_enabled || !redis_ctx || !key)
 		return NULL;
 
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "GET %s", key);
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", key);
 	if (!reply)
 		return NULL;
 
@@ -3329,23 +2487,5 @@ char *redis_get_string(const char *key)
 
 	freeReplyObject(reply);
 	return result;
-#endif
-}
-
-void redis_clear_dirty_players(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx)
-		return;
-
-	redisReply *reply = (redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players");
-	if (reply)
-		freeReplyObject(reply);
-
-	redisReply *inflight =
-		(redisReply *)redisCommand(redis_ctx, "DEL mud:dirty_players:flushing");
-	if (inflight)
-		freeReplyObject(inflight);
-
 #endif
 }

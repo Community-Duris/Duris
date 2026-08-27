@@ -19,7 +19,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <gnutls/gnutls.h>
-#include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -33,6 +32,8 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <utility>
+#include <vector>
 #include <zlib.h>
 #include "assocs.h"
 #include "auction_houses.h"
@@ -40,6 +41,7 @@
 #include "copyover.h"
 #include "ctf.h"
 #include "epic.h"
+#include "epic_task_catalog.h"
 #include "ferry.h"
 #include "gmcp.h"
 #include "graph.h"
@@ -81,9 +83,28 @@
 #include "latency_trace.h"
 #include "persistence_queue.h"
 #include "locker_async.h"
+#include "maintenance_repository.h"
+#include "maintenance_scheduler.h"
+#include "maintenance_snapshot.h"
+#include "critical_command_coordinator.h"
+#include "critical_command_repository.h"
+#include "critical_outbox.h"
+#include "currency_transaction.h"
+#include "item_movement_transaction.h"
+#include "auction_transaction.h"
+#include "combat_outcome_transaction.h"
+#include "artifact_guild_transaction.h"
+#include "boon_reward_transaction.h"
+#include "zone_touch_transaction.h"
+#include "epic_transaction.h"
+#include "player_save_pipeline.h"
+#include "player_load_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
 #include "test_async.h"
 #endif
+
+void account_player_load_complete(P_desc d, player_load_result result);
+void nanny_player_load_complete(P_desc d, player_load_result result);
 
 /* external variables */
 
@@ -107,6 +128,108 @@ extern void checkpointing(void);
 long sentbytes = 0;
 long receivedbytes = 0;
 bool game_booted = FALSE;
+static std::vector<int32_t> maintenance_catalog_candidate;
+
+static void maintenance_handle_completions(const maintenance_result *results, size_t count)
+{
+	for (size_t index = 0; index < count; ++index)
+	{
+		const auto &result = results[index];
+		if (result.job_id == maintenance_job_id::cargo_market &&
+		    (result.outcome == maintenance_outcome::complete ||
+		     result.outcome == maintenance_outcome::permanent_failure))
+			cargo_maintenance_complete(result.work_id,
+						   result.outcome == maintenance_outcome::complete);
+		if (result.job_id == maintenance_job_id::auction_due_scan &&
+		    (result.outcome == maintenance_outcome::complete ||
+		     result.outcome == maintenance_outcome::more))
+		{
+			for (size_t value = 0; value < result.value_count; ++value)
+				if (!finalize_auction(static_cast<int>(result.values[value]),
+						      nullptr))
+					logit(LOG_DEBUG,
+					      "maintenance job=auction_due_scan outcome=submit_failed actor=redacted");
+		}
+		if (result.job_id == maintenance_job_id::level_cap &&
+		    result.outcome == maintenance_outcome::complete && result.value_count == 3 &&
+		    result.values[0] > 0 && result.values[0] <= INT32_MAX)
+			boon_notify_snapshot(static_cast<int>(result.values[0]),
+					     static_cast<int>(result.values[1]),
+					     static_cast<int>(result.values[2]), BN_CREATE);
+		if (result.job_id == maintenance_job_id::boon_scan &&
+		    (result.outcome == maintenance_outcome::complete ||
+		     result.outcome == maintenance_outcome::more) &&
+		    result.value_count % 6 == 0)
+			for (size_t value = 0; value < result.value_count; value += 6)
+			{
+				const int id = static_cast<int>(result.values[value]);
+				const int racewar = static_cast<int>(result.values[value + 1]);
+				const int pid = static_cast<int>(result.values[value + 2]);
+				const int reason = static_cast<int>(result.values[value + 3]);
+				const int option = static_cast<int>(result.values[value + 4]);
+				const int criteria = static_cast<int>(result.values[value + 5]);
+				if (option == BOPT_CTFB && reason == BN_VOID)
+					ctf_delete_flag(criteria);
+				boon_notify_snapshot(id, racewar, pid, reason);
+			}
+		if (result.job_id != maintenance_job_id::epic_task_catalog)
+			continue;
+		if (result.outcome != maintenance_outcome::complete &&
+		    result.outcome != maintenance_outcome::more)
+		{
+			maintenance_catalog_candidate.clear();
+			continue;
+		}
+		bool valid = maintenance_catalog_candidate.size() + result.value_count <=
+			     EPIC_TASK_CATALOG_MAX;
+		for (size_t value = 0; valid && value < result.value_count; ++value)
+			if (result.values[value] <= 0 || result.values[value] > INT32_MAX)
+				valid = false;
+			else
+				maintenance_catalog_candidate.push_back(
+					static_cast<int32_t>(result.values[value]));
+		if (!valid)
+		{
+			maintenance_catalog_candidate.clear();
+			continue;
+		}
+		if (result.outcome == maintenance_outcome::complete)
+		{
+			if (!epic_task_catalog_publish(maintenance_catalog_candidate.data(),
+						       maintenance_catalog_candidate.size()))
+				logit(LOG_DEBUG,
+				      "maintenance job=epic_task_catalog outcome=publish_failed actor=redacted");
+			maintenance_catalog_candidate.clear();
+		}
+	}
+}
+
+static void critical_gameplay_handle_completions(const critical_completion *completions,
+						 size_t count)
+{
+	epic_transaction_handle_completions(completions, count);
+	currency_transaction_handle_completions(completions, count);
+	item_movement_transaction_handle_completions(completions, count);
+	auction_transaction_handle_completions(completions, count);
+	combat_outcome_transaction_handle_completions(completions, count);
+	artifact_guild_transaction_handle_completions(completions, count);
+	boon_reward_transaction_handle_completions(completions, count);
+	zone_touch_transaction_handle_completions(completions, count);
+}
+
+static critical_outbox_delivery_result
+critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *context)
+{
+	if (record.destination == 6)
+		return combat_outcome_transaction_outbox_delivery(record, context);
+	if (record.destination == 7)
+		return artifact_guild_transaction_outbox_delivery(record, context);
+	if (record.destination == 8)
+		return boon_reward_transaction_outbox_delivery(record, context);
+	if (record.destination == 9)
+		return zone_touch_transaction_outbox_delivery(record, context);
+	return auction_transaction_outbox_delivery(record, context);
+}
 
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 {
@@ -348,12 +471,16 @@ int main(int argc, char **argv)
 
 	logit(LOG_STATUS, "Using %s as data directory.", dir);
 
-	load_env_file();
+	if (load_env_file() < 0)
+		fatal_boot_error("comm", "Unsafe environment configuration file");
 
 	if (initialize_mysql() < 0)
 	{
 		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
+	if (!sql_hydrate_item_owner_revisions())
+		logit(LOG_STATUS,
+		      "Authoritative item owner revisions unavailable; movement fails closed.");
 
 	redis_init();
 
@@ -431,6 +558,9 @@ void run_the_game(int port, int sslport)
 
 	logit(LOG_STATUS, "Signal trapping.");
 	signal_setup();
+	if (!player_load_pipeline_init())
+		logit(LOG_STATUS,
+		      "Player load pipeline unavailable; existing-character login fails closed.");
 
 	SetSpellCircles(); /* spells circlewise done with pure math */
 
@@ -443,11 +573,8 @@ void run_the_game(int port, int sslport)
 	}
 	if (!mini_mode)
 	{
-		/* Start the item pipeline before boot-time corpse restoration emits
-		 * audit events. Otherwise every clean boot writes one avoidable flat
-		 * fallback record and immediately replays it after boot. */
-		persistence_replay_fallback_events();
-		persistence_start_item_event_worker();
+		/* Legacy raw event queues are retired. Historical fallback records are
+		 * inspected or quarantined by the explicit operator tool only. */
 	}
 
 	boot_db(mini_mode);
@@ -470,6 +597,9 @@ void run_the_game(int port, int sslport)
 
 	fprintf(stderr, "-- Updating zone database.\r\n");
 	update_zone_db();
+	if (!epic_task_catalog_refresh())
+		logit(LOG_STATUS,
+		      "Epic task catalog unavailable; zone task selection uses safe fallback.");
 
 	calculate_map_coordinates();
 	fprintf(stderr, "--  Done calculating maps coordinates.\r\n");
@@ -513,6 +643,9 @@ void run_the_game(int port, int sslport)
 
 		Guild::initialize();
 		fprintf(stderr, "-- Done loading guilds\r\n");
+		if (!artifact_guild_state_hydrate())
+			logit(LOG_FILE,
+			      "artifact_guild: component=hydration outcome=unavailable state=retained");
 
 		Guildhall::initialize();
 		fprintf(stderr, "-- Done loading guildhalls\r\n");
@@ -563,12 +696,12 @@ void run_the_game(int port, int sslport)
 
 		loadHints();
 		epic_initialization();
-		ssl_read_cert();
 	}
 	else
 	{
 		fprintf(stderr, "--  Skipping optional subsystems in mini mode.\r\n");
 	}
+	ssl_read_cert();
 
 	fprintf(stderr, "Assigning map glyph variations.\r\n");
 	init_map_glyphs();
@@ -586,14 +719,46 @@ void run_the_game(int port, int sslport)
 	logit(LOG_STATUS, "Entering game loop.");
 	if (mini_mode)
 	{
-		persistence_replay_fallback_events();
 		logit(LOG_STATUS, "Skipping persistence worker startup in mini mode.");
 	}
 	else
 	{
-		persistence_start_scalar_event_worker();
-		persistence_start_large_event_worker();
 		locker_async_init();
+		const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
+		if (!player_save_pipeline_init(journal_directory))
+		{
+			logit(LOG_STATUS,
+			      "Player save pipeline unavailable; nonterminal saves fail closed.");
+			persistence_alert(AVATAR, "player_save", "pipeline", "none", "none",
+					  "start_failed", "check PLAYER_SAVE_JOURNAL_DIR");
+		}
+		const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
+		if (!critical_outbox_init(critical_gameplay_outbox_delivery, NULL) ||
+		    !critical_command_coordinator_init(critical_journal_directory,
+						       critical_command_repository_apply_from_pool,
+						       NULL))
+		{
+			critical_command_coordinator_shutdown();
+			critical_outbox_shutdown();
+			logit(LOG_STATUS,
+			      "Critical command pipeline unavailable; critical gameplay fails closed.");
+			persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
+					  "start_failed", "check critical schema and journal");
+		}
+		critical_command_coordinator_set_drain_observer(
+			critical_gameplay_handle_completions);
+		const uint64_t maintenance_instance =
+			(static_cast<uint64_t>(static_cast<uint32_t>(port)) << 32) |
+			static_cast<uint32_t>(sslport);
+		const char *maintenance_state = getenv("MAINTENANCE_STATE_FILE");
+		if (!maintenance_state || !*maintenance_state)
+			maintenance_state = "bin/server/maintenance-scheduler.state";
+		if (!maintenance_scheduler_set_state_path(maintenance_state) ||
+		    !maintenance_scheduler_init(maintenance_instance,
+						maintenance_repository_execute, nullptr,
+						maintenance_prepare_request))
+			logit(LOG_STATUS,
+			      "Maintenance scheduler unavailable; recurring external jobs fail closed.");
 	}
 
 	/* Boot-time scalar queue flood test: overflows the queue so the
@@ -618,12 +783,15 @@ void run_the_game(int port, int sslport)
 #endif
 
 	game_loop(port, sslport);
+	maintenance_scheduler_shutdown();
+	redis_cleanup();
+	player_load_pipeline_shutdown();
+	critical_command_coordinator_shutdown();
+	critical_outbox_shutdown();
 	if (!_pwipe)
 	{
-		persistence_stop_scalar_event_worker();
-		persistence_stop_large_event_worker();
-		persistence_stop_item_event_worker();
 		locker_async_shutdown();
+		player_save_pipeline_shutdown();
 	}
 
 	/* Don't need this anymore, as dropped artis are handled in real time on the DB.
@@ -646,26 +814,13 @@ void run_the_game(int port, int sslport)
 		ws_broadcast_mud_shutdown("reboot");
 		exit(52); /* what's so great about HHGTTG, anyhow? */
 	}
+	// A successful copyover replaces this process from inside game_loop(). A
+	// failed copyover resumes that loop, so reaching here with the flag set is
+	// an invariant failure and must not fall back to a destructive restart.
 	if (_copyover)
 	{
-		if (_autoboot)
-		{
-			logit(LOG_EXIT, "Auto reboot with copyover.");
-			logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good,
-			      max_ingame_evil);
-		}
-		else
-		{
-			logit(LOG_EXIT, "Copyover reboot.");
-			logit(LOG_EXIT, "Max Goods: %d, Max Evils: %d.", max_ingame_good,
-			      max_ingame_evil);
-		}
-		ws_broadcast_mud_shutdown("copyover");
-		// attempt true copyover - if it returns, something went wrong
-		copyover_save(mother_desc, mother_desc_ssl, ws_desc);
-		// fallback to old behavior if copyover_save fails
-		logit(LOG_EXIT, "Copyover failed, falling back to normal restart.");
-		exit(_autoboot ? 57 : 53);
+		logit(LOG_EXIT, "Copyover returned unexpectedly; refusing fallback exit.");
+		return;
 	}
 	if (_autoboot)
 	{
@@ -845,6 +1000,7 @@ void game_loop(int port, int sslport)
 	long last_desc_per_hour_reset = time(0);
 	clock_t loop_time_end;
 	/* Main loop */
+resume_game_loop:
 	while (!shutdownflag)
 	{
 		clock_t loop_time_begin = clock();
@@ -1363,52 +1519,75 @@ void game_loop(int port, int sslport)
 			gmcp_flush_dirty_ship_info();
 			flush_pending_ship_saves();
 			locker_async_pulse();
+			critical_completion critical_completions[64] = {};
+			const size_t critical_completion_count =
+				critical_command_coordinator_pulse(critical_completions, 64);
+			critical_gameplay_handle_completions(critical_completions,
+							     critical_completion_count);
+			auction_transaction_publish_outbox();
+			combat_outcome_transaction_publish_outbox();
+			artifact_guild_transaction_publish_outbox();
+			for (size_t index = 0; index < critical_completion_count; ++index)
+				if (critical_completions[index].outcome ==
+				    critical_apply_outcome::terminal_failure)
+					persistence_alert(AVATAR, "critical_command", "completion",
+							  "none", "none", "integrity_failure",
+							  "operation metadata redacted");
+			player_save_pipeline_pulse();
+			player_load_result load_completions[32] = {};
+			const size_t load_completion_count =
+				player_load_pipeline_pulse(load_completions, 32);
+			for (size_t index = 0; index < load_completion_count; ++index)
+			{
+				bool delivered = false;
+				for (P_desc descriptor = descriptor_list; descriptor;
+				     descriptor = descriptor->next)
+					if (descriptor->player_load_request_id ==
+					    load_completions[index].request_id)
+					{
+						if (descriptor->player_load_mode ==
+						    PLAYER_LOAD_MODE_LEGACY)
+							nanny_player_load_complete(
+								descriptor,
+								std::move(load_completions[index]));
+						else
+							account_player_load_complete(
+								descriptor,
+								std::move(load_completions[index]));
+						delivered = true;
+						break;
+					}
+				if (!delivered)
+					player_load_pipeline_note_stale();
+			}
+			redis_world_recovery_pulse();
 			latency_trace_record("gmcp_flush",
 					     (long)((clock() - _gmcp) * 1000000.0 / CLOCKS_PER_SEC),
 					     pulse);
 		}
+		maintenance_result maintenance_results[MAINTENANCE_COMPLETION_MAX] = {};
+		const size_t maintenance_count = maintenance_scheduler_pulse(
+			ne_event_tick, maintenance_results, MAINTENANCE_COMPLETION_MAX);
+		maintenance_handle_completions(maintenance_results, maintenance_count);
 
 		PROFILE_START(activities);
-		if (!(pulse % (WAIT_SEC * 60)))
-			timers_activity();
-
-		if (!(pulse % WAIT_SEC))
+		if (maintenance_activity_due(ne_event_tick, WAIT_SEC, 1))
 			ship_activity();
 
-		if (!no_ferries && !(pulse % WAIT_SEC))
+		if (!no_ferries && maintenance_activity_due(ne_event_tick, WAIT_SEC, 2))
 			ferry_activity();
 
-		if (!(pulse % (WAIT_SEC * 60)))
-			auction_houses_activity();
-
-		if (!(pulse % (WAIT_SEC * 120)))
+		if (maintenance_activity_due(ne_event_tick, WAIT_SEC * 120, 3))
 			spawn_random_mapmob();
 
 		//    if (!(pulse % WAIT_SEC))
 		//      arena_activity();
 
-		if (!(pulse % SHORT_AFFECT))
+		if (maintenance_activity_due(ne_event_tick, SHORT_AFFECT, 4))
 			short_affect_update();
 
-		if (!(pulse % PULSES_IN_TICK) && !mini_mode)
-			web_info();
-
-		if (!(pulse % (WAIT_SEC * 300)))
+		if (maintenance_activity_due(ne_event_tick, WAIT_SEC * 300, 5))
 			wimps_in_approve_queue();
-
-		if (!(pulse % (WAIT_SEC * 300)))
-			poll_check_expirations();
-
-		if (!(pulse % (WAIT_SEC * 120)))
-		{
-			epic_zone_balance();
-		}
-
-		if (!(pulse % (WAIT_SEC * 60)))
-			sql_check_level_cap_periodic();
-
-		if (!(pulse % (WAIT_SEC * 60)))
-			boon_maintenance();
 
 		PROFILE_END(activities);
 		double activities_time = (double)(activities_profile_end - activities_profile_beg) /
@@ -1579,6 +1758,87 @@ void game_loop(int port, int sslport)
 		PROFILE_END(pulse_reset);
 	}
 
+	if (_copyover)
+	{
+		if (!copyover_save(s, S, WS))
+		{
+			persistence_alert(AVATAR, "player_save", "copyover", "none", "none",
+					  "terminal_save_failed", "shutdown_cancelled=1");
+			shutdownflag = 0;
+			_reboot = 0;
+			_copyover = 0;
+			_autoboot = 0;
+			goto resume_game_loop;
+		}
+		return;
+	}
+
+	critical_command_coordinator_quiesce();
+	critical_outbox_quiesce();
+	if (!_pwipe && !critical_command_coordinator_drain(3000))
+	{
+		critical_command_coordinator_resume();
+		critical_outbox_resume();
+		persistence_alert(AVATAR, "critical_command", "shutdown", "none", "none",
+				  "pipeline_drain_failed", "shutdown_cancelled=1");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
+	if (!_pwipe && !critical_outbox_drain(3000))
+	{
+		critical_command_coordinator_resume();
+		critical_outbox_resume();
+		persistence_alert(AVATAR, "critical_outbox", "shutdown", "none", "none",
+				  "pipeline_drain_failed", "shutdown_cancelled=1");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
+	if (!_pwipe && !persistence_save_all_characters_terminal(RENT_CRASH))
+	{
+		critical_command_coordinator_resume();
+		critical_outbox_resume();
+		persistence_alert(AVATAR, "player_save", "shutdown", "none", "none",
+				  "terminal_save_failed", "shutdown_cancelled=1");
+		for (P_desc pending_desc = descriptor_list; pending_desc;
+		     pending_desc = pending_desc->next)
+			if (pending_desc->descriptor > 0 && pending_desc->connected == CON_PLAYING)
+				write_to_descriptor(
+					pending_desc,
+					"\r\nShutdown cancelled because a character save failed.\r\n");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
+	if (!_pwipe && !player_save_pipeline_drain(3000))
+	{
+		critical_command_coordinator_resume();
+		critical_outbox_resume();
+		player_save_pipeline_resume();
+		persistence_alert(AVATAR, "player_save", "shutdown", "none", "none",
+				  "pipeline_drain_failed", "shutdown_cancelled=1");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
+	if (!_pwipe && !redis_world_recovery_drain(3000))
+	{
+		critical_command_coordinator_resume();
+		critical_outbox_resume();
+		player_save_pipeline_resume();
+		persistence_alert(AVATAR, "world_recovery", "shutdown", "none", "none",
+				  "pipeline_drain_failed", "shutdown_cancelled=1");
+		shutdownflag = 0;
+		_reboot = 0;
+		_autoboot = 0;
+		goto resume_game_loop;
+	}
+
 	PROFILES(SAVE);
 #ifdef DO_PROFILE
 	save_func_call_info();
@@ -1606,7 +1866,6 @@ void game_loop(int port, int sslport)
 	// skip character extraction during copyover - we need them intact
 	if (!_copyover && !_pwipe)
 	{
-		persistence_flush_all_character_saves();
 		for (point = descriptor_list; point; point = point->next)
 		{
 			if (point->character)
@@ -1629,14 +1888,6 @@ void game_loop(int port, int sslport)
 					if (shutdown_message)
 					{
 						write_to_descriptor(point, shutdown_message);
-					}
-					if (!_pwipe)
-					{
-						write_to_descriptor(point, "\r\nSaving...\r\n");
-						if (!do_save_silent(point->character, 3))
-							logit(LOG_STATUS,
-							      "Failed to save %s during shutdown.",
-							      GET_NAME(point->character));
 					}
 					// If it's not an immortal.
 					if (GET_LEVEL(point->character) < MINLVLIMMORTAL)
@@ -1945,6 +2196,31 @@ int bannedsite(char *name, int flag)
        * old/new socket code. JAB                                                                                                                                                                      \
        */
 
+bool runtime_listener_address(sockaddr_in6 *address)
+{
+	if (!address)
+		return false;
+	memset(address, 0, sizeof(*address));
+	address->sin6_family = AF_INET6;
+
+	const char *configured = getenv("LISTEN_ADDRESS");
+	if (!configured || !*configured || !strcmp(configured, "::"))
+	{
+		address->sin6_addr = in6addr_any;
+		return true;
+	}
+	if (inet_pton(AF_INET6, configured, &address->sin6_addr) == 1)
+		return true;
+
+	in_addr ipv4;
+	if (inet_pton(AF_INET, configured, &ipv4) != 1)
+		return false;
+	address->sin6_addr.s6_addr[10] = 0xff;
+	address->sin6_addr.s6_addr[11] = 0xff;
+	memcpy(&address->sin6_addr.s6_addr[12], &ipv4, sizeof(ipv4));
+	return true;
+}
+
 int init_socket(int port)
 {
 	int s, bind_error;
@@ -1961,6 +2237,11 @@ int init_socket(int port)
 	linger_values.l_linger = 0;
 
 	bzero(&sa, sizeof sa);
+	if (!runtime_listener_address(&sa))
+	{
+		logit(LOG_EXIT, "LISTEN_ADDRESS must be a numeric IPv4 or IPv6 address");
+		exit(1);
+	}
 	/*
 	  gethostname(hostname, MAX_HOSTNAME);
 	  hp = gethostbyname(hostname);
@@ -1970,7 +2251,6 @@ int init_socket(int port)
 	  }
 	*/
 	/*  sa.sin_family = hp->h_addrtype; */
-	sa.sin6_family = AF_INET6;
 	sa.sin6_port = htons((unsigned short int)port);
 #ifdef IPPROTO_MPTCP
 	/*
@@ -2090,6 +2370,8 @@ void close_socket(struct descriptor_data *d)
 	int is_morphed = d->character ? IS_MORPH(d->character) : 0;
 	char Gbuf1[MAX_STRING_LENGTH];
 	time_t ct;
+	if (d && d->player_load_request_id)
+		player_load_pipeline_cancel(d->player_load_request_id);
 
 	compress_end(d, TRUE); /* does flushing out all output break anything ? */
 
@@ -2213,23 +2495,13 @@ void close_socket(struct descriptor_data *d)
 					 GET_NAME(GET_PLYR(d->character)), d->host, Gbuf1);
 				sql_log(d->character, CONNECTLOG, "Lost Link");
 			}
-			persistence_flush_character_saves(d->character);
-
-			// Wrap final save in transaction (flush already completed above)
-			if (sql_begin_transaction())
+			if (!persistence_save_character_terminal(d->character, RENT_CRASH))
 			{
-				writeCharacter(d->character, RENT_CRASH, d->character->in_room);
-				if (!sql_commit())
-				{
-					logit(LOG_DEBUG, "close_socket: commit failed for %s",
-					      GET_NAME(d->character));
-					sql_rollback();
-				}
-			}
-			else
-			{
-				// still try to save even if transaction start fails
-				writeCharacter(d->character, RENT_CRASH, d->character->in_room);
+				persistence_alert(AVATAR, "player_save", "link_loss", "none",
+						  "none", "terminal_save_failed",
+						  "retry_scheduled=1");
+				persistence_schedule_character_save(d->character, RENT_CRASH, 4,
+								    "link-loss-retry");
 			}
 			d->character->desc = 0;
 		}
@@ -3906,7 +4178,7 @@ void escape_act_dollars(char *dst, size_t dst_size, const char *src)
 	dst[di] = '\0';
 }
 
-// LATENT: no output buffer bounds checking on 'buf'/'tbuf' — safe only
+// LATENT: no output buffer bounds checking on 'buf'/'tbuf' - safe only
 // because format strings are code constants, not player-controlled.
 // Would need snprintf-style length tracking to harden.
 void act(const char *str, int hide_invisible, P_char ch, P_obj obj, void *vict_obj, int type)

@@ -75,6 +75,7 @@ int sql_get_player_pid(const char *name);
 
 // individual load functions (called by sql_load_player)
 bool sql_load_player_status(P_char ch, int pid);
+bool sql_load_player_epic_bonus(P_char ch);
 bool sql_load_player_skills(P_char ch);
 bool sql_load_player_affects(P_char ch);
 bool sql_load_player_items(P_char ch);
@@ -137,6 +138,7 @@ int sql_get_or_create_public_chest(int locker_id);
 int sql_create_private_chest(int locker_id, const char *chest_name, const char *password);
 bool sql_delete_private_chest(int chest_id);
 int sql_get_chest_id(int locker_id, const char *chest_name);
+bool sql_set_chest_password(int chest_id, const char *password);
 bool sql_verify_chest_password(int chest_id, const char *password);
 int sql_count_private_chests(int locker_id);
 // private_chest_log action_type values
@@ -152,12 +154,24 @@ bool sql_save_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
 void sql_load_private_chest_items(int locker_id, int chest_id, P_obj chest_obj);
 
 // account bank
+struct AccountBankBalances
+{
+	int copper;
+	int silver;
+	int gold;
+	int platinum;
+};
+
 bool sql_load_account_bank(const char *account_name, int racewar, P_char ch);
-bool sql_save_account_bank(const char *account_name, int racewar, P_char ch);
 long long sql_account_bank_deposit(const char *account_name, int racewar, int coin_type,
 				   int amount);
+bool sql_account_bank_deposit_balances(const char *account_name, int racewar,
+				       const AccountBankBalances *amounts,
+				       AccountBankBalances *committed);
 long long sql_account_bank_withdraw(const char *account_name, int racewar, int coin_type,
 				    int amount);
+int sql_account_bank_withdraw_value(const char *account_name, int racewar, int amount,
+				    AccountBankBalances *committed, int *change);
 bool sql_ensure_account_bank(const char *account_name, int racewar);
 
 // ============================================================================
@@ -183,8 +197,8 @@ int sql_migrate_all_players(void);
 // caller must free returned string
 char *sql_escape_string(const char *str);
 
-// log sql error with context
-void sql_player_error(const char *context, const char *query);
+// log a redacted SQL failure with a stable call-site label
+void sql_player_error(const char *site);
 
 // towns
 bool sql_save_towns(void);

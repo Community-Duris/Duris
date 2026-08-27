@@ -81,6 +81,7 @@ OBJS =  $(SHIP_OBJS) \
 				 magic.o \
 				 achievements.o \
 				 account.o \
+				 password_hash.o \
 				 account_reward.o \
 				 account_reward_snapshot.o \
 				 account_reward_config.o \
@@ -140,6 +141,8 @@ OBJS =  $(SHIP_OBJS) \
 				 encounters.o \
 				 epic.o \
 				 epic_bonus.o \
+				 epic_bonus_state.o \
+				 deferred_save_policy.o \
 				 epic_skills.o \
 				 ethermancer.o \
 				 events.o \
@@ -188,6 +191,59 @@ OBJS =  $(SHIP_OBJS) \
 				 objconv.o \
 				 objmisc.o \
 				 outposts.o \
+				 persistence_observability.o \
+				 critical_command.o \
+				 critical_command_journal.o \
+				 critical_command_coordinator.o \
+				 critical_command_repository.o \
+				 item_transfer_command.o \
+				 item_ownership_runtime.o \
+				 item_movement_transaction.o \
+				 item_transfer_repository.o \
+				 item_transfer_synthetic.o \
+				 item_uid_allocator.o \
+				 critical_outbox.o \
+				 epic_command.o \
+				 epic_transaction.o \
+				 currency_command.o \
+				 auction_command.o \
+				 auction_repository.o \
+				 auction_transaction.o \
+				 combat_outcome_command.o \
+				 combat_outcome_repository.o \
+				 combat_outcome_transaction.o \
+				 artifact_guild_command.o \
+				 artifact_guild_repository.o \
+				 artifact_guild_state.o \
+				 artifact_guild_transaction.o \
+				 boon_reward_command.o \
+				 boon_reward_repository.o \
+				 boon_reward_transaction.o \
+				 zone_touch_command.o \
+				 zone_touch_repository.o \
+				 zone_touch_transaction.o \
+				 session_audit_command.o \
+				 session_audit_repository.o \
+				 session_audit_transaction.o \
+				 player_load_repository.o \
+				 player_load_pipeline.o \
+				 player_load_items.o \
+				 player_load_pets.o \
+				 gameplay_read_state.o \
+				 epic_task_catalog.o \
+				 maintenance_scheduler.o \
+				 maintenance_repository.o \
+				 maintenance_snapshot.o \
+				 player_load_materialize.o \
+				 currency_transaction.o \
+				 player_revision_state.o \
+				 player_save_worker.o \
+				 player_save_journal.o \
+				 player_save_pipeline.o \
+				 world_recovery_pipeline.o \
+				 player_snapshot_repository.o \
+				 player_snapshot_capture.o \
+				 player_snapshot_codec.o \
 				 persistence_queue.o \
 				 latency_trace.o \
 				 sql_persistence_raw.o \

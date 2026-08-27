@@ -11,18 +11,26 @@
 #include "comm.h"
 #include "db.h"
 #include "interp.h"
+#include "item_uid_allocator.h"
 #include "utils.h"
 #include "sql.h"
+#include "item_ownership_runtime.h"
 #include "sql_pool.h"
+#include "session_audit_transaction.h"
+#include "runtime_compatibility_contract.h"
+#include <openssl/sha.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
 #include <pthread.h>
+#include <vector>
 #include "account.h"
 #include "account_reward.h"
 #include "assocs.h"
@@ -39,6 +47,8 @@
 #include "timers.h"
 #include "persistence_queue.h"
 #include "utility.h"
+#include <errno.h>
+#include <limits.h>
 
 extern P_index mob_index;
 extern const struct race_names race_names_table[];
@@ -59,14 +69,11 @@ extern P_room world;
 void get_pkill_player_description(P_char ch, char *buffer);
 
 static int sql_trace_burst = 0;
-static char sql_trace_last_site[64] = "";
-static char sql_trace_last_sql[240] = "";
+static const pid_t sql_main_process_id = getpid();
 static bool sql_trace_enabled(void);
 static bool sql_trace_active(void);
-static const char *sql_trace_kind(const char *sql);
-static void sql_trace_preview(const char *sql, char *out, size_t outsz);
-static void sql_trace_log(const char *phase, MYSQL *conn, const char *sql);
 static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained);
+static bool sql_verify_metadata_fingerprint(void);
 
 #ifdef __NO_MYSQL__
 int initialize_mysql()
@@ -129,8 +136,10 @@ int sql_find_racewar_for_ip(char *ip, int *racewar_side)
 {
 	return -1;
 }
-bool qry(const char *format, ...)
+bool qry_at(struct persistence_query_site site, const char *format, ...)
 {
+	(void)site;
+	(void)format;
 	return TRUE;
 }
 void send_to_char_offline(const char *msg, int pid) {}
@@ -139,6 +148,18 @@ void log_epic_gain(int pid, int zone_id, int type, int epics) {}
 void log_epic_gain_event(const char *event_key, int pid, int type, int type_id, int epics) {}
 bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
 					const char *owner_ref, const char *context)
+{
+	return true;
+}
+bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
+						 const char *owner_type,
+						 unsigned long long owner_id,
+						 unsigned long long owner_context_id,
+						 const char *context)
+{
+	return true;
+}
+bool sql_hydrate_item_owner_revisions(void)
 {
 	return true;
 }
@@ -256,7 +277,19 @@ void send_mud_info(const char *name, P_char ch) {}
 
 void sql_update_bind_data(int vnum, int *owner_pid, int *timer) {}
 
-void sql_get_bind_data(int vnum, int *owner_pid, int *timer) {}
+bool sql_get_bind_data(int vnum, int *owner_pid, int *timer)
+{
+	(void)vnum;
+	if (owner_pid)
+	{
+		*owner_pid = 0;
+	}
+	if (timer)
+	{
+		*timer = 0;
+	}
+	return false;
+}
 
 bool sql_pwipe(int code_verify)
 {
@@ -285,11 +318,270 @@ static bool sql_verify_boot_database(void);
 MYSQL *DB;
 
 /* persistenceDB replaced by connection pool (sql_pool.c).
- * persistence_sql_mutex kept for backward compatibility — no longer
+ * persistence_sql_mutex kept for backward compatibility -- no longer
  * needed for connection serialisation but still referenced by
  * sql_persistence_raw.c for now. */
 MYSQL *persistenceDB = NULL;
 pthread_mutex_t persistence_sql_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static bool sql_env_true(const char *name)
+{
+	const char *value = getenv(name);
+	return value && !strcasecmp(value, "TRUE");
+}
+
+static bool sql_host_is_loopback(const char *host)
+{
+	return host && (!strcasecmp(host, "localhost") || !strcmp(host, "127.0.0.1") ||
+			!strcmp(host, "::1"));
+}
+
+static bool sql_target_is_allowed(const char *host, const char *database)
+{
+	const char *allowed = getenv("DB_ALLOWED_TARGETS");
+	if (!allowed || !*allowed || !host || !database)
+		return false;
+
+	char target[512];
+	int written = snprintf(target, sizeof(target), "%s/%s", host, database);
+	if (written < 0 || (size_t)written >= sizeof(target))
+		return false;
+
+	size_t target_len = (size_t)written;
+	for (const char *start = allowed; *start;)
+	{
+		const char *end = strchr(start, ',');
+		size_t len = end ? (size_t)(end - start) : strlen(start);
+		if (len == target_len && !strncmp(start, target, len))
+			return true;
+		if (!end)
+			break;
+		start = end + 1;
+	}
+	return false;
+}
+
+static bool sql_runtime_config_valid(void)
+{
+	const char *role = getenv("ENVIRONMENT");
+	if (!role || (strcmp(role, "local") && strcmp(role, "production")))
+	{
+		logit(LOG_STATUS,
+		      "Database configuration rejected: ENVIRONMENT must be local or production");
+		return false;
+	}
+
+	const char *required[] = { "DB_HOST", "DB_USER", "DB_PASSWD", "DB_NAME",
+				   "DB_ALLOWED_TARGETS" };
+	for (const char *name : required)
+	{
+		const char *value = getenv(name);
+		if (!value || !*value)
+		{
+			logit(LOG_STATUS,
+			      "Database configuration rejected: required field %s is missing",
+			      name);
+			return false;
+		}
+	}
+
+	const char *port = getenv("DB_PORT");
+	if (port && *port)
+	{
+		errno = 0;
+		char *end = NULL;
+		long parsed = strtol(port, &end, 10);
+		if (errno == ERANGE || end == port || *end || parsed < 1 || parsed > 65535)
+		{
+			logit(LOG_STATUS, "Database configuration rejected: DB_PORT is invalid");
+			return false;
+		}
+	}
+
+	if (!strcmp(role, "production") && RUNNING_PORT != DFLT_PORT)
+	{
+		logit(LOG_STATUS,
+		      "Database configuration rejected: production role requires the production port");
+		return false;
+	}
+
+	const char *database = sql_persistence_db_name();
+	if (!sql_target_is_allowed(DB_HOST, database))
+	{
+		logit(LOG_STATUS,
+		      "Database configuration rejected: resolved target is not allow-listed");
+		return false;
+	}
+
+	const char *socket_path = getenv("DB_SOCKET");
+	bool protected_local = sql_host_is_loopback(DB_HOST) || (socket_path && *socket_path);
+	if (socket_path && *socket_path &&
+	    (!sql_host_is_loopback(DB_HOST) || strcmp(role, "local")))
+	{
+		logit(LOG_STATUS, "Database configuration rejected: DB_SOCKET is local-mode only");
+		return false;
+	}
+	if (RUNTIME_DB_REMOTE_TLS_REQUIRED && !protected_local)
+	{
+		const char *ca = getenv("DB_SSL_CA");
+		struct stat ca_stat;
+		if (!sql_env_true("DB_TLS") || !ca || !*ca || stat(ca, &ca_stat) ||
+		    !S_ISREG(ca_stat.st_mode))
+		{
+			logit(LOG_STATUS,
+			      "Database configuration rejected: remote transport requires TLS and a CA file");
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool sql_connection_execute(MYSQL *conn, const char *statement)
+{
+	if (mysql_real_query(conn, statement, strlen(statement)))
+		return false;
+	MYSQL_RES *result = mysql_store_result(conn);
+	if (result)
+		mysql_free_result(result);
+	return mysql_next_result(conn) == -1;
+}
+
+static bool sql_mode_has(const char *mode, const char *required)
+{
+	if (!mode || !required)
+		return false;
+	size_t required_len = strlen(required);
+	for (const char *start = mode; *start;)
+	{
+		const char *end = strchr(start, ',');
+		size_t len = end ? (size_t)(end - start) : strlen(start);
+		if (len == required_len && !strncmp(start, required, len))
+			return true;
+		if (!end)
+			break;
+		start = end + 1;
+	}
+	return false;
+}
+
+static bool sql_verify_session_contract(MYSQL *conn)
+{
+	const char *verify = "SELECT @@character_set_connection,@@time_zone,@@sql_mode";
+	if (mysql_real_query(conn, verify, strlen(verify)))
+		return false;
+	MYSQL_RES *result = mysql_store_result(conn);
+	MYSQL_ROW row = result ? mysql_fetch_row(result) : NULL;
+	bool valid = row && row[0] && !strcmp(row[0], RUNTIME_DB_CHARACTER_SET) && row[1] &&
+		     !strcmp(row[1], RUNTIME_DB_TIME_ZONE) && row[2] &&
+		     sql_mode_has(row[2], "STRICT_TRANS_TABLES") &&
+		     sql_mode_has(row[2], "ERROR_FOR_DIVISION_BY_ZERO") &&
+		     sql_mode_has(row[2], "NO_ENGINE_SUBSTITUTION");
+	if (result)
+		mysql_free_result(result);
+	if (!valid)
+		return false;
+
+	const char *isolation_queries[] = { "SELECT @@transaction_isolation",
+					    "SELECT @@tx_isolation" };
+	for (const char *query : isolation_queries)
+	{
+		if (mysql_real_query(conn, query, strlen(query)))
+			continue;
+		result = mysql_store_result(conn);
+		row = result ? mysql_fetch_row(result) : NULL;
+		valid = row && row[0] && !strcasecmp(row[0], RUNTIME_DB_ISOLATION);
+		if (result)
+			mysql_free_result(result);
+		if (valid)
+			return true;
+	}
+	return false;
+}
+
+static bool sql_apply_session_contract(MYSQL *conn)
+{
+	if (mysql_set_character_set(conn, RUNTIME_DB_CHARACTER_SET))
+		return false;
+	std::string sql_mode_statement =
+		"SET SESSION sql_mode='" + std::string(RUNTIME_DB_SQL_MODE) + "'";
+	const char *statements[] = { "SET SESSION time_zone='+00:00'",
+				     "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED",
+				     sql_mode_statement.c_str() };
+	for (const char *statement : statements)
+		if (!sql_connection_execute(conn, statement))
+			return false;
+	return sql_verify_session_contract(conn);
+}
+
+MYSQL *sql_open_configured_connection(unsigned long client_flags)
+{
+	if (!sql_runtime_config_valid())
+		return NULL;
+
+	MYSQL *conn = mysql_init(NULL);
+	if (!conn)
+		return NULL;
+
+	unsigned int timeout = RUNTIME_DB_TIMEOUT_SECONDS;
+	bool reconnect = false;
+	if (mysql_options(conn, MYSQL_OPT_CONNECT_TIMEOUT, &timeout) ||
+	    mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &timeout) ||
+	    mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &timeout) ||
+	    mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect) ||
+	    mysql_options(conn, MYSQL_SET_CHARSET_NAME, RUNTIME_DB_CHARACTER_SET))
+	{
+		mysql_close(conn);
+		return NULL;
+	}
+
+	const char *socket_path = getenv("DB_SOCKET");
+	bool protected_local = sql_host_is_loopback(DB_HOST) || (socket_path && *socket_path);
+	if (RUNTIME_DB_REMOTE_TLS_REQUIRED && !protected_local)
+	{
+		const char *ca = getenv("DB_SSL_CA");
+		/* Both arms demand the same thing: TLS is mandatory, the server
+		 * certificate must chain to the CA, and the name on it must match the
+		 * host we asked for.  MySQL deprecated MYSQL_OPT_SSL_ENFORCE and
+		 * MYSQL_OPT_SSL_VERIFY_SERVER_CERT in 5.7 and removed them in 8.0,
+		 * folding both into MYSQL_OPT_SSL_MODE; MariaDB Connector/C ships only
+		 * the original pair.  Build against either without weakening the
+		 * requirement -- a downgrade here is silent until someone is on the
+		 * wrong end of it. */
+#if defined(MARIADB_BASE_VERSION) || defined(MARIADB_PACKAGE_VERSION)
+		bool enabled = true;
+		if (mysql_options(conn, MYSQL_OPT_SSL_ENFORCE, &enabled) ||
+		    mysql_options(conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &enabled) ||
+		    mysql_options(conn, MYSQL_OPT_SSL_CA, ca))
+#else
+		unsigned int ssl_mode = SSL_MODE_VERIFY_IDENTITY;
+		if (mysql_options(conn, MYSQL_OPT_SSL_MODE, &ssl_mode) ||
+		    mysql_options(conn, MYSQL_OPT_SSL_CA, ca))
+#endif
+		{
+			mysql_close(conn);
+			return NULL;
+		}
+		client_flags |= CLIENT_SSL;
+	}
+
+	if (!mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASSWD, sql_persistence_db_name(),
+				DB_PORT, socket_path && *socket_path ? socket_path : NULL,
+				client_flags))
+	{
+		logit(LOG_STATUS, "Database connection failed error_code=%u sqlstate=%.5s",
+		      (unsigned int)mysql_errno(conn), mysql_sqlstate(conn));
+		mysql_close(conn);
+		return NULL;
+	}
+	if ((!protected_local && !mysql_get_ssl_cipher(conn)) || !sql_apply_session_contract(conn))
+	{
+		logit(LOG_STATUS,
+		      "Database connection rejected: transport or session contract failed");
+		mysql_close(conn);
+		return NULL;
+	}
+	return conn;
+}
 
 /* Escapes a string. */
 char *mysql_str(const char *str, char *buf)
@@ -320,91 +612,231 @@ string escape_str(const char *str)
 	return escaped;
 }
 
-/* populate races and classes lookup tables on boot */
-void sql_populate_lookup_tables()
+static void lookup_append(std::string *output, const std::string &value)
 {
-	char buf[MAX_STRING_LENGTH];
-	char esc_name[256], esc_ansi[256], esc_short[64], esc_abbrev[16];
-	int i;
+	uint64_t size = value.size();
+	for (int shift = 56; shift >= 0; shift -= 8)
+		output->push_back((char)((size >> shift) & 0xff));
+	output->append(value);
+}
 
-	logit(LOG_STATUS, "Populating lookup tables...");
+static std::string lookup_escape(const char *value)
+{
+	if (!value)
+		value = "";
+	std::string escaped(strlen(value) * 2 + 1, '\0');
+	unsigned long length = mysql_real_escape_string(DB, &escaped[0], value, strlen(value));
+	escaped.resize(length);
+	return escaped;
+}
 
-	// clear existing data
-	qry("DELETE FROM races");
-	qry("DELETE FROM classes");
+static bool lookup_checksum(const std::string &canonical, char *encoded, size_t size)
+{
+	if (size < SHA256_DIGEST_LENGTH * 2 + 1)
+		return false;
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	if (!SHA256((const unsigned char *)canonical.data(), canonical.size(), digest))
+		return false;
+	for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i)
+		snprintf(encoded + i * 2, 3, "%02x", digest[i]);
+	encoded[SHA256_DIGEST_LENGTH * 2] = '\0';
+	return true;
+}
 
-	// populate races table
-	for (i = 0; i <= LAST_RACE; i++)
+static bool lookup_rows_match(const char *checksum, size_t race_count, size_t class_count)
+{
+	const char *queries[] = { "SELECT id,name,COALESCE(short_name,''),COALESCE(ansi_name,''),"
+				  "COALESCE(abbrev,''),racewar,playable FROM races ORDER BY id",
+				  "SELECT id,name,COALESCE(ansi_name,''),COALESCE(short_name,''),"
+				  "COALESCE(menu_char,'') FROM classes ORDER BY id" };
+	const size_t widths[] = { 7, 5 };
+	const char *tags[] = { "race", "class" };
+	const size_t expected[] = { race_count, class_count };
+	std::string canonical;
+	for (size_t query_index = 0; query_index < 2; ++query_index)
+	{
+		if (mysql_real_query(DB, queries[query_index], strlen(queries[query_index])))
+			return false;
+		MYSQL_RES *result = mysql_store_result(DB);
+		if (!result || mysql_num_fields(result) != widths[query_index] ||
+		    mysql_num_rows(result) != expected[query_index])
+		{
+			if (result)
+				mysql_free_result(result);
+			return false;
+		}
+		MYSQL_ROW row;
+		while ((row = mysql_fetch_row(result)) != NULL)
+		{
+			lookup_append(&canonical, tags[query_index]);
+			for (size_t column = 0; column < widths[query_index]; ++column)
+			{
+				if (!row[column])
+				{
+					mysql_free_result(result);
+					return false;
+				}
+				lookup_append(&canonical, row[column]);
+			}
+		}
+		mysql_free_result(result);
+	}
+	char actual[SHA256_DIGEST_LENGTH * 2 + 1];
+	return lookup_checksum(canonical, actual, sizeof actual) && !strcmp(actual, checksum);
+}
+
+static bool lookup_state_matches(const char *checksum, size_t race_count, size_t class_count)
+{
+	char query[256];
+	snprintf(query, sizeof query,
+		 "SELECT dataset_version,LOWER(HEX(dataset_checksum)),race_count,class_count "
+		 "FROM lookup_dataset_state WHERE dataset_name='%s'",
+		 LOOKUP_DATASET_NAME);
+	if (mysql_real_query(DB, query, strlen(query)))
+		return false;
+	MYSQL_RES *result = mysql_store_result(DB);
+	MYSQL_ROW row = result ? mysql_fetch_row(result) : NULL;
+	bool matches = row && row[0] && atoi(row[0]) == (int)LOOKUP_DATASET_VERSION && row[1] &&
+		       !strcmp(row[1], checksum) && row[2] &&
+		       strtoul(row[2], NULL, 10) == race_count && row[3] &&
+		       strtoul(row[3], NULL, 10) == class_count;
+	if (result)
+		mysql_free_result(result);
+	return matches;
+}
+
+static std::string lookup_id_list(const std::vector<int> &ids)
+{
+	std::string list;
+	for (int id : ids)
+	{
+		if (!list.empty())
+			list += ',';
+		list += std::to_string(id);
+	}
+	return list;
+}
+
+/* Publish the compiled race/class dataset atomically. Unchanged boots do no writes. */
+bool sql_populate_lookup_tables()
+{
+	std::vector<std::string> race_sql, class_sql;
+	std::vector<int> race_ids, class_ids;
+	std::string canonical;
+
+	for (int i = 0; i <= LAST_RACE; ++i)
 	{
 		if (!race_names_table[i].normal || !race_names_table[i].normal[0])
 			continue;
-
-		mysql_real_escape_string(DB, esc_name, race_names_table[i].normal,
-					 strlen(race_names_table[i].normal));
-		mysql_real_escape_string(
-			DB, esc_ansi, race_names_table[i].ansi ? race_names_table[i].ansi : "",
-			race_names_table[i].ansi ? strlen(race_names_table[i].ansi) : 0);
-		mysql_real_escape_string(
-			DB, esc_short,
-			race_names_table[i].no_spaces ? race_names_table[i].no_spaces : "",
-			race_names_table[i].no_spaces ? strlen(race_names_table[i].no_spaces) : 0);
-		mysql_real_escape_string(
-			DB, esc_abbrev, race_names_table[i].code ? race_names_table[i].code : "",
-			race_names_table[i].code ? strlen(race_names_table[i].code) : 0);
-
-		// check if this is a playable race and get racewar side
-		int racewar = 0;
-		int playable = 0;
-		for (int j = 0; playable_races[j].race_id >= 0; j++)
-		{
+		int racewar = 0, playable = 0;
+		for (int j = 0; playable_races[j].race_id >= 0; ++j)
 			if (playable_races[j].race_id == i)
 			{
 				playable = 1;
-				if (strcmp(playable_races[j].faction, "good") == 0)
+				if (!strcmp(playable_races[j].faction, "good"))
 					racewar = RACEWAR_GOOD;
-				else if (strcmp(playable_races[j].faction, "evil") == 0)
+				else if (!strcmp(playable_races[j].faction, "evil"))
 					racewar = RACEWAR_EVIL;
-				else if (strcmp(playable_races[j].faction, "undead") == 0)
+				else if (!strcmp(playable_races[j].faction, "undead"))
 					racewar = RACEWAR_UNDEAD;
-				else if (strcmp(playable_races[j].faction, "neutral") == 0)
+				else if (!strcmp(playable_races[j].faction, "neutral"))
 					racewar = RACEWAR_NEUTRAL;
 				break;
 			}
-		}
-
-		snprintf(
-			buf, sizeof(buf),
-			"INSERT INTO races (id, name, short_name, ansi_name, abbrev, racewar, playable) "
-			"VALUES (%d, '%s', '%s', '%s', '%s', %d, %d)",
-			i, esc_name, esc_short, esc_ansi, esc_abbrev, racewar, playable);
-		qry("%s", buf);
+		const char *raw[] = { race_names_table[i].normal,
+				      race_names_table[i].no_spaces ?
+					      race_names_table[i].no_spaces :
+					      "",
+				      race_names_table[i].ansi ? race_names_table[i].ansi : "",
+				      race_names_table[i].code ? race_names_table[i].code : "" };
+		lookup_append(&canonical, "race");
+		lookup_append(&canonical, std::to_string(i));
+		for (const char *value : raw)
+			lookup_append(&canonical, value);
+		lookup_append(&canonical, std::to_string(racewar));
+		lookup_append(&canonical, std::to_string(playable));
+		race_ids.push_back(i);
+		race_sql.push_back(
+			"INSERT INTO races(id,name,short_name,ansi_name,abbrev,racewar,playable) VALUES(" +
+			std::to_string(i) + ",'" + lookup_escape(raw[0]) + "','" +
+			lookup_escape(raw[1]) + "','" + lookup_escape(raw[2]) + "','" +
+			lookup_escape(raw[3]) + "'," + std::to_string(racewar) + "," +
+			std::to_string(playable) +
+			") ON DUPLICATE KEY UPDATE name=VALUES(name),"
+			"short_name=VALUES(short_name),ansi_name=VALUES(ansi_name),abbrev=VALUES(abbrev),"
+			"racewar=VALUES(racewar),playable=VALUES(playable)");
 	}
 
-	// populate classes table
-	for (i = 0; i <= CLASS_COUNT; i++)
+	for (int i = 0; i <= CLASS_COUNT; ++i)
 	{
 		if (!class_names_table[i].normal || !class_names_table[i].normal[0])
 			continue;
-
-		mysql_real_escape_string(DB, esc_name, class_names_table[i].normal,
-					 strlen(class_names_table[i].normal));
-		mysql_real_escape_string(
-			DB, esc_ansi, class_names_table[i].ansi ? class_names_table[i].ansi : "",
-			class_names_table[i].ansi ? strlen(class_names_table[i].ansi) : 0);
-		mysql_real_escape_string(
-			DB, esc_short, class_names_table[i].code ? class_names_table[i].code : "",
-			class_names_table[i].code ? strlen(class_names_table[i].code) : 0);
-
-		char letter[2] = { class_names_table[i].letter, '\0' };
-
-		snprintf(buf, sizeof(buf),
-			 "INSERT INTO classes (id, name, ansi_name, short_name, menu_char) "
-			 "VALUES (%d, '%s', '%s', '%s', '%s')",
-			 i, esc_name, esc_ansi, esc_short, letter);
-		qry("%s", buf);
+		const char *raw[] = { class_names_table[i].normal,
+				      class_names_table[i].ansi ? class_names_table[i].ansi : "",
+				      class_names_table[i].code ? class_names_table[i].code : "" };
+		char letter[] = { class_names_table[i].letter, '\0' };
+		lookup_append(&canonical, "class");
+		lookup_append(&canonical, std::to_string(i));
+		for (const char *value : raw)
+			lookup_append(&canonical, value);
+		lookup_append(&canonical, letter);
+		class_ids.push_back(i);
+		class_sql.push_back(
+			"INSERT INTO classes(id,name,ansi_name,short_name,menu_char) VALUES(" +
+			std::to_string(i) + ",'" + lookup_escape(raw[0]) + "','" +
+			lookup_escape(raw[1]) + "','" + lookup_escape(raw[2]) + "','" +
+			lookup_escape(letter) +
+			"') ON DUPLICATE KEY UPDATE name=VALUES(name),"
+			"ansi_name=VALUES(ansi_name),short_name=VALUES(short_name),"
+			"menu_char=VALUES(menu_char)");
 	}
 
-	logit(LOG_STATUS, "Lookup tables populated.");
+	char checksum[SHA256_DIGEST_LENGTH * 2 + 1];
+	if (!lookup_checksum(canonical, checksum, sizeof checksum))
+		return false;
+
+	if (lookup_state_matches(checksum, race_sql.size(), class_sql.size()) &&
+	    lookup_rows_match(checksum, race_sql.size(), class_sql.size()))
+	{
+		logit(LOG_STATUS, "Lookup dataset unchanged; publication skipped.");
+		return true;
+	}
+
+	if (!sql_connection_execute(DB, "START TRANSACTION"))
+		return false;
+	auto rollback = []()
+	{
+		sql_connection_execute(DB, "ROLLBACK");
+		return false;
+	};
+	for (const std::string &query : race_sql)
+		if (!sql_connection_execute(DB, query.c_str()))
+			return rollback();
+	for (const std::string &query : class_sql)
+		if (!sql_connection_execute(DB, query.c_str()))
+			return rollback();
+	std::string delete_races =
+		"DELETE FROM races WHERE id NOT IN (" + lookup_id_list(race_ids) + ")";
+	std::string delete_classes =
+		"DELETE FROM classes WHERE id NOT IN (" + lookup_id_list(class_ids) + ")";
+	if (!sql_connection_execute(DB, delete_races.c_str()) ||
+	    !sql_connection_execute(DB, delete_classes.c_str()))
+		return rollback();
+	if (!lookup_rows_match(checksum, race_sql.size(), class_sql.size()))
+		return rollback();
+	std::string state =
+		"INSERT INTO lookup_dataset_state(dataset_name,dataset_version,dataset_checksum,"
+		"race_count,class_count) VALUES('" +
+		std::string(LOOKUP_DATASET_NAME) + "'," + std::to_string(LOOKUP_DATASET_VERSION) +
+		",UNHEX('" + checksum + "')," + std::to_string(race_sql.size()) + "," +
+		std::to_string(class_sql.size()) +
+		") ON DUPLICATE KEY UPDATE dataset_version=VALUES(dataset_version),"
+		"dataset_checksum=VALUES(dataset_checksum),race_count=VALUES(race_count),"
+		"class_count=VALUES(class_count)";
+	if (!sql_connection_execute(DB, state.c_str()) || !sql_connection_execute(DB, "COMMIT"))
+		return rollback();
+	logit(LOG_STATUS, "Lookup dataset published atomically.");
+	return true;
 }
 
 /* Resolve the requested database while retaining the non-default-port
@@ -423,11 +855,33 @@ const char *sql_persistence_db_name(void)
 /* load .env file if present, setting environment variables */
 int load_env_file(void)
 {
-	FILE *f = fopen(".env", "r");
+	int fd = open(".env", O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
+	if (fd < 0)
+	{
+		if (errno != ENOENT)
+		{
+			logit(LOG_STATUS, "Unable to open .env securely");
+			return -1;
+		}
+		logit(LOG_STATUS, "No .env file found; explicit process environment is required.");
+		return 0;
+	}
+
+	struct stat file_stat;
+	if (fstat(fd, &file_stat) || !S_ISREG(file_stat.st_mode) || file_stat.st_uid != geteuid() ||
+	    (file_stat.st_mode & 0177))
+	{
+		logit(LOG_STATUS,
+		      "Unsafe .env metadata: require an owner-controlled regular file with mode 0600 or stricter");
+		close(fd);
+		return -1;
+	}
+
+	FILE *f = fdopen(fd, "r");
 	if (!f)
 	{
-		logit(LOG_STATUS, "No .env file found, using default database credentials.");
-		return 0;
+		close(fd);
+		return -1;
 	}
 
 	char line[256];
@@ -469,35 +923,16 @@ int load_env_file(void)
  * throughout the mud session. */
 int initialize_mysql()
 {
-	/* Resolve the target database through the shared helper so the
-	 * main DB connection, the connection pool slots, and the legacy
-	 * persistenceDB fallback all connect to the same database. */
-	const char *db_name = sql_persistence_db_name();
-
-	logit(LOG_STATUS, "Initializing MySQL persistent connection to %s (host=%s port=%d).",
-	      db_name, DB_HOST, DB_PORT);
-	DB = mysql_init(NULL);
-	if (DB == NULL)
+	logit(LOG_STATUS, "Initializing validated MySQL connection.");
+	DB = sql_open_configured_connection(CLIENT_MULTI_STATEMENTS);
+	if (!DB)
 	{
-		logit(LOG_STATUS, "Error initializing handler.");
-		return -1;
-	}
-
-	unsigned int timeout = 10;
-	mysql_options(DB, MYSQL_OPT_READ_TIMEOUT, &timeout);
-	mysql_options(DB, MYSQL_OPT_WRITE_TIMEOUT, &timeout);
-
-	if (!mysql_real_connect(DB, DB_HOST, DB_USER, DB_PASSWD, db_name, DB_PORT, NULL,
-				CLIENT_MULTI_STATEMENTS))
-	{
-		logit(LOG_STATUS, "Error connecting to database: %s", mysql_error(DB));
 		return -1;
 	}
 
 	logit(LOG_STATUS, "Connection established.");
 
 	sql_resetConnectTimes();
-	sql_populate_lookup_tables();
 
 	if (!sql_verify_boot_database())
 	{
@@ -510,13 +945,29 @@ int initialize_mysql()
 		}
 		return -1;
 	}
+	if (!sql_populate_lookup_tables())
+	{
+		logit(LOG_STATUS,
+		      "FATAL: COMPAT-E007 lookup dataset publication failed or commit outcome is ambiguous");
+		mysql_close(DB);
+		DB = NULL;
+		return -1;
+	}
+	if (!item_uid_allocator_reserve(DB, ITEM_UID_BOOT_RESERVATION))
+	{
+		logit(LOG_STATUS,
+		      "FATAL: could not reserve a collision-free item UID range at boot");
+		mysql_close(DB);
+		DB = NULL;
+		return -1;
+	}
 
 	/* Initialise the connection pool for async persistence
 	 * workers (item, scalar, large-payload event queues). */
 	if (sql_pool_init(SQL_POOL_DEFAULT_SIZE) != 0)
 	{
 		logit(LOG_STATUS,
-		      "Warning: connection pool init failed — persistence workers will use sync fallback.");
+		      "Warning: connection pool init failed -- persistence workers will use sync fallback.");
 		/* Non-fatal: the main DB connection still works. */
 	}
 
@@ -524,7 +975,7 @@ int initialize_mysql()
 }
 
 /* Handle a query, log possible errors and return results (if available) */
-MYSQL_RES *db_query(const char *format, ...)
+MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...)
 {
 	va_list args;
 	int needed;
@@ -554,15 +1005,13 @@ MYSQL_RES *db_query(const char *format, ...)
 		return NULL;
 	}
 
-	if (!sql_trace_exec("db_query", buf, strlen(buf), true, false))
+	if (!sql_trace_exec_at(site, "db_query", buf, strlen(buf), true, false))
 	{
 		free(buf);
 		return NULL;
 	}
 
 	res = mysql_store_result(DB);
-	if (res)
-		sql_trace_log("db_query/rows", DB, buf);
 	free(buf);
 	return res;
 }
@@ -575,18 +1024,88 @@ static bool sql_verify_boot_database(void)
 		return false;
 	}
 
+	char compatibility_probe[4096];
+	snprintf(
+		compatibility_probe, sizeof compatibility_probe,
+		"SELECT "
+		"(SELECT COUNT(*) FROM mud_schema_baselines WHERE baseline_id='%s' AND "
+		"LOWER(HEX(schema_fingerprint))='%s' AND manifest_version=%u AND runner_version=1),"
+		"(SELECT COUNT(*) FROM mud_schema_history WHERE migration_id='%s' AND "
+		"sequence_number=%u AND LOWER(HEX(apply_checksum))='%s' AND "
+		"LOWER(HEX(verify_checksum))='%s' AND runner_version=1),"
+		"(SELECT COUNT(*) FROM mud_schema_migration_state WHERE state_id=1 AND "
+		"applied_count=%u AND LOWER(HEX(history_checksum))='%s'),"
+		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+		"AND table_type='BASE TABLE'),"
+		"(SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+		"AND table_type='BASE TABLE' AND engine='InnoDB' AND "
+		"table_collation='utf8mb4_unicode_ci')",
+		RUNTIME_BASELINE_ID, RUNTIME_BASELINE_FINGERPRINT,
+		RUNTIME_COMPATIBILITY_MANIFEST_VERSION, RUNTIME_MIGRATION_HEAD_ID,
+		RUNTIME_MIGRATION_HEAD_SEQUENCE, RUNTIME_MIGRATION_APPLY_CHECKSUM,
+		RUNTIME_MIGRATION_VERIFY_CHECKSUM, RUNTIME_MIGRATION_HEAD_SEQUENCE,
+		RUNTIME_MIGRATION_HISTORY_CHECKSUM);
+	MYSQL_RES *result = db_query("%s", compatibility_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: COMPAT-E001 compatibility metadata query failed");
+		return false;
+	}
+	MYSQL_ROW row = mysql_fetch_row(result);
+	unsigned long *lengths = row ? mysql_fetch_lengths(result) : NULL;
+	bool compatibility_ok = row && lengths && row[0] && atoi(row[0]) == 1 && row[1] &&
+				atoi(row[1]) == 1 && row[2] && atoi(row[2]) == 1 && row[3] &&
+				atoi(row[3]) == (int)RUNTIME_CURRENT_TABLE_COUNT && row[4] &&
+				atoi(row[4]) == (int)RUNTIME_CURRENT_TABLE_COUNT;
+	mysql_free_result(result);
+	if (!compatibility_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: COMPAT-E002 migration, table, engine, or collation identity mismatch expected_baseline=%s expected_head=%s expected_tables=%u",
+		      RUNTIME_BASELINE_ID, RUNTIME_MIGRATION_HEAD_ID, RUNTIME_CURRENT_TABLE_COUNT);
+		return false;
+	}
+	if (!sql_verify_metadata_fingerprint())
+	{
+		logit(LOG_STATUS,
+		      "FATAL: COMPAT-E003 normalized table/column/index/foreign-key fingerprint mismatch");
+		return false;
+	}
+
 	const char *probe = "SELECT 1 FROM accounts LIMIT 1";
 	if (!sql_trace_exec("boot/accounts_probe", probe, strlen(probe), true, false))
 	{
 		logit(LOG_STATUS,
-		      "FATAL: required accounts table is missing or unreadable at boot: %s",
-		      mysql_error(DB));
+		      "FATAL: required accounts table is missing or unreadable at boot");
 		return false;
 	}
 
-	MYSQL_RES *result = mysql_store_result(DB);
+	result = mysql_store_result(DB);
 	if (result)
 		mysql_free_result(result);
+
+	const char *player_revision_probe =
+		"SELECT COUNT(*) FROM information_schema.columns "
+		"WHERE table_schema=DATABASE() AND table_name='player_data' AND "
+		"column_name='save_revision' AND data_type='bigint' AND "
+		"column_type LIKE '%unsigned' AND "
+		"is_nullable='NO' AND column_default='0'";
+	result = db_query("%s", player_revision_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: player save revision schema query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool player_revision_ok = row && lengths && row[0] && atoi(row[0]) == 1;
+	mysql_free_result(result);
+	if (!player_revision_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: player save revision schema is missing or incompatible at boot");
+		return false;
+	}
 
 	/* The asynchronous persistence workers require these tables and their
 	 * idempotency/index contract.  Fail at boot rather than allowing a worker
@@ -601,13 +1120,11 @@ static bool sql_verify_boot_database(void)
 	result = db_query("%s", event_schema_probe);
 	if (!result)
 	{
-		logit(LOG_STATUS,
-		      "FATAL: persistence event schema metadata query failed at boot: %s",
-		      mysql_error(DB));
+		logit(LOG_STATUS, "FATAL: persistence event schema metadata query failed at boot");
 		return false;
 	}
-	MYSQL_ROW row = mysql_fetch_row(result);
-	unsigned long *lengths = row ? mysql_fetch_lengths(result) : NULL;
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
 	bool event_columns_ok = row && lengths && row[0] && atoi(row[0]) == 25;
 	mysql_free_result(result);
 	if (!event_columns_ok)
@@ -628,9 +1145,7 @@ static bool sql_verify_boot_database(void)
 	result = db_query("%s", event_index_probe);
 	if (!result)
 	{
-		logit(LOG_STATUS,
-		      "FATAL: persistence event index metadata query failed at boot: %s",
-		      mysql_error(DB));
+		logit(LOG_STATUS, "FATAL: persistence event index metadata query failed at boot");
 		return false;
 	}
 	row = mysql_fetch_row(result);
@@ -654,8 +1169,7 @@ static bool sql_verify_boot_database(void)
 	result = db_query("%s", auction_engine_probe);
 	if (!result)
 	{
-		logit(LOG_STATUS, "FATAL: auction storage-engine metadata query failed at boot: %s",
-		      mysql_error(DB));
+		logit(LOG_STATUS, "FATAL: auction storage-engine metadata query failed at boot");
 		return false;
 	}
 	row = mysql_fetch_row(result);
@@ -668,11 +1182,397 @@ static bool sql_verify_boot_database(void)
 		      "FATAL: transactional auction tables are not all InnoDB at boot (expected 4).");
 		return false;
 	}
+
+	const char *critical_schema_probe =
+		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+		"AND ((table_name='critical_operation_inbox' AND column_name IN "
+		"('operation_id','command_hash','keys_hash','command_type','schema_version',"
+		"'payload_version','status','result_code','durable_revision','result_payload',"
+		"'created_at','committed_at')) OR (table_name='critical_test_state' AND "
+		"column_name IN ('entity_type','entity_id','value','revision','updated_at')) OR "
+		"(table_name='critical_outbox' AND column_name IN "
+		"('outbox_id','operation_id','event_index','destination','event_type',"
+		"'payload_version','payload','status','attempt_count','next_attempt_at',"
+		"'created_at','delivered_at','dead_lettered_at','last_error_code')) OR "
+		"(table_name='critical_outbox_delivery_dedupe' AND column_name IN "
+		"('consumer_id','outbox_id','delivered_at')))";
+	result = db_query("%s", critical_schema_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: critical command schema metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool critical_columns_ok = row && lengths && row[0] && atoi(row[0]) == 34;
+	mysql_free_result(result);
+	if (!critical_columns_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: critical command schema is incomplete at boot (expected 34 required columns).");
+		return false;
+	}
+	const char *critical_index_probe =
+		"SELECT COUNT(*) FROM (SELECT DISTINCT table_name,index_name FROM "
+		"information_schema.statistics WHERE table_schema=DATABASE() AND "
+		"((table_name='critical_operation_inbox' AND index_name IN "
+		"('PRIMARY','idx_critical_inbox_status_created')) OR "
+		"(table_name='critical_test_state' AND index_name='PRIMARY') OR "
+		"(table_name='critical_outbox' AND index_name IN "
+		"('PRIMARY','uq_critical_outbox_operation_event','idx_critical_outbox_claim',"
+		"'idx_critical_outbox_age')) OR (table_name='critical_outbox_delivery_dedupe' "
+		"AND index_name='PRIMARY'))) AS critical_required_indexes";
+	result = db_query("%s", critical_index_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: critical command index metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool critical_indexes_ok = row && lengths && row[0] && atoi(row[0]) == 8;
+	mysql_free_result(result);
+	if (!critical_indexes_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: critical command indexes are incomplete at boot (expected 8 entries).");
+		return false;
+	}
+	const char *epic_schema_probe =
+		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+		"AND ((table_name='player_data' AND column_name='epic_revision') OR "
+		"(table_name='epic_balance_baseline' AND column_name IN "
+		"('pid','opening_balance','opening_revision','captured_at')) OR "
+		"(table_name='epic_ledger' AND column_name IN "
+		"('operation_id','pid','delta','balance_after','epic_revision','reason_type',"
+		"'reason_id','source_site','created_at')))";
+	result = db_query("%s", epic_schema_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: epic ledger schema metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool epic_columns_ok = row && lengths && row[0] && atoi(row[0]) == 14;
+	mysql_free_result(result);
+	if (!epic_columns_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: epic ledger schema is incomplete at boot (expected 14 required columns).");
+		return false;
+	}
+	const char *epic_index_probe =
+		"SELECT COUNT(*) FROM (SELECT DISTINCT table_name,index_name FROM "
+		"information_schema.statistics WHERE table_schema=DATABASE() AND "
+		"((table_name='epic_balance_baseline' AND index_name='PRIMARY') OR "
+		"(table_name='epic_ledger' AND index_name IN "
+		"('PRIMARY','uq_epic_ledger_pid_revision','idx_epic_ledger_pid_created',"
+		"'idx_epic_ledger_reason_created')))) AS epic_required_indexes";
+	result = db_query("%s", epic_index_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: epic ledger index metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool epic_indexes_ok = row && lengths && row[0] && atoi(row[0]) == 5;
+	mysql_free_result(result);
+	if (!epic_indexes_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: epic ledger indexes are incomplete at boot (expected 5 entries).");
+		return false;
+	}
+	const char *epic_baseline_coverage_probe =
+		"SELECT COUNT(*) FROM player_data AS player LEFT JOIN epic_balance_baseline AS baseline "
+		"ON baseline.pid=player.pid WHERE baseline.pid IS NULL";
+	result = db_query("%s", epic_baseline_coverage_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: epic balance baseline coverage query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool epic_baseline_coverage_ok = row && lengths && row[0] && atoll(row[0]) == 0;
+	mysql_free_result(result);
+	if (!epic_baseline_coverage_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: epic balance baseline does not cover every player at boot.");
+		return false;
+	}
+	const char *currency_schema_probe =
+		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+		"AND ((table_name='player_data' AND column_name='wallet_revision') OR "
+		"(table_name='account_banks' AND column_name='bank_revision') OR "
+		"(table_name='currency_wallet_baseline' AND column_name IN "
+		"('pid','opening_copper','opening_silver','opening_gold','opening_platinum',"
+		"'opening_revision','captured_at')) OR (table_name='currency_bank_baseline' AND "
+		"column_name IN ('bank_id','opening_copper','opening_silver','opening_gold',"
+		"'opening_platinum','opening_revision','captured_at')) OR "
+		"(table_name='currency_ledger' AND column_name IN "
+		"('operation_id','pid','bank_id','wallet_delta_copper','wallet_delta_silver',"
+		"'wallet_delta_gold','wallet_delta_platinum','bank_delta_copper',"
+		"'bank_delta_silver','bank_delta_gold','bank_delta_platinum',"
+		"'wallet_after_copper','wallet_after_silver','wallet_after_gold',"
+		"'wallet_after_platinum','bank_after_copper','bank_after_silver','bank_after_gold',"
+		"'bank_after_platinum','wallet_revision','bank_revision','reason_type','reason_id',"
+		"'source_site','created_at')))";
+	result = db_query("%s", currency_schema_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: currency ledger schema metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool currency_columns_ok = row && lengths && row[0] && atoi(row[0]) == 41;
+	mysql_free_result(result);
+	if (!currency_columns_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: currency ledger schema is incomplete at boot (expected 41 required columns).");
+		return false;
+	}
+	const char *currency_index_probe =
+		"SELECT COUNT(*) FROM (SELECT DISTINCT table_name,index_name FROM "
+		"information_schema.statistics WHERE table_schema=DATABASE() AND "
+		"((table_name='currency_wallet_baseline' AND index_name='PRIMARY') OR "
+		"(table_name='currency_bank_baseline' AND index_name='PRIMARY') OR "
+		"(table_name='currency_ledger' AND index_name IN "
+		"('PRIMARY','uq_currency_wallet_revision','uq_currency_bank_revision',"
+		"'idx_currency_pid_created','idx_currency_bank_created',"
+		"'idx_currency_reason_created')))) AS currency_required_indexes";
+	result = db_query("%s", currency_index_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: currency ledger index metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool currency_indexes_ok = row && lengths && row[0] && atoi(row[0]) == 8;
+	mysql_free_result(result);
+	if (!currency_indexes_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: currency ledger indexes are incomplete at boot (expected 8 entries).");
+		return false;
+	}
+	const char *currency_wallet_baseline_coverage_probe =
+		"SELECT COUNT(*) FROM player_data AS player LEFT JOIN currency_wallet_baseline AS "
+		"baseline ON baseline.pid=player.pid WHERE baseline.pid IS NULL";
+	result = db_query("%s", currency_wallet_baseline_coverage_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: currency wallet baseline coverage query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool currency_wallet_coverage_ok = row && lengths && row[0] && atoll(row[0]) == 0;
+	mysql_free_result(result);
+	if (!currency_wallet_coverage_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: currency wallet baseline does not cover every player at boot.");
+		return false;
+	}
+	const char *currency_bank_baseline_coverage_probe =
+		"SELECT COUNT(*) FROM account_banks AS bank LEFT JOIN currency_bank_baseline AS "
+		"baseline ON baseline.bank_id=bank.id WHERE baseline.bank_id IS NULL";
+	result = db_query("%s", currency_bank_baseline_coverage_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: currency bank baseline coverage query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool currency_bank_coverage_ok = row && lengths && row[0] && atoll(row[0]) == 0;
+	mysql_free_result(result);
+	if (!currency_bank_coverage_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: currency bank baseline does not cover every account bank at boot.");
+		return false;
+	}
+	const char *item_ownership_schema_probe =
+		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+		"AND ((table_name='item_uid_allocator' AND column_name IN "
+		"('allocator_id','next_uid','updated_at')) OR (table_name='item_owner_revision' "
+		"AND column_name IN ('owner_type','owner_id','owner_context_id','revision','updated_at')) "
+		"OR (table_name='item_current_owner' AND column_name IN "
+		"('item_uid','root_item_uid','parent_item_uid','owner_type','owner_id',"
+		"'owner_context_id','item_revision','vnum','state','updated_at')) OR "
+		"(table_name='item_ownership_baseline' AND column_name IN "
+		"('item_uid','root_item_uid','parent_item_uid','owner_type','owner_id',"
+		"'owner_context_id','opening_item_revision','vnum','source_table','source_row_id',"
+		"'captured_at')) OR (table_name='item_ownership_quarantine' AND column_name IN "
+		"('quarantine_id','item_uid','source_table','source_row_id','conflict_code','evidence',"
+		"'detected_at','repaired_at')) OR (table_name='item_ownership_ledger' AND "
+		"column_name IN ('operation_id','event_index','item_uid','root_item_uid',"
+		"'parent_item_uid','from_owner_type','from_owner_id','from_owner_context_id',"
+		"'to_owner_type','to_owner_id','to_owner_context_id','item_revision',"
+		"'from_owner_revision','to_owner_revision','reason_type','reason_id','source_site',"
+		"'created_at')))";
+	result = db_query("%s", item_ownership_schema_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: item ownership schema metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool item_ownership_columns_ok = row && lengths && row[0] && atoi(row[0]) == 55;
+	mysql_free_result(result);
+	if (!item_ownership_columns_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: item ownership schema is incomplete at boot (expected 55 columns).");
+		return false;
+	}
+	const char *item_ownership_index_probe =
+		"SELECT COUNT(*) FROM (SELECT DISTINCT table_name,index_name FROM "
+		"information_schema.statistics WHERE table_schema=DATABASE() AND ((table_name="
+		"'item_uid_allocator' AND index_name='PRIMARY') OR (table_name='item_owner_revision' "
+		"AND index_name IN ('PRIMARY','idx_item_owner_revision_updated')) OR (table_name="
+		"'item_current_owner' AND index_name IN ('PRIMARY','idx_item_current_root_uid',"
+		"'idx_item_current_owner','idx_item_current_parent')) OR (table_name="
+		"'item_ownership_baseline' AND index_name IN ('PRIMARY','uq_item_baseline_source',"
+		"'idx_item_baseline_owner')) OR (table_name='item_ownership_quarantine' AND index_name "
+		"IN ('PRIMARY','uq_item_quarantine_evidence','idx_item_quarantine_open')) OR "
+		"(table_name='item_ownership_ledger' AND index_name IN ('PRIMARY',"
+		"'uq_item_ledger_item_revision','idx_item_ledger_item_created',"
+		"'idx_item_ledger_from_owner','idx_item_ledger_to_owner')))) item_required_indexes";
+	result = db_query("%s", item_ownership_index_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: item ownership index metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool item_ownership_indexes_ok = row && lengths && row[0] && atoi(row[0]) == 18;
+	mysql_free_result(result);
+	if (!item_ownership_indexes_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: item ownership indexes are incomplete at boot (expected 18).");
+		return false;
+	}
+	const char *item_ownership_foreign_key_probe =
+		"SELECT COUNT(*) FROM information_schema.referential_constraints WHERE "
+		"constraint_schema=DATABASE() AND constraint_name IN "
+		"('item_current_parent_fk','item_ownership_operation_fk') AND "
+		"update_rule='RESTRICT' AND delete_rule='RESTRICT'";
+	result = db_query("%s", item_ownership_foreign_key_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: item ownership foreign-key metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool item_ownership_foreign_keys_ok = row && lengths && row[0] && atoi(row[0]) == 2;
+	mysql_free_result(result);
+	if (!item_ownership_foreign_keys_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: item ownership restrictive foreign keys are incomplete at boot.");
+		return false;
+	}
+	result = db_query(
+		"SELECT COUNT(*) FROM item_uid_allocator WHERE allocator_id=1 AND next_uid>0");
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: item UID allocator query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool item_uid_allocator_ok = row && lengths && row[0] && atoi(row[0]) == 1;
+	mysql_free_result(result);
+	if (!item_uid_allocator_ok)
+	{
+		logit(LOG_STATUS, "FATAL: item UID allocator singleton is missing at boot");
+		return false;
+	}
 	return true;
 }
 
+static bool sql_verify_metadata_fingerprint(void)
+{
+	const char *query =
+		"SELECT CONCAT('T',CHAR(9),table_name,CHAR(9),engine,CHAR(9),table_collation) "
+		"FROM information_schema.tables WHERE table_schema=DATABASE() AND "
+		"table_type='BASE TABLE' UNION ALL SELECT CONCAT('C',CHAR(9),c.table_name,CHAR(9),"
+		"c.column_name,CHAR(9),c.ordinal_position,CHAR(9),c.data_type,CHAR(9),c.is_nullable,"
+		"CHAR(9),COALESCE(c.character_maximum_length,0),CHAR(9),"
+		"COALESCE(c.numeric_precision,0),CHAR(9),COALESCE(c.numeric_scale,0),CHAR(9),"
+		"COALESCE(c.datetime_precision,0),CHAR(9),CASE WHEN c.column_default IS NULL THEN "
+		"'<NULL>' WHEN UPPER(c.column_default) LIKE "
+		"'CURRENT_TIMESTAMP%' THEN 'CURRENT_TIMESTAMP' ELSE TRIM(BOTH '\\'' FROM "
+		"c.column_default) END,CHAR(9),CONCAT(IF(LOWER(c.extra) LIKE "
+		"'%auto_increment%','A',''),IF(LOWER(c.extra) LIKE '%on update%','U',''),"
+		"IF(LOWER(c.extra) LIKE '%generated%','G',''))) FROM information_schema.columns c "
+		"JOIN information_schema.tables t ON t.table_schema=c.table_schema AND "
+		"t.table_name=c.table_name AND t.table_type='BASE TABLE' WHERE "
+		"c.table_schema=DATABASE() "
+		"UNION ALL SELECT CONCAT('I',CHAR(9),table_name,CHAR(9),index_name,CHAR(9),"
+		"non_unique,CHAR(9),seq_in_index,CHAR(9),column_name,CHAR(9),COALESCE(sub_part,0)) "
+		"FROM information_schema.statistics WHERE table_schema=DATABASE() UNION ALL SELECT "
+		"CONCAT('F',CHAR(9),k.table_name,CHAR(9),k.constraint_name,CHAR(9),k.column_name,"
+		"CHAR(9),k.referenced_table_name,CHAR(9),k.referenced_column_name,CHAR(9),"
+		"k.ordinal_position,CHAR(9),r.update_rule,CHAR(9),r.delete_rule) FROM "
+		"information_schema.key_column_usage k JOIN information_schema.referential_constraints "
+		"r ON r.constraint_schema=k.constraint_schema AND "
+		"r.constraint_name=k.constraint_name WHERE k.constraint_schema=DATABASE() AND "
+		"k.referenced_table_name IS NOT NULL ORDER BY 1";
+	if (mysql_real_query(DB, query, strlen(query)))
+		return false;
+	MYSQL_RES *result = mysql_store_result(DB);
+	if (!result)
+		return false;
+	std::string canonical;
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(result)) != NULL)
+	{
+		if (!row[0])
+		{
+			mysql_free_result(result);
+			return false;
+		}
+		size_t row_length = strlen(row[0]);
+		if (row_length >= RUNTIME_METADATA_MAX_BYTES - canonical.size())
+		{
+			mysql_free_result(result);
+			return false;
+		}
+		canonical += row[0];
+		canonical += '\n';
+	}
+	mysql_free_result(result);
+	unsigned char digest[SHA256_DIGEST_LENGTH];
+	if (!SHA256((const unsigned char *)canonical.data(), canonical.size(), digest))
+		return false;
+	char encoded[SHA256_DIGEST_LENGTH * 2 + 1];
+	for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i)
+		snprintf(encoded + i * 2, 3, "%02x", digest[i]);
+	encoded[SHA256_DIGEST_LENGTH * 2] = '\0';
+	const char *server = mysql_get_server_info(DB);
+	const char *expected = server && strstr(server, "MariaDB") ?
+				       RUNTIME_MARIADB10_11_METADATA_FINGERPRINT :
+				       RUNTIME_MYSQL8_METADATA_FINGERPRINT;
+	return !strcmp(encoded, expected);
+}
+
 /* Same as above, but won't log failed queries, ie when key restrictions suffice */
-MYSQL_RES *db_query_nolog(const char *format, ...)
+MYSQL_RES *db_query_nolog_at(struct persistence_query_site site, const char *format, ...)
 {
 	va_list args;
 	int needed;
@@ -692,7 +1592,7 @@ MYSQL_RES *db_query_nolog(const char *format, ...)
 	vsnprintf(buf, (size_t)needed + 1, format, args);
 	va_end(args);
 
-	if (!sql_trace_exec("db_query_nolog", buf, strlen(buf), true, false))
+	if (!sql_trace_exec_at(site, "db_query_nolog", buf, strlen(buf), true, false))
 	{
 		free(buf);
 		return NULL;
@@ -1193,7 +2093,6 @@ unsigned long new_pkill_event(P_char ch)
 	if (!sql_trace_exec("new_pkill_event", query.c_str(), query.size(), false, false))
 	{
 		logit(LOG_DEBUG, "MYSQL: Failed to create pkill event");
-		logit(LOG_DEBUG, "MYSQL: Query was: %s", query.c_str());
 		return 0;
 	}
 
@@ -1461,7 +2360,7 @@ void sql_world_quest_finished(P_char ch, P_obj reward)
 		GET_PID(ch), ch->only.pc->quest_giver, GET_NAME(ch), GET_LEVEL(ch),
 		ch->only.pc->quest_mob_vnum, reward_vnum, reward_desc);
 
-	mark_player_dirty(GET_PID(ch));
+	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 }
 
 int sql_world_quest_can_do_another(P_char ch)
@@ -1721,80 +2620,14 @@ static bool sql_trace_active(void)
 	return sql_trace_enabled() || sql_trace_burst > 0;
 }
 
-static const char *sql_trace_kind(const char *sql)
+static enum persistence_query_context sql_current_context(void)
 {
-	while (sql && *sql && isspace((unsigned char)*sql))
-		++sql;
-
-	if (!sql || !*sql)
-		return "EMPTY";
-	if (!strncasecmp(sql, "SELECT", 6))
-		return "SELECT";
-	if (!strncasecmp(sql, "UPDATE", 6))
-		return "UPDATE";
-	if (!strncasecmp(sql, "INSERT", 6))
-		return "INSERT";
-	if (!strncasecmp(sql, "DELETE", 6))
-		return "DELETE";
-	if (!strncasecmp(sql, "REPLACE", 7))
-		return "REPLACE";
-	if (!strncasecmp(sql, "START TRANSACTION", 17))
-		return "TXN_BEGIN";
-	if (!strncasecmp(sql, "COMMIT", 6))
-		return "COMMIT";
-	if (!strncasecmp(sql, "ROLLBACK", 8))
-		return "ROLLBACK";
-	return "OTHER";
-}
-
-static void sql_trace_preview(const char *sql, char *out, size_t outsz)
-{
-	size_t j = 0;
-
-	if (!out || outsz == 0)
-		return;
-	out[0] = '\0';
-	if (!sql)
-		return;
-
-	for (size_t i = 0; sql[i] && j + 1 < outsz; ++i)
-	{
-		unsigned char c = (unsigned char)sql[i];
-		if (c == '\n' || c == '\r' || c == '	')
-			c = ' ';
-		out[j++] = (char)c;
-		if (j + 4 >= outsz)
-			break;
-	}
-	out[j] = '\0';
-	if (sql[j] != '\0' && outsz > 4)
-		strcat(out, "...");
-}
-
-static void sql_trace_log(const char *phase, MYSQL *conn, const char *sql)
-{
-	if (!conn)
-		return;
-	const bool trace_on = sql_trace_enabled();
-	const bool burst_on = (sql_trace_burst > 0 && !trace_on);
-	if (!trace_on && !burst_on)
-		return;
-	if (burst_on)
-		--sql_trace_burst;
-
-	char preview[240];
-	sql_trace_preview(sql, preview, sizeof(preview));
-	logit(LOG_DEBUG,
-	      "[SQLTRACE] phase=%s conn=%lu kind=%s burst=%d errno=%u field_count=%u more_results=%d sql=\"%s\"",
-	      phase, (unsigned long)mysql_thread_id(conn), sql_trace_kind(sql), sql_trace_burst,
-	      (unsigned int)mysql_errno(conn), (unsigned int)mysql_field_count(conn),
-	      mysql_more_results(conn), preview);
+	return getpid() == sql_main_process_id ? PERSISTENCE_QUERY_CONTEXT_MAIN :
+						 PERSISTENCE_QUERY_CONTEXT_CHILD;
 }
 
 static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained)
 {
-	char preview[240];
-
 	if (!conn)
 		return;
 	if (drained)
@@ -1802,13 +2635,12 @@ static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained)
 	if (!sql_trace_active() && !drained)
 		return;
 
-	sql_trace_preview(sql_trace_last_sql, preview, sizeof(preview));
 	logit(LOG_DEBUG,
-	      "[SQLTRACE] phase=%s conn=%lu drained=%d burst=%d errno=%u field_count=%u more_results=%d site=%s sql=\"%s\"",
-	      phase, (unsigned long)mysql_thread_id(conn), drained ? 1 : 0, sql_trace_burst,
-	      (unsigned int)mysql_errno(conn), (unsigned int)mysql_field_count(conn),
-	      mysql_more_results(conn), *sql_trace_last_site ? sql_trace_last_site : "unknown",
-	      preview);
+	      "[SQLTRACE] phase=%s drained=%d burst=%d error_code=%u sqlstate=%.5s "
+	      "field_count=%u more_results=%d",
+	      phase, drained ? 1 : 0, sql_trace_burst, (unsigned int)mysql_errno(conn),
+	      mysql_sqlstate(conn), (unsigned int)mysql_field_count(conn),
+	      mysql_more_results(conn));
 }
 
 void sql_trace_panic(void)
@@ -1816,30 +2648,65 @@ void sql_trace_panic(void)
 	sql_trace_burst = 100;
 }
 
-bool sql_trace_exec(const char *site, const char *sql, size_t len, bool drain_before,
-		    bool drain_after)
+bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
+			     enum persistence_query_context context, const char *sql, size_t len,
+			     uint64_t *operation_id)
+{
+	if (!conn || !sql)
+		return false;
+
+	const enum persistence_statement_kind kind = persistence_statement_kind_from_sql(sql);
+	const uint64_t started_at = persistence_observability_now_usec();
+	const int status = mysql_real_query(conn, sql, len);
+	const uint64_t finished_at = persistence_observability_now_usec();
+	const uint64_t duration = finished_at >= started_at ? finished_at - started_at : 0;
+	const unsigned int error_code = status == 0 ? 0 : (unsigned int)mysql_errno(conn);
+	const char *mysql_state = status == 0 ? "00000" : mysql_sqlstate(conn);
+	const uint64_t recorded_id = persistence_query_record(site, context, kind, duration,
+							      status == 0, error_code, mysql_state);
+	if (operation_id)
+		*operation_id = recorded_id;
+
+	if (status != 0 || sql_trace_active())
+	{
+		struct persistence_query_event event = {};
+		char diagnostic[512];
+		event.operation_id = recorded_id;
+		event.site = site;
+		event.context = context;
+		event.kind = kind;
+		event.duration_usec = duration;
+		event.error_code = error_code;
+		event.success = status == 0;
+		snprintf(event.sqlstate, sizeof(event.sqlstate), "%.5s", mysql_state);
+		if (persistence_query_event_format(diagnostic, sizeof(diagnostic), &event) >= 0)
+			logit(status == 0 ? LOG_DEBUG : LOG_STATUS, "%s", diagnostic);
+		if (sql_trace_burst > 0 && !sql_trace_enabled())
+			--sql_trace_burst;
+	}
+	return status == 0;
+}
+
+bool sql_trace_exec_at(struct persistence_query_site source_site, const char *label,
+		       const char *sql, size_t len, bool drain_before, bool drain_after)
 {
 	if (!DB || !sql)
 		return false;
-
-	snprintf(sql_trace_last_site, sizeof(sql_trace_last_site), "%s", site ? site : "unknown");
-	sql_trace_preview(sql, sql_trace_last_sql, sizeof(sql_trace_last_sql));
-
+	const struct persistence_query_site semantic_site = {
+		source_site.file, label && *label ? label : source_site.function, source_site.line
+	};
 	if (drain_before)
 		sql_clear_results_on(DB);
-	sql_trace_log(site, DB, sql);
-	if (mysql_real_query(DB, sql, len) != 0)
+	uint64_t operation_id = 0;
+	if (!sql_observed_execute_at(DB, semantic_site, sql_current_context(), sql, len,
+				     &operation_id))
 	{
-		logit(LOG_STATUS, "MySQL error: %s", mysql_error(DB));
-		logit(LOG_STATUS, "on MySQL query: %s", sql);
 		sql_trace_panic();
-		sql_trace_log("exec/fail", DB, sql);
 		return false;
 	}
 
 	if (drain_after)
 		sql_clear_results_on(DB);
-	sql_trace_log("exec/ok", DB, sql);
 	return true;
 }
 
@@ -1878,7 +2745,6 @@ void sql_clear_results_on(MYSQL *conn)
 			}
 			else /* actual error occurred */
 			{
-				logit(LOG_DEBUG, "MySQL error: %s", mysql_error(conn));
 				sql_trace_log_drain(conn, "clear/error", true);
 				break;
 			}
@@ -1886,7 +2752,6 @@ void sql_clear_results_on(MYSQL *conn)
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((status = mysql_next_result(conn)) > 0)
 		{
-			logit(LOG_DEBUG, "MySQL error: %s", mysql_error(conn));
 			sql_trace_log_drain(conn, "clear/next_result_error", true);
 			break;
 		}
@@ -1902,11 +2767,8 @@ void sql_clear_results()
 }
 
 /* Execute a semicolon-separated multi-statement query.
- * Uses mysql_real_query (supports multi-statement with
- * CLIENT_MULTI_STATEMENTS) and drains all result sets. */
-/* Execute a semicolon-separated multi-statement query.
- * Uses mysql_real_query (supports multi-statement with
- * CLIENT_MULTI_STATEMENTS) and drains all result sets. */
+ * Uses the observed executor with CLIENT_MULTI_STATEMENTS and drains all
+ * result sets. */
 bool sql_run_multi_query(const char *query)
 {
 	if (!DB || !query || !*query)
@@ -1914,7 +2776,7 @@ bool sql_run_multi_query(const char *query)
 
 	if (!sql_trace_exec("sql_run_multi_query", query, strlen(query), true, false))
 	{
-		sql_player_error("sql_run_multi_query", query);
+		sql_player_error("sql_run_multi_query");
 		// Drain any partial result sets from statements that succeeded
 		// before the failing one (multi-statement with CLIENT_MULTI_STATEMENTS).
 		sql_clear_results();
@@ -1925,7 +2787,7 @@ bool sql_run_multi_query(const char *query)
 	return true;
 }
 
-bool qry(const char *format, ...)
+bool qry_at(struct persistence_query_site site, const char *format, ...)
 {
 	char buf[MAX_STRING_LENGTH];
 	va_list args;
@@ -1950,10 +2812,8 @@ bool qry(const char *format, ...)
 		return FALSE;
 	}
 
-	if (!sql_trace_exec("qry/direct", buf, strlen(buf), true, false))
+	if (!sql_trace_exec_at(site, "qry/direct", buf, strlen(buf), true, false))
 	{
-		logit(LOG_DEBUG, "MySQL error: %s", mysql_error(DB));
-		logit(LOG_DEBUG, "on MySQL query: %s", buf);
 		return FALSE;
 	}
 
@@ -2088,30 +2948,18 @@ int sql_quest_trophy(P_char giver)
 
 void log_epic_gain(int pid, int type, int type_id, int epics)
 {
-	qry("INSERT INTO epic_gain (pid, time, type, type_id, epics) values ('%d', now(), '%d', '%d', '%d')",
-	    pid, type, type_id, epics);
+	(void)pid;
+	(void)type;
+	(void)type_id;
+	(void)epics;
 }
 
 void log_epic_gain_event(const char * /*event_key*/, int pid, int type, int type_id, int epics)
 {
-	char line[PERSISTENCE_EVENT_MAX_LEN];
-
-	snprintf(
-		line, sizeof(line),
-		"INSERT INTO epic_gain (pid, time, type, type_id, epics) VALUES ('%d', NOW(), '%d', '%d', '%d')",
-		pid, type, type_id, epics);
-
-	if (persistence_scalar_event_worker_running())
-	{
-		if (persistence_scalar_event_queue_enqueue(line))
-			return;
-		if (persistence_write_fallback_event_line(line, "scalar_event", "epic_gain",
-							  "queue_full_flat_fallback"))
-			return;
-	}
-
-	qry("INSERT INTO epic_gain (pid, time, type, type_id, epics) VALUES ('%d', NOW(), '%d', '%d', '%d')",
-	    pid, type, type_id, epics);
+	(void)pid;
+	(void)type;
+	(void)type_id;
+	(void)epics;
 }
 
 /* The prepstatement_duris_sql table looks like:
@@ -2156,9 +3004,8 @@ void do_sql(P_char ch, char *argument, int cmd)
 		return;
 	}
 
-	wizlog(56, "SQL (%s): '%s'", GET_TRUE_NAME(ch), argument);
-	logit(LOG_WIZ, "SQL (%s): '%s'", GET_TRUE_NAME(ch), argument);
-	sql_log(ch, WIZLOG, "SQL: '%s'", argument);
+	wizlog(56, "SQL command executed");
+	logit(LOG_WIZ, "SQL command executed");
 
 	rest = one_argument(argument, first);
 	rest = one_argument(rest, second);
@@ -2285,8 +3132,8 @@ void do_sql(P_char ch, char *argument, int cmd)
 	sql_clear_results_on(DB);
 	if (!sql_trace_exec("do_sql", argument, strlen(argument), false, false))
 	{
-		snprintf(result, MAX_STRING_LENGTH, "%s", mysql_error(DB));
-		logit(LOG_DEBUG, "MySQL error(sql command): %s", mysql_error(DB));
+		snprintf(result, MAX_STRING_LENGTH, "Database operation failed.\r\n");
+		logit(LOG_DEBUG, "Database admin command failed");
 		send_to_char(result, ch);
 		return;
 	}
@@ -2572,34 +3419,92 @@ void send_mud_info(const char *name, P_char ch)
 	send_to_char(get_mud_info(name).c_str(), ch, LOG_NONE);
 }
 
-void sql_get_bind_data(int vnum, int *owner_pid, int *timer)
+static bool sql_parse_bind_int(const char *value, int *result)
 {
-	if (!qry("select * from artifact_bind where vnum = %d", vnum))
+	if (!value || !result || !*value)
+	{
+		return false;
+	}
+
+	const char *digits = value;
+	if (*digits == '-' || *digits == '+')
+	{
+		digits++;
+	}
+	if (!*digits)
+	{
+		return false;
+	}
+	for (const char *digit = digits; *digit; digit++)
+	{
+		if (!isdigit((unsigned char)*digit))
+		{
+			return false;
+		}
+	}
+
+	errno = 0;
+	char *end = NULL;
+	long parsed = strtol(value, &end, 10);
+	if (errno == ERANGE || !end || *end || parsed < INT_MIN || parsed > INT_MAX)
+	{
+		return false;
+	}
+
+	*result = (int)parsed;
+	return true;
+}
+
+bool sql_get_bind_data(int vnum, int *owner_pid, int *timer)
+{
+	if (owner_pid)
+	{
+		*owner_pid = 0;
+	}
+	if (timer)
+	{
+		*timer = 0;
+	}
+	if (!owner_pid || !timer)
+	{
+		logit(LOG_DEBUG, "sql_get_bind_data(): invalid output pointer");
+		return false;
+	}
+
+	if (!qry("SELECT owner_pid, timer FROM artifact_bind WHERE vnum = %d", vnum))
 	{
 		logit(LOG_DEBUG, "sql_get_bind_data(): failed to read from database");
-		return;
+		return false;
 	}
 
 	MYSQL_RES *res = mysql_store_result(DB);
+	if (!res)
+	{
+		logit(LOG_DEBUG, "sql_get_bind_data(): mysql_store_result failed");
+		return false;
+	}
 
 	if (mysql_num_rows(res) < 1)
 	{
-		// logit(LOG_DEBUG, "sql_get_bind_data(): Cannot find artifact entry, using default values.");
-		*owner_pid = 0;
-		*timer = 0;
 		mysql_free_result(res);
-		return;
+		return true;
 	}
-	else
+
+	MYSQL_ROW row = mysql_fetch_row(res);
+	int parsed_owner_pid = 0;
+	int parsed_timer = 0;
+	if (!row || !sql_parse_bind_int(row[0], &parsed_owner_pid) ||
+	    !sql_parse_bind_int(row[1], &parsed_timer))
 	{
-		MYSQL_ROW row = mysql_fetch_row(res);
-		if (row != NULL)
-		{
-			*owner_pid = atoi(row[1]);
-			*timer = atoi(row[2]);
-		}
+		logit(LOG_DEBUG, "sql_get_bind_data(): malformed database row");
+		mysql_free_result(res);
+		return false;
 	}
+
+	*owner_pid = parsed_owner_pid;
+	*timer = parsed_timer;
 	mysql_free_result(res);
+	return true;
 }
 
 void sql_update_bind_data(int vnum, int *owner_pid, int *timer)
@@ -2900,7 +3805,7 @@ bool sql_pwipe(int code_verify)
 	logit(LOG_DEBUG, "sql_pwipe: STARTED!");
 	if (code_verify == 1723699)
 	{
-		/* ── Preflight: verify critical tables exist and have correct engines ── */
+		/* -- Preflight: verify critical tables exist and have correct engines -- */
 		logit(LOG_DEBUG, "sql_pwipe: Preflight schema check... .. .");
 		send_to_all("Preflight schema check... .. .");
 		if (!sql_verify_persistence_schema())
@@ -3180,7 +4085,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: player-owned item graphs ── */
+		/* -- Season-reset manifest: player-owned item graphs -- */
 		/* Child tables (affects, extra_descr) must be cleared before parent item tables. */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing player item subtable data... .. .");
 		send_to_all("Clearing player item subtable data... .. .");
@@ -3209,7 +4114,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: player pet graphs ── */
+		/* -- Season-reset manifest: player pet graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing player pet subtable data... .. .");
 		send_to_all("Clearing player pet subtable data... .. .");
 		if (qry("DELETE FROM player_pet_item_affects") &&
@@ -3238,7 +4143,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: player character state ── */
+		/* -- Season-reset manifest: player character state -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing player character state data... .. .");
 		send_to_all("Clearing player character state data... .. .");
 		if (qry("DELETE FROM player_affects") && qry("DELETE FROM player_skills") &&
@@ -3258,7 +4163,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: locker/chest graphs ── */
+		/* -- Season-reset manifest: locker/chest graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing locker subtable data... .. .");
 		send_to_all("Clearing locker subtable data... .. .");
 		if (qry("DELETE FROM locker_item_affects") &&
@@ -3288,7 +4193,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: account locker graphs ── */
+		/* -- Season-reset manifest: account locker graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing account locker data... .. .");
 		send_to_all("Clearing account locker data... .. .");
 		if (qry("DELETE FROM account_locker_item_affects") &&
@@ -3305,7 +4210,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: private chests ── */
+		/* -- Season-reset manifest: private chests -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing private chest data... .. .");
 		send_to_all("Clearing private chest data... .. .");
 		if (qry("DELETE FROM private_chest_log") && qry("DELETE FROM private_chests"))
@@ -3319,7 +4224,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: corpse graphs ── */
+		/* -- Season-reset manifest: corpse graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing corpse subtable data... .. .");
 		send_to_all("Clearing corpse subtable data... .. .");
 		if (qry("DELETE FROM corpse_item_affects") &&
@@ -3347,7 +4252,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: saved item graphs ── */
+		/* -- Season-reset manifest: saved item graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing saved item data... .. .");
 		send_to_all("Clearing saved item data... .. .");
 		if (qry("DELETE FROM saved_item_affects") &&
@@ -3362,7 +4267,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: ship graphs ── */
+		/* -- Season-reset manifest: ship graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing ship subtable data... .. .");
 		send_to_all("Clearing ship subtable data... .. .");
 		if (qry("DELETE FROM ship_armor") && qry("DELETE FROM ship_crew") &&
@@ -3390,7 +4295,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: guild membership ── */
+		/* -- Season-reset manifest: guild membership -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing guild membership data... .. .");
 		send_to_all("Clearing guild membership data... .. .");
 		if (qry("DELETE FROM guild_members") && qry("DELETE FROM guild_ranks") &&
@@ -3405,7 +4310,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: world/competitive state ── */
+		/* -- Season-reset manifest: world/competitive state -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing artifact data... .. .");
 		send_to_all("Clearing artifact data... .. .");
 		if (qry("DELETE FROM artifacts") && qry("DELETE FROM artifacts_mortal"))
@@ -3434,7 +4339,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: siege and shopkeeper graphs ── */
+		/* -- Season-reset manifest: siege and shopkeeper graphs -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing siege and shopkeeper data... .. .");
 		send_to_all("Clearing siege and shopkeeper data... .. .");
 		if (qry("DELETE FROM siege_item_affects") &&
@@ -3453,7 +4358,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: polls and boon shop ── */
+		/* -- Season-reset manifest: polls and boon shop -- */
 		logit(LOG_DEBUG, "sql_pwipe: Clearing poll and boon shop data... .. .");
 		send_to_all("Clearing poll and boon shop data... .. .");
 		if (qry("DELETE FROM poll_votes") && qry("DELETE FROM poll_options") &&
@@ -3468,7 +4373,7 @@ bool sql_pwipe(int code_verify)
 			send_to_all("        failure!\n");
 			return FALSE;
 		}
-		/* ── Season-reset manifest: soft-delete account characters ── */
+		/* -- Season-reset manifest: soft-delete account characters -- */
 		logit(LOG_DEBUG, "sql_pwipe: Soft-deleting account characters... .. .");
 		send_to_all("Soft-deleting account characters... .. .");
 		if (qry("UPDATE account_characters SET deleted_at = COALESCE(deleted_at, NOW()) WHERE deleted_at IS NULL"))
@@ -3528,7 +4433,7 @@ bool sql_pwipe(int code_verify)
 			logit(LOG_DEBUG, "sql_pwipe: Redis pwipe invalidation failed.");
 			return FALSE;
 		}
-		/* ── Postflight: verify critical season-scoped tables are empty ── */
+		/* -- Postflight: verify critical season-scoped tables are empty -- */
 		logit(LOG_DEBUG, "sql_pwipe: Postflight invariant check... .. .");
 		send_to_all("Postflight invariant check... .. .");
 		{
@@ -3661,43 +4566,16 @@ bool sql_pwipe(int code_verify)
 
 void sql_log_player_login(P_char ch, const char *status)
 {
-	if (!ch || IS_NPC(ch) || !ch->desc)
+	if (!ch || IS_NPC(ch) || !status)
 		return;
-
-	// Async scalar-event queue replaces fork().
-	// Escape all user-supplied strings then build the INSERT line.
-	char line[PERSISTENCE_EVENT_MAX_LEN];
-	char esc_name[128], esc_ip[128], esc_account[128], esc_client[256];
-	char esc_status[64], esc_client_ver[128];
-
-	const char *acct = get_account_name_safe(ch);
-
-	persistence_sql_escape_field(GET_NAME(ch), esc_name, sizeof(esc_name));
-	persistence_sql_escape_field(ch->desc->host, esc_ip, sizeof(esc_ip));
-	persistence_sql_escape_field(acct ? acct : "", esc_account, sizeof(esc_account));
-	persistence_sql_escape_field(ch->desc->client_name[0] ? ch->desc->client_name : "",
-				     esc_client, sizeof(esc_client));
-	persistence_sql_escape_field(ch->desc->client_version[0] ? ch->desc->client_version : "",
-				     esc_client_ver, sizeof(esc_client_ver));
-	persistence_sql_escape_field(status, esc_status, sizeof(esc_status));
-
-	snprintf(
-		line, sizeof(line),
-		"INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) "
-		"VALUES (NOW(), '%s', '%s', %d, '%s', 0, 0, 'account=%s client=%s %s')",
-		esc_status, esc_ip, GET_PID(ch), esc_name, esc_account, esc_client, esc_client_ver);
-
-	if (persistence_scalar_event_worker_running())
-	{
-		if (persistence_scalar_event_queue_enqueue(line))
-			return;
-		if (persistence_write_fallback_event_line(line, "scalar_event", "player_login",
-							  "queue_full_fallback"))
-			return;
-	}
-
-	// Fallback: execute synchronously
-	qry("%s", line);
+	const session_audit_event event = !strcasecmp(status, "login") ?
+						  session_audit_event::login :
+						  session_audit_event::logout;
+	if (strcasecmp(status, "login") && strcasecmp(status, "logout"))
+		return;
+	if (!session_audit_transaction_submit(ch, event))
+		logit(LOG_FILE,
+		      "session_audit: component=submit outcome=unavailable actor=redacted");
 }
 
 /* ---- Persistence DB connection ---- */
@@ -3725,20 +4603,9 @@ MYSQL *sql_persistence_connection(void)
 		pthread_mutex_lock(&persistence_sql_mutex);
 		if (!persistenceDB)
 		{
-			persistenceDB = mysql_init(NULL);
+			persistenceDB = sql_open_configured_connection(0);
 			if (!persistenceDB)
 			{
-				pthread_mutex_unlock(&persistence_sql_mutex);
-				return NULL;
-			}
-			if (!mysql_real_connect(persistenceDB, DB_HOST, DB_USER, DB_PASSWD,
-						sql_persistence_db_name(), DB_PORT, NULL, 0))
-			{
-				logit(LOG_DEBUG,
-				      "Persistence MySQL: sql_persistence_connection failed: %s",
-				      mysql_error(persistenceDB));
-				mysql_close(persistenceDB);
-				persistenceDB = NULL;
 				pthread_mutex_unlock(&persistence_sql_mutex);
 				return NULL;
 			}
@@ -3759,7 +4626,7 @@ void sql_persistence_release_connection(MYSQL *conn)
 
 	/* If this connection came from the pool, release it.  The pool
 	 * checks pointer equality against its slots, so passing a
-	 * non-pool connection is harmless — it simply won't match. */
+	 * non-pool connection is harmless -- it simply won't match. */
 	sql_pool_release(conn);
 }
 
@@ -3890,82 +4757,126 @@ bool sql_persistence_write_large_event_line(const char *line)
 	return sql_persistence_execute_raw(line);
 }
 
-/* Validates that an item's persistence_event log matches its expected
- * owner.  Queries persistence_item_events for the most recent event
- * involving item_uid and checks that the target field matches the
- * expected owner_type:owner_ref.
- *
- * Returns true if:
- *   - item_uid == 0 (no ownership data, keep item)
- *   - No recent event found (safe default, keep item)
- *   - Most recent event target matches expected owner
- * Returns false if the item was last seen at a different owner (stolen item)
- */
+bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
+						 const char *owner_type,
+						 unsigned long long expected_id,
+						 unsigned long long expected_context_id,
+						 const char *context)
+{
+	if (item_uid == 0)
+		return true;
+	if (!owner_type || !context || !DB)
+		return false;
+	item_owner_type expected_type = item_owner_type::unknown;
+	if (!strcmp(owner_type, "player"))
+		expected_type = item_owner_type::player;
+	else if (!strcmp(owner_type, "container"))
+		expected_type = item_owner_type::container;
+	else if (!strcmp(owner_type, "room"))
+		expected_type = item_owner_type::room;
+	else if (!strcmp(owner_type, "corpse"))
+		expected_type = item_owner_type::corpse;
+	else if (!strcmp(owner_type, "locker"))
+		expected_type = item_owner_type::locker;
+	else if (!strcmp(owner_type, "auction"))
+		expected_type = item_owner_type::auction;
+	if (expected_type == item_owner_type::unknown)
+		return false;
+	if (!expected_id)
+		return false;
+	char query[512];
+	snprintf(
+		query, sizeof(query),
+		"SELECT current_item.root_item_uid,COALESCE(current_item.parent_item_uid,0),"
+		"current_item.owner_type,current_item.owner_id,current_item.owner_context_id,"
+		"current_item.item_revision,current_item.vnum,current_item.state,owner.revision "
+		"FROM item_current_owner current_item JOIN item_owner_revision owner ON "
+		"owner.owner_type=current_item.owner_type AND owner.owner_id=current_item.owner_id "
+		"AND owner.owner_context_id=current_item.owner_context_id WHERE current_item.item_uid=%llu",
+		item_uid);
+	MYSQL_RES *result = db_query("%s", query);
+	if (!result)
+		return false;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	if (!row)
+	{
+		mysql_free_result(result);
+		logit(LOG_FILE,
+		      "sql_persistence: authoritative owner missing item_uid=%llu context=%s",
+		      item_uid, context);
+		return false;
+	}
+	item_ownership_runtime_entry entry = {
+		.item_uid = item_uid,
+		.root_item_uid = strtoull(row[0], NULL, 10),
+		.parent_item_uid = strtoull(row[1], NULL, 10),
+		.owner = { static_cast<item_owner_type>(strtoul(row[2], NULL, 10)),
+			   strtoull(row[3], NULL, 10), strtoull(row[4], NULL, 10) },
+		.item_revision = strtoull(row[5], NULL, 10),
+		.owner_revision = strtoull(row[8], NULL, 10),
+		.vnum = static_cast<int32_t>(strtol(row[6], NULL, 10)),
+		.state = static_cast<item_custody_state>(strtoul(row[7], NULL, 10)),
+	};
+	const bool matches = entry.owner.type == expected_type && entry.owner.id == expected_id &&
+			     entry.owner.context_id == expected_context_id &&
+			     entry.state == item_custody_state::active;
+	if (!matches)
+	{
+		logit(LOG_DEBUG,
+		      "sql_persistence: OWNERSHIP MISMATCH item_uid=%llu "
+		      "expected=%u:%llu:%llu actual=%u:%llu:%llu context=%s",
+		      item_uid, static_cast<unsigned int>(expected_type), expected_id,
+		      expected_context_id, static_cast<unsigned int>(entry.owner.type),
+		      (unsigned long long)entry.owner.id,
+		      (unsigned long long)entry.owner.context_id, context);
+		mysql_free_result(result);
+		return false;
+	}
+	const bool hydrated = item_ownership_runtime_hydrate(entry);
+	mysql_free_result(result);
+	return hydrated;
+}
+
 bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
 					const char *owner_ref, const char *context)
 {
-	/* No ownership data to validate */
 	if (item_uid == 0)
 		return true;
+	if (!owner_ref)
+		return false;
+	char *owner_end = NULL;
+	errno = 0;
+	const unsigned long long owner_id = strtoull(owner_ref, &owner_end, 10);
+	if (errno || !owner_end || *owner_end || !owner_id)
+		return false;
+	return sql_persistence_item_owner_matches_identity(item_uid, owner_type, owner_id, 0,
+							   context);
+}
 
-	if (!owner_type || !owner_ref || !context)
-		return true;
-
+bool sql_hydrate_item_owner_revisions(void)
+{
 	if (!DB)
-		return true;
-
-	/* Build the expected target prefix, e.g. "player:", "locker:", "corpse:" */
-	char expected_prefix[64];
-	snprintf(expected_prefix, sizeof(expected_prefix), "%s:", owner_type);
-	size_t prefix_len = strlen(expected_prefix);
-
-	/* Query the most recent persistence event for this item_uid.
-	 * ORDER BY ts_usec DESC, id DESC gives us the latest event. */
-	char query[512];
-	snprintf(query, sizeof(query),
-		 "SELECT target FROM persistence_item_events "
-		 "WHERE item_uid=%llu "
-		 "ORDER BY ts_usec DESC, id DESC LIMIT 1",
-		 item_uid);
-
-	MYSQL_RES *result = db_query("%s", query);
+		return false;
+	MYSQL_RES *result = db_query(
+		"SELECT owner_type,owner_id,owner_context_id,revision FROM item_owner_revision");
 	if (!result)
-		return true; /* query failed, keep item (conservative) */
-
-	MYSQL_ROW row = mysql_fetch_row(result);
-	if (!row || !row[0])
-	{
-		mysql_free_result(result);
-		return true; /* no events found, keep item (conservative) */
-	}
-
-	const char *target = row[0];
-
-	/* Check that the target starts with the expected owner_type prefix */
-	if (strncmp(target, expected_prefix, prefix_len) != 0)
-	{
-		logit(LOG_DEBUG,
-		      "sql_persistence: OWNERSHIP MISMATCH item_uid=%llu "
-		      "expected=%s%s actual_target=%s context=%s",
-		      item_uid, expected_prefix, owner_ref, target, context);
-		mysql_free_result(result);
 		return false;
-	}
-
-	/* Extract the owner ref from target (after the prefix) and compare */
-	const char *actual_ref = target + prefix_len;
-	if (strcmp(actual_ref, owner_ref) != 0)
+	bool ok = true;
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(result)))
 	{
-		logit(LOG_DEBUG,
-		      "sql_persistence: OWNERSHIP MISMATCH item_uid=%llu "
-		      "expected=%s%s actual_target=%s context=%s",
-		      item_uid, expected_prefix, owner_ref, target, context);
-		mysql_free_result(result);
-		return false;
+		const item_owner_identity owner = {
+			static_cast<item_owner_type>(strtoul(row[0], NULL, 10)),
+			strtoull(row[1], NULL, 10), strtoull(row[2], NULL, 10)
+		};
+		if (!item_ownership_runtime_hydrate_owner(owner, strtoull(row[3], NULL, 10)))
+		{
+			ok = false;
+			break;
+		}
 	}
-
 	mysql_free_result(result);
-	return true;
+	return ok;
 }
 
 /* Logs zone touch events to persistence_scalar_events for epic analysis.
@@ -3973,41 +4884,13 @@ bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char 
 void sql_zone_touch_finished(const char *event_key, int boot_time, int touched_at, int zone_number,
 			     int toucher_pid, int group_size, int epic_value, int alignment_delta)
 {
-	char line[PERSISTENCE_EVENT_MAX_LEN];
-	const char *safe_key;
-
-	safe_key = (event_key && *event_key) ? event_key : "none";
-
-	snprintf(line, sizeof(line),
-		 "INSERT INTO persistence_scalar_events "
-		 "(event_type, event_key, boot_time, touched_at, zone_number, "
-		 "toucher_pid, group_size, epic_value, alignment_delta, dedupe_key, created_at) "
-		 "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, "
-		 "SHA2(CONCAT('zone_touch', '|', '%s', '|', %d, '|', %d, '|', %d, '|', "
-		 "%d, '|', %d, '|', %d, '|', %d), 256), NOW()) "
-		 "ON DUPLICATE KEY UPDATE id=id",
-		 safe_key, boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value,
-		 alignment_delta, safe_key, boot_time, touched_at, zone_number, toucher_pid,
-		 group_size, epic_value, alignment_delta);
-
-	if (persistence_scalar_event_worker_running())
-	{
-		if (persistence_scalar_event_queue_enqueue(line))
-			return;
-		if (persistence_write_fallback_event_line(line, "scalar_event", "zone_touch",
-							  "queue_full_fallback"))
-			return;
-	}
-
-	qry("INSERT INTO persistence_scalar_events "
-	    "(event_type, event_key, boot_time, touched_at, zone_number, "
-	    "toucher_pid, group_size, epic_value, alignment_delta, dedupe_key, created_at) "
-	    "VALUES ('zone_touch', '%s', %d, %d, %d, %d, %d, %d, %d, "
-	    "SHA2(CONCAT('zone_touch', '|', '%s', '|', %d, '|', %d, '|', %d, '|', "
-	    "%d, '|', %d, '|', %d, '|', %d), 256), NOW()) "
-	    "ON DUPLICATE KEY UPDATE id=id",
-	    safe_key, boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value,
-	    alignment_delta, safe_key, boot_time, touched_at, zone_number, toucher_pid, group_size,
-	    epic_value, alignment_delta);
+	(void)event_key;
+	(void)boot_time;
+	(void)touched_at;
+	(void)zone_number;
+	(void)toucher_pid;
+	(void)group_size;
+	(void)epic_value;
+	(void)alignment_delta;
 }
 #endif

@@ -251,7 +251,7 @@ void quest_full_reward(P_char ch, P_char quest_mob, int type)
 	act(Gbuf1, FALSE, quest_mob, 0, ch, TO_VICT);
 
 	sql_world_quest_finished(ch, reward);
-	mark_player_dirty(GET_PID(ch));
+	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 
 	resetQuest(ch);
 	gmcp_quest_status(ch);
@@ -342,7 +342,7 @@ void quest_kill(P_char ch, P_char quest_mob)
 
 		quest_epic_reward(ch, FIND_AND_KILL);
 		sql_world_quest_finished(ch, 0);
-		mark_player_dirty(GET_PID(ch));
+		mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS);
 		resetQuest(ch);
 		gmcp_quest_status(ch);
 	}

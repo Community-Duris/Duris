@@ -26,6 +26,8 @@
 #include "safe_io.h"
 using namespace std;
 
+struct AccountBankBalances;
+
 /* Legacy special-procedure callbacks expose their tagged payload as char *.
  * Convert it through void * so every object-pointer interpretation is explicit
  * and centralized instead of relying on alignment-raising C-style casts. */
@@ -2211,6 +2213,7 @@ void shutdown_notice(void);
 void shutdown_request(void);
 */
 void signal_setup(void);
+bool take_reaped_child_status(pid_t pid, int *status);
 
 /* sojourn.c */
 
@@ -2870,6 +2873,13 @@ int STAT_INDEX_DAMAGE_PULSE(float);
 int STAT_INDEX_SPELL_PULSE(float);
 int SUB_MONEY(P_char, int, int);
 int SUB_BALANCE(P_char, int, int);
+void publish_account_bank_balance(const char *account_name, int racewar, int coin_type,
+				  int balance);
+void publish_account_bank_balances(const char *account_name, int racewar,
+				   const AccountBankBalances *balances);
+void publish_account_bank_balances_revision(const char *account_name, int racewar,
+					    const AccountBankBalances *balances,
+					    uint64_t bank_revision);
 bool ac_can_see(P_char, P_char, bool);
 bool ac_can_see_obj(P_char sub, P_obj obj, int zrange = 0);
 int get_vis_mode(P_char, int);
@@ -2922,8 +2932,10 @@ int persistence_pending_scalar_events(void);
 unsigned long persistence_dropped_scalar_events(void);
 void persistence_schedule_character_save(P_char ch, int type, int delay, const char *reason);
 void persistence_schedule_level_checkpoint(P_char ch, int type, int delay, const char *reason);
-void persistence_flush_character_saves(P_char ch);
-void persistence_flush_all_character_saves(void);
+bool persistence_flush_character_saves(P_char ch);
+bool persistence_flush_all_character_saves(void);
+bool persistence_save_character_terminal(P_char ch, int type);
+bool persistence_save_all_characters_terminal(int type);
 void sprint64bit(ulong *, const char **, char *);
 void sprintbit(ulong, const char **, char *);
 void sprinttype(int, const char **, char *);

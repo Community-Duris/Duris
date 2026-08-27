@@ -118,10 +118,10 @@ else:
         print('[PASS] auction_bid logs refund staging failures')
 
 # other insert_money_pickup callers should also check failures and use safe fallbacks
-if 'ADD_MONEY(ch, coins_refund)' in epic_text and 'could not be staged, so it was credited directly instead' in epic_text:
-    print('[PASS] epic.c falls back to direct credit when pickup staging fails')
+if 'currency_transaction_submit_wallet_value(' in epic_text and 'currency_reason_type::refund' in epic_text:
+    print('[PASS] epic.c falls back to a transactional wallet credit when pickup staging fails')
 else:
-    print('[FAIL] epic.c does not fall back to direct credit on refund staging failure')
+    print('[FAIL] epic.c does not use a transactional refund fallback')
     ok = False
 
 if 'ship->money += insurance;' in ship_text and 'fell back to ship coffers' in ship_text:

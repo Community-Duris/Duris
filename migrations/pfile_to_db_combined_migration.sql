@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS player_data (
     birth_time BIGINT DEFAULT 0,
     played_time INT DEFAULT 0,
     last_save BIGINT DEFAULT 0,
+    save_revision BIGINT UNSIGNED NOT NULL DEFAULT 0,
     perm_aging SMALLINT DEFAULT 0,
     base_str TINYINT DEFAULT 0,
     base_dex TINYINT DEFAULT 0,

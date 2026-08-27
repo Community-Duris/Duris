@@ -54,7 +54,7 @@ AREA_WORLD_DIRECT_INPUTS := \
 .PHONY: \
 	help all build build-server build-editor build-area-tools world \
 	build-deps-package test test-all test-python test-native test-list test-db \
-	clean clean-all
+	security-sbom security-check clean clean-all
 
 help:
 	@printf '%s\n' \
@@ -65,6 +65,8 @@ help:
 		'  make test-list       List tests discovered by the regression runner' \
 		'  make test-db         Run isolated Docker/MySQL integration tests' \
 		'  make build-deps-package  Build the Debian metapackage under bin/packages' \
+		'  make security-sbom    Generate dependency inventory and SPDX under bin/security' \
+		'  make security-check   Generate the SBOM and run local security contracts' \
 		'  make clean           Remove compiled build artifacts' \
 		'  make clean-all       Remove all reproducible developer artifacts' \
 		'' \
@@ -89,6 +91,13 @@ build-deps-package:
 	@mkdir -p $(PACKAGE_DIR)
 	cd $(PACKAGE_DIR) && equivs-build ../../packaging/duris-build-deps.equivs
 	@test -s $(BUILD_DEPS_PACKAGE)
+
+security-sbom:
+	$(PYTHON) scripts/generate_security_sbom.py
+
+security-check: security-sbom
+	$(PYTHON) scripts/security_source_check.py
+	$(PYTHON) tests/async/test_security_dependency_baseline.py
 
 world: build-area-tools
 	@set -eu; \
@@ -158,6 +167,12 @@ test-db:
 	tests/async/run_account_bound_reward_schema_mysql.sh
 	tests/async/run_corpse_persistence_schema_mysql.sh
 	tests/async/run_persistence_contract_mysql.sh
+	tests/async/run_lifecycle_archive_schema_mysql.sh
+	tests/async/run_personal_data_export_schema_mysql.sh
+	tests/async/run_account_erasure_schema_mysql.sh
+	tests/async/run_immutable_migration_ledger_mysql.sh
+	tests/async/run_lookup_dataset_mysql.sh
+	tests/async/run_runtime_compatibility_mysql.sh
 
 clean:
 	+$(MAKE) -C src clean
