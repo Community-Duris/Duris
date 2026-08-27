@@ -1710,6 +1710,7 @@ void *has_memorized(P_char, int);
 int knows_spell(P_char, int);
 void use_spell(P_char, int);
 int AddSpellToSpellBook(P_char, P_obj, int);
+int FillMasterSpellBook(P_obj);
 int get_max_circle(P_char);
 int GetPagesInBook(P_obj);
 int get_spell_circle(P_char, int);

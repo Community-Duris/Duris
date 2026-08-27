@@ -60,6 +60,19 @@ A unmade treasure item lies here.~
 8 26 0 0 7 0 0 16385 0 0 0
 0 0 0 0 0 0 0 0
 1 0 100
+#7
+book spell spellbook master tome~
+&+Wthe &+Cmaster &+Wspellbook&N~
+&+WThe master spellbook lies here, every page already inked.&N~
+~
+33 28 3 1 7 0 8 16385 0 0 0
+27 408980992 9999 0 0 0 0 0
+1 1 100
+E
+book spell spellbook master tome~
+Every spell a spellbook class can learn is already scribed here.  The pages
+turn themselves to whichever incantation you are looking for.
+~
 #8
 bodypart~
 bodypart to be created~

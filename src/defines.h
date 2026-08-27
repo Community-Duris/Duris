@@ -1364,6 +1364,10 @@ struct material_data
 #define DRAGONLORD_PLATE_VNUM 25723
 #define REVENANT_CROWN_VNUM 22070
 #define DWARVEN_ANCESTOR_VNUM 75
+/* Spellbook prototype pre-scribed with every spell a book class can learn.
+ * Filled in code (see FillMasterSpellBook): the scribed-spell list is a raw
+ * bitmap that cannot survive the text object file. */
+#define MASTER_SPELLBOOK_VNUM 7
 
 #define SNEAK(ch) \
 	(IS_AFFECTED(ch, AFF_SNEAK) || UD_SNEAK(ch) || OUTDOOR_SNEAK(ch) || SWAMP_SNEAK(ch))
