@@ -1,8 +1,0 @@
-echo "`grep Laps vote.evil | wc -l`   Laps"
-echo "`grep Spij vote.evil | wc -l`   Spij"
-echo "`grep Vuthen vote.evil | wc -l`   Vuthen"
-echo "`grep Vanis vote.evil | wc -l`   Vanis"
-echo "`grep Tiu vote.evil | wc -l`   Tiu"
-echo "`grep Mumba vote.evil | wc -l`   Mumba"
-echo "`grep Krazzyr vote.evil | wc -l`   Krazzyr"
-echo "`grep Ghurdak vote.evil | wc -l`   Ghurdak"

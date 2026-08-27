@@ -1,8 +1,0 @@
-echo "`grep Aethia vote.good | wc -l`   Aethia"
-echo "`grep Ash vote.good | wc -l`   Ash"
-echo "`grep Denel vote.good | wc -l`   Denel"
-echo "`grep Tronok vote.good | wc -l`   Tronok"
-echo "`grep Ravok vote.good | wc -l`   Ravok"
-echo "`grep Janal vote.good | wc -l`   Janal"
-echo "`grep Tarex vote.good | wc -l`   Tarex"
-echo "`grep Monnor vote.good | wc -l`   Monnor"

@@ -1,6 +1,0 @@
-echo "GOODIES"
-checkvote.good | sort -nr
-echo
-echo
-echo "EVILS"
-checkvote.evil | sort -nr
