@@ -232,16 +232,16 @@ void select_accountname(P_desc d, char *arg)
 
 void get_account_password(P_desc d, char *arg)
 {
-	// skip whitespace
-	for (; isspace(*arg); arg++)
-		;
-
 	if (!arg)
 	{
 		d->account = free_account(d->account);
 		close_socket(d);
 		return;
 	}
+
+	// skip whitespace
+	for (; isspace(*arg); arg++)
+		;
 
 	if (*arg == -1)
 	{
@@ -258,13 +258,6 @@ void get_account_password(P_desc d, char *arg)
 		}
 		else
 			d->account = free_account(d->account);
-		close_socket(d);
-		return;
-	}
-
-	if (!arg)
-	{
-		d->account = free_account(d->account);
 		close_socket(d);
 		return;
 	}
@@ -360,7 +353,7 @@ void get_account_password(P_desc d, char *arg)
 
 void display_account_menu(P_desc d, char *arg)
 {
-	if (!arg)
+	if (!*arg)
 	{
 		char buf[256];
 

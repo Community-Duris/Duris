@@ -15731,10 +15731,11 @@ void spell_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 			}
 		}
 
-		logit(LOG_EXP, "Resu debug: %s (%d) by %s (%d): old exp: %d, new exp: %d, +exp: %d",
+		logit(LOG_EXP,
+		      "Resu debug: %s (%d) by %s (%d): old exp: %d, new exp: %ld, +exp: %ld",
 		      GET_NAME(t_ch), GET_LEVEL(t_ch), GET_NAME(ch), GET_LEVEL(ch), GET_EXP(t_ch),
 		      GET_EXP(t_ch) + resu_exp, resu_exp);
-		debug("&+RResurrect&n: %s (%d) by %s (%d): old exp: %d, new exp: %d, +exp: %d",
+		debug("&+RResurrect&n: %s (%d) by %s (%d): old exp: %d, new exp: %ld, +exp: %ld",
 		      GET_NAME(t_ch), GET_LEVEL(t_ch), GET_NAME(ch), GET_LEVEL(ch), GET_EXP(t_ch),
 		      GET_EXP(t_ch) + resu_exp, resu_exp);
 
@@ -21241,7 +21242,7 @@ bool spell_general_portal(int /*level*/, P_char ch, P_char victim, struct portal
 				 J_NAME(victim),
 				 IS_NPC(victim) ? GET_VNUM(victim) : GET_PID(victim),
 				 (to_room == NOWHERE) ? "NOWHERE" : "LIMBO");
-			logit(LOG_PORTALS, logbuf);
+			logit(LOG_PORTALS, "%s", logbuf);
 			send_to_char("Spell messed up. contact someone.\n", ch);
 			return FALSE;
 		}
@@ -21251,7 +21252,7 @@ bool spell_general_portal(int /*level*/, P_char ch, P_char victim, struct portal
 				 settings->R_num, J_NAME(ch),
 				 IS_NPC(ch) ? GET_VNUM(ch) : GET_PID(ch), world[ch->in_room].number,
 				 (to_room == NOWHERE) ? "NOWHERE" : "LIMBO");
-			logit(LOG_PORTALS, logbuf);
+			logit(LOG_PORTALS, "%s", logbuf);
 			send_to_char("Spell messed up. contact someone.\n", ch);
 			return FALSE;
 		}
@@ -21274,7 +21275,7 @@ bool spell_general_portal(int /*level*/, P_char ch, P_char victim, struct portal
 	if (!portal1)
 	{
 		snprintf(logbuf, 500, "spell_portal(): obj %d not loadable", settings->R_num);
-		logit(LOG_DEBUG, logbuf);
+		logit(LOG_DEBUG, "%s", logbuf);
 		send_to_char("Spell messed up. contact someone.\n", ch);
 		return FALSE;
 	}
@@ -21285,7 +21286,7 @@ bool spell_general_portal(int /*level*/, P_char ch, P_char victim, struct portal
 		{
 			snprintf(logbuf, 500, "spell_portal(): obj %d not loadable",
 				 settings->R_num);
-			logit(LOG_DEBUG, logbuf);
+			logit(LOG_DEBUG, "%s", logbuf);
 			send_to_char("Spell messed up. contact someone.\n", ch);
 			if (portal1)
 			{
@@ -21302,13 +21303,13 @@ bool spell_general_portal(int /*level*/, P_char ch, P_char victim, struct portal
 			 world[ch->in_room].number, J_NAME(victim),
 			 IS_NPC(victim) ? GET_VNUM(victim) : GET_PID(victim),
 			 world[to_room].number);
-		logit(LOG_PORTALS, logbuf);
+		logit(LOG_PORTALS, "%s", logbuf);
 		sql_log(ch, PLAYERLOG, "Portal (%d) to %s in %d", settings->R_num, J_NAME(victim),
 			world[to_room].number);
 		// spam immo's if it looks like a possible camped target
 		if ((world[to_room].number == GET_HOME(victim)) || (GET_LEVEL(victim) < 10))
 		{
-			statuslog(57, logbuf);
+			statuslog(57, "%s", logbuf);
 		}
 	}
 	if (world[to_room].people)
@@ -21877,7 +21878,8 @@ void spell_life_bolt(int level, P_char ch, char * /*arg*/, int /*type*/, P_char 
 				"&+WYou send a quick prayer to your Deity, offering your &+Rlifeforce&+W and asking for divine energy to flow through you!\r\n",
 				ch);
 
-			vamp(ch, self_dam / 6, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamp(ch, self_dam / 6,
+			     static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 			// if (spell_damage(ch, ch, self_dam, SPLDAM_HOLY, RAWDAM_NOKILL | SPLDAM_NOSHRUG, 0) != DAM_NONEDEAD)
 			//        return;
 		}

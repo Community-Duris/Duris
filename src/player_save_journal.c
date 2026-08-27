@@ -438,12 +438,18 @@ bool player_save_journal_init(const char *directory, size_t quota_bytes)
 	struct stat status = {};
 	if (lstat(directory, &status) != 0)
 	{
-		if (errno != ENOENT || mkdir(directory, 0700) != 0 ||
-		    lstat(directory, &status) != 0)
+		if (errno != ENOENT || (mkdir(directory, 0700) != 0 && errno != EEXIST))
 			return false;
 	}
-	if (!safe_owned_mode(status, 0700, true) || chmod(directory, 0700) != 0)
+	const int directory_fd = open(directory, O_RDONLY | O_DIRECTORY | O_NOFOLLOW);
+	if (directory_fd < 0 || fstat(directory_fd, &status) != 0 ||
+	    !safe_owned_mode(status, 0700, true) || fchmod(directory_fd, 0700) != 0)
+	{
+		if (directory_fd >= 0)
+			close(directory_fd);
 		return false;
+	}
+	close(directory_fd);
 	journal_directory = directory;
 	journal_path = journal_directory + "/" + JOURNAL_FILE_NAME;
 	quarantine_path = journal_directory + "/" + JOURNAL_QUARANTINE_NAME;

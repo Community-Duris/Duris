@@ -859,7 +859,7 @@ void do_construct_rename(P_char ch, char *arg)
 	while (*arg == ' ')
 		arg++;
 
-	if (!*arg || !arg)
+	if (!*arg)
 	{
 		snprintf(
 			buff, MAX_STRING_LENGTH,

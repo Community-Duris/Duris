@@ -331,9 +331,8 @@ P_obj get_purchase_obj(P_char ch, char *arg, P_char keeper, int shop_nr, int msg
 		{
 			if (msg)
 			{
-				checked_snprintf_runtime(buf, MAX_STRING_LENGTH,
-							 shop_index[shop_nr].no_such_item1,
-							 GET_NAME(ch));
+				checked_substitute(buf, MAX_STRING_LENGTH,
+						   shop_index[shop_nr].no_such_item1, GET_NAME(ch));
 			}
 			return NULL;
 		}
@@ -399,8 +398,8 @@ P_obj get_selling_obj(P_char ch, char *name, P_char keeper, int shop_nr, int msg
 	{
 		if (msg)
 		{
-			checked_snprintf_runtime(buf, MAX_STRING_LENGTH,
-						 shop_index[shop_nr].no_such_item2, GET_NAME(ch));
+			checked_substitute(buf, MAX_STRING_LENGTH,
+					   shop_index[shop_nr].no_such_item2, GET_NAME(ch));
 			mobsay(keeper, buf);
 		}
 		return (0);
@@ -411,8 +410,8 @@ P_obj get_selling_obj(P_char ch, char *name, P_char keeper, int shop_nr, int msg
 	switch (result)
 	{
 	case OBJECT_NOTOK:
-		checked_snprintf_runtime(buf, MAX_STRING_LENGTH, shop_index[shop_nr].do_not_buy,
-					 GET_NAME(ch));
+		checked_substitute(buf, MAX_STRING_LENGTH, shop_index[shop_nr].do_not_buy,
+				   GET_NAME(ch));
 		break;
 	case OBJECT_DEAD:
 		snprintf(buf, MAX_STRING_LENGTH, "%s %s", GET_NAME(ch), MSG_NO_USED_WANDSTAFF);
@@ -420,7 +419,7 @@ P_obj get_selling_obj(P_char ch, char *name, P_char keeper, int shop_nr, int msg
 	default:
 		snprintf(buf, MAX_STRING_LENGTH,
 			 "Illegal return value of %d from trade_with() (shop.c)", result);
-		logit(LOG_DEBUG, buf);
+		logit(LOG_DEBUG, "%s", buf);
 		snprintf(buf, MAX_STRING_LENGTH, "%s An error has occurred.", GET_NAME(ch));
 		break;
 	}
@@ -478,8 +477,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		}
 		if (!temp1)
 		{
-			checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
-						 shop_index[shop_nr].no_such_item1, GET_NAME(ch));
+			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
+					   shop_index[shop_nr].no_such_item1, GET_NAME(ch));
 			do_tell(keeper, Gbuf1, 0);
 			return;
 		}
@@ -487,8 +486,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if (temp1->cost <= 0)
 	{
-		checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
-					 shop_index[shop_nr].no_such_item1, GET_NAME(ch));
+		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
+				   GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 		extract_obj(temp1, TRUE); // Arti with no cost?
 		return;
@@ -542,15 +541,15 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		if (!transact(ch, gem, keeper, sale))
 		{
-			checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
-						 shop_index[shop_nr].missing_cash2, GET_NAME(ch));
+			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
+					   shop_index[shop_nr].missing_cash2, GET_NAME(ch));
 			mobsay(keeper, Gbuf1);
 			return;
 		}
 	}
 	act("$n buys $p.", FALSE, ch, temp1, 0, TO_ROOM);
-	checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_buy,
-				 GET_NAME(ch), coin_stringv(sale));
+	checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_buy, GET_NAME(ch),
+			   coin_stringv(sale));
 	do_tell(keeper, Gbuf1, 0);
 	// SET_BIT(temp1->type, ITEM_TREASURE);
 	snprintf(Gbuf1, MAX_STRING_LENGTH, "You now have %s.\r\n", temp1->short_description);
@@ -694,8 +693,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	if ((GET_VNUM(keeper) != 11005) && /* guild shops don't lose cash */
 	    ((shop_index[shop_nr].shop_is_roaming == 1) && (GET_MONEY(keeper) < sale)))
 	{
-		checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
-					 shop_index[shop_nr].missing_cash1, GET_NAME(ch));
+		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].missing_cash1,
+				   GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 		return;
 	}
@@ -709,8 +708,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	}
 	act("$n sells $p.", FALSE, ch, temp1, 0, TO_ROOM);
 
-	checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell,
-				 GET_NAME(ch), coin_stringv(sale));
+	checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell, GET_NAME(ch),
+			   coin_stringv(sale));
 
 	int temp = 0;
 
@@ -901,16 +900,16 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 		}
 		if (!temp1)
 		{
-			checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
-						 shop_index[shop_nr].no_such_item1, GET_NAME(ch));
+			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
+					   shop_index[shop_nr].no_such_item1, GET_NAME(ch));
 			do_tell(keeper, Gbuf1, 0);
 			return;
 		}
 	}
 	if (temp1->cost <= 0)
 	{
-		checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
-					 shop_index[shop_nr].no_such_item1, GET_NAME(ch));
+		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
+				   GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
 		extract_obj(temp1, TRUE); // Arti with no cost?
 		return;
@@ -922,8 +921,8 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		if (!transact(ch, gem, keeper, sale))
 		{
-			checked_snprintf_runtime(Gbuf1, MAX_STRING_LENGTH,
-						 shop_index[shop_nr].missing_cash2, GET_NAME(ch));
+			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
+					   shop_index[shop_nr].missing_cash2, GET_NAME(ch));
 			mobsay(keeper, Gbuf1);
 			return;
 		}
@@ -1167,9 +1166,8 @@ void shopping_repair(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 			if (!transact(ch, gem, keeper, cost))
 			{
-				checked_snprintf_runtime(buf, MAX_INPUT_LENGTH,
-							 shop_index[shop_nr].missing_cash2,
-							 GET_NAME(ch));
+				checked_substitute(buf, MAX_INPUT_LENGTH,
+						   shop_index[shop_nr].missing_cash2, GET_NAME(ch));
 				mobsay(keeper, buf);
 				return;
 			}
@@ -1465,7 +1463,7 @@ int read_type_list(FILE *shop_f, struct shop_buy_data *list, int /*max*/)
 	{
 		snprintf(buf, MAX_STRING_LENGTH, "Raise MAX_TRADE constant in config.h to %d",
 			 len + error);
-		logit(LOG_DEBUG, buf);
+		logit(LOG_DEBUG, "%s", buf);
 	}
 
 	BUY_WORD(list[len]) = 0;

@@ -156,7 +156,7 @@ int gellz_test_obj_procs(P_obj obj, P_char ch, int cmd, char *argument)
 						 "Ship '%s' owner changed from %s to %s.",
 						 strip_ansi(ship->name).c_str(), argstring3,
 						 skip_spaces(argument));
-				logit(LOG_SHIP, buf);
+				logit(LOG_SHIP, "%s", buf);
 				send_to_char_f(ch, "Ship '%s' now owned by %s.\n", ship->name,
 					       GET_NAME(owner));
 			}

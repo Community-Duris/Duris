@@ -295,7 +295,7 @@ int scan_mail_file(void)
 	file_end_pos = ftell(mail_file);
 	fclose(mail_file);
 	snprintf(buf, 100, "   %ld bytes read.", file_end_pos);
-	logit(LOG_DEBUG, buf);
+	logit(LOG_DEBUG, "%s", buf);
 	if (file_end_pos % BLOCK_SIZE)
 	{
 		logit(LOG_DEBUG, "SYSERR: Error booting mail system -- Mail file corrupt!");
@@ -303,7 +303,7 @@ int scan_mail_file(void)
 		return 0;
 	}
 	snprintf(buf, 100, "   Mail file read -- %d messages.", total_messages);
-	logit(LOG_DEBUG, buf);
+	logit(LOG_DEBUG, "%s", buf);
 	return 1;
 } /* end of scan_file */
 

@@ -2784,9 +2784,9 @@ void event_spellcast(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 				    "(no target ch|obj)",
 			 world[ch->in_room].number);
 
-		logit(LOG_WIZ, buf);
-		wizlog(GET_LEVEL(ch), buf);
-		sql_log(ch, WIZLOG, buf);
+		logit(LOG_WIZ, "%s", buf);
+		wizlog(GET_LEVEL(ch), "%s", buf);
+		sql_log(ch, WIZLOG, "%s", buf);
 	}
 
 #ifdef MISFIRE

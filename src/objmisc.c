@@ -105,7 +105,7 @@ void event_random_exit(P_char /*ch*/, P_char /*victim*/, P_obj obj, void * /*dat
 		return;
 
 	if (obj->value[0] > number(0, 99) && OBJ_ROOM(obj) &&
-	    sscanf(obj->name, "%s exit_%s ", buf, exit_name) &&
+	    sscanf(obj->name, "%511s exit_%31s ", buf, exit_name) == 2 &&
 	    (exit_dir = dir_from_keyword(exit_name)) != -1 &&
 	    (d_room = real_room(obj->value[1])) != -1)
 	{

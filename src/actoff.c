@@ -3069,7 +3069,7 @@ void do_consume(P_char ch, char *argument, int /*cmd*/)
 		/*if(!NewSaves(victim, SAVING_FEAR, 0))
 		tdam = (int) (tdam * 1.33);*/
 		af = get_spell_from_char(victim, SPELL_DECAYING_FLESH);
-		vamp(ch, tdam, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+		vamp(ch, tdam, static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		// spell_damage(ch, victim, 4 * GET_LEVEL(ch), SPLDAM_GENERIC, RAWDAM_NOKILL, 0);
 		while (--af->modifier > 0)
 		{
@@ -3086,7 +3086,7 @@ void do_consume(P_char ch, char *argument, int /*cmd*/)
 			send_to_char(buf, ch);
 			/*if(!NewSaves(victim, SAVING_FEAR, 0))
 			temp_dam = (int) (temp_dam * 1.33);*/
-			vamp(ch, temp_dam, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamp(ch, temp_dam, static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 			spell_damage(ch, victim, 3 * GET_LEVEL(ch), SPLDAM_GENERIC, RAWDAM_NOKILL,
 				     0);
 		}

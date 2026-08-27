@@ -576,7 +576,7 @@ void gain_epic(P_char ch, int type, int data, int amount)
 	if (!IS_ALIVE(ch) || errand_notch < 1)
 	{
 		debug("gain_epic: Bad ch '%s' %d, or bad errand_notch %d.",
-		      (ch == NULL) ? "NULL" : J_NAME(ch), errand_notch);
+		      (ch == NULL) ? "NULL" : J_NAME(ch), type, errand_notch);
 		return;
 	}
 

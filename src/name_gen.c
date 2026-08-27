@@ -174,10 +174,9 @@ int get_name(char return_namn[256], int SEX, uint64_t id)
 	if (!id)
 		id = number(0, 2147483647);
 
-	strcpy(namn, start[id % antal_start]); /* get a start                  */
-	strcat(namn, mitt[id % antal_mitt]); /* get a middle                 */
-	strcat(namn, slut[id % antal_slut]); /* get an ending                */
-	snprintf(return_namn, MAX_STRING_LENGTH, "%s", namn);
+	checked_snprintf(namn, sizeof namn, "%s%s%s", start[id % antal_start],
+			 mitt[id % antal_mitt], slut[id % antal_slut]);
+	strlcpy(return_namn, namn, 256);
 
 	return (SEX);
 }

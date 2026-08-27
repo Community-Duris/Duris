@@ -2094,9 +2094,9 @@ P_char read_mobile(int nr, int type)
 		REQUIRED_FSCANF(mob_f, " %ld ", &tmp);
 		if (tmp > MAXLVL || tmp < 1)
 		{
-			logit(LOG_DEBUG, "Bad level %d for mob '%s' %d.", tmp, J_NAME(mob),
+			logit(LOG_DEBUG, "Bad level %d for mob '%s' %ld.", tmp, J_NAME(mob),
 			      GET_VNUM(mob));
-			debug("Bad level %d for mob '%s' %d.", tmp, J_NAME(mob), GET_VNUM(mob));
+			debug("Bad level %d for mob '%s' %ld.", tmp, J_NAME(mob), GET_VNUM(mob));
 			mob->player.level = level = (tmp > MAXLVL) ? MAXLVL : 1;
 		}
 		else

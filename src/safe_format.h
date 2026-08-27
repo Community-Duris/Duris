@@ -17,6 +17,15 @@ int checked_snprintf(char *destination, size_t destination_size, const char *for
 int checked_snprintf_runtime(char *destination, size_t destination_size, const char *format, ...);
 
 /*
+ * Expand data-driven templates containing only %s placeholders. Unlike
+ * checked_snprintf_runtime, the template is never passed to a printf-family
+ * function, so malformed or player-controlled percent sequences are copied
+ * literally instead of being interpreted as conversions.
+ */
+int checked_substitute_strings(char *destination, size_t destination_size, const char *format,
+			       const char *const *substitutions, size_t substitution_count);
+
+/*
  * Append formatted text to a NUL-terminated buffer holding `capacity` bytes.
  *
  * Truncates rather than overflowing, and leaves an already-full buffer
@@ -30,6 +39,14 @@ int checked_appendf(char *buffer, size_t capacity, const char *format, ...)
 	__attribute__((format(printf, 3, 4)));
 
 #ifdef __cplusplus
+template <typename... Values> int checked_substitute(char *destination, size_t destination_size,
+						     const char *format, Values... values)
+{
+	const char *substitutions[] = { values... };
+	return checked_substitute_strings(destination, destination_size, format, substitutions,
+					  sizeof...(values));
+}
+
 /*
  * A buffer's capacity, deduced from its type. A pointer carries no array bound,
  * so APPENDF() on one fails to compile instead of silently using sizeof(char *).

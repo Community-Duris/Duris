@@ -131,11 +131,11 @@ void convertObj(P_obj obj)
 			val1 = obj->value[1] = 1;
 		if (val2 < 1)
 			val2 = obj->value[2] = 1;
-		cost = 100 * (val1 * 2) * val2;
+		cost = 100L * (val1 * 2) * val2;
 		if (IS_BACKSTABBER(obj))
 		{
-			cost += 1000 * (val1 * val1 * val1 * 2);
-			cost += 1000 * (val2 * val2 / 2);
+			cost += 1000L * val1 * val1 * val1 * 2;
+			cost += 1000L * val2 * val2 / 2;
 		}
 		break;
 	case ITEM_FIREWEAPON:
@@ -147,7 +147,7 @@ void convertObj(P_obj obj)
 		/* 1 s * missle type */
 		//    cost = val3 * (val1 * 2) * val2 * (val0 / 2) * 10;
 		// Start with average damage * 10.
-		cost = (obj->value[1] * (obj->value[2] + 1)) * 5;
+		cost = static_cast<long>(obj->value[1]) * (obj->value[2] + 1) * 5;
 		// cost = (10 * avgdam) squared * maxdamage cubed / 125
 		cost = (cost * cost * val1 * val1 * val1 * val2 * val2 * val2) / 125;
 		obj->cost = BOUNDED(1, cost, 5000000);

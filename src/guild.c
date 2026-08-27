@@ -697,7 +697,7 @@ void do_spells(P_char ch, char *argument, int /*cmd*/)
 		      }
 		    } else*/
 
-		if (IS_TRUSTED(ch) && argument)
+		if (IS_TRUSTED(ch))
 		{
 			if (!(target = get_char_vis(ch, argument)))
 			{
@@ -834,7 +834,7 @@ void do_skills(P_char ch, char *argument, int /*cmd*/)
 	}
 	else
 	{
-		if (IS_TRUSTED(ch) && argument)
+		if (IS_TRUSTED(ch))
 		{
 			argument = one_argument(argument, buf);
 			if (is_abbrev(buf, "reset"))
@@ -1221,7 +1221,7 @@ void do_practice(P_char ch, char *arg, int cmd)
 			snprintf(buf, MAX_STRING_LENGTH,
 				 "DEBUG: ch->only.pc->skills[i].learned = %d (%s)\n",
 				 ch->only.pc->skills[i].learned, J_NAME(ch));
-			debug(buf);
+			debug("%s", buf);
 			return;
 		}
 

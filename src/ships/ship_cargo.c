@@ -506,7 +506,7 @@ void calculate_port_distances()
 
 	strcat(line, "MIN    MAX");
 
-	logit(LOG_SHIP, line);
+	logit(LOG_SHIP, "%s", line);
 	line[0] = '\0';
 
 	int global_min_route[3] = { 10000, 0, 0 };
@@ -585,7 +585,7 @@ void calculate_port_distances()
 			global_max_route[2] = max_port;
 		}
 
-		logit(LOG_SHIP, line);
+		logit(LOG_SHIP, "%s", line);
 		line[0] = '\0';
 	}
 

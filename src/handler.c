@@ -2723,7 +2723,7 @@ void obj_to_obj(P_obj obj, P_obj obj_to)
 				 obj->short_description ? obj->short_description : "?",
 				 OBJ_VNUM(obj_to),
 				 obj_to->short_description ? obj_to->short_description : "?");
-			logit(LOG_EXIT, buf);
+			logit(LOG_EXIT, "%s", buf);
 		}
 		else
 			logit(LOG_EXIT, "obj_to_obj: obj or obj_to is somehow invalid");
@@ -2815,7 +2815,7 @@ void obj_to_obj_at_end(P_obj obj, P_obj obj_to)
 				 obj->short_description ? obj->short_description : "?",
 				 OBJ_VNUM(obj_to),
 				 obj_to->short_description ? obj_to->short_description : "?");
-			logit(LOG_EXIT, buf);
+			logit(LOG_EXIT, "%s", buf);
 		}
 		else
 			logit(LOG_EXIT, "obj_to_obj_at_end: obj or obj_to is somehow invalid");

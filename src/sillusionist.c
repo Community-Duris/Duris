@@ -1717,9 +1717,8 @@ void spell_imprison(int level, P_char ch, char * /*arg*/, int /*type*/, P_char v
 
 	SET_BIT(shell->str_mask, STRUNG_DESC1);
 
-	checked_snprintf_runtime(buf, 1024, shell->description,
-				 victim->player.short_descr ? victim->player.short_descr :
-							      "someone");
+	checked_substitute(buf, 1024, shell->description,
+			   victim->player.short_descr ? victim->player.short_descr : "someone");
 
 	shell->description = str_dup(buf);
 	shell->value[0] = GET_PID(victim);

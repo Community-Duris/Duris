@@ -199,8 +199,9 @@ void Deck::Shuffle(int numShuffles)
 		}
 		if (count != numCards || left != NULL || right != NULL)
 		{
-			debug("Shuffle: We have a problem: count %d, numCards %d, left %d, right %d",
-			      count, numCards, left, right);
+			debug("Shuffle: We have a problem: count %d, numCards %d, left %p, right %p",
+			      count, numCards, static_cast<void *>(left),
+			      static_cast<void *>(right));
 		}
 	}
 }

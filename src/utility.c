@@ -2795,6 +2795,8 @@ char *coin_stringv(int amount, int padfront)
 
 	if (padfront < 0)
 		padfront = 0;
+	if (padfront >= (int)sizeof buf)
+		padfront = sizeof buf - 1;
 
 	if (!amount)
 	{
@@ -2836,51 +2838,32 @@ char *coin_stringv(int amount, int padfront)
 		{
 			*(spot++) = ' ';
 		}
+		*spot = '\0';
 	}
 
 	if (p)
-	{
-		amount = snprintf(spot, MAX_STRING_LENGTH, "%d &+Wplatinum&N", p);
-		spot += amount;
-	}
+		APPENDF(buf, "%d &+Wplatinum&N", p);
 	if (g)
 	{
 		if (p && !s && !c)
-		{
-			snprintf(spot, MAX_STRING_LENGTH, ", and ");
-			spot += 6;
-		}
+			APPENDF(buf, ", and ");
 		else if (p)
-		{
-			snprintf(spot, MAX_STRING_LENGTH, ", ");
-			spot += 2;
-		}
-		amount = snprintf(spot, MAX_STRING_LENGTH, "%d &+Ygold&N", g);
-		spot += amount;
+			APPENDF(buf, ", ");
+		APPENDF(buf, "%d &+Ygold&N", g);
 	}
 	if (s)
 	{
 		if ((p || g) && !c)
-		{
-			snprintf(spot, MAX_STRING_LENGTH, ", and ");
-			spot += 6;
-		}
+			APPENDF(buf, ", and ");
 		else if (p || g)
-		{
-			snprintf(spot, MAX_STRING_LENGTH, ", ");
-			spot += 2;
-		}
-		amount = snprintf(spot, MAX_STRING_LENGTH, "%d silver", s);
-		spot += amount;
+			APPENDF(buf, ", ");
+		APPENDF(buf, "%d silver", s);
 	}
 	if (c)
 	{
 		if (p || g || s)
-		{
-			snprintf(spot, MAX_STRING_LENGTH, ", and ");
-			spot += 6;
-		}
-		snprintf(spot, MAX_STRING_LENGTH, "%d &+ycopper&N", c);
+			APPENDF(buf, ", and ");
+		APPENDF(buf, "%d &+ycopper&N", c);
 	}
 	return buf;
 }
@@ -6723,7 +6706,9 @@ long unsigned int ip2ul(const char *ip)
 	long unsigned int result = 0;
 	int var1, var2, var3, var4;
 
-	if (sscanf(ip, "%d.%d.%d.%d", &var1, &var2, &var3, &var4))
+	if (sscanf(ip, "%d.%d.%d.%d", &var1, &var2, &var3, &var4) == 4 && var1 >= 0 &&
+	    var1 <= 255 && var2 >= 0 && var2 <= 255 && var3 >= 0 && var3 <= 255 && var4 >= 0 &&
+	    var4 <= 255)
 	{
 		result = (var1 << 24) + (var2 << 16) + (var3 << 8) + var4;
 	}

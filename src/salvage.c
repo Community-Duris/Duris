@@ -490,7 +490,7 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 			checked_snprintf(debugBuf + strlen(debugBuf),
 					 MAX_STRING_LENGTH - strlen(debugBuf), ", Final cost: %d.",
 					 salvaged->cost);
-			debug(debugBuf);
+			debug("%s", debugBuf);
 		}
 
 		salvaged = read_object(matvnum, VIRTUAL);
@@ -532,7 +532,7 @@ void do_salvage(P_char ch, char *argument, int /*cmd*/)
 			checked_snprintf(debugBuf + strlen(debugBuf),
 					 MAX_STRING_LENGTH - strlen(debugBuf), ", Final cost: %d.",
 					 salvaged->cost);
-			debug(debugBuf);
+			debug("%s", debugBuf);
 		}
 	}
 

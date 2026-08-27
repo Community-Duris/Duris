@@ -99,7 +99,7 @@ int get_property(const char *key, int default_value, bool fuss)
 		snprintf(buf, 500,
 			 "(int)get_property() called for \"%s\" which has a float value of %f.",
 			 key, float_prop);
-		wizlog(58, buf);
+		wizlog(58, "%s", buf);
 	}
 
 	return (int)float_prop;
@@ -222,8 +222,8 @@ void save_properties(P_char ch)
 	rename(PROPERTIES_FILE ".new", PROPERTIES_FILE);
 
 	checked_snprintf(buf, 4096, "%s saved the properties: %s", GET_NAME(ch), changes);
-	wizlog(57, buf);
-	logit(LOG_WIZ, buf);
+	wizlog(57, "%s", buf);
+	logit(LOG_WIZ, "%s", buf);
 	sql_log(ch, WIZLOG, "Saved properties");
 
 	// snprintf(buf, 4096, "svn commit -m \'%s: %s\' " PROPERTIES_FILE, name, changes);
@@ -301,8 +301,8 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 								 ch->player.name,
 								 duris_properties[i].key,
 								 new_value);
-						wizlog(57, buf);
-						logit(LOG_WIZ, buf);
+						wizlog(57, "%s", buf);
+						logit(LOG_WIZ, "%s", buf);
 						sql_log(ch, WIZLOG, "Set %s to %.3f",
 							duris_properties[i].key, new_value);
 						success = TRUE;
@@ -311,7 +311,7 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 				if (!success)
 				{
 					snprintf(buf, 256, "property %s not found", pattern);
-					wizlog(57, buf);
+					wizlog(57, "%s", buf);
 				}
 				else
 				{
@@ -346,8 +346,8 @@ void do_properties(P_char ch, char *args, int /*cmd*/)
 			}
 			apply_properties();
 			snprintf(buf, 256, "%s reverted property changes.", ch->player.name);
-			wizlog(57, buf);
-			logit(LOG_WIZ, buf);
+			wizlog(57, "%s", buf);
+			logit(LOG_WIZ, "%s", buf);
 			sql_log(ch, WIZLOG, "Reverted property changes");
 		}
 		else

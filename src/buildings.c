@@ -761,7 +761,7 @@ bool Building::generate_portals()
 
 	if ((portal_op = read_object(BUILDING_PORTAL, VIRTUAL)))
 	{
-		checked_snprintf_runtime(buff, MAX_STRING_LENGTH, portal_op->description, ghname);
+		checked_substitute(buff, MAX_STRING_LENGTH, portal_op->description, ghname);
 		portal_op->value[0] = guildhall_room;
 		portal_op->description = str_dup(buff);
 		portal_op->str_mask = STRUNG_DESC1;
@@ -770,8 +770,8 @@ bool Building::generate_portals()
 
 	if ((portal_gh = read_object(BUILDING_PORTAL, VIRTUAL)))
 	{
-		checked_snprintf_runtime(buff, MAX_STRING_LENGTH, portal_gh->description,
-					 continent_name(world[location()].continent));
+		checked_substitute(buff, MAX_STRING_LENGTH, portal_gh->description,
+				   continent_name(world[location()].continent));
 		portal_gh->value[0] = rooms[0]->number;
 		portal_gh->description = str_dup(buff);
 		portal_gh->str_mask = STRUNG_DESC1;

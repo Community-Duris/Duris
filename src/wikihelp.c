@@ -766,7 +766,7 @@ void load_cmd_attributes()
 			else
 			{
 				logit(LOG_DEBUG, "Bad line in command_attributes.txt: ");
-				logit(LOG_DEBUG, line);
+				logit(LOG_DEBUG, "%s", line);
 			}
 			REQUIRED_FGETS(line, sizeof line, cmd_file);
 		}

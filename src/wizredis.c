@@ -117,11 +117,10 @@ static void redis_status_detailed(P_char ch)
 {
 	char buf[MAX_STRING_LENGTH * 2];
 	char time_buf[64];
-	int pos = 0;
 
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "&+gRedis Status (detailed)&n\r\n\r\n");
+	checked_snprintf(buf, sizeof(buf), "&+gRedis Status (detailed)&n\r\n\r\n");
 
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "&+g[World Recovery]&n\r\n");
+	APPENDF(buf, "&+g[World Recovery]&n\r\n");
 
 	// world state with full timestamp
 	time_t ws_ts = redis_world_state_timestamp();
@@ -133,46 +132,38 @@ static void redis_status_detailed(P_char ch)
 		char date_buf[64];
 		strftime(date_buf, sizeof(date_buf), "%Y-%m-%d %H:%M:%S", tm_info);
 		format_time_ago(ws_ts, time_buf, sizeof(time_buf));
-		pos += snprintf(buf + pos, sizeof(buf) - pos,
-				"  &+cworld_state&n      %s%-5s&n    %s (%s)\r\n",
-				is_valid ? "&+G" : "&+R", is_valid ? "VALID" : "NONE", date_buf,
-				time_buf);
+		APPENDF(buf, "  &+cworld_state&n      %s%-5s&n    %s (%s)\r\n",
+			is_valid ? "&+G" : "&+R", is_valid ? "VALID" : "NONE", date_buf, time_buf);
 	}
 	else
 	{
-		pos += snprintf(buf + pos, sizeof(buf) - pos,
-				"  &+cworld_state&n      &+RNONE&n\r\n");
+		APPENDF(buf, "  &+cworld_state&n      &+RNONE&n\r\n");
 	}
 
 	// floor drops
 	long floor_drops = redis_hlen("mud:floor_drops");
-	pos += snprintf(buf + pos, sizeof(buf) - pos,
-			"  &+cfloor_drops&n      &+Y%-5ld&n    objects tracked\r\n", floor_drops);
+	APPENDF(buf, "  &+cfloor_drops&n      &+Y%-5ld&n    objects tracked\r\n", floor_drops);
 
 	// floor pickups
 	long floor_pickups = redis_scard("mud:floor_pickups");
-	pos += snprintf(buf + pos, sizeof(buf) - pos,
-			"  &+cfloor_pickups&n    &+Y%-5ld&n    uids in dedup set\r\n",
-			floor_pickups);
+	APPENDF(buf, "  &+cfloor_pickups&n    &+Y%-5ld&n    uids in dedup set\r\n", floor_pickups);
 
 	// revisioned player save queue
 	int dirty = get_dirty_player_count();
-	pos += snprintf(buf + pos, sizeof(buf) - pos,
-			"  &+cplayer_queue&n     &+Y%-5d&n    pending async saves\r\n", dirty);
+	APPENDF(buf, "  &+cplayer_queue&n     &+Y%-5d&n    pending async saves\r\n", dirty);
 
 	// obj uid counter
 	char *uid_str = redis_cache_get("mud:next_obj_uid");
 	if (uid_str)
 	{
-		pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cnext_obj_uid&n     &+Y%s&n\r\n",
-				uid_str);
+		APPENDF(buf, "  &+cnext_obj_uid&n     &+Y%s&n\r\n", uid_str);
 		free(uid_str);
 	}
 
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "\r\n&+g[Content Caches]&n\r\n");
+	APPENDF(buf, "\r\n&+g[Content Caches]&n\r\n");
 
 	// artifacts - show all 6 variants
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cartifacts&n\r\n");
+	APPENDF(buf, "  &+cartifacts&n\r\n");
 
 	const char *arti_names[] = { "major", "unique", "ioun" };
 	for (int t = 1; t <= 3; t++)
@@ -182,16 +173,16 @@ static void redis_status_detailed(P_char ch)
 			char key[64];
 			snprintf(key, sizeof(key), "mud:cache:artifact:%d:%d", t, g);
 			bool cached = redis_key_exists(key);
-			pos += snprintf(buf + pos, sizeof(buf) - pos, "    %s (%s)    %s%s&n\r\n",
-					arti_names[t - 1], g ? "god" : "player",
-					cached ? "&+G" : "&+R", cached ? "CACHED" : "CLEAR");
+			APPENDF(buf, "    %s (%s)    %s%s&n\r\n", arti_names[t - 1],
+				g ? "god" : "player", cached ? "&+G" : "&+R",
+				cached ? "CACHED" : "CLEAR");
 		}
 	}
 
 	// fraglist
 	bool frag_cached = redis_key_exists("mud:cache:fraglist");
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cfraglist&n         %s%s&n\r\n",
-			frag_cached ? "&+G" : "&+R", frag_cached ? "CACHED" : "CLEAR");
+	APPENDF(buf, "  &+cfraglist&n         %s%s&n\r\n", frag_cached ? "&+G" : "&+R",
+		frag_cached ? "CACHED" : "CLEAR");
 
 	// epic zones with ttl
 	bool epic_cached = redis_key_exists("mud:cache:epic_zones");
@@ -199,19 +190,18 @@ static void redis_status_detailed(P_char ch)
 	if (epic_cached && epic_ttl > 0)
 	{
 		format_ttl(epic_ttl, time_buf, sizeof(time_buf));
-		pos += snprintf(buf + pos, sizeof(buf) - pos,
-				"  &+cepic_zones&n       &+GCACHED&n   ttl %s\r\n", time_buf);
+		APPENDF(buf, "  &+cepic_zones&n       &+GCACHED&n   ttl %s\r\n", time_buf);
 	}
 	else
 	{
-		pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cepic_zones&n       %s%s&n\r\n",
-				epic_cached ? "&+G" : "&+R", epic_cached ? "CACHED" : "CLEAR");
+		APPENDF(buf, "  &+cepic_zones&n       %s%s&n\r\n", epic_cached ? "&+G" : "&+R",
+			epic_cached ? "CACHED" : "CLEAR");
 	}
 
 	// named
 	bool named_cached = redis_key_exists("mud:cache:named");
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cnamed&n            %s%s&n\r\n",
-			named_cached ? "&+G" : "&+R", named_cached ? "CACHED" : "CLEAR");
+	APPENDF(buf, "  &+cnamed&n            %s%s&n\r\n", named_cached ? "&+G" : "&+R",
+		named_cached ? "CACHED" : "CLEAR");
 
 	send_to_char(buf, ch);
 }

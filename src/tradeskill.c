@@ -2025,7 +2025,7 @@ int itemvalue(P_obj obj)
 		{
 			if (mod < 1 || mod > LAST_RACE)
 			{
-				debug("itemvalue: obj '%s' %d has APPLY_..._RACE %d and bad modifier %d.",
+				debug("itemvalue: obj '%s' %d has APPLY_..._RACE %d and bad modifier %g.",
 				      obj->short_description, OBJ_VNUM(obj),
 				      obj->affected[i].location, mod);
 				workingvalue += 100;
@@ -2058,7 +2058,7 @@ int itemvalue(P_obj obj)
 					break;
 				// Should never be the case but..
 				default:
-					debug("itemvalue: obj '%s' %d has 'bad' APPLY_..._RACE %d, modifier %d.",
+					debug("itemvalue: obj '%s' %d has 'bad' APPLY_..._RACE %d, modifier %g.",
 					      obj->short_description, OBJ_VNUM(obj),
 					      obj->affected[i].location, mod);
 					workingvalue += 100;

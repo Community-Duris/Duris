@@ -422,7 +422,8 @@ int calculate_hitpoints2(P_char ch)
 	// Calculate toughness bonus
 	if ((toughness = GET_CHAR_SKILL(ch, SKILL_TOUGHNESS)) > 0 && !GET_CLASS(ch, CLASS_MONK))
 	{
-		toughness = (float)toughness * get_property("epic.skill.toughness", 0.500) *
+		toughness = static_cast<double>(toughness) *
+			    get_property("epic.skill.toughness", 0.500) *
 			    (GET_CLASS(ch, CLASS_WARRIOR | CLASS_PALADIN | CLASS_ANTIPALADIN |
 						   CLASS_MERCENARY) ?
 				     2. :

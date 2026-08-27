@@ -852,14 +852,17 @@ void do_fire(P_char ch, char *argument, int cmd)
 			dam *= get_property("archery.diceFactor", 1.000);
 			// aditional mods
 			// damroll bonus: 35% of damroll
-			dam += GET_DAMROLL(ch) * get_property("damroll.mod", 1.0) *
+			dam += static_cast<double>(GET_DAMROLL(ch)) *
+			       get_property("damroll.mod", 1.0) *
 			       get_property("archery.damrollFactor", 0.350);
 			// hitroll bonus: 1/4 of hitroll
-			dam += GET_HITROLL(ch) * get_property("archery.hitrollFactor", 0.250);
+			dam += static_cast<double>(GET_HITROLL(ch)) *
+			       get_property("archery.hitrollFactor", 0.250);
 			// Minor mods by luck and dex.
 			dam += number(0, GET_C_LUK(ch) / 40) + number(0, GET_C_DEX(ch) / 25);
 			// Weapon bonus
-			dam += weapon->value[2] * get_property("archery.weaponFactor", 0.500);
+			dam += static_cast<double>(weapon->value[2]) *
+			       get_property("archery.weaponFactor", 0.500);
 			// +0-4 damage at 100 skill.
 			dam += number(0, GET_CHAR_SKILL(ch, SKILL_ARCHERY) / 25);
 

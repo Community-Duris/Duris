@@ -2209,8 +2209,8 @@ void perform_eq_wipe(P_char ch)
 			 "New Longest Ptime: '%s' %d with %d %dD%dH%dM%dS", J_NAME(ch),
 			 ch->only.pc->pid, ch->player.time.played, playing_time.day,
 			 playing_time.hour, playing_time.minute, playing_time.second);
-		debug(Gbuf1);
-		logit(LOG_STATUS, Gbuf1);
+		debug("%s", Gbuf1);
+		logit(LOG_STATUS, "%s", Gbuf1);
 	}
 	/*
 	  ch->only.pc->frags = 0;
@@ -5050,7 +5050,7 @@ int find_hometown(int race, bool force)
 	if ((race < 1) || (race > LAST_RACE))
 	{
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "find_hometown: illegal race, %d\n", race);
-		logit(LOG_STATUS, Gbuf1);
+		logit(LOG_STATUS, "%s", Gbuf1);
 		return (HOME_THARN); /* default */
 	}
 	for (i = 0; i <= LAST_HOME; i++)
@@ -5066,7 +5066,7 @@ int find_hometown(int race, bool force)
 	{ /* none found, avail_hometowns matrix fucked */
 		snprintf(Gbuf1, MAX_STRING_LENGTH,
 			 "find_hometown: race %d has no avail hometowns\n", race);
-		logit(LOG_STATUS, Gbuf1);
+		logit(LOG_STATUS, "%s", Gbuf1);
 		return (HOME_THARN); /* default */
 	}
 	else if (count == 1 || force) /* what we expect, 1 town, return it */
@@ -5103,7 +5103,7 @@ void find_starting_location(P_char ch, int hometown)
 		snprintf(Gbuf1, MAX_STRING_LENGTH,
 			 "find_starting_location: illegal hometown %d for %s", hometown,
 			 GET_NAME(ch));
-		logit(LOG_DEBUG, Gbuf1);
+		logit(LOG_DEBUG, "%s", Gbuf1);
 		GET_HOME(ch) = guild_locations[HOME_THARN][0]; /* default */
 		return;
 	}
@@ -5112,7 +5112,7 @@ void find_starting_location(P_char ch, int hometown)
 		snprintf(Gbuf1, MAX_STRING_LENGTH,
 			 "find_starting_location: illegal class %d for %s", ch->player.m_class,
 			 GET_NAME(ch));
-		logit(LOG_DEBUG, Gbuf1);
+		logit(LOG_DEBUG, "%s", Gbuf1);
 		GET_HOME(ch) = guild_locations[HOME_THARN][0]; /* default */
 		return;
 	}
@@ -5123,7 +5123,7 @@ void find_starting_location(P_char ch, int hometown)
 		snprintf(Gbuf1, MAX_STRING_LENGTH,
 			 "find_starting_location: hometown %d, no guild for class %d (%s)",
 			 hometown, ch->player.m_class, GET_NAME(ch));
-		logit(LOG_DEBUG, Gbuf1);
+		logit(LOG_DEBUG, "%s", Gbuf1);
 		GET_HOME(ch) = guild_locations[hometown][0];
 		return;
 	}
@@ -5142,14 +5142,14 @@ int find_starting_alignment(int race, int m_class)
 	{
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "find_starting_alignment: illegal race, %d\n",
 			 race);
-		logit(LOG_STATUS, Gbuf1);
+		logit(LOG_STATUS, "%s", Gbuf1);
 		return (0); /* default */
 	}
 	if ((m_class < 1) || (m_class > (1 << (CLASS_COUNT - 1))))
 	{
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "find_starting_alignment: illegal class, %d\n",
 			 m_class);
-		logit(LOG_STATUS, Gbuf1);
+		logit(LOG_STATUS, "%s", Gbuf1);
 		return (0); /* default */
 	}
 	return (creation_class_align(race, flag2idx(m_class)));
