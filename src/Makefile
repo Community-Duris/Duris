@@ -216,6 +216,12 @@ OBJS =  $(SHIP_OBJS) \
 				 artifact_guild_repository.o \
 				 artifact_guild_state.o \
 				 artifact_guild_transaction.o \
+				 boon_reward_command.o \
+				 boon_reward_repository.o \
+				 boon_reward_transaction.o \
+				 zone_touch_command.o \
+				 zone_touch_repository.o \
+				 zone_touch_transaction.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
 				 player_save_worker.o \

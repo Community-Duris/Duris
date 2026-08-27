@@ -1,7 +1,7 @@
 # Session 12: Raw Event Queue Retirement and Domain Gate
 
 **Session ID**: `phase02-session12-raw-event-queue-retirement-and-domain-gate`
-**Status**: Not Started
+**Status**: In Progress
 **Work Window**: One final transactional-domain cutover boundary inventorying every
 durable event producer, replacing unrestricted SQL records, reconciling ledgers/current
 rows, and proving all domains under crash, replay, outage, and bounded load.

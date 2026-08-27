@@ -17,6 +17,7 @@ using namespace std;
 #include "achievements.h"
 #include "assocs.h"
 #include "artifact_guild_transaction.h"
+#include "zone_touch_transaction.h"
 #include "auction_houses.h"
 #include "boon.h"
 #include "damage.h"
@@ -1208,50 +1209,49 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 				thanksgiving_proc(ch);
 		}
 
-		epic_stone_one_touch(obj, ch, epic_value);
-
-		/* go through all members of group */
-		int group_size = 1;
-
+		vector<P_char> participants = { ch };
 		if (ch->group)
 		{
 			for (struct group_list *gl = ch->group; gl; gl = gl->next)
-			{
 				if (gl->ch != ch && IS_PC(gl->ch) && !IS_TRUSTED(gl->ch) &&
 				    gl->ch->in_room == ch->in_room)
-				{
-					group_size++;
-					epic_stone_one_touch(obj, gl->ch, epic_value);
-				}
-			}
+					participants.push_back(gl->ch);
 		}
-
+		if (participants.size() > ZONE_TOUCH_MAX_PARTICIPANTS)
+		{
+			send_to_char("Too many participants are touching the stone.\r\n", ch);
+			return TRUE;
+		}
 		if (zone_number > 0 && zone_number != RANDOM_ZONE_ID)
 		{
 			int delta = GET_RACEWAR(ch);
 			delta = (delta == RACEWAR_EVIL) ? -1 : (delta == RACEWAR_GOOD ? 1 : 0);
-			if (delta != 0)
-				update_epic_zone_alignment(zone_number, delta);
-
-			// set completed flag
-			epic_zone_completions.push_back(
-				epic_zone_completion(zone_number, time(NULL), delta));
-			redis_invalidate_epic_zones();
-			db_query("UPDATE zones SET last_touch = NOW() WHERE number = '%d'",
-				 zone_number);
-			db_query(
-				"INSERT INTO zone_touches (boot_time, touched_at, zone_number, toucher_pid, group_size, epic_value, alignment_delta) VALUES (FROM_UNIXTIME(%d), NOW(), %d, %d, %d, %d, %d);",
-				boot_time, zone_number, GET_PID(ch), group_size, epic_value, delta);
-
-			//  Allow !reset zones to possibly reset somewhere down the line...  - Jexni 11/7/11
-			if (!zone_table[zone_number].reset_mode)
+			zone_touch_payload touch = {
+				.zone_number = static_cast<uint32_t>(zone_number),
+				.toucher_pid = static_cast<uint32_t>(GET_PID(ch)),
+				.boot_time = static_cast<int32_t>(boot_time),
+				.touched_at = static_cast<int32_t>(time(nullptr)),
+				.group_size = static_cast<uint16_t>(participants.size()),
+				.participant_pids = {},
+				.epic_value = epic_value,
+				.alignment_delta = static_cast<int16_t>(delta),
+				.reset_requested = static_cast<uint8_t>(
+					!zone_table[real_zone0(zone_number)].reset_mode)
+			};
+			for (size_t index = 0; index < participants.size(); ++index)
+				touch.participant_pids[index] =
+					static_cast<uint32_t>(GET_PID(participants[index]));
+			if (!zone_touch_transaction_submit(touch))
 			{
-				int x = real_zone(zone_number);
-				add_event(event_reset_zone, 1, 0, 0, 0, 0, &x, sizeof(x));
-				db_query("UPDATE zones SET reset_perc = 1 WHERE number = '%d'",
-					 zone_number);
+				send_to_char(
+					"The zone-touch service is busy. Please try again.\r\n",
+					ch);
+				return TRUE;
 			}
 		}
+
+		for (P_char participant : participants)
+			epic_stone_one_touch(obj, participant, epic_value);
 
 		act("$p flashes brightly then blurs, and remains still and powerless.", FALSE, 0,
 		    obj, 0, TO_ROOM);
@@ -1261,6 +1261,18 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 	}
 
 	return FALSE;
+}
+
+void epic_publish_zone_touch(const zone_touch_result &result)
+{
+	epic_zone_completions.push_back(epic_zone_completion(
+		static_cast<int>(result.zone_number), result.touched_at, result.alignment_delta));
+	if (result.reset_requested)
+	{
+		int zone = real_zone(static_cast<int>(result.zone_number));
+		if (zone >= 0)
+			add_event(event_reset_zone, 1, 0, 0, 0, 0, &zone, sizeof(zone));
+	}
 }
 
 void epic_zone_balance()

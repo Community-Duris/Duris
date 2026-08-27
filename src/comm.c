@@ -88,6 +88,8 @@
 #include "auction_transaction.h"
 #include "combat_outcome_transaction.h"
 #include "artifact_guild_transaction.h"
+#include "boon_reward_transaction.h"
+#include "zone_touch_transaction.h"
 #include "epic_transaction.h"
 #include "player_save_pipeline.h"
 #if !defined(__NO_TESTS__) || defined(TEST_REAL_PERSISTENCE)
@@ -126,6 +128,8 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	auction_transaction_handle_completions(completions, count);
 	combat_outcome_transaction_handle_completions(completions, count);
 	artifact_guild_transaction_handle_completions(completions, count);
+	boon_reward_transaction_handle_completions(completions, count);
+	zone_touch_transaction_handle_completions(completions, count);
 }
 
 static critical_outbox_delivery_result
@@ -135,6 +139,10 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 		return combat_outcome_transaction_outbox_delivery(record, context);
 	if (record.destination == 7)
 		return artifact_guild_transaction_outbox_delivery(record, context);
+	if (record.destination == 8)
+		return boon_reward_transaction_outbox_delivery(record, context);
+	if (record.destination == 9)
+		return zone_touch_transaction_outbox_delivery(record, context);
 	return auction_transaction_outbox_delivery(record, context);
 }
 

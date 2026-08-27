@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string>
 #include "config.h"
+#include "boon_reward_command.h"
 
 // Boon DB Tables
 //
@@ -176,5 +177,7 @@ void boon_maintenance();
 void boon_random_maintenance();
 int boon_get_random_zone(int);
 void check_boon_completion(P_char, P_char, double, int);
+void boon_publish_transaction_result(P_char ch, double event_data,
+				     const boon_reward_result &result);
 
 #endif // __BOON_H__

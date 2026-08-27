@@ -46,7 +46,7 @@ prerequisites for every Phase 02 session.
 | 08 | Auction Settlement and Claim Cutover | Complete | Listing custody, bid funds, settlement, refunds, claims, ownership, and publication | 2026-08-27 |
 | 09 | PvP and Combat Outcome Batching | Complete | Immutable battle outcome capture and transactional group, frag, ledger, and outbox apply | 2026-08-27 |
 | 10 | Artifact and Guild Outcome Batching | Complete | Set-based artifact deltas and ordered guild prestige/construction commands | 2026-08-27 |
-| 11 | Boon, Reward, and Zone Command Batching | Not Started | Typed progress, reward, and zone-touch commands with domain delegation and batch apply | - |
+| 11 | Boon, Reward, and Zone Command Batching | Complete | Typed progress, reward, and zone-touch commands with domain delegation and batch apply | 2026-08-27 |
 | 12 | Raw Event Queue Retirement and Domain Gate | Not Started | Producer inventory, unrestricted SQL removal, crash/replay reconciliation, and load gate | - |
 
 ---
@@ -63,12 +63,13 @@ prerequisites for every Phase 02 session.
 - Session 08: Auction Settlement and Claim Cutover (completed 2026-08-27)
 - Session 09: PvP and Combat Outcome Batching (completed 2026-08-27)
 - Session 10: Artifact and Guild Outcome Batching (completed 2026-08-27)
+- Session 11: Boon, Reward, and Zone Command Batching (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 11: Boon, Reward, and Zone Command Batching
+- Session 12: Raw Event Queue Retirement and Domain Gate
 
 ---
 

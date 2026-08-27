@@ -30,6 +30,7 @@ enum class critical_entity_type : uint8_t
 	room,
 	system,
 	artifact,
+	zone,
 };
 
 struct critical_entity_key

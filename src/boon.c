@@ -38,6 +38,7 @@ using namespace std;
 #include "assocs.h"
 #include "auction_houses.h"
 #include "boon.h"
+#include "boon_reward_transaction.h"
 #include "buildings.h"
 #include "ctf.h"
 #include "currency_transaction.h"
@@ -131,7 +132,6 @@ static void cash_boon_committed(P_char ch, bool committed,
 				ch);
 		return;
 	}
-	boon_notify(context.boon_id, ch, BN_COMPLETE);
 	send_to_char_f(ch, "Your bank receives a deposit of %s&n.\r\n", coin_stringv(context.cash));
 }
 
@@ -3148,7 +3148,8 @@ int boon_get_random_zone(int std)
 // in the group have completed the boon as well.  That will be handled at the
 // bottom of boon_maintenance().
 // Note: BOPT_RACE and BOPT_MOB both are called after victim is set to STAT_DEAD.
-void check_boon_completion(P_char ch, P_char victim, double data, int option)
+#if 0
+void check_boon_completion_legacy(P_char ch, P_char victim, double data, int option)
 {
 	BoonData bdata;
 	BoonShop bshop;
@@ -3697,4 +3698,166 @@ void check_boon_completion(P_char ch, P_char victim, double data, int option)
 #endif
 	}
 	return;
+}
+#endif
+
+void check_boon_completion(P_char ch, P_char victim, double data, int option)
+{
+	if (!ch || IS_NPC(ch) || option < 0 || option >= MAX_BOPT ||
+	    !IS_SET(ch->specials.act2, PLR2_BOON))
+		return;
+	if (!boon_reward_transaction_submit(ch, victim, data, option))
+		logit(LOG_FILE,
+		      "boon_reward: component=trigger outcome=submission_unavailable actor=redacted");
+}
+
+void boon_publish_transaction_result(P_char ch, double event_data, const boon_reward_result &result)
+{
+	if (!ch || IS_NPC(ch) || result.pid != static_cast<uint32_t>(GET_PID(ch)))
+		return;
+	for (size_t index = 0; index < result.entry_count; ++index)
+	{
+		const auto &entry = result.entries[index];
+		if (entry.flags & BOON_RESULT_PROGRESS)
+		{
+			if (entry.counter >= 0 && !(entry.flags & BOON_RESULT_COMPLETED))
+				send_to_char_f(
+					ch,
+					"&+CYour progress for boon # %u is now %.2f of %.2f.&n\r\n",
+					entry.boon_id, entry.counter, entry.criteria);
+		}
+		if (!(entry.flags & BOON_RESULT_COMPLETED))
+			continue;
+		send_to_char_f(ch, "&+CYou have completed boon # %u.&n\r\n", entry.boon_id);
+		switch (entry.type)
+		{
+		case BTYPE_EXPM:
+			gain_exp(ch, nullptr, static_cast<int>(event_data * entry.bonus), EXP_BOON);
+			break;
+		case BTYPE_EXP:
+			gain_exp(ch, nullptr, static_cast<int>(entry.bonus), EXP_BOON);
+			break;
+		case BTYPE_EPIC:
+			gain_epic(ch, EPIC_BOON, GET_PID(ch), static_cast<int>(entry.bonus));
+			break;
+		case BTYPE_CASH:
+		{
+			const int cash = static_cast<int>(entry.bonus);
+			const cash_boon_context context = { static_cast<int>(entry.boon_id), cash };
+			if (cash <= 0 || !currency_transaction_submit_bank_reward(
+						 ch, cash, currency_reason_type::boon_reward,
+						 entry.boon_id, critical_source_site::combat,
+						 critical_deadline_class::background,
+						 cash_boon_committed, &context, sizeof(context)))
+				send_to_char(
+					"Your cash boon could not be deposited. Please contact staff.\r\n",
+					ch);
+			break;
+		}
+		case BTYPE_LEVEL:
+			if (GET_LEVEL(ch) + 1 <= static_cast<int>(entry.bonus))
+			{
+				if (static_cast<int>(entry.bonus2))
+				{
+					GET_EXP(ch) -= new_exp_table[GET_LEVEL(ch) + 1];
+					advance_level(ch);
+				}
+				else
+					epic_free_level(ch);
+			}
+			break;
+		case BTYPE_POWER:
+		{
+			struct affected_type af = {};
+			const int field = static_cast<int>(entry.bonus);
+			const int bit = static_cast<int>(entry.bonus2);
+			if (bit < 0 || bit >= static_cast<int>(sizeof(long) * 8))
+				break;
+			af.type = TAG_BOON;
+			af.duration = 60;
+			if (field == 1)
+				af.bitvector = static_cast<long>(1) << bit;
+			else if (field == 2)
+				af.bitvector2 = static_cast<long>(1) << bit;
+			else if (field == 3)
+				af.bitvector3 = static_cast<long>(1) << bit;
+			else if (field == 4)
+				af.bitvector4 = static_cast<long>(1) << bit;
+			else if (field == 5)
+				af.bitvector5 = static_cast<long>(1) << bit;
+			else
+				break;
+			affect_to_char_with_messages(ch, &af,
+						     "&+CYour bonus power fa&+cdes away...&n\r\n",
+						     "$n&+C's bonus power fades.&n\r\n");
+			break;
+		}
+		case BTYPE_SPELL:
+		{
+			const int skill = static_cast<int>(entry.bonus);
+			if (skill >= 0 && skill < MAX_SKILLS && skills[skill].spell_pointer)
+				((*skills[skill].spell_pointer)(56, ch, nullptr, SPELL_TYPE_SPELL,
+								ch, nullptr));
+			break;
+		}
+		case BTYPE_STAT:
+		{
+			sh_int *attribute = nullptr;
+			switch (static_cast<int>(entry.bonus))
+			{
+			case STR:
+				attribute = &ch->base_stats.Str;
+				break;
+			case DEX:
+				attribute = &ch->base_stats.Dex;
+				break;
+			case AGI:
+				attribute = &ch->base_stats.Agi;
+				break;
+			case CON:
+				attribute = &ch->base_stats.Con;
+				break;
+			case POW:
+				attribute = &ch->base_stats.Pow;
+				break;
+			case INT:
+				attribute = &ch->base_stats.Int;
+				break;
+			case WIS:
+				attribute = &ch->base_stats.Wis;
+				break;
+			case CHA:
+				attribute = &ch->base_stats.Cha;
+				break;
+			case LUCK:
+				attribute = &ch->base_stats.Luk;
+				break;
+			case KARMA:
+				attribute = &ch->base_stats.Kar;
+				break;
+			default:
+				break;
+			}
+			if (attribute)
+			{
+				*attribute = BOUNDED(0, *attribute + 1, 100);
+				affect_total(ch, TRUE);
+			}
+			break;
+		}
+		case BTYPE_ITEM:
+		{
+			P_obj reward = read_object(static_cast<int>(entry.bonus), VIRTUAL);
+			if (reward)
+			{
+				obj_to_char(reward, ch);
+				send_to_char_f(ch, "&+WYou receive %s&+W!&n\r\n",
+					       reward->short_description);
+			}
+			break;
+		}
+		default:
+			break;
+		}
+	}
 }

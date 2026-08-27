@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "zone_touch_command.h"
 using namespace std;
 
 struct critical_operation_id;
@@ -83,6 +84,7 @@ void epic_publish_pvp_award(P_char ch, int amount);
 const char *epic_prestige(P_char);
 void init_guild_frags();
 void epic_feed_artifacts(P_char ch, int epics, int epic_type);
+void epic_publish_zone_touch(const zone_touch_result &result);
 void do_epic_reset(P_char ch, char *arg, int cmd);
 void do_epic_reset_norefund(P_char ch, char *arg, int cmd);
 void do_infuse(P_char ch, char *arg, int cmd);

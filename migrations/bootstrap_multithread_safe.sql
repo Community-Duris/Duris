@@ -2075,4 +2075,39 @@ CREATE TABLE `guild_outcome_ledger` (
   CONSTRAINT `guild_outcome_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `artifact_guild_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `boon_reward_outcome` (
+  `operation_id` binary(16) NOT NULL, `pid` int unsigned NOT NULL,
+  `option` tinyint unsigned NOT NULL, `event_value` double NOT NULL,
+  `entry_count` smallint unsigned NOT NULL,
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`), KEY `idx_boon_reward_player_created` (`pid`,`created_at`),
+  CONSTRAINT `boon_reward_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `boon_reward_outcome_entry` (
+  `operation_id` binary(16) NOT NULL, `entry_index` smallint unsigned NOT NULL,
+  `boon_id` int NOT NULL, `counter_after` double NOT NULL,
+  `completed` tinyint unsigned NOT NULL, `reward_type` tinyint unsigned NOT NULL,
+  `reward_value` double NOT NULL, PRIMARY KEY (`operation_id`,`entry_index`),
+  UNIQUE KEY `uq_boon_reward_operation_boon` (`operation_id`,`boon_id`),
+  KEY `idx_boon_reward_boon` (`boon_id`,`operation_id`),
+  CONSTRAINT `boon_reward_entry_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `boon_reward_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `zone_touch_outcome` (
+  `operation_id` binary(16) NOT NULL, `zone_number` int NOT NULL,
+  `toucher_pid` int unsigned NOT NULL, `boot_time` int NOT NULL, `touched_at` int NOT NULL,
+  `group_size` smallint unsigned NOT NULL, `epic_value` int NOT NULL,
+  `alignment_delta` smallint NOT NULL, `reset_requested` tinyint unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`), KEY `idx_zone_touch_outcome_zone_created` (`zone_number`,`created_at`),
+  CONSTRAINT `zone_touch_outcome_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `zone_touch_outcome_participant` (
+  `operation_id` binary(16) NOT NULL, `participant_index` smallint unsigned NOT NULL,
+  `pid` int unsigned NOT NULL, `epic_value` int NOT NULL,
+  PRIMARY KEY (`operation_id`,`participant_index`),
+  UNIQUE KEY `uq_zone_touch_operation_pid` (`operation_id`,`pid`),
+  KEY `idx_zone_touch_participant_pid` (`pid`,`operation_id`),
+  CONSTRAINT `zone_touch_participant_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `zone_touch_outcome` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

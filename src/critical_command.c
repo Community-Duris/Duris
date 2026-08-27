@@ -15,7 +15,7 @@ constexpr unsigned char COMMAND_MAGIC[4] = { 'C', 'C', 'M', '1' };
 
 bool valid_entity_type(critical_entity_type type)
 {
-	return type >= critical_entity_type::player && type <= critical_entity_type::artifact;
+	return type >= critical_entity_type::player && type <= critical_entity_type::zone;
 }
 
 template <typename T> void append_le(std::vector<uint8_t> &output, T value)

@@ -8,6 +8,10 @@
 #include "combat_outcome_repository.h"
 #include "artifact_guild_command.h"
 #include "artifact_guild_repository.h"
+#include "boon_reward_command.h"
+#include "boon_reward_repository.h"
+#include "zone_touch_command.h"
+#include "zone_touch_repository.h"
 #include "item_transfer_repository.h"
 #include "sql_pool.h"
 
@@ -41,6 +45,10 @@ constexpr uint16_t OUTBOX_DESTINATION_COMBAT = 6;
 constexpr uint16_t OUTBOX_EVENT_COMBAT_OUTCOME = 1;
 constexpr uint16_t OUTBOX_DESTINATION_ARTIFACT_GUILD = 7;
 constexpr uint16_t OUTBOX_EVENT_ARTIFACT_GUILD_MUTATED = 1;
+constexpr uint16_t OUTBOX_DESTINATION_BOON_REWARD = 8;
+constexpr uint16_t OUTBOX_EVENT_BOON_REWARD_MUTATED = 1;
+constexpr uint16_t OUTBOX_DESTINATION_ZONE_TOUCH = 9;
+constexpr uint16_t OUTBOX_EVENT_ZONE_TOUCH_MUTATED = 1;
 thread_local unsigned int last_statement_error = 0;
 
 struct stored_operation
@@ -411,6 +419,16 @@ bool insert_outbox(MYSQL *connection, const critical_command &command, const uin
 	{
 		destination = OUTBOX_DESTINATION_ARTIFACT_GUILD;
 		event_type = OUTBOX_EVENT_ARTIFACT_GUILD_MUTATED;
+	}
+	else if (command.type == critical_command_type::boon_reward)
+	{
+		destination = OUTBOX_DESTINATION_BOON_REWARD;
+		event_type = OUTBOX_EVENT_BOON_REWARD_MUTATED;
+	}
+	else if (command.type == critical_command_type::zone)
+	{
+		destination = OUTBOX_DESTINATION_ZONE_TOUCH;
+		event_type = OUTBOX_EVENT_ZONE_TOUCH_MUTATED;
 	}
 	unsigned long operation_length = command.operation_id.bytes.size(),
 		      payload_length = payload_size;
@@ -906,6 +924,8 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	auction_command_payload auction_payload = {};
 	combat_outcome_payload combat_payload = {};
 	artifact_guild_payload artifact_payload = {};
+	boon_reward_payload boon_payload = {};
+	zone_touch_payload zone_payload = {};
 	const bool test_command = command.type == critical_command_type::test &&
 				  command.payload.size() == 8;
 	const bool epic_command = epic_command_decode_payload(command, &epic_payload);
@@ -915,9 +935,12 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 	const bool combat_command = combat_outcome_command_decode_payload(command, &combat_payload);
 	const bool artifact_guild_command =
 		artifact_guild_command_decode_payload(command, &artifact_payload);
+	const bool boon_command = boon_reward_command_decode_payload(command, &boon_payload);
+	const bool zone_command = zone_touch_command_decode_payload(command, &zone_payload);
 	if (!connection ||
 	    (!test_command && !epic_command && !currency_command && !item_command &&
-	     !auction_command && !combat_command && !artifact_guild_command) ||
+	     !auction_command && !combat_command && !artifact_guild_command && !boon_command &&
+	     !zone_command) ||
 	    !critical_command_valid(command))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash = {}, keys_hash = {};
@@ -1236,6 +1259,94 @@ critical_apply_result critical_command_repository_apply(MYSQL *connection,
 							  critical_apply_outcome::terminal_failure :
 							  critical_apply_outcome::applied,
 						  durable_revision, result_code };
+		applied.result_size = result_payload.size();
+		std::copy(result_payload.begin(), result_payload.end(),
+			  applied.result_payload.begin());
+		return applied;
+	}
+	if (boon_command)
+	{
+		boon_reward_result boon_result = {};
+		unsigned int result_code = 0;
+		bool mutation_applied = false;
+		if (!boon_reward_repository_execute(connection, command, &boon_result, &result_code,
+						    &mutation_applied))
+		{
+			const unsigned int database_failure = database_error(connection);
+			const unsigned int error = database_failure ? database_failure : errno;
+			rollback(connection);
+			return failure(error);
+		}
+		std::array<uint8_t, BOON_REWARD_RESULT_BYTES> result_payload = {};
+		if (!boon_reward_command_encode_result(boon_result, &result_payload) ||
+		    (mutation_applied && !insert_outbox(connection, command, result_payload.data(),
+							result_payload.size())) ||
+		    !finish_inbox(connection, command, 0, result_code, result_payload.data(),
+				  result_payload.size()))
+		{
+			const unsigned int database_failure = database_error(connection);
+			const unsigned int error = database_failure ? database_failure : errno;
+			rollback(connection);
+			return failure(error);
+		}
+		if (!execute(connection, "COMMIT"))
+		{
+			const unsigned int error = mysql_errno(connection);
+			if (!connection_error(error))
+				rollback(connection);
+			return { connection_error(error) ?
+					 critical_apply_outcome::ambiguous_commit :
+					 failure(error).outcome,
+				 0, error };
+		}
+		critical_apply_result applied = { result_code ?
+							  critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::applied,
+						  0, result_code };
+		applied.result_size = result_payload.size();
+		std::copy(result_payload.begin(), result_payload.end(),
+			  applied.result_payload.begin());
+		return applied;
+	}
+	if (zone_command)
+	{
+		zone_touch_result zone_result = {};
+		unsigned int result_code = 0;
+		bool mutation_applied = false;
+		if (!zone_touch_repository_execute(connection, command, &zone_result, &result_code,
+						   &mutation_applied))
+		{
+			const unsigned int database_failure = database_error(connection);
+			const unsigned int error = database_failure ? database_failure : errno;
+			rollback(connection);
+			return failure(error);
+		}
+		std::array<uint8_t, ZONE_TOUCH_RESULT_BYTES> result_payload = {};
+		if (!zone_touch_command_encode_result(zone_result, &result_payload) ||
+		    (mutation_applied && !insert_outbox(connection, command, result_payload.data(),
+							result_payload.size())) ||
+		    !finish_inbox(connection, command, 0, result_code, result_payload.data(),
+				  result_payload.size()))
+		{
+			const unsigned int database_failure = database_error(connection);
+			const unsigned int error = database_failure ? database_failure : errno;
+			rollback(connection);
+			return failure(error);
+		}
+		if (!execute(connection, "COMMIT"))
+		{
+			const unsigned int error = mysql_errno(connection);
+			if (!connection_error(error))
+				rollback(connection);
+			return { connection_error(error) ?
+					 critical_apply_outcome::ambiguous_commit :
+					 failure(error).outcome,
+				 0, error };
+		}
+		critical_apply_result applied = { result_code ?
+							  critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::applied,
+						  0, result_code };
 		applied.result_size = result_payload.size();
 		std::copy(result_payload.begin(), result_payload.end(),
 			  applied.result_payload.begin());
