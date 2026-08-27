@@ -448,14 +448,12 @@ void do_zcheck(P_char ch, char *argument, [[maybe_unused]] int cmd)
 	else
 	{
 		char buf[MAX_STRING_LENGTH];
-		int len = snprintf(buf, sizeof(buf), "Entrances (cross-zone ways in): ");
+		checked_snprintf(buf, sizeof(buf), "Entrances (cross-zone ways in): ");
 		for (i = 0; i < (int)entrances.size() && i < 8; i++)
-			len += snprintf(buf + len, sizeof(buf) - (size_t)len, "%s#%d",
-					i ? ", " : "", zc_vnum(entrances[i]));
+			APPENDF(buf, "%s#%d", i ? ", " : "", zc_vnum(entrances[i]));
 		if ((int)entrances.size() > 8)
-			len += snprintf(buf + len, sizeof(buf) - (size_t)len, " and %d more",
-					(int)entrances.size() - 8);
-		snprintf(buf + len, sizeof(buf) - (size_t)len, "\r\n");
+			APPENDF(buf, " and %d more", (int)entrances.size() - 8);
+		APPENDF(buf, "\r\n");
 		send_to_char(buf, ch);
 	}
 

@@ -2917,13 +2917,13 @@ void spell_ether_warp(int level, P_char ch, char * /*arg*/, int /*type*/, P_char
 		char logbuf[500];
 		snprintf(logbuf, 500, "Ether Warp from %s[%d] to %s[%d]", GET_NAME(ch),
 			 world[ch->in_room].number, GET_NAME(victim), world[to_room].number);
-		logit(LOG_PORTALS, logbuf);
+		logit(LOG_PORTALS, "%s", logbuf);
 		// spam immo's if it looks like a possible camped target
 		if (IS_PC(victim) &&
 		    ((world[to_room].number == GET_HOME(victim)) || (GET_LEVEL(victim) < 10)))
 		{
 			strcat(logbuf, " - &=RCPossible Camped Target&n");
-			statuslog(57, logbuf);
+			statuslog(57, "%s", logbuf);
 		}
 	}
 	for (tmp = world[ch->in_room].people; tmp; tmp = tmp_next)

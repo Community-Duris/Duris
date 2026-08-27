@@ -784,7 +784,7 @@ int sell_cargo_slot(P_char ch, P_ship ship, int slot, int rroom)
 	sprintf(buf, "CARGO: %s sold &+W%d&n %s&n at %s&n [%d] for %s&n (%d percent profit)",
 		GET_NAME(ch), crates, cargo_type_name(type), ports[rroom].loc_name,
 		ports[rroom].loc_room, coin_stringv(cost), profit);
-	statuslog(56, buf);
+	statuslog(56, "%s", buf);
 	logit(LOG_SHIP, strip_ansi(buf).c_str());
 
 	send_to_char_f(
@@ -933,7 +933,7 @@ int sell_contra_slot(P_char ch, P_ship ship, int slot, int rroom)
 	sprintf(buf, "CONTRABAND: %s sold &+W%d&n %s&n at %s&n [%d] for %s&n (%d percent profit)",
 		GET_NAME(ch), crates, contra_type_name(type), ports[rroom].loc_name,
 		ports[rroom].loc_room, coin_stringv(cost), profit);
-	statuslog(56, buf);
+	statuslog(56, "%s", buf);
 	logit(LOG_SHIP, strip_ansi(buf).c_str());
 
 	send_to_char_f(
@@ -1181,7 +1181,7 @@ void check_contraband(P_ship ship, int to_room)
 					SHIP_OWNER(ship), confiscated, crates,
 					contra_type_name(type), ports[rroom].loc_name,
 					ports[rroom].loc_room);
-				statuslog(56, buf);
+				statuslog(56, "%s", buf);
 				logit(LOG_SHIP, strip_ansi(buf).c_str());
 
 				act_to_all_in_ship_f(
@@ -1876,7 +1876,7 @@ int buy_cargo(P_char ch, P_ship ship, char *arg)
 	sprintf(buf, "CARGO: %s bought &+W%d&n %s&n at %s&n [%d] for %s", GET_NAME(ch), placed,
 		cargo_type_name(rroom), ports[rroom].loc_name, ports[rroom].loc_room,
 		coin_stringv(cost));
-	statuslog(56, buf);
+	statuslog(56, "%s", buf);
 	logit(LOG_SHIP, strip_ansi(buf).c_str());
 
 	send_to_char_f(ch, "&+gYou buy &+Y%d &+gcrates of &n%s &+gfor &n%s&+g.&n\n", placed,
@@ -2052,7 +2052,7 @@ int buy_contra(P_char ch, P_ship ship, char *arg)
 	sprintf(buf, "CONTRABAND: %s bought &+W%d&n %s&n at %s&n [%d] for %s", GET_NAME(ch), placed,
 		contra_type_name(rroom), ports[rroom].loc_name, ports[rroom].loc_room,
 		coin_stringv(cost));
-	statuslog(56, buf);
+	statuslog(56, "%s", buf);
 	logit(LOG_SHIP, strip_ansi(buf).c_str());
 
 	send_to_char_f(ch, "&+gYou buy &+Y%d &+gcrates of &n%s &+gfor &n%s&+g.&n\n", placed,

@@ -4415,8 +4415,8 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 			snprintf(buf, 500, "\r\n%s grabs Duris by the balls and rips them off.\r\n",
 				 shutdownData.IssuedBy);
 			send_to_all(buf);
-			logit(LOG_STATUS, buf);
-			sql_log(ch, WIZLOG, buf);
+			logit(LOG_STATUS, "%s", buf);
+			sql_log(ch, WIZLOG, "%s", buf);
 			write_shutdown_info(shutdownData.IssuedBy, shutdownData.Reason);
 			shutdownflag = 1;
 			break;
@@ -4425,8 +4425,8 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 			snprintf(buf, 500, "\r\n%s shreds the world around you.\r\n",
 				 shutdownData.IssuedBy);
 			send_to_all(buf);
-			logit(LOG_STATUS, buf);
-			sql_log(ch, WIZLOG, buf);
+			logit(LOG_STATUS, "%s", buf);
+			sql_log(ch, WIZLOG, "%s", buf);
 			write_shutdown_info(shutdownData.IssuedBy, shutdownData.Reason);
 			shutdownflag = _reboot = 1;
 			break;
@@ -4435,8 +4435,8 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 			snprintf(buf, 500, "\r\n%s destroys the world as you know it.\r\n",
 				 shutdownData.IssuedBy);
 			send_to_all(buf);
-			logit(LOG_STATUS, buf);
-			sql_log(ch, WIZLOG, buf);
+			logit(LOG_STATUS, "%s", buf);
+			sql_log(ch, WIZLOG, "%s", buf);
 			write_shutdown_info(shutdownData.IssuedBy, shutdownData.Reason);
 			shutdownflag = _copyover = 1;
 			break;
@@ -4446,8 +4446,8 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 				buf, 500,
 				"\r\nDuris fades into nothing, as the world begins its reconstruction...\r\n");
 			send_to_all(buf);
-			logit(LOG_STATUS, buf);
-			sql_log(ch, WIZLOG, buf);
+			logit(LOG_STATUS, "%s", buf);
+			sql_log(ch, WIZLOG, "%s", buf);
 			shutdownflag = _autoboot = _copyover = 1;
 			break;
 
@@ -4456,8 +4456,8 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 				buf, 500,
 				"\r\nDuris fades into nothing, as the world begins its reconstruction...\r\n");
 			send_to_all(buf);
-			logit(LOG_STATUS, buf);
-			sql_log(ch, WIZLOG, buf);
+			logit(LOG_STATUS, "%s", buf);
+			sql_log(ch, WIZLOG, "%s", buf);
 			shutdownflag = _autoboot = 1;
 			break;
 
@@ -4676,7 +4676,7 @@ void do_shutdown(P_char ch, char *argument, int /*cmd*/)
 				reason_start++;
 
 			// If there's text after minutes, that's the reason
-			if (reason_start && *reason_start)
+			if (*reason_start)
 				strlcpy(reason, reason_start, sizeof reason);
 		}
 		// If temp_arg is NOT numeric, entire argument is the reason
@@ -4710,7 +4710,7 @@ void do_shutdown(P_char ch, char *argument, int /*cmd*/)
 		send_to_all(buf);
 		snprintf(buf, 100, "Scheduled %s cancelled by %s", type, GET_NAME(ch));
 		shutdownData.eShutdownType = TimedShutdownData::NONE;
-		wizlog(60, buf);
+		wizlog(60, "%s", buf);
 		sql_log(ch, WIZLOG, "Shutdown cancelled by %s", GET_NAME(ch));
 		// Delete shutdown info file when cancelled
 		unlink("logs/shutdown_info.txt");
@@ -4817,7 +4817,7 @@ void do_shutdown(P_char ch, char *argument, int /*cmd*/)
 	shutdownData.reboot_time = (time(0) + (mins_to_reboot * 60));
 	snprintf(buf, sizeof buf, "Scheduled %s initiated by %s in %d minutes.", type, GET_NAME(ch),
 		 mins_to_reboot);
-	wizlog(60, buf);
+	wizlog(60, "%s", buf);
 	sql_log(ch, WIZLOG, "%s initiated by %s in %d minutes.", type, GET_NAME(ch),
 		mins_to_reboot);
 	// calling the event will start the event
@@ -6382,7 +6382,7 @@ void do_reinitphys(P_char ch, char *arg, int /*cmd*/)
 		init_height_weight(ch);
 		return;
 	}
-	if (!*arg || !arg)
+	if (!*arg)
 	{
 		send_to_char("usage:\n   reinitphys <targetname>\n", ch);
 		return;
@@ -7169,7 +7169,7 @@ void do_allow(P_char ch, char *argument, int /*cmd*/)
 			send_to_char("Ok.\n", ch);
 			snprintf(buf, MAX_STRING_LENGTH, "WIZ: (%s) allow %s", ch->player.name,
 				 argument);
-			logit(LOG_WIZ, buf);
+			logit(LOG_WIZ, "%s", buf);
 			save_ban_file();
 			return;
 		}
@@ -7371,7 +7371,7 @@ void do_lookup(P_char ch, char *argument, int /*cmd*/)
 	if ((fp = fopen(file, "r")) == NULL)
 	{
 		snprintf(buf, MAX_STRING_LENGTH, "Error opening %s", file);
-		logit(LOG_FILE, buf);
+		logit(LOG_FILE, "%s", buf);
 		snprintf(buf, MAX_STRING_LENGTH, "Error opening %s...tell an implementor.\n", file);
 		send_to_char(buf, ch);
 		return;
@@ -7782,7 +7782,7 @@ void do_finger(P_char ch, char *arg, int /*cmd*/)
 	bool in_game;
 	int pid;
 
-	if (!*arg || !arg)
+	if (!*arg)
 	{
 		send_to_char("Usage:\n  finger playername.\n", ch);
 		return;
@@ -7899,7 +7899,7 @@ void do_decline(P_char ch, char *arg, int /*cmd*/)
 	P_desc d, i;
 
 	arg = skip_spaces(arg);
-	if (!*arg || !arg)
+	if (!*arg)
 	{
 		send_to_char("Usage: decline <charname> [reason]\n", ch);
 		return;
@@ -8025,7 +8025,7 @@ void do_approve(P_char ch, char *arg, int /*cmd*/)
 		snprintf(Gbuf2, MAX_STRING_LENGTH,
 			 "&+CAC: Someone set newchar application system %s.\n",
 			 approve_modes[APPROVE_OFF]);
-		logit(LOG_WIZ, Gbuf1);
+		logit(LOG_WIZ, "%s", Gbuf1);
 		for (d1 = descriptor_list; d1; d1 = d1->next)
 		{
 			if ((d1->connected == CON_PLAYING) && d1->character &&
@@ -8049,7 +8049,7 @@ void do_approve(P_char ch, char *arg, int /*cmd*/)
 
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "&+cAC: %s set newchar application system %s.\n",
 			 GET_NAME(ch), approve_modes[APPROVE_ON]);
-		logit(LOG_WIZ, Gbuf1);
+		logit(LOG_WIZ, "%s", Gbuf1);
 		snprintf(Gbuf2, MAX_STRING_LENGTH,
 			 "&+cAC: Someone set newchar application system %s.\n",
 			 approve_modes[APPROVE_ON]);
@@ -8127,7 +8127,7 @@ void do_invite(P_char ch, char *arg, int /*cmd*/)
 	char f_a[MAX_STRING_LENGTH];
 
 	arg = skip_spaces(arg);
-	if (!*arg || !arg)
+	if (!*arg)
 	{
 		send_to_char("Usage: invite <charname> or invite <on|off>\n", ch);
 		return;
@@ -12519,7 +12519,7 @@ void do_where(P_char ch, char *argument, int /*cmd*/)
 		argument++;
 	}
 
-	if (argument && !strcmp(argument, "?"))
+	if (!strcmp(argument, "?"))
 	{
 		send_to_char(
 			"&+YValid arguments: &+Wevils, goods, undeads, neutrals, <vnum>, zone, trap, stat, nowhere.\n\r",

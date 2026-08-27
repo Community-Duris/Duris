@@ -650,7 +650,7 @@ void boot_the_quests(void)
 				 */
 			}
 			//      letter = 0;
-			REQUIRED_FSCANF(quest_f, " %s \n", letterStrn);
+			REQUIRED_FSCANF(quest_f, " %255s \n", letterStrn);
 			while (letterStrn[0] != 'S')
 			{
 				switch (letterStrn[0])
@@ -796,7 +796,7 @@ void boot_the_quests(void)
 					      letterStrn);
 					exit(1);
 				}
-				if (!fscanf(quest_f, " %s \n", letterStrn))
+				if (fscanf(quest_f, " %255s \n", letterStrn) != 1)
 				{
 					logit(LOG_EXIT, "Error in boot quest: quester %d.\n",
 					      mob_index[quest_index[number_of_quests].quester]

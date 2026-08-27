@@ -811,7 +811,7 @@ void update_exp_table()
 		}
 		new_exp_table[i] = propVal;
 		global_exp_limit += (long)new_exp_table[i];
-		debug("new_exp_table[%d]=%d, global_exp_limit=%d", i, propVal, global_exp_limit);
+		debug("new_exp_table[%d]=%d, global_exp_limit=%ld", i, propVal, global_exp_limit);
 	}
 }
 
@@ -1422,7 +1422,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			for (int i = GET_LEVEL(ch) + 1;
 			     (i <= levelcap) && (new_exp_table[i] <= GET_EXP(ch)); i++)
 			{
-				logexp("player %s advancing level, p.exp = %d, newlevelexp = %d, levelcap = %d (a)",
+				logexp("player %s advancing level, p.exp = %d, newlevelexp = %ld, levelcap = %d (a)",
 				       GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
 				GET_EXP(ch) -= new_exp_table[i];
 				advance_level(ch);
@@ -1435,7 +1435,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			for (int i = GET_LEVEL(ch) + 1;
 			     (i <= levelcap) && (new_exp_table[i] <= GET_EXP(ch)); i++)
 			{
-				logexp("player %s advancing level, p.exp = %d, newlevelexp = %d, levelcap = %d (b)",
+				logexp("player %s advancing level, p.exp = %d, newlevelexp = %ld, levelcap = %d (b)",
 				       GET_NAME(ch), GET_EXP(ch), new_exp_table[i], levelcap);
 				GET_EXP(ch) -= new_exp_table[i];
 				advance_level(ch);

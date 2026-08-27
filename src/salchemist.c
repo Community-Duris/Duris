@@ -1201,7 +1201,7 @@ void do_encrust(P_char ch, char *argument, int /*cmd*/)
 	snprintf(buf2, MAX_STRING_LENGTH, "%s attempts to encrust %s with %s...", GET_NAME(ch),
 		 item->short_description, jewel->short_description);
 	act(buf2, TRUE, ch, 0, 0, TO_ROOM);
-	wizlog(56, buf2);
+	wizlog(56, "%s", buf2);
 
 	craftsmanship = item->craftsmanship;
 

@@ -329,8 +329,8 @@ void do_test(P_char ch, char *arg, int cmd)
 	snprintf(buff, MAX_STRING_LENGTH, "%s in [%d]: test %s", GET_NAME(ch),
 		 world[ch->in_room].number, arg);
 
-	wizlog(56, buff);
-	logit(LOG_WIZ, buff);
+	wizlog(56, "%s", buff);
+	logit(LOG_WIZ, "%s", buff);
 
 	arg = one_argument(arg, buff);
 
@@ -1163,7 +1163,7 @@ void do_test(P_char ch, char *arg, int cmd)
 				return;
 			}
 		}
-		debug("Could not find maliciousPID %d in game. :(");
+		debug("Could not find maliciousPID %d in game. :(", maliciousPID);
 	}
 	else
 	{
@@ -1195,8 +1195,8 @@ void do_test_radiate(P_char ch, char *arg, int /*cmd*/)
 
 	snprintf(buff, MAX_STRING_LENGTH, "%s in %s [%d] radiates \"%s\" %d rooms.", J_NAME(ch),
 		 world[ch->in_room].name, world[ch->in_room].number, message, num_rooms);
-	wizlog(56, buff);
-	logit(LOG_WIZ, buff);
+	wizlog(56, "%s", buff);
+	logit(LOG_WIZ, "%s", buff);
 
 	// Radiate from ch's room, the message, outward by num_rooms rooms, dracolich flags, and show 100% of the time.
 	radiate_message_from_room(ch->in_room, message, num_rooms,

@@ -163,8 +163,8 @@ int proclibobj_actroom(P_obj obj, P_char /*ch*/, int cmd, char *params)
 		char buf[500];
 		snprintf(buf, 500, "Malformed _proclib_actroom description on object %d",
 			 obj_index[obj->R_num].virtual_number);
-		debug(buf);
-		wizlog(58, buf);
+		debug("%s", buf);
+		wizlog(58, "%s", buf);
 		return FALSE;
 	}
 	pAct++;
@@ -252,7 +252,7 @@ int proclibobj_actworn(P_obj obj, P_char ch, int cmd, char *params)
 				pAct++;
 
 			// we are all set!
-			if (pAct && (*pAct))
+			if (*pAct)
 			{
 				act(buf, TRUE, ch, obj, NULL, TO_ROOM);
 				act(pAct, TRUE, ch, obj, 0, TO_CHAR);
@@ -262,8 +262,8 @@ int proclibobj_actworn(P_obj obj, P_char ch, int cmd, char *params)
 	}
 	snprintf(buf, 500, "Malformed _proclib_actworn description on object %d",
 		 obj_index[obj->R_num].virtual_number);
-	debug(buf);
-	wizlog(58, buf);
+	debug("%s", buf);
+	wizlog(58, "%s", buf);
 	return FALSE;
 }
 

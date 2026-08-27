@@ -857,7 +857,7 @@ int flamberge(P_obj obj, P_char ch, int cmd, char *arg)
 				       asctime(localtime(&obj->timer[0])));
 			curr_time = time(NULL) - obj->timer[0];
 			send_to_char_f(ch,
-				       "  diff of timer0 is: %10ld = &+G%02d&+Lm &+G%02ld&+Ls&n\n",
+				       "  diff of timer0 is: %10d = &+G%02d&+Lm &+G%02d&+Ls&n\n",
 				       curr_time, curr_time / 60, curr_time % 60);
 			return TRUE;
 		}

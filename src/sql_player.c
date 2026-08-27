@@ -743,22 +743,19 @@ static char *spellbook_to_json(const char *bits)
 	if (!buf)
 		return NULL;
 
-	char *p = buf;
-	*p++ = '[';
+	buf[0] = '[';
+	buf[1] = '\0';
 
 	int first = 1;
 	for (int i = 0; i < MAX_SKILLS; i++)
 	{
 		if (bits[i / 8] & (1 << (i % 8)))
 		{
-			if (!first)
-				*p++ = ',';
-			p += snprintf(p, buf + MAX_SKILLS * 6 - p, "%d", i);
+			checked_appendf(buf, MAX_SKILLS * 6, "%s%d", first ? "" : ",", i);
 			first = 0;
 		}
 	}
-	*p++ = ']';
-	*p = '\0';
+	checked_appendf(buf, MAX_SKILLS * 6, "]");
 
 	return buf;
 }

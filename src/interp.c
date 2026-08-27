@@ -2031,7 +2031,7 @@ void command_interpreter(P_char ch, char *argument)
 	if (IS_TRUSTED(exec_char) && sscanf(argument + begin, "%d ", &j) == 1)
 	{
 		// If that number was between 1 and 20 && prevent recursing (3 3 ' hi -> 3 times do 3 times say hi)
-		if ((j >= 1) && (j <= 20) && !sscanf(argument + begin + look_at, " %d ", &k))
+		if ((j >= 1) && (j <= 20) && sscanf(argument + begin + look_at, " %d ", &k) != 1)
 		{
 			k = exec_char->in_room;
 			for (i = 0; (i < j) && CAN_ACT(exec_char) && (k == exec_char->in_room); i++)

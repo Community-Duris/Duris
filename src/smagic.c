@@ -436,7 +436,7 @@ void spell_spirit_walk(int /*level*/, P_char ch, char * /*arg*/, int /*type*/, P
 		char logbuf[500];
 		snprintf(logbuf, 500, "SpiritWalk from %s[%d] to corpse of %s[%d]", GET_NAME(ch),
 			 world[ch->in_room].number, GET_NAME(victim), world[location].number);
-		logit(LOG_PORTALS, logbuf);
+		logit(LOG_PORTALS, "%s", logbuf);
 		// because of the timer limits, less need to spam immos of this
 		// statuslog(57, logbuf);
 	}

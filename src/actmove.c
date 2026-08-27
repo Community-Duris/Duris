@@ -1027,7 +1027,7 @@ char *enter_message(P_char ch, P_char people, int exitnumb, char *amsg, int was_
 		}
 		/* amsg's only %s is placeholder for verb, which is now in tmp2 */
 
-		checked_snprintf_runtime(tmp, sizeof tmp, amsg, tmp2);
+		checked_substitute(tmp, sizeof tmp, amsg, tmp2);
 
 		strcpy(amsg, tmp);
 	}
@@ -1036,20 +1036,20 @@ char *enter_message(P_char ch, P_char people, int exitnumb, char *amsg, int was_
 
 		/* amsg's only %s is placeholder for verb .. */
 
-		checked_snprintf_runtime(tmp, sizeof tmp, amsg,
-					 IS_ROOM(ch->in_room, ROOM_UNDERWATER) ? "swims in" :
-					 ch->specials.z_cord < 0	       ? "swims in" :
-					 ch->specials.z_cord > 0	       ? "flies in" :
-					 LEVITATE(ch, exitnumb)		       ? "floats in" :
-					 IS_SLIME(ch)			       ? "oozes in" :
-					 GET_RACE(ch) == RACE_DRAGON	       ? "lumbers in" :
-					 load_modifier(ch) > 199	       ? "staggers in" :
-					 (SNEAK(ch) && !mount)		       ? "sneaks in" :
-					 GET_POS(ch) == POS_PRONE	       ? "slithers in" :
-					 GET_POS(ch) == POS_KNEELING	       ? "crawls in" :
-					 has_innate(ch, INNATE_HORSE_BODY)     ? "trots in" :
-					 has_innate(ch, INNATE_SPIDER_BODY)    ? "skitters in" :
-										 "enters");
+		checked_substitute(tmp, sizeof tmp, amsg,
+				   IS_ROOM(ch->in_room, ROOM_UNDERWATER) ? "swims in" :
+				   ch->specials.z_cord < 0		 ? "swims in" :
+				   ch->specials.z_cord > 0		 ? "flies in" :
+				   LEVITATE(ch, exitnumb)		 ? "floats in" :
+				   IS_SLIME(ch)				 ? "oozes in" :
+				   GET_RACE(ch) == RACE_DRAGON		 ? "lumbers in" :
+				   load_modifier(ch) > 199		 ? "staggers in" :
+				   (SNEAK(ch) && !mount)		 ? "sneaks in" :
+				   GET_POS(ch) == POS_PRONE		 ? "slithers in" :
+				   GET_POS(ch) == POS_KNEELING		 ? "crawls in" :
+				   has_innate(ch, INNATE_HORSE_BODY)	 ? "trots in" :
+				   has_innate(ch, INNATE_SPIDER_BODY)	 ? "skitters in" :
+									   "enters");
 
 		if (SNEAK(ch) && (!ch->lobj || (ch->lobj && !ch->lobj->Visible_Type())))
 		{

@@ -2463,7 +2463,8 @@ void do_teach(P_char ch, char *arg, int cmd)
 		}
 		else
 		{
-			debug("do_teach: ch not in room!: ch: '%s', arg: '%s', cmd: %d!", arg, cmd);
+			debug("do_teach: ch not in room!: ch: '%s', arg: '%s', cmd: %d!",
+			      J_NAME(ch), arg, cmd);
 		}
 
 		return;

@@ -213,7 +213,7 @@ void deleteExtraDescUser(extraDesc **extraDescHead, uint *numbExtraDescs)
 
     if (ch == 'Q')
       return;
-  } while (!((ch >= 'A') && (ch <= ('A' + ((*numbExtraDescs) - 1)))));
+  } while (ch < 'A' || static_cast<uint>(ch - 'A') >= *numbExtraDescs);
 
   ch -= 'A';
 

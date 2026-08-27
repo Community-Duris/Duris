@@ -4354,7 +4354,7 @@ P_char restorePet(char *id)
 	if ((GET_BYTE(buf) != short_size) || (GET_BYTE(buf) != int_size) ||
 	    (GET_BYTE(buf) != long_size))
 	{
-		wizlog(OVERLORD, "Ouch. Bad file sizing for %d", id);
+		wizlog(OVERLORD, "Ouch. Bad file sizing for %s", id);
 		return 0;
 	}
 	if (size < static_cast<int>(5 * int_size + 5 * sizeof(char) + long_size))

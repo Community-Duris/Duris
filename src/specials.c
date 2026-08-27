@@ -366,7 +366,7 @@ void npc_steal(P_char ch, P_char vict)
 						statuslog(
 							MINLVLIMMORTAL,
 							"npc_steal: %s &+Rjust stole&n '%s' %d from %s.",
-							OBJ_SHORT(obj), OBJ_VNUM(obj),
+							J_NAME(ch), OBJ_SHORT(obj), OBJ_VNUM(obj),
 							J_NAME(vict));
 						// Don't need this; it's handled in unequip_char & obj_to_char.
 						//   artifact_update_location_sql( obj );

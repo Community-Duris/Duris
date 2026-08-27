@@ -1009,7 +1009,7 @@ void random_jewelry(P_obj obj, int base_value)
 		/* Next, roll the dice and determine bv */
 		bv = 0;
 		for (bv_die = 1; bv_die <= bv_table[base_value_place][1]; bv_die++)
-			bv += number(0, bv_table[base_value_place][2]) *
+			bv += static_cast<long>(number(0, bv_table[base_value_place][2])) *
 			      bv_table[base_value_place][3];
 	}
 
@@ -1018,8 +1018,8 @@ void random_jewelry(P_obj obj, int base_value)
 	if (number(0, 10) == 1)
 	{
 		nice_work = " (exquisite workmanship)";
-		if (bv == bv_table[base_value_place][1] * bv_table[base_value_place][2] *
-				  bv_table[base_value_place][3])
+		if (bv == static_cast<long>(bv_table[base_value_place][1]) *
+				  bv_table[base_value_place][2] * bv_table[base_value_place][3])
 		{
 			if (base_value_place < 6)
 			{
@@ -1030,8 +1030,8 @@ void random_jewelry(P_obj obj, int base_value)
 		else
 		{
 			/* Set bv to maximum for this base_value_place */
-			bv = bv_table[base_value_place][1] * bv_table[base_value_place][2] *
-			     bv_table[base_value_place][3];
+			bv = static_cast<long>(bv_table[base_value_place][1]) *
+			     bv_table[base_value_place][2] * bv_table[base_value_place][3];
 			/*      goto check_for_exceptional;*/
 		}
 	}

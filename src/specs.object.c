@@ -14721,7 +14721,8 @@ void soul_taking_check(P_char ch, P_char tch)
 		if ((stiletto = ch->equipment[WIELD]) &&
 		    obj_index[stiletto->R_num].virtual_number == SOUL_TAKING_STILETTO)
 		{
-			if (vamp(ch, 1.5 * GET_LEVEL(tch), VAMPPERCENT(ch) * GET_MAX_HIT(ch)))
+			if (vamp(ch, 1.5 * GET_LEVEL(tch),
+				 VAMPPERCENT(ch) * static_cast<double>(GET_MAX_HIT(ch))))
 			{
 				act("&+LYour stiletto &+Wglows &+Lwith power as it &+wdevours &+Lanother &+Wsoul!&n",
 				    FALSE, ch, 0, 0, TO_CHAR);

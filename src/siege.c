@@ -1345,7 +1345,7 @@ void check_deploy(struct zone_data *zone)
 			 "Mob: %d '%s': Current load: %d, Max load: %d in room: %d.",
 			 town->guard_vnum, mob_index[rnum].desc2, mob_index[rnum].number,
 			 mob_index[rnum].limit, town->guard_load_room);
-		wizlog(60, buf);
+		wizlog(60, "%s", buf);
 
 		// Deploy guards if necessary..
 		for (i = mob_index[rnum].number; i < mob_index[rnum].limit; i++)
@@ -1363,7 +1363,7 @@ void check_deploy(struct zone_data *zone)
 			 "Mob: %d '%s': Current load: %d, Max load: %d in room: %d.",
 			 town->cavalry_vnum, mob_index[rnum].desc2, mob_index[rnum].number,
 			 mob_index[rnum].limit, town->cavalry_load_room);
-		wizlog(60, buf);
+		wizlog(60, "%s", buf);
 
 		// Deploy cavalry if necessary..
 		for (i = mob_index[rnum].number; i < mob_index[rnum].limit; i++)
@@ -1744,12 +1744,17 @@ void remove_siege(P_obj siege)
 {
 	P_siege sieges = siege_objects;
 	P_siege siege2;
+	if (!sieges)
+	{
+		logit(LOG_DEBUG, "remove_siege: siege list is empty!");
+		return;
+	}
 
 	if (sieges->obj == siege)
 	{
 		siege_objects = siege_objects->next_siege;
 		sieges->next_siege = NULL;
-		free(sieges);
+		delete sieges;
 		return;
 	}
 	while (sieges->next_siege)
@@ -1760,7 +1765,7 @@ void remove_siege(P_obj siege)
 			sieges->next_siege = siege2->next_siege;
 			siege2->next_siege = NULL;
 			siege2->obj = NULL;
-			free(siege2);
+			delete siege2;
 			return;
 		}
 		sieges = sieges->next_siege;

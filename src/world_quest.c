@@ -952,7 +952,7 @@ int getItemFromZone(int zone)
 				/* Debugging code.
 				snprintf(buf, MAX_STRING_LENGTH, "%6d  %5d  %-s\n", obj_index[i].virtual_number, obj_index[i].number - 1,
 				  (t_obj->short_description) ? t_obj->short_description : "None");
-				wizlog(56, buf);
+				wizlog(56, "%s", buf);
 				*/
 
 				valid_items[list++] = obj_index[i].virtual_number;

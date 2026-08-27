@@ -902,7 +902,7 @@ void game_loop(int port, int sslport)
 	avail_descs = MAX_CONNECTIONS;
 
 	snprintf(buf, MAX_STRING_LENGTH, "avail_descs set to: %d", avail_descs);
-	logit(LOG_STATUS, buf);
+	logit(LOG_STATUS, "%s", buf);
 
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGUSR1);

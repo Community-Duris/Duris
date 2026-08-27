@@ -20,6 +20,9 @@ int main(void)
 	char exact[16];
 	char overlap[8] = "abc";
 	char truncated[5];
+	char substituted[32];
+	char hostile[32];
+	const char *values[] = {"Alice", "10 gold"};
 
 	if (checked_snprintf(exact, sizeof exact, "%s-%d", "value", 7) != 7 ||
 	    strcmp(exact, "value-7") != 0)
@@ -30,6 +33,13 @@ int main(void)
 	if (checked_snprintf(truncated, sizeof truncated, "%s", "abcdef") != 6 ||
 	    strcmp(truncated, "abcd") != 0)
 		return 3;
+	if (checked_substitute_strings(substituted, sizeof substituted, "%s pays %s (100%%)",
+				       values, 2) != 25 ||
+	    strcmp(substituted, "Alice pays 10 gold (100%)") != 0)
+		return 4;
+	if (checked_substitute_strings(hostile, sizeof hostile, "%s says %n %x", values, 1) != 16 ||
+	    strcmp(hostile, "Alice says %n %x") != 0)
+		return 5;
 	return 0;
 }
 """

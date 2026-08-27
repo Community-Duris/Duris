@@ -398,21 +398,23 @@ bool Guildhall::valid()
 
 		if (!room)
 		{
-			logit(LOG_GUILDHALLS, "Guildhall::valid(%d): invalid room pointer!");
+			logit(LOG_GUILDHALLS, "Guildhall::valid(%d): invalid room pointer!",
+			      this->id);
 			return FALSE;
 		}
 
 		if (!room->valid())
 		{
-			logit(LOG_GUILDHALLS, "Guildhall::valid(%d): invalid room! (%d)", room->id);
+			logit(LOG_GUILDHALLS, "Guildhall::valid(%d): invalid room! (%d)", this->id,
+			      room->id);
 			return FALSE;
 		}
 	}
 
 	if (this->rooms.size() > this->max_rooms)
 	{
-		logit(LOG_GUILDHALLS, "Guildhall::init(%d): too many rooms! (%d, max %d)", this->id,
-		      this->rooms.size(), this->max_rooms);
+		logit(LOG_GUILDHALLS, "Guildhall::init(%d): too many rooms! (%zu, max %d)",
+		      this->id, this->rooms.size(), this->max_rooms);
 		return FALSE;
 	}
 

@@ -2771,7 +2771,7 @@ void die(P_char ch, P_char killer)
 			{
 				snprintf(buf, MAX_STRING_LENGTH, "%s %d", ch->player.name,
 					 GET_RNUM(ch));
-				logit(LOG_STATUS, buf);
+				logit(LOG_STATUS, "%s", buf);
 				logit(LOG_STATUS, "No special function for ACT_SPEC_DIE");
 				REMOVE_BIT(ch->specials.act, ACT_SPEC_DIE);
 				corpse = make_corpse(ch, loss);
@@ -3747,7 +3747,8 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 				act("Before you can recover $n steps forward and slams $s fist into your face!",
 				    TRUE, ch, 0, victim, TO_VICT);
 				victim_dead = damage(ch, victim,
-						     GET_DAMROLL(ch) * ch->specials.damage_mod,
+						     static_cast<double>(GET_DAMROLL(ch)) *
+							     ch->specials.damage_mod,
 						     SKILL_FOLLOWUP_RIPOSTE);
 
 				if (!victim_dead && skl / 3 > number(0, 100))
@@ -3770,7 +3771,9 @@ int try_riposte(P_char ch, P_char victim, P_obj wpn)
 			    TRUE, ch, 0, victim, TO_VICT);
 			act("Spinning around you slam your elbow into $N's throat.", TRUE, ch, 0,
 			    victim, TO_CHAR);
-			victim_dead = damage(ch, victim, GET_DAMROLL(ch) * ch->specials.damage_mod,
+			victim_dead = damage(ch, victim,
+					     static_cast<double>(GET_DAMROLL(ch)) *
+						     ch->specials.damage_mod,
 					     SKILL_FOLLOWUP_RIPOSTE);
 
 			if (!victim_dead && skl / 3 > number(0, 100))
@@ -4323,8 +4326,9 @@ int spell_damage(P_char ch, P_char victim, double dam, int type, uint flags,
 		    TO_VICT);
 		act("$n's&+L spell is absorbed by&n $N's &+Rhellfire!", FALSE, ch, 0, victim,
 		    TO_NOTVICT);
-		vamp(victim, dam * get_property("vamping.hellfire.absorb", 0.14),
-		     GET_MAX_HIT(victim) * VAMPPERCENT(victim));
+		vamp(victim,
+		     static_cast<double>(dam) * get_property("vamping.hellfire.absorb", 0.14),
+		     static_cast<double>(GET_MAX_HIT(victim)) * VAMPPERCENT(victim));
 		return DAM_NONEDEAD;
 	}
 
@@ -5172,8 +5176,9 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 		{
 			if (mount == victim)
 			{
-				vamped = vamp(ch, dam * dam_factor[DF_TOUCHVAMP],
-					      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+				vamped = vamp(
+					ch, static_cast<double>(dam) * dam_factor[DF_TOUCHVAMP],
+					static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 
 				if (vamped)
 				{
@@ -5189,8 +5194,8 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	if ((flags & PHSDAM_ARROW) && IS_AFFECTED2(ch, AFF2_VAMPIRIC_TOUCH) && IS_PC(ch) &&
 	    !IS_AFFECTED4(ch, AFF4_BATTLE_ECSTASY) && dam >= 4)
 	{
-		vamped =
-			vamp(ch, dam * dam_factor[DF_ARROWVAMP], GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+		vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_ARROWVAMP],
+			      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 	}
 
 	// Physical type actions that vamp
@@ -5202,60 +5207,60 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 		// Illithids get full regular touch vamp (since they have lousy str).
 		if (IS_ILLITHID(ch))
 		{
-			vamped = vamp(ch, dam * dam_factor[DF_TOUCHVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_TOUCHVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		// The class order makes a difference to multiclass chars.
 		else if (GET_CLASS(ch, CLASS_ANTIPALADIN))
 		{
-			vamped = vamp(ch, dam * dam_factor[DF_ANTIPALADINVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_ANTIPALADINVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		else if (GET_CLASS(ch, CLASS_MONK))
 		{
-			vamped = vamp(ch, dam * dam_factor[DF_MONKVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_MONKVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		else if (GET_CLASS(ch, CLASS_MERCENARY))
 		{
-			vamped = vamp(ch, dam * dam_factor[DF_MERCENARYVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_MERCENARYVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		else if (GET_CLASS(ch, CLASS_WARRIOR))
 		{
-			vamped = vamp(ch, dam * dam_factor[DF_WARRIORVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_WARRIORVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		else if (GET_CLASS(ch, CLASS_BERSERKER))
 		{
-			vamped = vamp(ch, dam * dam_factor[DF_BERSERKERVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_BERSERKERVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		else if (GET_CLASS(ch, CLASS_ROGUE))
 		{
-			vamped = vamp(ch, dam * dam_factor[DF_ROGUEVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_ROGUEVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		else if (GET_CLASS(ch, CLASS_PALADIN))
 		{
-			vamped = vamp(ch, dam * dam_factor[DF_PALADINVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_PALADINVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		else if (GET_CLASS(ch, CLASS_RANGER))
 		{
-			vamped = vamp(ch, dam * dam_factor[DF_RANGERVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_RANGERVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		else if (GET_CLASS(ch, CLASS_AVENGER) || GET_CLASS(ch, CLASS_DREADLORD))
 		{
-			vamped = vamp(ch, dam * dam_factor[DF_DLORDAVGRVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_DLORDAVGRVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		else
 		{
 			// vamped = vamp(ch, dam * dam_factor[DF_TOUCHVAMP], GET_MAX_HIT(ch) * 1.10); //113?
-			vamped = vamp(ch, dam * dam_factor[DF_TOUCHVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_TOUCHVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 	}
 
@@ -5264,8 +5269,8 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	if ((flags & PHSDAM_TOUCH) && IS_AFFECTED2(ch, AFF2_VAMPIRIC_TOUCH) && IS_NPC(ch) &&
 	    !IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM))
 	{
-		vamped =
-			vamp(ch, dam * dam_factor[DF_TOUCHVAMP], GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+		vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_TOUCHVAMP],
+			      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 	}
 	// end TOUCHVAMP
 
@@ -5280,13 +5285,15 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	{
 		if (IS_PC(ch))
 		{
-			temp_dam = dam * get_property("vamping.self.battleEcstasy", 0.150);
-			vamp(ch, temp_dam, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			temp_dam = static_cast<double>(dam) *
+				   get_property("vamping.self.battleEcstasy", 0.150);
+			vamp(ch, temp_dam, static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		else
 		{
-			temp_dam = dam * get_property("vamping.self.NPCbattleEcstasy", 0.050);
-			vamp(ch, temp_dam, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			temp_dam = static_cast<double>(dam) *
+				   get_property("vamping.self.NPCbattleEcstasy", 0.050);
+			vamp(ch, temp_dam, static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 	}
 
@@ -5303,8 +5310,11 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 				    tch->in_room == ch->in_room && tch != ch)
 				{
 					// Have to use BOUNDEDF here for floats.. *sigh*
-					vamp(tch, dam * get_property("vamping.battleEcstasy", .140),
-					     VAMPPERCENT(tch) * GET_MAX_HIT(tch));
+					vamp(tch,
+					     static_cast<double>(dam) *
+						     get_property("vamping.battleEcstasy", .140),
+					     VAMPPERCENT(tch) *
+						     static_cast<double>(GET_MAX_HIT(tch)));
 				}
 			}
 		}
@@ -5320,7 +5330,9 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 				    IS_SET((tch)->specials.affected_by4, AFF4_BATTLE_ECSTASY) &&
 				    tch->in_room == ch->in_room && tch != ch)
 				{
-					vamp(tch, temp_dam, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+					vamp(tch, temp_dam,
+					     static_cast<double>(GET_MAX_HIT(ch)) *
+						     VAMPPERCENT(ch));
 				}
 			}
 		}
@@ -5329,8 +5341,8 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	if (!vamped && IS_AFFECTED2(ch, AFF2_VAMPIRIC_TOUCH) && (flags & RAWDAM_TRANCEVAMP) &&
 	    (IS_AFFECTED4(ch, AFF4_VAMPIRE_FORM)))
 	{
-		vamped = vamp(ch, dam * dam_factor[DF_TRANCEVAMP],
-			      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+		vamped = vamp(ch, static_cast<double>(dam) * dam_factor[DF_TRANCEVAMP],
+			      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 	}
 
 	// hellfire vamp
@@ -5345,8 +5357,8 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 			wdam = MIN(dam, dice(weapon->value[1], MAX(1, weapon->value[2])));
 		if (wdam)
 		{
-			vamped = vamp(ch, wdam * dam_factor[DF_HFIREVAMP],
-				      GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			vamped = vamp(ch, static_cast<double>(wdam) * dam_factor[DF_HFIREVAMP],
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 	}
 
@@ -5354,7 +5366,7 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	if (!vamped && (flags & PHSDAM_BATTLETIDE) && IS_AFFECTED4(ch, AFF4_BATTLETIDE) &&
 	    !affected_by_spell(ch, SPELL_PLAGUE))
 	{
-		bt_gain = dam * dam_factor[DF_BATTLETIDEVAMP];
+		bt_gain = static_cast<double>(dam) * dam_factor[DF_BATTLETIDEVAMP];
 
 		for (group = ch->group; group; group = group->next)
 		{
@@ -5370,18 +5382,20 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	{
 		if (IS_DRACOLICH(ch))
 		{
-			fhits = dam * dam_factor[DF_DRACOLICHVAMP];
-			vamped = vamp(ch, fhits, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			fhits = static_cast<double>(dam) * dam_factor[DF_DRACOLICHVAMP];
+			vamped = vamp(ch, fhits,
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		if (IS_NPC(ch))
 		{
-			fhits = dam * dam_factor[DF_NPCVAMP];
-			vamped = vamp(ch, fhits, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+			fhits = static_cast<double>(dam) * dam_factor[DF_NPCVAMP];
+			vamped = vamp(ch, fhits,
+				      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		}
 		// 10 dam * .3 = 3 points of vamp minimum. 'cause I said so.
 		else if (dam >= 12 && IS_PC(ch))
 		{
-			fhits = dam * dam_factor[DF_UNDEADVAMP];
+			fhits = static_cast<double>(dam) * dam_factor[DF_UNDEADVAMP];
 			fcap = GET_MAX_HIT(ch);
 			// Liches vamp from spells.
 			if (flags & SPLDAM_SPELL && GET_RACE(ch) == RACE_LICH)
@@ -5395,7 +5409,8 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	if (!vamped && ch->equipment[WIELD] &&
 	    (obj_index[ch->equipment[WIELD]->R_num].virtual_number == HOA_ILLESARUS_VNUM))
 	{
-		vamped = vamp(ch, MIN(dam, number(2, 7)), GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+		vamped = vamp(ch, MIN(dam, number(2, 7)),
+			      static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 	}
 
 	if ((dam >= 2 && !IS_AFFECTED4(ch, AFF4_BATTLE_ECSTASY) &&
@@ -5408,7 +5423,7 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 	    || (EVIL_RACE(victim) && !EVIL_RACE(ch))))
 	*/
 	{
-		sac_gain = dam * get_property("vamping.holySacrifice", 0.035);
+		sac_gain = static_cast<double>(dam) * get_property("vamping.holySacrifice", 0.035);
 		for (group = victim->group; group; group = group->next)
 		{
 			tch = group->ch;
@@ -6569,8 +6584,8 @@ int required_weapon_skill(P_obj wpn)
 				 wpn->short_description, OBJ_VNUM(wpn),
 				 (wpn->value[0] == WEAPON_DAGGER) ? "Dagger" : "Horn",
 				 wpn->value[0]);
-			debug(Gbuf);
-			logit(LOG_OBJ, Gbuf);
+			debug("%s", Gbuf);
+			logit(LOG_OBJ, "%s", Gbuf);
 		}
 		return IS_SET(wpn->extra_flags, ITEM_TWOHANDS) ? 0 : SKILL_1H_PIERCING;
 		break;
@@ -6988,7 +7003,7 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 		    victim, TO_VICT);
 		damage(ch, victim, to_hit, SPELL_VAMPIRIC_TOUCH);
 		affect_from_char(ch, SPELL_VAMPIRIC_TOUCH);
-		vamp(ch, to_hit, GET_MAX_HIT(ch) * VAMPPERCENT(ch));
+		vamp(ch, to_hit, static_cast<double>(GET_MAX_HIT(ch)) * VAMPPERCENT(ch));
 		return FALSE;
 	}
 
@@ -7121,12 +7136,12 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 		{
 			if (IS_PC(ch) || IS_PC_PET(ch))
 			{
-				dam = dam_factor[DF_TWOHANDED_MODIFIER] *
+				dam = static_cast<double>(dam_factor[DF_TWOHANDED_MODIFIER]) *
 				      dice(weapon->value[1], weapon->value[2]);
 			}
 			else
 			{
-				dam += dam_factor[DF_TWOHANDED_MODIFIER] *
+				dam += static_cast<double>(dam_factor[DF_TWOHANDED_MODIFIER]) *
 				       dice(weapon->value[1], weapon->value[2]);
 			}
 		}
@@ -7252,7 +7267,8 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 	{
 		if (IS_PC(ch))
 		{
-			dam += get_property("damage.modifier.vicious.strike", 1.050) *
+			dam += static_cast<double>(
+				       get_property("damage.modifier.vicious.strike", 1.050)) *
 			       GET_CHAR_SKILL(ch, SKILL_VICIOUS_STRIKE);
 		}
 		else if (IS_ELITE(ch))

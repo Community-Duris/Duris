@@ -348,7 +348,7 @@ bool found_asc(P_char god, P_char leader, const char *bits, char *asc_name)
 		asc_name[ASC_MAX_STR - 1] = '\0';
 		strcat(buf, asc_name);
 		strcat(buf, "'.");
-		debug(buf);
+		debug("%s", buf);
 	}
 
 	/* bits string interpreter */
@@ -1394,7 +1394,7 @@ void do_supervise(P_char god, char *argument, int /*cmd*/)
 		{
 			guild->set_prestige(atoi(fourth));
 			guild->save();
-			send_to_char_f(god, "You set %s's prestige points to %d.\n",
+			send_to_char_f(god, "You set %s's prestige points to %lu.\n",
 				       guild->get_name().c_str(), guild->get_prestige());
 			return;
 		}
@@ -1402,7 +1402,7 @@ void do_supervise(P_char god, char *argument, int /*cmd*/)
 		{
 			guild->set_construction(atoi(fourth));
 			guild->save();
-			send_to_char_f(god, "You set %s's construction points to %d.\n",
+			send_to_char_f(god, "You set %s's construction points to %lu.\n",
 				       guild->get_name().c_str(), guild->get_construction());
 			return;
 		}
@@ -2451,7 +2451,7 @@ void Guild::ledger(P_char member, char *args)
 		args++;
 	}
 
-	if (!args || is_abbrev(args, "player"))
+	if (is_abbrev(args, "player"))
 	{
 		if (!qry("SELECT transaction_info FROM guild_transactions WHERE soc_id = %d AND transaction_info NOT LIKE '%%System withdrew%%' ORDER BY date DESC LIMIT 100",
 			 id_number))

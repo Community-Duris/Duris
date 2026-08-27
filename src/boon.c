@@ -3273,7 +3273,7 @@ void check_boon_completion_legacy(P_char ch, P_char victim, double data, int opt
 	if (!qry(dbqry))
 	{
 		debug("check_boon_completion(): can't read from db");
-		debug(dbqry);
+		debug("%s", dbqry);
 		return;
 	}
 

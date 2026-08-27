@@ -660,7 +660,7 @@ void parse_action(int command, char *string, struct descriptor_data *d)
 				strcat(buf, *d->str);
 			*s = temp;
 			strcat(buf, buf2);
-			if (s && (*s != '\0'))
+			if (*s != '\0')
 				strcat(buf, s);
 			RECREATE(*d->str, char, strlen(buf) + 3);
 
@@ -936,7 +936,7 @@ void string_add(struct descriptor_data *d, char *str)
 			SEND_TO_Q(MENU, d);
 			d->connected = CON_MAIN_MENU;
 		}
-		else if ((d->str) && (*d->str) && (**d->str == '\0'))
+		else if (*d->str && **d->str == '\0')
 		{
 			FREE(*d->str);
 			*d->str = NULL;
@@ -1381,7 +1381,7 @@ void do_rename(P_char ch, char *arg, int /*cmd*/)
 	{
 		// get name of char whos name/ship will be renamed
 		arg = one_argument(arg, who_to_rename);
-		if (!*who_to_rename || !*arg || !arg)
+		if (!*who_to_rename || !*arg)
 		{
 			has_wrong_arg = TRUE;
 		}

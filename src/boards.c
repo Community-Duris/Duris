@@ -148,7 +148,7 @@ void initialize_boards(void)
 		{
 			snprintf(buf, 256, " Fatal board error: board vnum %d does not exist!",
 				 BOARD_VNUM(i));
-			logit(LOG_BOARD, buf);
+			logit(LOG_BOARD, "%s", buf);
 			continue;
 		}
 		num_of_msgs[i] = 0;
