@@ -1,6 +1,6 @@
 # PRD Phase 02: Transactional Gameplay Domains
 
-**Status**: Not Started
+**Status**: In Progress
 **Sessions**: 12 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
@@ -26,9 +26,9 @@ auctions because those paths have different custody and rollback boundaries. Lat
 sessions batch PvP, artifact, guild, boon, reward, and zone outcomes before removing
 unrestricted raw SQL messages from durable queues.
 
-This is an advance plan. Phase 00 remains active with 0 of 10 sessions completed, and
-Phase 01 remains future work with 0 of 8 sessions completed. No Phase 02 session is
-executable until both earlier phases and their transition evidence are complete.
+Phase 00 and Phase 01 are complete and audited. Their correctness, trust-boundary,
+immutable snapshot, revision, journal, exact-ACK, and bounded recovery contracts are
+prerequisites for every Phase 02 session.
 
 ---
 
@@ -91,8 +91,8 @@ None yet.
 
 ## Prerequisites
 
-- All Phase 00 and Phase 01 sessions are completed and validated; the analyzer
-  currently reports Phase 00 as active with 0 of 10 sessions completed.
+- All Phase 00 and Phase 01 sessions are completed, validated, and reconciled by their
+  phase audits.
 - Phase 01 provides monotonic player and inventory revisions, immutable capture,
   bounded keyed workers, exact main-thread ACKs, typed journal replay, and bounded
   shutdown spill.
