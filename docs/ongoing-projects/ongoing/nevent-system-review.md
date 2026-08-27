@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation complete; post-completion audit validation pending
+Status: Implementation complete; independent completion audit complete
 
-Last implementation update: 2026-08-28 01:13 IDT
+Last implementation update: 2026-08-28 01:15 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -28,7 +28,7 @@ contracts, formatting, and the server build pass.
 | 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Complete | Typed rejection/success/replace and global/owner chronology in the ASan/UBSan scheduler harness; 225 Python regressions; native signal test; format check; server build |
 | 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | Complete | ASan/UBSan owner-link, corruption, thread-boundary, unique-key, cadence, retry, continuation, missed-run, conditional-enable, and watchdog cases; bounded-maintenance contracts; 226 Python regressions; native signal test; format check; server build |
 | 10 | NEV-21 documentation and legacy cleanup | Complete | Current-reference and retired-interface source contract; 227 Python regressions; native signal test; format check; strict server build |
-| 11 | Independent completion audit: rejected callers, alternate ship teardown, final legacy and durability closure | In progress | Focused ASan/UBSan runtime and source contracts, formatting, strict server build, and security gate pass; full gate exposed and is validating an area-editor C++20 flag repair |
+| 11 | Independent completion audit: rejected callers, alternate ship teardown, final legacy and durability closure | Complete | Focused ASan/UBSan runtime/source contracts; forced C++20 editor build; security and format checks; server/editor/tool builds; 227 Python regressions; native signal test |
 
 Checkpoint 1 replaced the fixed 6,000-entry array and sentinel scan with a
 dynamically sized, validated address-to-name registry. Duplicate addresses are
@@ -212,7 +212,9 @@ contract, formatting, strict-build, and security checks. The full maintained
 regression gate then exposed that the area editor compiled shared server headers
 without the server's C++20 language flag. Its two compilation paths now use
 `-std=c++20`, with a root-build contract preventing drift. A clean forced editor
-build passes; the restarted full gate remains before this checkpoint is
+build passes. The restarted maintained gate builds the server, editor, and area
+tools, confirms world data, and passes all 227 Python regressions plus the native
+signal-handler test. This checkpoint and the independent completion audit are
 complete.
 
 ### Completion evidence matrix
@@ -1288,6 +1290,14 @@ Checkpoint 10 added
 current reference contract and rejects the retired type, macro, wrapper, table,
 and factory surfaces. The complete 227-test Python suite, native signal test,
 strict server build, and formatting check passed.
+Checkpoint 11 re-ran the scheduler, cancellation, typed-payload, ship-volley,
+and periodic real-code harnesses under ASan/UBSan, together with the focused
+maintenance, command-gate, source-contract, format, strict-server-build, and
+security gates. The first maintained full-gate run exposed a missing C++20 flag
+in both area-editor compilation paths. After aligning those paths with the
+server and adding a root-build contract, a forced editor rebuild passed and
+`make test-all` built the server, editor, and area tools, confirmed world data,
+and passed all 227 Python regressions plus the native signal-handler test.
 
 `make -C src -j2` completed and linked `bin/server/dms_new` successfully. The
 built binary is a 64-bit PIE. A symbol/data probe found 6,220 text symbols in the
@@ -1296,7 +1306,7 @@ against current artifacts.
 
 No live server or database was used. No migrations, production operations, or
 game-data mutations were performed. Implementation and verification are current
-through the final checkpoint 10 in the ledger above; every recorded finding is
+through the final checkpoint 11 in the ledger above; every recorded finding is
 resolved.
 
 ## Suggested implementation-session boundaries
