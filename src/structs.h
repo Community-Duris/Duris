@@ -2043,6 +2043,7 @@ struct nevent_data
 	unsigned int deferral_count;
 	unsigned int lifecycle_state;
 	unsigned long long due_tick; // Absolute scheduler tick when this event becomes eligible.
+	unsigned long long deferred_cost_us; // Cost estimate registered with catch-up debt.
 	unsigned long long sequence;
 	struct char_link_data *cld;
 	P_nevent next_char_nev;

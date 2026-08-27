@@ -41,6 +41,8 @@ static std::vector<int> fired_this_tick;
 static bool oracle_enabled = false;
 static int failure_code = 0;
 static unsigned long long fake_clock_ns = 0;
+static int unbounded_warnings = 0;
+static int invalid_config_warnings = 0;
 
 struct oracle_record
 {
@@ -83,8 +85,12 @@ void debug(const char *, ...)
 {
 }
 
-void logit(const char *, const char *, ...)
+void logit(const char *, const char *format, ...)
 {
+	if (format && std::strstr(format, "intentionally unbounded"))
+		unbounded_warnings++;
+	if (format && std::strstr(format, "allowed 0.."))
+		invalid_config_warnings++;
 }
 
 void statuslog(int, const char *, ...)
@@ -151,10 +157,8 @@ void release_mob_mem(P_char, P_char, P_obj, void *)
 DEFINE_LABEL_CALLBACK(event_hit_regen)
 DEFINE_LABEL_CALLBACK(event_mana_regen)
 DEFINE_LABEL_CALLBACK(event_move_regen)
-DEFINE_LABEL_CALLBACK(event_ward_regen)
 DEFINE_LABEL_CALLBACK(event_spellcast)
 DEFINE_LABEL_CALLBACK(event_memorize)
-DEFINE_LABEL_CALLBACK(event_wait)
 DEFINE_LABEL_CALLBACK(event_balance_affects)
 DEFINE_LABEL_CALLBACK(event_mob_mundane)
 DEFINE_LABEL_CALLBACK(event_reset_zone)
@@ -177,9 +181,19 @@ static void record_callback(P_char, P_char, P_obj, void *data)
 {
 	auto *record = static_cast<record_payload *>(data);
 	require(record != nullptr, 20);
-	require(ne_event_tick == record->expected_tick, 21);
+	require(record->expected_tick == ULLONG_MAX || ne_event_tick == record->expected_tick, 21);
 	fired.emplace_back(record->id, ne_event_tick);
 	fired_this_tick.push_back(record->id);
+}
+
+void event_wait(P_char ch, P_char victim, P_obj obj, void *data)
+{
+	record_callback(ch, victim, obj, data);
+}
+
+void event_ward_regen(P_char ch, P_char victim, P_obj obj, void *data)
+{
+	record_callback(ch, victim, obj, data);
 }
 
 static void add_record(int id, int delay, unsigned long long expected_tick)
@@ -188,6 +202,12 @@ static void add_record(int id, int delay, unsigned long long expected_tick)
 	add_event(record_callback, delay, nullptr, nullptr, nullptr, 0, &record, sizeof(record));
 	if (oracle_enabled)
 		oracle.push({ expected_tick, id });
+}
+
+static void add_player_record(P_char player, event_func_type callback, int id, int delay = 0)
+{
+	record_payload record = { id, ULLONG_MAX };
+	add_event(callback, delay, player, nullptr, nullptr, 0, &record, sizeof(record));
 }
 
 static void child_callback(P_char, P_char, P_obj, void *data)
@@ -249,6 +269,8 @@ static void reset_scheduler()
 	nevent_catchup_quota = 0;
 	nevent_catchup_extension_us = 0;
 	nevent_catchup_extra_callbacks = 0;
+	nevent_catchup_debt_estimated_us = 0;
+	nevent_deferred_due_counts.clear();
 	nevent_pending_cancellations.clear();
 	pulse = 0;
 	after_events_call = FALSE;
@@ -257,6 +279,8 @@ static void reset_scheduler()
 	fired_this_tick.clear();
 	oracle = {};
 	oracle_enabled = false;
+	unbounded_warnings = 0;
+	invalid_config_warnings = 0;
 }
 
 static void run_one_heartbeat()
@@ -358,8 +382,7 @@ static void test_current_bucket_positions()
 			if (position == target_position)
 				add_record(2000 + position, 0, 0);
 			else
-				add_record(2100 + position, position == 0 ? 300 : 600,
-					   position == 0 ? 300 : 600);
+				add_event(noop_callback, 0, nullptr, nullptr, nullptr, 0, nullptr, 0);
 		}
 		P_nevent cursor = ne_schedule[0];
 		for (int position = 0; position < target_position; ++position)
@@ -369,7 +392,6 @@ static void test_current_bucket_positions()
 			81);
 		run_one_heartbeat();
 		require(fired.size() == 1 && fired[0].second == 0, 82);
-		cancel_all_events();
 		require_balanced(83);
 	}
 
@@ -439,6 +461,106 @@ static void test_reschedule_apis()
 	nevent_advance_tick();
 	run_one_heartbeat();
 	require(fired.size() == 1 && fired[0].second == 1, 108);
+}
+
+static void test_priority_order(bool enabled)
+{
+	reset_scheduler();
+	char_data player = {};
+	player.specials.position = STAT_NORMAL | POS_STANDING;
+	add_record(6000, 0, ULLONG_MAX);
+	add_player_record(&player, event_wait, 6001);
+	add_player_record(&player, event_ward_regen, 6002);
+	ne_events();
+	const std::vector<int> expected =
+		enabled ? std::vector<int>{ 6001, 6002, 6000 } :
+			  std::vector<int>{ 6000, 6001, 6002 };
+	require(fired_this_tick == expected, 110);
+	require(player.nevents == nullptr, 111);
+	nevent_advance_tick();
+	require_balanced(112);
+}
+
+static void test_bounded_normal_aging()
+{
+	reset_scheduler();
+	char_data player = {};
+	player.specials.position = STAT_NORMAL | POS_STANDING;
+	add_record(7000, 0, ULLONG_MAX);
+	for (int id = 7001; id <= 7004; ++id)
+		add_player_record(&player, event_wait, id);
+	for (int tick = 0; tick <= static_cast<int>(NEVENT_NORMAL_AGING_DEFERRALS); ++tick)
+		run_one_heartbeat();
+	auto normal = std::find(fired.begin(), fired.end(),
+				std::pair<int, unsigned long long>{ 7000,
+								       NEVENT_NORMAL_AGING_DEFERRALS });
+	require(normal != fired.end(), 115);
+	cancel_all_events();
+	require_balanced(116);
+
+	reset_scheduler();
+	player = {};
+	player.specials.position = STAT_NORMAL | POS_STANDING;
+	add_record(7100, 0, ULLONG_MAX);
+	add_player_record(&player, event_wait, 7101);
+	run_one_heartbeat();
+	add_player_record(&player, event_wait, 7102);
+	run_one_heartbeat();
+	normal = std::find(fired.begin(), fired.end(),
+			   std::pair<int, unsigned long long>{ 7100, 1 });
+	require(normal != fired.end(), 117);
+	cancel_all_events();
+	require_balanced(118);
+}
+
+static void test_catchup_convergence()
+{
+	reset_scheduler();
+	nevent_avg_callback_us = 100;
+	for (int id = 8000; id < 8006; ++id)
+		add_record(id, 0, ULLONG_MAX);
+	ne_events();
+	require(nevent_catchup_debt == 4, 140);
+	require(nevent_catchup_debt_estimated_us ==
+			static_cast<unsigned long long>(4 * nevent_avg_callback_us),
+		141);
+	require(nevent_oldest_deferred_due_tick() == 0, 142);
+	nevent_advance_tick();
+
+	int next_id = 8100;
+	int repayment_ticks = 0;
+	while (nevent_catchup_debt > 0)
+	{
+		require(repayment_ticks++ < 8, 143);
+		const long debt_before = nevent_catchup_debt;
+		add_record(next_id++, 0, ULLONG_MAX);
+		add_record(next_id++, 0, ULLONG_MAX);
+		ne_events();
+		require(nevent_catchup_debt < debt_before, 144);
+		require(nevent_catchup_extension_us == 0, 145);
+		nevent_advance_tick();
+	}
+	require(repayment_ticks <= NEVENT_CATCHUP_WINDOW_PULSES, 146);
+	require(nevent_catchup_debt_estimated_us == 0 &&
+			nevent_deferred_due_counts.empty(),
+		147);
+	require_balanced(148);
+}
+
+static void test_unbounded_warning()
+{
+	reset_scheduler();
+	ne_events();
+	nevent_advance_tick();
+	ne_events();
+	nevent_advance_tick();
+	require(unbounded_warnings == 1, 150);
+}
+
+static void test_invalid_config_fallback()
+{
+	require(nevent_budget_usec() == NEVENT_BUDGET_USEC_DEFAULT, 155);
+	require(invalid_config_warnings == 1, 156);
 }
 
 static unsigned int random_state = 0x6d2b79f5U;
@@ -523,18 +645,32 @@ static void test_randomized_oracle()
 	require_balanced(130);
 }
 
-int main()
+int main(int argc, char **argv)
 {
-	setenv("DURIS_NEVENT_BUDGET_USEC", "0", 1);
-	setenv("DURIS_NEVENT_MAX_CALLBACKS", "0", 1);
-	setenv("DURIS_NEVENT_ANALYTICS", "0", 1);
-	setenv("DURIS_NEVENT_PLAYER_PRIORITY", "0", 1);
-	test_boundary_matrix();
-	test_current_bucket_positions();
-	test_shared_bucket_revolutions();
-	test_reschedule_apis();
-	test_randomized_oracle();
-	std::puts("nevent absolute-due scheduler runtime matrix passed");
+	require(argc == 2, 160);
+	if (std::strcmp(argv[1], "common") == 0)
+	{
+		test_boundary_matrix();
+		test_current_bucket_positions();
+		test_shared_bucket_revolutions();
+		test_reschedule_apis();
+		test_randomized_oracle();
+	}
+	else if (std::strcmp(argv[1], "priority-off") == 0)
+		test_priority_order(false);
+	else if (std::strcmp(argv[1], "priority-on") == 0)
+		test_priority_order(true);
+	else if (std::strcmp(argv[1], "aging") == 0)
+		test_bounded_normal_aging();
+	else if (std::strcmp(argv[1], "catchup") == 0)
+		test_catchup_convergence();
+	else if (std::strcmp(argv[1], "unbounded") == 0)
+		test_unbounded_warning();
+	else if (std::strcmp(argv[1], "invalid-config") == 0)
+		test_invalid_config_fallback();
+	else
+		require(false, 161);
+	std::printf("nevent scheduler runtime mode passed: %s\n", argv[1]);
 	return failure_code;
 }
 '''
@@ -561,10 +697,40 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-scheduler-") as directory:
         ],
         check=True,
     )
-    environment = os.environ.copy()
-    environment["ASAN_OPTIONS"] = "detect_leaks=1:halt_on_error=1"
-    environment["UBSAN_OPTIONS"] = "halt_on_error=1:print_stacktrace=1"
-    subprocess.run([str(binary)], check=True, env=environment)
+    base_environment = os.environ.copy()
+    base_environment.update(
+        {
+            "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
+            "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
+            "DURIS_NEVENT_ANALYTICS": "0",
+            "DURIS_NEVENT_BUDGET_USEC": "0",
+            "DURIS_NEVENT_MAX_CALLBACKS": "0",
+            "DURIS_NEVENT_CATCHUP_MAX_EXTENSION_USEC": "0",
+            "DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS": "0",
+            "DURIS_NEVENT_PLAYER_PRIORITY": "0",
+        }
+    )
+
+    def run_mode(mode: str, **overrides: str) -> None:
+        environment = base_environment.copy()
+        environment.update(overrides)
+        subprocess.run([str(binary), mode], check=True, env=environment)
+
+    run_mode("common")
+    run_mode("priority-off")
+    run_mode("priority-on", DURIS_NEVENT_PLAYER_PRIORITY="1")
+    run_mode(
+        "aging",
+        DURIS_NEVENT_PLAYER_PRIORITY="1",
+        DURIS_NEVENT_MAX_CALLBACKS="1",
+    )
+    run_mode(
+        "catchup",
+        DURIS_NEVENT_MAX_CALLBACKS="2",
+        DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS="1",
+    )
+    run_mode("unbounded")
+    run_mode("invalid-config", DURIS_NEVENT_BUDGET_USEC="9" * 100)
 
 source = (SRC / "new_events.c").read_text(encoding="ascii")
 comm = (SRC / "comm.c").read_text(encoding="ascii")
@@ -572,6 +738,8 @@ assert "--(current_nevent->timer)" not in source
 assert "event->timer" not in source
 assert "current_nevent->due_tick > ne_event_tick" in source
 assert "pass_sequence = ne_event_sequence" in source
+assert "nevent_sorts_before" in source
+assert "NEVENT_NORMAL_AGING_DEFERRALS" in source
 assert "nevent_advance_tick();" in comm
 
-print("nevent scheduler runtime test passed under ASan/UBSan")
+print("nevent scheduler timing, priority, aging, and catch-up passed under ASan/UBSan")

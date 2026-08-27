@@ -8,12 +8,14 @@
  * ***************************************************************************
  */
 
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #include <sys/time.h>
 #include <time.h>
+#include <map>
 #include <vector>
 #ifndef _LINUX_SOURCE
 #include <sys/types.h>
@@ -42,13 +44,18 @@
 #define FUNCTION_NAMES_FILE "lib/misc/event_names"
 #define NEVENT_BUDGET_USEC_DEFAULT 25000L
 #define NEVENT_MAX_CALLBACKS_DEFAULT 4000L
+#define NEVENT_CONFIG_MAX_BUDGET_USEC 1000000L
+#define NEVENT_CONFIG_MAX_CALLBACKS 1000000L
+#define NEVENT_UNLIMITED 0L
 #define NEVENT_PRIORITY_NORMAL 0U
 #define NEVENT_PRIORITY_PLAYER 1U
+#define NEVENT_PRIORITY_AGED_NORMAL 2U
 #define NEVENT_LIFECYCLE_ACTIVE 1U
 #define NEVENT_LIFECYCLE_CANCEL_PENDING 2U
 #define NEVENT_LIFECYCLE_DESTROYING 3U
 #define NEVENT_LIFECYCLE_RELEASED 4U
-#define NEVENT_MAX_DEFERRALS 0U
+#define NEVENT_NORMAL_AGING_DEFERRALS 2U
+#define NEVENT_NORMAL_AGING_TICKS 2ULL
 #define NEVENT_CATCHUP_WINDOW_PULSES 4
 #define NEVENT_CATCHUP_MAX_EXTENSION_USEC_DEFAULT 5000L
 #define NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS_DEFAULT 4000L
@@ -92,6 +99,11 @@ struct nevent_analytics_data
 	unsigned long long peak_total_us_tick;
 	long budget_exhausted_pulses;
 	long callback_overflow;
+	long long lateness_on_time;
+	long long lateness_one_tick;
+	long long lateness_two_to_three;
+	long long lateness_four_to_fifteen;
+	long long lateness_sixteen_plus;
 	struct nevent_callback_analytics callbacks[NEVENT_ANALYTICS_CALLBACK_SLOTS];
 };
 
@@ -102,8 +114,11 @@ static long nevent_avg_callback_us = 50;
 static long nevent_catchup_quota = 0;
 static long nevent_catchup_extension_us = 0;
 static long nevent_catchup_extra_callbacks = 0;
+static unsigned long long nevent_catchup_debt_estimated_us = 0;
+static std::map<unsigned long long, long> nevent_deferred_due_counts;
 static std::vector<nevent_handle> nevent_pending_cancellations;
 
+static void nevent_register_deferred(P_nevent event);
 static void nevent_complete_deferred(P_nevent event);
 
 static void nevent_destroy_raw_payload(void *data)
@@ -160,7 +175,7 @@ extern void event_move_regen(P_char, P_char, P_obj, void *);
 extern void event_hit_regen(P_char, P_char, P_obj, void *);
 extern void event_ward_regen(P_char, P_char, P_obj, void *);
 extern void event_balance_affects(P_char, P_char, P_obj, void *);
-static long nevent_config_limit(const char *name, long fallback);
+static long nevent_config_limit(const char *name, long fallback, long maximum);
 
 static unsigned int nevent_bucket_for_tick(unsigned long long tick)
 {
@@ -206,127 +221,79 @@ static const char *nevent_callback_label(event_func_type func)
 
 static bool nevent_is_player_timed(event_func_type func, P_char ch)
 {
+	if (!ch)
+		return FALSE;
 	if (func == event_spellcast || func == event_memorize || func == event_balance_affects)
-		return ch != NULL;
+		return IS_PC(ch);
 	/* event_wait clears the player's command gate set by CharWait().  If it
 	 * misses its deadline, the player remains unable to issue commands after
 	 * the visible action (cast/flee/combat action) has completed. */
 	if (func == event_wait)
-		return ch != NULL && (IS_PC(ch) || (IS_NPC(ch) && GET_MASTER(ch) &&
-						    IS_AFFECTED5(GET_MASTER(ch), AFF5_ORDERING)));
-	return ch && IS_PC(ch) &&
-	       (func == event_mana_regen || func == event_move_regen || func == event_hit_regen);
+		return IS_PC(ch) || (IS_NPC(ch) && GET_MASTER(ch) &&
+				     IS_AFFECTED5(GET_MASTER(ch), AFF5_ORDERING));
+	return IS_PC(ch) && (func == event_mana_regen || func == event_move_regen ||
+			     func == event_hit_regen || func == event_ward_regen);
 }
 
 static unsigned int nevent_priority(event_func_type func, P_char ch)
 {
 	static long player_priority = -1;
 	if (player_priority < 0)
-		player_priority = nevent_config_limit("DURIS_NEVENT_PLAYER_PRIORITY", 1);
+		player_priority = nevent_config_limit("DURIS_NEVENT_PLAYER_PRIORITY", 1, 1);
 	if (player_priority > 0 && nevent_is_player_timed(func, ch))
 		return NEVENT_PRIORITY_PLAYER;
 	return NEVENT_PRIORITY_NORMAL;
 }
 
+static unsigned int nevent_effective_priority(P_nevent event)
+{
+	if (event->priority == NEVENT_PRIORITY_NORMAL &&
+	    (event->deferral_count >= NEVENT_NORMAL_AGING_DEFERRALS ||
+	     (ne_event_tick > event->due_tick &&
+	      ne_event_tick - event->due_tick >= NEVENT_NORMAL_AGING_TICKS)))
+		return NEVENT_PRIORITY_AGED_NORMAL;
+	return event->priority;
+}
+
+static bool nevent_sorts_before(P_nevent left, P_nevent right)
+{
+	const unsigned int left_priority = nevent_effective_priority(left);
+	const unsigned int right_priority = nevent_effective_priority(right);
+
+	if (left->due_tick != right->due_tick)
+		return left->due_tick < right->due_tick;
+	if (left_priority != right_priority)
+		return left_priority > right_priority;
+	return left->sequence < right->sequence;
+}
+
 static void nevent_link_schedule(P_nevent event, int loc)
 {
 	P_nevent cursor;
-	P_nevent last_player = NULL;
 
-	if (!ne_schedule[loc])
-	{
-		ne_schedule[loc] = event;
-		ne_schedule_tail[loc] = event;
-		return;
-	}
+	for (cursor = ne_schedule[loc]; cursor && !nevent_sorts_before(event, cursor);
+	     cursor = cursor->next_sched)
+		;
 
-	if (!nevent_is_player_timed(event->func, event->ch))
+	if (!cursor)
 	{
 		event->prev_sched = ne_schedule_tail[loc];
-		ne_schedule_tail[loc]->next_sched = event;
+		event->next_sched = NULL;
+		if (ne_schedule_tail[loc])
+			ne_schedule_tail[loc]->next_sched = event;
+		else
+			ne_schedule[loc] = event;
 		ne_schedule_tail[loc] = event;
 		return;
 	}
 
-	for (cursor = ne_schedule[loc]; cursor && nevent_is_player_timed(cursor->func, cursor->ch);
-	     cursor = cursor->next_sched)
-		last_player = cursor;
-
-	if (!last_player)
-	{
-		event->next_sched = ne_schedule[loc];
-		ne_schedule[loc]->prev_sched = event;
-		ne_schedule[loc] = event;
-		return;
-	}
-
-	event->prev_sched = last_player;
-	event->next_sched = last_player->next_sched;
-	last_player->next_sched = event;
-	if (event->next_sched)
-		event->next_sched->prev_sched = event;
+	event->prev_sched = cursor->prev_sched;
+	event->next_sched = cursor;
+	if (cursor->prev_sched)
+		cursor->prev_sched->next_sched = event;
 	else
-		ne_schedule_tail[loc] = event;
-}
-
-static bool nevent_overdue_event(P_nevent event)
-{
-	/* Player-timed events remain normally prioritized, but ordinary events
-	 * must not starve behind a continuously busy player prefix. */
-	static_assert(NEVENT_MAX_DEFERRALS == 0U,
-		      "Immediate overdue-event promotion is part of the scheduler contract");
-	return event != NULL && event->due_tick <= ne_event_tick;
-}
-
-/* Keep the budget as the default, but allow one repeatedly deferred event to
- * run so every class of work continues making progress. */
-static bool nevent_promote_overdue_event(P_nevent *next_event, P_nevent anchor)
-{
-	P_nevent candidate;
-	P_nevent prior;
-	P_nevent following;
-
-	if (!next_event || !*next_event)
-		return FALSE;
-
-	for (candidate = *next_event; candidate; candidate = candidate->next_sched)
-	{
-		if (!nevent_overdue_event(candidate))
-			continue;
-		if (candidate == *next_event)
-			return TRUE;
-
-		prior = candidate->prev_sched;
-		following = candidate->next_sched;
-		prior->next_sched = following;
-		if (following)
-			following->prev_sched = prior;
-		else
-			ne_schedule_tail[pulse] = prior;
-
-		candidate->prev_sched = anchor;
-		if (anchor)
-		{
-			candidate->next_sched = anchor->next_sched;
-			if (anchor->next_sched)
-				anchor->next_sched->prev_sched = candidate;
-			else
-				ne_schedule_tail[pulse] = candidate;
-			anchor->next_sched = candidate;
-		}
-		else
-		{
-			candidate->next_sched = ne_schedule[pulse];
-			if (ne_schedule[pulse])
-				ne_schedule[pulse]->prev_sched = candidate;
-			else
-				ne_schedule_tail[pulse] = candidate;
-			ne_schedule[pulse] = candidate;
-		}
-		*next_event = candidate;
-		return TRUE;
-	}
-	return FALSE;
+		ne_schedule[loc] = event;
+	cursor->prev_sched = event;
 }
 
 static void nevent_detach_character(P_nevent event)
@@ -523,13 +490,13 @@ bool nevent_reschedule_at(nevent_handle handle, unsigned long long due_tick)
 		due_tick = first_eligible_tick;
 
 	nevent_unlink_schedule(event);
-	event->due_tick = due_tick;
-	event->element = nevent_bucket_for_tick(due_tick);
 	if (event->deferral_count > 0)
 	{
 		nevent_complete_deferred(event);
 		event->deferral_count = 0;
 	}
+	event->due_tick = due_tick;
+	event->element = nevent_bucket_for_tick(due_tick);
 	nevent_link_schedule(event, static_cast<int>(event->element));
 	return TRUE;
 }
@@ -697,6 +664,7 @@ static void add_event_internal(event_func func, int delay, P_char ch, P_char vic
 	event->data_destroy = NULL;
 	event->priority = nevent_priority(func, ch);
 	event->deferral_count = 0;
+	event->deferred_cost_us = 0;
 	event->due_tick = nevent_add_ticks(ne_event_tick, static_cast<unsigned long long>(delay));
 	if (event->due_tick < nevent_first_eligible_tick())
 		event->due_tick = nevent_first_eligible_tick();
@@ -843,7 +811,7 @@ void nevent_from_char( P_nevent old_nevent )
 }
 */
 
-static long nevent_config_limit(const char *name, long default_value)
+static long nevent_config_limit(const char *name, long default_value, long maximum)
 {
 	const char *raw = getenv(name);
 	char *end = NULL;
@@ -851,21 +819,44 @@ static long nevent_config_limit(const char *name, long default_value)
 
 	if (!raw || !*raw)
 		return default_value;
+	errno = 0;
 	value = strtol(raw, &end, 10);
-	if (!end || *end != '\0' || value < 0)
+	if (errno == ERANGE || !end || *end != '\0' || value < 0 || value > maximum)
 	{
-		logit(LOG_STATUS, "Invalid %s='%s'; using %ld", name, raw, default_value);
+		logit(LOG_STATUS, "Invalid %s='%s' (allowed 0..%ld); using %ld", name, raw, maximum,
+		      default_value);
 		return default_value;
 	}
 	return value;
+}
+
+static long nevent_saturating_add_long(long left, long right)
+{
+	if (right > LONG_MAX - left)
+		return LONG_MAX;
+	return left + right;
+}
+
+static unsigned long long nevent_saturating_add_ull(unsigned long long left,
+						    unsigned long long right)
+{
+	if (right > ULLONG_MAX - left)
+		return ULLONG_MAX;
+	return left + right;
+}
+
+static unsigned long long nevent_ceil_div_ull(unsigned long long value, unsigned long long divisor)
+{
+	return value / divisor + (value % divisor != 0);
 }
 
 static long nevent_budget_usec(void)
 {
 	static long configured = -1;
 	if (configured < 0)
-		configured =
-			nevent_config_limit("DURIS_NEVENT_BUDGET_USEC", NEVENT_BUDGET_USEC_DEFAULT);
+		configured = nevent_config_limit("DURIS_NEVENT_BUDGET_USEC",
+						 NEVENT_BUDGET_USEC_DEFAULT,
+						 NEVENT_CONFIG_MAX_BUDGET_USEC);
 	return configured;
 }
 
@@ -874,7 +865,8 @@ static long nevent_max_callbacks(void)
 	static long configured = -1;
 	if (configured < 0)
 		configured = nevent_config_limit("DURIS_NEVENT_MAX_CALLBACKS",
-						 NEVENT_MAX_CALLBACKS_DEFAULT);
+						 NEVENT_MAX_CALLBACKS_DEFAULT,
+						 NEVENT_CONFIG_MAX_CALLBACKS);
 	return configured;
 }
 
@@ -884,7 +876,8 @@ static long nevent_catchup_max_extension_us(void)
 
 	if (configured < 0)
 		configured = nevent_config_limit("DURIS_NEVENT_CATCHUP_MAX_EXTENSION_USEC",
-						 NEVENT_CATCHUP_MAX_EXTENSION_USEC_DEFAULT);
+						 NEVENT_CATCHUP_MAX_EXTENSION_USEC_DEFAULT,
+						 NEVENT_CONFIG_MAX_BUDGET_USEC);
 	return configured;
 }
 
@@ -894,7 +887,8 @@ static long nevent_catchup_max_extra_callbacks(void)
 
 	if (configured < 0)
 		configured = nevent_config_limit("DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS",
-						 NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS_DEFAULT);
+						 NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS_DEFAULT,
+						 NEVENT_CONFIG_MAX_CALLBACKS);
 	return configured;
 }
 
@@ -911,19 +905,47 @@ static void nevent_record_callback_cost(long callback_us)
 		nevent_avg_callback_us = 1;
 }
 
-static void nevent_add_catchup_debt(long deferred)
+static void nevent_register_deferred(P_nevent event)
 {
-	if (deferred <= 0)
+	if (!event || event->deferral_count > 0)
 		return;
-	nevent_catchup_debt += deferred;
+	if (nevent_catchup_debt == LONG_MAX)
+		panic_corruption("nevent", "catch-up debt counter overflow");
+	event->deferred_cost_us = static_cast<unsigned long long>(MAX(1L, nevent_avg_callback_us));
+	nevent_catchup_debt++;
+	nevent_catchup_debt_estimated_us = nevent_saturating_add_ull(
+		nevent_catchup_debt_estimated_us, event->deferred_cost_us);
+	nevent_deferred_due_counts[event->due_tick]++;
 	if (nevent_catchup_remaining <= 0)
 		nevent_catchup_remaining = NEVENT_CATCHUP_WINDOW_PULSES;
 }
 
 static void nevent_complete_deferred(P_nevent event)
 {
-	if (event && event->deferral_count > 0 && nevent_catchup_debt > 0)
-		nevent_catchup_debt--;
+	std::map<unsigned long long, long>::iterator due;
+
+	if (!event || event->deferral_count == 0)
+		return;
+	if (nevent_catchup_debt <= 0)
+		panic_corruption("nevent", "deferred event sequence %llu has no catch-up debt",
+				 event->sequence);
+	due = nevent_deferred_due_counts.find(event->due_tick);
+	if (due == nevent_deferred_due_counts.end() || due->second <= 0)
+		panic_corruption("nevent", "deferred event sequence %llu has no due-tick debt",
+				 event->sequence);
+	if (--due->second == 0)
+		nevent_deferred_due_counts.erase(due);
+	nevent_catchup_debt--;
+	if (event->deferred_cost_us > nevent_catchup_debt_estimated_us)
+		panic_corruption("nevent", "deferred event sequence %llu has invalid cost debt",
+				 event->sequence);
+	nevent_catchup_debt_estimated_us -= event->deferred_cost_us;
+	event->deferred_cost_us = 0;
+}
+
+static unsigned long long nevent_oldest_deferred_due_tick()
+{
+	return nevent_deferred_due_counts.empty() ? 0 : nevent_deferred_due_counts.begin()->first;
 }
 
 static void nevent_prepare_catchup(long base_budget_usec, long base_max_callbacks,
@@ -931,7 +953,8 @@ static void nevent_prepare_catchup(long base_budget_usec, long base_max_callback
 {
 	long max_extra_callbacks = nevent_catchup_max_extra_callbacks();
 	long max_extension_usec = nevent_catchup_max_extension_us();
-	long callback_budget;
+	unsigned long long callback_quota;
+	unsigned long long cost_quota;
 
 	nevent_catchup_quota = 0;
 	nevent_catchup_extra_callbacks = 0;
@@ -942,24 +965,45 @@ static void nevent_prepare_catchup(long base_budget_usec, long base_max_callback
 	if (nevent_catchup_debt <= 0 || nevent_catchup_remaining <= 0)
 		return;
 
-	nevent_catchup_quota =
-		(nevent_catchup_debt + nevent_catchup_remaining - 1) / nevent_catchup_remaining;
-	nevent_catchup_extra_callbacks = MIN(nevent_catchup_quota, max_extra_callbacks);
-	callback_budget = nevent_catchup_extra_callbacks * MAX(1L, nevent_avg_callback_us);
-	nevent_catchup_extension_us = MIN(max_extension_usec, callback_budget);
-	*effective_budget_usec += nevent_catchup_extension_us;
-	if (base_max_callbacks > 0)
-		*effective_max_callbacks += nevent_catchup_extra_callbacks;
+	/* Deferred records retain older due ticks and therefore sort ahead of new
+	 * arrivals.  This extension is enabled only by registered debt: old work
+	 * receives the base capacity first, while the added capacity makes that
+	 * repayment a net reduction even at the sustainable base arrival rate. */
+	callback_quota =
+		nevent_ceil_div_ull(static_cast<unsigned long long>(nevent_catchup_debt),
+				    static_cast<unsigned long long>(nevent_catchup_remaining));
+	cost_quota = nevent_ceil_div_ull(nevent_catchup_debt_estimated_us,
+					 static_cast<unsigned long long>(nevent_catchup_remaining));
+	nevent_catchup_quota = static_cast<long>(
+		MIN(callback_quota, static_cast<unsigned long long>(NEVENT_CONFIG_MAX_CALLBACKS)));
+	if (base_max_callbacks != NEVENT_UNLIMITED)
+	{
+		nevent_catchup_extra_callbacks = MIN(nevent_catchup_quota, max_extra_callbacks);
+		*effective_max_callbacks = nevent_saturating_add_long(
+			base_max_callbacks, nevent_catchup_extra_callbacks);
+	}
+	if (base_budget_usec != NEVENT_UNLIMITED)
+	{
+		nevent_catchup_extension_us = static_cast<long>(
+			MIN(cost_quota, static_cast<unsigned long long>(max_extension_usec)));
+		*effective_budget_usec =
+			nevent_saturating_add_long(base_budget_usec, nevent_catchup_extension_us);
+	}
 }
 
 static void nevent_finish_catchup_pulse(void)
 {
 	if (nevent_catchup_debt <= 0)
 	{
+		if (!nevent_deferred_due_counts.empty() || nevent_catchup_debt_estimated_us != 0)
+			panic_corruption("nevent",
+					 "zero catch-up count disagrees with debt metadata");
 		nevent_catchup_debt = 0;
 		nevent_catchup_remaining = 0;
 		return;
 	}
+	if (nevent_deferred_due_counts.empty())
+		panic_corruption("nevent", "catch-up debt has no deferred due ticks");
 	if (nevent_catchup_remaining > 0)
 		nevent_catchup_remaining--;
 	if (nevent_catchup_remaining <= 0)
@@ -968,14 +1012,14 @@ static void nevent_finish_catchup_pulse(void)
 
 static bool nevent_trace_player(void)
 {
-	return nevent_config_limit("DURIS_NEVENT_TRACE_PLAYER", 0) > 0;
+	return nevent_config_limit("DURIS_NEVENT_TRACE_PLAYER", 0, 1) > 0;
 }
 
 static bool nevent_analytics_enabled(void)
 {
 	static long enabled = -1;
 	if (enabled < 0)
-		enabled = nevent_config_limit("DURIS_NEVENT_ANALYTICS", 0) > 0;
+		enabled = nevent_config_limit("DURIS_NEVENT_ANALYTICS", 0, 1) > 0;
 	return enabled > 0;
 }
 
@@ -1044,6 +1088,22 @@ static void nevent_analytics_record_deferred(P_nevent event)
 		callback->deferred++;
 }
 
+static void nevent_analytics_record_lateness(unsigned long long lateness)
+{
+	if (!nevent_analytics_enabled())
+		return;
+	if (lateness == 0)
+		nevent_analytics.lateness_on_time++;
+	else if (lateness == 1)
+		nevent_analytics.lateness_one_tick++;
+	else if (lateness <= 3)
+		nevent_analytics.lateness_two_to_three++;
+	else if (lateness <= 15)
+		nevent_analytics.lateness_four_to_fifteen++;
+	else
+		nevent_analytics.lateness_sixteen_plus++;
+}
+
 static void nevent_analytics_emit_callbacks(void)
 {
 	int i;
@@ -1109,9 +1169,10 @@ static void nevent_analytics_record(long scanned, long executed, long deferred,
 		nevent_analytics.peak_pending = ne_event_counter;
 
 	logit(LOG_STATUS,
-	      "NEVENT ANALYTICS PULSE: tick=%llu scanned=%ld executed=%ld deferred=%ld pending=%ld budget_exhausted=%d catchup_debt=%ld catchup_quota=%ld catchup_executed=%ld max_deferral=%ld max_late_ticks=%ld max_late_name=%s max_late_due=%llu max_late_deferral=%ld catchup_extension_us=%ld avg_callback_us=%ld total_us=%ld",
+	      "NEVENT ANALYTICS PULSE: tick=%llu scanned=%ld executed=%ld deferred=%ld pending=%ld budget_exhausted=%d catchup_debt=%ld catchup_debt_estimated_us=%llu catchup_oldest_due=%llu catchup_quota=%ld catchup_executed=%ld max_deferral=%ld max_late_ticks=%ld max_late_name=%s max_late_due=%llu max_late_deferral=%ld catchup_extension_us=%ld avg_callback_us=%ld total_us=%ld",
 	      ne_event_tick, scanned, executed, deferred, ne_event_counter,
-	      budget_exhausted ? 1 : 0, nevent_catchup_debt, nevent_catchup_quota, catchup_executed,
+	      budget_exhausted ? 1 : 0, nevent_catchup_debt, nevent_catchup_debt_estimated_us,
+	      nevent_oldest_deferred_due_tick(), nevent_catchup_quota, catchup_executed,
 	      max_deferral_seen, max_late_ticks, max_late_name, max_late_due, max_late_deferral,
 	      nevent_catchup_extension_us, nevent_avg_callback_us, loop_us);
 
@@ -1119,7 +1180,7 @@ static void nevent_analytics_record(long scanned, long executed, long deferred,
 	{
 		double pulses = (double)nevent_analytics.pulses;
 		logit(LOG_STATUS,
-		      "NEVENT ANALYTICS MINUTE: start_tick=%llu end_tick=%llu pulses=%ld avg_scanned=%.2f avg_executed=%.2f avg_deferred=%.2f avg_total_us=%.2f peak_scanned=%ld peak_executed=%ld peak_executed_tick=%llu peak_deferred=%ld peak_total_us=%ld peak_total_us_tick=%llu peak_pending=%ld budget_exhausted_pulses=%ld",
+		      "NEVENT ANALYTICS WINDOW: start_tick=%llu end_tick=%llu pulses=%ld avg_scanned=%.2f avg_executed=%.2f avg_deferred=%.2f avg_total_us=%.2f peak_scanned=%ld peak_executed=%ld peak_executed_tick=%llu peak_deferred=%ld peak_total_us=%ld peak_total_us_tick=%llu peak_pending=%ld budget_exhausted_pulses=%ld lateness_on_time=%lld lateness_1=%lld lateness_2_3=%lld lateness_4_15=%lld lateness_16_plus=%lld",
 		      nevent_analytics.window_start_tick, ne_event_tick, nevent_analytics.pulses,
 		      nevent_analytics.total_scanned / pulses,
 		      nevent_analytics.total_executed / pulses,
@@ -1127,7 +1188,11 @@ static void nevent_analytics_record(long scanned, long executed, long deferred,
 		      nevent_analytics.peak_scanned, nevent_analytics.peak_executed,
 		      nevent_analytics.peak_executed_tick, nevent_analytics.peak_deferred,
 		      nevent_analytics.peak_total_us, nevent_analytics.peak_total_us_tick,
-		      nevent_analytics.peak_pending, nevent_analytics.budget_exhausted_pulses);
+		      nevent_analytics.peak_pending, nevent_analytics.budget_exhausted_pulses,
+		      nevent_analytics.lateness_on_time, nevent_analytics.lateness_one_tick,
+		      nevent_analytics.lateness_two_to_three,
+		      nevent_analytics.lateness_four_to_fifteen,
+		      nevent_analytics.lateness_sixteen_plus);
 		nevent_analytics_emit_callbacks();
 		nevent_analytics_reset(ne_event_tick + 1);
 	}
@@ -1139,14 +1204,12 @@ static long nevent_elapsed_us(const struct timespec *started, const struct times
 	       (finished->tv_nsec - started->tv_nsec) / 1000L;
 }
 
-/* Move every unscanned due event to the front of the next bucket.  Future
- * revolutions sharing this bucket stay put.  due_tick remains unchanged so
- * deferral affects lateness, never the requested deadline. */
+/* Move every unscanned due event into the next bucket.  Reinsertion uses the
+ * authoritative due/priority/aging order; future revolutions stay put and the
+ * original due tick remains unchanged. */
 static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 {
 	P_nevent event, next;
-	P_nevent moved_head = NULL;
-	P_nevent moved_tail = NULL;
 	unsigned int next_bucket;
 	long deferred = 0;
 
@@ -1166,40 +1229,32 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 
 		nevent_unlink_schedule(event);
 		event->element = next_bucket;
-		if (event->deferral_count == 0 && new_debt)
-			(*new_debt)++;
+		if (event->deferral_count == 0)
+		{
+			nevent_register_deferred(event);
+			if (new_debt)
+				(*new_debt)++;
+		}
 		event->deferral_count++;
 		nevent_analytics_record_deferred(event);
 		deferred++;
-
-		if (!moved_head)
-		{
-			moved_head = moved_tail = event;
-		}
-		else
-		{
-			moved_tail->next_sched = event;
-			event->prev_sched = moved_tail;
-			moved_tail = event;
-		}
+		nevent_link_schedule(event, static_cast<int>(next_bucket));
 	}
-
-	if (!moved_head)
-		return 0;
-
-	/* Prepend the moved run to the next pulse, preserving their order. */
-	if (ne_schedule[next_bucket])
-	{
-		moved_tail->next_sched = ne_schedule[next_bucket];
-		ne_schedule[next_bucket]->prev_sched = moved_tail;
-	}
-	else
-	{
-		ne_schedule_tail[next_bucket] = moved_tail;
-	}
-	ne_schedule[next_bucket] = moved_head;
 
 	return deferred;
+}
+
+static void nevent_warn_if_unbounded(long base_budget_usec, long base_max_callbacks)
+{
+	static bool warned = FALSE;
+
+	if (!warned && base_budget_usec == NEVENT_UNLIMITED &&
+	    base_max_callbacks == NEVENT_UNLIMITED)
+	{
+		warned = TRUE;
+		logit(LOG_STATUS,
+		      "NEVENT CONFIG WARNING: both callback and time limits are zero; the scheduler is intentionally unbounded");
+	}
 }
 
 // Execute events!
@@ -1219,7 +1274,6 @@ void ne_events(void)
 	long budget_usec = base_budget_usec;
 	long max_callbacks = base_max_callbacks;
 	bool budget_exhausted = FALSE;
-	bool priority_promotion_used = FALSE;
 	const char *slowest_name = "none";
 
 	if ((pulse < 0) || (pulse >= PULSES_IN_TICK))
@@ -1234,6 +1288,7 @@ void ne_events(void)
 				 ne_event_tick);
 	after_events_call = TRUE;
 	pass_sequence = ne_event_sequence;
+	nevent_warn_if_unbounded(base_budget_usec, base_max_callbacks);
 
 	if (debug_event_list)
 	{
@@ -1257,16 +1312,9 @@ void ne_events(void)
 				budget_exhausted = nevent_elapsed_us(&loop_started,
 								     &loop_finished) >= budget_usec;
 			}
-			if (budget_exhausted && next_event && !priority_promotion_used &&
-			    nevent_promote_overdue_event(&next_event, current_nevent))
-			{
-				priority_promotion_used = TRUE;
-				continue;
-			}
 			if (budget_exhausted && next_event)
 			{
 				deferred = nevent_defer_suffix(next_event, &new_debt);
-				nevent_add_catchup_debt(new_debt);
 				break;
 			}
 			continue;
@@ -1274,10 +1322,16 @@ void ne_events(void)
 
 		if ((long)current_nevent->deferral_count > max_deferral_seen)
 			max_deferral_seen = (long)current_nevent->deferral_count;
-		if (ne_event_tick > current_nevent->due_tick &&
-		    (long)(ne_event_tick - current_nevent->due_tick) > max_late_ticks)
+		const unsigned long long current_lateness =
+			ne_event_tick > current_nevent->due_tick ?
+				ne_event_tick - current_nevent->due_tick :
+				0;
+		const long current_lateness_long = static_cast<long>(
+			MIN(current_lateness, static_cast<unsigned long long>(LONG_MAX)));
+		nevent_analytics_record_lateness(current_lateness);
+		if (current_lateness_long > max_late_ticks)
 		{
-			max_late_ticks = (long)(ne_event_tick - current_nevent->due_tick);
+			max_late_ticks = current_lateness_long;
 			max_late_name = current_nevent->func ?
 						nevent_callback_label(current_nevent->func) :
 						"neutered";
@@ -1317,10 +1371,8 @@ void ne_events(void)
 		if (nevent_is_player_timed(current_nevent->func, current_nevent->ch) &&
 		    nevent_trace_player())
 		{
-			long long late_pulses =
-				(ne_event_tick > current_nevent->due_tick) ?
-					(long long)(ne_event_tick - current_nevent->due_tick) :
-					0;
+			long long late_pulses = static_cast<long long>(
+				MIN(current_lateness, static_cast<unsigned long long>(LLONG_MAX)));
 			logit(LOG_STATUS,
 			      "PLAYER EVENT TIMING: func=%s sequence=%llu ch_pid=%ld due_tick=%llu actual_tick=%llu late_pulses=%lld scheduled=%ld",
 			      nevent_callback_label(current_nevent->func), current_nevent->sequence,
@@ -1341,16 +1393,9 @@ void ne_events(void)
 			if (nevent_elapsed_us(&loop_started, &loop_finished) >= budget_usec)
 				budget_exhausted = TRUE;
 		}
-		if (budget_exhausted && next_event && !priority_promotion_used &&
-		    nevent_promote_overdue_event(&next_event, NULL))
-		{
-			priority_promotion_used = TRUE;
-			continue;
-		}
 		if (budget_exhausted && next_event)
 		{
 			deferred = nevent_defer_suffix(next_event, &new_debt);
-			nevent_add_catchup_debt(new_debt);
 			break;
 		}
 	}
@@ -1362,8 +1407,9 @@ void ne_events(void)
 	if (deferred > 0)
 	{
 		logit(LOG_STATUS,
-		      "NEVENT BUDGET: pulse=%d total_us=%ld scanned=%ld executed=%ld deferred=%ld catchup_debt=%ld catchup_quota=%ld catchup_executed=%ld max_deferral=%ld max_late_ticks=%ld max_late_name=%s max_late_due=%llu max_late_deferral=%ld catchup_extension_us=%ld avg_callback_us=%ld slowest=%s slowest_us=%ld scheduled=%ld",
+		      "NEVENT BUDGET: pulse=%d total_us=%ld scanned=%ld executed=%ld deferred=%ld catchup_debt=%ld catchup_debt_estimated_us=%llu catchup_oldest_due=%llu catchup_quota=%ld catchup_executed=%ld max_deferral=%ld max_late_ticks=%ld max_late_name=%s max_late_due=%llu max_late_deferral=%ld catchup_extension_us=%ld avg_callback_us=%ld slowest=%s slowest_us=%ld scheduled=%ld",
 		      pulse, loop_us, scanned, executed, deferred, nevent_catchup_debt,
+		      nevent_catchup_debt_estimated_us, nevent_oldest_deferred_due_tick(),
 		      nevent_catchup_quota, catchup_executed, max_deferral_seen, max_late_ticks,
 		      max_late_name, max_late_due, max_late_deferral, nevent_catchup_extension_us,
 		      nevent_avg_callback_us, slowest_name ? slowest_name : "unknown", slowest_us,
@@ -1372,10 +1418,11 @@ void ne_events(void)
 	if (nevent_catchup_quota > 0 || new_debt > 0)
 	{
 		logit(LOG_STATUS,
-		      "NEVENT CATCHUP: pulse=%d debt=%ld remaining_pulses=%d quota=%ld executed=%ld extension_us=%ld avg_callback_us=%ld new_debt=%ld",
-		      pulse, nevent_catchup_debt, nevent_catchup_remaining, nevent_catchup_quota,
-		      catchup_executed, nevent_catchup_extension_us, nevent_avg_callback_us,
-		      new_debt);
+		      "NEVENT CATCHUP: pulse=%d debt=%ld debt_estimated_us=%llu oldest_due=%llu remaining_pulses=%d quota=%ld extra_callbacks=%ld executed=%ld extension_us=%ld avg_callback_us=%ld new_debt=%ld",
+		      pulse, nevent_catchup_debt, nevent_catchup_debt_estimated_us,
+		      nevent_oldest_deferred_due_tick(), nevent_catchup_remaining,
+		      nevent_catchup_quota, nevent_catchup_extra_callbacks, catchup_executed,
+		      nevent_catchup_extension_us, nevent_avg_callback_us, new_debt);
 	}
 	if (loop_us >= 50000)
 	{
@@ -1511,6 +1558,8 @@ void ne_init_event_pool(void)
 	after_events_call = FALSE;
 	nevent_catchup_debt = 0;
 	nevent_catchup_remaining = 0;
+	nevent_catchup_debt_estimated_us = 0;
+	nevent_deferred_due_counts.clear();
 	nevent_pending_cancellations.clear();
 	memset(ne_schedule, 0, sizeof(ne_schedule));
 	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));

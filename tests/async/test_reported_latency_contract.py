@@ -17,6 +17,7 @@ assert 'case EPIC_BOTTLE:' in epic
 assert 'return epic_reason_type::bottle_award;' in epic
 assert 'if (context.type == EPIC_BOTTLE)' in epic
 assert 'func == event_wait' in new_events
-assert 'return ch != NULL && (IS_PC(ch)' in new_events
+assert 'return IS_PC(ch) || (IS_NPC(ch)' in new_events
+assert 'IS_AFFECTED5(GET_MASTER(ch), AFF5_ORDERING)' in new_events
 
 print("reported latency contract passed")

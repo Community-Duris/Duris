@@ -26,17 +26,17 @@ assert contains(src, 'if (event->due_tick > ne_event_tick)')
 assert not contains(src, 'event->timer')
 assert not contains(src, 'future_head')
 
-# Moved events are prepended in order, and both bucket ends stay consistent.
-assert contains(src, 'ne_schedule[next_bucket] = moved_head;')
+# Moved events are unlinked and reinserted through the authoritative ordering path.
 assert contains(src, 'nevent_unlink_schedule(event);')
-assert contains(src, 'ne_schedule_tail[next_bucket] = moved_tail;')
+assert contains(src, 'nevent_link_schedule(event, static_cast<int>(next_bucket));')
 
-# Overdue-event promotion must not be gated on the callback cap: the cap is
-# exhausted exactly when deferred work needs the shortcut.
-assert contains(src, 'priority_promotion_used')
-assert contains(src, 'priority_promotion_used = TRUE')
-assert not contains(src, '(max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used')
-assert count(src, '!priority_promotion_used && nevent_promote_overdue_event') == 2
+# Due tick, effective priority/aging, and sequence are the single insertion order.
+assert contains(src, 'nevent_sorts_before')
+assert contains(src, 'left->due_tick < right->due_tick')
+assert contains(src, 'left_priority > right_priority')
+assert contains(src, 'left->sequence < right->sequence')
+assert not contains(src, 'priority_promotion_used')
+assert count(src, 'nevent_defer_suffix(next_event, &new_debt)') == 2
 
 # Instrumentation and clock source.
 assert contains(src, 'NEVENT BUDGET:')

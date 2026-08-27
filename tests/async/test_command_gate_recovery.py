@@ -12,14 +12,14 @@ Verifies:
 2. CharWait() clears PLR2_WAIT when the event did not get scheduled.
 3. CharWait() records an absolute deadline for the gate.
 4. comm.c self-heals a gate with no event_wait scheduled OR past its deadline.
-5. The event wheel does not strand due events, and overdue events can be promoted
-   even on a pulse that has already spent its callback budget.
+5. The event wheel does not strand due events: authoritative ordering keeps old
+   debt ahead of future work, and deferral reinserts through the same path.
 """
 
 from pathlib import Path
 import re
 import sys
-from contract_text import contains, count
+from contract_text import contains
 
 ROOT = Path(__file__).resolve().parents[2]
 events = (ROOT / "src" / "events.c").read_text(encoding="utf-8", errors="replace")
@@ -101,16 +101,16 @@ if defer:
     checks.append((
         "deferral keeps both bucket ends consistent",
         contains(defer_body, "nevent_unlink_schedule(event);") and
-        contains(defer_body, "ne_schedule[next_bucket] = moved_head;") and
-        contains(defer_body, "ne_schedule_tail[next_bucket] = moved_tail;")
+        contains(defer_body, "nevent_link_schedule(event, static_cast<int>(next_bucket));")
     ))
 else:
     checks.append(("nevent_defer_suffix present", False))
 
 checks.append((
-    "overdue event promotion is not blocked by an exhausted callback cap",
-    not contains(new_events, "(max_callbacks <= 0 || executed < max_callbacks) && !priority_promotion_used") and
-    count(new_events, "!priority_promotion_used && nevent_promote_overdue_event") == 2
+    "due and aged work sort ahead of future work without ad hoc promotion",
+    contains(new_events, "left->due_tick < right->due_tick") and
+    contains(new_events, "left_priority > right_priority") and
+    not contains(new_events, "nevent_promote_overdue_event")
 ))
 
 failed = [name for name, ok in checks if not ok]

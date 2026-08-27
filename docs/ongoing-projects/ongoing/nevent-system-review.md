@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 6 complete
+Status: Implementation in progress; checkpoint 7 complete
 
-Last implementation update: 2026-08-27 22:49 IDT
+Last implementation update: 2026-08-27 23:07 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -24,9 +24,9 @@ contracts, formatting, and the server build pass.
 | 4 | NEV-03 stable ship-volley references | Complete | ASan/UBSan live, deleted-endpoint, and ABA harness, 223 Python regressions, native signal test, format check, server build |
 | 5 | NEV-06 and NEV-07 periodic rearm safety | Complete | ASan/UBSan multi-interval/retry harness, 224 Python regressions, native signal test, format check, server build |
 | 6 | NEV-04, NEV-11, NEV-12, and NEV-22 absolute due-tick core, rescheduling, and harness foundation | Complete | ASan/UBSan three-phase boundary matrix and 1,200-tick oracle, 225 Python regressions, native signal test, format check, server build |
-| 7 | NEV-09 and NEV-13 priority, aging, and catch-up policy | Next | Not started |
-| 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Pending | Not started |
-| 9 | NEV-14 through NEV-20 load control, observability, durability, and thread boundary | Pending | Not started |
+| 7 | NEV-09, NEV-13, NEV-15, and NEV-22 priority, aging, catch-up, and range safety | Complete | ASan/UBSan priority-on/off, mixed-deferral, continuous-arrival, convergence, unlimited, and invalid-range modes; 225 Python regressions; native signal test; format check; server build |
+| 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Next | Not started |
+| 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | Pending | Not started |
 | 10 | NEV-21 documentation and legacy cleanup | Pending | Not started |
 
 Checkpoint 1 replaced the fixed 6,000-entry array and sentinel scan with a
@@ -98,10 +98,31 @@ insertion, execution, destruction, and rescheduling paths. Under ASan/UBSan it
 covers delays 0, 1, 299, 300, 301, 599, 600, and 601 in all three phases;
 empty/head/middle/tail and callback-created current-bucket records; multiple
 revolutions in one bucket; link/counter/pool balance; and a 1,200-tick randomized
-comparison against an absolute-due priority-queue oracle. Priority, deferral,
-and catch-up portions of the larger NEV-22 matrix remain assigned to checkpoint
-7. The complete 225-test Python regression suite and native signal-handler test
-also pass with the new timing model.
+comparison against an absolute-due priority-queue oracle. The complete 225-test
+Python regression suite and native signal-handler test also pass with the new
+timing model.
+
+Checkpoint 7 made the stored priority authoritative and replaced incidental
+list placement plus ad hoc promotion with one deterministic ordering tuple:
+`(due_tick, effective_priority, sequence)`. Player priority now affects only
+equal deadlines, the environment switch genuinely disables it, ward regeneration
+is included, and cast/memorize/balance classification requires a PC. Normal work
+ages above player work after two deferrals or late ticks; older deadlines always
+precede new arrivals. Every deferral reinserts through the same comparator.
+Catch-up debt now records an estimated callback cost and due-tick multiset, so
+cancellation, execution, and rescheduling reconcile count, cost, and oldest due
+together. Recovery quotas use both count and cost, preserve zero as an explicit
+unlimited sentinel, warn once when both limits are disabled, and expose lateness
+distribution buckets. Configuration parsing now checks `errno`, enforces fixed
+operational ceilings, and uses saturating additions. The sanitizer
+harness runs separate processes for priority on/off, bounded aging under player
+load, steady arrivals equal to base capacity, four-pulse debt convergence,
+unlimited settings, and invalid-range fallback. The server build, native signal
+test, focused contracts, and all 225 Python regressions pass.
+
+The executive assessment and finding evidence below preserve the original
+pre-remediation review. Per-finding implementation status and the checkpoint
+ledger above are authoritative for the current tree.
 
 ## Executive assessment
 
@@ -574,6 +595,13 @@ Recommendation:
 
 ### NEV-09: Priority and fairness contracts are internally inconsistent
 
+Implementation status (2026-08-27): Fixed and verified in checkpoint 7. The
+wheel is ordered by due tick, authoritative stored/effective priority, and
+sequence. Normal events age above equal-deadline player work after two
+deferrals/late ticks, all deferrals use the same insertion path, ward regen is
+classified, and the disabled-priority mode is FIFO by due tick and sequence.
+The evidence below describes the pre-fix implementation.
+
 This is a group of related overload-ordering failures.
 
 #### The player-priority setting is ignored by insertion
@@ -707,6 +735,14 @@ and schedule links outside the scheduler implementation.
 
 ### NEV-13: Catch-up behavior does not guarantee recovery
 
+Implementation status (2026-08-27): Fixed and verified in checkpoint 7.
+Deferred records retain the oldest due positions, debt tracks count, estimated
+cost, and oldest due tick, and lifecycle completion reconciles all three.
+Count/cost quotas add bounded net recovery capacity without converting an
+unlimited base setting into a limit. A steady-arrival sanitizer test proves debt
+converges inside the four-pulse window. The evidence below describes the pre-fix
+implementation.
+
 - Catch-up extension is a larger general budget, not a reservation for deferred
   work. New and priority work can consume it before debt-bearing records, so debt
   need not converge.
@@ -748,6 +784,13 @@ apply results on the game thread in bounded slices, and give bulk callbacks a
 continuation cursor. Track wall time including preparation and diagnostic costs.
 
 ### NEV-15: Configuration and duration arithmetic are not range-safe
+
+Implementation status (2026-08-27): Fixed and verified across checkpoints 6
+and 7. Due arithmetic is saturating unsigned 64-bit, remaining-time/lateness
+conversions clamp to their public types, configuration parsing checks `ERANGE`
+and operational ceilings, and catch-up budget additions saturate. The runtime
+harness verifies an out-of-range value falls back safely. The evidence below
+describes the pre-fix implementation.
 
 `nevent_config_limit` uses `strtol` but does not inspect `errno` or enforce an
 upper bound (`src/new_events.c:801-815`). Extreme accepted values can overflow
@@ -873,14 +916,14 @@ material, and remove or quarantine unused legacy interfaces.
 
 ### NEV-22: Tests assert source strings, not scheduler behavior
 
-Implementation status (2026-08-27): In progress. Checkpoint 6 added the
+Implementation status (2026-08-27): In progress. Checkpoints 6 and 7 added the
 ASan/UBSan deterministic runtime harness and completed the phase/boundary,
-current-bucket, shared-revolution, reschedule/accounting, and randomized
-absolute-due oracle portions below. Existing executable regressions cover the
-listed cancellation, ownership, payload, lifetime, name-loading, and periodic
-rearm cases. Priority, mixed deferral, continuous-arrival fairness, and catch-up
-convergence are intentionally added with checkpoint 7; periodic uniqueness is
-part of checkpoint 9.
+current-bucket, shared-revolution, reschedule/accounting, randomized
+absolute-due oracle, priority-on/off, mixed-deferral, continuous-arrival
+fairness, and catch-up convergence portions below. Existing executable
+regressions cover the listed cancellation, ownership, payload, lifetime,
+name-loading, and periodic rearm cases. Periodic uniqueness remains part of
+checkpoint 9.
 
 The focused nevent tests passed, but inspection shows they mainly read source
 files and assert that particular identifiers or snippets exist. These tests can

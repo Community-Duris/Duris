@@ -11,7 +11,11 @@ events = (ROOT / "src" / "events.c").read_text()
 for marker in (
     "NEVENT_CATCHUP_WINDOW_PULSES",
     "nevent_catchup_debt",
+    "nevent_catchup_debt_estimated_us",
+    "nevent_oldest_deferred_due_tick",
     "nevent_catchup_extension_us",
+    "NEVENT_UNLIMITED",
+    "intentionally unbounded",
     "NEVENT CATCHUP",
     "avg_callback_us",
 ):

@@ -7,7 +7,7 @@ source = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8", errors="rep
 required = [
     "DURIS_NEVENT_ANALYTICS",
     "NEVENT ANALYTICS PULSE:",
-    "NEVENT ANALYTICS MINUTE:",
+    "NEVENT ANALYTICS WINDOW:",
     "nevent_analytics",
     "total_executed",
     "total_deferred",

@@ -100,10 +100,16 @@ static long wheel_count()
 
 static void require_balanced(long expected_events, long expected_debt, int code)
 {
+	long tracked_debt = 0;
+	for (const auto &entry : nevent_deferred_due_counts)
+		tracked_debt += entry.second;
 	require(wheel_count() == expected_events, code);
 	require(ne_event_counter == expected_events, code + 1);
 	require(static_cast<long>(test_pool.objs_used) == expected_events, code + 2);
 	require(nevent_catchup_debt == expected_debt, code + 3);
+	require(tracked_debt == expected_debt, code + 4);
+	if (expected_debt == 0)
+		require(nevent_catchup_debt_estimated_us == 0, code + 5);
 }
 
 static void reset_scheduler()
@@ -115,6 +121,8 @@ static void reset_scheduler()
 	ne_event_sequence = 0;
 	nevent_catchup_debt = 0;
 	nevent_catchup_remaining = 0;
+	nevent_catchup_debt_estimated_us = 0;
+	nevent_deferred_due_counts.clear();
 	nevent_pending_cancellations.clear();
 	std::memset(&test_pool, 0, sizeof(test_pool));
 	ne_dead_event_pool = &test_pool;
@@ -136,7 +144,8 @@ static void schedule_event(P_nevent event, unsigned int bucket, P_char ch = null
 	event->func = callback;
 	event->due_tick = 0;
 	event->element = bucket;
-	event->deferral_count = deferrals;
+	event->deferral_count = 0;
+	event->deferred_cost_us = 0;
 	event->sequence = ++ne_event_sequence;
 	event->lifecycle_state = NEVENT_LIFECYCLE_ACTIVE;
 	event->prev_sched = ne_schedule_tail[bucket];
@@ -160,7 +169,10 @@ static void schedule_event(P_nevent event, unsigned int bucket, P_char ch = null
 	ne_event_counter++;
 	test_pool.objs_used++;
 	if (deferrals > 0)
-		nevent_catchup_debt++;
+	{
+		nevent_register_deferred(event);
+		event->deferral_count = deferrals;
+	}
 }
 
 static void test_immediate_and_idempotent_cancel()
