@@ -33,7 +33,7 @@ response runbook. No license or ownership policy was invented.
 - `docs/api/health.md`
 - `scripts/healthcheck.sh`
 - `tests/async/test_health_endpoint_contract.py`
-- `.spec_system/audit/known-issues.md`
+- `.spec_system/audit/known-issues.md` (retired with the `.spec_system/` tree)
 
 `docs/README.md` was renamed to `docs/README_docs.md` so the only conventional
 README remains at the repository root. Existing architecture, configuration,
@@ -71,6 +71,10 @@ The last two items are documented operational gaps, not missing documentation.
   `.spec_system/scripts/analyze-project.sh --json`.
 - Source requirements were reconciled against `.spec_system/PRD/PRD.md`, the
   archived Phase 03 PRD and session records, and Phase 03 implementation notes.
+- The `.spec_system/` tracking tree was retired after Phase 03 closeout; its contents
+  remain in git history at commit `212592e3`. The paths recorded above describe the state
+  at audit time; the archived PRD now lives at
+  `docs/attic/PRD_db-refactor_08-2026.md`.
 - `git diff --name-only 286efed4..HEAD` identified 393 tracked Phase 03 files;
   the uncommitted closeout diff was reviewed separately.
 - Runtime behavior was checked against `src/websocket.c`, `src/websocket.h`,

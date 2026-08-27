@@ -50,4 +50,20 @@ the verified development, architecture, operations, database, and builder refere
 - [Server architecture diagram](diagrams/duris-server-architecture.html) and
   [database model](diagrams/duris-database-model.html)
 
+## Project Records
+
+Standing references and Phase 00-03 evidence, moved here when the `.spec_system/`
+tracking tree was retired.
+
+| Document | Purpose |
+|----------|---------|
+| [CONVENTIONS.md](CONVENTIONS.md) | Repository conventions and their precedence against `AGENTS.md`. |
+| [CONSIDERATIONS.md](CONSIDERATIONS.md) | Institutional memory carried forward between phases. |
+| [SECURITY-COMPLIANCE.md](SECURITY-COMPLIANCE.md) | Cumulative security posture and GDPR compliance record. |
+| [readiness-report.md](readiness-report.md) | Phase 03 final readiness result and the deferred capacity gate. |
+| [query-plan-gate-report.md](query-plan-gate-report.md) | Query plan and index gate run against a non-production clone. |
+| [maintenance-inventory.md](maintenance-inventory.md) | Recurring maintenance activities and their bounded-worker disposition. |
+| [archive-inventory.md](archive-inventory.md) | Archive candidates and why no destructive rule is approved. |
+| [docs-audit.md](docs-audit.md) | Phase 03 documentation audit, its gaps, and its evidence ledger. |
+
 Material under `attic/`, `areas/`, and `lib/misc/` is historical and may be stale.

@@ -148,8 +148,8 @@ approval.
 
 ## Phase 03 readiness boundary
 
-Session 14 owns the final readiness claim. Its authoritative specification is
-`.spec_system/PRD/phase_03/session_14_final_200_player_and_compliance_gate.md`.
+Session 14 owns the final readiness claim. Its published outcome and remaining
+limitations are recorded in `docs/readiness-report.md`.
 Until that session qualifies isolated representative data, runs all eight profiles at
 25/50/100/200 clients with each 200-client hold lasting at least 30 minutes, injects
 the complete fault matrix, reconciles every durable domain after every run, validates

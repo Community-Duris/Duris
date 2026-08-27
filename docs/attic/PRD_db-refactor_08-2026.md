@@ -2,6 +2,10 @@
 
 ## Source Review Record
 
+- **Archived:** The `.spec_system/` tracking tree was retired after Phase 03 closeout;
+  its contents remain in git history at commit `212592e3`. The `.spec_system/PRD/phase_NN/`
+  stubs referenced below are part of that retired tree and are kept here as a
+  historical record.
 - **Requirements baseline:** Database Integration and 200-Player Scalability Review
 - **Date:** August 26, 2026
 - **Status:** Phases 00-03 complete; representative 200-account/four-hour capacity run deferred

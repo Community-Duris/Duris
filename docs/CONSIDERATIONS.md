@@ -105,9 +105,9 @@ Items that still constrain any future work or release claim.
   quality workflow and the compiler warning contract aligned with a fresh Ubuntu build.
 - [P03] **Local WebSocket ports are configurable**: `DURIS_WEBSOCKET_PORT` allows isolated
   development probes; production defaults to 4050 unless explicitly configured.
-- [P03] **Spec state is script-derived**: Use
-  `.spec_system/scripts/analyze-project.sh --json`; it reports all four defined phases
-  complete and no active session.
+- [P03] **Spec state is settled**: All four defined phases are complete and no
+  session is active. The `.spec_system/` tracking tree was retired after Phase 03
+  closeout; its contents remain in git history at commit `212592e3`.
 
 ---
 
