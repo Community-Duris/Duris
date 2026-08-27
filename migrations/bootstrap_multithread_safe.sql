@@ -2303,5 +2303,33 @@ CREATE TABLE `account_erasure_tombstones` (
   KEY `idx_account_erasure_tombstone_scope` (`account_scope_hash`),
   CONSTRAINT `account_erasure_tombstone_request_fk` FOREIGN KEY (`request_id`) REFERENCES `account_erasure_requests` (`request_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `mud_schema_baselines` (
+  `baseline_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `baseline_kind` enum('fresh_bootstrap','verified_legacy_adoption') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `schema_fingerprint` binary(32) NOT NULL, `manifest_version` int unsigned NOT NULL,
+  `runner_version` int unsigned NOT NULL,
+  `adopted_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`baseline_id`), UNIQUE KEY `uq_mud_schema_baseline_kind` (`baseline_kind`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `mud_schema_history` (
+  `migration_id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sequence_number` int unsigned NOT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `apply_checksum` binary(32) NOT NULL, `verify_checksum` binary(32) NOT NULL,
+  `compatibility` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `runner_version` int unsigned NOT NULL,
+  `applied_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`migration_id`),
+  UNIQUE KEY `uq_mud_schema_history_sequence` (`sequence_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `mud_schema_migration_state` (
+  `state_id` tinyint unsigned NOT NULL, `applied_count` int unsigned NOT NULL,
+  `history_checksum` binary(32) NOT NULL,
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`state_id`),
+  CONSTRAINT `chk_mud_schema_migration_state_id` CHECK (`state_id` = 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `mud_schema_migration_state` (`state_id`,`applied_count`,`history_checksum`)
+VALUES (1,0,UNHEX(SHA2('',256)));
 
 SET FOREIGN_KEY_CHECKS = 1;

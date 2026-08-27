@@ -1,0 +1,10 @@
+{
+  "manifest_version": 1,
+  "runner_version": 1,
+  "baseline": {
+    "id": "duris-schema-2026-08-27-session11",
+    "required_table_count": 170,
+    "required_table_fingerprint": "db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd"
+  },
+  "migrations": []
+}

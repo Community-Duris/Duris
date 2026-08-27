@@ -110,8 +110,11 @@ transaction, replay, or idempotency identifiers.
   baseline for this branch.
 - `migrations/schema_migration_v*.sql` -- incremental upgrades, versioned
   (accounts, hardcore, pets, obj UIDs, locker changes, ships/guilds retirements, ...).
-- `migrations/run_migration.sh` -- the single entrypoint that applies the
-  additive upgrade path; re-runnable by design.
+- `migrations/run_migration.sh` -- the legacy additive upgrade/baseline-adoption path;
+  re-runnable by design.
+- `migrations/migration_manifest.json` and `scripts/migration_runner.py` -- the
+  immutable manifest-driven path for every migration after the verified Session 11
+  baseline. See [IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md).
 
 ### Applying schema changes
 
@@ -121,6 +124,9 @@ mysql -u duris -p duris_dev < migrations/bootstrap_multithread_safe.sql
 
 # Existing populated database:
 ./migrations/run_migration.sh
+
+# After an adopted baseline, apply immutable post-baseline migrations:
+python3 scripts/migration_runner.py run
 ```
 
 Scoped persistence/auction repair tools exist for archive-restored clones:

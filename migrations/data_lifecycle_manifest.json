@@ -4790,6 +4790,60 @@
       "dependencies": ["database:account_erasure_requests"]
     },
     {
+      "id": "database:mud_schema_baselines",
+      "kind": "database_table",
+      "locator": "mud_schema_baselines",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_applicable",
+      "technical_purpose": "honest fresh-bootstrap or verified-legacy schema adoption identity",
+      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "export_rule": {
+        "disposition": "exclude", "subject_route": "lifecycle_metadata",
+        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
+        "excluded_fields": [], "shared_fields": []
+      },
+      "season_action": "retain", "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon", "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:mud_schema_history",
+      "kind": "database_table",
+      "locator": "mud_schema_history",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_applicable",
+      "technical_purpose": "immutable ordered post-baseline migration identity and content hashes",
+      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "export_rule": {
+        "disposition": "exclude", "subject_route": "lifecycle_metadata",
+        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
+        "excluded_fields": [], "shared_fields": []
+      },
+      "season_action": "retain", "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon", "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:mud_schema_migration_state",
+      "kind": "database_table",
+      "locator": "mud_schema_migration_state",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_applicable",
+      "technical_purpose": "tamper-evident applied-history count and immutable chain head",
+      "controller_decision": { "status": "pending", "reference": "PENDING-CONTROLLER-DECISION" },
+      "export_rule": {
+        "disposition": "exclude", "subject_route": "lifecycle_metadata",
+        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
+        "excluded_fields": [], "shared_fields": []
+      },
+      "season_action": "retain", "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon", "protected_record": true,
+      "dependencies": []
+    },
+    {
       "id": "database:personal_data_export_requests",
       "kind": "database_table",
       "locator": "personal_data_export_requests",

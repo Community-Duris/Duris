@@ -45,7 +45,7 @@ The final sessions reconcile documentation to the implemented system and run the
 | 08 | Retention and Archival Execution | Complete | Idempotent archive state machine, schema, verification, reconciliation gates, dry-run controls, and policy-disabled scheduler slot | 2026-08-27 |
 | 09 | Authenticated Personal Data Export | Complete | Guarded schema, exact manifest mapping, reauthentication/package/spool contract; canonical activation blocked by pending disclosure policy | 2026-08-27 |
 | 10 | Account Erasure and Backup Propagation | Complete | Guarded request/store/tombstone schema and restore preflight; canonical mutation blocked by pending policy | 2026-08-27 |
-| 11 | Immutable Migration Ledger and Runner | Not Started | Stable IDs, checksums, baseline adoption, exact replay, and partial-failure recovery | - |
+| 11 | Immutable Migration Ledger and Runner | Complete | Honest 170-table baseline, immutable manifest, success-last history, chain-head tamper evidence, and exact resume | 2026-08-27 |
 | 12 | Boot Schema and Lookup Compatibility | Not Started | Pre-write manifest verification, connection invariants, and transactional lookup publication | - |
 | 13 | Documentation and Operator Contract | Not Started | Source-traced architecture, database, configuration, lifecycle, testing, and recovery guidance | - |
 | 14 | Final 200-Player and Compliance Gate | Not Started | Integrated workloads, fault matrix, reconciliation, privacy checks, repair, and readiness evidence | - |
@@ -64,12 +64,13 @@ The final sessions reconcile documentation to the implemented system and run the
 - Session 08: Retention and Archival Execution (completed 2026-08-27; canonical mutation disabled)
 - Session 09: Authenticated Personal Data Export (completed 2026-08-27; canonical activation disabled)
 - Session 10: Account Erasure and Backup Propagation (completed 2026-08-27; canonical mutation disabled)
+- Session 11: Immutable Migration Ledger and Runner (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 11: Immutable Migration Ledger and Runner
+- Session 12: Boot Schema and Lookup Compatibility
 
 ---
 

@@ -1,7 +1,7 @@
 # Session 11: Immutable Migration Ledger and Runner
 
 **Session ID**: `phase03-session11-immutable-migration-ledger-and-runner`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One schema-history boundary from verified legacy baseline adoption
 through immutable migration discovery, checksum validation, ordered execution, success
 recording, rerun, partial-failure diagnosis, and fresh-database equivalence.
@@ -49,10 +49,10 @@ contract is installed without pretending that untracked historical steps were re
 
 ## Prerequisites
 
-- [ ] Phase 02 and Sessions 05, 08, and 10 final schema changes and verifiers are known.
-- [ ] All migration tests run only on empty isolated databases or backed-up development
+- [x] Phase 02 and Sessions 05, 08, and 10 final schema changes and verifiers are known.
+- [x] All migration tests run only on empty isolated databases or backed-up development
       clones.
-- [ ] Existing data-copy markers are backed up and their semantics are documented.
+- [x] Existing data-copy markers are backed up and their semantics are documented.
 
 ---
 
@@ -71,16 +71,16 @@ contract is installed without pretending that untracked historical steps were re
 
 ## Success Criteria
 
-- [ ] Every migration after the explicit baseline has one unique immutable ordered ID
+- [x] Every migration after the explicit baseline has one unique immutable ordered ID
       and SHA-256 checksum recorded only after its apply and verification succeed.
-- [ ] Editing, deleting, duplicating, or reordering an applied migration fails closed
+- [x] Editing, deleting, duplicating, or reordering an applied migration fails closed
       with a redacted diagnostic before any later operation runs.
-- [ ] Existing deployments receive an honest verified baseline-adoption record while
+- [x] Existing deployments receive an honest verified baseline-adoption record while
       selected legacy data-copy markers remain intact and semantically separate.
-- [ ] A partially failed DDL run reports the exact migration and verification state and
+- [x] A partially failed DDL run reports the exact migration and verification state and
       can resume safely without marking incomplete work successful.
-- [ ] Empty bootstrap and legacy-upgrade/adoption paths converge to the same required
+- [x] Empty bootstrap and legacy-upgrade/adoption paths converge to the same required
       schema and current migration identity.
-- [ ] Target/credential safety remains fail closed and tests cannot select production.
-- [ ] Focused runner, checksum, replay, schema-equivalence, and isolated database tests
+- [x] Target/credential safety remains fail closed and tests cannot select production.
+- [x] Focused runner, checksum, replay, schema-equivalence, and isolated database tests
       pass.

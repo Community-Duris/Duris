@@ -23,7 +23,7 @@ export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
 
 STEP=0
-TOTAL=139
+TOTAL=141
 FAILED=0
 
 run_sql() {
@@ -2930,6 +2930,7 @@ run_sql_file "apply personal data export schema" "$SCRIPT_DIR/personal_data_expo
 run_check "verify personal data export schema" "$SCRIPT_DIR/verify_personal_data_export_schema.sh"
 run_sql_file "apply account erasure schema" "$SCRIPT_DIR/account_erasure.sql"
 run_check "verify account erasure schema" "$SCRIPT_DIR/verify_account_erasure_schema.sh"
+run_sql_file "apply immutable migration ledger" "$SCRIPT_DIR/immutable_migration_ledger.sql"
 run_sql_file "apply item ownership ledger schema" "$SCRIPT_DIR/item_ownership_ledger.sql"
 run_check "verify item ownership ledger schema" "$SCRIPT_DIR/verify_item_ownership_schema.sh"
 run_sql_file "normalize stable corpse ownership identity" "$SCRIPT_DIR/live_item_movement_cutover.sql"
@@ -3011,6 +3012,8 @@ SET @sql = IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schem
 run_sql "convert ship cargo tables to InnoDB" "
 ALTER TABLE ship_cargo_prices ENGINE=InnoDB;
 ALTER TABLE ship_cargo_market_mods ENGINE=InnoDB;"
+
+run_check "adopt verified legacy migration baseline" "$SCRIPT_DIR/adopt_migration_baseline.sh"
 
 # flush redis cache (migration invalidates all cached data)
 STEP=$((STEP + 1))

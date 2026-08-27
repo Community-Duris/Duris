@@ -71,7 +71,8 @@
     "phase03-session07-data-processing-and-retention-contract",
     "phase03-session08-retention-and-archival-execution",
     "phase03-session09-authenticated-personal-data-export",
-    "phase03-session10-account-erasure-and-backup-propagation"
+    "phase03-session10-account-erasure-and-backup-propagation",
+    "phase03-session11-immutable-migration-ledger-and-runner"
   ],
   "next_session_history": [
     {
@@ -272,6 +273,21 @@
     {
       "date": "2026-08-27",
       "session": "phase03-session10-account-erasure-and-backup-propagation",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session11-immutable-migration-ledger-and-runner",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session11-immutable-migration-ledger-and-runner",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session11-immutable-migration-ledger-and-runner",
       "status": "completed"
     }
   ]
