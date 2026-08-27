@@ -29,6 +29,7 @@
 using namespace std;
 
 struct AccountBankBalances;
+enum class regen_resource : uint8_t;
 
 /* Legacy special-procedure callbacks expose their tagged payload as char *.
  * Convert it through void * so every object-pointer interpretation is explicit
@@ -907,14 +908,10 @@ void edit_start(P_desc desc, char *old_text, int max_lines, void (*callback)(P_d
 
 /* events.c */
 
-void clear_char_nevents(P_char, int, void *);
 void load_event_names();
 int Berserk(P_char, int);
 void CharWait(P_char, int);
-void ClearCharEvents(P_char);
-void ClearObjEvents(P_obj);
-void clear_events_type(P_char, int);
-void StartRegen(P_char, int);
+void StartRegen(P_char, regen_resource);
 void Stun(P_char, P_char, int, bool);
 typedef void (*event_func)(P_char ch, P_char victim, P_obj obj, void *data);
 nevent_schedule_result add_event(event_func, int, P_char, P_char, P_obj, int, const void *, int);

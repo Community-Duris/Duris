@@ -4554,7 +4554,7 @@ int secret_door(P_obj obj, P_char ch, int cmd, char *arg)
 			GET_HIT(ch) -= dam;
 		else
 			GET_HIT(ch) = dam;
-		StartRegen(ch, EVENT_HIT_REGEN);
+		StartRegen(ch, regen_resource::hit);
 	}
 	teleport_to(ch, real_room(obj->value[0]), 0);
 
@@ -4593,7 +4593,7 @@ int verzanan_portal(P_obj obj, P_char ch, int cmd, char *arg)
 			GET_HIT(ch) -= dam;
 		else
 			GET_HIT(ch) = dam;
-		StartRegen(ch, EVENT_HIT_REGEN);
+		StartRegen(ch, regen_resource::hit);
 	}
 	/*
 	   this is sort of a clunky way to do it -- DTS * teleport_to(ch,

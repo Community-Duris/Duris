@@ -5670,7 +5670,7 @@ int boulder_pusher(P_char ch, P_char t_ch, int cmd, char * /*arg*/)
 							die(victim, ch);
 							return (TRUE);
 						}
-						StartRegen(victim, EVENT_HIT_REGEN);
+						StartRegen(victim, regen_resource::hit);
 
 						/*
 						 * low possibility of stunnage or even KO
@@ -9471,7 +9471,8 @@ int archer(P_char ch, P_char /*pl*/, int cmd, char * /*arg*/)
 									die(targ, ch);
 									return TRUE;
 								}
-								StartRegen(targ, EVENT_HIT_REGEN);
+								StartRegen(targ,
+									   regen_resource::hit);
 								update_pos(targ);
 								gottem = TRUE;
 							}

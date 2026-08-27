@@ -560,7 +560,7 @@ int GlyphOfWarding(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 			GET_HIT(ch) -= Damage;
 		else
 			GET_HIT(ch) = 1;
-		StartRegen(ch, EVENT_HIT_REGEN);
+		StartRegen(ch, regen_resource::hit);
 	}
 	else
 	{

@@ -1,8 +1,8 @@
 
 /*
  * ***************************************************************************
- * *  File: events.c                                           Part of Duris *
- * *  Usage: manipulate various event lists
+ * *  File: new_events.c                                       Part of Duris *
+ * *  Usage: schedule, execute, cancel, and diagnose nevents
  * * *  Copyright  1994, 1995 - John Bashaw and Duris Systems Ltd.
  * *
  * ***************************************************************************
@@ -164,10 +164,6 @@ static void nevent_destroy_raw_payload(void *data)
 	FREE(data);
 }
 
-/*
- * this code was majorly redone by Tharkun, look for original events description
- * in events.c file
- */
 struct mm_ds *ne_dead_event_pool = NULL;
 
 static void nevent_assert_pool_accounting(const char *operation)
@@ -179,10 +175,7 @@ static void nevent_assert_pool_accounting(const char *operation)
 				 ne_dead_event_pool ? ne_dead_event_pool->objs_used : 0);
 }
 
-/*
- * main array of pointers to lists, schedule is the 'master' controller,
- * has one element per pulse in a real minute.
- */
+/* Absolute due ticks are hashed across one 300-pulse (75-second) revolution. */
 P_nevent ne_schedule[PULSES_IN_TICK];
 P_nevent ne_schedule_tail[PULSES_IN_TICK];
 
@@ -1850,17 +1843,14 @@ void ne_init_events(void)
 	// This is where we set the initial hour mud-tick.
 	nevent_register_periodic_job("game-clock", event_another_hour, 125 * WAIT_SEC - pulse,
 				     PULSES_IN_TICK, nevent_periodic_policy::fixed_rate, true);
-	// AddEvent(EVENT_SPECIAL, 500 - pulse, FALSE, another_hour, 0);
 
 	/* timed house control stuff */
 	// old guildhalls (deprecated)
 	// add_event(event_housekeeping, 500, NULL, NULL, NULL, 0, NULL, 0);
-	// AddEvent(EVENT_SPECIAL, 500 - pulse, FALSE, do_housekeeping, 0);
 
 	/* sunrise, sunset, etc informer */
 	nevent_register_periodic_job("astral-clock", event_astral_clock, 125 * WAIT_SEC,
 				     PULSES_IN_TICK, nevent_periodic_policy::fixed_rate, true);
-	// AddEvent(EVENT_SPECIAL, 500, TRUE, astral_clock, NULL);
 
 	/* sector weather */
 	// Why do we have 100 events where the weather changes instead of just one?
@@ -1869,16 +1859,11 @@ void ne_init_events(void)
 		// We take 2 ticks before we start changing the weather.
 		add_event(event_weather_change, 125 * WAIT_SEC + number(-9, 9), NULL, NULL, NULL, 0,
 			  &j, sizeof(j));
-		// AddEvent(EVENT_SPECIAL, 500 + number(-9, 9), TRUE, weather_change, Gbuf1);
 	}
-
-	/* Statistic logging functionality */
-	// AddEvent(EVENT_SPECIAL, 60, TRUE, write_statistic, NULL);
 
 	/* miscellaneous character looping */
 	nevent_register_periodic_job("generic-character-sweep", generic_char_event, 20 * WAIT_SEC,
 				     5 * WAIT_SEC, nevent_periodic_policy::fixed_delay, true);
-	// AddEvent(EVENT_SPECIAL, 20 * 4, FALSE, generic_char_event, 0);
 
 	// Checks to see if artifact souls are ready to merge.
 	nevent_register_periodic_job("artifact-bind", event_artifact_check_bind_sql, 15 * WAIT_SEC,

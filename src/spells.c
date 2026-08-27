@@ -2587,7 +2587,7 @@ void cast_bloodstone(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 	debug("blood to stone: duration: %f, dur: %d", duration, dur);
 
 	GET_VITALITY(victim) -= 3;
-	StartRegen(victim, EVENT_MOVE_REGEN);
+	StartRegen(victim, regen_resource::vitality);
 
 	bzero(&af, sizeof(af));
 	af.type = SPELL_BLOODTOSTONE;

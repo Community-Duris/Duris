@@ -1980,12 +1980,12 @@ void use_spell(P_char ch, int spell)
 				"&+MFocusing your mind, you bend reality a bit more easily...&n\n",
 				ch);
 			GET_MANA(ch) -= (int)(get_spell_circle(ch, spell) * 35 / 10);
-			StartRegen(ch, EVENT_MANA_REGEN);
+			StartRegen(ch, regen_resource::mana);
 		}
 		else
 		{
 			GET_MANA(ch) -= get_spell_circle(ch, spell) * MANA_PER_CIRCLE;
-			StartRegen(ch, EVENT_MANA_REGEN);
+			StartRegen(ch, regen_resource::mana);
 		}
 	}
 	else if (USES_SPELL_SLOTS(ch))

@@ -55,7 +55,6 @@ extern int spl_table[TOTALLVLS][MAX_CIRCLE];
 extern long boot_time;
 extern struct str_app_type str_app[];
 extern struct time_info_data time_info;
-extern uint event_counter[];
 extern struct mm_ds *dead_pconly_pool;
 extern struct mm_ds *dead_trophy_pool;
 extern int portal_id;
@@ -4050,7 +4049,7 @@ void free_char(P_char ch)
 		affect_remove(ch, af);
 	}
 
-	clear_char_nevents(ch, -1, NULL);
+	disarm_char_nevents(ch, NULL);
 
 	if (IS_PC(ch) && ch->only.pc)
 		delete_knownShapes(ch);
@@ -4061,9 +4060,6 @@ void free_char(P_char ch)
 	//      tr2 = tr1->next;
 	//      mm_release(dead_trophy_pool, tr1);
 	//    }
-	/* remove all events associated with this ch  */
-	// ClearCharEvents(ch);
-
 	if (IS_NPC(ch))
 	{
 		/* MOST mob strings should not be freed, as they are shared among
@@ -4152,7 +4148,7 @@ void free_obj(P_obj obj)
 		logit(LOG_DEBUG, "free_obj called with no obj!");
 		return;
 	}
-	ClearObjEvents(obj);
+	disarm_obj_nevents(obj, NULL);
 
 	while ((af = obj->affects))
 		obj_affect_remove(obj, af);

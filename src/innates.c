@@ -3108,7 +3108,7 @@ void do_doorkick(P_char ch, char *arg, int /*cmd*/)
                                                  * badly hurt if not
                                                  * lucky.
                                                  */
-    StartRegen(ch, EVENT_HIT_REGEN);
+    StartRegen(ch, regen_resource::hit);
 #endif
 		if (damage(ch, ch, dice(2, number(2, 10)), TYPE_UNDEFINED))
 			return;
@@ -3151,7 +3151,7 @@ void do_doorkick(P_char ch, char *arg, int /*cmd*/)
 
 		/*
 		    GET_HIT(ch) -= dice(2, 5);
-		    StartRegen(ch, EVENT_HIT_REGEN);
+		    StartRegen(ch, regen_resource::hit);
 		*/
 		if (damage(ch, ch, dice(2, 5), TYPE_UNDEFINED))
 			return;
@@ -3166,7 +3166,7 @@ void do_doorkick(P_char ch, char *arg, int /*cmd*/)
 		act(Gbuf1, TRUE, ch, 0, 0, TO_ROOM);
 		/*
 		    GET_HIT(ch) -= dice(2, number(1, 10));
-		    StartRegen(ch, EVENT_HIT_REGEN);
+		    StartRegen(ch, regen_resource::hit);
 		*/
 		if (damage(ch, ch, dice(2, number(1, 10)), TYPE_UNDEFINED))
 			return;
@@ -3198,7 +3198,7 @@ void do_tupor(P_char ch, char * /*arg*/, int /*cmd*/)
 	}
 
 	SET_BIT(ch->specials.affected_by4, AFF4_TUPOR);
-	StartRegen(ch, EVENT_MANA_REGEN);
+	StartRegen(ch, regen_resource::mana);
 	send_to_char("You slip into a death-like trance...\n", ch);
 	act("$n slips into a death-like trance...", TRUE, ch, 0, 0, TO_ROOM);
 }

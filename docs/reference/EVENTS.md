@@ -1,271 +1,253 @@
 # Event system (`nevent`)
 
-Reference for the deferred-work scheduler in `src/new_events.c`. This document
-covers the mechanism: how events are stored, scheduled, fired, cancelled, and
-bounded. For the incident history behind the wheel's load-bearing invariants,
-see [ARCHITECTURE.md](ARCHITECTURE.md#event-wheel).
+This is the mechanism reference for Duris's deferred-work scheduler. For the
+game-loop context and incident-derived design constraints, see
+[ARCHITECTURE.md](ARCHITECTURE.md#event-wheel).
 
-Two files divide the work:
+The implementation is split by responsibility:
 
-- **`src/new_events.c`** — the scheduler: the wheel, insertion, the per-pulse
-  execution loop, budgeting, deferral, cancellation.
-- **`src/events.c`** — the callbacks themselves: `event_hit_regen`,
-  `event_mana_regen`, `event_move_regen`, `event_wait`, `event_reset_zone`.
+- `src/new_events.c` owns the timer wheel, scheduling, ordering, execution,
+  cancellation, overload recovery, diagnostics, and invariant checks.
+- `src/nevent_periodic.c` owns durable in-process registration and health for
+  recurring jobs.
+- `src/events.c` contains callbacks and callback-specific helpers such as
+  regeneration, command waits, room events, and zone resets. It is not a
+  second scheduler.
+- `src/event_names.c` maps callback addresses to diagnostic names.
+- `src/events.h` contains only the regeneration selector and the current
+  character/object event-list traversal helpers. The old numeric event-type
+  scheduler no longer exists.
 
-## The wheel
+## Clock and wheel
 
-`src/new_events.c:116`
+The scheduler uses a monotonic absolute tick, `ne_event_tick`. There are four
+pulses per second and `PULSES_IN_TICK` is 300, so one physical wheel revolution
+is 75 seconds. The revolution is an indexing detail, not the duration limit.
 
-```c
-P_nevent ne_schedule[PULSES_IN_TICK];       /* 300 buckets */
-P_nevent ne_schedule_tail[PULSES_IN_TICK];  /* O(1) append */
-```
-
-A hashed timer wheel with one bucket per pulse in a tick. Each bucket holds a
-doubly-linked list of events; the tail array makes appending O(1) and
-`prev_sched` makes removal O(1).
-
-| Constant | Value | Source | Meaning |
-|----------|-------|--------|---------|
-| `OPT_USEC` | `250000` | `config.h:82` | 250 ms per pulse, 4 pulses/second |
-| `WAIT_SEC` | `4` | `config.h:105` | pulses per second |
-| `PULSES_IN_TICK` | `300` | `config.h:107` | buckets; one revolution = 75 s |
-
-Each pulse, `ne_events()` visits bucket `pulse` and **only** that bucket.
-
-## Scheduling: bucket plus revolution counter
-
-`add_event()` (`src/new_events.c:610`) reduces to three lines:
+Every event records its absolute `due_tick` and is placed in:
 
 ```c
-loc            = (delay + pulse) % PULSES_IN_TICK;
-event->timer   = (delay / PULSES_IN_TICK) + 1;
-event->element = loc;
+bucket = due_tick % PULSES_IN_TICK;
 ```
 
-`element` is the position on the ring; `timer` is how many full revolutions to
-skip first. The execution loop decrements on every visit and fires at zero:
+The current bucket can therefore contain deadlines from many revolutions.
+Eligibility is determined by comparing `due_tick` with `ne_event_tick`; there
+is no relative revolution counter to decrement. Long delays remain exact even
+when a bucket is deferred under load.
 
-```c
-if (--(current_nevent->timer) > 0)
-    continue;    /* not this revolution */
-```
+`ne_events()` may run only once for a scheduler tick. A zero-delay event
+scheduled before that pass is eligible in the current tick. Scheduling during
+or after the pass clamps the deadline to the next tick. The pass also snapshots
+the current sequence number, so callbacks cannot grow the active pass by
+creating more immediately executable work.
 
-A 1000-pulse delay lands in bucket `(1000 + pulse) % 300` with `timer = 4`: it is
-passed over three times and fires on the fourth visit. This is how a fixed
-300-bucket array represents an unbounded delay range. Insertion is O(1)
-regardless of delay — there is no priority queue and no comparison sort.
+## Event records and ownership
 
-`add_event()` rejects a negative delay, rejects a dead `ch` (except
-`release_mob_mem`), rejects a `victim` with no `ch`, and promotes a zero delay to
-one pulse when called after this pulse's `Events()` call (`after_events_call`).
+`nevent_data` records the callback, payload, absolute deadline, stable sequence,
+priority, lifecycle state, deferral metadata, periodic-job identity, and safe
+diagnostic owner identities. An event can be linked into three intrusive,
+doubly linked lists at once:
 
-## The event record
+| Links | Purpose |
+| --- | --- |
+| `prev_sched`, `next_sched` | One wheel bucket. |
+| `prev_char_nev`, `next_char_nev` | The owning character's event list. |
+| `prev_obj_nev`, `next_obj_nev` | The owning object's event list. |
 
-`struct nevent_data`, `src/structs.h:2018`. Each event is on **three intrusive
-lists simultaneously**:
+Each list has a head and tail. Wheel and owner-list removal are O(1) once the
+record is known. Owner-specific lookup is O(k) for that owner; the callback-only
+lookup scans the wheel and should be reserved for diagnostics or rare paths.
 
-| Field(s) | List | Answers |
-|----------|------|---------|
-| `prev_sched`, `next_sched` | wheel bucket | "what fires this pulse?" |
-| `next_char_nev` | owning character | "what does this character have pending?" |
-| `next_obj_nev` | owning object | "what does this object have pending?" |
+When an event targets a different character, `char_link_data` connects owner
+and victim. Breaking that link cancels the event instead of leaving a dangling
+victim pointer. Runtime character IDs and the object vnum are captured while
+owners are live so diagnostics never need to dereference a stale pointer just
+to identify it.
 
-The character and object chains are what make targeted cancellation cheap. The
-overload set at `src/new_events.c:1366-1400` shows the cost difference:
+Records come from the `NEVENTS` memory pool. Pool usage, the live-event counter,
+and wheel membership are kept equal and are checked at lifecycle boundaries.
 
-| Call | Cost |
-|------|------|
-| `get_scheduled(func)` | O(300 × N) — scans every bucket |
-| `get_scheduled(ch, func)` | O(k) — walks `ch->nevents` |
-| `get_scheduled(obj, func)` | O(k) — walks `obj->nevents` |
+## Scheduling API
 
-Prefer the two-argument forms. The global scan exists for diagnostics and
-should not appear in a per-player or per-pulse path.
+`add_event()` returns `nevent_schedule_result`, not a nullable record. A success
+contains a `nevent_handle` made from the record address and its nonzero sequence;
+the sequence prevents a pooled address from making an old handle valid again.
+Failure statuses distinguish:
 
-Two other fields matter:
+- null callbacks and negative delays;
+- dead owners and victims without owners;
+- invalid payloads;
+- exhausted sequence space;
+- invalid replacement targets; and
+- calls from outside the game thread.
 
-- **`data`** is a heap copy. `add_event()` allocates `data_size` bytes and
-  `memcpy`s the caller's payload, so passing a stack local is safe.
-  `clear_nevent()` frees it.
-- **`cld`** is a `char_link_data` created when `ch != victim`, so a destroyed
-  victim cannot leave the event holding a dangling pointer.
+The raw payload overload copies bytes and accepts only trivially copyable C++
+types. Use `add_event_owned()` for typed/non-trivial payloads; it stores the
+payload with the matching destructor. Every teardown route invokes the recorded
+destructor exactly once.
 
-`scheduled_tick`, `sequence`, `priority`, and `deferral_count` support the
-budget, ordering, and telemetry described below.
+`nevent_replace()` and `nevent_replace_owned()` arm the successor before
+cancelling the old handle. If successor scheduling fails, the original event
+remains active. Existing events can be moved with `nevent_reschedule_at()`,
+`nevent_reschedule_after()`, or `nevent_advance_by()` when no event pass is
+active.
 
-## Cancellation: neutering, not unlinking
+Callers must inspect scheduling failure whenever game state assumes that a
+callback will later clear it. `CharWait()` is the command-gate example: it
+restores a safe state if the wait event cannot be armed.
 
-`disarm_char_nevents()` (`src/new_events.c:524`) does **not** remove the event
-from its bucket:
+## Ordering and fairness
 
-```c
-e1->func  = NULL;
-e1->timer = 1;
-```
+Within a bucket, insertion uses this total order:
 
-The event is still visited; `ne_events()` sees a null `func`, skips the call, and
-frees the record. The header comment states the contract: *"They fire but do
-nothing."*
+1. earlier absolute `due_tick`;
+2. higher effective priority; then
+3. lower `sequence` (stable FIFO for otherwise equal events).
 
-This is a re-entrancy requirement, not an optimisation. Callbacks routinely
-cancel events, including their own and including the one currently being
-iterated — `current_nevent` is a global. Unlinking mid-iteration would invalidate
-the loop's `next_event` pointer. Neutering avoids the entire class of bug.
+With `DURIS_NEVENT_PLAYER_PRIORITY=1`, latency-sensitive player callbacks have
+player priority: command waits, spell casts, memorization, affect balancing,
+and player regeneration. Ordinary events age above player priority after two
+deferrals or two ticks of lateness. This keeps visible actions responsive
+without allowing an endless player prefix to starve older maintenance work.
 
-The cost is that a cancelled event holds its pool slot until its bucket comes
-around again: up to 300 pulses (75 s). "Cancelled" and "freed" are not the same
-instant.
+## Cancellation and destruction
 
-Passing `func == NULL` neuters every event on the character; passing a specific
-function neuters only events of that type and leaves `e->ch` intact, because the
-event is not being pulled from the `next_char_nev` list.
+Use `nevent_cancel(handle)` for one event, or `disarm_char_nevents()` and
+`disarm_obj_nevents()` for all matching events owned by an entity. Passing a
+null callback filter disarms every event for that owner.
 
-## Memory
+Cancellation is sequence-validated and idempotent. Outside an active event
+pass, it unlinks and destroys the record immediately. During a pass, it marks
+the event cancellation-pending, clears the callback, detaches owners
+immediately, and queues reclamation until iteration is safe. This protects
+callbacks that cancel themselves or another record in the bucket while still
+releasing all owner-facing references at once.
 
-Events are pool-allocated: `mm_get(ne_dead_event_pool)` on creation,
-`mm_release()` after firing. There is no per-event `malloc`. At Duris's event
-rates — regeneration, wait gates, casting and affect timers for every character —
-heap churn would fragment badly.
+Destruction unlinks every remaining list, removes a victim link, invokes the
+payload destructor, reconciles any deferral debt, decrements the live counter,
+and returns the record to the pool. Results distinguish immediate cancellation,
+deferred reclamation, stale handles, already-inactive events, invalid handles,
+and wrong-thread calls.
 
-`clear_nevent()` (`src/new_events.c:309`) is the teardown: remove the character
-link, free `data`, and unlink from all three lists.
+## Per-pulse limits and overload recovery
 
-## Per-pulse budget
+The default base limits are 25 ms and 4,000 executed callbacks per pulse. A
+zero value disables that individual limit; setting both to zero intentionally
+makes the scheduler unbounded and emits a warning once. Configuration values
+are rejected outside their documented range.
 
-`src/new_events.c:41-42`
+Time is checked after each callback and every 64 scans through not-yet-due
+records. When either active limit is exhausted, every remaining due event in
+the unscanned suffix is moved to the next bucket. Its original `due_tick`
+remains authoritative, so lateness stays measurable and no long-delay event
+loses a revolution.
 
-```c
-#define NEVENT_BUDGET_USEC_DEFAULT   25000L   /* 25 ms */
-#define NEVENT_MAX_CALLBACKS_DEFAULT 4000L
-```
+The first deferral registers three forms of catch-up debt:
 
-25 ms of a 250 ms pulse — the wheel gets 10% of the frame; commands, combat and
-sockets get the rest. The wall-clock budget is intended to be the binding limit;
-a callback cap low enough to end pulses well inside the time budget starves the
-wheel and builds a backlog.
+- callback count;
+- an EWMA-based callback-cost estimate; and
+- the oldest outstanding due tick.
 
-The budget is sampled asymmetrically, because `clock_gettime()` is not free:
+Debt receives a front-loaded quota over a four-pulse repayment window. The
+quota can extend both limits, capped by the configured catch-up allowances.
+Old deadlines sort ahead of new arrivals, and aged ordinary work outranks new
+player-priority work, so sustainable incoming load cannot hold the debt steady
+forever. Executing or cancelling a deferred event removes its count, cost, and
+due-tick debt exactly once.
 
-- **skip path** (`--timer`, not yet due): checked every 64 scanned events
-- **execute path**: checked after every callback
+A callback itself cannot be preempted. Heavy jobs must expose bounded slices
+instead of hiding an unbounded sweep inside one invocation.
 
-## Deferral
+## Periodic jobs and continuations
 
-When the budget is exhausted, `nevent_defer_suffix()` (`src/new_events.c:1101`)
-moves the entire remaining suffix of the bucket to `pulse + 1` with `timer = 1`,
-preserving order and incrementing `deferral_count`.
+The periodic registry gives each recurring job a unique string key, callback,
+initial delay, interval, policy, enabled state, and one owned event handle.
+Registering the same definition twice is suppressed; a conflicting key or a
+callback registered under another key is rejected.
 
-One detail in that function is load-bearing:
+- `fixed_rate` advances from the prior deadline and counts intervals skipped
+  while late.
+- `fixed_delay` advances from callback completion.
+- `nevent_periodic_retry_after()` records a failure and selects a retry delay.
+- `nevent_periodic_next_after()` overrides the next successful interval.
+- `nevent_periodic_continue_after()` schedules another bounded slice without
+  counting the logical run as complete.
 
-```c
-/* Scheduled for a later ring traversal.  The scan never reached it, so
- * decrement here; otherwise it silently loses a whole revolution. */
-if (event->timer > 1)
-{
-    event->timer--;
-    continue;
-}
-```
+The watchdog runs after every event pass. It re-arms an enabled job that lost
+its successor, reports mismatched live handles as corruption, and tracks missed
+runs, schedule failures, callback failures, duplicate suppression, and watchdog
+rearms. The registry currently owns 11 boot jobs; Redis-dependent jobs remain
+registered but can be disabled by configuration.
 
-Events in the deferred suffix with `timer > 1` were never visited, so they never
-received their decrement. Without this, every saturated pulse would push them a
-full revolution (75 s) into the future — silently, with no error.
+Maintenance callbacks use one-tick continuations to bound their work. Current
+slice caps are eight artifact-bind rows, one artifact-expiry row, four
+artifact-war owners, eight dirty-player checkpoints, and four surname players.
+Each logical scan uses stable cursors or runtime-ID snapshots so entity removal
+between slices cannot invalidate traversal state.
 
-## Catch-up debt
+## Game-thread ownership
 
-Deferring once is harmless. Deferring the same suffix every pulse starves the
-tail of a busy bucket permanently. `src/new_events.c:869-921` repays the backlog
-on a bounded schedule:
+`ne_init_event_pool()` binds the scheduler to the game thread. Scheduling,
+cancellation, rescheduling, lookup, event execution, periodic-registry access,
+and invariant inspection all require that thread. A debug build treats a
+wrong-thread call as corruption; a release build logs and rejects it. Worker
+threads must return results through the established game-thread handoff rather
+than mutate nevent state directly.
 
-```c
-nevent_catchup_quota = (debt + remaining - 1) / remaining;          /* ceil */
-extra_callbacks      = MIN(quota, max_extra_callbacks);
-extension_us         = MIN(max_extension_usec,
-                           extra_callbacks * MAX(1L, nevent_avg_callback_us));
-```
+## Diagnostics
 
-- Deferring N events adds N to `nevent_catchup_debt` and opens a repayment window
-  of `NEVENT_CATCHUP_WINDOW_PULSES` (4).
-- Each pulse in the window repays `ceil(debt / remaining)`, front-loaded so the
-  debt converges.
-- The budget extension is sized from `nevent_avg_callback_us`, an EWMA of
-  measured callback cost (`NEVENT_CALLBACK_EWMA_SHIFT 4`, 1/16 weighting) — not a
-  fixed guess.
-- Both extensions are capped: +5 ms and +4000 callbacks.
-- `nevent_complete_deferred()` decrements the debt only when a previously
-  deferred event actually runs.
+The `world events` command reports wheel, counter, pool, invariant, last-pulse,
+and periodic-registry health. `world events periodic` shows every registered
+job, including armed/running state, calls, completed logical runs, continuation
+slices, failures, missed runs, and the next deadline. Supplying a callback name
+lists matching records with deadline, lateness, effective priority, deferrals,
+sequence, and captured owner/victim/object identities plus live checks.
 
-A load spike therefore produces a brief, bounded, self-correcting delay rather
-than a permanent stall.
+The optional analytics window uses a dynamic callback map, so distinct callback
+functions are never aliased into a fixed slot. It records full scheduler wall
+time, callback costs, deferrals, pending peaks, budget exhaustion, and lateness
+histograms. Relevant logs are:
 
-## Priority and promotion
+| Log prefix | Meaning |
+| --- | --- |
+| `NEVENT BUDGET` | Work was deferred after a limit was reached. |
+| `NEVENT CATCHUP` | Debt was added or a repayment quota was active. |
+| `NEVENT SLOW` | Total scheduler work for the pulse reached 50 ms. |
+| `NEVENT ANALYTICS WINDOW` | One 300-pulse aggregate window. |
+| `NEVENT ANALYTICS CALLBACK` | Per-callback timing and deferral totals. |
+| `PLAYER EVENT TIMING` | Optional per-player deadline trace. |
 
-`nevent_is_player_timed()` (`src/new_events.c:182`) classifies PC regeneration
-(`event_hit_regen`, `event_mana_regen`, `event_move_regen`), `event_spellcast`,
-`event_memorize` and `event_wait` as player-timed.
-
-`nevent_link_schedule()` (`src/new_events.c:206`) inserts player-timed events at
-the **front** of the bucket, after any existing player prefix, and everything
-else at the tail. Players perceive regeneration and wait-gate lag; mob
-housekeeping is not perceived the same way.
-
-That ordering creates the inverse risk: a permanently busy player prefix would
-starve ordinary events. `nevent_promote_overdue_event()`
-(`src/new_events.c:258`) is the release valve — on budget exhaustion, one
-non-player event is hoisted to run before the suffix is deferred. It is limited
-to one promotion per pulse (`priority_promotion_used`), and it is deliberately
-**not** gated on the callback cap, since it exists precisely for saturated
-pulses. The contract is asserted in the source:
-
-```c
-static_assert(NEVENT_MAX_DEFERRALS == 0U,
-    "Immediate overdue-event promotion is part of the scheduler contract");
-```
-
-## Telemetry
-
-Per-callback cost is tracked in a 128-slot analytics ring keyed by function name
-(`nevent_callback_label()` maps hot function pointers to names directly and falls
-back to `get_function_name()`, which reads `lib/misc/event_names`).
-
-| Log line | Emitted when |
-|----------|--------------|
-| `NEVENT BUDGET:` | any event was deferred this pulse |
-| `NEVENT CATCHUP:` | a repayment window is open or new debt was added |
-| `NEVENT SLOW:` | the loop exceeded 50 ms |
-
-`NEVENT BUDGET` carries `scanned`, `executed`, `deferred`, `catchup_debt`,
-`max_late_ticks`, the name of the latest event, and the slowest callback with its
-cost — enough to identify a saturating callback without a profiler.
+The expensive invariant checker is observation-only. It verifies reciprocal
+wheel and owner links, unique sequences, lifecycle and payload ownership,
+live-owner identities, victim links, periodic metadata, pool/counter equality,
+and exact catch-up debt. It reports corruption but never repairs or severs
+links while inspecting them.
 
 ## Configuration
 
-Read by `nevent_config_limit()`. The first two are also listed in
-[CONFIGURATION.md](../operations/CONFIGURATION.md#diagnostics).
+| Variable | Default | Allowed | Effect |
+| --- | ---: | ---: | --- |
+| `DURIS_NEVENT_BUDGET_USEC` | `25000` | `0..1000000` | Base wall-clock limit per pulse; `0` is unlimited. |
+| `DURIS_NEVENT_MAX_CALLBACKS` | `4000` | `0..1000000` | Base callback limit per pulse; `0` is unlimited. |
+| `DURIS_NEVENT_CATCHUP_MAX_EXTENSION_USEC` | `5000` | `0..1000000` | Maximum time added while repaying debt. |
+| `DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS` | `4000` | `0..1000000` | Maximum callback capacity added while repaying debt. |
+| `DURIS_NEVENT_PLAYER_PRIORITY` | `1` | `0..1` | Enables player-timed priority. |
+| `DURIS_NEVENT_TRACE_PLAYER` | `0` | `0..1` | Emits per-player timing logs. |
+| `DURIS_NEVENT_ANALYTICS` | `0` | `0..1` | Emits 300-pulse scheduler analytics windows. |
 
-| Variable | Default | Effect |
-|----------|---------|--------|
-| `DURIS_NEVENT_BUDGET_USEC` | `25000` | Wall-clock budget per pulse. |
-| `DURIS_NEVENT_MAX_CALLBACKS` | `4000` | Callback count cap per pulse. |
-| `DURIS_NEVENT_CATCHUP_MAX_EXTENSION_USEC` | `5000` | Cap on the catch-up budget extension. |
-| `DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS` | `4000` | Cap on catch-up extra callbacks. |
-| `DURIS_NEVENT_PLAYER_PRIORITY` | `1` | Non-zero enables player-timed front insertion. |
-| `DURIS_NEVENT_TRACE_PLAYER` | `0` | Non-zero logs `PLAYER EVENT TIMING` per player event. |
-| `DURIS_NEVENT_ANALYTICS` | `0` | Non-zero enables the per-callback analytics window. |
+## Core invariants
 
-## Invariants
-
-- `ne_events()` is **not re-entrant**. `current_nevent` is a global; a callback
-  must never invoke the event loop. Nothing enforces this.
-- A callback may cancel any event, including its own, because cancellation
-  neuters rather than unlinks.
-- `add_event()` may refuse an event. Callers that set state cleared only by the
-  scheduled event must handle refusal — see `CharWait()` in `src/events.c` and
-  [ARCHITECTURE.md](ARCHITECTURE.md#command-gate).
-- Deferral covers the whole unscanned suffix, and every event left behind still
-  has its timer accounted for.
-- A long-running callback cannot be preempted. The budget bounds how many
-  callbacks run, never how long one runs; slicing a sweep across invocations is
-  the caller's responsibility (`generic_char_event` in `src/handler.c` is the
-  worked example).
+- One bound game thread owns all scheduler and periodic-registry state.
+- `ne_events()` runs exactly once per monotonic tick and is not re-entrant.
+- The deadline and sequence cutoff prevent callbacks from extending their own
+  active pass.
+- Every live record has one wheel membership; each live owner has one matching
+  owner-list membership.
+- Pool usage, the live counter, and wheel cardinality agree.
+- Handles are valid only while both address and sequence match an active record.
+- Every accepted payload has exactly one matching destruction path.
+- Cancellation detaches owners immediately and reclaims at the first safe point.
+- Deferral preserves absolute deadlines and debt metadata until execution or
+  cancellation.
+- A registered, enabled periodic job is running or owns exactly one successor.
+- Heavy maintenance advances through bounded, resumable slices.

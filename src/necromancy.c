@@ -610,7 +610,7 @@ void raise_undead(int level, P_char ch, P_char /*victim*/, P_obj obj, int which_
 	// 5 at 56.
 	undead->points.damsizedice = (level - 1) / 11;
 
-	StartRegen(undead, EVENT_MANA_REGEN);
+	StartRegen(undead, regen_resource::mana);
 	balance_affects(undead);
 	undead->only.npc->str_mask = (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2);
 

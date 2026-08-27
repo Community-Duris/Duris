@@ -468,9 +468,9 @@ int room_of_sanctum(int /*room*/, P_char ch, int cmd, char * /*arg*/)
 				GET_HIT(ch) = 1;
 			else
 				GET_HIT(ch) -= 90;
-			StartRegen(ch, EVENT_HIT_REGEN);
+			StartRegen(ch, regen_resource::hit);
 			GET_VITALITY(ch) = 0;
-			StartRegen(ch, EVENT_MOVE_REGEN);
+			StartRegen(ch, regen_resource::vitality);
 		}
 		return TRUE;
 	}

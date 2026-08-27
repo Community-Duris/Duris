@@ -34,6 +34,7 @@
 #include "disguise.h"
 #include "dreadlord.h"
 #include "epic.h"
+#include "events.h"
 #include "gmcp.h"
 #include "hardcore_config.h"
 #include "grapple.h"
@@ -2938,7 +2939,7 @@ void die(P_char ch, P_char killer)
 
 			check_saved_corpse(ch);
 
-			ClearCharEvents(ch);
+			disarm_char_nevents(ch, NULL);
 			ch->specials.conditions[DISEASE_TYPE] = 0;
 			ch->specials.conditions[POISON_TYPE] = 0;
 
@@ -5143,13 +5144,13 @@ void check_vamp(P_char ch, P_char victim, double fdam, uint flags)
 			GET_MANA(ch) = GET_MAX_MANA(ch);
 
 		if (GET_MANA(ch) < GET_MAX_MANA(ch))
-			StartRegen(ch, EVENT_MANA_REGEN);
+			StartRegen(ch, regen_resource::mana);
 
 		GET_MANA(victim) -= (int)can_mana;
 		// BOUNDED(0, number(1, can_mana), GET_MANA(victim));
 
 		if (GET_MANA(victim) < GET_MAX_MANA(victim))
-			StartRegen(victim, EVENT_MANA_REGEN);
+			StartRegen(victim, regen_resource::mana);
 	}
 
 	// Negative energy barrier prevents all forms of hitpoint vamp.
@@ -5905,14 +5906,14 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 			}
 			if (new_stat != STAT_DEAD)
 			{
-				StartRegen(victim, EVENT_HIT_REGEN);
-				StartRegen(victim, EVENT_WARD_REGEN);
+				StartRegen(victim, regen_resource::hit);
+				StartRegen(victim, regen_resource::ward);
 			}
 		}
 		else
 		{
-			StartRegen(victim, EVENT_HIT_REGEN);
-			StartRegen(victim, EVENT_WARD_REGEN);
+			StartRegen(victim, regen_resource::hit);
+			StartRegen(victim, regen_resource::ward);
 			max_hit = GET_MAX_HIT(victim);
 
 			if (dam > GET_HIT(victim) && ch != victim)

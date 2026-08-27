@@ -88,7 +88,7 @@ void event_firesector(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data
 	else
 	{
 		GET_HIT(ch) -= 3;
-		StartRegen(ch, EVENT_HIT_REGEN);
+		StartRegen(ch, regen_resource::hit);
 		// Doesn't matter if PC, if they have a descriptor, show the burn!
 		if (ch->desc)
 			ch->desc->prompt_mode = TRUE;
@@ -134,7 +134,7 @@ void event_underwatersector(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * 
 		else
 		{
 			GET_HIT(ch) -= 3;
-			StartRegen(ch, EVENT_HIT_REGEN);
+			StartRegen(ch, regen_resource::hit);
 		}
 
 		if (ch->desc)
@@ -206,7 +206,7 @@ void swimming_char(P_char ch)
 	      if( ch->desc )
 	    ch->desc->prompt_mode = TRUE;
 
-	      StartRegen(ch, EVENT_MOVE_REGEN);
+	      StartRegen(ch, regen_resource::vitality);
 	  } else {
 	    FIND_EVENT_TYPE(e1, EVENT_SWIMMING)
 	    if (ch == (P_char) e1->actor.a_ch)
@@ -513,7 +513,7 @@ void event_negsector(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /*data*
 	else
 	{
 		GET_HIT(ch) -= 3;
-		StartRegen(ch, EVENT_HIT_REGEN);
+		StartRegen(ch, regen_resource::hit);
 		if (ch->desc)
 			ch->desc->prompt_mode = TRUE;
 	}

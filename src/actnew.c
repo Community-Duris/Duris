@@ -1573,14 +1573,14 @@ void do_meditate(P_char ch, char * /*arg*/, int /*cmd*/)
 				"You feel completely aligned with your spirit as you sink in meditation...\n",
 				ch);
 			CharWait(ch, PULSE_VIOLENCE / 2);
-			StartRegen(ch, EVENT_MOVE_REGEN);
+			StartRegen(ch, regen_resource::vitality);
 		}
 		else
 		{
 			send_to_char("You sink in meditation...\n", ch);
 			CharWait(ch, PULSE_VIOLENCE);
 		}
-		StartRegen(ch, EVENT_HIT_REGEN);
+		StartRegen(ch, regen_resource::hit);
 		add_event(event_meditation,
 			  get_property("timer.sec.advancedMeditation", 3) * WAIT_SEC, ch, 0, 0, 0,
 			  0, 0);
@@ -1591,7 +1591,7 @@ void do_meditate(P_char ch, char * /*arg*/, int /*cmd*/)
 		CharWait(ch, PULSE_VIOLENCE);
 	}
 	SET_BIT(ch->specials.affected_by, AFF_MEDITATE);
-	StartRegen(ch, EVENT_MANA_REGEN);
+	StartRegen(ch, regen_resource::mana);
 }
 
 /*
@@ -1696,7 +1696,7 @@ P_char morph(P_char ch, int rnum, int mode)
 				    GET_MAX_VITALITY(mob) / 100;
 	}
 	mob->only.npc->default_pos = POS_STANDING + STAT_NORMAL;
-	ClearCharEvents(mob);
+	disarm_char_nevents(mob, NULL);
 
 	if (ch->desc)
 	{
@@ -3476,7 +3476,7 @@ void do_hamstring(P_char ch, char *arg, int /*cmd*/)
 
 		GET_VITALITY(vict) -= i;
 
-		StartRegen(vict, EVENT_MOVE_REGEN);
+		StartRegen(vict, regen_resource::vitality);
 
 		if (!affected_by_spell(vict, SKILL_AWARENESS))
 		{

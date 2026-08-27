@@ -83,7 +83,6 @@ extern const char *connected_types[];
 extern const char *dirs[];
 extern const char *drinks[];
 extern const char *equipment_types[];
-extern const char *event_names[];
 extern const char *exit_bits[];
 extern const flagDef extra_bits[];
 extern const flagDef extra2_bits[];

@@ -2545,13 +2545,13 @@ void enter_game(P_desc d)
 		GET_VITALITY(ch) = BOUNDED(1, GET_VITALITY(ch) + move_g, GET_MAX_VITALITY(ch));
 
 		if (GET_HIT(ch) != GET_MAX_HIT(ch))
-			StartRegen(ch, EVENT_HIT_REGEN);
+			StartRegen(ch, regen_resource::hit);
 		if (GET_MANA(ch) != GET_MAX_MANA(ch))
-			StartRegen(ch, EVENT_MANA_REGEN);
+			StartRegen(ch, regen_resource::mana);
 		if (GET_VITALITY(ch) != GET_MAX_VITALITY(ch))
-			StartRegen(ch, EVENT_MOVE_REGEN);
+			StartRegen(ch, regen_resource::vitality);
 		if (GET_WARD(ch) != GET_MAX_WARD(ch))
-			StartRegen(ch, EVENT_WARD_REGEN);
+			StartRegen(ch, regen_resource::ward);
 
 		set_char_size(ch);
 

@@ -44,7 +44,6 @@ extern P_index mob_index;
 extern P_index obj_index;
 extern P_room world;
 extern const racewar_struct racewar_color[MAX_RACEWAR + 2];
-extern const char *event_names[];
 extern const struct stat_data stat_factor[];
 extern const struct racial_data_type racial_data[];
 float spell_pulse_data[LAST_RACE + 1];

@@ -871,8 +871,8 @@ void spell_restore_spirit(int level, P_char ch, char * /*arg*/, [[maybe_unused]]
 		GET_VITALITY(ch) += 10;
 	}
 
-	StartRegen(ch, EVENT_MOVE_REGEN);
-	StartRegen(victim, EVENT_MOVE_REGEN);
+	StartRegen(ch, regen_resource::vitality);
+	StartRegen(victim, regen_resource::vitality);
 
 	result = spell_damage(ch, victim, dam, SPLDAM_HOLY, SPLDAM_NOSHRUG, &messages);
 
@@ -988,8 +988,8 @@ void spell_enervation(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int
 		GET_VITALITY(ch) += 10;
 	}
 
-	StartRegen(ch, EVENT_MOVE_REGEN);
-	StartRegen(victim, EVENT_MOVE_REGEN);
+	StartRegen(ch, regen_resource::vitality);
+	StartRegen(victim, regen_resource::vitality);
 
 	result = spell_damage(ch, victim, dam, SPLDAM_NEGATIVE, SPLDAM_NOSHRUG, &messages);
 
@@ -1098,8 +1098,8 @@ void spell_life_leech(int level, P_char ch, char * /*arg*/, int /*type*/, P_char
 				vamp(ch, (int)(dam / 2), (int)(GET_MAX_HIT(ch) * 1.00));
 		}
 
-		StartRegen(ch, EVENT_MOVE_REGEN);
-		StartRegen(victim, EVENT_MOVE_REGEN);
+		StartRegen(ch, regen_resource::vitality);
+		StartRegen(victim, regen_resource::vitality);
 
 		// Vamping still occurs as above. We do not want double vamping undead.
 		spell_damage(ch, victim, dam, SPLDAM_NEGATIVE, SPLDAM_NOSHRUG | SPLDAM_NOVAMP,
@@ -1202,8 +1202,8 @@ void spell_energy_drain(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 				debug("E DRAIN: (%s&n) loses and (%s&n) gained (%d) moves.",
 				      J_NAME(victim), J_NAME(ch), moves);
 			}
-			StartRegen(ch, EVENT_MOVE_REGEN);
-			StartRegen(victim, EVENT_MOVE_REGEN);
+			StartRegen(ch, regen_resource::vitality);
+			StartRegen(victim, regen_resource::vitality);
 		}
 
 		// Vamping still occurs as above. We do not want double vamping undead.
@@ -1338,7 +1338,7 @@ void spell_energy_drain(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 // {
 // mana = MIN(GET_MANA(victim), 100);
 // GET_MANA(victim) -= mana;
-// StartRegen(victim, EVENT_MANA_REGEN);
+// StartRegen(victim, regen_resource::mana);
 // GET_MANA(ch) += mana >> 1;
 // }
 
@@ -1369,8 +1369,8 @@ void spell_energy_drain(int level, P_char ch, char * /*arg*/, [[maybe_unused]] i
 // GET_VITALITY(ch) += 10;
 // }
 
-// StartRegen(ch, EVENT_MOVE_REGEN);
-// StartRegen(victim, EVENT_MOVE_REGEN);
+// StartRegen(ch, regen_resource::vitality);
+// StartRegen(victim, regen_resource::vitality);
 
 // spell_damage(ch, victim, dam, SPLDAM_NEGATIVE, SPLDAM_NOSHRUG,
 // &messages);
@@ -15700,7 +15700,7 @@ void spell_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 	    TO_CHAR);
 
 	GET_VITALITY(ch) = MIN(0, GET_VITALITY(ch));
-	StartRegen(ch, EVENT_MOVE_REGEN);
+	StartRegen(ch, regen_resource::vitality);
 
 	/*
 	 * restore lost exp from death
@@ -15756,8 +15756,8 @@ void spell_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused]] int 
 
 	SET_POS(ch, POS_STANDING + STAT_NORMAL);
 
-	StartRegen(t_ch, EVENT_MOVE_REGEN);
-	StartRegen(t_ch, EVENT_MANA_REGEN);
+	StartRegen(t_ch, regen_resource::vitality);
+	StartRegen(t_ch, regen_resource::mana);
 
 	if (t_ch && affected_by_spell(t_ch, SPELL_POISON))
 	{
@@ -16088,7 +16088,7 @@ void spell_lesser_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused
 	act("You are &+yextremely tired&n after being resurrected!", TRUE, t_ch, 0, 0, TO_CHAR);
 
 	GET_VITALITY(ch) = MIN(0, GET_VITALITY(ch));
-	StartRegen(ch, EVENT_MOVE_REGEN);
+	StartRegen(ch, regen_resource::vitality);
 
 	/*
 	 * restore lost exp from death
@@ -16103,8 +16103,8 @@ void spell_lesser_resurrect(int level, P_char ch, char * /*arg*/, [[maybe_unused
 	if (GET_COND(t_ch, THIRST) > 0)
 		GET_COND(t_ch, THIRST) = 0;
 
-	StartRegen(t_ch, EVENT_MOVE_REGEN);
-	StartRegen(t_ch, EVENT_MANA_REGEN);
+	StartRegen(t_ch, regen_resource::vitality);
+	StartRegen(t_ch, regen_resource::mana);
 
 	/*
 	 * Added by DTS 7/30/95

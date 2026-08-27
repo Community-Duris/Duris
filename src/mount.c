@@ -317,7 +317,7 @@ void do_mount(P_char ch, char *argument, int /*cmd*/)
 	if (GET_VITALITY(ch) > GET_MAX_VITALITY(ch))
 		GET_VITALITY(ch) = GET_MAX_VITALITY(ch);
 
-	StartRegen(ch, EVENT_MOVE_REGEN);
+	StartRegen(ch, regen_resource::vitality);
 
 	link_char(ch, mount, LNK_RIDING);
 	act("You climb up and ride $N.", FALSE, ch, 0, mount, TO_CHAR);

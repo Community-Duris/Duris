@@ -262,9 +262,9 @@ int leave_by_exit(P_char ch, int exitnumb)
 	 * (pegasus for example).  JAB
 	 */
 
-	StartRegen(ch, EVENT_MOVE_REGEN);
-	StartRegen(ch, EVENT_HIT_REGEN);
-	StartRegen(ch, EVENT_WARD_REGEN);
+	StartRegen(ch, regen_resource::vitality);
+	StartRegen(ch, regen_resource::hit);
+	StartRegen(ch, regen_resource::ward);
 
 	if (IS_PC(ch) && IS_RIDING(ch))
 	{
@@ -4205,10 +4205,10 @@ void do_rest(P_char ch, char * /*argument*/, int /*cmd*/)
 	gmcp_char_vitals(ch);
 	if ((GET_POS(ch) != POS_SITTING) && (GET_POS(ch) != POS_KNEELING))
 		stop_memorizing(ch);
-	StartRegen(ch, EVENT_HIT_REGEN);
-	StartRegen(ch, EVENT_MOVE_REGEN);
-	StartRegen(ch, EVENT_MANA_REGEN);
-	StartRegen(ch, EVENT_WARD_REGEN);
+	StartRegen(ch, regen_resource::hit);
+	StartRegen(ch, regen_resource::vitality);
+	StartRegen(ch, regen_resource::mana);
+	StartRegen(ch, regen_resource::ward);
 }
 
 /*

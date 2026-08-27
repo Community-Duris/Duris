@@ -6964,7 +6964,7 @@ int wall_generic(P_obj obj, P_char ch, int cmd, char *arg)
 		}
 
 		update_pos(ch);
-		StartRegen(ch, EVENT_HIT_REGEN);
+		StartRegen(ch, regen_resource::hit);
 		drag_followers = TRUE;
 		break;
 		/* XXX */
@@ -6994,7 +6994,7 @@ int wall_generic(P_obj obj, P_char ch, int cmd, char *arg)
 			     ch);
 		GET_HIT(ch) = MAX(GET_HIT(ch) - MAX(dam / 2, 20), 1);
 		update_pos(ch);
-		StartRegen(ch, EVENT_MOVE_REGEN);
+		StartRegen(ch, regen_resource::vitality);
 
 		break;
 	case LIGHTNING_CURTAIN:
@@ -7024,7 +7024,7 @@ int wall_generic(P_obj obj, P_char ch, int cmd, char *arg)
 		act("&+YOUCH!  &+BYou step through the lightning curtain!&n", TRUE, ch, NULL, NULL,
 		    TO_CHAR);
 		update_pos(ch);
-		StartRegen(ch, EVENT_HIT_REGEN);
+		StartRegen(ch, regen_resource::hit);
 
 		drag_followers = TRUE;
 		break;
@@ -7183,7 +7183,7 @@ int wall_generic(P_obj obj, P_char ch, int cmd, char *arg)
 			dam = number(10, 28);
 			GET_VITALITY(ch) = MAX(GET_VITALITY(ch) - dam, 1);
 			update_pos(ch);
-			StartRegen(ch, EVENT_MOVE_REGEN);
+			StartRegen(ch, regen_resource::vitality);
 			return TRUE;
 		}
 		act("Oof! You bump into $p...", TRUE, ch, obj, 0, TO_CHAR);
@@ -7196,7 +7196,7 @@ int wall_generic(P_obj obj, P_char ch, int cmd, char *arg)
 			ch);
 		GET_VITALITY(ch) = MAX(GET_VITALITY(ch) - dam, 1);
 		update_pos(ch);
-		StartRegen(ch, EVENT_MOVE_REGEN);
+		StartRegen(ch, regen_resource::vitality);
 		drag_followers = TRUE;
 		break;
 
@@ -7710,8 +7710,8 @@ int rod_of_zarbon(P_obj obj, P_char ch, int cmd, char *arg)
 			GET_VITALITY(vict) -= (dam / 9);
 			GET_VITALITY(ch) += (dam / 9);
 
-			StartRegen(ch, EVENT_MOVE_REGEN);
-			StartRegen(vict, EVENT_MOVE_REGEN);
+			StartRegen(ch, regen_resource::vitality);
+			StartRegen(vict, regen_resource::vitality);
 		}
 	}
 	return TRUE;
@@ -12656,7 +12656,7 @@ int huntsman_ward(P_obj obj, P_char ch, int cmd, char *argument)
 	if (cmd == CMD_FOUND)
 	{
 		act("You succesfully disarmed $p hidden here.", FALSE, ch, obj, 0, TO_CHAR);
-		ClearObjEvents(obj);
+		disarm_obj_nevents(obj, NULL);
 		obj->value[0] = 0;
 		return TRUE;
 	}
@@ -12682,7 +12682,7 @@ int huntsman_ward(P_obj obj, P_char ch, int cmd, char *argument)
 				act(buf, FALSE, tch, 0, ch, TO_CHAR);
 				REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
 				obj->value[0] = 0;
-				ClearObjEvents(obj);
+				disarm_obj_nevents(obj, NULL);
 
 				if (number(0, 120) < GET_C_INT(ch))
 				{
@@ -12701,7 +12701,7 @@ int huntsman_ward(P_obj obj, P_char ch, int cmd, char *argument)
 			{
 				REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
 				obj->value[0] = 0;
-				ClearObjEvents(obj);
+				disarm_obj_nevents(obj, NULL);
 
 				// PHSDAM_NOREDUCE -> 5d5 damage total.
 				dam = dice(5, 5);
@@ -12732,7 +12732,7 @@ int huntsman_ward(P_obj obj, P_char ch, int cmd, char *argument)
 				act(buf, FALSE, tch, 0, ch, TO_CHAR);
 				REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
 				obj->value[0] = 0;
-				ClearObjEvents(obj);
+				disarm_obj_nevents(obj, NULL);
 
 				if (number(0, 120) < GET_C_INT(ch))
 				{
@@ -12765,7 +12765,7 @@ int huntsman_ward(P_obj obj, P_char ch, int cmd, char *argument)
 			{
 				REMOVE_BIT(obj->extra_flags, ITEM_SECRET);
 				obj->value[0] = 0;
-				ClearObjEvents(obj);
+				disarm_obj_nevents(obj, NULL);
 
 				act("Without warning, a hidden trap injects a large dose of &+gpoison&n into $n's &+rflesh&n.",
 				    FALSE, ch, obj, 0, TO_NOTVICT);

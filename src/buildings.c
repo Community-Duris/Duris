@@ -269,7 +269,7 @@ int check_outpost_death(P_char ch, P_char killer)
 	*/
 
 	clear_all_links(ch);
-	ClearCharEvents(ch);
+	disarm_char_nevents(ch, NULL);
 
 	ch->specials.conditions[DISEASE_TYPE] = 0;
 	ch->specials.conditions[POISON_TYPE] = 0;

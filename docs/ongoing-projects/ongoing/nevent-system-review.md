@@ -2,9 +2,9 @@
 
 Date: 2026-08-27
 
-Status: Implementation in progress; checkpoint 9 complete
+Status: Implementation complete; final validation complete
 
-Last implementation update: 2026-08-28 00:37 IDT
+Last implementation update: 2026-08-28 00:53 IDT
 
 Scope: The current `nevent` scheduler, its callers, event ownership and payloads,
 boot/reconstruction behavior, recurring jobs, overload controls, diagnostics,
@@ -27,7 +27,7 @@ contracts, formatting, and the server build pass.
 | 7 | NEV-09, NEV-13, NEV-15, and NEV-22 priority, aging, catch-up, and range safety | Complete | ASan/UBSan priority-on/off, mixed-deferral, continuous-arrival, convergence, unlimited, and invalid-range modes; 225 Python regressions; native signal test; format check; server build |
 | 8 | NEV-19 scheduling results, chronological lookup, and handle API completion | Complete | Typed rejection/success/replace and global/owner chronology in the ASan/UBSan scheduler harness; 225 Python regressions; native signal test; format check; server build |
 | 9 | NEV-14, NEV-16 through NEV-18, and NEV-20 load control, observability, durability, and thread boundary | Complete | ASan/UBSan owner-link, corruption, thread-boundary, unique-key, cadence, retry, continuation, missed-run, conditional-enable, and watchdog cases; bounded-maintenance contracts; 226 Python regressions; native signal test; format check; server build |
-| 10 | NEV-21 documentation and legacy cleanup | Pending | Not started |
+| 10 | NEV-21 documentation and legacy cleanup | Complete | Current-reference and retired-interface source contract; 227 Python regressions; native signal test; format check; strict server build |
 
 Checkpoint 1 replaced the fixed 6,000-entry array and sentinel scan with a
 dynamically sized, validated address-to-name registry. Duplicate addresses are
@@ -183,6 +183,18 @@ full callback timing. The continuation path is exercised under ASan/UBSan, the
 new maintenance contract covers every sliced callback, and all 226 Python
 regressions, the native signal test, formatting, and the strict server build
 pass.
+
+Checkpoint 10 rewrote the event reference around the implemented absolute
+deadline, typed result/handle, cancellation, overload-recovery, periodic-job,
+thread-ownership, and diagnostic contracts, and aligned the architecture and
+configuration references. The numeric event taxonomy, old `AddEvent` and lookup
+macros, relative-time constants, historical counters/name table and scheduler
+description, forwarding cancellation wrappers, and unused `EventsFactory` stub
+were removed. Regeneration selection now uses a scoped `regen_resource`, and
+all owner cleanup paths call the current `disarm_*_nevents` API directly. The
+new reference/legacy source contract prevents those surfaces and stale timing
+claims from returning. All 227 Python regressions, the native signal test,
+formatting check, and strict server build pass.
 
 The executive assessment and finding evidence below preserve the original
 pre-remediation review. Per-finding implementation status and the checkpoint
@@ -1001,6 +1013,13 @@ debug builds, and route worker completions through a bounded game-thread queue.
 
 ### NEV-21: Documentation and legacy surfaces no longer match reality
 
+Implementation status (2026-08-28): Fixed and verified in checkpoint 10. The
+reference now describes the tested absolute-deadline scheduler, periodic
+registry, overload recovery, diagnostics, and game-thread boundary. Legacy
+numeric types, macros, globals, compatibility wrappers, and the unused factory
+stub are gone, with a source contract guarding both code and documentation. The
+evidence below describes the pre-fix implementation.
+
 `docs/reference/EVENTS.md` currently overstates or misstates several properties:
 
 - removal is described as O(1), but `clear_nevent` scans the bucket;
@@ -1213,6 +1232,11 @@ semantics and added `tests/async/test_nevent_maintenance_slicing.py` for the
 production callback budgets, stable-ID resolution, SQL cursors, shared
 ship-frag snapshot, and operator counters. The complete 226-test Python suite,
 native signal test, strict server build, and formatting check passed.
+Checkpoint 10 added
+`tests/async/test_nevent_reference_and_legacy_cleanup.py`, which checks the
+current reference contract and rejects the retired type, macro, wrapper, table,
+and factory surfaces. The complete 227-test Python suite, native signal test,
+strict server build, and formatting check passed.
 
 `make -C src -j2` completed and linked `bin/server/dms_new` successfully. The
 built binary is a 64-bit PIE. A symbol/data probe found 6,220 text symbols in the
@@ -1221,7 +1245,8 @@ against current artifacts.
 
 No live server or database was used. No migrations, production operations, or
 game-data mutations were performed. Implementation and verification are current
-through the periodic-registry checkpoint 9 slice in the ledger above.
+through the final checkpoint 10 in the ledger above; every recorded finding is
+resolved.
 
 ## Suggested implementation-session boundaries
 

@@ -2635,41 +2635,6 @@ struct mem_usage
 	size_t allocs;
 };
 
-// this is stub for possible array-based event manager, not used yet  - Odorf
-struct EventsFactory
-{
-	void init_event(nevent_data *event, event_func_type func, P_char ch, P_char victim,
-			P_obj obj, void *data, int data_size);
-	P_nevent add_event(nevent_data *&table, nevent_data *&size, nevent_data *&tail,
-			   event_func_type func, P_char ch, P_char victim, P_obj obj, void *data,
-			   int data_size);
-	P_nevent add_global_event(event_func_type func, P_char ch, P_char victim, P_obj obj,
-				  void *data, int data_size);
-	P_nevent add_local_event(event_func_type func, P_char ch, P_char victim, P_obj obj,
-				 void *data, int data_size);
-	void expand(nevent_data *&table, nevent_data *&last, nevent_data *&tail);
-	void init_table(P_nevent &table, P_nevent &last, P_nevent &tail, int size);
-	void init_global_table(int size);
-	void init_local_table(int size);
-
-	int get_count() { return (global_tail - global_table) + (local_tail - local_table); }
-	int get_size() { return (global_last - global_table) + (local_last - local_table); }
-	int get_global_count() { return (global_tail - global_table); }
-	int get_global_size() { return (global_last - global_table); }
-	int get_local_count() { return (local_tail - local_table); }
-	int get_local_size() { return (local_last - local_table); }
-
-	P_nevent get_first_event();
-	P_nevent get_next_event(P_nevent);
-
-	nevent_data *global_table;
-	nevent_data *global_last;
-	nevent_data *global_tail;
-	nevent_data *local_table;
-	nevent_data *local_last;
-	nevent_data *local_tail;
-};
-
 // For the shutdown command.
 struct TimedShutdownData
 {
