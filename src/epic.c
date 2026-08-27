@@ -55,6 +55,23 @@ extern epic_teacher_skill epic_teachers[];
 vector<epic_zone_completion> epic_zone_completions;
 int errand_notch;
 
+size_t epic_zone_completion_snapshot(int64_t *values, size_t capacity)
+{
+	if (!values)
+		return 0;
+	if (epic_zone_completions.size() > capacity / 2)
+		return SIZE_MAX;
+	size_t count = 0;
+	for (const auto &completion : epic_zone_completions)
+	{
+		if (count + 2 > capacity)
+			break;
+		values[count++] = completion.number;
+		values[count++] = completion.done_at;
+	}
+	return count;
+}
+
 namespace
 {
 struct epic_award_context

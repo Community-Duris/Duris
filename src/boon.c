@@ -2935,6 +2935,30 @@ void boon_notify(int id, P_char ch, int action)
 	return;
 }
 
+void boon_notify_snapshot(int id, int racewar, int pid, int action)
+{
+	if (id <= 0 || (action != BN_CREATE && action != BN_VOID && action != BN_EXPIRE))
+		return;
+	for (P_desc descriptor = descriptor_list; descriptor; descriptor = descriptor->next)
+	{
+		P_char character = descriptor->character;
+		if (descriptor->connected || !character ||
+		    !IS_SET(character->specials.act2, PLR2_BOON) ||
+		    (!IS_TRUSTED(character) && ((racewar && GET_RACEWAR(character) != racewar) ||
+						(pid && GET_PID(character) != pid))))
+			continue;
+		if (action == BN_CREATE)
+			send_to_char_f(
+				character,
+				"&+CYou qualify for a new boon (#%d) that has been created.&n\r\n",
+				id);
+		else if (action == BN_EXPIRE)
+			send_to_char_f(character, "&+CBoon # %d has expired.&n\r\n", id);
+		else
+			send_to_char_f(character, "&+CBoon # %d is no longer available.&n\r\n", id);
+	}
+}
+
 void boon_randomize(P_char ch, char *argument)
 {
 	send_to_char_f(ch, "Randomizing boon list with argument: %s.\r\n", argument);

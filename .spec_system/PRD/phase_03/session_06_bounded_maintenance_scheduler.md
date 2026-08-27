@@ -1,7 +1,7 @@
 # Session 06: Bounded Maintenance Scheduler
 
 **Session ID**: `phase03-session06-bounded-maintenance-scheduler`
-**Status**: Not Started
+**Status**: Complete (validated 2026-08-27)
 **Work Window**: One recurring-work boundary from cadence registration and deterministic
 staggering through bounded job submission, row/time cursors, completion, retry,
 shutdown, and pulse-latency verification.
@@ -50,9 +50,9 @@ from pausing the simulation while preserving each maintenance task's cadence and
 
 ## Prerequisites
 
-- [ ] Phase 01 bounded worker/journal/shutdown behavior is authoritative.
-- [ ] Phase 02 scheduled domain mutations use typed idempotent commands.
-- [ ] Session 05 has established the accepted access paths for maintenance queries.
+- [x] Phase 01 bounded worker/journal/shutdown behavior is authoritative.
+- [x] Phase 02 scheduled domain mutations use typed idempotent commands.
+- [x] Session 05 has established the accepted access paths for maintenance queries.
 
 ---
 
@@ -71,16 +71,16 @@ from pausing the simulation while preserving each maintenance task's cadence and
 
 ## Success Criteria
 
-- [ ] Recurring external jobs have stable IDs and deterministic offsets that prevent
+- [x] Recurring external jobs have stable IDs and deterministic offsets that prevent
       the 60/120-second maintenance wave within one server and across configured peers.
-- [ ] Every scan respects its row or wall-time budget and resumes from an exact cursor
+- [x] Every scan respects its row or wall-time budget and resumes from an exact cursor
       without skipping or applying an idempotent effect twice.
-- [ ] A still-running job cannot overlap itself, and retry uses the same work identity
+- [x] A still-running job cannot overlap itself, and retry uses the same work identity
       and cursor under bounded backoff.
-- [ ] No scheduled callback performs database, Redis, filesystem, or large serialization
+- [x] No scheduled callback performs database, Redis, filesystem, or large serialization
       work on the simulation thread.
-- [ ] Queue age, run age, cursor lag, rows, retries, overlap suppression, and failures
+- [x] Queue age, run age, cursor lag, rows, retries, overlap suppression, and failures
       are bounded and redacted.
-- [ ] The scheduled-work workload stays within pulse/event budgets without sustained
+- [x] The scheduled-work workload stays within pulse/event budgets without sustained
       debt at the defined 25-to-200-client levels.
-- [ ] Focused regressions, formatting checks, and `make -C src` pass.
+- [x] Focused regressions, formatting checks, and `make -C src` pass.

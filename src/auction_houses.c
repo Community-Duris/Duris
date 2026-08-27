@@ -113,11 +113,11 @@ static void auction_money_pickup_committed(P_char ch, bool committed,
 	send_to_char_f(ch, "&+WYou pick up &n%s&+W.&n\r\n", coin_stringv(context.money));
 }
 
-// backfill obj_info_text for existing auctions, processes small batch per tick
-// fails silently if column doesnt exist - not all devs have full schema
+// Legacy one-time backfill retained for migration tooling only. It is deliberately
+// disconnected from recurring gameplay; new listings populate obj_info_text at write time.
 #define BACKFILL_BATCH_SIZE 5
 
-void backfill_auction_info_text_tick()
+[[maybe_unused]] static void backfill_auction_info_text_tick()
 {
 	// already done or skipped
 	if (backfill_state != 0)
@@ -450,9 +450,6 @@ void auction_error(P_char ch)
 
 void auction_houses_activity()
 {
-	// process backfill in small batches, non-blocking
-	backfill_auction_info_text_tick();
-
 	if (!qry("SELECT id FROM auctions WHERE end_time < NOW() AND status = %d "
 		 "AND custody_state = 1",
 		 AUCTION_STATUS_OPEN))

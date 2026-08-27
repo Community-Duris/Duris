@@ -172,6 +172,7 @@ int create_boon_shop_entry(BoonShop *bs);
 int remove_boon(int);
 int extend_boon(int, int, const char *);
 void boon_notify(int, P_char, int);
+void boon_notify_snapshot(int id, int racewar, int pid, int action);
 void boon_randomize(P_char, char *);
 void boon_maintenance();
 void boon_random_maintenance();

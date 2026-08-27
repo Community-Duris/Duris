@@ -48,6 +48,7 @@ using namespace std;
 #include "player_save_journal.h"
 #include "player_save_pipeline.h"
 #include "player_load_pipeline.h"
+#include "maintenance_scheduler.h"
 #include "world_recovery_pipeline.h"
 #include "redis.h"
 #include "ships/ships.h"
@@ -64,6 +65,7 @@ using namespace std;
 /* * external variables */
 
 extern bool debug_event_list;
+extern unsigned long long ne_event_tick;
 extern float spell_pulse_data[LAST_RACE + 1];
 extern char *target_locs[];
 extern char *set_master_text[];
@@ -4000,6 +4002,8 @@ static void show_world_persistence(P_char ch)
 	const critical_outbox_health critical_outbox = critical_outbox_health_copy();
 	const epic_transaction_health epic_transactions = epic_transaction_health_copy();
 	const world_recovery_health world_recovery = world_recovery_pipeline_health_copy();
+	const maintenance_scheduler_health maintenance =
+		maintenance_scheduler_health_copy(ne_event_tick);
 	uint64_t oldest_save_age_msec = deferred.oldest_age_msec;
 	char line[MAX_STRING_LENGTH];
 
@@ -4033,6 +4037,37 @@ static void show_world_persistence(P_char ch)
 			 (unsigned long long)query.total_failures, (unsigned long long)query.count,
 			 (unsigned long long)query.registry_overflow);
 	send_to_char(line, ch);
+
+	snprintf(line, sizeof(line),
+		 "maintenance state=%s queued=%llu inflight=%llu completions=%llu "
+		 "queue_age_ticks=%llu run_age_ticks=%llu high_water=%llu stop_pending=%d\n",
+		 !maintenance.running			    ? "stopped" :
+		 maintenance.queued || maintenance.inflight ? "pending" :
+							      "ready",
+		 (unsigned long long)maintenance.queued, (unsigned long long)maintenance.inflight,
+		 (unsigned long long)maintenance.completions,
+		 (unsigned long long)maintenance.oldest_queue_age_ticks,
+		 (unsigned long long)maintenance.inflight_age_ticks,
+		 (unsigned long long)maintenance.high_water, maintenance.stop_pending);
+	send_to_char(line, ch);
+	for (size_t job_index = 0; job_index < MAINTENANCE_JOB_COUNT; ++job_index)
+	{
+		const auto &job = maintenance.jobs[job_index];
+		const uint64_t due_lag =
+			ne_event_tick > job.next_due_tick ? ne_event_tick - job.next_due_tick : 0;
+		snprintf(line, sizeof(line),
+			 "maintenance_job name=%s active=%d due_lag_ticks=%llu cursor=%llu "
+			 "submitted=%llu completed=%llu retries=%llu suppressed=%llu "
+			 "failures=%llu rows=%llu last_run_us=%llu\n",
+			 maintenance_job_name(static_cast<maintenance_job_id>(job_index)),
+			 job.active, (unsigned long long)due_lag, (unsigned long long)job.cursor,
+			 (unsigned long long)job.submitted, (unsigned long long)job.completed,
+			 (unsigned long long)job.retries,
+			 (unsigned long long)job.overlap_suppressed,
+			 (unsigned long long)job.failures, (unsigned long long)job.rows,
+			 (unsigned long long)job.last_run_usec);
+		send_to_char(line, ch);
+	}
 
 	snprintf(line, sizeof(line),
 		 "player_load state=%s queued=%llu inflight=%llu completions=%llu "

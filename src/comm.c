@@ -33,6 +33,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <utility>
+#include <vector>
 #include <zlib.h>
 #include "assocs.h"
 #include "auction_houses.h"
@@ -82,6 +83,9 @@
 #include "latency_trace.h"
 #include "persistence_queue.h"
 #include "locker_async.h"
+#include "maintenance_repository.h"
+#include "maintenance_scheduler.h"
+#include "maintenance_snapshot.h"
 #include "critical_command_coordinator.h"
 #include "critical_command_repository.h"
 #include "critical_outbox.h"
@@ -124,6 +128,81 @@ extern void checkpointing(void);
 long sentbytes = 0;
 long receivedbytes = 0;
 bool game_booted = FALSE;
+static std::vector<int32_t> maintenance_catalog_candidate;
+
+static void maintenance_handle_completions(const maintenance_result *results, size_t count)
+{
+	for (size_t index = 0; index < count; ++index)
+	{
+		const auto &result = results[index];
+		if (result.job_id == maintenance_job_id::cargo_market &&
+		    (result.outcome == maintenance_outcome::complete ||
+		     result.outcome == maintenance_outcome::permanent_failure))
+			cargo_maintenance_complete(result.work_id,
+						   result.outcome == maintenance_outcome::complete);
+		if (result.job_id == maintenance_job_id::auction_due_scan &&
+		    (result.outcome == maintenance_outcome::complete ||
+		     result.outcome == maintenance_outcome::more))
+		{
+			for (size_t value = 0; value < result.value_count; ++value)
+				if (!finalize_auction(static_cast<int>(result.values[value]),
+						      nullptr))
+					logit(LOG_DEBUG,
+					      "maintenance job=auction_due_scan outcome=submit_failed actor=redacted");
+		}
+		if (result.job_id == maintenance_job_id::level_cap &&
+		    result.outcome == maintenance_outcome::complete && result.value_count == 3 &&
+		    result.values[0] > 0 && result.values[0] <= INT32_MAX)
+			boon_notify_snapshot(static_cast<int>(result.values[0]),
+					     static_cast<int>(result.values[1]),
+					     static_cast<int>(result.values[2]), BN_CREATE);
+		if (result.job_id == maintenance_job_id::boon_scan &&
+		    (result.outcome == maintenance_outcome::complete ||
+		     result.outcome == maintenance_outcome::more) &&
+		    result.value_count % 6 == 0)
+			for (size_t value = 0; value < result.value_count; value += 6)
+			{
+				const int id = static_cast<int>(result.values[value]);
+				const int racewar = static_cast<int>(result.values[value + 1]);
+				const int pid = static_cast<int>(result.values[value + 2]);
+				const int reason = static_cast<int>(result.values[value + 3]);
+				const int option = static_cast<int>(result.values[value + 4]);
+				const int criteria = static_cast<int>(result.values[value + 5]);
+				if (option == BOPT_CTFB && reason == BN_VOID)
+					ctf_delete_flag(criteria);
+				boon_notify_snapshot(id, racewar, pid, reason);
+			}
+		if (result.job_id != maintenance_job_id::epic_task_catalog)
+			continue;
+		if (result.outcome != maintenance_outcome::complete &&
+		    result.outcome != maintenance_outcome::more)
+		{
+			maintenance_catalog_candidate.clear();
+			continue;
+		}
+		bool valid = maintenance_catalog_candidate.size() + result.value_count <=
+			     EPIC_TASK_CATALOG_MAX;
+		for (size_t value = 0; valid && value < result.value_count; ++value)
+			if (result.values[value] <= 0 || result.values[value] > INT32_MAX)
+				valid = false;
+			else
+				maintenance_catalog_candidate.push_back(
+					static_cast<int32_t>(result.values[value]));
+		if (!valid)
+		{
+			maintenance_catalog_candidate.clear();
+			continue;
+		}
+		if (result.outcome == maintenance_outcome::complete)
+		{
+			if (!epic_task_catalog_publish(maintenance_catalog_candidate.data(),
+						       maintenance_catalog_candidate.size()))
+				logit(LOG_DEBUG,
+				      "maintenance job=epic_task_catalog outcome=publish_failed actor=redacted");
+			maintenance_catalog_candidate.clear();
+		}
+	}
+}
 
 static void critical_gameplay_handle_completions(const critical_completion *completions,
 						 size_t count)
@@ -668,6 +747,18 @@ void run_the_game(int port, int sslport)
 		}
 		critical_command_coordinator_set_drain_observer(
 			critical_gameplay_handle_completions);
+		const uint64_t maintenance_instance =
+			(static_cast<uint64_t>(static_cast<uint32_t>(port)) << 32) |
+			static_cast<uint32_t>(sslport);
+		const char *maintenance_state = getenv("MAINTENANCE_STATE_FILE");
+		if (!maintenance_state || !*maintenance_state)
+			maintenance_state = "bin/server/maintenance-scheduler.state";
+		if (!maintenance_scheduler_set_state_path(maintenance_state) ||
+		    !maintenance_scheduler_init(maintenance_instance,
+						maintenance_repository_execute, nullptr,
+						maintenance_prepare_request))
+			logit(LOG_STATUS,
+			      "Maintenance scheduler unavailable; recurring external jobs fail closed.");
 	}
 
 	/* Boot-time scalar queue flood test: overflows the queue so the
@@ -692,6 +783,7 @@ void run_the_game(int port, int sslport)
 #endif
 
 	game_loop(port, sslport);
+	maintenance_scheduler_shutdown();
 	redis_cleanup();
 	player_load_pipeline_shutdown();
 	critical_command_coordinator_shutdown();
@@ -1461,48 +1553,29 @@ resume_game_loop:
 					     (long)((clock() - _gmcp) * 1000000.0 / CLOCKS_PER_SEC),
 					     pulse);
 		}
+		maintenance_result maintenance_results[MAINTENANCE_COMPLETION_MAX] = {};
+		const size_t maintenance_count = maintenance_scheduler_pulse(
+			ne_event_tick, maintenance_results, MAINTENANCE_COMPLETION_MAX);
+		maintenance_handle_completions(maintenance_results, maintenance_count);
 
 		PROFILE_START(activities);
-		if (!(pulse % (WAIT_SEC * 60)))
-			timers_activity();
-
-		if (!(pulse % WAIT_SEC))
+		if (maintenance_activity_due(ne_event_tick, WAIT_SEC, 1))
 			ship_activity();
 
-		if (!no_ferries && !(pulse % WAIT_SEC))
+		if (!no_ferries && maintenance_activity_due(ne_event_tick, WAIT_SEC, 2))
 			ferry_activity();
 
-		if (!(pulse % (WAIT_SEC * 60)))
-			auction_houses_activity();
-
-		if (!(pulse % (WAIT_SEC * 120)))
+		if (maintenance_activity_due(ne_event_tick, WAIT_SEC * 120, 3))
 			spawn_random_mapmob();
 
 		//    if (!(pulse % WAIT_SEC))
 		//      arena_activity();
 
-		if (!(pulse % SHORT_AFFECT))
+		if (maintenance_activity_due(ne_event_tick, SHORT_AFFECT, 4))
 			short_affect_update();
 
-		if (!(pulse % PULSES_IN_TICK) && !mini_mode)
-			web_info();
-
-		if (!(pulse % (WAIT_SEC * 300)))
+		if (maintenance_activity_due(ne_event_tick, WAIT_SEC * 300, 5))
 			wimps_in_approve_queue();
-
-		if (!(pulse % (WAIT_SEC * 300)))
-			poll_check_expirations();
-
-		if (!(pulse % (WAIT_SEC * 120)))
-		{
-			epic_zone_balance();
-		}
-
-		if (!(pulse % (WAIT_SEC * 60)))
-			sql_check_level_cap_periodic();
-
-		if (!(pulse % (WAIT_SEC * 60)))
-			boon_maintenance();
 
 		PROFILE_END(activities);
 		double activities_time = (double)(activities_profile_end - activities_profile_beg) /

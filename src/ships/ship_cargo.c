@@ -22,6 +22,11 @@
 float ship_cargo_market_mod[NUM_PORTS][NUM_PORTS];
 float ship_cargo_market_mod_delayed[NUM_PORTS][NUM_PORTS];
 float ship_contra_market_mod[NUM_PORTS][NUM_PORTS];
+static int cargo_maintenance_last_update;
+static int cargo_maintenance_last_delayed_update;
+static uint64_t cargo_maintenance_work_id;
+static size_t cargo_maintenance_value_count;
+static int64_t cargo_maintenance_values[3 + NUM_PORTS * NUM_PORTS * 4];
 
 // This matrix shows the base cost in platinum for each port's cargo/contraband,
 // as well as the minimum number of ship frags required to be able to buy that
@@ -92,6 +97,8 @@ void initialize_ship_cargo()
 	{
 		logit(LOG_SHIP, "Error reading market values from database!");
 	}
+	cargo_maintenance_last_update = get_timer("update_cargo");
+	cargo_maintenance_last_delayed_update = get_timer("update_delayed_cargo_prices");
 }
 
 int read_cargo()
@@ -259,13 +266,8 @@ ship.contraband.sellPriceMod=1.0
 ship.contraband.buyPriceMod=1.0
 */
 
-void update_cargo(bool force)
+static void adjust_cargo_market()
 {
-	if (!force && !has_elapsed("update_cargo", get_property("ship.cargo.update.secs", 1800)))
-		return;
-
-	debug("update_cargo()");
-
 	int i, j;
 
 	// all mods auto-balance to 1.0 with time, the farther it from 1.0, the faster it changes
@@ -377,13 +379,20 @@ void update_cargo(bool force)
 			}
 		}
 	}
+}
 
+void update_cargo(bool force)
+{
+	if (!force && !has_elapsed("update_cargo", get_property("ship.cargo.update.secs", 1800)))
+		return;
+	debug("update_cargo()");
+	adjust_cargo_market();
 	if (!write_cargo())
-	{
 		logit(LOG_SHIP, "Error writing market values!");
-	}
-
 	set_timer("update_cargo");
+	cargo_maintenance_last_update = time(nullptr);
+	cargo_maintenance_work_id = 0;
+	cargo_maintenance_value_count = 0;
 }
 
 void update_cargo()
@@ -410,6 +419,7 @@ void update_delayed_cargo_prices()
 	}
 
 	set_timer("update_delayed_cargo_prices");
+	cargo_maintenance_last_delayed_update = time(nullptr);
 }
 
 // this gets run once every minute
@@ -417,6 +427,67 @@ void cargo_activity()
 {
 	update_cargo();
 	update_delayed_cargo_prices();
+}
+
+size_t cargo_maintenance_snapshot(uint64_t work_id, int64_t *values, size_t capacity)
+{
+	constexpr size_t required = 3 + NUM_PORTS * NUM_PORTS * 4;
+	if (!values || capacity < required)
+		return 0;
+	if (cargo_maintenance_work_id == work_id && cargo_maintenance_value_count == required)
+	{
+		memcpy(values, cargo_maintenance_values, sizeof(cargo_maintenance_values));
+		return required;
+	}
+	const int now = time(nullptr);
+	const bool cargo_due =
+		now > cargo_maintenance_last_update + get_property("ship.cargo.update.secs", 1800);
+	const bool delayed_due = now >
+				 cargo_maintenance_last_delayed_update +
+					 get_property("ship.cargo.updateDelayedPrices.secs", 1800);
+	if (!cargo_due && !delayed_due)
+		return 0;
+	if (cargo_due)
+		adjust_cargo_market();
+	cargo_maintenance_values[0] = now;
+	cargo_maintenance_values[1] = cargo_due ? 1 : 0;
+	cargo_maintenance_values[2] = delayed_due ? 1 : 0;
+	size_t offset = 3;
+	for (int port = 0; port < NUM_PORTS; ++port)
+		for (int type = 0; type < NUM_PORTS; ++type)
+		{
+			if (delayed_due)
+				ship_cargo_market_mod_delayed[port][type] =
+					ship_cargo_market_mod[port][type];
+			cargo_maintenance_values[offset++] =
+				port == type ? cargo_sell_price(port) : cargo_buy_price(port, type);
+			cargo_maintenance_values[offset++] = port == type ?
+								     contra_sell_price(port) :
+								     contra_buy_price(port, type);
+			cargo_maintenance_values[offset++] = static_cast<int64_t>(
+				llround(ship_cargo_market_mod[port][type] * 1000000.0));
+			cargo_maintenance_values[offset++] = static_cast<int64_t>(
+				llround(ship_contra_market_mod[port][type] * 1000000.0));
+		}
+	cargo_maintenance_work_id = work_id;
+	cargo_maintenance_value_count = offset;
+	memcpy(values, cargo_maintenance_values, sizeof(cargo_maintenance_values));
+	return cargo_maintenance_value_count;
+}
+
+void cargo_maintenance_complete(uint64_t work_id, bool success)
+{
+	if (work_id != cargo_maintenance_work_id)
+		return;
+	if (success)
+	{
+		if (cargo_maintenance_values[1])
+			cargo_maintenance_last_update = cargo_maintenance_values[0];
+		if (cargo_maintenance_values[2])
+			cargo_maintenance_last_delayed_update = cargo_maintenance_values[0];
+	}
+	cargo_maintenance_work_id = 0;
+	cargo_maintenance_value_count = 0;
 }
 
 void calculate_port_distances()

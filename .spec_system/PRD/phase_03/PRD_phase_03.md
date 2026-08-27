@@ -41,7 +41,7 @@ and their transition evidence are complete.
 | 03 | Batched Pet Graph Hydration | Complete | Set-based pet items/metadata, explicit bounds, staged publication, and recovery semantics | 2026-08-27 |
 | 04 | Set-Based PvP and Epic Task Reads | Complete | Recent-death aggregation, in-memory task selection, and remaining read fan-out removal | 2026-08-27 |
 | 05 | Production-Clone Query Plan and Index Gate | Complete | Fail-closed qualification harness; local fixture unqualified and no candidate applied | 2026-08-27 |
-| 06 | Bounded Maintenance Scheduler | Not Started | Staggered cadences, async jobs, row/time budgets, cursors, and pulse isolation | - |
+| 06 | Bounded Maintenance Scheduler | Complete | Staggered cadences, async jobs, row/time budgets, durable cursors/completions, and pulse isolation | 2026-08-27 |
 | 07 | Data Processing and Retention Contract | Not Started | Complete data inventory, approved lifecycle rules, subject mapping, and fail-closed policy | - |
 | 08 | Retention and Archival Execution | Not Started | Idempotent archive batches, verification, purge eligibility, reconciliation, and dry-run operations | - |
 | 09 | Authenticated Personal Data Export | Not Started | Account-scoped request, consistent collection, safe packaging, delivery, expiry, and audit | - |
@@ -60,12 +60,13 @@ and their transition evidence are complete.
 - Session 03: Batched Pet Graph Hydration (completed 2026-08-27)
 - Session 04: Set-Based PvP and Epic Task Reads (completed 2026-08-27)
 - Session 05: Production-Clone Query Plan and Index Gate (completed 2026-08-27; local target unqualified)
+- Session 06: Bounded Maintenance Scheduler (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 06: Bounded Maintenance Scheduler
+- Session 07: Data Processing and Retention Contract
 
 ---
 

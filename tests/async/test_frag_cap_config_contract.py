@@ -16,6 +16,7 @@ redis = (SRC / "redis.c").read_text()
 fraglist = (SRC / "fraglist.c").read_text()
 limits = (SRC / "limits.c").read_text()
 makefile = (SRC / "Makefile").read_text()
+maintenance = (SRC / "maintenance_repository.c").read_text()
 
 assert "frag_cap_config.o" in makefile
 assert "boot_frag_cap_config" in comm
@@ -88,7 +89,10 @@ assert "frag_cap_config_boon_duration_minutes" in impl
 assert "frag_cap_config_boon_bonus" in impl
 assert "sql_check_level_cap_periodic" in sql
 assert "sql_check_level_cap_periodic" in sql_h
-assert "sql_check_level_cap_periodic" in comm
+assert "sql_check_level_cap_periodic" not in comm
+assert "maintenance_job_id::level_cap" in comm
+assert "frag_cap_config_cap_level_from_frags" in maintenance
+assert "frag_cap_config_timer_days" in maintenance
 assert "COALESCE(SUM(total_frags), 0)" in sql
 assert "if (gain >= 0)" in sql
 assert "FROM_UNIXTIME" in sql

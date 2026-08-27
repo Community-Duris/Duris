@@ -110,6 +110,7 @@ void epic_zone_erase_touch(int);
 bool epic_zone_done_now(int zone_number);
 bool epic_zone_done(int zone_number);
 void epic_zone_balance();
+size_t epic_zone_completion_snapshot(int64_t *values, size_t capacity);
 int zone2saveable(int zone_index);
 int saveable2zone(int saved_zone);
 void epic_choose_new_epic_task(P_char ch);

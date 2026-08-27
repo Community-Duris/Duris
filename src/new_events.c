@@ -1540,7 +1540,6 @@ void ne_init_events(void)
 	}
 
 	/* Statistic logging functionality */
-	add_event(event_write_statistic, 15 * WAIT_SEC, NULL, NULL, NULL, 0, NULL, 0);
 	// AddEvent(EVENT_SPECIAL, 60, TRUE, write_statistic, NULL);
 
 	/* miscellaneous character looping */

@@ -30,6 +30,7 @@
 #include "ttype.h"
 #include "websocket.h"
 #include "locker_async.h"
+#include "maintenance_scheduler.h"
 #include "critical_command_coordinator.h"
 #include "critical_outbox.h"
 #include "player_save_pipeline.h"
@@ -64,6 +65,23 @@ extern void nonblock(int s);
 extern void clear_char(P_char ch);
 
 static int copyover_in_progress = 0;
+
+namespace
+{
+struct copyover_worker_resume_guard
+{
+	bool armed = true;
+	~copyover_worker_resume_guard()
+	{
+		if (!armed)
+			return;
+		maintenance_scheduler_resume();
+		critical_command_coordinator_resume();
+		critical_outbox_resume();
+		player_save_pipeline_resume();
+	}
+};
+} // namespace
 
 int is_copyover_boot(void)
 {
@@ -467,8 +485,16 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 			"\r\n*** Copyover cancelled: a pending locker save failed. ***\r\n");
 		return false;
 	}
+	copyover_worker_resume_guard resume_workers;
+	maintenance_scheduler_quiesce();
 	critical_command_coordinator_quiesce();
 	critical_outbox_quiesce();
+	if (!maintenance_scheduler_drain(3000))
+	{
+		logit(LOG_STATUS, "copyover: maintenance drain failed, aborting copyover");
+		notify_copyover_failure("\r\n*** Copyover FAILED - server remains live. ***\r\n");
+		return false;
+	}
 	if (!critical_command_coordinator_drain(3000))
 	{
 		logit(LOG_STATUS, "copyover: critical command drain failed, aborting copyover");
