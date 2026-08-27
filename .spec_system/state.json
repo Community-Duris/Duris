@@ -65,7 +65,8 @@
     "phase03-session01-consistent-player-load-transaction",
     "phase03-session02-batched-item-ownership-and-linear-assembly",
     "phase03-session03-batched-pet-graph-hydration",
-    "phase03-session04-set-based-pvp-and-epic-task-reads"
+    "phase03-session04-set-based-pvp-and-epic-task-reads",
+    "phase03-session05-production-clone-query-plan-and-index-gate"
   ],
   "next_session_history": [
     {
@@ -176,6 +177,21 @@
     {
       "date": "2026-08-27",
       "session": "phase03-session04-set-based-pvp-and-epic-task-reads",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session05-production-clone-query-plan-and-index-gate",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session05-production-clone-query-plan-and-index-gate",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session05-production-clone-query-plan-and-index-gate",
       "status": "completed"
     }
   ]

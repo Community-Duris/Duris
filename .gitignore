@@ -71,3 +71,4 @@ tests/db_write/schema.sql
 
 # Local/manual test helpers and temporary artifacts
 /tmp/
+/tmp/query-plan-gate/
