@@ -11,6 +11,7 @@
 #include "comm.h"
 #include "db.h"
 #include "interp.h"
+#include "item_uid_allocator.h"
 #include "utils.h"
 #include "sql.h"
 #include "sql_pool.h"
@@ -773,6 +774,14 @@ int initialize_mysql()
 		}
 		return -1;
 	}
+	if (!item_uid_allocator_reserve(DB, ITEM_UID_BOOT_RESERVATION))
+	{
+		logit(LOG_STATUS,
+		      "FATAL: could not reserve a collision-free item UID range at boot");
+		mysql_close(DB);
+		DB = NULL;
+		return -1;
+	}
 
 	/* Initialise the connection pool for async persistence
 	 * workers (item, scalar, large-payload event queues). */
@@ -1161,6 +1170,108 @@ static bool sql_verify_boot_database(void)
 	{
 		logit(LOG_STATUS,
 		      "FATAL: currency bank baseline does not cover every account bank at boot.");
+		return false;
+	}
+	const char *item_ownership_schema_probe =
+		"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+		"AND ((table_name='item_uid_allocator' AND column_name IN "
+		"('allocator_id','next_uid','updated_at')) OR (table_name='item_owner_revision' "
+		"AND column_name IN ('owner_type','owner_id','owner_context_id','revision','updated_at')) "
+		"OR (table_name='item_current_owner' AND column_name IN "
+		"('item_uid','root_item_uid','parent_item_uid','owner_type','owner_id',"
+		"'owner_context_id','item_revision','vnum','state','updated_at')) OR "
+		"(table_name='item_ownership_baseline' AND column_name IN "
+		"('item_uid','root_item_uid','parent_item_uid','owner_type','owner_id',"
+		"'owner_context_id','opening_item_revision','vnum','source_table','source_row_id',"
+		"'captured_at')) OR (table_name='item_ownership_quarantine' AND column_name IN "
+		"('quarantine_id','item_uid','source_table','source_row_id','conflict_code','evidence',"
+		"'detected_at','repaired_at')) OR (table_name='item_ownership_ledger' AND "
+		"column_name IN ('operation_id','event_index','item_uid','root_item_uid',"
+		"'parent_item_uid','from_owner_type','from_owner_id','from_owner_context_id',"
+		"'to_owner_type','to_owner_id','to_owner_context_id','item_revision',"
+		"'from_owner_revision','to_owner_revision','reason_type','reason_id','source_site',"
+		"'created_at')))";
+	result = db_query("%s", item_ownership_schema_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: item ownership schema metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool item_ownership_columns_ok = row && lengths && row[0] && atoi(row[0]) == 55;
+	mysql_free_result(result);
+	if (!item_ownership_columns_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: item ownership schema is incomplete at boot (expected 55 columns).");
+		return false;
+	}
+	const char *item_ownership_index_probe =
+		"SELECT COUNT(*) FROM (SELECT DISTINCT table_name,index_name FROM "
+		"information_schema.statistics WHERE table_schema=DATABASE() AND ((table_name="
+		"'item_uid_allocator' AND index_name='PRIMARY') OR (table_name='item_owner_revision' "
+		"AND index_name IN ('PRIMARY','idx_item_owner_revision_updated')) OR (table_name="
+		"'item_current_owner' AND index_name IN ('PRIMARY','idx_item_current_root_uid',"
+		"'idx_item_current_owner','idx_item_current_parent')) OR (table_name="
+		"'item_ownership_baseline' AND index_name IN ('PRIMARY','uq_item_baseline_source',"
+		"'idx_item_baseline_owner')) OR (table_name='item_ownership_quarantine' AND index_name "
+		"IN ('PRIMARY','uq_item_quarantine_evidence','idx_item_quarantine_open')) OR "
+		"(table_name='item_ownership_ledger' AND index_name IN ('PRIMARY',"
+		"'uq_item_ledger_item_revision','idx_item_ledger_item_created',"
+		"'idx_item_ledger_from_owner','idx_item_ledger_to_owner')))) item_required_indexes";
+	result = db_query("%s", item_ownership_index_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: item ownership index metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool item_ownership_indexes_ok = row && lengths && row[0] && atoi(row[0]) == 18;
+	mysql_free_result(result);
+	if (!item_ownership_indexes_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: item ownership indexes are incomplete at boot (expected 18).");
+		return false;
+	}
+	const char *item_ownership_foreign_key_probe =
+		"SELECT COUNT(*) FROM information_schema.referential_constraints WHERE "
+		"constraint_schema=DATABASE() AND constraint_name IN "
+		"('item_current_parent_fk','item_ownership_operation_fk') AND "
+		"update_rule='RESTRICT' AND delete_rule='RESTRICT'";
+	result = db_query("%s", item_ownership_foreign_key_probe);
+	if (!result)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: item ownership foreign-key metadata query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool item_ownership_foreign_keys_ok = row && lengths && row[0] && atoi(row[0]) == 2;
+	mysql_free_result(result);
+	if (!item_ownership_foreign_keys_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: item ownership restrictive foreign keys are incomplete at boot.");
+		return false;
+	}
+	result = db_query(
+		"SELECT COUNT(*) FROM item_uid_allocator WHERE allocator_id=1 AND next_uid>0");
+	if (!result)
+	{
+		logit(LOG_STATUS, "FATAL: item UID allocator query failed at boot");
+		return false;
+	}
+	row = mysql_fetch_row(result);
+	lengths = row ? mysql_fetch_lengths(result) : NULL;
+	const bool item_uid_allocator_ok = row && lengths && row[0] && atoi(row[0]) == 1;
+	mysql_free_result(result);
+	if (!item_uid_allocator_ok)
+	{
+		logit(LOG_STATUS, "FATAL: item UID allocator singleton is missing at boot");
 		return false;
 	}
 	return true;

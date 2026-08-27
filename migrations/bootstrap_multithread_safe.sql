@@ -1874,4 +1874,71 @@ CREATE TABLE `currency_ledger` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+CREATE TABLE `item_uid_allocator` (
+  `allocator_id` tinyint unsigned NOT NULL,
+  `next_uid` bigint unsigned NOT NULL,
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`allocator_id`),
+  CONSTRAINT `chk_item_uid_allocator_singleton` CHECK ((`allocator_id` = 1)),
+  CONSTRAINT `chk_item_uid_allocator_nonzero` CHECK ((`next_uid` > 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `item_uid_allocator` (`allocator_id`,`next_uid`) VALUES (1,1);
+CREATE TABLE `item_owner_revision` (
+  `owner_type` tinyint unsigned NOT NULL, `owner_id` bigint unsigned NOT NULL,
+  `owner_context_id` bigint unsigned NOT NULL DEFAULT '0', `revision` bigint unsigned NOT NULL DEFAULT '0',
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`owner_type`,`owner_id`,`owner_context_id`), KEY `idx_item_owner_revision_updated` (`updated_at`),
+  CONSTRAINT `chk_item_owner_revision_type` CHECK ((`owner_type` between 1 and 8))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `item_current_owner` (
+  `item_uid` bigint unsigned NOT NULL, `root_item_uid` bigint unsigned NOT NULL,
+  `parent_item_uid` bigint unsigned DEFAULT NULL, `owner_type` tinyint unsigned NOT NULL,
+  `owner_id` bigint unsigned NOT NULL, `owner_context_id` bigint unsigned NOT NULL DEFAULT '0',
+  `item_revision` bigint unsigned NOT NULL DEFAULT '0', `vnum` int NOT NULL DEFAULT '0',
+  `state` tinyint unsigned NOT NULL DEFAULT '1',
+  `updated_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`item_uid`), KEY `idx_item_current_root_uid` (`root_item_uid`,`item_uid`),
+  KEY `idx_item_current_owner` (`owner_type`,`owner_id`,`owner_context_id`,`item_uid`),
+  KEY `idx_item_current_parent` (`parent_item_uid`),
+  CONSTRAINT `chk_item_current_uid_nonzero` CHECK (((`item_uid` > 0) and (`root_item_uid` > 0))),
+  CONSTRAINT `chk_item_current_owner_type` CHECK ((`owner_type` between 1 and 8)),
+  CONSTRAINT `chk_item_current_state` CHECK ((`state` between 1 and 3)),
+  CONSTRAINT `item_current_parent_fk` FOREIGN KEY (`parent_item_uid`) REFERENCES `item_current_owner` (`item_uid`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `item_ownership_baseline` (
+  `item_uid` bigint unsigned NOT NULL, `root_item_uid` bigint unsigned NOT NULL,
+  `parent_item_uid` bigint unsigned DEFAULT NULL, `owner_type` tinyint unsigned NOT NULL,
+  `owner_id` bigint unsigned NOT NULL, `owner_context_id` bigint unsigned NOT NULL DEFAULT '0',
+  `opening_item_revision` bigint unsigned NOT NULL DEFAULT '0', `vnum` int NOT NULL DEFAULT '0',
+  `source_table` varchar(32) NOT NULL, `source_row_id` bigint unsigned NOT NULL,
+  `captured_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (`item_uid`),
+  UNIQUE KEY `uq_item_baseline_source` (`source_table`,`source_row_id`),
+  KEY `idx_item_baseline_owner` (`owner_type`,`owner_id`,`owner_context_id`),
+  CONSTRAINT `chk_item_baseline_owner_type` CHECK ((`owner_type` between 1 and 8))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `item_ownership_quarantine` (
+  `quarantine_id` bigint unsigned NOT NULL AUTO_INCREMENT, `item_uid` bigint unsigned NOT NULL,
+  `source_table` varchar(32) NOT NULL, `source_row_id` bigint unsigned NOT NULL,
+  `conflict_code` smallint unsigned NOT NULL, `evidence` varchar(255) NOT NULL,
+  `detected_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), `repaired_at` timestamp(6) NULL DEFAULT NULL,
+  PRIMARY KEY (`quarantine_id`), UNIQUE KEY `uq_item_quarantine_evidence` (`item_uid`,`source_table`,`source_row_id`,`conflict_code`),
+  KEY `idx_item_quarantine_open` (`repaired_at`,`item_uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE `item_ownership_ledger` (
+  `operation_id` binary(16) NOT NULL, `event_index` smallint unsigned NOT NULL,
+  `item_uid` bigint unsigned NOT NULL, `root_item_uid` bigint unsigned NOT NULL,
+  `parent_item_uid` bigint unsigned DEFAULT NULL, `from_owner_type` tinyint unsigned NOT NULL,
+  `from_owner_id` bigint unsigned NOT NULL, `from_owner_context_id` bigint unsigned NOT NULL,
+  `to_owner_type` tinyint unsigned NOT NULL, `to_owner_id` bigint unsigned NOT NULL,
+  `to_owner_context_id` bigint unsigned NOT NULL, `item_revision` bigint unsigned NOT NULL,
+  `from_owner_revision` bigint unsigned NOT NULL, `to_owner_revision` bigint unsigned NOT NULL,
+  `reason_type` smallint unsigned NOT NULL, `reason_id` bigint NOT NULL DEFAULT '0',
+  `source_site` smallint unsigned NOT NULL, `created_at` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`operation_id`,`event_index`), UNIQUE KEY `uq_item_ledger_item_revision` (`item_uid`,`item_revision`),
+  KEY `idx_item_ledger_item_created` (`item_uid`,`created_at`),
+  KEY `idx_item_ledger_from_owner` (`from_owner_type`,`from_owner_id`,`from_owner_context_id`,`created_at`),
+  KEY `idx_item_ledger_to_owner` (`to_owner_type`,`to_owner_id`,`to_owner_context_id`,`created_at`),
+  CONSTRAINT `item_ownership_operation_fk` FOREIGN KEY (`operation_id`) REFERENCES `critical_operation_inbox` (`operation_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

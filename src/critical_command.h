@@ -27,6 +27,8 @@ enum class critical_entity_type : uint8_t
 	locker,
 	corpse,
 	auction,
+	room,
+	system,
 };
 
 struct critical_entity_key

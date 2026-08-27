@@ -1,7 +1,7 @@
 # Session 05: Item Ownership Ledger and Transfer Primitive
 
 **Session ID**: `phase02-session05-item-ownership-ledger-and-transfer-primitive`
-**Status**: Not Started
+**Status**: Complete
 **Work Window**: One authoritative ownership boundary spanning durable item identity,
 owner taxonomy, current-owner state, subtree transfer, affected inventory revisions,
 immutable ledger, outbox, baseline reconciliation, and a synthetic transfer adapter.
@@ -46,9 +46,9 @@ authoritative current owner and advances all affected inventory state exactly on
 
 ## Prerequisites
 
-- [ ] Sessions 01 and 02 are validated.
-- [ ] Phase 01 inventory revision and immutable snapshot contracts are available.
-- [ ] Baseline scans and schema writes use only isolated non-production databases.
+- [x] Sessions 01 and 02 are validated.
+- [x] Phase 01 inventory revision and immutable snapshot contracts are available.
+- [x] Baseline scans and schema writes use only isolated non-production databases.
 
 ---
 
@@ -67,18 +67,18 @@ authoritative current owner and advances all affected inventory state exactly on
 
 ## Success Criteria
 
-- [ ] Every accepted durable item has one stable nonzero identity and at most one
+- [x] Every accepted durable item has one stable nonzero identity and at most one
       authoritative current-owner row.
-- [ ] One transfer commits expected-owner validation, current owner, immutable ledger,
+- [x] One transfer commits expected-owner validation, current owner, immutable ledger,
       all affected inventory revisions, inbox result, and outbox rows atomically.
-- [ ] Duplicate or ambiguous replay cannot duplicate, lose, resurrect, or move an item
+- [x] Duplicate or ambiguous replay cannot duplicate, lose, resurrect, or move an item
       twice.
-- [ ] A container transfer includes its declared durable subtree or changes nothing.
-- [ ] Stale expected owner, missing identity, duplicate identity, or revision conflict
+- [x] A container transfer includes its declared durable subtree or changes nothing.
+- [x] Stale expected owner, missing identity, duplicate identity, or revision conflict
       fails closed without selecting an owner from incomplete legacy events.
-- [ ] Baseline reconciliation preserves legacy history and quarantines every ambiguous
+- [x] Baseline reconciliation preserves legacy history and quarantines every ambiguous
       custody case for explicit repair.
-- [ ] Generic inventory checkpoints cannot overwrite transaction-owned current-owner
+- [x] Generic inventory checkpoints cannot overwrite transaction-owned current-owner
       state or regress an affected inventory revision.
-- [ ] Focused regressions, isolated schema tests, formatting checks, and `make -C src`
+- [x] Focused regressions, isolated schema tests, formatting checks, and `make -C src`
       pass.

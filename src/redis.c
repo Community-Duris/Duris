@@ -534,10 +534,9 @@ void redis_load_obj_uid_counter(void)
 	{
 		unsigned long loaded = strtoul(reply->str, NULL, 10);
 		if (loaded > next_obj_uid)
-		{
-			next_obj_uid = loaded;
-			logit(LOG_SYS, "redis: loaded obj_uid counter = %lu", next_obj_uid);
-		}
+			logit(LOG_SYS,
+			      "redis: ignored legacy obj_uid counter %lu; SQL allocator is authoritative",
+			      loaded);
 	}
 	if (reply)
 		freeReplyObject(reply);

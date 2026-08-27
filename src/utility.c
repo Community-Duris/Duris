@@ -29,6 +29,7 @@ using namespace std;
 #include "db.h"
 #include "events.h"
 #include "interp.h"
+#include "item_uid_allocator.h"
 #include "utility.h"
 #include "utils.h"
 #include "assocs.h"
@@ -875,7 +876,7 @@ void persistence_alert(int level, const char *domain, const char *owner, const c
 
 unsigned long long persistence_next_item_uid(void)
 {
-	return (unsigned long long)next_obj_uid++;
+	return item_uid_allocator_next();
 }
 
 void persistence_assign_item_uid(P_obj obj, const char *reason)

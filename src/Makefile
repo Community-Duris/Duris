@@ -196,6 +196,10 @@ OBJS =  $(SHIP_OBJS) \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \
 				 critical_command_repository.o \
+				 item_transfer_command.o \
+				 item_transfer_repository.o \
+				 item_transfer_synthetic.o \
+				 item_uid_allocator.o \
 				 critical_outbox.o \
 				 epic_command.o \
 				 epic_transaction.o \
