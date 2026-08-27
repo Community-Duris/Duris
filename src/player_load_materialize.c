@@ -96,6 +96,10 @@ bool valid_snapshot(const player_load_result &result)
 	     result.snapshot.pets.size() != result.pet_identities.size() ||
 	     result.authoritative_item_count > PLAYER_LOAD_ITEM_MAX))
 		return false;
+	if (result.read_components != PLAYER_LOAD_SESSION04_READS ||
+	    result.recent_pvp_deaths.size() > PLAYER_LOAD_RECENT_PVP_MAX ||
+	    result.completed_epic_zones.size() > PLAYER_LOAD_COMPLETED_ZONE_MAX)
+		return false;
 	return true;
 }
 
@@ -328,6 +332,11 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	for (const player_snapshot_integer &entry : result.snapshot.status_integers)
 		apply_integer(ch, entry, &hit_difference);
 	ch->only.pc->pid = result.pid;
+	if (!gameplay_read_state_publish(
+		    &ch->only.pc->gameplay_reads, result.recent_pvp_deaths.data(),
+		    result.recent_pvp_deaths.size(), result.completed_epic_zones.data(),
+		    result.completed_epic_zones.size()))
+		return false;
 	ch->player.time.saved = result.saved_at;
 	ch->player.time.logon = time(nullptr);
 	ch->specials.was_in_room = result.snapshot.room_vnum;

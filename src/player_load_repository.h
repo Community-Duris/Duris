@@ -2,6 +2,7 @@
 #define PLAYER_LOAD_REPOSITORY_H
 
 #include "item_transfer_command.h"
+#include "gameplay_read_state.h"
 #include "player_snapshot.h"
 
 #include <array>
@@ -14,7 +15,7 @@ typedef struct st_mysql MYSQL;
 constexpr uint32_t PLAYER_LOAD_SCHEMA_VERSION = 1;
 constexpr size_t PLAYER_LOAD_ACCOUNT_MAX = 50;
 constexpr size_t PLAYER_LOAD_NAME_MAX = 32;
-constexpr size_t PLAYER_LOAD_QUERY_MAX = 20;
+constexpr size_t PLAYER_LOAD_QUERY_MAX = 22;
 constexpr uint64_t PLAYER_LOAD_TIMEOUT_USEC = UINT64_C(3000000);
 constexpr size_t PLAYER_LOAD_ITEM_MAX = PLAYER_SNAPSHOT_MAX_OBJECTS;
 constexpr size_t PLAYER_LOAD_ITEM_AFFECT_MAX = 4;
@@ -22,6 +23,14 @@ constexpr size_t PLAYER_LOAD_ITEM_DESCRIPTION_MAX = 64;
 constexpr size_t PLAYER_LOAD_ITEM_OPERATIONS_PER_ITEM = 96;
 constexpr size_t PLAYER_LOAD_PET_MAX = 64;
 constexpr size_t PLAYER_LOAD_PET_OPERATIONS_PER_PET = 16;
+constexpr size_t PLAYER_LOAD_RECENT_PVP_MAX = GAMEPLAY_READ_RECENT_DURABLE_MAX;
+constexpr size_t PLAYER_LOAD_COMPLETED_ZONE_MAX = GAMEPLAY_READ_COMPLETED_ZONE_MAX;
+
+using player_load_read_mask_t = uint8_t;
+constexpr player_load_read_mask_t PLAYER_LOAD_READ_RECENT_PVP = UINT8_C(1) << 0;
+constexpr player_load_read_mask_t PLAYER_LOAD_READ_EPIC_COMPLETIONS = UINT8_C(1) << 1;
+constexpr player_load_read_mask_t PLAYER_LOAD_SESSION04_READS = PLAYER_LOAD_READ_RECENT_PVP |
+								PLAYER_LOAD_READ_EPIC_COMPLETIONS;
 
 constexpr player_component_mask_t PLAYER_LOAD_SESSION01_COMPONENTS =
 	PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_LANGUAGES | PLAYER_COMPONENT_INTRODUCTIONS |
@@ -131,6 +140,9 @@ struct player_load_result
 	size_t authoritative_item_count = 0;
 	std::vector<player_load_item_identity> item_identities;
 	std::vector<player_load_pet_identity> pet_identities;
+	player_load_read_mask_t read_components = 0;
+	std::vector<int64_t> recent_pvp_deaths;
+	std::vector<int32_t> completed_epic_zones;
 	player_load_metrics metrics = {};
 	int64_t saved_at = 0;
 	std::string account_name;

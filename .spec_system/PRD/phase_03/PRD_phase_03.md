@@ -4,7 +4,7 @@
 **Sessions**: 14 (initial estimate)
 **Estimated Duration**: Adaptive; each session continues through its verification boundary
 
-**Progress**: 3/14 sessions (21%)
+**Progress**: 4/14 sessions (29%)
 
 ---
 
@@ -39,7 +39,7 @@ and their transition evidence are complete.
 | 01 | Consistent Player Load Transaction | Complete | Async typed login read, one snapshot, required components, and fail-closed publication | 2026-08-27 |
 | 02 | Batched Item Ownership and Linear Assembly | Complete | Set-based item/owner metadata and O(N) object graph materialization | 2026-08-27 |
 | 03 | Batched Pet Graph Hydration | Complete | Set-based pet items/metadata, explicit bounds, staged publication, and recovery semantics | 2026-08-27 |
-| 04 | Set-Based PvP and Epic Task Reads | Not Started | Recent-death aggregation, in-memory task selection, and remaining read fan-out removal | - |
+| 04 | Set-Based PvP and Epic Task Reads | Complete | Recent-death aggregation, in-memory task selection, and remaining read fan-out removal | 2026-08-27 |
 | 05 | Production-Clone Query Plan and Index Gate | Not Started | Reproducible plan evidence, write-cost measurement, and validated schema changes | - |
 | 06 | Bounded Maintenance Scheduler | Not Started | Staggered cadences, async jobs, row/time budgets, cursors, and pulse isolation | - |
 | 07 | Data Processing and Retention Contract | Not Started | Complete data inventory, approved lifecycle rules, subject mapping, and fail-closed policy | - |
@@ -58,12 +58,13 @@ and their transition evidence are complete.
 - Session 01: Consistent Player Load Transaction (completed 2026-08-27)
 - Session 02: Batched Item Ownership and Linear Assembly (completed 2026-08-27)
 - Session 03: Batched Pet Graph Hydration (completed 2026-08-27)
+- Session 04: Set-Based PvP and Epic Task Reads (completed 2026-08-27)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 04: Set-Based PvP and Epic Task Reads
+- Session 05: Production-Clone Query Plan and Index Gate
 
 ---
 

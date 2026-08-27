@@ -40,6 +40,7 @@
 #include "copyover.h"
 #include "ctf.h"
 #include "epic.h"
+#include "epic_task_catalog.h"
 #include "ferry.h"
 #include "gmcp.h"
 #include "graph.h"
@@ -517,6 +518,9 @@ void run_the_game(int port, int sslport)
 
 	fprintf(stderr, "-- Updating zone database.\r\n");
 	update_zone_db();
+	if (!epic_task_catalog_refresh())
+		logit(LOG_STATUS,
+		      "Epic task catalog unavailable; zone task selection uses safe fallback.");
 
 	calculate_map_coordinates();
 	fprintf(stderr, "--  Done calculating maps coordinates.\r\n");

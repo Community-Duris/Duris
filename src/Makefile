@@ -229,6 +229,8 @@ OBJS =  $(SHIP_OBJS) \
 				 player_load_pipeline.o \
 				 player_load_items.o \
 				 player_load_pets.o \
+				 gameplay_read_state.o \
+				 epic_task_catalog.o \
 				 player_load_materialize.o \
 				 currency_transaction.o \
 				 player_revision_state.o \

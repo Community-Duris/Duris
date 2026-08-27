@@ -133,6 +133,7 @@ player_load_result base_result(int pid = 42)
     player_load_result result = {};
     result.pid = pid;
     result.item_owner_revision = 7;
+    result.read_components = PLAYER_LOAD_SESSION04_READS;
     return result;
 }
 

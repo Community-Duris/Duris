@@ -27,6 +27,7 @@
 
 #include "defines.h"
 #include "epic_bonus_state.h"
+#include "gameplay_read_state.h"
 #include "map.h"
 #include "player_log.h"
 #include "ansi.h"
@@ -1329,6 +1330,7 @@ struct pc_only_data
 	uint64_t epic_revision; /* Transactional epic domain revision. */
 	long epic_skill_points;
 	struct EpicBonusState epic_bonus_state;
+	struct gameplay_read_state gameplay_reads;
 	long spell_bind_used; // used for skill_spellbind
 	sh_int prestige; /* commoner or lord?                       */
 	time_t time_left_guild; /* time you left guild                     */

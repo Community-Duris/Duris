@@ -1233,6 +1233,77 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 	return result->snapshot.pets.size() == result->pet_identities.size() &&
 	       total_items == result->authoritative_item_count;
 }
+
+bool load_gameplay_reads(MYSQL *connection, player_load_result *result)
+{
+	const std::string pid = std::to_string(result->pid);
+	const std::string recent_sql =
+		"SELECT UNIX_TIMESTAMP(pe.stamp) FROM pkill_info pi JOIN pkill_event pe ON "
+		"pe.id=pi.event_id WHERE pi.pid=" +
+		pid + " AND pi.pk_type='VICTIM' ORDER BY pe.stamp DESC, pi.id DESC LIMIT 20";
+	if (!load_rows(connection, recent_sql, result,
+		       [&](MYSQL_ROW row)
+		       {
+			       int64_t occurred_at = 0;
+			       if (result->recent_pvp_deaths.size() >= PLAYER_LOAD_RECENT_PVP_MAX)
+			       {
+				       result->outcome = player_load_outcome::limit_exceeded;
+				       return false;
+			       }
+			       if (!parse_signed(row[0], 1, INT64_MAX, &occurred_at) ||
+				   (!result->recent_pvp_deaths.empty() &&
+				    result->recent_pvp_deaths.back() < occurred_at))
+				       return false;
+			       try
+			       {
+				       result->recent_pvp_deaths.push_back(occurred_at);
+			       }
+			       catch (const std::bad_alloc &)
+			       {
+				       result->outcome = player_load_outcome::retryable_failure;
+				       return false;
+			       }
+			       return true;
+		       }))
+		return false;
+	result->read_components |= PLAYER_LOAD_READ_RECENT_PVP;
+
+	const std::string completion_sql =
+		"SELECT zone_number FROM (SELECT type_id AS zone_number FROM epic_gain WHERE "
+		"pid=" +
+		pid +
+		" AND type=0 UNION SELECT reason_id AS zone_number FROM epic_ledger WHERE pid=" +
+		pid + " AND reason_type=1) completed ORDER BY zone_number";
+	if (!load_rows(connection, completion_sql, result,
+		       [&](MYSQL_ROW row)
+		       {
+			       int64_t zone_number = 0;
+			       if (result->completed_epic_zones.size() >=
+				   PLAYER_LOAD_COMPLETED_ZONE_MAX)
+			       {
+				       result->outcome = player_load_outcome::limit_exceeded;
+				       return false;
+			       }
+			       if (!parse_signed(row[0], 1, INT32_MAX, &zone_number) ||
+				   (!result->completed_epic_zones.empty() &&
+				    result->completed_epic_zones.back() >= zone_number))
+				       return false;
+			       try
+			       {
+				       result->completed_epic_zones.push_back(
+					       static_cast<int32_t>(zone_number));
+			       }
+			       catch (const std::bad_alloc &)
+			       {
+				       result->outcome = player_load_outcome::retryable_failure;
+				       return false;
+			       }
+			       return true;
+		       }))
+		return false;
+	result->read_components |= PLAYER_LOAD_READ_EPIC_COMPLETIONS;
+	return true;
+}
 } // namespace
 
 bool player_load_request_valid(const player_load_request &request, uint64_t now_usec)
@@ -1276,6 +1347,7 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 		  load_components(connection, request, &result) &&
 		  (!request.include_items || load_items(connection, &result)) &&
 		  (!request.include_pets || load_pets(connection, &result)) &&
+		  load_gameplay_reads(connection, &result) &&
 		  load_bank(connection, request, &result) && before_deadline(request) &&
 		  within_budget(result);
 	result.snapshot.pid = result.pid;

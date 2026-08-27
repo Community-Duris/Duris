@@ -24,6 +24,7 @@ using namespace std;
 #include "currency_transaction.h"
 #include "epic.h"
 #include "epic_bonus.h"
+#include "epic_task_catalog.h"
 #include "epic_transaction.h"
 #include "epic_skills.h"
 #include "nexus_stones.h"
@@ -171,6 +172,10 @@ void epic_award_committed(P_char ch, bool committed, const epic_command_result &
 		 context.amount == 1 ? "" : "s");
 	send_to_char(buffer, ch);
 	epic_bonus_record_gain(ch, context.type, context.amount);
+	if (context.type == EPIC_ZONE && context.data > 0 &&
+	    !gameplay_read_state_add_completed_zone(&ch->only.pc->gameplay_reads, context.data))
+		logit(LOG_DEBUG,
+		      "epic_award_committed: component=completed_zone outcome=unavailable actor=redacted");
 	epiclog(56, "%s received %d epic points (%s)", ch->player.name, context.amount,
 		epic_award_name(context.type));
 
@@ -357,35 +362,9 @@ void epic_complete_errand(P_char ch, int zone)
 
 int epic_random_task_zone(P_char ch)
 {
-	int zone_number = -1;
-#ifdef __NO_MYSQL__
-	return zone_number;
-#else
-	if (!qry("select number, name from zones where task_zone = 1 and number not in "
-		 "(select type_id from epic_gain where pid = '%d' and type = '%d' union "
-		 "select reason_id from epic_ledger where pid = '%d' and reason_type = '%d') "
-		 "order by rand() limit 1",
-		 GET_PID(ch), EPIC_ZONE, GET_PID(ch), (int)epic_reason_type::zone_award))
+	if (!ch || IS_NPC(ch))
 		return -1;
-
-	MYSQL_RES *res = mysql_store_result(DB);
-	if (!res)
-	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-		return FALSE;
-	}
-
-	if (mysql_num_rows(res) > 0)
-	{
-		MYSQL_ROW row = mysql_fetch_row(res);
-		zone_number = atoi(row[0]);
-	}
-
-	mysql_free_result(res);
-
-	return zone_number;
-
-#endif
+	return epic_task_catalog_select(&ch->only.pc->gameplay_reads);
 }
 
 void epic_choose_new_epic_task(P_char ch)

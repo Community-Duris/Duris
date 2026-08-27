@@ -59,6 +59,7 @@
 #include "item_movement_transaction.h"
 #include "item_ownership_runtime.h"
 #include "combat_outcome_transaction.h"
+#include "gameplay_read_state.h"
 /*
  * external variables //
  */
@@ -773,72 +774,24 @@ void appear(P_char ch, bool removeHide)
 // Right now it has a base of level+20 sec + 3 minutes for every PvP death within the hour.
 void setHeavenTime(P_char victim)
 {
-	int time_in_heaven, counter, i;
-	int kill_ids[20];
-	MYSQL_RES *res;
-	MYSQL_ROW row;
-
 	// Victim must be a real PC, but doesn't have to be alive.
 	if (!victim || IS_NPC(victim))
 		return;
-
-	/* level / 10 minutes in heaven, rounded up */
-	// time_in_heaven = ((GET_LEVEL(victim) - 1) / 10 + 1) * 60;
-	//  New value: level + 20 seconds in heaven.
-	time_in_heaven = GET_LEVEL(victim) + 20;
-
-	// Query the DB for the latest 20 deaths of victim in pvp
-	qry("SELECT event_id FROM pkill_info WHERE pid=%d AND pk_type='VICTIM' ORDER BY id DESC LIMIT 20",
-	    GET_PID(victim));
-	res = mysql_store_result(DB);
-	if (!res)
+	const int64_t now = time(nullptr);
+	int time_in_heaven = 0;
+	if (!gameplay_read_state_heaven_seconds(&victim->only.pc->gameplay_reads, now,
+						GET_LEVEL(victim) + 20, &time_in_heaven))
 	{
-		logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
+		logit(LOG_DEBUG,
+		      "setHeavenTime: component=recent_pvp outcome=unavailable actor=redacted");
 		return;
 	}
-	if (res)
-	{
-		counter = 0;
-		i = -1;
-		// Walk through and record each pkill id battle number.
-		while ((row = mysql_fetch_row(res)))
-			kill_ids[++i] = atoi(row[0]);
+	const size_t recent_deaths =
+		gameplay_read_state_recent_count(&victim->only.pc->gameplay_reads, now);
 
-		mysql_free_result(res);
-
-		while (i >= 0)
-		{
-			// If this death was within the last 60 min, increase the counter.
-			// Note: qry should always return true (successful attempt; no errors),
-			//   and res should have 0 or 1 rows, depending on whether the event was within the 60 minutes.
-			if (qry("SELECT * from pkill_event WHERE id=%d AND TIMESTAMPDIFF( MINUTE, stamp, NOW() ) < 60",
-				kill_ids[i--]))
-			{
-				MYSQL_RES *event_res = mysql_store_result(DB);
-				if (!event_res)
-				{
-					logit(LOG_DEBUG, "%s: mysql_store_result failed", __func__);
-					return;
-				}
-				if (mysql_num_rows(event_res) > 0)
-					counter++;
-				mysql_free_result(event_res);
-			}
-		}
-
-		// Double the time for every death over 1 within the hour.
-		while (--counter > 0)
-			time_in_heaven *= 2;
-		// If it's greater than 30 mins (then it'll reset while they're sitting there, so we want to cage them maybe?)
-		// For right now, make it 12 hrs+ <--- should stop feeding for a day at least.
-		if (time_in_heaven > 30 * 60)
-			time_in_heaven *= 24;
-	}
-
-	victim->only.pc->pc_timer[PC_TIMER_HEAVEN] = time(NULL) + time_in_heaven;
-	debug("%s time in heaven: until %s = %d seconds, recent deaths = %d.", J_NAME(victim),
-	      asctime(localtime(&(victim->only.pc->pc_timer[PC_TIMER_HEAVEN]))), time_in_heaven,
-	      counter);
+	victim->only.pc->pc_timer[PC_TIMER_HEAVEN] = now + time_in_heaven;
+	debug("actor=redacted time in heaven: %d seconds, recent deaths = %zu.", time_in_heaven,
+	      recent_deaths);
 }
 
 static combat_outcome_participant *combat_outcome_add_participant(combat_outcome_payload *payload,
@@ -883,16 +836,18 @@ static combat_outcome_participant *combat_outcome_add_participant(combat_outcome
 static void combat_outcome_committed(bool committed, const combat_outcome_result &, unsigned int,
 				     const combat_outcome_payload &payload)
 {
+	P_char victim = find_player_by_pid(payload.victim_pid);
+	if (victim && payload.gameplay_read_token)
+		gameplay_read_state_finish_provisional(&victim->only.pc->gameplay_reads,
+						       payload.gameplay_read_token, committed);
 	if (!committed)
 	{
-		P_char victim = find_player_by_pid(payload.victim_pid);
 		if (victim)
 			send_to_char(
 				"The PvP outcome could not be recorded; no rewards were applied.\r\n",
 				victim);
 		return;
 	}
-	P_char victim = find_player_by_pid(payload.victim_pid);
 	for (size_t index = 0; index < payload.participant_count; ++index)
 	{
 		const auto &entry = payload.participants[index];
@@ -1084,8 +1039,16 @@ static bool submit_pvp_outcome(P_char ch, P_char victim, bool award_frags)
 			victim_entry->flags |= COMBAT_PARTICIPANT_SPILL_BLOOD;
 	}
 	critical_operation_id operation_id = {};
+	payload.gameplay_read_occurred_at = time(nullptr);
+	payload.gameplay_read_token = gameplay_read_state_add_provisional(
+		&victim->only.pc->gameplay_reads, payload.gameplay_read_occurred_at);
 	if (!combat_outcome_transaction_submit(payload, combat_outcome_committed, &operation_id))
+	{
+		if (payload.gameplay_read_token)
+			gameplay_read_state_finish_provisional(&victim->only.pc->gameplay_reads,
+							       payload.gameplay_read_token, false);
 		return false;
+	}
 	for (size_t index = 0; index < payload.participant_count; ++index)
 	{
 		const auto &entry = payload.participants[index];

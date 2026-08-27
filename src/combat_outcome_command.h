@@ -51,6 +51,8 @@ struct combat_outcome_payload
 {
 	uint32_t victim_pid;
 	int32_t room_vnum;
+	int64_t gameplay_read_occurred_at;
+	uint64_t gameplay_read_token;
 	std::array<char, COMBAT_OUTCOME_ROOM_NAME_MAX_BYTES + 1> room_name;
 	uint16_t participant_count;
 	std::array<combat_outcome_participant, COMBAT_OUTCOME_MAX_PARTICIPANTS> participants;

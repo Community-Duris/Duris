@@ -64,17 +64,13 @@
     "phase02-session12-raw-event-queue-retirement-and-domain-gate",
     "phase03-session01-consistent-player-load-transaction",
     "phase03-session02-batched-item-ownership-and-linear-assembly",
-    "phase03-session03-batched-pet-graph-hydration"
+    "phase03-session03-batched-pet-graph-hydration",
+    "phase03-session04-set-based-pvp-and-epic-task-reads"
   ],
   "next_session_history": [
     {
       "date": "2026-08-27",
       "session": "phase02-session10-artifact-and-guild-outcome-batching",
-      "status": "planned"
-    },
-    {
-      "date": "2026-08-27",
-      "session": "phase02-session10-artifact-and-guild-outcome-batching",
       "status": "validated"
     },
     {
@@ -165,6 +161,21 @@
     {
       "date": "2026-08-27",
       "session": "phase03-session03-batched-pet-graph-hydration",
+      "status": "completed"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session04-set-based-pvp-and-epic-task-reads",
+      "status": "planned"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session04-set-based-pvp-and-epic-task-reads",
+      "status": "validated"
+    },
+    {
+      "date": "2026-08-27",
+      "session": "phase03-session04-set-based-pvp-and-epic-task-reads",
       "status": "completed"
     }
   ]

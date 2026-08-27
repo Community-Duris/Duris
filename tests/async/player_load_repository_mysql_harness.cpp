@@ -72,7 +72,10 @@ int main()
 	assert(result.request_id == request.request_id && result.pid == pid);
 	assert(result.snapshot.pid == pid);
 	assert(result.snapshot.components == PLAYER_LOAD_SESSION03_COMPONENTS);
-	assert(result.metrics.query_count == 20);
+	assert(result.metrics.query_count == 22);
+	assert(result.read_components == PLAYER_LOAD_SESSION04_READS);
+	assert(result.recent_pvp_deaths.size() <= GAMEPLAY_READ_RECENT_DURABLE_MAX);
+	assert(result.completed_epic_zones.size() <= GAMEPLAY_READ_COMPLETED_ZONE_MAX);
 	assert(result.metrics.row_count > 0 &&
 	       result.metrics.row_count <= PLAYER_SNAPSHOT_MAX_ROWS);
 	assert(result.metrics.byte_count > 0 &&
@@ -126,17 +129,41 @@ int main()
 	player_load_result absent = player_load_repository_execute(connection, missing);
 	assert(absent.outcome == player_load_outcome::not_found);
 
-	// Shadow only the item-domain tables for deterministic, connection-local fixtures.
+	// Shadow the touched domains for deterministic, connection-local fixtures.
 	// Temporary tables vanish on connection close and cannot alter configured player data.
 	for (const char *table :
 	     { "player_items", "player_item_affects", "player_item_extra_descr", "player_pets",
 	       "player_pet_items", "player_pet_item_affects", "player_pet_item_extra_descr",
-	       "item_current_owner", "item_owner_revision" })
+	       "item_current_owner", "item_owner_revision", "pkill_event", "pkill_info",
+	       "epic_gain", "epic_ledger" })
 	{
 		const std::string temporary = std::string("fixture_") + table;
 		execute_sql(connection, "CREATE TEMPORARY TABLE " + temporary + " LIKE " + table);
 		execute_sql(connection, "ALTER TABLE " + temporary + " RENAME TO " + table);
 	}
+	for (int index = 0; index < 25; ++index)
+	{
+		const int event_id = 4001 + index;
+		execute_sql(connection,
+			    "INSERT INTO pkill_event(id,stamp,room_vnum,room_name) VALUES(" +
+				    std::to_string(event_id) + ",FROM_UNIXTIME(" +
+				    std::to_string(2000000000 - index) + "),1,'fixture')");
+		execute_sql(
+			connection,
+			"INSERT INTO pkill_info(event_id,pid,level,pk_type,equip,inroom) VALUES(" +
+				std::to_string(event_id) + "," + std::to_string(pid) +
+				",1,'VICTIM','',1)");
+	}
+	execute_sql(connection, "INSERT INTO epic_gain(pid,time,type,type_id,epics) VALUES(" +
+					std::to_string(pid) + ",NOW(),0,10,1),(" +
+					std::to_string(pid) + ",NOW(),0,20,1)");
+	execute_sql(
+		connection,
+		"INSERT INTO epic_ledger(operation_id,pid,delta,balance_after,epic_revision,"
+		"reason_type,reason_id,source_site) VALUES(UNHEX('00000000000000000000000000000001')," +
+			std::to_string(pid) +
+			",1,1,1,1,20,1),(UNHEX('00000000000000000000000000000002')," +
+			std::to_string(pid) + ",1,2,2,1,30,1)");
 	execute_sql(
 		connection,
 		"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) "
@@ -170,7 +197,11 @@ int main()
 
 	player_load_result fixture = execute_load(connection, request, 81);
 	assert(fixture.outcome == player_load_outcome::applied);
-	assert(fixture.metrics.query_count == 20 && fixture.snapshot.items.size() == 3);
+	assert(fixture.metrics.query_count == 22 && fixture.snapshot.items.size() == 3);
+	assert(fixture.recent_pvp_deaths.size() == 20);
+	assert(fixture.recent_pvp_deaths.front() == 2000000000 &&
+	       fixture.recent_pvp_deaths.back() == 1999999981);
+	assert((fixture.completed_epic_zones == std::vector<int32_t>{ 10, 20, 30 }));
 	assert(fixture.item_identities.size() == 3 && fixture.item_owner_revision == 7);
 	assert(fixture.snapshot.items[1].parent_index == 0);
 	assert(fixture.item_identities[1].root_item_uid == 900001);
@@ -205,7 +236,7 @@ int main()
 		    "(3101,'detail','pet fixture')");
 	player_load_result pet_fixture = execute_load(connection, request, 88);
 	assert(pet_fixture.outcome == player_load_outcome::applied);
-	assert(pet_fixture.metrics.query_count == 20 && pet_fixture.snapshot.pets.size() == 1);
+	assert(pet_fixture.metrics.query_count == 22 && pet_fixture.snapshot.pets.size() == 1);
 	assert(pet_fixture.pet_identities.size() == 1 &&
 	       pet_fixture.pet_identities[0].database_id == 3001);
 	assert(pet_fixture.snapshot.pets[0].items.size() == 2 &&
@@ -254,12 +285,12 @@ int main()
 	execute_sql(connection, "DELETE FROM item_current_owner");
 	player_load_result empty = execute_load(connection, request, 85);
 	assert(empty.outcome == player_load_outcome::applied && empty.snapshot.items.empty());
-	assert(empty.item_owner_revision == 7 && empty.metrics.query_count == 20);
+	assert(empty.item_owner_revision == 7 && empty.metrics.query_count == 22);
 	execute_sql(connection, "DELETE FROM item_owner_revision");
 	player_load_result never_owned = execute_load(connection, request, 86);
 	assert(never_owned.outcome == player_load_outcome::applied &&
 	       never_owned.snapshot.items.empty());
-	assert(never_owned.item_owner_revision == 0 && never_owned.metrics.query_count == 20);
+	assert(never_owned.item_owner_revision == 0 && never_owned.metrics.query_count == 22);
 
 	// Serialized payload without authoritative custody fails in the opposite direction.
 	execute_sql(connection,
