@@ -961,9 +961,11 @@ int race_size(int race);
 	((cls) & (CLASS_ANTIPALADIN | CLASS_PALADIN | CLASS_RANGER | CLASS_DRAGOON | \
 		  CLASS_REAVER | CLASS_AVENGER))
 #define IS_CASTER_CLASS(cls) (IS_PURE_CASTER_CLASS(cls) || IS_SEMI_CASTER_CLASS(cls))
-#define IS_BOOK_CLASS(cls)                                                                  \
-	((cls) & (CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_ILLUSIONIST | \
-		  CLASS_BARD | CLASS_SUMMONER | CLASS_REAVER | CLASS_THEURGIST))
+/* Every class that memorizes out of a spellbook. */
+#define BOOK_CLASSES                                                                            \
+	(CLASS_SORCERER | CLASS_CONJURER | CLASS_NECROMANCER | CLASS_ILLUSIONIST | CLASS_BARD | \
+	 CLASS_SUMMONER | CLASS_REAVER | CLASS_THEURGIST)
+#define IS_BOOK_CLASS(cls) ((cls) & BOOK_CLASSES)
 #define IS_PRAYING_CLASS(cls) \
 	((cls) & (CLASS_CLERIC | CLASS_PALADIN | CLASS_ANTIPALADIN | CLASS_AVENGER))
 #define IS_MEMING_CLASS(cls) (IS_BOOK_CLASS(cls) || ((cls) & CLASS_SHAMAN))

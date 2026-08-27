@@ -876,6 +876,7 @@ static int drain_new_connections(int listener, int conn_type, const char *label)
 void game_loop(int port, int sslport)
 {
 	P_char t_ch = NULL;
+	bool casting_input = FALSE;
 	P_desc point, next_point;
 	char buf[MAX_STRING_LENGTH];
 	char comm[MAX_INPUT_LENGTH];
@@ -1392,10 +1393,21 @@ resume_game_loop:
 				}
 			}
 
-			if ((!t_ch || (t_ch && (CAN_ACT(t_ch) &&
+			/* A casting character is gated by PLR2_WAIT for the whole chant.
+			 * Read their queue only for a command the casting gate in
+			 * command_interpreter() will actually run ('abort', 'petition',
+			 * 'return'); everything else stays queued as type-ahead instead
+			 * of being drained one line per pulse and rejected. */
+			casting_input =
+				(t_ch && !CAN_ACT(t_ch) && IS_AFFECTED2(t_ch, AFF2_CASTING) &&
+				 point->connected == CON_PLAYING && !point->showstr_count &&
+				 !point->str);
+
+			if ((!t_ch || (t_ch && ((CAN_ACT(t_ch) || casting_input) &&
 						(!IS_SET(t_ch->specials.affected_by, AFF_CHARM) ||
 						 (point->original))))) &&
-			    get_from_q(&point->input, comm))
+			    (casting_input ? get_casting_cmd_from_q(&point->input, comm) :
+					     get_from_q(&point->input, comm)))
 			{
 				if (t_ch)
 				{
@@ -1926,6 +1938,47 @@ int get_from_q(struct txt_q *queue, char *dest)
 	FREE(tmp);
 
 	return (1);
+}
+
+/*
+ * Pull the first command a casting character is actually allowed to run out of
+ * their input queue, skipping (and leaving queued) everything else.  Taking it
+ * out of order matters: a player who typed something else before deciding to
+ * 'abort' would otherwise sit behind their own type-ahead until the chant ended.
+ */
+int get_casting_cmd_from_q(struct txt_q *queue, char *dest)
+{
+	struct txt_block *prev = NULL;
+	struct txt_block *tmp;
+
+	if (!queue || !dest)
+	{
+		logit(LOG_COMM, "call to get_casting_cmd_from_q with bogus arguments");
+		return (0);
+	}
+
+	for (tmp = queue->head; tmp; prev = tmp, tmp = tmp->next)
+	{
+		if (!input_allowed_while_casting(tmp->text))
+			continue;
+
+		strcpy(dest, tmp->text);
+
+		if (prev)
+			prev->next = tmp->next;
+		else
+			queue->head = tmp->next;
+
+		if (queue->tail == tmp)
+			queue->tail = prev;
+
+		FREE(tmp->text);
+		FREE(tmp);
+
+		return (1);
+	}
+
+	return (0);
 }
 
 /*

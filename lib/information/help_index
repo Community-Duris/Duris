@@ -1,6 +1,19 @@
 last update: 12 January 06 (See VERSION)
 
 #
+"ABORT" (Command)
+===========================================================================
+Syntax:         abort
+
+The abort command allows a spellcaster or psionicist to voluntarily interrupt
+and cancel a spell or power while in the middle of chanting or focusing.
+
+Aborting a spell avoids consuming spell slots or mana for the canceled spell,
+but incurs a brief recovery delay before another action can be taken.
+===========================================================================
+See also: CAST, COMMUNE, PRAY, WILL
+
+#
 "ABOMINAL CONSUMPTION" (Skill)
 ===========================================================================
 Syntax:         eat <bodypart> (after carving a corpse)

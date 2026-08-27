@@ -2192,7 +2192,7 @@ int AddSpellToSpellBook(P_char ch, P_obj obj, int spl)
 	if (SpellInThisSpellBook(tmp, spl))
 		return FALSE;
 	if (!obj->value[1])
-		obj->value[1] = ch->player.m_class;
+		obj->value[1] = ch ? ch->player.m_class : 0;
 	if (!obj->value[0])
 		obj->value[0] = TONGUE_MAGIC;
 
@@ -2203,6 +2203,72 @@ int AddSpellToSpellBook(P_char ch, P_obj obj, int spl)
 	   ok, we done, we happy campers.
 	 */
 	return TRUE;
+}
+
+/*
+ * Circle a spellbook class would study this spell at, or 0 if no class that
+ * uses a spellbook can learn it at all.  Mirrors what prac_all_spells() lets a
+ * character scribe: the spell needs both a circle and a learnable cap.
+ */
+static int book_class_spell_circle(int spl)
+{
+	int circle = MAX_CIRCLE + 1;
+	int idx, spec;
+
+	for (idx = 0; idx < CLASS_COUNT; idx++)
+	{
+		if (!IS_BOOK_CLASS(1U << idx))
+			continue;
+
+		for (spec = 0; spec <= MAX_SPEC; spec++)
+		{
+			int rlevel = skills[spl].m_class[idx].rlevel[spec];
+
+			if (rlevel < 1 || rlevel > MAX_CIRCLE)
+				continue;
+			if (!skills[spl].m_class[idx].maxlearn[spec])
+				continue;
+			if (rlevel < circle)
+				circle = rlevel;
+		}
+	}
+
+	return (circle > MAX_CIRCLE) ? 0 : circle;
+}
+
+/*
+ * Scribe every spell any spellbook class can learn into obj.  The master
+ * spellbook prototype is filled this way at load time because the scribed-spell
+ * list is a raw bitmap living in an extra description -- it has embedded NULs
+ * and so cannot be carried by the text object file.  Returns the page count.
+ */
+int FillMasterSpellBook(P_obj obj)
+{
+	int spl;
+	int pages = 0;
+
+	if (!obj || obj->type != ITEM_SPELLBOOK)
+		return 0;
+
+	/* AddSpellToSpellBook() reads the character only to stamp these two, so
+	 * setting them up front lets a prototype be filled with no owner. */
+	obj->value[0] = TONGUE_MAGIC;
+	obj->value[1] = BOOK_CLASSES;
+
+	for (spl = FIRST_SPELL; spl <= LAST_SPELL; spl++)
+	{
+		int circle = book_class_spell_circle(spl);
+
+		if (!circle)
+			continue;
+
+		if (AddSpellToSpellBook(NULL, obj, spl))
+			pages += circle;
+	}
+
+	obj->value[3] = pages;
+
+	return pages;
 }
 
 struct scribing_data_type *scribing_base, *scribing_free_base = NULL;

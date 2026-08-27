@@ -3018,6 +3018,11 @@ P_obj read_object(int nr, int type)
 	}
 	*/
 
+	/* The master spellbook carries no scribed spells in the object file -- the
+	 * spell list is a raw bitmap -- so it is filled here on every load. */
+	if (obj->type == ITEM_SPELLBOOK && obj_index[nr].virtual_number == MASTER_SPELLBOOK_VNUM)
+		FillMasterSpellBook(obj);
+
 	convertObj(obj);
 
 	return (obj);

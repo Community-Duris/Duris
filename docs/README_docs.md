@@ -12,6 +12,7 @@ the verified development, architecture, operations, database, and builder refere
 | [environments.md](environments.md) | Local and network-deployment trust boundaries. |
 | [deployment.md](deployment.md) | Repository-owned CI, local probes, and external release boundary. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Process model, boot gate, game loop, typed persistence, recovery, and networking. |
+| [EVENTS.md](EVENTS.md) | The `nevent` deferred-work scheduler: the timer wheel, scheduling, cancellation, the per-pulse budget, and catch-up. |
 | [DATABASE.md](DATABASE.md) | Database authority, typed reads/writes, schema, reconciliation, and migrations. |
 | [CONFIGURATION.md](CONFIGURATION.md) | Runtime variables, Redis, listeners, proxy handling, and diagnostics. |
 | [RUNBOOK.md](RUNBOOK.md) | Safe startup, migration, backup, restore, recovery, and reconciliation procedures. |
