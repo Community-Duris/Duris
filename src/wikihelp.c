@@ -2,6 +2,9 @@
 #include "utility.h"
 #include "utils.h"
 #include "wikihelp.h"
+#ifdef __NO_MYSQL__
+#include "flatfile_help_catalog.h"
+#endif
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -66,9 +69,100 @@ string tolower(string str_)
 
 #ifdef __NO_MYSQL__
 
-string wiki_help(string /*str*/)
+namespace
 {
-	return string("The help system is temporarily disabled.");
+struct cached_flat_help
+{
+	flatfile_help_catalog catalog;
+	string error;
+	bool ready = false;
+};
+
+const cached_flat_help &flat_help()
+{
+	static const cached_flat_help cached = []
+	{
+		cached_flat_help value;
+		value.ready = flatfile_help_catalog_load(".", &value.catalog, &value.error);
+		return value;
+	}();
+	return cached;
+}
+
+string render_flat_help(const flatfile_help_entry &entry, unsigned int depth)
+{
+	if (depth < 8)
+	{
+		const string content = trim(entry.text, " \t\r\n");
+		const string prefix = "Redirect:";
+		if (content.rfind(prefix, 0) == 0)
+		{
+			const string target = trim(content.substr(prefix.size()), " \t\r\n");
+			const flatfile_help_entry *redirect =
+				flatfile_help_catalog_find(flat_help().catalog, target);
+			if (redirect)
+				return render_flat_help(*redirect, depth + 1);
+		}
+	}
+	string rendered = "&+c" + entry.title + "&N\n&+L";
+	rendered.append(entry.title.size(), '=');
+	rendered += "&N\n";
+	rendered += dewikify(trim(entry.text, " \t\r\n"));
+	return rendered;
+}
+} // namespace
+
+string wiki_help_single(string str)
+{
+	const auto &help = flat_help();
+	if (!help.ready)
+	{
+		logit(LOG_DEBUG, "flat-file help catalog unavailable: %s", help.error.c_str());
+		return string("&+GSorry, but there was an error with the help system.");
+	}
+	const flatfile_help_entry *entry = flatfile_help_catalog_find(help.catalog, str);
+	return entry ? render_flat_help(*entry, 0) : string("&+GHelp topic not found.");
+}
+
+string wiki_help(string str)
+{
+	if (str.empty())
+		return wiki_help_single("help");
+	const auto &help = flat_help();
+	if (!help.ready)
+	{
+		logit(LOG_DEBUG, "flat-file help catalog unavailable: %s", help.error.c_str());
+		return string("&+GSorry, but there was an error with the help system.");
+	}
+	const auto matches = flatfile_help_catalog_search(
+		help.catalog, str, static_cast<size_t>(WIKIHELP_RESULTS_LIMIT) + 1);
+	if (matches.empty())
+	{
+		logit(LOG_HELP, "%s", str.c_str());
+		return string("&+GSorry, but there are no help topics that match your search.");
+	}
+	if (matches.size() == 1)
+		return render_flat_help(*matches.front(), 0);
+	const string key = tolower(str);
+	const flatfile_help_entry *exact = nullptr;
+	string result;
+	for (const auto *entry : matches)
+		if (tolower(entry->title) == key)
+		{
+			exact = entry;
+			break;
+		}
+	if (exact)
+	{
+		result = render_flat_help(*exact, 0);
+		result += "\n\n&+GThe following help topics also matched your search:\n";
+	}
+	else
+		result = "&+GThe following help topics matched your search:\n";
+	for (const auto *entry : matches)
+		if (entry != exact)
+			result += " &+c" + entry->title + "\n";
+	return result;
 }
 
 #else

@@ -7,8 +7,8 @@ runtime serving.
 
 The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
 
-1. **`wiki_help()`** (`src/wikihelp.c`) - queries the `pages` table on the
-   main MySQL connection:
+1. **`wiki_help()`** (`src/wikihelp.c`) - in database-backed mode, queries the
+   `pages` table on the main MySQL connection:
 
    ```sql
    SELECT title FROM pages WHERE title LIKE '%<term>%'
@@ -48,8 +48,13 @@ The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
     up to `CMD_ATTRIB_MAX` entries (1024, `src/wikihelp.h`) and bounds-checks
     the count, logging and skipping anything beyond the cap.
 
-The help system is database-backed by design. Narrow test harnesses may compile its
-historical `__NO_MYSQL__` stub, but the complete server has no supported no-MySQL build.
+Without MySQL (`-D__NO_MYSQL__` builds), the same command loads and caches the
+tracked source files that feed the database importer. It applies the importer's
+precedence - individual `lib/information` pages, then `help_index`, then
+`duris_help_parsed.hlp` - and provides case-insensitive exact and substring
+searches without a database connection. Missing or structurally invalid source
+catalogs fail closed with the normal help-system error instead of silently
+returning the former disabled stub.
 
 ## Content pipeline
 

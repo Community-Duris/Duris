@@ -24,6 +24,27 @@
 - **Overall state:** the full objective is not complete. The global incomplete-domain
   boot fence remains in place while other concrete DB-free gaps are restored.
 
+### 2026-08-29 - database-independent in-game help
+
+- **Concrete gap:** `wiki_help` returned only a disabled message under `__NO_MYSQL__`,
+  even though the help pages imported into the database are generated from tracked flat
+  files in this repository.
+- **Restoration:** flat-file-only mode now loads those existing sources directly and
+  caches a bounded catalog. It follows the importer's existing precedence across the
+  individual information files, `help_index`, and `duris_help_parsed.hlp`, then provides
+  the established case-insensitive exact lookup, substring search, sorted results,
+  result limit, missing-topic response, and redirects. Database-backed help remains
+  unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_help_catalog.py` loads more
+  than 1,500 real topics, verifies source precedence and search behavior, and directly
+  invokes `wiki_help` in a client-free runtime harness to prove that real content—not the
+  former disabled stub—is returned. The test is included in the client-free CI job.
+- **Build evidence:** `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  and `git diff --check` pass.
+- **Overall state:** the full objective is not complete. The global incomplete-domain
+  boot fence remains in place while other concrete DB-free gaps are restored.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,
