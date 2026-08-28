@@ -56,6 +56,24 @@ bool valid_payload(const shop_trade_payload &payload)
 	    payload.item_blob_size > payload.item_blob.size())
 		return false;
 	const bool creates = creation(payload);
+	if (creates)
+	{
+		if (!payload.stock_item_uid ||
+		    payload.stock_item_uid == payload.selected_item_uid ||
+		    !payload.expected_stock_item_revision ||
+		    payload.expected_stock_item_revision == ITEM_TRANSFER_ABSENT_REVISION ||
+		    payload.stock_vnum <= 0)
+			return false;
+	}
+	else if (payload.action == shop_trade_action::buy_existing)
+	{
+		if (payload.stock_item_uid != payload.selected_item_uid ||
+		    !payload.expected_stock_item_revision || payload.stock_vnum <= 0)
+			return false;
+	}
+	else if (payload.stock_item_uid || payload.expected_stock_item_revision ||
+		 payload.stock_vnum)
+		return false;
 	const uint64_t root_uid = payload.items[0].root_item_uid;
 	if (root_uid != payload.selected_item_uid)
 		return false;
@@ -83,6 +101,15 @@ bool valid_payload(const shop_trade_payload &payload)
 			return false;
 	}
 	if (!selected)
+		return false;
+	const auto root = std::find_if(payload.items.begin(),
+				       payload.items.begin() + payload.item_count,
+				       [&](const auto &item)
+				       { return item.item_uid == payload.selected_item_uid; });
+	if (root == payload.items.begin() + payload.item_count ||
+	    ((creates || payload.action == shop_trade_action::buy_existing) &&
+	     (payload.stock_vnum != root->vnum ||
+	      (!creates && payload.expected_stock_item_revision != root->expected_item_revision))))
 		return false;
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
@@ -170,6 +197,9 @@ bool shop_trade_command_encode_payload(const shop_trade_payload &payload,
 		append_le<uint64_t>(encoded, payload.expected_bank_revision);
 		append_le<uint64_t>(encoded, payload.expected_shop_revision);
 		append_le<uint64_t>(encoded, payload.selected_item_uid);
+		append_le<uint64_t>(encoded, payload.stock_item_uid);
+		append_le<uint64_t>(encoded, payload.expected_stock_item_revision);
+		append_le<int32_t>(encoded, payload.stock_vnum);
 		append_le<uint16_t>(encoded, payload.item_count);
 		const size_t name_length =
 			strnlen(payload.account_name.data(), payload.account_name.size());
@@ -201,7 +231,8 @@ bool shop_trade_command_encode_payload(const shop_trade_payload &payload,
 bool shop_trade_command_decode_payload(const critical_command &command, shop_trade_payload *payload)
 {
 	if (!payload || command.type != critical_command_type::shop_trade ||
-	    command.payload_version != SHOP_TRADE_PAYLOAD_VERSION)
+	    (command.payload_version != SHOP_TRADE_PAYLOAD_VERSION &&
+	     command.payload_version != SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION))
 		return false;
 	*payload = {};
 	const uint8_t *cursor = command.payload.data();
@@ -213,8 +244,14 @@ bool shop_trade_command_decode_payload(const critical_command &command, shop_tra
 	    !read_le(&cursor, end, &payload->expected_wallet_revision) ||
 	    !read_le(&cursor, end, &payload->expected_bank_revision) ||
 	    !read_le(&cursor, end, &payload->expected_shop_revision) ||
-	    !read_le(&cursor, end, &payload->selected_item_uid) ||
-	    !read_le(&cursor, end, &payload->item_count) || !read_le(&cursor, end, &name_length) ||
+	    !read_le(&cursor, end, &payload->selected_item_uid))
+		return false;
+	if (command.payload_version == SHOP_TRADE_PAYLOAD_VERSION &&
+	    (!read_le(&cursor, end, &payload->stock_item_uid) ||
+	     !read_le(&cursor, end, &payload->expected_stock_item_revision) ||
+	     !read_le(&cursor, end, &payload->stock_vnum)))
+		return false;
+	if (!read_le(&cursor, end, &payload->item_count) || !read_le(&cursor, end, &name_length) ||
 	    !name_length || name_length > CURRENCY_ACCOUNT_NAME_MAX_BYTES ||
 	    static_cast<size_t>(end - cursor) < name_length ||
 	    payload->item_count > payload->items.size())
@@ -239,6 +276,23 @@ bool shop_trade_command_decode_payload(const critical_command &command, shop_tra
 	    static_cast<size_t>(end - cursor) != payload->item_blob_size)
 		return false;
 	memcpy(payload->item_blob.data(), cursor, payload->item_blob_size);
+	if (command.payload_version == SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION)
+	{
+		if (payload->action == shop_trade_action::buy_produced)
+			return false;
+		if (payload->action == shop_trade_action::buy_existing)
+		{
+			auto selected = std::find_if(
+				payload->items.begin(),
+				payload->items.begin() + payload->item_count, [&](const auto &item)
+				{ return item.item_uid == payload->selected_item_uid; });
+			if (selected == payload->items.begin() + payload->item_count)
+				return false;
+			payload->stock_item_uid = selected->item_uid;
+			payload->expected_stock_item_revision = selected->expected_item_revision;
+			payload->stock_vnum = selected->vnum;
+		}
+	}
 	if (!valid_payload(*payload))
 		return false;
 	critical_command expected = {};
@@ -354,6 +408,14 @@ bool shop_trade_command_build(critical_command *command, critical_operation_id o
 			command->keys.push_back(item);
 			command->expected_revisions.push_back(
 				{ item, payload.items[index].expected_item_revision });
+		}
+		if (creation(payload))
+		{
+			const critical_entity_key stock = { critical_entity_type::item,
+							    payload.stock_item_uid };
+			command->keys.push_back(stock);
+			command->expected_revisions.push_back(
+				{ stock, payload.expected_stock_item_revision });
 		}
 	}
 	catch (const std::bad_alloc &)

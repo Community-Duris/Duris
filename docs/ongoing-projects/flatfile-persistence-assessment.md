@@ -2225,6 +2225,30 @@ sections below continue to describe the required end state.
   transfer, then implement the flat repository apply path using one authority transaction and
   idempotent operation result before adding runtime submission/completion handling.
 
+### Checkpoint 69 - produced-stock exemplar fence
+
+- **Corrected:** shop-trade payload version 2 distinguishes the persistent produced-stock
+  exemplar from the newly allocated purchased clone. Produced purchases now carry the exemplar
+  UID, active item revision, and vnum in addition to the clone graph's absent UIDs, preventing a
+  repository from approving creation merely because an unrelated item shares the requested
+  prototype.
+- **Lock coverage:** the exemplar is an additional item key and expected revision for produced
+  purchases. Existing-stock purchases require the stock identity to be the selected root and
+  to repeat its vnum/revision exactly; sale actions reject stray stock fields.
+- **Compatibility:** v2 is the only emitted form. The decoder retains v1 support for existing
+  purchases and both sale actions by reconstructing their unambiguous stock metadata, while
+  rejecting v1 produced purchases because that format cannot identify or fence an exemplar.
+- **Checks passed:** the strict codec regression covers v2 exemplar fences, v1 existing-stock
+  compatibility, v1 produced-stock rejection, absent clone enforcement, full command/result
+  round trips, and tamper detection. Changed-line formatting and the normal C++20 server build
+  pass.
+- **Exposure:** the command remains unrouted and therefore cannot mutate either backend. The
+  correction landed before repository or runtime adoption, but compatibility is retained so an
+  inert queued v1 intent cannot be misinterpreted after future activation.
+- **Next action:** implement the lock-scoped shop aggregate prepare API, including exact item
+  blob/topology validation and produced-exemplar comparison, then compose it with wallet and
+  custody after-images.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

@@ -44,6 +44,18 @@ shop_trade_payload trade(shop_trade_action action)
 							 item_custody_state::active;
 	payload.items[0] = { 100, 100, 0, revision, 500, state };
 	payload.items[1] = { 101, 100, 100, revision, 501, state };
+	if (action == shop_trade_action::buy_existing)
+	{
+		payload.stock_item_uid = 100;
+		payload.expected_stock_item_revision = 5;
+		payload.stock_vnum = 500;
+	}
+	else if (action == shop_trade_action::buy_produced)
+	{
+		payload.stock_item_uid = 900;
+		payload.expected_stock_item_revision = 4;
+		payload.stock_vnum = 500;
+	}
 	payload.item_blob_size = 4;
 	payload.item_blob[0] = 0x44;
 	payload.item_blob[1] = 0x55;
@@ -61,6 +73,7 @@ int main()
 					critical_source_site::command,
 					critical_deadline_class::interactive));
 	assert(command.type == critical_command_type::shop_trade);
+	assert(command.payload_version == SHOP_TRADE_PAYLOAD_VERSION);
 	command.accepted_at_usec = 1;
 	assert(critical_command_valid(command));
 
@@ -74,7 +87,14 @@ int main()
 	assert(shop_trade_command_decode_payload(command_copy, &decoded));
 	assert(decoded.action == shop_trade_action::buy_existing && decoded.shop_id == 0 &&
 	       decoded.item_count == 2 && decoded.items[1].parent_item_uid == 100 &&
-	       decoded.item_blob_size == 4 && decoded.item_blob[3] == 0x77);
+	       decoded.stock_item_uid == 100 && decoded.item_blob_size == 4 &&
+	       decoded.item_blob[3] == 0x77);
+
+	critical_command legacy = command;
+	legacy.payload.erase(legacy.payload.begin() + 50, legacy.payload.begin() + 70);
+	legacy.payload_version = SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION;
+	assert(shop_trade_command_decode_payload(legacy, &decoded));
+	assert(decoded.stock_item_uid == 100 && decoded.expected_stock_item_revision == 5);
 
 	command_copy.expected_revisions.back().revision++;
 	assert(!shop_trade_command_decode_payload(command_copy, &decoded));
@@ -83,6 +103,10 @@ int main()
 	assert(shop_trade_command_build(&command, operation(), produced,
 					critical_source_site::command,
 					critical_deadline_class::interactive));
+	legacy = command;
+	legacy.payload.erase(legacy.payload.begin() + 50, legacy.payload.begin() + 70);
+	legacy.payload_version = SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION;
+	assert(!shop_trade_command_decode_payload(legacy, &decoded));
 	produced.items[0].expected_state = item_custody_state::active;
 	assert(!shop_trade_command_build(&command, operation(), produced,
 					 critical_source_site::command,
