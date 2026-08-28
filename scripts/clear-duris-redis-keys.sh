@@ -5,12 +5,17 @@ set -euo pipefail
 : "${REDIS_HOST:?REDIS_HOST is required}"
 : "${REDIS_PORT:?REDIS_PORT is required}"
 : "${REDIS_DB:?REDIS_DB is required}"
+: "${REDIS_NAMESPACE:?REDIS_NAMESPACE is required}"
 : "${REDIS_TLS:?REDIS_TLS is required}"
 : "${REDIS_ALLOWED_TARGETS:?REDIS_ALLOWED_TARGETS is required}"
 : "${REDIS_DESTRUCTIVE_CONFIRM:?REDIS_DESTRUCTIVE_CONFIRM is required}"
 
 if [[ "$ENVIRONMENT" != "local" ]]; then
     printf 'refusing Redis deletion: ENVIRONMENT must be local\n' >&2
+    exit 2
+fi
+if [[ ! "$REDIS_NAMESPACE" =~ ^duris:local:[a-z0-9]([a-z0-9_-]{0,30}[a-z0-9])?$ ]]; then
+    printf 'refusing Redis deletion: REDIS_NAMESPACE must match duris:local:<deployment>\n' >&2
     exit 2
 fi
 if [[ ! "$REDIS_PORT" =~ ^[0-9]+$ ]] || ((REDIS_PORT < 1 || REDIS_PORT > 65535)); then
@@ -74,7 +79,7 @@ fi
 
 DELETE_BATCH='local r=redis.call("SCAN",ARGV[1],"MATCH",ARGV[2],"COUNT",256); local n=#r[2]; for i=1,n,128 do redis.call("DEL",unpack(r[2],i,math.min(i+127,n))) end; return {r[1],n}'
 COUNT_BATCH='local r=redis.call("SCAN",ARGV[1],"MATCH",ARGV[2],"COUNT",256); return {r[1],#r[2]}'
-PATTERNS=('mud:*' 'ship:snapshot:*')
+PATTERNS=("$REDIS_NAMESPACE:*" 'mud:*' 'ship:snapshot:*')
 
 scan_batches() {
     local script="$1"

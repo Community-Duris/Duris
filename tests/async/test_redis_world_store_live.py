@@ -50,7 +50,7 @@ int main(int argc, char **argv)
         "127.0.0.1", live_port, 250, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false};
     redis_connection_settings *settings = redis_connection_settings_create(&options);
     assert(settings);
-    redis_world_store_config config = {settings, 42, 3600};
+    redis_world_store_config config = {settings, "mud", 42, 3600};
     constexpr const char *writer_a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     constexpr const char *writer_b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     constexpr uint64_t lease = 600000;
@@ -226,6 +226,7 @@ int main(int argc, char **argv)
                 "-I",
                 str(ROOT / "src"),
                 str(ROOT / "src" / "redis_connection.c"),
+                str(ROOT / "src" / "redis_namespace.c"),
                 str(ROOT / "src" / "redis_world_store.c"),
                 str(source),
                 "-lhiredis",

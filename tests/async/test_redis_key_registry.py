@@ -18,7 +18,7 @@ owned_patterns = re.findall(
 )
 assert len(surface_names) == len(set(surface_names)) == 42
 assert len(store_names) == len(set(store_names)) == 5
-assert owned_patterns == ["mud:*", "ship:snapshot:*"]
+assert owned_patterns == ["<namespace>:*", "mud:*", "ship:snapshot:*"]
 
 redis_literals = re.compile(r'"(?:mud|ship):')
 for source in sorted((ROOT / "src").rglob("*.[ch]")):
@@ -27,9 +27,7 @@ for source in sorted((ROOT / "src").rglob("*.[ch]")):
     assert not redis_literals.search(source.read_text(encoding="utf-8")), source
 
 clear_script = (ROOT / "scripts" / "clear-duris-redis-keys.sh").read_text(encoding="ascii")
-declared = re.search(r"^PATTERNS=\(([^\n]+)\)$", clear_script, re.MULTILINE)
-assert declared
-script_patterns = re.findall(r"'([^']+)'", declared.group(1))
-assert script_patterns == owned_patterns
+assert 'PATTERNS=("$REDIS_NAMESPACE:*" \'mud:*\' \'ship:snapshot:*\')' in clear_script
+assert "REDIS_NAMESPACE must match duris:local:<deployment>" in clear_script
 
 print("Redis runtime, lifecycle, and destructive-maintenance registry contract passed")

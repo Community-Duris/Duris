@@ -1,6 +1,7 @@
 #include "redis_world_store.h"
 #include "redis_connection.h"
 #include "redis_key_registry.h"
+#include "redis_namespace.h"
 
 #include "world_recovery_pipeline.h"
 
@@ -48,36 +49,34 @@ constexpr const char *WORLD_PUBLISH_SCRIPT =
 	"redis.call('PEXPIRE',KEYS[1],ARGV[7]) "
 	"return 1";
 
-bool format_key(char *buffer, size_t size, uint64_t epoch, const char *suffix)
+bool format_key(char *buffer, size_t size, const char *key_namespace, uint64_t epoch,
+		const char *suffix)
 {
-	if (!buffer || size < 64 || !epoch || !suffix || !*suffix)
-		return false;
-	const int written =
-		snprintf(buffer, size, REDIS_SEASON_KEY_FORMAT, (unsigned long long)epoch, suffix);
-	return written > 0 && (size_t)written < size;
+	return redis_namespace_season_key(key_namespace, epoch, suffix, buffer, size);
 }
 
 bool build_keys(const redis_world_store_config *config, world_keys *keys)
 {
-	return config && keys && config->season_epoch &&
-	       format_key(keys->fence, sizeof keys->fence, config->season_epoch,
-			  REDIS_WORLD_FENCE_SUFFIX) &&
-	       format_key(keys->current, sizeof keys->current, config->season_epoch,
-			  REDIS_WORLD_CURRENT_SUFFIX) &&
-	       format_key(keys->timestamp, sizeof keys->timestamp, config->season_epoch,
-			  REDIS_WORLD_TIMESTAMP_SUFFIX) &&
-	       format_key(keys->sequence, sizeof keys->sequence, config->season_epoch,
-			  REDIS_WORLD_SEQUENCE_SUFFIX) &&
-	       format_key(keys->checksum, sizeof keys->checksum, config->season_epoch,
-			  REDIS_WORLD_CHECKSUM_SUFFIX) &&
-	       format_key(keys->complete, sizeof keys->complete, config->season_epoch,
-			  REDIS_WORLD_COMPLETE_SUFFIX) &&
-	       format_key(keys->floor_drops, sizeof keys->floor_drops, config->season_epoch,
-			  REDIS_FLOOR_DROPS_SUFFIX) &&
+	return config && keys && config->key_namespace && config->season_epoch &&
+	       format_key(keys->fence, sizeof keys->fence, config->key_namespace,
+			  config->season_epoch, REDIS_WORLD_FENCE_SUFFIX) &&
+	       format_key(keys->current, sizeof keys->current, config->key_namespace,
+			  config->season_epoch, REDIS_WORLD_CURRENT_SUFFIX) &&
+	       format_key(keys->timestamp, sizeof keys->timestamp, config->key_namespace,
+			  config->season_epoch, REDIS_WORLD_TIMESTAMP_SUFFIX) &&
+	       format_key(keys->sequence, sizeof keys->sequence, config->key_namespace,
+			  config->season_epoch, REDIS_WORLD_SEQUENCE_SUFFIX) &&
+	       format_key(keys->checksum, sizeof keys->checksum, config->key_namespace,
+			  config->season_epoch, REDIS_WORLD_CHECKSUM_SUFFIX) &&
+	       format_key(keys->complete, sizeof keys->complete, config->key_namespace,
+			  config->season_epoch, REDIS_WORLD_COMPLETE_SUFFIX) &&
+	       format_key(keys->floor_drops, sizeof keys->floor_drops, config->key_namespace,
+			  config->season_epoch, REDIS_FLOOR_DROPS_SUFFIX) &&
 	       format_key(keys->floor_drop_index, sizeof keys->floor_drop_index,
-			  config->season_epoch, REDIS_FLOOR_DROP_INDEX_SUFFIX) &&
-	       format_key(keys->clean_shutdown, sizeof keys->clean_shutdown, config->season_epoch,
-			  REDIS_WORLD_CLEAN_SHUTDOWN_SUFFIX);
+			  config->key_namespace, config->season_epoch,
+			  REDIS_FLOOR_DROP_INDEX_SUFFIX) &&
+	       format_key(keys->clean_shutdown, sizeof keys->clean_shutdown, config->key_namespace,
+			  config->season_epoch, REDIS_WORLD_CLEAN_SHUTDOWN_SUFFIX);
 }
 
 bool generation_key(char *buffer, size_t size, const redis_world_store_config *config,
@@ -87,7 +86,7 @@ bool generation_key(char *buffer, size_t size, const redis_world_store_config *c
 	const int written = snprintf(suffix, sizeof suffix, REDIS_WORLD_GENERATION_FORMAT,
 				     (unsigned long long)sequence);
 	return config && sequence && written > 0 && (size_t)written < sizeof suffix &&
-	       format_key(buffer, size, config->season_epoch, suffix);
+	       format_key(buffer, size, config->key_namespace, config->season_epoch, suffix);
 }
 
 bool generation_chunk_key(char *buffer, size_t size, const redis_world_store_config *config,
@@ -100,7 +99,7 @@ bool generation_chunk_key(char *buffer, size_t size, const redis_world_store_con
 				     (unsigned long long)sequence, upload_token, index);
 	return config && sequence && index < REDIS_WORLD_GENERATION_MAX_CHUNKS && written > 0 &&
 	       (size_t)written < sizeof suffix &&
-	       format_key(buffer, size, config->season_epoch, suffix);
+	       format_key(buffer, size, config->key_namespace, config->season_epoch, suffix);
 }
 
 void put_u32(unsigned char *output, uint32_t value)

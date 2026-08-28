@@ -70,6 +70,7 @@ revisioned player-save pipeline and typed journal.
 | `REDIS_HOST` | `127.0.0.1` | hostname or IP | Redis host. |
 | `REDIS_PORT` | `6379` | `1`-`65535` | Redis TCP port. An explicitly invalid value disables Redis at boot. |
 | `REDIS_DB` | `0` | `0`-`255` | Database explicitly selected by every runtime connection and destructive maintenance command. |
+| `REDIS_NAMESPACE` | none | `duris:<ENVIRONMENT>:<deployment>` | Required isolation prefix for every active key and channel. Deployment is 1-32 lowercase letters, digits, hyphens, or underscores and must not begin or end with punctuation. |
 | `REDIS_USERNAME` | empty | Redis ACL username | Optional runtime and maintenance ACL identity; requires a nonempty password. |
 | `REDIS_PASSWORD` | empty | Redis ACL password | Optional runtime secret. Maintenance passes it through `REDISCLI_AUTH`, not a command argument. |
 | `REDIS_TLS` | `FALSE` | Exact `TRUE` or `FALSE` | Enables verified TLS for every runtime and maintenance connection. Non-loopback production runtime endpoints require `TRUE`; destructive maintenance requires it for every non-loopback target. |
@@ -89,7 +90,7 @@ sequence-keyed payload, advances the current pointer and diagnostic metadata, co
 the pre-capture floor hash, and renews the lease in one atomic Lua compare-and-set. A
 stale or second writer cannot publish. The single script also reduces background Redis
 round trips compared with a watched transaction.
-All of those keys use `mud:season:<epoch>:` with the active SQL season epoch captured at
+All of those keys use `<REDIS_NAMESPACE>:season:<epoch>:` with the active SQL season epoch captured at
 boot. An old process can therefore write only its abandoned epoch after a reset; it cannot
 create a snapshot visible to the new season.
 Boot accepts only a complete, non-expired generation whose schema, sequence, size, and
@@ -134,6 +135,7 @@ REDIS=TRUE
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 REDIS_DB=0
+REDIS_NAMESPACE=duris:local:default
 REDIS_TLS=FALSE
 REDIS_WORLD_STATE=TRUE
 ```
@@ -141,8 +143,9 @@ REDIS_WORLD_STATE=TRUE
 Stop the server before clearing Redis state. `scripts/clear-redis.sh --confirm
 <host:port/database>` loads the owner-only `.env`, requires `ENVIRONMENT=local`, checks the
 exact target against `REDIS_ALLOWED_TARGETS`, applies the configured database, ACL, and TLS
-settings, and deletes only `mud:*` and `ship:snapshot:*` keys. It uses cursor scans and at
-most 128 keys per `DEL`, verifies that both Duris patterns are empty afterward, and leaves
+settings, and deletes only `<REDIS_NAMESPACE>:*`, legacy `mud:*`, and retired
+`ship:snapshot:*` keys. It uses cursor scans and at most 128 keys per `DEL`, verifies that
+all three Duris patterns are empty afterward, and leaves
 unrelated application keys intact. Missing `redis-cli`, connection failure, unexpected replies, wrong
 confirmation, or a failed postflight returns nonzero.
 
@@ -153,12 +156,12 @@ floor deltas. Neither case authorizes a synchronous player save or journal delet
 Presence login/logout updates use a dedicated worker with a fixed 1,024-job queue, bounded
 timeouts, and exponential reconnect backoff. Gameplay paths only encode the bounded JSON
 payload and enqueue it; they never wait for a presence connection or Redis command. Each
-state change and optional `mud:season:<epoch>:player` event is one idempotent Lua operation. Pwipe joins
+state change and optional `<REDIS_NAMESPACE>:season:<epoch>:player` event is one idempotent Lua operation. Pwipe joins
 and cancels this worker before checked deletion, and shutdown gives it a one-second drain
 deadline. Connection outages retain ordered jobs until Redis returns; a job is dropped
 after three command-level failures so a permanent schema or ACL error cannot block the
-queue indefinitely. Online state uses `mud:season:<epoch>:presence:current` plus
-`mud:season:<epoch>:presence:session:<instance>:<pid>` keys with a 180-second TTL. The worker refreshes
+queue indefinitely. Online state uses `<REDIS_NAMESPACE>:season:<epoch>:presence:current` plus
+`<REDIS_NAMESPACE>:season:<epoch>:presence:session:<instance>:<pid>` keys with a 180-second TTL. The worker refreshes
 active leases every 60 seconds in batches of at most 64; a crashed server, failed logout,
 or superseded worker therefore cannot leave persistent presence data.
 
@@ -166,13 +169,13 @@ Named, fraglist, epic-zone, and artifact report reads use a bounded 32-entry in-
 cache and never wait for Redis during gameplay. Redis publication and invalidation use a
 separate worker bounded to 64 jobs and 4 MiB of queued values; repeated mutations for one
 key are coalesced. Values are limited to 1 MiB and keys to 128 bytes. Existing artifact
-cache values under `mud:season:<epoch>:cache:*` are seeded with their remaining TTL in one boot-only Redis operation, while
+cache values under `<REDIS_NAMESPACE>:season:<epoch>:cache:*` are seeded with their remaining TTL in one boot-only Redis operation, while
 expired or persistent legacy artifact values are ignored. Pwipe cancels the worker before
 checked deletion and shutdown gives it a one-second drain deadline.
 
 Donation notices use a separately gated, authenticated subscriber worker. Connect,
 subscribe, socket reads, validation, replay filtering, and reconnect backoff all run off
-the simulation thread. It subscribes only to `mud:season:<epoch>:nchat`, where the epoch is
+the simulation thread. It subscribes only to `<REDIS_NAMESPACE>:season:<epoch>:nchat`, where the epoch is
 captured from SQL once at boot. Its delivery queue holds at most 64 fixed-size validated events;
 each game pulse dequeues at most eight and performs no Redis work. Invalid, stale,
 oversized, replayed, or excess envelopes are counted and ignored. The publisher contract

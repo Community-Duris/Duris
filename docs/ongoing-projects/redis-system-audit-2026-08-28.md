@@ -6,10 +6,64 @@ Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-001, RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
 RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, and RDS-017 are remediated. RDS-008 is remediated for
-connection security but remains partial for namespace isolation; the remaining findings
-are open.
+connection security and application/environment/deployment namespace isolation but remains
+partial for Unix-socket transport; the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-008 deployment namespace isolation
+
+Completed in this interval:
+
+- Made `REDIS_NAMESPACE` mandatory whenever Redis is enabled. Boot accepts only
+  `duris:<ENVIRONMENT>:<deployment>`, requires the environment component to exactly match
+  `ENVIRONMENT`, and restricts deployment identifiers to a bounded lowercase safe alphabet.
+  Missing, malformed, oversized, or cross-environment values disable Redis before a
+  connection or worker can start.
+- Replaced the fixed `mud:season:<epoch>:` active prefix with
+  `<REDIS_NAMESPACE>:season:<epoch>:` for world recovery, floor deltas, presence, retry
+  tokens, report caches, player transition events, and donation delivery. The namespace
+  and SQL epoch are captured once at boot and passed immutably to the world store and
+  background workers.
+- Extended stopped-server destructive maintenance to delete only the configured namespace
+  plus the explicitly retained legacy `mud:*` and retired `ship:snapshot:*` patterns.
+  Namespace syntax, local-environment enforcement, target allow-listing, exact confirmation,
+  bounded deletion, and empty postconditions all fail closed.
+- Updated the DurisWeb and donation producer contracts to require the same configured
+  namespace as the server. Separate local, production, blue/green, test, or developer
+  deployments can safely share a Redis database without addressing each other's active
+  keys or channels.
+
+Performance effect:
+
+- Namespace validation and key construction occur only during boot. The key builder uses
+  bounded stack buffers and direct copies with no heap allocation, Redis command, SQL
+  query, lock, wait, filesystem access, or process work.
+- Gameplay cache reads retain the preformatted keys introduced by RDS-001. Presence,
+  donation, floor, and world operations continue to hand immutable resolved names to their
+  existing bounded workers, so no per-event namespace formatting was added.
+- The additional namespace scan is confined to explicitly invoked stopped-server
+  destructive maintenance.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_namespace.py`: passed under ASan/UBSan with valid local
+  and production namespaces plus missing, cross-environment, unsafe-character, boundary,
+  oversized, and undersized-output rejection.
+- `python3 tests/async/test_redis_season_scope.py`: passed namespace-plus-epoch inventory,
+  boot capture, worker configuration, and cache resolution contracts.
+- `python3 tests/async/test_redis_clear_scoped_live.py`: passed against isolated Redis,
+  deleting current-namespace and legacy keys while preserving an unrelated application.
+- `python3 tests/async/test_redis_world_store_live.py`: passed namespace-aware fencing,
+  publication, read, consume, cleanup, and cross-season isolation against isolated Redis.
+- `python3 tests/async/test_redis_key_registry.py` and
+  `python3 tests/async/test_migration_runner_cli_safety.py`: passed registry ownership and
+  destructive-maintenance safety contracts.
+
+Remaining RDS-008 work is Unix-socket transport. ACL/password authentication, verified
+TLS, explicit database selection, production endpoint policy, and complete active-surface
+namespace isolation are implemented.
 
 ### 2026-08-28 - RDS-001 complete season-scoped Redis isolation
 
@@ -1117,17 +1171,17 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 
 | Area | Redis keys/channels | Intended role | Current authority behavior |
 | --- | --- | --- | --- |
-| World recovery | `mud:season:<epoch>:world_state:generation:<seq>`, current pointer, diagnostic metadata | Optional recent world reconstruction | Schema, semantic graph, and complete item SQL custody are validated before rollback-capable materialization; NPC-held items are intentionally omitted. |
-| Floor deltas | `mud:season:<epoch>:floor_drops`; retired `mud:floor_pickups` cleanup | Bridge changes around a world snapshot | Versioned bounded binary item trees join the generation plan and complete SQL authority check before any materialization. |
+| World recovery | `<namespace>:season:<epoch>:world_state:generation:<seq>`, current pointer, diagnostic metadata | Optional recent world reconstruction | Schema, semantic graph, and complete item SQL custody are validated before rollback-capable materialization; NPC-held items are intentionally omitted. |
+| Floor deltas | `<namespace>:season:<epoch>:floor_drops`; retired `mud:floor_pickups` cleanup | Bridge changes around a world snapshot | Versioned bounded binary item trees join the generation plan and complete SQL authority check before any materialization. |
 | Ship cache | `ship:snapshot:<owner>` | Reconstructible SQL cache | Cache is returned before SQL without TTL, row revision, or schema/environment identity. |
-| Content caches | `mud:season:<epoch>:cache:named`, fraglist, epic-zone, and artifact variants | Reconstructible command output | Player reads use bounded local memory and Redis publication is asynchronous; named/fraglist freshness remains incomplete. |
-| Presence | `mud:season:<epoch>:presence:current`, expiring session keys, player channel, and retry tokens | Web presence and login/logout events | Privacy-safe payloads use a fenced 180-second per-session lease refreshed only by the bounded worker. |
-| Donation integration | `mud:season:<epoch>:nchat` pub/sub | Broadcast external donation notices | A bounded worker accepts only authenticated, fresh, replay-protected envelopes and delivers at most eight events per game pulse. |
+| Content caches | `<namespace>:season:<epoch>:cache:named`, fraglist, epic-zone, and artifact variants | Reconstructible command output | Player reads use bounded local memory and Redis publication is asynchronous; named/fraglist freshness remains incomplete. |
+| Presence | `<namespace>:season:<epoch>:presence:current`, expiring session keys, player channel, and retry tokens | Web presence and login/logout events | Privacy-safe payloads use a fenced 180-second per-session lease refreshed only by the bounded worker. |
+| Donation integration | `<namespace>:season:<epoch>:nchat` pub/sub | Broadcast external donation notices | A bounded worker accepts only authenticated, fresh, replay-protected envelopes and delivers at most eight events per game pulse. |
 | Legacy UID | `mud:next_obj_uid` | Retired counter | No runtime read, write, or administrator display remains. |
 
 All runtime connections share bounded ACL/password, explicit database, and verified TLS
-settings. Key names still lack a complete application/environment/deployment namespace;
-season-scoped stores include the SQL epoch while several caches and channels do not.
+settings. Every active key and channel uses a required, boot-validated
+`duris:<environment>:<deployment>` namespace followed by the captured SQL season epoch.
 
 ## Finding index
 
@@ -1426,18 +1480,20 @@ support one writer or enforce that invariant with a renewable lease.
 Severity: High
 Confidence: Confirmed configuration gap; exploitability depends on deployment reachability
 Remediation status: Partially remediated; runtime and destructive-maintenance connections
-now support ACL/password authentication, explicit database selection, and verified TLS.
+support ACL/password authentication, explicit database selection, and verified TLS.
 Non-loopback production runtime endpoints fail closed without TLS, while destructive
 maintenance additionally requires an exact local target allow-list and confirmation.
-Application/environment/deployment namespace isolation and Unix sockets remain open.
+Every active key and channel now uses a required application/environment/deployment
+namespace plus the SQL season epoch. Unix-socket transport remains open.
 
 Evidence:
 
 - Every runtime owner connects through the shared adapter
   ([`src/redis_connection.c`](../../src/redis_connection.c)), which performs bounded TCP,
   optional verified TLS, ACL/password authentication, and explicit database selection.
-- Runtime and maintenance configuration now share host, port, database, credentials, TLS,
-  and CA settings. Key names still have no complete environment/deployment namespace.
+- Runtime and maintenance configuration share host, port, database, credentials, TLS,
+  CA, and an exact `duris:<environment>:<deployment>` namespace. Runtime validation rejects
+  a namespace whose environment differs from `ENVIRONMENT` before connecting.
 - Recovery integrity is CRC32, which detects accidental corruption but does not
   authenticate the writer ([`src/world_recovery_pipeline.c`](../../src/world_recovery_pipeline.c#L183)).
 - A writer can influence mob stats, gold, affects, items, ships, artifact JSON, presence,

@@ -5,7 +5,8 @@ External donation notices are disabled unless both `REDIS=TRUE` and
 least 32 bytes. The key must be shared only with the trusted payment-event publisher.
 
 Read the active `season_epoch` from SQL `season_reset_state`, then publish a compact JSON
-object to `mud:season:<epoch>:nchat` with these exact fields:
+object to `<REDIS_NAMESPACE>:season:<epoch>:nchat` with these exact fields. The publisher
+must use the same explicit `duris:<environment>:<deployment>` namespace as the server:
 
 | Field | Contract |
 | --- | --- |

@@ -30,6 +30,7 @@
 #include "redis_donation_worker.h"
 #include "redis_floor_store.h"
 #include "redis_key_registry.h"
+#include "redis_namespace.h"
 #include "redis_presence_payload.h"
 #include "redis_presence_worker.h"
 #include "redis_world_store.h"
@@ -101,6 +102,7 @@ static bool world_recovery_materialization_active = false;
 static uint64_t clean_shutdown_sequence = 0;
 static uint64_t world_sequence_floor = 0;
 static uint64_t redis_runtime_epoch = 0;
+static char redis_key_namespace[64] = {};
 static char redis_presence_current_key[160] = {};
 static char redis_presence_session_prefix[160] = {};
 static char redis_presence_session_pattern[160] = {};
@@ -134,6 +136,7 @@ static redis_world_store_config redis_world_store_config_copy(void)
 {
 	redis_world_store_config config = {};
 	config.connection = redis_settings;
+	config.key_namespace = redis_key_namespace;
 	config.season_epoch = world_writer_epoch ? world_writer_epoch : redis_runtime_epoch;
 	config.generation_ttl_seconds = std::max<uint64_t>(3600, world_state_max_age * 4);
 	return config;
@@ -141,11 +144,7 @@ static redis_world_store_config redis_world_store_config_copy(void)
 
 static bool redis_epoch_key(char *buffer, size_t size, uint64_t epoch, const char *suffix)
 {
-	if (!buffer || size < 64 || !epoch || !suffix || !*suffix)
-		return false;
-	const int written =
-		snprintf(buffer, size, REDIS_SEASON_KEY_FORMAT, (unsigned long long)epoch, suffix);
-	return written > 0 && (size_t)written < size;
+	return redis_namespace_season_key(redis_key_namespace, epoch, suffix, buffer, size);
 }
 
 bool redis_season_key(char *buffer, size_t size, const char *suffix)
@@ -513,6 +512,12 @@ static bool redis_host_is_loopback(const char *host)
 			!strcmp(host, "::1"));
 }
 
+static bool redis_configure_namespace(void)
+{
+	return redis_namespace_validate(getenv("REDIS_NAMESPACE"), getenv("ENVIRONMENT"),
+					redis_key_namespace, sizeof redis_key_namespace);
+}
+
 static bool redis_configure_connection(const char *host, int port)
 {
 	int database = 0;
@@ -588,10 +593,19 @@ bool redis_init(void)
 		redis_enabled = false;
 		redis_donation_enabled = false;
 		redis_runtime_epoch = 0;
+		redis_key_namespace[0] = '\0';
 		return true;
 	}
 	redis_enabled = true;
 	redis_runtime_epoch = 0;
+	redis_key_namespace[0] = '\0';
+	if (!redis_configure_namespace())
+	{
+		logit(LOG_SYS,
+		      "redis: REDIS_NAMESPACE must match duris:<ENVIRONMENT>:<deployment>; Redis disabled");
+		redis_enabled = false;
+		return false;
+	}
 	if (!redis_configure_epoch_surfaces(sql_season_epoch()))
 	{
 		logit(LOG_SYS, "redis: active SQL season epoch unavailable; Redis disabled");

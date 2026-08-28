@@ -10,6 +10,7 @@ struct redis_connection_settings;
 struct redis_world_store_config
 {
 	const struct redis_connection_settings *connection;
+	const char *key_namespace;
 	uint64_t season_epoch;
 	uint64_t generation_ttl_seconds;
 };

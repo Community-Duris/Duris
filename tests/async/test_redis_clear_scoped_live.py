@@ -31,6 +31,7 @@ def run_helper(port: int, **updates: str) -> subprocess.CompletedProcess[str]:
             "REDIS_HOST": "127.0.0.1",
             "REDIS_PORT": str(port),
             "REDIS_DB": "0",
+            "REDIS_NAMESPACE": "duris:local:test",
             "REDIS_TLS": "FALSE",
             "REDIS_ALLOWED_TARGETS": target,
             "REDIS_DESTRUCTIVE_CONFIRM": target,
@@ -56,7 +57,7 @@ def main() -> None:
     wrapper = (ROOT / "scripts" / "clear-redis.sh").read_text(encoding="ascii")
     for text in (source, migration, wrapper):
         assert "FLUSHDB" not in text and "FLUSHALL" not in text
-    assert "PATTERNS=('mud:*' 'ship:snapshot:*')" in source
+    assert 'PATTERNS=("$REDIS_NAMESPACE:*" \'mud:*\' \'ship:snapshot:*\')' in source
     assert "REDIS_ALLOWED_TARGETS" in source
     assert "REDIS_DESTRUCTIVE_CONFIRM" in source
     assert "ENVIRONMENT must be local" in source
@@ -99,6 +100,7 @@ def main() -> None:
                 raise AssertionError("isolated redis-server did not start")
 
             for key in (
+                "duris:local:test:season:42:world_state:current",
                 "mud:cache:named",
                 "mud:season:42:world_state:current",
                 "ship:snapshot:Tester",
@@ -112,12 +114,15 @@ def main() -> None:
             assert wrong_confirmation.returncode == 2
             wrong_allowlist = run_helper(port, REDIS_ALLOWED_TARGETS="127.0.0.1:1/0")
             assert wrong_allowlist.returncode == 2
+            wrong_namespace = run_helper(port, REDIS_NAMESPACE="duris:production:test")
+            assert wrong_namespace.returncode == 2
 
             cleared = run_helper(port)
             assert cleared.returncode == 0, cleared
-            assert "deleted 3 Duris Redis keys" in cleared.stdout
+            assert "deleted 4 Duris Redis keys" in cleared.stdout
             assert "postflight clean" in cleared.stdout
             for key in (
+                "duris:local:test:season:42:world_state:current",
                 "mud:cache:named",
                 "mud:season:42:world_state:current",
                 "ship:snapshot:Tester",

@@ -12,6 +12,7 @@ PRESENCE = (ROOT / "src" / "redis_presence_worker.c").read_text(encoding="ascii"
 PRESENCE_HEADER = (ROOT / "src" / "redis_presence_worker.h").read_text(encoding="ascii")
 DONATION = (ROOT / "src" / "redis_donation_worker.c").read_text(encoding="ascii")
 DONATION_HEADER = (ROOT / "src" / "redis_donation_worker.h").read_text(encoding="ascii")
+NAMESPACE = (ROOT / "src" / "redis_namespace.c").read_text(encoding="ascii")
 
 surfaces = re.findall(
     r'^REDIS_SURFACE\(([A-Z0-9_]+), "([^"]+)", "([^"]+)", '
@@ -23,8 +24,8 @@ active = [(name, token, pattern, kind) for name, token, pattern, kind, state in 
           if state == "active"]
 assert active
 for name, token, pattern, kind in active:
-    assert pattern.startswith("mud:season:<epoch>:"), (name, pattern)
-    if name != "SEASON_KEY_FORMAT":
+    assert pattern.startswith("<namespace>:season:<epoch>:"), (name, pattern)
+    if name != "SEASON_INFIX":
         assert not token.startswith("mud:"), (name, token)
     assert kind in {"key", "key_format", "key_pattern", "key_prefix", "channel"}
 
@@ -32,6 +33,10 @@ assert REDIS.count("redis_configure_epoch_surfaces(sql_season_epoch())") == 1
 assert "redis_runtime_epoch = epoch" in REDIS
 assert "world_writer_epoch = redis_runtime_epoch" in REDIS
 assert "return redis_epoch_key(buffer, size, redis_runtime_epoch, suffix)" in REDIS
+assert "redis_configure_namespace()" in REDIS
+assert "REDIS_SEASON_INFIX" in NAMESPACE
+assert "redis_namespace_season_key(redis_key_namespace" in REDIS
+assert "config.key_namespace = redis_key_namespace" in REDIS
 assert REDIS.count("sql_season_epoch()") == 1
 
 for field in ("current_key", "session_prefix", "retry_prefix", "event_channel"):

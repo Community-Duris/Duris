@@ -235,7 +235,7 @@ class DocumentationContractTest(unittest.TestCase):
             "`--help` is safe",
             "unknown argument is rejected",
             "normal no-argument run begins work immediately",
-            "deletes only `mud:*` and `ship:snapshot:*` keys",
+            "deletes only `<REDIS_NAMESPACE>:*`, legacy `mud:*`, and retired `ship:snapshot:*` keys",
             "REDIS_HOST",
             "REDIS_PORT",
             "REDIS_DB",

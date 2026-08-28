@@ -195,7 +195,7 @@ for token in (
     "redis.call('PEXPIRE',KEYS[1],ARGV[7])",
 ):
     assert token in STORE
-for token in ("mud:season:%llu:%s", "world_state:writer_fence",
+for token in ("SEASON_INFIX", "world_state:writer_fence",
               "world_state:generation:", "world_state:current", "world_state:timestamp",
               "world_state:sequence", "world_state:checksum", "world_state:complete",
               "world_state:clean_shutdown", "floor_drops", "floor_drop_index"):

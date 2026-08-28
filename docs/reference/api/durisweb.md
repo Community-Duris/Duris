@@ -40,16 +40,17 @@ Redis presence is an expiring generation inside the active SQL season namespace.
 single active `season_epoch` from `season_reset_state` and keep that value fixed for the
 complete read. A consumer must:
 
-1. Read the opaque instance from `mud:season:<epoch>:presence:current`; a missing key means
+1. Read the opaque instance from `<REDIS_NAMESPACE>:season:<epoch>:presence:current`; a missing key means
    nobody is online.
-2. Scan only `mud:season:<epoch>:presence:session:<instance>:*` and read the matching JSON values.
+2. Scan only `<REDIS_NAMESPACE>:season:<epoch>:presence:session:<instance>:*` and read the matching JSON values.
    Missing keys are expired/offline sessions and must be ignored.
-3. Read `mud:season:<epoch>:presence:current` again after the scan. If it changed, discard the result and
+3. Read `<REDIS_NAMESPACE>:season:<epoch>:presence:current` again after the scan. If it changed, discard the result and
    retry against the new instance.
 
 Both the pointer and session keys have a 180-second TTL and are refreshed every 60
 seconds by the game server's background worker. Never combine keys from different
-instances or season epochs. The `mud:season:<epoch>:player` pub/sub channel remains a
+instances, deployments, environments, or season epochs. The
+`<REDIS_NAMESPACE>:season:<epoch>:player` pub/sub channel remains a
 transition hint; the expiring key set is the current-state source. A season change requires
 discarding all old keys and subscribing to the new channel.
 

@@ -48,7 +48,7 @@ assert "stat -c '%a'" in CLEAR_REDIS
 assert "--confirm <host:port/database>" in CLEAR_REDIS
 assert "REDIS_ALLOWED_TARGETS" in CLEAR_REDIS
 assert "clear-duris-redis-keys.sh" in CLEAR_REDIS
-assert "PATTERNS=('mud:*' 'ship:snapshot:*')" in SCOPED_CLEAR
+assert 'PATTERNS=("$REDIS_NAMESPACE:*" \'mud:*\' \'ship:snapshot:*\')' in SCOPED_CLEAR
 assert "ENVIRONMENT must be local" in SCOPED_CLEAR
 assert "REDIS_DB must be an integer" in SCOPED_CLEAR
 assert "non-loopback Redis requires REDIS_TLS=TRUE" in SCOPED_CLEAR
