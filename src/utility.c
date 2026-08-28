@@ -44,7 +44,7 @@ using namespace std;
 #include "map.h"
 #include "mm.h"
 #include "persistence_queue.h"
-#include "redis.h"
+#include "persistence_checkpoint.h"
 #include "latency_trace.h"
 #include "specializations.h"
 #include "spells.h"

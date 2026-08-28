@@ -39,6 +39,7 @@ using namespace std;
 #include "nexus_stones.h"
 #include "objmisc.h"
 #include "paladins.h"
+#include "persistence_checkpoint.h"
 #include "persistence_observability.h"
 #include "persistence_queue.h"
 #include "critical_command_coordinator.h"
@@ -50,7 +51,6 @@ using namespace std;
 #include "player_load_pipeline.h"
 #include "maintenance_scheduler.h"
 #include "world_recovery_pipeline.h"
-#include "redis.h"
 #include "redis_cache_store.h"
 #include "redis_command_observability.h"
 #include "redis_donation_worker.h"
@@ -4037,7 +4037,7 @@ static void show_world_persistence(P_char ch)
 		persistence_scalar_event_health_snapshot_copy();
 	const struct persistence_queue_health_snapshot large_queue =
 		persistence_large_event_health_snapshot_copy();
-	const struct persistence_dirty_save_snapshot dirty = redis_dirty_save_snapshot_copy();
+	const struct persistence_dirty_save_snapshot dirty = persistence_dirty_save_snapshot_copy();
 	const struct persistence_deferred_save_snapshot deferred =
 		persistence_deferred_save_snapshot_copy();
 	const redis_shared_command_health redis_commands = redis_shared_command_health_copy();

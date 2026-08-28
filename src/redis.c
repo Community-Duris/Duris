@@ -22,8 +22,6 @@
 #include "world_recovery_pipeline.h"
 #include "epic.h"
 #include "files.h"
-#include "player_save_pipeline.h"
-#include "player_save_worker.h"
 #include "presence_policy.h"
 #include "redis_cache_store.h"
 #include "redis_command_observability.h"
@@ -550,14 +548,6 @@ static bool redis_delete_key_checked(redis_shared_command_scope scope, const cha
 #endif
 }
 
-// rnum to vnum
-static int get_room_vnum(P_char ch)
-{
-	if (!ch || ch->in_room < 0 || ch->in_room > top_of_world)
-		return NOWHERE;
-	return world[ch->in_room].number;
-}
-
 static bool redis_parse_number(const char *value, int minimum, int maximum, int fallback,
 			       int *result)
 {
@@ -790,8 +780,6 @@ static bool redis_reconnect(void)
 	return true;
 #endif
 }
-
-void event_flush_dirty_players(P_char ch, P_char victim, P_obj obj, void *data);
 
 bool redis_init(void)
 {
@@ -1481,93 +1469,6 @@ static bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *re
 	(void)maximum_bytes;
 	return false;
 #endif
-}
-
-void mark_player_dirty(int pid)
-{
-	if (_pwipe)
-		return;
-	mark_player_dirty_components(pid, PLAYER_CHECKPOINT_COMPONENT_ALL);
-}
-
-void mark_player_dirty_components(int pid, player_component_mask_t components)
-{
-	if (_pwipe)
-		return;
-	player_save_pipeline_mark(pid, components);
-}
-
-void flush_dirty_players(void)
-{
-	for (P_char ch = character_list; ch; ch = ch->next)
-		if (IS_PC(ch) && GET_PID(ch) > 0)
-			player_save_pipeline_checkpoint_dirty(ch, RENT_CRASH, get_room_vnum(ch));
-}
-
-int get_dirty_player_count(void)
-{
-	return static_cast<int>(player_save_pipeline_dirty_count());
-}
-
-struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy(void)
-{
-	struct persistence_dirty_save_snapshot snapshot = {};
-	const player_save_pipeline_health pipeline = player_save_pipeline_health_copy();
-	const player_save_worker_health worker = player_save_worker_health_copy();
-	snapshot.enabled = 1;
-	snapshot.available = pipeline.initialized ? 1 : 0;
-	snapshot.active_count = player_save_pipeline_dirty_count();
-	snapshot.inflight_count = worker.inflight_pids;
-	snapshot.inflight_oldest_age_msec = worker.oldest_age_msec;
-	return snapshot;
-}
-
-void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
-{
-	constexpr size_t DIRTY_PLAYER_BATCH_SIZE = 8;
-	static std::vector<uint64_t> character_ids;
-	static size_t cursor = 0;
-
-	if (character_ids.empty())
-	{
-		try
-		{
-			for (P_char character = character_list; character;
-			     character = character->next)
-				if (IS_PC(character) && GET_PID(character) > 0 &&
-				    character->runtime_id)
-					character_ids.push_back(character->runtime_id);
-		}
-		catch (const std::bad_alloc &)
-		{
-			character_ids.clear();
-			cursor = 0;
-			nevent_periodic_retry_after(WAIT_SEC,
-						    "dirty-player snapshot allocation failed");
-			return;
-		}
-	}
-
-	size_t processed = 0;
-	while (cursor < character_ids.size() && processed < DIRTY_PLAYER_BATCH_SIZE)
-	{
-		P_char character = find_character_by_runtime_id(character_ids[cursor++]);
-		processed++;
-		if (character && IS_PC(character) && GET_PID(character) > 0)
-			player_save_pipeline_checkpoint_dirty(character, RENT_CRASH,
-							      get_room_vnum(character));
-	}
-
-	if (cursor < character_ids.size())
-	{
-		nevent_periodic_continue_after(1);
-		return;
-	}
-
-	character_ids.clear();
-	cursor = 0;
-	if (redis_world_state_enabled)
-		redis_flush_floor_drops();
 }
 
 bool redis_save_world_state(void)

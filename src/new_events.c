@@ -40,6 +40,7 @@
 #include "mm.h"
 #include "objmisc.h"
 #include "outposts.h"
+#include "persistence_checkpoint.h"
 #include "profile.h"
 #include "redis.h"
 #include "specs.prototypes.h"

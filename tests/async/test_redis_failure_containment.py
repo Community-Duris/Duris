@@ -5,6 +5,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
 text = (root / "src/redis.c").read_text()
+checkpoint = (root / "src/persistence_checkpoint.c").read_text()
 store = (root / "src/redis_world_store.c").read_text()
 presence_worker = (root / "src/redis_presence_worker.c").read_text()
 cache_store = (root / "src/redis_cache_store.c").read_text()
@@ -16,10 +17,10 @@ header = (root / "src/redis.h").read_text()
 signals = (root / "src/signals.c").read_text()
 
 
-def section(start: str, end: str) -> str:
-    first = text.index(start)
-    last = text.index(end, first)
-    return text[first:last]
+def section(start: str, end: str, source: str = text) -> str:
+    first = source.index(start)
+    last = source.index(end, first)
+    return source[first:last]
 
 
 assert "redisCommand(" not in text
@@ -141,23 +142,32 @@ connect_failure = init[init.index("if (!redis_ctx)"):init.index("// check for wo
 assert "redis_enabled = false;" not in connect_failure
 assert "mud:dirty_players" not in init
 snapshot = section(
-    "struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy",
+    "struct persistence_dirty_save_snapshot persistence_dirty_save_snapshot_copy",
     "void event_flush_dirty_players",
+    checkpoint,
 )
 assert "player_save_pipeline_health_copy" in snapshot
 assert "snapshot.available = pipeline.initialized" in snapshot
-dirty_count = section("int get_dirty_player_count(void)", "struct persistence_dirty_save_snapshot")
+dirty_count = section(
+    "int get_dirty_player_count(void)",
+    "struct persistence_dirty_save_snapshot",
+    checkpoint,
+)
 assert "player_save_pipeline_dirty_count()" in dirty_count
 assert "redis_command" not in dirty_count
 print("[PASS] dirty health and count use local revisioned pipeline state")
 
-mark = section("void mark_player_dirty(int pid)", "void flush_dirty_players(void)")
+mark = section(
+    "void mark_player_dirty(int pid)", "void flush_dirty_players(void)", checkpoint
+)
 assert "mark_player_dirty_components(pid, PLAYER_CHECKPOINT_COMPONENT_ALL)" in mark
 assert "player_save_pipeline_mark(pid, components)" in mark
 assert "sql_save_player" not in mark
 assert "sql_begin_transaction" not in mark
 assert "redis_command" not in mark and "redis_reconnect" not in mark
-flush = section("void flush_dirty_players(void)", "int get_dirty_player_count(void)")
+flush = section(
+    "void flush_dirty_players(void)", "int get_dirty_player_count(void)", checkpoint
+)
 assert "player_save_pipeline_checkpoint_dirty" in flush
 for forbidden in ("redis_command", "redis_reconnect", "sql_save_player", "fork("):
     assert forbidden not in flush

@@ -4,18 +4,20 @@ from contract_text import contains
 ROOT = Path(__file__).resolve().parents[2]
 header = (ROOT / "src/redis.h").read_text()
 source = (ROOT / "src/redis.c").read_text()
+checkpoint = (ROOT / "src/persistence_checkpoint.c").read_text()
 sql = (ROOT / "src/sql.c").read_text()
 
 assert contains(header, "bool redis_clear_pwipe_state(void);")
 assert contains(header, "bool redis_validate_pwipe_state(void);")
 assert contains(source, "extern int                  _pwipe;")
-for signature in (
-    "void redis_log_floor_drop(P_obj obj, int room_vnum)",
-    "void mark_player_dirty(int pid)",
-):
+for signature in ("void redis_log_floor_drop(P_obj obj, int room_vnum)",):
     start = source.index(signature)
     body = source[start:source.index("\n}", start) + 2]
     assert contains(body, "if (_pwipe)"), signature
+signature = "void mark_player_dirty(int pid)"
+start = checkpoint.index(signature)
+body = checkpoint[start:checkpoint.index("\n}", start) + 2]
+assert contains(body, "if (_pwipe)"), signature
 
 wipe = sql[sql.index("bool sql_pwipe(int code_verify)"):]
 assert wipe.index("redis_validate_pwipe_state()") < wipe.index("sql_begin_pwipe_epoch()")
@@ -51,7 +53,9 @@ assert not contains(pwipe_fn, "FLUSHALL")
 assert contains(source, "redis_clear_scan_match")
 assert contains(source, "redis_scan_match_empty(scope, pattern)")
 delete_checked = source[
-    source.index("static bool redis_delete_key_checked") : source.index("// rnum to vnum")
+    source.index("static bool redis_delete_key_checked") : source.index(
+        "static bool redis_parse_number"
+    )
 ]
 assert contains(delete_checked, "REDIS_SHARED_COMMAND_READ")
 assert contains(delete_checked, '"EXISTS %s"')

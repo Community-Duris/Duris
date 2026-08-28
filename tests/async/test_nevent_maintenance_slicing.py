@@ -30,6 +30,7 @@ drannak = source("src/drannak.c")
 hardcore = source("src/hardcore.c")
 periodic = source("src/nevent_periodic.c")
 redis = source("src/redis.c")
+checkpoint = source("src/persistence_checkpoint.c")
 ship_base = source("src/ships/ship_base.c")
 events = source("src/new_events.c")
 
@@ -52,7 +53,7 @@ assert "ARTIFACT_BIND_BATCH_SIZE = 8" in artifact
 assert "WHERE vnum > %d ORDER BY vnum LIMIT %zu" in binding
 assert "nevent_periodic_continue_after(1);" in binding
 
-dirty = function_body(redis, "void event_flush_dirty_players(P_char /*ch*/")
+dirty = function_body(checkpoint, "void event_flush_dirty_players(P_char /*ch*/")
 assert "DIRTY_PLAYER_BATCH_SIZE = 8" in dirty
 assert "character->runtime_id" in dirty
 assert "find_character_by_runtime_id" in dirty

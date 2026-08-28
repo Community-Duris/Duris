@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "sql.h"
 #include "item_ownership_runtime.h"
+#include "persistence_checkpoint.h"
 #include "sql_pool.h"
 #include "session_audit_transaction.h"
 #include "runtime_compatibility_contract.h"

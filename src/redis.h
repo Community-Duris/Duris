@@ -2,8 +2,6 @@
 #define __REDIS_H__
 
 #include "structs.h"
-#include "persistence_observability.h"
-#include "player_revision_state.h"
 #include <stdbool.h>
 
 struct ShipData;
@@ -22,13 +20,6 @@ void redis_log_floor_drop(P_obj obj, int room_vnum);
 void redis_remove_floor_drop(unsigned long obj_uid);
 void redis_clear_floor_drops(void);
 bool redis_flush_floor_drops(void);
-
-void mark_player_dirty(int pid);
-void mark_player_dirty_components(int pid, player_component_mask_t components);
-void flush_dirty_players(void);
-int get_dirty_player_count(void);
-struct persistence_dirty_save_snapshot redis_dirty_save_snapshot_copy(void);
-void event_flush_dirty_players(P_char ch, P_char victim, P_obj obj, void *data);
 
 // world state persistence for crash recovery
 extern bool redis_world_state_enabled;

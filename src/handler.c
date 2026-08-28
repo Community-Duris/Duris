@@ -28,6 +28,7 @@
 #include "justice.h"
 #include "map.h"
 #include "mm.h"
+#include "persistence_checkpoint.h"
 #include "redis.h"
 #include "world_recovery_pipeline.h"
 #include "ships/ships.h"

@@ -11,7 +11,7 @@ PIPELINE = (ROOT / "src/player_save_pipeline.c").read_text()
 HEADER = (ROOT / "src/player_save_pipeline.h").read_text()
 FILES = (ROOT / "src/files.c").read_text()
 ACTOTH = (ROOT / "src/actoth.c").read_text()
-REDIS = (ROOT / "src/redis.c").read_text()
+CHECKPOINT = (ROOT / "src/persistence_checkpoint.c").read_text()
 EVENTS = (ROOT / "src/new_events.c").read_text()
 COMM = (ROOT / "src/comm.c").read_text()
 WORKER = (ROOT / "src/player_save_worker.c").read_text()
@@ -138,8 +138,8 @@ assert legacy_save.index("sql_save_player_shapechanges") < legacy_save.index("SE
 assert legacy_save.index("SET save_revision") < legacy_save.index("if (own_txn)")
 print("[PASS] transactional compatibility saves fence every older immutable revision")
 
-mark = section(REDIS, "void mark_player_dirty(int pid)", "void flush_dirty_players(void)")
-flush = section(REDIS, "void flush_dirty_players(void)", "int get_dirty_player_count(void)")
+mark = section(CHECKPOINT, "void mark_player_dirty(int pid)", "void flush_dirty_players(void)")
+flush = section(CHECKPOINT, "void flush_dirty_players(void)", "int get_dirty_player_count(void)")
 assert "player_save_pipeline_mark" in mark
 assert "player_save_pipeline_checkpoint_dirty" in flush
 for retired in ("redis_command", "redis_reconnect", "sql_save_player", "fork("):

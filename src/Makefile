@@ -203,6 +203,7 @@ OBJS =  $(SHIP_OBJS) \
 				 objconv.o \
 				 objmisc.o \
 				 outposts.o \
+				 persistence_checkpoint.o \
 				 persistence_observability.o \
 				 critical_command.o \
 				 critical_command_journal.o \

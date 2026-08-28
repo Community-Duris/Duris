@@ -179,7 +179,7 @@ assert sorted(mark_callers) == ["player_save_pipeline.c", "sql_player.c"], (
 )
 assert "writeCharacter" not in SOURCE
 assert "sql_save_player" not in SOURCE
-assert "player_save_pipeline_mark" in (ROOT / "src/redis.c").read_text()
+assert "player_save_pipeline_mark" in (ROOT / "src/persistence_checkpoint.c").read_text()
 print("[PASS] production marks are limited to the pipeline and fenced legacy compatibility")
 
 print("player revision and component state contracts passed")

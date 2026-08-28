@@ -38,7 +38,7 @@ using namespace std;
 #include "justice.h"
 #include "map.h"
 #include "objmisc.h"
-#include "redis.h"
+#include "persistence_checkpoint.h"
 #include "spells.h"
 #include "sql.h"
 #include "weather.h"

@@ -34,7 +34,7 @@
 #include "map.h"
 #include "mm.h"
 #include "nexus_stones.h"
-#include "redis.h"
+#include "persistence_checkpoint.h"
 #include "spells.h"
 #include "sql.h"
 #include "trophy.h"

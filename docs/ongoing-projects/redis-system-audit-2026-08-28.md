@@ -10,6 +10,46 @@ remediated, as are RDS-018, RDS-025, and RDS-015; RDS-026 remains open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-026 player-checkpoint module boundary
+
+Completed in this interval:
+
+- Moved dirty-player marking, batched checkpoint capture, local dirty counts, worker-health
+  snapshots, and the periodic checkpoint callback from `redis.c` into the typed
+  `persistence_checkpoint.c/.h` module. The Redis public header no longer exports
+  revisioned player-save APIs or includes player revision/observability types.
+- Routed every checkpoint caller through the new header and removed the Redis umbrella
+  include from eight translation units that use no Redis behavior. The baseline set of 29
+  direct `redis.h` consumers is now 22, including the one implementation bridge that
+  invokes the existing floor-flush callback after a checkpoint cycle.
+- Reduced `redis.c` from the audit baseline of 2,525 lines to 2,400 and `redis.h` to 84
+  lines. Added a boundary regression that rejects reintroduction of checkpoint APIs,
+  player-save dependencies, or checkpoint-only consumers into the Redis module.
+- Updated existing player-save, periodic-maintenance, pwipe, and Redis failure contracts
+  to inspect the owning module rather than assuming monolithic source layout.
+
+Performance effect:
+
+- Runtime logic and call order are unchanged: dirty marking remains one bounded in-memory
+  pipeline operation, periodic capture remains sliced at eight character IDs, and the
+  existing asynchronous floor submission still runs only after the checkpoint cycle.
+- The change reduces compile dependencies and review surface; it adds no allocation,
+  Redis, SQL, filesystem, logging, sleep, or wait work to gameplay.
+
+Validation:
+
+- `./scripts/format.sh --check` and `make -C src -j2`: passed under the warning-as-error
+  profile.
+- All 24 `tests/async/test_redis*.py` regressions passed, including the new module-boundary
+  gate and all isolated live Redis suites.
+- Dirty-flush, player-save pipeline/revision, bounded periodic-maintenance, failure
+  containment, and pwipe invalidation focused regressions passed.
+
+RDS-026 remains partially remediated. The unrelated player-checkpoint surface is now
+separate; remaining work is to move the world/floor, content-cache, presence/donation, and
+administrative lifecycle facades out of the Redis composition root without changing their
+already bounded runtime behavior.
+
 ### 2026-08-28 - RDS-015 pwipe and materialization runtime closure
 
 Completed in this interval:
@@ -2407,6 +2447,11 @@ single typed health snapshot to both operator commands and health diagnostics.
 
 Severity: Medium
 Confidence: Confirmed structural issue
+Remediation status: Partially remediated. Connection/security, key registry, world store,
+floor, presence, donation, and cache workers already have typed modules. Revisioned player
+checkpoint ownership has now moved to `persistence_checkpoint.c/.h`; eight checkpoint-only
+consumers no longer include `redis.h`, which no longer exports player revision types. The
+remaining composition root still owns too many subsystem facades and lifecycle policies.
 
 `src/redis.c` is 2,525 lines and combines connection/configuration, world publication,
 floor recovery, ship serialization, report caches, presence, pub/sub, administrator

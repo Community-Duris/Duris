@@ -25,6 +25,7 @@
 #include "justice.h"
 #include "necromancy.h"
 #include "objmisc.h"
+#include "persistence_checkpoint.h"
 #include "redis.h"
 #include "spells.h"
 #include "sql.h"

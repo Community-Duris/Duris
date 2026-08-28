@@ -6,13 +6,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 REDIS = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
+CHECKPOINT = (ROOT / "src" / "persistence_checkpoint.c").read_text(encoding="ascii")
 HEADER = (ROOT / "src" / "redis.h").read_text(encoding="ascii")
 ACTOBJ = (ROOT / "src" / "actobj.c").read_text(encoding="utf-8")
 
 
-def section(start: str, end: str) -> str:
-    first = REDIS.index(start)
-    return REDIS[first : REDIS.index(end, first)]
+def section(start: str, end: str, source: str = REDIS) -> str:
+    first = source.index(start)
+    return source[first : source.index(end, first)]
 
 
 assert "redis_log_floor_pickup" not in HEADER
@@ -29,8 +30,8 @@ assert "HEXISTS mud:floor_drops" not in REDIS
 drop = section("void redis_log_floor_drop", "bool redis_flush_floor_drops")
 flush = section("bool redis_flush_floor_drops", "void redis_remove_floor_drop")
 remove = section("void redis_remove_floor_drop", "static bool redis_clear_floor_drops_checked")
-restore = section("static bool redis_read_floor_records", "void mark_player_dirty")
-periodic = section("void event_flush_dirty_players", "bool redis_save_world_state")
+restore = section("static bool redis_read_floor_records", "bool redis_save_world_state")
+periodic = CHECKPOINT[CHECKPOINT.index("void event_flush_dirty_players") :]
 
 assert "!redis_world_state_enabled" in drop
 assert "!redis_world_state_enabled" in flush
