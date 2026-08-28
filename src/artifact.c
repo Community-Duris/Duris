@@ -624,6 +624,17 @@ void arti_remove_sql(int vnum, bool mortalToo)
 // This function is called at boot to set the mortals' artifact list table.
 void setupMortArtiList_sql()
 {
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "setupMortArtiList_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		return;
+	}
+#else
 	// Clear the mortals table.
 	qry("TRUNCATE TABLE artifacts_mortal");
 	// Arih : Explicitly specify columns to avoid "Column count doesn't match value count" error.
@@ -631,6 +642,7 @@ void setupMortArtiList_sql()
 	// Repopulate it: Only select columns that exist in both tables (excluding lastUpdate)
 	qry("INSERT INTO artifacts_mortal (vnum, owned, locType, location, timer, type) SELECT vnum, owned, locType, location, timer, type FROM artifacts WHERE locType=%d OR locType=%d",
 	    ARTIFACT_ON_PC, ARTIFACT_ONCORPSE);
+#endif
 
 	arti_cache_init();
 }
@@ -640,11 +652,47 @@ void addOnGroundArtis_sql()
 {
 	P_obj arti;
 	int room;
+#ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+#endif
 
 	logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Beginning.");
 
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "addOnGroundArtis_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		return;
+	}
+	bool found = false;
+	for (const auto &record : records)
+	{
+		if (!record.owned || record.location_type != ARTIFACT_ONGROUND)
+			continue;
+		found = true;
+		if (!(arti = read_object(record.vnum, VIRTUAL)))
+		{
+			logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Could not load object vnum %d.",
+			      record.vnum);
+			continue;
+		}
+		if ((room = real_room(record.location)) < 0 || room > top_of_world)
+		{
+			logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Could not find room %d.",
+			      record.location);
+			extract_obj(arti, FALSE);
+			continue;
+		}
+		obj_to_room(arti, room);
+	}
+	if (!found)
+		logit(LOG_ARTIFACT, "addOnGroundArtis_sql: No owned artifacts found on ground.");
+#else
 	qry("SELECT vnum, location FROM artifacts WHERE owned='Y' AND locType=%d",
 	    ARTIFACT_ONGROUND);
 
@@ -683,6 +731,7 @@ void addOnGroundArtis_sql()
 	{
 		logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Could not pull on ground arti list.");
 	}
+#endif
 
 	logit(LOG_ARTIFACT, "addOnGroundArtis_sql: Ending.");
 }
@@ -4316,11 +4365,47 @@ void addOnMobArtis_sql()
 {
 	P_obj arti;
 	P_char mob;
+#ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+#endif
 
 	logit(LOG_ARTIFACT, "addOnMobArtis_sql: Beginning.");
 
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "addOnMobArtis_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		return;
+	}
+	bool found = false;
+	for (const auto &record : records)
+	{
+		if (!record.owned || record.location_type != ARTIFACT_ON_NPC)
+			continue;
+		found = true;
+		if (!(arti = read_object(record.vnum, VIRTUAL)))
+		{
+			logit(LOG_ARTIFACT, "addOnMobArtis_sql: Could not load object vnum %d.",
+			      record.vnum);
+			continue;
+		}
+		if (!(mob = find_mob_in_game(record.location)))
+		{
+			logit(LOG_ARTIFACT, "addOnMobArtis_sql: Could not find mob vnum %d.",
+			      record.location);
+			extract_obj(arti);
+			continue;
+		}
+		obj_to_char(arti, mob);
+	}
+	if (!found)
+		logit(LOG_ARTIFACT, "addOnMobArtis_sql: No owned artifacts found on NPCs.");
+#else
 	qry("SELECT vnum, location FROM artifacts WHERE owned='Y' AND locType=%d", ARTIFACT_ON_NPC);
 
 	if ((res = mysql_store_result(DB)) != NULL)
@@ -4357,6 +4442,7 @@ void addOnMobArtis_sql()
 	{
 		logit(LOG_ARTIFACT, "addOnMobArtis_sql: Could not pull on mob arti list.");
 	}
+#endif
 
 	logit(LOG_ARTIFACT, "addOnMobArtis_sql: Ending.");
 }

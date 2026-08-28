@@ -235,6 +235,29 @@
   establishment plus listing, expiry, war-limit, and repair paths still require focused
   restoration. The global incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - restored flat artifact world placement at boot
+
+- **Concrete gap:** normal world boot calls `setupMortArtiList_sql`,
+  `addOnGroundArtis_sql`, and `addOnMobArtis_sql`. All three still depended on MySQL, so
+  the client-free build discarded mortal-list setup and could not reconstruct owned
+  artifacts whose authoritative locations were a room or an NPC.
+- **Restoration:** client-free boot now validates and derives the mortal view from the
+  canonical catalog, then filters that same catalog for owned ground and NPC records.
+  Valid objects are recreated in the recorded real room or on the matching live NPC;
+  unowned and unrelated records are ignored, and invalid room/NPC references are logged
+  and the temporary object is extracted. The copyover gate and database-backed boot path
+  are unchanged.
+- **Focused evidence:** the client-free runtime portion of
+  `python3 tests/async/test_flatfile_artifact_repository.py` directly invokes all three
+  boot functions against mixed owned, unowned, ground, NPC, and invalid-location records.
+  It verifies exactly the eligible artifacts are placed and invalid temporary objects are
+  cleaned up.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** persisted ground/NPC placement is restored, but catalog
+  establishment plus player-facing listing, expiry, war-limit, and repair paths remain.
+  The global incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,
