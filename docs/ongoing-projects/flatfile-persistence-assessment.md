@@ -2099,6 +2099,34 @@ sections below continue to describe the required end state.
 - **Next action:** compose detached mobile creation, saveable affect restoration, reconciled
   item materialization, and failure cleanup into a shopkeeper-specific materializer.
 
+### Checkpoint 64 - detached prototype-aware shopkeeper materialization
+
+- **Completed:** added a shopkeeper-specific materializer that resolves the saved mobile and
+  room vnums, loads and exactly reconciles global item custody before allocating a mobile,
+  instantiates the declared shopkeeper prototype, restores birthplace and saveable affects,
+  and materializes the complete nested equipment/inventory graph under the shopkeeper owner.
+- **All-or-nothing staging:** unknown prototypes/rooms, non-shopkeeper prototypes, invalid
+  affect widths, missing/corrupt/divergent custody, object prototype failures, nesting or
+  bound violations, allocation failures, and runtime ownership conflicts return a typed
+  failure. A staged mobile is extracted—with its affects, events, equipment, and inventory—
+  on every post-allocation failure. The caller output is assigned only after success and the
+  mobile remains outside any room pending batch publication.
+- **Flat snapshot fidelity:** complete-state mode additionally restores all six timers,
+  anti/anti2/extra2 flags, and craftsmanship while SQL-backed player/pet callers retain
+  their existing prototype-diff behavior. Dynamic object affects currently lack remaining
+  duration in the shared v1 item envelope, so complete-state materialization rejects any
+  such row instead of silently converting it to a permanent affect.
+- **Checks passed:** focused ordering/rollback/source contracts, exact custody reconciliation,
+  complete-state scalar restoration, the full player and pet item hydration suites,
+  changed-line formatting, and the normal C++20 server build pass. CI includes the detached
+  materializer contract.
+- **Exposure:** individual detached materialization is ready, but world replacement is not
+  yet routed. Runtime restore remains fenced until the entire catalog can be staged before
+  existing keepers are replaced and rooms are published.
+- **Next action:** implement batch staging/publication with duplicate shop/prototype checks,
+  produced-item policy, existing-keeper replacement, rollback-safe cleanup, and explicit
+  boot failure propagation.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

@@ -460,10 +460,27 @@ int main()
         add_item(result, 1, 10, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
         const item_owner_identity shopkeeper = { item_owner_type::shopkeeper, 1, 0 };
         result.item_identities[0].owner = shopkeeper;
+        result.snapshot.items[0].timers[1] = 44;
+        result.snapshot.items[0].anti_flags = 5;
+        result.snapshot.items[0].anti2_flags = 6;
+        result.snapshot.items[0].extra2_flags = 7;
+        result.snapshot.items[0].craftsmanship = 8;
         player_load_item_materialize_metrics metrics = {};
+        result.snapshot.items[0].dynamic_affects.push_back({1, 2, 3});
+        assert(!player_load_item_graph_materialize_for_owner(
+            &owner.character, result.snapshot.items, result.item_identities, shopkeeper,
+            result.item_owner_revision, true, true, &metrics));
+        assert(metrics.outcome == player_load_item_materialize_outcome::invalid_snapshot);
+        assert(!owner.character.carrying && item_ownership_runtime_size() == 0);
+        result.snapshot.items[0].dynamic_affects.clear();
         assert(player_load_item_graph_materialize_for_owner(
             &owner.character, result.snapshot.items, result.item_identities, shopkeeper,
-            result.item_owner_revision, true, &metrics));
+            result.item_owner_revision, true, true, &metrics));
+        assert(owner.character.carrying->timer[1] == 44);
+        assert(owner.character.carrying->anti_flags == 5);
+        assert(owner.character.carrying->anti2_flags == 6);
+        assert(owner.character.carrying->extra2_flags == 7);
+        assert(owner.character.carrying->craftsmanship == 8);
         item_ownership_runtime_entry entry = {};
         assert(item_ownership_runtime_lookup(10, &entry));
         assert(item_owner_identity_equal(entry.owner, shopkeeper));

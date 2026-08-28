@@ -136,7 +136,8 @@ enum class metadata_validation_outcome
 };
 
 metadata_validation_outcome valid_item_metadata(const player_item_snapshot &item,
-						const player_load_item_identity &identity)
+						const player_load_item_identity &identity,
+						bool complete_snapshot_state)
 {
 	constexpr uint8_t allowed_string_mask = STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 |
 						STRUNG_DESC3;
@@ -144,8 +145,14 @@ metadata_validation_outcome valid_item_metadata(const player_item_snapshot &item
 	    identity.database_id > static_cast<uint64_t>(INT_MAX) ||
 	    identity.item_uid > static_cast<uint64_t>(ULONG_MAX) ||
 	    item.timers[0] < std::numeric_limits<time_t>::min() ||
-	    item.timers[0] > std::numeric_limits<time_t>::max())
+	    item.timers[0] > std::numeric_limits<time_t>::max() ||
+	    (complete_snapshot_state && !item.dynamic_affects.empty()))
 		return metadata_validation_outcome::invalid;
+	if (complete_snapshot_state)
+		for (int64_t timer : item.timers)
+			if (timer < std::numeric_limits<time_t>::min() ||
+			    timer > std::numeric_limits<time_t>::max())
+				return metadata_validation_outcome::invalid;
 	if ((identity.override_mask & PLAYER_LOAD_ITEM_OVERRIDE_TYPE) &&
 	    (item.type < ITEM_LOWEST || item.type > ITEM_LAST))
 		return metadata_validation_outcome::invalid;
@@ -312,7 +319,7 @@ bool player_load_item_graph_materialize_for_owner(
 	P_char character, const std::vector<player_item_snapshot> &items,
 	const std::vector<player_load_item_identity> &identities,
 	const item_owner_identity &expected_owner, uint64_t owner_revision, bool hydrate_ownership,
-	player_load_item_materialize_metrics *metrics)
+	bool complete_snapshot_state, player_load_item_materialize_metrics *metrics)
 {
 	player_load_item_materialize_metrics local_metrics = {};
 	if (!metrics)
@@ -387,7 +394,8 @@ bool player_load_item_graph_materialize_for_owner(
 			return fail(metrics,
 				    player_load_item_materialize_outcome::allocation_failure);
 		}
-		const metadata_validation_outcome metadata = valid_item_metadata(item, identity);
+		const metadata_validation_outcome metadata =
+			valid_item_metadata(item, identity, complete_snapshot_state);
 		if (metadata != metadata_validation_outcome::valid)
 			return fail(
 				metrics,
@@ -505,8 +513,19 @@ bool player_load_item_graph_materialize_for_owner(
 		object->g_key = item.generated_key;
 		object->weight = item.weight;
 		object->cost = item.cost;
-		object->timer[0] = static_cast<time_t>(item.timers[0]);
+		if (complete_snapshot_state)
+			for (size_t timer = 0; timer < item.timers.size(); ++timer)
+				object->timer[timer] = static_cast<time_t>(item.timers[timer]);
+		else
+			object->timer[0] = static_cast<time_t>(item.timers[0]);
 		object->extra_flags = item.extra_flags;
+		if (complete_snapshot_state)
+		{
+			object->anti_flags = item.anti_flags;
+			object->anti2_flags = item.anti2_flags;
+			object->extra2_flags = item.extra2_flags;
+			object->craftsmanship = item.craftsmanship;
+		}
 		object->condition = item.condition;
 		for (size_t value_index = 0; value_index < item.values.size(); ++value_index)
 			object->value[value_index] = item.values[value_index];
@@ -630,7 +649,7 @@ bool player_load_item_graph_materialize(P_char character,
 	return player_load_item_graph_materialize_for_owner(
 		character, items, identities,
 		{ item_owner_type::player, static_cast<uint64_t>(pid), 0 }, owner_revision,
-		hydrate_ownership, metrics);
+		hydrate_ownership, false, metrics);
 }
 
 bool player_load_items_materialize(P_char character, const player_load_result &result,
