@@ -124,7 +124,7 @@ the record does not claim the dependency set is vulnerability-free.
 |----|---------|----------|----------|-------|------------|
 | P00-S01 | Sensitive SQL/private values in persistence logs | High | 2026-08-27 | P00 | Replaced with stable metadata-only diagnostics and regression checks. |
 | P00-S02 | Database credentials and transport failed open | High | 2026-08-27 | P00 | Explicit role, credentials, target, TLS/local transport and session invariants now fail closed. |
-| P00-S03 | Tracked local TLS key usable on network listeners | High | 2026-08-27 | P00 | Local certificate is loopback-only; network listeners require operator-owned material. |
+| P00-S03 | Tracked local TLS key usable on network listeners | High | 2026-08-28 | P00 | Tracked keypair removed; ignored per-developer generation is loopback-only and all private keys require owner-only metadata. |
 | P00-S04 | Persistence could overwrite or destroy newer state | High | 2026-08-27 | P01 | Revisioned typed workers, exact ACKs, journals and safe terminal behavior replaced forked saves. |
 | P00-S05 | Economy/ownership writes lacked atomic integrity | High | 2026-08-27 | P02 | Operation-keyed domain transactions couple authority, ledger, result and outbox state. |
 | P00-S06 | SQL construction relied on unenforced session assumptions | Medium | 2026-08-27 | P00 | Every connection now establishes and verifies the required session contract. |

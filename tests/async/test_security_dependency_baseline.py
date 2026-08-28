@@ -16,6 +16,8 @@ build_workflow = (ROOT / ".github/workflows/build.yml").read_text()
 security_workflow = (ROOT / ".github/workflows/security.yml").read_text()
 makefile = (ROOT / "Makefile").read_text()
 security_checker = (ROOT / "scripts/security_source_check.py").read_bytes()
+gitignore = (ROOT / ".gitignore").read_text()
+localhost_cert_generator = (ROOT / "scripts/generate_localhost_cert.sh").read_text()
 
 
 assert "security/advisories/new" in security
@@ -56,7 +58,21 @@ print("[PASS] immutable CodeQL/Trivy CI preserves reports and enforces stated po
 
 assert b"BEGIN " + b"PRIVATE KEY" not in security_checker
 assert b"BEGIN RSA " + b"PRIVATE KEY" not in security_checker
-print("[PASS] private-key detection does not match the tracked checker itself")
+assert b"scripts/import_help_to_prod.sh" in security_checker
+assert b"production import restores database fallback" in security_checker
+assert b"production import exposes a database password" in security_checker
+assert b"production import uses a predictable remote SQL temporary file" in security_checker
+assert b"production import exports every value sourced from .env" in security_checker
+assert b"epic payout migration documents public database credentials" in security_checker
+print("[PASS] tracked private keys and operational credential defaults are rejected")
+
+assert "/certs/*.key" in gitignore and "/certs/*.crt" in gitignore
+assert "/Players/**" in gitignore
+assert "!/Players/wipers/wipe_it_all" in gitignore
+assert "install -m 0600" in localhost_cert_generator
+assert "DNS:localhost,IP:127.0.0.1,IP:::1" in localhost_cert_generator
+assert "-days 365" in localhost_cert_generator
+print("[PASS] localhost TLS material is ignored, short-lived, and generated with safe metadata")
 
 assert re.search(r"^security-sbom:\s*$", makefile, re.MULTILINE)
 assert re.search(r"^security-check:\s*security-sbom\s*$", makefile, re.MULTILINE)

@@ -322,6 +322,7 @@ static void reset_scheduler()
 	nevent_catchup_debt_estimated_us = 0;
 	nevent_deferred_due_counts.clear();
 	nevent_pending_cancellations.clear();
+	nevent_pending_reschedules.clear();
 	pulse = 0;
 	after_events_call = FALSE;
 	fake_clock_ns = 0;
@@ -513,6 +514,37 @@ static void test_reschedule_apis()
 	require(fired.size() == 1 && fired[0].second == 1, 108);
 }
 
+static nevent_handle callback_reschedule_target = { nullptr, 0 };
+static bool callback_reschedule_accepted = false;
+
+static void reschedule_other_callback(P_char, P_char, P_obj, void *)
+{
+	callback_reschedule_accepted = nevent_reschedule_after(callback_reschedule_target, 10);
+}
+
+static void test_callback_reschedule()
+{
+	reset_scheduler();
+	callback_reschedule_target = { nullptr, 0 };
+	callback_reschedule_accepted = false;
+	add_event(reschedule_other_callback, 0, nullptr, nullptr, nullptr, 0, nullptr, 0);
+	add_record(4500, 0, ULLONG_MAX);
+	P_nevent target = get_scheduled(record_callback);
+	require(target != nullptr, 240);
+	callback_reschedule_target = nevent_handle_from_event(target);
+
+	ne_events();
+	require(callback_reschedule_accepted, 241);
+	require(fired.empty(), 242);
+	require(target->due_tick == 10 && target->element == 10, 243);
+	require(nevent_pending_reschedules.empty(), 244);
+	require_balanced(245);
+	nevent_advance_tick();
+	while (ne_event_counter > 0)
+		run_one_heartbeat();
+	require(fired.size() == 1 && fired[0].first == 4500 && fired[0].second == 10, 248);
+}
+
 static void test_priority_order(bool enabled)
 {
 	reset_scheduler();
@@ -595,6 +627,30 @@ static void test_catchup_convergence()
 			nevent_deferred_due_counts.empty(),
 		147);
 	require_balanced(148);
+}
+
+static void test_large_batch_deferral()
+{
+	reset_scheduler();
+	constexpr int record_count = 30000;
+	constexpr int callback_limit = 4000;
+	for (int id = 0; id < record_count; ++id)
+		add_record(20000 + id, 0, ULLONG_MAX);
+
+	ne_events();
+	require(static_cast<int>(fired.size()) == callback_limit, 230);
+	require(nevent_catchup_debt == record_count - callback_limit, 231);
+	require(ne_schedule[1] && ne_schedule_tail[1], 232);
+	P_nevent previous = nullptr;
+	for (P_nevent event = ne_schedule[1]; event; event = event->next_sched)
+	{
+		if (previous)
+			require(!nevent_sorts_before(event, previous), 233);
+		previous = event;
+	}
+	require_balanced(234);
+	cancel_all_events();
+	require_balanced(237);
 }
 
 static void test_unbounded_warning()
@@ -962,6 +1018,7 @@ int main(int argc, char **argv)
 		test_current_bucket_positions();
 		test_shared_bucket_revolutions();
 		test_reschedule_apis();
+		test_callback_reschedule();
 		test_randomized_oracle();
 	}
 	else if (std::strcmp(argv[1], "priority-off") == 0)
@@ -972,6 +1029,8 @@ int main(int argc, char **argv)
 		test_bounded_normal_aging();
 	else if (std::strcmp(argv[1], "catchup") == 0)
 		test_catchup_convergence();
+	else if (std::strcmp(argv[1], "large-batch") == 0)
+		test_large_batch_deferral();
 	else if (std::strcmp(argv[1], "unbounded") == 0)
 		test_unbounded_warning();
 	else if (std::strcmp(argv[1], "invalid-config") == 0)
@@ -1044,6 +1103,11 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-scheduler-") as directory:
         "catchup",
         DURIS_NEVENT_MAX_CALLBACKS="2",
         DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS="1",
+    )
+    run_mode(
+        "large-batch",
+        DURIS_NEVENT_MAX_CALLBACKS="4000",
+        DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS="0",
     )
     run_mode("unbounded")
     run_mode("invalid-config", DURIS_NEVENT_BUDGET_USEC="9" * 100)

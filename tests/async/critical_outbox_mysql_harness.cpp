@@ -41,11 +41,18 @@ static unsigned long long scalar(const char *sql)
 static void clear_rows()
 {
 	execute("DELETE d FROM critical_outbox_delivery_dedupe d JOIN critical_outbox o ON "
-		"o.outbox_id=d.outbox_id JOIN critical_operation_inbox i ON "
-		"i.operation_id=o.operation_id WHERE i.command_type=1");
-	execute("DELETE o FROM critical_outbox o JOIN critical_operation_inbox i ON "
-		"i.operation_id=o.operation_id WHERE i.command_type=1");
-	execute("DELETE FROM critical_operation_inbox WHERE command_type=1");
+		"o.outbox_id=d.outbox_id WHERE o.operation_id IN "
+		"(UNHEX('00000000000000000000000000000001'),"
+		"UNHEX('00000000000000000000000000000002'),"
+		"UNHEX('00000000000000000000000000000003'))");
+	execute("DELETE FROM critical_outbox WHERE operation_id IN "
+		"(UNHEX('00000000000000000000000000000001'),"
+		"UNHEX('00000000000000000000000000000002'),"
+		"UNHEX('00000000000000000000000000000003'))");
+	execute("DELETE FROM critical_operation_inbox WHERE operation_id IN "
+		"(UNHEX('00000000000000000000000000000001'),"
+		"UNHEX('00000000000000000000000000000002'),"
+		"UNHEX('00000000000000000000000000000003'))");
 	execute("DELETE FROM critical_test_state");
 }
 
@@ -117,8 +124,11 @@ int main()
 	assert(critical_outbox_init(deliver, &state));
 	wait_until([&] { return critical_outbox_health_copy().delivered == 1; });
 	critical_outbox_shutdown();
-	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE status=1") == 1);
-	assert(scalar("SELECT COUNT(*) FROM critical_outbox_delivery_dedupe") == 1);
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE status=1 AND operation_id="
+		      "UNHEX('00000000000000000000000000000001')") == 1);
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox_delivery_dedupe d JOIN "
+		      "critical_outbox o ON o.outbox_id=d.outbox_id WHERE o.operation_id="
+		      "UNHEX('00000000000000000000000000000001')") == 1);
 
 	clear_rows();
 	insert_record(2);
@@ -126,14 +136,15 @@ int main()
 	assert(critical_outbox_init(deliver, &state));
 	wait_until([&] { return critical_outbox_health_copy().retries == 1; });
 	critical_outbox_shutdown();
-	execute("UPDATE critical_outbox SET next_attempt_at=CURRENT_TIMESTAMP(6)");
+	execute("UPDATE critical_outbox SET next_attempt_at=CURRENT_TIMESTAMP(6) WHERE "
+		"operation_id=UNHEX('00000000000000000000000000000002')");
 	state.retry_first = false;
 	assert(critical_outbox_init(deliver, &state));
 	wait_until([&] { return critical_outbox_health_copy().delivered == 1; });
 	critical_outbox_shutdown();
 	assert(state.calls == 2);
-	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE status=1 AND attempt_count=1") ==
-	       1);
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE status=1 AND attempt_count=1 "
+		      "AND operation_id=UNHEX('00000000000000000000000000000002')") == 1);
 
 	clear_rows();
 	critical_reconciliation_report baseline = {};
@@ -143,11 +154,14 @@ int main()
 	assert(critical_outbox_init(deliver, &state));
 	wait_until([&] { return critical_outbox_health_copy().terminal_failures == 1; });
 	critical_outbox_shutdown();
-	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE status=2") == 1);
-	const uint64_t dead_id = scalar("SELECT outbox_id FROM critical_outbox WHERE status=2");
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE status=2 AND operation_id="
+		      "UNHEX('00000000000000000000000000000003')") == 1);
+	const uint64_t dead_id =
+		scalar("SELECT outbox_id FROM critical_outbox WHERE status=2 AND operation_id="
+		       "UNHEX('00000000000000000000000000000003')");
 	assert(critical_outbox_retry_dead_letter(dead_id));
-	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE status=0 AND attempt_count=0") ==
-	       1);
+	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE status=0 AND attempt_count=0 "
+		      "AND operation_id=UNHEX('00000000000000000000000000000003')") == 1);
 	critical_reconciliation_report report = {};
 	assert(critical_outbox_reconcile(&report));
 	assert(report.incomplete_inbox == baseline.incomplete_inbox &&

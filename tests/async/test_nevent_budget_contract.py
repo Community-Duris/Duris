@@ -20,15 +20,16 @@ assert contains(src, 'next_bucket = nevent_bucket_for_tick(nevent_add_ticks(ne_e
 assert contains(src, 'event->element = next_bucket;')
 assert contains(src, 'event->deferral_count++;')
 
-# The whole suffix is walked: due events move and later revolutions stay put.
-assert contains(src, 'for (event = deferred_head; event; event = next)')
-assert contains(src, 'if (event->due_tick > ne_event_tick)')
+# The due suffix is gathered as one batch; later revolutions stay put.
+assert contains(src, 'event && event->due_tick <= ne_event_tick')
+assert contains(src, 'batch.push_back(event);')
 assert not contains(src, 'event->timer')
 assert not contains(src, 'future_head')
 
-# Moved events are unlinked and reinserted through the authoritative ordering path.
+# Moved events are unlinked, sorted once under their aged priority, and merged.
 assert contains(src, 'nevent_unlink_schedule(event);')
-assert contains(src, 'nevent_link_schedule(event, static_cast<int>(next_bucket));')
+assert contains(src, 'std::sort(batch.begin(), batch.end(), nevent_sorts_before);')
+assert contains(src, 'nevent_merge_sorted_batch(batch, next_bucket);')
 
 # Due tick, effective priority/aging, and sequence are the single insertion order.
 assert contains(src, 'nevent_sorts_before')

@@ -128,7 +128,7 @@ assert "key_st.st_uid != geteuid()" in cert
 assert "(key_st.st_mode & 0777) & ~0600" in cert
 assert "exit(1);" in cert
 assert comm.count("ssl_read_cert();") == 1
-print("[PASS] tracked localhost key is loopback-local only; network key failure is fatal")
+print("[PASS] generated localhost key is loopback-local only; unsafe key metadata is fatal")
 
 for field in (
     "ENVIRONMENT=local",

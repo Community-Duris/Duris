@@ -34,10 +34,8 @@ cd "$SCRIPT_DIR"
 # Use the same local connection settings as the game and migration tools.
 # Keep credentials out of command-line arguments and process listings.
 if [ -f .env ]; then
-    set -a
     # shellcheck disable=SC1091
     source .env
-    set +a
 fi
 
 # ============================================================================
@@ -45,12 +43,10 @@ fi
 # ============================================================================
 REMOTE_HOST=""          # Will be set by --remote argument
 REMOTE_USER="$USER"     # Default to current user
-MYSQL_HOST="${DB_HOST:-localhost}"
-MYSQL_PORT="${DB_PORT:-3306}"
-MYSQL_USER="${DB_USER:-duris}"
-MYSQL_PASS="${DB_PASSWD:-duris}"
-MYSQL_DB="${DB_NAME:-duris_dev}"
-export MYSQL_PWD="$MYSQL_PASS"
+MYSQL_HOST="$DB_HOST"
+MYSQL_PORT="$DB_PORT"
+MYSQL_USER="$DB_USER"
+MYSQL_DB="$DB_NAME"
 
 HELP_DIR="lib/information"
 HELP_INDEX_FILE="lib/information/help_index"
@@ -130,6 +126,51 @@ if [ $USE_SSH -eq 1 ] && [ -z "$REMOTE_HOST" ]; then
     exit 1
 fi
 
+for REQUIRED_DB_FIELD in DB_HOST DB_PORT DB_USER DB_PASSWD DB_NAME; do
+    if [ -z "${!REQUIRED_DB_FIELD:-}" ]; then
+        echo "Error: $REQUIRED_DB_FIELD must be set explicitly in .env"
+        exit 1
+    fi
+done
+
+if ! [[ "$MYSQL_PORT" =~ ^[0-9]+$ ]] || (( MYSQL_PORT < 1 || MYSQL_PORT > 65535 )); then
+    echo "Error: DB_PORT must be between 1 and 65535"
+    exit 1
+fi
+
+# These values become arguments to a command interpreted by the remote shell.
+if ! [[ "$MYSQL_USER" =~ ^[A-Za-z0-9_.-]+$ ]] || ! [[ "$MYSQL_DB" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+    echo "Error: DB_USER and DB_NAME may contain only letters, numbers, dot, underscore, and hyphen"
+    exit 1
+fi
+
+if [ $USE_SSH -eq 1 ]; then
+    if ! [[ "$REMOTE_USER" =~ ^[A-Za-z0-9_.-]+$ ]] ||
+       ! [[ "$REMOTE_HOST" =~ ^[A-Za-z0-9.:-]+$ ]] || [[ "$REMOTE_HOST" == -* ]]; then
+        echo "Error: invalid SSH user or host"
+        exit 1
+    fi
+    # Remote mysql reads its password from the SSH account's protected client
+    # configuration. Never send the password in a command argument.
+    unset MYSQL_PWD
+else
+    # Limit password exposure to local mysql and the Python import subprocesses.
+    export MYSQL_PWD="$DB_PASSWD"
+fi
+
+TEMP_DIR=$(mktemp -d)
+trap 'rm -rf -- "$TEMP_DIR"' EXIT
+
+export IMPORT_USE_SSH="$USE_SSH"
+export IMPORT_REMOTE_HOST="$REMOTE_HOST"
+export IMPORT_REMOTE_USER="$REMOTE_USER"
+export IMPORT_MYSQL_HOST="$MYSQL_HOST"
+export IMPORT_MYSQL_PORT="$MYSQL_PORT"
+export IMPORT_MYSQL_USER="$MYSQL_USER"
+export IMPORT_MYSQL_DB="$MYSQL_DB"
+export IMPORT_HELP_INDEX_FILE="$HELP_INDEX_FILE"
+export IMPORT_PARSED_HELP_FILE="$PARSED_HELP_FILE"
+
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
@@ -138,8 +179,10 @@ fi
 execute_sql() {
     local sql="$1"
     if [ $USE_SSH -eq 1 ]; then
-        # SSH mode: execute on remote server
-        echo "$sql" | ssh "$REMOTE_USER@$REMOTE_HOST" "mysql -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB"
+        # The remote account supplies credentials through its protected MySQL
+        # client configuration (for example ~/.my.cnf).
+        printf '%s\n' "$sql" |
+            ssh "$REMOTE_USER@$REMOTE_HOST" mysql --user="$MYSQL_USER" "$MYSQL_DB"
     else
         # Local mode: execute directly using MYSQL_PWD from the environment.
         echo "$sql" | mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" -u"$MYSQL_USER" "$MYSQL_DB"
@@ -150,10 +193,8 @@ execute_sql() {
 execute_sql_file() {
     local sqlfile="$1"
     if [ $USE_SSH -eq 1 ]; then
-        # SSH mode: copy to remote and execute
-        scp -q "$sqlfile" "$REMOTE_USER@$REMOTE_HOST:/tmp/import_sql.tmp"
-        ssh "$REMOTE_USER@$REMOTE_HOST" "mysql -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB < /tmp/import_sql.tmp"
-        ssh "$REMOTE_USER@$REMOTE_HOST" "rm /tmp/import_sql.tmp"
+        # Stream the SQL over SSH instead of creating a predictable remote file.
+        ssh "$REMOTE_USER@$REMOTE_HOST" mysql --user="$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
     else
         # Local mode: execute directly using MYSQL_PWD from the environment.
         mysql -h"$MYSQL_HOST" -P"$MYSQL_PORT" -u"$MYSQL_USER" "$MYSQL_DB" < "$sqlfile"
@@ -167,6 +208,7 @@ echo "=== DurisMUD Unified Help Import to Production ===="
 if [ $USE_SSH -eq 1 ]; then
     echo "Mode: SSH (Remote)"
     echo "Remote Host: $REMOTE_HOST"
+    echo "Authentication: remote MySQL client configuration"
 else
     echo "Mode: LOCAL"
     echo "Host: $MYSQL_HOST:$MYSQL_PORT"
@@ -184,7 +226,7 @@ if [ $DRY_RUN -eq 1 ]; then
 else
     echo "Mode: LIVE (changes will be committed to production)"
     echo ""
-    read -p "Continue with production import? (yes/no): " confirm
+    read -r -p "Continue with production import? (yes/no): " confirm
     if [ "$confirm" != "yes" ]; then
         echo "Aborted."
         exit 0
@@ -224,7 +266,7 @@ if [ $CLEAN_DB -eq 1 ]; then
         echo ""
     else
         echo "WARNING: This will DELETE ALL existing help entries!"
-        read -p "Are you sure you want to continue? (yes/no): " clean_confirm
+        read -r -p "Are you sure you want to continue? (yes/no): " clean_confirm
         if [ "$clean_confirm" != "yes" ]; then
             echo "Aborted."
             exit 0
@@ -367,7 +409,7 @@ if [ ! -f "$HELP_INDEX_FILE" ]; then
 else
     # Parse help_index using Python
     echo "Parsing help_index file..."
-    python3 << PYTHON_SCRIPT > /tmp/help_index_entries.txt
+    python3 << PYTHON_SCRIPT > "$TEMP_DIR/help_index_entries.txt"
 import re
 
 def parse_help_index(filename):
@@ -411,35 +453,35 @@ def parse_help_index(filename):
 entries = parse_help_index('$HELP_INDEX_FILE')
 PYTHON_SCRIPT
 
-    entry_count=$(wc -l < /tmp/help_index_entries.txt)
+    entry_count=$(wc -l < "$TEMP_DIR/help_index_entries.txt")
     echo "Found $entry_count help_index entries"
     echo ""
 
     if [ $DRY_RUN -eq 1 ]; then
         echo "First 20 entries:"
-        head -20 /tmp/help_index_entries.txt | while IFS='|' read -r title length; do
+        head -20 "$TEMP_DIR/help_index_entries.txt" | while IFS='|' read -r title length; do
             echo "  - '$title' ($length bytes)"
         done
-        if [ $entry_count -gt 20 ]; then
+        if [ "$entry_count" -gt 20 ]; then
             echo "  ... and $((entry_count - 20)) more"
         fi
     else
         echo "Importing help_index entries..."
         # Import using Python
-        python3 << PYTHON_SCRIPT
+        python3 <<'PYTHON_SCRIPT'
+import os
 import re
 import subprocess
 import sys
 from datetime import datetime
 
-USE_SSH = $USE_SSH
-REMOTE_HOST = "$REMOTE_HOST"
-REMOTE_USER = "$REMOTE_USER"
-MYSQL_USER = "$MYSQL_USER"
-MYSQL_PASS = "$MYSQL_PASS"
-MYSQL_DB = "$MYSQL_DB"
-MYSQL_HOST = "$MYSQL_HOST"
-MYSQL_PORT = "$MYSQL_PORT"
+USE_SSH = os.environ["IMPORT_USE_SSH"] == "1"
+REMOTE_HOST = os.environ["IMPORT_REMOTE_HOST"]
+REMOTE_USER = os.environ["IMPORT_REMOTE_USER"]
+MYSQL_USER = os.environ["IMPORT_MYSQL_USER"]
+MYSQL_DB = os.environ["IMPORT_MYSQL_DB"]
+MYSQL_HOST = os.environ["IMPORT_MYSQL_HOST"]
+MYSQL_PORT = os.environ["IMPORT_MYSQL_PORT"]
 
 def parse_help_index(filename):
     with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
@@ -472,7 +514,7 @@ def parse_help_index(filename):
         content_lines = lines[1:]
         content = '\\n'.join(content_lines).strip()
         content = re.sub(r'^=+\\n', '', content)
-        content = re.sub(r'\\n=+\$', '', content)
+        content = re.sub(r'\\n=+$', '', content)
         content = content.strip()
 
         if title and content:
@@ -480,7 +522,7 @@ def parse_help_index(filename):
 
     return help_entries
 
-entries = parse_help_index('$HELP_INDEX_FILE')
+entries = parse_help_index(os.environ["IMPORT_HELP_INDEX_FILE"])
 now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 success_count = 0
@@ -494,15 +536,11 @@ for title, content in entries:
 INSERT INTO pages (title, text, last_update, last_update_by, category_id)
 VALUES ('{title.replace("'", "''")}', 0x{content_hex}, '{now}', 'Arih_importDB', 0);"""
 
-    # Write SQL to temp file
-    with open('/tmp/import_help_entry.sql', 'w') as f:
-        f.write(sql)
-
     # Execute based on mode (SSH or local)
     if USE_SSH == 1:
         mysql_result = subprocess.run(
             ['ssh', f'{REMOTE_USER}@{REMOTE_HOST}',
-             f'mysql -u{MYSQL_USER} -p{MYSQL_PASS} {MYSQL_DB}'],
+             'mysql', f'--user={MYSQL_USER}', MYSQL_DB],
             input=sql, capture_output=True, text=True
         )
     else:
@@ -527,7 +565,6 @@ print(f"  Errors: {error_count}")
 PYTHON_SCRIPT
     fi
 
-    rm -f /tmp/help_index_entries.txt
 fi
 
 echo ""
@@ -601,21 +638,21 @@ if len(entries) > 20:
     print(f"  ... and {len(entries) - 20} more")
 PYTHON_SCRIPT
     else
-        python3 << PYTHON_SCRIPT
+        python3 <<'PYTHON_SCRIPT'
+import os
 import re
 import subprocess
 import sys
 from datetime import datetime
 
-USE_SSH = $USE_SSH
-REMOTE_HOST = "$REMOTE_HOST"
-REMOTE_USER = "$REMOTE_USER"
-MYSQL_USER = "$MYSQL_USER"
-MYSQL_PASS = "$MYSQL_PASS"
-MYSQL_DB = "$MYSQL_DB"
-MYSQL_HOST = "$MYSQL_HOST"
-MYSQL_PORT = "$MYSQL_PORT"
-HELP_FILE = "$PARSED_HELP_FILE"
+USE_SSH = os.environ["IMPORT_USE_SSH"] == "1"
+REMOTE_HOST = os.environ["IMPORT_REMOTE_HOST"]
+REMOTE_USER = os.environ["IMPORT_REMOTE_USER"]
+MYSQL_USER = os.environ["IMPORT_MYSQL_USER"]
+MYSQL_DB = os.environ["IMPORT_MYSQL_DB"]
+MYSQL_HOST = os.environ["IMPORT_MYSQL_HOST"]
+MYSQL_PORT = os.environ["IMPORT_MYSQL_PORT"]
+HELP_FILE = os.environ["IMPORT_PARSED_HELP_FILE"]
 
 def parse_parsed_help(filename):
     """Parse duris_help_parsed.hlp file which uses #0 as separator."""
@@ -677,15 +714,11 @@ for title, content in entries:
 INSERT INTO pages (title, text, last_update, last_update_by, category_id)
 VALUES ('{safe_title}', 0x{content_hex}, '{now}', 'Arih_importDB', 0);"""
 
-    # Write SQL to temp file
-    with open('/tmp/import_help_entry.sql', 'w') as f:
-        f.write(sql)
-
     # Execute based on mode (SSH or local)
     if USE_SSH == 1:
         mysql_result = subprocess.run(
             ['ssh', f'{REMOTE_USER}@{REMOTE_HOST}',
-             f'mysql -u{MYSQL_USER} -p{MYSQL_PASS} {MYSQL_DB}'],
+             'mysql', f'--user={MYSQL_USER}', MYSQL_DB],
             input=sql, capture_output=True, text=True
         )
     else:
@@ -712,10 +745,8 @@ PYTHON_SCRIPT
 fi
 
 # ============================================================================
-# CLEANUP
+# COMPLETE
 # ============================================================================
-rm -f /tmp/import_help_entry.sql
-
 echo ""
 if [ $DRY_RUN -eq 1 ]; then
     echo "=== Dry run complete. Run without --dry-run to apply to production ==="

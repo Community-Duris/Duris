@@ -127,8 +127,10 @@ performs no blocking database query. Plain telnet defaults to `7777` and TLS tel
 `7778`; a custom plain-telnet port uses the following port for TLS. Configure a
 real `duris.crt` and `duris.key` in the repository root for networked TLS. The
 operator key must be owner-controlled and mode `0600` or stricter. The tracked
-self-signed certificate is accepted only with the explicit local role and an
-exact loopback listener.
+self-signed key was removed; run `./scripts/generate_localhost_cert.sh` to create
+an ignored machine-local fallback. That fallback is accepted only with the
+explicit local role and an exact loopback listener, and its key must also be
+owner-controlled and mode `0600` or stricter.
 
 ## Diagnostics
 

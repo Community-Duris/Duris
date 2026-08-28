@@ -1,5 +1,6 @@
 ---- non-destructive, can be applied like:
--- mysql -uduris -pduris duris_dev <epic-zone-payout.sql
+-- MYSQL_PWD="$DB_PASSWD" mysql --host="$DB_HOST" --port="$DB_PORT" \
+--   --user="$DB_USER" "$DB_NAME" < migrations/epic-zone-payout.sql
 
 ---- lets not have group size affect payout until we get the numbers right
 UPDATE zones SET suggested_group_size = 100 WHERE epic_type != '0';
@@ -119,4 +120,3 @@ UPDATE zones SET epic_payout = 900 WHERE number = 387; --ny'neth 3 (56)
 UPDATE zones SET epic_payout = 900 WHERE number = 455; --celestia (56)
 UPDATE zones SET epic_payout = 950 WHERE number = 875; --222 (56)
 UPDATE zones SET epic_payout = 1000 WHERE number = 583; --ravenloft (56)
-

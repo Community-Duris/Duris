@@ -37,7 +37,6 @@ void ssl_read_cert(void)
 	int err;
 	const char *certfile = CERTFILE;
 	const char *keyfile = KEYFILE;
-	bool local_fallback = false;
 
 	if (!priority_cache)
 		if ((err = gnutls_priority_init(&priority_cache, NULL, NULL)) < 0)
@@ -57,7 +56,6 @@ void ssl_read_cert(void)
 			keyfile = "certs/localhost.key";
 			st = fallback_cert;
 			key_st = fallback_key;
-			local_fallback = true;
 		}
 		else
 		{
@@ -67,8 +65,8 @@ void ssl_read_cert(void)
 			exit(1);
 		}
 	}
-	if (!S_ISREG(st.st_mode) || !S_ISREG(key_st.st_mode) ||
-	    (!local_fallback && (key_st.st_uid != geteuid() || ((key_st.st_mode & 0777) & ~0600))))
+	if (!S_ISREG(st.st_mode) || !S_ISREG(key_st.st_mode) || key_st.st_uid != geteuid() ||
+	    ((key_st.st_mode & 0777) & ~0600))
 	{
 		YELL("TLS certificate configuration has unsafe file metadata: %s\n", keyfile);
 		if (x509_cred)

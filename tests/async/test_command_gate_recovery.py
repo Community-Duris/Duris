@@ -100,7 +100,7 @@ if defer:
     defer_body = defer.group(0)
     checks.append((
         "deferral leaves future absolute deadlines untouched",
-        contains(defer_body, "event->due_tick > ne_event_tick") and
+        contains(defer_body, "event->due_tick <= ne_event_tick") and
         not contains(defer_body, "event->timer")
     ))
     checks.append((
@@ -110,7 +110,9 @@ if defer:
     checks.append((
         "deferral keeps both bucket ends consistent",
         contains(defer_body, "nevent_unlink_schedule(event);") and
-        contains(defer_body, "nevent_link_schedule(event, static_cast<int>(next_bucket));")
+        contains(defer_body, "nevent_merge_sorted_batch(batch, next_bucket);") and
+        contains(new_events, "ne_schedule[loc] = merged_head;") and
+        contains(new_events, "ne_schedule_tail[loc] = merged_tail;")
     ))
 else:
     checks.append(("nevent_defer_suffix present", False))

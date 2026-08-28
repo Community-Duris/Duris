@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <algorithm>
 #include <map>
 #include <new>
 #include <thread>
@@ -120,6 +121,12 @@ static long nevent_catchup_extra_callbacks = 0;
 static unsigned long long nevent_catchup_debt_estimated_us = 0;
 static std::map<unsigned long long, long> nevent_deferred_due_counts;
 static std::vector<nevent_handle> nevent_pending_cancellations;
+struct nevent_pending_reschedule
+{
+	unsigned long long sequence;
+	unsigned long long due_tick;
+};
+static std::map<P_nevent, struct nevent_pending_reschedule> nevent_pending_reschedules;
 static std::thread::id nevent_game_thread;
 static bool nevent_game_thread_bound = false;
 static long nevent_last_pulse_total_us = 0;
@@ -311,6 +318,18 @@ static void nevent_link_schedule(P_nevent event, int loc)
 {
 	P_nevent cursor;
 
+	if (!ne_schedule_tail[loc] || !nevent_sorts_before(event, ne_schedule_tail[loc]))
+	{
+		event->prev_sched = ne_schedule_tail[loc];
+		event->next_sched = NULL;
+		if (ne_schedule_tail[loc])
+			ne_schedule_tail[loc]->next_sched = event;
+		else
+			ne_schedule[loc] = event;
+		ne_schedule_tail[loc] = event;
+		return;
+	}
+
 	for (cursor = ne_schedule[loc]; cursor && !nevent_sorts_before(event, cursor);
 	     cursor = cursor->next_sched)
 		;
@@ -334,6 +353,39 @@ static void nevent_link_schedule(P_nevent event, int loc)
 	else
 		ne_schedule[loc] = event;
 	cursor->prev_sched = event;
+}
+
+static void nevent_merge_sorted_batch(const std::vector<P_nevent> &batch, unsigned int loc)
+{
+	P_nevent cursor = ne_schedule[loc];
+	P_nevent merged_head = NULL;
+	P_nevent merged_tail = NULL;
+	size_t index = 0;
+
+	while (index < batch.size() || cursor)
+	{
+		P_nevent next;
+		if (index < batch.size() && (!cursor || nevent_sorts_before(batch[index], cursor)))
+		{
+			next = batch[index++];
+		}
+		else
+		{
+			next = cursor;
+			cursor = cursor->next_sched;
+		}
+
+		next->prev_sched = merged_tail;
+		next->next_sched = NULL;
+		if (merged_tail)
+			merged_tail->next_sched = next;
+		else
+			merged_head = next;
+		merged_tail = next;
+	}
+
+	ne_schedule[loc] = merged_head;
+	ne_schedule_tail[loc] = merged_tail;
 }
 
 static void nevent_detach_character(P_nevent event)
@@ -479,6 +531,7 @@ static bool nevent_destroy(P_nevent event)
 		return FALSE;
 
 	event->lifecycle_state = NEVENT_LIFECYCLE_DESTROYING;
+	nevent_pending_reschedules.erase(event);
 	nevent_detach_owners(event);
 	nevent_unlink_schedule(event);
 	if (event->data)
@@ -533,6 +586,7 @@ nevent_cancel_result nevent_cancel(nevent_handle handle)
 
 	event->lifecycle_state = NEVENT_LIFECYCLE_CANCEL_PENDING;
 	event->func = NULL;
+	nevent_pending_reschedules.erase(event);
 	if (current_nevent)
 	{
 		nevent_detach_owners(event);
@@ -556,20 +610,8 @@ static void nevent_process_pending_cancellations()
 	}
 }
 
-bool nevent_reschedule_at(nevent_handle handle, unsigned long long due_tick)
+static void nevent_apply_reschedule(P_nevent event, unsigned long long due_tick)
 {
-	P_nevent event = handle.event;
-
-	if (!nevent_require_game_thread("nevent_reschedule_at"))
-		return FALSE;
-	const unsigned long long first_eligible_tick = nevent_first_eligible_tick();
-	if (!event || handle.sequence == 0 || event->sequence != handle.sequence ||
-	    event->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE || current_nevent)
-		return FALSE;
-
-	if (due_tick < first_eligible_tick)
-		due_tick = first_eligible_tick;
-
 	nevent_unlink_schedule(event);
 	if (event->deferral_count > 0)
 	{
@@ -579,6 +621,61 @@ bool nevent_reschedule_at(nevent_handle handle, unsigned long long due_tick)
 	event->due_tick = due_tick;
 	event->element = nevent_bucket_for_tick(due_tick);
 	nevent_link_schedule(event, static_cast<int>(event->element));
+}
+
+static bool nevent_apply_pending_reschedule(P_nevent event)
+{
+	auto pending = nevent_pending_reschedules.find(event);
+	if (pending == nevent_pending_reschedules.end())
+		return false;
+
+	const struct nevent_pending_reschedule request = pending->second;
+	nevent_pending_reschedules.erase(pending);
+	if (event->sequence != request.sequence ||
+	    event->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE)
+		return false;
+
+	nevent_apply_reschedule(event, request.due_tick);
+	return true;
+}
+
+static void nevent_process_pending_reschedules()
+{
+	while (!nevent_pending_reschedules.empty())
+	{
+		auto pending = nevent_pending_reschedules.begin();
+		P_nevent event = pending->first;
+		const struct nevent_pending_reschedule request = pending->second;
+		nevent_pending_reschedules.erase(pending);
+		if (event->sequence == request.sequence &&
+		    event->lifecycle_state == NEVENT_LIFECYCLE_ACTIVE)
+			nevent_apply_reschedule(event, request.due_tick);
+	}
+}
+
+bool nevent_reschedule_at(nevent_handle handle, unsigned long long due_tick)
+{
+	P_nevent event = handle.event;
+
+	if (!nevent_require_game_thread("nevent_reschedule_at"))
+		return FALSE;
+	const unsigned long long first_eligible_tick = nevent_first_eligible_tick();
+	if (!event || handle.sequence == 0 || event->sequence != handle.sequence ||
+	    event->lifecycle_state != NEVENT_LIFECYCLE_ACTIVE)
+		return FALSE;
+
+	if (due_tick < first_eligible_tick)
+		due_tick = first_eligible_tick;
+
+	if (current_nevent)
+	{
+		if (event == current_nevent)
+			return FALSE;
+		nevent_pending_reschedules[event] = { event->sequence, due_tick };
+		return TRUE;
+	}
+
+	nevent_apply_reschedule(event, due_tick);
 	return TRUE;
 }
 
@@ -1359,9 +1456,8 @@ static long nevent_elapsed_us(const struct timespec *started, const struct times
  * original due tick remains unchanged. */
 static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 {
-	P_nevent event, next;
+	std::vector<P_nevent> batch;
 	unsigned int next_bucket;
-	long deferred = 0;
 
 	if (new_debt)
 		*new_debt = 0;
@@ -1370,13 +1466,15 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 
 	next_bucket = nevent_bucket_for_tick(nevent_add_ticks(ne_event_tick, 1));
 
-	for (event = deferred_head; event; event = next)
+	/* Finish all allocation before unlinking anything so allocation failure
+	 * cannot leave a partially detached wheel.  The source bucket is ordered
+	 * by due tick, so the first future record ends the due suffix. */
+	for (P_nevent event = deferred_head; event && event->due_tick <= ne_event_tick;
+	     event = event->next_sched)
+		batch.push_back(event);
+
+	for (P_nevent event : batch)
 	{
-		next = event->next_sched;
-
-		if (event->due_tick > ne_event_tick)
-			continue;
-
 		nevent_unlink_schedule(event);
 		event->element = next_bucket;
 		if (event->deferral_count == 0)
@@ -1387,11 +1485,16 @@ static long nevent_defer_suffix(P_nevent deferred_head, long *new_debt)
 		}
 		event->deferral_count++;
 		nevent_analytics_record_deferred(event);
-		deferred++;
-		nevent_link_schedule(event, static_cast<int>(next_bucket));
 	}
 
-	return deferred;
+	/* Aging can change effective priority as the deferral count advances, so
+	 * sort once under the new state and merge the batch into the already-sorted
+	 * destination bucket.  This keeps budget enforcement O(n log n), avoiding
+	 * quadratic head scans when boot schedules tens of thousands of callbacks. */
+	std::sort(batch.begin(), batch.end(), nevent_sorts_before);
+	nevent_merge_sorted_batch(batch, next_bucket);
+
+	return static_cast<long>(batch.size());
 }
 
 static void nevent_warn_if_unbounded(long base_budget_usec, long base_max_callbacks)
@@ -1458,6 +1561,8 @@ void ne_events(void)
 	{
 		scanned++;
 		next_event = current_nevent->next_sched;
+		if (nevent_apply_pending_reschedule(current_nevent))
+			continue;
 
 		if (current_nevent->sequence > pass_sequence ||
 		    current_nevent->due_tick > ne_event_tick)
@@ -1562,6 +1667,7 @@ void ne_events(void)
 	}
 	current_nevent = NULL;
 	nevent_process_pending_cancellations();
+	nevent_process_pending_reschedules();
 	nevent_periodic_watchdog();
 	PROFILE_END(event_loop);
 	clock_gettime(CLOCK_MONOTONIC, &loop_finished);
@@ -1752,6 +1858,7 @@ void ne_init_event_pool(void)
 	nevent_catchup_debt_estimated_us = 0;
 	nevent_deferred_due_counts.clear();
 	nevent_pending_cancellations.clear();
+	nevent_pending_reschedules.clear();
 	nevent_periodic_reset();
 	memset(ne_schedule, 0, sizeof(ne_schedule));
 	memset(ne_schedule_tail, 0, sizeof(ne_schedule_tail));

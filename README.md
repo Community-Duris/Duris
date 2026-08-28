@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 1.81.56** | [Versioning policy](docs/guides/VERSIONING.md)
+**Version: 1.81.57** | [Versioning policy](docs/guides/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -221,11 +221,12 @@ telnet localhost 7777
 The WebSocket port can be overridden with `DURIS_WEBSOCKET_PORT`. Once the game is
 running, `scripts/healthcheck.sh` verifies both process and database-pool readiness.
 
-The tracked self-signed certificate in `certs/` is available only when
-`ENVIRONMENT=local` and `LISTEN_ADDRESS` is exactly `127.0.0.1` or `::1`. For a
-networked deployment, provide the ignored root files `duris.crt` and
-`duris.key`; the key must be owned by the server user and mode `0600` or
-stricter. Startup fails if that deployment certificate boundary is not met.
+For local TLS, run `./scripts/generate_localhost_cert.sh`. It creates an ignored,
+machine-local self-signed keypair under `certs/`; that fallback is accepted only
+when `ENVIRONMENT=local` and `LISTEN_ADDRESS` is exactly `127.0.0.1` or `::1`.
+For a networked deployment, provide the ignored root files `duris.crt` and
+`duris.key`; every private key must be owned by the server user and mode `0600`
+or stricter. Startup fails if that deployment certificate boundary is not met.
 
 ## Development workflow
 

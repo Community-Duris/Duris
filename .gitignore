@@ -25,6 +25,8 @@ migrate_pfiles
 .c*
 .env
 /Duris.xcodeproj
+/certs/*.crt
+/certs/*.key
 duris.crt
 duris.key
 etc/group
@@ -41,8 +43,9 @@ Accounts/email.db
 Accounts.old.*
 arih/
 backup/
-/Players/Backup/
-/Players/pc_idnumb
+/Players/**
+!/Players/wipers/
+!/Players/wipers/wipe_it_all
 Players.old.*
 Ships/ship_index
 
