@@ -453,6 +453,24 @@ int main()
         owner.character.carrying = nullptr;
     }
 
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        add_item(result, 1, 10, 101, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        const item_owner_identity shopkeeper = { item_owner_type::shopkeeper, 1, 0 };
+        result.item_identities[0].owner = shopkeeper;
+        player_load_item_materialize_metrics metrics = {};
+        assert(player_load_item_graph_materialize_for_owner(
+            &owner.character, result.snapshot.items, result.item_identities, shopkeeper,
+            result.item_owner_revision, true, &metrics));
+        item_ownership_runtime_entry entry = {};
+        assert(item_ownership_runtime_lookup(10, &entry));
+        assert(item_owner_identity_equal(entry.owner, shopkeeper));
+        assert(metrics.outcome == player_load_item_materialize_outcome::applied);
+        release_tree(owner.character.carrying);
+    }
+
     auto invalid = [](player_load_result result) {
         reset_test_state();
         test_character owner(42);

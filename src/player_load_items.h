@@ -36,6 +36,11 @@ bool player_load_item_graph_materialize(P_char character,
 					int32_t pid, uint64_t owner_revision,
 					bool hydrate_ownership,
 					player_load_item_materialize_metrics *metrics);
+bool player_load_item_graph_materialize_for_owner(
+	P_char character, const std::vector<player_item_snapshot> &items,
+	const std::vector<player_load_item_identity> &identities,
+	const item_owner_identity &expected_owner, uint64_t owner_revision, bool hydrate_ownership,
+	player_load_item_materialize_metrics *metrics);
 void player_load_items_activate_equipment(P_char character);
 void player_load_items_discard(P_char character);
 

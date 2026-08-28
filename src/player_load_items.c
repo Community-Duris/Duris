@@ -308,12 +308,11 @@ void attach_loaded_inventory(P_char character, const std::vector<P_obj> &objects
 }
 }
 
-bool player_load_item_graph_materialize(P_char character,
-					const std::vector<player_item_snapshot> &items,
-					const std::vector<player_load_item_identity> &identities,
-					int32_t pid, uint64_t owner_revision,
-					bool hydrate_ownership,
-					player_load_item_materialize_metrics *metrics)
+bool player_load_item_graph_materialize_for_owner(
+	P_char character, const std::vector<player_item_snapshot> &items,
+	const std::vector<player_load_item_identity> &identities,
+	const item_owner_identity &expected_owner, uint64_t owner_revision, bool hydrate_ownership,
+	player_load_item_materialize_metrics *metrics)
 {
 	player_load_item_materialize_metrics local_metrics = {};
 	if (!metrics)
@@ -321,14 +320,14 @@ bool player_load_item_graph_materialize(P_char character,
 	*metrics = {};
 	const size_t item_count = items.size();
 	metrics->item_count = item_count;
-	if (!character || pid <= 0 || identities.size() != item_count ||
-	    item_count > PLAYER_LOAD_ITEM_MAX)
+	if (!character || !item_owner_identity_valid(expected_owner) ||
+	    expected_owner.type == item_owner_type::system ||
+	    expected_owner.type == item_owner_type::destruction ||
+	    identities.size() != item_count || item_count > PLAYER_LOAD_ITEM_MAX)
 		return fail(metrics,
 			    item_count > PLAYER_LOAD_ITEM_MAX ?
 				    player_load_item_materialize_outcome::limit_exceeded :
 				    player_load_item_materialize_outcome::invalid_snapshot);
-	const item_owner_identity expected_owner = { item_owner_type::player,
-						     static_cast<uint64_t>(pid), 0 };
 	if (!item_count)
 	{
 		if (hydrate_ownership &&
@@ -609,6 +608,29 @@ bool player_load_item_graph_materialize(P_char character,
 	staged.published = true;
 	metrics->outcome = player_load_item_materialize_outcome::applied;
 	return true;
+}
+
+bool player_load_item_graph_materialize(P_char character,
+					const std::vector<player_item_snapshot> &items,
+					const std::vector<player_load_item_identity> &identities,
+					int32_t pid, uint64_t owner_revision,
+					bool hydrate_ownership,
+					player_load_item_materialize_metrics *metrics)
+{
+	if (pid <= 0)
+	{
+		if (metrics)
+		{
+			*metrics = {};
+			metrics->item_count = items.size();
+			metrics->outcome = player_load_item_materialize_outcome::invalid_snapshot;
+		}
+		return false;
+	}
+	return player_load_item_graph_materialize_for_owner(
+		character, items, identities,
+		{ item_owner_type::player, static_cast<uint64_t>(pid), 0 }, owner_revision,
+		hydrate_ownership, metrics);
 }
 
 bool player_load_items_materialize(P_char character, const player_load_result &result,

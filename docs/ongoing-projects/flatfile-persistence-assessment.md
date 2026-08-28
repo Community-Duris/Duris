@@ -2080,6 +2080,25 @@ sections below continue to describe the required end state.
   validated owner, then build an all-or-nothing detached shopkeeper materializer on the
   reconciled identities.
 
+### Checkpoint 63 - owner-aware bounded item graph materialization
+
+- **Completed:** extracted `player_load_item_graph_materialize_for_owner` from the proven
+  player loader. It accepts one explicit validated active owner while retaining the same
+  prototype lookup, metadata validation, topology/depth/operation bounds, staged object
+  rollback, nesting checks, equipment/inventory attachment, and optional atomic runtime
+  ownership hydration.
+- **Compatibility and guards:** the existing PID API remains unchanged and still rejects
+  nonpositive PIDs before constructing a player owner. The shared entry point rejects
+  invalid, system, and destruction owners; every supplied item identity must exactly match
+  the explicit owner and owner revision. Player and pet callers retain their prior paths.
+- **Checks passed:** the expanded runtime regression materializes and hydrates a shopkeeper
+  owned graph through the shared entry point, while the complete player and pet graph suites,
+  changed-line formatting, and normal C++20 server build pass.
+- **Exposure:** this is a reusable internal primitive only. No shopkeeper mobile is created
+  or published by this checkpoint, and runtime restore remains fenced.
+- **Next action:** compose detached mobile creation, saveable affect restoration, reconciled
+  item materialization, and failure cleanup into a shopkeeper-specific materializer.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
