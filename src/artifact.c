@@ -4634,23 +4634,50 @@ void arti_reset_sql(P_char ch, char *arg)
 	}
 	if (vnum > 0)
 	{
+#ifdef __NO_MYSQL__
+		std::string error;
+		const auto reset = flatfile_artifact_bind_update(persistence_mode_flatfile_root(),
+								 vnum, -1, 0, &error);
+		if (reset == flatfile_artifact_result::ok ||
+		    reset == flatfile_artifact_result::unchanged)
+#else
 		if (qry("UPDATE artifact_bind SET owner_pid = -1, timer = 0 WHERE vnum = %d", vnum))
+#endif
 		{
 			send_to_char_f(ch, "Artifact vnum %d has a hungry soul.\n\r", vnum);
 		}
 		else
 		{
+#ifdef __NO_MYSQL__
+			logit(LOG_ARTIFACT, "arti_reset_sql: flat binding reset failed for %d: %s",
+			      vnum,
+			      error.empty() ? "missing or invalid artifact authority" :
+					      error.c_str());
+#endif
 			send_to_char("Update operation failed.\n\r", ch);
 		}
 	}
 	else
 	{
+#ifdef __NO_MYSQL__
+		std::string error;
+		const auto reset =
+			flatfile_artifact_bind_reset_all(persistence_mode_flatfile_root(), &error);
+		if (reset == flatfile_artifact_result::ok ||
+		    reset == flatfile_artifact_result::unchanged)
+#else
 		if (qry("UPDATE artifact_bind SET owner_pid = -1, timer = 0"))
+#endif
 		{
 			send_to_char("All artifacts' souls are hungry for an owner now.\n\r", ch);
 		}
 		else
 		{
+#ifdef __NO_MYSQL__
+			logit(LOG_ARTIFACT, "arti_reset_sql: flat binding reset-all failed: %s",
+			      error.empty() ? "missing or invalid artifact authority" :
+					      error.c_str());
+#endif
 			send_to_char("Update operation failed.\n\r", ch);
 		}
 	}

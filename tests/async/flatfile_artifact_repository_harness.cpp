@@ -254,6 +254,20 @@ int main(int argc, char **argv)
 			records.size() == 1 && records[0].bind_owner_pid == 77 &&
 			records[0].bind_timer == 4100 && records[0].revision == 4,
 		"binding update did not preserve the canonical artifact record");
+	require(flatfile_artifact_bind_reset_all(bind_root.string(), &error) ==
+			flatfile_artifact_result::ok,
+		"binding reset-all failed: " + error);
+	require(flatfile_artifact_list(bind_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.size() == 1 && records[0].bind_owner_pid == -1 &&
+			records[0].bind_timer == 0 && records[0].owned &&
+			records[0].location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			records[0].location == 42 && records[0].timer == 5000 &&
+			records[0].revision == 5,
+		"binding reset-all did not preserve gameplay fields or advance revision");
+	require(flatfile_artifact_bind_reset_all(bind_root.string(), &error) ==
+			flatfile_artifact_result::unchanged,
+		"identical binding reset-all was not idempotent");
 
 	const fs::path gameplay_root = fs::path(argv[1]) / "gameplay";
 	prepare_root(gameplay_root);
@@ -453,6 +467,9 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_bind_update(root.string(), 100, 42, 5000, &error) ==
 			flatfile_artifact_result::invalid,
 		"corrupt artifact authority was overwritten through binding update");
+	require(flatfile_artifact_bind_reset_all(root.string(), &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was overwritten through binding reset-all");
 	require(flatfile_artifact_get(root.string(), 100, &gameplay_record, &error) ==
 			flatfile_artifact_result::invalid,
 		"corrupt artifact authority was exposed through gameplay lookup");

@@ -187,3 +187,11 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
         raise AssertionError("client-free per-player artifact list bypasses flat authority")
     if "requires MySQL support" in player_body:
         raise AssertionError("client-free per-player artifact list remains disabled")
+
+    reset_start = artifact_source.index("void arti_reset_sql(P_char ch, char *arg)\n{")
+    reset_end = artifact_source.index("\nP_char find_mob_in_game(", reset_start)
+    reset_body = artifact_source[reset_start:reset_end]
+    if "flatfile_artifact_bind_update(" not in reset_body:
+        raise AssertionError("client-free keyed soul reset bypasses flat authority")
+    if "flatfile_artifact_bind_reset_all(" not in reset_body:
+        raise AssertionError("client-free reset-all bypasses flat authority")

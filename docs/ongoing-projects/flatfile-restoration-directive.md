@@ -398,6 +398,28 @@
   repair, and remaining direct-SQL artifact paths still require focused work. The global
   incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - restored artifact soul reset without MySQL
+
+- **Concrete gap:** the confirmed staff soul-reset command still wrote only
+  `artifact_bind`, so both its single-vnum and reset-all forms falsely failed in
+  no-database mode.
+- **Restoration:** a single-vnum reset now uses the existing keyed atomic catalog update,
+  while the already privilege- and confirmation-gated reset-all form clears every binding
+  in one atomic catalog replacement. Both preserve all gameplay fields and report missing
+  or corrupt authority as failure. Database-backed SQL behavior is unchanged.
+- **Focused evidence:** repository tests cover reset-all mutation, gameplay-field
+  preservation, per-record and catalog revision progression, idempotence, and corrupt
+  authority refusal; keyed reset coverage already verifies missing-vnum and corruption
+  behavior. The artifact source contract confirms both real staff command routes use the
+  flat authority in client-free builds.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** staff soul reset is restored, but catalog establishment, fix/sync
+  repair paths, destructive clear semantics, and remaining direct-SQL artifact routes
+  still require focused work. The global incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,
