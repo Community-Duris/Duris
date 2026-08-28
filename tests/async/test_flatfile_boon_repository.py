@@ -7,25 +7,16 @@ import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
-with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
+with tempfile.TemporaryDirectory(prefix="duris-flat-boon-") as temporary:
     temporary_path = pathlib.Path(temporary)
-    binary = temporary_path / "flatfile_auction_test"
+    binary = temporary_path / "flatfile_boon_test"
     sources = [
-        "tests/async/flatfile_auction_repository_harness.cpp",
-        "src/flatfile_auction_repository.c",
+        "tests/async/flatfile_boon_repository_harness.cpp",
         "src/flatfile_boon_repository.c",
-        "src/flatfile_item_repository.c",
-        "src/flatfile_player_domain_repository.c",
         "src/flatfile_authority_transaction.c",
         "src/flatfile_store.c",
-        "src/auction_command.c",
-        "src/item_transfer_command.c",
-        "src/epic_command.c",
-        "src/currency_command.c",
-        "src/combat_outcome_command.c",
         "src/boon_reward_command.c",
         "src/critical_command.c",
-        "src/persistence_mode.c",
     ]
     compile_result = subprocess.run(
         [
@@ -36,7 +27,6 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
             "-Wpedantic",
             "-Werror",
             "-D__NO_MYSQL__",
-            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
             "-Isrc",
             "-Isrc/no_mysql",
             *sources,
@@ -62,3 +52,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
     if run_result.returncode:
         raise SystemExit(run_result.stdout)
     print(run_result.stdout.strip())
+
+dispatcher = (ROOT / "src/flatfile_item_repository.c").read_text()
+if "return flatfile_boon_repository_apply(root, command);" not in dispatcher:
+    raise SystemExit("flat critical dispatcher does not route boon rewards")

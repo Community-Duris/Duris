@@ -230,6 +230,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_item_uid_allocator.o \
 				 flatfile_item_repository.o \
 				 flatfile_auction_repository.o \
+				 flatfile_boon_repository.o \
 				 flatfile_offline_message_repository.o \
 				 flatfile_player_domain_repository.o \
 				 critical_command.o \

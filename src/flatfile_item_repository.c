@@ -1,6 +1,7 @@
 #include "flatfile_item_repository.h"
 
 #include "flatfile_auction_repository.h"
+#include "flatfile_boon_repository.h"
 #include "flatfile_authority_transaction.h"
 #include "flatfile_store.h"
 #include "flatfile_player_domain_repository.h"
@@ -880,6 +881,8 @@ flatfile_critical_command_repository_apply_selected(const critical_command &comm
 		return flatfile_item_repository_apply(root, command);
 	if (command.type == critical_command_type::auction)
 		return flatfile_auction_repository_apply(root, command);
+	if (command.type == critical_command_type::boon_reward)
+		return flatfile_boon_repository_apply(root, command);
 	if (command.type == critical_command_type::epic ||
 	    command.type == critical_command_type::account_bank ||
 	    command.type == critical_command_type::combat_outcome)

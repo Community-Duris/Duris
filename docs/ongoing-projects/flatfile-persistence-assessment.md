@@ -1007,6 +1007,44 @@ sections below continue to describe the required end state.
   cross-authority preparation APIs, including durable replay and event publication;
   then audit the remaining economy producers before narrowing that diagnostic.
 
+### Checkpoint 30 - flat boon definition/progress/shop authority
+
+- **Completed:** added a bounded, checksummed `boon_catalog` holding full reward
+  definitions, per-boon/player progress, per-player point/stat shop balances, and an
+  operation-ID ledger with typed results. Decode rejects duplicate definitions,
+  progress rows, shops, or operations; unknown progress definitions; invalid enums,
+  flags, non-finite values, corrupt checksums, oversized sections, and ambiguous IDs.
+- **Completed:** the flat critical dispatcher now applies typed boon reward commands.
+  Eligibility matches the SQL route for racewar/player targeting, zone/level/mob/race/
+  frag and event criteria, pet/conjured exclusions, progress increments, one-shot `-1`
+  completion fences, repeat reset, targeted deactivation, and point/stat shop credits.
+- **Completed:** exact command replay returns the original typed result; conflicting
+  operation-ID reuse returns `EEXIST`. More than 32 matching definitions and numeric/
+  capacity failures restore the original catalog and durably record only the rejection,
+  preventing partial progress or shop credit.
+- **Completed:** added an establish-once definition API for export/bootstrap and a bounded
+  player shop projection. Boon command construction now rejects non-finite event values
+  before they enter either backend.
+- **Checks passed:** `python3 tests/async/test_flatfile_boon_repository.py` covers
+  establish-once behavior, mob progress, one-shot and repeat completion, point/stat
+  balances, replay/conflict, zone and frag eligibility, victim exclusion, durable
+  oversized-match rejection, corruption refusal, and temporary-file cleanup;
+  `python3 tests/async/test_boon_reward_zone_transactional_cutover.py`, the affected
+  standalone auction/item/player repositories, `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  and `git diff --check` pass.
+- **Files changed:** new `src/flatfile_boon_repository.[ch]` and focused harness/test,
+  `src/boon_reward_command.c`, the flat critical dispatcher, `src/Makefile`, affected
+  standalone build lists, and this handoff ledger.
+- **Remaining boon gap:** the catalog command durably decides completion, but EXP/epic/
+  cash/level/power/spell/stat/item runtime reward effects are still published only from
+  an in-memory completion callback. A crash or disconnect after catalog commit can lose
+  or defer that reward, and boon admin/list/shop routes remain SQL-backed.
+- **Next action:** add a durable pending-reward publication marker and idempotent reward
+  handoff. Prepare authoritative wallet/epic/item/player after-images where possible and
+  retain pending runtime-only effects until the player is loaded and acknowledgement is
+  durable; then port boon read/admin/shop surfaces.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
