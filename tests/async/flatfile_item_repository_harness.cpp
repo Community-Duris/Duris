@@ -116,6 +116,35 @@ int main(int argc, char **argv)
 							 &error) ==
 			flatfile_item_baseline_result::conflict,
 		"conflicting owner baseline was accepted");
+	{
+		flatfile_authority_lock lock;
+		flatfile_authority_operation operation;
+		require(lock.acquire(root.string(), &error) &&
+				flatfile_item_repository_prepare_player_remove(
+					root.string(), lock, 999, &operation, &error) ==
+					flatfile_item_repository_result::ok &&
+				operation.filename == "item_ownership" && !operation.bytes.empty(),
+			"player item destruction was not prepared: " + error);
+		require(flatfile_authority_transaction_commit_operations(root.string(), lock,
+									 { operation }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"prepared player item destruction did not commit: " + error);
+	}
+	uint64_t removed_revision = 0;
+	std::vector<flatfile_item_ownership_record> removed_items;
+	require(flatfile_item_repository_load_owner(root.string(), baseline_owner,
+						    &removed_revision, &removed_items, &error) ==
+			flatfile_item_repository_result::not_found,
+		"deleted player item owner remained authoritative");
+	{
+		flatfile_authority_lock lock;
+		flatfile_authority_operation operation;
+		require(lock.acquire(root.string(), &error) &&
+				flatfile_item_repository_prepare_player_remove(
+					root.string(), lock, 999, &operation, &error) ==
+					flatfile_item_repository_result::not_found,
+			"prepared player item destruction was not idempotent");
+	}
 
 	const critical_command create = creation(1);
 	critical_apply_result applied = flatfile_item_repository_apply(root.string(), create);

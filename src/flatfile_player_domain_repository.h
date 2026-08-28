@@ -66,5 +66,9 @@ flatfile_player_domain_result flatfile_player_domain_prepare_base_stat(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	uint8_t stat_index, bool apply_increment, flatfile_base_stat_mutation *mutation,
 	unsigned int *result_code, std::string *error);
+flatfile_player_domain_result
+flatfile_player_domain_prepare_remove(const std::string &root, const flatfile_authority_lock &lock,
+				      uint32_t pid, flatfile_authority_operation *operation,
+				      std::string *error);
 
 #endif

@@ -1,6 +1,7 @@
 #include "flatfile_player_repository.h"
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
+#include "flatfile_player_domain_repository.h"
 #include "persistence_observability.h"
 
 #include <cstdlib>
@@ -275,6 +276,28 @@ int main(int argc, char **argv)
 				flatfile_player_load_result::ok &&
 			loaded.revision == 5 && loaded.status_integers[0].signed_value == 55,
 		"concurrent player writers lost the highest revision");
+	{
+		flatfile_player_snapshot_lock snapshot_lock;
+		flatfile_authority_lock authority_lock;
+		flatfile_authority_operation snapshot_remove, domain_remove;
+		require(snapshot_lock.acquire(root.string(), 42, &error) &&
+				authority_lock.acquire(root.string(), &error),
+			"could not acquire player deletion preparation locks: " + error);
+		require(flatfile_player_snapshot_prepare_remove(
+				root.string(), snapshot_lock, authority_lock, 42, &snapshot_remove,
+				&error) == flatfile_player_load_result::ok &&
+				snapshot_remove.store == flatfile_authority_store::players &&
+				snapshot_remove.kind == flatfile_authority_operation_kind::remove &&
+				snapshot_remove.filename == "42.snapshot",
+			"player snapshot removal was not prepared: " + error);
+		require(flatfile_player_domain_prepare_remove(root.string(), authority_lock, 42,
+							      &domain_remove, &error) ==
+					flatfile_player_domain_result::ok &&
+				domain_remove.store == flatfile_authority_store::domains &&
+				domain_remove.kind == flatfile_authority_operation_kind::remove &&
+				domain_remove.filename == "player-42.domain",
+			"player domain removal was not prepared: " + error);
+	}
 
 	const fs::path snapshot_path = players / "42.snapshot";
 	{

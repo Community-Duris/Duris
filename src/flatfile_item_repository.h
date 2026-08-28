@@ -61,6 +61,9 @@ flatfile_item_repository_result flatfile_item_repository_prepare_auction_transfe
 	const std::string &root, const flatfile_authority_lock &lock,
 	const auction_command_payload &payload, uint32_t auction_id, bool to_auction,
 	flatfile_item_auction_mutation *mutation, unsigned int *result_code, std::string *error);
+flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	flatfile_authority_operation *operation, std::string *error);
 critical_apply_result
 flatfile_critical_command_repository_apply_selected(const critical_command &command, void *context);
 

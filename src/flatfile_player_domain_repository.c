@@ -1036,6 +1036,27 @@ flatfile_player_domain_result flatfile_player_domain_prepare_base_stat(
 	return flatfile_player_domain_result::ok;
 }
 
+flatfile_player_domain_result
+flatfile_player_domain_prepare_remove(const std::string &root, const flatfile_authority_lock &lock,
+				      uint32_t pid, flatfile_authority_operation *operation,
+				      std::string *error)
+{
+	if (!operation || !pid || !lock.matches(root))
+		return flatfile_player_domain_result::invalid;
+	*operation = {};
+	const auto recovered = recover_authority(root, lock, error);
+	if (recovered != flatfile_player_domain_result::ok)
+		return recovered;
+	flatfile_player_domain_record record;
+	const auto loaded = load_player(root, pid, &record, error);
+	if (loaded != flatfile_player_domain_result::ok)
+		return loaded;
+	operation->store = flatfile_authority_store::domains;
+	operation->kind = flatfile_authority_operation_kind::remove;
+	operation->filename = player_filename(pid);
+	return flatfile_player_domain_result::ok;
+}
+
 critical_apply_result apply_epic_command(const std::string &root, const critical_command &command)
 {
 	epic_command_payload payload = {};

@@ -788,6 +788,61 @@ flatfile_item_repository_result flatfile_item_repository_prepare_auction_transfe
 	return flatfile_item_repository_result::ok;
 }
 
+flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	flatfile_authority_operation *operation, std::string *error)
+{
+	if (!operation || !pid || !lock.matches(root))
+		return flatfile_item_repository_result::invalid;
+	*operation = {};
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	const item_owner_identity player = { item_owner_type::player, pid, 0 };
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	owner_state *player_owner = find_owner(&catalog, player);
+	if (!player_owner)
+		return flatfile_item_repository_result::not_found;
+	owner_state *destruction_owner = ensure_owner(&catalog, destruction);
+	if (!destruction_owner || catalog.revision == std::numeric_limits<uint64_t>::max() ||
+	    destruction_owner->revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_item_repository_result::invalid;
+	for (const auto &item : catalog.items)
+		if (item_owner_identity_equal(item.owner, player) &&
+		    item.item_revision == std::numeric_limits<uint64_t>::max())
+			return flatfile_item_repository_result::invalid;
+	for (auto &item : catalog.items)
+	{
+		if (!item_owner_identity_equal(item.owner, player))
+			continue;
+		item.owner = destruction;
+		item.state = item_custody_state::destroyed;
+		++item.item_revision;
+	}
+	++destruction_owner->revision;
+	auto owner =
+		std::lower_bound(catalog.owners.begin(), catalog.owners.end(), player,
+				 [](const owner_state &candidate, const item_owner_identity &value)
+				 { return owner_less(candidate.owner, value); });
+	if (owner == catalog.owners.end() || !item_owner_identity_equal(owner->owner, player))
+		return flatfile_item_repository_result::invalid;
+	catalog.owners.erase(owner);
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, catalog.revision + 1, &encoded))
+		return flatfile_item_repository_result::invalid;
+	operation->store = flatfile_authority_store::domains;
+	operation->kind = flatfile_authority_operation_kind::write;
+	operation->filename = ownership_filename;
+	operation->bytes = std::move(encoded);
+	return flatfile_item_repository_result::ok;
+}
+
 critical_apply_result flatfile_item_repository_apply(const std::string &root,
 						     const critical_command &command)
 {

@@ -1436,6 +1436,41 @@ sections below continue to describe the required end state.
   operations with compatible lock ordering, then inventory and fence the remaining
   world-side effects before exposing the coordinator through `sql_delete_player`.
 
+### Checkpoint 43 - prepared player, custody, and boon deletion primitives
+
+- **Completed:** promoted the existing per-PID snapshot mutex/file lock to a reusable RAII
+  lock and made normal snapshot saves use it unchanged. Under that lock plus the global
+  authority lock, deletion preparation authenticates the complete checksummed snapshot
+  before returning a typed `players/<pid>.snapshot` removal operation.
+- **Completed:** player-domain preparation authenticates the PID gameplay-domain envelope
+  and returns a typed removal for `player-<pid>.domain` without touching account-scoped
+  bank authority. Both snapshot and domain operations remain unpublished until a future
+  coordinator commits the complete operation set.
+- **Completed:** item-owner preparation loads and validates the global custody catalog,
+  moves every item owned by the PID to the singleton destruction owner, marks custody
+  destroyed, advances item/destruction/catalog revisions, removes the player owner row,
+  and returns one checksummed catalog image. Item UIDs and historical command results are
+  retained; a retry observes the absent player owner instead of destroying twice.
+- **Completed:** boon-player preparation removes the PID's progress, shop balances,
+  pending/replayed reward operations, and shop operations. Targeted boon definitions are
+  deactivated and have their target PID cleared, preventing a tombstoned identity from
+  remaining embedded in global active configuration.
+- **Checks passed:** expanded player, item, and boon repository regressions verify prepared
+  operation type/name/content, journal publication where applicable, authoritative empty
+  projections, item-owner idempotency, and targeted-definition cleanup. Formatting and
+  strict focused compilation, the normal server build, and the isolated client-free
+  build/boot preflight pass.
+- **Files changed:** player snapshot/domain, item ownership, and boon repositories and
+  harnesses, plus this handoff ledger.
+- **Remaining coordinator gap:** locker access/data, ships, auctions, artifacts/guild
+  references, corpses, offline messages, and other name/PID world state still require an
+  explicit transactional cleanup or a checked-empty precondition. The coordinator and
+  `sql_delete_player` remain deliberately unrouted until that inventory is complete.
+- **Next action:** derive the exact remaining character-delete side-effect manifest from
+  current call sites and flat authorities, implement fail-closed preconditions for domains
+  not yet transactionally deletable, then compose all prepared operations with identity
+  last in one fault-injected coordinator.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

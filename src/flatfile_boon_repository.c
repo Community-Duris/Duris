@@ -971,6 +971,65 @@ flatfile_boon_result flatfile_boon_acknowledge_reward(const std::string &root,
 		       flatfile_boon_result::io_error;
 }
 
+flatfile_boon_result flatfile_boon_prepare_player_remove(const std::string &root,
+							 const flatfile_authority_lock &lock,
+							 uint32_t pid,
+							 flatfile_authority_operation *operation,
+							 std::string *error)
+{
+	if (!operation || !pid || !lock.matches(root))
+		return flatfile_boon_result::invalid;
+	*operation = {};
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_boon_result::io_error :
+			       flatfile_boon_result::invalid;
+	boon_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_boon_result::not_found;
+	if (loaded != flatfile_read_result::ok)
+		return loaded == flatfile_read_result::io_error ? flatfile_boon_result::io_error :
+								  flatfile_boon_result::invalid;
+	bool changed = false;
+	for (auto &definition : catalog.definitions)
+	{
+		if (definition.target_pid != pid)
+			continue;
+		definition.target_pid = 0;
+		definition.active = false;
+		definition.duration = 0;
+		changed = true;
+	}
+	auto erase_matching = [&](auto &records, auto predicate)
+	{
+		const size_t previous = records.size();
+		records.erase(std::remove_if(records.begin(), records.end(), predicate),
+			      records.end());
+		changed = changed || records.size() != previous;
+	};
+	erase_matching(catalog.progress, [pid](const auto &entry) { return entry.pid == pid; });
+	erase_matching(catalog.shops, [pid](const auto &entry) { return entry.pid == pid; });
+	erase_matching(catalog.operations,
+		       [pid](const auto &entry) { return entry.result.pid == pid; });
+	erase_matching(catalog.shop_operations,
+		       [pid](const auto &entry) { return entry.result.pid == pid; });
+	if (!changed)
+		return flatfile_boon_result::not_found;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_boon_result::invalid;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_boon_result::invalid;
+	operation->store = flatfile_authority_store::domains;
+	operation->kind = flatfile_authority_operation_kind::write;
+	operation->filename = catalog_filename;
+	operation->bytes = std::move(bytes);
+	return flatfile_boon_result::ok;
+}
+
 critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 						     const critical_command &command)
 {

@@ -3,6 +3,7 @@
 
 #include "boon_reward_command.h"
 #include "boon_shop_command.h"
+#include "flatfile_authority_transaction.h"
 #include "critical_command_coordinator.h"
 
 #include <cstdint>
@@ -78,6 +79,11 @@ flatfile_boon_result flatfile_boon_find_pending_reward(const std::string &root, 
 flatfile_boon_result flatfile_boon_acknowledge_reward(const std::string &root,
 						      const critical_operation_id &operation_id,
 						      std::string *error);
+flatfile_boon_result flatfile_boon_prepare_player_remove(const std::string &root,
+							 const flatfile_authority_lock &lock,
+							 uint32_t pid,
+							 flatfile_authority_operation *operation,
+							 std::string *error);
 critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 						     const critical_command &command);
 critical_apply_result flatfile_boon_shop_repository_apply(const std::string &root,

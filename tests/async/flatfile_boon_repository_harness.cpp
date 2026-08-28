@@ -212,6 +212,7 @@ int main(int argc, char **argv)
 		"boon definition projection did not preserve the catalog");
 	flatfile_boon_definition created = definition(0, BTYPE_EXP, BOPT_LEVEL, 60, 0, 500);
 	created.duration = -1;
+	created.target_pid = 42;
 	require(flatfile_boon_create(root.string(), &created, &error) == flatfile_boon_result::ok &&
 			created.id == 5 &&
 			flatfile_boon_create(root.string(), &created, &error) ==
@@ -273,6 +274,7 @@ int main(int argc, char **argv)
 		"conflicting boon operation ID was accepted");
 	expect_pending_reward(root.string(), 42, first_command.operation_id, mob.data, &error);
 	flatfile_boon_player_projection shop;
+	flatfile_boon_pending_reward pending;
 	require(flatfile_boon_load_player(root.string(), 42, &shop, &error) ==
 				flatfile_boon_result::ok &&
 			shop.points == 0 && shop.stats == 2,
@@ -379,6 +381,31 @@ int main(int argc, char **argv)
 			flatfile_boon_shop_repository_apply(root.string(), no_points).error_code ==
 				ENOSPC,
 		"boon shop insufficient-points rejection was not durable and replayable");
+	{
+		flatfile_authority_lock lock;
+		flatfile_authority_operation operation;
+		require(lock.acquire(root.string(), &error) &&
+				flatfile_boon_prepare_player_remove(root.string(), lock, 42,
+								    &operation, &error) ==
+					flatfile_boon_result::ok &&
+				operation.filename == "boon_catalog" && !operation.bytes.empty(),
+			"boon player state removal was not prepared: " + error);
+		require(flatfile_authority_transaction_commit_operations(root.string(), lock,
+									 { operation }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"prepared boon player state removal did not commit: " + error);
+	}
+	require(flatfile_boon_load_player(root.string(), 42, &shop, &error) ==
+				flatfile_boon_result::ok &&
+			shop.points == 0 && shop.stats == 0 &&
+			flatfile_boon_load_progress(root.string(), 1, 42, &progress, &error) ==
+				flatfile_boon_result::not_found &&
+			flatfile_boon_find_pending_reward(root.string(), 42, &pending, &error) ==
+				flatfile_boon_result::not_found &&
+			flatfile_boon_load_definitions(root.string(), &loaded_definitions,
+						       &error) == flatfile_boon_result::ok &&
+			loaded_definitions[4].target_pid == 0 && !loaded_definitions[4].active,
+		"prepared boon removal left PID-keyed player state");
 	const fs::path overflow_root = root / "overflow";
 	const fs::path overflow_domains = overflow_root / "domains";
 	fs::create_directories(overflow_domains);

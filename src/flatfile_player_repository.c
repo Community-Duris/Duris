@@ -67,12 +67,6 @@ struct decoder
 	}
 };
 
-struct authority_lock
-{
-	int fd = -1;
-	~authority_lock() { flatfile_lock_release(fd); }
-};
-
 std::string player_directory(const std::string &root)
 {
 	return root + "/players";
@@ -562,6 +556,54 @@ flatfile_player_domain_result establish_domain_baseline(const std::string &root,
 }
 } // namespace
 
+struct flatfile_player_snapshot_lock::state
+{
+	std::unique_lock<std::mutex> process_lock;
+	int fd = -1;
+	std::string root;
+	int32_t pid = 0;
+
+	state()
+		: process_lock(player_mutex, std::defer_lock)
+	{
+	}
+	~state() { flatfile_lock_release(fd); }
+};
+
+flatfile_player_snapshot_lock::flatfile_player_snapshot_lock() noexcept
+	: state_(new(std::nothrow) state)
+{
+}
+flatfile_player_snapshot_lock::~flatfile_player_snapshot_lock() = default;
+
+bool flatfile_player_snapshot_lock::acquire(const std::string &root, int32_t pid,
+					    std::string *error)
+{
+	if (!state_ || state_->process_lock.owns_lock() || root.empty() || pid <= 0)
+		return false;
+	state_->process_lock.lock();
+	if (flatfile_lock_acquire(player_directory(root), player_lock_filename(pid), &state_->fd,
+				  error))
+	{
+		state_->root = root;
+		state_->pid = pid;
+		return true;
+	}
+	state_->process_lock.unlock();
+	return false;
+}
+
+bool flatfile_player_snapshot_lock::owns(const std::string &root, int32_t pid) const
+{
+	return state_ && state_->process_lock.owns_lock() && state_->fd >= 0 &&
+	       state_->root == root && state_->pid == pid;
+}
+
+bool flatfile_player_snapshot_lock::matches(const std::string &root, int32_t pid) const
+{
+	return owns(root, pid);
+}
+
 flatfile_player_load_result flatfile_player_snapshot_load(const std::string &root, int32_t pid,
 							  player_snapshot *snapshot,
 							  std::string *error)
@@ -707,16 +749,38 @@ flatfile_player_load_repository_execute_selected(const player_load_request &requ
 	return result;
 }
 
+flatfile_player_load_result
+flatfile_player_snapshot_prepare_remove(const std::string &root,
+					const flatfile_player_snapshot_lock &snapshot_lock,
+					const flatfile_authority_lock &authority_lock, int32_t pid,
+					flatfile_authority_operation *operation, std::string *error)
+{
+	if (!operation || !snapshot_lock.matches(root, pid) || !authority_lock.matches(root))
+		return flatfile_player_load_result::invalid;
+	*operation = {};
+	const auto recovered = flatfile_authority_transaction_recover(root, authority_lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_player_load_result::io_error :
+			       flatfile_player_load_result::invalid;
+	player_snapshot snapshot = {};
+	const auto loaded = load_unlocked(root, pid, &snapshot, error);
+	if (loaded != flatfile_player_load_result::ok)
+		return loaded;
+	operation->store = flatfile_authority_store::players;
+	operation->kind = flatfile_authority_operation_kind::remove;
+	operation->filename = player_filename(pid);
+	return flatfile_player_load_result::ok;
+}
+
 player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 							const player_snapshot &snapshot,
 							std::string *error)
 {
 	if (!valid_snapshot(snapshot) || !replace_items_together(snapshot.components))
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
-	std::lock_guard<std::mutex> guard(player_mutex);
-	authority_lock authority;
-	if (!flatfile_lock_acquire(player_directory(root), player_lock_filename(snapshot.pid),
-				   &authority.fd, error))
+	flatfile_player_snapshot_lock snapshot_lock;
+	if (!snapshot_lock.acquire(root, snapshot.pid, error))
 		return { player_save_apply_outcome::retryable_failure, 0, EIO };
 	player_snapshot materialized = {};
 	const flatfile_player_load_result loaded =
