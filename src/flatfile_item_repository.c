@@ -157,6 +157,16 @@ bool item_less(const flatfile_item_ownership_record &left,
 	return left.item_uid < right.item_uid;
 }
 
+bool item_equal(const flatfile_item_ownership_record &left,
+		const flatfile_item_ownership_record &right)
+{
+	return left.item_uid == right.item_uid && left.root_item_uid == right.root_item_uid &&
+	       left.parent_item_uid == right.parent_item_uid &&
+	       item_owner_identity_equal(left.owner, right.owner) &&
+	       left.item_revision == right.item_revision && left.vnum == right.vnum &&
+	       left.state == right.state;
+}
+
 owner_state *find_owner(ownership_catalog *catalog, const item_owner_identity &owner)
 {
 	if (!catalog)
@@ -602,6 +612,93 @@ flatfile_item_repository_result flatfile_item_repository_load_owner(
 	*owner_revision = stored_owner->revision;
 	*items = std::move(selected);
 	return flatfile_item_repository_result::ok;
+}
+
+flatfile_item_baseline_result
+flatfile_item_repository_establish_owner(const std::string &root, const item_owner_identity &owner,
+					 const std::vector<flatfile_item_ownership_record> &items,
+					 std::string *error)
+{
+	if (root.empty() || !item_owner_identity_valid(owner) ||
+	    items.size() > ownership_maximum_entries ||
+	    !std::is_sorted(items.begin(), items.end(), item_less))
+		return flatfile_item_baseline_result::invalid;
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		const auto &entry = items[index];
+		if (!entry.item_uid || !entry.root_item_uid || entry.vnum <= 0 ||
+		    entry.item_revision != 1 || entry.state != item_custody_state::active ||
+		    !item_owner_identity_equal(entry.owner, owner) ||
+		    (index && items[index - 1].item_uid == entry.item_uid))
+			return flatfile_item_baseline_result::invalid;
+		if (entry.parent_item_uid)
+		{
+			auto parent = std::lower_bound(
+				items.begin(), items.end(), entry.parent_item_uid,
+				[](const flatfile_item_ownership_record &candidate, uint64_t uid)
+				{ return candidate.item_uid < uid; });
+			if (parent == items.end() || parent->item_uid != entry.parent_item_uid ||
+			    parent->root_item_uid != entry.root_item_uid)
+				return flatfile_item_baseline_result::invalid;
+		}
+		else if (entry.root_item_uid != entry.item_uid)
+			return flatfile_item_baseline_result::invalid;
+	}
+
+	std::lock_guard<std::mutex> guard(ownership_mutex);
+	authority_lock authority;
+	if (!flatfile_lock_acquire(domains_directory(root), ownership_lock_filename, &authority.fd,
+				   error))
+		return flatfile_item_baseline_result::io_error;
+	ownership_catalog catalog;
+	const flatfile_item_repository_result loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok &&
+	    loaded != flatfile_item_repository_result::not_found)
+		return loaded == flatfile_item_repository_result::io_error ?
+			       flatfile_item_baseline_result::io_error :
+			       flatfile_item_baseline_result::invalid;
+	owner_state *stored_owner = find_owner(&catalog, owner);
+	std::vector<flatfile_item_ownership_record> existing;
+	try
+	{
+		for (const auto &entry : catalog.items)
+			if (item_owner_identity_equal(entry.owner, owner))
+				existing.push_back(entry);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_baseline_result::io_error;
+	}
+	if (stored_owner && stored_owner->revision == 1 && existing.size() == items.size() &&
+	    std::equal(existing.begin(), existing.end(), items.begin(), item_equal))
+		return flatfile_item_baseline_result::already_applied;
+	if ((stored_owner && stored_owner->revision != 0) || !existing.empty())
+		return flatfile_item_baseline_result::conflict;
+	if (catalog.items.size() > ownership_maximum_entries - items.size() ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_item_baseline_result::conflict;
+	if (!stored_owner)
+	{
+		stored_owner = ensure_owner(&catalog, owner);
+		if (!stored_owner)
+			return flatfile_item_baseline_result::io_error;
+	}
+	stored_owner->revision = 1;
+	try
+	{
+		catalog.items.insert(catalog.items.end(), items.begin(), items.end());
+		std::sort(catalog.items.begin(), catalog.items.end(), item_less);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_baseline_result::io_error;
+	}
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, catalog.revision + 1, &encoded))
+		return flatfile_item_baseline_result::invalid;
+	if (!flatfile_atomic_write(domains_directory(root), ownership_filename, encoded, error))
+		return flatfile_item_baseline_result::io_error;
+	return flatfile_item_baseline_result::applied;
 }
 
 critical_apply_result flatfile_item_repository_apply(const std::string &root,

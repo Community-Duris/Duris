@@ -476,7 +476,7 @@ sections below continue to describe the required end state.
 - **Safety boundary:** the load still returns `external_domains / ENOTSUP` after item
   reconciliation. Wallet, bank, epic, frag, gameplay reads, trophy materialization, and
   initial custody publication for never-moved new-character items still prevent a safe
-  login claim.
+  login claim at this checkpoint.
 - **Completed:** expanded the player repository regression with stable UIDs, nested
   player and pet custody creation, owner revision checks, parent identity checks, and
   aggregate item-sidecar verification.
@@ -489,6 +489,40 @@ sections below continue to describe the required end state.
 - **Next action:** publish initial item custody as part of the first durable player
   baseline, then implement revisioned player-economy/account-bank/gameplay-read
   authorities and combine them into the load result.
+
+### Checkpoint 16 - first-baseline item custody fence
+
+- **Completed:** the first full flat player materialization now derives the complete
+  sorted UID/root/parent/vnum custody set from inventory, equipment, and pet snapshots
+  and establishes player owner revision 1 before publishing the player snapshot. Empty
+  inventories establish an explicit empty owner authority rather than leaving absence
+  ambiguous.
+- **Completed:** baseline custody is exact-state idempotent and guarded by the same
+  owner-only catalog lock. A retry after custody publication but before snapshot
+  publication observes the identical owner revision/set and continues; a different
+  pre-existing owner revision or item set refuses the snapshot. Thus the supported
+  partial outcome is recoverable custody-without-snapshot, never a loadable snapshot
+  without custody.
+- **Completed:** baseline validation rejects missing or duplicate UIDs, invalid vnums,
+  forward/cyclic parent references, cross-pet/inventory UID collisions, oversized
+  aggregate item sets, and inconsistent roots. Arbitrarily large valid player item sets
+  are established in one catalog mutation instead of being split across the interactive
+  transfer command's intentionally small subtree limit.
+- **Completed:** expanded the ownership regression with direct baseline apply, exact
+  replay, and conflict coverage. The player regression now proves its initial full
+  snapshot creates the owner authority automatically before the load sidecar is built.
+- **Checks passed:** `python3 tests/async/test_flatfile_item_repository.py`,
+  `python3 tests/async/test_flatfile_player_repository.py`,
+  `./scripts/format.sh --check`, `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `src/flatfile_item_repository.[ch]`,
+  `src/flatfile_player_repository.c`, `src/persistence_mode.c`, and the focused item and
+  player repository regressions.
+- **Remaining login gap:** item identity/custody is now complete for the first baseline
+  and later transfer operations, but economy/gameplay sidecars and trophy load coverage
+  still keep the result fail closed.
+- **Next action:** implement the typed player-economy/account-bank/gameplay-read
+  authorities and their initial-baseline publication, then make their critical commands
+  use the same revision/idempotence boundary.
 
 ### Milestone status
 

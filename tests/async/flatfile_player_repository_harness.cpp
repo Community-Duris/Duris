@@ -109,62 +109,6 @@ static player_snapshot make_status(player_revision_t revision, int level, int ro
 	return snapshot;
 }
 
-static critical_operation_id item_operation(uint8_t discriminator)
-{
-	critical_operation_id operation = {};
-	operation.bytes[0] = 0x91;
-	operation.bytes.back() = discriminator;
-	return operation;
-}
-
-static void register_items(const fs::path &root)
-{
-	const item_owner_identity system = { item_owner_type::system, 0, 0 };
-	const item_owner_identity player = { item_owner_type::player, 42, 0 };
-	item_transfer_payload items = {};
-	items.from_owner = system;
-	items.to_owner = player;
-	items.reason = item_transfer_reason::creation;
-	items.expected_from_revision = 0;
-	items.expected_to_revision = 0;
-	items.selected_item_uid = 100;
-	items.target_root_item_uid = 100;
-	items.item_count = 2;
-	items.items[0] = { 100, 100,
-			   0,	ITEM_TRANSFER_ABSENT_REVISION,
-			   500, item_custody_state::absent };
-	items.items[1] = { 101, 100,
-			   100, ITEM_TRANSFER_ABSENT_REVISION,
-			   501, item_custody_state::absent };
-	critical_command command = {};
-	require(item_transfer_command_build(&command, item_operation(1), items,
-					    critical_source_site::recovery,
-					    critical_deadline_class::recovery),
-		"could not build player item creation");
-	command.accepted_at_usec = 1;
-	require(flatfile_item_repository_apply(root.string(), command).outcome ==
-			critical_apply_outcome::applied,
-		"could not establish player item ownership");
-
-	items.expected_from_revision = 1;
-	items.expected_to_revision = 1;
-	items.selected_item_uid = 102;
-	items.target_root_item_uid = 102;
-	items.item_count = 1;
-	items.items = {};
-	items.items[0] = { 102, 102,
-			   0,	ITEM_TRANSFER_ABSENT_REVISION,
-			   501, item_custody_state::absent };
-	require(item_transfer_command_build(&command, item_operation(2), items,
-					    critical_source_site::recovery,
-					    critical_deadline_class::recovery),
-		"could not build pet item creation");
-	command.accepted_at_usec = 2;
-	require(flatfile_item_repository_apply(root.string(), command).outcome ==
-			critical_apply_outcome::applied,
-		"could not establish pet item ownership");
-}
-
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
@@ -212,7 +156,6 @@ int main(int argc, char **argv)
 			loaded.pets[0].items[0].vnum == 501 && loaded.shapes[0].mob_vnum == 800 &&
 			loaded.trophies[0].experience == 300,
 		"full player snapshot did not round trip: " + error);
-	register_items(root);
 	player_load_request load_request = {};
 	load_request.request_id = 1;
 	load_request.pid = 42;
@@ -222,7 +165,7 @@ int main(int argc, char **argv)
 	player_load_result load_result =
 		flatfile_player_load_repository_execute(root.string(), load_request);
 	require(load_result.pid == 42 && load_result.snapshot.revision == 1 &&
-			load_result.item_owner_revision == 2 &&
+			load_result.item_owner_revision == 1 &&
 			load_result.item_identities.size() == 2 &&
 			load_result.item_identities[1].parent_item_uid == 100 &&
 			load_result.pet_identities.size() == 1 &&

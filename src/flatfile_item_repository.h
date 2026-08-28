@@ -27,9 +27,22 @@ enum class flatfile_item_repository_result
 	io_error
 };
 
+enum class flatfile_item_baseline_result
+{
+	applied,
+	already_applied,
+	conflict,
+	invalid,
+	io_error
+};
+
 flatfile_item_repository_result flatfile_item_repository_load_owner(
 	const std::string &root, const item_owner_identity &owner, uint64_t *owner_revision,
 	std::vector<flatfile_item_ownership_record> *items, std::string *error);
+flatfile_item_baseline_result
+flatfile_item_repository_establish_owner(const std::string &root, const item_owner_identity &owner,
+					 const std::vector<flatfile_item_ownership_record> &items,
+					 std::string *error);
 critical_apply_result flatfile_item_repository_apply(const std::string &root,
 						     const critical_command &command);
 critical_apply_result

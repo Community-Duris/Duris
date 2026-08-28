@@ -7,6 +7,7 @@
 #include "persistence_mode.h"
 #include "player_snapshot_codec.h"
 
+#include <algorithm>
 #include <array>
 #include <cerrno>
 #include <climits>
@@ -14,6 +15,7 @@
 #include <limits>
 #include <mutex>
 #include <new>
+#include <numeric>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
 #include <type_traits>
@@ -405,6 +407,78 @@ bool merge_snapshot(const player_snapshot &incoming, player_snapshot *materializ
 	materialized->components = PLAYER_CHECKPOINT_COMPONENT_ALL;
 	return true;
 }
+
+bool append_baseline_items(const std::vector<player_item_snapshot> &items,
+			   const item_owner_identity &owner, std::unordered_set<uint64_t> *seen,
+			   std::vector<flatfile_item_ownership_record> *records)
+{
+	if (!seen || !records)
+		return false;
+	std::vector<uint64_t> roots;
+	try
+	{
+		roots.reserve(items.size());
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			const player_item_snapshot &item = items[index];
+			if (!item.object_uid || item.vnum <= 0 ||
+			    !seen->insert(item.object_uid).second)
+				return false;
+			uint64_t parent_uid = 0, root_uid = item.object_uid;
+			if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+			{
+				if (item.parent_index < 0 ||
+				    static_cast<size_t>(item.parent_index) >= index)
+					return false;
+				const size_t parent = static_cast<size_t>(item.parent_index);
+				parent_uid = items[parent].object_uid;
+				root_uid = roots[parent];
+			}
+			roots.push_back(root_uid);
+			records->push_back({ item.object_uid, root_uid, parent_uid, owner, 1,
+					     item.vnum, item_custody_state::active });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+flatfile_item_baseline_result establish_item_baseline(const std::string &root,
+						      const player_snapshot &snapshot,
+						      std::string *error)
+{
+	const item_owner_identity owner = { item_owner_type::player,
+					    static_cast<uint64_t>(snapshot.pid), 0 };
+	std::unordered_set<uint64_t> seen;
+	std::vector<flatfile_item_ownership_record> records;
+	try
+	{
+		const size_t pet_items =
+			std::accumulate(snapshot.pets.begin(), snapshot.pets.end(), size_t{ 0 },
+					[](size_t count, const player_pet_snapshot &pet)
+					{ return count + pet.items.size(); });
+		if (snapshot.items.size() > PLAYER_LOAD_ITEM_MAX ||
+		    pet_items > PLAYER_LOAD_ITEM_MAX - snapshot.items.size())
+			return flatfile_item_baseline_result::invalid;
+		seen.reserve(snapshot.items.size() + pet_items);
+		records.reserve(snapshot.items.size() + pet_items);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_baseline_result::io_error;
+	}
+	if (!append_baseline_items(snapshot.items, owner, &seen, &records))
+		return flatfile_item_baseline_result::invalid;
+	for (const player_pet_snapshot &pet : snapshot.pets)
+		if (!append_baseline_items(pet.items, owner, &seen, &records))
+			return flatfile_item_baseline_result::invalid;
+	std::sort(records.begin(), records.end(), [](const auto &left, const auto &right)
+		  { return left.item_uid < right.item_uid; });
+	return flatfile_item_repository_establish_owner(root, owner, records, error);
+}
 } // namespace
 
 flatfile_player_load_result flatfile_player_snapshot_load(const std::string &root, int32_t pid,
@@ -548,6 +622,17 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 	{
 		if (snapshot.components != PLAYER_CHECKPOINT_COMPONENT_ALL)
 			return { player_save_apply_outcome::terminal_failure, 0, ENOENT };
+		const flatfile_item_baseline_result item_baseline =
+			establish_item_baseline(root, snapshot, error);
+		if (item_baseline == flatfile_item_baseline_result::io_error)
+			return { player_save_apply_outcome::retryable_failure, 0, EIO };
+		if (item_baseline != flatfile_item_baseline_result::applied &&
+		    item_baseline != flatfile_item_baseline_result::already_applied)
+			return { player_save_apply_outcome::terminal_failure, 0,
+				 static_cast<unsigned int>(
+					 item_baseline == flatfile_item_baseline_result::conflict ?
+						 EEXIST :
+						 EINVAL) };
 		materialized = snapshot;
 	}
 	else

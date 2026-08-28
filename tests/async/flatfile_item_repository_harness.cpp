@@ -97,6 +97,25 @@ int main(int argc, char **argv)
 	fs::create_directories(domains);
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(domains, fs::perms::owner_all, fs::perm_options::replace);
+	const item_owner_identity baseline_owner = { item_owner_type::player, 999, 0 };
+	std::vector<flatfile_item_ownership_record> baseline = {
+		{ 300, 300, 0, baseline_owner, 1, 700, item_custody_state::active },
+		{ 301, 300, 300, baseline_owner, 1, 701, item_custody_state::active },
+	};
+	std::string error;
+	require(flatfile_item_repository_establish_owner(root.string(), baseline_owner, baseline,
+							 &error) ==
+			flatfile_item_baseline_result::applied,
+		"owner baseline did not apply: " + error);
+	require(flatfile_item_repository_establish_owner(root.string(), baseline_owner, baseline,
+							 &error) ==
+			flatfile_item_baseline_result::already_applied,
+		"owner baseline retry was not idempotent");
+	baseline[1].vnum = 702;
+	require(flatfile_item_repository_establish_owner(root.string(), baseline_owner, baseline,
+							 &error) ==
+			flatfile_item_baseline_result::conflict,
+		"conflicting owner baseline was accepted");
 
 	const critical_command create = creation(1);
 	critical_apply_result applied = flatfile_item_repository_apply(root.string(), create);
@@ -112,7 +131,6 @@ int main(int argc, char **argv)
 
 	uint64_t owner_revision = 0;
 	std::vector<flatfile_item_ownership_record> items;
-	std::string error;
 	require(flatfile_item_repository_load_owner(
 			root.string(), { item_owner_type::player, 42, 0 }, &owner_revision, &items,
 			&error) == flatfile_item_repository_result::ok &&

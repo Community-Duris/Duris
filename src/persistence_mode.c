@@ -19,7 +19,7 @@ static const char *const flatfile_directories[] = {
 };
 
 static const char unimplemented_domains[] =
-	"player external domain sidecars and initial item custody, "
+	"player external domain sidecars, "
 	"character rename/delete completion, non-item critical operations, "
 	"lockers/private chests, "
 	"corpses/saved items/shopkeepers/pets/shapes/recipes/spellbooks, "
