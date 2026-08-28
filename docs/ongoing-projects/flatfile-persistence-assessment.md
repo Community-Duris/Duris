@@ -193,12 +193,50 @@ sections below continue to describe the required end state.
   allocator, then make character membership changes publish consistently with those
   indexes.
 
+### Checkpoint 8 - durable PID allocator and bidirectional identity catalog
+
+- **Completed:** added a typed, versioned `DURIDEN` identity catalog under
+  `identities/names`. One atomic publication contains the next PID and all PID/name/
+  account mappings, so a committed catalog cannot expose a new high-water mark without
+  its matching indexes or vice versa. Active canonical names and all PIDs are unique;
+  deletion retains a PID tombstone while releasing the active name.
+- **Completed:** implemented allocate, current-highest, claim, case-insensitive name
+  lookup, PID lookup, rename-with-expected-name, block/unblock, and tombstone operations.
+  The no-MySQL `sql_player_exists`, `sql_get_player_pid`, `getNewPCidNumb`, and startup
+  high-water-mark routes now use this authority. Existence checks fail closed on catalog
+  errors so corruption cannot be mistaken for an available character name.
+- **Completed:** added owner-only advisory lock files to the atomic store. Catalog
+  mutations and optimistic account updates are now serialized across processes as well
+  as threads; files are still published with the same write/sync/rename/directory-sync
+  sequence.
+- **Completed:** added a strict identity repository regression and client-free CI step.
+  It covers allocation, both lookup directions, duplicate rejection, rename collision,
+  block state, tombstone semantics, unsafe names, checksum corruption, and forty
+  allocations across four forked writers. The account regression now proves that two
+  forked writers from revision 2 produce exactly one revision-3 winner and one conflict.
+- **Checks passed:** `python3 tests/async/test_flatfile_identity_repository.py`,
+  `python3 tests/async/test_flatfile_account_repository.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `.github/workflows/quality.yml`, `src/Makefile`,
+  `src/flatfile_store.[ch]`, `src/flatfile_account_repository.c`,
+  `src/flatfile_identity_repository.[ch]`, `src/flatfile_identity_adapter.[ch]`,
+  `src/nanny.c`, `src/sql_player.c`, `src/persistence_mode.c`, and the focused account,
+  identity, and boot tests.
+- **Remaining P1 gap:** allocation and lookup authority exist, but character creation
+  does not yet claim the identity together with account membership. Rename, block, and
+  delete call sites are not routed to catalog transactions, and player snapshots remain
+  unimplemented. Flat-file-primary boot therefore continues to fail closed.
+- **Next action:** introduce a recoverable account-membership transaction that claims or
+  updates the identity catalog and account record together, then route create, rename,
+  block, and delete flows through it.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
 |---|---|---|
 | P0 - real DB-free boundary | Complete | Client-free binary links without system MySQL dependencies; isolated boot preflight and no-MySQL CI job exist |
-| P1 - identity and player continuity | In progress | Atomic versioned account records and no-MySQL account routing exist; character indexes, allocation, flows, and player authority remain |
+| P1 - identity and player continuity | In progress | Account authority plus atomic PID/name catalog and allocator exist; membership flows and player authority remain |
 | P2 - transactional gameplay and domains | Not started | No flat operation WAL/domain repositories yet |
 | P3 - production operations | Not started | No exporter, whole-authority backup, or restore drill yet |
 
@@ -208,15 +246,16 @@ The current server is **not capable of production operation with MySQL/MariaDB r
 
 - The normal build requires the MySQL client library, and normal boot treats database
   initialization or schema verification failure as fatal.
-- The dormant `__NO_MYSQL__` compile switch does not currently build. Fixing its first
-  compile errors would still leave account loading, character discovery, player loading,
-  player saving, and many world subsystems stubbed out or disabled.
+- The client-free `__NO_MYSQL__` build now compiles and links, but explicit boot
+  preflight rejects it because account-character membership transactions, player
+  snapshots, and many world subsystems remain unimplemented.
 - The current player and critical-command journals are durable handoff queues whose
   consumer is MySQL. They are not a searchable flat-file database, do not contain all
   durable domains, and cannot reconstruct all acknowledged state after database loss.
 - The remaining pfile reader and writer code is compatibility code, not a complete
-  fallback. Normal players are no longer written to pfiles, account login is SQL-only,
-  and positive-PID pfiles have their objects skipped by the current item loader.
+  fallback. Flat account records and identity lookups now exist, but positive-PID pfiles
+  still have their objects skipped by the current item loader and are not an authoritative
+  player snapshot store.
 
 The last revision before the player-pfile-to-database project began did have working
 flat-file account and character storage and a much wider collection of file-backed

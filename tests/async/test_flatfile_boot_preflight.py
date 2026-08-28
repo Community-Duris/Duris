@@ -65,7 +65,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-build-") as build_tmp:
                 "boot did not identify the selected incomplete backend:\n" + boot.stdout,
             )
             require(
-                "unimplemented durable domains: accounts/auth" in boot.stdout,
+                "unimplemented durable domains: account-character membership transactions"
+                in boot.stdout,
                 "boot did not emit the durable-domain inventory:\n" + boot.stdout,
             )
 

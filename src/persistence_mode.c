@@ -19,7 +19,7 @@ static const char *const flatfile_directories[] = {
 };
 
 static const char unimplemented_domains[] =
-	"accounts/auth, account membership/name/PID indexes, player snapshots, "
+	"account-character membership transactions, player snapshots, "
 	"item UID/ownership/ledger, critical operations, lockers/private chests, "
 	"corpses/saved items/shopkeepers/pets/shapes/recipes/spellbooks, "
 	"guilds/alliances/halls/outposts/towns/siege/nexus, ships/cargo/markets, "

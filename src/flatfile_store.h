@@ -20,5 +20,8 @@ bool flatfile_atomic_write(const std::string &directory, const std::string &name
 flatfile_read_result flatfile_read(const std::string &directory, const std::string &name,
 				   size_t maximum_size, std::vector<uint8_t> *bytes,
 				   std::string *error);
+bool flatfile_lock_acquire(const std::string &directory, const std::string &name, int *lock_fd,
+			   std::string *error);
+void flatfile_lock_release(int lock_fd);
 
 #endif

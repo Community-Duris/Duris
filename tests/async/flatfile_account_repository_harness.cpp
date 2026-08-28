@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 namespace fs = std::filesystem;
 
@@ -91,6 +93,61 @@ int main(int argc, char **argv)
 				flatfile_account_result::ok &&
 			revision == 2,
 		"account revision update failed: " + error);
+
+	int ready_pipe[2], go_pipe[2];
+	require(pipe(ready_pipe) == 0 && pipe(go_pipe) == 0, "could not create account race pipes");
+	pid_t children[2];
+	for (int index = 0; index < 2; ++index)
+	{
+		children[index] = fork();
+		require(children[index] >= 0, "account race fork failed");
+		if (!children[index])
+		{
+			close(ready_pipe[0]);
+			close(go_pipe[1]);
+			flatfile_account_record competing;
+			std::string child_error;
+			if (flatfile_account_load(root.string(), "Alpha", &competing,
+						  &child_error) != flatfile_account_result::ok ||
+			    competing.revision != 2)
+				_exit(4);
+			char signal = 'r';
+			if (write(ready_pipe[1], &signal, 1) != 1 ||
+			    read(go_pipe[0], &signal, 1) != 1)
+				_exit(5);
+			competing.email = index ? "racer-two@example.test" :
+						  "racer-one@example.test";
+			uint64_t competing_revision = 0;
+			const flatfile_account_result competing_result = flatfile_account_save(
+				root.string(), competing, 2, &competing_revision, &child_error);
+			_exit(competing_result == flatfile_account_result::ok	    ? 0 :
+			      competing_result == flatfile_account_result::conflict ? 3 :
+										      6);
+		}
+	}
+	close(ready_pipe[1]);
+	close(go_pipe[0]);
+	char signal = 0;
+	require(read(ready_pipe[0], &signal, 1) == 1 && read(ready_pipe[0], &signal, 1) == 1,
+		"account race workers did not become ready");
+	require(write(go_pipe[1], "gg", 2) == 2, "account race workers could not be released");
+	close(ready_pipe[0]);
+	close(go_pipe[1]);
+	int successes = 0, conflicts = 0;
+	for (pid_t child : children)
+	{
+		int status = 0;
+		require(waitpid(child, &status, 0) == child && WIFEXITED(status),
+			"account race worker did not exit cleanly");
+		successes += WEXITSTATUS(status) == 0;
+		conflicts += WEXITSTATUS(status) == 3;
+	}
+	require(successes == 1 && conflicts == 1,
+		"cross-process stale account write was not rejected");
+	require(flatfile_account_load(root.string(), "Alpha", &loaded, &error) ==
+				flatfile_account_result::ok &&
+			loaded.revision == 3,
+		"cross-process account winner did not publish revision 3");
 
 	bool exists = true;
 	require(flatfile_account_exists(root.string(), "missing", &exists, &error) ==

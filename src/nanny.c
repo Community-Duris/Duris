@@ -30,6 +30,7 @@
 #include "item_movement_transaction.h"
 #include "auction_transaction.h"
 #include "files.h"
+#include "flatfile_identity_adapter.h"
 #include "gmcp.h"
 #include "guildhall.h"
 #include "hardcore_config.h"
@@ -181,6 +182,17 @@ void update_ingame_racewar(int racewar)
 
 int getNewPCidNumb(void)
 {
+#ifdef __NO_MYSQL__
+	int32_t allocated = -1;
+	std::string error;
+	if (!flatfile_player_identity_allocate(&allocated, &error))
+	{
+		logit(LOG_FILE, "could not allocate flat-file player id");
+		return -1;
+	}
+	highestPCidNumb = allocated;
+	return allocated;
+#else
 	FILE *file;
 
 	file = fopen(SAVE_DIR "/pc_idnumb", "wt");
@@ -197,10 +209,22 @@ int getNewPCidNumb(void)
 	}
 
 	return highestPCidNumb;
+#endif
 }
 
 void setNewPCidNumbfromFile(void)
 {
+#ifdef __NO_MYSQL__
+	int32_t highest = 0;
+	std::string error;
+	if (!flatfile_player_identity_highest(&highest, &error))
+	{
+		logit(LOG_FILE, "could not load flat-file player id allocator");
+		highestPCidNumb = 0;
+		return;
+	}
+	highestPCidNumb = highest;
+#else
 	FILE *file;
 
 	file = fopen(SAVE_DIR "/pc_idnumb", "rt");
@@ -222,6 +246,7 @@ void setNewPCidNumbfromFile(void)
 		REQUIRED_FSCANF(file, "%ld\n", &highestPCidNumb);
 		fclose(file);
 	}
+#endif
 
 	logit(LOG_STATUS, "highest PC number is %ld", highestPCidNumb);
 }

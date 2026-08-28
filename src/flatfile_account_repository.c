@@ -21,6 +21,12 @@ constexpr size_t account_maximum_characters = 16;
 constexpr std::array<uint8_t, 8> account_magic = { 'D', 'U', 'R', 'A', 'C', 'C', 'T', 0 };
 std::mutex account_mutex;
 
+struct authority_lock
+{
+	int fd = -1;
+	~authority_lock() { flatfile_lock_release(fd); }
+};
+
 struct encoder
 {
 	std::vector<uint8_t> bytes;
@@ -291,6 +297,9 @@ flatfile_account_result flatfile_account_save(const std::string &root,
 					      uint64_t *committed_revision, std::string *error)
 {
 	std::lock_guard<std::mutex> guard(account_mutex);
+	authority_lock authority;
+	if (!flatfile_lock_acquire(account_directory(root), ".accounts.lock", &authority.fd, error))
+		return flatfile_account_result::io_error;
 	std::string canonical;
 	if (!committed_revision || !canonical_name(record.name, &canonical) ||
 	    expected_revision == std::numeric_limits<uint64_t>::max())

@@ -7,6 +7,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <limits>
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -221,4 +222,68 @@ flatfile_read_result flatfile_read(const std::string &directory, const std::stri
 	}
 	close(file_fd);
 	return flatfile_read_result::ok;
+}
+
+bool flatfile_lock_acquire(const std::string &directory, const std::string &name, int *lock_fd,
+			   std::string *error)
+{
+	if (!lock_fd || !valid_name(name))
+	{
+		if (error)
+			*error = "invalid flat-file lock request";
+		return false;
+	}
+	*lock_fd = -1;
+	const int directory_fd =
+		open(directory.c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+	if (directory_fd < 0)
+	{
+		set_error(error, "open lock directory");
+		return false;
+	}
+	if (!private_directory(directory_fd))
+	{
+		if (error)
+			*error = "invalid lock directory metadata";
+		close(directory_fd);
+		return false;
+	}
+	const int file_fd =
+		openat(directory_fd, name.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_NOFOLLOW, 0600);
+	const int open_errno = errno;
+	close(directory_fd);
+	if (file_fd < 0)
+	{
+		errno = open_errno;
+		set_error(error, "open authority lock");
+		return false;
+	}
+	struct stat info;
+	if (fstat(file_fd, &info) < 0 || !S_ISREG(info.st_mode) || info.st_uid != geteuid() ||
+	    (info.st_mode & 0077))
+	{
+		if (error)
+			*error = "invalid authority lock metadata";
+		close(file_fd);
+		return false;
+	}
+	while (flock(file_fd, LOCK_EX) < 0)
+	{
+		if (errno == EINTR)
+			continue;
+		set_error(error, "lock authority");
+		close(file_fd);
+		return false;
+	}
+	*lock_fd = file_fd;
+	return true;
+}
+
+void flatfile_lock_release(int lock_fd)
+{
+	if (lock_fd < 0)
+		return;
+	while (flock(lock_fd, LOCK_UN) < 0 && errno == EINTR)
+		;
+	close(lock_fd);
 }

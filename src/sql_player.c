@@ -21,6 +21,7 @@
 #include "account.h"
 #include "assocs.h"
 #include "files.h"
+#include "flatfile_identity_adapter.h"
 #include "epic_bonus.h"
 #include "mm.h"
 #include "necromancy.h"
@@ -129,11 +130,19 @@ P_char sql_load_player(const char *name)
 }
 bool sql_player_exists(const char *name)
 {
-	return false;
+	bool exists = true;
+	std::string error;
+	if (!flatfile_player_identity_exists(name, &exists, &error))
+		return true;
+	return exists;
 }
 int sql_get_player_pid(const char *name)
 {
-	return -1;
+	int32_t pid = -1;
+	std::string error;
+	if (!flatfile_player_identity_pid(name, &pid, &error))
+		return -1;
+	return pid;
 }
 bool sql_load_player_status(P_char ch, int pid)
 {
