@@ -301,6 +301,9 @@ Runtime state belongs under `Players/`, `Accounts/`, `Ships/`, and `logs/`.
 Do not commit player data, credentials, logs, generated binaries, or backup
 archives.
 
+Project releases use Semantic Versioning. The canonical version is stored in
+the root [`VERSION`](VERSION) file.
+
 ## Documentation
 
 | Guide | Covers |
