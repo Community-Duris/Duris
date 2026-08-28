@@ -658,7 +658,8 @@ flatfile_shopkeeper_prepare_trade(const std::string &root, const flatfile_author
 		*result_code = ERANGE;
 		return flatfile_shopkeeper_result::ok;
 	}
-	if (payload.action == shop_trade_action::buy_existing)
+	if (payload.action == shop_trade_action::buy_existing ||
+	    payload.action == shop_trade_action::discard_invalid)
 	{
 		std::vector<player_item_snapshot> stored_items;
 		std::vector<bool> selected_rows;

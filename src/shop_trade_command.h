@@ -7,8 +7,9 @@
 #include <array>
 #include <cstdint>
 
-constexpr uint16_t SHOP_TRADE_PAYLOAD_VERSION = 3;
-constexpr uint16_t SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION = 2;
+constexpr uint16_t SHOP_TRADE_PAYLOAD_VERSION = 4;
+constexpr uint16_t SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION = 3;
+constexpr uint16_t SHOP_TRADE_STOCK_PAYLOAD_VERSION = 2;
 constexpr uint16_t SHOP_TRADE_LEGACY_PAYLOAD_VERSION = 1;
 constexpr size_t SHOP_TRADE_MAX_ITEMS = ITEM_TRANSFER_MAX_ITEMS;
 constexpr size_t SHOP_TRADE_ITEM_BLOB_MAX_BYTES = 128 * 1024;
@@ -22,6 +23,7 @@ enum class shop_trade_action : uint8_t
 	buy_produced,
 	sell_store,
 	sell_destroy,
+	discard_invalid,
 };
 
 struct shop_trade_item_entry

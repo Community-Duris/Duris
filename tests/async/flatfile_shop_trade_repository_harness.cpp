@@ -406,6 +406,84 @@ int main(int argc, char **argv)
 				compacted_health.reclaimable_events == 0,
 			"materialization catalog did not compact superseded events: " + error);
 	}
+	shop_trade_payload resale = payload;
+	resale.action = shop_trade_action::sell_store;
+	resale.price = 50;
+	resale.expected_wallet_revision = 4;
+	resale.expected_bank_revision = 5;
+	resale.expected_shop_revision = 5;
+	resale.stock_item_uid = 0;
+	resale.expected_stock_item_revision = 0;
+	resale.stock_vnum = 0;
+	for (size_t index = 0; index < resale.item_count; ++index)
+		resale.items[index].expected_item_revision = 4;
+	applied = flatfile_shop_trade_repository_apply(root.string(), command(resale, 6));
+	require(applied.outcome == critical_apply_outcome::applied,
+		"could not return repurchased stock for cleanup");
+	shop_trade_payload cleanup = resale;
+	cleanup.action = shop_trade_action::discard_invalid;
+	cleanup.price = 0;
+	cleanup.expected_wallet_revision = 5;
+	cleanup.expected_bank_revision = 6;
+	cleanup.expected_shop_revision = 6;
+	cleanup.stock_item_uid = 200;
+	cleanup.expected_stock_item_revision = 5;
+	cleanup.stock_vnum = 800;
+	for (size_t index = 0; index < cleanup.item_count; ++index)
+		cleanup.items[index].expected_item_revision = 5;
+	const critical_command cleanup_command = command(cleanup, 7);
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	applied = flatfile_critical_command_repository_apply_selected(
+		cleanup_command, const_cast<char *>(root_path.c_str()));
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			fs::exists(domains / ".critical-authority-transaction"),
+		"interrupted invalid-stock cleanup did not retain its authority intent");
+	applied = flatfile_shop_trade_repository_apply(root.string(), cleanup_command);
+	const shop_trade_result cleaned = result_of(applied);
+	require(applied.outcome == critical_apply_outcome::already_applied &&
+			cleaned.action == shop_trade_action::discard_invalid &&
+			cleaned.wallet_revision == 5 && cleaned.bank_revision == 6 &&
+			cleaned.shop_revision == 7 && cleaned.player_owner_revision == 6 &&
+			cleaned.counterparty_owner_revision == 1 && cleaned.item_count == 2 &&
+			!fs::exists(domains / ".critical-authority-transaction"),
+		"invalid-stock cleanup did not recover and replay exactly");
+	require(flatfile_player_domain_load(root.string(), 42, "shop-account", 1, &loaded_player,
+					    &error) == flatfile_player_domain_result::ok &&
+			loaded_player.domains.wallet_revision == 5 &&
+			loaded_player.domains.bank_revision == 6,
+		"invalid-stock cleanup changed player money revisions");
+	shops.clear();
+	require(flatfile_shopkeeper_list(root.string(), &shops, &error) ==
+				flatfile_shopkeeper_result::ok &&
+			shops.size() == 1 && shops[0].revision == 7 && shops[0].items.empty(),
+		"invalid-stock cleanup did not remove the durable shop subtree");
+	player_items.clear();
+	require(flatfile_item_repository_load_owner(root.string(), player_owner, &player_revision,
+						    &player_items, &error) ==
+				flatfile_item_repository_result::ok &&
+			player_items.size() == 2 && player_items[0].item_uid == 300 &&
+			player_items[1].item_uid == 700,
+		"invalid-stock cleanup left destroyed rows in active player custody");
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	uint64_t destruction_revision = 0;
+	std::vector<flatfile_item_ownership_record> destroyed_items;
+	require(flatfile_item_repository_load_owner(
+			root.string(), destruction, &destruction_revision, &destroyed_items,
+			&error) == flatfile_item_repository_result::ok &&
+			destruction_revision == 1 && destroyed_items.empty(),
+		"invalid-stock cleanup did not commit destruction custody");
+	{
+		flatfile_authority_lock health_lock;
+		flatfile_shop_trade_materialization_health cleanup_health = {};
+		require(health_lock.acquire(root.string(), &error),
+			"could not lock cleanup materialization health read: " + error);
+		require(flatfile_shop_trade_materialization_read_health(root.string(), health_lock,
+									&cleanup_health, &error) ==
+					flatfile_shop_trade_materialization_result::ok &&
+				cleanup_health.revision == 5 && cleanup_health.events == 3,
+			"invalid-stock cleanup unexpectedly wrote player materialization evidence");
+	}
 	{
 		std::fstream catalog(domains / "shop_trade_materializations",
 				     std::ios::binary | std::ios::in | std::ios::out);

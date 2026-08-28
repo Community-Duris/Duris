@@ -880,6 +880,14 @@ flatfile_item_repository_result flatfile_item_repository_prepare_shop_trade(
 		if (!ensure_owner(&catalog, destruction))
 			return flatfile_item_repository_result::io_error;
 	}
+	else if (payload.action == shop_trade_action::discard_invalid)
+	{
+		transfer.from_owner = shop;
+		transfer.to_owner = destruction;
+		transfer.reason = item_transfer_reason::destruction;
+		if (!ensure_owner(&catalog, destruction))
+			return flatfile_item_repository_result::io_error;
+	}
 	else
 		return flatfile_item_repository_result::invalid;
 	owner_state *from = find_owner(&catalog, transfer.from_owner);
@@ -909,9 +917,12 @@ flatfile_item_repository_result flatfile_item_repository_prepare_shop_trade(
 	}
 	const item_owner_identity counterparty =
 		payload.action == shop_trade_action::buy_produced ? system :
-		payload.action == shop_trade_action::sell_destroy ? destruction :
+		payload.action == shop_trade_action::sell_destroy ||
+				payload.action == shop_trade_action::discard_invalid ?
+								    destruction :
 								    shop;
-	const owner_state *player_owner = find_owner(&catalog, player);
+	const owner_state *player_owner = find_owner(
+		&catalog, payload.action == shop_trade_action::discard_invalid ? shop : player);
 	const owner_state *counterparty_owner = find_owner(&catalog, counterparty);
 	if (!player_owner || !counterparty_owner)
 		return flatfile_item_repository_result::invalid;

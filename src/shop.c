@@ -145,6 +145,32 @@ static bool shop_trade_submit_produced_continuation(P_char ch,
 	return true;
 }
 
+static bool shop_trade_submit_invalid_cleanup(P_char ch, P_char keeper, P_obj object,
+					      uint32_t shop_id)
+{
+	if (!ch || !keeper || !object || !OBJ_CARRIED_BY(object, keeper))
+		return false;
+	shop_trade_payload payload = {};
+	return shop_trade_runtime_build_payload(ch, object, NULL, NULL, shop_id,
+						shop_trade_action::discard_invalid, 0,
+						&payload) == shop_trade_payload_build_result::ok &&
+	       shop_trade_transaction_submit(ch, payload, shop_trade_completion);
+}
+
+static bool shop_trade_route_invalid_cleanup(P_char ch, P_char keeper, P_obj object,
+					     uint32_t shop_id)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return false;
+	if (shop_trade_transaction_player_busy(ch))
+		send_to_char("Your previous shop trade is still being processed.\r\n", ch);
+	else if (shop_trade_submit_invalid_cleanup(ch, keeper, object, shop_id))
+		send_to_char("The shopkeeper is removing invalid stock.\r\n", ch);
+	else
+		send_to_char("The invalid stock could not be removed safely.\r\n", ch);
+	return true;
+}
+
 static void shop_trade_completion(P_char ch, bool committed, const shop_trade_result &result,
 				  unsigned int error_code, const shop_trade_payload &payload)
 {
@@ -159,6 +185,7 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 	const bool buying = payload.action == shop_trade_action::buy_existing || produced;
 	const bool selling = payload.action == shop_trade_action::sell_store ||
 			     payload.action == shop_trade_action::sell_destroy;
+	const bool cleanup = payload.action == shop_trade_action::discard_invalid;
 	const bool correct_location =
 		object && (payload.action != shop_trade_action::sell_store || keeper) &&
 		((produced && keeper && OBJ_NOWHERE(object) &&
@@ -167,6 +194,7 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 		    GET_ITEM_TYPE(destination) == ITEM_CONTAINER))) ||
 		 (!produced && buying && keeper && OBJ_CARRIED(object) &&
 		  object->loc.carrying == keeper) ||
+		 (cleanup && keeper && OBJ_CARRIED_BY(object, keeper)) ||
 		 (selling && OBJ_CARRIED(object) && object->loc.carrying == ch));
 	const bool exact_object = correct_location &&
 				  shop_trade_runtime_object_matches_payload(object, payload);
@@ -199,6 +227,14 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 	}
 
 	char message[MAX_STRING_LENGTH];
+	if (cleanup)
+	{
+		wizlog(56, "(%s) shopkeeper durably destroyed invalid stock (%s %d).",
+		       GET_NAME(keeper), object->short_description, OBJ_VNUM(object));
+		extract_obj(object, TRUE);
+		send_to_char("The shopkeeper removed invalid stock; please try again.\r\n", ch);
+		return;
+	}
 	if (buying)
 	{
 		act("$n buys $p.", FALSE, ch, object, 0, TO_ROOM);
@@ -568,8 +604,15 @@ P_obj get_purchase_obj(P_char ch, char *arg, P_char keeper, int shop_nr, int msg
 			}
 			return NULL;
 		}
+		if ((IS_ARTIFACT(obj) || isname("encrust", obj->name)) &&
+		    shop_trade_route_invalid_cleanup(ch, keeper, obj,
+						     static_cast<uint32_t>(shop_nr)))
+			return NULL;
 		if (obj->cost <= 0)
 		{
+			if (shop_trade_route_invalid_cleanup(ch, keeper, obj,
+							     static_cast<uint32_t>(shop_nr)))
+				return NULL;
 			extract_obj(obj, TRUE); // Shopkeeper with cost 0 arti?
 			obj = NULL;
 		}
@@ -698,6 +741,10 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 			{
 				if (IS_ARTIFACT(temp1) || isname("encrust", temp1->name))
 				{
+					if (shop_trade_route_invalid_cleanup(
+						    ch, keeper, temp1,
+						    static_cast<uint32_t>(shop_nr)))
+						return;
 					wizlog(56, "(%s) shopkeeper just destroyed (%s).",
 					       GET_NAME(keeper), (temp1->short_description));
 					extract_obj(temp1, TRUE); // Bye arti.
@@ -727,9 +774,15 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
 				   GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
+		if (shop_trade_route_invalid_cleanup(ch, keeper, temp1,
+						     static_cast<uint32_t>(shop_nr)))
+			return;
 		extract_obj(temp1, TRUE); // Arti with no cost?
 		return;
 	}
+	if ((IS_ARTIFACT(temp1) || isname("encrust", temp1->name)) &&
+	    shop_trade_route_invalid_cleanup(ch, keeper, temp1, static_cast<uint32_t>(shop_nr)))
+		return;
 
 	cost_factor = (float)cha_app[STAT_INDEX(MAX(100, GET_C_CHA(ch)))].modifier;
 	if (GET_RACE(ch) != GET_RACE(keeper))
@@ -1283,9 +1336,15 @@ void shopping_peruse(char *arg, P_char ch, P_char keeper, int shop_nr)
 		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].no_such_item1,
 				   GET_NAME(ch));
 		do_tell(keeper, Gbuf1, 0);
+		if (shop_trade_route_invalid_cleanup(ch, keeper, temp1,
+						     static_cast<uint32_t>(shop_nr)))
+			return;
 		extract_obj(temp1, TRUE); // Arti with no cost?
 		return;
 	}
+	if ((IS_ARTIFACT(temp1) || isname("encrust", temp1->name)) &&
+	    shop_trade_route_invalid_cleanup(ch, keeper, temp1, static_cast<uint32_t>(shop_nr)))
+		return;
 
 	sale = (int)get_property("shops.peruse.cost", 1000.000);
 
@@ -1381,6 +1440,9 @@ void shopping_list(char * /*arg*/, P_char ch, P_char keeper, int shop_nr)
 		{
 			if (IS_ARTIFACT(obj1) || isname("encrust", obj1->name))
 			{
+				if (shop_trade_route_invalid_cleanup(
+					    ch, keeper, obj1, static_cast<uint32_t>(shop_nr)))
+					return;
 				wizlog(56, "(%s) shopkeeper just destroyed (%s %d).",
 				       GET_NAME(keeper), obj1->short_description, OBJ_VNUM(obj1));
 				extract_obj(obj1, TRUE); // Bye arti.

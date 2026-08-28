@@ -46,12 +46,18 @@ bool creation(const shop_trade_payload &payload)
 	return payload.action == shop_trade_action::buy_produced;
 }
 
+bool cleanup(const shop_trade_payload &payload)
+{
+	return payload.action == shop_trade_action::discard_invalid;
+}
+
 bool valid_payload(const shop_trade_payload &payload)
 {
 	if (payload.action <= shop_trade_action::unknown ||
-	    payload.action > shop_trade_action::sell_destroy || !payload.player_pid ||
-	    !valid_name(payload.account_name) || payload.price <= 0 || payload.price > INT_MAX ||
-	    !payload.expected_shop_revision || !payload.selected_item_uid || !payload.item_count ||
+	    payload.action > shop_trade_action::discard_invalid || !payload.player_pid ||
+	    !valid_name(payload.account_name) || payload.price < 0 || payload.price > INT_MAX ||
+	    (cleanup(payload) != (payload.price == 0)) || !payload.expected_shop_revision ||
+	    !payload.selected_item_uid || !payload.item_count ||
 	    payload.item_count > payload.items.size() || !payload.item_blob_size ||
 	    payload.item_blob_size > payload.item_blob.size())
 		return false;
@@ -74,7 +80,7 @@ bool valid_payload(const shop_trade_payload &payload)
 		    payload.stock_vnum <= 0)
 			return false;
 	}
-	else if (payload.action == shop_trade_action::buy_existing)
+	else if (payload.action == shop_trade_action::buy_existing || cleanup(payload))
 	{
 		if (payload.stock_item_uid != payload.selected_item_uid ||
 		    !payload.expected_stock_item_revision || payload.stock_vnum <= 0)
@@ -117,7 +123,7 @@ bool valid_payload(const shop_trade_payload &payload)
 				       [&](const auto &item)
 				       { return item.item_uid == payload.selected_item_uid; });
 	if (root == payload.items.begin() + payload.item_count ||
-	    ((creates || payload.action == shop_trade_action::buy_existing) &&
+	    ((creates || payload.action == shop_trade_action::buy_existing || cleanup(payload)) &&
 	     (payload.stock_vnum != root->vnum ||
 	      (!creates && payload.expected_stock_item_revision != root->expected_item_revision))))
 		return false;
@@ -246,6 +252,7 @@ bool shop_trade_command_decode_payload(const critical_command &command, shop_tra
 	if (!payload || command.type != critical_command_type::shop_trade ||
 	    (command.payload_version != SHOP_TRADE_PAYLOAD_VERSION &&
 	     command.payload_version != SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION &&
+	     command.payload_version != SHOP_TRADE_STOCK_PAYLOAD_VERSION &&
 	     command.payload_version != SHOP_TRADE_LEGACY_PAYLOAD_VERSION))
 		return false;
 	*payload = {};
@@ -260,14 +267,16 @@ bool shop_trade_command_decode_payload(const critical_command &command, shop_tra
 	    !read_le(&cursor, end, &payload->expected_shop_revision) ||
 	    !read_le(&cursor, end, &payload->selected_item_uid))
 		return false;
-	if (command.payload_version == SHOP_TRADE_PAYLOAD_VERSION &&
-	    (!read_le(&cursor, end, &payload->target_root_item_uid) ||
-	     !read_le(&cursor, end, &payload->target_parent_item_uid) ||
-	     !read_le(&cursor, end, &payload->expected_target_parent_revision)))
-		return false;
-	else if (command.payload_version != SHOP_TRADE_PAYLOAD_VERSION)
+	if (command.payload_version >= SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION)
+	{
+		if (!read_le(&cursor, end, &payload->target_root_item_uid) ||
+		    !read_le(&cursor, end, &payload->target_parent_item_uid) ||
+		    !read_le(&cursor, end, &payload->expected_target_parent_revision))
+			return false;
+	}
+	else
 		payload->target_root_item_uid = payload->selected_item_uid;
-	if (command.payload_version != SHOP_TRADE_LEGACY_PAYLOAD_VERSION &&
+	if (command.payload_version >= SHOP_TRADE_STOCK_PAYLOAD_VERSION &&
 	    (!read_le(&cursor, end, &payload->stock_item_uid) ||
 	     !read_le(&cursor, end, &payload->expected_stock_item_revision) ||
 	     !read_le(&cursor, end, &payload->stock_vnum)))
@@ -326,7 +335,7 @@ bool shop_trade_command_encode_result(const shop_trade_result &result,
 				      std::array<uint8_t, SHOP_TRADE_RESULT_BYTES> *encoded)
 {
 	if (!encoded || result.action <= shop_trade_action::unknown ||
-	    result.action > shop_trade_action::sell_destroy ||
+	    result.action > shop_trade_action::discard_invalid ||
 	    result.item_count > result.item_uids.size())
 		return false;
 	for (size_t index = 0; index < result.item_count; ++index)
@@ -367,9 +376,10 @@ bool shop_trade_command_decode_result(const uint8_t *encoded, size_t size,
 	result->action = static_cast<shop_trade_action>(encoded[0]);
 	result->item_count = get_u16(encoded + 2);
 	if (result->action <= shop_trade_action::unknown ||
-	    result->action > shop_trade_action::sell_destroy ||
+	    result->action > shop_trade_action::discard_invalid ||
 	    (!encoded[1] && (result->action == shop_trade_action::buy_produced ||
-			     result->action == shop_trade_action::sell_destroy)) ||
+			     result->action == shop_trade_action::sell_destroy ||
+			     result->action == shop_trade_action::discard_invalid)) ||
 	    result->item_count > result->item_uids.size())
 		return false;
 	for (size_t index = 0; index < CURRENCY_DENOMINATION_COUNT; ++index)

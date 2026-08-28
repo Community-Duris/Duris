@@ -92,11 +92,15 @@ int main()
 	       decoded.item_blob[3] == 0x77);
 
 	critical_command previous = command;
-	previous.payload.erase(previous.payload.begin() + 50, previous.payload.begin() + 74);
 	previous.payload_version = SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION;
 	assert(shop_trade_command_decode_payload(previous, &decoded));
 	assert(decoded.target_root_item_uid == 100);
-	critical_command legacy = previous;
+	critical_command stock_version = previous;
+	stock_version.payload.erase(stock_version.payload.begin() + 50,
+				    stock_version.payload.begin() + 74);
+	stock_version.payload_version = SHOP_TRADE_STOCK_PAYLOAD_VERSION;
+	assert(shop_trade_command_decode_payload(stock_version, &decoded));
+	critical_command legacy = stock_version;
 	legacy.payload.erase(legacy.payload.begin() + 50, legacy.payload.begin() + 70);
 	legacy.payload_version = SHOP_TRADE_LEGACY_PAYLOAD_VERSION;
 	assert(shop_trade_command_decode_payload(legacy, &decoded));
@@ -110,10 +114,14 @@ int main()
 					critical_source_site::command,
 					critical_deadline_class::interactive));
 	previous = command;
-	previous.payload.erase(previous.payload.begin() + 50, previous.payload.begin() + 74);
 	previous.payload_version = SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION;
 	assert(shop_trade_command_decode_payload(previous, &decoded));
-	legacy = previous;
+	stock_version = previous;
+	stock_version.payload.erase(stock_version.payload.begin() + 50,
+				    stock_version.payload.begin() + 74);
+	stock_version.payload_version = SHOP_TRADE_STOCK_PAYLOAD_VERSION;
+	assert(shop_trade_command_decode_payload(stock_version, &decoded));
+	legacy = stock_version;
 	legacy.payload.erase(legacy.payload.begin() + 50, legacy.payload.begin() + 70);
 	legacy.payload_version = SHOP_TRADE_LEGACY_PAYLOAD_VERSION;
 	assert(!shop_trade_command_decode_payload(legacy, &decoded));
@@ -123,10 +131,26 @@ int main()
 	assert(shop_trade_command_build(&command, operation(), produced,
 					critical_source_site::command,
 					critical_deadline_class::interactive));
-	assert(shop_trade_command_decode_payload(command, &decoded) &&
-	       decoded.target_parent_item_uid == 700 && command.keys.size() == 7);
+	assert(shop_trade_command_decode_payload(command, &decoded));
+	assert(decoded.target_parent_item_uid == 700);
+	assert(command.keys.size() == 7);
 	produced.items[0].expected_state = item_custody_state::active;
 	assert(!shop_trade_command_build(&command, operation(), produced,
+					 critical_source_site::command,
+					 critical_deadline_class::interactive));
+
+	shop_trade_payload cleanup = trade(shop_trade_action::discard_invalid);
+	cleanup.price = 0;
+	cleanup.stock_item_uid = 100;
+	cleanup.expected_stock_item_revision = 5;
+	cleanup.stock_vnum = 500;
+	assert(shop_trade_command_build(&command, operation(), cleanup,
+					critical_source_site::command,
+					critical_deadline_class::interactive));
+	assert(shop_trade_command_decode_payload(command, &decoded) &&
+	       decoded.action == shop_trade_action::discard_invalid && decoded.price == 0);
+	cleanup.price = 1;
+	assert(!shop_trade_command_build(&command, operation(), cleanup,
 					 critical_source_site::command,
 					 critical_deadline_class::interactive));
 
@@ -155,6 +179,11 @@ int main()
 	assert(shop_trade_command_decode_result(encoded_result.data(), encoded_result.size(),
 						&decoded_result));
 	result.action = shop_trade_action::sell_destroy;
+	assert(shop_trade_command_encode_result(result, &encoded_result));
+	encoded_result[1] = 0;
+	assert(!shop_trade_command_decode_result(encoded_result.data(), encoded_result.size(),
+						 &decoded_result));
+	result.action = shop_trade_action::discard_invalid;
 	assert(shop_trade_command_encode_result(result, &encoded_result));
 	encoded_result[1] = 0;
 	assert(!shop_trade_command_decode_result(encoded_result.data(), encoded_result.size(),

@@ -11,6 +11,7 @@ PLAYER = (ROOT / "src/flatfile_player_repository.c").read_text()
 for token in (
     "flatfile_shop_trade_materialization_prepare(",
     "images.push_back(std::move(materialization.after_image))",
+    "payload.action != shop_trade_action::discard_invalid",
 ):
     if token not in REPOSITORY:
         raise SystemExit(f"shop trade authority transaction is missing {token}")

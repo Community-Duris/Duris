@@ -69,6 +69,12 @@ bool publish_ownership(const shop_trade_payload &payload, const shop_trade_resul
 		transfer.to_owner = destruction;
 		transfer.reason = item_transfer_reason::destruction;
 	}
+	else if (payload.action == shop_trade_action::discard_invalid)
+	{
+		transfer.from_owner = shop;
+		transfer.to_owner = destruction;
+		transfer.reason = item_transfer_reason::destruction;
+	}
 	else
 		return false;
 	transfer.reason_id = payload.shop_id;
@@ -88,13 +94,16 @@ bool publish_ownership(const shop_trade_payload &payload, const shop_trade_resul
 					  payload.items[index].expected_state };
 	const bool buying = payload.action == shop_trade_action::buy_existing ||
 			    payload.action == shop_trade_action::buy_produced;
+	const bool cleanup = payload.action == shop_trade_action::discard_invalid;
 	item_transfer_result transfer_result = {
 		.root_item_uid = payload.selected_item_uid,
 		.item_count = result.item_count,
-		.from_owner_revision = buying ? result.counterparty_owner_revision :
-						result.player_owner_revision,
-		.to_owner_revision = buying ? result.player_owner_revision :
-					      result.counterparty_owner_revision,
+		.from_owner_revision = cleanup ? result.player_owner_revision :
+				       buying  ? result.counterparty_owner_revision :
+						 result.player_owner_revision,
+		.to_owner_revision = cleanup ? result.counterparty_owner_revision :
+				     buying  ? result.player_owner_revision :
+					       result.counterparty_owner_revision,
 		.max_item_revision = 0,
 	};
 	for (size_t index = 0; index < result.item_count; ++index)

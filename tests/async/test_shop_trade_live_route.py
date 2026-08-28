@@ -18,6 +18,7 @@ for token in (
     "shop_trade_action::buy_produced",
     "shop_trade_action::sell_store",
     "shop_trade_action::sell_destroy",
+    "shop_trade_action::discard_invalid",
     "shop_trade_transaction_submit(ch, payload, shop_trade_completion)",
     "committed shop trade could not publish live object",
     "produced && keeper && OBJ_NOWHERE(object)",
@@ -25,10 +26,14 @@ for token in (
     "produced_purchase_sequences",
     "shop_trade_container_accepts",
     "shop_trade_submit_produced_continuation",
+    "shop_trade_submit_invalid_cleanup",
+    "shop_trade_route_invalid_cleanup",
     "payload.target_parent_item_uid && !put(ch, object, destination, TRUE)",
 ):
     if token not in SOURCE:
         raise SystemExit(f"live shop trade route is missing {token}")
+if SOURCE.count("shop_trade_route_invalid_cleanup(") < 9:
+    raise SystemExit("not every flat shop invalid-stock selection route is authority-gated")
 
 buy_start = SOURCE.index("void shopping_buy(")
 sell_start = SOURCE.index("void shopping_sell(")
@@ -53,6 +58,11 @@ if not callback.index("shop_trade_runtime_object_matches_payload") < callback.in
     "obj_from_char(object)"
 ):
     raise SystemExit("live object moves before exact snapshot revalidation")
+cleanup_branch = callback.index("if (cleanup)")
+if not callback.index("shop_trade_runtime_object_matches_payload") < cleanup_branch < callback.index(
+    "extract_obj(object, TRUE)", cleanup_branch
+):
+    raise SystemExit("invalid shop stock is extracted before committed snapshot revalidation")
 if not TRANSACTION.index("currency_transaction_publish_balances(") < TRANSACTION.index(
     "completion(character, committed && published"
 ):

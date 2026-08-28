@@ -2540,6 +2540,37 @@ sections below continue to describe the required end state.
 - **Next action:** move invalid shop-stock cleanup through the custody authority, then audit and add
   materialization evidence for non-shop item-transfer domains with player-snapshot crash windows.
 
+### Checkpoint 80 - atomic invalid shop-stock destruction
+
+- **Composite cleanup action:** shop payload version 4 adds a zero-value `discard_invalid` action.
+  It validates the exact bounded stock subtree and atomically removes it from the revisioned
+  shopkeeper aggregate while transferring shop custody to the destruction owner. Player wallet and
+  bank records are read/fenced but neither mutated nor revision-advanced, and no player
+  materialization event is written. Version 3, version 2, and safe version 1 payloads remain readable.
+- **Commit-fenced live extraction:** flat-primary buy, peruse, purchase lookup, and list paths route
+  nonpositive, artifact, and encrusted stock through this action, including direct-name and numeric
+  selection. Submission failure leaves the live object untouched. Completion resolves the keeper
+  and item by stable IDs, revalidates exact snapshot and keeper custody, publishes authoritative
+  shop/item revisions, and only then calls artifact-aware extraction.
+- **Crash recovery:** an injected interruption after the first authority image preserves the
+  success-last transaction journal. Recovery publishes the operation result, shop aggregate, and
+  ownership after-images together; replay returns the exact cleanup result with unchanged money
+  revisions and the removed subtree cannot reappear from shopkeeper restore.
+- **Checks passed:** the composite repository regression covers nested stock resale, interrupted
+  cleanup, exact replay, unchanged wallet/bank revisions, empty shop inventory, inactive destruction
+  custody, and unchanged materialization revision. Command tests cover version 4/3/2/1 decoding and
+  zero-price validation; transaction publication covers shop-to-destruction revision orientation;
+  live-route, runtime, item/shop repositories, ownership refresh, changed-line formatting, and the
+  normal C++20 server build pass.
+- **Exposure:** cleanup is demand-driven by a player shop interaction rather than an eager boot or
+  maintenance sweep, so untouched invalid stock can remain until inspected. A durable cleanup whose
+  live callback cannot reproduce extraction raises the existing alert and converges on shop restore.
+  Trusted/gem purchases and MariaDB shop parity remain open. Non-shop transfer snapshot convergence
+  is still unaudited, so the flat-primary boot blocker remains required.
+- **Next action:** audit player-facing non-shop item transfers for the same post-commit/pre-snapshot
+  crash window, beginning with give/drop/get and locker/corpse boundaries, then add reusable
+  materialization evidence where ownership alone cannot reconstruct exact object state.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

@@ -21,6 +21,11 @@ bool is_buy(shop_trade_action action)
 	return action == shop_trade_action::buy_existing ||
 	       action == shop_trade_action::buy_produced;
 }
+
+bool shop_owned(shop_trade_action action)
+{
+	return is_buy(action) || action == shop_trade_action::discard_invalid;
+}
 } // namespace
 
 bool shop_trade_runtime_replace_revisions(const std::vector<flatfile_shopkeeper_record> &records)
@@ -81,8 +86,9 @@ shop_trade_runtime_build_payload(P_char player, P_obj selected, P_obj stock, P_o
 				 shop_trade_payload *payload)
 {
 	if (!player || IS_NPC(player) || !player->only.pc || GET_PID(player) <= 0 || !selected ||
-	    !selected->obj_uid || !payload || price <= 0 || price > INT_MAX ||
-	    action <= shop_trade_action::unknown || action > shop_trade_action::sell_destroy ||
+	    !selected->obj_uid || !payload || price < 0 || price > INT_MAX ||
+	    ((action == shop_trade_action::discard_invalid) != (price == 0)) ||
+	    action <= shop_trade_action::unknown || action > shop_trade_action::discard_invalid ||
 	    ((action == shop_trade_action::buy_produced) != (stock != nullptr)) ||
 	    (destination && action != shop_trade_action::buy_produced))
 		return shop_trade_payload_build_result::invalid;
@@ -111,7 +117,7 @@ shop_trade_runtime_build_payload(P_char player, P_obj selected, P_obj stock, P_o
 						   static_cast<uint32_t>(GET_PID(player)), 0 };
 	const item_owner_identity shop_owner = { item_owner_type::shopkeeper,
 						 item_shopkeeper_owner_id(shop_id), 0 };
-	const item_owner_identity expected_owner = is_buy(action) ? shop_owner : player_owner;
+	const item_owner_identity expected_owner = shop_owned(action) ? shop_owner : player_owner;
 	shop_trade_payload built = {};
 	built.action = action;
 	built.player_pid = static_cast<uint32_t>(GET_PID(player));
@@ -185,7 +191,8 @@ shop_trade_runtime_build_payload(P_char player, P_obj selected, P_obj stock, P_o
 			built.expected_target_parent_revision = target.item_revision;
 		}
 	}
-	else if (action == shop_trade_action::buy_existing)
+	else if (action == shop_trade_action::buy_existing ||
+		 action == shop_trade_action::discard_invalid)
 	{
 		const auto selected_entry = std::find_if(
 			built.items.begin(), built.items.begin() + built.item_count,

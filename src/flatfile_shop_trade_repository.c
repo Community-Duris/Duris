@@ -324,7 +324,7 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 				shop_prepared == flatfile_shopkeeper_result::not_found ? ENOENT :
 											 EILSEQ);
 	}
-	if (!result_code)
+	if (!result_code && payload.action != shop_trade_action::discard_invalid)
 	{
 		const auto prepared = flatfile_shop_trade_materialization_prepare(
 			root, lock, command.operation_id, payload, &materialization, &error);
@@ -333,7 +333,7 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 				prepared == flatfile_shop_trade_materialization_result::io_error,
 				EILSEQ);
 	}
-	if (!result_code)
+	if (!result_code && payload.action != shop_trade_action::discard_invalid)
 	{
 		const int64_t value_delta =
 			payload.action == shop_trade_action::buy_existing ||
@@ -393,9 +393,12 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 		{
 			images.push_back(std::move(shop.after_image));
 			images.push_back(std::move(items.after_image));
-			images.push_back(std::move(materialization.after_image));
-			for (auto &image : wallet.after_images)
-				images.push_back(std::move(image));
+			if (payload.action != shop_trade_action::discard_invalid)
+			{
+				images.push_back(std::move(materialization.after_image));
+				for (auto &image : wallet.after_images)
+					images.push_back(std::move(image));
+			}
 		}
 	}
 	catch (const std::bad_alloc &)

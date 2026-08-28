@@ -49,6 +49,14 @@ shop_trade_payload trade(shop_trade_action action, uint64_t uid)
 				     0,	  ITEM_TRANSFER_ABSENT_REVISION,
 				     800, item_custody_state::absent };
 	}
+	else if (action == shop_trade_action::discard_invalid)
+	{
+		payload.price = 0;
+		payload.stock_item_uid = uid;
+		payload.expected_stock_item_revision = 5;
+		payload.stock_vnum = 800;
+		payload.items[0] = { uid, uid, 0, 5, 800, item_custody_state::active };
+	}
 	else
 		payload.items[0] = { uid, uid, 0, 5, 800, item_custody_state::active };
 	return payload;
@@ -187,6 +195,21 @@ int main()
 	       published_transfer.to_owner.type == item_owner_type::destruction &&
 	       published_transfer_result.from_owner_revision == 9 &&
 	       published_transfer_result.to_owner_revision == 2 &&
+	       !shop_trade_transaction_player_busy(&character));
+
+	currency_published = ownership_published = shop_revision_published = completion_called =
+		completion_committed = false;
+	const shop_trade_payload cleanup = trade(shop_trade_action::discard_invalid, 302);
+	assert(shop_trade_transaction_submit(&character, cleanup, completed));
+	critical_completion cleanup_completion =
+		completion(result(shop_trade_action::discard_invalid, 302, 10, 3));
+	shop_trade_transaction_handle_completions(&cleanup_completion, 1);
+	assert(currency_published && ownership_published && shop_revision_published &&
+	       completion_called && completion_committed &&
+	       published_transfer.from_owner.type == item_owner_type::shopkeeper &&
+	       published_transfer.to_owner.type == item_owner_type::destruction &&
+	       published_transfer_result.from_owner_revision == 10 &&
+	       published_transfer_result.to_owner_revision == 3 &&
 	       !shop_trade_transaction_player_busy(&character));
 
 	shop_trade_transaction_reset_for_tests();
