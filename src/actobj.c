@@ -157,6 +157,20 @@ struct drop_movement_context
 	uint64_t item_uid;
 	int32_t room;
 	int32_t floor_hint;
+	uint32_t bulk_actor_pid;
+	int32_t quiet;
+};
+
+struct bulk_drop_state
+{
+	int32_t room;
+	std::string filter;
+	std::vector<uint64_t> durable_items;
+	size_t next_item;
+	int total;
+	bool failed;
+	bool announced;
+	bool alldot;
 };
 
 struct give_movement_context
@@ -171,16 +185,39 @@ struct put_movement_context
 	uint64_t item_uid;
 	uint64_t container_uid;
 	int32_t showit;
+	uint32_t bulk_actor_pid;
+};
+
+struct bulk_put_state
+{
+	uint64_t container_uid;
+	std::string filter;
+	std::vector<uint64_t> durable_items;
+	size_t next_item;
+	int total;
+	bool failed;
+	bool attempted;
+	bool alldot;
 };
 
 bool item_get_ack_publication = false;
 bool item_get_deferred = false;
 bool item_put_ack_publication = false;
+bool item_put_deferred = false;
 uint32_t bulk_get_submitter = 0;
+uint32_t bulk_drop_submitter = 0;
+uint32_t bulk_drop_quiet = 0;
+uint32_t bulk_put_submitter = 0;
 std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
+std::unordered_map<uint32_t, bulk_drop_state> bulk_drops;
+std::unordered_map<uint32_t, bulk_put_state> bulk_puts;
 
 void continue_bulk_get(P_char actor, bool previous_succeeded);
 void cancel_bulk_get(P_char actor);
+void continue_bulk_drop(P_char actor, bool previous_succeeded);
+void cancel_bulk_drop(P_char actor);
+void continue_bulk_put(P_char actor, bool previous_succeeded);
+void cancel_bulk_put(P_char actor);
 
 P_obj find_live_item_uid(uint64_t item_uid)
 {
@@ -251,34 +288,74 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 void item_drop_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
 			  const uint8_t *encoded, size_t encoded_size)
 {
-	if (!actor || !committed || !encoded || encoded_size != sizeof(drop_movement_context))
+	drop_movement_context context = {};
+	const bool context_valid = encoded && encoded_size == sizeof(context);
+	if (context_valid)
+		memcpy(&context, encoded, sizeof(context));
+	const bool bulk_drop = actor && IS_PC(actor) && context_valid &&
+			       context.bulk_actor_pid == static_cast<uint32_t>(GET_PID(actor));
+
+	if (!actor || !committed || !context_valid)
 	{
 		if (actor)
 			send_to_char(
 				"The item remains in your inventory; its drop did not commit.\r\n",
 				actor);
+		if (bulk_drop)
+		{
+			auto found = bulk_drops.find(context.bulk_actor_pid);
+			if (found != bulk_drops.end())
+				found->second.failed = true;
+			continue_bulk_drop(actor, false);
+		}
 		return;
 	}
-	drop_movement_context context = {};
-	memcpy(&context, encoded, sizeof(context));
 	P_obj object = find_live_item_uid(context.item_uid);
 	if (!object || !OBJ_CARRIED_BY(object, actor) || context.room < 0 ||
 	    context.room > top_of_world)
 	{
 		persistence_alert(AVATAR, "item_movement", "drop_publish", "none", "none",
 				  "stale_live_topology", "item_uid=%llu", context.item_uid);
+		if (bulk_drop)
+			cancel_bulk_drop(actor);
 		return;
 	}
-	act("You drop $p.", FALSE, actor, object, 0, TO_CHAR);
-	if (actor->in_room == context.room)
-		act("$n drops $p.", FALSE, actor, object, 0, TO_ROOM);
+	/* "drop all.<name>" reports one summary line instead of one line per item. */
+	if (!context.quiet)
+	{
+		act("You drop $p.", FALSE, actor, object, 0, TO_CHAR);
+		if (actor->in_room == context.room)
+			act("$n drops $p.", FALSE, actor, object, 0, TO_ROOM);
+	}
 	obj_from_char(object);
 	obj_to_room(object, context.room);
 	if (context.floor_hint)
 		redis_log_floor_drop(object, world[context.room].number);
+	if (IS_TRUSTED(actor))
+	{
+		wizlog(GET_LEVEL(actor), "%s drops %s [%d].", J_NAME(actor),
+		       object->short_description, world[context.room].number);
+		logit(LOG_WIZ, "%s drops %s [%d].", J_NAME(actor), object->short_description,
+		      world[context.room].number);
+		sql_log(actor, WIZLOG, "Dropped %s", object->short_description);
+	}
+	else if (IS_ARTIFACT(object))
+	{
+		wizlog(56, "%s dropping artifact %s (%d) in room %d.", J_NAME(actor),
+		       object->short_description, obj_index[object->R_num].virtual_number,
+		       world[context.room].number);
+		logit(LOG_OBJ, "%s dropping artifact %s (%d) in room %d.", J_NAME(actor),
+		      object->short_description, obj_index[object->R_num].virtual_number,
+		      world[context.room].number);
+	}
 	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
 							     PLAYER_COMPONENT_EQUIPMENT |
 							     PLAYER_COMPONENT_INVENTORY);
+	/* a dropped player corpse keeps its saved file in step with the world */
+	if (object->type == ITEM_CORPSE && IS_SET(object->value[1], PC_CORPSE))
+		writeCorpse(object);
+	if (bulk_drop)
+		continue_bulk_drop(actor, true);
 }
 
 void item_give_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
@@ -322,31 +399,48 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 void item_put_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
 			 const uint8_t *encoded, size_t encoded_size)
 {
-	if (!actor || !committed || !encoded || encoded_size != sizeof(put_movement_context))
+	put_movement_context context = {};
+	const bool context_valid = encoded && encoded_size == sizeof(context);
+	if (context_valid)
+		memcpy(&context, encoded, sizeof(context));
+	const bool bulk_put = actor && IS_PC(actor) && context_valid &&
+			      context.bulk_actor_pid == static_cast<uint32_t>(GET_PID(actor));
+
+	if (!actor || !committed || !context_valid)
 	{
 		if (actor)
 			send_to_char(
 				"The item remains where it was; its container move did not commit.\r\n",
 				actor);
+		if (bulk_put)
+		{
+			auto found = bulk_puts.find(context.bulk_actor_pid);
+			if (found != bulk_puts.end())
+				found->second.failed = true;
+			continue_bulk_put(actor, false);
+		}
 		return;
 	}
-	put_movement_context context = {};
-	memcpy(&context, encoded, sizeof(context));
 	P_obj object = find_live_item_uid(context.item_uid);
 	P_obj container = find_live_item_uid(context.container_uid);
 	if (!object || !container || !OBJ_CARRIED_BY(object, actor))
 	{
 		persistence_alert(AVATAR, "item_movement", "put_publish", "none", "none",
 				  "stale_live_topology", "item_uid=%llu", context.item_uid);
+		if (bulk_put)
+			cancel_bulk_put(actor);
 		return;
 	}
 	item_put_ack_publication = true;
-	put(actor, object, container, context.showit);
+	const bool stored = put(actor, object, container, context.showit);
 	item_put_ack_publication = false;
+	if (bulk_put)
+		continue_bulk_put(actor, stored);
 }
 
 bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int showit)
 {
+	item_put_deferred = false;
 	if (item_put_ack_publication || !IS_PC(actor) || !object->obj_uid || !container->obj_uid)
 		return false;
 	item_ownership_runtime_entry item_runtime = {}, container_runtime = {};
@@ -361,13 +455,15 @@ bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int show
 						     static_cast<uint64_t>(GET_PID(actor)), 0 };
 		if (item_owner_identity_equal(source, locker_destination))
 			return false;
-		const put_movement_context context = { object->obj_uid, container->obj_uid,
-						       showit };
+		const put_movement_context context = { object->obj_uid, container->obj_uid, showit,
+						       bulk_put_submitter };
 		if (!item_movement_transaction_submit(
 			    actor, object, NULL, source, locker_destination,
 			    item_transfer_reason::locker_deposit, locker_destination.context_id,
 			    item_put_completion, &context, sizeof(context)))
 			send_to_char("That item is busy or its ownership changed.\r\n", actor);
+		else
+			item_put_deferred = true;
 		return true;
 	}
 	if (!item_ownership_runtime_lookup(container->obj_uid, &container_runtime))
@@ -384,12 +480,37 @@ bool defer_cross_owner_put(P_char actor, P_obj object, P_obj container, int show
 	if (item_owner_identity_equal(source, container_runtime.owner))
 		return false;
 	const item_owner_identity destination = container_runtime.owner;
-	const put_movement_context context = { object->obj_uid, container->obj_uid, showit };
+	const put_movement_context context = { object->obj_uid, container->obj_uid, showit,
+					       bulk_put_submitter };
 	if (!item_movement_transaction_submit(actor, object, container, source, destination,
 					      item_transfer_reason::player_put, container->obj_uid,
 					      item_put_completion, &context, sizeof(context)))
 		send_to_char("That item is busy or its ownership changed.\r\n", actor);
+	else
+		item_put_deferred = true;
 	return true;
+}
+
+/*
+ * One durable drop, submitted through the ownership pipeline.  The live move
+ * happens in item_drop_completion() once the transaction commits.
+ */
+bool submit_player_drop(P_char ch, P_obj object)
+{
+	const item_owner_identity source = { item_owner_type::player,
+					     static_cast<uint64_t>(GET_PID(ch)), 0 };
+	item_owner_identity destination = { item_owner_type::room,
+					    static_cast<uint64_t>(world[ch->in_room].number), 0 };
+	const bool locker_deposit = locker_owner_for_room(ch, &destination);
+	const drop_movement_context context = { object->obj_uid, ch->in_room,
+						locker_deposit ? 0 : 1, bulk_drop_submitter,
+						static_cast<int32_t>(bulk_drop_quiet) };
+	return item_movement_transaction_submit(ch, object, NULL, source, destination,
+						locker_deposit ?
+							item_transfer_reason::locker_deposit :
+							item_transfer_reason::player_drop,
+						locker_deposit ? 0 : world[ch->in_room].number,
+						item_drop_completion, &context, sizeof(context));
 }
 }
 
@@ -2404,6 +2525,235 @@ void do_junk(P_char ch, char *argument, int /*cmd*/)
 	}
 }
 
+namespace
+{
+void cancel_bulk_drop(P_char actor)
+{
+	if (actor && IS_PC(actor))
+		bulk_drops.erase(static_cast<uint32_t>(GET_PID(actor)));
+}
+
+/*
+ * "drop all" reports each item as it lands, the way it always did; "drop
+ * all.<name>" stays quiet per item and reports one summary line at the end.
+ */
+void finish_bulk_drop(P_char actor, uint32_t actor_pid)
+{
+	auto found = bulk_drops.find(actor_pid);
+	if (found == bulk_drops.end())
+		return;
+	const int total = found->second.total;
+	const bool announced = found->second.announced || found->second.failed;
+	const bool alldot = found->second.alldot;
+	const std::string name = found->second.filter;
+	bulk_drops.erase(found);
+
+	if (!alldot)
+	{
+		if (!total && !announced)
+			send_to_char("You do not seem to have anything.\r\n", actor);
+		return;
+	}
+	if (!total)
+	{
+		send_to_char("You don't have any of those to drop.\r\n", actor);
+		return;
+	}
+
+	char line[MAX_STRING_LENGTH];
+	if (total == 1)
+	{
+		checked_snprintf(line, MAX_STRING_LENGTH, "You drop one %s.", name.c_str());
+		act(line, FALSE, actor, 0, 0, TO_CHAR);
+		checked_snprintf(line, MAX_STRING_LENGTH, "$n drops one %s.", name.c_str());
+		act(line, FALSE, actor, 0, 0, TO_ROOM);
+	}
+	else
+	{
+		checked_snprintf(line, MAX_STRING_LENGTH, "You drop %d %s(s).", total,
+				 name.c_str());
+		act(line, FALSE, actor, 0, 0, TO_CHAR);
+		checked_snprintf(line, MAX_STRING_LENGTH,
+				 total < 6 ? "$n drops some %s(s)." : "$n drops a bunch of %s(s).",
+				 name.c_str());
+		act(line, FALSE, actor, 0, 0, TO_ROOM);
+	}
+}
+
+bool bulk_drop_permitted(P_char actor, P_obj object, bulk_drop_state &state)
+{
+	if (IS_OBJ_STAT2(object, ITEM2_SOULBIND))
+	{
+		if (!state.alldot)
+		{
+			send_to_char(
+				"You may not relinquish posession of a &+Wsoulbound &nitem!\r\n",
+				actor);
+			state.announced = true;
+		}
+		return false;
+	}
+	if (IS_SET(object->extra_flags, ITEM_NODROP) && !IS_TRUSTED(actor))
+	{
+		if (!state.alldot && CAN_SEE_OBJ(actor, object))
+		{
+			char line[MAX_STRING_LENGTH];
+			snprintf(line, MAX_STRING_LENGTH,
+				 "You can't drop %s, it must be CURSED!\r\n",
+				 object->short_description);
+			send_to_char(line, actor);
+			state.announced = true;
+		}
+		return false;
+	}
+	return true;
+}
+
+void drop_transient_object(P_char actor, P_obj object, bulk_drop_state &state)
+{
+	if (!state.alldot)
+	{
+		if (CAN_SEE_OBJ(actor, object))
+		{
+			char line[MAX_STRING_LENGTH];
+			snprintf(line, MAX_STRING_LENGTH, "You drop %s.\r\n",
+				 object->short_description);
+			send_to_char(line, actor);
+		}
+		else
+			send_to_char("You drop something.\r\n", actor);
+		act("$n drops $p.", 1, actor, object, 0, TO_ROOM);
+	}
+	if (IS_TRUSTED(actor))
+	{
+		wizlog(GET_LEVEL(actor), "%s drops %s [%d].", J_NAME(actor),
+		       object->short_description, world[actor->in_room].number);
+		logit(LOG_WIZ, "%s drops %s [%d].", J_NAME(actor), object->short_description,
+		      world[actor->in_room].number);
+		sql_log(actor, WIZLOG, "Dropped %s", object->short_description);
+	}
+	else if (IS_ARTIFACT(object))
+	{
+		wizlog(56, "%s dropping artifact %s (%d) in room %d.", J_NAME(actor),
+		       object->short_description, obj_index[object->R_num].virtual_number,
+		       world[actor->in_room].number);
+		logit(LOG_OBJ, "%s dropping artifact %s (%d) in room %d.", J_NAME(actor),
+		      object->short_description, obj_index[object->R_num].virtual_number,
+		      world[actor->in_room].number);
+	}
+	const bool money = object->type == ITEM_MONEY;
+	const bool pc_corpse = object->type == ITEM_CORPSE && IS_SET(object->value[1], PC_CORPSE);
+	const int room = actor->in_room;
+
+	obj_from_char(object);
+	obj_to_room(object, room);
+	++state.total;
+	/* obj_to_room merges coins into a pile already on the floor and frees the
+	 * object it merged, so nothing below may touch a money object again. */
+	if (money)
+		return;
+	if (object->obj_uid > 0)
+		redis_log_floor_drop(object, world[room].number);
+	if (pc_corpse)
+		writeCorpse(object);
+}
+
+void continue_bulk_drop(P_char actor, bool previous_succeeded)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
+		return;
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	auto found = bulk_drops.find(actor_pid);
+	if (found == bulk_drops.end())
+		return;
+	bulk_drop_state &state = found->second;
+	if (previous_succeeded)
+		++state.total;
+
+	if (actor->in_room != state.room)
+	{
+		send_to_char("You stop dropping things because you have moved.\r\n", actor);
+		bulk_drops.erase(found);
+		return;
+	}
+
+	while (state.next_item < state.durable_items.size())
+	{
+		P_obj object = find_live_item_uid(state.durable_items[state.next_item++]);
+		if (!object || !OBJ_CARRIED_BY(object, actor) ||
+		    (state.filter.size() &&
+		     (!object->name || !isname(state.filter.c_str(), object->name))) ||
+		    !bulk_drop_permitted(actor, object, state))
+			continue;
+
+		bulk_drop_submitter = actor_pid;
+		bulk_drop_quiet = state.alldot ? 1 : 0;
+		const bool submitted = submit_player_drop(actor, object);
+		bulk_drop_submitter = 0;
+		bulk_drop_quiet = 0;
+		if (submitted)
+			return;
+
+		send_to_char("That item is busy or lacks authoritative ownership.\r\n", actor);
+		state.failed = true;
+	}
+
+	/* Coins and objects that never entered the ownership ledger move directly. */
+	for (P_obj object = actor->carrying, next = NULL; object; object = next)
+	{
+		next = object->next_content;
+		if ((object->obj_uid > 0 && object->type != ITEM_MONEY) ||
+		    (state.filter.size() &&
+		     (!object->name || !isname(state.filter.c_str(), object->name))) ||
+		    !bulk_drop_permitted(actor, object, state))
+			continue;
+		drop_transient_object(actor, object, state);
+	}
+
+	if (state.total)
+		mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+								     PLAYER_COMPONENT_EQUIPMENT |
+								     PLAYER_COMPONENT_INVENTORY);
+	char_light(actor);
+	room_light(actor->in_room, REAL);
+	finish_bulk_drop(actor, actor_pid);
+}
+
+void start_bulk_drop(P_char actor, const char *filter, bool alldot)
+{
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	if (bulk_drops.count(actor_pid) || item_movement_transaction_player_busy(actor))
+	{
+		send_to_char("You are already moving an item; try again in a moment.\r\n", actor);
+		return;
+	}
+	if (actor->in_room == NOWHERE)
+	{
+		send_to_char("You can't drop anything here.\r\n", actor);
+		return;
+	}
+
+	bulk_drop_state state = { actor->in_room, filter ? filter : "", {}, 0, 0, false, false,
+				  alldot };
+	try
+	{
+		for (P_obj object = actor->carrying; object; object = object->next_content)
+			if (object->obj_uid > 0 && object->type != ITEM_MONEY &&
+			    (state.filter.empty() ||
+			     (object->name && isname(state.filter.c_str(), object->name))))
+				state.durable_items.push_back(object->obj_uid);
+		bulk_drops.emplace(actor_pid, std::move(state));
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("You can't drop everything right now; please try again.\r\n", actor);
+		return;
+	}
+
+	continue_bulk_drop(actor, false);
+}
+}
+
 void do_dropalldot(P_char ch, char *name, int /*cmd*/)
 {
 	P_obj tmp_object, next_object;
@@ -2413,7 +2763,7 @@ void do_dropalldot(P_char ch, char *name, int /*cmd*/)
 	char Gbuf3[MAX_STRING_LENGTH];
 	if (IS_PC(ch) && strcmp(name, "coins"))
 	{
-		send_to_char("Durable items must be dropped one at a time.\r\n", ch);
+		start_bulk_drop(ch, name, true);
 		return;
 	}
 
@@ -2740,8 +3090,7 @@ void do_drop(P_char ch, char *argument, int cmd)
 		{
 			if (IS_PC(ch))
 			{
-				send_to_char("Durable items must be dropped one at a time.\r\n",
-					     ch);
+				start_bulk_drop(ch, NULL, false);
 				return;
 			}
 			bool dropped_any = false;
@@ -2843,34 +3192,7 @@ void do_drop(P_char ch, char *argument, int cmd)
 				{
 					if (IS_PC(ch) && tmp_object->obj_uid > 0)
 					{
-						const item_owner_identity source = {
-							item_owner_type::player,
-							static_cast<uint64_t>(GET_PID(ch)), 0
-						};
-						item_owner_identity destination = {
-							item_owner_type::room,
-							static_cast<uint64_t>(
-								world[ch->in_room].number),
-							0
-						};
-						const bool locker_deposit =
-							locker_owner_for_room(ch, &destination);
-						const drop_movement_context context = {
-							tmp_object->obj_uid, ch->in_room,
-							locker_deposit ? 0 : 1
-						};
-						if (!item_movement_transaction_submit(
-							    ch, tmp_object, NULL, source,
-							    destination,
-							    locker_deposit ?
-								    item_transfer_reason::
-									    locker_deposit :
-								    item_transfer_reason::player_drop,
-							    locker_deposit ?
-								    0 :
-								    world[ch->in_room].number,
-							    item_drop_completion, &context,
-							    sizeof(context)))
+						if (!submit_player_drop(ch, tmp_object))
 							send_to_char(
 								"That item is busy or lacks authoritative ownership.\r\n",
 								ch);
@@ -2949,6 +3271,158 @@ void do_drop(P_char ch, char *argument, int cmd)
 #define PUT_ALL 2
 #define PUT_ALLDOT 3
 #define PUT_ITEM 4
+
+namespace
+{
+void cancel_bulk_put(P_char actor)
+{
+	if (actor && IS_PC(actor))
+		bulk_puts.erase(static_cast<uint32_t>(GET_PID(actor)));
+}
+
+void finish_bulk_put(P_char actor, uint32_t actor_pid)
+{
+	auto found = bulk_puts.find(actor_pid);
+	if (found == bulk_puts.end())
+		return;
+	const int total = found->second.total;
+	const bool attempted = found->second.attempted;
+	const bool alldot = found->second.alldot;
+	const std::string name = found->second.filter;
+	P_obj container = find_live_item_uid(found->second.container_uid);
+	bulk_puts.erase(found);
+
+	if (!attempted)
+	{
+		send_to_char("You don't have anything to put in it.\r\n", actor);
+		return;
+	}
+	if (!total || !container)
+		return;
+
+	char line[MAX_STRING_LENGTH];
+	if (!alldot)
+	{
+		snprintf(line, MAX_STRING_LENGTH, "You put %d items into $p.", total);
+		act(line, FALSE, actor, container, 0, TO_CHAR);
+		act(total < 6 ? "$n puts some stuff into $p." : "$n puts a bunch of stuff into $p.",
+		    TRUE, actor, container, 0, TO_ROOM);
+	}
+	else
+	{
+		checked_snprintf(line, MAX_STRING_LENGTH, "You put %d %s(s) into $p.", total,
+				 name.c_str());
+		act(line, FALSE, actor, container, 0, TO_CHAR);
+		checked_snprintf(line, MAX_STRING_LENGTH,
+				 total < 6 ? "$n puts some %s(s) into $p." :
+					     "$n puts a bunch of %s(s) into $p.",
+				 name.c_str());
+		act(line, TRUE, actor, container, 0, TO_ROOM);
+	}
+	char_light(actor);
+	room_light(actor->in_room, REAL);
+	mark_player_dirty_components(GET_PID(actor), PLAYER_COMPONENT_STATUS |
+							     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
+	if (GET_ITEM_TYPE(container) == ITEM_STORAGE)
+		writeSavedItem(container);
+}
+
+void continue_bulk_put(P_char actor, bool previous_succeeded)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
+		return;
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	auto found = bulk_puts.find(actor_pid);
+	if (found == bulk_puts.end())
+		return;
+	bulk_put_state &state = found->second;
+	if (previous_succeeded)
+		++state.total;
+
+	P_obj container = find_live_item_uid(state.container_uid);
+	if (!container || (!OBJ_CARRIED_BY(container, actor) && !OBJ_WORN_BY(container, actor) &&
+			   (!OBJ_ROOM(container) || container->loc.room != actor->in_room)))
+	{
+		send_to_char("You stop because the container is no longer here.\r\n", actor);
+		bulk_puts.erase(found);
+		return;
+	}
+	if (GET_ITEM_TYPE(container) != ITEM_CORPSE && IS_SET(container->value[1], CONT_CLOSED))
+	{
+		send_to_char("You stop because the container is closed.\r\n", actor);
+		bulk_puts.erase(found);
+		return;
+	}
+
+	while (state.next_item < state.durable_items.size())
+	{
+		P_obj object = find_live_item_uid(state.durable_items[state.next_item++]);
+		if (!object || object == container || !OBJ_CARRIED_BY(object, actor) ||
+		    (state.alldot && (!CAN_SEE_OBJ(actor, object) || !object->name ||
+				      !isname(state.filter.c_str(), object->name))))
+			continue;
+
+		state.attempted = true;
+		bulk_put_submitter = actor_pid;
+		const bool stored = put(actor, object, container, FALSE);
+		bulk_put_submitter = 0;
+		if (item_put_deferred)
+			return;
+		if (stored)
+			++state.total;
+		else
+			state.failed = true;
+	}
+
+	/* Coins and objects outside the ownership ledger move straight across. */
+	for (P_obj object = actor->carrying, next = NULL; object; object = next)
+	{
+		next = object->next_content;
+		if (object == container || (object->obj_uid > 0 && object->type != ITEM_MONEY) ||
+		    (state.alldot && (!CAN_SEE_OBJ(actor, object) || !object->name ||
+				      !isname(state.filter.c_str(), object->name))))
+			continue;
+		state.attempted = true;
+		if (put(actor, object, container, FALSE))
+			++state.total;
+	}
+
+	finish_bulk_put(actor, actor_pid);
+}
+
+void start_bulk_put(P_char actor, P_obj container, const char *filter, bool alldot)
+{
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	if (bulk_puts.count(actor_pid) || item_movement_transaction_player_busy(actor))
+	{
+		send_to_char("You are already moving an item; try again in a moment.\r\n", actor);
+		return;
+	}
+
+	bulk_put_state state = {
+		container->obj_uid, filter ? filter : "", {}, 0, 0, false, false, alldot
+	};
+	try
+	{
+		for (P_obj object = actor->carrying; object; object = object->next_content)
+			if (object->obj_uid > 0 && object->type != ITEM_MONEY &&
+			    object != container &&
+			    (!alldot ||
+			     (object->name && isname(state.filter.c_str(), object->name))))
+				state.durable_items.push_back(object->obj_uid);
+		bulk_puts.emplace(actor_pid, std::move(state));
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("You can't put everything away right now; please try again.\r\n",
+			     actor);
+		return;
+	}
+
+	continue_bulk_put(actor, false);
+}
+}
 
 void do_put(P_char ch, char *argument, int /*cmd*/)
 {
@@ -3098,9 +3572,12 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 	}
 	else if (type == PUT_ALL || type == PUT_ALLDOT)
 	{
-		if (IS_PC(ch))
+		/* A durable container serialises the moves; ownership revisions make
+		 * concurrent submissions for one player unsafe. */
+		if (IS_PC(ch) && s_obj->obj_uid > 0)
 		{
-			send_to_char("Durable items must be put away one at a time.\r\n", ch);
+			start_bulk_put(ch, s_obj, type == PUT_ALLDOT ? obj_name : NULL,
+				       type == PUT_ALLDOT);
 			return;
 		}
 		for (o_obj = ch->carrying; o_obj; o_obj = next_obj)
@@ -3174,6 +3651,8 @@ void do_put(P_char ch, char *argument, int /*cmd*/)
 bool put(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 {
 	char Gbuf3[MAX_STRING_LENGTH];
+
+	item_put_deferred = false;
 
 	if (IS_ARTIFACT(o_obj) && !IS_TRUSTED(ch))
 	{
