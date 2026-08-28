@@ -234,6 +234,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_offline_message_repository.o \
 				 flatfile_player_domain_repository.o \
 				 flatfile_recipe_repository.o \
+				 flatfile_spellbook_repository.o \
 				 critical_command.o \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \

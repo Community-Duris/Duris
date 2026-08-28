@@ -25,6 +25,7 @@
 #include "files.h"
 #include "flatfile_identity_adapter.h"
 #include "flatfile_recipe_repository.h"
+#include "flatfile_spellbook_repository.h"
 #include "epic_bonus.h"
 #include "mm.h"
 #include "necromancy.h"
@@ -496,22 +497,86 @@ bool sql_save_private_chest_items(int /*locker_id*/, int /*chest_id*/, P_obj /*c
 }
 void sql_load_private_chest_items(int /*locker_id*/, int /*chest_id*/, P_obj /*chest_obj*/) {}
 
-bool sql_add_spellbook_mob(int /*pid*/, int /*mob_vnum*/)
+bool sql_add_spellbook_mob(int pid, int mob_vnum)
 {
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto result = root ? flatfile_spellbook_add(root, pid, mob_vnum, &error) :
+				   flatfile_spellbook_result::invalid;
+	if (result == flatfile_spellbook_result::ok)
+		return true;
+	persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "add",
+			  "flat_write_failed", "pid=%d mob=%d error=%s", pid, mob_vnum,
+			  error.c_str());
 	return false;
 }
-bool sql_has_spellbook_mob(int /*pid*/, int /*mob_vnum*/)
+bool sql_remove_spellbook_mob(int pid, int mob_vnum)
 {
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto result = root ? flatfile_spellbook_remove(root, pid, mob_vnum, &error) :
+				   flatfile_spellbook_result::invalid;
+	if (result == flatfile_spellbook_result::ok)
+		return true;
+	persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "remove",
+			  "flat_write_failed", "pid=%d mob=%d error=%s", pid, mob_vnum,
+			  error.c_str());
 	return false;
 }
-int *sql_get_spellbook_mobs(int /*pid*/, int *count)
+bool sql_has_spellbook_mob(int pid, int mob_vnum)
 {
-	if (count)
-		*count = 0;
-	return NULL;
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	bool contains = false;
+	const auto result =
+		root ? flatfile_spellbook_contains(root, pid, mob_vnum, &contains, &error) :
+		       flatfile_spellbook_result::invalid;
+	if (result == flatfile_spellbook_result::ok)
+		return contains;
+	persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "contains",
+			  "flat_read_failed", "pid=%d mob=%d error=%s", pid, mob_vnum,
+			  error.c_str());
+	return false;
 }
-bool sql_delete_spellbook_mobs(int /*pid*/)
+int *sql_get_spellbook_mobs(int pid, int *count)
 {
+	if (!count)
+		return NULL;
+	*count = 0;
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	std::vector<int32_t> mobs;
+	const auto loaded = root ? flatfile_spellbook_list(root, pid, &mobs, &error) :
+				   flatfile_spellbook_result::invalid;
+	if (loaded != flatfile_spellbook_result::ok)
+	{
+		persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "list",
+				  "flat_read_failed", "pid=%d error=%s", pid, error.c_str());
+		return NULL;
+	}
+	if (mobs.empty())
+		return NULL;
+	int *result = static_cast<int *>(malloc(mobs.size() * sizeof(int)));
+	if (!result)
+	{
+		persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "list",
+				  "allocation_failed", "pid=%d mobs=%zu", pid, mobs.size());
+		return NULL;
+	}
+	std::copy(mobs.begin(), mobs.end(), result);
+	*count = static_cast<int>(mobs.size());
+	return result;
+}
+bool sql_delete_spellbook_mobs(int pid)
+{
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto result = root ? flatfile_spellbook_clear(root, pid, &error) :
+				   flatfile_spellbook_result::invalid;
+	if (result == flatfile_spellbook_result::ok)
+		return true;
+	persistence_alert(AVATAR, "spellbooks", "redacted", "none", "none", "clear",
+			  "flat_write_failed", "pid=%d error=%s", pid, error.c_str());
 	return false;
 }
 
@@ -10962,6 +11027,17 @@ bool sql_add_spellbook_mob(int pid, int mob_vnum)
 	snprintf(query, sizeof(query),
 		 "insert ignore into player_spellbooks (pid, mob_vnum) values (%d, %d)", pid,
 		 mob_vnum);
+	return sql_run_query(query);
+}
+
+bool sql_remove_spellbook_mob(int pid, int mob_vnum)
+{
+	if (!DB || pid <= 0 || mob_vnum <= 0)
+		return false;
+
+	char query[256];
+	snprintf(query, sizeof(query), "delete from player_spellbooks where pid=%d and mob_vnum=%d",
+		 pid, mob_vnum);
 	return sql_run_query(query);
 }
 

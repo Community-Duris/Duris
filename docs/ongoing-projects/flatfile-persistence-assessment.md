@@ -1334,6 +1334,46 @@ sections below continue to describe the required end state.
   similarly bounded PID-keyed authority, then combine both external knowledge sets with
   the eventual character-delete transaction and exporter manifest.
 
+### Checkpoint 40 - revisioned flat conjuration spellbook authority
+
+- **Completed:** added a distinct `DURSPBK` v1 learned-minion catalog with SHA-256
+  validation, monotonic revision, canonical PID ordering, sorted unique positive mob
+  vnums, a 65,536-mob per-player bound, a 1,048,576-player bound, and a 256 MiB file
+  bound. A missing catalog fails closed; an absent PID within established authority is an
+  authoritative empty set.
+- **Completed:** exact establishment, list, membership, add, single-minion remove, and
+  clear operations share the global authority lock and generic transaction recovery
+  boundary. Runtime mutations are idempotent, concurrent additions are serialized, and
+  corrupt authority is neither projected as empty nor overwritten.
+- **Completed:** every client-free `player_spellbooks` API now uses the typed catalog and
+  raises persistence alerts on failures. MariaDB-primary retains its existing insert,
+  membership, ordered-list, and full-delete behavior and gains the missing parameterized
+  single-minion delete needed by gameplay.
+- **Correctness fix:** `conjure remove` previously read and rewrote an uninitialized legacy
+  filename even though all other learned-minion operations had moved to SQL. It now calls
+  the authoritative single-minion delete API in both modes. Learning also requires the
+  catalog/SQL insert to succeed before reporting success, preventing a failed persistence
+  write from falsely telling the player that the minion was learned.
+- **Checks passed:** the standalone repository regression covers missing-catalog failure,
+  canonical establishment, exact retry/conflict, authoritative empty projection,
+  membership, idempotent add/remove/clear, eight concurrent process writers, checksum
+  corruption refusal, and temporary-file cleanup. The runtime source contract covers all
+  five flat API routes, alerts, the legacy-file removal fix, persistence-before-success,
+  MariaDB query preservation, and build registration. The strict normal build passes and
+  the isolated client-free build/boot preflight passes; CI runs both focused spellbook
+  checks in the client-free job.
+- **Files changed:** the spellbook repository and harness, player SQL API/adapters,
+  conjuration gameplay, build/CI manifests, focused runtime contract, and this handoff
+  ledger.
+- **Remaining spellbook gap:** the future SQL-to-flat exporter must establish the catalog,
+  and safe character deletion must clear the PID row together with recipes in the same
+  recoverable identity transaction. Rename requires no catalog mutation because both
+  knowledge authorities are PID-keyed. Spellbooks therefore remain in the boot-time
+  unimplemented inventory until export and deletion composition exist.
+- **Next action:** design the exporter manifest/establishment pass for the now-typed recipe
+  and learned-minion catalogs, then compose their clears with character deletion rather
+  than leaving either catalog orphaned.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
