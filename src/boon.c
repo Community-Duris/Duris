@@ -3138,36 +3138,46 @@ void boon_randomize(P_char ch, char *argument)
 void boon_maintenance()
 {
 	BoonData bdata;
-	int i, expire;
+	int expire;
 	int id[MAX_BOONS];
+	std::vector<int> active_ids;
 
-	for (i = 0; i < MAX_BOONS; i++)
+	for (int i = 0; i < MAX_BOONS; i++)
 		id[i] = 0;
 
-	if (!qry("SELECT id FROM boons WHERE active = '1'"))
+	if (const char *root = flat_boon_root())
 	{
-		debug("boon_maintenance(): can't read from db");
-		return;
+		std::vector<flatfile_boon_definition> definitions;
+		std::string error;
+		if (flatfile_boon_load_definitions(root, &definitions, &error) !=
+		    flatfile_boon_result::ok)
+			return;
+		for (const auto &definition : definitions)
+			if (definition.active &&
+			    definition.id <= static_cast<uint32_t>(std::numeric_limits<int>::max()))
+				active_ids.push_back(static_cast<int>(definition.id));
 	}
-
-	MYSQL_RES *res = boon_store_result("boon_maintenance");
-	if (!res)
+	else
 	{
-		return;
-	}
-	if (mysql_num_rows(res) < 1)
-	{
+		if (!qry("SELECT id FROM boons WHERE active = '1'"))
+		{
+			debug("boon_maintenance(): can't read from db");
+			return;
+		}
+		MYSQL_RES *res = boon_store_result("boon_maintenance");
+		if (!res)
+			return;
+		boon_collect_ids(res, id, "boon_maintenance");
 		mysql_free_result(res);
-		return;
+		for (int i = 0; id[i]; ++i)
+			active_ids.push_back(id[i]);
 	}
 
-	boon_collect_ids(res, id, "boon_maintenance");
-	mysql_free_result(res);
-
-	for (i = 0; id[i]; i++)
+	for (int boon_id : active_ids)
 	{
 		zero_boon_data(&bdata);
-		get_boon_data(id[i], &bdata);
+		if (!get_boon_data(boon_id, &bdata))
+			continue;
 
 		// check durations and expire if necessesary
 		expire = FALSE;

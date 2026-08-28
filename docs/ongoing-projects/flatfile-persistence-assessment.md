@@ -1142,6 +1142,29 @@ sections below continue to describe the required end state.
   make maintenance enumerate that projection. Then introduce typed, operation-ID-ledgered
   shop spending rather than directly decrementing the shop row and mutating a live stat.
 
+### Checkpoint 34 - flat boon maintenance enumeration
+
+- **Completed:** periodic boon maintenance now enumerates active definitions from the
+  canonical catalog in flat-primary mode instead of unconditionally querying `boons`.
+  The existing MariaDB query remains isolated to its backend branch. Each selected ID is
+  still loaded through the backend-aware definition helper before expiry/completability
+  checks, and a failed lookup is skipped rather than processing zero-initialized data.
+- **Completed:** the enumeration uses a bounded vector of validated IDs. The catalog's
+  locked create path already caps active definitions, while the SQL compatibility path
+  retains its historical bounded collector. Expiry and void actions now reach the flat
+  deactivate operation added in checkpoint 33.
+- **Checks passed:** the boon source-contract suite verifies catalog enumeration and
+  flat-before-SQL ordering; the normal warning-clean build, isolated client-free
+  build/boot preflight, formatting, and diff checks pass.
+- **Files changed:** `src/boon.c`, the focused boon source-contract test, and this handoff
+  ledger.
+- **Remaining boon gap:** `boon_display`, the disabled random-boon implementation, and
+  shop spending remain SQL-coupled. Maintenance decisions for epic zones and nexus state
+  also depend on those subsystems' current authority status.
+- **Next action:** extract row formatting from `boon_display` so the same trusted/mortal
+  renderer consumes either SQL rows or flat definitions without duplicating presentation
+  logic. Then implement typed, ledgered shop spending.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
