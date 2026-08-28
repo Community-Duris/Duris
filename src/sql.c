@@ -305,6 +305,14 @@ bool sql_pwipe(int code_verify)
 	}
 	return FALSE;
 }
+bool sql_pwipe_crossed_boundary(void)
+{
+	return false;
+}
+uint64_t sql_season_epoch(void)
+{
+	return 0;
+}
 bool sql_clear_zone_trophy()
 {
 	return FALSE;
@@ -323,6 +331,8 @@ MYSQL *DB;
  * sql_persistence_raw.c for now. */
 MYSQL *persistenceDB = NULL;
 pthread_mutex_t persistence_sql_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool pwipe_crossed_boundary = false;
+static uint64_t current_season_epoch = 0;
 
 static bool sql_env_true(const char *name)
 {
@@ -444,6 +454,102 @@ static bool sql_connection_execute(MYSQL *conn, const char *statement)
 	if (result)
 		mysql_free_result(result);
 	return mysql_next_result(conn) == -1;
+}
+
+static bool sql_connection_execute_affected(MYSQL *conn, const char *statement,
+					    my_ulonglong *affected)
+{
+	if (!affected || mysql_real_query(conn, statement, strlen(statement)))
+		return false;
+	MYSQL_RES *result = mysql_store_result(conn);
+	if (result)
+		mysql_free_result(result);
+	*affected = mysql_affected_rows(conn);
+	return *affected != (my_ulonglong)-1 && mysql_next_result(conn) == -1;
+}
+
+static bool sql_load_active_season_state(void)
+{
+	MYSQL_RES *result = db_query(
+		"SELECT season_epoch,reset_status FROM season_reset_state WHERE state_id=1");
+	if (!result)
+		return false;
+	MYSQL_ROW row = mysql_fetch_row(result);
+	char *end = NULL;
+	errno = 0;
+	unsigned long long epoch = row && row[0] ? strtoull(row[0], &end, 10) : 0;
+	const bool ready = row && row[0] && end && !*end && !errno && epoch > 0 && row[1] &&
+			   !strcmp(row[1], "active") && mysql_fetch_row(result) == NULL;
+	mysql_free_result(result);
+	if (!ready)
+		return false;
+	current_season_epoch = epoch;
+	return true;
+}
+
+static bool sql_begin_pwipe_epoch(void)
+{
+	pwipe_crossed_boundary = false;
+	if (!DB || !sql_connection_execute(DB, "START TRANSACTION"))
+		return false;
+	MYSQL_RES *result = db_query(
+		"SELECT season_epoch,reset_status FROM season_reset_state WHERE state_id=1 FOR UPDATE");
+	MYSQL_ROW row = result ? mysql_fetch_row(result) : NULL;
+	char *end = NULL;
+	errno = 0;
+	unsigned long long epoch = row && row[0] ? strtoull(row[0], &end, 10) : 0;
+	const bool active = row && row[0] && end && !*end && !errno && epoch > 0 &&
+			    epoch < ULLONG_MAX && row[1] && !strcmp(row[1], "active") &&
+			    mysql_fetch_row(result) == NULL;
+	if (result)
+		mysql_free_result(result);
+	if (!active)
+	{
+		sql_connection_execute(DB, "ROLLBACK");
+		return false;
+	}
+	char update[384];
+	snprintf(update, sizeof update,
+		 "UPDATE season_reset_state SET season_epoch=%llu,reset_status='resetting',"
+		 "reset_started_at=UTC_TIMESTAMP(6),reset_completed_at=NULL "
+		 "WHERE state_id=1 AND season_epoch=%llu AND reset_status='active'",
+		 epoch + 1, epoch);
+	/* Attempting the first season mutation is the irreversible boundary. */
+	pwipe_crossed_boundary = true;
+	my_ulonglong affected = 0;
+	if (!sql_connection_execute_affected(DB, update, &affected) || affected != 1)
+	{
+		sql_connection_execute(DB, "ROLLBACK");
+		return false;
+	}
+	if (!sql_connection_execute(DB, "COMMIT"))
+		return false;
+	current_season_epoch = epoch + 1;
+	return true;
+}
+
+static bool sql_complete_pwipe_epoch(void)
+{
+	if (!DB || !current_season_epoch)
+		return false;
+	char update[320];
+	snprintf(update, sizeof update,
+		 "UPDATE season_reset_state SET reset_status='active',"
+		 "reset_completed_at=UTC_TIMESTAMP(6) WHERE state_id=1 AND season_epoch=%llu "
+		 "AND reset_status='resetting'",
+		 (unsigned long long)current_season_epoch);
+	my_ulonglong affected = 0;
+	return sql_connection_execute_affected(DB, update, &affected) && affected == 1;
+}
+
+bool sql_pwipe_crossed_boundary(void)
+{
+	return pwipe_crossed_boundary;
+}
+
+uint64_t sql_season_epoch(void)
+{
+	return current_season_epoch;
 }
 
 static bool sql_mode_has(const char *mode, const char *required)
@@ -943,6 +1049,14 @@ int initialize_mysql()
 			mysql_close(DB);
 			DB = NULL;
 		}
+		return -1;
+	}
+	if (!sql_load_active_season_state())
+	{
+		logit(LOG_STATUS,
+		      "FATAL: season reset state is missing, invalid, or not active; recovery is required");
+		mysql_close(DB);
+		DB = NULL;
 		return -1;
 	}
 	if (!sql_populate_lookup_tables())
@@ -3630,6 +3744,7 @@ bool sql_verify_pwipe_manifest(void)
 					      "saved_item_affects",
 					      "saved_item_extra_descr",
 					      "saved_items",
+					      "season_reset_state",
 					      "ship_armor",
 					      "ship_cargo_market_mods",
 					      "ship_cargo_prices",
@@ -3681,6 +3796,11 @@ bool sql_verify_pwipe_manifest(void)
 		{ "level_cap", "racewar_leader" },
 		{ "level_cap", "level" },
 		{ "level_cap", "next_update" },
+		{ "season_reset_state", "state_id" },
+		{ "season_reset_state", "season_epoch" },
+		{ "season_reset_state", "reset_status" },
+		{ "season_reset_state", "reset_started_at" },
+		{ "season_reset_state", "reset_completed_at" },
 		{ NULL, NULL }
 	};
 	char query[8192];
@@ -3802,6 +3922,7 @@ bool sql_verify_auction_engines(void)
 
 bool sql_pwipe(int code_verify)
 {
+	pwipe_crossed_boundary = false;
 	logit(LOG_DEBUG, "sql_pwipe: STARTED!");
 	if (code_verify == 1723699)
 	{
@@ -3827,6 +3948,20 @@ bool sql_pwipe(int code_verify)
 		{
 			logit(LOG_DEBUG, "sql_pwipe: Preflight failed: auction tables not InnoDB.");
 			send_to_all("Preflight FAILED: auction tables must be InnoDB!\n");
+			return FALSE;
+		}
+		if (!redis_validate_pwipe_state())
+		{
+			logit(LOG_DEBUG,
+			      "sql_pwipe: Preflight failed: fresh Redis administrative connection unavailable.");
+			send_to_all("Preflight FAILED: Redis invalidation target unavailable!\n");
+			return FALSE;
+		}
+		if (!sql_begin_pwipe_epoch())
+		{
+			logit(LOG_DEBUG,
+			      "sql_pwipe: Failed to establish durable season reset boundary.");
+			send_to_all("Preflight FAILED: season reset boundary unavailable!\n");
 			return FALSE;
 		}
 		logit(LOG_DEBUG, "  success!");
@@ -4548,6 +4683,14 @@ bool sql_pwipe(int code_verify)
 			      "sql_pwipe: account reward pwipe policy failed; preserving rewards for manual review.");
 			send_to_all(
 				"Account reward pwipe policy FAILED; rewards are being preserved for manual review.\n");
+		}
+		if (!sql_complete_pwipe_epoch())
+		{
+			logit(LOG_DEBUG,
+			      "sql_pwipe: Reset data cleared but season state completion failed; shutdown remains fenced.");
+			send_to_all(
+				"Season reset completion FAILED; server will remain stopped for recovery.\n");
+			return FALSE;
 		}
 		logit(LOG_DEBUG, "  success!");
 		send_to_all("  success!\n");

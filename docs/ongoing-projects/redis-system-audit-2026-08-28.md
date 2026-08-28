@@ -8,6 +8,54 @@ RDS-014, RDS-019, and RDS-028 are remediated and the remaining findings are open
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-001 durable season reset boundary
+
+Completed in this interval:
+
+- Added immutable migration `0003_season_reset_state` with a singleton monotonic season
+  epoch and explicit `active`/`resetting` status. The migration is additive,
+  re-runnable, verified, lifecycle-inventoried, and sealed into the MySQL 8 and MariaDB
+  10.11 runtime compatibility fingerprints.
+- Boot now reads the singleton exactly once and refuses to start unless it contains one
+  valid positive epoch in the `active` state. An interrupted destructive reset therefore
+  cannot silently reopen gameplay.
+- Pwipe now verifies a fresh bounded Redis administrative connection before its SQL
+  boundary, locks the singleton, advances the epoch, and commits `resetting` before the
+  first destructive season mutation.
+- The reset records its irreversible boundary conservatively before attempting the first
+  state mutation. Any failed or ambiguous result after that point keeps `_pwipe` set and
+  forces process shutdown instead of clearing the flags and telling players the old
+  season resumed.
+- A successful reset changes the exact new epoch back to `active` only after Redis
+  invalidation, SQL postconditions, and account reward policy processing have finished.
+
+Performance effect:
+
+- Added one indexed singleton read during database boot and no recurring query, pulse,
+  player-save, or gameplay work.
+- The transaction, Redis preflight connection, and completion update run only during an
+  explicitly requested pwipe while persistence workers are already quiesced.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_season_reset_fence.py`: passed.
+- `python3 tests/async/test_pwipe_quiescence.py`: passed.
+- `python3 tests/async/test_redis_pwipe_invalidation.py`: passed.
+- `python3 tests/async/test_data_lifecycle_manifest.py`: passed.
+- `python3 tests/async/test_immutable_migration_runner.py`: passed.
+- `python3 tests/async/test_runtime_boot_compatibility.py`: passed.
+- Runtime full-schema, migration-history, engine, collation, index, and column drift tests
+  passed against both `mysql:8.0` and `mariadb:10.11`.
+
+Remaining related work:
+
+- RDS-001 remains partial until the SQL epoch is present in every Redis namespace and
+  every pwipe deletion/postcondition is checked. Explicitly disabled Redis must be safe
+  against old keys when it is enabled again for a later season.
+- RDS-007 now has durable monotonic season identity, but world generation keys and the
+  pointer transaction are not yet scoped to that identity.
+
 ### 2026-08-28 - RDS-002/RDS-003 fenced atomic world publication
 
 Completed:
@@ -408,8 +456,9 @@ database 0 and have no application, environment, deployment, or season prefix.
 Severity: Critical
 Confidence: Confirmed from reachable code paths
 Remediation status: Partially remediated; enabled-but-unavailable Redis now fails pwipe
-invalidation closed, and world writers are quiesced before checked deletion. The durable
-SQL season epoch and irreversible reset failure state remain open.
+invalidation closed, world writers are quiesced before checked deletion, and a durable
+SQL epoch/reset fence prevents boot or live resumption after an interrupted destructive
+boundary. Full Redis epoch namespacing and checked postconditions remain open.
 
 Evidence:
 
@@ -629,8 +678,8 @@ authority.
 Severity: High
 Confidence: Confirmed; multi-instance impact is conditional on concurrent writers
 Remediation status: Partially remediated; a renewable exclusive writer lease and watched
-token-checked publication transaction prevent overlapping writers. Durable season-scoped
-sequence identity remains open under RDS-001.
+token-checked publication transaction prevent overlapping writers, and SQL now owns a
+durable monotonic season identity. World keys and sequences are not yet scoped to it.
 
 Evidence:
 

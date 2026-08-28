@@ -20,6 +20,7 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "bootstrap_multithread_safe.sql",
     ROOT / "migrations" / "bootstrap_legacy_baseline.sql",
     ROOT / "migrations" / "immutable" / "0001_lookup_dataset_state.sql",
+    ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -67,7 +68,7 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 171)
+        self.assertEqual(report["database_tables"], 172)
         self.assertEqual(report["non_database_stores"], 17)
         self.assertFalse(report["destructive_rules_enabled"])
 

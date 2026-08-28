@@ -52,7 +52,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 171:
+            value["current_table_count"] != 172:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     for field in ("baseline_table_fingerprint",):
         if not isinstance(value[field], str) or not re.fullmatch(r"[0-9a-f]{64}",
@@ -102,9 +102,11 @@ def validate() -> dict:
     tables = [entry["locator"] for entry in lifecycle_manifest["entries"]
               if entry["kind"] == "database_table"]
     if len(tables) != value["current_table_count"] or \
-            "lookup_dataset_state" not in tables or \
+            "lookup_dataset_state" not in tables or "season_reset_state" not in tables or \
             migration_runner.table_fingerprint(
-                [table for table in tables if table != "lookup_dataset_state"]
+                [table for table in tables if table not in {
+                    "lookup_dataset_state", "season_reset_state"
+                }]
             ) != value["baseline_table_fingerprint"]:
         raise migration_runner.MigrationContractError("runtime lifecycle table drift")
     header = HEADER.read_text()

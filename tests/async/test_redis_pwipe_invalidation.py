@@ -7,6 +7,7 @@ source = (ROOT / "src/redis.c").read_text()
 sql = (ROOT / "src/sql.c").read_text()
 
 assert contains(header, "bool redis_clear_pwipe_state(void);")
+assert contains(header, "bool redis_validate_pwipe_state(void);")
 assert contains(source, "extern int                  _pwipe;")
 for signature in (
     "void redis_log_floor_drop(P_obj obj, int room_vnum)",
@@ -17,6 +18,7 @@ for signature in (
     assert contains(body, "if (_pwipe)"), signature
 
 wipe = sql[sql.index("bool sql_pwipe(int code_verify)"):]
+assert wipe.index("redis_validate_pwipe_state()") < wipe.index("sql_begin_pwipe_epoch()")
 assert contains(wipe, 'DELETE FROM persistence_item_events')
 assert contains(wipe, 'DELETE FROM persistence_scalar_events')
 assert wipe.index("redis_clear_pwipe_state()") < wipe.rindex("return TRUE;")

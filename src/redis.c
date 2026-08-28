@@ -496,6 +496,31 @@ bool redis_clear_pwipe_state(void)
 	return redis_clear_ship_snapshots();
 }
 
+bool redis_validate_pwipe_state(void)
+{
+#ifdef __NO_MYSQL__
+	return true;
+#else
+	if (!redis_enabled)
+		return true;
+	const redis_world_store_config config = redis_world_store_config_copy();
+	redisContext *context = redis_connect_bounded(config.host, config.port);
+	if (!context || context->err)
+	{
+		if (context)
+			redisFree(context);
+		return false;
+	}
+	redisReply *reply = (redisReply *)redis_command(context, "PING");
+	const bool ready = reply && reply->type == REDIS_REPLY_STATUS && reply->str &&
+			   !strcmp(reply->str, "PONG");
+	if (reply)
+		freeReplyObject(reply);
+	redisFree(context);
+	return ready;
+#endif
+}
+
 void redis_cleanup(void)
 {
 #ifndef __NO_MYSQL__

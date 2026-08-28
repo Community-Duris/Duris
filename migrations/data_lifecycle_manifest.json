@@ -4808,6 +4808,24 @@
       "dependencies": []
     },
     {
+      "id": "database:season_reset_state",
+      "kind": "database_table",
+      "locator": "season_reset_state",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_applicable",
+      "technical_purpose": "monotonic season identity and irreversible reset boundary state",
+      "controller_decision": { "status": "not_required", "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION" },
+      "export_rule": {
+        "disposition": "exclude", "subject_route": "lifecycle_metadata",
+        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
+        "excluded_fields": [], "shared_fields": []
+      },
+      "season_action": "retain", "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon", "protected_record": true,
+      "dependencies": []
+    },
+    {
       "id": "database:mud_schema_baselines",
       "kind": "database_table",
       "locator": "mud_schema_baselines",

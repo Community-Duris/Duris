@@ -75,6 +75,13 @@ Do not use the `pwipe` shutdown path for ordinary restarts: exit code `55`
 causes `cycle_mud.sh` to run the filesystem player wipe artifact after the
 server exits.
 
+Pwipe advances `season_reset_state.season_epoch` and records `resetting` before the first
+destructive SQL statement. If any later step fails, the server exits and subsequent boots
+refuse to start while that state remains. Treat this as an incomplete destructive reset:
+preserve the database and logs, determine which reset postcondition failed, and recover
+or complete the reset under operator control. Do not change the row back to `active`
+merely to bypass the boot fence.
+
 ## Pre-service safety gate
 
 Before a development start, confirm the intended role and target without printing

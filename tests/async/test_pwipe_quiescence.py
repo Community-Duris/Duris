@@ -14,6 +14,8 @@ assert "shutdownflag = _pwipe = 1" in pwipe_case
 assert pwipe_case.index("shutdownflag = _pwipe = 1") < pwipe_case.index("persistence_prepare_pwipe")
 assert "shutdownData.eShutdownType = TimedShutdownData::NONE" in pwipe_case
 assert pwipe_case.count("shutdownflag = _pwipe = 0") >= 3
+assert "sql_pwipe_crossed_boundary()" in pwipe_case
+assert "forcing fenced shutdown" in pwipe_case
 assert "persistence_large_event_queue_reset();" in utility
 assert "persistence_scalar_event_queue_reset();" in utility
 assert "persistence_item_event_queue_reset();" in utility
