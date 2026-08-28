@@ -23,7 +23,7 @@
 #include "files.h"
 #include "mm.h"
 #include "necromancy.h"
-#include "redis.h"
+#include "redis_report_cache.h"
 #include "spells.h"
 #include "sql.h"
 #include "vnum.obj.h"
@@ -76,8 +76,7 @@ static void arti_cache_invalidate(void)
 // populate redis cache at boot
 void arti_cache_init(void)
 {
-	extern bool redis_enabled;
-	if (!redis_enabled)
+	if (!redis_report_cache_enabled())
 		return;
 
 	int t;
@@ -214,8 +213,7 @@ static char *arti_generate_json(int type, bool Godlist)
 
 void arti_redis_cache(int type, bool Godlist)
 {
-	extern bool redis_enabled;
-	if (!redis_enabled)
+	if (!redis_report_cache_enabled())
 		return;
 
 	char *json = arti_generate_json(type, Godlist);
@@ -403,9 +401,8 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 
 	// Treat cache unavailability or malformed data as a miss. The SQL-generated
 	// payload is rendered directly; cache publication is best effort.
-	extern bool redis_enabled;
 	root = NULL;
-	if (redis_enabled)
+	if (redis_report_cache_enabled())
 	{
 		json = redis_get_artifact_list(type, Godlist);
 		if (json)
@@ -444,7 +441,7 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 			send_to_char("Artifact data is temporarily unavailable.\n\r", ch);
 			return;
 		}
-		if (redis_enabled)
+		if (redis_report_cache_enabled())
 			redis_cache_artifact_list(type, Godlist, json);
 		free(json);
 	}

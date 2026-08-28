@@ -74,11 +74,11 @@ assert "redis_cache_artifact_list(type, Godlist, json)" in listing
 assert "Artifact data is temporarily unavailable." in listing
 assert "Cache error." not in listing
 
-redis = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
+redis = (ROOT / "src" / "redis_report_cache.c").read_text(encoding="ascii")
 cache_start = redis.index("void redis_cache_artifact_list")
 cache_end = redis.index("char *redis_get_artifact_list", cache_start)
 cache = redis[cache_start:cache_end]
-assert "ARTIFACT_CACHE_TTL_SECONDS = 900" in cache
-assert "redis_cache_set_ex" in cache
+assert "artifact_cache_ttl_seconds = 900" in redis
+assert "cache_set_ex" in cache
 
 print("artifact cache schema and SQL fallback checks passed")

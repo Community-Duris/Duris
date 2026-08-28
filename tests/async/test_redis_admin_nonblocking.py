@@ -9,6 +9,8 @@ WIZ = (ROOT / "src" / "wizredis.c").read_text()
 REDIS = (ROOT / "src" / "redis.c").read_text()
 DONATION = (ROOT / "src" / "redis_donation_runtime.c").read_text()
 HEADER = (ROOT / "src" / "redis.h").read_text()
+REPORT = (ROOT / "src" / "redis_report_cache.c").read_text()
+REPORT_HEADER = (ROOT / "src" / "redis_report_cache.h").read_text()
 
 
 def section(source: str, start: str, end: str) -> str:
@@ -61,13 +63,13 @@ for retired in (
     assert retired not in REDIS
 
 for signature in (
-    "bool redis_cache_del(const char *key)",
+    "bool redis_invalidate_named_report(void)",
     "bool redis_invalidate_fraglist(void)",
     "bool redis_invalidate_epic_zones(void)",
     "bool redis_invalidate_artifact_cache(void)",
 ):
-    assert signature in HEADER
-    assert signature in REDIS
+    assert signature in REPORT_HEADER
+    assert signature in REPORT
 
 donation_pulse = section(
     DONATION, "void check_donation_messages", "} // namespace"

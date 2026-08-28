@@ -13,6 +13,8 @@ DONATION_HEADER = (ROOT / "src/redis_donation_runtime.h").read_text(encoding="as
 DONATION_SOURCE = (ROOT / "src/redis_donation_runtime.c").read_text(encoding="ascii")
 PRESENCE_HEADER = (ROOT / "src/redis_presence_runtime.h").read_text(encoding="ascii")
 PRESENCE_SOURCE = (ROOT / "src/redis_presence_runtime.c").read_text(encoding="ascii")
+REPORT_HEADER = (ROOT / "src/redis_report_cache.h").read_text(encoding="ascii")
+REPORT_SOURCE = (ROOT / "src/redis_report_cache.c").read_text(encoding="ascii")
 MAKEFILE = (ROOT / "src/Makefile").read_text(encoding="ascii")
 
 
@@ -79,6 +81,58 @@ for filename in ("actoth.c", "nanny.c"):
     assert '#include "redis_presence_runtime.h"' in source
     assert '#include "redis.h"' not in source
 
+for symbol in (
+    "redis_report_cache_configure",
+    "redis_report_cache_start",
+    "redis_report_cache_cancel",
+    "redis_report_cache_shutdown",
+    "redis_cache_named_report",
+    "redis_cache_fraglist",
+    "redis_cache_epic_zones",
+    "redis_cache_artifact_list",
+):
+    assert symbol in REPORT_HEADER
+    assert symbol in REPORT_SOURCE
+    assert symbol not in REDIS_HEADER
+for token in (
+    "redis_cache_store_set",
+    "redis_cache_store_get",
+    "redis_cache_store_transform",
+    "redis_cache_store_delete",
+    "redis_cache_store_seed",
+    "generate_named_report",
+    "generate_fraglist_cache_payload",
+):
+    assert token in REPORT_SOURCE
+for token in (
+    "redis_cache_store_set",
+    "redis_cache_store_get",
+    "redis_cache_store_transform",
+    "redis_cache_store_seed",
+    "generate_named_report",
+    "generate_fraglist_cache_payload",
+):
+    assert token not in REDIS_SOURCE
+assert REDIS_SOURCE.count("redis_cache_store_delete") == 1
+assert "redis_report_cache.o" in MAKEFILE
+assert "redis_report_cache_start(redis_cache_settings)" in REDIS_SOURCE
+assert "redis_report_cache_cancel()" in REDIS_SOURCE
+assert "redis_report_cache_shutdown(REDIS_CACHE_DRAIN_TIMEOUT_MSEC)" in REDIS_SOURCE
+
+report_only_callers = (
+    "artifact.c",
+    "artifact_guild_transaction.c",
+    "combat_outcome_transaction.c",
+    "epic.c",
+    "fraglist.c",
+    "random.mob.c",
+    "zone_touch_transaction.c",
+)
+for filename in report_only_callers:
+    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
+    assert '#include "redis_report_cache.h"' in source
+    assert '#include "redis.h"' not in source
+
 checkpoint_only_callers = (
     "actinf.c",
     "auction_houses.c",
@@ -98,6 +152,6 @@ redis_includers = []
 for source_path in (ROOT / "src").rglob("*.[ch]"):
     if '#include "redis.h"' in source_path.read_text(encoding="utf-8"):
         redis_includers.append(source_path)
-assert len(redis_includers) <= 22
+assert len(redis_includers) <= 13
 
-print("Redis, checkpoint, donation, and presence module boundaries passed")
+print("Redis, checkpoint, donation, presence, and report-cache module boundaries passed")

@@ -7,7 +7,7 @@
 #include "assocs.h"
 #include "config.h"
 #include "frag_cap_config.h"
-#include "redis.h"
+#include "redis_report_cache.h"
 #include "ships.h"
 #include "spells.h"
 #include "sql.h"

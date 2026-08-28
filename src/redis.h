@@ -36,32 +36,6 @@ bool redis_world_recovery_drain(uint64_t timeout_msec);
 bool redis_world_recovery_quiesce(void);
 void redis_world_recovery_set_materializing(bool active);
 
-// cache helpers
-bool redis_cache_set(const char *key, const char *value);
-bool redis_cache_set_ex(const char *key, int seconds, const char *value);
-char *redis_cache_get(const char *key);
-bool redis_cache_del(const char *key);
-
-// named command cache
-void redis_cache_named_report(void);
-char *redis_get_named_report(void);
-
-// frag command cache
-void redis_cache_fraglist(void);
-char *redis_get_fraglist(void);
-bool redis_invalidate_fraglist(void);
-
-// epic zones command cache
-void redis_cache_epic_zones(void);
-char *redis_get_epic_zones(void);
-bool redis_invalidate_epic_zones(void);
-
-// arti cache
-void redis_cache_artifact_list(int type, bool godlist, const char *json);
-char *redis_get_artifact_list(int type, bool godlist);
-bool redis_invalidate_artifact_list(int type, bool godlist);
-bool redis_invalidate_artifact_cache(void);
-
 bool redis_clear_pwipe_state(void);
 bool redis_validate_pwipe_state(void);
 bool redis_season_key(char *buffer, size_t size, const char *suffix);

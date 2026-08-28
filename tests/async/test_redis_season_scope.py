@@ -8,6 +8,7 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 REGISTRY = (ROOT / "src" / "redis_key_registry.def").read_text(encoding="ascii")
 REDIS = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
+REPORT = (ROOT / "src" / "redis_report_cache.c").read_text(encoding="ascii")
 PRESENCE = (ROOT / "src" / "redis_presence_worker.c").read_text(encoding="ascii")
 PRESENCE_HEADER = (ROOT / "src" / "redis_presence_worker.h").read_text(encoding="ascii")
 DONATION = (ROOT / "src" / "redis_donation_worker.c").read_text(encoding="ascii")
@@ -50,18 +51,18 @@ assert "config->channel" in DONATION
 assert "configured_channel.c_str()" in DONATION
 assert "REDIS_DONATION_CHANNEL" not in DONATION
 
-for wrapper in ("redis_cache_set", "redis_cache_set_ex", "redis_cache_get", "redis_cache_del"):
-    start = REDIS.index(f"{wrapper}(")
-    body = REDIS[start:REDIS.index("\n}", start)]
-    assert "redis_resolve_cache_key" in body
-assert "redis_cache_named_key" in REDIS
-assert "redis_cache_fraglist_key" in REDIS
-assert "redis_cache_epic_zones_key" in REDIS
-assert "redis_cache_artifact_keys" in REDIS
+for wrapper in ("cache_set_ex", "cache_get", "cache_delete"):
+    start = REPORT.index(f"{wrapper}(")
+    body = REPORT[start:REPORT.index("\n}", start)]
+    assert "resolve_key" in body
+for key in ("named_key", "fraglist_key", "epic_zones_key", "artifact_keys"):
+    assert key in REPORT
+assert "redis_report_cache_configure(redis_key_namespace, epoch)" in REDIS
+assert "redis_namespace_season_key(key_namespace, epoch" in REPORT
 
 pwipe = REDIS[REDIS.index("bool redis_clear_pwipe_state"):REDIS.index("void redis_cleanup")]
 for scoped in ("redis_presence_current_key", "redis_presence_session_pattern",
-               "redis_presence_retry_pattern", "redis_cache_pattern"):
+               "redis_presence_retry_pattern", "redis_report_cache_pattern()"):
     assert scoped in pwipe
 for legacy in ("REDIS_LEGACY_PRESENCE_CURRENT",
                "REDIS_LEGACY_PRESENCE_SESSION_PATTERN",

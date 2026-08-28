@@ -10,6 +10,49 @@ remediated, as are RDS-018, RDS-025, and RDS-015; RDS-026 remains open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-026 report-cache facade boundary
+
+Completed in this interval:
+
+- Moved epoch-scoped content-cache keys, key resolution, report generation, local reads,
+  asynchronous writes and invalidations, artifact warm-up, and cache-worker lifecycle from
+  `redis.c` into `redis_report_cache.c/.h`.
+- Replaced the public generic cache set/get/delete surface with report-specific named,
+  fraglist, epic-zone, and artifact operations. Administrative named-cache invalidation now
+  uses an explicit operation instead of accepting an arbitrary cache key.
+- Routed seven report-only translation units through the typed header and removed their
+  `redis.h` dependency. Artifact rendering now reads the report-cache facade state rather
+  than the broad mutable Redis global.
+- Reduced `redis.c` from 2,281 to 1,802 lines and `redis.h` from 76 to 50 lines. Direct
+  `redis.h` consumers fell from 20 to 13, and the module-boundary gate now rejects report
+  generation, report-cache storage, or report-only callers returning to the composition
+  root.
+
+Performance effect:
+
+- Gameplay-facing cache reads remain an enabled check plus the existing bounded local
+  cache lookup or transform. Cache publication and invalidation still perform one bounded
+  enqueue to the existing background worker; no synchronous Redis, SQL, filesystem,
+  process, sleep, or wait work was added to those paths.
+- The only direct Redis read in the facade is the existing six-key artifact warm-up. It
+  remains bounded by the configured connection and command deadlines and runs only during
+  boot after the cache worker starts.
+
+Validation:
+
+- `./scripts/format.sh --check` and `make -C src -j2`: passed under the warning-as-error
+  profile.
+- Report/artifact codecs, season scoping, subsystem identity, pwipe invalidation,
+  administrator nonblocking, failure containment, command observability, transactional
+  cutover, and module-boundary regressions passed.
+- All 24 `tests/async/test_redis*.py` regressions passed, including every isolated live
+  Redis transport, ACL, cache, floor, presence, donation, maintenance, and world-store
+  suite.
+
+RDS-026 remains partially remediated. Player checkpoints, donation delivery, presence
+delivery, and report caches are separate typed modules; world/floor orchestration and
+administrative lifecycle policy remain in the Redis composition root.
+
 ### 2026-08-28 - RDS-026 presence runtime boundary
 
 Completed in this interval:
@@ -2529,24 +2572,29 @@ Remediation status: Partially remediated. Connection/security, key registry, wor
 floor, presence, donation, and cache workers already have typed modules. Revisioned player
 checkpoint ownership is in `persistence_checkpoint.c/.h`, and donation state plus bounded
 game delivery is in `redis_donation_runtime.c/.h`. Presence policy, payload submission, and
-enabled state are in `redis_presence_runtime.c/.h`. Ten former checkpoint/presence-only
-consumers no longer include `redis.h`, which exports neither player revision types nor
-donation/presence mutable state. The remaining composition root still owns too many
-subsystem facades and lifecycle policies.
+enabled state are in `redis_presence_runtime.c/.h`. Epoch-scoped report keys, report
+generation, local reads, asynchronous publication/invalidation, boot warm-up, and worker
+lifecycle are in `redis_report_cache.c/.h`; the generic public cache API has been replaced
+by report-specific operations. Sixteen former checkpoint, presence, or report-only
+consumers no longer include `redis.h`, which exports none of those subsystem APIs or
+mutable states. The remaining composition root still owns world/floor orchestration,
+legacy ship cleanup, and broad administrative lifecycle policy.
 
-`src/redis.c` is 2,525 lines and combines connection/configuration, world publication,
-floor recovery, ship serialization, report caches, presence, pub/sub, administrator
-helpers, and legacy UID handling. `redis.h` also owns revisioned player-save wrapper APIs
-that do not use Redis. Twenty-nine C/C++ translation units include the header, many only
-for dirty-player functions. Host/port parsing and connection construction are repeated.
+At the audit baseline, `src/redis.c` was 2,525 lines and combined
+connection/configuration, world publication, floor recovery, ship serialization, report
+caches, presence, pub/sub, administrator helpers, and legacy UID handling. `redis.h` also
+owned revisioned player-save wrapper APIs that did not use Redis, and 29 C/C++ translation
+units included the header. The composition root is now 1,802 lines, the header is 50
+lines, and 13 translation units include it; the remaining world/floor and administrative
+policy still has a broad review and lifecycle surface.
 
 Impact: changes have a broad compile/review surface, subsystem policy is inconsistent,
 and tests tend to assert monolithic source layout rather than typed interfaces.
 
-Recommendation: split into a small client/config adapter, key registry, world recovery,
-floor deltas, ship cache, content cache, presence, donation, and admin modules. Move
-player checkpoint wrappers to a persistence header. Keep each subsystem's availability,
-codec, TTL, authority, and lifecycle policy beside its implementation.
+Recommendation: finish moving world/floor orchestration, legacy ship cleanup, and
+administrative lifecycle policy behind typed modules. Keep each subsystem's availability,
+codec, TTL, authority, and lifecycle policy beside its implementation, leaving `redis.c`
+as the small boot/configuration composition root.
 
 ### RDS-027 - The no-MySQL build option is broken
 

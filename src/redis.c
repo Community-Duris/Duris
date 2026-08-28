@@ -5,7 +5,6 @@
 #include "db.h"
 #include "utility.h"
 #include "utils.h"
-#include "frag_cap_config.h"
 #include "redis.h"
 #include <ctype.h>
 #include <errno.h>
@@ -19,7 +18,6 @@
 #include "config.h"
 #include "copyover.h"
 #include "world_recovery_pipeline.h"
-#include "epic.h"
 #include "files.h"
 #include "redis_cache_store.h"
 #include "redis_command_observability.h"
@@ -31,10 +29,9 @@
 #include "redis_namespace.h"
 #include "redis_presence_runtime.h"
 #include "redis_presence_worker.h"
-#include "report_cache_codec.h"
+#include "redis_report_cache.h"
 #include "redis_world_store.h"
 #include "world_recovery_codec.h"
-#include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
 #include "ships/ships.h"
@@ -111,14 +108,7 @@ static char redis_presence_retry_prefix[160] = {};
 static char redis_presence_retry_pattern[160] = {};
 static char redis_presence_event_channel[160] = {};
 static char redis_donation_channel[160] = {};
-static char redis_cache_prefix[160] = {};
-static char redis_cache_pattern[160] = {};
-static char redis_cache_named_key[160] = {};
-static char redis_cache_fraglist_key[160] = {};
-static char redis_cache_epic_zones_key[160] = {};
-static char redis_cache_artifact_keys[6][160] = {};
 static bool redis_clear_floor_drops_checked(void);
-static void redis_prime_artifact_caches(void);
 
 #ifndef __NO_MYSQL__
 static redisReply *redis_command(redis_shared_command_scope scope, redis_shared_command_kind kind,
@@ -179,47 +169,10 @@ static bool redis_configure_epoch_surfaces(uint64_t epoch)
 			     epoch, REDIS_PRESENCE_EVENT_CHANNEL) ||
 	    !redis_epoch_key(redis_donation_channel, sizeof redis_donation_channel, epoch,
 			     REDIS_DONATION_CHANNEL) ||
-	    !redis_epoch_key(redis_cache_prefix, sizeof redis_cache_prefix, epoch, "cache:") ||
-	    !redis_epoch_key(redis_cache_pattern, sizeof redis_cache_pattern, epoch,
-			     REDIS_CACHE_PATTERN) ||
-	    !redis_epoch_key(redis_cache_named_key, sizeof redis_cache_named_key, epoch,
-			     REDIS_CACHE_NAMED) ||
-	    !redis_epoch_key(redis_cache_fraglist_key, sizeof redis_cache_fraglist_key, epoch,
-			     REDIS_CACHE_FRAGLIST) ||
-	    !redis_epoch_key(redis_cache_epic_zones_key, sizeof redis_cache_epic_zones_key, epoch,
-			     REDIS_CACHE_EPIC_ZONES))
+	    !redis_report_cache_configure(redis_key_namespace, epoch))
 		return false;
-	for (int type = 1; type <= 3; ++type)
-		for (int view = 0; view <= 1; ++view)
-		{
-			char suffix[64];
-			const int written = snprintf(suffix, sizeof suffix,
-						     REDIS_CACHE_ARTIFACT_FORMAT, type, view);
-			const size_t index = static_cast<size_t>((type - 1) * 2 + view);
-			if (written <= 0 || (size_t)written >= sizeof suffix ||
-			    !redis_epoch_key(redis_cache_artifact_keys[index],
-					     sizeof redis_cache_artifact_keys[index], epoch,
-					     suffix))
-				return false;
-		}
 	redis_runtime_epoch = epoch;
 	return true;
-}
-
-static const char *redis_resolve_cache_key(const char *key)
-{
-	if (!key)
-		return NULL;
-	if (!strcmp(key, REDIS_CACHE_NAMED))
-		return redis_cache_named_key;
-	if (!strcmp(key, REDIS_CACHE_FRAGLIST))
-		return redis_cache_fraglist_key;
-	if (!strcmp(key, REDIS_CACHE_EPIC_ZONES))
-		return redis_cache_epic_zones_key;
-	const size_t prefix_size = strlen(redis_cache_prefix);
-	return prefix_size && !strncmp(key, redis_cache_prefix, prefix_size) && key[prefix_size] ?
-		       key :
-		       NULL;
 }
 
 static bool redis_world_writer_token_create(void)
@@ -376,50 +329,6 @@ static redisReply *redis_command_argv(redis_shared_command_scope scope,
 	if (ctx && !ctx->err)
 		reply = static_cast<redisReply *>(redisCommandArgv(ctx, argc, arguments, lengths));
 	return redis_command_finish(scope, kind, ctx, started_usec, reply);
-}
-
-static void redis_prime_artifact_caches(void)
-{
-	redisContext *context = redis_connection_open(redis_cache_settings);
-	if (!context || context->err)
-	{
-		redis_shared_command_observability_record(REDIS_SHARED_SCOPE_CACHE,
-							  REDIS_SHARED_COMMAND_SCRIPT,
-							  redis_command_outcome(context, false), 0);
-		if (context)
-			redisFree(context);
-		return;
-	}
-	constexpr const char *script = "local result={} for index,key in ipairs(KEYS) do "
-				       "result[index*2-1]=redis.call('GET',key) "
-				       "result[index*2]=redis.call('PTTL',key) end return result";
-	const char *keys[6] = {};
-	for (size_t index = 0; index < 6; ++index)
-		keys[index] = redis_cache_artifact_keys[index];
-	redisReply *reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_CACHE,
-							REDIS_SHARED_COMMAND_SCRIPT, context,
-							"EVAL %b 6 %s %s %s %s %s %s", script,
-							strlen(script), keys[0], keys[1], keys[2],
-							keys[3], keys[4], keys[5]);
-	if (!reply || reply->type != REDIS_REPLY_ARRAY || reply->elements != 12)
-	{
-		if (reply)
-			freeReplyObject(reply);
-		redisFree(context);
-		return;
-	}
-	for (size_t index = 0; index < 6; ++index)
-	{
-		redisReply *value = reply->element[index * 2];
-		redisReply *ttl = reply->element[index * 2 + 1];
-		if (!value || value->type != REDIS_REPLY_STRING || !value->str || !ttl ||
-		    ttl->type != REDIS_REPLY_INTEGER || ttl->integer <= 0)
-			continue;
-		const long long seconds = std::min((ttl->integer + 999) / 1000, 900LL);
-		redis_cache_store_seed(keys[index], value->str, (int)seconds);
-	}
-	freeReplyObject(reply);
-	redisFree(context);
 }
 
 #endif
@@ -782,6 +691,7 @@ bool redis_init(void)
 	redis_shared_command_observability_reset(false);
 	redis_donation_runtime_set_enabled(false);
 	redis_presence_runtime_set_enabled(false);
+	redis_report_cache_reset();
 #ifdef __NO_MYSQL__
 	redis_enabled = false;
 	return true;
@@ -905,11 +815,8 @@ bool redis_init(void)
 		logit(LOG_SYS, "redis: presence worker unavailable; presence updates disabled");
 	else
 		redis_presence_runtime_set_enabled(true);
-	const redis_cache_store_config cache_config = { redis_cache_settings };
-	if (!redis_cache_store_init(&cache_config))
+	if (!redis_report_cache_start(redis_cache_settings))
 		logit(LOG_SYS, "redis: cache worker unavailable; report caches disabled");
-	else
-		redis_prime_artifact_caches();
 	if (redis_donation_runtime_enabled())
 	{
 		const redis_donation_worker_config donation_config = { redis_donation_settings,
@@ -996,7 +903,7 @@ bool redis_clear_pwipe_state(void)
 	redis_donation_worker_shutdown();
 	redis_presence_runtime_set_enabled(false);
 	redis_presence_worker_cancel();
-	redis_cache_store_cancel();
+	redis_report_cache_cancel();
 	redis_floor_store_cancel();
 	if (!redis_world_recovery_quiesce())
 		return false;
@@ -1046,7 +953,8 @@ bool redis_clear_pwipe_state(void)
 					 REDIS_LEGACY_WORLD_COMPLETE) &&
 		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
 					 REDIS_LEGACY_WORLD_FENCE) &&
-		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE, redis_cache_pattern) &&
+		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
+				       redis_report_cache_pattern()) &&
 		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
 				       REDIS_LEGACY_CACHE_PATTERN) &&
 		redis_clear_ship_snapshots();
@@ -1082,7 +990,7 @@ void redis_cleanup(void)
 	redis_presence_runtime_set_enabled(false);
 	if (!redis_presence_worker_shutdown(REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC))
 		logit(LOG_SYS, "redis: presence worker drain timed out during shutdown");
-	if (!redis_cache_store_shutdown(REDIS_CACHE_DRAIN_TIMEOUT_MSEC))
+	if (!redis_report_cache_shutdown(REDIS_CACHE_DRAIN_TIMEOUT_MSEC))
 		logit(LOG_SYS, "redis: cache worker drain timed out during shutdown");
 	if (redis_world_state_enabled)
 	{
@@ -1823,54 +1731,6 @@ void event_save_world_state(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, voi
 	nevent_periodic_next_after(world_state_interval * WAIT_SEC);
 }
 
-bool redis_cache_set(const char *key, const char *value)
-{
-#ifdef __NO_MYSQL__
-	return false;
-#else
-	const char *resolved = redis_resolve_cache_key(key);
-	if (!redis_enabled || !resolved || !value)
-		return false;
-	return redis_cache_store_set(resolved, value, 0);
-#endif
-}
-
-bool redis_cache_set_ex(const char *key, int seconds, const char *value)
-{
-#ifdef __NO_MYSQL__
-	return false;
-#else
-	const char *resolved = redis_resolve_cache_key(key);
-	if (!redis_enabled || !resolved || !value || seconds <= 0)
-		return false;
-	return redis_cache_store_set(resolved, value, seconds);
-#endif
-}
-
-char *redis_cache_get(const char *key)
-{
-#ifdef __NO_MYSQL__
-	return NULL;
-#else
-	const char *resolved = redis_resolve_cache_key(key);
-	if (!redis_enabled || !resolved)
-		return NULL;
-	return redis_cache_store_get(resolved);
-#endif
-}
-
-bool redis_cache_del(const char *key)
-{
-#ifndef __NO_MYSQL__
-	const char *resolved = redis_resolve_cache_key(key);
-	if (!redis_enabled || !resolved)
-		return false;
-	return redis_cache_store_delete(resolved);
-#else
-	return false;
-#endif
-}
-
 #ifndef __NO_MYSQL__
 static void redis_ship_cache_key(char *buf, size_t buf_size, const char *owner_name)
 {
@@ -1940,342 +1800,3 @@ bool redis_clear_ship_snapshots(void)
 	return redis_scan_match_empty(REDIS_SHARED_SCOPE_MAINTENANCE, REDIS_SHIP_SNAPSHOT_PATTERN);
 }
 #endif
-
-// forward declare from random.mob.c
-struct zone_random_data
-{
-	int zone;
-	int races[10];
-	int proc_spells[3][2];
-};
-extern struct zone_random_data zones_random_data[];
-extern Skill skills[];
-
-static char *generate_named_report(void)
-{
-	char *output = (char *)malloc(MAX_STRING_LENGTH * 4);
-	if (!output)
-		return NULL;
-
-	output[0] = '\0';
-	char buffer[MAX_STRING_LENGTH];
-
-	strcat(output, "&+YCurrent listing of spells granted by named sets by zone.&n\n");
-	strcat(output, "&+Y-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&n\n\n");
-	strcat(output, "  &+MNotes&n: &+W*&n if a zone isn't listed, sets still grant hitpoints\n");
-	strcat(output,
-	       "         &+W*&n caster level of the spell(s) is based on number of items\n");
-	strcat(output, "           going over set requirements will increase caster level\n");
-	strcat(output, "         &+W*&n &+Gthese&n spells have a cooldown of 1 minute\n");
-	strcat(output, "           &+ythese&n spells have a cooldown of 5 minutes\n\n");
-	strcat(output,
-	       "&+Y ZONE NAME                                        &+W|&+B SPELLS GRANTED &+W(&+Ypieces required&n&+W)&n\n");
-	strcat(output,
-	       "&+W-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=&n\n");
-
-	for (int i = 0; zones_random_data[i].zone; i++)
-	{
-		int zone_id = real_zone(zones_random_data[i].zone);
-		if (zone_id <= 0)
-			continue;
-
-		const char *zone_name = zone_table[zone_id].name;
-		snprintf(buffer, sizeof(buffer), " %s    &+W|&n ",
-			 pad_ansi(zone_name, 45, FALSE).c_str());
-
-		if (zones_random_data[i].proc_spells[0][0] == 0)
-		{
-			strcat(buffer, "&+LNONE&n");
-			strcat(buffer, "\n");
-			strcat(output, buffer);
-			continue;
-		}
-
-		for (int x = 0; x < 3; x++)
-		{
-			if (zones_random_data[i].proc_spells[x][0] != 0 &&
-			    zones_random_data[i].proc_spells[x][1] <= MAX_AFFECT_TYPES)
-			{
-				char buf[256];
-				const char *spellColor = "&+B";
-
-				if (zones_random_data[i].proc_spells[x][1] == SPELL_STONE_SKIN ||
-				    zones_random_data[i].proc_spells[x][1] == SPELL_INVIGORATE)
-					spellColor = "&+G";
-				else if (zones_random_data[i].proc_spells[x][1] ==
-					 SPELL_CONJURE_ELEMENTAL)
-					spellColor = "&+y";
-
-				snprintf(buf, sizeof(buf), "%s%s%s &+W(&+Y%d&+W)&n",
-					 x != 0 ? "&+W,&n " : "", spellColor,
-					 skills[zones_random_data[i].proc_spells[x][1]].name,
-					 zones_random_data[i].proc_spells[x][0]);
-				strcat(buffer, buf);
-			}
-		}
-		strcat(buffer, "\n");
-		strcat(output, buffer);
-	}
-
-	return output;
-}
-
-void redis_cache_named_report(void)
-{
-#ifndef __NO_MYSQL__
-	constexpr int named_report_cache_ttl_seconds = 86400;
-	if (!redis_enabled)
-		return;
-
-	char *report = generate_named_report();
-	if (report)
-	{
-		redis_cache_set_ex(REDIS_CACHE_NAMED, named_report_cache_ttl_seconds, report);
-		free(report);
-		logit(LOG_SYS, "redis: cached named report");
-	}
-#endif
-}
-
-char *redis_get_named_report(void)
-{
-	return redis_cache_get(REDIS_CACHE_NAMED);
-}
-
-// fraglist cache
-extern void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_update);
-extern const racewar_struct racewar_color[];
-
-#define MAX_FRAG_SIZE 10
-static constexpr int fraglist_cache_ttl_seconds = 900;
-
-static char *generate_fraglist_cache_payload(void)
-{
-#ifdef __NO_MYSQL__
-	return NULL;
-#else
-	char *output = (char *)malloc(65536);
-	if (!output)
-		return NULL;
-
-	output[0] = '\0';
-	char buf[2048], name[256], prefix[1024];
-	int frags, count;
-	float fragnum;
-	int cap_level, cap_racewar, cap_others;
-	long cap_frags;
-	time_t cap_deadline;
-	MYSQL_RES *res;
-	MYSQL_ROW row;
-
-	get_level_cap_info(&cap_frags, &cap_racewar, &cap_level, &cap_deadline);
-	if (cap_frags < 0 || cap_racewar < 0 || cap_racewar >= MAX_RACEWAR + 2 || cap_deadline <= 0)
-	{
-		free(output);
-		return NULL;
-	}
-	// Avoid a redundant lookup: both displayed caps derive from the same singleton row.
-	const struct frag_cap_config *cap_config = frag_cap_config_get();
-	if (!cap_config)
-	{
-		free(output);
-		return NULL;
-	}
-	cap_others = std::clamp(cap_level, cap_config->cap_floor_level,
-				std::min(cap_config->cap_maximum_level, MAXLVLMORTAL));
-
-	snprintf(
-		prefix, sizeof prefix,
-		"&+YFrag Level Cap:&+w %d - &+%c%s&n, &+w%d&N - Others, &+YTop Frag Amount: &+w%d.%02d\n"
-		"&+YTimer:&+w ",
-		cap_level, racewar_color[cap_racewar].color, racewar_color[cap_racewar].name,
-		cap_others, (int)(cap_frags / 100), (int)(cap_frags % 100));
-	snprintf(output, 65536, " &+YFrags needed:&+w %.2f&n\n\n&+WTop Fraggers\n\n",
-		 frag_cap_config_frags_for_level(cap_level + 1));
-
-	// query top fraggers (no filter)
-	res = db_query("SELECT char_name, total_frags FROM frag_leaderboard "
-		       "WHERE deleted_at IS NULL ORDER BY total_frags DESC LIMIT %d",
-		       MAX_FRAG_SIZE);
-	if (res)
-	{
-		count = 0;
-		while ((row = mysql_fetch_row(res)) && count < MAX_FRAG_SIZE)
-		{
-			if (row[0] && row[1])
-			{
-				strlcpy(name, row[0], sizeof name);
-				name[0] = toupper(name[0]);
-				frags = atoi(row[1]);
-				fragnum = frags / 100.0;
-				snprintf(buf, sizeof(buf), "   &+Y%-30s             &+R% 6.2f\r\n",
-					 name, fragnum);
-				strcat(output, buf);
-				count++;
-			}
-		}
-		mysql_free_result(res);
-
-		while (count < MAX_FRAG_SIZE)
-		{
-			snprintf(buf, sizeof(buf), "   &+Y%-30s             &+R% 6.2f\r\n",
-				 "Nobody", 0.0);
-			strcat(output, buf);
-			count++;
-		}
-	}
-
-	strcat(output, "\r\n\r\n&+LLowest Fraggers\r\n\r\n");
-
-	// query lowest fraggers
-	res = db_query("SELECT char_name, total_frags FROM frag_leaderboard "
-		       "WHERE deleted_at IS NULL ORDER BY total_frags ASC LIMIT %d",
-		       MAX_FRAG_SIZE);
-	if (res)
-	{
-		count = 0;
-		while ((row = mysql_fetch_row(res)) && count < MAX_FRAG_SIZE)
-		{
-			if (row[0] && row[1])
-			{
-				strlcpy(name, row[0], sizeof name);
-				name[0] = toupper(name[0]);
-				frags = atoi(row[1]);
-				fragnum = frags / 100.0;
-				snprintf(buf, sizeof(buf), "   &+Y%-30s             &+R% 6.2f\r\n",
-					 name, fragnum);
-				strcat(output, buf);
-				count++;
-			}
-		}
-		mysql_free_result(res);
-
-		while (count < MAX_FRAG_SIZE)
-		{
-			snprintf(buf, sizeof(buf), "   &+Y%-30s             &+R% 6.2f\r\n",
-				 "Nobody", 0.0);
-			strcat(output, buf);
-			count++;
-		}
-	}
-
-	strcat(output, "\r\n");
-	char *payload = report_cache_countdown_encode(prefix, output,
-						      static_cast<uint64_t>(time(NULL)),
-						      static_cast<uint64_t>(cap_deadline));
-	free(output);
-	return payload;
-#endif
-}
-
-void redis_cache_fraglist(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled)
-		return;
-
-	char *output = generate_fraglist_cache_payload();
-	if (output)
-	{
-		redis_cache_set_ex(REDIS_CACHE_FRAGLIST, fraglist_cache_ttl_seconds, output);
-		free(output);
-		logit(LOG_SYS, "redis: cached fraglist");
-	}
-#endif
-}
-
-char *redis_get_fraglist(void)
-{
-	const auto render = [](const char *payload, void *) -> char *
-	{
-		return report_cache_countdown_render(payload, static_cast<uint64_t>(time(NULL)),
-						     fraglist_cache_ttl_seconds);
-	};
-	return redis_cache_store_transform(redis_cache_fraglist_key, render, NULL);
-}
-
-bool redis_invalidate_fraglist(void)
-{
-	return redis_cache_del(REDIS_CACHE_FRAGLIST);
-}
-
-// epic zones cache - 15 min ttl for alignment display
-#define EPIC_ZONES_CACHE_TTL 900
-
-void redis_cache_epic_zones(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled)
-		return;
-
-	char *output = generate_epic_zones_output();
-	if (output)
-	{
-		redis_cache_set_ex(REDIS_CACHE_EPIC_ZONES, EPIC_ZONES_CACHE_TTL, output);
-		free(output);
-		logit(LOG_SYS, "redis: cached epic zones");
-	}
-#endif
-}
-
-char *redis_get_epic_zones(void)
-{
-	return redis_cache_get(REDIS_CACHE_EPIC_ZONES);
-}
-
-bool redis_invalidate_epic_zones(void)
-{
-	return redis_cache_del(REDIS_CACHE_EPIC_ZONES);
-}
-
-// arti cache
-static const char *get_artifact_cache_key(int type, bool godlist)
-{
-	if (type < 1 || type > 3)
-		return NULL;
-	return redis_cache_artifact_keys[(type - 1) * 2 + (godlist ? 1 : 0)];
-}
-
-void redis_cache_artifact_list(int type, bool godlist, const char *json)
-{
-#ifndef __NO_MYSQL__
-	constexpr int ARTIFACT_CACHE_TTL_SECONDS = 900;
-	if (!redis_enabled || type < 1 || type > 3 || !json)
-		return;
-	redis_cache_set_ex(get_artifact_cache_key(type, godlist), ARTIFACT_CACHE_TTL_SECONDS, json);
-#endif
-}
-
-char *redis_get_artifact_list(int type, bool godlist)
-{
-	return redis_cache_get(get_artifact_cache_key(type, godlist));
-}
-
-bool redis_invalidate_artifact_list(int type, bool godlist)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || type < 1 || type > 3)
-		return false;
-	return redis_cache_del(get_artifact_cache_key(type, godlist));
-#else
-	return false;
-#endif
-}
-
-bool redis_invalidate_artifact_cache(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled)
-		return false;
-
-	bool submitted = true;
-	for (int t = 1; t <= 3; t++)
-	{
-		submitted = redis_cache_del(get_artifact_cache_key(t, false)) && submitted;
-		submitted = redis_cache_del(get_artifact_cache_key(t, true)) && submitted;
-	}
-	return submitted;
-#else
-	return false;
-#endif
-}

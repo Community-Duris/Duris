@@ -39,7 +39,7 @@ for key in ("REDIS_LEGACY_FLOOR_DROPS", "REDIS_LEGACY_FLOOR_PICKUPS",
         pwipe_fn,
         f"redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE, {key})",
     )
-for pattern in ("redis_cache_pattern", "redis_presence_retry_pattern",
+for pattern in ("redis_report_cache_pattern()", "redis_presence_retry_pattern",
                 "redis_presence_session_pattern", "REDIS_LEGACY_CACHE_PATTERN",
                 "REDIS_LEGACY_PRESENCE_RETRY_PATTERN",
                 "REDIS_LEGACY_PRESENCE_SESSION_PATTERN",

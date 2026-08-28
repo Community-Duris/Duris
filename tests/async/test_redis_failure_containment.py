@@ -10,6 +10,7 @@ store = (root / "src/redis_world_store.c").read_text()
 presence_worker = (root / "src/redis_presence_worker.c").read_text()
 presence_runtime = (root / "src/redis_presence_runtime.c").read_text()
 cache_store = (root / "src/redis_cache_store.c").read_text()
+report_cache = (root / "src/redis_report_cache.c").read_text()
 floor_store = (root / "src/redis_floor_store.c").read_text()
 donation_worker = (root / "src/redis_donation_worker.c").read_text()
 donation_runtime = (root / "src/redis_donation_runtime.c").read_text()
@@ -125,19 +126,29 @@ for token in (
     "redis_cache_store_cancel",
 ):
     assert token in cache_store
-cache_helpers = section("bool redis_cache_set", "#ifndef __NO_MYSQL__\nstatic void redis_ship_cache_key")
+cache_helpers = section("bool cache_set_ex", "const char *artifact_key", report_cache)
 for forbidden in ("redis_command", "redis_ctx", "redis_reconnect"):
     assert forbidden not in cache_helpers
 for token in ("redis_cache_store_set", "redis_cache_store_get", "redis_cache_store_delete"):
     assert token in cache_helpers
-assert "redis_cache_store_cancel();" in section(
+assert "redis_report_cache_cancel();" in section(
     "bool redis_clear_pwipe_state", "bool redis_validate_pwipe_state"
 )
-assert "redis_cache_store_shutdown" in section(
+assert "redis_report_cache_shutdown" in section(
     "void redis_cleanup", "void redis_clear_floor_pickups"
 )
-prime = section("static void redis_prime_artifact_caches", "static bool redis_scan_match_empty")
+assert "redis_cache_store_cancel();" in report_cache
+assert "redis_cache_store_shutdown(timeout_msec)" in report_cache
+prime = section("redisReply *cache_prime_command", "#endif", report_cache)
 assert "PTTL" in prime and "redis_cache_store_seed" in prime
+for facade in (
+    section("char *redis_get_named_report", "bool redis_invalidate_named_report", report_cache),
+    section("char *redis_get_fraglist", "bool redis_invalidate_fraglist", report_cache),
+    section("char *redis_get_epic_zones", "bool redis_invalidate_epic_zones", report_cache),
+    section("char *redis_get_artifact_list", "bool redis_invalidate_artifact_list", report_cache),
+):
+    for forbidden in ("redisCommand", "redis_connection_open", "db_query", "sleep(", "wait("):
+        assert forbidden not in facade
 print("[PASS] report caches use bounded local reads and asynchronous Redis publication")
 
 init = section("bool redis_init(void)", "bool redis_clear_pwipe_state")
@@ -217,7 +228,7 @@ for token in ("redis_floor_store_take_barrier", "world_recovery_pipeline_request
 for token in ("REDIS_FLOOR_QUEUE_CAPACITY", "REDIS_FLOOR_QUEUE_MAX_BYTES",
               "redis_floor_store_request_barrier", "redis_floor_store_take_barrier"):
     assert token in floor_store
-event = section("void event_save_world_state", "bool redis_cache_set")
+event = section("void event_save_world_state", "#ifndef __NO_MYSQL__\nstatic void redis_ship_cache_key")
 assert "redis_clear_floor_drops" not in event
 print("[PASS] floor deltas use a bounded background pipeline and ordered snapshot barrier")
 

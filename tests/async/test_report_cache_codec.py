@@ -83,16 +83,18 @@ with tempfile.TemporaryDirectory(prefix="duris-report-cache-") as temp:
     )
     subprocess.run([str(binary)], check=True)
 
-redis = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
+redis = (ROOT / "src" / "redis_report_cache.c").read_text(encoding="ascii")
 comm = (ROOT / "src" / "comm.c").read_text(encoding="ascii")
 assert "named_report_cache_ttl_seconds = 86400" in redis
 assert "fraglist_cache_ttl_seconds = 900" in redis
 assert "report_cache_countdown_encode" in redis
 assert "report_cache_countdown_render" in redis
-fraglist = redis[redis.index("static char *generate_fraglist_cache_payload") :]
-fraglist = fraglist[: fraglist.index("// epic zones cache")]
+fraglist = redis[redis.index("char *generate_fraglist_cache_payload") :]
+fraglist = fraglist[: fraglist.index("} // namespace")]
 assert "sql_level_cap(" not in fraglist
-assert "redis_cache_set_ex(REDIS_CACHE_FRAGLIST" in fraglist
+cache_fraglist = redis[redis.index("void redis_cache_fraglist") :]
+cache_fraglist = cache_fraglist[: cache_fraglist.index("char *redis_get_fraglist")]
+assert "cache_set_ex(REDIS_CACHE_FRAGLIST" in cache_fraglist
 assert "redis_invalidate_fraglist();" in comm
 
 print("versioned report cache freshness and dynamic countdown checks passed")

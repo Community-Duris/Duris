@@ -20,7 +20,7 @@ assert "redis_cache_settings" in SOURCE
 assert "redis_donation_settings" in SOURCE
 assert "redis_maintenance_settings" in SOURCE
 assert "const redis_floor_store_config floor_config = { redis_settings };" in SOURCE
-assert "redis_connection_open(redis_cache_settings)" in SOURCE
+assert "redis_report_cache_start(redis_cache_settings)" in SOURCE
 assert "redis_connection_open(redis_maintenance_settings)" in SOURCE
 assert "redis_ctx = maintenance;" in SOURCE
 assert "redis_ctx = world_context;" in SOURCE
