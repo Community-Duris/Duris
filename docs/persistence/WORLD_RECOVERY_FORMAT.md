@@ -38,9 +38,10 @@ field UID must match the decoded root UID before the record enters recovery plan
 ## Redis storage and memory bounds
 
 A generation is not stored as one Redis value. The season-scoped generation key contains
-an exact 56-byte `WRG1` manifest with version 1, total byte length, chunk count, the fixed
-1 MiB chunk size, and a 32-byte lowercase hexadecimal upload token. The generation bytes
-are split across at most 64 keys qualified by sequence, upload token, and zero-based chunk
+an exact 120-byte `WRG2` manifest with version 2, total byte length, chunk count, the fixed
+1 MiB chunk size, a 32-byte lowercase hexadecimal upload token, a SHA-256 payload digest,
+and an HMAC-SHA256 tag bound to deployment, season, and sequence. The generation bytes are
+split across at most 64 keys qualified by sequence, upload token, and zero-based chunk
 index. Every manifest and chunk expires with the configured generation TTL.
 
 The publisher writes one chunk per command on the recovery worker, then uses the writer
@@ -73,6 +74,14 @@ process. The existing publisher thread converts a completed generation to schema
 place before checksumming and Redis publication. The existing floor worker converts queued
 native object snapshots before issuing its Redis command. Durable decoding occurs only
 during boot recovery.
+
+The payload is intentionally a bounded fuzzy recovery snapshot. Capture start is the
+durable timestamp, capture expires after five minutes, and an expired generation is never
+queued for publication. Reconstructible NPC, door, and zone state may therefore rewind
+within that window. NPC equipment/inventory are omitted and NPC gold is forced to zero;
+floor items are accepted only after stable-UID hierarchy validation and complete SQL
+custody reconciliation. No Redis, SQL, filesystem, process, or logging I/O is added to
+gameplay capture.
 
 Schema 8 and `WRF2:` data are rejected rather than interpreted through an ABI-dependent
 compatibility path. Recovery data is reconstructible and expiring: an incompatible current

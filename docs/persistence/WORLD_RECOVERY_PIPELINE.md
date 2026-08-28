@@ -6,6 +6,20 @@ generation across NPCs, floor objects, doors, and zone timers. Each pulse is bou
 record count and elapsed time, each record has a byte ceiling, and the complete retained
 generation has a fixed memory ceiling.
 
+The generation is an explicitly fuzzy recovery snapshot, not a point-in-time transaction.
+Its timestamp is capture start, so age is conservative relative to every record. Capture
+may span at most five minutes; an expired capture is discarded before publication, its
+failure completion resumes the floor worker, and a later periodic request retries from a
+new sequence. The game thread still performs at most 64 capture steps or 2 ms of capture
+work per pulse. Door capture scans all fixed directions for one room per step, avoiding
+one budget step per absent exit.
+
+Fuzzy state is restricted to reconstructible NPC position/state, doors, and zone timers.
+NPC equipment and inventory are omitted, and NPC-carried gold is captured as zero so a
+cross-time generation cannot replay currency into the persisted player economy. Floor
+item trees retain stable UIDs and hierarchy, and restore requires complete SQL custody of
+every item before materializing anything. Player and ship state remain SQL-authoritative.
+
 The publisher receives only owned framed bytes. It cannot traverse live characters,
 objects, rooms, exits, or zones. It seals the generation with schema version, timestamp,
 sequence, record counts, payload length, completeness, and CRC32.
@@ -38,8 +52,8 @@ blocking the game loop.
 The ordinary pulse advances capture and consumes typed completions. Copyover and
 shutdown wait to bounded deadlines for capture, publication, exact acknowledgement, and
 floor-boundary cleanup; failure cancels the process transition. `world persistence`
-reports aggregate capture, queue, bytes, sequence, runtime, retry, and failure health
-without object, room, or character identity.
+reports aggregate capture, queue, bytes, sequence, active/last capture age, expiry,
+runtime, retry, and publication-failure health without object, room, or character identity.
 
 After a successful graceful drain, the fenced writer records an expiring marker for the
 exact current sequence. Boot consumes that marker once and labels a matching valid

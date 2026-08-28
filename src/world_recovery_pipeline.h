@@ -14,6 +14,7 @@ constexpr size_t WORLD_RECOVERY_MAX_FLOOR_BYTES = 16 * 1024 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768;
 constexpr size_t WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 64;
 constexpr uint64_t WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC = 2000;
+constexpr uint64_t WORLD_RECOVERY_CAPTURE_MAX_AGE_MSEC = 300000;
 constexpr size_t WORLD_RECOVERY_QUEUE_CAPACITY = 2;
 constexpr unsigned int WORLD_RECOVERY_MAX_RETRIES = 3;
 
@@ -75,6 +76,7 @@ struct world_recovery_health
 	uint64_t requested;
 	uint64_t coalesced;
 	uint64_t capture_failures;
+	uint64_t capture_expirations;
 	uint64_t captured_records;
 	uint64_t captured_bytes;
 	uint64_t submitted;
@@ -86,6 +88,7 @@ struct world_recovery_health
 	uint64_t last_published_bytes;
 	uint64_t high_water_bytes;
 	uint64_t capture_age_msec;
+	uint64_t last_capture_duration_msec;
 	uint64_t worker_runtime_msec;
 	uint64_t queued_generations;
 	bool initialized;
@@ -107,6 +110,7 @@ bool world_recovery_pipeline_take_completion(world_recovery_completion *completi
 bool world_recovery_pipeline_drain(uint64_t timeout_msec);
 bool world_recovery_pipeline_busy(void);
 world_recovery_health world_recovery_pipeline_health_copy(void);
+bool world_recovery_capture_age_expired(uint64_t age_msec);
 
 bool world_recovery_validate(const unsigned char *data, size_t size, int max_age_seconds,
 			     uint64_t minimum_sequence, world_recovery_header *header_out);

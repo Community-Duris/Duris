@@ -6,9 +6,55 @@ Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-001, RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
 RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, RDS-017, RDS-008, and RDS-021 are
-remediated; the remaining findings are open.
+remediated, as is RDS-018; the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-018 bounded fuzzy recovery contract
+
+Completed in this interval:
+
+- Defined world recovery as a bounded fuzzy snapshot instead of claiming point-in-time
+  semantics. The durable timestamp remains capture start, conservatively measuring age
+  from the oldest possible record.
+- Added a hard five-minute capture deadline. A capture that reaches it is discarded before
+  publication, emits a fixed non-allocating failure completion, resumes the paused floor
+  worker, and can be retried by a later periodic request from a new sequence.
+- Restricted acceptable cross-time state to reconstructible NPC, door, and zone data.
+  NPC equipment and inventory remain omitted, and NPC-carried gold is now forced to zero
+  so recovery cannot replay transient currency into the persisted player economy. Floor
+  item restore retains stable hierarchy/UID validation and complete SQL custody before any
+  materialization; player and ship state remain SQL-authoritative.
+- Made the door stage scan all fixed directions for one room per capture step. Empty and
+  sparse rooms therefore consume up to six times fewer pulse-budget steps without changing
+  the record or time ceilings.
+- Added local-only capture expiry, active/last duration, capture-failure, and distinct
+  publication-failure telemetry to `world persistence`.
+
+Performance effect:
+
+- Capture remains bounded to 64 steps or 2 ms per pulse. The only added active-capture work
+  is one monotonic-clock age comparison per pulse; no Redis, SQL, filesystem, process,
+  network, logging, sleep, or wait operation was added to gameplay.
+- Failure handoff uses fixed pipeline state rather than allocating a completion record.
+  Door traversal performs less work; the publisher and boot-only validation paths retain
+  all external I/O and cryptography.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed capture expiry boundaries,
+  failure handoff/source contracts, bounded pulse ownership, NPC gold exclusion, framing,
+  atomic publication, and transactional restore contracts.
+- `python3 tests/async/test_redis_failure_containment.py`,
+  `python3 tests/async/test_redis_floor_world_gate.py`,
+  `python3 tests/async/test_redis_world_store_live.py`,
+  `python3 tests/async/test_world_recovery_codec.py`, and
+  `python3 tests/async/test_redis_admin_nonblocking.py`: passed.
+
+RDS-018 is complete under the audit's recommended explicit fuzzy-snapshot option. Exact
+economic and persisted-item authority is excluded from fuzzy capture; reconstructible
+world state has a documented maximum cross-time window and expired captures fail closed.
 
 ### 2026-08-28 - RDS-021 coherent report-cache freshness
 
@@ -1969,6 +2015,10 @@ bounded epoch-aware orphan collection.
 
 Severity: Medium
 Confidence: Confirmed design property
+Remediation status: Completed on branch by adopting the recommended explicit bounded
+fuzzy-snapshot contract. Capture start remains the conservative timestamp, captures expire
+after five minutes and never publish when expired, economic/persisted-item authority is
+excluded from fuzzy state, and failure safely resumes floor publication for later retry.
 
 Capture walks NPCs, room objects, doors, and zone ages over many pulses with a 64-record
 and 2 ms per-pulse budget ([`src/world_recovery_pipeline.c`](../../src/world_recovery_pipeline.c#L395)).

@@ -115,6 +115,10 @@ int main()
         WORLD_RECOVERY_MAX_ITEM_TREE + 1;
     finish(blob, header);
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 42, nullptr));
+
+    assert(!world_recovery_capture_age_expired(WORLD_RECOVERY_CAPTURE_MAX_AGE_MSEC - 1));
+    assert(world_recovery_capture_age_expired(WORLD_RECOVERY_CAPTURE_MAX_AGE_MSEC));
+    assert(world_recovery_capture_age_expired(UINT64_MAX));
     return 0;
 }
 '''
@@ -146,6 +150,7 @@ for token in (
     "WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768",
     "WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 64",
     "WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC = 2000",
+    "WORLD_RECOVERY_CAPTURE_MAX_AGE_MSEC = 300000",
     "WORLD_RECOVERY_QUEUE_CAPACITY = 2",
     "WORLD_RECOVERY_MAX_RETRIES = 3",
     "WORLD_RECOVERY_MAX_ITEM_TREE = 12",
@@ -155,6 +160,22 @@ capture = section(PIPELINE, "void world_recovery_pipeline_pulse", "bool world_re
 assert "WORLD_RECOVERY_CAPTURE_RECORD_BUDGET" in capture
 assert "WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC" in capture
 assert "std::chrono::steady_clock::now()" in capture
+assert "world_recovery_capture_age_expired" in capture
+assert "fail_capture(true)" in capture
+failure = section(PIPELINE, "void fail_capture(bool expired)", "bool submit_capture()")
+for token in (
+    "capture_failure_completion = { active_capture.generation.sequence, false, 0 }",
+    "capture_failure_pending = true",
+    "++health.capture_expirations",
+    "health.last_capture_duration_msec",
+):
+    assert token in failure
+completion = section(
+    PIPELINE, "bool world_recovery_pipeline_take_completion", "bool world_recovery_pipeline_drain"
+)
+assert "capture_failure_pending" in completion
+busy = section(PIPELINE, "bool world_recovery_pipeline_busy", "bool world_recovery_capture_age_expired")
+assert "capture_failure_pending" in busy
 worker = section(PIPELINE, "void publisher_main()", "bool capture_one_record()")
 for forbidden in ("character_list", "object_list", "world[", "zone_table", "P_char", "P_obj", "copyover_write_"):
     assert forbidden not in worker
@@ -246,6 +267,8 @@ for token in (
     assert token in PIPELINE
 mob_capture = section(PIPELINE, "int write_mob_record", "void publisher_main")
 assert "entry.num_carrying = 0" in mob_capture
+assert "entry.gold = 0" in mob_capture
+assert "GET_GOLD(mob)" not in mob_capture
 assert "std::fill" in mob_capture and "equipment_vnums" in mob_capture
 assert "copyover_write_mob_to_buffer" not in mob_capture
 assert "mob->carrying" not in mob_capture

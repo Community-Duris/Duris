@@ -87,6 +87,8 @@ capture_state active_capture;
 uint64_t next_sequence = 1;
 bool stop_requested = false;
 bool worker_busy = false;
+bool capture_failure_pending = false;
+world_recovery_completion capture_failure_completion = {};
 std::array<unsigned char, WORLD_RECOVERY_MAX_RECORD_BYTES> capture_buffer = {};
 
 struct planned_mob
@@ -205,10 +207,15 @@ bool encode_generation(recovery_generation *generation, world_recovery_header *h
 					    generation->blob.size());
 }
 
-void fail_capture()
+void fail_capture(bool expired)
 {
 	std::lock_guard<std::mutex> lock(recovery_mutex);
+	capture_failure_completion = { active_capture.generation.sequence, false, 0 };
+	capture_failure_pending = true;
 	++health.capture_failures;
+	if (expired)
+		++health.capture_expirations;
+	health.last_capture_duration_msec = elapsed_msec(active_capture.started);
 	health.capture_active = false;
 	active_capture = {};
 }
@@ -234,6 +241,7 @@ bool submit_capture()
 	health.captured_bytes += bytes;
 	health.high_water_bytes = std::max(health.high_water_bytes, static_cast<uint64_t>(bytes));
 	health.capture_age_msec = elapsed_msec(active_capture.started);
+	health.last_capture_duration_msec = health.capture_age_msec;
 	health.capture_active = false;
 	active_capture = {};
 	generation_available.notify_one();
@@ -310,7 +318,8 @@ int write_mob_record(P_char mob, char *buffer, size_t maximum)
 	entry.vitality = GET_VITALITY(mob);
 	entry.max_vitality = GET_MAX_VITALITY(mob);
 	entry.position = GET_POS(mob);
-	entry.gold = GET_GOLD(mob);
+	// Currency is authoritative player state and must not be replayed from a fuzzy world view.
+	entry.gold = 0;
 	if (mob->specials.fighting)
 	{
 		P_char target = mob->specials.fighting;
@@ -478,7 +487,7 @@ bool capture_one_record()
 						    .dir_option[direction]
 						    ->exit_info,
 					    EX_ISDOOR))
-					return true;
+					continue;
 				const int size = copyover_write_door_to_buffer(
 					active_capture.room, direction,
 					reinterpret_cast<char *>(capture_buffer.data()),
@@ -492,6 +501,7 @@ bool capture_one_record()
 			}
 			++active_capture.room;
 			active_capture.direction = 0;
+			return true;
 		}
 		active_capture.stage = capture_stage::zones;
 		return true;
@@ -531,6 +541,8 @@ bool world_recovery_pipeline_init(world_recovery_publish_fn publish, void *conte
 		publish_context = context;
 		stop_requested = false;
 		worker_busy = false;
+		capture_failure_pending = false;
+		capture_failure_completion = {};
 	}
 	try
 	{
@@ -549,7 +561,7 @@ bool world_recovery_pipeline_set_sequence_floor(uint64_t durable_sequence)
 {
 	std::lock_guard<std::mutex> lock(recovery_mutex);
 	if (!health.initialized || health.capture_active || !queued.empty() || worker_busy ||
-	    durable_sequence == UINT64_MAX)
+	    !completions.empty() || capture_failure_pending || durable_sequence == UINT64_MAX)
 		return false;
 	next_sequence = std::max(next_sequence, durable_sequence + 1);
 	health.last_acknowledged_sequence =
@@ -569,6 +581,8 @@ void world_recovery_pipeline_shutdown(void)
 	std::lock_guard<std::mutex> lock(recovery_mutex);
 	queued.clear();
 	completions.clear();
+	capture_failure_pending = false;
+	capture_failure_completion = {};
 	active_capture = {};
 	health.initialized = false;
 	health.capture_active = false;
@@ -584,6 +598,8 @@ void world_recovery_pipeline_cancel(void)
 		stop_requested = true;
 		queued.clear();
 		completions.clear();
+		capture_failure_pending = false;
+		capture_failure_completion = {};
 		active_capture = {};
 		health.capture_active = false;
 		health.queued_generations = 0;
@@ -604,7 +620,8 @@ bool world_recovery_pipeline_request(void)
 	if (!health.initialized || stop_requested)
 		return false;
 	++health.requested;
-	if (active_capture.stage != capture_stage::idle || !queued.empty() || worker_busy)
+	if (active_capture.stage != capture_stage::idle || !queued.empty() || worker_busy ||
+	    !completions.empty() || capture_failure_pending)
 	{
 		++health.coalesced;
 		return true;
@@ -636,6 +653,11 @@ void world_recovery_pipeline_pulse(void)
 		if (!health.capture_active)
 			return;
 	}
+	if (world_recovery_capture_age_expired(elapsed_msec(active_capture.started)))
+	{
+		fail_capture(true);
+		return;
+	}
 	const auto deadline = std::chrono::steady_clock::now() +
 			      std::chrono::microseconds(WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC);
 	for (size_t count = 0; count < WORLD_RECOVERY_CAPTURE_RECORD_BUDGET &&
@@ -644,7 +666,7 @@ void world_recovery_pipeline_pulse(void)
 	{
 		if (!capture_one_record())
 		{
-			fail_capture();
+			fail_capture(false);
 			return;
 		}
 		std::lock_guard<std::mutex> lock(recovery_mutex);
@@ -659,6 +681,13 @@ bool world_recovery_pipeline_take_completion(world_recovery_completion *completi
 	if (!completion)
 		return false;
 	std::lock_guard<std::mutex> lock(recovery_mutex);
+	if (capture_failure_pending)
+	{
+		*completion = capture_failure_completion;
+		capture_failure_pending = false;
+		capture_failure_completion = {};
+		return true;
+	}
 	if (completions.empty())
 		return false;
 	*completion = completions.front();
@@ -682,7 +711,8 @@ bool world_recovery_pipeline_drain(uint64_t timeout_msec)
 		world_recovery_pipeline_pulse();
 		{
 			std::lock_guard<std::mutex> lock(recovery_mutex);
-			if (!health.capture_active && queued.empty() && !worker_busy)
+			if (!health.capture_active && queued.empty() && !worker_busy &&
+			    completions.empty() && !capture_failure_pending)
 				return true;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -693,7 +723,13 @@ bool world_recovery_pipeline_drain(uint64_t timeout_msec)
 bool world_recovery_pipeline_busy(void)
 {
 	std::lock_guard<std::mutex> lock(recovery_mutex);
-	return health.capture_active || !queued.empty() || worker_busy || !completions.empty();
+	return health.capture_active || !queued.empty() || worker_busy || !completions.empty() ||
+	       capture_failure_pending;
+}
+
+bool world_recovery_capture_age_expired(uint64_t age_msec)
+{
+	return age_msec >= WORLD_RECOVERY_CAPTURE_MAX_AGE_MSEC;
 }
 
 world_recovery_health world_recovery_pipeline_health_copy(void)
@@ -1253,4 +1289,6 @@ void world_recovery_pipeline_reset_for_tests(void)
 	next_sequence = 1;
 	stop_requested = false;
 	worker_busy = false;
+	capture_failure_pending = false;
+	capture_failure_completion = {};
 }

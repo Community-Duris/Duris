@@ -161,13 +161,18 @@ static void redis_status_detailed(P_char ch)
 	APPENDF(buf,
 		"&+g[World Recovery Pipeline]&n\r\n"
 		"  state=%s capture=%s worker=%s busy=%s queued=%llu\r\n"
-		"  requested=%llu coalesced=%llu submitted=%llu published=%llu failures=%llu\r\n"
+		"  requested=%llu coalesced=%llu submitted=%llu published=%llu publish_failures=%llu\r\n"
+		"  capture_failures=%llu expired=%llu age_ms=%llu last_duration_ms=%llu\r\n"
 		"  last_sequence=%llu acknowledged=%llu bytes=%llu high_water=%llu\r\n\r\n",
 		world_worker_state(&world), world.capture_active ? "yes" : "no",
 		world.worker_running ? "running" : "stopped", world.worker_busy ? "yes" : "no",
 		(unsigned long long)world.queued_generations, (unsigned long long)world.requested,
 		(unsigned long long)world.coalesced, (unsigned long long)world.submitted,
 		(unsigned long long)world.published, (unsigned long long)world.publish_failures,
+		(unsigned long long)world.capture_failures,
+		(unsigned long long)world.capture_expirations,
+		(unsigned long long)world.capture_age_msec,
+		(unsigned long long)world.last_capture_duration_msec,
 		(unsigned long long)world.last_submitted_sequence,
 		(unsigned long long)world.last_acknowledged_sequence,
 		(unsigned long long)world.last_published_bytes,
