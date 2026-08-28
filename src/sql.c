@@ -17,6 +17,7 @@
 #include "flatfile_ip_activity_repository.h"
 #include "flatfile_offline_message_repository.h"
 #include "flatfile_frag_leaderboard_repository.h"
+#include "flatfile_world_quest_history.h"
 #include "persistence_mode.h"
 #include "utils.h"
 #include "sql.h"
@@ -174,15 +175,63 @@ int sql_shop_sell(P_char /*ch*/, P_obj /*obj*/, int /*value*/)
 {
 	return -1;
 }
-void sql_world_quest_finished(P_char /*ch*/, P_char /*giver*/, P_obj /*obj*/) {}
-void sql_world_quest_finished(P_char /*ch*/, P_obj /*obj*/) {}
-int sql_world_quest_done_already(P_char /*ch*/, int /*quest_target*/)
+void sql_world_quest_finished(P_char ch, P_obj /*obj*/)
 {
-	return -1;
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0 ||
+	    ch->only.pc->quest_mob_vnum <= 0)
+		return;
+	std::string error;
+	if (flatfile_world_quest_record(
+		    persistence_mode_flatfile_root(), static_cast<uint32_t>(GET_PID(ch)),
+		    ch->only.pc->quest_mob_vnum, GET_LEVEL(ch), static_cast<int64_t>(time(nullptr)),
+		    &error) != flatfile_world_quest_result::ok)
+		persistence_alert(AVATAR, "world_quest", "player", "unknown", "record",
+				  "flat_write_failed", "pid=%d error=%s", GET_PID(ch),
+				  error.c_str());
 }
-int sql_world_quest_can_do_another(P_char /*ch*/)
+
+int sql_world_quest_done_already(P_char ch, int quest_target)
 {
-	return -1;
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0 || quest_target <= 0)
+		return -1;
+	bool completed = false;
+	std::string error;
+	if (flatfile_world_quest_completed(persistence_mode_flatfile_root(),
+					   static_cast<uint32_t>(GET_PID(ch)), quest_target,
+					   &completed, &error) != flatfile_world_quest_result::ok)
+	{
+		logit(LOG_DEBUG, "sql_world_quest_done_already: %s", error.c_str());
+		return -1;
+	}
+	return completed ? 1 : 0;
+}
+
+int sql_world_quest_can_do_another(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0)
+		return -1;
+	int completed_today = 0;
+	std::string error;
+	if (flatfile_world_quest_count_day(persistence_mode_flatfile_root(),
+					   static_cast<uint32_t>(GET_PID(ch)), GET_LEVEL(ch),
+					   static_cast<int64_t>(time(nullptr)), &completed_today,
+					   &error) != flatfile_world_quest_result::ok)
+	{
+		logit(LOG_DEBUG, "sql_world_quest_can_do_another: %s", error.c_str());
+		return -1;
+	}
+	int maximum = 0;
+	if (GET_LEVEL(ch) <= 30)
+		maximum = get_property("world.quest.max.level.30.andUnder", 6.000);
+	else if (GET_LEVEL(ch) <= 40)
+		maximum = get_property("world.quest.max.level.40.andUnder", 6.000);
+	else if (GET_LEVEL(ch) <= 50)
+		maximum = get_property("world.quest.max.level.50.andUnder", 6.000);
+	else if (GET_LEVEL(ch) <= 55)
+		maximum = get_property("world.quest.max.level.55.andUnder", 6.000);
+	else
+		maximum = get_property("world.quest.max.level.other", 6.000);
+	return std::max(maximum - completed_today, 0);
 }
 
 static int flat_ip_racewar_side(P_char ch)

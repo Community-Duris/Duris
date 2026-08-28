@@ -103,6 +103,8 @@ jobs:
         run: python3 tests/async/test_flatfile_sql_log.py
       - name: Verify flat-file IP activity and one-hour rule
         run: python3 tests/async/test_flatfile_ip_activity.py
+      - name: Verify flat-file world-quest history
+        run: python3 tests/async/test_flatfile_world_quest_history.py
 
   quality:
     runs-on: ubuntu-24.04

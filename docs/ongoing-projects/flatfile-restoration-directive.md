@@ -160,6 +160,33 @@
 - **Overall state:** the full objective is not complete. The global incomplete-domain
   boot fence remains in place while other concrete DB-free gaps are restored.
 
+### 2026-08-29 - restored world quests without MySQL
+
+- **Concrete gap:** world-quest completion history was historically database-only. The
+  client-free daily-allowance and prior-target checks both returned `-1`; every normal
+  quest request was therefore rejected, and target selection treated every candidate as
+  already completed. World quests could not operate at all without the database.
+- **Restoration:** client-free completion writes and the two existing gameplay checks
+  now use one focused per-player history alongside the restored player files. Each entry
+  retains the target, completion level, and timestamp needed for the database's permanent
+  target exclusion and UTC daily/level allowance semantics. The history is bounded,
+  versioned, checksummed, owner-only, atomically replaced under a per-player lock, and
+  refuses to read or overwrite corruption. Database-backed quest history is unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_world_quest_history.py`
+  invokes the real client-free SQL compatibility functions and verifies missing-history
+  allowance, completion/target retention, below-level-50 filtering, level-50 aggregate
+  counting, prior-day exclusion, allowance exhaustion, owner-only permissions, checksum
+  corruption, fail-closed gameplay reads, and refusal to overwrite corrupt history. The
+  test is included in the client-free CI job.
+- **Lifecycle evidence:** `python3 tests/async/test_flatfile_character_delete.py`
+  establishes the new history and verifies crash-recovered and direct character deletion
+  remove it in the existing multi-authority transaction.
+- **Build evidence:** `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** the full objective is not complete. The global incomplete-domain
+  boot fence remains in place while other concrete DB-free gaps are restored.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

@@ -15,6 +15,7 @@
 #include "flatfile_spellbook_repository.h"
 #include "flatfile_shop_trade_materialization.h"
 #include "flatfile_world_item_repository.h"
+#include "flatfile_world_quest_history.h"
 #include "player_snapshot_codec.h"
 
 #include <algorithm>
@@ -100,6 +101,9 @@ static void establish(const fs::path &root, bool establish_boons)
 	require(flatfile_spellbook_establish(root.string(), { { 1, { 2001 } } }, &error) ==
 			flatfile_spellbook_result::ok,
 		"spellbook baseline failed: " + error);
+	require(flatfile_world_quest_record(root.string().c_str(), 1, 3001, 50, 1700000000,
+					    &error) == flatfile_world_quest_result::ok,
+		"world-quest history baseline failed: " + error);
 	require(flatfile_artifact_establish(
 			root.string(),
 			{ { 3001, true, FLATFILE_ARTIFACT_ON_PLAYER, 1, 9999, 1, 100, 1, 8888, 1 },
@@ -354,6 +358,11 @@ int main(int argc, char **argv)
 				flatfile_offline_message_result::ok &&
 			messages.empty(),
 		"recovered deletion retained offline messages");
+	bool quest_completed = false;
+	require(flatfile_world_quest_completed(root.string().c_str(), 1, 3001, &quest_completed,
+					       &error) == flatfile_world_quest_result::ok &&
+			!quest_completed,
+		"recovered deletion retained world-quest history");
 	std::vector<flatfile_account_reward_summon_record> summons;
 	require(flatfile_account_reward_summon_list(root.string(), &summons, &error) ==
 				flatfile_account_reward_summon_result::ok &&
@@ -390,6 +399,8 @@ int main(int argc, char **argv)
 		"direct deletion retry was not idempotent: " + error);
 	require(!fs::exists(direct / "domains/shop_trade_materializations"),
 		"direct deletion retained shop materialization history");
+	require(!fs::exists(direct / "players/1.world-quests"),
+		"direct deletion retained world-quest history");
 
 	std::cout << "flat-file character deletion passed\n";
 	return 0;

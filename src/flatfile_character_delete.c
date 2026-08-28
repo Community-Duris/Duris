@@ -18,6 +18,7 @@
 #include "flatfile_spellbook_repository.h"
 #include "flatfile_shop_trade_materialization.h"
 #include "flatfile_world_item_repository.h"
+#include "flatfile_world_quest_history.h"
 
 #include <ctime>
 #include <new>
@@ -244,6 +245,19 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	{
 		return map_authority(domain, flatfile_player_domain_result::not_found,
 				     flatfile_player_domain_result::io_error);
+	}
+
+	const auto world_quest = flatfile_world_quest_prepare_remove(
+		root, authority_lock, static_cast<uint32_t>(pid), &operation, error);
+	if (world_quest == flatfile_world_quest_result::ok)
+	{
+		if (!append_operation(&operations, &operation))
+			return flatfile_character_delete_result::io_error;
+	}
+	else if (world_quest != flatfile_world_quest_result::not_found)
+	{
+		return map_authority(world_quest, flatfile_world_quest_result::not_found,
+				     flatfile_world_quest_result::io_error);
 	}
 
 	const auto item = locker_changed || world_item_changed ?
