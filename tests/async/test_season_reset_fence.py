@@ -37,9 +37,11 @@ assert "reset_status" in load and 'strcmp(row[1], "active")' in load
 
 begin = section(SQL, "static bool sql_begin_pwipe_epoch", "static bool sql_complete_pwipe_epoch")
 assert begin.index('"START TRANSACTION"') < begin.index("FOR UPDATE")
-assert begin.index("reset_status='resetting'") < begin.index(
-    "pwipe_crossed_boundary = true"
-) < begin.index('"COMMIT"')
+update_call = begin.index("sql_connection_execute_affected(DB, update, &affected)")
+update_confirmed = begin.index("affected != 1", update_call)
+boundary = begin.index("pwipe_crossed_boundary = true", update_confirmed)
+assert begin.index("reset_status='resetting'") < update_call < update_confirmed < boundary
+assert boundary < begin.index('"COMMIT"', boundary)
 assert '"ROLLBACK"' in begin
 
 wipe = SQL[SQL.index("bool sql_pwipe(int code_verify)", SQL.index("#else")):]

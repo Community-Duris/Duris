@@ -17,6 +17,7 @@
 #include "redis_presence_worker.h"
 #include "redis_report_cache.h"
 #include "redis_runtime_config.h"
+#include "redis_ship_legacy.h"
 #include "sql.h"
 
 extern int _pwipe;
@@ -26,6 +27,7 @@ static bool redis_enabled = false;
 
 #define REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC 1000
 #define REDIS_CACHE_DRAIN_TIMEOUT_MSEC 1000
+#define REDIS_SHIP_LEGACY_DRAIN_TIMEOUT_MSEC 1000
 static uint64_t redis_runtime_epoch = 0;
 static char redis_key_namespace[64] = {};
 static char redis_presence_current_key[160] = {};
@@ -154,6 +156,9 @@ bool redis_init(void)
 		redis_presence_runtime_set_enabled(true);
 	if (!redis_report_cache_start(redis_connections.cache))
 		logit(LOG_SYS, "redis: cache worker unavailable; report caches disabled");
+	if (!redis_ship_legacy_worker_init(redis_connections.maintenance))
+		logit(LOG_SYS,
+		      "redis: maintenance worker unavailable; retired ship cleanup disabled");
 	if (redis_donation_runtime_enabled())
 	{
 		const redis_donation_worker_config donation_config = { redis_connections.donation,
@@ -188,6 +193,7 @@ bool redis_clear_pwipe_state(void)
 	redis_presence_runtime_set_enabled(false);
 	redis_presence_worker_cancel();
 	redis_report_cache_cancel();
+	redis_ship_legacy_worker_cancel();
 	if (!redis_world_recovery_quiesce())
 		return false;
 	const redis_maintenance_config config = {
@@ -227,6 +233,8 @@ void redis_cleanup(void)
 		logit(LOG_SYS, "redis: presence worker drain timed out during shutdown");
 	if (!redis_report_cache_shutdown(REDIS_CACHE_DRAIN_TIMEOUT_MSEC))
 		logit(LOG_SYS, "redis: cache worker drain timed out during shutdown");
+	if (!redis_ship_legacy_worker_shutdown(REDIS_SHIP_LEGACY_DRAIN_TIMEOUT_MSEC))
+		logit(LOG_SYS, "redis: retired ship cleanup drain timed out during shutdown");
 	redis_world_runtime_shutdown(_pwipe != 0);
 	redis_runtime_connections_destroy(&redis_connections);
 	redis_donation_runtime_set_enabled(false);

@@ -115,7 +115,10 @@ def main() -> None:
                 "presence": [f"~{PREFIX}:presence:*", f"&{PREFIX}:player", "+ping", "+select", "+get", "+set", "+del", "+publish"],
                 "cache": [f"~{PREFIX}:cache:*", "+ping", "+select", "+get", "+set", "+del"],
                 "donation": [f"&{PREFIX}:nchat", "+ping", "+select", "+subscribe"],
-                "maintenance": ["~duris:local:test:*", "+ping", "+select", "+get", "+set", "+del"],
+                "maintenance": [
+                    "~duris:local:test:*", "~mud:*", "~ship:snapshot:*",
+                    "+ping", "+select", "+get", "+set", "+del",
+                ],
             }
             for user, permissions in rules.items():
                 result = run(
@@ -149,6 +152,7 @@ def main() -> None:
             )
             denied(port, "donation", "GET", cache_key)
             allowed(port, "maintenance", "DEL", world_key, presence_key, cache_key)
+            allowed(port, "maintenance", "DEL", "mud:online", "ship:snapshot:Tester")
             denied(port, "maintenance", "SET", "other-application:key", "1")
         finally:
             server.terminate()

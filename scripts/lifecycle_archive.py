@@ -29,6 +29,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "bootstrap_multithread_safe.sql",
     ROOT / "migrations" / "bootstrap_legacy_baseline.sql",
     ROOT / "migrations" / "immutable" / "0001_lookup_dataset_state.sql",
+    ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
 )
 MAX_ROW_BUDGET = 256
 MAX_BYTE_BUDGET = 1024 * 1024

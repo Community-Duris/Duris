@@ -30,6 +30,7 @@ def main() -> None:
 
 #include <hiredis/hiredis.h>
 
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <cstdlib>
@@ -102,6 +103,43 @@ int main(int argc, char **argv)
     health = redis_presence_worker_health_copy();
     assert(health.active_sessions == 1 && health.lease_refreshes >= 1 &&
            health.lease_failures == 0);
+
+    // A continuously replenished queue must not starve a due lease heartbeat.
+    const uint64_t refreshes_before_backlog = health.lease_refreshes;
+    bool saturated = false;
+    for (size_t index = 0; index < 100000; ++index)
+    {
+        if (!redis_presence_worker_submit_online(101, "{\"name\":\"Async\"}", false))
+        {
+            saturated = true;
+            break;
+        }
+    }
+    assert(saturated);
+    std::atomic<bool> produce{true};
+    std::thread producer([&produce]() {
+        while (produce.load(std::memory_order_relaxed))
+            if (!redis_presence_worker_submit_online(
+                    101, "{\"name\":\"Async\"}", false))
+                std::this_thread::yield();
+    });
+    bool refreshed_while_queued = false;
+    const auto heartbeat_deadline =
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(1500);
+    while (std::chrono::steady_clock::now() < heartbeat_deadline)
+    {
+        health = redis_presence_worker_health_copy();
+        if (health.queued > 0 && health.lease_refreshes > refreshes_before_backlog)
+        {
+            refreshed_while_queued = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    produce.store(false, std::memory_order_relaxed);
+    producer.join();
+    assert(refreshed_while_queued);
+    assert(redis_presence_worker_drain(5000));
 
     assert(redis_presence_worker_submit_offline(101, true));
     assert(redis_presence_worker_drain(1000));

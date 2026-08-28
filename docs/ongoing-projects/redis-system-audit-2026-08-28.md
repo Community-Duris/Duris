@@ -670,8 +670,8 @@ Completed in this interval:
   retains the shared credential pair as an explicit fallback.
 - Routed world/floor recovery, presence publication, reconstructible cache publication and
   boot priming, donation subscription, and pwipe/stopped-server deletion through their
-  matching identities. The broad maintenance identity is opened only for pwipe preflight,
-  pwipe deletion, or the stopped-server helper.
+  matching identities. The broad maintenance identity is opened only by the bounded
+  retired-ship cleanup worker, pwipe preflight/deletion, or the stopped-server helper.
 - Documented per-subsystem key/channel ACL boundaries and rotation behavior. The
   stopped-server helper prefers the maintenance pair, rejects a partial pair, and keeps its
   password out of command arguments.
@@ -2285,8 +2285,8 @@ Impact:
 A compromised subsystem identity is contained to that subsystem's scoped key or channel
 surface. Donation envelopes and world generations additionally require independent HMAC
 keys, while namespace and season binding prevent cross-deployment and cross-season
-acceptance. The maintenance identity remains intentionally privileged and must be reserved
-for stopped-server or pwipe workflows.
+acceptance. The maintenance identity remains intentionally privileged and is reserved for
+retired-key cleanup, stopped-server maintenance, and pwipe workflows.
 
 Recommendation:
 

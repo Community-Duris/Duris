@@ -310,8 +310,7 @@ void worker_main()
 					[] { return stop_requested || !pending_jobs.empty(); });
 			if (stop_requested)
 				break;
-			heartbeat = pending_jobs.empty() &&
-				    std::chrono::steady_clock::now() >= next_heartbeat;
+			heartbeat = std::chrono::steady_clock::now() >= next_heartbeat;
 			heartbeat_has_sessions = heartbeat && generation_claimed &&
 						 !active_sessions.empty();
 			if (!heartbeat)

@@ -528,14 +528,14 @@ static bool sql_begin_pwipe_epoch(void)
 		 "reset_started_at=UTC_TIMESTAMP(6),reset_completed_at=NULL "
 		 "WHERE state_id=1 AND season_epoch=%llu AND reset_status='active'",
 		 epoch + 1, epoch);
-	/* Attempting the first season mutation is the irreversible boundary. */
-	pwipe_crossed_boundary = true;
 	my_ulonglong affected = 0;
 	if (!sql_connection_execute_affected(DB, update, &affected) || affected != 1)
 	{
 		sql_connection_execute(DB, "ROLLBACK");
 		return false;
 	}
+	/* The update succeeded; a failed COMMIT can now have an ambiguous outcome. */
+	pwipe_crossed_boundary = true;
 	if (!sql_connection_execute(DB, "COMMIT"))
 		return false;
 	current_season_epoch = epoch + 1;

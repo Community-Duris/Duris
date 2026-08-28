@@ -96,7 +96,8 @@ postflight_pos = index(sql_source, "if (!postflight_ok)")
 pwipe_pos = sql_source.index(pwipe_hook, postflight_pos)
 completed_pos = index(sql_source, 'send_to_all("WIPE COMPLETED!")', pwipe_pos)
 assert postflight_pos < pwipe_pos < completed_pos
-assert not contains(sql_source[pwipe_pos:completed_pos], "return FALSE")
+season_completion_pos = index(sql_source, "if (!sql_complete_pwipe_epoch())", pwipe_pos)
+assert not contains(sql_source[pwipe_pos:season_completion_pos], "return FALSE")
 manifest = sql_source[index(sql_source, "bool sql_verify_pwipe_manifest"):index(sql_source, "bool sql_verify_persistence_schema")]
 assert contains(manifest, '"account_bound_rewards"')
 assert contains(manifest, '"account_bound_reward_summons"')

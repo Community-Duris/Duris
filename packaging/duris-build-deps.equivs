@@ -24,10 +24,12 @@ Depends: build-essential,
 	 default-libmysqlclient-dev | libmariadb-dev-compat,
 	 default-mysql-client | mariadb-client,
 	 default-mysql-server | mariadb-server,
+	 redis-server,
+	 redis-tools,
 	 valgrind,
 	 gdb,
 	 clang-format,
-Suggests: redis | redict,
+Suggests: redict,
 Description: build dependencies for Duris
  This metapackage installs what you need for building, formatting, testing,
  debugging, memory-checking, and running a test instance of Duris.

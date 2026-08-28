@@ -78,7 +78,7 @@ revisioned player-save pipeline and typed journal.
 | `REDIS_PRESENCE_USERNAME`, `REDIS_PRESENCE_PASSWORD` | local fallback | Complete ACL pair | Presence key and event-channel identity. Required in production. |
 | `REDIS_CACHE_USERNAME`, `REDIS_CACHE_PASSWORD` | local fallback | Complete ACL pair | Reconstructible content-cache identity. Required in production. |
 | `REDIS_DONATION_USERNAME`, `REDIS_DONATION_PASSWORD` | local fallback | Complete ACL pair | Donation subscription identity. Required in production only when the subscriber is enabled. |
-| `REDIS_MAINTENANCE_USERNAME`, `REDIS_MAINTENANCE_PASSWORD` | local fallback | Complete ACL pair | Pwipe and stopped-server destructive-maintenance identity. Required in production. The shell helper passes its password through `REDISCLI_AUTH`, not a command argument. |
+| `REDIS_MAINTENANCE_USERNAME`, `REDIS_MAINTENANCE_PASSWORD` | local fallback | Complete ACL pair | Retired ship cleanup, pwipe, and stopped-server destructive-maintenance identity. Required in production. The shell helper passes its password through `REDISCLI_AUTH`, not a command argument. |
 | `REDIS_TLS` | `FALSE` | Exact `TRUE` or `FALSE` | Enables verified TLS for every TCP runtime and maintenance connection. Non-loopback production runtime endpoints require `TRUE`; destructive maintenance requires it for every non-loopback TCP target. Unix sockets require `FALSE`. |
 | `REDIS_CA_CERT` | empty | Readable CA bundle | Required when Redis TLS is enabled and used for peer verification. |
 | `REDIS_TLS_SERVER_NAME` | `REDIS_HOST` | Certificate DNS name | Optional runtime SNI and certificate-name override, useful when connecting by IP to a certificate issued for a DNS name. |
@@ -213,7 +213,9 @@ after three command-level failures so a permanent schema or ACL error cannot blo
 queue indefinitely. Online state uses `<REDIS_NAMESPACE>:season:<epoch>:presence:current` plus
 `<REDIS_NAMESPACE>:season:<epoch>:presence:session:<instance>:<pid>` keys with a 180-second TTL. The worker refreshes
 active leases every 60 seconds in batches of at most 64; a crashed server, failed logout,
-or superseded worker therefore cannot leave persistent presence data.
+or superseded worker therefore cannot leave persistent presence data. A due heartbeat is
+processed ahead of queued login/logout work so a sustained backlog cannot starve active
+leases past their TTL.
 
 Named, fraglist, epic-zone, and artifact report reads use a bounded 32-entry in-process
 cache and never wait for Redis during gameplay. Redis publication and invalidation use a
@@ -222,6 +224,12 @@ key are coalesced. Values are limited to 1 MiB and keys to 128 bytes. Existing a
 cache values under `<REDIS_NAMESPACE>:season:<epoch>:cache:*` are seeded with their remaining TTL in one boot-only Redis operation, while
 expired or persistent legacy artifact values are ignored. Pwipe cancels the worker before
 checked deletion and shutdown gives it a one-second drain deadline.
+
+Retired `ship:snapshot:*` invalidations use a separate bounded asynchronous worker with
+the maintenance identity. Ship deletion and owner-rename paths only enqueue the legacy
+key; connection, authentication, and deletion stay off the gameplay thread. Pwipe cancels
+the worker before its checked maintenance sweep, and normal shutdown gives it a one-second
+drain deadline.
 
 Every report cache has a bounded freshness contract: named-set output expires after 24
 hours, while fraglist, epic-zone, and artifact output expire after 15 minutes. Successful

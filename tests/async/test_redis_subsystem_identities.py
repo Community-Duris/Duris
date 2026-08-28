@@ -9,6 +9,7 @@ SOURCE = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
 WORLD = (ROOT / "src" / "redis_world_runtime.c").read_text(encoding="ascii")
 CONFIG = (ROOT / "src" / "redis_runtime_config.c").read_text(encoding="ascii")
 MAINTENANCE = (ROOT / "src" / "redis_maintenance.c").read_text(encoding="ascii")
+SHIP = (ROOT / "src" / "redis_ship_legacy.c").read_text(encoding="ascii")
 CLEAR = (ROOT / "scripts" / "clear-duris-redis-keys.sh").read_text(encoding="ascii")
 WRAPPER = (ROOT / "scripts" / "clear-redis.sh").read_text(encoding="ascii")
 
@@ -23,6 +24,8 @@ for field in ("world", "presence", "cache", "donation", "maintenance"):
 assert "const redis_floor_store_config floor_config = { world_connection };" in WORLD
 assert "redis_report_cache_start(redis_connections.cache)" in SOURCE
 assert "redis_connections.maintenance" in SOURCE
+assert "redis_ship_legacy_worker_init(redis_connections.maintenance)" in SOURCE
+assert "redis_connection_open(configured_connection)" in SHIP
 assert "redis_connection_open(config->connection)" in MAINTENANCE
 assert "redis_ctx = maintenance;" not in SOURCE
 assert "redis_ctx = world_context;" not in SOURCE

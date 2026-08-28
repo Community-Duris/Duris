@@ -8,6 +8,7 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 header = (ROOT / "src/redis_maintenance.h").read_text()
 source = (ROOT / "src/redis_maintenance.c").read_text()
+composition = (ROOT / "src/redis.c").read_text()
 legacy_header = (ROOT / "src/redis_ship_legacy.h").read_text()
 legacy = (ROOT / "src/redis_ship_legacy.c").read_text()
 sql = (ROOT / "src/sql_player.c").read_text()
@@ -29,9 +30,12 @@ save_end = sql.index("static bool sql_load_ship_armor", save_start)
 assert "redis_" not in sql[save_start:save_end]
 
 assert "bool redis_clear_ship_snapshots(struct redisContext *context)" in legacy_header
+assert "redis_ship_legacy_worker_init" in legacy_header
 assert '"SCAN %s MATCH %s COUNT 256"' in legacy
 assert "REDIS_SHIP_SNAPSHOT_PATTERN" in legacy
-assert "redis_cache_store_delete(key)" in legacy
+assert "redis_cache_store_delete" not in legacy
+assert "redis_connection_open(configured_connection)" in legacy
+assert "redis_ship_legacy_worker_init(redis_connections.maintenance)" in composition
 assert "redis_shared_command_observability_record" in legacy
 assert "redis_clear_ship_snapshots(context)" in source
 for caller in ("src/sql_player.c", "src/ships/ship_base.c"):
@@ -42,16 +46,13 @@ for caller in ("src/sql_player.c", "src/ships/ship_base.c"):
 HARNESS = r'''
 #include "redis_ship_legacy.h"
 #include "redis_command_observability.h"
+#include "redis_connection.h"
 
 #include <hiredis/hiredis.h>
 
 #include <cassert>
 #include <cstdlib>
-
-bool redis_cache_store_delete(const char *)
-{
-    return true;
-}
+#include <cstring>
 
 static void command_ok(redisContext *context, const char *format, int value)
 {
@@ -65,15 +66,61 @@ int main(int argc, char **argv)
     assert(argc == 2);
     redisContext *context = redisConnect("127.0.0.1", atoi(argv[1]));
     assert(context && !context->err);
+    redisReply *reply = static_cast<redisReply *>(redisCommand(
+        context,
+        "ACL SETUSER cache reset on >cache-secret ~duris:local:test:season:*:cache:* +select +del"
+    ));
+    assert(reply && reply->type == REDIS_REPLY_STATUS && !strcmp(reply->str, "OK"));
+    freeReplyObject(reply);
+    reply = static_cast<redisReply *>(redisCommand(
+        context,
+        "ACL SETUSER maintenance reset on >maintenance-secret ~duris:local:test:* ~mud:* ~ship:snapshot:* +select +del"
+    ));
+    assert(reply && reply->type == REDIS_REPLY_STATUS && !strcmp(reply->str, "OK"));
+    freeReplyObject(reply);
+
+    redis_connection_options options = {
+        "127.0.0.1", atoi(argv[1]), 250, 250, 0, "cache", "cache-secret",
+        false, nullptr, nullptr, false, nullptr};
+    redis_connection_settings *cache_settings = redis_connection_settings_create(&options);
+    assert(cache_settings);
+    redisContext *cache_context = redis_connection_open(cache_settings);
+    assert(cache_context && !cache_context->err);
+    reply = static_cast<redisReply *>(redisCommand(
+        cache_context, "DEL ship:snapshot:Queued"
+    ));
+    assert(reply && reply->type == REDIS_REPLY_ERROR && strstr(reply->str, "NOPERM"));
+    freeReplyObject(reply);
+    redisFree(cache_context);
+    redis_connection_settings_destroy(cache_settings);
+
+    options.username = "maintenance";
+    options.password = "maintenance-secret";
+    redis_connection_settings *maintenance_settings =
+        redis_connection_settings_create(&options);
+    assert(maintenance_settings);
+    assert(redis_ship_legacy_worker_init(maintenance_settings));
+
     for (int index = 0; index < 600; ++index)
         command_ok(context, "SET ship:snapshot:Owner%d value", index);
+    command_ok(context, "SET ship:snapshot:Queued value%d", 1);
     command_ok(context, "SET unrelated:key value%d", 1);
 
     redis_shared_command_observability_reset(true);
+    redis_invalidate_ship_snapshot("Queued");
+    assert(redis_ship_legacy_worker_drain(3000));
+    reply = static_cast<redisReply *>(redisCommand(
+        context, "EXISTS ship:snapshot:Queued"
+    ));
+    assert(reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
+    freeReplyObject(reply);
+    assert(redis_ship_legacy_worker_shutdown(1000));
+    redis_connection_settings_destroy(maintenance_settings);
+
     assert(!redis_clear_ship_snapshots(nullptr));
     assert(redis_clear_ship_snapshots(context));
 
-    redisReply *reply = static_cast<redisReply *>(
+    reply = static_cast<redisReply *>(
         redisCommand(context, "KEYS ship:snapshot:*")
     );
     assert(reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 0);
@@ -86,7 +133,7 @@ int main(int argc, char **argv)
     const redis_shared_scope_health &maintenance = health.scopes[REDIS_SHARED_SCOPE_MAINTENANCE];
     assert(maintenance.calls > 2 && maintenance.successes == maintenance.calls);
     assert(health.command_kind_calls[REDIS_SHARED_COMMAND_SCAN] >= 2);
-    assert(health.command_kind_calls[REDIS_SHARED_COMMAND_WRITE] == 600);
+    assert(health.command_kind_calls[REDIS_SHARED_COMMAND_WRITE] == 601);
     redisFree(context);
     return 0;
 }
@@ -118,8 +165,12 @@ with tempfile.TemporaryDirectory(prefix="duris-ship-legacy-") as temp:
             "-Isrc",
             str(source_path),
             "src/redis_ship_legacy.c",
+            "src/redis_connection.c",
             "src/redis_command_observability.c",
             "-lhiredis",
+            "-lhiredis_ssl",
+            "-lssl",
+            "-lcrypto",
             "-pthread",
             "-o",
             str(binary),

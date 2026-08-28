@@ -190,11 +190,20 @@ for token in (
 assert "redis_runtime_config.o" in MAKEFILE
 assert "redis_runtime_connections_configure(redis_donation_runtime_enabled()" in REDIS_SOURCE
 
-for symbol in ("redis_invalidate_ship_snapshot", "redis_clear_ship_snapshots"):
+for symbol in (
+    "redis_ship_legacy_worker_init",
+    "redis_ship_legacy_worker_drain",
+    "redis_ship_legacy_worker_shutdown",
+    "redis_ship_legacy_worker_cancel",
+    "redis_invalidate_ship_snapshot",
+    "redis_clear_ship_snapshots",
+):
     assert symbol in SHIP_HEADER
     assert symbol in SHIP_SOURCE
     assert symbol not in REDIS_HEADER
-assert "redis_cache_store_delete" in SHIP_SOURCE
+assert "redis_cache_store_delete" not in SHIP_SOURCE
+assert "redis_connection_open(configured_connection)" in SHIP_SOURCE
+assert "redis_ship_legacy_worker_init(redis_connections.maintenance)" in REDIS_SOURCE
 assert "REDIS_SHIP_SNAPSHOT_PATTERN" in SHIP_SOURCE
 assert "redis_ship_legacy.o" in MAKEFILE
 for filename in ("sql_player.c", "ships/ship_base.c"):
