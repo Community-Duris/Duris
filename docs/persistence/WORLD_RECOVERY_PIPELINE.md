@@ -1,6 +1,6 @@
 # World Recovery Pipeline
 
-Optional Redis crash recovery uses a long-lived in-process publisher instead of a
+Optional Redis restart and crash recovery uses a long-lived in-process publisher instead of a
 forked serializer. The game thread incrementally captures one sequence-numbered
 generation across NPCs, floor objects, doors, and zone timers. Each pulse is bounded by
 record count and elapsed time, each record has a byte ceiling, and the complete retained
@@ -26,15 +26,12 @@ checksum all validate.
 
 ## Floor-Delta Boundary
 
-Pending floor additions/removals are flushed before capture starts. While a capture,
-publish, or unconsumed completion exists, newer local deltas remain in the retry buffer.
-Only the exact acknowledged generation may clear the pre-capture Redis delta set. A
-failed, timed-out, or stale publish leaves that set intact, while post-boundary local
-deltas remain eligible for the next normal flush.
-
-Each flush buffers all bounded hash mutations and collects their replies as one ordered
-hiredis pipeline. This avoids one network round trip per delta. The in-memory batches are
-cleared only after every reply succeeds, so a failed exchange remains retryable.
+Pending floor additions/removals are submitted to a bounded background worker. Before
+capture, an ordered barrier confirms all earlier mutations and pauses publication of
+later mutations. Only the exact acknowledged generation may atomically clear the stable
+pre-capture hash. Completion or capture failure resumes post-barrier work. Each immutable
+batch remains a hiredis pipeline, avoiding one network round trip per delta without
+blocking the game loop.
 
 ## Lifecycle And Health
 
@@ -43,3 +40,9 @@ shutdown wait to bounded deadlines for capture, publication, exact acknowledgeme
 floor-boundary cleanup; failure cancels the process transition. `world persistence`
 reports aggregate capture, queue, bytes, sequence, runtime, retry, and failure health
 without object, room, or character identity.
+
+After a successful graceful drain, the fenced writer records an expiring marker for the
+exact current sequence. Boot consumes that marker once and labels a matching valid
+generation as clean-restart recovery. A missing or mismatched marker is crash recovery.
+Successful materialization consumes only that exact generation and leaves the publisher
+enabled for the new process lifetime.

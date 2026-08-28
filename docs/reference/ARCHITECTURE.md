@@ -160,10 +160,11 @@ After world boot, two recovery paths may apply before socket input is accepted:
 - **Copyover recovery** (`copyover_boot`, `src/copyover.c`): listening sockets
   and live player connections are re-inherited from `copyover.dat`; combat state
   is restored by `copyover_restore_combat()`.
-- **Redis crash recovery**: if the previous process died uncleanly, a world generation
+- **Redis restart recovery**: after a graceful restart or an unclean exit, a world generation
   is restored only after schema, completeness, sequence, checksum, size, and age
-  validation. The prior generation remains authoritative until publication ACK, and
-  matching floor deltas are retained until that ACK.
+  validation. A fenced one-use sequence marker distinguishes a clean restart from a
+  crash. The prior generation remains authoritative until publication ACK, and matching
+  floor deltas are retained until that ACK.
 
 Player-load initialization fails existing-character login closed. Before listeners,
 the runtime also initializes revisioned player saves, critical commands/outbox, and

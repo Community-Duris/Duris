@@ -20,6 +20,11 @@ bool redis_world_store_renew_fence(const struct redis_world_store_config *config
 				   const char *writer_token, uint64_t lease_msec);
 bool redis_world_store_release_fence(const struct redis_world_store_config *config,
 				     const char *writer_token);
+bool redis_world_store_mark_clean_shutdown(const struct redis_world_store_config *config,
+					   const char *writer_token);
+uint64_t redis_world_store_consume_clean_shutdown(const struct redis_world_store_config *config);
+bool redis_world_store_consume_generation(const struct redis_world_store_config *config,
+					  const char *writer_token, uint64_t sequence);
 bool redis_world_store_publish(const struct redis_world_store_config *config,
 			       const char *writer_token, uint64_t lease_msec,
 			       const unsigned char *data, size_t size, uint64_t sequence,

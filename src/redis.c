@@ -72,6 +72,7 @@ bool redis_enabled = false;
 bool redis_donation_enabled = false;
 bool redis_world_state_enabled = false;
 int crash_recovery_boot = 0;
+int clean_restart_recovery_boot = 0;
 
 #define REDIS_WORLD_STATE_INTERVAL_DEFAULT 10
 #define REDIS_WORLD_STATE_MAX_AGE_DEFAULT 300
@@ -98,6 +99,8 @@ static std::string donation_secret;
 static std::vector<std::string> donation_seen_event_ids;
 static bool world_floor_barrier_waiting = false;
 static bool world_floor_handoff_active = false;
+static uint64_t clean_shutdown_sequence = 0;
+static uint64_t world_sequence_floor = 0;
 static void donation_sub_drop(const char *reason);
 static bool redis_clear_floor_drops_checked(void);
 static void redis_prime_artifact_caches(void);
@@ -264,11 +267,13 @@ static bool redis_world_recovery_ensure_initialized(void)
 				NULL;
 		if (sequence_reply && sequence_reply->type == REDIS_REPLY_STRING &&
 		    sequence_reply->str)
-			world_recovery_pipeline_set_sequence_floor(
-				strtoull(sequence_reply->str, NULL, 10));
+			world_sequence_floor = std::max<uint64_t>(
+				world_sequence_floor, strtoull(sequence_reply->str, NULL, 10));
 		if (sequence_reply)
 			freeReplyObject(sequence_reply);
 	}
+	if (world_sequence_floor)
+		world_recovery_pipeline_set_sequence_floor(world_sequence_floor);
 	return true;
 }
 
@@ -500,6 +505,9 @@ bool redis_init(void)
 	world_writer_token.clear();
 	world_writer_lease_msec = 0;
 	world_writer_epoch = 0;
+	clean_shutdown_sequence = 0;
+	world_sequence_floor = 0;
+	clean_restart_recovery_boot = 0;
 	redis_donation_enabled = false;
 	donation_secret.clear();
 	const char *donation_env = getenv("REDIS_DONATION_SUBSCRIBER");
@@ -590,6 +598,13 @@ bool redis_init(void)
 			logit(LOG_SYS, "redis: floor worker unavailable; world recovery disabled");
 			redis_world_state_enabled = false;
 		}
+		if (redis_world_state_enabled)
+		{
+			const redis_world_store_config world_config =
+				redis_world_store_config_copy();
+			clean_shutdown_sequence =
+				redis_world_store_consume_clean_shutdown(&world_config);
+		}
 	}
 
 	// note: flush event scheduled in ne_init_events() after event system is ready
@@ -666,26 +681,35 @@ bool redis_validate_pwipe_state(void)
 void redis_cleanup(void)
 {
 #ifndef __NO_MYSQL__
+	bool world_recovery_drained = true;
 	if (!redis_presence_worker_shutdown(REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC))
 		logit(LOG_SYS, "redis: presence worker drain timed out during shutdown");
 	if (!redis_cache_store_shutdown(REDIS_CACHE_DRAIN_TIMEOUT_MSEC))
 		logit(LOG_SYS, "redis: cache worker drain timed out during shutdown");
 	if (redis_world_state_enabled)
 	{
-		const bool drained = !world_recovery_pipeline_health_copy().initialized ||
-				     redis_world_recovery_drain(REDIS_WORLD_DRAIN_TIMEOUT_MSEC);
-		if (!drained)
+		world_recovery_drained = !world_recovery_pipeline_health_copy().initialized ||
+					 redis_world_recovery_drain(REDIS_WORLD_DRAIN_TIMEOUT_MSEC);
+		if (!world_recovery_drained)
 			logit(LOG_SYS, "redis: world recovery drain timed out during shutdown");
 		if (world_recovery_pipeline_health_copy().initialized)
 		{
-			if (drained)
+			if (world_recovery_drained)
 				world_recovery_pipeline_shutdown();
 			else
 				world_recovery_pipeline_cancel();
 		}
 	}
-	if (!redis_floor_store_shutdown(REDIS_FLOOR_DRAIN_TIMEOUT_MSEC))
+	const bool floor_drained = redis_floor_store_shutdown(REDIS_FLOOR_DRAIN_TIMEOUT_MSEC);
+	if (!floor_drained)
 		logit(LOG_SYS, "redis: floor worker drain timed out during shutdown");
+	if (!_pwipe && !world_recovery_quiesced && world_recovery_drained && floor_drained &&
+	    redis_world_state_enabled && !world_writer_token.empty())
+	{
+		const redis_world_store_config config = redis_world_store_config_copy();
+		if (!redis_world_store_mark_clean_shutdown(&config, world_writer_token.c_str()))
+			logit(LOG_SYS, "redis: clean shutdown recovery marker was not recorded");
+	}
 	if (!world_writer_token.empty())
 	{
 		const redis_world_store_config config = redis_world_store_config_copy();
@@ -694,6 +718,9 @@ void redis_cleanup(void)
 	world_writer_token.clear();
 	world_writer_lease_msec = 0;
 	world_writer_epoch = 0;
+	clean_shutdown_sequence = 0;
+	world_sequence_floor = 0;
+	clean_restart_recovery_boot = 0;
 	if (redis_ctx)
 	{
 		redisFree(redis_ctx);
@@ -1361,7 +1388,13 @@ bool redis_has_world_state(void)
 	return false;
 #else
 	if (!redis_enabled || !redis_world_state_enabled)
+	{
+		clean_restart_recovery_boot = 0;
 		return false;
+	}
+	const uint64_t candidate_clean_sequence = clean_shutdown_sequence;
+	clean_shutdown_sequence = 0;
+	clean_restart_recovery_boot = 0;
 
 	if (!redis_ctx || redis_ctx->err)
 	{
@@ -1383,7 +1416,10 @@ bool redis_has_world_state(void)
 		sequence = strtoull(reply->str, NULL, 10);
 	freeReplyObject(reply);
 	if (!sequence)
+	{
+		clean_restart_recovery_boot = 0;
 		return false;
+	}
 	char generation_key[160];
 	if (!redis_world_generation_key(generation_key, sizeof generation_key, epoch, sequence))
 		return false;
@@ -1397,6 +1433,9 @@ bool redis_has_world_state(void)
 					reply->len, world_state_max_age, sequence, &header) &&
 		header.sequence == sequence;
 	freeReplyObject(reply);
+	if (exists)
+		world_sequence_floor = std::max(world_sequence_floor, sequence);
+	clean_restart_recovery_boot = exists && candidate_clean_sequence == sequence ? 1 : 0;
 	return exists;
 #endif
 }
@@ -1439,6 +1478,7 @@ bool redis_clear_world_state(void)
 	char sequence_key[128];
 	char checksum_key[128];
 	char complete_key[128];
+	char clean_shutdown_key[128];
 	if (!redis_epoch_key(generation_pattern, sizeof generation_pattern, world_writer_epoch,
 			     "world_state:generation:*") ||
 	    !redis_epoch_key(current_key, sizeof current_key, world_writer_epoch,
@@ -1450,13 +1490,16 @@ bool redis_clear_world_state(void)
 	    !redis_epoch_key(checksum_key, sizeof checksum_key, world_writer_epoch,
 			     "world_state:checksum") ||
 	    !redis_epoch_key(complete_key, sizeof complete_key, world_writer_epoch,
-			     "world_state:complete"))
+			     "world_state:complete") ||
+	    !redis_epoch_key(clean_shutdown_key, sizeof clean_shutdown_key, world_writer_epoch,
+			     "world_state:clean_shutdown"))
 		return false;
 	const bool generations_cleared = redis_clear_scan_match(generation_pattern);
 
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s %s %s %s %s",
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s %s %s %s %s %s",
 							current_key, timestamp_key, sequence_key,
-							checksum_key, complete_key);
+							checksum_key, complete_key,
+							clean_shutdown_key);
 	const bool metadata_cleared = reply && reply->type == REDIS_REPLY_INTEGER;
 	if (reply)
 		freeReplyObject(reply);
@@ -1466,6 +1509,31 @@ bool redis_clear_world_state(void)
 	return quiesced && generations_cleared && metadata_cleared;
 #else
 	return false;
+#endif
+}
+
+bool redis_consume_world_state(void)
+{
+#ifdef __NO_MYSQL__
+	return false;
+#else
+	if (!redis_enabled || !redis_world_state_enabled || !redis_ctx || redis_ctx->err)
+		return false;
+	const uint64_t epoch = sql_season_epoch();
+	char current_key[128];
+	if (!redis_epoch_key(current_key, sizeof current_key, epoch, "world_state:current"))
+		return false;
+	redisReply *current = (redisReply *)redis_command(redis_ctx, "GET %s", current_key);
+	if (!current || current->type != REDIS_REPLY_STRING || !current->str)
+	{
+		if (current)
+			freeReplyObject(current);
+		return false;
+	}
+	const uint64_t sequence = strtoull(current->str, NULL, 10);
+	freeReplyObject(current);
+	const redis_world_store_config config = redis_world_store_config_copy();
+	return redis_world_store_consume_generation(&config, world_writer_token.c_str(), sequence);
 #endif
 }
 

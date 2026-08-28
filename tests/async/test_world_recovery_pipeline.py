@@ -125,6 +125,8 @@ initialize = section(REDIS, "bool redis_init(void)", "bool redis_clear_pwipe_sta
 ensure = section(REDIS, "static bool redis_world_recovery_ensure_initialized", "static redisReply *redis_command")
 assert "redis_world_writer_fence_claim()" in initialize
 assert "redis_world_writer_fence_claim()" not in ensure
+assert "world_sequence_floor" in ensure
+assert "world_recovery_pipeline_set_sequence_floor(world_sequence_floor)" in ensure
 publisher = STORE[STORE.index("bool redis_world_store_publish"):]
 for token in (
     "WORLD_PUBLISH_SCRIPT",
@@ -148,11 +150,24 @@ for token in (
 for token in ("mud:season:%llu:%s", "world_state:writer_fence",
               "world_state:generation:", "world_state:current", "world_state:timestamp",
               "world_state:sequence", "world_state:checksum", "world_state:complete",
-              "floor_drops"):
+              "world_state:clean_shutdown", "floor_drops"):
+    assert token in STORE
+for token in ("redis_world_store_mark_clean_shutdown",
+              "redis_world_store_consume_clean_shutdown"):
     assert token in STORE
 assert publisher.index("GET %s") < publisher.index("EVAL %b 8")
 assert "header.sequence == sequence" in section(REDIS, "bool redis_has_world_state", "time_t redis_world_state_timestamp")
 assert "world_recovery_restore" in section(REDIS, "bool redis_load_world_state", "void event_save_world_state")
+consume = section(REDIS, "bool redis_consume_world_state", "bool redis_load_world_state")
+assert "redis_world_recovery_quiesce" not in consume
+assert "redis_world_store_consume_generation" in consume
+assert "redis.call('GET',KEYS[1])~=ARGV[1]" in section(
+    STORE, "bool redis_world_store_consume_generation", "bool redis_world_store_publish"
+)
+assert "redis_consume_world_state()" in COMM
+assert "redis_clear_world_state();" not in section(
+    COMM, "// redis crash recovery - restore world state from redis snapshot", "PROFILES(RESET)"
+)
 restore = section(PIPELINE, "bool world_recovery_restore", "void world_recovery_capture_forget_character")
 assert restore.count("copyover_restore_door_from_buffer") == 1 and ") < 0" in restore
 assert restore.count("copyover_restore_zone_age_from_buffer") == 1

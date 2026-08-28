@@ -4,10 +4,41 @@ Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-002, RDS-003, RDS-006, RDS-007, RDS-010, RDS-012,
-RDS-013, RDS-014, RDS-019, and RDS-028 are remediated and the remaining findings are
+RDS-013, RDS-014, RDS-019, RDS-024, and RDS-028 are remediated and the remaining findings are
 open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-024 explicit clean-restart recovery
+
+Completed in this interval:
+
+- Defined the existing graceful-restart behavior as intentional restart recovery rather
+  than treating every fresh generation as evidence of a crash.
+- Added a season-scoped, fenced clean-shutdown marker containing the exact current
+  generation sequence. It is written only after world and floor workers drain, expires
+  with the generation, and cannot be written by a stale writer token.
+- Consume the marker atomically at the next Redis initialization. A marker classifies the
+  boot as clean only when its sequence exactly matches the validated current generation;
+  absent, stale, failed, or already-consumed markers classify recovery as crash recovery.
+- Added a non-quiescing, compare-and-delete operation for a successfully restored
+  generation. Boot no longer calls the administrator clear path that cancels the writer
+  and disables recovery publication until another restart.
+- Updated boot logs and operator documentation to distinguish clean restart, crash, and
+  copyover recovery.
+
+Performance effect:
+
+- Marker work is limited to graceful shutdown and boot. It adds no gameplay-loop work.
+- Successful restore consumes one exact generation in a single Lua operation while
+  keeping the already-claimed publisher fence and background pipeline available.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_world_store_live.py`: passed against isolated Redis,
+  covering stale-writer rejection, marker TTL, exact sequence, and one-use consumption.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed.
 
 ### 2026-08-28 - RDS-011 asynchronous floor deltas and snapshot barrier
 
@@ -1371,6 +1402,10 @@ failed invalidation must fail a migration that depends on cache clearing.
 
 Severity: Medium
 Confidence: Confirmed behavior; product intent needs confirmation
+Remediation status: Completed on branch by preserving world state across a graceful
+restart as an explicit policy. A fenced, expiring, one-use marker identifies the exact
+clean generation; boot logs clean restart separately from crash recovery, and successful
+restore consumes the generation without quiescing the next publisher.
 
 Normal shutdown drains the recovery pipeline but does not clear the current generation
 ([`src/redis.c`](../../src/redis.c#L464)). A restart within the configured maximum age sees

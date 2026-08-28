@@ -95,6 +95,12 @@ times `REDIS_WORLD_STATE_MAX_AGE`, whichever is greater, so abandoned generation
 The background publisher scales its write timeout for the blob size, up to five seconds;
 this does not extend the game-loop Redis command deadline.
 
+Graceful shutdown preserves the latest valid world generation for restart recovery. After
+all world and floor work drains, the fenced writer records a one-use clean-shutdown marker
+for that exact sequence. The next boot consumes the marker and reports `clean restart`
+only when the validated current generation matches; otherwise it reports `crash`
+recovery. Successful restore consumes that generation without disabling future snapshots.
+
 Floor deltas use a separate background worker bounded to eight batches and 16 MiB. Each
 batch holds at most 2,048 mutations, each value is capped at 256 KiB, and keys are capped
 at 128 bytes. Before world capture, an ordered worker barrier confirms all earlier deltas

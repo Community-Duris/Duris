@@ -23,6 +23,7 @@ struct world_keys
 	char checksum[128];
 	char complete[128];
 	char floor_drops[128];
+	char clean_shutdown[128];
 };
 
 constexpr const char *WORLD_PUBLISH_SCRIPT =
@@ -66,7 +67,9 @@ bool build_keys(const redis_world_store_config *config, world_keys *keys)
 	       format_key(keys->complete, sizeof keys->complete, config->season_epoch,
 			  "world_state:complete") &&
 	       format_key(keys->floor_drops, sizeof keys->floor_drops, config->season_epoch,
-			  "floor_drops");
+			  "floor_drops") &&
+	       format_key(keys->clean_shutdown, sizeof keys->clean_shutdown, config->season_epoch,
+			  "world_state:clean_shutdown");
 }
 
 redisContext *connect_bounded(const redis_world_store_config *config)
@@ -235,6 +238,93 @@ bool redis_world_store_release_fence(const struct redis_world_store_config *conf
 		end_watch(context, transaction_started);
 	redisFree(context);
 	return released;
+}
+
+bool redis_world_store_mark_clean_shutdown(const struct redis_world_store_config *config,
+					   const char *writer_token)
+{
+	world_keys keys = {};
+	if (!writer_token || !*writer_token || !config || !config->generation_ttl_seconds ||
+	    !build_keys(config, &keys))
+		return false;
+	redisContext *context = connect_bounded(config);
+	if (!context || context->err)
+	{
+		if (context)
+			redisFree(context);
+		return false;
+	}
+	constexpr const char *script = "if redis.call('GET',KEYS[1])~=ARGV[1] then return 0 end "
+				       "local current=redis.call('GET',KEYS[2]) "
+				       "if not current then redis.call('DEL',KEYS[3]) return 0 end "
+				       "redis.call('SET',KEYS[3],current,'EX',ARGV[2]) return 1";
+	redisReply *reply = command(context, "EVAL %b 3 %s %s %s %b %llu", script, strlen(script),
+				    keys.fence, keys.current, keys.clean_shutdown, writer_token,
+				    strlen(writer_token),
+				    (unsigned long long)config->generation_ttl_seconds);
+	const bool marked = reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1;
+	if (reply)
+		freeReplyObject(reply);
+	redisFree(context);
+	return marked;
+}
+
+uint64_t redis_world_store_consume_clean_shutdown(const struct redis_world_store_config *config)
+{
+	world_keys keys = {};
+	if (!build_keys(config, &keys))
+		return 0;
+	redisContext *context = connect_bounded(config);
+	if (!context || context->err)
+	{
+		if (context)
+			redisFree(context);
+		return 0;
+	}
+	constexpr const char *script =
+		"local value=redis.call('GET',KEYS[1]) redis.call('DEL',KEYS[1]) return value";
+	redisReply *reply =
+		command(context, "EVAL %b 1 %s", script, strlen(script), keys.clean_shutdown);
+	uint64_t sequence = 0;
+	if (reply && reply->type == REDIS_REPLY_STRING && reply->str)
+		sequence = strtoull(reply->str, nullptr, 10);
+	if (reply)
+		freeReplyObject(reply);
+	redisFree(context);
+	return sequence;
+}
+
+bool redis_world_store_consume_generation(const struct redis_world_store_config *config,
+					  const char *writer_token, uint64_t sequence)
+{
+	world_keys keys = {};
+	char generation[160];
+	const std::string suffix = "world_state:generation:" + std::to_string(sequence);
+	if (!writer_token || !*writer_token || !sequence || !build_keys(config, &keys) ||
+	    !format_key(generation, sizeof generation, config->season_epoch, suffix.c_str()))
+		return false;
+	redisContext *context = connect_bounded(config);
+	if (!context || context->err)
+	{
+		if (context)
+			redisFree(context);
+		return false;
+	}
+	constexpr const char *script =
+		"if redis.call('GET',KEYS[1])~=ARGV[1] then return 0 end "
+		"if redis.call('GET',KEYS[2])~=ARGV[2] then return 0 end "
+		"redis.call('DEL',KEYS[2],KEYS[3],KEYS[4],KEYS[5],KEYS[6],KEYS[7],KEYS[8]) "
+		"return 1";
+	redisReply *reply = command(context, "EVAL %b 8 %s %s %s %s %s %s %s %s %b %llu", script,
+				    strlen(script), keys.fence, keys.current, generation,
+				    keys.timestamp, keys.sequence, keys.checksum, keys.complete,
+				    keys.clean_shutdown, writer_token, strlen(writer_token),
+				    (unsigned long long)sequence);
+	const bool consumed = reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1;
+	if (reply)
+		freeReplyObject(reply);
+	redisFree(context);
+	return consumed;
 }
 
 bool redis_world_store_publish(const struct redis_world_store_config *config,

@@ -1916,7 +1916,7 @@ void ne_init_events(void)
 		if (copyover_boot || crash_recovery_boot)
 		{
 			// just set lifespan without spawning mobs
-			// for crash recovery, zone ages will be restored from redis later
+			// for Redis restart recovery, zone ages are restored later
 			if (!crash_recovery_boot)
 			{
 				if (zone_table[j].lifespan_min != zone_table[j].lifespan_max)
@@ -1994,7 +1994,7 @@ void ne_init_events(void)
 				     nevent_periodic_policy::fixed_delay,
 				     redis_enabled && redis_donation_enabled);
 
-	// redis world state saves for crash recovery
+	// Redis world state saves for restart and crash recovery
 	nevent_register_periodic_job("world-state-save", event_save_world_state, 30 * WAIT_SEC,
 				     30 * WAIT_SEC, nevent_periodic_policy::fixed_delay,
 				     redis_enabled && redis_world_state_enabled &&

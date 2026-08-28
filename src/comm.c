@@ -579,7 +579,8 @@ void run_the_game(int port, int sslport)
 	{
 		crash_recovery_boot = 1;
 		logit(LOG_STATUS,
-		      "Crash recovery data found in redis, will restore world state after boot");
+		      "%s recovery data found in redis; world state restores after boot",
+		      clean_restart_recovery_boot ? "Clean restart" : "Crash");
 	}
 	if (!mini_mode)
 	{
@@ -966,19 +967,25 @@ void game_loop(int port, int sslport)
 	// redis crash recovery - restore world state from redis snapshot
 	if (crash_recovery_boot)
 	{
-		logit(LOG_STATUS, "Performing redis crash recovery...");
+		logit(LOG_STATUS, "Performing redis %s recovery...",
+		      clean_restart_recovery_boot ? "clean restart" : "crash");
 		if (redis_load_world_state())
 		{
 			copyover_restore_combat(); // reuse combat restoration logic
 			calc_zone_mob_level();
-			logit(LOG_STATUS, "Crash recovery complete");
+			logit(LOG_STATUS, "%s recovery complete",
+			      clean_restart_recovery_boot ? "Clean restart" : "Crash");
+			if (!redis_consume_world_state())
+				logit(LOG_STATUS,
+				      "Recovered Redis generation could not be consumed safely");
 		}
 		else
 		{
-			logit(LOG_STATUS, "Crash recovery failed, will use normal boot state");
+			logit(LOG_STATUS, "%s recovery failed; normal boot state remains",
+			      clean_restart_recovery_boot ? "Clean restart" : "Crash");
 		}
-		redis_clear_world_state();
 		crash_recovery_boot = 0;
+		clean_restart_recovery_boot = 0;
 		// Enable the registry-owned world-state job now that recovery is done.
 		const nevent_periodic_result world_state_job =
 			nevent_periodic_set_enabled("world-state-save", true, 30 * WAIT_SEC);

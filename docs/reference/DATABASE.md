@@ -71,7 +71,7 @@ message contract. The older `src/persistence_queue.c` and
 by source and health output.
 
 Redis is not an authority for player dirty state. It holds floor-delta recovery data
-and optional sequence-numbered world generations used after an unclean exit
+and optional sequence-numbered world generations used after graceful restart or an unclean exit
 (`src/redis.c`). A generation is cleared only after successful validated recovery.
 
 Critical gameplay commands are distinct from coalesced checkpoints. Each accepted

@@ -209,18 +209,20 @@ database failure, confirm every pending age is falling or stable, then request t
 copyover/shutdown again. A `fallback_saved` player-pfile alert is recovery evidence
 only; it does not mean MySQL committed and is not automatically replayed.
 
-## Crash recovery
+## Restart and crash recovery
 
-Two automatic paths run at next boot after an unclean exit:
+The automatic recovery paths are:
 
-1. **Redis world-state recovery** -- the current immutable generation is accepted only
+1. **Redis world-state recovery** -- after either a graceful restart or an unclean exit,
+   the current immutable generation is accepted only
    if schema, completeness, sequence, checksum, size, and age validate. Floor deltas are
-   reconciled with the matching generation, then recovery keys are cleared.
+   reconciled with the matching generation, then the exact restored generation is
+   consumed. A fenced one-use marker distinguishes clean restart from crash recovery.
 2. **Copyover recovery** -- only with `-C` boot flag / copyover flow.
 
 If Redis recovery fails, the server continues with a normal boot state. Check
-`logs/log/status` for `Performing redis crash recovery...` lines after any
-crash, and verify player integrity before reopening.
+`logs/log/status` for `Performing redis clean restart recovery...` or
+`Performing redis crash recovery...`, and verify player integrity before reopening.
 
 For queue or dependency incidents, use `world persistence` and the detailed `redis`
 status command. Do not clear a player save queue: player state is owned by the local
