@@ -2704,6 +2704,52 @@ sections below continue to describe the required end state.
   disposition under the same authority transaction. Room aggregate transfers remain the next
   uncoupled world-item boundary after corpse lifecycle coverage.
 
+### Checkpoint 85 - atomic corpse creation and artifact transfer context
+
+- **Versioned corpse context:** item-transfer payload version 5 appends a bounded, versioned corpse
+  context containing the stable room, post-move weight, all eight corpse values, canonical identity
+  strings, and the acting player's racewar side. The codec validates the encoded corpse PID/save ID
+  against the typed owner, bounds every string, preserves exact version 4/3/2 decoding, and rebuilds
+  historical command entity keys without requiring current-version re-encoding. Live movement
+  captures the context from a verified PC corpse immediately before submission and re-resolves only
+  its UID across the adoption retry boundary.
+- **Corpse aggregate composition:** the held-lock world-item preparer now handles both directions.
+  The first durable non-money death item establishes the corpse metadata and its exact nested subtree;
+  later durable death items append their trees with repaired parent indexes. Loot still proves and removes
+  the exact encoded subtree. Existing records must match immutable owner name, PID, save ID, and
+  racewar identity before mutable metadata is accepted. The ownership repository reconciles the
+  preparer's complete pre-mutation custody proof, including the absent/revision-zero case for first
+  establishment, before publishing ownership and world-item images together.
+- **Artifact disposition:** the artifact repository decodes the same exact subtree and fails closed
+  when an item marked as an artifact is missing from the artifact catalog. Death moves every selected
+  registered artifact from player to corpse custody and clears binding state. Loot moves it from the
+  corpse owner PID to the looter; cross-race loot clears the bound owner, records the accepted command
+  time as the bind timer, and feeds the artifact to at least five days. Artifact catalog/revision,
+  corpse aggregate, item custody, and player materialization after-images share one recoverable
+  transaction. Historical version 4 artifact loot remains a deterministic durable `EOPNOTSUPP`.
+- **Crash and replay behavior:** fault-injected repository cases cover interruption during first
+  artifact-bearing corpse establishment, subsequent nested corpse appends, and cross-race artifact
+  loot. Replay completes every missing authority image exactly once, preserves unrelated nested
+  contents and artifact timers, and returns `already_applied` only after ownership, world, artifact,
+  and player materialization agree. Live death staging now starts a PC corpse at body weight while
+  items remain on the player, preventing each acknowledged move from double-counting inventory
+  weight in both SQL and flat corpse snapshots.
+- **Checks passed:** version compatibility, live movement/ownership, item, world-item, artifact,
+  locker, auction, shop-trade, player, character-deletion, get-all, account-reward, and snapshot
+  focused suites pass. Changed-line formatting, `git diff --check`, the strict normal C++20 server
+  build, the guarded local MariaDB item-transfer schema/replay harness, and the isolated client-free
+  flat-file boot preflight also pass.
+- **Exposure:** version 5 establishes only PC corpses containing at least one durable non-money item.
+  Legacy money objects moved into an otherwise established corpse are not yet represented by the flat
+  aggregate. Money-only and empty corpses, metadata-only saves, relocation, explicit removal, and live
+  flat-file corpse restore remain SQL-only and keep the flat-primary boot blocker in place. Empty
+  established corpse records remain after the last item is looted because deletion is a distinct
+  lifecycle event; historical version 3/2 commands retain their ownership-only exposure.
+- **Next action:** add a dedicated idempotent corpse-lifecycle command and operation ledger for empty
+  establishment, money contents, metadata updates, relocation, and deletion, then route live flat
+  corpse load/restore through the completed authority. After that boundary, implement atomic room
+  aggregate transfers.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

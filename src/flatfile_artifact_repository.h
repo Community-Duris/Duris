@@ -29,6 +29,11 @@ struct flatfile_artifact_record
 	bool operator==(const flatfile_artifact_record &) const = default;
 };
 
+struct flatfile_artifact_transfer_mutation
+{
+	flatfile_authority_after_image after_image;
+};
+
 enum class flatfile_artifact_result
 {
 	ok,
@@ -50,9 +55,9 @@ flatfile_artifact_result flatfile_artifact_list(const std::string &root,
 flatfile_artifact_result flatfile_artifact_prepare_player_release(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error);
-flatfile_artifact_result flatfile_artifact_check_corpse_loot(const std::string &root,
-							     const flatfile_authority_lock &lock,
-							     const item_transfer_payload &payload,
-							     std::string *error);
+flatfile_artifact_result flatfile_artifact_prepare_corpse_transfer(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const item_transfer_payload &payload, uint64_t accepted_at_usec,
+	flatfile_artifact_transfer_mutation *mutation, std::string *error);
 
 #endif

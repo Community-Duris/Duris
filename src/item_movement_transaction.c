@@ -1,6 +1,7 @@
 #include "item_movement_transaction.h"
 
 #include "item_ownership_runtime.h"
+#include "necromancy.h"
 #include "player_snapshot_capture.h"
 #include "player_snapshot_codec.h"
 #include "prototypes.h"
@@ -17,6 +18,7 @@
 #include <vector>
 
 extern P_obj object_list;
+extern const int top_of_world;
 
 namespace
 {
@@ -28,6 +30,7 @@ struct pending_movement
 	uint64_t requested_target_parent_uid;
 	item_transfer_reason requested_reason;
 	int64_t requested_reason_id;
+	uint64_t requested_corpse_uid;
 	bool adopting;
 	item_movement_completion_fn completion;
 	std::array<uint8_t, ITEM_MOVEMENT_CONTEXT_MAX_BYTES> context;
@@ -96,6 +99,55 @@ bool capture_absent(P_obj object, uint64_t root_uid, uint64_t parent_uid,
 	return true;
 }
 
+bool capture_corpse_metadata(P_char actor, P_obj root, P_obj corpse, item_transfer_reason reason,
+			     item_corpse_metadata *metadata)
+{
+	if (!actor || !root || !corpse || !corpse->obj_uid || !metadata ||
+	    GET_ITEM_TYPE(corpse) != ITEM_CORPSE ||
+	    !IS_SET(corpse->value[CORPSE_FLAGS], PC_CORPSE) || !corpse->action_description ||
+	    !*corpse->action_description || corpse->value[CORPSE_PID] <= 0 ||
+	    corpse->value[CORPSE_SAVEID] <= 0 ||
+	    (reason != item_transfer_reason::corpse_create &&
+	     reason != item_transfer_reason::corpse_loot))
+		return false;
+	if (reason == item_transfer_reason::corpse_create)
+	{
+		if (!OBJ_CARRIED_BY(root, actor))
+			return false;
+	}
+	else
+	{
+		P_obj outer = root;
+		while (OBJ_INSIDE(outer) && outer->loc.inside)
+			outer = outer->loc.inside;
+		if (outer != corpse)
+			return false;
+	}
+	int32_t room_vnum = 0;
+	if (OBJ_ROOM(corpse) && corpse->loc.room > NOWHERE && corpse->loc.room <= top_of_world)
+		room_vnum = world[corpse->loc.room].number;
+	else if (OBJ_CARRIED(corpse) && corpse->loc.carrying &&
+		 corpse->loc.carrying->in_room > NOWHERE &&
+		 corpse->loc.carrying->in_room <= top_of_world)
+		room_vnum = world[corpse->loc.carrying->in_room].number;
+	const int64_t weight_delta = reason == item_transfer_reason::corpse_create ?
+					     static_cast<int64_t>(GET_OBJ_WEIGHT(root)) :
+					     -static_cast<int64_t>(GET_OBJ_WEIGHT(root));
+	const int64_t post_weight = static_cast<int64_t>(corpse->weight) + weight_delta;
+	if (room_vnum < 0 || post_weight < INT32_MIN || post_weight > INT32_MAX)
+		return false;
+	metadata->present = true;
+	metadata->room_vnum = room_vnum;
+	metadata->weight = static_cast<int32_t>(post_weight);
+	metadata->actor_racewar = static_cast<uint8_t>(GET_RACEWAR(actor));
+	std::copy(std::begin(corpse->value), std::end(corpse->value), metadata->values.begin());
+	metadata->owner_name = corpse->action_description;
+	metadata->short_description = corpse->short_description ? corpse->short_description : "";
+	metadata->description = corpse->description ? corpse->description : "";
+	metadata->keywords = corpse->name ? corpse->name : "";
+	return true;
+}
+
 P_obj find_item(uint64_t uid)
 {
 	for (P_obj object = object_list; object; object = object->next)
@@ -136,6 +188,7 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		const uint64_t target_parent_uid = entry.requested_target_parent_uid;
 		const item_transfer_reason reason = entry.requested_reason;
 		const int64_t reason_id = entry.requested_reason_id;
+		const uint64_t corpse_uid = entry.requested_corpse_uid;
 		const item_movement_completion_fn completion_fn = entry.completion;
 		const size_t context_size = entry.context_size;
 		const auto context = entry.context;
@@ -143,10 +196,11 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		++health.committed;
 		P_obj root = find_item(root_uid);
 		P_obj target_parent = target_parent_uid ? find_item(target_parent_uid) : NULL;
-		if (!root || (target_parent_uid && !target_parent) ||
+		P_obj corpse = corpse_uid ? find_item(corpse_uid) : NULL;
+		if (!root || (target_parent_uid && !target_parent) || (corpse_uid && !corpse) ||
 		    !item_movement_transaction_submit(actor, root, target_parent, source,
 						      destination, reason, reason_id, completion_fn,
-						      context.data(), context_size))
+						      context.data(), context_size, corpse))
 		{
 			++health.submission_failures;
 			if (completion_fn)
@@ -181,11 +235,14 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 				      const item_owner_identity &to_owner,
 				      item_transfer_reason reason, int64_t reason_id,
 				      item_movement_completion_fn completion, const void *context,
-				      size_t context_size)
+				      size_t context_size, P_obj corpse_context)
 {
+	const bool corpse_transfer = reason == item_transfer_reason::corpse_create ||
+				     reason == item_transfer_reason::corpse_loot;
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !root || !root->obj_uid ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
-	    pending.size() >= ITEM_MOVEMENT_PENDING_MAX || movement_conflicts(from_owner, to_owner))
+	    pending.size() >= ITEM_MOVEMENT_PENDING_MAX ||
+	    movement_conflicts(from_owner, to_owner) || corpse_transfer != (corpse_context != NULL))
 		return false;
 	item_ownership_runtime_entry runtime = {};
 	item_ownership_runtime_entry target_runtime = {};
@@ -234,7 +291,8 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.item_count = static_cast<uint16_t>(items.size()),
 		.items = {},
 		.item_blob_size = 0,
-		.item_blob = {}
+		.item_blob = {},
+		.corpse = {}
 	};
 	for (size_t index = 0; index < items.size(); ++index)
 		payload.items[index] = items[index];
@@ -249,6 +307,9 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		return false;
 	payload.item_blob_size = static_cast<uint32_t>(item_blob.size());
 	std::copy(item_blob.begin(), item_blob.end(), payload.item_blob.begin());
+	if (adopted && corpse_transfer &&
+	    !capture_corpse_metadata(actor, root, corpse_context, reason, &payload.corpse))
+		return false;
 	critical_operation_id operation_id = {};
 	critical_command command = {};
 	if (!critical_operation_id_generate(&operation_id) ||
@@ -256,19 +317,21 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 					 critical_source_site::command,
 					 critical_deadline_class::interactive))
 		return false;
-	pending_movement entry = { .actor_pid = static_cast<uint32_t>(GET_PID(actor)),
-				   .payload = payload,
-				   .requested_to_owner = to_owner,
-				   .requested_target_parent_uid =
-					   target_container ? target_container->obj_uid : 0,
-				   .requested_reason = reason,
-				   .requested_reason_id = reason_id,
-				   .adopting = !adopted,
-				   .completion = completion,
-				   .context = {},
-				   .context_size = context_size,
-				   .completion_ready = false,
-				   .completed = {} };
+	pending_movement entry = {
+		.actor_pid = static_cast<uint32_t>(GET_PID(actor)),
+		.payload = payload,
+		.requested_to_owner = to_owner,
+		.requested_target_parent_uid = target_container ? target_container->obj_uid : 0,
+		.requested_reason = reason,
+		.requested_reason_id = reason_id,
+		.requested_corpse_uid = corpse_context ? corpse_context->obj_uid : 0,
+		.adopting = !adopted,
+		.completion = completion,
+		.context = {},
+		.context_size = context_size,
+		.completion_ready = false,
+		.completed = {}
+	};
 	if (context_size)
 		memcpy(entry.context.data(), context, context_size);
 	const std::string key = operation_key(operation_id);

@@ -1,5 +1,7 @@
 #include "flatfile_artifact_repository.h"
+#include "player_snapshot_codec.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -28,6 +30,28 @@ static void prepare_root(const fs::path &root)
 	fs::permissions(root / "players", fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(root / "identities", fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(root / "identities/names", fs::perms::owner_all, fs::perm_options::replace);
+}
+
+static void set_transfer_item(item_transfer_payload *payload, int32_t vnum, bool artifact)
+{
+	require(payload != nullptr, "transfer payload is required");
+	player_item_snapshot item = {};
+	item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	item.equipment_slot = -1;
+	item.object_uid = 123;
+	item.vnum = vnum;
+	item.extra_flags = artifact ? 1U << 28 : 0;
+	std::vector<uint8_t> encoded;
+	require(player_item_snapshot_list_encode({ item }, &encoded) ==
+				player_snapshot_codec_result::ok &&
+			encoded.size() <= payload->item_blob.size(),
+		"could not encode transfer item");
+	payload->selected_item_uid = item.object_uid;
+	payload->item_count = 1;
+	payload->items[0].item_uid = item.object_uid;
+	payload->items[0].vnum = item.vnum;
+	payload->item_blob_size = static_cast<uint32_t>(encoded.size());
+	std::copy(encoded.begin(), encoded.end(), payload->item_blob.begin());
 }
 
 int main(int argc, char **argv)
@@ -108,33 +132,65 @@ int main(int argc, char **argv)
 			"artifact release retry was not idempotent");
 	}
 
-	const fs::path corpse_root = fs::path(argv[1]) / "corpse";
-	prepare_root(corpse_root);
 	const flatfile_artifact_record corpse = {
 		400, true, FLATFILE_ARTIFACT_ON_CORPSE, 42, 5000, 1, 1003, 42, 4000, 1
 	};
-	require(flatfile_artifact_establish(corpse_root.string(), { corpse }, &error) ==
+	const fs::path transfer_root = fs::path(argv[1]) / "corpse-transfer";
+	prepare_root(transfer_root);
+	require(flatfile_artifact_establish(transfer_root.string(), { corpse }, &error) ==
 			flatfile_artifact_result::ok,
-		"corpse artifact establishment failed");
+		"corpse transfer artifact establishment failed");
 	{
 		flatfile_authority_lock lock;
-		require(lock.acquire(corpse_root.string(), &error),
-			"could not acquire corpse artifact check authority");
+		require(lock.acquire(transfer_root.string(), &error),
+			"could not acquire corpse artifact transfer authority");
 		item_transfer_payload loot = {};
 		loot.from_owner = { item_owner_type::corpse, item_corpse_owner_id(42, 20), 0 };
 		loot.to_owner = { item_owner_type::player, 77, 0 };
 		loot.reason = item_transfer_reason::corpse_loot;
-		loot.item_count = 1;
-		loot.items[0].vnum = 401;
-		require(flatfile_artifact_check_corpse_loot(corpse_root.string(), lock, loot,
-							    &error) == flatfile_artifact_result::ok,
-			"ordinary corpse loot did not pass artifact authority check");
-		loot.items[0].vnum = 400;
-		require(flatfile_artifact_check_corpse_loot(corpse_root.string(), lock, loot,
-							    &error) ==
-				flatfile_artifact_result::conflict,
-			"artifact-bearing corpse loot did not fail closed");
+		set_transfer_item(&loot, 401, false);
+		flatfile_artifact_transfer_mutation mutation;
+		require(flatfile_artifact_prepare_corpse_transfer(
+				transfer_root.string(), lock, loot, 10000000000ULL, &mutation,
+				&error) == flatfile_artifact_result::unchanged,
+			"ordinary corpse loot did not leave artifact authority unchanged");
+		set_transfer_item(&loot, 401, true);
+		require(flatfile_artifact_prepare_corpse_transfer(
+				transfer_root.string(), lock, loot, 10000000000ULL, &mutation,
+				&error) == flatfile_artifact_result::conflict,
+			"artifact snapshot missing from the catalog did not fail closed");
+		set_transfer_item(&loot, 400, true);
+		require(flatfile_artifact_prepare_corpse_transfer(
+				transfer_root.string(), lock, loot, 10000000000ULL, &mutation,
+				&error) == flatfile_artifact_result::conflict,
+			"historical artifact-bearing corpse loot did not fail closed");
+		loot.corpse.present = true;
+		loot.corpse.actor_racewar = 2;
+		loot.corpse.values[5] = 1;
+		require(flatfile_artifact_prepare_corpse_transfer(
+				transfer_root.string(), lock, loot, 10000000000ULL, &mutation,
+				&error) == flatfile_artifact_result::ok &&
+				mutation.after_image.filename == "artifact_catalog",
+			"cross-race artifact loot did not prepare its authority image");
+		require(flatfile_authority_transaction_commit(transfer_root.string(), lock,
+							      { mutation.after_image }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"cross-race artifact loot transaction failed: " + error);
 	}
+	require(flatfile_artifact_list(transfer_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.size() == 1 && records[0].owned &&
+			records[0].location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			records[0].location == 77 && records[0].timer == 442000 &&
+			records[0].last_update == 10000 && records[0].bind_owner_pid == -1 &&
+			records[0].bind_timer == 10000 && records[0].revision == 2,
+		"cross-race artifact loot did not preserve feed and binding semantics");
+
+	const fs::path corpse_root = fs::path(argv[1]) / "corpse";
+	prepare_root(corpse_root);
+	require(flatfile_artifact_establish(corpse_root.string(), { corpse }, &error) ==
+			flatfile_artifact_result::ok,
+		"corpse artifact establishment failed");
 	{
 		flatfile_authority_lock lock;
 		require(lock.acquire(corpse_root.string(), &error),

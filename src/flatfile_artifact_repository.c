@@ -1,6 +1,7 @@
 #include "flatfile_artifact_repository.h"
 
 #include "flatfile_store.h"
+#include "player_snapshot_codec.h"
 
 #include <algorithm>
 #include <array>
@@ -18,6 +19,7 @@ constexpr uint32_t catalog_version = 1;
 constexpr size_t catalog_maximum_bytes = 64 * 1024 * 1024;
 constexpr size_t record_maximum = 1048576;
 constexpr const char *catalog_filename = "artifact_catalog";
+constexpr uint32_t artifact_extra_flag = 1U << 28;
 
 struct artifact_catalog
 {
@@ -356,28 +358,133 @@ flatfile_artifact_result flatfile_artifact_prepare_player_release(
 	return flatfile_artifact_result::ok;
 }
 
-flatfile_artifact_result flatfile_artifact_check_corpse_loot(const std::string &root,
-							     const flatfile_authority_lock &lock,
-							     const item_transfer_payload &payload,
-							     std::string *error)
+flatfile_artifact_result flatfile_artifact_prepare_corpse_transfer(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const item_transfer_payload &payload, uint64_t accepted_at_usec,
+	flatfile_artifact_transfer_mutation *mutation, std::string *error)
 {
-	if (root.empty() || !lock.matches(root) ||
-	    payload.from_owner.type != item_owner_type::corpse ||
-	    payload.to_owner.type != item_owner_type::player ||
-	    payload.reason != item_transfer_reason::corpse_loot)
+	constexpr int64_t cross_race_feed_seconds = 5 * 24 * 60 * 60;
+	constexpr size_t corpse_racewar_value_index = 5;
+	if (root.empty() || !lock.matches(root) || !mutation || !payload.item_count ||
+	    payload.item_count > ITEM_TRANSFER_MAX_ITEMS || accepted_at_usec / 1000000 > INT64_MAX)
+		return flatfile_artifact_result::invalid;
+	*mutation = {};
+	const bool create = payload.from_owner.type == item_owner_type::player &&
+			    payload.to_owner.type == item_owner_type::corpse &&
+			    payload.reason == item_transfer_reason::corpse_create;
+	const bool loot = payload.from_owner.type == item_owner_type::corpse &&
+			  payload.to_owner.type == item_owner_type::player &&
+			  payload.reason == item_transfer_reason::corpse_loot;
+	if (create == loot)
+		return flatfile_artifact_result::invalid;
+	std::vector<player_item_snapshot> exact_items;
+	if (!payload.item_blob_size || payload.item_blob_size > payload.item_blob.size() ||
+	    player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &exact_items) != player_snapshot_codec_result::ok ||
+	    exact_items.size() != payload.item_count || exact_items.empty() ||
+	    exact_items.front().object_uid != payload.selected_item_uid ||
+	    !std::all_of(exact_items.begin(), exact_items.end(),
+			 [&](const auto &item)
+			 {
+				 return std::any_of(payload.items.begin(),
+						    payload.items.begin() + payload.item_count,
+						    [&](const auto &entry) {
+							    return entry.item_uid ==
+									   item.object_uid &&
+								   entry.vnum == item.vnum;
+						    });
+			 }) ||
+	    !std::all_of(payload.items.begin(), payload.items.begin() + payload.item_count,
+			 [&](const auto &entry)
+			 {
+				 return std::count_if(exact_items.begin(), exact_items.end(),
+						      [&](const auto &item) {
+							      return entry.item_uid ==
+									     item.object_uid &&
+								     entry.vnum == item.vnum;
+						      }) == 1;
+			 }))
+		return flatfile_artifact_result::invalid;
+	const item_owner_identity &corpse_owner = create ? payload.to_owner : payload.from_owner;
+	const uint32_t corpse_pid = static_cast<uint32_t>(corpse_owner.id >> 32);
+	const uint32_t corpse_save_id = static_cast<uint32_t>(corpse_owner.id);
+	const uint64_t player_id = create ? payload.from_owner.id : payload.to_owner.id;
+	if (!corpse_pid || corpse_pid > INT32_MAX || !corpse_save_id || !player_id ||
+	    corpse_owner.id != item_corpse_owner_id(corpse_pid, corpse_save_id) ||
+	    player_id > INT32_MAX ||
+	    (payload.corpse.present && (payload.corpse.actor_racewar > 4 ||
+					payload.corpse.values[corpse_racewar_value_index] < 0 ||
+					payload.corpse.values[corpse_racewar_value_index] > 4)))
 		return flatfile_artifact_result::invalid;
 	artifact_catalog catalog;
 	const auto loaded = load_catalog(root, &catalog, error);
 	if (loaded != flatfile_artifact_result::ok)
 		return loaded;
-	for (size_t index = 0; index < payload.item_count; ++index)
+	for (const auto &item : exact_items)
 	{
+		if (!(item.extra_flags & artifact_extra_flag))
+			continue;
 		flatfile_artifact_record key = {};
-		key.vnum = payload.items[index].vnum;
+		key.vnum = item.vnum;
 		const auto record = std::lower_bound(catalog.records.begin(), catalog.records.end(),
 						     key, record_less);
-		if (record != catalog.records.end() && record->vnum == key.vnum)
+		if (record == catalog.records.end() || record->vnum != key.vnum)
 			return flatfile_artifact_result::conflict;
 	}
+	const int64_t event_time = static_cast<int64_t>(accepted_at_usec / 1000000);
+	bool changed = false;
+	for (auto &record : catalog.records)
+	{
+		const bool selected = std::any_of(payload.items.begin(),
+						  payload.items.begin() + payload.item_count,
+						  [&](const auto &item)
+						  { return item.vnum == record.vnum; });
+		if (!selected)
+			continue;
+		if (!payload.corpse.present)
+			return flatfile_artifact_result::conflict;
+		const int32_t expected_location =
+			static_cast<int32_t>(create ? player_id : corpse_pid);
+		const int32_t expected_type = create ? FLATFILE_ARTIFACT_ON_PLAYER :
+						       FLATFILE_ARTIFACT_ON_CORPSE;
+		if (!record.owned || record.location_type != expected_type ||
+		    record.location != expected_location || record.revision == UINT64_MAX)
+			return flatfile_artifact_result::conflict;
+		record.owned = true;
+		record.location_type = create ? FLATFILE_ARTIFACT_ON_CORPSE :
+						FLATFILE_ARTIFACT_ON_PLAYER;
+		record.location = static_cast<int32_t>(create ? corpse_pid : player_id);
+		record.last_update = event_time;
+		if (create)
+		{
+			record.bind_owner_pid = -1;
+			record.bind_timer = 0;
+		}
+		else
+		{
+			const int32_t corpse_racewar =
+				payload.corpse.values[corpse_racewar_value_index];
+			if (corpse_racewar && payload.corpse.actor_racewar != corpse_racewar)
+			{
+				if (event_time > INT64_MAX - cross_race_feed_seconds)
+					return flatfile_artifact_result::invalid;
+				record.bind_owner_pid = -1;
+				record.bind_timer = event_time;
+				record.timer = std::max(record.timer,
+							event_time + cross_race_feed_seconds);
+			}
+		}
+		++record.revision;
+		changed = true;
+	}
+	if (!changed)
+		return flatfile_artifact_result::unchanged;
+	if (catalog.revision == UINT64_MAX)
+		return flatfile_artifact_result::invalid;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	mutation->after_image = { catalog_filename, std::move(bytes) };
 	return flatfile_artifact_result::ok;
 }

@@ -51,11 +51,12 @@ struct flatfile_world_item_player_removal
 	std::vector<flatfile_corpse_custody_owner> custody;
 };
 
-struct flatfile_corpse_loot_mutation
+struct flatfile_corpse_transfer_mutation
 {
 	flatfile_authority_after_image after_image;
 	std::vector<flatfile_corpse_custody_item> expected_items;
 	uint64_t corpse_revision = 0;
+	bool created = false;
 };
 
 enum class flatfile_world_item_result
@@ -80,9 +81,9 @@ flatfile_world_item_result flatfile_world_item_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::string &expected_name, flatfile_world_item_player_removal *removal,
 	std::string *error);
-flatfile_world_item_result flatfile_world_item_prepare_corpse_loot(
+flatfile_world_item_result flatfile_world_item_prepare_corpse_transfer(
 	const std::string &root, const flatfile_authority_lock &lock,
-	const item_transfer_payload &payload, flatfile_corpse_loot_mutation *mutation,
+	const item_transfer_payload &payload, flatfile_corpse_transfer_mutation *mutation,
 	std::string *error);
 
 #endif

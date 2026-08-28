@@ -463,11 +463,20 @@ bool corpse_loot_transfer(const item_transfer_payload &payload)
 	       payload.reason == item_transfer_reason::corpse_loot;
 }
 
-bool generic_transfer_supported(const item_transfer_payload &payload)
+bool corpse_create_transfer(const item_transfer_payload &payload)
+{
+	return payload.from_owner.type == item_owner_type::player &&
+	       payload.to_owner.type == item_owner_type::corpse &&
+	       payload.reason == item_transfer_reason::corpse_create;
+}
+
+bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t payload_version)
 {
 	return (generic_materialization_owner(payload.from_owner.type) &&
 		generic_materialization_owner(payload.to_owner.type)) ||
-	       locker_transfer(payload) || corpse_loot_transfer(payload);
+	       locker_transfer(payload) || corpse_loot_transfer(payload) ||
+	       (payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+		corpse_create_transfer(payload));
 }
 
 bool locker_custody_matches(ownership_catalog &catalog, const item_owner_identity &owner,
@@ -490,9 +499,12 @@ bool locker_custody_matches(ownership_catalog &catalog, const item_owner_identit
 }
 
 bool corpse_custody_matches(ownership_catalog &catalog, const item_owner_identity &owner,
-			    const std::vector<flatfile_corpse_custody_item> &expected)
+			    const std::vector<flatfile_corpse_custody_item> &expected, bool created)
 {
-	if (!find_owner(&catalog, owner))
+	const owner_state *stored_owner = find_owner(&catalog, owner);
+	if (!stored_owner)
+		return created && expected.empty();
+	if (created && (stored_owner->revision || !expected.empty()))
 		return false;
 	size_t index = 0;
 	for (const auto &item : catalog.items)
@@ -1285,8 +1297,8 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	unsigned int result_code = apply_transfer(&candidate, payload, &result);
 	if (result_code == ENOMEM || result_code == EILSEQ)
 		return { critical_apply_outcome::retryable_failure, catalog.revision, result_code };
-	if (!result_code && command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
-	    !generic_transfer_supported(payload))
+	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
+	    !generic_transfer_supported(payload, command.payload_version))
 	{
 		try
 		{
@@ -1303,11 +1315,12 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 			   to ? to->revision : 0, 0 };
 		result_code = EOPNOTSUPP;
 	}
-	if (!result_code && command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+	if (!result_code && command.payload_version == ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
 	    corpse_loot_transfer(payload))
 	{
-		const auto artifacts =
-			flatfile_artifact_check_corpse_loot(root, authority, payload, &error);
+		flatfile_artifact_transfer_mutation ignored;
+		const auto artifacts = flatfile_artifact_prepare_corpse_transfer(
+			root, authority, payload, command.accepted_at_usec, &ignored, &error);
 		if (artifacts == flatfile_artifact_result::conflict)
 		{
 			try
@@ -1325,7 +1338,8 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 				   from ? from->revision : 0, to ? to->revision : 0, 0 };
 			result_code = EOPNOTSUPP;
 		}
-		else if (artifacts != flatfile_artifact_result::ok)
+		else if (artifacts != flatfile_artifact_result::ok &&
+			 artifacts != flatfile_artifact_result::unchanged)
 			return { artifacts == flatfile_artifact_result::io_error ?
 					 critical_apply_outcome::retryable_failure :
 					 critical_apply_outcome::terminal_failure,
@@ -1349,9 +1363,10 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
 	flatfile_shop_trade_materialization_mutation materialization;
 	flatfile_locker_transfer_mutation locker;
-	flatfile_corpse_loot_mutation corpse;
+	flatfile_corpse_transfer_mutation corpse;
+	flatfile_artifact_transfer_mutation corpse_artifacts;
 	bool include_locker = false;
-	if (!result_code && command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
 	    locker_transfer(payload))
 	{
 		const auto prepared = flatfile_locker_prepare_item_transfer(
@@ -1374,10 +1389,10 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		include_locker = true;
 	}
 	bool include_corpse = false;
-	if (!result_code && command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
-	    corpse_loot_transfer(payload))
+	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
+	    (corpse_loot_transfer(payload) || corpse_create_transfer(payload)))
 	{
-		const auto prepared = flatfile_world_item_prepare_corpse_loot(
+		const auto prepared = flatfile_world_item_prepare_corpse_transfer(
 			root, authority, payload, &corpse, &error);
 		if (prepared != flatfile_world_item_result::ok)
 			return { prepared == flatfile_world_item_result::io_error ?
@@ -1388,13 +1403,35 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 					 prepared == flatfile_world_item_result::io_error ?
 						 EIO :
 						 EILSEQ) };
-		if (!corpse_custody_matches(catalog, payload.from_owner, corpse.expected_items))
+		const item_owner_identity &corpse_owner =
+			corpse_create_transfer(payload) ? payload.to_owner : payload.from_owner;
+		if (!corpse_custody_matches(catalog, corpse_owner, corpse.expected_items,
+					    corpse.created))
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EILSEQ };
 		include_corpse = true;
 	}
+	bool include_corpse_artifacts = false;
+	if (!result_code && command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+	    (corpse_loot_transfer(payload) || corpse_create_transfer(payload)))
+	{
+		const auto prepared = flatfile_artifact_prepare_corpse_transfer(
+			root, authority, payload, command.accepted_at_usec, &corpse_artifacts,
+			&error);
+		if (prepared != flatfile_artifact_result::ok &&
+		    prepared != flatfile_artifact_result::unchanged)
+			return { prepared == flatfile_artifact_result::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.revision,
+				 static_cast<unsigned int>(
+					 prepared == flatfile_artifact_result::io_error ? EIO :
+											  EILSEQ) };
+		include_corpse_artifacts = prepared == flatfile_artifact_result::ok;
+	}
 	bool include_materialization = false;
-	if (!result_code && payload.item_blob_size)
+	if (!result_code && command.payload_version >= ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
+	    payload.item_blob_size)
 	{
 		const auto prepared = flatfile_item_transfer_materialization_prepare(
 			root, authority, command.operation_id, payload, &materialization, &error);
@@ -1420,6 +1457,8 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 			images.push_back(std::move(locker.after_image));
 		if (include_corpse)
 			images.push_back(std::move(corpse.after_image));
+		if (include_corpse_artifacts)
+			images.push_back(std::move(corpse_artifacts.after_image));
 		if (include_materialization)
 			images.push_back(std::move(materialization.after_image));
 	}

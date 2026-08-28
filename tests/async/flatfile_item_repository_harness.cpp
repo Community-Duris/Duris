@@ -192,9 +192,29 @@ static flatfile_corpse_record transfer_corpse()
 	corpse.description = "The exact transfer corpse is lying here.";
 	corpse.keywords = "corpse corpseowner _pcorpse_";
 	corpse.weight = 90;
+	corpse.values[3] = 42;
+	corpse.values[5] = 1;
+	corpse.values[6] = 20;
+	corpse.values[7] = 4;
 	corpse.revision = 4;
 	corpse.items = corpse_items();
 	return corpse;
+}
+
+static item_corpse_metadata corpse_metadata(const flatfile_corpse_record &corpse,
+					    uint8_t actor_racewar, int32_t post_weight)
+{
+	item_corpse_metadata metadata = {};
+	metadata.present = true;
+	metadata.room_vnum = corpse.room_vnum;
+	metadata.weight = post_weight;
+	metadata.actor_racewar = actor_racewar;
+	metadata.values = corpse.values;
+	metadata.owner_name = corpse.owner_name;
+	metadata.short_description = corpse.short_description;
+	metadata.description = corpse.description;
+	metadata.keywords = corpse.keywords;
+	return metadata;
 }
 
 static shop_trade_payload shop_trade(shop_trade_action action, uint64_t item_uid,
@@ -527,7 +547,8 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_establish(root.string(), { corpse_artifact }, &error) ==
 			flatfile_artifact_result::ok,
 		"could not establish corpse artifact authority: " + error);
-	require(flatfile_world_item_establish(root.string(), { transfer_corpse() }, {}, &error) ==
+	const flatfile_corpse_record initial_corpse = transfer_corpse();
+	require(flatfile_world_item_establish(root.string(), { initial_corpse }, {}, &error) ==
 			flatfile_world_item_result::ok,
 		"could not establish transfer corpse: " + error);
 	require(flatfile_item_repository_establish_owner(
@@ -559,6 +580,7 @@ int main(int argc, char **argv)
 	loot.items[1] = { 911, 910, 910, 1, 1911, item_custody_state::active };
 	loot.item_blob_size = static_cast<uint32_t>(loot_blob.size());
 	std::copy(loot_blob.begin(), loot_blob.end(), loot.item_blob.begin());
+	loot.corpse = corpse_metadata(initial_corpse, 1, 80);
 	critical_command loot_command = {};
 	require(item_transfer_command_build(&loot_command, operation(8), loot,
 					    critical_source_site::command,
@@ -615,26 +637,152 @@ int main(int argc, char **argv)
 	artifact_loot.items[0] = { 930, 930, 0, 1, 1999, item_custody_state::active };
 	artifact_loot.item_blob_size = static_cast<uint32_t>(artifact_blob.size());
 	std::copy(artifact_blob.begin(), artifact_blob.end(), artifact_loot.item_blob.begin());
+	artifact_loot.corpse = corpse_metadata(initial_corpse, 2, 70);
+	critical_command historical_artifact_command = {};
+	require(item_transfer_command_build(&historical_artifact_command, operation(10),
+					    artifact_loot, critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build historical artifact loot command");
+	historical_artifact_command.payload.resize(ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) +
+						   artifact_blob.size());
+	historical_artifact_command.payload_version = ITEM_TRANSFER_EXACT_PAYLOAD_VERSION;
+	historical_artifact_command.accepted_at_usec = 9000000000ULL;
+	applied = flatfile_item_repository_apply(root.string(), historical_artifact_command);
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == EOPNOTSUPP,
+		"historical artifact-bearing corpse loot bypassed its missing-context fence");
+	applied = flatfile_item_repository_apply(root.string(), historical_artifact_command);
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == EOPNOTSUPP,
+		"historical artifact-bearing corpse loot fence was not durably replayable");
 	critical_command artifact_command = {};
 	require(item_transfer_command_build(&artifact_command, operation(9), artifact_loot,
 					    critical_source_site::command,
 					    critical_deadline_class::interactive),
-		"could not build fenced artifact loot command");
-	artifact_command.accepted_at_usec = 9;
+		"could not build contextual artifact loot command");
+	artifact_command.accepted_at_usec = 10000000000ULL;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
 	applied = flatfile_item_repository_apply(root.string(), artifact_command);
-	require(applied.outcome == critical_apply_outcome::terminal_failure &&
-			applied.error_code == EOPNOTSUPP,
-		"artifact-bearing corpse loot bypassed its missing-context fence");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted contextual artifact loot did not retain composite intent");
 	applied = flatfile_item_repository_apply(root.string(), artifact_command);
-	require(applied.outcome == critical_apply_outcome::terminal_failure &&
-			applied.error_code == EOPNOTSUPP,
-		"artifact-bearing corpse loot fence was not durably replayable");
+	require(applied.outcome == critical_apply_outcome::already_applied,
+		"contextual artifact loot did not recover all authority images");
 	items.clear();
 	require(flatfile_item_repository_load_owner(root.string(), corpse_owner, &owner_revision,
 						    &items, &error) ==
 				flatfile_item_repository_result::ok &&
-			owner_revision == 2 && items.size() == 3 && items[2].item_uid == 930,
-		"artifact loot fence changed corpse custody");
+			owner_revision == 3 && items.size() == 2 && items[0].item_uid == 920,
+		"contextual artifact loot did not publish corpse custody");
+	corpses.clear();
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.size() == 1 && corpses[0].revision == 6 &&
+			corpses[0].weight == 70 && corpses[0].items.size() == 2 &&
+			corpses[0].items[1].parent_index == 0,
+		"contextual artifact loot did not publish exact corpse metadata and topology");
+	std::vector<flatfile_artifact_record> artifact_records;
+	require(flatfile_artifact_list(root.string(), &artifact_records, &error) ==
+				flatfile_artifact_result::ok &&
+			artifact_records.size() == 1 && artifact_records[0].owned &&
+			artifact_records[0].location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			artifact_records[0].location == 77 && artifact_records[0].timer == 442000 &&
+			artifact_records[0].last_update == 10000 &&
+			artifact_records[0].bind_owner_pid == -1 &&
+			artifact_records[0].bind_timer == 10000 &&
+			artifact_records[0].revision == 2,
+		"contextual artifact loot did not publish cross-race artifact semantics");
+
+	flatfile_corpse_record created_corpse = initial_corpse;
+	created_corpse.owner_pid = 77;
+	created_corpse.owner_name = "newowner";
+	created_corpse.save_id = 30;
+	created_corpse.room_vnum = 600;
+	created_corpse.short_description = "the newly created corpse";
+	created_corpse.description = "The newly created corpse is lying here.";
+	created_corpse.keywords = "corpse newowner _pcorpse_";
+	created_corpse.values[3] = 77;
+	created_corpse.values[5] = 2;
+	created_corpse.values[6] = 30;
+	created_corpse.items.clear();
+	const item_owner_identity created_corpse_owner = { item_owner_type::corpse,
+							   item_corpse_owner_id(77, 30), 0 };
+	item_transfer_payload create_corpse = artifact_loot;
+	create_corpse.from_owner = { item_owner_type::player, 77, 0 };
+	create_corpse.to_owner = created_corpse_owner;
+	create_corpse.reason = item_transfer_reason::corpse_create;
+	create_corpse.reason_id = 30;
+	create_corpse.expected_from_revision = 5;
+	create_corpse.expected_to_revision = 0;
+	create_corpse.items[0].expected_item_revision = 2;
+	create_corpse.corpse = corpse_metadata(created_corpse, 2, 100);
+	critical_command create_corpse_command = {};
+	require(item_transfer_command_build(&create_corpse_command, operation(11), create_corpse,
+					    critical_source_site::combat,
+					    critical_deadline_class::interactive),
+		"could not build first corpse creation transfer");
+	create_corpse_command.accepted_at_usec = 11000000000ULL;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	applied = flatfile_item_repository_apply(root.string(), create_corpse_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted corpse creation did not retain composite intent");
+	applied = flatfile_item_repository_apply(root.string(), create_corpse_command);
+	require(applied.outcome == critical_apply_outcome::already_applied,
+		"first corpse creation transfer did not recover exactly");
+	corpses.clear();
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.size() == 2 && corpses[1].owner_pid == 77 &&
+			corpses[1].owner_name == "newowner" && corpses[1].save_id == 30 &&
+			corpses[1].revision == 1 && corpses[1].weight == 100 &&
+			corpses[1].items.size() == 1 && corpses[1].items[0].object_uid == 930,
+		"first corpse creation transfer did not establish exact metadata and contents");
+	require(flatfile_artifact_list(root.string(), &artifact_records, &error) ==
+				flatfile_artifact_result::ok &&
+			artifact_records[0].location_type == FLATFILE_ARTIFACT_ON_CORPSE &&
+			artifact_records[0].location == 77 && artifact_records[0].timer == 442000 &&
+			artifact_records[0].last_update == 11000 &&
+			artifact_records[0].bind_timer == 0 && artifact_records[0].revision == 3,
+		"corpse creation did not atomically move artifact authority");
+
+	item_transfer_payload append_corpse = loot;
+	append_corpse.from_owner = { item_owner_type::player, 77, 0 };
+	append_corpse.to_owner = created_corpse_owner;
+	append_corpse.reason = item_transfer_reason::corpse_create;
+	append_corpse.reason_id = 30;
+	append_corpse.expected_from_revision = 6;
+	append_corpse.expected_to_revision = 1;
+	append_corpse.items[0].expected_item_revision = 2;
+	append_corpse.items[1].expected_item_revision = 2;
+	append_corpse.corpse = corpse_metadata(created_corpse, 2, 120);
+	critical_command append_corpse_command = {};
+	require(item_transfer_command_build(&append_corpse_command, operation(12), append_corpse,
+					    critical_source_site::combat,
+					    critical_deadline_class::interactive),
+		"could not build subsequent corpse creation transfer");
+	append_corpse_command.accepted_at_usec = 12000000000ULL;
+	applied = flatfile_item_repository_apply(root.string(), append_corpse_command);
+	require(applied.outcome == critical_apply_outcome::applied,
+		"subsequent corpse creation transfer did not apply");
+	corpses.clear();
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses[1].revision == 2 && corpses[1].weight == 120 &&
+			corpses[1].items.size() == 3 && corpses[1].items[0].object_uid == 930 &&
+			corpses[1].items[1].object_uid == 910 &&
+			corpses[1].items[2].parent_index == 1,
+		"subsequent corpse creation transfer did not append exact nested topology");
+	items.clear();
+	require(flatfile_item_repository_load_owner(root.string(), created_corpse_owner,
+						    &owner_revision, &items, &error) ==
+				flatfile_item_repository_result::ok &&
+			owner_revision == 2 && items.size() == 3 && items[0].item_uid == 910 &&
+			items[0].item_revision == 3 && items[2].item_uid == 930,
+		"subsequent corpse creation transfer did not publish complete custody");
 
 	move.expected_from_revision = 1;
 	move.expected_to_revision = 0;

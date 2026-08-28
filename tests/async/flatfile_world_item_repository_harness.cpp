@@ -1,5 +1,7 @@
 #include "flatfile_world_item_repository.h"
+#include "player_snapshot_codec.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -106,6 +108,92 @@ int main(int argc, char **argv)
 	require(flatfile_world_item_establish(root.string(), { conflicting, second }, { saved },
 					      &error) == flatfile_world_item_result::invalid,
 		"conflicting world item establishment was accepted");
+
+	const fs::path transfer_root = fs::path(argv[1]) / "transfer";
+	prepare_root(transfer_root);
+	require(flatfile_world_item_establish(transfer_root.string(), {}, {}, &error) ==
+			flatfile_world_item_result::ok,
+		"empty world item authority establishment failed");
+	item_transfer_payload transfer = {};
+	transfer.from_owner = { item_owner_type::player, 9, 0 };
+	transfer.to_owner = { item_owner_type::corpse, item_corpse_owner_id(9, 33), 0 };
+	transfer.reason = item_transfer_reason::corpse_create;
+	transfer.selected_item_uid = 300;
+	transfer.target_root_item_uid = 300;
+	transfer.item_count = 1;
+	transfer.items[0] = { 300, 300, 0, 1, 500, item_custody_state::active };
+	const std::vector<player_item_snapshot> transferred_items = { item(
+		300, PLAYER_SNAPSHOT_NO_PARENT, 500) };
+	std::vector<uint8_t> transfer_blob;
+	require(player_item_snapshot_list_encode(transferred_items, &transfer_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode corpse transfer item");
+	transfer.item_blob_size = static_cast<uint32_t>(transfer_blob.size());
+	std::copy(transfer_blob.begin(), transfer_blob.end(), transfer.item_blob.begin());
+	transfer.corpse.present = true;
+	transfer.corpse.room_vnum = 900;
+	transfer.corpse.weight = 55;
+	transfer.corpse.actor_racewar = 1;
+	transfer.corpse.values[3] = 9;
+	transfer.corpse.values[5] = 1;
+	transfer.corpse.values[6] = 33;
+	transfer.corpse.owner_name = "TransferOwner";
+	transfer.corpse.short_description = "the transfer corpse";
+	transfer.corpse.description = "The transfer corpse is lying here.";
+	transfer.corpse.keywords = "corpse transferowner _pcorpse_";
+	flatfile_corpse_transfer_mutation transfer_mutation;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(transfer_root.string(), &error),
+			"could not acquire corpse creation authority");
+		require(flatfile_world_item_prepare_corpse_transfer(
+				transfer_root.string(), lock, transfer, &transfer_mutation,
+				&error) == flatfile_world_item_result::ok &&
+				transfer_mutation.created &&
+				transfer_mutation.expected_items.empty() &&
+				transfer_mutation.corpse_revision == 1,
+			"first corpse transfer did not prepare establishment");
+		require(flatfile_authority_transaction_commit(
+				transfer_root.string(), lock, { transfer_mutation.after_image },
+				&error) == flatfile_authority_transaction_result::ok,
+			"first corpse transfer did not commit: " + error);
+	}
+	corpses.clear();
+	saved_items.clear();
+	require(flatfile_world_item_list(transfer_root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.size() == 1 && corpses[0].owner_name == "transferowner" &&
+			corpses[0].room_vnum == 900 && corpses[0].weight == 55 &&
+			corpses[0].items.size() == 1 && corpses[0].items[0].object_uid == 300,
+		"first corpse transfer did not preserve metadata and item state");
+	transfer.from_owner = transfer.to_owner;
+	transfer.to_owner = { item_owner_type::player, 10, 0 };
+	transfer.reason = item_transfer_reason::corpse_loot;
+	transfer.corpse.weight = 40;
+	transfer.corpse.actor_racewar = 2;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(transfer_root.string(), &error),
+			"could not acquire corpse loot authority");
+		require(flatfile_world_item_prepare_corpse_transfer(
+				transfer_root.string(), lock, transfer, &transfer_mutation,
+				&error) == flatfile_world_item_result::ok &&
+				!transfer_mutation.created &&
+				transfer_mutation.expected_items.size() == 1 &&
+				transfer_mutation.expected_items[0].item_uid == 300 &&
+				transfer_mutation.corpse_revision == 2,
+			"corpse loot did not prepare exact prestate evidence");
+		require(flatfile_authority_transaction_commit(
+				transfer_root.string(), lock, { transfer_mutation.after_image },
+				&error) == flatfile_authority_transaction_result::ok,
+			"corpse loot did not commit: " + error);
+	}
+	corpses.clear();
+	require(flatfile_world_item_list(transfer_root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.size() == 1 && corpses[0].revision == 2 &&
+			corpses[0].weight == 40 && corpses[0].items.empty(),
+		"corpse loot did not retain the empty metadata aggregate");
 
 	const fs::path invalid_root = fs::path(argv[1]) / "invalid";
 	prepare_root(invalid_root);

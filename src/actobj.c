@@ -674,7 +674,7 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		if (!item_owner_identity_valid(source) ||
 		    !item_movement_transaction_submit(ch, o_obj, NULL, source, destination, reason,
 						      o_obj->obj_uid, item_get_completion, &context,
-						      sizeof(context)))
+						      sizeof(context), corpse ? s_obj : NULL))
 		{
 			send_to_char("That item is busy or lacks authoritative ownership.\r\n", ch);
 			return;

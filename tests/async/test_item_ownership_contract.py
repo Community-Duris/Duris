@@ -33,10 +33,12 @@ class ItemOwnershipContractTests(unittest.TestCase):
         implementation = (SRC / "item_transfer_command.c").read_text()
         self.assertIn("ITEM_TRANSFER_MAX_ITEMS = 12", header)
         self.assertIn("ITEM_TRANSFER_PAYLOAD_BYTES", header)
-        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 4", header)
+        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 5", header)
+        self.assertIn("ITEM_TRANSFER_EXACT_PAYLOAD_VERSION = 4", header)
         self.assertIn("ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 3", header)
         self.assertIn("ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION = 2", header)
         self.assertIn("ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES", header)
+        self.assertIn("item_corpse_metadata", header)
         for owner in ("player", "container", "room", "corpse", "locker", "auction",
                       "system", "destruction", "shopkeeper"):
             self.assertIn(owner, header)

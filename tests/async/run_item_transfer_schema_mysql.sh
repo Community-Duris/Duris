@@ -28,7 +28,8 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -Isrc \
     src/boon_reward_command.c src/boon_reward_repository.c \
     src/zone_touch_command.c src/zone_touch_repository.c \
     src/session_audit_command.c src/session_audit_repository.c \
-    src/item_uid_allocator.c \
+    src/item_uid_allocator.c src/flatfile_item_uid_allocator.c src/flatfile_store.c \
+    src/persistence_mode.c \
     src/critical_command_repository.c "${MYSQL_LIBS[@]}" -lcrypto \
     -o "$ROOT/bin/tests/item_transfer_mysql_harness"
 "$ROOT/bin/tests/item_transfer_mysql_harness"
