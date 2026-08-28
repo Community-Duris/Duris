@@ -82,6 +82,26 @@ sections below continue to describe the required end state.
 - **Next action:** continue the warning-clean client-free compile sweep from `epic.c`,
   then resolve missing no-MySQL link symbols and add a boot preflight test.
 
+### Checkpoint 4 - warning-clean legacy stub sweep
+
+- **Completed:** repaired strict-build defects in the no-MySQL branches for epic zone
+  state, shopkeeper restore, guildhall loading, outposts, and artifact/guild hydration.
+  The affected stubs now return the declared sentinel value, explicitly consume inputs,
+  or omit SQL-only parsing helpers from the client-free build.
+- **Safety behavior preserved:** these changes do not make an incomplete durable domain
+  appear available. The runtime mode preflight still rejects flat-file boot with the
+  complete unimplemented-domain inventory before world initialization.
+- **Flat build evidence:** the same isolated `PERSISTENCE_BACKEND=flatfile` build now
+  compiles through epic state, files, guildhalls, outposts, persistence coordination,
+  artifact/guild state, zone touch, session auditing, and additional gameplay modules.
+  Its next strict-build boundary is the group of SQL-disabled poll functions in
+  `poll.c`; the binary has not linked yet.
+- **Files changed:** `src/epic.c`, `src/files.c`, `src/guildhall_db.c`,
+  `src/outposts.c`, and `src/artifact_guild_state.c`.
+- **Next action:** continue from the `poll.c` no-MySQL diagnostics, finish compiling all
+  translation units, then resolve client-free link symbols and add a boot preflight
+  test.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

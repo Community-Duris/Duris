@@ -4482,6 +4482,7 @@ P_char restoreShopKeeper(int id)
 #ifndef __NO_MYSQL__
 	return sql_restore_shopkeeper(id);
 #else
+	(void)id;
 	return NULL;
 #endif
 }

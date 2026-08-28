@@ -120,7 +120,9 @@ int next_guildhall_room_vnum()
 
 void load_guildhalls(vector<Guildhall *> &guildhalls)
 {
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	(void)guildhalls;
+#else
 	if (!qry("select id, assoc_id, type, outside_vnum, racewar from guildhalls order by id asc"))
 	{
 		logit(LOG_GUILDHALLS, "load_guildhalls(): query failed");
