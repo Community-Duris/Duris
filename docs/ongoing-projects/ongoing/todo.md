@@ -1,9 +1,13 @@
 # todo.md
 
 TODO of tasks NOT done yet:
- - Restore flatfile system:  flag or toggle?  primary or fallback?
- - Integration points on MUD server that integrate with website should be hardened
- - Refactor REDIS
+
+The following must be like get all, this is completely broken!
+- send_to_char("Durable items must be put away one at a time.\r\n", ch);
+- drop all.coins: send_to_char("Durable items must be dropped one at a time.\r\n",
+- drop all: send_to_char("Durable items must be dropped one at a time.\r\n",
+
+
  - Thorough testing of all the systems we are touching
 
 ---
