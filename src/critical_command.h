@@ -31,6 +31,7 @@ enum class critical_entity_type : uint8_t
 	system,
 	artifact,
 	zone,
+	shopkeeper,
 };
 
 struct critical_entity_key

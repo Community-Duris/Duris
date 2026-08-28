@@ -54,6 +54,7 @@ jobs:
         run: |
           python3 tests/async/test_flatfile_shopkeeper_repository.py
           python3 tests/async/test_flatfile_shopkeeper_capture.py
+          python3 tests/async/test_flatfile_shopkeeper_ownership.py
       - name: Verify flat-file world item authority
         run: python3 tests/async/test_flatfile_world_item_repository.py
       - name: Verify flat-file locker authority

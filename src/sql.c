@@ -5041,6 +5041,8 @@ bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
 		expected_type = item_owner_type::locker;
 	else if (!strcmp(owner_type, "auction"))
 		expected_type = item_owner_type::auction;
+	else if (!strcmp(owner_type, "shopkeeper"))
+		expected_type = item_owner_type::shopkeeper;
 	if (expected_type == item_owner_type::unknown)
 		return false;
 	if (!expected_id)

@@ -90,6 +90,8 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 		return critical_entity_type::auction;
 	case item_owner_type::room:
 		return critical_entity_type::room;
+	case item_owner_type::shopkeeper:
+		return critical_entity_type::shopkeeper;
 	default:
 		return critical_entity_type::system;
 	}
@@ -179,7 +181,7 @@ bool validate_payload(const item_transfer_payload &payload)
 
 bool item_owner_identity_valid(const item_owner_identity &owner)
 {
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::destruction)
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::shopkeeper)
 		return false;
 	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
 		return owner.id == 0 && owner.context_id == 0;
@@ -197,6 +199,11 @@ uint64_t item_corpse_owner_id(uint32_t player_pid, uint32_t corpse_save_id)
 	if (!player_pid || !corpse_save_id)
 		return 0;
 	return (static_cast<uint64_t>(player_pid) << 32) | corpse_save_id;
+}
+
+uint64_t item_shopkeeper_owner_id(uint32_t shop_id)
+{
+	return static_cast<uint64_t>(shop_id) + 1;
 }
 
 bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key)

@@ -26,6 +26,7 @@ enum class item_owner_type : uint8_t
 	auction,
 	system,
 	destruction,
+	shopkeeper,
 };
 
 enum class item_transfer_reason : uint16_t
@@ -101,6 +102,7 @@ struct item_transfer_result
 bool item_owner_identity_valid(const item_owner_identity &owner);
 bool item_owner_identity_equal(const item_owner_identity &left, const item_owner_identity &right);
 uint64_t item_corpse_owner_id(uint32_t player_pid, uint32_t corpse_save_id);
+uint64_t item_shopkeeper_owner_id(uint32_t shop_id);
 bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key);
 bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 					  std::vector<uint8_t> *encoded);

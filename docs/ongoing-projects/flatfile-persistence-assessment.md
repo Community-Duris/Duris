@@ -2053,6 +2053,33 @@ sections below continue to describe the required end state.
 - **Next action:** add prototype-aware shopkeeper materialization and reconcile every
   catalog UID with the global ownership authority before exposing runtime restore.
 
+### Checkpoint 62 - exact shopkeeper item custody reconciliation
+
+- **Completed:** added an append-only `shopkeeper` item-owner type and a stable nonzero
+  owner-ID mapping that covers the full zero-based `shop_id` range. Flat shop aggregates
+  can now be joined to the global item authority without masquerading as rooms, players,
+  or generic containers.
+- **Exact reconciliation:** the adapter requires the shop aggregate and active custody set
+  to have identical cardinality, UID, vnum, root, parent, owner, and revision evidence. It
+  derives parent/root identities from the bounded parent-before-child topology and emits
+  materializer identities only after every row agrees; missing, extra, anonymous,
+  duplicated, foreign-owner, or structurally divergent custody fails closed.
+- **Compatibility:** owner type 9 is appended after every published owner value. Fresh SQL
+  schemas accept the widened range, and the guarded, re-runnable
+  `shopkeeper_item_owner.sql` migration widens existing named checks without changing any
+  stored owner value. Flat catalog decoding and runtime ownership validation accept the
+  same identity.
+- **Checks passed:** exact nested reconciliation, zero/maximum shop-ID mapping, atomic
+  output on mismatch, item ownership source contracts, runtime ownership hydration, the
+  strict flat item repository, all shopkeeper regressions, changed-line formatting, and
+  the normal C++20 server build pass. CI includes the reconciliation regression.
+- **Exposure:** this establishes custody evidence but does not yet instantiate mobile/object
+  prototypes or place restored keepers into the world. Runtime shopkeeper restore remains
+  fenced.
+- **Next action:** generalize the proven item graph materializer to accept an explicit
+  validated owner, then build an all-or-nothing detached shopkeeper materializer on the
+  reconciled identities.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

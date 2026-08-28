@@ -21,6 +21,9 @@ class ItemOwnershipContractTests(unittest.TestCase):
             self.assertIn(token, migration)
             self.assertIn(token, bootstrap)
         self.assertIn("item_ownership_ledger.sql", runner)
+        self.assertIn("shopkeeper_item_owner.sql", runner)
+        shopkeeper_owner = (ROOT / "migrations/shopkeeper_item_owner.sql").read_text()
+        self.assertEqual(shopkeeper_owner.count("CHECK (owner_type BETWEEN 1 AND 9)"), 3)
         for script in ("baseline_item_ownership.sh", "reconcile_item_ownership.sh",
                        "verify_item_ownership_schema.sh"):
             self.assertTrue((ROOT / "migrations" / script).stat().st_mode & 0o111)
@@ -31,7 +34,7 @@ class ItemOwnershipContractTests(unittest.TestCase):
         self.assertIn("ITEM_TRANSFER_MAX_ITEMS = 12", header)
         self.assertIn("ITEM_TRANSFER_PAYLOAD_BYTES", header)
         for owner in ("player", "container", "room", "corpse", "locker", "auction",
-                      "system", "destruction"):
+                      "system", "destruction", "shopkeeper"):
             self.assertIn(owner, header)
         self.assertIn("expected_item_revision", header)
         self.assertIn("critical_entity_key_less", implementation)

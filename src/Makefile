@@ -244,6 +244,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_ship_repository.o \
 				 flatfile_shopkeeper_repository.o \
 				 flatfile_shopkeeper_capture.o \
+				 flatfile_shopkeeper_ownership.o \
 				 flatfile_world_item_repository.o \
 				 critical_command.o \
 				 critical_command_journal.o \

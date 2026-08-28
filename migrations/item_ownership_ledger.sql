@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS item_owner_revision (
         ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (owner_type,owner_id,owner_context_id),
     KEY idx_item_owner_revision_updated (updated_at),
-    CONSTRAINT chk_item_owner_revision_type CHECK (owner_type BETWEEN 1 AND 8)
+    CONSTRAINT chk_item_owner_revision_type CHECK (owner_type BETWEEN 1 AND 9)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS item_current_owner (
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS item_current_owner (
     KEY idx_item_current_owner (owner_type,owner_id,owner_context_id,item_uid),
     KEY idx_item_current_parent (parent_item_uid),
     CONSTRAINT chk_item_current_uid_nonzero CHECK (item_uid > 0 AND root_item_uid > 0),
-    CONSTRAINT chk_item_current_owner_type CHECK (owner_type BETWEEN 1 AND 8),
+    CONSTRAINT chk_item_current_owner_type CHECK (owner_type BETWEEN 1 AND 9),
     CONSTRAINT chk_item_current_state CHECK (state BETWEEN 1 AND 3),
     CONSTRAINT item_current_parent_fk FOREIGN KEY (parent_item_uid)
         REFERENCES item_current_owner(item_uid) ON UPDATE RESTRICT ON DELETE RESTRICT
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS item_ownership_baseline (
     PRIMARY KEY (item_uid),
     UNIQUE KEY uq_item_baseline_source (source_table,source_row_id),
     KEY idx_item_baseline_owner (owner_type,owner_id,owner_context_id),
-    CONSTRAINT chk_item_baseline_owner_type CHECK (owner_type BETWEEN 1 AND 8)
+    CONSTRAINT chk_item_baseline_owner_type CHECK (owner_type BETWEEN 1 AND 9)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS item_ownership_quarantine (
