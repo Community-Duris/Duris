@@ -75,6 +75,24 @@ static void arti_cache_invalidate(void)
 	redis_invalidate_artifact_cache();
 }
 
+static void artifact_bind_maintenance_update(int vnum, int owner_pid, long timer)
+{
+#ifdef __NO_MYSQL__
+	std::string error;
+	const auto result = flatfile_artifact_bind_update(persistence_mode_flatfile_root(), vnum,
+							  owner_pid, timer, &error);
+	if (result != flatfile_artifact_result::ok && result != flatfile_artifact_result::unchanged)
+	{
+		logit(LOG_ARTIFACT,
+		      "artifact binding maintenance could not update flat authority for %d: %s",
+		      vnum, error.empty() ? "unknown error" : error.c_str());
+	}
+#else
+	qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d", owner_pid,
+	    timer, vnum);
+#endif
+}
+
 // populate redis cache at boot
 void arti_cache_init(void)
 {
@@ -4007,8 +4025,10 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	static int cursor_vnum = 0;
 	artifact_bind_row rows[ARTIFACT_BIND_BATCH_SIZE] = {};
 	size_t row_count = 0;
+#ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row = NULL;
+#endif
 
 	if (!updateArtis)
 	{
@@ -4018,6 +4038,32 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 
 	debug("event_artifact_check_bind_sql(): beginning...");
 
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	const auto loaded =
+		flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error);
+	if (loaded != flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT,
+		      "event_artifact_check_bind_sql(): failed to read flat authority: %s",
+		      error.empty() ? "unknown error" : error.c_str());
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-bind flat read failed");
+		return;
+	}
+	for (const auto &record : records)
+	{
+		if (record.vnum <= cursor_vnum)
+			continue;
+		artifact_bind_row &entry = rows[row_count++];
+		entry.vnum = record.vnum;
+		entry.owner_pid = record.bind_owner_pid;
+		entry.timer = record.bind_timer;
+		if (row_count == ARTIFACT_BIND_BATCH_SIZE)
+			break;
+	}
+#else
 	if (!qry("SELECT vnum, owner_pid, timer FROM artifact_bind WHERE vnum > %d ORDER BY vnum LIMIT %zu",
 		 cursor_vnum, ARTIFACT_BIND_BATCH_SIZE))
 	{
@@ -4046,6 +4092,7 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 		entry.timer = row[2] ? atol(row[2]) : 0;
 	}
 	mysql_free_result(res);
+#endif
 
 	if (row_count == 0)
 	{
@@ -4081,9 +4128,9 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 						{
 							act("&+L$p &+Lmerges with your &+wsoul&+L.",
 							    FALSE, owner, arti, 0, TO_CHAR);
-							qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d",
-							    artidata.location, curr_time,
-							    entry.vnum);
+							artifact_bind_maintenance_update(
+								entry.vnum, artidata.location,
+								curr_time);
 							logit(LOG_ARTIFACT,
 							      "event_artifact_check_bind_sql(): artifact '%s' %d merged with '%s' %d's soul.",
 							      arti ? OBJ_SHORT(arti) : "NULL",
@@ -4122,8 +4169,8 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 						      entry.vnum,
 						      get_player_name_from_pid(artidata.location),
 						      artidata.location);
-						qry("UPDATE artifact_bind SET owner_pid = %d, timer = %ld WHERE vnum = %d",
-						    artidata.location, curr_time, entry.vnum);
+						artifact_bind_maintenance_update(
+							entry.vnum, artidata.location, curr_time);
 					}
 				}
 			}
@@ -4147,8 +4194,7 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 			      ++counter,
 			      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35, TRUE).c_str(),
 			      entry.vnum);
-			qry("UPDATE artifact_bind SET owner_pid = -1, timer = 0 WHERE vnum = %d",
-			    entry.vnum);
+			artifact_bind_maintenance_update(entry.vnum, -1, 0);
 		}
 		if (arti)
 		{

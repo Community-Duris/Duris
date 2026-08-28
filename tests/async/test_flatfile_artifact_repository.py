@@ -157,3 +157,11 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
         raise AssertionError("client-free artifact-war event does not group flat authority")
     if "flatfile_artifact_apply_war_burn(" not in wars_body:
         raise AssertionError("client-free artifact-war event does not update flat timers")
+
+    binding_start = artifact_source.index("void event_artifact_check_bind_sql(")
+    binding_end = artifact_source.index("\nvoid arti_fixit_sql(", binding_start)
+    binding_body = artifact_source[binding_start:binding_end]
+    if "flatfile_artifact_list(" not in binding_body:
+        raise AssertionError("client-free binding maintenance does not page flat authority")
+    if binding_body.count("artifact_bind_maintenance_update(") != 3:
+        raise AssertionError("binding maintenance does not persist every binding outcome")

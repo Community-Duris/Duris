@@ -308,6 +308,29 @@
   binding maintenance, listings, and staff repair routes remain. The global
   incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - restored artifact binding maintenance without MySQL
+
+- **Concrete gap:** the periodic soul-binding reconciliation still selected its work and
+  wrote all three binding outcomes exclusively through `artifact_bind`, leaving the
+  event unusable in no-database mode despite keyed flat binding reads and writes.
+- **Restoration:** no-database mode now reads the canonical flat artifact catalog in the
+  existing eight-artifact, vnum-cursor slices and applies the existing reconciliation
+  rules unchanged. Soul merge, future-timer correction, and stale-binding clearance now
+  use the atomic flat binding update; database-backed mode retains its existing SQL
+  selection and update.
+- **Focused evidence:** the flat artifact runtime tests exercise keyed binding reads,
+  updates, idempotence, preservation of gameplay fields, revision progression, missing
+  rows, and corrupt-authority refusal. The source-contract test confirms that the real
+  maintenance event both pages flat authority and persists all three binding outcomes;
+  the bounded-maintenance regression confirms its eight-row continuation slice remains.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** periodic binding maintenance is restored, but catalog establishment,
+  listings, staff repair, and other artifact command paths remain. The global
+  incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,
