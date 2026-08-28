@@ -16,12 +16,15 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <algorithm>
 #include <string>
 #include <unordered_set>
+#include <vector>
 #include "account.h"
 #include "assocs.h"
 #include "files.h"
 #include "flatfile_identity_adapter.h"
+#include "flatfile_recipe_repository.h"
 #include "epic_bonus.h"
 #include "mm.h"
 #include "necromancy.h"
@@ -33,6 +36,7 @@
 #include "player_name.h"
 #include "password_hash.h"
 #include "player_revision_state.h"
+#include "persistence_mode.h"
 #include "item_transfer_command.h"
 
 // external tables
@@ -103,25 +107,75 @@ bool sql_save_player_shapechanges(P_char ch)
 }
 bool sql_save_player_recipes(P_char ch)
 {
-	return false;
+	return ch && !IS_NPC(ch) && GET_PID(ch) > 0;
 }
 bool sql_add_player_recipe(int pid, int recipe_vnum)
 {
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto result = root ? flatfile_recipe_add(root, pid, recipe_vnum, &error) :
+				   flatfile_recipe_result::invalid;
+	if (result == flatfile_recipe_result::ok)
+		return true;
+	persistence_alert(AVATAR, "recipes", "redacted", "none", "none", "add", "flat_write_failed",
+			  "pid=%d recipe=%d error=%s", pid, recipe_vnum, error.c_str());
 	return false;
 }
 bool sql_delete_player_recipes(int pid)
 {
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	const auto result = root ? flatfile_recipe_clear(root, pid, &error) :
+				   flatfile_recipe_result::invalid;
+	if (result == flatfile_recipe_result::ok)
+		return true;
+	persistence_alert(AVATAR, "recipes", "redacted", "none", "none", "clear",
+			  "flat_write_failed", "pid=%d error=%s", pid, error.c_str());
 	return false;
 }
 bool sql_has_player_recipe(int pid, int recipe_vnum)
 {
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	bool contains = false;
+	const auto result =
+		root ? flatfile_recipe_contains(root, pid, recipe_vnum, &contains, &error) :
+		       flatfile_recipe_result::invalid;
+	if (result == flatfile_recipe_result::ok)
+		return contains;
+	persistence_alert(AVATAR, "recipes", "redacted", "none", "none", "contains",
+			  "flat_read_failed", "pid=%d recipe=%d error=%s", pid, recipe_vnum,
+			  error.c_str());
 	return false;
 }
 int *sql_get_player_recipes(int pid, int *count)
 {
-	if (count)
-		*count = 0;
-	return NULL;
+	if (!count)
+		return NULL;
+	*count = 0;
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	std::vector<int32_t> recipes;
+	const auto result = root ? flatfile_recipe_list(root, pid, &recipes, &error) :
+				   flatfile_recipe_result::invalid;
+	if (result != flatfile_recipe_result::ok)
+	{
+		persistence_alert(AVATAR, "recipes", "redacted", "none", "none", "list",
+				  "flat_read_failed", "pid=%d error=%s", pid, error.c_str());
+		return NULL;
+	}
+	if (recipes.empty())
+		return NULL;
+	int *result_recipes = static_cast<int *>(malloc(recipes.size() * sizeof(int)));
+	if (!result_recipes)
+	{
+		persistence_alert(AVATAR, "recipes", "redacted", "none", "none", "list",
+				  "allocation_failed", "pid=%d recipes=%zu", pid, recipes.size());
+		return NULL;
+	}
+	std::copy(recipes.begin(), recipes.end(), result_recipes);
+	*count = static_cast<int>(recipes.size());
+	return result_recipes;
 }
 
 P_char sql_load_player(const char *name)

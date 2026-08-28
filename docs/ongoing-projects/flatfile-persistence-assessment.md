@@ -1294,6 +1294,46 @@ sections below continue to describe the required end state.
   remove their external-sidecar fence, including typed flat runtime query/mutation routes
   and compatibility handling for snapshots that still declare recipes external.
 
+### Checkpoint 39 - revisioned flat recipe authority
+
+- **Design correction:** learned recipes are not resident on `char_data`; crafting reads
+  them lazily through the existing `sql_*_player_recipe` API and mutates them individually
+  when learned or wiped. Duplicating that set into an otherwise unused in-memory cache
+  solely for snapshot capture would create two live authorities. Recipes therefore remain
+  truthfully marked external in the player snapshot and now have one typed external
+  authority behind the same gameplay API.
+- **Completed:** added a `DURRCPE` v1 recipe catalog with SHA-256 validation, monotonic
+  revision, canonical PID ordering, sorted unique positive recipe vnums, a 65,536-recipe
+  per-player bound, a 1,048,576-player bound, and a 256 MiB file bound. A missing catalog
+  fails closed; within an established catalog an absent PID canonically means an empty set.
+- **Completed:** establish, list, contains, add, and clear operations share the global
+  authority lock and generic transaction recovery boundary. Establishment is exact and
+  idempotent for exporter/rehearsal use; add and clear are idempotent runtime mutations.
+  Corrupt authority is never treated as empty and is never overwritten by a mutation.
+- **Completed:** the client-free `sql_add_player_recipe`, `sql_delete_player_recipes`,
+  `sql_has_player_recipe`, and `sql_get_player_recipes` routes now use the flat catalog and
+  raise persistence alerts on read/write failures. MariaDB-primary retains its existing
+  SQL. Flat-primary crafting never falls through to the name-keyed legacy `.crafting`
+  files when the authoritative set is empty or unavailable, preventing stale resurrection.
+- **Checks passed:** the standalone repository regression covers missing-catalog failure,
+  canonical establishment, exact retry/conflict, empty-player projection, membership,
+  idempotent add/clear, eight concurrent process writers, checksum corruption, and temp
+  cleanup. The runtime source contract proves all four routes, alerts, legacy-file bypass,
+  MariaDB query preservation, and build registration. The normal strict build, isolated
+  client-free build/boot preflight, Python compile, formatting, and diff checks pass; CI
+  now runs the repository regression in the client-free job.
+- **Files changed:** the flat recipe repository and harness, client-free player SQL adapter,
+  crafting legacy-import guard, build/CI manifests, focused runtime contract, and this
+  handoff ledger.
+- **Remaining recipe gap:** the future SQL-to-flat exporter must establish the catalog,
+  and safe character deletion must clear the PID row in the same recoverable identity
+  transaction. Rename needs no recipe mutation because authority is PID-keyed. Recipes
+  therefore remain in the boot-time unimplemented inventory until export and deletion
+  composition exist.
+- **Next action:** inventory `player_spellbooks` learned-mob state and route it through a
+  similarly bounded PID-keyed authority, then combine both external knowledge sets with
+  the eventual character-delete transaction and exporter manifest.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

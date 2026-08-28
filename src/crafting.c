@@ -11,6 +11,7 @@
 #include "events.h"
 #include "interp.h"
 #include "objmisc.h"
+#include "persistence_mode.h"
 #include "spells.h"
 #include "vnum.obj.h"
 #include "crafting.h"
@@ -375,7 +376,8 @@ int *crafting_get_player_recipes(P_char ch, int *count)
 		return NULL;
 
 	recipes = sql_get_player_recipes(GET_PID(ch), count);
-	if (recipes != NULL || *count != 0)
+	if (recipes != NULL || *count != 0 ||
+	    persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
 		int i, kept = 0;
 		for (i = 0; i < *count; i++)
