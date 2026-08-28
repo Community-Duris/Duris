@@ -13,8 +13,11 @@
 #include "flatfile_recipe_repository.h"
 #include "flatfile_ship_repository.h"
 #include "flatfile_spellbook_repository.h"
+#include "flatfile_shop_trade_materialization.h"
 #include "flatfile_world_item_repository.h"
+#include "player_snapshot_codec.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -208,6 +211,37 @@ static void establish(const fs::path &root, bool establish_boons)
 	require(flatfile_offline_message_enqueue(root.string(), 1, message_id, "pending", &error) ==
 			flatfile_offline_message_result::ok,
 		"offline message baseline failed: " + error);
+	player_item_snapshot purchased = {};
+	purchased.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	purchased.object_uid = 777;
+	purchased.vnum = 3777;
+	purchased.name = "deleted player's purchase";
+	std::vector<uint8_t> item_blob;
+	require(player_item_snapshot_list_encode({ purchased }, &item_blob) ==
+			player_snapshot_codec_result::ok,
+		"shop materialization item encode failed");
+	shop_trade_payload trade = {};
+	trade.action = shop_trade_action::buy_existing;
+	trade.player_pid = 1;
+	trade.selected_item_uid = purchased.object_uid;
+	trade.item_count = 1;
+	trade.items[0].item_uid = purchased.object_uid;
+	trade.item_blob_size = static_cast<uint32_t>(item_blob.size());
+	std::copy(item_blob.begin(), item_blob.end(), trade.item_blob.begin());
+	critical_operation_id operation_id = {};
+	operation_id.bytes[0] = 1;
+	flatfile_authority_lock authority;
+	require(authority.acquire(root.string(), &error),
+		"shop materialization authority lock failed: " + error);
+	flatfile_shop_trade_materialization_mutation materialization;
+	require(flatfile_shop_trade_materialization_prepare(root.string(), authority, operation_id,
+							    trade, &materialization, &error) ==
+			flatfile_shop_trade_materialization_result::ok,
+		"shop materialization baseline failed: " + error);
+	require(flatfile_authority_transaction_commit(root.string(), authority,
+						      { materialization.after_image }, &error) ==
+			flatfile_authority_transaction_result::ok,
+		"shop materialization baseline commit failed: " + error);
 }
 
 int main(int argc, char **argv)
@@ -229,6 +263,8 @@ int main(int argc, char **argv)
 		"deletion recovery was not idempotent: " + error);
 	require(!fs::exists(root / "domains/.critical-authority-transaction"),
 		"recovered deletion left its journal behind");
+	require(!fs::exists(root / "domains/shop_trade_materializations"),
+		"recovered deletion retained shop materialization history");
 	flatfile_identity_record identity;
 	require(flatfile_identity_lookup_pid(root.string(), 1, &identity, &error) ==
 				flatfile_identity_result::ok &&
@@ -340,6 +376,8 @@ int main(int argc, char **argv)
 		"failed deletion changed player snapshot authority");
 	require(!fs::exists(missing / "domains/.critical-authority-transaction"),
 		"failed deletion published a transaction journal");
+	require(fs::exists(missing / "domains/shop_trade_materializations"),
+		"failed deletion removed shop materialization authority");
 
 	const fs::path direct = fs::path(argv[1]) / "direct";
 	establish(direct, true);
@@ -350,6 +388,8 @@ int main(int argc, char **argv)
 	require(flatfile_character_delete(direct.string(), 1, "Player", &error) ==
 			flatfile_character_delete_result::already_deleted,
 		"direct deletion retry was not idempotent: " + error);
+	require(!fs::exists(direct / "domains/shop_trade_materializations"),
+		"direct deletion retained shop materialization history");
 
 	std::cout << "flat-file character deletion passed\n";
 	return 0;

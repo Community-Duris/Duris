@@ -596,6 +596,17 @@ flatfile_item_repository_result flatfile_item_repository_load_owner(
 		return recovered == flatfile_authority_transaction_result::io_error ?
 			       flatfile_item_repository_result::io_error :
 			       flatfile_item_repository_result::invalid;
+	return flatfile_item_repository_load_owner_locked(root, authority, owner, owner_revision,
+							  items, error);
+}
+
+flatfile_item_repository_result flatfile_item_repository_load_owner_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const item_owner_identity &owner, uint64_t *owner_revision,
+	std::vector<flatfile_item_ownership_record> *items, std::string *error)
+{
+	if (!lock.matches(root) || !item_owner_identity_valid(owner) || !owner_revision || !items)
+		return flatfile_item_repository_result::invalid;
 	ownership_catalog catalog;
 	const flatfile_item_repository_result loaded = load_catalog(root, &catalog, error);
 	if (loaded != flatfile_item_repository_result::ok)

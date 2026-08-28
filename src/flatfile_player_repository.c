@@ -3,6 +3,7 @@
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
 #include "flatfile_player_domain_repository.h"
+#include "flatfile_shop_trade_materialization.h"
 #include "flatfile_store.h"
 #include "persistence_observability.h"
 #include "persistence_mode.h"
@@ -245,8 +246,27 @@ bool reconcile_item_ownership(const std::string &root, player_load_result *resul
 	uint64_t owner_revision = 0;
 	std::vector<flatfile_item_ownership_record> records;
 	std::string error;
-	const flatfile_item_repository_result loaded =
-		flatfile_item_repository_load_owner(root, owner, &owner_revision, &records, &error);
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, &error))
+	{
+		result->outcome = player_load_outcome::retryable_failure;
+		result->error_code = EIO;
+		result->failed_component = "item_ownership";
+		return false;
+	}
+	const auto recovered = flatfile_authority_transaction_recover(root, authority, &error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+	{
+		result->outcome = recovered == flatfile_authority_transaction_result::io_error ?
+					  player_load_outcome::retryable_failure :
+					  player_load_outcome::component_failure;
+		result->error_code =
+			recovered == flatfile_authority_transaction_result::io_error ? EIO : EILSEQ;
+		result->failed_component = "item_ownership";
+		return false;
+	}
+	const flatfile_item_repository_result loaded = flatfile_item_repository_load_owner_locked(
+		root, authority, owner, &owner_revision, &records, &error);
 	if (loaded != flatfile_item_repository_result::ok)
 	{
 		result->outcome = loaded == flatfile_item_repository_result::io_error ?
@@ -256,6 +276,22 @@ bool reconcile_item_ownership(const std::string &root, player_load_result *resul
 				     loaded == flatfile_item_repository_result::io_error  ? EIO :
 											    EILSEQ;
 		result->failed_component = "item_ownership";
+		return false;
+	}
+	const auto materialized = flatfile_shop_trade_materialization_reconcile(
+		root, authority, static_cast<uint32_t>(result->pid), records, &result->snapshot,
+		&error);
+	if (materialized != flatfile_shop_trade_materialization_result::ok)
+	{
+		result->outcome =
+			materialized == flatfile_shop_trade_materialization_result::io_error ?
+				player_load_outcome::retryable_failure :
+				player_load_outcome::component_failure;
+		result->error_code =
+			materialized == flatfile_shop_trade_materialization_result::io_error ?
+				EIO :
+				EILSEQ;
+		result->failed_component = "shop_trade_materialization";
 		return false;
 	}
 	std::unordered_map<uint64_t, flatfile_item_ownership_record> owned;

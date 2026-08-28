@@ -131,6 +131,13 @@
       "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_account_reward_summon_prepare_player_remove" }
     },
     {
+      "id": "shop_trade_materializations",
+      "source": "schema-derived",
+      "key": "pid+operation-id",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_shop_trade_materialization_prepare_player_remove" }
+    },
+    {
       "id": "historical_operation_ledgers",
       "source": "schema-derived",
       "key": "pid+operation-id",

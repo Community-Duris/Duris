@@ -6,6 +6,19 @@ import tempfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+REPOSITORY = (ROOT / "src/flatfile_shop_trade_repository.c").read_text()
+PLAYER = (ROOT / "src/flatfile_player_repository.c").read_text()
+for token in (
+    "flatfile_shop_trade_materialization_prepare(",
+    "images.push_back(std::move(materialization.after_image))",
+):
+    if token not in REPOSITORY:
+        raise SystemExit(f"shop trade authority transaction is missing {token}")
+locked_owner = PLAYER.index("flatfile_item_repository_load_owner_locked(")
+reconcile = PLAYER.index("flatfile_shop_trade_materialization_reconcile(")
+identities = PLAYER.index("build_item_identities(result->snapshot.items", reconcile)
+if not locked_owner < reconcile < identities:
+    raise SystemExit("player load does not reconcile shop materialization under ownership authority")
 
 with tempfile.TemporaryDirectory(prefix="duris-flat-shop-trade-") as temporary:
     temporary_path = pathlib.Path(temporary)
@@ -13,6 +26,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-shop-trade-") as temporary:
     sources = [
         "tests/async/flatfile_shop_trade_repository_harness.cpp",
         "src/flatfile_shop_trade_repository.c",
+        "src/flatfile_shop_trade_materialization.c",
         "src/flatfile_shopkeeper_repository.c",
         "src/flatfile_auction_repository.c",
         "src/flatfile_boon_repository.c",

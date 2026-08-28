@@ -4,6 +4,7 @@
 #include "flatfile_item_repository.h"
 #include "flatfile_player_domain_repository.h"
 #include "flatfile_shopkeeper_repository.h"
+#include "flatfile_shop_trade_materialization.h"
 #include "flatfile_store.h"
 #include "shop_trade_command.h"
 
@@ -292,6 +293,7 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 	flatfile_wallet_mutation wallet;
 	flatfile_item_shop_trade_mutation items;
 	flatfile_shopkeeper_trade_mutation shop;
+	flatfile_shop_trade_materialization_mutation materialization;
 	unsigned int result_code = 0;
 	const auto wallet_read = flatfile_player_domain_prepare_wallet(
 		root, lock, payload.player_pid, payload.account_name.data(), payload.racewar,
@@ -321,6 +323,15 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 				shop_prepared == flatfile_shopkeeper_result::io_error,
 				shop_prepared == flatfile_shopkeeper_result::not_found ? ENOENT :
 											 EILSEQ);
+	}
+	if (!result_code)
+	{
+		const auto prepared = flatfile_shop_trade_materialization_prepare(
+			root, lock, command.operation_id, payload, &materialization, &error);
+		if (prepared != flatfile_shop_trade_materialization_result::ok)
+			return repository_failure(
+				prepared == flatfile_shop_trade_materialization_result::io_error,
+				EILSEQ);
 	}
 	if (!result_code)
 	{
@@ -382,6 +393,7 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 		{
 			images.push_back(std::move(shop.after_image));
 			images.push_back(std::move(items.after_image));
+			images.push_back(std::move(materialization.after_image));
 			for (auto &image : wallet.after_images)
 				images.push_back(std::move(image));
 		}

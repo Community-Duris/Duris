@@ -1,6 +1,7 @@
 #include "flatfile_item_repository.h"
 #include "flatfile_player_domain_repository.h"
 #include "flatfile_shop_trade_repository.h"
+#include "flatfile_shop_trade_materialization.h"
 #include "flatfile_shopkeeper_repository.h"
 #include "player_snapshot_codec.h"
 
@@ -8,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -43,8 +45,21 @@ static player_item_snapshot shop_item()
 	return item;
 }
 
-static shop_trade_payload purchase(const player_item_snapshot &item)
+static player_item_snapshot shop_child()
 {
+	player_item_snapshot item = {};
+	item.parent_index = 0;
+	item.object_uid = 201;
+	item.generated_key = 1201;
+	item.vnum = 801;
+	item.name = "nested trade test item";
+	item.short_description = "a nested trade test item";
+	return item;
+}
+
+static shop_trade_payload purchase(const std::vector<player_item_snapshot> &items)
+{
+	require(!items.empty(), "shop purchase needs an item tree");
 	shop_trade_payload payload = {};
 	payload.action = shop_trade_action::buy_existing;
 	payload.player_pid = 42;
@@ -55,16 +70,24 @@ static shop_trade_payload purchase(const player_item_snapshot &item)
 	payload.expected_wallet_revision = 0;
 	payload.expected_bank_revision = 1;
 	payload.expected_shop_revision = 1;
-	payload.selected_item_uid = item.object_uid;
-	payload.stock_item_uid = item.object_uid;
+	payload.selected_item_uid = items.front().object_uid;
+	payload.stock_item_uid = items.front().object_uid;
 	payload.expected_stock_item_revision = 1;
-	payload.stock_vnum = item.vnum;
-	payload.item_count = 1;
-	payload.items[0] = { item.object_uid, item.object_uid,		 0, 1,
-			     item.vnum,	      item_custody_state::active };
+	payload.stock_vnum = items.front().vnum;
+	payload.item_count = static_cast<uint16_t>(items.size());
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		const uint64_t parent_uid =
+			items[index].parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+				0 :
+				items[static_cast<size_t>(items[index].parent_index)].object_uid;
+		payload.items[index] = {
+			items[index].object_uid, items.front().object_uid,  parent_uid, 1,
+			items[index].vnum,	 item_custody_state::active
+		};
+	}
 	std::vector<uint8_t> blob;
-	require(player_item_snapshot_list_encode({ item }, &blob) ==
-			player_snapshot_codec_result::ok,
+	require(player_item_snapshot_list_encode(items, &blob) == player_snapshot_codec_result::ok,
 		"could not encode shop purchase item");
 	require(blob.size() <= payload.item_blob.size(), "shop purchase item exceeded payload");
 	payload.item_blob_size = static_cast<uint32_t>(blob.size());
@@ -113,12 +136,14 @@ int main(int argc, char **argv)
 		"could not establish shop player: " + error);
 
 	const player_item_snapshot item = shop_item();
+	const player_item_snapshot child = shop_child();
+	const std::vector<player_item_snapshot> trade_items = { item, child };
 	flatfile_shopkeeper_record shop = {};
 	shop.mob_vnum = 1000;
 	shop.room_vnum = 2000;
 	shop.saved_at = 1;
 	shop.revision = 1;
-	shop.items = { item };
+	shop.items = trade_items;
 	require(flatfile_shopkeeper_establish(root.string(), { shop }, &error) ==
 			flatfile_shopkeeper_result::ok,
 		"could not establish shopkeeper: " + error);
@@ -131,13 +156,14 @@ int main(int argc, char **argv)
 		"could not establish player custody: " + error);
 	const std::vector<flatfile_item_ownership_record> shop_items = {
 		{ 200, 200, 0, shop_owner, 1, 800, item_custody_state::active },
+		{ 201, 200, 200, shop_owner, 1, 801, item_custody_state::active },
 	};
 	require(flatfile_item_repository_establish_owner(root.string(), shop_owner, shop_items,
 							 &error) ==
 			flatfile_item_baseline_result::applied,
 		"could not establish shop custody: " + error);
 
-	const shop_trade_payload payload = purchase(item);
+	const shop_trade_payload payload = purchase(trade_items);
 	const critical_command purchase_command = command(payload, 1);
 	const std::string root_path = root.string();
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
@@ -163,8 +189,9 @@ int main(int argc, char **argv)
 			purchased.wallet.amount == std::array<int64_t, 4>{ 0, 0, 9, 9 } &&
 			purchased.wallet_revision == 1 && purchased.bank_revision == 2 &&
 			purchased.shop_revision == 2 && purchased.player_owner_revision == 2 &&
-			purchased.counterparty_owner_revision == 2 && purchased.item_count == 1 &&
-			purchased.item_uids[0] == 200 && purchased.item_revisions[0] == 2,
+			purchased.counterparty_owner_revision == 2 && purchased.item_count == 2 &&
+			purchased.item_uids[0] == 200 && purchased.item_revisions[0] == 2 &&
+			purchased.item_uids[1] == 201 && purchased.item_revisions[1] == 2,
 		"recovered purchase did not replay its exact result");
 
 	std::vector<flatfile_shopkeeper_record> shops;
@@ -180,10 +207,37 @@ int main(int argc, char **argv)
 			flatfile_item_repository_load_owner(
 				root.string(), shop_owner, &shop_revision, &remaining_shop_items,
 				&error) == flatfile_item_repository_result::ok &&
-			player_revision == 2 && shop_revision == 2 && player_items.size() == 1 &&
+			player_revision == 2 && shop_revision == 2 && player_items.size() == 2 &&
 			player_items[0].item_uid == 200 && player_items[0].item_revision == 2 &&
-			remaining_shop_items.empty(),
+			player_items[1].item_uid == 201 && player_items[1].parent_item_uid == 200 &&
+			player_items[1].item_revision == 2 && remaining_shop_items.empty(),
 		"purchase did not transfer global item custody");
+	player_snapshot stale_snapshot = {};
+	stale_snapshot.pid = 42;
+	{
+		flatfile_authority_lock reconciliation_lock;
+		require(reconciliation_lock.acquire(root.string(), &error),
+			"could not lock purchase reconciliation: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				root.string(), reconciliation_lock, 42, player_items,
+				&stale_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_snapshot.items.size() == 2 &&
+				stale_snapshot.items[0].object_uid == item.object_uid &&
+				stale_snapshot.items[0].short_description ==
+					item.short_description &&
+				stale_snapshot.items[1].object_uid == child.object_uid &&
+				stale_snapshot.items[1].parent_index == 0,
+			"restart reconciliation did not materialize the committed purchase: " +
+				error);
+		stale_snapshot.items[0].cost = 777;
+		require(flatfile_shop_trade_materialization_reconcile(
+				root.string(), reconciliation_lock, 42, player_items,
+				&stale_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_snapshot.items[0].cost == 777,
+			"reconciliation overwrote a newer materialized object snapshot");
+	}
 
 	shop_trade_payload conflicting_payload = payload;
 	conflicting_payload.price = 101;
@@ -205,5 +259,58 @@ int main(int argc, char **argv)
 					    &error) == flatfile_player_domain_result::ok &&
 			loaded_player.domains.wallet == std::array<uint64_t, 4>{ 0, 0, 9, 9 },
 		"durable rejection changed player money");
+
+	shop_trade_payload sale = payload;
+	sale.action = shop_trade_action::sell_store;
+	sale.price = 50;
+	sale.expected_wallet_revision = 1;
+	sale.expected_bank_revision = 2;
+	sale.expected_shop_revision = 2;
+	sale.stock_item_uid = 0;
+	sale.expected_stock_item_revision = 0;
+	sale.stock_vnum = 0;
+	for (size_t index = 0; index < sale.item_count; ++index)
+		sale.items[index].expected_item_revision = 2;
+	applied = flatfile_shop_trade_repository_apply(root.string(), command(sale, 3));
+	require(applied.outcome == critical_apply_outcome::applied,
+		"could not commit retained sale for restart reconciliation");
+	player_items.clear();
+	require(flatfile_item_repository_load_owner(root.string(), player_owner, &player_revision,
+						    &player_items, &error) ==
+				flatfile_item_repository_result::ok &&
+			player_items.empty(),
+		"retained sale did not remove player custody");
+	{
+		flatfile_authority_lock reconciliation_lock;
+		require(reconciliation_lock.acquire(root.string(), &error),
+			"could not lock sale reconciliation: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				root.string(), reconciliation_lock, 42, player_items,
+				&stale_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_snapshot.items.empty(),
+			"restart reconciliation did not remove the committed sale: " + error);
+	}
+	{
+		std::fstream catalog(domains / "shop_trade_materializations",
+				     std::ios::binary | std::ios::in | std::ios::out);
+		require(catalog.good(),
+			"could not open materialization catalog for corruption test");
+		catalog.seekg(-1, std::ios::end);
+		char byte = 0;
+		catalog.read(&byte, 1);
+		byte ^= 0x5a;
+		catalog.seekp(-1, std::ios::end);
+		catalog.write(&byte, 1);
+		catalog.close();
+		flatfile_authority_lock reconciliation_lock;
+		require(reconciliation_lock.acquire(root.string(), &error),
+			"could not lock corrupt reconciliation test: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				root.string(), reconciliation_lock, 42, player_items,
+				&stale_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::invalid,
+			"corrupt materialization catalog was accepted");
+	}
 	std::cout << "flat-file shop trade repository passed\n";
 }

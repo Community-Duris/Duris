@@ -16,6 +16,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
         "src/flatfile_boon_repository.c",
         "src/flatfile_item_repository.c",
         "src/flatfile_shop_trade_repository.c",
+        "src/flatfile_shop_trade_materialization.c",
         "src/flatfile_shopkeeper_repository.c",
         "src/flatfile_player_domain_repository.c",
         "src/flatfile_authority_transaction.c",

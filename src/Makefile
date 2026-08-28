@@ -249,6 +249,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_shopkeeper_restore.o \
 				 flatfile_shopkeeper_save.o \
 				 flatfile_shop_trade_repository.o \
+				 flatfile_shop_trade_materialization.o \
 				 flatfile_world_item_repository.o \
 				 critical_command.o \
 				 critical_command_journal.o \

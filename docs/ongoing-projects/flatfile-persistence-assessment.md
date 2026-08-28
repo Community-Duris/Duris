@@ -2447,6 +2447,38 @@ sections below continue to describe the required end state.
   ownership converge should container/multi-buy sequencing, invalid-stock cleanup, and MariaDB
   parity proceed.
 
+### Checkpoint 77 - restart-replayable shop object materialization
+
+- **Atomic recovery evidence:** every successful flat shop operation now appends its exact bounded
+  item snapshot to a checksummed materialization catalog in the same authority transaction as the
+  operation result, shop aggregate, item custody, and player money. Interrupted commits therefore
+  recover the materialization evidence together with the ownership change; semantic rejections do
+  not append evidence.
+- **Ownership-directed player load:** item ownership and shop materializations are read under one
+  authority lock before the existing exact player-item reconciliation. Current ownership remains
+  the final arbiter: stale sold/destroyed rows are removed, missing still-player-owned purchases are
+  reconstructed from their latest committed inbound snapshot, and already-present snapshots retain
+  newer item state. Parent topology is rebuilt and cycle/missing-parent/duplicate/limit conflicts
+  fail closed before any load result is published.
+- **Lifecycle integration:** character deletion rewrites or removes the player's materialization
+  events in the same success-last deletion transaction. The character-delete disposition manifest
+  now inventories this authority explicitly, including interrupted deletion recovery and failed
+  deletion preservation.
+- **Checks passed:** the shop repository fault regression covers an interrupted nested purchase,
+  exact result replay, restart reconstruction, preservation of newer object fields, subsequent sale
+  removal, and checksum-corruption refusal. Character deletion covers recovery, direct removal,
+  idempotence, and failure rollback. Player/item/auction adjacency suites, delete-manifest contract,
+  changed-line formatting, and the normal C++20 build pass.
+- **Exposure:** the global materialization catalog is bounded but remains append-only between
+  character deletions, so it still needs compaction and capacity observability. A committed trade
+  whose live callback fails is repaired on the next load/reconnect rather than in the active
+  session. Non-shop item-transfer paths may have equivalent snapshot convergence gaps, and trusted
+  or gem purchases, container/multi-buy, invalid-stock destruction, and MariaDB parity remain open.
+  The flat-primary boot blocker remains required.
+- **Next action:** sequence container placement and multi-buy as independent committed shop
+  operations, then add safe materialization compaction/health reporting and audit other item-transfer
+  domains for the same player-snapshot crash window.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

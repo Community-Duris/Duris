@@ -27,6 +27,7 @@ required_ids = {
     "ships_and_cargo",
     "corpses_and_saved_items",
     "account_bound_summons",
+    "shop_trade_materializations",
     "historical_operation_ledgers",
 }
 allowed_dispositions = {
@@ -119,6 +120,7 @@ prepared_order = [
     "flatfile_item_repository_prepare_player_and_custody_remove",
     "append_operation(&operations, &locker_removal.operation)",
     "append_operation(&operations, &world_item_removal.operation)",
+    "flatfile_shop_trade_materialization_prepare_player_remove",
     "flatfile_boon_prepare_player_remove",
     "flatfile_recipe_prepare_clear",
     "flatfile_spellbook_prepare_clear",

@@ -16,6 +16,7 @@
 #include "flatfile_recipe_repository.h"
 #include "flatfile_ship_repository.h"
 #include "flatfile_spellbook_repository.h"
+#include "flatfile_shop_trade_materialization.h"
 #include "flatfile_world_item_repository.h"
 
 #include <ctime>
@@ -100,7 +101,7 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	std::vector<flatfile_authority_operation> operations;
 	try
 	{
-		operations.reserve(15);
+		operations.reserve(16);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -267,6 +268,21 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 		return flatfile_character_delete_result::io_error;
 	if (world_item_changed && !append_operation(&operations, &world_item_removal.operation))
 		return flatfile_character_delete_result::io_error;
+
+	const auto shop_materialization = flatfile_shop_trade_materialization_prepare_player_remove(
+		root, authority_lock, static_cast<uint32_t>(pid), &operation, error);
+	if (shop_materialization == flatfile_shop_trade_materialization_result::ok)
+	{
+		if (!append_operation(&operations, &operation))
+			return flatfile_character_delete_result::io_error;
+	}
+	else if (shop_materialization != flatfile_shop_trade_materialization_result::unchanged)
+	{
+		return shop_materialization ==
+				       flatfile_shop_trade_materialization_result::io_error ?
+			       flatfile_character_delete_result::io_error :
+			       flatfile_character_delete_result::invalid;
+	}
 
 	const auto boon = flatfile_boon_prepare_player_remove(
 		root, authority_lock, static_cast<uint32_t>(pid), &operation, error);
