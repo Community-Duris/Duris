@@ -29,7 +29,7 @@
 #include "mm.h"
 #include "objmisc.h"
 #include "profile.h"
-#include "redis.h"
+#include "redis_report_cache.h"
 #include "spells.h"
 #include "weather.h"
 

@@ -3,7 +3,7 @@
 #include "assocs.h"
 #include "comm.h"
 #include "prototypes.h"
-#include "redis.h"
+#include "redis_report_cache.h"
 #include "utils.h"
 
 #include <algorithm>

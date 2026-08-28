@@ -4488,6 +4488,17 @@ void timedShutdown(P_char ch, P_char, P_obj, void * /*data*/)
 			}
 			if (!sql_pwipe(1723699))
 			{
+				if (sql_pwipe_crossed_boundary())
+				{
+					send_to_all(
+						"&+RSeason reset crossed its irreversible boundary and did not complete. The server will stop for operator recovery.&n\n\r");
+					logit(LOG_STATUS,
+					      "Pwipe failed after irreversible season boundary; forcing fenced shutdown.");
+					write_shutdown_info(shutdownData.IssuedBy,
+							    "incomplete irreversible season reset");
+					shutdownflag = _pwipe = 1;
+					break;
+				}
 				send_to_all(
 					"&=GlSQL database not wiped clean.. Aborting shutdown wipe.&n\n\r&+WYou're still alive!  Yay!&n\n\r");
 				shutdownflag = _pwipe = 0;

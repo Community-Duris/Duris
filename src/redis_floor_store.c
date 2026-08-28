@@ -1,0 +1,559 @@
+#include "redis_floor_store.h"
+#include "redis_connection.h"
+#include "world_recovery_codec.h"
+
+#include <hiredis/hiredis.h>
+
+#include <algorithm>
+#include <chrono>
+#include <condition_variable>
+#include <cstdlib>
+#include <cstring>
+#include <deque>
+#include <memory>
+#include <mutex>
+#include <new>
+#include <string>
+#include <sys/time.h>
+#include <thread>
+#include <vector>
+
+namespace
+{
+struct owned_mutation
+{
+	uint64_t uid = 0;
+	std::string value;
+	bool remove = false;
+	bool encode_world_object = false;
+};
+
+enum class job_type : uint8_t
+{
+	batch,
+	barrier,
+};
+
+struct floor_job
+{
+	job_type type = job_type::batch;
+	std::string key;
+	std::string index_key;
+	std::vector<owned_mutation> mutations;
+	size_t bytes = 0;
+	unsigned int attempts = 0;
+};
+
+std::mutex store_mutex;
+std::condition_variable work_available;
+std::condition_variable store_drained;
+std::deque<std::shared_ptr<floor_job>> pending_jobs;
+std::thread worker_thread;
+redis_floor_store_health health = {};
+const redis_connection_settings *configured_connection = nullptr;
+size_t pending_bytes = 0;
+bool accepting = false;
+bool stop_requested = false;
+bool barrier_ready = false;
+bool barrier_succeeded = false;
+bool failure_before_barrier = false;
+
+uint64_t operation_elapsed(uint64_t started_usec)
+{
+	const uint64_t finished_usec = redis_observability_now_usec();
+	return finished_usec >= started_usec ? finished_usec - started_usec : 0;
+}
+
+redisContext *connect_bounded()
+{
+	return redis_connection_open(configured_connection);
+}
+
+bool integer_reply(const redisReply *reply)
+{
+	return reply && reply->type == REDIS_REPLY_INTEGER;
+}
+
+bool execute_group(redisContext *context, const std::shared_ptr<floor_job> &job, size_t first,
+		   size_t count)
+{
+	if (!context || context->err || !job || job->type != job_type::batch || !count ||
+	    first >= job->mutations.size() || count > job->mutations.size() - first ||
+	    redisAppendCommand(context, "MULTI") != REDIS_OK)
+		return false;
+	for (size_t index = first; index < first + count; ++index)
+	{
+		const owned_mutation &mutation = job->mutations[index];
+		const int result = mutation.remove ?
+					   redisAppendCommand(context, "HDEL %b %llu",
+							      job->key.data(), job->key.size(),
+							      (unsigned long long)mutation.uid) :
+					   redisAppendCommand(context, "HSET %b %llu %b",
+							      job->key.data(), job->key.size(),
+							      (unsigned long long)mutation.uid,
+							      mutation.value.data(),
+							      mutation.value.size());
+		const int index_result =
+			mutation.remove ?
+				redisAppendCommand(context, "ZREM %b %llu", job->index_key.data(),
+						   job->index_key.size(),
+						   (unsigned long long)mutation.uid) :
+				redisAppendCommand(context, "ZADD %b 0 %llu", job->index_key.data(),
+						   job->index_key.size(),
+						   (unsigned long long)mutation.uid);
+		if (result != REDIS_OK || index_result != REDIS_OK)
+			return false;
+	}
+	if (redisAppendCommand(context, "EXEC") != REDIS_OK)
+		return false;
+	const size_t reply_count = 2 + count * 2;
+	bool valid = true;
+	for (size_t index = 0; index < reply_count; ++index)
+	{
+		void *raw_reply = nullptr;
+		if (redisGetReply(context, &raw_reply) != REDIS_OK || !raw_reply)
+			return false;
+		redisReply *reply = static_cast<redisReply *>(raw_reply);
+		if (index == 0)
+			valid = valid && reply->type == REDIS_REPLY_STATUS && reply->str &&
+				strcmp(reply->str, "OK") == 0;
+		else if (index + 1 < reply_count)
+			valid = valid && reply->type == REDIS_REPLY_STATUS && reply->str &&
+				strcmp(reply->str, "QUEUED") == 0;
+		else
+		{
+			valid = valid && reply->type == REDIS_REPLY_ARRAY &&
+				reply->elements == count * 2;
+			for (size_t element = 0; valid && element < reply->elements; ++element)
+				valid = integer_reply(reply->element[element]);
+		}
+		freeReplyObject(reply);
+	}
+	return valid;
+}
+
+bool execute_batch(redisContext *context, const std::shared_ptr<floor_job> &job)
+{
+	constexpr size_t maximum_group_mutations = 64;
+	constexpr size_t maximum_group_value_bytes = 1024 * 1024;
+	if (!context || context->err || !job || job->type != job_type::batch)
+		return false;
+	for (size_t first = 0; first < job->mutations.size();)
+	{
+		size_t count = 0;
+		size_t bytes = 0;
+		while (first + count < job->mutations.size() && count < maximum_group_mutations)
+		{
+			const size_t value_bytes = job->mutations[first + count].value.size();
+			if (count && value_bytes > maximum_group_value_bytes - bytes)
+				break;
+			bytes += value_bytes;
+			++count;
+		}
+		if (!count || !execute_group(context, job, first, count))
+			return false;
+		first += count;
+	}
+	return true;
+}
+
+bool prepare_batch(const std::shared_ptr<floor_job> &job)
+{
+	if (!job || job->type != job_type::batch)
+		return false;
+	try
+	{
+		for (owned_mutation &mutation : job->mutations)
+		{
+			if (!mutation.encode_world_object)
+				continue;
+			std::vector<unsigned char> encoded;
+			if (!world_recovery_encode_floor_object(
+				    reinterpret_cast<const unsigned char *>(mutation.value.data()),
+				    mutation.value.size(), &encoded))
+				return false;
+			mutation.value.assign(reinterpret_cast<const char *>(encoded.data()),
+					      encoded.size());
+			mutation.encode_world_object = false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool wait_for_retry(unsigned int delay_msec)
+{
+	std::unique_lock<std::mutex> lock(store_mutex);
+	return !work_available.wait_for(lock, std::chrono::milliseconds(delay_msec),
+					[] { return stop_requested; });
+}
+
+void remove_front_locked(bool dropped)
+{
+	if (pending_jobs.empty())
+		return;
+	pending_bytes -= pending_jobs.front()->bytes;
+	pending_jobs.pop_front();
+	if (dropped)
+	{
+		++health.dropped_batches;
+		failure_before_barrier = true;
+	}
+	health.queued_batches = pending_jobs.size();
+	health.queued_bytes = pending_bytes;
+}
+
+void worker_main()
+{
+	redisContext *context = nullptr;
+	unsigned int reconnect_delay_msec = 100;
+	for (;;)
+	{
+		std::shared_ptr<floor_job> job;
+		{
+			std::unique_lock<std::mutex> lock(store_mutex);
+			work_available.wait(lock,
+					    [] {
+						    return stop_requested ||
+							   (!health.paused &&
+							    !pending_jobs.empty());
+					    });
+			if (stop_requested)
+				break;
+			job = pending_jobs.front();
+			if (job->type == job_type::barrier)
+			{
+				remove_front_locked(false);
+				if (!accepting)
+				{
+					health.barrier_requested = false;
+					if (pending_jobs.empty())
+						store_drained.notify_all();
+					continue;
+				}
+				health.paused = true;
+				barrier_succeeded = !failure_before_barrier;
+				failure_before_barrier = false;
+				barrier_ready = true;
+				store_drained.notify_all();
+				continue;
+			}
+			health.busy = true;
+		}
+
+		if (!context || context->err)
+		{
+			if (context)
+				redisFree(context);
+			context = connect_bounded();
+			const bool connected = context && !context->err;
+			{
+				std::lock_guard<std::mutex> lock(store_mutex);
+				health.connected = connected;
+				if (health.connected)
+					++health.reconnects;
+				else
+					++health.connection_failures;
+			}
+			if (!context || context->err)
+			{
+				if (context)
+				{
+					redisFree(context);
+					context = nullptr;
+				}
+				if (!wait_for_retry(reconnect_delay_msec))
+					break;
+				reconnect_delay_msec = std::min(reconnect_delay_msec * 2, 60000U);
+				continue;
+			}
+			reconnect_delay_msec = 100;
+		}
+
+		const bool prepared = prepare_batch(job);
+		const uint64_t operation_started = prepared ? redis_observability_now_usec() : 0;
+		const bool succeeded = prepared && execute_batch(context, job);
+		const uint64_t operation_duration =
+			prepared ? operation_elapsed(operation_started) : 0;
+		const redis_shared_command_outcome outcome =
+			redis_command_outcome(context, succeeded);
+		if (succeeded)
+		{
+			std::lock_guard<std::mutex> lock(store_mutex);
+			redis_worker_operation_record(&health.operations, outcome,
+						      operation_duration);
+			remove_front_locked(false);
+			++health.completed_batches;
+			health.completed_mutations += job->mutations.size();
+			health.busy = false;
+			if (pending_jobs.empty())
+				store_drained.notify_all();
+			continue;
+		}
+
+		{
+			std::lock_guard<std::mutex> lock(store_mutex);
+			if (prepared)
+				redis_worker_operation_record(&health.operations, outcome,
+							      operation_duration);
+			++health.command_failures;
+			health.connected = false;
+			++pending_jobs.front()->attempts;
+			if (pending_jobs.front()->attempts >= REDIS_FLOOR_MAX_COMMAND_ATTEMPTS)
+			{
+				remove_front_locked(true);
+				health.busy = false;
+				if (pending_jobs.empty())
+					store_drained.notify_all();
+			}
+		}
+		redisFree(context);
+		context = nullptr;
+		if (!wait_for_retry(reconnect_delay_msec))
+			break;
+		reconnect_delay_msec = std::min(reconnect_delay_msec * 2, 60000U);
+	}
+	if (context)
+		redisFree(context);
+	std::lock_guard<std::mutex> lock(store_mutex);
+	health.connected = false;
+	health.busy = false;
+	store_drained.notify_all();
+}
+
+void stop_worker(bool discard_pending)
+{
+	{
+		std::lock_guard<std::mutex> lock(store_mutex);
+		accepting = false;
+		stop_requested = true;
+	}
+	work_available.notify_all();
+	if (worker_thread.joinable())
+		worker_thread.join();
+	std::lock_guard<std::mutex> lock(store_mutex);
+	if (discard_pending)
+		health.dropped_batches += pending_jobs.size();
+	pending_jobs.clear();
+	pending_bytes = 0;
+	health.queued_batches = 0;
+	health.queued_bytes = 0;
+	health.initialized = false;
+	health.connected = false;
+	health.busy = false;
+	health.barrier_requested = false;
+	health.paused = false;
+	barrier_ready = false;
+}
+} // namespace
+
+bool redis_floor_store_init(const struct redis_floor_store_config *config)
+{
+	if (!config || !config->connection)
+		return false;
+	std::lock_guard<std::mutex> lock(store_mutex);
+	if (health.initialized)
+		return true;
+	try
+	{
+		configured_connection = config->connection;
+		pending_jobs.clear();
+		pending_bytes = 0;
+		health = {};
+		health.initialized = true;
+		accepting = true;
+		stop_requested = false;
+		barrier_ready = false;
+		barrier_succeeded = false;
+		failure_before_barrier = false;
+		worker_thread = std::thread(worker_main);
+	}
+	catch (...)
+	{
+		health = {};
+		accepting = false;
+		stop_requested = true;
+		return false;
+	}
+	return true;
+}
+
+bool redis_floor_store_submit(const char *key, const char *index_key,
+			      const struct redis_floor_mutation *mutations, size_t count)
+{
+	if (!key || !*key || !index_key || !*index_key || !mutations || !count ||
+	    count > REDIS_FLOOR_BATCH_CAPACITY)
+		return false;
+	const size_t key_size = strnlen(key, REDIS_FLOOR_KEY_MAX_BYTES + 1);
+	const size_t index_key_size = strnlen(index_key, REDIS_FLOOR_KEY_MAX_BYTES + 1);
+	if (!key_size || key_size > REDIS_FLOOR_KEY_MAX_BYTES || !index_key_size ||
+	    index_key_size > REDIS_FLOOR_KEY_MAX_BYTES || !strcmp(key, index_key))
+		return false;
+	try
+	{
+		auto job = std::make_shared<floor_job>();
+		job->key.assign(key, key_size);
+		job->index_key.assign(index_key, index_key_size);
+		job->mutations.reserve(count);
+		for (size_t index = 0; index < count; ++index)
+		{
+			const redis_floor_mutation &source = mutations[index];
+			if (!source.uid ||
+			    (!source.remove && (!source.value || !source.value_size ||
+						source.value_size > REDIS_FLOOR_VALUE_MAX_BYTES)) ||
+			    (source.remove && (source.value || source.value_size)))
+				return false;
+			owned_mutation mutation;
+			mutation.uid = source.uid;
+			mutation.remove = source.remove;
+			mutation.encode_world_object = source.encode_world_object;
+			if (!source.remove)
+			{
+				mutation.value.assign(reinterpret_cast<const char *>(source.value),
+						      source.value_size);
+				job->bytes += source.value_size +
+					      (source.encode_world_object ?
+						       WORLD_RECOVERY_FLOOR_PREFIX_BYTES :
+						       0);
+			}
+			job->mutations.push_back(std::move(mutation));
+		}
+		std::lock_guard<std::mutex> lock(store_mutex);
+		if (!health.initialized || !accepting ||
+		    pending_jobs.size() >= REDIS_FLOOR_QUEUE_CAPACITY ||
+		    job->bytes > REDIS_FLOOR_QUEUE_MAX_BYTES - pending_bytes)
+		{
+			++health.dropped_batches;
+			return false;
+		}
+		pending_jobs.push_back(std::move(job));
+		pending_bytes += pending_jobs.back()->bytes;
+		++health.submitted_batches;
+		health.queued_batches = pending_jobs.size();
+		health.queued_bytes = pending_bytes;
+		health.high_water_batches =
+			std::max(health.high_water_batches, pending_jobs.size());
+		health.high_water_bytes = std::max(health.high_water_bytes, pending_bytes);
+		work_available.notify_one();
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool redis_floor_store_request_barrier(void)
+{
+	std::lock_guard<std::mutex> lock(store_mutex);
+	if (!health.initialized || !accepting)
+		return false;
+	if (health.barrier_requested)
+		return true;
+	if (pending_jobs.size() >= REDIS_FLOOR_QUEUE_CAPACITY)
+		return false;
+	try
+	{
+		auto job = std::make_shared<floor_job>();
+		job->type = job_type::barrier;
+		pending_jobs.push_back(std::move(job));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	health.barrier_requested = true;
+	health.queued_batches = pending_jobs.size();
+	health.high_water_batches = std::max(health.high_water_batches, pending_jobs.size());
+	work_available.notify_one();
+	return true;
+}
+
+bool redis_floor_store_take_barrier(bool *succeeded)
+{
+	if (!succeeded)
+		return false;
+	std::lock_guard<std::mutex> lock(store_mutex);
+	if (!barrier_ready)
+		return false;
+	*succeeded = barrier_succeeded;
+	barrier_ready = false;
+	return true;
+}
+
+void redis_floor_store_resume(void)
+{
+	{
+		std::lock_guard<std::mutex> lock(store_mutex);
+		if (!health.initialized || !health.barrier_requested)
+			return;
+		health.barrier_requested = false;
+		health.paused = false;
+		barrier_ready = false;
+	}
+	work_available.notify_all();
+}
+
+bool redis_floor_store_drain(uint64_t timeout_msec)
+{
+	std::unique_lock<std::mutex> lock(store_mutex);
+	if (!health.initialized)
+		return true;
+	return store_drained.wait_for(lock, std::chrono::milliseconds(timeout_msec),
+				      [] { return pending_jobs.empty() && !health.busy; });
+}
+
+bool redis_floor_store_shutdown(uint64_t timeout_msec)
+{
+	{
+		std::lock_guard<std::mutex> lock(store_mutex);
+		if (!health.initialized)
+			return true;
+		accepting = false;
+		if (health.paused)
+		{
+			health.paused = false;
+			health.barrier_requested = false;
+		}
+	}
+	work_available.notify_all();
+	const bool drained = redis_floor_store_drain(timeout_msec);
+	stop_worker(!drained);
+	return drained;
+}
+
+void redis_floor_store_cancel(void)
+{
+	{
+		std::lock_guard<std::mutex> lock(store_mutex);
+		if (!health.initialized)
+			return;
+	}
+	stop_worker(true);
+}
+
+struct redis_floor_store_health redis_floor_store_health_copy(void)
+{
+	std::lock_guard<std::mutex> lock(store_mutex);
+	redis_floor_store_health snapshot = health;
+	redis_worker_operation_prepare_snapshot(&snapshot.operations);
+	return snapshot;
+}
+
+void redis_floor_store_reset_for_tests(void)
+{
+	redis_floor_store_cancel();
+	std::lock_guard<std::mutex> lock(store_mutex);
+	pending_jobs.clear();
+	health = {};
+	configured_connection = nullptr;
+	pending_bytes = 0;
+	accepting = false;
+	stop_requested = false;
+	barrier_ready = false;
+	barrier_succeeded = false;
+	failure_before_barrier = false;
+}

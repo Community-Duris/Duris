@@ -40,8 +40,11 @@
 #include "mm.h"
 #include "objmisc.h"
 #include "outposts.h"
+#include "persistence_checkpoint.h"
 #include "profile.h"
-#include "redis.h"
+#include "redis_donation_runtime.h"
+#include "redis_lifecycle.h"
+#include "redis_world_runtime.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "vnum.obj.h"
@@ -1913,11 +1916,11 @@ void ne_init_events(void)
 
 		// skip zone reset during copyover/crash_recovery - mobs preserved from before
 		// but still initialize lifespan so zone timers work
-		if (copyover_boot || crash_recovery_boot)
+		if (copyover_boot || redis_world_recovery_boot_active())
 		{
 			// just set lifespan without spawning mobs
-			// for crash recovery, zone ages will be restored from redis later
-			if (!crash_recovery_boot)
+			// for Redis restart recovery, zone ages are restored later
+			if (!redis_world_recovery_boot_active())
 			{
 				if (zone_table[j].lifespan_min != zone_table[j].lifespan_max)
 					zone_table[j].lifespan = number(zone_table[j].lifespan_min,
@@ -1991,13 +1994,14 @@ void ne_init_events(void)
 	// redis donation message polling
 	nevent_register_periodic_job("donation-message-poll", event_check_donation_messages,
 				     1 * WAIT_SEC, 1 * WAIT_SEC,
-				     nevent_periodic_policy::fixed_delay, redis_enabled);
+				     nevent_periodic_policy::fixed_delay,
+				     redis_donation_runtime_enabled());
 
-	// redis world state saves for crash recovery
+	// Redis world state saves for restart and crash recovery
 	nevent_register_periodic_job("world-state-save", event_save_world_state, 30 * WAIT_SEC,
 				     30 * WAIT_SEC, nevent_periodic_policy::fixed_delay,
-				     redis_enabled && redis_world_state_enabled &&
-					     !crash_recovery_boot);
+				     redis_runtime_enabled() && redis_world_runtime_enabled() &&
+					     !redis_world_recovery_boot_active());
 
 	logit(LOG_STATUS, "Done scheduling events.\n");
 }

@@ -57,9 +57,8 @@ assert '"durisweb_challenge"' in HANDLERS
 assert '"Core.AuthChallenge"' in GMCP
 
 # Private presence fields and invisible staff require an explicit scope.
-assert 'getenv("DURISWEB_PRIVATE_PRESENCE")' in HANDLERS
-assert "GET_WIZINVIS" in HANDLERS
-assert HANDLERS.count("if (ws_private_presence_enabled())") >= 2
+assert "durisweb_presence_character_visible" in HANDLERS
+assert HANDLERS.count("if (durisweb_private_presence_enabled())") >= 2
 
 # The command surface is table-driven and the formerly advertised dead text
 # categories are absent.

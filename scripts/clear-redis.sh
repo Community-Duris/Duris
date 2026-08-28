@@ -1,11 +1,25 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+
+usage() {
+    printf 'usage: %s --confirm <host:port/database|unix:/absolute/socket/database>\n' "$0"
+}
 
 case "${1:-}" in
-    "") ;;
     -h|--help)
-        printf 'usage: %s\n' "$0"
+        usage
         exit 0
+        ;;
+    --confirm)
+        if [[ $# -ne 2 || -z "${2:-}" ]]; then
+            usage >&2
+            exit 2
+        fi
+        CONFIRMED_TARGET="$2"
+        ;;
+    "")
+        usage >&2
+        exit 2
         ;;
     *)
         printf 'unknown argument: %s\n' "$1" >&2
@@ -25,12 +39,21 @@ elif [[ -e "$ENV_FILE" ]]; then
         printf 'unsafe environment file: require an owner-only regular file\n' >&2
         exit 2
     fi
-    # shellcheck disable=SC1091
+    # shellcheck disable=SC1090
     source "$ENV_FILE"
 fi
-: "${REDIS_HOST:?REDIS_HOST is required}"
-: "${REDIS_PORT:?REDIS_PORT is required}"
-
-echo "clearing redis cache..."
-redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" FLUSHDB
-echo "done."
+ENVIRONMENT="${ENVIRONMENT:-}" \
+REDIS_HOST="${REDIS_HOST:-}" \
+REDIS_PORT="${REDIS_PORT:-}" \
+REDIS_SOCKET="${REDIS_SOCKET:-}" \
+REDIS_DB="${REDIS_DB:-}" \
+REDIS_NAMESPACE="${REDIS_NAMESPACE:-}" \
+REDIS_USERNAME="${REDIS_USERNAME:-}" \
+REDIS_PASSWORD="${REDIS_PASSWORD:-}" \
+REDIS_MAINTENANCE_USERNAME="${REDIS_MAINTENANCE_USERNAME:-}" \
+REDIS_MAINTENANCE_PASSWORD="${REDIS_MAINTENANCE_PASSWORD:-}" \
+REDIS_TLS="${REDIS_TLS:-}" \
+REDIS_CA_CERT="${REDIS_CA_CERT:-}" \
+REDIS_ALLOWED_TARGETS="${REDIS_ALLOWED_TARGETS:-}" \
+REDIS_DESTRUCTIVE_CONFIRM="$CONFIRMED_TARGET" \
+    "$SCRIPT_DIR/clear-duris-redis-keys.sh"

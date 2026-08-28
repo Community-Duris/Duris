@@ -58,7 +58,10 @@
 #include "poll.h"
 #include "profile.h"
 #include "racewar_stat_mods.h"
-#include "redis.h"
+#include "redis_lifecycle.h"
+#include "redis_presence_runtime.h"
+#include "redis_report_cache.h"
+#include "redis_world_runtime.h"
 #include "ships.h"
 #include "siege.h"
 #include "spells.h"
@@ -151,11 +154,15 @@ static void maintenance_handle_completions(const maintenance_result *results, si
 					      "maintenance job=auction_due_scan outcome=submit_failed actor=redacted");
 		}
 		if (result.job_id == maintenance_job_id::level_cap &&
-		    result.outcome == maintenance_outcome::complete && result.value_count == 3 &&
-		    result.values[0] > 0 && result.values[0] <= INT32_MAX)
-			boon_notify_snapshot(static_cast<int>(result.values[0]),
-					     static_cast<int>(result.values[1]),
-					     static_cast<int>(result.values[2]), BN_CREATE);
+		    result.outcome == maintenance_outcome::complete)
+		{
+			redis_invalidate_fraglist();
+			if (result.value_count == 3 && result.values[0] > 0 &&
+			    result.values[0] <= INT32_MAX)
+				boon_notify_snapshot(static_cast<int>(result.values[0]),
+						     static_cast<int>(result.values[1]),
+						     static_cast<int>(result.values[2]), BN_CREATE);
+		}
 		if (result.job_id == maintenance_job_id::boon_scan &&
 		    (result.outcome == maintenance_outcome::complete ||
 		     result.outcome == maintenance_outcome::more) &&
@@ -575,11 +582,13 @@ void run_the_game(int port, int sslport)
 	SetSpellCircles(); /* spells circlewise done with pure math */
 
 	// check for redis crash recovery before boot_db (so ne_init_events skips zone resets)
-	if (!copyover_boot && redis_enabled && redis_world_state_enabled && redis_has_world_state())
+	if (!copyover_boot && redis_runtime_enabled() && redis_world_runtime_enabled() &&
+	    redis_has_world_state())
 	{
-		crash_recovery_boot = 1;
+		redis_world_recovery_boot_set(true);
 		logit(LOG_STATUS,
-		      "Crash recovery data found in redis, will restore world state after boot");
+		      "%s recovery data found in redis; world state restores after boot",
+		      redis_world_clean_restart_boot() ? "Clean restart" : "Crash");
 	}
 	if (!mini_mode)
 	{
@@ -964,21 +973,28 @@ void game_loop(int port, int sslport)
 	}
 
 	// redis crash recovery - restore world state from redis snapshot
-	if (crash_recovery_boot)
+	if (redis_world_recovery_boot_active())
 	{
-		logit(LOG_STATUS, "Performing redis crash recovery...");
+		logit(LOG_STATUS, "Performing redis %s recovery...",
+		      redis_world_clean_restart_boot() ? "clean restart" : "crash");
 		if (redis_load_world_state())
 		{
 			copyover_restore_combat(); // reuse combat restoration logic
 			calc_zone_mob_level();
-			logit(LOG_STATUS, "Crash recovery complete");
+			logit(LOG_STATUS, "%s recovery complete",
+			      redis_world_clean_restart_boot() ? "Clean restart" : "Crash");
+			if (!redis_consume_world_state())
+				logit(LOG_STATUS,
+				      "Recovered Redis generation could not be consumed safely");
 		}
 		else
 		{
-			logit(LOG_STATUS, "Crash recovery failed, will use normal boot state");
+			logit(LOG_STATUS, "%s recovery failed; applying full normal zone boot",
+			      redis_world_clean_restart_boot() ? "Clean restart" : "Crash");
+			for (int zone = 0; zone <= top_of_zone_table; ++zone)
+				reset_zone(zone, 2);
 		}
-		redis_clear_world_state();
-		crash_recovery_boot = 0;
+		redis_world_recovery_boot_clear();
 		// Enable the registry-owned world-state job now that recovery is done.
 		const nevent_periodic_result world_state_job =
 			nevent_periodic_set_enabled("world-state-save", true, 30 * WAIT_SEC);

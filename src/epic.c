@@ -30,7 +30,8 @@ using namespace std;
 #include "nexus_stones.h"
 #include "objmisc.h"
 #include "random.zone.h"
-#include "redis.h"
+#include "redis_key_registry.h"
+#include "redis_report_cache.h"
 #include "spells.h"
 #include "sql.h"
 #include "timers.h"
@@ -1994,7 +1995,7 @@ void do_epic_zones(P_char ch, char * /*arg*/, int /*cmd*/)
 	char *output = generate_epic_zones_output();
 	if (output)
 	{
-		redis_cache_set_ex("mud:cache:epic_zones", 900, output);
+		redis_cache_epic_zones_output(output);
 		page_string(ch->desc, output, 1);
 		free(output);
 	}

@@ -200,13 +200,8 @@ destructor = base[base.index("void delete_ship(P_ship") : base.index("void clear
 assert "register_ship_runtime(ship);" in constructor
 assert destructor.index("unregister_ship_runtime(ship);") < destructor.index("FREE(ship);")
 
-redis_loader = redis[
-    redis.index("struct ShipData *redis_load_ship_snapshot") : redis.index(
-        "void redis_invalidate_ship_snapshot"
-    )
-]
-assert "FREE(ship);" not in redis_loader
-assert redis_loader.index("shipObjHash.erase(ship);") < redis_loader.index("delete_ship(ship, true);")
+assert "redis_load_ship_snapshot" not in redis
+assert "redis_cache_ship_snapshot" not in redis
 
 sql_loader = sql_player[
     sql_player.index("P_ship sql_load_ship(") : sql_player.index(

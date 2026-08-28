@@ -336,7 +336,7 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-periodic-") as directory:
 
 events = (SRC / "new_events.c").read_text(encoding="utf-8")
 periodic = (SRC / "nevent_periodic.c").read_text(encoding="utf-8")
-redis = (SRC / "redis.c").read_text(encoding="utf-8")
+redis = (SRC / "redis_world_runtime.c").read_text(encoding="utf-8")
 artifact = (SRC / "artifact.c").read_text(encoding="utf-8")
 weather = (SRC / "weather.c").read_text(encoding="utf-8")
 handler = (SRC / "handler.c").read_text(encoding="utf-8")
@@ -344,6 +344,8 @@ outposts = (SRC / "outposts.c").read_text(encoding="utf-8")
 drannak = (SRC / "drannak.c").read_text(encoding="utf-8")
 comm = (SRC / "comm.c").read_text(encoding="utf-8")
 makefile = (SRC / "Makefile").read_text(encoding="utf-8")
+donation = (SRC / "redis_donation_runtime.c").read_text(encoding="utf-8")
+checkpoint = (SRC / "persistence_checkpoint.c").read_text(encoding="utf-8")
 
 for key in (
     "game-clock",
@@ -366,9 +368,9 @@ for source, signature, callback in (
     (handler, "void generic_char_event", "generic_char_event"),
     (outposts, "void event_outposts_upkeep", "event_outposts_upkeep"),
     (drannak, "void event_update_surnames", "event_update_surnames"),
-    (redis, "void event_flush_dirty_players", "event_flush_dirty_players"),
+    (checkpoint, "void event_flush_dirty_players", "event_flush_dirty_players"),
     (redis, "void event_save_world_state", "event_save_world_state"),
-    (redis, "void event_check_donation_messages", "event_check_donation_messages"),
+    (donation, "void event_check_donation_messages", "event_check_donation_messages"),
     (artifact, "void event_artifact_check_poof_sql", "event_artifact_check_poof_sql"),
     (artifact, "void event_artifact_wars_sql", "event_artifact_wars_sql"),
     (artifact, "void event_artifact_check_bind_sql", "event_artifact_check_bind_sql"),

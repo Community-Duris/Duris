@@ -4808,6 +4808,24 @@
       "dependencies": []
     },
     {
+      "id": "database:season_reset_state",
+      "kind": "database_table",
+      "locator": "season_reset_state",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "not_applicable",
+      "technical_purpose": "monotonic season identity and irreversible reset boundary state",
+      "controller_decision": { "status": "not_required", "reference": "TECHNICAL-NONPERSONAL-CLASSIFICATION" },
+      "export_rule": {
+        "disposition": "exclude", "subject_route": "lifecycle_metadata",
+        "decision": { "status": "not_required", "reference": "TECHNICAL-METADATA-EXCLUSION" },
+        "excluded_fields": [], "shared_fields": []
+      },
+      "season_action": "retain", "active_retention": "service_lifetime",
+      "archive_retention": "pending_controller_decision", "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon", "protected_record": true,
+      "dependencies": []
+    },
+    {
       "id": "database:mud_schema_baselines",
       "kind": "database_table",
       "locator": "mud_schema_baselines",
@@ -4953,7 +4971,7 @@
     {
       "id": "redis:world_recovery",
       "kind": "redis_keyspace",
-      "locator": "redis world recovery generations",
+      "locator": "redis world recovery generations and floor deltas",
       "data_category": "personal_or_mixed_durable_store",
       "data_subject_key": "player_id",
       "technical_purpose": "crash recovery and exact world restoration",
@@ -4977,6 +4995,122 @@
       "terminal_action": "retain",
       "exception": "protected_recovery_replay_or_restore_horizon",
       "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "redis:presence",
+      "kind": "redis_keyspace",
+      "locator": "redis expiring presence generation/session keys, channel, and retry tokens",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "privacy-filtered web presence and session transition events",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "regenerate",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "redis:content_cache",
+      "kind": "redis_keyspace",
+      "locator": "redis reconstructible content caches",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "aggregate_only",
+      "technical_purpose": "bounded local report cache with asynchronous Redis publication",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "regenerate",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "redis:donation",
+      "kind": "redis_channel",
+      "locator": "redis authenticated donation pubsub channel",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "mixed",
+      "technical_purpose": "authenticated bounded external donation event delivery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "regenerate",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
+      "id": "redis:ship_cache",
+      "kind": "redis_keyspace",
+      "locator": "redis retired ship snapshot cache cleanup",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_or_account_id",
+      "technical_purpose": "cleanup-only retirement of reconstructible ship snapshots",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "regenerate",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
       "dependencies": []
     },
     {

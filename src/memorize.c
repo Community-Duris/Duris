@@ -19,8 +19,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "guildhall.h"
+#include "persistence_checkpoint.h"
 #include "profile.h"
-#include "redis.h"
 #include "spells.h"
 
 /*

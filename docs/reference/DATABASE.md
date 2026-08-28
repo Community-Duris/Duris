@@ -61,7 +61,7 @@ verification; a protected local loopback/socket path is the only plaintext excep
 | Critical command | Stable 128-bit operation ID plus sorted entity keys | Inbox, typed domain rows/ledgers, result, and outbox in one transaction | Duplicate/ambiguity rereads result; affected gameplay stays fenced through retry |
 | Item ownership | Operation ID plus item UID | Current owner, immutable ownership ledger, both revisions, and outbox | Guarded expected-owner mismatch fails without partial movement |
 | Maintenance | Stable job/work ID plus continuation | Bounded row/time batch and success-last cursor | Retryable failure retains cursor; permanent failure is visible; lifecycle slot is disabled |
-| World recovery | Sequence and checksum | Immutable Redis generation plus current-pointer publication | Prior generation and floor deltas remain until exact publication ACK |
+| World recovery | Sequence, checksum, and item UID graph | Immutable Redis generation plus current-pointer publication; SQL custody remains authoritative | Floor and generation trees are planned together; every UID/root/parent/VNUM/room/state is reconciled before rollback-capable materialization |
 | Legacy event compatibility | Event key/generation where supported | Remaining item/scalar/large event row | Bounded queue/retry; never the player or critical-operation authority |
 
 The typed player and critical journals contain schema versions, checksums, bounds, and
@@ -71,8 +71,10 @@ message contract. The older `src/persistence_queue.c` and
 by source and health output.
 
 Redis is not an authority for player dirty state. It holds floor-delta recovery data
-and optional sequence-numbered world generations used after an unclean exit
-(`src/redis.c`). A generation is cleared only after successful validated recovery.
+and optional sequence-numbered world generations used after graceful restart or an unclean exit
+(`src/redis.c`). Recovery reads every referenced item from SQL in batches and accepts only
+an exact active room-owned graph before creating entities. A generation is cleared only
+after successful validated recovery and atomic runtime-custody hydration.
 
 Critical gameplay commands are distinct from coalesced checkpoints. Each accepted
 command is independently journaled with one stable operation ID and remains fenced
@@ -96,6 +98,16 @@ latency, and bounded latency buckets. When new sites exceed capacity, an
 overflow counter increases instead of allocating memory. Snapshots are copied
 under a short lock and sorted after unlock. Query execution never holds the
 metrics lock and the record path performs no filesystem or network I/O.
+
+Redis workers and the remaining shared boot/recovery/maintenance command adapter expose
+separate bounded local health snapshots. Shared commands retain only a redacted subsystem
+class, operation kind, outcome counters, latency aggregates, last-success age, and primary
+connection/reconnect transitions. Presence, report-cache, floor, donation, and world
+publication workers retain matching operation counters, latency aggregates, categorized
+failures, failure streaks, and last-success age alongside existing bounded queue and
+connection state. The typed snapshots feed both `redis detailed` and `world persistence`;
+rendering either command performs no Redis query and stores no key, value, identity,
+endpoint, or credential.
 
 Failure events may contain a process-local operation ID, source site, context,
 statement kind, duration, numeric MySQL error code, and SQLSTATE. They do not
@@ -139,9 +151,10 @@ python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
 python3 scripts/migration_runner.py run
 
 # Local development database only. --help is safe; there is no dry-run mode.
-# A normal invocation mutates immediately, records verified legacy adoption as its final
-# database gate, then calls redis-cli FLUSHDB on configured REDIS_HOST and REDIS_PORT.
-# Stop the game first and ensure those variables select its dedicated local Redis.
+# A normal invocation mutates immediately and records verified legacy adoption as its
+# final database gate. When REDIS=TRUE, it then deletes only Duris-owned key patterns from
+# the explicit local REDIS_HOST:REDIS_PORT/REDIS_DB target in REDIS_ALLOWED_TARGETS.
+# Stop the game and every other Redis writer first; Redis failure fails the migration.
 ./migrations/run_migration.sh
 
 # After an adopted baseline, apply immutable post-baseline migrations:

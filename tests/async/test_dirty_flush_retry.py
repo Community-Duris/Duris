@@ -3,7 +3,7 @@
 
 from pathlib import Path
 
-text = (Path(__file__).resolve().parents[2] / "src/redis.c").read_text()
+text = (Path(__file__).resolve().parents[2] / "src/persistence_checkpoint.c").read_text()
 
 flush_start = text.index("void flush_dirty_players(void)")
 flush_end = text.index("int get_dirty_player_count(void)", flush_start)
@@ -17,7 +17,7 @@ checks = {
         "mark_player_dirty_components(pid, PLAYER_CHECKPOINT_COMPONENT_ALL)" in mark
         and "player_save_pipeline_mark(pid, components)" in mark
     ),
-    "autosave scans online PCs": "for (P_char ch = character_list" in flush,
+    "autosave scans online PCs": "for (P_char character = character_list" in flush,
     "autosave captures only dirty state": "player_save_pipeline_checkpoint_dirty" in flush,
     "Redis is not a durability dependency": "redis_" not in flush,
     "database work is absent": "sql_" not in flush,

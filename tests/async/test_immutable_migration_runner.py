@@ -78,18 +78,22 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
     def test_canonical_manifest_keeps_baseline_and_orders_immutable_steps(self):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
-        self.assertEqual(len(manifest.migrations), 2)
+        self.assertEqual(len(manifest.migrations), 3)
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
                          "0002_player_item_metadata_uniqueness")
+        self.assertEqual(manifest.migrations[2].migration_id,
+                         "0003_season_reset_state")
         self.assertEqual(len(manifest.required_table_fingerprint), 64)
         lifecycle = json.loads(
             (ROOT / "migrations/data_lifecycle_manifest.json").read_text()
         )
         tables = [entry["locator"] for entry in lifecycle["entries"]
                   if entry["kind"] == "database_table"]
-        baseline_tables = [table for table in tables if table != "lookup_dataset_state"]
+        baseline_tables = [table for table in tables if table not in {
+            "lookup_dataset_state", "season_reset_state"
+        }]
         self.assertEqual(len(baseline_tables), manifest.required_table_count)
         self.assertEqual(runner.table_fingerprint(baseline_tables),
                          manifest.required_table_fingerprint)

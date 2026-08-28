@@ -27,9 +27,10 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
   prior executables under `bin/server/history/` by default, and runs the active
   binary in an outer loop. Set `DMS_BINARY_HISTORY_LIMIT` to change the limit.
 - On each restart it snapshots logs into `logs/old-logs/<timestamp>/`, writes
-  the stop reason, backs up pfiles (`scripts/backup_pfiles.sh`), optionally
-  emails an alert, and records boot/shutdown times plus reason into the
-  database.
+  the stop reason, creates and validates an atomic MySQL backup with
+  `scripts/backup_pfiles.sh`, optionally emails an alert, and records
+  boot/shutdown times plus reason into the database. A backup failure stops the
+  cycle before the server can restart.
 
 ### Exit codes interpreted by the cycle loop
 
@@ -73,6 +74,20 @@ its reboot record and rotate logs.
 Do not use the `pwipe` shutdown path for ordinary restarts: exit code `55`
 causes `cycle_mud.sh` to run the filesystem player wipe artifact after the
 server exits.
+
+Pwipe advances `season_reset_state.season_epoch` and records `resetting` before the first
+destructive SQL statement. If any later step fails, the server exits and subsequent boots
+refuse to start while that state remains. Treat this as an incomplete destructive reset:
+preserve the database and logs, determine which reset postcondition failed, and recover
+or complete the reset under operator control. Do not change the row back to `active`
+merely to bypass the boot fence.
+
+Every active Redis key and channel includes the boot-captured SQL season epoch. The old
+process continues to target only the old epoch while pwipe is in progress; after restart,
+the new process targets only the completed new epoch. Redis invalidation deletes and then
+verifies the old epoch when Redis is enabled. If Redis is explicitly disabled, old keys
+cannot become visible when it is enabled in a later season because no active unscoped
+surface remains.
 
 ## Pre-service safety gate
 
@@ -142,8 +157,10 @@ cache output or mutate queue, Redis, deferred-save, or query state.
 The report includes up to eight deterministically ranked query source sites,
 total calls and failures, registry overflow, item/scalar/large queue counters,
 player capture/journal/worker depths and ages, exact revision progress, world capture
-and publication health, critical-command queue/journal/fence health, and the oldest
-aggregate save age. Output is metadata-only and
+and publication health, redacted shared Redis boot/recovery/maintenance calls, failures,
+timeouts, maximum latency and reconnect transitions, per-worker Redis operation latency,
+failure streak, and last-success age, critical-command queue/journal/fence health, and the
+oldest aggregate save age. Output is metadata-only and
 must not be copied into a workflow that expects SQL, player, account, item, IP, or path
 values.
 
@@ -201,18 +218,25 @@ database failure, confirm every pending age is falling or stable, then request t
 copyover/shutdown again. A `fallback_saved` player-pfile alert is recovery evidence
 only; it does not mean MySQL committed and is not automatically replayed.
 
-## Crash recovery
+## Restart and crash recovery
 
-Two automatic paths run at next boot after an unclean exit:
+The automatic recovery paths are:
 
-1. **Redis world-state recovery** -- the current immutable generation is accepted only
+1. **Redis world-state recovery** -- after either a graceful restart or an unclean exit,
+   the current immutable generation is accepted only
    if schema, completeness, sequence, checksum, size, and age validate. Floor deltas are
-   reconciled with the matching generation, then recovery keys are cleared.
+   decoded with the matching generation into one semantic plan. Every item in each
+   bounded tree must exactly match SQL UID, root, parent, room owner, VNUM, and active
+   state before rollback-capable materialization; NPC-held items are not recreated. The
+   exact restored generation is then consumed. A fenced one-use marker distinguishes
+   clean restart from crash recovery.
 2. **Copyover recovery** -- only with `-C` boot flag / copyover flow.
 
-If Redis recovery fails, the server continues with a normal boot state. Check
-`logs/log/status` for `Performing redis crash recovery...` lines after any
-crash, and verify player integrity before reopening.
+If Redis recovery fails, the server runs a full normal reset for every zone. Check
+`logs/log/status` for `Performing redis clean restart recovery...` or
+`Performing redis crash recovery...` followed by `applying full normal zone boot`, and
+verify player integrity before reopening. The rejected generation and floor data are not
+cleared by the failed restore.
 
 For queue or dependency incidents, use `world persistence` and the detailed `redis`
 status command. Do not clear a player save queue: player state is owned by the local
@@ -234,8 +258,8 @@ These are investigated and understood; they are not signs of a failed boot.
 | Script | Purpose |
 |--------|---------|
 | `scripts/backup_pfiles.sh` | Snapshot database or legacy player files (run automatically per cycle iteration; see the mode note below). |
-| `scripts/delete_corpses.sh` | Inspect and, after confirmation, purge corpse rows and Redis corpse state. |
-| `scripts/clear-redis.sh` | Drop database `0` on `redis-cli`'s default endpoint; it does not read `.env`, so use it only on a stopped, dedicated local Redis instance. |
+| `scripts/delete_corpses.sh` | Retired safety stub; exits nonzero without reading or changing MySQL or Redis. |
+| `scripts/clear-redis.sh` | With the game stopped, use the scoped maintenance ACL identity to delete only the configured `REDIS_NAMESPACE`, legacy `mud:*`, and retired `ship:snapshot:*` keys from an explicitly confirmed, local, allow-listed Redis target; unrelated keys are preserved. |
 | `scripts/import_help_to_prod.sh` | Import help sources to MySQL; use `--dry-run` first and treat `--clean` as destructive. |
 | `scripts/migrate_players_to_accounts.sh`, `scripts/convert_all_pfiles.sh` | One-shot legacy data conversions; back up and review their assumptions before use. |
 | `bin/migrations/*` | Offline pfile/schema conversion binaries built from `src-migrate/`. |
@@ -253,10 +277,29 @@ clone is the only permitted target. Keep the original backup untouched.
 
 The legacy runner is mutation-capable and has no dry-run mode. `--help` is safe, and an
 unknown argument is rejected before configuration is loaded. A normal no-argument run
-begins work immediately. After its database gates it calls `redis-cli FLUSHDB` against
-the `REDIS_HOST` and `REDIS_PORT` loaded from `.env`. Run it only with the game stopped
-and those variables pointing to its dedicated local Redis; a qualified database does
-not make a shared Redis safe.
+begins work immediately. When `REDIS=TRUE`, its final step requires `ENVIRONMENT=local`,
+an exact `REDIS_HOST:REDIS_PORT/REDIS_DB` or `unix:REDIS_SOCKET/REDIS_DB` entry in
+`REDIS_ALLOWED_TARGETS`, and the configured ACL/TLS settings. It deletes only
+`<REDIS_NAMESPACE>:*`, legacy `mud:*`, and
+retired `ship:snapshot:*` keys, verifies
+the postcondition, and fails the migration if `redis-cli`, the connection, deletion, or
+postflight fails. When Redis is disabled, the step reports `not enabled` without requiring
+Redis connection fields. The game and every other Redis writer must remain stopped.
+
+Production runtime startup requires distinct `REDIS_WORLD_*`, `REDIS_PRESENCE_*`,
+`REDIS_CACHE_*`, and `REDIS_MAINTENANCE_*` credential pairs, plus a distinct
+`REDIS_DONATION_*` pair when donation subscription is enabled. Do not temporarily reuse a
+runtime identity for maintenance: correct the ACL configuration and repeat preflight.
+Local maintenance may fall back to `REDIS_USERNAME`/`REDIS_PASSWORD`, but an explicitly
+configured maintenance pair must be complete. Rotate one subsystem at a time by updating
+that Redis ACL user and its matching environment pair, then restart; connection settings
+are boot-captured and credentials are never reread on a gameplay path.
+
+World recovery requires an independent `REDIS_WORLD_STATE_SECRET`. To rotate it without
+accepting unsigned data, move the old value to `REDIS_WORLD_STATE_SECRET_PREVIOUS`, install
+the new current value, restart, and wait for a new acknowledged generation. Then remove the
+previous value and restart again. A manifest signed by neither key, or a generation whose
+SHA-256 digest differs from its authenticated manifest, is rejected before materialization.
 
 On the qualified clone only, use this order:
 
@@ -368,12 +411,13 @@ gameplay if any count is nonzero, preserve the inbox/outbox/ledger rows, and inv
 the operation history. Do not edit the ledger, invent historical operation IDs, or
 rerun the baseline against an active ledger.
 
-`backup_pfiles.sh` chooses its database-dump branch only when `REDIS` is the
-exact lowercase value `true` or the value `1`; the server itself accepts
-case-insensitive `TRUE`. If the automatic backup must use `mysqldump`, set
-`REDIS=true` in the environment used by the script and verify the resulting
-`db/Backup/` file. Otherwise it falls back to the legacy `Players/Backup/`
-layout.
+`backup_pfiles.sh` always backs up the authoritative MySQL database; Redis
+configuration does not select the backup mode. It requires the same explicit,
+allow-listed database identity and transport safety used by the cycle. Dumps
+are compressed into an owner-only temporary file, checked for the core Duris
+schema, synced, and atomically published under `db/Backup/`. A dump,
+compression, validation, or publication failure exits nonzero and leaves no
+new backup. `DATABASE_BACKUP_DIR` may select another owner-only directory.
 
 ## Phase 03 final readiness gate
 

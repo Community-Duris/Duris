@@ -160,10 +160,15 @@ After world boot, two recovery paths may apply before socket input is accepted:
 - **Copyover recovery** (`copyover_boot`, `src/copyover.c`): listening sockets
   and live player connections are re-inherited from `copyover.dat`; combat state
   is restored by `copyover_restore_combat()`.
-- **Redis crash recovery**: if the previous process died uncleanly, a world generation
+- **Redis restart recovery**: after a graceful restart or an unclean exit, a world generation
   is restored only after schema, completeness, sequence, checksum, size, and age
-  validation. The prior generation remains authoritative until publication ACK, and
-  matching floor deltas are retained until that ACK.
+  validation. The generation and bounded binary floor-item trees are combined into one
+  semantic plan; every item UID/root/parent/VNUM/room is reconciled against SQL before
+  rollback-capable materialization. NPC inventory and equipment are deliberately omitted
+  because they are not an authoritative identity-safe source. A fenced one-use sequence
+  marker distinguishes a clean restart from a crash. The prior generation remains
+  authoritative until publication ACK, and matching floor deltas are retained until that
+  ACK. A failed restore performs a full normal zone boot.
 
 Player-load initialization fails existing-character login closed. Before listeners,
 the runtime also initializes revisioned player saves, critical commands/outbox, and
@@ -200,7 +205,10 @@ Redis complements MySQL with floor-delta tracking and immutable world-recovery
 generations (`src/world_recovery_pipeline.c`, `src/redis.c`). World graph capture is
 incremental and bounded on the game thread; the publisher receives owned bytes only.
 It writes a sequence-keyed payload before atomically advancing the current pointer and
-metadata. Restore validates schema, completeness, checksum, sequence, and age.
+metadata. Restore validates framing and semantics, reconciles all item custody in one
+boot-only SQL transaction, creates entities with rollback tracking, atomically hydrates
+runtime custody, and applies doors/zones last. Floor and world item trees share the same
+12-node bounded binary representation; gameplay performs no recovery network or SQL I/O.
 
 Non-idempotent gameplay effects use a separate critical-command coordinator
 (`src/critical_command_coordinator.c`). Its immutable, non-coalescing commands carry a

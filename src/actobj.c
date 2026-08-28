@@ -25,7 +25,8 @@
 #include "justice.h"
 #include "necromancy.h"
 #include "objmisc.h"
-#include "redis.h"
+#include "persistence_checkpoint.h"
+#include "redis_floor_runtime.h"
 #include "spells.h"
 #include "sql.h"
 #include "tradeskill.h"
@@ -918,7 +919,6 @@ publish_after_ack:
 		// log floor pickup for duplication prevention
 		if (IS_PC(ch) && o_obj->obj_uid > 0)
 		{
-			redis_log_floor_pickup(o_obj->obj_uid);
 			redis_remove_floor_drop(o_obj->obj_uid);
 			mark_player_dirty_components(
 				GET_PID(ch), PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |

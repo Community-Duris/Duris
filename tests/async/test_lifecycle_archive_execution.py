@@ -34,6 +34,12 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.snapshot = MODULE.load_policy()
 
+    def test_default_loader_includes_season_reset_schema(self) -> None:
+        self.assertIn(
+            ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
+            MODULE.DEFAULT_SCHEMA_FILES,
+        )
+
     def approved_snapshot(self):
         manifest = copy.deepcopy(self.snapshot.manifest)
         entries = {key: copy.deepcopy(value) for key, value in self.snapshot.entries.items()}
@@ -118,7 +124,7 @@ class LifecycleArchiveExecutionTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["stores"], 188)
+        self.assertEqual(report["stores"], 193)
         self.assertEqual(report["approved_destructive_rules"], 0)
         self.assertFalse(report["destructive_rules_enabled"])
         self.assertEqual(report["scheduler_state"], "blocked_by_policy")

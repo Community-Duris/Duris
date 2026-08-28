@@ -21,17 +21,20 @@ assert (ROOT / "logs/log/.gitignore").is_file()
 
 
 # --- the donation subscriber must not block the game loop --------------------
-# A blocking redisGetReply() on a 100ms-timeout socket stalled every idle pulse
-# and showed up as a once-per-second NEVENT SLOW entry in logs/log/status.
-redis_c = (ROOT / "src/redis.c").read_text()
-check = redis_c.split("void redis_check_donation_messages(void)", 1)[1]
-check = check.split("\nvoid ", 1)[0]
-assert not contains(check, "redisGetReply(donation_sub_ctx")
-assert contains(check, "poll(&pfd, 1, 0)")
-assert contains(check, "redisBufferRead(")
-assert contains(check, "redisGetReplyFromReader(")
+# A blocking Redis subscriber socket stalled every idle pulse and showed up as
+# a once-per-second NEVENT SLOW entry in logs/log/status.
+donation_runtime = (ROOT / "src/redis_donation_runtime.c").read_text()
+check = donation_runtime.split("void check_donation_messages(void)", 1)[1]
+check = check.split("} // namespace", 1)[0]
+assert contains(check, "redis_donation_worker_take")
+for forbidden in ("redisGetReply", "redisBufferRead", "redisConnect", "poll("):
+    assert not contains(check, forbidden)
+donation_worker = (ROOT / "src/redis_donation_worker.c").read_text()
+assert contains(donation_worker, "poll(&descriptor, 1, 100)")
+assert contains(donation_worker, "redisBufferRead(")
+assert contains(donation_worker, "redisGetReplyFromReader(")
 # src/poll.h shadows <poll.h> through the Makefile's -I. include path.
-assert contains(redis_c, "#include <sys/poll.h>")
+assert contains(donation_worker, "#include <sys/poll.h>")
 
 
 # --- account saves must not emit a NULL pid ----------------------------------

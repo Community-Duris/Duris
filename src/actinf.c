@@ -39,6 +39,7 @@ using namespace std;
 #include "nexus_stones.h"
 #include "objmisc.h"
 #include "paladins.h"
+#include "persistence_checkpoint.h"
 #include "persistence_observability.h"
 #include "persistence_queue.h"
 #include "critical_command_coordinator.h"
@@ -50,7 +51,11 @@ using namespace std;
 #include "player_load_pipeline.h"
 #include "maintenance_scheduler.h"
 #include "world_recovery_pipeline.h"
-#include "redis.h"
+#include "redis_cache_store.h"
+#include "redis_command_observability.h"
+#include "redis_donation_worker.h"
+#include "redis_floor_store.h"
+#include "redis_presence_worker.h"
 #include "ships/ships.h"
 #include "specializations.h"
 #include "spells.h"
@@ -3975,6 +3980,51 @@ static void show_world_persistence_queue(P_char ch, const char *name,
 	send_to_char(line, ch);
 }
 
+static void show_world_redis_operation(P_char ch, const char *name, const char *state,
+				       uint64_t connection_failures, uint64_t reconnects,
+				       const redis_worker_operation_health *operations)
+{
+	char line[MAX_STRING_LENGTH];
+	const unsigned long long average =
+		operations->calls ? operations->total_latency_usec / operations->calls : 0;
+	if (operations->last_success_available)
+		snprintf(line, sizeof(line),
+			 "redis_worker name=%s state=%s calls=%llu successes=%llu failures=%llu "
+			 "unavailable=%llu timeouts=%llu transport=%llu response=%llu "
+			 "consecutive=%llu latency_us=%llu/%llu/%llu connection_failures=%llu "
+			 "reconnects=%llu last_success_age_ms=%llu\n",
+			 name, state, (unsigned long long)operations->calls,
+			 (unsigned long long)operations->successes,
+			 (unsigned long long)operations->failures,
+			 (unsigned long long)operations->unavailable,
+			 (unsigned long long)operations->timeouts,
+			 (unsigned long long)operations->transport_failures,
+			 (unsigned long long)operations->response_failures,
+			 (unsigned long long)operations->consecutive_failures,
+			 (unsigned long long)operations->last_latency_usec, average,
+			 (unsigned long long)operations->max_latency_usec,
+			 (unsigned long long)connection_failures, (unsigned long long)reconnects,
+			 (unsigned long long)operations->last_success_age_msec);
+	else
+		snprintf(line, sizeof(line),
+			 "redis_worker name=%s state=%s calls=%llu successes=%llu failures=%llu "
+			 "unavailable=%llu timeouts=%llu transport=%llu response=%llu "
+			 "consecutive=%llu latency_us=%llu/%llu/%llu connection_failures=%llu "
+			 "reconnects=%llu last_success=never\n",
+			 name, state, (unsigned long long)operations->calls,
+			 (unsigned long long)operations->successes,
+			 (unsigned long long)operations->failures,
+			 (unsigned long long)operations->unavailable,
+			 (unsigned long long)operations->timeouts,
+			 (unsigned long long)operations->transport_failures,
+			 (unsigned long long)operations->response_failures,
+			 (unsigned long long)operations->consecutive_failures,
+			 (unsigned long long)operations->last_latency_usec, average,
+			 (unsigned long long)operations->max_latency_usec,
+			 (unsigned long long)connection_failures, (unsigned long long)reconnects);
+	send_to_char(line, ch);
+}
+
 static void show_world_persistence(P_char ch)
 {
 	static const size_t top_site_limit = 8;
@@ -3987,9 +4037,14 @@ static void show_world_persistence(P_char ch)
 		persistence_scalar_event_health_snapshot_copy();
 	const struct persistence_queue_health_snapshot large_queue =
 		persistence_large_event_health_snapshot_copy();
-	const struct persistence_dirty_save_snapshot dirty = redis_dirty_save_snapshot_copy();
+	const struct persistence_dirty_save_snapshot dirty = persistence_dirty_save_snapshot_copy();
 	const struct persistence_deferred_save_snapshot deferred =
 		persistence_deferred_save_snapshot_copy();
+	const redis_shared_command_health redis_commands = redis_shared_command_health_copy();
+	const redis_presence_worker_health redis_presence = redis_presence_worker_health_copy();
+	const redis_cache_store_health redis_cache = redis_cache_store_health_copy();
+	const redis_floor_store_health redis_floor = redis_floor_store_health_copy();
+	const redis_donation_worker_health redis_donation = redis_donation_worker_health_copy();
 	const player_save_worker_health player_saves = player_save_worker_health_copy();
 	const player_save_journal_health player_journal = player_save_journal_health_copy();
 	const player_save_pipeline_health player_pipeline = player_save_pipeline_health_copy();
@@ -4035,6 +4090,68 @@ static void show_world_persistence(P_char ch)
 			 (unsigned long long)query.total_failures, (unsigned long long)query.count,
 			 (unsigned long long)query.registry_overflow);
 	send_to_char(line, ch);
+	uint64_t redis_command_calls = 0;
+	uint64_t redis_command_failures = 0;
+	uint64_t redis_command_timeouts = 0;
+	uint64_t redis_command_max_usec = 0;
+	uint64_t redis_command_consecutive_failures = 0;
+	for (size_t index = 0; index < REDIS_SHARED_SCOPE_COUNT; ++index)
+	{
+		redis_command_calls += redis_commands.scopes[index].calls;
+		redis_command_failures += redis_commands.scopes[index].failures;
+		redis_command_timeouts += redis_commands.scopes[index].timeouts;
+		redis_command_consecutive_failures +=
+			redis_commands.scopes[index].consecutive_failures;
+		redis_command_max_usec = world_persistence_max(
+			redis_command_max_usec, redis_commands.scopes[index].max_latency_usec);
+	}
+	snprintf(line, sizeof(line),
+		 "redis_shared state=%s calls=%llu failures=%llu timeouts=%llu max_us=%llu "
+		 "reconnects=%llu/%llu transitions=%llu\n",
+		 !redis_commands.enabled ? "disabled" :
+		 redis_commands.connection_available && !redis_command_consecutive_failures ?
+					   "ready" :
+					   "degraded",
+		 (unsigned long long)redis_command_calls,
+		 (unsigned long long)redis_command_failures,
+		 (unsigned long long)redis_command_timeouts,
+		 (unsigned long long)redis_command_max_usec,
+		 (unsigned long long)redis_commands.reconnect_successes,
+		 (unsigned long long)redis_commands.reconnect_attempts,
+		 (unsigned long long)redis_commands.recovery_transitions);
+	send_to_char(line, ch);
+	show_world_redis_operation(ch, "presence",
+				   !redis_presence.initialized ? "disabled" :
+				   redis_presence.connected    ? "ready" :
+								 "unavailable",
+				   redis_presence.connection_failures, redis_presence.reconnects,
+				   &redis_presence.operations);
+	show_world_redis_operation(ch, "cache",
+				   !redis_cache.initialized ? "disabled" :
+				   redis_cache.connected    ? "ready" :
+							      "unavailable",
+				   redis_cache.connection_failures, redis_cache.reconnects,
+				   &redis_cache.operations);
+	show_world_redis_operation(ch, "floor",
+				   !redis_floor.initialized ? "disabled" :
+				   redis_floor.paused	    ? "barrier" :
+				   redis_floor.connected    ? "ready" :
+							      "unavailable",
+				   redis_floor.connection_failures, redis_floor.reconnects,
+				   &redis_floor.operations);
+	show_world_redis_operation(ch, "donation",
+				   !redis_donation.initialized ? "disabled" :
+				   redis_donation.connected    ? "ready" :
+								 "unavailable",
+				   redis_donation.connection_failures, redis_donation.reconnects,
+				   &redis_donation.operations);
+	show_world_redis_operation(ch, "world_publish",
+				   !world_recovery.initialized ? "disabled" :
+				   world_recovery.publish_operations.consecutive_failures ?
+								 "degraded" :
+				   world_recovery.publish_operations.calls ? "ready" :
+									     "empty",
+				   0, 0, &world_recovery.publish_operations);
 
 	snprintf(line, sizeof(line),
 		 "maintenance state=%s queued=%llu inflight=%llu completions=%llu "

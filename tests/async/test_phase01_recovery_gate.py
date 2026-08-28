@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 REDIS = (ROOT / "src/redis.c").read_text()
+REDIS_WORLD = (ROOT / "src/redis_world_runtime.c").read_text()
 WORKER = (ROOT / "src/player_save_worker.c").read_text()
 PIPELINE = (ROOT / "src/player_save_pipeline.c").read_text()
 WORLD = (ROOT / "src/world_recovery_pipeline.c").read_text()
@@ -152,8 +153,8 @@ for retired in (
     "redis_save_world_state_json", "redis_save_world_state_sync",
     "redis_load_world_state_json", "mud:dirty_players",
 ):
-    assert retired not in REDIS
-assert "fork(" not in REDIS and "waitpid(" not in REDIS
+    assert retired not in REDIS + REDIS_WORLD
+assert "fork(" not in REDIS + REDIS_WORLD and "waitpid(" not in REDIS + REDIS_WORLD
 assert "player_queue" in WIZREDIS and "redis clear dirty" not in WIZREDIS
 
 for contract in (
@@ -164,7 +165,7 @@ for contract in (
 assert "player_snapshot_capture" in PIPELINE
 assert "apply_callback(job->snapshot" in WORKER
 assert "P_char" not in WORKER and "P_obj" not in WORKER
-assert "publish_callback(blob.data(), blob.size(), &header" in WORLD
+assert "publish_callback(generation.blob.data()," in WORLD
 publisher = WORLD[WORLD.index("void publisher_main()"): WORLD.index("bool capture_one_record()")]
 assert "P_char" not in publisher and "P_obj" not in publisher
 assert "redis_world_recovery_drain(3000)" in COMM

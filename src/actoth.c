@@ -38,7 +38,7 @@
 #include "map.h"
 #include "mccp.h"
 #include "player_save_pipeline.h"
-#include "redis.h"
+#include "redis_presence_runtime.h"
 #include "ships/ships.h"
 #include "specializations.h"
 #include "specs.winterhaven.h"

@@ -2,7 +2,7 @@ from pathlib import Path
 
 text = (Path(__file__).resolve().parents[2] / "scripts" / "cycle_mud.sh").read_text()
 root = Path(__file__).resolve().parents[2]
-start = text.index('if [ $RESULT == 55 ]')
+start = text.index('if [ "$RESULT" == 55 ]')
 end = text.index('fi\n\nif [ -f /usr/bin/sendemail', start)
 block = text[start:end]
 assert '[ ! -x "./Players/wipers/wipe_it_all" ]' in block

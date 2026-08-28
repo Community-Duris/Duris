@@ -13,6 +13,7 @@ sql = (SRC / "sql.c").read_text()
 sql_h = (SRC / "sql.h").read_text()
 comm = (SRC / "comm.c").read_text()
 redis = (SRC / "redis.c").read_text()
+report_cache = (SRC / "redis_report_cache.c").read_text()
 fraglist = (SRC / "fraglist.c").read_text()
 limits = (SRC / "limits.c").read_text()
 makefile = (SRC / "Makefile").read_text()
@@ -74,7 +75,8 @@ for token in (
 
 assert "frag_cap_config_cap_level_from_frags" in impl
 assert "frag_cap_config_frags_for_level" in fraglist
-assert "frag_cap_config_frags_for_level" in redis
+assert "frag_cap_config_frags_for_level" in report_cache
+assert "frag_cap_config_frags_for_level" not in redis
 assert "frag_cap_config_timer_days" in impl
 assert "timer.circle.level.35" in config
 assert "cap.level.step=1" in config

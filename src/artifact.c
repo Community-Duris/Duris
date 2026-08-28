@@ -10,6 +10,7 @@
 
 #include "prototypes.h"
 #include "structs.h"
+#include "artifact_cache_codec.h"
 #include "comm.h"
 #include "db.h"
 #include "utility.h"
@@ -22,7 +23,7 @@
 #include "files.h"
 #include "mm.h"
 #include "necromancy.h"
-#include "redis.h"
+#include "redis_report_cache.h"
 #include "spells.h"
 #include "sql.h"
 #include "vnum.obj.h"
@@ -75,8 +76,7 @@ static void arti_cache_invalidate(void)
 // populate redis cache at boot
 void arti_cache_init(void)
 {
-	extern bool redis_enabled;
-	if (!redis_enabled)
+	if (!redis_report_cache_enabled())
 		return;
 
 	int t;
@@ -112,7 +112,17 @@ static char *arti_generate_json(int type, bool Godlist)
 
 	root = cJSON_CreateObject();
 	arr = cJSON_CreateArray();
+	if (!root || !arr)
+	{
+		if (root)
+			cJSON_Delete(root);
+		if (arr)
+			cJSON_Delete(arr);
+		mysql_free_result(res);
+		return NULL;
+	}
 	cJSON_AddItemToObject(root, "artifacts", arr);
+	cJSON_AddNumberToObject(root, "schema_version", ARTIFACT_CACHE_SCHEMA_VERSION);
 	cJSON_AddNumberToObject(root, "type", type);
 	cJSON_AddBoolToObject(root, "godlist", Godlist);
 
@@ -134,6 +144,13 @@ static char *arti_generate_json(int type, bool Godlist)
 		}
 
 		item = cJSON_CreateObject();
+		if (!item)
+		{
+			extract_obj(obj, FALSE);
+			mysql_free_result(res);
+			cJSON_Delete(root);
+			return NULL;
+		}
 		cJSON_AddNumberToObject(item, "vnum", vnum);
 		cJSON_AddNumberToObject(item, "locType", locType);
 		cJSON_AddNumberToObject(item, "location", location);
@@ -179,6 +196,11 @@ static char *arti_generate_json(int type, bool Godlist)
 	mysql_free_result(res);
 
 	cJSON *summary = cJSON_CreateObject();
+	if (!summary)
+	{
+		cJSON_Delete(root);
+		return NULL;
+	}
 	cJSON_AddNumberToObject(summary, "total", articount[RACEWAR_NONE]);
 	cJSON_AddNumberToObject(summary, "good", articount[RACEWAR_GOOD]);
 	cJSON_AddNumberToObject(summary, "evil", articount[RACEWAR_EVIL]);
@@ -191,8 +213,7 @@ static char *arti_generate_json(int type, bool Godlist)
 
 void arti_redis_cache(int type, bool Godlist)
 {
-	extern bool redis_enabled;
-	if (!redis_enabled)
+	if (!redis_report_cache_enabled())
 		return;
 
 	char *json = arti_generate_json(type, Godlist);
@@ -378,45 +399,54 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 		return;
 	}
 
-	// get from redis, or generate directly if redis disabled
-	extern bool redis_enabled;
-	if (redis_enabled)
+	// Treat cache unavailability or malformed data as a miss. The SQL-generated
+	// payload is rendered directly; cache publication is best effort.
+	root = NULL;
+	if (redis_report_cache_enabled())
 	{
 		json = redis_get_artifact_list(type, Godlist);
-		if (!json)
+		if (json)
 		{
-			// cache miss - rebuild and try again
-			arti_redis_cache(type, Godlist);
-			json = redis_get_artifact_list(type, Godlist);
+			root = cJSON_Parse(json);
+			free(json);
+			if (!artifact_cache_payload_valid(root, type, Godlist))
+			{
+				if (root)
+					cJSON_Delete(root);
+				root = NULL;
+				redis_invalidate_artifact_list(type, Godlist);
+				logit(LOG_SYS,
+				      "redis: rejected malformed artifact cache type=%d godlist=%d",
+				      type, Godlist ? 1 : 0);
+			}
 		}
 	}
-	else
-	{
-		// no redis - generate json directly
-		json = arti_generate_json(type, Godlist);
-	}
-
-	if (!json)
-	{
-		send_to_char("No artifacts found.\n\r", ch);
-		return;
-	}
-
-	root = cJSON_Parse(json);
-	free(json);
 	if (!root)
 	{
-		send_to_char("Cache error.\n\r", ch);
-		return;
+		json = arti_generate_json(type, Godlist);
+		if (!json)
+		{
+			send_to_char("Artifact data is temporarily unavailable.\n\r", ch);
+			return;
+		}
+		root = cJSON_Parse(json);
+		if (!artifact_cache_payload_valid(root, type, Godlist))
+		{
+			free(json);
+			if (root)
+				cJSON_Delete(root);
+			logit(LOG_SYS,
+			      "artifact: generated invalid list payload type=%d godlist=%d", type,
+			      Godlist ? 1 : 0);
+			send_to_char("Artifact data is temporarily unavailable.\n\r", ch);
+			return;
+		}
+		if (redis_report_cache_enabled())
+			redis_cache_artifact_list(type, Godlist, json);
+		free(json);
 	}
 
 	artifacts = cJSON_GetObjectItem(root, "artifacts");
-	if (!artifacts)
-	{
-		cJSON_Delete(root);
-		send_to_char("No artifacts found.\n\r", ch);
-		return;
-	}
 
 	// header
 	if (Godlist)

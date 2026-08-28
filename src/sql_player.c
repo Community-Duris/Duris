@@ -25,7 +25,7 @@
 #include "mm.h"
 #include "necromancy.h"
 #include "ships/ships.h"
-#include "redis.h"
+#include "redis_ship_legacy.h"
 #include "siege.h"
 #include "spells.h"
 #include "sql.h"
@@ -10322,7 +10322,6 @@ bool sql_save_ship(P_ship ship)
 	}
 
 	logit(LOG_DEBUG, "sql_save_ship: finished saving ship %d", ship->db_id);
-	redis_cache_ship_snapshot(ship);
 
 	return true;
 }
@@ -10430,10 +10429,6 @@ P_ship sql_load_ship(const char *owner_name)
 	if (!owner_name)
 		return NULL;
 
-	P_ship cached_ship = redis_load_ship_snapshot(owner_name);
-	if (cached_ship)
-		return cached_ship;
-
 	if (!DB)
 		return NULL;
 
@@ -10493,7 +10488,6 @@ P_ship sql_load_ship(const char *owner_name)
 	ship->save_pending = false;
 	ship->save_retry_after = 0;
 	ship->save_saved_signature = ship_save_signature(ship);
-	redis_cache_ship_snapshot(ship);
 
 	return ship;
 }

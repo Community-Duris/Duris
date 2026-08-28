@@ -24,6 +24,8 @@ for package in (
     "dos2unix",
     "gawk",
     "libncurses-dev",
+    "redis-server",
+    "redis-tools",
     "valgrind",
     "gdb",
     "clang-format",

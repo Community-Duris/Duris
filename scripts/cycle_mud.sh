@@ -21,6 +21,7 @@ elif [ -e .env ]; then
   fi
   echo "Loading environment from .env"
   set -a
+  # shellcheck disable=SC1091
   source .env
   set +a
 fi
@@ -130,7 +131,7 @@ export MYSQL_PWD="$DB_PASSWD"
 echo "Validated explicit database configuration"
 
 while [[ $RESULT != 0 && $RESULT != 55 ]]; do
-	DATESTR=`date +%C%y.%m.%d-%H.%M.%S`
+	DATESTR=$(date +%C%y.%m.%d-%H.%M.%S)
 
   # Refuse to publish the service against a stale or incompatible schema. Local
   # databases can be advanced safely by the guarded immutable runner;
@@ -167,11 +168,11 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
 
   if [ -d logs/log ]; then
     #LOGNAME=`date +%b%d-%H%M`
-    mkdir logs/old-logs/$DATESTR
+    mkdir -p "logs/old-logs/$DATESTR"
     find logs/log -mindepth 1 -maxdepth 1 ! -name .gitignore \
-      -exec mv -t logs/old-logs/$DATESTR {} +
+      -exec mv -t "logs/old-logs/$DATESTR" {} +
     if [ -f core ]; then
-      mv core core.$DATESTR
+      mv core "core.$DATESTR"
     fi
   fi
 
@@ -179,8 +180,11 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   # directory is missing; every logit() write would be dropped.
   mkdir -p logs/log
 
-  echo "Backing up pfiles..."
-  ./scripts/backup_pfiles.sh
+  echo "Backing up the authoritative database..."
+  if ! ./scripts/backup_pfiles.sh; then
+    echo "Required database backup failed; refusing to continue the cycle" >&2
+    exit 1
+  fi
 
   if (( MINIMAL_MODE == 1 )); then
     for MINIMAL_FILE in mini.mob mini.obj mini.qst mini.wld mini.zon world.shp world.tab world.weather; do
@@ -204,7 +208,7 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   nm --demangle "$RUNTIME_BINARY" | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
 
 	if [ -f /usr/bin/sendemail ]; then
-		if [ -f /logs/old-logs/$DATESTR/exit ]; then
+		if [ -f "/logs/old-logs/$DATESTR/exit" ]; then
 			/usr/bin/sendEmail -t alert@durismud.com \
 				-f mud@durismud.com -u "Duris Booting..." \
 				-m "Mud booting at ${DATESTR}, previous shutdown reason: ${STOP_REASON} [${RESULT}]." \
@@ -294,7 +298,7 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   sleep 10
 done
 
-if [ $RESULT == 55 ]; then
+if [ "$RESULT" == 55 ]; then
   echo "Wiping player data..."
   if [ ! -x "./Players/wipers/wipe_it_all" ]; then
     echo "ERROR: required filesystem wipe artifact is missing or not executable" >&2
@@ -307,8 +311,8 @@ if [ $RESULT == 55 ]; then
   echo "Moving player-logs to backup.."
   if [ -d logs/player-log ]; then
     #LOGNAME=`date +%b%d-%H%M`
-    mkdir logs/player-log/$DATESTR
-    mv logs/player-log/* logs/player-log/$DATESTR
+    mkdir "logs/player-log/$DATESTR"
+    mv logs/player-log/* "logs/player-log/$DATESTR"
   fi
   echo "Wiped!"
 fi

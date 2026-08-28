@@ -12,7 +12,7 @@
 #include "auction_transaction.h"
 #include "currency_transaction.h"
 #include "item_ownership_runtime.h"
-#include "redis.h"
+#include "persistence_checkpoint.h"
 #include <cerrno>
 #include <climits>
 #include <ctime>

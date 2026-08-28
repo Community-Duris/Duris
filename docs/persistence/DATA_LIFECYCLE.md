@@ -1,12 +1,17 @@
 # Data Lifecycle Contract
 
 DurisMUD maintains one machine-readable technical inventory at
-`migrations/data_lifecycle_manifest.json`. It currently covers the 170-table sealed
-bootstrap baseline plus one immutable post-baseline table, for 171 current database
-tables, and 17 declared Redis, journal, fallback, quarantine, runtime-file, log,
+`migrations/data_lifecycle_manifest.json`. It currently covers 172 current database
+tables and 21 declared Redis, journal, fallback, quarantine, runtime-file, log,
 export-spool, and backup classes. Season reset, archive, export, erasure, restore, and
 documentation work must consume this inventory instead of introducing independent
 store lists.
+
+Redis keys, patterns, prefixes, and channels have an additional runtime-authoritative
+inventory in `src/redis_key_registry.def`. The C++ runtime consumes its constants, the
+lifecycle validator derives Redis store IDs and locators from it, and destructive
+maintenance is checked against its owned patterns. A new hardcoded `mud:` or
+`ship:snapshot:` literal outside the registry fails focused validation.
 
 This is an engineering control, not legal advice or a compliance conclusion. The
 repository does not contain an approved lawful-basis or retention decision. Those
@@ -48,12 +53,14 @@ reset change:
 ```sh
 python3 scripts/validate_data_lifecycle.py --json
 python3 tests/async/test_data_lifecycle_manifest.py
+python3 tests/async/test_redis_key_registry.py
 python3 tests/async/test_season_reset_manifest.py
 ```
 
-Validation fails closed on missing or duplicate stores, unknown fields or actions,
-stale policy versions, schema/FK drift, missing dependencies, dependency cycles,
-unapproved destructive rules, protected-record destruction, and symlink substitution.
+Validation fails closed on missing or duplicate stores, Redis registry/manifest drift,
+unknown Redis store references, unknown fields or actions, stale policy versions,
+schema/FK drift, missing dependencies, dependency cycles, unapproved destructive rules,
+protected-record destruction, and symlink substitution.
 The optional `--destructive-preflight STORE ACTION` additionally checks the exact
 versioned rule, global approval, non-production environment, loopback database host,
 and lifecycle administrator role. The checked-in policy cannot currently pass that

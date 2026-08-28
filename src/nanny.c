@@ -42,7 +42,7 @@
 #include "player_load_pets.h"
 #include "player_load_pipeline.h"
 #include "persistence_observability.h"
-#include "redis.h"
+#include "redis_presence_runtime.h"
 #include "ships.h"
 #include "specializations.h"
 #include "spells.h"

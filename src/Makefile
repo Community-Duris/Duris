@@ -28,7 +28,6 @@ EXTRA_CFLAGS =
 EXTRA_LDFLAGS =
 
 CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS)
-#CFLAGS += -D__NO_MYSQL__
 CFLAGS += -DTEST_MUD
 CFLAGS += -D__NO_TESTS__    # exclude test suite from production build
 CFLAGS += $(EXTRA_CFLAGS)
@@ -38,7 +37,7 @@ LDFLAGS += $(EXTRA_LDFLAGS)
 
 INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
 
-GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis -lbsd -pthread
+GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis -lhiredis_ssl -lbsd -pthread
 
 # GENERAL_LIBS += -lcygipc
 LIBS += $(GENERAL_LIBS)
@@ -105,6 +104,16 @@ OBJS =  $(SHIP_OBJS) \
 				 affects.o \
 				 arena.o \
 				 artifact.o \
+				 artifact_cache_codec.o \
+				 report_cache_codec.o \
+				 donation_event.o \
+				 redis_connection.o \
+				 redis_command_observability.o \
+				 redis_donation_runtime.o \
+				 redis_key_registry.o \
+				 redis_namespace.o \
+				 world_recovery_codec.o \
+				 redis_donation_worker.o \
 				 assocs.o \
 				 auction_houses.o \
 				 bard.o \
@@ -195,6 +204,7 @@ OBJS =  $(SHIP_OBJS) \
 				 objconv.o \
 				 objmisc.o \
 				 outposts.o \
+				 persistence_checkpoint.o \
 				 persistence_observability.o \
 				 critical_command.o \
 				 critical_command_journal.o \
@@ -239,6 +249,19 @@ OBJS =  $(SHIP_OBJS) \
 				 maintenance_repository.o \
 				 maintenance_snapshot.o \
 				 player_load_materialize.o \
+				 presence_policy.o \
+				 redis_cache_store.o \
+				 redis_report_cache.o \
+				 redis_runtime_config.o \
+				 redis_maintenance.o \
+				 redis_ship_legacy.o \
+				 redis_floor_runtime.o \
+				 redis_floor_store.o \
+				 redis_presence_payload.o \
+				 redis_presence_runtime.o \
+				 redis_presence_worker.o \
+				 redis_world_runtime.o \
+				 redis_world_store.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
 				 player_save_worker.o \

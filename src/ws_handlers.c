@@ -31,6 +31,7 @@
 #include "sql_player.h"
 #include "player_name.h"
 #include "password_hash.h"
+#include "presence_policy.h"
 #include "websocket.h"
 #include "ws_auth.h"
 #include "utility.h"
@@ -53,12 +54,6 @@ extern const int avail_hometowns[][LAST_RACE + 1];
 static const char *ws_get_race_name(int race);
 static const char *ws_get_class_name(unsigned int m_class);
 static int ws_durisweb_auth_limited(struct descriptor_data *d);
-
-static int ws_private_presence_enabled(void)
-{
-	const char *value = getenv("DURISWEB_PRIVATE_PRESENCE");
-	return value && !strcmp(value, "TRUE");
-}
 
 #define WS_IP_RATE_SLOTS 256
 
@@ -394,7 +389,7 @@ void ws_broadcast_player_login(struct descriptor_data *player_d)
 
 	if (!player_d || !player_d->character)
 		return;
-	if (GET_WIZINVIS(player_d->character) > 0 && !ws_private_presence_enabled())
+	if (!durisweb_presence_character_visible(player_d->character))
 		return;
 
 	root = cJSON_CreateObject();
@@ -410,7 +405,7 @@ void ws_broadcast_player_login(struct descriptor_data *player_d)
 	cJSON_AddStringToObject(data, "class",
 				ws_get_class_name(player_d->character->player.m_class));
 	cJSON_AddNumberToObject(data, "faction", GET_RACEWAR(player_d->character));
-	if (ws_private_presence_enabled())
+	if (durisweb_private_presence_enabled())
 	{
 		cJSON_AddStringToObject(data, "account",
 					player_d->account ? player_d->account->acct_name : "");
@@ -478,7 +473,7 @@ static void ws_send_wholist_to_client(struct descriptor_data *d)
 	{
 		if (target->connected != CON_PLAYING || !target->character)
 			continue;
-		if (GET_WIZINVIS(target->character) > 0 && !ws_private_presence_enabled())
+		if (!durisweb_presence_character_visible(target->character))
 			continue;
 
 		player = cJSON_CreateObject();
@@ -495,7 +490,7 @@ static void ws_send_wholist_to_client(struct descriptor_data *d)
 		cJSON_AddStringToObject(player, "class",
 					ws_get_class_name(target->character->player.m_class));
 		cJSON_AddNumberToObject(player, "faction", GET_RACEWAR(target->character));
-		if (ws_private_presence_enabled())
+		if (durisweb_private_presence_enabled())
 		{
 			cJSON_AddStringToObject(player, "account",
 						target->account ? target->account->acct_name : "");

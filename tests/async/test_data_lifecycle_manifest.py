@@ -16,10 +16,12 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR = ROOT / "scripts" / "validate_data_lifecycle.py"
 MANIFEST = ROOT / "migrations" / "data_lifecycle_manifest.json"
+REDIS_REGISTRY = ROOT / "src" / "redis_key_registry.def"
 SCHEMA_FILES = (
     ROOT / "migrations" / "bootstrap_multithread_safe.sql",
     ROOT / "migrations" / "bootstrap_legacy_baseline.sql",
     ROOT / "migrations" / "immutable" / "0001_lookup_dataset_state.sql",
+    ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -36,8 +38,10 @@ class LifecycleManifestTest(unittest.TestCase):
         manifest: Path = MANIFEST,
         schema_files: tuple[Path, ...] = SCHEMA_FILES,
         preflight: tuple[str, str] | None = None,
+        redis_registry: Path = REDIS_REGISTRY,
     ) -> subprocess.CompletedProcess[str]:
-        command = ["python3", str(VALIDATOR), "--manifest", str(manifest), "--json"]
+        command = ["python3", str(VALIDATOR), "--manifest", str(manifest),
+                   "--redis-registry", str(redis_registry), "--json"]
         for schema_file in schema_files:
             command.extend(("--schema-file", str(schema_file)))
         if preflight:
@@ -67,8 +71,9 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 171)
-        self.assertEqual(report["non_database_stores"], 17)
+        self.assertEqual(report["database_tables"], 172)
+        self.assertEqual(report["non_database_stores"], 21)
+        self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
 
     def test_missing_duplicate_unknown_and_stale_rules_fail_closed(self) -> None:
@@ -213,6 +218,37 @@ class LifecycleManifestTest(unittest.TestCase):
             link = directory / "manifest-link.json"
             link.symlink_to(MANIFEST)
             self.assert_rejected(self.run_validator(link), "regular non-symlink file")
+
+    def test_redis_registry_drives_manifest_coverage_and_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            registry = REDIS_REGISTRY.read_text(encoding="ascii")
+            omitted_store = directory / "omitted-store.def"
+            omitted_store.write_text(
+                "\n".join(
+                    line for line in registry.splitlines()
+                    if "REDIS_STORE(CONTENT_CACHE" not in line
+                ) + "\n",
+                encoding="ascii",
+            )
+            self.assert_rejected(
+                self.run_validator(redis_registry=omitted_store),
+                "Redis registry coverage mismatch",
+            )
+
+            added_store = directory / "added-store.def"
+            added_store.write_text(
+                registry +
+                'REDIS_STORE(TEST_ONLY, "redis:test_only", "test-only Redis store", '
+                '"redis_keyspace")\n'
+                'REDIS_SURFACE(TEST_ONLY, "test:key", "test:key", TEST_ONLY, "key", '
+                '"active")\n',
+                encoding="ascii",
+            )
+            self.assert_rejected(
+                self.run_validator(redis_registry=added_store),
+                "non-database coverage mismatch",
+            )
 
     def test_personal_and_protected_records_have_required_evidence(self) -> None:
         personal = [entry for entry in self.manifest["entries"]

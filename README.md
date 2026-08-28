@@ -115,14 +115,23 @@ Git and must never be committed. See the
 [configuration reference](docs/operations/CONFIGURATION.md) for precedence, Redis
 recovery, proxy handling, and diagnostic switches.
 
-Set `REDIS=TRUE` with `REDIS_HOST` and `REDIS_PORT` to enable caches and recovery
-integration; `REDIS_WORLD_STATE=TRUE` additionally enables immutable world recovery.
+Set `REDIS=TRUE` with `REDIS_HOST`, `REDIS_PORT`, and an explicit `REDIS_DB` to enable
+caches and recovery integration. Local development may use shared
+`REDIS_USERNAME`/`REDIS_PASSWORD` ACL authentication. Production requires distinct world,
+presence, cache, maintenance, and, when enabled, donation ACL identities. Verified
+`REDIS_TLS=TRUE` transport applies to every runtime connection; non-loopback production
+endpoints require TLS. `REDIS_WORLD_STATE=TRUE` additionally enables immutable world
+recovery.
 Player saves do not depend on Redis. If a DurisWeb backend will authenticate
 through WebSocket or GMCP, give it a private `DURISWEB_SECRET` and follow the
 challenge-response contract in the
 [DurisWeb API reference](docs/reference/api/durisweb.md). Production browser
 traffic must terminate TLS at a local reverse proxy. The remaining switches in
 `.env.example` are documented inline and are intended primarily for local gameplay testing.
+
+External donation notices are off by default. They require the separate
+`REDIS_DONATION_SUBSCRIBER=TRUE` opt-in and an independent HMAC key; see the
+[donation event envelope](docs/reference/api/donation-events.md).
 
 ### 3. Create a development database
 
@@ -300,6 +309,9 @@ Sanitizer and Valgrind workflows are covered in
 Runtime state belongs under `Players/`, `Accounts/`, `Ships/`, and `logs/`.
 Do not commit player data, credentials, logs, generated binaries, or backup
 archives.
+
+Project releases use Semantic Versioning. The canonical version is stored in
+the root [`VERSION`](VERSION) file.
 
 ## Documentation
 

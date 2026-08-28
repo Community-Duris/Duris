@@ -72,7 +72,8 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertNotIn("redis_check_floor_pickup", actobj)
         self.assertNotIn("redis_check_floor_drop", actobj)
         recovery = (SRC / "world_recovery_pipeline.c").read_text()
-        self.assertIn("sql_persistence_item_owner_matches", recovery)
+        self.assertIn("sql_persistence_reconcile_world_recovery_items", recovery)
+        self.assertIn("item_ownership_runtime_hydrate_many_atomic", recovery)
         self.assertNotIn("redis_check_floor_pickup", recovery)
         self.assertNotIn("redis_check_floor_drop", recovery)
 

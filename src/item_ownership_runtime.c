@@ -148,6 +148,111 @@ bool item_ownership_runtime_hydrate_batch(const item_ownership_runtime_entry *ba
 	return true;
 }
 
+bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_entry *batch,
+						size_t count)
+{
+	if ((!batch && count) || count > ITEM_OWNERSHIP_RUNTIME_MAX)
+		return false;
+	if (!count)
+		return true;
+	struct previous_entry
+	{
+		uint64_t item_uid;
+		bool existed;
+		item_ownership_runtime_entry value;
+	};
+	struct previous_owner
+	{
+		item_owner_identity owner;
+		bool existed;
+		uint64_t revision;
+	};
+	std::vector<previous_entry> previous_entries;
+	std::vector<previous_owner> previous_owners;
+	std::unordered_set<uint64_t> item_uids;
+	std::unordered_map<item_owner_identity, uint64_t, owner_hash, owner_equal> incoming_owners;
+	size_t new_entries = 0;
+	try
+	{
+		previous_entries.reserve(count);
+		item_uids.reserve(count);
+		incoming_owners.reserve(count);
+		for (size_t index = 0; index < count; ++index)
+		{
+			const item_ownership_runtime_entry &entry = batch[index];
+			if (!entry.item_uid || !entry.root_item_uid ||
+			    !item_owner_identity_valid(entry.owner) ||
+			    entry.state != item_custody_state::active || entry.vnum < 0 ||
+			    !item_uids.insert(entry.item_uid).second)
+				return false;
+			const auto incoming_owner = incoming_owners.find(entry.owner);
+			if (incoming_owner != incoming_owners.end())
+			{
+				if (incoming_owner->second != entry.owner_revision)
+					return false;
+			}
+			else
+				incoming_owners.emplace(entry.owner, entry.owner_revision);
+			const auto found = entries.find(entry.item_uid);
+			if (found != entries.end() &&
+			    (found->second.item_revision > entry.item_revision ||
+			     (found->second.item_revision == entry.item_revision &&
+			      (found->second.root_item_uid != entry.root_item_uid ||
+			       found->second.parent_item_uid != entry.parent_item_uid ||
+			       !item_owner_identity_equal(found->second.owner, entry.owner) ||
+			       found->second.vnum != entry.vnum ||
+			       found->second.state != entry.state))))
+				return false;
+			previous_entries.push_back({ entry.item_uid, found != entries.end(),
+						     found != entries.end() ?
+							     found->second :
+							     item_ownership_runtime_entry{} });
+			if (found == entries.end())
+				++new_entries;
+		}
+		previous_owners.reserve(incoming_owners.size());
+		for (const auto &[owner, revision] : incoming_owners)
+		{
+			const auto found = owner_revisions.find(owner);
+			if (found != owner_revisions.end() && found->second > revision)
+				return false;
+			previous_owners.push_back(
+				{ owner, found != owner_revisions.end(),
+				  found != owner_revisions.end() ? found->second : 0 });
+		}
+		if (entries.size() > ITEM_OWNERSHIP_RUNTIME_MAX - new_entries)
+			return false;
+		entries.reserve(entries.size() + new_entries);
+		owner_revisions.reserve(owner_revisions.size() + incoming_owners.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	try
+	{
+		for (size_t index = 0; index < count; ++index)
+			entries.insert_or_assign(batch[index].item_uid, batch[index]);
+		for (const auto &[owner, revision] : incoming_owners)
+			owner_revisions.insert_or_assign(owner, revision);
+	}
+	catch (const std::bad_alloc &)
+	{
+		for (const previous_entry &entry : previous_entries)
+			if (entry.existed)
+				entries[entry.item_uid] = entry.value;
+			else
+				entries.erase(entry.item_uid);
+		for (const previous_owner &owner : previous_owners)
+			if (owner.existed)
+				owner_revisions[owner.owner] = owner.revision;
+			else
+				owner_revisions.erase(owner.owner);
+		return false;
+	}
+	return true;
+}
+
 bool item_ownership_runtime_hydrate_owner(const item_owner_identity &owner, uint64_t revision)
 {
 	if (!item_owner_identity_valid(owner))

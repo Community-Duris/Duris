@@ -26,6 +26,16 @@
       "verify": "immutable/0002_player_item_metadata_uniqueness.sh",
       "verify_checksum": "312aa0aa354439e15bcef68403f00b7158c96627518d8be0bf85f59890ea1a90",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0003_season_reset_state",
+      "sequence": 3,
+      "description": "Add durable season reset epoch and fence state",
+      "apply": "immutable/0003_season_reset_state.sql",
+      "apply_checksum": "82390d1302e9a0bec3a0111fc22fd428b83ef3c0954a0904cfb9215a8ea14cc7",
+      "verify": "immutable/0003_season_reset_state.sh",
+      "verify_checksum": "75aeeae3f6bbfd486f4c596b33c742d23cff85d319f1a833c8503587f7d751a9",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

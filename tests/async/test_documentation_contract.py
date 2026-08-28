@@ -235,10 +235,12 @@ class DocumentationContractTest(unittest.TestCase):
             "`--help` is safe",
             "unknown argument is rejected",
             "normal no-argument run begins work immediately",
-            "redis-cli FLUSHDB",
+            "deletes only `<REDIS_NAMESPACE>:*`, legacy `mud:*`, and retired `ship:snapshot:*` keys",
             "REDIS_HOST",
             "REDIS_PORT",
-            "does not make a shared Redis safe",
+            "REDIS_DB",
+            "REDIS_ALLOWED_TARGETS",
+            "fails the migration",
             "never use production",
             "MySQL DDL may already have committed",
             "restore the known backup",
@@ -254,8 +256,9 @@ class DocumentationContractTest(unittest.TestCase):
                             database.index("## Tables worth knowing")]
         self.assertNotIn("adopt --kind verified_legacy_adoption", applying)
         self.assertIn("records verified legacy adoption", applying)
-        self.assertIn("redis-cli FLUSHDB", applying)
-        self.assertIn("configured REDIS_HOST and REDIS_PORT", applying)
+        self.assertIn("Duris-owned key patterns", applying)
+        self.assertIn("REDIS_HOST:REDIS_PORT/REDIS_DB", applying)
+        self.assertIn("REDIS_ALLOWED_TARGETS", applying)
 
     def test_named_authority_tables_exist_in_schema_sources(self) -> None:
         database = self.text[ROOT / "docs/reference/DATABASE.md"]
