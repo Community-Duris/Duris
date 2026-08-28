@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 WIZ = (ROOT / "src" / "wizredis.c").read_text()
 REDIS = (ROOT / "src" / "redis.c").read_text()
+DONATION = (ROOT / "src" / "redis_donation_runtime.c").read_text()
 HEADER = (ROOT / "src" / "redis.h").read_text()
 
 
@@ -69,7 +70,7 @@ for signature in (
     assert signature in REDIS
 
 donation_pulse = section(
-    REDIS, "void redis_check_donation_messages", "void event_check_donation_messages"
+    DONATION, "void check_donation_messages", "} // namespace"
 )
 assert "redis_donation_worker_take" in donation_pulse
 for forbidden in (

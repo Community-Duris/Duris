@@ -9,6 +9,8 @@ REDIS_HEADER = (ROOT / "src/redis.h").read_text(encoding="ascii")
 REDIS_SOURCE = (ROOT / "src/redis.c").read_text(encoding="ascii")
 CHECKPOINT_HEADER = (ROOT / "src/persistence_checkpoint.h").read_text(encoding="ascii")
 CHECKPOINT_SOURCE = (ROOT / "src/persistence_checkpoint.c").read_text(encoding="ascii")
+DONATION_HEADER = (ROOT / "src/redis_donation_runtime.h").read_text(encoding="ascii")
+DONATION_SOURCE = (ROOT / "src/redis_donation_runtime.c").read_text(encoding="ascii")
 MAKEFILE = (ROOT / "src/Makefile").read_text(encoding="ascii")
 
 
@@ -37,6 +39,24 @@ assert "player_save_pipeline.h" not in REDIS_SOURCE
 assert "player_save_worker.h" not in REDIS_SOURCE
 assert "persistence_checkpoint.o" in MAKEFILE
 
+for symbol in (
+    "redis_donation_runtime_enabled",
+    "redis_donation_runtime_set_enabled",
+    "event_check_donation_messages",
+):
+    assert symbol in DONATION_HEADER
+    assert symbol in DONATION_SOURCE
+    assert symbol not in REDIS_HEADER
+assert "redis_donation_worker_take" in DONATION_SOURCE
+assert "REDIS_DONATION_MAX_MESSAGES_PER_PULSE = 8" in DONATION_SOURCE
+assert "redis_donation_runtime.o" in MAKEFILE
+assert "redis_donation_enabled" not in REDIS_SOURCE
+assert "broadcast_donation_nchat" not in REDIS_SOURCE
+
+events = (ROOT / "src/new_events.c").read_text(encoding="utf-8")
+assert '#include "redis_donation_runtime.h"' in events
+assert "redis_donation_runtime_enabled()" in events
+
 checkpoint_only_callers = (
     "actinf.c",
     "auction_houses.c",
@@ -58,4 +78,4 @@ for source_path in (ROOT / "src").rglob("*.[ch]"):
         redis_includers.append(source_path)
 assert len(redis_includers) <= 22
 
-print("Redis and player-checkpoint module boundaries passed")
+print("Redis, checkpoint, and donation module boundaries passed")

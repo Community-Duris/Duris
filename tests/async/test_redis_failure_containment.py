@@ -11,6 +11,7 @@ presence_worker = (root / "src/redis_presence_worker.c").read_text()
 cache_store = (root / "src/redis_cache_store.c").read_text()
 floor_store = (root / "src/redis_floor_store.c").read_text()
 donation_worker = (root / "src/redis_donation_worker.c").read_text()
+donation_runtime = (root / "src/redis_donation_runtime.c").read_text()
 connection = (root / "src/redis_connection.c").read_text()
 key_registry = (root / "src/redis_key_registry.def").read_text()
 header = (root / "src/redis.h").read_text()
@@ -68,7 +69,7 @@ for token in (
 ):
     assert token in donation_worker
 donation_pulse = section(
-    "void redis_check_donation_messages", "void event_check_donation_messages"
+    "void check_donation_messages", "} // namespace", donation_runtime
 )
 assert "redis_donation_worker_take" in donation_pulse
 for forbidden in ("redis_command", "redis_ctx", "redisConnect", "redisGetReply", "poll("):

@@ -43,6 +43,7 @@
 #include "persistence_checkpoint.h"
 #include "profile.h"
 #include "redis.h"
+#include "redis_donation_runtime.h"
 #include "specs.prototypes.h"
 #include "spells.h"
 #include "vnum.obj.h"
@@ -1993,7 +1994,7 @@ void ne_init_events(void)
 	nevent_register_periodic_job("donation-message-poll", event_check_donation_messages,
 				     1 * WAIT_SEC, 1 * WAIT_SEC,
 				     nevent_periodic_policy::fixed_delay,
-				     redis_enabled && redis_donation_enabled);
+				     redis_donation_runtime_enabled());
 
 	// Redis world state saves for restart and crash recovery
 	nevent_register_periodic_job("world-state-save", event_save_world_state, 30 * WAIT_SEC,

@@ -48,14 +48,15 @@ def signed_event(**updates: object) -> str:
 
 def main() -> None:
     redis = (ROOT / "src" / "redis.c").read_text(encoding="utf-8")
+    runtime = (ROOT / "src" / "redis_donation_runtime.c").read_text(encoding="utf-8")
     worker = (ROOT / "src" / "redis_donation_worker.c").read_text(encoding="utf-8")
     worker_header = (ROOT / "src" / "redis_donation_worker.h").read_text(encoding="utf-8")
     events = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8")
     assert 'getenv("REDIS_DONATION_SUBSCRIBER")' in redis
     assert 'getenv("REDIS_DONATION_SECRET")' in redis
-    assert "redis_enabled && redis_donation_enabled" in events
-    assert "REDIS_DONATION_MAX_MESSAGES_PER_PULSE" in redis
-    assert "redis_donation_worker_take" in redis
+    assert "redis_donation_runtime_enabled()" in events
+    assert "REDIS_DONATION_MAX_MESSAGES_PER_PULSE" in runtime
+    assert "redis_donation_worker_take" in runtime
     assert "wait_for_retry(reconnect_delay_seconds)" in worker
     assert "REDIS_DONATION_REPLAY_CAPACITY" in worker
     assert "REDIS_DONATION_QUEUE_CAPACITY" in worker_header

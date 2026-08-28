@@ -23,9 +23,9 @@ assert (ROOT / "logs/log/.gitignore").is_file()
 # --- the donation subscriber must not block the game loop --------------------
 # A blocking Redis subscriber socket stalled every idle pulse and showed up as
 # a once-per-second NEVENT SLOW entry in logs/log/status.
-redis_c = (ROOT / "src/redis.c").read_text()
-check = redis_c.split("void redis_check_donation_messages(void)", 1)[1]
-check = check.split("\nvoid ", 1)[0]
+donation_runtime = (ROOT / "src/redis_donation_runtime.c").read_text()
+check = donation_runtime.split("void check_donation_messages(void)", 1)[1]
+check = check.split("} // namespace", 1)[0]
 assert contains(check, "redis_donation_worker_take")
 for forbidden in ("redisGetReply", "redisBufferRead", "redisConnect", "poll("):
     assert not contains(check, forbidden)

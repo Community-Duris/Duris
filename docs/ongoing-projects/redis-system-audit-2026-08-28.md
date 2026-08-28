@@ -10,6 +10,46 @@ remediated, as are RDS-018, RDS-025, and RDS-015; RDS-026 remains open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-026 donation runtime boundary
+
+Completed in this interval:
+
+- Moved donation enabled state, bounded queue polling, recipient filtering, game-message
+  formatting, audit logging, and the periodic callback from `redis.c` into
+  `redis_donation_runtime.c/.h`, beside the existing authenticated donation worker.
+- Replaced the exported mutable `redis_donation_enabled` global with typed enabled/set
+  accessors. Boot remains the only configuration owner, while the event registry reads the
+  module state directly and no longer depends on the Redis umbrella header for donation
+  declarations.
+- Kept the exact eight-message per-pulse budget and local `redis_donation_worker_take()`
+  loop. Subscription, socket polling, validation, replay protection, and retries remain on
+  the worker thread.
+- Reduced `redis.c` from 2,400 to 2,337 lines and `redis.h` from 84 to 81 lines. Extended
+  the module-boundary gate to prevent donation delivery or mutable enabled state from
+  returning to the composition root.
+
+Performance effect:
+
+- The event callback performs the same bounded local dequeue and player iteration as
+  before. No Redis command, connection, allocation policy, retry, wait, or new gameplay
+  work was introduced.
+- Boot-time accessor calls replace direct boolean reads only during configuration and
+  lifecycle transitions; the one periodic enabled check remains constant-time.
+
+Validation:
+
+- `./scripts/format.sh --check` and `make -C src -j2`: passed under the warning-as-error
+  profile.
+- Donation security/codec, live worker outage healing, failure containment, boot-log
+  hygiene, administrator nonblocking, periodic-registry ASan/UBSan, and module-boundary
+  regressions passed.
+- All 24 `tests/async/test_redis*.py` regressions passed, including every isolated live
+  Redis transport, worker, ACL, maintenance, and world-store case.
+
+RDS-026 remains partially remediated. Player checkpoints and donation delivery are now
+separate typed modules; world/floor orchestration, report-cache facades, presence delivery,
+and administrative lifecycle policy remain in the Redis composition root.
+
 ### 2026-08-28 - RDS-026 player-checkpoint module boundary
 
 Completed in this interval:
@@ -2449,9 +2489,11 @@ Severity: Medium
 Confidence: Confirmed structural issue
 Remediation status: Partially remediated. Connection/security, key registry, world store,
 floor, presence, donation, and cache workers already have typed modules. Revisioned player
-checkpoint ownership has now moved to `persistence_checkpoint.c/.h`; eight checkpoint-only
-consumers no longer include `redis.h`, which no longer exports player revision types. The
-remaining composition root still owns too many subsystem facades and lifecycle policies.
+checkpoint ownership is in `persistence_checkpoint.c/.h`, and donation state plus bounded
+game delivery is in `redis_donation_runtime.c/.h`. Eight checkpoint-only consumers no
+longer include `redis.h`, which exports neither player revision types nor donation mutable
+state. The remaining composition root still owns too many subsystem facades and lifecycle
+policies.
 
 `src/redis.c` is 2,525 lines and combines connection/configuration, world publication,
 floor recovery, ship serialization, report caches, presence, pub/sub, administrator

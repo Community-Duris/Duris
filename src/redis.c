@@ -18,7 +18,6 @@
 #include <unistd.h>
 #include "config.h"
 #include "copyover.h"
-#include "donation_event.h"
 #include "world_recovery_pipeline.h"
 #include "epic.h"
 #include "files.h"
@@ -27,6 +26,7 @@
 #include "redis_command_observability.h"
 #include "redis_connection.h"
 #include "redis_donation_worker.h"
+#include "redis_donation_runtime.h"
 #include "redis_floor_store.h"
 #include "redis_key_registry.h"
 #include "redis_namespace.h"
@@ -60,7 +60,6 @@ extern struct zone_data *zone_table;
 extern struct room_data *world;
 extern P_char character_list;
 extern const struct race_names race_names_table[];
-extern P_desc descriptor_list;
 
 // ship object vnums defined in ships/ships.h
 
@@ -79,7 +78,6 @@ static redis_connection_settings *redis_cache_settings = NULL;
 static redis_connection_settings *redis_donation_settings = NULL;
 static redis_connection_settings *redis_maintenance_settings = NULL;
 bool redis_enabled = false;
-bool redis_donation_enabled = false;
 bool redis_world_state_enabled = false;
 int crash_recovery_boot = 0;
 int clean_restart_recovery_boot = 0;
@@ -89,7 +87,6 @@ int clean_restart_recovery_boot = 0;
 #define REDIS_CONNECT_TIMEOUT_MSEC 250
 #define REDIS_COMMAND_TIMEOUT_MSEC 100
 #define REDIS_WORLD_DRAIN_TIMEOUT_MSEC 30000
-#define REDIS_DONATION_MAX_MESSAGES_PER_PULSE 8
 #define REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC 1000
 #define REDIS_CACHE_DRAIN_TIMEOUT_MSEC 1000
 #define REDIS_FLOOR_DRAIN_TIMEOUT_MSEC 1000
@@ -685,7 +682,7 @@ static bool redis_configure_connections(const char *host, int port, const char *
 				    &cache) ||
 	    !redis_resolve_identity("REDIS_MAINTENANCE_USERNAME", "REDIS_MAINTENANCE_PASSWORD",
 				    production, &maintenance) ||
-	    (redis_donation_enabled &&
+	    (redis_donation_runtime_enabled() &&
 	     !redis_resolve_identity("REDIS_DONATION_USERNAME", "REDIS_DONATION_PASSWORD",
 				     production, &donation)))
 		return false;
@@ -693,8 +690,9 @@ static bool redis_configure_connections(const char *host, int port, const char *
 	{
 		const char *usernames[5] = { world.username, presence.username, cache.username,
 					     maintenance.username,
-					     redis_donation_enabled ? donation.username : NULL };
-		const size_t count = redis_donation_enabled ? 5 : 4;
+					     redis_donation_runtime_enabled() ? donation.username :
+										NULL };
+		const size_t count = redis_donation_runtime_enabled() ? 5 : 4;
 		for (size_t left = 0; left < count; ++left)
 			for (size_t right = left + 1; right < count; ++right)
 				if (!usernames[left] || !*usernames[left] || !usernames[right] ||
@@ -724,7 +722,7 @@ static bool redis_configure_connections(const char *host, int port, const char *
 	options.password = cache.password;
 	redis_connection_settings *cache_settings = redis_connection_settings_create(&options);
 	redis_connection_settings *donation_settings = NULL;
-	if (redis_donation_enabled)
+	if (redis_donation_runtime_enabled())
 	{
 		options.username = donation.username;
 		options.password = donation.password;
@@ -735,7 +733,7 @@ static bool redis_configure_connections(const char *host, int port, const char *
 	redis_connection_settings *maintenance_settings =
 		redis_connection_settings_create(&options);
 	if (!world_settings || !presence_settings || !cache_settings ||
-	    (redis_donation_enabled && !donation_settings) || !maintenance_settings)
+	    (redis_donation_runtime_enabled() && !donation_settings) || !maintenance_settings)
 	{
 		redis_connection_settings_destroy(world_settings);
 		redis_connection_settings_destroy(presence_settings);
@@ -784,6 +782,7 @@ static bool redis_reconnect(void)
 bool redis_init(void)
 {
 	redis_shared_command_observability_reset(false);
+	redis_donation_runtime_set_enabled(false);
 #ifdef __NO_MYSQL__
 	redis_enabled = false;
 	return true;
@@ -793,7 +792,7 @@ bool redis_init(void)
 	{
 		logit(LOG_SYS, "redis disabled (set REDIS=TRUE in .env to enable)");
 		redis_enabled = false;
-		redis_donation_enabled = false;
+		redis_donation_runtime_set_enabled(false);
 		redis_world_state_enabled = false;
 		redis_runtime_epoch = 0;
 		redis_key_namespace[0] = '\0';
@@ -827,7 +826,7 @@ bool redis_init(void)
 	clean_shutdown_sequence = 0;
 	world_sequence_floor = 0;
 	clean_restart_recovery_boot = 0;
-	redis_donation_enabled = false;
+	redis_donation_runtime_set_enabled(false);
 	const char *donation_secret = NULL;
 	const char *donation_env = getenv("REDIS_DONATION_SUBSCRIBER");
 	if (donation_env && strcasecmp(donation_env, "TRUE") == 0)
@@ -835,7 +834,7 @@ bool redis_init(void)
 		const char *secret = getenv("REDIS_DONATION_SECRET");
 		if (secret && strlen(secret) >= 32)
 		{
-			redis_donation_enabled = true;
+			redis_donation_runtime_set_enabled(true);
 			donation_secret = secret;
 		}
 		else
@@ -910,14 +909,14 @@ bool redis_init(void)
 		logit(LOG_SYS, "redis: cache worker unavailable; report caches disabled");
 	else
 		redis_prime_artifact_caches();
-	if (redis_donation_enabled)
+	if (redis_donation_runtime_enabled())
 	{
 		const redis_donation_worker_config donation_config = { redis_donation_settings,
 								       donation_secret,
 								       redis_donation_channel };
 		if (!redis_donation_worker_init(&donation_config))
 		{
-			redis_donation_enabled = false;
+			redis_donation_runtime_set_enabled(false);
 			logit(LOG_SYS,
 			      "redis: donation worker unavailable; donation subscriber disabled");
 		}
@@ -1125,7 +1124,7 @@ void redis_cleanup(void)
 	}
 	redis_destroy_connection_settings();
 	redis_clear_world_authentication_secrets();
-	redis_donation_enabled = false;
+	redis_donation_runtime_set_enabled(false);
 	redis_world_state_enabled = false;
 	redis_enabled = false;
 	redis_shared_command_observability_set_enabled(false);
@@ -1938,68 +1937,6 @@ bool redis_clear_ship_snapshots(void)
 	return redis_scan_match_empty(REDIS_SHARED_SCOPE_MAINTENANCE, REDIS_SHIP_SNAPSHOT_PATTERN);
 }
 #endif
-
-static void broadcast_donation_nchat(const struct donation_event *event)
-{
-	char buf[MAX_STRING_LENGTH];
-	P_desc i;
-	P_char to;
-	const double amount = (double)event->amount_cents / 100.0;
-
-	if (event->is_public)
-	{
-		if (event->message[0])
-			snprintf(buf, sizeof(buf),
-				 "&+Y%s&n&+m donated &+W%.2f %s&n&+m: &+w'%s'&n\n",
-				 event->character_name, amount, event->currency, event->message);
-		else
-			snprintf(buf, sizeof(buf), "&+Y%s&n&+m donated &+W%.2f %s&n&+m!&n\n",
-				 event->character_name, amount, event->currency);
-	}
-	else
-	{
-		if (event->message[0])
-			snprintf(buf, sizeof(buf),
-				 "&+Yan anonymous donor&n&+m gave &+W%.2f %s&n&+m: &+w'%s'&n\n",
-				 amount, event->currency, event->message);
-		else
-			snprintf(buf, sizeof(buf),
-				 "&+Yan anonymous donor&n&+m gave &+W%.2f %s&n&+m!&n\n", amount,
-				 event->currency);
-	}
-
-	for (i = descriptor_list; i; i = i->next)
-	{
-		if (i->connected || !(to = i->character))
-			continue;
-		if (IS_NPC(to) || !PLR2_FLAGGED(to, PLR2_NCHAT))
-			continue;
-		send_to_char(buf, to);
-	}
-
-	logit(LOG_SYS, "donation: event=%s donor=%s amount=%.2f currency=%s", event->event_id,
-	      event->is_public ? event->character_name : "anonymous", amount, event->currency);
-}
-
-void redis_check_donation_messages(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_donation_enabled)
-		return;
-	for (int handled = 0; handled < REDIS_DONATION_MAX_MESSAGES_PER_PULSE; ++handled)
-	{
-		donation_event event = {};
-		if (!redis_donation_worker_take(&event))
-			break;
-		broadcast_donation_nchat(&event);
-	}
-#endif
-}
-
-void event_check_donation_messages(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
-{
-	redis_check_donation_messages();
-}
 
 // forward declare from random.mob.c
 struct zone_random_data

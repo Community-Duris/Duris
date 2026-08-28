@@ -7,7 +7,6 @@
 struct ShipData;
 
 extern bool redis_enabled;
-extern bool redis_donation_enabled;
 
 bool redis_init(void);
 void redis_cleanup(void);
@@ -42,8 +41,6 @@ bool redis_cache_set(const char *key, const char *value);
 bool redis_cache_set_ex(const char *key, int seconds, const char *value);
 char *redis_cache_get(const char *key);
 bool redis_cache_del(const char *key);
-void redis_check_donation_messages(void);
-void event_check_donation_messages(P_char ch, P_char victim, P_obj obj, void *data);
 
 // named command cache
 void redis_cache_named_report(void);
