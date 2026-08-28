@@ -1264,6 +1264,36 @@ sections below continue to describe the required end state.
   projections, then return to the remaining fail-closed durable-domain inventory rather
   than inventing a flat-only boon-point item catalog.
 
+### Checkpoint 38 - shared typed boon presentation
+
+- **Completed:** extracted duration, racewar, reward-type, completion-option, assignment,
+  and row formatting from the MariaDB result loop into one presentation-only renderer
+  over `BoonData`. MariaDB rows are converted to that typed DTO after visibility checks;
+  filtered flat definitions already use the same DTO and now enter the identical renderer.
+- **Completed:** flat mortal listings now receive the same natural-language reward and
+  completion descriptions as MariaDB listings, including zone, mob, race, guildhall,
+  outpost, nexus, CTF, cargo, auction, item, spell, affect, attribute, and currency labels.
+  Trusted rows retain their canonical numeric columns and also receive the shared detail
+  line. Backend-specific retrieval, filtering, and visibility rules remain outside the
+  renderer.
+- **Safety repair:** display-time affect lookup now walks each terminated flag table
+  instead of indexing it with unchecked persisted data. Spell and attribute names are
+  likewise bounded before lookup, and malformed values render explicit invalid labels.
+  This removes three crash/read-overrun paths shared by corrupt SQL and flat definitions.
+- **Checks passed:** the focused boon source-contract suite verifies flat-before-SQL
+  routing, all filters, both calls into the shared renderer, natural-language lookup
+  coverage, and invalid-value guards. The flat boon repository regression, normal strict
+  build, isolated client-free build/boot preflight, formatting, and diff checks pass.
+- **Files changed:** `src/boon.c`, the focused boon source-contract test, and this handoff
+  ledger.
+- **Remaining boon gap:** boon-point item purchases and random generation remain absent
+  in both backends; no flat-only behavior was invented. The implemented boon query,
+  maintenance, administration, reward, pending-publication, list, and stat-redemption
+  surfaces now share their intended backend-neutral behavior.
+- **Next action:** bring learned crafting recipes into the revisioned player snapshot and
+  remove their external-sidecar fence, including typed flat runtime query/mutation routes
+  and compatibility handling for snapshots that still declare recipes external.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

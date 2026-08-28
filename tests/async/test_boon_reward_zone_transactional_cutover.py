@@ -241,9 +241,26 @@ class BoonRewardZoneCutoverTests(unittest.TestCase):
             "boon_like_match",
             "definition.target_pid",
             "definition.racewar",
+            "boon_display_row(ch, boon)",
             "Displaying %d result(s)",
         ):
             self.assertIn(token, flat_display)
+        self.assertIn("boon_display_row(ch, boon)", display)
+        renderer_start = boon.index("static const char *boon_affect_label")
+        renderer = boon[renderer_start:flat_start]
+        for token in (
+            "boon_type_description",
+            "boon_option_description",
+            "boon_mob_label",
+            "boon_race_label",
+            "nexus_stone_info",
+            "get_building_from_id",
+            "Guildhall::find_by_id",
+            "Invalid Affect",
+            "Invalid Spell",
+            "Invalid Attribute",
+        ):
+            self.assertIn(token, renderer)
 
     def test_account_bound_reward_boundary_remains_covered(self):
         contracts = "\n".join((ROOT / path).read_text() for path in (

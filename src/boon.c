@@ -2252,6 +2252,268 @@ static bool boon_filter_contains(const std::vector<T> &values, const T &candidat
 	return values.empty() || std::find(values.begin(), values.end(), candidate) != values.end();
 }
 
+static const char *boon_racewar_label(int racewar)
+{
+	if (!racewar)
+		return "All";
+	if (racewar == RACEWAR_GOOD)
+		return "Good";
+	if (racewar == RACEWAR_EVIL)
+		return "Evil";
+	if (racewar == RACEWAR_UNDEAD)
+		return "Undead";
+	if (racewar == RACEWAR_NEUTRAL)
+		return "Neutral";
+	return "Unknown";
+}
+
+static const char *boon_affect_label(int field, int bit)
+{
+	const flagDef *flags = nullptr;
+	if (field == 1)
+		flags = affected1_bits;
+	else if (field == 2)
+		flags = affected2_bits;
+	else if (field == 3)
+		flags = affected3_bits;
+	else if (field == 4)
+		flags = affected4_bits;
+	else if (field == 5)
+		flags = affected5_bits;
+	if (!flags || bit < 0)
+		return "Invalid Affect";
+	for (int index = 0; flags[index].flagLong; ++index)
+		if (index == bit)
+			return flags[index].flagLong;
+	return "Invalid Affect";
+}
+
+static void boon_type_description(const BoonData &boon, char *description)
+{
+	if (!description)
+		return;
+	*description = '\0';
+	switch (boon.type)
+	{
+	case BTYPE_LEVEL:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 static_cast<int>(boon.bonus));
+		if (static_cast<int>(boon.bonus) != -1)
+			checked_snprintf(description + strlen(description),
+					 MAX_STRING_LENGTH - strlen(description), " (up to %d)",
+					 static_cast<int>(boon.bonus));
+		if (boon.bonus2)
+			checked_snprintf(description + strlen(description),
+					 MAX_STRING_LENGTH - strlen(description),
+					 " and bypass epics");
+		break;
+	case BTYPE_EXP:
+		snprintf(description, MAX_STRING_LENGTH, "%s", boon_types[boon.type].desc);
+		break;
+	case BTYPE_EXPM:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 static_cast<int>(boon.bonus * 100));
+		break;
+	case BTYPE_EPIC:
+	case BTYPE_STATS:
+	case BTYPE_POINT:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 static_cast<int>(boon.bonus));
+		break;
+	case BTYPE_CASH:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 coin_stringv(boon.bonus));
+		break;
+	case BTYPE_POWER:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 boon_affect_label(static_cast<int>(boon.bonus),
+							   static_cast<int>(boon.bonus2)));
+		break;
+	case BTYPE_SPELL:
+	{
+		const int spell = static_cast<int>(boon.bonus);
+		const char *name = spell >= 0 && spell < MAX_SKILLS && skills[spell].name ?
+					   skills[spell].name :
+					   "Invalid Spell";
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 name);
+		break;
+	}
+	case BTYPE_STAT:
+	{
+		const int attribute = static_cast<int>(boon.bonus);
+		const char *name = attribute >= STR && attribute <= MAX_ATTRIBUTES ?
+					   attr_names[attribute].name :
+					   "Invalid Attribute";
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 name);
+		break;
+	}
+	case BTYPE_ITEM:
+	{
+		const int object = real_object(static_cast<int>(boon.bonus));
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH, boon_types[boon.type].desc,
+					 object >= 0 ? obj_index[object].desc2 :
+						       "&+RBUGGY ITEM VNUM&n");
+		break;
+	}
+	default:
+		if (boon.type >= 0 && boon.type < MAX_BTYPE)
+			snprintf(description, MAX_STRING_LENGTH, "%s", boon_types[boon.type].desc);
+		else
+			snprintf(description, MAX_STRING_LENGTH, "Error, type is invalid.");
+		break;
+	}
+}
+
+static void boon_option_description(const BoonData &boon, char *description)
+{
+	if (!description)
+		return;
+	*description = '\0';
+	switch (boon.option)
+	{
+	case BOPT_FRAG:
+	case BOPT_FRAGS:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+					 boon_options[boon.option].desc, boon.criteria);
+		break;
+	case BOPT_LEVEL:
+		if (!boon.criteria)
+			snprintf(description, MAX_STRING_LENGTH, " when you raise a level.");
+		else
+			checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+						 boon_options[boon.option].desc,
+						 static_cast<int>(boon.criteria));
+		break;
+	case BOPT_CARGO:
+	case BOPT_AUCTION:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+					 boon_options[boon.option].desc,
+					 static_cast<int>(boon.criteria));
+		break;
+	case BOPT_NONE:
+	case BOPT_ZONE:
+	{
+		int index = 0;
+		while (index <= top_of_zone_table &&
+		       zone_table[index].number != static_cast<int>(boon.criteria))
+			++index;
+		if (index > top_of_zone_table)
+			snprintf(description, MAX_STRING_LENGTH, "Error, invalid zone number.");
+		else
+			checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+						 boon_options[boon.option].desc,
+						 zone_table[index].name);
+		break;
+	}
+	case BOPT_MOB:
+	{
+		char label[MAX_STRING_LENGTH];
+		boon_mob_label(static_cast<int>(boon.criteria2), label, sizeof(label), TRUE);
+		if (!strcmp(label, "unknown mob"))
+			snprintf(description, MAX_STRING_LENGTH, "Error, can't read mobile.");
+		else
+			checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+						 boon_options[boon.option].desc,
+						 static_cast<int>(boon.criteria), label);
+		break;
+	}
+	case BOPT_RACE:
+	{
+		char label[MAX_STRING_LENGTH];
+		boon_race_label(static_cast<int>(boon.criteria2), label, sizeof(label));
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+					 boon_options[boon.option].desc,
+					 static_cast<int>(boon.criteria), label);
+		break;
+	}
+	case BOPT_GH:
+	{
+		Guildhall *hall = Guildhall::find_by_id(static_cast<int>(boon.criteria));
+		if (!hall)
+			snprintf(description, MAX_STRING_LENGTH,
+				 "&+W'%d' is not a valid guildhall ID.&n",
+				 static_cast<int>(boon.criteria));
+		else
+			checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+						 boon_options[boon.option].desc,
+						 hall->get_assoc()->get_name().c_str());
+		break;
+	}
+	case BOPT_NEXUS:
+	{
+		NexusStoneInfo nexus;
+		if (!nexus_stone_info(boon.criteria, &nexus))
+			snprintf(description, MAX_STRING_LENGTH,
+				 "&+W'%d' is not a valid nexus stone ID.&n",
+				 static_cast<int>(boon.criteria));
+		else
+			checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+						 boon_options[boon.option].desc,
+						 nexus.name.c_str());
+		break;
+	}
+	case BOPT_OP:
+	{
+		Building *building = get_building_from_id(static_cast<int>(boon.criteria));
+		if (!building)
+			snprintf(description, MAX_STRING_LENGTH,
+				 "&+W'%d' is not a valid outpost ID.&n",
+				 static_cast<int>(boon.criteria));
+		else
+			checked_snprintf_runtime(
+				description, MAX_STRING_LENGTH, boon_options[boon.option].desc,
+				continent_name(world[building->location()].continent));
+		break;
+	}
+	case BOPT_CTF:
+	case BOPT_CTFB:
+		checked_snprintf_runtime(description, MAX_STRING_LENGTH,
+					 boon_options[boon.option].desc,
+					 static_cast<int>(boon.criteria));
+		break;
+	default:
+		snprintf(description, MAX_STRING_LENGTH, "Error, option is invalid.");
+		break;
+	}
+}
+
+static void boon_display_row(P_char ch, const BoonData &boon)
+{
+	char row[MAX_STRING_LENGTH], duration[MAX_STRING_LENGTH];
+	char type_description[MAX_STRING_LENGTH], option_description[MAX_STRING_LENGTH];
+	snprintf(row, sizeof(row), "%-6d %s ", boon.id, boon.repeat ? "R" : " ");
+	if (IS_TRUSTED(ch))
+		checked_snprintf(row + strlen(row), sizeof(row) - strlen(row), "%-10s ",
+				 boon.random ? "Yes" : boon.author.c_str());
+	if (boon.duration == -1)
+		snprintf(duration, sizeof(duration), "%-8s", "Forever");
+	else
+	{
+		const time_info_data remaining =
+			real_time_countdown(time(nullptr), boon.time, boon.duration * 60);
+		snprintf(duration, sizeof(duration), "%2d:%02d:%02d",
+			 remaining.day * 24 + remaining.hour, remaining.minute, remaining.second);
+	}
+	checked_snprintf(row + strlen(row), sizeof(row) - strlen(row), "%-8s %-7s ", duration,
+			 boon_racewar_label(boon.racewar));
+	if (IS_TRUSTED(ch))
+	{
+		const char *assigned = boon.pid ? get_player_name_from_pid(boon.pid) : "";
+		checked_snprintf(row + strlen(row), sizeof(row) - strlen(row),
+				 "%-6s %-9s %9.2f %9.2f %10.2f %7.2f %-10s \r\n &+CDescription&n: ",
+				 boon_types[boon.type].type, boon_options[boon.option].option,
+				 boon.criteria, boon.criteria2, boon.bonus, boon.bonus2,
+				 assigned ? assigned : "");
+	}
+	boon_type_description(boon, type_description);
+	boon_option_description(boon, option_description);
+	checked_snprintf(row + strlen(row), sizeof(row) - strlen(row), "%s %s&n\r\n",
+			 type_description, option_description);
+	send_to_char(row, ch);
+}
+
 static int boon_display_flat(P_char ch, const flat_boon_display_filters &filters)
 {
 	const char *root = flat_boon_root();
@@ -2267,8 +2529,8 @@ static int boon_display_flat(P_char ch, const flat_boon_display_filters &filters
 			       "ID", "Random", "Duration", "Racewar", "Type", "Option", "Criteria",
 			       "Criteria2", "Bonus", "Bonus2", "Assigned");
 	else
-		send_to_char_f(ch, "&+C%-6s   %-8s %-7s %-7s %-9s %10s&n\r\n", "ID", "Duration",
-			       "Racewar", "Type", "Option", "Reward");
+		send_to_char_f(ch, "&+C%-6s   %-8s %-7s %s&n\r\n", "ID", "Duration", "Racewar",
+			       "Description");
 	int count = 0;
 	for (const auto &definition : definitions)
 	{
@@ -2295,42 +2557,7 @@ static int boon_display_flat(P_char ch, const flat_boon_display_filters &filters
 		BoonData boon;
 		if (!copy_flat_boon_definition(definition, &boon))
 			continue;
-		char duration[MAX_STRING_LENGTH];
-		if (boon.duration == -1)
-			snprintf(duration, sizeof(duration), "%-8s", "Forever");
-		else
-		{
-			const time_info_data remaining =
-				real_time_countdown(time(nullptr), boon.time, boon.duration * 60);
-			snprintf(duration, sizeof(duration), "%2d:%02d:%02d",
-				 remaining.day * 24 + remaining.hour, remaining.minute,
-				 remaining.second);
-		}
-		const char *racewar = "Unknown";
-		if (!boon.racewar)
-			racewar = "All";
-		else if (boon.racewar == RACEWAR_GOOD)
-			racewar = "Good";
-		else if (boon.racewar == RACEWAR_EVIL)
-			racewar = "Evil";
-		else if (boon.racewar == RACEWAR_UNDEAD)
-			racewar = "Undead";
-		else if (boon.racewar == RACEWAR_NEUTRAL)
-			racewar = "Neutral";
-		const char *assigned = boon.pid ? get_player_name_from_pid(boon.pid) : "";
-		if (IS_TRUSTED(ch))
-			send_to_char_f(
-				ch,
-				"%-6d %s %-10s %-8s %-7s %-6s %-9s %9.2f %9.2f %10.2f %7.2f %-10s&n\r\n",
-				boon.id, boon.repeat ? "R" : " ",
-				boon.random ? "Yes" : boon.author.c_str(), duration, racewar,
-				boon_types[boon.type].type, boon_options[boon.option].option,
-				boon.criteria, boon.criteria2, boon.bonus, boon.bonus2, assigned);
-		else
-			send_to_char_f(ch, "%-6d %s %-8s %-7s %-7s %-9s %10.2f&n\r\n", boon.id,
-				       boon.repeat ? "R" : " ", duration, racewar,
-				       boon_types[boon.type].type, boon_options[boon.option].option,
-				       boon.bonus);
+		boon_display_row(ch, boon);
 		++count;
 	}
 	send_to_char_f(ch, "Displaying %d result(s).\r\n", count);
@@ -2340,17 +2567,14 @@ static int boon_display_flat(P_char ch, const flat_boon_display_filters &filters
 int boon_display(P_char ch, char *argument)
 {
 	char arg[MAX_STRING_LENGTH];
-	char buff[MAX_STRING_LENGTH], dbqry[MAX_STRING_LENGTH];
-	char bufftype[MAX_STRING_LENGTH], buffoption[MAX_STRING_LENGTH];
-	char cdtime[MAX_STRING_LENGTH], rw[MAX_STRING_LENGTH];
-	struct time_info_data timer;
-	int ct, i, pid = 0, count = 0;
+	char dbqry[MAX_STRING_LENGTH];
+	int i, pid = 0, count = 0;
 	int active = 0, inactive = 0, random = 0, manual = 0;
 	char name[MAX_STRING_LENGTH], type[MAX_STRING_LENGTH], option[MAX_STRING_LENGTH];
-	char player[MAX_STRING_LENGTH], pname[MAX_STRING_LENGTH];
+	char player[MAX_STRING_LENGTH];
 	flat_boon_display_filters flat_filters;
 
-	*name = *type = *option = *pname = *player = '\0';
+	*name = *type = *option = *player = '\0';
 
 	// Handle flags
 	while (*argument)
@@ -2601,319 +2825,22 @@ int boon_display(P_char ch, char *argument)
 			continue;
 
 		count++;
-
-		// interpret and display results
-		snprintf(buff, MAX_STRING_LENGTH, "%-6d %s ", id, (repeat ? "R" : " "));
-
-		if (IS_TRUSTED(ch))
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%-10s ", row_random ? "Yes" : author);
-
-		if (duration != -1)
-		{
-			ct = time(0);
-			timer = real_time_countdown(ct, timethen, duration * 60);
-			snprintf(cdtime, MAX_STRING_LENGTH, "%2d:%02d:%02d",
-				 timer.day * 24 + timer.hour, timer.minute, timer.second);
-		}
-		else
-			snprintf(cdtime, MAX_STRING_LENGTH, "%-8s", "Forever");
-		checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-8s ",
-				 cdtime);
-
-		if (racewar == 0)
-			strcpy(rw, "All");
-		else if (racewar == RACEWAR_GOOD)
-			strcpy(rw, "Good");
-		else if (racewar == RACEWAR_EVIL)
-			strcpy(rw, "Evil");
-		else if (racewar == RACEWAR_UNDEAD)
-			strcpy(rw, "Undead");
-		else if (racewar == RACEWAR_NEUTRAL)
-			strcpy(rw, "Neutral");
-		checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%-7s ",
-				 rw);
-
-		*pname = '\0';
-
-		if (IS_TRUSTED(ch))
-		{
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%-6s ", boon_types[type].type);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%-9s ", boon_options[option].option);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%9.2f ", criteria);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%9.2f ", criteria2);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%10.2f ", bonus);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%7.2f ", bonus2);
-			if (pid)
-				snprintf(pname, MAX_STRING_LENGTH, "%s",
-					 get_player_name_from_pid(pid));
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "%-10s ", pname);
-			checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff),
-					 "\r\n &+CDescription&n: ");
-		}
-
-		// Description of boon for mortal view
-		switch (type)
-		{
-		case BTYPE_LEVEL:
-		{
-			checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH, boon_types[type].desc,
-						 (int)bonus);
-			if ((int)bonus != -1)
-				checked_snprintf(bufftype + strlen(bufftype),
-						 MAX_STRING_LENGTH - strlen(bufftype),
-						 " (up to %d)", (int)bonus);
-			if (bonus2)
-				checked_snprintf(bufftype + strlen(bufftype),
-						 MAX_STRING_LENGTH - strlen(bufftype),
-						 " and bypass epics");
-			break;
-		}
-		case BTYPE_EXP:
-		{
-			snprintf(bufftype, MAX_STRING_LENGTH, "%s", boon_types[type].desc);
-			break;
-		}
-		case BTYPE_EXPM:
-		{
-			checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH, boon_types[type].desc,
-						 (int)(bonus * 100));
-			break;
-		}
-		case BTYPE_EPIC:
-		case BTYPE_STATS:
-		case BTYPE_POINT:
-		{
-			checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH, boon_types[type].desc,
-						 (int)bonus);
-			break;
-		}
-		case BTYPE_CASH:
-		{
-			checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH, boon_types[type].desc,
-						 coin_stringv(bonus));
-			break;
-		}
-		case BTYPE_POWER:
-		{
-			int aff = 0, bit = 0;
-			aff = (int)bonus;
-			bit = (int)bonus2;
-			if (aff == 1)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 affected1_bits[bit].flagLong);
-			else if (aff == 2)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 affected2_bits[bit].flagLong);
-			else if (aff == 3)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 affected3_bits[bit].flagLong);
-			else if (aff == 4)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 affected4_bits[bit].flagLong);
-			else if (aff == 5)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 affected5_bits[bit].flagLong);
-			else
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc, "Invalid Affect");
-			break;
-		}
-		case BTYPE_SPELL:
-		{
-			if (!skills[(int)bonus].name)
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc, "Invalid Spell");
-			else
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 skills[(int)bonus].name);
-			break;
-		}
-		case BTYPE_STAT:
-		{
-			checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH, boon_types[type].desc,
-						 attr_names[(int)bonus].name);
-			break;
-		}
-		case BTYPE_ITEM:
-		{
-			if (real_object((int)bonus) >= 0)
-			{
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 obj_index[real_object((int)bonus)].desc2);
-			}
-			else
-			{
-				checked_snprintf_runtime(bufftype, MAX_STRING_LENGTH,
-							 boon_types[type].desc,
-							 "&+RBUGGY ITEM VNUM&n");
-			}
-			break;
-		}
-		default:
-		{
-			if (type >= MAX_BTYPE)
-			{
-				snprintf(bufftype, MAX_STRING_LENGTH, "Error, type is invalid.");
-				break;
-			}
-			snprintf(bufftype, MAX_STRING_LENGTH, "%s", boon_types[type].desc);
-			break;
-		}
-		}
-
-		switch (option)
-		{
-		case BOPT_FRAG:
-		case BOPT_FRAGS:
-		{
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, criteria);
-			break;
-		}
-		case BOPT_LEVEL:
-		{
-			if (criteria == 0)
-				snprintf(buffoption, MAX_STRING_LENGTH, " when you raise a level.");
-			else
-				checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-							 boon_options[option].desc, (int)criteria);
-			break;
-		}
-		case BOPT_CARGO:
-		case BOPT_AUCTION:
-		{
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, (int)criteria);
-			break;
-		}
-		case BOPT_NONE:
-		case BOPT_ZONE:
-		{
-			i = 0;
-			while (i <= top_of_zone_table)
-			{
-				if (zone_table[i].number == (int)criteria)
-					break;
-				else
-					i++;
-			}
-			if (i > top_of_zone_table)
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "Error, invalid zone number.");
-				break;
-			}
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, zone_table[i].name);
-			break;
-		}
-		case BOPT_MOB:
-		{
-			char mob_label[MAX_STRING_LENGTH];
-
-			boon_mob_label((int)criteria2, mob_label, sizeof(mob_label), TRUE);
-			if (!strcmp(mob_label, "unknown mob"))
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "Error, can't read mobile.");
-				break;
-			}
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, (int)criteria,
-						 mob_label);
-			break;
-		}
-		case BOPT_RACE:
-		{
-			char race_label[MAX_STRING_LENGTH];
-
-			boon_race_label((int)criteria2, race_label, sizeof(race_label));
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, (int)criteria,
-						 race_label);
-			break;
-		}
-		case BOPT_GH:
-		{
-			Guildhall *gh;
-			if ((gh = Guildhall::find_by_id((int)criteria)) == NULL)
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "&+W'%d' is not a valid guildhall ID.&n", (int)criteria);
-				break;
-			}
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc,
-						 gh->get_assoc()->get_name().c_str());
-			break;
-		}
-		case BOPT_NEXUS:
-		{
-			// debug("type: %d, option: %d, criteria: %.2f, bonus: %.2f", type, option, criteria, bonus);
-			NexusStoneInfo nexus;
-			if (!nexus_stone_info(criteria, &nexus))
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "&+W'%d' is not a valid nexus stone ID.&n", (int)criteria);
-				break;
-			}
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, nexus.name.c_str());
-			break;
-		}
-		case BOPT_OP:
-		{
-			Building *building;
-			if ((building = get_building_from_id((int)criteria)) == NULL)
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "&+W'%d' is not a valid outpost ID.&n", (int)criteria);
-				break;
-			}
-			checked_snprintf_runtime(
-				buffoption, MAX_STRING_LENGTH, boon_options[option].desc,
-				continent_name(world[building->location()].continent));
-			break;
-		}
-		case BOPT_CTF:
-		case BOPT_CTFB:
-		{
-			checked_snprintf_runtime(buffoption, MAX_STRING_LENGTH,
-						 boon_options[option].desc, (int)criteria);
-			break;
-		}
-		default:
-		{
-			if (option >= MAX_BOPT)
-			{
-				snprintf(buffoption, MAX_STRING_LENGTH,
-					 "Error, option is invalid.");
-				break;
-			}
-			snprintf(buffoption, MAX_STRING_LENGTH, "%s", boon_options[option].desc);
-			break;
-		}
-		}
-
-		checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "%s %s",
-				 bufftype, buffoption);
-		checked_snprintf(buff + strlen(buff), MAX_STRING_LENGTH - strlen(buff), "&n\r\n");
-		send_to_char(buff, ch);
+		BoonData boon = { id,
+				  timethen,
+				  duration,
+				  racewar,
+				  type,
+				  option,
+				  criteria,
+				  criteria2,
+				  bonus,
+				  bonus2,
+				  row_random,
+				  1,
+				  author ? author : "",
+				  pid,
+				  repeat };
+		boon_display_row(ch, boon);
 	}
 
 	send_to_char_f(ch, "Displaying %d result(s).\r\n", count);
