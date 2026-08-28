@@ -16,7 +16,7 @@ python3 scripts/migration_runner.py run
 ./migrations/verify_runtime_compatibility.sh
 ```
 
-The current head is `0001_lookup_dataset_state`, producing 171 current tables. An
+The current head is `0002_player_item_metadata_uniqueness`, producing 171 current tables. An
 existing database must first complete the guarded legacy upgrade and verified
 baseline adoption described in [IMMUTABLE_MIGRATIONS.md](IMMUTABLE_MIGRATIONS.md).
 Never run migration or destructive verification commands against production.

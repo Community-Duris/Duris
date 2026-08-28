@@ -82,17 +82,17 @@ def validate() -> dict:
     if value["baseline_id"] != migration.baseline_id or \
             value["baseline_table_count"] != migration.required_table_count or \
             value["baseline_table_fingerprint"] != migration.required_table_fingerprint or \
-            len(migration.migrations) != 1:
+            not migration.migrations:
         raise migration_runner.MigrationContractError("runtime and migration baseline drift")
     head = migration.migrations[-1]
-    applied = migration_runner.AppliedMigration(
-        head.migration_id, head.sequence, head.description, head.apply_checksum,
-        head.verify_checksum, head.compatibility, migration.runner_version,
-    )
+    applied = [migration_runner.AppliedMigration(
+        item.migration_id, item.sequence, item.description, item.apply_checksum,
+        item.verify_checksum, item.compatibility, migration.runner_version,
+    ) for item in migration.migrations]
     expected_head = {
         "id": head.migration_id, "sequence": head.sequence,
         "apply_checksum": head.apply_checksum, "verify_checksum": head.verify_checksum,
-        "history_checksum": migration_runner.history_checksum([applied]),
+        "history_checksum": migration_runner.history_checksum(applied),
     }
     if value["migration_head"] != expected_head:
         raise migration_runner.MigrationContractError("runtime migration head drift")

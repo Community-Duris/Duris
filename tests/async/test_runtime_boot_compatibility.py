@@ -24,7 +24,8 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
     def test_manifests_and_compiled_contract_are_synchronized(self):
         report = runtime.validate()
         self.assertEqual(report["current_table_count"], 171)
-        self.assertEqual(report["migration_head"], "0001_lookup_dataset_state")
+        self.assertEqual(report["migration_head"],
+                         "0002_player_item_metadata_uniqueness")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)

@@ -2415,6 +2415,67 @@ bool in_their_zone(P_char mob)
 }
 
 void kill_gain(P_char ch, P_char victim);
+/*
+ * Death recovery: die() refuses to extract a character whose terminal save failed,
+ * to protect the live state that has not reached the database. Without a retry the
+ * player is stranded in STAT_DEAD - every command blocked by "Lie still; you are
+ * DEAD!!!" - while still being a live target in the room. These two functions
+ * re-attempt the save and finish the death the moment it lands.
+ */
+#define DEATH_EXTRACT_RETRY_INITIAL 4
+#define DEATH_EXTRACT_RETRY_MAX 60
+
+static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void *data);
+
+static void schedule_death_extract_retry(P_char ch, int delay)
+{
+	if (!ch || IS_NPC(ch) || !GET_NAME(ch))
+		return;
+
+	if (delay < DEATH_EXTRACT_RETRY_INITIAL)
+		delay = DEATH_EXTRACT_RETRY_INITIAL;
+	if (delay > DEATH_EXTRACT_RETRY_MAX)
+		delay = DEATH_EXTRACT_RETRY_MAX;
+
+	add_event(event_death_extract_retry, delay, ch, NULL, NULL, 0, &delay, sizeof(delay));
+}
+
+static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void *data)
+{
+	const int previous_delay = data ? *((int *)data) : DEATH_EXTRACT_RETRY_INITIAL;
+
+	(void)victim;
+	(void)obj;
+
+	if (!ch || IS_NPC(ch) || !GET_NAME(ch) || !ch->only.pc)
+		return;
+
+	// something brought them back (a god, a resurrect); the death is no longer pending
+	if (GET_STAT(ch) != STAT_DEAD || CHAR_IN_ARENA(ch))
+	{
+		persistence_alert(AVATAR, "player_save", "death", "none", "none",
+				  "death_recovery_abandoned", "stat=%d", GET_STAT(ch));
+		return;
+	}
+
+	if (!persistence_save_character_terminal(ch, RENT_DEATH))
+	{
+		persistence_alert(AVATAR, "player_save", "death", "none", "none",
+				  "death_recovery_retry", "delay=%d", previous_delay * 2);
+		schedule_death_extract_retry(ch, previous_delay * 2);
+		return;
+	}
+
+	persistence_alert(AVATAR, "player_save", "death", "none", "none",
+			  "death_recovery_completed", "extract_refused=0");
+	send_to_char("Your death has been recorded; the world lets go of you.\r\n", ch);
+	ch->only.pc->pc_timer[1] = 0; // reset flee timer
+	add_track(ch, NUM_EXITS);
+	if (GET_LEVEL(ch) < MINLVLIMMORTAL)
+		update_ingame_racewar(-GET_RACEWAR(ch));
+	extract_char(ch); // extract_char also calls free_char
+}
+
 void die(P_char ch, P_char killer)
 {
 	char buf[MAX_STRING_LENGTH];
@@ -2978,10 +3039,14 @@ void die(P_char ch, P_char killer)
 		if (!CHAR_IN_ARENA(ch) && !persistence_save_character_terminal(ch, RENT_DEATH))
 		{
 			persistence_alert(AVATAR, "player_save", "death", "none", "none",
-					  "terminal_save_failed", "extract_refused=1");
+					  "terminal_save_failed",
+					  "extract_refused=1 recovery_scheduled=1");
 			send_to_char(
 				"Your death could not be saved. You remain in the world for recovery.\r\n",
 				ch);
+			// the save pipeline retries on its own, but nothing else ever retries
+			// the death itself; this completes the extraction once it succeeds
+			schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);
 			return;
 		}
 		ch->only.pc->pc_timer[1] = 0; // reset flee timer

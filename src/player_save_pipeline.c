@@ -11,6 +11,7 @@
 #include "utils.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <array>
 #include <chrono>
 #include <condition_variable>
@@ -19,6 +20,8 @@
 #include <new>
 #include <thread>
 #include <utility>
+
+extern P_char character_list;
 
 #ifndef __NO_MYSQL__
 #include <mysql/mysql.h>
@@ -472,6 +475,8 @@ player_save_terminal_result player_save_pipeline_terminal(P_char ch, int save_in
 void player_save_pipeline_pulse(void)
 {
 	player_save_completion completions[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
+	int32_t missing_baseline[PLAYER_SAVE_PIPELINE_PULSE_BUDGET] = {};
+	size_t missing_baseline_count = 0;
 	const size_t completed =
 		player_save_worker_pulse(completions, PLAYER_SAVE_PIPELINE_PULSE_BUDGET);
 	{
@@ -498,7 +503,30 @@ void player_save_pipeline_pulse(void)
 				     player_save_apply_outcome::stale_revision) &&
 			    completions[index].durable_revision >= fence->revision)
 				fence->acknowledged = true;
+			// The worker only ever UPDATEs player_data. A missing row means the
+			// character never got its baseline INSERT, and every further async
+			// save would fail the same way; record it for the sync fallback.
+			if (completions[index].outcome ==
+				    player_save_apply_outcome::terminal_failure &&
+			    completions[index].error_code == ENOENT && completions[index].pid > 0)
+				missing_baseline[missing_baseline_count++] = completions[index].pid;
 		}
+	}
+	for (size_t index = 0; index < missing_baseline_count; ++index)
+	{
+		const int32_t pid = missing_baseline[index];
+		bool rearmed = false;
+		for (P_char ch = character_list; ch; ch = ch->next)
+			if (IS_PC(ch) && GET_PID(ch) == pid)
+			{
+				SET_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
+				rearmed = true;
+				break;
+			}
+		logit(LOG_PLAYER,
+		      "player_save_pipeline_pulse: component=apply outcome=missing_baseline "
+		      "pid=%d sync_fallback=%d",
+		      pid, rearmed ? 1 : 0);
 	}
 	for (size_t count = 0; count < PLAYER_SAVE_PIPELINE_PULSE_BUDGET; ++count)
 	{

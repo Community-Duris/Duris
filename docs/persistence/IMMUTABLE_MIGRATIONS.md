@@ -33,9 +33,9 @@ python3 scripts/migration_runner.py run
 The runner requires `ENVIRONMENT` to be local/development/test, a loopback `DB_HOST`,
 a non-production database name, and explicit credentials. Never point it at production.
 
-The current immutable head is `0001_lookup_dataset_state`. After it is applied, the
-runtime schema contains 171 tables and the history singleton records applied count 1
-plus the exact history checksum.
+The current immutable head is `0002_player_item_metadata_uniqueness`. After it is
+applied, the runtime schema contains 171 tables and the history singleton records
+applied count 2 plus the exact history checksum.
 
 ## Post-baseline migration contract
 

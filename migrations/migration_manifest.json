@@ -16,6 +16,16 @@
       "verify": "immutable/0001_lookup_dataset_state.sh",
       "verify_checksum": "90fc6de3aa449ef9b5b77fc96032314e129dfdd631e9760af86dc40329d7f0ca",
       "compatibility": "mysql8-mariadb10"
+    },
+    {
+      "id": "0002_player_item_metadata_uniqueness",
+      "sequence": 2,
+      "description": "Deduplicate and guard player item descriptions and affects",
+      "apply": "immutable/0002_player_item_metadata_uniqueness.sql",
+      "apply_checksum": "00e86dc65e6d5e935a50cd731d010675ade6da7fbbfdd18c4fe6fb17f88addba",
+      "verify": "immutable/0002_player_item_metadata_uniqueness.sh",
+      "verify_checksum": "312aa0aa354439e15bcef68403f00b7158c96627518d8be0bf85f59890ea1a90",
+      "compatibility": "mysql8-mariadb10"
     }
   ]
 }

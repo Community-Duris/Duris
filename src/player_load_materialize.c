@@ -322,8 +322,22 @@ void apply_integer(P_char ch, const player_snapshot_integer &entry, int *hit_dif
 
 bool player_load_materialize(P_char ch, const player_load_result &result)
 {
-	if (!ch || !ch->only.pc || !valid_snapshot(result))
+	if (!ch || !ch->only.pc)
 		return false;
+	if (!valid_snapshot(result))
+	{
+		// The repository runs on a worker thread and cannot log, so this is the first
+		// place a refused load can be reported. Without it the player only ever sees
+		// "Sorry, I couldn't load that character!".
+		logit(LOG_DEBUG,
+		      "player_load_materialize: component=snapshot pid=%d outcome=%u error=%u "
+		      "repository_component=%s queries=%u rows=%u items=%zu",
+		      result.pid, static_cast<unsigned int>(result.outcome), result.error_code,
+		      result.failed_component ? result.failed_component : "none",
+		      result.metrics.query_count, result.metrics.row_count,
+		      result.snapshot.items.size());
+		return false;
+	}
 	reset_char(ch);
 	int hit_difference = 0;
 	for (const player_snapshot_string &entry : result.snapshot.status_strings)
@@ -485,6 +499,12 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 			    ch, result.snapshot.items, result.item_identities, result.pid,
 			    result.item_owner_revision, false, &item_metrics))
 		{
+			logit(LOG_DEBUG,
+			      "player_load_materialize: component=item_graph pid=%d outcome=%u "
+			      "count=%zu operations=%zu depth=%zu",
+			      result.pid, static_cast<unsigned int>(item_metrics.outcome),
+			      item_metrics.item_count, item_metrics.operation_count,
+			      item_metrics.maximum_depth);
 			player_load_pets_discard(&pets);
 			return false;
 		}
@@ -513,6 +533,9 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		}
 		catch (const std::bad_alloc &)
 		{
+			logit(LOG_DEBUG,
+			      "player_load_materialize: component=ownership pid=%d outcome=allocation_failure",
+			      result.pid);
 			player_load_items_discard(ch);
 			player_load_pets_discard(&pets);
 			return false;
@@ -521,6 +544,10 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 						    static_cast<uint64_t>(result.pid), 0 };
 		if (ownership.size() != result.authoritative_item_count)
 		{
+			logit(LOG_DEBUG,
+			      "player_load_materialize: component=ownership pid=%d outcome=count_mismatch "
+			      "entries=%zu authoritative=%zu",
+			      result.pid, ownership.size(), result.authoritative_item_count);
 			player_load_items_discard(ch);
 			player_load_pets_discard(&pets);
 			return false;
@@ -533,6 +560,10 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 								     ownership.size());
 		if (!ownership_applied)
 		{
+			logit(LOG_DEBUG,
+			      "player_load_materialize: component=ownership pid=%d outcome=hydrate_failure "
+			      "entries=%zu",
+			      result.pid, ownership.size());
 			player_load_items_discard(ch);
 			player_load_pets_discard(&pets);
 			return false;

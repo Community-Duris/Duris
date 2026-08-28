@@ -5386,6 +5386,13 @@ void init_char(P_char ch)
 	clear_title(ch);
 
 	ch->only.pc->pid = getNewPCidNumb();
+	/*
+	 * getNewPCidNumb() allocates from the on-disk counter and touches no table, so a
+	 * brand new character has a positive pid but no player_data row. The async save
+	 * pipeline only ever UPDATEs, so it would fail with ENOENT forever. Force the
+	 * first save down the synchronous path, which is the only one that INSERTs.
+	 */
+	SET_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
 	ch->only.pc->screen_length = 24; /* default */
 	ch->only.pc->wiz_invis = 0;
 	ch->only.pc->highest_level = 1;
