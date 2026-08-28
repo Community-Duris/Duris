@@ -12,6 +12,9 @@
 #include "db.h"
 #include "interp.h"
 #include "item_uid_allocator.h"
+#include "critical_command.h"
+#include "flatfile_offline_message_repository.h"
+#include "persistence_mode.h"
 #include "utils.h"
 #include "sql.h"
 #include "item_ownership_runtime.h"
@@ -19,6 +22,7 @@
 #include "sql_pool.h"
 #include "session_audit_transaction.h"
 #include "runtime_compatibility_contract.h"
+#include <algorithm>
 #include <openssl/sha.h>
 #include <math.h>
 #include <stdarg.h>
@@ -192,9 +196,63 @@ bool qry_at(struct persistence_query_site site, const char *format, ...)
 	(void)format;
 	return FALSE;
 }
-void send_to_char_offline(const char * /*msg*/, int /*pid*/) {}
-void send_to_pid_offline(const char * /*msg*/, int /*pid*/) {}
-void send_offline_messages(P_char /*ch*/) {}
+static void enqueue_flat_offline_message(const char *message, int pid)
+{
+	const char *root = persistence_mode_flatfile_root();
+	critical_operation_id operation_id = {};
+	std::string error;
+	if (!root || !message || pid <= 0 || !critical_operation_id_generate(&operation_id) ||
+	    flatfile_offline_message_enqueue(root, static_cast<uint32_t>(pid), operation_id.bytes,
+					     message,
+					     &error) != flatfile_offline_message_result::ok)
+		persistence_alert(AVATAR, "offline_message", "player", "unknown", "enqueue",
+				  "flat_write_failed", "pid=%d error=%s", pid, error.c_str());
+}
+void send_to_char_offline(const char *message, int pid)
+{
+	enqueue_flat_offline_message(message, pid);
+}
+void send_to_pid_offline(const char *message, int pid)
+{
+	enqueue_flat_offline_message(message, pid);
+}
+void send_offline_messages(P_char ch)
+{
+	const char *root = persistence_mode_flatfile_root();
+	if (!root || !ch || IS_NPC(ch) || GET_PID(ch) <= 0)
+		return;
+	std::vector<flatfile_offline_message_record> messages;
+	std::string error;
+	if (flatfile_offline_message_list(root, static_cast<uint32_t>(GET_PID(ch)), &messages,
+					  &error) != flatfile_offline_message_result::ok)
+	{
+		persistence_alert(AVATAR, "offline_message", "player", "unknown", "load",
+				  "flat_read_failed", "pid=%d error=%s", GET_PID(ch),
+				  error.c_str());
+		return;
+	}
+	std::sort(messages.begin(), messages.end(),
+		  [](const auto &left, const auto &right)
+		  {
+			  return left.created_at != right.created_at ?
+					 left.created_at < right.created_at :
+					 left.id < right.id;
+		  });
+	for (const auto &message : messages)
+	{
+		send_to_char(message.text.c_str(), ch);
+		const auto acknowledged = flatfile_offline_message_acknowledge(
+			root, static_cast<uint32_t>(GET_PID(ch)), message.id, &error);
+		if (acknowledged != flatfile_offline_message_result::ok &&
+		    acknowledged != flatfile_offline_message_result::not_found)
+		{
+			persistence_alert(AVATAR, "offline_message", "player", "unknown",
+					  "acknowledge", "flat_write_failed", "pid=%d error=%s",
+					  GET_PID(ch), error.c_str());
+			break;
+		}
+	}
+}
 void log_epic_gain(int /*pid*/, int /*zone_id*/, int /*type*/, int /*epics*/) {}
 void log_epic_gain_event(const char * /*event_key*/, int /*pid*/, int /*type*/, int /*type_id*/,
 			 int /*epics*/)

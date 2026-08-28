@@ -938,6 +938,36 @@ sections below continue to describe the required end state.
   publisher (with idempotent outbox delivery), then separate the now-covered auction
   authority from the wider economy diagnostic and proceed to boon rewards.
 
+### Checkpoint 28 - durable flat offline mailbox foundation
+
+- **Completed:** added a bounded, checksummed per-player offline-message repository under
+  the shared authority lock. Message IDs are 128-bit, records are stored in deterministic
+  ID order, exact enqueue replay is idempotent, conflicting ID reuse fails closed, and
+  each mailbox is capped at 4,096 messages with 4 KiB per message and a 32 MiB file limit.
+- **Completed:** client-free `send_to_pid_offline` and `send_to_char_offline` now enqueue
+  generated message IDs instead of discarding text. Login delivery loads messages in
+  creation/ID order, sends each message, and atomically acknowledges it afterward. A
+  crash after send but before acknowledgement may repeat a message but cannot lose it;
+  corrupt or unwritable mailboxes raise persistence alerts and remain untouched.
+- **Recovery behavior:** every mailbox entry point takes the same cross-authority lock
+  and finishes a surviving critical-authority transaction before reading or publishing,
+  so unrelated interrupted auction/player/item publication cannot be bypassed through
+  offline delivery.
+- **Checks passed:** `python3 tests/async/test_flatfile_offline_message_repository.py`
+  covers missing-mailbox reads, deterministic enqueue/list, exact replay, ID conflict,
+  single-message acknowledgement, invalid identities, checksum corruption, no-overwrite,
+  and temporary-file cleanup; `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  and `git diff --check` pass.
+- **Files changed:** new `src/flatfile_offline_message_repository.[ch]` and focused
+  harness/test, `src/sql.c`, `src/Makefile`, and this handoff ledger.
+- **Remaining event gap:** auction operations do not yet retain a flat pending-publication
+  marker, so their deterministic notifications are not staged into these mailboxes after
+  command commit. Web publication also needs a replay/ack boundary.
+- **Next action:** version the auction catalog operation ledger with pending-event state,
+  stage deterministic recipient messages into the new mailbox, publish the web event,
+  and acknowledge the catalog event only after both steps succeed.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
