@@ -52,6 +52,8 @@ assert "sudo apt install equivs dos2unix" not in readme
 assert "duris-build-deps_1.0_all.deb" in readme
 
 workflow = (ROOT / ".github/workflows/build.yml").read_text()
+assert "sudo apt-get update" in workflow
+assert workflow.index("sudo apt-get update") < workflow.index("sudo apt-get install --yes equivs")
 assert "make build-deps-package" in workflow
 assert "./bin/packages/duris-build-deps_1.0_all.deb" in workflow
 assert "sudo apt install equivs dos2unix" not in workflow

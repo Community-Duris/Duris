@@ -16,6 +16,10 @@ jobs:
     - name: sysinfo
       run: echo -en '\e[33;1mThread count:\e[0m ' && nproc && free -h
     - name: build-deps
-      run: sudo apt install equivs && make build-deps-package && sudo apt install ./bin/packages/duris-build-deps_1.0_all.deb
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes equivs
+        make build-deps-package
+        sudo apt-get install --yes ./bin/packages/duris-build-deps_1.0_all.deb
     - name: build and test
       run: make test-all -j"$(nproc)" TEST_JOBS="$(nproc)"
