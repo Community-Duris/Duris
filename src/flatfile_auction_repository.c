@@ -516,6 +516,66 @@ flatfile_read_result load_catalog(const std::string &root, auction_catalog *cata
 						flatfile_read_result::invalid;
 }
 
+flatfile_auction_query_result query_catalog(const std::string &root, auction_catalog *catalog,
+					    std::string *error)
+{
+	if (root.empty() || !catalog)
+		return flatfile_auction_query_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_auction_query_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_auction_query_result::io_error :
+			       flatfile_auction_query_result::invalid;
+	const auto loaded = load_catalog(root, catalog, error);
+	if (loaded == flatfile_read_result::not_found)
+	{
+		*catalog = {};
+		return flatfile_auction_query_result::ok;
+	}
+	if (loaded == flatfile_read_result::ok)
+		return flatfile_auction_query_result::ok;
+	if (loaded == flatfile_read_result::invalid && error && error->empty())
+		*error = "auction catalog is corrupt";
+	return loaded == flatfile_read_result::io_error ? flatfile_auction_query_result::io_error :
+							  flatfile_auction_query_result::invalid;
+}
+
+bool project_listing(const auction_listing &source, uint32_t claim_pid,
+		     flatfile_auction_listing_projection *target)
+{
+	if (!target)
+		return false;
+	flatfile_auction_listing_projection projected;
+	projected.auction_id = source.id;
+	projected.seller_pid = source.seller_pid;
+	projected.winner_pid = source.winner_pid;
+	projected.current_price = source.current_price;
+	projected.buy_price = source.buy_price;
+	projected.revision = source.revision;
+	projected.end_time = source.end_time;
+	try
+	{
+		projected.seller_name = source.seller_name;
+		projected.winner_name = source.winner_name;
+		projected.object_short = source.object_short;
+		projected.id_keywords = source.id_keywords;
+		projected.object_info = source.object_info;
+		projected.object_blob = source.object_blob;
+		for (const auto &item : source.items)
+			if (!claim_pid || (item.claim_pid == claim_pid && !item.claimed))
+				projected.items.push_back({ item.uid, item.revision, item.vnum });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	*target = std::move(projected);
+	return true;
+}
+
 uint32_t listing_id(const critical_operation_id &operation_id)
 {
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
@@ -558,6 +618,94 @@ critical_apply_result make_result(const auction_operation &operation, uint64_t r
 	return result;
 }
 } // namespace
+
+flatfile_auction_query_result
+flatfile_auction_list_open(const std::string &root,
+			   std::vector<flatfile_auction_listing_projection> *listings,
+			   std::string *error)
+{
+	if (!listings)
+		return flatfile_auction_query_result::invalid;
+	auction_catalog catalog;
+	const auto loaded = query_catalog(root, &catalog, error);
+	if (loaded != flatfile_auction_query_result::ok)
+		return loaded;
+	std::vector<flatfile_auction_listing_projection> projected;
+	try
+	{
+		projected.reserve(catalog.listings.size());
+		for (const auto &listing : catalog.listings)
+		{
+			if (listing.status != auction_status_open)
+				continue;
+			projected.emplace_back();
+			if (!project_listing(listing, 0, &projected.back()))
+				return flatfile_auction_query_result::io_error;
+		}
+		std::sort(projected.begin(), projected.end(),
+			  [](const auto &left, const auto &right)
+			  {
+				  return left.end_time != right.end_time ?
+						 left.end_time < right.end_time :
+						 left.auction_id < right.auction_id;
+			  });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_auction_query_result::io_error;
+	}
+	*listings = std::move(projected);
+	return flatfile_auction_query_result::ok;
+}
+
+flatfile_auction_query_result
+flatfile_auction_find_open(const std::string &root, uint32_t auction_id,
+			   flatfile_auction_listing_projection *listing, std::string *error)
+{
+	if (!auction_id || !listing)
+		return flatfile_auction_query_result::invalid;
+	auction_catalog catalog;
+	const auto loaded = query_catalog(root, &catalog, error);
+	if (loaded != flatfile_auction_query_result::ok)
+		return loaded;
+	const auction_listing *found = find_listing(&catalog, auction_id);
+	if (!found || found->status != auction_status_open)
+		return flatfile_auction_query_result::not_found;
+	return project_listing(*found, 0, listing) ? flatfile_auction_query_result::ok :
+						     flatfile_auction_query_result::io_error;
+}
+
+flatfile_auction_query_result
+flatfile_auction_find_pickup(const std::string &root, uint32_t pid,
+			     flatfile_auction_pickup_projection *pickup, std::string *error)
+{
+	if (!pid || !pickup)
+		return flatfile_auction_query_result::invalid;
+	auction_catalog catalog;
+	const auto loaded = query_catalog(root, &catalog, error);
+	if (loaded != flatfile_auction_query_result::ok)
+		return loaded;
+	flatfile_auction_pickup_projection projected;
+	if (const money_pickup *money = find_money(&catalog, pid))
+	{
+		projected.money = money->amount;
+		projected.money_revision = money->revision;
+	}
+	for (const auto &listing : catalog.listings)
+	{
+		const bool pending = std::any_of(
+			listing.items.begin(), listing.items.end(), [&](const auction_item &item)
+			{ return item.claim_pid == pid && !item.claimed; });
+		if (!pending)
+			continue;
+		if (!project_listing(listing, pid, &projected.item_claim))
+			return flatfile_auction_query_result::io_error;
+		projected.has_item_claim = true;
+		break;
+	}
+	*pickup = std::move(projected);
+	return flatfile_auction_query_result::ok;
+}
 
 critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							const critical_command &command)

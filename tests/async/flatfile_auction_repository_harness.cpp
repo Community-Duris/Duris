@@ -102,6 +102,11 @@ int main(int argc, char **argv)
 							 &error) ==
 			flatfile_item_baseline_result::applied,
 		"could not establish auction custody: " + error);
+	std::vector<flatfile_auction_listing_projection> open_listings;
+	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==
+				flatfile_auction_query_result::ok &&
+			open_listings.empty(),
+		"missing auction catalog was not projected as an empty list");
 
 	auction_command_payload listing = {};
 	listing.action = auction_action::list;
@@ -140,6 +145,19 @@ int main(int argc, char **argv)
 			listed.event_type == auction_event_type::listed && listed.auction_id != 0 &&
 			listed.item_revisions[0] == 2,
 		"recovered listing did not replay its result");
+	flatfile_auction_listing_projection listing_view;
+	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==
+				flatfile_auction_query_result::ok &&
+			open_listings.size() == 1 &&
+			open_listings[0].auction_id == listed.auction_id &&
+			open_listings[0].seller_name == "Seller" &&
+			open_listings[0].object_short == "an auction test item" &&
+			open_listings[0].object_info == "durable test object" &&
+			open_listings[0].items.size() == 1 &&
+			flatfile_auction_find_open(root.string(), listed.auction_id, &listing_view,
+						   &error) == flatfile_auction_query_result::ok &&
+			listing_view.object_blob == std::vector<uint8_t>{ 0x5a },
+		"open listing query did not project the durable catalog");
 	auction_command_payload conflicting_listing = listing;
 	conflicting_listing.listing_fee = 101;
 	require(flatfile_auction_repository_apply(root.string(), command(conflicting_listing, 1))
@@ -191,6 +209,28 @@ int main(int argc, char **argv)
 			buy_result.final_price == 5000 && buy_result.previous_bidder_pid == 43 &&
 			buy_result.auction_revision == 3,
 		"buy-now settlement did not apply");
+	flatfile_auction_pickup_projection bidder_pickup, seller_pickup, buyer_pickup;
+	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==
+				flatfile_auction_query_result::ok &&
+			open_listings.empty() &&
+			flatfile_auction_find_open(root.string(), listed.auction_id, &listing_view,
+						   &error) ==
+				flatfile_auction_query_result::not_found &&
+			flatfile_auction_find_pickup(root.string(), 43, &bidder_pickup, &error) ==
+				flatfile_auction_query_result::ok &&
+			bidder_pickup.money == 3000 && !bidder_pickup.has_item_claim &&
+			flatfile_auction_find_pickup(root.string(), 42, &seller_pickup, &error) ==
+				flatfile_auction_query_result::ok &&
+			seller_pickup.money == 4500 && !seller_pickup.has_item_claim &&
+			flatfile_auction_find_pickup(root.string(), 44, &buyer_pickup, &error) ==
+				flatfile_auction_query_result::ok &&
+			buyer_pickup.money == 0 && buyer_pickup.has_item_claim &&
+			buyer_pickup.item_claim.auction_id == listed.auction_id &&
+			buyer_pickup.item_claim.items.size() == 1 &&
+			buyer_pickup.item_claim.items[0].item_uid == 700 &&
+			buyer_pickup.item_claim.items[0].item_revision == 2 &&
+			buyer_pickup.item_claim.object_blob == std::vector<uint8_t>{ 0x5a },
+		"settled auction projections did not expose refunds, proceeds, and custody");
 
 	auction_command_payload bidder_money = {};
 	bidder_money.action = auction_action::claim_money;
@@ -312,6 +352,9 @@ int main(int argc, char **argv)
 	require(flatfile_auction_repository_apply(root.string(), claim_command).error_code ==
 			EILSEQ,
 		"corrupt auction catalog was accepted or overwritten");
+	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==
+			flatfile_auction_query_result::invalid,
+		"corrupt auction catalog was exposed through the query projection");
 	for (const fs::directory_entry &entry : fs::directory_iterator(domains))
 		require(entry.path().filename().string().find(".tmp.") == std::string::npos,
 			"temporary auction authority file was left behind");

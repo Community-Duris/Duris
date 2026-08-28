@@ -869,6 +869,43 @@ sections below continue to describe the required end state.
   no-MySQL auction browsing, inspection, and pickup-discovery surfaces through them;
   then use the same cross-authority preparation protocol for boon rewards.
 
+### Checkpoint 26 - flat auction queries and claim discovery
+
+- **Completed:** added bounded read projections for open listings, one open listing by
+  identifier, and a player's staged money plus first pending item claim. Queries take
+  the shared authority lock, finish any surviving cross-authority transaction before
+  decoding, treat a missing catalog as empty, sort open listings by expiry and identifier,
+  and fail closed on corrupt checksums or invalid records.
+- **Completed:** the client-free auction command surface is no longer an unconditional
+  disabled stub. `auction list` reads the flat catalog and supports all, exact-player,
+  and stored-keyword filtering; `auction info` renders the catalog's durable seller,
+  price, time, winner, and item-information projection without deserializing gameplay
+  objects or issuing SQL.
+- **Completed:** client-free `auction pickup` discovers staged money first, then the
+  first pending item claim, and submits the existing typed claim commands through the
+  critical coordinator. Item payloads carry the catalog's exact UID/revision/vnum and
+  object blob; invalid or unterminated blobs refuse submission. Publication callbacks
+  update runtime balances/custody and materialize claimed objects only after the durable
+  command acknowledgement.
+- **Safety behavior:** query failures produce an operator-visible catalog warning rather
+  than reporting an empty auction house. The no-MySQL outbox publisher continues to
+  return retryable failure instead of acknowledging notifications it cannot yet deliver.
+- **Checks passed:** the auction repository harness now verifies empty-catalog reads,
+  open list/detail fields, post-settlement hiding, refund/proceeds/item projections, and
+  query refusal after corruption; `python3 tests/async/test_flatfile_auction_repository.py`,
+  `python3 tests/async/test_auction_transactional_cutover.py`, `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  and `git diff --check` pass.
+- **Files changed:** `src/flatfile_auction_repository.[ch]`, the no-MySQL branch of
+  `src/auction_houses.c`, the focused auction harness, the auction cutover source
+  contract, and this handoff ledger.
+- **Remaining auction gap:** no-MySQL offer/bid/remove command construction, expiry
+  scheduling, committed-event/web/offline publication, and sorter initialization remain
+  unavailable. The auction/economy boot diagnostic therefore remains in place.
+- **Next action:** route offer, bid, and remove through the already-authoritative auction
+  command dispatcher, add flat expiry finalization and catalog-backed committed-event
+  publication, then reconsider only the auction portion of the boot diagnostic.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

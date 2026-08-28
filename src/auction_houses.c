@@ -11,8 +11,11 @@
 #include "auction_houses.h"
 #include "auction_transaction.h"
 #include "currency_transaction.h"
+#include "flatfile_auction_repository.h"
 #include "item_ownership_runtime.h"
 #include "persistence_checkpoint.h"
+#include "persistence_mode.h"
+#include <algorithm>
 #include <cerrno>
 #include <climits>
 #include <ctime>
@@ -27,17 +30,360 @@
 using namespace std;
 
 #ifdef __NO_MYSQL__
-void init_auction_houses() {}
+namespace
+{
+const char *flat_auction_root()
+{
+	return persistence_mode_flatfile_root();
+}
+
+bool copy_auction_text(char *destination, size_t capacity, const char *source)
+{
+	if (!destination || !capacity || !source || strlen(source) >= capacity)
+		return false;
+	memcpy(destination, source, strlen(source) + 1);
+	return true;
+}
+
+bool fill_auction_actor(P_char ch, auction_command_payload *payload)
+{
+	if (!ch || IS_NPC(ch) || !payload || !ch->only.pc)
+		return false;
+	const char *account = get_account_name_safe(ch);
+	if (!account || !strcmp(account, "Unknown") ||
+	    !copy_auction_text(payload->account_name.data(), payload->account_name.size(),
+			       account) ||
+	    !copy_auction_text(payload->actor_name.data(), payload->actor_name.size(),
+			       GET_NAME(ch)))
+		return false;
+	payload->actor_pid = static_cast<uint32_t>(GET_PID(ch));
+	payload->racewar = static_cast<uint8_t>(GET_RACEWAR(ch));
+	payload->expected_wallet_revision = ch->only.pc->wallet_revision;
+	payload->expected_bank_revision = ch->only.pc->bank_revision;
+	return true;
+}
+
+bool text_equal_folded(const std::string &left, const char *right)
+{
+	if (!right || left.size() != strlen(right))
+		return false;
+	for (size_t index = 0; index < left.size(); ++index)
+		if (tolower(static_cast<unsigned char>(left[index])) !=
+		    tolower(static_cast<unsigned char>(right[index])))
+			return false;
+	return true;
+}
+
+long auction_seconds_remaining(uint64_t end_time)
+{
+	const uint64_t now = static_cast<uint64_t>(time(nullptr));
+	if (end_time <= now)
+		return 0;
+	return static_cast<long>(std::min<uint64_t>(end_time - now, LONG_MAX));
+}
+
+void flat_money_claim_completed(P_char ch, bool committed, const auction_command_result &result,
+				unsigned int, const auction_command_payload &)
+{
+	if (!ch)
+		return;
+	if (!committed)
+		send_to_char("Your auction money remains available for pickup.\r\n", ch);
+	else
+		send_to_char_f(ch, "&+WYou pick up &n%s&+W.&n\r\n",
+			       coin_stringv(static_cast<int>(result.wallet_value_delta)));
+}
+
+void flat_item_claim_completed(P_char ch, bool committed, const auction_command_result &result,
+			       unsigned int, const auction_command_payload &payload)
+{
+	if (!ch)
+		return;
+	if (!committed)
+	{
+		send_to_char("Your auction items remain available for pickup.\r\n", ch);
+		return;
+	}
+	for (size_t index = 0; index < result.item_count; ++index)
+	{
+		P_obj object = read_one_object(const_cast<char *>(
+			reinterpret_cast<const char *>(payload.object_blob.data())));
+		if (!object)
+		{
+			persistence_alert(AVATAR, "auction", "player", "unknown", "claim_publish",
+					  "deserialize_failed", "auction_id=%u item_uid=%llu",
+					  result.auction_id,
+					  static_cast<unsigned long long>(result.item_uids[index]));
+			continue;
+		}
+		object->obj_uid = result.item_uids[index];
+		obj_to_char(object, ch);
+		send_to_char_f(ch, "&+WYou pick up &n%s&+W.&n\r\n", object->short_description);
+	}
+	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
+							  PLAYER_COMPONENT_EQUIPMENT |
+							  PLAYER_COMPONENT_INVENTORY);
+}
+
+bool report_flat_query_failure(P_char ch, const std::string &error)
+{
+	send_to_char(
+		"The auction catalog could not be read safely. Please contact an immortal.\r\n",
+		ch);
+	logit(LOG_WIZ, "Flat auction query failed: %s", error.c_str());
+	return true;
+}
+} // namespace
+
+string format_time(long seconds)
+{
+	char result[128] = {};
+	if (seconds < 0)
+		seconds = 0;
+	if (seconds < 60)
+		snprintf(result, sizeof(result), "&+R<1m&n");
+	else if (seconds < 60 * 60)
+		snprintf(result, sizeof(result), "&+R%ldm&n", (seconds / 60) % 60);
+	else if (seconds < 6 * 60 * 60)
+		snprintf(result, sizeof(result), "&+Y%ldh %ldm&n", seconds / 3600,
+			 (seconds / 60) % 60);
+	else
+		snprintf(result, sizeof(result), "&+W%ldh&n", seconds / 3600);
+	return result;
+}
+
+void init_auction_houses()
+{
+	fprintf(stderr, "-- Initializing Flat-File Auctions\r\n");
+}
 void shutdown_auction_houses() {}
 void auction_houses_activity() {}
-int auction_house_room_proc(int /*room_num*/, P_char ch, int /*cmd*/, char * /*arguments*/)
+
+bool auction_list(P_char ch, char *args)
 {
-	send_to_char("Auctions are disabled.", ch);
-	return TRUE;
+	const char *root = flat_auction_root();
+	if (!root)
+		return report_flat_query_failure(ch, "flat-file state root is not configured");
+	char mode[MAX_INPUT_LENGTH] = {};
+	half_chop(args, mode, args);
+	char player_name[MAX_INPUT_LENGTH] = {};
+	std::vector<std::string> keywords;
+	if (!*mode || isname(mode, "all a"))
+		send_to_char("&+WAuctions closing soon:\r\n", ch);
+	else if (isname(mode, "player p"))
+	{
+		half_chop(args, player_name, args);
+		if (!*player_name)
+		{
+			send_to_char("&+WPlease enter the name of a player.\r\n", ch);
+			return true;
+		}
+		send_to_char_f(ch, "&+WAuctions by &n%.100s&+W:\r\n", player_name);
+	}
+	else if (isname(mode, "sort s"))
+	{
+		char keyword[MAX_INPUT_LENGTH] = {};
+		while (*args)
+		{
+			half_chop(args, keyword, args);
+			keywords.emplace_back(keyword);
+		}
+		if (keywords.empty())
+		{
+			send_to_char("&+WPlease enter one or more item keywords.\r\n", ch);
+			return true;
+		}
+		send_to_char("&+WAuctions matching those item keywords:&n\r\n", ch);
+	}
+	else
+	{
+		send_to_char("&+WAuction list syntax:\r\nauction list\r\n"
+			     "auction list sort <keyword list>\r\n"
+			     "auction list player <playername>\r\n",
+			     ch);
+		return true;
+	}
+	std::vector<flatfile_auction_listing_projection> listings;
+	std::string error;
+	if (flatfile_auction_list_open(root, &listings, &error) !=
+	    flatfile_auction_query_result::ok)
+		return report_flat_query_failure(ch, error);
+	size_t shown = 0;
+	for (const auto &listing : listings)
+	{
+		if (*player_name && !text_equal_folded(listing.seller_name, player_name))
+			continue;
+		bool matches = true;
+		for (const auto &keyword : keywords)
+			if (listing.id_keywords.find(keyword) == std::string::npos)
+				matches = false;
+		if (!matches)
+			continue;
+		const char mine = GET_PID(ch) == static_cast<int>(listing.seller_pid) ||
+						  GET_PID(ch) ==
+							  static_cast<int>(listing.winner_pid) ?
+					  '*' :
+					  ' ';
+		const size_t quantity = listing.items.size();
+		if (listing.buy_price > 0)
+			send_to_char_f(
+				ch,
+				"&+W%u)&+W%c&n %zu %s&n [%s&n] &+WBid: &n%lldp&+W Buy: &n%lldp\r\n",
+				listing.auction_id, mine, quantity, listing.object_short.c_str(),
+				format_time(auction_seconds_remaining(listing.end_time)).c_str(),
+				static_cast<long long>(listing.current_price / 1000),
+				static_cast<long long>(listing.buy_price / 1000));
+		else
+			send_to_char_f(
+				ch, "&+W%u)&+W%c&n %zu %s&n [%s&n] &+WBid: &n%lldp\r\n",
+				listing.auction_id, mine, quantity, listing.object_short.c_str(),
+				format_time(auction_seconds_remaining(listing.end_time)).c_str(),
+				static_cast<long long>(listing.current_price / 1000));
+		++shown;
+	}
+	if (!shown)
+		send_to_char("&+yNo auctions found!\r\n", ch);
+	return true;
 }
-void new_ah_call(P_char ch, char * /*arg*/, int /*cmd*/)
+
+bool auction_info(P_char ch, char *args)
 {
-	send_to_char("Auctions are disabled.\r\n", ch);
+	char id_text[MAX_INPUT_LENGTH] = {};
+	half_chop(args, id_text, args);
+	char *end = nullptr;
+	errno = 0;
+	const unsigned long parsed = strtoul(id_text, &end, 10);
+	if (errno || !*id_text || !end || *end || !parsed || parsed > UINT_MAX)
+	{
+		send_to_char("&+WPlease enter a valid auction id.\r\n", ch);
+		return true;
+	}
+	const char *root = flat_auction_root();
+	if (!root)
+		return report_flat_query_failure(ch, "flat-file state root is not configured");
+	flatfile_auction_listing_projection listing;
+	std::string error;
+	const auto found =
+		flatfile_auction_find_open(root, static_cast<uint32_t>(parsed), &listing, &error);
+	if (found == flatfile_auction_query_result::not_found)
+	{
+		send_to_char("&+WThere is no open auction with that id!\r\n", ch);
+		return true;
+	}
+	if (found != flatfile_auction_query_result::ok)
+		return report_flat_query_failure(ch, error);
+	send_to_char_f(ch, "&+WAuction &+W%u\r\n", listing.auction_id);
+	send_to_char_f(ch, "&+WSeller: &n%s\r\n", listing.seller_name.c_str());
+	send_to_char_f(ch, "&+WTime left: &n%s\r\n",
+		       format_time(auction_seconds_remaining(listing.end_time)).c_str());
+	if (!listing.winner_pid)
+		send_to_char_f(ch, "&+WNo bids received. Starting bid: &n%lldp\r\n",
+			       static_cast<long long>(listing.current_price / 1000));
+	else
+		send_to_char_f(ch, "&+WHigh bid: &n%lldp&+W by &n%s\r\n",
+			       static_cast<long long>(listing.current_price / 1000),
+			       listing.winner_name.c_str());
+	if (listing.buy_price > 0)
+		send_to_char_f(ch, "&+WBuy-it-now price: &n%lldp\r\n",
+			       static_cast<long long>(listing.buy_price / 1000));
+	if (!listing.object_info.empty())
+	{
+		send_to_char("&+WItem information:&n\r\n", ch);
+		send_to_char(listing.object_info.c_str(), ch);
+		if (listing.object_info.back() != '\n')
+			send_to_char("\r\n", ch);
+	}
+	return true;
+}
+
+bool auction_pickup(P_char ch, char *args)
+{
+	if (args && *args)
+	{
+		send_to_char(
+			"Auction pickup no longer accepts an id; committed claims are authoritative.\r\n",
+			ch);
+		return true;
+	}
+	if (auction_transaction_player_busy(ch))
+	{
+		send_to_char("Your previous auction request is still being committed.\r\n", ch);
+		return true;
+	}
+	const char *root = flat_auction_root();
+	if (!root)
+		return report_flat_query_failure(ch, "flat-file state root is not configured");
+	flatfile_auction_pickup_projection pickup;
+	std::string error;
+	if (flatfile_auction_find_pickup(root, static_cast<uint32_t>(GET_PID(ch)), &pickup,
+					 &error) != flatfile_auction_query_result::ok)
+		return report_flat_query_failure(ch, error);
+	auction_command_payload payload = {};
+	if (!fill_auction_actor(ch, &payload))
+		return report_flat_query_failure(ch, "player auction identity is unavailable");
+	if (pickup.money > 0)
+	{
+		payload.action = auction_action::claim_money;
+		if (!auction_transaction_submit(ch, payload, flat_money_claim_completed))
+			send_to_char("The auction house is busy; your money remains staged.\r\n",
+				     ch);
+		else
+			send_to_char("Your auction money pickup is being committed.\r\n", ch);
+		return true;
+	}
+	if (!pickup.has_item_claim || pickup.item_claim.items.empty())
+	{
+		send_to_char("&+WYou have no items or money to pickup!&n\r\n", ch);
+		return true;
+	}
+	if (pickup.item_claim.object_blob.empty() || pickup.item_claim.object_blob.back() != 0 ||
+	    pickup.item_claim.object_blob.size() > payload.object_blob.size() ||
+	    pickup.item_claim.items.size() > payload.items.size())
+		return report_flat_query_failure(ch, "pending auction item blob is invalid");
+	payload.action = auction_action::claim_item;
+	payload.auction_id = pickup.item_claim.auction_id;
+	payload.object_blob_size = pickup.item_claim.object_blob.size();
+	std::copy(pickup.item_claim.object_blob.begin(), pickup.item_claim.object_blob.end(),
+		  payload.object_blob.begin());
+	for (const auto &item : pickup.item_claim.items)
+		payload.items[payload.item_count++] = { item.item_uid, item.item_revision,
+							item.vnum };
+	if (!auction_transaction_submit(ch, payload, flat_item_claim_completed))
+		send_to_char("The auction house is busy; your items remain staged.\r\n", ch);
+	else
+		send_to_char("Your auction item pickup is being committed.\r\n", ch);
+	return true;
+}
+
+bool auction_help(P_char ch, const char *)
+{
+	send_to_char("&+WAuction commands: list, info <id>, pickup.\r\n", ch);
+	return true;
+}
+
+void new_ah_call(P_char ch, char *arguments, int cmd)
+{
+	if (cmd != CMD_AUCTION || !IS_ALIVE(ch) || IS_NPC(ch))
+		return;
+	char command[MAX_INPUT_LENGTH] = {};
+	char args[MAX_STRING_LENGTH] = {};
+	half_chop(arguments, command, args);
+	if (isname(command, "list l"))
+		auction_list(ch, args);
+	else if (isname(command, "info i"))
+		auction_info(ch, args);
+	else if (isname(command, "pickup p"))
+		auction_pickup(ch, args);
+	else
+		auction_help(ch, arguments);
+}
+
+int auction_house_room_proc(int, P_char ch, int cmd, char *arguments)
+{
+	if (cmd != CMD_AUCTION || !IS_PC(ch))
+		return FALSE;
+	new_ah_call(ch, arguments, cmd);
+	return TRUE;
 }
 bool finalize_auction(int /*auction_id*/, P_char /*to_ch*/)
 {

@@ -129,6 +129,21 @@ class AuctionTransactionalCutoverTests(unittest.TestCase):
         self.assertIn("auction_transaction_outbox_delivery", transaction)
         self.assertIn("outbox_publication_state::published", transaction)
 
+    def test_client_free_read_and_pickup_routes_use_flat_catalog(self):
+        source = (SRC / "auction_houses.c").read_text()
+        no_mysql = section(source, "#ifdef __NO_MYSQL__", "#else")
+        self.assertNotIn("Auctions are disabled", no_mysql)
+        list_route = section(no_mysql, "bool auction_list(P_char", "bool auction_info(P_char")
+        info_route = section(no_mysql, "bool auction_info(P_char", "bool auction_pickup(P_char")
+        pickup_route = section(no_mysql, "bool auction_pickup(P_char", "bool auction_help(P_char")
+        self.assertIn("flatfile_auction_list_open", list_route)
+        self.assertIn("flatfile_auction_find_open", info_route)
+        self.assertIn("flatfile_auction_find_pickup", pickup_route)
+        self.assertIn("auction_transaction_submit", pickup_route)
+        for route in (list_route, info_route, pickup_route):
+            self.assertNotIn("qry(", route)
+            self.assertNotIn("MYSQL_", route)
+
     def test_repository_owns_settlement_claims_ledgers_and_outbox(self):
         repository = (SRC / "auction_repository.c").read_text()
         generic = (SRC / "critical_command_repository.c").read_text()
