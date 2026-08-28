@@ -3,10 +3,39 @@
 Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
-Status: Implementation in progress; RDS-006 and RDS-012 are remediated and the remaining
-findings are open.
+Status: Implementation in progress; RDS-006, RDS-012, and RDS-019 are remediated and the
+remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-019 floor-delta world-recovery gate
+
+Completed:
+
+- Gated floor-drop capture, removal, flush, and restore on `REDIS_WORLD_STATE` instead of
+  general Redis configuration.
+- Removed the unused floor-pickup writer and lookup APIs, eliminating a synchronous Redis
+  `SADD` from every tracked floor pickup.
+- Removed the unused floor-drop lookup API and stopped periodic player checkpoint work from
+  attempting floor flushes when world recovery is disabled.
+- Retained explicit cleanup of the legacy pickup set and floor hash for pwipe and operator
+  cleanup.
+- Added a focused contract that rejects floor-delta Redis work outside world recovery.
+
+Performance effect:
+
+- With the default `REDIS_WORLD_STATE=FALSE`, floor gameplay no longer performs floor-delta
+  Redis commands, snapshot-string allocation/copying, or retry-buffer maintenance.
+- World recovery enabled behavior retains its existing bounded batching and ACK rules.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_floor_world_gate.py`: passed.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed.
+- `python3 tests/async/test_redis_pwipe_invalidation.py`: passed.
+- `./scripts/format.sh --check`: passed.
 
 ### 2026-08-28 - RDS-012 database backup integrity
 
@@ -56,8 +85,8 @@ Validation:
 
 Remaining work:
 
-- All findings other than RDS-006 and RDS-012 remain open. The acceptance criteria are not
-  yet met.
+- All findings other than RDS-006, RDS-012, and RDS-019 remain open. The acceptance criteria
+  are not yet met.
 
 ## Executive summary
 
@@ -710,6 +739,8 @@ game-thread finalization pass that verifies captured revisions.
 
 Severity: Medium
 Confidence: Confirmed
+Remediation status: Completed on branch; disabled world recovery now performs no floor-delta
+capture, write, removal, lookup, restore, or periodic flush work.
 
 `.env.example` enables general Redis but disables world recovery. Floor drop buffering and
 the immediate floor-pickup `SADD` check only general Redis, while floor restore occurs only

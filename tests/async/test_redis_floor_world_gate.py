@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+"""Floor-delta work exists only when Redis world recovery is enabled."""
+
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+REDIS = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
+HEADER = (ROOT / "src" / "redis.h").read_text(encoding="ascii")
+ACTOBJ = (ROOT / "src" / "actobj.c").read_text(encoding="utf-8")
+
+
+def section(start: str, end: str) -> str:
+    first = REDIS.index(start)
+    return REDIS[first : REDIS.index(end, first)]
+
+
+assert "redis_log_floor_pickup" not in HEADER
+assert "redis_check_floor_pickup" not in HEADER
+assert "redis_check_floor_drop" not in HEADER
+assert "redis_log_floor_pickup" not in REDIS
+assert "redis_check_floor_pickup" not in REDIS
+assert "redis_check_floor_drop" not in REDIS
+assert "redis_log_floor_pickup" not in ACTOBJ
+assert "SADD mud:floor_pickups" not in REDIS
+assert "SISMEMBER mud:floor_pickups" not in REDIS
+assert "HEXISTS mud:floor_drops" not in REDIS
+
+drop = section("void redis_log_floor_drop", "bool redis_flush_floor_drops")
+flush = section("bool redis_flush_floor_drops", "void redis_remove_floor_drop")
+remove = section("void redis_remove_floor_drop", "static bool redis_clear_floor_drops_checked")
+restore = section("int redis_restore_floor_drops", "void mark_player_dirty")
+periodic = section("void event_flush_dirty_players", "bool redis_save_world_state")
+
+assert "!redis_world_state_enabled" in drop
+assert "!redis_world_state_enabled" in flush
+assert "!redis_world_state_enabled" in remove
+assert "!redis_world_state_enabled" in restore
+assert "if (redis_world_state_enabled)" in periodic
+assert "if (redis_enabled)" not in periodic
+
+# Cleanup intentionally remains available so old disabled-subsystem keys can be
+# removed by pwipe and administrator tooling.
+assert 'DEL mud:floor_pickups' in REDIS
+assert 'DEL mud:floor_drops' in REDIS
+
+print("Redis floor deltas are gated on world recovery")

@@ -544,38 +544,6 @@ void redis_load_obj_uid_counter(void)
 #endif
 }
 
-void redis_log_floor_pickup(unsigned long obj_uid)
-{
-	if (_pwipe)
-		return;
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx || obj_uid == 0)
-		return;
-
-	redisReply *reply =
-		(redisReply *)redis_command(redis_ctx, "SADD mud:floor_pickups %lu", obj_uid);
-	if (reply)
-		freeReplyObject(reply);
-#endif
-}
-
-bool redis_check_floor_pickup(unsigned long obj_uid)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx || obj_uid == 0)
-		return false;
-
-	redisReply *reply =
-		(redisReply *)redis_command(redis_ctx, "SISMEMBER mud:floor_pickups %lu", obj_uid);
-	bool found = (reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
-	if (reply)
-		freeReplyObject(reply);
-	return found;
-#else
-	return false;
-#endif
-}
-
 void redis_clear_floor_pickups(void)
 {
 #ifndef __NO_MYSQL__
@@ -614,7 +582,7 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 	if (_pwipe)
 		return;
 #ifndef __NO_MYSQL__
-	if (!obj || obj->obj_uid == 0)
+	if (!redis_world_state_enabled || !obj || obj->obj_uid == 0)
 		return;
 
 	// skip old corpses (vnum 2, value[6] is timestamp) - older than 24h
@@ -668,6 +636,8 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 bool redis_flush_floor_drops(void)
 {
 #ifndef __NO_MYSQL__
+	if (!redis_world_state_enabled)
+		return true;
 	if (world_recovery_floor_ack_pending || world_recovery_pipeline_busy())
 		return false;
 	if (!redis_enabled || !redis_ctx)
@@ -789,7 +759,7 @@ bool redis_flush_floor_drops(void)
 void redis_remove_floor_drop(unsigned long obj_uid)
 {
 #ifndef __NO_MYSQL__
-	if (obj_uid == 0)
+	if (!redis_world_state_enabled || obj_uid == 0)
 		return;
 
 	// check if it's in the pending batch - remove from there first
@@ -843,27 +813,10 @@ void redis_clear_floor_drops(void)
 	redis_clear_floor_drops_checked();
 }
 
-bool redis_check_floor_drop(unsigned long obj_uid)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx || obj_uid == 0)
-		return false;
-
-	redisReply *reply =
-		(redisReply *)redis_command(redis_ctx, "HEXISTS mud:floor_drops %lu", obj_uid);
-	bool found = (reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
-	if (reply)
-		freeReplyObject(reply);
-	return found;
-#else
-	return false;
-#endif
-}
-
 int redis_restore_floor_drops(void)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx)
+	if (!redis_world_state_enabled || !redis_enabled || !redis_ctx)
 		return 0;
 
 	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HGETALL mud:floor_drops");
@@ -1101,7 +1054,7 @@ void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, 
 
 	character_ids.clear();
 	cursor = 0;
-	if (redis_enabled)
+	if (redis_world_state_enabled)
 		redis_flush_floor_drops();
 }
 

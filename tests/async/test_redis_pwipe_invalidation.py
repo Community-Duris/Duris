@@ -9,7 +9,6 @@ sql = (ROOT / "src/sql.c").read_text()
 assert contains(header, "bool redis_clear_pwipe_state(void);")
 assert contains(source, "extern int                  _pwipe;")
 for signature in (
-    "void redis_log_floor_pickup(unsigned long obj_uid)",
     "void redis_log_floor_drop(P_obj obj, int room_vnum)",
     "void mark_player_dirty(int pid)",
 ):
