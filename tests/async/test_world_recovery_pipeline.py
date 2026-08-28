@@ -121,12 +121,27 @@ ensure = section(REDIS, "static bool redis_world_recovery_ensure_initialized", "
 assert "redis_world_writer_fence_claim()" in initialize
 assert "redis_world_writer_fence_claim()" not in ensure
 publisher = STORE[STORE.index("bool redis_world_store_publish"):]
-for token in ("WATCH mud:world_state:writer_fence", "token_matches", "MULTI",
-              "SET mud:world_state:generation:%llu %b", "world_state:current",
-              "world_state:timestamp", "world_state:sequence", "world_state:checksum",
-              "world_state:complete 1", "DEL mud:floor_drops", "PEXPIRE", "EXEC"):
+for token in (
+    "WORLD_PUBLISH_SCRIPT",
+    "EVAL %b 8",
+    "reply->type == REDIS_REPLY_INTEGER && reply->integer == 1",
+):
     assert token in publisher
-assert publisher.index("MULTI") < publisher.index("SET mud:world_state:generation:%llu %b") < publisher.index("EXEC")
+for token in (
+    "redis.call('GET',KEYS[1])~=ARGV[1]",
+    "current~=ARGV[2]",
+    "redis.call('SET',KEYS[3],ARGV[3])",
+    "redis.call('SET',KEYS[2],ARGV[4])",
+    "redis.call('DEL',KEYS[8])",
+    "redis.call('PEXPIRE',KEYS[1],ARGV[7])",
+):
+    assert token in STORE
+for token in ("mud:season:%llu:%s", "world_state:writer_fence",
+              "world_state:generation:", "world_state:current", "world_state:timestamp",
+              "world_state:sequence", "world_state:checksum", "world_state:complete",
+              "floor_drops"):
+    assert token in STORE
+assert publisher.index("GET %s") < publisher.index("EVAL %b 8")
 assert "header.sequence == sequence" in section(REDIS, "bool redis_has_world_state", "time_t redis_world_state_timestamp")
 assert "world_recovery_restore" in section(REDIS, "bool redis_load_world_state", "void event_save_world_state")
 restore = section(PIPELINE, "bool world_recovery_restore", "void world_recovery_capture_forget_character")
@@ -149,11 +164,9 @@ assert "redis_world_writer_fence_claim()" in quiesce
 assert "redis_world_store_release_fence" not in quiesce
 clear = section(REDIS, "bool redis_clear_world_state", "bool redis_load_world_state")
 assert clear.index("redis_world_recovery_quiesce()") < clear.index(
-    'redis_clear_scan_match("mud:world_state:generation:*")'
-)
-assert clear.index("if (!quiesced)") < clear.index(
-    'redis_clear_scan_match("mud:world_state:generation:*")'
-)
+    '"world_state:generation:*"'
+) < clear.index("redis_clear_scan_match(generation_pattern)")
+assert clear.index("if (!quiesced)") < clear.index("redis_clear_scan_match(generation_pattern)")
 cleanup = section(REDIS, "void redis_cleanup", "void redis_clear_floor_pickups")
 assert "redis_world_store_release_fence" in cleanup
 assert "world_recovery_capture_forget_character(ch);" in HANDLER

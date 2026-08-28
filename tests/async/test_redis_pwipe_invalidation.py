@@ -25,12 +25,14 @@ assert wipe.index("redis_clear_pwipe_state()") < wipe.rindex("return TRUE;")
 
 # Season caches must be wiped so old-season scoreboards/lists cannot resurrect.
 pwipe_fn = source[source.index("bool redis_clear_pwipe_state(void)"): source.index("void redis_cleanup(void)")]
-assert contains(pwipe_fn, "redis_invalidate_fraglist()")
-assert contains(pwipe_fn, "redis_invalidate_epic_zones()")
-assert contains(pwipe_fn, "redis_invalidate_artifact_cache()")
-assert contains(pwipe_fn, 'redis_cache_del("mud:cache:named")')
+assert contains(pwipe_fn, "redis_clear_floor_drops_checked()")
+for key in ("mud:floor_drops", "mud:floor_pickups", "mud:online",
+            "mud:world_state:current", "mud:world_state:timestamp",
+            "mud:world_state:sequence", "mud:world_state:checksum",
+            "mud:world_state:complete", "mud:world_state:writer_fence"):
+    assert contains(pwipe_fn, f'redis_delete_key_checked("{key}")')
 assert contains(pwipe_fn, 'redis_clear_scan_match("mud:cache:*)') or contains(pwipe_fn, 'redis_clear_scan_match("mud:cache:*")')
-assert contains(pwipe_fn, 'redis_clear_scan_match("mud:cache:artifact:*")')
+assert contains(pwipe_fn, 'redis_clear_scan_match("mud:world_state:generation:*")')
 assert contains(pwipe_fn, "redis_clear_ship_snapshots()")
 assert not contains(pwipe_fn, "FLUSHALL")
 assert contains(source, "redis_clear_scan_match")

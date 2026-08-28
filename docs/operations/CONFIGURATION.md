@@ -77,9 +77,14 @@ revisioned player-save pipeline and typed journal.
 
 World recovery is intentionally separate from player saves and reconstructible caches.
 At boot, one publisher claims a renewable 10-minute writer lease. Each background
-publication verifies that lease, writes the immutable sequence-keyed payload, advances
-the current pointer and diagnostic metadata, consumes the pre-capture floor hash, and
-renews the lease in one watched transaction. A stale or second writer cannot publish.
+publication verifies that lease and expected prior pointer, writes the immutable
+sequence-keyed payload, advances the current pointer and diagnostic metadata, consumes
+the pre-capture floor hash, and renews the lease in one atomic Lua compare-and-set. A
+stale or second writer cannot publish. The single script also reduces background Redis
+round trips compared with a watched transaction.
+All of those keys use `mud:season:<epoch>:` with the active SQL season epoch captured at
+boot. An old process can therefore write only its abandoned epoch after a reset; it cannot
+create a snapshot visible to the new season.
 Boot accepts only a complete, non-expired generation whose schema, sequence, size, and
 checksum validate. A failed or stale generation is ignored and the server continues with
 a normal boot.

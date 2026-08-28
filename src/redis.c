@@ -83,6 +83,7 @@ static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
 static bool world_recovery_quiesced = false;
 static std::string world_writer_token;
 static uint64_t world_writer_lease_msec = 0;
+static uint64_t world_writer_epoch = 0;
 static redisContext *donation_sub_ctx = NULL;
 static volatile bool donation_sub_connected = false;
 static unsigned int donation_reconnect_delay = 1;
@@ -90,6 +91,7 @@ static time_t donation_next_reconnect = 0;
 static std::string donation_secret;
 static std::vector<std::string> donation_seen_event_ids;
 static void donation_sub_drop(const char *reason);
+static bool redis_clear_floor_drops_checked(void);
 
 static void donation_schedule_reconnect(void)
 {
@@ -144,7 +146,31 @@ static redis_world_store_config redis_world_store_config_copy(void)
 	}
 	config.connect_timeout_msec = REDIS_CONNECT_TIMEOUT_MSEC;
 	config.command_timeout_msec = REDIS_COMMAND_TIMEOUT_MSEC;
+	config.season_epoch = world_writer_epoch ? world_writer_epoch : sql_season_epoch();
 	return config;
+}
+
+static bool redis_epoch_key(char *buffer, size_t size, uint64_t epoch, const char *suffix)
+{
+	if (!buffer || size < 64 || !epoch || !suffix || !*suffix)
+		return false;
+	const int written =
+		snprintf(buffer, size, "mud:season:%llu:%s", (unsigned long long)epoch, suffix);
+	return written > 0 && (size_t)written < size;
+}
+
+bool redis_season_key(char *buffer, size_t size, const char *suffix)
+{
+	return redis_epoch_key(buffer, size, sql_season_epoch(), suffix);
+}
+
+static bool redis_world_generation_key(char *buffer, size_t size, uint64_t epoch, uint64_t sequence)
+{
+	char suffix[96];
+	const int written = snprintf(suffix, sizeof suffix, "world_state:generation:%llu",
+				     (unsigned long long)sequence);
+	return written > 0 && (size_t)written < sizeof suffix &&
+	       redis_epoch_key(buffer, size, epoch, suffix);
 }
 
 static bool redis_world_writer_token_create(void)
@@ -170,8 +196,14 @@ static bool redis_world_writer_fence_claim(void)
 		return redis_world_store_renew_fence(&config, world_writer_token.c_str(),
 						     world_writer_lease_msec);
 	}
-	if (!redis_world_writer_token_create())
+	world_writer_epoch = sql_season_epoch();
+	if (!world_writer_epoch)
 		return false;
+	if (!redis_world_writer_token_create())
+	{
+		world_writer_epoch = 0;
+		return false;
+	}
 	world_writer_lease_msec = 10 * 60 * 1000;
 	const redis_world_store_config config = redis_world_store_config_copy();
 	if (redis_world_store_claim_fence(&config, world_writer_token.c_str(),
@@ -179,6 +211,7 @@ static bool redis_world_writer_fence_claim(void)
 		return true;
 	world_writer_token.clear();
 	world_writer_lease_msec = 0;
+	world_writer_epoch = 0;
 	return false;
 }
 
@@ -207,12 +240,17 @@ static bool redis_world_recovery_ensure_initialized(void)
 		redis_world_store_release_fence(&config, world_writer_token.c_str());
 		world_writer_token.clear();
 		world_writer_lease_msec = 0;
+		world_writer_epoch = 0;
 		return false;
 	}
 	if (redis_ctx)
 	{
+		char current_key[128];
 		redisReply *sequence_reply =
-			(redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
+			redis_epoch_key(current_key, sizeof current_key, world_writer_epoch,
+					"world_state:current") ?
+				(redisReply *)redis_command(redis_ctx, "GET %s", current_key) :
+				NULL;
 		if (sequence_reply && sequence_reply->type == REDIS_REPLY_STRING &&
 		    sequence_reply->str)
 			world_recovery_pipeline_set_sequence_floor(
@@ -313,6 +351,22 @@ static bool redis_clear_scan_match(const char *pattern)
 #endif
 }
 
+static bool redis_delete_key_checked(const char *key)
+{
+#ifndef __NO_MYSQL__
+	if (!key || !*key || !redis_enabled || !redis_ctx)
+		return false;
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s", key);
+	const bool deleted = reply && reply->type == REDIS_REPLY_INTEGER;
+	if (reply)
+		freeReplyObject(reply);
+	return deleted;
+#else
+	(void)key;
+	return true;
+#endif
+}
+
 // rnum to vnum
 static int get_room_vnum(P_char ch)
 {
@@ -381,6 +435,7 @@ bool redis_init(void)
 	world_recovery_quiesced = false;
 	world_writer_token.clear();
 	world_writer_lease_msec = 0;
+	world_writer_epoch = 0;
 	redis_donation_enabled = false;
 	donation_secret.clear();
 	const char *donation_env = getenv("REDIS_DONATION_SUBSCRIBER");
@@ -481,19 +536,17 @@ bool redis_clear_pwipe_state(void)
 
 	if (!redis_clear_world_state())
 		return false;
-	redis_clear_floor_drops();
-	redis_clear_floor_pickups();
-	redis_clear_online_players();
-	/* Explicit season caches: leave no online-scoreboard / list bleed into new season. */
-	redis_invalidate_fraglist();
-	redis_invalidate_epic_zones();
-	redis_invalidate_artifact_cache();
-	redis_cache_del("mud:cache:named");
-	if (!redis_clear_scan_match("mud:cache:artifact:*"))
-		return false;
-	if (!redis_clear_scan_match("mud:cache:*"))
-		return false;
-	return redis_clear_ship_snapshots();
+	return redis_clear_floor_drops_checked() && redis_delete_key_checked("mud:floor_drops") &&
+	       redis_delete_key_checked("mud:floor_pickups") &&
+	       redis_delete_key_checked("mud:online") &&
+	       redis_clear_scan_match("mud:world_state:generation:*") &&
+	       redis_delete_key_checked("mud:world_state:current") &&
+	       redis_delete_key_checked("mud:world_state:timestamp") &&
+	       redis_delete_key_checked("mud:world_state:sequence") &&
+	       redis_delete_key_checked("mud:world_state:checksum") &&
+	       redis_delete_key_checked("mud:world_state:complete") &&
+	       redis_delete_key_checked("mud:world_state:writer_fence") &&
+	       redis_clear_scan_match("mud:cache:*") && redis_clear_ship_snapshots();
 }
 
 bool redis_validate_pwipe_state(void)
@@ -545,6 +598,7 @@ void redis_cleanup(void)
 	}
 	world_writer_token.clear();
 	world_writer_lease_msec = 0;
+	world_writer_epoch = 0;
 	if (redis_ctx)
 	{
 		redisFree(redis_ctx);
@@ -666,12 +720,15 @@ bool redis_flush_floor_drops(void)
 
 	if (floor_drop_batch_count == 0 && floor_drop_remove_count == 0)
 		return true;
+	char floor_key[128];
+	if (!redis_season_key(floor_key, sizeof floor_key, "floor_drops"))
+		return false;
 
 	// process removes first
 	for (int i = 0; i < floor_drop_remove_count; i++)
 	{
-		redisReply *reply = (redisReply *)redis_command(
-			redis_ctx, "HDEL mud:floor_drops %lu", floor_drop_removes[i]);
+		redisReply *reply = (redisReply *)redis_command(redis_ctx, "HDEL %s %lu", floor_key,
+								floor_drop_removes[i]);
 		if (!reply || reply->type != REDIS_REPLY_INTEGER)
 		{
 			if (reply)
@@ -744,9 +801,8 @@ bool redis_flush_floor_drops(void)
 		if (!json_str)
 			return false;
 
-		redisReply *reply = (redisReply *)redis_command(redis_ctx,
-								"HSET mud:floor_drops %lu %s",
-								floor_drop_batch[i].uid, json_str);
+		redisReply *reply = (redisReply *)redis_command(
+			redis_ctx, "HSET %s %lu %s", floor_key, floor_drop_batch[i].uid, json_str);
 		free(json_str);
 		if (!reply || reply->type != REDIS_REPLY_INTEGER)
 		{
@@ -814,8 +870,12 @@ static bool redis_clear_floor_drops_checked(void)
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_ctx)
 		return false;
+	char floor_key[128];
+	const uint64_t epoch = world_writer_epoch ? world_writer_epoch : sql_season_epoch();
+	if (!redis_epoch_key(floor_key, sizeof floor_key, epoch, "floor_drops"))
+		return false;
 
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL mud:floor_drops");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s", floor_key);
 	if (!reply || reply->type != REDIS_REPLY_INTEGER)
 	{
 		if (reply)
@@ -839,8 +899,11 @@ int redis_restore_floor_drops(void)
 #ifndef __NO_MYSQL__
 	if (!redis_world_state_enabled || !redis_enabled || !redis_ctx)
 		return 0;
+	char floor_key[128];
+	if (!redis_season_key(floor_key, sizeof floor_key, "floor_drops"))
+		return 0;
 
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HGETALL mud:floor_drops");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HGETALL %s", floor_key);
 	if (!reply || reply->type != REDIS_REPLY_ARRAY)
 	{
 		if (reply)
@@ -1181,7 +1244,11 @@ bool redis_has_world_state(void)
 
 	// The atomic current pointer and self-validating framed blob are authoritative.
 	// Other metadata keys are operator diagnostics and cannot invalidate a good blob.
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
+	const uint64_t epoch = sql_season_epoch();
+	char current_key[128];
+	if (!redis_epoch_key(current_key, sizeof current_key, epoch, "world_state:current"))
+		return false;
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", current_key);
 	if (!reply)
 		return false;
 	uint64_t sequence = 0;
@@ -1190,8 +1257,10 @@ bool redis_has_world_state(void)
 	freeReplyObject(reply);
 	if (!sequence)
 		return false;
-	reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:generation:%llu",
-					    (unsigned long long)sequence);
+	char generation_key[160];
+	if (!redis_world_generation_key(generation_key, sizeof generation_key, epoch, sequence))
+		return false;
+	reply = (redisReply *)redis_command(redis_ctx, "GET %s", generation_key);
 	if (!reply)
 		return false;
 	world_recovery_header header = {};
@@ -1212,8 +1281,11 @@ time_t redis_world_state_timestamp(void)
 #else
 	if (!redis_enabled || !redis_ctx)
 		return 0;
+	char timestamp_key[128];
+	if (!redis_season_key(timestamp_key, sizeof timestamp_key, "world_state:timestamp"))
+		return 0;
 
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:world_state:timestamp");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", timestamp_key);
 	if (!reply)
 		return 0;
 
@@ -1234,11 +1306,30 @@ bool redis_clear_world_state(void)
 	const bool quiesced = redis_world_recovery_quiesce();
 	if (!quiesced)
 		return false;
-	const bool generations_cleared = redis_clear_scan_match("mud:world_state:generation:*");
+	char generation_pattern[160];
+	char current_key[128];
+	char timestamp_key[128];
+	char sequence_key[128];
+	char checksum_key[128];
+	char complete_key[128];
+	if (!redis_epoch_key(generation_pattern, sizeof generation_pattern, world_writer_epoch,
+			     "world_state:generation:*") ||
+	    !redis_epoch_key(current_key, sizeof current_key, world_writer_epoch,
+			     "world_state:current") ||
+	    !redis_epoch_key(timestamp_key, sizeof timestamp_key, world_writer_epoch,
+			     "world_state:timestamp") ||
+	    !redis_epoch_key(sequence_key, sizeof sequence_key, world_writer_epoch,
+			     "world_state:sequence") ||
+	    !redis_epoch_key(checksum_key, sizeof checksum_key, world_writer_epoch,
+			     "world_state:checksum") ||
+	    !redis_epoch_key(complete_key, sizeof complete_key, world_writer_epoch,
+			     "world_state:complete"))
+		return false;
+	const bool generations_cleared = redis_clear_scan_match(generation_pattern);
 
-	redisReply *reply = (redisReply *)redis_command(
-		redis_ctx,
-		"DEL mud:world_state:current mud:world_state:timestamp mud:world_state:sequence mud:world_state:checksum mud:world_state:complete");
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s %s %s %s %s",
+							current_key, timestamp_key, sequence_key,
+							checksum_key, complete_key);
 	const bool metadata_cleared = reply && reply->type == REDIS_REPLY_INTEGER;
 	if (reply)
 		freeReplyObject(reply);
@@ -1267,8 +1358,11 @@ bool redis_load_world_state(void)
 
 	// restore floor drops first - has most recent data
 	redis_restore_floor_drops();
-	redisReply *sequence_reply =
-		(redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
+	const uint64_t epoch = sql_season_epoch();
+	char current_key[128];
+	if (!redis_epoch_key(current_key, sizeof current_key, epoch, "world_state:current"))
+		return false;
+	redisReply *sequence_reply = (redisReply *)redis_command(redis_ctx, "GET %s", current_key);
 	if (!sequence_reply)
 		return false;
 	uint64_t expected_sequence = 0;
@@ -1278,9 +1372,11 @@ bool redis_load_world_state(void)
 	if (!expected_sequence)
 		return false;
 
-	redisReply *reply = (redisReply *)redis_command(redis_ctx,
-							"GET mud:world_state:generation:%llu",
-							(unsigned long long)expected_sequence);
+	char generation_key[160];
+	if (!redis_world_generation_key(generation_key, sizeof generation_key, epoch,
+					expected_sequence))
+		return false;
+	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", generation_key);
 	if (!reply || redis_ctx->err)
 	{
 		if (reply)

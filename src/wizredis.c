@@ -72,7 +72,10 @@ static void redis_status_simple(P_char ch)
 			"  &+cplayer_queue&n     &+Y%-5d&n    pending saves\r\n", dirty);
 
 	// floor drops
-	long floor_count = redis_hlen("mud:floor_drops");
+	char floor_key[128];
+	long floor_count = redis_season_key(floor_key, sizeof floor_key, "floor_drops") ?
+				   redis_hlen(floor_key) :
+				   -1;
 	pos += snprintf(buf + pos, sizeof(buf) - pos,
 			"  &+cfloor_drops&n      &+Y%-5ld&n    objects\r\n", floor_count);
 
@@ -141,7 +144,10 @@ static void redis_status_detailed(P_char ch)
 	}
 
 	// floor drops
-	long floor_drops = redis_hlen("mud:floor_drops");
+	char floor_key[128];
+	long floor_drops = redis_season_key(floor_key, sizeof floor_key, "floor_drops") ?
+				   redis_hlen(floor_key) :
+				   -1;
 	APPENDF(buf, "  &+cfloor_drops&n      &+Y%-5ld&n    objects tracked\r\n", floor_drops);
 
 	// floor pickups

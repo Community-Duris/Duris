@@ -12,11 +12,12 @@ sequence, record counts, payload length, completeness, and CRC32.
 
 ## Atomic Publication
 
-The worker first writes an immutable `mud:world_state:generation:<sequence>` blob. It
-then atomically swaps the small `mud:world_state:current` pointer and diagnostic metadata
-with Redis `MULTI`/`EXEC`. A failed blob write or unexecuted pointer transaction leaves
-the previous current generation recoverable. After a verified swap, the previous blob
-is removed.
+The worker passes the immutable generation blob to one Redis Lua compare-and-set. The
+script verifies the writer token and expected prior pointer while atomically writing
+`mud:season:<epoch>:world_state:generation:<sequence>`, swapping the small
+`mud:season:<epoch>:world_state:current` pointer and diagnostic metadata, consuming the
+stable floor hash, and renewing the lease. A rejected script leaves the previous current
+generation recoverable. After a verified swap, the previous blob is removed.
 
 Boot trusts neither the diagnostic `valid` flag nor a partial key set. It loads the
 current pointer and accepts the referenced generation only when magic, schema, header

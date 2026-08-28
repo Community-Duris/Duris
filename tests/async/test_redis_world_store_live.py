@@ -42,7 +42,7 @@ static redisReply *run(redisContext *context, const char *command)
 int main(int argc, char **argv)
 {
     assert(argc == 2);
-    redis_world_store_config config = {"127.0.0.1", atoi(argv[1]), 250, 100};
+    redis_world_store_config config = {"127.0.0.1", atoi(argv[1]), 250, 100, 42};
     constexpr const char *writer_a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     constexpr const char *writer_b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     constexpr uint64_t lease = 600000;
@@ -56,30 +56,30 @@ int main(int argc, char **argv)
 
     redisContext *context = redisConnect("127.0.0.1", config.port);
     assert(context && !context->err);
-    freeReplyObject(run(context, "HSET mud:floor_drops 100 delta"));
+    freeReplyObject(run(context, "HSET mud:season:42:floor_drops 100 delta"));
 
     assert(!redis_world_store_publish(&config, writer_b, lease, first, sizeof(first) - 1,
                                       1, time(nullptr), 11));
-    redisReply *reply = run(context, "EXISTS mud:world_state:current");
+    redisReply *reply = run(context, "EXISTS mud:season:42:world_state:current");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
-    reply = run(context, "HLEN mud:floor_drops");
+    reply = run(context, "HLEN mud:season:42:floor_drops");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
     freeReplyObject(reply);
 
     assert(redis_world_store_publish(&config, writer_a, lease, first, sizeof(first) - 1,
                                      1, time(nullptr), 11));
-    reply = run(context, "GET mud:world_state:current");
+    reply = run(context, "GET mud:season:42:world_state:current");
     assert(reply->type == REDIS_REPLY_STRING && !strcmp(reply->str, "1"));
     freeReplyObject(reply);
-    reply = run(context, "EXISTS mud:floor_drops");
+    reply = run(context, "EXISTS mud:season:42:floor_drops");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
 
-    freeReplyObject(run(context, "HSET mud:floor_drops 200 newer-delta"));
+    freeReplyObject(run(context, "HSET mud:season:42:floor_drops 200 newer-delta"));
     assert(!redis_world_store_publish(&config, writer_b, lease, second,
                                       sizeof(second) - 1, 2, time(nullptr), 22));
-    reply = run(context, "HLEN mud:floor_drops");
+    reply = run(context, "HLEN mud:season:42:floor_drops");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
     freeReplyObject(reply);
 
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     assert(redis_world_store_renew_fence(&config, writer_b, lease));
     assert(redis_world_store_publish(&config, writer_b, lease, second, sizeof(second) - 1,
                                      2, time(nullptr), 22));
-    reply = run(context, "MGET mud:world_state:current mud:world_state:generation:1 mud:world_state:generation:2");
+    reply = run(context, "MGET mud:season:42:world_state:current mud:season:42:world_state:generation:1 mud:season:42:world_state:generation:2");
     assert(reply->type == REDIS_REPLY_ARRAY && reply->elements == 3);
     assert(reply->element[0]->type == REDIS_REPLY_STRING && !strcmp(reply->element[0]->str, "2"));
     assert(reply->element[1]->type == REDIS_REPLY_NIL);
@@ -97,11 +97,28 @@ int main(int argc, char **argv)
            reply->element[2]->len == sizeof(second) - 1 &&
            !memcmp(reply->element[2]->str, second, sizeof(second) - 1));
     freeReplyObject(reply);
-    reply = run(context, "EXISTS mud:floor_drops");
+    reply = run(context, "EXISTS mud:season:42:floor_drops");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
     assert(!redis_world_store_release_fence(&config, writer_a));
+
+    redis_world_store_config next_season = config;
+    next_season.season_epoch = 43;
+    assert(redis_world_store_claim_fence(&next_season, writer_a, lease));
+    reply = run(context, "EXISTS mud:season:43:world_state:current");
+    assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
+    freeReplyObject(reply);
+    assert(redis_world_store_publish(&next_season, writer_a, lease, first,
+                                     sizeof(first) - 1, 1, time(nullptr), 33));
+    assert(redis_world_store_publish(&config, writer_b, lease, second, sizeof(second) - 1,
+                                     3, time(nullptr), 44));
+    reply = run(context, "MGET mud:season:42:world_state:current mud:season:43:world_state:current");
+    assert(reply->type == REDIS_REPLY_ARRAY && reply->elements == 2);
+    assert(reply->element[0]->type == REDIS_REPLY_STRING && !strcmp(reply->element[0]->str, "3"));
+    assert(reply->element[1]->type == REDIS_REPLY_STRING && !strcmp(reply->element[1]->str, "1"));
+    freeReplyObject(reply);
     assert(redis_world_store_release_fence(&config, writer_b));
+    assert(redis_world_store_release_fence(&next_season, writer_a));
     redisFree(context);
     return 0;
 }

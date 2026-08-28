@@ -39,9 +39,10 @@ assert "!redis_world_state_enabled" in restore
 assert "if (redis_world_state_enabled)" in periodic
 assert "if (redis_enabled)" not in periodic
 
-# Cleanup intentionally remains available so old disabled-subsystem keys can be
-# removed by pwipe and administrator tooling.
+# Cleanup intentionally remains available for the retired pickup key and the
+# current season-scoped floor hash.
 assert 'DEL mud:floor_pickups' in REDIS
-assert 'DEL mud:floor_drops' in REDIS
+assert 'redis_season_key(floor_key, sizeof floor_key, "floor_drops")' in REDIS
+assert 'redis_command(redis_ctx, "DEL %s", floor_key)' in REDIS
 
 print("Redis floor deltas are gated on world recovery")

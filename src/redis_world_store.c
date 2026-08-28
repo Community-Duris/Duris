@@ -3,12 +3,68 @@
 #include <hiredis/hiredis.h>
 
 #include <cstdarg>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <sys/time.h>
 
 namespace
 {
+struct world_keys
+{
+	char fence[128];
+	char current[128];
+	char timestamp[128];
+	char sequence[128];
+	char checksum[128];
+	char complete[128];
+	char floor_drops[128];
+};
+
+constexpr const char *WORLD_PUBLISH_SCRIPT =
+	"if redis.call('GET',KEYS[1])~=ARGV[1] then return 0 end "
+	"local current=redis.call('GET',KEYS[2]) "
+	"if ARGV[2]=='' then if current then return 0 end "
+	"elseif current~=ARGV[2] then return 0 end "
+	"redis.call('SET',KEYS[3],ARGV[3]) "
+	"redis.call('SET',KEYS[2],ARGV[4]) "
+	"redis.call('SET',KEYS[4],ARGV[5]) "
+	"redis.call('SET',KEYS[5],ARGV[4]) "
+	"redis.call('SET',KEYS[6],ARGV[6]) "
+	"redis.call('SET',KEYS[7],'1') "
+	"redis.call('DEL',KEYS[8]) "
+	"redis.call('PEXPIRE',KEYS[1],ARGV[7]) "
+	"return 1";
+
+bool format_key(char *buffer, size_t size, uint64_t epoch, const char *suffix)
+{
+	if (!buffer || size < 64 || !epoch || !suffix || !*suffix)
+		return false;
+	const int written =
+		snprintf(buffer, size, "mud:season:%llu:%s", (unsigned long long)epoch, suffix);
+	return written > 0 && (size_t)written < size;
+}
+
+bool build_keys(const redis_world_store_config *config, world_keys *keys)
+{
+	return config && keys && config->season_epoch &&
+	       format_key(keys->fence, sizeof keys->fence, config->season_epoch,
+			  "world_state:writer_fence") &&
+	       format_key(keys->current, sizeof keys->current, config->season_epoch,
+			  "world_state:current") &&
+	       format_key(keys->timestamp, sizeof keys->timestamp, config->season_epoch,
+			  "world_state:timestamp") &&
+	       format_key(keys->sequence, sizeof keys->sequence, config->season_epoch,
+			  "world_state:sequence") &&
+	       format_key(keys->checksum, sizeof keys->checksum, config->season_epoch,
+			  "world_state:checksum") &&
+	       format_key(keys->complete, sizeof keys->complete, config->season_epoch,
+			  "world_state:complete") &&
+	       format_key(keys->floor_drops, sizeof keys->floor_drops, config->season_epoch,
+			  "floor_drops");
+}
+
 redisContext *connect_bounded(const redis_world_store_config *config)
 {
 	if (!config || !config->host || !*config->host || config->port <= 0 ||
@@ -57,9 +113,9 @@ bool status_ok(redisReply *reply)
 	return result;
 }
 
-bool token_matches(redisContext *context, const char *writer_token)
+bool token_matches(redisContext *context, const char *fence_key, const char *writer_token)
 {
-	redisReply *reply = command(context, "GET mud:world_state:writer_fence");
+	redisReply *reply = command(context, "GET %s", fence_key);
 	const bool matches = reply && reply->type == REDIS_REPLY_STRING && reply->str &&
 			     reply->len == strlen(writer_token) &&
 			     memcmp(reply->str, writer_token, reply->len) == 0;
@@ -79,7 +135,8 @@ void end_watch(redisContext *context, bool transaction_started)
 bool redis_world_store_claim_fence(const struct redis_world_store_config *config,
 				   const char *writer_token, uint64_t lease_msec)
 {
-	if (!writer_token || !*writer_token || !lease_msec)
+	world_keys keys = {};
+	if (!writer_token || !*writer_token || !lease_msec || !build_keys(config, &keys))
 		return false;
 	redisContext *context = connect_bounded(config);
 	if (!context || context->err)
@@ -88,9 +145,9 @@ bool redis_world_store_claim_fence(const struct redis_world_store_config *config
 			redisFree(context);
 		return false;
 	}
-	const bool claimed = status_ok(
-		command(context, "SET mud:world_state:writer_fence %b NX PX %llu", writer_token,
-			strlen(writer_token), (unsigned long long)lease_msec));
+	const bool claimed =
+		status_ok(command(context, "SET %s %b NX PX %llu", keys.fence, writer_token,
+				  strlen(writer_token), (unsigned long long)lease_msec));
 	redisFree(context);
 	return claimed;
 }
@@ -98,7 +155,8 @@ bool redis_world_store_claim_fence(const struct redis_world_store_config *config
 bool redis_world_store_renew_fence(const struct redis_world_store_config *config,
 				   const char *writer_token, uint64_t lease_msec)
 {
-	if (!writer_token || !*writer_token || !lease_msec)
+	world_keys keys = {};
+	if (!writer_token || !*writer_token || !lease_msec || !build_keys(config, &keys))
 		return false;
 	redisContext *context = connect_bounded(config);
 	if (!context || context->err)
@@ -108,12 +166,13 @@ bool redis_world_store_renew_fence(const struct redis_world_store_config *config
 		return false;
 	}
 	bool transaction_started = false;
-	bool renewed = status_ok(command(context, "WATCH mud:world_state:writer_fence")) &&
-		       token_matches(context, writer_token) && status_ok(command(context, "MULTI"));
+	bool renewed = status_ok(command(context, "WATCH %s", keys.fence)) &&
+		       token_matches(context, keys.fence, writer_token) &&
+		       status_ok(command(context, "MULTI"));
 	if (renewed)
 	{
 		transaction_started = true;
-		redisReply *queued = command(context, "PEXPIRE mud:world_state:writer_fence %llu",
+		redisReply *queued = command(context, "PEXPIRE %s %llu", keys.fence,
 					     (unsigned long long)lease_msec);
 		renewed = queued && queued->type == REDIS_REPLY_STATUS;
 		if (queued)
@@ -137,7 +196,8 @@ bool redis_world_store_renew_fence(const struct redis_world_store_config *config
 bool redis_world_store_release_fence(const struct redis_world_store_config *config,
 				     const char *writer_token)
 {
-	if (!writer_token || !*writer_token)
+	world_keys keys = {};
+	if (!writer_token || !*writer_token || !build_keys(config, &keys))
 		return false;
 	redisContext *context = connect_bounded(config);
 	if (!context || context->err)
@@ -147,13 +207,13 @@ bool redis_world_store_release_fence(const struct redis_world_store_config *conf
 		return false;
 	}
 	bool transaction_started = false;
-	bool released = status_ok(command(context, "WATCH mud:world_state:writer_fence")) &&
-			token_matches(context, writer_token) &&
+	bool released = status_ok(command(context, "WATCH %s", keys.fence)) &&
+			token_matches(context, keys.fence, writer_token) &&
 			status_ok(command(context, "MULTI"));
 	if (released)
 	{
 		transaction_started = true;
-		redisReply *queued = command(context, "DEL mud:world_state:writer_fence");
+		redisReply *queued = command(context, "DEL %s", keys.fence);
 		released = queued && queued->type == REDIS_REPLY_STATUS;
 		if (queued)
 			freeReplyObject(queued);
@@ -178,8 +238,13 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 			       const unsigned char *data, size_t size, uint64_t sequence,
 			       int64_t timestamp, uint32_t checksum)
 {
+	world_keys keys = {};
+	char generation[160];
+	const std::string generation_suffix = "world_state:generation:" + std::to_string(sequence);
 	if (!writer_token || !*writer_token || !lease_msec || !data || !size || !sequence ||
-	    timestamp <= 0)
+	    timestamp <= 0 || !build_keys(config, &keys) ||
+	    !format_key(generation, sizeof generation, config->season_epoch,
+			generation_suffix.c_str()))
 		return false;
 	redisContext *context = connect_bounded(config);
 	if (!context || context->err)
@@ -189,69 +254,46 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 		return false;
 	}
 
-	bool transaction_started = false;
-	bool valid = status_ok(command(context, "WATCH mud:world_state:writer_fence")) &&
-		     token_matches(context, writer_token);
 	uint64_t previous_sequence = 0;
-	if (valid)
-	{
-		redisReply *reply = command(context, "GET mud:world_state:current");
-		if (reply && reply->type == REDIS_REPLY_STRING && reply->str)
-			previous_sequence = strtoull(reply->str, nullptr, 10);
-		if (reply)
-			freeReplyObject(reply);
-		valid = status_ok(command(context, "MULTI"));
-		transaction_started = valid;
-	}
+	redisReply *current_reply = command(context, "GET %s", keys.current);
+	bool valid = current_reply &&
+		     (current_reply->type == REDIS_REPLY_NIL ||
+		      (current_reply->type == REDIS_REPLY_STRING && current_reply->str));
+	if (valid && current_reply->type == REDIS_REPLY_STRING)
+		previous_sequence = strtoull(current_reply->str, nullptr, 10);
+	if (current_reply)
+		freeReplyObject(current_reply);
 
-	const char *commands[] = {
-		"SET mud:world_state:generation:%llu %b",
-		"SET mud:world_state:current %llu",
-		"SET mud:world_state:timestamp %lld",
-		"SET mud:world_state:sequence %llu",
-		"SET mud:world_state:checksum %u",
-		"SET mud:world_state:complete 1",
-		"DEL mud:floor_drops",
-		"PEXPIRE mud:world_state:writer_fence %llu",
-	};
-	redisReply *queued[8] = {};
+	char expected[32] = {};
+	const int expected_length = previous_sequence ?
+					    snprintf(expected, sizeof expected, "%llu",
+						     (unsigned long long)previous_sequence) :
+					    0;
+	if (expected_length < 0 || (size_t)expected_length >= sizeof expected)
+		valid = false;
 	if (valid)
 	{
-		queued[0] = command(context, commands[0], (unsigned long long)sequence, data, size);
-		queued[1] = command(context, commands[1], (unsigned long long)sequence);
-		queued[2] = command(context, commands[2], (long long)timestamp);
-		queued[3] = command(context, commands[3], (unsigned long long)sequence);
-		queued[4] = command(context, commands[4], checksum);
-		queued[5] = command(context, commands[5]);
-		queued[6] = command(context, commands[6]);
-		queued[7] = command(context, commands[7], (unsigned long long)lease_msec);
-		for (redisReply *reply : queued)
-			if (!reply || reply->type != REDIS_REPLY_STATUS)
-				valid = false;
-		for (redisReply *reply : queued)
-			if (reply)
-				freeReplyObject(reply);
-	}
-
-	if (valid)
-	{
-		redisReply *reply = command(context, "EXEC");
-		valid = reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 8;
-		if (valid)
-			for (size_t index = 0; index < reply->elements; ++index)
-				if (!reply->element[index] ||
-				    reply->element[index]->type == REDIS_REPLY_ERROR)
-					valid = false;
+		redisReply *reply = command(
+			context, "EVAL %b 8 %s %s %s %s %s %s %s %s %b %b %b %llu %lld %u %llu",
+			WORLD_PUBLISH_SCRIPT, strlen(WORLD_PUBLISH_SCRIPT), keys.fence,
+			keys.current, generation, keys.timestamp, keys.sequence, keys.checksum,
+			keys.complete, keys.floor_drops, writer_token, strlen(writer_token),
+			expected, (size_t)expected_length, data, size, (unsigned long long)sequence,
+			(long long)timestamp, checksum, (unsigned long long)lease_msec);
+		valid = reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1;
 		if (reply)
 			freeReplyObject(reply);
 	}
-	else
-		end_watch(context, transaction_started);
 
 	if (valid && previous_sequence && previous_sequence != sequence)
 	{
-		redisReply *reply = command(context, "DEL mud:world_state:generation:%llu",
-					    (unsigned long long)previous_sequence);
+		char previous[160];
+		const std::string previous_suffix =
+			"world_state:generation:" + std::to_string(previous_sequence);
+		redisReply *reply = format_key(previous, sizeof previous, config->season_epoch,
+					       previous_suffix.c_str()) ?
+					    command(context, "DEL %s", previous) :
+					    nullptr;
 		if (reply)
 			freeReplyObject(reply);
 	}

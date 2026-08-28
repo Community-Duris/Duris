@@ -78,11 +78,13 @@ assert "bool take_reaped_child_status(pid_t pid, int *status)" in signals
 print("[PASS] player and world persistence child paths are fully retired")
 
 publisher = store[store.index("bool redis_world_store_publish"):]
-assert "WATCH mud:world_state:writer_fence" in publisher
-assert "MULTI" in publisher and "EXEC" in publisher and "DISCARD" in store
-assert "world_state:sequence" in publisher and "world_state:checksum" in publisher
-assert "DEL mud:floor_drops" in publisher and "PEXPIRE" in publisher
-print("[PASS] null, timeout, error reply, or incomplete world transaction forces worker failure")
+assert "WORLD_PUBLISH_SCRIPT" in publisher and "EVAL %b 8" in publisher
+assert "redis.call('GET',KEYS[1])~=ARGV[1]" in store
+assert "current~=ARGV[2]" in store
+assert "reply->type == REDIS_REPLY_INTEGER && reply->integer == 1" in publisher
+assert "world_state:sequence" in store and "world_state:checksum" in store
+assert "redis.call('DEL',KEYS[8])" in store and "PEXPIRE" in store
+print("[PASS] null, timeout, error reply, or rejected world CAS forces worker failure")
 
 floor_flush = section("bool redis_flush_floor_drops(void)", "void redis_remove_floor_drop")
 assert "world_recovery_pipeline_busy()" in floor_flush

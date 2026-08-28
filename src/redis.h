@@ -86,6 +86,7 @@ long redis_hlen(const char *key);
 long redis_scard(const char *key);
 bool redis_clear_pwipe_state(void);
 bool redis_validate_pwipe_state(void);
+bool redis_season_key(char *buffer, size_t size, const char *suffix);
 
 // Legacy ship snapshot cleanup. MySQL is the only ship read authority.
 void redis_invalidate_ship_snapshot(const char *owner_name);

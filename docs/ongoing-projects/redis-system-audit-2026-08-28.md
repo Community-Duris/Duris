@@ -3,10 +3,56 @@
 Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
-Status: Implementation in progress; RDS-002, RDS-003, RDS-006, RDS-010, RDS-012, RDS-013,
-RDS-014, RDS-019, and RDS-028 are remediated and the remaining findings are open.
+Status: Implementation in progress; RDS-002, RDS-003, RDS-006, RDS-007, RDS-010, RDS-012,
+RDS-013, RDS-014, RDS-019, and RDS-028 are remediated and the remaining findings are
+open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-001/RDS-007 epoch-scoped world recovery
+
+Completed in this interval:
+
+- Changed world generations, pointer metadata, writer leases, and the floor-delta hash to
+  the `mud:season:<epoch>:` namespace. Readers use the active SQL epoch; the background
+  publisher captures its epoch once when it acquires the boot lease.
+- Preserved `(epoch, sequence)` identity across generation publication, validation,
+  restore, previous-generation cleanup, floor handoff, status, and administrator clear
+  paths.
+- Added cross-epoch live Redis coverage. The old and new writers can overlap, but an old
+  writer advances only its old pointer while the new epoch remains unchanged.
+- Replaced multi-round-trip watched publication with one Lua compare-and-set that checks
+  the exact writer token and expected prior pointer before atomically writing the
+  generation, pointer metadata, floor handoff, and lease renewal.
+- Made pwipe invalidation check the current captured-epoch floor delete, legacy floor and
+  recovery keys, presence, all cache scans, and ship snapshot scans. Removed redundant
+  unchecked cache deletion calls from that path.
+
+Performance effect:
+
+- Added no SQL query or network round trip to snapshot capture, publication, restore, or
+  gameplay. Epoch reads are process-local and key formatting occurs only where the same
+  Redis operation already existed.
+- Publication remains on the background worker. The atomic script reduces its Redis
+  round trips; floor batching retains the same bounds and command count.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_world_store_live.py`: passed, including overlapping
+  old/new epoch writers.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+- `python3 tests/async/test_redis_floor_world_gate.py`: passed.
+- `python3 tests/async/test_redis_pwipe_invalidation.py`: passed.
+- `python3 tests/async/test_season_reset_fence.py`: passed.
+
+Remaining related work:
+
+- RDS-001 remains partial until presence, content caches, and every other active Redis
+  store are epoch-scoped or explicitly proven cross-season safe.
+- RDS-007 is complete: publication is scoped by durable season epoch and requires both
+  the exclusive writer token and expected prior pointer in one atomic operation.
 
 ### 2026-08-28 - RDS-001 durable season reset boundary
 
@@ -63,9 +109,9 @@ Completed:
 - Added a random single-writer token with a renewable 10-minute Redis lease. Lease
   acquisition occurs at boot, and game-loop snapshot requests fail fast if it was not
   acquired.
-- Moved publication into a focused store adapter. Its watched transaction verifies the
-  fence token, writes the generation, advances all pointer metadata, consumes the stable
-  pre-capture floor hash, and renews the lease atomically.
+- Moved publication into a focused store adapter. Its atomic compare-and-set verifies the
+  fence token and expected prior pointer, writes the generation, advances all pointer
+  metadata, consumes the stable pre-capture floor hash, and renews the lease.
 - Removed the later game-thread floor-hash delete and its acknowledgment state. Floor
   changes made during capture remain in bounded memory and are flushed only after the
   completed transaction, so they are not consumed with the captured generation.
@@ -82,8 +128,8 @@ Performance effect:
 
 - Removed the synchronous post-publication floor `DEL` from the simulation thread and
   removed a redundant floor flush attempt from the periodic event wrapper.
-- Fence acquisition is boot-only. The additional `WATCH`, token read, and lease renewal
-  execute on the existing background publisher, not on a game pulse.
+- Fence acquisition is boot-only. Publication validation and lease renewal execute as
+  one Redis script on the existing background publisher, not on a game pulse.
 - Normal capture remains bounded to 64 records or 2 ms per pulse. Failed boot fencing
   disables publication for that process instead of retrying connections from gameplay.
 
@@ -405,8 +451,8 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 
 | Area | Redis keys/channels | Intended role | Current authority behavior |
 | --- | --- | --- | --- |
-| World recovery | `mud:world_state:generation:<seq>`, `mud:world_state:current`, diagnostic metadata | Optional recent world reconstruction | Redis payload directly materializes mobs, objects, doors, zones, gold, affects, and equipment after structural validation. |
-| Floor deltas | `mud:floor_drops`, `mud:floor_pickups` | Bridge changes around a world snapshot | Root SQL ownership is checked, but descendant identity/state is incomplete. |
+| World recovery | `mud:season:<epoch>:world_state:generation:<seq>`, current pointer, diagnostic metadata | Optional recent world reconstruction | Redis payload directly materializes mobs, objects, doors, zones, gold, affects, and equipment after structural validation. |
+| Floor deltas | `mud:season:<epoch>:floor_drops`; retired `mud:floor_pickups` cleanup | Bridge changes around a world snapshot | Root SQL ownership is checked, but descendant identity/state is incomplete. |
 | Ship cache | `ship:snapshot:<owner>` | Reconstructible SQL cache | Cache is returned before SQL without TTL, row revision, or schema/environment identity. |
 | Content caches | `mud:cache:named`, `mud:cache:fraglist`, `mud:cache:epic_zones`, artifact variants | Reconstructible command output | Most are persistent rendered strings with scattered invalidation. |
 | Presence | `mud:online`, `mud:player` | Web presence and login/logout events | Stores account, IP, client metadata, and invisible staff presence regardless of the documented privacy switch. |
@@ -458,7 +504,8 @@ Confidence: Confirmed from reachable code paths
 Remediation status: Partially remediated; enabled-but-unavailable Redis now fails pwipe
 invalidation closed, world writers are quiesced before checked deletion, and a durable
 SQL epoch/reset fence prevents boot or live resumption after an interrupted destructive
-boundary. Full Redis epoch namespacing and checked postconditions remain open.
+boundary. World/floor keys and pwipe deletions are epoch-aware and checked; other active
+Redis namespaces still need epoch isolation.
 
 Evidence:
 
@@ -677,9 +724,10 @@ authority.
 
 Severity: High
 Confidence: Confirmed; multi-instance impact is conditional on concurrent writers
-Remediation status: Partially remediated; a renewable exclusive writer lease and watched
-token-checked publication transaction prevent overlapping writers, and SQL now owns a
-durable monotonic season identity. World keys and sequences are not yet scoped to it.
+Remediation status: Completed; a renewable exclusive writer lease and one atomic Lua
+compare-and-set require the exact writer token and expected prior pointer. All world
+recovery identities and keys use the durable SQL season epoch, so a stale process cannot
+publish into the active season.
 
 Evidence:
 

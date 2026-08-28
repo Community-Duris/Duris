@@ -10,6 +10,7 @@ struct redis_world_store_config
 	int port;
 	int connect_timeout_msec;
 	int command_timeout_msec;
+	uint64_t season_epoch;
 };
 
 bool redis_world_store_claim_fence(const struct redis_world_store_config *config,
