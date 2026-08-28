@@ -2892,8 +2892,10 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 	size_t owner_count = 0;
 	bool timers_updated = false;
 	bool update_failed = false;
+#ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+#endif
 
 	if (!updateArtis)
 	{
@@ -2915,6 +2917,27 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 	// Aggregate only violating owners and page them by pid.  Timer updates are one
 	// statement per owner, so the callback never materializes the whole artifact table.
 	debug("event_artifact_wars_sql: querying artifact owners after pid %d...", cursor_pid);
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_war_owner> flat_owners;
+	std::string error;
+	if (flatfile_artifact_war_owners(persistence_mode_flatfile_root(), cursor_pid,
+					 ARTIFACT_WARS_OWNER_BATCH_SIZE, &flat_owners,
+					 &error) != flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "event_artifact_wars_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+					    "artifact-wars flat read failed");
+		return;
+	}
+	owner_count = flat_owners.size();
+	for (size_t index = 0; index < owner_count; ++index)
+	{
+		owners[index] = { flat_owners[index].pid, flat_owners[index].total,
+				  flat_owners[index].major, flat_owners[index].unique,
+				  flat_owners[index].ioun };
+	}
+#else
 	if (!qry("SELECT location, COUNT(*), SUM(type=%d), SUM(type=%d), SUM(type=%d) FROM artifacts WHERE locType=%d AND location > %d GROUP BY location HAVING SUM(type=%d) > 1 OR SUM(type=%d) > 1 OR SUM(type=%d) > 1 ORDER BY location LIMIT %zu",
 		 ARTIFACT_MAJOR, ARTIFACT_UNIQUE, ARTIFACT_IOUN, ARTIFACT_ON_PC, cursor_pid,
 		 ARTIFACT_MAJOR, ARTIFACT_UNIQUE, ARTIFACT_IOUN, ARTIFACT_WARS_OWNER_BATCH_SIZE))
@@ -2944,6 +2967,7 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 		entry.ioun = row[4] ? atoi(row[4]) : 0;
 	}
 	mysql_free_result(res);
+#endif
 
 	if (owner_count == 0)
 	{
@@ -2969,6 +2993,21 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 			if (burn > 1.0f)
 				burn = 1.0f;
 			const float retained = 1.0f - burn;
+#ifdef __NO_MYSQL__
+			const auto updated = flatfile_artifact_apply_war_burn(
+				persistence_mode_flatfile_root(), entry.pid,
+				static_cast<int64_t>(now), retained, static_cast<int64_t>(now),
+				&error);
+			if (updated == flatfile_artifact_result::ok)
+			{
+				timers_updated = true;
+				logit(LOG_ARTIFACT,
+				      "artifact_wars: pid %d artifact timers cut by %d%% (punish_level=%d)",
+				      entry.pid, (int)(burn * 100.0f), punish_level);
+			}
+			else if (updated != flatfile_artifact_result::unchanged)
+				update_failed = true;
+#else
 			if (qry("UPDATE artifacts SET timer = FROM_UNIXTIME(%lu + FLOOR((UNIX_TIMESTAMP(timer) - %lu) * %.9f)), lastUpdate=SYSDATE() WHERE locType=%d AND location=%d AND timer > FROM_UNIXTIME(%lu)",
 				(unsigned long)now, (unsigned long)now, retained, ARTIFACT_ON_PC,
 				entry.pid, (unsigned long)now))
@@ -2980,6 +3019,7 @@ void event_artifact_wars_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void
 			}
 			else
 				update_failed = true;
+#endif
 		}
 
 		P_char owner = find_player_by_pid(entry.pid);

@@ -4,6 +4,7 @@
 #include "flatfile_authority_transaction.h"
 #include "item_transfer_command.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -32,6 +33,15 @@ struct flatfile_artifact_record
 struct flatfile_artifact_transfer_mutation
 {
 	flatfile_authority_after_image after_image;
+};
+
+struct flatfile_artifact_war_owner
+{
+	int32_t pid = 0;
+	int32_t total = 0;
+	int32_t major = 0;
+	int32_t unique = 0;
+	int32_t ioun = 0;
 };
 
 enum class flatfile_artifact_result
@@ -66,6 +76,12 @@ flatfile_artifact_result flatfile_artifact_find_next_expired(const std::string &
 							     std::string *error);
 flatfile_artifact_result flatfile_artifact_expire(const std::string &root, int32_t vnum,
 						  int64_t now, std::string *error);
+flatfile_artifact_result
+flatfile_artifact_war_owners(const std::string &root, int32_t after_pid, size_t maximum,
+			     std::vector<flatfile_artifact_war_owner> *owners, std::string *error);
+flatfile_artifact_result flatfile_artifact_apply_war_burn(const std::string &root, int32_t pid,
+							  int64_t now, double retained,
+							  int64_t last_update, std::string *error);
 flatfile_artifact_result flatfile_artifact_bind_get(const std::string &root, int32_t vnum,
 						    int32_t *owner_pid, int64_t *timer,
 						    std::string *error);

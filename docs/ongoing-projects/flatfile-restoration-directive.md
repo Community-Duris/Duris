@@ -283,6 +283,31 @@
   war penalties, binding maintenance, listings, and staff repair routes remain. The
   global incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - restored artifact-war enforcement without MySQL
+
+- **Concrete gap:** the periodic artifact-war rule still grouped owners and burned
+  artifact timers exclusively through MySQL, so it could not enforce duplicate-type
+  limits in no-database mode even though the flat catalog held the required fields.
+- **Restoration:** no-database mode now groups the same player-location and artifact-type
+  rows in PID order using the existing four-owner maintenance slice, applies the existing
+  modifier and punishment levels, and atomically burns the affected owner's catalog
+  timers with the same floor calculation. Existing forced-drop behavior is unchanged and
+  now persists through the previously restored flat location updates. Database-backed
+  behavior is unchanged.
+- **Focused evidence:** the artifact repository/runtime test covers grouping, violation
+  filtering, bounded PID paging, the original SQL treatment of player-located rows whose
+  owned flag is false, timer flooring, null timers, binding preservation, revision
+  progression, and corrupt-authority refusal. The source-contract test confirms the real
+  war event uses both flat repository paths, and the maintenance-slicing regression still
+  passes.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** artifact-war enforcement is restored, but catalog establishment,
+  binding maintenance, listings, and staff repair routes remain. The global
+  incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

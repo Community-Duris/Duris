@@ -149,3 +149,11 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
         raise AssertionError("client-free expiry event does not select from flat authority")
     if "flatfile_artifact_expire(" not in expiry_body:
         raise AssertionError("client-free expiry event does not clear flat authority")
+
+    wars_start = artifact_source.index("void event_artifact_wars_sql(")
+    wars_end = artifact_source.index("\nvoid event_arti_hunt_sql(", wars_start)
+    wars_body = artifact_source[wars_start:wars_end]
+    if "flatfile_artifact_war_owners(" not in wars_body:
+        raise AssertionError("client-free artifact-war event does not group flat authority")
+    if "flatfile_artifact_apply_war_burn(" not in wars_body:
+        raise AssertionError("client-free artifact-war event does not update flat timers")

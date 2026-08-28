@@ -336,6 +336,60 @@ int main(int argc, char **argv)
 						    &error) == flatfile_artifact_result::not_found,
 		"cleared or future artifact remained in the expired selection");
 
+	const fs::path wars_root = fs::path(argv[1]) / "wars";
+	prepare_root(wars_root);
+	const std::vector<flatfile_artifact_record> war_records = {
+		{ 800, true, FLATFILE_ARTIFACT_ON_PLAYER, 42, 2000, 1, 1000, 42, 500, 1 },
+		{ 801, true, FLATFILE_ARTIFACT_ON_PLAYER, 42, 3001, 1, 1000, 42, 500, 1 },
+		{ 802, true, FLATFILE_ARTIFACT_ON_PLAYER, 42, 0, 2, 1000, 42, 500, 1 },
+		{ 803, true, FLATFILE_ARTIFACT_ON_PLAYER, 43, 5000, 1, 1000, 43, 500, 1 },
+		{ 804, true, FLATFILE_ARTIFACT_ON_PLAYER, 44, 4000, 3, 1000, 44, 500, 1 },
+		{ 805, true, FLATFILE_ARTIFACT_ON_PLAYER, 44, 5000, 3, 1000, 44, 500, 1 },
+		{ 806, false, FLATFILE_ARTIFACT_ON_PLAYER, 45, 4000, 2, 1000, 45, 500, 1 },
+		{ 807, true, FLATFILE_ARTIFACT_ON_PLAYER, 45, 5000, 2, 1000, 45, 500, 1 },
+	};
+	require(flatfile_artifact_establish(wars_root.string(), war_records, &error) ==
+			flatfile_artifact_result::ok,
+		"artifact-war establishment failed: " + error);
+	std::vector<flatfile_artifact_war_owner> war_owners;
+	require(flatfile_artifact_war_owners(wars_root.string(), 0, 2, &war_owners, &error) ==
+				flatfile_artifact_result::ok &&
+			war_owners.size() == 2 && war_owners[0].pid == 42 &&
+			war_owners[0].total == 3 && war_owners[0].major == 2 &&
+			war_owners[0].unique == 1 && war_owners[0].ioun == 0 &&
+			war_owners[1].pid == 44,
+		"artifact-war owners were not grouped, filtered, or bounded by pid");
+	require(flatfile_artifact_war_owners(wars_root.string(), 42, 2, &war_owners, &error) ==
+				flatfile_artifact_result::ok &&
+			war_owners.size() == 2 && war_owners[0].pid == 44 &&
+			war_owners[0].ioun == 2 && war_owners[1].pid == 45 &&
+			war_owners[1].unique == 2,
+		"artifact-war owner cursor did not preserve database grouping semantics");
+	require(flatfile_artifact_apply_war_burn(wars_root.string(), 42, 1000, 0.5, 1100, &error) ==
+			flatfile_artifact_result::ok,
+		"artifact-war timer burn failed: " + error);
+	require(flatfile_artifact_get(wars_root.string(), 800, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			gameplay_record.timer == 1500 && gameplay_record.last_update == 1100 &&
+			gameplay_record.bind_owner_pid == 42 && gameplay_record.bind_timer == 500 &&
+			gameplay_record.revision == 2,
+		"artifact-war burn did not reduce the first future timer safely");
+	require(flatfile_artifact_get(wars_root.string(), 801, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			gameplay_record.timer == 2000 && gameplay_record.revision == 2,
+		"artifact-war burn did not apply database floor semantics");
+	require(flatfile_artifact_get(wars_root.string(), 802, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			gameplay_record.timer == 0 && gameplay_record.last_update == 1000 &&
+			gameplay_record.revision == 1,
+		"artifact-war burn changed a null-equivalent timer");
+	require(flatfile_artifact_apply_war_burn(wars_root.string(), 99, 1000, 0.5, 1100, &error) ==
+			flatfile_artifact_result::unchanged,
+		"artifact-war burn changed an unreferenced owner");
+	require(flatfile_artifact_apply_war_burn(wars_root.string(), 42, 1000, -0.1, 1100,
+						 &error) == flatfile_artifact_result::invalid,
+		"artifact-war burn accepted an invalid retained fraction");
+
 	const fs::path catalog = root / "domains/artifact_catalog";
 	{
 		std::fstream file(catalog, std::ios::in | std::ios::out | std::ios::binary);
@@ -369,6 +423,12 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_expire(root.string(), 100, 6000, &error) ==
 			flatfile_artifact_result::invalid,
 		"corrupt artifact authority was overwritten through expiry");
+	require(flatfile_artifact_war_owners(root.string(), 0, 4, &war_owners, &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was exposed through war grouping");
+	require(flatfile_artifact_apply_war_burn(root.string(), 42, 1000, 0.5, 1100, &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was overwritten through war timer burn");
 	{
 		flatfile_authority_lock lock;
 		require(lock.acquire(root.string(), &error),

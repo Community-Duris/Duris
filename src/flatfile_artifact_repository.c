@@ -5,8 +5,10 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstring>
 #include <limits>
+#include <map>
 #include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
@@ -456,6 +458,107 @@ flatfile_artifact_result flatfile_artifact_expire(const std::string &root, int32
 	found->timer = 0;
 	found->last_update = now;
 	++found->revision;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_artifact_result::ok :
+		       flatfile_artifact_result::io_error;
+}
+
+flatfile_artifact_result
+flatfile_artifact_war_owners(const std::string &root, int32_t after_pid, size_t maximum,
+			     std::vector<flatfile_artifact_war_owner> *owners, std::string *error)
+{
+	if (owners)
+		owners->clear();
+	if (root.empty() || after_pid < 0 || !maximum || maximum > record_maximum || !owners)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	try
+	{
+		std::map<int32_t, flatfile_artifact_war_owner> grouped;
+		for (const auto &record : catalog.records)
+		{
+			if (record.location_type != FLATFILE_ARTIFACT_ON_PLAYER ||
+			    record.location <= after_pid)
+				continue;
+			auto &owner = grouped[record.location];
+			owner.pid = record.location;
+			++owner.total;
+			if (record.type == 1)
+				++owner.major;
+			else if (record.type == 2)
+				++owner.unique;
+			else
+				++owner.ioun;
+		}
+		owners->reserve(std::min(maximum, grouped.size()));
+		for (const auto &[pid, owner] : grouped)
+		{
+			(void)pid;
+			if (owner.major <= 1 && owner.unique <= 1 && owner.ioun <= 1)
+				continue;
+			owners->push_back(owner);
+			if (owners->size() == maximum)
+				break;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		owners->clear();
+		return flatfile_artifact_result::io_error;
+	}
+	return flatfile_artifact_result::ok;
+}
+
+flatfile_artifact_result flatfile_artifact_apply_war_burn(const std::string &root, int32_t pid,
+							  int64_t now, double retained,
+							  int64_t last_update, std::string *error)
+{
+	if (root.empty() || pid <= 0 || now < 0 || !std::isfinite(retained) || retained < 0.0 ||
+	    retained > 1.0 || last_update < 0)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	bool changed = false;
+	for (auto &record : catalog.records)
+	{
+		if (record.location_type != FLATFILE_ARTIFACT_ON_PLAYER || record.location != pid ||
+		    record.timer <= now)
+			continue;
+		if (record.revision == std::numeric_limits<uint64_t>::max())
+			return flatfile_artifact_result::invalid;
+		const int64_t remaining = record.timer - now;
+		const int64_t reduced = static_cast<int64_t>(
+			std::floor(static_cast<long double>(remaining) * retained));
+		record.timer = now + reduced;
+		record.last_update = last_update;
+		++record.revision;
+		changed = true;
+	}
+	if (!changed)
+		return flatfile_artifact_result::unchanged;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_artifact_result::invalid;
 	++catalog.revision;
 	std::vector<uint8_t> bytes;
 	if (!encode_catalog(catalog, &bytes))
