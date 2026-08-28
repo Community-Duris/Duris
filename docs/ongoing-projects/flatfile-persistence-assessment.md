@@ -2152,6 +2152,32 @@ sections below continue to describe the required end state.
 - **Next action:** add the recoverable dirty-save path, then route boot restore and periodic
   saves through flat authority only when both paths can fail closed.
 
+### Checkpoint 66 - revisioned custody-fenced shopkeeper saves
+
+- **Completed:** the shop catalog now supports compare-and-swap replacement of one aggregate.
+  A replacement must advance exactly one record revision, match the expected stored revision,
+  preserve whole-catalog validity and global UID uniqueness, and publish through the atomic
+  checksummed catalog write. Stale writers and skipped revisions fail distinctly.
+- **Dirty-save fence:** the live save adapter loads the current record, captures the keeper at
+  `revision + 1`, and requires the captured UID/vnum/root/parent topology to match the active
+  global shopkeeper custody set exactly before attempting the revisioned catalog update.
+  Missing, extra, stale, foreign, anonymous, or otherwise divergent custody prevents the
+  catalog write.
+- **Retry behavior:** the batch dirty scanner locates each keeper only in its configured room
+  and clears `shop_index[].dirty` only after capture, custody reconciliation, and catalog CAS
+  all succeed. Missing keepers, capture/authority errors, or stale publication leave the bit
+  set for an explicit retry and make the batch report failure.
+- **Checks passed:** the strict repository regression covers successful replacement round
+  trip, stale expected revision, and nonconsecutive revision refusal. The focused save
+  contract proves capture-before-custody-before-publication-before-dirty-clear ordering;
+  changed-line formatting and the normal C++20 server build pass. CI includes the save test.
+- **Exposure:** boot and periodic wrappers remain unchanged. Current shop buy/sell code does
+  not transfer UID custody, so the new save path correctly refuses those divergent live
+  inventories rather than blessing them into the catalog.
+- **Next action:** route every shop purchase, sale, duplicate destruction, and produced-item
+  creation through the item transaction authority, then select the flat restore/save wrappers
+  and remove the shopkeeper boot blocker.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

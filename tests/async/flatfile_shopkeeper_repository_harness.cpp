@@ -92,6 +92,25 @@ int main(int argc, char **argv)
 	require(flatfile_shopkeeper_establish(root.string(), { conflicting, second }, &error) ==
 			flatfile_shopkeeper_result::invalid,
 		"conflicting shopkeeper establishment was accepted");
+	auto replacement = records[1];
+	replacement.revision = 3;
+	replacement.saved_at++;
+	replacement.room_vnum++;
+	require(flatfile_shopkeeper_replace(root.string(), replacement, 2, &error) ==
+			flatfile_shopkeeper_result::ok,
+		"revision-guarded shopkeeper replacement failed: " + error);
+	require(flatfile_shopkeeper_list(root.string(), &records, &error) ==
+				flatfile_shopkeeper_result::ok &&
+			records[1].revision == 3 && records[1].room_vnum == replacement.room_vnum,
+		"shopkeeper replacement did not round trip");
+	require(flatfile_shopkeeper_replace(root.string(), replacement, 2, &error) ==
+			flatfile_shopkeeper_result::stale,
+		"stale shopkeeper replacement was accepted");
+	auto skipped_revision = replacement;
+	skipped_revision.revision = 5;
+	require(flatfile_shopkeeper_replace(root.string(), skipped_revision, 3, &error) ==
+			flatfile_shopkeeper_result::invalid,
+		"nonconsecutive shopkeeper revision was accepted");
 
 	const fs::path invalid_root = fs::path(argv[1]) / "invalid";
 	prepare_root(invalid_root);

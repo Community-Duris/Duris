@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <limits>
 #include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
@@ -407,5 +408,52 @@ flatfile_shopkeeper_list(const std::string &root, std::vector<flatfile_shopkeepe
 	if (loaded != flatfile_shopkeeper_result::ok)
 		return loaded;
 	*records = std::move(catalog.records);
+	return flatfile_shopkeeper_result::ok;
+}
+
+flatfile_shopkeeper_result flatfile_shopkeeper_replace(const std::string &root,
+						       const flatfile_shopkeeper_record &record,
+						       uint64_t expected_revision,
+						       std::string *error)
+{
+	if (root.empty() || !expected_revision ||
+	    expected_revision == std::numeric_limits<uint64_t>::max() ||
+	    record.revision != expected_revision + 1)
+		return flatfile_shopkeeper_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_shopkeeper_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_shopkeeper_result::ok)
+		return recovered;
+	shopkeeper_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_shopkeeper_result::ok)
+		return loaded;
+	auto existing = std::lower_bound(catalog.records.begin(), catalog.records.end(), record,
+					 [](const flatfile_shopkeeper_record &candidate,
+					    const flatfile_shopkeeper_record &value)
+					 { return record_less(candidate, value); });
+	if (existing == catalog.records.end() || existing->shop_id != record.shop_id)
+		return flatfile_shopkeeper_result::not_found;
+	if (existing->revision != expected_revision)
+		return flatfile_shopkeeper_result::stale;
+	try
+	{
+		*existing = record;
+		std::sort(existing->affects.begin(), existing->affects.end(), affect_less);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_shopkeeper_result::io_error;
+	}
+	if (!valid_catalog(catalog) || catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_shopkeeper_result::invalid;
+	++catalog.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, &encoded))
+		return flatfile_shopkeeper_result::invalid;
+	if (!flatfile_atomic_write(domains_directory(root), catalog_filename, encoded, error))
+		return flatfile_shopkeeper_result::io_error;
 	return flatfile_shopkeeper_result::ok;
 }

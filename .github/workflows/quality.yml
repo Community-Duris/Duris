@@ -57,6 +57,7 @@ jobs:
           python3 tests/async/test_flatfile_shopkeeper_ownership.py
           python3 tests/async/test_flatfile_shopkeeper_materialize.py
           python3 tests/async/test_flatfile_shopkeeper_restore.py
+          python3 tests/async/test_flatfile_shopkeeper_save.py
       - name: Verify flat-file world item authority
         run: python3 tests/async/test_flatfile_world_item_repository.py
       - name: Verify flat-file locker authority
