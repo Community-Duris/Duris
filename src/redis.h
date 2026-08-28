@@ -14,11 +14,8 @@ void redis_cleanup(void);
 // Legacy floor-pickup key cleanup. New pickup entries are not created.
 void redis_clear_floor_pickups(void);
 
-// floor drop tracking for crash recovery
-void redis_log_floor_drop(P_obj obj, int room_vnum);
-void redis_remove_floor_drop(unsigned long obj_uid);
+// Administrative floor-state cleanup. Runtime staging is in redis_floor_runtime.h.
 void redis_clear_floor_drops(void);
-bool redis_flush_floor_drops(void);
 
 // world state persistence for crash recovery
 extern bool redis_world_state_enabled;
@@ -34,7 +31,6 @@ void event_save_world_state(P_char ch, P_char victim, P_obj obj, void *data);
 void redis_world_recovery_pulse(void);
 bool redis_world_recovery_drain(uint64_t timeout_msec);
 bool redis_world_recovery_quiesce(void);
-void redis_world_recovery_set_materializing(bool active);
 
 bool redis_clear_pwipe_state(void);
 bool redis_validate_pwipe_state(void);

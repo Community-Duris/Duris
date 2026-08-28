@@ -24,6 +24,7 @@
 #include "redis_connection.h"
 #include "redis_donation_worker.h"
 #include "redis_donation_runtime.h"
+#include "redis_floor_runtime.h"
 #include "redis_floor_store.h"
 #include "redis_key_registry.h"
 #include "redis_namespace.h"
@@ -96,7 +97,6 @@ static uint64_t world_writer_lease_msec = 0;
 static uint64_t world_writer_epoch = 0;
 static bool world_floor_barrier_waiting = false;
 static bool world_floor_handoff_active = false;
-static bool world_recovery_materialization_active = false;
 static uint64_t clean_shutdown_sequence = 0;
 static uint64_t world_sequence_floor = 0;
 static uint64_t redis_runtime_epoch = 0;
@@ -169,6 +169,7 @@ static bool redis_configure_epoch_surfaces(uint64_t epoch)
 			     epoch, REDIS_PRESENCE_EVENT_CHANNEL) ||
 	    !redis_epoch_key(redis_donation_channel, sizeof redis_donation_channel, epoch,
 			     REDIS_DONATION_CHANNEL) ||
+	    !redis_floor_runtime_configure(redis_key_namespace, epoch) ||
 	    !redis_report_cache_configure(redis_key_namespace, epoch))
 		return false;
 	redis_runtime_epoch = epoch;
@@ -690,6 +691,7 @@ bool redis_init(void)
 {
 	redis_shared_command_observability_reset(false);
 	redis_donation_runtime_set_enabled(false);
+	redis_floor_runtime_reset();
 	redis_presence_runtime_set_enabled(false);
 	redis_report_cache_reset();
 #ifdef __NO_MYSQL__
@@ -731,7 +733,6 @@ bool redis_init(void)
 	world_writer_token.clear();
 	world_writer_lease_msec = 0;
 	world_writer_epoch = 0;
-	world_recovery_materialization_active = false;
 	clean_shutdown_sequence = 0;
 	world_sequence_floor = 0;
 	clean_restart_recovery_boot = 0;
@@ -868,6 +869,8 @@ bool redis_init(void)
 			redis_world_state_enabled = false;
 		}
 		if (redis_world_state_enabled)
+			redis_floor_runtime_set_enabled(true);
+		if (redis_world_state_enabled)
 		{
 			const redis_world_store_config world_config =
 				redis_world_store_config_copy();
@@ -883,12 +886,16 @@ bool redis_init(void)
 		if (redis_world_state_enabled && !redis_world_writer_fence_claim())
 		{
 			world_recovery_quiesced = true;
+			redis_floor_runtime_set_quiesced(true);
 			logit(LOG_SYS,
 			      "redis: world publisher disabled; writer lease unavailable at boot");
 		}
 	}
 	else if (redis_world_state_enabled)
+	{
 		world_recovery_quiesced = true;
+		redis_floor_runtime_set_quiesced(true);
+	}
 
 	return true;
 #endif
@@ -901,6 +908,8 @@ bool redis_clear_pwipe_state(void)
 	if (!redis_runtime_epoch)
 		return false;
 	redis_donation_worker_shutdown();
+	redis_floor_runtime_set_enabled(false);
+	redis_floor_runtime_set_quiesced(true);
 	redis_presence_runtime_set_enabled(false);
 	redis_presence_worker_cancel();
 	redis_report_cache_cancel();
@@ -987,6 +996,8 @@ void redis_cleanup(void)
 #ifndef __NO_MYSQL__
 	bool world_recovery_drained = true;
 	redis_donation_worker_shutdown();
+	redis_floor_runtime_set_enabled(false);
+	redis_floor_runtime_set_quiesced(true);
 	redis_presence_runtime_set_enabled(false);
 	if (!redis_presence_worker_shutdown(REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC))
 		logit(LOG_SYS, "redis: presence worker drain timed out during shutdown");
@@ -1024,7 +1035,6 @@ void redis_cleanup(void)
 	world_writer_token.clear();
 	world_writer_lease_msec = 0;
 	world_writer_epoch = 0;
-	world_recovery_materialization_active = false;
 	clean_shutdown_sequence = 0;
 	world_sequence_floor = 0;
 	clean_restart_recovery_boot = 0;
@@ -1036,6 +1046,8 @@ void redis_cleanup(void)
 	redis_destroy_connection_settings();
 	redis_clear_world_authentication_secrets();
 	redis_donation_runtime_set_enabled(false);
+	redis_floor_runtime_set_enabled(false);
+	redis_floor_runtime_set_quiesced(true);
 	redis_world_state_enabled = false;
 	redis_enabled = false;
 	redis_shared_command_observability_set_enabled(false);
@@ -1054,136 +1066,6 @@ void redis_clear_floor_pickups(void)
 	if (reply)
 		freeReplyObject(reply);
 #endif
-}
-
-#define MAX_FLOOR_DROP_BATCH 1024
-constexpr size_t FLOOR_DROP_RECORD_MAX_BYTES =
-	sizeof(world_recovery_object_record) +
-	WORLD_RECOVERY_MAX_ITEM_TREE * sizeof(world_recovery_item_snapshot);
-
-static struct
-{
-	unsigned long uid;
-	size_t record_size;
-	unsigned char record[FLOOR_DROP_RECORD_MAX_BYTES];
-} floor_drop_batch[MAX_FLOOR_DROP_BATCH];
-
-static int floor_drop_batch_count = 0;
-static unsigned long floor_drop_removes[MAX_FLOOR_DROP_BATCH];
-static int floor_drop_remove_count = 0;
-
-void redis_log_floor_drop(P_obj obj, int room_vnum)
-{
-	if (_pwipe)
-		return;
-#ifndef __NO_MYSQL__
-	if (!redis_world_state_enabled || world_recovery_quiesced || !obj || obj->obj_uid == 0)
-		return;
-
-	// skip old corpses (vnum 2, value[6] is timestamp) - older than 24h
-	if (OBJ_VNUM(obj) == 2 && obj->value[6] > 0)
-	{
-		time_t corpse_time = (time_t)obj->value[6];
-		if (time(NULL) - corpse_time > 86400)
-			return;
-	}
-
-	if (floor_drop_batch_count >= MAX_FLOOR_DROP_BATCH)
-	{
-		redis_flush_floor_drops();
-		if (floor_drop_batch_count >= MAX_FLOOR_DROP_BATCH)
-		{
-			logit(LOG_SYS, "redis: floor delta retry buffer is full");
-			return;
-		}
-	}
-
-	const int index = floor_drop_batch_count;
-	const int size = world_recovery_write_object_to_buffer(
-		obj, room_vnum, reinterpret_cast<char *>(floor_drop_batch[index].record),
-		sizeof(floor_drop_batch[index].record));
-	if (size <= 0)
-		return;
-	floor_drop_batch[index].uid = obj->obj_uid;
-	floor_drop_batch[index].record_size = static_cast<size_t>(size);
-	++floor_drop_batch_count;
-#endif
-}
-
-bool redis_flush_floor_drops(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_world_state_enabled || world_recovery_quiesced)
-		return true;
-	if (!redis_enabled || !redis_floor_store_health_copy().initialized)
-		return false;
-
-	if (floor_drop_batch_count == 0 && floor_drop_remove_count == 0)
-		return true;
-	char floor_key[128];
-	char floor_index_key[128];
-	if (!redis_season_key(floor_key, sizeof floor_key, REDIS_FLOOR_DROPS_SUFFIX) ||
-	    !redis_season_key(floor_index_key, sizeof floor_index_key,
-			      REDIS_FLOOR_DROP_INDEX_SUFFIX))
-		return false;
-
-	std::vector<redis_floor_mutation> mutations;
-	try
-	{
-		mutations.reserve(floor_drop_remove_count + floor_drop_batch_count);
-	}
-	catch (const std::bad_alloc &)
-	{
-		return false;
-	}
-	// Preserve remove-before-replacement ordering within one immutable worker batch.
-	for (int i = 0; i < floor_drop_remove_count; i++)
-		mutations.push_back({ floor_drop_removes[i], NULL, 0, true });
-
-	for (int i = 0; i < floor_drop_batch_count; i++)
-		mutations.push_back({ floor_drop_batch[i].uid, floor_drop_batch[i].record,
-				      floor_drop_batch[i].record_size, false, true });
-
-	if (!redis_floor_store_submit(floor_key, floor_index_key, mutations.data(),
-				      mutations.size()))
-		return false;
-
-	floor_drop_remove_count = 0;
-	floor_drop_batch_count = 0;
-	return true;
-#else
-	return false;
-#endif
-}
-
-void redis_remove_floor_drop(unsigned long obj_uid)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_world_state_enabled || world_recovery_quiesced ||
-	    world_recovery_materialization_active || obj_uid == 0)
-		return;
-
-	// check if it's in the pending batch - remove from there first
-	for (int i = 0; i < floor_drop_batch_count; i++)
-	{
-		if (floor_drop_batch[i].uid == obj_uid)
-		{
-			--floor_drop_batch_count;
-			if (i != floor_drop_batch_count)
-				floor_drop_batch[i] = floor_drop_batch[floor_drop_batch_count];
-			return;
-		}
-	}
-
-	// not in batch, queue for removal from redis
-	if (floor_drop_remove_count < MAX_FLOOR_DROP_BATCH)
-		floor_drop_removes[floor_drop_remove_count++] = obj_uid;
-#endif
-}
-
-void redis_world_recovery_set_materializing(bool active)
-{
-	world_recovery_materialization_active = active;
 }
 
 static bool redis_clear_floor_drops_checked(void)
@@ -1488,6 +1370,7 @@ bool redis_world_recovery_quiesce(void)
 	return true;
 #else
 	world_recovery_quiesced = true;
+	redis_floor_runtime_set_quiesced(true);
 	redis_floor_store_cancel();
 	world_floor_barrier_waiting = false;
 	world_floor_handoff_active = false;

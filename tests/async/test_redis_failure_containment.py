@@ -12,11 +12,13 @@ presence_runtime = (root / "src/redis_presence_runtime.c").read_text()
 cache_store = (root / "src/redis_cache_store.c").read_text()
 report_cache = (root / "src/redis_report_cache.c").read_text()
 floor_store = (root / "src/redis_floor_store.c").read_text()
+floor_runtime = (root / "src/redis_floor_runtime.c").read_text()
 donation_worker = (root / "src/redis_donation_worker.c").read_text()
 donation_runtime = (root / "src/redis_donation_runtime.c").read_text()
 connection = (root / "src/redis_connection.c").read_text()
 key_registry = (root / "src/redis_key_registry.def").read_text()
 header = (root / "src/redis.h").read_text()
+floor_runtime_header = (root / "src/redis_floor_runtime.h").read_text()
 signals = (root / "src/signals.c").read_text()
 
 
@@ -210,7 +212,9 @@ assert '"world_state:sequence"' in key_registry and '"world_state:checksum"' in 
 assert "redis.call('DEL',KEYS[8],KEYS[9])" in store and "PEXPIRE" in store
 print("[PASS] null, timeout, error reply, or rejected world CAS forces worker failure")
 
-floor_flush = section("bool redis_flush_floor_drops(void)", "void redis_remove_floor_drop")
+floor_flush = section(
+    "bool redis_flush_floor_drops(void)", "void redis_remove_floor_drop", floor_runtime
+)
 assert "redis_floor_store_submit" in floor_flush
 assert "world_recovery_floor_ack_pending" not in floor_flush
 assert floor_flush.index("return false;") < floor_flush.index("floor_drop_remove_count = 0;")
@@ -218,7 +222,8 @@ assert floor_flush.index("return false;") < floor_flush.index("floor_drop_batch_
 assert "redis_append_command" not in floor_flush
 assert "redis_collect_integer_replies" not in floor_flush
 assert floor_flush.count("redis_command") == 0
-assert "bool redis_flush_floor_drops(void);" in header
+assert "bool redis_flush_floor_drops(void);" in floor_runtime_header
+assert "bool redis_flush_floor_drops(void);" not in header
 ack = section("void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
 assert "redis_clear_floor_drops_checked()" not in ack
 assert "world_recovery_floor_ack_pending" not in ack

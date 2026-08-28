@@ -10,6 +10,46 @@ remediated, as are RDS-018, RDS-025, and RDS-015; RDS-026 remains open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-026 floor-delta runtime boundary
+
+Completed in this interval:
+
+- Moved fixed-capacity floor-drop staging, object encoding, replacement/removal
+  coalescing, materialization suppression, and bounded worker submission from `redis.c`
+  into `redis_floor_runtime.c/.h`.
+- The typed runtime now owns its enabled, quiesced, and materializing state. Boot,
+  recovery quiescence, pwipe, and shutdown update that state explicitly before worker
+  cancellation or draining.
+- Precomputed the season-scoped floor hash and index keys during boot configuration. The
+  periodic flush no longer formats or resolves either key on the game thread.
+- Routed object movement, extraction, checkpoint flushing, and recovery materialization
+  through the typed header. Four more translation units no longer include `redis.h`,
+  reducing direct umbrella consumers from 13 to 9.
+- Reduced `redis.c` from 1,802 to 1,685 lines and `redis.h` from 50 to 46 lines. Extended
+  the module-boundary gate to keep floor staging, encoding, lifecycle state, and callers
+  out of the composition root.
+
+Performance effect:
+
+- Drop/remove capture retains the same constant-time state checks and fixed 1,024-entry
+  in-memory arrays. It performs no Redis, SQL, filesystem, process, sleep, or wait work.
+- Flush retains the same bounded local vector construction and one background-worker
+  enqueue. Reusing boot-computed keys removes two namespace/key formatting operations
+  from each non-empty periodic flush.
+
+Validation:
+
+- `./scripts/format.sh --check` and `make -C src -j2`: passed under the warning-as-error
+  profile.
+- Floor/world gating, failure containment, pwipe invalidation, module ownership, and the
+  compiled recovery planner/materializer checks passed.
+- All 24 `tests/async/test_redis*.py` regressions passed, including the isolated live
+  floor-worker barrier, fault recovery, ACL, maintenance, and world-store suites.
+
+RDS-026 remains partially remediated. Gameplay floor-delta staging is now separate from
+the root; world snapshot orchestration, direct administrative cleanup, legacy ship
+cleanup, and broad lifecycle/configuration policy remain.
+
 ### 2026-08-28 - RDS-026 report-cache facade boundary
 
 Completed in this interval:
@@ -2575,26 +2615,28 @@ game delivery is in `redis_donation_runtime.c/.h`. Presence policy, payload subm
 enabled state are in `redis_presence_runtime.c/.h`. Epoch-scoped report keys, report
 generation, local reads, asynchronous publication/invalidation, boot warm-up, and worker
 lifecycle are in `redis_report_cache.c/.h`; the generic public cache API has been replaced
-by report-specific operations. Sixteen former checkpoint, presence, or report-only
-consumers no longer include `redis.h`, which exports none of those subsystem APIs or
-mutable states. The remaining composition root still owns world/floor orchestration,
-legacy ship cleanup, and broad administrative lifecycle policy.
+by report-specific operations. Fixed-capacity floor-delta capture, coalescing, lifecycle
+state, and background submission are in `redis_floor_runtime.c/.h`, with season keys
+precomputed at boot. Twenty former checkpoint, presence, report, or floor-only consumers
+no longer include `redis.h`, which exports none of those subsystem APIs or mutable states.
+The remaining composition root still owns world snapshot orchestration, direct
+administrative cleanup, legacy ship cleanup, and broad configuration/lifecycle policy.
 
 At the audit baseline, `src/redis.c` was 2,525 lines and combined
 connection/configuration, world publication, floor recovery, ship serialization, report
 caches, presence, pub/sub, administrator helpers, and legacy UID handling. `redis.h` also
 owned revisioned player-save wrapper APIs that did not use Redis, and 29 C/C++ translation
-units included the header. The composition root is now 1,802 lines, the header is 50
-lines, and 13 translation units include it; the remaining world/floor and administrative
-policy still has a broad review and lifecycle surface.
+units included the header. The composition root is now 1,685 lines, the header is 46
+lines, and 9 translation units include it; the remaining world and administrative policy
+still has a broad review and lifecycle surface.
 
 Impact: changes have a broad compile/review surface, subsystem policy is inconsistent,
 and tests tend to assert monolithic source layout rather than typed interfaces.
 
-Recommendation: finish moving world/floor orchestration, legacy ship cleanup, and
-administrative lifecycle policy behind typed modules. Keep each subsystem's availability,
-codec, TTL, authority, and lifecycle policy beside its implementation, leaving `redis.c`
-as the small boot/configuration composition root.
+Recommendation: finish moving world snapshot orchestration, direct administrative
+cleanup, legacy ship cleanup, and broad lifecycle policy behind typed modules. Keep each
+subsystem's availability, codec, TTL, authority, and lifecycle policy beside its
+implementation, leaving `redis.c` as the small boot/configuration composition root.
 
 ### RDS-027 - The no-MySQL build option is broken
 

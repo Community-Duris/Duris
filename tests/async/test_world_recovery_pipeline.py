@@ -171,7 +171,7 @@ bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_ent
     return hydrate_succeeds;
 }
 
-void redis_world_recovery_set_materializing(bool active)
+void redis_floor_runtime_set_materializing(bool active)
 {
     materializing = active;
 }
@@ -539,8 +539,8 @@ for token in (
     "add_object_record",
     "sql_persistence_reconcile_world_recovery_items",
     "materialize_plan",
-    "redis_world_recovery_set_materializing(true)",
-    "redis_world_recovery_set_materializing(false)",
+    "redis_floor_runtime_set_materializing(true)",
+    "redis_floor_runtime_set_materializing(false)",
 ):
     assert token in transactional_restore
 assert transactional_restore.index("build_recovery_plan") < transactional_restore.index(
@@ -567,10 +567,12 @@ assert "copyover_restore_door_from_buffer" not in restore
 assert "copyover_restore_zone_age_from_buffer" not in restore
 print("[PASS] recovery publication is atomic and restore accepts only validated framed generations")
 
-flush = section(REDIS, "bool redis_flush_floor_drops", "void redis_remove_floor_drop")
+FLOOR_RUNTIME = (ROOT / "src/redis_floor_runtime.c").read_text(encoding="ascii")
+flush = section(FLOOR_RUNTIME, "bool redis_flush_floor_drops", "void redis_remove_floor_drop")
 pulse = section(REDIS, "void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
 assert "redis_floor_store_submit" in flush
-assert "REDIS_FLOOR_DROP_INDEX_SUFFIX" in flush
+assert "floor_key" in flush and "floor_index_key" in flush
+assert "REDIS_FLOOR_DROP_INDEX_SUFFIX" in FLOOR_RUNTIME
 assert "world_recovery_floor_ack_pending" not in flush
 assert "redis_append_command" not in flush and "redis_collect_integer_replies" not in flush
 assert flush.count("redis_command") == 0

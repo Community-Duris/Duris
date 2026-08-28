@@ -4,6 +4,7 @@ from contract_text import contains
 ROOT = Path(__file__).resolve().parents[2]
 header = (ROOT / "src/redis.h").read_text()
 source = (ROOT / "src/redis.c").read_text()
+floor = (ROOT / "src/redis_floor_runtime.c").read_text()
 checkpoint = (ROOT / "src/persistence_checkpoint.c").read_text()
 sql = (ROOT / "src/sql.c").read_text()
 
@@ -11,8 +12,8 @@ assert contains(header, "bool redis_clear_pwipe_state(void);")
 assert contains(header, "bool redis_validate_pwipe_state(void);")
 assert contains(source, "extern int                  _pwipe;")
 for signature in ("void redis_log_floor_drop(P_obj obj, int room_vnum)",):
-    start = source.index(signature)
-    body = source[start:source.index("\n}", start) + 2]
+    start = floor.index(signature)
+    body = floor[start:floor.index("\n}", start) + 2]
     assert contains(body, "if (_pwipe)"), signature
 signature = "void mark_player_dirty(int pid)"
 start = checkpoint.index(signature)

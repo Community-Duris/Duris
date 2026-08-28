@@ -4,7 +4,7 @@
 #include "db.h"
 #include "item_ownership_runtime.h"
 #include "prototypes.h"
-#include "redis.h"
+#include "redis_floor_runtime.h"
 #include "ships/ships.h"
 #include "utils.h"
 #include "world_recovery_codec.h"
@@ -1262,9 +1262,9 @@ bool world_recovery_restore_with_floor(const unsigned char *data, size_t size, i
 		    plan.authority_items.data(), plan.authority_items.size(), authoritative.data(),
 		    authoritative.size()))
 		return false;
-	redis_world_recovery_set_materializing(true);
+	redis_floor_runtime_set_materializing(true);
 	const bool materialized = materialize_plan(plan, authoritative);
-	redis_world_recovery_set_materializing(false);
+	redis_floor_runtime_set_materializing(false);
 	if (!materialized)
 		return false;
 	if (header_out)

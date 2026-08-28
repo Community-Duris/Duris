@@ -4,7 +4,7 @@
 #include "player_save_pipeline.h"
 #include "player_save_worker.h"
 #include "prototypes.h"
-#include "redis.h"
+#include "redis_floor_runtime.h"
 #include "utils.h"
 
 #include <new>
@@ -109,6 +109,6 @@ void event_flush_dirty_players(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, 
 
 	character_ids.clear();
 	cursor = 0;
-	if (redis_world_state_enabled)
+	if (redis_floor_runtime_enabled())
 		redis_flush_floor_drops();
 }

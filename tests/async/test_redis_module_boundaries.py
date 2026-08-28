@@ -15,6 +15,8 @@ PRESENCE_HEADER = (ROOT / "src/redis_presence_runtime.h").read_text(encoding="as
 PRESENCE_SOURCE = (ROOT / "src/redis_presence_runtime.c").read_text(encoding="ascii")
 REPORT_HEADER = (ROOT / "src/redis_report_cache.h").read_text(encoding="ascii")
 REPORT_SOURCE = (ROOT / "src/redis_report_cache.c").read_text(encoding="ascii")
+FLOOR_RUNTIME_HEADER = (ROOT / "src/redis_floor_runtime.h").read_text(encoding="ascii")
+FLOOR_RUNTIME_SOURCE = (ROOT / "src/redis_floor_runtime.c").read_text(encoding="ascii")
 MAKEFILE = (ROOT / "src/Makefile").read_text(encoding="ascii")
 
 
@@ -133,6 +135,32 @@ for filename in report_only_callers:
     assert '#include "redis_report_cache.h"' in source
     assert '#include "redis.h"' not in source
 
+for symbol in (
+    "redis_floor_runtime_configure",
+    "redis_floor_runtime_set_enabled",
+    "redis_floor_runtime_set_quiesced",
+    "redis_floor_runtime_set_materializing",
+    "redis_log_floor_drop",
+    "redis_remove_floor_drop",
+    "redis_flush_floor_drops",
+):
+    assert symbol in FLOOR_RUNTIME_HEADER
+    assert symbol in FLOOR_RUNTIME_SOURCE
+    assert symbol not in REDIS_HEADER
+assert "redis_floor_store_submit" in FLOOR_RUNTIME_SOURCE
+assert "world_recovery_write_object_to_buffer" in FLOOR_RUNTIME_SOURCE
+assert "max_floor_drop_batch = 1024" in FLOOR_RUNTIME_SOURCE
+assert "redis_floor_runtime.o" in MAKEFILE
+for filename in (
+    "actobj.c",
+    "handler.c",
+    "persistence_checkpoint.c",
+    "world_recovery_pipeline.c",
+):
+    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
+    assert '#include "redis_floor_runtime.h"' in source
+    assert '#include "redis.h"' not in source
+
 checkpoint_only_callers = (
     "actinf.c",
     "auction_houses.c",
@@ -152,6 +180,6 @@ redis_includers = []
 for source_path in (ROOT / "src").rglob("*.[ch]"):
     if '#include "redis.h"' in source_path.read_text(encoding="utf-8"):
         redis_includers.append(source_path)
-assert len(redis_includers) <= 13
+assert len(redis_includers) <= 9
 
-print("Redis, checkpoint, donation, presence, and report-cache module boundaries passed")
+print("Redis, checkpoint, donation, presence, report-cache, and floor-runtime boundaries passed")

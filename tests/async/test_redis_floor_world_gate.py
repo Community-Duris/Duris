@@ -6,8 +6,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 REDIS = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
+FLOOR = (ROOT / "src" / "redis_floor_runtime.c").read_text(encoding="ascii")
 CHECKPOINT = (ROOT / "src" / "persistence_checkpoint.c").read_text(encoding="ascii")
 HEADER = (ROOT / "src" / "redis.h").read_text(encoding="ascii")
+FLOOR_HEADER = (ROOT / "src" / "redis_floor_runtime.h").read_text(encoding="ascii")
 ACTOBJ = (ROOT / "src" / "actobj.c").read_text(encoding="utf-8")
 
 
@@ -27,15 +29,15 @@ assert "SADD mud:floor_pickups" not in REDIS
 assert "SISMEMBER mud:floor_pickups" not in REDIS
 assert "HEXISTS mud:floor_drops" not in REDIS
 
-drop = section("void redis_log_floor_drop", "bool redis_flush_floor_drops")
-flush = section("bool redis_flush_floor_drops", "void redis_remove_floor_drop")
-remove = section("void redis_remove_floor_drop", "static bool redis_clear_floor_drops_checked")
+drop = section("void redis_log_floor_drop", "bool redis_flush_floor_drops", FLOOR)
+flush = section("bool redis_flush_floor_drops", "void redis_remove_floor_drop", FLOOR)
+remove = FLOOR[FLOOR.index("void redis_remove_floor_drop") :]
 restore = section("static bool redis_read_floor_records", "bool redis_save_world_state")
 periodic = CHECKPOINT[CHECKPOINT.index("void event_flush_dirty_players") :]
 
-assert "!redis_world_state_enabled" in drop
-assert "!redis_world_state_enabled" in flush
-assert "!redis_world_state_enabled" in remove
+assert "!floor_runtime_enabled" in drop
+assert "!floor_runtime_enabled" in flush
+assert "!floor_runtime_enabled" in remove
 assert "!redis_world_state_enabled" in restore
 assert "world_recovery_floor_object_root_uid" in restore
 assert "WORLD_RECOVERY_FLOOR_PREFIX_BYTES" in restore
@@ -46,8 +48,13 @@ assert "WORLD_RECOVERY_MAX_FLOOR_RECORDS" in restore
 assert "WORLD_RECOVERY_MAX_FLOOR_BYTES" in restore
 assert "read_object(" not in restore
 assert "obj_to_room(" not in restore
-assert "if (redis_world_state_enabled)" in periodic
+assert "if (redis_floor_runtime_enabled())" in periodic
 assert "if (redis_enabled)" not in periodic
+assert "redis_namespace_season_key" in FLOOR
+assert "redis_season_key" not in flush
+for symbol in ("redis_log_floor_drop", "redis_remove_floor_drop", "redis_flush_floor_drops"):
+    assert symbol in FLOOR_HEADER
+    assert symbol not in HEADER
 
 # Cleanup intentionally remains available for the retired pickup key and the
 # current season-scoped floor hash.
