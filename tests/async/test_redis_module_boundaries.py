@@ -15,6 +15,8 @@ PRESENCE_HEADER = (ROOT / "src/redis_presence_runtime.h").read_text(encoding="as
 PRESENCE_SOURCE = (ROOT / "src/redis_presence_runtime.c").read_text(encoding="ascii")
 REPORT_HEADER = (ROOT / "src/redis_report_cache.h").read_text(encoding="ascii")
 REPORT_SOURCE = (ROOT / "src/redis_report_cache.c").read_text(encoding="ascii")
+RUNTIME_CONFIG_HEADER = (ROOT / "src/redis_runtime_config.h").read_text(encoding="ascii")
+RUNTIME_CONFIG_SOURCE = (ROOT / "src/redis_runtime_config.c").read_text(encoding="ascii")
 FLOOR_RUNTIME_HEADER = (ROOT / "src/redis_floor_runtime.h").read_text(encoding="ascii")
 FLOOR_RUNTIME_SOURCE = (ROOT / "src/redis_floor_runtime.c").read_text(encoding="ascii")
 MAKEFILE = (ROOT / "src/Makefile").read_text(encoding="ascii")
@@ -117,7 +119,7 @@ for token in (
     assert token not in REDIS_SOURCE
 assert REDIS_SOURCE.count("redis_cache_store_delete") == 1
 assert "redis_report_cache.o" in MAKEFILE
-assert "redis_report_cache_start(redis_cache_settings)" in REDIS_SOURCE
+assert "redis_report_cache_start(redis_connections.cache)" in REDIS_SOURCE
 assert "redis_report_cache_cancel()" in REDIS_SOURCE
 assert "redis_report_cache_shutdown(REDIS_CACHE_DRAIN_TIMEOUT_MSEC)" in REDIS_SOURCE
 
@@ -160,6 +162,25 @@ for filename in (
     source = (ROOT / "src" / filename).read_text(encoding="utf-8")
     assert '#include "redis_floor_runtime.h"' in source
     assert '#include "redis.h"' not in source
+
+for symbol in (
+    "redis_runtime_connections_configure",
+    "redis_runtime_connections_destroy",
+):
+    assert symbol in RUNTIME_CONFIG_HEADER
+    assert symbol in RUNTIME_CONFIG_SOURCE
+for token in (
+    "REDIS_WORLD_USERNAME",
+    "REDIS_PRESENCE_USERNAME",
+    "REDIS_CACHE_USERNAME",
+    "REDIS_DONATION_USERNAME",
+    "REDIS_MAINTENANCE_USERNAME",
+    "redis_connection_settings_create",
+):
+    assert token in RUNTIME_CONFIG_SOURCE
+    assert token not in REDIS_SOURCE
+assert "redis_runtime_config.o" in MAKEFILE
+assert "redis_runtime_connections_configure(redis_donation_runtime_enabled()" in REDIS_SOURCE
 
 checkpoint_only_callers = (
     "actinf.c",

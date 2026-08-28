@@ -10,6 +10,45 @@ remediated, as are RDS-018, RDS-025, and RDS-015; RDS-026 remains open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-026 runtime connection configuration boundary
+
+Completed in this interval:
+
+- Moved endpoint parsing, database selection, TLS requirements, scoped identity
+  resolution, production identity separation, connection-setting construction, and secure
+  destruction from `redis.c` into `redis_runtime_config.c/.h`.
+- Replaced five independent settings globals with one typed connection bundle consumed by
+  the world, presence, report-cache, donation, floor, and maintenance composition calls.
+- Preserved the existing 250 ms connect and 100 ms command deadlines, loopback production
+  exception, Unix-socket restrictions, TLS verification inputs, legacy development
+  credential fallback, and fail-closed production requirements.
+- Added an ASan/UBSan runtime harness covering default TCP configuration, strict numeric
+  parsing, invalid TLS modes, socket/host exclusivity, scoped production credentials,
+  optional donation identity, duplicate identity rejection, partial credentials, and
+  idempotent destruction without making a network connection.
+- Reduced `redis.c` from 1,685 to 1,492 lines. The public header and its nine remaining
+  consumers are unchanged because this boundary is boot-only internal composition.
+
+Performance effect:
+
+- All moved work runs only during Redis boot configuration or shutdown cleanup. Gameplay
+  submission, lookup, capture, pulse, and worker execution paths are unchanged.
+- The connection bundle adds no indirection to Redis commands beyond selecting the same
+  prebuilt settings pointer at boot or maintenance entry points.
+
+Validation:
+
+- `./scripts/format.sh --check` and `make -C src -j2`: passed under the warning-as-error
+  profile.
+- `python3 tests/async/test_redis_runtime_config.py`: passed the compiled sanitizer-backed
+  endpoint, security, identity, and cleanup matrix.
+- All 25 `tests/async/test_redis*.py` regressions passed, including live TCP/TLS/Unix
+  authentication, database selection, subsystem ACL isolation, and maintenance checks.
+
+RDS-026 remains partially remediated. Connection construction is now a boot-only typed
+adapter; world snapshot orchestration, direct administrative cleanup, legacy ship cleanup,
+and broad lifecycle policy remain in the composition root.
+
 ### 2026-08-28 - RDS-026 floor-delta runtime boundary
 
 Completed in this interval:
@@ -2617,16 +2656,18 @@ generation, local reads, asynchronous publication/invalidation, boot warm-up, an
 lifecycle are in `redis_report_cache.c/.h`; the generic public cache API has been replaced
 by report-specific operations. Fixed-capacity floor-delta capture, coalescing, lifecycle
 state, and background submission are in `redis_floor_runtime.c/.h`, with season keys
-precomputed at boot. Twenty former checkpoint, presence, report, or floor-only consumers
-no longer include `redis.h`, which exports none of those subsystem APIs or mutable states.
-The remaining composition root still owns world snapshot orchestration, direct
-administrative cleanup, legacy ship cleanup, and broad configuration/lifecycle policy.
+precomputed at boot. Endpoint/security parsing and the five scoped connection settings are
+owned by `redis_runtime_config.c/.h`. Twenty former checkpoint, presence, report, or
+floor-only consumers no longer include `redis.h`, which exports none of those subsystem
+APIs or mutable states. The remaining composition root still owns world snapshot
+orchestration, direct administrative cleanup, legacy ship cleanup, and broad lifecycle
+policy.
 
 At the audit baseline, `src/redis.c` was 2,525 lines and combined
 connection/configuration, world publication, floor recovery, ship serialization, report
 caches, presence, pub/sub, administrator helpers, and legacy UID handling. `redis.h` also
 owned revisioned player-save wrapper APIs that did not use Redis, and 29 C/C++ translation
-units included the header. The composition root is now 1,685 lines, the header is 46
+units included the header. The composition root is now 1,492 lines, the header is 46
 lines, and 9 translation units include it; the remaining world and administrative policy
 still has a broad review and lifecycle surface.
 

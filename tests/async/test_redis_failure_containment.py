@@ -58,7 +58,7 @@ assert "redis_command_outcome(ctx, false)" in command
 assert "REDIS_REPLY_ERROR" in command and '"error_reply"' in command
 assert '"timeout"' in command and '"transport"' in command and '"no_reply"' in command
 assert "redis_shared_command_observability_record" in command
-assert "redis_ctx = redis_connection_open(redis_settings);" in text
+assert "redis_ctx = redis_connection_open(redis_connections.world);" in text
 print("[PASS] all runtime Redis connections use bounded authenticated selected-database helpers")
 
 assert "redisConnectWithTimeout(" not in donation_worker

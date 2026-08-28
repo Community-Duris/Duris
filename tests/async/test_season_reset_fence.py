@@ -49,7 +49,7 @@ assert wipe.index("redis_validate_pwipe_state()") < wipe.index(
 assert wipe.index("redis_clear_pwipe_state()") < wipe.index("sql_complete_pwipe_epoch()")
 
 validate = section(REDIS, "bool redis_validate_pwipe_state", "void redis_cleanup")
-assert "redis_connection_open(redis_maintenance_settings)" in validate
+assert "redis_connection_open(redis_connections.maintenance)" in validate
 assert "REDIS_SHARED_SCOPE_MAINTENANCE" in validate
 assert "REDIS_SHARED_COMMAND_READ" in validate
 assert 'context, "PING"' in validate

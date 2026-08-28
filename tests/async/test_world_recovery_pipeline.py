@@ -591,7 +591,7 @@ assert "redis_world_writer_fence_claim()" in quiesce
 assert "redis_world_store_release_fence" not in quiesce
 pwipe = section(REDIS, "bool redis_clear_pwipe_state", "bool redis_validate_pwipe_state")
 assert pwipe.index("redis_world_recovery_quiesce()") < pwipe.index(
-    "redis_connection_open(redis_maintenance_settings)"
+    "redis_connection_open(redis_connections.maintenance)"
 )
 clear = section(REDIS, "bool redis_clear_world_state", "bool redis_load_world_state")
 generation_clear = "redis_clear_scan_match(REDIS_SHARED_SCOPE_WORLD, generation_pattern)"

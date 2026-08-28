@@ -55,7 +55,7 @@ assert contains(source, "redis_clear_scan_match")
 assert contains(source, "redis_scan_match_empty(scope, pattern)")
 delete_checked = source[
     source.index("static bool redis_delete_key_checked") : source.index(
-        "static bool redis_parse_number"
+        "static bool redis_configure_namespace"
     )
 ]
 assert contains(delete_checked, "REDIS_SHARED_COMMAND_READ")
