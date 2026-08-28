@@ -73,6 +73,7 @@ bool get_equipment_list(P_char ch, char *buf, int list_only);
 extern P_index obj_index;
 extern struct zone_data *zone_table;
 extern int top_of_zone_table;
+extern const int top_of_world;
 extern P_index obj_index;
 extern P_obj object_list;
 extern P_room world;
@@ -348,13 +349,37 @@ bool sql_trace_exec_at(struct persistence_query_site /*source_site*/, const char
 {
 	return false;
 }
-void sql_log_player_login(P_char /*ch*/, const char * /*status*/) {}
+void sql_log_player_login(P_char ch, const char *status)
+{
+	if (!ch || IS_NPC(ch) || !status ||
+	    (strcasecmp(status, "login") && strcasecmp(status, "logout")))
+		return;
+	sql_log(ch, CONNECTLOG, "Session audit: %s", status);
+}
 void update_zone_db() {}
 void update_zone_epic_level(int /*zone_id*/, int /*level*/) {}
 void show_frag_trophy(P_char ch, P_char /*who*/)
 {
 	send_to_char("Disabled.", ch);
 }
+
+static void sanitize_flat_log_field(const char *source, char *destination, size_t capacity)
+{
+	if (!destination || capacity == 0)
+		return;
+
+	size_t index = 0;
+	if (source)
+	{
+		for (; source[index] && index + 1 < capacity; ++index)
+		{
+			const unsigned char byte = static_cast<unsigned char>(source[index]);
+			destination[index] = byte < 0x20 || byte == 0x7f ? ' ' : source[index];
+		}
+	}
+	destination[index] = '\0';
+}
+
 void sql_log(P_char ch, const char *kind, const char *format, ...)
 {
 	if (!ch)
@@ -367,81 +392,54 @@ void sql_log(P_char ch, const char *kind, const char *format, ...)
 	{
 		debug("sql_log called in sql.c for mobile ch - %s - Vnum %d", GET_NAME(ch),
 		      GET_VNUM(ch));
-		debug("sql_log kind '%s', format '%s'", kind, format);
+		debug("sql_log kind '%s', format '%s'", kind ? kind : "(null)",
+		      format ? format : "(null)");
 		return;
 	}
 
+	if (!ch->only.pc || !GET_NAME(ch) || !kind || !format)
+	{
+		debug("sql_log called with incomplete player log data");
+		return;
+	}
+
+	static char message[MAX_STRING_LENGTH];
 	va_list args;
-	int raw_len;
-	char *raw_msg;
-	char *escaped_msg;
-	string esc_kind;
-	string esc_ip;
-	string esc_name;
-	string query;
-
 	va_start(args, format);
-	raw_len = vsnprintf(NULL, 0, format, args);
+	const int message_length = vsnprintf(message, sizeof(message), format, args);
 	va_end(args);
-	if (raw_len < 0)
+	if (message_length < 0 || message_length >= static_cast<int>(sizeof(message)))
 	{
-		debug("sql_log: Message formatting error");
+		debug("sql_log: Message too long or formatting error");
 		return;
 	}
 
-	raw_msg = (char *)malloc((size_t)raw_len + 1);
-	if (!raw_msg)
-		return;
+	char safe_kind[32];
+	char safe_ip[sizeof(ch->desc->host)];
+	char safe_name[MAX_INPUT_LENGTH];
+	sanitize_flat_log_field(kind, safe_kind, sizeof(safe_kind));
+	sanitize_flat_log_field(ch->desc ? ch->desc->host : "", safe_ip, sizeof(safe_ip));
+	sanitize_flat_log_field(GET_NAME(ch), safe_name, sizeof(safe_name));
+	sanitize_flat_log_field(message, message, sizeof(message));
 
-	va_start(args, format);
-	vsnprintf(raw_msg, (size_t)raw_len + 1, format, args);
-	va_end(args);
-
-	escaped_msg = (char *)malloc(((size_t)raw_len * 2) + 1);
-	if (!escaped_msg)
+	int zone_number = NOWHERE;
+	int room_vnum = NOWHERE;
+	if (world && ch->in_room >= 0 && ch->in_room <= top_of_world)
 	{
-		free(raw_msg);
-		return;
+		room_vnum = world[ch->in_room].number;
+		const int zone_rnum = world[ch->in_room].zone;
+		if (zone_table && zone_rnum >= 0 && zone_rnum <= top_of_zone_table)
+			zone_number = zone_table[zone_rnum].number;
 	}
-	mysql_real_escape_string(DB, escaped_msg, raw_msg, (unsigned long)raw_len);
 
-	auto escape_sql = [](const char *src) -> string
-	{
-		if (!src)
-			return string();
-		size_t len = strlen(src);
-		string out;
-		out.resize((len * 2) + 1);
-		unsigned long out_len =
-			mysql_real_escape_string(DB, &out[0], src, (unsigned long)len);
-		out.resize(out_len);
-		return out;
-	};
+	const char *destination = LOG_PLAYER;
+	if (!strcmp(kind, WIZLOG))
+		destination = LOG_WIZ;
+	else if (!strcmp(kind, EXPLOG))
+		destination = LOG_EXP;
 
-	esc_kind = escape_sql(kind);
-	if (ch->desc && ch->desc->host[0])
-		esc_ip = escape_sql(ch->desc->host);
-	esc_name = escape_sql(GET_NAME(ch));
-
-	query = "INSERT INTO log_entries (date, kind, ip_address, pid, player_name, zone_number, room_vnum, message) VALUES (NOW(), '";
-	query += esc_kind;
-	query += "', '";
-	query += esc_ip;
-	query += "', ";
-	query += std::to_string(GET_PID(ch));
-	query += ", '";
-	query += esc_name;
-	query += "', ";
-	query += std::to_string(zone_table[world[ch->in_room].zone].number);
-	query += ", ";
-	query += std::to_string(world[ch->in_room].number);
-	query += ", '";
-	query += escaped_msg;
-	query += "')";
-
-	qry("%s", query.c_str());
-	free(raw_msg);
-	free(escaped_msg);
+	logit(destination, "kind=%s ip=%s pid=%d player=%s zone=%d room=%d message=%s", safe_kind,
+	      safe_ip, GET_PID(ch), safe_name, zone_number, room_vnum, message);
 }
 
 bool get_zone_info(int /*zone_number*/, struct zone_info * /*info*/)

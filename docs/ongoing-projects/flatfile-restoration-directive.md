@@ -113,6 +113,28 @@
 - **Overall state:** the full objective is not complete. The global incomplete-domain
   boot fence remains in place while other concrete DB-free gaps are restored.
 
+### 2026-08-29 - database-independent operational audit logs
+
+- **Concrete gap:** the client-free `sql_log` implementation formatted more than one
+  hundred player, staff, quest, experience, and connection call sites as SQL and passed
+  them to a no-op query stub, silently discarding every event. The separate session
+  login/logout audit hook was also empty.
+- **Restoration:** client-free mode now routes those existing events to the ordinary
+  durable player, staff, and experience log files, retaining the database-visible kind,
+  IP, player ID and name, zone, room, and message fields. Formatting remains bounded;
+  invalid or oversized events are rejected and record control characters are flattened
+  to prevent forged log lines. The database-backed SQL and transactional session-audit
+  paths are unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_sql_log.py` invokes the real
+  client-free `sql_log` and login-audit paths and verifies field preservation, file
+  routing, control-character handling, invalid-status rejection, and oversized-message
+  rejection. The test is included in the client-free CI job.
+- **Build evidence:** `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** the full objective is not complete. The global incomplete-domain
+  boot fence remains in place while other concrete DB-free gaps are restored.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

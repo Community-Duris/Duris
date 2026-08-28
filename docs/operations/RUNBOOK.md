@@ -150,6 +150,13 @@ All under `logs/`; rotated per-run into `logs/old-logs/<timestamp>/`.
 | `logs/log/wizlog` | Immortal commands |
 | `logs/duris-console.log` | stdout/stderr of the supervised process |
 
+In `flatfile-primary`, events sent through the database-backed audit logger remain
+available in the ordinary files above: staff events use `logs/player-log/wizcmds`,
+experience events use `logs/log/exp`, and player, quest, connection, and session events
+use `logs/player-log/player`. Each entry retains its kind, player ID and name, IP, zone,
+room, and message. Control characters are flattened so one event cannot forge another
+log line.
+
 Useful checks:
 
 ```bash
