@@ -50,12 +50,14 @@ int main(int argc, char **argv)
     redis_floor_mutation first[] = {
         {100, binary_value, sizeof(binary_value), false},
         {200, reinterpret_cast<const unsigned char *>("two"), 3, false}};
-    assert(redis_floor_store_submit("mud:season:1:floor_drops", first, 2));
+    assert(redis_floor_store_submit("mud:season:1:floor_drops",
+                                    "mud:season:1:floor_drop_index", first, 2));
     assert(redis_floor_store_request_barrier());
     redis_floor_mutation after[] = {
         {100, nullptr, 0, true},
         {300, reinterpret_cast<const unsigned char *>("three"), 5, false}};
-    assert(redis_floor_store_submit("mud:season:1:floor_drops", after, 2));
+    assert(redis_floor_store_submit("mud:season:1:floor_drops",
+                                    "mud:season:1:floor_drop_index", after, 2));
 
     bool succeeded = false;
     for (int count = 0; count < 100 && !redis_floor_store_take_barrier(&succeeded); ++count)
@@ -73,6 +75,10 @@ int main(int argc, char **argv)
     assert(reply->element[1]->type == REDIS_REPLY_STRING && !strcmp(reply->element[1]->str, "two"));
     assert(reply->element[2]->type == REDIS_REPLY_NIL);
     freeReplyObject(reply);
+    reply = (redisReply *)redisCommand(context, "ZRANGE mud:season:1:floor_drop_index 0 -1");
+    assert(reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 2);
+    assert(!strcmp(reply->element[0]->str, "100") && !strcmp(reply->element[1]->str, "200"));
+    freeReplyObject(reply);
 
     redis_floor_store_resume();
     assert(redis_floor_store_drain(2000));
@@ -81,6 +87,10 @@ int main(int argc, char **argv)
     assert(reply->element[0]->type == REDIS_REPLY_NIL);
     assert(reply->element[1]->type == REDIS_REPLY_STRING && !strcmp(reply->element[1]->str, "two"));
     assert(reply->element[2]->type == REDIS_REPLY_STRING && !strcmp(reply->element[2]->str, "three"));
+    freeReplyObject(reply);
+    reply = (redisReply *)redisCommand(context, "ZRANGE mud:season:1:floor_drop_index 0 -1");
+    assert(reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 2);
+    assert(!strcmp(reply->element[0]->str, "200") && !strcmp(reply->element[1]->str, "300"));
     freeReplyObject(reply);
     world_recovery_object_record object = {321, 1};
     world_recovery_item_snapshot item = {};
@@ -93,7 +103,8 @@ int main(int argc, char **argv)
     memcpy(native_object.data() + sizeof(object), &item, sizeof(item));
     redis_floor_mutation encoded[] = {
         {600, native_object.data(), native_object.size(), false, true}};
-    assert(redis_floor_store_submit("mud:season:1:floor_drops", encoded, 1));
+    assert(redis_floor_store_submit("mud:season:1:floor_drops",
+                                    "mud:season:1:floor_drop_index", encoded, 1));
     assert(redis_floor_store_drain(2000));
     reply = (redisReply *)redisCommand(context, "HGET mud:season:1:floor_drops 600");
     assert(reply && reply->type == REDIS_REPLY_STRING && reply->len > 5 &&
@@ -107,11 +118,16 @@ int main(int argc, char **argv)
         {400, reinterpret_cast<const unsigned char *>("four"), 4, false}};
     redis_floor_mutation shutdown_after[] = {
         {500, reinterpret_cast<const unsigned char *>("five"), 4, false}};
-    assert(redis_floor_store_submit("mud:season:1:floor_drops", shutdown_before, 1));
+    assert(redis_floor_store_submit("mud:season:1:floor_drops",
+                                    "mud:season:1:floor_drop_index", shutdown_before, 1));
     assert(redis_floor_store_request_barrier());
-    assert(redis_floor_store_submit("mud:season:1:floor_drops", shutdown_after, 1));
+    assert(redis_floor_store_submit("mud:season:1:floor_drops",
+                                    "mud:season:1:floor_drop_index", shutdown_after, 1));
     assert(redis_floor_store_shutdown(2000));
     reply = (redisReply *)redisCommand(context, "HLEN mud:season:1:floor_drops");
+    assert(reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 5);
+    freeReplyObject(reply);
+    reply = (redisReply *)redisCommand(context, "ZCARD mud:season:1:floor_drop_index");
     assert(reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 5);
     freeReplyObject(reply);
     redisFree(context);

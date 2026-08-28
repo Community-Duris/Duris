@@ -38,6 +38,7 @@ struct floor_job
 {
 	job_type type = job_type::batch;
 	std::string key;
+	std::string index_key;
 	std::vector<owned_mutation> mutations;
 	size_t bytes = 0;
 	unsigned int attempts = 0;
@@ -62,13 +63,21 @@ redisContext *connect_bounded()
 	return redis_connection_open(configured_connection);
 }
 
-bool execute_batch(redisContext *context, const std::shared_ptr<floor_job> &job)
+bool integer_reply(const redisReply *reply)
 {
-	if (!context || context->err || !job || job->type != job_type::batch)
+	return reply && reply->type == REDIS_REPLY_INTEGER;
+}
+
+bool execute_group(redisContext *context, const std::shared_ptr<floor_job> &job, size_t first,
+		   size_t count)
+{
+	if (!context || context->err || !job || job->type != job_type::batch || !count ||
+	    first >= job->mutations.size() || count > job->mutations.size() - first ||
+	    redisAppendCommand(context, "MULTI") != REDIS_OK)
 		return false;
-	size_t appended = 0;
-	for (const owned_mutation &mutation : job->mutations)
+	for (size_t index = first; index < first + count; ++index)
 	{
+		const owned_mutation &mutation = job->mutations[index];
 		const int result = mutation.remove ?
 					   redisAppendCommand(context, "HDEL %b %llu",
 							      job->key.data(), job->key.size(),
@@ -78,21 +87,68 @@ bool execute_batch(redisContext *context, const std::shared_ptr<floor_job> &job)
 							      (unsigned long long)mutation.uid,
 							      mutation.value.data(),
 							      mutation.value.size());
-		if (result != REDIS_OK)
-			break;
-		++appended;
+		const int index_result =
+			mutation.remove ?
+				redisAppendCommand(context, "ZREM %b %llu", job->index_key.data(),
+						   job->index_key.size(),
+						   (unsigned long long)mutation.uid) :
+				redisAppendCommand(context, "ZADD %b 0 %llu", job->index_key.data(),
+						   job->index_key.size(),
+						   (unsigned long long)mutation.uid);
+		if (result != REDIS_OK || index_result != REDIS_OK)
+			return false;
 	}
-	bool valid = appended == job->mutations.size();
-	for (size_t index = 0; index < appended; ++index)
+	if (redisAppendCommand(context, "EXEC") != REDIS_OK)
+		return false;
+	const size_t reply_count = 2 + count * 2;
+	bool valid = true;
+	for (size_t index = 0; index < reply_count; ++index)
 	{
 		void *raw_reply = nullptr;
 		if (redisGetReply(context, &raw_reply) != REDIS_OK || !raw_reply)
 			return false;
 		redisReply *reply = static_cast<redisReply *>(raw_reply);
-		valid = valid && reply->type == REDIS_REPLY_INTEGER;
+		if (index == 0)
+			valid = valid && reply->type == REDIS_REPLY_STATUS && reply->str &&
+				strcmp(reply->str, "OK") == 0;
+		else if (index + 1 < reply_count)
+			valid = valid && reply->type == REDIS_REPLY_STATUS && reply->str &&
+				strcmp(reply->str, "QUEUED") == 0;
+		else
+		{
+			valid = valid && reply->type == REDIS_REPLY_ARRAY &&
+				reply->elements == count * 2;
+			for (size_t element = 0; valid && element < reply->elements; ++element)
+				valid = integer_reply(reply->element[element]);
+		}
 		freeReplyObject(reply);
 	}
 	return valid;
+}
+
+bool execute_batch(redisContext *context, const std::shared_ptr<floor_job> &job)
+{
+	constexpr size_t maximum_group_mutations = 64;
+	constexpr size_t maximum_group_value_bytes = 1024 * 1024;
+	if (!context || context->err || !job || job->type != job_type::batch)
+		return false;
+	for (size_t first = 0; first < job->mutations.size();)
+	{
+		size_t count = 0;
+		size_t bytes = 0;
+		while (first + count < job->mutations.size() && count < maximum_group_mutations)
+		{
+			const size_t value_bytes = job->mutations[first + count].value.size();
+			if (count && value_bytes > maximum_group_value_bytes - bytes)
+				break;
+			bytes += value_bytes;
+			++count;
+		}
+		if (!count || !execute_group(context, job, first, count))
+			return false;
+		first += count;
+	}
+	return true;
 }
 
 bool prepare_batch(const std::shared_ptr<floor_job> &job)
@@ -304,18 +360,22 @@ bool redis_floor_store_init(const struct redis_floor_store_config *config)
 	return true;
 }
 
-bool redis_floor_store_submit(const char *key, const struct redis_floor_mutation *mutations,
-			      size_t count)
+bool redis_floor_store_submit(const char *key, const char *index_key,
+			      const struct redis_floor_mutation *mutations, size_t count)
 {
-	if (!key || !*key || !mutations || !count || count > REDIS_FLOOR_BATCH_CAPACITY)
+	if (!key || !*key || !index_key || !*index_key || !mutations || !count ||
+	    count > REDIS_FLOOR_BATCH_CAPACITY)
 		return false;
 	const size_t key_size = strnlen(key, REDIS_FLOOR_KEY_MAX_BYTES + 1);
-	if (!key_size || key_size > REDIS_FLOOR_KEY_MAX_BYTES)
+	const size_t index_key_size = strnlen(index_key, REDIS_FLOOR_KEY_MAX_BYTES + 1);
+	if (!key_size || key_size > REDIS_FLOOR_KEY_MAX_BYTES || !index_key_size ||
+	    index_key_size > REDIS_FLOOR_KEY_MAX_BYTES || !strcmp(key, index_key))
 		return false;
 	try
 	{
 		auto job = std::make_shared<floor_job>();
 		job->key.assign(key, key_size);
+		job->index_key.assign(index_key, index_key_size);
 		job->mutations.reserve(count);
 		for (size_t index = 0; index < count; ++index)
 		{

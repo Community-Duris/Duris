@@ -47,8 +47,8 @@ struct redis_floor_store_health
 };
 
 bool redis_floor_store_init(const struct redis_floor_store_config *config);
-bool redis_floor_store_submit(const char *key, const struct redis_floor_mutation *mutations,
-			      size_t count);
+bool redis_floor_store_submit(const char *key, const char *index_key,
+			      const struct redis_floor_mutation *mutations, size_t count);
 bool redis_floor_store_request_barrier(void);
 bool redis_floor_store_take_barrier(bool *succeeded);
 void redis_floor_store_resume(void);

@@ -38,6 +38,11 @@ assert "!redis_world_state_enabled" in remove
 assert "!redis_world_state_enabled" in restore
 assert "world_recovery_floor_object_root_uid" in restore
 assert "WORLD_RECOVERY_FLOOR_PREFIX_BYTES" in restore
+assert "ZCARD" in restore and "HLEN" in restore
+assert "ZRANGE" in restore and "HMGET" in restore
+assert "HGETALL" not in restore
+assert "WORLD_RECOVERY_MAX_FLOOR_RECORDS" in restore
+assert "WORLD_RECOVERY_MAX_FLOOR_BYTES" in restore
 assert "read_object(" not in restore
 assert "obj_to_room(" not in restore
 assert "if (redis_world_state_enabled)" in periodic
@@ -47,6 +52,7 @@ assert "if (redis_enabled)" not in periodic
 # current season-scoped floor hash.
 assert 'DEL mud:floor_pickups' in REDIS
 assert "redis_season_key(floor_key, sizeof floor_key, REDIS_FLOOR_DROPS_SUFFIX)" in REDIS
-assert 'redis_command(redis_ctx, "DEL %s", floor_key)' in REDIS
+assert "REDIS_FLOOR_DROP_INDEX_SUFFIX" in REDIS
+assert 'redis_command(redis_ctx, "DEL %s %s", floor_key, floor_index_key)' in REDIS
 
 print("Redis floor deltas are gated on world recovery")

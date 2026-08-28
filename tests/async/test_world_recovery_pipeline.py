@@ -142,6 +142,8 @@ print("[PASS] schema, sequence, completeness, age, length, and checksum framing 
 for token in (
     "WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024",
     "WORLD_RECOVERY_MAX_RECORD_BYTES = 256 * 1024",
+    "WORLD_RECOVERY_MAX_FLOOR_BYTES = 16 * 1024 * 1024",
+    "WORLD_RECOVERY_MAX_FLOOR_RECORDS = 32768",
     "WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 64",
     "WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC = 2000",
     "WORLD_RECOVERY_QUEUE_CAPACITY = 2",
@@ -163,9 +165,9 @@ print("[PASS] bounded capture is game-thread owned and publisher traverses no li
 
 save = section(REDIS, "bool redis_save_world_state(void)", "void redis_world_recovery_pulse")
 assert "fork()" not in save and "redis_floor_store_request_barrier" in save
-bounded_get = section(REDIS, "static redisReply *redis_get_bounded_string", "static void redis_prime_artifact_caches")
-assert "STRLEN" in bounded_get and "WORLD_RECOVERY_MAX_BYTES" in REDIS
-assert REDIS.count("redis_get_bounded_string(redis_ctx, generation_key") == 2
+generation_read = section(STORE, "bool redis_world_store_read_generation", "bool redis_world_store_publish")
+assert "bounded_string" in generation_read and "REDIS_WORLD_GENERATION_CHUNK_BYTES" in generation_read
+assert REDIS.count("redis_world_store_read_generation") == 2
 initialize = section(REDIS, "bool redis_init(void)", "bool redis_clear_pwipe_state")
 ensure = section(REDIS, "static bool redis_world_recovery_ensure_initialized", "static redisReply *redis_command")
 assert "redis_world_writer_fence_claim()" in initialize
@@ -175,10 +177,11 @@ assert "world_recovery_pipeline_set_sequence_floor(world_sequence_floor)" in ens
 publisher = STORE[STORE.index("bool redis_world_store_publish"):]
 for token in (
     "WORLD_PUBLISH_SCRIPT",
-    "EVAL %b 8",
+    "EVAL %b 9",
     "size > WORLD_RECOVERY_MAX_BYTES",
-    "assumed_bytes_per_second",
-    "maximum_publish_timeout_msec",
+    "REDIS_WORLD_GENERATION_CHUNK_BYTES",
+    "REDIS_WORLD_GENERATION_MANIFEST_BYTES",
+    "SET %s %b EX %llu",
     "reply->type == REDIS_REPLY_INTEGER && reply->integer == 1",
 ):
     assert token in publisher
@@ -188,19 +191,19 @@ for token in (
     "redis.call('SET',KEYS[3],ARGV[3])",
     "redis.call('EXPIRE',KEYS[3],ARGV[8])",
     "redis.call('SET',KEYS[2],ARGV[4])",
-    "redis.call('DEL',KEYS[8])",
+    "redis.call('DEL',KEYS[8],KEYS[9])",
     "redis.call('PEXPIRE',KEYS[1],ARGV[7])",
 ):
     assert token in STORE
 for token in ("mud:season:%llu:%s", "world_state:writer_fence",
               "world_state:generation:", "world_state:current", "world_state:timestamp",
               "world_state:sequence", "world_state:checksum", "world_state:complete",
-              "world_state:clean_shutdown", "floor_drops"):
+              "world_state:clean_shutdown", "floor_drops", "floor_drop_index"):
     assert token in REGISTRY
 for token in ("redis_world_store_mark_clean_shutdown",
               "redis_world_store_consume_clean_shutdown"):
     assert token in STORE
-assert publisher.index("GET %s") < publisher.index("EVAL %b 8")
+assert publisher.index("GET %s") < publisher.index("EVAL %b 9")
 assert "header.sequence == sequence" in section(REDIS, "bool redis_has_world_state", "bool redis_clear_world_state")
 assert "world_recovery_restore" in section(REDIS, "bool redis_load_world_state", "void event_save_world_state")
 consume = section(REDIS, "bool redis_consume_world_state", "bool redis_load_world_state")
@@ -251,6 +254,7 @@ print("[PASS] recovery publication is atomic and restore accepts only validated 
 flush = section(REDIS, "bool redis_flush_floor_drops", "void redis_remove_floor_drop")
 pulse = section(REDIS, "void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
 assert "redis_floor_store_submit" in flush
+assert "REDIS_FLOOR_DROP_INDEX_SUFFIX" in flush
 assert "world_recovery_floor_ack_pending" not in flush
 assert "redis_append_command" not in flush and "redis_collect_integer_replies" not in flush
 assert flush.count("redis_command") == 0

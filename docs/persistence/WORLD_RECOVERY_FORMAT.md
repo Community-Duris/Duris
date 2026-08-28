@@ -35,6 +35,37 @@ lengths, oversized records, unterminated strings, and native-width overflow.
 Floor deltas use the same schema-9 object-tree payload prefixed by `WRF3:`. The Redis hash
 field UID must match the decoded root UID before the record enters recovery planning.
 
+## Redis storage and memory bounds
+
+A generation is not stored as one Redis value. The season-scoped generation key contains
+an exact 56-byte `WRG1` manifest with version 1, total byte length, chunk count, the fixed
+1 MiB chunk size, and a 32-byte lowercase hexadecimal upload token. The generation bytes
+are split across at most 64 keys qualified by sequence, upload token, and zero-based chunk
+index. Every manifest and chunk expires with the configured generation TTL.
+
+The publisher writes one chunk per command on the recovery worker, then uses the writer
+fence and expected current sequence to atomically publish the manifest and pointer. A
+failed publisher deletes only chunks qualified by its own upload token. Readers validate
+the manifest, use `STRLEN` before every `GET`, require exact expected chunk sizes, and
+reject missing, malformed, oversized, or surplus-length data.
+
+Floor records are stored in a season-scoped hash with a sorted-set UID index. The floor
+worker changes each hash field and index member in the same Redis transaction. Each
+transaction group contains at most 64 mutations and 1 MiB of value bytes. During boot,
+the loader requires equal hash/index counts, accepts at most 32,768 records, and reads
+64 index members followed by one `HMGET` page at a time; it never uses `HGETALL`.
+
+Accepted recovery payload has these application-level ceilings:
+
+- generation bytes: 64 MiB;
+- floor object payload: 16 MiB;
+- generation plus floor payload: 64 MiB;
+- floor records: 32,768;
+- individual generation Redis command/reply: 1 MiB plus protocol/key overhead.
+
+Generation publication, floor encoding/indexing, and Redis socket work remain background
+operations. Durable reads and recovery planning occur only during boot.
+
 ## Runtime and compatibility policy
 
 Gameplay capture retains bounded native in-process snapshots because they never leave the

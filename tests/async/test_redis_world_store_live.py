@@ -33,6 +33,7 @@ def main() -> None:
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <vector>
 
 static redisReply *run(redisContext *context, const char *command)
 {
@@ -68,6 +69,7 @@ int main(int argc, char **argv)
     redisContext *context = redisConnect("127.0.0.1", live_port);
     assert(context && !context->err);
     freeReplyObject(run(context, "HSET mud:season:42:floor_drops 100 delta"));
+    freeReplyObject(run(context, "ZADD mud:season:42:floor_drop_index 0 100"));
 
     assert(!redis_world_store_publish(&config, writer_b, lease, first, sizeof(first) - 1,
                                       1, time(nullptr), 11));
@@ -75,6 +77,9 @@ int main(int argc, char **argv)
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
     reply = run(context, "HLEN mud:season:42:floor_drops");
+    assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
+    freeReplyObject(reply);
+    reply = run(context, "ZCARD mud:season:42:floor_drop_index");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
     freeReplyObject(reply);
 
@@ -86,8 +91,19 @@ int main(int argc, char **argv)
     reply = run(context, "EXISTS mud:season:42:floor_drops");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
+    reply = run(context, "EXISTS mud:season:42:floor_drop_index");
+    assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
+    freeReplyObject(reply);
+
+    assert(!redis_world_store_publish(&config, writer_b, lease, second,
+                                      sizeof(second) - 1, 1, time(nullptr), 22));
+    std::vector<unsigned char> loaded;
+    assert(redis_world_store_read_generation(&config, 1, &loaded));
+    assert(loaded.size() == sizeof(first) - 1 &&
+           !memcmp(loaded.data(), first, loaded.size()));
 
     freeReplyObject(run(context, "HSET mud:season:42:floor_drops 200 newer-delta"));
+    freeReplyObject(run(context, "ZADD mud:season:42:floor_drop_index 0 200"));
     assert(!redis_world_store_publish(&config, writer_b, lease, second,
                                       sizeof(second) - 1, 2, time(nullptr), 22));
     reply = run(context, "HLEN mud:season:42:floor_drops");
@@ -105,9 +121,11 @@ int main(int argc, char **argv)
     assert(reply->element[0]->type == REDIS_REPLY_STRING && !strcmp(reply->element[0]->str, "2"));
     assert(reply->element[1]->type == REDIS_REPLY_NIL);
     assert(reply->element[2]->type == REDIS_REPLY_STRING &&
-           reply->element[2]->len == sizeof(second) - 1 &&
-           !memcmp(reply->element[2]->str, second, sizeof(second) - 1));
+           reply->element[2]->len == REDIS_WORLD_GENERATION_MANIFEST_BYTES);
     freeReplyObject(reply);
+    assert(redis_world_store_read_generation(&config, 2, &loaded));
+    assert(loaded.size() == sizeof(second) - 1 &&
+           !memcmp(loaded.data(), second, loaded.size()));
     reply = run(context, "TTL mud:season:42:world_state:generation:2");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer > 3500 && reply->integer <= 3600);
     freeReplyObject(reply);
@@ -124,7 +142,14 @@ int main(int argc, char **argv)
     reply = run(context, "EXISTS mud:season:42:world_state:current mud:season:42:world_state:generation:2");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
+    reply = run(context, "SCAN 0 MATCH mud:season:42:world_state:generation:2:upload:* COUNT 100");
+    assert(reply->type == REDIS_REPLY_ARRAY && reply->elements == 2 &&
+           reply->element[1]->type == REDIS_REPLY_ARRAY && reply->element[1]->elements == 0);
+    freeReplyObject(reply);
     reply = run(context, "EXISTS mud:season:42:floor_drops");
+    assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
+    freeReplyObject(reply);
+    reply = run(context, "EXISTS mud:season:42:floor_drop_index");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
     assert(!redis_world_store_release_fence(&config, writer_a));
@@ -139,9 +164,42 @@ int main(int argc, char **argv)
                                      sizeof(first) - 1, 1, time(nullptr), 33));
     assert(redis_world_store_publish(&config, writer_b, lease, second, sizeof(second) - 1,
                                      3, time(nullptr), 44));
+    std::vector<unsigned char> large(REDIS_WORLD_GENERATION_CHUNK_BYTES * 2 + 17);
+    for (size_t index = 0; index < large.size(); ++index)
+        large[index] = static_cast<unsigned char>(index);
+    assert(redis_world_store_publish(&config, writer_b, lease, large.data(), large.size(),
+                                     4, time(nullptr), 55));
+    assert(redis_world_store_read_generation(&config, 4, &loaded));
+    assert(loaded == large);
+    reply = run(context, "TTL mud:season:42:world_state:generation:4:upload:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:chunk:000");
+    assert(reply->type == REDIS_REPLY_INTEGER && reply->integer > 3500 && reply->integer <= 3600);
+    freeReplyObject(reply);
+    freeReplyObject(run(context, "DEL mud:season:42:world_state:generation:4:upload:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:chunk:001"));
+    assert(!redis_world_store_read_generation(&config, 4, &loaded));
+    assert(loaded.empty());
+    assert(redis_world_store_publish(&config, writer_b, lease, large.data(), large.size(),
+                                     4, time(nullptr), 56));
+    std::vector<unsigned char> oversized(REDIS_WORLD_GENERATION_CHUNK_BYTES + 1, 1);
+    reply = (redisReply *)redisCommand(
+        context,
+        "SET mud:season:42:world_state:generation:4:upload:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:chunk:001 %b",
+        oversized.data(), oversized.size());
+    assert(reply && reply->type == REDIS_REPLY_STATUS);
+    freeReplyObject(reply);
+    assert(!redis_world_store_read_generation(&config, 4, &loaded));
+    assert(loaded.empty());
+    assert(redis_world_store_publish(&config, writer_b, lease, large.data(), large.size(),
+                                     4, time(nullptr), 57));
+    freeReplyObject(run(context, "SET mud:season:42:world_state:generation:4 bad"));
+    assert(!redis_world_store_read_generation(&config, 4, &loaded));
+    assert(loaded.empty());
+    assert(redis_world_store_publish(&config, writer_b, lease, large.data(), large.size(),
+                                     4, time(nullptr), 58));
+    assert(redis_world_store_read_generation(&config, 4, &loaded));
+    assert(loaded == large);
     reply = run(context, "MGET mud:season:42:world_state:current mud:season:43:world_state:current");
     assert(reply->type == REDIS_REPLY_ARRAY && reply->elements == 2);
-    assert(reply->element[0]->type == REDIS_REPLY_STRING && !strcmp(reply->element[0]->str, "3"));
+    assert(reply->element[0]->type == REDIS_REPLY_STRING && !strcmp(reply->element[0]->str, "4"));
     assert(reply->element[1]->type == REDIS_REPLY_STRING && !strcmp(reply->element[1]->str, "1"));
     freeReplyObject(reply);
     assert(redis_world_store_release_fence(&config, writer_b));

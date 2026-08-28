@@ -40,6 +40,7 @@
 #include "ships/ships.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <new>
 #include <string>
@@ -104,7 +105,6 @@ static void redis_prime_artifact_caches(void);
 
 #ifndef __NO_MYSQL__
 static redisReply *redis_command(redisContext *ctx, const char *format, ...);
-static redisReply *redis_get_bounded_string(redisContext *ctx, const char *key, size_t max_bytes);
 
 static void redis_log_command_failure(const char *outcome)
 {
@@ -137,15 +137,6 @@ static bool redis_epoch_key(char *buffer, size_t size, uint64_t epoch, const cha
 bool redis_season_key(char *buffer, size_t size, const char *suffix)
 {
 	return redis_epoch_key(buffer, size, sql_season_epoch(), suffix);
-}
-
-static bool redis_world_generation_key(char *buffer, size_t size, uint64_t epoch, uint64_t sequence)
-{
-	char suffix[96];
-	const int written = snprintf(suffix, sizeof suffix, REDIS_WORLD_GENERATION_FORMAT,
-				     (unsigned long long)sequence);
-	return written > 0 && (size_t)written < sizeof suffix &&
-	       redis_epoch_key(buffer, size, epoch, suffix);
 }
 
 static bool redis_world_writer_token_create(void)
@@ -265,25 +256,6 @@ static redisReply *redis_command(redisContext *ctx, const char *format, ...)
 	if (reply->type == REDIS_REPLY_ERROR)
 	{
 		redis_log_command_failure("error_reply");
-		freeReplyObject(reply);
-		return NULL;
-	}
-	return reply;
-}
-
-static redisReply *redis_get_bounded_string(redisContext *ctx, const char *key, size_t max_bytes)
-{
-	if (!ctx || !key || !*key || !max_bytes)
-		return NULL;
-	constexpr const char *script = "local size=redis.call('STRLEN',KEYS[1]) "
-				       "if size>tonumber(ARGV[1]) then return size end "
-				       "return redis.call('GET',KEYS[1])";
-	redisReply *reply = (redisReply *)redis_command(ctx, "EVAL %b 1 %s %zu", script,
-							strlen(script), key, max_bytes);
-	if (reply && reply->type == REDIS_REPLY_INTEGER)
-	{
-		logit(LOG_SYS, "redis: rejected oversized recovery value bytes=%lld limit=%zu",
-		      reply->integer, max_bytes);
 		freeReplyObject(reply);
 		return NULL;
 	}
@@ -838,7 +810,10 @@ bool redis_flush_floor_drops(void)
 	if (floor_drop_batch_count == 0 && floor_drop_remove_count == 0)
 		return true;
 	char floor_key[128];
-	if (!redis_season_key(floor_key, sizeof floor_key, REDIS_FLOOR_DROPS_SUFFIX))
+	char floor_index_key[128];
+	if (!redis_season_key(floor_key, sizeof floor_key, REDIS_FLOOR_DROPS_SUFFIX) ||
+	    !redis_season_key(floor_index_key, sizeof floor_index_key,
+			      REDIS_FLOOR_DROP_INDEX_SUFFIX))
 		return false;
 
 	std::vector<redis_floor_mutation> mutations;
@@ -858,7 +833,8 @@ bool redis_flush_floor_drops(void)
 		mutations.push_back({ floor_drop_batch[i].uid, floor_drop_batch[i].record,
 				      floor_drop_batch[i].record_size, false, true });
 
-	if (!redis_floor_store_submit(floor_key, mutations.data(), mutations.size()))
+	if (!redis_floor_store_submit(floor_key, floor_index_key, mutations.data(),
+				      mutations.size()))
 		return false;
 
 	floor_drop_remove_count = 0;
@@ -905,11 +881,15 @@ static bool redis_clear_floor_drops_checked(void)
 	if (!redis_enabled || !redis_ctx)
 		return false;
 	char floor_key[128];
+	char floor_index_key[128];
 	const uint64_t epoch = world_writer_epoch ? world_writer_epoch : sql_season_epoch();
-	if (!redis_epoch_key(floor_key, sizeof floor_key, epoch, REDIS_FLOOR_DROPS_SUFFIX))
+	if (!redis_epoch_key(floor_key, sizeof floor_key, epoch, REDIS_FLOOR_DROPS_SUFFIX) ||
+	    !redis_epoch_key(floor_index_key, sizeof floor_index_key, epoch,
+			     REDIS_FLOOR_DROP_INDEX_SUFFIX))
 		return false;
 
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s", floor_key);
+	redisReply *reply =
+		(redisReply *)redis_command(redis_ctx, "DEL %s %s", floor_key, floor_index_key);
 	if (!reply || reply->type != REDIS_REPLY_INTEGER)
 	{
 		if (reply)
@@ -928,93 +908,149 @@ void redis_clear_floor_drops(void)
 	redis_clear_floor_drops_checked();
 }
 
-static bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *records)
+static bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *records,
+				     size_t maximum_bytes)
 {
 #ifndef __NO_MYSQL__
 	if (!records || !redis_world_state_enabled || !redis_enabled || !redis_ctx)
 		return false;
 	char floor_key[128];
-	if (!redis_season_key(floor_key, sizeof floor_key, REDIS_FLOOR_DROPS_SUFFIX))
+	char floor_index_key[128];
+	if (!redis_season_key(floor_key, sizeof floor_key, REDIS_FLOOR_DROPS_SUFFIX) ||
+	    !redis_season_key(floor_index_key, sizeof floor_index_key,
+			      REDIS_FLOOR_DROP_INDEX_SUFFIX))
 		return false;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HGETALL %s", floor_key);
-	if (!reply || reply->type != REDIS_REPLY_ARRAY)
-	{
-		if (reply)
-			freeReplyObject(reply);
+	redisReply *index_count_reply =
+		(redisReply *)redis_command(redis_ctx, "ZCARD %s", floor_index_key);
+	redisReply *hash_count_reply = (redisReply *)redis_command(redis_ctx, "HLEN %s", floor_key);
+	const bool counts_valid =
+		index_count_reply && index_count_reply->type == REDIS_REPLY_INTEGER &&
+		index_count_reply->integer >= 0 && hash_count_reply &&
+		hash_count_reply->type == REDIS_REPLY_INTEGER && hash_count_reply->integer >= 0 &&
+		index_count_reply->integer == hash_count_reply->integer &&
+		static_cast<uint64_t>(index_count_reply->integer) <=
+			WORLD_RECOVERY_MAX_FLOOR_RECORDS;
+	const size_t record_count = counts_valid ? static_cast<size_t>(index_count_reply->integer) :
+						   0;
+	if (index_count_reply)
+		freeReplyObject(index_count_reply);
+	if (hash_count_reply)
+		freeReplyObject(hash_count_reply);
+	if (!counts_valid || (record_count && !maximum_bytes) ||
+	    maximum_bytes > WORLD_RECOVERY_MAX_FLOOR_BYTES)
 		return false;
-	}
-	if (reply->elements % 2)
-	{
-		freeReplyObject(reply);
-		return false;
-	}
-	bool valid = true;
-	size_t aggregate_size = 0;
 	try
 	{
 		records->clear();
-		records->reserve(reply->elements / 2);
+		records->reserve(record_count);
 	}
 	catch (const std::bad_alloc &)
 	{
-		freeReplyObject(reply);
 		return false;
 	}
-	for (size_t i = 0; i + 1 < reply->elements; i += 2)
+	constexpr size_t page_size = 64;
+	size_t aggregate_size = 0;
+	for (size_t first = 0; first < record_count; first += page_size)
 	{
-		const redisReply *field_reply = reply->element[i];
-		const redisReply *value_reply = reply->element[i + 1];
-		const char *uid_str = field_reply && field_reply->type == REDIS_REPLY_STRING ?
-					      field_reply->str :
-					      NULL;
-		const char *encoded = value_reply && value_reply->type == REDIS_REPLY_STRING ?
-					      value_reply->str :
-					      NULL;
-		char *end = NULL;
-		errno = 0;
-		const uint64_t field_uid = uid_str ? strtoull(uid_str, &end, 10) : 0;
-		uint64_t root_uid = 0;
-		if (!uid_str || !encoded || errno || !end || *end || !field_uid || !value_reply ||
-		    !world_recovery_floor_object_root_uid(
-			    reinterpret_cast<const unsigned char *>(encoded), value_reply->len,
-			    &root_uid))
+		const size_t count = std::min(page_size, record_count - first);
+		redisReply *fields = (redisReply *)redis_command(
+			redis_ctx, "ZRANGE %s %zu %zu", floor_index_key, first, first + count - 1);
+		if (!fields || fields->type != REDIS_REPLY_ARRAY || fields->elements != count)
 		{
+			if (fields)
+				freeReplyObject(fields);
+			records->clear();
+			return false;
+		}
+		std::array<const char *, page_size + 2> arguments = {};
+		std::array<size_t, page_size + 2> lengths = {};
+		std::array<uint64_t, page_size> field_uids = {};
+		arguments[0] = "HMGET";
+		lengths[0] = 5;
+		arguments[1] = floor_key;
+		lengths[1] = strlen(floor_key);
+		bool valid = true;
+		for (size_t index = 0; index < count; ++index)
+		{
+			const redisReply *field = fields->element[index];
+			char *end = NULL;
+			errno = 0;
+			field_uids[index] = field && field->type == REDIS_REPLY_STRING &&
+							    field->str ?
+						    strtoull(field->str, &end, 10) :
+						    0;
+			valid = valid && field && field->type == REDIS_REPLY_STRING && field->str &&
+				!errno && end && !*end && field_uids[index];
+			arguments[index + 2] = field ? field->str : nullptr;
+			lengths[index + 2] = field ? field->len : 0;
+		}
+		redisReply *values = nullptr;
+		if (valid)
+			values = static_cast<redisReply *>(
+				redisCommandArgv(redis_ctx, static_cast<int>(count + 2),
+						 arguments.data(), lengths.data()));
+		if (!values || values->type != REDIS_REPLY_ARRAY || values->elements != count)
 			valid = false;
-			break;
-		}
-		const size_t record_size = value_reply->len - WORLD_RECOVERY_FLOOR_PREFIX_BYTES;
-		if (record_size > WORLD_RECOVERY_MAX_RECORD_BYTES ||
-		    aggregate_size > WORLD_RECOVERY_MAX_BYTES - record_size)
+		for (size_t index = 0; valid && index < count; ++index)
 		{
-			valid = false;
-			break;
+			const redisReply *value = values->element[index];
+			uint64_t root_uid = 0;
+			valid = value && value->type == REDIS_REPLY_STRING && value->str &&
+				value->len > WORLD_RECOVERY_FLOOR_PREFIX_BYTES &&
+				value->len <= WORLD_RECOVERY_FLOOR_PREFIX_BYTES +
+						      WORLD_RECOVERY_MAX_RECORD_BYTES &&
+				world_recovery_floor_object_root_uid(
+					reinterpret_cast<const unsigned char *>(value->str),
+					value->len, &root_uid) &&
+				root_uid == field_uids[index];
+			if (!valid)
+				break;
+			const size_t record_size = value->len - WORLD_RECOVERY_FLOOR_PREFIX_BYTES;
+			if (record_size > maximum_bytes - aggregate_size)
+			{
+				valid = false;
+				break;
+			}
+			std::vector<unsigned char> record;
+			try
+			{
+				record.resize(record_size);
+			}
+			catch (const std::bad_alloc &)
+			{
+				valid = false;
+				break;
+			}
+			memcpy(record.data(), value->str + WORLD_RECOVERY_FLOOR_PREFIX_BYTES,
+			       record_size);
+			aggregate_size += record_size;
+			records->push_back(std::move(record));
 		}
-		std::vector<unsigned char> record;
-		try
+		if (values)
+			freeReplyObject(values);
+		freeReplyObject(fields);
+		if (!valid)
 		{
-			record.resize(record_size);
+			records->clear();
+			return false;
 		}
-		catch (const std::bad_alloc &)
-		{
-			valid = false;
-			break;
-		}
-		memcpy(record.data(), encoded + WORLD_RECOVERY_FLOOR_PREFIX_BYTES, record_size);
-		if (root_uid != field_uid)
-		{
-			valid = false;
-			break;
-		}
-		aggregate_size += record_size;
-		records->push_back(std::move(record));
 	}
-	freeReplyObject(reply);
-	if (!valid)
+	index_count_reply = (redisReply *)redis_command(redis_ctx, "ZCARD %s", floor_index_key);
+	hash_count_reply = (redisReply *)redis_command(redis_ctx, "HLEN %s", floor_key);
+	const bool stable = index_count_reply && index_count_reply->type == REDIS_REPLY_INTEGER &&
+			    hash_count_reply && hash_count_reply->type == REDIS_REPLY_INTEGER &&
+			    index_count_reply->integer == static_cast<long long>(record_count) &&
+			    hash_count_reply->integer == static_cast<long long>(record_count);
+	if (index_count_reply)
+		freeReplyObject(index_count_reply);
+	if (hash_count_reply)
+		freeReplyObject(hash_count_reply);
+	if (!stable)
 		records->clear();
-	return valid;
+	return stable;
 #else
 	(void)records;
+	(void)maximum_bytes;
 	return false;
 #endif
 }
@@ -1260,19 +1296,14 @@ bool redis_has_world_state(void)
 		clean_restart_recovery_boot = 0;
 		return false;
 	}
-	char generation_key[160];
-	if (!redis_world_generation_key(generation_key, sizeof generation_key, epoch, sequence))
-		return false;
-	reply = redis_get_bounded_string(redis_ctx, generation_key, WORLD_RECOVERY_MAX_BYTES);
-	if (!reply)
+	std::vector<unsigned char> generation;
+	const redis_world_store_config config = redis_world_store_config_copy();
+	if (!redis_world_store_read_generation(&config, sequence, &generation))
 		return false;
 	world_recovery_header header = {};
-	const bool exists =
-		reply->type == REDIS_REPLY_STRING && reply->str && reply->len > 0 &&
-		world_recovery_validate(reinterpret_cast<const unsigned char *>(reply->str),
-					reply->len, world_state_max_age, sequence, &header) &&
-		header.sequence == sequence;
-	freeReplyObject(reply);
+	const bool exists = world_recovery_validate(generation.data(), generation.size(),
+						    world_state_max_age, sequence, &header) &&
+			    header.sequence == sequence;
 	if (exists)
 		world_sequence_floor = std::max(world_sequence_floor, sequence);
 	clean_restart_recovery_boot = exists && candidate_clean_sequence == sequence ? 1 : 0;
@@ -1381,31 +1412,18 @@ bool redis_load_world_state(void)
 	if (!expected_sequence)
 		return false;
 
-	char generation_key[160];
-	if (!redis_world_generation_key(generation_key, sizeof generation_key, epoch,
-					expected_sequence))
+	std::vector<unsigned char> generation;
+	const redis_world_store_config config = redis_world_store_config_copy();
+	if (!redis_world_store_read_generation(&config, expected_sequence, &generation))
 		return false;
-	redisReply *reply =
-		redis_get_bounded_string(redis_ctx, generation_key, WORLD_RECOVERY_MAX_BYTES);
-	if (!reply || redis_ctx->err)
-	{
-		if (reply)
-			freeReplyObject(reply);
-		return false;
-	}
-
-	if (reply->type != REDIS_REPLY_STRING || !reply->str || reply->len == 0)
-	{
-		freeReplyObject(reply);
-		return false;
-	}
 
 	std::vector<std::vector<unsigned char>> floor_records;
-	if (!redis_read_floor_records(&floor_records))
-	{
-		freeReplyObject(reply);
+	const size_t floor_budget = generation.size() <= WORLD_RECOVERY_MAX_BYTES ?
+					    std::min(WORLD_RECOVERY_MAX_FLOOR_BYTES,
+						     WORLD_RECOVERY_MAX_BYTES - generation.size()) :
+					    0;
+	if (!redis_read_floor_records(&floor_records, floor_budget))
 		return false;
-	}
 	std::vector<const unsigned char *> floor_record_data;
 	std::vector<size_t> floor_record_sizes;
 	try
@@ -1420,15 +1438,12 @@ bool redis_load_world_state(void)
 	}
 	catch (const std::bad_alloc &)
 	{
-		freeReplyObject(reply);
 		return false;
 	}
 	world_recovery_header header = {};
 	const bool result = world_recovery_restore_with_floor(
-		reinterpret_cast<const unsigned char *>(reply->str), reply->len,
-		world_state_max_age, expected_sequence, floor_record_data.data(),
-		floor_record_sizes.data(), floor_records.size(), &header);
-	freeReplyObject(reply);
+		generation.data(), generation.size(), world_state_max_age, expected_sequence,
+		floor_record_data.data(), floor_record_sizes.data(), floor_records.size(), &header);
 	if (!result || header.sequence != expected_sequence)
 	{
 		logit(LOG_SYS, "redis: rejected invalid world recovery generation");

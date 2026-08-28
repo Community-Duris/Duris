@@ -5,11 +5,65 @@ Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
-RDS-023, RDS-024, RDS-027, RDS-028, and RDS-016 are remediated. RDS-008 is remediated for
+RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, and RDS-017 are remediated. RDS-008 is remediated for
 connection security but remains partial for namespace isolation; the remaining findings
 are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-017 bounded recovery commands and aggregate memory
+
+Completed in this interval:
+
+- Replaced each monolithic generation value with a 56-byte `WRG1` manifest and at most
+  64 writer-qualified chunks of at most 1 MiB each. Publication writes expiring chunks on
+  the existing publisher thread, then atomically advances the fenced generation pointer
+  to the manifest. Writer-qualified upload keys prevent a stale publisher from deleting a
+  current publisher's chunks.
+- Reads validate the exact manifest first, check each chunk with `STRLEN`, require the
+  exact expected chunk size, and assemble no more than the 64 MiB generation ceiling.
+  Missing, malformed, incorrectly sized, or oversized chunks fail recovery closed.
+- Added a season-scoped sorted-set index for floor-record UIDs. The floor worker updates
+  the hash and index together in transactions bounded to 64 mutations and 1 MiB of value
+  data. Snapshot barriers expose only completed groups and retries are idempotent.
+- Replaced boot-time `HGETALL` with count-checked, 64-record `ZRANGE`/`HMGET` pages. Boot
+  enforces 32,768 floor records, 16 MiB of floor payload, and a 64 MiB combined
+  generation-plus-floor payload ceiling before recovery planning.
+- Extended the Redis registry from 35 to 37 surfaces for the generation-chunk key format
+  and floor index. Generation publication and administrator cleanup delete the floor hash
+  and index together, and generation manifests/chunks retain bounded TTL cleanup.
+
+Performance effect:
+
+- Gameplay capture is unchanged: it performs only the existing bounded native snapshot
+  copies and queue operations. It performs no Redis, SQL, filesystem, process, logging, or
+  wait operation.
+- The largest generation Redis command or reply is reduced from roughly 64 MiB to 1 MiB,
+  eliminating the generation-sized Hiredis command-formatting buffer. Chunk work remains
+  publisher-thread or boot-only.
+- Floor publication remains worker-only. Transaction groups cap queued Redis output at
+  64 mutations and 1 MiB of values; boot pages cap each floor fetch to 64 validated
+  records instead of allocating the complete hash reply.
+- Application-owned recovery bytes are explicitly capped at 64 MiB combined, including
+  at most 16 MiB of floor payload. Planning/materialization allocations remain boot-only
+  and are bounded by the same validated record counts and payload ceilings.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed bounded chunk, manifest,
+  index, and no-game-thread-I/O source contracts.
+- `python3 tests/async/test_redis_failure_containment.py`: passed bounded worker,
+  transactional index, and fail-closed publication contracts.
+- `python3 tests/async/test_redis_floor_world_gate.py`: passed paged boot-read and feature
+  gate contracts, including the absence of `HGETALL`.
+- `python3 tests/async/test_redis_floor_store_live.py`: passed under ASan/UBSan against
+  isolated Redis with hash/index consistency before and after an ordered barrier.
+- `python3 tests/async/test_redis_world_store_live.py`: passed against isolated Redis with
+  multi-chunk round trips, stale-writer isolation, TTLs, previous-generation cleanup, and
+  missing, oversized, and malformed chunk/manifest rejection.
+- `python3 tests/async/test_redis_key_registry.py` and
+  `python3 tests/async/test_data_lifecycle_manifest.py`: passed with 37 Redis surfaces.
 
 ### 2026-08-28 - RDS-016 portable world-recovery codec
 
@@ -57,7 +111,7 @@ Validation:
 
 Completed in this interval:
 
-- Added one declarative registry for all 35 active and cleanup-only Redis keys, key
+- Added one declarative registry, initially covering 35 active and cleanup-only Redis keys, key
   formats, prefixes, patterns, and channels across world recovery, floor deltas,
   presence, content caches, donation delivery, and retired ship snapshots.
 - Replaced every `mud:` and `ship:snapshot:` literal in runtime C/C++ sources with
@@ -82,12 +136,12 @@ Performance effect:
 Validation:
 
 - `make -C src -j2`: passed with the warning-as-error profile.
-- `python3 tests/async/test_redis_key_registry.py`: passed with 35 declared surfaces and
+- `python3 tests/async/test_redis_key_registry.py`: passed with 37 declared surfaces and
   exact destructive-maintenance pattern matching.
 - `python3 tests/async/test_data_lifecycle_manifest.py`: passed, including registry drift
   and fail-closed coverage.
 - `python3 scripts/validate_data_lifecycle.py --json`: passed with 172 database tables,
-  21 non-database stores, and 35 Redis surfaces.
+  21 non-database stores, and 37 Redis surfaces.
 
 ### 2026-08-28 - RDS-027 supported server build contract
 
@@ -445,11 +499,8 @@ Validation:
   including the generation TTL and publication size ceiling.
 - `python3 tests/async/test_redis_failure_containment.py`: passed.
 
-Remaining related work:
-
-- RDS-017 still includes Hiredis's command formatting buffer and unbounded aggregate
-  floor-hash restore. Chunked recovery would be needed to make peak memory much lower than
-  roughly two generation-sized buffers during publication.
+Remaining related work was completed by the later chunked-generation and indexed-floor
+interval above.
 
 ### 2026-08-28 - RDS-011/RDS-021 local report cache and asynchronous publication
 
@@ -1612,20 +1663,23 @@ tests. Keep the in-process structs separate from the durable format.
 
 Severity: Medium
 Confidence: Confirmed
-Remediation status: Partially remediated; validation and publication enforce the 64 MiB
-ceiling, reads reject oversized values server-side before transfer, the publisher owns
-only one application-level blob, write deadlines scale with payload size, and generation
-keys expire. Hiredis command formatting and aggregate floor restore remain open.
+Remediation status: Completed on branch. Generation storage is chunked into a small
+manifest plus at most 64 one-MiB values, every read is length-checked before transfer,
+floor recovery uses a transactionally maintained UID index and 64-record pages, and boot
+enforces explicit generation, floor, record-count, and combined payload ceilings.
 
-- Capture is limited to 64 MiB, but validation does not reject an incoming value larger
-  than that bound. Hiredis must receive and allocate the complete `GET` reply before
-  validation runs ([`src/world_recovery_pipeline.c`](../../src/world_recovery_pipeline.c#L493)).
-- The publisher holds the generation payload, allocates a second header-plus-payload
-  vector, and then passes it to hiredis, which formats another command buffer. Peak memory
-  is materially above the documented generation ceiling.
-- The same 100 ms command timeout is used for a possible 64 MiB `SET`.
-- Only the previously current generation is deleted. Crashes and races can leave orphan
-  generation keys indefinitely; generations have no TTL or bounded garbage collector.
+The audit baseline performed a complete `GET` and a monolithic publication command for a
+possible 64 MiB generation, so Hiredis could allocate generation-sized reply and command
+buffers. It also restored the entire floor hash with `HGETALL`, had no floor aggregate or
+record-count ceiling, and could leave orphan generation keys indefinitely.
+
+The current publisher writes at most 1 MiB per Redis command on its worker thread and
+atomically publishes only the fixed-size manifest. Boot accepts only exact manifest and
+chunk lengths. Floor writes update the hash and sorted-set index in bounded worker
+transactions; boot verifies index/hash counts and reads 64 fields per page. The accepted
+application payload is at most 64 MiB combined, with at most 16 MiB and 32,768 records
+from the floor bridge. All generation artifacts expire, and successful replacement or
+consumption removes the known prior/current artifacts in bounded commands.
 
 Recommendation: check `STRLEN` before `GET`, reject over-limit data, use a chunked or
 streamed format, and document a true peak-memory budget. Use a publication-specific
@@ -1726,7 +1780,7 @@ maintenance patterns are checked against it, and lifecycle validation derives Re
 coverage and exact locators from it.
 
 The audit baseline lifecycle manifest had only `redis:world_recovery`, while runtime keys
-were duplicated as string literals. The registry now declares 35 surfaces mapped to five
+were duplicated as string literals. The registry now declares 37 surfaces mapped to five
 lifecycle stores: world/floor recovery, presence, content caches, donation pub/sub, and
 retired ship-cache cleanup. Runtime source is prohibited from introducing another
 `mud:` or `ship:snapshot:` literal, and the validator fails when a registry store is
@@ -1879,8 +1933,8 @@ keeps the key registry and lifecycle inventory accurate.
 1. Introduce the central Redis adapter, namespace/key registry, ACL/TLS/database settings,
    health state machine, circuit breaker, and reconnect backoff.
 2. Replace native recovery structs with a fixed-width versioned codec and add a true
-   inbound/peak-memory bound. The codec is completed; aggregate floor and Hiredis command
-   memory remain tracked by RDS-017.
+   inbound/peak-memory bound. Completed by the schema-9 codec and RDS-017 chunked,
+   indexed recovery storage.
 3. Enforce presence privacy centrally and harden donation envelopes, budgets, escaping,
    and feature gating.
 4. Move noncritical Redis writes off the simulation thread and pipeline bounded batches.
