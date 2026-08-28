@@ -222,6 +222,8 @@ static void format_time_remaining(time_t expires_at, char *buf, size_t buflen)
 bool poll_has_voted(const char *account_name, int poll_id)
 {
 #ifdef __NO_MYSQL__
+	(void)account_name;
+	(void)poll_id;
 	return false;
 #else
 	if (!account_name || !*account_name)
@@ -247,7 +249,9 @@ vector<poll_data> poll_get_all(bool active_only)
 {
 	vector<poll_data> polls;
 
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	(void)active_only;
+#else
 	MYSQL_RES *res;
 
 	if (active_only)
@@ -311,7 +315,9 @@ poll_data poll_get_by_id(int poll_id)
 	poll_data poll;
 	poll.id = 0;
 
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	(void)poll_id;
+#else
 	MYSQL_RES *res = db_query(
 		"SELECT id, question, created_by, UNIX_TIMESTAMP(created_at), UNIX_TIMESTAMP(expires_at), is_active, multi_select, max_choices "
 		"FROM polls WHERE id = %d",
@@ -393,6 +399,7 @@ poll_data poll_get_by_id(int poll_id)
 bool poll_create(poll_data *poll)
 {
 #ifdef __NO_MYSQL__
+	(void)poll;
 	return false;
 #else
 	string question_esc = escape_str(poll->question.c_str());
@@ -425,6 +432,8 @@ bool poll_create(poll_data *poll)
 bool poll_close(int poll_id, P_char ch)
 {
 #ifdef __NO_MYSQL__
+	(void)poll_id;
+	(void)ch;
 	return false;
 #else
 	poll_data poll = poll_get_by_id(poll_id);
@@ -461,6 +470,9 @@ bool poll_close(int poll_id, P_char ch)
 int poll_cast_vote(P_char ch, int poll_id, vector<int> &choices)
 {
 #ifdef __NO_MYSQL__
+	(void)ch;
+	(void)poll_id;
+	(void)choices;
 	return 0;
 #else
 	const char *acct = get_account_name_safe(ch);
@@ -504,6 +516,11 @@ int poll_record_votes(const char *acct_name, const char *char_name, int poll_id,
 		      vector<int> &choices)
 {
 #ifdef __NO_MYSQL__
+	(void)acct_name;
+	(void)char_name;
+	(void)poll_id;
+	(void)poll;
+	(void)choices;
 	return 0;
 #else
 	string acct_esc = escape_str(acct_name);
@@ -1144,7 +1161,11 @@ void poll_wizard_handle_input(P_char ch, char *input)
 /* broadcasts */
 void poll_broadcast_new(int poll_id, const char *question, const char *creator)
 {
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	(void)poll_id;
+	(void)question;
+	(void)creator;
+#else
 	extern struct descriptor_data *descriptor_list;
 	struct descriptor_data *d;
 
@@ -1179,7 +1200,10 @@ void poll_broadcast_new(int poll_id, const char *question, const char *creator)
 
 void poll_broadcast_vote(int poll_id, int total_votes)
 {
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	(void)poll_id;
+	(void)total_votes;
+#else
 	extern struct descriptor_data *descriptor_list;
 	struct descriptor_data *d;
 
@@ -1213,7 +1237,10 @@ void poll_broadcast_vote(int poll_id, int total_votes)
 
 void poll_broadcast_close(int poll_id, const char *question)
 {
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+	(void)poll_id;
+	(void)question;
+#else
 	extern struct descriptor_data *descriptor_list;
 	struct descriptor_data *d;
 

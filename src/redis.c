@@ -85,7 +85,7 @@ bool redis_init(void)
 	redis_floor_runtime_reset();
 	redis_presence_runtime_set_enabled(false);
 	redis_report_cache_reset();
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	redis_enabled = false;
 	return true;
 #else
@@ -226,7 +226,7 @@ bool redis_validate_pwipe_state(void)
 
 void redis_cleanup(void)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	redis_donation_worker_shutdown();
 	redis_presence_runtime_set_enabled(false);
 	if (!redis_presence_worker_shutdown(REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC))

@@ -24,7 +24,7 @@
 #include <thread>
 #include <vector>
 
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 #include <hiredis/hiredis.h>
 #include <openssl/rand.h>
 #endif
@@ -56,7 +56,7 @@ bool world_floor_handoff_active = false;
 uint64_t clean_shutdown_sequence = 0;
 uint64_t world_sequence_floor = 0;
 
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 void redis_clear_world_authentication_secrets()
 {
 	std::fill(world_authentication_secret.begin(), world_authentication_secret.end(), '\0');
@@ -482,7 +482,7 @@ bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *records,
 
 bool redis_world_runtime_start(const redis_world_runtime_config *config)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)config;
 	return true;
 #else
@@ -595,7 +595,7 @@ bool redis_world_runtime_start(const redis_world_runtime_config *config)
 
 void redis_world_runtime_shutdown(bool pwipe)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	bool recovery_drained = true;
 	redis_floor_runtime_set_enabled(false);
 	redis_floor_runtime_set_quiesced(true);
@@ -678,7 +678,7 @@ void redis_world_recovery_boot_clear(void)
 
 bool redis_save_world_state(void)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	return false;
 #else
 	if (!world_enabled)
@@ -701,7 +701,7 @@ bool redis_save_world_state(void)
 
 void redis_world_recovery_pulse(void)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!world_enabled || !world_recovery_pipeline_health_copy().initialized)
 		return;
 	bool barrier_succeeded = false;
@@ -750,7 +750,7 @@ void redis_world_recovery_pulse(void)
 
 bool redis_world_recovery_drain(uint64_t timeout_msec)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)timeout_msec;
 	return true;
 #else
@@ -771,7 +771,7 @@ bool redis_world_recovery_drain(uint64_t timeout_msec)
 
 bool redis_world_recovery_quiesce(void)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	return true;
 #else
 	world_recovery_quiesced = true;
@@ -787,7 +787,7 @@ bool redis_world_recovery_quiesce(void)
 
 bool redis_has_world_state(void)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	return false;
 #else
 	if (!world_enabled)
@@ -831,7 +831,7 @@ bool redis_has_world_state(void)
 
 bool redis_consume_world_state(void)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	return false;
 #else
 	if (!world_enabled || !world_context || world_context->err)
@@ -857,7 +857,7 @@ bool redis_consume_world_state(void)
 
 bool redis_load_world_state(void)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	return false;
 #else
 	if (!world_enabled || ((!world_context || world_context->err) && !redis_reconnect()))

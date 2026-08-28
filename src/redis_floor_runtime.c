@@ -86,7 +86,7 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 {
 	if (_pwipe)
 		return;
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!floor_runtime_enabled || floor_runtime_quiesced || !obj || obj->obj_uid == 0)
 		return;
 
@@ -121,7 +121,7 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 
 bool redis_flush_floor_drops(void)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!floor_runtime_enabled || floor_runtime_quiesced)
 		return true;
 	if (!redis_floor_store_health_copy().initialized || !floor_key[0] || !floor_index_key[0])
@@ -159,7 +159,7 @@ bool redis_flush_floor_drops(void)
 
 void redis_remove_floor_drop(unsigned long obj_uid)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!floor_runtime_enabled || floor_runtime_quiesced || floor_runtime_materializing ||
 	    obj_uid == 0)
 		return;

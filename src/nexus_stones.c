@@ -43,22 +43,23 @@ sh_int *char_stat(P_char ch, int stat);
 int init_nexus_stones()
 {
 	// load nothing
+	return 0;
 }
 
-void do_nexus(P_char ch, char *arg, int cmd)
+void do_nexus(P_char /*ch*/, char * /*arg*/, int /*cmd*/)
 {
 	// do nothing
 }
-P_obj get_random_enemy_nexus(P_char ch)
+P_obj get_random_enemy_nexus(P_char /*ch*/)
 {
 	return NULL;
 }
 
-P_obj get_nexus_stone(int stone_id)
+P_obj get_nexus_stone(int /*stone_id*/)
 {
 	return NULL;
 }
-int check_nexus_bonus(P_char ch, int amount, int type)
+int check_nexus_bonus(P_char /*ch*/, int /*amount*/, int /*type*/)
 {
 	return 0;
 }

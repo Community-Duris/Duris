@@ -56,7 +56,7 @@ void broadcast_donation_nchat(const struct donation_event *event)
 
 void check_donation_messages(void)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!donation_enabled)
 		return;
 	for (int handled = 0; handled < REDIS_DONATION_MAX_MESSAGES_PER_PULSE; ++handled)

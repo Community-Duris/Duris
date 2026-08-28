@@ -7,11 +7,11 @@
 #include "utility.h"
 
 #ifdef __NO_MYSQL__
-void set_timer(const char *name) {}
+void set_timer(const char * /*name*/) {}
 
-void set_timer(const char *name, int date) {}
+void set_timer(const char * /*name*/, int /*date*/) {}
 
-int get_timer(const char *name)
+int get_timer(const char * /*name*/)
 {
 	return 0;
 }

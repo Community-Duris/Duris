@@ -102,6 +102,33 @@ sections below continue to describe the required end state.
   translation units, then resolve client-free link symbols and add a boot preflight
   test.
 
+### Checkpoint 5 - all client-free translation units compile
+
+- **Completed:** repaired the remaining strict compile failures in polling, SQL and
+  player SQL stubs, locker workers, timers, trophies, nexus stones, wiki help, and the
+  multiplay whitelist. SQL-disabled mutation, ownership, hydration, and query sentinels
+  now fail closed instead of reporting success.
+- **Completed:** separated Redis compilation from the MariaDB guard. Redis remains an
+  independently configured, optional service and no longer loses its hiredis types and
+  implementation merely because `PERSISTENCE_BACKEND=flatfile` disables MySQL.
+- **Checks passed:** `python3 tests/async/test_persistence_mode.py`,
+  `python3 tests/async/test_no_mysql_compat.py`,
+  `python3 tests/async/test_account_bound_reward_contract.py`,
+  `./scripts/format.sh --check`, `git diff --check`, and `make -C src -j2`.
+- **Flat build evidence:** every server translation unit now compiles with the normal
+  strict warning profile and without system MySQL headers. The build reaches its final
+  link command without `-lmysqlclient` and reports 41 distinct missing symbols.
+- **Link inventory:** the remaining symbols fall into four bounded groups: shared
+  environment/string helpers currently compiled inside the SQL-only branch; explicit
+  no-MySQL SQL/player/locker sentinels; and CTF, outpost, nexus, auction, and related
+  gameplay functions whose entire implementations are still compiled out.
+- **Files changed:** `src/poll.c`, `src/redis.c`, `src/sql.c`, `src/sql_player.c`,
+  `src/locker_async.c`, `src/timers.c`, `src/trophy.c`, `src/nexus_stones.c`,
+  `src/wikihelp.c`, and `src/multiplay_whitelist.c`.
+- **Next action:** expose `load_env_file()` and other backend-neutral helpers outside the
+  SQL branch, implement fail-closed versions of the missing SQL APIs, then decouple or
+  stub the remaining gameplay symbol groups until the client-free binary links.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

@@ -56,6 +56,10 @@ vector<whitelist_data> get_whitelist()
 bool add_to_whitelist(P_char ch, const char *player, const char *pattern, const char *description)
 {
 #ifdef __NO_MYSQL__
+	(void)ch;
+	(void)player;
+	(void)pattern;
+	(void)description;
 	return false;
 #else
 	char descbuff[MAX_STRING_LENGTH];
@@ -78,6 +82,8 @@ bool add_to_whitelist(P_char ch, const char *player, const char *pattern, const 
 bool remove_from_whitelist(P_char ch, const char *pattern)
 {
 #ifdef __NO_MYSQL__
+	(void)ch;
+	(void)pattern;
 	return false;
 #else
 	if (!qry("DELETE FROM %s WHERE pattern = trim('%s')", MULTIPLAY_WHITELIST_TABLE_NAME,

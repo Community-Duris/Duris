@@ -28,7 +28,7 @@ void redis_presence_runtime_set_enabled(bool enabled)
 
 void redis_player_online(P_char character)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!presence_enabled || !character || IS_NPC(character))
 		return;
 	if (!durisweb_presence_character_visible(character))
@@ -71,7 +71,7 @@ void redis_player_online(P_char character)
 
 void redis_player_offline(P_char character)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!presence_enabled || !character || IS_NPC(character))
 		return;
 	redis_presence_worker_submit_offline(GET_PID(character),
@@ -81,7 +81,7 @@ void redis_player_offline(P_char character)
 
 void redis_clear_online_players(void)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (presence_enabled)
 		redis_presence_worker_submit_clear();
 #endif

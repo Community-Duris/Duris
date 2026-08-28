@@ -52,6 +52,8 @@ void ensure_pconly_pool(void);
 #ifdef __NO_MYSQL__
 
 // stubs when mysql is disabled
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 bool sql_begin_transaction(void)
 {
@@ -381,6 +383,8 @@ bool sql_ensure_account_bank(const char *account_name, int racewar)
 {
 	return false;
 }
+
+#pragma GCC diagnostic pop
 
 #else
 

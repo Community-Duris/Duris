@@ -17,13 +17,13 @@
 #include <thread>
 #include <utility>
 
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 #include <hiredis/hiredis.h>
 #endif
 
 namespace
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 struct ship_delete_job
 {
 	std::string key;
@@ -245,7 +245,7 @@ void stop_worker(bool discard_pending)
 
 bool redis_ship_legacy_worker_init(const redis_connection_settings *connection)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)connection;
 	return true;
 #else
@@ -278,7 +278,7 @@ bool redis_ship_legacy_worker_init(const redis_connection_settings *connection)
 
 bool redis_ship_legacy_worker_drain(uint64_t timeout_msec)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)timeout_msec;
 	return true;
 #else
@@ -292,7 +292,7 @@ bool redis_ship_legacy_worker_drain(uint64_t timeout_msec)
 
 bool redis_ship_legacy_worker_shutdown(uint64_t timeout_msec)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)timeout_msec;
 	return true;
 #else
@@ -310,7 +310,7 @@ bool redis_ship_legacy_worker_shutdown(uint64_t timeout_msec)
 
 void redis_ship_legacy_worker_cancel(void)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	{
 		std::lock_guard<std::mutex> lock(worker_mutex);
 		if (!worker_initialized)
@@ -322,7 +322,7 @@ void redis_ship_legacy_worker_cancel(void)
 
 void redis_invalidate_ship_snapshot(const char *owner_name)
 {
-#ifndef __NO_MYSQL__
+#ifndef __NO_REDIS__
 	if (!owner_name)
 		return;
 	char key[256];
@@ -337,7 +337,7 @@ void redis_invalidate_ship_snapshot(const char *owner_name)
 
 bool redis_clear_ship_snapshots(struct redisContext *context)
 {
-#ifdef __NO_MYSQL__
+#ifdef __NO_REDIS__
 	(void)context;
 	return true;
 #else

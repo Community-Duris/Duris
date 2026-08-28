@@ -310,11 +310,11 @@ int get_zone_exp(P_char ch, int zone_number)
 }
 
 #ifdef __NO_MYSQL__
-void load_zone_trophy(P_char ch) {}
+void load_zone_trophy(P_char /*ch*/) {}
 
 void zone_trophy_update() {}
 
-void save_zone_trophy(P_char ch) {}
+void save_zone_trophy(P_char /*ch*/) {}
 #else
 void load_zone_trophy(P_char ch)
 {

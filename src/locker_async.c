@@ -631,6 +631,7 @@ fail:
 
 /* ---------------- worker ---------------- */
 
+#ifndef __NO_MYSQL__
 static int repair_failed_connection(MYSQL **conn_io)
 {
 	MYSQL *conn;
@@ -708,6 +709,7 @@ static int apply_sql_script(MYSQL **conn_io, const char *sql)
 	} while (status == 0);
 	return 1;
 }
+#endif
 
 static void *locker_async_worker_main(void *arg)
 {
@@ -727,7 +729,6 @@ static void *locker_async_worker_main(void *arg)
 	{
 		struct locker_async_job job;
 		struct locker_async_result res;
-		MYSQL *conn = NULL;
 
 		memset(&job, 0, sizeof(job));
 		pthread_mutex_lock(&g_q_mu);
@@ -748,6 +749,7 @@ static void *locker_async_worker_main(void *arg)
 		res.ok = 0;
 
 #ifndef __NO_MYSQL__
+		MYSQL *conn = NULL;
 		conn = sql_persistence_connection();
 		if (conn && job.sql)
 			res.ok = apply_sql_script(&conn, job.sql) ? 1 : 0;

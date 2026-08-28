@@ -73,12 +73,14 @@ extern P_room world;
 
 void get_pkill_player_description(P_char ch, char *buffer);
 
+#ifndef __NO_MYSQL__
 static int sql_trace_burst = 0;
 static const pid_t sql_main_process_id = getpid();
 static bool sql_trace_enabled(void);
 static bool sql_trace_active(void);
 static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained);
 static bool sql_verify_metadata_fingerprint(void);
+#endif
 
 #ifdef __NO_MYSQL__
 MYSQL *DB = NULL;
@@ -118,61 +120,61 @@ bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
 
 int initialize_mysql()
 {
-	return 1;
+	return -1;
 }
-void do_sql(P_char ch, char *argument, int cmd) {}
-int sql_save_player_core(P_char ch)
+void do_sql(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
+int sql_save_player_core(P_char /*ch*/)
 {
-	return 1;
+	return 0;
 }
-void sql_modify_frags(P_char ch, int gain) {}
-void sql_insert_item(P_char ch, P_obj obj, char *desc) {}
+void sql_modify_frags(P_char /*ch*/, int /*gain*/) {}
+void sql_insert_item(P_char /*ch*/, P_obj /*obj*/, char * /*desc*/) {}
 
-void sql_save_pkill(P_char ch, P_char victim) {}
-void sql_insert_new_item(P_char ch, P_obj obj) {}
+void sql_save_pkill(P_char /*ch*/, P_char /*victim*/) {}
+void sql_insert_new_item(P_char /*ch*/, P_obj /*obj*/) {}
 
-void sql_webinfo_toggle(P_char ch) {}
-void sql_update_level(P_char ch) {}
-void sql_update_money(P_char ch) {}
-void sql_update_epics(P_char ch) {}
-void sql_update_playtime(P_char ch) {}
-void manual_log(P_char ch) {}
-void perform_wiki_search(P_char ch, const char *buf) {}
-int sql_quest_finish(P_char ch, P_char giver, int type, int value)
+void sql_webinfo_toggle(P_char /*ch*/) {}
+void sql_update_level(P_char /*ch*/) {}
+void sql_update_money(P_char /*ch*/) {}
+void sql_update_epics(P_char /*ch*/) {}
+void sql_update_playtime(P_char /*ch*/) {}
+void manual_log(P_char /*ch*/) {}
+void perform_wiki_search(P_char /*ch*/, const char * /*buf*/) {}
+int sql_quest_finish(P_char /*ch*/, P_char /*giver*/, int /*type*/, int /*value*/)
 {
 	return -1;
 }
-int sql_quest_trophy(P_char giver)
+int sql_quest_trophy(P_char /*giver*/)
 {
 	return -1;
 }
-int sql_shop_trophy(P_obj obj)
+int sql_shop_trophy(P_obj /*obj*/)
 {
 	return -1;
 }
-int sql_shop_sell(P_char ch, P_obj obj, int value)
+int sql_shop_sell(P_char /*ch*/, P_obj /*obj*/, int /*value*/)
 {
 	return -1;
 }
-void sql_world_quest_finished(P_char ch, P_char giver, P_obj obj) {}
-int sql_world_quest_done_already(P_char ch, int quest_target)
+void sql_world_quest_finished(P_char /*ch*/, P_char /*giver*/, P_obj /*obj*/) {}
+int sql_world_quest_done_already(P_char /*ch*/, int /*quest_target*/)
 {
 	return -1;
 }
-int sql_world_quest_can_do_another(P_char ch)
+int sql_world_quest_can_do_another(P_char /*ch*/)
 {
 	return -1;
 }
 
-void sql_connectIP(P_char ch) {}
-void sql_disconnectIP(P_char ch) {}
-const char *sql_select_IP_info(P_char ch, char *buf, size_t bufSize, time_t *lastConnect,
-			       time_t *lastDisconnect)
+void sql_connectIP(P_char /*ch*/) {}
+void sql_disconnectIP(P_char /*ch*/) {}
+const char *sql_select_IP_info(P_char /*ch*/, char *buf, size_t /*bufSize*/,
+			       time_t * /*lastConnect*/, time_t * /*lastDisconnect*/)
 {
 	buf[0] = 0;
 	return buf;
 }
-int sql_find_racewar_for_ip(char *ip, int *racewar_side)
+int sql_find_racewar_for_ip(char * /*ip*/, int * /*racewar_side*/)
 {
 	return -1;
 }
@@ -180,24 +182,28 @@ bool qry_at(struct persistence_query_site site, const char *format, ...)
 {
 	(void)site;
 	(void)format;
-	return TRUE;
+	return FALSE;
 }
-void send_to_char_offline(const char *msg, int pid) {}
-void send_offline_messages(P_char ch) {}
-void log_epic_gain(int pid, int zone_id, int type, int epics) {}
-void log_epic_gain_event(const char *event_key, int pid, int type, int type_id, int epics) {}
-bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
-					const char *owner_ref, const char *context)
+void send_to_char_offline(const char * /*msg*/, int /*pid*/) {}
+void send_offline_messages(P_char /*ch*/) {}
+void log_epic_gain(int /*pid*/, int /*zone_id*/, int /*type*/, int /*epics*/) {}
+void log_epic_gain_event(const char * /*event_key*/, int /*pid*/, int /*type*/, int /*type_id*/,
+			 int /*epics*/)
 {
-	return true;
 }
-bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
-						 const char *owner_type,
-						 unsigned long long owner_id,
-						 unsigned long long owner_context_id,
-						 const char *context)
+bool sql_persistence_item_owner_matches(unsigned long long /*item_uid*/,
+					const char * /*owner_type*/, const char * /*owner_ref*/,
+					const char * /*context*/)
 {
-	return true;
+	return false;
+}
+bool sql_persistence_item_owner_matches_identity(unsigned long long /*item_uid*/,
+						 const char * /*owner_type*/,
+						 unsigned long long /*owner_id*/,
+						 unsigned long long /*owner_context_id*/,
+						 const char * /*context*/)
+{
+	return false;
 }
 bool sql_persistence_reconcile_world_recovery_items(const world_recovery_authority_item *items,
 						    size_t count,
@@ -210,11 +216,11 @@ bool sql_persistence_reconcile_world_recovery_items(const world_recovery_authori
 }
 bool sql_hydrate_item_owner_revisions(void)
 {
-	return true;
+	return false;
 }
 void update_zone_db() {}
-void update_zone_epic_level(int zone_id, int level) {}
-void show_frag_trophy(P_char ch, P_char who)
+void update_zone_epic_level(int /*zone_id*/, int /*level*/) {}
+void show_frag_trophy(P_char ch, P_char /*who*/)
 {
 	send_to_char("Disabled.", ch);
 }
@@ -282,7 +288,7 @@ void sql_log(P_char ch, const char *kind, const char *format, ...)
 	};
 
 	esc_kind = escape_sql(kind);
-	if (ch->desc && ch->desc->host)
+	if (ch->desc && ch->desc->host[0])
 		esc_ip = escape_sql(ch->desc->host);
 	esc_name = escape_sql(GET_NAME(ch));
 
@@ -307,7 +313,7 @@ void sql_log(P_char ch, const char *kind, const char *format, ...)
 	free(escaped_msg);
 }
 
-bool get_zone_info(int zone_number, struct zone_info *info)
+bool get_zone_info(int /*zone_number*/, struct zone_info * /*info*/)
 {
 	return FALSE;
 }
@@ -317,14 +323,14 @@ string escape_str(const char *str)
 	return string(str);
 }
 
-string get_mud_info(const char *name)
+string get_mud_info(const char * /*name*/)
 {
 	return string();
 }
 
-void send_mud_info(const char *name, P_char ch) {}
+void send_mud_info(const char * /*name*/, P_char /*ch*/) {}
 
-void sql_update_bind_data(int vnum, int *owner_pid, int *timer) {}
+void sql_update_bind_data(int /*vnum*/, int * /*owner_pid*/, int * /*timer*/) {}
 
 bool sql_get_bind_data(int vnum, int *owner_pid, int *timer)
 {

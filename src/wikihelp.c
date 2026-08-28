@@ -66,7 +66,7 @@ string tolower(string str_)
 
 #ifdef __NO_MYSQL__
 
-string wiki_help(string str)
+string wiki_help(string /*str*/)
 {
 	return string("The help system is temporarily disabled.");
 }
