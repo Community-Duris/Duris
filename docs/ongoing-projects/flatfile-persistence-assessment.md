@@ -2031,6 +2031,28 @@ sections below continue to describe the required end state.
   saveable NPC affects and catalog revision handling, then add prototype-aware load
   materialization and UID ownership reconciliation.
 
+### Checkpoint 61 - bounded live shopkeeper capture adapter
+
+- **Completed:** added `flatfile_shopkeeper_capture`, which converts one validated live
+  shopkeeper NPC into a detached catalog aggregate containing stable shop ID, prototype and
+  room vnums, caller-supplied revision/save time, saveable affects, and the complete
+  equipment/inventory object graph.
+- **Safety semantics:** capture rejects PCs, non-shopkeeper NPCs, invalid prototype/room
+  indexes, zero revisions, negative timestamps, cyclic affect lists, malformed item graphs,
+  and anonymous zero-UID items. It skips `AFFTYPE_NOSAVE` affects and publishes the output
+  only after both affect and item traversal succeed; allocation failure remains retryable.
+- **Legacy fidelity:** the adapter uses the shared item capture with no-rent omission
+  disabled, matching the existing SQL shopkeeper save behavior while retaining bounded
+  traversal, one-based equipment slots, zero inventory/contained markers, and complete
+  nested object state.
+- **Checks passed:** the focused immutable/source contract and normal C++20 server build
+  pass. CI now runs the capture contract beside the strict shopkeeper repository regression.
+- **Exposure:** capture performs no repository I/O or live-world mutation. Runtime save and
+  restore remain fenced until catalog revisions, prototype-aware materialization, and global
+  UID ownership reconciliation are composed into the startup and dirty-save paths.
+- **Next action:** add prototype-aware shopkeeper materialization and reconcile every
+  catalog UID with the global ownership authority before exposing runtime restore.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
