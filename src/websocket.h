@@ -38,6 +38,10 @@
 #define WS_OUTPUT_QUEUE_FULL (-2)
 #define WS_AUTH_MAX_FAILURES 5
 #define WS_AUTH_FAILURE_WINDOW 60
+#define WS_LOGIN_MAX_ATTEMPTS 5
+#define WS_LOGIN_WINDOW 60
+#define WS_REGISTER_MAX_ATTEMPTS 3
+#define WS_REGISTER_WINDOW 300
 
 /* frame length thresholds (rfc 6455) */
 #define WS_LEN_7BIT_MAX 125
@@ -100,8 +104,7 @@ int websocket_complete_handshake(struct descriptor_data *d, const char *key);
 /* frame sending */
 int websocket_send_text(struct descriptor_data *d, const char *text);
 int websocket_send_binary(struct descriptor_data *d, const void *data, size_t len);
-int websocket_send_json(struct descriptor_data *d, const char *type, const char *package,
-			const char *json);
+int websocket_send_json(struct descriptor_data *d, const char *package, const char *json);
 int websocket_send_close(struct descriptor_data *d, int code, const char *reason);
 int websocket_send_ping(struct descriptor_data *d);
 int websocket_send_pong(struct descriptor_data *d, const char *data, size_t len);

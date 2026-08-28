@@ -9629,7 +9629,11 @@ void sql_restore_saved_items(void)
 		"obj_uid "
 		"FROM saved_items WHERE container_id IS NULL");
 	if (!result)
+	{
+		logit(LOG_SYS,
+		      "sql_restore_saved_items: root restore query failed; saved ground items were not loaded");
 		return;
+	}
 
 	int loaded = 0;
 	MYSQL_ROW row;

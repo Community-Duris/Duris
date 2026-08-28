@@ -1,6 +1,6 @@
 # DurisMUD
 
-**Version: 1.81.57** | [Versioning policy](docs/guides/VERSIONING.md)
+**Version: 1.81.58** | [Versioning policy](docs/guides/VERSIONING.md)
 
 [![Build status][build-badge]][build]
 ![C++20][cpp20-badge]
@@ -115,9 +115,12 @@ recovery, proxy handling, and diagnostic switches.
 
 Set `REDIS=TRUE` with `REDIS_HOST` and `REDIS_PORT` to enable caches and recovery
 integration; `REDIS_WORLD_STATE=TRUE` additionally enables immutable world recovery.
-Player saves do not depend on Redis. If a DurisWeb backend will authenticate through WebSocket or GMCP,
-give it a private `DURISWEB_SECRET`. The remaining switches in `.env.example`
-are documented inline and are intended primarily for local gameplay testing.
+Player saves do not depend on Redis. If a DurisWeb backend will authenticate
+through WebSocket or GMCP, give it a private `DURISWEB_SECRET` and follow the
+challenge-response contract in the
+[DurisWeb API reference](docs/reference/api/durisweb.md). Production browser
+traffic must terminate TLS at a local reverse proxy. The remaining switches in
+`.env.example` are documented inline and are intended primarily for local gameplay testing.
 
 ### 3. Create a development database
 
@@ -173,9 +176,12 @@ The root build places every compiled artifact below `bin/`: the staged server
 is `bin/server/dms_new`, the editor is `bin/areas/editor/de`, and the
 area-generation tools are under `bin/areas/tools/`. The startup supervisor
 promotes the server to `bin/server/dms`, rotates prior executables under
-`bin/server/history/`, regenerates combined `areas/world.*` files, and starts
-it. Without a configured user service it runs in the background and writes
-console output to `logs/duris-console.log`.
+`bin/server/history/`, regenerates combined `areas/world.*` files, applies
+pending immutable migrations for an allow-listed local database, verifies the
+exact runtime schema on every restart, and only then starts it. Production
+startup performs the verification read-only; use the migration runbook to
+upgrade production. Without a configured user service it runs in the
+background and writes console output to `logs/duris-console.log`.
 
 For a foreground development session on port 4000, use this instead of
 `start_mud.sh`:

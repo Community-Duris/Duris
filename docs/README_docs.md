@@ -24,6 +24,7 @@ docs/
 | [DATABASE.md](reference/DATABASE.md) | Database authority, typed reads/writes, schema, reconciliation, and migrations. |
 | [EVENTS.md](reference/EVENTS.md) | The `nevent` deferred-work scheduler: the timer wheel, scheduling, cancellation, the per-pulse budget, and catch-up. |
 | [api/health.md](reference/api/health.md) | The health endpoint contract. |
+| [api/durisweb.md](reference/api/durisweb.md) | DurisWeb transport, challenge authentication, authorization, and privacy contract. |
 
 ## persistence/ - durability, lifecycle, and privacy
 

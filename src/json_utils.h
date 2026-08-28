@@ -39,12 +39,9 @@ struct ShipData;
 #define AUTH_REGISTERED "registered"
 #define AUTH_FAILED "failed"
 
-/* text categories */
-#define TEXT_COMBAT "combat"
-#define TEXT_MOVEMENT "movement"
+/* Unstructured game output currently has one category. Structured combat,
+ * movement and channel state is carried by GMCP packages. */
 #define TEXT_INFO "info"
-#define TEXT_SYSTEM "system"
-#define TEXT_CHANNEL "channel"
 
 /* gmcp package names (mudlet/ire compatible) */
 #define GMCP_ROOM_INFO "Room.Info"

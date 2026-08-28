@@ -118,10 +118,18 @@ for production.
 | --- | --- |
 | `LISTEN_ADDRESS` | Numeric IPv4 or IPv6 address applied to telnet, TLS telnet, and WebSocket listeners. Use `127.0.0.1` or `::1` for local development. |
 | `DURIS_WEBSOCKET_PORT` | WebSocket and HTTP health-listener port. It defaults to `4050`; values must be decimal ports from 1 through 65535. |
-| `DURISWEB_SECRET` | Shared secret for DurisWeb HMAC authentication. The client signature is a 64-character SHA-256 hex digest for the current Unix minute; the server accepts the adjacent minute on either side to tolerate clock skew. Keep this secret private and use the same value in the backend. |
+| `DURIS_WEBSOCKET_LISTEN_ADDRESS` | WebSocket-only numeric listener address; defaults to `LISTEN_ADDRESS`. Production requires exact loopback so a local TLS reverse proxy owns the public endpoint. |
+| `DURIS_WEBSOCKET_ALLOWED_ORIGINS` | Exact comma-separated browser `Origin` allow-list. Required in production; non-browser service connections may omit `Origin`. |
+| `DURISWEB_SECRET` | Current shared key for one-time DurisWeb challenge-response authentication. See the DurisWeb API reference. |
+| `DURISWEB_SECRET_PREVIOUS` | Optional previous service key accepted during a bounded zero-downtime rotation. Remove it after every backend has switched. |
+| `DURISWEB_PRIVATE_PRESENCE` | Exact `TRUE` opts the authenticated backend into account names, IP addresses, client metadata, and invisible staff presence. The default feed omits them. |
 | `DURIS_TRUSTED_PROXY_IP` | One immediate proxy IP address whose `X-Forwarded-For` header may be trusted for WebSocket and telnet connections. If unset, forwarded addresses are ignored. This is an address allow-list, not a CIDR range. |
 
 WebSocket and `GET /health` listen on `DURIS_WEBSOCKET_PORT` (default `4050`).
+In production, the WebSocket listener must use loopback, the trusted proxy and
+allowed origins must be configured, and the local reverse proxy must terminate
+TLS before forwarding to this plaintext listener. The server refuses to create
+the production listener when those controls are absent.
 The health response reports only process and in-memory database-pool readiness and
 performs no blocking database query. Plain telnet defaults to `7777` and TLS telnet to
 `7778`; a custom plain-telnet port uses the following port for TLS. Configure a

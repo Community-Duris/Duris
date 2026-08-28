@@ -71,23 +71,14 @@ void gmcp_handle_negotiation(struct descriptor_data *d, int cmd)
 
 static int gmcp_durisweb_auth_limited(struct descriptor_data *d)
 {
-	time_t now = time(NULL);
-
-	if (!d->durisweb_auth_window_start ||
-	    (now >= d->durisweb_auth_window_start &&
-	     now - d->durisweb_auth_window_start >= WS_AUTH_FAILURE_WINDOW))
-	{
-		d->durisweb_auth_window_start = now;
-		d->durisweb_auth_failures = 0;
-	}
-	return d->durisweb_auth_failures >= WS_AUTH_MAX_FAILURES;
+	return ws_auth_rate_limited(&d->durisweb_auth_window_start, &d->durisweb_auth_failures,
+				    WS_AUTH_MAX_FAILURES, WS_AUTH_FAILURE_WINDOW);
 }
 
 static void gmcp_durisweb_auth_failure(struct descriptor_data *d)
 {
-	(void)gmcp_durisweb_auth_limited(d);
-	if (d->durisweb_auth_failures < WS_AUTH_MAX_FAILURES)
-		d->durisweb_auth_failures++;
+	ws_auth_record_failure(&d->durisweb_auth_window_start, &d->durisweb_auth_failures,
+			       WS_AUTH_MAX_FAILURES, WS_AUTH_FAILURE_WINDOW);
 	if (d->durisweb_auth_failures >= WS_AUTH_MAX_FAILURES)
 		STATE(d) = CON_EXIT;
 }
@@ -113,6 +104,8 @@ void gmcp_handle_input(struct descriptor_data *d, const char *data, size_t len)
 				cJSON *client = cJSON_GetObjectItem(root, "client");
 				cJSON *version = cJSON_GetObjectItem(root, "version");
 				cJSON *sig = cJSON_GetObjectItem(root, "sig");
+				cJSON *challenge_request =
+					cJSON_GetObjectItem(root, "requestAuthChallenge");
 
 				if (client && cJSON_IsString(client) && client->valuestring)
 					strlcpy(d->client_name, client->valuestring,
@@ -123,7 +116,23 @@ void gmcp_handle_input(struct descriptor_data *d, const char *data, size_t len)
 						sizeof(d->client_version) - 1);
 					d->client_version[sizeof(d->client_version) - 1] = '\0';
 				}
-				if (sig && cJSON_IsString(sig))
+				if (challenge_request && cJSON_IsTrue(challenge_request) &&
+				    !d->account && !d->character && d->connected != CON_PLAYING &&
+				    !d->durisweb_verified && !d->durisweb_backend &&
+				    !gmcp_durisweb_auth_limited(d))
+				{
+					if (ws_issue_durisweb_challenge(
+						    d->durisweb_auth_challenge,
+						    &d->durisweb_auth_challenge_expires))
+					{
+						char challenge_json[128];
+						snprintf(challenge_json, sizeof(challenge_json),
+							 "{\"nonce\":\"%s\",\"expiresIn\":30}",
+							 d->durisweb_auth_challenge);
+						gmcp_send(d, "Core.AuthChallenge", challenge_json);
+					}
+				}
+				else if (sig && cJSON_IsString(sig))
 				{
 					if (d->account || d->character ||
 					    d->connected == CON_PLAYING || d->durisweb_verified ||
@@ -131,15 +140,22 @@ void gmcp_handle_input(struct descriptor_data *d, const char *data, size_t len)
 					{
 						/* Player and service identities cannot be mixed. */
 					}
-					else if (ws_verify_durisweb_signature(sig->valuestring))
+					else if (ws_verify_durisweb_signature(
+							 sig->valuestring,
+							 d->durisweb_auth_challenge,
+							 d->durisweb_auth_challenge_expires))
 					{
 						d->durisweb_verified = 1;
 						d->durisweb_backend = 1;
-						d->durisweb_auth_window_start = 0;
-						d->durisweb_auth_failures = 0;
+						ws_auth_reset(&d->durisweb_auth_window_start,
+							      &d->durisweb_auth_failures);
+						d->durisweb_auth_challenge[0] = '\0';
+						d->durisweb_auth_challenge_expires = 0;
 					}
 					else
 					{
+						d->durisweb_auth_challenge[0] = '\0';
+						d->durisweb_auth_challenge_expires = 0;
 						gmcp_durisweb_auth_failure(d);
 					}
 				}
@@ -192,7 +208,7 @@ void gmcp_send(struct descriptor_data *d, const char *package, const char *json)
 	if (d->websocket)
 	{
 		/* WebSocket: Send JSON message */
-		websocket_send_json(d, "gmcp", package, json);
+		websocket_send_json(d, package, json);
 	}
 	else
 	{

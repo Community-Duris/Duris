@@ -18,10 +18,13 @@ for source in (WS, GMCP, AUTH):
 assert '#include "ws_auth.h"' in WS
 assert '#include "ws_auth.h"' in GMCP
 assert 'getenv("DURISWEB_SECRET")' in AUTH
-assert "if (!secret || !*secret || !sig || strlen(sig) != 64)" in AUTH
+assert "if (!secret || !*secret || !sig || strlen(sig) != 64 || !challenge" in AUTH
 assert "char expected[65];" in AUTH
 assert "expected[64] = '\\0';" in AUTH
 assert "CRYPTO_memcmp(sig, expected, 64)" in AUTH
+assert 'getenv("DURISWEB_SECRET_PREVIOUS")' in AUTH
+assert "RAND_bytes" in AUTH
+assert '"%ld:%s", minute, challenge' in AUTH
 
 # The example contains a placeholder only; the runtime reads .env, never the
 # template. The server also loads .env when launched without cycle_mud.sh.

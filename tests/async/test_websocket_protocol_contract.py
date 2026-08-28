@@ -149,7 +149,7 @@ def test_legacy_binary_output_cannot_bypass_websocket_framing():
     assert 'output_result == WS_OUTPUT_QUEUE_FULL' in COMM
     assert '!(t->websocket && output_result == WS_OUTPUT_QUEUE_FULL)' in COMM
     assert 'if (d->websocket)' in GMCP
-    assert 'websocket_send_json(d, "gmcp", package, json)' in GMCP
+    assert 'websocket_send_json(d, package, json)' in GMCP
 
 
 def test_proxy_metadata_requires_trusted_peer_and_validated_values():
@@ -168,7 +168,7 @@ def test_proxy_metadata_requires_trusted_peer_and_validated_values():
 def test_authentication_fails_closed_without_configured_secret():
     assert 'DURISWEB_SECRET_DEFAULT' not in WS_HANDLERS
     assert 'DURISWEB_SECRET_DEFAULT' not in GMCP
-    assert 'if (!secret || !*secret || !sig || strlen(sig) != 64)' in AUTH
+    assert 'if (!secret || !*secret || !sig || strlen(sig) != 64 || !challenge' in AUTH
     assert '#include "ws_auth.h"' in WS_HANDLERS
     assert '#include "ws_auth.h"' in GMCP
     assert 'strlen(sig) != 64' in AUTH
@@ -182,7 +182,7 @@ def test_authorization_state_fails_closed_for_service_and_player_commands():
     assert 'd->account || d->character || d->connected == CON_PLAYING' in WS_HANDLERS
     assert 'void ws_cmd_poll_vote' in WS_HANDLERS
     assert 'if (!d || !d->account || !d->account->acct_name)' in WS_HANDLERS
-    assert 'ws_verify_durisweb_signature(sig->valuestring)' in WS_HANDLERS
+    assert 'ws_verify_durisweb_signature(sig->valuestring, d->durisweb_auth_challenge' in WS_HANDLERS
     assert 'd->connected != CON_PLAYING || !d->character' in WS_HANDLERS
     assert 'Service connection cannot log in as a player' in WS_HANDLERS
     assert 'Already authenticated' in WS_HANDLERS
@@ -196,7 +196,10 @@ def test_authorization_state_fails_closed_for_service_and_player_commands():
     assert 'websocket_input_error(d, WS_CLOSE_INTERNAL_ERROR)' in SOURCE
     assert 'WS_CLOSE_INTERNAL_ERROR ? "Internal error"' in COMM
     assert SOURCE.count('deflateInit2') == 1
-    assert SOURCE.index('deflateInit2') < SOURCE.index('websocket_send_all(d->descriptor')
+    complete_handshake = SOURCE[SOURCE.index('int websocket_complete_handshake('):]
+    assert complete_handshake.index('deflateInit2') < complete_handshake.index(
+        'websocket_send_all(d->descriptor'
+    )
     assert 'ws_compressed_message' in SOURCE
     assert 'if (rsv1 || d->ws_compressed_message)' in SOURCE
     assert 'out_size = WS_MAX_MESSAGE_SIZE - d->ws_message_len' in SOURCE
@@ -287,7 +290,7 @@ def test_authorization_state_fails_closed_for_service_and_player_commands():
     assert '#define WS_AUTH_FAILURE_WINDOW 60' in HEADER
     assert 'ws_durisweb_auth_limited' in WS_HANDLERS
     assert 'ws_durisweb_auth_failure(d);' in WS_HANDLERS
-    assert 'd->durisweb_auth_failures = 0;' in WS_HANDLERS
+    assert 'ws_auth_reset(&d->durisweb_auth_window_start' in WS_HANDLERS
     assert 'd->durisweb_auth_failures = 0;' in COMM
     assert 'gmcp_durisweb_auth_limited' in GMCP
     assert 'gmcp_durisweb_auth_failure(d);' in GMCP

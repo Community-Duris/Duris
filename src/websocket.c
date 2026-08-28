@@ -38,6 +38,63 @@ extern struct descriptor_data *descriptor_list;
 
 static int ws_listen_fd = -1;
 
+static int websocket_address_is_loopback(const char *address)
+{
+	return address && (!strcmp(address, "127.0.0.1") || !strcmp(address, "::1"));
+}
+
+static int websocket_listener_address(sockaddr_in6 *address, const char **configured)
+{
+	const char *value = getenv("DURIS_WEBSOCKET_LISTEN_ADDRESS");
+	struct in_addr ipv4;
+
+	if (!value || !*value)
+		value = getenv("LISTEN_ADDRESS");
+	if (!value || !*value || !address)
+		return 0;
+	memset(address, 0, sizeof(*address));
+	address->sin6_family = AF_INET6;
+	if (inet_pton(AF_INET6, value, &address->sin6_addr) != 1)
+	{
+		if (inet_pton(AF_INET, value, &ipv4) != 1)
+			return 0;
+		address->sin6_addr.s6_addr[10] = 0xff;
+		address->sin6_addr.s6_addr[11] = 0xff;
+		memcpy(&address->sin6_addr.s6_addr[12], &ipv4, sizeof(ipv4));
+	}
+	if (configured)
+		*configured = value;
+	return 1;
+}
+
+static int websocket_origin_allowed(const char *origin)
+{
+	const char *allowed = getenv("DURIS_WEBSOCKET_ALLOWED_ORIGINS");
+	size_t origin_len;
+
+	if (!allowed || !*allowed)
+		return 1;
+	if (!origin || !*origin)
+		return 0;
+	origin_len = strlen(origin);
+	for (const char *start = allowed; *start;)
+	{
+		const char *end = strchr(start, ',');
+		const char *trimmed_end = end ? end : start + strlen(start);
+		while (*start == ' ' || *start == '\t')
+			start++;
+		while (trimmed_end > start && (trimmed_end[-1] == ' ' || trimmed_end[-1] == '\t'))
+			trimmed_end--;
+		if ((size_t)(trimmed_end - start) == origin_len &&
+		    !memcmp(start, origin, origin_len))
+			return 1;
+		if (!end)
+			break;
+		start = end + 1;
+	}
+	return 0;
+}
+
 static int websocket_peer_is_trusted_proxy(struct descriptor_data *d)
 {
 	const char *trusted_ip = getenv("DURIS_TRUSTED_PROXY_IP");
@@ -236,6 +293,18 @@ static int websocket_send_health_response(struct descriptor_data *d)
 	return websocket_send_all(descriptor, response, (size_t)response_len);
 }
 
+static int websocket_send_http_rejection(struct descriptor_data *d, const char *status)
+{
+	char response[WS_RESPONSE_BUFFER_SIZE];
+	int response_len = snprintf(response, sizeof(response),
+				    "HTTP/1.1 %s\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
+				    status);
+
+	if (!d || response_len < 0 || (size_t)response_len >= sizeof(response))
+		return -1;
+	return websocket_send_all(d->descriptor, response, (size_t)response_len);
+}
+
 /* base64 encoding helper */
 static char *base64_encode(const unsigned char *input, int length)
 {
@@ -307,6 +376,8 @@ int websocket_init(int port)
 {
 	sockaddr_in6 sa;
 	int opt = 1;
+	const char *listen_address = NULL;
+	const char *environment = getenv("ENVIRONMENT");
 	const char *configured_port = getenv("DURIS_WEBSOCKET_PORT");
 	if (configured_port && *configured_port)
 	{
@@ -338,9 +409,19 @@ int websocket_init(int port)
 
 	/* set up address */
 	memset(&sa, 0, sizeof(sa));
-	if (!runtime_listener_address(&sa))
+	if (!websocket_listener_address(&sa, &listen_address))
 	{
-		logit(LOG_STATUS, "WebSocket LISTEN_ADDRESS is invalid");
+		logit(LOG_STATUS, "WebSocket listener address is invalid");
+		close(ws_listen_fd);
+		return -1;
+	}
+	if (environment && !strcmp(environment, "production") &&
+	    (!websocket_address_is_loopback(listen_address) || !getenv("DURIS_TRUSTED_PROXY_IP") ||
+	     !*getenv("DURIS_TRUSTED_PROXY_IP") || !getenv("DURIS_WEBSOCKET_ALLOWED_ORIGINS") ||
+	     !*getenv("DURIS_WEBSOCKET_ALLOWED_ORIGINS")))
+	{
+		logit(LOG_STATUS,
+		      "Production WebSocket requires a loopback DURIS_WEBSOCKET_LISTEN_ADDRESS, trusted proxy IP, and allowed origins");
 		close(ws_listen_fd);
 		return -1;
 	}
@@ -463,6 +544,8 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 	int malformed_header = 0;
 	int first_line = 1;
 	int health_request = 0;
+	int origin_seen = 0;
+	int origin_ok = 1;
 
 	if (!d || !buf || len > WS_MAX_HANDSHAKE_SIZE)
 		return -1;
@@ -571,6 +654,14 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 				d->ws_deflate_requested = 1;
 			}
 		}
+		else if (strncasecmp(line, "Origin:", 7) == 0)
+		{
+			const char *value = skip_header_value(line, 7);
+			if (origin_seen)
+				duplicate_invalid = 1;
+			origin_seen = 1;
+			origin_ok = websocket_origin_allowed(value);
+		}
 		/* x-forwarded-for - trust only from the configured immediate proxy */
 		else if (strncasecmp(line, "X-Forwarded-For:", 16) == 0)
 		{
@@ -607,6 +698,20 @@ int websocket_parse_handshake(struct descriptor_data *d, const char *buf, size_t
 		int sent = websocket_send_health_response(d);
 		free(request);
 		/* The HTTP health response is complete; the caller closes the probe socket. */
+		return sent < 0 ? -1 : -2;
+	}
+	if (bannedsite(d->host, 0))
+	{
+		banlog(56, "Reject WebSocket connect from %s, banned site.", d->host);
+		logit(LOG_STATUS, "Rejected WebSocket connect from %s, banned site.", d->host);
+		int sent = websocket_send_http_rejection(d, "403 Forbidden");
+		free(request);
+		return sent < 0 ? -1 : -2;
+	}
+	if (!origin_ok)
+	{
+		int sent = websocket_send_http_rejection(d, "403 Forbidden");
+		free(request);
 		return sent < 0 ? -1 : -2;
 	}
 
@@ -1086,8 +1191,7 @@ int websocket_send_binary(struct descriptor_data *d, const void *data, size_t le
 }
 
 /* send json message with type wrapper */
-int websocket_send_json(struct descriptor_data *d, const char * /*type*/, const char *package,
-			const char *json)
+int websocket_send_json(struct descriptor_data *d, const char *package, const char *json)
 {
 	char *message;
 	int result;

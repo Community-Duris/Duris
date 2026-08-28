@@ -113,7 +113,8 @@ assert "bool runtime_listener_address(struct sockaddr_in6 *address);" in comm_h
 listener = section(comm, "bool runtime_listener_address(sockaddr_in6 *address)", "int init_socket")
 assert 'getenv("LISTEN_ADDRESS")' in listener
 assert "inet_pton(AF_INET6" in listener and "inet_pton(AF_INET" in listener
-assert "runtime_listener_address(&sa)" in websocket
+assert 'getenv("DURIS_WEBSOCKET_LISTEN_ADDRESS")' in websocket
+assert "websocket_listener_address(&sa, &listen_address)" in websocket
 init_socket = section(comm, "int init_socket(int port)", "int new_connection")
 assert "runtime_listener_address(&sa)" in init_socket
 print("[PASS] every game listener applies the explicit numeric bind address")

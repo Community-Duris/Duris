@@ -21,7 +21,9 @@
 #include "account.h"
 #include "defines.h"
 #include "files.h"
+#include "gmcp.h"
 #include "hardcore_config.h"
+#include "justice.h"
 #include "json_utils.h"
 #include "mm.h"
 #include "poll.h"
@@ -31,18 +33,13 @@
 #include "password_hash.h"
 #include "websocket.h"
 #include "ws_auth.h"
+#include "utility.h"
 
 extern struct descriptor_data *descriptor_list;
 extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 extern struct room_data *world;
 extern int top_of_world;
-extern bool account_exists(const char *dir, char *name);
-extern int read_account(P_acct acct);
-extern int write_account(P_acct acct);
-extern int is_valid_email(const char *email);
-extern bool is_email_taken(const char *email);
-extern int restoreCharOnly(P_char ch, char *name);
 extern const struct class_names class_names_table[];
 extern const struct race_names race_names_table[];
 extern int class_table[LAST_RACE + 1][CLASS_COUNT + 1];
@@ -55,6 +52,93 @@ extern const int avail_hometowns[][LAST_RACE + 1];
 /* forward declarations for helpers used by broadcast functions */
 static const char *ws_get_race_name(int race);
 static const char *ws_get_class_name(unsigned int m_class);
+static int ws_durisweb_auth_limited(struct descriptor_data *d);
+
+static int ws_private_presence_enabled(void)
+{
+	const char *value = getenv("DURISWEB_PRIVATE_PRESENCE");
+	return value && !strcmp(value, "TRUE");
+}
+
+#define WS_IP_RATE_SLOTS 256
+
+struct ws_ip_rate_slot
+{
+	char host[sizeof(((struct descriptor_data *)0)->host)];
+	time_t login_window_start;
+	unsigned int login_attempts;
+	time_t register_window_start;
+	unsigned int register_attempts;
+	time_t last_used;
+};
+
+static struct ws_ip_rate_slot ws_ip_rates[WS_IP_RATE_SLOTS];
+
+static struct ws_ip_rate_slot *ws_ip_rate_for(const char *host)
+{
+	struct ws_ip_rate_slot *oldest = &ws_ip_rates[0];
+	time_t now = time(NULL);
+
+	for (size_t i = 0; i < WS_IP_RATE_SLOTS; i++)
+	{
+		if (ws_ip_rates[i].host[0] && !strcmp(ws_ip_rates[i].host, host))
+		{
+			ws_ip_rates[i].last_used = now;
+			return &ws_ip_rates[i];
+		}
+		if (!ws_ip_rates[i].host[0])
+		{
+			oldest = &ws_ip_rates[i];
+			break;
+		}
+		if (ws_ip_rates[i].last_used < oldest->last_used)
+			oldest = &ws_ip_rates[i];
+	}
+
+	memset(oldest, 0, sizeof(*oldest));
+	strlcpy(oldest->host, host ? host : "", sizeof(oldest->host));
+	oldest->last_used = now;
+	return oldest;
+}
+
+static int ws_player_auth_attempt(struct descriptor_data *d, int registration)
+{
+	struct ws_ip_rate_slot *ip_rate;
+	time_t *descriptor_window;
+	unsigned int *descriptor_attempts;
+	time_t *ip_window;
+	unsigned int *ip_attempts;
+	unsigned int maximum;
+	time_t window;
+
+	if (!d)
+		return 0;
+	ip_rate = ws_ip_rate_for(d->host);
+	if (registration)
+	{
+		descriptor_window = &d->websocket_register_window_start;
+		descriptor_attempts = &d->websocket_register_attempts;
+		ip_window = &ip_rate->register_window_start;
+		ip_attempts = &ip_rate->register_attempts;
+		maximum = WS_REGISTER_MAX_ATTEMPTS;
+		window = WS_REGISTER_WINDOW;
+	}
+	else
+	{
+		descriptor_window = &d->websocket_login_window_start;
+		descriptor_attempts = &d->websocket_login_attempts;
+		ip_window = &ip_rate->login_window_start;
+		ip_attempts = &ip_rate->login_attempts;
+		maximum = WS_LOGIN_MAX_ATTEMPTS;
+		window = WS_LOGIN_WINDOW;
+	}
+	if (ws_auth_rate_limited(descriptor_window, descriptor_attempts, maximum, window) ||
+	    ws_auth_rate_limited(ip_window, ip_attempts, maximum, window))
+		return 0;
+	(*descriptor_attempts)++;
+	(*ip_attempts)++;
+	return 1;
+}
 
 /* send auth response helper */
 static void send_auth_response(struct descriptor_data *d, int success, const char *error)
@@ -74,26 +158,44 @@ static void send_auth_response(struct descriptor_data *d, int success, const cha
 	cJSON_Delete(root);
 }
 
-/* DurisWeb authentication attempt limiter. */
+void ws_cmd_durisweb_challenge(struct descriptor_data *d, cJSON *data)
+{
+	cJSON *root;
+	char *json;
+
+	(void)data;
+	if (!d || d->account || d->character || d->connected == CON_PLAYING ||
+	    d->durisweb_verified || d->durisweb_backend || ws_durisweb_auth_limited(d))
+		return;
+	if (!ws_issue_durisweb_challenge(d->durisweb_auth_challenge,
+					 &d->durisweb_auth_challenge_expires))
+	{
+		send_auth_response(d, 0, "Unable to create authentication challenge");
+		return;
+	}
+	root = cJSON_CreateObject();
+	cJSON_AddStringToObject(root, "type", "durisweb_challenge");
+	cJSON_AddStringToObject(root, "nonce", d->durisweb_auth_challenge);
+	cJSON_AddNumberToObject(root, "expiresIn", 30);
+	json = cJSON_PrintUnformatted(root);
+	cJSON_Delete(root);
+	if (json)
+	{
+		websocket_send_text(d, json);
+		free(json);
+	}
+}
+
 static int ws_durisweb_auth_limited(struct descriptor_data *d)
 {
-	time_t now = time(NULL);
-
-	if (!d->durisweb_auth_window_start ||
-	    (now >= d->durisweb_auth_window_start &&
-	     now - d->durisweb_auth_window_start >= WS_AUTH_FAILURE_WINDOW))
-	{
-		d->durisweb_auth_window_start = now;
-		d->durisweb_auth_failures = 0;
-	}
-	return d->durisweb_auth_failures >= WS_AUTH_MAX_FAILURES;
+	return ws_auth_rate_limited(&d->durisweb_auth_window_start, &d->durisweb_auth_failures,
+				    WS_AUTH_MAX_FAILURES, WS_AUTH_FAILURE_WINDOW);
 }
 
 static void ws_durisweb_auth_failure(struct descriptor_data *d)
 {
-	(void)ws_durisweb_auth_limited(d);
-	if (d->durisweb_auth_failures < WS_AUTH_MAX_FAILURES)
-		d->durisweb_auth_failures++;
+	ws_auth_record_failure(&d->durisweb_auth_window_start, &d->durisweb_auth_failures,
+			       WS_AUTH_MAX_FAILURES, WS_AUTH_FAILURE_WINDOW);
 	if (d->durisweb_auth_failures >= WS_AUTH_MAX_FAILURES)
 		STATE(d) = CON_EXIT;
 }
@@ -136,19 +238,32 @@ void ws_cmd_durisweb_auth(struct descriptor_data *d, cJSON *data)
 		return;
 	}
 
-	if (ws_verify_durisweb_signature(sig->valuestring))
+	if (ws_verify_durisweb_signature(sig->valuestring, d->durisweb_auth_challenge,
+					 d->durisweb_auth_challenge_expires))
 	{
 		d->durisweb_verified = 1;
 		d->durisweb_backend = 1;
-		d->durisweb_auth_window_start = 0;
-		d->durisweb_auth_failures = 0;
+		ws_auth_reset(&d->durisweb_auth_window_start, &d->durisweb_auth_failures);
+		d->durisweb_auth_challenge[0] = '\0';
+		d->durisweb_auth_challenge_expires = 0;
 		statuslog(56, "DurisWeb service authenticated");
 		send_auth_response(d, 1, NULL);
 	}
 	else
 	{
+		d->durisweb_auth_challenge[0] = '\0';
+		d->durisweb_auth_challenge_expires = 0;
 		ws_durisweb_auth_failure(d);
 		send_auth_response(d, 0, "Invalid signature");
+	}
+}
+
+static void ws_broadcast_service_json(const char *json)
+{
+	for (struct descriptor_data *d = descriptor_list; d; d = d->next)
+	{
+		if (d->websocket && d->durisweb_backend)
+			websocket_send_text(d, json);
 	}
 }
 
@@ -156,7 +271,6 @@ void ws_cmd_durisweb_auth(struct descriptor_data *d, cJSON *data)
 void ws_broadcast_auction_new(int auction_id, const char *seller_name, const char *obj_short,
 			      int cur_price, int buy_price, int end_time)
 {
-	struct descriptor_data *d;
 	cJSON *root, *data;
 	char *json;
 
@@ -180,14 +294,7 @@ void ws_broadcast_auction_new(int auction_id, const char *seller_name, const cha
 	if (!json)
 		return;
 
-	for (d = descriptor_list; d; d = d->next)
-	{
-		if (d->websocket && d->durisweb_verified)
-		{
-			websocket_send_text(d, json);
-		}
-	}
-
+	ws_broadcast_service_json(json);
 	free(json);
 }
 
@@ -195,7 +302,6 @@ void ws_broadcast_auction_new(int auction_id, const char *seller_name, const cha
 void ws_broadcast_auction_bid(int auction_id, const char *bidder_name, int bid_amount,
 			      int prev_bidder_pid, const char *prev_bidder_name)
 {
-	struct descriptor_data *d;
 	cJSON *root, *data;
 	char *json;
 
@@ -218,14 +324,7 @@ void ws_broadcast_auction_bid(int auction_id, const char *bidder_name, int bid_a
 	if (!json)
 		return;
 
-	for (d = descriptor_list; d; d = d->next)
-	{
-		if (d->websocket && d->durisweb_backend)
-		{
-			websocket_send_text(d, json);
-		}
-	}
-
+	ws_broadcast_service_json(json);
 	free(json);
 }
 
@@ -234,7 +333,6 @@ void ws_broadcast_auction_close(int auction_id, const char *winner_name, int win
 				int final_price, const char *close_reason, int seller_pid,
 				const char *seller_name)
 {
-	struct descriptor_data *d;
 	cJSON *root, *data;
 	char *json;
 
@@ -259,21 +357,13 @@ void ws_broadcast_auction_close(int auction_id, const char *winner_name, int win
 	if (!json)
 		return;
 
-	for (d = descriptor_list; d; d = d->next)
-	{
-		if (d->websocket && d->durisweb_backend)
-		{
-			websocket_send_text(d, json);
-		}
-	}
-
+	ws_broadcast_service_json(json);
 	free(json);
 }
 
 /* broadcast mud shutdown to durisweb service */
 void ws_broadcast_mud_shutdown(const char *type)
 {
-	struct descriptor_data *d;
 	cJSON *root, *data;
 	char *json;
 
@@ -292,25 +382,19 @@ void ws_broadcast_mud_shutdown(const char *type)
 	if (!json)
 		return;
 
-	for (d = descriptor_list; d; d = d->next)
-	{
-		if (d->websocket && d->durisweb_verified)
-		{
-			websocket_send_text(d, json);
-		}
-	}
-
+	ws_broadcast_service_json(json);
 	free(json);
 }
 
 /* broadcast player login to durisweb service */
 void ws_broadcast_player_login(struct descriptor_data *player_d)
 {
-	struct descriptor_data *d;
 	cJSON *root, *data;
 	char *json;
 
 	if (!player_d || !player_d->character)
+		return;
+	if (GET_WIZINVIS(player_d->character) > 0 && !ws_private_presence_enabled())
 		return;
 
 	root = cJSON_CreateObject();
@@ -321,16 +405,19 @@ void ws_broadcast_player_login(struct descriptor_data *player_d)
 
 	data = cJSON_CreateObject();
 	cJSON_AddStringToObject(data, "character", GET_NAME(player_d->character));
-	cJSON_AddStringToObject(data, "account",
-				player_d->account ? player_d->account->acct_name : "");
-	cJSON_AddStringToObject(data, "ip", player_d->host);
 	cJSON_AddNumberToObject(data, "level", GET_LEVEL(player_d->character));
 	cJSON_AddStringToObject(data, "race", ws_get_race_name(GET_RACE(player_d->character)));
 	cJSON_AddStringToObject(data, "class",
 				ws_get_class_name(player_d->character->player.m_class));
 	cJSON_AddNumberToObject(data, "faction", GET_RACEWAR(player_d->character));
-	cJSON_AddStringToObject(data, "client", player_d->client_name);
-	cJSON_AddStringToObject(data, "clientVersion", player_d->client_version);
+	if (ws_private_presence_enabled())
+	{
+		cJSON_AddStringToObject(data, "account",
+					player_d->account ? player_d->account->acct_name : "");
+		cJSON_AddStringToObject(data, "ip", player_d->host);
+		cJSON_AddStringToObject(data, "client", player_d->client_name);
+		cJSON_AddStringToObject(data, "clientVersion", player_d->client_version);
+	}
 	cJSON_AddItemToObject(root, "data", data);
 
 	json = cJSON_PrintUnformatted(root);
@@ -338,20 +425,13 @@ void ws_broadcast_player_login(struct descriptor_data *player_d)
 	if (!json)
 		return;
 
-	for (d = descriptor_list; d; d = d->next)
-	{
-		if (d->websocket && d->durisweb_backend)
-		{
-			websocket_send_text(d, json);
-		}
-	}
+	ws_broadcast_service_json(json);
 	free(json);
 }
 
 /* broadcast player logout to durisweb service */
 void ws_broadcast_player_logout(const char *character, int faction)
 {
-	struct descriptor_data *d;
 	cJSON *root, *data;
 	char *json;
 
@@ -374,13 +454,7 @@ void ws_broadcast_player_logout(const char *character, int faction)
 	if (!json)
 		return;
 
-	for (d = descriptor_list; d; d = d->next)
-	{
-		if (d->websocket && d->durisweb_backend)
-		{
-			websocket_send_text(d, json);
-		}
-	}
+	ws_broadcast_service_json(json);
 	free(json);
 }
 
@@ -404,7 +478,7 @@ static void ws_send_wholist_to_client(struct descriptor_data *d)
 	{
 		if (target->connected != CON_PLAYING || !target->character)
 			continue;
-		if (d->character && !who_visible_to(d->character, target->character))
+		if (GET_WIZINVIS(target->character) > 0 && !ws_private_presence_enabled())
 			continue;
 
 		player = cJSON_CreateObject();
@@ -415,17 +489,20 @@ static void ws_send_wholist_to_client(struct descriptor_data *d)
 								 display_name,
 								 sizeof(display_name)));
 		}
-		cJSON_AddStringToObject(player, "account",
-					target->account ? target->account->acct_name : "");
-		cJSON_AddStringToObject(player, "ip", target->host);
 		cJSON_AddNumberToObject(player, "level", GET_LEVEL(target->character));
 		cJSON_AddStringToObject(player, "race",
 					ws_get_race_name(GET_RACE(target->character)));
 		cJSON_AddStringToObject(player, "class",
 					ws_get_class_name(target->character->player.m_class));
 		cJSON_AddNumberToObject(player, "faction", GET_RACEWAR(target->character));
-		cJSON_AddStringToObject(player, "client", target->client_name);
-		cJSON_AddStringToObject(player, "clientVersion", target->client_version);
+		if (ws_private_presence_enabled())
+		{
+			cJSON_AddStringToObject(player, "account",
+						target->account ? target->account->acct_name : "");
+			cJSON_AddStringToObject(player, "ip", target->host);
+			cJSON_AddStringToObject(player, "client", target->client_name);
+			cJSON_AddStringToObject(player, "clientVersion", target->client_version);
+		}
 		cJSON_AddNumberToObject(player, "uptime",
 					time(0) - target->character->player.time.logon);
 		cJSON_AddItemToArray(players, player);
@@ -547,7 +624,6 @@ static const char *ws_get_class_alignment(int value)
 /* load basic character info for json response */
 static int ws_load_char_info(const char *charname, struct ws_char_info *info)
 {
-	extern char *get_class_string(P_char ch, char *strn);
 	P_char temp_ch;
 	int result;
 
@@ -692,16 +768,9 @@ void ws_send_full_game_state(struct descriptor_data *d)
 	/* trigger gmcp updates to send current state */
 	if (d->character->in_room >= 0 && d->ws_handshake_done)
 	{
-		extern void gmcp_room_info(struct char_data * ch);
-		extern void gmcp_room_map(struct char_data * ch);
 		gmcp_room_info(d->character);
 		gmcp_room_map(d->character);
 	}
-
-	extern void gmcp_char_vitals(struct char_data * ch);
-	extern void gmcp_char_status(struct char_data * ch);
-	extern void gmcp_char_affects(struct char_data * ch);
-	extern void gmcp_quest_status(struct char_data * ch);
 
 	/* Guard GMCP sends behind WS handshake to prevent leaking
 	 * frames into the login stream before handshake completes */
@@ -789,6 +858,11 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 		ws_send_auth_failed(d, "Service connection cannot log in as a player");
 		return;
 	}
+	if (!ws_player_auth_attempt(d, 0))
+	{
+		ws_send_auth_failed(d, "Too many login attempts; try again later");
+		return;
+	}
 	if (!data)
 	{
 		ws_send_auth_failed(d, "Missing login data");
@@ -816,7 +890,7 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 	/* Validate account name */
 	if (strlen(account_name) < 3 || strlen(account_name) > 20)
 	{
-		ws_send_auth_failed(d, "Invalid account name");
+		ws_send_auth_failed(d, "Invalid account or password");
 		return;
 	}
 
@@ -830,7 +904,7 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 	/* check if account exists */
 	if (!account_exists("Accounts", tmp_name))
 	{
-		ws_send_auth_failed(d, "Account not found");
+		ws_send_auth_failed(d, "Invalid account or password");
 		return;
 	}
 
@@ -850,7 +924,7 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 
 	if (read_account(d->account) == -1)
 	{
-		ws_send_auth_failed(d, "Error loading account");
+		ws_send_auth_failed(d, "Invalid account or password");
 		d->account = free_account(d->account);
 		return;
 	}
@@ -869,14 +943,13 @@ void ws_cmd_login(struct descriptor_data *d, cJSON *data)
 
 	if (!password_valid)
 	{
-		ws_send_auth_failed(d, "Invalid password");
+		ws_send_auth_failed(d, "Invalid account or password");
 		d->account = free_account(d->account);
 		return;
 	}
 
 	/* reconnect check: look for in-game characters from this account */
 	{
-		extern struct char_data *get_char_online(char *name, bool include_linkdead);
 		struct descriptor_data *k, *next_k;
 		struct acct_chars *c;
 		struct char_data *online_char = NULL;
@@ -1128,6 +1201,11 @@ void ws_cmd_register(struct descriptor_data *d, cJSON *data)
 		ws_send_auth_failed(d, "Already authenticated");
 		return;
 	}
+	if (!ws_player_auth_attempt(d, 1))
+	{
+		ws_send_auth_failed(d, "Too many registration attempts; try again later");
+		return;
+	}
 	if (!data)
 	{
 		ws_send_auth_failed(d, "Missing registration data");
@@ -1184,7 +1262,7 @@ void ws_cmd_register(struct descriptor_data *d, cJSON *data)
 	/* check if account already exists */
 	if (account_exists("Accounts", tmp_name))
 	{
-		ws_send_auth_failed(d, "An account with that name already exists");
+		ws_send_auth_failed(d, "Unable to create account with those details");
 		return;
 	}
 
@@ -1198,7 +1276,7 @@ void ws_cmd_register(struct descriptor_data *d, cJSON *data)
 	/* check if email is already in use */
 	if (is_email_taken(email_json->valuestring))
 	{
-		ws_send_auth_failed(d, "Email address is already in use");
+		ws_send_auth_failed(d, "Unable to create account with those details");
 		return;
 	}
 
@@ -1625,6 +1703,12 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 		ws_send_system(d, "error", "Not authenticated");
 		return;
 	}
+	if (bannedsite(d->host, 1))
+	{
+		ws_send_system(d, "error",
+			       "New character creation is not permitted from this site");
+		return;
+	}
 
 	/* validate required fields */
 	name_item = cJSON_GetObjectItem(data, "name");
@@ -1760,13 +1844,6 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 	d->chargen_newbie = is_newbie;
 
 	/* actual character creation */
-	extern bool pfile_exists(const char *dir, char *name);
-	extern void clear_char(P_char ch);
-	extern void init_char(P_char ch);
-	extern void add_char_to_account(P_desc d);
-	extern int writeCharacter(P_char ch, int type, int room);
-	extern void enter_game(P_desc d);
-	extern int find_hometown(int race, bool force);
 
 	char capitalized_name[MAX_NAME_LENGTH + 1];
 	int i, actual_hometown;
@@ -1953,7 +2030,6 @@ void ws_cmd_create_character(struct descriptor_data *d, cJSON *data)
 /* validate character name - check if already taken */
 void ws_cmd_validate_name(struct descriptor_data *d, cJSON *data)
 {
-	extern bool pfile_exists(const char *dir, char *name);
 	cJSON *name_item, *response;
 	char *json_str;
 	const char *name;
@@ -2181,7 +2257,6 @@ static cJSON *ws_build_character_list(struct descriptor_data *d)
 /* get extended account information */
 void ws_cmd_account_info(struct descriptor_data *d, cJSON * /*data*/)
 {
-	extern char *get_class_string(P_char ch, char *strn);
 	cJSON *info_data, *characters, *char_obj;
 	char time_buf[64];
 	char class_str[256];
@@ -3261,110 +3336,51 @@ void ws_cmd_poll_vote(struct descriptor_data *d, cJSON *data)
 /* dispatch */
 void ws_handle_command(struct descriptor_data *d, const char *cmd, cJSON *data)
 {
+	static const struct
+	{
+		const char *name;
+		ws_cmd_handler handler;
+	} handlers[] = {
+		{ "login", ws_cmd_login },
+		{ "durisweb_challenge", ws_cmd_durisweb_challenge },
+		{ "register", ws_cmd_register },
+		{ "enter", ws_cmd_enter },
+		{ "game", ws_cmd_game },
+		{ "chargen_options", ws_cmd_chargen_options },
+		{ "roll_stats", ws_cmd_roll_stats },
+		{ "add_bonus", ws_cmd_add_bonus },
+		{ "validate_name", ws_cmd_validate_name },
+		{ "get_hometowns", ws_cmd_get_hometowns },
+		{ "create_character", ws_cmd_create_character },
+		{ "swap_stats", ws_cmd_swap_stats },
+		{ "account_info", ws_cmd_account_info },
+		{ "change_email", ws_cmd_change_email },
+		{ "change_password", ws_cmd_change_password },
+		{ "delete_character", ws_cmd_delete_character },
+		{ "rested_bonus", ws_cmd_rested_bonus },
+		{ "logout", ws_cmd_logout },
+		{ "durisweb_auth", ws_cmd_durisweb_auth },
+		{ "admin_delete_character", ws_cmd_admin_delete_character },
+		{ "poll_list", ws_cmd_poll_list },
+		{ "poll_view", ws_cmd_poll_view },
+		{ "poll_vote", ws_cmd_poll_vote },
+		{ "request_wholist", ws_cmd_request_wholist },
+	};
+
 	if (!cmd)
 		return;
-
-	if (strcmp(cmd, "login") == 0)
+	for (const auto &entry : handlers)
 	{
-		ws_cmd_login(d, data);
-	}
-	else if (strcmp(cmd, "register") == 0)
-	{
-		ws_cmd_register(d, data);
-	}
-	else if (strcmp(cmd, "enter") == 0)
-	{
-		ws_cmd_enter(d, data);
-	}
-	else if (strcmp(cmd, "game") == 0)
-	{
-		ws_cmd_game(d, data);
-	}
-	else if (strcmp(cmd, "chargen_options") == 0)
-	{
-		ws_cmd_chargen_options(d, data);
-	}
-	else if (strcmp(cmd, "roll_stats") == 0)
-	{
-		ws_cmd_roll_stats(d, data);
-	}
-	else if (strcmp(cmd, "add_bonus") == 0)
-	{
-		ws_cmd_add_bonus(d, data);
-	}
-	else if (strcmp(cmd, "validate_name") == 0)
-	{
-		ws_cmd_validate_name(d, data);
-	}
-	else if (strcmp(cmd, "get_hometowns") == 0)
-	{
-		ws_cmd_get_hometowns(d, data);
-	}
-	else if (strcmp(cmd, "create_character") == 0)
-	{
-		ws_cmd_create_character(d, data);
-	}
-	else if (strcmp(cmd, "swap_stats") == 0)
-	{
-		ws_cmd_swap_stats(d, data);
-	}
-	else if (strcmp(cmd, "account_info") == 0)
-	{
-		ws_cmd_account_info(d, data);
-	}
-	else if (strcmp(cmd, "change_email") == 0)
-	{
-		ws_cmd_change_email(d, data);
-	}
-	else if (strcmp(cmd, "change_password") == 0)
-	{
-		ws_cmd_change_password(d, data);
-	}
-	else if (strcmp(cmd, "delete_character") == 0)
-	{
-		ws_cmd_delete_character(d, data);
-	}
-	else if (strcmp(cmd, "rested_bonus") == 0)
-	{
-		ws_cmd_rested_bonus(d, data);
-	}
-	else if (strcmp(cmd, "logout") == 0)
-	{
-		ws_cmd_logout(d, data);
-	}
-	else if (strcmp(cmd, "durisweb_auth") == 0)
-	{
-		ws_cmd_durisweb_auth(d, data);
-	}
-	else if (strcmp(cmd, "admin_delete_character") == 0)
-	{
-		statuslog(56, "Dispatching admin_delete_character command");
-		ws_cmd_admin_delete_character(d, data);
-	}
-	else if (strcmp(cmd, "poll_list") == 0)
-	{
-		ws_cmd_poll_list(d, data);
-	}
-	else if (strcmp(cmd, "poll_view") == 0)
-	{
-		ws_cmd_poll_view(d, data);
-	}
-	else if (strcmp(cmd, "poll_vote") == 0)
-	{
-		ws_cmd_poll_vote(d, data);
-	}
-	else if (strcmp(cmd, "request_wholist") == 0)
-	{
-		ws_cmd_request_wholist(d, data);
-	}
-	else
-	{
-		/* unknown = game cmd */
-		if (d->connected == CON_PLAYING)
+		if (!strcmp(cmd, entry.name))
 		{
-			write_to_q(cmd, &d->input, 0);
+			entry.handler(d, data);
+			return;
 		}
 	}
+
+	/* Unknown messages remain raw game commands for authenticated players. */
+	if (d && d->connected == CON_PLAYING)
+		write_to_q(cmd, &d->input, 0);
 }
 
 /* initialize websocket handlers */

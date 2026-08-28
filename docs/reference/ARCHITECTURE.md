@@ -229,7 +229,11 @@ Details and schema management: [DATABASE.md](DATABASE.md).
   `duris.crt` / `duris.key` in the repository root (symlinks recommended).
 - **WebSocket** (`websocket.c`): RFC 6455 server on `DURIS_WEBSOCKET_PORT`
   (default 4050) with HTTP upgrade for browser clients and a value-free
-  `GET /health` readiness response. Game messages use JSON (`json_utils.c`).
+  `GET /health` readiness response. Production binds the WebSocket listener to
+  loopback behind a TLS reverse proxy and applies an exact browser-origin
+  allow-list. Game messages use JSON (`json_utils.c`); the privileged DurisWeb
+  peer uses the one-time challenge contract in
+  [api/durisweb.md](api/durisweb.md).
 - **GMCP** (`gmcp.c`): outbound game data to capable clients over telnet or
   WebSocket.
 - Hostname resolution and login/nanny flow are in `nanny.c`; interpreter and

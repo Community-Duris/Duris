@@ -106,6 +106,7 @@ case ",$DB_ALLOWED_TARGETS," in
   *",$DB_HOST/$EFFECTIVE_DB_NAME,"*) ;;
   *) echo "Resolved database target is not allow-listed" >&2; exit 1 ;;
 esac
+export DB_NAME="$EFFECTIVE_DB_NAME"
 
 MYSQL_CONNECTION_ARGS=(--connect-timeout=10 -u "$DB_USER")
 if [[ -n "${DB_SOCKET:-}" ]]; then
@@ -130,6 +131,22 @@ echo "Validated explicit database configuration"
 
 while [[ $RESULT != 0 && $RESULT != 55 ]]; do
 	DATESTR=`date +%C%y.%m.%d-%H.%M.%S`
+
+  # Refuse to publish the service against a stale or incompatible schema. Local
+  # databases can be advanced safely by the guarded immutable runner;
+  # production remains read-only and must be migrated through the runbook.
+  if [[ "$ENVIRONMENT" == "local" ]]; then
+    echo "Applying pending immutable database migrations..."
+    if ! python3 scripts/migration_runner.py run; then
+      echo "Database migrations are not up to date; refusing to boot" >&2
+      exit 1
+    fi
+  fi
+  echo "Verifying runtime database compatibility..."
+  if ! ./migrations/verify_runtime_compatibility.sh; then
+    echo "Database schema is incompatible with this server; refusing to boot" >&2
+    exit 1
+  fi
 
   if [[ $RESULT == 53 || $RESULT == 57 ]]; then
     if [ -f "$STAGED_BINARY" ]; then

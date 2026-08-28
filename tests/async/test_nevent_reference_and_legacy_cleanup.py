@@ -21,7 +21,7 @@ structs = read("src/structs.h")
 reference = read("docs/reference/EVENTS.md")
 architecture = read("docs/reference/ARCHITECTURE.md")
 configuration = read("docs/operations/CONFIGURATION.md")
-review = read("docs/ongoing-projects/ongoing/nevent-system-review.md")
+completed_review = ROOT / "docs/ongoing-projects/ongoing/nevent-system-review.md"
 all_source = "\n".join(
     path.read_text(encoding="utf-8", errors="replace")
     for path in SRC.rglob("*")
@@ -97,14 +97,9 @@ for stale_contract in (
 assert "timer decremented" not in architecture
 assert "Player-event promotion" not in architecture
 
-current_architecture = review[
-    review.index("## Current architecture") : review.index("## Detailed findings")
-]
-assert "object-owned events are\nprepended" not in current_architecture
-assert "attempts one promotion" not in current_architecture
-assert "object-owned events are\nappended" in current_architecture
-assert "There are currently no durable one-shot nevents." in current_architecture
-assert "four-pulse repayment window" in current_architecture
+# The completed review is retired; current behavior belongs in reference docs
+# and executable contracts instead of a second, drifting architecture source.
+assert not completed_review.exists()
 
 for setting in (
     "DURIS_NEVENT_CATCHUP_MAX_EXTENSION_USEC",

@@ -77,5 +77,8 @@ struct acct_list_entry
 };
 
 void cleanup_temp_char(struct char_data *ch);
+bool account_exists(const char *dir, char *name);
+int is_valid_email(const char *email);
+bool is_email_taken(const char *email);
 
 #endif // DURIS_ACCOUNT_H

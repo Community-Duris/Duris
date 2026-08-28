@@ -1799,6 +1799,12 @@ struct descriptor_data
 	int durisweb_backend; /* true only for backend service, not web clients */
 	time_t durisweb_auth_window_start;
 	unsigned int durisweb_auth_failures;
+	char durisweb_auth_challenge[65];
+	time_t durisweb_auth_challenge_expires;
+	time_t websocket_login_window_start;
+	unsigned int websocket_login_attempts;
+	time_t websocket_register_window_start;
+	unsigned int websocket_register_attempts;
 
 	/* ttype/mtts support */
 	int ttype_state; /* 0=none, 1=sent_do, 2=cycling, 3=complete */
