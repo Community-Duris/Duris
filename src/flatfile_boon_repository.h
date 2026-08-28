@@ -2,6 +2,7 @@
 #define DURIS_FLATFILE_BOON_REPOSITORY_H
 
 #include "boon_reward_command.h"
+#include "boon_shop_command.h"
 #include "critical_command_coordinator.h"
 
 #include <cstdint>
@@ -79,5 +80,7 @@ flatfile_boon_result flatfile_boon_acknowledge_reward(const std::string &root,
 						      std::string *error);
 critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 						     const critical_command &command);
+critical_apply_result flatfile_boon_shop_repository_apply(const std::string &root,
+							  const critical_command &command);
 
 #endif

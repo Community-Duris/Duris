@@ -260,6 +260,8 @@ OBJS =  $(SHIP_OBJS) \
 				 boon_reward_command.o \
 				 boon_reward_repository.o \
 				 boon_reward_transaction.o \
+				 boon_shop_command.o \
+				 boon_shop_transaction.o \
 				 zone_touch_command.o \
 				 zone_touch_repository.o \
 				 zone_touch_transaction.o \

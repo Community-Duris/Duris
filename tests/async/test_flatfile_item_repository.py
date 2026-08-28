@@ -35,6 +35,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-") as t
             "src/auction_command.c",
             "src/combat_outcome_command.c",
             "src/boon_reward_command.c",
+            "src/boon_shop_command.c",
             "src/persistence_mode.c",
             "-lcrypto",
             "-pthread",

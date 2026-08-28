@@ -38,6 +38,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
             "src/auction_command.c",
             "src/combat_outcome_command.c",
             "src/boon_reward_command.c",
+            "src/boon_shop_command.c",
             "src/persistence_observability.c",
             "src/persistence_mode.c",
             "-lcrypto",

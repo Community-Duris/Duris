@@ -54,6 +54,7 @@ enum class critical_command_type : uint16_t
 	boon_reward,
 	zone,
 	session_audit,
+	boon_shop,
 };
 
 enum class critical_source_site : uint16_t

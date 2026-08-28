@@ -41,6 +41,7 @@ using namespace std;
 #include "auction_houses.h"
 #include "boon.h"
 #include "boon_reward_transaction.h"
+#include "boon_shop_transaction.h"
 #include "buildings.h"
 #include "ctf.h"
 #include "currency_transaction.h"
@@ -2011,6 +2012,12 @@ void boon_shop(P_char ch, char *argument)
 			send_to_char(
 				"That's not a valid stat, please choose from the following: str, dex, agi, con, pow, int, wis, con.\r\n",
 				ch);
+			return;
+		}
+		if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		{
+			if (!boon_shop_transaction_submit(ch, static_cast<uint8_t>(stat - 1)))
+				send_to_char("The boon shop is temporarily unavailable.\r\n", ch);
 			return;
 		}
 		else

@@ -12,6 +12,7 @@ SRC = ROOT / "src"
 
 HARNESS = r'''
 #include "boon_reward_command.h"
+#include "boon_shop_command.h"
 #include "zone_touch_command.h"
 #include <cassert>
 
@@ -35,6 +36,21 @@ int main()
     assert(boon_reward_command_decode_result(boon_bytes.data(), boon_bytes.size(),
                                              &decoded_result));
     assert(decoded_result.entries[0].boon_id == 5);
+
+    boon_shop_payload shop = {42, 3};
+    critical_command shop_command = {};
+    assert(boon_shop_command_build(&shop_command, operation, shop));
+    boon_shop_payload decoded_shop = {};
+    assert(boon_shop_command_decode_payload(shop_command, &decoded_shop));
+    assert(decoded_shop.pid == 42 && decoded_shop.stat_index == 3);
+    boon_shop_result shop_result = {42, 3, 61, 4, 9};
+    std::array<uint8_t, BOON_SHOP_RESULT_BYTES> shop_bytes = {};
+    assert(boon_shop_command_encode_result(shop_result, &shop_bytes));
+    boon_shop_result decoded_shop_result = {};
+    assert(boon_shop_command_decode_result(shop_bytes.data(), shop_bytes.size(),
+                                           &decoded_shop_result));
+    assert(decoded_shop_result.stat_value == 61 &&
+           decoded_shop_result.remaining_stat_points == 4);
 
     zone_touch_payload zone = {};
     zone.zone_number = 900;
@@ -73,7 +89,8 @@ class BoonRewardZoneCutoverTests(unittest.TestCase):
             subprocess.run([
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", f"-I{SRC}",
                 str(harness), str(SRC / "critical_command.c"),
-                str(SRC / "boon_reward_command.c"), str(SRC / "zone_touch_command.c"),
+                str(SRC / "boon_reward_command.c"), str(SRC / "boon_shop_command.c"),
+                str(SRC / "zone_touch_command.c"),
                 "-lcrypto", "-o", str(binary),
             ], check=True)
             subprocess.run([str(binary)], check=True)
@@ -86,6 +103,21 @@ class BoonRewardZoneCutoverTests(unittest.TestCase):
         self.assertIn("boon_reward_transaction_submit", callback)
         for forbidden in ("qry(", "db_query", "mysql_", "redis_", "fopen("):
             self.assertNotIn(forbidden, callback)
+
+    def test_flat_boon_shop_submits_before_live_or_sql_mutation(self):
+        source = (SRC / "boon.c").read_text()
+        start = source.index("void boon_shop(P_char")
+        end = source.index("struct flat_boon_display_filters", start)
+        shop = source[start:end]
+        branch = shop.index("PERSISTENCE_MODE_FLATFILE_PRIMARY")
+        submit = shop.index("boon_shop_transaction_submit", branch)
+        live = shop.index("bshop.stats--", submit)
+        sql = shop.index('qry("UPDATE boons_shop', live)
+        self.assertLess(branch, submit)
+        self.assertLess(submit, live)
+        self.assertLess(live, sql)
+        comm = (SRC / "comm.c").read_text()
+        self.assertIn("boon_shop_transaction_handle_completions(completions, count)", comm)
 
     def test_epic_touch_uses_one_immutable_zone_batch(self):
         source = (SRC / "epic.c").read_text()

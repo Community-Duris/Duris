@@ -1,7 +1,9 @@
 #include "flatfile_boon_repository.h"
 
 #include "boon.h"
+#include "boon_shop_command.h"
 #include "flatfile_authority_transaction.h"
+#include "flatfile_player_domain_repository.h"
 #include "flatfile_store.h"
 
 #include <algorithm>
@@ -21,7 +23,8 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'B', 'O', 'O', 'N', 0 };
-constexpr uint32_t catalog_version = 2;
+constexpr uint32_t catalog_version = 3;
+constexpr uint32_t catalog_reward_event_version = 2;
 constexpr uint32_t catalog_legacy_version = 1;
 constexpr size_t catalog_maximum_bytes = 256 * 1024 * 1024;
 constexpr size_t definition_maximum = 65536;
@@ -55,6 +58,14 @@ struct boon_operation
 	bool reward_published = false;
 };
 
+struct boon_shop_operation
+{
+	critical_operation_id operation_id = {};
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_digest = {};
+	unsigned int result_code = 0;
+	boon_shop_result result = {};
+};
+
 struct boon_catalog
 {
 	uint64_t revision = 0;
@@ -62,6 +73,7 @@ struct boon_catalog
 	std::vector<boon_progress> progress;
 	std::vector<boon_shop_record> shops;
 	std::vector<boon_operation> operations;
+	std::vector<boon_shop_operation> shop_operations;
 };
 
 struct operation_id_hash
@@ -226,7 +238,8 @@ bool encode_catalog(const boon_catalog &catalog, std::vector<uint8_t> *bytes)
 {
 	if (!bytes || catalog.definitions.size() > definition_maximum ||
 	    catalog.progress.size() > progress_maximum || catalog.shops.size() > shop_maximum ||
-	    catalog.operations.size() > operation_maximum)
+	    catalog.operations.size() > operation_maximum ||
+	    catalog.shop_operations.size() > operation_maximum)
 		return false;
 	encoder payload;
 	payload.number<uint32_t>(catalog.definitions.size());
@@ -284,6 +297,18 @@ bool encode_catalog(const boon_catalog &catalog, std::vector<uint8_t> *bytes)
 		payload.number(std::bit_cast<uint64_t>(operation.event_data));
 		payload.number<uint8_t>(operation.reward_published);
 	}
+	payload.number<uint32_t>(catalog.shop_operations.size());
+	for (const auto &operation : catalog.shop_operations)
+	{
+		payload.raw(operation.operation_id.bytes.data(),
+			    operation.operation_id.bytes.size());
+		payload.raw(operation.command_digest.data(), operation.command_digest.size());
+		payload.number(operation.result_code);
+		std::array<uint8_t, BOON_SHOP_RESULT_BYTES> result = {};
+		if (!boon_shop_command_encode_result(operation.result, &result))
+			return false;
+		payload.raw(result.data(), result.size());
+	}
 	if (!payload.valid || payload.bytes.size() > catalog_maximum_bytes)
 		return false;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
@@ -312,8 +337,9 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, boon_catalog *catalog)
 	uint64_t revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
 	    !header.number(&revision) ||
-	    (version != catalog_version && version != catalog_legacy_version) || !revision ||
-	    payload_size != bytes.size() - header_size)
+	    (version != catalog_version && version != catalog_reward_event_version &&
+	     version != catalog_legacy_version) ||
+	    !revision || payload_size != bytes.size() - header_size)
 		return false;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
@@ -447,8 +473,9 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, boon_catalog *catalog)
 					 operation.command_digest.size()) ||
 			    !payload.number(&operation.result_code) ||
 			    !payload.raw(result.data(), result.size()) ||
-			    (version == catalog_version && (!payload.number(&event_data) ||
-							    !payload.number(&reward_published))) ||
+			    (version >= catalog_reward_event_version &&
+			     (!payload.number(&event_data) ||
+			      !payload.number(&reward_published))) ||
 			    reward_published > 1 ||
 			    critical_operation_id_is_zero(operation.operation_id) ||
 			    !boon_reward_command_decode_result(result.data(), result.size(),
@@ -465,6 +492,34 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, boon_catalog *catalog)
 	catch (const std::bad_alloc &)
 	{
 		return false;
+	}
+	if (version == catalog_version)
+	{
+		if (!payload.number(&count) || count > operation_maximum)
+			return false;
+		try
+		{
+			decoded.shop_operations.resize(count);
+			ids.reserve(ids.size() + count);
+			std::array<uint8_t, BOON_SHOP_RESULT_BYTES> shop_result = {};
+			for (auto &operation : decoded.shop_operations)
+				if (!payload.raw(operation.operation_id.bytes.data(),
+						 operation.operation_id.bytes.size()) ||
+				    !payload.raw(operation.command_digest.data(),
+						 operation.command_digest.size()) ||
+				    !payload.number(&operation.result_code) ||
+				    !payload.raw(shop_result.data(), shop_result.size()) ||
+				    critical_operation_id_is_zero(operation.operation_id) ||
+				    !boon_shop_command_decode_result(shop_result.data(),
+								     shop_result.size(),
+								     &operation.result) ||
+				    !ids.insert(operation.operation_id.bytes).second)
+					return false;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
 	}
 	if (payload.offset != payload.size)
 		return false;
@@ -529,6 +584,21 @@ critical_apply_result make_result(const boon_operation &operation, uint64_t revi
 {
 	std::array<uint8_t, BOON_REWARD_RESULT_BYTES> encoded = {};
 	if (!boon_reward_command_encode_result(operation.result, &encoded))
+		return { critical_apply_outcome::terminal_failure, revision, EILSEQ };
+	critical_apply_result result = { operation.result_code ?
+						 critical_apply_outcome::terminal_failure :
+						 success,
+					 revision, operation.result_code };
+	result.result_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), result.result_payload.begin());
+	return result;
+}
+
+critical_apply_result make_result(const boon_shop_operation &operation, uint64_t revision,
+				  critical_apply_outcome success)
+{
+	std::array<uint8_t, BOON_SHOP_RESULT_BYTES> encoded = {};
+	if (!boon_shop_command_encode_result(operation.result, &encoded))
 		return { critical_apply_outcome::terminal_failure, revision, EILSEQ };
 	critical_apply_result result = { operation.result_code ?
 						 critical_apply_outcome::terminal_failure :
@@ -948,6 +1018,10 @@ critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 			return make_result(operation, catalog.revision,
 					   critical_apply_outcome::already_applied);
 		}
+	for (const auto &operation : catalog.shop_operations)
+		if (critical_operation_id_equal(operation.operation_id, command.operation_id))
+			return { critical_apply_outcome::terminal_failure, catalog.revision,
+				 EEXIST };
 	if (catalog.operations.size() >= operation_maximum ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
@@ -1106,5 +1180,136 @@ critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 	if (!flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, &error))
 		return { critical_apply_outcome::retryable_failure, catalog.revision, EIO };
 	return make_result(candidate.operations.back(), candidate.revision,
+			   critical_apply_outcome::applied);
+}
+
+critical_apply_result flatfile_boon_shop_repository_apply(const std::string &root,
+							  const critical_command &command)
+{
+	boon_shop_payload payload = {};
+	std::vector<uint8_t> encoded_command;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	if (root.empty() || !critical_command_valid(command) ||
+	    !boon_shop_command_decode_payload(command, &payload) ||
+	    critical_command_encode(command, &encoded_command) != critical_command_codec_result::ok)
+		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+	SHA256(encoded_command.data(), encoded_command.size(), digest.data());
+	flatfile_authority_lock lock;
+	std::string error;
+	if (!lock.acquire(root, &error))
+		return { critical_apply_outcome::retryable_failure, 0, EIO };
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, &error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return { recovered == flatfile_authority_transaction_result::io_error ?
+				 critical_apply_outcome::retryable_failure :
+				 critical_apply_outcome::terminal_failure,
+			 0,
+			 static_cast<unsigned int>(
+				 recovered == flatfile_authority_transaction_result::io_error ?
+					 EIO :
+					 EILSEQ) };
+	boon_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, &error);
+	if (loaded != flatfile_read_result::ok)
+		return { loaded == flatfile_read_result::io_error ?
+				 critical_apply_outcome::retryable_failure :
+				 critical_apply_outcome::terminal_failure,
+			 catalog.revision,
+			 static_cast<unsigned int>(
+				 loaded == flatfile_read_result::not_found ? ENOENT :
+				 loaded == flatfile_read_result::io_error  ? EIO :
+									     EILSEQ) };
+	for (const auto &operation : catalog.shop_operations)
+		if (critical_operation_id_equal(operation.operation_id, command.operation_id))
+		{
+			if (CRYPTO_memcmp(operation.command_digest.data(), digest.data(),
+					  digest.size()))
+				return { critical_apply_outcome::terminal_failure, catalog.revision,
+					 EEXIST };
+			return make_result(operation, catalog.revision,
+					   critical_apply_outcome::already_applied);
+		}
+	for (const auto &operation : catalog.operations)
+		if (critical_operation_id_equal(operation.operation_id, command.operation_id))
+			return { critical_apply_outcome::terminal_failure, catalog.revision,
+				 EEXIST };
+	if (catalog.shop_operations.size() >= operation_maximum ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
+
+	flatfile_base_stat_mutation stat = {};
+	unsigned int result_code = 0;
+	const auto inspected = flatfile_player_domain_prepare_base_stat(
+		root, lock, payload.pid, payload.stat_index, false, &stat, &result_code, &error);
+	if (inspected != flatfile_player_domain_result::ok)
+		return { inspected == flatfile_player_domain_result::io_error ?
+				 critical_apply_outcome::retryable_failure :
+				 critical_apply_outcome::terminal_failure,
+			 catalog.revision,
+			 static_cast<unsigned int>(
+				 inspected == flatfile_player_domain_result::not_found ? ENOENT :
+				 inspected == flatfile_player_domain_result::io_error  ? EIO :
+											 EILSEQ) };
+	boon_shop_record *shop = find_shop(&catalog, payload.pid);
+	if (!result_code && (!shop || shop->stats <= 0))
+		result_code = ENOSPC;
+	bool mutation_applied = false;
+	if (!result_code)
+	{
+		const auto prepared = flatfile_player_domain_prepare_base_stat(
+			root, lock, payload.pid, payload.stat_index, true, &stat, &result_code,
+			&error);
+		if (prepared != flatfile_player_domain_result::ok)
+			return { prepared == flatfile_player_domain_result::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.revision,
+				 static_cast<unsigned int>(
+					 prepared == flatfile_player_domain_result::io_error ?
+						 EIO :
+						 EILSEQ) };
+		mutation_applied = !result_code;
+	}
+	if (mutation_applied)
+		--shop->stats;
+	boon_shop_result result = { payload.pid, payload.stat_index, stat.stat_value,
+				    mutation_applied ? shop->stats :
+						       std::max<int64_t>(shop ? shop->stats : 0, 0),
+				    stat.stat_revision };
+	try
+	{
+		catalog.shop_operations.push_back(
+			{ command.operation_id, digest, result_code, result });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, catalog.revision, ENOMEM };
+	}
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return { critical_apply_outcome::terminal_failure, catalog.revision - 1, ENOSPC };
+	std::vector<flatfile_authority_after_image> images;
+	try
+	{
+		images.push_back({ catalog_filename, std::move(bytes) });
+		if (mutation_applied)
+			images.push_back(std::move(stat.after_image));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, catalog.revision - 1, ENOMEM };
+	}
+	const auto committed = flatfile_authority_transaction_commit(root, lock, images, &error);
+	if (committed != flatfile_authority_transaction_result::ok)
+		return { committed == flatfile_authority_transaction_result::io_error ?
+				 critical_apply_outcome::retryable_failure :
+				 critical_apply_outcome::terminal_failure,
+			 catalog.revision - 1,
+			 static_cast<unsigned int>(
+				 committed == flatfile_authority_transaction_result::io_error ?
+					 EIO :
+					 EILSEQ) };
+	return make_result(catalog.shop_operations.back(), catalog.revision,
 			   critical_apply_outcome::applied);
 }

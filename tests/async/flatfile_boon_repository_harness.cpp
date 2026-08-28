@@ -1,5 +1,6 @@
 #include "boon.h"
 #include "flatfile_boon_repository.h"
+#include "flatfile_player_domain_repository.h"
 
 #include <cerrno>
 #include <cstdlib>
@@ -37,6 +38,36 @@ static critical_command command(const boon_reward_payload &payload, uint8_t oper
 	value.accepted_at_usec = operation_value;
 	require(critical_command_normalize(&value), "could not normalize boon command");
 	return value;
+}
+
+static critical_command shop_command(uint32_t pid, uint8_t stat_index, uint8_t operation_value)
+{
+	critical_command value = {};
+	require(boon_shop_command_build(&value, operation(operation_value), { pid, stat_index }),
+		"could not build boon shop command");
+	value.accepted_at_usec = operation_value;
+	require(critical_command_normalize(&value), "could not normalize boon shop command");
+	return value;
+}
+
+static boon_shop_result decode_shop_result(const critical_apply_result &applied)
+{
+	boon_shop_result result = {};
+	require(boon_shop_command_decode_result(applied.result_payload.data(), applied.result_size,
+						&result),
+		"could not decode boon shop result");
+	return result;
+}
+
+static flatfile_player_domain_record player(uint32_t pid)
+{
+	flatfile_player_domain_record record;
+	record.pid = pid;
+	record.account_name = "account-one";
+	record.racewar = 1;
+	record.domains.base_stat_revision = 1;
+	record.domains.base_stats = { 50, 51, 52, 53, 54, 55, 56, 57, 58, 59 };
+	return record;
 }
 
 static boon_reward_result decode_applied_result(const critical_apply_result &applied)
@@ -122,9 +153,12 @@ static void convert_catalog_to_legacy_v1(const fs::path &path)
 	const uint32_t operation_count = read_u32(payload, &offset);
 	constexpr size_t version_two_operation_size = 16 + 32 + 4 + BOON_REWARD_RESULT_BYTES + 9;
 	constexpr size_t version_one_operation_size = version_two_operation_size - 9;
-	require(offset + static_cast<size_t>(operation_count) * version_two_operation_size ==
+	require(offset + static_cast<size_t>(operation_count) * version_two_operation_size + 4 ==
 			payload.size(),
 		"legacy boon conversion did not locate operations");
+	require(payload[payload.size() - 4] == 0 && payload[payload.size() - 3] == 0 &&
+			payload[payload.size() - 2] == 0 && payload[payload.size() - 1] == 0,
+		"legacy boon conversion found shop operations");
 	std::vector<uint8_t> legacy(payload.begin(), payload.begin() + operations_header + 4);
 	for (uint32_t operation = 0; operation < operation_count; ++operation)
 	{
@@ -163,6 +197,11 @@ int main(int argc, char **argv)
 			flatfile_boon_establish(root.string(), definitions, &error) ==
 				flatfile_boon_result::already_exists,
 		"could not establish boon catalog: " + error);
+	require(flatfile_player_domain_establish(root.string(), player(42), &error) ==
+				flatfile_player_domain_result::ok &&
+			flatfile_player_domain_establish(root.string(), player(43), &error) ==
+				flatfile_player_domain_result::ok,
+		"could not establish player stat authority: " + error);
 	std::vector<flatfile_boon_definition> loaded_definitions;
 	require(flatfile_boon_load_definitions(root.string(), &loaded_definitions, &error) ==
 				flatfile_boon_result::ok &&
@@ -285,6 +324,61 @@ int main(int argc, char **argv)
 	require(applied.outcome == critical_apply_outcome::applied &&
 			decode_applied_result(applied).entry_count == 0,
 		"pet/conjured mob exclusion was not preserved");
+	const fs::path legacy_root = root.string() + "-legacy";
+	fs::copy(root, legacy_root, fs::copy_options::recursive);
+	const fs::path legacy_catalog = legacy_root / "domains" / "boon_catalog";
+	convert_catalog_to_legacy_v1(legacy_catalog);
+	require(flatfile_boon_load_player(legacy_root.string(), 42, &shop, &error) ==
+				flatfile_boon_result::ok &&
+			shop.points == 5 && shop.stats == 6,
+		"legacy v1 boon catalog was not readable after pending-reward upgrade");
+
+	const critical_command purchase = shop_command(42, 0, 20);
+	applied = flatfile_boon_shop_repository_apply(root.string(), purchase);
+	boon_shop_result purchased = decode_shop_result(applied);
+	require(applied.outcome == critical_apply_outcome::applied && purchased.stat_value == 51 &&
+			purchased.stat_revision == 2 && purchased.remaining_stat_points == 5 &&
+			flatfile_boon_shop_repository_apply(root.string(), purchase).outcome ==
+				critical_apply_outcome::already_applied,
+		"boon shop purchase did not commit and replay exactly");
+	require(flatfile_boon_shop_repository_apply(root.string(), shop_command(42, 1, 20))
+				.error_code == EEXIST,
+		"conflicting boon shop operation ID was accepted");
+	flatfile_player_domain_record loaded_player;
+	require(flatfile_player_domain_load(root.string(), 42, "account-one", 1, &loaded_player,
+					    &error) == flatfile_player_domain_result::ok &&
+			loaded_player.domains.base_stats[0] == 51 &&
+			loaded_player.domains.base_stat_revision == 2 &&
+			flatfile_boon_load_player(root.string(), 42, &shop, &error) ==
+				flatfile_boon_result::ok &&
+			shop.stats == 5,
+		"boon shop did not atomically publish catalog and player stat authority");
+
+	const critical_command interrupted = shop_command(42, 1, 21);
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	require(flatfile_boon_shop_repository_apply(root.string(), interrupted).outcome ==
+			critical_apply_outcome::retryable_failure,
+		"boon shop fault injection did not interrupt after the catalog image");
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	applied = flatfile_boon_shop_repository_apply(root.string(), interrupted);
+	purchased = decode_shop_result(applied);
+	require(applied.outcome == critical_apply_outcome::already_applied &&
+			purchased.stat_value == 52 && purchased.stat_revision == 3 &&
+			purchased.remaining_stat_points == 4 &&
+			flatfile_player_domain_load(root.string(), 42, "account-one", 1,
+						    &loaded_player,
+						    &error) == flatfile_player_domain_result::ok &&
+			loaded_player.domains.base_stats[1] == 52 &&
+			loaded_player.domains.base_stat_revision == 3,
+		"interrupted boon shop commit did not recover both after-images exactly once");
+	const critical_command no_points = shop_command(43, 0, 30);
+	applied = flatfile_boon_shop_repository_apply(root.string(), no_points);
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == ENOSPC &&
+			decode_shop_result(applied).stat_value == 50 &&
+			flatfile_boon_shop_repository_apply(root.string(), no_points).error_code ==
+				ENOSPC,
+		"boon shop insufficient-points rejection was not durable and replayable");
 	const fs::path overflow_root = root / "overflow";
 	const fs::path overflow_domains = overflow_root / "domains";
 	fs::create_directories(overflow_domains);
@@ -306,11 +400,6 @@ int main(int argc, char **argv)
 					.error_code == E2BIG,
 		"oversized boon match set was not rolled back and durably rejected");
 	const fs::path catalog = domains / "boon_catalog";
-	convert_catalog_to_legacy_v1(catalog);
-	require(flatfile_boon_load_player(root.string(), 42, &shop, &error) ==
-				flatfile_boon_result::ok &&
-			shop.points == 5 && shop.stats == 6,
-		"legacy v1 boon catalog was not readable after pending-reward upgrade");
 	{
 		std::fstream file(catalog, std::ios::in | std::ios::out | std::ios::binary);
 		require(file.good(), "could not open boon catalog for corruption");

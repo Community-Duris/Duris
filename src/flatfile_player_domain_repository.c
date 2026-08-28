@@ -982,6 +982,60 @@ flatfile_player_domain_result flatfile_player_domain_prepare_wallet(
 	return flatfile_player_domain_result::ok;
 }
 
+flatfile_player_domain_result flatfile_player_domain_prepare_base_stat(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	uint8_t stat_index, bool apply_increment, flatfile_base_stat_mutation *mutation,
+	unsigned int *result_code, std::string *error)
+{
+	if (!mutation || !result_code || !pid ||
+	    stat_index >= player_load_domain_state{}.base_stats.size() || !lock.matches(root))
+		return flatfile_player_domain_result::invalid;
+	*mutation = {};
+	*result_code = 0;
+	const auto recovered = recover_authority(root, lock, error);
+	if (recovered != flatfile_player_domain_result::ok)
+		return recovered;
+	player_authority player;
+	const auto loaded = load_player_authority(root, pid, &player, error);
+	if (loaded != flatfile_player_domain_result::ok)
+		return loaded;
+	mutation->stat_value = player.record.domains.base_stats[stat_index];
+	mutation->stat_revision = player.record.domains.base_stat_revision;
+	if (!mutation->stat_revision)
+	{
+		*result_code = ENODATA;
+		return flatfile_player_domain_result::ok;
+	}
+	if (!apply_increment)
+		return flatfile_player_domain_result::ok;
+	if (mutation->stat_value >= 100)
+	{
+		*result_code = EALREADY;
+		return flatfile_player_domain_result::ok;
+	}
+	if (mutation->stat_value < 0 ||
+	    mutation->stat_revision == std::numeric_limits<uint64_t>::max())
+	{
+		*result_code = ERANGE;
+		return flatfile_player_domain_result::ok;
+	}
+	++mutation->stat_value;
+	++mutation->stat_revision;
+	player.record.domains.base_stats[stat_index] = mutation->stat_value;
+	player.record.domains.base_stat_revision = mutation->stat_revision;
+	try
+	{
+		mutation->after_image.filename = player_filename(pid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+	if (!encode_player_authority(player, &mutation->after_image.bytes))
+		return flatfile_player_domain_result::invalid;
+	return flatfile_player_domain_result::ok;
+}
+
 critical_apply_result apply_epic_command(const std::string &root, const critical_command &command)
 {
 	epic_command_payload payload = {};

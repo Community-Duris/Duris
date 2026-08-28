@@ -1225,6 +1225,45 @@ sections below continue to describe the required end state.
   after-image preparation API; combine it with the boon catalog after-image in one
   recoverable transaction, then route `boon shop stat` through the coordinator.
 
+### Checkpoint 37 - atomic flat boon stat redemption
+
+- **Completed:** added a bounded, canonical boon-shop command/result codec keyed by the
+  player and selected base-stat index. The durable result records the authoritative stat
+  value/revision and remaining shop stat points, so retries and live publication consume
+  the committed outcome rather than re-running purchase logic.
+- **Completed:** upgraded the boon catalog to schema v3 with a separate operation-ID and
+  command-digest ledger for shop purchases. V1 catalogs without reward-publication data
+  and v2 catalogs with it remain readable; new writes emit v3. Successful and rejected
+  purchases replay exactly, while operation-ID reuse with a different command is rejected.
+- **Completed:** the player-domain repository can prepare one bounded base-stat increment
+  as an after-image while the caller owns the global authority lock. The boon repository
+  decrements one stat point and commits the catalog plus player-domain after-images in
+  one generic recoverable authority transaction. Insufficient points, capped stats,
+  legacy stat authority, corruption, and capacity failures do not partially mutate
+  either side.
+- **Completed:** flat-primary `boon shop stat` now submits the typed command before any
+  live character, SQL, or catalog mutation. Completion publication applies the committed
+  stat value to the connected character and recomputes affects; a disconnected player
+  receives the authoritative value through normal player-domain materialization on the
+  next load. MariaDB-primary retains the existing SQL path.
+- **Checks passed:** the boon repository harness proves successful replay, conflicting
+  identity rejection, durable insufficient-points rejection, v1 catalog compatibility,
+  and forced interruption after the catalog image followed by recovery of both images
+  exactly once. The codec/routing suite, player-domain suite, affected item/auction/player
+  repository suites, normal strict build, isolated client-free build/boot preflight,
+  formatting, and diff checks pass.
+- **Files changed:** boon-shop command and live transaction modules, critical command and
+  flat dispatcher registration, boon catalog/player-domain repositories, game-loop and
+  shop routing, focused harnesses/source contracts, the build manifest, and this handoff
+  ledger.
+- **Remaining boon gap:** boon-point item purchases are not implemented (the shop exposes
+  no items in either backend), and the flat mortal list still uses concise typed rows
+  instead of the MariaDB renderer's natural-language zone/mob/item/spell expansion. The
+  random-boon implementation remains disabled in both backends.
+- **Next action:** extract a presentation-only boon row formatter shared by SQL and flat
+  projections, then return to the remaining fail-closed durable-domain inventory rather
+  than inventing a flat-only boon-point item catalog.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

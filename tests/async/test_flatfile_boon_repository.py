@@ -13,9 +13,14 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-boon-") as temporary:
     sources = [
         "tests/async/flatfile_boon_repository_harness.cpp",
         "src/flatfile_boon_repository.c",
+        "src/flatfile_player_domain_repository.c",
         "src/flatfile_authority_transaction.c",
         "src/flatfile_store.c",
         "src/boon_reward_command.c",
+        "src/boon_shop_command.c",
+        "src/epic_command.c",
+        "src/currency_command.c",
+        "src/combat_outcome_command.c",
         "src/critical_command.c",
     ]
     compile_result = subprocess.run(
@@ -27,6 +32,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-boon-") as temporary:
             "-Wpedantic",
             "-Werror",
             "-D__NO_MYSQL__",
+            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
             "-Isrc",
             "-Isrc/no_mysql",
             *sources,
@@ -56,3 +62,5 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-boon-") as temporary:
 dispatcher = (ROOT / "src/flatfile_item_repository.c").read_text()
 if "return flatfile_boon_repository_apply(root, command);" not in dispatcher:
     raise SystemExit("flat critical dispatcher does not route boon rewards")
+if "return flatfile_boon_shop_repository_apply(root, command);" not in dispatcher:
+    raise SystemExit("flat critical dispatcher does not route boon shop purchases")

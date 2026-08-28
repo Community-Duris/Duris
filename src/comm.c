@@ -102,6 +102,7 @@
 #include "combat_outcome_transaction.h"
 #include "artifact_guild_transaction.h"
 #include "boon_reward_transaction.h"
+#include "boon_shop_transaction.h"
 #include "zone_touch_transaction.h"
 #include "epic_transaction.h"
 #include "player_save_pipeline.h"
@@ -225,6 +226,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	combat_outcome_transaction_handle_completions(completions, count);
 	artifact_guild_transaction_handle_completions(completions, count);
 	boon_reward_transaction_handle_completions(completions, count);
+	boon_shop_transaction_handle_completions(completions, count);
 	zone_touch_transaction_handle_completions(completions, count);
 }
 

@@ -24,6 +24,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
         "src/currency_command.c",
         "src/combat_outcome_command.c",
         "src/boon_reward_command.c",
+        "src/boon_shop_command.c",
         "src/critical_command.c",
         "src/persistence_mode.c",
     ]
