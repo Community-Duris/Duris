@@ -3,6 +3,27 @@
 **Effective date:** 2026-08-28  
 **Status:** authoritative direction for all remaining flat-file work
 
+## Progress ledger
+
+### 2026-08-29 - database-independent global timers
+
+- **Concrete gap:** under `__NO_MYSQL__`, `set_timer` discarded every write and
+  `get_timer` always returned zero. The database-backed `timers` table is the functional
+  reference for these named date values; current callers use them for cargo maintenance,
+  trophy reduction, and epic-zone timing.
+- **Restoration:** flat-file-only mode now persists each named timer beneath the existing
+  flat-file metadata authority. Records use the existing atomic file publication path,
+  owner-only metadata validation, a bounded name, an explicit version, and a checksum.
+  Database-backed mode remains unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_timers.py` covers missing,
+  create, replace, negative-value compatibility, corruption, symlink, unsafe-name, and
+  private-permission behavior. The test is included in the client-free CI job.
+- **Build evidence:** `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  and `git diff --check` pass.
+- **Overall state:** the full objective is not complete. The global incomplete-domain
+  boot fence remains in place while other concrete DB-free gaps are restored.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

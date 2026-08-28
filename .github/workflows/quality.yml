@@ -91,6 +91,8 @@ jobs:
         run: |
           python3 tests/async/test_flatfile_spellbook_repository.py
           python3 tests/async/test_flatfile_spellbook_runtime_contract.py
+      - name: Verify flat-file global timers
+        run: python3 tests/async/test_flatfile_timers.py
 
   quality:
     runs-on: ubuntu-24.04
