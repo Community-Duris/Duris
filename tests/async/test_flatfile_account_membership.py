@@ -23,6 +23,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-membership-test-") as tempor
             "src/flatfile_account_adapter.c",
             "src/flatfile_account_repository.c",
             "src/flatfile_identity_repository.c",
+            "src/flatfile_authority_transaction.c",
             "src/flatfile_store.c",
             "src/persistence_mode.c",
             "-lcrypto",

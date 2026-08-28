@@ -37,6 +37,8 @@ std::string operation_directory(const std::string &root, flatfile_authority_stor
 		return domains_directory(root);
 	case flatfile_authority_store::players:
 		return root + "/players";
+	case flatfile_authority_store::identities:
+		return root + "/identities/names";
 	}
 	return {};
 }

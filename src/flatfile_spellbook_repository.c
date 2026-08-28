@@ -430,3 +430,38 @@ flatfile_spellbook_result flatfile_spellbook_clear(const std::string &root, uint
 	catalog.records.erase(found);
 	return publish(root, catalog, error);
 }
+
+flatfile_spellbook_result flatfile_spellbook_prepare_clear(const std::string &root,
+							   const flatfile_authority_lock &lock,
+							   uint32_t pid,
+							   flatfile_authority_operation *operation,
+							   std::string *error)
+{
+	if (root.empty() || !pid || !operation || !lock.matches(root))
+		return flatfile_spellbook_result::invalid;
+	*operation = {};
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_spellbook_result::ok)
+		return recovered;
+	spellbook_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_spellbook_result::ok)
+		return loaded;
+	auto found = std::lower_bound(catalog.records.begin(), catalog.records.end(), pid,
+				      [](const auto &record, uint32_t candidate)
+				      { return record.pid < candidate; });
+	if (found == catalog.records.end() || found->pid != pid)
+		return flatfile_spellbook_result::not_found;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_spellbook_result::invalid;
+	catalog.records.erase(found);
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_spellbook_result::invalid;
+	operation->store = flatfile_authority_store::domains;
+	operation->kind = flatfile_authority_operation_kind::write;
+	operation->filename = catalog_filename;
+	operation->bytes = std::move(bytes);
+	return flatfile_spellbook_result::ok;
+}

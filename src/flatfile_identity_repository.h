@@ -1,8 +1,11 @@
 #ifndef DURIS_FLATFILE_IDENTITY_REPOSITORY_H
 #define DURIS_FLATFILE_IDENTITY_REPOSITORY_H
 
+#include "flatfile_authority_transaction.h"
+
 #include <stdint.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -35,6 +38,28 @@ enum class flatfile_identity_result
 	io_error
 };
 
+class flatfile_identity_lock
+{
+    public:
+	flatfile_identity_lock() noexcept;
+	~flatfile_identity_lock();
+	flatfile_identity_lock(const flatfile_identity_lock &) = delete;
+	flatfile_identity_lock &operator=(const flatfile_identity_lock &) = delete;
+
+	bool acquire(const std::string &root, std::string *error);
+	bool matches(const std::string &root) const;
+
+    private:
+	struct state;
+	std::unique_ptr<state> state_;
+	bool owns(const std::string &root) const;
+	friend flatfile_identity_result
+	flatfile_identity_prepare_remove(const std::string &, const flatfile_identity_lock &,
+					 const flatfile_authority_lock &, int32_t,
+					 const std::string &, flatfile_authority_operation *,
+					 std::string *);
+};
+
 flatfile_identity_result flatfile_identity_allocate_pid(const std::string &root, int32_t *pid,
 							std::string *error);
 flatfile_identity_result flatfile_identity_current_highest_pid(const std::string &root,
@@ -64,5 +89,11 @@ flatfile_identity_result flatfile_identity_set_blocked(const std::string &root, 
 flatfile_identity_result flatfile_identity_remove(const std::string &root, int32_t pid,
 						  const std::string &expected_name,
 						  std::string *error);
+flatfile_identity_result
+flatfile_identity_prepare_remove(const std::string &root,
+				 const flatfile_identity_lock &identity_lock,
+				 const flatfile_authority_lock &authority_lock, int32_t pid,
+				 const std::string &expected_name,
+				 flatfile_authority_operation *operation, std::string *error);
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef DURIS_FLATFILE_SPELLBOOK_REPOSITORY_H
 #define DURIS_FLATFILE_SPELLBOOK_REPOSITORY_H
 
+#include "flatfile_authority_transaction.h"
+
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -36,5 +38,10 @@ flatfile_spellbook_result flatfile_spellbook_remove(const std::string &root, uin
 						    int32_t mob_vnum, std::string *error);
 flatfile_spellbook_result flatfile_spellbook_clear(const std::string &root, uint32_t pid,
 						   std::string *error);
+flatfile_spellbook_result flatfile_spellbook_prepare_clear(const std::string &root,
+							   const flatfile_authority_lock &lock,
+							   uint32_t pid,
+							   flatfile_authority_operation *operation,
+							   std::string *error);
 
 #endif

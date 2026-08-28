@@ -101,6 +101,21 @@ int main(int argc, char **argv)
 			mobs.size() == 10 &&
 			std::find(mobs.begin(), mobs.end(), 1003) == mobs.end(),
 		"spellbook remove was not durable and idempotent");
+	{
+		flatfile_authority_lock lock;
+		flatfile_authority_operation operation;
+		require(lock.acquire(root.string(), &error) &&
+				flatfile_spellbook_prepare_clear(root.string(), lock, 42,
+								 &operation, &error) ==
+					flatfile_spellbook_result::ok &&
+				operation.filename == "spellbook_catalog" &&
+				!operation.bytes.empty(),
+			"spellbook clear was not prepared: " + error);
+		require(flatfile_authority_transaction_commit_operations(root.string(), lock,
+									 { operation }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"prepared spellbook clear did not commit: " + error);
+	}
 	require(flatfile_spellbook_clear(root.string(), 42, &error) ==
 				flatfile_spellbook_result::ok &&
 			flatfile_spellbook_clear(root.string(), 42, &error) ==
@@ -108,7 +123,7 @@ int main(int argc, char **argv)
 			flatfile_spellbook_list(root.string(), 42, &mobs, &error) ==
 				flatfile_spellbook_result::ok &&
 			mobs.empty(),
-		"spellbook clear was not durable and idempotent");
+		"prepared spellbook clear was not durable and idempotent");
 	std::vector<flatfile_spellbook_record> conflict = { { 43, { 901 } } };
 	require(flatfile_spellbook_establish(root.string(), conflict, &error) ==
 			flatfile_spellbook_result::invalid,

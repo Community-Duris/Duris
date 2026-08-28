@@ -7,6 +7,7 @@
 #include <cstring>
 #include <limits>
 #include <mutex>
+#include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
 #include <type_traits>
@@ -30,12 +31,6 @@ struct identity_catalog
 	uint64_t revision = 0;
 	int64_t next_pid = 1;
 	std::vector<flatfile_identity_record> entries;
-};
-
-struct authority_lock
-{
-	int fd = -1;
-	~authority_lock() { flatfile_lock_release(fd); }
 };
 
 struct encoder
@@ -300,10 +295,8 @@ flatfile_identity_result publish_catalog(const std::string &root, identity_catal
 template <typename Mutation> flatfile_identity_result
 mutate_catalog(const std::string &root, Mutation mutation, std::string *error)
 {
-	std::lock_guard<std::mutex> guard(identity_mutex);
-	authority_lock authority;
-	if (!flatfile_lock_acquire(identity_directory(root), identity_lock_filename, &authority.fd,
-				   error))
+	flatfile_identity_lock authority;
+	if (!authority.acquire(root, error))
 		return flatfile_identity_result::io_error;
 	identity_catalog catalog;
 	const flatfile_identity_result loaded = load_catalog(root, &catalog, error);
@@ -336,6 +329,51 @@ flatfile_identity_record *find_active_name(identity_catalog *catalog, const std:
 	return nullptr;
 }
 } // namespace
+
+struct flatfile_identity_lock::state
+{
+	std::unique_lock<std::mutex> process_lock;
+	int fd = -1;
+	std::string root;
+
+	state()
+		: process_lock(identity_mutex, std::defer_lock)
+	{
+	}
+	~state() { flatfile_lock_release(fd); }
+};
+
+flatfile_identity_lock::flatfile_identity_lock() noexcept
+	: state_(new(std::nothrow) state)
+{
+}
+flatfile_identity_lock::~flatfile_identity_lock() = default;
+
+bool flatfile_identity_lock::acquire(const std::string &root, std::string *error)
+{
+	if (!state_ || state_->process_lock.owns_lock() || root.empty())
+		return false;
+	state_->process_lock.lock();
+	if (flatfile_lock_acquire(identity_directory(root), identity_lock_filename, &state_->fd,
+				  error))
+	{
+		state_->root = root;
+		return true;
+	}
+	state_->process_lock.unlock();
+	return false;
+}
+
+bool flatfile_identity_lock::owns(const std::string &root) const
+{
+	return state_ && state_->process_lock.owns_lock() && state_->fd >= 0 &&
+	       state_->root == root;
+}
+
+bool flatfile_identity_lock::matches(const std::string &root) const
+{
+	return owns(root);
+}
 
 flatfile_identity_result flatfile_identity_allocate_pid(const std::string &root, int32_t *pid,
 							std::string *error)
@@ -604,4 +642,47 @@ flatfile_identity_result flatfile_identity_remove(const std::string &root, int32
 			return flatfile_identity_result::ok;
 		},
 		error);
+}
+
+flatfile_identity_result
+flatfile_identity_prepare_remove(const std::string &root,
+				 const flatfile_identity_lock &identity_lock,
+				 const flatfile_authority_lock &authority_lock, int32_t pid,
+				 const std::string &expected_name,
+				 flatfile_authority_operation *operation, std::string *error)
+{
+	std::string expected_key;
+	if (!operation || pid <= 0 || !identity_lock.matches(root) ||
+	    !authority_lock.matches(root) || !canonical_name(expected_name, &expected_key))
+		return flatfile_identity_result::invalid;
+	*operation = {};
+	const auto recovered = flatfile_authority_transaction_recover(root, authority_lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_identity_result::io_error :
+			       flatfile_identity_result::invalid;
+	identity_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_identity_result::ok)
+		return loaded;
+	flatfile_identity_record *entry = find_pid(&catalog, pid);
+	std::string current_key;
+	if (!entry || !canonical_name(entry->name, &current_key) || current_key != expected_key)
+		return entry ? flatfile_identity_result::conflict :
+			       flatfile_identity_result::not_found;
+	if (!entry->active)
+		return entry->blocked ? flatfile_identity_result::not_found :
+					flatfile_identity_result::conflict;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_identity_result::exhausted;
+	entry->active = false;
+	entry->blocked = true;
+	std::vector<uint8_t> bytes;
+	if (!encode_file(catalog, catalog.revision + 1, &bytes))
+		return flatfile_identity_result::invalid;
+	operation->store = flatfile_authority_store::identities;
+	operation->kind = flatfile_authority_operation_kind::write;
+	operation->filename = identity_filename;
+	operation->bytes = std::move(bytes);
+	return flatfile_identity_result::ok;
 }

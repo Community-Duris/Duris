@@ -26,10 +26,13 @@ int main(int argc, char **argv)
 	const fs::path root = argv[1];
 	const fs::path identities = root / "identities";
 	const fs::path names = identities / "names";
+	const fs::path domains = root / "domains";
 	fs::create_directories(names);
+	fs::create_directories(domains);
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(identities, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(names, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(domains, fs::perms::owner_all, fs::perm_options::replace);
 
 	std::string error;
 	int32_t highest = -1;
@@ -127,6 +130,30 @@ int main(int argc, char **argv)
 				flatfile_identity_result::ok &&
 			!record.active && record.blocked,
 		"PID tombstone was not retained");
+	{
+		flatfile_identity_lock identity_lock;
+		flatfile_authority_lock authority_lock;
+		flatfile_authority_operation operation;
+		require(identity_lock.acquire(root.string(), &error) &&
+				authority_lock.acquire(root.string(), &error),
+			"could not acquire prepared-removal locks: " + error);
+		require(flatfile_identity_prepare_remove(
+				root.string(), identity_lock, authority_lock, alpha_pid, "Gamma",
+				&operation, &error) == flatfile_identity_result::ok &&
+				operation.store == flatfile_authority_store::identities &&
+				operation.kind == flatfile_authority_operation_kind::write &&
+				operation.filename == "catalog.identity" &&
+				!operation.bytes.empty(),
+			"identity tombstone was not prepared: " + error);
+		require(flatfile_authority_transaction_commit_operations(
+				root.string(), authority_lock, { operation }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"prepared identity tombstone did not commit: " + error);
+	}
+	require(flatfile_identity_lookup_pid(root.string(), alpha_pid, &record, &error) ==
+				flatfile_identity_result::ok &&
+			!record.active && record.blocked,
+		"prepared identity tombstone did not publish");
 
 	constexpr int worker_count = 4;
 	constexpr int allocations_per_worker = 10;

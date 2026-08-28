@@ -15,7 +15,8 @@ struct flatfile_authority_after_image
 enum class flatfile_authority_store : uint8_t
 {
 	domains = 1,
-	players = 2
+	players = 2,
+	identities = 3
 };
 
 enum class flatfile_authority_operation_kind : uint8_t

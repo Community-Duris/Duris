@@ -89,13 +89,27 @@ int main(int argc, char **argv)
 				flatfile_recipe_result::ok &&
 			recipes.size() == 11 && recipes.front() == 500 && recipes.back() == 1007,
 		"concurrent recipe additions were lost");
+	{
+		flatfile_authority_lock lock;
+		flatfile_authority_operation operation;
+		require(lock.acquire(root.string(), &error) &&
+				flatfile_recipe_prepare_clear(root.string(), lock, 42, &operation,
+							      &error) ==
+					flatfile_recipe_result::ok &&
+				operation.filename == "recipe_catalog" && !operation.bytes.empty(),
+			"recipe clear was not prepared: " + error);
+		require(flatfile_authority_transaction_commit_operations(root.string(), lock,
+									 { operation }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"prepared recipe clear did not commit: " + error);
+	}
 	require(flatfile_recipe_clear(root.string(), 42, &error) == flatfile_recipe_result::ok &&
 			flatfile_recipe_clear(root.string(), 42, &error) ==
 				flatfile_recipe_result::ok &&
 			flatfile_recipe_list(root.string(), 42, &recipes, &error) ==
 				flatfile_recipe_result::ok &&
 			recipes.empty(),
-		"recipe clear was not durable and idempotent");
+		"prepared recipe clear was not durable and idempotent");
 	std::vector<flatfile_recipe_record> conflict = { { 43, { 901 } } };
 	require(flatfile_recipe_establish(root.string(), conflict, &error) ==
 			flatfile_recipe_result::invalid,

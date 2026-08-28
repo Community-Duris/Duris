@@ -1377,10 +1377,10 @@ sections below continue to describe the required end state.
 ### Checkpoint 41 - recoverable cross-store authority removals
 
 - **Completed:** upgraded the bounded `DURAUTH` transaction journal to version 2 with
-  explicit write/remove operations and typed `domains/` or `players/` targets. Target
-  names remain single safe filenames, duplicate operations on the same store/name pair
-  are rejected, writes require non-empty bounded after-images, and removes require empty
-  payloads.
+  explicit write/remove operations and typed `domains/`, `players/`, or
+  `identities/names/` targets. Target names remain single safe filenames, duplicate
+  operations on the same store/name pair are rejected, writes require non-empty bounded
+  after-images, and removes require empty payloads.
 - **Compatibility:** recovery still decodes and replays version-1 write-only journals
   produced by prior checkpoints. New callers can submit mixed operations, while the
   existing after-image API remains a compatibility wrapper that emits version-2 domain
@@ -1404,6 +1404,37 @@ sections below continue to describe the required end state.
   one authority lock; independent clears remain intentionally unacceptable.
 - **Next action:** add those repository prepare APIs and a typed character-delete
   coordinator, with fault injection proving recovery from every operation boundary.
+
+### Checkpoint 42 - prepared identity and knowledge deletion primitives
+
+- **Completed:** the identity repository now exposes an owner-only RAII lock and a
+  prepare-only tombstone operation. Preparation verifies the global authority lock, PID,
+  expected canonical name, active state, catalog checksum/schema, and revision bound,
+  then returns the next checksummed identity-catalog image without publishing it.
+- **Completed:** recipe and learned-minion repositories now expose equivalent prepare-only
+  PID clears under an already-held global authority lock. They recover an outstanding
+  journal first, fail closed on missing/corrupt authority, omit absent PID rows through a
+  distinct not-found result, and return revision-incremented catalog images without any
+  independent write.
+- **Locking correction:** normal identity mutations now use the same public identity lock
+  implementation as coordinated deletion. This preserves the existing process mutex and
+  `.identity.lock` serialization while allowing a coordinator to hold identity state
+  stable, then acquire the global authority lock in one documented direction.
+- **Checks passed:** identity and account-membership regressions still pass. Expanded
+  identity, recipe, and spellbook harnesses commit their prepared operations through the
+  generic journal and verify the resulting tombstone/empty projection. The cross-store
+  harness now also applies an identity-catalog image in the interrupted mixed transaction.
+  The strict normal build and isolated client-free build/boot preflight pass.
+- **Files changed:** identity, recipe, spellbook, and authority transaction APIs/codecs;
+  their focused harnesses/link manifests; and this handoff ledger.
+- **Deletion-set correction:** snapshot/domain/knowledge alone is insufficient. Item
+  ownership and per-player boon redemption are also PID-keyed flat authorities, while
+  locker, ship, auction, artifact, and other character-delete side effects still need an
+  explicit precondition or transactional disposition. The runtime delete route remains
+  closed rather than claiming a partial delete.
+- **Next action:** add prepared player-snapshot, player-domain, item-owner, and boon-player
+  operations with compatible lock ordering, then inventory and fence the remaining
+  world-side effects before exposing the coordinator through `sql_delete_player`.
 
 ### Milestone status
 

@@ -72,11 +72,16 @@ int main(int argc, char **argv)
 	const fs::path root = argv[1];
 	const fs::path domains = root / "domains";
 	const fs::path players = root / "players";
+	const fs::path identities = root / "identities";
+	const fs::path names = identities / "names";
 	fs::create_directories(domains);
 	fs::create_directories(players);
+	fs::create_directories(names);
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(domains, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(players, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(identities, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(names, fs::perms::owner_all, fs::perm_options::replace);
 	std::string error;
 	require(flatfile_atomic_write(domains.string(), "authority-one", bytes("old-one"),
 				      &error) &&
@@ -114,7 +119,9 @@ int main(int argc, char **argv)
 		"authority recovery did not publish and clear every after-image");
 	require(flatfile_atomic_write(players.string(), "42", bytes("player-snapshot"), &error) &&
 			flatfile_atomic_write(domains.string(), "player_42", bytes("player-domain"),
-					      &error),
+					      &error) &&
+			flatfile_atomic_write(names.string(), "catalog.identity",
+					      bytes("old-identity"), &error),
 		"could not establish removal fixtures: " + error);
 	const std::vector<flatfile_authority_operation> operations = {
 		{ flatfile_authority_store::domains, flatfile_authority_operation_kind::write,
@@ -127,6 +134,8 @@ int main(int argc, char **argv)
 		  flatfile_authority_operation_kind::remove,
 		  "player_42",
 		  {} },
+		{ flatfile_authority_store::identities, flatfile_authority_operation_kind::write,
+		  "catalog.identity", bytes("new-identity") },
 	};
 	{
 		flatfile_authority_lock lock;
@@ -149,6 +158,7 @@ int main(int argc, char **argv)
 			"cross-store removal recovery failed: " + error);
 	}
 	require(!fs::exists(players / "42") && !fs::exists(domains / "player_42") &&
+			read(names / "catalog.identity") == bytes("new-identity") &&
 			!fs::exists(domains / ".critical-authority-transaction"),
 		"recovery did not complete and clear cross-store removals");
 	{
