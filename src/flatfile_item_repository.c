@@ -784,7 +784,8 @@ flatfile_critical_command_repository_apply_selected(const critical_command &comm
 		return { critical_apply_outcome::terminal_failure, 0, ENOENT };
 	if (command.type == critical_command_type::item_transfer)
 		return flatfile_item_repository_apply(root, command);
-	if (command.type == critical_command_type::epic)
+	if (command.type == critical_command_type::epic ||
+	    command.type == critical_command_type::account_bank)
 		return flatfile_player_domain_apply(root, command);
 	return { critical_apply_outcome::terminal_failure, 0, ENOTSUP };
 }

@@ -684,6 +684,49 @@ sections below continue to describe the required end state.
   intent, publish both under the global domain lock, then durably clear the intent;
   every domain entry point will finish a surviving intent before reading or mutating.
 
+### Checkpoint 22 - recoverable wallet/shared-bank transaction
+
+- **Completed:** the flat critical dispatcher now applies the existing account-bank
+  currency command. It validates canonical account/racewar ownership, both expected
+  revisions, insufficient funds, the runtime `INT_MAX` balance bound, and revision
+  overflow. Successful commands increment wallet and bank revisions together; rejected
+  commands retain the original balances and durably record their typed result.
+- **Completed:** successful two-record changes first publish a checksummed
+  `.currency-transaction` containing the exact checksummed player and bank after-images.
+  Under the global domain lock the repository publishes bank, then player, then durably
+  removes the intent. Every baseline, load, epic, and currency entry point finishes a
+  surviving intent before reading or mutating, so a crash cannot expose a permanently
+  split wallet/bank decision.
+- **Completed:** currency decisions share the player-domain operation ledger. Exact
+  replay returns the original wallet, bank, and revisions; conflicting operation-ID
+  reuse fails with `EEXIST`; stale and insufficient-funds decisions replay without
+  reevaluation. Compound command formats remain untouched.
+- **Completed:** the focused regression covers mutation/load, exact replay, operation-ID
+  conflict, stale rejection replay, insufficient bank funds, and an injected interruption
+  after bank publication. The subsequent load republishes both after-images, removes the
+  intent, and the command then replays as already applied. The fault point is compiled
+  only into that standalone regression.
+- **Contract update:** full immutable status capture carries opening currency values for
+  the flat first-baseline handoff. SQL checkpoint replay still filters those fields and
+  load materialization still takes balances exclusively from the transaction domain, so
+  later snapshots cannot overwrite currency authority.
+- **Checks passed:** `python3 tests/async/test_flatfile_player_domain_repository.py`,
+  `python3 tests/async/test_flatfile_item_repository.py`,
+  `python3 tests/async/test_flatfile_player_repository.py`,
+  `python3 tests/async/test_currency_transaction_contract.py`, `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `./scripts/format.sh --check`, and `git diff --check`.
+- **Files changed:** `src/flatfile_player_domain_repository.c`,
+  `src/flatfile_item_repository.c`, `src/persistence_mode.c`, the focused domain/item/
+  player/currency/boot regressions, and this handoff ledger.
+- **Remaining player mutation gap:** standalone epic and wallet/bank commands are now
+  authoritative. Frag changes are carried by compound combat commands, which still need
+  a multi-player/account atomic protocol and remain fenced with other non-item critical
+  operations.
+- **Next action:** implement the combat outcome command across participant frag, epic,
+  wallet, and shared-bank records using a generalized multi-after-image intent, then
+  route auction and boon compound mutations through the same recovery boundary.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
