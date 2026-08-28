@@ -2,6 +2,7 @@
 
 #include "flatfile_authority_transaction.h"
 #include "flatfile_artifact_repository.h"
+#include "flatfile_association_repository.h"
 #include "flatfile_auction_repository.h"
 #include "flatfile_boon_repository.h"
 #include "flatfile_frag_leaderboard_repository.h"
@@ -96,7 +97,7 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	std::vector<flatfile_authority_operation> operations;
 	try
 	{
-		operations.reserve(11);
+		operations.reserve(12);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -155,6 +156,23 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	if (!locker_changed && locker != flatfile_locker_result::unchanged)
 		return map_authority(locker, flatfile_locker_result::not_found,
 				     flatfile_locker_result::io_error);
+
+	const auto association = flatfile_association_prepare_player_remove(
+		root, authority_lock, static_cast<uint32_t>(pid), expected_name, &operation, error);
+	if (association == flatfile_association_result::ok)
+	{
+		if (!append_operation(&operations, &operation))
+			return flatfile_character_delete_result::io_error;
+	}
+	else if (association == flatfile_association_result::conflict)
+	{
+		return flatfile_character_delete_result::conflict;
+	}
+	else if (association != flatfile_association_result::unchanged)
+	{
+		return map_authority(association, flatfile_association_result::not_found,
+				     flatfile_association_result::io_error);
+	}
 
 	const auto snapshot = flatfile_player_snapshot_prepare_remove(
 		root, snapshot_lock, authority_lock, pid, &operation, error);

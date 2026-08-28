@@ -92,8 +92,8 @@
       "id": "association_membership",
       "source": "runtime-call",
       "key": "association+pid",
-      "disposition": "unimplemented",
-      "evidence": { "path": "src/files.c", "token": "GET_ASSOC(ch)->kick(ch)" }
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_association_prepare_player_remove" }
     },
     {
       "id": "frag_leaderboard",

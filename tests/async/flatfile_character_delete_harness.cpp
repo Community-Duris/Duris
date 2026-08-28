@@ -1,6 +1,7 @@
 #include "flatfile_boon_repository.h"
 #include "flatfile_character_delete.h"
 #include "flatfile_artifact_repository.h"
+#include "flatfile_association_repository.h"
 #include "flatfile_frag_leaderboard_repository.h"
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
@@ -133,6 +134,17 @@ static void establish(const fs::path &root, bool establish_boons)
 					    { "guild.7.locker", "player", 1 } },
 					  &error) == flatfile_locker_result::ok,
 		"locker baseline failed: " + error);
+	flatfile_association_record association = {};
+	association.association_id = 7;
+	association.name = "Test Guild";
+	association.frags = 10;
+	association.top_frags = 6;
+	association.top_fragger = "Player";
+	association.revision = 1;
+	association.members = { { 1, "Player", 1, 0, 2, 6, 1 }, { 2, "Other", 1, 0, 0, 4, 1 } };
+	require(flatfile_association_establish(root.string(), { association }, &error) ==
+			flatfile_association_result::ok,
+		"association baseline failed: " + error);
 	const item_owner_identity locker_owner = { item_owner_type::locker, 10, 11 };
 	require(flatfile_item_repository_establish_owner(
 			root.string(), locker_owner,
@@ -208,6 +220,13 @@ int main(int argc, char **argv)
 			lockers.size() == 1 && lockers[0].owner_assoc_id == 7 &&
 			locker_access.empty(),
 		"recovered deletion retained player locker or access state");
+	std::vector<flatfile_association_record> associations;
+	require(flatfile_association_list(root.string(), &associations, &error) ==
+				flatfile_association_result::ok &&
+			associations.size() == 1 && associations[0].members.size() == 1 &&
+			associations[0].members[0].pid == 2 && associations[0].frags == 4 &&
+			associations[0].top_frags == 0 && associations[0].top_fragger.empty(),
+		"recovered deletion retained association membership or frag contribution");
 	std::vector<flatfile_artifact_record> artifacts;
 	require(flatfile_artifact_list(root.string(), &artifacts, &error) ==
 				flatfile_artifact_result::ok &&

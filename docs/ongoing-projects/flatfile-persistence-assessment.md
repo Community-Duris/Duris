@@ -1752,6 +1752,46 @@ sections below continue to describe the required end state.
   character removal, then address name-keyed ships/cargo without weakening the corpse and
   account-bound summon fences.
 
+### Checkpoint 52 - canonical association authority and membership deletion
+
+- **Completed:** added a checksummed `DURASSC` v1 catalog consolidating the active `guilds`,
+  `guild_ranks`, and `guild_members` projections. Each association carries its stable ID,
+  display name, racewar/bits, prestige/construction, coin balances, total and top frag
+  aggregates, fixed rank titles, revision, and canonical PID-keyed members. Each member
+  carries canonical name, permission/rank bits, debt, online projection, captured frag
+  contribution, and revision.
+- **Exporter and integrity boundary:** exact establishment canonicalizes association and
+  member ordering and is idempotent only for identical state. Validation enforces unique
+  association IDs, globally unique member PIDs, printable bounded text, canonical member
+  and top-fragger names, consistent empty top-fragger aggregates, bounded counts/files,
+  revisions, and SHA-256 integrity. Missing or corrupt authority fails closed.
+- **Deletion semantics:** under the held global authority lock, the PID/name member is
+  removed, its captured frag contribution is subtracted with checked signed arithmetic,
+  and matching top-fragger name/value state is cleared. The association and catalog
+  revisions advance once; absent membership is an idempotent unchanged result, while a
+  PID/name mismatch or arithmetic overflow conflicts before publication. This reproduces
+  the durable effects of `Guild::kick` instead of deleting only the membership row and
+  leaving guild aggregates stale.
+- **Coordinator composition:** the prepared association image joins the same recoverable
+  character-delete transaction before snapshot/domain/item removal and the success-last
+  identity tombstone. The bounded operation count is now twelve. Fault recovery proves
+  the remaining member and association survive while the deleting member, frag
+  contribution, and top-fragger state converge exactly.
+- **Checks passed:** the standalone strict regression covers canonical establishment/list,
+  ranks/balances/members, retry/conflict behavior, duplicate cross-association PID refusal,
+  aggregate validation, prepare-before-publish isolation, transactional member removal,
+  frag/top-fragger updates, retry stability, and checksum corruption. The expanded
+  coordinator and manifest regressions pass, and CI runs the association repository in the
+  client-free authority suite.
+- **Manifest and exposure:** `association_membership` advances from `unimplemented` to
+  `prepared_rewrite`, reducing the checked deletion blocker count from four to three.
+  General client-free guild gameplay/load/save remains unrouted and stays inside the wider
+  guild domain boot fence; ships/cargo, corpses/saved items, and account-bound summons still
+  prevent live character-delete exposure.
+- **Next action:** implement canonical ship and cargo authority with name/PID ownership and
+  exact item-custody composition, then retain explicit corpse and account-bound summon
+  fences until their repositories are complete.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
