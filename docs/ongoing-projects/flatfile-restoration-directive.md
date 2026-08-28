@@ -92,6 +92,27 @@
 - **Overall state:** the full objective is not complete. The global incomplete-domain
   boot fence remains in place while other concrete DB-free gaps are restored.
 
+### 2026-08-29 - restored flat information pages
+
+- **Concrete gap:** the no-MySQL implementations of `get_mud_info` and
+  `send_mud_info` returned empty content and did nothing. This blanked the tracked news,
+  motd, and wizmotd during boot and disabled information commands that request credits,
+  FAQ, rules, or wizlist, even though those flat files remain the database import
+  sources.
+- **Restoration:** the client-free path now reads those exact allow-listed tracked
+  files through the bounded flat content reader already used by in-game help, and
+  `send_mud_info` once again sends the result. Unknown names cannot select arbitrary
+  paths. Database-backed lookup remains unchanged; no writable format was added.
+- **Focused evidence:** `python3 tests/async/test_flatfile_help_catalog.py` now verifies
+  case-insensitive news lookup, motd and credits content, and traversal-name rejection.
+  A client-free runtime harness directly invokes `get_mud_info` and `send_mud_info`, in
+  addition to the test's existing direct `wiki_help` runtime coverage.
+- **Build evidence:** `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** the full objective is not complete. The global incomplete-domain
+  boot fence remains in place while other concrete DB-free gaps are restored.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

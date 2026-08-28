@@ -67,4 +67,29 @@ with tempfile.TemporaryDirectory(prefix="duris-flatfile-help-") as temporary:
     )
     subprocess.run([str(runtime_binary)], cwd=ROOT, check=True)
 
+    mud_info_binary = temporary_path / "flatfile_mud_info_runtime_test"
+    subprocess.run(
+        [
+            "g++",
+            "-std=c++20",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-D__NO_MYSQL__",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-Isrc/no_mysql",
+            "-Isrc",
+            "tests/async/flatfile_mud_info_runtime_harness.cpp",
+            "src/sql.c",
+            "src/flatfile_help_catalog.c",
+            "-Wl,--gc-sections",
+            "-o",
+            str(mud_info_binary),
+        ],
+        cwd=ROOT,
+        check=True,
+    )
+    subprocess.run([str(mud_info_binary)], cwd=ROOT, check=True)
+
 print("flat-file help catalog regression passed")

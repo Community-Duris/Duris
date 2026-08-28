@@ -56,6 +56,11 @@ searches without a database connection. Missing or structurally invalid source
 catalogs fail closed with the normal help-system error instead of silently
 returning the former disabled stub.
 
+The same client-free content path serves the existing `mud_info` callers for
+motd, news, wizmotd, credits, FAQ, rules, and wizlist directly from their
+allow-listed `lib/information/` files. This keeps boot/login and information
+commands functional without changing the database-backed lookup path.
+
 ## Content pipeline
 
 ```

@@ -13,6 +13,7 @@
 #include "interp.h"
 #include "item_uid_allocator.h"
 #include "critical_command.h"
+#include "flatfile_help_catalog.h"
 #include "flatfile_offline_message_repository.h"
 #include "flatfile_frag_leaderboard_repository.h"
 #include "persistence_mode.h"
@@ -453,12 +454,22 @@ string escape_str(const char *str)
 	return string(str);
 }
 
-string get_mud_info(const char * /*name*/)
+string get_mud_info(const char *name)
 {
-	return string();
+	string contents, error;
+	if (!name || !flatfile_information_read(".", name, &contents, &error))
+	{
+		logit(LOG_DEBUG, "get_mud_info: %s",
+		      error.empty() ? "invalid name" : error.c_str());
+		return {};
+	}
+	return contents;
 }
 
-void send_mud_info(const char * /*name*/, P_char /*ch*/) {}
+void send_mud_info(const char *name, P_char ch)
+{
+	send_to_char(get_mud_info(name).c_str(), ch, LOG_NONE);
+}
 
 void sql_update_bind_data(int /*vnum*/, int * /*owner_pid*/, int * /*timer*/) {}
 

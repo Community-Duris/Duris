@@ -35,6 +35,13 @@ constexpr help_source individual_sources[] = {
 	{ "docs/lib/information/hints.txt", "hints" },
 };
 
+constexpr help_source mud_information_sources[] = {
+	{ "lib/information/motd", "motd" },	  { "lib/information/news", "news" },
+	{ "lib/information/wizmotd", "wizmotd" }, { "lib/information/credits", "credits" },
+	{ "lib/information/faq", "faq" },	  { "lib/information/rules", "rules" },
+	{ "lib/information/wizlist", "wizlist" },
+};
+
 std::string trim(const std::string &value)
 {
 	const size_t first = value.find_first_not_of(" \t\r\n");
@@ -298,6 +305,34 @@ bool flatfile_help_catalog_load(const std::string &project_root, flatfile_help_c
 		return false;
 	}
 	return true;
+}
+
+bool flatfile_information_read(const std::string &project_root, const std::string &name,
+			       std::string *contents, std::string *error)
+{
+	if (project_root.empty() || name.empty() || !contents)
+		return false;
+	contents->clear();
+	if (error)
+		error->clear();
+	const std::string requested = canonical(name);
+	for (const auto &source : mud_information_sources)
+		if (requested == source.title)
+		{
+			const read_result read =
+				read_source(project_root + "/" + source.path, contents);
+			if (read == read_result::ok)
+				return true;
+			if (error)
+				*error = std::string(read == read_result::not_found ?
+							     "missing information source: " :
+							     "invalid information source: ") +
+					 source.path;
+			return false;
+		}
+	if (error)
+		*error = "unknown information source";
+	return false;
 }
 
 const flatfile_help_entry *flatfile_help_catalog_find(const flatfile_help_catalog &catalog,
