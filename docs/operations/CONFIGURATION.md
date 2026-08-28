@@ -72,6 +72,8 @@ revisioned player-save pipeline and typed journal.
 | `REDIS_WORLD_STATE` | disabled | `TRUE` enables it | Enable bounded capture and background publication of crash-recovery world generations. |
 | `REDIS_WORLD_STATE_INTERVAL` | `10` seconds | `5`-`300` | Snapshot interval when world-state recovery is enabled. |
 | `REDIS_WORLD_STATE_MAX_AGE` | `300` seconds | `60`-`3600` | Maximum snapshot age accepted during recovery. |
+| `REDIS_DONATION_SUBSCRIBER` | disabled | Exact `TRUE` enables it | Subscribe to authenticated external donation notices. No polling job or subscriber connection exists by default. |
+| `REDIS_DONATION_SECRET` | none | At least 32 bytes | Independent HMAC key required when the donation subscriber is enabled. Do not reuse a Redis, database, or DurisWeb secret. |
 
 World recovery is intentionally separate from player saves and reconstructible caches.
 The publisher writes an immutable sequence-keyed payload, then atomically advances the
@@ -96,6 +98,11 @@ and inspect the intended Redis database explicitly.
 Redis uses a 250 ms connect timeout and 100 ms command timeout. A cache failure may
 degrade a report, while a world-generation failure preserves the prior generation and
 floor deltas. Neither case authorizes a synchronous player save or journal deletion.
+
+Donation notices use a separately gated, authenticated subscriber. Invalid, stale,
+oversized, or replayed envelopes are ignored. Reconnection uses bounded exponential
+backoff and each game pulse handles at most eight messages. The publisher contract and
+signature format are in [the donation event reference](../reference/api/donation-events.md).
 
 ## Character creation and gameplay modes
 

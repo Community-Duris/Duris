@@ -9,6 +9,7 @@
 struct ShipData;
 
 extern bool redis_enabled;
+extern bool redis_donation_enabled;
 
 bool redis_init(void);
 void redis_cleanup(void);

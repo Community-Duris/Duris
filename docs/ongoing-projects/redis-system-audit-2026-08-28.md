@@ -3,10 +3,44 @@
 Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
-Status: Implementation in progress; RDS-006, RDS-012, RDS-013, RDS-014, and RDS-019 are
-remediated and the remaining findings are open.
+Status: Implementation in progress; RDS-006, RDS-010, RDS-012, RDS-013, RDS-014, and
+RDS-019 are remediated and the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-010 donation subscriber hardening
+
+Completed:
+
+- Disabled the donation subscriber and its periodic polling job by default. Enabling it
+  requires exact `REDIS_DONATION_SUBSCRIBER=TRUE` plus an independent secret of at least 32
+  bytes.
+- Added a versioned HMAC-SHA256 event envelope with constant-time signature comparison,
+  stable event IDs, a five-minute timestamp window, and a bounded replay-ID window.
+- Required integer cents, positive bounded amounts, uppercase currency, bounded text, and
+  public-donor names. Rejects control bytes and the in-game color prefix before display or
+  logging.
+- Limited processing to eight messages per game pulse and added exponential reconnect
+  backoff capped at 60 seconds.
+- Documented the exact producer signature contract and the remaining at-most-once pub/sub
+  delivery semantics.
+
+Performance effect:
+
+- The default server no longer opens a donation subscriber connection or runs its
+  once-per-second polling event.
+- An explicitly enabled subscriber still uses a zero-timeout socket poll, now has a hard
+  per-pulse message budget, and replaces outage reconnect attempts every second with
+  exponential backoff.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_donation_security.py`: passed.
+- `python3 tests/async/test_boot_log_hygiene.py`: passed.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+- `python3 tests/async/test_nevent_periodic_rearm_runtime.py`: passed under ASan/UBSan.
+- `./scripts/format.sh --check`: passed.
 
 ### 2026-08-28 - RDS-013 unsafe corpse cleanup retirement
 
@@ -177,8 +211,8 @@ Validation:
 
 Remaining work:
 
-- All findings other than RDS-006, RDS-012, RDS-013, RDS-014, and RDS-019 remain open. The
-  acceptance criteria are not yet met.
+- All findings other than RDS-006, RDS-010, RDS-012, RDS-013, RDS-014, and RDS-019 remain
+  open. The acceptance criteria are not yet met.
 
 ## Executive summary
 
@@ -603,6 +637,9 @@ default. Use expiring per-session keys or a heartbeat/lease rather than a persis
 
 Severity: High
 Confidence: Confirmed
+Remediation status: Completed on branch; the subscriber is explicitly gated and requires
+authenticated, bounded, fresh, replay-protected events, with reconnect backoff and a hard
+per-pulse work budget.
 
 Evidence:
 

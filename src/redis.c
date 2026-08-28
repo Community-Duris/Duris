@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include "config.h"
 #include "copyover.h"
+#include "donation_event.h"
 #include "world_recovery_pipeline.h"
 #include "epic.h"
 #include "files.h"
@@ -31,8 +32,10 @@
 #include "sql_player.h"
 #include "ships/ships.h"
 
+#include <algorithm>
 #include <chrono>
 #include <new>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -61,6 +64,7 @@ bool redis_clear_ship_snapshots(void)
 
 static redisContext *redis_ctx = NULL;
 bool redis_enabled = false;
+bool redis_donation_enabled = false;
 bool redis_world_state_enabled = false;
 int crash_recovery_boot = 0;
 
@@ -69,13 +73,26 @@ int crash_recovery_boot = 0;
 #define REDIS_CONNECT_TIMEOUT_MSEC 250
 #define REDIS_COMMAND_TIMEOUT_MSEC 100
 #define REDIS_WORLD_DRAIN_TIMEOUT_MSEC 30000
+#define REDIS_DONATION_MAX_MESSAGES_PER_PULSE 8
+#define REDIS_DONATION_MAX_RECONNECT_DELAY 60
 
 static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
 static bool world_recovery_floor_ack_pending = false;
 static redisContext *donation_sub_ctx = NULL;
 static volatile bool donation_sub_connected = false;
+static unsigned int donation_reconnect_delay = 1;
+static time_t donation_next_reconnect = 0;
+static std::string donation_secret;
+static std::vector<std::string> donation_seen_event_ids;
 static void donation_sub_drop(const char *reason);
+
+static void donation_schedule_reconnect(void)
+{
+	donation_next_reconnect = time(NULL) + donation_reconnect_delay;
+	donation_reconnect_delay = std::min(donation_reconnect_delay * 2,
+					    (unsigned int)REDIS_DONATION_MAX_RECONNECT_DELAY);
+}
 
 #ifndef __NO_MYSQL__
 static redisReply *redis_command(redisContext *ctx, const char *format, ...);
@@ -371,9 +388,26 @@ bool redis_init(void)
 	{
 		logit(LOG_SYS, "redis disabled (set REDIS=TRUE in .env to enable)");
 		redis_enabled = false;
+		redis_donation_enabled = false;
+		donation_secret.clear();
 		return true;
 	}
 	redis_enabled = true;
+	redis_donation_enabled = false;
+	donation_secret.clear();
+	const char *donation_env = getenv("REDIS_DONATION_SUBSCRIBER");
+	if (donation_env && strcasecmp(donation_env, "TRUE") == 0)
+	{
+		const char *secret = getenv("REDIS_DONATION_SECRET");
+		if (secret && strlen(secret) >= 32)
+		{
+			redis_donation_enabled = true;
+			donation_secret = secret;
+		}
+		else
+			logit(LOG_SYS,
+			      "redis: donation subscriber disabled; REDIS_DONATION_SECRET must be at least 32 bytes");
+	}
 
 	const char *redis_host = getenv("REDIS_HOST");
 	if (!redis_host || !*redis_host)
@@ -435,7 +469,8 @@ bool redis_init(void)
 	if (redis_ctx)
 	{
 		redis_load_obj_uid_counter();
-		redis_donation_subscribe_init();
+		if (redis_donation_enabled)
+			redis_donation_subscribe_init();
 	}
 
 	return true;
@@ -487,6 +522,11 @@ void redis_cleanup(void)
 		donation_sub_ctx = NULL;
 	}
 	donation_sub_connected = false;
+	donation_next_reconnect = 0;
+	donation_reconnect_delay = 1;
+	donation_seen_event_ids.clear();
+	donation_secret.clear();
+	redis_donation_enabled = false;
 	redis_enabled = false;
 #endif
 }
@@ -1470,7 +1510,8 @@ bool redis_publish(const char *channel, const char *message)
 void redis_donation_subscribe_init(void)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled)
+	if (!redis_enabled || !redis_donation_enabled || donation_secret.empty() ||
+	    time(NULL) < donation_next_reconnect)
 		return;
 
 	const char *redis_host = getenv("REDIS_HOST");
@@ -1494,7 +1535,8 @@ void redis_donation_subscribe_init(void)
 			redisFree(donation_sub_ctx);
 			donation_sub_ctx = NULL;
 		}
-		logit(LOG_SYS, "redis: donation subscriber failed to connect");
+		donation_schedule_reconnect();
+		logit(LOG_SYS, "redis: donation subscriber failed to connect; retry delayed");
 		return;
 	}
 
@@ -1509,37 +1551,39 @@ void redis_donation_subscribe_init(void)
 	freeReplyObject(reply);
 
 	donation_sub_connected = true;
+	donation_next_reconnect = 0;
+	donation_reconnect_delay = 1;
 	logit(LOG_SYS, "redis: donation subscriber connected to mud:nchat");
 #endif
 }
 
-static void broadcast_donation_nchat(const char *char_name, double amount, const char *currency,
-				     const char *message, bool is_public)
+static void broadcast_donation_nchat(const struct donation_event *event)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_desc i;
 	P_char to;
+	const double amount = (double)event->amount_cents / 100.0;
 
-	if (is_public && char_name && *char_name)
+	if (event->is_public)
 	{
-		if (message && *message)
+		if (event->message[0])
 			snprintf(buf, sizeof(buf),
-				 "&+Y%s&n&+m donated &+W$%.2f %s&n&+m: &+w'%s'&n\n", char_name,
-				 amount, currency, message);
+				 "&+Y%s&n&+m donated &+W%.2f %s&n&+m: &+w'%s'&n\n",
+				 event->character_name, amount, event->currency, event->message);
 		else
-			snprintf(buf, sizeof(buf), "&+Y%s&n&+m donated &+W$%.2f %s&n&+m!&n\n",
-				 char_name, amount, currency);
+			snprintf(buf, sizeof(buf), "&+Y%s&n&+m donated &+W%.2f %s&n&+m!&n\n",
+				 event->character_name, amount, event->currency);
 	}
 	else
 	{
-		if (message && *message)
+		if (event->message[0])
 			snprintf(buf, sizeof(buf),
-				 "&+Yan anonymous donor&n&+m gave &+W$%.2f %s&n&+m: &+w'%s'&n\n",
-				 amount, currency, message);
+				 "&+Yan anonymous donor&n&+m gave &+W%.2f %s&n&+m: &+w'%s'&n\n",
+				 amount, event->currency, event->message);
 		else
 			snprintf(buf, sizeof(buf),
-				 "&+Yan anonymous donor&n&+m gave &+W$%.2f %s&n&+m!&n\n", amount,
-				 currency);
+				 "&+Yan anonymous donor&n&+m gave &+W%.2f %s&n&+m!&n\n", amount,
+				 event->currency);
 	}
 
 	for (i = descriptor_list; i; i = i->next)
@@ -1551,8 +1595,8 @@ static void broadcast_donation_nchat(const char *char_name, double amount, const
 		send_to_char(buf, to);
 	}
 
-	logit(LOG_SYS, "donation: %s donated $%.2f %s",
-	      (is_public && char_name) ? char_name : "anonymous", amount, currency);
+	logit(LOG_SYS, "donation: event=%s donor=%s amount=%.2f currency=%s", event->event_id,
+	      event->is_public ? event->character_name : "anonymous", amount, event->currency);
 }
 
 static void handle_donation_reply(redisReply *reply)
@@ -1564,48 +1608,20 @@ static void handle_donation_reply(redisReply *reply)
 		    strcmp(reply->element[0]->str, "message") == 0 &&
 		    reply->element[2]->type == REDIS_REPLY_STRING)
 		{
-			const char *payload = reply->element[2]->str;
+			struct donation_event event = {};
+			if (!donation_event_decode(reply->element[2]->str, reply->element[2]->len,
+						   donation_secret.c_str(), time(NULL), &event))
+				return;
 
-			cJSON *json = cJSON_Parse(payload);
-			if (json)
-			{
-				cJSON *type_obj = cJSON_GetObjectItem(json, "type");
-				if (type_obj && cJSON_IsString(type_obj) &&
-				    strcmp(type_obj->valuestring, "donation") == 0)
-				{
-					cJSON *char_name_obj =
-						cJSON_GetObjectItem(json, "character_name");
-					cJSON *amount_obj = cJSON_GetObjectItem(json, "amount");
-					cJSON *currency_obj = cJSON_GetObjectItem(json, "currency");
-					cJSON *message_obj = cJSON_GetObjectItem(json, "message");
-					cJSON *is_public_obj =
-						cJSON_GetObjectItem(json, "is_public");
-
-					const char *char_name =
-						(char_name_obj && cJSON_IsString(char_name_obj)) ?
-							char_name_obj->valuestring :
-							NULL;
-					double amount = (amount_obj && cJSON_IsNumber(amount_obj)) ?
-								amount_obj->valuedouble :
-								0.0;
-					const char *currency =
-						(currency_obj && cJSON_IsString(currency_obj)) ?
-							currency_obj->valuestring :
-							"USD";
-					const char *message =
-						(message_obj && cJSON_IsString(message_obj)) ?
-							message_obj->valuestring :
-							NULL;
-					bool is_public =
-						(is_public_obj && cJSON_IsBool(is_public_obj)) ?
-							cJSON_IsTrue(is_public_obj) :
-							false;
-
-					broadcast_donation_nchat(char_name, amount, currency,
-								 message, is_public);
-				}
-				cJSON_Delete(json);
-			}
+			const std::string event_id(event.event_id);
+			if (std::find(donation_seen_event_ids.begin(),
+				      donation_seen_event_ids.end(),
+				      event_id) != donation_seen_event_ids.end())
+				return;
+			if (donation_seen_event_ids.size() >= 256)
+				donation_seen_event_ids.erase(donation_seen_event_ids.begin());
+			donation_seen_event_ids.push_back(event_id);
+			broadcast_donation_nchat(&event);
 		}
 	}
 #endif
@@ -1614,7 +1630,8 @@ static void handle_donation_reply(redisReply *reply)
 static void donation_sub_drop(const char *reason)
 {
 #ifndef __NO_MYSQL__
-	logit(LOG_SYS, "redis: donation subscriber error: %s, will reconnect", reason);
+	donation_schedule_reconnect();
+	logit(LOG_SYS, "redis: donation subscriber error: %s; retry delayed", reason);
 	donation_sub_connected = false;
 	if (donation_sub_ctx)
 	{
@@ -1627,7 +1644,7 @@ static void donation_sub_drop(const char *reason)
 void redis_check_donation_messages(void)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled)
+	if (!redis_enabled || !redis_donation_enabled)
 		return;
 
 	// attempt reconnect if disconnected
@@ -1671,7 +1688,7 @@ void redis_check_donation_messages(void)
 		}
 	}
 
-	for (;;)
+	for (int handled = 0; handled < REDIS_DONATION_MAX_MESSAGES_PER_PULSE; ++handled)
 	{
 		redisReply *reply = NULL;
 

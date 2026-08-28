@@ -106,6 +106,7 @@ OBJS =  $(SHIP_OBJS) \
 				 arena.o \
 				 artifact.o \
 				 artifact_cache_codec.o \
+				 donation_event.o \
 				 assocs.o \
 				 auction_houses.o \
 				 bard.o \

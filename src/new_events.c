@@ -1991,7 +1991,8 @@ void ne_init_events(void)
 	// redis donation message polling
 	nevent_register_periodic_job("donation-message-poll", event_check_donation_messages,
 				     1 * WAIT_SEC, 1 * WAIT_SEC,
-				     nevent_periodic_policy::fixed_delay, redis_enabled);
+				     nevent_periodic_policy::fixed_delay,
+				     redis_enabled && redis_donation_enabled);
 
 	// redis world state saves for crash recovery
 	nevent_register_periodic_job("world-state-save", event_save_world_state, 30 * WAIT_SEC,

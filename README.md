@@ -124,6 +124,10 @@ challenge-response contract in the
 traffic must terminate TLS at a local reverse proxy. The remaining switches in
 `.env.example` are documented inline and are intended primarily for local gameplay testing.
 
+External donation notices are off by default. They require the separate
+`REDIS_DONATION_SUBSCRIBER=TRUE` opt-in and an independent HMAC key; see the
+[donation event envelope](docs/reference/api/donation-events.md).
+
 ### 3. Create a development database
 
 The following uses `duris_dev` as an example. Set that database name, the new
