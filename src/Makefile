@@ -221,6 +221,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence_mode.o \
 				 env_file.o \
 				 flatfile_store.o \
+				 flatfile_authority_transaction.o \
 				 flatfile_account_repository.o \
 				 flatfile_account_adapter.o \
 				 flatfile_identity_repository.o \

@@ -1,5 +1,6 @@
 #include "flatfile_item_repository.h"
 
+#include "flatfile_authority_transaction.h"
 #include "flatfile_store.h"
 #include "flatfile_player_domain_repository.h"
 #include "persistence_mode.h"
@@ -25,7 +26,6 @@ constexpr size_t ownership_maximum_bytes = 128 * 1024 * 1024;
 constexpr size_t ownership_maximum_entries = 262144;
 constexpr size_t ownership_maximum_operations = 1048576;
 constexpr const char *ownership_filename = "item_ownership";
-constexpr const char *ownership_lock_filename = ".item-ownership.lock";
 std::mutex ownership_mutex;
 
 struct owner_state
@@ -48,12 +48,6 @@ struct ownership_catalog
 	std::vector<owner_state> owners;
 	std::vector<flatfile_item_ownership_record> items;
 	std::vector<operation_state> operations;
-};
-
-struct authority_lock
-{
-	int fd = -1;
-	~authority_lock() { flatfile_lock_release(fd); }
 };
 
 struct encoder
@@ -591,6 +585,14 @@ flatfile_item_repository_result flatfile_item_repository_load_owner(
 	if (!item_owner_identity_valid(owner) || !owner_revision || !items)
 		return flatfile_item_repository_result::invalid;
 	std::lock_guard<std::mutex> guard(ownership_mutex);
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
+		return flatfile_item_repository_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, authority, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
 	ownership_catalog catalog;
 	const flatfile_item_repository_result loaded = load_catalog(root, &catalog, error);
 	if (loaded != flatfile_item_repository_result::ok)
@@ -647,10 +649,14 @@ flatfile_item_repository_establish_owner(const std::string &root, const item_own
 	}
 
 	std::lock_guard<std::mutex> guard(ownership_mutex);
-	authority_lock authority;
-	if (!flatfile_lock_acquire(domains_directory(root), ownership_lock_filename, &authority.fd,
-				   error))
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
 		return flatfile_item_baseline_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, authority, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_baseline_result::io_error :
+			       flatfile_item_baseline_result::invalid;
 	ownership_catalog catalog;
 	const flatfile_item_repository_result loaded = load_catalog(root, &catalog, error);
 	if (loaded != flatfile_item_repository_result::ok &&
@@ -712,11 +718,20 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	    !command_digest(command, &digest))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::lock_guard<std::mutex> guard(ownership_mutex);
-	authority_lock authority;
+	flatfile_authority_lock authority;
 	std::string error;
-	if (!flatfile_lock_acquire(domains_directory(root), ownership_lock_filename, &authority.fd,
-				   &error))
+	if (!authority.acquire(root, &error))
 		return { critical_apply_outcome::retryable_failure, 0, EIO };
+	const auto recovered = flatfile_authority_transaction_recover(root, authority, &error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return { recovered == flatfile_authority_transaction_result::io_error ?
+				 critical_apply_outcome::retryable_failure :
+				 critical_apply_outcome::terminal_failure,
+			 0,
+			 static_cast<unsigned int>(
+				 recovered == flatfile_authority_transaction_result::io_error ?
+					 EIO :
+					 EILSEQ) };
 	ownership_catalog catalog;
 	const flatfile_item_repository_result loaded = load_catalog(root, &catalog, &error);
 	if (loaded != flatfile_item_repository_result::ok &&

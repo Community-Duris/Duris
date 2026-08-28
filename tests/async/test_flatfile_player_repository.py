@@ -26,6 +26,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
             "src/flatfile_identity_repository.c",
             "src/flatfile_item_repository.c",
             "src/flatfile_player_domain_repository.c",
+            "src/flatfile_authority_transaction.c",
             "src/player_snapshot_codec.c",
             "src/flatfile_store.c",
             "src/item_transfer_command.c",

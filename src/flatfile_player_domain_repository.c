@@ -1,5 +1,6 @@
 #include "flatfile_player_domain_repository.h"
 
+#include "flatfile_authority_transaction.h"
 #include "flatfile_store.h"
 #include "combat_outcome_command.h"
 #include "currency_command.h"
@@ -29,7 +30,6 @@ constexpr size_t transaction_maximum_bytes =
 	domain_maximum_bytes * transaction_maximum_records + 4096;
 constexpr size_t domain_maximum_operations = 512;
 constexpr size_t account_maximum_bytes = PLAYER_LOAD_ACCOUNT_MAX;
-constexpr const char *domain_lock_filename = ".player-domains.lock";
 constexpr const char *transaction_filename = ".player-domain-transaction";
 constexpr const char *legacy_transaction_filename = ".currency-transaction";
 std::mutex domain_mutex;
@@ -81,12 +81,6 @@ enum class player_publish_result
 	ok,
 	invalid,
 	io_error
-};
-
-struct authority_lock
-{
-	int fd = -1;
-	~authority_lock() { flatfile_lock_release(fd); }
 };
 
 struct encoder
@@ -534,6 +528,17 @@ flatfile_player_domain_result recover_transaction(const std::string &root, std::
 		       legacy;
 }
 
+flatfile_player_domain_result
+recover_authority(const std::string &root, const flatfile_authority_lock &lock, std::string *error)
+{
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_player_domain_result::io_error :
+			       flatfile_player_domain_result::invalid;
+	return recover_transaction(root, error);
+}
+
 flatfile_player_domain_result load_bank(const std::string &root, const std::string &account,
 					int8_t racewar, bank_record *record, std::string *error)
 {
@@ -760,11 +765,10 @@ flatfile_player_domain_result establish(const std::string &root,
 	    (!require_bank_match && record.domains.bank != std::array<uint64_t, 4>{}))
 		return flatfile_player_domain_result::invalid;
 	std::lock_guard<std::mutex> guard(domain_mutex);
-	authority_lock authority;
-	if (!flatfile_lock_acquire(domains_directory(root), domain_lock_filename, &authority.fd,
-				   error))
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
 		return flatfile_player_domain_result::io_error;
-	const auto recovered = recover_transaction(root, error);
+	const auto recovered = recover_authority(root, authority, error);
 	if (recovered != flatfile_player_domain_result::ok)
 		return recovered;
 	flatfile_player_domain_record existing;
@@ -832,11 +836,10 @@ flatfile_player_domain_result flatfile_player_domain_load(const std::string &roo
 	if (!record || pid <= 0 || !canonical_account(account_name, &account))
 		return flatfile_player_domain_result::invalid;
 	std::lock_guard<std::mutex> guard(domain_mutex);
-	authority_lock authority;
-	if (!flatfile_lock_acquire(domains_directory(root), domain_lock_filename, &authority.fd,
-				   error))
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
 		return flatfile_player_domain_result::io_error;
-	const auto recovered = recover_transaction(root, error);
+	const auto recovered = recover_authority(root, authority, error);
 	if (recovered != flatfile_player_domain_result::ok)
 		return recovered;
 	flatfile_player_domain_record loaded;
@@ -866,11 +869,11 @@ critical_apply_result apply_epic_command(const std::string &root, const critical
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	SHA256(encoded_command.data(), encoded_command.size(), digest.data());
 	std::lock_guard<std::mutex> guard(domain_mutex);
-	authority_lock lock;
+	flatfile_authority_lock lock;
 	std::string error;
-	if (!flatfile_lock_acquire(domains_directory(root), domain_lock_filename, &lock.fd, &error))
+	if (!lock.acquire(root, &error))
 		return { critical_apply_outcome::retryable_failure, 0, EIO };
-	const auto recovered = recover_transaction(root, &error);
+	const auto recovered = recover_authority(root, lock, &error);
 	if (recovered != flatfile_player_domain_result::ok)
 		return { recovered == flatfile_player_domain_result::io_error ?
 				 critical_apply_outcome::retryable_failure :
@@ -985,11 +988,11 @@ critical_apply_result apply_currency_command(const std::string &root,
 	if (!canonical_account(payload.account_name.data(), &account) || payload.racewar > INT8_MAX)
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	std::lock_guard<std::mutex> guard(domain_mutex);
-	authority_lock lock;
+	flatfile_authority_lock lock;
 	std::string error;
-	if (!flatfile_lock_acquire(domains_directory(root), domain_lock_filename, &lock.fd, &error))
+	if (!lock.acquire(root, &error))
 		return { critical_apply_outcome::retryable_failure, 0, EIO };
-	const auto recovered = recover_transaction(root, &error);
+	const auto recovered = recover_authority(root, lock, &error);
 	if (recovered != flatfile_player_domain_result::ok)
 		return { recovered == flatfile_player_domain_result::io_error ?
 				 critical_apply_outcome::retryable_failure :
@@ -1205,11 +1208,11 @@ critical_apply_result apply_combat_outcome_command(const std::string &root,
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	SHA256(encoded_command.data(), encoded_command.size(), digest.data());
 	std::lock_guard<std::mutex> guard(domain_mutex);
-	authority_lock lock;
+	flatfile_authority_lock lock;
 	std::string error;
-	if (!flatfile_lock_acquire(domains_directory(root), domain_lock_filename, &lock.fd, &error))
+	if (!lock.acquire(root, &error))
 		return { critical_apply_outcome::retryable_failure, 0, EIO };
-	const auto recovered = recover_transaction(root, &error);
+	const auto recovered = recover_authority(root, lock, &error);
 	if (recovered != flatfile_player_domain_result::ok)
 		return { recovered == flatfile_player_domain_result::io_error ?
 				 critical_apply_outcome::retryable_failure :

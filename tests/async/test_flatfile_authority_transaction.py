@@ -7,9 +7,9 @@ import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
-with tempfile.TemporaryDirectory(prefix="duris-flat-player-domain-test-") as temporary:
+with tempfile.TemporaryDirectory(prefix="duris-flat-authority-transaction-") as temporary:
     temporary_path = pathlib.Path(temporary)
-    binary = temporary_path / "flatfile_player_domain_test"
+    binary = temporary_path / "flatfile_authority_transaction_test"
     compile_result = subprocess.run(
         [
             "g++",
@@ -18,18 +18,11 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-domain-test-") as tem
             "-Wextra",
             "-Wpedantic",
             "-Werror",
-            "-D__NO_MYSQL__",
-            "-DDURIS_FLATFILE_TRANSACTION_FAULT_TEST",
+            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
             "-Isrc",
-            "-Isrc/no_mysql",
-            "tests/async/flatfile_player_domain_repository_harness.cpp",
-            "src/flatfile_player_domain_repository.c",
+            "tests/async/flatfile_authority_transaction_harness.cpp",
             "src/flatfile_authority_transaction.c",
             "src/flatfile_store.c",
-            "src/epic_command.c",
-            "src/currency_command.c",
-            "src/combat_outcome_command.c",
-            "src/critical_command.c",
             "-lcrypto",
             "-pthread",
             "-o",
@@ -43,9 +36,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-domain-test-") as tem
     if compile_result.returncode:
         raise SystemExit(compile_result.stdout)
 
-    state_root = temporary_path / "state"
     run_result = subprocess.run(
-        [str(binary), str(state_root)],
+        [str(binary), str(temporary_path / "state")],
         cwd=ROOT,
         text=True,
         stdout=subprocess.PIPE,

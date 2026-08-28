@@ -775,6 +775,43 @@ sections below continue to describe the required end state.
   custody with wallet/shared-bank state, then use the same multi-authority protocol for
   boon rewards and the remaining compound critical commands.
 
+### Checkpoint 24 - cross-authority recovery foundation
+
+- **Completed:** added a shared flat authority lock spanning player domains and item
+  custody. Every player-domain baseline/load/command entry point and every item-custody
+  baseline/load/command entry point now takes that process-and-file lock before reading
+  authority. This gives compound commands one canonical serialization boundary without
+  weakening either repository's existing internal synchronization.
+- **Completed:** added a generic checksummed `.critical-authority-transaction` format.
+  A transaction carries up to 16 uniquely named after-images under `domains/`, rejects
+  unsafe or duplicate targets, caps aggregate input at 256 MiB, writes and synchronizes
+  the intent before any target, and durably removes it only after every target is
+  synchronized. The API requires the matching root's authority-lock token, preventing
+  publication or recovery outside the serialization boundary.
+- **Completed:** player and item reads/writes finish a surviving cross-authority intent
+  before decoding their own records. A crash during an auction publication therefore
+  cannot leave a durable split visible merely because the next operation enters through
+  the wallet side rather than the custody side, or vice versa.
+- **Completed:** the focused regression injects failure after the first of two unrelated
+  authority images, verifies the split plus surviving intent, reacquires the lock as a
+  restarted process would, and confirms recovery republishes both images and clears the
+  intent. It also verifies unsafe-path refusal and fail-closed checksum corruption that
+  neither advances the remaining image nor discards the damaged intent.
+- **Checks passed:** `python3 tests/async/test_flatfile_authority_transaction.py`,
+  `python3 tests/async/test_flatfile_player_domain_repository.py`,
+  `python3 tests/async/test_flatfile_item_repository.py`,
+  `python3 tests/async/test_flatfile_player_repository.py`, `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `./scripts/format.sh --check`, and `git diff --check`.
+- **Files changed:** new `src/flatfile_authority_transaction.[ch]` and focused regression,
+  `src/flatfile_player_domain_repository.c`, `src/flatfile_item_repository.c`,
+  `src/Makefile`, the standalone repository build lists, and this handoff ledger.
+- **Remaining auction gap:** the crash boundary is ready, but no flat auction catalog or
+  auction-command state machine exists yet. Auction commands remain fenced.
+- **Next action:** add the checksummed auction listing/pickup/operation catalog, prepare
+  its catalog, custody, player, and bank after-images under the shared lock, and publish
+  all four through the new cross-authority transaction.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

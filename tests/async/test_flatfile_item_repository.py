@@ -24,6 +24,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-") as t
             "tests/async/flatfile_item_repository_harness.cpp",
             "src/flatfile_item_repository.c",
             "src/flatfile_player_domain_repository.c",
+            "src/flatfile_authority_transaction.c",
             "src/flatfile_store.c",
             "src/item_transfer_command.c",
             "src/critical_command.c",
