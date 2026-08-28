@@ -11,6 +11,7 @@ Verifies:
 7. do_abort implemented in sparser.c handling StopCasting, wait reset, PULSE_VIOLENCE lag, and camp abort.
 8. command_attributes.txt coverage for abort.
 9. help_index contains ABORT command documentation.
+10. Casting-blocked command hints lead players to the abort command.
 """
 
 from pathlib import Path
@@ -63,6 +64,8 @@ if whitelist:
 
 all_ok &= check("casting guard in interp.c uses cmd_allowed_while_casting()",
                 "IS_AFFECTED2(ch, AFF2_CASTING) && !cmd_allowed_while_casting(cmd)" in interp_c)
+all_ok &= check("casting-blocked command hints lead with abort",
+                interp_c.count("Try 'abort' to stop casting.") == 2)
 
 # 3b. The casting guard must run before the falling / water-current checks, which
 #     have side effects (falling_char, do_move) and would otherwise fire on a

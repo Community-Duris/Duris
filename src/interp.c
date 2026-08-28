@@ -1441,10 +1441,12 @@ void command_interpreter(P_char ch, char *argument)
 		send_to_char("You're busy spellcasting!\r\n", ch);
 		if (IS_TRUSTED(ch))
 			send_to_char(
-				"&+YTry 'return' or you can petition other gods for help if you're stuck.&n\r\n",
+				"&+YTry 'abort' to stop casting. If you're stuck, try 'return' or petition other gods for help.&n\r\n",
 				ch);
 		else
-			send_to_char("If you think you're stuck, you can still petition.\r\n", ch);
+			send_to_char(
+				"Try 'abort' to stop casting. If you think you're stuck, you can still petition.\r\n",
+				ch);
 		return;
 	}
 
