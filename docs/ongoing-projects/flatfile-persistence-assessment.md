@@ -2750,6 +2750,43 @@ sections below continue to describe the required end state.
   corpse load/restore through the completed authority. After that boundary, implement atomic room
   aggregate transfers.
 
+### Checkpoint 86 - revisioned corpse lifecycle and money aggregates
+
+- **Bounded lifecycle protocol:** a dedicated corpse-lifecycle critical command now carries an
+  `upsert` or `remove` action, stable owner PID/save ID identity, expected corpse revision, room and
+  weight, all eight corpse values, four money denominations, and bounded identity strings. Commands
+  expose one canonical corpse entity key and one compare-and-swap revision; successful completions
+  return the new corpse and world-catalog revisions in a fixed-size result.
+- **Exactly-once flat authority:** the corpse repository maintains a separate checksummed operation
+  catalog keyed by operation ID and the complete command digest. Under the shared authority lock it
+  composes the world-item after-image with the operation result in one recoverable transaction.
+  Exact retries return the recorded result, operation-ID reuse with different bytes is rejected, and
+  stale, absent, or non-empty removal failures are themselves durable and deterministic.
+- **Lifecycle semantics:** revision zero establishes an empty or money-only corpse; later matching
+  revisions update money, mutable metadata, weight, and room placement while retaining every durable
+  item subtree. Owner name, PID, save ID, and racewar identity remain immutable. Removal requires an
+  exact revision and refuses to discard either durable items or any nonzero money denomination, so
+  only an empty aggregate can disappear at this boundary.
+- **Catalog compatibility:** world-item catalog version 2 stores the four money denominations beside
+  corpse metadata. Version 1 catalogs remain readable and materialize a zero money aggregate, while
+  all new writes use the checksummed version 2 form. Focused coverage rewrites a real version 2
+  fixture into the historical byte layout and verifies both nested-item preservation and the zeroed
+  legacy money state.
+- **Checks passed:** the bounded command codec, corpse lifecycle/recovery, world-item compatibility,
+  item ownership, auction, shop-trade, player, character-deletion, and critical-command coordinator
+  suites pass. Fault injection covers interruption between the world and operation-ledger images;
+  replay completes both exactly once. Changed-line formatting, `git diff --check`, the strict normal
+  C++20 server build, and the isolated client-free flat-file boot preflight also pass.
+- **Exposure:** this checkpoint supplies the durable command and repository primitive but does not
+  yet route live `writeCorpse` calls or boot restoration through it, so those paths remain SQL-only
+  and the flat-primary boot blocker remains. Non-empty corpse decay or extraction cannot be admitted
+  until corpse contents and money can move into a revisioned room aggregate in the same authority
+  transaction; those removals continue to fail closed.
+- **Next action:** route live corpse creation/save/relocation/removal through lifecycle command
+  submission with tracked revisions and completion handling, then restore version 2 corpse metadata,
+  money, and durable contents during flat load. Follow that with the room aggregate needed for atomic
+  non-empty decay and extraction.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

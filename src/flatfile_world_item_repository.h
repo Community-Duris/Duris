@@ -1,6 +1,7 @@
 #ifndef DURIS_FLATFILE_WORLD_ITEM_REPOSITORY_H
 #define DURIS_FLATFILE_WORLD_ITEM_REPOSITORY_H
 
+#include "corpse_lifecycle_command.h"
 #include "flatfile_authority_transaction.h"
 #include "item_transfer_command.h"
 #include "player_snapshot.h"
@@ -21,6 +22,7 @@ struct flatfile_corpse_record
 	std::string keywords;
 	int32_t weight = 0;
 	std::array<int32_t, 8> values = {};
+	std::array<int32_t, 4> money = {};
 	uint64_t revision = 0;
 	std::vector<player_item_snapshot> items;
 };
@@ -59,6 +61,13 @@ struct flatfile_corpse_transfer_mutation
 	bool created = false;
 };
 
+struct flatfile_corpse_lifecycle_mutation
+{
+	flatfile_authority_after_image after_image;
+	uint64_t corpse_revision = 0;
+	uint64_t catalog_revision = 0;
+};
+
 enum class flatfile_world_item_result
 {
 	ok,
@@ -66,6 +75,7 @@ enum class flatfile_world_item_result
 	already_exists,
 	unchanged,
 	conflict,
+	not_empty,
 	invalid,
 	io_error
 };
@@ -84,6 +94,10 @@ flatfile_world_item_result flatfile_world_item_prepare_player_remove(
 flatfile_world_item_result flatfile_world_item_prepare_corpse_transfer(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const item_transfer_payload &payload, flatfile_corpse_transfer_mutation *mutation,
+	std::string *error);
+flatfile_world_item_result flatfile_world_item_prepare_corpse_lifecycle(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const corpse_lifecycle_payload &payload, flatfile_corpse_lifecycle_mutation *mutation,
 	std::string *error);
 
 #endif

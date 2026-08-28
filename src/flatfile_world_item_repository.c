@@ -18,7 +18,8 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'W', 'R', 'L', 'D', 0 };
-constexpr uint32_t catalog_version = 1;
+constexpr uint32_t catalog_version = 2;
+constexpr uint32_t catalog_legacy_version = 1;
 constexpr size_t catalog_maximum_bytes = 256 * 1024 * 1024;
 constexpr size_t corpse_maximum = 262144;
 constexpr size_t saved_item_maximum = 262144;
@@ -224,6 +225,8 @@ bool valid_catalog(const world_item_catalog &catalog)
 								 corpse.owner_pid;
 			if (!corpse.owner_pid || !corpse.save_id || !corpse.revision ||
 			    corpse.room_vnum < 0 ||
+			    !std::all_of(corpse.money.begin(), corpse.money.end(),
+					 [](int32_t value) { return value >= 0; }) ||
 			    !valid_printable(corpse.owner_name, name_maximum, true) ||
 			    corpse.owner_name != canonical_name(corpse.owner_name) ||
 			    !valid_printable(corpse.short_description, short_description_maximum,
@@ -294,6 +297,8 @@ bool encode_catalog(const world_item_catalog &catalog, std::vector<uint8_t> *byt
 		payload.number(corpse.weight);
 		for (int32_t value : corpse.values)
 			payload.number(value);
+		for (int32_t value : corpse.money)
+			payload.number(value);
 		payload.number(corpse.revision);
 		if (!encode_items(payload, corpse.items))
 			return false;
@@ -333,7 +338,8 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, world_item_catalog *catal
 	uint32_t version = 0, payload_size = 0;
 	uint64_t revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    !header.number(&revision) || version != catalog_version || !revision ||
+	    !header.number(&revision) ||
+	    (version != catalog_version && version != catalog_legacy_version) || !revision ||
 	    payload_size != bytes.size() - header_size)
 		return false;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
@@ -365,6 +371,10 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, world_item_catalog *catal
 			for (int32_t &value : corpse.values)
 				if (!payload.number(&value))
 					return false;
+			if (version >= catalog_version)
+				for (int32_t &value : corpse.money)
+					if (!payload.number(&value))
+						return false;
 			if (!payload.number(&corpse.revision) ||
 			    !decode_items(payload, &corpse.items))
 				return false;
@@ -456,6 +466,47 @@ void apply_corpse_metadata(flatfile_corpse_record *corpse, const item_corpse_met
 	corpse->keywords = metadata.keywords;
 	corpse->weight = metadata.weight;
 	corpse->values = metadata.values;
+}
+
+void apply_corpse_lifecycle(flatfile_corpse_record *corpse, const corpse_lifecycle_payload &payload)
+{
+	corpse->owner_pid = payload.owner_pid;
+	corpse->owner_name = canonical_name(payload.owner_name);
+	corpse->save_id = payload.save_id;
+	corpse->room_vnum = payload.room_vnum;
+	corpse->short_description = payload.short_description;
+	corpse->description = payload.description;
+	corpse->keywords = payload.keywords;
+	corpse->weight = payload.weight;
+	corpse->values = payload.values;
+	corpse->money = payload.money;
+}
+
+bool valid_corpse_lifecycle(const corpse_lifecycle_payload &payload)
+{
+	if (!payload.owner_pid || payload.owner_pid > INT32_MAX || !payload.save_id ||
+	    payload.save_id > INT32_MAX ||
+	    !valid_printable(payload.owner_name, CORPSE_LIFECYCLE_OWNER_NAME_MAX_BYTES, true))
+		return false;
+	if (payload.action == corpse_lifecycle_action::remove)
+		return payload.expected_corpse_revision && !payload.room_vnum && !payload.weight &&
+		       std::all_of(payload.values.begin(), payload.values.end(),
+				   [](int32_t value) { return value == 0; }) &&
+		       std::all_of(payload.money.begin(), payload.money.end(),
+				   [](int32_t value) { return value == 0; }) &&
+		       payload.short_description.empty() && payload.description.empty() &&
+		       payload.keywords.empty();
+	return payload.action == corpse_lifecycle_action::upsert && payload.room_vnum >= 0 &&
+	       payload.values[3] == static_cast<int32_t>(payload.owner_pid) &&
+	       payload.values[5] >= 0 && payload.values[5] <= 4 &&
+	       payload.values[6] == static_cast<int32_t>(payload.save_id) &&
+	       std::all_of(payload.money.begin(), payload.money.end(),
+			   [](int32_t value) { return value >= 0; }) &&
+	       valid_printable(payload.short_description,
+			       CORPSE_LIFECYCLE_SHORT_DESCRIPTION_MAX_BYTES, false) &&
+	       valid_printable(payload.description, CORPSE_LIFECYCLE_DESCRIPTION_MAX_BYTES,
+			       false) &&
+	       valid_printable(payload.keywords, CORPSE_LIFECYCLE_KEYWORDS_MAX_BYTES, false);
 }
 } // namespace
 
@@ -586,6 +637,92 @@ flatfile_world_item_result flatfile_world_item_prepare_player_remove(
 	removal->operation.kind = flatfile_authority_operation_kind::write;
 	removal->operation.filename = catalog_filename;
 	removal->operation.bytes = std::move(encoded);
+	return flatfile_world_item_result::ok;
+}
+
+flatfile_world_item_result flatfile_world_item_prepare_corpse_lifecycle(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const corpse_lifecycle_payload &payload, flatfile_corpse_lifecycle_mutation *mutation,
+	std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !mutation || !valid_corpse_lifecycle(payload))
+		return flatfile_world_item_result::invalid;
+	*mutation = {};
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	flatfile_corpse_record key = {};
+	key.owner_pid = payload.owner_pid;
+	key.save_id = payload.save_id;
+	auto corpse =
+		std::lower_bound(catalog.corpses.begin(), catalog.corpses.end(), key, corpse_less);
+	const bool found = corpse != catalog.corpses.end() &&
+			   corpse->owner_pid == payload.owner_pid &&
+			   corpse->save_id == payload.save_id;
+	const std::string canonical_owner = canonical_name(payload.owner_name);
+	if (catalog.revision == UINT64_MAX)
+		return flatfile_world_item_result::conflict;
+	if (payload.action == corpse_lifecycle_action::upsert)
+	{
+		if ((!payload.expected_corpse_revision && found) ||
+		    (payload.expected_corpse_revision && !found))
+			return flatfile_world_item_result::conflict;
+		if ((!found && std::any_of(catalog.corpses.begin(), catalog.corpses.end(),
+					   [&](const auto &candidate) {
+						   return candidate.owner_pid !=
+								  payload.owner_pid &&
+							  candidate.owner_name == canonical_owner;
+					   })) ||
+		    (found &&
+		     (corpse->revision != payload.expected_corpse_revision ||
+		      corpse->revision == UINT64_MAX || corpse->owner_name != canonical_owner ||
+		      corpse->values[3] != payload.values[3] ||
+		      corpse->values[5] != payload.values[5] ||
+		      corpse->values[6] != payload.values[6])))
+			return flatfile_world_item_result::conflict;
+		if (!found && catalog.corpses.size() >= corpse_maximum)
+			return flatfile_world_item_result::conflict;
+		try
+		{
+			if (!found)
+			{
+				flatfile_corpse_record created = {};
+				apply_corpse_lifecycle(&created, payload);
+				created.revision = 1;
+				corpse = catalog.corpses.insert(corpse, std::move(created));
+			}
+			else
+			{
+				apply_corpse_lifecycle(&*corpse, payload);
+				++corpse->revision;
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			return flatfile_world_item_result::io_error;
+		}
+		mutation->corpse_revision = corpse->revision;
+	}
+	else
+	{
+		if (!found)
+			return flatfile_world_item_result::not_found;
+		if (corpse->revision != payload.expected_corpse_revision ||
+		    corpse->owner_name != canonical_owner)
+			return flatfile_world_item_result::conflict;
+		if (!corpse->items.empty() ||
+		    std::any_of(corpse->money.begin(), corpse->money.end(),
+				[](int32_t value) { return value != 0; }))
+			return flatfile_world_item_result::not_empty;
+		catalog.corpses.erase(corpse);
+	}
+	++catalog.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, &encoded))
+		return flatfile_world_item_result::invalid;
+	mutation->after_image = { catalog_filename, std::move(encoded) };
+	mutation->catalog_revision = catalog.revision;
 	return flatfile_world_item_result::ok;
 }
 

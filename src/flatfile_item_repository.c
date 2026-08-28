@@ -2,6 +2,7 @@
 
 #include "flatfile_auction_repository.h"
 #include "flatfile_artifact_repository.h"
+#include "flatfile_corpse_repository.h"
 #include "flatfile_boon_repository.h"
 #include "flatfile_authority_transaction.h"
 #include "flatfile_locker_repository.h"
@@ -1499,6 +1500,8 @@ flatfile_critical_command_repository_apply_selected(const critical_command &comm
 		return flatfile_boon_shop_repository_apply(root, command);
 	if (command.type == critical_command_type::shop_trade)
 		return flatfile_shop_trade_repository_apply(root, command);
+	if (command.type == critical_command_type::corpse_lifecycle)
+		return flatfile_corpse_repository_apply(root, command);
 	if (command.type == critical_command_type::epic ||
 	    command.type == critical_command_type::account_bank ||
 	    command.type == critical_command_type::combat_outcome)

@@ -232,6 +232,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_item_uid_allocator.o \
 				 flatfile_item_repository.o \
 				 flatfile_artifact_repository.o \
+				 flatfile_corpse_repository.o \
 				 flatfile_association_repository.o \
 				 flatfile_locker_repository.o \
 				 flatfile_frag_leaderboard_repository.o \
@@ -255,6 +256,7 @@ OBJS =  $(SHIP_OBJS) \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \
 				 critical_command_repository.o \
+				 corpse_lifecycle_command.o \
 				 item_transfer_command.o \
 				 item_ownership_runtime.o \
 				 item_movement_transaction.o \
