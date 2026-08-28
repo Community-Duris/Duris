@@ -3,9 +3,34 @@
 Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
-Status: Implementation in progress; RDS-006 is remediated and the remaining findings are open.
+Status: Implementation in progress; RDS-006 and RDS-012 are remediated and the remaining
+findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-012 database backup integrity
+
+Completed:
+
+- Removed the Redis-dependent and legacy-flat-file mode selection. The backup script now
+  always dumps the authoritative MySQL database.
+- Required an explicit allow-listed database identity, safe local socket or TLS transport,
+  owner-only environment file, and owner-only backup directory.
+- Added `set -euo pipefail`, `MYSQL_PWD` credential handling, owner-only temporary output,
+  gzip validation, required Duris schema markers, file and directory sync, and atomic rename.
+- Made dump, compression, content validation, and publication failures exit nonzero without
+  publishing a backup or retaining a temporary file.
+- Made `cycle_mud.sh` stop before restart when its required database backup fails.
+- Updated the runbook and added stubbed behavioral coverage for success, dump failure,
+  malformed dump, compression failure, cleanup, and cycle failure propagation.
+
+Validation:
+
+- `shellcheck scripts/backup_pfiles.sh scripts/cycle_mud.sh`: passed.
+- `bash -n scripts/backup_pfiles.sh scripts/cycle_mud.sh`: passed.
+- `python3 tests/async/test_backup_pfiles.py`: passed.
+- `python3 tests/async/test_cycle_pwipe_status.py`: passed.
+- `python3 tests/async/test_start_mud_worktree_safety.py`: passed.
 
 ### 2026-08-28 - RDS-006 MySQL ship authority
 
@@ -31,7 +56,8 @@ Validation:
 
 Remaining work:
 
-- All findings other than RDS-006 remain open. The acceptance criteria are not yet met.
+- All findings other than RDS-006 and RDS-012 remain open. The acceptance criteria are not
+  yet met.
 
 ## Executive summary
 
@@ -516,6 +542,8 @@ separate APIs. Set and test a total per-pulse Redis budget.
 
 Severity: High
 Confidence: Confirmed shell behavior
+Remediation status: Completed on branch; backups are MySQL-only, validated, atomic, and
+fail closed before restart.
 
 Evidence:
 

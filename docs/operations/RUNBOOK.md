@@ -27,9 +27,10 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
   prior executables under `bin/server/history/` by default, and runs the active
   binary in an outer loop. Set `DMS_BINARY_HISTORY_LIMIT` to change the limit.
 - On each restart it snapshots logs into `logs/old-logs/<timestamp>/`, writes
-  the stop reason, backs up pfiles (`scripts/backup_pfiles.sh`), optionally
-  emails an alert, and records boot/shutdown times plus reason into the
-  database.
+  the stop reason, creates and validates an atomic MySQL backup with
+  `scripts/backup_pfiles.sh`, optionally emails an alert, and records
+  boot/shutdown times plus reason into the database. A backup failure stops the
+  cycle before the server can restart.
 
 ### Exit codes interpreted by the cycle loop
 
@@ -368,12 +369,13 @@ gameplay if any count is nonzero, preserve the inbox/outbox/ledger rows, and inv
 the operation history. Do not edit the ledger, invent historical operation IDs, or
 rerun the baseline against an active ledger.
 
-`backup_pfiles.sh` chooses its database-dump branch only when `REDIS` is the
-exact lowercase value `true` or the value `1`; the server itself accepts
-case-insensitive `TRUE`. If the automatic backup must use `mysqldump`, set
-`REDIS=true` in the environment used by the script and verify the resulting
-`db/Backup/` file. Otherwise it falls back to the legacy `Players/Backup/`
-layout.
+`backup_pfiles.sh` always backs up the authoritative MySQL database; Redis
+configuration does not select the backup mode. It requires the same explicit,
+allow-listed database identity and transport safety used by the cycle. Dumps
+are compressed into an owner-only temporary file, checked for the core Duris
+schema, synced, and atomically published under `db/Backup/`. A dump,
+compression, validation, or publication failure exits nonzero and leaves no
+new backup. `DATABASE_BACKUP_DIR` may select another owner-only directory.
 
 ## Phase 03 final readiness gate
 
