@@ -9,6 +9,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef __NO_MYSQL__
+#include "flatfile_ip_activity_repository.h"
+
+#include <string>
+#include <time.h>
+#endif
+
 static enum persistence_mode active_mode = PERSISTENCE_MODE_MARIADB_PRIMARY;
 static const char *active_flatfile_root;
 
@@ -112,6 +119,15 @@ bool persistence_mode_configure(char *error, size_t error_size)
 	active_flatfile_root = getenv("FLATFILE_STATE_DIR");
 	if (!provision_flatfile_directories(active_flatfile_root, error, error_size))
 		return false;
+
+#ifdef __NO_MYSQL__
+	std::string activity_error;
+	if (active_mode == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	    flatfile_ip_activity_reset_active(active_flatfile_root, (int64_t)time(NULL),
+					      &activity_error) != flatfile_ip_activity_result::ok)
+		return fail(error, error_size, "cannot reset flat-file IP activity: %s",
+			    activity_error.c_str());
+#endif
 
 	return fail(error, error_size,
 		    "persistence mode %s is not ready; unimplemented durable domains: %s",

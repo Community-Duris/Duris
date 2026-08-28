@@ -54,6 +54,11 @@ because Redis happens to be enabled. It snapshots the selected `FLATFILE_STATE_D
 before boot and refuses to start if that snapshot fails. Build the client-free binary
 with `make -C src PERSISTENCE_BACKEND=flatfile` for this mode.
 
+Flat-file IP connection history is stored in the owner-only metadata authority so the
+existing one-hour racewar-side rule and staff/player information paths remain functional
+without a database. Treat the state root and its backups as private player data. Boot
+closes sessions left active by an interrupted prior run and refuses corrupt IP history.
+
 `DB_NAME` selects the requested database and `DB_ALLOWED_TARGETS` authorizes the
 resolved target. The listen port is an additional guard, not the primary selector.
 Production role requires port `7777`; on any other port an explicitly production-like

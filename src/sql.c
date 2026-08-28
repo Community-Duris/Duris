@@ -14,6 +14,7 @@
 #include "item_uid_allocator.h"
 #include "critical_command.h"
 #include "flatfile_help_catalog.h"
+#include "flatfile_ip_activity_repository.h"
 #include "flatfile_offline_message_repository.h"
 #include "flatfile_frag_leaderboard_repository.h"
 #include "persistence_mode.h"
@@ -184,17 +185,109 @@ int sql_world_quest_can_do_another(P_char /*ch*/)
 	return -1;
 }
 
-void sql_connectIP(P_char /*ch*/) {}
-void sql_disconnectIP(P_char /*ch*/) {}
-const char *sql_select_IP_info(P_char /*ch*/, char *buf, size_t /*bufSize*/,
-			       time_t * /*lastConnect*/, time_t * /*lastDisconnect*/)
+static int flat_ip_racewar_side(P_char ch)
 {
-	buf[0] = 0;
+	return IS_TRUSTED(ch) ? RACEWAR_NONE : GET_RACEWAR(ch);
+}
+
+void sql_connectIP(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0 || !ch->desc ||
+	    !ch->desc->host[0])
+		return;
+	std::string error;
+	if (flatfile_ip_activity_connect(
+		    persistence_mode_flatfile_root(), static_cast<uint32_t>(GET_PID(ch)),
+		    ch->desc->host, flat_ip_racewar_side(ch), static_cast<int64_t>(time(nullptr)),
+		    &error) != flatfile_ip_activity_result::ok)
+		logit(LOG_DEBUG, "sql_connectIP: failed to persist IP activity: %s", error.c_str());
+}
+
+void sql_disconnectIP(P_char ch)
+{
+	if (!ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0 || !ch->desc)
+		return;
+	std::string error;
+	if (flatfile_ip_activity_disconnect(
+		    persistence_mode_flatfile_root(), static_cast<uint32_t>(GET_PID(ch)),
+		    flat_ip_racewar_side(ch), static_cast<int64_t>(time(nullptr)),
+		    &error) != flatfile_ip_activity_result::ok)
+		logit(LOG_DEBUG, "sql_disconnectIP: failed to persist IP activity: %s",
+		      error.c_str());
+}
+
+const char *sql_select_IP_info(P_char ch, char *buf, size_t bufSize, time_t *lastConnect,
+			       time_t *lastDisconnect)
+{
+	if (buf && bufSize)
+		buf[0] = '\0';
+	if (lastConnect)
+		*lastConnect = 0;
+	if (lastDisconnect)
+		*lastDisconnect = 0;
+	if (!buf || !bufSize || !ch || !IS_PC(ch) || !ch->only.pc || GET_PID(ch) <= 0)
+		return buf;
+
+	flatfile_ip_activity_record record;
+	std::string error;
+	const auto loaded = flatfile_ip_activity_get(persistence_mode_flatfile_root(),
+						     static_cast<uint32_t>(GET_PID(ch)), &record,
+						     &error);
+	if (loaded == flatfile_ip_activity_result::not_found)
+		return buf;
+	if (loaded != flatfile_ip_activity_result::ok)
+	{
+		logit(LOG_DEBUG, "sql_select_IP_info: failed to load IP activity: %s",
+		      error.c_str());
+		return buf;
+	}
+
+	strlcpy(buf, record.ip.c_str(), bufSize);
+	const int64_t now = static_cast<int64_t>(time(nullptr));
+	if (lastConnect && record.last_connect > 0 && now >= record.last_connect)
+		*lastConnect = static_cast<time_t>(now - record.last_connect);
+	if (lastDisconnect && record.last_disconnect > 0 && now >= record.last_disconnect)
+		*lastDisconnect = static_cast<time_t>(now - record.last_disconnect);
 	return buf;
 }
-int sql_find_racewar_for_ip(char * /*ip*/, int * /*racewar_side*/)
+
+int sql_find_racewar_for_ip(char *ip, int *racewar_side)
 {
-	return -1;
+	if (racewar_side)
+		*racewar_side = RACEWAR_NONE;
+	if (!ip || !*ip || !racewar_side)
+		return -1;
+
+	flatfile_ip_activity_record record;
+	std::string error;
+	const auto loaded = flatfile_ip_activity_find_latest(persistence_mode_flatfile_root(), ip,
+							     &record, &error);
+	if (loaded == flatfile_ip_activity_result::not_found)
+		return 0;
+	if (loaded != flatfile_ip_activity_result::ok)
+	{
+		logit(LOG_DEBUG, "sql_find_racewar_for_ip: failed to load IP activity: %s",
+		      error.c_str());
+		return -1;
+	}
+
+	*racewar_side = record.racewar_side;
+	const int64_t now = static_cast<int64_t>(time(nullptr));
+	const int64_t hour_ago = now - 60 * 60;
+	if (record.last_disconnect > record.last_connect && record.last_disconnect <= hour_ago)
+	{
+		*racewar_side = RACEWAR_NONE;
+		return 0;
+	}
+	if (record.last_disconnect < record.last_connect)
+		return 60 * 60;
+	const int64_t remaining = record.last_disconnect - hour_ago;
+	if (remaining <= 0)
+	{
+		*racewar_side = RACEWAR_NONE;
+		return 0;
+	}
+	return static_cast<int>(std::min<int64_t>(remaining, 60 * 60));
 }
 bool qry_at(struct persistence_query_site site, const char *format, ...)
 {

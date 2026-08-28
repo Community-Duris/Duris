@@ -135,6 +135,31 @@
 - **Overall state:** the full objective is not complete. The global incomplete-domain
   boot fence remains in place while other concrete DB-free gaps are restored.
 
+### 2026-08-29 - database-independent IP activity and one-hour rule
+
+- **Concrete gap:** IP connection history was historically database-only. In a
+  client-free build, connect and disconnect updates were discarded, player/staff IP
+  information was always blank, and the racewar one-hour-side check received an invalid
+  sentinel without initialized side data. This silently removed an existing gameplay
+  restriction and made its caller unsafe.
+- **Restoration:** the existing SQL compatibility functions now use one focused private
+  flat metadata record containing PID, IP, connect/disconnect times, and racewar side.
+  It is bounded, versioned, checksummed, atomically replaced under the existing local
+  lock, and refuses mutation when corrupt. Same-IP lookup preserves the database's most
+  recent-session behavior. Boot closes sessions left active by an interrupted run, and
+  unavailable or corrupt history now denies the affected login instead of bypassing the
+  rule. The database-backed `ip_info` path is unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_ip_activity.py` exercises
+  connect/disconnect persistence, latest same-IP selection, interrupted-session boot
+  reset, compatibility reads, active and recently disconnected one-hour enforcement,
+  owner-only permissions, checksum corruption, fail-closed lookup, and refusal to
+  overwrite corrupt state. The test is included in the client-free CI job.
+- **Build evidence:** `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** the full objective is not complete. The global incomplete-domain
+  boot fence remains in place while other concrete DB-free gaps are restored.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

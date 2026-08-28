@@ -3388,6 +3388,15 @@ bool violating_one_hour_rule(P_desc d)
 	}
 
 	timer = sql_find_racewar_for_ip(d->host, &racewar_side);
+	if (timer < 0)
+	{
+		wizlog(AVATAR, "%s could not be checked against the one-hour rule.",
+		       GET_NAME(d->character));
+		send_to_char(
+			"\n\rLogin history is temporarily unavailable; please try again shortly.\n\r",
+			d->character);
+		return TRUE;
+	}
 
 	if (racewar_side < RACEWAR_NONE || racewar_side > MAX_RACEWAR)
 	{
