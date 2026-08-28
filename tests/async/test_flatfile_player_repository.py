@@ -32,6 +32,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
             "src/critical_command.c",
             "src/epic_command.c",
             "src/currency_command.c",
+            "src/combat_outcome_command.c",
             "src/persistence_observability.c",
             "src/persistence_mode.c",
             "-lcrypto",

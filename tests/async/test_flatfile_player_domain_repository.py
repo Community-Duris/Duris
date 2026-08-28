@@ -27,6 +27,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-domain-test-") as tem
             "src/flatfile_store.c",
             "src/epic_command.c",
             "src/currency_command.c",
+            "src/combat_outcome_command.c",
             "src/critical_command.c",
             "-lcrypto",
             "-pthread",

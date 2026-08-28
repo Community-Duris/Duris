@@ -1,4 +1,5 @@
 #include "flatfile_player_domain_repository.h"
+#include "combat_outcome_command.h"
 #include "currency_command.h"
 #include "epic_command.h"
 
@@ -73,6 +74,50 @@ static critical_command currency(currency_vector wallet_delta, currency_vector b
 		"could not build currency command");
 	command.accepted_at_usec = 1;
 	require(critical_command_normalize(&command), "could not normalize currency command");
+	return command;
+}
+
+static critical_command combat(uint8_t operation, uint64_t killer_frag_revision = 0,
+			       int64_t killer_frag_delta = 5)
+{
+	critical_operation_id operation_id = {};
+	operation_id.bytes[0] = operation;
+	combat_outcome_payload payload = {};
+	payload.victim_pid = 43;
+	payload.room_vnum = 100;
+	strcpy(payload.room_name.data(), "Arena");
+	payload.participant_count = 2;
+	payload.participants[0].pid = 42;
+	payload.participants[0].role = combat_participant_role::killer;
+	payload.participants[0].level = 50;
+	payload.participants[0].racewar = 1;
+	payload.participants[0].frag_delta = killer_frag_delta;
+	payload.participants[0].epic_delta = 2;
+	payload.participants[0].wallet_delta_copper = 11;
+	payload.participants[0].expected_frag_revision = killer_frag_revision;
+	payload.participants[0].expected_epic_revision = 1;
+	payload.participants[0].expected_wallet_revision = 2;
+	payload.participants[0].expected_bank_revision = 3;
+	strcpy(payload.participants[0].account_name.data(), "account-one");
+	strcpy(payload.participants[0].description.data(), "killer");
+	payload.participants[1].pid = 43;
+	payload.participants[1].role = combat_participant_role::victim;
+	payload.participants[1].level = 45;
+	payload.participants[1].racewar = 1;
+	payload.participants[1].frag_delta = -2;
+	payload.participants[1].epic_delta = 3;
+	payload.participants[1].wallet_delta_copper = 7;
+	payload.participants[1].expected_frag_revision = 0;
+	payload.participants[1].expected_epic_revision = 0;
+	payload.participants[1].expected_wallet_revision = 0;
+	payload.participants[1].expected_bank_revision = 3;
+	strcpy(payload.participants[1].account_name.data(), "account-one");
+	strcpy(payload.participants[1].description.data(), "victim");
+	critical_command command;
+	require(combat_outcome_command_build(&command, operation_id, payload),
+		"could not build combat outcome command");
+	command.accepted_at_usec = 1;
+	require(critical_command_normalize(&command), "could not normalize combat command");
 	return command;
 }
 
@@ -209,21 +254,64 @@ int main(int argc, char **argv)
 		"insufficient bank funds were accepted");
 	critical_command interrupted_currency =
 		currency({ { 1, 0, 0, 0 } }, { { 1, 0, 0, 0 } }, 1, 2, 13);
+	setenv("DURIS_FLATFILE_TEST_LEGACY_TRANSACTION", "1", 1);
 	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_BANK", "1", 1);
 	applied = flatfile_player_domain_apply(root.string(), interrupted_currency);
 	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_BANK");
+	unsetenv("DURIS_FLATFILE_TEST_LEGACY_TRANSACTION");
 	require(applied.outcome == critical_apply_outcome::retryable_failure &&
 			fs::exists(domains / ".currency-transaction"),
-		"currency interruption did not preserve its durable intent");
+		"currency interruption did not preserve its legacy durable intent");
 	require(flatfile_player_domain_load(root.string(), 42, "account-one", 1, &loaded, &error) ==
 				flatfile_player_domain_result::ok &&
 			loaded.domains.wallet[0] == 12 && loaded.domains.bank[0] == 4 &&
 			loaded.domains.wallet_revision == 2 && loaded.domains.bank_revision == 3 &&
 			!fs::exists(domains / ".currency-transaction"),
-		"domain load did not recover the interrupted currency transaction");
+		"domain load did not recover the legacy currency transaction");
 	applied = flatfile_player_domain_apply(root.string(), interrupted_currency);
 	require(applied.outcome == critical_apply_outcome::already_applied,
 		"recovered currency transaction did not replay from its operation ledger");
+
+	critical_command combat_outcome = combat(20);
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_BANK", "1", 1);
+	applied = flatfile_player_domain_apply(root.string(), combat_outcome);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_BANK");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			fs::exists(domains / ".player-domain-transaction"),
+		"combat interruption did not preserve its multi-record intent");
+	require(flatfile_player_domain_load(root.string(), 43, "account-one", 1, &loaded, &error) ==
+				flatfile_player_domain_result::ok &&
+			loaded.domains.frags == 8 && loaded.domains.old_frags == 10 &&
+			loaded.domains.frag_revision == 1 && loaded.domains.epics == 12 &&
+			loaded.domains.epic_revision == 1 &&
+			loaded.domains.wallet == std::array<uint64_t, 4>{ 8, 2, 3, 4 } &&
+			loaded.domains.wallet_revision == 1 && loaded.domains.bank_revision == 5 &&
+			!fs::exists(domains / ".player-domain-transaction"),
+		"domain load did not recover every combat after-image");
+	require(flatfile_player_domain_load(root.string(), 42, "account-one", 1, &loaded, &error) ==
+				flatfile_player_domain_result::ok &&
+			loaded.domains.frags == 15 && loaded.domains.old_frags == 10 &&
+			loaded.domains.frag_revision == 1 && loaded.domains.epics == 16 &&
+			loaded.domains.epic_revision == 2 &&
+			loaded.domains.wallet == std::array<uint64_t, 4>{ 3, 4, 3, 4 } &&
+			loaded.domains.wallet_revision == 3 && loaded.domains.bank_revision == 5,
+		"recovered combat state was incomplete");
+	applied = flatfile_player_domain_apply(root.string(), combat_outcome);
+	combat_outcome_result combat_result = {};
+	require(applied.outcome == critical_apply_outcome::already_applied &&
+			combat_outcome_command_decode_result(applied.result_payload.data(),
+							     applied.result_size, &combat_result) &&
+			combat_result.participant_count == 2 &&
+			combat_result.participants[0].frags == 15 &&
+			combat_result.participants[1].frags == 8 && combat_result.event_id != 0,
+		"recovered combat command did not replay its original result");
+	require(flatfile_player_domain_apply(root.string(), combat(20, 1, 6)).error_code == EEXIST,
+		"conflicting combat operation ID was accepted");
+	critical_command stale_combat = combat(21);
+	require(flatfile_player_domain_apply(root.string(), stale_combat).error_code == ESTALE &&
+			flatfile_player_domain_apply(root.string(), stale_combat).error_code ==
+				ESTALE,
+		"stale combat decision was not durably replayed");
 
 	const fs::path player = domains / "player-42.domain";
 	{

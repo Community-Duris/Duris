@@ -727,6 +727,54 @@ sections below continue to describe the required end state.
   wallet, and shared-bank records using a generalized multi-after-image intent, then
   route auction and boon compound mutations through the same recovery boundary.
 
+### Checkpoint 23 - recoverable multi-participant combat outcomes
+
+- **Completed:** the player-domain critical dispatcher now applies the existing combat
+  outcome command without changing its wire format. It loads every participant and
+  distinct shared bank under the global domain lock, validates frag, epic, wallet, and
+  bank revisions against the captured gameplay snapshot, and applies signed frag/epic
+  deltas plus canonical wallet rewards with overflow and runtime balance bounds.
+- **Completed:** the wallet journal is generalized to a bounded checksummed
+  `.player-domain-transaction`. It carries up to 15 player and 15 distinct bank
+  after-images, rejects duplicate or mismatched targets, publishes all banks before all
+  players, and durably removes the intent only after every after-image is synchronized.
+  Recovery still recognizes the prior one-player `.currency-transaction` format, so an
+  upgrade can finish an intent left by checkpoint 22; the interrupted-currency test now
+  constructs and recovers that legacy format explicitly.
+- **Completed:** combat decisions are recorded in every participant operation ledger.
+  Exact replay requires the same digest and a complete ledger entry set, returns the
+  original typed combat result and deterministic event identifier, and rejects
+  operation-ID reuse with `EEXIST`. Stale and range decisions publish a no-mutation
+  multi-player ledger transaction, preventing reevaluation on retry.
+- **Completed:** shared-account rewards preserve the SQL transaction semantics: every
+  rewarded participant validates the same opening bank revision, each reward advances
+  that shared revision, and all result entries report the final bank revision. Frag
+  changes preserve `old_frags` and advance the frag revision only when the delta is
+  nonzero.
+- **Completed:** the focused regression injects interruption after bank publication for
+  a two-participant, shared-account outcome. A subsequent participant load republishes
+  both player after-images and the bank, clears the intent, and exact replay proves the
+  operation was not duplicated. It also covers conflicting IDs and durable stale
+  rejection. Existing currency, item, player, and combat source-contract tests remain
+  green.
+- **Boot diagnostic:** transactional player frag mutation is no longer listed as a
+  missing domain. Flat-file modes remain deliberately fenced by character lifecycle,
+  other non-item critical commands, and the wider world/economy authorities.
+- **Checks passed:** `python3 tests/async/test_flatfile_player_domain_repository.py`,
+  `python3 tests/async/test_flatfile_item_repository.py`,
+  `python3 tests/async/test_flatfile_player_repository.py`,
+  `python3 tests/async/test_currency_transaction_contract.py`,
+  `python3 tests/async/test_combat_outcome_transactional_cutover.py`,
+  `python3 tests/async/test_combat_artifact_persistence.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `make -C src -j2`,
+  `./scripts/format.sh --check`, and `git diff --check`.
+- **Files changed:** `src/flatfile_player_domain_repository.c`,
+  `src/flatfile_item_repository.c`, `src/persistence_mode.c`, the focused domain/item/
+  player/boot regressions, and this handoff ledger.
+- **Next action:** extend the recovery boundary to auction commands, which combine item
+  custody with wallet/shared-bank state, then use the same multi-authority protocol for
+  boon rewards and the remaining compound critical commands.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

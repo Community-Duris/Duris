@@ -29,6 +29,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-") as t
             "src/critical_command.c",
             "src/epic_command.c",
             "src/currency_command.c",
+            "src/combat_outcome_command.c",
             "src/persistence_mode.c",
             "-lcrypto",
             "-pthread",
