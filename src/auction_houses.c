@@ -21,6 +21,7 @@
 #include <ctime>
 #include <string.h>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include "files.h"
 #include "spells.h"
@@ -30,8 +31,17 @@
 using namespace std;
 
 #ifdef __NO_MYSQL__
+extern P_obj object_list;
+
 namespace
 {
+int flat_default_auction_length = 2 * 24 * 60 * 60;
+int flat_bid_time_extension = 5 * 60;
+int flat_listing_fee = 1000;
+float flat_start_price_fee = 0.02f;
+float flat_closing_fee = 0.03f;
+std::unordered_set<uint32_t> pending_flat_finalizations;
+
 const char *flat_auction_root()
 {
 	return persistence_mode_flatfile_root();
@@ -60,7 +70,32 @@ bool fill_auction_actor(P_char ch, auction_command_payload *payload)
 	payload->racewar = static_cast<uint8_t>(GET_RACEWAR(ch));
 	payload->expected_wallet_revision = ch->only.pc->wallet_revision;
 	payload->expected_bank_revision = ch->only.pc->bank_revision;
+	payload->closing_fee_basis_points =
+		static_cast<uint32_t>(std::max(0.0f, std::min(1.0f, flat_closing_fee)) * 10000.0f);
+	payload->bid_extension_seconds =
+		static_cast<uint32_t>(std::max(0, flat_bid_time_extension));
 	return true;
+}
+
+bool parse_auction_platinum(const char *text, int64_t *value)
+{
+	if (!text || !*text || !value)
+		return false;
+	char *end = nullptr;
+	errno = 0;
+	const long long platinum = strtoll(text, &end, 10);
+	if (errno || !end || *end || platinum < 0 || platinum > INT_MAX / 1000)
+		return false;
+	*value = platinum * 1000;
+	return true;
+}
+
+P_obj find_live_auction_item(uint64_t item_uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return nullptr;
 }
 
 bool text_equal_folded(const std::string &left, const char *right)
@@ -71,6 +106,17 @@ bool text_equal_folded(const std::string &left, const char *right)
 		if (tolower(static_cast<unsigned char>(left[index])) !=
 		    tolower(static_cast<unsigned char>(right[index])))
 			return false;
+	return true;
+}
+
+bool flat_auction_access_blocked(P_char ch)
+{
+	if (!affected_by_spell(ch, SPELL_NOAUCTION) || IS_TRUSTED(ch))
+		return false;
+	send_to_char("&+RAuction House access has been temporarily disabled since you have "
+		     "recently &+Yremoved&+R a piece of worn equipment. Please try again in a "
+		     "little while.\r\n",
+		     ch);
 	return true;
 }
 
@@ -92,6 +138,72 @@ void flat_money_claim_completed(P_char ch, bool committed, const auction_command
 	else
 		send_to_char_f(ch, "&+WYou pick up &n%s&+W.&n\r\n",
 			       coin_stringv(static_cast<int>(result.wallet_value_delta)));
+}
+
+void flat_list_completed(P_char ch, bool committed, const auction_command_result &result,
+			 unsigned int, const auction_command_payload &payload)
+{
+	if (!ch)
+		return;
+	if (!committed)
+	{
+		send_to_char("The auction was not listed; your item and money are unchanged.\r\n",
+			     ch);
+		return;
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		P_obj object = find_live_auction_item(payload.items[index].item_uid);
+		if (!object || !OBJ_CARRIED_BY(object, ch))
+		{
+			persistence_alert(
+				AVATAR, "auction", "player", "unknown", "list_publish",
+				"stale_live_topology", "auction_id=%u item_uid=%llu",
+				result.auction_id,
+				static_cast<unsigned long long>(payload.items[index].item_uid));
+			continue;
+		}
+		obj_from_char(object);
+		extract_obj(object);
+	}
+	mark_player_dirty_components(GET_PID(ch), PLAYER_COMPONENT_STATUS |
+							  PLAYER_COMPONENT_EQUIPMENT |
+							  PLAYER_COMPONENT_INVENTORY);
+	send_to_char_f(ch, "&+W%s is now listed as auction %u.&n\r\n", payload.object_short.data(),
+		       result.auction_id);
+}
+
+void flat_bid_completed(P_char ch, bool committed, const auction_command_result &result,
+			unsigned int, const auction_command_payload &)
+{
+	if (!ch)
+		return;
+	if (!committed)
+		send_to_char("Your bid did not commit; your money is unchanged.\r\n", ch);
+	else
+		send_to_char_f(ch, "&+WYour bid of &n%s&+W on auction %u committed.&n\r\n",
+			       coin_stringv(static_cast<int>(result.final_price)),
+			       result.auction_id);
+}
+
+void flat_remove_completed(P_char ch, bool committed, const auction_command_result &result,
+			   unsigned int, const auction_command_payload &)
+{
+	if (!ch)
+		return;
+	if (!committed)
+		send_to_char("That auction could not be removed.\r\n", ch);
+	else
+	{
+		send_to_char_f(ch, "&+WAuction %u removed.&n\r\n", result.auction_id);
+		logit(LOG_WIZ, "Auction [%u] removed by %s", result.auction_id, GET_NAME(ch));
+	}
+}
+
+void flat_finalize_completed(P_char, bool, const auction_command_result &, unsigned int,
+			     const auction_command_payload &payload)
+{
+	pending_flat_finalizations.erase(payload.auction_id);
 }
 
 void flat_item_claim_completed(P_char ch, bool committed, const auction_command_result &result,
@@ -155,9 +267,194 @@ string format_time(long seconds)
 void init_auction_houses()
 {
 	fprintf(stderr, "-- Initializing Flat-File Auctions\r\n");
+	flat_default_auction_length = get_property("auctions.defaultLength", 2 * 24 * 60 * 60);
+	flat_bid_time_extension = get_property("auctions.bidTimeExtension", 5 * 60);
+	flat_listing_fee = get_property("auctions.listingFee", 1000);
+	flat_start_price_fee = get_property("auctions.startPricePctFee", 0.02);
+	flat_closing_fee = get_property("auctions.closingPctFee", 0.03);
 }
 void shutdown_auction_houses() {}
-void auction_houses_activity() {}
+void auction_houses_activity()
+{
+	const char *root = flat_auction_root();
+	if (!root)
+		return;
+	std::vector<flatfile_auction_listing_projection> listings;
+	std::string error;
+	if (flatfile_auction_list_open(root, &listings, &error) !=
+	    flatfile_auction_query_result::ok)
+	{
+		logit(LOG_WIZ, "Flat auction expiry scan failed: %s", error.c_str());
+		return;
+	}
+	const uint64_t now = static_cast<uint64_t>(time(nullptr));
+	for (const auto &listing : listings)
+	{
+		if (listing.end_time > now || pending_flat_finalizations.size() >= 64 ||
+		    !pending_flat_finalizations.insert(listing.auction_id).second)
+			continue;
+		auction_command_payload payload = {};
+		payload.action = auction_action::finalize;
+		payload.auction_id = listing.auction_id;
+		payload.closing_fee_basis_points = static_cast<uint32_t>(
+			std::max(0.0f, std::min(1.0f, flat_closing_fee)) * 10000.0f);
+		if (!auction_transaction_submit_background(payload, flat_finalize_completed))
+			pending_flat_finalizations.erase(listing.auction_id);
+	}
+}
+
+bool auction_offer(P_char ch, char *args)
+{
+	char item_name[MAX_INPUT_LENGTH] = {}, value_text[MAX_INPUT_LENGTH] = {};
+	half_chop(args, item_name, args);
+	P_obj object = get_obj_in_list_vis(ch, item_name, ch->carrying);
+	if (!object)
+	{
+		send_to_char("&+WYou don't seem to have that item!\r\n", ch);
+		return true;
+	}
+	if (IS_ARTIFACT(object) || IS_SET(object->extra_flags, ITEM_NODROP) ||
+	    IS_SET(object->extra_flags, ITEM_NORENT) || object->condition < 90 || object->contains)
+	{
+		send_to_char("&+WYou can't sell that item.\r\n", ch);
+		return true;
+	}
+	int64_t start_price = 0, buy_price = 0;
+	half_chop(args, value_text, args);
+	if (*value_text && !parse_auction_platinum(value_text, &start_price))
+	{
+		send_to_char("&+WInvalid starting price.\r\n", ch);
+		return true;
+	}
+	half_chop(args, value_text, args);
+	if (*value_text && !parse_auction_platinum(value_text, &buy_price))
+	{
+		send_to_char("&+WInvalid buy-it-now price.\r\n", ch);
+		return true;
+	}
+	if (buy_price && buy_price < start_price)
+	{
+		send_to_char("&+WInvalid buy-it-now price.\r\n", ch);
+		return true;
+	}
+	half_chop(args, value_text, args);
+	const int days = *value_text ? atoi(value_text) : flat_default_auction_length / 86400;
+	if (days < 1 || days > 7)
+	{
+		send_to_char("&+WInvalid auction length: please enter 1 to 7 (days).\r\n", ch);
+		return true;
+	}
+	half_chop(args, value_text, args);
+	const int quantity = *value_text ? atoi(value_text) : 1;
+	if (quantity < 1 || quantity > static_cast<int>(AUCTION_COMMAND_MAX_ITEMS))
+	{
+		send_to_char("&+WInvalid auction quantity: please enter 1 to 9 (items).\r\n", ch);
+		return true;
+	}
+	auction_command_payload payload = {};
+	payload.action = auction_action::list;
+	if (!fill_auction_actor(ch, &payload))
+		return report_flat_query_failure(ch, "player auction identity is unavailable");
+	payload.start_price = start_price;
+	payload.buy_price = buy_price;
+	payload.listing_fee =
+		flat_listing_fee + static_cast<int64_t>(start_price * flat_start_price_fee);
+	payload.end_time = static_cast<uint64_t>(time(nullptr)) + days * UINT64_C(86400);
+	P_obj current = object;
+	for (int index = 0; index < quantity; ++index)
+	{
+		if (!current || current->R_num != object->R_num)
+		{
+			send_to_char("You do not have enough of that item.\r\n", ch);
+			return true;
+		}
+		item_ownership_runtime_entry runtime = {};
+		if (!current->obj_uid ||
+		    !item_ownership_runtime_lookup(current->obj_uid, &runtime) ||
+		    runtime.owner.type != item_owner_type::player ||
+		    runtime.owner.id != static_cast<uint64_t>(GET_PID(ch)))
+		{
+			send_to_char("That item's ownership is still being synchronized.\r\n", ch);
+			return true;
+		}
+		payload.items[index] = { current->obj_uid, runtime.item_revision,
+					 static_cast<int32_t>(OBJ_VNUM(current)) };
+		current = current->next_content;
+	}
+	payload.item_count = quantity;
+	char serialized[AUCTION_BLOB_MAX_BYTES] = {};
+	const int serialized_size = write_one_object(object, serialized);
+	if (serialized_size <= 0 ||
+	    serialized_size >= static_cast<int>(payload.object_blob.size()) ||
+	    !object->short_description ||
+	    !copy_auction_text(payload.object_short.data(), payload.object_short.size(),
+			       object->short_description) ||
+	    !copy_auction_text(payload.id_keywords.data(), payload.id_keywords.size(),
+			       object->name ? object->name : ""))
+		return report_flat_query_failure(ch, "auction item could not be encoded safely");
+	memcpy(payload.object_blob.data(), serialized, serialized_size + 1);
+	payload.object_blob_size = serialized_size + 1;
+	if (!auction_transaction_submit(ch, payload, flat_list_completed))
+		send_to_char("The auction house is busy; nothing was changed.\r\n", ch);
+	else
+		send_to_char("Your auction listing is being committed.\r\n", ch);
+	return true;
+}
+
+bool auction_bid(P_char ch, char *args)
+{
+	char id_text[MAX_INPUT_LENGTH] = {}, bid_text[MAX_INPUT_LENGTH] = {};
+	half_chop(args, id_text, args);
+	half_chop(args, bid_text, args);
+	char *end = nullptr;
+	errno = 0;
+	const unsigned long parsed = strtoul(id_text, &end, 10);
+	int64_t bid = 0;
+	if (errno || !end || *end || !parsed || parsed > UINT_MAX ||
+	    !parse_auction_platinum(bid_text, &bid) || bid <= 0)
+	{
+		send_to_char("&+WUsage: auction bid <auction id> <positive value in plat>.&n\r\n",
+			     ch);
+		return true;
+	}
+	auction_command_payload payload = {};
+	payload.action = auction_action::bid;
+	payload.auction_id = static_cast<uint32_t>(parsed);
+	payload.value = bid;
+	if (!fill_auction_actor(ch, &payload))
+		return report_flat_query_failure(ch, "player auction identity is unavailable");
+	if (!auction_transaction_submit(ch, payload, flat_bid_completed))
+		send_to_char("The auction house is busy; your money is unchanged.\r\n", ch);
+	else
+		send_to_char("Your bid is being committed.\r\n", ch);
+	return true;
+}
+
+bool auction_remove(P_char ch, char *args)
+{
+	if (!IS_TRUSTED(ch))
+		return auction_help(ch, "");
+	char id_text[MAX_INPUT_LENGTH] = {};
+	half_chop(args, id_text, args);
+	char *end = nullptr;
+	errno = 0;
+	const unsigned long parsed = strtoul(id_text, &end, 10);
+	if (errno || !end || *end || !parsed || parsed > UINT_MAX)
+	{
+		send_to_char("&+WThere is no auction with that id!\r\n", ch);
+		return true;
+	}
+	auction_command_payload payload = {};
+	payload.action = auction_action::remove;
+	payload.auction_id = static_cast<uint32_t>(parsed);
+	if (!fill_auction_actor(ch, &payload))
+		return report_flat_query_failure(ch, "player auction identity is unavailable");
+	if (!auction_transaction_submit(ch, payload, flat_remove_completed))
+		send_to_char("The auction house is busy; nothing was changed.\r\n", ch);
+	else
+		send_to_char("The auction removal is being committed.\r\n", ch);
+	return true;
+}
 
 bool auction_list(P_char ch, char *args)
 {
@@ -357,7 +654,8 @@ bool auction_pickup(P_char ch, char *args)
 
 bool auction_help(P_char ch, const char *)
 {
-	send_to_char("&+WAuction commands: list, info <id>, pickup.\r\n", ch);
+	send_to_char("&+WAuction commands: offer, list, info, bid, pickup, remove (immortal).\r\n",
+		     ch);
 	return true;
 }
 
@@ -365,15 +663,34 @@ void new_ah_call(P_char ch, char *arguments, int cmd)
 {
 	if (cmd != CMD_AUCTION || !IS_ALIVE(ch) || IS_NPC(ch))
 		return;
+	if (IS_FIGHTING(ch) || IS_DESTROYING(ch))
+	{
+		send_to_char("&+yYou're too busy fighting for your life to participate in an "
+			     "auction!&n\r\n",
+			     ch);
+		return;
+	}
 	char command[MAX_INPUT_LENGTH] = {};
 	char args[MAX_STRING_LENGTH] = {};
 	half_chop(arguments, command, args);
-	if (isname(command, "list l"))
+	if (isname(command, "offer o"))
+	{
+		if (!flat_auction_access_blocked(ch))
+			auction_offer(ch, args);
+	}
+	else if (isname(command, "list l"))
 		auction_list(ch, args);
 	else if (isname(command, "info i"))
 		auction_info(ch, args);
+	else if (isname(command, "bid b"))
+	{
+		if (!flat_auction_access_blocked(ch))
+			auction_bid(ch, args);
+	}
 	else if (isname(command, "pickup p"))
 		auction_pickup(ch, args);
+	else if (isname(command, "remove r"))
+		auction_remove(ch, args);
 	else
 		auction_help(ch, arguments);
 }

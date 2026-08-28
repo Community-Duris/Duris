@@ -144,6 +144,23 @@ class AuctionTransactionalCutoverTests(unittest.TestCase):
             self.assertNotIn("qry(", route)
             self.assertNotIn("MYSQL_", route)
 
+    def test_client_free_mutations_and_expiry_use_typed_commands(self):
+        source = (SRC / "auction_houses.c").read_text()
+        no_mysql = section(source, "#ifdef __NO_MYSQL__", "#else")
+        expiry = section(no_mysql, "void auction_houses_activity()", "bool auction_offer(P_char")
+        offer = section(no_mysql, "bool auction_offer(P_char", "bool auction_bid(P_char")
+        bid = section(no_mysql, "bool auction_bid(P_char", "bool auction_remove(P_char")
+        remove = section(no_mysql, "bool auction_remove(P_char", "bool auction_list(P_char")
+        self.assertIn("flatfile_auction_list_open", expiry)
+        self.assertIn("pending_flat_finalizations", expiry)
+        self.assertIn("auction_transaction_submit_background", expiry)
+        self.assertIn("item_ownership_runtime_lookup", offer)
+        self.assertIn("write_one_object", offer)
+        for route in (offer, bid, remove):
+            self.assertIn("auction_transaction_submit", route)
+            self.assertNotIn("SUB_MONEY", route)
+            self.assertNotIn("qry(", route)
+
     def test_repository_owns_settlement_claims_ledgers_and_outbox(self):
         repository = (SRC / "auction_repository.c").read_text()
         generic = (SRC / "critical_command_repository.c").read_text()

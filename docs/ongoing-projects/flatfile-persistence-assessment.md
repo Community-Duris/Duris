@@ -906,6 +906,38 @@ sections below continue to describe the required end state.
   command dispatcher, add flat expiry finalization and catalog-backed committed-event
   publication, then reconsider only the auction portion of the boot diagnostic.
 
+### Checkpoint 27 - client-free auction mutation and expiry routing
+
+- **Completed:** the no-MySQL command UI now constructs typed list and bid payloads from
+  bounded price/day/quantity input and the character's canonical account, wallet/bank
+  revisions, and runtime item-custody revisions. Listing serializes the representative
+  object before submission and removes live inventory only in the acknowledged completion
+  callback; rejected or unsubmitted commands leave money and items untouched.
+- **Completed:** trusted one-at-a-time removal uses the same typed command route. The
+  client-free dispatcher restores fighting/destroying and recent-equipment-removal access
+  checks, and exposes offer, bid, and remove alongside the catalog-backed list, info, and
+  pickup surfaces.
+- **Completed:** auction activity scans the flat open-listing projection for expiry and
+  submits background finalize commands with the configured closing fee. An in-memory
+  pending-ID set caps and deduplicates submissions while commands are outstanding; the
+  durable catalog state and operation ledger remain the authority across restart.
+- **Checks passed:** `python3 tests/async/test_auction_transactional_cutover.py` now checks
+  that all client-free mutation and expiry routes submit typed commands without SQL or
+  direct balance mutation; `python3 tests/async/test_flatfile_auction_repository.py`, the
+  four adjacent auction transaction/source regressions, `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  and `git diff --check` pass.
+- **Files changed:** the no-MySQL branch of `src/auction_houses.c`, its focused source
+  contract, and this handoff ledger.
+- **Remaining auction gap:** committed auction events still cannot be safely acknowledged
+  without a flat offline-message/publication contract. They remain retryable instead of
+  being silently discarded. Stored item sort metadata is currently limited to object
+  name keywords, and the richer SQL-era identify text is not generated in the no-MySQL
+  listing route. The combined auction/economy boot diagnostic remains in place.
+- **Next action:** implement a recoverable flat committed-event/offline-notification
+  publisher (with idempotent outbox delivery), then separate the now-covered auction
+  authority from the wider economy diagnostic and proceed to boon rewards.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
