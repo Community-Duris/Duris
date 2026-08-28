@@ -135,9 +135,11 @@ bool interpEditObjTypeMenu(const usint ch, objectType *obj, const uint origVnum)
       DECAP(obj->objShortName);
       if( default_long )
       {
-        sprintf( obj->objLongName, "%s lies here.", obj->objShortName );
-        // Make sure the first letter of the long description is uppercase.
-        CAP(obj->objLongName);
+	      // Bound the short name so the fixed suffix always fits.
+	      snprintf(obj->objLongName, sizeof(obj->objLongName), "%.*s lies here.",
+		       (int)(sizeof(obj->objLongName) - sizeof(" lies here.")), obj->objShortName);
+	      // Make sure the first letter of the long description is uppercase.
+	      CAP(obj->objLongName);
       }
     }
     displayEditObjTypeMenu(obj, origVnum);

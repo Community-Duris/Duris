@@ -142,7 +142,9 @@ void deleteExitPrompt(const char dir)
       strcpy(strn, g_exitnames[dir]);
       strn[0] = toupper(strn[0]);
 
-      sprintf(outstrn, "\n%s exit deleted.\n\n", strn);
+      // Bound the direction name so the fixed suffix always fits.
+      snprintf(outstrn, sizeof(outstrn), "\n%.*s exit deleted.\n\n",
+	       (int)(sizeof(outstrn) - sizeof("\n exit deleted.\n\n")), strn);
       _outtext(outstrn);
     }
     else 
