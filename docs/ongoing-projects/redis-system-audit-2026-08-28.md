@@ -2,8 +2,36 @@
 
 Date: 2026-08-28
 Branch: `redis-refactor`
-Commit reviewed: `68a916ec`
-Status: Findings only; no runtime, migration, database, or Redis state was changed.
+Audit baseline commit: `68a916ec`
+Status: Implementation in progress; RDS-006 is remediated and the remaining findings are open.
+
+## Implementation progress
+
+### 2026-08-28 - RDS-006 MySQL ship authority
+
+Completed:
+
+- Removed the Redis ship snapshot loader and publisher APIs and their JSON codec.
+- Made `sql_load_ship()` always query MySQL and its dependent ship tables.
+- Stopped publishing ship state from `sql_save_ship()`, including saves that participate in
+  an outer transaction.
+- Retained deletion of legacy `ship:snapshot:*` keys during ship deletion, owner rename,
+  pwipe, and explicit namespace cleanup so stale snapshots cannot become active again.
+- Updated focused source-contract tests to reject any Redis access in ship load/save paths.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_ship_snapshot_invalidation.py`: passed.
+- `python3 tests/async/test_ship_save_guards.py`: passed.
+- `python3 tests/async/test_redis_pwipe_invalidation.py`: passed.
+- `python3 tests/async/test_nevent_ship_volley_runtime.py`: passed.
+- `python3 tests/async/test_ship_nested_transaction.py`: passed.
+- `python3 tests/async/test_ship_shutdown_txn.py`: passed.
+
+Remaining work:
+
+- All findings other than RDS-006 remain open. The acceptance criteria are not yet met.
 
 ## Executive summary
 
@@ -296,6 +324,7 @@ normal zone boot.
 
 Severity: High
 Confidence: Confirmed
+Remediation status: Completed on branch; MySQL is now the only ship read authority.
 
 Evidence:
 

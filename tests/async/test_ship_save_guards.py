@@ -72,12 +72,12 @@ retry_signature = find(text_base, 'ship->save_saved_signature = ship_save_signat
 flush_fn = find(text_base, 'void flush_pending_ship_saves(void)')
 checks.append(('ship save retry fallback', write_ship, retry_pending, retry_delay, retry_signature))
 
-# ship snapshot redis cache wiring
+# MySQL is the only ship read authority. Redis invalidation remains temporarily so
+# retired snapshot keys cannot survive deletes or owner renames.
 sql_load_ship_fn = find(text_player, 'P_ship sql_load_ship(const char *owner_name)')
-sql_load_try = find(text_player, 'redis_load_ship_snapshot', sql_load_ship_fn)
+sql_load_ship_end = find(text_player, 'bool sql_load_all_ships()', sql_load_ship_fn)
 sql_load_query = find(text_player, 'from ships where owner_name', sql_load_ship_fn)
-sql_load_prime = find(text_player, 'redis_cache_ship_snapshot', sql_load_ship_fn)
-checks.append(('sql_load_ship redis flow', sql_load_ship_fn, sql_load_try, sql_load_query, sql_load_prime))
+checks.append(('sql_load_ship SQL authority', sql_load_ship_fn, sql_load_query, -1, -1))
 
 sql_delete_ship_fn = find(text_player, 'bool sql_delete_ship(const char *owner_name)')
 sql_delete_query = find(text_player, "delete from ships where owner_name='%s'", sql_delete_ship_fn)
@@ -105,8 +105,8 @@ for name, a, b, c, d in checks:
     if name == 'ship save retry fallback' and not (b < c < d):
         print('ship save retry fallback is missing one of the retry markers')
         ok = False
-    if name == 'sql_load_ship redis flow' and not (b != -1 and c != -1 and d != -1):
-        print('sql_load_ship missing one of the redis cache hooks')
+    if name == 'sql_load_ship SQL authority' and 'redis_' in text_player[sql_load_ship_fn:sql_load_ship_end]:
+        print('sql_load_ship still consults or publishes Redis state')
         ok = False
     if name == 'sql_delete_ship redis invalidate' and c == -1:
         print('sql_delete_ship does not invalidate redis snapshot after delete')

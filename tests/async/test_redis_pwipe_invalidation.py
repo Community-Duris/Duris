@@ -12,7 +12,6 @@ for signature in (
     "void redis_log_floor_pickup(unsigned long obj_uid)",
     "void redis_log_floor_drop(P_obj obj, int room_vnum)",
     "void mark_player_dirty(int pid)",
-    "bool redis_cache_ship_snapshot(struct ShipData *ship)",
 ):
     start = source.index(signature)
     body = source[start:source.index("\n}", start) + 2]
