@@ -112,9 +112,9 @@
     {
       "id": "ships_and_cargo",
       "source": "runtime-call",
-      "key": "canonical-name",
-      "disposition": "unimplemented",
-      "evidence": { "path": "src/files.c", "token": "delete_ship(GET_NAME(ch))" }
+      "key": "pid+canonical-name",
+      "disposition": "prepared_remove",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_ship_prepare_player_remove" }
     },
     {
       "id": "corpses_and_saved_items",

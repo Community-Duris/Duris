@@ -26,6 +26,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
         "src/flatfile_player_domain_repository.c",
         "src/flatfile_recipe_repository.c",
         "src/flatfile_spellbook_repository.c",
+        "src/flatfile_ship_repository.c",
         "src/flatfile_authority_transaction.c",
         "src/player_snapshot_codec.c",
         "src/flatfile_store.c",

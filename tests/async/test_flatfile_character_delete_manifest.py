@@ -94,6 +94,7 @@ prepared_order = [
     "flatfile_frag_leaderboard_prepare_tombstone",
     "flatfile_locker_prepare_player_remove",
     "flatfile_association_prepare_player_remove",
+    "flatfile_ship_prepare_player_remove",
     "flatfile_player_snapshot_prepare_remove",
     "flatfile_player_domain_prepare_remove",
     "flatfile_item_repository_prepare_player_and_locker_remove",

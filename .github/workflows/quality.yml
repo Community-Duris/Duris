@@ -46,6 +46,8 @@ jobs:
         run: python3 tests/async/test_flatfile_artifact_repository.py
       - name: Verify flat-file association authority
         run: python3 tests/async/test_flatfile_association_repository.py
+      - name: Verify flat-file ship authority
+        run: python3 tests/async/test_flatfile_ship_repository.py
       - name: Verify flat-file locker authority
         run: python3 tests/async/test_flatfile_locker_repository.py
       - name: Verify flat-file frag leaderboard authority

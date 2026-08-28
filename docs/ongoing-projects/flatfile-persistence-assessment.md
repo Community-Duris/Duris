@@ -1792,6 +1792,44 @@ sections below continue to describe the required end state.
   exact item-custody composition, then retain explicit corpse and account-bound summon
   fences until their repositories are complete.
 
+### Checkpoint 53 - canonical ship, crew, armor, slot, and cargo authority
+
+- **Completed:** added a checksummed `DURSHIP` v1 catalog consolidating `ships`,
+  `ship_armor`, `ship_crew`, and `ship_slots`. Each record carries stable ship and owner
+  PIDs, canonical owner name, display name, class/frags/location/time/sail/race/money/flags,
+  all armor/internal sides, fixed-point crew skills and chiefs, canonical indexed slots,
+  and a revision. Slot type/item/position/timer/value fields include the cargo and
+  contraband quantities and pricing state used by the runtime.
+- **Authority boundary:** exact establishment canonicalizes ship and slot ordering and is
+  idempotent only for identical state. Validation enforces unique ship IDs, owner PIDs and
+  canonical owner names, unique bounded slot indexes, printable bounded names, revisions,
+  maximum record/file sizes, and SHA-256 integrity. Missing, conflicting, oversized, or
+  corrupt authority fails closed.
+- **Deletion semantics:** under the held global authority lock, deletion resolves by owner
+  PID and verifies the canonical expected character name before preparing removal of the
+  complete ship aggregate. The catalog revision advances once; absent ownership is an
+  idempotent unchanged result and a PID/name mismatch conflicts. Ship cargo is persisted as
+  slot scalar state rather than object UID custody, so no global item-owner rewrite is
+  required for this domain.
+- **Coordinator composition:** the ship image joins the recoverable character-delete
+  transaction after association cleanup and before player snapshot removal, with the
+  identity tombstone still success-last. The bounded operation count is thirteen. Fault
+  recovery proves the deleting player's ship and cargo slots do not survive.
+- **Checks passed:** the standalone strict regression covers exact canonical establishment,
+  metadata, armor, crew fixed-point fields, slot/cargo round trip, owner and slot uniqueness,
+  conflict refusal, prepare-before-publish isolation, transactional removal, unrelated ship
+  preservation, retry stability, and checksum corruption. The expanded coordinator and
+  manifest regressions pass, and CI runs the ship repository in the client-free authority
+  suite.
+- **Manifest and exposure:** `ships_and_cargo` advances from `unimplemented` to
+  `prepared_remove`, reducing the checked deletion blocker count from three to two. General
+  ship gameplay/load/save remains SQL-only and stays in the wider ship domain boot fence;
+  corpses/saved items and account-bound summons still prevent live character-delete
+  exposure.
+- **Next action:** implement corpse and saved-world-item authority with nested object and
+  exact item-custody reconciliation, then address account-bound summon references before
+  exposing the complete character-delete route.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

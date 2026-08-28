@@ -10,6 +10,7 @@
 #include "flatfile_player_domain_repository.h"
 #include "flatfile_player_repository.h"
 #include "flatfile_recipe_repository.h"
+#include "flatfile_ship_repository.h"
 #include "flatfile_spellbook_repository.h"
 
 #include <cstdlib>
@@ -145,6 +146,16 @@ static void establish(const fs::path &root, bool establish_boons)
 	require(flatfile_association_establish(root.string(), { association }, &error) ==
 			flatfile_association_result::ok,
 		"association baseline failed: " + error);
+	flatfile_ship_record ship = {};
+	ship.ship_id = 30;
+	ship.owner_pid = 1;
+	ship.owner_name = "Player";
+	ship.ship_name = "Player Ship";
+	ship.revision = 1;
+	ship.slots = { { 0, 4, 5, 6, 7, { 8, 9, 10, 11, 12 } } };
+	require(flatfile_ship_establish(root.string(), { ship }, &error) ==
+			flatfile_ship_result::ok,
+		"ship baseline failed: " + error);
 	const item_owner_identity locker_owner = { item_owner_type::locker, 10, 11 };
 	require(flatfile_item_repository_establish_owner(
 			root.string(), locker_owner,
@@ -227,6 +238,10 @@ int main(int argc, char **argv)
 			associations[0].members[0].pid == 2 && associations[0].frags == 4 &&
 			associations[0].top_frags == 0 && associations[0].top_fragger.empty(),
 		"recovered deletion retained association membership or frag contribution");
+	std::vector<flatfile_ship_record> ships;
+	require(flatfile_ship_list(root.string(), &ships, &error) == flatfile_ship_result::ok &&
+			ships.empty(),
+		"recovered deletion retained player ship or cargo slots");
 	std::vector<flatfile_artifact_record> artifacts;
 	require(flatfile_artifact_list(root.string(), &artifacts, &error) ==
 				flatfile_artifact_result::ok &&

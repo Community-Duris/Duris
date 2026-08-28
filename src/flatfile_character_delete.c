@@ -13,6 +13,7 @@
 #include "flatfile_player_domain_repository.h"
 #include "flatfile_player_repository.h"
 #include "flatfile_recipe_repository.h"
+#include "flatfile_ship_repository.h"
 #include "flatfile_spellbook_repository.h"
 
 #include <ctime>
@@ -97,7 +98,7 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	std::vector<flatfile_authority_operation> operations;
 	try
 	{
-		operations.reserve(12);
+		operations.reserve(13);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -172,6 +173,23 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	{
 		return map_authority(association, flatfile_association_result::not_found,
 				     flatfile_association_result::io_error);
+	}
+
+	const auto ship = flatfile_ship_prepare_player_remove(
+		root, authority_lock, static_cast<uint32_t>(pid), expected_name, &operation, error);
+	if (ship == flatfile_ship_result::ok)
+	{
+		if (!append_operation(&operations, &operation))
+			return flatfile_character_delete_result::io_error;
+	}
+	else if (ship == flatfile_ship_result::conflict)
+	{
+		return flatfile_character_delete_result::conflict;
+	}
+	else if (ship != flatfile_ship_result::unchanged)
+	{
+		return map_authority(ship, flatfile_ship_result::not_found,
+				     flatfile_ship_result::io_error);
 	}
 
 	const auto snapshot = flatfile_player_snapshot_prepare_remove(
