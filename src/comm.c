@@ -1716,15 +1716,23 @@ resume_game_loop:
 		}
 		nevent_advance_tick();
 		double affect_and_points_begin = loop_monotonic_seconds();
+		double affect_time = 0.0;
+		double point_time = 0.0;
 		if (!pulse)
 		{
 			affect_update();
+			double affect_end = loop_monotonic_seconds();
 			point_update();
+			double point_end = loop_monotonic_seconds();
+			affect_time = affect_end - affect_and_points_begin;
+			point_time = point_end - affect_end;
 		}
 		double affect_and_points_end = loop_monotonic_seconds();
 		double affect_and_points_time = affect_and_points_end - affect_and_points_begin;
 		latency_trace_record("affect_and_points",
 				     (long)(affect_and_points_time * 1000000.0), pulse);
+		latency_trace_record("affect_update", (long)(affect_time * 1000000.0), pulse);
+		latency_trace_record("point_update", (long)(point_time * 1000000.0), pulse);
 		/* check out the time */
 		loop_time_end = loop_monotonic_seconds();
 		double loop_time = loop_time_end - loop_time_begin;
@@ -1738,6 +1746,8 @@ resume_game_loop:
 			statuslog(56, "  - ne_events time - %f", ne_events_time);
 			statuslog(56, "  - prompts time - %f", prompts_time);
 			statuslog(56, "  - aff/pts time - %f", affect_and_points_time);
+			statuslog(56, "    - affect_update time - %f", affect_time);
+			statuslog(56, "    - point_update time - %f", point_time);
 		}
 		latency_trace_record("total_tick", (long)(loop_time * 1000000.0), pulse);
 		if (!(tics % 300))

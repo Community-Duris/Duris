@@ -330,21 +330,18 @@ static void nevent_link_schedule(P_nevent event, int loc)
 		return;
 	}
 
-	for (cursor = ne_schedule[loc]; cursor && !nevent_sorts_before(event, cursor);
-	     cursor = cursor->next_sched)
+	/*
+	 * Walk back from the tail rather than forward from the head.  Both find
+	 * the same slot, but events are nearly always queued for a tick at or
+	 * after what the bucket already holds, so the insertion point sits near
+	 * the end.  Scanning from the head made a mass reschedule -- every mob
+	 * in the world queuing a regen event on the same tick -- quadratic, and
+	 * that alone cost the game loop about a second every tick.
+	 */
+	for (cursor = ne_schedule_tail[loc];
+	     cursor->prev_sched && nevent_sorts_before(event, cursor->prev_sched);
+	     cursor = cursor->prev_sched)
 		;
-
-	if (!cursor)
-	{
-		event->prev_sched = ne_schedule_tail[loc];
-		event->next_sched = NULL;
-		if (ne_schedule_tail[loc])
-			ne_schedule_tail[loc]->next_sched = event;
-		else
-			ne_schedule[loc] = event;
-		ne_schedule_tail[loc] = event;
-		return;
-	}
 
 	event->prev_sched = cursor->prev_sched;
 	event->next_sched = cursor;

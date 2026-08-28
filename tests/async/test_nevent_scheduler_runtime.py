@@ -16,6 +16,7 @@ HARNESS = r'''
 #undef clock_gettime
 
 #include <algorithm>
+#include <chrono>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -1009,6 +1010,57 @@ static void test_randomized_oracle()
 	require_balanced(130);
 }
 
+
+/*
+ * A world tick makes every mob queue a regen event for the same near tick.  The
+ * bucket they land in also holds events due a full revolution later, so each
+ * insert has to be placed ahead of the tail.  Ordering the bucket by walking
+ * forward from the head made that batch quadratic -- measured at roughly a
+ * second of game-loop stall per tick with ~16k events queued.
+ */
+static void test_mass_same_tick_insert()
+{
+	reset_scheduler();
+	/* Shares bucket 1, but is due a whole revolution later. */
+	add_record(7000, PULSES_IN_TICK + 1, PULSES_IN_TICK + 1);
+
+	const int batch = 20000;
+	const auto begin = std::chrono::steady_clock::now();
+	for (int index = 0; index < batch; ++index)
+		add_record(8000 + index, 1, 1);
+	const double elapsed =
+		std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count();
+	/* Measured: ~0.01s with the ordered insert, ~1.1s when it walks from the
+	 * head.  The bound sits well clear of both. */
+	require(elapsed < 0.250, 250);
+
+	long seen = 0;
+	unsigned long long previous_tick = 0;
+	unsigned long long previous_sequence = 0;
+	for (P_nevent event = ne_schedule[1]; event; event = event->next_sched)
+	{
+		require(event->due_tick >= previous_tick, 251);
+		if (event->due_tick == previous_tick)
+			require(event->sequence > previous_sequence, 252);
+		previous_tick = event->due_tick;
+		previous_sequence = event->sequence;
+		++seen;
+	}
+	require(seen == batch + 1, 253);
+	require(ne_schedule_tail[1] && ne_schedule_tail[1]->due_tick == PULSES_IN_TICK + 1, 254);
+
+	while (ne_event_counter > 0)
+		run_one_heartbeat();
+	require(fired.size() == static_cast<size_t>(batch) + 1, 255);
+	for (int index = 0; index < batch; ++index)
+		require(fired[static_cast<size_t>(index)] ==
+				std::pair<int, unsigned long long>{ 8000 + index, 1 },
+			256);
+	require(fired.back() ==
+			std::pair<int, unsigned long long>{ 7000, PULSES_IN_TICK + 1 },
+		257);
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, 160);
@@ -1031,6 +1083,8 @@ int main(int argc, char **argv)
 		test_catchup_convergence();
 	else if (std::strcmp(argv[1], "large-batch") == 0)
 		test_large_batch_deferral();
+	else if (std::strcmp(argv[1], "mass-insert") == 0)
+		test_mass_same_tick_insert();
 	else if (std::strcmp(argv[1], "unbounded") == 0)
 		test_unbounded_warning();
 	else if (std::strcmp(argv[1], "invalid-config") == 0)
@@ -1109,6 +1163,11 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-scheduler-") as directory:
         DURIS_NEVENT_MAX_CALLBACKS="4000",
         DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS="0",
     )
+    run_mode(
+        "mass-insert",
+        DURIS_NEVENT_MAX_CALLBACKS="30000",
+        DURIS_NEVENT_CATCHUP_MAX_EXTRA_CALLBACKS="0",
+    )
     run_mode("unbounded")
     run_mode("invalid-config", DURIS_NEVENT_BUDGET_USEC="9" * 100)
     run_mode("api")
@@ -1121,6 +1180,7 @@ assert "event->timer" not in source
 assert "current_nevent->due_tick > ne_event_tick" in source
 assert "pass_sequence = ne_event_sequence" in source
 assert "nevent_sorts_before" in source
+assert "cursor = ne_schedule_tail[loc];" in source
 assert "NEVENT_NORMAL_AGING_DEFERRALS" in source
 assert "nevent_schedule_status" in source
 assert "nevent_find_next" in source

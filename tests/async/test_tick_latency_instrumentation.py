@@ -69,6 +69,16 @@ if loop:
                           "ne_events", "prompts", "aff/pts"))
     ))
     checks.append((
+        "the stall report splits aff/pts into affect_update and point_update",
+        all(contains(loop, f'"    - {label} time - %f"')
+            for label in ("affect_update", "point_update"))
+    ))
+    checks.append((
+        "the split timings are recorded in the latency trace",
+        all(contains(loop, f'latency_trace_record("{name}"')
+            for name in ("affect_update", "point_update"))
+    ))
+    checks.append((
         "the latency trace dump targets the repository's logs directory",
         contains(loop, 'fopen("logs/latency_trace.log", "a")') and
         not contains(loop, "/durismud/logs")
