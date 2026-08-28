@@ -75,12 +75,14 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         path.write_text(json.dumps(manifest))
         return path
 
-    def test_canonical_manifest_keeps_baseline_and_adds_first_immutable_step(self):
+    def test_canonical_manifest_keeps_baseline_and_orders_immutable_steps(self):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
-        self.assertEqual(len(manifest.migrations), 1)
+        self.assertEqual(len(manifest.migrations), 2)
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
+        self.assertEqual(manifest.migrations[1].migration_id,
+                         "0002_player_item_metadata_uniqueness")
         self.assertEqual(len(manifest.required_table_fingerprint), 64)
         lifecycle = json.loads(
             (ROOT / "migrations/data_lifecycle_manifest.json").read_text()

@@ -82,6 +82,8 @@ typedef unsigned int uint;
 /* character runtime flags (not saved to db) */
 #define CHAR_RFLAG_DIRTY_EQUIPMENT BIT_1
 #define CHAR_RFLAG_DIRTY_INVENTORY BIT_2
+/* set at creation, cleared once player_data holds a row for this character */
+#define CHAR_RFLAG_NO_DB_BASELINE BIT_3
 
 /* object runtime flags (not saved to db) */
 #define OBJ_RFLAG_DIRTY_CONTAINER BIT_1

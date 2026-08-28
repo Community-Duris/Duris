@@ -607,6 +607,18 @@ bool parse_item_payload(MYSQL_ROW row, player_load_result *result, player_item_s
 	       !(identity->override_mask & ~PLAYER_LOAD_ITEM_OVERRIDE_ALL);
 }
 
+// An exact duplicate (keyword, description) carries no information the first row does
+// not already carry, and the write side has historically been able to produce them.
+bool duplicate_description(const std::vector<player_item_extra_description_snapshot> &descriptions,
+			   const char *keyword, const char *description)
+{
+	const char *text = description ? description : "";
+	for (const player_item_extra_description_snapshot &existing : descriptions)
+		if (existing.keyword == keyword && existing.description == text)
+			return true;
+	return false;
+}
+
 bool load_items(MYSQL *connection, player_load_result *result)
 {
 	const std::string pid = std::to_string(result->pid);
@@ -927,8 +939,16 @@ bool load_items(MYSQL *connection, player_load_result *result)
 				    return true;
 			    }
 			    if (!row[5] || strlen(row[5]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
-				(row[6] && strlen(row[6]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES) ||
-				item.extra_descriptions.size() >= PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
+				(row[6] && strlen(row[6]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES))
+			    {
+				    result->outcome = player_load_outcome::limit_exceeded;
+				    return false;
+			    }
+			    // Exact duplicates are semantically identical, so drop them here
+			    // rather than letting the materialize step refuse the character.
+			    if (duplicate_description(item.extra_descriptions, row[5], row[6]))
+				    return true;
+			    if (item.extra_descriptions.size() >= PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
 			    {
 				    result->outcome = player_load_outcome::limit_exceeded;
 				    return false;
@@ -1208,8 +1228,14 @@ bool load_pets(MYSQL *connection, player_load_result *result)
 				    return true;
 			    }
 			    if (!row[5] || strlen(row[5]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
-				(row[6] && strlen(row[6]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES) ||
-				item.extra_descriptions.size() >= PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
+				(row[6] && strlen(row[6]) > PLAYER_SNAPSHOT_MAX_STRING_BYTES))
+			    {
+				    result->outcome = player_load_outcome::limit_exceeded;
+				    return false;
+			    }
+			    if (duplicate_description(item.extra_descriptions, row[5], row[6]))
+				    return true;
+			    if (item.extra_descriptions.size() >= PLAYER_LOAD_ITEM_DESCRIPTION_MAX)
 			    {
 				    result->outcome = player_load_outcome::limit_exceeded;
 				    return false;
@@ -1343,15 +1369,38 @@ player_load_result player_load_repository_execute(MYSQL *connection,
 	result.snapshot.components = request.include_pets  ? PLAYER_LOAD_SESSION03_COMPONENTS :
 				     request.include_items ? PLAYER_LOAD_SESSION02_COMPONENTS :
 							     PLAYER_LOAD_SESSION01_COMPONENTS;
-	bool ok = load_status(connection, request, &result) &&
-		  load_components(connection, request, &result) &&
-		  (!request.include_items || load_items(connection, &result)) &&
-		  (!request.include_pets || load_pets(connection, &result)) &&
-		  load_gameplay_reads(connection, &result) &&
-		  load_bank(connection, request, &result) && before_deadline(request) &&
-		  within_budget(result);
+	bool ok = true;
+	const auto stage = [&](const char *name, bool completed)
+	{
+		if (!ok)
+			return false;
+		if (completed)
+			return true;
+		ok = false;
+		result.failed_component = name;
+		return false;
+	};
+	stage("status", load_status(connection, request, &result));
+	if (ok)
+		stage("components", load_components(connection, request, &result));
+	if (ok && request.include_items)
+		stage("items", load_items(connection, &result));
+	if (ok && request.include_pets)
+		stage("pets", load_pets(connection, &result));
+	if (ok)
+		stage("gameplay_reads", load_gameplay_reads(connection, &result));
+	if (ok)
+		stage("bank", load_bank(connection, request, &result));
+	if (ok)
+		stage("deadline", before_deadline(request));
+	if (ok)
+		stage("budget", within_budget(result));
 	result.snapshot.pid = result.pid;
-	if (ok && execute(connection, "COMMIT", &result) && before_deadline(request))
+	if (ok && !execute(connection, "COMMIT", &result))
+		stage("commit", false);
+	else if (ok && !before_deadline(request))
+		stage("commit_deadline", false);
+	if (ok)
 		result.outcome = player_load_outcome::applied;
 	else
 	{

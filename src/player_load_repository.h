@@ -142,6 +142,10 @@ struct player_load_result
 	std::vector<int64_t> recent_pvp_deaths;
 	std::vector<int32_t> completed_epic_zones;
 	player_load_metrics metrics = {};
+	// Static string literal naming the loader stage that refused the load, or nullptr
+	// on success. The worker thread cannot log, so the failing stage is carried back
+	// to the game thread to be reported there.
+	const char *failed_component = nullptr;
 	int64_t saved_at = 0;
 	std::string account_name;
 };

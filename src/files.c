@@ -1582,6 +1582,7 @@ int writeCharacter(P_char ch, int type, int room)
 		room = (*world[ch->in_room].funct)(ch->in_room, ch, (-80), NULL);
 
 	if (!is_locker_char && GET_PID(ch) > 0 && !sql_in_transaction() &&
+	    !IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE) &&
 	    player_save_pipeline_is_nonterminal_type(type))
 	{
 		room = calculate_save_room(ch, type, room);

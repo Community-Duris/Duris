@@ -67,7 +67,8 @@ int main()
 	if (result.outcome != player_load_outcome::applied)
 		std::cerr << "outcome=" << static_cast<int>(result.outcome)
 			  << " error=" << result.error_code << " mysql=" << mysql_errno(connection)
-			  << " queries=" << result.metrics.query_count << '\n';
+			  << " queries=" << result.metrics.query_count << " component="
+			  << (result.failed_component ? result.failed_component : "none") << '\n';
 	assert(result.outcome == player_load_outcome::applied);
 	assert(result.request_id == request.request_id && result.pid == pid);
 	assert(result.snapshot.pid == pid);
@@ -128,6 +129,12 @@ int main()
 	missing.deadline_usec = persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
 	player_load_result absent = player_load_repository_execute(connection, missing);
 	assert(absent.outcome == player_load_outcome::not_found);
+	if (std::getenv("PLAYER_LOAD_REAL_ONLY"))
+	{
+		mysql_close(connection);
+		std::cout << "configured player-load repository snapshot passed\n";
+		return 0;
+	}
 
 	// Shadow the touched domains for deterministic, connection-local fixtures.
 	// Temporary tables vanish on connection close and cannot alter configured player data.

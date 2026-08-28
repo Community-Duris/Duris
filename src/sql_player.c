@@ -1047,6 +1047,9 @@ bool sql_save_player(P_char ch, int type, int room)
 	clear_player_dirty_container_flags(ch);
 	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
 	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+	// A pre-existing row or a newly inserted baseline is durable only once the whole
+	// synchronous save succeeds (and, when owned here, commits).
+	REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
 
 	return true;
 }
@@ -1635,6 +1638,12 @@ bool sql_save_player_status(P_char ch, int type, int room)
 			return false;
 		}
 	}
+	// The caller clears the no-baseline runtime marker only after the complete player
+	// save commits. Clearing it here would route the next save asynchronously even if a
+	// later component failed and rolled this INSERT back.
+	if (!is_update)
+		logit(LOG_PLAYER,
+		      "sql_save_player_status: component=baseline outcome=inserted pid=%d", pid);
 	return true;
 }
 
@@ -1867,6 +1876,14 @@ bool sql_save_player_affects(P_char ch)
 // save item affects (the obj->affected[] array)
 static bool sql_save_item_affects(int item_id, P_obj obj)
 {
+	// same accumulation hazard as the extra descriptions: item rows survive the
+	// incremental and equipment-only saves, so the previous affects must go first
+	char del_query[128];
+	snprintf(del_query, sizeof(del_query), "DELETE FROM player_item_affects WHERE item_id = %d",
+		 item_id);
+	if (!sql_run_query(del_query))
+		return false;
+
 	for (int i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
 		if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
@@ -2132,7 +2149,19 @@ static void sql_load_item_affects_from_table(int item_id, P_obj obj, const char 
 
 static bool sql_save_item_extra_descr(int item_id, P_obj obj, const char *table)
 {
-	if (!obj || !obj->ex_description || !DB)
+	if (!obj || !DB)
+		return true;
+
+	// The incremental and equipment-only save paths update item rows in place, so the
+	// FK cascade from a full inventory delete never runs. Without clearing the rows
+	// first every save appends another exact copy of each description until the load
+	// path rejects the whole character as a corrupt snapshot.
+	char del_query[256];
+	snprintf(del_query, sizeof(del_query), "DELETE FROM %s WHERE item_id = %d", table, item_id);
+	if (!sql_run_query(del_query))
+		return false;
+
+	if (!obj->ex_description)
 		return true;
 
 	struct extra_descr_data *ed;
@@ -2849,13 +2878,12 @@ static bool sql_save_player_items_batch_all(int pid, P_char ch, bool save_equipm
 			return false;
 		}
 
-		if (obj->ex_description)
+		// unconditional: the item row may already exist with descriptions that are
+		// no longer present on the object, and only this call clears them
+		if (!sql_save_item_extra_descr(item_id, obj, "player_item_extra_descr"))
 		{
-			if (!sql_save_item_extra_descr(item_id, obj, "player_item_extra_descr"))
-			{
-				free(flat);
-				return false;
-			}
+			free(flat);
+			return false;
 		}
 	}
 
@@ -2983,10 +3011,30 @@ bool sql_delete_player_items(int pid)
 // pet item affects save
 static bool sql_save_pet_item_affects(int item_id, P_obj obj)
 {
+	char del_query[128];
+	snprintf(del_query, sizeof(del_query),
+		 "DELETE FROM player_pet_item_affects WHERE item_id = %d", item_id);
+	if (!sql_run_query(del_query))
+		return false;
+
 	for (int i = 0; i < MAX_OBJ_AFFECT; i++)
 	{
 		if (obj->affected[i].location != 0 || obj->affected[i].modifier != 0)
 		{
+			// skip duplicates (same location+modifier already saved)
+			bool is_dup = false;
+			for (int j = 0; j < i; j++)
+			{
+				if (obj->affected[j].location == obj->affected[i].location &&
+				    obj->affected[j].modifier == obj->affected[i].modifier)
+				{
+					is_dup = true;
+					break;
+				}
+			}
+			if (is_dup)
+				continue;
+
 			char ins_query[256];
 			snprintf(
 				ins_query, sizeof(ins_query),

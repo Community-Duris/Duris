@@ -10,17 +10,17 @@ constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
 constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 171;
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"6a00ae24b351d2fe3227df2e298bb053be34a7e0c4886525855136a4e4e4bc8f";
+	"63be1814724472ecd652f9acc2868478f49ace81483217725dee97a48020dc15";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"3968598be2fd8cc7fa7cd15be15d1ecce4e5b2b1ddcc81b69596a89425ec1151";
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0001_lookup_dataset_state";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 1;
+	"7189aa7bf6a033a5f2f2cf270bcc348568e4e742e1dc1e3b3e35deb94c9715d2";
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0002_player_item_metadata_uniqueness";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 2;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"e39db8df5bd7a8d71d5cc9c177919b8117d6fed77a9318f79610ed9413de4ccb";
+	"00e86dc65e6d5e935a50cd731d010675ade6da7fbbfdd18c4fe6fb17f88addba";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"90fc6de3aa449ef9b5b77fc96032314e129dfdd631e9760af86dc40329d7f0ca";
+	"312aa0aa354439e15bcef68403f00b7158c96627518d8be0bf85f59890ea1a90";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"31b2670946d2cd0cb96c9ec63399095a62abdc45408e3928268ee7698ef59a9f";
+	"b6731ff057a35a121c25fe0e9953a01b794efa9c286b479abb988a5d7f81cce8";
 constexpr const char *LOOKUP_DATASET_NAME = "race_class";
 constexpr unsigned LOOKUP_DATASET_VERSION = 1;
 constexpr const char *RUNTIME_DB_CHARACTER_SET = "utf8mb4";
