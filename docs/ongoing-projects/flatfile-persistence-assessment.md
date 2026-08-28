@@ -1413,9 +1413,9 @@ sections below continue to describe the required end state.
   then returns the next checksummed identity-catalog image without publishing it.
 - **Completed:** recipe and learned-minion repositories now expose equivalent prepare-only
   PID clears under an already-held global authority lock. They recover an outstanding
-  journal first, fail closed on missing/corrupt authority, omit absent PID rows through a
-  distinct not-found result, and return revision-incremented catalog images without any
-  independent write.
+  journal first, fail closed on missing/corrupt authority, distinguish an absent PID in an
+  established catalog from missing authority, and return revision-incremented catalog
+  images without any independent write.
 - **Locking correction:** normal identity mutations now use the same public identity lock
   implementation as coordinated deletion. This preserves the existing process mutex and
   `.identity.lock` serialization while allowing a coordinator to hold identity state
@@ -1470,6 +1470,42 @@ sections below continue to describe the required end state.
   current call sites and flat authorities, implement fail-closed preconditions for domains
   not yet transactionally deletable, then compose all prepared operations with identity
   last in one fault-injected coordinator.
+
+### Checkpoint 44 - recoverable core character-delete coordinator
+
+- **Completed:** added a typed core coordinator that locks one PID snapshot, then identity,
+  then global authority; validates the identity/name tombstone plus player snapshot,
+  player-domain, item custody, boon, recipe, and spellbook authorities; and commits their
+  prepared operations in one bounded `DURAUTH` transaction. The identity catalog image is
+  ordered last, so an interruption cannot visibly tombstone a character before the
+  preceding core removals have been journaled for deterministic replay.
+- **Idempotency and fail-closed semantics:** prepare-only repositories now distinguish
+  “catalog exists and the PID is already absent” from “catalog is missing.” Recovery of an
+  interrupted journal therefore converges to `already_deleted`, while a missing or corrupt
+  authority aborts before publication. A tombstoned identity with residual core authority
+  but no recovery journal is rejected as inconsistent rather than silently cleaned up.
+- **Locking correction:** the coordinator acquires the snapshot lock before the identity
+  lock. First-snapshot establishment already holds that snapshot lock while consulting
+  identity authority, so this order avoids an inverse lock dependency; global authority is
+  acquired last and remains the serialization boundary shared by domain/catalog writers.
+- **Checks passed:** the focused coordinator regression covers a normal delete and retry,
+  missing-boon fail-closed behavior with no journal or authority changes, interruption
+  after the first operation, durable mixed-store journal recovery, identity tombstoning,
+  snapshot/domain removals, knowledge clears, item-owner removal, and success-last journal
+  cleanup. The five affected repository regressions, formatting, and strict normal server
+  build pass. CI now runs the coordinator regression explicitly in the client-free job.
+- **Files changed:** the core deletion coordinator, build and CI registration, repository
+  result contracts, focused fault-injection harness, dependent exhaustive result mapping,
+  and this handoff ledger.
+- **Exposure remains fenced:** this coordinator is intentionally not connected to
+  `sql_delete_player` or the live `deleteCharacter` call path. That path also mutates
+  locker access/data, artifacts and guild references, association membership, account
+  membership, ships, auctions/corpses, offline messages, and other world state. Each must
+  receive a transactional disposition or a checked-empty precondition before the runtime
+  can claim complete character deletion.
+- **Next action:** turn the live delete call graph into a machine-checked side-effect
+  manifest, implement fail-closed preconditions/preparers for the remaining authorities,
+  and only then route the complete transaction through the backend-neutral delete API.
 
 ### Milestone status
 

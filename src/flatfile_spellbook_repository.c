@@ -451,7 +451,7 @@ flatfile_spellbook_result flatfile_spellbook_prepare_clear(const std::string &ro
 				      [](const auto &record, uint32_t candidate)
 				      { return record.pid < candidate; });
 	if (found == catalog.records.end() || found->pid != pid)
-		return flatfile_spellbook_result::not_found;
+		return flatfile_spellbook_result::unchanged;
 	if (catalog.revision == std::numeric_limits<uint64_t>::max())
 		return flatfile_spellbook_result::invalid;
 	catalog.records.erase(found);

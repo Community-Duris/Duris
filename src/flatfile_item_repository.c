@@ -808,7 +808,7 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
 	owner_state *player_owner = find_owner(&catalog, player);
 	if (!player_owner)
-		return flatfile_item_repository_result::not_found;
+		return flatfile_item_repository_result::unchanged;
 	owner_state *destruction_owner = ensure_owner(&catalog, destruction);
 	if (!destruction_owner || catalog.revision == std::numeric_limits<uint64_t>::max() ||
 	    destruction_owner->revision == std::numeric_limits<uint64_t>::max())

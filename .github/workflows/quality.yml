@@ -44,6 +44,8 @@ jobs:
         run: python3 tests/async/test_flatfile_player_domain_repository.py
       - name: Verify recoverable cross-authority transactions
         run: python3 tests/async/test_flatfile_authority_transaction.py
+      - name: Verify recoverable flat-file character deletion
+        run: python3 tests/async/test_flatfile_character_delete.py
       - name: Verify flat-file recipe authority
         run: |
           python3 tests/async/test_flatfile_recipe_repository.py

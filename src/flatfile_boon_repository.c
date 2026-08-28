@@ -1016,7 +1016,7 @@ flatfile_boon_result flatfile_boon_prepare_player_remove(const std::string &root
 	erase_matching(catalog.shop_operations,
 		       [pid](const auto &entry) { return entry.result.pid == pid; });
 	if (!changed)
-		return flatfile_boon_result::not_found;
+		return flatfile_boon_result::unchanged;
 	if (catalog.revision == std::numeric_limits<uint64_t>::max())
 		return flatfile_boon_result::invalid;
 	++catalog.revision;

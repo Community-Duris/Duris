@@ -25,6 +25,7 @@ enum class flatfile_item_repository_result
 {
 	ok,
 	not_found,
+	unchanged,
 	invalid,
 	io_error
 };

@@ -671,7 +671,7 @@ flatfile_identity_prepare_remove(const std::string &root,
 		return entry ? flatfile_identity_result::conflict :
 			       flatfile_identity_result::not_found;
 	if (!entry->active)
-		return entry->blocked ? flatfile_identity_result::not_found :
+		return entry->blocked ? flatfile_identity_result::unchanged :
 					flatfile_identity_result::conflict;
 	if (catalog.revision == std::numeric_limits<uint64_t>::max())
 		return flatfile_identity_result::exhausted;

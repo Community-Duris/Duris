@@ -226,6 +226,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_account_adapter.o \
 				 flatfile_identity_repository.o \
 				 flatfile_identity_adapter.o \
+				 flatfile_character_delete.o \
 				 flatfile_player_repository.o \
 				 flatfile_item_uid_allocator.o \
 				 flatfile_item_repository.o \

@@ -19,6 +19,7 @@ enum class flatfile_spellbook_result
 	ok,
 	not_found,
 	already_exists,
+	unchanged,
 	invalid,
 	io_error
 };

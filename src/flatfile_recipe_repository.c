@@ -418,7 +418,7 @@ flatfile_recipe_result flatfile_recipe_prepare_clear(const std::string &root,
 				      [](const auto &record, uint32_t candidate)
 				      { return record.pid < candidate; });
 	if (found == catalog.records.end() || found->pid != pid)
-		return flatfile_recipe_result::not_found;
+		return flatfile_recipe_result::unchanged;
 	if (catalog.revision == std::numeric_limits<uint64_t>::max())
 		return flatfile_recipe_result::invalid;
 	catalog.records.erase(found);

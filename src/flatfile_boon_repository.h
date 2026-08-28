@@ -47,6 +47,7 @@ enum class flatfile_boon_result
 {
 	ok,
 	not_found,
+	unchanged,
 	invalid,
 	io_error,
 	already_exists,

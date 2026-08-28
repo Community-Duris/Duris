@@ -33,6 +33,7 @@ enum class flatfile_identity_result
 	ok,
 	not_found,
 	conflict,
+	unchanged,
 	invalid,
 	exhausted,
 	io_error

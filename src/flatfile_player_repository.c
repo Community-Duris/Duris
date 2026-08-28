@@ -171,6 +171,7 @@ player_load_result identity_failure(const player_load_request &request,
 		break;
 	case flatfile_identity_result::ok:
 	case flatfile_identity_result::conflict:
+	case flatfile_identity_result::unchanged:
 	case flatfile_identity_result::invalid:
 	case flatfile_identity_result::exhausted:
 		result.outcome = player_load_outcome::component_failure;

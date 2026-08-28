@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 		require(lock.acquire(root.string(), &error) &&
 				flatfile_item_repository_prepare_player_remove(
 					root.string(), lock, 999, &operation, &error) ==
-					flatfile_item_repository_result::not_found,
+					flatfile_item_repository_result::unchanged,
 			"prepared player item destruction was not idempotent");
 	}
 
