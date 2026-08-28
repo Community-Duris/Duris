@@ -54,6 +54,14 @@ flatfile_boon_result
 flatfile_boon_establish(const std::string &root,
 			const std::vector<flatfile_boon_definition> &definitions,
 			std::string *error);
+flatfile_boon_result flatfile_boon_create(const std::string &root,
+					  flatfile_boon_definition *definition, std::string *error);
+flatfile_boon_result flatfile_boon_deactivate(const std::string &root, uint32_t boon_id,
+					      std::string *error);
+flatfile_boon_result flatfile_boon_extend(const std::string &root, uint32_t boon_id,
+					  int64_t extend_minutes, int64_t now,
+					  const std::string &author, bool *was_active,
+					  std::string *error);
 flatfile_boon_result
 flatfile_boon_load_definitions(const std::string &root,
 			       std::vector<flatfile_boon_definition> *definitions,

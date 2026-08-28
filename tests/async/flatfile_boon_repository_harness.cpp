@@ -171,6 +171,33 @@ int main(int argc, char **argv)
 			loaded_definitions[0].author == definitions[0].author &&
 			loaded_definitions[3].bonus == definitions[3].bonus,
 		"boon definition projection did not preserve the catalog");
+	flatfile_boon_definition created = definition(0, BTYPE_EXP, BOPT_LEVEL, 60, 0, 500);
+	created.duration = -1;
+	require(flatfile_boon_create(root.string(), &created, &error) == flatfile_boon_result::ok &&
+			created.id == 5 &&
+			flatfile_boon_create(root.string(), &created, &error) ==
+				flatfile_boon_result::invalid,
+		"boon definition creation was not bounded or monotonic");
+	require(flatfile_boon_extend(root.string(), created.id, 10, 100, "ops", nullptr, &error) ==
+			flatfile_boon_result::invalid,
+		"boon extension accepted a missing active-state output");
+	require(flatfile_boon_deactivate(root.string(), 3, &error) == flatfile_boon_result::ok &&
+			flatfile_boon_deactivate(root.string(), 3, &error) ==
+				flatfile_boon_result::ok,
+		"boon deactivation was not durable and idempotent");
+	bool was_active = true;
+	require(flatfile_boon_extend(root.string(), created.id, 10, 100, "ops", &was_active,
+				     &error) == flatfile_boon_result::invalid,
+		"boon extension changed a forever definition");
+	require(flatfile_boon_extend(root.string(), 3, 10, 100, "ops", &was_active, &error) ==
+				flatfile_boon_result::ok &&
+			!was_active &&
+			flatfile_boon_load_definitions(root.string(), &loaded_definitions,
+						       &error) == flatfile_boon_result::ok &&
+			loaded_definitions[2].active && loaded_definitions[2].start_time == 100 &&
+			loaded_definitions[2].duration == 10 &&
+			loaded_definitions[2].author == "*ops",
+		"boon extension did not reactivate from the current expiry boundary");
 	boon_reward_payload mob = { .pid = 42,
 				    .racewar = 1,
 				    .level = 50,

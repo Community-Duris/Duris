@@ -159,6 +159,19 @@ class BoonRewardZoneCutoverTests(unittest.TestCase):
             self.assertIn("flat_boon_root", body)
             self.assertLess(body.index(flat_token), body.index(sql_token))
 
+    def test_flat_boon_definition_mutations_route_before_sql(self):
+        boon = (SRC / "boon.c").read_text()
+        for function, flat_token, sql_token in (
+            ("int create_boon", "flatfile_boon_create", "qry("),
+            ("int remove_boon", "flatfile_boon_deactivate", "qry("),
+            ("int extend_boon", "flatfile_boon_extend", "qry("),
+        ):
+            start = boon.index(function)
+            next_function = boon.find("\n}\n", start) + 3
+            body = boon[start:next_function]
+            self.assertIn("flat_boon_root", body)
+            self.assertLess(body.index(flat_token), body.index(sql_token))
+
     def test_account_bound_reward_boundary_remains_covered(self):
         contracts = "\n".join((ROOT / path).read_text() for path in (
             "tests/async/test_account_bound_reward_contract.py",

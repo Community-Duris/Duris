@@ -205,6 +205,27 @@ static bool copy_flat_boon_definition(const flatfile_boon_definition &source, Bo
 	return true;
 }
 
+static flatfile_boon_definition copy_boon_definition_to_flat(const BoonData &source,
+							     int64_t start_time)
+{
+	flatfile_boon_definition target;
+	target.start_time = start_time;
+	target.duration = source.duration;
+	target.racewar = static_cast<uint8_t>(source.racewar);
+	target.type = static_cast<uint8_t>(source.type);
+	target.option = static_cast<uint8_t>(source.option);
+	target.criteria = source.criteria;
+	target.criteria2 = source.criteria2;
+	target.bonus = source.bonus;
+	target.bonus2 = source.bonus2;
+	target.random = source.random;
+	target.active = true;
+	target.target_pid = static_cast<uint32_t>(source.pid);
+	target.repeat = source.repeat;
+	target.author = source.author;
+	return target;
+}
+
 static int boon_ctf_index(int flag_id)
 {
 	int i;
@@ -2763,6 +2784,22 @@ int create_boon(BoonData *bdata)
 		debug("Maximum number of boons has been reached.  Aborting create_boon().");
 		return FALSE;
 	}
+	if (const char *root = flat_boon_root())
+	{
+		if (bdata->racewar < 0 || bdata->racewar > UINT8_MAX || bdata->type < 0 ||
+		    bdata->type > UINT8_MAX || bdata->option < 0 || bdata->option > UINT8_MAX ||
+		    bdata->pid < 0)
+			return FALSE;
+		flatfile_boon_definition definition =
+			copy_boon_definition_to_flat(*bdata, time(nullptr));
+		std::string error;
+		if (flatfile_boon_create(root, &definition, &error) != flatfile_boon_result::ok ||
+		    definition.id > static_cast<uint32_t>(std::numeric_limits<int>::max()))
+			return FALSE;
+		bdata->id = static_cast<int>(definition.id);
+		boon_notify(bdata->id, nullptr, BN_CREATE);
+		return TRUE;
+	}
 
 	if (qry("INSERT INTO boons (time, duration, racewar, type, opt, criteria, criteria2, bonus, bonus2, random, author, active, pid, rpt) VALUES "
 		"(%d, %d, %d, %d, %d, %f, %f, %f, %f, %d, '%s', 1, '%d', '%d')",
@@ -2823,6 +2860,14 @@ int create_boon_shop_entry(BoonShop *bshop)
 
 int remove_boon(int id)
 {
+	if (const char *root = flat_boon_root())
+	{
+		if (id <= 0)
+			return 0;
+		std::string error;
+		return flatfile_boon_deactivate(root, static_cast<uint32_t>(id), &error) ==
+		       flatfile_boon_result::ok;
+	}
 	// if (!qry("DELETE FROM boons WHERE id = %d", id))
 	//  Gona leave boons on the DB for history lookup purposes
 	if (!qry("UPDATE boons SET active='0', duration='0' WHERE id='%d'", id))
@@ -2834,6 +2879,18 @@ int remove_boon(int id)
 
 int extend_boon(int id, int extend, const char *name)
 {
+	if (const char *root = flat_boon_root())
+	{
+		if (id <= 0 || extend < 0 || !name || !*name)
+			return FALSE;
+		bool was_active = false;
+		std::string error;
+		if (flatfile_boon_extend(root, static_cast<uint32_t>(id), extend, time(nullptr),
+					 name, &was_active, &error) != flatfile_boon_result::ok)
+			return FALSE;
+		boon_notify(id, nullptr, was_active ? BN_EXTEND : BN_REACTIVATE);
+		return TRUE;
+	}
 	if (!qry("SELECT time, duration, active FROM boons WHERE id = %d", id))
 	{
 		debug("extend_boon() can't read from db");

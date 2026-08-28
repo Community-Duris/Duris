@@ -174,7 +174,8 @@ std::string domains_directory(const std::string &root)
 
 bool valid_definition(const flatfile_boon_definition &definition)
 {
-	return definition.id && definition.type < MAX_BTYPE && definition.option < MAX_BOPT &&
+	return definition.id && definition.start_time >= 0 && definition.duration >= -1 &&
+	       definition.type < MAX_BTYPE && definition.option < MAX_BOPT &&
 	       definition.author.size() <= author_maximum_bytes &&
 	       definition.author.find('\0') == std::string::npos &&
 	       std::isfinite(definition.criteria) && std::isfinite(definition.criteria2) &&
@@ -580,6 +581,156 @@ flatfile_boon_establish(const std::string &root,
 	std::vector<uint8_t> bytes;
 	if (!encode_catalog(catalog, &bytes))
 		return flatfile_boon_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_boon_result::ok :
+		       flatfile_boon_result::io_error;
+}
+
+flatfile_boon_result flatfile_boon_create(const std::string &root,
+					  flatfile_boon_definition *definition, std::string *error)
+{
+	if (root.empty() || !definition || definition->id)
+		return flatfile_boon_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_boon_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_boon_result::io_error :
+			       flatfile_boon_result::invalid;
+	boon_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_boon_result::not_found;
+	if (loaded != flatfile_read_result::ok)
+		return loaded == flatfile_read_result::io_error ? flatfile_boon_result::io_error :
+								  flatfile_boon_result::invalid;
+	if (catalog.definitions.size() >= definition_maximum ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_boon_result::io_error;
+	if (std::count_if(catalog.definitions.begin(), catalog.definitions.end(),
+			  [](const auto &entry) { return entry.active; }) >= MAX_BOONS)
+		return flatfile_boon_result::invalid;
+	const uint32_t last_id = catalog.definitions.empty() ? 0 : catalog.definitions.back().id;
+	if (last_id == std::numeric_limits<uint32_t>::max())
+		return flatfile_boon_result::io_error;
+	flatfile_boon_definition created = *definition;
+	created.id = last_id + 1;
+	if (!valid_definition(created))
+		return flatfile_boon_result::invalid;
+	try
+	{
+		catalog.definitions.push_back(created);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_boon_result::io_error;
+	}
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_boon_result::io_error;
+	if (!flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error))
+		return flatfile_boon_result::io_error;
+	*definition = std::move(created);
+	return flatfile_boon_result::ok;
+}
+
+flatfile_boon_result flatfile_boon_deactivate(const std::string &root, uint32_t boon_id,
+					      std::string *error)
+{
+	if (root.empty() || !boon_id)
+		return flatfile_boon_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_boon_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_boon_result::io_error :
+			       flatfile_boon_result::invalid;
+	boon_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_boon_result::not_found;
+	if (loaded != flatfile_read_result::ok)
+		return loaded == flatfile_read_result::io_error ? flatfile_boon_result::io_error :
+								  flatfile_boon_result::invalid;
+	auto definition = std::lower_bound(catalog.definitions.begin(), catalog.definitions.end(),
+					   boon_id, [](const auto &entry, uint32_t key)
+					   { return entry.id < key; });
+	if (definition == catalog.definitions.end() || definition->id != boon_id)
+		return flatfile_boon_result::not_found;
+	if (!definition->active && definition->duration == 0)
+		return flatfile_boon_result::ok;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_boon_result::io_error;
+	definition->active = false;
+	definition->duration = 0;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_boon_result::io_error;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_boon_result::ok :
+		       flatfile_boon_result::io_error;
+}
+
+flatfile_boon_result flatfile_boon_extend(const std::string &root, uint32_t boon_id,
+					  int64_t extend_minutes, int64_t now,
+					  const std::string &author, bool *was_active,
+					  std::string *error)
+{
+	if (root.empty() || !boon_id || extend_minutes < 0 || now < 0 || !was_active ||
+	    author.empty() || author.size() >= author_maximum_bytes ||
+	    author.find('\0') != std::string::npos)
+		return flatfile_boon_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_boon_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_boon_result::io_error :
+			       flatfile_boon_result::invalid;
+	boon_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_boon_result::not_found;
+	if (loaded != flatfile_read_result::ok)
+		return loaded == flatfile_read_result::io_error ? flatfile_boon_result::io_error :
+								  flatfile_boon_result::invalid;
+	auto definition = std::lower_bound(catalog.definitions.begin(), catalog.definitions.end(),
+					   boon_id, [](const auto &entry, uint32_t key)
+					   { return entry.id < key; });
+	if (definition == catalog.definitions.end() || definition->id != boon_id)
+		return flatfile_boon_result::not_found;
+	if (definition->duration == -1)
+		return flatfile_boon_result::invalid;
+	if (definition->duration > std::numeric_limits<int64_t>::max() / 60)
+		return flatfile_boon_result::io_error;
+	const int64_t duration_seconds = definition->duration * 60;
+	if (definition->start_time > std::numeric_limits<int64_t>::max() - duration_seconds ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_boon_result::io_error;
+	const int64_t expires_at = definition->start_time + duration_seconds;
+	const int64_t remaining = std::max<int64_t>(0, expires_at - now);
+	if (remaining > std::numeric_limits<int64_t>::max() - now)
+		return flatfile_boon_result::io_error;
+	flatfile_boon_definition updated = *definition;
+	*was_active = updated.active;
+	updated.start_time = now + remaining;
+	updated.duration = extend_minutes;
+	updated.active = true;
+	updated.author = "*" + author;
+	if (!valid_definition(updated))
+		return flatfile_boon_result::invalid;
+	*definition = std::move(updated);
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_boon_result::io_error;
 	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
 		       flatfile_boon_result::ok :
 		       flatfile_boon_result::io_error;

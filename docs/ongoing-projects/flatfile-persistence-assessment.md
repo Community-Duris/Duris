@@ -1111,6 +1111,37 @@ sections below continue to describe the required end state.
   progress annotations. Then add typed flat shop spending and administrative mutations;
   design per-effect publication state before changing reward acknowledgement semantics.
 
+### Checkpoint 33 - flat boon definition administration
+
+- **Completed:** added locked create, deactivate, and extend operations to the flat boon
+  authority. Create allocates the next monotonic definition ID, validates the complete
+  record, and enforces the 99-active-boon limit while holding the authority lock.
+  Deactivation is idempotent and preserves history while setting `active=false` and
+  `duration=0`, matching the SQL behavior.
+- **Completed:** extension rejects forever boons and unsafe time/author inputs, preserves
+  any unexpired seconds, starts the requested added duration at that boundary, reactivates
+  inactive definitions, and records the legacy `*author` marker. Every changed catalog
+  advances its revision and is atomically replaced only after full re-encoding succeeds.
+- **Completed:** the existing `create_boon`, `remove_boon`, and `extend_boon` command
+  adapters select these operations in flat-primary mode before reaching SQL. Creation and
+  extension retain the existing notification behavior, including the distinction between
+  extending an active boon and reactivating an inactive one. MariaDB-primary routing is
+  unchanged.
+- **Checks passed:** the repository harness covers monotonic creation, invalid ID reuse,
+  forever-extension rejection, idempotent deactivation, reactivation, expiry-boundary
+  calculation, and author persistence. The source-contract suite verifies all three
+  adapters route before `qry`; the normal warning-clean build, affected standalone
+  repositories, isolated client-free build/boot preflight, formatting, and diff checks
+  pass.
+- **Files changed:** `src/flatfile_boon_repository.[ch]`, definition mutation adapters in
+  `src/boon.c`, focused repository and source-contract tests, and this handoff ledger.
+- **Remaining boon gap:** the list renderer, randomization/maintenance queries, legacy
+  progress/shop creation helpers, and shop stat spending still issue SQL directly. The
+  reward effect acknowledgement gap from checkpoint 31 also remains.
+- **Next action:** route the mortal list renderer over the flat definition projection and
+  make maintenance enumerate that projection. Then introduce typed, operation-ID-ledgered
+  shop spending rather than directly decrementing the shop row and mutating a live stat.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
