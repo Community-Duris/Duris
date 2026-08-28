@@ -11,6 +11,8 @@ CHECKPOINT_HEADER = (ROOT / "src/persistence_checkpoint.h").read_text(encoding="
 CHECKPOINT_SOURCE = (ROOT / "src/persistence_checkpoint.c").read_text(encoding="ascii")
 DONATION_HEADER = (ROOT / "src/redis_donation_runtime.h").read_text(encoding="ascii")
 DONATION_SOURCE = (ROOT / "src/redis_donation_runtime.c").read_text(encoding="ascii")
+PRESENCE_HEADER = (ROOT / "src/redis_presence_runtime.h").read_text(encoding="ascii")
+PRESENCE_SOURCE = (ROOT / "src/redis_presence_runtime.c").read_text(encoding="ascii")
 MAKEFILE = (ROOT / "src/Makefile").read_text(encoding="ascii")
 
 
@@ -57,6 +59,26 @@ events = (ROOT / "src/new_events.c").read_text(encoding="utf-8")
 assert '#include "redis_donation_runtime.h"' in events
 assert "redis_donation_runtime_enabled()" in events
 
+for symbol in (
+    "redis_presence_runtime_enabled",
+    "redis_presence_runtime_set_enabled",
+    "redis_player_online",
+    "redis_player_offline",
+    "redis_clear_online_players",
+):
+    assert symbol in PRESENCE_HEADER
+    assert symbol in PRESENCE_SOURCE
+    assert symbol not in REDIS_HEADER
+assert "redis_presence_payload_encode" in PRESENCE_SOURCE
+assert "redis_presence_worker_submit_online" in PRESENCE_SOURCE
+assert "redis_presence_worker_submit_offline" in PRESENCE_SOURCE
+assert "redis_presence_worker_submit_clear" in PRESENCE_SOURCE
+assert "redis_presence_runtime.o" in MAKEFILE
+for filename in ("actoth.c", "nanny.c"):
+    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
+    assert '#include "redis_presence_runtime.h"' in source
+    assert '#include "redis.h"' not in source
+
 checkpoint_only_callers = (
     "actinf.c",
     "auction_houses.c",
@@ -78,4 +100,4 @@ for source_path in (ROOT / "src").rglob("*.[ch]"):
         redis_includers.append(source_path)
 assert len(redis_includers) <= 22
 
-print("Redis, checkpoint, and donation module boundaries passed")
+print("Redis, checkpoint, donation, and presence module boundaries passed")

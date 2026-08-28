@@ -62,11 +62,6 @@ char *redis_get_artifact_list(int type, bool godlist);
 bool redis_invalidate_artifact_list(int type, bool godlist);
 bool redis_invalidate_artifact_cache(void);
 
-// online players list for web
-void redis_player_online(P_char ch);
-void redis_player_offline(P_char ch);
-void redis_clear_online_players(void);
-
 bool redis_clear_pwipe_state(void);
 bool redis_validate_pwipe_state(void);
 bool redis_season_key(char *buffer, size_t size, const char *suffix);

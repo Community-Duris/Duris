@@ -8,6 +8,7 @@ text = (root / "src/redis.c").read_text()
 checkpoint = (root / "src/persistence_checkpoint.c").read_text()
 store = (root / "src/redis_world_store.c").read_text()
 presence_worker = (root / "src/redis_presence_worker.c").read_text()
+presence_runtime = (root / "src/redis_presence_runtime.c").read_text()
 cache_store = (root / "src/redis_cache_store.c").read_text()
 floor_store = (root / "src/redis_floor_store.c").read_text()
 donation_worker = (root / "src/redis_donation_worker.c").read_text()
@@ -95,8 +96,10 @@ for token in (
     "redis_presence_worker_cancel",
 ):
     assert token in presence_worker
-online = section("void redis_player_online", "void redis_player_offline")
-offline = section("void redis_player_offline", "void redis_clear_online_players")
+online = section("void redis_player_online", "void redis_player_offline", presence_runtime)
+offline = section(
+    "void redis_player_offline", "void redis_clear_online_players", presence_runtime
+)
 for path in (online, offline):
     assert "redis_command" not in path and "redis_ctx" not in path
 assert "redis_presence_worker_cancel();" in section(

@@ -21,7 +21,6 @@
 #include "world_recovery_pipeline.h"
 #include "epic.h"
 #include "files.h"
-#include "presence_policy.h"
 #include "redis_cache_store.h"
 #include "redis_command_observability.h"
 #include "redis_connection.h"
@@ -30,7 +29,7 @@
 #include "redis_floor_store.h"
 #include "redis_key_registry.h"
 #include "redis_namespace.h"
-#include "redis_presence_payload.h"
+#include "redis_presence_runtime.h"
 #include "redis_presence_worker.h"
 #include "report_cache_codec.h"
 #include "redis_world_store.h"
@@ -59,7 +58,6 @@ extern int top_of_zone_table;
 extern struct zone_data *zone_table;
 extern struct room_data *world;
 extern P_char character_list;
-extern const struct race_names race_names_table[];
 
 // ship object vnums defined in ships/ships.h
 
@@ -783,6 +781,7 @@ bool redis_init(void)
 {
 	redis_shared_command_observability_reset(false);
 	redis_donation_runtime_set_enabled(false);
+	redis_presence_runtime_set_enabled(false);
 #ifdef __NO_MYSQL__
 	redis_enabled = false;
 	return true;
@@ -904,6 +903,8 @@ bool redis_init(void)
 	};
 	if (!redis_presence_worker_init(&presence_config))
 		logit(LOG_SYS, "redis: presence worker unavailable; presence updates disabled");
+	else
+		redis_presence_runtime_set_enabled(true);
 	const redis_cache_store_config cache_config = { redis_cache_settings };
 	if (!redis_cache_store_init(&cache_config))
 		logit(LOG_SYS, "redis: cache worker unavailable; report caches disabled");
@@ -993,6 +994,7 @@ bool redis_clear_pwipe_state(void)
 	if (!redis_runtime_epoch)
 		return false;
 	redis_donation_worker_shutdown();
+	redis_presence_runtime_set_enabled(false);
 	redis_presence_worker_cancel();
 	redis_cache_store_cancel();
 	redis_floor_store_cancel();
@@ -1077,6 +1079,7 @@ void redis_cleanup(void)
 #ifndef __NO_MYSQL__
 	bool world_recovery_drained = true;
 	redis_donation_worker_shutdown();
+	redis_presence_runtime_set_enabled(false);
 	if (!redis_presence_worker_shutdown(REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC))
 		logit(LOG_SYS, "redis: presence worker drain timed out during shutdown");
 	if (!redis_cache_store_shutdown(REDIS_CACHE_DRAIN_TIMEOUT_MSEC))
@@ -2223,65 +2226,6 @@ char *redis_get_epic_zones(void)
 bool redis_invalidate_epic_zones(void)
 {
 	return redis_cache_del(REDIS_CACHE_EPIC_ZONES);
-}
-
-// online players list for web
-void redis_player_online(P_char ch)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !ch || IS_NPC(ch))
-		return;
-	if (!durisweb_presence_character_visible(ch))
-	{
-		redis_presence_worker_submit_offline(GET_PID(ch), false);
-		return;
-	}
-
-	const char *account = get_account_name_safe(ch);
-	const char *race_str = race_names_table[GET_RACE(ch)].ansi;
-	const char *class_str = get_class_name(ch, NULL);
-	const char *ip = (ch->desc && ch->desc->host[0]) ? ch->desc->host : "";
-	const char *client = (ch->desc && ch->desc->client_name[0]) ? ch->desc->client_name : "";
-	const char *client_ver =
-		(ch->desc && ch->desc->client_version[0]) ? ch->desc->client_version : "";
-	time_t login_time = ch->player.time.logon;
-
-	const redis_presence_fields fields = { GET_NAME(ch),
-					       account,
-					       race_str,
-					       class_str,
-					       ip,
-					       client,
-					       client_ver,
-					       GET_LEVEL(ch),
-					       GET_RACEWAR(ch),
-					       static_cast<int64_t>(login_time),
-					       durisweb_private_presence_enabled() };
-	char *json = redis_presence_payload_encode(fields);
-	if (!json)
-		return;
-
-	redis_presence_worker_submit_online(GET_PID(ch), json, true);
-	free(json);
-#endif
-}
-
-void redis_player_offline(P_char ch)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !ch || IS_NPC(ch))
-		return;
-	redis_presence_worker_submit_offline(GET_PID(ch), durisweb_presence_character_visible(ch));
-#endif
-}
-
-void redis_clear_online_players(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled)
-		return;
-	redis_presence_worker_submit_clear();
-#endif
 }
 
 // arti cache

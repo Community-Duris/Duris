@@ -78,10 +78,16 @@ with tempfile.TemporaryDirectory(prefix="duris-presence-") as temp:
     )
     subprocess.run([str(binary)], check=True)
 
-redis = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
-online = redis[redis.index("void redis_player_online") : redis.index("void redis_player_offline")]
-offline = redis[redis.index("void redis_player_offline") : redis.index("void redis_clear_online_players")]
-clear = redis[redis.index("void redis_clear_online_players") : redis.index("// arti cache")]
+runtime = (ROOT / "src" / "redis_presence_runtime.c").read_text(encoding="ascii")
+online = runtime[
+    runtime.index("void redis_player_online") : runtime.index("void redis_player_offline")
+]
+offline = runtime[
+    runtime.index("void redis_player_offline") : runtime.index(
+        "void redis_clear_online_players"
+    )
+]
+clear = runtime[runtime.index("void redis_clear_online_players") :]
 assert "durisweb_presence_character_visible" in online
 assert "durisweb_private_presence_enabled" in online
 assert "redis_presence_payload_encode" in online

@@ -59,6 +59,7 @@
 #include "profile.h"
 #include "racewar_stat_mods.h"
 #include "redis.h"
+#include "redis_presence_runtime.h"
 #include "ships.h"
 #include "siege.h"
 #include "spells.h"

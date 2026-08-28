@@ -253,6 +253,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis_cache_store.o \
 				 redis_floor_store.o \
 				 redis_presence_payload.o \
+				 redis_presence_runtime.o \
 				 redis_presence_worker.o \
 				 redis_world_store.o \
 				 currency_transaction.o \

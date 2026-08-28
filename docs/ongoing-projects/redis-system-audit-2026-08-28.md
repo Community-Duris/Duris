@@ -10,6 +10,44 @@ remediated, as are RDS-018, RDS-025, and RDS-015; RDS-026 remains open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-026 presence runtime boundary
+
+Completed in this interval:
+
+- Moved DurisWeb visibility policy, public/private field selection, payload encoding,
+  online/offline/clear submission, and presence enabled state from `redis.c` into
+  `redis_presence_runtime.c/.h`, beside the existing payload and healing-worker modules.
+- Boot now enables the facade only after presence-worker initialization succeeds. Pwipe
+  and shutdown disable submissions before canceling or draining the worker, so callers no
+  longer infer availability from the broad Redis global.
+- Routed login/logout and connection cleanup through the typed presence header. `nanny.c`
+  and `actoth.c` no longer include `redis.h`; direct umbrella consumers fell from 22 to 20.
+- Reduced `redis.c` from 2,337 to 2,281 lines and `redis.h` from 81 to 76 lines. Extended
+  the module-boundary gate to keep payload/policy/worker calls and presence declarations in
+  their owning module.
+
+Performance effect:
+
+- Online/offline behavior is unchanged: one constant-time enabled check, local payload
+  encoding, and one bounded worker enqueue. There is no synchronous Redis, SQL,
+  filesystem, logging, sleep, or wait work on the gameplay path.
+- The new enable/disable calls occur only at boot, pwipe, or shutdown. Failed worker
+  initialization now avoids even the previous rejected submit attempts.
+
+Validation:
+
+- `./scripts/format.sh --check` and `make -C src -j2`: passed under the warning-as-error
+  profile.
+- Presence privacy/escaping, live outage healing and queue bounds, DurisWeb integration
+  security, Redis failure containment, pwipe invalidation, and module-boundary regressions
+  passed.
+- All 24 `tests/async/test_redis*.py` regressions passed, including every isolated live
+  Redis suite.
+
+RDS-026 remains partially remediated. Player checkpoints, donation delivery, and presence
+delivery are separate typed modules; world/floor orchestration, report-cache facades, and
+administrative lifecycle policy remain in the Redis composition root.
+
 ### 2026-08-28 - RDS-026 donation runtime boundary
 
 Completed in this interval:
@@ -2490,10 +2528,11 @@ Confidence: Confirmed structural issue
 Remediation status: Partially remediated. Connection/security, key registry, world store,
 floor, presence, donation, and cache workers already have typed modules. Revisioned player
 checkpoint ownership is in `persistence_checkpoint.c/.h`, and donation state plus bounded
-game delivery is in `redis_donation_runtime.c/.h`. Eight checkpoint-only consumers no
-longer include `redis.h`, which exports neither player revision types nor donation mutable
-state. The remaining composition root still owns too many subsystem facades and lifecycle
-policies.
+game delivery is in `redis_donation_runtime.c/.h`. Presence policy, payload submission, and
+enabled state are in `redis_presence_runtime.c/.h`. Ten former checkpoint/presence-only
+consumers no longer include `redis.h`, which exports neither player revision types nor
+donation/presence mutable state. The remaining composition root still owns too many
+subsystem facades and lifecycle policies.
 
 `src/redis.c` is 2,525 lines and combines connection/configuration, world publication,
 floor recovery, ship serialization, report caches, presence, pub/sub, administrator
