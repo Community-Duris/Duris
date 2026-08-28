@@ -89,6 +89,12 @@ Boot accepts only a complete, non-expired generation whose schema, sequence, siz
 checksum validate. A failed or stale generation is ignored and the server continues with
 a normal boot.
 
+World generations are capped at 64 MiB. Restore checks the value length inside Redis
+before transfer. Each published generation receives a TTL of at least one hour or four
+times `REDIS_WORLD_STATE_MAX_AGE`, whichever is greater, so abandoned generations expire.
+The background publisher scales its write timeout for the blob size, up to five seconds;
+this does not extend the game-loop Redis command deadline.
+
 The in-game `redis clear world`, `redis clear floor`, and `redis clear all confirm`
 commands cancel and join the publisher before deleting recovery state. They retain the
 writer fence and keep publication quiesced until shutdown; a restart is required to

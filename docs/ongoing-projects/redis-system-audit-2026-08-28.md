@@ -9,6 +9,45 @@ open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-017 bounded world-recovery memory and retention
+
+Completed in this interval:
+
+- Rejected recovery values above the 64 MiB wire-format ceiling before validation and
+  before publication.
+- Added a server-side `STRLEN` guard to recovery reads, so Redis does not transfer an
+  oversized generation to Hiredis before the process rejects it.
+- Reserved the durable header at capture start and published that same owned blob. The
+  publisher no longer allocates and copies a second header-plus-payload vector.
+- Added an atomic generation TTL of at least one hour (or four times the configured
+  accepted recovery age). Successful, uncertain, and orphaned generation writes now age
+  out even if a later cleanup never observes them.
+- Scaled the worker-only publication timeout from the payload size at a conservative
+  16 MiB/s assumption, capped at five seconds, instead of applying the 100 ms control
+  command timeout to a possible 64 MiB write.
+
+Performance effect:
+
+- No new work runs during ordinary gameplay. The size guard is a boot/admin recovery
+  operation, while framing and publication remain on the existing recovery worker.
+- Publishing removes one full-generation allocation and memory copy. Oversized restore
+  candidates are rejected inside Redis without transferring the value to the game process.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed, including the 64 MiB
+  validation ceiling and single-owned-blob publication contract.
+- `python3 tests/async/test_redis_world_store_live.py`: passed against isolated Redis,
+  including the generation TTL and publication size ceiling.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+
+Remaining related work:
+
+- RDS-017 still includes Hiredis's command formatting buffer and unbounded aggregate
+  floor-hash restore. Chunked recovery would be needed to make peak memory much lower than
+  roughly two generation-sized buffers during publication.
+
 ### 2026-08-28 - RDS-011/RDS-021 local report cache and asynchronous publication
 
 Completed in this interval:
@@ -1150,6 +1189,10 @@ tests. Keep the in-process structs separate from the durable format.
 
 Severity: Medium
 Confidence: Confirmed
+Remediation status: Partially remediated; validation and publication enforce the 64 MiB
+ceiling, reads reject oversized values server-side before transfer, the publisher owns
+only one application-level blob, write deadlines scale with payload size, and generation
+keys expire. Hiredis command formatting and aggregate floor restore remain open.
 
 - Capture is limited to 64 MiB, but validation does not reject an incoming value larger
   than that bound. Hiredis must receive and allocate the complete `GET` reply before

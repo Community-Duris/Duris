@@ -63,7 +63,7 @@ struct recovery_generation
 	uint32_t object_count = 0;
 	uint32_t door_count = 0;
 	uint32_t zone_count = 0;
-	std::vector<unsigned char> payload;
+	std::vector<unsigned char> blob;
 };
 
 struct capture_state
@@ -104,17 +104,17 @@ bool append_record(recovery_generation &generation, record_type type, const void
 	if (!data || !size || size > WORLD_RECOVERY_MAX_RECORD_BYTES)
 		return false;
 	const size_t added = sizeof(record_header) + size;
-	if (generation.payload.size() > WORLD_RECOVERY_MAX_BYTES - added)
+	if (generation.blob.size() > WORLD_RECOVERY_MAX_BYTES - added)
 		return false;
 	try
 	{
-		const size_t offset = generation.payload.size();
-		generation.payload.resize(offset + added);
+		const size_t offset = generation.blob.size();
+		generation.blob.resize(offset + added);
 		record_header header = {};
 		header.size = static_cast<uint32_t>(size);
 		header.type = static_cast<uint8_t>(type);
-		memcpy(generation.payload.data() + offset, &header, sizeof(header));
-		memcpy(generation.payload.data() + offset + sizeof(header), data, size);
+		memcpy(generation.blob.data() + offset, &header, sizeof(header));
+		memcpy(generation.blob.data() + offset + sizeof(header), data, size);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -136,7 +136,7 @@ bool submit_capture()
 	std::lock_guard<std::mutex> lock(recovery_mutex);
 	if (queued.size() >= WORLD_RECOVERY_QUEUE_CAPACITY)
 		return false;
-	const size_t bytes = active_capture.generation.payload.size();
+	const size_t bytes = active_capture.generation.blob.size();
 	const uint64_t sequence = active_capture.generation.sequence;
 	try
 	{
@@ -181,45 +181,39 @@ void publisher_main()
 		}
 
 		world_recovery_header header = {};
-		memcpy(header.magic, "WRS7", 4);
-		header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
-		header.header_size = sizeof(header);
-		header.sequence = generation.sequence;
-		header.timestamp = generation.timestamp;
-		header.payload_size = generation.payload.size();
-		header.checksum = crc32(0, generation.payload.data(), generation.payload.size());
-		header.mob_count = generation.mob_count;
-		header.object_count = generation.object_count;
-		header.door_count = generation.door_count;
-		header.zone_count = generation.zone_count;
-		header.complete = 1;
-		std::vector<unsigned char> blob;
 		bool published = false;
 		unsigned int attempts = 0;
 		const auto started = std::chrono::steady_clock::now();
-		try
+		if (generation.blob.size() >= sizeof(header))
 		{
-			blob.resize(sizeof(header) + generation.payload.size());
-			memcpy(blob.data(), &header, sizeof(header));
-			memcpy(blob.data() + sizeof(header), generation.payload.data(),
-			       generation.payload.size());
+			memcpy(header.magic, "WRS7", 4);
+			header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
+			header.header_size = sizeof(header);
+			header.sequence = generation.sequence;
+			header.timestamp = generation.timestamp;
+			header.payload_size = generation.blob.size() - sizeof(header);
+			header.checksum = crc32(0, generation.blob.data() + sizeof(header),
+						generation.blob.size() - sizeof(header));
+			header.mob_count = generation.mob_count;
+			header.object_count = generation.object_count;
+			header.door_count = generation.door_count;
+			header.zone_count = generation.zone_count;
+			header.complete = 1;
+			memcpy(generation.blob.data(), &header, sizeof(header));
 			for (; attempts < WORLD_RECOVERY_MAX_RETRIES && !published; ++attempts)
 			{
 				published = publish_callback &&
-					    publish_callback(blob.data(), blob.size(), &header,
+					    publish_callback(generation.blob.data(),
+							     generation.blob.size(), &header,
 							     publish_context);
 				if (!published)
 					std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 		}
-		catch (const std::bad_alloc &)
-		{
-			published = false;
-		}
 
 		std::lock_guard<std::mutex> lock(recovery_mutex);
 		health.worker_runtime_msec = elapsed_msec(started);
-		health.last_published_bytes = blob.size();
+		health.last_published_bytes = generation.blob.size();
 		if (published)
 			++health.published;
 		else
@@ -428,6 +422,16 @@ bool world_recovery_pipeline_request(void)
 	active_capture.stage = capture_stage::mobs;
 	active_capture.generation.sequence = next_sequence++;
 	active_capture.generation.timestamp = time(NULL);
+	try
+	{
+		active_capture.generation.blob.resize(sizeof(world_recovery_header));
+	}
+	catch (const std::bad_alloc &)
+	{
+		active_capture = {};
+		++health.capture_failures;
+		return false;
+	}
 	active_capture.next_character = character_list;
 	active_capture.started = std::chrono::steady_clock::now();
 	health.capture_active = true;
@@ -514,7 +518,8 @@ world_recovery_health world_recovery_pipeline_health_copy(void)
 bool world_recovery_validate(const unsigned char *data, size_t size, int max_age_seconds,
 			     uint64_t minimum_sequence, world_recovery_header *header_out)
 {
-	if (!data || size < sizeof(world_recovery_header) || max_age_seconds <= 0)
+	if (!data || size < sizeof(world_recovery_header) || size > WORLD_RECOVERY_MAX_BYTES ||
+	    max_age_seconds <= 0)
 		return false;
 	world_recovery_header header = {};
 	memcpy(&header, data, sizeof(header));

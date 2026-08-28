@@ -107,6 +107,7 @@ static void donation_schedule_reconnect(void)
 
 #ifndef __NO_MYSQL__
 static redisReply *redis_command(redisContext *ctx, const char *format, ...);
+static redisReply *redis_get_bounded_string(redisContext *ctx, const char *key, size_t max_bytes);
 
 static void redis_log_command_failure(const char *outcome)
 {
@@ -152,6 +153,7 @@ static redis_world_store_config redis_world_store_config_copy(void)
 	config.connect_timeout_msec = REDIS_CONNECT_TIMEOUT_MSEC;
 	config.command_timeout_msec = REDIS_COMMAND_TIMEOUT_MSEC;
 	config.season_epoch = world_writer_epoch ? world_writer_epoch : sql_season_epoch();
+	config.generation_ttl_seconds = std::max<uint64_t>(3600, world_state_max_age * 4);
 	return config;
 }
 
@@ -293,6 +295,25 @@ static redisReply *redis_command(redisContext *ctx, const char *format, ...)
 	if (reply->type == REDIS_REPLY_ERROR)
 	{
 		redis_log_command_failure("error_reply");
+		freeReplyObject(reply);
+		return NULL;
+	}
+	return reply;
+}
+
+static redisReply *redis_get_bounded_string(redisContext *ctx, const char *key, size_t max_bytes)
+{
+	if (!ctx || !key || !*key || !max_bytes)
+		return NULL;
+	constexpr const char *script = "local size=redis.call('STRLEN',KEYS[1]) "
+				       "if size>tonumber(ARGV[1]) then return size end "
+				       "return redis.call('GET',KEYS[1])";
+	redisReply *reply = (redisReply *)redis_command(ctx, "EVAL %b 1 %s %zu", script,
+							strlen(script), key, max_bytes);
+	if (reply && reply->type == REDIS_REPLY_INTEGER)
+	{
+		logit(LOG_SYS, "redis: rejected oversized recovery value bytes=%lld limit=%zu",
+		      reply->integer, max_bytes);
 		freeReplyObject(reply);
 		return NULL;
 	}
@@ -1368,7 +1389,7 @@ bool redis_has_world_state(void)
 	char generation_key[160];
 	if (!redis_world_generation_key(generation_key, sizeof generation_key, epoch, sequence))
 		return false;
-	reply = (redisReply *)redis_command(redis_ctx, "GET %s", generation_key);
+	reply = redis_get_bounded_string(redis_ctx, generation_key, WORLD_RECOVERY_MAX_BYTES);
 	if (!reply)
 		return false;
 	world_recovery_header header = {};
@@ -1484,7 +1505,8 @@ bool redis_load_world_state(void)
 	if (!redis_world_generation_key(generation_key, sizeof generation_key, epoch,
 					expected_sequence))
 		return false;
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", generation_key);
+	redisReply *reply =
+		redis_get_bounded_string(redis_ctx, generation_key, WORLD_RECOVERY_MAX_BYTES);
 	if (!reply || redis_ctx->err)
 	{
 		if (reply)

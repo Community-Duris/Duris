@@ -45,6 +45,7 @@ int main()
     memcpy(blob.data(), &header, sizeof(header));
     world_recovery_header decoded = {};
     assert(world_recovery_validate(blob.data(), blob.size(), 300, 42, &decoded));
+    assert(!world_recovery_validate(blob.data(), WORLD_RECOVERY_MAX_BYTES + 1, 300, 42, nullptr));
     assert(decoded.sequence == 42);
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 43, nullptr));
     header.complete = 0;
@@ -110,12 +111,16 @@ assert "std::chrono::steady_clock::now()" in capture
 worker = section(PIPELINE, "void publisher_main()", "bool capture_one_record()")
 for forbidden in ("character_list", "object_list", "world[", "zone_table", "P_char", "P_obj", "copyover_write_"):
     assert forbidden not in worker
-assert "publish_callback(blob.data(), blob.size(), &header" in worker
-assert "crc32(0, generation.payload.data()" in worker
+assert "publish_callback(generation.blob.data()" in worker
+assert "crc32(0, generation.blob.data() + sizeof(header)" in worker
+assert "std::vector<unsigned char> blob" not in worker
 print("[PASS] bounded capture is game-thread owned and publisher traverses no live graph")
 
 save = section(REDIS, "bool redis_save_world_state(void)", "void redis_world_recovery_pulse")
 assert "fork()" not in save and "world_recovery_pipeline_request" in save
+bounded_get = section(REDIS, "static redisReply *redis_get_bounded_string", "static void redis_prime_artifact_caches")
+assert "STRLEN" in bounded_get and "WORLD_RECOVERY_MAX_BYTES" in REDIS
+assert REDIS.count("redis_get_bounded_string(redis_ctx, generation_key") == 2
 initialize = section(REDIS, "bool redis_init(void)", "bool redis_clear_pwipe_state")
 ensure = section(REDIS, "static bool redis_world_recovery_ensure_initialized", "static redisReply *redis_command")
 assert "redis_world_writer_fence_claim()" in initialize
@@ -124,6 +129,9 @@ publisher = STORE[STORE.index("bool redis_world_store_publish"):]
 for token in (
     "WORLD_PUBLISH_SCRIPT",
     "EVAL %b 8",
+    "size > WORLD_RECOVERY_MAX_BYTES",
+    "assumed_bytes_per_second",
+    "maximum_publish_timeout_msec",
     "reply->type == REDIS_REPLY_INTEGER && reply->integer == 1",
 ):
     assert token in publisher
@@ -131,6 +139,7 @@ for token in (
     "redis.call('GET',KEYS[1])~=ARGV[1]",
     "current~=ARGV[2]",
     "redis.call('SET',KEYS[3],ARGV[3])",
+    "redis.call('EXPIRE',KEYS[3],ARGV[8])",
     "redis.call('SET',KEYS[2],ARGV[4])",
     "redis.call('DEL',KEYS[8])",
     "redis.call('PEXPIRE',KEYS[1],ARGV[7])",

@@ -26,6 +26,7 @@ def main() -> None:
 
     harness = r'''
 #include "redis_world_store.h"
+#include "world_recovery_pipeline.h"
 #include <hiredis/hiredis.h>
 #include <cassert>
 #include <cstdlib>
@@ -42,12 +43,16 @@ static redisReply *run(redisContext *context, const char *command)
 int main(int argc, char **argv)
 {
     assert(argc == 2);
-    redis_world_store_config config = {"127.0.0.1", atoi(argv[1]), 250, 100, 42};
+    redis_world_store_config config = {"127.0.0.1", atoi(argv[1]), 250, 100, 42, 3600};
     constexpr const char *writer_a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     constexpr const char *writer_b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     constexpr uint64_t lease = 600000;
     const unsigned char first[] = "generation-one";
     const unsigned char second[] = "generation-two";
+
+    assert(!redis_world_store_publish(&config, writer_a, lease, first,
+                                      WORLD_RECOVERY_MAX_BYTES + 1, 1,
+                                      time(nullptr), 11));
 
     assert(redis_world_store_claim_fence(&config, writer_a, lease));
     assert(!redis_world_store_claim_fence(&config, writer_b, lease));
@@ -96,6 +101,9 @@ int main(int argc, char **argv)
     assert(reply->element[2]->type == REDIS_REPLY_STRING &&
            reply->element[2]->len == sizeof(second) - 1 &&
            !memcmp(reply->element[2]->str, second, sizeof(second) - 1));
+    freeReplyObject(reply);
+    reply = run(context, "TTL mud:season:42:world_state:generation:2");
+    assert(reply->type == REDIS_REPLY_INTEGER && reply->integer > 3500 && reply->integer <= 3600);
     freeReplyObject(reply);
     reply = run(context, "EXISTS mud:season:42:floor_drops");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);

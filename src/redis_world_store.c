@@ -1,7 +1,10 @@
 #include "redis_world_store.h"
 
+#include "world_recovery_pipeline.h"
+
 #include <hiredis/hiredis.h>
 
+#include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -28,6 +31,7 @@ constexpr const char *WORLD_PUBLISH_SCRIPT =
 	"if ARGV[2]=='' then if current then return 0 end "
 	"elseif current~=ARGV[2] then return 0 end "
 	"redis.call('SET',KEYS[3],ARGV[3]) "
+	"redis.call('EXPIRE',KEYS[3],ARGV[8]) "
 	"redis.call('SET',KEYS[2],ARGV[4]) "
 	"redis.call('SET',KEYS[4],ARGV[5]) "
 	"redis.call('SET',KEYS[5],ARGV[4]) "
@@ -241,12 +245,21 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 	world_keys keys = {};
 	char generation[160];
 	const std::string generation_suffix = "world_state:generation:" + std::to_string(sequence);
-	if (!writer_token || !*writer_token || !lease_msec || !data || !size || !sequence ||
-	    timestamp <= 0 || !build_keys(config, &keys) ||
+	if (!writer_token || !*writer_token || !lease_msec || !data || !size ||
+	    size > WORLD_RECOVERY_MAX_BYTES || !sequence || timestamp <= 0 || !config ||
+	    !config->generation_ttl_seconds || !build_keys(config, &keys) ||
 	    !format_key(generation, sizeof generation, config->season_epoch,
 			generation_suffix.c_str()))
 		return false;
-	redisContext *context = connect_bounded(config);
+	redis_world_store_config publication_config = *config;
+	constexpr size_t assumed_bytes_per_second = 16 * 1024 * 1024;
+	constexpr int maximum_publish_timeout_msec = 5000;
+	const uint64_t transfer_msec =
+		(size * 1000ULL + assumed_bytes_per_second - 1) / assumed_bytes_per_second;
+	publication_config.command_timeout_msec = std::max(
+		publication_config.command_timeout_msec,
+		std::min(maximum_publish_timeout_msec, static_cast<int>(transfer_msec + 100)));
+	redisContext *context = connect_bounded(&publication_config);
 	if (!context || context->err)
 	{
 		if (context)
@@ -274,12 +287,14 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 	if (valid)
 	{
 		redisReply *reply = command(
-			context, "EVAL %b 8 %s %s %s %s %s %s %s %s %b %b %b %llu %lld %u %llu",
+			context,
+			"EVAL %b 8 %s %s %s %s %s %s %s %s %b %b %b %llu %lld %u %llu %llu",
 			WORLD_PUBLISH_SCRIPT, strlen(WORLD_PUBLISH_SCRIPT), keys.fence,
 			keys.current, generation, keys.timestamp, keys.sequence, keys.checksum,
 			keys.complete, keys.floor_drops, writer_token, strlen(writer_token),
 			expected, (size_t)expected_length, data, size, (unsigned long long)sequence,
-			(long long)timestamp, checksum, (unsigned long long)lease_msec);
+			(long long)timestamp, checksum, (unsigned long long)lease_msec,
+			(unsigned long long)config->generation_ttl_seconds);
 		valid = reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1;
 		if (reply)
 			freeReplyObject(reply);
