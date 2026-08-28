@@ -345,12 +345,47 @@ sections below continue to describe the required end state.
   the identity catalog, returns the complete materialized snapshot and revision, and
   fails closed—with explicit missing-domain state—where P2-owned sidecars are required.
 
+### Checkpoint 12 - backend-selected, identity-verified player snapshot load
+
+- **Completed:** the client-free load worker now selects the flat repository directly;
+  its default path no longer initializes a MySQL worker thread, acquires a SQL pool
+  connection, or calls the SQL load repository. MariaDB builds retain the existing
+  consistent-snapshot transaction path, and injected test callbacks remain supported.
+- **Completed:** flat loads resolve PID/account or canonical character name through the
+  identity catalog, reject inactive or blocked identities and account/PID mismatches,
+  authenticate the checksummed full snapshot, and require its embedded character name
+  to match the catalog. Missing, corrupt, expired, inaccessible, and transient-read
+  outcomes remain distinguishable to the game thread.
+- **Safety boundary:** a verified snapshot is deliberately not reported as loadable yet.
+  The adapter returns `external_domains` with `ENOTSUP` because item ownership plus
+  wallet, bank, epic, frag, and recent-gameplay state still lack flat authorities.
+  Character materialization therefore cannot fabricate zero balances, accept ambiguous
+  item custody, or silently omit gameplay history.
+- **Completed:** expanded the standalone player repository regression to cover catalog
+  linkage, canonical-name resolution, account mismatch, request expiry, and the explicit
+  external-domain fence. The pipeline source contract now verifies backend selection.
+- **Checks passed:** `python3 tests/async/test_flatfile_player_repository.py`,
+  `python3 tests/async/test_player_load_pipeline.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `python3 tests/async/test_persistence_mode.py`, `./scripts/format.sh --check`,
+  `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `src/flatfile_player_repository.[ch]`,
+  `src/player_load_pipeline.c`, `src/persistence_mode.c`, and the focused player
+  repository, pipeline, and boot tests.
+- **Remaining P1 gap:** snapshot-owned character state now has save, terminal-fence, and
+  verified load paths, but login remains intentionally blocked until the external
+  sidecars can be loaded consistently. Rename/delete completion and offline legacy
+  import are also unfinished.
+- **Next action:** define and implement the flat player-domain sidecar transaction for
+  wallet/bank/epic/frag/gameplay reads and the item UID/ownership authority, then combine
+  those revisions with the snapshot into one materializable load result.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
 |---|---|---|
 | P0 - real DB-free boundary | Complete | Client-free binary links without system MySQL dependencies; isolated boot preflight and no-MySQL CI job exist |
-| P1 - identity and player continuity | In progress | Account/identity continuity and revisioned player materialization exist; baseline creation, load, and terminal flows remain |
+| P1 - identity and player continuity | In progress | Account/identity continuity, baseline creation, revisioned save, terminal fences, and identity-verified snapshot load exist; external sidecars still fence login |
 | P2 - transactional gameplay and domains | Not started | No flat operation WAL/domain repositories yet |
 | P3 - production operations | Not started | No exporter, whole-authority backup, or restore drill yet |
 
@@ -361,8 +396,8 @@ The current server is **not capable of production operation with MySQL/MariaDB r
 - The normal build requires the MySQL client library, and normal boot treats database
   initialization or schema verification failure as fatal.
 - The client-free `__NO_MYSQL__` build now compiles and links, but explicit boot
-  preflight rejects it because account-character membership transactions, player
-  snapshots, and many world subsystems remain unimplemented.
+  preflight rejects it because player external-domain sidecars, safe rename/delete
+  completion, and many world subsystems remain unimplemented.
 - The current player and critical-command journals are durable handoff queues whose
   consumer is MySQL. They are not a searchable flat-file database, do not contain all
   durable domains, and cannot reconstruct all acknowledged state after database loss.

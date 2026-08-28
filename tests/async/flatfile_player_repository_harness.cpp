@@ -1,4 +1,6 @@
 #include "flatfile_player_repository.h"
+#include "flatfile_identity_repository.h"
+#include "persistence_observability.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -9,6 +11,18 @@
 #include <unistd.h>
 
 namespace fs = std::filesystem;
+
+bool player_load_request_valid(const player_load_request &request, uint64_t now)
+{
+	const bool pid_identity = request.pid > 0 && !request.account_name.empty() &&
+				  request.account_name.size() <= PLAYER_LOAD_ACCOUNT_MAX;
+	const bool name_identity = request.pid == 0 && !request.player_name.empty() &&
+				   request.player_name.size() <= PLAYER_LOAD_NAME_MAX;
+	return request.schema_version == PLAYER_LOAD_SCHEMA_VERSION && request.request_id > 0 &&
+	       (pid_identity || name_identity) && request.deadline_usec > now &&
+	       request.deadline_usec - now <= PLAYER_LOAD_TIMEOUT_USEC &&
+	       (!request.include_pets || request.include_items);
+}
 
 static void require(bool condition, const std::string &message)
 {
@@ -96,11 +110,24 @@ int main(int argc, char **argv)
 	require(argc == 2, "state root argument required");
 	const fs::path root = argv[1];
 	const fs::path players = root / "players";
+	const fs::path identities = root / "identities/names";
 	fs::create_directories(players);
+	fs::create_directories(identities);
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(players, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "identities", fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(identities, fs::perms::owner_all, fs::perm_options::replace);
 
 	std::string error;
+	int32_t allocated_pid = 0;
+	for (int32_t expected_pid = 1; expected_pid <= 42; ++expected_pid)
+		require(flatfile_identity_allocate_pid(root.string(), &allocated_pid, &error) ==
+					flatfile_identity_result::ok &&
+				allocated_pid == expected_pid,
+			"could not allocate player PID: " + error);
+	require(flatfile_identity_claim(root.string(), 42, "Player", "Account-One", &error) ==
+			flatfile_identity_result::ok,
+		"could not claim player identity: " + error);
 	player_save_apply_result applied =
 		flatfile_player_snapshot_apply(root.string(), make_status(1, 10, 100), &error);
 	require(applied.outcome == player_save_apply_outcome::terminal_failure &&
@@ -122,6 +149,40 @@ int main(int argc, char **argv)
 			loaded.pets[0].items[0].vnum == 501 && loaded.shapes[0].mob_vnum == 800 &&
 			loaded.trophies[0].experience == 300,
 		"full player snapshot did not round trip: " + error);
+	player_load_request load_request = {};
+	load_request.request_id = 1;
+	load_request.pid = 42;
+	load_request.account_name = "account-one";
+	load_request.deadline_usec =
+		persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	player_load_result load_result =
+		flatfile_player_load_repository_execute(root.string(), load_request);
+	require(load_result.pid == 42 && load_result.snapshot.revision == 1 &&
+			load_result.outcome == player_load_outcome::component_failure &&
+			load_result.error_code == ENOTSUP &&
+			std::string(load_result.failed_component) == "external_domains",
+		"verified snapshot did not fail closed at missing external domains");
+	load_request.request_id = 2;
+	load_request.account_name = "wrong-account";
+	load_result = flatfile_player_load_repository_execute(root.string(), load_request);
+	require(load_result.outcome == player_load_outcome::component_failure &&
+			load_result.error_code == EACCES &&
+			std::string(load_result.failed_component) == "identity",
+		"account/PID mismatch was accepted");
+	load_request = {};
+	load_request.request_id = 3;
+	load_request.player_name = "pLaYeR";
+	load_request.deadline_usec =
+		persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
+	load_result = flatfile_player_load_repository_execute(root.string(), load_request);
+	require(load_result.pid == 42 && load_result.account_name == "Account-One" &&
+			load_result.error_code == ENOTSUP,
+		"canonical name lookup did not resolve the snapshot identity");
+	load_request.deadline_usec = persistence_observability_now_usec();
+	load_result = flatfile_player_load_repository_execute(root.string(), load_request);
+	require(load_result.outcome == player_load_outcome::timed_out &&
+			load_result.error_code == ETIMEDOUT,
+		"expired flat-file load request was accepted");
 	applied = flatfile_player_snapshot_apply(root.string(), full, &error);
 	require(applied.outcome == player_save_apply_outcome::already_applied &&
 			applied.durable_revision == 1,

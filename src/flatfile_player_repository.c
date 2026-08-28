@@ -1,6 +1,8 @@
 #include "flatfile_player_repository.h"
 
+#include "flatfile_identity_repository.h"
 #include "flatfile_store.h"
+#include "persistence_observability.h"
 #include "persistence_mode.h"
 #include "player_snapshot_codec.h"
 
@@ -85,6 +87,65 @@ bool valid_snapshot(const player_snapshot &snapshot)
 	       !(snapshot.components & ~PLAYER_CHECKPOINT_COMPONENT_ALL) &&
 	       snapshot.encoded_size_bound &&
 	       snapshot.encoded_size_bound <= PLAYER_SNAPSHOT_MAX_BYTES;
+}
+
+bool same_authority_key(const std::string &left, const std::string &right)
+{
+	if (left.size() != right.size())
+		return false;
+	for (size_t index = 0; index < left.size(); ++index)
+	{
+		unsigned char left_character = left[index];
+		unsigned char right_character = right[index];
+		if (left_character >= 'A' && left_character <= 'Z')
+			left_character = static_cast<unsigned char>(left_character - 'A' + 'a');
+		if (right_character >= 'A' && right_character <= 'Z')
+			right_character = static_cast<unsigned char>(right_character - 'A' + 'a');
+		if (left_character != right_character)
+			return false;
+	}
+	return true;
+}
+
+const std::string *snapshot_player_name(const player_snapshot &snapshot)
+{
+	const std::string *name = nullptr;
+	for (const player_snapshot_string &entry : snapshot.status_strings)
+		if (entry.field == player_status_string_field::name)
+		{
+			if (name)
+				return nullptr;
+			name = &entry.value;
+		}
+	return name;
+}
+
+player_load_result identity_failure(const player_load_request &request,
+				    flatfile_identity_result failure)
+{
+	player_load_result result = {};
+	result.request_id = request.request_id;
+	result.pid = request.pid;
+	result.failed_component = "identity";
+	switch (failure)
+	{
+	case flatfile_identity_result::not_found:
+		result.outcome = player_load_outcome::not_found;
+		result.error_code = ENOENT;
+		break;
+	case flatfile_identity_result::io_error:
+		result.outcome = player_load_outcome::retryable_failure;
+		result.error_code = EIO;
+		break;
+	case flatfile_identity_result::ok:
+	case flatfile_identity_result::conflict:
+	case flatfile_identity_result::invalid:
+	case flatfile_identity_result::exhausted:
+		result.outcome = player_load_outcome::component_failure;
+		result.error_code = EILSEQ;
+		break;
+	}
+	return result;
 }
 
 bool normalize_size(player_snapshot *snapshot, std::vector<uint8_t> *payload)
@@ -227,6 +288,100 @@ flatfile_player_load_result flatfile_player_snapshot_load(const std::string &roo
 {
 	std::lock_guard<std::mutex> guard(player_mutex);
 	return load_unlocked(root, pid, snapshot, error);
+}
+
+player_load_result flatfile_player_load_repository_execute(const std::string &root,
+							   const player_load_request &request)
+{
+	const uint64_t started = persistence_observability_now_usec();
+	player_load_result result = {};
+	result.request_id = request.request_id;
+	result.pid = request.pid;
+	if (!player_load_request_valid(request, started))
+	{
+		result.outcome = request.deadline_usec <= started ?
+					 player_load_outcome::timed_out :
+					 player_load_outcome::component_failure;
+		result.error_code = request.deadline_usec <= started ? ETIMEDOUT : EINVAL;
+		result.failed_component = "request";
+		return result;
+	}
+
+	flatfile_identity_record identity = {};
+	std::string error;
+	const flatfile_identity_result identity_loaded =
+		request.pid > 0 ?
+			flatfile_identity_lookup_pid(root, request.pid, &identity, &error) :
+			flatfile_identity_lookup_name(root, request.player_name, &identity, &error);
+	if (identity_loaded != flatfile_identity_result::ok)
+		return identity_failure(request, identity_loaded);
+	result.pid = identity.pid;
+	result.account_name = identity.account;
+	result.saved_at = identity.last_save;
+	if (!identity.active)
+	{
+		result.outcome = player_load_outcome::not_found;
+		result.error_code = ENOENT;
+		result.failed_component = "identity";
+		return result;
+	}
+	if (identity.blocked ||
+	    (request.pid > 0 && !same_authority_key(request.account_name, identity.account)))
+	{
+		result.outcome = player_load_outcome::component_failure;
+		result.error_code = EACCES;
+		result.failed_component = "identity";
+		return result;
+	}
+
+	const flatfile_player_load_result snapshot_loaded =
+		flatfile_player_snapshot_load(root, identity.pid, &result.snapshot, &error);
+	if (snapshot_loaded != flatfile_player_load_result::ok)
+	{
+		result.failed_component = "snapshot";
+		result.error_code =
+			snapshot_loaded == flatfile_player_load_result::not_found ? ENOENT :
+			snapshot_loaded == flatfile_player_load_result::io_error  ? EIO :
+										    EILSEQ;
+		result.outcome = snapshot_loaded == flatfile_player_load_result::not_found ?
+					 player_load_outcome::not_found :
+				 snapshot_loaded == flatfile_player_load_result::io_error ?
+					 player_load_outcome::retryable_failure :
+					 player_load_outcome::component_failure;
+		return result;
+	}
+	const std::string *snapshot_name = snapshot_player_name(result.snapshot);
+	if (!snapshot_name || !same_authority_key(*snapshot_name, identity.name))
+	{
+		result.outcome = player_load_outcome::component_failure;
+		result.error_code = EILSEQ;
+		result.failed_component = "snapshot_identity";
+		return result;
+	}
+
+	result.metrics.byte_count = result.snapshot.encoded_size_bound;
+	result.metrics.row_count = 1;
+	result.metrics.transaction_usec = persistence_observability_now_usec() - started;
+	result.outcome = player_load_outcome::component_failure;
+	result.error_code = ENOTSUP;
+	result.failed_component = "external_domains";
+	return result;
+}
+
+player_load_result
+flatfile_player_load_repository_execute_selected(const player_load_request &request, void *context)
+{
+	const char *root = context ? static_cast<const char *>(context) :
+				     persistence_mode_flatfile_root();
+	if (root && *root)
+		return flatfile_player_load_repository_execute(root, request);
+	player_load_result result = {};
+	result.request_id = request.request_id;
+	result.pid = request.pid;
+	result.outcome = player_load_outcome::component_failure;
+	result.error_code = ENOENT;
+	result.failed_component = "state_root";
+	return result;
 }
 
 player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
