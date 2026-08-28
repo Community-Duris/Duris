@@ -82,17 +82,23 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 		return;
 	P_obj object = shop_trade_find_object(payload.selected_item_uid);
 	P_char keeper = shop_trade_find_keeper(payload.shop_id);
-	const bool buying = payload.action == shop_trade_action::buy_existing;
+	const bool produced = payload.action == shop_trade_action::buy_produced;
+	const bool buying = payload.action == shop_trade_action::buy_existing || produced;
 	const bool selling = payload.action == shop_trade_action::sell_store ||
 			     payload.action == shop_trade_action::sell_destroy;
 	const bool correct_location =
 		object && (payload.action != shop_trade_action::sell_store || keeper) &&
-		((buying && keeper && OBJ_CARRIED(object) && object->loc.carrying == keeper) ||
+		((produced && keeper && OBJ_NOWHERE(object)) ||
+		 (!produced && buying && keeper && OBJ_CARRIED(object) &&
+		  object->loc.carrying == keeper) ||
 		 (selling && OBJ_CARRIED(object) && object->loc.carrying == ch));
-	if (!committed || !correct_location ||
-	    !shop_trade_runtime_object_matches_payload(object, payload))
+	const bool exact_object = correct_location &&
+				  shop_trade_runtime_object_matches_payload(object, payload);
+	if (!committed || !exact_object)
 	{
-		if (committed || (result.shop_revision && result.item_count))
+		const bool durable_commit = committed ||
+					    (result.shop_revision && result.item_count);
+		if (durable_commit)
 		{
 			statuslog(
 				56,
@@ -102,11 +108,14 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 			persistence_alert(AVATAR, "shop_trade", "redacted", "none", "none",
 					  "live_publish_failed", NULL);
 		}
-		else if (error_code == ENOSPC)
+		else if (produced && object && OBJ_NOWHERE(object) &&
+			 shop_trade_runtime_object_matches_payload(object, payload))
+			extract_obj(object, FALSE);
+		if (!durable_commit && error_code == ENOSPC)
 			send_to_char("You don't have enough money for that purchase.\r\n", ch);
-		else if (error_code == ESTALE)
+		else if (!durable_commit && error_code == ESTALE)
 			send_to_char("That shop trade changed before it could complete.\r\n", ch);
-		else
+		else if (!durable_commit)
 			send_to_char("The shop could not complete that trade.\r\n", ch);
 		return;
 	}
@@ -123,7 +132,8 @@ static void shop_trade_completion(P_char ch, bool committed, const shop_trade_re
 			do_tell(keeper, message, 0);
 			ADD_MONEY(keeper, payload.price);
 		}
-		obj_from_char(object);
+		if (!produced)
+			obj_from_char(object);
 		SET_BIT(object->extra2_flags, ITEM2_STOREITEM);
 		obj_to_char(object, ch);
 		snprintf(message, MAX_STRING_LENGTH, "You now have %s.\r\n",
@@ -661,19 +671,37 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	}
 	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
-		if (IS_TRUSTED(ch) || gem || shop_producing(temp1, shop_nr))
+		if (IS_TRUSTED(ch) || gem)
 		{
 			send_to_char(
 				"That purchase is not available through flat-file persistence yet.\r\n",
 				ch);
 			return;
 		}
+		const bool produced = shop_producing(temp1, shop_nr);
+		if (produced && *arg)
+		{
+			send_to_char(
+				"Produced multi-buy and container placement are not available yet.\r\n",
+				ch);
+			return;
+		}
+		P_obj selected = temp1;
+		if (produced && !(selected = read_object(temp1->R_num, REAL)))
+		{
+			send_to_char("The shop could not create that item.\r\n", ch);
+			return;
+		}
 		shop_trade_payload payload = {};
-		if (shop_trade_runtime_build_payload(
-			    ch, temp1, NULL, shop_nr, shop_trade_action::buy_existing, sale,
-			    &payload) != shop_trade_payload_build_result::ok ||
+		if (shop_trade_runtime_build_payload(ch, selected, produced ? temp1 : NULL, shop_nr,
+						     produced ? shop_trade_action::buy_produced :
+								shop_trade_action::buy_existing,
+						     sale, &payload) !=
+			    shop_trade_payload_build_result::ok ||
 		    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
 		{
+			if (produced)
+				extract_obj(selected, FALSE);
 			send_to_char("The shop transaction service is busy. Please try again.\r\n",
 				     ch);
 			return;

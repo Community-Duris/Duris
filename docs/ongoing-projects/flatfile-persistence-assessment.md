@@ -2419,6 +2419,34 @@ sections below continue to describe the required end state.
   sequence container placement/multi-buy as independent committed operations. After those pass,
   move invalid-stock destruction through custody authority and add MariaDB composite parity.
 
+### Checkpoint 76 - commit-fenced produced-stock purchases
+
+- **Produced clone staging:** flat-primary produced purchases now allocate one fresh object and UID
+  in `LOC_NOWHERE`, capture its exact bounded object tree, and submit it with the separately fenced
+  shop-stock exemplar. The clone is neither charged nor placed in player inventory before the
+  composite operation commits. Container placement and recursive multi-buy arguments fail closed
+  before allocation rather than partially reproducing the legacy recursive mutation path.
+- **Completion and cleanup:** a successful callback resolves the staged clone by UID, requires it
+  to remain nowhere, and compares its current snapshot bytes with the committed payload before
+  moving it to the player. Synchronous submission failure and ordinary semantic rejection extract
+  an unchanged staged clone without artifact side effects. A durable result that cannot publish
+  the exact live object raises the existing persistence alert and leaves the object untouched for
+  recovery rather than guessing at custody.
+- **Checks passed:** the live-route regression now proves the produced action is routed through the
+  transaction adapter, clone allocation occurs inside the flat branch before submission, nowhere
+  custody is revalidated, and pre-commit cleanup exists. Runtime and transaction regressions,
+  changed-line formatting, and the normal C++20 build pass.
+- **Exposure:** durable destination materialization is still incomplete. A crash after the shop
+  operation commits but before its live callback/player save can leave the player's object snapshot
+  inconsistent with authoritative item ownership; retained sales have the corresponding source
+  reconciliation gap. Trusted and gem purchases still fail closed, invalid stock destruction
+  remains outside the composite boundary, and MariaDB has no shop-trade repository parity. These
+  gaps prohibit removing the flat-primary boot blocker.
+- **Next action:** add a durable, restart-replayable object materialization/reconciliation boundary
+  for both sides of committed shop transfers. Only after restart tests prove player snapshots and
+  ownership converge should container/multi-buy sequencing, invalid-stock cleanup, and MariaDB
+  parity proceed.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
