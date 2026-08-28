@@ -99,8 +99,7 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 
 bool valid_reason(item_transfer_reason reason)
 {
-	return reason > item_transfer_reason::unknown &&
-	       reason <= item_transfer_reason::auction_claim;
+	return reason > item_transfer_reason::unknown && reason <= item_transfer_reason::shop_sell;
 }
 
 bool validate_payload(const item_transfer_payload &payload)
@@ -266,7 +265,8 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 					  item_transfer_payload *payload)
 {
 	if (!payload || command.type != critical_command_type::item_transfer ||
-	    command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION ||
+	    (command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION) ||
 	    command.payload.size() != ITEM_TRANSFER_PAYLOAD_BYTES)
 		return false;
 	*payload = {};
@@ -304,7 +304,10 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 		if (input[37] || input[38] || input[39])
 			return false;
 	}
-	if (!validate_payload(*payload) || command.expected_revisions.size() != command.keys.size())
+	if (!validate_payload(*payload) ||
+	    (command.payload_version == ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION &&
+	     payload->reason > item_transfer_reason::auction_claim) ||
+	    command.expected_revisions.size() != command.keys.size())
 		return false;
 	critical_command expected = {};
 	if (!item_transfer_command_build(&expected, command.operation_id, *payload,

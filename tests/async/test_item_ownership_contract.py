@@ -33,10 +33,15 @@ class ItemOwnershipContractTests(unittest.TestCase):
         implementation = (SRC / "item_transfer_command.c").read_text()
         self.assertIn("ITEM_TRANSFER_MAX_ITEMS = 12", header)
         self.assertIn("ITEM_TRANSFER_PAYLOAD_BYTES", header)
+        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 3", header)
+        self.assertIn("ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 2", header)
         for owner in ("player", "container", "room", "corpse", "locker", "auction",
                       "system", "destruction", "shopkeeper"):
             self.assertIn(owner, header)
         self.assertIn("expected_item_revision", header)
+        self.assertIn("shop_buy", header)
+        self.assertIn("shop_sell", header)
+        self.assertIn("ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION", implementation)
         self.assertIn("critical_entity_key_less", implementation)
 
     def test_repository_locks_complete_root_and_commits_all_authorities(self):

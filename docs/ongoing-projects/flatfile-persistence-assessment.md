@@ -2178,6 +2178,28 @@ sections below continue to describe the required end state.
   creation through the item transaction authority, then select the flat restore/save wrappers
   and remove the shopkeeper boot blocker.
 
+### Checkpoint 67 - backward-compatible shop transfer reason vocabulary
+
+- **Completed:** item-transfer payload version 3 appends explicit `shop_buy` and `shop_sell`
+  reasons without renumbering any existing reason or changing the fixed payload layout. New
+  commands publish version 3 while the decoder continues to accept version 2 commands using
+  the original reason range; a version 2 payload cannot smuggle either new reason.
+- **Shopkeeper key validity:** the general critical-command validator now recognizes the
+  append-only shopkeeper entity type. This closes a gap where a shopkeeper transfer could be
+  assembled but would fail the shared command validity gate before durable publication.
+- **Checks passed:** the executable compatibility regression proves v3 shop-buy round trip,
+  general command validation, legacy v2 player-transfer decode, and rejection of a v2
+  shop-buy reason. The ownership source/runtime/repository regressions, changed-line
+  formatting, and the normal C++20 server build pass. CI runs the compatibility regression
+  with the flat-file item authority checks.
+- **Exposure:** this checkpoint only establishes the durable protocol vocabulary. Live shop
+  buy/sell still moves items and currency synchronously, and publishing an item transfer
+  independently of payment would create a split money/item commit boundary. Shopkeeper death
+  and duplicate/trash destruction also remain synchronous custody mutations.
+- **Next action:** design and implement one recoverable shop operation boundary that couples
+  payment with item custody, including produced-item creation and duplicate/trash destruction,
+  before routing live shop commands or selecting the flat restore/save wrappers.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

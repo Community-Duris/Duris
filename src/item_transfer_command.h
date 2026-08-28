@@ -6,7 +6,8 @@
 #include <array>
 #include <cstdint>
 
-constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 2;
+constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 3;
+constexpr uint16_t ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 2;
 constexpr size_t ITEM_TRANSFER_MAX_ITEMS = 12;
 constexpr size_t ITEM_TRANSFER_HEADER_BYTES = 96;
 constexpr size_t ITEM_TRANSFER_ENTRY_BYTES = 40;
@@ -47,6 +48,8 @@ enum class item_transfer_reason : uint16_t
 	locker_withdraw,
 	auction_list,
 	auction_claim,
+	shop_buy,
+	shop_sell,
 };
 
 enum class item_custody_state : uint8_t

@@ -43,7 +43,9 @@ jobs:
       - name: Verify flat-file item UID authority
         run: python3 tests/async/test_flatfile_item_uid_allocator.py
       - name: Verify flat-file item ownership authority
-        run: python3 tests/async/test_flatfile_item_repository.py
+        run: |
+          python3 tests/async/test_flatfile_item_repository.py
+          python3 tests/async/test_item_transfer_version_compatibility.py
       - name: Verify flat-file artifact authority
         run: python3 tests/async/test_flatfile_artifact_repository.py
       - name: Verify flat-file association authority
