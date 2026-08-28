@@ -95,19 +95,6 @@ uint64_t operation_elapsed(uint64_t started_usec)
 	return finished_usec >= started_usec ? finished_usec - started_usec : 0;
 }
 
-redis_shared_command_outcome operation_outcome(redisContext *context, bool succeeded)
-{
-	if (succeeded)
-		return REDIS_SHARED_OUTCOME_SUCCESS;
-	if (!context)
-		return REDIS_SHARED_OUTCOME_UNAVAILABLE;
-	if (context->err == REDIS_ERR_TIMEOUT)
-		return REDIS_SHARED_OUTCOME_TIMEOUT;
-	if (context->err)
-		return REDIS_SHARED_OUTCOME_TRANSPORT;
-	return REDIS_SHARED_OUTCOME_ERROR_REPLY;
-}
-
 bool valid_surface(const char *value)
 {
 	return value && *value && strnlen(value, 161) <= 160;
@@ -273,7 +260,8 @@ execution_result refresh_active_sessions(redisContext *context)
 		{
 			std::lock_guard<std::mutex> lock(worker_mutex);
 			redis_worker_operation_record(&health.operations,
-						      operation_outcome(context, command_succeeded),
+						      redis_command_outcome(context,
+									    command_succeeded),
 						      operation_elapsed(operation_started));
 		}
 		if (!command_succeeded)
@@ -422,7 +410,8 @@ void worker_main()
 		const uint64_t operation_duration = operation_elapsed(operation_started);
 		const bool succeeded = result == execution_result::success ||
 				       result == execution_result::fenced;
-		const redis_shared_command_outcome outcome = operation_outcome(context, succeeded);
+		const redis_shared_command_outcome outcome =
+			redis_command_outcome(context, succeeded);
 		if (result == execution_result::success || result == execution_result::fenced)
 		{
 			std::lock_guard<std::mutex> lock(worker_mutex);

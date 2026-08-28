@@ -64,19 +64,6 @@ uint64_t operation_elapsed(uint64_t started_usec)
 	return finished_usec >= started_usec ? finished_usec - started_usec : 0;
 }
 
-redis_shared_command_outcome operation_outcome(redisContext *context, bool succeeded)
-{
-	if (succeeded)
-		return REDIS_SHARED_OUTCOME_SUCCESS;
-	if (!context)
-		return REDIS_SHARED_OUTCOME_UNAVAILABLE;
-	if (context->err == REDIS_ERR_TIMEOUT)
-		return REDIS_SHARED_OUTCOME_TIMEOUT;
-	if (context->err)
-		return REDIS_SHARED_OUTCOME_TRANSPORT;
-	return REDIS_SHARED_OUTCOME_ERROR_REPLY;
-}
-
 redisContext *connect_bounded()
 {
 	return redis_connection_open(configured_connection);
@@ -291,7 +278,8 @@ void worker_main()
 		const bool succeeded = prepared && execute_batch(context, job);
 		const uint64_t operation_duration =
 			prepared ? operation_elapsed(operation_started) : 0;
-		const redis_shared_command_outcome outcome = operation_outcome(context, succeeded);
+		const redis_shared_command_outcome outcome =
+			redis_command_outcome(context, succeeded);
 		if (succeeded)
 		{
 			std::lock_guard<std::mutex> lock(store_mutex);

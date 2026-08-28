@@ -291,6 +291,7 @@ int main(int argc, char **argv)
                 "-I",
                 str(ROOT / "src"),
                 str(ROOT / "src" / "redis_connection.c"),
+                str(ROOT / "src" / "redis_command_observability.c"),
                 str(ROOT / "src" / "redis_namespace.c"),
                 str(ROOT / "src" / "redis_world_store.c"),
                 str(source),

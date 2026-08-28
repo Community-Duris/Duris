@@ -10,6 +10,55 @@ remediated, as are RDS-018 and RDS-025; the remaining findings are open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-015 live timeout and uncertain-reply recovery
+
+Completed in this interval:
+
+- Added an isolated TCP fault proxy that suppresses the reply only after Redis executes a
+  selected command. A world-generation `EVAL` can therefore commit its pointer/floor
+  handoff while the publisher observes transport failure; a direct retry of the same
+  fenced sequence is proven successful with one current generation and no resurrected
+  floor delta.
+- Exercised the floor worker with the same fault at `EXEC`. The first batch attempt is
+  deliberately ambiguous after Redis commits it, then the bounded worker reconnects,
+  retries the idempotent mutations, drains successfully, resets its failure streak, and
+  leaves one consistent hash/index result.
+- Added a stalled-server case that reaches the real hiredis command deadline. This exposed
+  that hiredis reports socket deadlines as `REDIS_ERR_IO` plus `EAGAIN` on this platform,
+  which the health layer had counted as transport rather than timeout.
+- Centralized Redis outcome classification for shared commands and all workers. Socket
+  deadline errno values now map to timeout consistently, while EOF/reset failures remain
+  transport failures. The connection adapter preserves an errored context after an
+  authentication or database-selection transport failure so callers can classify and
+  free it instead of losing the cause as a null context.
+
+Performance effect:
+
+- The classifier runs only after an existing Redis operation fails or completes on a
+  background, boot, recovery, or stopped-server path. Successful connection and gameplay
+  submission behavior is unchanged.
+- No Redis, SQL, filesystem, process, network, logging, allocation, sleep, or wait work was
+  added to gameplay. The fault proxy and stalled endpoint exist only inside the regression
+  process.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_fault_recovery_live.py`: passed real socket timeout,
+  committed-but-lost world `EVAL` reply, idempotent retry, lost floor `EXEC` reply,
+  reconnect, retry, final-state, and worker-health checks against isolated Redis.
+- `python3 tests/async/test_redis_command_observability.py` and
+  `python3 tests/async/test_redis_connection_security_live.py`: passed centralized outcome
+  and bounded connection/security contracts.
+- All 23 `tests/async/test_redis*.py` regressions passed, as did the backup atomicity,
+  authority-first recovery, recovery codec/pipeline, and persistence-status gates.
+
+RDS-015 remains partially remediated. Live coverage now includes worker outage healing,
+timeouts, uncertain publication/transaction replies, fencing, atomic floor handoff, ACLs,
+TLS/authentication, scoped maintenance deletion, presence, donation, caches, and bounded
+queues. Completion still requires a live pwipe orchestration harness and a materialization
+harness with injected semantic/SQL-custody failure and rollback checks.
+
 ### 2026-08-28 - RDS-025 background-worker observability
 
 Completed in this interval:
@@ -2036,11 +2085,18 @@ entries. Treat all cache failures as misses and preserve the SQL result.
 
 Severity: Medium
 Confidence: Confirmed by test inspection and execution
+Remediation status: Partially remediated. Ephemeral Redis tests now cover TCP, TLS, Unix
+socket, authentication, selected database, subsystem ACL isolation, scoped destructive
+maintenance, cache/presence/donation outage healing, floor barriers, world fencing,
+authenticated chunked generations, atomic floor handoff, command timeout, and
+committed-but-lost `EVAL`/`EXEC` replies. Runtime codec tests cover privacy escaping,
+donation authentication/replay/bounds, and recovery framing. The backup script is exercised
+with successful and failing dump/compression stubs. Full pwipe orchestration and recovery
+materialization/rollback still rely primarily on source contracts.
 
-The focused tests all pass, but most Redis assertions search source text for helper names,
-ordering, and forbidden tokens. The world harness exercises
-`world_recovery_validate()` framing; it does not materialize a world or use a Redis
-server. Current coverage does not exercise:
+At the audit baseline, most Redis assertions searched source text for helper names,
+ordering, and forbidden tokens. The world harness exercised framing but did not
+materialize a world or use a Redis server. The original gaps were:
 
 - initial outage and healing, command timeout, or uncertain `EXEC` outcomes
 - pwipe with a null context, a real invalidation failure, or an in-flight publisher
@@ -2049,6 +2105,15 @@ server. Current coverage does not exercise:
 - ship outer-transaction rollback, missed invalidation, malformed JSON, or stale revision
 - presence privacy and escaping, donation authenticity/bursts/backoff, or oversized values
 - script behavior against stubbed failing `mysqldump` and isolated Redis endpoints
+
+Most transport, worker, atomic-publication, privacy/authenticity, and backup items above
+are now covered or obsolete because Redis ship read authority and process-child persistence
+were retired. The remaining unproven runtime behaviors are:
+
+- complete pwipe quiesce/validate/delete/postflight behavior during connection failure and
+  an in-flight publisher
+- duplicate/moved descendant rejection plus semantic/custody failure rollback during real
+  recovery materialization with fake world and SQL adapters
 
 Recommendation: add ephemeral Redis integration tests on a random Unix socket or isolated
 port, plus small materialization harnesses with fake world/SQL custody adapters. Keep

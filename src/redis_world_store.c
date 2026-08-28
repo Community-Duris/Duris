@@ -257,17 +257,6 @@ redisReply *command(redisContext *context, const char *format, ...)
 	return reply;
 }
 
-redis_shared_command_outcome operation_outcome(redisContext *context)
-{
-	if (!context)
-		return REDIS_SHARED_OUTCOME_UNAVAILABLE;
-	if (context->err == REDIS_ERR_TIMEOUT)
-		return REDIS_SHARED_OUTCOME_TIMEOUT;
-	if (context->err)
-		return REDIS_SHARED_OUTCOME_TRANSPORT;
-	return REDIS_SHARED_OUTCOME_ERROR_REPLY;
-}
-
 redisReply *bounded_string(redisContext *context, const char *key, size_t maximum_bytes,
 			   size_t expected_bytes = 0)
 {
@@ -688,7 +677,7 @@ bool redis_world_store_publish_observed(const struct redis_world_store_config *c
 	if (!context || context->err)
 	{
 		if (outcome)
-			*outcome = operation_outcome(context);
+			*outcome = redis_command_outcome(context, false);
 		if (context)
 			redisFree(context);
 		return false;
@@ -744,7 +733,7 @@ bool redis_world_store_publish_observed(const struct redis_world_store_config *c
 		if (reply)
 			freeReplyObject(reply);
 	}
-	const redis_shared_command_outcome failure_outcome = operation_outcome(context);
+	const redis_shared_command_outcome failure_outcome = redis_command_outcome(context, false);
 	if (!valid)
 		delete_generation_artifacts(context, config, sequence, writer_token, false);
 

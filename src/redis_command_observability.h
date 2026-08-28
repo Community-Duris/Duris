@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+struct redisContext;
+
 enum redis_shared_command_scope
 {
 	REDIS_SHARED_SCOPE_WORLD = 0,
@@ -90,6 +92,7 @@ void redis_shared_command_observability_record(redis_shared_command_scope scope,
 					       uint64_t duration_usec);
 void redis_shared_connection_observability_record(bool reconnect, bool success);
 redis_shared_command_health redis_shared_command_health_copy(void);
+redis_shared_command_outcome redis_command_outcome(struct redisContext *context, bool succeeded);
 uint64_t redis_observability_now_usec(void);
 void redis_worker_operation_record(redis_worker_operation_health *health,
 				   redis_shared_command_outcome outcome, uint64_t duration_usec);

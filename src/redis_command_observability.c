@@ -1,9 +1,13 @@
 #include "redis_command_observability.h"
 
+#include <hiredis/hiredis.h>
+
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cerrno>
 #include <chrono>
+#include <cstring>
 
 namespace
 {
@@ -40,6 +44,33 @@ uint64_t monotonic_msec()
 	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
 					     std::chrono::steady_clock::now().time_since_epoch())
 					     .count());
+}
+
+bool socket_timeout_errno(int value)
+{
+	if (value == EAGAIN || value == ETIMEDOUT)
+		return true;
+#if EWOULDBLOCK != EAGAIN
+	if (value == EWOULDBLOCK)
+		return true;
+#endif
+	return false;
+}
+
+bool socket_timeout_context(const redisContext *context)
+{
+	if (!context || context->err != REDIS_ERR_IO)
+		return false;
+	if (socket_timeout_errno(errno))
+		return true;
+	if (!strcmp(context->errstr, strerror(EAGAIN)) ||
+	    !strcmp(context->errstr, strerror(ETIMEDOUT)))
+		return true;
+#if EWOULDBLOCK != EAGAIN
+	if (!strcmp(context->errstr, strerror(EWOULDBLOCK)))
+		return true;
+#endif
+	return false;
 }
 
 void update_max(std::atomic<uint64_t> *maximum, uint64_t value)
@@ -230,6 +261,19 @@ redis_shared_command_health redis_shared_command_health_copy(void)
 	snapshot.enabled = observability_enabled.load(std::memory_order_relaxed);
 	snapshot.connection_available = connection_available.load(std::memory_order_relaxed);
 	return snapshot;
+}
+
+redis_shared_command_outcome redis_command_outcome(redisContext *context, bool succeeded)
+{
+	if (succeeded)
+		return REDIS_SHARED_OUTCOME_SUCCESS;
+	if (!context)
+		return REDIS_SHARED_OUTCOME_UNAVAILABLE;
+	if (context->err == REDIS_ERR_TIMEOUT || socket_timeout_context(context))
+		return REDIS_SHARED_OUTCOME_TIMEOUT;
+	if (context->err)
+		return REDIS_SHARED_OUTCOME_TRANSPORT;
+	return REDIS_SHARED_OUTCOME_ERROR_REPLY;
 }
 
 uint64_t redis_observability_now_usec(void)

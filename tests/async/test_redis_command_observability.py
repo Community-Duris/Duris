@@ -32,7 +32,11 @@ WORKER_HEADERS = (
 HARNESS = r'''
 #include "redis_command_observability.h"
 
+#include <hiredis/hiredis.h>
+
 #include <cassert>
+#include <cerrno>
+#include <cstring>
 #include <string>
 
 int main()
@@ -137,6 +141,17 @@ int main()
     assert(operations.last_latency_usec == 40);
     assert(operations.max_latency_usec == 40);
 
+    redisContext context = {};
+    context.err = REDIS_ERR_IO;
+    errno = EAGAIN;
+    assert(redis_command_outcome(&context, false) == REDIS_SHARED_OUTCOME_TIMEOUT);
+    errno = ECONNRESET;
+    assert(redis_command_outcome(&context, false) == REDIS_SHARED_OUTCOME_TRANSPORT);
+    strcpy(context.errstr, strerror(EAGAIN));
+    assert(redis_command_outcome(&context, false) == REDIS_SHARED_OUTCOME_TIMEOUT);
+    assert(redis_command_outcome(&context, true) == REDIS_SHARED_OUTCOME_SUCCESS);
+    assert(redis_command_outcome(nullptr, false) == REDIS_SHARED_OUTCOME_UNAVAILABLE);
+
     redis_shared_command_observability_set_enabled(false);
     health = redis_shared_command_health_copy();
     assert(!health.enabled);
@@ -196,5 +211,5 @@ for worker_name in WORKERS:
     assert f'"{worker_name}"' in ACTINF
 assert WIZ.count("redis_append_operation_health") == 6
 assert "redis_world_store_publish_observed" in WORLD_STORE
-assert "context->err == REDIS_ERR_TIMEOUT" in WORLD_STORE
+assert "redis_command_outcome(context, false)" in WORLD_STORE
 print("shared and worker Redis command observability contracts passed")

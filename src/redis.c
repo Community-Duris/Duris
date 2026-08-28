@@ -333,20 +333,12 @@ static redisReply *redis_command_finish(redis_shared_command_scope scope,
 		finished_usec >= started_usec ? finished_usec - started_usec : 0;
 	redis_shared_command_outcome outcome = REDIS_SHARED_OUTCOME_SUCCESS;
 	const char *label = NULL;
-	if (!ctx)
+	if (!ctx || ctx->err)
 	{
-		outcome = REDIS_SHARED_OUTCOME_UNAVAILABLE;
-		label = "unavailable";
-	}
-	else if (ctx->err == REDIS_ERR_TIMEOUT)
-	{
-		outcome = REDIS_SHARED_OUTCOME_TIMEOUT;
-		label = "timeout";
-	}
-	else if (ctx->err)
-	{
-		outcome = REDIS_SHARED_OUTCOME_TRANSPORT;
-		label = "transport";
+		outcome = redis_command_outcome(ctx, false);
+		label = outcome == REDIS_SHARED_OUTCOME_UNAVAILABLE ? "unavailable" :
+			outcome == REDIS_SHARED_OUTCOME_TIMEOUT	    ? "timeout" :
+								      "transport";
 	}
 	else if (!reply)
 	{
@@ -398,12 +390,9 @@ static void redis_prime_artifact_caches(void)
 	redisContext *context = redis_connection_open(redis_cache_settings);
 	if (!context || context->err)
 	{
-		redis_shared_command_observability_record(
-			REDIS_SHARED_SCOPE_CACHE, REDIS_SHARED_COMMAND_SCRIPT,
-			!context			  ? REDIS_SHARED_OUTCOME_UNAVAILABLE :
-			context->err == REDIS_ERR_TIMEOUT ? REDIS_SHARED_OUTCOME_TIMEOUT :
-							    REDIS_SHARED_OUTCOME_TRANSPORT,
-			0);
+		redis_shared_command_observability_record(REDIS_SHARED_SCOPE_CACHE,
+							  REDIS_SHARED_COMMAND_SCRIPT,
+							  redis_command_outcome(context, false), 0);
 		if (context)
 			redisFree(context);
 		return;
@@ -1023,12 +1012,10 @@ bool redis_clear_pwipe_state(void)
 	redisContext *maintenance = redis_connection_open(redis_maintenance_settings);
 	if (!maintenance || maintenance->err)
 	{
-		redis_shared_command_observability_record(
-			REDIS_SHARED_SCOPE_MAINTENANCE, REDIS_SHARED_COMMAND_WRITE,
-			!maintenance			      ? REDIS_SHARED_OUTCOME_UNAVAILABLE :
-			maintenance->err == REDIS_ERR_TIMEOUT ? REDIS_SHARED_OUTCOME_TIMEOUT :
-								REDIS_SHARED_OUTCOME_TRANSPORT,
-			0);
+		redis_shared_command_observability_record(REDIS_SHARED_SCOPE_MAINTENANCE,
+							  REDIS_SHARED_COMMAND_WRITE,
+							  redis_command_outcome(maintenance, false),
+							  0);
 		if (maintenance)
 			redisFree(maintenance);
 		return false;

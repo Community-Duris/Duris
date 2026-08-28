@@ -47,7 +47,8 @@ assert "redisSetTimeout" in connection
 assert 'redisCommand(context, "AUTH %b %b"' in connection
 assert 'redisCommand(context, "AUTH %b"' in connection
 assert 'redisCommand(context, "SELECT %d"' in connection
-assert "if (!ctx)" in command and "if (ctx->err)" in command
+assert "if (!ctx || ctx->err)" in command
+assert "redis_command_outcome(ctx, false)" in command
 assert "REDIS_REPLY_ERROR" in command and '"error_reply"' in command
 assert '"timeout"' in command and '"transport"' in command and '"no_reply"' in command
 assert "redis_shared_command_observability_record" in command

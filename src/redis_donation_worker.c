@@ -35,19 +35,6 @@ uint64_t operation_elapsed(uint64_t started_usec)
 	return finished_usec >= started_usec ? finished_usec - started_usec : 0;
 }
 
-redis_shared_command_outcome operation_outcome(redisContext *context, bool succeeded)
-{
-	if (succeeded)
-		return REDIS_SHARED_OUTCOME_SUCCESS;
-	if (!context)
-		return REDIS_SHARED_OUTCOME_UNAVAILABLE;
-	if (context->err == REDIS_ERR_TIMEOUT)
-		return REDIS_SHARED_OUTCOME_TIMEOUT;
-	if (context->err)
-		return REDIS_SHARED_OUTCOME_TRANSPORT;
-	return REDIS_SHARED_OUTCOME_ERROR_REPLY;
-}
-
 bool valid_channel(const char *channel)
 {
 	return channel && *channel && strnlen(channel, 161) <= 160;
@@ -182,9 +169,10 @@ void worker_main()
 			const bool subscribed = context && !context->err && subscribe(context);
 			{
 				std::lock_guard<std::mutex> lock(worker_mutex);
-				redis_worker_operation_record(
-					&health.operations, operation_outcome(context, subscribed),
-					operation_elapsed(operation_started));
+				redis_worker_operation_record(&health.operations,
+							      redis_command_outcome(context,
+										    subscribed),
+							      operation_elapsed(operation_started));
 			}
 			if (!subscribed)
 			{
@@ -214,7 +202,8 @@ void worker_main()
 			{
 				std::lock_guard<std::mutex> lock(worker_mutex);
 				redis_worker_operation_record(&health.operations,
-							      operation_outcome(context, false), 0);
+							      redis_command_outcome(context, false),
+							      0);
 			}
 			drop_connection(&context);
 			continue;
@@ -251,9 +240,9 @@ void worker_main()
 		const bool read_succeeded = redisBufferRead(context) == REDIS_OK;
 		{
 			std::lock_guard<std::mutex> lock(worker_mutex);
-			redis_worker_operation_record(&health.operations,
-						      operation_outcome(context, read_succeeded),
-						      operation_elapsed(operation_started));
+			redis_worker_operation_record(
+				&health.operations, redis_command_outcome(context, read_succeeded),
+				operation_elapsed(operation_started));
 		}
 		if (!read_succeeded)
 		{

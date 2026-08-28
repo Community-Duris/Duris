@@ -182,11 +182,15 @@ redisContext *redis_connection_open_with_timeout(const struct redis_connection_s
 	}
 	if ((!settings->username.empty() || !settings->password.empty()) && !reply)
 	{
+		if (context->err)
+			return context;
 		redisFree(context);
 		return nullptr;
 	}
 
 	reply = (redisReply *)redisCommand(context, "SELECT %d", settings->database);
+	if (!reply && context->err)
+		return context;
 	if (!status_ok(reply))
 	{
 		redisFree(context);
