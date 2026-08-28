@@ -138,10 +138,14 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		account_health();
 		return;
 	}
-	if (entry.completion)
-		entry.completion(actor, committed && registry_applied, result,
-				 decoded ? entry.completed.error_code : EBADMSG,
-				 entry.context.data(), entry.context_size);
+	const item_movement_completion_fn completion_fn = entry.completion;
+	const auto context = entry.context;
+	const size_t context_size = entry.context_size;
+	const unsigned int error_code = decoded ? entry.completed.error_code : EBADMSG;
+	pending.erase(found);
+	if (completion_fn)
+		completion_fn(actor, committed && registry_applied, result, error_code,
+			      context.data(), context_size);
 	if (committed && registry_applied)
 		++health.committed;
 	else
@@ -150,7 +154,6 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		if (committed)
 			++health.stale_publications;
 	}
-	pending.erase(found);
 	account_health();
 }
 }
@@ -282,12 +285,20 @@ void item_movement_transaction_player_ready(P_char actor)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
 		return;
-	for (auto found = pending.begin(); found != pending.end();)
+	for (;;)
 	{
-		auto current = found++;
-		if (current->second.actor_pid == static_cast<uint32_t>(GET_PID(actor)) &&
-		    current->second.completion_ready)
-			publish(current, actor);
+		auto found =
+			std::find_if(pending.begin(), pending.end(),
+				     [&](const auto &entry)
+				     {
+					     return entry.second.actor_pid ==
+							    static_cast<uint32_t>(GET_PID(actor)) &&
+						    entry.second.completion_ready;
+				     });
+		if (found == pending.end())
+			break;
+		/* publish may invoke a callback that inserts and rehashes pending. */
+		publish(found, actor);
 	}
 }
 

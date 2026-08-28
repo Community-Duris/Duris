@@ -38,7 +38,9 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertIn("item_get_ack_publication", actobj)
         self.assertIn("item_put_ack_publication", actobj)
         self.assertIn("Durable items must be dropped one at a time", actobj)
-        self.assertIn("Durable container items must be collected one at a time", actobj)
+        self.assertIn("start_container_bulk_get", actobj)
+        self.assertIn("continue_bulk_get(actor, true)", actobj)
+        self.assertNotIn("Durable container items must be collected one at a time", actobj)
 
     def test_death_items_are_chained_after_ack_and_failure_is_preserved(self):
         fight = (SRC / "fight.c").read_text()

@@ -35,6 +35,11 @@
 #include "item_ownership_runtime.h"
 #include "storage_lockers.h"
 
+#include <new>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 /*
  * external variables
  */
@@ -132,6 +137,19 @@ struct get_movement_context
 	uint64_t container_uid;
 	int32_t room;
 	int32_t showit;
+	uint32_t bulk_actor_pid;
+};
+
+struct bulk_get_state
+{
+	int32_t room;
+	uint64_t container_uid;
+	std::string filter;
+	std::vector<uint64_t> durable_items;
+	size_t next_item;
+	int total;
+	bool failed;
+	bool corpse;
 };
 
 struct drop_movement_context
@@ -158,6 +176,11 @@ struct put_movement_context
 bool item_get_ack_publication = false;
 bool item_get_deferred = false;
 bool item_put_ack_publication = false;
+uint32_t bulk_get_submitter = 0;
+std::unordered_map<uint32_t, bulk_get_state> bulk_gets;
+
+void continue_bulk_get(P_char actor, bool previous_succeeded);
+void cancel_bulk_get(P_char actor);
 
 P_obj find_live_item_uid(uint64_t item_uid)
 {
@@ -170,16 +193,28 @@ P_obj find_live_item_uid(uint64_t item_uid)
 void item_get_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
 			 const uint8_t *encoded, size_t encoded_size)
 {
-	if (!actor || !committed || !encoded || encoded_size != sizeof(get_movement_context))
+	get_movement_context context = {};
+	const bool context_valid = encoded && encoded_size == sizeof(context);
+	if (context_valid)
+		memcpy(&context, encoded, sizeof(context));
+	const bool bulk_get = actor && context_valid &&
+			      context.bulk_actor_pid == static_cast<uint32_t>(GET_PID(actor));
+
+	if (!actor || !committed || !context_valid)
 	{
 		if (actor)
 			send_to_char(
 				"The item remains where it was; its ownership did not commit.\r\n",
 				actor);
+		if (bulk_get)
+		{
+			auto found = bulk_gets.find(context.bulk_actor_pid);
+			if (found != bulk_gets.end())
+				found->second.failed = true;
+			continue_bulk_get(actor, false);
+		}
 		return;
 	}
-	get_movement_context context = {};
-	memcpy(&context, encoded, sizeof(context));
 	P_obj object = find_live_item_uid(context.item_uid);
 	P_obj container = context.container_uid ? find_live_item_uid(context.container_uid) : NULL;
 	const bool source_matches =
@@ -194,11 +229,15 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 			actor);
 		persistence_alert(AVATAR, "item_movement", "get_publish", "none", "none",
 				  "stale_live_topology", "item_uid=%llu", context.item_uid);
+		if (bulk_get)
+			cancel_bulk_get(actor);
 		return;
 	}
 	item_get_ack_publication = true;
 	get(actor, object, container, context.showit);
 	item_get_ack_publication = false;
+	if (bulk_get)
+		continue_bulk_get(actor, true);
 }
 
 void item_drop_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
@@ -495,7 +534,8 @@ void get(P_char ch, P_obj o_obj, P_obj s_obj, int showit)
 		const item_owner_identity destination = { item_owner_type::player,
 							  static_cast<uint64_t>(GET_PID(ch)), 0 };
 		const get_movement_context context = { o_obj->obj_uid, s_obj ? s_obj->obj_uid : 0,
-						       s_obj ? NOWHERE : o_obj->loc.room, showit };
+						       s_obj ? NOWHERE : o_obj->loc.room, showit,
+						       bulk_get_submitter };
 		const item_transfer_reason reason = source.type == item_owner_type::locker ?
 							    item_transfer_reason::locker_withdraw :
 						    s_obj && GET_ITEM_TYPE(s_obj) == ITEM_CORPSE ?
@@ -807,7 +847,10 @@ static void do_get_finalize_pickup_core(P_char ch, P_obj s_obj, P_obj o_obj, boo
 static void do_get_finalize_container_item(P_char ch, P_obj s_obj, P_obj o_obj, int &total,
 					   bool &found, const char *post_tag)
 {
+	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
 	do_get_finalize_pickup_core(ch, s_obj, o_obj, found, total);
+	if (money)
+		return;
 	GETDBG_LOG(
 		"%s: ch=%s room=%d obj=%s [%d] uid=%lu carried=%d container=%s [%d] cuid=%lu total=%d",
 		post_tag, GET_NAME(ch), world[ch->in_room].number,
@@ -1243,14 +1286,283 @@ static void do_get_reject_too_heavy(P_char ch, P_obj o_obj, bool &fail)
 
 static void do_get_finalize_room_item(P_char ch, P_obj o_obj, bool &found, int &total)
 {
+	const bool money = GET_ITEM_TYPE(o_obj) == ITEM_MONEY;
 	do_get_finalize_pickup_core(ch, 0, o_obj, found, total);
-	do_get_log_room_artifact_pickup(ch, o_obj);
+	/* A complete coin pickup extracts the object inside get(). */
+	if (!money)
+		do_get_log_room_artifact_pickup(ch, o_obj);
 }
 
 static void do_get_mark_alldot(char *arg1, bool &alldot)
 {
 	snprintf(arg1, MAX_INPUT_LENGTH, "all");
 	alldot = TRUE;
+}
+
+namespace
+{
+void cancel_bulk_get(P_char actor)
+{
+	if (actor && IS_PC(actor))
+		bulk_gets.erase(static_cast<uint32_t>(GET_PID(actor)));
+}
+
+static void finish_bulk_get(P_char actor, uint32_t actor_pid)
+{
+	auto found = bulk_gets.find(actor_pid);
+	if (found == bulk_gets.end())
+		return;
+	const int total = found->second.total;
+	const bool failed = found->second.failed;
+	const bool from_container = found->second.container_uid != 0;
+	bulk_gets.erase(found);
+
+	if (total > 1)
+	{
+		char summary[MAX_STRING_LENGTH];
+		snprintf(summary, sizeof(summary), "You got %d items.\r\n", total);
+		send_to_char(summary, actor);
+	}
+	else if (!total && !failed && !from_container)
+	{
+		send_to_char("You see nothing here.\r\n", actor);
+	}
+}
+
+void continue_bulk_get(P_char actor, bool previous_succeeded)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
+		return;
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	auto found = bulk_gets.find(actor_pid);
+	if (found == bulk_gets.end())
+		return;
+	bulk_get_state &state = found->second;
+	if (previous_succeeded)
+	{
+		++state.total;
+		if (state.container_uid)
+		{
+			P_obj source = find_live_item_uid(state.container_uid);
+			if (source && GET_ITEM_TYPE(source) == ITEM_QUIVER && source->value[3] > 0)
+				source->value[3]--;
+		}
+	}
+
+	P_obj container = state.container_uid ? find_live_item_uid(state.container_uid) : NULL;
+	const bool container_local =
+		container && (OBJ_CARRIED_BY(container, actor) || OBJ_WORN_BY(container, actor));
+	if ((!container && state.container_uid) ||
+	    (!state.container_uid && actor->in_room != state.room) ||
+	    (container && !container_local &&
+	     (!OBJ_ROOM(container) || container->loc.room != actor->in_room)))
+	{
+		send_to_char("You stop collecting items because the source is no longer here.\r\n",
+			     actor);
+		bulk_gets.erase(found);
+		return;
+	}
+	if (container && GET_ITEM_TYPE(container) != ITEM_CORPSE &&
+	    IS_SET(container->value[1], CONT_CLOSED))
+	{
+		send_to_char("You stop collecting items because the container is closed.\r\n",
+			     actor);
+		bulk_gets.erase(found);
+		return;
+	}
+
+	while (state.next_item < state.durable_items.size())
+	{
+		P_obj object = find_live_item_uid(state.durable_items[state.next_item++]);
+		const bool source_matches =
+			object &&
+			(container ? (OBJ_INSIDE(object) && object->loc.inside == container) :
+				     (OBJ_ROOM(object) && object->loc.room == state.room));
+		if (!source_matches ||
+		    (state.filter.size() &&
+		     (!object->name || !isname(state.filter.c_str(), object->name))) ||
+		    (!container_local && !CAN_SEE_OBJ(actor, object)))
+			continue;
+
+		const bool material_exception = !container &&
+						((OBJ_VNUM(object) > LOWEST_MAT_VNUM) &&
+						 (OBJ_VNUM(object) <= HIGHEST_MAT_VNUM));
+		if (IS_CARRYING_N(actor) >= CAN_CARRY_N(actor) && !material_exception)
+		{
+			send_to_char(container ? "You can't carry any more.\r\n" :
+						 "You can't carry anything more.\r\n",
+				     actor);
+			state.failed = true;
+			break;
+		}
+		if (!container_local &&
+		    (total_carried_weight(actor) + GET_OBJ_WEIGHT(object)) > CAN_CARRY_W(actor))
+		{
+			do_get_reject_object(actor, object,
+					     container ? "is too heavy." : "is too heavy to lift.",
+					     state.failed);
+			continue;
+		}
+		if (!container_local && !do_get_obj_is_takeable(actor, object))
+		{
+			do_get_reject_not_takeable(actor, object, state.failed);
+			continue;
+		}
+
+		bulk_get_submitter = actor_pid;
+		if (container)
+		{
+			bool item_found = false;
+			const int total_before = state.total;
+			do_get_finalize_container_success(actor, actor, container, object,
+							  state.total, item_found, state.corpse,
+							  "GETDBG[get-container-bulk-post]");
+			if (!item_get_deferred)
+				state.total = total_before;
+		}
+		else
+		{
+			get(actor, object, NULL, TRUE);
+		}
+		bulk_get_submitter = 0;
+		if (item_get_deferred)
+			return;
+
+		/* Durable pickups normally defer. A synchronous return here means the
+		 * item's own preflight rejected it (trap, binding, condition, etc.). */
+		state.failed = true;
+	}
+
+	/* Currency and transient objects do not use the durable ownership path.
+	 * Collect them synchronously after the durable chain has advanced. */
+	P_obj next_object = NULL;
+	bool found_item = false;
+	P_obj contents = container ? container->contains : world[state.room].contents;
+	int container_safety = top_of_objt + 1;
+	for (P_obj object = contents; object && (!container || container_safety-- > 0);
+	     object = next_object)
+	{
+		next_object = object->next_content;
+		if ((object->obj_uid > 0 && object->type != ITEM_MONEY) ||
+		    (state.filter.size() &&
+		     (!object->name || !isname(state.filter.c_str(), object->name))) ||
+		    (!container_local && !CAN_SEE_OBJ(actor, object)))
+			continue;
+		const bool material_exception = !container &&
+						((OBJ_VNUM(object) > LOWEST_MAT_VNUM) &&
+						 (OBJ_VNUM(object) <= HIGHEST_MAT_VNUM));
+		if (IS_CARRYING_N(actor) >= CAN_CARRY_N(actor) && !material_exception)
+		{
+			send_to_char(container ? "You can't carry any more.\r\n" :
+						 "You can't carry anything more.\r\n",
+				     actor);
+			state.failed = true;
+			break;
+		}
+		if (!container_local &&
+		    (total_carried_weight(actor) + GET_OBJ_WEIGHT(object)) > CAN_CARRY_W(actor))
+		{
+			do_get_reject_object(actor, object,
+					     container ? "is too heavy." : "is too heavy to lift.",
+					     state.failed);
+			continue;
+		}
+		if (!container_local && !do_get_obj_is_takeable(actor, object))
+		{
+			do_get_reject_not_takeable(actor, object, state.failed);
+			continue;
+		}
+		if (container)
+			do_get_finalize_container_success(actor, actor, container, object,
+							  state.total, found_item, state.corpse,
+							  "GETDBG[get-container-bulk-post]");
+		else
+			do_get_finalize_room_item(actor, object, found_item, state.total);
+	}
+
+	finish_bulk_get(actor, actor_pid);
+}
+
+static void start_floor_bulk_get(P_char actor, const char *filter)
+{
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	if (bulk_gets.count(actor_pid) || item_movement_transaction_player_busy(actor))
+	{
+		send_to_char("You are already moving an item; try again in a moment.\r\n", actor);
+		return;
+	}
+
+	bulk_get_state state = { actor->in_room, 0, filter ? filter : "", {}, 0, 0, false, false };
+	try
+	{
+		for (P_obj object = world[actor->in_room].contents; object;
+		     object = object->next_content)
+		{
+			if (object->obj_uid > 0 && object->type != ITEM_MONEY &&
+			    (state.filter.empty() ||
+			     (object->name && isname(state.filter.c_str(), object->name))))
+				state.durable_items.push_back(object->obj_uid);
+		}
+		bulk_gets.emplace(actor_pid, std::move(state));
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("You can't collect everything right now; please try again.\r\n",
+			     actor);
+		return;
+	}
+
+	continue_bulk_get(actor, false);
+}
+
+static void start_container_bulk_get(P_char actor, P_obj container, const char *filter, bool corpse)
+{
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	if (bulk_gets.count(actor_pid) || item_movement_transaction_player_busy(actor))
+	{
+		send_to_char("You are already moving an item; try again in a moment.\r\n", actor);
+		return;
+	}
+
+	bool has_durable_items = false;
+	int container_safety = top_of_objt + 1;
+	for (P_obj object = container->contains; object && container_safety-- > 0;
+	     object = object->next_content)
+		if (object->obj_uid > 0 && object->type != ITEM_MONEY &&
+		    (!filter || (object->name && isname(filter, object->name))))
+		{
+			has_durable_items = true;
+			break;
+		}
+	if (has_durable_items && !container->obj_uid)
+	{
+		send_to_char("That container lacks authoritative ownership.\r\n", actor);
+		return;
+	}
+
+	bulk_get_state state = {
+		actor->in_room, container->obj_uid, filter ? filter : "", {}, 0, 0, false, corpse
+	};
+	try
+	{
+		container_safety = top_of_objt + 1;
+		for (P_obj object = container->contains; object && container_safety-- > 0;
+		     object = object->next_content)
+			if (object->obj_uid > 0 && object->type != ITEM_MONEY &&
+			    (state.filter.empty() ||
+			     (object->name && isname(state.filter.c_str(), object->name))))
+				state.durable_items.push_back(object->obj_uid);
+		bulk_gets.emplace(actor_pid, std::move(state));
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("You can't collect everything right now; please try again.\r\n",
+			     actor);
+		return;
+	}
+
+	continue_bulk_get(actor, false);
+}
 }
 
 void do_get(P_char ch, char *argument, int cmd)
@@ -1382,8 +1694,7 @@ void do_get(P_char ch, char *argument, int cmd)
 	{
 		if (IS_PC(ch))
 		{
-			send_to_char("Durable floor items must be collected one at a time.\r\n",
-				     ch);
+			start_floor_bulk_get(ch, alldot ? Gbuf2 : NULL);
 			return;
 		}
 		s_obj = 0;
@@ -1631,12 +1942,6 @@ void do_get(P_char ch, char *argument, int cmd)
 	/* get all ??? */
 	if (type == 4)
 	{
-		if (IS_PC(ch))
-		{
-			send_to_char("Durable container items must be collected one at a time.\r\n",
-				     ch);
-			return;
-		}
 		found = FALSE;
 		fail = FALSE;
 
@@ -1658,6 +1963,30 @@ void do_get(P_char ch, char *argument, int cmd)
 				if (!do_get_container_preflight(ch, s_obj, corpse_flag, TRUE, arg1,
 								arg2, fail))
 					return;
+				if (IS_PC(ch))
+				{
+					if (s_obj->obj_uid)
+					{
+						start_container_bulk_get(ch, s_obj,
+									 alldot ? Gbuf2 : NULL,
+									 corpse_flag);
+						return;
+					}
+					int ownership_safety = top_of_objt + 1;
+					for (o_obj = s_obj->contains;
+					     o_obj && ownership_safety-- > 0;
+					     o_obj = o_obj->next_content)
+						if (o_obj->obj_uid > 0 &&
+						    o_obj->type != ITEM_MONEY &&
+						    (!alldot ||
+						     (o_obj->name && isname(Gbuf2, o_obj->name))))
+						{
+							send_to_char(
+								"That container lacks authoritative ownership.\r\n",
+								ch);
+							return;
+						}
+				}
 
 				int container_safety = top_of_objt + 1;
 
