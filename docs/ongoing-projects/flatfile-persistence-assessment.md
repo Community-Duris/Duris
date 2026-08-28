@@ -1082,6 +1082,35 @@ sections below continue to describe the required end state.
   effects with the player snapshot; acknowledge only after every prepared effect is
   durable. Then port the remaining boon read/admin/shop surfaces.
 
+### Checkpoint 32 - flat boon query primitives
+
+- **Completed:** added locked, recovery-aware definition and per-player progress
+  projections to the boon repository. Definitions preserve their canonical ID ordering;
+  progress lookup uses the ordered `(boon_id, pid)` key and distinguishes an absent row
+  from a stored zero counter. Existing shop projection remains bounded to legacy integer
+  consumers at the adapter boundary.
+- **Completed:** `is_boon_valid`, `count_boons`, `get_boon_data`,
+  `get_boon_progress_data`, and `get_boon_shop_data` now select the flat catalog before
+  issuing a query when flat-file primary mode is active. MariaDB-primary behavior is
+  unchanged. This removes SQL from the shared definition/progress/shop lookup helpers
+  used outside the monolithic display and mutation commands.
+- **Checks passed:** the repository harness covers full definition projection, exact
+  progress lookup and missing-player behavior in addition to the prior catalog cases;
+  the boon/zone source-contract suite verifies that all five legacy helpers route to the
+  flat repository before `qry`. `python3 tests/async/test_flatfile_boon_repository.py`,
+  the affected auction/item/player standalone repositories, `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass.
+- **Files changed:** `src/flatfile_boon_repository.[ch]`, the lookup adapters in
+  `src/boon.c`, focused repository and source-contract tests, and this handoff ledger.
+- **Remaining boon gap:** `boon_display`, shop spending, definition create/remove/extend,
+  randomization, and maintenance still issue SQL directly. Reward effect publication is
+  still at-least-once for live-state effects as described in checkpoint 31.
+- **Next action:** route the mortal boon list display over the canonical definition
+  projection, including its active/manual/random/author/type/option/player filters and
+  progress annotations. Then add typed flat shop spending and administrative mutations;
+  design per-effect publication state before changing reward acknowledgement semantics.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

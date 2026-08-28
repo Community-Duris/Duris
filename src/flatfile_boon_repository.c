@@ -585,6 +585,70 @@ flatfile_boon_establish(const std::string &root,
 		       flatfile_boon_result::io_error;
 }
 
+flatfile_boon_result
+flatfile_boon_load_definitions(const std::string &root,
+			       std::vector<flatfile_boon_definition> *definitions,
+			       std::string *error)
+{
+	if (root.empty() || !definitions)
+		return flatfile_boon_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_boon_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_boon_result::io_error :
+			       flatfile_boon_result::invalid;
+	boon_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_boon_result::not_found;
+	if (loaded != flatfile_read_result::ok)
+		return loaded == flatfile_read_result::io_error ? flatfile_boon_result::io_error :
+								  flatfile_boon_result::invalid;
+	try
+	{
+		*definitions = catalog.definitions;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_boon_result::io_error;
+	}
+	return flatfile_boon_result::ok;
+}
+
+flatfile_boon_result flatfile_boon_load_progress(const std::string &root, uint32_t boon_id,
+						 uint32_t pid, double *counter, std::string *error)
+{
+	if (root.empty() || !boon_id || !pid || !counter)
+		return flatfile_boon_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_boon_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_boon_result::io_error :
+			       flatfile_boon_result::invalid;
+	boon_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_boon_result::not_found;
+	if (loaded != flatfile_read_result::ok)
+		return loaded == flatfile_read_result::io_error ? flatfile_boon_result::io_error :
+								  flatfile_boon_result::invalid;
+	const auto progress = std::lower_bound(
+		catalog.progress.begin(), catalog.progress.end(), std::pair{ boon_id, pid },
+		[](const boon_progress &entry, const auto &key)
+		{ return std::pair{ entry.boon_id, entry.pid } < key; });
+	if (progress == catalog.progress.end() || progress->boon_id != boon_id ||
+	    progress->pid != pid)
+		return flatfile_boon_result::not_found;
+	*counter = progress->counter;
+	return flatfile_boon_result::ok;
+}
+
 flatfile_boon_result flatfile_boon_load_player(const std::string &root, uint32_t pid,
 					       flatfile_boon_player_projection *player,
 					       std::string *error)

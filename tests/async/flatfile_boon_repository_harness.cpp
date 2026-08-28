@@ -163,6 +163,14 @@ int main(int argc, char **argv)
 			flatfile_boon_establish(root.string(), definitions, &error) ==
 				flatfile_boon_result::already_exists,
 		"could not establish boon catalog: " + error);
+	std::vector<flatfile_boon_definition> loaded_definitions;
+	require(flatfile_boon_load_definitions(root.string(), &loaded_definitions, &error) ==
+				flatfile_boon_result::ok &&
+			loaded_definitions.size() == definitions.size() &&
+			loaded_definitions[0].id == definitions[0].id &&
+			loaded_definitions[0].author == definitions[0].author &&
+			loaded_definitions[3].bonus == definitions[3].bonus,
+		"boon definition projection did not preserve the catalog");
 	boon_reward_payload mob = { .pid = 42,
 				    .racewar = 1,
 				    .level = 50,
@@ -185,6 +193,13 @@ int main(int argc, char **argv)
 	require(flatfile_boon_repository_apply(root.string(), first_command).outcome ==
 			critical_apply_outcome::already_applied,
 		"boon command did not replay exactly");
+	double progress = 0;
+	require(flatfile_boon_load_progress(root.string(), 1, 42, &progress, &error) ==
+				flatfile_boon_result::ok &&
+			progress == 1 &&
+			flatfile_boon_load_progress(root.string(), 1, 43, &progress, &error) ==
+				flatfile_boon_result::not_found,
+		"boon progress projection did not return the exact player row");
 	boon_reward_payload conflicting = mob;
 	conflicting.victim_vnum = 901;
 	require(flatfile_boon_repository_apply(root.string(), command(conflicting, 1)).error_code ==

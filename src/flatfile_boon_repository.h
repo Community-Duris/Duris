@@ -54,6 +54,12 @@ flatfile_boon_result
 flatfile_boon_establish(const std::string &root,
 			const std::vector<flatfile_boon_definition> &definitions,
 			std::string *error);
+flatfile_boon_result
+flatfile_boon_load_definitions(const std::string &root,
+			       std::vector<flatfile_boon_definition> *definitions,
+			       std::string *error);
+flatfile_boon_result flatfile_boon_load_progress(const std::string &root, uint32_t boon_id,
+						 uint32_t pid, double *counter, std::string *error);
 flatfile_boon_result flatfile_boon_load_player(const std::string &root, uint32_t pid,
 					       flatfile_boon_player_projection *player,
 					       std::string *error);

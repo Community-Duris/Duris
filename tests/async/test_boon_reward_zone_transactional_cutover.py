@@ -144,6 +144,21 @@ class BoonRewardZoneCutoverTests(unittest.TestCase):
 
         self.assertEqual(nanny.count("boon_reward_transaction_player_ready("), 2)
 
+    def test_flat_boon_query_helpers_route_before_sql(self):
+        boon = (SRC / "boon.c").read_text()
+        for function, flat_token, sql_token in (
+            ("int is_boon_valid", "flatfile_boon_load_definitions", "qry("),
+            ("int count_boons", "flatfile_boon_load_definitions", "qry("),
+            ("bool get_boon_data", "flatfile_boon_load_definitions", "qry("),
+            ("bool get_boon_progress_data", "flatfile_boon_load_progress", "qry("),
+            ("bool get_boon_shop_data", "flatfile_boon_load_player", "qry("),
+        ):
+            start = boon.index(function)
+            next_function = boon.find("\n}\n", start) + 3
+            body = boon[start:next_function]
+            self.assertIn("flat_boon_root", body)
+            self.assertLess(body.index(flat_token), body.index(sql_token))
+
     def test_account_bound_reward_boundary_remains_covered(self):
         contracts = "\n".join((ROOT / path).read_text() for path in (
             "tests/async/test_account_bound_reward_contract.py",

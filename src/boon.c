@@ -24,8 +24,10 @@
 //   being manually added, update the random_std array to include the new
 //   boon_data array number.
 
+#include <algorithm>
 #include <stdio.h>
 #include <string.h>
+#include <limits>
 #include <string>
 #include <time.h>
 using namespace std;
@@ -43,8 +45,10 @@ using namespace std;
 #include "ctf.h"
 #include "currency_transaction.h"
 #include "epic.h"
+#include "flatfile_boon_repository.h"
 #include "guildhall.h"
 #include "nexus_stones.h"
+#include "persistence_mode.h"
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
@@ -165,6 +169,40 @@ static void boon_collect_ids(MYSQL_RES *res, int *id, const char *where)
 		logit(LOG_DEBUG, "%s: active boon list truncated at MAX_BOONS",
 		      where ? where : "boon");
 	}
+}
+
+static const char *flat_boon_root()
+{
+	return persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY ?
+		       persistence_mode_flatfile_root() :
+		       nullptr;
+}
+
+static bool copy_flat_boon_definition(const flatfile_boon_definition &source, BoonData *target)
+{
+	if (!target || source.id > static_cast<uint32_t>(std::numeric_limits<int>::max()) ||
+	    source.start_time < std::numeric_limits<int>::min() ||
+	    source.start_time > std::numeric_limits<int>::max() ||
+	    source.duration < std::numeric_limits<int>::min() ||
+	    source.duration > std::numeric_limits<int>::max() ||
+	    source.target_pid > static_cast<uint32_t>(std::numeric_limits<int>::max()))
+		return false;
+	target->id = static_cast<int>(source.id);
+	target->time = static_cast<int>(source.start_time);
+	target->duration = static_cast<int>(source.duration);
+	target->racewar = source.racewar;
+	target->type = source.type;
+	target->option = source.option;
+	target->criteria = source.criteria;
+	target->criteria2 = source.criteria2;
+	target->bonus = source.bonus;
+	target->bonus2 = source.bonus2;
+	target->random = source.random;
+	target->author = source.author;
+	target->active = source.active;
+	target->pid = static_cast<int>(source.target_pid);
+	target->repeat = source.repeat;
+	return true;
 }
 
 static int boon_ctf_index(int flag_id)
@@ -351,6 +389,19 @@ int get_valid_boon_option(char *arg)
 
 int is_boon_valid(int id)
 {
+	if (const char *root = flat_boon_root())
+	{
+		if (id <= 0)
+			return FALSE;
+		std::vector<flatfile_boon_definition> definitions;
+		std::string error;
+		if (flatfile_boon_load_definitions(root, &definitions, &error) !=
+		    flatfile_boon_result::ok)
+			return FALSE;
+		return std::any_of(definitions.begin(), definitions.end(),
+				   [&](const auto &definition)
+				   { return definition.id == static_cast<uint32_t>(id); });
+	}
 	if (!qry("SELECT id FROM boons WHERE id = '%d'", id))
 	{
 		return FALSE;
@@ -372,6 +423,20 @@ int is_boon_valid(int id)
 
 int count_boons(int active, int random)
 {
+	if (const char *root = flat_boon_root())
+	{
+		std::vector<flatfile_boon_definition> definitions;
+		std::string error;
+		if (flatfile_boon_load_definitions(root, &definitions, &error) !=
+		    flatfile_boon_result::ok)
+			return 0;
+		return static_cast<int>(std::count_if(definitions.begin(), definitions.end(),
+						      [&](const auto &definition) {
+							      return (!active ||
+								      definition.active) &&
+								     (!random || definition.random);
+						      }));
+	}
 	char dbqry[MAX_STRING_LENGTH];
 	int count = 0;
 
@@ -422,6 +487,22 @@ bool get_boon_data(int id, BoonData *bdata)
 {
 	if (!bdata)
 		return FALSE;
+	if (const char *root = flat_boon_root())
+	{
+		if (id <= 0)
+			return FALSE;
+		std::vector<flatfile_boon_definition> definitions;
+		std::string error;
+		if (flatfile_boon_load_definitions(root, &definitions, &error) !=
+		    flatfile_boon_result::ok)
+			return FALSE;
+		const auto found = std::lower_bound(definitions.begin(), definitions.end(),
+						    static_cast<uint32_t>(id),
+						    [](const auto &definition, uint32_t key)
+						    { return definition.id < key; });
+		return found != definitions.end() && found->id == static_cast<uint32_t>(id) &&
+		       copy_flat_boon_definition(*found, bdata);
+	}
 
 	if (!qry("SELECT id, time, duration, racewar, type, opt, criteria, criteria2, bonus, bonus2, random, author, active, pid, rpt FROM boons WHERE id = '%d'",
 		 id))
@@ -473,6 +554,19 @@ bool get_boon_progress_data(int id, int pid, BoonProgress *bpg)
 {
 	if (!bpg)
 		return FALSE;
+	if (const char *root = flat_boon_root())
+	{
+		if (id <= 0 || pid <= 0)
+			return FALSE;
+		std::string error;
+		double counter = 0;
+		if (flatfile_boon_load_progress(root, static_cast<uint32_t>(id),
+						static_cast<uint32_t>(pid), &counter,
+						&error) != flatfile_boon_result::ok)
+			return FALSE;
+		*bpg = { 0, id, pid, counter };
+		return TRUE;
+	}
 
 	if (!qry("SELECT id, boonid, pid, counter FROM boons_progress WHERE boonid = '%d' AND pid = '%d'",
 		 id, pid))
@@ -513,6 +607,23 @@ bool get_boon_shop_data(int pid, BoonShop *bshop)
 {
 	if (!bshop)
 		return FALSE;
+	if (const char *root = flat_boon_root())
+	{
+		if (pid <= 0)
+			return FALSE;
+		flatfile_boon_player_projection player;
+		std::string error;
+		if (flatfile_boon_load_player(root, static_cast<uint32_t>(pid), &player, &error) !=
+			    flatfile_boon_result::ok ||
+		    player.points < std::numeric_limits<int>::min() ||
+		    player.points > std::numeric_limits<int>::max() ||
+		    player.stats < std::numeric_limits<int>::min() ||
+		    player.stats > std::numeric_limits<int>::max())
+			return FALSE;
+		*bshop = { 0, pid, static_cast<int>(player.points), static_cast<int>(player.stats),
+			   0 };
+		return TRUE;
+	}
 
 	if (!qry("SELECT id, pid, points, stats from boons_shop WHERE pid = '%d'", pid))
 	{
