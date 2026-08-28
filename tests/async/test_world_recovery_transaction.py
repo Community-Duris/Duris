@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PIPELINE = (ROOT / "src/world_recovery_pipeline.c").read_text(encoding="ascii")
 HEADER = (ROOT / "src/world_recovery_pipeline.h").read_text(encoding="ascii")
 REDIS = (ROOT / "src/redis.c").read_text(encoding="ascii")
+WORLD_RUNTIME = (ROOT / "src/redis_world_runtime.c").read_text(encoding="ascii")
 SQL = (ROOT / "src/sql.c").read_text(encoding="ascii")
 COMM = (ROOT / "src/comm.c").read_text(encoding="ascii")
 
@@ -83,10 +84,10 @@ assert materialize.index("created_objects.push_back") < materialize.index(
     "item_ownership_runtime_hydrate_many_atomic"
 ) < materialize.index("for (const copyover_room &door")
 
-load = section(REDIS, "bool redis_load_world_state", "void event_save_world_state")
+load = section(WORLD_RUNTIME, "bool redis_load_world_state", "void event_save_world_state")
 assert load.index("redis_read_floor_records") < load.index("world_recovery_restore_with_floor")
 assert "redis_restore_floor_drops" not in load
-reader = section(REDIS, "static bool redis_read_floor_records", "void mark_player_dirty")
+reader = section(WORLD_RUNTIME, "bool redis_read_floor_records", "bool redis_world_runtime_start")
 assert "world_recovery_floor_object_root_uid" in reader
 assert "read_object(" not in reader and "obj_to_room(" not in reader
 

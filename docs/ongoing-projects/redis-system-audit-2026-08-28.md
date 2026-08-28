@@ -3,12 +3,59 @@
 Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
-Status: Implementation in progress; RDS-001, RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
-RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
-RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, RDS-017, RDS-008, and RDS-021 are
-remediated, as are RDS-018, RDS-025, and RDS-015; RDS-026 remains open.
+Status: Remediation complete on branch; all findings RDS-001 through RDS-028 are remediated.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-026 world runtime and typed lifecycle boundary
+
+Completed in this interval:
+
+- Moved world connection ownership, recovery configuration, authentication secrets,
+  writer fencing, boot detection, floor/recovery handoff, bounded publication pulse, load,
+  consume, quiesce, and shutdown policy from `redis.c` into
+  `redis_world_runtime.c/.h`.
+- Replaced the remaining public mutable world/recovery flags with typed accessors. Boot,
+  event scheduling, copyover, and administrator callers now depend only on the lifecycle,
+  world-runtime, or wizard interface they use.
+- Retired the broad `redis.h` umbrella as a one-line compile-time migration guard. No
+  production translation unit includes it; `redis_lifecycle.h`,
+  `redis_world_runtime.h`, and `redis_wizard.h` are the final narrow public boundaries.
+- Reduced the composition root from 1,344 to 236 lines and its umbrella header from 40
+  lines to the one-line retirement guard. The root now owns only namespace/epoch surface
+  composition, typed subsystem startup, stopped-server maintenance coordination, and
+  orderly shutdown.
+- Extended source-contract tests to enforce world ownership, typed consumer boundaries,
+  private lifecycle state, umbrella retirement, and the absence of world orchestration in
+  the composition root.
+
+Performance effect:
+
+- The recurring gameplay path retains the same bounded in-memory recovery pulse, fixed
+  capture budget, floor barrier polling, completion polling, and background-worker
+  publication. It performs no synchronous Redis, SQL, filesystem, process, sleep, or wait
+  work.
+- Direct Redis commands remain limited to boot/recovery restore, explicit generation
+  consumption, stopped-server maintenance, and orderly shutdown. Typed enabled/boot
+  accessors replace public globals only in boot, event-registration, recovery, copyover,
+  and administrator paths; they add no work to player commands or simulation updates.
+- The extraction changes ownership rather than algorithms or budgets. It adds no queue,
+  allocation, serialization, connection, or retry work to gameplay and preserves the
+  existing background workers and command deadlines.
+
+Validation:
+
+- `./scripts/format.sh --check`, `make -C src -j2`, and `git diff --check`: passed under
+  the warning-as-error profile.
+- All 26 `tests/async/test_redis*.py` regressions passed, including live transport, ACL,
+  cache, donation, floor, maintenance, presence, ship, and world-store suites.
+- World recovery pipeline/transaction, recovery gate, periodic event rearm, maintenance
+  slicing, runtime boot compatibility, season reset fencing, SQL pwipe completion, and
+  locker ownership cutover regressions passed.
+
+RDS-026 is complete. World policy is owned by its typed runtime, all other subsystem
+policy remains behind its existing typed boundary, and `redis.c` is the small
+boot/configuration composition root requested by the finding.
 
 ### 2026-08-28 - RDS-026 stopped-server maintenance boundary
 
@@ -2728,38 +2775,32 @@ single typed health snapshot to both operator commands and health diagnostics.
 
 Severity: Medium
 Confidence: Confirmed structural issue
-Remediation status: Partially remediated. Connection/security, key registry, world store,
-floor, presence, donation, and cache workers already have typed modules. Revisioned player
-checkpoint ownership is in `persistence_checkpoint.c/.h`, and donation state plus bounded
-game delivery is in `redis_donation_runtime.c/.h`. Presence policy, payload submission, and
-enabled state are in `redis_presence_runtime.c/.h`. Epoch-scoped report keys, report
-generation, local reads, asynchronous publication/invalidation, boot warm-up, and worker
-lifecycle are in `redis_report_cache.c/.h`; the generic public cache API has been replaced
-by report-specific operations. Fixed-capacity floor-delta capture, coalescing, lifecycle
-state, and background submission are in `redis_floor_runtime.c/.h`, with season keys
-precomputed at boot. Endpoint/security parsing and the five scoped connection settings are
-owned by `redis_runtime_config.c/.h`. Retired ship-snapshot invalidation is isolated in
-`redis_ship_legacy.c/.h`. Authenticated stopped-server scan/delete and postflight policy is
-owned by `redis_maintenance.c/.h`, without borrowing the world context. Twenty-three former
-checkpoint, presence, report, floor, ship, or maintenance-only consumers no longer include
-`redis.h`, which exports none of those subsystem APIs or mutable states. The remaining
-composition root still owns world snapshot orchestration and broad lifecycle policy.
+Remediation status: Completed on branch. World connection ownership, recovery
+configuration, authentication, fencing, capture/publication orchestration, floor handoff,
+restore, consume, and shutdown policy are in `redis_world_runtime.c/.h`. Connection
+security, key registry, world store, floor, presence, donation, report cache, player
+checkpoint, retired ship invalidation, and stopped-server maintenance remain behind their
+typed module boundaries. Boot/recovery state is private and exposed through narrow typed
+accessors.
 
 At the audit baseline, `src/redis.c` was 2,525 lines and combined
 connection/configuration, world publication, floor recovery, ship serialization, report
 caches, presence, pub/sub, administrator helpers, and legacy UID handling. `redis.h` also
 owned revisioned player-save wrapper APIs that did not use Redis, and 29 C/C++ translation
-units included the header. The composition root is now 1,344 lines, the header is 40
-lines, and 6 translation units include it; the remaining world and lifecycle policy still
-has a broad review surface.
+units included the header. The composition root is now 236 lines and owns only typed
+boot/configuration composition, stopped-server maintenance coordination, and shutdown.
+The broad header is a one-line retirement guard with zero production consumers; callers
+include only `redis_lifecycle.h`, `redis_world_runtime.h`, `redis_wizard.h`, or the owning
+subsystem header.
 
-Impact: changes have a broad compile/review surface, subsystem policy is inconsistent,
-and tests tend to assert monolithic source layout rather than typed interfaces.
+Baseline impact: changes had a broad compile/review surface, subsystem policy was
+inconsistent, and tests tended to assert monolithic source layout rather than typed
+interfaces. The typed boundaries and ownership gates now constrain that surface.
 
-Recommendation: finish moving world snapshot orchestration and broad lifecycle policy
-behind typed modules. Keep each subsystem's
-availability, codec, TTL, authority, and lifecycle policy beside its implementation,
-leaving `redis.c` as the small boot/configuration composition root.
+Recommendation completed: world snapshot orchestration and broad lifecycle policy moved
+behind typed modules. Each subsystem's availability, codec, TTL, authority, and lifecycle
+policy stays beside its implementation, leaving `redis.c` as the small boot/configuration
+composition root.
 
 ### RDS-027 - The no-MySQL build option is broken
 

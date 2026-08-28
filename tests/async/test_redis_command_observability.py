@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 REDIS = (ROOT / "src/redis.c").read_text()
+WORLD_RUNTIME = (ROOT / "src/redis_world_runtime.c").read_text()
 REPORT = (ROOT / "src/redis_report_cache.c").read_text()
 MAINTENANCE = (ROOT / "src/redis_maintenance.c").read_text()
 SHIP = (ROOT / "src/redis_ship_legacy.c").read_text()
@@ -199,7 +200,7 @@ for token in (
     "REDIS_SHARED_COMMAND_SCRIPT",
     "redis_shared_command_observability_record",
 ):
-    assert token in REDIS + REPORT + MAINTENANCE + SHIP
+    assert token in REDIS + WORLD_RUNTIME + REPORT + MAINTENANCE + SHIP
 
 assert "redis_shared_command_health_copy" in WIZ
 assert "Redis is not queried" in WIZ

@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 REDIS = (ROOT / "src" / "redis.c").read_text(encoding="utf-8")
+WORLD = (ROOT / "src" / "redis_world_runtime.c").read_text(encoding="utf-8")
 HEADER = (ROOT / "src" / "redis.h").read_text(encoding="utf-8")
 ADMIN = (ROOT / "src" / "wizredis.c").read_text(encoding="utf-8")
 
@@ -17,7 +18,7 @@ for retired in (
     "redis_publish(",
     "redis_get_string",
 ):
-    assert retired not in REDIS, retired
+    assert retired not in REDIS + WORLD, retired
     assert retired not in HEADER, retired
 
 assert "mud:next_obj_uid" not in ADMIN

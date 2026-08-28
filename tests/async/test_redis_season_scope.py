@@ -8,6 +8,7 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 REGISTRY = (ROOT / "src" / "redis_key_registry.def").read_text(encoding="ascii")
 REDIS = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
+WORLD = (ROOT / "src" / "redis_world_runtime.c").read_text(encoding="ascii")
 MAINTENANCE = (ROOT / "src" / "redis_maintenance.c").read_text(encoding="ascii")
 REPORT = (ROOT / "src" / "redis_report_cache.c").read_text(encoding="ascii")
 PRESENCE = (ROOT / "src" / "redis_presence_worker.c").read_text(encoding="ascii")
@@ -33,12 +34,11 @@ for name, token, pattern, kind in active:
 
 assert REDIS.count("redis_configure_epoch_surfaces(sql_season_epoch())") == 1
 assert "redis_runtime_epoch = epoch" in REDIS
-assert "world_writer_epoch = redis_runtime_epoch" in REDIS
-assert "return redis_epoch_key(buffer, size, redis_runtime_epoch, suffix)" in REDIS
+assert "world_writer_epoch = world_runtime_epoch" in WORLD
 assert "redis_configure_namespace()" in REDIS
 assert "REDIS_SEASON_INFIX" in NAMESPACE
 assert "redis_namespace_season_key(redis_key_namespace" in REDIS
-assert "config.key_namespace = redis_key_namespace" in REDIS
+assert "config.key_namespace = world_key_namespace.c_str()" in WORLD
 assert REDIS.count("sql_season_epoch()") == 1
 
 for field in ("current_key", "session_prefix", "retry_prefix", "event_channel"):

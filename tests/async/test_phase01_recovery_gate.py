@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 REDIS = (ROOT / "src/redis.c").read_text()
+REDIS_WORLD = (ROOT / "src/redis_world_runtime.c").read_text()
 WORKER = (ROOT / "src/player_save_worker.c").read_text()
 PIPELINE = (ROOT / "src/player_save_pipeline.c").read_text()
 WORLD = (ROOT / "src/world_recovery_pipeline.c").read_text()
@@ -152,8 +153,8 @@ for retired in (
     "redis_save_world_state_json", "redis_save_world_state_sync",
     "redis_load_world_state_json", "mud:dirty_players",
 ):
-    assert retired not in REDIS
-assert "fork(" not in REDIS and "waitpid(" not in REDIS
+    assert retired not in REDIS + REDIS_WORLD
+assert "fork(" not in REDIS + REDIS_WORLD and "waitpid(" not in REDIS + REDIS_WORLD
 assert "player_queue" in WIZREDIS and "redis clear dirty" not in WIZREDIS
 
 for contract in (

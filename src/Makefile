@@ -260,6 +260,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis_presence_payload.o \
 				 redis_presence_runtime.o \
 				 redis_presence_worker.o \
+				 redis_world_runtime.o \
 				 redis_world_store.o \
 				 currency_transaction.o \
 				 player_revision_state.o \

@@ -8,7 +8,7 @@
 #include <string.h>
 #include <strings.h>
 #include "persistence_checkpoint.h"
-#include "redis.h"
+#include "redis_lifecycle.h"
 #include "redis_cache_store.h"
 #include "redis_command_observability.h"
 #include "redis_donation_worker.h"
@@ -16,11 +16,13 @@
 #include "redis_key_registry.h"
 #include "redis_presence_worker.h"
 #include "redis_report_cache.h"
+#include "redis_wizard.h"
+#include "redis_world_runtime.h"
 #include "world_recovery_pipeline.h"
 
 static const char *world_worker_state(const world_recovery_health *world)
 {
-	if (!redis_world_state_enabled)
+	if (!redis_world_runtime_enabled())
 		return "OFF";
 	if (!world->initialized)
 		return "READY";
@@ -414,7 +416,7 @@ void do_redis(P_char ch, char *argument, int /*cmd*/)
 	if (IS_NPC(ch))
 		return;
 
-	if (!redis_enabled)
+	if (!redis_runtime_enabled())
 	{
 		send_to_char("Redis is not enabled.\r\n", ch);
 		return;

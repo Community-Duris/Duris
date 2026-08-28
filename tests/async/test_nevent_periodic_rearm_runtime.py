@@ -336,7 +336,7 @@ with tempfile.TemporaryDirectory(prefix="duris-nevent-periodic-") as directory:
 
 events = (SRC / "new_events.c").read_text(encoding="utf-8")
 periodic = (SRC / "nevent_periodic.c").read_text(encoding="utf-8")
-redis = (SRC / "redis.c").read_text(encoding="utf-8")
+redis = (SRC / "redis_world_runtime.c").read_text(encoding="utf-8")
 artifact = (SRC / "artifact.c").read_text(encoding="utf-8")
 weather = (SRC / "weather.c").read_text(encoding="utf-8")
 handler = (SRC / "handler.c").read_text(encoding="utf-8")

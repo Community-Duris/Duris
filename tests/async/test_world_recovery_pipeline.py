@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PIPELINE = (ROOT / "src/world_recovery_pipeline.c").read_text()
 HEADER = (ROOT / "src/world_recovery_pipeline.h").read_text()
 REDIS = (ROOT / "src/redis.c").read_text()
+WORLD_RUNTIME = (ROOT / "src/redis_world_runtime.c").read_text()
 STORE = (ROOT / "src/redis_world_store.c").read_text()
 REGISTRY = (ROOT / "src/redis_key_registry.def").read_text()
 COMM = (ROOT / "src/comm.c").read_text()
@@ -475,13 +476,13 @@ assert "crc32(0, generation->blob.data() + WORLD_RECOVERY_WIRE_HEADER_BYTES" in 
 assert "std::vector<unsigned char> blob" not in worker
 print("[PASS] bounded capture is game-thread owned and publisher traverses no live graph")
 
-save = section(REDIS, "bool redis_save_world_state(void)", "void redis_world_recovery_pulse")
+save = section(WORLD_RUNTIME, "bool redis_save_world_state(void)", "void redis_world_recovery_pulse")
 assert "fork()" not in save and "redis_floor_store_request_barrier" in save
 generation_read = section(STORE, "bool redis_world_store_read_generation", "bool redis_world_store_publish")
 assert "bounded_string" in generation_read and "REDIS_WORLD_GENERATION_CHUNK_BYTES" in generation_read
-assert REDIS.count("redis_world_store_read_generation") == 2
-initialize = section(REDIS, "bool redis_init(void)", "bool redis_clear_pwipe_state")
-ensure = section(REDIS, "static bool redis_world_recovery_ensure_initialized", "static redisReply *redis_command")
+assert WORLD_RUNTIME.count("redis_world_store_read_generation") == 2
+initialize = section(WORLD_RUNTIME, "bool redis_world_runtime_start", "void redis_world_runtime_shutdown")
+ensure = section(WORLD_RUNTIME, "bool redis_world_recovery_ensure_initialized", "void redis_clear_floor_pickups")
 assert "redis_world_writer_fence_claim()" in initialize
 assert "redis_world_writer_fence_claim()" not in ensure
 assert "world_sequence_floor" in ensure
@@ -518,9 +519,9 @@ for token in ("redis_world_store_mark_clean_shutdown",
               "redis_world_store_consume_clean_shutdown"):
     assert token in STORE
 assert publisher.index("GET %s") < publisher.index("EVAL %b 9")
-assert "header.sequence == sequence" in section(REDIS, "bool redis_has_world_state", "bool redis_clear_world_state")
-assert "world_recovery_restore" in section(REDIS, "bool redis_load_world_state", "void event_save_world_state")
-consume = section(REDIS, "bool redis_consume_world_state", "bool redis_load_world_state")
+assert "header.sequence == sequence" in section(WORLD_RUNTIME, "bool redis_has_world_state", "bool redis_consume_world_state")
+assert "world_recovery_restore" in section(WORLD_RUNTIME, "bool redis_load_world_state", "void event_save_world_state")
+consume = section(WORLD_RUNTIME, "bool redis_consume_world_state", "bool redis_load_world_state")
 assert "redis_world_recovery_quiesce" not in consume
 assert "redis_world_store_consume_generation" in consume
 assert "redis.call('GET',KEYS[1])~=ARGV[1]" in section(
@@ -569,7 +570,7 @@ print("[PASS] recovery publication is atomic and restore accepts only validated 
 
 FLOOR_RUNTIME = (ROOT / "src/redis_floor_runtime.c").read_text(encoding="ascii")
 flush = section(FLOOR_RUNTIME, "bool redis_flush_floor_drops", "void redis_remove_floor_drop")
-pulse = section(REDIS, "void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
+pulse = section(WORLD_RUNTIME, "void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
 assert "redis_floor_store_submit" in flush
 assert "floor_key" in flush and "floor_index_key" in flush
 assert "REDIS_FLOOR_DROP_INDEX_SUFFIX" in FLOOR_RUNTIME
@@ -584,22 +585,17 @@ cancel = section(PIPELINE, "void world_recovery_pipeline_cancel", "bool world_re
 for token in ("stop_requested = true", "queued.clear()", "completions.clear()",
               "active_capture = {}", "publisher_worker.join()"):
     assert token in cancel
-quiesce = section(REDIS, "bool redis_world_recovery_quiesce", "bool redis_has_world_state")
+quiesce = section(WORLD_RUNTIME, "bool redis_world_recovery_quiesce", "bool redis_has_world_state")
 assert "world_recovery_pipeline_cancel()" in quiesce
 assert "redis_floor_store_cancel()" in quiesce
 assert "redis_world_writer_fence_claim()" in quiesce
 assert "redis_world_store_release_fence" not in quiesce
 pwipe = section(REDIS, "bool redis_clear_pwipe_state", "bool redis_validate_pwipe_state")
 assert pwipe.index("redis_world_recovery_quiesce()") < pwipe.index(
-    "redis_connection_open(redis_connections.maintenance)"
+    "redis_maintenance_clear(&config)"
 )
-clear = section(REDIS, "bool redis_clear_world_state", "bool redis_load_world_state")
-generation_clear = "redis_clear_scan_match(REDIS_SHARED_SCOPE_WORLD, generation_pattern)"
-assert clear.index("redis_world_recovery_quiesce()") < clear.index(
-    "REDIS_WORLD_GENERATION_PATTERN"
-) < clear.index(generation_clear)
-assert clear.index("if (!quiesced)") < clear.index(generation_clear)
-cleanup = section(REDIS, "void redis_cleanup", "void redis_clear_floor_pickups")
+assert "redis_clear_world_state" not in WORLD_RUNTIME
+cleanup = section(WORLD_RUNTIME, "void redis_world_runtime_shutdown", "bool redis_world_runtime_enabled")
 assert "redis_world_store_release_fence" in cleanup
 assert "world_recovery_capture_forget_character(ch);" in HANDLER
 assert "world_recovery_capture_forget_object(obj);" in HANDLER

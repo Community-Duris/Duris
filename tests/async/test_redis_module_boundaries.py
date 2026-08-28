@@ -7,6 +7,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 REDIS_HEADER = (ROOT / "src/redis.h").read_text(encoding="ascii")
 REDIS_SOURCE = (ROOT / "src/redis.c").read_text(encoding="ascii")
+LIFECYCLE_HEADER = (ROOT / "src/redis_lifecycle.h").read_text(encoding="ascii")
+WORLD_RUNTIME_HEADER = (ROOT / "src/redis_world_runtime.h").read_text(encoding="ascii")
+WORLD_RUNTIME_SOURCE = (ROOT / "src/redis_world_runtime.c").read_text(encoding="ascii")
+WIZARD_HEADER = (ROOT / "src/redis_wizard.h").read_text(encoding="ascii")
 CHECKPOINT_HEADER = (ROOT / "src/persistence_checkpoint.h").read_text(encoding="ascii")
 CHECKPOINT_SOURCE = (ROOT / "src/persistence_checkpoint.c").read_text(encoding="ascii")
 DONATION_HEADER = (ROOT / "src/redis_donation_runtime.h").read_text(encoding="ascii")
@@ -209,6 +213,42 @@ sql = (ROOT / "src/sql.c").read_text(encoding="utf-8")
 assert '#include "redis_maintenance.h"' in sql
 assert '#include "redis.h"' not in sql
 
+assert "#error \"redis.h is retired" in REDIS_HEADER
+for symbol in ("redis_init", "redis_cleanup", "redis_runtime_enabled"):
+    assert symbol in LIFECYCLE_HEADER
+for symbol in (
+    "redis_world_runtime_start",
+    "redis_world_runtime_shutdown",
+    "redis_world_runtime_enabled",
+    "redis_save_world_state",
+    "redis_world_recovery_pulse",
+    "redis_world_recovery_drain",
+    "redis_world_recovery_quiesce",
+):
+    assert symbol in WORLD_RUNTIME_HEADER
+    assert symbol in WORLD_RUNTIME_SOURCE
+assert "do_redis" in WIZARD_HEADER
+for token in (
+    "redis_connection_open(world_connection)",
+    "redis_world_store_claim_fence",
+    "redis_floor_store_request_barrier",
+    "world_recovery_pipeline_request",
+    "world_recovery_restore_with_floor",
+):
+    assert token in WORLD_RUNTIME_SOURCE
+    assert token not in REDIS_SOURCE
+assert "redis_world_runtime.o" in MAKEFILE
+for filename, header in (
+    ("comm.c", "redis_world_runtime.h"),
+    ("copyover.c", "redis_world_runtime.h"),
+    ("new_events.c", "redis_world_runtime.h"),
+    ("wizredis.c", "redis_world_runtime.h"),
+    ("interp.c", "redis_wizard.h"),
+):
+    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
+    assert f'#include "{header}"' in source
+    assert '#include "redis.h"' not in source
+
 checkpoint_only_callers = (
     "actinf.c",
     "auction_houses.c",
@@ -228,6 +268,6 @@ redis_includers = []
 for source_path in (ROOT / "src").rglob("*.[ch]"):
     if '#include "redis.h"' in source_path.read_text(encoding="utf-8"):
         redis_includers.append(source_path)
-assert len(redis_includers) <= 6
+assert redis_includers == []
 
 print("Redis, checkpoint, donation, presence, report-cache, and floor-runtime boundaries passed")

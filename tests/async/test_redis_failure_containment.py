@@ -5,6 +5,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
 text = (root / "src/redis.c").read_text()
+world_runtime = (root / "src/redis_world_runtime.c").read_text()
 checkpoint = (root / "src/persistence_checkpoint.c").read_text()
 store = (root / "src/redis_world_store.c").read_text()
 presence_worker = (root / "src/redis_presence_worker.c").read_text()
@@ -31,8 +32,10 @@ def section(start: str, end: str, source: str = text) -> str:
 assert "redisCommand(" not in text
 assert "redisConnect(" not in text
 assert "redisConnectWithTimeout(" not in text
-assert text.count("redisvCommand(") == 1
-assert text.count("redisCommandArgv(") == 1
+assert text.count("redisvCommand(") == 0
+assert text.count("redisCommandArgv(") == 0
+assert world_runtime.count("redisvCommand(") == 1
+assert world_runtime.count("redisCommandArgv(") == 1
 assert "redisvAppendCommand(" not in text
 assert "redisGetReply(ctx," not in text
 assert floor_store.count("redisAppendCommand(") == 6
@@ -44,7 +47,7 @@ assert 'redisAppendCommand(context, "ZREM %b %llu"' in floor_store
 assert "redisConnect(" not in store
 assert "redisConnectWithTimeout(" not in store
 assert store.count("redisvCommand(") == 1
-command = section("static redisReply *redis_command", "static bool redis_scan_match_empty")
+command = section("redisReply *redis_command_finish", "bool redis_reconnect", world_runtime)
 assert connection.count("redisConnectWithTimeout(") == 1
 assert "redisInitiateSSL(context, ssl)" in connection
 assert "X509_VERIFY_PARAM_set1_host" in connection
@@ -53,12 +56,12 @@ assert "redisSetTimeout" in connection
 assert 'redisCommand(context, "AUTH %b %b"' in connection
 assert 'redisCommand(context, "AUTH %b"' in connection
 assert 'redisCommand(context, "SELECT %d"' in connection
-assert "if (!ctx || ctx->err)" in command
-assert "redis_command_outcome(ctx, false)" in command
+assert "if (!world_context || world_context->err)" in command
+assert "redis_command_outcome(world_context, false)" in command
 assert "REDIS_REPLY_ERROR" in command and '"error_reply"' in command
 assert '"timeout"' in command and '"transport"' in command and '"no_reply"' in command
 assert "redis_shared_command_observability_record" in command
-assert "redis_ctx = redis_connection_open(redis_connections.world);" in text
+assert "world_context = redis_connection_open(world_connection);" in world_runtime
 print("[PASS] all runtime Redis connections use bounded authenticated selected-database helpers")
 
 assert "redisConnectWithTimeout(" not in donation_worker
@@ -109,7 +112,7 @@ assert "redis_presence_worker_cancel();" in section(
     "bool redis_clear_pwipe_state", "bool redis_validate_pwipe_state"
 )
 assert "redis_presence_worker_shutdown" in section(
-    "void redis_cleanup", "void redis_clear_floor_pickups"
+    "void redis_cleanup", "#endif\n}", text
 )
 print("[PASS] presence writes and lease refreshes use a bounded healing worker outside the simulation thread")
 
@@ -137,7 +140,7 @@ assert "redis_report_cache_cancel();" in section(
     "bool redis_clear_pwipe_state", "bool redis_validate_pwipe_state"
 )
 assert "redis_report_cache_shutdown" in section(
-    "void redis_cleanup", "void redis_clear_floor_pickups"
+    "void redis_cleanup", "#endif\n}", text
 )
 assert "redis_cache_store_cancel();" in report_cache
 assert "redis_cache_store_shutdown(timeout_msec)" in report_cache
@@ -154,8 +157,9 @@ for facade in (
 print("[PASS] report caches use bounded local reads and asynchronous Redis publication")
 
 init = section("bool redis_init(void)", "bool redis_clear_pwipe_state")
-assert init.index("redis_enabled = true;") < init.index("redis_connection_open")
-connect_failure = init[init.index("if (!redis_ctx)"):init.index("// check for world state")]
+assert init.index("redis_enabled = true;") < init.index("redis_world_runtime_start")
+world_start = section("bool redis_world_runtime_start", "void redis_world_runtime_shutdown", world_runtime)
+connect_failure = world_start[world_start.index("if (!world_context)"):]
 assert "redis_enabled = false;" not in connect_failure
 assert "mud:dirty_players" not in init
 snapshot = section(
@@ -190,12 +194,12 @@ for forbidden in ("redis_command", "redis_reconnect", "sql_save_player", "fork("
     assert forbidden not in flush
 print("[PASS] dirty marking and checkpoint capture do no Redis, SQL, filesystem, or fork work")
 
-world = section("bool redis_save_world_state(void)", "bool redis_has_world_state(void)")
+world = section("bool redis_save_world_state(void)", "bool redis_has_world_state(void)", world_runtime)
 assert "fork(" not in world
 assert "world_recovery_pipeline_request" in world
 assert "world_recovery_pipeline_busy" in world
 assert "redis_floor_store_request_barrier" in world
-cleanup = section("void redis_cleanup(void)", "void redis_clear_floor_pickups(void)")
+cleanup = section("void redis_world_runtime_shutdown", "bool redis_world_runtime_enabled", world_runtime)
 assert "redis_terminate_child" not in cleanup
 assert "world_recovery_pipeline_shutdown" in cleanup
 assert "waitpid(-1, &status, WNOHANG)" in signals
@@ -224,7 +228,7 @@ assert "redis_collect_integer_replies" not in floor_flush
 assert floor_flush.count("redis_command") == 0
 assert "bool redis_flush_floor_drops(void);" in floor_runtime_header
 assert "bool redis_flush_floor_drops(void);" not in header
-ack = section("void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
+ack = section("void redis_world_recovery_pulse", "bool redis_world_recovery_drain", world_runtime)
 assert "redis_clear_floor_drops_checked()" not in ack
 assert "world_recovery_floor_ack_pending" not in ack
 for token in ("redis_floor_store_take_barrier", "world_recovery_pipeline_request",
@@ -233,7 +237,7 @@ for token in ("redis_floor_store_take_barrier", "world_recovery_pipeline_request
 for token in ("REDIS_FLOOR_QUEUE_CAPACITY", "REDIS_FLOOR_QUEUE_MAX_BYTES",
               "redis_floor_store_request_barrier", "redis_floor_store_take_barrier"):
     assert token in floor_store
-event = text[text.index("void event_save_world_state") :]
+event = world_runtime[world_runtime.index("void event_save_world_state") :]
 assert "redis_clear_floor_drops" not in event
 print("[PASS] floor deltas use a bounded background pipeline and ordered snapshot barrier")
 
