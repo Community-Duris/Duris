@@ -45,6 +45,29 @@
 - **Overall state:** the full objective is not complete. The global incomplete-domain
   boot fence remains in place while other concrete DB-free gaps are restored.
 
+### 2026-08-29 - database-independent launcher and pre-boot backup
+
+- **Concrete gap:** `cycle_mud.sh` required database credentials and ran migrations,
+  schema verification, and MySQL shutdown logging in every mode. Its pre-boot backup
+  selected `mysqldump` from the unrelated `REDIS` switch, so a flat-file-only launch
+  could not be operationally independent of database tools.
+- **Restoration:** launcher validation and database operations now follow the selected
+  persistence mode. `flatfile-primary` requires only its absolute state root, avoids
+  migration/schema/MySQL paths, and snapshots that complete state root to an explicitly
+  separate owner-only backup before boot. A failed or unsafe snapshot stops the launch.
+  Existing database-backed and fallback paths retain their database requirements.
+- **Focused evidence:** `python3 tests/async/test_flatfile_launcher.py` validates all
+  three mode contracts and runs an isolated supervised flat-file cycle with `REDIS=1`.
+  It proves the selected state is backed up, no database-only command path is entered,
+  and an unsafe nested backup destination fails closed. The test is included in the
+  client-free CI job.
+- **Build evidence:** `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `bash -n scripts/cycle_mud.sh scripts/backup_pfiles.sh`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** the full objective is not complete. The global incomplete-domain
+  boot fence remains in place while other concrete DB-free gaps are restored.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

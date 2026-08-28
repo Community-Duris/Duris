@@ -19,7 +19,7 @@ connection details. The server checks metadata before reading: `.env` must be
 a regular file owned by the effective server user and must grant no permission
 beyond owner read/write (`0600`).
 
-## Database
+## Persistence
 
 `PERSISTENCE_MODE` selects one whole-server authority. It defaults to
 `mariadb-primary`. The accepted values are `mariadb-primary`,
@@ -32,19 +32,27 @@ must not be enabled in production yet.
 | --- | --- | --- |
 | `PERSISTENCE_MODE` | Optional; defaults to `mariadb-primary` | Select the complete persistence authority; mixed per-write failover is not supported. |
 | `FLATFILE_STATE_DIR` | Required by either flat-file mode | Absolute server-user-owned directory with mode `0700` or stricter. |
+| `FLATFILE_BACKUP_DIR` | Optional in `flatfile-primary`; defaults to `backups/flatfile` | Absolute backup root outside `FLATFILE_STATE_DIR`; each pre-boot snapshot is owner-only. |
 | `ENVIRONMENT` | Required: `local` or `production` | Runtime trust role. |
-| `DB_HOST` | Required | MySQL/MariaDB host. |
+| `DB_HOST` | Required by either database-backed mode | MySQL/MariaDB host. |
 | `DB_PORT` | Optional; `1`-`65535` | Database TCP port; the client default applies when omitted. |
-| `DB_USER` | Required | Database account. |
-| `DB_PASSWD` | Required | Database password. |
-| `DB_NAME` | Required | Requested database name. |
-| `DB_ALLOWED_TARGETS` | Required | Comma-separated exact `host/database` pairs; the resolved pair must match. |
+| `DB_USER` | Required by either database-backed mode | Database account. |
+| `DB_PASSWD` | Required by either database-backed mode | Database password. |
+| `DB_NAME` | Required by either database-backed mode | Requested database name. |
+| `DB_ALLOWED_TARGETS` | Required by either database-backed mode | Comma-separated exact `host/database` pairs; the resolved pair must match. |
 | `DB_SOCKET` | Optional, local role only | Protected local Unix socket used instead of remote transport. |
 | `DB_TLS` | Required as `TRUE` for non-loopback hosts | Enforce encrypted database transport. |
 | `DB_SSL_CA` | Required for non-loopback hosts | Regular CA file used to verify the database server certificate. |
 | `PLAYER_SAVE_JOURNAL_DIR` | Required outside mini mode | Absolute server-user-owned `0700` directory for revisioned player snapshots. |
 | `CRITICAL_COMMAND_JOURNAL_DIR` | Required outside mini mode | Absolute server-user-owned `0700` directory for non-coalescing critical commands. |
 | `MAINTENANCE_STATE_FILE` | Optional; `bin/server/maintenance-scheduler.state` | Durable scheduler cursor/completion state; parent directory must be server-user controlled. |
+
+`scripts/cycle_mud.sh --check-config` validates the selected mode without starting the
+server. In `flatfile-primary`, the launcher does not require database settings, run
+migrations or schema checks, invoke MySQL shutdown logging, or select a database backup
+because Redis happens to be enabled. It snapshots the selected `FLATFILE_STATE_DIR`
+before boot and refuses to start if that snapshot fails. Build the client-free binary
+with `make -C src PERSISTENCE_BACKEND=flatfile` for this mode.
 
 `DB_NAME` selects the requested database and `DB_ALLOWED_TARGETS` authorizes the
 resolved target. The listen port is an additional guard, not the primary selector.
@@ -352,8 +360,8 @@ switches to `0..1`; invalid values fall back to their defaults. See
 1. The launching process environment has precedence over `.env`.
 2. `.env` values are loaded from the server's data directory, normally the
    repository root or the directory supplied with `-d`.
-3. Missing required values fail closed; no database credentials or names have
-   compiled defaults.
+3. Missing values required by the selected persistence mode fail closed; no database
+   credentials or names have compiled defaults.
 4. The resolved database target must be present in `DB_ALLOWED_TARGETS` before
    a connection is attempted. Logs report validation categories without
    printing credentials or target values.

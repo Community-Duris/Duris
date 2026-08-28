@@ -10,14 +10,19 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
                            # otherwise nohup cycle_mud.sh -> logs/duris-console.log
 ./scripts/cycle_mud.sh     # foreground supervised run (what start_mud wraps)
 ./scripts/cycle_mud.sh --dev   # development listener/build role on port 4000
+./scripts/cycle_mud.sh --check-config  # validate the selected persistence mode only
 ```
 
 `cycle_mud.sh`:
 
 - Anchors itself to the repository root; loads `.env` if present.
-- Requires `ENVIRONMENT`, `DB_HOST`, `DB_USER`, `DB_PASSWD`, `DB_NAME`, and
-  `DB_ALLOWED_TARGETS` from the environment or a securely permissioned `.env`.
-  It has no source-code credential fallback.
+- Requires `ENVIRONMENT` in every mode. Database-backed modes also require `DB_HOST`,
+  `DB_USER`, `DB_PASSWD`, `DB_NAME`, and `DB_ALLOWED_TARGETS`; `flatfile-primary`
+  instead requires an absolute `FLATFILE_STATE_DIR`. It has no source-code credential
+  fallback.
+- Runs migrations, schema verification, and MySQL shutdown logging only for a
+  database-backed mode. A `flatfile-primary` launch does not invoke those database
+  tools, even when Redis is enabled.
 - Raises core dump limits (`ulimit -c unlimited`).
 - Rebuilds area tools and regenerates `areas/world.*` when the `make_*`
   helpers are missing.
@@ -27,10 +32,11 @@ Day-to-day operation of a DurisMUD instance. First-time setup is in
   prior executables under `bin/server/history/` by default, and runs the active
   binary in an outer loop. Set `DMS_BINARY_HISTORY_LIMIT` to change the limit.
 - On each restart it snapshots logs into `logs/old-logs/<timestamp>/`, writes
-  the stop reason, creates and validates an atomic MySQL backup with
-  `scripts/backup_pfiles.sh`, optionally emails an alert, and records
-  boot/shutdown times plus reason into the database. A backup failure stops the
-  cycle before the server can restart.
+  the stop reason, runs `scripts/backup_pfiles.sh`, and optionally emails an alert.
+  Database-backed modes create and validate an atomic MySQL backup and record
+  boot/shutdown times plus the reason in the database. `flatfile-primary` instead
+  snapshots `FLATFILE_STATE_DIR` beneath `FLATFILE_BACKUP_DIR` (default
+  `backups/flatfile`). A backup failure in either mode stops the cycle before restart.
 
 ### Exit codes interpreted by the cycle loop
 
@@ -95,8 +101,11 @@ Before a development start, confirm the intended role and target without printin
 credentials:
 
 ```bash
+# Validate mode-specific requirements without contacting a database.
+./scripts/cycle_mud.sh --check-config
+
 # Inspect names only. Do not print or copy secret values.
-sed -n 's/^\(ENVIRONMENT\|DB_HOST\|DB_PORT\|DB_NAME\|DB_ALLOWED_TARGETS\)=.*/\1=<set>/p' .env
+sed -n 's/^\(ENVIRONMENT\|PERSISTENCE_MODE\|FLATFILE_STATE_DIR\|DB_HOST\|DB_PORT\|DB_NAME\|DB_ALLOWED_TARGETS\)=.*/\1=<set>/p' .env
 
 # Source-only contract checks; these do not connect to a configured database.
 python3 tests/async/test_runtime_connection_trust.py
@@ -274,6 +283,11 @@ These are investigated and understood; they are not signs of a failed boot.
 
 Schema operations follow the safety rules in [DATABASE.md](../reference/DATABASE.md):
 back up, clone, validate replay on the clone -- never against live data.
+
+In `flatfile-primary`, `scripts/backup_pfiles.sh` snapshots the complete selected
+`FLATFILE_STATE_DIR` instead of inferring database use from `REDIS`. Its backup root
+must be absolute and outside the state root. A missing state root on first boot is a
+clean no-op; an unsafe target or failed copy stops the supervised launch.
 
 ### Migration procedure
 

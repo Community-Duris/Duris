@@ -95,6 +95,8 @@ jobs:
         run: python3 tests/async/test_flatfile_timers.py
       - name: Verify flat-file help catalog
         run: python3 tests/async/test_flatfile_help_catalog.py
+      - name: Verify database-independent launcher
+        run: python3 tests/async/test_flatfile_launcher.py
 
   quality:
     runs-on: ubuntu-24.04
@@ -122,5 +124,7 @@ jobs:
           bash -n \
             migrations/adopt_migration_baseline.sh \
             migrations/run_migration.sh \
+            scripts/backup_pfiles.sh \
             scripts/clear-redis.sh \
+            scripts/cycle_mud.sh \
             scripts/start_mud.sh
