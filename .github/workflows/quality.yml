@@ -46,6 +46,7 @@ jobs:
         run: |
           python3 tests/async/test_flatfile_item_repository.py
           python3 tests/async/test_item_transfer_version_compatibility.py
+          python3 tests/async/test_shop_trade_command.py
       - name: Verify flat-file artifact authority
         run: python3 tests/async/test_flatfile_artifact_repository.py
       - name: Verify flat-file association authority

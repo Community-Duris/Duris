@@ -2200,6 +2200,31 @@ sections below continue to describe the required end state.
   payment with item custody, including produced-item creation and duplicate/trash destruction,
   before routing live shop commands or selecting the flat restore/save wrappers.
 
+### Checkpoint 68 - bounded composite shop-trade command
+
+- **Completed:** added an append-only `shop_trade` critical-command type with a versioned,
+  pointer-free codec for the four durable outcomes: purchase of existing stock, purchase of
+  produced stock, sale retained by the shop, and sale destroyed as duplicate/trash.
+- **Atomic intent:** one command now carries the player/account identity, positive bounded
+  price, wallet and bank revisions, shop aggregate revision, selected root UID, sorted bounded
+  item graph and item revisions/states, plus a 128 KiB bounded item-snapshot blob. Its lock set
+  covers the player, account, zero-safe shopkeeper identity, and every item UID; produced-item
+  intents require absent revisions while all other actions require active non-absent custody.
+- **Completion contract:** the fixed result envelope can publish post-commit wallet/bank
+  balances and revisions, shop revision, both item-owner revisions, and every resulting item
+  revision. Strict decoding rejects malformed topology, mismatched fences, unsupported actions,
+  noncanonical creation state, nonzero reserved bytes, and trailing result data.
+- **Checks passed:** the executable codec regression covers full critical-command
+  encode/decode, shop ID zero mapping, fence tampering, produced-item absent-state enforcement,
+  result round trip, and reserved-tail rejection. Changed-line formatting and the normal C++20
+  server build pass; CI runs the codec with item-authority regressions.
+- **Exposure:** neither MariaDB nor flat-file apply routing recognizes the new command yet, and
+  no live shop path submits it. This is an intentionally inert protocol boundary until a single
+  repository transaction can publish wallet, item custody, and shop aggregate after-images.
+- **Next action:** add reusable locked prepare APIs for shop aggregate mutation and generic item
+  transfer, then implement the flat repository apply path using one authority transaction and
+  idempotent operation result before adding runtime submission/completion handling.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
