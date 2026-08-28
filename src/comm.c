@@ -97,6 +97,7 @@
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
 #include "item_uid_allocator.h"
+#include "flatfile_item_repository.h"
 #include "auction_transaction.h"
 #include "combat_outcome_transaction.h"
 #include "artifact_guild_transaction.h"
@@ -765,9 +766,12 @@ void run_the_game(int port, int sslport)
 				  "check PLAYER_SAVE_JOURNAL_DIR");
 	}
 	const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
+	critical_apply_fn critical_apply = critical_command_repository_apply_from_pool;
+#ifdef __NO_MYSQL__
+	critical_apply = flatfile_critical_command_repository_apply_selected;
+#endif
 	if (!critical_outbox_init(critical_gameplay_outbox_delivery, NULL) ||
-	    !critical_command_coordinator_init(critical_journal_directory,
-					       critical_command_repository_apply_from_pool, NULL))
+	    !critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL))
 	{
 		critical_command_coordinator_shutdown();
 		critical_outbox_shutdown();

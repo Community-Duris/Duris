@@ -413,13 +413,56 @@ sections below continue to describe the required end state.
   applies the existing item-transfer command atomically and idempotently, then use it to
   construct authoritative item sidecars during player load.
 
+### Checkpoint 14 - revisioned item custody and idempotent transfer ledger
+
+- **Completed:** added a typed `DUROWN` authority under `domains/` containing the sorted
+  owner-revision index, current UID/root/parent/owner/revision/custody records, and the
+  operation-ID result ledger. The entire mutation and its replay result publish in one
+  checksummed catalog revision under an owner-only cross-process lock, so no committed
+  ownership move can exist without its idempotence record or vice versa.
+- **Completed:** the repository applies the existing version-2 item-transfer command
+  rather than a new flat-only mutation format. It enforces expected owner and item
+  revisions, complete selected-subtree topology, target-parent ownership/revision,
+  creation uniqueness, destruction custody state, revision overflow, and bounded
+  catalog capacity. A command replay returns its original result; reusing an operation
+  ID with different command bytes is rejected.
+- **Completed:** the existing critical-command journal and coordinator now select this
+  repository for client-free item transfers. The journal remains the pre-apply WAL;
+  after a crash, replay reaches the catalog ledger and either applies once or returns
+  `already_applied`. Non-item critical commands remain explicitly unsupported rather
+  than reaching the SQL pool.
+- **Completed:** added owner-load support for reconstructing an active custody sidecar.
+  Player snapshot/ownership reconciliation is still a separate next step, so login is
+  not enabled merely because an owner catalog exists.
+- **Completed:** added a standalone repository regression and client-free CI step. It
+  covers nested creation, owner/item revision results, owner reload, exact replay,
+  conflicting operation-ID reuse, cross-owner movement, stale rejection and its replay,
+  two-process replay of one creation, checksum corruption, refusal to overwrite corrupt
+  authority, and temporary-file cleanup.
+- **Checks passed:** `python3 tests/async/test_flatfile_item_repository.py`,
+  `python3 tests/async/test_item_ownership_contract.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `src/flatfile_item_repository.[ch]`, `src/comm.c`,
+  `src/Makefile`, `src/persistence_mode.c`, `.github/workflows/quality.yml`, and the
+  focused ownership repository regression.
+- **Operational limitation:** the embedded operation ledger is deliberately bounded and
+  never forgets an operation ID. Production tooling must compact it only into another
+  durable generation that preserves replay answers; reaching the bound fails closed.
+- **Remaining P2 gap:** player/pet snapshot rows are not yet reconciled against custody
+  records, other critical command types still use no flat repository, and external
+  economy/gameplay sidecars remain absent.
+- **Next action:** construct player-load item identity sidecars by matching every
+  snapshot UID and parent edge to the player owner revision, then add the economy and
+  gameplay-read authorities needed for a fully materializable result.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
 |---|---|---|
 | P0 - real DB-free boundary | Complete | Client-free binary links without system MySQL dependencies; isolated boot preflight and no-MySQL CI job exist |
 | P1 - identity and player continuity | In progress | Account/identity continuity, baseline creation, revisioned save, terminal fences, and identity-verified snapshot load exist; external sidecars still fence login |
-| P2 - transactional gameplay and domains | In progress | Collision-free durable item UID ranges exist; ownership, transfer ledger, operation WAL, and domain repositories remain |
+| P2 - transactional gameplay and domains | In progress | Durable UID allocation plus revisioned item ownership/transfer replay exist; load reconciliation, non-item operations, and remaining domains remain |
 | P3 - production operations | Not started | No exporter, whole-authority backup, or restore drill yet |
 
 ## Executive conclusion
