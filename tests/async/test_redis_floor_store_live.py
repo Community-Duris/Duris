@@ -26,6 +26,7 @@ def main() -> None:
 
     harness = r'''
 #include "redis_floor_store.h"
+#include "redis_connection.h"
 #include <hiredis/hiredis.h>
 #include <cassert>
 #include <chrono>
@@ -36,7 +37,12 @@ def main() -> None:
 int main(int argc, char **argv)
 {
     assert(argc == 2);
-    redis_floor_store_config config = {"127.0.0.1", atoi(argv[1]), 100, 100};
+    const int live_port = atoi(argv[1]);
+    redis_connection_options options = {
+        "127.0.0.1", live_port, 100, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false};
+    redis_connection_settings *settings = redis_connection_settings_create(&options);
+    assert(settings);
+    redis_floor_store_config config = {settings};
     assert(redis_floor_store_init(&config));
     const unsigned char binary_value[] = {'o', 0, 'e'};
     redis_floor_mutation first[] = {
@@ -56,7 +62,7 @@ int main(int argc, char **argv)
     redis_floor_store_health health = redis_floor_store_health_copy();
     assert(health.paused && health.queued_batches == 1);
 
-    redisContext *context = redisConnect("127.0.0.1", config.port);
+    redisContext *context = redisConnect("127.0.0.1", live_port);
     assert(context && !context->err);
     redisReply *reply = (redisReply *)redisCommand(context, "HMGET mud:season:1:floor_drops 100 200 300");
     assert(reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 3);
@@ -87,6 +93,7 @@ int main(int argc, char **argv)
     freeReplyObject(reply);
     redisFree(context);
     redis_floor_store_reset_for_tests();
+    redis_connection_settings_destroy(settings);
     return 0;
 }
 '''
@@ -101,8 +108,9 @@ int main(int argc, char **argv)
             [
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
-                "-I", str(ROOT / "src"), str(ROOT / "src" / "redis_floor_store.c"),
-                str(source), "-lhiredis", "-pthread", "-o", str(binary),
+                "-I", str(ROOT / "src"), str(ROOT / "src" / "redis_connection.c"),
+                str(ROOT / "src" / "redis_floor_store.c"), str(source), "-lhiredis",
+                "-lhiredis_ssl", "-lssl", "-lcrypto", "-pthread", "-o", str(binary),
             ],
             check=True,
         )

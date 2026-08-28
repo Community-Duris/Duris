@@ -1,4 +1,5 @@
 #include "redis_world_store.h"
+#include "redis_connection.h"
 
 #include "world_recovery_pipeline.h"
 
@@ -72,26 +73,12 @@ bool build_keys(const redis_world_store_config *config, world_keys *keys)
 			  "world_state:clean_shutdown");
 }
 
-redisContext *connect_bounded(const redis_world_store_config *config)
+redisContext *connect_bounded(const redis_world_store_config *config,
+			      int minimum_command_timeout_msec = 0)
 {
-	if (!config || !config->host || !*config->host || config->port <= 0 ||
-	    config->port > 65535 || config->connect_timeout_msec <= 0 ||
-	    config->command_timeout_msec <= 0)
-		return nullptr;
-	struct timeval connect_timeout = { config->connect_timeout_msec / 1000,
-					   (config->connect_timeout_msec % 1000) * 1000 };
-	struct timeval command_timeout = { config->command_timeout_msec / 1000,
-					   (config->command_timeout_msec % 1000) * 1000 };
-	redisContext *context =
-		redisConnectWithTimeout(config->host, config->port, connect_timeout);
-	if (!context || context->err)
-		return context;
-	if (redisSetTimeout(context, command_timeout) != REDIS_OK)
-	{
-		redisFree(context);
-		return nullptr;
-	}
-	return context;
+	return config ? redis_connection_open_with_timeout(config->connection,
+							   minimum_command_timeout_msec) :
+			nullptr;
 }
 
 redisReply *command(redisContext *context, const char *format, ...)
@@ -341,15 +328,13 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 	    !format_key(generation, sizeof generation, config->season_epoch,
 			generation_suffix.c_str()))
 		return false;
-	redis_world_store_config publication_config = *config;
 	constexpr size_t assumed_bytes_per_second = 16 * 1024 * 1024;
 	constexpr int maximum_publish_timeout_msec = 5000;
 	const uint64_t transfer_msec =
 		(size * 1000ULL + assumed_bytes_per_second - 1) / assumed_bytes_per_second;
-	publication_config.command_timeout_msec = std::max(
-		publication_config.command_timeout_msec,
-		std::min(maximum_publish_timeout_msec, static_cast<int>(transfer_msec + 100)));
-	redisContext *context = connect_bounded(&publication_config);
+	const int publish_timeout_msec =
+		std::min(maximum_publish_timeout_msec, static_cast<int>(transfer_msec + 100));
+	redisContext *context = connect_bounded(config, publish_timeout_msec);
 	if (!context || context->err)
 	{
 		if (context)

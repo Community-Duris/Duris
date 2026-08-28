@@ -26,6 +26,7 @@
 #include "player_save_worker.h"
 #include "presence_policy.h"
 #include "redis_cache_store.h"
+#include "redis_connection.h"
 #include "redis_donation_worker.h"
 #include "redis_floor_store.h"
 #include "redis_presence_payload.h"
@@ -68,6 +69,7 @@ bool redis_clear_ship_snapshots(void)
 #endif
 
 static redisContext *redis_ctx = NULL;
+static redis_connection_settings *redis_settings = NULL;
 bool redis_enabled = false;
 bool redis_donation_enabled = false;
 bool redis_world_state_enabled = false;
@@ -112,39 +114,10 @@ static void redis_log_command_failure(const char *outcome)
 	logit(LOG_DEBUG, "redis command failed: outcome=%s", outcome);
 }
 
-static redisContext *redis_connect_bounded(const char *host, int port)
-{
-	struct timeval connect_timeout = { REDIS_CONNECT_TIMEOUT_MSEC / 1000,
-					   (REDIS_CONNECT_TIMEOUT_MSEC % 1000) * 1000 };
-	struct timeval command_timeout = { REDIS_COMMAND_TIMEOUT_MSEC / 1000,
-					   (REDIS_COMMAND_TIMEOUT_MSEC % 1000) * 1000 };
-	redisContext *ctx = redisConnectWithTimeout(host, port, connect_timeout);
-	if (!ctx || ctx->err)
-		return ctx;
-	if (redisSetTimeout(ctx, command_timeout) != REDIS_OK)
-	{
-		redisFree(ctx);
-		return NULL;
-	}
-	return ctx;
-}
-
 static redis_world_store_config redis_world_store_config_copy(void)
 {
 	redis_world_store_config config = {};
-	config.host = getenv("REDIS_HOST");
-	if (!config.host || !*config.host)
-		config.host = "127.0.0.1";
-	config.port = 6379;
-	const char *port = getenv("REDIS_PORT");
-	if (port && *port)
-	{
-		const int configured = atoi(port);
-		if (configured > 0 && configured <= 65535)
-			config.port = configured;
-	}
-	config.connect_timeout_msec = REDIS_CONNECT_TIMEOUT_MSEC;
-	config.command_timeout_msec = REDIS_COMMAND_TIMEOUT_MSEC;
+	config.connection = redis_settings;
 	config.season_epoch = world_writer_epoch ? world_writer_epoch : sql_season_epoch();
 	config.generation_ttl_seconds = std::max<uint64_t>(3600, world_state_max_age * 4);
 	return config;
@@ -430,6 +403,65 @@ static int get_room_vnum(P_char ch)
 	return world[ch->in_room].number;
 }
 
+static bool redis_parse_number(const char *value, int minimum, int maximum, int fallback,
+			       int *result)
+{
+	if (!result)
+		return false;
+	if (!value || !*value)
+	{
+		*result = fallback;
+		return true;
+	}
+	errno = 0;
+	char *end = NULL;
+	const long parsed = strtol(value, &end, 10);
+	if (errno || !end || *end || parsed < minimum || parsed > maximum)
+		return false;
+	*result = (int)parsed;
+	return true;
+}
+
+static bool redis_host_is_loopback(const char *host)
+{
+	return host && (!strcasecmp(host, "localhost") || !strcmp(host, "127.0.0.1") ||
+			!strcmp(host, "::1"));
+}
+
+static bool redis_configure_connection(const char *host, int port)
+{
+	int database = 0;
+	if (!redis_parse_number(getenv("REDIS_DB"), 0, 255, 0, &database))
+		return false;
+	const char *tls_value = getenv("REDIS_TLS");
+	const bool tls = tls_value && !strcasecmp(tls_value, "TRUE");
+	if (tls_value && *tls_value && strcasecmp(tls_value, "TRUE") &&
+	    strcasecmp(tls_value, "FALSE"))
+		return false;
+	const char *environment = getenv("ENVIRONMENT");
+	const bool require_tls = environment && !strcasecmp(environment, "production") &&
+				 !redis_host_is_loopback(host);
+	const redis_connection_options options = {
+		host,
+		port,
+		REDIS_CONNECT_TIMEOUT_MSEC,
+		REDIS_COMMAND_TIMEOUT_MSEC,
+		database,
+		getenv("REDIS_USERNAME"),
+		getenv("REDIS_PASSWORD"),
+		tls,
+		getenv("REDIS_CA_CERT"),
+		getenv("REDIS_TLS_SERVER_NAME"),
+		require_tls,
+	};
+	redis_connection_settings *settings = redis_connection_settings_create(&options);
+	if (!settings)
+		return false;
+	redis_connection_settings_destroy(redis_settings);
+	redis_settings = settings;
+	return true;
+}
+
 static bool redis_reconnect(void)
 {
 #ifdef __NO_MYSQL__
@@ -441,20 +473,7 @@ static bool redis_reconnect(void)
 		redis_ctx = NULL;
 	}
 
-	const char *redis_host = getenv("REDIS_HOST");
-	if (!redis_host || !*redis_host)
-		redis_host = "127.0.0.1";
-
-	const char *redis_port_str = getenv("REDIS_PORT");
-	int redis_port = 6379;
-	if (redis_port_str && *redis_port_str)
-	{
-		redis_port = atoi(redis_port_str);
-		if (redis_port <= 0 || redis_port > 65535)
-			redis_port = 6379;
-	}
-
-	redis_ctx = redis_connect_bounded(redis_host, redis_port);
+	redis_ctx = redis_connection_open(redis_settings);
 	if (!redis_ctx || redis_ctx->err)
 	{
 		if (redis_ctx)
@@ -464,7 +483,7 @@ static bool redis_reconnect(void)
 		}
 		return false;
 	}
-	logit(LOG_SYS, "redis reconnected to %s:%d", redis_host, redis_port);
+	logit(LOG_SYS, "redis reconnected");
 	return true;
 #endif
 }
@@ -516,14 +535,20 @@ bool redis_init(void)
 
 	const char *redis_port_str = getenv("REDIS_PORT");
 	int redis_port = 6379;
-	if (redis_port_str && *redis_port_str)
+	if (!redis_parse_number(redis_port_str, 1, 65535, 6379, &redis_port))
 	{
-		redis_port = atoi(redis_port_str);
-		if (redis_port <= 0 || redis_port > 65535)
-			redis_port = 6379;
+		logit(LOG_SYS, "redis: invalid REDIS_PORT; Redis disabled");
+		redis_enabled = false;
+		return false;
+	}
+	if (!redis_configure_connection(redis_host, redis_port))
+	{
+		logit(LOG_SYS, "redis: invalid connection security configuration; Redis disabled");
+		redis_enabled = false;
+		return false;
 	}
 
-	redis_ctx = redis_connect_bounded(redis_host, redis_port);
+	redis_ctx = redis_connection_open(redis_settings);
 	if (!redis_ctx)
 	{
 		logit(LOG_SYS, "redis: failed to allocate context");
@@ -540,27 +565,19 @@ bool redis_init(void)
 	}
 
 	const redis_presence_worker_config presence_config = {
-		redis_host,
-		redis_port,
-		REDIS_CONNECT_TIMEOUT_MSEC,
-		REDIS_COMMAND_TIMEOUT_MSEC,
-		REDIS_PRESENCE_SESSION_TTL_SECONDS,
+		redis_settings, REDIS_PRESENCE_SESSION_TTL_SECONDS,
 		REDIS_PRESENCE_HEARTBEAT_INTERVAL_SECONDS * 1000
 	};
 	if (!redis_presence_worker_init(&presence_config))
 		logit(LOG_SYS, "redis: presence worker unavailable; presence updates disabled");
-	const redis_cache_store_config cache_config = { redis_host, redis_port,
-							REDIS_CONNECT_TIMEOUT_MSEC,
-							REDIS_COMMAND_TIMEOUT_MSEC };
+	const redis_cache_store_config cache_config = { redis_settings };
 	if (!redis_cache_store_init(&cache_config))
 		logit(LOG_SYS, "redis: cache worker unavailable; report caches disabled");
 	else
 		redis_prime_artifact_caches();
 	if (redis_donation_enabled)
 	{
-		const redis_donation_worker_config donation_config = { redis_host, redis_port,
-								       REDIS_CONNECT_TIMEOUT_MSEC,
-								       REDIS_COMMAND_TIMEOUT_MSEC,
+		const redis_donation_worker_config donation_config = { redis_settings,
 								       donation_secret };
 		if (!redis_donation_worker_init(&donation_config))
 		{
@@ -594,9 +611,7 @@ bool redis_init(void)
 
 		logit(LOG_SYS, "redis world state enabled: interval=%ds, max_age=%ds",
 		      world_state_interval, world_state_max_age);
-		const redis_floor_store_config floor_config = { redis_host, redis_port,
-								REDIS_CONNECT_TIMEOUT_MSEC,
-								REDIS_COMMAND_TIMEOUT_MSEC };
+		const redis_floor_store_config floor_config = { redis_settings };
 		if (!redis_floor_store_init(&floor_config))
 		{
 			logit(LOG_SYS, "redis: floor worker unavailable; world recovery disabled");
@@ -664,8 +679,7 @@ bool redis_validate_pwipe_state(void)
 #else
 	if (!redis_enabled)
 		return true;
-	const redis_world_store_config config = redis_world_store_config_copy();
-	redisContext *context = redis_connect_bounded(config.host, config.port);
+	redisContext *context = redis_connection_open(redis_settings);
 	if (!context || context->err)
 	{
 		if (context)
@@ -732,6 +746,8 @@ void redis_cleanup(void)
 		redisFree(redis_ctx);
 		redis_ctx = NULL;
 	}
+	redis_connection_settings_destroy(redis_settings);
+	redis_settings = NULL;
 	redis_donation_enabled = false;
 	redis_enabled = false;
 #endif

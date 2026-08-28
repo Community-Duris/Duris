@@ -10,6 +10,7 @@ presence_worker = (root / "src/redis_presence_worker.c").read_text()
 cache_store = (root / "src/redis_cache_store.c").read_text()
 floor_store = (root / "src/redis_floor_store.c").read_text()
 donation_worker = (root / "src/redis_donation_worker.c").read_text()
+connection = (root / "src/redis_connection.c").read_text()
 header = (root / "src/redis.h").read_text()
 signals = (root / "src/signals.c").read_text()
 
@@ -22,34 +23,38 @@ def section(start: str, end: str) -> str:
 
 assert "redisCommand(" not in text
 assert "redisConnect(" not in text
-assert text.count("redisConnectWithTimeout(") == 1
+assert "redisConnectWithTimeout(" not in text
 assert text.count("redisvCommand(") == 1
 assert "redisvAppendCommand(" not in text
 assert "redisGetReply(ctx," not in text
 assert floor_store.count("redisAppendCommand(") == 2
 assert floor_store.count("redisGetReply(context,") == 1
 assert "redisConnect(" not in store
-assert store.count("redisConnectWithTimeout(") == 1
+assert "redisConnectWithTimeout(" not in store
 assert store.count("redisvCommand(") == 1
-connect = section("static redisContext *redis_connect_bounded", "static redisReply *redis_command")
 command = section("static redisReply *redis_command", "/* Scan-and-delete with MATCH pattern.")
-assert "REDIS_CONNECT_TIMEOUT_MSEC" in connect
-assert "REDIS_COMMAND_TIMEOUT_MSEC" in connect
-assert "redisSetTimeout" in connect
+assert connection.count("redisConnectWithTimeout(") == 1
+assert "redisInitiateSSL(context, ssl)" in connection
+assert "X509_VERIFY_PARAM_set1_host" in connection
+assert "X509_VERIFY_PARAM_set1_ip_asc" in connection
+assert "redisSetTimeout" in connection
+assert 'redisCommand(context, "AUTH %b %b"' in connection
+assert 'redisCommand(context, "AUTH %b"' in connection
+assert 'redisCommand(context, "SELECT %d"' in connection
 assert "if (!ctx)" in command and "if (ctx->err)" in command
 assert "REDIS_REPLY_ERROR" in command and '"error_reply"' in command
 assert '"timeout_or_io"' in command and '"no_reply"' in command
-assert "redis_ctx = redis_connect_bounded(redis_host, redis_port);" in text
-print("[PASS] all Redis connects and commands use bounded guarded helpers")
+assert "redis_ctx = redis_connection_open(redis_settings);" in text
+print("[PASS] all runtime Redis connections use bounded authenticated selected-database helpers")
 
-assert donation_worker.count("redisConnectWithTimeout(") == 1
+assert "redisConnectWithTimeout(" not in donation_worker
+assert "redis_connection_open(configured_connection)" in donation_worker
 assert donation_worker.count("redisCommand(") == 1
 for token in (
     "REDIS_DONATION_QUEUE_CAPACITY",
     "REDIS_DONATION_REPLAY_CAPACITY",
     "REDIS_DONATION_WORK_BATCH",
     "wait_for_retry(reconnect_delay_seconds)",
-    "redisSetTimeout",
     "redis_donation_worker_take",
 ):
     assert token in donation_worker
@@ -61,7 +66,8 @@ for forbidden in ("redis_command", "redis_ctx", "redisConnect", "redisGetReply",
     assert forbidden not in donation_pulse
 print("[PASS] donation connect, subscribe, validation, and replay work stay off the simulation thread")
 
-assert presence_worker.count("redisConnectWithTimeout(") == 1
+assert "redisConnectWithTimeout(" not in presence_worker
+assert "redis_connection_open(configured_connection)" in presence_worker
 assert presence_worker.count("redisvCommand(") == 1
 assert presence_worker.count("redisCommandArgv(") == 1
 for token in (
@@ -69,7 +75,6 @@ for token in (
     "REDIS_PRESENCE_MAX_PAYLOAD_BYTES",
     "pending_jobs.size() >= REDIS_PRESENCE_QUEUE_CAPACITY",
     "reconnect_delay_msec = std::min(reconnect_delay_msec * 2, 60000U)",
-    "redisSetTimeout",
     "PRESENCE_SCRIPT",
     "PRESENCE_HEARTBEAT_SCRIPT",
     "REDIS_PRESENCE_HEARTBEAT_BATCH",
@@ -92,7 +97,8 @@ assert "redis_presence_worker_shutdown" in section(
 )
 print("[PASS] presence writes and lease refreshes use a bounded healing worker outside the simulation thread")
 
-assert cache_store.count("redisConnectWithTimeout(") == 1
+assert "redisConnectWithTimeout(" not in cache_store
+assert "redis_connection_open(configured_connection)" in cache_store
 assert cache_store.count("redisvCommand(") == 1
 for token in (
     "REDIS_CACHE_QUEUE_CAPACITY",
@@ -122,7 +128,7 @@ assert "PTTL" in prime and "redis_cache_store_seed" in prime
 print("[PASS] report caches use bounded local reads and asynchronous Redis publication")
 
 init = section("bool redis_init(void)", "bool redis_clear_pwipe_state")
-assert init.index("redis_enabled = true;") < init.index("redis_connect_bounded")
+assert init.index("redis_enabled = true;") < init.index("redis_connection_open")
 connect_failure = init[init.index("if (!redis_ctx)"):init.index("// check for world state")]
 assert "redis_enabled = false;" not in connect_failure
 assert "mud:dirty_players" not in init

@@ -59,6 +59,7 @@ def main() -> None:
 
     harness = r'''
 #include "redis_donation_worker.h"
+#include "redis_connection.h"
 
 #include <cassert>
 #include <chrono>
@@ -69,7 +70,11 @@ def main() -> None:
 int main(int argc, char **argv)
 {
     assert(argc == 3);
-    redis_donation_worker_config config = {"127.0.0.1", atoi(argv[1]), 100, 100, argv[2]};
+    redis_connection_options options = {
+        "127.0.0.1", atoi(argv[1]), 100, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false};
+    redis_connection_settings *settings = redis_connection_settings_create(&options);
+    assert(settings);
+    redis_donation_worker_config config = {settings, argv[2]};
     assert(redis_donation_worker_init(&config));
 
     redis_donation_worker_health health = {};
@@ -107,6 +112,7 @@ int main(int argc, char **argv)
     health = redis_donation_worker_health_copy();
     assert(!health.initialized && !health.connected);
     redis_donation_worker_reset_for_tests();
+    redis_connection_settings_destroy(settings);
     return 0;
 }
 '''
@@ -128,10 +134,13 @@ int main(int argc, char **argv)
                 "-fno-omit-frame-pointer",
                 "-I",
                 str(ROOT / "src"),
+                str(ROOT / "src" / "redis_connection.c"),
                 str(ROOT / "src" / "redis_donation_worker.c"),
                 str(ROOT / "src" / "donation_event.c"),
                 str(source),
                 "-lhiredis",
+                "-lhiredis_ssl",
+                "-lssl",
                 "-lcjson",
                 "-lcrypto",
                 "-pthread",

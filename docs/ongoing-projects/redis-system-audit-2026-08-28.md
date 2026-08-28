@@ -5,9 +5,50 @@ Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-023,
-RDS-024, and RDS-028 are remediated and the remaining findings are open.
+RDS-024, and RDS-028 are remediated. RDS-008 is remediated for connection security but
+remains partial for namespace isolation; the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-008 runtime connection security
+
+Completed in this interval:
+
+- Replaced six independent host/port-only connection constructors with one immutable,
+  shared settings object and one bounded connection adapter used by the primary context,
+  presence, caches, floor publication, world publication, and donation subscription.
+- Every connection now authenticates with either password-only `AUTH` or ACL
+  username/password authentication when configured, then explicitly selects `REDIS_DB`.
+  Authentication or selection failure closes the connection and cannot degrade into an
+  unauthenticated database-0 connection.
+- Added verified TLS with a reusable Hiredis/OpenSSL context, CA validation, peer
+  verification, SNI/certificate-name support, and a fail-closed rule that refuses a
+  non-loopback production endpoint without TLS.
+- Centralized strict validation for port, database, TLS boolean, username/password
+  pairing, CA presence, and production transport policy. Logs never include credentials.
+- Retained the larger bounded command timeout used only for background world-generation
+  payload publication without weakening the normal 100 ms command bound.
+
+Performance effect:
+
+- Authentication, database selection, and the optional TLS handshake execute only while
+  creating a connection at boot or on an existing background worker reconnect. No new
+  Redis command, socket operation, allocation, logging, or wait was added to a game pulse,
+  player command, cache read, login/logout submission, or floor capture path.
+- All workers retain their existing fixed queue, byte, batch, retry, and backoff limits.
+  The TLS context is created once and reused across connections rather than rebuilt for
+  every worker reconnect.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_connection_security_live.py`: passed under ASan/UBSan
+  against isolated password-protected plaintext and TLS Redis servers, proving password
+  authentication, ACL `default` username authentication, wrong-password rejection,
+  database-2 isolation, verified TLS/SNI, certificate-name mismatch rejection,
+  invalid-database rejection, and the required-TLS fail-closed gate.
+- All five existing live cache, floor, presence, donation, and world-store tests passed,
+  preserving outage healing, queue saturation, fencing, and publication behavior.
 
 ### 2026-08-28 - RDS-023 scoped destructive Redis maintenance
 
@@ -881,8 +922,9 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 | Donation integration | `mud:nchat` pub/sub | Broadcast external donation notices | A bounded worker accepts only authenticated, fresh, replay-protected envelopes and delivers at most eight events per game pulse. |
 | Legacy UID | `mud:next_obj_uid` | Retired counter | No runtime read, write, or administrator display remains. |
 
-All runtime connections use only `REDIS_HOST` and `REDIS_PORT`; keys are fixed in Redis
-database 0 and have no application, environment, deployment, or season prefix.
+All runtime connections share bounded ACL/password, explicit database, and verified TLS
+settings. Key names still lack a complete application/environment/deployment namespace;
+season-scoped stores include the SQL epoch while several caches and channels do not.
 
 ## Finding index
 
@@ -1187,18 +1229,19 @@ support one writer or enforce that invariant with a renewable lease.
 
 Severity: High
 Confidence: Confirmed configuration gap; exploitability depends on deployment reachability
-Remediation status: Partially remediated; destructive maintenance now requires explicit
-database selection, ACL credentials when configured, verified TLS for non-loopback targets,
-an exact local target allow-list, and confirmation. Runtime connections and key namespace
-isolation remain open.
+Remediation status: Partially remediated; runtime and destructive-maintenance connections
+now support ACL/password authentication, explicit database selection, and verified TLS.
+Non-loopback production runtime endpoints fail closed without TLS, while destructive
+maintenance additionally requires an exact local target allow-list and confirmation.
+Application/environment/deployment namespace isolation and Unix sockets remain open.
 
 Evidence:
 
-- Runtime connections support host and port only
-  ([`src/redis.c`](../../src/redis.c#L91)). There is no ACL username, password, TLS,
-  certificate verification, Redis database selection, URI, or Unix socket setting.
-- Scripts use the same host/port-only model. Every key is fixed to database 0 with no
-  environment or season namespace.
+- Every runtime owner connects through the shared adapter
+  ([`src/redis_connection.c`](../../src/redis_connection.c)), which performs bounded TCP,
+  optional verified TLS, ACL/password authentication, and explicit database selection.
+- Runtime and maintenance configuration now share host, port, database, credentials, TLS,
+  and CA settings. Key names still have no complete environment/deployment namespace.
 - Recovery integrity is CRC32, which detects accidental corruption but does not
   authenticate the writer ([`src/world_recovery_pipeline.c`](../../src/world_recovery_pipeline.c#L183)).
 - A writer can influence mob stats, gold, affects, items, ships, artifact JSON, presence,

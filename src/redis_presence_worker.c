@@ -1,4 +1,5 @@
 #include "redis_presence_worker.h"
+#include "redis_connection.h"
 
 #include <hiredis/hiredis.h>
 
@@ -74,10 +75,7 @@ std::deque<presence_job> pending_jobs;
 std::unordered_map<int, std::shared_ptr<const std::string>> active_sessions;
 std::thread worker_thread;
 redis_presence_worker_health health = {};
-std::string configured_host;
-int configured_port = 0;
-int configured_connect_timeout_msec = 0;
-int configured_command_timeout_msec = 0;
+const redis_connection_settings *configured_connection = nullptr;
 unsigned int configured_session_ttl_seconds = 0;
 unsigned int configured_heartbeat_interval_msec = 0;
 uint64_t instance_id = 0;
@@ -88,20 +86,7 @@ bool generation_claimed = false;
 
 redisContext *connect_bounded()
 {
-	struct timeval connect_timeout = { configured_connect_timeout_msec / 1000,
-					   (configured_connect_timeout_msec % 1000) * 1000 };
-	struct timeval command_timeout = { configured_command_timeout_msec / 1000,
-					   (configured_command_timeout_msec % 1000) * 1000 };
-	redisContext *context =
-		redisConnectWithTimeout(configured_host.c_str(), configured_port, connect_timeout);
-	if (!context || context->err)
-		return context;
-	if (redisSetTimeout(context, command_timeout) != REDIS_OK)
-	{
-		redisFree(context);
-		return nullptr;
-	}
-	return context;
+	return redis_connection_open(configured_connection);
 }
 
 redisReply *command(redisContext *context, const char *format, ...)
@@ -534,9 +519,7 @@ void stop_worker(bool discard_pending)
 
 bool redis_presence_worker_init(const struct redis_presence_worker_config *config)
 {
-	if (!config || !config->host || !*config->host || config->port <= 0 ||
-	    config->port > 65535 || config->connect_timeout_msec <= 0 ||
-	    config->command_timeout_msec <= 0 || config->session_ttl_seconds < 2 ||
+	if (!config || !config->connection || config->session_ttl_seconds < 2 ||
 	    !config->heartbeat_interval_msec ||
 	    config->heartbeat_interval_msec >= config->session_ttl_seconds * 1000ULL)
 		return false;
@@ -545,10 +528,7 @@ bool redis_presence_worker_init(const struct redis_presence_worker_config *confi
 		return true;
 	try
 	{
-		configured_host = config->host;
-		configured_port = config->port;
-		configured_connect_timeout_msec = config->connect_timeout_msec;
-		configured_command_timeout_msec = config->command_timeout_msec;
+		configured_connection = config->connection;
 		configured_session_ttl_seconds = config->session_ttl_seconds;
 		configured_heartbeat_interval_msec = config->heartbeat_interval_msec;
 		std::random_device random;
@@ -635,10 +615,7 @@ void redis_presence_worker_reset_for_tests(void)
 	redis_presence_worker_cancel();
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	health = {};
-	configured_host.clear();
-	configured_port = 0;
-	configured_connect_timeout_msec = 0;
-	configured_command_timeout_msec = 0;
+	configured_connection = nullptr;
 	configured_session_ttl_seconds = 0;
 	configured_heartbeat_interval_msec = 0;
 	instance_id = 0;

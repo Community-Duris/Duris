@@ -26,6 +26,7 @@ def main() -> None:
 
     harness = r'''
 #include "redis_presence_worker.h"
+#include "redis_connection.h"
 
 #include <hiredis/hiredis.h>
 
@@ -48,7 +49,11 @@ int main(int argc, char **argv)
     assert(argc == 3);
     const int live_port = atoi(argv[1]);
     const int unavailable_port = atoi(argv[2]);
-    redis_presence_worker_config config = {"127.0.0.1", live_port, 100, 100, 6, 250};
+    redis_connection_options options = {
+        "127.0.0.1", live_port, 100, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false};
+    redis_connection_settings *settings = redis_connection_settings_create(&options);
+    assert(settings);
+    redis_presence_worker_config config = {settings, 6, 250};
     assert(redis_presence_worker_init(&config));
 
     // These submissions occur before the isolated server starts. They must stay local,
@@ -130,7 +135,6 @@ int main(int argc, char **argv)
 
     // Cancellation may race a successful front job. Join before discarding the deque.
     redis_presence_worker_reset_for_tests();
-    config.port = live_port;
     assert(redis_presence_worker_init(&config));
     for (int pid = 1; pid <= 512; ++pid)
         assert(redis_presence_worker_submit_online(pid, "{}", false));
@@ -141,7 +145,11 @@ int main(int argc, char **argv)
 
     // With Redis unavailable, the fixed queue must reject excess work without blocking.
     redis_presence_worker_reset_for_tests();
-    config.port = unavailable_port;
+    redis_connection_settings_destroy(settings);
+    options.port = unavailable_port;
+    settings = redis_connection_settings_create(&options);
+    assert(settings);
+    config.connection = settings;
     assert(redis_presence_worker_init(&config));
     std::string oversized(REDIS_PRESENCE_MAX_PAYLOAD_BYTES + 1, 'x');
     assert(!redis_presence_worker_submit_online(1, oversized.c_str(), false));
@@ -161,6 +169,7 @@ int main(int argc, char **argv)
            health.active_sessions == active_before_rejected_offline - 1);
     redis_presence_worker_cancel();
     redis_presence_worker_reset_for_tests();
+    redis_connection_settings_destroy(settings);
     return 0;
 }
 '''
@@ -183,9 +192,13 @@ int main(int argc, char **argv)
                 "-fno-omit-frame-pointer",
                 "-I",
                 str(ROOT / "src"),
+                str(ROOT / "src" / "redis_connection.c"),
                 str(ROOT / "src" / "redis_presence_worker.c"),
                 str(source),
                 "-lhiredis",
+                "-lhiredis_ssl",
+                "-lssl",
+                "-lcrypto",
                 "-pthread",
                 "-o",
                 str(binary),

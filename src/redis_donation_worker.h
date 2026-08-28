@@ -6,6 +6,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct redis_connection_settings;
+
 constexpr size_t REDIS_DONATION_QUEUE_CAPACITY = 64;
 constexpr size_t REDIS_DONATION_REPLAY_CAPACITY = 256;
 constexpr size_t REDIS_DONATION_WORK_BATCH = 32;
@@ -13,10 +15,7 @@ constexpr unsigned int REDIS_DONATION_MAX_RECONNECT_DELAY_SECONDS = 60;
 
 struct redis_donation_worker_config
 {
-	const char *host;
-	int port;
-	int connect_timeout_msec;
-	int command_timeout_msec;
+	const struct redis_connection_settings *connection;
 	const char *secret;
 };
 

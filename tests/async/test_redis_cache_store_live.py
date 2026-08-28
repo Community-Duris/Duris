@@ -26,6 +26,7 @@ def main() -> None:
 
     harness = r'''
 #include "redis_cache_store.h"
+#include "redis_connection.h"
 
 #include <hiredis/hiredis.h>
 
@@ -48,7 +49,11 @@ int main(int argc, char **argv)
     assert(argc == 3);
     const int live_port = atoi(argv[1]);
     const int unavailable_port = atoi(argv[2]);
-    redis_cache_store_config config = {"127.0.0.1", live_port, 100, 100};
+    redis_connection_options options = {
+        "127.0.0.1", live_port, 100, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false};
+    redis_connection_settings *settings = redis_connection_settings_create(&options);
+    assert(settings);
+    redis_cache_store_config config = {settings};
     assert(redis_cache_store_init(&config));
 
     assert(redis_cache_store_seed("mud:cache:test", "warm", 30));
@@ -93,9 +98,13 @@ int main(int argc, char **argv)
     freeReplyObject(reply);
     redisFree(context);
     assert(redis_cache_store_shutdown(1000));
+    redis_connection_settings_destroy(settings);
 
     redis_cache_store_reset_for_tests();
-    config.port = unavailable_port;
+    options.port = unavailable_port;
+    settings = redis_connection_settings_create(&options);
+    assert(settings);
+    config.connection = settings;
     assert(redis_cache_store_init(&config));
     std::string oversized(REDIS_CACHE_MAX_VALUE_BYTES + 1, 'x');
     assert(!redis_cache_store_set("mud:cache:oversized", oversized.c_str(), 0));
@@ -126,6 +135,7 @@ int main(int argc, char **argv)
     assert(health.queued <= REDIS_CACHE_QUEUE_CAPACITY);
     redis_cache_store_cancel();
     redis_cache_store_reset_for_tests();
+    redis_connection_settings_destroy(settings);
     return 0;
 }
 '''
@@ -148,9 +158,13 @@ int main(int argc, char **argv)
                 "-fno-omit-frame-pointer",
                 "-I",
                 str(ROOT / "src"),
+                str(ROOT / "src" / "redis_connection.c"),
                 str(ROOT / "src" / "redis_cache_store.c"),
                 str(source),
                 "-lhiredis",
+                "-lhiredis_ssl",
+                "-lssl",
+                "-lcrypto",
                 "-pthread",
                 "-o",
                 str(binary),

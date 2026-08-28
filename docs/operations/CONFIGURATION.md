@@ -68,12 +68,13 @@ revisioned player-save pipeline and typed journal.
 | --- | --- | --- | --- |
 | `REDIS` | disabled | `TRUE` enables it | Enable Redis integration. |
 | `REDIS_HOST` | `127.0.0.1` | hostname or IP | Redis host. |
-| `REDIS_PORT` | `6379` | `1`-`65535` | Redis TCP port; invalid values fall back to `6379`. |
-| `REDIS_DB` | none | `0`-`255` | Explicit Redis database for destructive maintenance scripts. Runtime database selection remains open under RDS-008. |
-| `REDIS_USERNAME` | empty | Redis ACL username | Optional maintenance-script ACL identity. |
-| `REDIS_PASSWORD` | empty | Redis ACL password | Optional maintenance-script secret passed through `REDISCLI_AUTH`, not a command argument. |
-| `REDIS_TLS` | none | Exact `TRUE` or `FALSE` | Maintenance-script transport policy; non-loopback targets require `TRUE`. Runtime TLS remains open under RDS-008. |
-| `REDIS_CA_CERT` | empty | Readable file | Required CA certificate when maintenance-script Redis TLS is enabled. |
+| `REDIS_PORT` | `6379` | `1`-`65535` | Redis TCP port. An explicitly invalid value disables Redis at boot. |
+| `REDIS_DB` | `0` | `0`-`255` | Database explicitly selected by every runtime connection and destructive maintenance command. |
+| `REDIS_USERNAME` | empty | Redis ACL username | Optional runtime and maintenance ACL identity; requires a nonempty password. |
+| `REDIS_PASSWORD` | empty | Redis ACL password | Optional runtime secret. Maintenance passes it through `REDISCLI_AUTH`, not a command argument. |
+| `REDIS_TLS` | `FALSE` | Exact `TRUE` or `FALSE` | Enables verified TLS for every runtime and maintenance connection. Non-loopback production runtime endpoints require `TRUE`; destructive maintenance requires it for every non-loopback target. |
+| `REDIS_CA_CERT` | empty | Readable CA bundle | Required when Redis TLS is enabled and used for peer verification. |
+| `REDIS_TLS_SERVER_NAME` | `REDIS_HOST` | Certificate DNS name | Optional runtime SNI and certificate-name override, useful when connecting by IP to a certificate issued for a DNS name. |
 | `REDIS_ALLOWED_TARGETS` | none | Comma-separated exact `host:port/database` values | Required destructive-maintenance allow-list. |
 | `REDIS_WORLD_STATE` | disabled | `TRUE` enables it | Enable bounded capture and background publication of crash-recovery world generations. |
 | `REDIS_WORLD_STATE_INTERVAL` | `10` seconds | `5`-`300` | Snapshot interval when world-state recovery is enabled. |
@@ -132,6 +133,8 @@ For a local development session, the following is a reasonable starting point:
 REDIS=TRUE
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
+REDIS_DB=0
+REDIS_TLS=FALSE
 REDIS_WORLD_STATE=TRUE
 ```
 

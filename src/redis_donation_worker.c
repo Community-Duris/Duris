@@ -1,4 +1,5 @@
 #include "redis_donation_worker.h"
+#include "redis_connection.h"
 
 #include <hiredis/hiredis.h>
 
@@ -23,28 +24,14 @@ std::deque<donation_event> pending_events;
 std::deque<std::string> seen_event_ids;
 std::thread worker_thread;
 redis_donation_worker_health health = {};
-std::string configured_host;
 std::string configured_secret;
-int configured_port = 0;
-int configured_connect_timeout_msec = 0;
-int configured_command_timeout_msec = 0;
+const redis_connection_settings *configured_connection = nullptr;
 bool stop_requested = false;
 
 redisContext *connect_bounded()
 {
-	struct timeval connect_timeout = { configured_connect_timeout_msec / 1000,
-					   (configured_connect_timeout_msec % 1000) * 1000 };
-	redisContext *context =
-		redisConnectWithTimeout(configured_host.c_str(), configured_port, connect_timeout);
-	if (!context || context->err)
-	{
-		if (context)
-			redisFree(context);
-		return nullptr;
-	}
-	struct timeval command_timeout = { configured_command_timeout_msec / 1000,
-					   (configured_command_timeout_msec % 1000) * 1000 };
-	if (redisSetTimeout(context, command_timeout) != REDIS_OK)
+	redisContext *context = redis_connection_open(configured_connection);
+	if (context && context->err)
 	{
 		redisFree(context);
 		return nullptr;
@@ -227,20 +214,15 @@ void worker_main()
 
 bool redis_donation_worker_init(const struct redis_donation_worker_config *config)
 {
-	if (!config || !config->host || !*config->host || config->port <= 0 ||
-	    config->port > 65535 || config->connect_timeout_msec <= 0 ||
-	    config->command_timeout_msec <= 0 || !config->secret || strlen(config->secret) < 32)
+	if (!config || !config->connection || !config->secret || strlen(config->secret) < 32)
 		return false;
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	if (health.initialized)
 		return false;
 	try
 	{
-		configured_host = config->host;
+		configured_connection = config->connection;
 		configured_secret = config->secret;
-		configured_port = config->port;
-		configured_connect_timeout_msec = config->connect_timeout_msec;
-		configured_command_timeout_msec = config->command_timeout_msec;
 		pending_events.clear();
 		seen_event_ids.clear();
 		health = {};
@@ -251,7 +233,6 @@ bool redis_donation_worker_init(const struct redis_donation_worker_config *confi
 	catch (...)
 	{
 		health = {};
-		configured_host.clear();
 		configured_secret.clear();
 		return false;
 	}
@@ -302,10 +283,7 @@ void redis_donation_worker_reset_for_tests(void)
 	redis_donation_worker_shutdown();
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	health = {};
-	configured_host.clear();
+	configured_connection = nullptr;
 	configured_secret.clear();
-	configured_port = 0;
-	configured_connect_timeout_msec = 0;
-	configured_command_timeout_msec = 0;
 	stop_requested = false;
 }

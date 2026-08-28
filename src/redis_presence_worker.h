@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct redis_connection_settings;
+
 constexpr size_t REDIS_PRESENCE_QUEUE_CAPACITY = 1024;
 constexpr size_t REDIS_PRESENCE_MAX_PAYLOAD_BYTES = 4096;
 constexpr size_t REDIS_PRESENCE_HEARTBEAT_BATCH = 64;
@@ -13,10 +15,7 @@ constexpr unsigned int REDIS_PRESENCE_MAX_COMMAND_ATTEMPTS = 3;
 
 struct redis_presence_worker_config
 {
-	const char *host;
-	int port;
-	int connect_timeout_msec;
-	int command_timeout_msec;
+	const struct redis_connection_settings *connection;
 	unsigned int session_ttl_seconds;
 	unsigned int heartbeat_interval_msec;
 };

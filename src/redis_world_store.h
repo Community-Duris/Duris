@@ -4,12 +4,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct redis_connection_settings;
+
 struct redis_world_store_config
 {
-	const char *host;
-	int port;
-	int connect_timeout_msec;
-	int command_timeout_msec;
+	const struct redis_connection_settings *connection;
 	uint64_t season_epoch;
 	uint64_t generation_ttl_seconds;
 };

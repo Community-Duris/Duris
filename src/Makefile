@@ -38,7 +38,7 @@ LDFLAGS += $(EXTRA_LDFLAGS)
 
 INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
 
-GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis -lbsd -pthread
+GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis -lhiredis_ssl -lbsd -pthread
 
 # GENERAL_LIBS += -lcygipc
 LIBS += $(GENERAL_LIBS)
@@ -107,6 +107,7 @@ OBJS =  $(SHIP_OBJS) \
 				 artifact.o \
 				 artifact_cache_codec.o \
 				 donation_event.o \
+				 redis_connection.o \
 				 redis_donation_worker.o \
 				 assocs.o \
 				 auction_houses.o \

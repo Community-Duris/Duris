@@ -26,6 +26,7 @@ def main() -> None:
 
     harness = r'''
 #include "redis_world_store.h"
+#include "redis_connection.h"
 #include "world_recovery_pipeline.h"
 #include <hiredis/hiredis.h>
 #include <cassert>
@@ -43,7 +44,12 @@ static redisReply *run(redisContext *context, const char *command)
 int main(int argc, char **argv)
 {
     assert(argc == 2);
-    redis_world_store_config config = {"127.0.0.1", atoi(argv[1]), 250, 100, 42, 3600};
+    const int live_port = atoi(argv[1]);
+    redis_connection_options options = {
+        "127.0.0.1", live_port, 250, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false};
+    redis_connection_settings *settings = redis_connection_settings_create(&options);
+    assert(settings);
+    redis_world_store_config config = {settings, 42, 3600};
     constexpr const char *writer_a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     constexpr const char *writer_b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     constexpr uint64_t lease = 600000;
@@ -59,7 +65,7 @@ int main(int argc, char **argv)
     assert(redis_world_store_renew_fence(&config, writer_a, lease));
     assert(!redis_world_store_renew_fence(&config, writer_b, lease));
 
-    redisContext *context = redisConnect("127.0.0.1", config.port);
+    redisContext *context = redisConnect("127.0.0.1", live_port);
     assert(context && !context->err);
     freeReplyObject(run(context, "HSET mud:season:42:floor_drops 100 delta"));
 
@@ -141,6 +147,7 @@ int main(int argc, char **argv)
     assert(redis_world_store_release_fence(&config, writer_b));
     assert(redis_world_store_release_fence(&next_season, writer_a));
     redisFree(context);
+    redis_connection_settings_destroy(settings);
     return 0;
 }
 '''
@@ -160,9 +167,13 @@ int main(int argc, char **argv)
                 "-Werror",
                 "-I",
                 str(ROOT / "src"),
+                str(ROOT / "src" / "redis_connection.c"),
                 str(ROOT / "src" / "redis_world_store.c"),
                 str(source),
                 "-lhiredis",
+                "-lhiredis_ssl",
+                "-lssl",
+                "-lcrypto",
                 "-o",
                 str(binary),
             ],

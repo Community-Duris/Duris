@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct redis_connection_settings;
+
 constexpr size_t REDIS_CACHE_QUEUE_CAPACITY = 64;
 constexpr size_t REDIS_CACHE_QUEUE_MAX_BYTES = 4 * 1024 * 1024;
 constexpr size_t REDIS_CACHE_LOCAL_CAPACITY = 32;
@@ -13,10 +15,7 @@ constexpr unsigned int REDIS_CACHE_MAX_COMMAND_ATTEMPTS = 3;
 
 struct redis_cache_store_config
 {
-	const char *host;
-	int port;
-	int connect_timeout_msec;
-	int command_timeout_msec;
+	const struct redis_connection_settings *connection;
 };
 
 struct redis_cache_store_health

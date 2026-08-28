@@ -1,4 +1,5 @@
 #include "redis_cache_store.h"
+#include "redis_connection.h"
 
 #include <hiredis/hiredis.h>
 
@@ -47,10 +48,7 @@ std::deque<std::shared_ptr<cache_job>> pending_jobs;
 std::map<std::string, local_cache_entry> local_cache;
 std::thread worker_thread;
 redis_cache_store_health health = {};
-std::string configured_host;
-int configured_port = 0;
-int configured_connect_timeout_msec = 0;
-int configured_command_timeout_msec = 0;
+const redis_connection_settings *configured_connection = nullptr;
 size_t pending_bytes = 0;
 bool accepting = false;
 bool stop_requested = false;
@@ -62,20 +60,7 @@ size_t job_bytes(const std::shared_ptr<cache_job> &job)
 
 redisContext *connect_bounded()
 {
-	struct timeval connect_timeout = { configured_connect_timeout_msec / 1000,
-					   (configured_connect_timeout_msec % 1000) * 1000 };
-	struct timeval command_timeout = { configured_command_timeout_msec / 1000,
-					   (configured_command_timeout_msec % 1000) * 1000 };
-	redisContext *context =
-		redisConnectWithTimeout(configured_host.c_str(), configured_port, connect_timeout);
-	if (!context || context->err)
-		return context;
-	if (redisSetTimeout(context, command_timeout) != REDIS_OK)
-	{
-		redisFree(context);
-		return nullptr;
-	}
-	return context;
+	return redis_connection_open(configured_connection);
 }
 
 redisReply *command(redisContext *context, const char *format, ...)
@@ -285,19 +270,14 @@ void stop_worker(bool discard_pending)
 
 bool redis_cache_store_init(const struct redis_cache_store_config *config)
 {
-	if (!config || !config->host || !*config->host || config->port <= 0 ||
-	    config->port > 65535 || config->connect_timeout_msec <= 0 ||
-	    config->command_timeout_msec <= 0)
+	if (!config || !config->connection)
 		return false;
 	std::lock_guard<std::mutex> lock(store_mutex);
 	if (health.initialized)
 		return true;
 	try
 	{
-		configured_host = config->host;
-		configured_port = config->port;
-		configured_connect_timeout_msec = config->connect_timeout_msec;
-		configured_command_timeout_msec = config->command_timeout_msec;
+		configured_connection = config->connection;
 		pending_jobs.clear();
 		pending_bytes = 0;
 		local_cache.clear();
@@ -505,10 +485,7 @@ void redis_cache_store_reset_for_tests(void)
 	pending_jobs.clear();
 	local_cache.clear();
 	health = {};
-	configured_host.clear();
-	configured_port = 0;
-	configured_connect_timeout_msec = 0;
-	configured_command_timeout_msec = 0;
+	configured_connection = nullptr;
 	pending_bytes = 0;
 	accepting = false;
 	stop_requested = false;
