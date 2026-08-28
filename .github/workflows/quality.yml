@@ -50,6 +50,8 @@ jobs:
         run: python3 tests/async/test_flatfile_association_repository.py
       - name: Verify flat-file ship authority
         run: python3 tests/async/test_flatfile_ship_repository.py
+      - name: Verify flat-file shopkeeper authority
+        run: python3 tests/async/test_flatfile_shopkeeper_repository.py
       - name: Verify flat-file world item authority
         run: python3 tests/async/test_flatfile_world_item_repository.py
       - name: Verify flat-file locker authority

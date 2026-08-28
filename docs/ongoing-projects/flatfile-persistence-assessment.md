@@ -1964,6 +1964,38 @@ sections below continue to describe the required end state.
   world/domain authority and runtime routes, keeping the same exact export, fail-closed,
   recovery, and checkpoint discipline.
 
+### Checkpoint 58 - canonical shopkeeper aggregate authority
+
+- **Completed:** added a checksummed `DURSHOP` v1 `shopkeeper_catalog` consolidating the
+  legacy `shopkeepers`, `shopkeeper_affects`, `shopkeeper_items`, item affects, and extra
+  descriptions. Each aggregate carries stable shop ID, mob and room vnums, absolute save
+  time, revision, canonical saveable affects, and one complete item topology covering both
+  equipment slots and inventory/container contents.
+- **Shared object fidelity:** shopkeeper objects reuse the bounded nested item snapshot
+  envelope, preserving allocated UID/generated identity, mutable scalar and string state,
+  fixed/dynamic affects, extra descriptions, prototype differences, and parent topology.
+  Top-level equipment uses normalized zero-based slots; inventory and every contained item
+  use the no-equipment marker.
+- **Validation:** exact establishment canonicalizes shops and affect ordering and is
+  idempotent only for identical state. The catalog rejects duplicate shop IDs, invalid
+  mob/room/save/revision values, malformed or over-deep nesting, nested equipment markers,
+  duplicate top-level equipment slots, invalid vnums, and duplicate or absent UIDs across
+  all shops, plus oversized, corrupt, or trailing data. Missing authority fails closed.
+- **Migration requirement:** the legacy SQL shopkeeper writer commonly omitted `obj_uid`
+  even after the column existed. Export must allocate and reconcile stable UIDs before
+  establishing this authority; the flat catalog refuses to perpetuate anonymous objects.
+- **Checks passed:** the strict standalone regression covers canonical establishment/list,
+  affect ordering, equipment/inventory/nested item round trip, retry/conflict behavior,
+  cross-shop UID collision refusal, invalid equipment topology, and checksum corruption.
+  Changed-line formatting, the normal server build, and the client-free build/boot preflight
+  pass; CI includes the repository.
+- **Exposure:** shopkeeper runtime save/restore remains fenced. Catalog authority does not
+  itself validate world prototypes, materialize NPCs/objects, or prove UID ownership at
+  boot, so the wider `shopkeepers` boot blocker is unchanged.
+- **Next action:** add prototype-aware shopkeeper capture/materialization adapters and
+  reconcile exported UIDs with global item ownership before routing startup restore and
+  dirty-save paths through this catalog.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
