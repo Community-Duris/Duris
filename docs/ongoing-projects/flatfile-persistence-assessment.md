@@ -622,6 +622,43 @@ sections below continue to describe the required end state.
   and apply the existing wallet/bank/epic/frag commands under their expected revisions,
   then select it from the client-free critical-command coordinator.
 
+### Checkpoint 20 - idempotent epic mutation authority
+
+- **Completed:** upgraded player-domain records to format version 2 with a bounded
+  embedded operation ledger. Each entry stores the operation ID, full encoded-command
+  digest, result code, and typed result payload in the same atomic player publication as
+  the epic balance/revision. Version 1 player and bank records remain readable; the next
+  publication upgrades them.
+- **Completed:** the flat critical-command dispatcher now accepts the existing version-1
+  epic command. It enforces expected revision, required funds, signed overflow, and
+  revision overflow; successful and rejected decisions are both recorded. Exact replay
+  returns the original typed result, while reuse of an operation ID for different bytes
+  fails with `EEXIST`.
+- **Completed:** load reads the mutated epic balance/revision directly from the upgraded
+  player authority. The normal MariaDB repository and command format are unchanged.
+  The player-specific boot blocker is narrowed to wallet/bank/frag mutations; compound
+  commands that touch those domains remain unsupported.
+- **Completed:** expanded the domain regression with successful mutation and load,
+  exact replay, conflicting operation-ID reuse, stale-revision replay, and insufficient
+  funds. Standalone item/player tests now compile the same selected dispatcher with the
+  local no-MySQL compatibility surface.
+- **Checks passed:** `python3 tests/async/test_flatfile_player_domain_repository.py`,
+  `python3 tests/async/test_flatfile_item_repository.py`,
+  `python3 tests/async/test_flatfile_player_repository.py`,
+  `python3 tests/async/test_item_ownership_contract.py`,
+  `python3 tests/async/test_epic_transaction_contract.py`,
+  `python3 tests/async/test_player_load_pipeline.py`, `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `./scripts/format.sh --check`, and `git diff --check`.
+- **Files changed:** `src/flatfile_player_domain_repository.[ch]`,
+  `src/flatfile_item_repository.c`, `src/persistence_mode.c`, and the focused domain,
+  item, player, and boot regressions.
+- **Operational limitation:** the embedded ledger is deliberately bounded at 512
+  operations per player and never forgets replay decisions. Exhaustion fails closed;
+  future compaction must preserve operation answers in another durable generation.
+- **Next action:** add a recoverable two-record transaction for wallet plus shared bank,
+  then add frag mutation/ledger application and route the associated compound commands.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

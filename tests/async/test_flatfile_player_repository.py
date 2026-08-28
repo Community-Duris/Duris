@@ -30,6 +30,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
             "src/flatfile_store.c",
             "src/item_transfer_command.c",
             "src/critical_command.c",
+            "src/epic_command.c",
             "src/persistence_observability.c",
             "src/persistence_mode.c",
             "-lcrypto",

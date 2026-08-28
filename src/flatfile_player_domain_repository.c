@@ -1,6 +1,7 @@
 #include "flatfile_player_domain_repository.h"
 
 #include "flatfile_store.h"
+#include "epic_command.h"
 
 #include <algorithm>
 #include <array>
@@ -16,10 +17,11 @@
 
 namespace
 {
-constexpr uint32_t domain_format_version = 1;
+constexpr uint32_t domain_format_version = 2;
 constexpr std::array<uint8_t, 8> player_magic = { 'D', 'U', 'R', 'P', 'D', 'O', 'M', 0 };
 constexpr std::array<uint8_t, 8> bank_magic = { 'D', 'U', 'R', 'B', 'A', 'N', 'K', 0 };
 constexpr size_t domain_maximum_bytes = 64 * 1024;
+constexpr size_t domain_maximum_operations = 512;
 constexpr size_t account_maximum_bytes = PLAYER_LOAD_ACCOUNT_MAX;
 constexpr const char *domain_lock_filename = ".player-domains.lock";
 std::mutex domain_mutex;
@@ -30,6 +32,28 @@ struct bank_record
 	int8_t racewar = 0;
 	uint64_t revision = 0;
 	std::array<uint64_t, 4> balances = {};
+};
+
+struct domain_operation
+{
+	critical_operation_id operation_id;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_digest;
+	unsigned int result_code = 0;
+	uint16_t result_size = 0;
+	std::array<uint8_t, CRITICAL_COMPLETION_RESULT_MAX_BYTES> result = {};
+};
+
+struct player_authority
+{
+	flatfile_player_domain_record record;
+	std::vector<domain_operation> operations;
+};
+
+enum class player_publish_result
+{
+	ok,
+	invalid,
+	io_error
 };
 
 struct authority_lock
@@ -73,6 +97,23 @@ struct encoder
 			valid = false;
 		}
 	}
+
+	void raw(const uint8_t *data, size_t size)
+	{
+		if (!valid || (!data && size))
+		{
+			valid = false;
+			return;
+		}
+		try
+		{
+			bytes.insert(bytes.end(), data, data + size);
+		}
+		catch (const std::bad_alloc &)
+		{
+			valid = false;
+		}
+	}
 };
 
 struct decoder
@@ -102,6 +143,15 @@ struct decoder
 		value->assign(reinterpret_cast<const char *>(data + offset), length);
 		offset += length;
 		return value->find('\0') == std::string::npos;
+	}
+
+	bool raw(uint8_t *value, size_t count)
+	{
+		if (!value || size - offset < count)
+			return false;
+		memcpy(value, data + offset, count);
+		offset += count;
+		return true;
 	}
 };
 
@@ -187,17 +237,17 @@ bool encode_file(const std::array<uint8_t, 8> &magic, const std::vector<uint8_t>
 
 flatfile_player_domain_result decode_envelope(const std::vector<uint8_t> &bytes,
 					      const std::array<uint8_t, 8> &magic, decoder *payload,
-					      uint64_t *revision)
+					      uint64_t *revision, uint32_t *format_version)
 {
 	constexpr size_t header_size =
 		8 + sizeof(uint32_t) * 2 + sizeof(uint64_t) + SHA256_DIGEST_LENGTH;
-	if (!payload || !revision || bytes.size() < header_size ||
+	if (!payload || !revision || !format_version || bytes.size() < header_size ||
 	    memcmp(bytes.data(), magic.data(), magic.size()))
 		return flatfile_player_domain_result::invalid;
 	decoder header{ bytes.data() + magic.size(), bytes.size() - magic.size() };
 	uint32_t version = 0, payload_size = 0;
 	if (!header.number(&version) || !header.number(&payload_size) || !header.number(revision) ||
-	    version != domain_format_version || !*revision ||
+	    !version || version > domain_format_version || !*revision ||
 	    payload_size != bytes.size() - header_size)
 		return flatfile_player_domain_result::invalid;
 	const uint8_t *digest =
@@ -208,6 +258,7 @@ flatfile_player_domain_result decode_envelope(const std::vector<uint8_t> &bytes,
 	if (CRYPTO_memcmp(digest, actual, sizeof(actual)))
 		return flatfile_player_domain_result::invalid;
 	*payload = { data, payload_size };
+	*format_version = version;
 	return flatfile_player_domain_result::ok;
 }
 
@@ -235,9 +286,11 @@ flatfile_player_domain_result load_bank(const std::string &root, const std::stri
 		return read;
 	decoder payload{ nullptr, 0 };
 	uint64_t revision = 0;
-	if (decode_envelope(bytes, bank_magic, &payload, &revision) !=
+	uint32_t format_version = 0;
+	if (decode_envelope(bytes, bank_magic, &payload, &revision, &format_version) !=
 	    flatfile_player_domain_result::ok)
 		return flatfile_player_domain_result::invalid;
+	(void)format_version;
 	bank_record decoded;
 	if (!payload.string(&decoded.account_name) || !payload.number(&decoded.racewar))
 		return flatfile_player_domain_result::invalid;
@@ -268,10 +321,10 @@ bool publish_bank(const std::string &root, const bank_record &record, std::strin
 				     error);
 }
 
-flatfile_player_domain_result load_player(const std::string &root, int32_t pid,
-					  flatfile_player_domain_record *record, std::string *error)
+flatfile_player_domain_result load_player_authority(const std::string &root, int32_t pid,
+						    player_authority *authority, std::string *error)
 {
-	if (!record || pid <= 0)
+	if (!authority || pid <= 0)
 		return flatfile_player_domain_result::invalid;
 	std::vector<uint8_t> bytes;
 	const auto read = read_bytes(root, player_filename(pid), &bytes, error);
@@ -279,63 +332,107 @@ flatfile_player_domain_result load_player(const std::string &root, int32_t pid,
 		return read;
 	decoder payload{ nullptr, 0 };
 	uint64_t file_revision = 0;
-	if (decode_envelope(bytes, player_magic, &payload, &file_revision) !=
+	uint32_t format_version = 0;
+	if (decode_envelope(bytes, player_magic, &payload, &file_revision, &format_version) !=
 	    flatfile_player_domain_result::ok)
 		return flatfile_player_domain_result::invalid;
-	flatfile_player_domain_record decoded;
-	uint32_t recent_count = 0, zone_count = 0;
-	if (!payload.number(&decoded.pid) || !payload.string(&decoded.account_name) ||
-	    !payload.number(&decoded.racewar) ||
-	    !payload.number(&decoded.domains.wallet_revision) ||
-	    !payload.number(&decoded.domains.epic_revision) ||
-	    !payload.number(&decoded.domains.frag_revision))
+	player_authority decoded;
+	uint32_t recent_count = 0, zone_count = 0, operation_count = 0;
+	if (!payload.number(&decoded.record.pid) || !payload.string(&decoded.record.account_name) ||
+	    !payload.number(&decoded.record.racewar) ||
+	    !payload.number(&decoded.record.domains.wallet_revision) ||
+	    !payload.number(&decoded.record.domains.epic_revision) ||
+	    !payload.number(&decoded.record.domains.frag_revision))
 		return flatfile_player_domain_result::invalid;
-	for (uint64_t &balance : decoded.domains.wallet)
+	for (uint64_t &balance : decoded.record.domains.wallet)
 		if (!payload.number(&balance))
 			return flatfile_player_domain_result::invalid;
-	if (!payload.number(&decoded.domains.epics) || !payload.number(&decoded.domains.frags) ||
-	    !payload.number(&decoded.domains.old_frags) || !payload.number(&recent_count) ||
+	if (!payload.number(&decoded.record.domains.epics) ||
+	    !payload.number(&decoded.record.domains.frags) ||
+	    !payload.number(&decoded.record.domains.old_frags) || !payload.number(&recent_count) ||
 	    recent_count > PLAYER_LOAD_RECENT_PVP_MAX)
 		return flatfile_player_domain_result::invalid;
 	try
 	{
-		decoded.recent_pvp_deaths.resize(recent_count);
+		decoded.record.recent_pvp_deaths.resize(recent_count);
 	}
 	catch (const std::bad_alloc &)
 	{
 		return flatfile_player_domain_result::io_error;
 	}
-	for (int64_t &death : decoded.recent_pvp_deaths)
+	for (int64_t &death : decoded.record.recent_pvp_deaths)
 		if (!payload.number(&death))
 			return flatfile_player_domain_result::invalid;
 	if (!payload.number(&zone_count) || zone_count > PLAYER_LOAD_COMPLETED_ZONE_MAX)
 		return flatfile_player_domain_result::invalid;
 	try
 	{
-		decoded.completed_epic_zones.resize(zone_count);
+		decoded.record.completed_epic_zones.resize(zone_count);
 	}
 	catch (const std::bad_alloc &)
 	{
 		return flatfile_player_domain_result::io_error;
 	}
-	for (int32_t &zone : decoded.completed_epic_zones)
+	for (int32_t &zone : decoded.record.completed_epic_zones)
 		if (!payload.number(&zone))
 			return flatfile_player_domain_result::invalid;
+	if (format_version >= 2)
+	{
+		if (!payload.number(&operation_count) ||
+		    operation_count > domain_maximum_operations)
+			return flatfile_player_domain_result::invalid;
+		try
+		{
+			decoded.operations.resize(operation_count);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return flatfile_player_domain_result::io_error;
+		}
+		for (domain_operation &operation : decoded.operations)
+			if (!payload.raw(operation.operation_id.bytes.data(),
+					 operation.operation_id.bytes.size()) ||
+			    !payload.raw(operation.command_digest.data(),
+					 operation.command_digest.size()) ||
+			    !payload.number(&operation.result_code) ||
+			    !payload.number(&operation.result_size) ||
+			    operation.result_size > operation.result.size() ||
+			    !payload.raw(operation.result.data(), operation.result_size) ||
+			    critical_operation_id_is_zero(operation.operation_id))
+				return flatfile_player_domain_result::invalid;
+	}
 	std::string canonical;
-	if (payload.offset != payload.size || decoded.pid != pid ||
-	    !canonical_account(decoded.account_name, &canonical) ||
-	    decoded.account_name != canonical || !valid_gameplay(decoded) ||
-	    file_revision !=
-		    std::max({ decoded.domains.wallet_revision, decoded.domains.epic_revision,
-			       decoded.domains.frag_revision, UINT64_C(1) }))
+	if (payload.offset != payload.size || decoded.record.pid != pid ||
+	    !canonical_account(decoded.record.account_name, &canonical) ||
+	    decoded.record.account_name != canonical || !valid_gameplay(decoded.record) ||
+	    file_revision != std::max({ decoded.record.domains.wallet_revision,
+					decoded.record.domains.epic_revision,
+					decoded.record.domains.frag_revision, UINT64_C(1) }))
 		return flatfile_player_domain_result::invalid;
-	*record = std::move(decoded);
+	for (size_t index = 0; index < decoded.operations.size(); ++index)
+		for (size_t other = index + 1; other < decoded.operations.size(); ++other)
+			if (critical_operation_id_equal(decoded.operations[index].operation_id,
+							decoded.operations[other].operation_id))
+				return flatfile_player_domain_result::invalid;
+	*authority = std::move(decoded);
 	return flatfile_player_domain_result::ok;
 }
 
-bool publish_player(const std::string &root, const flatfile_player_domain_record &record,
-		    std::string *error)
+flatfile_player_domain_result load_player(const std::string &root, int32_t pid,
+					  flatfile_player_domain_record *record, std::string *error)
 {
+	player_authority authority;
+	const auto loaded = load_player_authority(root, pid, &authority, error);
+	if (loaded == flatfile_player_domain_result::ok)
+		*record = std::move(authority.record);
+	return loaded;
+}
+
+player_publish_result publish_player_authority(const std::string &root,
+					       const player_authority &authority,
+					       std::string *error)
+{
+	const flatfile_player_domain_record &record = authority.record;
 	encoder payload;
 	payload.number(record.pid);
 	payload.string(record.account_name);
@@ -354,13 +451,32 @@ bool publish_player(const std::string &root, const flatfile_player_domain_record
 	payload.number<uint32_t>(record.completed_epic_zones.size());
 	for (int32_t zone : record.completed_epic_zones)
 		payload.number(zone);
+	payload.number<uint32_t>(authority.operations.size());
+	for (const domain_operation &operation : authority.operations)
+	{
+		payload.raw(operation.operation_id.bytes.data(),
+			    operation.operation_id.bytes.size());
+		payload.raw(operation.command_digest.data(), operation.command_digest.size());
+		payload.number(operation.result_code);
+		payload.number(operation.result_size);
+		payload.raw(operation.result.data(), operation.result_size);
+	}
 	const uint64_t revision =
 		std::max({ record.domains.wallet_revision, record.domains.epic_revision,
 			   record.domains.frag_revision, UINT64_C(1) });
 	std::vector<uint8_t> bytes;
-	return payload.valid && encode_file(player_magic, payload.bytes, revision, &bytes) &&
-	       flatfile_atomic_write(domains_directory(root), player_filename(record.pid), bytes,
-				     error);
+	if (!payload.valid || !encode_file(player_magic, payload.bytes, revision, &bytes))
+		return player_publish_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), player_filename(record.pid), bytes,
+				     error) ?
+		       player_publish_result::ok :
+		       player_publish_result::io_error;
+}
+
+bool publish_player(const std::string &root, const flatfile_player_domain_record &record,
+		    std::string *error)
+{
+	return publish_player_authority(root, { record, {} }, error) == player_publish_result::ok;
 }
 
 flatfile_player_domain_result establish(const std::string &root,
@@ -458,4 +574,111 @@ flatfile_player_domain_result flatfile_player_domain_load(const std::string &roo
 	loaded.domains.bank_revision = bank.revision;
 	*record = std::move(loaded);
 	return flatfile_player_domain_result::ok;
+}
+
+critical_apply_result flatfile_player_domain_apply(const std::string &root,
+						   const critical_command &command)
+{
+	epic_command_payload payload = {};
+	std::vector<uint8_t> encoded_command;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	if (root.empty() || !critical_command_valid(command) ||
+	    !epic_command_decode_payload(command, &payload) ||
+	    critical_command_encode(command, &encoded_command) != critical_command_codec_result::ok)
+		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
+	SHA256(encoded_command.data(), encoded_command.size(), digest.data());
+	std::lock_guard<std::mutex> guard(domain_mutex);
+	authority_lock lock;
+	std::string error;
+	if (!flatfile_lock_acquire(domains_directory(root), domain_lock_filename, &lock.fd, &error))
+		return { critical_apply_outcome::retryable_failure, 0, EIO };
+	player_authority authority;
+	const auto loaded = load_player_authority(root, payload.pid, &authority, &error);
+	if (loaded != flatfile_player_domain_result::ok)
+		return { loaded == flatfile_player_domain_result::io_error ?
+				 critical_apply_outcome::retryable_failure :
+				 critical_apply_outcome::terminal_failure,
+			 0,
+			 static_cast<unsigned int>(
+				 loaded == flatfile_player_domain_result::not_found ? ENOENT :
+				 loaded == flatfile_player_domain_result::io_error  ? EIO :
+										      EILSEQ) };
+	for (const domain_operation &operation : authority.operations)
+		if (critical_operation_id_equal(operation.operation_id, command.operation_id))
+		{
+			if (CRYPTO_memcmp(operation.command_digest.data(), digest.data(),
+					  digest.size()))
+				return { critical_apply_outcome::terminal_failure,
+					 authority.record.domains.epic_revision, EEXIST };
+			epic_command_result replay = {};
+			if (!epic_command_decode_result(operation.result.data(),
+							operation.result_size, &replay))
+				return { critical_apply_outcome::terminal_failure, 0, EILSEQ };
+			critical_apply_result result = {
+				operation.result_code ? critical_apply_outcome::terminal_failure :
+							critical_apply_outcome::already_applied,
+				replay.revision, operation.result_code
+			};
+			result.result_size = operation.result_size;
+			std::copy_n(operation.result.begin(), operation.result_size,
+				    result.result_payload.begin());
+			return result;
+		}
+	if (authority.operations.size() >= domain_maximum_operations)
+		return { critical_apply_outcome::terminal_failure,
+			 authority.record.domains.epic_revision, ENOSPC };
+	epic_command_result epic_result = { authority.record.domains.epics,
+					    authority.record.domains.epic_revision, payload.delta };
+	unsigned int result_code = 0;
+	const uint64_t expected = command.expected_revisions[0].revision;
+	if (expected != std::numeric_limits<uint64_t>::max() && expected != epic_result.revision)
+		result_code = ESTALE;
+	else if (payload.delta < 0 && (payload.flags & EPIC_COMMAND_REQUIRE_FUNDS) &&
+		 (payload.delta == std::numeric_limits<int64_t>::min() ||
+		  epic_result.balance < -payload.delta))
+		result_code = ENOSPC;
+	else if ((payload.delta > 0 &&
+		  epic_result.balance > std::numeric_limits<int64_t>::max() - payload.delta) ||
+		 (payload.delta < 0 &&
+		  epic_result.balance < std::numeric_limits<int64_t>::min() - payload.delta) ||
+		 epic_result.revision == std::numeric_limits<uint64_t>::max())
+		result_code = ERANGE;
+	else
+	{
+		epic_result.balance += payload.delta;
+		++epic_result.revision;
+		authority.record.domains.epics = epic_result.balance;
+		authority.record.domains.epic_revision = epic_result.revision;
+	}
+	std::array<uint8_t, EPIC_RESULT_PAYLOAD_BYTES> encoded_result = {};
+	if (!epic_command_encode_result(epic_result, &encoded_result))
+		return { critical_apply_outcome::terminal_failure, epic_result.revision, EBADMSG };
+	domain_operation operation = {};
+	operation.operation_id = command.operation_id;
+	operation.command_digest = digest;
+	operation.result_code = result_code;
+	operation.result_size = encoded_result.size();
+	std::copy(encoded_result.begin(), encoded_result.end(), operation.result.begin());
+	try
+	{
+		authority.operations.push_back(operation);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, epic_result.revision, ENOMEM };
+	}
+	const player_publish_result published = publish_player_authority(root, authority, &error);
+	if (published != player_publish_result::ok)
+		return { published == player_publish_result::io_error ?
+				 critical_apply_outcome::retryable_failure :
+				 critical_apply_outcome::terminal_failure,
+			 epic_result.revision,
+			 static_cast<unsigned int>(
+				 published == player_publish_result::io_error ? EIO : ENOSPC) };
+	critical_apply_result result = { result_code ? critical_apply_outcome::terminal_failure :
+						       critical_apply_outcome::applied,
+					 epic_result.revision, result_code };
+	result.result_size = encoded_result.size();
+	std::copy(encoded_result.begin(), encoded_result.end(), result.result_payload.begin());
+	return result;
 }

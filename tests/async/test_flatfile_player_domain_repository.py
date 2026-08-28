@@ -24,6 +24,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-domain-test-") as tem
             "tests/async/flatfile_player_domain_repository_harness.cpp",
             "src/flatfile_player_domain_repository.c",
             "src/flatfile_store.c",
+            "src/epic_command.c",
+            "src/critical_command.c",
             "-lcrypto",
             "-pthread",
             "-o",

@@ -1,6 +1,7 @@
 #include "flatfile_item_repository.h"
 
 #include "flatfile_store.h"
+#include "flatfile_player_domain_repository.h"
 #include "persistence_mode.h"
 
 #include <algorithm>
@@ -781,7 +782,9 @@ flatfile_critical_command_repository_apply_selected(const critical_command &comm
 				     persistence_mode_flatfile_root();
 	if (!root || !*root)
 		return { critical_apply_outcome::terminal_failure, 0, ENOENT };
-	if (command.type != critical_command_type::item_transfer)
-		return { critical_apply_outcome::terminal_failure, 0, ENOTSUP };
-	return flatfile_item_repository_apply(root, command);
+	if (command.type == critical_command_type::item_transfer)
+		return flatfile_item_repository_apply(root, command);
+	if (command.type == critical_command_type::epic)
+		return flatfile_player_domain_apply(root, command);
+	return { critical_apply_outcome::terminal_failure, 0, ENOTSUP };
 }

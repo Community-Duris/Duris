@@ -2,6 +2,7 @@
 #define DURIS_FLATFILE_PLAYER_DOMAIN_REPOSITORY_H
 
 #include "player_load_repository.h"
+#include "critical_command_coordinator.h"
 
 #include <cstdint>
 #include <string>
@@ -36,5 +37,7 @@ flatfile_player_domain_result flatfile_player_domain_load(const std::string &roo
 							  int8_t racewar,
 							  flatfile_player_domain_record *record,
 							  std::string *error);
+critical_apply_result flatfile_player_domain_apply(const std::string &root,
+						   const critical_command &command);
 
 #endif
