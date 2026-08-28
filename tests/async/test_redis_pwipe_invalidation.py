@@ -49,7 +49,7 @@ for pattern in ("redis_report_cache_pattern()", "redis_presence_retry_pattern",
         pwipe_fn,
         f"redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE, {pattern})",
     )
-assert contains(pwipe_fn, "redis_clear_ship_snapshots()")
+assert contains(pwipe_fn, "redis_clear_ship_snapshots(maintenance)")
 assert not contains(pwipe_fn, "FLUSHALL")
 assert contains(source, "redis_clear_scan_match")
 assert contains(source, "redis_scan_match_empty(scope, pattern)")

@@ -10,6 +10,46 @@ remediated, as are RDS-018, RDS-025, and RDS-015; RDS-026 remains open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-026 legacy ship-cache boundary
+
+Completed in this interval:
+
+- Moved retired ship-snapshot key construction, asynchronous invalidation, scoped scan,
+  deletion, postflight verification, and maintenance observability from `redis.c` into
+  `redis_ship_legacy.c/.h`.
+- The destructive cleanup now accepts the already authenticated, selected-database
+  maintenance context explicitly instead of borrowing and depending on the composition
+  root's mutable world-context global.
+- Routed ship ownership changes and SQL ship deletion through the typed legacy header.
+  `ships/ship_base.c` and `sql_player.c` no longer include `redis.h`, reducing direct
+  umbrella consumers from 9 to 7.
+- Added a sanitizer-backed isolated-Redis regression that creates 600 legacy ship keys,
+  proves multi-page deletion and postflight emptiness, preserves an unrelated key, and
+  verifies categorized maintenance scan/write counters.
+- Reduced `redis.c` from 1,492 to 1,416 lines and `redis.h` from 46 to 42 lines. The root
+  no longer includes or directly calls the generic cache store.
+
+Performance effect:
+
+- Gameplay invalidation remains one key formatting operation plus one bounded background
+  cache-worker enqueue. No Redis command, connection, wait, sleep, SQL, filesystem, or
+  process work was added to the gameplay path.
+- Scan/delete/postflight work remains synchronous only in stopped-server pwipe maintenance
+  and uses the existing authenticated context and command deadline.
+
+Validation:
+
+- `./scripts/format.sh --check` and `make -C src -j2`: passed under the warning-as-error
+  profile.
+- `python3 tests/async/test_redis_ship_snapshot_invalidation.py`: passed source ownership
+  checks and the 600-key isolated-Redis cleanup/observability harness under ASan/UBSan.
+- Floor/world failure containment, pwipe invalidation, ship save/rename guards, and module
+  ownership checks passed.
+
+RDS-026 remains partially remediated. Legacy ship-cache compatibility is isolated; world
+snapshot orchestration, direct administrative cleanup, and broad lifecycle policy remain
+in the composition root.
+
 ### 2026-08-28 - RDS-026 runtime connection configuration boundary
 
 Completed in this interval:
@@ -2657,27 +2697,27 @@ lifecycle are in `redis_report_cache.c/.h`; the generic public cache API has bee
 by report-specific operations. Fixed-capacity floor-delta capture, coalescing, lifecycle
 state, and background submission are in `redis_floor_runtime.c/.h`, with season keys
 precomputed at boot. Endpoint/security parsing and the five scoped connection settings are
-owned by `redis_runtime_config.c/.h`. Twenty former checkpoint, presence, report, or
-floor-only consumers no longer include `redis.h`, which exports none of those subsystem
-APIs or mutable states. The remaining composition root still owns world snapshot
-orchestration, direct administrative cleanup, legacy ship cleanup, and broad lifecycle
-policy.
+owned by `redis_runtime_config.c/.h`. Retired ship-snapshot invalidation and stopped-server
+scoped cleanup are isolated in `redis_ship_legacy.c/.h`. Twenty-two former checkpoint,
+presence, report, floor, or ship-only consumers no longer include `redis.h`, which exports
+none of those subsystem APIs or mutable states. The remaining composition root still owns
+world snapshot orchestration, direct administrative cleanup, and broad lifecycle policy.
 
 At the audit baseline, `src/redis.c` was 2,525 lines and combined
 connection/configuration, world publication, floor recovery, ship serialization, report
 caches, presence, pub/sub, administrator helpers, and legacy UID handling. `redis.h` also
 owned revisioned player-save wrapper APIs that did not use Redis, and 29 C/C++ translation
-units included the header. The composition root is now 1,492 lines, the header is 46
-lines, and 9 translation units include it; the remaining world and administrative policy
+units included the header. The composition root is now 1,416 lines, the header is 42
+lines, and 7 translation units include it; the remaining world and administrative policy
 still has a broad review and lifecycle surface.
 
 Impact: changes have a broad compile/review surface, subsystem policy is inconsistent,
 and tests tend to assert monolithic source layout rather than typed interfaces.
 
 Recommendation: finish moving world snapshot orchestration, direct administrative
-cleanup, legacy ship cleanup, and broad lifecycle policy behind typed modules. Keep each
-subsystem's availability, codec, TTL, authority, and lifecycle policy beside its
-implementation, leaving `redis.c` as the small boot/configuration composition root.
+cleanup, and broad lifecycle policy behind typed modules. Keep each subsystem's
+availability, codec, TTL, authority, and lifecycle policy beside its implementation,
+leaving `redis.c` as the small boot/configuration composition root.
 
 ### RDS-027 - The no-MySQL build option is broken
 

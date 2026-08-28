@@ -25,7 +25,7 @@
 #include "mm.h"
 #include "necromancy.h"
 #include "ships/ships.h"
-#include "redis.h"
+#include "redis_ship_legacy.h"
 #include "siege.h"
 #include "spells.h"
 #include "sql.h"

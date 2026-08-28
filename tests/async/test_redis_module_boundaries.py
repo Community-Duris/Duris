@@ -17,6 +17,8 @@ REPORT_HEADER = (ROOT / "src/redis_report_cache.h").read_text(encoding="ascii")
 REPORT_SOURCE = (ROOT / "src/redis_report_cache.c").read_text(encoding="ascii")
 RUNTIME_CONFIG_HEADER = (ROOT / "src/redis_runtime_config.h").read_text(encoding="ascii")
 RUNTIME_CONFIG_SOURCE = (ROOT / "src/redis_runtime_config.c").read_text(encoding="ascii")
+SHIP_HEADER = (ROOT / "src/redis_ship_legacy.h").read_text(encoding="ascii")
+SHIP_SOURCE = (ROOT / "src/redis_ship_legacy.c").read_text(encoding="ascii")
 FLOOR_RUNTIME_HEADER = (ROOT / "src/redis_floor_runtime.h").read_text(encoding="ascii")
 FLOOR_RUNTIME_SOURCE = (ROOT / "src/redis_floor_runtime.c").read_text(encoding="ascii")
 MAKEFILE = (ROOT / "src/Makefile").read_text(encoding="ascii")
@@ -117,7 +119,7 @@ for token in (
     "generate_fraglist_cache_payload",
 ):
     assert token not in REDIS_SOURCE
-assert REDIS_SOURCE.count("redis_cache_store_delete") == 1
+assert "redis_cache_store_delete" not in REDIS_SOURCE
 assert "redis_report_cache.o" in MAKEFILE
 assert "redis_report_cache_start(redis_connections.cache)" in REDIS_SOURCE
 assert "redis_report_cache_cancel()" in REDIS_SOURCE
@@ -182,6 +184,18 @@ for token in (
 assert "redis_runtime_config.o" in MAKEFILE
 assert "redis_runtime_connections_configure(redis_donation_runtime_enabled()" in REDIS_SOURCE
 
+for symbol in ("redis_invalidate_ship_snapshot", "redis_clear_ship_snapshots"):
+    assert symbol in SHIP_HEADER
+    assert symbol in SHIP_SOURCE
+    assert symbol not in REDIS_HEADER
+assert "redis_cache_store_delete" in SHIP_SOURCE
+assert "REDIS_SHIP_SNAPSHOT_PATTERN" in SHIP_SOURCE
+assert "redis_ship_legacy.o" in MAKEFILE
+for filename in ("sql_player.c", "ships/ship_base.c"):
+    source = (ROOT / "src" / filename).read_text(encoding="utf-8")
+    assert '#include "redis_ship_legacy.h"' in source
+    assert '#include "redis.h"' not in source
+
 checkpoint_only_callers = (
     "actinf.c",
     "auction_houses.c",
@@ -201,6 +215,6 @@ redis_includers = []
 for source_path in (ROOT / "src").rglob("*.[ch]"):
     if '#include "redis.h"' in source_path.read_text(encoding="utf-8"):
         redis_includers.append(source_path)
-assert len(redis_includers) <= 9
+assert len(redis_includers) <= 7
 
 print("Redis, checkpoint, donation, presence, report-cache, and floor-runtime boundaries passed")

@@ -253,6 +253,7 @@ OBJS =  $(SHIP_OBJS) \
 				 redis_cache_store.o \
 				 redis_report_cache.o \
 				 redis_runtime_config.o \
+				 redis_ship_legacy.o \
 				 redis_floor_runtime.o \
 				 redis_floor_store.o \
 				 redis_presence_payload.o \

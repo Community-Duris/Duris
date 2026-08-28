@@ -29,7 +29,7 @@
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
-#include "redis.h"
+#include "redis_ship_legacy.h"
 
 extern char buf[MAX_STRING_LENGTH];
 extern bool insert_money_pickup(int pid, int money);

@@ -19,7 +19,6 @@
 #include "copyover.h"
 #include "world_recovery_pipeline.h"
 #include "files.h"
-#include "redis_cache_store.h"
 #include "redis_command_observability.h"
 #include "redis_connection.h"
 #include "redis_donation_worker.h"
@@ -32,6 +31,7 @@
 #include "redis_presence_worker.h"
 #include "redis_report_cache.h"
 #include "redis_runtime_config.h"
+#include "redis_ship_legacy.h"
 #include "redis_world_store.h"
 #include "world_recovery_codec.h"
 #include "sql.h"
@@ -61,12 +61,6 @@ extern P_char character_list;
 // ship object vnums defined in ships/ships.h
 
 extern int _pwipe;
-#ifdef __NO_MYSQL__
-bool redis_clear_ship_snapshots(void)
-{
-	return true;
-}
-#endif
 
 static redisContext *redis_ctx = NULL;
 static redis_runtime_connections redis_connections = {};
@@ -773,7 +767,7 @@ bool redis_clear_pwipe_state(void)
 				       redis_report_cache_pattern()) &&
 		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
 				       REDIS_LEGACY_CACHE_PATTERN) &&
-		redis_clear_ship_snapshots();
+		redis_clear_ship_snapshots(maintenance);
 	redis_ctx = world_context;
 	redisFree(maintenance);
 	return cleared;
@@ -1420,73 +1414,3 @@ void event_save_world_state(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, voi
 		nevent_periodic_mark_failure("world-state persistence is disabled");
 	nevent_periodic_next_after(world_state_interval * WAIT_SEC);
 }
-
-#ifndef __NO_MYSQL__
-static void redis_ship_cache_key(char *buf, size_t buf_size, const char *owner_name)
-{
-	snprintf(buf, buf_size, REDIS_SHIP_SNAPSHOT_FORMAT, owner_name ? owner_name : "");
-}
-
-void redis_invalidate_ship_snapshot(const char *owner_name)
-{
-	if (!owner_name)
-		return;
-
-	char key[256];
-	redis_ship_cache_key(key, sizeof(key), owner_name);
-	redis_cache_store_delete(key);
-}
-
-bool redis_clear_ship_snapshots(void)
-{
-	if (!redis_enabled)
-		return true;
-	if (!redis_ctx)
-		return false;
-
-	char cursor[64] = "0";
-	do
-	{
-		redisReply *scan = (redisReply *)redis_command(REDIS_SHARED_SCOPE_MAINTENANCE,
-							       REDIS_SHARED_COMMAND_SCAN, redis_ctx,
-							       "SCAN %s MATCH %s COUNT 256", cursor,
-							       REDIS_SHIP_SNAPSHOT_PATTERN);
-		if (!scan || scan->type != REDIS_REPLY_ARRAY || scan->elements != 2 ||
-		    !scan->element[0] || !scan->element[1] || !scan->element[0]->str ||
-		    scan->element[0]->type != REDIS_REPLY_STRING ||
-		    scan->element[1]->type != REDIS_REPLY_ARRAY)
-		{
-			if (scan)
-				freeReplyObject(scan);
-			return false;
-		}
-
-		snprintf(cursor, sizeof(cursor), "%s", scan->element[0]->str);
-		redisReply *keys = scan->element[1];
-		for (size_t i = 0; i < keys->elements; i++)
-		{
-			redisReply *key = keys->element[i];
-			if (!key || key->type != REDIS_REPLY_STRING || !key->str)
-			{
-				freeReplyObject(scan);
-				return false;
-			}
-			redisReply *del = (redisReply *)redis_command(
-				REDIS_SHARED_SCOPE_MAINTENANCE, REDIS_SHARED_COMMAND_WRITE,
-				redis_ctx, "DEL %b", key->str, key->len);
-			if (!del ||
-			    (del->type != REDIS_REPLY_INTEGER && del->type != REDIS_REPLY_NIL))
-			{
-				if (del)
-					freeReplyObject(del);
-				freeReplyObject(scan);
-				return false;
-			}
-			freeReplyObject(del);
-		}
-		freeReplyObject(scan);
-	} while (strcmp(cursor, "0") != 0);
-
-	return redis_scan_match_empty(REDIS_SHARED_SCOPE_MAINTENANCE, REDIS_SHIP_SNAPSHOT_PATTERN);
-}
-#endif

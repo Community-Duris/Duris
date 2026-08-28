@@ -233,7 +233,7 @@ for token in ("redis_floor_store_take_barrier", "world_recovery_pipeline_request
 for token in ("REDIS_FLOOR_QUEUE_CAPACITY", "REDIS_FLOOR_QUEUE_MAX_BYTES",
               "redis_floor_store_request_barrier", "redis_floor_store_take_barrier"):
     assert token in floor_store
-event = section("void event_save_world_state", "#ifndef __NO_MYSQL__\nstatic void redis_ship_cache_key")
+event = text[text.index("void event_save_world_state") :]
 assert "redis_clear_floor_drops" not in event
 print("[PASS] floor deltas use a bounded background pipeline and ordered snapshot barrier")
 

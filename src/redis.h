@@ -36,10 +36,6 @@ bool redis_clear_pwipe_state(void);
 bool redis_validate_pwipe_state(void);
 bool redis_season_key(char *buffer, size_t size, const char *suffix);
 
-// Legacy ship snapshot cleanup. MySQL is the only ship read authority.
-void redis_invalidate_ship_snapshot(const char *owner_name);
-bool redis_clear_ship_snapshots(void);
-
 // wiz command
 void do_redis(P_char ch, char *argument, int cmd);
 
