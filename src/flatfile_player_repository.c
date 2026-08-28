@@ -1,6 +1,7 @@
 #include "flatfile_player_repository.h"
 
 #include "flatfile_identity_repository.h"
+#include "flatfile_item_repository.h"
 #include "flatfile_store.h"
 #include "persistence_observability.h"
 #include "persistence_mode.h"
@@ -8,12 +9,16 @@
 
 #include <array>
 #include <cerrno>
+#include <climits>
 #include <cstring>
 #include <limits>
 #include <mutex>
+#include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
 #include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -146,6 +151,126 @@ player_load_result identity_failure(const player_load_request &request,
 		break;
 	}
 	return result;
+}
+
+bool build_item_identities(const std::vector<player_item_snapshot> &items,
+			   const std::unordered_map<uint64_t, flatfile_item_ownership_record> &owned,
+			   const item_owner_identity &owner, uint64_t owner_revision,
+			   uint64_t *next_database_id, std::unordered_set<uint64_t> *consumed,
+			   std::vector<player_load_item_identity> *identities)
+{
+	if (!next_database_id || !consumed || !identities)
+		return false;
+	std::vector<uint64_t> database_ids;
+	try
+	{
+		database_ids.reserve(items.size());
+		identities->reserve(items.size());
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			const player_item_snapshot &item = items[index];
+			if (!item.object_uid || item.vnum <= 0 ||
+			    *next_database_id > static_cast<uint64_t>(INT_MAX) ||
+			    !consumed->insert(item.object_uid).second)
+				return false;
+			const auto found = owned.find(item.object_uid);
+			if (found == owned.end())
+				return false;
+			const flatfile_item_ownership_record &record = found->second;
+			uint64_t parent_uid = 0, serialized_parent = 0;
+			if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+			{
+				if (item.parent_index < 0 ||
+				    static_cast<size_t>(item.parent_index) >= index)
+					return false;
+				const size_t parent_index = static_cast<size_t>(item.parent_index);
+				parent_uid = items[parent_index].object_uid;
+				serialized_parent = database_ids[parent_index];
+			}
+			if (record.vnum != item.vnum || record.parent_item_uid != parent_uid ||
+			    !item_owner_identity_equal(record.owner, owner) ||
+			    record.state != item_custody_state::active ||
+			    (!parent_uid && record.root_item_uid != record.item_uid))
+				return false;
+			const uint64_t database_id = (*next_database_id)++;
+			database_ids.push_back(database_id);
+			identities->push_back({ database_id, serialized_parent, 1,
+						PLAYER_LOAD_ITEM_OVERRIDE_ALL, record.item_uid,
+						record.root_item_uid, record.parent_item_uid,
+						record.owner, record.item_revision, owner_revision,
+						record.state });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool reconcile_item_ownership(const std::string &root, player_load_result *result)
+{
+	if (!result || result->pid <= 0)
+		return false;
+	const item_owner_identity owner = { item_owner_type::player,
+					    static_cast<uint64_t>(result->pid), 0 };
+	uint64_t owner_revision = 0;
+	std::vector<flatfile_item_ownership_record> records;
+	std::string error;
+	const flatfile_item_repository_result loaded =
+		flatfile_item_repository_load_owner(root, owner, &owner_revision, &records, &error);
+	if (loaded != flatfile_item_repository_result::ok)
+	{
+		result->outcome = loaded == flatfile_item_repository_result::io_error ?
+					  player_load_outcome::retryable_failure :
+					  player_load_outcome::component_failure;
+		result->error_code = loaded == flatfile_item_repository_result::not_found ? ENOENT :
+				     loaded == flatfile_item_repository_result::io_error  ? EIO :
+											    EILSEQ;
+		result->failed_component = "item_ownership";
+		return false;
+	}
+	std::unordered_map<uint64_t, flatfile_item_ownership_record> owned;
+	std::unordered_set<uint64_t> consumed;
+	try
+	{
+		owned.reserve(records.size());
+		consumed.reserve(records.size());
+		for (const auto &record : records)
+			if (!owned.emplace(record.item_uid, record).second)
+				return false;
+		result->pet_identities.resize(result->snapshot.pets.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		result->outcome = player_load_outcome::retryable_failure;
+		result->error_code = ENOMEM;
+		result->failed_component = "item_ownership";
+		return false;
+	}
+	uint64_t next_database_id = 1;
+	if (!build_item_identities(result->snapshot.items, owned, owner, owner_revision,
+				   &next_database_id, &consumed, &result->item_identities))
+		goto invalid;
+	for (size_t index = 0; index < result->snapshot.pets.size(); ++index)
+	{
+		result->pet_identities[index].database_id = index + 1;
+		if (!build_item_identities(result->snapshot.pets[index].items, owned, owner,
+					   owner_revision, &next_database_id, &consumed,
+					   &result->pet_identities[index].item_identities))
+			goto invalid;
+	}
+	if (consumed.size() != records.size())
+		goto invalid;
+	result->item_owner_revision = owner_revision;
+	result->authoritative_item_count = records.size();
+	return true;
+
+invalid:
+	result->outcome = player_load_outcome::component_failure;
+	result->error_code = EILSEQ;
+	result->failed_component = "item_ownership";
+	return false;
 }
 
 bool normalize_size(player_snapshot *snapshot, std::vector<uint8_t> *payload)
@@ -358,6 +483,23 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 		result.failed_component = "snapshot_identity";
 		return result;
 	}
+	if (request.include_items && !reconcile_item_ownership(root, &result))
+		return result;
+	if (!request.include_pets)
+	{
+		result.snapshot.pets.clear();
+		result.pet_identities.clear();
+	}
+	if (!request.include_items)
+	{
+		result.snapshot.items.clear();
+		result.item_identities.clear();
+		result.item_owner_revision = 0;
+		result.authoritative_item_count = 0;
+	}
+	result.snapshot.components = request.include_pets  ? PLAYER_LOAD_SESSION03_COMPONENTS :
+				     request.include_items ? PLAYER_LOAD_SESSION02_COMPONENTS :
+							     PLAYER_LOAD_SESSION01_COMPONENTS;
 
 	result.metrics.byte_count = result.snapshot.encoded_size_bound;
 	result.metrics.row_count = 1;

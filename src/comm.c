@@ -228,6 +228,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	zone_touch_transaction_handle_completions(completions, count);
 }
 
+#ifndef __NO_MYSQL__
 static critical_outbox_delivery_result
 critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *context)
 {
@@ -241,6 +242,7 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 		return zone_touch_transaction_outbox_delivery(record, context);
 	return auction_transaction_outbox_delivery(record, context);
 }
+#endif
 
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 {
@@ -769,9 +771,16 @@ void run_the_game(int port, int sslport)
 	critical_apply_fn critical_apply = critical_command_repository_apply_from_pool;
 #ifdef __NO_MYSQL__
 	critical_apply = flatfile_critical_command_repository_apply_selected;
+#else
+	const bool critical_outbox_ready =
+		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);
 #endif
-	if (!critical_outbox_init(critical_gameplay_outbox_delivery, NULL) ||
-	    !critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL))
+	if (
+#ifndef __NO_MYSQL__
+		!critical_outbox_ready ||
+#endif
+		!critical_command_coordinator_init(critical_journal_directory, critical_apply,
+						   NULL))
 	{
 		critical_command_coordinator_shutdown();
 		critical_outbox_shutdown();

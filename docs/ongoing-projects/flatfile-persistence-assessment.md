@@ -456,6 +456,40 @@ sections below continue to describe the required end state.
   snapshot UID and parent edge to the player owner revision, then add the economy and
   gameplay-read authorities needed for a fully materializable result.
 
+### Checkpoint 15 - snapshot-to-custody load reconciliation
+
+- **Completed:** flat player loads now read the player owner revision and active custody
+  set, then match every inventory, equipment, and pet-item snapshot row by stable UID.
+  They require exact aggregate cardinality, unique UIDs, matching vnums, matching parent
+  edges and roots, active player custody, and one shared owner revision. Extra catalog
+  items and extra snapshot items both reject the load.
+- **Completed:** successful reconciliation constructs the existing bounded
+  `player_load_item_identity` and pet-identity sidecars with synthetic per-load row IDs,
+  stable UID/root/parent metadata, item and owner revisions, quantity, custody state,
+  and explicit metadata override coverage. The result is trimmed to the requested
+  session component set without weakening reconciliation of the complete stored
+  authority.
+- **Completed:** the client-free critical pipeline no longer starts the SQL outbox
+  worker. Item commands use the flat journal/coordinator/catalog result path directly;
+  MariaDB mode retains its transactional outbox worker. This removes a latent loop that
+  would otherwise poll a permanently unavailable SQL pool in flat mode.
+- **Safety boundary:** the load still returns `external_domains / ENOTSUP` after item
+  reconciliation. Wallet, bank, epic, frag, gameplay reads, trophy materialization, and
+  initial custody publication for never-moved new-character items still prevent a safe
+  login claim.
+- **Completed:** expanded the player repository regression with stable UIDs, nested
+  player and pet custody creation, owner revision checks, parent identity checks, and
+  aggregate item-sidecar verification.
+- **Checks passed:** `python3 tests/async/test_flatfile_player_repository.py`,
+  `python3 tests/async/test_flatfile_item_repository.py`,
+  `python3 tests/async/test_player_load_pipeline.py`, `./scripts/format.sh --check`,
+  `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `src/flatfile_player_repository.c`, `src/comm.c`,
+  `src/persistence_mode.c`, and the focused player repository regression.
+- **Next action:** publish initial item custody as part of the first durable player
+  baseline, then implement revisioned player-economy/account-bank/gameplay-read
+  authorities and combine them into the load result.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
