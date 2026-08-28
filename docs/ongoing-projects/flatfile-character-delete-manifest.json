@@ -99,8 +99,8 @@
       "id": "frag_leaderboard",
       "source": "runtime-call",
       "key": "pid",
-      "disposition": "unimplemented",
-      "evidence": { "path": "src/files.c", "token": "sql_soft_delete_character(GET_PID(ch))" }
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_frag_leaderboard_prepare_tombstone" }
     },
     {
       "id": "locker_contents",

@@ -14,6 +14,7 @@
 #include "item_uid_allocator.h"
 #include "critical_command.h"
 #include "flatfile_offline_message_repository.h"
+#include "flatfile_frag_leaderboard_repository.h"
 #include "persistence_mode.h"
 #include "utils.h"
 #include "sql.h"
@@ -138,7 +139,10 @@ int sql_save_player_core(P_char /*ch*/)
 {
 	return 0;
 }
-void sql_modify_frags(P_char /*ch*/, int /*gain*/) {}
+void sql_modify_frags(P_char ch, int /*gain*/)
+{
+	sql_update_frag_leaderboard(ch);
+}
 void sql_insert_item(P_char /*ch*/, P_obj /*obj*/, char * /*desc*/) {}
 
 void sql_save_pkill(P_char /*ch*/, P_char /*victim*/) {}
@@ -304,7 +308,35 @@ double sql_get_total_donated(const char * /*account_name*/)
 {
 	return 0.0;
 }
-void sql_update_frag_leaderboard(P_char /*ch*/) {}
+void sql_update_frag_leaderboard(P_char ch)
+{
+	if (!ch || IS_NPC(ch))
+		return;
+	if (IS_MORPH(ch))
+		ch = MORPH_ORIG(ch);
+	const char *root = persistence_mode_flatfile_root();
+	const char *account = get_account_name_safe(ch);
+	const char *name = GET_NAME(ch);
+	if (!root || GET_PID(ch) <= 0 || !account || !*account || !name || !*name)
+		return;
+	flatfile_frag_leaderboard_record record;
+	record.pid = static_cast<uint32_t>(GET_PID(ch));
+	record.account_name = account;
+	record.character_name = name;
+	record.total_frags = ch->only.pc->frags;
+	record.racewar = GET_RACEWAR(ch);
+	record.race_name = race_names_table[ch->player.race].normal;
+	record.class_name = class_names_table[flag2idx(ch->player.m_class)].normal;
+	record.level = GET_LEVEL(ch);
+	record.last_updated = static_cast<int64_t>(time(nullptr));
+	record.revision = 1;
+	std::string error;
+	if (flatfile_frag_leaderboard_upsert(root, record, &error) !=
+	    flatfile_frag_leaderboard_result::ok)
+		persistence_alert(AVATAR, "frag_leaderboard", "player", "unknown", "upsert",
+				  "flat_write_failed", "pid=%d error=%s", GET_PID(ch),
+				  error.c_str());
+}
 bool sql_soft_delete_character(long /*pid*/)
 {
 	return false;

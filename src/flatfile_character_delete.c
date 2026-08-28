@@ -4,6 +4,7 @@
 #include "flatfile_artifact_repository.h"
 #include "flatfile_auction_repository.h"
 #include "flatfile_boon_repository.h"
+#include "flatfile_frag_leaderboard_repository.h"
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
 #include "flatfile_offline_message_repository.h"
@@ -12,6 +13,7 @@
 #include "flatfile_recipe_repository.h"
 #include "flatfile_spellbook_repository.h"
 
+#include <ctime>
 #include <new>
 #include <vector>
 
@@ -93,7 +95,7 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	std::vector<flatfile_authority_operation> operations;
 	try
 	{
-		operations.reserve(9);
+		operations.reserve(10);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -125,6 +127,20 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	{
 		return map_authority(artifact, flatfile_artifact_result::not_found,
 				     flatfile_artifact_result::io_error);
+	}
+
+	const auto leaderboard = flatfile_frag_leaderboard_prepare_tombstone(
+		root, authority_lock, static_cast<uint32_t>(pid),
+		static_cast<int64_t>(time(nullptr)), &operation, error);
+	if (leaderboard == flatfile_frag_leaderboard_result::ok)
+	{
+		if (!append_operation(&operations, &operation))
+			return flatfile_character_delete_result::io_error;
+	}
+	else if (leaderboard != flatfile_frag_leaderboard_result::unchanged)
+	{
+		return map_authority(leaderboard, flatfile_frag_leaderboard_result::not_found,
+				     flatfile_frag_leaderboard_result::io_error);
 	}
 
 	const auto snapshot = flatfile_player_snapshot_prepare_remove(

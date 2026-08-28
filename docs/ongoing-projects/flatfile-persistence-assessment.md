@@ -1607,6 +1607,43 @@ sections below continue to describe the required end state.
   while keeping account lockers separate, then compose locker access/content removal into
   deletion without touching account-scoped storage.
 
+### Checkpoint 48 - revisioned flat frag-leaderboard authority
+
+- **Completed:** added a `DURFRAG` v1 PID-keyed leaderboard catalog covering account and
+  character display names, total frags, racewar/race/class/level dimensions, soft-delete
+  and update timestamps, and a monotonic row revision. The catalog has its own revision,
+  canonical PID ordering, strict string/count/size bounds, fixed-width encoding, and
+  SHA-256 validation.
+- **Exporter and runtime writes:** exact establishment is canonical and idempotent only for
+  identical source rows; missing/corrupt authority fails closed. Client-free
+  `sql_update_frag_leaderboard` now builds a typed row from live character state and
+  performs a revisioned upsert, while client-free `sql_modify_frags` refreshes that row
+  after frag changes. Failed writes raise a persistence alert instead of disappearing in
+  the former no-op stub.
+- **Deletion composition:** the core coordinator prepares a soft-delete timestamp and row
+  revision update under the held authority lock, then includes the catalog image before
+  snapshot/domain/item removal and the success-last identity tombstone. An absent PID in
+  an established catalog and a previously tombstoned row are idempotent; a missing catalog
+  remains a hard failure.
+- **Checks passed:** the repository regression covers missing-authority refusal, canonical
+  exact establishment, conflicting establishment, signed frag totals, round-trip decoding,
+  update/insert ordering and revisions, absent-PID tombstone, journal publication,
+  timestamped soft deletion, retry stability, and corrupt read/write refusal. The expanded
+  coordinator recovery test verifies the leaderboard tombstone, the runtime source
+  contract rejects restoration of the no-op, and the strict normal build passes. CI runs
+  the focused regression in the client-free job.
+- **Manifest and remaining gap:** frag leaderboard deletion advances from `unimplemented`
+  to `prepared_rewrite`, reducing the checked blocker count from seven to six. Native
+  client-free ranking/filter/list projections in `fraglist.c`, Redis/web publication, and
+  level-cap aggregation are not yet routed, so the broader economy/statistics boot fence
+  remains truthful and the live delete route stays closed.
+- **Files changed:** frag-leaderboard repository/codec and harness, client-free SQL update
+  adapter, coordinator/build/CI wiring, deletion manifest/validator, and this handoff
+  ledger.
+- **Next action:** extract the nested item snapshot codec used by player persistence so a
+  complete locker catalog can encode chest metadata and object payloads while the existing
+  item ledger remains the sole UID/custody authority.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

@@ -1,6 +1,7 @@
 #include "flatfile_boon_repository.h"
 #include "flatfile_character_delete.h"
 #include "flatfile_artifact_repository.h"
+#include "flatfile_frag_leaderboard_repository.h"
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
 #include "flatfile_offline_message_repository.h"
@@ -92,6 +93,11 @@ static void establish(const fs::path &root, bool establish_boons)
 						100, 1, 8888, 1 } },
 					    &error) == flatfile_artifact_result::ok,
 		"artifact baseline failed: " + error);
+	require(flatfile_frag_leaderboard_establish(
+			root.string(),
+			{ { 1, "Account", "Player", 1234, 1, "Human", "Warrior", 50, 0, 100, 1 } },
+			&error) == flatfile_frag_leaderboard_result::ok,
+		"frag leaderboard baseline failed: " + error);
 	if (establish_boons)
 		require(flatfile_boon_establish(root.string(), {}, &error) ==
 				flatfile_boon_result::ok,
@@ -159,6 +165,14 @@ int main(int argc, char **argv)
 			artifacts[0].bind_owner_pid == -1 && artifacts[0].bind_timer == 0 &&
 			artifacts[0].revision == 2,
 		"recovered deletion did not release player artifacts");
+	std::vector<flatfile_frag_leaderboard_record> leaderboard;
+	require(flatfile_frag_leaderboard_list(root.string(), &leaderboard, &error) ==
+				flatfile_frag_leaderboard_result::ok &&
+			leaderboard.size() == 1 && leaderboard[0].pid == 1 &&
+			leaderboard[0].deleted_at > 0 &&
+			leaderboard[0].last_updated == leaderboard[0].deleted_at &&
+			leaderboard[0].revision == 2,
+		"recovered deletion did not tombstone frag leaderboard state");
 	std::vector<flatfile_offline_message_record> messages;
 	require(flatfile_offline_message_list(root.string(), 1, &messages, &error) ==
 				flatfile_offline_message_result::ok &&
