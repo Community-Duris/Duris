@@ -31,10 +31,10 @@ wholist events and may request `request_wholist` or
 `admin_delete_character`. Player and service identities cannot share a
 connection. Five failed service-auth attempts in 60 seconds close it.
 
-Presence payloads omit account names, IP addresses, client metadata, and
-invisible staff by default. Set `DURISWEB_PRIVATE_PRESENCE=TRUE` only when the
-backend has an explicit operational need and matching access and retention
-controls.
+WebSocket and Redis presence payloads omit account names, IP addresses, client
+metadata, and invisible staff by default. Set
+`DURISWEB_PRIVATE_PRESENCE=TRUE` only when the backend has an explicit
+operational need and matching access and retention controls.
 
 Browser login is limited to five attempts per minute and registration to three
 attempts per five minutes, both per connection and client address. Login uses a

@@ -24,6 +24,8 @@
 #include "files.h"
 #include "player_save_pipeline.h"
 #include "player_save_worker.h"
+#include "presence_policy.h"
+#include "redis_presence_payload.h"
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
@@ -1995,6 +1997,14 @@ void redis_player_online(P_char ch)
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_ctx || !ch || IS_NPC(ch))
 		return;
+	if (!durisweb_presence_character_visible(ch))
+	{
+		redisReply *reply =
+			(redisReply *)redis_command(redis_ctx, "HDEL mud:online %d", GET_PID(ch));
+		if (reply)
+			freeReplyObject(reply);
+		return;
+	}
 
 	const char *account = get_account_name_safe(ch);
 	const char *race_str = race_names_table[GET_RACE(ch)].ansi;
@@ -2005,17 +2015,24 @@ void redis_player_online(P_char ch)
 		(ch->desc && ch->desc->client_version[0]) ? ch->desc->client_version : "";
 	time_t login_time = ch->player.time.logon;
 
-	char json[1024];
-	snprintf(
-		json, sizeof(json),
-		"{\"name\":\"%s\",\"account\":\"%s\",\"level\":%d,\"race\":\"%s\",\"class\":\"%s\","
-		"\"racewar\":%d,\"ip\":\"%s\",\"client\":\"%s\",\"client_version\":\"%s\",\"login_time\":%ld}",
-		GET_NAME(ch), account ? account : "", GET_LEVEL(ch), race_str ? race_str : "",
-		class_str ? class_str : "", GET_RACEWAR(ch), ip, client, client_ver,
-		(long)login_time);
+	const redis_presence_fields fields = { GET_NAME(ch),
+					       account,
+					       race_str,
+					       class_str,
+					       ip,
+					       client,
+					       client_ver,
+					       GET_LEVEL(ch),
+					       GET_RACEWAR(ch),
+					       static_cast<int64_t>(login_time),
+					       durisweb_private_presence_enabled() };
+	char *json = redis_presence_payload_encode(fields);
+	if (!json)
+		return;
 
 	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HSET mud:online %d %b",
 							GET_PID(ch), json, strlen(json));
+	free(json);
 	if (reply)
 		freeReplyObject(reply);
 
@@ -2034,7 +2051,8 @@ void redis_player_offline(P_char ch)
 	if (reply)
 		freeReplyObject(reply);
 
-	redis_publish_player_event(GET_PID(ch), "logout");
+	if (durisweb_presence_character_visible(ch))
+		redis_publish_player_event(GET_PID(ch), "logout");
 #endif
 }
 

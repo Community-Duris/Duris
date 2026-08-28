@@ -240,6 +240,8 @@ OBJS =  $(SHIP_OBJS) \
 				 maintenance_repository.o \
 				 maintenance_snapshot.o \
 				 player_load_materialize.o \
+				 presence_policy.o \
+				 redis_presence_payload.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
 				 player_save_worker.o \

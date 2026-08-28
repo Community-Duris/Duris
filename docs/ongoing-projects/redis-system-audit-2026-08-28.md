@@ -8,6 +8,43 @@ and the remaining findings are open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-009 presence privacy and encoding (partial)
+
+Completed:
+
+- Centralized exact `DURISWEB_PRIVATE_PRESENCE=TRUE` policy and invisible-staff filtering
+  for both WebSocket and Redis presence transports.
+- Default Redis presence payloads now omit account name, IP address, client name, and client
+  version. Private fields and invisible staff require the explicit opt-in.
+- Replaced `snprintf` JSON assembly with cJSON encoding so quotes, backslashes, and control
+  characters in client-provided metadata cannot corrupt the stored payload.
+- Removes any prior hash entry when a now-invisible character logs in and suppresses its
+  login/logout publication.
+- Added a compiled payload harness for public/private field selection, exact opt-in parsing,
+  and JSON escaping, plus updated the DurisWeb security contract and documentation.
+
+Performance effect:
+
+- Normal visible login/logout keeps the existing bounded Redis command count. Invisible
+  staff skip publication, and JSON encoding performs only small in-memory work at session
+  boundaries rather than on the game pulse hot path.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_presence_privacy.py`: passed.
+- `python3 tests/async/test_durisweb_integration_security.py`: passed.
+- `python3 tests/async/test_durisweb_auth_runtime.py`: passed.
+- `python3 tests/async/test_durisweb_secret_config.py`: passed.
+- `python3 tests/async/test_websocket_protocol_contract.py`: passed.
+- `python3 tests/async/test_runtime_connection_trust.py`: passed.
+- `./scripts/format.sh --check`: passed.
+
+Remaining RDS-009 work:
+
+- Replace the persistent `mud:online` hash entry model with per-session leases or another
+  per-entry expiry contract so a failed logout cannot leave stale presence indefinitely.
+
 ### 2026-08-28 - RDS-014 artifact cache safety
 
 Completed:
@@ -509,6 +546,8 @@ external donation envelopes with independent keys so Redis access alone is insuf
 
 Severity: High
 Confidence: Confirmed
+Remediation status: Privacy policy and JSON safety are completed on branch. Per-entry
+presence expiry remains open.
 
 Evidence:
 
