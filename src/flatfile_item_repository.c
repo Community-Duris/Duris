@@ -3,6 +3,7 @@
 #include "flatfile_auction_repository.h"
 #include "flatfile_boon_repository.h"
 #include "flatfile_authority_transaction.h"
+#include "flatfile_locker_repository.h"
 #include "flatfile_store.h"
 #include "flatfile_player_domain_repository.h"
 #include "flatfile_shop_trade_materialization.h"
@@ -442,6 +443,42 @@ bool generic_materialization_owner(item_owner_type type)
 {
 	return type == item_owner_type::player || type == item_owner_type::system ||
 	       type == item_owner_type::destruction;
+}
+
+bool locker_transfer(const item_transfer_payload &payload)
+{
+	return (payload.from_owner.type == item_owner_type::player &&
+		payload.to_owner.type == item_owner_type::locker &&
+		payload.reason == item_transfer_reason::locker_deposit) ||
+	       (payload.from_owner.type == item_owner_type::locker &&
+		payload.to_owner.type == item_owner_type::player &&
+		payload.reason == item_transfer_reason::locker_withdraw);
+}
+
+bool generic_transfer_supported(const item_transfer_payload &payload)
+{
+	return (generic_materialization_owner(payload.from_owner.type) &&
+		generic_materialization_owner(payload.to_owner.type)) ||
+	       locker_transfer(payload);
+}
+
+bool locker_custody_matches(ownership_catalog &catalog, const item_owner_identity &owner,
+			    const std::vector<flatfile_locker_custody_item> &expected)
+{
+	if (!find_owner(&catalog, owner))
+		return false;
+	size_t index = 0;
+	for (const auto &item : catalog.items)
+	{
+		if (item.state != item_custody_state::active ||
+		    !item_owner_identity_equal(item.owner, owner))
+			continue;
+		if (index >= expected.size() || expected[index].item_uid != item.item_uid ||
+		    expected[index].vnum != item.vnum)
+			return false;
+		++index;
+	}
+	return index == expected.size();
 }
 
 bool descendant_of(const std::vector<flatfile_item_ownership_record *> &root_items,
@@ -1222,8 +1259,7 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	if (result_code == ENOMEM || result_code == EILSEQ)
 		return { critical_apply_outcome::retryable_failure, catalog.revision, result_code };
 	if (!result_code && command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
-	    (!generic_materialization_owner(payload.from_owner.type) ||
-	     !generic_materialization_owner(payload.to_owner.type)))
+	    !generic_transfer_supported(payload))
 	{
 		try
 		{
@@ -1253,6 +1289,30 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	if (!encode_catalog(candidate, catalog.revision + 1, &encoded))
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
 	flatfile_shop_trade_materialization_mutation materialization;
+	flatfile_locker_transfer_mutation locker;
+	bool include_locker = false;
+	if (!result_code && command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+	    locker_transfer(payload))
+	{
+		const auto prepared = flatfile_locker_prepare_item_transfer(
+			root, authority, payload, &locker, &error);
+		if (prepared != flatfile_locker_result::ok)
+			return { prepared == flatfile_locker_result::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.revision,
+				 static_cast<unsigned int>(
+					 prepared == flatfile_locker_result::io_error ? EIO :
+											EILSEQ) };
+		if (!locker_custody_matches(catalog,
+					    payload.from_owner.type == item_owner_type::locker ?
+						    payload.from_owner :
+						    payload.to_owner,
+					    locker.expected_items))
+			return { critical_apply_outcome::terminal_failure, catalog.revision,
+				 EILSEQ };
+		include_locker = true;
+	}
 	bool include_materialization = false;
 	if (!result_code && payload.item_blob_size)
 	{
@@ -1276,6 +1336,8 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	try
 	{
 		images.push_back({ ownership_filename, std::move(encoded) });
+		if (include_locker)
+			images.push_back(std::move(locker.after_image));
 		if (include_materialization)
 			images.push_back(std::move(materialization.after_image));
 	}

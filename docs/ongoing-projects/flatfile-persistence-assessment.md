@@ -2635,6 +2635,39 @@ sections below continue to describe the required end state.
   creation/removal metadata and nested exact snapshots, then compose each with ownership and player
   materialization in one operation-specific flat repository.
 
+### Checkpoint 83 - atomic locker deposit and withdrawal aggregates
+
+- **Held-lock locker mutation:** the locker repository now prepares exact deposit and withdrawal
+  after-images from the version 4 item snapshot. It resolves the stable `{locker ID, chest ID}` owner,
+  accepts only correctly oriented `locker_deposit`/`locker_withdraw` player transitions, rejects
+  target-parent ambiguity, and advances catalog, locker, and chest revisions together. Deposits append
+  a normalized nested root without disturbing existing chest topology; withdrawals extract the exact
+  encoded subtree and rebuild all remaining parent indexes.
+- **Cross-authority reconciliation:** before publication, the item repository compares every active
+  UID/vnum owned by the locker chest with the preparer's complete pre-mutation chest proof. Missing,
+  extra, or mismatched ownership fails closed. Successful commands publish ownership first, then the
+  locker aggregate, then compacted player materialization evidence in one recoverable authority
+  transaction. The CP82 fence now admits only this narrowly typed player/locker composite while room,
+  corpse, auction, shopkeeper, and arbitrary locker transitions remain rejected.
+- **Crash and replay behavior:** the item repository regression begins with an unrelated nested locker
+  tree, injects interruption after the ownership image of a nested player deposit, and verifies replay
+  recovers the exact locker descriptions/topology before returning `already_applied`. A subsequent
+  withdrawal removes only the transferred subtree, preserves the unrelated nested tree and unchanged
+  item revisions, advances locker/chest revisions once per command, and restores player custody with
+  incremented item revisions.
+- **Checks passed:** the item, locker, auction, player, shop, and character-deletion repository
+  harnesses pass with the new dependency; the live locker ownership contract proves the held-lock
+  preparer is ordered before both its after-image and authority commit. Changed-line formatting and
+  the strict normal C++20 server build pass.
+- **Exposure:** the composite repository is ready for already-established flat locker/chest
+  authorities, but general locker creation, access, session, asynchronous save, and load paths remain
+  SQL-only and keep the flat-primary boot fence in place. Same-chest synchronous rearrangement is not
+  revisioned by this path, and cross-chest moves still require two explicit operations or a future
+  dual-chest command. Historical version 3/2 transfers retain their ownership-only exposure.
+- **Next action:** define a corpse operation payload carrying creation/removal metadata in addition to
+  the exact item subtree, then compose corpse aggregate, ownership, player materialization, and
+  artifact disposition under one recoverable transaction before admitting corpse owner transitions.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

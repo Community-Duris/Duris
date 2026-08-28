@@ -451,6 +451,91 @@ bool catalog_equal(locker_catalog left, locker_catalog right)
 	return encode_catalog(left, &left_bytes) && encode_catalog(right, &right_bytes) &&
 	       left_bytes == right_bytes;
 }
+
+bool payload_items_match(const item_transfer_payload &payload,
+			 const std::vector<player_item_snapshot> &items)
+{
+	if (items.empty() || items.size() != payload.item_count ||
+	    items.front().object_uid != payload.selected_item_uid)
+		return false;
+	std::unordered_set<uint64_t> expected;
+	try
+	{
+		expected.reserve(payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+			expected.insert(payload.items[index].item_uid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return expected.size() == items.size() &&
+	       std::all_of(items.begin(), items.end(),
+			   [&](const auto &item) { return expected.contains(item.object_uid); });
+}
+
+bool extract_subtree(const std::vector<player_item_snapshot> &original, uint64_t selected_uid,
+		     std::vector<player_item_snapshot> *selected,
+		     std::vector<player_item_snapshot> *remaining)
+{
+	if (!selected || !remaining)
+		return false;
+	size_t selected_index = original.size();
+	for (size_t index = 0; index < original.size(); ++index)
+		if (original[index].object_uid == selected_uid)
+		{
+			selected_index = index;
+			break;
+		}
+	if (selected_index == original.size())
+		return false;
+	std::vector<bool> included(original.size(), false);
+	std::vector<int32_t> selected_positions(original.size(), PLAYER_SNAPSHOT_NO_PARENT);
+	std::vector<int32_t> remaining_positions(original.size(), PLAYER_SNAPSHOT_NO_PARENT);
+	try
+	{
+		for (size_t index = 0; index < original.size(); ++index)
+		{
+			if (index == selected_index)
+				included[index] = true;
+			else if (original[index].parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				included[index] =
+					included[static_cast<size_t>(original[index].parent_index)];
+			if (included[index])
+			{
+				selected_positions[index] = static_cast<int32_t>(selected->size());
+				auto item = original[index];
+				item.parent_index = index == selected_index ?
+							    PLAYER_SNAPSHOT_NO_PARENT :
+							    selected_positions[static_cast<size_t>(
+								    original[index].parent_index)];
+				if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+				    index != selected_index)
+					return false;
+				selected->push_back(std::move(item));
+			}
+			else
+			{
+				remaining_positions[index] =
+					static_cast<int32_t>(remaining->size());
+				auto item = original[index];
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+				{
+					item.parent_index = remaining_positions[static_cast<size_t>(
+						original[index].parent_index)];
+					if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+						return false;
+				}
+				remaining->push_back(std::move(item));
+			}
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return !selected->empty();
+}
 } // namespace
 
 flatfile_locker_result flatfile_locker_establish(
@@ -598,5 +683,108 @@ flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_au
 	removal->operation.kind = flatfile_authority_operation_kind::write;
 	removal->operation.filename = catalog_filename;
 	removal->operation.bytes = std::move(encoded);
+	return flatfile_locker_result::ok;
+}
+
+flatfile_locker_result
+flatfile_locker_prepare_item_transfer(const std::string &root, const flatfile_authority_lock &lock,
+				      const item_transfer_payload &payload,
+				      flatfile_locker_transfer_mutation *mutation,
+				      std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !mutation || !payload.item_blob_size ||
+	    payload.item_blob_size > payload.item_blob.size())
+		return flatfile_locker_result::invalid;
+	*mutation = {};
+	const bool deposit = payload.to_owner.type == item_owner_type::locker;
+	const bool withdraw = payload.from_owner.type == item_owner_type::locker;
+	if (deposit == withdraw ||
+	    (deposit && (payload.reason != item_transfer_reason::locker_deposit ||
+			 payload.from_owner.type != item_owner_type::player)) ||
+	    (withdraw && (payload.reason != item_transfer_reason::locker_withdraw ||
+			  payload.to_owner.type != item_owner_type::player)))
+		return flatfile_locker_result::invalid;
+	const item_owner_identity locker_owner = deposit ? payload.to_owner : payload.from_owner;
+	if (!locker_owner.id || locker_owner.id > UINT32_MAX || !locker_owner.context_id ||
+	    locker_owner.context_id > UINT32_MAX || payload.target_parent_item_uid)
+		return flatfile_locker_result::invalid;
+	std::vector<player_item_snapshot> exact_items;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &exact_items) != player_snapshot_codec_result::ok ||
+	    !payload_items_match(payload, exact_items))
+		return flatfile_locker_result::invalid;
+	locker_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_locker_result::ok)
+		return loaded;
+	auto locker = std::find_if(catalog.lockers.begin(), catalog.lockers.end(),
+				   [&](const auto &entry)
+				   { return entry.locker_id == locker_owner.id; });
+	if (locker == catalog.lockers.end())
+		return flatfile_locker_result::not_found;
+	auto chest = std::find_if(locker->chests.begin(), locker->chests.end(),
+				  [&](const auto &entry)
+				  { return entry.chest_id == locker_owner.context_id; });
+	if (chest == locker->chests.end())
+		return flatfile_locker_result::not_found;
+	if (catalog.revision == UINT64_MAX || locker->revision == UINT64_MAX ||
+	    chest->revision == UINT64_MAX)
+		return flatfile_locker_result::conflict;
+	try
+	{
+		mutation->expected_items.reserve(chest->items.size());
+		for (const auto &item : chest->items)
+			mutation->expected_items.push_back({ item.object_uid, item.vnum });
+		std::sort(mutation->expected_items.begin(), mutation->expected_items.end(),
+			  [](const auto &left, const auto &right)
+			  { return left.item_uid < right.item_uid; });
+		if (deposit)
+		{
+			std::unordered_set<uint64_t> existing;
+			for (const auto &stored_locker : catalog.lockers)
+				for (const auto &stored_chest : stored_locker.chests)
+					for (const auto &item : stored_chest.items)
+						existing.insert(item.object_uid);
+			for (const auto &item : exact_items)
+				if (existing.contains(item.object_uid))
+					return flatfile_locker_result::conflict;
+			const int32_t offset = static_cast<int32_t>(chest->items.size());
+			for (auto item : exact_items)
+			{
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index += offset;
+				chest->items.push_back(std::move(item));
+			}
+		}
+		else
+		{
+			std::vector<player_item_snapshot> selected;
+			std::vector<player_item_snapshot> remaining;
+			if (!extract_subtree(chest->items, payload.selected_item_uid, &selected,
+					     &remaining))
+				return flatfile_locker_result::conflict;
+			std::vector<uint8_t> selected_blob;
+			if (player_item_snapshot_list_encode(selected, &selected_blob) !=
+				    player_snapshot_codec_result::ok ||
+			    selected_blob.size() != payload.item_blob_size ||
+			    !std::equal(selected_blob.begin(), selected_blob.end(),
+					payload.item_blob.begin()))
+				return flatfile_locker_result::conflict;
+			chest->items = std::move(remaining);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_locker_result::io_error;
+	}
+	++catalog.revision;
+	++locker->revision;
+	++chest->revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, &encoded))
+		return flatfile_locker_result::invalid;
+	mutation->after_image = { catalog_filename, std::move(encoded) };
+	mutation->locker_revision = locker->revision;
+	mutation->chest_revision = chest->revision;
 	return flatfile_locker_result::ok;
 }

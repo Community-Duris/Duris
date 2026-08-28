@@ -1,4 +1,5 @@
 #include "flatfile_item_repository.h"
+#include "flatfile_locker_repository.h"
 #include "flatfile_shop_trade_materialization.h"
 #include "player_snapshot_codec.h"
 
@@ -97,6 +98,7 @@ static std::vector<player_item_snapshot> movement_items()
 {
 	player_item_snapshot root = {};
 	root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	root.equipment_slot = -1;
 	root.object_uid = 100;
 	root.generated_key = 1100;
 	root.vnum = 500;
@@ -104,12 +106,42 @@ static std::vector<player_item_snapshot> movement_items()
 	root.short_description = "an exact given container";
 	player_item_snapshot child = {};
 	child.parent_index = 0;
+	child.equipment_slot = -1;
 	child.object_uid = 101;
 	child.generated_key = 1101;
 	child.vnum = 501;
 	child.name = "nested gift";
 	child.short_description = "an exact nested gift";
 	return { root, child };
+}
+
+static flatfile_locker_record transfer_locker()
+{
+	player_item_snapshot stored_root = {};
+	stored_root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	stored_root.equipment_slot = -1;
+	stored_root.object_uid = 900;
+	stored_root.vnum = 1900;
+	stored_root.name = "stored locker container";
+	player_item_snapshot stored_child = {};
+	stored_child.parent_index = 0;
+	stored_child.equipment_slot = -1;
+	stored_child.object_uid = 901;
+	stored_child.vnum = 1901;
+	stored_child.name = "stored locker child";
+	flatfile_locker_chest_record chest = {};
+	chest.chest_id = 11;
+	chest.chest_name = "public";
+	chest.is_public = true;
+	chest.revision = 1;
+	chest.items = { stored_root, stored_child };
+	flatfile_locker_record locker = {};
+	locker.locker_id = 2;
+	locker.locker_name = "transfer.locker";
+	locker.owner_pid = 77;
+	locker.revision = 1;
+	locker.chests = { chest };
+	return locker;
 }
 
 static shop_trade_payload shop_trade(shop_trade_action action, uint64_t item_uid,
@@ -348,6 +380,92 @@ int main(int argc, char **argv)
 			&error) == flatfile_item_repository_result::ok &&
 			owner_revision == 1 && items.size() == 2,
 		"failed room transfer changed player ownership");
+	const item_owner_identity locker_owner = { item_owner_type::locker, 2, 11 };
+	require(flatfile_locker_establish(root.string(), { transfer_locker() }, {}, &error) ==
+			flatfile_locker_result::ok,
+		"could not establish transfer locker: " + error);
+	require(flatfile_item_repository_establish_owner(
+			root.string(), locker_owner,
+			{ { 900, 900, 0, locker_owner, 1, 1900, item_custody_state::active },
+			  { 901, 900, 900, locker_owner, 1, 1901, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish existing locker custody: " + error);
+	item_transfer_payload deposit = uncoupled;
+	deposit.to_owner = locker_owner;
+	deposit.reason = item_transfer_reason::locker_deposit;
+	deposit.reason_id = 11;
+	deposit.expected_to_revision = 1;
+	critical_command deposit_command = {};
+	require(item_transfer_command_build(&deposit_command, operation(6), deposit,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build locker deposit");
+	deposit_command.accepted_at_usec = 6;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	applied = flatfile_item_repository_apply(root.string(), deposit_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted locker deposit did not retain composite intent: outcome=" +
+			std::to_string(static_cast<unsigned int>(applied.outcome)) +
+			" error=" + std::to_string(applied.error_code));
+	applied = flatfile_item_repository_apply(root.string(), deposit_command);
+	require(applied.outcome == critical_apply_outcome::already_applied,
+		"locker deposit did not recover exactly");
+	std::vector<flatfile_locker_record> lockers;
+	std::vector<flatfile_locker_access_record> locker_access;
+	require(flatfile_locker_list(root.string(), &lockers, &locker_access, &error) ==
+				flatfile_locker_result::ok &&
+			lockers.size() == 1 && lockers[0].revision == 2 &&
+			lockers[0].chests[0].revision == 2 &&
+			lockers[0].chests[0].items.size() == 4 &&
+			lockers[0].chests[0].items[2].short_description ==
+				"an exact given container" &&
+			lockers[0].chests[0].items[3].parent_index == 2,
+		"recovered deposit did not publish exact locker aggregate: " + error);
+	items.clear();
+	require(flatfile_item_repository_load_owner(root.string(), locker_owner, &owner_revision,
+						    &items, &error) ==
+				flatfile_item_repository_result::ok &&
+			owner_revision == 2 && items.size() == 4 && items[0].item_revision == 3 &&
+			items[2].item_uid == 900 && items[2].item_revision == 1,
+		"recovered deposit did not publish locker custody");
+	item_transfer_payload withdraw = deposit;
+	withdraw.from_owner = locker_owner;
+	withdraw.to_owner = { item_owner_type::player, 77, 0 };
+	withdraw.reason = item_transfer_reason::locker_withdraw;
+	withdraw.expected_from_revision = 2;
+	withdraw.expected_to_revision = 2;
+	for (size_t index = 0; index < withdraw.item_count; ++index)
+		withdraw.items[index] = { items[index].item_uid,
+					  items[index].root_item_uid,
+					  items[index].parent_item_uid,
+					  items[index].item_revision,
+					  items[index].vnum,
+					  items[index].state };
+	critical_command withdraw_command = {};
+	require(item_transfer_command_build(&withdraw_command, operation(7), withdraw,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build locker withdrawal");
+	withdraw_command.accepted_at_usec = 7;
+	applied = flatfile_item_repository_apply(root.string(), withdraw_command);
+	require(applied.outcome == critical_apply_outcome::applied,
+		"locker withdrawal did not apply");
+	lockers.clear();
+	require(flatfile_locker_list(root.string(), &lockers, &locker_access, &error) ==
+				flatfile_locker_result::ok &&
+			lockers[0].revision == 3 && lockers[0].chests[0].revision == 3 &&
+			lockers[0].chests[0].items.size() == 2 &&
+			lockers[0].chests[0].items[0].object_uid == 900 &&
+			lockers[0].chests[0].items[1].parent_index == 0,
+		"locker withdrawal did not remove only the exact aggregate subtree");
+	items.clear();
+	require(flatfile_item_repository_load_owner(
+			root.string(), { item_owner_type::player, 77, 0 }, &owner_revision, &items,
+			&error) == flatfile_item_repository_result::ok &&
+			owner_revision == 3 && items.size() == 2 && items[0].item_revision == 4,
+		"locker withdrawal did not restore player custody");
 
 	move.expected_from_revision = 1;
 	move.expected_to_revision = 0;

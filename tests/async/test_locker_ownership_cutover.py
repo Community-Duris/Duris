@@ -26,6 +26,8 @@ class LockerOwnershipCutoverTests(unittest.TestCase):
         cls.movement = (SRC / "item_movement_transaction.c").read_text()
         cls.snapshot = (SRC / "locker_async.c").read_text()
         cls.copyover = (SRC / "copyover.c").read_text()
+        cls.flat_items = (SRC / "flatfile_item_repository.c").read_text()
+        cls.flat_lockers = (SRC / "flatfile_locker_repository.c").read_text()
 
     def test_live_identity_uses_stable_locker_and_chest_ids(self):
         for token in (
@@ -84,6 +86,18 @@ class LockerOwnershipCutoverTests(unittest.TestCase):
             "bool sql_locker_exists(",
         )
         self.assertNotIn("owner_ref", locker_restore)
+
+    def test_flat_transfer_composes_locker_and_ownership_after_images(self):
+        self.assertIn("flatfile_locker_prepare_item_transfer", self.flat_lockers)
+        apply = self.flat_items[self.flat_items.index(
+            "critical_apply_result flatfile_item_repository_apply") :]
+        prepare = apply.index("flatfile_locker_prepare_item_transfer")
+        locker_image = apply.index("locker.after_image", prepare)
+        commit = apply.index("flatfile_authority_transaction_commit", locker_image)
+        self.assertLess(prepare, locker_image)
+        self.assertLess(locker_image, commit)
+        self.assertIn("item_transfer_reason::locker_deposit", self.flat_items)
+        self.assertIn("item_transfer_reason::locker_withdraw", self.flat_items)
 
     def test_snapshot_is_not_ownership_authority_and_worker_is_pointer_free(self):
         builder = function_body(self.snapshot, "static char *build_locker_snapshot_sql(",

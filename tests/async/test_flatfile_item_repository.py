@@ -26,6 +26,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-") as t
             "src/flatfile_item_repository.c",
             "src/flatfile_shop_trade_repository.c",
             "src/flatfile_shop_trade_materialization.c",
+            "src/flatfile_locker_repository.c",
             "src/flatfile_shopkeeper_repository.c",
             "src/flatfile_auction_repository.c",
             "src/flatfile_boon_repository.c",
