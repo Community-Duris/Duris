@@ -3,10 +3,33 @@
 Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
-Status: Implementation in progress; RDS-006, RDS-012, RDS-014, and RDS-019 are remediated
-and the remaining findings are open.
+Status: Implementation in progress; RDS-006, RDS-012, RDS-013, RDS-014, and RDS-019 are
+remediated and the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-013 unsafe corpse cleanup retirement
+
+Completed:
+
+- Replaced the obsolete cleanup implementation with a fail-closed retirement stub.
+- The stub exits nonzero without loading credentials, connecting to MySQL or Redis, or
+  changing either persistent store.
+- Updated the operations runbook so the command is no longer presented as a usable cleanup
+  procedure.
+- Added behavioral coverage with probe database and cache clients to prove invocation has
+  no storage side effects.
+
+Performance effect:
+
+- None in the running server. This change affects only an explicitly invoked offline
+  operations script.
+
+Validation:
+
+- `shellcheck scripts/delete_corpses.sh`: passed.
+- `bash -n scripts/delete_corpses.sh`: passed.
+- `python3 tests/async/test_delete_corpses_retired.py`: passed.
 
 ### 2026-08-28 - RDS-009 presence privacy and encoding (partial)
 
@@ -154,8 +177,8 @@ Validation:
 
 Remaining work:
 
-- All findings other than RDS-006, RDS-012, RDS-014, and RDS-019 remain open. The acceptance
-  criteria are not yet met.
+- All findings other than RDS-006, RDS-012, RDS-013, RDS-014, and RDS-019 remain open. The
+  acceptance criteria are not yet met.
 
 ## Executive summary
 
@@ -675,6 +698,8 @@ when its required backup fails.
 
 Severity: High
 Confidence: Confirmed
+Remediation status: Completed on branch; the obsolete cleanup implementation is retired
+and now exits nonzero without connecting to or changing either persistent store.
 
 Evidence:
 
