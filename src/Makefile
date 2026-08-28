@@ -28,7 +28,6 @@ EXTRA_CFLAGS =
 EXTRA_LDFLAGS =
 
 CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS)
-#CFLAGS += -D__NO_MYSQL__
 CFLAGS += -DTEST_MUD
 CFLAGS += -D__NO_TESTS__    # exclude test suite from production build
 CFLAGS += $(EXTRA_CFLAGS)

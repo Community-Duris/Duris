@@ -7,7 +7,7 @@ runtime serving.
 
 The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
 
-1. **`wiki_help()`** (`src/wikihelp.c`) — queries the `pages` table on the
+1. **`wiki_help()`** (`src/wikihelp.c`) - queries the `pages` table on the
    main MySQL connection:
 
    ```sql
@@ -36,7 +36,7 @@ The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
      skills, spells). Titles `Multiclass` and `Races` also get hardcoded
      sections. Editing those pages means authoring only the static part.
 
-2. **`attrib_help()`** — appends per-command attributes (stat usage)
+2. **`attrib_help()`** - appends per-command attributes (stat usage)
     loaded at boot from `docs/lib/information/command_attributes.txt`
     (`src/wikihelp.c`, boot loader). If the file is missing, only a debug log
     line notes it. Coverage is complete: every command name registered in
@@ -48,17 +48,17 @@ The `help` command (`do_help`, `src/actinf.c:6527`) does two things:
     up to `CMD_ATTRIB_MAX` entries (1024, `src/wikihelp.h`) and bounds-checks
     the count, logging and skipping anything beyond the cap.
 
-Without MySQL (`-D__NO_MYSQL__` builds) help is disabled and returns a stub
-message — the help system is database-backed by design.
+The help system is database-backed by design. Narrow test harnesses may compile its
+historical `__NO_MYSQL__` stub, but the complete server has no supported no-MySQL build.
 
 ## Content pipeline
 
 ```
 lib/information/*          help/                      database
-├─ motd, news, faq    ─┐   ├─ duris_help.hlp          ┌─────────────┐
-├─ help, rules, ...   │──▶├─ duris_help_parsed.hlp ─▶│ pages       │
-└─ hints.txt, help_index  └─ (parsed inline by the    │ mud_info    │
-                             import script)           └─────────────┘
+|- motd, news, faq    -+   |- duris_help.hlp          +-------------+
+|- help, rules, ...   |-->|- duris_help_parsed.hlp ->| pages       |
++- hints.txt, help_index  +- (parsed inline by the    | mud_info    |
+                             import script)           +-------------+
         scripts/import_help_to_prod.sh
 ```
 
@@ -85,9 +85,9 @@ lib/information/*          help/                      database
   title present in both files ends up owned by `duris_help_parsed.hlp`.
   Titles compare case-insensitively (MySQL default collation). Check both
   sources before adding an entry to `help_index`.
-- Title parsing in `help_index`: unquoted titles are truncated at `(` —
+- Title parsing in `help_index`: unquoted titles are truncated at `(` -
   `PURGE (Spell)` stores page title `PURGE`; quoted titles keep everything
-  inside the quotes — `"ECHO (IMMORTAL)"` stores the full string. Use
+  inside the quotes - `"ECHO (IMMORTAL)"` stores the full string. Use
   quoting whenever you need parentheses in a page title.
 - motd/news/wizmotd are cached into memory at boot (`src/db.c`) and re-read
   only by the immortal `page` command (level 60+, `src/actcomm.c`). After
@@ -109,9 +109,9 @@ lib/information/*          help/                      database
   [`docs/content/HELP_STYLE_GUIDE.md`](HELP_STYLE_GUIDE.md). The style
   guide is spell-oriented (stat header block); immortal command entries in
   `help_index` instead use a `Syntax:` line, a rank/level line, a short
-  description, and `See also:` — follow the existing entries there.
+  description, and `See also:` - follow the existing entries there.
 - In-game topic text lives in `pages`; the import script is the only write
-  path (no in-game editor exists — nothing in `src/` inserts into or updates
+  path (no in-game editor exists - nothing in `src/` inserts into or updates
   `pages`). Update the source files and re-run the import script; editing the
   database directly would silently diverge from the flat-file sources. See the
   warning above before importing to a shared or remote database.

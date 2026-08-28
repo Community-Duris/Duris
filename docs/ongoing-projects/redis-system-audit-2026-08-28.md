@@ -5,10 +5,34 @@ Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-023,
-RDS-024, and RDS-028 are remediated. RDS-008 is remediated for connection security but
+RDS-024, RDS-027, and RDS-028 are remediated. RDS-008 is remediated for connection security but
 remains partial for namespace isolation; the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-027 supported server build contract
+
+Completed in this interval:
+
+- Removed the commented `-D__NO_MYSQL__` switch from the production Makefile. The partial
+  preprocessor stubs remain available to focused unit harnesses but are no longer presented
+  as a whole-server build configuration.
+- Corrected the build and help-system guides to state that MySQL/MariaDB client support is
+  mandatory for the server. Redis remains optional at runtime while Hiredis and OpenSSL are
+  intentionally mandatory build dependencies of the single supported binary.
+- Added a focused source/documentation contract that fails if the unsupported toggle is
+  advertised again or the mandatory dependency statement disappears.
+
+Performance effect:
+
+- No runtime source, flags, linked-library set, or executable behavior changed. This
+  interval only makes the supported build matrix truthful.
+
+Validation:
+
+- `make -C src -j2`: passed with the maintained warning-as-error profile.
+- `python3 tests/async/test_supported_server_build_contract.py`: passed.
+- `python3 tests/async/test_documentation_contract.py`: passed.
 
 ### 2026-08-28 - RDS-008 runtime connection security
 
@@ -1719,6 +1743,9 @@ codec, TTL, authority, and lifecycle policy beside its implementation.
 
 Severity: Low
 Confidence: Confirmed by syntax probe
+Remediation status: Completed on branch by removing the unsupported whole-server toggle
+and documenting MySQL/MariaDB client support as mandatory. Narrow `__NO_MYSQL__` unit
+harness stubs remain explicitly non-production.
 
 The Makefile advertises a commented `-D__NO_MYSQL__` toggle, but `redis.c` declares
 `redisContext` pointers and a `redisReply` helper signature outside the hiredis guard.
