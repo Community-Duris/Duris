@@ -466,6 +466,28 @@
   sync, destructive clear semantics, and remaining direct-SQL artifact routes still
   require focused work. The global incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - restored artifact record clearing without MySQL
+
+- **Concrete gap:** both the internal artifact-row removal helper and the existing staff
+  `artifact clear` command still issued SQL deletes, so no-database mode left the
+  canonical record intact while the command path could proceed as though it were gone.
+- **Restoration:** client-free builds now erase the requested canonical catalog record
+  under the authority lock and replace the checksummed catalog atomically. Because flat
+  gameplay and binding state share that canonical record, the erase removes the complete
+  artifact entry rather than leaving detached binding data. Missing or corrupt authority
+  is never overwritten. Database-backed table behavior is unchanged.
+- **Focused evidence:** repository tests cover successful erase, absence from subsequent
+  lookup, repeated missing-row behavior, and corrupt-authority refusal. Source contracts
+  confirm both the internal removal helper and real staff clear command route through the
+  catalog erase in client-free builds.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** record clearing is restored, but catalog establishment, player-save
+  sync, deletion cleanup compatibility, and any remaining executable direct-SQL artifact
+  routes still require focused work. The global incomplete-domain boot fence remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

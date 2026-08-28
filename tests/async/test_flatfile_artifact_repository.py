@@ -215,3 +215,13 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
         raise AssertionError("client-free artifact fixit bypasses flat selection")
     if "flatfile_artifact_repair_player_binding(" not in fix_body:
         raise AssertionError("client-free artifact fixit bypasses atomic flat repair")
+
+    remove_entry_start = artifact_source.index("void arti_remove_sql(int vnum, bool mortalToo)\n{")
+    remove_entry_end = artifact_source.index("\nvoid setupMortArtiList_sql(", remove_entry_start)
+    if "flatfile_artifact_erase(" not in artifact_source[remove_entry_start:remove_entry_end]:
+        raise AssertionError("client-free artifact removal bypasses catalog erase")
+
+    clear_start = artifact_source.index("void arti_clear_sql(P_char ch, char *arg)\n{")
+    clear_end = artifact_source.index("\nvoid arti_poof_sql(", clear_start)
+    if "flatfile_artifact_erase(" not in artifact_source[clear_start:clear_end]:
+        raise AssertionError("client-free staff artifact clear bypasses catalog erase")

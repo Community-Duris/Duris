@@ -789,6 +789,18 @@ void arti_remove_sql(int vnum, bool mortalToo)
 		return;
 	}
 
+#ifdef __NO_MYSQL__
+	(void)mortalToo;
+	std::string error;
+	const auto removed =
+		flatfile_artifact_erase(persistence_mode_flatfile_root(), vnum, &error);
+	if (removed != flatfile_artifact_result::ok &&
+	    removed != flatfile_artifact_result::not_found)
+		logit(LOG_ARTIFACT, "arti_remove_sql: flat artifact erase failed for %d: %s", vnum,
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+	else
+		arti_cache_invalidate();
+#else
 	// Remove from artifacts table:
 	qry("DELETE FROM artifacts WHERE vnum = '%d'", vnum);
 	arti_cache_invalidate();
@@ -797,6 +809,7 @@ void arti_remove_sql(int vnum, bool mortalToo)
 	{
 		qry("DELETE FROM artifacts_mortal WHERE vnum = '%d'", vnum);
 	}
+#endif
 }
 
 // This function is called at boot to set the mortals' artifact list table.
@@ -3668,6 +3681,23 @@ void arti_clear_sql(P_char ch, char *arg)
 		act("$p &+Wis not an artifact.", FALSE, ch, arti, 0, TO_CHAR);
 	}
 
+#ifdef __NO_MYSQL__
+	std::string error;
+	const auto removed =
+		flatfile_artifact_erase(persistence_mode_flatfile_root(), vnum, &error);
+	if (removed == flatfile_artifact_result::ok)
+	{
+		arti_cache_invalidate();
+		act("&+WThe artifact data for $p&+W has been cleared.  You fool!", FALSE, ch, arti,
+		    0, TO_CHAR);
+	}
+	else
+	{
+		logit(LOG_ARTIFACT, "arti_clear_sql: flat artifact erase failed for %d: %s", vnum,
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		send_to_char("&+WFailed to remove entry from artifact data.&n\n\r", ch);
+	}
+#else
 	// Remove from artifacts table:
 	if (qry("DELETE FROM artifacts WHERE vnum = '%d'", vnum))
 	{
@@ -3688,6 +3718,7 @@ void arti_clear_sql(P_char ch, char *arg)
 	{
 		send_to_char("&+WFailed to remove entry from main DB.  wth?&n\n\r", ch);
 	}
+#endif
 	extract_obj(arti);
 }
 

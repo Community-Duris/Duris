@@ -402,6 +402,15 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_extend_timer(gameplay_root.string(), 701, 0, 1700, &error) ==
 			flatfile_artifact_result::invalid,
 		"artifact timer extension accepted a zero minimum");
+	require(flatfile_artifact_erase(gameplay_root.string(), 799, &error) ==
+			flatfile_artifact_result::ok,
+		"artifact erase failed: " + error);
+	require(flatfile_artifact_get(gameplay_root.string(), 799, &gameplay_record, &error) ==
+			flatfile_artifact_result::not_found,
+		"erased artifact remained in canonical authority");
+	require(flatfile_artifact_erase(gameplay_root.string(), 799, &error) ==
+			flatfile_artifact_result::not_found,
+		"identical artifact erase was not safely reported as missing");
 	flatfile_artifact_record expired_record;
 	require(flatfile_artifact_find_next_expired(gameplay_root.string(), 0, 6500,
 						    &expired_record,
@@ -520,6 +529,9 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_get(root.string(), 100, &gameplay_record, &error) ==
 			flatfile_artifact_result::invalid,
 		"corrupt artifact authority was exposed through gameplay lookup");
+	require(flatfile_artifact_erase(root.string(), 100, &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was overwritten through erase");
 	require(flatfile_artifact_gameplay_update(root.string(), 100, true,
 						  FLATFILE_ARTIFACT_ON_PLAYER, 42, 5000, 1, 1200,
 						  &error) == flatfile_artifact_result::invalid,

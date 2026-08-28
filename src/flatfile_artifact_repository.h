@@ -65,6 +65,8 @@ flatfile_artifact_result flatfile_artifact_list(const std::string &root,
 flatfile_artifact_result flatfile_artifact_get(const std::string &root, int32_t vnum,
 					       flatfile_artifact_record *record,
 					       std::string *error);
+flatfile_artifact_result flatfile_artifact_erase(const std::string &root, int32_t vnum,
+						 std::string *error);
 flatfile_artifact_result flatfile_artifact_gameplay_update(const std::string &root, int32_t vnum,
 							   bool owned, int32_t location_type,
 							   int32_t location, int64_t timer,
