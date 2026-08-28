@@ -19,6 +19,8 @@ RUNTIME_CONFIG_HEADER = (ROOT / "src/redis_runtime_config.h").read_text(encoding
 RUNTIME_CONFIG_SOURCE = (ROOT / "src/redis_runtime_config.c").read_text(encoding="ascii")
 SHIP_HEADER = (ROOT / "src/redis_ship_legacy.h").read_text(encoding="ascii")
 SHIP_SOURCE = (ROOT / "src/redis_ship_legacy.c").read_text(encoding="ascii")
+MAINTENANCE_HEADER = (ROOT / "src/redis_maintenance.h").read_text(encoding="ascii")
+MAINTENANCE_SOURCE = (ROOT / "src/redis_maintenance.c").read_text(encoding="ascii")
 FLOOR_RUNTIME_HEADER = (ROOT / "src/redis_floor_runtime.h").read_text(encoding="ascii")
 FLOOR_RUNTIME_SOURCE = (ROOT / "src/redis_floor_runtime.c").read_text(encoding="ascii")
 MAKEFILE = (ROOT / "src/Makefile").read_text(encoding="ascii")
@@ -196,6 +198,17 @@ for filename in ("sql_player.c", "ships/ship_base.c"):
     assert '#include "redis_ship_legacy.h"' in source
     assert '#include "redis.h"' not in source
 
+for symbol in ("redis_clear_pwipe_state", "redis_validate_pwipe_state"):
+    assert symbol in MAINTENANCE_HEADER
+    assert symbol not in REDIS_HEADER
+for symbol in ("redis_maintenance_clear", "redis_maintenance_validate"):
+    assert symbol in MAINTENANCE_HEADER
+    assert symbol in MAINTENANCE_SOURCE
+assert "redis_maintenance.o" in MAKEFILE
+sql = (ROOT / "src/sql.c").read_text(encoding="utf-8")
+assert '#include "redis_maintenance.h"' in sql
+assert '#include "redis.h"' not in sql
+
 checkpoint_only_callers = (
     "actinf.c",
     "auction_houses.c",
@@ -215,6 +228,6 @@ redis_includers = []
 for source_path in (ROOT / "src").rglob("*.[ch]"):
     if '#include "redis.h"' in source_path.read_text(encoding="utf-8"):
         redis_includers.append(source_path)
-assert len(redis_includers) <= 7
+assert len(redis_includers) <= 6
 
 print("Redis, checkpoint, donation, presence, report-cache, and floor-runtime boundaries passed")

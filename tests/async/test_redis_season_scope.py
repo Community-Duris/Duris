@@ -8,6 +8,7 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 REGISTRY = (ROOT / "src" / "redis_key_registry.def").read_text(encoding="ascii")
 REDIS = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
+MAINTENANCE = (ROOT / "src" / "redis_maintenance.c").read_text(encoding="ascii")
 REPORT = (ROOT / "src" / "redis_report_cache.c").read_text(encoding="ascii")
 PRESENCE = (ROOT / "src" / "redis_presence_worker.c").read_text(encoding="ascii")
 PRESENCE_HEADER = (ROOT / "src" / "redis_presence_worker.h").read_text(encoding="ascii")
@@ -67,6 +68,7 @@ for scoped in ("redis_presence_current_key", "redis_presence_session_pattern",
 for legacy in ("REDIS_LEGACY_PRESENCE_CURRENT",
                "REDIS_LEGACY_PRESENCE_SESSION_PATTERN",
                "REDIS_LEGACY_PRESENCE_RETRY_PATTERN", "REDIS_LEGACY_CACHE_PATTERN"):
-    assert legacy in pwipe
+    assert legacy in MAINTENANCE
+assert "redis_namespace_season_key(config->key_namespace, config->season_epoch" in MAINTENANCE
 
 print("all active Redis surfaces use the boot-captured SQL season epoch")

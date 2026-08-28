@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SQL = (ROOT / "src/sql.c").read_text()
 ACTWIZ = (ROOT / "src/actwiz.c").read_text()
 REDIS = (ROOT / "src/redis.c").read_text()
+MAINTENANCE = (ROOT / "src/redis_maintenance.c").read_text()
 MIGRATION = (ROOT / "migrations/immutable/0003_season_reset_state.sql").read_text()
 VERIFY = (ROOT / "migrations/immutable/0003_season_reset_state.sh").read_text()
 
@@ -49,10 +50,11 @@ assert wipe.index("redis_validate_pwipe_state()") < wipe.index(
 assert wipe.index("redis_clear_pwipe_state()") < wipe.index("sql_complete_pwipe_epoch()")
 
 validate = section(REDIS, "bool redis_validate_pwipe_state", "void redis_cleanup")
-assert "redis_connection_open(redis_connections.maintenance)" in validate
-assert "REDIS_SHARED_SCOPE_MAINTENANCE" in validate
-assert "REDIS_SHARED_COMMAND_READ" in validate
-assert 'context, "PING"' in validate
+assert "redis_maintenance_validate(&config)" in validate
+assert "redis_connection_open(config->connection)" in MAINTENANCE
+assert "REDIS_SHARED_SCOPE_MAINTENANCE" in MAINTENANCE
+assert "REDIS_SHARED_COMMAND_READ" in MAINTENANCE
+assert 'context, "PING"' in MAINTENANCE
 
 pwipe_case = section(ACTWIZ, "case TimedShutdownData::PWIPE:", "default:")
 failure = pwipe_case[pwipe_case.index("if (!sql_pwipe(1723699))"):]

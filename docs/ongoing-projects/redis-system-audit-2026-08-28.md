@@ -10,6 +10,47 @@ remediated, as are RDS-018, RDS-025, and RDS-015; RDS-026 remains open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-026 stopped-server maintenance boundary
+
+Completed in this interval:
+
+- Moved authenticated pwipe readiness checks, season-scoped key construction,
+  scan/delete loops, exact-key deletion, and empty postflight verification from
+  `redis.c` into `redis_maintenance.c/.h`.
+- The maintenance adapter now owns its connection for the complete cleanup. It no longer
+  swaps the composition root's mutable world context to reuse online command helpers.
+- Preserved the fail-closed workflow: donation, floor, presence, report-cache, and world
+  publishers are disabled or canceled and world recovery is quiesced before any cleanup
+  connection or destructive command is attempted.
+- Routed SQL season reset through the typed maintenance header. `sql.c` no longer includes
+  `redis.h`, reducing direct umbrella consumers from 7 to 6; pwipe declarations have also
+  left the umbrella header.
+- Added an ASan/UBSan isolated-Redis regression covering readiness, four 600-key
+  multi-page surfaces, every exact current and legacy key class, postflight emptiness,
+  unrelated-key preservation, and categorized maintenance command counters.
+- Reduced `redis.c` from 1,416 to 1,344 lines and `redis.h` from 42 to 40 lines.
+
+Performance effect:
+
+- The entire extracted path remains restricted to explicit stopped-server season-reset
+  maintenance. No gameplay pulse, command, persistence capture, cache lookup, or worker
+  submission path changed.
+- Maintenance continues to use the prebuilt bounded connection settings and bounded SCAN
+  pages. Removing the temporary world-context swap also removes mutable global context
+  churn from destructive maintenance without adding any runtime indirection.
+
+Validation:
+
+- `./scripts/format.sh --check` and `make -C src -j2`: passed under the warning-as-error
+  profile.
+- `python3 tests/async/test_redis_maintenance_live.py`: passed scoped cleanup and
+  observability checks against a disposable Redis server under ASan/UBSan.
+- All 26 `tests/async/test_redis*.py` regressions passed, including live transport, ACL,
+  cache, donation, floor, presence, maintenance, ship, and world-store suites.
+
+RDS-026 remains partially remediated. Direct administrative cleanup is isolated; world
+snapshot orchestration and broad lifecycle policy remain in the composition root.
+
 ### 2026-08-28 - RDS-026 legacy ship-cache boundary
 
 Completed in this interval:
@@ -2697,25 +2738,26 @@ lifecycle are in `redis_report_cache.c/.h`; the generic public cache API has bee
 by report-specific operations. Fixed-capacity floor-delta capture, coalescing, lifecycle
 state, and background submission are in `redis_floor_runtime.c/.h`, with season keys
 precomputed at boot. Endpoint/security parsing and the five scoped connection settings are
-owned by `redis_runtime_config.c/.h`. Retired ship-snapshot invalidation and stopped-server
-scoped cleanup are isolated in `redis_ship_legacy.c/.h`. Twenty-two former checkpoint,
-presence, report, floor, or ship-only consumers no longer include `redis.h`, which exports
-none of those subsystem APIs or mutable states. The remaining composition root still owns
-world snapshot orchestration, direct administrative cleanup, and broad lifecycle policy.
+owned by `redis_runtime_config.c/.h`. Retired ship-snapshot invalidation is isolated in
+`redis_ship_legacy.c/.h`. Authenticated stopped-server scan/delete and postflight policy is
+owned by `redis_maintenance.c/.h`, without borrowing the world context. Twenty-three former
+checkpoint, presence, report, floor, ship, or maintenance-only consumers no longer include
+`redis.h`, which exports none of those subsystem APIs or mutable states. The remaining
+composition root still owns world snapshot orchestration and broad lifecycle policy.
 
 At the audit baseline, `src/redis.c` was 2,525 lines and combined
 connection/configuration, world publication, floor recovery, ship serialization, report
 caches, presence, pub/sub, administrator helpers, and legacy UID handling. `redis.h` also
 owned revisioned player-save wrapper APIs that did not use Redis, and 29 C/C++ translation
-units included the header. The composition root is now 1,416 lines, the header is 42
-lines, and 7 translation units include it; the remaining world and administrative policy
-still has a broad review and lifecycle surface.
+units included the header. The composition root is now 1,344 lines, the header is 40
+lines, and 6 translation units include it; the remaining world and lifecycle policy still
+has a broad review surface.
 
 Impact: changes have a broad compile/review surface, subsystem policy is inconsistent,
 and tests tend to assert monolithic source layout rather than typed interfaces.
 
-Recommendation: finish moving world snapshot orchestration, direct administrative
-cleanup, and broad lifecycle policy behind typed modules. Keep each subsystem's
+Recommendation: finish moving world snapshot orchestration and broad lifecycle policy
+behind typed modules. Keep each subsystem's
 availability, codec, TTL, authority, and lifecycle policy beside its implementation,
 leaving `redis.c` as the small boot/configuration composition root.
 

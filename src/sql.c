@@ -44,7 +44,7 @@
 #include "graph.h"
 #include "mm.h"
 #include "objmisc.h"
-#include "redis.h"
+#include "redis_maintenance.h"
 #include "specializations.h"
 #include "spells.h"
 #include "sql_player.h"

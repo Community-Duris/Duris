@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
 CONFIG = (ROOT / "src" / "redis_runtime_config.c").read_text(encoding="ascii")
+MAINTENANCE = (ROOT / "src" / "redis_maintenance.c").read_text(encoding="ascii")
 CLEAR = (ROOT / "scripts" / "clear-duris-redis-keys.sh").read_text(encoding="ascii")
 WRAPPER = (ROOT / "scripts" / "clear-redis.sh").read_text(encoding="ascii")
 
@@ -20,9 +21,10 @@ for field in ("world", "presence", "cache", "donation", "maintenance"):
     assert f"configured.{field}" in CONFIG
 assert "const redis_floor_store_config floor_config = { redis_connections.world };" in SOURCE
 assert "redis_report_cache_start(redis_connections.cache)" in SOURCE
-assert "redis_connection_open(redis_connections.maintenance)" in SOURCE
-assert "redis_ctx = maintenance;" in SOURCE
-assert "redis_ctx = world_context;" in SOURCE
+assert "redis_connections.maintenance" in SOURCE
+assert "redis_connection_open(config->connection)" in MAINTENANCE
+assert "redis_ctx = maintenance;" not in SOURCE
+assert "redis_ctx = world_context;" not in SOURCE
 
 assert "REDIS_MAINTENANCE_USERNAME" in CLEAR
 assert "REDIS_MAINTENANCE_PASSWORD" in CLEAR

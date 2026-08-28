@@ -32,8 +32,6 @@ void redis_world_recovery_pulse(void);
 bool redis_world_recovery_drain(uint64_t timeout_msec);
 bool redis_world_recovery_quiesce(void);
 
-bool redis_clear_pwipe_state(void);
-bool redis_validate_pwipe_state(void);
 bool redis_season_key(char *buffer, size_t size, const char *suffix);
 
 // wiz command

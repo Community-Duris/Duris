@@ -26,12 +26,12 @@
 #include "redis_floor_runtime.h"
 #include "redis_floor_store.h"
 #include "redis_key_registry.h"
+#include "redis_maintenance.h"
 #include "redis_namespace.h"
 #include "redis_presence_runtime.h"
 #include "redis_presence_worker.h"
 #include "redis_report_cache.h"
 #include "redis_runtime_config.h"
-#include "redis_ship_legacy.h"
 #include "redis_world_store.h"
 #include "world_recovery_codec.h"
 #include "sql.h"
@@ -417,31 +417,6 @@ static bool redis_clear_scan_match(redis_shared_command_scope scope, const char 
 #endif
 }
 
-static bool redis_delete_key_checked(redis_shared_command_scope scope, const char *key)
-{
-#ifndef __NO_MYSQL__
-	if (!key || !*key || !redis_enabled || !redis_ctx)
-		return false;
-	redisReply *reply = (redisReply *)redis_command(scope, REDIS_SHARED_COMMAND_WRITE,
-							redis_ctx, "DEL %s", key);
-	const bool deleted = reply && reply->type == REDIS_REPLY_INTEGER;
-	if (reply)
-		freeReplyObject(reply);
-	if (!deleted)
-		return false;
-	reply = (redisReply *)redis_command(scope, REDIS_SHARED_COMMAND_READ, redis_ctx,
-					    "EXISTS %s", key);
-	const bool absent = reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 0;
-	if (reply)
-		freeReplyObject(reply);
-	return absent;
-#else
-	(void)scope;
-	(void)key;
-	return true;
-#endif
-}
-
 static bool redis_configure_namespace(void)
 {
 	return redis_namespace_validate(getenv("REDIS_NAMESPACE"), getenv("ENVIRONMENT"),
@@ -717,79 +692,32 @@ bool redis_clear_pwipe_state(void)
 	redis_floor_store_cancel();
 	if (!redis_world_recovery_quiesce())
 		return false;
-	redisContext *maintenance = redis_connection_open(redis_connections.maintenance);
-	if (!maintenance || maintenance->err)
-	{
-		redis_shared_command_observability_record(REDIS_SHARED_SCOPE_MAINTENANCE,
-							  REDIS_SHARED_COMMAND_WRITE,
-							  redis_command_outcome(maintenance, false),
-							  0);
-		if (maintenance)
-			redisFree(maintenance);
-		return false;
-	}
-	redisContext *world_context = redis_ctx;
-	redis_ctx = maintenance;
-	const bool cleared =
-		redis_clear_world_state() && redis_clear_floor_drops_checked() &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
-					 REDIS_LEGACY_FLOOR_DROPS) &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
-					 REDIS_LEGACY_FLOOR_PICKUPS) &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE, REDIS_LEGACY_ONLINE) &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
-					 redis_presence_current_key) &&
-		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
-				       redis_presence_session_pattern) &&
-		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
-				       redis_presence_retry_pattern) &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
-					 REDIS_LEGACY_PRESENCE_CURRENT) &&
-		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
-				       REDIS_LEGACY_PRESENCE_SESSION_PATTERN) &&
-		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
-				       REDIS_LEGACY_PRESENCE_RETRY_PATTERN) &&
-		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
-				       REDIS_LEGACY_WORLD_GENERATION_PATTERN) &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
-					 REDIS_LEGACY_WORLD_CURRENT) &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
-					 REDIS_LEGACY_WORLD_TIMESTAMP) &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
-					 REDIS_LEGACY_WORLD_SEQUENCE) &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
-					 REDIS_LEGACY_WORLD_CHECKSUM) &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
-					 REDIS_LEGACY_WORLD_COMPLETE) &&
-		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
-					 REDIS_LEGACY_WORLD_FENCE) &&
-		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
-				       redis_report_cache_pattern()) &&
-		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
-				       REDIS_LEGACY_CACHE_PATTERN) &&
-		redis_clear_ship_snapshots(maintenance);
-	redis_ctx = world_context;
-	redisFree(maintenance);
-	return cleared;
+	const redis_maintenance_config config = {
+		redis_connections.maintenance,
+		redis_key_namespace,
+		redis_runtime_epoch,
+		redis_presence_current_key,
+		redis_presence_session_pattern,
+		redis_presence_retry_pattern,
+		redis_report_cache_pattern(),
+	};
+	return redis_maintenance_clear(&config);
 }
 
 bool redis_validate_pwipe_state(void)
 {
-#ifdef __NO_MYSQL__
-	return true;
-#else
 	if (!redis_enabled)
 		return true;
-	redisContext *context = redis_connection_open(redis_connections.maintenance);
-	redisReply *reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_MAINTENANCE,
-							REDIS_SHARED_COMMAND_READ, context, "PING");
-	const bool ready = reply && reply->type == REDIS_REPLY_STATUS && reply->str &&
-			   !strcmp(reply->str, "PONG");
-	if (reply)
-		freeReplyObject(reply);
-	redisFree(context);
-	return ready;
-#endif
+	const redis_maintenance_config config = {
+		redis_connections.maintenance,
+		redis_key_namespace,
+		redis_runtime_epoch,
+		redis_presence_current_key,
+		redis_presence_session_pattern,
+		redis_presence_retry_pattern,
+		redis_report_cache_pattern(),
+	};
+	return redis_maintenance_validate(&config);
 }
 
 void redis_cleanup(void)

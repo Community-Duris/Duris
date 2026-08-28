@@ -6,8 +6,8 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-header = (ROOT / "src/redis.h").read_text()
-source = (ROOT / "src/redis.c").read_text()
+header = (ROOT / "src/redis_maintenance.h").read_text()
+source = (ROOT / "src/redis_maintenance.c").read_text()
 legacy_header = (ROOT / "src/redis_ship_legacy.h").read_text()
 legacy = (ROOT / "src/redis_ship_legacy.c").read_text()
 sql = (ROOT / "src/sql_player.c").read_text()
@@ -33,8 +33,7 @@ assert '"SCAN %s MATCH %s COUNT 256"' in legacy
 assert "REDIS_SHIP_SNAPSHOT_PATTERN" in legacy
 assert "redis_cache_store_delete(key)" in legacy
 assert "redis_shared_command_observability_record" in legacy
-clear = source[source.index("bool redis_clear_pwipe_state(void)"):]
-assert "redis_clear_ship_snapshots(maintenance)" in clear
+assert "redis_clear_ship_snapshots(context)" in source
 for caller in ("src/sql_player.c", "src/ships/ship_base.c"):
     caller_source = (ROOT / caller).read_text()
     assert '#include "redis_ship_legacy.h"' in caller_source
