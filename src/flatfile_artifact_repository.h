@@ -70,6 +70,9 @@ flatfile_artifact_result flatfile_artifact_gameplay_update(const std::string &ro
 							   int32_t location, int64_t timer,
 							   int32_t type, int64_t last_update,
 							   std::string *error);
+flatfile_artifact_result flatfile_artifact_remove_owned(const std::string &root, int32_t vnum,
+							int32_t corpse_pid, int32_t type,
+							int64_t last_update, std::string *error);
 flatfile_artifact_result flatfile_artifact_find_next_expired(const std::string &root,
 							     int32_t after_vnum, int64_t now,
 							     flatfile_artifact_record *record,

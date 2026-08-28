@@ -302,6 +302,49 @@ int main(int argc, char **argv)
 						  1, 1200,
 						  &error) == flatfile_artifact_result::invalid,
 		"invalid gameplay artifact location type was accepted");
+	require(flatfile_artifact_remove_owned(gameplay_root.string(), 701, -1, 1, 1300, &error) ==
+			flatfile_artifact_result::ok,
+		"owned artifact removal failed: " + error);
+	require(flatfile_artifact_get(gameplay_root.string(), 701, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			!gameplay_record.owned &&
+			gameplay_record.location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			gameplay_record.location == -1 && gameplay_record.timer == 7000 &&
+			gameplay_record.type == 1 && gameplay_record.last_update == 1300 &&
+			gameplay_record.bind_owner_pid == -1 && gameplay_record.bind_timer == 0 &&
+			gameplay_record.revision == 2,
+		"owned artifact removal did not preserve gameplay data or clear binding");
+	require(flatfile_artifact_remove_owned(gameplay_root.string(), 701, -1, 1, 1300, &error) ==
+			flatfile_artifact_result::unchanged,
+		"identical owned artifact removal was not idempotent");
+	require(flatfile_artifact_remove_owned(gameplay_root.string(), 701, 77, 1, 1400, &error) ==
+			flatfile_artifact_result::ok,
+		"artifact corpse ownership update failed: " + error);
+	require(flatfile_artifact_get(gameplay_root.string(), 701, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			gameplay_record.owned &&
+			gameplay_record.location_type == FLATFILE_ARTIFACT_ON_CORPSE &&
+			gameplay_record.location == 77 && gameplay_record.timer == 7000 &&
+			gameplay_record.bind_owner_pid == -1 && gameplay_record.bind_timer == 0 &&
+			gameplay_record.revision == 3,
+		"artifact corpse ownership did not preserve timer/type or clear binding");
+	require(flatfile_artifact_remove_owned(gameplay_root.string(), 799, -1, 2, 1500, &error) ==
+			flatfile_artifact_result::unchanged,
+		"removing an untracked artifact synthesized a record");
+	require(flatfile_artifact_remove_owned(gameplay_root.string(), 799, 88, 2, 1500, &error) ==
+			flatfile_artifact_result::ok,
+		"missing corpse-held artifact was not recovered");
+	require(flatfile_artifact_get(gameplay_root.string(), 799, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			gameplay_record.owned &&
+			gameplay_record.location_type == FLATFILE_ARTIFACT_ON_CORPSE &&
+			gameplay_record.location == 88 && gameplay_record.timer == 0 &&
+			gameplay_record.type == 2 && gameplay_record.bind_owner_pid == -1 &&
+			gameplay_record.revision == 1,
+		"missing corpse-held artifact recovery did not use safe defaults");
+	require(flatfile_artifact_remove_owned(gameplay_root.string(), 799, 88, 9, 1500, &error) ==
+			flatfile_artifact_result::invalid,
+		"owned artifact removal accepted an invalid type");
 	flatfile_artifact_record expired_record;
 	require(flatfile_artifact_find_next_expired(gameplay_root.string(), 0, 6500,
 						    &expired_record,
@@ -417,6 +460,9 @@ int main(int argc, char **argv)
 						  FLATFILE_ARTIFACT_ON_PLAYER, 42, 5000, 1, 1200,
 						  &error) == flatfile_artifact_result::invalid,
 		"corrupt artifact authority was overwritten through gameplay update");
+	require(flatfile_artifact_remove_owned(root.string(), 100, -1, 1, 1200, &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was overwritten through owned removal");
 	require(flatfile_artifact_find_next_expired(root.string(), 0, 6000, &expired_record,
 						    &error) == flatfile_artifact_result::invalid,
 		"corrupt artifact authority was exposed through expiry selection");

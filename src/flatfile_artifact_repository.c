@@ -395,6 +395,79 @@ flatfile_artifact_result flatfile_artifact_gameplay_update(const std::string &ro
 		       flatfile_artifact_result::io_error;
 }
 
+flatfile_artifact_result flatfile_artifact_remove_owned(const std::string &root, int32_t vnum,
+							int32_t corpse_pid, int32_t type,
+							int64_t last_update, std::string *error)
+{
+	if (root.empty() || vnum <= 0 || type < 1 || type > 3 || last_update < 0)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	auto found = std::lower_bound(catalog.records.begin(), catalog.records.end(), vnum,
+				      [](const flatfile_artifact_record &candidate, int32_t sought)
+				      { return candidate.vnum < sought; });
+	if (found == catalog.records.end() || found->vnum != vnum)
+	{
+		if (corpse_pid <= 0)
+			return flatfile_artifact_result::unchanged;
+		const flatfile_artifact_record inserted = { vnum,
+							    true,
+							    FLATFILE_ARTIFACT_ON_CORPSE,
+							    corpse_pid,
+							    0,
+							    type,
+							    last_update,
+							    -1,
+							    0,
+							    1 };
+		try
+		{
+			catalog.records.insert(found, inserted);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return flatfile_artifact_result::io_error;
+		}
+	}
+	else
+	{
+		const bool on_corpse = corpse_pid > 0;
+		const int32_t location_type = on_corpse ? FLATFILE_ARTIFACT_ON_CORPSE :
+							  FLATFILE_ARTIFACT_NOT_IN_GAME;
+		const int32_t location = on_corpse ? corpse_pid : -1;
+		if (found->owned == on_corpse && found->location_type == location_type &&
+		    found->location == location && found->last_update == last_update &&
+		    found->bind_owner_pid == -1 && found->bind_timer == 0)
+			return flatfile_artifact_result::unchanged;
+		if (found->revision == std::numeric_limits<uint64_t>::max())
+			return flatfile_artifact_result::invalid;
+		found->owned = on_corpse;
+		found->location_type = location_type;
+		found->location = location;
+		found->last_update = last_update;
+		found->bind_owner_pid = -1;
+		found->bind_timer = 0;
+		++found->revision;
+	}
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_artifact_result::invalid;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_artifact_result::ok :
+		       flatfile_artifact_result::io_error;
+}
+
 flatfile_artifact_result flatfile_artifact_find_next_expired(const std::string &root,
 							     int32_t after_vnum, int64_t now,
 							     flatfile_artifact_record *record,

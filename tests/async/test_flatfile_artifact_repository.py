@@ -165,3 +165,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
         raise AssertionError("client-free binding maintenance does not page flat authority")
     if binding_body.count("artifact_bind_maintenance_update(") != 3:
         raise AssertionError("binding maintenance does not persist every binding outcome")
+
+    remove_start = artifact_source.index("bool remove_owned_artifact_sql(")
+    remove_end = artifact_source.index("\nvoid remove_all_artifacts_sql(", remove_start)
+    remove_body = artifact_source[remove_start:remove_end]
+    if "flatfile_artifact_remove_owned(" not in remove_body:
+        raise AssertionError("client-free owned artifact removal bypasses flat authority")

@@ -35,6 +35,8 @@ P_room world = rooms;
 extern const int top_of_world = 1;
 index_data mob_indices[1] = {};
 P_index mob_index = mob_indices;
+index_data obj_indices[1] = {};
+P_index obj_index = obj_indices;
 char_data boot_mob = {};
 npc_only_data boot_mob_data = {};
 P_char character_list = &boot_mob;
@@ -55,6 +57,11 @@ void logit(const char *, const char *, ...) {}
 bool redis_invalidate_artifact_cache()
 {
 	return true;
+}
+
+bool isname(const char *, const char *)
+{
+	return false;
 }
 
 P_obj read_object(int vnum, int)
@@ -172,6 +179,22 @@ int main(int argc, char **argv)
 			stored.bind_owner_pid == 0 && stored.bind_timer == 0 &&
 			stored.revision == 1,
 		"newly tracked runtime artifact did not receive binding defaults");
+	P_obj removed = new obj_data{};
+	obj_indices[0].virtual_number = 701;
+	removed->R_num = 0;
+	removed->extra_flags = ITEM_ARTIFACT;
+	removed->name = const_cast<char *>("artifact");
+	require(remove_owned_artifact_sql(removed),
+		"runtime owned-artifact removal rejected flat persistence");
+	delete removed;
+	require(flatfile_artifact_get(state_root, 701, &stored, &error) ==
+				flatfile_artifact_result::ok &&
+			!stored.owned && stored.location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			stored.location == -1 && stored.timer == 7000 && stored.type == 1 &&
+			stored.bind_owner_pid == -1 && stored.bind_timer == 0 &&
+			stored.revision == 2,
+		"runtime owned-artifact removal did not persist its complete outcome");
+	artifact_update_sql(701, true, FLATFILE_ARTIFACT_ON_GROUND, 1202, 7000, 1);
 
 	mob_indices[0].virtual_number = 8100;
 	boot_mob_data.R_num = 0;

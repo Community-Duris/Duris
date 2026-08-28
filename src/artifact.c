@@ -1394,9 +1394,11 @@ void artifact_update_sql(int vnum, bool owned, int locType, int location, time_t
 bool remove_owned_artifact_sql(P_obj arti, int pid)
 {
 	int vnum = arti ? OBJ_VNUM(arti) : -1;
+#ifndef __NO_MYSQL__
 	bool update_existing = FALSE;
 	MYSQL_RES *res;
 	MYSQL_ROW row = NULL;
+#endif
 
 	if (!updateArtis)
 	{
@@ -1410,6 +1412,24 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 		      arti ? arti->short_description : "NULL", arti ? OBJ_VNUM(arti) : -1);
 		return FALSE;
 	}
+
+#ifdef __NO_MYSQL__
+	const int type = IS_IOUN(arti)	 ? ARTIFACT_IOUN :
+			 IS_UNIQUE(arti) ? ARTIFACT_UNIQUE :
+					   ARTIFACT_MAJOR;
+	std::string error;
+	const auto removed = flatfile_artifact_remove_owned(persistence_mode_flatfile_root(), vnum,
+							    pid, type, time(NULL), &error);
+	if (removed != flatfile_artifact_result::ok &&
+	    removed != flatfile_artifact_result::unchanged)
+	{
+		logit(LOG_ARTIFACT, "remove_owned_artifact_sql: flat artifact update failed: %s",
+		      error.empty() ? "invalid or missing artifact authority" : error.c_str());
+		return FALSE;
+	}
+	arti_cache_invalidate();
+	return TRUE;
+#else
 
 	// If we can't query the DB, we have a big issue (only values we care about are time difference and owned value).
 	if (!qry("SELECT owned, UNIX_TIMESTAMP(timer), UNIX_TIMESTAMP(lastUpdate) FROM artifacts WHERE vnum = %d",
@@ -1473,6 +1493,7 @@ bool remove_owned_artifact_sql(P_obj arti, int pid)
 
 	// If pid <= 0 && there's no existing entry, don't bother.
 	return TRUE;
+#endif
 }
 
 // This is used for when a character is deleted.

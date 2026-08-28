@@ -331,6 +331,31 @@
   listings, staff repair, and other artifact command paths remain. The global
   incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - restored owned-artifact removal without MySQL
+
+- **Concrete gap:** permanent object extraction, theft handoff, and the legacy corpse
+  path still called `remove_owned_artifact_sql`, whose implementation read and mutated
+  only MySQL. In no-database mode it therefore reported failure and could leave catalog
+  ownership or binding state stale.
+- **Restoration:** no-database mode now applies the existing outcome in one atomic catalog
+  replacement: an artifact removed from play becomes unowned and not-in-game, an artifact
+  moved to a player corpse remains owned at that PID, existing timer/type data is
+  preserved, and soul binding is cleared in the same write. The historical recovery of a
+  missing corpse-held row remains supported only when a valid catalog already exists;
+  missing or corrupt authority still fails closed. Database-backed behavior is unchanged.
+- **Focused evidence:** repository tests cover out-of-game removal, corpse placement,
+  idempotence, timer/type preservation, binding clearance, missing-row recovery, invalid
+  input, revision progression, and corrupt-authority refusal. The client-free runtime
+  harness directly invokes the real `remove_owned_artifact_sql` compatibility function
+  and verifies its complete persisted outcome.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** core owned-artifact removal is restored, but catalog establishment,
+  listings, staff repair, and remaining direct-SQL artifact paths still require focused
+  work. The global incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,
