@@ -81,6 +81,41 @@ static void sql_trace_log_drain(MYSQL *conn, const char *phase, bool drained);
 static bool sql_verify_metadata_fingerprint(void);
 
 #ifdef __NO_MYSQL__
+MYSQL *DB = NULL;
+
+MYSQL *sql_open_configured_connection(unsigned long client_flags)
+{
+	(void)client_flags;
+	return NULL;
+}
+
+MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...)
+{
+	(void)site;
+	(void)format;
+	return NULL;
+}
+
+MYSQL_RES *db_query_nolog_at(struct persistence_query_site site, const char *format, ...)
+{
+	(void)site;
+	(void)format;
+	return NULL;
+}
+
+bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
+			     enum persistence_query_context context, const char *sql, size_t len,
+			     uint64_t *operation_id)
+{
+	(void)conn;
+	(void)site;
+	(void)context;
+	(void)sql;
+	(void)len;
+	(void)operation_id;
+	return false;
+}
+
 int initialize_mysql()
 {
 	return 1;

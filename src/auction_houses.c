@@ -30,7 +30,7 @@ using namespace std;
 void init_auction_houses() {}
 void shutdown_auction_houses() {}
 void auction_houses_activity() {}
-int auction_house_room_proc(int room_num, P_char ch, int cmd, char *arguments)
+int auction_house_room_proc(int /*room_num*/, P_char ch, int /*cmd*/, char * /*arguments*/)
 {
 	send_to_char("Auctions are disabled.", ch);
 	return TRUE;

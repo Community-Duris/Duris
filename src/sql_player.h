@@ -7,9 +7,6 @@
 
 #include "structs.h"
 
-#ifndef __NO_MYSQL__
-#include <mysql.h>
-
 // ============================================================================
 // transaction helpers
 // ============================================================================
@@ -26,11 +23,15 @@ bool sql_rollback(void);
 // check if we're currently in a transaction
 bool sql_in_transaction(void);
 
+#ifndef __NO_MYSQL__
+#include <mysql.h>
+
 // for forked child - create separate db connection
 MYSQL *sql_create_child_connection(void);
 
 // child swaps globals after fork
 void sql_reset_for_child(MYSQL *child_conn);
+#endif
 
 // ============================================================================
 // player save functions
@@ -255,7 +256,5 @@ bool sql_add_spellbook_mob(int pid, int mob_vnum);
 bool sql_has_spellbook_mob(int pid, int mob_vnum);
 int *sql_get_spellbook_mobs(int pid, int *count);
 bool sql_delete_spellbook_mobs(int pid);
-
-#endif // __NO_MYSQL__
 
 #endif // __SQL_PLAYER_H_INCLUDED__

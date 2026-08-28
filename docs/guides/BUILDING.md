@@ -25,6 +25,13 @@ make -C src PERSISTENCE_BACKEND=flatfile
 client library. The flat build is an implementation target and is not yet production
 ready; boot currently fails closed with the durable domains that remain unimplemented.
 
+Mixed legacy modules still mention MySQL types while their durable operations are being
+moved behind backend repositories. Flat builds resolve those declarations through
+`src/no_mysql/`, a client-free compatibility surface whose connection, query, statement,
+and thread initialization calls always fail. It neither connects nor persists data and
+must not be treated as a backend; the boot-time domain inventory prevents those paths
+from becoming an accidental reduced-function mode.
+
 The root `Makefile` is the maintained full-project entry point. `make clean`
 removes compiled server, editor, and area-tool artifacts but preserves generated
 world data, the active runtime, package artifacts, and runtime history. Every

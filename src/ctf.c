@@ -32,13 +32,10 @@ using namespace std;
 
 int init_ctf()
 {
-	// load nothing
+	return 0;
 }
 
-void do_ctf(P_char ch, char *arg, int cmd)
-{
-	// do nothing
-}
+void do_ctf(P_char /*ch*/, char * /*arg*/, int /*cmd*/) {}
 #else
 
 extern MYSQL *DB;

@@ -39,7 +39,7 @@ MYSQL_INCLUDES = -I/usr/include/mysql
 MYSQL_LIBS = -lmysqlclient
 else ifeq ($(PERSISTENCE_BACKEND),flatfile)
 CFLAGS += -D__NO_MYSQL__
-MYSQL_INCLUDES =
+MYSQL_INCLUDES = -I./no_mysql
 MYSQL_LIBS =
 else
 $(error PERSISTENCE_BACKEND must be mariadb or flatfile)

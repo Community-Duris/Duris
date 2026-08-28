@@ -140,6 +140,7 @@ with tempfile.TemporaryDirectory(prefix="persistence-mode-") as directory:
         text=True,
     ).stdout
     assert "-D__NO_MYSQL__" in dry_run
+    assert "-I./no_mysql" in dry_run
     assert "/usr/include/mysql" not in dry_run
     assert "-lmysqlclient" not in dry_run
 

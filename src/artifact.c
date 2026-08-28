@@ -224,7 +224,7 @@ void arti_redis_cache(int type, bool Godlist)
 	free(json);
 }
 #else
-void arti_redis_cache(int type, bool Godlist) {}
+void arti_redis_cache(int /*type*/, bool /*Godlist*/) {}
 #endif
 
 // forward declarations
@@ -591,6 +591,11 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
 			 "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
 	send_to_char(buf, ch);
+#else
+	(void)type;
+	(void)Godlist;
+	(void)allArtis;
+	send_to_char("Artifact persistence requires a completed durable backend.\n", ch);
 #endif
 }
 
@@ -4386,6 +4391,7 @@ void arti_player_sql(P_char ch, char *arg)
 	if (!shownData)
 		send_to_char("No artifacts found.\n\r", ch);
 #else
+	(void)arg;
 	send_to_char("This command requires MySQL support which is not compiled in.\n", ch);
 #endif
 }

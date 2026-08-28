@@ -81,6 +81,7 @@ static bool parse_reward_marker(P_obj obj, RewardMarker *parsed)
 	return false;
 }
 
+#ifndef __NO_MYSQL__
 static bool reward_marker_matches(P_obj obj, const char *account, unsigned long long grant_id)
 {
 	RewardMarker marker;
@@ -96,6 +97,7 @@ static bool grant_marker_matches(P_obj obj, const RewardGrant &grant)
 	return grant.template_version == 0 &&
 	       reward_marker_matches(obj, grant.account.c_str(), 0) && OBJ_VNUM(obj) == grant.vnum;
 }
+#endif
 
 bool account_bound_reward_owner(P_char ch, P_obj obj)
 {
@@ -104,6 +106,7 @@ bool account_bound_reward_owner(P_char ch, P_obj obj)
 	return account && parse_reward_marker(obj, &marker) && !strcasecmp(marker.account, account);
 }
 
+#ifndef __NO_MYSQL__
 static P_char reward_item_owner(P_obj obj)
 {
 	P_obj top = obj;
@@ -256,6 +259,7 @@ static std::string lifetime_text(const RewardGrant &grant)
 		return "in " + human_duration(grant.expires_seconds, true);
 	return "never (permanent)";
 }
+#endif
 
 #ifndef __NO_MYSQL__
 static std::string escape_sql(const char *value)
@@ -1122,6 +1126,7 @@ void account_bound_reward_on_login(P_char ch)
 #endif
 }
 
+#ifndef __NO_MYSQL__
 static void divineclaim_help(P_char ch)
 {
 	send_to_char(
@@ -1136,11 +1141,13 @@ static void divineclaim_help(P_char ch)
 		"Each character on that account may summon one copy.\r\n",
 		ch);
 }
+#endif
 
 void do_divineclaim(P_char ch, char *argument, int cmd)
 {
 	(void)cmd;
 #ifdef __NO_MYSQL__
+	(void)argument;
 	if (IS_TRUSTED(ch))
 		send_to_char("Account rewards require the database-enabled server.\r\n", ch);
 	else

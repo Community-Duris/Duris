@@ -54,6 +54,34 @@ sections below continue to describe the required end state.
   ship shutdown persistence through a backend interface, then iterate the isolated flat
   build to its next compile boundary.
 
+### Checkpoint 3 - client-free mixed-module compile surface
+
+- **Completed:** exposed the existing fail-closed `sql_player.c` no-MySQL declarations
+  to common callers and added null/error query stubs for mixed modules. Ship shutdown now
+  resolves its transaction calls to the existing false-returning no-MySQL implementation
+  instead of failing compilation.
+- **Completed:** added `src/no_mysql/` compatibility declarations for legacy units that
+  still name MySQL result/statement types. The flat build selects these local headers;
+  they are not a client implementation, allocate no connection, and make every client
+  initialization, connection, query, and prepared-statement operation fail.
+- **Completed:** repaired configuration-specific compile errors in account rewards,
+  administrator IP lookup, artifact reporting, auction rooms, and CTF stubs without
+  weakening the warning profile.
+- **Checks passed:** `python3 tests/async/test_persistence_mode.py`,
+  `python3 tests/async/test_no_mysql_compat.py`,
+  `python3 tests/async/test_account_bound_reward_contract.py`,
+  `./scripts/format.sh --check`, `git diff --check`, and `make -C src -j2`.
+- **Flat build evidence:** the isolated client-free build now compiles through ships,
+  accounts, rewards, administration, artifacts, associations, auctions, buildings, CTF,
+  database boot support, crafting, and several gameplay modules. Its next failures are
+  `__NO_MYSQL__` unused-parameter diagnostics in `epic.c`; it has not linked yet.
+- **Files changed:** `src/no_mysql/mysql.h`, `src/no_mysql/mysql/mysql.h`, `src/sql.[ch]`,
+  `src/sql_player.h`, `src/account_reward.c`, `src/actwiz.c`, `src/artifact.c`,
+  `src/auction_houses.c`, `src/ctf.c`, `src/Makefile`, and
+  `tests/async/test_no_mysql_compat.py`.
+- **Next action:** continue the warning-clean client-free compile sweep from `epic.c`,
+  then resolve missing no-MySQL link symbols and add a boot preflight test.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

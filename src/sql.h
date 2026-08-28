@@ -45,8 +45,11 @@ static inline int get_db_port(void)
 #define DB_NAME get_db_name()
 #define DB_PORT get_db_port()
 
-#ifndef __NO_MYSQL__
+#ifdef __NO_MYSQL__
+#include "no_mysql/mysql.h"
+#else
 #include <mysql.h>
+#endif
 extern MYSQL *DB;
 MYSQL *sql_open_configured_connection(unsigned long client_flags);
 MYSQL_RES *db_query_at(struct persistence_query_site site, const char *format, ...);
@@ -54,7 +57,6 @@ MYSQL_RES *db_query_nolog_at(struct persistence_query_site site, const char *for
 bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
 			     enum persistence_query_context context, const char *sql, size_t len,
 			     uint64_t *operation_id);
-#endif
 
 int load_env_file(void);
 int initialize_mysql();
@@ -102,8 +104,10 @@ void sql_trace_panic(void);
  * the same database. */
 const char *sql_persistence_db_name(void);
 
+#ifndef __NO_MYSQL__
 MYSQL *sql_persistence_connection(void);
 void sql_persistence_release_connection(MYSQL *conn);
+#endif
 bool sql_persistence_execute_raw(const char *sql);
 bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
 					const char *owner_ref, const char *context);
@@ -157,7 +161,9 @@ void send_mud_info(const char *name, P_char ch);
 
 string escape_str(const char *str);
 
+#ifndef __NO_MYSQL__
 void sql_clear_results_on(MYSQL *conn);
+#endif
 
 #include <vector>
 using namespace std;
