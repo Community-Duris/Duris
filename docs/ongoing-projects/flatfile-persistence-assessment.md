@@ -314,6 +314,37 @@ sections below continue to describe the required end state.
   load pipeline to produce a bounded `player_load_result` from the materialized snapshot
   with explicit handling for item identity and the still-external gameplay domains.
 
+### Checkpoint 11 - first baseline and terminal materialization fence
+
+- **Completed:** new client-free characters now initialize revision state at durable
+  revision 0. Their first `writeCharacter` cannot fall into the legacy SQL component
+  calls: it requests an all-component immutable capture through the existing terminal
+  fence and waits up to five seconds for the flat repository to acknowledge the actual
+  materialized revision.
+- **Completed:** the flat synchronous branch captures before any legacy unequip, affect
+  removal, or item extraction. It clears the no-baseline and dirty-container flags only
+  after exact materialization acknowledgement. On failure it returns with the live
+  character untouched; on a successful terminal save it performs the existing bounded
+  unequip/extract/reapply sequence after durability.
+- **Completed:** other terminal call sites disable journal-only handoff in the
+  client-free build. A durable queue record is therefore not permission to discard live
+  inventory; MariaDB mode retains its existing journal-handoff policy.
+- **Checks passed:** `python3 tests/async/test_player_save_pipeline.py`,
+  `python3 tests/async/test_player_snapshot_capture.py`,
+  `python3 tests/async/test_character_persistence_gap.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `src/nanny.c`, `src/files.c`, `src/actoth.c`,
+  `src/persistence_mode.c`, `tests/async/test_player_save_pipeline.py`, and the boot
+  preflight.
+- **Remaining P1 gap:** the load worker still queries MariaDB and expects SQL ownership,
+  wallet, epic, frag, bank, and recent-gameplay sidecars. Until a flat load result can
+  distinguish snapshot-owned state from those external domains, character login and
+  safe rename/delete completion remain blocked.
+- **Next action:** add a flat player-load adapter that verifies PID/account/name against
+  the identity catalog, returns the complete materialized snapshot and revision, and
+  fails closed—with explicit missing-domain state—where P2-owned sidecars are required.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

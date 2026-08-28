@@ -43,6 +43,7 @@
 #include "player_load_pets.h"
 #include "player_load_pipeline.h"
 #include "persistence_observability.h"
+#include "player_revision_state.h"
 #include "redis_presence_runtime.h"
 #include "ships.h"
 #include "specializations.h"
@@ -5411,6 +5412,10 @@ void init_char(P_char ch)
 	clear_title(ch);
 
 	ch->only.pc->pid = getNewPCidNumb();
+#ifdef __NO_MYSQL__
+	if (ch->only.pc->pid > 0 && !player_revision_hydrate(ch->only.pc->pid, 0))
+		logit(LOG_FILE, "could not initialize flat-file player revision state");
+#endif
 	/*
 	 * getNewPCidNumb() allocates from the on-disk counter and touches no table, so a
 	 * brand new character has a positive pid but no player_data row. The async save

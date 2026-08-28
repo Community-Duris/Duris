@@ -2021,8 +2021,12 @@ bool persistence_save_character_terminal(P_char ch, int type)
 		return false;
 
 	const int room = calculate_save_room(ch, type, ch->in_room);
+	bool allow_journal_handoff = true;
+#ifdef __NO_MYSQL__
+	allow_journal_handoff = false;
+#endif
 	const player_save_terminal_result terminal =
-		player_save_pipeline_terminal(ch, type, room, 2000, true);
+		player_save_pipeline_terminal(ch, type, room, 2000, allow_journal_handoff);
 	const bool saved = terminal == player_save_terminal_result::database_acknowledged ||
 			   terminal == player_save_terminal_result::journal_durable;
 	slot = find_deferred_save_slot(GET_PID(ch));

@@ -1575,6 +1575,10 @@ int writeCharacter(P_char ch, int type, int room)
 		return 0;
 
 	const bool is_locker_char = (strstr(GET_NAME(ch), ".locker") != NULL);
+	const bool terminal_type = (type == RENT_INN || type == RENT_LINKDEAD ||
+				    type == RENT_CAMPED || type == RENT_DEATH ||
+				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
+				    type == RENT_FIGHTARTI);
 
 	// locker hook (pre-save)
 	if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
@@ -1591,6 +1595,47 @@ int writeCharacter(P_char ch, int type, int room)
 		return queued == player_save_pipeline_result::queued ||
 		       queued == player_save_pipeline_result::coalesced;
 	}
+
+#ifdef __NO_MYSQL__
+	if (!is_locker_char &&
+	    (terminal_type || IS_SET(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE)))
+	{
+		room = calculate_save_room(ch, type, room);
+		if (ch->desc)
+			ch->desc->rtype = type;
+		const player_save_terminal_result saved =
+			player_save_pipeline_terminal(ch, type, room, 5000, false);
+		if (saved != player_save_terminal_result::database_acknowledged)
+			return 0;
+		clear_player_dirty_container_flags(ch);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_EQUIPMENT);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+		REMOVE_BIT(ch->runtime_flags, CHAR_RFLAG_NO_DB_BASELINE);
+		if (terminal_type)
+		{
+			for (i = 0; i < MAX_WEAR; ++i)
+				save_equip[i] = ch->equipment[i] ? unequip_char(ch, i, TRUE) : NULL;
+			all_affects(ch, FALSE);
+			updateShortAffects(ch);
+			for (i = 0; i < MAX_WEAR; ++i)
+				if (save_equip[i])
+				{
+					extract_obj(save_equip[i]);
+					save_equip[i] = NULL;
+				}
+			for (obj = ch->carrying; obj; obj = obj2)
+			{
+				obj2 = obj->next_content;
+				extract_obj(obj);
+			}
+			all_affects(ch, TRUE);
+		}
+		if (ch->in_room != NOWHERE && IS_ROOM(ch->in_room, ROOM_LOCKER) &&
+		    world[ch->in_room].funct)
+			(*world[ch->in_room].funct)(ch->in_room, ch, (-81), NULL);
+		return 1;
+	}
+#endif
 
 	if (!is_locker_char)
 	{
@@ -1681,11 +1726,6 @@ int writeCharacter(P_char ch, int type, int room)
 			result = 0;
 		}
 	}
-
-	const bool terminal_type = (type == RENT_INN || type == RENT_LINKDEAD ||
-				    type == RENT_CAMPED || type == RENT_DEATH ||
-				    type == RENT_POOFARTI || type == RENT_SWAPARTI ||
-				    type == RENT_FIGHTARTI);
 
 	// Failed saves always restore the live recovery source. Terminal inventory may
 	// be extracted only after the database save has succeeded; a flat fallback is

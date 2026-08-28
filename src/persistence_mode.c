@@ -19,7 +19,7 @@ static const char *const flatfile_directories[] = {
 };
 
 static const char unimplemented_domains[] =
-	"player snapshot baseline/load and terminal fencing, character rename/delete completion, "
+	"player snapshot load and external domain sidecars, character rename/delete completion, "
 	"item UID/ownership/ledger, critical operations, lockers/private chests, "
 	"corpses/saved items/shopkeepers/pets/shapes/recipes/spellbooks, "
 	"guilds/alliances/halls/outposts/towns/siege/nexus, ships/cargo/markets, "
