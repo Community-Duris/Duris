@@ -53,6 +53,12 @@ static player_snapshot make_full(player_revision_t revision)
 	snapshot.status_integers.push_back({ player_status_field::epics, 15, 0, false });
 	snapshot.status_integers.push_back({ player_status_field::frags, 16, 0, false });
 	snapshot.status_integers.push_back({ player_status_field::old_frags, 17, 0, false });
+	for (int index = 0; index < 10; ++index)
+		snapshot.status_integers.push_back(
+			{ static_cast<player_status_field>(
+				  static_cast<unsigned int>(player_status_field::base_strength) +
+				  index),
+			  50 + index, 0, false });
 	snapshot.status_strings.push_back({ player_status_string_field::name, "Player" });
 	snapshot.conditions = { 1, 2, 3, 4, 5 };
 	snapshot.quest_values[3] = 77;
@@ -181,6 +187,9 @@ int main(int argc, char **argv)
 			load_result.domains.wallet == std::array<uint64_t, 4>{ 11, 12, 13, 14 } &&
 			load_result.domains.bank_revision == 1 && load_result.domains.epics == 15 &&
 			load_result.domains.frags == 16 && load_result.domains.old_frags == 17 &&
+			load_result.domains.base_stat_revision == 1 &&
+			load_result.domains.base_stats[0] == 50 &&
+			load_result.domains.base_stats[9] == 59 &&
 			load_result.read_components == PLAYER_LOAD_SESSION04_READS &&
 			load_result.outcome == player_load_outcome::applied &&
 			load_result.error_code == 0 && !load_result.failed_component,

@@ -89,6 +89,12 @@ bool valid_snapshot(const player_load_result &result)
 	for (uint64_t balance : result.domains.bank)
 		if (balance > INT_MAX)
 			return false;
+	if (!result.domains.base_stat_revision &&
+	    result.domains.base_stats != std::array<int16_t, 10>{})
+		return false;
+	for (int16_t stat : result.domains.base_stats)
+		if (stat < 0 || stat > 100)
+			return false;
 	if (result.snapshot.components == PLAYER_LOAD_SESSION01_COMPONENTS &&
 	    (!result.snapshot.items.empty() || !result.item_identities.empty() ||
 	     result.item_owner_revision || !result.snapshot.pets.empty() ||
@@ -419,6 +425,19 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 	ch->only.pc->frags = result.domains.frags;
 	ch->only.pc->oldfrags = result.domains.old_frags;
 	ch->only.pc->frag_revision = result.domains.frag_revision;
+	if (result.domains.base_stat_revision)
+	{
+		ch->base_stats.Str = result.domains.base_stats[0];
+		ch->base_stats.Dex = result.domains.base_stats[1];
+		ch->base_stats.Agi = result.domains.base_stats[2];
+		ch->base_stats.Con = result.domains.base_stats[3];
+		ch->base_stats.Pow = result.domains.base_stats[4];
+		ch->base_stats.Int = result.domains.base_stats[5];
+		ch->base_stats.Wis = result.domains.base_stats[6];
+		ch->base_stats.Cha = result.domains.base_stats[7];
+		ch->base_stats.Kar = result.domains.base_stats[8];
+		ch->base_stats.Luk = result.domains.base_stats[9];
+	}
 	for (size_t index = 0; index < result.snapshot.conditions.size(); ++index)
 		ch->specials.conditions[index] = result.snapshot.conditions[index];
 	int32_t *quest[] = {

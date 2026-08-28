@@ -63,4 +63,25 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-player-test-") as temporary:
     )
     if run_result.returncode:
         raise SystemExit(run_result.stdout)
+
+    domain_source = (ROOT / "src/flatfile_player_domain_repository.c").read_text()
+    player_source = (ROOT / "src/flatfile_player_repository.c").read_text()
+    materialize_source = (ROOT / "src/player_load_materialize.c").read_text()
+    for token in (
+        "constexpr uint32_t domain_format_version = 3",
+        "base_stat_revision",
+        "record.domains.base_stats",
+        "format_version >= 3",
+    ):
+        if token not in domain_source:
+            raise SystemExit(f"flat player stat authority is missing {token}")
+    if "record.domains.base_stat_revision = 1" not in player_source:
+        raise SystemExit("first player baseline does not establish stat authority")
+    for token in (
+        "result.domains.base_stat_revision",
+        "ch->base_stats.Str = result.domains.base_stats[0]",
+        "ch->base_stats.Luk = result.domains.base_stats[9]",
+    ):
+        if token not in materialize_source:
+            raise SystemExit(f"player load does not publish authoritative stats: {token}")
     print(run_result.stdout.strip())

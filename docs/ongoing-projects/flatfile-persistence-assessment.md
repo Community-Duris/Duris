@@ -1194,6 +1194,37 @@ sections below continue to describe the required end state.
   stat after-image, then return to a shared presentation-only row formatter. Do not make
   shop points durable separately from the selected player stat mutation.
 
+### Checkpoint 36 - command-authoritative player base stats
+
+- **Completed:** upgraded the player-domain sidecar to schema v3 with a base-stat
+  revision and the ten canonical STR/DEX/AGI/CON/POW/INT/WIS/CHA/KARMA/LUCK values.
+  Validation rejects values outside 0..100 and rejects nonzero stat data without an
+  authority revision. The file revision now includes the stat revision alongside wallet,
+  epic, and frag revisions.
+- **Completed:** first player-domain establishment derives all ten values from the
+  identity-verified full player snapshot and establishes stat revision 1. On load, the
+  sidecar overrides checkpoint base stats only when that revision is present, following
+  the same stale-snapshot protection already used for wallet/epic/frag state. MariaDB
+  loads and legacy sidecars leave the snapshot values authoritative.
+- **Completed:** v1/v2 player-domain files remain readable with stat revision zero, and
+  pending v2 transaction envelopes remain recoverable after the v3 upgrade. New writes
+  publish v3. This avoids manufacturing zero stats during upgrade and creates a safe
+  command-authority target independent of ordinary checkpoint-save locking.
+- **Checks passed:** the player-domain harness covers v3 stat round-trip and a real
+  v3-to-v2 compatibility fixture; the full player repository harness proves initial
+  snapshot derivation and load projection. Player-load/read contracts, affected
+  auction/item/boon standalone repositories, the normal strict build, isolated
+  client-free build/boot preflight, formatting, and diff checks pass.
+- **Files changed:** the player load DTO, flat player-domain codec, initial-domain
+  derivation, load materializer, focused player/domain harnesses and source contracts,
+  and this handoff ledger.
+- **Remaining shop gap:** no command mutates the new stat authority yet. Boon shop balance
+  and base-stat updates must be prepared under one authority lock, committed as one
+  generic transaction, and replayed by operation ID before the live character is changed.
+- **Next action:** add a bounded boon-shop command/result codec and player-domain stat
+  after-image preparation API; combine it with the boon catalog after-image in one
+  recoverable transaction, then route `boon shop stat` through the coordinator.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

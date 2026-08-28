@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <openssl/sha.h>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -21,6 +22,48 @@ static void require(bool condition, const std::string &message)
 	}
 }
 
+static uint32_t read_u32(const std::vector<uint8_t> &bytes, size_t *offset)
+{
+	require(*offset + 4 <= bytes.size(), "legacy player-domain conversion overflowed");
+	uint32_t value = 0;
+	for (size_t byte = 0; byte < 4; ++byte)
+		value |= static_cast<uint32_t>(bytes[(*offset)++]) << (byte * 8);
+	return value;
+}
+
+static void write_u32(std::vector<uint8_t> *bytes, size_t offset, uint32_t value)
+{
+	for (size_t byte = 0; byte < 4; ++byte)
+		(*bytes)[offset + byte] = static_cast<uint8_t>(value >> (byte * 8));
+}
+
+static void convert_player_domain_to_v2(const fs::path &path)
+{
+	std::ifstream input(path, std::ios::binary);
+	std::vector<uint8_t> file((std::istreambuf_iterator<char>(input)),
+				  std::istreambuf_iterator<char>());
+	require(file.size() >= 56, "player domain was too short for legacy conversion");
+	std::vector<uint8_t> payload(file.begin() + 56, file.end());
+	size_t offset = 4;
+	const uint32_t account_size = read_u32(payload, &offset);
+	offset += account_size + 1 + 24 + 32 + 24;
+	const uint32_t death_count = read_u32(payload, &offset);
+	offset += static_cast<size_t>(death_count) * 8;
+	const uint32_t zone_count = read_u32(payload, &offset);
+	offset += static_cast<size_t>(zone_count) * 4;
+	require(offset + 28 <= payload.size(), "player stat authority was not in v3 payload");
+	payload.erase(payload.begin() + offset, payload.begin() + offset + 28);
+	write_u32(&file, 8, 2);
+	write_u32(&file, 12, payload.size());
+	file.resize(56);
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(payload.data(), payload.size(), digest.data());
+	std::copy(digest.begin(), digest.end(), file.begin() + 24);
+	file.insert(file.end(), payload.begin(), payload.end());
+	std::ofstream output(path, std::ios::binary | std::ios::trunc);
+	output.write(reinterpret_cast<const char *>(file.data()), file.size());
+}
+
 static flatfile_player_domain_record baseline(int32_t pid)
 {
 	flatfile_player_domain_record record;
@@ -32,6 +75,8 @@ static flatfile_player_domain_record baseline(int32_t pid)
 	record.domains.epics = 9;
 	record.domains.frags = 10;
 	record.domains.old_frags = 11;
+	record.domains.base_stat_revision = 1;
+	record.domains.base_stats = { 50, 51, 52, 53, 54, 55, 56, 57, 58, 59 };
 	record.recent_pvp_deaths = { 3000, 2000, 1000 };
 	record.completed_epic_zones = { 7, 12, 99 };
 	return record;
@@ -142,7 +187,8 @@ int main(int argc, char **argv)
 			loaded.domains.wallet == source.domains.wallet &&
 			loaded.domains.bank == source.domains.bank &&
 			loaded.domains.bank_revision == 1 && loaded.domains.epics == 9 &&
-			loaded.domains.frags == 10 &&
+			loaded.domains.frags == 10 && loaded.domains.base_stat_revision == 1 &&
+			loaded.domains.base_stats == source.domains.base_stats &&
 			loaded.recent_pvp_deaths == source.recent_pvp_deaths &&
 			loaded.completed_epic_zones == source.completed_epic_zones,
 		"domain baseline did not round trip: " + error);
@@ -312,6 +358,13 @@ int main(int argc, char **argv)
 			flatfile_player_domain_apply(root.string(), stale_combat).error_code ==
 				ESTALE,
 		"stale combat decision was not durably replayed");
+
+	convert_player_domain_to_v2(domains / "player-45.domain");
+	require(flatfile_player_domain_load(root.string(), 45, "account-one", 1, &loaded, &error) ==
+				flatfile_player_domain_result::ok &&
+			loaded.domains.base_stat_revision == 0 &&
+			loaded.domains.base_stats == std::array<int16_t, 10>{},
+		"legacy v2 player domain did not remain readable and snapshot-owned");
 
 	const fs::path player = domains / "player-42.domain";
 	{

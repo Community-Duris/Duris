@@ -20,7 +20,7 @@
 
 namespace
 {
-constexpr uint32_t domain_format_version = 2;
+constexpr uint32_t domain_format_version = 3;
 constexpr std::array<uint8_t, 8> player_magic = { 'D', 'U', 'R', 'P', 'D', 'O', 'M', 0 };
 constexpr std::array<uint8_t, 8> bank_magic = { 'D', 'U', 'R', 'B', 'A', 'N', 'K', 0 };
 constexpr std::array<uint8_t, 8> transaction_magic = { 'D', 'U', 'R', 'T', 'X', 'N', 0, 0 };
@@ -226,6 +226,12 @@ bool valid_gameplay(const flatfile_player_domain_record &record)
 		    (index &&
 		     record.completed_epic_zones[index - 1] >= record.completed_epic_zones[index]))
 			return false;
+	if (!record.domains.base_stat_revision &&
+	    record.domains.base_stats != std::array<int16_t, 10>{})
+		return false;
+	for (int16_t stat : record.domains.base_stats)
+		if (stat < 0 || stat > 100)
+			return false;
 	return true;
 }
 
@@ -357,7 +363,7 @@ flatfile_player_domain_result decode_transaction(const std::vector<uint8_t> &byt
 	uint16_t player_count = 0, bank_count = 0;
 	if (decode_envelope(bytes, transaction_magic, &payload, &revision, &format_version) !=
 		    flatfile_player_domain_result::ok ||
-	    format_version != domain_format_version || revision != 1 ||
+	    format_version < 2 || format_version > domain_format_version || revision != 1 ||
 	    !payload.number(&player_count) || !payload.number(&bank_count) || !player_count ||
 	    static_cast<size_t>(player_count) + bank_count > transaction_maximum_records)
 		return flatfile_player_domain_result::invalid;
@@ -451,7 +457,7 @@ flatfile_player_domain_result decode_legacy_transaction(const std::vector<uint8_
 	transaction_bank bank;
 	if (decode_envelope(bytes, transaction_magic, &payload, &revision, &format_version) !=
 		    flatfile_player_domain_result::ok ||
-	    format_version != domain_format_version || revision != 1 ||
+	    format_version < 2 || format_version > domain_format_version || revision != 1 ||
 	    !payload.number(&player.pid) || !payload.string(&bank.account_name) ||
 	    !payload.number(&bank.racewar) || !payload.number(&player_size) ||
 	    !payload.number(&bank_size) || player.pid <= 0 || !player_size || !bank_size ||
@@ -645,6 +651,14 @@ flatfile_player_domain_result load_player_authority(const std::string &root, int
 	for (int32_t &zone : decoded.record.completed_epic_zones)
 		if (!payload.number(&zone))
 			return flatfile_player_domain_result::invalid;
+	if (format_version >= 3)
+	{
+		if (!payload.number(&decoded.record.domains.base_stat_revision))
+			return flatfile_player_domain_result::invalid;
+		for (int16_t &stat : decoded.record.domains.base_stats)
+			if (!payload.number(&stat))
+				return flatfile_player_domain_result::invalid;
+	}
 	if (format_version >= 2)
 	{
 		if (!payload.number(&operation_count) ||
@@ -676,7 +690,8 @@ flatfile_player_domain_result load_player_authority(const std::string &root, int
 	    decoded.record.account_name != canonical || !valid_gameplay(decoded.record) ||
 	    file_revision != std::max({ decoded.record.domains.wallet_revision,
 					decoded.record.domains.epic_revision,
-					decoded.record.domains.frag_revision, UINT64_C(1) }))
+					decoded.record.domains.frag_revision,
+					decoded.record.domains.base_stat_revision, UINT64_C(1) }))
 		return flatfile_player_domain_result::invalid;
 	for (size_t index = 0; index < decoded.operations.size(); ++index)
 		for (size_t other = index + 1; other < decoded.operations.size(); ++other)
@@ -718,6 +733,9 @@ bool encode_player_authority(const player_authority &authority, std::vector<uint
 	payload.number<uint32_t>(record.completed_epic_zones.size());
 	for (int32_t zone : record.completed_epic_zones)
 		payload.number(zone);
+	payload.number(record.domains.base_stat_revision);
+	for (int16_t stat : record.domains.base_stats)
+		payload.number(stat);
 	payload.number<uint32_t>(authority.operations.size());
 	for (const domain_operation &operation : authority.operations)
 	{
@@ -728,9 +746,9 @@ bool encode_player_authority(const player_authority &authority, std::vector<uint
 		payload.number(operation.result_size);
 		payload.raw(operation.result.data(), operation.result_size);
 	}
-	const uint64_t revision =
-		std::max({ record.domains.wallet_revision, record.domains.epic_revision,
-			   record.domains.frag_revision, UINT64_C(1) });
+	const uint64_t revision = std::max(
+		{ record.domains.wallet_revision, record.domains.epic_revision,
+		  record.domains.frag_revision, record.domains.base_stat_revision, UINT64_C(1) });
 	return payload.valid && encode_file(player_magic, payload.bytes, revision, bytes);
 }
 
@@ -761,7 +779,7 @@ flatfile_player_domain_result establish(const std::string &root,
 	if (root.empty() || record.pid <= 0 || !canonical_account(record.account_name, &account) ||
 	    record.domains.wallet_revision || record.domains.epic_revision ||
 	    record.domains.frag_revision || record.domains.bank_revision ||
-	    !valid_gameplay(record) ||
+	    record.domains.base_stat_revision > 1 || !valid_gameplay(record) ||
 	    (!require_bank_match && record.domains.bank != std::array<uint64_t, 4>{}))
 		return flatfile_player_domain_result::invalid;
 	std::lock_guard<std::mutex> guard(domain_mutex);
@@ -780,6 +798,8 @@ flatfile_player_domain_result establish(const std::string &root,
 		    existing.domains.epics != record.domains.epics ||
 		    existing.domains.frags != record.domains.frags ||
 		    existing.domains.old_frags != record.domains.old_frags ||
+		    existing.domains.base_stat_revision != record.domains.base_stat_revision ||
+		    existing.domains.base_stats != record.domains.base_stats ||
 		    existing.recent_pvp_deaths != record.recent_pvp_deaths ||
 		    existing.completed_epic_zones != record.completed_epic_zones)
 			return flatfile_player_domain_result::conflict;

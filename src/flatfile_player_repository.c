@@ -541,6 +541,22 @@ flatfile_player_domain_result establish_domain_baseline(const std::string &root,
 	    !snapshot_signed(snapshot, player_status_field::frags, &record.domains.frags) ||
 	    !snapshot_signed(snapshot, player_status_field::old_frags, &record.domains.old_frags))
 		return flatfile_player_domain_result::invalid;
+	static constexpr std::array<player_status_field, 10> base_stat_fields = {
+		player_status_field::base_strength, player_status_field::base_dexterity,
+		player_status_field::base_agility,  player_status_field::base_constitution,
+		player_status_field::base_power,    player_status_field::base_intelligence,
+		player_status_field::base_wisdom,   player_status_field::base_charisma,
+		player_status_field::base_karma,    player_status_field::base_luck,
+	};
+	for (size_t index = 0; index < base_stat_fields.size(); ++index)
+	{
+		int64_t stat = 0;
+		if (!snapshot_signed(snapshot, base_stat_fields[index], &stat) || stat < 0 ||
+		    stat > 100)
+			return flatfile_player_domain_result::invalid;
+		record.domains.base_stats[index] = static_cast<int16_t>(stat);
+	}
+	record.domains.base_stat_revision = 1;
 	record.racewar = static_cast<int8_t>(racewar);
 	return flatfile_player_domain_establish_initial_player(root, record, error);
 }

@@ -111,8 +111,10 @@ struct player_load_domain_state
 	uint64_t epic_revision = 0;
 	uint64_t frag_revision = 0;
 	uint64_t bank_revision = 0;
+	uint64_t base_stat_revision = 0;
 	std::array<uint64_t, 4> wallet = {};
 	std::array<uint64_t, 4> bank = {};
+	std::array<int16_t, 10> base_stats = {};
 	int64_t epics = 0;
 	int64_t frags = 0;
 	int64_t old_frags = 0;
