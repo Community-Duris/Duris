@@ -161,6 +161,13 @@ for forbidden_route in (
 ):
     assert forbidden_route not in CAPTURE
 assert "P_char ch" in CAPTURE_HEADER
+assert "player_item_snapshot_list_capture" in CAPTURE_HEADER
+assert "bool omit_norent" in CAPTURE_HEADER
+assert "capture_items(owner, items, budget, equipment, inventory, omit_norent)" in CAPTURE
+assert "*items_out = std::move(items);" in CAPTURE
+assert CAPTURE.index("capture_items(owner, items, budget, equipment, inventory, omit_norent)") < CAPTURE.index(
+    "*items_out = std::move(items);"
+)
 assert "P_char" not in DTO
 print("[PASS] adapter accepts live state only at capture and performs no I/O or queue cutover")
 

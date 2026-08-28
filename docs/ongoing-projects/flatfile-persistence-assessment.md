@@ -2011,6 +2011,26 @@ sections below continue to describe the required end state.
 - **Next action:** expose a bounded shared capture adapter using the corrected slot contract,
   then build prototype-aware materialization and UID reconciliation.
 
+### Checkpoint 60 - reusable bounded live item capture adapter
+
+- **Completed:** exposed `player_item_snapshot_list_capture` as the shared live-object to
+  value-DTO adapter. Callers select equipment and/or inventory traversal and explicitly
+  choose whether `ITEM_NORENT` subtrees are omitted; successful capture returns the complete
+  item list and optional conservative byte estimate.
+- **Safety semantics:** the adapter reuses the existing player snapshot traversal, depth,
+  object/row/byte/string limits, cycle detection, prototype validation, string-mask rules,
+  fixed/dynamic affect capture, spellbook/extra-description conversion, parent topology,
+  and one-based equipment-slot contract. It mutates no live object and assigns the caller's
+  output only after the entire graph succeeds.
+- **Compatibility:** player inventory/equipment and pet capture retain their prior
+  `ITEM_NORENT` omission behavior by passing the policy explicitly. Shopkeeper capture can
+  preserve the legacy SQL behavior by requesting all items without cloning traversal code.
+- **Checks passed:** the expanded immutable-capture source/DTO contract, changed-line
+  formatting, normal server build, and isolated client-free build/boot preflight pass.
+- **Next action:** implement the shopkeeper capture adapter around this API, including
+  saveable NPC affects and catalog revision handling, then add prototype-aware load
+  materialization and UID ownership reconciliation.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
