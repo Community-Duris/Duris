@@ -69,6 +69,8 @@ test character into a valid room without regenerating or loading the full world.
 - Minimal mode now also disables random-zone creation and skips full-world state
   restoration (ships, arena, wagons, corpses, saved ground items, shopkeepers,
   associations, justice, and artifacts) plus zone-database publication.
+- Documented `cycle_mud.sh --minimal` and `start_mud.sh --minimal` in the main
+  README, including development-port and persistence behavior.
 
 ## Progress log
 
@@ -78,8 +80,8 @@ test character into a valid room without regenerating or loading the full world.
 - [x] Expose a safe `--minimal` option through the maintained startup scripts.
 - [x] Add focused regression coverage.
 - [x] Build and run formatting checks.
-- [ ] Verify boot, client connection, and configured-character entry end to end.
-- [ ] Document operator usage and final validation evidence.
+- [x] Verify boot, client connection, and configured-character entry end to end.
+- [x] Document operator usage and final validation evidence.
 
 ## Validation evidence
 
@@ -95,4 +97,16 @@ test character into a valid room without regenerating or loading the full world.
   snapshot/item load, entry into room 1200, and `look` — passed.
 - Client disconnect produced no new terminal-save failure or deferred retry, and
   `SIGINT` then shut the server down normally with exit status 0.
-- Maintained `scripts/cycle_mud.sh --minimal` startup path remains to be verified.
+- `scripts/cycle_mud.sh --minimal` — passed on port 4000. It explicitly reported
+  the `areas_mini` dataset and skipped full-world generation.
+- The maintained-path Telnet test authenticated, selected the configured character,
+  entered room 1200, and completed `look`; disconnect and supervisor shutdown were
+  clean, and the supervisor recorded exit status 0.
+- SHA-256 hashes for all six generated `areas/world.{mob,obj,qst,shp,wld,zon}` files
+  were identical before and after the maintained startup test.
+- Strong isolation check: all six generated full-world files were temporarily moved
+  aside and `bin/server/dms --minimal 4090` still reached the game loop without a
+  missing-file or fatal boot error. The files were restored after the check.
+- `scripts/start_mud.sh --minimal` — passed on port 4000. A Telnet client reached
+  the account prompt, and `SIGINT` produced a normal supervised shutdown with exit
+  status 0.
