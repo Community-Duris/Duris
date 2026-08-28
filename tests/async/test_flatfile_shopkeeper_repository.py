@@ -15,6 +15,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-shopkeeper-") as temporary:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
             "tests/async/flatfile_shopkeeper_repository_harness.cpp",
             "src/flatfile_shopkeeper_repository.c", "src/player_snapshot_codec.c",
+            "src/shop_trade_command.c", "src/item_transfer_command.c",
+            "src/currency_command.c", "src/critical_command.c",
             "src/flatfile_authority_transaction.c", "src/flatfile_store.c",
             "-lcrypto", "-pthread", "-o", str(binary),
         ],

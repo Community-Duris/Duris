@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <cstring>
 #include <limits>
 #include <new>
@@ -346,6 +347,136 @@ bool catalog_equal(shopkeeper_catalog left, shopkeeper_catalog right)
 	return encode_catalog(left, &left_bytes) && encode_catalog(right, &right_bytes) &&
 	       left_bytes == right_bytes;
 }
+
+bool trade_items_match_payload(const shop_trade_payload &payload,
+			       const std::vector<player_item_snapshot> &items)
+{
+	if (items.size() != payload.item_count)
+		return false;
+	size_t root_count = 0;
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		const auto &item = items[index];
+		if (!item.object_uid || item.vnum <= 0 || item.equipment_slot != 0)
+			return false;
+		uint64_t parent_uid = 0;
+		if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+		{
+			++root_count;
+			if (item.object_uid != payload.selected_item_uid)
+				return false;
+		}
+		else if (item.parent_index < 0 || item.parent_index >= static_cast<int32_t>(index))
+			return false;
+		else
+			parent_uid = items[item.parent_index].object_uid;
+		auto expected = std::lower_bound(
+			payload.items.begin(), payload.items.begin() + payload.item_count,
+			item.object_uid, [](const shop_trade_item_entry &candidate, uint64_t uid)
+			{ return candidate.item_uid < uid; });
+		if (expected == payload.items.begin() + payload.item_count ||
+		    expected->item_uid != item.object_uid ||
+		    expected->root_item_uid != payload.selected_item_uid ||
+		    expected->parent_item_uid != parent_uid || expected->vnum != item.vnum)
+			return false;
+	}
+	return root_count == 1;
+}
+
+bool select_subtree(const std::vector<player_item_snapshot> &items, uint64_t root_uid,
+		    std::vector<player_item_snapshot> *selected, std::vector<bool> *selected_rows)
+{
+	if (!selected || !selected_rows)
+		return false;
+	auto root = std::find_if(items.begin(), items.end(),
+				 [&](const auto &item) { return item.object_uid == root_uid; });
+	if (root == items.end() || root->parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+		return false;
+	try
+	{
+		selected->clear();
+		selected_rows->assign(items.size(), false);
+		std::vector<int32_t> remap(items.size(), PLAYER_SNAPSHOT_NO_PARENT);
+		for (size_t index = 0; index < items.size(); ++index)
+		{
+			const bool include = items[index].object_uid == root_uid ||
+					     (items[index].parent_index >= 0 &&
+					      (*selected_rows)[items[index].parent_index]);
+			if (!include)
+				continue;
+			player_item_snapshot copy = items[index];
+			copy.parent_index = items[index].object_uid == root_uid ?
+						    PLAYER_SNAPSHOT_NO_PARENT :
+						    remap[items[index].parent_index];
+			if (copy.parent_index < PLAYER_SNAPSHOT_NO_PARENT)
+				return false;
+			remap[index] = static_cast<int32_t>(selected->size());
+			(*selected_rows)[index] = true;
+			selected->push_back(std::move(copy));
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return !selected->empty();
+}
+
+bool remove_rows(std::vector<player_item_snapshot> *items, const std::vector<bool> &removed)
+{
+	if (!items || removed.size() != items->size())
+		return false;
+	try
+	{
+		std::vector<player_item_snapshot> kept;
+		std::vector<int32_t> remap(items->size(), PLAYER_SNAPSHOT_NO_PARENT);
+		kept.reserve(items->size());
+		for (size_t index = 0; index < items->size(); ++index)
+		{
+			if (removed[index])
+				continue;
+			player_item_snapshot copy = (*items)[index];
+			if (copy.parent_index >= 0)
+			{
+				if (removed[copy.parent_index] ||
+				    remap[copy.parent_index] == PLAYER_SNAPSHOT_NO_PARENT)
+					return false;
+				copy.parent_index = remap[copy.parent_index];
+			}
+			remap[index] = static_cast<int32_t>(kept.size());
+			kept.push_back(std::move(copy));
+		}
+		*items = std::move(kept);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool append_trade_items(std::vector<player_item_snapshot> *items,
+			const std::vector<player_item_snapshot> &added)
+{
+	if (!items || items->size() > PLAYER_SNAPSHOT_MAX_OBJECTS - added.size())
+		return false;
+	const int32_t offset = static_cast<int32_t>(items->size());
+	try
+	{
+		items->reserve(items->size() + added.size());
+		for (auto item : added)
+		{
+			if (item.parent_index >= 0)
+				item.parent_index += offset;
+			items->push_back(std::move(item));
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
 } // namespace
 
 flatfile_shopkeeper_result
@@ -454,6 +585,135 @@ flatfile_shopkeeper_result flatfile_shopkeeper_replace(const std::string &root,
 	if (!encode_catalog(catalog, &encoded))
 		return flatfile_shopkeeper_result::invalid;
 	if (!flatfile_atomic_write(domains_directory(root), catalog_filename, encoded, error))
+		return flatfile_shopkeeper_result::io_error;
+	return flatfile_shopkeeper_result::ok;
+}
+
+flatfile_shopkeeper_result
+flatfile_shopkeeper_prepare_trade(const std::string &root, const flatfile_authority_lock &lock,
+				  const shop_trade_payload &payload,
+				  flatfile_shopkeeper_trade_mutation *mutation,
+				  unsigned int *result_code, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !mutation || !result_code)
+		return flatfile_shopkeeper_result::invalid;
+	*mutation = {};
+	*result_code = 0;
+	std::vector<uint8_t> validated_payload;
+	if (!shop_trade_command_encode_payload(payload, &validated_payload))
+		return flatfile_shopkeeper_result::invalid;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_shopkeeper_result::ok)
+		return recovered;
+	std::vector<player_item_snapshot> trade_items;
+	const auto decoded = player_item_snapshot_list_decode(payload.item_blob.data(),
+							      payload.item_blob_size, &trade_items);
+	if (decoded == player_snapshot_codec_result::allocation_failure)
+		return flatfile_shopkeeper_result::io_error;
+	if (decoded != player_snapshot_codec_result::ok ||
+	    !trade_items_match_payload(payload, trade_items))
+	{
+		*result_code = EINVAL;
+		return flatfile_shopkeeper_result::ok;
+	}
+	if (payload.action == shop_trade_action::sell_store &&
+	    std::any_of(trade_items.begin(), trade_items.end(),
+			[](const auto &item) { return !item.dynamic_affects.empty(); }))
+	{
+		*result_code = EOPNOTSUPP;
+		return flatfile_shopkeeper_result::ok;
+	}
+	std::vector<uint8_t> canonical_blob;
+	const auto encoded = player_item_snapshot_list_encode(trade_items, &canonical_blob);
+	if (encoded == player_snapshot_codec_result::allocation_failure)
+		return flatfile_shopkeeper_result::io_error;
+	if (encoded != player_snapshot_codec_result::ok ||
+	    canonical_blob.size() != payload.item_blob_size ||
+	    !std::equal(canonical_blob.begin(), canonical_blob.end(), payload.item_blob.begin()))
+	{
+		*result_code = EINVAL;
+		return flatfile_shopkeeper_result::ok;
+	}
+	shopkeeper_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_shopkeeper_result::ok)
+		return loaded;
+	auto record =
+		std::lower_bound(catalog.records.begin(), catalog.records.end(), payload.shop_id,
+				 [](const flatfile_shopkeeper_record &candidate, uint32_t shop_id)
+				 { return candidate.shop_id < shop_id; });
+	if (record == catalog.records.end() || record->shop_id != payload.shop_id)
+	{
+		*result_code = ENOENT;
+		return flatfile_shopkeeper_result::ok;
+	}
+	if (record->revision != payload.expected_shop_revision)
+	{
+		*result_code = ESTALE;
+		return flatfile_shopkeeper_result::ok;
+	}
+	if (record->revision == std::numeric_limits<uint64_t>::max() ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+	{
+		*result_code = ERANGE;
+		return flatfile_shopkeeper_result::ok;
+	}
+	if (payload.action == shop_trade_action::buy_existing)
+	{
+		std::vector<player_item_snapshot> stored_items;
+		std::vector<bool> selected_rows;
+		if (!select_subtree(record->items, payload.stock_item_uid, &stored_items,
+				    &selected_rows))
+		{
+			*result_code = ESTALE;
+			return flatfile_shopkeeper_result::ok;
+		}
+		std::vector<uint8_t> stored_blob;
+		if (player_item_snapshot_list_encode(stored_items, &stored_blob) !=
+		    player_snapshot_codec_result::ok)
+			return flatfile_shopkeeper_result::io_error;
+		if (stored_blob != canonical_blob)
+		{
+			*result_code = ESTALE;
+			return flatfile_shopkeeper_result::ok;
+		}
+		if (!remove_rows(&record->items, selected_rows))
+			return flatfile_shopkeeper_result::io_error;
+	}
+	else if (payload.action == shop_trade_action::buy_produced)
+	{
+		auto stock = std::find_if(record->items.begin(), record->items.end(),
+					  [&](const auto &item)
+					  { return item.object_uid == payload.stock_item_uid; });
+		if (stock == record->items.end() ||
+		    stock->parent_index != PLAYER_SNAPSHOT_NO_PARENT ||
+		    stock->equipment_slot != 0 || stock->vnum != payload.stock_vnum ||
+		    trade_items.front().vnum != payload.stock_vnum)
+		{
+			*result_code = ESTALE;
+			return flatfile_shopkeeper_result::ok;
+		}
+	}
+	else if (payload.action == shop_trade_action::sell_store)
+	{
+		if (!append_trade_items(&record->items, trade_items))
+			return flatfile_shopkeeper_result::io_error;
+	}
+	else if (payload.action != shop_trade_action::sell_destroy)
+	{
+		*result_code = EINVAL;
+		return flatfile_shopkeeper_result::ok;
+	}
+	++record->revision;
+	++catalog.revision;
+	if (!valid_catalog(catalog))
+	{
+		*result_code = EINVAL;
+		return flatfile_shopkeeper_result::ok;
+	}
+	mutation->shop_revision = record->revision;
+	mutation->after_image.filename = catalog_filename;
+	if (!encode_catalog(catalog, &mutation->after_image.bytes))
 		return flatfile_shopkeeper_result::io_error;
 	return flatfile_shopkeeper_result::ok;
 }

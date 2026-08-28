@@ -2249,6 +2249,35 @@ sections below continue to describe the required end state.
   blob/topology validation and produced-exemplar comparison, then compose it with wallet and
   custody after-images.
 
+### Checkpoint 70 - lock-scoped shop aggregate trade preparation
+
+- **Completed:** the shopkeeper repository can now prepare, but not independently publish, a
+  trade after-image while the caller holds the whole-authority lock. It recovers pending
+  authority transactions first, validates the command envelope and canonical item snapshot
+  blob, checks the exact shop record revision, advances the record/catalog revisions once, and
+  returns the encoded catalog for a later multi-authority commit.
+- **Inventory transitions:** existing purchases require the stored subtree to byte-match the
+  submitted canonical snapshot before removing and reindexing exactly that subtree. Produced
+  purchases require a top-level, unequipped exemplar with the fenced UID and vnum and leave it
+  in place. Stored sales append and reindex the transferred graph; duplicate/trash sales advance
+  the shop revision without adding inventory.
+- **Fail-closed state:** snapshot UID/vnum/root/parent topology must match the sorted custody
+  entries exactly, roots must be unequipped, stale/missing aggregates return explicit result
+  codes, and whole-catalog UID/equipment invariants are revalidated before encoding. Stored
+  sales with dynamic object affects remain rejected because complete shopkeeper materialization
+  cannot yet restore their remaining duration safely.
+- **Checks passed:** the strict repository harness prepares and commits each of the four action
+  classes through the authority transaction layer, verifies produced exemplars remain, exact
+  purchased stock disappears, stored sales appear, destroyed sales do not, stale revisions
+  yield no after-image, and dynamic-affect sales fail closed. The command codec regression,
+  changed-line formatting, and the normal C++20 server build pass.
+- **Exposure:** this API never writes by itself and shop commands still cannot reach it. Item
+  custody and wallet after-images, operation idempotency, and one aggregate commit remain
+  prerequisites for routing the command.
+- **Next action:** generalize the flat item repository's locked transfer preparation for all
+  four shop actions, including produced creation and destruction, then compose it with the shop
+  and wallet preparations in an idempotent shop-trade repository.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
