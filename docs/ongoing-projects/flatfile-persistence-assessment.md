@@ -273,12 +273,53 @@ sections below continue to describe the required end state.
   and revision, reuse the existing capture/codec coverage where safe, and route the flat
   player load/save boundary to it.
 
+### Checkpoint 10 - crash-safe player snapshot materialization
+
+- **Completed:** added a versioned `DURPLYR` player repository under `players/`, reusing
+  the existing host-layout-independent snapshot codec rather than defining a competing
+  character model. Each PID file has redundant PID/revision/component metadata, a
+  SHA-256 payload checksum, strict size and ownership validation, a per-PID process lock,
+  and the established write/sync/rename/directory-sync publication sequence.
+- **Completed:** full snapshots establish a baseline; later component snapshots merge
+  into the last complete materialization without discarding untouched fields. Apply is
+  revision-idempotent, reports already-applied and stale revisions, rejects partial
+  creation, and turns an ambiguous post-rename retry into an exact revision read. The
+  stored materialization always declares the complete component mask.
+- **Completed:** equipment and inventory are normalized into one flat-backend checkpoint
+  unit. A one-sided item replacement is rejected because its parent indexes cannot be
+  safely spliced into the other half; the save pipeline expands either dirty bit to both
+  before capture.
+- **Completed:** the client-free save worker and journal replay now select the flat
+  materializer while the normal build continues to select the MariaDB repository. Thus
+  a complete flat baseline can accept, replay, merge, and acknowledge the existing
+  asynchronous snapshot stream without a database client.
+- **Completed:** added a strict repository regression and client-free CI step covering a
+  representative complete snapshot (status, replacement rows, skills, affects, nested
+  items, spellbook metadata, pet items, shapes, and trophies), partial merge retention,
+  missing-baseline rejection, duplicate/stale revisions, torn item rejection, two
+  forked writers, checksum corruption, and temporary-file cleanup.
+- **Checks passed:** `python3 tests/async/test_flatfile_player_repository.py`,
+  `python3 tests/async/test_player_save_pipeline.py`,
+  `python3 tests/async/test_player_save_journal.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `.github/workflows/quality.yml`, `src/Makefile`,
+  `src/flatfile_player_repository.[ch]`, `src/player_save_pipeline.c`,
+  `src/persistence_mode.c`, and the focused player repository, pipeline, and boot tests.
+- **Remaining P1 gap:** the synchronous first-save path does not yet create the complete
+  flat baseline, and the load pipeline does not yet source this materialization or build
+  its ownership/domain sidecars. Terminal saves therefore cannot claim flat authority
+  yet, and boot remains fail closed.
+- **Next action:** route synchronous full capture/apply for new characters, then adapt the
+  load pipeline to produce a bounded `player_load_result` from the materialized snapshot
+  with explicit handling for item identity and the still-external gameplay domains.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
 |---|---|---|
 | P0 - real DB-free boundary | Complete | Client-free binary links without system MySQL dependencies; isolated boot preflight and no-MySQL CI job exist |
-| P1 - identity and player continuity | In progress | Account auth, PID/name allocation, and single-authority membership exist; player snapshots and terminal flows remain |
+| P1 - identity and player continuity | In progress | Account/identity continuity and revisioned player materialization exist; baseline creation, load, and terminal flows remain |
 | P2 - transactional gameplay and domains | Not started | No flat operation WAL/domain repositories yet |
 | P3 - production operations | Not started | No exporter, whole-authority backup, or restore drill yet |
 

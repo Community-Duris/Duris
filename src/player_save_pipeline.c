@@ -3,6 +3,7 @@
 
 #include "prototypes.h"
 #include "files.h"
+#include "flatfile_player_repository.h"
 #include "player_save_journal.h"
 #include "player_save_worker.h"
 #include "player_snapshot_capture.h"
@@ -39,6 +40,15 @@ size_t retained_bytes = 0;
 bool stop_requested = false;
 bool accepting = false;
 bool append_inflight = false;
+
+player_save_apply_fn selected_snapshot_apply()
+{
+#ifdef __NO_MYSQL__
+	return flatfile_player_snapshot_apply_selected;
+#else
+	return player_snapshot_repository_apply_from_pool;
+#endif
+}
 
 struct terminal_fence
 {
@@ -126,8 +136,7 @@ void dispatcher_main()
 	const bool mysql_ready = true;
 #endif
 	if (mysql_ready)
-		replay = player_save_journal_replay(player_snapshot_repository_apply_from_pool,
-						    nullptr);
+		replay = player_save_journal_replay(selected_snapshot_apply(), nullptr);
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);
 		health.replay_complete = replay == player_save_journal_result::ok;
@@ -278,7 +287,7 @@ bool player_save_pipeline_init(const char *journal_directory)
 	}
 	if (!player_save_journal_init(journal_directory, PLAYER_SAVE_JOURNAL_MAX_BYTES))
 		return false;
-	if (!player_save_worker_init(player_snapshot_repository_apply_from_pool, nullptr))
+	if (!player_save_worker_init(selected_snapshot_apply(), nullptr))
 	{
 		player_save_journal_shutdown();
 		return false;
@@ -337,6 +346,10 @@ void player_save_pipeline_shutdown(void)
 
 bool player_save_pipeline_mark(int pid, player_component_mask_t components)
 {
+#ifdef __NO_MYSQL__
+	if (components & (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY))
+		components |= PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY;
+#endif
 	bool fenced = false;
 	{
 		std::lock_guard<std::mutex> lock(pipeline_mutex);

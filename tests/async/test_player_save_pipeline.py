@@ -90,7 +90,10 @@ dispatcher = section(PIPELINE, "void dispatcher_main()", "player_save_pipeline_r
 assert dispatcher.index("player_save_journal_append(snapshot)") < dispatcher.index(
     "durable_ready.push_back"
 )
-assert "player_save_journal_replay(player_snapshot_repository_apply_from_pool" in dispatcher
+assert "player_save_journal_replay(selected_snapshot_apply()" in dispatcher
+selector = section(PIPELINE, "player_save_apply_fn selected_snapshot_apply()", "struct terminal_fence")
+assert "flatfile_player_snapshot_apply_selected" in selector
+assert "player_snapshot_repository_apply_from_pool" in selector
 assert "sleep_for(std::chrono::milliseconds(100))" in dispatcher
 print("[PASS] bounded dispatcher journals before worker eligibility and retains append failures")
 

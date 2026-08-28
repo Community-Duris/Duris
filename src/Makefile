@@ -225,6 +225,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_account_adapter.o \
 				 flatfile_identity_repository.o \
 				 flatfile_identity_adapter.o \
+				 flatfile_player_repository.o \
 				 critical_command.o \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \
