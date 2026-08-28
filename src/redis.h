@@ -75,6 +75,7 @@ void redis_invalidate_epic_zones(void);
 // arti cache
 void redis_cache_artifact_list(int type, bool godlist, const char *json);
 char *redis_get_artifact_list(int type, bool godlist);
+void redis_invalidate_artifact_list(int type, bool godlist);
 void redis_invalidate_artifact_cache(void);
 
 // online players list for web

@@ -105,6 +105,7 @@ OBJS =  $(SHIP_OBJS) \
 				 affects.o \
 				 arena.o \
 				 artifact.o \
+				 artifact_cache_codec.o \
 				 assocs.o \
 				 auction_houses.o \
 				 bard.o \

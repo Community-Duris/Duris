@@ -3,10 +3,42 @@
 Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
-Status: Implementation in progress; RDS-006, RDS-012, and RDS-019 are remediated and the
-remaining findings are open.
+Status: Implementation in progress; RDS-006, RDS-012, RDS-014, and RDS-019 are remediated
+and the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-014 artifact cache safety
+
+Completed:
+
+- Added a versioned artifact-cache schema and a typed codec that validates view identity,
+  item count, every required field, integer ranges, booleans, and bounded strings before
+  rendering.
+- Invalidates one malformed cache variant and falls back to a freshly generated MySQL
+  result instead of reporting false emptiness or dereferencing malformed JSON.
+- Renders the owned MySQL result directly on a cache miss and makes cache publication best
+  effort, removing the prior second Redis read.
+- Distinguishes SQL/generation failure from a valid empty artifact list.
+- Added allocation checks to artifact JSON generation and a 900-second cache TTL.
+- Added a compiled cJSON harness covering valid mortal/staff payloads, mismatched schema
+  identity, missing fields, invalid types, invalid ranges, and malformed JSON.
+
+Performance effect:
+
+- Cache hits still require one bounded Redis read. Cache misses no longer re-read Redis after
+  publication; the SQL result already in memory is rendered directly.
+- The 900-second TTL creates an occasional SQL refresh in exchange for bounded stale-data
+  lifetime.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_artifact_cache_codec.py`: passed.
+- `python3 tests/async/test_artifact_guild_transactional_cutover.py`: passed.
+- `python3 tests/async/test_combat_artifact_persistence.py`: passed.
+- `python3 tests/async/test_redis_pwipe_invalidation.py`: passed.
+- `./scripts/format.sh --check`: passed.
 
 ### 2026-08-28 - RDS-019 floor-delta world-recovery gate
 
@@ -85,8 +117,8 @@ Validation:
 
 Remaining work:
 
-- All findings other than RDS-006, RDS-012, and RDS-019 remain open. The acceptance criteria
-  are not yet met.
+- All findings other than RDS-006, RDS-012, RDS-014, and RDS-019 remain open. The acceptance
+  criteria are not yet met.
 
 ## Executive summary
 
@@ -633,6 +665,8 @@ postflight both SQL and Redis.
 
 Severity: High
 Confidence: Confirmed
+Remediation status: Completed on branch; cache payloads are versioned and validated, and
+every miss/error/malformed payload falls back to the owned MySQL result.
 
 Evidence:
 

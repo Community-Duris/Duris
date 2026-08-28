@@ -2061,15 +2061,25 @@ static const char *get_artifact_cache_key(int type, bool godlist)
 void redis_cache_artifact_list(int type, bool godlist, const char *json)
 {
 #ifndef __NO_MYSQL__
+	constexpr int ARTIFACT_CACHE_TTL_SECONDS = 900;
 	if (!redis_enabled || type < 1 || type > 3 || !json)
 		return;
-	redis_cache_set(get_artifact_cache_key(type, godlist), json);
+	redis_cache_set_ex(get_artifact_cache_key(type, godlist), ARTIFACT_CACHE_TTL_SECONDS, json);
 #endif
 }
 
 char *redis_get_artifact_list(int type, bool godlist)
 {
 	return redis_cache_get(get_artifact_cache_key(type, godlist));
+}
+
+void redis_invalidate_artifact_list(int type, bool godlist)
+{
+#ifndef __NO_MYSQL__
+	if (!redis_enabled || !redis_ctx || type < 1 || type > 3)
+		return;
+	redis_cache_del(get_artifact_cache_key(type, godlist));
+#endif
 }
 
 void redis_invalidate_artifact_cache(void)
