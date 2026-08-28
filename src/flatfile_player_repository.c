@@ -2,6 +2,7 @@
 
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
+#include "flatfile_player_domain_repository.h"
 #include "flatfile_store.h"
 #include "persistence_observability.h"
 #include "persistence_mode.h"
@@ -125,6 +126,36 @@ const std::string *snapshot_player_name(const player_snapshot &snapshot)
 			name = &entry.value;
 		}
 	return name;
+}
+
+bool snapshot_unsigned(const player_snapshot &snapshot, player_status_field field, uint64_t *value)
+{
+	bool found = false;
+	for (const player_snapshot_integer &entry : snapshot.status_integers)
+		if (entry.field == field)
+		{
+			if (found || (!entry.is_unsigned && entry.signed_value < 0))
+				return false;
+			*value = entry.is_unsigned ? entry.unsigned_value :
+						     static_cast<uint64_t>(entry.signed_value);
+			found = true;
+		}
+	return found;
+}
+
+bool snapshot_signed(const player_snapshot &snapshot, player_status_field field, int64_t *value)
+{
+	bool found = false;
+	for (const player_snapshot_integer &entry : snapshot.status_integers)
+		if (entry.field == field)
+		{
+			if (found || (entry.is_unsigned && entry.unsigned_value > INT64_MAX))
+				return false;
+			*value = entry.is_unsigned ? static_cast<int64_t>(entry.unsigned_value) :
+						     entry.signed_value;
+			found = true;
+		}
+	return found;
 }
 
 player_load_result identity_failure(const player_load_request &request,
@@ -479,6 +510,40 @@ flatfile_item_baseline_result establish_item_baseline(const std::string &root,
 		  { return left.item_uid < right.item_uid; });
 	return flatfile_item_repository_establish_owner(root, owner, records, error);
 }
+
+flatfile_player_domain_result establish_domain_baseline(const std::string &root,
+							const player_snapshot &snapshot,
+							std::string *error)
+{
+	flatfile_identity_record identity;
+	const flatfile_identity_result identity_loaded =
+		flatfile_identity_lookup_pid(root, snapshot.pid, &identity, error);
+	if (identity_loaded != flatfile_identity_result::ok)
+		return identity_loaded == flatfile_identity_result::io_error ?
+			       flatfile_player_domain_result::io_error :
+		       identity_loaded == flatfile_identity_result::not_found ?
+			       flatfile_player_domain_result::not_found :
+			       flatfile_player_domain_result::invalid;
+	const std::string *name = snapshot_player_name(snapshot);
+	int64_t racewar = 0;
+	flatfile_player_domain_record record;
+	record.pid = snapshot.pid;
+	record.account_name = identity.account;
+	if (!identity.active || !name || !same_authority_key(*name, identity.name) ||
+	    !snapshot_signed(snapshot, player_status_field::racewar, &racewar) ||
+	    racewar < INT8_MIN || racewar > INT8_MAX || identity.racewar != racewar ||
+	    !snapshot_unsigned(snapshot, player_status_field::copper, &record.domains.wallet[0]) ||
+	    !snapshot_unsigned(snapshot, player_status_field::silver, &record.domains.wallet[1]) ||
+	    !snapshot_unsigned(snapshot, player_status_field::gold, &record.domains.wallet[2]) ||
+	    !snapshot_unsigned(snapshot, player_status_field::platinum,
+			       &record.domains.wallet[3]) ||
+	    !snapshot_signed(snapshot, player_status_field::epics, &record.domains.epics) ||
+	    !snapshot_signed(snapshot, player_status_field::frags, &record.domains.frags) ||
+	    !snapshot_signed(snapshot, player_status_field::old_frags, &record.domains.old_frags))
+		return flatfile_player_domain_result::invalid;
+	record.racewar = static_cast<int8_t>(racewar);
+	return flatfile_player_domain_establish_initial_player(root, record, error);
+}
 } // namespace
 
 flatfile_player_load_result flatfile_player_snapshot_load(const std::string &root, int32_t pid,
@@ -559,6 +624,34 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 	}
 	if (request.include_items && !reconcile_item_ownership(root, &result))
 		return result;
+	int64_t snapshot_racewar = 0;
+	if (!snapshot_signed(result.snapshot, player_status_field::racewar, &snapshot_racewar) ||
+	    snapshot_racewar != identity.racewar)
+	{
+		result.outcome = player_load_outcome::component_failure;
+		result.error_code = EILSEQ;
+		result.failed_component = "domain_identity";
+		return result;
+	}
+	flatfile_player_domain_record domains;
+	const flatfile_player_domain_result domains_loaded = flatfile_player_domain_load(
+		root, identity.pid, identity.account, identity.racewar, &domains, &error);
+	if (domains_loaded != flatfile_player_domain_result::ok)
+	{
+		result.outcome = domains_loaded == flatfile_player_domain_result::io_error ?
+					 player_load_outcome::retryable_failure :
+					 player_load_outcome::component_failure;
+		result.error_code =
+			domains_loaded == flatfile_player_domain_result::not_found ? ENOENT :
+			domains_loaded == flatfile_player_domain_result::io_error  ? EIO :
+										     EILSEQ;
+		result.failed_component = "domains";
+		return result;
+	}
+	result.domains = domains.domains;
+	result.recent_pvp_deaths = std::move(domains.recent_pvp_deaths);
+	result.completed_epic_zones = std::move(domains.completed_epic_zones);
+	result.read_components = PLAYER_LOAD_SESSION04_READS;
 	if (!request.include_pets)
 	{
 		result.snapshot.pets.clear();
@@ -580,7 +673,7 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 	result.metrics.transaction_usec = persistence_observability_now_usec() - started;
 	result.outcome = player_load_outcome::component_failure;
 	result.error_code = ENOTSUP;
-	result.failed_component = "external_domains";
+	result.failed_component = "trophies";
 	return result;
 }
 
@@ -632,6 +725,20 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 				 static_cast<unsigned int>(
 					 item_baseline == flatfile_item_baseline_result::conflict ?
 						 EEXIST :
+						 EINVAL) };
+		const flatfile_player_domain_result domain_baseline =
+			establish_domain_baseline(root, snapshot, error);
+		if (domain_baseline == flatfile_player_domain_result::io_error)
+			return { player_save_apply_outcome::retryable_failure, 0, EIO };
+		if (domain_baseline != flatfile_player_domain_result::ok)
+			return { player_save_apply_outcome::terminal_failure, 0,
+				 static_cast<unsigned int>(
+					 domain_baseline ==
+							 flatfile_player_domain_result::conflict ?
+						 EEXIST :
+					 domain_baseline ==
+							 flatfile_player_domain_result::not_found ?
+						 ENOENT :
 						 EINVAL) };
 		materialized = snapshot;
 	}

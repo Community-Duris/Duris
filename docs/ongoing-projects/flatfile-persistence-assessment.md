@@ -554,6 +554,42 @@ sections below continue to describe the required end state.
   snapshot, hydrate the bounded load result from them, then route wallet/bank/epic/frag
   critical commands through a durable idempotent operation ledger.
 
+### Checkpoint 18 - player-domain baseline and load integration
+
+- **Completed:** immutable status capture now includes the four carried currency values
+  and epic balance, completing all 63 status fields expected by the load materializer.
+  The first full flat snapshot extracts those values plus racewar/frags, verifies its
+  PID/name/account/racewar against the identity catalog, and establishes the player
+  domain record before publishing the snapshot.
+- **Completed:** first-save recovery now has three ordered, idempotent authorities:
+  item custody, player/account domain baseline, then the snapshot. A crash can leave
+  custody or domains ahead of the snapshot, but an exact retry completes publication;
+  conflicting, corrupt, or identity-mismatched state fails closed. New characters use
+  an existing shared account/racewar bank as-is, while a missing bank is initialized to
+  zero, so character creation cannot overwrite an account balance it did not capture.
+- **Completed:** flat loads now verify snapshot racewar against identity, load the
+  checksummed player and shared-bank records, and populate wallet/bank/epic/frag
+  balances and revisions plus both bounded gameplay-read collections. Missing,
+  corrupt, conflicting, and transient domain outcomes remain distinct failures.
+- **Safety boundary:** the result still returns `ENOTSUP`, now specifically at
+  `trophies`, because the load materializer does not apply the snapshot trophy rows.
+  Domain mutations also remain unsupported in the flat critical-command coordinator;
+  the boot blocker now names these narrower gaps instead of claiming the sidecars are
+  absent.
+- **Checks passed:** `python3 tests/async/test_flatfile_player_domain_repository.py`,
+  `python3 tests/async/test_flatfile_player_repository.py`,
+  `python3 tests/async/test_player_snapshot_capture.py`,
+  `python3 tests/async/test_epic_transaction_contract.py`,
+  `python3 tests/async/test_player_load_pipeline.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `./scripts/format.sh --check`, `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `src/flatfile_player_domain_repository.[ch]`,
+  `src/flatfile_player_repository.c`, `src/player_snapshot_capture.c`,
+  `src/persistence_mode.c`, and the focused domain, player, and boot regressions.
+- **Next action:** materialize trophy rows so the now-complete flat read DTO can pass
+  the login boundary, then implement wallet/bank/epic/frag command application and its
+  idempotent ledger before allowing flat-file-primary boot.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

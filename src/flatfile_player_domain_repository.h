@@ -29,6 +29,8 @@ enum class flatfile_player_domain_result
 flatfile_player_domain_result
 flatfile_player_domain_establish(const std::string &root,
 				 const flatfile_player_domain_record &record, std::string *error);
+flatfile_player_domain_result flatfile_player_domain_establish_initial_player(
+	const std::string &root, const flatfile_player_domain_record &record, std::string *error);
 flatfile_player_domain_result flatfile_player_domain_load(const std::string &root, int32_t pid,
 							  const std::string &account_name,
 							  int8_t racewar,

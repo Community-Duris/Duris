@@ -45,6 +45,14 @@ static player_snapshot make_full(player_revision_t revision)
 	snapshot.room_vnum = 1201;
 	snapshot.encoded_size_bound = 8192;
 	snapshot.status_integers.push_back({ player_status_field::level, 50, 0, false });
+	snapshot.status_integers.push_back({ player_status_field::racewar, 0, 0, false });
+	snapshot.status_integers.push_back({ player_status_field::copper, 11, 0, false });
+	snapshot.status_integers.push_back({ player_status_field::silver, 12, 0, false });
+	snapshot.status_integers.push_back({ player_status_field::gold, 13, 0, false });
+	snapshot.status_integers.push_back({ player_status_field::platinum, 14, 0, false });
+	snapshot.status_integers.push_back({ player_status_field::epics, 15, 0, false });
+	snapshot.status_integers.push_back({ player_status_field::frags, 16, 0, false });
+	snapshot.status_integers.push_back({ player_status_field::old_frags, 17, 0, false });
 	snapshot.status_strings.push_back({ player_status_string_field::name, "Player" });
 	snapshot.conditions = { 1, 2, 3, 4, 5 };
 	snapshot.quest_values[3] = 77;
@@ -170,10 +178,14 @@ int main(int argc, char **argv)
 			load_result.item_identities[1].parent_item_uid == 100 &&
 			load_result.pet_identities.size() == 1 &&
 			load_result.pet_identities[0].item_identities.size() == 1 &&
+			load_result.domains.wallet == std::array<uint64_t, 4>{ 11, 12, 13, 14 } &&
+			load_result.domains.bank_revision == 1 && load_result.domains.epics == 15 &&
+			load_result.domains.frags == 16 && load_result.domains.old_frags == 17 &&
+			load_result.read_components == PLAYER_LOAD_SESSION04_READS &&
 			load_result.outcome == player_load_outcome::component_failure &&
 			load_result.error_code == ENOTSUP &&
-			std::string(load_result.failed_component) == "external_domains",
-		"verified snapshot did not fail closed at missing external domains");
+			std::string(load_result.failed_component) == "trophies",
+		"verified snapshot/domain load did not stop at trophy materialization");
 	load_request.request_id = 2;
 	load_request.account_name = "wrong-account";
 	load_result = flatfile_player_load_repository_execute(root.string(), load_request);

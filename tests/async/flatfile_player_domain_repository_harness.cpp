@@ -75,6 +75,15 @@ int main(int argc, char **argv)
 	require(flatfile_player_domain_establish(root.string(), sibling, &error) ==
 			flatfile_player_domain_result::ok,
 		"second character could not share the account bank");
+	flatfile_player_domain_record creation = baseline(45);
+	creation.domains.bank = {};
+	require(flatfile_player_domain_establish_initial_player(root.string(), creation, &error) ==
+			flatfile_player_domain_result::ok,
+		"new character could not reuse an existing authoritative account bank");
+	require(flatfile_player_domain_load(root.string(), 45, "account-one", 1, &loaded, &error) ==
+				flatfile_player_domain_result::ok &&
+			loaded.domains.bank == sibling.domains.bank,
+		"new character did not load the existing authoritative account bank");
 	flatfile_player_domain_record conflict = baseline(44);
 	conflict.domains.bank[0] = 99;
 	require(flatfile_player_domain_establish(root.string(), conflict, &error) ==

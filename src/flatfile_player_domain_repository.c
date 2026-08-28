@@ -362,16 +362,17 @@ bool publish_player(const std::string &root, const flatfile_player_domain_record
 	       flatfile_atomic_write(domains_directory(root), player_filename(record.pid), bytes,
 				     error);
 }
-} // namespace
 
-flatfile_player_domain_result
-flatfile_player_domain_establish(const std::string &root,
-				 const flatfile_player_domain_record &record, std::string *error)
+flatfile_player_domain_result establish(const std::string &root,
+					const flatfile_player_domain_record &record,
+					bool require_bank_match, std::string *error)
 {
 	std::string account;
 	if (root.empty() || record.pid <= 0 || !canonical_account(record.account_name, &account) ||
 	    record.domains.wallet_revision || record.domains.epic_revision ||
-	    record.domains.frag_revision || record.domains.bank_revision || !valid_gameplay(record))
+	    record.domains.frag_revision || record.domains.bank_revision ||
+	    !valid_gameplay(record) ||
+	    (!require_bank_match && record.domains.bank != std::array<uint64_t, 4>{}))
 		return flatfile_player_domain_result::invalid;
 	std::lock_guard<std::mutex> guard(domain_mutex);
 	authority_lock authority;
@@ -394,7 +395,7 @@ flatfile_player_domain_establish(const std::string &root,
 		const auto bank_loaded = load_bank(root, account, record.racewar, &bank, error);
 		if (bank_loaded != flatfile_player_domain_result::ok)
 			return bank_loaded;
-		return bank.balances == record.domains.bank ?
+		return !require_bank_match || bank.balances == record.domains.bank ?
 			       flatfile_player_domain_result::ok :
 			       flatfile_player_domain_result::conflict;
 	}
@@ -410,13 +411,27 @@ flatfile_player_domain_establish(const std::string &root,
 	}
 	else if (bank_loaded != flatfile_player_domain_result::ok)
 		return bank_loaded;
-	else if (bank.balances != record.domains.bank)
+	else if (require_bank_match && bank.balances != record.domains.bank)
 		return flatfile_player_domain_result::conflict;
 	flatfile_player_domain_record canonical = record;
 	canonical.account_name = account;
 	if (!publish_player(root, canonical, error))
 		return flatfile_player_domain_result::io_error;
 	return flatfile_player_domain_result::ok;
+}
+} // namespace
+
+flatfile_player_domain_result
+flatfile_player_domain_establish(const std::string &root,
+				 const flatfile_player_domain_record &record, std::string *error)
+{
+	return establish(root, record, true, error);
+}
+
+flatfile_player_domain_result flatfile_player_domain_establish_initial_player(
+	const std::string &root, const flatfile_player_domain_record &record, std::string *error)
+{
+	return establish(root, record, false, error);
 }
 
 flatfile_player_domain_result flatfile_player_domain_load(const std::string &root, int32_t pid,
