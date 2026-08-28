@@ -7,43 +7,29 @@ import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
-with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as temporary:
+with tempfile.TemporaryDirectory(prefix="duris-flat-shop-trade-") as temporary:
     temporary_path = pathlib.Path(temporary)
-    binary = temporary_path / "flatfile_character_delete_test"
+    binary = temporary_path / "flatfile_shop_trade_test"
     sources = [
-        "tests/async/flatfile_character_delete_harness.cpp",
-        "src/flatfile_character_delete.c",
-        "src/flatfile_account_reward_summon_repository.c",
-        "src/flatfile_artifact_repository.c",
-        "src/flatfile_association_repository.c",
-        "src/flatfile_frag_leaderboard_repository.c",
-        "src/flatfile_player_repository.c",
-        "src/flatfile_identity_repository.c",
-        "src/flatfile_item_repository.c",
+        "tests/async/flatfile_shop_trade_repository_harness.cpp",
         "src/flatfile_shop_trade_repository.c",
         "src/flatfile_shopkeeper_repository.c",
-        "src/flatfile_locker_repository.c",
         "src/flatfile_auction_repository.c",
         "src/flatfile_boon_repository.c",
-        "src/flatfile_offline_message_repository.c",
+        "src/flatfile_item_repository.c",
         "src/flatfile_player_domain_repository.c",
-        "src/flatfile_recipe_repository.c",
-        "src/flatfile_spellbook_repository.c",
-        "src/flatfile_ship_repository.c",
-        "src/flatfile_world_item_repository.c",
         "src/flatfile_authority_transaction.c",
-        "src/player_snapshot_codec.c",
         "src/flatfile_store.c",
-        "src/item_transfer_command.c",
+        "src/player_snapshot_codec.c",
         "src/shop_trade_command.c",
-        "src/critical_command.c",
+        "src/item_transfer_command.c",
         "src/epic_command.c",
-        "src/currency_command.c",
         "src/auction_command.c",
+        "src/currency_command.c",
         "src/combat_outcome_command.c",
         "src/boon_reward_command.c",
         "src/boon_shop_command.c",
-        "src/persistence_observability.c",
+        "src/critical_command.c",
         "src/persistence_mode.c",
     ]
     compile_result = subprocess.run(
@@ -71,7 +57,6 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
     )
     if compile_result.returncode:
         raise SystemExit(compile_result.stdout)
-
     run_result = subprocess.run(
         [str(binary), str(temporary_path / "state")],
         cwd=ROOT,

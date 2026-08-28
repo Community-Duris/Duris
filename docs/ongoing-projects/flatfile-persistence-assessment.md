@@ -2305,6 +2305,34 @@ sections below continue to describe the required end state.
   paths under one authority lock, encode the unified result, and publish every after-image in one
   recoverable authority transaction.
 
+### Checkpoint 72 - atomic idempotent flat shop trades
+
+- **Completed:** added a dedicated checksummed, versioned shop-trade operation catalog keyed by
+  operation ID and the SHA-256 digest of the complete command. Exact retries return the stored
+  result, reuse of an operation ID for different bytes fails with `EEXIST`, and semantic
+  rejections are durably recorded without publishing any player, shop, or custody change.
+- **Atomic mutation:** the repository acquires one whole-authority lock, recovers any interrupted
+  transaction, preflights the expected wallet/bank identity and revisions, prepares item custody
+  and shop inventory, applies the signed price delta, and commits the operation result, shop
+  catalog, item ownership catalog, account bank, and player-domain after-images as one recoverable
+  transaction. The fixed completion result records all resulting money, shop, owner, and item
+  revisions.
+- **Crash and replay evidence:** the executable integration regression interrupts publication
+  after the operation-catalog image, proves the transaction intent remains, triggers recovery
+  through a player-domain load, and verifies the exact debit, stock removal, custody transfer,
+  revision advances, and idempotent result replay. It also proves digest conflict rejection and
+  durable stale-command rejection without a second mutation.
+- **Routing and checks:** the flat selected critical-command repository now routes `shop_trade`
+  commands to the composite repository. The new regression runs in CI with the shopkeeper
+  authority checks; affected item, auction, player, and character-delete link/regression harnesses,
+  changed-line formatting, and the normal C++20 server build pass.
+- **Exposure:** no live shop command submits or completes this command yet, and the MariaDB apply
+  path does not implement the composite command. The flat boot blocker therefore remains; this
+  repository is reachable only by an explicitly assembled critical command or test.
+- **Next action:** implement the runtime shop buy/sell submission and completion adapter without
+  mutating money or inventory ahead of the durable result, and add MariaDB command parity before
+  selecting that route in normal operation.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

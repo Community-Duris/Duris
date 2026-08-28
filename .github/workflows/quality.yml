@@ -56,6 +56,7 @@ jobs:
       - name: Verify flat-file shopkeeper authority
         run: |
           python3 tests/async/test_flatfile_shopkeeper_repository.py
+          python3 tests/async/test_flatfile_shop_trade_repository.py
           python3 tests/async/test_flatfile_shopkeeper_capture.py
           python3 tests/async/test_flatfile_shopkeeper_ownership.py
           python3 tests/async/test_flatfile_shopkeeper_materialize.py
