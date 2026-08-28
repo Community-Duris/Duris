@@ -119,6 +119,25 @@ int main(int argc, char **argv)
 	{
 		flatfile_authority_lock lock;
 		require(lock.acquire(corpse_root.string(), &error),
+			"could not acquire corpse artifact check authority");
+		item_transfer_payload loot = {};
+		loot.from_owner = { item_owner_type::corpse, item_corpse_owner_id(42, 20), 0 };
+		loot.to_owner = { item_owner_type::player, 77, 0 };
+		loot.reason = item_transfer_reason::corpse_loot;
+		loot.item_count = 1;
+		loot.items[0].vnum = 401;
+		require(flatfile_artifact_check_corpse_loot(corpse_root.string(), lock, loot,
+							    &error) == flatfile_artifact_result::ok,
+			"ordinary corpse loot did not pass artifact authority check");
+		loot.items[0].vnum = 400;
+		require(flatfile_artifact_check_corpse_loot(corpse_root.string(), lock, loot,
+							    &error) ==
+				flatfile_artifact_result::conflict,
+			"artifact-bearing corpse loot did not fail closed");
+	}
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(corpse_root.string(), &error),
 			"could not acquire corpse artifact authority");
 		flatfile_authority_operation operation;
 		require(flatfile_artifact_prepare_player_release(corpse_root.string(), lock, 42,

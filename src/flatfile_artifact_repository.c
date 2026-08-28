@@ -355,3 +355,29 @@ flatfile_artifact_result flatfile_artifact_prepare_player_release(
 	operation->bytes = std::move(bytes);
 	return flatfile_artifact_result::ok;
 }
+
+flatfile_artifact_result flatfile_artifact_check_corpse_loot(const std::string &root,
+							     const flatfile_authority_lock &lock,
+							     const item_transfer_payload &payload,
+							     std::string *error)
+{
+	if (root.empty() || !lock.matches(root) ||
+	    payload.from_owner.type != item_owner_type::corpse ||
+	    payload.to_owner.type != item_owner_type::player ||
+	    payload.reason != item_transfer_reason::corpse_loot)
+		return flatfile_artifact_result::invalid;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		flatfile_artifact_record key = {};
+		key.vnum = payload.items[index].vnum;
+		const auto record = std::lower_bound(catalog.records.begin(), catalog.records.end(),
+						     key, record_less);
+		if (record != catalog.records.end() && record->vnum == key.vnum)
+			return flatfile_artifact_result::conflict;
+	}
+	return flatfile_artifact_result::ok;
+}

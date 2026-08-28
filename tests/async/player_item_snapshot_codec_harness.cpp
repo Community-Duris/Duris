@@ -83,6 +83,24 @@ int main()
 	require(player_item_snapshot_list_decode(trailing.data(), trailing.size(), &decoded) ==
 			player_snapshot_codec_result::invalid_value,
 		"trailing item-list bytes were accepted");
+	auto forest = original;
+	auto other_root = original[0];
+	other_root.object_uid = 200;
+	other_root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	auto other_child = original[1];
+	other_child.object_uid = 201;
+	other_child.parent_index = 2;
+	forest.push_back(other_root);
+	forest.push_back(other_child);
+	std::vector<player_item_snapshot> selected, remaining;
+	require(player_item_snapshot_extract_subtree(forest, 100, &selected, &remaining) ==
+				player_snapshot_codec_result::ok &&
+			selected.size() == 2 && selected[0].object_uid == 100 &&
+			selected[1].parent_index == 0 && remaining.size() == 2 &&
+			remaining[0].object_uid == 200 &&
+			remaining[0].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+			remaining[1].parent_index == 0,
+		"subtree extraction did not normalize both resulting forests");
 	auto invalid_parent = original;
 	invalid_parent[1].parent_index = 1;
 	require(player_item_snapshot_list_encode(invalid_parent, &encoded) ==

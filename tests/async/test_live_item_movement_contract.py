@@ -112,6 +112,23 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertIn("SET root_item_uid=?", repository)
         self.assertIn("target_container", movement)
 
+    def test_flat_corpse_loot_is_composite_but_creation_remains_fenced(self):
+        repository = (SRC / "flatfile_item_repository.c").read_text()
+        world = (SRC / "flatfile_world_item_repository.c").read_text()
+        self.assertIn("flatfile_world_item_prepare_corpse_loot", world)
+        self.assertIn("corpse_loot_transfer(payload)", repository)
+        apply = repository[repository.index(
+            "critical_apply_result flatfile_item_repository_apply") :]
+        prepare = apply.index("flatfile_world_item_prepare_corpse_loot")
+        image = apply.index("corpse.after_image", prepare)
+        commit = apply.index("flatfile_authority_transaction_commit", image)
+        self.assertLess(prepare, image)
+        self.assertLess(image, commit)
+        supported = repository[repository.index("bool generic_transfer_supported") :]
+        supported = supported[:supported.index("bool locker_custody_matches")]
+        self.assertIn("corpse_loot_transfer(payload)", supported)
+        self.assertNotIn("corpse_create", supported)
+
 
 if __name__ == "__main__":
     unittest.main()

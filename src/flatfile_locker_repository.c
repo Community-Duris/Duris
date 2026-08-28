@@ -474,68 +474,6 @@ bool payload_items_match(const item_transfer_payload &payload,
 			   [&](const auto &item) { return expected.contains(item.object_uid); });
 }
 
-bool extract_subtree(const std::vector<player_item_snapshot> &original, uint64_t selected_uid,
-		     std::vector<player_item_snapshot> *selected,
-		     std::vector<player_item_snapshot> *remaining)
-{
-	if (!selected || !remaining)
-		return false;
-	size_t selected_index = original.size();
-	for (size_t index = 0; index < original.size(); ++index)
-		if (original[index].object_uid == selected_uid)
-		{
-			selected_index = index;
-			break;
-		}
-	if (selected_index == original.size())
-		return false;
-	std::vector<bool> included(original.size(), false);
-	std::vector<int32_t> selected_positions(original.size(), PLAYER_SNAPSHOT_NO_PARENT);
-	std::vector<int32_t> remaining_positions(original.size(), PLAYER_SNAPSHOT_NO_PARENT);
-	try
-	{
-		for (size_t index = 0; index < original.size(); ++index)
-		{
-			if (index == selected_index)
-				included[index] = true;
-			else if (original[index].parent_index != PLAYER_SNAPSHOT_NO_PARENT)
-				included[index] =
-					included[static_cast<size_t>(original[index].parent_index)];
-			if (included[index])
-			{
-				selected_positions[index] = static_cast<int32_t>(selected->size());
-				auto item = original[index];
-				item.parent_index = index == selected_index ?
-							    PLAYER_SNAPSHOT_NO_PARENT :
-							    selected_positions[static_cast<size_t>(
-								    original[index].parent_index)];
-				if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
-				    index != selected_index)
-					return false;
-				selected->push_back(std::move(item));
-			}
-			else
-			{
-				remaining_positions[index] =
-					static_cast<int32_t>(remaining->size());
-				auto item = original[index];
-				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
-				{
-					item.parent_index = remaining_positions[static_cast<size_t>(
-						original[index].parent_index)];
-					if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
-						return false;
-				}
-				remaining->push_back(std::move(item));
-			}
-		}
-	}
-	catch (const std::bad_alloc &)
-	{
-		return false;
-	}
-	return !selected->empty();
-}
 } // namespace
 
 flatfile_locker_result flatfile_locker_establish(
@@ -760,8 +698,9 @@ flatfile_locker_prepare_item_transfer(const std::string &root, const flatfile_au
 		{
 			std::vector<player_item_snapshot> selected;
 			std::vector<player_item_snapshot> remaining;
-			if (!extract_subtree(chest->items, payload.selected_item_uid, &selected,
-					     &remaining))
+			if (player_item_snapshot_extract_subtree(
+				    chest->items, payload.selected_item_uid, &selected,
+				    &remaining) != player_snapshot_codec_result::ok)
 				return flatfile_locker_result::conflict;
 			std::vector<uint8_t> selected_blob;
 			if (player_item_snapshot_list_encode(selected, &selected_blob) !=

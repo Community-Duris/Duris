@@ -1,3 +1,4 @@
+#include "flatfile_artifact_repository.h"
 #include "flatfile_item_repository.h"
 #include "flatfile_locker_repository.h"
 #include "flatfile_shop_trade_materialization.h"
@@ -142,6 +143,58 @@ static flatfile_locker_record transfer_locker()
 	locker.revision = 1;
 	locker.chests = { chest };
 	return locker;
+}
+
+static std::vector<player_item_snapshot> corpse_items()
+{
+	player_item_snapshot loot_root = {};
+	loot_root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	loot_root.equipment_slot = -1;
+	loot_root.object_uid = 910;
+	loot_root.vnum = 1910;
+	loot_root.name = "corpse loot container";
+	loot_root.short_description = "an exact corpse loot container";
+	player_item_snapshot loot_child = {};
+	loot_child.parent_index = 0;
+	loot_child.equipment_slot = -1;
+	loot_child.object_uid = 911;
+	loot_child.vnum = 1911;
+	loot_child.name = "corpse loot child";
+	player_item_snapshot retained_root = {};
+	retained_root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	retained_root.equipment_slot = -1;
+	retained_root.object_uid = 920;
+	retained_root.vnum = 1920;
+	retained_root.name = "retained corpse container";
+	player_item_snapshot retained_child = {};
+	retained_child.parent_index = 2;
+	retained_child.equipment_slot = -1;
+	retained_child.object_uid = 921;
+	retained_child.vnum = 1921;
+	retained_child.name = "retained corpse child";
+	player_item_snapshot artifact = {};
+	artifact.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	artifact.equipment_slot = -1;
+	artifact.object_uid = 930;
+	artifact.vnum = 1999;
+	artifact.name = "fenced corpse artifact";
+	return { loot_root, loot_child, retained_root, retained_child, artifact };
+}
+
+static flatfile_corpse_record transfer_corpse()
+{
+	flatfile_corpse_record corpse = {};
+	corpse.owner_pid = 42;
+	corpse.owner_name = "corpseowner";
+	corpse.save_id = 20;
+	corpse.room_vnum = 500;
+	corpse.short_description = "the exact transfer corpse";
+	corpse.description = "The exact transfer corpse is lying here.";
+	corpse.keywords = "corpse corpseowner _pcorpse_";
+	corpse.weight = 90;
+	corpse.revision = 4;
+	corpse.items = corpse_items();
+	return corpse;
 }
 
 static shop_trade_payload shop_trade(shop_trade_action action, uint64_t item_uid,
@@ -466,6 +519,122 @@ int main(int argc, char **argv)
 			&error) == flatfile_item_repository_result::ok &&
 			owner_revision == 3 && items.size() == 2 && items[0].item_revision == 4,
 		"locker withdrawal did not restore player custody");
+	const item_owner_identity corpse_owner = { item_owner_type::corpse,
+						   item_corpse_owner_id(42, 20), 0 };
+	const flatfile_artifact_record corpse_artifact = {
+		1999, true, FLATFILE_ARTIFACT_ON_CORPSE, 42, 5000, 1, 1000, -1, 0, 1
+	};
+	require(flatfile_artifact_establish(root.string(), { corpse_artifact }, &error) ==
+			flatfile_artifact_result::ok,
+		"could not establish corpse artifact authority: " + error);
+	require(flatfile_world_item_establish(root.string(), { transfer_corpse() }, {}, &error) ==
+			flatfile_world_item_result::ok,
+		"could not establish transfer corpse: " + error);
+	require(flatfile_item_repository_establish_owner(
+			root.string(), corpse_owner,
+			{ { 910, 910, 0, corpse_owner, 1, 1910, item_custody_state::active },
+			  { 911, 910, 910, corpse_owner, 1, 1911, item_custody_state::active },
+			  { 920, 920, 0, corpse_owner, 1, 1920, item_custody_state::active },
+			  { 921, 920, 920, corpse_owner, 1, 1921, item_custody_state::active },
+			  { 930, 930, 0, corpse_owner, 1, 1999, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish corpse custody: " + error);
+	const std::vector<player_item_snapshot> all_corpse_items = corpse_items();
+	std::vector<player_item_snapshot> loot_items = { all_corpse_items[0], all_corpse_items[1] };
+	std::vector<uint8_t> loot_blob;
+	require(player_item_snapshot_list_encode(loot_items, &loot_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode exact corpse loot");
+	item_transfer_payload loot = {};
+	loot.from_owner = corpse_owner;
+	loot.to_owner = { item_owner_type::player, 77, 0 };
+	loot.reason = item_transfer_reason::corpse_loot;
+	loot.reason_id = 910;
+	loot.expected_from_revision = 1;
+	loot.expected_to_revision = 3;
+	loot.selected_item_uid = 910;
+	loot.target_root_item_uid = 910;
+	loot.item_count = 2;
+	loot.items[0] = { 910, 910, 0, 1, 1910, item_custody_state::active };
+	loot.items[1] = { 911, 910, 910, 1, 1911, item_custody_state::active };
+	loot.item_blob_size = static_cast<uint32_t>(loot_blob.size());
+	std::copy(loot_blob.begin(), loot_blob.end(), loot.item_blob.begin());
+	critical_command loot_command = {};
+	require(item_transfer_command_build(&loot_command, operation(8), loot,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build corpse loot command");
+	loot_command.accepted_at_usec = 8;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	applied = flatfile_item_repository_apply(root.string(), loot_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted corpse loot did not retain composite intent");
+	applied = flatfile_item_repository_apply(root.string(), loot_command);
+	require(applied.outcome == critical_apply_outcome::already_applied,
+		"corpse loot did not recover exactly");
+	std::vector<flatfile_corpse_record> corpses;
+	std::vector<flatfile_saved_world_item_record> saved_items;
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.size() == 1 && corpses[0].revision == 5 &&
+			corpses[0].items.size() == 3 && corpses[0].items[0].object_uid == 920 &&
+			corpses[0].items[1].parent_index == 0 &&
+			corpses[0].items[2].object_uid == 930,
+		"recovered corpse loot did not remove only the exact subtree: " + error);
+	items.clear();
+	require(flatfile_item_repository_load_owner(root.string(), corpse_owner, &owner_revision,
+						    &items, &error) ==
+				flatfile_item_repository_result::ok &&
+			owner_revision == 2 && items.size() == 3 && items[0].item_uid == 920 &&
+			items[0].item_revision == 1,
+		"recovered corpse loot did not preserve remaining corpse custody");
+	items.clear();
+	require(flatfile_item_repository_load_owner(
+			root.string(), { item_owner_type::player, 77, 0 }, &owner_revision, &items,
+			&error) == flatfile_item_repository_result::ok &&
+			owner_revision == 4 && items.size() == 4 && items[2].item_uid == 910 &&
+			items[2].item_revision == 2,
+		"recovered corpse loot did not restore exact player custody");
+	std::vector<player_item_snapshot> artifact_items = { all_corpse_items[4] };
+	std::vector<uint8_t> artifact_blob;
+	require(player_item_snapshot_list_encode(artifact_items, &artifact_blob) ==
+			player_snapshot_codec_result::ok,
+		"could not encode fenced corpse artifact");
+	item_transfer_payload artifact_loot = {};
+	artifact_loot.from_owner = corpse_owner;
+	artifact_loot.to_owner = { item_owner_type::player, 77, 0 };
+	artifact_loot.reason = item_transfer_reason::corpse_loot;
+	artifact_loot.reason_id = 930;
+	artifact_loot.expected_from_revision = 2;
+	artifact_loot.expected_to_revision = 4;
+	artifact_loot.selected_item_uid = 930;
+	artifact_loot.target_root_item_uid = 930;
+	artifact_loot.item_count = 1;
+	artifact_loot.items[0] = { 930, 930, 0, 1, 1999, item_custody_state::active };
+	artifact_loot.item_blob_size = static_cast<uint32_t>(artifact_blob.size());
+	std::copy(artifact_blob.begin(), artifact_blob.end(), artifact_loot.item_blob.begin());
+	critical_command artifact_command = {};
+	require(item_transfer_command_build(&artifact_command, operation(9), artifact_loot,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build fenced artifact loot command");
+	artifact_command.accepted_at_usec = 9;
+	applied = flatfile_item_repository_apply(root.string(), artifact_command);
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == EOPNOTSUPP,
+		"artifact-bearing corpse loot bypassed its missing-context fence");
+	applied = flatfile_item_repository_apply(root.string(), artifact_command);
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == EOPNOTSUPP,
+		"artifact-bearing corpse loot fence was not durably replayable");
+	items.clear();
+	require(flatfile_item_repository_load_owner(root.string(), corpse_owner, &owner_revision,
+						    &items, &error) ==
+				flatfile_item_repository_result::ok &&
+			owner_revision == 2 && items.size() == 3 && items[2].item_uid == 930,
+		"artifact loot fence changed corpse custody");
 
 	move.expected_from_revision = 1;
 	move.expected_to_revision = 0;

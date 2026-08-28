@@ -21,6 +21,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
             "-Isrc",
             "tests/async/flatfile_artifact_repository_harness.cpp",
             "src/flatfile_artifact_repository.c",
+            "src/item_transfer_command.c",
+            "src/critical_command.c",
             "src/flatfile_authority_transaction.c",
             "src/flatfile_store.c",
             "-lcrypto",

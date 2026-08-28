@@ -2,6 +2,7 @@
 #define DURIS_FLATFILE_ARTIFACT_REPOSITORY_H
 
 #include "flatfile_authority_transaction.h"
+#include "item_transfer_command.h"
 
 #include <cstdint>
 #include <string>
@@ -49,5 +50,9 @@ flatfile_artifact_result flatfile_artifact_list(const std::string &root,
 flatfile_artifact_result flatfile_artifact_prepare_player_release(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error);
+flatfile_artifact_result flatfile_artifact_check_corpse_loot(const std::string &root,
+							     const flatfile_authority_lock &lock,
+							     const item_transfer_payload &payload,
+							     std::string *error);
 
 #endif

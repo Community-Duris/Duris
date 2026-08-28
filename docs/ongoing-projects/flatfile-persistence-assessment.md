@@ -2668,6 +2668,42 @@ sections below continue to describe the required end state.
   the exact item subtree, then compose corpse aggregate, ownership, player materialization, and
   artifact disposition under one recoverable transaction before admitting corpse owner transitions.
 
+### Checkpoint 84 - atomic established-corpse loot
+
+- **Held-lock corpse mutation:** the world-item repository now prepares exact loot after-images for an
+  already-established corpse. It resolves the stable `{owner PID, save ID}` identity, requires a
+  correctly oriented version 4 `corpse_loot` command with no ambiguous context or target parent,
+  proves the encoded selected subtree byte-for-byte, removes it, repairs every remaining parent
+  index, and advances both world-item catalog and corpse revisions. The shared snapshot codec now
+  owns subtree extraction, so locker and corpse mutations use the same topology checks.
+- **Cross-authority reconciliation:** before publication, the item repository compares every active
+  UID/vnum owned by the corpse with the preparer's complete pre-mutation corpse proof. It also reads
+  artifact authority under the same lock and fails closed if the selected subtree contains any
+  registered artifact. Successful ordinary loot publishes ownership, the corpse aggregate, and
+  compacted player materialization evidence in one recoverable authority transaction. The generic
+  fence admits only this corpse-to-player operation; corpse creation and arbitrary corpse transitions
+  remain rejected.
+- **Crash and replay behavior:** the repository regression starts from a corpse containing multiple
+  nested trees, injects interruption after the ownership image while looting one tree, and verifies
+  replay publishes the exact corpse and player after-images before returning `already_applied`.
+  Unrelated corpse contents keep their fields and repaired topology, while the destination player
+  reconstructs the selected nested tree with incremented item revisions. A registered artifact loot
+  attempt returns durable `EOPNOTSUPP` without changing either custody authority.
+- **Checks passed:** the item, artifact, world-item, snapshot-codec, locker, auction, player, shop,
+  character-deletion, ownership, locker-cutover, and live movement focused tests pass. Changed-line
+  formatting, the strict normal C++20 server build, and the client-free flat-file boot preflight also
+  pass.
+- **Exposure:** corpse creation still lacks the metadata needed to establish a complete flat corpse,
+  and artifact loot lacks the player/corpse race context required to reproduce binding, feed, and
+  disposition semantics safely. Empty established corpse records are retained because corpse removal
+  is a separate lifecycle action. General live corpse save/load remains SQL-only, historical version
+  3/2 transfers retain their ownership-only exposure, and the flat-primary boot blocker remains
+  required.
+- **Next action:** introduce a corpse-specific command or item-transfer payload version carrying
+  creation/removal metadata and race context, then compose corpse establishment/removal and artifact
+  disposition under the same authority transaction. Room aggregate transfers remain the next
+  uncoupled world-item boundary after corpse lifecycle coverage.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
