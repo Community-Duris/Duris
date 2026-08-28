@@ -378,6 +378,26 @@
   player-specific staff listing, staff repair, and remaining direct-SQL artifact paths
   still require focused work. The global incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - restored per-player artifact lookup without MySQL
+
+- **Concrete gap:** the staff `artifact player` lookup remained an explicit no-MySQL
+  compile-time stub after the ordinary type lists were restored.
+- **Restoration:** no-database mode now resolves the requested name or PID through the
+  existing flat identity routes, filters canonical catalog rows to artifacts held by that
+  player or their corpse, and renders the existing owner, countdown, last-update, object,
+  and vnum report. Missing or corrupt authority fails visibly; database-backed behavior
+  is unchanged.
+- **Focused evidence:** the catalog runtime test covers ordered reads and corruption
+  refusal, and the artifact source contract confirms the real per-player command reads
+  flat authority and no longer returns its MySQL-required stub.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** player-specific lookup is restored, but catalog establishment, staff
+  repair, and remaining direct-SQL artifact paths still require focused work. The global
+  incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

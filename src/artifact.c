@@ -4889,7 +4889,88 @@ void arti_player_sql(P_char ch, char *arg)
 	if (!shownData)
 		send_to_char("No artifacts found.\n\r", ch);
 #else
-	(void)arg;
-	send_to_char("This command requires MySQL support which is not compiled in.\n", ch);
+	char buf[MAX_STRING_LENGTH], location_buffer[MAX_STRING_LENGTH], time_buffer[128];
+	int pid = atoi(arg);
+	if (pid < 1)
+	{
+		pid = get_player_pid_from_name(arg);
+		if (pid < 1)
+		{
+			send_to_char(
+				"The '&+wartifact player&n' command requires a valid player name or pid.\n\r",
+				ch);
+			return;
+		}
+	}
+	char *name = get_player_name_from_pid(pid);
+	if (!name)
+	{
+		snprintf(buf, sizeof(buf), "'%s' was not found to be a valid player name or pid.\n",
+			 arg);
+		send_to_char(buf, ch);
+		return;
+	}
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "arti_player_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		send_to_char("Artifact data is unavailable.\n\r", ch);
+		return;
+	}
+	snprintf(buf, sizeof(buf),
+		 "&+YOwner                  Time      Last Update           Artifact\r\n\r\n");
+	send_to_char(buf, ch);
+	bool shown_data = false;
+	for (const auto &record : records)
+	{
+		if (record.location != pid || (record.location_type != ARTIFACT_ON_PC &&
+					       record.location_type != ARTIFACT_ONCORPSE))
+			continue;
+		P_obj artifact = read_object(record.vnum, VIRTUAL);
+		if (!artifact || !IS_ARTIFACT(artifact))
+		{
+			debug("arti_player_sql: Non artifact on arti list: '%s' %d.",
+			      artifact ? artifact->short_description : "NULL", record.vnum);
+			if (artifact)
+				extract_obj(artifact, FALSE);
+			continue;
+		}
+		if (record.location_type == ARTIFACT_ON_PC)
+			snprintf(location_buffer, sizeof(location_buffer), "%-21s", name);
+		else
+		{
+			snprintf(buf, sizeof(buf), "%s's corpse", name);
+			checked_snprintf(location_buffer, sizeof(location_buffer), "%-21s", buf);
+		}
+		long total_time = static_cast<long>(record.timer - time(NULL));
+		bool negative_time = total_time < 0;
+		if (negative_time)
+			total_time *= -1;
+		total_time /= 60;
+		const int minutes = total_time % 60;
+		total_time /= 60;
+		const int hours = total_time % 24;
+		const long days = record.timer ? total_time / 24 : 0;
+		snprintf(time_buffer, sizeof(time_buffer), "%c%2ld:%02d:%02d",
+			 negative_time && record.timer ? '-' : ' ', days, record.timer ? hours : 0,
+			 record.timer ? minutes : 0);
+		char update_buffer[32] = "";
+		const time_t updated = static_cast<time_t>(record.last_update);
+		struct tm update_time;
+		if (record.last_update > 0 && localtime_r(&updated, &update_time))
+			strftime(update_buffer, sizeof(update_buffer), "%Y-%m-%d %H:%M:%S",
+				 &update_time);
+		checked_snprintf(buf, sizeof(buf), "%s&n%-11s %-22s%s (#%d)\r\n", location_buffer,
+				 time_buffer, update_buffer, artifact->short_description,
+				 record.vnum);
+		send_to_char(buf, ch);
+		shown_data = true;
+		extract_obj(artifact, FALSE);
+	}
+	if (!shown_data)
+		send_to_char("No artifacts found.\n\r", ch);
 #endif
 }

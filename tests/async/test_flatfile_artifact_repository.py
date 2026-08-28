@@ -180,3 +180,10 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
         raise AssertionError("client-free artifact list bypasses flat authority")
     if "requires a completed durable backend" in list_body:
         raise AssertionError("client-free artifact list remains disabled")
+
+    player_start = artifact_source.index("void arti_player_sql(P_char ch, char *arg)\n{")
+    player_body = artifact_source[player_start:]
+    if "flatfile_artifact_list(" not in player_body:
+        raise AssertionError("client-free per-player artifact list bypasses flat authority")
+    if "requires MySQL support" in player_body:
+        raise AssertionError("client-free per-player artifact list remains disabled")
