@@ -151,11 +151,15 @@ static void maintenance_handle_completions(const maintenance_result *results, si
 					      "maintenance job=auction_due_scan outcome=submit_failed actor=redacted");
 		}
 		if (result.job_id == maintenance_job_id::level_cap &&
-		    result.outcome == maintenance_outcome::complete && result.value_count == 3 &&
-		    result.values[0] > 0 && result.values[0] <= INT32_MAX)
-			boon_notify_snapshot(static_cast<int>(result.values[0]),
-					     static_cast<int>(result.values[1]),
-					     static_cast<int>(result.values[2]), BN_CREATE);
+		    result.outcome == maintenance_outcome::complete)
+		{
+			redis_invalidate_fraglist();
+			if (result.value_count == 3 && result.values[0] > 0 &&
+			    result.values[0] <= INT32_MAX)
+				boon_notify_snapshot(static_cast<int>(result.values[0]),
+						     static_cast<int>(result.values[1]),
+						     static_cast<int>(result.values[2]), BN_CREATE);
+		}
 		if (result.job_id == maintenance_job_id::boon_scan &&
 		    (result.outcome == maintenance_outcome::complete ||
 		     result.outcome == maintenance_outcome::more) &&

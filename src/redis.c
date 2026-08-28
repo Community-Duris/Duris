@@ -33,6 +33,7 @@
 #include "redis_namespace.h"
 #include "redis_presence_payload.h"
 #include "redis_presence_worker.h"
+#include "report_cache_codec.h"
 #include "redis_world_store.h"
 #include "world_recovery_codec.h"
 #include "spells.h"
@@ -2080,13 +2081,14 @@ static char *generate_named_report(void)
 void redis_cache_named_report(void)
 {
 #ifndef __NO_MYSQL__
+	constexpr int named_report_cache_ttl_seconds = 86400;
 	if (!redis_enabled)
 		return;
 
 	char *report = generate_named_report();
 	if (report)
 	{
-		redis_cache_set(REDIS_CACHE_NAMED, report);
+		redis_cache_set_ex(REDIS_CACHE_NAMED, named_report_cache_ttl_seconds, report);
 		free(report);
 		logit(LOG_SYS, "redis: cached named report");
 	}
@@ -2100,12 +2102,12 @@ char *redis_get_named_report(void)
 
 // fraglist cache
 extern void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_update);
-extern int sql_level_cap(int racewar_side);
 extern const racewar_struct racewar_color[];
 
 #define MAX_FRAG_SIZE 10
+static constexpr int fraglist_cache_ttl_seconds = 900;
 
-static char *generate_fraglist_output(void)
+static char *generate_fraglist_cache_payload(void)
 {
 #ifdef __NO_MYSQL__
 	return NULL;
@@ -2115,42 +2117,39 @@ static char *generate_fraglist_output(void)
 		return NULL;
 
 	output[0] = '\0';
-	char buf[2048], name[256];
+	char buf[2048], name[256], prefix[1024];
 	int frags, count;
 	float fragnum;
 	int cap_level, cap_racewar, cap_others;
 	long cap_frags;
-	time_t cap_timer;
-	int days, hours, mins, secs;
+	time_t cap_deadline;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
 
-	get_level_cap_info(&cap_frags, &cap_racewar, &cap_level, &cap_timer);
-	cap_others = sql_level_cap((cap_racewar == RACEWAR_GOOD) ? RACEWAR_EVIL : RACEWAR_GOOD);
-	cap_timer -= time(NULL);
-
-	if (cap_timer <= 0)
+	get_level_cap_info(&cap_frags, &cap_racewar, &cap_level, &cap_deadline);
+	if (cap_frags < 0 || cap_racewar < 0 || cap_racewar >= MAX_RACEWAR + 2 || cap_deadline <= 0)
 	{
-		secs = mins = hours = days = 0;
+		free(output);
+		return NULL;
 	}
-	else
+	// Avoid a redundant lookup: both displayed caps derive from the same singleton row.
+	const struct frag_cap_config *cap_config = frag_cap_config_get();
+	if (!cap_config)
 	{
-		secs = cap_timer % 60;
-		cap_timer /= 60;
-		mins = cap_timer % 60;
-		cap_timer /= 60;
-		hours = cap_timer % 24;
-		cap_timer /= 24;
-		days = cap_timer;
+		free(output);
+		return NULL;
 	}
+	cap_others = std::clamp(cap_level, cap_config->cap_floor_level,
+				std::min(cap_config->cap_maximum_level, MAXLVLMORTAL));
 
 	snprintf(
-		output, 65536,
+		prefix, sizeof prefix,
 		"&+YFrag Level Cap:&+w %d - &+%c%s&n, &+w%d&N - Others, &+YTop Frag Amount: &+w%d.%02d\n"
-		"&+YTimer:&+w %02d:%02d:%02d:%02d &+YFrags needed:&+w %.2f&n\n\n&+WTop Fraggers\n\n",
+		"&+YTimer:&+w ",
 		cap_level, racewar_color[cap_racewar].color, racewar_color[cap_racewar].name,
-		cap_others, (int)(cap_frags / 100), (int)(cap_frags % 100), days, hours, mins, secs,
-		frag_cap_config_frags_for_level(cap_level + 1));
+		cap_others, (int)(cap_frags / 100), (int)(cap_frags % 100));
+	snprintf(output, 65536, " &+YFrags needed:&+w %.2f&n\n\n&+WTop Fraggers\n\n",
+		 frag_cap_config_frags_for_level(cap_level + 1));
 
 	// query top fraggers (no filter)
 	res = db_query("SELECT char_name, total_frags FROM frag_leaderboard "
@@ -2219,7 +2218,11 @@ static char *generate_fraglist_output(void)
 	}
 
 	strcat(output, "\r\n");
-	return output;
+	char *payload = report_cache_countdown_encode(prefix, output,
+						      static_cast<uint64_t>(time(NULL)),
+						      static_cast<uint64_t>(cap_deadline));
+	free(output);
+	return payload;
 #endif
 }
 
@@ -2229,10 +2232,10 @@ void redis_cache_fraglist(void)
 	if (!redis_enabled)
 		return;
 
-	char *output = generate_fraglist_output();
+	char *output = generate_fraglist_cache_payload();
 	if (output)
 	{
-		redis_cache_set(REDIS_CACHE_FRAGLIST, output);
+		redis_cache_set_ex(REDIS_CACHE_FRAGLIST, fraglist_cache_ttl_seconds, output);
 		free(output);
 		logit(LOG_SYS, "redis: cached fraglist");
 	}
@@ -2241,7 +2244,12 @@ void redis_cache_fraglist(void)
 
 char *redis_get_fraglist(void)
 {
-	return redis_cache_get(REDIS_CACHE_FRAGLIST);
+	const auto render = [](const char *payload, void *) -> char *
+	{
+		return report_cache_countdown_render(payload, static_cast<uint64_t>(time(NULL)),
+						     fraglist_cache_ttl_seconds);
+	};
+	return redis_cache_store_transform(redis_cache_fraglist_key, render, NULL);
 }
 
 bool redis_invalidate_fraglist(void)

@@ -44,6 +44,17 @@ static redisReply *run(redisContext *context, const char *command)
     return reply;
 }
 
+static char *append_suffix(const char *value, void *context)
+{
+    const char *suffix = static_cast<const char *>(context);
+    const size_t size = strlen(value) + strlen(suffix);
+    char *result = static_cast<char *>(malloc(size + 1));
+    assert(result);
+    strcpy(result, value);
+    strcat(result, suffix);
+    return result;
+}
+
 int main(int argc, char **argv)
 {
     assert(argc == 3);
@@ -60,6 +71,11 @@ int main(int argc, char **argv)
     char *local = redis_cache_store_get("mud:cache:test");
     assert(local && !strcmp(local, "warm"));
     free(local);
+    local = redis_cache_store_transform(
+        "mud:cache:test", append_suffix, const_cast<char *>("-rendered"));
+    assert(local && !strcmp(local, "warm-rendered"));
+    free(local);
+    assert(!redis_cache_store_transform("mud:cache:test", nullptr, nullptr));
 
     // Local reads and repeated publication remain available before Redis starts.
     for (int value = 1; value <= 100; ++value)

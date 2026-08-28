@@ -18,6 +18,8 @@ struct redis_cache_store_config
 	const struct redis_connection_settings *connection;
 };
 
+typedef char *(*redis_cache_store_transform_fn)(const char *value, void *context);
+
 struct redis_cache_store_health
 {
 	uint64_t submitted;
@@ -40,6 +42,8 @@ bool redis_cache_store_init(const struct redis_cache_store_config *config);
 bool redis_cache_store_seed(const char *key, const char *value, int ttl_seconds);
 bool redis_cache_store_set(const char *key, const char *value, int ttl_seconds);
 char *redis_cache_store_get(const char *key);
+char *redis_cache_store_transform(const char *key, redis_cache_store_transform_fn transform,
+				  void *context);
 bool redis_cache_store_delete(const char *key);
 bool redis_cache_store_drain(uint64_t timeout_msec);
 bool redis_cache_store_shutdown(uint64_t timeout_msec);

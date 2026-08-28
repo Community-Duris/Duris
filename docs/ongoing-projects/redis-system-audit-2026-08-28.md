@@ -5,10 +5,58 @@ Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-001, RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
-RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, RDS-017, and RDS-008 are remediated; the
-remaining findings are open.
+RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, RDS-017, RDS-008, and RDS-021 are
+remediated; the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-021 coherent report-cache freshness
+
+Completed in this interval:
+
+- Added explicit asynchronous Redis/local TTLs to the remaining persistent report caches:
+  24 hours for boot-derived named-set output and 15 minutes for fraglist output. Epic-zone
+  and artifact output retain their existing 15-minute bounds.
+- Replaced the frozen rendered fraglist timer with a bounded `FRC1` frame containing stable
+  display segments, generation time, absolute cap deadline, component lengths, and a
+  content-derived revision. Cache hits validate the frame and render the countdown from
+  the current time, so a displayed timer cannot freeze or count down stale text.
+- Added a shared immutable-value transform to the local cache. Countdown rendering holds a
+  reference only long enough to render outside the mutex and allocates only the returned
+  display buffer; it does not create an intermediate cache-value copy.
+- Invalidated fraglist state after successful level-cap maintenance commits as well as
+  combat-outcome publication. The TTL remains a backstop if either asynchronous delete is
+  dropped during an outage.
+- Removed the redundant second `level_cap` SQL query during fraglist regeneration by
+  deriving the other-side display from the already-read singleton row with the same
+  configured clamp.
+
+Performance effect:
+
+- A cache hit remains one short local mutex acquisition and one result allocation. It adds
+  bounded header parsing/countdown formatting but removes the intermediate allocation from
+  the initial implementation; it performs no Redis, SQL, filesystem, process, logging, or
+  wait operation.
+- A fraglist miss now issues one fewer SQL query. Redis TTL publication and commit-driven
+  invalidation remain coalesced worker jobs, so no Redis command is added to gameplay or
+  maintenance completion paths.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_report_cache_codec.py`: passed under ASan/UBSan with dynamic
+  countdown, expiry, future-clock, schema, revision, length, and corruption cases.
+- `python3 tests/async/test_redis_cache_store_live.py`: passed against isolated Redis,
+  including immutable local transform, TTL, outage healing, coalescing, and queue bounds.
+- All 21 `tests/async/test_redis*.py` tests passed, including live worker, ACL, transport,
+  recovery, namespace, failure-containment, and destructive-maintenance coverage.
+- `python3 tests/async/test_frag_cap_config_contract.py`,
+  `python3 tests/async/test_maintenance_scheduler.py`,
+  `python3 tests/async/test_redis_failure_containment.py`, and
+  `python3 tests/async/test_combat_outcome_transactional_cutover.py`: passed.
+
+RDS-021 is complete: all active content caches have explicit bounded freshness or
+revision/schema validation, authoritative mutation invalidation, and stable-data rendering.
 
 ### 2026-08-28 - RDS-008 least-privilege subsystem identities
 
@@ -774,12 +822,8 @@ Validation:
 - `python3 tests/async/test_artifact_cache_codec.py`: passed.
 - `python3 tests/async/test_redis_pwipe_invalidation.py`: passed.
 
-Remaining related work:
-
-- RDS-011 simulation-thread isolation was subsequently completed in the interval above;
-  optional world/floor preflight remains confined to boot recovery.
-- RDS-021 still needs stable-data rendering for the fraglist countdown and explicit TTLs
-  or revisions for named and fraglist data.
+Remaining related work was completed by the later simulation-thread isolation and coherent
+report-cache freshness intervals above.
 
 ### 2026-08-28 - RDS-009/RDS-011 asynchronous presence publication
 
@@ -1303,7 +1347,7 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 | World recovery | `<namespace>:season:<epoch>:world_state:generation:<seq>`, current pointer, diagnostic metadata | Optional recent world reconstruction | An independent HMAC authenticates the namespace/season/sequence-bound manifest and complete payload before schema, semantic graph, complete item SQL custody, and rollback-capable materialization checks; NPC-held items are intentionally omitted. |
 | Floor deltas | `<namespace>:season:<epoch>:floor_drops`; retired `mud:floor_pickups` cleanup | Bridge changes around a world snapshot | Versioned bounded binary item trees join the generation plan and complete SQL authority check before any materialization. |
 | Ship cache | `ship:snapshot:<owner>` | Reconstructible SQL cache | Cache is returned before SQL without TTL, row revision, or schema/environment identity. |
-| Content caches | `<namespace>:season:<epoch>:cache:named`, fraglist, epic-zone, and artifact variants | Reconstructible command output | Player reads use bounded local memory and Redis publication is asynchronous; named/fraglist freshness remains incomplete. |
+| Content caches | `<namespace>:season:<epoch>:cache:named`, fraglist, epic-zone, and artifact variants | Reconstructible command output | Player reads use bounded local memory, Redis publication is asynchronous, every entry has an explicit TTL, artifact and fraglist payloads are versioned, and countdown rendering uses a stored absolute deadline. |
 | Presence | `<namespace>:season:<epoch>:presence:current`, expiring session keys, player channel, and retry tokens | Web presence and login/logout events | Privacy-safe payloads use a fenced 180-second per-session lease refreshed only by the bounded worker. |
 | Donation integration | `<namespace>:season:<epoch>:nchat` pub/sub | Broadcast external donation notices | A bounded worker accepts only authenticated, fresh, replay-protected envelopes and delivers at most eight events per game pulse. |
 | Legacy UID | `mud:next_obj_uid` | Retired counter | No runtime read, write, or administrator display remains. |
@@ -1988,10 +2032,11 @@ writer fencing, and a bounded deadline.
 
 Severity: Medium
 Confidence: Confirmed
-Remediation status: Partially remediated; runtime report reads are bounded local-memory
-lookups, Redis writes are asynchronous and coalesced, and existing artifact/epic TTLs are
-enforced locally. Named/fraglist TTL or revision contracts and stable countdown rendering
-remain open.
+Remediation status: Completed on branch. Runtime report reads are bounded local-memory
+lookups, Redis writes and invalidations are asynchronous and coalesced, and every active
+content cache has an explicit TTL. Artifact JSON and fraglist frames are versioned and
+validated; fraglist countdown presentation is rendered from an absolute deadline on each
+local hit.
 
 Named, fraglist, artifact, and ship caches are persistent and unversioned; only epic zones
 has a 900-second TTL. Invalidation is distributed across unrelated gameplay files.
@@ -1999,6 +2044,13 @@ Fraglist caches an already-rendered countdown derived from `next_update`, so the
 timer freezes until another invalidation. The maintenance level-cap completion path does
 not invalidate that cache ([`src/comm.c`](../../src/comm.c#L137),
 [`src/redis.c`](../../src/redis.c#L2137)).
+
+The current named cache has a 24-hour backstop; fraglist, epic-zone, and artifact caches
+have 15-minute backstops. Combat-outcome and level-cap commits invalidate fraglist state.
+The `FRC1` payload stores stable content, generation time, source-content revision, and the
+absolute cap deadline; malformed, stale, future, or revision-mismatched frames are misses.
+Local rendering advances the timer without external I/O, and regeneration no longer makes
+the redundant second level-cap query.
 
 Recommendation: cache stable data, not time-relative presentation. Put schema version,
 source revision, generated time, and bounded TTL in every cache contract. Centralize

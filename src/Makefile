@@ -105,6 +105,7 @@ OBJS =  $(SHIP_OBJS) \
 				 arena.o \
 				 artifact.o \
 				 artifact_cache_codec.o \
+				 report_cache_codec.o \
 				 donation_event.o \
 				 redis_connection.o \
 				 redis_key_registry.o \

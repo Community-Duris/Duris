@@ -266,6 +266,38 @@ void stop_worker(bool discard_pending)
 	health.connected = false;
 	health.busy = false;
 }
+
+std::shared_ptr<const std::string> local_value(const char *key)
+{
+	if (!key)
+		return {};
+	const size_t key_size = strnlen(key, REDIS_CACHE_MAX_KEY_BYTES + 1);
+	if (!key_size || key_size > REDIS_CACHE_MAX_KEY_BYTES)
+		return {};
+	std::string owned_key;
+	try
+	{
+		owned_key.assign(key, key_size);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return {};
+	}
+	std::lock_guard<std::mutex> lock(store_mutex);
+	if (!health.initialized)
+		return {};
+	auto found = local_cache.find(owned_key);
+	if (found == local_cache.end())
+		return {};
+	if (found->second.expires != std::chrono::steady_clock::time_point{} &&
+	    std::chrono::steady_clock::now() >= found->second.expires)
+	{
+		local_cache.erase(found);
+		health.local_entries = local_cache.size();
+		return {};
+	}
+	return found->second.value;
+}
 } // namespace
 
 bool redis_cache_store_init(const struct redis_cache_store_config *config)
@@ -374,37 +406,7 @@ bool redis_cache_store_seed(const char *key, const char *value, int ttl_seconds)
 
 char *redis_cache_store_get(const char *key)
 {
-	if (!key)
-		return nullptr;
-	const size_t key_size = strnlen(key, REDIS_CACHE_MAX_KEY_BYTES + 1);
-	if (!key_size || key_size > REDIS_CACHE_MAX_KEY_BYTES)
-		return nullptr;
-	std::string owned_key;
-	try
-	{
-		owned_key.assign(key, key_size);
-	}
-	catch (const std::bad_alloc &)
-	{
-		return nullptr;
-	}
-	std::shared_ptr<const std::string> value;
-	{
-		std::lock_guard<std::mutex> lock(store_mutex);
-		if (!health.initialized)
-			return nullptr;
-		auto found = local_cache.find(owned_key);
-		if (found == local_cache.end())
-			return nullptr;
-		if (found->second.expires != std::chrono::steady_clock::time_point{} &&
-		    std::chrono::steady_clock::now() >= found->second.expires)
-		{
-			local_cache.erase(found);
-			health.local_entries = local_cache.size();
-			return nullptr;
-		}
-		value = found->second.value;
-	}
+	const std::shared_ptr<const std::string> value = local_value(key);
 	if (!value)
 		return nullptr;
 	char *result = (char *)malloc(value->size() + 1);
@@ -413,6 +415,15 @@ char *redis_cache_store_get(const char *key)
 	memcpy(result, value->data(), value->size());
 	result[value->size()] = '\0';
 	return result;
+}
+
+char *redis_cache_store_transform(const char *key, redis_cache_store_transform_fn transform,
+				  void *context)
+{
+	if (!transform)
+		return nullptr;
+	const std::shared_ptr<const std::string> value = local_value(key);
+	return value ? transform(value->c_str(), context) : nullptr;
 }
 
 bool redis_cache_store_delete(const char *key)

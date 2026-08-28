@@ -210,6 +210,14 @@ cache values under `<REDIS_NAMESPACE>:season:<epoch>:cache:*` are seeded with th
 expired or persistent legacy artifact values are ignored. Pwipe cancels the worker before
 checked deletion and shutdown gives it a one-second drain deadline.
 
+Every report cache has a bounded freshness contract: named-set output expires after 24
+hours, while fraglist, epic-zone, and artifact output expire after 15 minutes. Successful
+combat-outcome and level-cap commits also invalidate the fraglist asynchronously. The
+fraglist stores only stable leaderboard/cap content plus an absolute cap deadline in the
+versioned `FRC1` frame. Each local hit renders the countdown from that deadline, so the
+timer advances without a Redis or SQL query. Frame schema, generated time, content
+revision, component lengths, maximum age, and clock skew are validated before display.
+
 Donation notices use a separately gated, authenticated subscriber worker. Connect,
 subscribe, socket reads, validation, replay filtering, and reconnect backoff all run off
 the simulation thread. It subscribes only to `<REDIS_NAMESPACE>:season:<epoch>:nchat`, where the epoch is
