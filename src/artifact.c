@@ -612,10 +612,169 @@ void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)
 			 "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
 	send_to_char(buf, ch);
 #else
-	(void)type;
-	(void)Godlist;
-	(void)allArtis;
-	send_to_char("Artifact persistence requires a completed durable backend.\n", ch);
+	char buf[MAX_STRING_LENGTH];
+	int articount[5] = { 0 };
+	bool shownData = FALSE;
+	if (type != ARTIFACT_MAJOR && type != ARTIFACT_UNIQUE && type != ARTIFACT_IOUN)
+	{
+		send_to_char("Invalid artifact type.\n\r", ch);
+		return;
+	}
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "list_artifacts_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		send_to_char("Artifact data is unavailable.\n\r", ch);
+		return;
+	}
+	if (Godlist)
+		snprintf(buf, MAX_STRING_LENGTH,
+			 "&+YOwner                  Time      Last Update           %s\r\n\r\n",
+			 type == ARTIFACT_MAJOR	 ? "Artifact" :
+			 type == ARTIFACT_UNIQUE ? "Unique" :
+						   "Ioun");
+	else
+		snprintf(buf, MAX_STRING_LENGTH, "&+YOwner               %s\r\n\r\n",
+			 type == ARTIFACT_MAJOR	 ? "Artifact" :
+			 type == ARTIFACT_UNIQUE ? "Unique" :
+						   "Ioun");
+	send_to_char(buf, ch);
+
+	for (const auto &record : records)
+	{
+		if (record.type != type || (!allArtis && !record.owned) ||
+		    (!Godlist && record.location_type != ARTIFACT_ON_PC &&
+		     record.location_type != ARTIFACT_ONCORPSE))
+			continue;
+		P_obj artifact = read_object(record.vnum, VIRTUAL);
+		if (!artifact || !IS_ARTIFACT(artifact))
+		{
+			if (artifact)
+				extract_obj(artifact, FALSE);
+			continue;
+		}
+		char *owner_name = NULL;
+		int racewar = RACEWAR_NONE;
+		if (record.location_type == ARTIFACT_ON_PC ||
+		    record.location_type == ARTIFACT_ONCORPSE)
+		{
+			owner_name = get_player_name_from_pid(record.location);
+			if (owner_name)
+			{
+				P_char owner = load_dummy_char(owner_name);
+				if (owner)
+				{
+					racewar = GET_RACEWAR(owner);
+					nuke_eq(owner);
+					owner->in_room = NOWHERE;
+					extract_char(owner);
+				}
+			}
+		}
+		char location_buffer[MAX_STRING_LENGTH];
+		const char *location_name = NULL;
+		switch (record.location_type)
+		{
+		case ARTIFACT_NOTINGAME:
+			location_name = "&+RNotInGame&n";
+			break;
+		case ARTIFACT_ON_NPC:
+			location_name = "&+YOnMob&n";
+			break;
+		case ARTIFACT_ON_PC:
+			location_name = owner_name;
+			break;
+		case ARTIFACT_ONGROUND:
+			snprintf(location_buffer, sizeof(location_buffer), "Room #%d",
+				 record.location);
+			location_name = location_buffer;
+			break;
+		case ARTIFACT_ONCORPSE:
+			if (owner_name)
+			{
+				snprintf(location_buffer, sizeof(location_buffer),
+					 Godlist ? "%s's corpse" : "%s", owner_name);
+				location_name = location_buffer;
+			}
+			break;
+		default:
+			extract_obj(artifact, FALSE);
+			continue;
+		}
+		if (!location_name)
+			location_name = "&+RUnknown&n";
+		if (record.owned && (record.location_type == ARTIFACT_ON_PC ||
+				     record.location_type == ARTIFACT_ONCORPSE))
+		{
+			++articount[RACEWAR_NONE];
+			if (racewar > RACEWAR_NONE && racewar <= RACEWAR_NEUTRAL)
+				++articount[racewar];
+		}
+		if (!Godlist)
+		{
+			checked_snprintf(buf, MAX_STRING_LENGTH, "%-20s%s\r\n", location_name,
+					 artifact->short_description);
+			send_to_char(buf, ch);
+			shownData = TRUE;
+			extract_obj(artifact, FALSE);
+			continue;
+		}
+		long total_time = static_cast<long>(record.timer - time(NULL));
+		bool negative_time = total_time < 0;
+		if (negative_time)
+			total_time *= -1;
+		total_time /= 60;
+		const int minutes = total_time % 60;
+		total_time /= 60;
+		const int hours = total_time % 24;
+		long days = total_time / 24;
+		if (!record.timer)
+		{
+			negative_time = FALSE;
+			days = 0;
+		}
+		char timer_buffer[32];
+		snprintf(timer_buffer, sizeof(timer_buffer), "%c%2ld:%02d:%02d",
+			 negative_time ? '-' : ' ', days, record.timer ? hours : 0,
+			 record.timer ? minutes : 0);
+		char update_buffer[32] = "";
+		const time_t updated = static_cast<time_t>(record.last_update);
+		struct tm update_time;
+		if (record.last_update > 0 && localtime_r(&updated, &update_time))
+			strftime(update_buffer, sizeof(update_buffer), "%Y-%m-%d %H:%M:%S",
+				 &update_time);
+		char padded_location[MAX_STRING_LENGTH];
+		snprintf(padded_location, sizeof(padded_location), "%s",
+			 pad_ansi(location_name, MAX_NAME_LENGTH + 9, TRUE).c_str());
+		checked_snprintf(buf, MAX_STRING_LENGTH, "%-21s&n%-11s %-22s%s (#%d)\r\n",
+				 padded_location, timer_buffer, update_buffer,
+				 artifact->short_description, record.vnum);
+		send_to_char(buf, ch);
+		shownData = TRUE;
+		extract_obj(artifact, FALSE);
+	}
+	if (!shownData)
+	{
+		send_to_char("No artifacts found.\r\n", ch);
+		return;
+	}
+	snprintf(buf, MAX_STRING_LENGTH, "\r\n       &+r------&+LSummary&+r------&n\r\n");
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+WGoodies:      %d&n\r\n", articount[RACEWAR_GOOD]);
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+rEvils:        %d&n\r\n", articount[RACEWAR_EVIL]);
+	if (articount[RACEWAR_UNDEAD])
+		checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+				 "         &+LUndead:       %d&n\r\n", articount[RACEWAR_UNDEAD]);
+	if (articount[RACEWAR_NEUTRAL])
+		checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+				 "         &+MNeutral:      %d&n\r\n", articount[RACEWAR_NEUTRAL]);
+	checked_snprintf(buf + strlen(buf), MAX_STRING_LENGTH - strlen(buf),
+			 "         &+WTotal:        %d\r\n", articount[RACEWAR_NONE]);
+	send_to_char(buf, ch);
 #endif
 }
 

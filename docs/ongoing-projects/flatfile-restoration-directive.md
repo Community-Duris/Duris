@@ -356,6 +356,28 @@
   listings, staff repair, and remaining direct-SQL artifact paths still require focused
   work. The global incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - restored artifact lists without MySQL
+
+- **Concrete gap:** the player-visible major, unique, and ioun lists were disabled at
+  compile time without MySQL even though the canonical flat catalog already contained
+  their ownership, location, timer, type, and update fields.
+- **Restoration:** no-database mode now renders those lists directly from the catalog. It
+  preserves mortal versus staff visibility, owned/all filtering, player and corpse owner
+  labels, ground and NPC locations, countdowns, local last-update timestamps, and the
+  existing race-war ownership summary. Missing or corrupt authority is reported as
+  unavailable rather than as an empty list. Database-backed Redis/SQL behavior is
+  unchanged.
+- **Focused evidence:** the repository runtime test covers ordered catalog reads and
+  corrupt-authority refusal, while the artifact source contract confirms that the real
+  command reads flat authority and no longer contains its disabled-backend response.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** ordinary artifact lists are restored, but catalog establishment,
+  player-specific staff listing, staff repair, and remaining direct-SQL artifact paths
+  still require focused work. The global incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

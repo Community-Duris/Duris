@@ -171,3 +171,12 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
     remove_body = artifact_source[remove_start:remove_end]
     if "flatfile_artifact_remove_owned(" not in remove_body:
         raise AssertionError("client-free owned artifact removal bypasses flat authority")
+
+    list_signature = "void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)\n{"
+    list_start = artifact_source.index(list_signature)
+    list_end = artifact_source.index("\nvoid arti_remove_sql(", list_start)
+    list_body = artifact_source[list_start:list_end]
+    if "flatfile_artifact_list(" not in list_body:
+        raise AssertionError("client-free artifact list bypasses flat authority")
+    if "requires a completed durable backend" in list_body:
+        raise AssertionError("client-free artifact list remains disabled")
