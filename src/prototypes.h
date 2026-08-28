@@ -849,7 +849,7 @@ void reset_time(void);
 void reset_zone(int, int);
 void setup_dir(FILE *, int, int);
 void skip_fread(FILE *);
-void weather_setup(void);
+void weather_setup(int mini_mode);
 int get_mob_table(int);
 int get_obj_table(int);
 void room_event(P_char, P_char, P_obj, void *);

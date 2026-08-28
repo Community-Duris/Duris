@@ -365,6 +365,14 @@ int main(int argc, char **argv)
 
 	while ((pos < argc) && (*(argv[pos]) == '-'))
 	{
+		if (!strcmp(argv[pos], "--minimal"))
+		{
+			mini_mode = 1;
+			no_ferries = 1;
+			logit(LOG_STATUS, "Running in minimal world mode");
+			pos++;
+			continue;
+		}
 		if (!strncmp(argv[pos], "--material-rarity-report",
 			     strlen("--material-rarity-report")))
 		{
@@ -428,10 +436,10 @@ int main(int argc, char **argv)
 	{
 		if (!isdigit(*argv[pos]))
 		{
-			fatal_boot_error(
-				"comm",
-				"Usage: %s [-l] [-m] [-s] [-p] [-f] [-d pathname] [ port # ]",
-				argv[0]);
+			fatal_boot_error("comm",
+					 "Usage: %s [-l] [-m|--minimal] [-s] [-p] [-f] "
+					 "[-d pathname] [ port # ]",
+					 argv[0]);
 		}
 		else if ((port = atoi(argv[pos])) <= 1024)
 		{

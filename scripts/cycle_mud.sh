@@ -27,9 +27,34 @@ fi
 
 # Parse command line arguments
 DEV_MODE=0
-if [[ "$1" == "--dev" ]]; then
-  DEV_MODE=1
+MINIMAL_MODE=0
+while (( $# > 0 )); do
+  case "$1" in
+    --dev)
+      DEV_MODE=1
+      ;;
+    --minimal)
+      MINIMAL_MODE=1
+      DEV_MODE=1
+      ;;
+    --help|-h)
+      echo "Usage: $0 [--dev] [--minimal]"
+      echo "  --minimal  Use the tracked areas_mini dataset (implies --dev)."
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Usage: $0 [--dev] [--minimal]" >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+if (( DEV_MODE == 1 )); then
   echo "Running in DEV mode - using TEST_MUD database"
+fi
+if (( MINIMAL_MODE == 1 )); then
+  echo "Running in minimal world mode from areas_mini"
 fi
 MUD_PORT=7777
 if [ $DEV_MODE -eq 1 ]; then
@@ -140,13 +165,23 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   echo "Backing up pfiles..."
   ./scripts/backup_pfiles.sh
 
-  echo "Building area tools if needed..."
-  if [ ! -x "bin/areas/tools/make_mob" ] || [ ! -x "bin/areas/tools/make_obj" ] || [ ! -x "bin/areas/tools/make_qst" ] || [ ! -x "bin/areas/tools/make_shp" ] || [ ! -x "bin/areas/tools/make_wld" ] || [ ! -x "bin/areas/tools/make_zon" ]; then
-    (cd ./areas/src && make -j1) || exit 1
-  fi
+  if (( MINIMAL_MODE == 1 )); then
+    for MINIMAL_FILE in mini.mob mini.obj mini.qst mini.wld mini.zon world.shp world.tab world.weather; do
+      if [[ ! -s "areas_mini/$MINIMAL_FILE" ]]; then
+        echo "Missing required minimal world file: areas_mini/$MINIMAL_FILE" >&2
+        exit 1
+      fi
+    done
+    echo "Using tracked minimal world data; skipping full world generation."
+  else
+    echo "Building area tools if needed..."
+    if [ ! -x "bin/areas/tools/make_mob" ] || [ ! -x "bin/areas/tools/make_obj" ] || [ ! -x "bin/areas/tools/make_qst" ] || [ ! -x "bin/areas/tools/make_shp" ] || [ ! -x "bin/areas/tools/make_wld" ] || [ ! -x "bin/areas/tools/make_zon" ]; then
+      (cd ./areas/src && make -j1) || exit 1
+    fi
 
-  echo "Building areas..."
-  (cd ./areas && ./m_slow)
+    echo "Building areas..."
+    (cd ./areas && ./m_slow)
+  fi
 
   echo "Generating list of function names.."
   nm --demangle "$RUNTIME_BINARY" | grep " T " | sed -e 's/[(].*//g' > lib/misc/event_names
@@ -168,7 +203,11 @@ while [[ $RESULT != 0 && $RESULT != 55 ]]; do
   BOOT_TIME=$(date +%s)
 
   echo "Starting duris on port ${MUD_PORT}..."
-  "$RUNTIME_BINARY" ${MUD_PORT} # > dms.out
+  SERVER_ARGS=()
+  if (( MINIMAL_MODE == 1 )); then
+    SERVER_ARGS+=(--minimal)
+  fi
+  "$RUNTIME_BINARY" "${SERVER_ARGS[@]}" "${MUD_PORT}" # > dms.out
 
 	# capture the exit code
   RESULT=${PIPESTATUS[0]}

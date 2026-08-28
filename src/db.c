@@ -161,7 +161,7 @@ P_index generate_indices(FILE *, int *);
 
 void assign_continents();
 
-void init_rand_tables(void);
+void init_rand_tables(int mini_mode);
 void init_email_reg_db(void);
 void dump_email_reg_db(void);
 int email_in_use(char *, char *);
@@ -551,7 +551,7 @@ void boot_db(int mini_mode)
 
 	fprintf(stderr, "Initializing Random Load Tables.\r\n");
 	logit(LOG_STATUS, "Initializing Random Load Tables.");
-	init_rand_tables();
+	init_rand_tables(mini_mode);
 
 	if (0)
 	{ /* EMAIL registration  */
@@ -635,7 +635,7 @@ void boot_db(int mini_mode)
 	 */
 	fprintf(stderr, "-- Weather\n");
 	logit(LOG_STATUS, "Setting up weather.");
-	weather_setup();
+	weather_setup(mini_mode);
 
 	fprintf(stderr, "-- Banned sites\n");
 	logit(LOG_STATUS, "Reading ban sites.");
@@ -765,7 +765,7 @@ void reset_time(void)
 				       "am.");
 }
 
-void weather_setup(void)
+void weather_setup(int mini_mode)
 {
 	int zon, s, i;
 	int tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8, tmp9, tmp10, tmp11, tmp12;
@@ -777,9 +777,10 @@ void weather_setup(void)
 	const signed char humid[9] = { 4, 10, 20, 30, 40, 50, 60, 75, 100 };
 	const signed char temps[11] = { -15, -8, 0, 10, 17, 27, 33, 40, 50, 75, 100 };
 
-	if (!(fl = fopen("areas/world.weather", "r")))
+	const char *weather_file = mini_mode ? "areas_mini/world.weather" : "areas/world.weather";
+	if (!(fl = fopen(weather_file, "r")))
 	{
-		fatal_boot_error("db", "weather_setup: could not open areas/world.weather: %s",
+		fatal_boot_error("db", "weather_setup: could not open %s: %s", weather_file,
 				 strerror(errno));
 	}
 	for (zon = 0; zon <= 99; zon++)
@@ -838,7 +839,7 @@ void weather_setup(void)
 }
 
 /* generate random mob and obj tables */
-void init_rand_tables()
+void init_rand_tables(int mini_mode)
 {
 	uint mtables, otables; /* counts for tables */
 	int v, w;
@@ -852,9 +853,10 @@ void init_rand_tables()
 	mtables = 0;
 	otables = 0;
 
-	if (!(tfile = fopen("areas/world.tab", "r")))
+	const char *table_file = mini_mode ? "areas_mini/world.tab" : "areas/world.tab";
+	if (!(tfile = fopen(table_file, "r")))
 	{
-		fatal_boot_error("db", "boot_tables: could not open areas/world.tab: %s",
+		fatal_boot_error("db", "boot_tables: could not open %s: %s", table_file,
 				 strerror(errno));
 	}
 

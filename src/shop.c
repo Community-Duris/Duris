@@ -40,6 +40,7 @@ extern struct str_app_type str_app[];
 extern struct cha_app_type cha_app[];
 extern struct time_info_data time_info;
 extern struct zone_data *zone_table;
+extern int mini_mode;
 
 struct shop_data *shop_index;
 int number_of_shops = 0;
@@ -1477,6 +1478,9 @@ int read_type_list(FILE *shop_f, struct shop_buy_data *list, int /*max*/)
 
 static FILE *open_shop_stream(void)
 {
+	if (mini_mode == 1)
+		return fopen("areas_mini/world.shp", "r");
+
 	FILE *shop_f = fopen(SHOP_FILE, "r");
 	if (shop_f)
 		return shop_f;
