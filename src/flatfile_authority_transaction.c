@@ -15,7 +15,8 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> transaction_magic = { 'D', 'U', 'R', 'A', 'U', 'T', 'H', 0 };
-constexpr uint32_t transaction_version = 1;
+constexpr uint32_t transaction_version = 2;
+constexpr uint32_t transaction_legacy_version = 1;
 constexpr size_t transaction_maximum_images = 16;
 constexpr size_t transaction_maximum_filename = 128;
 constexpr size_t transaction_maximum_bytes = 256 * 1024 * 1024;
@@ -26,6 +27,18 @@ std::mutex authority_mutex;
 std::string domains_directory(const std::string &root)
 {
 	return root + "/domains";
+}
+
+std::string operation_directory(const std::string &root, flatfile_authority_store store)
+{
+	switch (store)
+	{
+	case flatfile_authority_store::domains:
+		return domains_directory(root);
+	case flatfile_authority_store::players:
+		return root + "/players";
+	}
+	return {};
 }
 
 bool safe_filename(const std::string &filename)
@@ -91,7 +104,7 @@ struct decoder
 
 	template <typename T> bool number(T *value)
 	{
-		if (!value || size - offset < sizeof(T))
+		if (!value || offset > size || size - offset < sizeof(T))
 			return false;
 		using unsigned_type = std::make_unsigned_t<T>;
 		unsigned_type bits = 0;
@@ -103,7 +116,7 @@ struct decoder
 
 	bool raw(uint8_t *output, size_t count)
 	{
-		if (!output || size - offset < count)
+		if (!output || offset > size || size - offset < count)
 			return false;
 		memcpy(output, data + offset, count);
 		offset += count;
@@ -111,27 +124,46 @@ struct decoder
 	}
 };
 
-bool encode_transaction(const std::vector<flatfile_authority_after_image> &images,
+bool valid_operation(const flatfile_authority_operation &operation)
+{
+	if (operation_directory("root", operation.store).empty() ||
+	    !safe_filename(operation.filename))
+		return false;
+	switch (operation.kind)
+	{
+	case flatfile_authority_operation_kind::write:
+		return !operation.bytes.empty() &&
+		       operation.bytes.size() <= transaction_maximum_bytes;
+	case flatfile_authority_operation_kind::remove:
+		return operation.bytes.empty();
+	}
+	return false;
+}
+
+bool encode_transaction(const std::vector<flatfile_authority_operation> &operations,
 			std::vector<uint8_t> *bytes)
 {
-	if (!bytes || images.empty() || images.size() > transaction_maximum_images)
+	if (!bytes || operations.empty() || operations.size() > transaction_maximum_images)
 		return false;
 	encoder payload;
-	payload.number<uint16_t>(images.size());
-	for (size_t index = 0; index < images.size(); ++index)
+	payload.number<uint16_t>(operations.size());
+	for (size_t index = 0; index < operations.size(); ++index)
 	{
-		const auto &image = images[index];
-		if (!safe_filename(image.filename) || image.bytes.empty() ||
-		    image.bytes.size() > transaction_maximum_bytes)
+		const auto &operation = operations[index];
+		if (!valid_operation(operation))
 			return false;
 		for (size_t prior = 0; prior < index; ++prior)
-			if (images[prior].filename == image.filename)
+			if (operations[prior].store == operation.store &&
+			    operations[prior].filename == operation.filename)
 				return false;
-		payload.number<uint16_t>(image.filename.size());
-		payload.raw(reinterpret_cast<const uint8_t *>(image.filename.data()),
-			    image.filename.size());
-		payload.number<uint32_t>(image.bytes.size());
-		payload.raw(image.bytes.data(), image.bytes.size());
+		payload.number(operation.store);
+		payload.number(operation.kind);
+		payload.number<uint16_t>(operation.filename.size());
+		payload.raw(reinterpret_cast<const uint8_t *>(operation.filename.data()),
+			    operation.filename.size());
+		payload.number<uint32_t>(operation.bytes.size());
+		if (!operation.bytes.empty())
+			payload.raw(operation.bytes.data(), operation.bytes.size());
 	}
 	if (!payload.valid || payload.bytes.size() > transaction_maximum_bytes)
 		return false;
@@ -151,18 +183,19 @@ bool encode_transaction(const std::vector<flatfile_authority_after_image> &image
 
 flatfile_authority_transaction_result
 decode_transaction(const std::vector<uint8_t> &bytes,
-		   std::vector<flatfile_authority_after_image> *images)
+		   std::vector<flatfile_authority_operation> *operations)
 {
 	constexpr size_t header_size =
 		transaction_magic.size() + sizeof(uint32_t) * 2 + SHA256_DIGEST_LENGTH;
-	if (!images || bytes.size() < header_size ||
+	if (!operations || bytes.size() < header_size ||
 	    memcmp(bytes.data(), transaction_magic.data(), transaction_magic.size()))
 		return flatfile_authority_transaction_result::invalid;
 	decoder header{ bytes.data() + transaction_magic.size(),
 			bytes.size() - transaction_magic.size() };
 	uint32_t version = 0, payload_size = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    version != transaction_version || payload_size != bytes.size() - header_size)
+	    (version != transaction_version && version != transaction_legacy_version) ||
+	    payload_size != bytes.size() - header_size)
 		return flatfile_authority_transaction_result::invalid;
 	const uint8_t *expected_digest = bytes.data() + transaction_magic.size() + 8;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
@@ -176,25 +209,35 @@ decode_transaction(const std::vector<uint8_t> &bytes,
 		return flatfile_authority_transaction_result::invalid;
 	try
 	{
-		images->clear();
-		images->resize(count);
+		operations->clear();
+		operations->resize(count);
 	}
 	catch (const std::bad_alloc &)
 	{
 		return flatfile_authority_transaction_result::io_error;
 	}
-	for (size_t index = 0; index < images->size(); ++index)
+	for (size_t index = 0; index < operations->size(); ++index)
 	{
 		uint16_t filename_size = 0;
 		uint32_t image_size = 0;
+		auto &operation = (*operations)[index];
+		if (version == transaction_version)
+		{
+			if (!payload.number(&operation.store) || !payload.number(&operation.kind))
+				return flatfile_authority_transaction_result::invalid;
+		}
+		else
+		{
+			operation.store = flatfile_authority_store::domains;
+			operation.kind = flatfile_authority_operation_kind::write;
+		}
 		if (!payload.number(&filename_size) || !filename_size ||
 		    filename_size > transaction_maximum_filename ||
 		    payload.size - payload.offset < filename_size)
 			return flatfile_authority_transaction_result::invalid;
-		auto &image = (*images)[index];
 		try
 		{
-			image.filename.assign(
+			operation.filename.assign(
 				reinterpret_cast<const char *>(payload.data + payload.offset),
 				filename_size);
 		}
@@ -203,26 +246,41 @@ decode_transaction(const std::vector<uint8_t> &bytes,
 			return flatfile_authority_transaction_result::io_error;
 		}
 		payload.offset += filename_size;
-		if (!safe_filename(image.filename) || !payload.number(&image_size) || !image_size ||
-		    image_size > transaction_maximum_bytes ||
+		if (!payload.number(&image_size) || image_size > transaction_maximum_bytes ||
 		    payload.size - payload.offset < image_size)
 			return flatfile_authority_transaction_result::invalid;
 		for (size_t prior = 0; prior < index; ++prior)
-			if ((*images)[prior].filename == image.filename)
+			if ((*operations)[prior].store == operation.store &&
+			    (*operations)[prior].filename == operation.filename)
 				return flatfile_authority_transaction_result::invalid;
 		try
 		{
-			image.bytes.resize(image_size);
+			operation.bytes.resize(image_size);
 		}
 		catch (const std::bad_alloc &)
 		{
 			return flatfile_authority_transaction_result::io_error;
 		}
-		if (!payload.raw(image.bytes.data(), image.bytes.size()))
+		if (image_size && !payload.raw(operation.bytes.data(), operation.bytes.size()))
+			return flatfile_authority_transaction_result::invalid;
+		if (!valid_operation(operation))
 			return flatfile_authority_transaction_result::invalid;
 	}
 	return payload.offset == payload.size ? flatfile_authority_transaction_result::ok :
 						flatfile_authority_transaction_result::invalid;
+}
+
+bool apply_operation(const std::string &root, const flatfile_authority_operation &operation,
+		     std::string *error)
+{
+	const std::string directory = operation_directory(root, operation.store);
+	if (directory.empty())
+		return false;
+	if (operation.kind == flatfile_authority_operation_kind::write)
+		return flatfile_atomic_write(directory, operation.filename, operation.bytes, error);
+	if (operation.kind == flatfile_authority_operation_kind::remove)
+		return flatfile_atomic_remove(directory, operation.filename, true, error);
+	return false;
 }
 } // namespace
 
@@ -286,13 +344,12 @@ flatfile_authority_transaction_recover(const std::string &root, const flatfile_a
 		return flatfile_authority_transaction_result::invalid;
 	if (read != flatfile_read_result::ok)
 		return flatfile_authority_transaction_result::io_error;
-	std::vector<flatfile_authority_after_image> images;
-	const auto decoded = decode_transaction(bytes, &images);
+	std::vector<flatfile_authority_operation> operations;
+	const auto decoded = decode_transaction(bytes, &operations);
 	if (decoded != flatfile_authority_transaction_result::ok)
 		return decoded;
-	for (const auto &image : images)
-		if (!flatfile_atomic_write(domains_directory(root), image.filename, image.bytes,
-					   error))
+	for (const auto &operation : operations)
+		if (!apply_operation(root, operation, error))
 			return flatfile_authority_transaction_result::io_error;
 	return flatfile_atomic_remove(domains_directory(root), transaction_filename, false, error) ?
 		       flatfile_authority_transaction_result::ok :
@@ -304,15 +361,34 @@ flatfile_authority_transaction_commit(const std::string &root, const flatfile_au
 				      const std::vector<flatfile_authority_after_image> &images,
 				      std::string *error)
 {
+	std::vector<flatfile_authority_operation> operations;
+	try
+	{
+		operations.reserve(images.size());
+		for (const auto &image : images)
+			operations.push_back({ flatfile_authority_store::domains,
+					       flatfile_authority_operation_kind::write,
+					       image.filename, image.bytes });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_authority_transaction_result::io_error;
+	}
+	return flatfile_authority_transaction_commit_operations(root, lock, operations, error);
+}
+
+flatfile_authority_transaction_result flatfile_authority_transaction_commit_operations(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations, std::string *error)
+{
 	std::vector<uint8_t> bytes;
-	if (!lock.owns(root) || !encode_transaction(images, &bytes))
+	if (!lock.owns(root) || !encode_transaction(operations, &bytes))
 		return flatfile_authority_transaction_result::invalid;
 	if (!flatfile_atomic_write(domains_directory(root), transaction_filename, bytes, error))
 		return flatfile_authority_transaction_result::io_error;
-	for (size_t index = 0; index < images.size(); ++index)
+	for (size_t index = 0; index < operations.size(); ++index)
 	{
-		if (!flatfile_atomic_write(domains_directory(root), images[index].filename,
-					   images[index].bytes, error))
+		if (!apply_operation(root, operations[index], error))
 			return flatfile_authority_transaction_result::io_error;
 #ifdef DURIS_FLATFILE_AUTHORITY_FAULT_TEST
 		if (getenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE") && index == 0)

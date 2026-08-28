@@ -12,6 +12,26 @@ struct flatfile_authority_after_image
 	std::vector<uint8_t> bytes;
 };
 
+enum class flatfile_authority_store : uint8_t
+{
+	domains = 1,
+	players = 2
+};
+
+enum class flatfile_authority_operation_kind : uint8_t
+{
+	write = 1,
+	remove = 2
+};
+
+struct flatfile_authority_operation
+{
+	flatfile_authority_store store = flatfile_authority_store::domains;
+	flatfile_authority_operation_kind kind = flatfile_authority_operation_kind::write;
+	std::string filename;
+	std::vector<uint8_t> bytes;
+};
+
 enum class flatfile_authority_transaction_result
 {
 	ok,
@@ -42,6 +62,10 @@ class flatfile_authority_lock
 	flatfile_authority_transaction_commit(const std::string &, const flatfile_authority_lock &,
 					      const std::vector<flatfile_authority_after_image> &,
 					      std::string *);
+	friend flatfile_authority_transaction_result
+	flatfile_authority_transaction_commit_operations(
+		const std::string &, const flatfile_authority_lock &,
+		const std::vector<flatfile_authority_operation> &, std::string *);
 };
 
 flatfile_authority_transaction_result
@@ -51,5 +75,8 @@ flatfile_authority_transaction_result
 flatfile_authority_transaction_commit(const std::string &root, const flatfile_authority_lock &lock,
 				      const std::vector<flatfile_authority_after_image> &images,
 				      std::string *error);
+flatfile_authority_transaction_result flatfile_authority_transaction_commit_operations(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const std::vector<flatfile_authority_operation> &operations, std::string *error);
 
 #endif

@@ -1374,6 +1374,37 @@ sections below continue to describe the required end state.
   and learned-minion catalogs, then compose their clears with character deletion rather
   than leaving either catalog orphaned.
 
+### Checkpoint 41 - recoverable cross-store authority removals
+
+- **Completed:** upgraded the bounded `DURAUTH` transaction journal to version 2 with
+  explicit write/remove operations and typed `domains/` or `players/` targets. Target
+  names remain single safe filenames, duplicate operations on the same store/name pair
+  are rejected, writes require non-empty bounded after-images, and removes require empty
+  payloads.
+- **Compatibility:** recovery still decodes and replays version-1 write-only journals
+  produced by prior checkpoints. New callers can submit mixed operations, while the
+  existing after-image API remains a compatibility wrapper that emits version-2 domain
+  writes. Corrupt or structurally invalid journals continue to fail closed in place.
+- **Crash semantics:** the journal is durably published before any operation. Recovery
+  replays writes and idempotent removals in order, synchronizes each target directory via
+  the atomic store, and removes the journal only after every operation succeeds. Thus an
+  interruption can no longer make cross-store deletion irrecoverable merely because one
+  target was already removed.
+- **Checks passed:** the focused fault-injection regression proves interrupted domain
+  writes, interrupted `players/` plus `domains/` removals, idempotent missing-file replay,
+  unsafe/payload-invalid rejection, version-1 journal recovery, corrupt-journal refusal,
+  and success-last journal cleanup. The dependent player-domain, boon, recipe, spellbook,
+  item, and auction repository regressions, strict normal build, and isolated client-free
+  build/boot preflight also pass. CI now runs the transaction regression explicitly.
+- **Files changed:** the generic authority transaction API/codec, its standalone harness,
+  CI, and this handoff ledger.
+- **Remaining deletion gap:** repositories must expose validated prepared operations for
+  the identity tombstone, player snapshot, PID gameplay-domain record, recipe catalog,
+  and spellbook catalog. The runtime delete route must then commit that exact set under
+  one authority lock; independent clears remain intentionally unacceptable.
+- **Next action:** add those repository prepare APIs and a typed character-delete
+  coordinator, with fault injection proving recovery from every operation boundary.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
