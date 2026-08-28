@@ -524,6 +524,36 @@ sections below continue to describe the required end state.
   authorities and their initial-baseline publication, then make their critical commands
   use the same revision/idempotence boundary.
 
+### Checkpoint 17 - player economy and shared account-bank authority foundation
+
+- **Completed:** added separate typed `DURPDOM` player-domain and `DURBANK`
+  account/racewar-bank records under `domains/`. Player records cover wallet balances,
+  epic and frag counters, their independent revisions, recent PvP death timestamps, and
+  completed epic-zone IDs; bank balances and revision live once per canonical account
+  and racewar rather than being duplicated across character records.
+- **Completed:** both record types use bounded little-endian schemas, explicit format
+  versions, SHA-256 payload checksums, owner-only file validation, and the shared atomic
+  write/sync/rename/directory-sync store. A single owner-only domain lock serializes the
+  two-file initial baseline so retries verify both records, including the shared bank,
+  before reporting success. Corrupt or conflicting authority is never overwritten.
+- **Completed:** added a standalone repository regression and client-free CI step. It
+  covers full round trips, canonical account lookup, exact retry, conflicting player and
+  same-player bank retries, two characters sharing one account bank, conflicting shared
+  bank creation, account mismatch, checksum corruption, refusal to overwrite corrupt
+  authority, and temporary-file cleanup.
+- **Checks passed:** `python3 tests/async/test_flatfile_player_domain_repository.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, the normal `make -C src -j2`
+  build, `./scripts/format.sh --check`, and `git diff --check`.
+- **Files changed:** `src/flatfile_player_domain_repository.[ch]`, `src/Makefile`,
+  `.github/workflows/quality.yml`, and the focused domain repository regression.
+- **Remaining login gap:** this checkpoint establishes the typed authority and its
+  recoverable initial transaction only. Player snapshot baseline/load are not yet wired
+  to it, mutation commands do not yet apply its revision boundary, and trophy load
+  coverage remains fenced.
+- **Next action:** derive and establish these records during the first full player
+  snapshot, hydrate the bounded load result from them, then route wallet/bank/epic/frag
+  critical commands through a durable idempotent operation ledger.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
