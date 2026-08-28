@@ -1,9 +1,11 @@
 #include "flatfile_character_delete.h"
 
 #include "flatfile_authority_transaction.h"
+#include "flatfile_auction_repository.h"
 #include "flatfile_boon_repository.h"
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
+#include "flatfile_offline_message_repository.h"
 #include "flatfile_player_domain_repository.h"
 #include "flatfile_player_repository.h"
 #include "flatfile_recipe_repository.h"
@@ -90,7 +92,7 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	std::vector<flatfile_authority_operation> operations;
 	try
 	{
-		operations.reserve(7);
+		operations.reserve(8);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -98,6 +100,15 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	}
 
 	flatfile_authority_operation operation;
+	const auto auction = flatfile_auction_check_player_unreferenced(
+		root, authority_lock, static_cast<uint32_t>(pid), error);
+	if (auction == flatfile_auction_player_reference_result::referenced)
+		return flatfile_character_delete_result::conflict;
+	if (auction != flatfile_auction_player_reference_result::clear)
+		return auction == flatfile_auction_player_reference_result::io_error ?
+			       flatfile_character_delete_result::io_error :
+			       flatfile_character_delete_result::invalid;
+
 	const auto snapshot = flatfile_player_snapshot_prepare_remove(
 		root, snapshot_lock, authority_lock, pid, &operation, error);
 	if (snapshot == flatfile_player_load_result::ok)
@@ -174,6 +185,19 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	{
 		return map_authority(spellbook, flatfile_spellbook_result::not_found,
 				     flatfile_spellbook_result::io_error);
+	}
+
+	const auto offline = flatfile_offline_message_prepare_remove(
+		root, authority_lock, static_cast<uint32_t>(pid), &operation, error);
+	if (offline == flatfile_offline_message_result::ok)
+	{
+		if (!append_operation(&operations, &operation))
+			return flatfile_character_delete_result::io_error;
+	}
+	else if (offline != flatfile_offline_message_result::unchanged)
+	{
+		return map_authority(offline, flatfile_offline_message_result::not_found,
+				     flatfile_offline_message_result::io_error);
 	}
 
 	if (!retry && !append_operation(&operations, &identity_operation))

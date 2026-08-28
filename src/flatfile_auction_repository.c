@@ -797,6 +797,38 @@ flatfile_auction_acknowledge_event(const std::string &root,
 		       flatfile_auction_query_result::io_error;
 }
 
+flatfile_auction_player_reference_result
+flatfile_auction_check_player_unreferenced(const std::string &root,
+					   const flatfile_authority_lock &lock, uint32_t pid,
+					   std::string *error)
+{
+	if (!pid || !lock.matches(root))
+		return flatfile_auction_player_reference_result::invalid;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_auction_player_reference_result::io_error :
+			       flatfile_auction_player_reference_result::invalid;
+	auction_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_read_result::ok && loaded != flatfile_read_result::not_found)
+		return loaded == flatfile_read_result::io_error ?
+			       flatfile_auction_player_reference_result::io_error :
+			       flatfile_auction_player_reference_result::invalid;
+	for (const auto &listing : catalog.listings)
+	{
+		if (listing.seller_pid == pid || listing.winner_pid == pid)
+			return flatfile_auction_player_reference_result::referenced;
+		for (const auto &item : listing.items)
+			if (item.claim_pid == pid)
+				return flatfile_auction_player_reference_result::referenced;
+	}
+	if (std::any_of(catalog.money.begin(), catalog.money.end(),
+			[pid](const auto &entry) { return entry.pid == pid; }))
+		return flatfile_auction_player_reference_result::referenced;
+	return flatfile_auction_player_reference_result::clear;
+}
+
 critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							const critical_command &command)
 {

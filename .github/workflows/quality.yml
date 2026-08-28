@@ -46,6 +46,10 @@ jobs:
         run: python3 tests/async/test_flatfile_authority_transaction.py
       - name: Verify recoverable flat-file character deletion
         run: python3 tests/async/test_flatfile_character_delete.py
+      - name: Verify deletion-adjacent auction and offline-message authority
+        run: |
+          python3 tests/async/test_flatfile_auction_repository.py
+          python3 tests/async/test_flatfile_offline_message_repository.py
       - name: Verify flat-file recipe authority
         run: |
           python3 tests/async/test_flatfile_recipe_repository.py

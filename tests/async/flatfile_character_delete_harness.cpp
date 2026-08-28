@@ -2,6 +2,7 @@
 #include "flatfile_character_delete.h"
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
+#include "flatfile_offline_message_repository.h"
 #include "flatfile_player_domain_repository.h"
 #include "flatfile_player_repository.h"
 #include "flatfile_recipe_repository.h"
@@ -89,6 +90,11 @@ static void establish(const fs::path &root, bool establish_boons)
 		require(flatfile_boon_establish(root.string(), {}, &error) ==
 				flatfile_boon_result::ok,
 			"boon baseline failed: " + error);
+	flatfile_offline_message_id message_id = {};
+	message_id[0] = 1;
+	require(flatfile_offline_message_enqueue(root.string(), 1, message_id, "pending", &error) ==
+			flatfile_offline_message_result::ok,
+		"offline message baseline failed: " + error);
 }
 
 int main(int argc, char **argv)
@@ -138,6 +144,11 @@ int main(int argc, char **argv)
 			root.string(), { item_owner_type::player, 1, 0 }, &owner_revision, &items,
 			&error) == flatfile_item_repository_result::not_found,
 		"recovered deletion retained the player item owner");
+	std::vector<flatfile_offline_message_record> messages;
+	require(flatfile_offline_message_list(root.string(), 1, &messages, &error) ==
+				flatfile_offline_message_result::ok &&
+			messages.empty(),
+		"recovered deletion retained offline messages");
 
 	const fs::path missing = fs::path(argv[1]) / "missing";
 	establish(missing, false);

@@ -354,3 +354,28 @@ flatfile_offline_message_acknowledge(const std::string &root, uint32_t pid,
 	catalog.messages.erase(found);
 	return publish(root, pid, &catalog, error);
 }
+
+flatfile_offline_message_result
+flatfile_offline_message_prepare_remove(const std::string &root,
+					const flatfile_authority_lock &lock, uint32_t pid,
+					flatfile_authority_operation *operation, std::string *error)
+{
+	if (!operation || !pid || !lock.matches(root))
+		return flatfile_offline_message_result::invalid;
+	*operation = {};
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_offline_message_result::io_error :
+			       flatfile_offline_message_result::invalid;
+	message_catalog catalog;
+	const auto loaded = load_catalog(root, pid, &catalog, error);
+	if (loaded == flatfile_offline_message_result::not_found)
+		return flatfile_offline_message_result::unchanged;
+	if (loaded != flatfile_offline_message_result::ok)
+		return loaded;
+	operation->store = flatfile_authority_store::domains;
+	operation->kind = flatfile_authority_operation_kind::remove;
+	operation->filename = message_filename(pid);
+	return flatfile_offline_message_result::ok;
+}

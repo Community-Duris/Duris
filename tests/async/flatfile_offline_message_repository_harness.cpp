@@ -77,6 +77,23 @@ int main(int argc, char **argv)
 				flatfile_offline_message_result::invalid,
 		"invalid offline message identity was accepted");
 	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not acquire authority lock for offline removal");
+		flatfile_authority_operation operation;
+		require(flatfile_offline_message_prepare_remove(root.string(), lock, 42, &operation,
+								&error) ==
+					flatfile_offline_message_result::ok &&
+				operation.store == flatfile_authority_store::domains &&
+				operation.kind == flatfile_authority_operation_kind::remove &&
+				operation.filename == "offline_messages_42",
+			"offline removal did not prepare the expected operation");
+		require(flatfile_offline_message_prepare_remove(root.string(), lock, 99, &operation,
+								&error) ==
+				flatfile_offline_message_result::unchanged,
+			"missing offline mailbox was not an idempotent removal");
+	}
+	{
 		std::fstream file(catalog, std::ios::in | std::ios::out | std::ios::binary);
 		require(file.good(), "could not open offline catalog for corruption");
 		file.seekg(-1, std::ios::end);
@@ -92,6 +109,16 @@ int main(int argc, char **argv)
 							 &error) ==
 				flatfile_offline_message_result::invalid,
 		"corrupt offline catalog was exposed or overwritten");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not reacquire authority lock for corrupt offline removal");
+		flatfile_authority_operation operation;
+		require(flatfile_offline_message_prepare_remove(root.string(), lock, 42, &operation,
+								&error) ==
+				flatfile_offline_message_result::invalid,
+			"corrupt offline mailbox was accepted for removal");
+	}
 	for (const auto &entry : fs::directory_iterator(domains))
 		require(entry.path().filename().string().find(".tmp.") == std::string::npos,
 			"temporary offline-message file was left behind");

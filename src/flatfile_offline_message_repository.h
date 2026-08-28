@@ -1,6 +1,8 @@
 #ifndef DURIS_FLATFILE_OFFLINE_MESSAGE_REPOSITORY_H
 #define DURIS_FLATFILE_OFFLINE_MESSAGE_REPOSITORY_H
 
+#include "flatfile_authority_transaction.h"
+
 #include <array>
 #include <cstdint>
 #include <string>
@@ -26,6 +28,7 @@ enum class flatfile_offline_message_result
 	io_error,
 	full,
 	conflict,
+	unchanged,
 };
 
 flatfile_offline_message_result
@@ -39,5 +42,8 @@ flatfile_offline_message_list(const std::string &root, uint32_t pid,
 flatfile_offline_message_result
 flatfile_offline_message_acknowledge(const std::string &root, uint32_t pid,
 				     const flatfile_offline_message_id &id, std::string *error);
+flatfile_offline_message_result flatfile_offline_message_prepare_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	flatfile_authority_operation *operation, std::string *error);
 
 #endif

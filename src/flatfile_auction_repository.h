@@ -3,6 +3,7 @@
 
 #include "auction_command.h"
 #include "critical_command_coordinator.h"
+#include "flatfile_authority_transaction.h"
 
 #include <cstdint>
 #include <string>
@@ -12,6 +13,14 @@ enum class flatfile_auction_query_result
 {
 	ok,
 	not_found,
+	invalid,
+	io_error,
+};
+
+enum class flatfile_auction_player_reference_result
+{
+	clear,
+	referenced,
 	invalid,
 	io_error,
 };
@@ -73,6 +82,10 @@ flatfile_auction_find_pending_event(const std::string &root,
 flatfile_auction_query_result
 flatfile_auction_acknowledge_event(const std::string &root,
 				   const critical_operation_id &operation_id, std::string *error);
+flatfile_auction_player_reference_result
+flatfile_auction_check_player_unreferenced(const std::string &root,
+					   const flatfile_authority_lock &lock, uint32_t pid,
+					   std::string *error);
 
 critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							const critical_command &command);

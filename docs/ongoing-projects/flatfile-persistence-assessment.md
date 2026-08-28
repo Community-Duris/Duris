@@ -1507,6 +1507,40 @@ sections below continue to describe the required end state.
   manifest, implement fail-closed preconditions/preparers for the remaining authorities,
   and only then route the complete transaction through the backend-neutral delete API.
 
+### Checkpoint 45 - offline-message cleanup and auction deletion fence
+
+- **Completed:** per-PID offline messages now expose a prepare-only typed removal under the
+  held global authority lock. A present file must pass its schema, bounds, ordering, and
+  checksum validation before its domain removal joins the character-delete journal; a
+  missing file is the repository's authoritative empty state and produces no operation.
+- **Completed:** the auction repository now exposes a held-lock player-reference check.
+  Deletion is rejected with a conflict if the PID occurs as any listing seller, winner,
+  item claimant, or money-pickup owner. Missing auction authority retains the repository's
+  established empty-catalog semantics, while corrupt or unreadable authority fails closed.
+  The conservative check includes historical listings intentionally: deletion will remain
+  fenced until a later auction disposition can distinguish and rewrite safe history.
+- **Coordinator integration:** auction validation occurs before any prepared core image is
+  accepted, and offline-message removal is ordered before the identity tombstone in the
+  same recoverable transaction. The operation bound is now eight. Interrupted recovery
+  verifies that the offline file disappears together with snapshot/domain/knowledge/item
+  state and that the final identity tombstone remains success-last.
+- **Call-graph inventory:** the live route still performs artifact release, locker-access
+  deletion, association kick/save, account-character and leaderboard soft deletion,
+  optional locker-content deletion, core player deletion, and name-keyed ship deletion.
+  Auction and offline-message references were not explicit calls but are PID authorities
+  that could otherwise outlive the identity; they are now represented in the coordinator.
+- **Checks passed:** the offline-message repository, auction repository, expanded
+  coordinator fault/retry regression, formatting, and strict normal server build pass.
+  Auction tests prove referenced/clear preflight outcomes, and CI now runs both adjacent
+  repository regressions alongside the coordinator in the client-free job.
+- **Exposure remains fenced:** lockers/private chests, artifacts and bindings,
+  guild/association authority, frag leaderboard history, ships/cargo, corpses/saved world
+  items, and other schema-derived PID references still lack a complete disposition. The
+  live `deleteCharacter` and `sql_delete_player` routes remain unchanged.
+- **Next action:** codify the explicit call graph plus schema-derived references as a
+  checked manifest, then implement the locker and artifact preparers/preconditions before
+  addressing name-keyed ships and association authority.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

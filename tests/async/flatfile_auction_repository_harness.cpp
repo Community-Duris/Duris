@@ -431,6 +431,19 @@ int main(int argc, char **argv)
 	require(flatfile_auction_repository_apply(root.string(), command(removed_claim, 14))
 				.outcome == critical_apply_outcome::applied,
 		"removed item was not reclaimable by its seller");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not acquire authority lock for player reference check");
+		require(flatfile_auction_check_player_unreferenced(root.string(), lock, 42,
+								   &error) ==
+				flatfile_auction_player_reference_result::referenced,
+			"auction history did not fence referenced player deletion");
+		require(flatfile_auction_check_player_unreferenced(root.string(), lock, 99,
+								   &error) ==
+				flatfile_auction_player_reference_result::clear,
+			"unreferenced player was fenced by auction authority");
+	}
 	const fs::path catalog = domains / "auction_catalog";
 	convert_catalog_to_legacy_v1(catalog);
 	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==
