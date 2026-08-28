@@ -370,7 +370,29 @@ load_catalog(const std::string &root, materialization_catalog *catalog, std::str
 bool payload_items_match(const shop_trade_payload &payload,
 			 const std::vector<player_item_snapshot> &items)
 {
-	if (items.size() != payload.item_count ||
+	if (items.empty() || items.size() != payload.item_count ||
+	    items.front().object_uid != payload.selected_item_uid)
+		return false;
+	std::unordered_set<uint64_t> payload_uids;
+	try
+	{
+		payload_uids.reserve(payload.item_count);
+		for (size_t index = 0; index < payload.item_count; ++index)
+			payload_uids.insert(payload.items[index].item_uid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return payload_uids.size() == items.size() &&
+	       std::all_of(items.begin(), items.end(), [&](const auto &item)
+			   { return payload_uids.contains(item.object_uid); });
+}
+
+bool payload_items_match(const item_transfer_payload &payload,
+			 const std::vector<player_item_snapshot> &items)
+{
+	if (items.empty() || items.size() != payload.item_count ||
 	    items.front().object_uid != payload.selected_item_uid)
 		return false;
 	std::unordered_set<uint64_t> payload_uids;
@@ -550,6 +572,94 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_p
 	try
 	{
 		catalog.events.push_back(std::move(event));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_shop_trade_materialization_result::io_error;
+	}
+	if (!compact_catalog(&catalog, &removed))
+		return flatfile_shop_trade_materialization_result::io_error;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_shop_trade_materialization_result::invalid;
+	mutation->after_image = { catalog_filename, std::move(bytes) };
+	return flatfile_shop_trade_materialization_result::ok;
+}
+
+flatfile_shop_trade_materialization_result flatfile_item_transfer_materialization_prepare(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation_id, const item_transfer_payload &payload,
+	flatfile_shop_trade_materialization_mutation *mutation, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || critical_operation_id_is_zero(operation_id) ||
+	    !mutation || !payload.item_blob_size ||
+	    payload.item_blob_size > payload.item_blob.size())
+		return flatfile_shop_trade_materialization_result::invalid;
+	std::vector<uint8_t> item_blob;
+	std::vector<player_item_snapshot> items;
+	try
+	{
+		item_blob.assign(payload.item_blob.begin(),
+				 payload.item_blob.begin() + payload.item_blob_size);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_shop_trade_materialization_result::io_error;
+	}
+	materialization_event decoded_event;
+	decoded_event.item_blob = item_blob;
+	if (!decode_items(decoded_event, &items) || !payload_items_match(payload, items))
+		return flatfile_shop_trade_materialization_result::invalid;
+	std::vector<materialization_event> additions;
+	auto add = [&](uint64_t owner_id, shop_trade_action action) -> bool
+	{
+		if (!owner_id || owner_id > std::numeric_limits<uint32_t>::max())
+			return false;
+		try
+		{
+			additions.push_back({ operation_id, action, static_cast<uint32_t>(owner_id),
+					      item_blob });
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+		return true;
+	};
+	const bool from_player = payload.from_owner.type == item_owner_type::player;
+	const bool to_player = payload.to_owner.type == item_owner_type::player;
+	if (from_player && to_player && payload.from_owner.id == payload.to_owner.id)
+	{
+		if (!add(payload.to_owner.id, shop_trade_action::buy_existing))
+			return flatfile_shop_trade_materialization_result::io_error;
+	}
+	else
+	{
+		if (from_player && !add(payload.from_owner.id, shop_trade_action::sell_store))
+			return flatfile_shop_trade_materialization_result::io_error;
+		if (to_player && !add(payload.to_owner.id, shop_trade_action::buy_existing))
+			return flatfile_shop_trade_materialization_result::io_error;
+	}
+	if (additions.empty())
+		return flatfile_shop_trade_materialization_result::unchanged;
+	materialization_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_shop_trade_materialization_result::ok)
+		return loaded;
+	if (std::any_of(
+		    catalog.events.begin(), catalog.events.end(), [&](const auto &existing)
+		    { return critical_operation_id_equal(existing.operation_id, operation_id); }) ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_shop_trade_materialization_result::invalid;
+	size_t removed = 0;
+	if (!compact_catalog(&catalog, &removed))
+		return flatfile_shop_trade_materialization_result::io_error;
+	if (catalog.events.size() > catalog_maximum_events - additions.size())
+		return flatfile_shop_trade_materialization_result::invalid;
+	try
+	{
+		catalog.events.insert(catalog.events.end(), additions.begin(), additions.end());
 	}
 	catch (const std::bad_alloc &)
 	{

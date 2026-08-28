@@ -6,13 +6,15 @@
 #include <array>
 #include <cstdint>
 
-constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 3;
-constexpr uint16_t ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 2;
+constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 4;
+constexpr uint16_t ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 3;
+constexpr uint16_t ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION = 2;
 constexpr size_t ITEM_TRANSFER_MAX_ITEMS = 12;
 constexpr size_t ITEM_TRANSFER_HEADER_BYTES = 96;
 constexpr size_t ITEM_TRANSFER_ENTRY_BYTES = 40;
 constexpr size_t ITEM_TRANSFER_PAYLOAD_BYTES =
 	ITEM_TRANSFER_HEADER_BYTES + ITEM_TRANSFER_MAX_ITEMS * ITEM_TRANSFER_ENTRY_BYTES;
+constexpr size_t ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES = 128 * 1024;
 constexpr size_t ITEM_TRANSFER_RESULT_BYTES = 40;
 constexpr uint64_t ITEM_TRANSFER_ABSENT_REVISION = UINT64_MAX;
 
@@ -91,6 +93,8 @@ struct item_transfer_payload
 	uint64_t expected_target_parent_revision;
 	uint16_t item_count;
 	std::array<item_transfer_entry, ITEM_TRANSFER_MAX_ITEMS> items;
+	uint32_t item_blob_size;
+	std::array<uint8_t, ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES> item_blob;
 };
 
 struct item_transfer_result

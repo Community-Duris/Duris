@@ -28,13 +28,15 @@ class ItemOwnershipContractTests(unittest.TestCase):
                        "verify_item_ownership_schema.sh"):
             self.assertTrue((ROOT / "migrations" / script).stat().st_mode & 0o111)
 
-    def test_command_is_fixed_bounded_typed_and_revisioned(self):
+    def test_command_is_bounded_typed_revisioned_and_snapshot_capable(self):
         header = (SRC / "item_transfer_command.h").read_text()
         implementation = (SRC / "item_transfer_command.c").read_text()
         self.assertIn("ITEM_TRANSFER_MAX_ITEMS = 12", header)
         self.assertIn("ITEM_TRANSFER_PAYLOAD_BYTES", header)
-        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 3", header)
-        self.assertIn("ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 2", header)
+        self.assertIn("ITEM_TRANSFER_PAYLOAD_VERSION = 4", header)
+        self.assertIn("ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 3", header)
+        self.assertIn("ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION = 2", header)
+        self.assertIn("ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES", header)
         for owner in ("player", "container", "room", "corpse", "locker", "auction",
                       "system", "destruction", "shopkeeper"):
             self.assertIn(owner, header)
@@ -42,6 +44,7 @@ class ItemOwnershipContractTests(unittest.TestCase):
         self.assertIn("shop_buy", header)
         self.assertIn("shop_sell", header)
         self.assertIn("ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION", implementation)
+        self.assertIn("ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION", implementation)
         self.assertIn("critical_entity_key_less", implementation)
 
     def test_repository_locks_complete_root_and_commits_all_authorities(self):

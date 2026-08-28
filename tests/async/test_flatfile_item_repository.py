@@ -19,6 +19,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-") as t
             "-Wpedantic",
             "-Werror",
             "-D__NO_MYSQL__",
+            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
             "-Isrc",
             "-Isrc/no_mysql",
             "tests/async/flatfile_item_repository_harness.cpp",

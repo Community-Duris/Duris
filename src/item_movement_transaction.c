@@ -1,6 +1,8 @@
 #include "item_movement_transaction.h"
 
 #include "item_ownership_runtime.h"
+#include "player_snapshot_capture.h"
+#include "player_snapshot_codec.h"
 #include "prototypes.h"
 #include "utils.h"
 
@@ -230,10 +232,23 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 		.expected_target_parent_revision =
 			adopted && target_container ? target_runtime.item_revision : 0,
 		.item_count = static_cast<uint16_t>(items.size()),
-		.items = {}
+		.items = {},
+		.item_blob_size = 0,
+		.item_blob = {}
 	};
 	for (size_t index = 0; index < items.size(); ++index)
 		payload.items[index] = items[index];
+	std::vector<player_item_snapshot> snapshots;
+	std::vector<uint8_t> item_blob;
+	if (player_item_snapshot_tree_capture(root, &snapshots, nullptr) !=
+		    player_snapshot_capture_result::ok ||
+	    snapshots.size() != items.size() ||
+	    player_item_snapshot_list_encode(snapshots, &item_blob) !=
+		    player_snapshot_codec_result::ok ||
+	    item_blob.empty() || item_blob.size() > payload.item_blob.size())
+		return false;
+	payload.item_blob_size = static_cast<uint32_t>(item_blob.size());
+	std::copy(item_blob.begin(), item_blob.end(), payload.item_blob.begin());
 	critical_operation_id operation_id = {};
 	critical_command command = {};
 	if (!critical_operation_id_generate(&operation_id) ||

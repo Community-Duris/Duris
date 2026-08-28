@@ -32,6 +32,17 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertLess(movement.index("const bool committed"),
                         movement.index("item_ownership_runtime_apply"))
 
+    def test_transfer_captures_exact_snapshot_before_submission(self):
+        movement = (SRC / "item_movement_transaction.c").read_text()
+        capture = movement.index("player_item_snapshot_tree_capture")
+        encode = movement.index("player_item_snapshot_list_encode")
+        build = movement.index("item_transfer_command_build")
+        submit = movement.index("critical_command_coordinator_submit")
+        self.assertLess(capture, encode)
+        self.assertLess(encode, build)
+        self.assertLess(build, submit)
+        self.assertIn("payload.item_blob_size", movement)
+
     def test_audited_commands_defer_pointer_mutation(self):
         actobj = (SRC / "actobj.c").read_text()
         for reason in ("player_get", "player_drop", "player_put", "player_give",

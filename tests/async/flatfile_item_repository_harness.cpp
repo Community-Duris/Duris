@@ -1,5 +1,8 @@
 #include "flatfile_item_repository.h"
+#include "flatfile_shop_trade_materialization.h"
+#include "player_snapshot_codec.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <cstring>
 #include <cstdlib>
@@ -88,6 +91,25 @@ static item_transfer_result result_of(const critical_apply_result &applied)
 						    applied.result_size, &result),
 		"could not decode item repository result");
 	return result;
+}
+
+static std::vector<player_item_snapshot> movement_items()
+{
+	player_item_snapshot root = {};
+	root.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	root.object_uid = 100;
+	root.generated_key = 1100;
+	root.vnum = 500;
+	root.name = "given container";
+	root.short_description = "an exact given container";
+	player_item_snapshot child = {};
+	child.parent_index = 0;
+	child.object_uid = 101;
+	child.generated_key = 1101;
+	child.vnum = 501;
+	child.name = "nested gift";
+	child.short_description = "an exact nested gift";
+	return { root, child };
 }
 
 static shop_trade_payload shop_trade(shop_trade_action action, uint64_t item_uid,
@@ -228,24 +250,72 @@ int main(int argc, char **argv)
 				      items[index].item_revision,
 				      items[index].vnum,
 				      items[index].state };
+	const std::vector<player_item_snapshot> exact_items = movement_items();
+	std::vector<uint8_t> exact_blob;
+	require(player_item_snapshot_list_encode(exact_items, &exact_blob) ==
+				player_snapshot_codec_result::ok &&
+			exact_blob.size() <= move.item_blob.size(),
+		"could not encode exact transfer snapshot");
+	move.item_blob_size = static_cast<uint32_t>(exact_blob.size());
+	std::copy(exact_blob.begin(), exact_blob.end(), move.item_blob.begin());
 	critical_command transfer = {};
 	require(item_transfer_command_build(&transfer, operation(2), move,
 					    critical_source_site::command,
 					    critical_deadline_class::interactive),
 		"could not build transfer command");
 	transfer.accepted_at_usec = 2;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	applied = flatfile_item_repository_apply(root.string(), transfer);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted transfer did not leave recoverable atomic intent");
 	applied = flatfile_item_repository_apply(root.string(), transfer);
 	result = result_of(applied);
-	require(applied.outcome == critical_apply_outcome::applied &&
+	require(applied.outcome == critical_apply_outcome::already_applied &&
 			result.from_owner_revision == 2 && result.to_owner_revision == 1 &&
 			result.max_item_revision == 2,
-		"cross-owner transfer did not apply");
+		"cross-owner transfer did not recover atomically");
 	items.clear();
 	require(flatfile_item_repository_load_owner(
 			root.string(), { item_owner_type::player, 77, 0 }, &owner_revision, &items,
 			&error) == flatfile_item_repository_result::ok &&
 			owner_revision == 1 && items.size() == 2 && items[0].item_revision == 2,
 		"destination owner did not receive the complete topology");
+	player_snapshot stale_source = {};
+	stale_source.pid = 42;
+	stale_source.items = exact_items;
+	player_snapshot missing_destination = {};
+	missing_destination.pid = 77;
+	std::vector<flatfile_item_ownership_record> source_items;
+	uint64_t source_revision = 0;
+	const auto source_loaded = flatfile_item_repository_load_owner(
+		root.string(), { item_owner_type::player, 42, 0 }, &source_revision, &source_items,
+		&error);
+	require((source_loaded == flatfile_item_repository_result::ok ||
+		 source_loaded == flatfile_item_repository_result::not_found) &&
+			source_items.empty(),
+		"source owner unexpectedly retained transferred items");
+	{
+		flatfile_authority_lock reconciliation_lock;
+		require(reconciliation_lock.acquire(root.string(), &error),
+			"could not lock transfer reconciliation: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				root.string(), reconciliation_lock, 42, source_items, &stale_source,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_source.items.empty(),
+			"restart reconciliation retained the stale source transfer: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				root.string(), reconciliation_lock, 77, items, &missing_destination,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				missing_destination.items.size() == 2 &&
+				missing_destination.items[0].object_uid == 100 &&
+				missing_destination.items[0].short_description ==
+					"an exact given container" &&
+				missing_destination.items[1].parent_index == 0,
+			"restart reconciliation did not reconstruct the exact destination transfer: " +
+				error);
+	}
 
 	move.expected_from_revision = 1;
 	move.expected_to_revision = 0;

@@ -12,7 +12,6 @@ HARNESS = r'''
 #include "item_transfer_command.h"
 
 #include <cassert>
-
 namespace
 {
 constexpr size_t REASON_OFFSET = 34;
@@ -46,6 +45,10 @@ int main()
 	payload.target_root_item_uid = 100;
 	payload.item_count = 1;
 	payload.items[0] = { 100, 100, 0, 5, 500, item_custody_state::active };
+	payload.item_blob_size = 3;
+	payload.item_blob[0] = 0x12;
+	payload.item_blob[1] = 0x34;
+	payload.item_blob[2] = 0x56;
 
 	critical_command command = {};
 	assert(item_transfer_command_build(&command, operation(), payload,
@@ -59,8 +62,17 @@ int main()
 	assert(item_transfer_command_decode_payload(command, &decoded));
 	assert(decoded.reason == item_transfer_reason::shop_buy);
 	assert(item_owner_identity_equal(decoded.from_owner, payload.from_owner));
+	assert(decoded.item_blob_size == payload.item_blob_size);
+	assert(decoded.item_blob[2] == payload.item_blob[2]);
 
+	command.payload.resize(ITEM_TRANSFER_PAYLOAD_BYTES);
 	command.payload_version = ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION;
+	set_reason(&command, item_transfer_reason::shop_buy);
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.reason == item_transfer_reason::shop_buy);
+	assert(decoded.item_blob_size == 0);
+
+	command.payload_version = ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION;
 	set_reason(&command, item_transfer_reason::player_give);
 	assert(item_transfer_command_decode_payload(command, &decoded));
 	assert(decoded.reason == item_transfer_reason::player_give);
@@ -114,4 +126,4 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-version-") as temp_
     )
     subprocess.run([str(binary)], check=True)
 
-print("[PASS] item-transfer v2 compatibility and v3 shop reasons")
+print("[PASS] item-transfer v2/v3 compatibility and v4 exact snapshots")

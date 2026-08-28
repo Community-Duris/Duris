@@ -106,7 +106,8 @@ bool validate_payload(const item_transfer_payload &payload)
 {
 	if (!item_owner_identity_valid(payload.from_owner) ||
 	    !item_owner_identity_valid(payload.to_owner) || !valid_reason(payload.reason) ||
-	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS)
+	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    payload.item_blob_size > payload.item_blob.size())
 		return false;
 	const bool creation = payload.from_owner.type == item_owner_type::system;
 	const bool destruction = payload.to_owner.type == item_owner_type::destruction;
@@ -229,7 +230,7 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 {
 	if (!encoded || !validate_payload(payload))
 		return false;
-	encoded->assign(ITEM_TRANSFER_PAYLOAD_BYTES, 0);
+	encoded->assign(ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) + payload.item_blob_size, 0);
 	encode_owner(encoded->data() + FROM_OFFSET, payload.from_owner);
 	encode_owner(encoded->data() + TO_OFFSET, payload.to_owner);
 	put_u16(encoded->data() + REASON_OFFSET, static_cast<uint16_t>(payload.reason));
@@ -257,6 +258,9 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 		put_u32(output + 32, static_cast<uint32_t>(entry.vnum));
 		output[36] = static_cast<uint8_t>(entry.expected_state);
 	}
+	put_u32(encoded->data() + ITEM_TRANSFER_PAYLOAD_BYTES, payload.item_blob_size);
+	std::copy_n(payload.item_blob.begin(), payload.item_blob_size,
+		    encoded->begin() + ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t));
 	return true;
 }
 
@@ -265,8 +269,11 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 {
 	if (!payload || command.type != critical_command_type::item_transfer ||
 	    (command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION &&
-	     command.payload_version != ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION) ||
-	    command.payload.size() != ITEM_TRANSFER_PAYLOAD_BYTES)
+	     command.payload_version != ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION) ||
+	    (command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION ?
+		     command.payload.size() < ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) :
+		     command.payload.size() != ITEM_TRANSFER_PAYLOAD_BYTES))
 		return false;
 	*payload = {};
 	payload->from_owner = decode_owner(command.payload.data() + FROM_OFFSET);
@@ -303,8 +310,20 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 		if (input[37] || input[38] || input[39])
 			return false;
 	}
+	if (command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION)
+	{
+		payload->item_blob_size =
+			get_u32(command.payload.data() + ITEM_TRANSFER_PAYLOAD_BYTES);
+		if (payload->item_blob_size > payload->item_blob.size() ||
+		    command.payload.size() != ITEM_TRANSFER_PAYLOAD_BYTES + sizeof(uint32_t) +
+						      payload->item_blob_size)
+			return false;
+		std::copy_n(command.payload.begin() + ITEM_TRANSFER_PAYLOAD_BYTES +
+				    sizeof(uint32_t),
+			    payload->item_blob_size, payload->item_blob.begin());
+	}
 	if (!validate_payload(*payload) ||
-	    (command.payload_version == ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION &&
+	    (command.payload_version == ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION &&
 	     payload->reason > item_transfer_reason::auction_claim) ||
 	    command.expected_revisions.size() != command.keys.size())
 		return false;

@@ -37,6 +37,10 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_p
 	const std::string &root, const flatfile_authority_lock &lock,
 	const critical_operation_id &operation_id, const shop_trade_payload &payload,
 	flatfile_shop_trade_materialization_mutation *mutation, std::string *error);
+flatfile_shop_trade_materialization_result flatfile_item_transfer_materialization_prepare(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation_id, const item_transfer_payload &payload,
+	flatfile_shop_trade_materialization_mutation *mutation, std::string *error);
 
 flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_reconcile(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t player_pid,

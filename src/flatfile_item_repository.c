@@ -5,6 +5,7 @@
 #include "flatfile_authority_transaction.h"
 #include "flatfile_store.h"
 #include "flatfile_player_domain_repository.h"
+#include "flatfile_shop_trade_materialization.h"
 #include "flatfile_shop_trade_repository.h"
 #include "persistence_mode.h"
 
@@ -1226,8 +1227,48 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	std::vector<uint8_t> encoded;
 	if (!encode_catalog(candidate, catalog.revision + 1, &encoded))
 		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
-	if (!flatfile_atomic_write(domains_directory(root), ownership_filename, encoded, &error))
-		return { critical_apply_outcome::retryable_failure, catalog.revision, EIO };
+	flatfile_shop_trade_materialization_mutation materialization;
+	bool include_materialization = false;
+	if (!result_code && payload.item_blob_size)
+	{
+		const auto prepared = flatfile_item_transfer_materialization_prepare(
+			root, authority, command.operation_id, payload, &materialization, &error);
+		if (prepared != flatfile_shop_trade_materialization_result::ok &&
+		    prepared != flatfile_shop_trade_materialization_result::unchanged)
+			return { prepared == flatfile_shop_trade_materialization_result::io_error ?
+					 critical_apply_outcome::retryable_failure :
+					 critical_apply_outcome::terminal_failure,
+				 catalog.revision,
+				 static_cast<unsigned int>(
+					 prepared == flatfile_shop_trade_materialization_result::
+								 io_error ?
+						 EIO :
+						 EILSEQ) };
+		include_materialization = prepared ==
+					  flatfile_shop_trade_materialization_result::ok;
+	}
+	std::vector<flatfile_authority_after_image> images;
+	try
+	{
+		images.push_back({ ownership_filename, std::move(encoded) });
+		if (include_materialization)
+			images.push_back(std::move(materialization.after_image));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, catalog.revision, ENOMEM };
+	}
+	const auto committed =
+		flatfile_authority_transaction_commit(root, authority, images, &error);
+	if (committed != flatfile_authority_transaction_result::ok)
+		return { committed == flatfile_authority_transaction_result::io_error ?
+				 critical_apply_outcome::retryable_failure :
+				 critical_apply_outcome::terminal_failure,
+			 catalog.revision,
+			 static_cast<unsigned int>(
+				 committed == flatfile_authority_transaction_result::io_error ?
+					 EIO :
+					 EILSEQ) };
 	return make_result(result_code ? critical_apply_outcome::terminal_failure :
 					 critical_apply_outcome::applied,
 			   result_code, result);

@@ -2571,6 +2571,40 @@ sections below continue to describe the required end state.
   crash window, beginning with give/drop/get and locker/corpse boundaries, then add reusable
   materialization evidence where ownership alone cannot reconstruct exact object state.
 
+### Checkpoint 81 - exact restart evidence for generic item transfers
+
+- **Exact command evidence:** item-transfer payload version 4 appends a bounded encoded snapshot of
+  the selected object tree. The live movement transaction captures and validates that snapshot
+  before command construction, so give, drop, get, put, locker, corpse, and adoption/creation routes
+  using the shared transaction carry the object fields needed after a post-commit process stop.
+  Version 3 and version 2 commands remain readable with no fabricated snapshot evidence.
+- **Ownership-coupled recovery:** a successful flat item transfer converts player-facing directions
+  into internal inbound/outbound materialization events and publishes their compacted catalog
+  after-image in the same authority transaction as the ownership catalog. Player-to-player moves
+  record both sides, player-to-non-player moves record removal evidence, and non-player-to-player
+  moves record reconstruction evidence. Same-player reparenting records one inbound event and uses
+  the authoritative ownership graph to normalize the final root and parent.
+- **Crash recovery:** the repository regression injects an interruption after ownership is the first
+  authority image. Replay recovers the pending materialization image before reporting
+  `already_applied`; reconciliation then removes an exact stale source tree and reconstructs the
+  missing nested destination tree with its encoded descriptions and parent topology. The version
+  regression covers a nonempty version 4 blob plus version 3/2 compatibility, and the live source
+  contract requires capture and encoding before command submission.
+- **Checks passed:** the item command compatibility, item repository fault/restart, live movement,
+  get-all, locker cutover, shop repository, player repository, and ownership-runtime focused tests
+  pass. The shared catalog remains compatible with shop buy/sell recovery, changed-line formatting
+  passes, and the normal strict C++20 server build completes.
+- **Exposure:** historical version 3/2 replays and synthetic version 4 callers that omit a blob still
+  publish ownership without exact materialization evidence. Non-player room, locker, corpse, auction,
+  and shop aggregates are not reconstructed by this player catalog; their own durable authority and
+  restart coupling still require separate audits. A committed move whose active-session callback
+  cannot publish is repaired on the player's next load/reconnect. The shared compacted catalog still
+  retains distinct historical item UIDs until deletion, and the flat-primary boot blocker remains
+  required.
+- **Next action:** audit corpse, room, locker, and auction aggregate publication against the generic
+  ownership transaction, then close trusted/gem purchase and MariaDB shop parity gaps without
+  weakening exact replay or the boot blocker.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
