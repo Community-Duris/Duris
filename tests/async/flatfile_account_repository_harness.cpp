@@ -1,4 +1,5 @@
 #include "flatfile_account_repository.h"
+#include "flatfile_store.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -157,6 +158,17 @@ int main(int argc, char **argv)
 	require(flatfile_account_load(root.string(), "../escape", &loaded, &error) ==
 			flatfile_account_result::invalid,
 		"unsafe account name was accepted");
+	const std::vector<uint8_t> marker = { 1, 2, 3 };
+	require(flatfile_atomic_write(directory.string(), "remove-test", marker, &error) &&
+			flatfile_atomic_remove(directory.string(), "remove-test", false, &error) &&
+			!fs::exists(directory / "remove-test") &&
+			flatfile_atomic_remove(directory.string(), "remove-test", true, &error),
+		"durable authority removal failed: " + error);
+	fs::create_symlink("/etc/passwd", directory / "remove-symlink");
+	require(!flatfile_atomic_remove(directory.string(), "remove-symlink", false, &error) &&
+			fs::is_symlink(directory / "remove-symlink"),
+		"authority removal followed a symlink");
+	fs::remove(directory / "remove-symlink");
 
 	const fs::path account_path = directory / "616c706861.acct";
 	{

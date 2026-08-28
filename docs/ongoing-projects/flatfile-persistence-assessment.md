@@ -659,6 +659,26 @@ sections below continue to describe the required end state.
 - **Next action:** add a recoverable two-record transaction for wallet plus shared bank,
   then add frag mutation/ledger application and route the associated compound commands.
 
+### Checkpoint 21 - durable transaction-intent cleanup primitive
+
+- **Completed:** added an owner-validated atomic authority removal primitive for the
+  forthcoming wallet/shared-bank transaction protocol. It opens the containing
+  directory without following symlinks, requires owner-only regular-file metadata,
+  unlinks by directory descriptor, and synchronizes the directory before reporting the
+  intent cleared. Missing-file acknowledgement is explicit for crash-recovery retries.
+- **Safety behavior:** unsafe names, symlinks, wrong ownership/access modes, directory
+  errors, unlink failures, and directory-sync failures refuse completion. A retry after
+  unlink but before its acknowledgement can safely treat the already-missing intent as
+  complete because transaction materializations must be synchronized first.
+- **Checks passed:** the account repository regression now covers durable removal,
+  idempotent missing removal, and symlink refusal; `./scripts/format.sh --check` and
+  `git diff --check` are rerun before publication.
+- **Files changed:** `src/flatfile_store.[ch]`, the focused account repository
+  regression, and this handoff ledger.
+- **Next action:** encode the wallet/bank after-images in a checksummed transaction
+  intent, publish both under the global domain lock, then durably clear the intent;
+  every domain entry point will finish a surviving intent before reading or mutating.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

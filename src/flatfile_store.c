@@ -158,6 +158,57 @@ bool flatfile_atomic_write(const std::string &directory, const std::string &name
 	return true;
 }
 
+bool flatfile_atomic_remove(const std::string &directory, const std::string &name, bool missing_ok,
+			    std::string *error)
+{
+	if (!valid_name(name))
+	{
+		if (error)
+			*error = "invalid flat-file name";
+		return false;
+	}
+	const int directory_fd =
+		open(directory.c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+	if (directory_fd < 0)
+	{
+		set_error(error, "open authority directory");
+		return false;
+	}
+	if (!private_directory(directory_fd))
+	{
+		if (error)
+			*error = "invalid authority directory metadata";
+		close(directory_fd);
+		return false;
+	}
+	struct stat info;
+	if (fstatat(directory_fd, name.c_str(), &info, AT_SYMLINK_NOFOLLOW) < 0)
+	{
+		const int saved_errno = errno;
+		close(directory_fd);
+		errno = saved_errno;
+		if (missing_ok && errno == ENOENT)
+			return true;
+		set_error(error, "inspect authority file for removal");
+		return false;
+	}
+	if (!S_ISREG(info.st_mode) || info.st_uid != geteuid() || (info.st_mode & 0077))
+	{
+		if (error)
+			*error = "invalid authority file metadata for removal";
+		close(directory_fd);
+		return false;
+	}
+	if (unlinkat(directory_fd, name.c_str(), 0) < 0 || fsync(directory_fd) < 0)
+	{
+		set_error(error, "remove authority file");
+		close(directory_fd);
+		return false;
+	}
+	close(directory_fd);
+	return true;
+}
+
 flatfile_read_result flatfile_read(const std::string &directory, const std::string &name,
 				   size_t maximum_size, std::vector<uint8_t> *bytes,
 				   std::string *error)
