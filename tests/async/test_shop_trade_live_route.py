@@ -41,6 +41,13 @@ value_start = SOURCE.index("void shopping_value(")
 buy = SOURCE[buy_start:sell_start]
 sell = SOURCE[sell_start:value_start]
 
+if "That purchase is not available through flat-file persistence yet" in buy:
+    raise SystemExit("flat buy still disables trusted zero-charge purchases")
+if "const int64_t transaction_price = IS_TRUSTED(ch) ? 0 : sale;" not in buy:
+    raise SystemExit("flat buy does not preserve trusted zero-charge behavior")
+if buy.count("transaction_price") < 3:
+    raise SystemExit("flat buy does not carry trusted pricing through produced continuations")
+
 buy_submit = buy.index("shop_trade_transaction_submit(ch, payload, shop_trade_completion)")
 if not buy_submit < buy.index("transact(ch, gem, keeper, sale)") < buy.index("writeShopKeeper(keeper)"):
     raise SystemExit("flat buy does not submit before legacy money/shop mutation")

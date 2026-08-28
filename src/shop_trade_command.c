@@ -51,13 +51,19 @@ bool cleanup(const shop_trade_payload &payload)
 	return payload.action == shop_trade_action::discard_invalid;
 }
 
+bool purchase(const shop_trade_payload &payload)
+{
+	return payload.action == shop_trade_action::buy_existing ||
+	       payload.action == shop_trade_action::buy_produced;
+}
+
 bool valid_payload(const shop_trade_payload &payload)
 {
 	if (payload.action <= shop_trade_action::unknown ||
 	    payload.action > shop_trade_action::discard_invalid || !payload.player_pid ||
 	    !valid_name(payload.account_name) || payload.price < 0 || payload.price > INT_MAX ||
-	    (cleanup(payload) != (payload.price == 0)) || !payload.expected_shop_revision ||
-	    !payload.selected_item_uid || !payload.item_count ||
+	    (cleanup(payload) ? payload.price != 0 : (!purchase(payload) && payload.price == 0)) ||
+	    !payload.expected_shop_revision || !payload.selected_item_uid || !payload.item_count ||
 	    payload.item_count > payload.items.size() || !payload.item_blob_size ||
 	    payload.item_blob_size > payload.item_blob.size())
 		return false;

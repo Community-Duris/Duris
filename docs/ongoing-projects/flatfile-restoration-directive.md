@@ -542,6 +542,35 @@
   persistence domains still require focused audit; the global incomplete-domain boot
   fence remains.
 
+### 2026-08-29 - restored trusted shop purchases in flat mode
+
+- **Concrete gap:** the database-backed shop path lets trusted staff buy an item without
+  charging their purse, but the flat path rejected that purchase with an explicit
+  "not available" message because its durable command required every purchase to have a
+  positive price.
+- **Restoration:** trusted flat-file purchases now submit the existing durable shop trade
+  with a zero transaction price. Player money remains unchanged while shop inventory,
+  item custody, materialization evidence, and live publication follow the same existing
+  atomic transfer as an ordinary purchase. Produced multi-item continuations retain the
+  zero price. Ordinary players are still charged the computed sale price, zero-price
+  sales remain invalid, and database-backed behavior is unchanged.
+- **Focused evidence:** command-codec tests accept zero-price buys while rejecting
+  zero-price sales; the live-route contract confirms the old flat-only rejection is gone
+  and the trusted price reaches initial and continued purchases. The flat shop repository
+  test commits a complimentary purchase and verifies unchanged durable money plus exact
+  player/shop custody transfer.
+- **Build evidence:** `make -C src -j2`,
+  `python3 tests/async/test_shop_trade_command.py`,
+  `python3 tests/async/test_shop_trade_live_route.py`,
+  `python3 tests/async/test_shop_trade_runtime.py`,
+  `python3 tests/async/test_flatfile_shop_trade_repository.py`,
+  `python3 tests/async/test_minimal_boot.py`,
+  `python3 tests/async/test_persistence_mode.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass.
+- **Overall state:** the explicit flat shop purchase disablement is removed. Other
+  database-only or incomplete persistence behavior still requires focused audit; the
+  global incomplete-domain boot fence remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

@@ -837,13 +837,7 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	}
 	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
 	{
-		if (IS_TRUSTED(ch) || gem)
-		{
-			send_to_char(
-				"That purchase is not available through flat-file persistence yet.\r\n",
-				ch);
-			return;
-		}
+		const int64_t transaction_price = IS_TRUSTED(ch) ? 0 : sale;
 		const bool produced = shop_producing(temp1, shop_nr);
 		P_obj destination = NULL;
 		int purchase_count = 1;
@@ -887,7 +881,8 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 								 static_cast<uint32_t>(shop_nr),
 								 temp1->obj_uid,
 								 destination->obj_uid,
-								 purchase_count, sale })
+								 purchase_count,
+								 transaction_price })
 						.second;
 			}
 			catch (const std::bad_alloc &)
@@ -923,7 +918,7 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 			    ch, selected, produced ? temp1 : NULL, destination, shop_nr,
 			    produced ? shop_trade_action::buy_produced :
 				       shop_trade_action::buy_existing,
-			    sale, &payload) != shop_trade_payload_build_result::ok ||
+			    transaction_price, &payload) != shop_trade_payload_build_result::ok ||
 		    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
 		{
 			if (produced)

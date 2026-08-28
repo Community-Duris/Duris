@@ -484,6 +484,59 @@ int main(int argc, char **argv)
 				cleanup_health.revision == 5 && cleanup_health.events == 3,
 			"invalid-stock cleanup unexpectedly wrote player materialization evidence");
 	}
+
+	const fs::path complimentary_root = fs::path(argv[1]).string() + "-complimentary";
+	fs::create_directories(complimentary_root / "domains");
+	fs::permissions(complimentary_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(complimentary_root / "domains", fs::perms::owner_all,
+			fs::perm_options::replace);
+	flatfile_player_domain_record complimentary_player = player;
+	require(flatfile_player_domain_establish(complimentary_root.string(), complimentary_player,
+						 &error) == flatfile_player_domain_result::ok,
+		"could not establish complimentary-purchase player: " + error);
+	flatfile_shopkeeper_record complimentary_shop = shop;
+	complimentary_shop.revision = 1;
+	complimentary_shop.items = trade_items;
+	require(flatfile_shopkeeper_establish(complimentary_root.string(), { complimentary_shop },
+					      &error) == flatfile_shopkeeper_result::ok,
+		"could not establish complimentary-purchase shop: " + error);
+	require(flatfile_item_repository_establish_owner(complimentary_root.string(), player_owner,
+							 {}, &error) ==
+			flatfile_item_baseline_result::applied,
+		"could not establish empty complimentary player custody: " + error);
+	require(flatfile_item_repository_establish_owner(
+			complimentary_root.string(), shop_owner,
+			{ { 200, 200, 0, shop_owner, 1, 800, item_custody_state::active },
+			  { 201, 200, 200, shop_owner, 1, 801, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish complimentary shop custody: " + error);
+	shop_trade_payload complimentary_purchase = purchase(trade_items);
+	complimentary_purchase.price = 0;
+	applied = flatfile_shop_trade_repository_apply(complimentary_root.string(),
+						       command(complimentary_purchase, 1));
+	const shop_trade_result complimentary_result = result_of(applied);
+	require(applied.outcome == critical_apply_outcome::applied &&
+			complimentary_result.wallet.amount ==
+				std::array<int64_t, 4>{ 0, 0, 0, 10 } &&
+			complimentary_result.wallet_revision == 1 &&
+			complimentary_result.bank_revision == 2,
+		"complimentary purchase did not preserve player money");
+	require(flatfile_player_domain_load(complimentary_root.string(), 42, "shop-account", 1,
+					    &loaded_player,
+					    &error) == flatfile_player_domain_result::ok &&
+			loaded_player.domains.wallet == std::array<uint64_t, 4>{ 0, 0, 0, 10 },
+		"complimentary purchase changed durable player money");
+	player_items.clear();
+	remaining_shop_items.clear();
+	require(flatfile_item_repository_load_owner(complimentary_root.string(), player_owner,
+						    &player_revision, &player_items, &error) ==
+				flatfile_item_repository_result::ok &&
+			flatfile_item_repository_load_owner(complimentary_root.string(), shop_owner,
+							    &shop_revision, &remaining_shop_items,
+							    &error) ==
+				flatfile_item_repository_result::ok &&
+			player_items.size() == 2 && remaining_shop_items.empty(),
+		"complimentary purchase did not transfer durable item custody");
 	{
 		std::fstream catalog(domains / "shop_trade_materializations",
 				     std::ios::binary | std::ios::in | std::ios::out);

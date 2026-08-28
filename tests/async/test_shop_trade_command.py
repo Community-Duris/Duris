@@ -154,6 +154,20 @@ int main()
 					 critical_source_site::command,
 					 critical_deadline_class::interactive));
 
+	shop_trade_payload complimentary = trade(shop_trade_action::buy_existing);
+	complimentary.price = 0;
+	assert(shop_trade_command_build(&command, operation(), complimentary,
+					 critical_source_site::command,
+					 critical_deadline_class::interactive));
+	assert(shop_trade_command_decode_payload(command, &decoded) && decoded.price == 0);
+	complimentary.action = shop_trade_action::sell_store;
+	complimentary.stock_item_uid = 0;
+	complimentary.expected_stock_item_revision = 0;
+	complimentary.stock_vnum = 0;
+	assert(!shop_trade_command_build(&command, operation(), complimentary,
+					  critical_source_site::command,
+					  critical_deadline_class::interactive));
+
 	shop_trade_result result = {};
 	result.action = shop_trade_action::sell_store;
 	result.wallet = { { 1, 2, 3, 4 } };

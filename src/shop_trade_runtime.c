@@ -87,7 +87,8 @@ shop_trade_runtime_build_payload(P_char player, P_obj selected, P_obj stock, P_o
 {
 	if (!player || IS_NPC(player) || !player->only.pc || GET_PID(player) <= 0 || !selected ||
 	    !selected->obj_uid || !payload || price < 0 || price > INT_MAX ||
-	    ((action == shop_trade_action::discard_invalid) != (price == 0)) ||
+	    (action == shop_trade_action::discard_invalid ? price != 0 :
+							    (!is_buy(action) && price == 0)) ||
 	    action <= shop_trade_action::unknown || action > shop_trade_action::discard_invalid ||
 	    ((action == shop_trade_action::buy_produced) != (stock != nullptr)) ||
 	    (destination && action != shop_trade_action::buy_produced))
