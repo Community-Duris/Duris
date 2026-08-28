@@ -31,9 +31,6 @@ else
     exit 2
 fi
 
-: "${REDIS_HOST:?REDIS_HOST is required}"
-: "${REDIS_PORT:?REDIS_PORT is required}"
-
 MYSQL_PWD="$DB_PASSWD"
 export MYSQL_PWD
 MYSQL=(mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USER" "$DB_NAME")
@@ -3030,18 +3027,29 @@ ALTER TABLE ship_cargo_market_mods ENGINE=InnoDB;"
 
 run_check "adopt verified legacy migration baseline" "$SCRIPT_DIR/adopt_migration_baseline.sh"
 
-# flush redis cache (migration invalidates all cached data)
+# Delete only Duris Redis keys when the configured integration is active.
 STEP=$((STEP + 1))
-printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "flush redis cache"
-if command -v redis-cli &> /dev/null; then
-    if redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" FLUSHDB > /dev/null 2>&1; then
+printf "[%2d/%d] %s... " "$STEP" "$TOTAL" "clear Duris Redis keys"
+if [[ "${REDIS:-FALSE}" != "TRUE" ]]; then
+    echo "not enabled"
+else
+    REDIS_TARGET="${REDIS_HOST:-}:${REDIS_PORT:-}/${REDIS_DB:-}"
+    if ENVIRONMENT="${ENVIRONMENT:-}" \
+        REDIS_HOST="${REDIS_HOST:-}" \
+        REDIS_PORT="${REDIS_PORT:-}" \
+        REDIS_DB="${REDIS_DB:-}" \
+        REDIS_USERNAME="${REDIS_USERNAME:-}" \
+        REDIS_PASSWORD="${REDIS_PASSWORD:-}" \
+        REDIS_TLS="${REDIS_TLS:-}" \
+        REDIS_CA_CERT="${REDIS_CA_CERT:-}" \
+        REDIS_ALLOWED_TARGETS="${REDIS_ALLOWED_TARGETS:-}" \
+        REDIS_DESTRUCTIVE_CONFIRM="$REDIS_TARGET" \
+        "$PROJECT_ROOT/scripts/clear-duris-redis-keys.sh" > /dev/null; then
         echo "ok"
     else
         echo "FAILED"
         FAILED=$((FAILED + 1))
     fi
-else
-    echo "skipped (redis-cli not found)"
 fi
 
 echo ""

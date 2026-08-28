@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 RUNNER = ROOT / "migrations/run_migration.sh"
 SOURCE = RUNNER.read_text()
 CLEAR_REDIS = (ROOT / "scripts/clear-redis.sh").read_text()
+SCOPED_CLEAR = (ROOT / "scripts/clear-duris-redis-keys.sh").read_text()
 
 
 helped = subprocess.run(
@@ -38,16 +39,21 @@ assert unknown.returncode == 2
 assert "unknown argument" in unknown.stderr
 
 assert "ALTER TABLE players_core" not in SOURCE
-assert ': "${REDIS_HOST:?REDIS_HOST is required}"' in SOURCE
-assert ': "${REDIS_PORT:?REDIS_PORT is required}"' in SOURCE
-assert 'redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT"' in SOURCE
+assert '[[ "${REDIS:-FALSE}" != "TRUE" ]]' in SOURCE
+assert '"$PROJECT_ROOT/scripts/clear-duris-redis-keys.sh"' in SOURCE
 assert "FAILED=$((FAILED + 1))" in SOURCE
-assert "redis-cli FLUSHDB" not in SOURCE
+assert "FLUSHDB" not in SOURCE
 assert '[[ -L "$ENV_FILE" ]]' in CLEAR_REDIS
 assert "stat -c '%a'" in CLEAR_REDIS
-assert ': "${REDIS_HOST:?REDIS_HOST is required}"' in CLEAR_REDIS
-assert ': "${REDIS_PORT:?REDIS_PORT is required}"' in CLEAR_REDIS
-assert 'redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" FLUSHDB' in CLEAR_REDIS
-assert "redis-cli FLUSHDB" not in CLEAR_REDIS
+assert "--confirm <host:port/database>" in CLEAR_REDIS
+assert "REDIS_ALLOWED_TARGETS" in CLEAR_REDIS
+assert "clear-duris-redis-keys.sh" in CLEAR_REDIS
+assert "PATTERNS=('mud:*' 'ship:snapshot:*')" in SCOPED_CLEAR
+assert "ENVIRONMENT must be local" in SCOPED_CLEAR
+assert "REDIS_DB must be an integer" in SCOPED_CLEAR
+assert "non-loopback Redis requires REDIS_TLS=TRUE" in SCOPED_CLEAR
+assert "REDISCLI_AUTH" in SCOPED_CLEAR
+assert "redis-cli is required" in SCOPED_CLEAR
+assert "FLUSHDB" not in CLEAR_REDIS and "FLUSHDB" not in SCOPED_CLEAR
 
 print("legacy migration CLI and configured Redis target safety: ok")

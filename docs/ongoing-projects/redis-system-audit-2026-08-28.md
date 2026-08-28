@@ -4,10 +4,53 @@ Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
-RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-024, and
-RDS-028 are remediated and the remaining findings are open.
+RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-023,
+RDS-024, and RDS-028 are remediated and the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-023 scoped destructive Redis maintenance
+
+Completed in this interval:
+
+- Removed every `FLUSHDB`/`FLUSHALL` operation from the standalone clear script and the
+  legacy migration runner. Both now use one shared cursor scanner that deletes only
+  `mud:*` and retired `ship:snapshot:*` keys, with at most 128 keys per `DEL` call.
+- Added fail-closed destructive gates: exact `ENVIRONMENT=local`, numeric explicit Redis
+  database, exact `host:port/database` allow-list membership, and exact target
+  confirmation. Non-loopback targets require verified TLS with a readable CA file.
+- Added maintenance support for Redis ACL username/password, explicit database selection,
+  TLS, and CA verification. Passwords reach `redis-cli` through `REDISCLI_AUTH` rather than
+  a process-list command argument.
+- Added a full postflight scan for both owned patterns. Missing `redis-cli`, failed PING,
+  command failure, malformed scan reply, remaining key, unsafe environment, wrong target,
+  or wrong confirmation returns nonzero.
+- Made the legacy migration skip Redis connection requirements only when `REDIS` is not
+  enabled. When enabled, a missing client or any invalidation/postflight failure increments
+  the migration failure count and produces a nonzero exit.
+- Corrected the runbook and database/configuration references to describe the actual
+  owner-only `.env`, allow-list, confirmation, scoped deletion, ACL/TLS/database settings,
+  stopped-writer requirement, and failure semantics.
+
+Performance effect:
+
+- No runtime or gameplay code changed in this interval. Destructive maintenance is
+  offline-only and uses cursor scans plus `DEL` chunks of at most 128 keys instead of
+  blocking an entire shared database with `FLUSHDB`.
+- Unrelated Redis application keys remain untouched, so Duris maintenance no longer
+  invalidates another service's cache or working set.
+
+Validation:
+
+- `python3 tests/async/test_redis_clear_scoped_live.py`: passed against an isolated Redis,
+  proving local/allow-list/confirmation gates, exact deletion of three Duris keys,
+  preservation of an unrelated key, and a clean postflight.
+- `python3 tests/async/test_migration_runner_cli_safety.py`: passed.
+- `bash -n scripts/clear-redis.sh scripts/clear-duris-redis-keys.sh
+  migrations/run_migration.sh`: passed.
+- `shellcheck scripts/clear-redis.sh scripts/clear-duris-redis-keys.sh`: passed.
+- `python3 scripts/security_source_check.py`: passed.
+- `python3 tests/async/test_documentation_contract.py`: passed.
 
 ### 2026-08-28 - RDS-011/RDS-020 nonblocking runtime administration and donation delivery
 
@@ -760,8 +803,8 @@ Validation:
 Remaining work:
 
 - All findings other than RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007, RDS-009,
-  RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-024, and RDS-028
-  remain open. The acceptance criteria are not yet met.
+  RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-023, RDS-024, and
+  RDS-028 remain open. The acceptance criteria are not yet met.
 
 ## Executive summary
 
@@ -1144,6 +1187,10 @@ support one writer or enforce that invariant with a renewable lease.
 
 Severity: High
 Confidence: Confirmed configuration gap; exploitability depends on deployment reachability
+Remediation status: Partially remediated; destructive maintenance now requires explicit
+database selection, ACL credentials when configured, verified TLS for non-loopback targets,
+an exact local target allow-list, and confirmation. Runtime connections and key namespace
+isolation remain open.
 
 Evidence:
 
@@ -1545,6 +1592,10 @@ handwritten list.
 
 Severity: Medium
 Confidence: Confirmed
+Remediation status: Completed on branch. Broad database flushes are removed. A shared
+scanner deletes only the two declared Duris key patterns with bounded `DEL` calls after local
+environment, exact target allow-list, explicit database, ACL/TLS, CA, and confirmation
+checks, then verifies an empty postcondition. Missing tooling or any failure is nonzero.
 
 - [`scripts/clear-redis.sh`](../../scripts/clear-redis.sh#L31) performs `FLUSHDB` using
   host and port only. It has a good owner/mode/symlink check for `.env`, but no explicit

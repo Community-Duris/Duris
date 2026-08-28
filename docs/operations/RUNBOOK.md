@@ -250,7 +250,7 @@ These are investigated and understood; they are not signs of a failed boot.
 |--------|---------|
 | `scripts/backup_pfiles.sh` | Snapshot database or legacy player files (run automatically per cycle iteration; see the mode note below). |
 | `scripts/delete_corpses.sh` | Retired safety stub; exits nonzero without reading or changing MySQL or Redis. |
-| `scripts/clear-redis.sh` | Drop database `0` on `redis-cli`'s default endpoint; it does not read `.env`, so use it only on a stopped, dedicated local Redis instance. |
+| `scripts/clear-redis.sh` | With the game stopped, delete only Duris-owned `mud:*` and `ship:snapshot:*` keys from an explicitly confirmed, local, allow-listed Redis target; unrelated keys are preserved. |
 | `scripts/import_help_to_prod.sh` | Import help sources to MySQL; use `--dry-run` first and treat `--clean` as destructive. |
 | `scripts/migrate_players_to_accounts.sh`, `scripts/convert_all_pfiles.sh` | One-shot legacy data conversions; back up and review their assumptions before use. |
 | `bin/migrations/*` | Offline pfile/schema conversion binaries built from `src-migrate/`. |
@@ -268,10 +268,12 @@ clone is the only permitted target. Keep the original backup untouched.
 
 The legacy runner is mutation-capable and has no dry-run mode. `--help` is safe, and an
 unknown argument is rejected before configuration is loaded. A normal no-argument run
-begins work immediately. After its database gates it calls `redis-cli FLUSHDB` against
-the `REDIS_HOST` and `REDIS_PORT` loaded from `.env`. Run it only with the game stopped
-and those variables pointing to its dedicated local Redis; a qualified database does
-not make a shared Redis safe.
+begins work immediately. When `REDIS=TRUE`, its final step requires `ENVIRONMENT=local`,
+an exact `REDIS_HOST:REDIS_PORT/REDIS_DB` entry in `REDIS_ALLOWED_TARGETS`, and the
+configured ACL/TLS settings. It deletes only `mud:*` and `ship:snapshot:*` keys, verifies
+the postcondition, and fails the migration if `redis-cli`, the connection, deletion, or
+postflight fails. When Redis is disabled, the step reports `not enabled` without requiring
+Redis connection fields. The game and every other Redis writer must remain stopped.
 
 On the qualified clone only, use this order:
 

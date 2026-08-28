@@ -141,9 +141,10 @@ python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
 python3 scripts/migration_runner.py run
 
 # Local development database only. --help is safe; there is no dry-run mode.
-# A normal invocation mutates immediately, records verified legacy adoption as its final
-# database gate, then calls redis-cli FLUSHDB on configured REDIS_HOST and REDIS_PORT.
-# Stop the game first and ensure those variables select its dedicated local Redis.
+# A normal invocation mutates immediately and records verified legacy adoption as its
+# final database gate. When REDIS=TRUE, it then deletes only Duris-owned key patterns from
+# the explicit local REDIS_HOST:REDIS_PORT/REDIS_DB target in REDIS_ALLOWED_TARGETS.
+# Stop the game and every other Redis writer first; Redis failure fails the migration.
 ./migrations/run_migration.sh
 
 # After an adopted baseline, apply immutable post-baseline migrations:

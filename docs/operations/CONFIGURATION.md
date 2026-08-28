@@ -69,6 +69,12 @@ revisioned player-save pipeline and typed journal.
 | `REDIS` | disabled | `TRUE` enables it | Enable Redis integration. |
 | `REDIS_HOST` | `127.0.0.1` | hostname or IP | Redis host. |
 | `REDIS_PORT` | `6379` | `1`-`65535` | Redis TCP port; invalid values fall back to `6379`. |
+| `REDIS_DB` | none | `0`-`255` | Explicit Redis database for destructive maintenance scripts. Runtime database selection remains open under RDS-008. |
+| `REDIS_USERNAME` | empty | Redis ACL username | Optional maintenance-script ACL identity. |
+| `REDIS_PASSWORD` | empty | Redis ACL password | Optional maintenance-script secret passed through `REDISCLI_AUTH`, not a command argument. |
+| `REDIS_TLS` | none | Exact `TRUE` or `FALSE` | Maintenance-script transport policy; non-loopback targets require `TRUE`. Runtime TLS remains open under RDS-008. |
+| `REDIS_CA_CERT` | empty | Readable file | Required CA certificate when maintenance-script Redis TLS is enabled. |
+| `REDIS_ALLOWED_TARGETS` | none | Comma-separated exact `host:port/database` values | Required destructive-maintenance allow-list. |
 | `REDIS_WORLD_STATE` | disabled | `TRUE` enables it | Enable bounded capture and background publication of crash-recovery world generations. |
 | `REDIS_WORLD_STATE_INTERVAL` | `10` seconds | `5`-`300` | Snapshot interval when world-state recovery is enabled. |
 | `REDIS_WORLD_STATE_MAX_AGE` | `300` seconds | `60`-`3600` | Maximum snapshot age accepted during recovery. |
@@ -129,10 +135,13 @@ REDIS_PORT=6379
 REDIS_WORLD_STATE=TRUE
 ```
 
-Stop the server before clearing Redis state. `scripts/clear-redis.sh` loads `.env` and
-runs `redis-cli FLUSHDB` with the configured `REDIS_HOST` and `REDIS_PORT` (database
-`0`). Use the script only for that exact dedicated local instance; otherwise connect
-and inspect the intended Redis database explicitly.
+Stop the server before clearing Redis state. `scripts/clear-redis.sh --confirm
+<host:port/database>` loads the owner-only `.env`, requires `ENVIRONMENT=local`, checks the
+exact target against `REDIS_ALLOWED_TARGETS`, applies the configured database, ACL, and TLS
+settings, and deletes only `mud:*` and `ship:snapshot:*` keys. It uses cursor scans and at
+most 128 keys per `DEL`, verifies that both Duris patterns are empty afterward, and leaves
+unrelated application keys intact. Missing `redis-cli`, connection failure, unexpected replies, wrong
+confirmation, or a failed postflight returns nonzero.
 
 Redis uses a 250 ms connect timeout and 100 ms command timeout. A cache failure may
 degrade a report, while a world-generation failure preserves the prior generation and
