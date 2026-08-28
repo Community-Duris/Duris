@@ -159,8 +159,9 @@ total calls and failures, registry overflow, item/scalar/large queue counters,
 player capture/journal/worker depths and ages, exact revision progress, world capture
 and publication health, redacted shared Redis boot/recovery/maintenance calls, failures,
 timeouts, maximum latency and reconnect transitions, per-worker Redis operation latency,
-failure streak, and last-success age, critical-command queue/journal/fence health, and the
-oldest aggregate save age. Output is metadata-only and
+failure streak, and last-success age, critical-command queue/journal/fence health, flat
+shop materialization event/byte capacity and reclaimable counts, and the oldest aggregate
+save age. Output is metadata-only and
 must not be copied into a workflow that expects SQL, player, account, item, IP, or path
 values.
 
@@ -168,7 +169,7 @@ Interpret explicit states as follows:
 
 - `state=empty` means the observed subsystem currently has no pending work or
   has recorded no query calls.
-- `state=disabled` means Redis integration is configured off.
+- `state=disabled` means the reported optional backend or integration is configured off.
 - `state=unavailable` means the subsystem is enabled but its local health state
   cannot currently confirm availability. `heartbeat=unavailable` means that
   queue worker has never published a heartbeat.
@@ -195,6 +196,13 @@ incident. Preserve the journal and database rows, stop affected domain cutovers,
 the typed reconciliation report. After correcting the destination, retry only the
 specific numeric dead-letter ID through the guarded repair API; never edit payloads or
 execute SQL copied from a command.
+
+For `shop_materialization`, `state=degraded` means the checksummed catalog has reached
+80% of its event or byte limit. `state=unavailable` means its lock, read, checksum, or
+bounded decode failed. Preserve the authority files and transaction journal, stop new
+flat-primary shop trades, and investigate the storage or catalog before attempting any
+repair. The health read is lock-scoped and on demand; it never prints player, item, or
+path data.
 
 ### Retained terminal-save failures
 

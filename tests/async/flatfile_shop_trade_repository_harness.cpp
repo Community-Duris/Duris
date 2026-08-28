@@ -126,6 +126,20 @@ int main(int argc, char **argv)
 	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
 	fs::permissions(domains, fs::perms::owner_all, fs::perm_options::replace);
 	std::string error;
+	{
+		flatfile_authority_lock health_lock;
+		flatfile_shop_trade_materialization_health empty_health = {};
+		require(health_lock.acquire(root.string(), &error),
+			"could not lock empty materialization health read: " + error);
+		require(flatfile_shop_trade_materialization_read_health(root.string(), health_lock,
+									&empty_health, &error) ==
+					flatfile_shop_trade_materialization_result::ok &&
+				empty_health.revision == 0 && empty_health.events == 0 &&
+				empty_health.encoded_bytes == 0 &&
+				empty_health.maximum_events > 0 && empty_health.maximum_bytes > 0 &&
+				!empty_health.near_capacity,
+			"empty materialization health was not available: " + error);
+	}
 
 	flatfile_player_domain_record player = {};
 	player.pid = 42;
@@ -345,6 +359,53 @@ int main(int argc, char **argv)
 			"restart reconciliation did not restore produced container placement: " +
 				error);
 	}
+	flatfile_shop_trade_materialization_health health_before = {};
+	{
+		flatfile_authority_lock health_lock;
+		require(health_lock.acquire(root.string(), &error),
+			"could not lock materialization health read: " + error);
+		require(flatfile_shop_trade_materialization_read_health(root.string(), health_lock,
+									&health_before, &error) ==
+					flatfile_shop_trade_materialization_result::ok &&
+				health_before.revision == 3 && health_before.events == 3 &&
+				health_before.encoded_bytes > 0 &&
+				health_before.maximum_events >= health_before.events &&
+				health_before.maximum_bytes >= health_before.encoded_bytes &&
+				!health_before.near_capacity,
+			"materialization health did not report bounded catalog usage: " + error);
+	}
+	shop_trade_payload repurchase = payload;
+	repurchase.expected_wallet_revision = 3;
+	repurchase.expected_bank_revision = 4;
+	repurchase.expected_shop_revision = 4;
+	repurchase.expected_stock_item_revision = 3;
+	for (size_t index = 0; index < repurchase.item_count; ++index)
+		repurchase.items[index].expected_item_revision = 3;
+	const critical_command repurchase_command = command(repurchase, 5);
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "1", 1);
+	applied = flatfile_critical_command_repository_apply_selected(
+		repurchase_command, const_cast<char *>(root_path.c_str()));
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			fs::exists(domains / ".critical-authority-transaction"),
+		"interrupted compaction did not preserve its cross-authority intent");
+	applied = flatfile_shop_trade_repository_apply(root.string(), repurchase_command);
+	require(applied.outcome == critical_apply_outcome::already_applied &&
+			!fs::exists(domains / ".critical-authority-transaction"),
+		"compacted repurchase did not recover and replay exactly");
+	{
+		flatfile_authority_lock health_lock;
+		flatfile_shop_trade_materialization_health compacted_health = {};
+		require(health_lock.acquire(root.string(), &error),
+			"could not lock compacted materialization health read: " + error);
+		require(flatfile_shop_trade_materialization_read_health(
+				root.string(), health_lock, &compacted_health, &error) ==
+					flatfile_shop_trade_materialization_result::ok &&
+				compacted_health.revision == 4 && compacted_health.events == 2 &&
+				compacted_health.events < health_before.events &&
+				compacted_health.reclaimable_events == 0,
+			"materialization catalog did not compact superseded events: " + error);
+	}
 	{
 		std::fstream catalog(domains / "shop_trade_materializations",
 				     std::ios::binary | std::ios::in | std::ios::out);
@@ -365,6 +426,12 @@ int main(int argc, char **argv)
 				&stale_snapshot,
 				&error) == flatfile_shop_trade_materialization_result::invalid,
 			"corrupt materialization catalog was accepted");
+		flatfile_shop_trade_materialization_health corrupt_health = {};
+		error.clear();
+		require(flatfile_shop_trade_materialization_read_health(
+				root.string(), reconciliation_lock, &corrupt_health, &error) ==
+				flatfile_shop_trade_materialization_result::invalid,
+			"corrupt materialization catalog reported healthy capacity");
 	}
 	std::cout << "flat-file shop trade repository passed\n";
 }

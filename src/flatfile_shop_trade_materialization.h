@@ -22,6 +22,17 @@ struct flatfile_shop_trade_materialization_mutation
 	flatfile_authority_after_image after_image;
 };
 
+struct flatfile_shop_trade_materialization_health
+{
+	uint64_t revision = 0;
+	uint64_t events = 0;
+	uint64_t encoded_bytes = 0;
+	uint64_t reclaimable_events = 0;
+	uint64_t maximum_events = 0;
+	uint64_t maximum_bytes = 0;
+	bool near_capacity = false;
+};
+
 flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_prepare(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const critical_operation_id &operation_id, const shop_trade_payload &payload,
@@ -31,6 +42,9 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_r
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t player_pid,
 	const std::vector<flatfile_item_ownership_record> &owned, player_snapshot *snapshot,
 	std::string *error);
+flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_read_health(
+	const std::string &root, const flatfile_authority_lock &lock,
+	flatfile_shop_trade_materialization_health *health, std::string *error);
 flatfile_shop_trade_materialization_result
 flatfile_shop_trade_materialization_prepare_player_remove(const std::string &root,
 							  const flatfile_authority_lock &lock,

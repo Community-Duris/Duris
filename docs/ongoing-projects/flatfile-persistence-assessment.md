@@ -2511,6 +2511,35 @@ sections below continue to describe the required end state.
   invalid shop-stock cleanup through custody authority and audit non-shop item-transfer domains for
   the same player-snapshot crash window.
 
+### Checkpoint 79 - semantics-preserving materialization compaction and health
+
+- **Recovery-equivalent compaction:** each successful shop append now compacts the catalog while
+  the authority lock is held. For every player/item pair it retains the latest event that mentions
+  the item and the latest inbound snapshot—the exact two facts load reconciliation consumes. A
+  multi-item event is retained when any member still needs it. Existing reclaimable rows are removed
+  before enforcing event capacity, and the new event is compacted before its after-image is encoded.
+- **Atomicity:** the compacted checksummed catalog remains one after-image in the same success-last
+  authority transaction as shop result, money, shop aggregate, and item custody. An injected stop
+  after the first authority image leaves the journal intact; recovery publishes the compacted
+  catalog with the operation and exact replay then reports `already_applied`.
+- **Bounded operator health:** a lock-scoped health read reports catalog revision, current/hard-limit
+  event and encoded-byte counts, reclaimable events, and an 80% near-capacity flag. Trusted
+  `world persistence` renders this as metadata-only `shop_materialization` state, using `disabled`,
+  `unavailable`, `ready`, or `degraded` without exposing player, item, path, or payload data.
+- **Checks passed:** the repository regression covers empty health, a nested buy/sell/repurchase
+  cycle that shrinks from three stored events to two despite appending a fourth, restart recovery
+  across interrupted compaction, zero remaining reclaimable rows, and corrupt-catalog health
+  refusal. Character deletion, player-load adjacency, persistence-status source contract,
+  changed-line formatting, and the normal C++20 server build pass.
+- **Exposure:** compaction deliberately retains the final mention and inbound evidence until
+  character deletion, even after a player snapshot has incorporated it; distinct historical item
+  UIDs can therefore still consume capacity. The on-demand health read scans the bounded catalog
+  while holding the authority lock. The separate shop-operation catalog is still append-only.
+  Invalid-stock destruction, MariaDB shop parity, trusted/gem purchases, and non-shop
+  snapshot-convergence audits remain open, so the flat-primary boot blocker remains required.
+- **Next action:** move invalid shop-stock cleanup through the custody authority, then audit and add
+  materialization evidence for non-shop item-transfer domains with player-snapshot crash windows.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

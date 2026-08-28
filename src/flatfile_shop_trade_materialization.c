@@ -37,6 +37,23 @@ struct materialization_catalog
 	std::vector<materialization_event> events;
 };
 
+struct player_item_key
+{
+	uint32_t player_pid = 0;
+	uint64_t item_uid = 0;
+
+	bool operator==(const player_item_key &) const = default;
+};
+
+struct player_item_key_hash
+{
+	size_t operator()(const player_item_key &key) const noexcept
+	{
+		return std::hash<uint64_t>{}((static_cast<uint64_t>(key.player_pid) << 32) ^
+					     key.item_uid);
+	}
+};
+
 struct encoder
 {
 	std::vector<uint8_t> bytes;
@@ -236,6 +253,98 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, materialization_catalog *
 	return true;
 }
 
+bool retained_event_indexes(const materialization_catalog &catalog, std::vector<size_t> *retained)
+{
+	if (!retained)
+		return false;
+	retained->clear();
+	std::unordered_set<player_item_key, player_item_key_hash> latest_mentions;
+	std::unordered_set<player_item_key, player_item_key_hash> latest_inbound;
+	try
+	{
+		latest_mentions.reserve(catalog.events.size());
+		latest_inbound.reserve(catalog.events.size());
+		retained->reserve(catalog.events.size());
+		for (size_t offset = catalog.events.size(); offset > 0; --offset)
+		{
+			const auto &event = catalog.events[offset - 1];
+			std::vector<player_item_snapshot> items;
+			if (!decode_items(event, &items))
+				return false;
+			bool required = false;
+			for (const auto &item : items)
+			{
+				const player_item_key key = { event.player_pid, item.object_uid };
+				if (!latest_mentions.contains(key) ||
+				    (inbound(event.action) && !latest_inbound.contains(key)))
+					required = true;
+			}
+			for (const auto &item : items)
+			{
+				const player_item_key key = { event.player_pid, item.object_uid };
+				latest_mentions.insert(key);
+				if (inbound(event.action))
+					latest_inbound.insert(key);
+			}
+			if (required)
+				retained->push_back(offset - 1);
+		}
+		std::reverse(retained->begin(), retained->end());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool compact_catalog(materialization_catalog *catalog, size_t *removed)
+{
+	if (!catalog || !removed)
+		return false;
+	*removed = 0;
+	std::vector<size_t> retained;
+	if (!retained_event_indexes(*catalog, &retained))
+		return false;
+	try
+	{
+		std::vector<materialization_event> compacted;
+		compacted.reserve(retained.size());
+		for (size_t index : retained)
+			compacted.push_back(std::move(catalog->events[index]));
+		*removed = catalog->events.size() - compacted.size();
+		catalog->events = std::move(compacted);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool catalog_health(const materialization_catalog &catalog,
+		    flatfile_shop_trade_materialization_health *health)
+{
+	if (!health)
+		return false;
+	std::vector<size_t> retained;
+	if (!retained_event_indexes(catalog, &retained))
+		return false;
+	std::vector<uint8_t> encoded;
+	if (!catalog.events.empty() && !encode_catalog(catalog, &encoded))
+		return false;
+	*health = {};
+	health->revision = catalog.revision;
+	health->events = catalog.events.size();
+	health->encoded_bytes = encoded.size();
+	health->reclaimable_events = catalog.events.size() - retained.size();
+	health->maximum_events = catalog_maximum_events;
+	health->maximum_bytes = catalog_maximum_bytes;
+	health->near_capacity = catalog.events.size() >= catalog_maximum_events * 4 / 5 ||
+				encoded.size() >= catalog_maximum_bytes * 4 / 5;
+	return true;
+}
+
 flatfile_shop_trade_materialization_result
 load_catalog(const std::string &root, materialization_catalog *catalog, std::string *error)
 {
@@ -431,8 +540,12 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_p
 	if (std::any_of(
 		    catalog.events.begin(), catalog.events.end(), [&](const auto &existing)
 		    { return critical_operation_id_equal(existing.operation_id, operation_id); }) ||
-	    catalog.events.size() >= catalog_maximum_events ||
 	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_shop_trade_materialization_result::invalid;
+	size_t removed = 0;
+	if (!compact_catalog(&catalog, &removed))
+		return flatfile_shop_trade_materialization_result::io_error;
+	if (catalog.events.size() >= catalog_maximum_events)
 		return flatfile_shop_trade_materialization_result::invalid;
 	try
 	{
@@ -442,12 +555,29 @@ flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_p
 	{
 		return flatfile_shop_trade_materialization_result::io_error;
 	}
+	if (!compact_catalog(&catalog, &removed))
+		return flatfile_shop_trade_materialization_result::io_error;
 	++catalog.revision;
 	std::vector<uint8_t> bytes;
 	if (!encode_catalog(catalog, &bytes))
 		return flatfile_shop_trade_materialization_result::invalid;
 	mutation->after_image = { catalog_filename, std::move(bytes) };
 	return flatfile_shop_trade_materialization_result::ok;
+}
+
+flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_read_health(
+	const std::string &root, const flatfile_authority_lock &lock,
+	flatfile_shop_trade_materialization_health *health, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !health)
+		return flatfile_shop_trade_materialization_result::invalid;
+	materialization_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_shop_trade_materialization_result::ok)
+		return loaded;
+	return catalog_health(catalog, health) ?
+		       flatfile_shop_trade_materialization_result::ok :
+		       flatfile_shop_trade_materialization_result::io_error;
 }
 
 flatfile_shop_trade_materialization_result flatfile_shop_trade_materialization_reconcile(
