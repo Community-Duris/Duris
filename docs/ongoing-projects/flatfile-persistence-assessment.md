@@ -1830,6 +1830,43 @@ sections below continue to describe the required end state.
   exact item-custody reconciliation, then address account-bound summon references before
   exposing the complete character-delete route.
 
+### Checkpoint 54 - canonical corpse and saved-world-item catalog
+
+- **Completed:** added a checksummed `DURWRLD` v1 `world_item_catalog` consolidating PC
+  corpse metadata and its nested contents with saved ground-item trees. Corpse records
+  carry owner PID, canonical owner name, save ID, room, descriptive fields, weight, all
+  runtime value slots, revision, and complete nested item payloads. Saved-world records
+  carry their runtime item key, room, revision, and complete nested item payloads.
+- **Authority boundary:** both collections reuse the exact bounded player-item snapshot
+  envelope, preserving stable UID/generated identity, prototype and mutable scalar state,
+  dynamic affects, extra descriptions, spellbook metadata, and parent topology without a
+  second object codec. Establishment canonicalizes corpse `(owner PID, save ID)` and saved
+  item-key ordering and is idempotent only for identical state.
+- **Validation:** the catalog rejects absent or conflicting corpse identities, inconsistent
+  names across one PID, reuse of a canonical owner name by another PID, duplicate saved
+  keys, more than one saved-item root, malformed or over-deep nesting, equipment placement,
+  invalid vnums, missing or duplicate UIDs across either collection, invalid revisions,
+  unsafe bounds, checksum corruption, and trailing data. Missing or corrupt authority
+  fails closed.
+- **Custody semantics:** corpse contents remain owned by the stable encoded
+  `(owner PID, save ID)` corpse identity; saved ground trees remain room custody and are
+  not attributed to a character merely because both legacy tables shared an object
+  persistence shape. Character deletion will therefore remove only matching corpse
+  aggregates and reconcile those exact corpse owners with the global item ledger while
+  preserving unrelated saved room trees.
+- **Checks passed:** the strict standalone regression covers canonical establishment/list,
+  metadata and nested-state round trip, retry/conflict behavior, cross-collection UID
+  collision refusal, malformed nesting and multiple-root refusal, duplicate corpse
+  identity refusal, and checksum corruption. Changed-line formatting, the normal server
+  build, and the client-free boot preflight pass; CI now runs the world-item repository.
+- **Manifest and exposure:** the schema-derived deletion entry remains deliberately
+  `unimplemented` in this checkpoint. Catalog authority alone does not prove atomic corpse,
+  item-ledger, and artifact disposition, so both deletion blockers and the live route fence
+  remain unchanged.
+- **Next action:** prepare PID/name-verified corpse removal, return exact corpse custody
+  evidence, compose it with item destruction and corpse-held artifact release in the
+  recoverable character-delete transaction, and only then advance the manifest entry.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

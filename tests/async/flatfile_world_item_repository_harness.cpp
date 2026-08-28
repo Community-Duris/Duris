@@ -1,0 +1,149 @@
+#include "flatfile_world_item_repository.h"
+
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
+
+namespace fs = std::filesystem;
+
+static void require(bool condition, const std::string &message)
+{
+	if (!condition)
+	{
+		std::cerr << message << '\n';
+		exit(1);
+	}
+}
+
+static void prepare_root(const fs::path &root)
+{
+	fs::create_directories(root / "domains");
+	fs::create_directories(root / "players");
+	fs::create_directories(root / "identities/names");
+	fs::permissions(root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "players", fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "identities", fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(root / "identities/names", fs::perms::owner_all, fs::perm_options::replace);
+}
+
+static player_item_snapshot item(uint64_t uid, int32_t parent, int32_t vnum)
+{
+	player_item_snapshot value = {};
+	value.parent_index = parent;
+	value.equipment_slot = -1;
+	value.object_uid = uid;
+	value.generated_key = static_cast<int64_t>(uid + 1000);
+	value.vnum = vnum;
+	value.name = "world item";
+	value.short_description = "a world item";
+	value.dynamic_affects.push_back({ 3, 4, 5 });
+	value.extra_descriptions.push_back({ "runes", "small runes", true, { 7, 8 } });
+	return value;
+}
+
+static flatfile_corpse_record corpse(uint32_t pid, uint32_t save_id, uint64_t uid)
+{
+	flatfile_corpse_record value = {};
+	value.owner_pid = pid;
+	value.owner_name = pid == 42 ? "Hero" : "Other";
+	value.save_id = save_id;
+	value.room_vnum = 500;
+	value.short_description = "the corpse of Hero";
+	value.description = "The corpse of Hero is lying here.";
+	value.keywords = "corpse hero _pcorpse_";
+	value.weight = 90;
+	value.values = { 1, 2, 3, 4, 5, 6, 0, 8 };
+	value.revision = 4;
+	value.items = { item(uid, PLAYER_SNAPSHOT_NO_PARENT, 300), item(uid + 1, 0, 301) };
+	return value;
+}
+
+static flatfile_saved_world_item_record saved_item()
+{
+	flatfile_saved_world_item_record value = {};
+	value.item_key = "item.statue.1";
+	value.room_vnum = 700;
+	value.revision = 3;
+	value.items = { item(200, PLAYER_SNAPSHOT_NO_PARENT, 400), item(201, 0, 401) };
+	return value;
+}
+
+int main(int argc, char **argv)
+{
+	require(argc == 2, "state root argument required");
+	const fs::path root = fs::path(argv[1]) / "world";
+	prepare_root(root);
+	std::string error;
+	std::vector<flatfile_corpse_record> corpses;
+	std::vector<flatfile_saved_world_item_record> saved_items;
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+			flatfile_world_item_result::not_found,
+		"missing world item authority did not fail closed");
+	const auto first = corpse(42, 20, 100);
+	const auto second = corpse(77, 10, 110);
+	const auto saved = saved_item();
+	require(flatfile_world_item_establish(root.string(), { second, first }, { saved },
+					      &error) == flatfile_world_item_result::ok,
+		"world item establishment failed: " + error);
+	require(flatfile_world_item_establish(root.string(), { first, second }, { saved },
+					      &error) == flatfile_world_item_result::already_exists,
+		"canonical world item establishment retry was not idempotent");
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.size() == 2 && corpses[0].owner_pid == 42 &&
+			corpses[0].owner_name == "hero" && corpses[0].values[7] == 8 &&
+			corpses[0].items.size() == 2 && corpses[0].items[1].parent_index == 0 &&
+			corpses[0].items[0].dynamic_affects[0].extra2 == 5 &&
+			saved_items.size() == 1 && saved_items[0].item_key == "item.statue.1" &&
+			saved_items[0].items[1].extra_descriptions[0].spell_ids[1] == 8,
+		"world item catalog was not canonical or did not round trip nested state");
+	auto conflicting = first;
+	conflicting.weight++;
+	require(flatfile_world_item_establish(root.string(), { conflicting, second }, { saved },
+					      &error) == flatfile_world_item_result::invalid,
+		"conflicting world item establishment was accepted");
+
+	const fs::path invalid_root = fs::path(argv[1]) / "invalid";
+	prepare_root(invalid_root);
+	auto duplicate_uid = saved;
+	duplicate_uid.items[0].object_uid = 100;
+	require(flatfile_world_item_establish(invalid_root.string(), { first }, { duplicate_uid },
+					      &error) == flatfile_world_item_result::invalid,
+		"duplicate UID across corpse and saved room custody was accepted");
+	auto malformed = saved;
+	malformed.items[1].parent_index = 1;
+	require(flatfile_world_item_establish(invalid_root.string(), {}, { malformed }, &error) ==
+			flatfile_world_item_result::invalid,
+		"malformed saved item nesting was accepted");
+	auto duplicate_corpse = first;
+	duplicate_corpse.owner_name = "Impostor";
+	require(flatfile_world_item_establish(invalid_root.string(), { first, duplicate_corpse },
+					      {}, &error) == flatfile_world_item_result::invalid,
+		"duplicate corpse owner/save identity was accepted");
+	auto two_roots = saved;
+	two_roots.items[1].parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	require(flatfile_world_item_establish(invalid_root.string(), {}, { two_roots }, &error) ==
+			flatfile_world_item_result::invalid,
+		"saved item key with multiple roots was accepted");
+
+	const fs::path catalog = root / "domains/world_item_catalog";
+	{
+		std::fstream file(catalog, std::ios::in | std::ios::out | std::ios::binary);
+		require(file.good(), "could not open world item catalog for corruption");
+		file.seekg(-1, std::ios::end);
+		char byte = 0;
+		file.read(&byte, 1);
+		byte ^= 0x5a;
+		file.seekp(-1, std::ios::end);
+		file.write(&byte, 1);
+	}
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+			flatfile_world_item_result::invalid,
+		"corrupt world item authority was exposed");
+	std::cout << "flat-file world item repository passed\n";
+	return 0;
+}

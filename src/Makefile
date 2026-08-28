@@ -241,6 +241,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_recipe_repository.o \
 				 flatfile_spellbook_repository.o \
 				 flatfile_ship_repository.o \
+				 flatfile_world_item_repository.o \
 				 critical_command.o \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \
