@@ -21,7 +21,8 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'B', 'O', 'O', 'N', 0 };
-constexpr uint32_t catalog_version = 1;
+constexpr uint32_t catalog_version = 2;
+constexpr uint32_t catalog_legacy_version = 1;
 constexpr size_t catalog_maximum_bytes = 256 * 1024 * 1024;
 constexpr size_t definition_maximum = 65536;
 constexpr size_t progress_maximum = 1048576;
@@ -50,6 +51,8 @@ struct boon_operation
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_digest = {};
 	unsigned int result_code = 0;
 	boon_reward_result result = {};
+	double event_data = 0;
+	bool reward_published = false;
 };
 
 struct boon_catalog
@@ -267,7 +270,7 @@ bool encode_catalog(const boon_catalog &catalog, std::vector<uint8_t> *bytes)
 	payload.number<uint32_t>(catalog.operations.size());
 	for (const auto &operation : catalog.operations)
 	{
-		if (!valid_result(operation.result))
+		if (!valid_result(operation.result) || !std::isfinite(operation.event_data))
 			return false;
 		payload.raw(operation.operation_id.bytes.data(),
 			    operation.operation_id.bytes.size());
@@ -277,6 +280,8 @@ bool encode_catalog(const boon_catalog &catalog, std::vector<uint8_t> *bytes)
 		if (!boon_reward_command_encode_result(operation.result, &result))
 			return false;
 		payload.raw(result.data(), result.size());
+		payload.number(std::bit_cast<uint64_t>(operation.event_data));
+		payload.number<uint8_t>(operation.reward_published);
 	}
 	if (!payload.valid || payload.bytes.size() > catalog_maximum_bytes)
 		return false;
@@ -305,7 +310,8 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, boon_catalog *catalog)
 	uint32_t version = 0, payload_size = 0;
 	uint64_t revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    !header.number(&revision) || version != catalog_version || !revision ||
+	    !header.number(&revision) ||
+	    (version != catalog_version && version != catalog_legacy_version) || !revision ||
 	    payload_size != bytes.size() - header_size)
 		return false;
 	const uint8_t *payload_bytes = bytes.data() + header_size;
@@ -431,18 +437,29 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, boon_catalog *catalog)
 	{
 		ids.reserve(count);
 		for (auto &operation : decoded.operations)
+		{
+			uint64_t event_data = 0;
+			uint8_t reward_published = version == catalog_legacy_version;
 			if (!payload.raw(operation.operation_id.bytes.data(),
 					 operation.operation_id.bytes.size()) ||
 			    !payload.raw(operation.command_digest.data(),
 					 operation.command_digest.size()) ||
 			    !payload.number(&operation.result_code) ||
 			    !payload.raw(result.data(), result.size()) ||
+			    (version == catalog_version && (!payload.number(&event_data) ||
+							    !payload.number(&reward_published))) ||
+			    reward_published > 1 ||
 			    critical_operation_id_is_zero(operation.operation_id) ||
 			    !boon_reward_command_decode_result(result.data(), result.size(),
 							       &operation.result) ||
 			    !valid_result(operation.result) ||
 			    !ids.insert(operation.operation_id.bytes).second)
 				return false;
+			operation.event_data = std::bit_cast<double>(event_data);
+			operation.reward_published = reward_published;
+			if (!std::isfinite(operation.event_data))
+				return false;
+		}
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -594,6 +611,79 @@ flatfile_boon_result flatfile_boon_load_player(const std::string &root, uint32_t
 	else
 		*player = {};
 	return flatfile_boon_result::ok;
+}
+
+flatfile_boon_result flatfile_boon_find_pending_reward(const std::string &root, uint32_t pid,
+						       flatfile_boon_pending_reward *reward,
+						       std::string *error)
+{
+	if (root.empty() || !pid || !reward)
+		return flatfile_boon_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_boon_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_boon_result::io_error :
+			       flatfile_boon_result::invalid;
+	boon_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_boon_result::not_found;
+	if (loaded != flatfile_read_result::ok)
+		return loaded == flatfile_read_result::io_error ? flatfile_boon_result::io_error :
+								  flatfile_boon_result::invalid;
+	const auto operation =
+		std::find_if(catalog.operations.begin(), catalog.operations.end(),
+			     [&](const boon_operation &entry)
+			     { return !entry.reward_published && entry.result.pid == pid; });
+	if (operation == catalog.operations.end())
+		return flatfile_boon_result::not_found;
+	*reward = { operation->operation_id, operation->result.pid, operation->event_data,
+		    operation->result };
+	return flatfile_boon_result::ok;
+}
+
+flatfile_boon_result flatfile_boon_acknowledge_reward(const std::string &root,
+						      const critical_operation_id &operation_id,
+						      std::string *error)
+{
+	if (root.empty() || critical_operation_id_is_zero(operation_id))
+		return flatfile_boon_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_boon_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_boon_result::io_error :
+			       flatfile_boon_result::invalid;
+	boon_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_boon_result::not_found;
+	if (loaded != flatfile_read_result::ok)
+		return loaded == flatfile_read_result::io_error ? flatfile_boon_result::io_error :
+								  flatfile_boon_result::invalid;
+	auto operation = std::find_if(
+		catalog.operations.begin(), catalog.operations.end(),
+		[&](const boon_operation &entry)
+		{ return critical_operation_id_equal(entry.operation_id, operation_id); });
+	if (operation == catalog.operations.end())
+		return flatfile_boon_result::not_found;
+	if (operation->reward_published)
+		return flatfile_boon_result::ok;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_boon_result::io_error;
+	operation->reward_published = true;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_boon_result::io_error;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_boon_result::ok :
+		       flatfile_boon_result::io_error;
 }
 
 critical_apply_result flatfile_boon_repository_apply(const std::string &root,
@@ -786,8 +876,9 @@ critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 	}
 	try
 	{
-		candidate.operations.push_back(
-			{ command.operation_id, digest, result_code, result });
+		candidate.operations.push_back({ command.operation_id, digest, result_code, result,
+						 payload.data,
+						 result_code || result.entry_count == 0 });
 	}
 	catch (const std::bad_alloc &)
 	{

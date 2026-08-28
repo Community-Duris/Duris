@@ -1045,6 +1045,43 @@ sections below continue to describe the required end state.
   retain pending runtime-only effects until the player is loaded and acknowledgement is
   durable; then port boon read/admin/shop surfaces.
 
+### Checkpoint 31 - recoverable flat boon reward publication
+
+- **Completed:** upgraded the checksummed boon catalog to schema v2. Every successful
+  command with reward entries now persists its event data and an unpublished marker in
+  the same atomic catalog write as progress/shop state and the typed result. Legacy v1
+  catalogs remain readable and their historical operations are treated as already
+  published, so an upgrade cannot replay old rewards.
+- **Completed:** added bounded pending-reward lookup and idempotent acknowledgement APIs.
+  Both run behind the boon authority lock, recover an interrupted generic transaction
+  before reading, reject corrupt catalogs, and atomically advance the catalog revision
+  when acknowledgement changes state.
+- **Completed:** an online completion publishes the runtime effects before acknowledging
+  its durable marker. If the player is disconnected or the server restarts first, normal
+  entry and reconnect drain up to 64 pending rewards for that PID and acknowledge each
+  only after publication. Failed loads or writes retain the marker and emit a persistence
+  alert rather than silently dropping the reward.
+- **Checks passed:** `python3 tests/async/test_flatfile_boon_repository.py` now also covers
+  exact event/result recovery, idempotent acknowledgement, absence after acknowledgement,
+  and an actual v1 catalog fixture; the boon/zone source-contract suite guards publish-
+  before-ack ordering and both player-ready hooks. The affected auction/item/player
+  standalone repositories, `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass.
+- **Files changed:** `src/flatfile_boon_repository.[ch]`, the boon reward transaction and
+  player entry/reconnect hooks, focused repository and source-contract tests, and this
+  handoff ledger.
+- **Remaining boon gap:** delivery is recoverable and at-least-once, not exactly-once. A
+  crash after applying a runtime EXP/level/power/spell/stat/item effect (or submitting an
+  epic/cash sub-operation) but before acknowledging the catalog can repeat that effect on
+  reconnect. The effect families need operation-ID-aware durable after-images or their
+  own idempotency ledgers before acknowledgement is crash-atomic. Boon admin/list/shop
+  routes also remain SQL-backed.
+- **Next action:** make boon effect application idempotent by carrying the parent boon
+  operation ID into wallet/epic/item/player authority updates and recording runtime-only
+  effects with the player snapshot; acknowledge only after every prepared effect is
+  durable. Then port the remaining boon read/admin/shop surfaces.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

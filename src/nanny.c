@@ -29,6 +29,7 @@
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
 #include "auction_transaction.h"
+#include "boon_reward_transaction.h"
 #include "files.h"
 #include "flatfile_identity_adapter.h"
 #include "gmcp.h"
@@ -2878,6 +2879,7 @@ void enter_game(P_desc d)
 	currency_transaction_player_ready(ch);
 	item_movement_transaction_player_ready(ch);
 	auction_transaction_player_ready(ch);
+	boon_reward_transaction_player_ready(ch);
 	writeCharacter(ch, 1, NOWHERE);
 	if (!sql_save_player_core(ch))
 	{
@@ -3475,6 +3477,7 @@ void reconnect(P_desc d, P_char tmp_ch)
 	currency_transaction_player_ready(tmp_ch);
 	item_movement_transaction_player_ready(tmp_ch);
 	auction_transaction_player_ready(tmp_ch);
+	boon_reward_transaction_player_ready(tmp_ch);
 	act("$n has reconnected.", TRUE, tmp_ch, 0, 0, TO_ROOM);
 	logit(LOG_COMM, "%s [%s] has reconnected.", GET_NAME(d->character), d->host);
 	loginlog(d->character->player.level, "%s [%s] has reconnected.", GET_NAME(d->character),

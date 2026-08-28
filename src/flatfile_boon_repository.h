@@ -33,6 +33,14 @@ struct flatfile_boon_player_projection
 	int64_t stats = 0;
 };
 
+struct flatfile_boon_pending_reward
+{
+	critical_operation_id operation_id = {};
+	uint32_t pid = 0;
+	double event_data = 0;
+	boon_reward_result result = {};
+};
+
 enum class flatfile_boon_result
 {
 	ok,
@@ -49,6 +57,12 @@ flatfile_boon_establish(const std::string &root,
 flatfile_boon_result flatfile_boon_load_player(const std::string &root, uint32_t pid,
 					       flatfile_boon_player_projection *player,
 					       std::string *error);
+flatfile_boon_result flatfile_boon_find_pending_reward(const std::string &root, uint32_t pid,
+						       flatfile_boon_pending_reward *reward,
+						       std::string *error);
+flatfile_boon_result flatfile_boon_acknowledge_reward(const std::string &root,
+						      const critical_operation_id &operation_id,
+						      std::string *error);
 critical_apply_result flatfile_boon_repository_apply(const std::string &root,
 						     const critical_command &command);
 

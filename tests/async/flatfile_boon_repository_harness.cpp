@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <openssl/sha.h>
 #include <string>
 #include <vector>
 
@@ -64,6 +65,84 @@ static flatfile_boon_definition definition(uint32_t id, uint8_t type, uint8_t op
 	return value;
 }
 
+static void expect_pending_reward(const std::string &root, uint32_t pid,
+				  const critical_operation_id &operation_id, double event_data,
+				  std::string *error)
+{
+	flatfile_boon_pending_reward reward;
+	require(flatfile_boon_find_pending_reward(root, pid, &reward, error) ==
+				flatfile_boon_result::ok &&
+			critical_operation_id_equal(reward.operation_id, operation_id) &&
+			reward.event_data == event_data && reward.result.pid == pid,
+		"committed boon result was not durably pending");
+	require(flatfile_boon_acknowledge_reward(root, operation_id, error) ==
+				flatfile_boon_result::ok &&
+			flatfile_boon_acknowledge_reward(root, operation_id, error) ==
+				flatfile_boon_result::ok &&
+			flatfile_boon_find_pending_reward(root, pid, &reward, error) ==
+				flatfile_boon_result::not_found,
+		"boon reward acknowledgement was not durable and idempotent");
+}
+
+static uint32_t read_u32(const std::vector<uint8_t> &bytes, size_t *offset)
+{
+	require(*offset + 4 <= bytes.size(), "legacy boon conversion exceeded payload");
+	uint32_t value = 0;
+	for (size_t index = 0; index < 4; ++index)
+		value |= static_cast<uint32_t>(bytes[(*offset)++]) << (index * 8);
+	return value;
+}
+
+static void write_u32(std::vector<uint8_t> *bytes, size_t offset, uint32_t value)
+{
+	for (size_t index = 0; index < 4; ++index)
+		(*bytes)[offset + index] = static_cast<uint8_t>(value >> (index * 8));
+}
+
+static void convert_catalog_to_legacy_v1(const fs::path &path)
+{
+	std::ifstream input(path, std::ios::binary);
+	std::vector<uint8_t> file((std::istreambuf_iterator<char>(input)),
+				  std::istreambuf_iterator<char>());
+	require(file.size() >= 56, "boon catalog too short for legacy conversion");
+	std::vector<uint8_t> payload(file.begin() + 56, file.end());
+	size_t offset = 0;
+	const uint32_t definition_count = read_u32(payload, &offset);
+	for (uint32_t definition = 0; definition < definition_count; ++definition)
+	{
+		offset += 62;
+		require(offset + 2 <= payload.size(), "legacy boon conversion missed author");
+		const uint16_t author_size = static_cast<uint16_t>(payload[offset]) |
+					     static_cast<uint16_t>(payload[offset + 1]) << 8;
+		offset += 2 + author_size;
+	}
+	offset += static_cast<size_t>(read_u32(payload, &offset)) * 16;
+	offset += static_cast<size_t>(read_u32(payload, &offset)) * 20;
+	const size_t operations_header = offset;
+	const uint32_t operation_count = read_u32(payload, &offset);
+	constexpr size_t version_two_operation_size = 16 + 32 + 4 + BOON_REWARD_RESULT_BYTES + 9;
+	constexpr size_t version_one_operation_size = version_two_operation_size - 9;
+	require(offset + static_cast<size_t>(operation_count) * version_two_operation_size ==
+			payload.size(),
+		"legacy boon conversion did not locate operations");
+	std::vector<uint8_t> legacy(payload.begin(), payload.begin() + operations_header + 4);
+	for (uint32_t operation = 0; operation < operation_count; ++operation)
+	{
+		legacy.insert(legacy.end(), payload.begin() + offset,
+			      payload.begin() + offset + version_one_operation_size);
+		offset += version_two_operation_size;
+	}
+	write_u32(&file, 8, 1);
+	write_u32(&file, 12, legacy.size());
+	file.resize(56);
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(legacy.data(), legacy.size(), digest.data());
+	std::copy(digest.begin(), digest.end(), file.begin() + 24);
+	file.insert(file.end(), legacy.begin(), legacy.end());
+	std::ofstream output(path, std::ios::binary | std::ios::trunc);
+	output.write(reinterpret_cast<const char *>(file.data()), file.size());
+}
+
 int main(int argc, char **argv)
 {
 	require(argc == 2, "state root argument required");
@@ -111,6 +190,7 @@ int main(int argc, char **argv)
 	require(flatfile_boon_repository_apply(root.string(), command(conflicting, 1)).error_code ==
 			EEXIST,
 		"conflicting boon operation ID was accepted");
+	expect_pending_reward(root.string(), 42, first_command.operation_id, mob.data, &error);
 	flatfile_boon_player_projection shop;
 	require(flatfile_boon_load_player(root.string(), 42, &shop, &error) ==
 				flatfile_boon_result::ok &&
@@ -125,6 +205,7 @@ int main(int argc, char **argv)
 				flatfile_boon_result::ok &&
 			shop.points == 5 && shop.stats == 4,
 		"second mob event did not complete one-shot and repeatable rewards");
+	expect_pending_reward(root.string(), 42, operation(2), mob.data, &error);
 	applied = flatfile_boon_repository_apply(root.string(), command(mob, 3));
 	boon_reward_result third = decode_applied_result(applied);
 	require(applied.outcome == critical_apply_outcome::applied && third.entry_count == 2 &&
@@ -135,6 +216,7 @@ int main(int argc, char **argv)
 				flatfile_boon_result::ok &&
 			shop.points == 5 && shop.stats == 6,
 		"completed one-shot boon repeated or repeatable boon stopped");
+	expect_pending_reward(root.string(), 42, operation(3), mob.data, &error);
 	boon_reward_payload zone = mob;
 	zone.option = BOPT_ZONE;
 	zone.data = 77;
@@ -144,6 +226,7 @@ int main(int argc, char **argv)
 			decode_applied_result(applied).entry_count == 1 &&
 			(decode_applied_result(applied).entries[0].flags & BOON_RESULT_COMPLETED),
 		"non-progress zone boon did not complete immediately");
+	expect_pending_reward(root.string(), 42, operation(4), zone.data, &error);
 	boon_reward_payload frag = mob;
 	frag.option = BOPT_FRAG;
 	frag.data = 12;
@@ -153,6 +236,7 @@ int main(int argc, char **argv)
 			decode_applied_result(applied).entry_count == 1 &&
 			decode_applied_result(applied).entries[0].boon_id == 4,
 		"frag-threshold boon eligibility did not match SQL semantics");
+	expect_pending_reward(root.string(), 42, operation(5), frag.data, &error);
 	boon_reward_payload excluded = mob;
 	excluded.victim_flags = 0;
 	applied = flatfile_boon_repository_apply(root.string(), command(excluded, 6));
@@ -180,6 +264,11 @@ int main(int argc, char **argv)
 					.error_code == E2BIG,
 		"oversized boon match set was not rolled back and durably rejected");
 	const fs::path catalog = domains / "boon_catalog";
+	convert_catalog_to_legacy_v1(catalog);
+	require(flatfile_boon_load_player(root.string(), 42, &shop, &error) ==
+				flatfile_boon_result::ok &&
+			shop.points == 5 && shop.stats == 6,
+		"legacy v1 boon catalog was not readable after pending-reward upgrade");
 	{
 		std::fstream file(catalog, std::ios::in | std::ios::out | std::ios::binary);
 		require(file.good(), "could not open boon catalog for corruption");

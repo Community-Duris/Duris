@@ -121,6 +121,29 @@ class BoonRewardZoneCutoverTests(unittest.TestCase):
             self.assertIn(token, bootstrap)
         self.assertIn("verify_boon_reward_zone_schema.sh", runner)
 
+    def test_flat_boon_rewards_replay_before_acknowledgement(self):
+        repository = (SRC / "flatfile_boon_repository.c").read_text()
+        transaction = (SRC / "boon_reward_transaction.c").read_text()
+        nanny = (SRC / "nanny.c").read_text()
+
+        for token in (
+            "flatfile_boon_find_pending_reward",
+            "flatfile_boon_acknowledge_reward",
+            "catalog_legacy_version",
+            "reward_published",
+        ):
+            self.assertIn(token, repository)
+
+        ready_start = transaction.index("void boon_reward_transaction_player_ready")
+        ready_end = transaction.index("critical_outbox_delivery_result", ready_start)
+        ready = transaction[ready_start:ready_end]
+        publish = ready.index("boon_publish_transaction_result")
+        acknowledge = ready.index("acknowledge_flat_reward")
+        self.assertLess(publish, acknowledge)
+        self.assertIn("flatfile_boon_find_pending_reward", ready)
+
+        self.assertEqual(nanny.count("boon_reward_transaction_player_ready("), 2)
+
     def test_account_bound_reward_boundary_remains_covered(self):
         contracts = "\n".join((ROOT / path).read_text() for path in (
             "tests/async/test_account_bound_reward_contract.py",

@@ -1,6 +1,8 @@
 #include "boon_reward_transaction.h"
 
 #include "boon.h"
+#include "flatfile_boon_repository.h"
+#include "persistence_mode.h"
 #include "prototypes.h"
 #include "spells.h"
 #include "utils.h"
@@ -34,6 +36,20 @@ std::string operation_key(const critical_operation_id &operation_id)
 {
 	return std::string(reinterpret_cast<const char *>(operation_id.bytes.data()),
 			   operation_id.bytes.size());
+}
+
+bool acknowledge_flat_reward(const critical_operation_id &operation_id)
+{
+	if (persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return true;
+	const char *root = persistence_mode_flatfile_root();
+	std::string error;
+	if (root && flatfile_boon_acknowledge_reward(root, operation_id, &error) ==
+			    flatfile_boon_result::ok)
+		return true;
+	persistence_alert(AVATAR, "boon_reward", "player", "unknown", "acknowledge",
+			  "flat_write_failed", "error=%s", error.c_str());
+	return false;
 }
 } // namespace
 
@@ -109,8 +125,11 @@ void boon_reward_transaction_handle_completions(const critical_completion *compl
 		{
 			P_char character = find_player_by_pid(found->second.pid);
 			if (character)
+			{
 				boon_publish_transaction_result(character,
 								found->second.payload.data, result);
+				acknowledge_flat_reward(completions[index].operation_id);
+			}
 			health.max_results =
 				std::max<uint64_t>(health.max_results, result.entry_count);
 			++health.committed;
@@ -120,6 +139,35 @@ void boon_reward_transaction_handle_completions(const critical_completion *compl
 		pending.erase(found);
 	}
 	health.pending = pending.size();
+}
+
+void boon_reward_transaction_player_ready(P_char character)
+{
+	if (!character || IS_NPC(character) || GET_PID(character) <= 0 ||
+	    persistence_mode_get() != PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		return;
+	const char *root = persistence_mode_flatfile_root();
+	if (!root)
+		return;
+	for (size_t delivered = 0; delivered < 64; ++delivered)
+	{
+		flatfile_boon_pending_reward reward;
+		std::string error;
+		const auto found = flatfile_boon_find_pending_reward(
+			root, static_cast<uint32_t>(GET_PID(character)), &reward, &error);
+		if (found == flatfile_boon_result::not_found)
+			break;
+		if (found != flatfile_boon_result::ok)
+		{
+			persistence_alert(AVATAR, "boon_reward", "player", "unknown",
+					  "load_pending", "flat_read_failed", "error=%s",
+					  error.c_str());
+			break;
+		}
+		boon_publish_transaction_result(character, reward.event_data, reward.result);
+		if (!acknowledge_flat_reward(reward.operation_id))
+			break;
+	}
 }
 
 critical_outbox_delivery_result
