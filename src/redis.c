@@ -94,6 +94,8 @@ static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
 static bool world_recovery_quiesced = false;
 static std::string world_writer_token;
+static std::string redis_world_authentication_secret;
+static std::string redis_world_previous_authentication_secret;
 static uint64_t world_writer_lease_msec = 0;
 static uint64_t world_writer_epoch = 0;
 static bool world_floor_barrier_waiting = false;
@@ -137,6 +139,11 @@ static redis_world_store_config redis_world_store_config_copy(void)
 	redis_world_store_config config = {};
 	config.connection = redis_settings;
 	config.key_namespace = redis_key_namespace;
+	config.authentication_secret = redis_world_authentication_secret.c_str();
+	config.previous_authentication_secret =
+		redis_world_previous_authentication_secret.empty() ?
+			NULL :
+			redis_world_previous_authentication_secret.c_str();
 	config.season_epoch = world_writer_epoch ? world_writer_epoch : redis_runtime_epoch;
 	config.generation_ttl_seconds = std::max<uint64_t>(3600, world_state_max_age * 4);
 	return config;
@@ -518,6 +525,39 @@ static bool redis_configure_namespace(void)
 					redis_key_namespace, sizeof redis_key_namespace);
 }
 
+static void redis_clear_world_authentication_secrets(void)
+{
+	std::fill(redis_world_authentication_secret.begin(),
+		  redis_world_authentication_secret.end(), '\0');
+	std::fill(redis_world_previous_authentication_secret.begin(),
+		  redis_world_previous_authentication_secret.end(), '\0');
+	redis_world_authentication_secret.clear();
+	redis_world_previous_authentication_secret.clear();
+}
+
+static bool redis_configure_world_authentication(void)
+{
+	const char *current = getenv("REDIS_WORLD_STATE_SECRET");
+	const char *previous = getenv("REDIS_WORLD_STATE_SECRET_PREVIOUS");
+	const size_t current_size = current ? strlen(current) : 0;
+	const size_t previous_size = previous ? strlen(previous) : 0;
+	if (current_size < 32 || current_size > 256 ||
+	    (previous_size && (previous_size < 32 || previous_size > 256)))
+		return false;
+	try
+	{
+		redis_world_authentication_secret.assign(current, current_size);
+		if (previous_size)
+			redis_world_previous_authentication_secret.assign(previous, previous_size);
+	}
+	catch (const std::bad_alloc &)
+	{
+		redis_clear_world_authentication_secrets();
+		return false;
+	}
+	return true;
+}
+
 static bool redis_configure_connection(const char *host, int port, const char *unix_socket)
 {
 	int database = 0;
@@ -594,13 +634,17 @@ bool redis_init(void)
 		logit(LOG_SYS, "redis disabled (set REDIS=TRUE in .env to enable)");
 		redis_enabled = false;
 		redis_donation_enabled = false;
+		redis_world_state_enabled = false;
 		redis_runtime_epoch = 0;
 		redis_key_namespace[0] = '\0';
+		redis_clear_world_authentication_secrets();
 		return true;
 	}
 	redis_enabled = true;
+	redis_world_state_enabled = false;
 	redis_runtime_epoch = 0;
 	redis_key_namespace[0] = '\0';
+	redis_clear_world_authentication_secrets();
 	if (!redis_configure_namespace())
 	{
 		logit(LOG_SYS,
@@ -722,6 +766,12 @@ bool redis_init(void)
 	if (world_state_env && strcasecmp(world_state_env, "TRUE") == 0)
 	{
 		redis_world_state_enabled = true;
+		if (!redis_configure_world_authentication())
+		{
+			logit(LOG_SYS,
+			      "redis: world recovery disabled; REDIS_WORLD_STATE_SECRET must be 32-256 bytes");
+			redis_world_state_enabled = false;
+		}
 
 		const char *interval_str = getenv("REDIS_WORLD_STATE_INTERVAL");
 		if (interval_str && *interval_str)
@@ -739,10 +789,11 @@ bool redis_init(void)
 				world_state_max_age = max_age;
 		}
 
-		logit(LOG_SYS, "redis world state enabled: interval=%ds, max_age=%ds",
-		      world_state_interval, world_state_max_age);
+		if (redis_world_state_enabled)
+			logit(LOG_SYS, "redis world state enabled: interval=%ds, max_age=%ds",
+			      world_state_interval, world_state_max_age);
 		const redis_floor_store_config floor_config = { redis_settings };
-		if (!redis_floor_store_init(&floor_config))
+		if (redis_world_state_enabled && !redis_floor_store_init(&floor_config))
 		{
 			logit(LOG_SYS, "redis: floor worker unavailable; world recovery disabled");
 			redis_world_state_enabled = false;
@@ -886,7 +937,9 @@ void redis_cleanup(void)
 	}
 	redis_connection_settings_destroy(redis_settings);
 	redis_settings = NULL;
+	redis_clear_world_authentication_secrets();
 	redis_donation_enabled = false;
+	redis_world_state_enabled = false;
 	redis_enabled = false;
 #endif
 }

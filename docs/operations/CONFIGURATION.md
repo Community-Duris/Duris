@@ -81,6 +81,8 @@ revisioned player-save pipeline and typed journal.
 | `REDIS_WORLD_STATE` | disabled | `TRUE` enables it | Enable bounded capture and background publication of crash-recovery world generations. |
 | `REDIS_WORLD_STATE_INTERVAL` | `10` seconds | `5`-`300` | Snapshot interval when world-state recovery is enabled. |
 | `REDIS_WORLD_STATE_MAX_AGE` | `300` seconds | `60`-`3600` | Maximum snapshot age accepted during recovery. |
+| `REDIS_WORLD_STATE_SECRET` | none | `32`-`256` bytes | Independent HMAC key required when world recovery is enabled. It authenticates the manifest and complete generation payload; do not reuse Redis, database, donation, or DurisWeb credentials. |
+| `REDIS_WORLD_STATE_SECRET_PREVIOUS` | empty | `32`-`256` bytes | Optional previous recovery HMAC key accepted only for reading and cleanup during a bounded rotation window. New generations are always signed by the current key. |
 | `REDIS_DONATION_SUBSCRIBER` | disabled | Exact `TRUE` enables it | Subscribe to authenticated external donation notices. No polling job or subscriber connection exists by default. |
 | `REDIS_DONATION_SECRET` | none | At least 32 bytes | Independent HMAC key required when the donation subscriber is enabled. Do not reuse a Redis, database, or DurisWeb secret. |
 
@@ -140,6 +142,7 @@ REDIS_DB=0
 REDIS_NAMESPACE=duris:local:default
 REDIS_TLS=FALSE
 REDIS_WORLD_STATE=TRUE
+REDIS_WORLD_STATE_SECRET=replace-with-an-independent-random-secret
 ```
 
 Stop the server before clearing Redis state. `scripts/clear-redis.sh --confirm

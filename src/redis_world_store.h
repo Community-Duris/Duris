@@ -11,12 +11,14 @@ struct redis_world_store_config
 {
 	const struct redis_connection_settings *connection;
 	const char *key_namespace;
+	const char *authentication_secret;
+	const char *previous_authentication_secret;
 	uint64_t season_epoch;
 	uint64_t generation_ttl_seconds;
 };
 
 constexpr size_t REDIS_WORLD_GENERATION_CHUNK_BYTES = 1024 * 1024;
-constexpr size_t REDIS_WORLD_GENERATION_MANIFEST_BYTES = 56;
+constexpr size_t REDIS_WORLD_GENERATION_MANIFEST_BYTES = 120;
 constexpr size_t REDIS_WORLD_GENERATION_MAX_CHUNKS = 64;
 
 bool redis_world_store_claim_fence(const struct redis_world_store_config *config,

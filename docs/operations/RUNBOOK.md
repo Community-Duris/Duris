@@ -284,6 +284,12 @@ the postcondition, and fails the migration if `redis-cli`, the connection, delet
 postflight fails. When Redis is disabled, the step reports `not enabled` without requiring
 Redis connection fields. The game and every other Redis writer must remain stopped.
 
+World recovery requires an independent `REDIS_WORLD_STATE_SECRET`. To rotate it without
+accepting unsigned data, move the old value to `REDIS_WORLD_STATE_SECRET_PREVIOUS`, install
+the new current value, restart, and wait for a new acknowledged generation. Then remove the
+previous value and restart again. A manifest signed by neither key, or a generation whose
+SHA-256 digest differs from its authenticated manifest, is rejected before materialization.
+
 On the qualified clone only, use this order:
 
 ```bash

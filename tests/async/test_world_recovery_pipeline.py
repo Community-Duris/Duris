@@ -195,6 +195,8 @@ for token in (
     "redis.call('PEXPIRE',KEYS[1],ARGV[7])",
 ):
     assert token in STORE
+for token in ("WRG2", "HMAC(EVP_sha256()", "SHA256(", "CRYPTO_memcmp"):
+    assert token in STORE
 for token in ("SEASON_INFIX", "world_state:writer_fence",
               "world_state:generation:", "world_state:current", "world_state:timestamp",
               "world_state:sequence", "world_state:checksum", "world_state:complete",

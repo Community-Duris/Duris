@@ -50,7 +50,14 @@ int main(int argc, char **argv)
         "127.0.0.1", live_port, 250, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false, nullptr};
     redis_connection_settings *settings = redis_connection_settings_create(&options);
     assert(settings);
-    redis_world_store_config config = {settings, "mud", 42, 3600};
+    constexpr const char *recovery_secret =
+        "world-recovery-authentication-secret-0001";
+    constexpr const char *rotated_secret =
+        "world-recovery-authentication-secret-0002";
+    constexpr const char *wrong_secret =
+        "world-recovery-authentication-secret-wrong";
+    redis_world_store_config config = {
+        settings, "mud", recovery_secret, nullptr, 42, 3600};
     constexpr const char *writer_a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     constexpr const char *writer_b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     constexpr uint64_t lease = 600000;
@@ -162,6 +169,24 @@ int main(int argc, char **argv)
     freeReplyObject(reply);
     assert(redis_world_store_publish(&next_season, writer_a, lease, first,
                                      sizeof(first) - 1, 1, time(nullptr), 33));
+    reply = run(context, "GET mud:season:43:world_state:generation:1");
+    assert(reply->type == REDIS_REPLY_STRING &&
+           reply->len == REDIS_WORLD_GENERATION_MANIFEST_BYTES);
+    std::vector<unsigned char> replayed_manifest(reply->str, reply->str + reply->len);
+    freeReplyObject(reply);
+    reply = (redisReply *)redisCommand(
+        context, "SET mud:season:42:world_state:generation:1 %b",
+        replayed_manifest.data(), replayed_manifest.size());
+    assert(reply && reply->type == REDIS_REPLY_STATUS);
+    freeReplyObject(reply);
+    assert(!redis_world_store_read_generation(&config, 1, &loaded));
+    reply = (redisReply *)redisCommand(
+        context, "SET mud:season:42:world_state:generation:99 %b",
+        replayed_manifest.data(), replayed_manifest.size());
+    assert(reply && reply->type == REDIS_REPLY_STATUS);
+    freeReplyObject(reply);
+    assert(!redis_world_store_read_generation(&config, 99, &loaded));
+    freeReplyObject(run(context, "DEL mud:season:42:world_state:generation:1 mud:season:42:world_state:generation:99"));
     assert(redis_world_store_publish(&config, writer_b, lease, second, sizeof(second) - 1,
                                      3, time(nullptr), 44));
     std::vector<unsigned char> large(REDIS_WORLD_GENERATION_CHUNK_BYTES * 2 + 17);
@@ -171,6 +196,41 @@ int main(int argc, char **argv)
                                      4, time(nullptr), 55));
     assert(redis_world_store_read_generation(&config, 4, &loaded));
     assert(loaded == large);
+    redis_world_store_config wrong_key = config;
+    wrong_key.authentication_secret = wrong_secret;
+    assert(!redis_world_store_read_generation(&wrong_key, 4, &loaded));
+    assert(loaded.empty());
+    redis_world_store_config rotated = config;
+    rotated.authentication_secret = rotated_secret;
+    rotated.previous_authentication_secret = recovery_secret;
+    assert(redis_world_store_read_generation(&rotated, 4, &loaded));
+    assert(loaded == large);
+    std::vector<unsigned char> forged_chunk(REDIS_WORLD_GENERATION_CHUNK_BYTES);
+    memcpy(forged_chunk.data(), large.data(), forged_chunk.size());
+    forged_chunk[0] ^= 0xff;
+    reply = (redisReply *)redisCommand(
+        context,
+        "SET mud:season:42:world_state:generation:4:upload:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:chunk:000 %b",
+        forged_chunk.data(), forged_chunk.size());
+    assert(reply && reply->type == REDIS_REPLY_STATUS);
+    freeReplyObject(reply);
+    assert(!redis_world_store_read_generation(&config, 4, &loaded));
+    assert(loaded.empty());
+    assert(redis_world_store_publish(&config, writer_b, lease, large.data(), large.size(),
+                                     4, time(nullptr), 59));
+    reply = run(context, "GET mud:season:42:world_state:generation:4");
+    assert(reply->type == REDIS_REPLY_STRING &&
+           reply->len == REDIS_WORLD_GENERATION_MANIFEST_BYTES);
+    std::vector<unsigned char> forged_manifest(reply->str, reply->str + reply->len);
+    freeReplyObject(reply);
+    forged_manifest[88] ^= 0xff;
+    reply = (redisReply *)redisCommand(
+        context, "SET mud:season:42:world_state:generation:4 %b",
+        forged_manifest.data(), forged_manifest.size());
+    assert(reply && reply->type == REDIS_REPLY_STATUS);
+    freeReplyObject(reply);
+    assert(!redis_world_store_read_generation(&config, 4, &loaded));
+    assert(loaded.empty());
     reply = run(context, "TTL mud:season:42:world_state:generation:4:upload:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:chunk:000");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer > 3500 && reply->integer <= 3600);
     freeReplyObject(reply);

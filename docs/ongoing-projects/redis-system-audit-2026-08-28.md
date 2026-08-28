@@ -7,10 +7,56 @@ Status: Implementation in progress; RDS-001, RDS-002, RDS-003, RDS-004, RDS-005,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
 RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, and RDS-017 are remediated. RDS-008 is
 remediated for connection, transport, and namespace isolation but remains partial for
-independent recovery-payload authenticity and least-privilege identity separation; the
-remaining findings are open.
+least-privilege identity separation; the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-008 authenticated recovery generations
+
+Completed in this interval:
+
+- Replaced the structural 56-byte `WRG1` manifest with a 120-byte `WRG2` authenticated
+  manifest. It carries the bounded layout fields and writer-qualified upload token, a
+  SHA-256 digest of the complete generation, and an HMAC-SHA256 tag.
+- Bound the tag to the manifest, application/environment/deployment namespace, SQL season
+  epoch, and generation sequence. Copying a valid manifest across deployments, seasons,
+  or sequence keys therefore fails constant-time authentication.
+- Required an independent 32-256 byte `REDIS_WORLD_STATE_SECRET` whenever world recovery
+  is enabled. An optional bounded `REDIS_WORLD_STATE_SECRET_PREVIOUS` is read-only and
+  supports a controlled rotation window; publication always uses the current key. Secret
+  storage is scrubbed during reinitialization and shutdown.
+- Verify the manifest HMAC before allocating the declared generation buffer. After bounded
+  chunk reads, verify the complete payload digest before returning bytes to schema,
+  semantic, SQL-custody, or materialization logic. Unsigned `WRG1`, wrong-key, forged tag,
+  same-size chunk mutation, cross-context replay, malformed, missing, and oversized data
+  all fail closed.
+
+Performance effect:
+
+- Generation SHA-256 and HMAC computation run only in the existing publisher worker.
+  Gameplay capture retains the same bounded native copies and queue operation with no
+  cryptography, Redis, SQL, filesystem, allocation, lock, logging, or wait added.
+- Verification is boot/recovery-only. HMAC rejection occurs before generation allocation;
+  the single payload digest pass occurs after the already-required bounded chunk read and
+  before materialization.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_world_store_live.py`: passed live Redis publication and
+  read with valid authentication, wrong-key rejection, previous-key rotation acceptance,
+  same-size chunk forgery rejection, forged-manifest rejection, and existing fencing,
+  chunking, TTL, cleanup, and cross-season cases.
+- `python3 tests/async/test_redis_recovery_auth.py`: passed secret bounds, WRG2 layout,
+  context binding, HMAC-before-allocation, digest-before-return, and worker-owned signing
+  contracts.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed immutable publication,
+  schema/sequence/framing validation, atomic floor handoff, and authenticated store
+  integration contracts.
+
+Redis write access alone can no longer forge an accepted world generation or donation
+event. RDS-008 remains partial only for separate least-privilege Redis ACL identities per
+subsystem.
 
 ### 2026-08-28 - RDS-008 Unix-socket transport
 
@@ -50,9 +96,9 @@ Validation:
 - `python3 tests/async/test_migration_runner_cli_safety.py`: passed socket/TCP target syntax,
   mutual-exclusion, allow-list, confirmation, and no-`FLUSHDB` contracts.
 
-RDS-008 transport and namespace work is complete. Independent recovery-payload
-authentication and least-privilege subsystem identity separation remain open within the
-finding.
+RDS-008 transport and namespace work is complete. Recovery-payload authentication was
+completed by the later WRG2 interval; least-privilege subsystem identity separation remains
+open within the finding.
 
 ### 2026-08-28 - RDS-008 deployment namespace isolation
 
@@ -1214,7 +1260,7 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 
 | Area | Redis keys/channels | Intended role | Current authority behavior |
 | --- | --- | --- | --- |
-| World recovery | `<namespace>:season:<epoch>:world_state:generation:<seq>`, current pointer, diagnostic metadata | Optional recent world reconstruction | Schema, semantic graph, and complete item SQL custody are validated before rollback-capable materialization; NPC-held items are intentionally omitted. |
+| World recovery | `<namespace>:season:<epoch>:world_state:generation:<seq>`, current pointer, diagnostic metadata | Optional recent world reconstruction | An independent HMAC authenticates the namespace/season/sequence-bound manifest and complete payload before schema, semantic graph, complete item SQL custody, and rollback-capable materialization checks; NPC-held items are intentionally omitted. |
 | Floor deltas | `<namespace>:season:<epoch>:floor_drops`; retired `mud:floor_pickups` cleanup | Bridge changes around a world snapshot | Versioned bounded binary item trees join the generation plan and complete SQL authority check before any materialization. |
 | Ship cache | `ship:snapshot:<owner>` | Reconstructible SQL cache | Cache is returned before SQL without TTL, row revision, or schema/environment identity. |
 | Content caches | `<namespace>:season:<epoch>:cache:named`, fraglist, epic-zone, and artifact variants | Reconstructible command output | Player reads use bounded local memory and Redis publication is asynchronous; named/fraglist freshness remains incomplete. |
@@ -1527,8 +1573,9 @@ support ACL/password authentication, explicit database selection, verified TCP T
 bounded Unix-socket transport. Non-loopback production runtime endpoints fail closed without
 TLS, while destructive maintenance requires an exact local target allow-list and
 confirmation. Every active key and channel uses a required
-application/environment/deployment namespace plus the SQL season epoch. Independent world
-recovery payload authentication and least-privilege subsystem identities remain open.
+application/environment/deployment namespace plus the SQL season epoch. World generation
+manifests and payloads use an independent rotating HMAC secret. Least-privilege subsystem
+identities remain open.
 
 Evidence:
 
@@ -1541,16 +1588,17 @@ Evidence:
 - TCP and absolute Unix-socket endpoints are mutually exclusive and use the same bounded
   authenticated, database-selected connection adapter. TLS is required for non-loopback
   production TCP and rejected for local socket transport.
-- Recovery integrity is CRC32, which detects accidental corruption but does not
-  authenticate the writer ([`src/world_recovery_pipeline.c`](../../src/world_recovery_pipeline.c#L183)).
+- Recovery generations use a `WRG2` manifest whose constant-time HMAC verification binds
+  the full payload digest to namespace, season, and sequence before materialization.
 - A writer can influence mob stats, gold, affects, items, ships, artifact JSON, presence,
   and donation messages. Several consumers do not perform semantic validation.
 
 Impact:
 
-Any process or person with Redis write access can spoof donation notices, disclose online
-PII, crash cache consumers, or inject a checksum-valid recovery payload. A shared Redis
-can also cross-contaminate development, test, and production.
+Any identity with broad Redis write access can still spoof presence or malformed
+reconstructible cache values within its authorized namespace. Donation envelopes and world
+generations require independent HMAC keys, while namespace and season binding prevent
+cross-deployment and cross-season acceptance.
 
 Recommendation:
 

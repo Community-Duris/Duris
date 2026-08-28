@@ -6,6 +6,10 @@
 #include "world_recovery_pipeline.h"
 
 #include <hiredis/hiredis.h>
+#include <openssl/crypto.h>
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
+#include <openssl/sha.h>
 
 #include <algorithm>
 #include <array>
@@ -130,32 +134,84 @@ uint64_t get_u64(const unsigned char *data)
 	return value;
 }
 
-bool encode_manifest(unsigned char *output, size_t output_size, size_t generation_size,
-		     const char *upload_token)
+bool authentication_secret_valid(const char *secret)
 {
-	if (!output || output_size < REDIS_WORLD_GENERATION_MANIFEST_BYTES || !generation_size ||
-	    generation_size > WORLD_RECOVERY_MAX_BYTES || !upload_token ||
+	const size_t size = secret ? strlen(secret) : 0;
+	return size >= 32 && size <= 256;
+}
+
+bool manifest_tag(const redis_world_store_config *config, uint64_t sequence,
+		  const unsigned char *manifest_prefix, const char *secret, unsigned char *tag)
+{
+	if (!config || !config->key_namespace || !*config->key_namespace || !sequence ||
+	    !manifest_prefix || !authentication_secret_valid(secret) || !tag)
+		return false;
+	constexpr size_t signed_manifest_bytes = 88;
+	std::array<unsigned char, 256> authenticated = {};
+	const size_t namespace_size = strlen(config->key_namespace);
+	const size_t required = signed_manifest_bytes + namespace_size + 1 + 16;
+	if (namespace_size > 63 || required > authenticated.size())
+		return false;
+	memcpy(authenticated.data(), manifest_prefix, signed_manifest_bytes);
+	size_t offset = signed_manifest_bytes;
+	memcpy(authenticated.data() + offset, config->key_namespace, namespace_size);
+	offset += namespace_size;
+	authenticated[offset++] = 0;
+	put_u64(authenticated.data() + offset, config->season_epoch);
+	offset += 8;
+	put_u64(authenticated.data() + offset, sequence);
+	offset += 8;
+	unsigned int tag_size = 0;
+	return HMAC(EVP_sha256(), secret, static_cast<int>(strlen(secret)), authenticated.data(),
+		    offset, tag, &tag_size) &&
+	       tag_size == SHA256_DIGEST_LENGTH;
+}
+
+bool encode_manifest(const redis_world_store_config *config, uint64_t sequence,
+		     unsigned char *output, size_t output_size, const unsigned char *generation,
+		     size_t generation_size, const char *upload_token)
+{
+	if (!config || !authentication_secret_valid(config->authentication_secret) || !sequence ||
+	    !output || output_size < REDIS_WORLD_GENERATION_MANIFEST_BYTES || !generation ||
+	    !generation_size || generation_size > WORLD_RECOVERY_MAX_BYTES || !upload_token ||
 	    strlen(upload_token) != 32)
 		return false;
 	const size_t chunks = (generation_size + REDIS_WORLD_GENERATION_CHUNK_BYTES - 1) /
 			      REDIS_WORLD_GENERATION_CHUNK_BYTES;
 	if (!chunks || chunks > REDIS_WORLD_GENERATION_MAX_CHUNKS)
 		return false;
-	memcpy(output, "WRG1", 4);
-	put_u32(output + 4, 1);
+	memcpy(output, "WRG2", 4);
+	put_u32(output + 4, 2);
 	put_u64(output + 8, generation_size);
 	put_u32(output + 16, static_cast<uint32_t>(chunks));
 	put_u32(output + 20, REDIS_WORLD_GENERATION_CHUNK_BYTES);
 	memcpy(output + 24, upload_token, 32);
-	return true;
+	if (!SHA256(generation, generation_size, output + 56))
+		return false;
+	return manifest_tag(config, sequence, output, config->authentication_secret, output + 88);
 }
 
-bool decode_manifest(const unsigned char *data, size_t size, size_t *generation_size,
-		     size_t *chunk_count, char *upload_token, size_t upload_token_size)
+bool decode_manifest(const redis_world_store_config *config, uint64_t sequence,
+		     const unsigned char *data, size_t size, size_t *generation_size,
+		     size_t *chunk_count, char *upload_token, size_t upload_token_size,
+		     unsigned char *generation_digest)
 {
-	if (!data || size != REDIS_WORLD_GENERATION_MANIFEST_BYTES || !generation_size ||
-	    !chunk_count || !upload_token || upload_token_size < 33 || memcmp(data, "WRG1", 4) ||
-	    get_u32(data + 4) != 1 || get_u32(data + 20) != REDIS_WORLD_GENERATION_CHUNK_BYTES)
+	if (!config || !sequence || !data || size != REDIS_WORLD_GENERATION_MANIFEST_BYTES ||
+	    !generation_size || !chunk_count || !upload_token || upload_token_size < 33 ||
+	    !generation_digest || memcmp(data, "WRG2", 4) || get_u32(data + 4) != 2 ||
+	    get_u32(data + 20) != REDIS_WORLD_GENERATION_CHUNK_BYTES)
+		return false;
+	unsigned char expected_tag[SHA256_DIGEST_LENGTH] = {};
+	bool authenticated =
+		authentication_secret_valid(config->authentication_secret) &&
+		manifest_tag(config, sequence, data, config->authentication_secret, expected_tag) &&
+		CRYPTO_memcmp(expected_tag, data + 88, SHA256_DIGEST_LENGTH) == 0;
+	if (!authenticated && authentication_secret_valid(config->previous_authentication_secret))
+		authenticated = manifest_tag(config, sequence, data,
+					     config->previous_authentication_secret,
+					     expected_tag) &&
+				CRYPTO_memcmp(expected_tag, data + 88, SHA256_DIGEST_LENGTH) == 0;
+	if (!authenticated)
 		return false;
 	const uint64_t total = get_u64(data + 8);
 	const uint32_t chunks = get_u32(data + 16);
@@ -172,6 +228,7 @@ bool decode_manifest(const unsigned char *data, size_t size, size_t *generation_
 			return false;
 	memcpy(upload_token, data + 24, 32);
 	upload_token[32] = '\0';
+	memcpy(generation_digest, data + 56, SHA256_DIGEST_LENGTH);
 	return true;
 }
 
@@ -293,10 +350,12 @@ bool manifest_upload_token(redisContext *context, const redis_world_store_config
 					      REDIS_WORLD_GENERATION_MANIFEST_BYTES);
 	size_t generation_size = 0;
 	size_t chunk_count = 0;
+	unsigned char generation_digest[SHA256_DIGEST_LENGTH] = {};
 	const bool valid = manifest &&
-			   decode_manifest(reinterpret_cast<const unsigned char *>(manifest->str),
+			   decode_manifest(config, sequence,
+					   reinterpret_cast<const unsigned char *>(manifest->str),
 					   manifest->len, &generation_size, &chunk_count,
-					   upload_token, upload_token_size);
+					   upload_token, upload_token_size, generation_digest);
 	if (manifest)
 		freeReplyObject(manifest);
 	return valid;
@@ -545,10 +604,12 @@ bool redis_world_store_read_generation(const struct redis_world_store_config *co
 	size_t generation_size = 0;
 	size_t chunk_count = 0;
 	char upload_token[33] = {};
+	unsigned char generation_digest[SHA256_DIGEST_LENGTH] = {};
 	bool valid = manifest &&
-		     decode_manifest(reinterpret_cast<const unsigned char *>(manifest->str),
+		     decode_manifest(config, sequence,
+				     reinterpret_cast<const unsigned char *>(manifest->str),
 				     manifest->len, &generation_size, &chunk_count, upload_token,
-				     sizeof upload_token);
+				     sizeof upload_token, generation_digest);
 	if (manifest)
 		freeReplyObject(manifest);
 	try
@@ -584,6 +645,12 @@ bool redis_world_store_read_generation(const struct redis_world_store_config *co
 		}
 		memcpy(generation->data() + offset, chunk->str, expected);
 		freeReplyObject(chunk);
+	}
+	if (valid)
+	{
+		unsigned char actual_digest[SHA256_DIGEST_LENGTH] = {};
+		valid = SHA256(generation->data(), generation->size(), actual_digest) &&
+			CRYPTO_memcmp(actual_digest, generation_digest, SHA256_DIGEST_LENGTH) == 0;
 	}
 	redisFree(context);
 	if (!valid)
@@ -629,7 +696,8 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 	if (expected_length < 0 || (size_t)expected_length >= sizeof expected)
 		valid = false;
 	std::array<unsigned char, REDIS_WORLD_GENERATION_MANIFEST_BYTES> manifest = {};
-	valid = valid && encode_manifest(manifest.data(), manifest.size(), size, writer_token);
+	valid = valid && encode_manifest(config, sequence, manifest.data(), manifest.size(), data,
+					 size, writer_token);
 	const size_t chunk_count = (size + REDIS_WORLD_GENERATION_CHUNK_BYTES - 1) /
 				   REDIS_WORLD_GENERATION_CHUNK_BYTES;
 	for (size_t index = 0; valid && index < chunk_count; ++index)
