@@ -96,6 +96,10 @@ flatfile_artifact_result flatfile_artifact_bind_update(const std::string &root, 
 						       std::string *error);
 flatfile_artifact_result flatfile_artifact_bind_reset_all(const std::string &root,
 							  std::string *error);
+flatfile_artifact_result
+flatfile_artifact_repair_player_binding(const std::string &root, int32_t vnum,
+					int64_t artifact_timer, int64_t bind_timer,
+					int64_t last_update, std::string *error);
 flatfile_artifact_result flatfile_artifact_prepare_player_release(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error);

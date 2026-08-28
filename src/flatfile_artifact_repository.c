@@ -788,6 +788,49 @@ flatfile_artifact_result flatfile_artifact_bind_reset_all(const std::string &roo
 		       flatfile_artifact_result::io_error;
 }
 
+flatfile_artifact_result
+flatfile_artifact_repair_player_binding(const std::string &root, int32_t vnum,
+					int64_t artifact_timer, int64_t bind_timer,
+					int64_t last_update, std::string *error)
+{
+	if (root.empty() || vnum <= 0 || artifact_timer <= 0 || bind_timer < 0 || last_update < 0)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	auto found = std::lower_bound(catalog.records.begin(), catalog.records.end(), vnum,
+				      [](const flatfile_artifact_record &candidate, int32_t sought)
+				      { return candidate.vnum < sought; });
+	if (found == catalog.records.end() || found->vnum != vnum)
+		return flatfile_artifact_result::not_found;
+	if (found->location_type != FLATFILE_ARTIFACT_ON_PLAYER || found->location <= 0)
+		return flatfile_artifact_result::conflict;
+	if (found->bind_owner_pid == found->location)
+		return flatfile_artifact_result::unchanged;
+	if (found->revision == std::numeric_limits<uint64_t>::max() ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_artifact_result::invalid;
+	found->timer = artifact_timer;
+	found->last_update = last_update;
+	found->bind_owner_pid = found->location;
+	found->bind_timer = bind_timer;
+	++found->revision;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_artifact_result::ok :
+		       flatfile_artifact_result::io_error;
+}
+
 flatfile_artifact_result flatfile_artifact_prepare_player_release(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error)

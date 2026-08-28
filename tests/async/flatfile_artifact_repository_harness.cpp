@@ -268,6 +268,25 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_bind_reset_all(bind_root.string(), &error) ==
 			flatfile_artifact_result::unchanged,
 		"identical binding reset-all was not idempotent");
+	require(flatfile_artifact_repair_player_binding(bind_root.string(), 500, 9000, 2000, 2000,
+							&error) == flatfile_artifact_result::ok,
+		"player binding repair failed: " + error);
+	require(flatfile_artifact_list(bind_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.size() == 1 && records[0].owned &&
+			records[0].location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			records[0].location == 42 && records[0].timer == 9000 &&
+			records[0].last_update == 2000 && records[0].bind_owner_pid == 42 &&
+			records[0].bind_timer == 2000 && records[0].revision == 6,
+		"player binding repair did not persist its complete atomic outcome");
+	require(flatfile_artifact_repair_player_binding(bind_root.string(), 500, 10000, 3000, 3000,
+							&error) ==
+			flatfile_artifact_result::unchanged,
+		"already-correct player binding was unnecessarily rewritten");
+	require(flatfile_artifact_repair_player_binding(bind_root.string(), 501, 9000, 2000, 2000,
+							&error) ==
+			flatfile_artifact_result::not_found,
+		"player binding repair synthesized a missing artifact");
 
 	const fs::path gameplay_root = fs::path(argv[1]) / "gameplay";
 	prepare_root(gameplay_root);
@@ -494,6 +513,10 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_bind_reset_all(root.string(), &error) ==
 			flatfile_artifact_result::invalid,
 		"corrupt artifact authority was overwritten through binding reset-all");
+	require(flatfile_artifact_repair_player_binding(root.string(), 100, 9000, 2000, 2000,
+							&error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was overwritten through binding repair");
 	require(flatfile_artifact_get(root.string(), 100, &gameplay_record, &error) ==
 			flatfile_artifact_result::invalid,
 		"corrupt artifact authority was exposed through gameplay lookup");

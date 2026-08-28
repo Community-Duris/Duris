@@ -207,3 +207,11 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
     feed_body = artifact_source[feed_start:feed_end]
     if "flatfile_artifact_gameplay_update(" not in feed_body:
         raise AssertionError("client-free missing-row feed bypasses flat authority")
+
+    fix_start = artifact_source.index("void arti_fixit_sql(P_char ch)\n{")
+    fix_end = artifact_source.index("\nvoid arti_sync_sql(", fix_start)
+    fix_body = artifact_source[fix_start:fix_end]
+    if "flatfile_artifact_list(" not in fix_body:
+        raise AssertionError("client-free artifact fixit bypasses flat selection")
+    if "flatfile_artifact_repair_player_binding(" not in fix_body:
+        raise AssertionError("client-free artifact fixit bypasses atomic flat repair")

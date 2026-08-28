@@ -4480,6 +4480,52 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 // Resets the timers on artifacts that weren't properly bound.
 void arti_fixit_sql(P_char ch)
 {
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_artifact_record> records;
+	std::string error;
+	if (flatfile_artifact_list(persistence_mode_flatfile_root(), &records, &error) !=
+	    flatfile_artifact_result::ok)
+	{
+		logit(LOG_ARTIFACT, "arti_fixit_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		send_to_char("Failed to read artifact data.\n\r", ch);
+		return;
+	}
+	const time_t now = time(NULL);
+	const time_t new_time = now + ARTIFACT_BLOOD_DAYS * SECS_PER_REAL_DAY;
+	int counter = 0;
+	bool found_player_artifact = false;
+	for (const auto &record : records)
+	{
+		if (record.location_type != ARTIFACT_ON_PC)
+			continue;
+		found_player_artifact = true;
+		const auto repaired = flatfile_artifact_repair_player_binding(
+			persistence_mode_flatfile_root(), record.vnum, new_time, now, now, &error);
+		if (repaired == flatfile_artifact_result::unchanged)
+			continue;
+		if (repaired != flatfile_artifact_result::ok)
+		{
+			logit(LOG_ARTIFACT, "arti_fixit_sql: flat repair failed for %d: %s",
+			      record.vnum,
+			      error.empty() ? "invalid artifact authority" : error.c_str());
+			send_to_char_f(ch, "Skipped artifact %d: repair failed.\n\r", record.vnum);
+			continue;
+		}
+		P_obj artifact = read_object(record.vnum, VIRTUAL);
+		send_to_char_f(ch, "%3d) '%s&n'%6d - timer reset and now owned by '%s' %d.\n\r",
+			       ++counter,
+			       pad_ansi(artifact ? OBJ_SHORT(artifact) : "NULL", 35, TRUE).c_str(),
+			       record.vnum, get_player_name_from_pid(record.location),
+			       record.location);
+		if (artifact)
+			extract_obj(artifact);
+	}
+	if (!found_player_artifact)
+		send_to_char("Empty set; no artifacts on PC in artifact data.\n\r", ch);
+	else if (!counter)
+		send_to_char("All artifact bind_data are up to date.\n\r", ch);
+#else
 	int pid, timer, curr_time;
 	int vnum, location, counter;
 	time_t new_time;
@@ -4555,6 +4601,7 @@ void arti_fixit_sql(P_char ch)
 	{
 		send_to_char("All artifact bind_data are up to date.\n\r", ch);
 	}
+#endif
 }
 
 // syncs all in-game artifact locations to the database

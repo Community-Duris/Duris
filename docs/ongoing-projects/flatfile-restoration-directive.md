@@ -445,6 +445,27 @@
   fix/sync repair paths, destructive clear semantics, and remaining direct-SQL artifact
   routes still require focused work. The global incomplete-domain boot fence remains.
 
+### 2026-08-29 - restored artifact binding repair without MySQL
+
+- **Concrete gap:** the staff `artifact reset fixit` reconciliation still selected
+  player-held artifacts and repaired their binding/timer state only through MySQL.
+- **Restoration:** no-database mode now selects player-held rows from the canonical
+  catalog and, only when the soul owner differs from the recorded holder, atomically sets
+  the soul owner, binding time, ten-day artifact timer, and last-update time in the same
+  record replacement. Already-correct rows are left untouched; missing, moved, or corrupt
+  rows fail safely. Database-backed behavior is unchanged.
+- **Focused evidence:** repository tests cover complete repair outcome, gameplay-field
+  preservation, already-correct idempotence, missing rows, revision progression, and
+  corrupt-authority refusal. The artifact source contract confirms the real fixit command
+  uses both flat selection and the atomic repair mutation in client-free builds.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** binding repair is restored, but catalog establishment, player-save
+  sync, destructive clear semantics, and remaining direct-SQL artifact routes still
+  require focused work. The global incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,
