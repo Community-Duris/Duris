@@ -32,6 +32,8 @@ jobs:
         run: python3 tests/async/test_flatfile_account_repository.py
       - name: Verify flat-file identity authority
         run: python3 tests/async/test_flatfile_identity_repository.py
+      - name: Verify flat-file account membership authority
+        run: python3 tests/async/test_flatfile_account_membership.py
 
   quality:
     runs-on: ubuntu-24.04

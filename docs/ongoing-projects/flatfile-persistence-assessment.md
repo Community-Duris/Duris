@@ -231,12 +231,54 @@ sections below continue to describe the required end state.
   updates the identity catalog and account record together, then route create, rename,
   block, and delete flows through it.
 
+### Checkpoint 9 - single-authority account-character membership
+
+- **Completed:** promoted the identity catalog to version 2 and made it the sole
+  account-character membership authority. Each entry now carries every existing
+  `acct_chars` field: account, PID, name, login count/time, block and racewar state,
+  level, race, primary/secondary class, last room, and last save. Version 1 catalogs
+  remain readable and upgrade on their next mutation.
+- **Completed:** added atomic list-by-account and full-account synchronization. One
+  catalog publication can claim new allocated PIDs, update or swap canonical names and
+  metadata, and tombstone omitted memberships while validating final global name/PID
+  uniqueness. It never needs a partially committed second index.
+- **Completed:** flat account files no longer serialize character membership. Account
+  loads materialize their linked character list from the catalog, and successful scalar
+  account saves then synchronize the in-memory list to that authority. Existing account
+  records containing the former cache remain readable, but the adapter deliberately
+  ignores and removes that duplicate authority on the next save.
+- **Runtime effect:** normal account character creation reaches this path through
+  `write_account`, so the allocated PID, canonical name, account relationship, and list
+  metadata become discoverable together. Account-list metadata changes and direct list
+  removals use the same sync. The higher-level character rename and deletion commands
+  still fail closed because player snapshots and their locker/ship/artifact side effects
+  are not authoritative yet; they are not falsely reported as complete here.
+- **Completed:** added an adapter-level regression and client-free CI step. It proves an
+  account scalar record has no membership cache, reload materializes all catalog fields,
+  rename/block publish together, removal releases the active name while preserving the
+  PID tombstone, and catalog version 2 metadata round-trips.
+- **Checks passed:** `python3 tests/async/test_flatfile_account_membership.py`,
+  `python3 tests/async/test_flatfile_identity_repository.py`,
+  `python3 tests/async/test_flatfile_account_repository.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `.github/workflows/quality.yml`,
+  `src/flatfile_account_adapter.c`, `src/flatfile_identity_repository.[ch]`, and
+  `tests/async/{test_flatfile_account_membership.py,flatfile_account_membership_harness.cpp,flatfile_identity_repository_harness.cpp}`.
+- **Remaining P1 gap:** player load/save still has no flat materialized snapshot, so
+  character login cannot continue past membership discovery and terminal saves are not
+  fenced on a flat authority. Rename/delete command completion and offline legacy import
+  must follow that player authority.
+- **Next action:** implement a typed, versioned player snapshot repository keyed by PID
+  and revision, reuse the existing capture/codec coverage where safe, and route the flat
+  player load/save boundary to it.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
 |---|---|---|
 | P0 - real DB-free boundary | Complete | Client-free binary links without system MySQL dependencies; isolated boot preflight and no-MySQL CI job exist |
-| P1 - identity and player continuity | In progress | Account authority plus atomic PID/name catalog and allocator exist; membership flows and player authority remain |
+| P1 - identity and player continuity | In progress | Account auth, PID/name allocation, and single-authority membership exist; player snapshots and terminal flows remain |
 | P2 - transactional gameplay and domains | Not started | No flat operation WAL/domain repositories yet |
 | P3 - production operations | Not started | No exporter, whole-authority backup, or restore drill yet |
 

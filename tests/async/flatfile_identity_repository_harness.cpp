@@ -72,6 +72,34 @@ int main(int argc, char **argv)
 	require(flatfile_identity_claim(root.string(), alpha_pid, "Other", "Account-One", &error) ==
 			flatfile_identity_result::conflict,
 		"duplicate PID was accepted");
+	flatfile_identity_record alpha, beta;
+	require(flatfile_identity_lookup_pid(root.string(), alpha_pid, &alpha, &error) ==
+				flatfile_identity_result::ok &&
+			flatfile_identity_lookup_pid(root.string(), beta_pid, &beta, &error) ==
+				flatfile_identity_result::ok,
+		"identities could not be prepared for membership sync");
+	alpha.login_count = 17;
+	alpha.last_login = 101;
+	alpha.racewar = 2;
+	alpha.level = 50;
+	alpha.race = 4;
+	alpha.primary_class = 8;
+	alpha.secondary_class = 9;
+	alpha.last_room = 600;
+	alpha.last_save = 700;
+	require(flatfile_identity_sync_account(root.string(), "account-one", { alpha }, &error) ==
+			flatfile_identity_result::ok,
+		"account membership sync failed: " + error);
+	std::vector<flatfile_identity_record> memberships;
+	require(flatfile_identity_list_account(root.string(), "ACCOUNT-ONE", &memberships,
+					       &error) == flatfile_identity_result::ok &&
+			memberships.size() == 1 && memberships[0].pid == alpha_pid &&
+			memberships[0].login_count == 17 && memberships[0].last_login == 101 &&
+			memberships[0].racewar == 2 && memberships[0].level == 50 &&
+			memberships[0].race == 4 && memberships[0].primary_class == 8 &&
+			memberships[0].secondary_class == 9 && memberships[0].last_room == 600 &&
+			memberships[0].last_save == 700,
+		"account membership metadata did not round trip");
 
 	require(flatfile_identity_rename(root.string(), alpha_pid, "Alpha", "Gamma", &error) ==
 			flatfile_identity_result::ok,

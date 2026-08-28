@@ -1,6 +1,7 @@
 #include "flatfile_account_adapter.h"
 
 #include "flatfile_account_repository.h"
+#include "flatfile_identity_repository.h"
 #include "persistence_mode.h"
 
 #include <cstdlib>
@@ -61,15 +62,26 @@ bool to_record(P_acct account, flatfile_account_record *record)
 	for (struct acct_ip *ip = account->acct_unique_ips; ip; ip = ip->next)
 		record->ips.push_back({ ip->hostname ? ip->hostname : "",
 					ip->ip_address ? ip->ip_address : "", ip->count });
+	return true;
+}
+
+bool membership_records(P_acct account, std::vector<flatfile_identity_record> *records)
+{
+	if (!account || !records || !account->acct_name)
+		return false;
 	for (struct acct_chars *character = account->acct_character_list; character;
 	     character = character->next)
 	{
-		flatfile_account_character value;
+		if (!character->charname)
+			return false;
+		flatfile_identity_record value;
 		value.pid = character->pid;
-		value.name = character->charname ? character->charname : "";
+		value.name = character->charname;
+		value.account = account->acct_name;
 		value.login_count = character->count;
 		value.last_login = character->last;
 		value.blocked = character->blocked;
+		value.active = true;
 		value.racewar = character->racewar;
 		value.level = character->level;
 		value.race = character->race;
@@ -77,13 +89,18 @@ bool to_record(P_acct account, flatfile_account_record *record)
 		value.secondary_class = character->secondary_class;
 		value.last_room = character->last_room;
 		value.last_save = character->last_save;
-		record->characters.push_back(std::move(value));
+		records->push_back(std::move(value));
 	}
 	return true;
 }
 
-P_acct from_record(const flatfile_account_record &record)
+P_acct from_record(const flatfile_account_record &record, std::string *error)
 {
+	const char *root = persistence_mode_flatfile_root();
+	std::vector<flatfile_identity_record> memberships;
+	if (!root || flatfile_identity_list_account(root, record.name, &memberships, error) !=
+			     flatfile_identity_result::ok)
+		return NULL;
 	P_acct account = static_cast<P_acct>(calloc(1, sizeof(struct acct_entry)));
 	if (!account)
 		return NULL;
@@ -136,7 +153,7 @@ P_acct from_record(const flatfile_account_record &record)
 	}
 
 	struct acct_chars **character_tail = &account->acct_character_list;
-	for (const flatfile_account_character &source : record.characters)
+	for (const flatfile_identity_record &source : memberships)
 	{
 		struct acct_chars *character =
 			static_cast<struct acct_chars *>(calloc(1, sizeof(struct acct_chars)));
@@ -179,7 +196,7 @@ P_acct flatfile_account_state_load(const char *name, std::string *error)
 	flatfile_account_record record;
 	if (flatfile_account_load(root, name, &record, error) != flatfile_account_result::ok)
 		return NULL;
-	return from_record(record);
+	return from_record(record, error);
 }
 
 bool flatfile_account_state_save(P_acct account, std::string *error)
@@ -193,6 +210,11 @@ bool flatfile_account_state_save(P_acct account, std::string *error)
 				  error) != flatfile_account_result::ok)
 		return false;
 	account->persistence_revision = committed_revision;
+	std::vector<flatfile_identity_record> memberships;
+	if (!membership_records(account, &memberships) ||
+	    flatfile_identity_sync_account(root, account->acct_name, memberships, error) !=
+		    flatfile_identity_result::ok)
+		return false;
 	return true;
 }
 

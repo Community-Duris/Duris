@@ -16,7 +16,7 @@
 
 namespace
 {
-constexpr uint32_t identity_format_version = 1;
+constexpr uint32_t identity_format_version = 2;
 constexpr size_t identity_maximum_bytes = 64 * 1024 * 1024;
 constexpr size_t identity_maximum_entries = 1000000;
 constexpr size_t identity_maximum_name = 64;
@@ -171,6 +171,15 @@ bool encode_payload(const identity_catalog &catalog, std::vector<uint8_t> *paylo
 		out.number<uint8_t>(entry.blocked ? 1 : 0);
 		out.string(entry.name);
 		out.string(entry.account);
+		out.number<uint64_t>(entry.login_count);
+		out.number<int64_t>(entry.last_login);
+		out.number<int8_t>(entry.racewar);
+		out.number<int32_t>(entry.level);
+		out.number<int32_t>(entry.race);
+		out.number<uint32_t>(entry.primary_class);
+		out.number<uint32_t>(entry.secondary_class);
+		out.number<int32_t>(entry.last_room);
+		out.number<int64_t>(entry.last_save);
 	}
 	if (!out.valid || out.bytes.size() > identity_maximum_bytes)
 		return false;
@@ -178,7 +187,7 @@ bool encode_payload(const identity_catalog &catalog, std::vector<uint8_t> *paylo
 	return true;
 }
 
-bool decode_payload(const uint8_t *data, size_t size, identity_catalog *catalog)
+bool decode_payload(const uint8_t *data, size_t size, uint32_t version, identity_catalog *catalog)
 {
 	decoder in{ data, size };
 	identity_catalog decoded;
@@ -195,6 +204,13 @@ bool decode_payload(const uint8_t *data, size_t size, identity_catalog *catalog)
 			return false;
 		entry.active = active;
 		entry.blocked = blocked;
+		if (version >= 2 &&
+		    (!in.number(&entry.login_count) || !in.number(&entry.last_login) ||
+		     !in.number(&entry.racewar) || !in.number(&entry.level) ||
+		     !in.number(&entry.race) || !in.number(&entry.primary_class) ||
+		     !in.number(&entry.secondary_class) || !in.number(&entry.last_room) ||
+		     !in.number(&entry.last_save)))
+			return false;
 	}
 	if (!in.valid || in.offset != in.size || !validate_catalog(decoded))
 		return false;
@@ -246,8 +262,8 @@ flatfile_identity_result load_catalog(const std::string &root, identity_catalog 
 	uint32_t version = 0, payload_size = 0;
 	uint64_t revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    !header.number(&revision) || version != identity_format_version || !revision ||
-	    payload_size != bytes.size() - header_size)
+	    !header.number(&revision) || (version != 1 && version != identity_format_version) ||
+	    !revision || payload_size != bytes.size() - header_size)
 		return flatfile_identity_result::invalid;
 	const uint8_t *stored_digest =
 		bytes.data() + identity_magic.size() + sizeof(uint32_t) * 2 + sizeof(uint64_t);
@@ -257,7 +273,7 @@ flatfile_identity_result load_catalog(const std::string &root, identity_catalog 
 	if (CRYPTO_memcmp(stored_digest, actual_digest, sizeof(actual_digest)))
 		return flatfile_identity_result::invalid;
 	identity_catalog decoded;
-	if (!decode_payload(payload, payload_size, &decoded))
+	if (!decode_payload(payload, payload_size, version, &decoded))
 		return flatfile_identity_result::invalid;
 	decoded.revision = revision;
 	for (flatfile_identity_record &entry : decoded.entries)
@@ -423,6 +439,100 @@ flatfile_identity_result flatfile_identity_lookup_pid(const std::string &root, i
 		return flatfile_identity_result::not_found;
 	*record = *entry;
 	return flatfile_identity_result::ok;
+}
+
+flatfile_identity_result
+flatfile_identity_list_account(const std::string &root, const std::string &account,
+			       std::vector<flatfile_identity_record> *records, std::string *error)
+{
+	std::string account_key;
+	if (!records || !canonical_name(account, &account_key))
+		return flatfile_identity_result::invalid;
+	std::lock_guard<std::mutex> guard(identity_mutex);
+	identity_catalog catalog;
+	const flatfile_identity_result result = load_catalog(root, &catalog, error);
+	records->clear();
+	if (result == flatfile_identity_result::not_found)
+		return flatfile_identity_result::ok;
+	if (result != flatfile_identity_result::ok)
+		return result;
+	for (const flatfile_identity_record &entry : catalog.entries)
+	{
+		std::string candidate;
+		if (entry.active && canonical_name(entry.account, &candidate) &&
+		    candidate == account_key)
+			records->push_back(entry);
+	}
+	std::sort(records->begin(), records->end(),
+		  [](const auto &left, const auto &right) { return left.pid < right.pid; });
+	return flatfile_identity_result::ok;
+}
+
+flatfile_identity_result
+flatfile_identity_sync_account(const std::string &root, const std::string &account,
+			       const std::vector<flatfile_identity_record> &records,
+			       std::string *error)
+{
+	std::string account_key;
+	if (!canonical_name(account, &account_key) || records.size() > 1024)
+		return flatfile_identity_result::invalid;
+	return mutate_catalog(
+		root,
+		[&](identity_catalog *catalog)
+		{
+			std::unordered_set<int32_t> desired_pids;
+			std::unordered_set<std::string> desired_names;
+			for (const flatfile_identity_record &desired : records)
+			{
+				std::string desired_account, desired_name;
+				if (desired.pid <= 0 || desired.pid >= catalog->next_pid ||
+				    !canonical_name(desired.account, &desired_account) ||
+				    desired_account != account_key ||
+				    !canonical_name(desired.name, &desired_name) ||
+				    !desired_pids.insert(desired.pid).second ||
+				    !desired_names.insert(desired_name).second)
+					return flatfile_identity_result::invalid;
+				flatfile_identity_record *existing = find_pid(catalog, desired.pid);
+				if (existing)
+				{
+					std::string existing_account;
+					if (!existing->active ||
+					    !canonical_name(existing->account, &existing_account) ||
+					    existing_account != account_key)
+						return flatfile_identity_result::conflict;
+				}
+			}
+
+			identity_catalog candidate = *catalog;
+			for (flatfile_identity_record &entry : candidate.entries)
+			{
+				std::string existing_account;
+				if (entry.active &&
+				    canonical_name(entry.account, &existing_account) &&
+				    existing_account == account_key &&
+				    !desired_pids.contains(entry.pid))
+				{
+					entry.active = false;
+					entry.blocked = true;
+				}
+			}
+			for (flatfile_identity_record desired : records)
+			{
+				desired.catalog_revision = 0;
+				desired.active = true;
+				flatfile_identity_record *existing =
+					find_pid(&candidate, desired.pid);
+				if (existing)
+					*existing = std::move(desired);
+				else
+					candidate.entries.push_back(std::move(desired));
+			}
+			if (!validate_catalog(candidate))
+				return flatfile_identity_result::conflict;
+			*catalog = std::move(candidate);
+			return flatfile_identity_result::ok;
+		},
+		error);
 }
 
 flatfile_identity_result flatfile_identity_rename(const std::string &root, int32_t pid,
