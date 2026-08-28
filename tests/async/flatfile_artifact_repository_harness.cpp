@@ -302,6 +302,39 @@ int main(int argc, char **argv)
 						  1, 1200,
 						  &error) == flatfile_artifact_result::invalid,
 		"invalid gameplay artifact location type was accepted");
+	flatfile_artifact_record expired_record;
+	require(flatfile_artifact_find_next_expired(gameplay_root.string(), 0, 6500,
+						    &expired_record,
+						    &error) == flatfile_artifact_result::ok &&
+			expired_record.vnum == 700,
+		"first expired artifact was not selected in vnum order");
+	require(flatfile_artifact_find_next_expired(gameplay_root.string(), 700, 8000,
+						    &expired_record,
+						    &error) == flatfile_artifact_result::ok &&
+			expired_record.vnum == 701,
+		"expired artifact cursor did not advance by vnum");
+	require(flatfile_artifact_expire(gameplay_root.string(), 701, 6500, &error) ==
+			flatfile_artifact_result::unchanged,
+		"non-expired artifact was cleared");
+	require(flatfile_artifact_expire(gameplay_root.string(), 700, 6500, &error) ==
+			flatfile_artifact_result::ok,
+		"expired artifact was not cleared: " + error);
+	require(flatfile_artifact_expire(gameplay_root.string(), 700, 6500, &error) ==
+			flatfile_artifact_result::unchanged,
+		"expired artifact clear was not idempotent");
+	require(flatfile_artifact_get(gameplay_root.string(), 700, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			!gameplay_record.owned &&
+			gameplay_record.location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			gameplay_record.location == -1 && gameplay_record.timer == 0 &&
+			gameplay_record.last_update == 6500 && gameplay_record.type == 3 &&
+			gameplay_record.bind_owner_pid == 42 &&
+			gameplay_record.bind_timer == 4000 && gameplay_record.revision == 7,
+		"expiry did not clear gameplay fields while preserving type and binding");
+	require(flatfile_artifact_find_next_expired(gameplay_root.string(), 0, 6500,
+						    &expired_record,
+						    &error) == flatfile_artifact_result::not_found,
+		"cleared or future artifact remained in the expired selection");
 
 	const fs::path catalog = root / "domains/artifact_catalog";
 	{
@@ -330,6 +363,12 @@ int main(int argc, char **argv)
 						  FLATFILE_ARTIFACT_ON_PLAYER, 42, 5000, 1, 1200,
 						  &error) == flatfile_artifact_result::invalid,
 		"corrupt artifact authority was overwritten through gameplay update");
+	require(flatfile_artifact_find_next_expired(root.string(), 0, 6000, &expired_record,
+						    &error) == flatfile_artifact_result::invalid,
+		"corrupt artifact authority was exposed through expiry selection");
+	require(flatfile_artifact_expire(root.string(), 100, 6000, &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was overwritten through expiry");
 	{
 		flatfile_authority_lock lock;
 		require(lock.acquire(root.string(), &error),

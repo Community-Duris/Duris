@@ -2378,8 +2378,13 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 	bool expired = FALSE;
 	bool save_failed = FALSE;
 	char *name;
+#ifndef __NO_MYSQL__
 	MYSQL_RES *res;
 	MYSQL_ROW row = NULL;
+#else
+	flatfile_artifact_record flat_expired;
+	const int64_t expiry_now = static_cast<int64_t>(time(NULL));
+#endif
 	size_t row_count;
 	int page_last_vnum = cursor_vnum;
 
@@ -2391,6 +2396,22 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 
 	// Each expired artifact can require global object scans or an offline player save.
 	// Page by vnum so only a fixed amount of that work runs in one game pulse.
+#ifdef __NO_MYSQL__
+	std::string error;
+	const auto selected = flatfile_artifact_find_next_expired(
+		persistence_mode_flatfile_root(), cursor_vnum, expiry_now, &flat_expired, &error);
+	if (selected == flatfile_artifact_result::not_found)
+		row_count = 0;
+	else if (selected == flatfile_artifact_result::ok)
+		row_count = 1;
+	else
+	{
+		logit(LOG_ARTIFACT, "event_artifact_check_poof_sql: flat artifact read failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		nevent_periodic_mark_failure("artifact-expiry flat read failed");
+		return;
+	}
+#else
 	if (!qry("SELECT vnum, locType, location FROM artifacts WHERE owned='Y' AND timer < now() AND vnum > %d ORDER BY vnum LIMIT %zu",
 		 cursor_vnum, ARTIFACT_EXPIRY_BATCH_SIZE))
 	{
@@ -2406,18 +2427,28 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 		return;
 	}
 	row_count = static_cast<size_t>(mysql_num_rows(res));
+#endif
 
 	// If there were any artis to pull
 	if (row_count > 0)
 	{
 		expired = TRUE;
-		while ((row = mysql_fetch_row(res)))
+		for (size_t row_index = 0; row_index < row_count; ++row_index)
 		{
 			bool owner_terminal_saved = TRUE;
+#ifdef __NO_MYSQL__
+			vnum = flat_expired.vnum;
+			locType = flat_expired.location_type;
+			location = flat_expired.location;
+#else
+			row = mysql_fetch_row(res);
+			if (!row)
+				break;
 			vnum = atoi(row[0]);
-			page_last_vnum = vnum;
 			locType = atoi(row[1]);
 			location = atoi(row[2]);
+#endif
+			page_last_vnum = vnum;
 
 			// Not in game: nothing to find or poof, the UPDATE below clears the row.
 			if (locType == ARTIFACT_NOTINGAME)
@@ -2799,12 +2830,26 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 		}
 	}
 
+#ifndef __NO_MYSQL__
 	mysql_free_result(res);
+#endif
 
 	// Clear only the page that was processed.  Keeping this after the loop preserves
 	// the all-or-nothing behavior for offline owner saves within the page.
 	if (expired && !save_failed)
 	{
+#ifdef __NO_MYSQL__
+		const auto cleared = flatfile_artifact_expire(persistence_mode_flatfile_root(),
+							      page_last_vnum, expiry_now, &error);
+		if (cleared == flatfile_artifact_result::ok)
+			arti_cache_invalidate();
+		else if (cleared != flatfile_artifact_result::unchanged)
+		{
+			nevent_periodic_retry_after(ARTIFACT_MAINTENANCE_RETRY_DELAY,
+						    "artifact-expiry flat update failed");
+			return;
+		}
+#else
 		if (qry("UPDATE artifacts SET owned='N', locType=%d, location=-1, timer=NULL, lastUpdate=SYSDATE() WHERE owned='Y' AND timer < now() AND vnum = %d",
 			ARTIFACT_NOTINGAME, page_last_vnum))
 			arti_cache_invalidate();
@@ -2814,6 +2859,7 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 						    "artifact-expiry update failed");
 			return;
 		}
+#endif
 	}
 	else if (save_failed)
 	{

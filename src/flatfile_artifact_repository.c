@@ -393,6 +393,78 @@ flatfile_artifact_result flatfile_artifact_gameplay_update(const std::string &ro
 		       flatfile_artifact_result::io_error;
 }
 
+flatfile_artifact_result flatfile_artifact_find_next_expired(const std::string &root,
+							     int32_t after_vnum, int64_t now,
+							     flatfile_artifact_record *record,
+							     std::string *error)
+{
+	if (record)
+		*record = {};
+	if (root.empty() || after_vnum < 0 || now < 0 || !record)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	const auto first =
+		std::upper_bound(catalog.records.begin(), catalog.records.end(), after_vnum,
+				 [](int32_t sought, const flatfile_artifact_record &candidate)
+				 { return sought < candidate.vnum; });
+	const auto found = std::find_if(
+		first, catalog.records.end(), [=](const flatfile_artifact_record &candidate)
+		{ return candidate.owned && candidate.timer > 0 && candidate.timer < now; });
+	if (found == catalog.records.end())
+		return flatfile_artifact_result::not_found;
+	*record = *found;
+	return flatfile_artifact_result::ok;
+}
+
+flatfile_artifact_result flatfile_artifact_expire(const std::string &root, int32_t vnum,
+						  int64_t now, std::string *error)
+{
+	if (root.empty() || vnum <= 0 || now < 0)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	auto found = std::lower_bound(catalog.records.begin(), catalog.records.end(), vnum,
+				      [](const flatfile_artifact_record &candidate, int32_t sought)
+				      { return candidate.vnum < sought; });
+	if (found == catalog.records.end() || found->vnum != vnum)
+		return flatfile_artifact_result::not_found;
+	if (!found->owned || found->timer <= 0 || found->timer >= now)
+		return flatfile_artifact_result::unchanged;
+	if (found->revision == std::numeric_limits<uint64_t>::max() ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_artifact_result::invalid;
+	found->owned = false;
+	found->location_type = FLATFILE_ARTIFACT_NOT_IN_GAME;
+	found->location = -1;
+	found->timer = 0;
+	found->last_update = now;
+	++found->revision;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_artifact_result::ok :
+		       flatfile_artifact_result::io_error;
+}
+
 flatfile_artifact_result flatfile_artifact_bind_get(const std::string &root, int32_t vnum,
 						    int32_t *owner_pid, int64_t *timer,
 						    std::string *error)

@@ -140,3 +140,12 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
     if gameplay_result.returncode:
         raise SystemExit(gameplay_result.stdout)
     print(gameplay_result.stdout.strip())
+
+    artifact_source = (ROOT / "src/artifact.c").read_text()
+    expiry_start = artifact_source.index("void event_artifact_check_poof_sql(")
+    expiry_end = artifact_source.index("\nvoid event_artifact_wars_sql(", expiry_start)
+    expiry_body = artifact_source[expiry_start:expiry_end]
+    if "flatfile_artifact_find_next_expired(" not in expiry_body:
+        raise AssertionError("client-free expiry event does not select from flat authority")
+    if "flatfile_artifact_expire(" not in expiry_body:
+        raise AssertionError("client-free expiry event does not clear flat authority")

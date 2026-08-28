@@ -258,6 +258,31 @@
   establishment plus player-facing listing, expiry, war-limit, and repair paths remain.
   The global incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - restored flat artifact expiry scheduling
+
+- **Concrete gap:** the bounded periodic artifact-expiry job still selected and cleared
+  rows exclusively through MySQL. Flat artifact timers could now be read and updated, but
+  an artifact whose timer elapsed was never selected for the existing world/player/corpse
+  poof workflow and its catalog row was never cleared.
+- **Restoration:** the existing one-vnum-per-slice event now selects the next owned,
+  positive, elapsed timer from the canonical catalog after its existing cursor. After the
+  unchanged cleanup workflow succeeds, a checked update clears that still-expired record
+  to unowned/not-in-game with a null-equivalent timer and advances its revisions. Future,
+  null-equivalent, missing, changed, corrupt, and unavailable state is not overwritten;
+  failures retain the periodic retry/failure behavior. The MariaDB query/update path is
+  unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_artifact_repository.py` covers
+  ordered cursor selection, future-timer exclusion, conditional expiry, idempotence,
+  gameplay-field clearing, binding/type preservation, revision advancement, corruption
+  refusal, and source-contract routing from the real periodic event. The bounded periodic
+  maintenance source contract also passes.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** ordinary artifact expiry is connected, but catalog establishment,
+  war penalties, binding maintenance, listings, and staff repair routes remain. The
+  global incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,
