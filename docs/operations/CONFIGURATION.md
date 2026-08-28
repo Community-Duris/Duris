@@ -121,6 +121,14 @@ deadline. Connection outages retain ordered jobs until Redis returns; a job is d
 after three command-level failures so a permanent schema or ACL error cannot block the
 queue indefinitely.
 
+Named, fraglist, epic-zone, and artifact report reads use a bounded 32-entry in-process
+cache and never wait for Redis during gameplay. Redis publication and invalidation use a
+separate worker bounded to 64 jobs and 4 MiB of queued values; repeated mutations for one
+key are coalesced. Values are limited to 1 MiB and keys to 128 bytes. Existing artifact
+cache values are seeded with their remaining TTL in one boot-only Redis operation, while
+expired or persistent legacy artifact values are ignored. Pwipe cancels the worker before
+checked deletion and shutdown gives it a one-second drain deadline.
+
 Donation notices use a separately gated, authenticated subscriber. Invalid, stale,
 oversized, or replayed envelopes are ignored. Reconnection uses bounded exponential
 backoff and each game pulse handles at most eight messages. The publisher contract and

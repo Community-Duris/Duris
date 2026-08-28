@@ -9,6 +9,7 @@
 #include <strings.h>
 #include <time.h>
 #include "redis.h"
+#include "redis_cache_store.h"
 #include "redis_presence_worker.h"
 
 // helper to format time ago
@@ -80,6 +81,16 @@ static void redis_status_simple(P_char ch)
 			presence.connected    ? "HEALTHY" :
 						"BACKOFF",
 			presence.queued, (unsigned long long)presence.dropped);
+	const redis_cache_store_health cache = redis_cache_store_health_copy();
+	pos += snprintf(
+		buf + pos, sizeof(buf) - pos,
+		"  &+ccache_worker&n     %s%-9s&n queued=%zu/%zuB local=%zu dropped=%llu\r\n",
+		cache.connected ? "&+G" : "&+Y",
+		!cache.initialized ? "OFF" :
+		cache.connected	   ? "HEALTHY" :
+				     "BACKOFF",
+		cache.queued, cache.queued_bytes, cache.local_entries,
+		(unsigned long long)cache.dropped);
 
 	// floor drops
 	char floor_key[128];
@@ -145,6 +156,18 @@ static void redis_status_detailed(P_char ch)
 		(unsigned long long)presence.submitted, (unsigned long long)presence.completed,
 		(unsigned long long)presence.dropped, (unsigned long long)presence.command_failures,
 		(unsigned long long)presence.reconnects);
+	const redis_cache_store_health cache = redis_cache_store_health_copy();
+	APPENDF(buf,
+		"&+g[Cache Worker]&n\r\n"
+		"  state=%s queued=%zu bytes=%zu local=%zu busy=%s\r\n"
+		"  submitted=%llu completed=%llu coalesced=%llu dropped=%llu failures=%llu reconnects=%llu\r\n\r\n",
+		!cache.initialized ? "off" :
+		cache.connected	   ? "healthy" :
+				     "backoff",
+		cache.queued, cache.queued_bytes, cache.local_entries, cache.busy ? "yes" : "no",
+		(unsigned long long)cache.submitted, (unsigned long long)cache.completed,
+		(unsigned long long)cache.coalesced, (unsigned long long)cache.dropped,
+		(unsigned long long)cache.command_failures, (unsigned long long)cache.reconnects);
 
 	APPENDF(buf, "&+g[World Recovery]&n\r\n");
 

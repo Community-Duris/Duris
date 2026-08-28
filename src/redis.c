@@ -26,6 +26,7 @@
 #include "player_save_pipeline.h"
 #include "player_save_worker.h"
 #include "presence_policy.h"
+#include "redis_cache_store.h"
 #include "redis_presence_payload.h"
 #include "redis_presence_worker.h"
 #include "redis_world_store.h"
@@ -79,6 +80,7 @@ int crash_recovery_boot = 0;
 #define REDIS_DONATION_MAX_MESSAGES_PER_PULSE 8
 #define REDIS_DONATION_MAX_RECONNECT_DELAY 60
 #define REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC 1000
+#define REDIS_CACHE_DRAIN_TIMEOUT_MSEC 1000
 
 static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
@@ -94,6 +96,7 @@ static std::string donation_secret;
 static std::vector<std::string> donation_seen_event_ids;
 static void donation_sub_drop(const char *reason);
 static bool redis_clear_floor_drops_checked(void);
+static void redis_prime_artifact_caches(void);
 
 static void donation_schedule_reconnect(void)
 {
@@ -294,6 +297,40 @@ static redisReply *redis_command(redisContext *ctx, const char *format, ...)
 		return NULL;
 	}
 	return reply;
+}
+
+static void redis_prime_artifact_caches(void)
+{
+	if (!redis_ctx || redis_ctx->err)
+		return;
+	constexpr const char *script = "local result={} for index,key in ipairs(KEYS) do "
+				       "result[index*2-1]=redis.call('GET',key) "
+				       "result[index*2]=redis.call('PTTL',key) end return result";
+	constexpr const char *keys[] = {
+		"mud:cache:artifact:1:0", "mud:cache:artifact:1:1", "mud:cache:artifact:2:0",
+		"mud:cache:artifact:2:1", "mud:cache:artifact:3:0", "mud:cache:artifact:3:1",
+	};
+	redisReply *reply = (redisReply *)redis_command(
+		redis_ctx,
+		"EVAL %b 6 mud:cache:artifact:1:0 mud:cache:artifact:1:1 mud:cache:artifact:2:0 mud:cache:artifact:2:1 mud:cache:artifact:3:0 mud:cache:artifact:3:1",
+		script, strlen(script));
+	if (!reply || reply->type != REDIS_REPLY_ARRAY || reply->elements != 12)
+	{
+		if (reply)
+			freeReplyObject(reply);
+		return;
+	}
+	for (size_t index = 0; index < 6; ++index)
+	{
+		redisReply *value = reply->element[index * 2];
+		redisReply *ttl = reply->element[index * 2 + 1];
+		if (!value || value->type != REDIS_REPLY_STRING || !value->str || !ttl ||
+		    ttl->type != REDIS_REPLY_INTEGER || ttl->integer <= 0)
+			continue;
+		const long long seconds = std::min((ttl->integer + 999) / 1000, 900LL);
+		redis_cache_store_seed(keys[index], value->str, (int)seconds);
+	}
+	freeReplyObject(reply);
 }
 
 static bool redis_append_command(redisContext *ctx, const char *format, ...)
@@ -530,6 +567,13 @@ bool redis_init(void)
 							       REDIS_COMMAND_TIMEOUT_MSEC };
 	if (!redis_presence_worker_init(&presence_config))
 		logit(LOG_SYS, "redis: presence worker unavailable; presence updates disabled");
+	const redis_cache_store_config cache_config = { redis_host, redis_port,
+							REDIS_CONNECT_TIMEOUT_MSEC,
+							REDIS_COMMAND_TIMEOUT_MSEC };
+	if (!redis_cache_store_init(&cache_config))
+		logit(LOG_SYS, "redis: cache worker unavailable; report caches disabled");
+	else
+		redis_prime_artifact_caches();
 
 	// check for world state persistence
 	const char *world_state_env = getenv("REDIS_WORLD_STATE");
@@ -582,6 +626,7 @@ bool redis_clear_pwipe_state(void)
 	if (!redis_enabled)
 		return true;
 	redis_presence_worker_cancel();
+	redis_cache_store_cancel();
 	if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
 		return false;
 
@@ -631,6 +676,8 @@ void redis_cleanup(void)
 #ifndef __NO_MYSQL__
 	if (!redis_presence_worker_shutdown(REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC))
 		logit(LOG_SYS, "redis: presence worker drain timed out during shutdown");
+	if (!redis_cache_store_shutdown(REDIS_CACHE_DRAIN_TIMEOUT_MSEC))
+		logit(LOG_SYS, "redis: cache worker drain timed out during shutdown");
 	if (redis_world_state_enabled)
 	{
 		const bool drained = !world_recovery_pipeline_health_copy().initialized ||
@@ -1488,17 +1535,9 @@ bool redis_cache_set(const char *key, const char *value)
 #ifdef __NO_MYSQL__
 	return false;
 #else
-	if (!redis_enabled || !redis_ctx || !key || !value)
+	if (!redis_enabled || !key || !value)
 		return false;
-
-	redisReply *reply =
-		(redisReply *)redis_command(redis_ctx, "SET %s %b", key, value, strlen(value));
-	if (!reply)
-		return false;
-
-	bool ok = (reply->type == REDIS_REPLY_STATUS);
-	freeReplyObject(reply);
-	return ok;
+	return redis_cache_store_set(key, value, 0);
 #endif
 }
 
@@ -1507,17 +1546,9 @@ bool redis_cache_set_ex(const char *key, int seconds, const char *value)
 #ifdef __NO_MYSQL__
 	return false;
 #else
-	if (!redis_enabled || !redis_ctx || !key || !value || seconds <= 0)
+	if (!redis_enabled || !key || !value || seconds <= 0)
 		return false;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "SETEX %s %d %b", key, seconds,
-							value, strlen(value));
-	if (!reply)
-		return false;
-
-	bool ok = (reply->type == REDIS_REPLY_STATUS);
-	freeReplyObject(reply);
-	return ok;
+	return redis_cache_store_set(key, value, seconds);
 #endif
 }
 
@@ -1526,31 +1557,18 @@ char *redis_cache_get(const char *key)
 #ifdef __NO_MYSQL__
 	return NULL;
 #else
-	if (!redis_enabled || !redis_ctx || !key)
+	if (!redis_enabled || !key)
 		return NULL;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", key);
-	if (!reply)
-		return NULL;
-
-	char *result = NULL;
-	if (reply->type == REDIS_REPLY_STRING && reply->str)
-		result = strdup(reply->str);
-
-	freeReplyObject(reply);
-	return result;
+	return redis_cache_store_get(key);
 #endif
 }
 
 void redis_cache_del(const char *key)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx || !key)
+	if (!redis_enabled || !key)
 		return;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s", key);
-	if (reply)
-		freeReplyObject(reply);
+	redis_cache_store_delete(key);
 #endif
 }
 
@@ -2189,7 +2207,7 @@ char *redis_get_artifact_list(int type, bool godlist)
 void redis_invalidate_artifact_list(int type, bool godlist)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx || type < 1 || type > 3)
+	if (!redis_enabled || type < 1 || type > 3)
 		return;
 	redis_cache_del(get_artifact_cache_key(type, godlist));
 #endif
@@ -2198,7 +2216,7 @@ void redis_invalidate_artifact_list(int type, bool godlist)
 void redis_invalidate_artifact_cache(void)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx)
+	if (!redis_enabled)
 		return;
 
 	for (int t = 1; t <= 3; t++)

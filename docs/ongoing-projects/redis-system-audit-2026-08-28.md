@@ -9,6 +9,52 @@ open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-011/RDS-021 local report cache and asynchronous publication
+
+Completed in this interval:
+
+- Replaced synchronous Redis reads for named reports, fraglists, epic-zone reports, and
+  artifact lists with a 32-entry in-process cache. Existing TTLs use a monotonic local
+  deadline, and callers retain their SQL/generation fallback on a local miss.
+- Moved cache `SET`, `SETEX`, and `DEL` operations to a dedicated worker. The queue is
+  bounded to 64 jobs, 4 MiB total payload, 1 MiB per value, and 128 bytes per key.
+- Coalesced queued mutations by key without replacing the in-flight front job, so an
+  outage retains the newest cache state without accumulating redundant report payloads.
+- Added bounded worker-only timeouts, exponential reconnect backoff, three-attempt
+  command-error handling, one-second shutdown drain, and pwipe cancel/join before checked
+  deletion.
+- Preserved restart-time artifact cache hits with one boot-only Lua read of all six
+  artifact variants and their remaining TTLs. Persistent or expired legacy values are not
+  seeded, and local TTL is capped at the existing 900-second contract.
+- Added local queue, byte, coalescing, drop, failure, reconnect, and entry-count health to
+  administrator status without a Redis query.
+
+Performance effect:
+
+- Player-facing named-report, fraglist, epic-zone, and artifact cache hits perform no
+  socket I/O. They take a short mutex and one bounded memory copy.
+- Report publication and transaction-triggered cache invalidation no longer wait on Redis.
+  Repeated mutations for one key collapse to the newest queued value.
+- The only warm-cache read is one batched boot operation before the game loop. Named,
+  fraglist, and epic-zone caches are generated during the existing boot sequence.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_cache_store_live.py`: passed under ASan/UBSan, covering
+  local reads before Redis startup, outage healing, coalescing, TTL behavior, immediate
+  local invalidation, job/byte/value bounds, and cancellation.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+- `python3 tests/async/test_artifact_cache_codec.py`: passed.
+- `python3 tests/async/test_redis_pwipe_invalidation.py`: passed.
+
+Remaining related work:
+
+- RDS-011 still includes optional world/floor preflight I/O and deliberately invoked
+  administrator queries on the shared context.
+- RDS-021 still needs stable-data rendering for the fraglist countdown and explicit TTLs
+  or revisions for named and fraglist data.
+
 ### 2026-08-28 - RDS-009/RDS-011 asynchronous presence publication
 
 Completed in this interval:
@@ -533,7 +579,7 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 | World recovery | `mud:season:<epoch>:world_state:generation:<seq>`, current pointer, diagnostic metadata | Optional recent world reconstruction | Redis payload directly materializes mobs, objects, doors, zones, gold, affects, and equipment after structural validation. |
 | Floor deltas | `mud:season:<epoch>:floor_drops`; retired `mud:floor_pickups` cleanup | Bridge changes around a world snapshot | Root SQL ownership is checked, but descendant identity/state is incomplete. |
 | Ship cache | `ship:snapshot:<owner>` | Reconstructible SQL cache | Cache is returned before SQL without TTL, row revision, or schema/environment identity. |
-| Content caches | `mud:cache:named`, `mud:cache:fraglist`, `mud:cache:epic_zones`, artifact variants | Reconstructible command output | Most are persistent rendered strings with scattered invalidation. |
+| Content caches | `mud:cache:named`, `mud:cache:fraglist`, `mud:cache:epic_zones`, artifact variants | Reconstructible command output | Player reads use bounded local memory and Redis publication is asynchronous; named/fraglist freshness remains incomplete. |
 | Presence | `mud:online`, `mud:player`, one-hour `mud:presence_op:*` retry tokens | Web presence and login/logout events | Privacy-safe payloads are published by a bounded worker; hash entries still lack per-entry expiry. |
 | Donation integration | `mud:nchat` pub/sub | Broadcast external donation notices | Any publisher with channel access can generate an in-game and log message. |
 | Legacy UID | `mud:next_obj_uid` | Retired counter | SQL allocator is authoritative, but Redis still reads, writes, and displays the legacy key. |
@@ -936,8 +982,9 @@ Severity: High
 Confidence: Confirmed
 Remediation status: Partially remediated; presence writes and reconnects run on a bounded
 healing worker, and floor-delta batches use one pipelined exchange instead of up to 2,048
-sequential round trips. Synchronous cache operations, administrator queries, and
-world/floor preflight work on the shared connection remain open.
+sequential round trips. Report cache reads, writes, invalidations, and reconnects are also
+off the simulation thread. Administrator queries and optional world/floor preflight work
+on the shared connection remain open.
 
 Evidence:
 
@@ -1182,6 +1229,10 @@ writer fencing, and a bounded deadline.
 
 Severity: Medium
 Confidence: Confirmed
+Remediation status: Partially remediated; runtime report reads are bounded local-memory
+lookups, Redis writes are asynchronous and coalesced, and existing artifact/epic TTLs are
+enforced locally. Named/fraglist TTL or revision contracts and stable countdown rendering
+remain open.
 
 Named, fraglist, artifact, and ship caches are persistent and unversioned; only epic zones
 has a 900-second TTL. Invalidation is distributed across unrelated gameplay files.
@@ -1259,6 +1310,9 @@ completed. Test manual shutdown, reboot, autoreboot, copyover, crash, and pwipe 
 
 Severity: Medium
 Confidence: Confirmed
+Remediation status: Partially remediated; presence and report-cache workers expose local
+state, queue/byte high water, completions, drops, command failures, and reconnects without
+network queries. The shared world/floor/admin context still lacks per-subsystem telemetry.
 
 The world pipeline exposes useful counters and timing, but the shared command layer emits
 only one global rate-limited line per second with a broad outcome. It omits command class,

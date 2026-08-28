@@ -7,6 +7,7 @@ root = Path(__file__).resolve().parents[2]
 text = (root / "src/redis.c").read_text()
 store = (root / "src/redis_world_store.c").read_text()
 presence_worker = (root / "src/redis_presence_worker.c").read_text()
+cache_store = (root / "src/redis_cache_store.c").read_text()
 header = (root / "src/redis.h").read_text()
 signals = (root / "src/signals.c").read_text()
 
@@ -66,6 +67,35 @@ assert "redis_presence_worker_shutdown" in section(
     "void redis_cleanup", "void redis_clear_floor_pickups"
 )
 print("[PASS] presence writes use a bounded healing worker outside the simulation thread")
+
+assert cache_store.count("redisConnectWithTimeout(") == 1
+assert cache_store.count("redisvCommand(") == 1
+for token in (
+    "REDIS_CACHE_QUEUE_CAPACITY",
+    "REDIS_CACHE_QUEUE_MAX_BYTES",
+    "REDIS_CACHE_LOCAL_CAPACITY",
+    "REDIS_CACHE_MAX_VALUE_BYTES",
+    "pending_jobs.size() >= REDIS_CACHE_QUEUE_CAPACITY",
+    "pending_bytes > REDIS_CACHE_QUEUE_MAX_BYTES - bytes",
+    "reconnect_delay_msec = std::min(reconnect_delay_msec * 2, 60000U)",
+    "redis_cache_store_drain",
+    "redis_cache_store_cancel",
+):
+    assert token in cache_store
+cache_helpers = section("bool redis_cache_set", "#ifndef __NO_MYSQL__\nstatic void redis_ship_cache_key")
+for forbidden in ("redis_command", "redis_ctx", "redis_reconnect"):
+    assert forbidden not in cache_helpers
+for token in ("redis_cache_store_set", "redis_cache_store_get", "redis_cache_store_delete"):
+    assert token in cache_helpers
+assert "redis_cache_store_cancel();" in section(
+    "bool redis_clear_pwipe_state", "bool redis_validate_pwipe_state"
+)
+assert "redis_cache_store_shutdown" in section(
+    "void redis_cleanup", "void redis_clear_floor_pickups"
+)
+prime = section("static void redis_prime_artifact_caches", "static bool redis_append_command")
+assert "PTTL" in prime and "redis_cache_store_seed" in prime
+print("[PASS] report caches use bounded local reads and asynchronous Redis publication")
 
 init = section("bool redis_init(void)", "bool redis_clear_pwipe_state")
 assert init.index("redis_enabled = true;") < init.index("redis_connect_bounded")
