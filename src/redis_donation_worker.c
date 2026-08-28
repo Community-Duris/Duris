@@ -29,6 +29,25 @@ std::string configured_channel;
 const redis_connection_settings *configured_connection = nullptr;
 bool stop_requested = false;
 
+uint64_t operation_elapsed(uint64_t started_usec)
+{
+	const uint64_t finished_usec = redis_observability_now_usec();
+	return finished_usec >= started_usec ? finished_usec - started_usec : 0;
+}
+
+redis_shared_command_outcome operation_outcome(redisContext *context, bool succeeded)
+{
+	if (succeeded)
+		return REDIS_SHARED_OUTCOME_SUCCESS;
+	if (!context)
+		return REDIS_SHARED_OUTCOME_UNAVAILABLE;
+	if (context->err == REDIS_ERR_TIMEOUT)
+		return REDIS_SHARED_OUTCOME_TIMEOUT;
+	if (context->err)
+		return REDIS_SHARED_OUTCOME_TRANSPORT;
+	return REDIS_SHARED_OUTCOME_ERROR_REPLY;
+}
+
 bool valid_channel(const char *channel)
 {
 	return channel && *channel && strnlen(channel, 161) <= 160;
@@ -36,13 +55,7 @@ bool valid_channel(const char *channel)
 
 redisContext *connect_bounded()
 {
-	redisContext *context = redis_connection_open(configured_connection);
-	if (context && context->err)
-	{
-		redisFree(context);
-		return nullptr;
-	}
-	return context;
+	return redis_connection_open(configured_connection);
 }
 
 bool subscribe(redisContext *context)
@@ -164,8 +177,16 @@ void worker_main()
 		}
 		if (!context)
 		{
+			const uint64_t operation_started = redis_observability_now_usec();
 			context = connect_bounded();
-			if (!context || !subscribe(context))
+			const bool subscribed = context && !context->err && subscribe(context);
+			{
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				redis_worker_operation_record(
+					&health.operations, operation_outcome(context, subscribed),
+					operation_elapsed(operation_started));
+			}
+			if (!subscribed)
 			{
 				drop_connection(&context);
 				if (!wait_for_retry(reconnect_delay_seconds))
@@ -190,6 +211,11 @@ void worker_main()
 			continue;
 		if (reader_failed)
 		{
+			{
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				redis_worker_operation_record(&health.operations,
+							      operation_outcome(context, false), 0);
+			}
 			drop_connection(&context);
 			continue;
 		}
@@ -200,13 +226,36 @@ void worker_main()
 		{
 			if (errno == EINTR)
 				continue;
+			{
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				redis_worker_operation_record(&health.operations,
+							      REDIS_SHARED_OUTCOME_TRANSPORT, 0);
+			}
 			drop_connection(&context);
 			continue;
 		}
 		if (!ready)
 			continue;
 		if (descriptor.revents & (POLLERR | POLLHUP | POLLNVAL) ||
-		    !(descriptor.revents & POLLIN) || redisBufferRead(context) != REDIS_OK)
+		    !(descriptor.revents & POLLIN))
+		{
+			{
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				redis_worker_operation_record(&health.operations,
+							      REDIS_SHARED_OUTCOME_TRANSPORT, 0);
+			}
+			drop_connection(&context);
+			continue;
+		}
+		const uint64_t operation_started = redis_observability_now_usec();
+		const bool read_succeeded = redisBufferRead(context) == REDIS_OK;
+		{
+			std::lock_guard<std::mutex> lock(worker_mutex);
+			redis_worker_operation_record(&health.operations,
+						      operation_outcome(context, read_succeeded),
+						      operation_elapsed(operation_started));
+		}
+		if (!read_succeeded)
 		{
 			drop_connection(&context);
 			continue;
@@ -285,7 +334,9 @@ void redis_donation_worker_shutdown(void)
 struct redis_donation_worker_health redis_donation_worker_health_copy(void)
 {
 	std::lock_guard<std::mutex> lock(worker_mutex);
-	return health;
+	redis_donation_worker_health snapshot = health;
+	redis_worker_operation_prepare_snapshot(&snapshot.operations);
+	return snapshot;
 }
 
 void redis_donation_worker_reset_for_tests(void)

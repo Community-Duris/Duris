@@ -231,3 +231,62 @@ redis_shared_command_health redis_shared_command_health_copy(void)
 	snapshot.connection_available = connection_available.load(std::memory_order_relaxed);
 	return snapshot;
 }
+
+uint64_t redis_observability_now_usec(void)
+{
+	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+					     std::chrono::steady_clock::now().time_since_epoch())
+					     .count());
+}
+
+void redis_worker_operation_record(redis_worker_operation_health *health,
+				   redis_shared_command_outcome outcome, uint64_t duration_usec)
+{
+	if (!health)
+		return;
+	++health->calls;
+	health->total_latency_usec += duration_usec;
+	health->last_latency_usec = duration_usec;
+	health->max_latency_usec = std::max(health->max_latency_usec, duration_usec);
+	if (outcome == REDIS_SHARED_OUTCOME_SUCCESS)
+	{
+		++health->successes;
+		health->consecutive_failures = 0;
+		health->last_success_monotonic_msec = monotonic_msec();
+		health->last_success_available = true;
+		return;
+	}
+	++health->failures;
+	++health->consecutive_failures;
+	switch (outcome)
+	{
+	case REDIS_SHARED_OUTCOME_UNAVAILABLE:
+		++health->unavailable;
+		break;
+	case REDIS_SHARED_OUTCOME_TIMEOUT:
+		++health->timeouts;
+		break;
+	case REDIS_SHARED_OUTCOME_TRANSPORT:
+		++health->transport_failures;
+		break;
+	case REDIS_SHARED_OUTCOME_ERROR_REPLY:
+	case REDIS_SHARED_OUTCOME_NO_REPLY:
+		++health->response_failures;
+		break;
+	case REDIS_SHARED_OUTCOME_SUCCESS:
+		break;
+	}
+}
+
+void redis_worker_operation_prepare_snapshot(redis_worker_operation_health *health)
+{
+	if (!health)
+		return;
+	health->last_success_age_msec = 0;
+	if (!health->last_success_available)
+		return;
+	const uint64_t now_msec = monotonic_msec();
+	health->last_success_age_msec = now_msec >= health->last_success_monotonic_msec ?
+						now_msec - health->last_success_monotonic_msec :
+						0;
+}

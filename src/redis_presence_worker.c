@@ -89,6 +89,25 @@ bool accepting = false;
 bool stop_requested = false;
 bool generation_claimed = false;
 
+uint64_t operation_elapsed(uint64_t started_usec)
+{
+	const uint64_t finished_usec = redis_observability_now_usec();
+	return finished_usec >= started_usec ? finished_usec - started_usec : 0;
+}
+
+redis_shared_command_outcome operation_outcome(redisContext *context, bool succeeded)
+{
+	if (succeeded)
+		return REDIS_SHARED_OUTCOME_SUCCESS;
+	if (!context)
+		return REDIS_SHARED_OUTCOME_UNAVAILABLE;
+	if (context->err == REDIS_ERR_TIMEOUT)
+		return REDIS_SHARED_OUTCOME_TIMEOUT;
+	if (context->err)
+		return REDIS_SHARED_OUTCOME_TRANSPORT;
+	return REDIS_SHARED_OUTCOME_ERROR_REPLY;
+}
+
 bool valid_surface(const char *value)
 {
 	return value && *value && strnlen(value, 161) <= 160;
@@ -246,11 +265,18 @@ execution_result refresh_active_sessions(redisContext *context)
 		{
 			return execution_result::failure;
 		}
+		const uint64_t operation_started = redis_observability_now_usec();
 		redisReply *reply =
 			(redisReply *)redisCommandArgv(context, static_cast<int>(arguments.size()),
 						       arguments.data(), lengths.data());
-		if (!reply || reply->type == REDIS_REPLY_ERROR ||
-		    reply->type != REDIS_REPLY_INTEGER)
+		const bool command_succeeded = reply && reply->type == REDIS_REPLY_INTEGER;
+		{
+			std::lock_guard<std::mutex> lock(worker_mutex);
+			redis_worker_operation_record(&health.operations,
+						      operation_outcome(context, command_succeeded),
+						      operation_elapsed(operation_started));
+		}
+		if (!command_succeeded)
 		{
 			if (reply)
 				freeReplyObject(reply);
@@ -333,11 +359,14 @@ void worker_main()
 			if (context)
 				redisFree(context);
 			context = connect_bounded();
+			const bool connected = context && !context->err;
 			{
 				std::lock_guard<std::mutex> lock(worker_mutex);
-				health.connected = context && !context->err;
+				health.connected = connected;
 				if (health.connected)
 					++health.reconnects;
+				else
+					++health.connection_failures;
 			}
 			if (!context || context->err)
 			{
@@ -388,10 +417,17 @@ void worker_main()
 			continue;
 		}
 
+		const uint64_t operation_started = redis_observability_now_usec();
 		const execution_result result = execute_job(context, job);
+		const uint64_t operation_duration = operation_elapsed(operation_started);
+		const bool succeeded = result == execution_result::success ||
+				       result == execution_result::fenced;
+		const redis_shared_command_outcome outcome = operation_outcome(context, succeeded);
 		if (result == execution_result::success || result == execution_result::fenced)
 		{
 			std::lock_guard<std::mutex> lock(worker_mutex);
+			redis_worker_operation_record(&health.operations, outcome,
+						      operation_duration);
 			if (result == execution_result::fenced)
 			{
 				active_sessions.clear();
@@ -411,6 +447,8 @@ void worker_main()
 
 		{
 			std::lock_guard<std::mutex> lock(worker_mutex);
+			redis_worker_operation_record(&health.operations, outcome,
+						      operation_duration);
 			++health.command_failures;
 			health.connected = false;
 			++pending_jobs.front().attempts;
@@ -628,7 +666,9 @@ void redis_presence_worker_cancel(void)
 struct redis_presence_worker_health redis_presence_worker_health_copy(void)
 {
 	std::lock_guard<std::mutex> lock(worker_mutex);
-	return health;
+	redis_presence_worker_health snapshot = health;
+	redis_worker_operation_prepare_snapshot(&snapshot.operations);
+	return snapshot;
 }
 
 void redis_presence_worker_reset_for_tests(void)

@@ -400,10 +400,24 @@ void publisher_main()
 		{
 			for (; attempts < WORLD_RECOVERY_MAX_RETRIES && !published; ++attempts)
 			{
+				redis_shared_command_outcome outcome =
+					REDIS_SHARED_OUTCOME_UNAVAILABLE;
+				const uint64_t operation_started = redis_observability_now_usec();
 				published = publish_callback &&
 					    publish_callback(generation.blob.data(),
 							     generation.blob.size(), &header,
-							     publish_context);
+							     &outcome, publish_context);
+				if (published)
+					outcome = REDIS_SHARED_OUTCOME_SUCCESS;
+				const uint64_t operation_finished = redis_observability_now_usec();
+				{
+					std::lock_guard<std::mutex> lock(recovery_mutex);
+					redis_worker_operation_record(
+						&health.publish_operations, outcome,
+						operation_finished >= operation_started ?
+							operation_finished - operation_started :
+							0);
+				}
 				if (!published)
 					std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
@@ -736,6 +750,7 @@ world_recovery_health world_recovery_pipeline_health_copy(void)
 {
 	std::lock_guard<std::mutex> lock(recovery_mutex);
 	world_recovery_health snapshot = health;
+	redis_worker_operation_prepare_snapshot(&snapshot.publish_operations);
 	snapshot.queued_generations = queued.size();
 	if (health.capture_active)
 		snapshot.capture_age_msec = elapsed_msec(active_capture.started);

@@ -132,6 +132,7 @@ with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
             "-ffunction-sections", "-fdata-sections", "-Isrc", str(source),
             "src/world_recovery_pipeline.c", "src/world_recovery_codec.c",
+            "src/redis_command_observability.c",
             "-Wl,--gc-sections", "-lz", "-pthread",
             "-o", str(binary),
         ],
@@ -180,6 +181,10 @@ worker = section(PIPELINE, "void publisher_main()", "bool capture_one_record()")
 for forbidden in ("character_list", "object_list", "world[", "zone_table", "P_char", "P_obj", "copyover_write_"):
     assert forbidden not in worker
 assert "publish_callback(generation.blob.data()" in worker
+assert "&outcome, publish_context" in worker
+assert "redis_worker_operation_record" in worker
+assert "health.publish_operations" in worker
+assert "redis_worker_operation_prepare_snapshot(&snapshot.publish_operations)" in PIPELINE
 assert "crc32(0, generation->blob.data() + WORLD_RECOVERY_WIRE_HEADER_BYTES" in PIPELINE
 assert "std::vector<unsigned char> blob" not in worker
 print("[PASS] bounded capture is game-thread owned and publisher traverses no live graph")

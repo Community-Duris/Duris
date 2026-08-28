@@ -6,9 +6,60 @@ Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-001, RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
 RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, RDS-017, RDS-008, and RDS-021 are
-remediated, as is RDS-018; the remaining findings are open.
+remediated, as are RDS-018 and RDS-025; the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-025 background-worker observability
+
+Completed in this interval:
+
+- Added one reusable fixed-memory operation-health record to the presence, report-cache,
+  floor, donation, and world-publication worker snapshots. Each reports calls, successes,
+  failures, unavailable/timeout/transport/response categories, consecutive failures,
+  total/last/maximum latency, and last-success age.
+- Recorded Redis work at the existing worker execution boundaries, including presence
+  lease refreshes, cache jobs, prepared floor batches, donation subscription/socket reads,
+  and world-generation publish attempts. The world-store callback now returns a typed
+  timeout/transport/response outcome instead of collapsing publication failure to a
+  Boolean. Connection-open failures remain separately visible for the reconnecting
+  presence, cache, floor, and donation workers.
+- Exposed the same typed snapshots through both `redis detailed` and trusted `world
+  persistence`. Both surfaces remain metadata-only and distinguish a worker with no
+  observed operation from a healthy or consecutively failing worker.
+- Added runtime counter-contract coverage plus live isolated-Redis assertions for outage
+  healing, successful-operation counts, failure streak reset, latency, and last-success
+  age across the reconnecting workers. World publication retains focused source contracts
+  around its already tested bounded publisher lifecycle.
+
+Performance effect:
+
+- No gameplay submission, local cache lookup, donation dequeue, presence event capture,
+  floor serialization, or incremental world-capture behavior changed. Timing and counter
+  updates execute only on background worker threads around Redis work that already
+  existed.
+- Each record update uses fixed fields and a monotonic-clock sample under the worker's
+  existing health mutex. Health rendering copies fixed snapshots and performs no Redis,
+  SQL, filesystem, process, network, logging, allocation, sleep, or wait operation.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_command_observability.py`: passed shared and worker
+  runtime counter, latency, outcome, failure-streak, and last-success-age contracts.
+- `python3 tests/async/test_redis_cache_store_live.py`,
+  `python3 tests/async/test_redis_floor_store_live.py`,
+  `python3 tests/async/test_redis_presence_worker_live.py`, and
+  `python3 tests/async/test_redis_donation_worker_live.py`: passed against isolated Redis.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed publisher instrumentation,
+  bounded capture, framing, atomic publication, and restore contracts.
+- All 22 `tests/async/test_redis*.py` regressions passed, as did the persistence-status,
+  phase-01 recovery-load, and world-recovery codec/pipeline gates.
+
+RDS-025 is complete. Shared commands and every active background Redis worker now expose
+redacted calls, latency, categorized failures, failure streaks, last-success age, and
+connection/reconnect state through the same local typed health snapshots used by both
+operator surfaces.
 
 ### 2026-08-28 - RDS-025 shared-command observability
 
@@ -2223,14 +2274,12 @@ completed. Test manual shutdown, reboot, autoreboot, copyover, crash, and pwipe 
 
 Severity: Medium
 Confidence: Confirmed
-Remediation status: Partially remediated; presence, report-cache, floor, world, and donation
-workers expose local state, queue/byte high water where applicable, completions, drops,
-failures, and reconnects without network queries. Administrator status is now entirely
-local and no longer conflates remote absence with failure. Boot/recovery/maintenance
-shared-context commands now expose one typed, redacted snapshot with subsystem/operation
-classification, latency, timeout/error breakdown, consecutive failures, last-success age,
-and reconnect transitions to both operator surfaces. Background workers still need the
-same latency/age/failure-streak detail before this finding is complete.
+Remediation status: Completed on branch. Presence, report-cache, floor, donation, and
+world-publication workers expose calls, categorized failures, consecutive failures,
+latency, last-success age, queue/high-water state where applicable, and connection or
+reconnect state without network queries. Boot/recovery/maintenance shared-context commands
+expose the same redacted diagnostic dimensions plus subsystem and operation classification.
+Both typed snapshot families feed `redis detailed` and trusted `world persistence`.
 
 The world pipeline exposes useful counters and timing, but the shared command layer emits
 only one global rate-limited line per second with a broad outcome. It omits command class,

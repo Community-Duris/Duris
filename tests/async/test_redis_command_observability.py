@@ -10,6 +10,24 @@ ROOT = Path(__file__).resolve().parents[2]
 REDIS = (ROOT / "src/redis.c").read_text()
 WIZ = (ROOT / "src/wizredis.c").read_text()
 ACTINF = (ROOT / "src/actinf.c").read_text()
+WORLD_STORE = (ROOT / "src/redis_world_store.c").read_text()
+WORKERS = {
+    name: (ROOT / path).read_text()
+    for name, path in {
+        "presence": "src/redis_presence_worker.c",
+        "cache": "src/redis_cache_store.c",
+        "floor": "src/redis_floor_store.c",
+        "donation": "src/redis_donation_worker.c",
+        "world_publish": "src/world_recovery_pipeline.c",
+    }.items()
+}
+WORKER_HEADERS = (
+    ROOT / "src/redis_presence_worker.h",
+    ROOT / "src/redis_cache_store.h",
+    ROOT / "src/redis_floor_store.h",
+    ROOT / "src/redis_donation_worker.h",
+    ROOT / "src/world_recovery_pipeline.h",
+)
 
 HARNESS = r'''
 #include "redis_command_observability.h"
@@ -87,6 +105,38 @@ int main()
     assert(redis_shared_command_scope_name(REDIS_SHARED_SCOPE_WORLD) ==
            std::string("world"));
 
+    redis_worker_operation_health operations = {};
+    redis_worker_operation_prepare_snapshot(&operations);
+    assert(!operations.last_success_available);
+    assert(operations.last_success_age_msec == 0);
+    redis_worker_operation_record(
+        &operations, REDIS_SHARED_OUTCOME_SUCCESS, 10);
+    redis_worker_operation_record(
+        &operations, REDIS_SHARED_OUTCOME_TIMEOUT, 20);
+    redis_worker_operation_record(
+        &operations, REDIS_SHARED_OUTCOME_ERROR_REPLY, 30);
+    assert(operations.calls == 3);
+    assert(operations.successes == 1);
+    assert(operations.failures == 2);
+    assert(operations.timeouts == 1);
+    assert(operations.response_failures == 1);
+    assert(operations.consecutive_failures == 2);
+    assert(operations.total_latency_usec == 60);
+    assert(operations.last_latency_usec == 30);
+    assert(operations.max_latency_usec == 30);
+    redis_worker_operation_prepare_snapshot(&operations);
+    assert(operations.last_success_available);
+    assert(operations.last_success_age_msec < 1000);
+    redis_worker_operation_record(
+        &operations, REDIS_SHARED_OUTCOME_SUCCESS, 40);
+    assert(operations.calls == 4);
+    assert(operations.successes == 2);
+    assert(operations.failures == 2);
+    assert(operations.consecutive_failures == 0);
+    assert(operations.total_latency_usec == 100);
+    assert(operations.last_latency_usec == 40);
+    assert(operations.max_latency_usec == 40);
+
     redis_shared_command_observability_set_enabled(false);
     health = redis_shared_command_health_copy();
     assert(!health.enabled);
@@ -137,4 +187,14 @@ assert "redis_shared_command_health_copy" in WIZ
 assert "Redis is not queried" in WIZ
 assert "redis_shared_command_health_copy" in ACTINF
 assert "redis_shared state=" in ACTINF
-print("shared Redis command observability runtime and source contracts passed")
+for worker_name, worker_source in WORKERS.items():
+    assert "redis_worker_operation_record" in worker_source, worker_name
+    assert "redis_worker_operation_prepare_snapshot" in worker_source, worker_name
+for header in WORKER_HEADERS:
+    assert "redis_worker_operation_health" in header.read_text(), header
+for worker_name in WORKERS:
+    assert f'"{worker_name}"' in ACTINF
+assert WIZ.count("redis_append_operation_health") == 6
+assert "redis_world_store_publish_observed" in WORLD_STORE
+assert "context->err == REDIS_ERR_TIMEOUT" in WORLD_STORE
+print("shared and worker Redis command observability contracts passed")

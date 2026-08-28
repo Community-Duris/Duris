@@ -78,8 +78,11 @@ int main(int argc, char **argv)
     freeReplyObject(run(context, "HSET mud:season:42:floor_drops 100 delta"));
     freeReplyObject(run(context, "ZADD mud:season:42:floor_drop_index 0 100"));
 
-    assert(!redis_world_store_publish(&config, writer_b, lease, first, sizeof(first) - 1,
-                                      1, time(nullptr), 11));
+    redis_shared_command_outcome publish_outcome = REDIS_SHARED_OUTCOME_SUCCESS;
+    assert(!redis_world_store_publish_observed(
+        &config, writer_b, lease, first, sizeof(first) - 1, 1, time(nullptr), 11,
+        &publish_outcome));
+    assert(publish_outcome == REDIS_SHARED_OUTCOME_ERROR_REPLY);
     redisReply *reply = run(context, "EXISTS mud:season:42:world_state:current");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
@@ -90,8 +93,10 @@ int main(int argc, char **argv)
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 1);
     freeReplyObject(reply);
 
-    assert(redis_world_store_publish(&config, writer_a, lease, first, sizeof(first) - 1,
-                                     1, time(nullptr), 11));
+    assert(redis_world_store_publish_observed(
+        &config, writer_a, lease, first, sizeof(first) - 1, 1, time(nullptr), 11,
+        &publish_outcome));
+    assert(publish_outcome == REDIS_SHARED_OUTCOME_SUCCESS);
     reply = run(context, "GET mud:season:42:world_state:current");
     assert(reply->type == REDIS_REPLY_STRING && !strcmp(reply->str, "1"));
     freeReplyObject(reply);

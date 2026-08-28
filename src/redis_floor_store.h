@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "redis_command_observability.h"
 
 struct redis_connection_settings;
 
@@ -33,8 +34,10 @@ struct redis_floor_store_health
 	uint64_t completed_batches;
 	uint64_t completed_mutations;
 	uint64_t command_failures;
+	uint64_t connection_failures;
 	uint64_t reconnects;
 	uint64_t dropped_batches;
+	redis_worker_operation_health operations;
 	size_t queued_batches;
 	size_t queued_bytes;
 	size_t high_water_batches;

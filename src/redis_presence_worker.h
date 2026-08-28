@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "redis_command_observability.h"
 
 struct redis_connection_settings;
 
@@ -30,10 +31,12 @@ struct redis_presence_worker_health
 	uint64_t submitted;
 	uint64_t completed;
 	uint64_t command_failures;
+	uint64_t connection_failures;
 	uint64_t reconnects;
 	uint64_t dropped;
 	uint64_t lease_refreshes;
 	uint64_t lease_failures;
+	redis_worker_operation_health operations;
 	size_t queued;
 	size_t high_water;
 	size_t active_sessions;

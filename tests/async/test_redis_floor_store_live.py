@@ -114,6 +114,13 @@ int main(int argc, char **argv)
         reinterpret_cast<const unsigned char *>(reply->str), reply->len, &root_uid));
     assert(root_uid == 600);
     freeReplyObject(reply);
+    health = redis_floor_store_health_copy();
+    assert(health.operations.calls >= 3);
+    assert(health.operations.successes == health.operations.calls);
+    assert(health.operations.failures == 0);
+    assert(health.operations.consecutive_failures == 0);
+    assert(health.operations.last_success_available);
+    assert(health.operations.last_success_age_msec < 1000);
     redis_floor_mutation shutdown_before[] = {
         {400, reinterpret_cast<const unsigned char *>("four"), 4, false}};
     redis_floor_mutation shutdown_after[] = {
@@ -149,6 +156,7 @@ int main(int argc, char **argv)
                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
                 "-I", str(ROOT / "src"), str(ROOT / "src" / "redis_connection.c"),
                 str(ROOT / "src" / "redis_floor_store.c"),
+                str(ROOT / "src" / "redis_command_observability.c"),
                 str(ROOT / "src" / "world_recovery_codec.c"), str(source), "-lhiredis",
                 "-lhiredis_ssl", "-lssl", "-lcrypto", "-pthread", "-o", str(binary),
             ],

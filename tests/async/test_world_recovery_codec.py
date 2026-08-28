@@ -198,7 +198,9 @@ assert "world_recovery_encode_header" in PIPELINE
 assert "world_recovery_encode_record" in PIPELINE
 assert "world_recovery_decode_record" in PIPELINE
 assert 'memcpy(generation.blob.data(), &header' not in PIPELINE
-assert "prepare_batch(job) && execute_batch" in FLOOR
+assert "const bool prepared = prepare_batch(job)" in FLOOR
+assert "const bool succeeded = prepared && execute_batch(context, job)" in FLOOR
+assert "prepared ? redis_observability_now_usec() : 0" in FLOOR
 assert FLOOR.index("prepare_batch(job)") < FLOOR.index("execute_batch(context, job)")
 
 print("schema-9 little-endian recovery codec golden vectors passed")

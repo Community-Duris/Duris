@@ -91,6 +91,12 @@ int main(int argc, char **argv)
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
     assert(health.connected && health.connection_failures >= 1);
+    assert(health.operations.calls >= 2);
+    assert(health.operations.successes >= 1);
+    assert(health.operations.failures >= 1);
+    assert(health.operations.consecutive_failures == 0);
+    assert(health.operations.last_success_available);
+    assert(health.operations.last_success_age_msec < 1000);
 
     donation_event event = {};
     for (int attempt = 0; attempt < 100; ++attempt)
@@ -141,6 +147,7 @@ int main(int argc, char **argv)
                 str(ROOT / "src"),
                 str(ROOT / "src" / "redis_connection.c"),
                 str(ROOT / "src" / "redis_donation_worker.c"),
+                str(ROOT / "src" / "redis_command_observability.c"),
                 str(ROOT / "src" / "donation_event.c"),
                 str(source),
                 "-lhiredis",

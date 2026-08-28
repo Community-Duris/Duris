@@ -2,6 +2,7 @@
 #define REDIS_DONATION_WORKER_H
 
 #include "donation_event.h"
+#include "redis_command_observability.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -29,6 +30,7 @@ struct redis_donation_worker_health
 	uint64_t dropped;
 	uint64_t connection_failures;
 	uint64_t reconnects;
+	redis_worker_operation_health operations;
 	size_t queued;
 	size_t high_water;
 	bool initialized;

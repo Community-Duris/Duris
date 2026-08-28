@@ -257,6 +257,17 @@ redisReply *command(redisContext *context, const char *format, ...)
 	return reply;
 }
 
+redis_shared_command_outcome operation_outcome(redisContext *context)
+{
+	if (!context)
+		return REDIS_SHARED_OUTCOME_UNAVAILABLE;
+	if (context->err == REDIS_ERR_TIMEOUT)
+		return REDIS_SHARED_OUTCOME_TIMEOUT;
+	if (context->err)
+		return REDIS_SHARED_OUTCOME_TRANSPORT;
+	return REDIS_SHARED_OUTCOME_ERROR_REPLY;
+}
+
 redisReply *bounded_string(redisContext *context, const char *key, size_t maximum_bytes,
 			   size_t expected_bytes = 0)
 {
@@ -658,11 +669,14 @@ bool redis_world_store_read_generation(const struct redis_world_store_config *co
 	return valid;
 }
 
-bool redis_world_store_publish(const struct redis_world_store_config *config,
-			       const char *writer_token, uint64_t lease_msec,
-			       const unsigned char *data, size_t size, uint64_t sequence,
-			       int64_t timestamp, uint32_t checksum)
+bool redis_world_store_publish_observed(const struct redis_world_store_config *config,
+					const char *writer_token, uint64_t lease_msec,
+					const unsigned char *data, size_t size, uint64_t sequence,
+					int64_t timestamp, uint32_t checksum,
+					redis_shared_command_outcome *outcome)
 {
+	if (outcome)
+		*outcome = REDIS_SHARED_OUTCOME_ERROR_REPLY;
 	world_keys keys = {};
 	char generation[160];
 	if (!writer_token || !*writer_token || !lease_msec || !data || !size ||
@@ -673,6 +687,8 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 	redisContext *context = connect_bounded(config, 500);
 	if (!context || context->err)
 	{
+		if (outcome)
+			*outcome = operation_outcome(context);
 		if (context)
 			redisFree(context);
 		return false;
@@ -728,6 +744,7 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 		if (reply)
 			freeReplyObject(reply);
 	}
+	const redis_shared_command_outcome failure_outcome = operation_outcome(context);
 	if (!valid)
 		delete_generation_artifacts(context, config, sequence, writer_token, false);
 
@@ -740,5 +757,16 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 						    previous_upload_token, true);
 	}
 	redisFree(context);
+	if (outcome)
+		*outcome = valid ? REDIS_SHARED_OUTCOME_SUCCESS : failure_outcome;
 	return valid;
+}
+
+bool redis_world_store_publish(const struct redis_world_store_config *config,
+			       const char *writer_token, uint64_t lease_msec,
+			       const unsigned char *data, size_t size, uint64_t sequence,
+			       int64_t timestamp, uint32_t checksum)
+{
+	return redis_world_store_publish_observed(config, writer_token, lease_msec, data, size,
+						  sequence, timestamp, checksum, nullptr);
 }

@@ -53,6 +53,25 @@ size_t pending_bytes = 0;
 bool accepting = false;
 bool stop_requested = false;
 
+uint64_t operation_elapsed(uint64_t started_usec)
+{
+	const uint64_t finished_usec = redis_observability_now_usec();
+	return finished_usec >= started_usec ? finished_usec - started_usec : 0;
+}
+
+redis_shared_command_outcome operation_outcome(redisContext *context, bool succeeded)
+{
+	if (succeeded)
+		return REDIS_SHARED_OUTCOME_SUCCESS;
+	if (!context)
+		return REDIS_SHARED_OUTCOME_UNAVAILABLE;
+	if (context->err == REDIS_ERR_TIMEOUT)
+		return REDIS_SHARED_OUTCOME_TIMEOUT;
+	if (context->err)
+		return REDIS_SHARED_OUTCOME_TRANSPORT;
+	return REDIS_SHARED_OUTCOME_ERROR_REPLY;
+}
+
 size_t job_bytes(const std::shared_ptr<cache_job> &job)
 {
 	return job && job->value ? job->value->size() : 0;
@@ -143,11 +162,14 @@ void worker_main()
 			if (context)
 				redisFree(context);
 			context = connect_bounded();
+			const bool connected = context && !context->err;
 			{
 				std::lock_guard<std::mutex> lock(store_mutex);
-				health.connected = context && !context->err;
+				health.connected = connected;
 				if (health.connected)
 					++health.reconnects;
+				else
+					++health.connection_failures;
 			}
 			if (!context || context->err)
 			{
@@ -164,9 +186,15 @@ void worker_main()
 			reconnect_delay_msec = 100;
 		}
 
-		if (execute_job(context, job))
+		const uint64_t operation_started = redis_observability_now_usec();
+		const bool succeeded = execute_job(context, job);
+		const uint64_t operation_duration = operation_elapsed(operation_started);
+		const redis_shared_command_outcome outcome = operation_outcome(context, succeeded);
+		if (succeeded)
 		{
 			std::lock_guard<std::mutex> lock(store_mutex);
+			redis_worker_operation_record(&health.operations, outcome,
+						      operation_duration);
 			remove_front_locked(false);
 			++health.completed;
 			health.busy = false;
@@ -177,6 +205,8 @@ void worker_main()
 
 		{
 			std::lock_guard<std::mutex> lock(store_mutex);
+			redis_worker_operation_record(&health.operations, outcome,
+						      operation_duration);
 			++health.command_failures;
 			health.connected = false;
 			++pending_jobs.front()->attempts;
@@ -486,7 +516,9 @@ void redis_cache_store_cancel(void)
 struct redis_cache_store_health redis_cache_store_health_copy(void)
 {
 	std::lock_guard<std::mutex> lock(store_mutex);
-	return health;
+	redis_cache_store_health snapshot = health;
+	redis_worker_operation_prepare_snapshot(&snapshot.operations);
+	return snapshot;
 }
 
 void redis_cache_store_reset_for_tests(void)

@@ -2,6 +2,7 @@
 #define WORLD_RECOVERY_PIPELINE_H
 
 #include "structs.h"
+#include "redis_command_observability.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -90,6 +91,7 @@ struct world_recovery_health
 	uint64_t capture_age_msec;
 	uint64_t last_capture_duration_msec;
 	uint64_t worker_runtime_msec;
+	redis_worker_operation_health publish_operations;
 	uint64_t queued_generations;
 	bool initialized;
 	bool capture_active;
@@ -98,7 +100,8 @@ struct world_recovery_health
 };
 
 typedef bool (*world_recovery_publish_fn)(const unsigned char *data, size_t size,
-					  const world_recovery_header *header, void *context);
+					  const world_recovery_header *header,
+					  redis_shared_command_outcome *outcome, void *context);
 
 bool world_recovery_pipeline_init(world_recovery_publish_fn publish, void *context);
 bool world_recovery_pipeline_set_sequence_floor(uint64_t durable_sequence);

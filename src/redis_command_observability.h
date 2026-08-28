@@ -63,6 +63,24 @@ struct redis_shared_command_health
 	bool connection_available;
 };
 
+struct redis_worker_operation_health
+{
+	uint64_t calls;
+	uint64_t successes;
+	uint64_t failures;
+	uint64_t unavailable;
+	uint64_t timeouts;
+	uint64_t transport_failures;
+	uint64_t response_failures;
+	uint64_t consecutive_failures;
+	uint64_t total_latency_usec;
+	uint64_t last_latency_usec;
+	uint64_t max_latency_usec;
+	uint64_t last_success_monotonic_msec;
+	uint64_t last_success_age_msec;
+	bool last_success_available;
+};
+
 const char *redis_shared_command_scope_name(redis_shared_command_scope scope);
 void redis_shared_command_observability_reset(bool enabled);
 void redis_shared_command_observability_set_enabled(bool enabled);
@@ -72,5 +90,9 @@ void redis_shared_command_observability_record(redis_shared_command_scope scope,
 					       uint64_t duration_usec);
 void redis_shared_connection_observability_record(bool reconnect, bool success);
 redis_shared_command_health redis_shared_command_health_copy(void);
+uint64_t redis_observability_now_usec(void);
+void redis_worker_operation_record(redis_worker_operation_health *health,
+				   redis_shared_command_outcome outcome, uint64_t duration_usec);
+void redis_worker_operation_prepare_snapshot(redis_worker_operation_health *health);
 
 #endif

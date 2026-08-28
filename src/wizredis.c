@@ -29,6 +29,40 @@ static const char *world_worker_state(const world_recovery_health *world)
 	return "IDLE";
 }
 
+template <size_t Size> static void
+redis_append_operation_health(char (&buf)[Size], const redis_worker_operation_health *operations)
+{
+	const unsigned long long average =
+		operations->calls ? operations->total_latency_usec / operations->calls : 0;
+	if (operations->last_success_available)
+		APPENDF(buf,
+			"  io calls=%llu success=%llu failures=%llu timeout=%llu transport=%llu response=%llu unavailable=%llu consecutive=%llu latency_us=%llu/%llu/%llu last_success_age_ms=%llu\r\n",
+			(unsigned long long)operations->calls,
+			(unsigned long long)operations->successes,
+			(unsigned long long)operations->failures,
+			(unsigned long long)operations->timeouts,
+			(unsigned long long)operations->transport_failures,
+			(unsigned long long)operations->response_failures,
+			(unsigned long long)operations->unavailable,
+			(unsigned long long)operations->consecutive_failures,
+			(unsigned long long)operations->last_latency_usec, average,
+			(unsigned long long)operations->max_latency_usec,
+			(unsigned long long)operations->last_success_age_msec);
+	else
+		APPENDF(buf,
+			"  io calls=%llu success=%llu failures=%llu timeout=%llu transport=%llu response=%llu unavailable=%llu consecutive=%llu latency_us=%llu/%llu/%llu last_success=never\r\n",
+			(unsigned long long)operations->calls,
+			(unsigned long long)operations->successes,
+			(unsigned long long)operations->failures,
+			(unsigned long long)operations->timeouts,
+			(unsigned long long)operations->transport_failures,
+			(unsigned long long)operations->response_failures,
+			(unsigned long long)operations->unavailable,
+			(unsigned long long)operations->consecutive_failures,
+			(unsigned long long)operations->last_latency_usec, average,
+			(unsigned long long)operations->max_latency_usec);
+}
+
 static void redis_status_simple(P_char ch)
 {
 	char buf[MAX_STRING_LENGTH];
@@ -190,8 +224,8 @@ static void redis_status_detailed(P_char ch)
 	APPENDF(buf,
 		"&+g[Presence Worker]&n\r\n"
 		"  state=%s queued=%zu high_water=%zu active=%zu busy=%s\r\n"
-		"  submitted=%llu completed=%llu dropped=%llu failures=%llu reconnects=%llu\r\n"
-		"  lease_refreshes=%llu lease_failures=%llu\r\n\r\n",
+		"  submitted=%llu completed=%llu dropped=%llu failures=%llu connection_failures=%llu reconnects=%llu\r\n"
+		"  lease_refreshes=%llu lease_failures=%llu\r\n",
 		!presence.initialized ? "off" :
 		presence.connected    ? "healthy" :
 					"backoff",
@@ -199,26 +233,33 @@ static void redis_status_detailed(P_char ch)
 		presence.busy ? "yes" : "no", (unsigned long long)presence.submitted,
 		(unsigned long long)presence.completed, (unsigned long long)presence.dropped,
 		(unsigned long long)presence.command_failures,
+		(unsigned long long)presence.connection_failures,
 		(unsigned long long)presence.reconnects,
 		(unsigned long long)presence.lease_refreshes,
 		(unsigned long long)presence.lease_failures);
+	redis_append_operation_health(buf, &presence.operations);
+	APPENDF(buf, "\r\n");
 	const redis_cache_store_health cache = redis_cache_store_health_copy();
 	APPENDF(buf,
 		"&+g[Cache Worker]&n\r\n"
 		"  state=%s queued=%zu bytes=%zu local=%zu busy=%s\r\n"
-		"  submitted=%llu completed=%llu coalesced=%llu dropped=%llu failures=%llu reconnects=%llu\r\n\r\n",
+		"  submitted=%llu completed=%llu coalesced=%llu dropped=%llu failures=%llu connection_failures=%llu reconnects=%llu\r\n",
 		!cache.initialized ? "off" :
 		cache.connected	   ? "healthy" :
 				     "backoff",
 		cache.queued, cache.queued_bytes, cache.local_entries, cache.busy ? "yes" : "no",
 		(unsigned long long)cache.submitted, (unsigned long long)cache.completed,
 		(unsigned long long)cache.coalesced, (unsigned long long)cache.dropped,
-		(unsigned long long)cache.command_failures, (unsigned long long)cache.reconnects);
+		(unsigned long long)cache.command_failures,
+		(unsigned long long)cache.connection_failures,
+		(unsigned long long)cache.reconnects);
+	redis_append_operation_health(buf, &cache.operations);
+	APPENDF(buf, "\r\n");
 	const redis_floor_store_health floor = redis_floor_store_health_copy();
 	APPENDF(buf,
 		"&+g[Floor Worker]&n\r\n"
 		"  state=%s queued=%zu bytes=%zu busy=%s barrier=%s\r\n"
-		"  batches=%llu completed=%llu mutations=%llu dropped=%llu failures=%llu reconnects=%llu\r\n\r\n",
+		"  batches=%llu completed=%llu mutations=%llu dropped=%llu failures=%llu connection_failures=%llu reconnects=%llu\r\n",
 		!floor.initialized ? "off" :
 		floor.paused	   ? "barrier" :
 		floor.connected	   ? "healthy" :
@@ -228,13 +269,17 @@ static void redis_status_detailed(P_char ch)
 		(unsigned long long)floor.completed_batches,
 		(unsigned long long)floor.completed_mutations,
 		(unsigned long long)floor.dropped_batches,
-		(unsigned long long)floor.command_failures, (unsigned long long)floor.reconnects);
+		(unsigned long long)floor.command_failures,
+		(unsigned long long)floor.connection_failures,
+		(unsigned long long)floor.reconnects);
+	redis_append_operation_health(buf, &floor.operations);
+	APPENDF(buf, "\r\n");
 	const redis_donation_worker_health donation = redis_donation_worker_health_copy();
 	APPENDF(buf,
 		"&+g[Donation Worker]&n\r\n"
 		"  state=%s queued=%zu high_water=%zu\r\n"
 		"  received=%llu validated=%llu rejected=%llu replayed=%llu dropped=%llu\r\n"
-		"  connection_failures=%llu reconnects=%llu\r\n\r\n",
+		"  connection_failures=%llu reconnects=%llu\r\n",
 		!donation.initialized ? "off" :
 		donation.connected    ? "healthy" :
 					"backoff",
@@ -243,6 +288,8 @@ static void redis_status_detailed(P_char ch)
 		(unsigned long long)donation.replayed, (unsigned long long)donation.dropped,
 		(unsigned long long)donation.connection_failures,
 		(unsigned long long)donation.reconnects);
+	redis_append_operation_health(buf, &donation.operations);
+	APPENDF(buf, "\r\n");
 
 	const world_recovery_health world = world_recovery_pipeline_health_copy();
 	APPENDF(buf,
@@ -250,7 +297,7 @@ static void redis_status_detailed(P_char ch)
 		"  state=%s capture=%s worker=%s busy=%s queued=%llu\r\n"
 		"  requested=%llu coalesced=%llu submitted=%llu published=%llu publish_failures=%llu\r\n"
 		"  capture_failures=%llu expired=%llu age_ms=%llu last_duration_ms=%llu\r\n"
-		"  last_sequence=%llu acknowledged=%llu bytes=%llu high_water=%llu\r\n\r\n",
+		"  last_sequence=%llu acknowledged=%llu bytes=%llu high_water=%llu\r\n",
 		world_worker_state(&world), world.capture_active ? "yes" : "no",
 		world.worker_running ? "running" : "stopped", world.worker_busy ? "yes" : "no",
 		(unsigned long long)world.queued_generations, (unsigned long long)world.requested,
@@ -264,6 +311,8 @@ static void redis_status_detailed(P_char ch)
 		(unsigned long long)world.last_acknowledged_sequence,
 		(unsigned long long)world.last_published_bytes,
 		(unsigned long long)world.high_water_bytes);
+	redis_append_operation_health(buf, &world.publish_operations);
+	APPENDF(buf, "\r\n");
 
 	const int dirty = get_dirty_player_count();
 	APPENDF(buf,

@@ -112,6 +112,14 @@ int main(int argc, char **argv)
     reply = run(context, "EXISTS mud:cache:test");
     assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
+    health = redis_cache_store_health_copy();
+    assert(health.connection_failures >= 1);
+    assert(health.operations.calls >= 3);
+    assert(health.operations.successes == health.operations.calls);
+    assert(health.operations.failures == 0);
+    assert(health.operations.consecutive_failures == 0);
+    assert(health.operations.last_success_available);
+    assert(health.operations.last_success_age_msec < 1000);
     redisFree(context);
     assert(redis_cache_store_shutdown(1000));
     redis_connection_settings_destroy(settings);
@@ -176,6 +184,7 @@ int main(int argc, char **argv)
                 str(ROOT / "src"),
                 str(ROOT / "src" / "redis_connection.c"),
                 str(ROOT / "src" / "redis_cache_store.c"),
+                str(ROOT / "src" / "redis_command_observability.c"),
                 str(source),
                 "-lhiredis",
                 "-lhiredis_ssl",

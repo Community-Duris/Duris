@@ -272,14 +272,17 @@ static bool redis_world_writer_fence_claim(void)
 }
 
 static bool redis_publish_world_generation(const unsigned char *data, size_t size,
-					   const world_recovery_header *header, void * /*context*/)
+					   const world_recovery_header *header,
+					   redis_shared_command_outcome *outcome,
+					   void * /*context*/)
 {
 	if (!data || !size || !header || world_writer_token.empty() || !world_writer_lease_msec)
 		return false;
 	const redis_world_store_config config = redis_world_store_config_copy();
-	return redis_world_store_publish(&config, world_writer_token.c_str(),
-					 world_writer_lease_msec, data, size, header->sequence,
-					 header->timestamp, header->checksum);
+	return redis_world_store_publish_observed(&config, world_writer_token.c_str(),
+						  world_writer_lease_msec, data, size,
+						  header->sequence, header->timestamp,
+						  header->checksum, outcome);
 }
 
 static bool redis_world_recovery_ensure_initialized(void)

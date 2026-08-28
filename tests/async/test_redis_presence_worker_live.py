@@ -74,7 +74,14 @@ int main(int argc, char **argv)
 
     redis_presence_worker_health health = redis_presence_worker_health_copy();
     assert(health.submitted == 2 && health.completed == 2);
-    assert(health.reconnects >= 1 && health.queued == 0 && !health.busy);
+    assert(health.connection_failures >= 1 && health.reconnects >= 1);
+    assert(health.queued == 0 && !health.busy);
+    assert(health.operations.calls >= 2);
+    assert(health.operations.successes == health.operations.calls);
+    assert(health.operations.failures == 0);
+    assert(health.operations.consecutive_failures == 0);
+    assert(health.operations.last_success_available);
+    assert(health.operations.last_success_age_msec < 1000);
 
     redisContext *context = redisConnect("127.0.0.1", live_port);
     assert(context && !context->err);
@@ -208,6 +215,7 @@ int main(int argc, char **argv)
                 str(ROOT / "src"),
                 str(ROOT / "src" / "redis_connection.c"),
                 str(ROOT / "src" / "redis_presence_worker.c"),
+                str(ROOT / "src" / "redis_command_observability.c"),
                 str(source),
                 "-lhiredis",
                 "-lhiredis_ssl",

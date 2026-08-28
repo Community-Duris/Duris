@@ -1,6 +1,8 @@
 #ifndef REDIS_WORLD_STORE_H
 #define REDIS_WORLD_STORE_H
 
+#include "redis_command_observability.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <vector>
@@ -38,5 +40,10 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 			       const char *writer_token, uint64_t lease_msec,
 			       const unsigned char *data, size_t size, uint64_t sequence,
 			       int64_t timestamp, uint32_t checksum);
+bool redis_world_store_publish_observed(const struct redis_world_store_config *config,
+					const char *writer_token, uint64_t lease_msec,
+					const unsigned char *data, size_t size, uint64_t sequence,
+					int64_t timestamp, uint32_t checksum,
+					redis_shared_command_outcome *outcome);
 
 #endif
