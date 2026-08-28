@@ -671,9 +671,7 @@ player_load_result flatfile_player_load_repository_execute(const std::string &ro
 	result.metrics.byte_count = result.snapshot.encoded_size_bound;
 	result.metrics.row_count = 1;
 	result.metrics.transaction_usec = persistence_observability_now_usec() - started;
-	result.outcome = player_load_outcome::component_failure;
-	result.error_code = ENOTSUP;
-	result.failed_component = "trophies";
+	result.outcome = player_load_outcome::applied;
 	return result;
 }
 

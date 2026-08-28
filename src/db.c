@@ -35,6 +35,7 @@
 #include "spells.h"
 #include "sql.h"
 #include "studioproc.h"
+#include "trophy.h"
 #include "weather.h"
 
 /*
@@ -4061,7 +4062,11 @@ void free_char(P_char ch)
 	disarm_char_nevents(ch, NULL);
 
 	if (IS_PC(ch) && ch->only.pc)
+	{
 		delete_knownShapes(ch);
+		delete ch->only.pc->zone_trophy;
+		ch->only.pc->zone_trophy = nullptr;
+	}
 
 	//  if (IS_PC(ch))                /* clear trophy */
 	//    for (tr1 = ch->only.pc->trophy; tr1; tr1 = tr2)

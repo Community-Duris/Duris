@@ -182,10 +182,9 @@ int main(int argc, char **argv)
 			load_result.domains.bank_revision == 1 && load_result.domains.epics == 15 &&
 			load_result.domains.frags == 16 && load_result.domains.old_frags == 17 &&
 			load_result.read_components == PLAYER_LOAD_SESSION04_READS &&
-			load_result.outcome == player_load_outcome::component_failure &&
-			load_result.error_code == ENOTSUP &&
-			std::string(load_result.failed_component) == "trophies",
-		"verified snapshot/domain load did not stop at trophy materialization");
+			load_result.outcome == player_load_outcome::applied &&
+			load_result.error_code == 0 && !load_result.failed_component,
+		"verified snapshot/domain load was not reported as materializable");
 	load_request.request_id = 2;
 	load_request.account_name = "wrong-account";
 	load_result = flatfile_player_load_repository_execute(root.string(), load_request);
@@ -200,7 +199,7 @@ int main(int argc, char **argv)
 		persistence_observability_now_usec() + PLAYER_LOAD_TIMEOUT_USEC;
 	load_result = flatfile_player_load_repository_execute(root.string(), load_request);
 	require(load_result.pid == 42 && load_result.account_name == "Account-One" &&
-			load_result.error_code == ENOTSUP,
+			load_result.outcome == player_load_outcome::applied,
 		"canonical name lookup did not resolve the snapshot identity");
 	load_request.deadline_usec = persistence_observability_now_usec();
 	load_result = flatfile_player_load_repository_execute(root.string(), load_request);

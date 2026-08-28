@@ -590,6 +590,38 @@ sections below continue to describe the required end state.
   the login boundary, then implement wallet/bank/epic/frag command application and its
   idempotent ledger before allowing flat-file-primary boot.
 
+### Checkpoint 19 - complete materializable flat player read
+
+- **Completed:** the load materializer now validates trophy zone/experience rows,
+  rejects duplicate zones, constructs the runtime zone-trophy vector with bounded
+  allocation failure handling, and releases that vector with the rest of player-owned
+  state. Empty trophy authority is represented by an initialized empty vector rather
+  than an ambiguous null pointer.
+- **Completed:** after identity, snapshot, custody, player-domain, shared-bank, gameplay
+  read, and trophy validation all succeed, the flat repository now returns the existing
+  `applied` load outcome with no failed component. PID-based and canonical-name requests
+  therefore produce the same complete DTO that the game-thread materializer expects.
+- **Safety boundary:** this enables the read/materialization contract, not backend boot.
+  Wallet, bank, epic, and frag mutations still have no flat critical-command apply path,
+  so preflight now names `player domain mutations` as the remaining player-specific
+  blocker.
+- **Compatibility repair:** removed a redundant direct system-MySQL include from the
+  epic task catalog. Its SQL interface already supplies the selected client or local
+  compatibility types; the duplicate include collided with client-free declarations in
+  the focused gameplay-read build.
+- **Checks passed:** `python3 tests/async/test_flatfile_player_repository.py`,
+  `python3 tests/async/test_player_load_pipeline.py`,
+  `python3 tests/async/test_player_load_pets.py`,
+  `python3 tests/async/test_set_based_gameplay_reads.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `make -C src -j2`,
+  `./scripts/format.sh --check`, and `git diff --check`.
+- **Files changed:** `src/player_load_materialize.c`, `src/flatfile_player_repository.c`,
+  `src/db.c`, `src/persistence_mode.c`, `src/epic_task_catalog.c`, and the focused
+  player, pipeline, and boot regressions.
+- **Next action:** extend the player-domain authority with an embedded operation ledger
+  and apply the existing wallet/bank/epic/frag commands under their expected revisions,
+  then select it from the client-free critical-command coordinator.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

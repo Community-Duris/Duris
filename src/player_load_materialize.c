@@ -11,12 +11,15 @@
 #include <climits>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <new>
 #include <unordered_set>
 #include <vector>
 
 #include "assocs.h"
 #include "player_revision_state.h"
 #include "spells.h"
+#include "trophy.h"
 
 namespace
 {
@@ -42,6 +45,7 @@ bool valid_snapshot(const player_load_result &result)
 		return false;
 	std::unordered_set<unsigned int> integers;
 	std::unordered_set<unsigned int> strings;
+	std::unordered_set<int32_t> trophy_zones;
 	for (const player_snapshot_integer &entry : result.snapshot.status_integers)
 		if (entry.field < player_status_field::class_primary ||
 		    entry.field > player_status_field::last_ip ||
@@ -74,6 +78,10 @@ bool valid_snapshot(const player_load_result &result)
 	for (const player_affect_snapshot &entry : result.snapshot.affects)
 		if (entry.wear_off_character.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
 		    entry.wear_off_room.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+			return false;
+	for (const player_trophy_snapshot &entry : result.snapshot.trophies)
+		if (entry.zone_number <= 0 || entry.experience < 0 ||
+		    !trophy_zones.insert(entry.zone_number).second)
 			return false;
 	for (uint64_t balance : result.domains.wallet)
 		if (balance > INT_MAX)
@@ -339,6 +347,22 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      result.snapshot.items.size());
 		return false;
 	}
+	if (ZONE_TROPHY(ch))
+		return false;
+	std::unique_ptr<std::vector<zone_trophy_data>> zone_trophies(
+		new (std::nothrow) std::vector<zone_trophy_data>());
+	if (!zone_trophies)
+		return false;
+	try
+	{
+		zone_trophies->reserve(result.snapshot.trophies.size());
+		for (const player_trophy_snapshot &entry : result.snapshot.trophies)
+			zone_trophies->push_back({ entry.zone_number, entry.experience });
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 	if (result.stale_item_rows)
 		logit(LOG_DEBUG,
 		      "player_load_materialize: component=items pid=%d outcome=stale_rows_skipped "
@@ -456,6 +480,7 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		else
 			affect_to_char(ch, &affect);
 	}
+	ZONE_TROPHY(ch) = zone_trophies.release();
 	char_shapechange_data **shape = &ch->only.pc->knownShapes;
 	for (const player_shape_snapshot &entry : result.snapshot.shapes)
 	{
