@@ -9,6 +9,7 @@ store = (root / "src/redis_world_store.c").read_text()
 presence_worker = (root / "src/redis_presence_worker.c").read_text()
 cache_store = (root / "src/redis_cache_store.c").read_text()
 floor_store = (root / "src/redis_floor_store.c").read_text()
+donation_worker = (root / "src/redis_donation_worker.c").read_text()
 header = (root / "src/redis.h").read_text()
 signals = (root / "src/signals.c").read_text()
 
@@ -38,12 +39,27 @@ assert "redisSetTimeout" in connect
 assert "if (!ctx)" in command and "if (ctx->err)" in command
 assert "REDIS_REPLY_ERROR" in command and '"error_reply"' in command
 assert '"timeout_or_io"' in command and '"no_reply"' in command
-for assignment in (
-    "redis_ctx = redis_connect_bounded(redis_host, redis_port);",
-    "donation_sub_ctx = redis_connect_bounded(redis_host, redis_port);",
-):
-    assert assignment in text
+assert "redis_ctx = redis_connect_bounded(redis_host, redis_port);" in text
 print("[PASS] all Redis connects and commands use bounded guarded helpers")
+
+assert donation_worker.count("redisConnectWithTimeout(") == 1
+assert donation_worker.count("redisCommand(") == 1
+for token in (
+    "REDIS_DONATION_QUEUE_CAPACITY",
+    "REDIS_DONATION_REPLAY_CAPACITY",
+    "REDIS_DONATION_WORK_BATCH",
+    "wait_for_retry(reconnect_delay_seconds)",
+    "redisSetTimeout",
+    "redis_donation_worker_take",
+):
+    assert token in donation_worker
+donation_pulse = section(
+    "void redis_check_donation_messages", "void event_check_donation_messages"
+)
+assert "redis_donation_worker_take" in donation_pulse
+for forbidden in ("redis_command", "redis_ctx", "redisConnect", "redisGetReply", "poll("):
+    assert forbidden not in donation_pulse
+print("[PASS] donation connect, subscribe, validation, and replay work stay off the simulation thread")
 
 assert presence_worker.count("redisConnectWithTimeout(") == 1
 assert presence_worker.count("redisvCommand(") == 1

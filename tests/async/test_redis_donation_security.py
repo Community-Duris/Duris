@@ -48,13 +48,18 @@ def signed_event(**updates: object) -> str:
 
 def main() -> None:
     redis = (ROOT / "src" / "redis.c").read_text(encoding="utf-8")
+    worker = (ROOT / "src" / "redis_donation_worker.c").read_text(encoding="utf-8")
+    worker_header = (ROOT / "src" / "redis_donation_worker.h").read_text(encoding="utf-8")
     events = (ROOT / "src" / "new_events.c").read_text(encoding="utf-8")
     assert 'getenv("REDIS_DONATION_SUBSCRIBER")' in redis
     assert 'getenv("REDIS_DONATION_SECRET")' in redis
     assert "redis_enabled && redis_donation_enabled" in events
     assert "REDIS_DONATION_MAX_MESSAGES_PER_PULSE" in redis
-    assert "donation_schedule_reconnect()" in redis
-    assert "donation_seen_event_ids.size() >= 256" in redis
+    assert "redis_donation_worker_take" in redis
+    assert "wait_for_retry(reconnect_delay_seconds)" in worker
+    assert "REDIS_DONATION_REPLAY_CAPACITY" in worker
+    assert "REDIS_DONATION_QUEUE_CAPACITY" in worker_header
+    assert "REDIS_DONATION_WORK_BATCH" in worker_header
 
     harness = r'''
 #include "donation_event.h"
@@ -122,7 +127,7 @@ int main(int argc, char **argv)
             signed_event(issued_at=NOW - 301),
             signed_event(character_name="Apex&+R"),
             signed_event(message="forged\nlog line"),
-            signed_event(message="not-ascii-€"),
+            signed_event(message="not-ascii-\u20ac"),
             signed_event(event_id="short"),
             signed_event() + (" " * 4096),
         ]

@@ -187,7 +187,7 @@ for token in ("redis_world_store_mark_clean_shutdown",
               "redis_world_store_consume_clean_shutdown"):
     assert token in STORE
 assert publisher.index("GET %s") < publisher.index("EVAL %b 8")
-assert "header.sequence == sequence" in section(REDIS, "bool redis_has_world_state", "time_t redis_world_state_timestamp")
+assert "header.sequence == sequence" in section(REDIS, "bool redis_has_world_state", "bool redis_clear_world_state")
 assert "world_recovery_restore" in section(REDIS, "bool redis_load_world_state", "void event_save_world_state")
 consume = section(REDIS, "bool redis_consume_world_state", "bool redis_load_world_state")
 assert "redis_world_recovery_quiesce" not in consume

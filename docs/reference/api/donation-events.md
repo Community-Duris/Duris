@@ -40,7 +40,9 @@ The server compares signatures in constant time, rejects event IDs already seen 
 current process, and retains a bounded window of 256 IDs. The timestamp window limits
 replay after restart; the publisher must always create a new stable event ID.
 
-The subscriber processes at most eight buffered messages per game pulse. It reconnects
-after failures with exponential delays capped at 60 seconds. Pub/sub remains at-most-once;
-if delivery guarantees become necessary, move this envelope to a durable stream keyed by
-the same stable event ID.
+The subscriber worker owns all Redis connection, subscription, socket, validation, and
+reconnect work. It retains at most 64 validated events and drops excess events with a
+health counter. The simulation thread dequeues at most eight events per game pulse and
+performs no Redis work. Reconnect delays are exponential and capped at 60 seconds. Pub/sub
+remains at-most-once; if delivery guarantees become necessary, move this envelope to a
+durable stream keyed by the same stable event ID.

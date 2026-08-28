@@ -107,6 +107,7 @@ OBJS =  $(SHIP_OBJS) \
 				 artifact.o \
 				 artifact_cache_codec.o \
 				 donation_event.o \
+				 redis_donation_worker.o \
 				 assocs.o \
 				 auction_houses.o \
 				 bard.o \

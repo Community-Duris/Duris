@@ -112,10 +112,13 @@ handoff deletes the acknowledged hash atomically, then post-barrier deltas resum
 Gameplay performs bounded fixed-memory serialization but no Redis socket, SQL, disk,
 process, or logging I/O for floor drops, pickups, or snapshot preflight.
 
-The in-game `redis clear world`, `redis clear floor`, and `redis clear all confirm`
-commands cancel and join the publisher before deleting recovery state. They retain the
-writer fence and keep publication quiesced until shutdown; a restart is required to
-resume snapshots. This makes a successful clear durable against queued old work.
+The in-game `redis` and `redis detailed` commands read bounded local worker/pipeline
+telemetry only; they never query Redis. Online artifact, fraglist, epic-zone, and named
+cache clears remove the local entry and submit a background invalidation, reporting
+whether that submission was accepted. The in-game `redis clear world`, `redis clear
+floor`, and `redis clear all` commands are refused while the server is running because
+their scans, writer fencing, and exact postflight cannot safely run on the simulation
+thread. Stop the server and use the maintenance clear workflow for broad state removal.
 
 For a local development session, the following is a reasonable starting point:
 
@@ -155,10 +158,12 @@ cache values are seeded with their remaining TTL in one boot-only Redis operatio
 expired or persistent legacy artifact values are ignored. Pwipe cancels the worker before
 checked deletion and shutdown gives it a one-second drain deadline.
 
-Donation notices use a separately gated, authenticated subscriber. Invalid, stale,
-oversized, or replayed envelopes are ignored. Reconnection uses bounded exponential
-backoff and each game pulse handles at most eight messages. The publisher contract and
-signature format are in [the donation event reference](../reference/api/donation-events.md).
+Donation notices use a separately gated, authenticated subscriber worker. Connect,
+subscribe, socket reads, validation, replay filtering, and reconnect backoff all run off
+the simulation thread. Its delivery queue holds at most 64 fixed-size validated events;
+each game pulse dequeues at most eight and performs no Redis work. Invalid, stale,
+oversized, replayed, or excess envelopes are counted and ignored. The publisher contract
+and signature format are in [the donation event reference](../reference/api/donation-events.md).
 
 ## Character creation and gameplay modes
 

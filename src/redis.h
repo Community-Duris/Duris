@@ -40,7 +40,6 @@ bool redis_load_world_state(void);
 bool redis_has_world_state(void);
 bool redis_consume_world_state(void);
 bool redis_clear_world_state(void);
-time_t redis_world_state_timestamp(void);
 void event_save_world_state(P_char ch, P_char victim, P_obj obj, void *data);
 void redis_world_recovery_pulse(void);
 bool redis_world_recovery_drain(uint64_t timeout_msec);
@@ -51,8 +50,7 @@ void redis_world_recovery_set_materializing(bool active);
 bool redis_cache_set(const char *key, const char *value);
 bool redis_cache_set_ex(const char *key, int seconds, const char *value);
 char *redis_cache_get(const char *key);
-void redis_cache_del(const char *key);
-void redis_donation_subscribe_init(void);
+bool redis_cache_del(const char *key);
 void redis_check_donation_messages(void);
 void event_check_donation_messages(P_char ch, P_char victim, P_obj obj, void *data);
 
@@ -63,29 +61,24 @@ char *redis_get_named_report(void);
 // frag command cache
 void redis_cache_fraglist(void);
 char *redis_get_fraglist(void);
-void redis_invalidate_fraglist(void);
+bool redis_invalidate_fraglist(void);
 
 // epic zones command cache
 void redis_cache_epic_zones(void);
 char *redis_get_epic_zones(void);
-void redis_invalidate_epic_zones(void);
+bool redis_invalidate_epic_zones(void);
 
 // arti cache
 void redis_cache_artifact_list(int type, bool godlist, const char *json);
 char *redis_get_artifact_list(int type, bool godlist);
-void redis_invalidate_artifact_list(int type, bool godlist);
-void redis_invalidate_artifact_cache(void);
+bool redis_invalidate_artifact_list(int type, bool godlist);
+bool redis_invalidate_artifact_cache(void);
 
 // online players list for web
 void redis_player_online(P_char ch);
 void redis_player_offline(P_char ch);
 void redis_clear_online_players(void);
 
-// generic helpers for wiz command
-bool redis_key_exists(const char *key);
-long redis_get_ttl(const char *key);
-long redis_hlen(const char *key);
-long redis_scard(const char *key);
 bool redis_clear_pwipe_state(void);
 bool redis_validate_pwipe_state(void);
 bool redis_season_key(char *buffer, size_t size, const char *suffix);

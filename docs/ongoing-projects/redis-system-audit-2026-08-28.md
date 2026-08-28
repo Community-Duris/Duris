@@ -4,10 +4,55 @@ Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
-RDS-009, RDS-010, RDS-012, RDS-013, RDS-014, RDS-019, RDS-024, and RDS-028 are remediated
-and the remaining findings are open.
+RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-024, and
+RDS-028 are remediated and the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-011/RDS-020 nonblocking runtime administration and donation delivery
+
+Completed in this interval:
+
+- Replaced all remote key existence, count, and TTL queries in `redis` and `redis detailed`
+  with bounded local snapshots from the world, floor, cache, presence, donation, and
+  player-save pipelines. Both commands explicitly identify their output as local telemetry.
+- Retired the ambiguous administrator helpers that mapped Redis failures to valid empty
+  values: `redis_key_exists`, `redis_get_ttl`, `redis_hlen`, `redis_scard`, and the now-unused
+  remote world timestamp accessor.
+- Changed report-cache invalidation APIs to return queue acceptance. Online administrator
+  cache clears now say `Queued`, `Rejected`, or `Partial` instead of claiming a remote key
+  was already cleared.
+- Refused world, floor, and all-state clears while the server is live. Those operations
+  require stopped-writer proof, scans, fencing, and postflight checks and no longer run on
+  the simulation thread under an administrator command.
+- Moved donation connect, subscribe, socket reads, signature validation, replay filtering,
+  and exponential reconnect backoff into a dedicated worker. Its fixed queue holds at most
+  64 validated events and retains at most 256 replay IDs; the game pulse only dequeues and
+  broadcasts at most eight fixed-size events.
+- Added donation worker health for connection failures, reconnects, received, validated,
+  rejected, replayed, dropped, queue depth, and high water to local administrator status.
+
+Performance effect:
+
+- Online administrator status and cache-clear commands issue no Redis commands, scans,
+  reconnects, or waits. Cache invalidation is the existing bounded background queue.
+- Donation outages and reconnects can no longer consume the 250 ms connect or 100 ms
+  command timeout on a game pulse. The pulse does only a bounded mutex-protected dequeue
+  and at most eight existing broadcasts.
+- Broad destructive work is rejected online instead of risking a multi-page `SCAN` stall.
+  Boot, recovery, shutdown, pwipe, and stopped-server maintenance retain checked Redis I/O.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_donation_worker_live.py`: passed under ASan/UBSan,
+  covering startup outage healing, authenticated delivery, replay rejection, and bounded
+  flood behavior at the 64-event queue limit.
+- `python3 tests/async/test_redis_donation_security.py`: passed.
+- `python3 tests/async/test_redis_admin_nonblocking.py`: passed.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed.
+- `python3 tests/async/test_redis_cache_store_live.py`: passed.
 
 ### 2026-08-28 - RDS-009 expiring presence leases
 
@@ -260,8 +305,8 @@ Validation:
 
 Remaining related work:
 
-- RDS-011 still includes optional world/floor preflight I/O and deliberately invoked
-  administrator queries on the shared context.
+- RDS-011 simulation-thread isolation was subsequently completed in the interval above;
+  optional world/floor preflight remains confined to boot recovery.
 - RDS-021 still needs stable-data rendering for the fraglist countdown and explicit TTLs
   or revisions for named and fraglist data.
 
@@ -313,8 +358,8 @@ Validation:
 Remaining related work:
 
 - RDS-009 expiry was subsequently completed in the interval above.
-- RDS-011 still includes synchronous administrative queries and
-  world/floor preflight work on the shared context.
+- RDS-011 simulation-thread isolation was subsequently completed in the interval above;
+  world/floor preflight remains boot-only.
 
 ### 2026-08-28 - RDS-011 pipelined floor-delta flush
 
@@ -332,8 +377,8 @@ Performance effect:
 - A full flush now uses one pipelined network exchange instead of as many as 2,048
   sequential round trips. It sends the same Redis mutations and does not add any command.
 - No Redis work was added to object movement. This interval reduces the worst existing
-  flush latency, but RDS-011 remains partial until noncritical gameplay writes and
-  reconnects are fully isolated from the simulation thread.
+  flush latency. Later intervals fully isolated noncritical gameplay writes, donation
+  reconnects, and online administrator commands from the simulation thread.
 
 Validation:
 
@@ -534,9 +579,9 @@ Performance effect:
 
 - The default server no longer opens a donation subscriber connection or runs its
   once-per-second polling event.
-- An explicitly enabled subscriber still uses a zero-timeout socket poll, now has a hard
-  per-pulse message budget, and replaces outage reconnect attempts every second with
-  exponential backoff.
+- This interval initially retained a zero-timeout game-thread socket poll with a hard
+  per-pulse budget and exponential reconnect backoff. The later RDS-011/RDS-020 interval
+  moved the socket and reconnect lifecycle entirely to a bounded worker.
 
 Validation:
 
@@ -715,8 +760,8 @@ Validation:
 Remaining work:
 
 - All findings other than RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007, RDS-009,
-  RDS-010, RDS-012, RDS-013, RDS-014, RDS-019, RDS-024, and RDS-028 remain open. The
-  acceptance criteria are not yet met.
+  RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-024, and RDS-028
+  remain open. The acceptance criteria are not yet met.
 
 ## Executive summary
 
@@ -790,8 +835,8 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 | Ship cache | `ship:snapshot:<owner>` | Reconstructible SQL cache | Cache is returned before SQL without TTL, row revision, or schema/environment identity. |
 | Content caches | `mud:cache:named`, `mud:cache:fraglist`, `mud:cache:epic_zones`, artifact variants | Reconstructible command output | Player reads use bounded local memory and Redis publication is asynchronous; named/fraglist freshness remains incomplete. |
 | Presence | `mud:presence:current`, expiring `mud:presence:session:<instance>:<pid>`, `mud:player`, one-hour `mud:presence_op:*` retry tokens | Web presence and login/logout events | Privacy-safe payloads use a fenced 180-second per-session lease refreshed only by the bounded worker. |
-| Donation integration | `mud:nchat` pub/sub | Broadcast external donation notices | Any publisher with channel access can generate an in-game and log message. |
-| Legacy UID | `mud:next_obj_uid` | Retired counter | SQL allocator is authoritative, but Redis still reads, writes, and displays the legacy key. |
+| Donation integration | `mud:nchat` pub/sub | Broadcast external donation notices | A bounded worker accepts only authenticated, fresh, replay-protected envelopes and delivers at most eight events per game pulse. |
+| Legacy UID | `mud:next_obj_uid` | Retired counter | No runtime read, write, or administrator display remains. |
 
 All runtime connections use only `REDIS_HOST` and `REDIS_PORT`; keys are fixed in Redis
 database 0 and have no application, environment, deployment, or season prefix.
@@ -1165,8 +1210,9 @@ default. Use expiring per-session keys or a heartbeat/lease rather than a persis
 Severity: High
 Confidence: Confirmed
 Remediation status: Completed on branch; the subscriber is explicitly gated and requires
-authenticated, bounded, fresh, replay-protected events, with reconnect backoff and a hard
-per-pulse work budget.
+authenticated, bounded, fresh, replay-protected events. A dedicated bounded worker owns
+connect, subscribe, validation, replay filtering, and reconnect backoff; the game pulse
+only dequeues at most eight fixed-size validated events.
 
 Evidence:
 
@@ -1197,11 +1243,11 @@ use a durable stream with stable event IDs rather than at-most-once pub/sub.
 
 Severity: High
 Confidence: Confirmed
-Remediation status: Partially remediated; presence writes and reconnects run on a bounded
-healing worker, and floor-delta batches use one pipelined exchange instead of up to 2,048
-sequential round trips on a dedicated worker with an ordered snapshot barrier. Report
-cache reads, writes, invalidations, and reconnects are also off the simulation thread.
-Only deliberately invoked administrator queries remain on the shared connection.
+Remediation status: Completed on branch. Presence, report cache, floor delta, world
+publication, and donation network work use bounded workers. Donation reconnect/subscribe
+is worker-owned, online administrator status is local-only, cache clears enqueue bounded
+invalidation, and broad recovery clears are refused online. Shared synchronous commands
+remain only in boot, recovery materialization, shutdown, pwipe, and stopped maintenance.
 
 Evidence:
 
@@ -1431,6 +1477,10 @@ expiring. Add explicit caps and overflow counters to both addition and removal b
 
 Severity: Medium
 Confidence: Confirmed
+Remediation status: Completed on branch. Status reports bounded local typed worker/pipeline
+state without Redis queries. Cache clear responses distinguish accepted, rejected, and
+partial background submission, while world/floor/all clears are refused online rather
+than running scans or reporting unchecked success.
 
 - Status helpers map unavailable/error to `0`, `false`, or `-1`, which is also a valid
   empty, missing, or persistent-key result ([`src/redis.c`](../../src/redis.c#L2423)).
@@ -1535,11 +1585,11 @@ completed. Test manual shutdown, reboot, autoreboot, copyover, crash, and pwipe 
 
 Severity: Medium
 Confidence: Confirmed
-Remediation status: Partially remediated; presence and report-cache workers expose local
-state, queue/byte high water, completions, drops, command failures, and reconnects without
-network queries. The floor worker also exposes queue/byte, barrier, completion, drop,
-failure, and reconnect state. The shared world/admin context still lacks complete
-per-command telemetry.
+Remediation status: Partially remediated; presence, report-cache, floor, world, and donation
+workers expose local state, queue/byte high water where applicable, completions, drops,
+failures, and reconnects without network queries. Administrator status is now entirely
+local and no longer conflates remote absence with failure. Boot/recovery/maintenance
+shared-context commands still lack complete per-command telemetry.
 
 The world pipeline exposes useful counters and timing, but the shared command layer emits
 only one global rate-limited line per second with a broad outcome. It omits command class,

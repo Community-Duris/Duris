@@ -7,67 +7,39 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <time.h>
 #include "redis.h"
 #include "redis_cache_store.h"
+#include "redis_donation_worker.h"
 #include "redis_floor_store.h"
 #include "redis_presence_worker.h"
+#include "world_recovery_pipeline.h"
 
-// helper to format time ago
-static void format_time_ago(time_t ts, char *buf, size_t len)
+static const char *world_worker_state(const world_recovery_health *world)
 {
-	if (ts == 0)
-	{
-		snprintf(buf, len, "never");
-		return;
-	}
-
-	time_t now = time(NULL);
-	long diff = now - ts;
-
-	if (diff < 0)
-		diff = 0;
-
-	if (diff < 60)
-		snprintf(buf, len, "%ld sec ago", diff);
-	else if (diff < 3600)
-		snprintf(buf, len, "%ld min ago", diff / 60);
-	else if (diff < 86400)
-		snprintf(buf, len, "%ld hr ago", diff / 3600);
-	else
-		snprintf(buf, len, "%ld day ago", diff / 86400);
-}
-
-// helper to format ttl remaining
-static void format_ttl(long ttl, char *buf, size_t len)
-{
-	if (ttl <= 0)
-	{
-		snprintf(buf, len, "expired");
-		return;
-	}
-
-	long mins = ttl / 60;
-	long secs = ttl % 60;
-	snprintf(buf, len, "%ld:%02ld", mins, secs);
+	if (!redis_world_state_enabled)
+		return "OFF";
+	if (!world->initialized)
+		return "READY";
+	if (world->capture_active)
+		return "CAPTURE";
+	if (world->worker_busy || world->queued_generations)
+		return "PUBLISH";
+	return "IDLE";
 }
 
 static void redis_status_simple(P_char ch)
 {
 	char buf[MAX_STRING_LENGTH];
-	char time_buf[64];
 	int pos = 0;
 
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "&+gRedis Status&n\r\n");
+	pos += snprintf(buf + pos, sizeof(buf) - pos,
+			"&+gRedis Status&n &+L(local telemetry; Redis is not queried)&n\r\n");
 
-	// world state
-	time_t ws_ts = redis_world_state_timestamp();
-	bool is_valid = redis_has_world_state();
-
-	format_time_ago(ws_ts, time_buf, sizeof(time_buf));
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cworld_state&n      %s%-5s&n    %s\r\n",
-			is_valid ? "&+G" : "&+R", is_valid ? "VALID" : "NONE",
-			ws_ts > 0 ? time_buf : "");
+	const world_recovery_health world = world_recovery_pipeline_health_copy();
+	pos += snprintf(buf + pos, sizeof(buf) - pos,
+			"  &+cworld_worker&n     &+Y%-9s&n published=%llu failures=%llu\r\n",
+			world_worker_state(&world), (unsigned long long)world.published,
+			(unsigned long long)world.publish_failures);
 
 	// revisioned player save queue
 	int dirty = get_dirty_player_count();
@@ -103,48 +75,16 @@ static void redis_status_simple(P_char ch)
 					     "BACKOFF",
 			floor.queued_batches, floor.queued_bytes,
 			(unsigned long long)floor.dropped_batches);
-
-	// floor drops
-	char floor_key[128];
-	long floor_count = redis_season_key(floor_key, sizeof floor_key, "floor_drops") ?
-				   redis_hlen(floor_key) :
-				   -1;
-	pos += snprintf(buf + pos, sizeof(buf) - pos,
-			"  &+cfloor_drops&n      &+Y%-5ld&n    objects\r\n", floor_count);
-
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "\r\n&+gCaches&n\r\n");
-
-	// artifacts - just check if any exist
-	bool arti_cached = redis_key_exists("mud:cache:artifact:1:0") ||
-			   redis_key_exists("mud:cache:artifact:2:0") ||
-			   redis_key_exists("mud:cache:artifact:3:0");
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cartifacts&n        %s%s&n\r\n",
-			arti_cached ? "&+G" : "&+R", arti_cached ? "CACHED" : "CLEAR");
-
-	// fraglist
-	bool frag_cached = redis_key_exists("mud:cache:fraglist");
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cfraglist&n         %s%s&n\r\n",
-			frag_cached ? "&+G" : "&+R", frag_cached ? "CACHED" : "CLEAR");
-
-	// epic zones
-	bool epic_cached = redis_key_exists("mud:cache:epic_zones");
-	long epic_ttl = redis_get_ttl("mud:cache:epic_zones");
-	if (epic_cached && epic_ttl > 0)
-	{
-		format_ttl(epic_ttl, time_buf, sizeof(time_buf));
-		pos += snprintf(buf + pos, sizeof(buf) - pos,
-				"  &+cepic_zones&n       &+GCACHED&n   expires %s\r\n", time_buf);
-	}
-	else
-	{
-		pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cepic_zones&n       %s%s&n\r\n",
-				epic_cached ? "&+G" : "&+R", epic_cached ? "CACHED" : "CLEAR");
-	}
-
-	// named
-	bool named_cached = redis_key_exists("mud:cache:named");
-	pos += snprintf(buf + pos, sizeof(buf) - pos, "  &+cnamed&n            %s%s&n\r\n",
-			named_cached ? "&+G" : "&+R", named_cached ? "CACHED" : "CLEAR");
+	const redis_donation_worker_health donation = redis_donation_worker_health_copy();
+	pos += snprintf(
+		buf + pos, sizeof(buf) - pos,
+		"  &+cdonation_worker&n  %s%-9s&n queued=%zu rejected=%llu dropped=%llu\r\n",
+		donation.connected ? "&+G" : "&+Y",
+		!donation.initialized ? "OFF" :
+		donation.connected    ? "HEALTHY" :
+					"BACKOFF",
+		donation.queued, (unsigned long long)donation.rejected,
+		(unsigned long long)donation.dropped);
 
 	send_to_char(buf, ch);
 }
@@ -152,9 +92,11 @@ static void redis_status_simple(P_char ch)
 static void redis_status_detailed(P_char ch)
 {
 	char buf[MAX_STRING_LENGTH * 2];
-	char time_buf[64];
 
-	checked_snprintf(buf, sizeof(buf), "&+gRedis Status (detailed)&n\r\n\r\n");
+	checked_snprintf(
+		buf, sizeof(buf),
+		"&+gRedis Status (detailed)&n\r\n"
+		"&+LAll values are bounded local telemetry; Redis is not queried.&n\r\n\r\n");
 
 	const redis_presence_worker_health presence = redis_presence_worker_health_copy();
 	APPENDF(buf,
@@ -199,84 +141,43 @@ static void redis_status_detailed(P_char ch)
 		(unsigned long long)floor.completed_mutations,
 		(unsigned long long)floor.dropped_batches,
 		(unsigned long long)floor.command_failures, (unsigned long long)floor.reconnects);
+	const redis_donation_worker_health donation = redis_donation_worker_health_copy();
+	APPENDF(buf,
+		"&+g[Donation Worker]&n\r\n"
+		"  state=%s queued=%zu high_water=%zu\r\n"
+		"  received=%llu validated=%llu rejected=%llu replayed=%llu dropped=%llu\r\n"
+		"  connection_failures=%llu reconnects=%llu\r\n\r\n",
+		!donation.initialized ? "off" :
+		donation.connected    ? "healthy" :
+					"backoff",
+		donation.queued, donation.high_water, (unsigned long long)donation.received,
+		(unsigned long long)donation.validated, (unsigned long long)donation.rejected,
+		(unsigned long long)donation.replayed, (unsigned long long)donation.dropped,
+		(unsigned long long)donation.connection_failures,
+		(unsigned long long)donation.reconnects);
 
-	APPENDF(buf, "&+g[World Recovery]&n\r\n");
+	const world_recovery_health world = world_recovery_pipeline_health_copy();
+	APPENDF(buf,
+		"&+g[World Recovery Pipeline]&n\r\n"
+		"  state=%s capture=%s worker=%s busy=%s queued=%llu\r\n"
+		"  requested=%llu coalesced=%llu submitted=%llu published=%llu failures=%llu\r\n"
+		"  last_sequence=%llu acknowledged=%llu bytes=%llu high_water=%llu\r\n\r\n",
+		world_worker_state(&world), world.capture_active ? "yes" : "no",
+		world.worker_running ? "running" : "stopped", world.worker_busy ? "yes" : "no",
+		(unsigned long long)world.queued_generations, (unsigned long long)world.requested,
+		(unsigned long long)world.coalesced, (unsigned long long)world.submitted,
+		(unsigned long long)world.published, (unsigned long long)world.publish_failures,
+		(unsigned long long)world.last_submitted_sequence,
+		(unsigned long long)world.last_acknowledged_sequence,
+		(unsigned long long)world.last_published_bytes,
+		(unsigned long long)world.high_water_bytes);
 
-	// world state with full timestamp
-	time_t ws_ts = redis_world_state_timestamp();
-	bool is_valid = redis_has_world_state();
-
-	if (ws_ts > 0)
-	{
-		struct tm *tm_info = localtime(&ws_ts);
-		char date_buf[64];
-		strftime(date_buf, sizeof(date_buf), "%Y-%m-%d %H:%M:%S", tm_info);
-		format_time_ago(ws_ts, time_buf, sizeof(time_buf));
-		APPENDF(buf, "  &+cworld_state&n      %s%-5s&n    %s (%s)\r\n",
-			is_valid ? "&+G" : "&+R", is_valid ? "VALID" : "NONE", date_buf, time_buf);
-	}
-	else
-	{
-		APPENDF(buf, "  &+cworld_state&n      &+RNONE&n\r\n");
-	}
-
-	// floor drops
-	char floor_key[128];
-	long floor_drops = redis_season_key(floor_key, sizeof floor_key, "floor_drops") ?
-				   redis_hlen(floor_key) :
-				   -1;
-	APPENDF(buf, "  &+cfloor_drops&n      &+Y%-5ld&n    objects tracked\r\n", floor_drops);
-
-	// floor pickups
-	long floor_pickups = redis_scard("mud:floor_pickups");
-	APPENDF(buf, "  &+cfloor_pickups&n    &+Y%-5ld&n    uids in dedup set\r\n", floor_pickups);
-
-	// revisioned player save queue
-	int dirty = get_dirty_player_count();
-	APPENDF(buf, "  &+cplayer_queue&n     &+Y%-5d&n    pending async saves\r\n", dirty);
-
-	APPENDF(buf, "\r\n&+g[Content Caches]&n\r\n");
-
-	// artifacts - show all 6 variants
-	APPENDF(buf, "  &+cartifacts&n\r\n");
-
-	const char *arti_names[] = { "major", "unique", "ioun" };
-	for (int t = 1; t <= 3; t++)
-	{
-		for (int g = 0; g <= 1; g++)
-		{
-			char key[64];
-			snprintf(key, sizeof(key), "mud:cache:artifact:%d:%d", t, g);
-			bool cached = redis_key_exists(key);
-			APPENDF(buf, "    %s (%s)    %s%s&n\r\n", arti_names[t - 1],
-				g ? "god" : "player", cached ? "&+G" : "&+R",
-				cached ? "CACHED" : "CLEAR");
-		}
-	}
-
-	// fraglist
-	bool frag_cached = redis_key_exists("mud:cache:fraglist");
-	APPENDF(buf, "  &+cfraglist&n         %s%s&n\r\n", frag_cached ? "&+G" : "&+R",
-		frag_cached ? "CACHED" : "CLEAR");
-
-	// epic zones with ttl
-	bool epic_cached = redis_key_exists("mud:cache:epic_zones");
-	long epic_ttl = redis_get_ttl("mud:cache:epic_zones");
-	if (epic_cached && epic_ttl > 0)
-	{
-		format_ttl(epic_ttl, time_buf, sizeof(time_buf));
-		APPENDF(buf, "  &+cepic_zones&n       &+GCACHED&n   ttl %s\r\n", time_buf);
-	}
-	else
-	{
-		APPENDF(buf, "  &+cepic_zones&n       %s%s&n\r\n", epic_cached ? "&+G" : "&+R",
-			epic_cached ? "CACHED" : "CLEAR");
-	}
-
-	// named
-	bool named_cached = redis_key_exists("mud:cache:named");
-	APPENDF(buf, "  &+cnamed&n            %s%s&n\r\n", named_cached ? "&+G" : "&+R",
-		named_cached ? "CACHED" : "CLEAR");
+	const int dirty = get_dirty_player_count();
+	APPENDF(buf,
+		"&+g[Local State]&n\r\n"
+		"  player_queue=%d cache_entries=%zu presence_sessions=%zu\r\n"
+		"  Remote key counts, TTLs, and existence are intentionally not queried online.\r\n",
+		dirty, cache.local_entries, presence.active_sessions);
 
 	send_to_char(buf, ch);
 }
@@ -288,99 +189,76 @@ static void redis_clear_cache(P_char ch, const char *cache)
 	if (!*cache)
 	{
 		send_to_char("Usage: redis clear <cache>\r\n", ch);
-		send_to_char("&+cValid:&n world, floor, artifacts, fraglist, epic, named, all\r\n",
-			     ch);
+		send_to_char("&+cOnline:&n artifacts, fraglist, epic, named\r\n", ch);
+		send_to_char("&+cMaintenance only:&n world, floor, all\r\n", ch);
 		return;
 	}
 
-	if (is_abbrev(cache, "world"))
+	if (is_abbrev(cache, "world") || is_abbrev(cache, "floor"))
 	{
-		if (redis_clear_world_state())
-			send_to_char(
-				"&+GCleared and quiesced:&n world_state (publishing resumes after restart)\r\n",
-				ch);
-		else
-			send_to_char("&+RFailed:&n world_state was not safely cleared\r\n", ch);
-		return;
-	}
-
-	if (is_abbrev(cache, "floor"))
-	{
-		if (!redis_world_recovery_quiesce())
-		{
-			send_to_char("&+RFailed:&n world publisher could not be safely fenced\r\n",
-				     ch);
-			return;
-		}
-		redis_clear_floor_drops();
-		redis_clear_floor_pickups();
 		send_to_char(
-			"&+GCleared and quiesced:&n floor_drops, floor_pickups (publishing resumes after restart)\r\n",
+			"&+RRefused online:&n recovery clears require a stopped server and the maintenance clear workflow.\r\n",
 			ch);
 		return;
 	}
 
 	if (is_abbrev(cache, "artifacts"))
 	{
-		redis_invalidate_artifact_cache();
-		send_to_char("&+GCleared:&n artifacts (6 variants)\r\n", ch);
+		if (redis_invalidate_artifact_cache())
+			send_to_char(
+				"&+GQueued:&n artifacts (6 variants) for background invalidation\r\n",
+				ch);
+		else
+			send_to_char(
+				"&+YPartial:&n local artifacts were cleared, but one or more background invalidations were rejected; retry.\r\n",
+				ch);
 		return;
 	}
 
 	if (is_abbrev(cache, "fraglist"))
 	{
-		redis_invalidate_fraglist();
-		send_to_char("&+GCleared:&n fraglist\r\n", ch);
+		if (redis_invalidate_fraglist())
+			send_to_char("&+GQueued:&n fraglist for background invalidation\r\n", ch);
+		else
+			send_to_char(
+				"&+RRejected:&n fraglist invalidation was not queued; retry after checking redis detailed.\r\n",
+				ch);
 		return;
 	}
 
 	if (is_abbrev(cache, "epic"))
 	{
-		redis_invalidate_epic_zones();
-		send_to_char("&+GCleared:&n epic_zones\r\n", ch);
+		if (redis_invalidate_epic_zones())
+			send_to_char("&+GQueued:&n epic_zones for background invalidation\r\n", ch);
+		else
+			send_to_char(
+				"&+RRejected:&n epic_zones invalidation was not queued; retry after checking redis detailed.\r\n",
+				ch);
 		return;
 	}
 
 	if (is_abbrev(cache, "named"))
 	{
-		redis_cache_del("mud:cache:named");
-		send_to_char("&+GCleared:&n named\r\n", ch);
+		if (redis_cache_del("mud:cache:named"))
+			send_to_char("&+GQueued:&n named for background invalidation\r\n", ch);
+		else
+			send_to_char(
+				"&+RRejected:&n named invalidation was not queued; retry after checking redis detailed.\r\n",
+				ch);
 		return;
 	}
 
 	snprintf(buf, sizeof(buf), "&+RUnknown cache:&n %s\r\n", cache);
 	send_to_char(buf, ch);
-	send_to_char("&+cValid:&n world, floor, artifacts, fraglist, epic, named, all\r\n", ch);
+	send_to_char("&+cOnline:&n artifacts, fraglist, epic, named\r\n", ch);
+	send_to_char("&+cMaintenance only:&n world, floor, all\r\n", ch);
 }
 
-static void redis_clear_all(P_char ch, bool confirmed)
+static void redis_clear_all(P_char ch, bool /*confirmed*/)
 {
-	if (!confirmed)
-	{
-		send_to_char("&+RUse 'redis clear all confirm' to clear all caches.&n\r\n", ch);
-		return;
-	}
-
-	// world recovery
-	if (!redis_clear_world_state())
-	{
-		send_to_char("&+RFailed:&n world recovery was not safely cleared\r\n", ch);
-		return;
-	}
-	redis_clear_floor_drops();
-	redis_clear_floor_pickups();
-
 	send_to_char(
-		"&+GCleared and quiesced:&n world_state, floor_drops, floor_pickups (publishing resumes after restart)\r\n",
+		"&+RRefused online:&n 'redis clear all' requires a stopped server and the maintenance clear workflow.\r\n",
 		ch);
-
-	// content caches
-	redis_invalidate_artifact_cache();
-	redis_invalidate_fraglist();
-	redis_invalidate_epic_zones();
-	redis_cache_del("mud:cache:named");
-
-	send_to_char("&+GCleared:&n artifacts (6), fraglist, epic_zones, named\r\n", ch);
 }
 
 void do_redis(P_char ch, char *argument, int /*cmd*/)
@@ -422,9 +300,8 @@ void do_redis(P_char ch, char *argument, int /*cmd*/)
 		if (!*arg2)
 		{
 			send_to_char("Usage: redis clear <cache>\r\n", ch);
-			send_to_char(
-				"&+cValid:&n world, floor, artifacts, fraglist, epic, named, all\r\n",
-				ch);
+			send_to_char("&+cOnline:&n artifacts, fraglist, epic, named\r\n", ch);
+			send_to_char("&+cMaintenance only:&n world, floor, all\r\n", ch);
 			return;
 		}
 

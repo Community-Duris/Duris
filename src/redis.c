@@ -10,7 +10,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
-#include <sys/poll.h> /* local src/poll.h shadows <poll.h> via -I. */
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -27,6 +26,7 @@
 #include "player_save_worker.h"
 #include "presence_policy.h"
 #include "redis_cache_store.h"
+#include "redis_donation_worker.h"
 #include "redis_floor_store.h"
 #include "redis_presence_payload.h"
 #include "redis_presence_worker.h"
@@ -80,7 +80,6 @@ int clean_restart_recovery_boot = 0;
 #define REDIS_COMMAND_TIMEOUT_MSEC 100
 #define REDIS_WORLD_DRAIN_TIMEOUT_MSEC 30000
 #define REDIS_DONATION_MAX_MESSAGES_PER_PULSE 8
-#define REDIS_DONATION_MAX_RECONNECT_DELAY 60
 #define REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC 1000
 #define REDIS_CACHE_DRAIN_TIMEOUT_MSEC 1000
 #define REDIS_FLOOR_DRAIN_TIMEOUT_MSEC 1000
@@ -91,27 +90,13 @@ static bool world_recovery_quiesced = false;
 static std::string world_writer_token;
 static uint64_t world_writer_lease_msec = 0;
 static uint64_t world_writer_epoch = 0;
-static redisContext *donation_sub_ctx = NULL;
-static volatile bool donation_sub_connected = false;
-static unsigned int donation_reconnect_delay = 1;
-static time_t donation_next_reconnect = 0;
-static std::string donation_secret;
-static std::vector<std::string> donation_seen_event_ids;
 static bool world_floor_barrier_waiting = false;
 static bool world_floor_handoff_active = false;
 static bool world_recovery_materialization_active = false;
 static uint64_t clean_shutdown_sequence = 0;
 static uint64_t world_sequence_floor = 0;
-static void donation_sub_drop(const char *reason);
 static bool redis_clear_floor_drops_checked(void);
 static void redis_prime_artifact_caches(void);
-
-static void donation_schedule_reconnect(void)
-{
-	donation_next_reconnect = time(NULL) + donation_reconnect_delay;
-	donation_reconnect_delay = std::min(donation_reconnect_delay * 2,
-					    (unsigned int)REDIS_DONATION_MAX_RECONNECT_DELAY);
-}
 
 #ifndef __NO_MYSQL__
 static redisReply *redis_command(redisContext *ctx, const char *format, ...);
@@ -498,7 +483,6 @@ bool redis_init(void)
 		logit(LOG_SYS, "redis disabled (set REDIS=TRUE in .env to enable)");
 		redis_enabled = false;
 		redis_donation_enabled = false;
-		donation_secret.clear();
 		return true;
 	}
 	redis_enabled = true;
@@ -511,7 +495,7 @@ bool redis_init(void)
 	world_sequence_floor = 0;
 	clean_restart_recovery_boot = 0;
 	redis_donation_enabled = false;
-	donation_secret.clear();
+	const char *donation_secret = NULL;
 	const char *donation_env = getenv("REDIS_DONATION_SUBSCRIBER");
 	if (donation_env && strcasecmp(donation_env, "TRUE") == 0)
 	{
@@ -572,6 +556,19 @@ bool redis_init(void)
 		logit(LOG_SYS, "redis: cache worker unavailable; report caches disabled");
 	else
 		redis_prime_artifact_caches();
+	if (redis_donation_enabled)
+	{
+		const redis_donation_worker_config donation_config = { redis_host, redis_port,
+								       REDIS_CONNECT_TIMEOUT_MSEC,
+								       REDIS_COMMAND_TIMEOUT_MSEC,
+								       donation_secret };
+		if (!redis_donation_worker_init(&donation_config))
+		{
+			redis_donation_enabled = false;
+			logit(LOG_SYS,
+			      "redis: donation worker unavailable; donation subscriber disabled");
+		}
+	}
 
 	// check for world state persistence
 	const char *world_state_env = getenv("REDIS_WORLD_STATE");
@@ -618,8 +615,6 @@ bool redis_init(void)
 
 	if (redis_ctx)
 	{
-		if (redis_donation_enabled)
-			redis_donation_subscribe_init();
 		if (redis_world_state_enabled && !redis_world_writer_fence_claim())
 		{
 			world_recovery_quiesced = true;
@@ -691,6 +686,7 @@ void redis_cleanup(void)
 {
 #ifndef __NO_MYSQL__
 	bool world_recovery_drained = true;
+	redis_donation_worker_shutdown();
 	if (!redis_presence_worker_shutdown(REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC))
 		logit(LOG_SYS, "redis: presence worker drain timed out during shutdown");
 	if (!redis_cache_store_shutdown(REDIS_CACHE_DRAIN_TIMEOUT_MSEC))
@@ -736,16 +732,6 @@ void redis_cleanup(void)
 		redisFree(redis_ctx);
 		redis_ctx = NULL;
 	}
-	if (donation_sub_ctx)
-	{
-		redisFree(donation_sub_ctx);
-		donation_sub_ctx = NULL;
-	}
-	donation_sub_connected = false;
-	donation_next_reconnect = 0;
-	donation_reconnect_delay = 1;
-	donation_seen_event_ids.clear();
-	donation_secret.clear();
 	redis_donation_enabled = false;
 	redis_enabled = false;
 #endif
@@ -1273,30 +1259,6 @@ bool redis_has_world_state(void)
 #endif
 }
 
-time_t redis_world_state_timestamp(void)
-{
-#ifdef __NO_MYSQL__
-	return 0;
-#else
-	if (!redis_enabled || !redis_ctx)
-		return 0;
-	char timestamp_key[128];
-	if (!redis_season_key(timestamp_key, sizeof timestamp_key, "world_state:timestamp"))
-		return 0;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", timestamp_key);
-	if (!reply)
-		return 0;
-
-	time_t ts = 0;
-	if (reply->type == REDIS_REPLY_STRING && reply->str)
-		ts = (time_t)atol(reply->str);
-
-	freeReplyObject(reply);
-	return ts;
-#endif
-}
-
 bool redis_clear_world_state(void)
 {
 #ifndef __NO_MYSQL__
@@ -1506,12 +1468,14 @@ char *redis_cache_get(const char *key)
 #endif
 }
 
-void redis_cache_del(const char *key)
+bool redis_cache_del(const char *key)
 {
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !key)
-		return;
-	redis_cache_store_delete(key);
+		return false;
+	return redis_cache_store_delete(key);
+#else
+	return false;
 #endif
 }
 
@@ -1580,56 +1544,6 @@ bool redis_clear_ship_snapshots(void)
 }
 #endif
 
-void redis_donation_subscribe_init(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_donation_enabled || donation_secret.empty() ||
-	    time(NULL) < donation_next_reconnect)
-		return;
-
-	const char *redis_host = getenv("REDIS_HOST");
-	if (!redis_host || !*redis_host)
-		redis_host = "127.0.0.1";
-
-	const char *redis_port_str = getenv("REDIS_PORT");
-	int redis_port = 6379;
-	if (redis_port_str && *redis_port_str)
-	{
-		redis_port = atoi(redis_port_str);
-		if (redis_port <= 0 || redis_port > 65535)
-			redis_port = 6379;
-	}
-
-	donation_sub_ctx = redis_connect_bounded(redis_host, redis_port);
-	if (!donation_sub_ctx || donation_sub_ctx->err)
-	{
-		if (donation_sub_ctx)
-		{
-			redisFree(donation_sub_ctx);
-			donation_sub_ctx = NULL;
-		}
-		donation_schedule_reconnect();
-		logit(LOG_SYS, "redis: donation subscriber failed to connect; retry delayed");
-		return;
-	}
-
-	redisReply *reply = (redisReply *)redis_command(donation_sub_ctx, "SUBSCRIBE mud:nchat");
-	if (!reply || reply->type != REDIS_REPLY_ARRAY)
-	{
-		if (reply)
-			freeReplyObject(reply);
-		donation_sub_drop("subscribe failed");
-		return;
-	}
-	freeReplyObject(reply);
-
-	donation_sub_connected = true;
-	donation_next_reconnect = 0;
-	donation_reconnect_delay = 1;
-	logit(LOG_SYS, "redis: donation subscriber connected to mud:nchat");
-#endif
-}
-
 static void broadcast_donation_nchat(const struct donation_event *event)
 {
 	char buf[MAX_STRING_LENGTH];
@@ -1672,110 +1586,17 @@ static void broadcast_donation_nchat(const struct donation_event *event)
 	      event->is_public ? event->character_name : "anonymous", amount, event->currency);
 }
 
-static void handle_donation_reply(redisReply *reply)
-{
-#ifndef __NO_MYSQL__
-	if (reply->type == REDIS_REPLY_ARRAY && reply->elements == 3)
-	{
-		if (reply->element[0]->type == REDIS_REPLY_STRING &&
-		    strcmp(reply->element[0]->str, "message") == 0 &&
-		    reply->element[2]->type == REDIS_REPLY_STRING)
-		{
-			struct donation_event event = {};
-			if (!donation_event_decode(reply->element[2]->str, reply->element[2]->len,
-						   donation_secret.c_str(), time(NULL), &event))
-				return;
-
-			const std::string event_id(event.event_id);
-			if (std::find(donation_seen_event_ids.begin(),
-				      donation_seen_event_ids.end(),
-				      event_id) != donation_seen_event_ids.end())
-				return;
-			if (donation_seen_event_ids.size() >= 256)
-				donation_seen_event_ids.erase(donation_seen_event_ids.begin());
-			donation_seen_event_ids.push_back(event_id);
-			broadcast_donation_nchat(&event);
-		}
-	}
-#endif
-}
-
-static void donation_sub_drop(const char *reason)
-{
-#ifndef __NO_MYSQL__
-	donation_schedule_reconnect();
-	logit(LOG_SYS, "redis: donation subscriber error: %s; retry delayed", reason);
-	donation_sub_connected = false;
-	if (donation_sub_ctx)
-	{
-		redisFree(donation_sub_ctx);
-		donation_sub_ctx = NULL;
-	}
-#endif
-}
-
 void redis_check_donation_messages(void)
 {
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || !redis_donation_enabled)
 		return;
-
-	// attempt reconnect if disconnected
-	if (!donation_sub_connected || !donation_sub_ctx)
-	{
-		redis_donation_subscribe_init();
-		if (!donation_sub_connected)
-			return;
-	}
-
-	/* The subscriber socket is blocking with a 100ms timeout, so calling
-	   redisGetReply() unconditionally stalls the whole game loop for that
-	   timeout on every idle pulse.  Only touch the socket when it already
-	   has data, then drain the complete replies the reader holds. */
-	struct pollfd pfd;
-
-	pfd.fd = donation_sub_ctx->fd;
-	pfd.events = POLLIN;
-	pfd.revents = 0;
-
-	if (poll(&pfd, 1, 0) < 0)
-	{
-		if (errno == EINTR || errno == EAGAIN)
-			return;
-		donation_sub_drop(strerror(errno));
-		return;
-	}
-
-	if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
-	{
-		donation_sub_drop("subscriber socket closed");
-		return;
-	}
-
-	if (pfd.revents & POLLIN)
-	{
-		if (redisBufferRead(donation_sub_ctx) != REDIS_OK)
-		{
-			donation_sub_drop(donation_sub_ctx->errstr);
-			return;
-		}
-	}
-
 	for (int handled = 0; handled < REDIS_DONATION_MAX_MESSAGES_PER_PULSE; ++handled)
 	{
-		redisReply *reply = NULL;
-
-		if (redisGetReplyFromReader(donation_sub_ctx, (void **)&reply) != REDIS_OK)
-		{
-			donation_sub_drop(donation_sub_ctx->errstr);
-			return;
-		}
-
-		if (!reply)
+		donation_event event = {};
+		if (!redis_donation_worker_take(&event))
 			break;
-
-		handle_donation_reply(reply);
-		freeReplyObject(reply);
+		broadcast_donation_nchat(&event);
 	}
 #endif
 }
@@ -2031,9 +1852,9 @@ char *redis_get_fraglist(void)
 	return redis_cache_get("mud:cache:fraglist");
 }
 
-void redis_invalidate_fraglist(void)
+bool redis_invalidate_fraglist(void)
 {
-	redis_cache_del("mud:cache:fraglist");
+	return redis_cache_del("mud:cache:fraglist");
 }
 
 // epic zones cache - 15 min ttl for alignment display
@@ -2060,9 +1881,9 @@ char *redis_get_epic_zones(void)
 	return redis_cache_get("mud:cache:epic_zones");
 }
 
-void redis_invalidate_epic_zones(void)
+bool redis_invalidate_epic_zones(void)
 {
-	redis_cache_del("mud:cache:epic_zones");
+	return redis_cache_del("mud:cache:epic_zones");
 }
 
 // online players list for web
@@ -2147,108 +1968,31 @@ char *redis_get_artifact_list(int type, bool godlist)
 	return redis_cache_get(get_artifact_cache_key(type, godlist));
 }
 
-void redis_invalidate_artifact_list(int type, bool godlist)
+bool redis_invalidate_artifact_list(int type, bool godlist)
 {
 #ifndef __NO_MYSQL__
 	if (!redis_enabled || type < 1 || type > 3)
-		return;
-	redis_cache_del(get_artifact_cache_key(type, godlist));
+		return false;
+	return redis_cache_del(get_artifact_cache_key(type, godlist));
+#else
+	return false;
 #endif
 }
 
-void redis_invalidate_artifact_cache(void)
+bool redis_invalidate_artifact_cache(void)
 {
 #ifndef __NO_MYSQL__
 	if (!redis_enabled)
-		return;
+		return false;
 
+	bool submitted = true;
 	for (int t = 1; t <= 3; t++)
 	{
-		redis_cache_del(get_artifact_cache_key(t, false));
-		redis_cache_del(get_artifact_cache_key(t, true));
+		submitted = redis_cache_del(get_artifact_cache_key(t, false)) && submitted;
+		submitted = redis_cache_del(get_artifact_cache_key(t, true)) && submitted;
 	}
-#endif
-}
-
-// generic helpers for wiz command
-
-bool redis_key_exists(const char *key)
-{
-#ifdef __NO_MYSQL__
+	return submitted;
+#else
 	return false;
-#else
-	if (!redis_enabled || !redis_ctx || !key)
-		return false;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "EXISTS %s", key);
-	if (!reply)
-		return false;
-
-	bool exists = (reply->type == REDIS_REPLY_INTEGER && reply->integer > 0);
-	freeReplyObject(reply);
-	return exists;
-#endif
-}
-
-long redis_get_ttl(const char *key)
-{
-#ifdef __NO_MYSQL__
-	return -1;
-#else
-	if (!redis_enabled || !redis_ctx || !key)
-		return -1;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "TTL %s", key);
-	if (!reply)
-		return -1;
-
-	long ttl = -1;
-	if (reply->type == REDIS_REPLY_INTEGER)
-		ttl = (long)reply->integer;
-
-	freeReplyObject(reply);
-	return ttl;
-#endif
-}
-
-long redis_hlen(const char *key)
-{
-#ifdef __NO_MYSQL__
-	return 0;
-#else
-	if (!redis_enabled || !redis_ctx || !key)
-		return 0;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HLEN %s", key);
-	if (!reply)
-		return 0;
-
-	long len = 0;
-	if (reply->type == REDIS_REPLY_INTEGER)
-		len = (long)reply->integer;
-
-	freeReplyObject(reply);
-	return len;
-#endif
-}
-
-long redis_scard(const char *key)
-{
-#ifdef __NO_MYSQL__
-	return 0;
-#else
-	if (!redis_enabled || !redis_ctx || !key)
-		return 0;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "SCARD %s", key);
-	if (!reply)
-		return 0;
-
-	long card = 0;
-	if (reply->type == REDIS_REPLY_INTEGER)
-		card = (long)reply->integer;
-
-	freeReplyObject(reply);
-	return card;
 #endif
 }
