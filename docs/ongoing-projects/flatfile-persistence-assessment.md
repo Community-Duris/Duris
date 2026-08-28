@@ -1936,6 +1936,34 @@ sections below continue to describe the required end state.
   partial/transient deletion requests, then route only supported terminal deletion through
   the coordinator and update the exposure contract with focused source/runtime tests.
 
+### Checkpoint 57 - live full-character deletion route
+
+- **Completed:** `deleteCharacter` now selects the recoverable flat coordinator when the
+  active backend is `flatfile-primary`. A successful or already-recovered deletion returns
+  success and refreshes the descriptor's in-memory account-character list only after the
+  durable transaction has completed. Any authority, identity, custody, corruption, or I/O
+  failure returns failure without falling through to legacy SQL mutations.
+- **Caller semantics:** the audit classified the default calls from player confirmation,
+  forced deletion, hardcore terminal death, account menus, administration, and web routes
+  as full lifecycle deletion. The two `bDeleteLocker=false` calls are partial cleanup of a
+  failed just-created character and an old locker proxy during rename; flat-primary mode
+  rejects those requests instead of incorrectly applying a full deletion transaction.
+  MariaDB modes retain their existing behavior and call order.
+- **Exposure contract:** the machine-readable manifest now declares `runtime_exposure` as
+  `enabled`. Its regression proves the flat-primary mode guard, partial-request refusal,
+  coordinator call, post-commit in-memory account refresh, and early return all precede the
+  untouched legacy artifact/locker/association/soft-delete/account/player/ship sequence.
+- **Checks passed:** the fault-injected coordinator regression still proves atomic recovery
+  across all fifteen possible authority images, and the zero-blocker manifest/live-route
+  contract passes. Changed-line formatting, the normal server build, and the isolated
+  client-free build and flat boot preflight pass.
+- **Scope note:** this completes the character-delete slice and safely exposes it through
+  the selected backend; it does not remove the wider flat boot fence for unrelated durable
+  domains or make the overall backend production-ready.
+- **Next action:** return to the broader P2 inventory and implement the next boot-fenced
+  world/domain authority and runtime routes, keeping the same exact export, fail-closed,
+  recovery, and checkpoint discipline.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

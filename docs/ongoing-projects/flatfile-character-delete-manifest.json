@@ -2,7 +2,7 @@
   "schema_version": 1,
   "runtime_entry": "src/files.c:deleteCharacter",
   "core_coordinator": "src/flatfile_character_delete.c:flatfile_character_delete",
-  "runtime_exposure": "fenced",
+  "runtime_exposure": "enabled",
   "entries": [
     {
       "id": "identity",

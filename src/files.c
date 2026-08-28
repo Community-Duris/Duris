@@ -20,10 +20,12 @@
 #include "assocs.h"
 #include "config.h"
 #include "deferred_save_policy.h"
+#include "flatfile_character_delete.h"
 #include "justice.h"
 #include "mm.h"
 #include "necromancy.h"
 #include "player_save_pipeline.h"
+#include "persistence_mode.h"
 #include "random.zone.h"
 #include "ships.h"
 #include "spells.h"
@@ -1769,6 +1771,32 @@ int writeCharacter(P_char ch, int type, int room)
 
 int deleteCharacter(P_char ch, bool bDeleteLocker)
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		if (!ch || !GET_NAME(ch) || GET_PID(ch) <= 0 || !bDeleteLocker)
+		{
+			logit(LOG_DEBUG,
+			      "deleteCharacter(): unsupported partial or invalid flat deletion request");
+			return FALSE;
+		}
+		std::string error;
+		const auto result = flatfile_character_delete(persistence_mode_flatfile_root(),
+							      GET_PID(ch), GET_NAME(ch), &error);
+		if (result != flatfile_character_delete_result::ok &&
+		    result != flatfile_character_delete_result::already_deleted)
+		{
+			logit(LOG_DEBUG, "deleteCharacter(): flat deletion failed for pid %d: %s",
+			      GET_PID(ch),
+			      error.empty() ? "unspecified authority failure" : error.c_str());
+			return FALSE;
+		}
+#ifdef USE_ACCOUNT
+		if (ch->desc && ch->desc->account)
+			remove_char_from_list(ch->desc->account, ch->player.name);
+#endif
+		return TRUE;
+	}
+
 	char *tmp;
 	char name[MAX_STRING_LENGTH];
 	bool ok = TRUE;

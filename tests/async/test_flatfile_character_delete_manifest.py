@@ -84,11 +84,26 @@ runtime_calls = [
     "sql_delete_player(GET_PID(ch))",
     "delete_ship(GET_NAME(ch))",
 ]
-positions = [delete_body.find(call) for call in runtime_calls]
+legacy_start = delete_body.index("char *tmp;")
+positions = [delete_body.find(call, legacy_start) for call in runtime_calls]
 if any(position < 0 for position in positions) or positions != sorted(positions):
     raise SystemExit("live character-delete call graph drifted from the manifest")
-if "flatfile_character_delete" in delete_body:
-    raise SystemExit("incomplete flat character deletion was exposed through the live route")
+exposure = manifest.get("runtime_exposure")
+if exposure == "fenced" and "flatfile_character_delete" in delete_body:
+    raise SystemExit("fenced flat character deletion was exposed through the live route")
+if exposure == "enabled":
+    route_tokens = [
+        "persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY",
+        "!bDeleteLocker",
+        "flatfile_character_delete(persistence_mode_flatfile_root()",
+        "remove_char_from_list(ch->desc->account",
+        "return TRUE;",
+    ]
+    route_positions = [delete_body.find(token) for token in route_tokens]
+    if any(position < 0 for position in route_positions) or route_positions != sorted(route_positions):
+        raise SystemExit("enabled flat character deletion route is incomplete or misordered")
+    if route_positions[2] > positions[0]:
+        raise SystemExit("flat character deletion does not bypass the legacy SQL mutations")
 
 coordinator = (ROOT / "src/flatfile_character_delete.c").read_text()
 prepared_order = [
