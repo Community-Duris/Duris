@@ -22,7 +22,8 @@ struct redis_floor_store_config
 struct redis_floor_mutation
 {
 	uint64_t uid;
-	const char *value;
+	const unsigned char *value;
+	size_t value_size;
 	bool remove;
 };
 

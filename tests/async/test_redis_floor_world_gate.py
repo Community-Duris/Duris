@@ -29,13 +29,17 @@ assert "HEXISTS mud:floor_drops" not in REDIS
 drop = section("void redis_log_floor_drop", "bool redis_flush_floor_drops")
 flush = section("bool redis_flush_floor_drops", "void redis_remove_floor_drop")
 remove = section("void redis_remove_floor_drop", "static bool redis_clear_floor_drops_checked")
-restore = section("int redis_restore_floor_drops", "void mark_player_dirty")
+restore = section("static bool redis_read_floor_records", "void mark_player_dirty")
 periodic = section("void event_flush_dirty_players", "bool redis_save_world_state")
 
 assert "!redis_world_state_enabled" in drop
 assert "!redis_world_state_enabled" in flush
 assert "!redis_world_state_enabled" in remove
 assert "!redis_world_state_enabled" in restore
+assert 'memcmp(encoded, "WRF2:", 5)' in restore
+assert "world_recovery_item_snapshot" in restore
+assert "read_object(" not in restore
+assert "obj_to_room(" not in restore
 assert "if (redis_world_state_enabled)" in periodic
 assert "if (redis_enabled)" not in periodic
 

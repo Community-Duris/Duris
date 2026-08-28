@@ -61,7 +61,7 @@ verification; a protected local loopback/socket path is the only plaintext excep
 | Critical command | Stable 128-bit operation ID plus sorted entity keys | Inbox, typed domain rows/ledgers, result, and outbox in one transaction | Duplicate/ambiguity rereads result; affected gameplay stays fenced through retry |
 | Item ownership | Operation ID plus item UID | Current owner, immutable ownership ledger, both revisions, and outbox | Guarded expected-owner mismatch fails without partial movement |
 | Maintenance | Stable job/work ID plus continuation | Bounded row/time batch and success-last cursor | Retryable failure retains cursor; permanent failure is visible; lifecycle slot is disabled |
-| World recovery | Sequence and checksum | Immutable Redis generation plus current-pointer publication | Prior generation and floor deltas remain until exact publication ACK |
+| World recovery | Sequence, checksum, and item UID graph | Immutable Redis generation plus current-pointer publication; SQL custody remains authoritative | Floor and generation trees are planned together; every UID/root/parent/VNUM/room/state is reconciled before rollback-capable materialization |
 | Legacy event compatibility | Event key/generation where supported | Remaining item/scalar/large event row | Bounded queue/retry; never the player or critical-operation authority |
 
 The typed player and critical journals contain schema versions, checksums, bounds, and
@@ -72,7 +72,9 @@ by source and health output.
 
 Redis is not an authority for player dirty state. It holds floor-delta recovery data
 and optional sequence-numbered world generations used after graceful restart or an unclean exit
-(`src/redis.c`). A generation is cleared only after successful validated recovery.
+(`src/redis.c`). Recovery reads every referenced item from SQL in batches and accepts only
+an exact active room-owned graph before creating entities. A generation is cleared only
+after successful validated recovery and atomic runtime-custody hydration.
 
 Critical gameplay commands are distinct from coalesced checkpoints. Each accepted
 command is independently journaled with one stable operation ID and remains fenced

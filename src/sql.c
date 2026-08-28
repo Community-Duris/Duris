@@ -30,6 +30,10 @@
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <algorithm>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "account.h"
 #include "account_reward.h"
@@ -158,6 +162,15 @@ bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
 						 const char *context)
 {
 	return true;
+}
+bool sql_persistence_reconcile_world_recovery_items(const world_recovery_authority_item *items,
+						    size_t count,
+						    item_ownership_runtime_entry *authoritative,
+						    size_t authoritative_capacity)
+{
+	(void)items;
+	(void)authoritative;
+	return count == 0 && authoritative_capacity == 0;
 }
 bool sql_hydrate_item_owner_revisions(void)
 {
@@ -4994,6 +5007,137 @@ bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char 
 		return false;
 	return sql_persistence_item_owner_matches_identity(item_uid, owner_type, owner_id, 0,
 							   context);
+}
+
+bool sql_persistence_reconcile_world_recovery_items(const world_recovery_authority_item *items,
+						    size_t count,
+						    item_ownership_runtime_entry *authoritative,
+						    size_t authoritative_capacity)
+{
+	constexpr size_t QUERY_BATCH_SIZE = 256;
+	constexpr size_t MAX_RECOVERY_ITEMS = 262144;
+	if ((!items && count) || (!authoritative && count) || count > MAX_RECOVERY_ITEMS ||
+	    authoritative_capacity != count || !DB || sql_in_transaction())
+		return false;
+	if (!count)
+		return true;
+	std::unordered_map<uint64_t, const world_recovery_authority_item *> expected;
+	size_t authoritative_count = 0;
+	try
+	{
+		expected.reserve(count);
+		for (size_t index = 0; index < count; ++index)
+			if (!items[index].item_uid || !items[index].root_item_uid ||
+			    !items[index].room_vnum || items[index].vnum <= 0 ||
+			    !expected.emplace(items[index].item_uid, &items[index]).second)
+				return false;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (!sql_begin_transaction())
+		return false;
+	bool valid = true;
+	for (size_t begin = 0; valid && begin < count; begin += QUERY_BATCH_SIZE)
+	{
+		const size_t end = std::min(count, begin + QUERY_BATCH_SIZE);
+		std::string query =
+			"SELECT current_item.item_uid,current_item.root_item_uid,"
+			"COALESCE(current_item.parent_item_uid,0),current_item.owner_type,"
+			"current_item.owner_id,current_item.owner_context_id,"
+			"current_item.item_revision,current_item.vnum,current_item.state,"
+			"owner.revision FROM item_current_owner current_item JOIN "
+			"item_owner_revision owner ON owner.owner_type=current_item.owner_type "
+			"AND owner.owner_id=current_item.owner_id AND "
+			"owner.owner_context_id=current_item.owner_context_id WHERE "
+			"current_item.item_uid IN (";
+		try
+		{
+			for (size_t index = begin; index < end; ++index)
+			{
+				if (index != begin)
+					query.push_back(',');
+				query += std::to_string(items[index].item_uid);
+			}
+			query.push_back(')');
+		}
+		catch (const std::bad_alloc &)
+		{
+			valid = false;
+			break;
+		}
+		MYSQL_RES *result = db_query("%s", query.c_str());
+		if (!result)
+		{
+			valid = false;
+			break;
+		}
+		MYSQL_ROW row;
+		while (valid && (row = mysql_fetch_row(result)))
+		{
+			const uint64_t item_uid = row[0] ? strtoull(row[0], NULL, 10) : 0;
+			const auto found = expected.find(item_uid);
+			if (found == expected.end())
+			{
+				valid = false;
+				break;
+			}
+			const world_recovery_authority_item &planned = *found->second;
+			item_ownership_runtime_entry entry = {
+				.item_uid = item_uid,
+				.root_item_uid = row[1] ? strtoull(row[1], NULL, 10) : 0,
+				.parent_item_uid = row[2] ? strtoull(row[2], NULL, 10) : 0,
+				.owner = { row[3] ? static_cast<item_owner_type>(
+							    strtoul(row[3], NULL, 10)) :
+						    item_owner_type::unknown,
+					   row[4] ? strtoull(row[4], NULL, 10) : 0,
+					   row[5] ? strtoull(row[5], NULL, 10) : 0 },
+				.item_revision = row[6] ? strtoull(row[6], NULL, 10) : 0,
+				.owner_revision = row[9] ? strtoull(row[9], NULL, 10) : 0,
+				.vnum = row[7] ? static_cast<int32_t>(strtol(row[7], NULL, 10)) : 0,
+				.state = row[8] ? static_cast<item_custody_state>(
+							  strtoul(row[8], NULL, 10)) :
+						  item_custody_state::absent,
+			};
+			if (entry.root_item_uid != planned.root_item_uid ||
+			    entry.parent_item_uid != planned.parent_item_uid ||
+			    entry.owner.type != item_owner_type::room ||
+			    entry.owner.id != static_cast<uint64_t>(planned.room_vnum) ||
+			    entry.owner.context_id != 0 || entry.vnum != planned.vnum ||
+			    entry.state != item_custody_state::active)
+			{
+				valid = false;
+				break;
+			}
+			try
+			{
+				if (authoritative_count >= authoritative_capacity)
+				{
+					valid = false;
+					break;
+				}
+				authoritative[authoritative_count++] = entry;
+			}
+			catch (const std::bad_alloc &)
+			{
+				valid = false;
+			}
+		}
+		mysql_free_result(result);
+	}
+	valid = valid && authoritative_count == count;
+	if (valid)
+	{
+		valid = sql_commit();
+		if (!valid)
+			sql_rollback();
+	}
+	else
+		sql_rollback();
+	if (!valid)
+		return false;
+	return true;
 }
 
 bool sql_hydrate_item_owner_revisions(void)

@@ -2,6 +2,7 @@
 
 #include "copyover.h"
 #include "db.h"
+#include "item_ownership_runtime.h"
 #include "prototypes.h"
 #include "redis.h"
 #include "ships/ships.h"
@@ -10,12 +11,15 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <climits>
 #include <condition_variable>
 #include <cstring>
 #include <deque>
 #include <mutex>
 #include <new>
 #include <thread>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <zlib.h>
@@ -26,9 +30,9 @@ extern P_char character_list;
 extern P_obj object_list;
 extern int top_of_world;
 extern int top_of_zone_table;
-extern bool sql_persistence_item_owner_matches(unsigned long long item_uid, const char *owner_type,
-					       const char *owner_ref, const char *context);
-
+extern bool sql_persistence_reconcile_world_recovery_items(
+	const world_recovery_authority_item *items, size_t count,
+	item_ownership_runtime_entry *authoritative, size_t authoritative_capacity);
 namespace
 {
 enum class capture_stage : uint8_t
@@ -91,6 +95,31 @@ uint64_t next_sequence = 1;
 bool stop_requested = false;
 bool worker_busy = false;
 std::array<unsigned char, WORLD_RECOVERY_MAX_RECORD_BYTES> capture_buffer = {};
+
+struct planned_mob
+{
+	std::vector<unsigned char> record;
+	int room_rnum = NOWHERE;
+};
+
+struct planned_object
+{
+	int room_rnum = NOWHERE;
+	int room_vnum = 0;
+	std::vector<world_recovery_item_snapshot> items;
+	P_obj existing_root = nullptr;
+};
+
+struct recovery_plan
+{
+	world_recovery_header header = {};
+	std::vector<planned_mob> mobs;
+	std::vector<planned_object> objects;
+	std::vector<copyover_room> doors;
+	std::vector<zone_age_entry> zones;
+	std::vector<world_recovery_authority_item> authority_items;
+	std::unordered_set<uint64_t> item_uids;
+};
 
 uint64_t elapsed_msec(std::chrono::steady_clock::time_point started)
 {
@@ -158,6 +187,127 @@ bool submit_capture()
 	return true;
 }
 
+bool capture_item_tree(P_obj object, uint64_t root_uid, uint64_t parent_uid,
+		       world_recovery_item_snapshot *items, uint32_t *count)
+{
+	if (!object || !items || !count || *count >= WORLD_RECOVERY_MAX_ITEM_TREE ||
+	    !object->obj_uid || OBJ_VNUM(object) <= 0)
+		return false;
+	const uint64_t item_uid = object->obj_uid;
+	if (!root_uid)
+		root_uid = item_uid;
+	world_recovery_item_snapshot &entry = items[(*count)++];
+	entry = {};
+	entry.item_uid = item_uid;
+	entry.root_item_uid = root_uid;
+	entry.parent_item_uid = parent_uid;
+	entry.vnum = OBJ_VNUM(object);
+	entry.type = object->type;
+	for (int index = 0; index < NUMB_OBJ_VALS; ++index)
+		entry.values[index] = object->value[index];
+	for (int index = 0; index < 6; ++index)
+		entry.timers[index] = static_cast<int64_t>(object->timer[index]);
+	if (object->name)
+		strlcpy(entry.name, object->name, sizeof(entry.name));
+	if (object->short_description)
+		strlcpy(entry.short_description, object->short_description,
+			sizeof(entry.short_description));
+	if (object->description)
+		strlcpy(entry.description, object->description, sizeof(entry.description));
+	for (P_obj child = object->contains; child; child = child->next_content)
+		if (!capture_item_tree(child, root_uid, item_uid, items, count))
+			return false;
+	return true;
+}
+
+int write_object_record(P_obj object, int room_vnum, char *buffer, size_t maximum)
+{
+	if (!object || !buffer || room_vnum <= 0 || maximum < sizeof(world_recovery_object_record))
+		return -1;
+	std::array<world_recovery_item_snapshot, WORLD_RECOVERY_MAX_ITEM_TREE> items = {};
+	uint32_t count = 0;
+	if (!capture_item_tree(object, 0, 0, items.data(), &count) || !count)
+		return -1;
+	const size_t size = sizeof(world_recovery_object_record) +
+			    static_cast<size_t>(count) * sizeof(world_recovery_item_snapshot);
+	if (size > maximum)
+		return -1;
+	const world_recovery_object_record record = { room_vnum, count };
+	memcpy(buffer, &record, sizeof(record));
+	memcpy(buffer + sizeof(record), items.data(),
+	       static_cast<size_t>(count) * sizeof(world_recovery_item_snapshot));
+	return static_cast<int>(size);
+}
+
+int write_mob_record(P_char mob, char *buffer, size_t maximum)
+{
+	if (!mob || !buffer || maximum < sizeof(copyover_mob))
+		return -1;
+	copyover_mob entry = {};
+	const int mob_rnum = GET_RNUM(mob);
+	if (mob_rnum < 0 || mob->in_room < 0 || mob->in_room > top_of_world)
+		return -1;
+	entry.vnum = mob_index[mob_rnum].virtual_number;
+	entry.idnum = GET_IDNUM(mob);
+	entry.room = world[mob->in_room].number;
+	entry.hit = GET_HIT(mob);
+	entry.max_hit = GET_MAX_HIT(mob);
+	entry.mana = GET_MANA(mob);
+	entry.max_mana = GET_MAX_MANA(mob);
+	entry.vitality = GET_VITALITY(mob);
+	entry.max_vitality = GET_MAX_VITALITY(mob);
+	entry.position = GET_POS(mob);
+	entry.gold = GET_GOLD(mob);
+	if (mob->specials.fighting)
+	{
+		P_char target = mob->specials.fighting;
+		if (IS_NPC(target))
+		{
+			entry.fighting_type = 2;
+			entry.fighting_id = GET_IDNUM(target);
+		}
+		else
+		{
+			entry.fighting_type = 1;
+			if (GET_NAME(target))
+				strlcpy(entry.fighting_name, GET_NAME(target),
+					sizeof(entry.fighting_name));
+		}
+	}
+	std::fill(std::begin(entry.equipment_vnums), std::end(entry.equipment_vnums), -1);
+	entry.num_carrying = 0;
+	for (affected_type *affect = mob->affected; affect; affect = affect->next)
+	{
+		if (sizeof(entry) +
+			    (static_cast<size_t>(entry.num_affects) + 1) * sizeof(copyover_affect) >
+		    maximum)
+			return -1;
+		++entry.num_affects;
+	}
+	memcpy(buffer, &entry, sizeof(entry));
+	size_t offset = sizeof(entry);
+	for (affected_type *affect = mob->affected; affect; affect = affect->next)
+	{
+		copyover_affect saved = {};
+		saved.type = affect->type;
+		saved.wear_off_message_index = affect->wear_off_message_index;
+		saved.duration = affect->duration;
+		saved.flags = affect->flags;
+		saved.modifier = affect->modifier;
+		saved.location = affect->location;
+		saved.loc2 = affect->loc2;
+		saved.level = affect->level;
+		saved.bitvector = affect->bitvector;
+		saved.bitvector2 = affect->bitvector2;
+		saved.bitvector3 = affect->bitvector3;
+		saved.bitvector4 = affect->bitvector4;
+		saved.bitvector5 = affect->bitvector5;
+		memcpy(buffer + offset, &saved, sizeof(saved));
+		offset += sizeof(saved);
+	}
+	return static_cast<int>(offset);
+}
+
 void publisher_main()
 {
 	{
@@ -186,7 +336,7 @@ void publisher_main()
 		const auto started = std::chrono::steady_clock::now();
 		if (generation.blob.size() >= sizeof(header))
 		{
-			memcpy(header.magic, "WRS7", 4);
+			memcpy(header.magic, "WRS8", 4);
 			header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
 			header.header_size = sizeof(header);
 			header.sequence = generation.sequence;
@@ -238,7 +388,7 @@ bool capture_one_record()
 			active_capture.next_character = ch->next;
 			if (!IS_NPC(ch) || ch->in_room < 0 || IS_PC_PET(ch))
 				return true;
-			const int size = copyover_write_mob_to_buffer(
+			const int size = write_mob_record(
 				ch, reinterpret_cast<char *>(capture_buffer.data()),
 				capture_buffer.size());
 			if (size <= 0 || !append_record(active_capture.generation, record_type::mob,
@@ -264,9 +414,10 @@ bool capture_one_record()
 			if (vnum == 2 && obj->value[6] > 0 &&
 			    time(NULL) - static_cast<time_t>(obj->value[6]) > 86400)
 				return true;
-			const int size = copyover_write_obj_to_buffer(
-				obj, reinterpret_cast<char *>(capture_buffer.data()),
-				capture_buffer.size());
+			const int size =
+				write_object_record(obj, world[obj->loc.room].number,
+						    reinterpret_cast<char *>(capture_buffer.data()),
+						    capture_buffer.size());
 			if (size <= 0 ||
 			    !append_record(active_capture.generation, record_type::object,
 					   capture_buffer.data(), size))
@@ -523,7 +674,7 @@ bool world_recovery_validate(const unsigned char *data, size_t size, int max_age
 		return false;
 	world_recovery_header header = {};
 	memcpy(&header, data, sizeof(header));
-	if (memcmp(header.magic, "WRS7", 4) ||
+	if (memcmp(header.magic, "WRS8", 4) ||
 	    header.schema_version != WORLD_RECOVERY_SCHEMA_VERSION ||
 	    header.header_size != sizeof(header) || !header.complete ||
 	    header.sequence < minimum_sequence || header.payload_size != size - sizeof(header))
@@ -554,7 +705,7 @@ bool world_recovery_validate(const unsigned char *data, size_t size, int max_age
 			{
 				copyover_mob entry = {};
 				memcpy(&entry, data + offset, sizeof(entry));
-				if (entry.num_affects < 0 || entry.num_carrying < 0 ||
+				if (entry.num_affects < 0 || entry.num_carrying != 0 ||
 				    static_cast<size_t>(entry.num_affects) >
 					    (WORLD_RECOVERY_MAX_RECORD_BYTES - sizeof(entry)) /
 						    sizeof(copyover_affect) ||
@@ -568,21 +719,23 @@ bool world_recovery_validate(const unsigned char *data, size_t size, int max_age
 							sizeof(copyover_carried_item);
 				if (sizeof(entry) + affects + carrying != record.size)
 					return false;
+				for (int vnum : entry.equipment_vnums)
+					if (vnum > 0)
+						return false;
 			}
 			++mobs;
 			break;
 		case record_type::object:
-			if (record.size < sizeof(copyover_obj))
+			if (record.size < sizeof(world_recovery_object_record) +
+						  sizeof(world_recovery_item_snapshot))
 				return false;
 			{
-				copyover_obj entry = {};
+				world_recovery_object_record entry = {};
 				memcpy(&entry, data + offset, sizeof(entry));
-				if (entry.num_contents < 0 ||
-				    static_cast<size_t>(entry.num_contents) >
-					    (WORLD_RECOVERY_MAX_RECORD_BYTES - sizeof(entry)) /
-						    sizeof(copyover_obj_content) ||
-				    sizeof(entry) + static_cast<size_t>(entry.num_contents) *
-							    sizeof(copyover_obj_content) !=
+				if (!entry.item_count ||
+				    entry.item_count > WORLD_RECOVERY_MAX_ITEM_TREE ||
+				    sizeof(entry) + static_cast<size_t>(entry.item_count) *
+							    sizeof(world_recovery_item_snapshot) !=
 					    record.size)
 					return false;
 			}
@@ -611,82 +764,456 @@ bool world_recovery_validate(const unsigned char *data, size_t size, int max_age
 	return true;
 }
 
-bool world_recovery_restore(const unsigned char *data, size_t size, int max_age_seconds,
-			    uint64_t minimum_sequence, world_recovery_header *header_out)
+namespace
 {
-	world_recovery_header header = {};
-	if (!world_recovery_validate(data, size, max_age_seconds, minimum_sequence, &header))
+bool terminated(const char *text, size_t size)
+{
+	return text && memchr(text, '\0', size);
+}
+
+P_obj find_object_uid(uint64_t item_uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return nullptr;
+}
+
+bool existing_tree_matches(const planned_object &planned)
+{
+	if (!planned.existing_root || planned.items.empty() || !OBJ_ROOM(planned.existing_root) ||
+	    world[planned.existing_root->loc.room].number != planned.room_vnum)
 		return false;
-	size_t offset = sizeof(header);
-	uint32_t mobs = 0, objects = 0, doors = 0, zones = 0;
+	for (const world_recovery_item_snapshot &item : planned.items)
+	{
+		P_obj object = find_object_uid(item.item_uid);
+		if (!object || OBJ_VNUM(object) != item.vnum)
+			return false;
+		if (!item.parent_item_uid)
+		{
+			if (object != planned.existing_root)
+				return false;
+		}
+		else if (!OBJ_INSIDE(object) || !object->loc.inside ||
+			 object->loc.inside->obj_uid != item.parent_item_uid)
+			return false;
+	}
+	size_t live_count = 0;
+	std::array<P_obj, WORLD_RECOVERY_MAX_ITEM_TREE> pending = {};
+	size_t pending_count = 1;
+	pending[0] = planned.existing_root;
+	while (pending_count)
+	{
+		P_obj object = pending[--pending_count];
+		if (++live_count > planned.items.size())
+			return false;
+		for (P_obj child = object->contains; child; child = child->next_content)
+		{
+			if (pending_count >= pending.size())
+				return false;
+			pending[pending_count++] = child;
+		}
+	}
+	return live_count == planned.items.size();
+}
+
+bool add_object_record(recovery_plan *plan, const unsigned char *data, size_t size)
+{
+	if (!plan || !data ||
+	    size < sizeof(world_recovery_object_record) + sizeof(world_recovery_item_snapshot))
+		return false;
+	world_recovery_object_record record = {};
+	memcpy(&record, data, sizeof(record));
+	if (!record.item_count || record.item_count > WORLD_RECOVERY_MAX_ITEM_TREE ||
+	    size != sizeof(record) + static_cast<size_t>(record.item_count) *
+					     sizeof(world_recovery_item_snapshot))
+		return false;
+	planned_object planned;
+	planned.room_vnum = record.room_vnum;
+	planned.room_rnum = real_room(record.room_vnum);
+	if (planned.room_rnum < 0 || planned.room_rnum > top_of_world)
+		return false;
+	try
+	{
+		planned.items.resize(record.item_count);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	memcpy(planned.items.data(), data + sizeof(record),
+	       planned.items.size() * sizeof(world_recovery_item_snapshot));
+	std::unordered_set<uint64_t> parents;
+	try
+	{
+		parents.reserve(planned.items.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	const uint64_t root_uid = planned.items[0].item_uid;
+	for (size_t index = 0; index < planned.items.size(); ++index)
+	{
+		const world_recovery_item_snapshot &item = planned.items[index];
+		for (int timer_index = 0; timer_index < 6; ++timer_index)
+			if (static_cast<int64_t>(static_cast<time_t>(item.timers[timer_index])) !=
+			    item.timers[timer_index])
+				return false;
+		if (!item.item_uid || item.item_uid > ULONG_MAX || !item.root_item_uid ||
+		    item.root_item_uid != root_uid || item.vnum <= 0 || item.type < ITEM_LIGHT ||
+		    item.type > ITEM_LAST || real_object(item.vnum) < 0 ||
+		    !terminated(item.name, sizeof(item.name)) ||
+		    !terminated(item.short_description, sizeof(item.short_description)) ||
+		    !terminated(item.description, sizeof(item.description)) ||
+		    (index == 0 && item.parent_item_uid) ||
+		    (index != 0 && (!item.parent_item_uid ||
+				    parents.find(item.parent_item_uid) == parents.end())))
+			return false;
+		try
+		{
+			if (!plan->item_uids.insert(item.item_uid).second ||
+			    !parents.insert(item.item_uid).second)
+				return false;
+			plan->authority_items.push_back({ item.item_uid, item.root_item_uid,
+							  item.parent_item_uid, planned.room_vnum,
+							  item.vnum });
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	}
+	planned.existing_root = find_object_uid(root_uid);
+	for (const world_recovery_item_snapshot &item : planned.items)
+		if (find_object_uid(item.item_uid) &&
+		    (!planned.existing_root || !existing_tree_matches(planned)))
+			return false;
+	try
+	{
+		plan->objects.push_back(std::move(planned));
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_seconds,
+			 uint64_t minimum_sequence, recovery_plan *plan)
+{
+	if (!plan ||
+	    !world_recovery_validate(data, size, max_age_seconds, minimum_sequence, &plan->header))
+		return false;
+	size_t offset = sizeof(world_recovery_header);
 	while (offset < size)
 	{
-		if (size - offset < sizeof(record_header))
-			return false;
 		record_header record = {};
 		memcpy(&record, data + offset, sizeof(record));
 		offset += sizeof(record);
-		if (!record.size || record.size > WORLD_RECOVERY_MAX_RECORD_BYTES ||
-		    record.size > size - offset)
-			return false;
-		size_t consumed = 0;
+		const unsigned char *record_data = data + offset;
 		switch (static_cast<record_type>(record.type))
 		{
 		case record_type::mob:
-			copyover_restore_mob_from_buffer(
-				reinterpret_cast<const char *>(data + offset), record.size,
-				&consumed);
-			++mobs;
-			break;
-		case record_type::object:
 		{
-			if (record.size < sizeof(copyover_obj))
+			copyover_mob entry = {};
+			memcpy(&entry, record_data, sizeof(entry));
+			planned_mob planned;
+			planned.room_rnum = real_room(entry.room);
+			if (real_mobile(entry.vnum) < 0 || planned.room_rnum < 0 ||
+			    planned.room_rnum > top_of_world || entry.max_hit <= 0 ||
+			    entry.max_mana < 0 || entry.max_vitality < 0 || entry.gold < 0)
 				return false;
-			copyover_obj entry = {};
-			memcpy(&entry, data + offset, sizeof(entry));
-			char room_ref[32];
-			snprintf(room_ref, sizeof(room_ref), "%d", entry.room);
-			if (entry.obj_uid &&
-			    !sql_persistence_item_owner_matches(entry.obj_uid, "room", room_ref,
-								"world_recovery_restore"))
+			const unsigned char *affect_data = record_data + sizeof(entry);
+			for (int index = 0; index < entry.num_affects; ++index)
 			{
-				consumed = record.size;
-				++objects;
-				break;
+				copyover_affect affect = {};
+				memcpy(&affect,
+				       affect_data + static_cast<size_t>(index) * sizeof(affect),
+				       sizeof(affect));
+				if (affect.location > APPLY_LAST)
+					return false;
 			}
-			copyover_restore_obj_from_buffer(
-				reinterpret_cast<const char *>(data + offset), record.size,
-				&consumed);
-			++objects;
+			try
+			{
+				planned.record.assign(record_data, record_data + record.size);
+				plan->mobs.push_back(std::move(planned));
+			}
+			catch (const std::bad_alloc &)
+			{
+				return false;
+			}
 			break;
 		}
+		case record_type::object:
+			if (!add_object_record(plan, record_data, record.size))
+				return false;
+			break;
 		case record_type::door:
-			if (copyover_restore_door_from_buffer(
-				    reinterpret_cast<const char *>(data + offset), record.size,
-				    &consumed) < 0)
+		{
+			copyover_room door = {};
+			memcpy(&door, record_data, sizeof(door));
+			const int room = real_room(door.vnum);
+			constexpr int ALLOWED_DOOR_FLAGS =
+				EX_ISDOOR | EX_CLOSED | EX_LOCKED | EX_RSCLOSED | EX_RSLOCKED |
+				EX_PICKABLE | EX_SECRET | EX_BLOCKED | EX_PICKPROOF | EX_WALLED |
+				EX_SPIKED | EX_ILLUSION | EX_BREAKABLE;
+			if (room < 0 || room > top_of_world || door.dir < 0 ||
+			    door.dir >= NUM_EXITS || !world[room].dir_option[door.dir] ||
+			    !IS_SET(world[room].dir_option[door.dir]->exit_info, EX_ISDOOR) ||
+			    !IS_SET(door.state, EX_ISDOOR) || (door.state & ~ALLOWED_DOOR_FLAGS))
 				return false;
-			++doors;
+			try
+			{
+				plan->doors.push_back(door);
+			}
+			catch (const std::bad_alloc &)
+			{
+				return false;
+			}
 			break;
+		}
 		case record_type::zone:
-			if (copyover_restore_zone_age_from_buffer(
-				    reinterpret_cast<const char *>(data + offset), record.size,
-				    &consumed) < 0)
+		{
+			zone_age_entry zone = {};
+			memcpy(&zone, record_data, sizeof(zone));
+			if (zone.zone_rnum < 0 || zone.zone_rnum > top_of_zone_table ||
+			    zone.age < 0 || zone.lifespan < 0 || zone.fullreset_age < 0 ||
+			    zone.fullreset_lifespan < 0)
 				return false;
-			++zones;
+			try
+			{
+				plan->zones.push_back(zone);
+			}
+			catch (const std::bad_alloc &)
+			{
+				return false;
+			}
 			break;
+		}
 		default:
 			return false;
 		}
-		if (consumed != record.size)
-			return false;
 		offset += record.size;
 	}
-	if (mobs != header.mob_count || objects != header.object_count ||
-	    doors != header.door_count || zones != header.zone_count)
+	return plan->mobs.size() == plan->header.mob_count &&
+	       plan->objects.size() == plan->header.object_count &&
+	       plan->doors.size() == plan->header.door_count &&
+	       plan->zones.size() == plan->header.zone_count;
+}
+
+void replace_object_text(P_obj object, const world_recovery_item_snapshot &item)
+{
+	if (item.name[0])
+	{
+		if ((object->str_mask & STRUNG_KEYS) && object->name)
+			str_free(object->name);
+		object->name = str_dup(item.name);
+		object->str_mask |= STRUNG_KEYS;
+	}
+	if (item.short_description[0])
+	{
+		if ((object->str_mask & STRUNG_DESC2) && object->short_description)
+			str_free(object->short_description);
+		object->short_description = str_dup(item.short_description);
+		object->str_mask |= STRUNG_DESC2;
+	}
+	if (item.description[0])
+	{
+		if ((object->str_mask & STRUNG_DESC1) && object->description)
+			str_free(object->description);
+		object->description = str_dup(item.description);
+		object->str_mask |= STRUNG_DESC1;
+	}
+}
+
+P_obj materialize_object(const planned_object &planned)
+{
+	if (planned.existing_root)
+		return planned.existing_root;
+	std::unordered_map<uint64_t, P_obj> objects;
+	P_obj root = nullptr;
+	try
+	{
+		objects.reserve(planned.items.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return nullptr;
+	}
+	for (const world_recovery_item_snapshot &item : planned.items)
+	{
+		P_obj object = read_object(item.vnum, VIRTUAL);
+		if (!object)
+		{
+			if (root)
+				extract_obj(root, FALSE);
+			return nullptr;
+		}
+		object->obj_uid = static_cast<unsigned long>(item.item_uid);
+		object->type = item.type;
+		for (int index = 0; index < NUMB_OBJ_VALS; ++index)
+			object->value[index] = item.values[index];
+		for (int index = 0; index < 6; ++index)
+			object->timer[index] = static_cast<time_t>(item.timers[index]);
+		replace_object_text(object, item);
+		if (!item.parent_item_uid)
+			root = object;
+		else
+		{
+			const auto parent = objects.find(item.parent_item_uid);
+			if (parent == objects.end())
+			{
+				extract_obj(object, FALSE);
+				if (root)
+					extract_obj(root, FALSE);
+				return nullptr;
+			}
+			obj_to_obj(object, parent->second);
+		}
+		try
+		{
+			objects.emplace(item.item_uid, object);
+		}
+		catch (const std::bad_alloc &)
+		{
+			if (!item.parent_item_uid)
+				extract_obj(object, FALSE);
+			else if (root)
+				extract_obj(root, FALSE);
+			return nullptr;
+		}
+	}
+	if (!root)
+		return nullptr;
+	obj_to_room(root, planned.room_rnum);
+	return root;
+}
+
+void rollback_materialized(std::vector<P_char> *mobs, std::vector<P_obj> *objects)
+{
+	if (objects)
+		for (auto item = objects->rbegin(); item != objects->rend(); ++item)
+			extract_obj(*item, FALSE);
+	if (mobs)
+		for (auto mob = mobs->rbegin(); mob != mobs->rend(); ++mob)
+			extract_char(*mob);
+}
+
+bool materialize_plan(const recovery_plan &plan,
+		      const std::vector<item_ownership_runtime_entry> &authoritative)
+{
+	std::vector<P_char> created_mobs;
+	std::vector<P_obj> created_objects;
+	size_t applied_objects = 0;
+	try
+	{
+		created_mobs.reserve(plan.mobs.size());
+		created_objects.reserve(plan.objects.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	for (const planned_mob &planned : plan.mobs)
+	{
+		size_t consumed = 0;
+		P_char mob = copyover_restore_mob_from_buffer(
+			reinterpret_cast<const char *>(planned.record.data()),
+			planned.record.size(), &consumed);
+		if (!mob || consumed != planned.record.size())
+		{
+			rollback_materialized(&created_mobs, &created_objects);
+			return false;
+		}
+		created_mobs.push_back(mob);
+	}
+	for (const planned_object &planned : plan.objects)
+	{
+		P_obj object = materialize_object(planned);
+		if (!object)
+		{
+			rollback_materialized(&created_mobs, &created_objects);
+			return false;
+		}
+		if (!planned.existing_root)
+			created_objects.push_back(object);
+		++applied_objects;
+	}
+	if (created_mobs.size() != plan.mobs.size() || applied_objects != plan.objects.size())
+	{
+		rollback_materialized(&created_mobs, &created_objects);
+		return false;
+	}
+	if (!item_ownership_runtime_hydrate_many_atomic(authoritative.data(), authoritative.size()))
+	{
+		rollback_materialized(&created_mobs, &created_objects);
+		return false;
+	}
+	for (const copyover_room &door : plan.doors)
+	{
+		const int room = real_room(door.vnum);
+		world[room].dir_option[door.dir]->exit_info = door.state;
+	}
+	for (const zone_age_entry &zone : plan.zones)
+	{
+		zone_table[zone.zone_rnum].age = zone.age;
+		zone_table[zone.zone_rnum].lifespan = zone.lifespan;
+		zone_table[zone.zone_rnum].fullreset_age = zone.fullreset_age;
+		zone_table[zone.zone_rnum].fullreset_lifespan = zone.fullreset_lifespan;
+	}
+	return true;
+}
+} // namespace
+
+bool world_recovery_restore_with_floor(const unsigned char *data, size_t size, int max_age_seconds,
+				       uint64_t minimum_sequence,
+				       const unsigned char *const *floor_records,
+				       const size_t *floor_record_sizes, size_t floor_record_count,
+				       world_recovery_header *header_out)
+{
+	if ((!floor_records || !floor_record_sizes) && floor_record_count)
+		return false;
+	recovery_plan plan;
+	if (!build_recovery_plan(data, size, max_age_seconds, minimum_sequence, &plan))
+		return false;
+	for (size_t index = 0; index < floor_record_count; ++index)
+		if (!add_object_record(&plan, floor_records[index], floor_record_sizes[index]))
+			return false;
+	std::vector<item_ownership_runtime_entry> authoritative;
+	try
+	{
+		authoritative.resize(plan.authority_items.size());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	if (!sql_persistence_reconcile_world_recovery_items(
+		    plan.authority_items.data(), plan.authority_items.size(), authoritative.data(),
+		    authoritative.size()))
+		return false;
+	redis_world_recovery_set_materializing(true);
+	const bool materialized = materialize_plan(plan, authoritative);
+	redis_world_recovery_set_materializing(false);
+	if (!materialized)
 		return false;
 	if (header_out)
-		*header_out = header;
+		*header_out = plan.header;
 	return true;
+}
+
+bool world_recovery_restore(const unsigned char *data, size_t size, int max_age_seconds,
+			    uint64_t minimum_sequence, world_recovery_header *header_out)
+{
+	return world_recovery_restore_with_floor(data, size, max_age_seconds, minimum_sequence,
+						 nullptr, nullptr, 0, header_out);
+}
+
+int world_recovery_write_object_to_buffer(P_obj obj, int room_vnum, char *buf, size_t max_len)
+{
+	return write_object_record(obj, room_vnum, buf, max_len);
 }
 
 void world_recovery_capture_forget_character(P_char ch)

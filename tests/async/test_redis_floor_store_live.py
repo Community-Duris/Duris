@@ -38,10 +38,15 @@ int main(int argc, char **argv)
     assert(argc == 2);
     redis_floor_store_config config = {"127.0.0.1", atoi(argv[1]), 100, 100};
     assert(redis_floor_store_init(&config));
-    redis_floor_mutation first[] = {{100, "one", false}, {200, "two", false}};
+    const unsigned char binary_value[] = {'o', 0, 'e'};
+    redis_floor_mutation first[] = {
+        {100, binary_value, sizeof(binary_value), false},
+        {200, reinterpret_cast<const unsigned char *>("two"), 3, false}};
     assert(redis_floor_store_submit("mud:season:1:floor_drops", first, 2));
     assert(redis_floor_store_request_barrier());
-    redis_floor_mutation after[] = {{100, nullptr, true}, {300, "three", false}};
+    redis_floor_mutation after[] = {
+        {100, nullptr, 0, true},
+        {300, reinterpret_cast<const unsigned char *>("three"), 5, false}};
     assert(redis_floor_store_submit("mud:season:1:floor_drops", after, 2));
 
     bool succeeded = false;
@@ -55,7 +60,8 @@ int main(int argc, char **argv)
     assert(context && !context->err);
     redisReply *reply = (redisReply *)redisCommand(context, "HMGET mud:season:1:floor_drops 100 200 300");
     assert(reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 3);
-    assert(reply->element[0]->type == REDIS_REPLY_STRING && !strcmp(reply->element[0]->str, "one"));
+    assert(reply->element[0]->type == REDIS_REPLY_STRING && reply->element[0]->len == 3 &&
+           !memcmp(reply->element[0]->str, binary_value, sizeof(binary_value)));
     assert(reply->element[1]->type == REDIS_REPLY_STRING && !strcmp(reply->element[1]->str, "two"));
     assert(reply->element[2]->type == REDIS_REPLY_NIL);
     freeReplyObject(reply);
@@ -68,8 +74,10 @@ int main(int argc, char **argv)
     assert(reply->element[1]->type == REDIS_REPLY_STRING && !strcmp(reply->element[1]->str, "two"));
     assert(reply->element[2]->type == REDIS_REPLY_STRING && !strcmp(reply->element[2]->str, "three"));
     freeReplyObject(reply);
-    redis_floor_mutation shutdown_before[] = {{400, "four", false}};
-    redis_floor_mutation shutdown_after[] = {{500, "five", false}};
+    redis_floor_mutation shutdown_before[] = {
+        {400, reinterpret_cast<const unsigned char *>("four"), 4, false}};
+    redis_floor_mutation shutdown_after[] = {
+        {500, reinterpret_cast<const unsigned char *>("five"), 4, false}};
     assert(redis_floor_store_submit("mud:season:1:floor_drops", shutdown_before, 1));
     assert(redis_floor_store_request_barrier());
     assert(redis_floor_store_submit("mud:season:1:floor_drops", shutdown_after, 1));

@@ -33,7 +33,7 @@ HARNESS = r'''
 int main()
 {
     world_recovery_header header = {};
-    memcpy(header.magic, "WRS7", 4);
+    memcpy(header.magic, "WRS8", 4);
     header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
     header.header_size = sizeof(header);
     header.sequence = 42;
@@ -72,6 +72,36 @@ int main()
     header.door_count = 2;
     memcpy(blob.data(), &header, sizeof(header));
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 42, nullptr));
+
+    world_recovery_object_record object = {100, 2};
+    world_recovery_item_snapshot items[2] = {};
+    items[0].item_uid = 500;
+    items[0].root_item_uid = 500;
+    items[0].vnum = 1000;
+    items[1].item_uid = 501;
+    items[1].root_item_uid = 500;
+    items[1].parent_item_uid = 500;
+    items[1].vnum = 1001;
+    record.size = sizeof(object) + sizeof(items);
+    record.type = 2;
+    header.door_count = 0;
+    header.object_count = 1;
+    header.payload_size = sizeof(record) + record.size;
+    blob.resize(sizeof(header) + header.payload_size);
+    size_t offset = sizeof(header);
+    memcpy(blob.data() + offset, &record, sizeof(record));
+    offset += sizeof(record);
+    memcpy(blob.data() + offset, &object, sizeof(object));
+    offset += sizeof(object);
+    memcpy(blob.data() + offset, items, sizeof(items));
+    header.checksum = crc32(0, blob.data() + sizeof(header), header.payload_size);
+    memcpy(blob.data(), &header, sizeof(header));
+    assert(world_recovery_validate(blob.data(), blob.size(), 300, 42, nullptr));
+    object.item_count = WORLD_RECOVERY_MAX_ITEM_TREE + 1;
+    memcpy(blob.data() + sizeof(header) + sizeof(record), &object, sizeof(object));
+    header.checksum = crc32(0, blob.data() + sizeof(header), header.payload_size);
+    memcpy(blob.data(), &header, sizeof(header));
+    assert(!world_recovery_validate(blob.data(), blob.size(), 300, 42, nullptr));
     return 0;
 }
 '''
@@ -102,6 +132,7 @@ for token in (
     "WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC = 2000",
     "WORLD_RECOVERY_QUEUE_CAPACITY = 2",
     "WORLD_RECOVERY_MAX_RETRIES = 3",
+    "WORLD_RECOVERY_MAX_ITEM_TREE = 12",
 ):
     assert token in HEADER
 capture = section(PIPELINE, "void world_recovery_pipeline_pulse", "bool world_recovery_pipeline_take_completion")
@@ -169,8 +200,38 @@ assert "redis_clear_world_state();" not in section(
     COMM, "// redis crash recovery - restore world state from redis snapshot", "PROFILES(RESET)"
 )
 restore = section(PIPELINE, "bool world_recovery_restore", "void world_recovery_capture_forget_character")
-assert restore.count("copyover_restore_door_from_buffer") == 1 and ") < 0" in restore
-assert restore.count("copyover_restore_zone_age_from_buffer") == 1
+transactional_restore = section(
+    PIPELINE, "bool world_recovery_restore_with_floor", "bool world_recovery_restore("
+)
+for token in (
+    "build_recovery_plan",
+    "add_object_record",
+    "sql_persistence_reconcile_world_recovery_items",
+    "materialize_plan",
+    "redis_world_recovery_set_materializing(true)",
+    "redis_world_recovery_set_materializing(false)",
+):
+    assert token in transactional_restore
+assert transactional_restore.index("build_recovery_plan") < transactional_restore.index(
+    "sql_persistence_reconcile_world_recovery_items"
+) < transactional_restore.index("materialize_plan")
+for token in (
+    "world_recovery_item_snapshot",
+    "root_item_uid",
+    "parent_item_uid",
+    "existing_tree_matches",
+    "rollback_materialized",
+    "extract_obj(*item, FALSE)",
+    "extract_char(*mob)",
+):
+    assert token in PIPELINE
+mob_capture = section(PIPELINE, "int write_mob_record", "void publisher_main")
+assert "entry.num_carrying = 0" in mob_capture
+assert "std::fill" in mob_capture and "equipment_vnums" in mob_capture
+assert "copyover_write_mob_to_buffer" not in mob_capture
+assert "mob->carrying" not in mob_capture
+assert "copyover_restore_door_from_buffer" not in restore
+assert "copyover_restore_zone_age_from_buffer" not in restore
 print("[PASS] recovery publication is atomic and restore accepts only validated framed generations")
 
 flush = section(REDIS, "bool redis_flush_floor_drops", "void redis_remove_floor_drop")

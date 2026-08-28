@@ -216,13 +216,18 @@ The automatic recovery paths are:
 1. **Redis world-state recovery** -- after either a graceful restart or an unclean exit,
    the current immutable generation is accepted only
    if schema, completeness, sequence, checksum, size, and age validate. Floor deltas are
-   reconciled with the matching generation, then the exact restored generation is
-   consumed. A fenced one-use marker distinguishes clean restart from crash recovery.
+   decoded with the matching generation into one semantic plan. Every item in each
+   bounded tree must exactly match SQL UID, root, parent, room owner, VNUM, and active
+   state before rollback-capable materialization; NPC-held items are not recreated. The
+   exact restored generation is then consumed. A fenced one-use marker distinguishes
+   clean restart from crash recovery.
 2. **Copyover recovery** -- only with `-C` boot flag / copyover flow.
 
-If Redis recovery fails, the server continues with a normal boot state. Check
+If Redis recovery fails, the server runs a full normal reset for every zone. Check
 `logs/log/status` for `Performing redis clean restart recovery...` or
-`Performing redis crash recovery...`, and verify player integrity before reopening.
+`Performing redis crash recovery...` followed by `applying full normal zone boot`, and
+verify player integrity before reopening. The rejected generation and floor data are not
+cleared by the failed restore.
 
 For queue or dependency incidents, use `world persistence` and the detailed `redis`
 status command. Do not clear a player save queue: player state is owned by the local

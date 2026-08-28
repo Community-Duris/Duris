@@ -99,6 +99,7 @@ static std::string donation_secret;
 static std::vector<std::string> donation_seen_event_ids;
 static bool world_floor_barrier_waiting = false;
 static bool world_floor_handoff_active = false;
+static bool world_recovery_materialization_active = false;
 static uint64_t clean_shutdown_sequence = 0;
 static uint64_t world_sequence_floor = 0;
 static void donation_sub_drop(const char *reason);
@@ -505,6 +506,7 @@ bool redis_init(void)
 	world_writer_token.clear();
 	world_writer_lease_msec = 0;
 	world_writer_epoch = 0;
+	world_recovery_materialization_active = false;
 	clean_shutdown_sequence = 0;
 	world_sequence_floor = 0;
 	clean_restart_recovery_boot = 0;
@@ -718,6 +720,7 @@ void redis_cleanup(void)
 	world_writer_token.clear();
 	world_writer_lease_msec = 0;
 	world_writer_epoch = 0;
+	world_recovery_materialization_active = false;
 	clean_shutdown_sequence = 0;
 	world_sequence_floor = 0;
 	clean_restart_recovery_boot = 0;
@@ -754,20 +757,15 @@ void redis_clear_floor_pickups(void)
 }
 
 #define MAX_FLOOR_DROP_BATCH 1024
+constexpr size_t FLOOR_DROP_RECORD_MAX_BYTES =
+	5 + sizeof(world_recovery_object_record) +
+	WORLD_RECOVERY_MAX_ITEM_TREE * sizeof(world_recovery_item_snapshot);
 
 static struct
 {
 	unsigned long uid;
-	int vnum;
-	int room_vnum;
-	int type;
-	int values[8];
-	time_t timers[6];
-	char *name;
-	char *short_desc;
-	char *long_desc;
-	int content_vnums[16];
-	int content_count;
+	size_t record_size;
+	unsigned char record[FLOOR_DROP_RECORD_MAX_BYTES];
 } floor_drop_batch[MAX_FLOOR_DROP_BATCH];
 
 static int floor_drop_batch_count = 0;
@@ -800,33 +798,16 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 		}
 	}
 
-	int idx = floor_drop_batch_count++;
-	floor_drop_batch[idx].uid = obj->obj_uid;
-	floor_drop_batch[idx].vnum = OBJ_VNUM(obj);
-	floor_drop_batch[idx].room_vnum = room_vnum;
-	floor_drop_batch[idx].type = obj->type;
-
-	for (int i = 0; i < NUMB_OBJ_VALS; i++)
-		floor_drop_batch[idx].values[i] = obj->value[i];
-
-	for (int i = 0; i < 6; i++)
-		floor_drop_batch[idx].timers[i] = obj->timer[i];
-
-	floor_drop_batch[idx].name = (obj->name && obj->name[0]) ? str_dup(obj->name) : NULL;
-	floor_drop_batch[idx].short_desc = (obj->short_description && obj->short_description[0]) ?
-						   str_dup(obj->short_description) :
-						   NULL;
-	floor_drop_batch[idx].long_desc =
-		(obj->description && obj->description[0]) ? str_dup(obj->description) : NULL;
-
-	floor_drop_batch[idx].content_count = 0;
-	P_obj content;
-	for (content = obj->contains; content && floor_drop_batch[idx].content_count < 16;
-	     content = content->next_content)
-	{
-		floor_drop_batch[idx].content_vnums[floor_drop_batch[idx].content_count++] =
-			OBJ_VNUM(content);
-	}
+	const int index = floor_drop_batch_count;
+	const int size = world_recovery_write_object_to_buffer(
+		obj, room_vnum, reinterpret_cast<char *>(floor_drop_batch[index].record + 5),
+		sizeof(floor_drop_batch[index].record) - 5);
+	if (size <= 0)
+		return;
+	memcpy(floor_drop_batch[index].record, "WRF2:", 5);
+	floor_drop_batch[index].uid = obj->obj_uid;
+	floor_drop_batch[index].record_size = 5 + static_cast<size_t>(size);
+	++floor_drop_batch_count;
 #endif
 }
 
@@ -844,11 +825,9 @@ bool redis_flush_floor_drops(void)
 	if (!redis_season_key(floor_key, sizeof floor_key, "floor_drops"))
 		return false;
 
-	std::vector<std::string> values;
 	std::vector<redis_floor_mutation> mutations;
 	try
 	{
-		values.reserve(floor_drop_batch_count);
 		mutations.reserve(floor_drop_remove_count + floor_drop_batch_count);
 	}
 	catch (const std::bad_alloc &)
@@ -857,99 +836,16 @@ bool redis_flush_floor_drops(void)
 	}
 	// Preserve remove-before-replacement ordering within one immutable worker batch.
 	for (int i = 0; i < floor_drop_remove_count; i++)
-		mutations.push_back({ floor_drop_removes[i], NULL, true });
+		mutations.push_back({ floor_drop_removes[i], NULL, 0, true });
 
 	for (int i = 0; i < floor_drop_batch_count; i++)
-	{
-		cJSON *o = cJSON_CreateObject();
-		if (!o)
-			return false;
-
-		cJSON_AddNumberToObject(o, "uid", (double)floor_drop_batch[i].uid);
-		cJSON_AddNumberToObject(o, "v", floor_drop_batch[i].vnum);
-		cJSON_AddNumberToObject(o, "rm", floor_drop_batch[i].room_vnum);
-		cJSON_AddNumberToObject(o, "tp", floor_drop_batch[i].type);
-
-		for (int j = 0; j < 8; j++)
-		{
-			if (floor_drop_batch[i].values[j] != 0)
-			{
-				char key[16];
-				snprintf(key, sizeof(key), "v%d", j);
-				cJSON_AddNumberToObject(o, key, floor_drop_batch[i].values[j]);
-			}
-		}
-
-		bool has_timer = false;
-		for (int j = 0; j < 6; j++)
-		{
-			if (floor_drop_batch[i].timers[j] != 0)
-			{
-				has_timer = true;
-				break;
-			}
-		}
-		if (has_timer)
-		{
-			cJSON *tmr = cJSON_CreateArray();
-			for (int j = 0; j < 6; j++)
-				cJSON_AddItemToArray(
-					tmr,
-					cJSON_CreateNumber((double)floor_drop_batch[i].timers[j]));
-			cJSON_AddItemToObject(o, "tmr", tmr);
-		}
-
-		if (floor_drop_batch[i].name)
-			cJSON_AddStringToObject(o, "nm", floor_drop_batch[i].name);
-		if (floor_drop_batch[i].short_desc)
-			cJSON_AddStringToObject(o, "sd", floor_drop_batch[i].short_desc);
-		if (floor_drop_batch[i].long_desc)
-			cJSON_AddStringToObject(o, "ld", floor_drop_batch[i].long_desc);
-
-		if (floor_drop_batch[i].content_count > 0)
-		{
-			cJSON *contents = cJSON_CreateArray();
-			for (int j = 0; j < floor_drop_batch[i].content_count; j++)
-				cJSON_AddItemToArray(
-					contents,
-					cJSON_CreateNumber(floor_drop_batch[i].content_vnums[j]));
-			cJSON_AddItemToObject(o, "con", contents);
-		}
-
-		char *json_str = cJSON_PrintUnformatted(o);
-		cJSON_Delete(o);
-		if (!json_str)
-			return false;
-		try
-		{
-			values.emplace_back(json_str);
-			mutations.push_back(
-				{ floor_drop_batch[i].uid, values.back().c_str(), false });
-		}
-		catch (const std::bad_alloc &)
-		{
-			free(json_str);
-			return false;
-		}
-		free(json_str);
-	}
+		mutations.push_back({ floor_drop_batch[i].uid, floor_drop_batch[i].record,
+				      floor_drop_batch[i].record_size, false });
 
 	if (!redis_floor_store_submit(floor_key, mutations.data(), mutations.size()))
 		return false;
 
 	floor_drop_remove_count = 0;
-	for (int i = 0; i < floor_drop_batch_count; i++)
-	{
-		if (floor_drop_batch[i].name)
-			str_free(floor_drop_batch[i].name);
-		if (floor_drop_batch[i].short_desc)
-			str_free(floor_drop_batch[i].short_desc);
-		if (floor_drop_batch[i].long_desc)
-			str_free(floor_drop_batch[i].long_desc);
-		floor_drop_batch[i].name = NULL;
-		floor_drop_batch[i].short_desc = NULL;
-		floor_drop_batch[i].long_desc = NULL;
-	}
 	floor_drop_batch_count = 0;
 	return true;
 #else
@@ -960,7 +856,8 @@ bool redis_flush_floor_drops(void)
 void redis_remove_floor_drop(unsigned long obj_uid)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_world_state_enabled || world_recovery_quiesced || obj_uid == 0)
+	if (!redis_world_state_enabled || world_recovery_quiesced ||
+	    world_recovery_materialization_active || obj_uid == 0)
 		return;
 
 	// check if it's in the pending batch - remove from there first
@@ -968,17 +865,9 @@ void redis_remove_floor_drop(unsigned long obj_uid)
 	{
 		if (floor_drop_batch[i].uid == obj_uid)
 		{
-			if (floor_drop_batch[i].name)
-				str_free(floor_drop_batch[i].name);
-			if (floor_drop_batch[i].short_desc)
-				str_free(floor_drop_batch[i].short_desc);
-			if (floor_drop_batch[i].long_desc)
-				str_free(floor_drop_batch[i].long_desc);
-
-			// shift remaining entries
-			for (int j = i; j < floor_drop_batch_count - 1; j++)
-				floor_drop_batch[j] = floor_drop_batch[j + 1];
-			floor_drop_batch_count--;
+			--floor_drop_batch_count;
+			if (i != floor_drop_batch_count)
+				floor_drop_batch[i] = floor_drop_batch[floor_drop_batch_count];
 			return;
 		}
 	}
@@ -987,6 +876,11 @@ void redis_remove_floor_drop(unsigned long obj_uid)
 	if (floor_drop_remove_count < MAX_FLOOR_DROP_BATCH)
 		floor_drop_removes[floor_drop_remove_count++] = obj_uid;
 #endif
+}
+
+void redis_world_recovery_set_materializing(bool active)
+{
+	world_recovery_materialization_active = active;
 }
 
 static bool redis_clear_floor_drops_checked(void)
@@ -1018,164 +912,96 @@ void redis_clear_floor_drops(void)
 	redis_clear_floor_drops_checked();
 }
 
-int redis_restore_floor_drops(void)
+static bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *records)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_world_state_enabled || !redis_enabled || !redis_ctx)
-		return 0;
+	if (!records || !redis_world_state_enabled || !redis_enabled || !redis_ctx)
+		return false;
 	char floor_key[128];
 	if (!redis_season_key(floor_key, sizeof floor_key, "floor_drops"))
-		return 0;
+		return false;
 
 	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HGETALL %s", floor_key);
 	if (!reply || reply->type != REDIS_REPLY_ARRAY)
 	{
 		if (reply)
 			freeReplyObject(reply);
-		return 0;
+		return false;
 	}
-
-	int restored = 0, skipped = 0;
-
-	// hgetall returns [key, val, key, val...]
+	if (reply->elements % 2)
+	{
+		freeReplyObject(reply);
+		return false;
+	}
+	bool valid = true;
+	size_t aggregate_size = 0;
+	try
+	{
+		records->clear();
+		records->reserve(reply->elements / 2);
+	}
+	catch (const std::bad_alloc &)
+	{
+		freeReplyObject(reply);
+		return false;
+	}
 	for (size_t i = 0; i + 1 < reply->elements; i += 2)
 	{
-		const char *uid_str = reply->element[i]->str;
-		const char *json_str = reply->element[i + 1]->str;
-		if (!uid_str || !json_str)
-			continue;
-
-		unsigned long uid = strtoul(uid_str, NULL, 10);
-		if (uid == 0)
-			continue;
-
-		cJSON *obj_json = cJSON_Parse(json_str);
-		if (!obj_json)
-			continue;
-
-		cJSON *v = cJSON_GetObjectItem(obj_json, "v");
-		cJSON *rm = cJSON_GetObjectItem(obj_json, "rm");
-		if (!v || !rm)
+		const redisReply *field_reply = reply->element[i];
+		const redisReply *value_reply = reply->element[i + 1];
+		const char *uid_str = field_reply && field_reply->type == REDIS_REPLY_STRING ?
+					      field_reply->str :
+					      NULL;
+		const char *encoded = value_reply && value_reply->type == REDIS_REPLY_STRING ?
+					      value_reply->str :
+					      NULL;
+		char *end = NULL;
+		errno = 0;
+		const uint64_t field_uid = uid_str ? strtoull(uid_str, &end, 10) : 0;
+		if (!uid_str || !encoded || errno || !end || *end || !field_uid || !value_reply ||
+		    value_reply->len <= 5 || memcmp(encoded, "WRF2:", 5))
 		{
-			cJSON_Delete(obj_json);
-			continue;
+			valid = false;
+			break;
 		}
-
-		int vnum = v->valueint;
-		int room_vnum = rm->valueint;
-		int rnum = real_room(room_vnum);
-		if (rnum < 0 || rnum > top_of_world)
+		const size_t record_size = value_reply->len - 5;
+		if (record_size > FLOOR_DROP_RECORD_MAX_BYTES - 5 ||
+		    aggregate_size > WORLD_RECOVERY_MAX_BYTES - record_size)
 		{
-			cJSON_Delete(obj_json);
-			continue;
+			valid = false;
+			break;
 		}
-		char room_ref[32];
-		snprintf(room_ref, sizeof(room_ref), "%d", room_vnum);
-		if (!sql_persistence_item_owner_matches(uid, "room", room_ref,
-							"redis_restore_floor_drops"))
+		std::vector<unsigned char> record;
+		try
 		{
-			skipped++;
-			cJSON_Delete(obj_json);
-			continue;
+			record.resize(record_size);
 		}
-
-		P_obj obj = read_object(vnum, VIRTUAL);
-		if (!obj)
+		catch (const std::bad_alloc &)
 		{
-			cJSON_Delete(obj_json);
-			continue;
+			valid = false;
+			break;
 		}
-
-		obj->obj_uid = uid;
-
-		cJSON *tp = cJSON_GetObjectItem(obj_json, "tp");
-		if (tp && cJSON_IsNumber(tp))
-			obj->type = tp->valueint;
-
-		for (int j = 0; j < NUMB_OBJ_VALS; j++)
+		memcpy(record.data(), encoded + 5, record_size);
+		if (!valid || record.size() < sizeof(world_recovery_object_record) +
+						      sizeof(world_recovery_item_snapshot))
+			break;
+		world_recovery_item_snapshot root = {};
+		memcpy(&root, record.data() + sizeof(world_recovery_object_record), sizeof(root));
+		if (root.item_uid != field_uid)
 		{
-			char key[16];
-			snprintf(key, sizeof(key), "v%d", j);
-			cJSON *val = cJSON_GetObjectItem(obj_json, key);
-			if (val && cJSON_IsNumber(val))
-				obj->value[j] = val->valueint;
+			valid = false;
+			break;
 		}
-
-		cJSON *tmr = cJSON_GetObjectItem(obj_json, "tmr");
-		if (tmr && cJSON_IsArray(tmr))
-		{
-			int idx = 0;
-			cJSON *t;
-			cJSON_ArrayForEach(t, tmr)
-			{
-				if (idx < 6 && cJSON_IsNumber(t))
-					obj->timer[idx] = (time_t)t->valuedouble;
-				idx++;
-			}
-		}
-
-		cJSON *nm = cJSON_GetObjectItem(obj_json, "nm");
-		cJSON *sd = cJSON_GetObjectItem(obj_json, "sd");
-		cJSON *ld = cJSON_GetObjectItem(obj_json, "ld");
-		if (nm && cJSON_IsString(nm) && nm->valuestring[0])
-		{
-			if ((obj->str_mask & STRUNG_KEYS) && obj->name)
-				str_free(obj->name);
-			obj->name = str_dup(nm->valuestring);
-			obj->str_mask |= STRUNG_KEYS;
-		}
-		if (sd && cJSON_IsString(sd) && sd->valuestring[0])
-		{
-			if ((obj->str_mask & STRUNG_DESC2) && obj->short_description)
-				str_free(obj->short_description);
-			obj->short_description = str_dup(sd->valuestring);
-			obj->str_mask |= STRUNG_DESC2;
-		}
-		if (ld && cJSON_IsString(ld) && ld->valuestring[0])
-		{
-			if ((obj->str_mask & STRUNG_DESC1) && obj->description)
-				str_free(obj->description);
-			obj->description = str_dup(ld->valuestring);
-			obj->str_mask |= STRUNG_DESC1;
-		}
-
-		obj_to_room(obj, rnum);
-
-		cJSON *con = cJSON_GetObjectItem(obj_json, "con");
-		if (con && cJSON_IsArray(con))
-		{
-			cJSON *cont_vnum;
-			cJSON_ArrayForEach(cont_vnum, con)
-			{
-				if (!cJSON_IsNumber(cont_vnum))
-					continue;
-				int content_vnum = cont_vnum->valueint;
-				if (content_vnum > 0)
-				{
-					P_obj content = read_object(content_vnum, VIRTUAL);
-					if (content)
-						obj_to_obj(content, obj);
-				}
-			}
-		}
-
-		cJSON_Delete(obj_json);
-		restored++;
+		aggregate_size += record_size;
+		records->push_back(std::move(record));
 	}
-
 	freeReplyObject(reply);
-
-	if (skipped > 0)
-		logit(LOG_SYS, "redis: floor drops: skipped %d non-authoritative items", skipped);
-	if (restored > 0)
-		logit(LOG_SYS, "redis: floor drops: restored %d items", restored);
-
-	// dont clear floor_drops here - world_state restore needs to check against it
-	// cleared after world_state restore completes
-
-	return restored;
+	if (!valid)
+		records->clear();
+	return valid;
 #else
-	return 0;
+	(void)records;
+	return false;
 #endif
 }
 
@@ -1551,8 +1377,6 @@ bool redis_load_world_state(void)
 			return false;
 	}
 
-	// restore floor drops first - has most recent data
-	redis_restore_floor_drops();
 	const uint64_t epoch = sql_season_epoch();
 	char current_key[128];
 	if (!redis_epoch_key(current_key, sizeof current_key, epoch, "world_state:current"))
@@ -1586,10 +1410,34 @@ bool redis_load_world_state(void)
 		return false;
 	}
 
+	std::vector<std::vector<unsigned char>> floor_records;
+	if (!redis_read_floor_records(&floor_records))
+	{
+		freeReplyObject(reply);
+		return false;
+	}
+	std::vector<const unsigned char *> floor_record_data;
+	std::vector<size_t> floor_record_sizes;
+	try
+	{
+		floor_record_data.reserve(floor_records.size());
+		floor_record_sizes.reserve(floor_records.size());
+		for (const std::vector<unsigned char> &record : floor_records)
+		{
+			floor_record_data.push_back(record.data());
+			floor_record_sizes.push_back(record.size());
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		freeReplyObject(reply);
+		return false;
+	}
 	world_recovery_header header = {};
-	const bool result =
-		world_recovery_restore(reinterpret_cast<const unsigned char *>(reply->str),
-				       reply->len, world_state_max_age, expected_sequence, &header);
+	const bool result = world_recovery_restore_with_floor(
+		reinterpret_cast<const unsigned char *>(reply->str), reply->len,
+		world_state_max_age, expected_sequence, floor_record_data.data(),
+		floor_record_sizes.data(), floor_records.size(), &header);
 	freeReplyObject(reply);
 	if (!result || header.sequence != expected_sequence)
 	{

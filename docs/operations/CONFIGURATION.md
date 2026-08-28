@@ -86,8 +86,10 @@ All of those keys use `mud:season:<epoch>:` with the active SQL season epoch cap
 boot. An old process can therefore write only its abandoned epoch after a reset; it cannot
 create a snapshot visible to the new season.
 Boot accepts only a complete, non-expired generation whose schema, sequence, size, and
-checksum validate. A failed or stale generation is ignored and the server continues with
-a normal boot.
+checksum validate. It combines the generation with versioned binary floor records,
+validates the full semantic graph, and batch-reconciles every item UID against SQL before
+creating any entity. A failed or stale generation is retained for diagnosis and the
+server performs a full normal zone boot.
 
 World generations are capped at 64 MiB. Restore checks the value length inside Redis
 before transfer. Each published generation receives a TTL of at least one hour or four
@@ -103,10 +105,12 @@ recovery. Successful restore consumes that generation without disabling future s
 
 Floor deltas use a separate background worker bounded to eight batches and 16 MiB. Each
 batch holds at most 2,048 mutations, each value is capped at 256 KiB, and keys are capped
-at 128 bytes. Before world capture, an ordered worker barrier confirms all earlier deltas
-and pauses later publication; the generation handoff deletes the acknowledged hash
-atomically, then post-barrier deltas resume. Gameplay performs no Redis socket I/O for
-floor drops, pickups, or snapshot preflight.
+at 128 bytes. Each value is a binary tree of at most 12 identity-preserving items; larger
+trees fail capture closed rather than being truncated. Before world capture, an ordered
+worker barrier confirms all earlier deltas and pauses later publication; the generation
+handoff deletes the acknowledged hash atomically, then post-barrier deltas resume.
+Gameplay performs bounded fixed-memory serialization but no Redis socket, SQL, disk,
+process, or logging I/O for floor drops, pickups, or snapshot preflight.
 
 The in-game `redis clear world`, `redis clear floor`, and `redis clear all confirm`
 commands cancel and join the publisher before deleting recovery state. They retain the

@@ -2,7 +2,9 @@
 #define __SQL_H_INCLUDED__
 
 #include "structs.h"
+#include "item_ownership_runtime.h"
 #include "persistence_observability.h"
+#include "world_recovery_pipeline.h"
 #include <stdlib.h>
 
 /* Database connection fields are explicit. Runtime validation rejects missing values. */
@@ -110,6 +112,10 @@ bool sql_persistence_item_owner_matches_identity(unsigned long long item_uid,
 						 unsigned long long owner_id,
 						 unsigned long long owner_context_id,
 						 const char *context);
+bool sql_persistence_reconcile_world_recovery_items(const world_recovery_authority_item *items,
+						    size_t count,
+						    item_ownership_runtime_entry *authoritative,
+						    size_t authoritative_capacity);
 bool sql_hydrate_item_owner_revisions(void);
 void sql_world_quest_finished(P_char ch, P_obj obj);
 int sql_world_quest_done_already(P_char ch, int number);

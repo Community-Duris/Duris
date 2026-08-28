@@ -22,7 +22,6 @@ void redis_log_floor_drop(P_obj obj, int room_vnum);
 void redis_remove_floor_drop(unsigned long obj_uid);
 void redis_clear_floor_drops(void);
 bool redis_flush_floor_drops(void);
-int redis_restore_floor_drops(void);
 
 void mark_player_dirty(int pid);
 void mark_player_dirty_components(int pid, player_component_mask_t components);
@@ -46,6 +45,7 @@ void event_save_world_state(P_char ch, P_char victim, P_obj obj, void *data);
 void redis_world_recovery_pulse(void);
 bool redis_world_recovery_drain(uint64_t timeout_msec);
 bool redis_world_recovery_quiesce(void);
+void redis_world_recovery_set_materializing(bool active);
 
 // cache helpers
 bool redis_cache_set(const char *key, const char *value);

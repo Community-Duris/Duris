@@ -981,8 +981,10 @@ void game_loop(int port, int sslport)
 		}
 		else
 		{
-			logit(LOG_STATUS, "%s recovery failed; normal boot state remains",
+			logit(LOG_STATUS, "%s recovery failed; applying full normal zone boot",
 			      clean_restart_recovery_boot ? "Clean restart" : "Crash");
+			for (int zone = 0; zone <= top_of_zone_table; ++zone)
+				reset_zone(zone, 2);
 		}
 		crash_recovery_boot = 0;
 		clean_restart_recovery_boot = 0;

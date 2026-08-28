@@ -311,19 +311,19 @@ bool redis_floor_store_submit(const char *key, const struct redis_floor_mutation
 		for (size_t index = 0; index < count; ++index)
 		{
 			const redis_floor_mutation &source = mutations[index];
-			if (!source.uid || (!source.remove && !source.value))
+			if (!source.uid ||
+			    (!source.remove && (!source.value || !source.value_size ||
+						source.value_size > REDIS_FLOOR_VALUE_MAX_BYTES)) ||
+			    (source.remove && (source.value || source.value_size)))
 				return false;
 			owned_mutation mutation;
 			mutation.uid = source.uid;
 			mutation.remove = source.remove;
 			if (!source.remove)
 			{
-				const size_t size =
-					strnlen(source.value, REDIS_FLOOR_VALUE_MAX_BYTES + 1);
-				if (size > REDIS_FLOOR_VALUE_MAX_BYTES)
-					return false;
-				mutation.value.assign(source.value, size);
-				job->bytes += size;
+				mutation.value.assign(reinterpret_cast<const char *>(source.value),
+						      source.value_size);
+				job->bytes += source.value_size;
 			}
 			job->mutations.push_back(std::move(mutation));
 		}

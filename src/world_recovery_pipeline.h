@@ -6,9 +6,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 7;
+constexpr uint32_t WORLD_RECOVERY_SCHEMA_VERSION = 8;
 constexpr size_t WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024;
 constexpr size_t WORLD_RECOVERY_MAX_RECORD_BYTES = 256 * 1024;
+constexpr size_t WORLD_RECOVERY_MAX_ITEM_TREE = 12;
 constexpr size_t WORLD_RECOVERY_CAPTURE_RECORD_BUDGET = 64;
 constexpr uint64_t WORLD_RECOVERY_CAPTURE_TIME_BUDGET_USEC = 2000;
 constexpr size_t WORLD_RECOVERY_QUEUE_CAPACITY = 2;
@@ -36,6 +37,35 @@ struct world_recovery_completion
 	uint64_t sequence;
 	bool published;
 	unsigned int attempts;
+};
+
+struct world_recovery_item_snapshot
+{
+	uint64_t item_uid;
+	uint64_t root_item_uid;
+	uint64_t parent_item_uid;
+	int32_t vnum;
+	int32_t type;
+	int32_t values[8];
+	int64_t timers[6];
+	char name[80];
+	char short_description[80];
+	char description[160];
+};
+
+struct world_recovery_object_record
+{
+	int32_t room_vnum;
+	uint32_t item_count;
+};
+
+struct world_recovery_authority_item
+{
+	uint64_t item_uid;
+	uint64_t root_item_uid;
+	uint64_t parent_item_uid;
+	int32_t room_vnum;
+	int32_t vnum;
 };
 
 struct world_recovery_health
@@ -80,6 +110,12 @@ bool world_recovery_validate(const unsigned char *data, size_t size, int max_age
 			     uint64_t minimum_sequence, world_recovery_header *header_out);
 bool world_recovery_restore(const unsigned char *data, size_t size, int max_age_seconds,
 			    uint64_t minimum_sequence, world_recovery_header *header_out);
+bool world_recovery_restore_with_floor(const unsigned char *data, size_t size, int max_age_seconds,
+				       uint64_t minimum_sequence,
+				       const unsigned char *const *floor_records,
+				       const size_t *floor_record_sizes, size_t floor_record_count,
+				       world_recovery_header *header_out);
+int world_recovery_write_object_to_buffer(P_obj obj, int room_vnum, char *buf, size_t max_len);
 
 void world_recovery_capture_forget_character(P_char ch);
 void world_recovery_capture_forget_object(P_obj obj);
