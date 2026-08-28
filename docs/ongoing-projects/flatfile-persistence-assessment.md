@@ -2391,6 +2391,34 @@ sections below continue to describe the required end state.
   transaction adapter first, with pointer-safe UID lookup in completion callbacks; then add
   produced-clone submission and multi-buy sequencing.
 
+### Checkpoint 75 - post-commit flat shop buy/sell publication
+
+- **Live cutover:** `shopping_buy` now routes non-produced, non-trusted flat-primary purchases
+  through the composite command before any payment or inventory mutation. `shopping_sell` routes
+  both retained and duplicate/trash outcomes before the legacy SQL, wallet, keeper-cash, or object
+  mutation path. MariaDB and fallback-selected operation retain the legacy behavior.
+- **Pointer-safe completion:** pending state retains only the immutable payload and player PID.
+  Completion resolves the selected object and current keeper by UID/shop ID, verifies the exact
+  object snapshot bytes and expected physical carrier, and only then moves the object from keeper
+  to player, player to keeper, or player to extraction. Authoritative wallet/bank, custody, and shop
+  revisions are published before this callback runs.
+- **Concurrency and failure behavior:** one pending trade per player blocks repeated shop commands,
+  while coordinator shop/player/item fences reject overlapping durable submissions. Insufficient
+  flat wallet balance no longer invokes gem debt mutation. Semantic rejection leaves the object in
+  place; a durable commit that cannot be reflected in the live object graph raises an explicit
+  persistence alert instead of performing an unverified move.
+- **Checks passed:** the focused live-route contract proves both flat branches submit before every
+  legacy money/SQL/object mutation, verifies UID/shop lookup and carrier/snapshot revalidation, and
+  proves authoritative runtime publication precedes the callback. Runtime/transaction regressions,
+  changed-line formatting, and the normal C++20 build pass; CI runs the new route contract.
+- **Exposure:** produced stock, trusted free purchases, gem-for-debt purchases, purchase-to-container,
+  and recursive multi-buy deliberately fail closed in flat-primary mode. Legacy cleanup of invalid
+  artifact/encrusted or nonpositive shop stock also remains outside the composite boundary, and
+  MariaDB has no shop-trade repository parity yet.
+- **Next action:** implement produced-clone lifetime and UID allocation through completion, then
+  sequence container placement/multi-buy as independent committed operations. After those pass,
+  move invalid-stock destruction through custody authority and add MariaDB composite parity.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

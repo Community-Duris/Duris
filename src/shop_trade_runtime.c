@@ -187,3 +187,17 @@ shop_trade_payload_build_result shop_trade_runtime_build_payload(P_char player, 
 	*payload = std::move(built);
 	return shop_trade_payload_build_result::ok;
 }
+
+bool shop_trade_runtime_object_matches_payload(P_obj selected, const shop_trade_payload &payload)
+{
+	if (!selected || selected->obj_uid != payload.selected_item_uid)
+		return false;
+	std::vector<player_item_snapshot> snapshots;
+	std::vector<uint8_t> encoded;
+	return player_item_snapshot_tree_capture(selected, &snapshots, nullptr) ==
+		       player_snapshot_capture_result::ok &&
+	       player_item_snapshot_list_encode(snapshots, &encoded) ==
+		       player_snapshot_codec_result::ok &&
+	       encoded.size() == payload.item_blob_size &&
+	       std::equal(encoded.begin(), encoded.end(), payload.item_blob.begin());
+}

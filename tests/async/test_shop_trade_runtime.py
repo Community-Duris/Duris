@@ -19,6 +19,8 @@ for token in (
     "ITEM_TRANSFER_ABSENT_REVISION",
     "item_ownership_runtime_lookup(stock->obj_uid",
     "shop_trade_command_encode_payload(built",
+    "shop_trade_runtime_object_matches_payload",
+    "encoded.size() == payload.item_blob_size",
 ):
     if token not in SOURCE:
         raise SystemExit(f"shop trade payload builder is missing {token}")

@@ -59,6 +59,7 @@ jobs:
           python3 tests/async/test_flatfile_shop_trade_repository.py
           python3 tests/async/test_shop_trade_transaction.py
           python3 tests/async/test_shop_trade_runtime.py
+          python3 tests/async/test_shop_trade_live_route.py
           python3 tests/async/test_flatfile_shopkeeper_capture.py
           python3 tests/async/test_flatfile_shopkeeper_ownership.py
           python3 tests/async/test_flatfile_shopkeeper_materialize.py

@@ -23,6 +23,10 @@
 #include "salchemist.h"
 #include "specs.prototypes.h"
 #include "sql.h"
+#include "persistence_mode.h"
+#include "shop_trade_runtime.h"
+#include "shop_trade_transaction.h"
+#include <cerrno>
 
 /*
  * external variables
@@ -41,12 +45,116 @@ extern struct cha_app_type cha_app[];
 extern struct time_info_data time_info;
 extern struct zone_data *zone_table;
 extern int mini_mode;
+extern P_obj object_list;
 
 struct shop_data *shop_index;
 int number_of_shops = 0;
 const char *operator_str[] = { "[({", "])}", "|+", "&*", "^'" };
 
 void lore_item(P_char ch, P_obj obj);
+
+static P_obj shop_trade_find_object(uint64_t uid)
+{
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == uid)
+			return object;
+	return NULL;
+}
+
+static P_char shop_trade_find_keeper(uint32_t shop_id)
+{
+	if (shop_id >= static_cast<uint32_t>(number_of_shops))
+		return NULL;
+	const int room_rnum = real_room(shop_index[shop_id].in_room);
+	if (room_rnum < 0 || room_rnum > top_of_world)
+		return NULL;
+	for (P_char candidate = world[room_rnum].people; candidate;
+	     candidate = candidate->next_in_room)
+		if (IS_NPC(candidate) && GET_RNUM(candidate) == shop_index[shop_id].keeper)
+			return candidate;
+	return NULL;
+}
+
+static void shop_trade_completion(P_char ch, bool committed, const shop_trade_result &result,
+				  unsigned int error_code, const shop_trade_payload &payload)
+{
+	if (!ch)
+		return;
+	P_obj object = shop_trade_find_object(payload.selected_item_uid);
+	P_char keeper = shop_trade_find_keeper(payload.shop_id);
+	const bool buying = payload.action == shop_trade_action::buy_existing;
+	const bool selling = payload.action == shop_trade_action::sell_store ||
+			     payload.action == shop_trade_action::sell_destroy;
+	const bool correct_location =
+		object && (payload.action != shop_trade_action::sell_store || keeper) &&
+		((buying && keeper && OBJ_CARRIED(object) && object->loc.carrying == keeper) ||
+		 (selling && OBJ_CARRIED(object) && object->loc.carrying == ch));
+	if (!committed || !correct_location ||
+	    !shop_trade_runtime_object_matches_payload(object, payload))
+	{
+		if (committed || (result.shop_revision && result.item_count))
+		{
+			statuslog(
+				56,
+				"&+RALERT&n: committed shop trade could not publish live object [%llu] at shop [%u]",
+				static_cast<unsigned long long>(payload.selected_item_uid),
+				payload.shop_id);
+			persistence_alert(AVATAR, "shop_trade", "redacted", "none", "none",
+					  "live_publish_failed", NULL);
+		}
+		else if (error_code == ENOSPC)
+			send_to_char("You don't have enough money for that purchase.\r\n", ch);
+		else if (error_code == ESTALE)
+			send_to_char("That shop trade changed before it could complete.\r\n", ch);
+		else
+			send_to_char("The shop could not complete that trade.\r\n", ch);
+		return;
+	}
+
+	char message[MAX_STRING_LENGTH];
+	if (buying)
+	{
+		act("$n buys $p.", FALSE, ch, object, 0, TO_ROOM);
+		if (keeper)
+		{
+			checked_substitute(message, MAX_STRING_LENGTH,
+					   shop_index[payload.shop_id].message_buy, GET_NAME(ch),
+					   coin_stringv(payload.price));
+			do_tell(keeper, message, 0);
+			ADD_MONEY(keeper, payload.price);
+		}
+		obj_from_char(object);
+		SET_BIT(object->extra2_flags, ITEM2_STOREITEM);
+		obj_to_char(object, ch);
+		snprintf(message, MAX_STRING_LENGTH, "You now have %s.\r\n",
+			 object->short_description);
+		send_to_char(message, ch);
+		return;
+	}
+
+	act("$n sells $p.", FALSE, ch, object, 0, TO_ROOM);
+	if (keeper)
+	{
+		checked_substitute(message, MAX_STRING_LENGTH,
+				   shop_index[payload.shop_id].message_sell, GET_NAME(ch),
+				   coin_stringv(payload.price));
+		do_tell(keeper, message, 0);
+		SUB_MONEY(keeper, payload.price, 0);
+	}
+	snprintf(message, MAX_STRING_LENGTH, "The shopkeeper gives you %s.\r\n",
+		 coin_stringv(payload.price));
+	send_to_char(message, ch);
+	obj_from_char(object);
+	if (payload.action == shop_trade_action::sell_destroy)
+		extract_obj(object, TRUE);
+	else
+	{
+		obj_to_char(object, keeper);
+		snprintf(message, MAX_STRING_LENGTH, "The shopkeeper now has %s.\r\n",
+			 object->short_description);
+		send_to_char(message, ch);
+	}
+}
 
 void push(struct stack_data *stack, int pushval)
 {
@@ -441,6 +549,12 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	{
 		return;
 	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	    shop_trade_transaction_player_busy(ch))
+	{
+		send_to_char("Your previous shop trade is still being processed.\r\n", ch);
+		return;
+	}
 
 	arg = one_argument(arg, argm);
 	if (!(*argm))
@@ -528,6 +642,13 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if ((GET_MONEY(ch) < sale) && !IS_TRUSTED(ch))
 	{
+		if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+		{
+			checked_substitute(Gbuf1, MAX_STRING_LENGTH,
+					   shop_index[shop_nr].missing_cash2, GET_NAME(ch));
+			mobsay(keeper, Gbuf1);
+			return;
+		}
 		gem = accept_gem_for_debt(ch, keeper, sale);
 	}
 
@@ -536,6 +657,28 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s : You can't carry that many items.\r\n",
 			 FirstWord(temp1->name));
 		send_to_char(Gbuf1, ch);
+		return;
+	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		if (IS_TRUSTED(ch) || gem || shop_producing(temp1, shop_nr))
+		{
+			send_to_char(
+				"That purchase is not available through flat-file persistence yet.\r\n",
+				ch);
+			return;
+		}
+		shop_trade_payload payload = {};
+		if (shop_trade_runtime_build_payload(
+			    ch, temp1, NULL, shop_nr, shop_trade_action::buy_existing, sale,
+			    &payload) != shop_trade_payload_build_result::ok ||
+		    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
+		{
+			send_to_char("The shop transaction service is busy. Please try again.\r\n",
+				     ch);
+			return;
+		}
+		send_to_char("Your purchase is being processed.\r\n", ch);
 		return;
 	}
 	if (!IS_TRUSTED(ch))
@@ -625,6 +768,12 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 
 	if (!(is_ok(keeper, ch, shop_nr)))
 		return;
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY &&
+	    shop_trade_transaction_player_busy(ch))
+	{
+		send_to_char("Your previous shop trade is still being processed.\r\n", ch);
+		return;
+	}
 
 	one_argument(arg, argm);
 
@@ -707,11 +856,6 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 		do_tell(keeper, Gbuf1, 0);
 		return;
 	}
-	act("$n sells $p.", FALSE, ch, temp1, 0, TO_ROOM);
-
-	checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell, GET_NAME(ch),
-			   coin_stringv(sale));
-
 	int temp = 0;
 
 	if ((temp = sql_shop_trophy(temp1)) > 1)
@@ -729,6 +873,30 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 			"The shopkeeper says 'This item is rather common, you won't get as much for it.'\r\n");
 		send_to_char(Gbuf1, ch);
 	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		const shop_trade_action action = (get_obj_in_list(argm, keeper->carrying) ||
+						  GET_ITEM_TYPE(temp1) == ITEM_TRASH) ?
+							 shop_trade_action::sell_destroy :
+							 shop_trade_action::sell_store;
+		shop_trade_payload payload = {};
+		if (shop_trade_runtime_build_payload(ch, temp1, NULL, shop_nr, action, sale,
+						     &payload) !=
+			    shop_trade_payload_build_result::ok ||
+		    !shop_trade_transaction_submit(ch, payload, shop_trade_completion))
+		{
+			send_to_char("The shop transaction service is busy. Please try again.\r\n",
+				     ch);
+			return;
+		}
+		send_to_char("Your sale is being processed.\r\n", ch);
+		return;
+	}
+
+	act("$n sells $p.", FALSE, ch, temp1, 0, TO_ROOM);
+	if (temp <= 1)
+		checked_substitute(Gbuf1, MAX_STRING_LENGTH, shop_index[shop_nr].message_sell,
+				   GET_NAME(ch), coin_stringv(sale));
 
 	do_tell(keeper, Gbuf1, 0);
 
