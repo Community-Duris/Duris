@@ -9,6 +9,33 @@ open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-011 pipelined floor-delta flush
+
+Completed in this interval:
+
+- Changed floor-delta flushes from one blocking request/reply cycle per `HDEL` or `HSET`
+  to hiredis command buffering followed by one ordered reply collection.
+- Preserved the existing fail-closed contract: queued deltas are released only after
+  every reply is received and has the expected integer type. Partial append, timeout,
+  Redis error, allocation failure, or unexpected reply retains the full retry buffer.
+- Kept the existing 1,024-add and 1,024-remove memory bounds and the world-capture gate.
+
+Performance effect:
+
+- A full flush now uses one pipelined network exchange instead of as many as 2,048
+  sequential round trips. It sends the same Redis mutations and does not add any command.
+- No Redis work was added to object movement. This interval reduces the worst existing
+  flush latency, but RDS-011 remains partial until noncritical gameplay writes and
+  reconnects are fully isolated from the simulation thread.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed.
+- `python3 tests/async/test_redis_floor_world_gate.py`: passed.
+- `./scripts/format.sh --check`: passed.
+
 ### 2026-08-28 - RDS-001/RDS-007 epoch-scoped world recovery
 
 Completed in this interval:
@@ -855,6 +882,9 @@ use a durable stream with stable event IDs rather than at-most-once pub/sub.
 
 Severity: High
 Confidence: Confirmed
+Remediation status: Partially remediated; floor-delta batches use one pipelined exchange
+instead of up to 2,048 sequential round trips. Other synchronous gameplay Redis calls and
+the shared connection's sticky failure behavior remain open.
 
 Evidence:
 

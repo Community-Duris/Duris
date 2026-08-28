@@ -294,6 +294,48 @@ static redisReply *redis_command(redisContext *ctx, const char *format, ...)
 	return reply;
 }
 
+static bool redis_append_command(redisContext *ctx, const char *format, ...)
+{
+	if (!ctx || ctx->err || !format)
+	{
+		redis_log_command_failure(!ctx ? "unavailable" : "context_error");
+		return false;
+	}
+	va_list args;
+	va_start(args, format);
+	const int result = redisvAppendCommand(ctx, format, args);
+	va_end(args);
+	if (result != REDIS_OK)
+		redis_log_command_failure(ctx->err == REDIS_ERR_IO ? "timeout_or_io" :
+								     "append_failed");
+	return result == REDIS_OK;
+}
+
+static bool redis_collect_integer_replies(redisContext *ctx, size_t count)
+{
+	bool valid = true;
+	for (size_t index = 0; index < count; ++index)
+	{
+		void *raw_reply = NULL;
+		if (!ctx || redisGetReply(ctx, &raw_reply) != REDIS_OK || !raw_reply)
+		{
+			redis_log_command_failure(
+				ctx && ctx->err == REDIS_ERR_IO ? "timeout_or_io" : "no_reply");
+			return false;
+		}
+		redisReply *reply = (redisReply *)raw_reply;
+		if (reply->type != REDIS_REPLY_INTEGER)
+		{
+			redis_log_command_failure(reply->type == REDIS_REPLY_ERROR ?
+							  "error_reply" :
+							  "unexpected_reply");
+			valid = false;
+		}
+		freeReplyObject(reply);
+	}
+	return valid;
+}
+
 #endif
 
 /* Scan-and-delete with MATCH pattern. Fail closed if SCAN/DEL misshape. */
@@ -724,26 +766,30 @@ bool redis_flush_floor_drops(void)
 	if (!redis_season_key(floor_key, sizeof floor_key, "floor_drops"))
 		return false;
 
-	// process removes first
+	size_t appended = 0;
+	bool queued = true;
+	// Queue removes first, followed by replacement values. Hiredis sends the buffered
+	// commands together when replies are collected, avoiding one round trip per delta.
 	for (int i = 0; i < floor_drop_remove_count; i++)
 	{
-		redisReply *reply = (redisReply *)redis_command(redis_ctx, "HDEL %s %lu", floor_key,
-								floor_drop_removes[i]);
-		if (!reply || reply->type != REDIS_REPLY_INTEGER)
+		if (!redis_append_command(redis_ctx, "HDEL %s %lu", floor_key,
+					  floor_drop_removes[i]))
 		{
-			if (reply)
-				freeReplyObject(reply);
-			return false;
+			queued = false;
+			break;
 		}
-		freeReplyObject(reply);
+		++appended;
 	}
 
-	// process adds
-	for (int i = 0; i < floor_drop_batch_count; i++)
+	// Queue adds only if every remove was accepted into the client output buffer.
+	for (int i = 0; queued && i < floor_drop_batch_count; i++)
 	{
 		cJSON *o = cJSON_CreateObject();
 		if (!o)
+		{
+			redis_collect_integer_replies(redis_ctx, appended);
 			return false;
+		}
 
 		cJSON_AddNumberToObject(o, "uid", (double)floor_drop_batch[i].uid);
 		cJSON_AddNumberToObject(o, "v", floor_drop_batch[i].vnum);
@@ -799,19 +845,22 @@ bool redis_flush_floor_drops(void)
 		char *json_str = cJSON_PrintUnformatted(o);
 		cJSON_Delete(o);
 		if (!json_str)
-			return false;
-
-		redisReply *reply = (redisReply *)redis_command(
-			redis_ctx, "HSET %s %lu %s", floor_key, floor_drop_batch[i].uid, json_str);
-		free(json_str);
-		if (!reply || reply->type != REDIS_REPLY_INTEGER)
 		{
-			if (reply)
-				freeReplyObject(reply);
+			redis_collect_integer_replies(redis_ctx, appended);
 			return false;
 		}
-		freeReplyObject(reply);
+
+		queued = redis_append_command(redis_ctx, "HSET %s %lu %s", floor_key,
+					      floor_drop_batch[i].uid, json_str);
+		free(json_str);
+		if (queued)
+			++appended;
 	}
+
+	const bool flushed = redis_collect_integer_replies(redis_ctx, appended);
+	if (!queued || !flushed ||
+	    appended != (size_t)(floor_drop_remove_count + floor_drop_batch_count))
+		return false;
 
 	floor_drop_remove_count = 0;
 	for (int i = 0; i < floor_drop_batch_count; i++)

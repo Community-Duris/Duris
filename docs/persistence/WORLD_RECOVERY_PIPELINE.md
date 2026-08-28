@@ -32,6 +32,10 @@ Only the exact acknowledged generation may clear the pre-capture Redis delta set
 failed, timed-out, or stale publish leaves that set intact, while post-boundary local
 deltas remain eligible for the next normal flush.
 
+Each flush buffers all bounded hash mutations and collects their replies as one ordered
+hiredis pipeline. This avoids one network round trip per delta. The in-memory batches are
+cleared only after every reply succeeds, so a failed exchange remains retryable.
+
 ## Lifecycle And Health
 
 The ordinary pulse advances capture and consumes typed completions. Copyover and

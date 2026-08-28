@@ -153,6 +153,8 @@ flush = section(REDIS, "bool redis_flush_floor_drops", "void redis_remove_floor_
 pulse = section(REDIS, "void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
 assert "world_recovery_pipeline_busy()" in flush
 assert "world_recovery_floor_ack_pending" not in flush
+assert "redis_append_command" in flush and "redis_collect_integer_replies" in flush
+assert flush.count("redis_command") == 0
 assert "redis_clear_floor_drops_checked()" not in pulse
 cancel = section(PIPELINE, "void world_recovery_pipeline_cancel", "bool world_recovery_pipeline_request")
 for token in ("stop_requested = true", "queued.clear()", "completions.clear()",

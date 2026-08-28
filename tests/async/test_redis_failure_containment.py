@@ -20,6 +20,8 @@ assert "redisCommand(" not in text
 assert "redisConnect(" not in text
 assert text.count("redisConnectWithTimeout(") == 1
 assert text.count("redisvCommand(") == 1
+assert text.count("redisvAppendCommand(") == 1
+assert text.count("redisGetReply(ctx,") == 1
 assert "redisConnect(" not in store
 assert store.count("redisConnectWithTimeout(") == 1
 assert store.count("redisvCommand(") == 1
@@ -91,12 +93,15 @@ assert "world_recovery_pipeline_busy()" in floor_flush
 assert "world_recovery_floor_ack_pending" not in floor_flush
 assert floor_flush.index("return false;") < floor_flush.index("floor_drop_remove_count = 0;")
 assert floor_flush.index("return false;") < floor_flush.index("floor_drop_batch_count = 0;")
+assert "redis_append_command" in floor_flush
+assert "redis_collect_integer_replies" in floor_flush
+assert floor_flush.count("redis_command") == 0
 assert "bool redis_flush_floor_drops(void);" in header
 ack = section("void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
 assert "redis_clear_floor_drops_checked()" not in ack
 assert "world_recovery_floor_ack_pending" not in ack
 event = section("void event_save_world_state", "bool redis_cache_set")
 assert "redis_clear_floor_drops" not in event
-print("[PASS] floor deltas clear only after exact snapshot success; newer deltas remain queued")
+print("[PASS] floor deltas use one pipelined exchange and clear only after exact success")
 
 print("redis failure containment source contracts passed")
