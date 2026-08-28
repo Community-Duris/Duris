@@ -396,6 +396,11 @@ void worker_main()
 				health.connected = false;
 				health.busy = false;
 			}
+			// A failed due heartbeat must not remain perpetually overdue and starve
+			// queued state changes while Redis rejects the lease command.
+			next_heartbeat =
+				std::chrono::steady_clock::now() +
+				std::chrono::milliseconds(configured_heartbeat_interval_msec);
 			redisFree(context);
 			context = nullptr;
 			if (!wait_for_retry(reconnect_delay_msec))

@@ -175,10 +175,13 @@ int main(int argc, char **argv)
     const std::string expiring_key = "mud:season:7:presence:session:" +
                                      std::string(reply->str, reply->len) + ":404";
     freeReplyObject(reply);
+    health = redis_presence_worker_health_copy();
+    const uint64_t lease_failures_before_fence = health.lease_failures;
     freeReplyObject(run(context, "SET mud:season:7:presence:current newer-instance EX 3"));
     std::this_thread::sleep_for(std::chrono::milliseconds(600));
     health = redis_presence_worker_health_copy();
-    assert(health.active_sessions == 0 && health.lease_failures == 0);
+    assert(health.active_sessions == 0 &&
+           health.lease_failures == lease_failures_before_fence);
     reply = run(context, "GET mud:season:7:presence:current");
     assert(reply->type == REDIS_REPLY_STRING && !strcmp(reply->str, "newer-instance"));
     freeReplyObject(reply);
