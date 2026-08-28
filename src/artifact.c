@@ -259,6 +259,7 @@ void arti_reset_sql(P_char ch, char *arg);
 void arti_swap_sql(P_char ch, char *arg);
 void arti_syncdb_sql(P_char ch);
 void arti_timer_sql(P_char ch, char *arg);
+void artifact_update_sql(P_obj arti, char owned, time_t timer);
 P_char load_dummy_char(char *name);
 void nuke_eq(P_char ch);
 
@@ -918,12 +919,16 @@ void addOnGroundArtis_sql()
 //   the new time to poof.
 void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 {
-	int vnum = OBJ_VNUM(arti), location;
-	long unsigned oldtime, to_time;
+	int vnum = OBJ_VNUM(arti);
+	long unsigned to_time;
 	P_char owner;
 	P_obj cont;
+#ifndef __NO_MYSQL__
+	int location;
+	long unsigned oldtime;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
+#endif
 
 	if (!updateArtis)
 	{
@@ -952,6 +957,66 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 		      (long)(time(NULL) + min_minutes * 60), vnum);
 	}
 
+#ifdef __NO_MYSQL__
+	flatfile_artifact_record record;
+	std::string error;
+	const auto loaded =
+		flatfile_artifact_get(persistence_mode_flatfile_root(), vnum, &record, &error);
+	if (loaded == flatfile_artifact_result::ok)
+	{
+		if (!record.owned)
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: WARNING: Updating time on non-owned artifact %d.",
+			      vnum);
+		const auto extended = flatfile_artifact_extend_timer(
+			persistence_mode_flatfile_root(), vnum, to_time, time(NULL), &error);
+		if (extended != flatfile_artifact_result::ok &&
+		    extended != flatfile_artifact_result::unchanged)
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: flat timer extension failed for %d: %s",
+			      vnum, error.empty() ? "invalid artifact authority" : error.c_str());
+		else
+			arti_cache_invalidate();
+		return;
+	}
+	if (loaded != flatfile_artifact_result::not_found)
+	{
+		logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: flat artifact read failed: %s",
+		      error.empty() ? "invalid artifact authority" : error.c_str());
+		return;
+	}
+	cont = arti;
+	if (OBJ_INSIDE(cont))
+	{
+		logit(LOG_ARTIFACT,
+		      "artifact_feed_to_min_sql: arti vnum %d is inside a container?!", vnum);
+		while (OBJ_INSIDE(cont) && cont->loc.inside)
+			cont = cont->loc.inside;
+	}
+	if (OBJ_ROOM(cont))
+		artifact_update_sql(arti, 'Y', to_time);
+	else if (OBJ_WORN(cont) || OBJ_CARRIED(cont))
+	{
+		owner = OBJ_WORN(cont) ? cont->loc.wearing : cont->loc.carrying;
+		if (!owner)
+			logit(LOG_ARTIFACT,
+			      "artifact_feed_to_min_sql: arti vnum %d worn or carried, but no owner?!",
+			      vnum);
+		else
+			artifact_update_sql(arti, IS_NPC(owner) ? 'N' : 'Y', to_time);
+	}
+	else if (OBJ_INSIDE(cont))
+		logit(LOG_ARTIFACT,
+		      "artifact_feed_to_min_sql: arti vnum %d is inside a non-existent container?!",
+		      vnum);
+	else if (OBJ_NOWHERE(cont))
+		logit(LOG_ARTIFACT,
+		      "artifact_feed_to_min_sql: arti vnum %d is in location NOWHERE?!", vnum);
+	else
+		logit(LOG_ARTIFACT,
+		      "artifact_feed_to_min_sql: arti vnum %d is in an UNKNOWN location?!", vnum);
+	return;
+#else
 	if (!qry("select owned, UNIX_TIMESTAMP(timer) from artifacts where vnum = %d", vnum))
 	{
 		logit(LOG_ARTIFACT, "artifact_feed_to_min_sql: failed to read from database.");
@@ -1075,6 +1140,7 @@ void artifact_feed_to_min_sql(P_obj arti, int min_minutes)
 		}
 	}
 	mysql_free_result(res);
+#endif
 }
 
 // This function handles the 'soul' of the artifact.
@@ -1860,12 +1926,31 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
 	if (!get_artifact_data_sql(vnum, &artidata))
 	{
 		statuslog(MINLVLIMMORTAL, "artifact_feed_sql: called without an entry in DB?!");
+#ifdef __NO_MYSQL__
+		std::string error;
+		const int type = IS_IOUN(arti)	 ? ARTIFACT_IOUN :
+				 IS_UNIQUE(arti) ? ARTIFACT_UNIQUE :
+						   ARTIFACT_MAJOR;
+		const auto updated = flatfile_artifact_gameplay_update(
+			persistence_mode_flatfile_root(), vnum, true, ARTIFACT_ON_PC,
+			GET_PID(owner), poof_time, type, time(NULL), &error);
+		if (updated != flatfile_artifact_result::ok &&
+		    updated != flatfile_artifact_result::unchanged)
+		{
+			logit(LOG_ARTIFACT, "artifact_feed_sql: flat artifact update failed: %s",
+			      error.empty() ? "invalid or missing artifact authority" :
+					      error.c_str());
+			return;
+		}
+#endif
 		send_to_char("&+RYou feel a deep sense of satisfaction from somewhere...\r\n",
 			     owner);
+#ifndef __NO_MYSQL__
 		qry("INSERT INTO artifacts (vnum, owned, locType, location, timer, type, lastUpdate) VALUES(%d, 'Y', %d, %d, FROM_UNIXTIME(%lu), %d, SYSDATE())",
 		    vnum, ARTIFACT_ON_PC, GET_PID(owner), poof_time,
 		    IS_IOUN(arti) ? ARTIFACT_IOUN :
 				    (IS_UNIQUE(arti) ? ARTIFACT_UNIQUE : ARTIFACT_MAJOR));
+#endif
 		arti_cache_invalidate();
 		return;
 	}

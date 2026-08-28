@@ -81,6 +81,11 @@ int real_room(const int vnum)
 	return -1;
 }
 
+int real_room0(const int vnum)
+{
+	return real_room(vnum);
+}
+
 void obj_to_room(P_obj object, int room)
 {
 	require(object && room >= 0 && room <= top_of_world, "invalid boot room placement");
@@ -195,6 +200,20 @@ int main(int argc, char **argv)
 			stored.revision == 2,
 		"runtime owned-artifact removal did not persist its complete outcome");
 	artifact_update_sql(701, true, FLATFILE_ARTIFACT_ON_GROUND, 1202, 7000, 1);
+	P_obj fed = new obj_data{};
+	fed->R_num = 0;
+	fed->extra_flags = ITEM_ARTIFACT;
+	fed->name = const_cast<char *>("artifact");
+	const time_t minimum_timer = time(NULL) + 120 * 60;
+	artifact_feed_to_min_sql(fed, 120);
+	delete fed;
+	require(flatfile_artifact_get(state_root, 701, &stored, &error) ==
+				flatfile_artifact_result::ok &&
+			stored.timer >= minimum_timer && stored.timer <= minimum_timer + 2 &&
+			stored.owned && stored.location_type == FLATFILE_ARTIFACT_ON_GROUND &&
+			stored.location == 1202 && stored.type == 1 &&
+			stored.bind_owner_pid == -1 && stored.bind_timer == 0,
+		"runtime minimum feed did not extend only the canonical flat timer");
 
 	mob_indices[0].virtual_number = 8100;
 	boot_mob_data.R_num = 0;

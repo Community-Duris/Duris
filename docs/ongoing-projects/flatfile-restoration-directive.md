@@ -420,6 +420,31 @@
   repair paths, destructive clear semantics, and remaining direct-SQL artifact routes
   still require focused work. The global incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - restored artifact feeding without MySQL
+
+- **Concrete gap:** both the “feed to at least this duration” path and the normal feed
+  recovery for an untracked/unowned artifact still issued direct SQL. In no-database mode
+  those calls could neither extend an existing timer nor establish the feed outcome.
+- **Restoration:** the minimum-feed path now uses one locked catalog mutation that applies
+  `max(current, requested)` and refreshes last-update time without changing ownership,
+  location, type, or binding. When no row exists in an already established catalog, the
+  existing live object-location rules create the same ground/NPC/player state through the
+  restored gameplay updater. Normal player feeding likewise records its player-owned
+  recovery through that updater. Missing or corrupt catalog authority remains fail-closed;
+  database-backed behavior is unchanged.
+- **Focused evidence:** repository tests cover non-decreasing timer extension,
+  last-update refresh, non-timer preservation, idempotence, missing rows, invalid input,
+  revision progression, and corrupt-authority refusal. The client-free runtime harness
+  invokes the real minimum-feed compatibility function and verifies its persisted result;
+  the source contract confirms normal missing-row feeding also uses flat authority.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** normal artifact feeding is restored, but catalog establishment,
+  fix/sync repair paths, destructive clear semantics, and remaining direct-SQL artifact
+  routes still require focused work. The global incomplete-domain boot fence remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

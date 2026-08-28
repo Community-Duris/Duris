@@ -359,13 +359,37 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_remove_owned(gameplay_root.string(), 799, 88, 9, 1500, &error) ==
 			flatfile_artifact_result::invalid,
 		"owned artifact removal accepted an invalid type");
+	require(flatfile_artifact_extend_timer(gameplay_root.string(), 701, 8000, 1600, &error) ==
+			flatfile_artifact_result::ok,
+		"artifact timer extension failed: " + error);
+	require(flatfile_artifact_extend_timer(gameplay_root.string(), 701, 7500, 1700, &error) ==
+			flatfile_artifact_result::ok,
+		"artifact timer extension could not refresh last-update time");
+	require(flatfile_artifact_get(gameplay_root.string(), 701, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			gameplay_record.timer == 8000 && gameplay_record.last_update == 1700 &&
+			gameplay_record.owned &&
+			gameplay_record.location_type == FLATFILE_ARTIFACT_ON_CORPSE &&
+			gameplay_record.location == 77 && gameplay_record.type == 1 &&
+			gameplay_record.bind_owner_pid == -1 && gameplay_record.bind_timer == 0 &&
+			gameplay_record.revision == 5,
+		"artifact timer extension lowered its timer or changed non-timer fields");
+	require(flatfile_artifact_extend_timer(gameplay_root.string(), 701, 7500, 1700, &error) ==
+			flatfile_artifact_result::unchanged,
+		"identical artifact timer extension was not idempotent");
+	require(flatfile_artifact_extend_timer(gameplay_root.string(), 798, 8000, 1700, &error) ==
+			flatfile_artifact_result::not_found,
+		"artifact timer extension synthesized a missing artifact");
+	require(flatfile_artifact_extend_timer(gameplay_root.string(), 701, 0, 1700, &error) ==
+			flatfile_artifact_result::invalid,
+		"artifact timer extension accepted a zero minimum");
 	flatfile_artifact_record expired_record;
 	require(flatfile_artifact_find_next_expired(gameplay_root.string(), 0, 6500,
 						    &expired_record,
 						    &error) == flatfile_artifact_result::ok &&
 			expired_record.vnum == 700,
 		"first expired artifact was not selected in vnum order");
-	require(flatfile_artifact_find_next_expired(gameplay_root.string(), 700, 8000,
+	require(flatfile_artifact_find_next_expired(gameplay_root.string(), 700, 8001,
 						    &expired_record,
 						    &error) == flatfile_artifact_result::ok &&
 			expired_record.vnum == 701,
@@ -480,6 +504,9 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_remove_owned(root.string(), 100, -1, 1, 1200, &error) ==
 			flatfile_artifact_result::invalid,
 		"corrupt artifact authority was overwritten through owned removal");
+	require(flatfile_artifact_extend_timer(root.string(), 100, 6000, 1200, &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was overwritten through timer extension");
 	require(flatfile_artifact_find_next_expired(root.string(), 0, 6000, &expired_record,
 						    &error) == flatfile_artifact_result::invalid,
 		"corrupt artifact authority was exposed through expiry selection");

@@ -468,6 +468,45 @@ flatfile_artifact_result flatfile_artifact_remove_owned(const std::string &root,
 		       flatfile_artifact_result::io_error;
 }
 
+flatfile_artifact_result flatfile_artifact_extend_timer(const std::string &root, int32_t vnum,
+							int64_t minimum_timer, int64_t last_update,
+							std::string *error)
+{
+	if (root.empty() || vnum <= 0 || minimum_timer <= 0 || last_update < 0)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	auto found = std::lower_bound(catalog.records.begin(), catalog.records.end(), vnum,
+				      [](const flatfile_artifact_record &candidate, int32_t sought)
+				      { return candidate.vnum < sought; });
+	if (found == catalog.records.end() || found->vnum != vnum)
+		return flatfile_artifact_result::not_found;
+	const int64_t timer = std::max(found->timer, minimum_timer);
+	if (found->timer == timer && found->last_update == last_update)
+		return flatfile_artifact_result::unchanged;
+	if (found->revision == std::numeric_limits<uint64_t>::max() ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_artifact_result::invalid;
+	found->timer = timer;
+	found->last_update = last_update;
+	++found->revision;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_artifact_result::ok :
+		       flatfile_artifact_result::io_error;
+}
+
 flatfile_artifact_result flatfile_artifact_find_next_expired(const std::string &root,
 							     int32_t after_vnum, int64_t now,
 							     flatfile_artifact_record *record,

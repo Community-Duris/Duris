@@ -195,3 +195,15 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
         raise AssertionError("client-free keyed soul reset bypasses flat authority")
     if "flatfile_artifact_bind_reset_all(" not in reset_body:
         raise AssertionError("client-free reset-all bypasses flat authority")
+
+    feed_min_start = artifact_source.index("void artifact_feed_to_min_sql(")
+    feed_min_end = artifact_source.index("\nvoid artifact_switch_check(", feed_min_start)
+    feed_min_body = artifact_source[feed_min_start:feed_min_end]
+    if "flatfile_artifact_extend_timer(" not in feed_min_body:
+        raise AssertionError("client-free minimum feed bypasses flat timer authority")
+
+    feed_start = artifact_source.index("void artifact_feed_sql(")
+    feed_end = artifact_source.index("\nP_char load_dummy_char(", feed_start)
+    feed_body = artifact_source[feed_start:feed_end]
+    if "flatfile_artifact_gameplay_update(" not in feed_body:
+        raise AssertionError("client-free missing-row feed bypasses flat authority")
