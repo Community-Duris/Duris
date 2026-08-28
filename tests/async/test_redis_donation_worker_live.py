@@ -65,6 +65,7 @@ def main() -> None:
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <thread>
 
 int main(int argc, char **argv)
@@ -74,7 +75,11 @@ int main(int argc, char **argv)
         "127.0.0.1", atoi(argv[1]), 100, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false};
     redis_connection_settings *settings = redis_connection_settings_create(&options);
     assert(settings);
-    redis_donation_worker_config config = {settings, argv[2]};
+    redis_donation_worker_config config = {settings, argv[2], "mud:season:7:nchat"};
+    std::string oversized_channel(161, 'x');
+    config.channel = oversized_channel.c_str();
+    assert(!redis_donation_worker_init(&config));
+    config.channel = "mud:season:7:nchat";
     assert(redis_donation_worker_init(&config));
 
     redis_donation_worker_health health = {};
@@ -185,6 +190,16 @@ int main(int argc, char **argv)
                 raise AssertionError("isolated redis-server did not start")
 
             encoded = payload()
+            old_season = subprocess.run(
+                [
+                    "redis-cli", "-h", "127.0.0.1", "-p", str(port),
+                    "PUBLISH", "mud:season:6:nchat", encoded,
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            assert int(old_season.stdout.strip()) == 0
             subscribers = 0
             for _ in range(80):
                 published = subprocess.run(
@@ -195,7 +210,7 @@ int main(int argc, char **argv)
                         "-p",
                         str(port),
                         "PUBLISH",
-                        "mud:nchat",
+                        "mud:season:7:nchat",
                         encoded,
                     ],
                     capture_output=True,
@@ -216,7 +231,7 @@ int main(int argc, char **argv)
                         "-p",
                         str(port),
                         "PUBLISH",
-                        "mud:nchat",
+                        "mud:season:7:nchat",
                         encoded,
                     ],
                     check=True,
@@ -232,7 +247,7 @@ int main(int argc, char **argv)
                         "-p",
                         str(port),
                         "PUBLISH",
-                        "mud:nchat",
+                        "mud:season:7:nchat",
                         payload(f"worker-flood-event-{index:04d}"),
                     ],
                     check=True,

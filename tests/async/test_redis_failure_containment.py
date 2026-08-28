@@ -37,7 +37,7 @@ assert 'redisAppendCommand(context, "ZREM %b %llu"' in floor_store
 assert "redisConnect(" not in store
 assert "redisConnectWithTimeout(" not in store
 assert store.count("redisvCommand(") == 1
-command = section("static redisReply *redis_command", "/* Scan-and-delete with MATCH pattern.")
+command = section("static redisReply *redis_command", "static bool redis_scan_match_empty")
 assert connection.count("redisConnectWithTimeout(") == 1
 assert "redisInitiateSSL(context, ssl)" in connection
 assert "X509_VERIFY_PARAM_set1_host" in connection
@@ -128,7 +128,7 @@ assert "redis_cache_store_cancel();" in section(
 assert "redis_cache_store_shutdown" in section(
     "void redis_cleanup", "void redis_clear_floor_pickups"
 )
-prime = section("static void redis_prime_artifact_caches", "#endif\n\n/* Scan-and-delete")
+prime = section("static void redis_prime_artifact_caches", "static bool redis_scan_match_empty")
 assert "PTTL" in prime and "redis_cache_store_seed" in prime
 print("[PASS] report caches use bounded local reads and asynchronous Redis publication")
 

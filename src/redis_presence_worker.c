@@ -1,6 +1,5 @@
 #include "redis_presence_worker.h"
 #include "redis_connection.h"
-#include "redis_key_registry.h"
 
 #include <hiredis/hiredis.h>
 
@@ -77,6 +76,11 @@ std::unordered_map<int, std::shared_ptr<const std::string>> active_sessions;
 std::thread worker_thread;
 redis_presence_worker_health health = {};
 const redis_connection_settings *configured_connection = nullptr;
+std::string configured_current_key;
+std::string configured_session_prefix;
+std::string configured_retry_prefix;
+std::string configured_event_channel;
+std::string configured_legacy_online_key;
 unsigned int configured_session_ttl_seconds = 0;
 unsigned int configured_heartbeat_interval_msec = 0;
 uint64_t instance_id = 0;
@@ -84,6 +88,11 @@ uint64_t next_sequence = 1;
 bool accepting = false;
 bool stop_requested = false;
 bool generation_claimed = false;
+
+bool valid_surface(const char *value)
+{
+	return value && *value && strnlen(value, 161) <= 160;
+}
 
 redisContext *connect_bounded()
 {
@@ -155,17 +164,17 @@ execution_result execute_job(redisContext *context, const presence_job &job)
 	    (size_t)ttl_length >= sizeof ttl)
 		return execution_result::failure;
 
-	redisReply *reply = command(context,
-				    "EVAL %b 5 %s %s %s %s %s "
-				    "%b %s %b %b %b %b %b",
-				    PRESENCE_SCRIPT, strlen(PRESENCE_SCRIPT),
-				    REDIS_PRESENCE_CURRENT, REDIS_PRESENCE_SESSION_PREFIX,
-				    REDIS_PRESENCE_RETRY_PREFIX, REDIS_PRESENCE_EVENT_CHANNEL,
-				    REDIS_LEGACY_ONLINE, operation_id, (size_t)operation_id_length,
-				    operation_name(job.operation), pid, strlen(pid),
-				    job.payload ? job.payload->data() : "",
-				    job.payload ? job.payload->size() : 0, event, strlen(event),
-				    instance, (size_t)instance_length, ttl, (size_t)ttl_length);
+	redisReply *reply =
+		command(context,
+			"EVAL %b 5 %s %s %s %s %s "
+			"%b %s %b %b %b %b %b",
+			PRESENCE_SCRIPT, strlen(PRESENCE_SCRIPT), configured_current_key.c_str(),
+			configured_session_prefix.c_str(), configured_retry_prefix.c_str(),
+			configured_event_channel.c_str(), configured_legacy_online_key.c_str(),
+			operation_id, (size_t)operation_id_length, operation_name(job.operation),
+			pid, strlen(pid), job.payload ? job.payload->data() : "",
+			job.payload ? job.payload->size() : 0, event, strlen(event), instance,
+			(size_t)instance_length, ttl, (size_t)ttl_length);
 	const execution_result result = !reply || reply->type != REDIS_REPLY_INTEGER ?
 						execution_result::failure :
 					reply->integer == 1 ? execution_result::success :
@@ -219,9 +228,9 @@ execution_result refresh_active_sessions(redisContext *context)
 			add_argument("EVAL", 4);
 			add_argument(PRESENCE_HEARTBEAT_SCRIPT, strlen(PRESENCE_HEARTBEAT_SCRIPT));
 			add_argument("2", 1);
-			add_argument(REDIS_PRESENCE_CURRENT, strlen(REDIS_PRESENCE_CURRENT));
-			add_argument(REDIS_PRESENCE_SESSION_PREFIX,
-				     strlen(REDIS_PRESENCE_SESSION_PREFIX));
+			add_argument(configured_current_key.data(), configured_current_key.size());
+			add_argument(configured_session_prefix.data(),
+				     configured_session_prefix.size());
 			add_argument(instance, static_cast<size_t>(instance_length));
 			add_argument(ttl, static_cast<size_t>(ttl_length));
 			for (size_t count = 0;
@@ -525,7 +534,10 @@ bool redis_presence_worker_init(const struct redis_presence_worker_config *confi
 {
 	if (!config || !config->connection || config->session_ttl_seconds < 2 ||
 	    !config->heartbeat_interval_msec ||
-	    config->heartbeat_interval_msec >= config->session_ttl_seconds * 1000ULL)
+	    config->heartbeat_interval_msec >= config->session_ttl_seconds * 1000ULL ||
+	    !valid_surface(config->current_key) || !valid_surface(config->session_prefix) ||
+	    !valid_surface(config->retry_prefix) || !valid_surface(config->event_channel) ||
+	    !valid_surface(config->legacy_online_key))
 		return false;
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	if (health.initialized)
@@ -533,6 +545,11 @@ bool redis_presence_worker_init(const struct redis_presence_worker_config *confi
 	try
 	{
 		configured_connection = config->connection;
+		configured_current_key = config->current_key;
+		configured_session_prefix = config->session_prefix;
+		configured_retry_prefix = config->retry_prefix;
+		configured_event_channel = config->event_channel;
+		configured_legacy_online_key = config->legacy_online_key;
 		configured_session_ttl_seconds = config->session_ttl_seconds;
 		configured_heartbeat_interval_msec = config->heartbeat_interval_msec;
 		std::random_device random;
@@ -620,6 +637,11 @@ void redis_presence_worker_reset_for_tests(void)
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	health = {};
 	configured_connection = nullptr;
+	configured_current_key.clear();
+	configured_session_prefix.clear();
+	configured_retry_prefix.clear();
+	configured_event_channel.clear();
+	configured_legacy_online_key.clear();
 	configured_session_ttl_seconds = 0;
 	configured_heartbeat_interval_msec = 0;
 	instance_id = 0;

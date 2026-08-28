@@ -4,7 +4,8 @@ External donation notices are disabled unless both `REDIS=TRUE` and
 `REDIS_DONATION_SUBSCRIBER=TRUE` are configured and `REDIS_DONATION_SECRET` contains at
 least 32 bytes. The key must be shared only with the trusted payment-event publisher.
 
-Publish a compact JSON object to `mud:nchat` with these exact fields:
+Read the active `season_epoch` from SQL `season_reset_state`, then publish a compact JSON
+object to `mud:season:<epoch>:nchat` with these exact fields:
 
 | Field | Contract |
 | --- | --- |
@@ -39,6 +40,10 @@ Use `REDIS_DONATION_SECRET` as the HMAC-SHA256 key and hex-encode the 32-byte di
 The server compares signatures in constant time, rejects event IDs already seen by the
 current process, and retains a bounded window of 256 IDs. The timestamp window limits
 replay after restart; the publisher must always create a new stable event ID.
+
+The subscriber captures the active epoch once at server boot. A publisher must refresh
+its epoch after a season reset; publishing to an old season channel has no subscriber and
+cannot deliver an old-season event into the new game.
 
 The subscriber worker owns all Redis connection, subscription, socket, validation, and
 reconnect work. It retains at most 64 validated events and drops excess events with a

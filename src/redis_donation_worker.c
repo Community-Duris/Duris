@@ -1,6 +1,5 @@
 #include "redis_donation_worker.h"
 #include "redis_connection.h"
-#include "redis_key_registry.h"
 
 #include <hiredis/hiredis.h>
 
@@ -26,8 +25,14 @@ std::deque<std::string> seen_event_ids;
 std::thread worker_thread;
 redis_donation_worker_health health = {};
 std::string configured_secret;
+std::string configured_channel;
 const redis_connection_settings *configured_connection = nullptr;
 bool stop_requested = false;
+
+bool valid_channel(const char *channel)
+{
+	return channel && *channel && strnlen(channel, 161) <= 160;
+}
 
 redisContext *connect_bounded()
 {
@@ -43,7 +48,7 @@ redisContext *connect_bounded()
 bool subscribe(redisContext *context)
 {
 	redisReply *reply =
-		(redisReply *)redisCommand(context, "SUBSCRIBE %s", REDIS_DONATION_CHANNEL);
+		(redisReply *)redisCommand(context, "SUBSCRIBE %s", configured_channel.c_str());
 	const bool subscribed = reply && reply->type == REDIS_REPLY_ARRAY;
 	if (reply)
 		freeReplyObject(reply);
@@ -216,7 +221,8 @@ void worker_main()
 
 bool redis_donation_worker_init(const struct redis_donation_worker_config *config)
 {
-	if (!config || !config->connection || !config->secret || strlen(config->secret) < 32)
+	if (!config || !config->connection || !config->secret || strlen(config->secret) < 32 ||
+	    !valid_channel(config->channel))
 		return false;
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	if (health.initialized)
@@ -225,6 +231,7 @@ bool redis_donation_worker_init(const struct redis_donation_worker_config *confi
 	{
 		configured_connection = config->connection;
 		configured_secret = config->secret;
+		configured_channel = config->channel;
 		pending_events.clear();
 		seen_event_ids.clear();
 		health = {};
@@ -272,6 +279,7 @@ void redis_donation_worker_shutdown(void)
 	health.initialized = false;
 	health.connected = false;
 	configured_secret.clear();
+	configured_channel.clear();
 }
 
 struct redis_donation_worker_health redis_donation_worker_health_copy(void)
@@ -287,5 +295,6 @@ void redis_donation_worker_reset_for_tests(void)
 	health = {};
 	configured_connection = nullptr;
 	configured_secret.clear();
+	configured_channel.clear();
 	stop_requested = false;
 }

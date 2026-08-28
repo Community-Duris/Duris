@@ -3,13 +3,63 @@
 Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
-Status: Implementation in progress; RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
+Status: Implementation in progress; RDS-001, RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
 RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, and RDS-017 are remediated. RDS-008 is remediated for
 connection security but remains partial for namespace isolation; the remaining findings
 are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-001 complete season-scoped Redis isolation
+
+Completed in this interval:
+
+- Bound every active Redis key, key pattern, prefix, and pub/sub channel to
+  `mud:season:<epoch>:`. Presence, retry tokens, report caches, player transition events,
+  and donation notices now use the same durable SQL season identity as world recovery and
+  floor deltas.
+- Captured the active SQL epoch once during Redis initialization. All workers receive
+  immutable resolved keys or channels, cache keys are preformatted at boot, and the old
+  process continues targeting only its captured old epoch after pwipe advances SQL to the
+  next epoch.
+- Kept the previous unscoped presence, cache, donation, world, floor, online, and ship
+  surfaces as explicit cleanup-only registry entries. They can be removed during a
+  connected pwipe but can never become active again.
+- Strengthened destructive invalidation postconditions. Pattern deletion performs a
+  second complete `SCAN` proving no match remains, direct deletion verifies `EXISTS=0`,
+  world metadata and floor hash/index deletion verify absence, and ship cleanup verifies
+  its retired pattern is empty.
+- Updated DurisWeb and donation producer contracts to read `season_reset_state` and use
+  only the active epoch. Cross-season live tests prove that a presence worker does not
+  touch old keys and a donation worker has no subscription to an old channel.
+
+Performance effect:
+
+- Epoch resolution and all fixed key formatting occur once during boot. Cache reads use
+  preformatted keys, so gameplay report lookups add no per-call formatting, SQL query,
+  Redis command, allocation, lock, or wait.
+- Presence and donation behavior remains worker-owned and bounded. Their gameplay paths
+  still perform only the existing payload validation/copy and queue operation.
+- The additional `SCAN` and `EXISTS` postconditions run only during pwipe, administrator
+  cleanup, or stopped-server maintenance after writers are quiesced.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_season_scope.py`: passed all-active-surface inventory,
+  boot-captured epoch, immutable worker configuration, cache resolution, and old-surface
+  cleanup contracts.
+- `python3 tests/async/test_redis_presence_worker_live.py`: passed under ASan/UBSan,
+  including old-season key isolation.
+- `python3 tests/async/test_redis_donation_worker_live.py`: passed under ASan/UBSan,
+  including zero old-season subscribers and bounded current-season delivery.
+- `python3 tests/async/test_redis_pwipe_invalidation.py` and
+  `python3 tests/async/test_season_reset_fence.py`: passed checked deletion,
+  postcondition, boot fence, and irreversible-boundary contracts.
+- `python3 tests/async/test_redis_key_registry.py` and
+  `python3 tests/async/test_data_lifecycle_manifest.py`: passed with 42 declared Redis
+  surfaces, including the retained cleanup-only legacy inventory.
 
 ### 2026-08-28 - RDS-017 bounded recovery commands and aggregate memory
 
@@ -666,8 +716,8 @@ Validation:
 
 Remaining related work:
 
-- RDS-001 remains partial until presence, content caches, and every other active Redis
-  store are epoch-scoped or explicitly proven cross-season safe.
+- RDS-001's remaining presence, content-cache, and channel isolation was completed by the
+  later all-active-surface epoch interval above.
 - RDS-007 is complete: publication is scoped by durable season epoch and requires both
   the exclusive writer token and expected prior pointer in one atomic operation.
 
@@ -713,9 +763,8 @@ Validation:
 
 Remaining related work:
 
-- RDS-001 remains partial until the SQL epoch is present in every Redis namespace and
-  every pwipe deletion/postcondition is checked. Explicitly disabled Redis must be safe
-  against old keys when it is enabled again for a later season.
+- RDS-001's remaining all-namespace and deletion-postcondition work was completed by the
+  later all-active-surface epoch interval above.
 - RDS-007 now has durable monotonic season identity, but world generation keys and the
   pointer transaction are not yet scoped to that identity.
 
@@ -1071,9 +1120,9 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 | World recovery | `mud:season:<epoch>:world_state:generation:<seq>`, current pointer, diagnostic metadata | Optional recent world reconstruction | Schema, semantic graph, and complete item SQL custody are validated before rollback-capable materialization; NPC-held items are intentionally omitted. |
 | Floor deltas | `mud:season:<epoch>:floor_drops`; retired `mud:floor_pickups` cleanup | Bridge changes around a world snapshot | Versioned bounded binary item trees join the generation plan and complete SQL authority check before any materialization. |
 | Ship cache | `ship:snapshot:<owner>` | Reconstructible SQL cache | Cache is returned before SQL without TTL, row revision, or schema/environment identity. |
-| Content caches | `mud:cache:named`, `mud:cache:fraglist`, `mud:cache:epic_zones`, artifact variants | Reconstructible command output | Player reads use bounded local memory and Redis publication is asynchronous; named/fraglist freshness remains incomplete. |
-| Presence | `mud:presence:current`, expiring `mud:presence:session:<instance>:<pid>`, `mud:player`, one-hour `mud:presence_op:*` retry tokens | Web presence and login/logout events | Privacy-safe payloads use a fenced 180-second per-session lease refreshed only by the bounded worker. |
-| Donation integration | `mud:nchat` pub/sub | Broadcast external donation notices | A bounded worker accepts only authenticated, fresh, replay-protected envelopes and delivers at most eight events per game pulse. |
+| Content caches | `mud:season:<epoch>:cache:named`, fraglist, epic-zone, and artifact variants | Reconstructible command output | Player reads use bounded local memory and Redis publication is asynchronous; named/fraglist freshness remains incomplete. |
+| Presence | `mud:season:<epoch>:presence:current`, expiring session keys, player channel, and retry tokens | Web presence and login/logout events | Privacy-safe payloads use a fenced 180-second per-session lease refreshed only by the bounded worker. |
+| Donation integration | `mud:season:<epoch>:nchat` pub/sub | Broadcast external donation notices | A bounded worker accepts only authenticated, fresh, replay-protected envelopes and delivers at most eight events per game pulse. |
 | Legacy UID | `mud:next_obj_uid` | Retired counter | No runtime read, write, or administrator display remains. |
 
 All runtime connections share bounded ACL/password, explicit database, and verified TLS
@@ -1119,41 +1168,34 @@ season-scoped stores include the SQL epoch while several caches and channels do 
 
 Severity: Critical
 Confidence: Confirmed from reachable code paths
-Remediation status: Partially remediated; enabled-but-unavailable Redis now fails pwipe
-invalidation closed, world writers are quiesced before checked deletion, and a durable
-SQL epoch/reset fence prevents boot or live resumption after an interrupted destructive
-boundary. World/floor keys and pwipe deletions are epoch-aware and checked; other active
-Redis namespaces still need epoch isolation.
+Remediation status: Completed on branch. Pwipe uses a durable irreversible SQL reset
+fence, all active Redis surfaces use the boot-captured monotonic season epoch, writers are
+quiesced before invalidation, and every enabled-Redis deletion has an explicit absence
+postcondition. Disabled Redis is safe because a later season cannot address old keys.
 
 Evidence:
 
-- [`redis_clear_pwipe_state()`](../../src/redis.c#L443) returns success immediately when
-  Redis is configured off. Its direct world, floor, online, and cache deletes are `void`
-  and their outcomes are ignored.
-- [`redis_clear_scan_match()`](../../src/redis.c#L258) returns success when the main
-  context is null. [`redis_clear_ship_snapshots()`](../../src/redis.c#L1734) does the
-  same. An enabled Redis integration whose initial connection failed can therefore pass
-  pwipe invalidation without deleting a key.
-- Redis invalidation runs only after the destructive SQL sequence
-  ([`src/sql.c`](../../src/sql.c#L4417)). If it returns false, `sql_pwipe()` returns false
-  after many earlier mutations. The caller then clears `_pwipe`, cancels shutdown, and
-  tells players that the wipe was aborted ([`src/actwiz.c`](../../src/actwiz.c#L4489)).
+The audit baseline allowed null-context deletion to report success, ran Redis invalidation
+after destructive SQL without an irreversible process fence, and used unscoped presence,
+cache, and pub/sub names that a later season could address.
+
+The current reset preflights a fresh bounded Redis connection, commits an incremented
+`resetting` SQL epoch before the first destructive mutation, and forces shutdown on every
+later ambiguous result. Redis workers are stopped first. The old process retains its
+captured old epoch while deleting and verifying that exact namespace; a new process can
+start only after SQL marks the incremented epoch `active`. Active registry surfaces all
+contain `<epoch>`, while former unscoped names are cleanup-only.
 
 Impact:
 
-- Old world generations, ship snapshots, presence, or caches can survive a successful
-  season reset and reappear when Redis is later available or re-enabled.
-- A real Redis failure late in reset can resume a live process against a partially or
-  almost completely wiped SQL database. This is not a rollback.
+Old Redis values may remain only when Redis was explicitly disabled or unreachable, but
+they are unreachable from the next epoch and cannot reappear. A failure after the SQL
+boundary cannot resume gameplay: the process stops and boot remains fenced in
+`resetting` for operator recovery.
 
-Recommendation:
-
-Implement pwipe as an irreversible, fenced state machine. Create a monotonic season epoch
-in SQL, stop every Redis writer, verify a fresh administrative Redis connection before
-the destructive boundary, and put the epoch in every key. Once SQL mutation begins, a
-failure must leave the server fenced and stopped for recovery; it must never resume the
-old live season. Make every invalidation return a checked result and verify postconditions
-against the exact epoch.
+Recommendation implemented: preserve the irreversible state machine, boot-captured epoch,
+writer quiescence, exact postconditions, and all-active-surface registry test as mandatory
+reset invariants.
 
 ### RDS-002 - In-flight writers can republish cleared state
 
@@ -1780,7 +1822,7 @@ maintenance patterns are checked against it, and lifecycle validation derives Re
 coverage and exact locators from it.
 
 The audit baseline lifecycle manifest had only `redis:world_recovery`, while runtime keys
-were duplicated as string literals. The registry now declares 37 surfaces mapped to five
+were duplicated as string literals. The registry now declares 42 surfaces mapped to five
 lifecycle stores: world/floor recovery, presence, content caches, donation pub/sub, and
 retired ship-cache cleanup. Runtime source is prohibited from introducing another
 `mud:` or `ship:snapshot:` literal, and the validator fails when a registry store is

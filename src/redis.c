@@ -100,6 +100,20 @@ static bool world_floor_handoff_active = false;
 static bool world_recovery_materialization_active = false;
 static uint64_t clean_shutdown_sequence = 0;
 static uint64_t world_sequence_floor = 0;
+static uint64_t redis_runtime_epoch = 0;
+static char redis_presence_current_key[160] = {};
+static char redis_presence_session_prefix[160] = {};
+static char redis_presence_session_pattern[160] = {};
+static char redis_presence_retry_prefix[160] = {};
+static char redis_presence_retry_pattern[160] = {};
+static char redis_presence_event_channel[160] = {};
+static char redis_donation_channel[160] = {};
+static char redis_cache_prefix[160] = {};
+static char redis_cache_pattern[160] = {};
+static char redis_cache_named_key[160] = {};
+static char redis_cache_fraglist_key[160] = {};
+static char redis_cache_epic_zones_key[160] = {};
+static char redis_cache_artifact_keys[6][160] = {};
 static bool redis_clear_floor_drops_checked(void);
 static void redis_prime_artifact_caches(void);
 
@@ -120,7 +134,7 @@ static redis_world_store_config redis_world_store_config_copy(void)
 {
 	redis_world_store_config config = {};
 	config.connection = redis_settings;
-	config.season_epoch = world_writer_epoch ? world_writer_epoch : sql_season_epoch();
+	config.season_epoch = world_writer_epoch ? world_writer_epoch : redis_runtime_epoch;
 	config.generation_ttl_seconds = std::max<uint64_t>(3600, world_state_max_age * 4);
 	return config;
 }
@@ -136,7 +150,67 @@ static bool redis_epoch_key(char *buffer, size_t size, uint64_t epoch, const cha
 
 bool redis_season_key(char *buffer, size_t size, const char *suffix)
 {
-	return redis_epoch_key(buffer, size, sql_season_epoch(), suffix);
+	return redis_epoch_key(buffer, size, redis_runtime_epoch, suffix);
+}
+
+static bool redis_configure_epoch_surfaces(uint64_t epoch)
+{
+	if (!epoch ||
+	    !redis_epoch_key(redis_presence_current_key, sizeof redis_presence_current_key, epoch,
+			     REDIS_PRESENCE_CURRENT) ||
+	    !redis_epoch_key(redis_presence_session_prefix, sizeof redis_presence_session_prefix,
+			     epoch, REDIS_PRESENCE_SESSION_PREFIX) ||
+	    !redis_epoch_key(redis_presence_session_pattern, sizeof redis_presence_session_pattern,
+			     epoch, REDIS_PRESENCE_SESSION_PATTERN) ||
+	    !redis_epoch_key(redis_presence_retry_prefix, sizeof redis_presence_retry_prefix, epoch,
+			     REDIS_PRESENCE_RETRY_PREFIX) ||
+	    !redis_epoch_key(redis_presence_retry_pattern, sizeof redis_presence_retry_pattern,
+			     epoch, REDIS_PRESENCE_RETRY_PATTERN) ||
+	    !redis_epoch_key(redis_presence_event_channel, sizeof redis_presence_event_channel,
+			     epoch, REDIS_PRESENCE_EVENT_CHANNEL) ||
+	    !redis_epoch_key(redis_donation_channel, sizeof redis_donation_channel, epoch,
+			     REDIS_DONATION_CHANNEL) ||
+	    !redis_epoch_key(redis_cache_prefix, sizeof redis_cache_prefix, epoch, "cache:") ||
+	    !redis_epoch_key(redis_cache_pattern, sizeof redis_cache_pattern, epoch,
+			     REDIS_CACHE_PATTERN) ||
+	    !redis_epoch_key(redis_cache_named_key, sizeof redis_cache_named_key, epoch,
+			     REDIS_CACHE_NAMED) ||
+	    !redis_epoch_key(redis_cache_fraglist_key, sizeof redis_cache_fraglist_key, epoch,
+			     REDIS_CACHE_FRAGLIST) ||
+	    !redis_epoch_key(redis_cache_epic_zones_key, sizeof redis_cache_epic_zones_key, epoch,
+			     REDIS_CACHE_EPIC_ZONES))
+		return false;
+	for (int type = 1; type <= 3; ++type)
+		for (int view = 0; view <= 1; ++view)
+		{
+			char suffix[64];
+			const int written = snprintf(suffix, sizeof suffix,
+						     REDIS_CACHE_ARTIFACT_FORMAT, type, view);
+			const size_t index = static_cast<size_t>((type - 1) * 2 + view);
+			if (written <= 0 || (size_t)written >= sizeof suffix ||
+			    !redis_epoch_key(redis_cache_artifact_keys[index],
+					     sizeof redis_cache_artifact_keys[index], epoch,
+					     suffix))
+				return false;
+		}
+	redis_runtime_epoch = epoch;
+	return true;
+}
+
+static const char *redis_resolve_cache_key(const char *key)
+{
+	if (!key)
+		return NULL;
+	if (!strcmp(key, REDIS_CACHE_NAMED))
+		return redis_cache_named_key;
+	if (!strcmp(key, REDIS_CACHE_FRAGLIST))
+		return redis_cache_fraglist_key;
+	if (!strcmp(key, REDIS_CACHE_EPIC_ZONES))
+		return redis_cache_epic_zones_key;
+	const size_t prefix_size = strlen(redis_cache_prefix);
+	return prefix_size && !strncmp(key, redis_cache_prefix, prefix_size) && key[prefix_size] ?
+		       key :
+		       NULL;
 }
 
 static bool redis_world_writer_token_create(void)
@@ -162,7 +236,7 @@ static bool redis_world_writer_fence_claim(void)
 		return redis_world_store_renew_fence(&config, world_writer_token.c_str(),
 						     world_writer_lease_msec);
 	}
-	world_writer_epoch = sql_season_epoch();
+	world_writer_epoch = redis_runtime_epoch;
 	if (!world_writer_epoch)
 		return false;
 	if (!redis_world_writer_token_create())
@@ -269,16 +343,9 @@ static void redis_prime_artifact_caches(void)
 	constexpr const char *script = "local result={} for index,key in ipairs(KEYS) do "
 				       "result[index*2-1]=redis.call('GET',key) "
 				       "result[index*2]=redis.call('PTTL',key) end return result";
-	char key_storage[6][64] = {};
 	const char *keys[6] = {};
-	for (int type = 1; type <= 3; ++type)
-		for (int view = 0; view <= 1; ++view)
-		{
-			const size_t index = static_cast<size_t>((type - 1) * 2 + view);
-			snprintf(key_storage[index], sizeof key_storage[index],
-				 REDIS_CACHE_ARTIFACT_FORMAT, type, view);
-			keys[index] = key_storage[index];
-		}
+	for (size_t index = 0; index < 6; ++index)
+		keys[index] = redis_cache_artifact_keys[index];
 	redisReply *reply = (redisReply *)redis_command(redis_ctx, "EVAL %b 6 %s %s %s %s %s %s",
 							script, strlen(script), keys[0], keys[1],
 							keys[2], keys[3], keys[4], keys[5]);
@@ -303,7 +370,40 @@ static void redis_prime_artifact_caches(void)
 
 #endif
 
-/* Scan-and-delete with MATCH pattern. Fail closed if SCAN/DEL misshape. */
+static bool redis_scan_match_empty(const char *pattern)
+{
+#ifndef __NO_MYSQL__
+	char cursor[64] = "0";
+	if (!pattern || !redis_enabled || !redis_ctx)
+		return false;
+	do
+	{
+		redisReply *scan = (redisReply *)redis_command(
+			redis_ctx, "SCAN %s MATCH %s COUNT 1", cursor, pattern);
+		if (!scan || scan->type != REDIS_REPLY_ARRAY || scan->elements != 2 ||
+		    !scan->element[0] || !scan->element[1] || !scan->element[0]->str ||
+		    scan->element[0]->type != REDIS_REPLY_STRING ||
+		    scan->element[1]->type != REDIS_REPLY_ARRAY)
+		{
+			if (scan)
+				freeReplyObject(scan);
+			return false;
+		}
+		redisReply *keys = scan->element[1];
+		const bool empty = keys->elements == 0;
+		snprintf(cursor, sizeof(cursor), "%s", scan->element[0]->str);
+		freeReplyObject(scan);
+		if (!empty)
+			return false;
+	} while (strcmp(cursor, "0") != 0);
+	return true;
+#else
+	(void)pattern;
+	return true;
+#endif
+}
+
+/* Scan-and-delete with MATCH pattern and verify an empty postcondition. */
 static bool redis_clear_scan_match(const char *pattern)
 {
 #ifndef __NO_MYSQL__
@@ -351,7 +451,7 @@ static bool redis_clear_scan_match(const char *pattern)
 		freeReplyObject(scan);
 	} while (strcmp(cursor, "0") != 0);
 
-	return true;
+	return redis_scan_match_empty(pattern);
 #else
 	(void)pattern;
 	return true;
@@ -367,7 +467,13 @@ static bool redis_delete_key_checked(const char *key)
 	const bool deleted = reply && reply->type == REDIS_REPLY_INTEGER;
 	if (reply)
 		freeReplyObject(reply);
-	return deleted;
+	if (!deleted)
+		return false;
+	reply = (redisReply *)redis_command(redis_ctx, "EXISTS %s", key);
+	const bool absent = reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 0;
+	if (reply)
+		freeReplyObject(reply);
+	return absent;
 #else
 	(void)key;
 	return true;
@@ -481,9 +587,17 @@ bool redis_init(void)
 		logit(LOG_SYS, "redis disabled (set REDIS=TRUE in .env to enable)");
 		redis_enabled = false;
 		redis_donation_enabled = false;
+		redis_runtime_epoch = 0;
 		return true;
 	}
 	redis_enabled = true;
+	redis_runtime_epoch = 0;
+	if (!redis_configure_epoch_surfaces(sql_season_epoch()))
+	{
+		logit(LOG_SYS, "redis: active SQL season epoch unavailable; Redis disabled");
+		redis_enabled = false;
+		return false;
+	}
 	world_recovery_quiesced = false;
 	world_writer_token.clear();
 	world_writer_lease_msec = 0;
@@ -544,8 +658,14 @@ bool redis_init(void)
 	}
 
 	const redis_presence_worker_config presence_config = {
-		redis_settings, REDIS_PRESENCE_SESSION_TTL_SECONDS,
-		REDIS_PRESENCE_HEARTBEAT_INTERVAL_SECONDS * 1000
+		redis_settings,
+		REDIS_PRESENCE_SESSION_TTL_SECONDS,
+		REDIS_PRESENCE_HEARTBEAT_INTERVAL_SECONDS * 1000,
+		redis_presence_current_key,
+		redis_presence_session_prefix,
+		redis_presence_retry_prefix,
+		redis_presence_event_channel,
+		REDIS_LEGACY_ONLINE
 	};
 	if (!redis_presence_worker_init(&presence_config))
 		logit(LOG_SYS, "redis: presence worker unavailable; presence updates disabled");
@@ -557,7 +677,8 @@ bool redis_init(void)
 	if (redis_donation_enabled)
 	{
 		const redis_donation_worker_config donation_config = { redis_settings,
-								       donation_secret };
+								       donation_secret,
+								       redis_donation_channel };
 		if (!redis_donation_worker_init(&donation_config))
 		{
 			redis_donation_enabled = false;
@@ -627,6 +748,9 @@ bool redis_clear_pwipe_state(void)
 {
 	if (!redis_enabled)
 		return true;
+	if (!redis_runtime_epoch)
+		return false;
+	redis_donation_worker_shutdown();
 	redis_presence_worker_cancel();
 	redis_cache_store_cancel();
 	redis_floor_store_cancel();
@@ -639,9 +763,12 @@ bool redis_clear_pwipe_state(void)
 	       redis_delete_key_checked(REDIS_LEGACY_FLOOR_DROPS) &&
 	       redis_delete_key_checked(REDIS_LEGACY_FLOOR_PICKUPS) &&
 	       redis_delete_key_checked(REDIS_LEGACY_ONLINE) &&
-	       redis_delete_key_checked(REDIS_PRESENCE_CURRENT) &&
-	       redis_clear_scan_match(REDIS_PRESENCE_SESSION_PATTERN) &&
-	       redis_clear_scan_match(REDIS_PRESENCE_RETRY_PATTERN) &&
+	       redis_delete_key_checked(redis_presence_current_key) &&
+	       redis_clear_scan_match(redis_presence_session_pattern) &&
+	       redis_clear_scan_match(redis_presence_retry_pattern) &&
+	       redis_delete_key_checked(REDIS_LEGACY_PRESENCE_CURRENT) &&
+	       redis_clear_scan_match(REDIS_LEGACY_PRESENCE_SESSION_PATTERN) &&
+	       redis_clear_scan_match(REDIS_LEGACY_PRESENCE_RETRY_PATTERN) &&
 	       redis_clear_scan_match(REDIS_LEGACY_WORLD_GENERATION_PATTERN) &&
 	       redis_delete_key_checked(REDIS_LEGACY_WORLD_CURRENT) &&
 	       redis_delete_key_checked(REDIS_LEGACY_WORLD_TIMESTAMP) &&
@@ -649,7 +776,8 @@ bool redis_clear_pwipe_state(void)
 	       redis_delete_key_checked(REDIS_LEGACY_WORLD_CHECKSUM) &&
 	       redis_delete_key_checked(REDIS_LEGACY_WORLD_COMPLETE) &&
 	       redis_delete_key_checked(REDIS_LEGACY_WORLD_FENCE) &&
-	       redis_clear_scan_match(REDIS_CACHE_PATTERN) && redis_clear_ship_snapshots();
+	       redis_clear_scan_match(redis_cache_pattern) &&
+	       redis_clear_scan_match(REDIS_LEGACY_CACHE_PATTERN) && redis_clear_ship_snapshots();
 }
 
 bool redis_validate_pwipe_state(void)
@@ -882,7 +1010,7 @@ static bool redis_clear_floor_drops_checked(void)
 		return false;
 	char floor_key[128];
 	char floor_index_key[128];
-	const uint64_t epoch = world_writer_epoch ? world_writer_epoch : sql_season_epoch();
+	const uint64_t epoch = world_writer_epoch ? world_writer_epoch : redis_runtime_epoch;
 	if (!redis_epoch_key(floor_key, sizeof floor_key, epoch, REDIS_FLOOR_DROPS_SUFFIX) ||
 	    !redis_epoch_key(floor_index_key, sizeof floor_index_key, epoch,
 			     REDIS_FLOOR_DROP_INDEX_SUFFIX))
@@ -897,7 +1025,11 @@ static bool redis_clear_floor_drops_checked(void)
 		return false;
 	}
 	freeReplyObject(reply);
-	return true;
+	reply = (redisReply *)redis_command(redis_ctx, "EXISTS %s %s", floor_key, floor_index_key);
+	const bool absent = reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 0;
+	if (reply)
+		freeReplyObject(reply);
+	return absent;
 #else
 	return false;
 #endif
@@ -1280,7 +1412,7 @@ bool redis_has_world_state(void)
 
 	// The atomic current pointer and self-validating framed blob are authoritative.
 	// Other metadata keys are operator diagnostics and cannot invalidate a good blob.
-	const uint64_t epoch = sql_season_epoch();
+	const uint64_t epoch = redis_runtime_epoch;
 	char current_key[128];
 	if (!redis_epoch_key(current_key, sizeof current_key, epoch, REDIS_WORLD_CURRENT_SUFFIX))
 		return false;
@@ -1350,10 +1482,21 @@ bool redis_clear_world_state(void)
 	const bool metadata_cleared = reply && reply->type == REDIS_REPLY_INTEGER;
 	if (reply)
 		freeReplyObject(reply);
+	reply = NULL;
+	if (metadata_cleared)
+	{
+		reply = (redisReply *)redis_command(redis_ctx, "EXISTS %s %s %s %s %s %s",
+						    current_key, timestamp_key, sequence_key,
+						    checksum_key, complete_key, clean_shutdown_key);
+	}
+	const bool metadata_absent = reply && reply->type == REDIS_REPLY_INTEGER &&
+				     reply->integer == 0;
+	if (reply)
+		freeReplyObject(reply);
 
-	if (quiesced && generations_cleared && metadata_cleared)
+	if (quiesced && generations_cleared && metadata_cleared && metadata_absent)
 		logit(LOG_SYS, "redis: cleared and quiesced world recovery until restart");
-	return quiesced && generations_cleared && metadata_cleared;
+	return quiesced && generations_cleared && metadata_cleared && metadata_absent;
 #else
 	return false;
 #endif
@@ -1366,7 +1509,7 @@ bool redis_consume_world_state(void)
 #else
 	if (!redis_enabled || !redis_world_state_enabled || !redis_ctx || redis_ctx->err)
 		return false;
-	const uint64_t epoch = sql_season_epoch();
+	const uint64_t epoch = redis_runtime_epoch;
 	char current_key[128];
 	if (!redis_epoch_key(current_key, sizeof current_key, epoch, REDIS_WORLD_CURRENT_SUFFIX))
 		return false;
@@ -1398,7 +1541,7 @@ bool redis_load_world_state(void)
 			return false;
 	}
 
-	const uint64_t epoch = sql_season_epoch();
+	const uint64_t epoch = redis_runtime_epoch;
 	char current_key[128];
 	if (!redis_epoch_key(current_key, sizeof current_key, epoch, REDIS_WORLD_CURRENT_SUFFIX))
 		return false;
@@ -1476,9 +1619,10 @@ bool redis_cache_set(const char *key, const char *value)
 #ifdef __NO_MYSQL__
 	return false;
 #else
-	if (!redis_enabled || !key || !value)
+	const char *resolved = redis_resolve_cache_key(key);
+	if (!redis_enabled || !resolved || !value)
 		return false;
-	return redis_cache_store_set(key, value, 0);
+	return redis_cache_store_set(resolved, value, 0);
 #endif
 }
 
@@ -1487,9 +1631,10 @@ bool redis_cache_set_ex(const char *key, int seconds, const char *value)
 #ifdef __NO_MYSQL__
 	return false;
 #else
-	if (!redis_enabled || !key || !value || seconds <= 0)
+	const char *resolved = redis_resolve_cache_key(key);
+	if (!redis_enabled || !resolved || !value || seconds <= 0)
 		return false;
-	return redis_cache_store_set(key, value, seconds);
+	return redis_cache_store_set(resolved, value, seconds);
 #endif
 }
 
@@ -1498,18 +1643,20 @@ char *redis_cache_get(const char *key)
 #ifdef __NO_MYSQL__
 	return NULL;
 #else
-	if (!redis_enabled || !key)
+	const char *resolved = redis_resolve_cache_key(key);
+	if (!redis_enabled || !resolved)
 		return NULL;
-	return redis_cache_store_get(key);
+	return redis_cache_store_get(resolved);
 #endif
 }
 
 bool redis_cache_del(const char *key)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled || !key)
+	const char *resolved = redis_resolve_cache_key(key);
+	if (!redis_enabled || !resolved)
 		return false;
-	return redis_cache_store_delete(key);
+	return redis_cache_store_delete(resolved);
 #else
 	return false;
 #endif
@@ -1528,13 +1675,15 @@ void redis_invalidate_ship_snapshot(const char *owner_name)
 
 	char key[256];
 	redis_ship_cache_key(key, sizeof(key), owner_name);
-	redis_cache_del(key);
+	redis_cache_store_delete(key);
 }
 
 bool redis_clear_ship_snapshots(void)
 {
-	if (!redis_enabled || !redis_ctx)
+	if (!redis_enabled)
 		return true;
+	if (!redis_ctx)
+		return false;
 
 	char cursor[64] = "0";
 	do
@@ -1577,7 +1726,7 @@ bool redis_clear_ship_snapshots(void)
 		freeReplyObject(scan);
 	} while (strcmp(cursor, "0") != 0);
 
-	return true;
+	return redis_scan_match_empty(REDIS_SHIP_SNAPSHOT_PATTERN);
 }
 #endif
 
@@ -1985,9 +2134,9 @@ void redis_clear_online_players(void)
 // arti cache
 static const char *get_artifact_cache_key(int type, bool godlist)
 {
-	static char key[64];
-	snprintf(key, sizeof(key), REDIS_CACHE_ARTIFACT_FORMAT, type, godlist ? 1 : 0);
-	return key;
+	if (type < 1 || type > 3)
+		return NULL;
+	return redis_cache_artifact_keys[(type - 1) * 2 + (godlist ? 1 : 0)];
 }
 
 void redis_cache_artifact_list(int type, bool godlist, const char *json)

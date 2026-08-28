@@ -18,6 +18,11 @@ struct redis_presence_worker_config
 	const struct redis_connection_settings *connection;
 	unsigned int session_ttl_seconds;
 	unsigned int heartbeat_interval_msec;
+	const char *current_key;
+	const char *session_prefix;
+	const char *retry_prefix;
+	const char *event_channel;
+	const char *legacy_online_key;
 };
 
 struct redis_presence_worker_health

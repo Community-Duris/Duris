@@ -17,6 +17,7 @@ struct redis_donation_worker_config
 {
 	const struct redis_connection_settings *connection;
 	const char *secret;
+	const char *channel;
 };
 
 struct redis_donation_worker_health

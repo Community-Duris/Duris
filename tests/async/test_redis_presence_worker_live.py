@@ -53,7 +53,17 @@ int main(int argc, char **argv)
         "127.0.0.1", live_port, 100, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false};
     redis_connection_settings *settings = redis_connection_settings_create(&options);
     assert(settings);
-    redis_presence_worker_config config = {settings, 6, 250};
+    redis_presence_worker_config config = {
+        settings, 6, 250,
+        "mud:season:7:presence:current",
+        "mud:season:7:presence:session:",
+        "mud:season:7:presence_op:",
+        "mud:season:7:player",
+        "mud:online"};
+    std::string oversized_surface(161, 'x');
+    config.current_key = oversized_surface.c_str();
+    assert(!redis_presence_worker_init(&config));
+    config.current_key = "mud:season:7:presence:current";
     assert(redis_presence_worker_init(&config));
 
     // These submissions occur before the isolated server starts. They must stay local,
@@ -68,11 +78,12 @@ int main(int argc, char **argv)
 
     redisContext *context = redisConnect("127.0.0.1", live_port);
     assert(context && !context->err);
-    redisReply *reply = run(context, "GET mud:presence:current");
+    freeReplyObject(run(context, "SET mud:season:6:presence:current old-season"));
+    redisReply *reply = run(context, "GET mud:season:7:presence:current");
     assert(reply->type == REDIS_REPLY_STRING);
     std::string instance(reply->str, reply->len);
     freeReplyObject(reply);
-    const std::string session_key = "mud:presence:session:" + instance + ":101";
+    const std::string session_key = "mud:season:7:presence:session:" + instance + ":101";
     reply = (redisReply *)redisCommand(context, "GET %s", session_key.c_str());
     assert(reply && reply->type == REDIS_REPLY_STRING);
     assert(!strcmp(reply->str, "{\"name\":\"Async\"}"));
@@ -92,8 +103,8 @@ int main(int argc, char **argv)
     freeReplyObject(reply);
 
     // A permanent WRONGTYPE error must not write the retry marker or wedge the queue.
-    freeReplyObject(run(context, "DEL mud:presence:current"));
-    freeReplyObject(run(context, "LPUSH mud:presence:current wrong-type"));
+    freeReplyObject(run(context, "DEL mud:season:7:presence:current"));
+    freeReplyObject(run(context, "LPUSH mud:season:7:presence:current wrong-type"));
     health = redis_presence_worker_health_copy();
     const uint64_t completed_before_error = health.completed;
     const uint64_t dropped_before_error = health.dropped;
@@ -103,28 +114,31 @@ int main(int argc, char **argv)
     assert(health.completed == completed_before_error);
     assert(health.dropped == dropped_before_error + 1);
     assert(health.command_failures >= REDIS_PRESENCE_MAX_COMMAND_ATTEMPTS);
-    reply = run(context, "TYPE mud:presence:current");
+    reply = run(context, "TYPE mud:season:7:presence:current");
     assert(reply->type == REDIS_REPLY_STATUS && !strcmp(reply->str, "list"));
     freeReplyObject(reply);
     assert(redis_presence_worker_submit_clear());
     assert(redis_presence_worker_drain(1000));
-    reply = run(context, "TYPE mud:presence:current");
+    reply = run(context, "TYPE mud:season:7:presence:current");
     assert(reply->type == REDIS_REPLY_STATUS && !strcmp(reply->str, "string"));
     freeReplyObject(reply);
 
     assert(redis_presence_worker_submit_online(404, "{\"name\":\"Lease\"}", false));
     assert(redis_presence_worker_drain(1000));
-    reply = run(context, "GET mud:presence:current");
+    reply = run(context, "GET mud:season:7:presence:current");
     assert(reply->type == REDIS_REPLY_STRING);
-    const std::string expiring_key = "mud:presence:session:" +
+    const std::string expiring_key = "mud:season:7:presence:session:" +
                                      std::string(reply->str, reply->len) + ":404";
     freeReplyObject(reply);
-    freeReplyObject(run(context, "SET mud:presence:current newer-instance EX 3"));
+    freeReplyObject(run(context, "SET mud:season:7:presence:current newer-instance EX 3"));
     std::this_thread::sleep_for(std::chrono::milliseconds(600));
     health = redis_presence_worker_health_copy();
     assert(health.active_sessions == 0 && health.lease_failures == 0);
-    reply = run(context, "GET mud:presence:current");
+    reply = run(context, "GET mud:season:7:presence:current");
     assert(reply->type == REDIS_REPLY_STRING && !strcmp(reply->str, "newer-instance"));
+    freeReplyObject(reply);
+    reply = run(context, "GET mud:season:6:presence:current");
+    assert(reply->type == REDIS_REPLY_STRING && !strcmp(reply->str, "old-season"));
     freeReplyObject(reply);
     assert(redis_presence_worker_shutdown(1000));
     std::this_thread::sleep_for(std::chrono::milliseconds(6200));

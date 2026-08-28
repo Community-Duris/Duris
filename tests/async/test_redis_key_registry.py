@@ -16,7 +16,7 @@ store_names = re.findall(r"^REDIS_STORE\(([A-Z0-9_]+),", registry, re.MULTILINE)
 owned_patterns = re.findall(
     r'^REDIS_OWNED_PATTERN\([A-Z0-9_]+, "([^"]+)"\)$', registry, re.MULTILINE
 )
-assert len(surface_names) == len(set(surface_names)) == 37
+assert len(surface_names) == len(set(surface_names)) == 42
 assert len(store_names) == len(set(store_names)) == 5
 assert owned_patterns == ["mud:*", "ship:snapshot:*"]
 

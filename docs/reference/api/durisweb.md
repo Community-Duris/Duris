@@ -36,19 +36,22 @@ metadata, and invisible staff by default. Set
 `DURISWEB_PRIVATE_PRESENCE=TRUE` only when the backend has an explicit
 operational need and matching access and retention controls.
 
-Redis presence is an expiring generation, not a persistent hash. A consumer must:
+Redis presence is an expiring generation inside the active SQL season namespace. Read the
+single active `season_epoch` from `season_reset_state` and keep that value fixed for the
+complete read. A consumer must:
 
-1. Read the opaque instance from `mud:presence:current`; a missing key means nobody is
-   online.
-2. Scan only `mud:presence:session:<instance>:*` and read the matching JSON values.
+1. Read the opaque instance from `mud:season:<epoch>:presence:current`; a missing key means
+   nobody is online.
+2. Scan only `mud:season:<epoch>:presence:session:<instance>:*` and read the matching JSON values.
    Missing keys are expired/offline sessions and must be ignored.
-3. Read `mud:presence:current` again after the scan. If it changed, discard the result and
+3. Read `mud:season:<epoch>:presence:current` again after the scan. If it changed, discard the result and
    retry against the new instance.
 
 Both the pointer and session keys have a 180-second TTL and are refreshed every 60
 seconds by the game server's background worker. Never combine keys from different
-instances. The `mud:player` pub/sub channel remains a transition hint; the expiring key
-set is the current-state source.
+instances or season epochs. The `mud:season:<epoch>:player` pub/sub channel remains a
+transition hint; the expiring key set is the current-state source. A season change requires
+discarding all old keys and subscribing to the new channel.
 
 Browser login is limited to five attempts per minute and registration to three
 attempts per five minutes, both per connection and client address. Login uses a

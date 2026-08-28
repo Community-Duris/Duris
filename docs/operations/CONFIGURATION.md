@@ -153,12 +153,12 @@ floor deltas. Neither case authorizes a synchronous player save or journal delet
 Presence login/logout updates use a dedicated worker with a fixed 1,024-job queue, bounded
 timeouts, and exponential reconnect backoff. Gameplay paths only encode the bounded JSON
 payload and enqueue it; they never wait for a presence connection or Redis command. Each
-state change and optional `mud:player` event is one idempotent Lua operation. Pwipe joins
+state change and optional `mud:season:<epoch>:player` event is one idempotent Lua operation. Pwipe joins
 and cancels this worker before checked deletion, and shutdown gives it a one-second drain
 deadline. Connection outages retain ordered jobs until Redis returns; a job is dropped
 after three command-level failures so a permanent schema or ACL error cannot block the
-queue indefinitely. Online state uses `mud:presence:current` plus
-`mud:presence:session:<instance>:<pid>` keys with a 180-second TTL. The worker refreshes
+queue indefinitely. Online state uses `mud:season:<epoch>:presence:current` plus
+`mud:season:<epoch>:presence:session:<instance>:<pid>` keys with a 180-second TTL. The worker refreshes
 active leases every 60 seconds in batches of at most 64; a crashed server, failed logout,
 or superseded worker therefore cannot leave persistent presence data.
 
@@ -166,13 +166,14 @@ Named, fraglist, epic-zone, and artifact report reads use a bounded 32-entry in-
 cache and never wait for Redis during gameplay. Redis publication and invalidation use a
 separate worker bounded to 64 jobs and 4 MiB of queued values; repeated mutations for one
 key are coalesced. Values are limited to 1 MiB and keys to 128 bytes. Existing artifact
-cache values are seeded with their remaining TTL in one boot-only Redis operation, while
+cache values under `mud:season:<epoch>:cache:*` are seeded with their remaining TTL in one boot-only Redis operation, while
 expired or persistent legacy artifact values are ignored. Pwipe cancels the worker before
 checked deletion and shutdown gives it a one-second drain deadline.
 
 Donation notices use a separately gated, authenticated subscriber worker. Connect,
 subscribe, socket reads, validation, replay filtering, and reconnect backoff all run off
-the simulation thread. Its delivery queue holds at most 64 fixed-size validated events;
+the simulation thread. It subscribes only to `mud:season:<epoch>:nchat`, where the epoch is
+captured from SQL once at boot. Its delivery queue holds at most 64 fixed-size validated events;
 each game pulse dequeues at most eight and performs no Redis work. Invalid, stale,
 oversized, replayed, or excess envelopes are counted and ignored. The publisher contract
 and signature format are in [the donation event reference](../reference/api/donation-events.md).

@@ -82,6 +82,13 @@ preserve the database and logs, determine which reset postcondition failed, and 
 or complete the reset under operator control. Do not change the row back to `active`
 merely to bypass the boot fence.
 
+Every active Redis key and channel includes the boot-captured SQL season epoch. The old
+process continues to target only the old epoch while pwipe is in progress; after restart,
+the new process targets only the completed new epoch. Redis invalidation deletes and then
+verifies the old epoch when Redis is enabled. If Redis is explicitly disabled, old keys
+cannot become visible when it is enabled in a later season because no active unscoped
+surface remains.
+
 ## Pre-service safety gate
 
 Before a development start, confirm the intended role and target without printing
