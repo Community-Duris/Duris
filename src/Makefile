@@ -243,6 +243,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player_load_materialize.o \
 				 presence_policy.o \
 				 redis_cache_store.o \
+				 redis_floor_store.o \
 				 redis_presence_payload.o \
 				 redis_presence_worker.o \
 				 redis_world_store.o \

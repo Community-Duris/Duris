@@ -10,6 +10,7 @@
 #include <time.h>
 #include "redis.h"
 #include "redis_cache_store.h"
+#include "redis_floor_store.h"
 #include "redis_presence_worker.h"
 
 // helper to format time ago
@@ -91,6 +92,16 @@ static void redis_status_simple(P_char ch)
 				     "BACKOFF",
 		cache.queued, cache.queued_bytes, cache.local_entries,
 		(unsigned long long)cache.dropped);
+	const redis_floor_store_health floor = redis_floor_store_health_copy();
+	pos += snprintf(buf + pos, sizeof(buf) - pos,
+			"  &+cfloor_worker&n     %s%-9s&n queued=%zu/%zuB dropped=%llu\r\n",
+			floor.connected ? "&+G" : "&+Y",
+			!floor.initialized ? "OFF" :
+			floor.paused	   ? "BARRIER" :
+			floor.connected	   ? "HEALTHY" :
+					     "BACKOFF",
+			floor.queued_batches, floor.queued_bytes,
+			(unsigned long long)floor.dropped_batches);
 
 	// floor drops
 	char floor_key[128];
@@ -168,6 +179,21 @@ static void redis_status_detailed(P_char ch)
 		(unsigned long long)cache.submitted, (unsigned long long)cache.completed,
 		(unsigned long long)cache.coalesced, (unsigned long long)cache.dropped,
 		(unsigned long long)cache.command_failures, (unsigned long long)cache.reconnects);
+	const redis_floor_store_health floor = redis_floor_store_health_copy();
+	APPENDF(buf,
+		"&+g[Floor Worker]&n\r\n"
+		"  state=%s queued=%zu bytes=%zu busy=%s barrier=%s\r\n"
+		"  batches=%llu completed=%llu mutations=%llu dropped=%llu failures=%llu reconnects=%llu\r\n\r\n",
+		!floor.initialized ? "off" :
+		floor.paused	   ? "barrier" :
+		floor.connected	   ? "healthy" :
+				     "backoff",
+		floor.queued_batches, floor.queued_bytes, floor.busy ? "yes" : "no",
+		floor.barrier_requested ? "yes" : "no", (unsigned long long)floor.submitted_batches,
+		(unsigned long long)floor.completed_batches,
+		(unsigned long long)floor.completed_mutations,
+		(unsigned long long)floor.dropped_batches,
+		(unsigned long long)floor.command_failures, (unsigned long long)floor.reconnects);
 
 	APPENDF(buf, "&+g[World Recovery]&n\r\n");
 

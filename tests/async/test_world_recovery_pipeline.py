@@ -117,7 +117,7 @@ assert "std::vector<unsigned char> blob" not in worker
 print("[PASS] bounded capture is game-thread owned and publisher traverses no live graph")
 
 save = section(REDIS, "bool redis_save_world_state(void)", "void redis_world_recovery_pulse")
-assert "fork()" not in save and "world_recovery_pipeline_request" in save
+assert "fork()" not in save and "redis_floor_store_request_barrier" in save
 bounded_get = section(REDIS, "static redisReply *redis_get_bounded_string", "static void redis_prime_artifact_caches")
 assert "STRLEN" in bounded_get and "WORLD_RECOVERY_MAX_BYTES" in REDIS
 assert REDIS.count("redis_get_bounded_string(redis_ctx, generation_key") == 2
@@ -160,10 +160,13 @@ print("[PASS] recovery publication is atomic and restore accepts only validated 
 
 flush = section(REDIS, "bool redis_flush_floor_drops", "void redis_remove_floor_drop")
 pulse = section(REDIS, "void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
-assert "world_recovery_pipeline_busy()" in flush
+assert "redis_floor_store_submit" in flush
 assert "world_recovery_floor_ack_pending" not in flush
-assert "redis_append_command" in flush and "redis_collect_integer_replies" in flush
+assert "redis_append_command" not in flush and "redis_collect_integer_replies" not in flush
 assert flush.count("redis_command") == 0
+assert "redis_floor_store_take_barrier" in pulse
+assert "world_recovery_pipeline_request" in pulse
+assert "redis_floor_store_resume" in pulse
 assert "redis_clear_floor_drops_checked()" not in pulse
 cancel = section(PIPELINE, "void world_recovery_pipeline_cancel", "bool world_recovery_pipeline_request")
 for token in ("stop_requested = true", "queued.clear()", "completions.clear()",
@@ -171,6 +174,7 @@ for token in ("stop_requested = true", "queued.clear()", "completions.clear()",
     assert token in cancel
 quiesce = section(REDIS, "bool redis_world_recovery_quiesce", "bool redis_has_world_state")
 assert "world_recovery_pipeline_cancel()" in quiesce
+assert "redis_floor_store_cancel()" in quiesce
 assert "redis_world_writer_fence_claim()" in quiesce
 assert "redis_world_store_release_fence" not in quiesce
 clear = section(REDIS, "bool redis_clear_world_state", "bool redis_load_world_state")

@@ -27,6 +27,7 @@
 #include "player_save_worker.h"
 #include "presence_policy.h"
 #include "redis_cache_store.h"
+#include "redis_floor_store.h"
 #include "redis_presence_payload.h"
 #include "redis_presence_worker.h"
 #include "redis_world_store.h"
@@ -81,6 +82,7 @@ int crash_recovery_boot = 0;
 #define REDIS_DONATION_MAX_RECONNECT_DELAY 60
 #define REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC 1000
 #define REDIS_CACHE_DRAIN_TIMEOUT_MSEC 1000
+#define REDIS_FLOOR_DRAIN_TIMEOUT_MSEC 1000
 
 static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
@@ -94,6 +96,8 @@ static unsigned int donation_reconnect_delay = 1;
 static time_t donation_next_reconnect = 0;
 static std::string donation_secret;
 static std::vector<std::string> donation_seen_event_ids;
+static bool world_floor_barrier_waiting = false;
+static bool world_floor_handoff_active = false;
 static void donation_sub_drop(const char *reason);
 static bool redis_clear_floor_drops_checked(void);
 static void redis_prime_artifact_caches(void);
@@ -354,48 +358,6 @@ static void redis_prime_artifact_caches(void)
 	freeReplyObject(reply);
 }
 
-static bool redis_append_command(redisContext *ctx, const char *format, ...)
-{
-	if (!ctx || ctx->err || !format)
-	{
-		redis_log_command_failure(!ctx ? "unavailable" : "context_error");
-		return false;
-	}
-	va_list args;
-	va_start(args, format);
-	const int result = redisvAppendCommand(ctx, format, args);
-	va_end(args);
-	if (result != REDIS_OK)
-		redis_log_command_failure(ctx->err == REDIS_ERR_IO ? "timeout_or_io" :
-								     "append_failed");
-	return result == REDIS_OK;
-}
-
-static bool redis_collect_integer_replies(redisContext *ctx, size_t count)
-{
-	bool valid = true;
-	for (size_t index = 0; index < count; ++index)
-	{
-		void *raw_reply = NULL;
-		if (!ctx || redisGetReply(ctx, &raw_reply) != REDIS_OK || !raw_reply)
-		{
-			redis_log_command_failure(
-				ctx && ctx->err == REDIS_ERR_IO ? "timeout_or_io" : "no_reply");
-			return false;
-		}
-		redisReply *reply = (redisReply *)raw_reply;
-		if (reply->type != REDIS_REPLY_INTEGER)
-		{
-			redis_log_command_failure(reply->type == REDIS_REPLY_ERROR ?
-							  "error_reply" :
-							  "unexpected_reply");
-			valid = false;
-		}
-		freeReplyObject(reply);
-	}
-	return valid;
-}
-
 #endif
 
 /* Scan-and-delete with MATCH pattern. Fail closed if SCAN/DEL misshape. */
@@ -620,6 +582,14 @@ bool redis_init(void)
 
 		logit(LOG_SYS, "redis world state enabled: interval=%ds, max_age=%ds",
 		      world_state_interval, world_state_max_age);
+		const redis_floor_store_config floor_config = { redis_host, redis_port,
+								REDIS_CONNECT_TIMEOUT_MSEC,
+								REDIS_COMMAND_TIMEOUT_MSEC };
+		if (!redis_floor_store_init(&floor_config))
+		{
+			logit(LOG_SYS, "redis: floor worker unavailable; world recovery disabled");
+			redis_world_state_enabled = false;
+		}
 	}
 
 	// note: flush event scheduled in ne_init_events() after event system is ready
@@ -648,6 +618,7 @@ bool redis_clear_pwipe_state(void)
 		return true;
 	redis_presence_worker_cancel();
 	redis_cache_store_cancel();
+	redis_floor_store_cancel();
 	if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
 		return false;
 
@@ -713,6 +684,8 @@ void redis_cleanup(void)
 				world_recovery_pipeline_cancel();
 		}
 	}
+	if (!redis_floor_store_shutdown(REDIS_FLOOR_DRAIN_TIMEOUT_MSEC))
+		logit(LOG_SYS, "redis: floor worker drain timed out during shutdown");
 	if (!world_writer_token.empty())
 	{
 		const redis_world_store_config config = redis_world_store_config_copy();
@@ -779,7 +752,7 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 	if (_pwipe)
 		return;
 #ifndef __NO_MYSQL__
-	if (!redis_world_state_enabled || !obj || obj->obj_uid == 0)
+	if (!redis_world_state_enabled || world_recovery_quiesced || !obj || obj->obj_uid == 0)
 		return;
 
 	// skip old corpses (vnum 2, value[6] is timestamp) - older than 24h
@@ -833,11 +806,9 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 bool redis_flush_floor_drops(void)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_world_state_enabled)
+	if (!redis_world_state_enabled || world_recovery_quiesced)
 		return true;
-	if (world_recovery_pipeline_busy())
-		return false;
-	if (!redis_enabled || !redis_ctx)
+	if (!redis_enabled || !redis_floor_store_health_copy().initialized)
 		return false;
 
 	if (floor_drop_batch_count == 0 && floor_drop_remove_count == 0)
@@ -846,30 +817,26 @@ bool redis_flush_floor_drops(void)
 	if (!redis_season_key(floor_key, sizeof floor_key, "floor_drops"))
 		return false;
 
-	size_t appended = 0;
-	bool queued = true;
-	// Queue removes first, followed by replacement values. Hiredis sends the buffered
-	// commands together when replies are collected, avoiding one round trip per delta.
-	for (int i = 0; i < floor_drop_remove_count; i++)
+	std::vector<std::string> values;
+	std::vector<redis_floor_mutation> mutations;
+	try
 	{
-		if (!redis_append_command(redis_ctx, "HDEL %s %lu", floor_key,
-					  floor_drop_removes[i]))
-		{
-			queued = false;
-			break;
-		}
-		++appended;
+		values.reserve(floor_drop_batch_count);
+		mutations.reserve(floor_drop_remove_count + floor_drop_batch_count);
 	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	// Preserve remove-before-replacement ordering within one immutable worker batch.
+	for (int i = 0; i < floor_drop_remove_count; i++)
+		mutations.push_back({ floor_drop_removes[i], NULL, true });
 
-	// Queue adds only if every remove was accepted into the client output buffer.
-	for (int i = 0; queued && i < floor_drop_batch_count; i++)
+	for (int i = 0; i < floor_drop_batch_count; i++)
 	{
 		cJSON *o = cJSON_CreateObject();
 		if (!o)
-		{
-			redis_collect_integer_replies(redis_ctx, appended);
 			return false;
-		}
 
 		cJSON_AddNumberToObject(o, "uid", (double)floor_drop_batch[i].uid);
 		cJSON_AddNumberToObject(o, "v", floor_drop_batch[i].vnum);
@@ -925,21 +892,22 @@ bool redis_flush_floor_drops(void)
 		char *json_str = cJSON_PrintUnformatted(o);
 		cJSON_Delete(o);
 		if (!json_str)
+			return false;
+		try
 		{
-			redis_collect_integer_replies(redis_ctx, appended);
+			values.emplace_back(json_str);
+			mutations.push_back(
+				{ floor_drop_batch[i].uid, values.back().c_str(), false });
+		}
+		catch (const std::bad_alloc &)
+		{
+			free(json_str);
 			return false;
 		}
-
-		queued = redis_append_command(redis_ctx, "HSET %s %lu %s", floor_key,
-					      floor_drop_batch[i].uid, json_str);
 		free(json_str);
-		if (queued)
-			++appended;
 	}
 
-	const bool flushed = redis_collect_integer_replies(redis_ctx, appended);
-	if (!queued || !flushed ||
-	    appended != (size_t)(floor_drop_remove_count + floor_drop_batch_count))
+	if (!redis_floor_store_submit(floor_key, mutations.data(), mutations.size()))
 		return false;
 
 	floor_drop_remove_count = 0;
@@ -965,7 +933,7 @@ bool redis_flush_floor_drops(void)
 void redis_remove_floor_drop(unsigned long obj_uid)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_world_state_enabled || obj_uid == 0)
+	if (!redis_world_state_enabled || world_recovery_quiesced || obj_uid == 0)
 		return;
 
 	// check if it's in the pending batch - remove from there first
@@ -1284,14 +1252,15 @@ bool redis_save_world_state(void)
 		return false;
 	}
 	redis_world_recovery_pulse();
-	if (world_recovery_pipeline_busy())
+	if (world_recovery_pipeline_busy() || world_floor_barrier_waiting ||
+	    world_floor_handoff_active)
 		return true;
-	if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
-		return false;
 	if (!redis_flush_floor_drops())
 		return false;
-	logit(LOG_SYS, "redis: starting bounded world recovery capture");
-	return world_recovery_pipeline_request();
+	if (!redis_floor_store_request_barrier())
+		return false;
+	world_floor_barrier_waiting = true;
+	return true;
 #endif
 }
 
@@ -1302,10 +1271,30 @@ void redis_world_recovery_pulse(void)
 		return;
 	if (!world_recovery_pipeline_health_copy().initialized)
 		return;
+	bool barrier_succeeded = false;
+	if (world_floor_barrier_waiting && redis_floor_store_take_barrier(&barrier_succeeded))
+	{
+		world_floor_barrier_waiting = false;
+		if (barrier_succeeded && world_recovery_pipeline_request())
+		{
+			world_floor_handoff_active = true;
+			logit(LOG_SYS, "redis: starting bounded world recovery capture");
+		}
+		else
+		{
+			redis_floor_store_resume();
+			logit(LOG_SYS, "redis: floor preflight failed; recovery capture deferred");
+		}
+	}
 	world_recovery_pipeline_pulse();
 	world_recovery_completion completion = {};
 	while (world_recovery_pipeline_take_completion(&completion))
 	{
+		if (world_floor_handoff_active)
+		{
+			redis_floor_store_resume();
+			world_floor_handoff_active = false;
+		}
 		const world_recovery_health recovery = world_recovery_pipeline_health_copy();
 		if (completion.published &&
 		    completion.sequence == recovery.last_acknowledged_sequence)
@@ -1318,6 +1307,12 @@ void redis_world_recovery_pulse(void)
 			logit(LOG_SYS,
 			      "redis: world recovery generation publish failed sequence=%llu attempts=%u",
 			      (unsigned long long)completion.sequence, completion.attempts);
+	}
+	if (world_floor_handoff_active && !world_recovery_pipeline_busy())
+	{
+		redis_floor_store_resume();
+		world_floor_handoff_active = false;
+		logit(LOG_SYS, "redis: recovery capture failed; floor publication resumed");
 	}
 #endif
 }
@@ -1351,6 +1346,9 @@ bool redis_world_recovery_quiesce(void)
 	return true;
 #else
 	world_recovery_quiesced = true;
+	redis_floor_store_cancel();
+	world_floor_barrier_waiting = false;
+	world_floor_handoff_active = false;
 	if (world_recovery_pipeline_health_copy().initialized)
 		world_recovery_pipeline_cancel();
 	return redis_world_writer_fence_claim();

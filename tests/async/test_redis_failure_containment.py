@@ -8,6 +8,7 @@ text = (root / "src/redis.c").read_text()
 store = (root / "src/redis_world_store.c").read_text()
 presence_worker = (root / "src/redis_presence_worker.c").read_text()
 cache_store = (root / "src/redis_cache_store.c").read_text()
+floor_store = (root / "src/redis_floor_store.c").read_text()
 header = (root / "src/redis.h").read_text()
 signals = (root / "src/signals.c").read_text()
 
@@ -22,8 +23,10 @@ assert "redisCommand(" not in text
 assert "redisConnect(" not in text
 assert text.count("redisConnectWithTimeout(") == 1
 assert text.count("redisvCommand(") == 1
-assert text.count("redisvAppendCommand(") == 1
-assert text.count("redisGetReply(ctx,") == 1
+assert "redisvAppendCommand(" not in text
+assert "redisGetReply(ctx," not in text
+assert floor_store.count("redisAppendCommand(") == 2
+assert floor_store.count("redisGetReply(context,") == 1
 assert "redisConnect(" not in store
 assert store.count("redisConnectWithTimeout(") == 1
 assert store.count("redisvCommand(") == 1
@@ -93,7 +96,7 @@ assert "redis_cache_store_cancel();" in section(
 assert "redis_cache_store_shutdown" in section(
     "void redis_cleanup", "void redis_clear_floor_pickups"
 )
-prime = section("static void redis_prime_artifact_caches", "static bool redis_append_command")
+prime = section("static void redis_prime_artifact_caches", "#endif\n\n/* Scan-and-delete")
 assert "PTTL" in prime and "redis_cache_store_seed" in prime
 print("[PASS] report caches use bounded local reads and asynchronous Redis publication")
 
@@ -129,6 +132,7 @@ world = section("bool redis_save_world_state(void)", "bool redis_has_world_state
 assert "fork(" not in world
 assert "world_recovery_pipeline_request" in world
 assert "world_recovery_pipeline_busy" in world
+assert "redis_floor_store_request_barrier" in world
 cleanup = section("void redis_cleanup(void)", "void redis_clear_floor_pickups(void)")
 assert "redis_terminate_child" not in cleanup
 assert "world_recovery_pipeline_shutdown" in cleanup
@@ -146,19 +150,25 @@ assert "redis.call('DEL',KEYS[8])" in store and "PEXPIRE" in store
 print("[PASS] null, timeout, error reply, or rejected world CAS forces worker failure")
 
 floor_flush = section("bool redis_flush_floor_drops(void)", "void redis_remove_floor_drop")
-assert "world_recovery_pipeline_busy()" in floor_flush
+assert "redis_floor_store_submit" in floor_flush
 assert "world_recovery_floor_ack_pending" not in floor_flush
 assert floor_flush.index("return false;") < floor_flush.index("floor_drop_remove_count = 0;")
 assert floor_flush.index("return false;") < floor_flush.index("floor_drop_batch_count = 0;")
-assert "redis_append_command" in floor_flush
-assert "redis_collect_integer_replies" in floor_flush
+assert "redis_append_command" not in floor_flush
+assert "redis_collect_integer_replies" not in floor_flush
 assert floor_flush.count("redis_command") == 0
 assert "bool redis_flush_floor_drops(void);" in header
 ack = section("void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
 assert "redis_clear_floor_drops_checked()" not in ack
 assert "world_recovery_floor_ack_pending" not in ack
+for token in ("redis_floor_store_take_barrier", "world_recovery_pipeline_request",
+              "redis_floor_store_resume"):
+    assert token in ack
+for token in ("REDIS_FLOOR_QUEUE_CAPACITY", "REDIS_FLOOR_QUEUE_MAX_BYTES",
+              "redis_floor_store_request_barrier", "redis_floor_store_take_barrier"):
+    assert token in floor_store
 event = section("void event_save_world_state", "bool redis_cache_set")
 assert "redis_clear_floor_drops" not in event
-print("[PASS] floor deltas use one pipelined exchange and clear only after exact success")
+print("[PASS] floor deltas use a bounded background pipeline and ordered snapshot barrier")
 
 print("redis failure containment source contracts passed")

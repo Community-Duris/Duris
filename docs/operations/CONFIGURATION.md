@@ -95,6 +95,13 @@ times `REDIS_WORLD_STATE_MAX_AGE`, whichever is greater, so abandoned generation
 The background publisher scales its write timeout for the blob size, up to five seconds;
 this does not extend the game-loop Redis command deadline.
 
+Floor deltas use a separate background worker bounded to eight batches and 16 MiB. Each
+batch holds at most 2,048 mutations, each value is capped at 256 KiB, and keys are capped
+at 128 bytes. Before world capture, an ordered worker barrier confirms all earlier deltas
+and pauses later publication; the generation handoff deletes the acknowledged hash
+atomically, then post-barrier deltas resume. Gameplay performs no Redis socket I/O for
+floor drops, pickups, or snapshot preflight.
+
 The in-game `redis clear world`, `redis clear floor`, and `redis clear all confirm`
 commands cancel and join the publisher before deleting recovery state. They retain the
 writer fence and keep publication quiesced until shutdown; a restart is required to

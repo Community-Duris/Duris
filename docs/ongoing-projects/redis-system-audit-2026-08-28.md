@@ -9,6 +9,40 @@ open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-011 asynchronous floor deltas and snapshot barrier
+
+Completed in this interval:
+
+- Moved floor `HSET`/`HDEL`, connection attempts, retries, and reply collection to a
+  dedicated worker. Gameplay now serializes an immutable bounded batch and enqueues it.
+- Bounded the worker to eight batches, 16 MiB of values, 2,048 mutations per batch,
+  256 KiB per value, and 128 bytes per key. Connection outages use exponential backoff;
+  permanent command errors stop retrying after three attempts.
+- Added an ordered barrier before each world capture. Pre-capture deltas must be
+  acknowledged before capture begins; the floor worker then pauses so post-barrier
+  mutations cannot be deleted by the generation's atomic floor handoff.
+- Resume occurs after either publication completion or capture failure. Destructive
+  quiesce cancels and joins the floor worker before deleting state.
+- Added queue, byte, barrier, completion, failure, reconnect, and drop health without a
+  Redis query.
+
+Performance effect:
+
+- Object drops, pickups, periodic floor flushes, and world-save preflight no longer wait
+  for Redis. A full gameplay batch performs bounded JSON serialization and memory copies,
+  then returns after a queue lock; all socket I/O is background work.
+- Floor mutations remain pipelined per immutable batch, preserving the prior reduction in
+  Redis round trips.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_floor_store_live.py`: passed under ASan/UBSan against
+  isolated Redis, proving initial-outage healing, pre-barrier visibility, paused
+  post-barrier work, ordered resume, shutdown drain, and delete/set behavior.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+
 ### 2026-08-28 - RDS-017 bounded world-recovery memory and retention
 
 Completed in this interval:
@@ -1021,9 +1055,9 @@ Severity: High
 Confidence: Confirmed
 Remediation status: Partially remediated; presence writes and reconnects run on a bounded
 healing worker, and floor-delta batches use one pipelined exchange instead of up to 2,048
-sequential round trips. Report cache reads, writes, invalidations, and reconnects are also
-off the simulation thread. Administrator queries and optional world/floor preflight work
-on the shared connection remain open.
+sequential round trips on a dedicated worker with an ordered snapshot barrier. Report
+cache reads, writes, invalidations, and reconnects are also off the simulation thread.
+Only deliberately invoked administrator queries remain on the shared connection.
 
 Evidence:
 
@@ -1355,7 +1389,9 @@ Severity: Medium
 Confidence: Confirmed
 Remediation status: Partially remediated; presence and report-cache workers expose local
 state, queue/byte high water, completions, drops, command failures, and reconnects without
-network queries. The shared world/floor/admin context still lacks per-subsystem telemetry.
+network queries. The floor worker also exposes queue/byte, barrier, completion, drop,
+failure, and reconnect state. The shared world/admin context still lacks complete
+per-command telemetry.
 
 The world pipeline exposes useful counters and timing, but the shared command layer emits
 only one global rate-limited line per second with a broad outcome. It omits command class,
