@@ -118,7 +118,7 @@ for production.
 | --- | --- |
 | `LISTEN_ADDRESS` | Numeric IPv4 or IPv6 address applied to telnet, TLS telnet, and WebSocket listeners. Use `127.0.0.1` or `::1` for local development. |
 | `DURIS_WEBSOCKET_PORT` | WebSocket and HTTP health-listener port. It defaults to `4050`; values must be decimal ports from 1 through 65535. |
-| `DURIS_WEBSOCKET_LISTEN_ADDRESS` | WebSocket-only numeric listener address; defaults to `LISTEN_ADDRESS`. Production requires exact loopback so a local TLS reverse proxy owns the public endpoint. |
+| `DURIS_WEBSOCKET_LISTEN_ADDRESS` | WebSocket-only numeric listener address; defaults to `LISTEN_ADDRESS`, and to `127.0.0.1` when neither is set. Production requires exact loopback so a local TLS reverse proxy owns the public endpoint. |
 | `DURIS_WEBSOCKET_ALLOWED_ORIGINS` | Exact comma-separated browser `Origin` allow-list. Required in production; non-browser service connections may omit `Origin`. |
 | `DURISWEB_SECRET` | Current shared key for one-time DurisWeb challenge-response authentication. See the DurisWeb API reference. |
 | `DURISWEB_SECRET_PREVIOUS` | Optional previous service key accepted during a bounded zero-downtime rotation. Remove it after every backend has switched. |

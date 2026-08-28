@@ -885,6 +885,22 @@ static int drain_new_connections(int listener, int conn_type, const char *label)
 	return accepted_count;
 }
 
+/*
+ * Tick latency is wall-clock latency.  clock() reports CPU time accumulated by
+ * every thread in the process, so the MySQL worker pool and the Redis
+ * subscriber were folded into the game loop's own numbers and inflated them
+ * into false "MUD TICK TOOK TOO LONG" reports.  CLOCK_MONOTONIC measures the
+ * time the tick actually spent, and is unaffected by wall-clock adjustments.
+ */
+static double loop_monotonic_seconds(void)
+{
+	struct timespec now;
+
+	if (clock_gettime(CLOCK_MONOTONIC, &now) != 0)
+		return 0.0;
+	return (double)now.tv_sec + (double)now.tv_nsec / 1E9;
+}
+
 void game_loop(int port, int sslport)
 {
 	P_char t_ch = NULL;
@@ -1014,12 +1030,12 @@ void game_loop(int port, int sslport)
 	copyover_clear_boot();
 
 	long last_desc_per_hour_reset = time(0);
-	clock_t loop_time_end;
+	double loop_time_end;
 	/* Main loop */
 resume_game_loop:
 	while (!shutdownflag)
 	{
-		clock_t loop_time_begin = clock();
+		double loop_time_begin = loop_monotonic_seconds();
 		// check for signal-initiated shutdown (from launcher)
 		//PROFILE_START(process_signal_shutdown_pending);
 		if (signal_shutdown_pending)
@@ -1063,6 +1079,7 @@ resume_game_loop:
 
 		/* Continue with original code */
 		PROFILE_START(connections);
+		double connections_begin = loop_monotonic_seconds();
 		FD_SET(s, &input_set);
 		FD_SET(S, &input_set);
 		if (WS >= 0)
@@ -1213,9 +1230,7 @@ resume_game_loop:
 			}
 		}
 		PROFILE_END(connections);
-		double connections_time =
-			(double)(connections_profile_end - connections_profile_beg) /
-			(double)CLOCKS_PER_SEC;
+		double connections_time = loop_monotonic_seconds() - connections_begin;
 		latency_trace_record("connections", (long)(connections_time * 1000000.0), pulse);
 
 #if 0
@@ -1225,6 +1240,7 @@ resume_game_loop:
 
 		/* process_commands */
 		PROFILE_START(commands);
+		double commands_begin = loop_monotonic_seconds();
 		for (point = descriptor_list, player_count = 0; point; point = next_to_process)
 		{
 			next_to_process = point->next;
@@ -1453,11 +1469,11 @@ resume_game_loop:
 			}
 		}
 		PROFILE_END(commands);
-		double commands_time = (double)(commands_profile_end - commands_profile_beg) /
-				       (double)CLOCKS_PER_SEC;
+		double commands_time = loop_monotonic_seconds() - commands_begin;
 		latency_trace_record("commands", (long)(commands_time * 1000000.0), pulse);
 
 		PROFILE_START(prompts);
+		double prompts_begin = loop_monotonic_seconds();
 		for (point = descriptor_list; point; point = next_point)
 		{
 			next_point = point->next;
@@ -1512,23 +1528,21 @@ resume_game_loop:
 		}
 
 		PROFILE_END(prompts);
-		double prompts_time = (double)(prompts_profile_end - prompts_profile_beg) /
-				      (double)CLOCKS_PER_SEC;
+		double prompts_time = loop_monotonic_seconds() - prompts_begin;
 		latency_trace_record("prompts", (long)(prompts_time * 1000000.0), pulse);
 
 		/* handle heartbeat stuff */
 		/* ne_events() closes the current tick's pre-event scheduling phase. */
-		clock_t ne_events_begin = clock();
+		double ne_events_begin = loop_monotonic_seconds();
 		ne_events();
-		clock_t ne_events_end = clock();
-		double ne_events_time =
-			(double)(ne_events_end - ne_events_begin) / (double)CLOCKS_PER_SEC;
+		double ne_events_end = loop_monotonic_seconds();
+		double ne_events_time = ne_events_end - ne_events_begin;
 		latency_trace_record("ne_events", (long)(ne_events_time * 1000000.0), pulse);
 
 		/* Flush dirty room GMCP updates every 2 pulses (~500ms) */
 		if (!(pulse % 2))
 		{
-			clock_t _gmcp = clock();
+			double _gmcp = loop_monotonic_seconds();
 			gmcp_flush_dirty_rooms();
 			gmcp_flush_dirty_ship_contacts();
 			gmcp_flush_dirty_ship_info();
@@ -1577,7 +1591,7 @@ resume_game_loop:
 			}
 			redis_world_recovery_pulse();
 			latency_trace_record("gmcp_flush",
-					     (long)((clock() - _gmcp) * 1000000.0 / CLOCKS_PER_SEC),
+					     (long)((loop_monotonic_seconds() - _gmcp) * 1000000.0),
 					     pulse);
 		}
 		maintenance_result maintenance_results[MAINTENANCE_COMPLETION_MAX] = {};
@@ -1586,6 +1600,7 @@ resume_game_loop:
 		maintenance_handle_completions(maintenance_results, maintenance_count);
 
 		PROFILE_START(activities);
+		double activities_begin = loop_monotonic_seconds();
 		if (maintenance_activity_due(ne_event_tick, WAIT_SEC, 1))
 			ship_activity();
 
@@ -1605,11 +1620,11 @@ resume_game_loop:
 			wimps_in_approve_queue();
 
 		PROFILE_END(activities);
-		double activities_time = (double)(activities_profile_end - activities_profile_beg) /
-					 (double)CLOCKS_PER_SEC;
+		double activities_time = loop_monotonic_seconds() - activities_begin;
 		latency_trace_record("activities", (long)(activities_time * 1000000.0), pulse);
 
 		PROFILE_START(combat);
+		double combat_begin = loop_monotonic_seconds();
 		perform_violence();
 
 		/* for action_delays[] related to combat --TAM 04/19/94 */
@@ -1687,8 +1702,7 @@ resume_game_loop:
 		}
 		//      }
 		PROFILE_END(combat);
-		double combat_time =
-			(double)(combat_profile_end - combat_profile_beg) / (double)CLOCKS_PER_SEC;
+		double combat_time = loop_monotonic_seconds() - combat_begin;
 		latency_trace_record("combat", (long)(combat_time * 1000000.0), pulse);
 
 		PROFILE_START(pulse_reset);
@@ -1701,22 +1715,19 @@ resume_game_loop:
 			logit(LOG_SYS, "Huge value for tics, resetting to 1.");
 		}
 		nevent_advance_tick();
-		clock_t affect_and_points_begin = clock();
+		double affect_and_points_begin = loop_monotonic_seconds();
 		if (!pulse)
 		{
 			affect_update();
 			point_update();
 		}
-		clock_t affect_and_points_end = clock();
-		double affect_and_points_time =
-			(double)(affect_and_points_end - affect_and_points_begin) /
-			(double)CLOCKS_PER_SEC;
+		double affect_and_points_end = loop_monotonic_seconds();
+		double affect_and_points_time = affect_and_points_end - affect_and_points_begin;
 		latency_trace_record("affect_and_points",
 				     (long)(affect_and_points_time * 1000000.0), pulse);
 		/* check out the time */
-		loop_time_end = clock();
-		double loop_time =
-			(double)(loop_time_end - loop_time_begin) / (double)CLOCKS_PER_SEC;
+		loop_time_end = loop_monotonic_seconds();
+		double loop_time = loop_time_end - loop_time_begin;
 		if (loop_time >= 0.250) // 4 ticks a sec
 		{
 			statuslog(56, "MUD TICK TOOK TOO LONG - loop time - %f", loop_time);
@@ -1731,7 +1742,7 @@ resume_game_loop:
 		latency_trace_record("total_tick", (long)(loop_time * 1000000.0), pulse);
 		if (!(tics % 300))
 		{
-			FILE *_ltf = fopen("/durismud/logs/latency_trace.log", "a");
+			FILE *_ltf = fopen("logs/latency_trace.log", "a");
 			if (_ltf)
 			{
 				latency_trace_dump(_ltf);

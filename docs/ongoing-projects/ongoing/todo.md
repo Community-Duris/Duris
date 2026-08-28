@@ -1,9 +1,13 @@
 # todo.md
 
 TODO of tasks NOT done yet:
- - Restore flatfile system:  flag or toggle?  primary or fallback?
- - Integration points on MUD server that integrate with website should be hardened
- - Refactor REDIS
+
+DONE - `drop all`, `drop all.<name>`, `put all`, and `put all.<name>` now use the
+same serialized durable chain as `get all` (`start_bulk_drop` / `start_bulk_put`
+in `src/actobj.c`). The blanket "Durable items must be dropped/put away one at a
+time." rejections are gone. Regression test:
+`tests/async/test_bulk_drop_put_durable_chain.py`.
+
  - Thorough testing of all the systems we are touching
 
 ---

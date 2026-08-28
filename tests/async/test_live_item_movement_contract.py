@@ -40,10 +40,17 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertIn("item_movement_transaction_submit", actobj)
         self.assertIn("item_get_ack_publication", actobj)
         self.assertIn("item_put_ack_publication", actobj)
-        self.assertIn("Durable items must be dropped one at a time", actobj)
         self.assertIn("start_container_bulk_get", actobj)
         self.assertIn("continue_bulk_get(actor, true)", actobj)
+        self.assertIn("start_bulk_drop", actobj)
+        self.assertIn("continue_bulk_drop(actor, true)", actobj)
+        self.assertIn("start_bulk_put", actobj)
+        self.assertIn("continue_bulk_put(actor, stored)", actobj)
+        # every bulk command now serialises its transactions instead of
+        # refusing the command outright.
         self.assertNotIn("Durable container items must be collected one at a time", actobj)
+        self.assertNotIn("Durable items must be dropped one at a time", actobj)
+        self.assertNotIn("Durable items must be put away one at a time", actobj)
 
     def test_death_items_are_chained_after_ack_and_failure_is_preserved(self):
         fight = (SRC / "fight.c").read_text()
