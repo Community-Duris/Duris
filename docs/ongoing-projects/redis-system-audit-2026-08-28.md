@@ -5,11 +5,52 @@ Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-001, RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
-RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, and RDS-017 are remediated. RDS-008 is
-remediated for connection, transport, and namespace isolation but remains partial for
-least-privilege identity separation; the remaining findings are open.
+RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, RDS-017, and RDS-008 are remediated; the
+remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-008 least-privilege subsystem identities
+
+Completed in this interval:
+
+- Added immutable world, presence, cache, donation, and maintenance connection settings.
+  Production requires complete scoped credential pairs, rejects empty or reused usernames,
+  and requires the donation pair only when that subscriber is enabled. Local development
+  retains the shared credential pair as an explicit fallback.
+- Routed world/floor recovery, presence publication, reconstructible cache publication and
+  boot priming, donation subscription, and pwipe/stopped-server deletion through their
+  matching identities. The broad maintenance identity is opened only for pwipe preflight,
+  pwipe deletion, or the stopped-server helper.
+- Documented per-subsystem key/channel ACL boundaries and rotation behavior. The
+  stopped-server helper prefers the maintenance pair, rejects a partial pair, and keeps its
+  password out of command arguments.
+- Added live Redis ACL isolation coverage proving allowed world, presence, cache, donation,
+  and maintenance operations and `NOPERM` failures for cross-subsystem keys, channels, and
+  unrelated application prefixes.
+
+Performance effect:
+
+- Credential resolution and immutable settings construction happen once at boot.
+  Authentication occurs only when existing worker, boot/recovery, or maintenance
+  connections open or reconnect; no per-command settings construction was added.
+- Gameplay paths retain bounded serialization, local cache reads, and queue submission.
+  They gain no Redis, SQL, filesystem, process, allocation, logging, wait, connection, or
+  authentication work. Cache priming uses its own identity in one boot-only connection.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `./scripts/format.sh --check` and `git diff --check`: passed.
+- All 21 `tests/async/test_redis*.py` tests passed, including isolated live Redis ACL,
+  connection/TLS/socket, worker outage-healing, queue-bound, fencing, and publication tests.
+- `python3 tests/async/test_season_reset_fence.py`,
+  `python3 tests/async/test_data_lifecycle_manifest.py`, and
+  `python3 tests/async/test_world_recovery_pipeline.py`: passed.
+
+RDS-008 is complete: transport, authentication, database selection, deployment/season
+isolation, authenticated sensitive payloads, and least-privilege subsystem identity
+separation now fail closed in production.
 
 ### 2026-08-28 - RDS-008 authenticated recovery generations
 
@@ -55,8 +96,7 @@ Validation:
   integration contracts.
 
 Redis write access alone can no longer forge an accepted world generation or donation
-event. RDS-008 remains partial only for separate least-privilege Redis ACL identities per
-subsystem.
+event.
 
 ### 2026-08-28 - RDS-008 Unix-socket transport
 
@@ -1568,37 +1608,39 @@ support one writer or enforce that invariant with a renewable lease.
 
 Severity: High
 Confidence: Confirmed configuration gap; exploitability depends on deployment reachability
-Remediation status: Partially remediated. Runtime and destructive-maintenance connections
+Remediation status: Completed on branch. Runtime and destructive-maintenance connections
 support ACL/password authentication, explicit database selection, verified TCP TLS, and
 bounded Unix-socket transport. Non-loopback production runtime endpoints fail closed without
 TLS, while destructive maintenance requires an exact local target allow-list and
 confirmation. Every active key and channel uses a required
 application/environment/deployment namespace plus the SQL season epoch. World generation
-manifests and payloads use an independent rotating HMAC secret. Least-privilege subsystem
-identities remain open.
+manifests and payloads use an independent rotating HMAC secret. Production requires
+distinct world, presence, cache, maintenance, and enabled-donation ACL identities.
 
 Evidence:
 
 - Every runtime owner connects through the shared adapter
   ([`src/redis_connection.c`](../../src/redis_connection.c)), which performs bounded TCP,
   optional verified TLS, ACL/password authentication, and explicit database selection.
-- Runtime and maintenance configuration share host, port, database, credentials, TLS,
-  CA, and an exact `duris:<environment>:<deployment>` namespace. Runtime validation rejects
-  a namespace whose environment differs from `ENVIRONMENT` before connecting.
+- Runtime and maintenance configuration share host, port, database, TLS, CA, and an exact
+  `duris:<environment>:<deployment>` namespace while using distinct subsystem credentials.
+  Runtime validation rejects a namespace whose environment differs from `ENVIRONMENT`
+  before connecting.
 - TCP and absolute Unix-socket endpoints are mutually exclusive and use the same bounded
   authenticated, database-selected connection adapter. TLS is required for non-loopback
   production TCP and rejected for local socket transport.
 - Recovery generations use a `WRG2` manifest whose constant-time HMAC verification binds
   the full payload digest to namespace, season, and sequence before materialization.
-- A writer can influence mob stats, gold, affects, items, ships, artifact JSON, presence,
-  and donation messages. Several consumers do not perform semantic validation.
+- Live ACL coverage proves that subsystem identities cannot cross key or channel
+  boundaries and that maintenance cannot address an unrelated application prefix.
 
 Impact:
 
-Any identity with broad Redis write access can still spoof presence or malformed
-reconstructible cache values within its authorized namespace. Donation envelopes and world
-generations require independent HMAC keys, while namespace and season binding prevent
-cross-deployment and cross-season acceptance.
+A compromised subsystem identity is contained to that subsystem's scoped key or channel
+surface. Donation envelopes and world generations additionally require independent HMAC
+keys, while namespace and season binding prevent cross-deployment and cross-season
+acceptance. The maintenance identity remains intentionally privileged and must be reserved
+for stopped-server or pwipe workflows.
 
 Recommendation:
 

@@ -116,10 +116,12 @@ Git and must never be committed. See the
 recovery, proxy handling, and diagnostic switches.
 
 Set `REDIS=TRUE` with `REDIS_HOST`, `REDIS_PORT`, and an explicit `REDIS_DB` to enable
-caches and recovery integration. Optional `REDIS_USERNAME`/`REDIS_PASSWORD` ACL
-authentication and verified `REDIS_TLS=TRUE` transport apply to every runtime connection;
-non-loopback production endpoints require TLS. `REDIS_WORLD_STATE=TRUE` additionally
-enables immutable world recovery.
+caches and recovery integration. Local development may use shared
+`REDIS_USERNAME`/`REDIS_PASSWORD` ACL authentication. Production requires distinct world,
+presence, cache, maintenance, and, when enabled, donation ACL identities. Verified
+`REDIS_TLS=TRUE` transport applies to every runtime connection; non-loopback production
+endpoints require TLS. `REDIS_WORLD_STATE=TRUE` additionally enables immutable world
+recovery.
 Player saves do not depend on Redis. If a DurisWeb backend will authenticate
 through WebSocket or GMCP, give it a private `DURISWEB_SECRET` and follow the
 challenge-response contract in the

@@ -72,8 +72,13 @@ revisioned player-save pipeline and typed journal.
 | `REDIS_SOCKET` | empty | Absolute path, at most 107 bytes | Optional local Unix socket used instead of TCP. It is mutually exclusive with `REDIS_HOST`/`REDIS_PORT` and with TLS. Every runtime worker uses the same socket through the shared adapter. |
 | `REDIS_DB` | `0` | `0`-`255` | Database explicitly selected by every runtime connection and destructive maintenance command. |
 | `REDIS_NAMESPACE` | none | `duris:<ENVIRONMENT>:<deployment>` | Required isolation prefix for every active key and channel. Deployment is 1-32 lowercase letters, digits, hyphens, or underscores and must not begin or end with punctuation. |
-| `REDIS_USERNAME` | empty | Redis ACL username | Optional runtime and maintenance ACL identity; requires a nonempty password. |
-| `REDIS_PASSWORD` | empty | Redis ACL password | Optional runtime secret. Maintenance passes it through `REDISCLI_AUTH`, not a command argument. |
+| `REDIS_USERNAME` | empty | Redis ACL username | Shared local-development fallback. Production does not accept it in place of scoped identities. |
+| `REDIS_PASSWORD` | empty | Redis ACL password | Password paired with the local-development fallback identity. |
+| `REDIS_WORLD_USERNAME`, `REDIS_WORLD_PASSWORD` | local fallback | Complete ACL pair | World/floor recovery identity. Required in production. |
+| `REDIS_PRESENCE_USERNAME`, `REDIS_PRESENCE_PASSWORD` | local fallback | Complete ACL pair | Presence key and event-channel identity. Required in production. |
+| `REDIS_CACHE_USERNAME`, `REDIS_CACHE_PASSWORD` | local fallback | Complete ACL pair | Reconstructible content-cache identity. Required in production. |
+| `REDIS_DONATION_USERNAME`, `REDIS_DONATION_PASSWORD` | local fallback | Complete ACL pair | Donation subscription identity. Required in production only when the subscriber is enabled. |
+| `REDIS_MAINTENANCE_USERNAME`, `REDIS_MAINTENANCE_PASSWORD` | local fallback | Complete ACL pair | Pwipe and stopped-server destructive-maintenance identity. Required in production. The shell helper passes its password through `REDISCLI_AUTH`, not a command argument. |
 | `REDIS_TLS` | `FALSE` | Exact `TRUE` or `FALSE` | Enables verified TLS for every TCP runtime and maintenance connection. Non-loopback production runtime endpoints require `TRUE`; destructive maintenance requires it for every non-loopback TCP target. Unix sockets require `FALSE`. |
 | `REDIS_CA_CERT` | empty | Readable CA bundle | Required when Redis TLS is enabled and used for peer verification. |
 | `REDIS_TLS_SERVER_NAME` | `REDIS_HOST` | Certificate DNS name | Optional runtime SNI and certificate-name override, useful when connecting by IP to a certificate issued for a DNS name. |
@@ -87,6 +92,31 @@ revisioned player-save pipeline and typed journal.
 | `REDIS_DONATION_SECRET` | none | At least 32 bytes | Independent HMAC key required when the donation subscriber is enabled. Do not reuse a Redis, database, or DurisWeb secret. |
 
 World recovery is intentionally separate from player saves and reconstructible caches.
+At boot the server constructs immutable connection settings for each subsystem. In
+production, every required scoped username must be nonempty and distinct; an incomplete
+pair or reused username disables Redis before gameplay starts. Authentication occurs only
+when a worker, boot/recovery path, or maintenance path opens or reconnects a connection.
+Gameplay enqueue and cache-read paths do not perform authentication or connection work.
+
+Provision ACL users with unique passwords and the narrowest command set supported by the
+deployed Redis version. Key/channel boundaries should be:
+
+| Identity | Allowed keys/channels |
+| --- | --- |
+| world | `<REDIS_NAMESPACE>:season:*:world_state:*` and `<REDIS_NAMESPACE>:season:*:floor_*` |
+| presence | `<REDIS_NAMESPACE>:season:*:presence:*`, `<REDIS_NAMESPACE>:season:*:presence_op:*`, and publish only to `<REDIS_NAMESPACE>:season:*:player` |
+| cache | `<REDIS_NAMESPACE>:season:*:cache:*` |
+| donation | subscribe only to `<REDIS_NAMESPACE>:season:*:nchat`; no key access |
+| maintenance | `<REDIS_NAMESPACE>:*`, `mud:*`, and `ship:snapshot:*`; allow only connection, scan, delete, and required Lua execution commands |
+
+The world, presence, and cache workers need their respective read/write/Lua commands plus
+`PING` and `SELECT`; they do not need administrative, server-management, or cross-prefix
+access. The donation identity needs only `PING`, `SELECT`, and `SUBSCRIBE` with the channel
+pattern above. Maintenance is deliberately broader in key scope because it removes active
+and retired Duris surfaces, but it must not have access to other applications' prefixes.
+Test the exact ACL rules on a disposable Redis instance before deployment; Redis command
+categories and Lua ACL behavior can differ across supported server versions.
+
 At boot, one publisher claims a renewable 10-minute writer lease. Each background
 publication verifies that lease and expected prior pointer, writes the immutable
 sequence-keyed payload, advances the current pointer and diagnostic metadata, consumes
@@ -149,7 +179,8 @@ Stop the server before clearing Redis state. `scripts/clear-redis.sh --confirm
 <host:port/database|unix:/absolute/socket/database>` loads the owner-only `.env`, requires
 `ENVIRONMENT=local`, checks the
 exact target against `REDIS_ALLOWED_TARGETS`, applies the configured database, ACL, and TLS
-settings, and deletes only `<REDIS_NAMESPACE>:*`, legacy `mud:*`, and retired
+settings, uses the maintenance identity when configured, and deletes only
+`<REDIS_NAMESPACE>:*`, legacy `mud:*`, and retired
 `ship:snapshot:*` keys. It uses cursor scans and at most 128 keys per `DEL`, verifies that
 all three Duris patterns are empty afterward, and leaves
 unrelated application keys intact. Missing `redis-cli`, connection failure, unexpected replies, wrong

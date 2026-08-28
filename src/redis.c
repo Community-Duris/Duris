@@ -74,6 +74,10 @@ bool redis_clear_ship_snapshots(void)
 
 static redisContext *redis_ctx = NULL;
 static redis_connection_settings *redis_settings = NULL;
+static redis_connection_settings *redis_presence_settings = NULL;
+static redis_connection_settings *redis_cache_settings = NULL;
+static redis_connection_settings *redis_donation_settings = NULL;
+static redis_connection_settings *redis_maintenance_settings = NULL;
 bool redis_enabled = false;
 bool redis_donation_enabled = false;
 bool redis_world_state_enabled = false;
@@ -344,21 +348,27 @@ static redisReply *redis_command(redisContext *ctx, const char *format, ...)
 
 static void redis_prime_artifact_caches(void)
 {
-	if (!redis_ctx || redis_ctx->err)
+	redisContext *context = redis_connection_open(redis_cache_settings);
+	if (!context || context->err)
+	{
+		if (context)
+			redisFree(context);
 		return;
+	}
 	constexpr const char *script = "local result={} for index,key in ipairs(KEYS) do "
 				       "result[index*2-1]=redis.call('GET',key) "
 				       "result[index*2]=redis.call('PTTL',key) end return result";
 	const char *keys[6] = {};
 	for (size_t index = 0; index < 6; ++index)
 		keys[index] = redis_cache_artifact_keys[index];
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "EVAL %b 6 %s %s %s %s %s %s",
+	redisReply *reply = (redisReply *)redis_command(context, "EVAL %b 6 %s %s %s %s %s %s",
 							script, strlen(script), keys[0], keys[1],
 							keys[2], keys[3], keys[4], keys[5]);
 	if (!reply || reply->type != REDIS_REPLY_ARRAY || reply->elements != 12)
 	{
 		if (reply)
 			freeReplyObject(reply);
+		redisFree(context);
 		return;
 	}
 	for (size_t index = 0; index < 6; ++index)
@@ -372,6 +382,7 @@ static void redis_prime_artifact_caches(void)
 		redis_cache_store_seed(keys[index], value->str, (int)seconds);
 	}
 	freeReplyObject(reply);
+	redisFree(context);
 }
 
 #endif
@@ -558,7 +569,52 @@ static bool redis_configure_world_authentication(void)
 	return true;
 }
 
-static bool redis_configure_connection(const char *host, int port, const char *unix_socket)
+struct redis_identity
+{
+	const char *username;
+	const char *password;
+};
+
+static bool redis_resolve_identity(const char *username_name, const char *password_name,
+				   bool production, redis_identity *identity)
+{
+	if (!username_name || !password_name || !identity)
+		return false;
+	const char *username = getenv(username_name);
+	const char *password = getenv(password_name);
+	const bool scoped = (username && *username) || (password && *password);
+	if (scoped)
+	{
+		if (!username || !*username || !password || !*password)
+			return false;
+	}
+	else
+	{
+		if (production)
+			return false;
+		username = getenv("REDIS_USERNAME");
+		password = getenv("REDIS_PASSWORD");
+	}
+	identity->username = username;
+	identity->password = password;
+	return true;
+}
+
+static void redis_destroy_connection_settings(void)
+{
+	redis_connection_settings_destroy(redis_settings);
+	redis_connection_settings_destroy(redis_presence_settings);
+	redis_connection_settings_destroy(redis_cache_settings);
+	redis_connection_settings_destroy(redis_donation_settings);
+	redis_connection_settings_destroy(redis_maintenance_settings);
+	redis_settings = NULL;
+	redis_presence_settings = NULL;
+	redis_cache_settings = NULL;
+	redis_donation_settings = NULL;
+	redis_maintenance_settings = NULL;
+}
+
+static bool redis_configure_connections(const char *host, int port, const char *unix_socket)
 {
 	int database = 0;
 	if (!redis_parse_number(getenv("REDIS_DB"), 0, 255, 0, &database))
@@ -569,28 +625,88 @@ static bool redis_configure_connection(const char *host, int port, const char *u
 	    strcasecmp(tls_value, "FALSE"))
 		return false;
 	const char *environment = getenv("ENVIRONMENT");
+	const bool production = environment && !strcasecmp(environment, "production");
 	const bool require_tls = (!unix_socket || !*unix_socket) && environment &&
 				 !strcasecmp(environment, "production") &&
 				 !redis_host_is_loopback(host);
-	const redis_connection_options options = {
+	redis_identity world = {};
+	redis_identity presence = {};
+	redis_identity cache = {};
+	redis_identity donation = {};
+	redis_identity maintenance = {};
+	if (!redis_resolve_identity("REDIS_WORLD_USERNAME", "REDIS_WORLD_PASSWORD", production,
+				    &world) ||
+	    !redis_resolve_identity("REDIS_PRESENCE_USERNAME", "REDIS_PRESENCE_PASSWORD",
+				    production, &presence) ||
+	    !redis_resolve_identity("REDIS_CACHE_USERNAME", "REDIS_CACHE_PASSWORD", production,
+				    &cache) ||
+	    !redis_resolve_identity("REDIS_MAINTENANCE_USERNAME", "REDIS_MAINTENANCE_PASSWORD",
+				    production, &maintenance) ||
+	    (redis_donation_enabled &&
+	     !redis_resolve_identity("REDIS_DONATION_USERNAME", "REDIS_DONATION_PASSWORD",
+				     production, &donation)))
+		return false;
+	if (production)
+	{
+		const char *usernames[5] = { world.username, presence.username, cache.username,
+					     maintenance.username,
+					     redis_donation_enabled ? donation.username : NULL };
+		const size_t count = redis_donation_enabled ? 5 : 4;
+		for (size_t left = 0; left < count; ++left)
+			for (size_t right = left + 1; right < count; ++right)
+				if (!usernames[left] || !*usernames[left] || !usernames[right] ||
+				    !*usernames[right] ||
+				    !strcmp(usernames[left], usernames[right]))
+					return false;
+	}
+	redis_connection_options options = {
 		host,
 		port,
 		REDIS_CONNECT_TIMEOUT_MSEC,
 		REDIS_COMMAND_TIMEOUT_MSEC,
 		database,
-		getenv("REDIS_USERNAME"),
-		getenv("REDIS_PASSWORD"),
+		world.username,
+		world.password,
 		tls,
 		getenv("REDIS_CA_CERT"),
 		getenv("REDIS_TLS_SERVER_NAME"),
 		require_tls,
 		unix_socket,
 	};
-	redis_connection_settings *settings = redis_connection_settings_create(&options);
-	if (!settings)
+	redis_connection_settings *world_settings = redis_connection_settings_create(&options);
+	options.username = presence.username;
+	options.password = presence.password;
+	redis_connection_settings *presence_settings = redis_connection_settings_create(&options);
+	options.username = cache.username;
+	options.password = cache.password;
+	redis_connection_settings *cache_settings = redis_connection_settings_create(&options);
+	redis_connection_settings *donation_settings = NULL;
+	if (redis_donation_enabled)
+	{
+		options.username = donation.username;
+		options.password = donation.password;
+		donation_settings = redis_connection_settings_create(&options);
+	}
+	options.username = maintenance.username;
+	options.password = maintenance.password;
+	redis_connection_settings *maintenance_settings =
+		redis_connection_settings_create(&options);
+	if (!world_settings || !presence_settings || !cache_settings ||
+	    (redis_donation_enabled && !donation_settings) || !maintenance_settings)
+	{
+		redis_connection_settings_destroy(world_settings);
+		redis_connection_settings_destroy(presence_settings);
+		redis_connection_settings_destroy(cache_settings);
+		redis_connection_settings_destroy(donation_settings);
+		redis_connection_settings_destroy(maintenance_settings);
 		return false;
-	redis_connection_settings_destroy(redis_settings);
-	redis_settings = settings;
+	}
+	redis_destroy_connection_settings();
+	redis_settings = world_settings;
+	redis_presence_settings = presence_settings;
+	redis_cache_settings = cache_settings;
+	redis_donation_settings = donation_settings;
+	redis_maintenance_settings = maintenance_settings;
 	return true;
 }
 
@@ -705,7 +821,7 @@ bool redis_init(void)
 		redis_enabled = false;
 		return false;
 	}
-	if (!redis_configure_connection(redis_host, redis_port, use_socket ? redis_socket : NULL))
+	if (!redis_configure_connections(redis_host, redis_port, use_socket ? redis_socket : NULL))
 	{
 		logit(LOG_SYS, "redis: invalid connection security configuration; Redis disabled");
 		redis_enabled = false;
@@ -732,7 +848,7 @@ bool redis_init(void)
 	}
 
 	const redis_presence_worker_config presence_config = {
-		redis_settings,
+		redis_presence_settings,
 		REDIS_PRESENCE_SESSION_TTL_SECONDS,
 		REDIS_PRESENCE_HEARTBEAT_INTERVAL_SECONDS * 1000,
 		redis_presence_current_key,
@@ -743,14 +859,14 @@ bool redis_init(void)
 	};
 	if (!redis_presence_worker_init(&presence_config))
 		logit(LOG_SYS, "redis: presence worker unavailable; presence updates disabled");
-	const redis_cache_store_config cache_config = { redis_settings };
+	const redis_cache_store_config cache_config = { redis_cache_settings };
 	if (!redis_cache_store_init(&cache_config))
 		logit(LOG_SYS, "redis: cache worker unavailable; report caches disabled");
 	else
 		redis_prime_artifact_caches();
 	if (redis_donation_enabled)
 	{
-		const redis_donation_worker_config donation_config = { redis_settings,
+		const redis_donation_worker_config donation_config = { redis_donation_settings,
 								       donation_secret,
 								       redis_donation_channel };
 		if (!redis_donation_worker_init(&donation_config))
@@ -835,30 +951,38 @@ bool redis_clear_pwipe_state(void)
 	redis_presence_worker_cancel();
 	redis_cache_store_cancel();
 	redis_floor_store_cancel();
-	if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
+	redisContext *maintenance = redis_connection_open(redis_maintenance_settings);
+	if (!maintenance || maintenance->err)
+	{
+		if (maintenance)
+			redisFree(maintenance);
 		return false;
-
-	if (!redis_clear_world_state())
-		return false;
-	return redis_clear_floor_drops_checked() &&
-	       redis_delete_key_checked(REDIS_LEGACY_FLOOR_DROPS) &&
-	       redis_delete_key_checked(REDIS_LEGACY_FLOOR_PICKUPS) &&
-	       redis_delete_key_checked(REDIS_LEGACY_ONLINE) &&
-	       redis_delete_key_checked(redis_presence_current_key) &&
-	       redis_clear_scan_match(redis_presence_session_pattern) &&
-	       redis_clear_scan_match(redis_presence_retry_pattern) &&
-	       redis_delete_key_checked(REDIS_LEGACY_PRESENCE_CURRENT) &&
-	       redis_clear_scan_match(REDIS_LEGACY_PRESENCE_SESSION_PATTERN) &&
-	       redis_clear_scan_match(REDIS_LEGACY_PRESENCE_RETRY_PATTERN) &&
-	       redis_clear_scan_match(REDIS_LEGACY_WORLD_GENERATION_PATTERN) &&
-	       redis_delete_key_checked(REDIS_LEGACY_WORLD_CURRENT) &&
-	       redis_delete_key_checked(REDIS_LEGACY_WORLD_TIMESTAMP) &&
-	       redis_delete_key_checked(REDIS_LEGACY_WORLD_SEQUENCE) &&
-	       redis_delete_key_checked(REDIS_LEGACY_WORLD_CHECKSUM) &&
-	       redis_delete_key_checked(REDIS_LEGACY_WORLD_COMPLETE) &&
-	       redis_delete_key_checked(REDIS_LEGACY_WORLD_FENCE) &&
-	       redis_clear_scan_match(redis_cache_pattern) &&
-	       redis_clear_scan_match(REDIS_LEGACY_CACHE_PATTERN) && redis_clear_ship_snapshots();
+	}
+	redisContext *world_context = redis_ctx;
+	redis_ctx = maintenance;
+	const bool cleared = redis_clear_world_state() && redis_clear_floor_drops_checked() &&
+			     redis_delete_key_checked(REDIS_LEGACY_FLOOR_DROPS) &&
+			     redis_delete_key_checked(REDIS_LEGACY_FLOOR_PICKUPS) &&
+			     redis_delete_key_checked(REDIS_LEGACY_ONLINE) &&
+			     redis_delete_key_checked(redis_presence_current_key) &&
+			     redis_clear_scan_match(redis_presence_session_pattern) &&
+			     redis_clear_scan_match(redis_presence_retry_pattern) &&
+			     redis_delete_key_checked(REDIS_LEGACY_PRESENCE_CURRENT) &&
+			     redis_clear_scan_match(REDIS_LEGACY_PRESENCE_SESSION_PATTERN) &&
+			     redis_clear_scan_match(REDIS_LEGACY_PRESENCE_RETRY_PATTERN) &&
+			     redis_clear_scan_match(REDIS_LEGACY_WORLD_GENERATION_PATTERN) &&
+			     redis_delete_key_checked(REDIS_LEGACY_WORLD_CURRENT) &&
+			     redis_delete_key_checked(REDIS_LEGACY_WORLD_TIMESTAMP) &&
+			     redis_delete_key_checked(REDIS_LEGACY_WORLD_SEQUENCE) &&
+			     redis_delete_key_checked(REDIS_LEGACY_WORLD_CHECKSUM) &&
+			     redis_delete_key_checked(REDIS_LEGACY_WORLD_COMPLETE) &&
+			     redis_delete_key_checked(REDIS_LEGACY_WORLD_FENCE) &&
+			     redis_clear_scan_match(redis_cache_pattern) &&
+			     redis_clear_scan_match(REDIS_LEGACY_CACHE_PATTERN) &&
+			     redis_clear_ship_snapshots();
+	redis_ctx = world_context;
+	redisFree(maintenance);
+	return cleared;
 }
 
 bool redis_validate_pwipe_state(void)
@@ -868,7 +992,7 @@ bool redis_validate_pwipe_state(void)
 #else
 	if (!redis_enabled)
 		return true;
-	redisContext *context = redis_connection_open(redis_settings);
+	redisContext *context = redis_connection_open(redis_maintenance_settings);
 	if (!context || context->err)
 	{
 		if (context)
@@ -935,8 +1059,7 @@ void redis_cleanup(void)
 		redisFree(redis_ctx);
 		redis_ctx = NULL;
 	}
-	redis_connection_settings_destroy(redis_settings);
-	redis_settings = NULL;
+	redis_destroy_connection_settings();
 	redis_clear_world_authentication_secrets();
 	redis_donation_enabled = false;
 	redis_world_state_enabled = false;

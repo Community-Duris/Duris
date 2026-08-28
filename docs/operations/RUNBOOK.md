@@ -257,7 +257,7 @@ These are investigated and understood; they are not signs of a failed boot.
 |--------|---------|
 | `scripts/backup_pfiles.sh` | Snapshot database or legacy player files (run automatically per cycle iteration; see the mode note below). |
 | `scripts/delete_corpses.sh` | Retired safety stub; exits nonzero without reading or changing MySQL or Redis. |
-| `scripts/clear-redis.sh` | With the game stopped, delete only the configured `REDIS_NAMESPACE`, legacy `mud:*`, and retired `ship:snapshot:*` keys from an explicitly confirmed, local, allow-listed Redis target; unrelated keys are preserved. |
+| `scripts/clear-redis.sh` | With the game stopped, use the scoped maintenance ACL identity to delete only the configured `REDIS_NAMESPACE`, legacy `mud:*`, and retired `ship:snapshot:*` keys from an explicitly confirmed, local, allow-listed Redis target; unrelated keys are preserved. |
 | `scripts/import_help_to_prod.sh` | Import help sources to MySQL; use `--dry-run` first and treat `--clean` as destructive. |
 | `scripts/migrate_players_to_accounts.sh`, `scripts/convert_all_pfiles.sh` | One-shot legacy data conversions; back up and review their assumptions before use. |
 | `bin/migrations/*` | Offline pfile/schema conversion binaries built from `src-migrate/`. |
@@ -283,6 +283,15 @@ retired `ship:snapshot:*` keys, verifies
 the postcondition, and fails the migration if `redis-cli`, the connection, deletion, or
 postflight fails. When Redis is disabled, the step reports `not enabled` without requiring
 Redis connection fields. The game and every other Redis writer must remain stopped.
+
+Production runtime startup requires distinct `REDIS_WORLD_*`, `REDIS_PRESENCE_*`,
+`REDIS_CACHE_*`, and `REDIS_MAINTENANCE_*` credential pairs, plus a distinct
+`REDIS_DONATION_*` pair when donation subscription is enabled. Do not temporarily reuse a
+runtime identity for maintenance: correct the ACL configuration and repeat preflight.
+Local maintenance may fall back to `REDIS_USERNAME`/`REDIS_PASSWORD`, but an explicitly
+configured maintenance pair must be complete. Rotate one subsystem at a time by updating
+that Redis ACL user and its matching environment pair, then restart; connection settings
+are boot-captured and credentials are never reread on a gameplay path.
 
 World recovery requires an independent `REDIS_WORLD_STATE_SECRET`. To rotate it without
 accepting unsigned data, move the old value to `REDIS_WORLD_STATE_SECRET_PREVIOUS`, install

@@ -168,6 +168,54 @@ def main() -> None:
                 check=True,
             )
             assert exists.stdout.strip() == "0"
+
+            maintenance_password = "maintenance-clear-test-secret"
+            subprocess.run(
+                [
+                    *cli,
+                    "ACL",
+                    "SETUSER",
+                    "maintenance",
+                    "reset",
+                    "on",
+                    f">{maintenance_password}",
+                    "~duris:local:test:*",
+                    "~mud:*",
+                    "~ship:snapshot:*",
+                    "+ping",
+                    "+select",
+                    "+eval",
+                    "+scan",
+                    "+del",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [*cli, "SET", "duris:local:test:season:44:cache:named", "value"],
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [*cli, "ACL", "SETUSER", "default", "off"],
+                check=True,
+                capture_output=True,
+            )
+            authenticated_clear = run_helper(
+                port,
+                REDIS_MAINTENANCE_USERNAME="maintenance",
+                REDIS_MAINTENANCE_PASSWORD=maintenance_password,
+            )
+            assert authenticated_clear.returncode == 0, authenticated_clear
+            assert "deleted 1 Duris Redis keys" in authenticated_clear.stdout
+
+            partial_credentials = run_helper(
+                port,
+                REDIS_MAINTENANCE_USERNAME="maintenance",
+                REDIS_MAINTENANCE_PASSWORD="",
+            )
+            assert partial_credentials.returncode == 2
+            assert "must be configured together" in partial_credentials.stderr
         finally:
             server.terminate()
             server.wait(timeout=5)

@@ -73,11 +73,22 @@ if ! command -v redis-cli >/dev/null 2>&1; then
     exit 2
 fi
 
-if [[ -n "${REDIS_USERNAME:-}" ]]; then
-    REDIS_CLI+=(--user "$REDIS_USERNAME")
+if [[ -n "${REDIS_MAINTENANCE_USERNAME:-}" || -n "${REDIS_MAINTENANCE_PASSWORD:-}" ]]; then
+    if [[ -z "${REDIS_MAINTENANCE_USERNAME:-}" || -z "${REDIS_MAINTENANCE_PASSWORD:-}" ]]; then
+        printf 'refusing Redis deletion: maintenance username and password must be configured together\n' >&2
+        exit 2
+    fi
+    MAINTENANCE_USERNAME="$REDIS_MAINTENANCE_USERNAME"
+    MAINTENANCE_PASSWORD="$REDIS_MAINTENANCE_PASSWORD"
+else
+    MAINTENANCE_USERNAME="${REDIS_USERNAME:-}"
+    MAINTENANCE_PASSWORD="${REDIS_PASSWORD:-}"
 fi
-if [[ -n "${REDIS_PASSWORD:-}" ]]; then
-    REDISCLI_AUTH="$REDIS_PASSWORD"
+if [[ -n "$MAINTENANCE_USERNAME" ]]; then
+    REDIS_CLI+=(--user "$MAINTENANCE_USERNAME")
+fi
+if [[ -n "$MAINTENANCE_PASSWORD" ]]; then
+    REDISCLI_AUTH="$MAINTENANCE_PASSWORD"
     export REDISCLI_AUTH
 fi
 if [[ "$REDIS_TLS" == "TRUE" ]]; then
