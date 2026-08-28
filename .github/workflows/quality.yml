@@ -45,7 +45,9 @@ jobs:
       - name: Verify recoverable cross-authority transactions
         run: python3 tests/async/test_flatfile_authority_transaction.py
       - name: Verify recoverable flat-file character deletion
-        run: python3 tests/async/test_flatfile_character_delete.py
+        run: |
+          python3 tests/async/test_flatfile_character_delete.py
+          python3 tests/async/test_flatfile_character_delete_manifest.py
       - name: Verify deletion-adjacent auction and offline-message authority
         run: |
           python3 tests/async/test_flatfile_auction_repository.py

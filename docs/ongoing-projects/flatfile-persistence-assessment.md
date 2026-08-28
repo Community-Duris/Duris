@@ -1541,6 +1541,32 @@ sections below continue to describe the required end state.
   checked manifest, then implement the locker and artifact preparers/preconditions before
   addressing name-keyed ships and association authority.
 
+### Checkpoint 46 - checked character-delete disposition manifest
+
+- **Completed:** added a versioned machine-readable deletion inventory covering the live
+  call graph, every authority currently composed by the core coordinator, and
+  schema-derived references that are not explicit calls. Each entry records its identity
+  key, source class, current disposition, and a repository/source/schema evidence token.
+- **Drift enforcement:** the focused validator requires the exact inventory IDs, unique
+  entries, known dispositions, safe repository-relative evidence paths, and live evidence
+  tokens. It also checks the durable call order in `deleteCharacter`, proves the incomplete
+  coordinator is not routed there, and verifies the prepared core order keeps identity
+  success-last.
+- **Explicit blockers:** the manifest currently reports eight unimplemented groups:
+  artifacts, locker access, association membership, frag leaderboard state, locker
+  contents, ships/cargo, corpses/saved items, and account-bound summons. While any entry is
+  unimplemented, `runtime_exposure` must remain `fenced`; the validator rejects a readiness
+  claim that contradicts those dispositions.
+- **CI and handoff:** the validator runs beside the fault-injected coordinator regression
+  in the client-free job. Adding, removing, or reordering a durable live delete call now
+  requires an intentional manifest/test update instead of silently changing the deletion
+  contract.
+- **Files changed:** the deletion manifest, focused validator, CI registration, and this
+  handoff ledger.
+- **Next action:** implement flat locker-access/content authority or an authenticated
+  checked-empty precondition, then add artifact/binding disposition; keep the manifest as
+  the gate for reducing the blocker count.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
