@@ -8,6 +8,7 @@
 #include <array>
 #include <cctype>
 #include <cstring>
+#include <limits>
 #include <new>
 #include <openssl/crypto.h>
 #include <openssl/sha.h>
@@ -489,5 +490,68 @@ flatfile_world_item_list(const std::string &root, std::vector<flatfile_corpse_re
 		return loaded;
 	*corpses = std::move(catalog.corpses);
 	*saved_items = std::move(catalog.saved_items);
+	return flatfile_world_item_result::ok;
+}
+
+flatfile_world_item_result flatfile_world_item_prepare_player_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	const std::string &expected_name, flatfile_world_item_player_removal *removal,
+	std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !pid || !removal ||
+	    !valid_printable(expected_name, name_maximum, true))
+		return flatfile_world_item_result::invalid;
+	*removal = {};
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_world_item_result::ok)
+		return recovered;
+	world_item_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_world_item_result::ok)
+		return loaded;
+	const std::string canonical_expected = canonical_name(expected_name);
+	auto first = std::lower_bound(catalog.corpses.begin(), catalog.corpses.end(), pid,
+				      [](const auto &corpse, uint32_t owner_pid)
+				      { return corpse.owner_pid < owner_pid; });
+	auto last = first;
+	while (last != catalog.corpses.end() && last->owner_pid == pid)
+		++last;
+	if (first == last)
+		return flatfile_world_item_result::unchanged;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_world_item_result::invalid;
+	try
+	{
+		removal->custody.reserve(static_cast<size_t>(last - first));
+		for (auto corpse = first; corpse != last; ++corpse)
+		{
+			if (corpse->owner_name != canonical_expected)
+				return flatfile_world_item_result::conflict;
+			flatfile_corpse_custody_owner expected;
+			expected.owner = { item_owner_type::corpse,
+					   item_corpse_owner_id(pid, corpse->save_id), 0 };
+			expected.items.reserve(corpse->items.size());
+			for (const auto &item : corpse->items)
+				expected.items.push_back({ item.object_uid, item.vnum });
+			std::sort(expected.items.begin(), expected.items.end(),
+				  [](const auto &left, const auto &right)
+				  { return left.item_uid < right.item_uid; });
+			if (!expected.items.empty())
+				removal->custody.push_back(std::move(expected));
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_world_item_result::io_error;
+	}
+	catalog.corpses.erase(first, last);
+	++catalog.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, &encoded))
+		return flatfile_world_item_result::invalid;
+	removal->operation.store = flatfile_authority_store::domains;
+	removal->operation.kind = flatfile_authority_operation_kind::write;
+	removal->operation.filename = catalog_filename;
+	removal->operation.bytes = std::move(encoded);
 	return flatfile_world_item_result::ok;
 }

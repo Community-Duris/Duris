@@ -843,13 +843,15 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	return flatfile_item_repository_result::ok;
 }
 
-flatfile_item_repository_result flatfile_item_repository_prepare_player_and_locker_remove(
+flatfile_item_repository_result flatfile_item_repository_prepare_player_and_custody_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<flatfile_locker_custody_owner> &locker_custody,
+	const std::vector<flatfile_corpse_custody_owner> &corpse_custody,
 	flatfile_authority_operation *operation, std::string *error)
 {
 	if (!operation || !pid || !lock.matches(root) ||
-	    locker_custody.size() > ownership_maximum_entries)
+	    locker_custody.size() > ownership_maximum_entries ||
+	    corpse_custody.size() > ownership_maximum_entries - locker_custody.size())
 		return flatfile_item_repository_result::invalid;
 	*operation = {};
 	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
@@ -864,11 +866,44 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_and_lock
 	std::vector<item_owner_identity> owners;
 	try
 	{
-		owners.reserve(locker_custody.size() + 1);
+		owners.reserve(locker_custody.size() + corpse_custody.size() + 1);
 		owners.push_back({ item_owner_type::player, pid, 0 });
 		for (const auto &expected : locker_custody)
 		{
 			if (expected.owner.type != item_owner_type::locker ||
+			    !item_owner_identity_valid(expected.owner) ||
+			    !std::is_sorted(expected.items.begin(), expected.items.end(),
+					    [](const auto &left, const auto &right)
+					    { return left.item_uid < right.item_uid; }))
+				return flatfile_item_repository_result::invalid;
+			if (std::find_if(owners.begin(), owners.end(),
+					 [&](const auto &owner) {
+						 return item_owner_identity_equal(owner,
+										  expected.owner);
+					 }) != owners.end())
+				return flatfile_item_repository_result::invalid;
+			const owner_state *stored_owner = find_owner(&catalog, expected.owner);
+			if (!stored_owner)
+				return flatfile_item_repository_result::invalid;
+			size_t item_index = 0;
+			for (const auto &item : catalog.items)
+			{
+				if (item.state != item_custody_state::active ||
+				    !item_owner_identity_equal(item.owner, expected.owner))
+					continue;
+				if (item_index >= expected.items.size() ||
+				    expected.items[item_index].item_uid != item.item_uid ||
+				    expected.items[item_index].vnum != item.vnum)
+					return flatfile_item_repository_result::invalid;
+				++item_index;
+			}
+			if (item_index != expected.items.size())
+				return flatfile_item_repository_result::invalid;
+			owners.push_back(expected.owner);
+		}
+		for (const auto &expected : corpse_custody)
+		{
+			if (expected.owner.type != item_owner_type::corpse ||
 			    !item_owner_identity_valid(expected.owner) ||
 			    !std::is_sorted(expected.items.begin(), expected.items.end(),
 					    [](const auto &left, const auto &right)
@@ -949,6 +984,15 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_and_lock
 	operation->filename = ownership_filename;
 	operation->bytes = std::move(encoded);
 	return flatfile_item_repository_result::ok;
+}
+
+flatfile_item_repository_result flatfile_item_repository_prepare_player_and_locker_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	const std::vector<flatfile_locker_custody_owner> &locker_custody,
+	flatfile_authority_operation *operation, std::string *error)
+{
+	return flatfile_item_repository_prepare_player_and_custody_remove(
+		root, lock, pid, locker_custody, {}, operation, error);
 }
 
 critical_apply_result flatfile_item_repository_apply(const std::string &root,

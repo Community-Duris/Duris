@@ -12,6 +12,7 @@
 #include "flatfile_recipe_repository.h"
 #include "flatfile_ship_repository.h"
 #include "flatfile_spellbook_repository.h"
+#include "flatfile_world_item_repository.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -91,10 +92,11 @@ static void establish(const fs::path &root, bool establish_boons)
 	require(flatfile_spellbook_establish(root.string(), { { 1, { 2001 } } }, &error) ==
 			flatfile_spellbook_result::ok,
 		"spellbook baseline failed: " + error);
-	require(flatfile_artifact_establish(root.string(),
-					    { { 3001, true, FLATFILE_ARTIFACT_ON_PLAYER, 1, 9999, 1,
-						100, 1, 8888, 1 } },
-					    &error) == flatfile_artifact_result::ok,
+	require(flatfile_artifact_establish(
+			root.string(),
+			{ { 3001, true, FLATFILE_ARTIFACT_ON_PLAYER, 1, 9999, 1, 100, 1, 8888, 1 },
+			  { 3002, true, FLATFILE_ARTIFACT_ON_CORPSE, 1, 7777, 1, 101, 1, 6666, 1 } },
+			&error) == flatfile_artifact_result::ok,
 		"artifact baseline failed: " + error);
 	require(flatfile_frag_leaderboard_establish(
 			root.string(),
@@ -156,12 +158,42 @@ static void establish(const fs::path &root, bool establish_boons)
 	require(flatfile_ship_establish(root.string(), { ship }, &error) ==
 			flatfile_ship_result::ok,
 		"ship baseline failed: " + error);
+	player_item_snapshot corpse_item = locker_item;
+	corpse_item.object_uid = 901;
+	corpse_item.vnum = 3002;
+	corpse_item.name = "corpse artifact";
+	flatfile_corpse_record corpse = {};
+	corpse.owner_pid = 1;
+	corpse.owner_name = "Player";
+	corpse.save_id = 40;
+	corpse.room_vnum = 500;
+	corpse.short_description = "the corpse of Player";
+	corpse.revision = 1;
+	corpse.items = { corpse_item };
+	flatfile_saved_world_item_record saved = {};
+	saved.item_key = "item.statue.1";
+	saved.room_vnum = 700;
+	saved.revision = 1;
+	player_item_snapshot saved_item = locker_item;
+	saved_item.object_uid = 902;
+	saved_item.vnum = 3902;
+	saved.items = { saved_item };
+	require(flatfile_world_item_establish(root.string(), { corpse }, { saved }, &error) ==
+			flatfile_world_item_result::ok,
+		"world item baseline failed: " + error);
 	const item_owner_identity locker_owner = { item_owner_type::locker, 10, 11 };
 	require(flatfile_item_repository_establish_owner(
 			root.string(), locker_owner,
 			{ { 900, 900, 0, locker_owner, 1, 3900, item_custody_state::active } },
 			&error) == flatfile_item_baseline_result::applied,
 		"locker custody baseline failed: " + error);
+	const item_owner_identity corpse_owner = { item_owner_type::corpse,
+						   item_corpse_owner_id(1, 40), 0 };
+	require(flatfile_item_repository_establish_owner(
+			root.string(), corpse_owner,
+			{ { 901, 901, 0, corpse_owner, 1, 3002, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"corpse custody baseline failed: " + error);
 	if (establish_boons)
 		require(flatfile_boon_establish(root.string(), {}, &error) ==
 				flatfile_boon_result::ok,
@@ -224,6 +256,12 @@ int main(int argc, char **argv)
 			root.string(), { item_owner_type::locker, 10, 11 }, &owner_revision, &items,
 			&error) == flatfile_item_repository_result::not_found,
 		"recovered deletion retained locker item custody");
+	const item_owner_identity corpse_owner = { item_owner_type::corpse,
+						   item_corpse_owner_id(1, 40), 0 };
+	require(flatfile_item_repository_load_owner(root.string(), corpse_owner, &owner_revision,
+						    &items, &error) ==
+			flatfile_item_repository_result::not_found,
+		"recovered deletion retained corpse item custody");
 	std::vector<flatfile_locker_record> lockers;
 	std::vector<flatfile_locker_access_record> locker_access;
 	require(flatfile_locker_list(root.string(), &lockers, &locker_access, &error) ==
@@ -242,15 +280,26 @@ int main(int argc, char **argv)
 	require(flatfile_ship_list(root.string(), &ships, &error) == flatfile_ship_result::ok &&
 			ships.empty(),
 		"recovered deletion retained player ship or cargo slots");
+	std::vector<flatfile_corpse_record> corpses;
+	std::vector<flatfile_saved_world_item_record> saved_items;
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.empty() && saved_items.size() == 1 &&
+			saved_items[0].items[0].object_uid == 902,
+		"recovered deletion retained corpse or removed saved room state");
 	std::vector<flatfile_artifact_record> artifacts;
 	require(flatfile_artifact_list(root.string(), &artifacts, &error) ==
 				flatfile_artifact_result::ok &&
-			artifacts.size() == 1 && !artifacts[0].owned &&
+			artifacts.size() == 2 && !artifacts[0].owned &&
 			artifacts[0].location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
 			artifacts[0].location == 0 && artifacts[0].timer == 0 &&
 			artifacts[0].bind_owner_pid == -1 && artifacts[0].bind_timer == 0 &&
-			artifacts[0].revision == 2,
-		"recovered deletion did not release player artifacts");
+			artifacts[0].revision == 2 && !artifacts[1].owned &&
+			artifacts[1].location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			artifacts[1].location == 0 && artifacts[1].timer == 0 &&
+			artifacts[1].bind_owner_pid == -1 && artifacts[1].bind_timer == 0 &&
+			artifacts[1].revision == 2,
+		"recovered deletion did not release player and corpse artifacts");
 	std::vector<flatfile_frag_leaderboard_record> leaderboard;
 	require(flatfile_frag_leaderboard_list(root.string(), &leaderboard, &error) ==
 				flatfile_frag_leaderboard_result::ok &&

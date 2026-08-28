@@ -1867,6 +1867,42 @@ sections below continue to describe the required end state.
   evidence, compose it with item destruction and corpse-held artifact release in the
   recoverable character-delete transaction, and only then advance the manifest entry.
 
+### Checkpoint 55 - transactional corpse, item-custody, and artifact deletion
+
+- **Completed:** world-item deletion now resolves every corpse owned by the deleting PID,
+  verifies the canonical expected character name, and prepares one catalog image that
+  removes those aggregates while preserving unrelated corpses and all saved room-item
+  trees. Each non-empty removed corpse returns a sorted, exact custody proof containing
+  its encoded `(PID, save ID)` item-owner identity and every UID/vnum pair.
+- **Exact custody reconciliation:** the item repository's composed deletion path now
+  accepts both locker and corpse custody proofs. It requires every supplied owner to exist,
+  requires its complete active ledger set to exactly match the materialized UID/vnum set,
+  rejects duplicate or incorrectly typed owners, and only then moves all player, locker,
+  and corpse items to destroyed custody in one ownership after-image. Empty corpses require
+  no synthetic ledger owner.
+- **Artifact disposition:** artifact release now covers both direct player placement and
+  corpse placement keyed to the deleting PID, in addition to clearing binding state. Held
+  artifacts become unowned/not-in-game with zero location and timers; unrelated artifact
+  records are preserved. This removes the prior corpse-artifact conflict only because the
+  corpse catalog and item-ledger images now join the same transaction.
+- **Coordinator composition:** PID/name-verified corpse preparation precedes artifact
+  release. The ownership image publishes before the locker and world-item catalog images,
+  and the identity tombstone remains success-last. The bounded operation count is fourteen;
+  retry recovery remains idempotent.
+- **Checks passed:** strict world-item, artifact, item-ownership, and character-delete
+  regressions pass. The fault-injected deletion test proves journal recovery removes the
+  player corpse, corpse ledger owner, locker owner, and other character authorities,
+  releases player/corpse artifacts, preserves an unrelated saved room tree, and leaves no
+  recovery journal. Changed-line formatting, the normal build, and the client-free build
+  and boot preflight also pass.
+- **Manifest and exposure:** `corpses_and_saved_items` advances from `unimplemented` to
+  `prepared_remove`, reducing the checked deletion blocker count from two to one. The live
+  character-delete route remains fenced because account-bound summon references still lack
+  a flat authority and explicit deletion disposition.
+- **Next action:** implement the account-bound summon/reference authority, compose its
+  player cleanup into deletion, and then audit the complete manifest and runtime exposure
+  gate before routing the live terminal path.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

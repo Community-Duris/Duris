@@ -1,6 +1,8 @@
 #ifndef DURIS_FLATFILE_WORLD_ITEM_REPOSITORY_H
 #define DURIS_FLATFILE_WORLD_ITEM_REPOSITORY_H
 
+#include "flatfile_authority_transaction.h"
+#include "item_transfer_command.h"
 #include "player_snapshot.h"
 
 #include <array>
@@ -31,11 +33,31 @@ struct flatfile_saved_world_item_record
 	std::vector<player_item_snapshot> items;
 };
 
+struct flatfile_corpse_custody_item
+{
+	uint64_t item_uid = 0;
+	int32_t vnum = 0;
+};
+
+struct flatfile_corpse_custody_owner
+{
+	item_owner_identity owner = { item_owner_type::unknown, 0, 0 };
+	std::vector<flatfile_corpse_custody_item> items;
+};
+
+struct flatfile_world_item_player_removal
+{
+	flatfile_authority_operation operation;
+	std::vector<flatfile_corpse_custody_owner> custody;
+};
+
 enum class flatfile_world_item_result
 {
 	ok,
 	not_found,
 	already_exists,
+	unchanged,
+	conflict,
 	invalid,
 	io_error
 };
@@ -47,5 +69,9 @@ flatfile_world_item_result
 flatfile_world_item_list(const std::string &root, std::vector<flatfile_corpse_record> *corpses,
 			 std::vector<flatfile_saved_world_item_record> *saved_items,
 			 std::string *error);
+flatfile_world_item_result flatfile_world_item_prepare_player_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	const std::string &expected_name, flatfile_world_item_player_removal *removal,
+	std::string *error);
 
 #endif

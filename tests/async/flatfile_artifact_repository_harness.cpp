@@ -123,13 +123,22 @@ int main(int argc, char **argv)
 		flatfile_authority_operation operation;
 		require(flatfile_artifact_prepare_player_release(corpse_root.string(), lock, 42,
 								 &operation, &error) ==
-				flatfile_artifact_result::conflict,
-			"corpse-held artifact did not fence player deletion");
+					flatfile_artifact_result::ok &&
+				operation.filename == "artifact_catalog",
+			"corpse-held artifact release was not prepared");
+		require(flatfile_authority_transaction_commit_operations(corpse_root.string(), lock,
+									 { operation }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"corpse-held artifact release failed: " + error);
 	}
 	require(flatfile_artifact_list(corpse_root.string(), &records, &error) ==
 				flatfile_artifact_result::ok &&
-			records == std::vector<flatfile_artifact_record>{ corpse },
-		"corpse conflict changed artifact authority");
+			records.size() == 1 && !records[0].owned &&
+			records[0].location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			records[0].location == 0 && records[0].timer == 0 &&
+			records[0].bind_owner_pid == -1 && records[0].bind_timer == 0 &&
+			records[0].revision == 2,
+		"corpse-held artifact was not released with player deletion semantics");
 
 	const fs::path catalog = root / "domains/artifact_catalog";
 	{

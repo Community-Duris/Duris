@@ -90,6 +90,7 @@ if "flatfile_character_delete" in delete_body:
 
 coordinator = (ROOT / "src/flatfile_character_delete.c").read_text()
 prepared_order = [
+    "flatfile_world_item_prepare_player_remove",
     "flatfile_artifact_prepare_player_release",
     "flatfile_frag_leaderboard_prepare_tombstone",
     "flatfile_locker_prepare_player_remove",
@@ -97,8 +98,9 @@ prepared_order = [
     "flatfile_ship_prepare_player_remove",
     "flatfile_player_snapshot_prepare_remove",
     "flatfile_player_domain_prepare_remove",
-    "flatfile_item_repository_prepare_player_and_locker_remove",
+    "flatfile_item_repository_prepare_player_and_custody_remove",
     "append_operation(&operations, &locker_removal.operation)",
+    "append_operation(&operations, &world_item_removal.operation)",
     "flatfile_boon_prepare_player_remove",
     "flatfile_recipe_prepare_clear",
     "flatfile_spellbook_prepare_clear",

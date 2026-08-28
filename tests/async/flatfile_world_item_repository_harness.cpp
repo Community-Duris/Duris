@@ -130,6 +130,55 @@ int main(int argc, char **argv)
 			flatfile_world_item_result::invalid,
 		"saved item key with multiple roots was accepted");
 
+	flatfile_world_item_player_removal removal;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not acquire world item authority");
+		require(flatfile_world_item_prepare_player_remove(root.string(), lock, 42, "wrong",
+								  &removal, &error) ==
+				flatfile_world_item_result::conflict,
+			"corpse owner name mismatch did not conflict");
+		require(flatfile_world_item_prepare_player_remove(root.string(), lock, 42, "Hero",
+								  &removal, &error) ==
+					flatfile_world_item_result::ok &&
+				removal.operation.filename == "world_item_catalog" &&
+				removal.custody.size() == 1 &&
+				removal.custody[0].owner.type == item_owner_type::corpse &&
+				removal.custody[0].owner.id == item_corpse_owner_id(42, 20) &&
+				removal.custody[0].items.size() == 2 &&
+				removal.custody[0].items[0].item_uid == 100 &&
+				removal.custody[0].items[1].vnum == 301,
+			"corpse removal did not prepare exact custody evidence");
+	}
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.size() == 2,
+		"prepared corpse removal published before commit");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not reacquire world item authority");
+		require(flatfile_authority_transaction_commit_operations(
+				root.string(), lock, { removal.operation }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"corpse removal transaction failed: " + error);
+	}
+	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.size() == 1 && corpses[0].owner_pid == 77 &&
+			saved_items.size() == 1 && saved_items[0].items[0].object_uid == 200,
+		"corpse removal did not preserve unrelated corpse and saved room state");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not acquire world item authority for retry");
+		require(flatfile_world_item_prepare_player_remove(root.string(), lock, 42, "hero",
+								  &removal, &error) ==
+				flatfile_world_item_result::unchanged,
+			"corpse removal retry was not idempotent");
+	}
+
 	const fs::path catalog = root / "domains/world_item_catalog";
 	{
 		std::fstream file(catalog, std::ios::in | std::ios::out | std::ios::binary);

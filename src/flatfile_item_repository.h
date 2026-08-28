@@ -4,6 +4,7 @@
 #include "auction_command.h"
 #include "flatfile_authority_transaction.h"
 #include "flatfile_locker_repository.h"
+#include "flatfile_world_item_repository.h"
 #include "critical_command_coordinator.h"
 #include "item_transfer_command.h"
 
@@ -69,6 +70,11 @@ flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 flatfile_item_repository_result flatfile_item_repository_prepare_player_and_locker_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::vector<flatfile_locker_custody_owner> &locker_custody,
+	flatfile_authority_operation *operation, std::string *error);
+flatfile_item_repository_result flatfile_item_repository_prepare_player_and_custody_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	const std::vector<flatfile_locker_custody_owner> &locker_custody,
+	const std::vector<flatfile_corpse_custody_owner> &corpse_custody,
 	flatfile_authority_operation *operation, std::string *error);
 critical_apply_result
 flatfile_critical_command_repository_apply_selected(const critical_command &command, void *context);

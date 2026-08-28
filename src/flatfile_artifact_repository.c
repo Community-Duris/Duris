@@ -315,14 +315,11 @@ flatfile_artifact_result flatfile_artifact_prepare_player_release(
 	const auto loaded = load_catalog(root, &catalog, error);
 	if (loaded != flatfile_artifact_result::ok)
 		return loaded;
-	for (const auto &record : catalog.records)
-		if (record.location_type == FLATFILE_ARTIFACT_ON_CORPSE &&
-		    record.location == static_cast<int32_t>(pid))
-			return flatfile_artifact_result::conflict;
 	bool changed = false;
 	for (auto &record : catalog.records)
 	{
-		const bool held = record.location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+		const bool held = (record.location_type == FLATFILE_ARTIFACT_ON_PLAYER ||
+				   record.location_type == FLATFILE_ARTIFACT_ON_CORPSE) &&
 				  record.location == static_cast<int32_t>(pid);
 		const bool bound = record.bind_owner_pid == static_cast<int32_t>(pid);
 		if (!held && !bound)

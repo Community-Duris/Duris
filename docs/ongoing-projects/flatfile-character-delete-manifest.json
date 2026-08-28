@@ -107,7 +107,7 @@
       "source": "runtime-call",
       "key": "pid+locker-id+chest-id",
       "disposition": "prepared_rewrite",
-      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_item_repository_prepare_player_and_locker_remove" }
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_item_repository_prepare_player_and_custody_remove" }
     },
     {
       "id": "ships_and_cargo",
@@ -120,8 +120,8 @@
       "id": "corpses_and_saved_items",
       "source": "schema-derived",
       "key": "pid+save-id",
-      "disposition": "unimplemented",
-      "evidence": { "path": "migrations/run_migration.sh", "token": "CREATE TABLE IF NOT EXISTS corpses" }
+      "disposition": "prepared_remove",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_world_item_prepare_player_remove" }
     },
     {
       "id": "account_bound_summons",

@@ -15,6 +15,7 @@
 #include "flatfile_recipe_repository.h"
 #include "flatfile_ship_repository.h"
 #include "flatfile_spellbook_repository.h"
+#include "flatfile_world_item_repository.h"
 
 #include <ctime>
 #include <new>
@@ -98,7 +99,7 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	std::vector<flatfile_authority_operation> operations;
 	try
 	{
-		operations.reserve(13);
+		operations.reserve(14);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -114,6 +115,17 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 		return auction == flatfile_auction_player_reference_result::io_error ?
 			       flatfile_character_delete_result::io_error :
 			       flatfile_character_delete_result::invalid;
+
+	flatfile_world_item_player_removal world_item_removal;
+	const auto world_item = flatfile_world_item_prepare_player_remove(
+		root, authority_lock, static_cast<uint32_t>(pid), expected_name,
+		&world_item_removal, error);
+	const bool world_item_changed = world_item == flatfile_world_item_result::ok;
+	if (world_item == flatfile_world_item_result::conflict)
+		return flatfile_character_delete_result::conflict;
+	if (!world_item_changed && world_item != flatfile_world_item_result::unchanged)
+		return map_authority(world_item, flatfile_world_item_result::not_found,
+				     flatfile_world_item_result::io_error);
 
 	const auto artifact = flatfile_artifact_prepare_player_release(
 		root, authority_lock, static_cast<uint32_t>(pid), &operation, error);
@@ -218,10 +230,11 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 				     flatfile_player_domain_result::io_error);
 	}
 
-	const auto item = locker_changed ?
-				  flatfile_item_repository_prepare_player_and_locker_remove(
+	const auto item = locker_changed || world_item_changed ?
+				  flatfile_item_repository_prepare_player_and_custody_remove(
 					  root, authority_lock, static_cast<uint32_t>(pid),
-					  locker_removal.custody, &operation, error) :
+					  locker_removal.custody, world_item_removal.custody,
+					  &operation, error) :
 				  flatfile_item_repository_prepare_player_remove(
 					  root, authority_lock, static_cast<uint32_t>(pid),
 					  &operation, error);
@@ -236,6 +249,8 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 				     flatfile_item_repository_result::io_error);
 	}
 	if (locker_changed && !append_operation(&operations, &locker_removal.operation))
+		return flatfile_character_delete_result::io_error;
+	if (world_item_changed && !append_operation(&operations, &world_item_removal.operation))
 		return flatfile_character_delete_result::io_error;
 
 	const auto boon = flatfile_boon_prepare_player_remove(
