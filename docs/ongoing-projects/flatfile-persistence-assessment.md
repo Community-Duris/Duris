@@ -380,13 +380,46 @@ sections below continue to describe the required end state.
   wallet/bank/epic/frag/gameplay reads and the item UID/ownership authority, then combine
   those revisions with the snapshot into one materializable load result.
 
+### Checkpoint 13 - durable collision-free item UID allocation
+
+- **Completed:** added a typed `DURUID` allocator authority under `metadata/`. Each
+  reservation atomically advances a 64-bit high-water mark with a format version,
+  monotonic authority revision, SHA-256 checksum, owner-only cross-process lock, and the
+  shared write/sync/rename/directory-sync publication sequence.
+- **Completed:** allocator ranges are reserved durably before any UID is returned. A
+  crash may leave unused IDs in a reserved range but cannot cause reuse; overflow,
+  corruption, unsafe files, failed locks, or ambiguous I/O fail closed. The existing
+  in-memory fast allocator consumes only its already-published range.
+- **Completed:** backend selection now reserves the boot UID range from this authority
+  in flat mode while MariaDB mode retains its transactional allocator row. The boot
+  blocker no longer lists UID allocation itself, but item ownership and its transfer
+  ledger remain explicitly unimplemented.
+- **Completed:** added a standalone regression and client-free CI step. It verifies the
+  initial reservation, high-water/revision reads, zero-count rejection, four concurrent
+  process reservations with no overlap, checksum corruption rejection, refusal to
+  overwrite corrupt authority, and temporary-file cleanup.
+- **Checks passed:** `python3 tests/async/test_flatfile_item_uid_allocator.py`,
+  `python3 tests/async/test_item_ownership_contract.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `src/flatfile_item_uid_allocator.[ch]`,
+  `src/item_uid_allocator.c`, `src/comm.c`, `src/Makefile`,
+  `src/persistence_mode.c`, `.github/workflows/quality.yml`, and the focused allocator
+  regression.
+- **Remaining P2 gap:** allocating an ID does not establish custody. No durable flat
+  owner index or idempotent transfer ledger exists yet, so item creation, movement,
+  load identities, and cross-owner revision checks remain fenced.
+- **Next action:** implement a versioned ownership catalog plus operation-ID ledger that
+  applies the existing item-transfer command atomically and idempotently, then use it to
+  construct authoritative item sidecars during player load.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
 |---|---|---|
 | P0 - real DB-free boundary | Complete | Client-free binary links without system MySQL dependencies; isolated boot preflight and no-MySQL CI job exist |
 | P1 - identity and player continuity | In progress | Account/identity continuity, baseline creation, revisioned save, terminal fences, and identity-verified snapshot load exist; external sidecars still fence login |
-| P2 - transactional gameplay and domains | Not started | No flat operation WAL/domain repositories yet |
+| P2 - transactional gameplay and domains | In progress | Collision-free durable item UID ranges exist; ownership, transfer ledger, operation WAL, and domain repositories remain |
 | P3 - production operations | Not started | No exporter, whole-authority backup, or restore drill yet |
 
 ## Executive conclusion

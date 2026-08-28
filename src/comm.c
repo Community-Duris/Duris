@@ -96,6 +96,7 @@
 #include "critical_outbox.h"
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
+#include "item_uid_allocator.h"
 #include "auction_transaction.h"
 #include "combat_outcome_transaction.h"
 #include "artifact_guild_transaction.h"
@@ -502,6 +503,9 @@ int main(int argc, char **argv)
 	{
 		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
+	if (!persistence_mode_requires_mysql() &&
+	    !item_uid_allocator_reserve(nullptr, ITEM_UID_BOOT_RESERVATION))
+		fatal_boot_error("comm", "Could not reserve a collision-free flat item UID range");
 	if (persistence_mode_requires_mysql() && !sql_hydrate_item_owner_revisions())
 		logit(LOG_STATUS,
 		      "Authoritative item owner revisions unavailable; movement fails closed.");

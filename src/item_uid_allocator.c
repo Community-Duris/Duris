@@ -1,6 +1,8 @@
 #include "item_uid_allocator.h"
 
 #include "db.h"
+#include "flatfile_item_uid_allocator.h"
+#include "persistence_mode.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -23,8 +25,22 @@ bool execute(MYSQL *connection, const char *sql)
 bool item_uid_allocator_reserve(MYSQL *connection, uint64_t count)
 {
 	std::lock_guard<std::mutex> guard(range_mutex);
-	if (!connection || !count || range_next != range_end ||
-	    !execute(connection, "START TRANSACTION"))
+	if (!count || range_next != range_end)
+		return false;
+	if (!persistence_mode_requires_mysql())
+	{
+		const char *root = persistence_mode_flatfile_root();
+		uint64_t first = 0;
+		std::string error;
+		if (!root || flatfile_item_uid_reserve(root, count, &first, &error) !=
+				     flatfile_item_uid_result::ok)
+			return false;
+		range_next = first;
+		range_end = first + count;
+		next_obj_uid = static_cast<unsigned long>(first);
+		return true;
+	}
+	if (!connection || !execute(connection, "START TRANSACTION"))
 		return false;
 	if (!execute(connection,
 		     "SELECT next_uid FROM item_uid_allocator WHERE allocator_id=1 FOR UPDATE"))
