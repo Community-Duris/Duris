@@ -86,6 +86,7 @@
 #include "latency_trace.h"
 #include "persistence_queue.h"
 #include "persistence_mode.h"
+#include "env_file.h"
 #include "locker_async.h"
 #include "maintenance_repository.h"
 #include "maintenance_scheduler.h"

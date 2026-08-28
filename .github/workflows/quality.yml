@@ -9,6 +9,26 @@ permissions:
   contents: read
 
 jobs:
+  flatfile-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install client-free build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            build-essential \
+            python3 \
+            libxml2-dev \
+            zlib1g-dev \
+            gnutls-dev \
+            libcjson-dev \
+            libssl-dev \
+            libhiredis-dev \
+            libbsd-dev
+      - name: Build without MySQL and verify fail-closed boot
+        run: python3 tests/async/test_flatfile_boot_preflight.py
+
   quality:
     runs-on: ubuntu-24.04
     steps:

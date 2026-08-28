@@ -58,7 +58,6 @@ bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
 			     enum persistence_query_context context, const char *sql, size_t len,
 			     uint64_t *operation_id);
 
-int load_env_file(void);
 int initialize_mysql();
 bool sql_populate_lookup_tables();
 int sql_save_player_core(P_char ch);

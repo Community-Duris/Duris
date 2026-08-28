@@ -219,6 +219,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence_checkpoint.o \
 				 persistence_observability.o \
 				 persistence_mode.o \
+				 env_file.o \
 				 critical_command.o \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \

@@ -129,11 +129,40 @@ sections below continue to describe the required end state.
   SQL branch, implement fail-closed versions of the missing SQL APIs, then decouple or
   stub the remaining gameplay symbol groups until the client-free binary links.
 
+### Checkpoint 6 - linked client-free binary and boot preflight
+
+- **Completed:** moved secure `.env` loading into the backend-neutral `env_file` module,
+  before persistence-mode selection, so the client-free binary can read its explicit
+  backend and state-root configuration without any SQL implementation.
+- **Completed:** closed the 41-symbol link inventory with explicit fail-closed SQL,
+  player, locker, auction, CTF, outpost, and nexus implementations. The flat build now
+  compiles and links the complete server without system MySQL headers, MySQL objects, or
+  `-lmysqlclient`.
+- **Completed:** added `test_flatfile_boot_preflight.py` and a dedicated CI job whose
+  dependency list omits MySQL/MariaDB. The test performs a fresh isolated build, rejects
+  any system MySQL include or client link flag, and launches the resulting binary with
+  an otherwise empty environment.
+- **Boot evidence:** the client-free binary exits with status 1 before world boot,
+  identifies `flatfile-primary`, prints the unimplemented durable-domain inventory, and
+  provisions exactly the expected authority directories at mode `0700`.
+- **Checks passed:** `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `python3 tests/async/test_persistence_mode.py`,
+  `python3 tests/async/test_no_mysql_compat.py`,
+  `python3 tests/async/test_account_bound_reward_contract.py`,
+  `./scripts/format.sh --check`, `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `.github/workflows/quality.yml`, `src/Makefile`, `src/comm.c`,
+  `src/env_file.[ch]`, `src/sql.[ch]`, `src/sql_player.c`, `src/auction_houses.c`,
+  `src/ctf.c`, `src/outposts.c`, `src/nexus_stones.c`, and
+  `tests/async/test_flatfile_boot_preflight.py`.
+- **Next action:** begin P1 with the typed/versioned flat account authority and its
+  canonical account/name/PID indexes, then route account login and character discovery
+  through the selected backend.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
 |---|---|---|
-| P0 - real DB-free boundary | In progress | Mode/root fail-closed contract and compile/link selection implemented; common source still exposes SQL types |
+| P0 - real DB-free boundary | Complete | Client-free binary links without system MySQL dependencies; isolated boot preflight and no-MySQL CI job exist |
 | P1 - identity and player continuity | Not started | No flat account/player authority yet |
 | P2 - transactional gameplay and domains | Not started | No flat operation WAL/domain repositories yet |
 | P3 - production operations | Not started | No exporter, whole-authority backup, or restore drill yet |

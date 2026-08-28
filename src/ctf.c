@@ -28,6 +28,20 @@ using namespace std;
 #include "spells.h"
 #include "sql.h"
 
+struct ctfData ctfdata[] = { { 0, 0, 0, 0, 0, NULL },
+			     { 1, CTF_PRIMARY, RACEWAR_GOOD, 790, 132573, NULL },
+			     { 2, CTF_PRIMARY, RACEWAR_EVIL, 791, 97628, NULL },
+			     { 3, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL },
+			     { 4, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL },
+			     { 5, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL },
+			     { 6, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL },
+			     { 7, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
+			     { 8, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
+			     { 9, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
+			     { 10, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
+			     { 11, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
+			     {} };
+
 #ifdef __NO_MYSQL__
 
 int init_ctf()
@@ -36,6 +50,19 @@ int init_ctf()
 }
 
 void do_ctf(P_char /*ch*/, char * /*arg*/, int /*cmd*/) {}
+size_t ctf_boon_state_snapshot(int64_t * /*values*/, size_t /*capacity*/)
+{
+	return 0;
+}
+int ctf_use_boon(BoonData * /*bdata*/)
+{
+	return FALSE;
+}
+void ctf_delete_flag(int /*id*/) {}
+int ctf_carrying_flag(P_char /*ch*/)
+{
+	return FALSE;
+}
 #else
 
 extern MYSQL *DB;
@@ -53,24 +80,6 @@ extern struct zone_data *zone_table;
 // Example:  You want the flag to spawn in tiamat, but be random every
 // other time:  Set room = tiamat's room vnum, and make the flag type
 // CTF_RANDOM.
-
-struct ctfData ctfdata[] = {
-	// ID,	FLAG_TYPE,	RACEWAR,	O VNUM,	ROOM,	OBJ POINTER
-	{ 0, 0, 0, 0, 0, NULL }, // None
-	{ 1, CTF_PRIMARY, RACEWAR_GOOD, 790, 132573, NULL }, // Tharn
-	{ 2, CTF_PRIMARY, RACEWAR_EVIL, 791, 97628, NULL }, // Shady
-	{ 3, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL }, // Random epic
-	{ 4, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL }, // Random epic
-	{ 5, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL }, // Random epic
-	{ 6, CTF_RANDOM, RACEWAR_NONE, 792, RANDOM, NULL }, // Random epic
-	// Allowing space for 5 possible boon flags.
-	{ 7, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
-	{ 8, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
-	{ 9, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
-	{ 10, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
-	{ 11, CTF_BOON, RACEWAR_NONE, 792, 0, NULL },
-	{}
-};
 
 size_t ctf_boon_state_snapshot(int64_t *values, size_t capacity)
 {

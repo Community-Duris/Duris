@@ -35,6 +35,23 @@ int auction_house_room_proc(int /*room_num*/, P_char ch, int /*cmd*/, char * /*a
 	send_to_char("Auctions are disabled.", ch);
 	return TRUE;
 }
+void new_ah_call(P_char ch, char * /*arg*/, int /*cmd*/)
+{
+	send_to_char("Auctions are disabled.\r\n", ch);
+}
+bool finalize_auction(int /*auction_id*/, P_char /*to_ch*/)
+{
+	return false;
+}
+bool insert_money_pickup(int /*pid*/, int /*money*/)
+{
+	return false;
+}
+bool auction_publish_committed_event(const auction_command_result & /*result*/,
+				     unsigned long long /*outbox_id*/)
+{
+	return false;
+}
 #else
 #include <mysql.h>
 

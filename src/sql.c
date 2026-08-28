@@ -118,6 +118,13 @@ bool sql_observed_execute_at(MYSQL *conn, struct persistence_query_site site,
 	return false;
 }
 
+char *mysql_str(const char * /*str*/, char *buf)
+{
+	if (buf)
+		buf[0] = '\0';
+	return buf;
+}
+
 int initialize_mysql()
 {
 	return -1;
@@ -157,6 +164,7 @@ int sql_shop_sell(P_char /*ch*/, P_obj /*obj*/, int /*value*/)
 	return -1;
 }
 void sql_world_quest_finished(P_char /*ch*/, P_char /*giver*/, P_obj /*obj*/) {}
+void sql_world_quest_finished(P_char /*ch*/, P_obj /*obj*/) {}
 int sql_world_quest_done_already(P_char /*ch*/, int /*quest_target*/)
 {
 	return -1;
@@ -185,6 +193,7 @@ bool qry_at(struct persistence_query_site site, const char *format, ...)
 	return FALSE;
 }
 void send_to_char_offline(const char * /*msg*/, int /*pid*/) {}
+void send_to_pid_offline(const char * /*msg*/, int /*pid*/) {}
 void send_offline_messages(P_char /*ch*/) {}
 void log_epic_gain(int /*pid*/, int /*zone_id*/, int /*type*/, int /*epics*/) {}
 void log_epic_gain_event(const char * /*event_key*/, int /*pid*/, int /*type*/, int /*type_id*/,
@@ -218,6 +227,37 @@ bool sql_hydrate_item_owner_revisions(void)
 {
 	return false;
 }
+void get_level_cap_info(long *max_frags, int *racewar, int *level, time_t *next_update)
+{
+	if (max_frags)
+		*max_frags = -1;
+	if (racewar)
+		*racewar = RACEWAR_NONE;
+	if (level)
+		*level = frag_cap_config_get()->cap_floor_level;
+	if (next_update)
+		*next_update = 0;
+}
+int sql_level_cap(int /*racewar_side*/)
+{
+	return frag_cap_config_get()->cap_floor_level;
+}
+double sql_get_total_donated(const char * /*account_name*/)
+{
+	return 0.0;
+}
+void sql_update_frag_leaderboard(P_char /*ch*/) {}
+bool sql_soft_delete_character(long /*pid*/)
+{
+	return false;
+}
+bool sql_trace_exec_at(struct persistence_query_site /*source_site*/, const char * /*label*/,
+		       const char * /*sql*/, size_t /*len*/, bool /*drain_before*/,
+		       bool /*drain_after*/)
+{
+	return false;
+}
+void sql_log_player_login(P_char /*ch*/, const char * /*status*/) {}
 void update_zone_db() {}
 void update_zone_epic_level(int /*zone_id*/, int /*level*/) {}
 void show_frag_trophy(P_char ch, P_char /*who*/)
@@ -1011,73 +1051,6 @@ const char *sql_persistence_db_name(void)
 	if (RUNNING_PORT != DFLT_PORT && production_name)
 		return "duris_dev";
 	return DB_NAME;
-}
-
-/* load .env file if present, setting environment variables */
-int load_env_file(void)
-{
-	int fd = open(".env", O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
-	if (fd < 0)
-	{
-		if (errno != ENOENT)
-		{
-			logit(LOG_STATUS, "Unable to open .env securely");
-			return -1;
-		}
-		logit(LOG_STATUS, "No .env file found; explicit process environment is required.");
-		return 0;
-	}
-
-	struct stat file_stat;
-	if (fstat(fd, &file_stat) || !S_ISREG(file_stat.st_mode) || file_stat.st_uid != geteuid() ||
-	    (file_stat.st_mode & 0177))
-	{
-		logit(LOG_STATUS,
-		      "Unsafe .env metadata: require an owner-controlled regular file with mode 0600 or stricter");
-		close(fd);
-		return -1;
-	}
-
-	FILE *f = fdopen(fd, "r");
-	if (!f)
-	{
-		close(fd);
-		return -1;
-	}
-
-	char line[256];
-	int count = 0;
-	while (fgets(line, sizeof(line), f))
-	{
-		// skip comments and empty lines
-		if (line[0] == '#' || line[0] == '\n' || line[0] == '\r')
-			continue;
-
-		// remove newline
-		char *nl = strchr(line, '\n');
-		if (nl)
-			*nl = '\0';
-		nl = strchr(line, '\r');
-		if (nl)
-			*nl = '\0';
-
-		// skip empty lines after trimming
-		if (line[0] == '\0')
-			continue;
-
-		// parse KEY=VALUE
-		char *eq = strchr(line, '=');
-		if (eq)
-		{
-			*eq = '\0';
-			setenv(line, eq + 1, 0);
-			count++;
-		}
-	}
-	fclose(f);
-
-	logit(LOG_STATUS, "Loaded %d environment variables from .env file.", count);
-	return count;
 }
 
 /* Open a connection to the database. The connection will remain open

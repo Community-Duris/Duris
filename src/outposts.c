@@ -106,6 +106,27 @@ void outpost_death(P_char outpost, P_char killer)
 	(void)outpost;
 	(void)killer;
 }
+P_Guild get_outpost_owner(Building * /*building*/)
+{
+	return NULL;
+}
+int get_outpost_archers(Building * /*building*/)
+{
+	return 0;
+}
+int outpost_gateguard_proc(P_char /*ch*/, P_char /*pl*/, int /*cmd*/, char * /*arg*/)
+{
+	return FALSE;
+}
+bool check_castle_walls(int /*from*/, int /*to*/)
+{
+	return false;
+}
+void event_outposts_upkeep(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/, void * /*data*/) {}
+int outpost_archer_attack(P_char /*ch*/, P_char /*vict*/)
+{
+	return FALSE;
+}
 #else
 
 extern MYSQL *DB;

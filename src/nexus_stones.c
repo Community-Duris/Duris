@@ -63,6 +63,12 @@ int check_nexus_bonus(P_char /*ch*/, int /*amount*/, int /*type*/)
 {
 	return 0;
 }
+bool nexus_stone_info(int /*stone_id*/, NexusStoneInfo *info)
+{
+	if (info)
+		*info = {};
+	return false;
+}
 #else
 
 // #include <mysql.h>

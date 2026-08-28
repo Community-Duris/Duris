@@ -384,6 +384,74 @@ bool sql_ensure_account_bank(const char *account_name, int racewar)
 	return false;
 }
 
+bool sql_player_rename(P_char /*ch*/, const char * /*new_name*/)
+{
+	return false;
+}
+
+int sql_get_locker_id_by_name(const char * /*locker_name*/)
+{
+	return -1;
+}
+int sql_get_or_create_public_chest(int /*locker_id*/)
+{
+	return -1;
+}
+int sql_create_private_chest(int /*locker_id*/, const char * /*chest_name*/,
+			     const char * /*password*/)
+{
+	return 0;
+}
+bool sql_delete_private_chest(int /*chest_id*/)
+{
+	return false;
+}
+int sql_get_chest_id(int /*locker_id*/, const char * /*chest_name*/)
+{
+	return -1;
+}
+bool sql_set_chest_password(int /*chest_id*/, const char * /*password*/)
+{
+	return false;
+}
+bool sql_verify_chest_password(int /*chest_id*/, const char * /*password*/)
+{
+	return false;
+}
+int sql_count_private_chests(int /*locker_id*/)
+{
+	return -1;
+}
+bool sql_log_chest_activity(int /*locker_id*/, int /*chest_id*/, const char * /*char_name*/,
+			    int /*action_type*/, const char * /*item_short*/)
+{
+	return false;
+}
+bool sql_save_private_chest_items(int /*locker_id*/, int /*chest_id*/, P_obj /*chest_obj*/)
+{
+	return false;
+}
+void sql_load_private_chest_items(int /*locker_id*/, int /*chest_id*/, P_obj /*chest_obj*/) {}
+
+bool sql_add_spellbook_mob(int /*pid*/, int /*mob_vnum*/)
+{
+	return false;
+}
+bool sql_has_spellbook_mob(int /*pid*/, int /*mob_vnum*/)
+{
+	return false;
+}
+int *sql_get_spellbook_mobs(int /*pid*/, int *count)
+{
+	if (count)
+		*count = 0;
+	return NULL;
+}
+bool sql_delete_spellbook_mobs(int /*pid*/)
+{
+	return false;
+}
+
 #pragma GCC diagnostic pop
 
 #else
