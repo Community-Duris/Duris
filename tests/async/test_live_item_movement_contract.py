@@ -26,6 +26,9 @@ class LiveItemMovementContractTests(unittest.TestCase):
         self.assertNotIn("P_char", pending)
         self.assertIn("critical_command_coordinator_submit", movement)
         self.assertIn("item_ownership_runtime_apply", movement)
+        self.assertIn("movement_conflicts(from_owner, to_owner)", movement)
+        self.assertLess(movement.index("movement_conflicts(from_owner, to_owner)"),
+                        movement.index("critical_command_coordinator_submit"))
         self.assertLess(movement.index("const bool committed"),
                         movement.index("item_ownership_runtime_apply"))
 
@@ -69,6 +72,16 @@ class LiveItemMovementContractTests(unittest.TestCase):
     def test_reconnect_replays_retained_completion(self):
         nanny = (SRC / "nanny.c").read_text()
         self.assertGreaterEqual(nanny.count("item_movement_transaction_player_ready"), 2)
+
+    def test_give_completion_can_publish_to_a_linkdead_recipient(self):
+        actobj = (SRC / "actobj.c").read_text()
+        helper = actobj[actobj.index("P_char find_live_player_pid"):]
+        helper = helper[:helper.index("void item_get_completion")]
+        self.assertIn("character_list", helper)
+        give = actobj[actobj.index("void item_give_completion"):]
+        give = give[:give.index("void item_put_completion")]
+        self.assertIn("find_live_player_pid(context.recipient_pid)", give)
+        self.assertNotIn("find_player_by_pid(context.recipient_pid)", give)
 
     def test_same_owner_reparenting_is_authoritative(self):
         command = (SRC / "item_transfer_command.c").read_text()

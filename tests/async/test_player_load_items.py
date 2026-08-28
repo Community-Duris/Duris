@@ -232,6 +232,24 @@ P_obj read_object(int rnum, int)
     object->loc.room = NOWHERE;
     object->type = rnum == 100 ? ITEM_CONTAINER : ITEM_OTHER;
     object->weight = rnum == 100 ? 2 : 3;
+    if (rnum == 102)
+    {
+        auto *normal = static_cast<extra_descr_data *>(std::calloc(1, sizeof(extra_descr_data)));
+        auto *spellbook =
+            static_cast<extra_descr_data *>(std::calloc(1, sizeof(extra_descr_data)));
+        assert(normal && spellbook);
+        normal->keyword = str_dup("book spell spellbook");
+        normal->description = str_dup("Every spell a spellbook can contain.");
+        const char marker[] = {3, 1, 3, 0};
+        spellbook->keyword = str_dup(marker);
+        const size_t bytes = (MAX_SKILLS + 1) / 8 + 1;
+        spellbook->description = static_cast<char *>(std::calloc(bytes, 1));
+        assert(spellbook->description);
+        for (int spell : {1, 7, 31})
+            spellbook->description[spell / 8] |= static_cast<char>(1U << (spell % 8));
+        normal->next = spellbook;
+        object->ex_description = normal;
+    }
     return object;
 }
 
@@ -359,6 +377,25 @@ int main()
         owner.character.equipment[0]->affects = nullptr;
         release_tree(owner.character.carrying);
         release_tree(owner.character.equipment[0]);
+    }
+
+    {
+        reset_test_state();
+        test_character owner(42);
+        player_load_result result = base_result();
+        add_item(result, 1, 10, 102, PLAYER_SNAPSHOT_NO_PARENT, 0);
+        result.snapshot.items[0].extra_descriptions.push_back(
+            {"book spell spellbook", "Every spell a spellbook can contain.", false, {}});
+        result.snapshot.items[0].extra_descriptions.push_back(
+            {"SPELLBOOK", "[1,7,31]", true, {}});
+        player_load_item_materialize_metrics metrics = {};
+        assert(player_load_items_materialize(&owner.character, result, &metrics));
+        size_t descriptions = 0;
+        for (extra_descr_data *entry = owner.character.carrying->ex_description; entry;
+             entry = entry->next)
+            ++descriptions;
+        assert(descriptions == 2);
+        release_tree(owner.character.carrying);
     }
 
     {
@@ -644,6 +681,7 @@ for contract in (
     "PLAYER_LOAD_ITEM_OPERATIONS_PER_ITEM",
     "item_ownership_runtime_hydrate_batch",
     "staged.published = true",
+    "already_present",
 ):
     assert contract in ITEMS
 for contract in (

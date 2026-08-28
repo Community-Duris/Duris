@@ -215,6 +215,27 @@ int main()
 	assert(fixture.item_identities[1].parent_item_uid == 900001);
 	assert(fixture.snapshot.items[1].extra_descriptions.size() == 1);
 	assert(fixture.snapshot.items[1].affects[0][0] == 1);
+	assert(fixture.stale_item_rows == 0);
+
+	// A committed ownership move can outrun the replacement player snapshot. The
+	// ownership ledger is authoritative, so the stale payload row is skipped and its
+	// metadata cannot make the whole character unloadable.
+	execute_sql(
+		connection,
+		"INSERT INTO item_owner_revision(owner_type,owner_id,owner_context_id,revision) "
+		"VALUES(3,1200,0,1)");
+	execute_sql(connection, "UPDATE item_current_owner SET owner_type=3,owner_id=1200,"
+				"owner_context_id=0 WHERE item_uid=900003");
+	player_load_result stale_payload = execute_load(connection, request, 90);
+	assert(stale_payload.outcome == player_load_outcome::applied);
+	assert(stale_payload.snapshot.items.size() == 2 && stale_payload.stale_item_rows == 1);
+	assert(stale_payload.authoritative_item_count == 2);
+	execute_sql(connection,
+		    "UPDATE item_current_owner SET owner_type=1,owner_id=" + std::to_string(pid) +
+			    ",owner_context_id=0 WHERE item_uid=900003");
+	execute_sql(connection,
+		    "DELETE FROM item_owner_revision WHERE owner_type=3 AND owner_id=1200 AND "
+		    "owner_context_id=0");
 
 	// Pet payload and metadata share the player owner revision and add three queries,
 	// independent of pet and pet-item count.

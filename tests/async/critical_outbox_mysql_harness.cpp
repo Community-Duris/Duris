@@ -23,7 +23,11 @@ extern "C" MYSQL *sql_pool_replace_connection(MYSQL *)
 
 static void execute(const char *sql)
 {
-	assert(mysql_real_query(database_connection, sql, strlen(sql)) == 0);
+	const int result = mysql_real_query(database_connection, sql, strlen(sql));
+	if (result != 0)
+		fprintf(stderr, "critical outbox query failed: %s\n",
+			mysql_error(database_connection));
+	assert(result == 0);
 }
 
 static unsigned long long scalar(const char *sql)
@@ -54,6 +58,18 @@ static void clear_rows()
 		"UNHEX('00000000000000000000000000000002'),"
 		"UNHEX('00000000000000000000000000000003'))");
 	execute("DELETE FROM critical_test_state");
+}
+
+static void create_temporary_tables()
+{
+	static const char *tables[] = { "critical_operation_inbox", "critical_test_state",
+					"critical_outbox", "critical_outbox_delivery_dedupe" };
+	for (const char *table : tables)
+	{
+		const std::string temporary = std::string(table) + "_isolated";
+		execute(("CREATE TEMPORARY TABLE " + temporary + " LIKE " + table).c_str());
+		execute(("ALTER TABLE " + temporary + " RENAME TO " + table).c_str());
+	}
 }
 
 static void insert_record(unsigned int suffix)
@@ -112,11 +128,13 @@ int main()
 	database_connection = mysql_init(nullptr);
 	assert(database_connection);
 	const char *port_text = getenv("DB_PORT");
+	const char *database = getenv("CRITICAL_TEST_DB_NAME");
 	assert(mysql_real_connect(
 		database_connection, getenv("DB_HOST"), getenv("DB_USER"), getenv("DB_PASSWD"),
-		getenv("CRITICAL_TEST_DB_NAME"),
+		database,
 		static_cast<unsigned int>(strtoul(port_text ? port_text : "3306", nullptr, 10)),
 		nullptr, 0));
+	create_temporary_tables();
 	clear_rows();
 
 	insert_record(1);

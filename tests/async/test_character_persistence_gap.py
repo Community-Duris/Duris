@@ -147,6 +147,10 @@ require(
     and "if (!obj || !obj->ex_description || !DB)" not in extra_descr,
     "an object that lost all its descriptions must still clear the stored rows",
 )
+require(
+    "description_keys" in extra_descr,
+    "the synchronous item save must skip duplicate in-memory descriptions",
+)
 
 item_affects = section(SQL_PLAYER, "static bool sql_save_item_affects(int item_id, P_obj obj)", "\n}\n")
 require(

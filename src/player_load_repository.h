@@ -136,6 +136,7 @@ struct player_load_result
 	player_load_domain_state domains = {};
 	uint64_t item_owner_revision = 0;
 	size_t authoritative_item_count = 0;
+	size_t stale_item_rows = 0;
 	std::vector<player_load_item_identity> item_identities;
 	std::vector<player_load_pet_identity> pet_identities;
 	player_load_read_mask_t read_components = 0;

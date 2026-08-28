@@ -619,15 +619,26 @@ bool duplicate_description(const std::vector<player_item_extra_description_snaps
 	return false;
 }
 
+bool load_owner_identity_valid(const item_owner_identity &owner)
+{
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::destruction)
+		return false;
+	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
+		return owner.id == 0 && owner.context_id == 0;
+	return owner.id != 0;
+}
+
 bool load_items(MYSQL *connection, player_load_result *result)
 {
 	const std::string pid = std::to_string(result->pid);
 	std::unordered_map<uint64_t, size_t> item_by_database_id;
 	std::unordered_map<uint64_t, size_t> item_by_uid;
+	std::unordered_set<uint64_t> stale_database_ids;
 	try
 	{
 		item_by_database_id.reserve(PLAYER_LOAD_ITEM_MAX);
 		item_by_uid.reserve(PLAYER_LOAD_ITEM_MAX);
+		stale_database_ids.reserve(PLAYER_LOAD_ITEM_MAX);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -775,12 +786,35 @@ bool load_items(MYSQL *connection, player_load_result *result)
 				    return false;
 			    identity.state = static_cast<item_custody_state>(unsigned_field);
 			    if (!parse_unsigned(row[40], UINT64_MAX, &identity.owner_revision) ||
-				identity.owner.type != item_owner_type::player ||
-				identity.owner.id != static_cast<uint64_t>(result->pid) ||
-				identity.owner.context_id != 0 ||
-				identity.state != item_custody_state::active ||
+				!load_owner_identity_valid(identity.owner) ||
+				(identity.state != item_custody_state::active &&
+				 identity.state != item_custody_state::destroyed) ||
 				identity.override_mask & ~PLAYER_LOAD_ITEM_OVERRIDE_ALL ||
-				item_by_database_id.find(identity.database_id) !=
+				stale_database_ids.find(identity.database_id) !=
+					stale_database_ids.end())
+				    return false;
+			    const item_owner_identity expected_owner = {
+				    item_owner_type::player, static_cast<uint64_t>(result->pid), 0
+			    };
+			    if (identity.owner.type != expected_owner.type ||
+				identity.owner.id != expected_owner.id ||
+				identity.owner.context_id != expected_owner.context_id ||
+				identity.state != item_custody_state::active)
+			    {
+				    try
+				    {
+					    stale_database_ids.insert(identity.database_id);
+					    ++result->stale_item_rows;
+				    }
+				    catch (const std::bad_alloc &)
+				    {
+					    result->outcome =
+						    player_load_outcome::retryable_failure;
+					    return false;
+				    }
+				    return true;
+			    }
+			    if (item_by_database_id.find(identity.database_id) !=
 					item_by_database_id.end() ||
 				item_by_uid.find(identity.item_uid) != item_by_uid.end())
 				    return false;
@@ -899,7 +933,8 @@ bool load_items(MYSQL *connection, player_load_result *result)
 				    return false;
 			    const auto found = item_by_database_id.find(database_id);
 			    if (found == item_by_database_id.end())
-				    return false;
+				    return stale_database_ids.find(database_id) !=
+					   stale_database_ids.end();
 			    const size_t index = found->second;
 			    player_item_snapshot &item = result->snapshot.items[index];
 			    player_load_item_identity &identity = result->item_identities[index];

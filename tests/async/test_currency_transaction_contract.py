@@ -55,6 +55,7 @@ class CurrencyTransactionContractTests(unittest.TestCase):
         state = repository[start:apply]
         for token in (
             "FOR UPDATE",
+            "INSERT IGNORE INTO account_banks(account_name,racewar) VALUES(?,?)",
             "UPDATE player_data SET copper=?,silver=?,gold=?,platinum=?,wallet_revision=?",
             "UPDATE account_banks SET bank_copper=?,bank_silver=?,bank_gold=?,bank_platinum=?,",
             "INSERT INTO currency_ledger",
@@ -62,6 +63,13 @@ class CurrencyTransactionContractTests(unittest.TestCase):
             "currency_bank_baseline",
         ):
             self.assertIn(token, state)
+        bank_ensure = state.index(
+            "INSERT IGNORE INTO account_banks(account_name,racewar) VALUES(?,?)"
+        )
+        bank_lock = state.index(
+            "FROM account_banks WHERE account_name=? AND racewar=? FOR UPDATE"
+        )
+        self.assertLess(bank_ensure, bank_lock)
         branch = repository[apply:]
         currency = branch[branch.index("if (currency_command)") :]
         commit = currency.index('execute(connection, "COMMIT")')

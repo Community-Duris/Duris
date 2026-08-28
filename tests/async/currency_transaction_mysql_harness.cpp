@@ -108,10 +108,9 @@ int main()
 		"VALUES('CurrencyHarness','" +
 		account + "',1,9,8,7,6)");
 	const uint32_t pid = static_cast<uint32_t>(mysql_insert_id(connection));
-	execute("INSERT INTO account_banks(account_name,racewar,bank_copper,bank_silver,bank_gold,"
-		"bank_platinum) VALUES('" +
-		account + "',1,1,2,3,4)");
-	const uint32_t bank_id = static_cast<uint32_t>(mysql_insert_id(connection));
+	assert(scalar("SELECT COUNT(*) FROM account_banks WHERE account_name='" + account + "'") ==
+	       0);
+	uint32_t bank_id = 0;
 
 	const currency_vector wallet_deposit = { { -9, -8, -7, -6 } };
 	const currency_vector bank_deposit = { { 9, 8, 7, 6 } };
@@ -129,10 +128,13 @@ int main()
 	assert(applied.outcome == critical_apply_outcome::applied && applied.error_code == 0);
 	currency_command_result result = result_of(applied);
 	const currency_vector empty_balances = {};
-	const currency_vector deposited_balances = { { 10, 10, 10, 10 } };
+	const currency_vector deposited_balances = { { 9, 8, 7, 6 } };
 	assert(result.wallet.amount == empty_balances.amount);
 	assert(result.bank.amount == deposited_balances.amount);
 	assert(result.wallet_revision == 1 && result.bank_revision == 1);
+	bank_id = static_cast<uint32_t>(scalar("SELECT id FROM account_banks WHERE account_name='" +
+					       account + "' AND racewar=1"));
+	assert(bank_id != 0);
 	critical_apply_result duplicate = critical_command_repository_apply(connection, deposit);
 	assert(duplicate.outcome == critical_apply_outcome::already_applied);
 	assert(result_of(duplicate).bank_revision == 1);
@@ -146,7 +148,7 @@ int main()
 	applied = critical_command_repository_apply(connection, withdrawal);
 	assert(applied.outcome == critical_apply_outcome::applied);
 	result = result_of(applied);
-	assert(result.wallet.amount[3] == 5 && result.bank.amount[3] == 5);
+	assert(result.wallet.amount[3] == 5 && result.bank.amount[3] == 1);
 
 	const currency_vector empty = {};
 	const currency_vector excessive = { { 0, 0, 0, -100 } };
@@ -182,7 +184,7 @@ int main()
 	assert(scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(pid)) == 0);
 	assert(scalar("SELECT platinum FROM player_data WHERE pid=" + std::to_string(pid)) == 5);
 	assert(scalar("SELECT bank_platinum FROM account_banks WHERE id=" +
-		      std::to_string(bank_id)) == 5);
+		      std::to_string(bank_id)) == 1);
 	assert(scalar("SELECT COUNT(*) FROM currency_ledger WHERE pid=" + std::to_string(pid)) ==
 	       2);
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox o JOIN currency_ledger l "

@@ -628,6 +628,8 @@ bool execute_currency_state(MYSQL *connection, const critical_command &command,
 	static const char PLAYER_LOCK_SQL[] =
 		"SELECT account_name,racewar,copper,silver,gold,platinum,wallet_revision "
 		"FROM player_data WHERE pid=? FOR UPDATE";
+	static const char BANK_ENSURE_SQL[] =
+		"INSERT IGNORE INTO account_banks(account_name,racewar) VALUES(?,?)";
 	static const char BANK_LOCK_SQL[] =
 		"SELECT id,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision "
 		"FROM account_banks WHERE account_name=? AND racewar=? FOR UPDATE";
@@ -715,6 +717,10 @@ bool execute_currency_state(MYSQL *connection, const critical_command &command,
 	bank_key[1].buffer_type = MYSQL_TYPE_TINY;
 	bank_key[1].buffer = &payload.racewar;
 	bank_key[1].is_unsigned = true;
+	if (!prepare(&statement, connection, BANK_ENSURE_SQL) ||
+	    mysql_stmt_bind_param(statement, bank_key) != 0 || mysql_stmt_execute(statement) != 0)
+		return statement_failure(statement);
+	mysql_stmt_close(statement);
 	if (!prepare(&statement, connection, BANK_LOCK_SQL) ||
 	    mysql_stmt_bind_param(statement, bank_key) != 0 || mysql_stmt_execute(statement) != 0 ||
 	    mysql_stmt_store_result(statement) != 0)
