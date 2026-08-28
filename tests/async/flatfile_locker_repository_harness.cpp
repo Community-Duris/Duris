@@ -151,6 +151,58 @@ int main(int argc, char **argv)
 					  { { "missing.locker", "guest", 1 } },
 					  &error) == flatfile_locker_result::invalid,
 		"dangling locker access was accepted");
+	auto duplicate_owner = guild;
+	duplicate_owner.locker_id = 3;
+	duplicate_owner.locker_name = "guild.7.second";
+	duplicate_owner.chests[0].chest_id = 30;
+	require(flatfile_locker_establish(invalid_root.string(), { guild, duplicate_owner }, {},
+					  &error) == flatfile_locker_result::invalid,
+		"duplicate association locker owner was accepted");
+
+	flatfile_locker_player_removal removal;
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error), "could not acquire locker authority");
+		require(flatfile_locker_prepare_player_remove(root.string(), lock, 42, "Hero",
+							      &removal, &error) ==
+					flatfile_locker_result::ok &&
+				removal.operation.filename == "locker_catalog" &&
+				removal.custody.size() == 2 &&
+				removal.custody[0].owner.type == item_owner_type::locker &&
+				removal.custody[0].owner.id == 2 &&
+				removal.custody[0].owner.context_id == 11 &&
+				removal.custody[0].items.size() == 2 &&
+				removal.custody[0].items[0].item_uid == 100 &&
+				removal.custody[1].owner.context_id == 12 &&
+				removal.custody[1].items[0].vnum == 302,
+			"player locker removal did not prepare exact custody metadata");
+	}
+	require(flatfile_locker_list(root.string(), &lockers, &access, &error) ==
+				flatfile_locker_result::ok &&
+			lockers.size() == 2 && access.size() == 2,
+		"prepared locker removal published before transaction commit");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not reacquire locker authority for commit");
+		require(flatfile_authority_transaction_commit_operations(
+				root.string(), lock, { removal.operation }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"locker removal transaction failed: " + error);
+	}
+	require(flatfile_locker_list(root.string(), &lockers, &access, &error) ==
+				flatfile_locker_result::ok &&
+			lockers.size() == 1 && lockers[0].owner_assoc_id == 7 && access.empty(),
+		"locker removal did not remove owned locker and player access rows");
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(root.string(), &error),
+			"could not acquire locker authority for retry");
+		require(flatfile_locker_prepare_player_remove(root.string(), lock, 42, "Hero",
+							      &removal, &error) ==
+				flatfile_locker_result::unchanged,
+			"player locker removal retry was not idempotent");
+	}
 
 	const fs::path catalog = root / "domains/locker_catalog";
 	{

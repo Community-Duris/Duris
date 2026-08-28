@@ -3,6 +3,7 @@
 
 #include "auction_command.h"
 #include "flatfile_authority_transaction.h"
+#include "flatfile_locker_repository.h"
 #include "critical_command_coordinator.h"
 #include "item_transfer_command.h"
 
@@ -64,6 +65,10 @@ flatfile_item_repository_result flatfile_item_repository_prepare_auction_transfe
 	flatfile_item_auction_mutation *mutation, unsigned int *result_code, std::string *error);
 flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	flatfile_authority_operation *operation, std::string *error);
+flatfile_item_repository_result flatfile_item_repository_prepare_player_and_locker_remove(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	const std::vector<flatfile_locker_custody_owner> &locker_custody,
 	flatfile_authority_operation *operation, std::string *error);
 critical_apply_result
 flatfile_critical_command_repository_apply_selected(const critical_command &command, void *context);

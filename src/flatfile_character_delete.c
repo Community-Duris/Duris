@@ -7,6 +7,7 @@
 #include "flatfile_frag_leaderboard_repository.h"
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
+#include "flatfile_locker_repository.h"
 #include "flatfile_offline_message_repository.h"
 #include "flatfile_player_domain_repository.h"
 #include "flatfile_player_repository.h"
@@ -95,7 +96,7 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 	std::vector<flatfile_authority_operation> operations;
 	try
 	{
-		operations.reserve(10);
+		operations.reserve(11);
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -143,6 +144,18 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 				     flatfile_frag_leaderboard_result::io_error);
 	}
 
+	flatfile_locker_player_removal locker_removal;
+	const auto locker = flatfile_locker_prepare_player_remove(root, authority_lock,
+								  static_cast<uint32_t>(pid),
+								  expected_name, &locker_removal,
+								  error);
+	const bool locker_changed = locker == flatfile_locker_result::ok;
+	if (locker == flatfile_locker_result::conflict)
+		return flatfile_character_delete_result::conflict;
+	if (!locker_changed && locker != flatfile_locker_result::unchanged)
+		return map_authority(locker, flatfile_locker_result::not_found,
+				     flatfile_locker_result::io_error);
+
 	const auto snapshot = flatfile_player_snapshot_prepare_remove(
 		root, snapshot_lock, authority_lock, pid, &operation, error);
 	if (snapshot == flatfile_player_load_result::ok)
@@ -169,8 +182,13 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 				     flatfile_player_domain_result::io_error);
 	}
 
-	const auto item = flatfile_item_repository_prepare_player_remove(
-		root, authority_lock, static_cast<uint32_t>(pid), &operation, error);
+	const auto item = locker_changed ?
+				  flatfile_item_repository_prepare_player_and_locker_remove(
+					  root, authority_lock, static_cast<uint32_t>(pid),
+					  locker_removal.custody, &operation, error) :
+				  flatfile_item_repository_prepare_player_remove(
+					  root, authority_lock, static_cast<uint32_t>(pid),
+					  &operation, error);
 	if (item == flatfile_item_repository_result::ok)
 	{
 		if (!append_operation(&operations, &operation))
@@ -181,6 +199,8 @@ flatfile_character_delete_result flatfile_character_delete(const std::string &ro
 		return map_authority(item, flatfile_item_repository_result::not_found,
 				     flatfile_item_repository_result::io_error);
 	}
+	if (locker_changed && !append_operation(&operations, &locker_removal.operation))
+		return flatfile_character_delete_result::io_error;
 
 	const auto boon = flatfile_boon_prepare_player_remove(
 		root, authority_lock, static_cast<uint32_t>(pid), &operation, error);

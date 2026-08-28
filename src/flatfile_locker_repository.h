@@ -1,6 +1,8 @@
 #ifndef DURIS_FLATFILE_LOCKER_REPOSITORY_H
 #define DURIS_FLATFILE_LOCKER_REPOSITORY_H
 
+#include "flatfile_authority_transaction.h"
+#include "item_transfer_command.h"
 #include "player_snapshot.h"
 
 #include <cstdint>
@@ -37,11 +39,31 @@ struct flatfile_locker_access_record
 	uint64_t revision = 0;
 };
 
+struct flatfile_locker_custody_item
+{
+	uint64_t item_uid = 0;
+	int32_t vnum = 0;
+};
+
+struct flatfile_locker_custody_owner
+{
+	item_owner_identity owner = { item_owner_type::unknown, 0, 0 };
+	std::vector<flatfile_locker_custody_item> items;
+};
+
+struct flatfile_locker_player_removal
+{
+	flatfile_authority_operation operation;
+	std::vector<flatfile_locker_custody_owner> custody;
+};
+
 enum class flatfile_locker_result
 {
 	ok,
 	not_found,
 	already_exists,
+	unchanged,
+	conflict,
 	invalid,
 	io_error
 };
@@ -53,5 +75,9 @@ flatfile_locker_result flatfile_locker_list(const std::string &root,
 					    std::vector<flatfile_locker_record> *lockers,
 					    std::vector<flatfile_locker_access_record> *access,
 					    std::string *error);
+flatfile_locker_result
+flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_authority_lock &lock,
+				      uint32_t pid, const std::string &player_name,
+				      flatfile_locker_player_removal *removal, std::string *error);
 
 #endif

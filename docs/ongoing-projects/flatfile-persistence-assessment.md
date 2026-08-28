@@ -1712,6 +1712,46 @@ sections below continue to describe the required end state.
   removal API for all locker chest identities, then compose both images in the recoverable
   character-delete transaction and advance the two locker manifest entries together.
 
+### Checkpoint 51 - transactional locker and item-custody deletion
+
+- **Completed:** the locker repository now prepares one held-lock catalog rewrite for
+  character deletion. It removes the PID-owned player locker, every access row owned by
+  that locker, and every access row where the deleting canonical character name is the
+  visitor. Association lockers and unrelated access remain intact. The catalog also
+  enforces one locker per player PID or association ID.
+- **Exact custody handoff:** the prepared locker result exposes every removed chest as the
+  stable item owner `{locker_id, chest_id}` plus its sorted expected UID/vnum set. The item
+  repository's combined player-and-locker removal validates that each chest owner exists
+  and its active custody set matches exactly before preparing one `item_ownership` image.
+  Missing owners, extra/missing items, UID mismatch, or vnum mismatch fail closed before a
+  transaction journal is published; empty chests require an explicitly established empty
+  owner as part of the authority.
+- **Coordinator composition:** character deletion now prepares the locker plan before
+  player snapshot removal, publishes the combined item-custody image followed by the
+  locker catalog image, and still keeps the identity tombstone success-last in the same
+  recoverable `DURAUTH` transaction. The bounded operation count is eleven. Recovery after
+  any partial publication converges, and a retry sees absent locker/access/item owners as
+  already deleted rather than advancing revisions again.
+- **Account boundary preserved:** only PID-owned entries in `DURLOCK` participate. The
+  account locker schema is neither represented by this catalog nor addressed by its
+  deletion preparer, so deleting a character cannot remove account-scoped storage.
+- **Checks passed:** locker tests cover prepared-but-unpublished state, exact custody
+  extraction, owner/visitor access cleanup, association-locker preservation, transactional
+  publication, retry stability, and duplicate owner rejection. Item tests cover exact
+  UID/vnum reconciliation, empty chest owners, combined player/chest destruction, and
+  mismatch refusal. The expanded fault-injected coordinator test proves journal recovery
+  removes player and locker custody, the player locker, and both access directions while
+  retaining the association locker. All four focused repository/coordinator/manifest
+  regressions pass.
+- **Manifest and exposure:** `locker_access` and `locker_contents` advance from
+  `unimplemented` to `prepared_rewrite`, reducing the checked runtime blocker count from
+  six to four. Live locker gameplay save/load/chest/access calls are still SQL-only, and
+  association membership, ships/cargo, corpses/saved items, and account-bound summons
+  still block runtime character-delete exposure.
+- **Next action:** implement canonical association membership authority and its prepared
+  character removal, then address name-keyed ships/cargo without weakening the corpse and
+  account-bound summon fences.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

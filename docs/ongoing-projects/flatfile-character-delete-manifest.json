@@ -85,8 +85,8 @@
       "id": "locker_access",
       "source": "runtime-call",
       "key": "canonical-name",
-      "disposition": "unimplemented",
-      "evidence": { "path": "src/files.c", "token": "remove_all_locker_access(ch)" }
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_locker_prepare_player_remove" }
     },
     {
       "id": "association_membership",
@@ -105,9 +105,9 @@
     {
       "id": "locker_contents",
       "source": "runtime-call",
-      "key": "pid",
-      "disposition": "unimplemented",
-      "evidence": { "path": "src/files.c", "token": "sql_delete_locker(GET_PID(ch), 0)" }
+      "key": "pid+locker-id+chest-id",
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_item_repository_prepare_player_and_locker_remove" }
     },
     {
       "id": "ships_and_cargo",

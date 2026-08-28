@@ -195,12 +195,16 @@ bool valid_catalog(const locker_catalog &catalog)
 	    !std::is_sorted(catalog.access.begin(), catalog.access.end(), access_less))
 		return false;
 	std::unordered_set<std::string> locker_names;
+	std::unordered_set<int32_t> player_owners;
+	std::unordered_set<int32_t> association_owners;
 	std::unordered_set<uint32_t> chest_ids;
 	std::unordered_set<uint64_t> item_uids;
 	size_t chest_count = 0;
 	try
 	{
 		locker_names.reserve(catalog.lockers.size());
+		player_owners.reserve(catalog.lockers.size());
+		association_owners.reserve(catalog.lockers.size());
 		chest_ids.reserve(std::min(chest_maximum, catalog.lockers.size() * 2));
 		for (size_t locker_index = 0; locker_index < catalog.lockers.size(); ++locker_index)
 		{
@@ -211,6 +215,10 @@ bool valid_catalog(const locker_catalog &catalog)
 			    locker.locker_name.rfind("account.", 0) == 0 ||
 			    (locker.owner_pid > 0) == (locker.owner_assoc_id > 0) ||
 			    locker.owner_pid < 0 || locker.owner_assoc_id < 0 ||
+			    (locker.owner_pid > 0 &&
+			     !player_owners.insert(locker.owner_pid).second) ||
+			    (locker.owner_assoc_id > 0 &&
+			     !association_owners.insert(locker.owner_assoc_id).second) ||
 			    (locker_index &&
 			     catalog.lockers[locker_index - 1].locker_id == locker.locker_id) ||
 			    !locker_names.insert(locker.locker_name).second ||
@@ -517,5 +525,78 @@ flatfile_locker_result flatfile_locker_list(const std::string &root,
 		return loaded;
 	*lockers = std::move(catalog.lockers);
 	*access = std::move(catalog.access);
+	return flatfile_locker_result::ok;
+}
+
+flatfile_locker_result
+flatfile_locker_prepare_player_remove(const std::string &root, const flatfile_authority_lock &lock,
+				      uint32_t pid, const std::string &player_name,
+				      flatfile_locker_player_removal *removal, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !pid || pid > static_cast<uint32_t>(INT32_MAX) ||
+	    !removal || !valid_name(player_name, access_name_maximum))
+		return flatfile_locker_result::invalid;
+	*removal = {};
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_locker_result::ok)
+		return recovered;
+	locker_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_locker_result::ok)
+		return loaded;
+	const std::string canonical_player = canonical_name(player_name);
+	const int32_t owner_pid = static_cast<int32_t>(pid);
+	auto locker = std::find_if(catalog.lockers.begin(), catalog.lockers.end(),
+				   [owner_pid](const auto &entry)
+				   { return entry.owner_pid == owner_pid; });
+	const bool has_locker = locker != catalog.lockers.end();
+	const std::string removed_name = has_locker ? locker->locker_name : std::string();
+	try
+	{
+		if (has_locker)
+		{
+			removal->custody.reserve(locker->chests.size());
+			for (const auto &chest : locker->chests)
+			{
+				flatfile_locker_custody_owner owner;
+				owner.owner = { item_owner_type::locker, locker->locker_id,
+						static_cast<uint64_t>(chest.chest_id) };
+				owner.items.reserve(chest.items.size());
+				for (const auto &item : chest.items)
+					owner.items.push_back({ item.object_uid, item.vnum });
+				std::sort(owner.items.begin(), owner.items.end(),
+					  [](const auto &left, const auto &right)
+					  { return left.item_uid < right.item_uid; });
+				removal->custody.push_back(std::move(owner));
+			}
+			catalog.lockers.erase(locker);
+		}
+		const size_t old_access_size = catalog.access.size();
+		catalog.access.erase(
+			std::remove_if(catalog.access.begin(), catalog.access.end(),
+				       [&](const auto &entry)
+				       {
+					       return entry.visitor_name == canonical_player ||
+						      (has_locker &&
+						       entry.owner_name == removed_name);
+				       }),
+			catalog.access.end());
+		if (!has_locker && old_access_size == catalog.access.size())
+			return flatfile_locker_result::unchanged;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_locker_result::io_error;
+	}
+	if (catalog.revision == UINT64_MAX)
+		return flatfile_locker_result::conflict;
+	++catalog.revision;
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(catalog, &encoded))
+		return flatfile_locker_result::invalid;
+	removal->operation.store = flatfile_authority_store::domains;
+	removal->operation.kind = flatfile_authority_operation_kind::write;
+	removal->operation.filename = catalog_filename;
+	removal->operation.bytes = std::move(encoded);
 	return flatfile_locker_result::ok;
 }

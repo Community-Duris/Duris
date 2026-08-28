@@ -259,6 +259,57 @@ int main(int argc, char **argv)
 			owner_revision == 1 && items.size() == 1 && items[0].item_uid == 200,
 		"concurrent replay duplicated or lost item creation");
 
+	const fs::path combined_root = fs::path(argv[1]).string() + "-combined";
+	fs::create_directories(combined_root / "domains");
+	fs::permissions(combined_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(combined_root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	const item_owner_identity combined_player = { item_owner_type::player, 42, 0 };
+	const item_owner_identity locker_public = { item_owner_type::locker, 2, 11 };
+	const item_owner_identity locker_private = { item_owner_type::locker, 2, 12 };
+	require(flatfile_item_repository_establish_owner(
+			combined_root.string(), combined_player,
+			{ { 400, 400, 0, combined_player, 1, 800, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"combined player owner baseline failed: " + error);
+	require(flatfile_item_repository_establish_owner(
+			combined_root.string(), locker_public,
+			{ { 500, 500, 0, locker_public, 1, 900, item_custody_state::active },
+			  { 501, 500, 500, locker_public, 1, 901, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"combined public locker owner baseline failed: " + error);
+	require(flatfile_item_repository_establish_owner(combined_root.string(), locker_private, {},
+							 &error) ==
+			flatfile_item_baseline_result::applied,
+		"combined empty private locker owner baseline failed: " + error);
+	std::vector<flatfile_locker_custody_owner> custody = {
+		{ locker_public, { { 500, 900 }, { 501, 901 } } }, { locker_private, {} }
+	};
+	{
+		flatfile_authority_lock lock;
+		flatfile_authority_operation prepared;
+		auto mismatch = custody;
+		mismatch[0].items[1].vnum = 999;
+		require(lock.acquire(combined_root.string(), &error) &&
+				flatfile_item_repository_prepare_player_and_locker_remove(
+					combined_root.string(), lock, 42, mismatch, &prepared,
+					&error) == flatfile_item_repository_result::invalid,
+			"locker payload/custody mismatch was accepted");
+		require(flatfile_item_repository_prepare_player_and_locker_remove(
+				combined_root.string(), lock, 42, custody, &prepared, &error) ==
+					flatfile_item_repository_result::ok &&
+				prepared.filename == "item_ownership",
+			"combined player/locker removal was not prepared: " + error);
+		require(flatfile_authority_transaction_commit_operations(
+				combined_root.string(), lock, { prepared }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"combined player/locker removal did not commit: " + error);
+	}
+	for (const auto &owner : { combined_player, locker_public, locker_private })
+		require(flatfile_item_repository_load_owner(combined_root.string(), owner,
+							    &owner_revision, &items, &error) ==
+				flatfile_item_repository_result::not_found,
+			"combined removal left an item owner authoritative");
+
 	const fs::path authority = domains / "item_ownership";
 	{
 		std::fstream file(authority, std::ios::in | std::ios::out | std::ios::binary);

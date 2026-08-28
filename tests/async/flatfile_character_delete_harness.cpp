@@ -4,6 +4,7 @@
 #include "flatfile_frag_leaderboard_repository.h"
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
+#include "flatfile_locker_repository.h"
 #include "flatfile_offline_message_repository.h"
 #include "flatfile_player_domain_repository.h"
 #include "flatfile_player_repository.h"
@@ -98,6 +99,46 @@ static void establish(const fs::path &root, bool establish_boons)
 			{ { 1, "Account", "Player", 1234, 1, "Human", "Warrior", 50, 0, 100, 1 } },
 			&error) == flatfile_frag_leaderboard_result::ok,
 		"frag leaderboard baseline failed: " + error);
+	player_item_snapshot locker_item = {};
+	locker_item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	locker_item.equipment_slot = -1;
+	locker_item.object_uid = 900;
+	locker_item.vnum = 3900;
+	locker_item.name = "stored item";
+	flatfile_locker_chest_record player_chest = {};
+	player_chest.chest_id = 11;
+	player_chest.chest_name = "public";
+	player_chest.is_public = true;
+	player_chest.revision = 1;
+	player_chest.items = { locker_item };
+	flatfile_locker_record player_locker = {};
+	player_locker.locker_id = 10;
+	player_locker.locker_name = "player.locker";
+	player_locker.owner_pid = 1;
+	player_locker.revision = 1;
+	player_locker.chests = { player_chest };
+	flatfile_locker_chest_record guild_chest = {};
+	guild_chest.chest_id = 21;
+	guild_chest.chest_name = "public";
+	guild_chest.is_public = true;
+	guild_chest.revision = 1;
+	flatfile_locker_record guild_locker = {};
+	guild_locker.locker_id = 20;
+	guild_locker.locker_name = "guild.7.locker";
+	guild_locker.owner_assoc_id = 7;
+	guild_locker.revision = 1;
+	guild_locker.chests = { guild_chest };
+	require(flatfile_locker_establish(root.string(), { guild_locker, player_locker },
+					  { { "player.locker", "guest", 1 },
+					    { "guild.7.locker", "player", 1 } },
+					  &error) == flatfile_locker_result::ok,
+		"locker baseline failed: " + error);
+	const item_owner_identity locker_owner = { item_owner_type::locker, 10, 11 };
+	require(flatfile_item_repository_establish_owner(
+			root.string(), locker_owner,
+			{ { 900, 900, 0, locker_owner, 1, 3900, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"locker custody baseline failed: " + error);
 	if (establish_boons)
 		require(flatfile_boon_establish(root.string(), {}, &error) ==
 				flatfile_boon_result::ok,
@@ -156,6 +197,17 @@ int main(int argc, char **argv)
 			root.string(), { item_owner_type::player, 1, 0 }, &owner_revision, &items,
 			&error) == flatfile_item_repository_result::not_found,
 		"recovered deletion retained the player item owner");
+	require(flatfile_item_repository_load_owner(
+			root.string(), { item_owner_type::locker, 10, 11 }, &owner_revision, &items,
+			&error) == flatfile_item_repository_result::not_found,
+		"recovered deletion retained locker item custody");
+	std::vector<flatfile_locker_record> lockers;
+	std::vector<flatfile_locker_access_record> locker_access;
+	require(flatfile_locker_list(root.string(), &lockers, &locker_access, &error) ==
+				flatfile_locker_result::ok &&
+			lockers.size() == 1 && lockers[0].owner_assoc_id == 7 &&
+			locker_access.empty(),
+		"recovered deletion retained player locker or access state");
 	std::vector<flatfile_artifact_record> artifacts;
 	require(flatfile_artifact_list(root.string(), &artifacts, &error) ==
 				flatfile_artifact_result::ok &&
