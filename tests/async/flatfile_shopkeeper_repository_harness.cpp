@@ -55,8 +55,8 @@ static flatfile_shopkeeper_record shop(uint32_t id, uint64_t uid)
 	value.revision = 2;
 	value.affects = { { 9, 10, 11, 12, { 1, 2, 3, 4, 5 } },
 			  { 1, 2, 3, 4, { 6, 7, 8, 9, 10 } } };
-	value.items = { item(uid, PLAYER_SNAPSHOT_NO_PARENT, 3, 400), item(uid + 1, 0, -1, 401),
-			item(uid + 2, PLAYER_SNAPSHOT_NO_PARENT, -1, 402) };
+	value.items = { item(uid, PLAYER_SNAPSHOT_NO_PARENT, 3, 400), item(uid + 1, 0, 0, 401),
+			item(uid + 2, PLAYER_SNAPSHOT_NO_PARENT, 0, 402) };
 	return value;
 }
 

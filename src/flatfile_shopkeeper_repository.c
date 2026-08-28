@@ -145,10 +145,10 @@ bool valid_items(const std::vector<player_item_snapshot> &items,
 	std::set<int16_t> equipment_slots;
 	for (const auto &item : items)
 	{
-		if (!item.object_uid || item.vnum <= 0 || item.equipment_slot < -1 ||
+		if (!item.object_uid || item.vnum <= 0 || item.equipment_slot < 0 ||
 		    item.equipment_slot > equipment_slot_maximum ||
-		    (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT && item.equipment_slot != -1) ||
-		    (item.equipment_slot >= 0 &&
+		    (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT && item.equipment_slot != 0) ||
+		    (item.equipment_slot > 0 &&
 		     !equipment_slots.insert(item.equipment_slot).second) ||
 		    !item_uids->insert(item.object_uid).second)
 			return false;

@@ -1974,8 +1974,8 @@ sections below continue to describe the required end state.
 - **Shared object fidelity:** shopkeeper objects reuse the bounded nested item snapshot
   envelope, preserving allocated UID/generated identity, mutable scalar and string state,
   fixed/dynamic affects, extra descriptions, prototype differences, and parent topology.
-  Top-level equipment uses normalized zero-based slots; inventory and every contained item
-  use the no-equipment marker.
+  Top-level equipment retains the legacy one-based slot representation; inventory and every
+  contained item use the zero slot marker.
 - **Validation:** exact establishment canonicalizes shops and affect ordering and is
   idempotent only for identical state. The catalog rejects duplicate shop IDs, invalid
   mob/room/save/revision values, malformed or over-deep nesting, nested equipment markers,
@@ -1995,6 +1995,21 @@ sections below continue to describe the required end state.
 - **Next action:** add prototype-aware shopkeeper capture/materialization adapters and
   reconcile exported UIDs with global item ownership before routing startup restore and
   dirty-save paths through this catalog.
+
+### Checkpoint 59 - shopkeeper equipment-slot contract correction
+
+- **Corrected before exposure:** adapter inspection showed that the existing capture and
+  SQL shopkeeper paths use one-based equipment slots and `0` for inventory or contained
+  objects. The v1 catalog validator and regression now enforce that exact convention rather
+  than the initially documented `-1` marker.
+- **Safety effect:** only top-level records may carry a positive equipment slot, positive
+  slots remain unique within one shopkeeper, and every inventory or nested record must carry
+  zero. This matches `sql_save_shopkeeper_item`, `capture_item_tree`, and the existing
+  materializer's attachment contract without an implicit conversion layer.
+- **Checks passed:** the strict repository regression and changed-line formatting pass.
+  No shopkeeper runtime route or exported catalog was exposed under the earlier convention.
+- **Next action:** expose a bounded shared capture adapter using the corrected slot contract,
+  then build prototype-aware materialization and UID reconciliation.
 
 ### Milestone status
 
