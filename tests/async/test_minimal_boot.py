@@ -50,11 +50,32 @@ assert "\n0 0 0\n" not in (MINIMAL / "mini.wld").read_text(), (
     "minimal world contains an exit to nonexistent room zero"
 )
 
+weather_rows = [
+    [int(value) for value in line.split()]
+    for line in (MINIMAL / "world.weather").read_text().splitlines()
+]
+assert len(weather_rows) == 100
+assert all(len(row) == 12 for row in weather_rows)
+for row in weather_rows:
+    for index in (1, 4, 7, 10):
+        assert 0 <= row[index] <= 8, "weather precipitation index is out of bounds"
+
 assert 'strcmp(argv[pos], "--minimal")' in COMM
+assert COMM.count("no_random = 1;") >= 2
 assert '"areas_mini/world.weather"' in DB
 assert '"areas_mini/world.tab"' in DB
+assert "Skipping full-world state restoration in mini mode." in DB
 assert 'fopen("areas_mini/world.shp", "r")' in SHOP
 assert "STUDIOPROC: minimal world mode, proc engine idle." in STUDIOPROC
+
+assert "Skipping persistence worker startup in mini mode." not in COMM
+pipeline_startup = COMM[
+    COMM.index('logit(LOG_STATUS, "Entering game loop.");') : COMM.index("latency_trace_reset();")
+]
+assert "if (!mini_mode)\n\t\tlocker_async_init();" in pipeline_startup
+assert "player_save_pipeline_init" in pipeline_startup
+assert "critical_command_coordinator_init" in pipeline_startup
+assert "Skipping zone database publication in mini mode." in COMM
 
 assert "--minimal)" in CYCLE
 assert "MINIMAL_MODE=1" in CYCLE

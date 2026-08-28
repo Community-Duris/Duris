@@ -663,15 +663,18 @@ void boot_db(int mini_mode)
 	}
 #endif
 
-	fprintf(stderr, "-- Ships\n");
-	logit(LOG_STATUS, "Initializing ships.");
-	initialize_ships();
+	if (!mini_mode)
+	{
+		fprintf(stderr, "-- Ships\n");
+		logit(LOG_STATUS, "Initializing ships.");
+		initialize_ships();
 
-	logit(LOG_STATUS, "Initializing Arena.");
-	initialize_arena();
+		logit(LOG_STATUS, "Initializing Arena.");
+		initialize_arena();
 
-	logit(LOG_STATUS, "Setting up Carriages and wagons.");
-	init_wagons();
+		logit(LOG_STATUS, "Setting up Carriages and wagons.");
+		init_wagons();
+	}
 
 	fprintf(stderr, "-- Mail\n");
 	logit(LOG_STATUS, "Booting mail system.");
@@ -681,34 +684,38 @@ void boot_db(int mini_mode)
 		no_mail = 1;
 	}
 
-	fprintf(stderr, "-- Player corpses\n");
-	logit(LOG_STATUS, "Reloading Player corpses.");
-	restoreCorpses();
-
-	logit(LOG_STATUS, "Reloading SavedItems.");
-	restoreSavedItems();
-
-	fprintf(stderr, "-- Shopkeepers\n");
-	logit(LOG_STATUS, "Reloading Shopkeepers.");
-	restore_shopkeepers();
-
-	fprintf(stderr, "-- Associations\n");
-	logit(LOG_STATUS, "Updating associations table.");
-	sql_update_assoc_table();
-
 	if (!mini_mode)
 	{
+		fprintf(stderr, "-- Player corpses\n");
+		logit(LOG_STATUS, "Reloading Player corpses.");
+		restoreCorpses();
+
+		logit(LOG_STATUS, "Reloading SavedItems.");
+		restoreSavedItems();
+
+		fprintf(stderr, "-- Shopkeepers\n");
+		logit(LOG_STATUS, "Reloading Shopkeepers.");
+		restore_shopkeepers();
+
+		fprintf(stderr, "-- Associations\n");
+		logit(LOG_STATUS, "Updating associations table.");
+		sql_update_assoc_table();
+
 		logit(LOG_STATUS, "Loading patrol Justice area.");
 		load_justice_area();
-	}
 
-	logit(LOG_STATUS, "Setting up player-side artifact list.");
-	setupMortArtiList_sql();
-	// skip loading artifacts from db during copyover - they're restored from copyover.dat
-	if (!is_copyover_boot())
+		logit(LOG_STATUS, "Setting up player-side artifact list.");
+		setupMortArtiList_sql();
+		// skip loading artifacts from db during copyover - they're restored from copyover.dat
+		if (!is_copyover_boot())
+		{
+			addOnGroundArtis_sql();
+			addOnMobArtis_sql();
+		}
+	}
+	else
 	{
-		addOnGroundArtis_sql();
-		addOnMobArtis_sql();
+		fprintf(stderr, "--  Skipping full-world state restoration in mini mode.\r\n");
 	}
 
 	fprintf(stderr, "-- Continents\n");

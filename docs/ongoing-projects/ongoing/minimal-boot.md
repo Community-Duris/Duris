@@ -59,6 +59,16 @@ test character into a valid room without regenerating or loading the full world.
   and removed room 1207's exit to nonexistent room vnum `0`.
 - Added `tests/async/test_minimal_boot.py` to protect the launcher, data-file routing,
   dataset framing, required test object, empty reset contract, and void-exit fix.
+- A second direct boot exposed out-of-range precipitation values in
+  `areas_mini/world.weather`; all affected values now match the valid upper index
+  (`8`), and the regression test checks all 100 weather rows and bounds.
+- Character entry then succeeded in room 1200, but disconnect could not complete a
+  terminal save because the old mini mode skipped all durability workers. Minimal
+  mode now starts player-save and critical-command pipelines, while still skipping
+  locker and maintenance workers that depend on full-world runtime features.
+- Minimal mode now also disables random-zone creation and skips full-world state
+  restoration (ships, arena, wagons, corpses, saved ground items, shopkeepers,
+  associations, justice, and artifacts) plus zone-database publication.
 
 ## Progress log
 
@@ -78,5 +88,11 @@ test character into a valid room without regenerating or loading the full world.
 - `./scripts/cycle_mud.sh --help` — passed and documents `--minimal`.
 - `python3 tests/async/test_minimal_boot.py` — passed.
 - `./scripts/format.sh --check` — passed.
-- Initial direct boot reached the game loop and account login, but the final character
-  entry check must be repeated after the object and dataset repairs above.
+- Direct `bin/server/dms_new --minimal 4090` boot — passed in 7 ms with 1 zone,
+  67 rooms, 171 mobile prototypes, 805 object prototypes, no random zones, and no
+  full-world state restoration.
+- Real Telnet account authentication, configured-character selection, asynchronous
+  snapshot/item load, entry into room 1200, and `look` — passed.
+- Client disconnect produced no new terminal-save failure or deferred retry, and
+  `SIGINT` then shut the server down normally with exit status 0.
+- Maintained `scripts/cycle_mud.sh --minimal` startup path remains to be verified.
