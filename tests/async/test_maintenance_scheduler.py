@@ -77,6 +77,14 @@ maintenance_result execute(const maintenance_request &request, void *raw)
     return result;
 }
 
+// Keep the harness deterministic: only the auction job may be submitted, so no
+// other job can leave durable request or completion state behind across the
+// simulated restarts below.
+bool auction_only(maintenance_request &request, void *)
+{
+    return request.job_id == maintenance_job_id::auction_due_scan;
+}
+
 template <typename Predicate> void wait_until(Predicate predicate)
 {
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
@@ -114,7 +122,7 @@ int main(int argc, char **argv)
 
     state_type state;
     assert(maintenance_scheduler_set_state_path(argv[1]));
-    assert(maintenance_scheduler_init(9, execute, &state));
+    assert(maintenance_scheduler_init(9, execute, &state, auction_only));
     auto health = maintenance_scheduler_health_copy(0);
     assert(!health.jobs[lifecycle].enabled);
     const size_t auction = static_cast<size_t>(maintenance_job_id::auction_due_scan);
@@ -140,14 +148,13 @@ int main(int argc, char **argv)
 	maintenance_scheduler_resume();
 
     uint64_t tick = first_tick + registry[auction].cadence_ticks;
+    // Stop pulsing as soon as the retry has been resubmitted. Any later pulse
+    // could acknowledge its completion, which this phase must leave durable.
     wait_until([&] {
+        if (maintenance_scheduler_health_copy(tick).jobs[auction].submitted >= 2)
+            return true;
         maintenance_scheduler_pulse(++tick, results, MAINTENANCE_COMPLETION_MAX);
-        std::lock_guard<std::mutex> lock(state.mutex);
-        size_t calls = 0;
-        for (const auto &request : state.requests)
-            if (request.job_id == maintenance_job_id::auction_due_scan)
-                ++calls;
-        return calls >= 2;
+        return false;
     });
 	{
 		std::unique_lock<std::mutex> lock(state.mutex);
@@ -174,7 +181,7 @@ int main(int argc, char **argv)
 	state_type restarted;
 	restarted.hold = false;
 	restarted.restart = true;
-	assert(maintenance_scheduler_init(9, execute, &restarted));
+	assert(maintenance_scheduler_init(9, execute, &restarted, auction_only));
 	assert(maintenance_scheduler_health_copy(0).completions == 1);
 	maintenance_scheduler_pulse(0, results, MAINTENANCE_COMPLETION_MAX);
 	maintenance_scheduler_pulse(1, results, MAINTENANCE_COMPLETION_MAX);
@@ -201,7 +208,7 @@ int main(int argc, char **argv)
 	acknowledged.hold = false;
 	acknowledged.restart = true;
 	assert(maintenance_scheduler_set_state_path(argv[1]));
-	assert(maintenance_scheduler_init(9, execute, &acknowledged));
+	assert(maintenance_scheduler_init(9, execute, &acknowledged, auction_only));
 	assert(maintenance_scheduler_health_copy(0).completions == 0);
 	maintenance_scheduler_shutdown();
 	maintenance_scheduler_reset_for_tests();
