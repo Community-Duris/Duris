@@ -108,6 +108,7 @@ OBJS =  $(SHIP_OBJS) \
 				 donation_event.o \
 				 redis_connection.o \
 				 redis_key_registry.o \
+				 world_recovery_codec.o \
 				 redis_donation_worker.o \
 				 assocs.o \
 				 auction_houses.o \

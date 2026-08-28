@@ -87,7 +87,7 @@ load = section(REDIS, "bool redis_load_world_state", "void event_save_world_stat
 assert load.index("redis_read_floor_records") < load.index("world_recovery_restore_with_floor")
 assert "redis_restore_floor_drops" not in load
 reader = section(REDIS, "static bool redis_read_floor_records", "void mark_player_dirty")
-assert 'memcmp(encoded, "WRF2:", 5)' in reader
+assert "world_recovery_floor_object_root_uid" in reader
 assert "read_object(" not in reader and "obj_to_room(" not in reader
 
 recovery = section(COMM, "// redis crash recovery", "PROFILES(RESET)")

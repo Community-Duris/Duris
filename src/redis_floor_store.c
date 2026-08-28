@@ -1,5 +1,6 @@
 #include "redis_floor_store.h"
 #include "redis_connection.h"
+#include "world_recovery_codec.h"
 
 #include <hiredis/hiredis.h>
 
@@ -24,6 +25,7 @@ struct owned_mutation
 	uint64_t uid = 0;
 	std::string value;
 	bool remove = false;
+	bool encode_world_object = false;
 };
 
 enum class job_type : uint8_t
@@ -91,6 +93,33 @@ bool execute_batch(redisContext *context, const std::shared_ptr<floor_job> &job)
 		freeReplyObject(reply);
 	}
 	return valid;
+}
+
+bool prepare_batch(const std::shared_ptr<floor_job> &job)
+{
+	if (!job || job->type != job_type::batch)
+		return false;
+	try
+	{
+		for (owned_mutation &mutation : job->mutations)
+		{
+			if (!mutation.encode_world_object)
+				continue;
+			std::vector<unsigned char> encoded;
+			if (!world_recovery_encode_floor_object(
+				    reinterpret_cast<const unsigned char *>(mutation.value.data()),
+				    mutation.value.size(), &encoded))
+				return false;
+			mutation.value.assign(reinterpret_cast<const char *>(encoded.data()),
+					      encoded.size());
+			mutation.encode_world_object = false;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
 }
 
 bool wait_for_retry(unsigned int delay_msec)
@@ -179,7 +208,7 @@ void worker_main()
 			reconnect_delay_msec = 100;
 		}
 
-		if (execute_batch(context, job))
+		if (prepare_batch(job) && execute_batch(context, job))
 		{
 			std::lock_guard<std::mutex> lock(store_mutex);
 			remove_front_locked(false);
@@ -299,11 +328,15 @@ bool redis_floor_store_submit(const char *key, const struct redis_floor_mutation
 			owned_mutation mutation;
 			mutation.uid = source.uid;
 			mutation.remove = source.remove;
+			mutation.encode_world_object = source.encode_world_object;
 			if (!source.remove)
 			{
 				mutation.value.assign(reinterpret_cast<const char *>(source.value),
 						      source.value_size);
-				job->bytes += source.value_size;
+				job->bytes += source.value_size +
+					      (source.encode_world_object ?
+						       WORLD_RECOVERY_FLOOR_PREFIX_BYTES :
+						       0);
 			}
 			job->mutations.push_back(std::move(mutation));
 		}

@@ -27,12 +27,14 @@ def main() -> None:
     harness = r'''
 #include "redis_floor_store.h"
 #include "redis_connection.h"
+#include "world_recovery_codec.h"
 #include <hiredis/hiredis.h>
 #include <cassert>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <thread>
+#include <vector>
 
 int main(int argc, char **argv)
 {
@@ -80,6 +82,27 @@ int main(int argc, char **argv)
     assert(reply->element[1]->type == REDIS_REPLY_STRING && !strcmp(reply->element[1]->str, "two"));
     assert(reply->element[2]->type == REDIS_REPLY_STRING && !strcmp(reply->element[2]->str, "three"));
     freeReplyObject(reply);
+    world_recovery_object_record object = {321, 1};
+    world_recovery_item_snapshot item = {};
+    item.item_uid = 600;
+    item.root_item_uid = 600;
+    item.vnum = 456;
+    item.type = 7;
+    std::vector<unsigned char> native_object(sizeof(object) + sizeof(item));
+    memcpy(native_object.data(), &object, sizeof(object));
+    memcpy(native_object.data() + sizeof(object), &item, sizeof(item));
+    redis_floor_mutation encoded[] = {
+        {600, native_object.data(), native_object.size(), false, true}};
+    assert(redis_floor_store_submit("mud:season:1:floor_drops", encoded, 1));
+    assert(redis_floor_store_drain(2000));
+    reply = (redisReply *)redisCommand(context, "HGET mud:season:1:floor_drops 600");
+    assert(reply && reply->type == REDIS_REPLY_STRING && reply->len > 5 &&
+           !memcmp(reply->str, "WRF3:", 5));
+    uint64_t root_uid = 0;
+    assert(world_recovery_floor_object_root_uid(
+        reinterpret_cast<const unsigned char *>(reply->str), reply->len, &root_uid));
+    assert(root_uid == 600);
+    freeReplyObject(reply);
     redis_floor_mutation shutdown_before[] = {
         {400, reinterpret_cast<const unsigned char *>("four"), 4, false}};
     redis_floor_mutation shutdown_after[] = {
@@ -89,7 +112,7 @@ int main(int argc, char **argv)
     assert(redis_floor_store_submit("mud:season:1:floor_drops", shutdown_after, 1));
     assert(redis_floor_store_shutdown(2000));
     reply = (redisReply *)redisCommand(context, "HLEN mud:season:1:floor_drops");
-    assert(reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 4);
+    assert(reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 5);
     freeReplyObject(reply);
     redisFree(context);
     redis_floor_store_reset_for_tests();
@@ -109,7 +132,8 @@ int main(int argc, char **argv)
                 "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
                 "-I", str(ROOT / "src"), str(ROOT / "src" / "redis_connection.c"),
-                str(ROOT / "src" / "redis_floor_store.c"), str(source), "-lhiredis",
+                str(ROOT / "src" / "redis_floor_store.c"),
+                str(ROOT / "src" / "world_recovery_codec.c"), str(source), "-lhiredis",
                 "-lhiredis_ssl", "-lssl", "-lcrypto", "-pthread", "-o", str(binary),
             ],
             check=True,

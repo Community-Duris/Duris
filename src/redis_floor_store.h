@@ -24,6 +24,7 @@ struct redis_floor_mutation
 	const unsigned char *value;
 	size_t value_size;
 	bool remove;
+	bool encode_world_object = false;
 };
 
 struct redis_floor_store_health

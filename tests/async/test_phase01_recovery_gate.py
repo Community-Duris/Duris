@@ -164,7 +164,7 @@ for contract in (
 assert "player_snapshot_capture" in PIPELINE
 assert "apply_callback(job->snapshot" in WORKER
 assert "P_char" not in WORKER and "P_obj" not in WORKER
-assert "publish_callback(blob.data(), blob.size(), &header" in WORLD
+assert "publish_callback(generation.blob.data()," in WORLD
 publisher = WORLD[WORLD.index("void publisher_main()"): WORLD.index("bool capture_one_record()")]
 assert "P_char" not in publisher and "P_obj" not in publisher
 assert "redis_world_recovery_drain(3000)" in COMM

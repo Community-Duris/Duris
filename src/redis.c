@@ -33,6 +33,7 @@
 #include "redis_presence_payload.h"
 #include "redis_presence_worker.h"
 #include "redis_world_store.h"
+#include "world_recovery_codec.h"
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
@@ -774,7 +775,7 @@ void redis_clear_floor_pickups(void)
 
 #define MAX_FLOOR_DROP_BATCH 1024
 constexpr size_t FLOOR_DROP_RECORD_MAX_BYTES =
-	5 + sizeof(world_recovery_object_record) +
+	sizeof(world_recovery_object_record) +
 	WORLD_RECOVERY_MAX_ITEM_TREE * sizeof(world_recovery_item_snapshot);
 
 static struct
@@ -816,13 +817,12 @@ void redis_log_floor_drop(P_obj obj, int room_vnum)
 
 	const int index = floor_drop_batch_count;
 	const int size = world_recovery_write_object_to_buffer(
-		obj, room_vnum, reinterpret_cast<char *>(floor_drop_batch[index].record + 5),
-		sizeof(floor_drop_batch[index].record) - 5);
+		obj, room_vnum, reinterpret_cast<char *>(floor_drop_batch[index].record),
+		sizeof(floor_drop_batch[index].record));
 	if (size <= 0)
 		return;
-	memcpy(floor_drop_batch[index].record, "WRF2:", 5);
 	floor_drop_batch[index].uid = obj->obj_uid;
-	floor_drop_batch[index].record_size = 5 + static_cast<size_t>(size);
+	floor_drop_batch[index].record_size = static_cast<size_t>(size);
 	++floor_drop_batch_count;
 #endif
 }
@@ -856,7 +856,7 @@ bool redis_flush_floor_drops(void)
 
 	for (int i = 0; i < floor_drop_batch_count; i++)
 		mutations.push_back({ floor_drop_batch[i].uid, floor_drop_batch[i].record,
-				      floor_drop_batch[i].record_size, false });
+				      floor_drop_batch[i].record_size, false, true });
 
 	if (!redis_floor_store_submit(floor_key, mutations.data(), mutations.size()))
 		return false;
@@ -974,14 +974,17 @@ static bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *re
 		char *end = NULL;
 		errno = 0;
 		const uint64_t field_uid = uid_str ? strtoull(uid_str, &end, 10) : 0;
+		uint64_t root_uid = 0;
 		if (!uid_str || !encoded || errno || !end || *end || !field_uid || !value_reply ||
-		    value_reply->len <= 5 || memcmp(encoded, "WRF2:", 5))
+		    !world_recovery_floor_object_root_uid(
+			    reinterpret_cast<const unsigned char *>(encoded), value_reply->len,
+			    &root_uid))
 		{
 			valid = false;
 			break;
 		}
-		const size_t record_size = value_reply->len - 5;
-		if (record_size > FLOOR_DROP_RECORD_MAX_BYTES - 5 ||
+		const size_t record_size = value_reply->len - WORLD_RECOVERY_FLOOR_PREFIX_BYTES;
+		if (record_size > WORLD_RECOVERY_MAX_RECORD_BYTES ||
 		    aggregate_size > WORLD_RECOVERY_MAX_BYTES - record_size)
 		{
 			valid = false;
@@ -997,13 +1000,8 @@ static bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *re
 			valid = false;
 			break;
 		}
-		memcpy(record.data(), encoded + 5, record_size);
-		if (!valid || record.size() < sizeof(world_recovery_object_record) +
-						      sizeof(world_recovery_item_snapshot))
-			break;
-		world_recovery_item_snapshot root = {};
-		memcpy(&root, record.data() + sizeof(world_recovery_object_record), sizeof(root));
-		if (root.item_uid != field_uid)
+		memcpy(record.data(), encoded + WORLD_RECOVERY_FLOOR_PREFIX_BYTES, record_size);
+		if (root_uid != field_uid)
 		{
 			valid = false;
 			break;

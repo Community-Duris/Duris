@@ -24,54 +24,72 @@ def section(text: str, start: str, end: str) -> str:
 
 HARNESS = r'''
 #include "world_recovery_pipeline.h"
+#include "world_recovery_codec.h"
 #include "copyover.h"
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <ctime>
 #include <vector>
 #include <zlib.h>
 
+static void finish(std::vector<unsigned char>& blob, world_recovery_header& header)
+{
+    header.payload_size = blob.size() - WORLD_RECOVERY_WIRE_HEADER_BYTES;
+    header.checksum = crc32(0, blob.data() + WORLD_RECOVERY_WIRE_HEADER_BYTES,
+                            header.payload_size);
+    assert(world_recovery_encode_header(&header, blob.data(), blob.size()));
+}
+
+static std::vector<unsigned char> frame(world_recovery_record_type type,
+                                        const unsigned char *native, size_t native_size)
+{
+    std::array<unsigned char, WORLD_RECOVERY_MAX_RECORD_BYTES> payload = {};
+    size_t payload_size = 0;
+    assert(world_recovery_encode_record(type, native, native_size, payload.data(),
+                                        payload.size(), &payload_size));
+    std::vector<unsigned char> framed(WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES + payload_size);
+    assert(world_recovery_encode_record_header(type, payload_size, framed.data(), framed.size()));
+    memcpy(framed.data() + WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES, payload.data(), payload_size);
+    return framed;
+}
+
 int main()
 {
     world_recovery_header header = {};
-    memcpy(header.magic, "WRS8", 4);
+    memcpy(header.magic, "WRS9", 4);
     header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
-    header.header_size = sizeof(header);
+    header.header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
     header.sequence = 42;
     header.timestamp = time(nullptr);
     header.payload_size = 0;
     header.checksum = crc32(0, nullptr, 0);
     header.complete = 1;
-    std::vector<unsigned char> blob(sizeof(header));
-    memcpy(blob.data(), &header, sizeof(header));
+    std::vector<unsigned char> blob(WORLD_RECOVERY_WIRE_HEADER_BYTES);
+    finish(blob, header);
     world_recovery_header decoded = {};
     assert(world_recovery_validate(blob.data(), blob.size(), 300, 42, &decoded));
     assert(!world_recovery_validate(blob.data(), WORLD_RECOVERY_MAX_BYTES + 1, 300, 42, nullptr));
     assert(decoded.sequence == 42);
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 43, nullptr));
     header.complete = 0;
-    memcpy(blob.data(), &header, sizeof(header));
+    finish(blob, header);
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 0, nullptr));
     header.complete = 1;
-    header.schema_version++;
-    memcpy(blob.data(), &header, sizeof(header));
+    finish(blob, header);
+    blob[4] = 8;
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 0, nullptr));
 
-    struct framed_record { uint32_t size; uint8_t type; uint8_t reserved[3]; } record = {};
     copyover_room door = {100, 1, 2};
-    record.size = sizeof(door);
-    record.type = 3;
-    header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
-    header.payload_size = sizeof(record) + sizeof(door);
+    auto record = frame(world_recovery_record_type::door,
+                        reinterpret_cast<const unsigned char *>(&door), sizeof(door));
     header.door_count = 1;
-    blob.resize(sizeof(header) + header.payload_size);
-    memcpy(blob.data() + sizeof(header), &record, sizeof(record));
-    memcpy(blob.data() + sizeof(header) + sizeof(record), &door, sizeof(door));
-    header.checksum = crc32(0, blob.data() + sizeof(header), header.payload_size);
-    memcpy(blob.data(), &header, sizeof(header));
+    blob.assign(WORLD_RECOVERY_WIRE_HEADER_BYTES + record.size(), 0);
+    memcpy(blob.data() + WORLD_RECOVERY_WIRE_HEADER_BYTES, record.data(), record.size());
+    finish(blob, header);
     assert(world_recovery_validate(blob.data(), blob.size(), 300, 42, nullptr));
     header.door_count = 2;
-    memcpy(blob.data(), &header, sizeof(header));
+    finish(blob, header);
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 42, nullptr));
 
     world_recovery_object_record object = {100, 2};
@@ -83,25 +101,19 @@ int main()
     items[1].root_item_uid = 500;
     items[1].parent_item_uid = 500;
     items[1].vnum = 1001;
-    record.size = sizeof(object) + sizeof(items);
-    record.type = 2;
+    std::vector<unsigned char> native(sizeof(object) + sizeof(items));
+    memcpy(native.data(), &object, sizeof(object));
+    memcpy(native.data() + sizeof(object), items, sizeof(items));
+    record = frame(world_recovery_record_type::object, native.data(), native.size());
     header.door_count = 0;
     header.object_count = 1;
-    header.payload_size = sizeof(record) + record.size;
-    blob.resize(sizeof(header) + header.payload_size);
-    size_t offset = sizeof(header);
-    memcpy(blob.data() + offset, &record, sizeof(record));
-    offset += sizeof(record);
-    memcpy(blob.data() + offset, &object, sizeof(object));
-    offset += sizeof(object);
-    memcpy(blob.data() + offset, items, sizeof(items));
-    header.checksum = crc32(0, blob.data() + sizeof(header), header.payload_size);
-    memcpy(blob.data(), &header, sizeof(header));
+    blob.assign(WORLD_RECOVERY_WIRE_HEADER_BYTES + record.size(), 0);
+    memcpy(blob.data() + WORLD_RECOVERY_WIRE_HEADER_BYTES, record.data(), record.size());
+    finish(blob, header);
     assert(world_recovery_validate(blob.data(), blob.size(), 300, 42, nullptr));
-    object.item_count = WORLD_RECOVERY_MAX_ITEM_TREE + 1;
-    memcpy(blob.data() + sizeof(header) + sizeof(record), &object, sizeof(object));
-    header.checksum = crc32(0, blob.data() + sizeof(header), header.payload_size);
-    memcpy(blob.data(), &header, sizeof(header));
+    blob[WORLD_RECOVERY_WIRE_HEADER_BYTES + WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES + 4] =
+        WORLD_RECOVERY_MAX_ITEM_TREE + 1;
+    finish(blob, header);
     assert(!world_recovery_validate(blob.data(), blob.size(), 300, 42, nullptr));
     return 0;
 }
@@ -115,7 +127,8 @@ with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
             "-ffunction-sections", "-fdata-sections", "-Isrc", str(source),
-            "src/world_recovery_pipeline.c", "-Wl,--gc-sections", "-lz", "-pthread",
+            "src/world_recovery_pipeline.c", "src/world_recovery_codec.c",
+            "-Wl,--gc-sections", "-lz", "-pthread",
             "-o", str(binary),
         ],
         cwd=ROOT,
@@ -144,7 +157,7 @@ worker = section(PIPELINE, "void publisher_main()", "bool capture_one_record()")
 for forbidden in ("character_list", "object_list", "world[", "zone_table", "P_char", "P_obj", "copyover_write_"):
     assert forbidden not in worker
 assert "publish_callback(generation.blob.data()" in worker
-assert "crc32(0, generation.blob.data() + sizeof(header)" in worker
+assert "crc32(0, generation->blob.data() + WORLD_RECOVERY_WIRE_HEADER_BYTES" in PIPELINE
 assert "std::vector<unsigned char> blob" not in worker
 print("[PASS] bounded capture is game-thread owned and publisher traverses no live graph")
 

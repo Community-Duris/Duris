@@ -7,6 +7,7 @@
 #include "redis.h"
 #include "ships/ships.h"
 #include "utils.h"
+#include "world_recovery_codec.h"
 
 #include <algorithm>
 #include <array>
@@ -42,14 +43,6 @@ enum class capture_stage : uint8_t
 	objects,
 	doors,
 	zones,
-};
-
-enum class record_type : uint8_t
-{
-	mob = 1,
-	object = 2,
-	door = 3,
-	zone = 4,
 };
 
 struct record_header
@@ -128,7 +121,8 @@ uint64_t elapsed_msec(std::chrono::steady_clock::time_point started)
 					     .count());
 }
 
-bool append_record(recovery_generation &generation, record_type type, const void *data, size_t size)
+bool append_record(recovery_generation &generation, world_recovery_record_type type,
+		   const void *data, size_t size)
 {
 	if (!data || !size || size > WORLD_RECOVERY_MAX_RECORD_BYTES)
 		return false;
@@ -150,6 +144,65 @@ bool append_record(recovery_generation &generation, record_type type, const void
 		return false;
 	}
 	return true;
+}
+
+bool encode_generation(recovery_generation *generation, world_recovery_header *header)
+{
+	if (!generation || !header || generation->blob.size() < sizeof(world_recovery_header))
+		return false;
+	size_t source_offset = sizeof(world_recovery_header);
+	size_t destination_offset = WORLD_RECOVERY_WIRE_HEADER_BYTES;
+	std::array<unsigned char, WORLD_RECOVERY_MAX_RECORD_BYTES> encoded = {};
+	while (source_offset < generation->blob.size())
+	{
+		if (generation->blob.size() - source_offset < sizeof(record_header))
+			return false;
+		record_header native_header = {};
+		memcpy(&native_header, generation->blob.data() + source_offset,
+		       sizeof(native_header));
+		source_offset += sizeof(native_header);
+		if (!native_header.size || native_header.size > WORLD_RECOVERY_MAX_RECORD_BYTES ||
+		    native_header.size > generation->blob.size() - source_offset)
+			return false;
+		size_t encoded_size = 0;
+		const auto type = static_cast<world_recovery_record_type>(native_header.type);
+		if (!world_recovery_encode_record(type, generation->blob.data() + source_offset,
+						  native_header.size, encoded.data(),
+						  encoded.size(), &encoded_size) ||
+		    encoded_size > UINT32_MAX ||
+		    destination_offset + WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES + encoded_size >
+			    source_offset + native_header.size ||
+		    destination_offset >
+			    generation->blob.size() - WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES ||
+		    encoded_size > generation->blob.size() - destination_offset -
+					   WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES)
+			return false;
+		if (!world_recovery_encode_record_header(
+			    type, static_cast<uint32_t>(encoded_size),
+			    generation->blob.data() + destination_offset,
+			    generation->blob.size() - destination_offset))
+			return false;
+		destination_offset += WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES;
+		memcpy(generation->blob.data() + destination_offset, encoded.data(), encoded_size);
+		destination_offset += encoded_size;
+		source_offset += native_header.size;
+	}
+	generation->blob.resize(destination_offset);
+	memcpy(header->magic, "WRS9", 4);
+	header->schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
+	header->header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
+	header->sequence = generation->sequence;
+	header->timestamp = generation->timestamp;
+	header->payload_size = generation->blob.size() - WORLD_RECOVERY_WIRE_HEADER_BYTES;
+	header->checksum = crc32(0, generation->blob.data() + WORLD_RECOVERY_WIRE_HEADER_BYTES,
+				 generation->blob.size() - WORLD_RECOVERY_WIRE_HEADER_BYTES);
+	header->mob_count = generation->mob_count;
+	header->object_count = generation->object_count;
+	header->door_count = generation->door_count;
+	header->zone_count = generation->zone_count;
+	header->complete = 1;
+	return world_recovery_encode_header(header, generation->blob.data(),
+					    generation->blob.size());
 }
 
 void fail_capture()
@@ -334,22 +387,8 @@ void publisher_main()
 		bool published = false;
 		unsigned int attempts = 0;
 		const auto started = std::chrono::steady_clock::now();
-		if (generation.blob.size() >= sizeof(header))
+		if (encode_generation(&generation, &header))
 		{
-			memcpy(header.magic, "WRS8", 4);
-			header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
-			header.header_size = sizeof(header);
-			header.sequence = generation.sequence;
-			header.timestamp = generation.timestamp;
-			header.payload_size = generation.blob.size() - sizeof(header);
-			header.checksum = crc32(0, generation.blob.data() + sizeof(header),
-						generation.blob.size() - sizeof(header));
-			header.mob_count = generation.mob_count;
-			header.object_count = generation.object_count;
-			header.door_count = generation.door_count;
-			header.zone_count = generation.zone_count;
-			header.complete = 1;
-			memcpy(generation.blob.data(), &header, sizeof(header));
 			for (; attempts < WORLD_RECOVERY_MAX_RETRIES && !published; ++attempts)
 			{
 				published = publish_callback &&
@@ -391,7 +430,8 @@ bool capture_one_record()
 			const int size = write_mob_record(
 				ch, reinterpret_cast<char *>(capture_buffer.data()),
 				capture_buffer.size());
-			if (size <= 0 || !append_record(active_capture.generation, record_type::mob,
+			if (size <= 0 || !append_record(active_capture.generation,
+							world_recovery_record_type::mob,
 							capture_buffer.data(), size))
 				return false;
 			++active_capture.generation.mob_count;
@@ -418,9 +458,9 @@ bool capture_one_record()
 				write_object_record(obj, world[obj->loc.room].number,
 						    reinterpret_cast<char *>(capture_buffer.data()),
 						    capture_buffer.size());
-			if (size <= 0 ||
-			    !append_record(active_capture.generation, record_type::object,
-					   capture_buffer.data(), size))
+			if (size <= 0 || !append_record(active_capture.generation,
+							world_recovery_record_type::object,
+							capture_buffer.data(), size))
 				return false;
 			++active_capture.generation.object_count;
 			return true;
@@ -443,9 +483,9 @@ bool capture_one_record()
 					active_capture.room, direction,
 					reinterpret_cast<char *>(capture_buffer.data()),
 					capture_buffer.size());
-				if (size <= 0 ||
-				    !append_record(active_capture.generation, record_type::door,
-						   capture_buffer.data(), size))
+				if (size <= 0 || !append_record(active_capture.generation,
+								world_recovery_record_type::door,
+								capture_buffer.data(), size))
 					return false;
 				++active_capture.generation.door_count;
 				return true;
@@ -462,9 +502,9 @@ bool capture_one_record()
 				active_capture.zone++,
 				reinterpret_cast<char *>(capture_buffer.data()),
 				capture_buffer.size());
-			if (size <= 0 ||
-			    !append_record(active_capture.generation, record_type::zone,
-					   capture_buffer.data(), size))
+			if (size <= 0 || !append_record(active_capture.generation,
+							world_recovery_record_type::zone,
+							capture_buffer.data(), size))
 				return false;
 			++active_capture.generation.zone_count;
 			return true;
@@ -669,92 +709,58 @@ world_recovery_health world_recovery_pipeline_health_copy(void)
 bool world_recovery_validate(const unsigned char *data, size_t size, int max_age_seconds,
 			     uint64_t minimum_sequence, world_recovery_header *header_out)
 {
-	if (!data || size < sizeof(world_recovery_header) || size > WORLD_RECOVERY_MAX_BYTES ||
+	if (!data || size < WORLD_RECOVERY_WIRE_HEADER_BYTES || size > WORLD_RECOVERY_MAX_BYTES ||
 	    max_age_seconds <= 0)
 		return false;
 	world_recovery_header header = {};
-	memcpy(&header, data, sizeof(header));
-	if (memcmp(header.magic, "WRS8", 4) ||
+	if (!world_recovery_decode_header(data, size, &header) || memcmp(header.magic, "WRS9", 4) ||
 	    header.schema_version != WORLD_RECOVERY_SCHEMA_VERSION ||
-	    header.header_size != sizeof(header) || !header.complete ||
-	    header.sequence < minimum_sequence || header.payload_size != size - sizeof(header))
+	    header.header_size != WORLD_RECOVERY_WIRE_HEADER_BYTES || !header.complete ||
+	    header.sequence < minimum_sequence ||
+	    header.payload_size != size - WORLD_RECOVERY_WIRE_HEADER_BYTES)
 		return false;
 	const time_t now = time(NULL);
-	if (header.timestamp <= 0 || header.timestamp > now + 60 ||
-	    now - header.timestamp > max_age_seconds)
+	if (static_cast<int64_t>(static_cast<time_t>(header.timestamp)) != header.timestamp ||
+	    header.timestamp <= 0 || header.timestamp > static_cast<int64_t>(now) + 60 ||
+	    static_cast<int64_t>(now) - header.timestamp > max_age_seconds)
 		return false;
-	if (crc32(0, data + sizeof(header), header.payload_size) != header.checksum)
+	if (crc32(0, data + WORLD_RECOVERY_WIRE_HEADER_BYTES, header.payload_size) !=
+	    header.checksum)
 		return false;
-	size_t offset = sizeof(header);
+	size_t offset = WORLD_RECOVERY_WIRE_HEADER_BYTES;
 	uint32_t mobs = 0, objects = 0, doors = 0, zones = 0;
 	while (offset < size)
 	{
-		if (size - offset < sizeof(record_header))
+		if (size - offset < WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES)
 			return false;
-		record_header record = {};
-		memcpy(&record, data + offset, sizeof(record));
-		offset += sizeof(record);
-		if (!record.size || record.size > WORLD_RECOVERY_MAX_RECORD_BYTES ||
-		    record.size > size - offset)
+		world_recovery_record_type type = {};
+		uint32_t record_size = 0;
+		if (!world_recovery_decode_record_header(data + offset, size - offset, &type,
+							 &record_size))
 			return false;
-		switch (static_cast<record_type>(record.type))
+		offset += WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES;
+		if (record_size > size - offset)
+			return false;
+		size_t native_size = 0;
+		if (!world_recovery_record_native_size(type, data + offset, record_size,
+						       &native_size))
+			return false;
+		switch (type)
 		{
-		case record_type::mob:
-			if (record.size < sizeof(copyover_mob))
-				return false;
-			{
-				copyover_mob entry = {};
-				memcpy(&entry, data + offset, sizeof(entry));
-				if (entry.num_affects < 0 || entry.num_carrying != 0 ||
-				    static_cast<size_t>(entry.num_affects) >
-					    (WORLD_RECOVERY_MAX_RECORD_BYTES - sizeof(entry)) /
-						    sizeof(copyover_affect) ||
-				    static_cast<size_t>(entry.num_carrying) >
-					    (WORLD_RECOVERY_MAX_RECORD_BYTES - sizeof(entry)) /
-						    sizeof(copyover_carried_item))
-					return false;
-				const size_t affects = static_cast<size_t>(entry.num_affects) *
-						       sizeof(copyover_affect);
-				const size_t carrying = static_cast<size_t>(entry.num_carrying) *
-							sizeof(copyover_carried_item);
-				if (sizeof(entry) + affects + carrying != record.size)
-					return false;
-				for (int vnum : entry.equipment_vnums)
-					if (vnum > 0)
-						return false;
-			}
+		case world_recovery_record_type::mob:
 			++mobs;
 			break;
-		case record_type::object:
-			if (record.size < sizeof(world_recovery_object_record) +
-						  sizeof(world_recovery_item_snapshot))
-				return false;
-			{
-				world_recovery_object_record entry = {};
-				memcpy(&entry, data + offset, sizeof(entry));
-				if (!entry.item_count ||
-				    entry.item_count > WORLD_RECOVERY_MAX_ITEM_TREE ||
-				    sizeof(entry) + static_cast<size_t>(entry.item_count) *
-							    sizeof(world_recovery_item_snapshot) !=
-					    record.size)
-					return false;
-			}
+		case world_recovery_record_type::object:
 			++objects;
 			break;
-		case record_type::door:
-			if (record.size != sizeof(copyover_room))
-				return false;
+		case world_recovery_record_type::door:
 			++doors;
 			break;
-		case record_type::zone:
-			if (record.size != sizeof(zone_age_entry))
-				return false;
+		case world_recovery_record_type::zone:
 			++zones;
 			break;
-		default:
-			return false;
 		}
-		offset += record.size;
+		offset += record_size;
 	}
 	if (mobs != header.mob_count || objects != header.object_count ||
 	    doors != header.door_count || zones != header.zone_count)
@@ -906,16 +912,23 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 	if (!plan ||
 	    !world_recovery_validate(data, size, max_age_seconds, minimum_sequence, &plan->header))
 		return false;
-	size_t offset = sizeof(world_recovery_header);
+	size_t offset = WORLD_RECOVERY_WIRE_HEADER_BYTES;
 	while (offset < size)
 	{
-		record_header record = {};
-		memcpy(&record, data + offset, sizeof(record));
-		offset += sizeof(record);
-		const unsigned char *record_data = data + offset;
-		switch (static_cast<record_type>(record.type))
+		world_recovery_record_type type = {};
+		uint32_t record_size = 0;
+		if (!world_recovery_decode_record_header(data + offset, size - offset, &type,
+							 &record_size))
+			return false;
+		offset += WORLD_RECOVERY_WIRE_RECORD_HEADER_BYTES;
+		std::vector<unsigned char> native_record;
+		if (record_size > size - offset ||
+		    !world_recovery_decode_record(type, data + offset, record_size, &native_record))
+			return false;
+		const unsigned char *record_data = native_record.data();
+		switch (type)
 		{
-		case record_type::mob:
+		case world_recovery_record_type::mob:
 		{
 			copyover_mob entry = {};
 			memcpy(&entry, record_data, sizeof(entry));
@@ -937,7 +950,7 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 			}
 			try
 			{
-				planned.record.assign(record_data, record_data + record.size);
+				planned.record = std::move(native_record);
 				plan->mobs.push_back(std::move(planned));
 			}
 			catch (const std::bad_alloc &)
@@ -946,11 +959,11 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 			}
 			break;
 		}
-		case record_type::object:
-			if (!add_object_record(plan, record_data, record.size))
+		case world_recovery_record_type::object:
+			if (!add_object_record(plan, record_data, native_record.size()))
 				return false;
 			break;
-		case record_type::door:
+		case world_recovery_record_type::door:
 		{
 			copyover_room door = {};
 			memcpy(&door, record_data, sizeof(door));
@@ -974,7 +987,7 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 			}
 			break;
 		}
-		case record_type::zone:
+		case world_recovery_record_type::zone:
 		{
 			zone_age_entry zone = {};
 			memcpy(&zone, record_data, sizeof(zone));
@@ -992,10 +1005,8 @@ bool build_recovery_plan(const unsigned char *data, size_t size, int max_age_sec
 			}
 			break;
 		}
-		default:
-			return false;
 		}
-		offset += record.size;
+		offset += record_size;
 	}
 	return plan->mobs.size() == plan->header.mob_count &&
 	       plan->objects.size() == plan->header.object_count &&
@@ -1179,8 +1190,14 @@ bool world_recovery_restore_with_floor(const unsigned char *data, size_t size, i
 	if (!build_recovery_plan(data, size, max_age_seconds, minimum_sequence, &plan))
 		return false;
 	for (size_t index = 0; index < floor_record_count; ++index)
-		if (!add_object_record(&plan, floor_records[index], floor_record_sizes[index]))
+	{
+		std::vector<unsigned char> native_record;
+		if (!world_recovery_decode_record(world_recovery_record_type::object,
+						  floor_records[index], floor_record_sizes[index],
+						  &native_record) ||
+		    !add_object_record(&plan, native_record.data(), native_record.size()))
 			return false;
+	}
 	std::vector<item_ownership_runtime_entry> authoritative;
 	try
 	{
