@@ -8163,7 +8163,7 @@ void do_uninvite(P_char ch, char *arg, int /*cmd*/)
 	char f_a[MAX_STRING_LENGTH], path[2048];
 
 	arg = skip_spaces(arg);
-	if (!*arg || !arg)
+	if (!*arg)
 	{
 		send_to_char("Usage: uninvite <charname>\n", ch);
 		return;
