@@ -157,8 +157,9 @@ cache output or mutate queue, Redis, deferred-save, or query state.
 The report includes up to eight deterministically ranked query source sites,
 total calls and failures, registry overflow, item/scalar/large queue counters,
 player capture/journal/worker depths and ages, exact revision progress, world capture
-and publication health, critical-command queue/journal/fence health, and the oldest
-aggregate save age. Output is metadata-only and
+and publication health, redacted shared Redis boot/recovery/maintenance calls, failures,
+timeouts, maximum latency and reconnect transitions, critical-command queue/journal/fence
+health, and the oldest aggregate save age. Output is metadata-only and
 must not be copied into a workflow that expects SQL, player, account, item, IP, or path
 values.
 

@@ -53,6 +53,9 @@ assert "if (redis_enabled)" not in periodic
 assert 'DEL mud:floor_pickups' in REDIS
 assert "redis_season_key(floor_key, sizeof floor_key, REDIS_FLOOR_DROPS_SUFFIX)" in REDIS
 assert "REDIS_FLOOR_DROP_INDEX_SUFFIX" in REDIS
-assert 'redis_command(redis_ctx, "DEL %s %s", floor_key, floor_index_key)' in REDIS
+clear_floor = section("static bool redis_clear_floor_drops_checked", "void redis_clear_floor_drops")
+assert "REDIS_SHARED_SCOPE_FLOOR" in clear_floor
+assert "REDIS_SHARED_COMMAND_WRITE" in clear_floor
+assert '"DEL %s %s"' in clear_floor
 
 print("Redis floor deltas are gated on world recovery")

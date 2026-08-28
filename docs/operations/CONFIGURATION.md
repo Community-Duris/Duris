@@ -161,12 +161,16 @@ custody reconciliation before any recovery entity is created. `REDIS_WORLD_STATE
 still controls how old a completed durable generation may be when boot attempts restore.
 
 The in-game `redis` and `redis detailed` commands read bounded local worker/pipeline
-telemetry only; they never query Redis. Online artifact, fraglist, epic-zone, and named
-cache clears remove the local entry and submit a background invalidation, reporting
-whether that submission was accepted. The in-game `redis clear world`, `redis clear
-floor`, and `redis clear all` commands are refused while the server is running because
-their scans, writer fencing, and exact postflight cannot safely run on the simulation
-thread. Stop the server and use the maintenance clear workflow for broad state removal.
+telemetry only; they never query Redis. Shared boot, recovery, and stopped-server
+maintenance commands are grouped by redacted subsystem and operation kind, with local
+call, failure, latency, last-success-age, and reconnect counters. No key, value, account,
+player, item, endpoint, or credential is retained. Online artifact, fraglist, epic-zone,
+and named cache clears remove the local entry and submit a background invalidation,
+reporting whether that submission was accepted. The in-game `redis clear world`, `redis
+clear floor`, and `redis clear all` commands are refused while the server is running
+because their scans, writer fencing, and exact postflight cannot safely run on the
+simulation thread. Stop the server and use the maintenance clear workflow for broad state
+removal.
 
 For a local development session, the following is a reasonable starting point:
 

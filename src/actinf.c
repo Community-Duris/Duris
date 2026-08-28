@@ -51,6 +51,7 @@ using namespace std;
 #include "maintenance_scheduler.h"
 #include "world_recovery_pipeline.h"
 #include "redis.h"
+#include "redis_command_observability.h"
 #include "ships/ships.h"
 #include "specializations.h"
 #include "spells.h"
@@ -3990,6 +3991,7 @@ static void show_world_persistence(P_char ch)
 	const struct persistence_dirty_save_snapshot dirty = redis_dirty_save_snapshot_copy();
 	const struct persistence_deferred_save_snapshot deferred =
 		persistence_deferred_save_snapshot_copy();
+	const redis_shared_command_health redis_commands = redis_shared_command_health_copy();
 	const player_save_worker_health player_saves = player_save_worker_health_copy();
 	const player_save_journal_health player_journal = player_save_journal_health_copy();
 	const player_save_pipeline_health player_pipeline = player_save_pipeline_health_copy();
@@ -4034,6 +4036,36 @@ static void show_world_persistence(P_char ch)
 			 (unsigned long long)query.total_calls,
 			 (unsigned long long)query.total_failures, (unsigned long long)query.count,
 			 (unsigned long long)query.registry_overflow);
+	send_to_char(line, ch);
+	uint64_t redis_command_calls = 0;
+	uint64_t redis_command_failures = 0;
+	uint64_t redis_command_timeouts = 0;
+	uint64_t redis_command_max_usec = 0;
+	uint64_t redis_command_consecutive_failures = 0;
+	for (size_t index = 0; index < REDIS_SHARED_SCOPE_COUNT; ++index)
+	{
+		redis_command_calls += redis_commands.scopes[index].calls;
+		redis_command_failures += redis_commands.scopes[index].failures;
+		redis_command_timeouts += redis_commands.scopes[index].timeouts;
+		redis_command_consecutive_failures +=
+			redis_commands.scopes[index].consecutive_failures;
+		redis_command_max_usec = world_persistence_max(
+			redis_command_max_usec, redis_commands.scopes[index].max_latency_usec);
+	}
+	snprintf(line, sizeof(line),
+		 "redis_shared state=%s calls=%llu failures=%llu timeouts=%llu max_us=%llu "
+		 "reconnects=%llu/%llu transitions=%llu\n",
+		 !redis_commands.enabled ? "disabled" :
+		 redis_commands.connection_available && !redis_command_consecutive_failures ?
+					   "ready" :
+					   "degraded",
+		 (unsigned long long)redis_command_calls,
+		 (unsigned long long)redis_command_failures,
+		 (unsigned long long)redis_command_timeouts,
+		 (unsigned long long)redis_command_max_usec,
+		 (unsigned long long)redis_commands.reconnect_successes,
+		 (unsigned long long)redis_commands.reconnect_attempts,
+		 (unsigned long long)redis_commands.recovery_transitions);
 	send_to_char(line, ch);
 
 	snprintf(line, sizeof(line),

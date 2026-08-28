@@ -297,10 +297,11 @@ assert "redis_floor_store_cancel()" in quiesce
 assert "redis_world_writer_fence_claim()" in quiesce
 assert "redis_world_store_release_fence" not in quiesce
 clear = section(REDIS, "bool redis_clear_world_state", "bool redis_load_world_state")
+generation_clear = "redis_clear_scan_match(REDIS_SHARED_SCOPE_WORLD, generation_pattern)"
 assert clear.index("redis_world_recovery_quiesce()") < clear.index(
     "REDIS_WORLD_GENERATION_PATTERN"
-) < clear.index("redis_clear_scan_match(generation_pattern)")
-assert clear.index("if (!quiesced)") < clear.index("redis_clear_scan_match(generation_pattern)")
+) < clear.index(generation_clear)
+assert clear.index("if (!quiesced)") < clear.index(generation_clear)
 cleanup = section(REDIS, "void redis_cleanup", "void redis_clear_floor_pickups")
 assert "redis_world_store_release_fence" in cleanup
 assert "world_recovery_capture_forget_character(ch);" in HANDLER

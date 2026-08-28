@@ -33,16 +33,26 @@ for key in ("REDIS_LEGACY_FLOOR_DROPS", "REDIS_LEGACY_FLOOR_PICKUPS",
             "REDIS_LEGACY_WORLD_CURRENT", "REDIS_LEGACY_WORLD_TIMESTAMP",
             "REDIS_LEGACY_WORLD_SEQUENCE", "REDIS_LEGACY_WORLD_CHECKSUM",
             "REDIS_LEGACY_WORLD_COMPLETE", "REDIS_LEGACY_WORLD_FENCE"):
-    assert contains(pwipe_fn, f"redis_delete_key_checked({key})")
+    assert contains(
+        pwipe_fn,
+        f"redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE, {key})",
+    )
 for pattern in ("redis_cache_pattern", "redis_presence_retry_pattern",
                 "redis_presence_session_pattern", "REDIS_LEGACY_CACHE_PATTERN",
                 "REDIS_LEGACY_PRESENCE_RETRY_PATTERN",
                 "REDIS_LEGACY_PRESENCE_SESSION_PATTERN",
                 "REDIS_LEGACY_WORLD_GENERATION_PATTERN"):
-    assert contains(pwipe_fn, f"redis_clear_scan_match({pattern})")
+    assert contains(
+        pwipe_fn,
+        f"redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE, {pattern})",
+    )
 assert contains(pwipe_fn, "redis_clear_ship_snapshots()")
 assert not contains(pwipe_fn, "FLUSHALL")
 assert contains(source, "redis_clear_scan_match")
-assert contains(source, "redis_scan_match_empty(pattern)")
-assert contains(source, 'redis_command(redis_ctx, "EXISTS %s", key)')
+assert contains(source, "redis_scan_match_empty(scope, pattern)")
+delete_checked = source[
+    source.index("static bool redis_delete_key_checked") : source.index("// rnum to vnum")
+]
+assert contains(delete_checked, "REDIS_SHARED_COMMAND_READ")
+assert contains(delete_checked, '"EXISTS %s"')
 print("Redis pwipe invalidation checks passed")

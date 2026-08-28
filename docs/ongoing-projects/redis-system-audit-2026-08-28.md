@@ -10,6 +10,49 @@ remediated, as is RDS-018; the remaining findings are open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-025 shared-command observability
+
+Completed in this interval:
+
+- Added one fixed-memory typed health snapshot for the remaining shared Redis command
+  layer used by boot cache priming, world/floor recovery reads, and stopped-server
+  maintenance. Commands are classified by redacted subsystem/key class (`world`, `floor`,
+  `cache_boot`, or `maintenance`) and operation kind (`read`, `write`, `scan`, or `script`).
+- Recorded calls, successes, failure breakdown (unavailable, timeout, transport, Redis
+  error reply, or missing reply), consecutive failures, total/last/maximum latency, and
+  last-success age. Primary connection attempts, reconnect attempts/outcomes, and recovery
+  transitions are tracked separately.
+- Routed both `redis detailed` and trusted `world persistence` diagnostics through the same
+  snapshot. The simple status now reports shared-layer health without treating one
+  successful maintenance connection as proof that the primary world connection is healthy.
+- Wrapped the previously direct paged floor `HMGET` call so every shared-context Redis
+  command is classified and measured. Connection-open failures for cache priming and
+  destructive maintenance are also represented instead of disappearing before command
+  telemetry.
+
+Performance effect:
+
+- No gameplay queue submission, local cache read, floor mutation capture, presence update,
+  donation dequeue, or world-capture path was changed. Measurement surrounds only Redis
+  commands that already block during boot, recovery, or stopped-server maintenance.
+- Counters are fixed-size relaxed atomics. Status copies a fixed four-scope snapshot and
+  performs no Redis, SQL, filesystem, process, logging, allocation, sleep, or wait work.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_command_observability.py`: passed runtime classification,
+  latency, failure-breakdown, consecutive-failure reset, last-success age, primary
+  connection isolation, reconnect, and recovery-transition checks.
+- `python3 tests/async/test_redis_admin_nonblocking.py` and
+  `python3 tests/async/test_persistence_status_contract.py`: passed local-only operator and
+  trusted persistence-diagnostic contracts.
+
+RDS-025 remains partially remediated. This interval closes the shared boot/recovery/
+maintenance command blind spot; a later interval must add comparable latency,
+last-success-age, timeout, and consecutive-failure fields to each background worker before
+the finding is complete.
+
 ### 2026-08-28 - RDS-018 bounded fuzzy recovery contract
 
 Completed in this interval:
@@ -2184,7 +2227,10 @@ Remediation status: Partially remediated; presence, report-cache, floor, world, 
 workers expose local state, queue/byte high water where applicable, completions, drops,
 failures, and reconnects without network queries. Administrator status is now entirely
 local and no longer conflates remote absence with failure. Boot/recovery/maintenance
-shared-context commands still lack complete per-command telemetry.
+shared-context commands now expose one typed, redacted snapshot with subsystem/operation
+classification, latency, timeout/error breakdown, consecutive failures, last-success age,
+and reconnect transitions to both operator surfaces. Background workers still need the
+same latency/age/failure-streak detail before this finding is complete.
 
 The world pipeline exposes useful counters and timing, but the shared command layer emits
 only one global rate-limited line per second with a broad outcome. It omits command class,

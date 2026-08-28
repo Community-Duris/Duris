@@ -9,6 +9,7 @@
 #include <strings.h>
 #include "redis.h"
 #include "redis_cache_store.h"
+#include "redis_command_observability.h"
 #include "redis_donation_worker.h"
 #include "redis_floor_store.h"
 #include "redis_key_registry.h"
@@ -35,6 +36,25 @@ static void redis_status_simple(P_char ch)
 
 	pos += snprintf(buf + pos, sizeof(buf) - pos,
 			"&+gRedis Status&n &+L(local telemetry; Redis is not queried)&n\r\n");
+	const redis_shared_command_health shared = redis_shared_command_health_copy();
+	uint64_t shared_calls = 0;
+	uint64_t shared_failures = 0;
+	uint64_t shared_consecutive_failures = 0;
+	for (size_t index = 0; index < REDIS_SHARED_SCOPE_COUNT; ++index)
+	{
+		shared_calls += shared.scopes[index].calls;
+		shared_failures += shared.scopes[index].failures;
+		shared_consecutive_failures += shared.scopes[index].consecutive_failures;
+	}
+	pos += snprintf(
+		buf + pos, sizeof(buf) - pos,
+		"  &+cshared_commands&n  %s%-9s&n calls=%llu failures=%llu reconnects=%llu\r\n",
+		shared.connection_available && !shared_consecutive_failures ? "&+G" : "&+Y",
+		!shared.enabled						    ? "OFF" :
+		shared.connection_available && !shared_consecutive_failures ? "HEALTHY" :
+									      "DEGRADED",
+		(unsigned long long)shared_calls, (unsigned long long)shared_failures,
+		(unsigned long long)shared.reconnect_successes);
 
 	const world_recovery_health world = world_recovery_pipeline_health_copy();
 	pos += snprintf(buf + pos, sizeof(buf) - pos,
@@ -98,6 +118,73 @@ static void redis_status_detailed(P_char ch)
 		buf, sizeof(buf),
 		"&+gRedis Status (detailed)&n\r\n"
 		"&+LAll values are bounded local telemetry; Redis is not queried.&n\r\n\r\n");
+
+	const redis_shared_command_health shared = redis_shared_command_health_copy();
+	uint64_t shared_consecutive_failures = 0;
+	for (size_t index = 0; index < REDIS_SHARED_SCOPE_COUNT; ++index)
+		shared_consecutive_failures += shared.scopes[index].consecutive_failures;
+	APPENDF(buf,
+		"&+g[Shared Boot/Recovery/Maintenance Commands]&n\r\n"
+		"  state=%s primary_connection_attempts=%llu connection_failures=%llu\r\n"
+		"  reconnect_attempts=%llu successes=%llu failures=%llu transitions=%llu\r\n"
+		"  kinds read=%llu write=%llu scan=%llu script=%llu\r\n",
+		!shared.enabled						    ? "off" :
+		shared.connection_available && !shared_consecutive_failures ? "healthy" :
+									      "degraded",
+		(unsigned long long)shared.connection_attempts,
+		(unsigned long long)shared.connection_failures,
+		(unsigned long long)shared.reconnect_attempts,
+		(unsigned long long)shared.reconnect_successes,
+		(unsigned long long)shared.reconnect_failures,
+		(unsigned long long)shared.recovery_transitions,
+		(unsigned long long)shared.command_kind_calls[REDIS_SHARED_COMMAND_READ],
+		(unsigned long long)shared.command_kind_calls[REDIS_SHARED_COMMAND_WRITE],
+		(unsigned long long)shared.command_kind_calls[REDIS_SHARED_COMMAND_SCAN],
+		(unsigned long long)shared.command_kind_calls[REDIS_SHARED_COMMAND_SCRIPT]);
+	for (size_t index = 0; index < REDIS_SHARED_SCOPE_COUNT; ++index)
+	{
+		const redis_shared_scope_health &scope = shared.scopes[index];
+		if (scope.last_success_available)
+			APPENDF(buf,
+				"  scope=%s calls=%llu success=%llu failures=%llu timeout=%llu transport=%llu error=%llu no_reply=%llu unavailable=%llu consecutive=%llu latency_us=%llu/%llu/%llu last_success_age_ms=%llu\r\n",
+				redis_shared_command_scope_name(
+					static_cast<redis_shared_command_scope>(index)),
+				(unsigned long long)scope.calls,
+				(unsigned long long)scope.successes,
+				(unsigned long long)scope.failures,
+				(unsigned long long)scope.timeouts,
+				(unsigned long long)scope.transport_failures,
+				(unsigned long long)scope.error_replies,
+				(unsigned long long)scope.no_replies,
+				(unsigned long long)scope.unavailable,
+				(unsigned long long)scope.consecutive_failures,
+				(unsigned long long)scope.last_latency_usec,
+				(unsigned long long)(scope.calls ? scope.total_latency_usec /
+									   scope.calls :
+								   0),
+				(unsigned long long)scope.max_latency_usec,
+				(unsigned long long)scope.last_success_age_msec);
+		else
+			APPENDF(buf,
+				"  scope=%s calls=%llu success=%llu failures=%llu timeout=%llu transport=%llu error=%llu no_reply=%llu unavailable=%llu consecutive=%llu latency_us=%llu/%llu/%llu last_success=never\r\n",
+				redis_shared_command_scope_name(
+					static_cast<redis_shared_command_scope>(index)),
+				(unsigned long long)scope.calls,
+				(unsigned long long)scope.successes,
+				(unsigned long long)scope.failures,
+				(unsigned long long)scope.timeouts,
+				(unsigned long long)scope.transport_failures,
+				(unsigned long long)scope.error_replies,
+				(unsigned long long)scope.no_replies,
+				(unsigned long long)scope.unavailable,
+				(unsigned long long)scope.consecutive_failures,
+				(unsigned long long)scope.last_latency_usec,
+				(unsigned long long)(scope.calls ? scope.total_latency_usec /
+									   scope.calls :
+								   0),
+				(unsigned long long)scope.max_latency_usec);
+	}
+	APPENDF(buf, "\r\n");
 
 	const redis_presence_worker_health presence = redis_presence_worker_health_copy();
 	APPENDF(buf,

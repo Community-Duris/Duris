@@ -99,6 +99,13 @@ overflow counter increases instead of allocating memory. Snapshots are copied
 under a short lock and sorted after unlock. Query execution never holds the
 metrics lock and the record path performs no filesystem or network I/O.
 
+Redis workers and the remaining shared boot/recovery/maintenance command adapter expose
+separate bounded local health snapshots. Shared commands retain only a redacted subsystem
+class, operation kind, outcome counters, latency aggregates, last-success age, and primary
+connection/reconnect transitions. The same typed snapshot feeds `redis detailed` and
+`world persistence`; rendering either command performs no Redis query and stores no key,
+value, identity, endpoint, or credential.
+
 Failure events may contain a process-local operation ID, source site, context,
 statement kind, duration, numeric MySQL error code, and SQLSTATE. They do not
 contain SQL text, MySQL error prose, player/account/item values, or filesystem

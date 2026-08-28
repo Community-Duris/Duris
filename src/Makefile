@@ -108,6 +108,7 @@ OBJS =  $(SHIP_OBJS) \
 				 report_cache_codec.o \
 				 donation_event.o \
 				 redis_connection.o \
+				 redis_command_observability.o \
 				 redis_key_registry.o \
 				 redis_namespace.o \
 				 world_recovery_codec.o \

@@ -35,6 +35,7 @@ for status in (simple, detailed):
         "redis_cache_store_health_copy",
         "redis_floor_store_health_copy",
         "redis_donation_worker_health_copy",
+        "redis_shared_command_health_copy",
     ):
         assert local_snapshot in status
 

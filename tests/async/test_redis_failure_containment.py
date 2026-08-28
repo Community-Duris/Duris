@@ -26,6 +26,7 @@ assert "redisCommand(" not in text
 assert "redisConnect(" not in text
 assert "redisConnectWithTimeout(" not in text
 assert text.count("redisvCommand(") == 1
+assert text.count("redisCommandArgv(") == 1
 assert "redisvAppendCommand(" not in text
 assert "redisGetReply(ctx," not in text
 assert floor_store.count("redisAppendCommand(") == 6
@@ -48,7 +49,8 @@ assert 'redisCommand(context, "AUTH %b"' in connection
 assert 'redisCommand(context, "SELECT %d"' in connection
 assert "if (!ctx)" in command and "if (ctx->err)" in command
 assert "REDIS_REPLY_ERROR" in command and '"error_reply"' in command
-assert '"timeout_or_io"' in command and '"no_reply"' in command
+assert '"timeout"' in command and '"transport"' in command and '"no_reply"' in command
+assert "redis_shared_command_observability_record" in command
 assert "redis_ctx = redis_connection_open(redis_settings);" in text
 print("[PASS] all runtime Redis connections use bounded authenticated selected-database helpers")
 

@@ -26,6 +26,7 @@
 #include "player_save_worker.h"
 #include "presence_policy.h"
 #include "redis_cache_store.h"
+#include "redis_command_observability.h"
 #include "redis_connection.h"
 #include "redis_donation_worker.h"
 #include "redis_floor_store.h"
@@ -127,7 +128,11 @@ static bool redis_clear_floor_drops_checked(void);
 static void redis_prime_artifact_caches(void);
 
 #ifndef __NO_MYSQL__
-static redisReply *redis_command(redisContext *ctx, const char *format, ...);
+static redisReply *redis_command(redis_shared_command_scope scope, redis_shared_command_kind kind,
+				 redisContext *ctx, const char *format, ...);
+static redisReply *redis_command_argv(redis_shared_command_scope scope,
+				      redis_shared_command_kind kind, redisContext *ctx, int argc,
+				      const char **arguments, const size_t *lengths);
 
 static void redis_log_command_failure(const char *outcome)
 {
@@ -300,7 +305,9 @@ static bool redis_world_recovery_ensure_initialized(void)
 		redisReply *sequence_reply =
 			redis_epoch_key(current_key, sizeof current_key, world_writer_epoch,
 					REDIS_WORLD_CURRENT_SUFFIX) ?
-				(redisReply *)redis_command(redis_ctx, "GET %s", current_key) :
+				(redisReply *)redis_command(REDIS_SHARED_SCOPE_WORLD,
+							    REDIS_SHARED_COMMAND_READ, redis_ctx,
+							    "GET %s", current_key) :
 				NULL;
 		if (sequence_reply && sequence_reply->type == REDIS_REPLY_STRING &&
 		    sequence_reply->str)
@@ -314,37 +321,73 @@ static bool redis_world_recovery_ensure_initialized(void)
 	return true;
 }
 
-static redisReply *redis_command(redisContext *ctx, const char *format, ...)
+static redisReply *redis_command_finish(redis_shared_command_scope scope,
+					redis_shared_command_kind kind, redisContext *ctx,
+					uint64_t started_usec, redisReply *reply)
 {
+	const uint64_t finished_usec = persistence_observability_now_usec();
+	const uint64_t duration_usec =
+		finished_usec >= started_usec ? finished_usec - started_usec : 0;
+	redis_shared_command_outcome outcome = REDIS_SHARED_OUTCOME_SUCCESS;
+	const char *label = NULL;
 	if (!ctx)
 	{
-		redis_log_command_failure("unavailable");
-		return NULL;
+		outcome = REDIS_SHARED_OUTCOME_UNAVAILABLE;
+		label = "unavailable";
 	}
-	if (ctx->err)
+	else if (ctx->err == REDIS_ERR_TIMEOUT)
 	{
-		redis_log_command_failure(ctx->err == REDIS_ERR_IO ? "timeout_or_io" :
-								     "context_error");
-		return NULL;
+		outcome = REDIS_SHARED_OUTCOME_TIMEOUT;
+		label = "timeout";
 	}
-
-	va_list args;
-	va_start(args, format);
-	redisReply *reply = (redisReply *)redisvCommand(ctx, format, args);
-	va_end(args);
-
-	if (!reply)
+	else if (ctx->err)
 	{
-		redis_log_command_failure(ctx->err == REDIS_ERR_IO ? "timeout_or_io" : "no_reply");
-		return NULL;
+		outcome = REDIS_SHARED_OUTCOME_TRANSPORT;
+		label = "transport";
 	}
-	if (reply->type == REDIS_REPLY_ERROR)
+	else if (!reply)
 	{
-		redis_log_command_failure("error_reply");
+		outcome = REDIS_SHARED_OUTCOME_NO_REPLY;
+		label = "no_reply";
+	}
+	else if (reply->type == REDIS_REPLY_ERROR)
+	{
+		outcome = REDIS_SHARED_OUTCOME_ERROR_REPLY;
+		label = "error_reply";
+	}
+	redis_shared_command_observability_record(scope, kind, outcome, duration_usec);
+	if (outcome == REDIS_SHARED_OUTCOME_SUCCESS)
+		return reply;
+	redis_log_command_failure(label);
+	if (reply)
 		freeReplyObject(reply);
-		return NULL;
+	return NULL;
+}
+
+static redisReply *redis_command(redis_shared_command_scope scope, redis_shared_command_kind kind,
+				 redisContext *ctx, const char *format, ...)
+{
+	const uint64_t started_usec = persistence_observability_now_usec();
+	redisReply *reply = NULL;
+	if (ctx && !ctx->err)
+	{
+		va_list args;
+		va_start(args, format);
+		reply = (redisReply *)redisvCommand(ctx, format, args);
+		va_end(args);
 	}
-	return reply;
+	return redis_command_finish(scope, kind, ctx, started_usec, reply);
+}
+
+static redisReply *redis_command_argv(redis_shared_command_scope scope,
+				      redis_shared_command_kind kind, redisContext *ctx, int argc,
+				      const char **arguments, const size_t *lengths)
+{
+	const uint64_t started_usec = persistence_observability_now_usec();
+	redisReply *reply = NULL;
+	if (ctx && !ctx->err)
+		reply = static_cast<redisReply *>(redisCommandArgv(ctx, argc, arguments, lengths));
+	return redis_command_finish(scope, kind, ctx, started_usec, reply);
 }
 
 static void redis_prime_artifact_caches(void)
@@ -352,6 +395,12 @@ static void redis_prime_artifact_caches(void)
 	redisContext *context = redis_connection_open(redis_cache_settings);
 	if (!context || context->err)
 	{
+		redis_shared_command_observability_record(
+			REDIS_SHARED_SCOPE_CACHE, REDIS_SHARED_COMMAND_SCRIPT,
+			!context			  ? REDIS_SHARED_OUTCOME_UNAVAILABLE :
+			context->err == REDIS_ERR_TIMEOUT ? REDIS_SHARED_OUTCOME_TIMEOUT :
+							    REDIS_SHARED_OUTCOME_TRANSPORT,
+			0);
 		if (context)
 			redisFree(context);
 		return;
@@ -362,9 +411,11 @@ static void redis_prime_artifact_caches(void)
 	const char *keys[6] = {};
 	for (size_t index = 0; index < 6; ++index)
 		keys[index] = redis_cache_artifact_keys[index];
-	redisReply *reply = (redisReply *)redis_command(context, "EVAL %b 6 %s %s %s %s %s %s",
-							script, strlen(script), keys[0], keys[1],
-							keys[2], keys[3], keys[4], keys[5]);
+	redisReply *reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_CACHE,
+							REDIS_SHARED_COMMAND_SCRIPT, context,
+							"EVAL %b 6 %s %s %s %s %s %s", script,
+							strlen(script), keys[0], keys[1], keys[2],
+							keys[3], keys[4], keys[5]);
 	if (!reply || reply->type != REDIS_REPLY_ARRAY || reply->elements != 12)
 	{
 		if (reply)
@@ -388,7 +439,7 @@ static void redis_prime_artifact_caches(void)
 
 #endif
 
-static bool redis_scan_match_empty(const char *pattern)
+static bool redis_scan_match_empty(redis_shared_command_scope scope, const char *pattern)
 {
 #ifndef __NO_MYSQL__
 	char cursor[64] = "0";
@@ -396,8 +447,9 @@ static bool redis_scan_match_empty(const char *pattern)
 		return false;
 	do
 	{
-		redisReply *scan = (redisReply *)redis_command(
-			redis_ctx, "SCAN %s MATCH %s COUNT 1", cursor, pattern);
+		redisReply *scan =
+			(redisReply *)redis_command(scope, REDIS_SHARED_COMMAND_SCAN, redis_ctx,
+						    "SCAN %s MATCH %s COUNT 1", cursor, pattern);
 		if (!scan || scan->type != REDIS_REPLY_ARRAY || scan->elements != 2 ||
 		    !scan->element[0] || !scan->element[1] || !scan->element[0]->str ||
 		    scan->element[0]->type != REDIS_REPLY_STRING ||
@@ -416,13 +468,14 @@ static bool redis_scan_match_empty(const char *pattern)
 	} while (strcmp(cursor, "0") != 0);
 	return true;
 #else
+	(void)scope;
 	(void)pattern;
 	return true;
 #endif
 }
 
 /* Scan-and-delete with MATCH pattern and verify an empty postcondition. */
-static bool redis_clear_scan_match(const char *pattern)
+static bool redis_clear_scan_match(redis_shared_command_scope scope, const char *pattern)
 {
 #ifndef __NO_MYSQL__
 	char cursor[64] = "0";
@@ -432,8 +485,9 @@ static bool redis_clear_scan_match(const char *pattern)
 
 	do
 	{
-		redisReply *scan = (redisReply *)redis_command(
-			redis_ctx, "SCAN %s MATCH %s COUNT 256", cursor, pattern);
+		redisReply *scan =
+			(redisReply *)redis_command(scope, REDIS_SHARED_COMMAND_SCAN, redis_ctx,
+						    "SCAN %s MATCH %s COUNT 256", cursor, pattern);
 		if (!scan || scan->type != REDIS_REPLY_ARRAY || scan->elements != 2 ||
 		    !scan->element[0] || !scan->element[1] || !scan->element[0]->str ||
 		    scan->element[0]->type != REDIS_REPLY_STRING ||
@@ -454,7 +508,9 @@ static bool redis_clear_scan_match(const char *pattern)
 				freeReplyObject(scan);
 				return false;
 			}
-			redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %b", key->str,
+			redisReply *del = (redisReply *)redis_command(scope,
+								      REDIS_SHARED_COMMAND_WRITE,
+								      redis_ctx, "DEL %b", key->str,
 								      key->len);
 			if (!del ||
 			    (del->type != REDIS_REPLY_INTEGER && del->type != REDIS_REPLY_NIL))
@@ -469,30 +525,34 @@ static bool redis_clear_scan_match(const char *pattern)
 		freeReplyObject(scan);
 	} while (strcmp(cursor, "0") != 0);
 
-	return redis_scan_match_empty(pattern);
+	return redis_scan_match_empty(scope, pattern);
 #else
+	(void)scope;
 	(void)pattern;
 	return true;
 #endif
 }
 
-static bool redis_delete_key_checked(const char *key)
+static bool redis_delete_key_checked(redis_shared_command_scope scope, const char *key)
 {
 #ifndef __NO_MYSQL__
 	if (!key || !*key || !redis_enabled || !redis_ctx)
 		return false;
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s", key);
+	redisReply *reply = (redisReply *)redis_command(scope, REDIS_SHARED_COMMAND_WRITE,
+							redis_ctx, "DEL %s", key);
 	const bool deleted = reply && reply->type == REDIS_REPLY_INTEGER;
 	if (reply)
 		freeReplyObject(reply);
 	if (!deleted)
 		return false;
-	reply = (redisReply *)redis_command(redis_ctx, "EXISTS %s", key);
+	reply = (redisReply *)redis_command(scope, REDIS_SHARED_COMMAND_READ, redis_ctx,
+					    "EXISTS %s", key);
 	const bool absent = reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 0;
 	if (reply)
 		freeReplyObject(reply);
 	return absent;
 #else
+	(void)scope;
 	(void)key;
 	return true;
 #endif
@@ -730,8 +790,10 @@ static bool redis_reconnect(void)
 			redisFree(redis_ctx);
 			redis_ctx = NULL;
 		}
+		redis_shared_connection_observability_record(true, false);
 		return false;
 	}
+	redis_shared_connection_observability_record(true, true);
 	logit(LOG_SYS, "redis reconnected");
 	return true;
 #endif
@@ -741,6 +803,7 @@ void event_flush_dirty_players(P_char ch, P_char victim, P_obj obj, void *data);
 
 bool redis_init(void)
 {
+	redis_shared_command_observability_reset(false);
 #ifdef __NO_MYSQL__
 	redis_enabled = false;
 	return true;
@@ -758,6 +821,7 @@ bool redis_init(void)
 		return true;
 	}
 	redis_enabled = true;
+	redis_shared_command_observability_set_enabled(true);
 	redis_world_state_enabled = false;
 	redis_runtime_epoch = 0;
 	redis_key_namespace[0] = '\0';
@@ -847,6 +911,7 @@ bool redis_init(void)
 		else
 			logit(LOG_SYS, "redis connected to %s:%d", redis_host, redis_port);
 	}
+	redis_shared_connection_observability_record(false, redis_ctx != NULL);
 
 	const redis_presence_worker_config presence_config = {
 		redis_presence_settings,
@@ -955,32 +1020,55 @@ bool redis_clear_pwipe_state(void)
 	redisContext *maintenance = redis_connection_open(redis_maintenance_settings);
 	if (!maintenance || maintenance->err)
 	{
+		redis_shared_command_observability_record(
+			REDIS_SHARED_SCOPE_MAINTENANCE, REDIS_SHARED_COMMAND_WRITE,
+			!maintenance			      ? REDIS_SHARED_OUTCOME_UNAVAILABLE :
+			maintenance->err == REDIS_ERR_TIMEOUT ? REDIS_SHARED_OUTCOME_TIMEOUT :
+								REDIS_SHARED_OUTCOME_TRANSPORT,
+			0);
 		if (maintenance)
 			redisFree(maintenance);
 		return false;
 	}
 	redisContext *world_context = redis_ctx;
 	redis_ctx = maintenance;
-	const bool cleared = redis_clear_world_state() && redis_clear_floor_drops_checked() &&
-			     redis_delete_key_checked(REDIS_LEGACY_FLOOR_DROPS) &&
-			     redis_delete_key_checked(REDIS_LEGACY_FLOOR_PICKUPS) &&
-			     redis_delete_key_checked(REDIS_LEGACY_ONLINE) &&
-			     redis_delete_key_checked(redis_presence_current_key) &&
-			     redis_clear_scan_match(redis_presence_session_pattern) &&
-			     redis_clear_scan_match(redis_presence_retry_pattern) &&
-			     redis_delete_key_checked(REDIS_LEGACY_PRESENCE_CURRENT) &&
-			     redis_clear_scan_match(REDIS_LEGACY_PRESENCE_SESSION_PATTERN) &&
-			     redis_clear_scan_match(REDIS_LEGACY_PRESENCE_RETRY_PATTERN) &&
-			     redis_clear_scan_match(REDIS_LEGACY_WORLD_GENERATION_PATTERN) &&
-			     redis_delete_key_checked(REDIS_LEGACY_WORLD_CURRENT) &&
-			     redis_delete_key_checked(REDIS_LEGACY_WORLD_TIMESTAMP) &&
-			     redis_delete_key_checked(REDIS_LEGACY_WORLD_SEQUENCE) &&
-			     redis_delete_key_checked(REDIS_LEGACY_WORLD_CHECKSUM) &&
-			     redis_delete_key_checked(REDIS_LEGACY_WORLD_COMPLETE) &&
-			     redis_delete_key_checked(REDIS_LEGACY_WORLD_FENCE) &&
-			     redis_clear_scan_match(redis_cache_pattern) &&
-			     redis_clear_scan_match(REDIS_LEGACY_CACHE_PATTERN) &&
-			     redis_clear_ship_snapshots();
+	const bool cleared =
+		redis_clear_world_state() && redis_clear_floor_drops_checked() &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
+					 REDIS_LEGACY_FLOOR_DROPS) &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
+					 REDIS_LEGACY_FLOOR_PICKUPS) &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE, REDIS_LEGACY_ONLINE) &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
+					 redis_presence_current_key) &&
+		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
+				       redis_presence_session_pattern) &&
+		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
+				       redis_presence_retry_pattern) &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
+					 REDIS_LEGACY_PRESENCE_CURRENT) &&
+		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
+				       REDIS_LEGACY_PRESENCE_SESSION_PATTERN) &&
+		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
+				       REDIS_LEGACY_PRESENCE_RETRY_PATTERN) &&
+		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
+				       REDIS_LEGACY_WORLD_GENERATION_PATTERN) &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
+					 REDIS_LEGACY_WORLD_CURRENT) &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
+					 REDIS_LEGACY_WORLD_TIMESTAMP) &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
+					 REDIS_LEGACY_WORLD_SEQUENCE) &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
+					 REDIS_LEGACY_WORLD_CHECKSUM) &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
+					 REDIS_LEGACY_WORLD_COMPLETE) &&
+		redis_delete_key_checked(REDIS_SHARED_SCOPE_MAINTENANCE,
+					 REDIS_LEGACY_WORLD_FENCE) &&
+		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE, redis_cache_pattern) &&
+		redis_clear_scan_match(REDIS_SHARED_SCOPE_MAINTENANCE,
+				       REDIS_LEGACY_CACHE_PATTERN) &&
+		redis_clear_ship_snapshots();
 	redis_ctx = world_context;
 	redisFree(maintenance);
 	return cleared;
@@ -994,13 +1082,8 @@ bool redis_validate_pwipe_state(void)
 	if (!redis_enabled)
 		return true;
 	redisContext *context = redis_connection_open(redis_maintenance_settings);
-	if (!context || context->err)
-	{
-		if (context)
-			redisFree(context);
-		return false;
-	}
-	redisReply *reply = (redisReply *)redis_command(context, "PING");
+	redisReply *reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_MAINTENANCE,
+							REDIS_SHARED_COMMAND_READ, context, "PING");
 	const bool ready = reply && reply->type == REDIS_REPLY_STATUS && reply->str &&
 			   !strcmp(reply->str, "PONG");
 	if (reply)
@@ -1065,6 +1148,7 @@ void redis_cleanup(void)
 	redis_donation_enabled = false;
 	redis_world_state_enabled = false;
 	redis_enabled = false;
+	redis_shared_command_observability_set_enabled(false);
 #endif
 }
 
@@ -1074,7 +1158,9 @@ void redis_clear_floor_pickups(void)
 	if (!redis_enabled || !redis_ctx)
 		return;
 
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL mud:floor_pickups");
+	redisReply *reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_FLOOR,
+							REDIS_SHARED_COMMAND_WRITE, redis_ctx,
+							"DEL mud:floor_pickups");
 	if (reply)
 		freeReplyObject(reply);
 #endif
@@ -1223,8 +1309,9 @@ static bool redis_clear_floor_drops_checked(void)
 			     REDIS_FLOOR_DROP_INDEX_SUFFIX))
 		return false;
 
-	redisReply *reply =
-		(redisReply *)redis_command(redis_ctx, "DEL %s %s", floor_key, floor_index_key);
+	redisReply *reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_FLOOR,
+							REDIS_SHARED_COMMAND_WRITE, redis_ctx,
+							"DEL %s %s", floor_key, floor_index_key);
 	if (!reply || reply->type != REDIS_REPLY_INTEGER)
 	{
 		if (reply)
@@ -1232,7 +1319,8 @@ static bool redis_clear_floor_drops_checked(void)
 		return false;
 	}
 	freeReplyObject(reply);
-	reply = (redisReply *)redis_command(redis_ctx, "EXISTS %s %s", floor_key, floor_index_key);
+	reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_FLOOR, REDIS_SHARED_COMMAND_READ,
+					    redis_ctx, "EXISTS %s %s", floor_key, floor_index_key);
 	const bool absent = reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 0;
 	if (reply)
 		freeReplyObject(reply);
@@ -1260,8 +1348,11 @@ static bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *re
 			      REDIS_FLOOR_DROP_INDEX_SUFFIX))
 		return false;
 	redisReply *index_count_reply =
-		(redisReply *)redis_command(redis_ctx, "ZCARD %s", floor_index_key);
-	redisReply *hash_count_reply = (redisReply *)redis_command(redis_ctx, "HLEN %s", floor_key);
+		(redisReply *)redis_command(REDIS_SHARED_SCOPE_FLOOR, REDIS_SHARED_COMMAND_READ,
+					    redis_ctx, "ZCARD %s", floor_index_key);
+	redisReply *hash_count_reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_FLOOR,
+								   REDIS_SHARED_COMMAND_READ,
+								   redis_ctx, "HLEN %s", floor_key);
 	const bool counts_valid =
 		index_count_reply && index_count_reply->type == REDIS_REPLY_INTEGER &&
 		index_count_reply->integer >= 0 && hash_count_reply &&
@@ -1293,7 +1384,8 @@ static bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *re
 	{
 		const size_t count = std::min(page_size, record_count - first);
 		redisReply *fields = (redisReply *)redis_command(
-			redis_ctx, "ZRANGE %s %zu %zu", floor_index_key, first, first + count - 1);
+			REDIS_SHARED_SCOPE_FLOOR, REDIS_SHARED_COMMAND_READ, redis_ctx,
+			"ZRANGE %s %zu %zu", floor_index_key, first, first + count - 1);
 		if (!fields || fields->type != REDIS_REPLY_ARRAY || fields->elements != count)
 		{
 			if (fields)
@@ -1325,9 +1417,10 @@ static bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *re
 		}
 		redisReply *values = nullptr;
 		if (valid)
-			values = static_cast<redisReply *>(
-				redisCommandArgv(redis_ctx, static_cast<int>(count + 2),
-						 arguments.data(), lengths.data()));
+			values = redis_command_argv(REDIS_SHARED_SCOPE_FLOOR,
+						    REDIS_SHARED_COMMAND_READ, redis_ctx,
+						    static_cast<int>(count + 2), arguments.data(),
+						    lengths.data());
 		if (!values || values->type != REDIS_REPLY_ARRAY || values->elements != count)
 			valid = false;
 		for (size_t index = 0; valid && index < count; ++index)
@@ -1374,8 +1467,12 @@ static bool redis_read_floor_records(std::vector<std::vector<unsigned char>> *re
 			return false;
 		}
 	}
-	index_count_reply = (redisReply *)redis_command(redis_ctx, "ZCARD %s", floor_index_key);
-	hash_count_reply = (redisReply *)redis_command(redis_ctx, "HLEN %s", floor_key);
+	index_count_reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_FLOOR,
+							REDIS_SHARED_COMMAND_READ, redis_ctx,
+							"ZCARD %s", floor_index_key);
+	hash_count_reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_FLOOR,
+						       REDIS_SHARED_COMMAND_READ, redis_ctx,
+						       "HLEN %s", floor_key);
 	const bool stable = index_count_reply && index_count_reply->type == REDIS_REPLY_INTEGER &&
 			    hash_count_reply && hash_count_reply->type == REDIS_REPLY_INTEGER &&
 			    index_count_reply->integer == static_cast<long long>(record_count) &&
@@ -1623,7 +1720,9 @@ bool redis_has_world_state(void)
 	char current_key[128];
 	if (!redis_epoch_key(current_key, sizeof current_key, epoch, REDIS_WORLD_CURRENT_SUFFIX))
 		return false;
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", current_key);
+	redisReply *reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_WORLD,
+							REDIS_SHARED_COMMAND_READ, redis_ctx,
+							"GET %s", current_key);
 	if (!reply)
 		return false;
 	uint64_t sequence = 0;
@@ -1680,21 +1779,25 @@ bool redis_clear_world_state(void)
 	    !redis_epoch_key(clean_shutdown_key, sizeof clean_shutdown_key, world_writer_epoch,
 			     REDIS_WORLD_CLEAN_SHUTDOWN_SUFFIX))
 		return false;
-	const bool generations_cleared = redis_clear_scan_match(generation_pattern);
+	const bool generations_cleared =
+		redis_clear_scan_match(REDIS_SHARED_SCOPE_WORLD, generation_pattern);
 
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL %s %s %s %s %s %s",
-							current_key, timestamp_key, sequence_key,
-							checksum_key, complete_key,
-							clean_shutdown_key);
+	redisReply *reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_WORLD,
+							REDIS_SHARED_COMMAND_WRITE, redis_ctx,
+							"DEL %s %s %s %s %s %s", current_key,
+							timestamp_key, sequence_key, checksum_key,
+							complete_key, clean_shutdown_key);
 	const bool metadata_cleared = reply && reply->type == REDIS_REPLY_INTEGER;
 	if (reply)
 		freeReplyObject(reply);
 	reply = NULL;
 	if (metadata_cleared)
 	{
-		reply = (redisReply *)redis_command(redis_ctx, "EXISTS %s %s %s %s %s %s",
-						    current_key, timestamp_key, sequence_key,
-						    checksum_key, complete_key, clean_shutdown_key);
+		reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_WORLD,
+						    REDIS_SHARED_COMMAND_READ, redis_ctx,
+						    "EXISTS %s %s %s %s %s %s", current_key,
+						    timestamp_key, sequence_key, checksum_key,
+						    complete_key, clean_shutdown_key);
 	}
 	const bool metadata_absent = reply && reply->type == REDIS_REPLY_INTEGER &&
 				     reply->integer == 0;
@@ -1720,7 +1823,9 @@ bool redis_consume_world_state(void)
 	char current_key[128];
 	if (!redis_epoch_key(current_key, sizeof current_key, epoch, REDIS_WORLD_CURRENT_SUFFIX))
 		return false;
-	redisReply *current = (redisReply *)redis_command(redis_ctx, "GET %s", current_key);
+	redisReply *current = (redisReply *)redis_command(REDIS_SHARED_SCOPE_WORLD,
+							  REDIS_SHARED_COMMAND_READ, redis_ctx,
+							  "GET %s", current_key);
 	if (!current || current->type != REDIS_REPLY_STRING || !current->str)
 	{
 		if (current)
@@ -1752,7 +1857,9 @@ bool redis_load_world_state(void)
 	char current_key[128];
 	if (!redis_epoch_key(current_key, sizeof current_key, epoch, REDIS_WORLD_CURRENT_SUFFIX))
 		return false;
-	redisReply *sequence_reply = (redisReply *)redis_command(redis_ctx, "GET %s", current_key);
+	redisReply *sequence_reply = (redisReply *)redis_command(REDIS_SHARED_SCOPE_WORLD,
+								 REDIS_SHARED_COMMAND_READ,
+								 redis_ctx, "GET %s", current_key);
 	if (!sequence_reply)
 		return false;
 	uint64_t expected_sequence = 0;
@@ -1895,7 +2002,8 @@ bool redis_clear_ship_snapshots(void)
 	char cursor[64] = "0";
 	do
 	{
-		redisReply *scan = (redisReply *)redis_command(redis_ctx,
+		redisReply *scan = (redisReply *)redis_command(REDIS_SHARED_SCOPE_MAINTENANCE,
+							       REDIS_SHARED_COMMAND_SCAN, redis_ctx,
 							       "SCAN %s MATCH %s COUNT 256", cursor,
 							       REDIS_SHIP_SNAPSHOT_PATTERN);
 		if (!scan || scan->type != REDIS_REPLY_ARRAY || scan->elements != 2 ||
@@ -1918,8 +2026,9 @@ bool redis_clear_ship_snapshots(void)
 				freeReplyObject(scan);
 				return false;
 			}
-			redisReply *del = (redisReply *)redis_command(redis_ctx, "DEL %b", key->str,
-								      key->len);
+			redisReply *del = (redisReply *)redis_command(
+				REDIS_SHARED_SCOPE_MAINTENANCE, REDIS_SHARED_COMMAND_WRITE,
+				redis_ctx, "DEL %b", key->str, key->len);
 			if (!del ||
 			    (del->type != REDIS_REPLY_INTEGER && del->type != REDIS_REPLY_NIL))
 			{
@@ -1933,7 +2042,7 @@ bool redis_clear_ship_snapshots(void)
 		freeReplyObject(scan);
 	} while (strcmp(cursor, "0") != 0);
 
-	return redis_scan_match_empty(REDIS_SHIP_SNAPSHOT_PATTERN);
+	return redis_scan_match_empty(REDIS_SHARED_SCOPE_MAINTENANCE, REDIS_SHIP_SNAPSHOT_PATTERN);
 }
 #endif
 
