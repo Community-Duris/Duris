@@ -69,6 +69,9 @@ flatfile_item_repository_result flatfile_item_repository_load_owner_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const item_owner_identity &owner, uint64_t *owner_revision,
 	std::vector<flatfile_item_ownership_record> *items, std::string *error);
+flatfile_item_repository_result flatfile_item_repository_list_active_player_items(
+	const std::string &root, std::vector<flatfile_item_ownership_record> *items,
+	std::string *error);
 flatfile_item_baseline_result
 flatfile_item_repository_establish_owner(const std::string &root, const item_owner_identity &owner,
 					 const std::vector<flatfile_item_ownership_record> &items,

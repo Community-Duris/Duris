@@ -34,6 +34,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-") as t
             "src/flatfile_auction_repository.c",
             "src/flatfile_boon_repository.c",
             "src/flatfile_player_domain_repository.c",
+            "src/flatfile_ip_activity_repository.c",
             "src/flatfile_authority_transaction.c",
             "src/flatfile_store.c",
             "src/player_snapshot_codec.c",

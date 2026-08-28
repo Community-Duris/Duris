@@ -512,6 +512,36 @@
   sync, deletion cleanup compatibility, and any remaining executable direct-SQL artifact
   routes still require focused work. The global incomplete-domain boot fence remains.
 
+### 2026-08-29 - restored saved-artifact reconciliation without MySQL
+
+- **Concrete gap:** the existing staff `artifact reset syncdb` repair command still read
+  `player_items` and rewrote artifact ownership exclusively through SQL. The legacy bulk
+  deletion helper also retained an executable SQL update in client-free builds, even
+  though normal flat character deletion used the newer atomic deletion path.
+- **Restoration:** client-free `syncdb` now enumerates active player custody from the
+  existing flat item-ownership catalog and reconciles known artifacts to those saved
+  owners. It clears stale player/corpse locations and bindings, preserves artifact
+  timers/types and unrelated world locations, and refuses duplicate saved ownership
+  rather than selecting an arbitrary player. The deletion helper now commits the existing
+  flat player-release mutation. Database-backed SQL behavior is unchanged.
+- **Focused evidence:** artifact repository tests cover saved-owner recovery (including an
+  offline owner), stale player/corpse cleanup, unrelated-location preservation, binding
+  reset/rebuild, idempotent retry, duplicate-owner refusal without mutation, standalone
+  player release, and corrupt-authority refusal. Item repository tests cover active-player
+  enumeration and corrupt-authority refusal. Source contracts verify both live command
+  routes use those flat authorities.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_flatfile_item_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `python3 tests/async/test_persistence_mode.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass. Preprocessing `artifact.c` for `__NO_MYSQL__` leaves no
+  executable `qry_at` or `sql_trace_exec_at` call sites.
+- **Overall state:** artifact saved-player repair and deletion compatibility are restored,
+  and the no-MySQL artifact implementation has no executable direct-SQL paths. Other
+  persistence domains still require focused audit; the global incomplete-domain boot
+  fence remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

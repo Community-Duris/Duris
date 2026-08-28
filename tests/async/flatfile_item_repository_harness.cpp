@@ -272,6 +272,15 @@ int main(int argc, char **argv)
 							 &error) ==
 			flatfile_item_baseline_result::already_applied,
 		"owner baseline retry was not idempotent");
+	std::vector<flatfile_item_ownership_record> active_player_items;
+	require(flatfile_item_repository_list_active_player_items(root.string(),
+								  &active_player_items, &error) ==
+				flatfile_item_repository_result::ok &&
+			active_player_items.size() == 2 && active_player_items[0].item_uid == 300 &&
+			active_player_items[1].item_uid == 301 &&
+			active_player_items[0].owner.type == item_owner_type::player &&
+			active_player_items[0].owner.id == 999,
+		"active player item enumeration did not expose the authoritative baseline");
 	baseline[1].vnum = 702;
 	require(flatfile_item_repository_establish_owner(root.string(), baseline_owner, baseline,
 							 &error) ==
@@ -1038,6 +1047,9 @@ int main(int argc, char **argv)
 			root.string(), { item_owner_type::player, 77, 0 }, &owner_revision, &items,
 			&error) == flatfile_item_repository_result::invalid,
 		"corrupt ownership checksum was accepted");
+	require(flatfile_item_repository_list_active_player_items(root.string(), &items, &error) ==
+			flatfile_item_repository_result::invalid,
+		"corrupt ownership checksum was exposed through player item enumeration");
 	applied = flatfile_item_repository_apply(root.string(), transfer);
 	require(applied.outcome == critical_apply_outcome::terminal_failure &&
 			applied.error_code == EILSEQ,

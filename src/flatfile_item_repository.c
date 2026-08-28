@@ -725,6 +725,41 @@ flatfile_item_repository_result flatfile_item_repository_load_owner_locked(
 	return flatfile_item_repository_result::ok;
 }
 
+flatfile_item_repository_result flatfile_item_repository_list_active_player_items(
+	const std::string &root, std::vector<flatfile_item_ownership_record> *items,
+	std::string *error)
+{
+	if (root.empty() || !items)
+		return flatfile_item_repository_result::invalid;
+	std::lock_guard<std::mutex> guard(ownership_mutex);
+	flatfile_authority_lock authority;
+	if (!authority.acquire(root, error))
+		return flatfile_item_repository_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, authority, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	std::vector<flatfile_item_ownership_record> selected;
+	try
+	{
+		for (const auto &entry : catalog.items)
+			if (entry.state == item_custody_state::active &&
+			    entry.owner.type == item_owner_type::player)
+				selected.push_back(entry);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
+	*items = std::move(selected);
+	return flatfile_item_repository_result::ok;
+}
+
 flatfile_item_baseline_result
 flatfile_item_repository_establish_owner(const std::string &root, const item_owner_identity &owner,
 					 const std::vector<flatfile_item_ownership_record> &items,

@@ -235,6 +235,67 @@ int main(int argc, char **argv)
 			records[0].revision == 2,
 		"corpse-held artifact was not released with player deletion semantics");
 
+	const fs::path reconcile_root = fs::path(argv[1]) / "reconcile";
+	prepare_root(reconcile_root);
+	const std::vector<flatfile_artifact_record> reconcile_records = {
+		{ 900, true, FLATFILE_ARTIFACT_ON_PLAYER, 1, 9000, 1, 1000, 1, 8000, 1 },
+		{ 901, true, FLATFILE_ARTIFACT_ON_CORPSE, 2, 8000, 2, 1001, 2, 7000, 2 },
+		{ 902, true, FLATFILE_ARTIFACT_ON_GROUND, 1200, 7000, 3, 1002, 7, 6000, 3 },
+		{ 903, false, FLATFILE_ARTIFACT_NOT_IN_GAME, 0, 6000, 1, 1003, -1, 0, 4 },
+	};
+	require(flatfile_artifact_establish(reconcile_root.string(), reconcile_records, &error) ==
+			flatfile_artifact_result::ok,
+		"artifact reconciliation fixture establishment failed");
+	flatfile_artifact_reconcile_result reconcile_counts;
+	require(flatfile_artifact_reconcile_players(
+			reconcile_root.string(), { { 900, 42 }, { 900, 43 } }, 2000,
+			&reconcile_counts, &error) == flatfile_artifact_result::conflict,
+		"duplicate saved artifact ownership did not fail closed");
+	require(flatfile_artifact_list(reconcile_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records == reconcile_records,
+		"failed artifact reconciliation changed authority");
+	require(flatfile_artifact_reconcile_players(
+			reconcile_root.string(), { { 900, 42 }, { 903, 43 }, { 999, 44 } }, 2000,
+			&reconcile_counts, &error) == flatfile_artifact_result::ok &&
+			reconcile_counts.cleared == 2 && reconcile_counts.updated == 2,
+		"saved artifact ownership reconciliation failed: " + error);
+	require(flatfile_artifact_list(reconcile_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.size() == 4 && records[0].owned &&
+			records[0].location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			records[0].location == 42 && records[0].last_update == 2000 &&
+			records[0].bind_owner_pid == 42 && records[0].bind_timer == 2000 &&
+			records[0].revision == 2 && !records[1].owned &&
+			records[1].location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			records[1].location == 0 && records[1].last_update == 2000 &&
+			records[1].bind_owner_pid == -1 && records[1].bind_timer == 0 &&
+			records[1].revision == 3 && records[2].owned &&
+			records[2].location_type == FLATFILE_ARTIFACT_ON_GROUND &&
+			records[2].location == 1200 && records[2].last_update == 1002 &&
+			records[2].bind_owner_pid == -1 && records[2].bind_timer == 0 &&
+			records[2].revision == 4 && records[3].owned &&
+			records[3].location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			records[3].location == 43 && records[3].last_update == 2000 &&
+			records[3].bind_owner_pid == 43 && records[3].bind_timer == 2000 &&
+			records[3].revision == 5,
+		"saved artifact ownership reconciliation wrote incorrect authority");
+	require(flatfile_artifact_reconcile_players(
+			reconcile_root.string(), { { 900, 42 }, { 903, 43 }, { 999, 44 } }, 2000,
+			&reconcile_counts, &error) == flatfile_artifact_result::unchanged,
+		"identical artifact reconciliation was not idempotent");
+	require(flatfile_artifact_release_player(reconcile_root.string(), 42, &error) ==
+			flatfile_artifact_result::ok,
+		"standalone player artifact release failed: " + error);
+	flatfile_artifact_record reconcile_record;
+	require(flatfile_artifact_get(reconcile_root.string(), 900, &reconcile_record, &error) ==
+				flatfile_artifact_result::ok &&
+			!reconcile_record.owned &&
+			reconcile_record.location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			reconcile_record.location == 0 && reconcile_record.timer == 0 &&
+			reconcile_record.bind_owner_pid == -1 && reconcile_record.bind_timer == 0,
+		"standalone player artifact release wrote incorrect authority");
+
 	const fs::path bind_root = fs::path(argv[1]) / "bind";
 	prepare_root(bind_root);
 	int32_t bind_owner = 99;
@@ -577,6 +638,13 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_ensure(root.string(), &error) ==
 			flatfile_artifact_result::invalid,
 		"artifact ensure accepted or overwrote corrupt authority");
+	require(flatfile_artifact_release_player(root.string(), 42, &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was accepted by standalone player release");
+	require(flatfile_artifact_reconcile_players(root.string(), { { 100, 42 } }, 2000,
+						    &reconcile_counts,
+						    &error) == flatfile_artifact_result::invalid,
+		"corrupt artifact authority was accepted for saved-item reconciliation");
 	{
 		flatfile_authority_lock lock;
 		require(lock.acquire(root.string(), &error),

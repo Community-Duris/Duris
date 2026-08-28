@@ -22,6 +22,7 @@
 #include <vector>
 #include "files.h"
 #include "flatfile_artifact_repository.h"
+#include "flatfile_item_repository.h"
 #include "mm.h"
 #include "necromancy.h"
 #include "persistence_mode.h"
@@ -1751,9 +1752,22 @@ void remove_all_artifacts_sql(P_char ch)
 	}
 	pid = GET_PID(ch);
 
+#ifdef __NO_MYSQL__
+	std::string error;
+	const auto removed =
+		flatfile_artifact_release_player(persistence_mode_flatfile_root(), pid, &error);
+	if (removed != flatfile_artifact_result::ok &&
+	    removed != flatfile_artifact_result::unchanged)
+	{
+		logit(LOG_ARTIFACT, "remove_all_artifacts_sql: flat artifact release failed: %s",
+		      error.empty() ? "missing or invalid artifact authority" : error.c_str());
+		return;
+	}
+#else
 	// Nullify arti timers on all ch's equipment.
 	qry("UPDATE artifacts SET owned='N', timer=NULL, lastUpdate=SYSDATE() WHERE location=%d and locType=%d",
 	    pid, ARTIFACT_ON_PC);
+#endif
 	arti_cache_invalidate();
 }
 
@@ -4661,6 +4675,55 @@ void arti_sync_sql(P_char ch)
 // syncs artifact ownership from player_items table to artifacts_mortal
 void arti_syncdb_sql(P_char ch)
 {
+#ifdef __NO_MYSQL__
+	std::vector<flatfile_item_ownership_record> owned_items;
+	std::string error;
+	if (flatfile_item_repository_list_active_player_items(persistence_mode_flatfile_root(),
+							      &owned_items, &error) !=
+	    flatfile_item_repository_result::ok)
+	{
+		logit(LOG_ARTIFACT, "arti_syncdb_sql: flat item authority read failed: %s",
+		      error.empty() ? "missing or invalid item authority" : error.c_str());
+		send_to_char("Failed to read saved item ownership.\n\r", ch);
+		return;
+	}
+	std::vector<flatfile_artifact_player_item> player_items;
+	try
+	{
+		player_items.reserve(owned_items.size());
+		for (const auto &item : owned_items)
+		{
+			if (item.owner.id > static_cast<uint64_t>(INT32_MAX))
+			{
+				send_to_char(
+					"Saved item ownership contains an invalid player id.\n\r",
+					ch);
+				return;
+			}
+			player_items.push_back({ item.vnum, static_cast<int32_t>(item.owner.id) });
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		send_to_char("Not enough memory to reconcile artifact ownership.\n\r", ch);
+		return;
+	}
+	flatfile_artifact_reconcile_result counts;
+	const auto reconciled = flatfile_artifact_reconcile_players(
+		persistence_mode_flatfile_root(), player_items, time(NULL), &counts, &error);
+	if (reconciled != flatfile_artifact_result::ok &&
+	    reconciled != flatfile_artifact_result::unchanged)
+	{
+		logit(LOG_ARTIFACT, "arti_syncdb_sql: flat artifact reconciliation failed: %s",
+		      error.empty() ? "invalid or conflicting authority" : error.c_str());
+		send_to_char("Failed to reconcile artifact ownership.\n\r", ch);
+		return;
+	}
+	arti_cache_invalidate();
+	send_to_char_f(ch,
+		       "Cleared %zu, updated %zu artifact ownerships from flat player saves.\n\r",
+		       counts.cleared, counts.updated);
+#else
 	extern MYSQL *DB;
 	if (!DB)
 	{
@@ -4725,6 +4788,7 @@ void arti_syncdb_sql(P_char ch)
 	arti_cache_invalidate();
 	send_to_char_f(ch, "Cleared %d, updated %d artifact ownerships from player saves.\n\r",
 		       cleared, updated);
+#endif
 }
 
 // Resets the 'soul' of the artifact of vnum == arg.

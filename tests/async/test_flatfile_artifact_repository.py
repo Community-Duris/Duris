@@ -172,6 +172,11 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
     if "flatfile_artifact_remove_owned(" not in remove_body:
         raise AssertionError("client-free owned artifact removal bypasses flat authority")
 
+    remove_all_start = artifact_source.index("void remove_all_artifacts_sql(P_char ch)\n{")
+    remove_all_end = artifact_source.index("\n// This is a wrapper function", remove_all_start)
+    if "flatfile_artifact_release_player(" not in artifact_source[remove_all_start:remove_all_end]:
+        raise AssertionError("client-free bulk artifact removal bypasses flat authority")
+
     list_signature = "void list_artifacts_sql(P_char ch, int type, bool Godlist, bool allArtis)\n{"
     list_start = artifact_source.index(list_signature)
     list_end = artifact_source.index("\nvoid arti_remove_sql(", list_start)
@@ -215,6 +220,14 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
         raise AssertionError("client-free artifact fixit bypasses flat selection")
     if "flatfile_artifact_repair_player_binding(" not in fix_body:
         raise AssertionError("client-free artifact fixit bypasses atomic flat repair")
+
+    syncdb_start = artifact_source.index("void arti_syncdb_sql(P_char ch)\n{")
+    syncdb_end = artifact_source.index("\n// Resets the 'soul'", syncdb_start)
+    syncdb_body = artifact_source[syncdb_start:syncdb_end]
+    if "flatfile_item_repository_list_active_player_items(" not in syncdb_body:
+        raise AssertionError("client-free artifact syncdb bypasses saved item authority")
+    if "flatfile_artifact_reconcile_players(" not in syncdb_body:
+        raise AssertionError("client-free artifact syncdb bypasses artifact reconciliation")
 
     remove_entry_start = artifact_source.index("void arti_remove_sql(int vnum, bool mortalToo)\n{")
     remove_entry_end = artifact_source.index("\nvoid setupMortArtiList_sql(", remove_entry_start)

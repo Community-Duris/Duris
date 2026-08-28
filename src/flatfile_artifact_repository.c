@@ -942,6 +942,113 @@ flatfile_artifact_result flatfile_artifact_prepare_player_release(
 	return flatfile_artifact_result::ok;
 }
 
+flatfile_artifact_result flatfile_artifact_release_player(const std::string &root, uint32_t pid,
+							  std::string *error)
+{
+	if (root.empty() || !pid)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	flatfile_authority_operation operation;
+	const auto prepared =
+		flatfile_artifact_prepare_player_release(root, lock, pid, &operation, error);
+	if (prepared != flatfile_artifact_result::ok)
+		return prepared;
+	const auto committed =
+		flatfile_authority_transaction_commit_operations(root, lock, { operation }, error);
+	if (committed == flatfile_authority_transaction_result::ok)
+		return flatfile_artifact_result::ok;
+	return committed == flatfile_authority_transaction_result::io_error ?
+		       flatfile_artifact_result::io_error :
+		       flatfile_artifact_result::invalid;
+}
+
+flatfile_artifact_result flatfile_artifact_reconcile_players(
+	const std::string &root, const std::vector<flatfile_artifact_player_item> &items,
+	int64_t reconciled_at, flatfile_artifact_reconcile_result *result, std::string *error)
+{
+	if (result)
+		*result = {};
+	if (root.empty() || reconciled_at < 0 || !result)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	std::map<int32_t, int32_t> player_by_vnum;
+	for (const auto &item : items)
+	{
+		if (item.vnum <= 0 || item.pid <= 0)
+			return flatfile_artifact_result::invalid;
+		const auto artifact =
+			std::lower_bound(catalog.records.begin(), catalog.records.end(), item.vnum,
+					 [](const flatfile_artifact_record &candidate,
+					    int32_t sought) { return candidate.vnum < sought; });
+		if (artifact == catalog.records.end() || artifact->vnum != item.vnum)
+			continue;
+		if (!player_by_vnum.emplace(item.vnum, item.pid).second)
+			return flatfile_artifact_result::conflict;
+	}
+	bool changed = false;
+	for (auto &record : catalog.records)
+	{
+		const bool held = record.location_type == FLATFILE_ARTIFACT_ON_PLAYER ||
+				  record.location_type == FLATFILE_ARTIFACT_ON_CORPSE;
+		if (held)
+			++result->cleared;
+		const auto player = player_by_vnum.find(record.vnum);
+		if (player != player_by_vnum.end())
+			++result->updated;
+		flatfile_artifact_record desired = record;
+		if (player != player_by_vnum.end())
+		{
+			desired.owned = true;
+			desired.location_type = FLATFILE_ARTIFACT_ON_PLAYER;
+			desired.location = player->second;
+			desired.last_update = reconciled_at;
+			desired.bind_owner_pid = player->second;
+			desired.bind_timer = reconciled_at;
+		}
+		else
+		{
+			if (held)
+			{
+				desired.owned = false;
+				desired.location_type = FLATFILE_ARTIFACT_NOT_IN_GAME;
+				desired.location = 0;
+				desired.last_update = reconciled_at;
+			}
+			desired.bind_owner_pid = -1;
+			desired.bind_timer = 0;
+		}
+		if (desired == record)
+			continue;
+		if (record.revision == std::numeric_limits<uint64_t>::max())
+			return flatfile_artifact_result::invalid;
+		desired.revision = record.revision + 1;
+		record = desired;
+		changed = true;
+	}
+	if (!changed)
+		return flatfile_artifact_result::unchanged;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_artifact_result::invalid;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_artifact_result::ok :
+		       flatfile_artifact_result::io_error;
+}
+
 flatfile_artifact_result flatfile_artifact_prepare_corpse_transfer(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const item_transfer_payload &payload, uint64_t accepted_at_usec,
