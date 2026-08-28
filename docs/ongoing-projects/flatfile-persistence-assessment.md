@@ -666,6 +666,10 @@ sections below continue to describe the required end state.
   directory without following symlinks, requires owner-only regular-file metadata,
   unlinks by directory descriptor, and synchronizes the directory before reporting the
   intent cleared. Missing-file acknowledgement is explicit for crash-recovery retries.
+- **Completed:** separated deterministic player-domain and shared-bank record encoding
+  from their atomic publication. The transaction intent can therefore carry the exact
+  checksummed after-images that recovery will republish, without rebuilding mutable
+  state after a crash.
 - **Safety behavior:** unsafe names, symlinks, wrong ownership/access modes, directory
   errors, unlink failures, and directory-sync failures refuse completion. A retry after
   unlink but before its acknowledgement can safely treat the already-missing intent as
@@ -673,8 +677,9 @@ sections below continue to describe the required end state.
 - **Checks passed:** the account repository regression now covers durable removal,
   idempotent missing removal, and symlink refusal; `./scripts/format.sh --check` and
   `git diff --check` are rerun before publication.
-- **Files changed:** `src/flatfile_store.[ch]`, the focused account repository
-  regression, and this handoff ledger.
+- **Files changed:** `src/flatfile_store.[ch]`,
+  `src/flatfile_player_domain_repository.c`, the focused account/domain regressions,
+  and this handoff ledger.
 - **Next action:** encode the wallet/bank after-images in a checksummed transaction
   intent, publish both under the global domain lock, then durably clear the intent;
   every domain entry point will finish a surviving intent before reading or mutating.

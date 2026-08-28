@@ -307,15 +307,20 @@ flatfile_player_domain_result load_bank(const std::string &root, const std::stri
 	return flatfile_player_domain_result::ok;
 }
 
-bool publish_bank(const std::string &root, const bank_record &record, std::string *error)
+bool encode_bank_record(const bank_record &record, std::vector<uint8_t> *bytes)
 {
 	encoder payload;
 	payload.string(record.account_name);
 	payload.number(record.racewar);
 	for (uint64_t balance : record.balances)
 		payload.number(balance);
+	return payload.valid && encode_file(bank_magic, payload.bytes, record.revision, bytes);
+}
+
+bool publish_bank(const std::string &root, const bank_record &record, std::string *error)
+{
 	std::vector<uint8_t> bytes;
-	return payload.valid && encode_file(bank_magic, payload.bytes, record.revision, &bytes) &&
+	return encode_bank_record(record, &bytes) &&
 	       flatfile_atomic_write(domains_directory(root),
 				     bank_filename(record.account_name, record.racewar), bytes,
 				     error);
@@ -428,9 +433,7 @@ flatfile_player_domain_result load_player(const std::string &root, int32_t pid,
 	return loaded;
 }
 
-player_publish_result publish_player_authority(const std::string &root,
-					       const player_authority &authority,
-					       std::string *error)
+bool encode_player_authority(const player_authority &authority, std::vector<uint8_t> *bytes)
 {
 	const flatfile_player_domain_record &record = authority.record;
 	encoder payload;
@@ -464,11 +467,18 @@ player_publish_result publish_player_authority(const std::string &root,
 	const uint64_t revision =
 		std::max({ record.domains.wallet_revision, record.domains.epic_revision,
 			   record.domains.frag_revision, UINT64_C(1) });
+	return payload.valid && encode_file(player_magic, payload.bytes, revision, bytes);
+}
+
+player_publish_result publish_player_authority(const std::string &root,
+					       const player_authority &authority,
+					       std::string *error)
+{
 	std::vector<uint8_t> bytes;
-	if (!payload.valid || !encode_file(player_magic, payload.bytes, revision, &bytes))
+	if (!encode_player_authority(authority, &bytes))
 		return player_publish_result::invalid;
-	return flatfile_atomic_write(domains_directory(root), player_filename(record.pid), bytes,
-				     error) ?
+	return flatfile_atomic_write(domains_directory(root), player_filename(authority.record.pid),
+				     bytes, error) ?
 		       player_publish_result::ok :
 		       player_publish_result::io_error;
 }
