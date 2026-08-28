@@ -9,6 +9,7 @@
 #include <strings.h>
 #include <time.h>
 #include "redis.h"
+#include "redis_presence_worker.h"
 
 // helper to format time ago
 static void format_time_ago(time_t ts, char *buf, size_t len)
@@ -71,6 +72,15 @@ static void redis_status_simple(P_char ch)
 	pos += snprintf(buf + pos, sizeof(buf) - pos,
 			"  &+cplayer_queue&n     &+Y%-5d&n    pending saves\r\n", dirty);
 
+	const redis_presence_worker_health presence = redis_presence_worker_health_copy();
+	pos += snprintf(buf + pos, sizeof(buf) - pos,
+			"  &+cpresence_worker&n  %s%-9s&n queued=%zu dropped=%llu\r\n",
+			presence.connected ? "&+G" : "&+Y",
+			!presence.initialized ? "OFF" :
+			presence.connected    ? "HEALTHY" :
+						"BACKOFF",
+			presence.queued, (unsigned long long)presence.dropped);
+
 	// floor drops
 	char floor_key[128];
 	long floor_count = redis_season_key(floor_key, sizeof floor_key, "floor_drops") ?
@@ -122,6 +132,19 @@ static void redis_status_detailed(P_char ch)
 	char time_buf[64];
 
 	checked_snprintf(buf, sizeof(buf), "&+gRedis Status (detailed)&n\r\n\r\n");
+
+	const redis_presence_worker_health presence = redis_presence_worker_health_copy();
+	APPENDF(buf,
+		"&+g[Presence Worker]&n\r\n"
+		"  state=%s queued=%zu high_water=%zu busy=%s\r\n"
+		"  submitted=%llu completed=%llu dropped=%llu failures=%llu reconnects=%llu\r\n\r\n",
+		!presence.initialized ? "off" :
+		presence.connected    ? "healthy" :
+					"backoff",
+		presence.queued, presence.high_water, presence.busy ? "yes" : "no",
+		(unsigned long long)presence.submitted, (unsigned long long)presence.completed,
+		(unsigned long long)presence.dropped, (unsigned long long)presence.command_failures,
+		(unsigned long long)presence.reconnects);
 
 	APPENDF(buf, "&+g[World Recovery]&n\r\n");
 

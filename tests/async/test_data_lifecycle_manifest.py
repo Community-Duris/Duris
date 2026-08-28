@@ -69,7 +69,7 @@ class LifecycleManifestTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
         self.assertEqual(report["database_tables"], 172)
-        self.assertEqual(report["non_database_stores"], 17)
+        self.assertEqual(report["non_database_stores"], 18)
         self.assertFalse(report["destructive_rules_enabled"])
 
     def test_missing_duplicate_unknown_and_stale_rules_fail_closed(self) -> None:

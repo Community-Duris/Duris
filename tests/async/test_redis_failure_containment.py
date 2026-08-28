@@ -6,6 +6,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[2]
 text = (root / "src/redis.c").read_text()
 store = (root / "src/redis_world_store.c").read_text()
+presence_worker = (root / "src/redis_presence_worker.c").read_text()
 header = (root / "src/redis.h").read_text()
 signals = (root / "src/signals.c").read_text()
 
@@ -39,6 +40,32 @@ for assignment in (
 ):
     assert assignment in text
 print("[PASS] all Redis connects and commands use bounded guarded helpers")
+
+assert presence_worker.count("redisConnectWithTimeout(") == 1
+assert presence_worker.count("redisvCommand(") == 1
+for token in (
+    "REDIS_PRESENCE_QUEUE_CAPACITY",
+    "REDIS_PRESENCE_MAX_PAYLOAD_BYTES",
+    "pending_jobs.size() >= REDIS_PRESENCE_QUEUE_CAPACITY",
+    "reconnect_delay_msec = std::min(reconnect_delay_msec * 2, 60000U)",
+    "redisSetTimeout",
+    "PRESENCE_SCRIPT",
+    "REDIS_PRESENCE_MAX_COMMAND_ATTEMPTS",
+    "redis_presence_worker_drain",
+    "redis_presence_worker_cancel",
+):
+    assert token in presence_worker
+online = section("void redis_player_online", "void redis_player_offline")
+offline = section("void redis_player_offline", "void redis_clear_online_players")
+for path in (online, offline):
+    assert "redis_command" not in path and "redis_ctx" not in path
+assert "redis_presence_worker_cancel();" in section(
+    "bool redis_clear_pwipe_state", "bool redis_validate_pwipe_state"
+)
+assert "redis_presence_worker_shutdown" in section(
+    "void redis_cleanup", "void redis_clear_floor_pickups"
+)
+print("[PASS] presence writes use a bounded healing worker outside the simulation thread")
 
 init = section("bool redis_init(void)", "bool redis_clear_pwipe_state")
 assert init.index("redis_enabled = true;") < init.index("redis_connect_bounded")

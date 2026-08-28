@@ -9,6 +9,58 @@ open.
 
 ## Implementation progress
 
+### 2026-08-28 - RDS-009/RDS-011 asynchronous presence publication
+
+Completed in this interval:
+
+- Moved Redis presence `HSET`, `HDEL`, and login/logout publication off login, quit, and
+  disconnect paths onto a dedicated worker with an owned Redis connection.
+- Added a fixed 1,024-job queue. Submission performs only a bounded payload copy under a
+  short mutex; a full queue rejects new noncritical work without waiting for Redis.
+- Added worker-only bounded connection and command timeouts plus exponential reconnect
+  backoff from 100 ms to 60 seconds. Jobs queued during an outage remain ordered and are
+  delivered after Redis heals.
+- Combined each state mutation and optional event into one Lua operation. A one-hour
+  operation token makes a timeout retry idempotent, avoiding duplicate pub/sub events when
+  the first result was ambiguous.
+- Retry markers are written only after the state mutation succeeds. Three consecutive
+  command errors drop the noncritical job so a permanent wrong-type or ACL failure cannot
+  block every later presence update.
+- Pwipe cancels and joins the worker before checked presence deletion. Normal shutdown
+  drains it for at most one second, then discards remaining noncritical work.
+- Added local worker state, queue depth/high-water, completion, drop, failure, and
+  reconnect counters to administrator status without adding a Redis query.
+- Added the presence hash, channel, and one-hour retry-token keyspace to the lifecycle
+  manifest and its fail-closed required-store validation.
+
+Performance effect:
+
+- Login, logout, link-loss, and invisibility handling perform no Redis connection or
+  command wait. They now do bounded JSON encoding and queue submission only.
+- A visible session transition previously made two sequential synchronous Redis calls;
+  it now makes one Lua call on the background worker. Redis outage reconnects never run on
+  the simulation thread.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_presence_worker_live.py`: passed under ASan/UBSan,
+  including submission before Redis startup, ordered outage healing, final hash state,
+  permanent Redis command errors, cancellation races, shutdown drain, and queue
+  saturation.
+- `python3 tests/async/test_redis_presence_privacy.py`: passed.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+- `python3 tests/async/test_redis_pwipe_invalidation.py`: passed.
+- `python3 tests/async/test_data_lifecycle_manifest.py`: passed.
+- `python3 tests/async/test_boot_log_hygiene.py`: passed.
+
+Remaining related work:
+
+- RDS-009 still needs a per-entry expiry model compatible with the external presence
+  consumer.
+- RDS-011 still includes synchronous cache reads/writes, administrative queries, and
+  world/floor preflight work on the shared context.
+
 ### 2026-08-28 - RDS-011 pipelined floor-delta flush
 
 Completed in this interval:
@@ -482,7 +534,7 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 | Floor deltas | `mud:season:<epoch>:floor_drops`; retired `mud:floor_pickups` cleanup | Bridge changes around a world snapshot | Root SQL ownership is checked, but descendant identity/state is incomplete. |
 | Ship cache | `ship:snapshot:<owner>` | Reconstructible SQL cache | Cache is returned before SQL without TTL, row revision, or schema/environment identity. |
 | Content caches | `mud:cache:named`, `mud:cache:fraglist`, `mud:cache:epic_zones`, artifact variants | Reconstructible command output | Most are persistent rendered strings with scattered invalidation. |
-| Presence | `mud:online`, `mud:player` | Web presence and login/logout events | Stores account, IP, client metadata, and invisible staff presence regardless of the documented privacy switch. |
+| Presence | `mud:online`, `mud:player`, one-hour `mud:presence_op:*` retry tokens | Web presence and login/logout events | Privacy-safe payloads are published by a bounded worker; hash entries still lack per-entry expiry. |
 | Donation integration | `mud:nchat` pub/sub | Broadcast external donation notices | Any publisher with channel access can generate an in-game and log message. |
 | Legacy UID | `mud:next_obj_uid` | Retired counter | SQL allocator is authoritative, but Redis still reads, writes, and displays the legacy key. |
 
@@ -882,9 +934,10 @@ use a durable stream with stable event IDs rather than at-most-once pub/sub.
 
 Severity: High
 Confidence: Confirmed
-Remediation status: Partially remediated; floor-delta batches use one pipelined exchange
-instead of up to 2,048 sequential round trips. Other synchronous gameplay Redis calls and
-the shared connection's sticky failure behavior remain open.
+Remediation status: Partially remediated; presence writes and reconnects run on a bounded
+healing worker, and floor-delta batches use one pipelined exchange instead of up to 2,048
+sequential round trips. Synchronous cache operations, administrator queries, and
+world/floor preflight work on the shared connection remain open.
 
 Evidence:
 
@@ -1146,14 +1199,17 @@ cannot make old data current.
 
 Severity: Medium
 Confidence: Confirmed
+Remediation status: Partially remediated; presence state, events, and retry tokens are now
+required lifecycle entries alongside world recovery. Floor state, content caches, and the
+remaining Redis surfaces still need registry-backed inventory.
 
-The lifecycle manifest has one Redis entry, `redis:world_recovery`
-([`migrations/data_lifecycle_manifest.json`](../../migrations/data_lifecycle_manifest.json#L4954)).
-It omits presence/account/IP/client data, floor hashes, ship snapshots, content caches,
-legacy UID state, and channels. The validator hardcodes that same single Redis entry as
-the required inventory ([`scripts/validate_data_lifecycle.py`](../../scripts/validate_data_lifecycle.py#L57)),
-so it cannot discover a new or forgotten Redis store. Tests then report full inventory
-coverage because the hardcoded list matches itself.
+The audit baseline lifecycle manifest had only `redis:world_recovery`. This branch now
+also requires `redis:presence`, covering the online hash, player-event channel, and retry
+tokens. It still omits floor hashes, content caches, and other Redis surfaces. The
+validator's required list remains handwritten rather than generated from a runtime key
+registry, so it cannot discover a new or forgotten Redis store automatically. Tests can
+therefore still report full inventory coverage when both handwritten lists omit the same
+surface.
 
 Impact: privacy, export, erasure, retention, season reset, and documentation controls can
 pass while known Redis data is outside the policy boundary.

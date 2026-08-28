@@ -81,11 +81,17 @@ with tempfile.TemporaryDirectory(prefix="duris-presence-") as temp:
 redis = (ROOT / "src" / "redis.c").read_text(encoding="ascii")
 online = redis[redis.index("void redis_player_online") : redis.index("void redis_player_offline")]
 offline = redis[redis.index("void redis_player_offline") : redis.index("void redis_clear_online_players")]
+clear = redis[redis.index("void redis_clear_online_players") : redis.index("// arti cache")]
 assert "durisweb_presence_character_visible" in online
 assert "durisweb_private_presence_enabled" in online
 assert "redis_presence_payload_encode" in online
 assert "snprintf" not in online
 assert "durisweb_presence_character_visible" in offline
+assert "redis_presence_worker_submit_online" in online
+assert "redis_presence_worker_submit_offline" in online and "redis_presence_worker_submit_offline" in offline
+assert "redis_presence_worker_submit_clear" in clear
+for path in (online, offline, clear):
+    assert "redis_command" not in path and "redis_ctx" not in path
 
 handlers = (ROOT / "src" / "ws_handlers.c").read_text(encoding="utf-8")
 assert "ws_private_presence_enabled" not in handlers

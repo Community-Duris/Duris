@@ -112,6 +112,15 @@ Redis uses a 250 ms connect timeout and 100 ms command timeout. A cache failure 
 degrade a report, while a world-generation failure preserves the prior generation and
 floor deltas. Neither case authorizes a synchronous player save or journal deletion.
 
+Presence login/logout updates use a dedicated worker with a fixed 1,024-job queue, bounded
+timeouts, and exponential reconnect backoff. Gameplay paths only encode the bounded JSON
+payload and enqueue it; they never wait for a presence connection or Redis command. Each
+state change and optional `mud:player` event is one idempotent Lua operation. Pwipe joins
+and cancels this worker before checked deletion, and shutdown gives it a one-second drain
+deadline. Connection outages retain ordered jobs until Redis returns; a job is dropped
+after three command-level failures so a permanent schema or ACL error cannot block the
+queue indefinitely.
+
 Donation notices use a separately gated, authenticated subscriber. Invalid, stale,
 oversized, or replayed envelopes are ignored. Reconnection uses bounded exponential
 backoff and each game pulse handles at most eight messages. The publisher contract and

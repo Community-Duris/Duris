@@ -32,6 +32,7 @@ for key in ("mud:floor_drops", "mud:floor_pickups", "mud:online",
             "mud:world_state:complete", "mud:world_state:writer_fence"):
     assert contains(pwipe_fn, f'redis_delete_key_checked("{key}")')
 assert contains(pwipe_fn, 'redis_clear_scan_match("mud:cache:*)') or contains(pwipe_fn, 'redis_clear_scan_match("mud:cache:*")')
+assert contains(pwipe_fn, 'redis_clear_scan_match("mud:presence_op:*")')
 assert contains(pwipe_fn, 'redis_clear_scan_match("mud:world_state:generation:*")')
 assert contains(pwipe_fn, "redis_clear_ship_snapshots()")
 assert not contains(pwipe_fn, "FLUSHALL")

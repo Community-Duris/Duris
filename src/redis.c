@@ -27,6 +27,7 @@
 #include "player_save_worker.h"
 #include "presence_policy.h"
 #include "redis_presence_payload.h"
+#include "redis_presence_worker.h"
 #include "redis_world_store.h"
 #include "spells.h"
 #include "sql.h"
@@ -77,6 +78,7 @@ int crash_recovery_boot = 0;
 #define REDIS_WORLD_DRAIN_TIMEOUT_MSEC 30000
 #define REDIS_DONATION_MAX_MESSAGES_PER_PULSE 8
 #define REDIS_DONATION_MAX_RECONNECT_DELAY 60
+#define REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC 1000
 
 static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
@@ -523,6 +525,12 @@ bool redis_init(void)
 		logit(LOG_SYS, "redis connected to %s:%d", redis_host, redis_port);
 	}
 
+	const redis_presence_worker_config presence_config = { redis_host, redis_port,
+							       REDIS_CONNECT_TIMEOUT_MSEC,
+							       REDIS_COMMAND_TIMEOUT_MSEC };
+	if (!redis_presence_worker_init(&presence_config))
+		logit(LOG_SYS, "redis: presence worker unavailable; presence updates disabled");
+
 	// check for world state persistence
 	const char *world_state_env = getenv("REDIS_WORLD_STATE");
 	if (world_state_env && strcasecmp(world_state_env, "TRUE") == 0)
@@ -573,6 +581,7 @@ bool redis_clear_pwipe_state(void)
 {
 	if (!redis_enabled)
 		return true;
+	redis_presence_worker_cancel();
 	if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
 		return false;
 
@@ -581,6 +590,7 @@ bool redis_clear_pwipe_state(void)
 	return redis_clear_floor_drops_checked() && redis_delete_key_checked("mud:floor_drops") &&
 	       redis_delete_key_checked("mud:floor_pickups") &&
 	       redis_delete_key_checked("mud:online") &&
+	       redis_clear_scan_match("mud:presence_op:*") &&
 	       redis_clear_scan_match("mud:world_state:generation:*") &&
 	       redis_delete_key_checked("mud:world_state:current") &&
 	       redis_delete_key_checked("mud:world_state:timestamp") &&
@@ -619,6 +629,8 @@ bool redis_validate_pwipe_state(void)
 void redis_cleanup(void)
 {
 #ifndef __NO_MYSQL__
+	if (!redis_presence_worker_shutdown(REDIS_PRESENCE_DRAIN_TIMEOUT_MSEC))
+		logit(LOG_SYS, "redis: presence worker drain timed out during shutdown");
 	if (redis_world_state_enabled)
 	{
 		const bool drained = !world_recovery_pipeline_health_copy().initialized ||
@@ -2092,34 +2104,15 @@ void redis_invalidate_epic_zones(void)
 	redis_cache_del("mud:cache:epic_zones");
 }
 
-static void redis_publish_player_event(int pid, const char *event)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx || pid <= 0 || !event)
-		return;
-
-	char json[128];
-	snprintf(json, sizeof(json), "{\"event\":\"%s\",\"pid\":%d}", event, pid);
-
-	redisReply *reply =
-		(redisReply *)redis_command(redis_ctx, "PUBLISH mud:player %b", json, strlen(json));
-	if (reply)
-		freeReplyObject(reply);
-#endif
-}
-
 // online players list for web
 void redis_player_online(P_char ch)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx || !ch || IS_NPC(ch))
+	if (!redis_enabled || !ch || IS_NPC(ch))
 		return;
 	if (!durisweb_presence_character_visible(ch))
 	{
-		redisReply *reply =
-			(redisReply *)redis_command(redis_ctx, "HDEL mud:online %d", GET_PID(ch));
-		if (reply)
-			freeReplyObject(reply);
+		redis_presence_worker_submit_offline(GET_PID(ch), false);
 		return;
 	}
 
@@ -2147,41 +2140,26 @@ void redis_player_online(P_char ch)
 	if (!json)
 		return;
 
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "HSET mud:online %d %b",
-							GET_PID(ch), json, strlen(json));
+	redis_presence_worker_submit_online(GET_PID(ch), json, true);
 	free(json);
-	if (reply)
-		freeReplyObject(reply);
-
-	redis_publish_player_event(GET_PID(ch), "login");
 #endif
 }
 
 void redis_player_offline(P_char ch)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx || !ch || IS_NPC(ch))
+	if (!redis_enabled || !ch || IS_NPC(ch))
 		return;
-
-	redisReply *reply =
-		(redisReply *)redis_command(redis_ctx, "HDEL mud:online %d", GET_PID(ch));
-	if (reply)
-		freeReplyObject(reply);
-
-	if (durisweb_presence_character_visible(ch))
-		redis_publish_player_event(GET_PID(ch), "logout");
+	redis_presence_worker_submit_offline(GET_PID(ch), durisweb_presence_character_visible(ch));
 #endif
 }
 
 void redis_clear_online_players(void)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx)
+	if (!redis_enabled)
 		return;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "DEL mud:online");
-	if (reply)
-		freeReplyObject(reply);
+	redis_presence_worker_submit_clear();
 #endif
 }
 

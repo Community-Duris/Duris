@@ -4998,6 +4998,35 @@
       "dependencies": []
     },
     {
+      "id": "redis:presence",
+      "kind": "redis_keyspace",
+      "locator": "redis presence hash, channel, and retry tokens",
+      "data_category": "personal_or_mixed_durable_store",
+      "data_subject_key": "player_id",
+      "technical_purpose": "privacy-filtered web presence and session transition events",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "regenerate",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": []
+    },
+    {
       "id": "file:player_save_journal",
       "kind": "journal",
       "locator": "PLAYER_SAVE_JOURNAL_DIR/player-save.journal",
