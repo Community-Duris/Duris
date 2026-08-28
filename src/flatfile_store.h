@@ -1,0 +1,24 @@
+#ifndef DURIS_FLATFILE_STORE_H
+#define DURIS_FLATFILE_STORE_H
+
+#include <stddef.h>
+#include <stdint.h>
+
+#include <string>
+#include <vector>
+
+enum class flatfile_read_result
+{
+	ok,
+	not_found,
+	invalid,
+	io_error
+};
+
+bool flatfile_atomic_write(const std::string &directory, const std::string &name,
+			   const std::vector<uint8_t> &bytes, std::string *error);
+flatfile_read_result flatfile_read(const std::string &directory, const std::string &name,
+				   size_t maximum_size, std::vector<uint8_t> *bytes,
+				   std::string *error);
+
+#endif

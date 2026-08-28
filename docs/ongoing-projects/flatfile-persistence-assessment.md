@@ -158,12 +158,47 @@ sections below continue to describe the required end state.
   canonical account/name/PID indexes, then route account login and character discovery
   through the selected backend.
 
+### Checkpoint 7 - atomic, versioned account authority foundation
+
+- **Completed:** added a backend-neutral atomic file store that creates a same-directory
+  temporary file at mode `0600`, writes and synchronizes its contents, atomically
+  publishes it with `renameat`, and synchronizes the containing authority directory.
+  Reads reject unsafe names, symlinks, non-regular files, wrong ownership, group/world
+  access, and oversized records.
+- **Completed:** added a typed account repository with an explicit `DURACCT` magic,
+  version 1 schema, bounded little-endian fields, SHA-256 payload checksum, canonical
+  case-insensitive account key, and monotonically increasing optimistic revision.
+  The record covers the existing account scalars, unique-IP list, and account-character
+  membership fields.
+- **Completed:** added an adapter between the repository DTO and `acct_entry`; the
+  client-free build now routes `read_account`, `write_account`, and `account_exists`
+  through the flat authority while the normal build retains its MariaDB routes.
+- **Completed:** added a strict standalone repository regression and included it in the
+  client-free CI job. It verifies complete round trips, case-insensitive lookup, create
+  and update revisions, stale-write rejection, missing lookup, unsafe-name rejection,
+  checksum corruption, symlink and insecure-permission rejection, and temporary-file
+  cleanup.
+- **Checks passed:** `python3 tests/async/test_flatfile_account_repository.py`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  `git diff --check`, and `make -C src -j2`.
+- **Files changed:** `.github/workflows/quality.yml`, `src/Makefile`, `src/account.[ch]`,
+  `src/flatfile_store.[ch]`, `src/flatfile_account_repository.[ch]`,
+  `src/flatfile_account_adapter.[ch]`, and
+  `tests/async/{test_flatfile_account_repository.py,flatfile_account_repository_harness.cpp}`.
+- **Remaining P1 gap:** this is the account-record authority only. Canonical character
+  name and PID indexes, durable PID allocation, rename/delete/block transactions,
+  player snapshot materialization, terminal save fencing, and offline legacy import are
+  not implemented, so flat-file-primary boot must continue to fail closed.
+- **Next action:** implement the canonical character name/PID identity index and durable
+  allocator, then make character membership changes publish consistently with those
+  indexes.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
 |---|---|---|
 | P0 - real DB-free boundary | Complete | Client-free binary links without system MySQL dependencies; isolated boot preflight and no-MySQL CI job exist |
-| P1 - identity and player continuity | Not started | No flat account/player authority yet |
+| P1 - identity and player continuity | In progress | Atomic versioned account records and no-MySQL account routing exist; character indexes, allocation, flows, and player authority remain |
 | P2 - transactional gameplay and domains | Not started | No flat operation WAL/domain repositories yet |
 | P3 - production operations | Not started | No exporter, whole-authority backup, or restore drill yet |
 

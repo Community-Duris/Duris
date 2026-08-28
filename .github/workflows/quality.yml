@@ -28,6 +28,8 @@ jobs:
             libbsd-dev
       - name: Build without MySQL and verify fail-closed boot
         run: python3 tests/async/test_flatfile_boot_preflight.py
+      - name: Verify flat-file account authority
+        run: python3 tests/async/test_flatfile_account_repository.py
 
   quality:
     runs-on: ubuntu-24.04

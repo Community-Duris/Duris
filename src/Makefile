@@ -220,6 +220,9 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence_observability.o \
 				 persistence_mode.o \
 				 env_file.o \
+				 flatfile_store.o \
+				 flatfile_account_repository.o \
+				 flatfile_account_adapter.o \
 				 critical_command.o \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \
