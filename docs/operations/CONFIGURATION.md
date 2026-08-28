@@ -142,7 +142,10 @@ state change and optional `mud:player` event is one idempotent Lua operation. Pw
 and cancels this worker before checked deletion, and shutdown gives it a one-second drain
 deadline. Connection outages retain ordered jobs until Redis returns; a job is dropped
 after three command-level failures so a permanent schema or ACL error cannot block the
-queue indefinitely.
+queue indefinitely. Online state uses `mud:presence:current` plus
+`mud:presence:session:<instance>:<pid>` keys with a 180-second TTL. The worker refreshes
+active leases every 60 seconds in batches of at most 64; a crashed server, failed logout,
+or superseded worker therefore cannot leave persistent presence data.
 
 Named, fraglist, epic-zone, and artifact report reads use a bounded 32-entry in-process
 cache and never wait for Redis during gameplay. Redis publication and invalidation use a

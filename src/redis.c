@@ -555,9 +555,14 @@ bool redis_init(void)
 		logit(LOG_SYS, "redis connected to %s:%d", redis_host, redis_port);
 	}
 
-	const redis_presence_worker_config presence_config = { redis_host, redis_port,
-							       REDIS_CONNECT_TIMEOUT_MSEC,
-							       REDIS_COMMAND_TIMEOUT_MSEC };
+	const redis_presence_worker_config presence_config = {
+		redis_host,
+		redis_port,
+		REDIS_CONNECT_TIMEOUT_MSEC,
+		REDIS_COMMAND_TIMEOUT_MSEC,
+		REDIS_PRESENCE_SESSION_TTL_SECONDS,
+		REDIS_PRESENCE_HEARTBEAT_INTERVAL_SECONDS * 1000
+	};
 	if (!redis_presence_worker_init(&presence_config))
 		logit(LOG_SYS, "redis: presence worker unavailable; presence updates disabled");
 	const redis_cache_store_config cache_config = { redis_host, redis_port,
@@ -644,6 +649,8 @@ bool redis_clear_pwipe_state(void)
 	return redis_clear_floor_drops_checked() && redis_delete_key_checked("mud:floor_drops") &&
 	       redis_delete_key_checked("mud:floor_pickups") &&
 	       redis_delete_key_checked("mud:online") &&
+	       redis_delete_key_checked("mud:presence:current") &&
+	       redis_clear_scan_match("mud:presence:session:*") &&
 	       redis_clear_scan_match("mud:presence_op:*") &&
 	       redis_clear_scan_match("mud:world_state:generation:*") &&
 	       redis_delete_key_checked("mud:world_state:current") &&

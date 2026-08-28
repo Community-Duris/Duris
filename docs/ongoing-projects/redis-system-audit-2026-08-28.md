@@ -4,10 +4,52 @@ Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
-RDS-010, RDS-012, RDS-013, RDS-014, RDS-019, RDS-024, and RDS-028 are remediated and the
-remaining findings are open.
+RDS-009, RDS-010, RDS-012, RDS-013, RDS-014, RDS-019, RDS-024, and RDS-028 are remediated
+and the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-009 expiring presence leases
+
+Completed in this interval:
+
+- Replaced the persistent `mud:online` hash with an expiring generation pointer and
+  per-session keys: `mud:presence:current` selects one worker instance and
+  `mud:presence:session:<instance>:<pid>` holds the privacy-filtered JSON.
+- Session and generation keys expire after 180 seconds. The background presence worker
+  retains at most 1,024 active payloads and refreshes them every 60 seconds in Lua batches
+  of at most 64, so a crash or missed logout ages all presence out without another process.
+- Boot clear atomically claims a new presence generation and deletes the legacy hash.
+  Old-generation session keys become invisible immediately and expire naturally.
+- Heartbeats require the exact current worker instance. If a newer process claims the
+  pointer, the older worker drops its local active set and cannot overwrite or republish
+  the new generation.
+- Updated pwipe deletion to remove the generation pointer, all session keys, retry tokens,
+  and the legacy hash. Updated lifecycle inventory and the DurisWeb read contract for the
+  new key model.
+- Added active-session, lease-refresh, and lease-failure counters to local administrator
+  health without adding status-time Redis queries.
+
+Performance effect:
+
+- Login, logout, invisibility, and disconnect paths still perform only bounded JSON
+  encoding and queue submission; they gain no Redis command, reconnect, or wait.
+- Lease refresh is entirely worker-owned. One background Lua call refreshes up to 64
+  sessions every 60 seconds, with the active set capped at the existing 1,024 queue bound.
+- Consumers avoid a persistent full hash and read only the current generation's expiring
+  keys. Missing or expired keys are ordinary offline results.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_presence_worker_live.py`: passed under ASan/UBSan,
+  covering startup outage healing, exact payload/TTL publication, background refresh,
+  logout deletion, wrong-type retry bounds, newer-instance fencing, post-worker expiry,
+  cancellation, and queue/payload limits.
+- `python3 tests/async/test_redis_presence_privacy.py`: passed.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+- `python3 tests/async/test_redis_pwipe_invalidation.py`: passed.
+- `python3 tests/async/test_data_lifecycle_manifest.py`: passed.
 
 ### 2026-08-28 - RDS-004/RDS-005 authority-first transactional recovery
 
@@ -244,7 +286,7 @@ Completed in this interval:
   drains it for at most one second, then discards remaining noncritical work.
 - Added local worker state, queue depth/high-water, completion, drop, failure, and
   reconnect counters to administrator status without adding a Redis query.
-- Added the presence hash, channel, and one-hour retry-token keyspace to the lifecycle
+- Added the presence state, channel, and one-hour retry-token keyspace to the lifecycle
   manifest and its fail-closed required-store validation.
 
 Performance effect:
@@ -259,7 +301,7 @@ Validation:
 
 - `make -C src -j2`: passed with the warning-as-error profile.
 - `python3 tests/async/test_redis_presence_worker_live.py`: passed under ASan/UBSan,
-  including submission before Redis startup, ordered outage healing, final hash state,
+  including submission before Redis startup, ordered outage healing, final presence state,
   permanent Redis command errors, cancellation races, shutdown drain, and queue
   saturation.
 - `python3 tests/async/test_redis_presence_privacy.py`: passed.
@@ -270,9 +312,8 @@ Validation:
 
 Remaining related work:
 
-- RDS-009 still needs a per-entry expiry model compatible with the external presence
-  consumer.
-- RDS-011 still includes synchronous cache reads/writes, administrative queries, and
+- RDS-009 expiry was subsequently completed in the interval above.
+- RDS-011 still includes synchronous administrative queries and
   world/floor preflight work on the shared context.
 
 ### 2026-08-28 - RDS-011 pipelined floor-delta flush
@@ -529,7 +570,7 @@ Validation:
 - `bash -n scripts/delete_corpses.sh`: passed.
 - `python3 tests/async/test_delete_corpses_retired.py`: passed.
 
-### 2026-08-28 - RDS-009 presence privacy and encoding (partial)
+### 2026-08-28 - RDS-009 presence privacy and encoding
 
 Completed:
 
@@ -539,7 +580,7 @@ Completed:
   version. Private fields and invisible staff require the explicit opt-in.
 - Replaced `snprintf` JSON assembly with cJSON encoding so quotes, backslashes, and control
   characters in client-provided metadata cannot corrupt the stored payload.
-- Removes any prior hash entry when a now-invisible character logs in and suppresses its
+- Submits an offline removal when a now-invisible character logs in and suppresses its
   login/logout publication.
 - Added a compiled payload harness for public/private field selection, exact opt-in parsing,
   and JSON escaping, plus updated the DurisWeb security contract and documentation.
@@ -561,10 +602,8 @@ Validation:
 - `python3 tests/async/test_runtime_connection_trust.py`: passed.
 - `./scripts/format.sh --check`: passed.
 
-Remaining RDS-009 work:
-
-- Replace the persistent `mud:online` hash entry model with per-session leases or another
-  per-entry expiry contract so a failed logout cannot leave stale presence indefinitely.
+The expiring per-session lease work was subsequently completed in the RDS-009 interval
+above.
 
 ### 2026-08-28 - RDS-014 artifact cache safety
 
@@ -675,9 +714,9 @@ Validation:
 
 Remaining work:
 
-- All findings other than RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007, RDS-010,
-  RDS-012, RDS-013, RDS-014, RDS-019, RDS-024, and RDS-028 remain open. The acceptance
-  criteria are not yet met.
+- All findings other than RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007, RDS-009,
+  RDS-010, RDS-012, RDS-013, RDS-014, RDS-019, RDS-024, and RDS-028 remain open. The
+  acceptance criteria are not yet met.
 
 ## Executive summary
 
@@ -750,7 +789,7 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 | Floor deltas | `mud:season:<epoch>:floor_drops`; retired `mud:floor_pickups` cleanup | Bridge changes around a world snapshot | Versioned bounded binary item trees join the generation plan and complete SQL authority check before any materialization. |
 | Ship cache | `ship:snapshot:<owner>` | Reconstructible SQL cache | Cache is returned before SQL without TTL, row revision, or schema/environment identity. |
 | Content caches | `mud:cache:named`, `mud:cache:fraglist`, `mud:cache:epic_zones`, artifact variants | Reconstructible command output | Player reads use bounded local memory and Redis publication is asynchronous; named/fraglist freshness remains incomplete. |
-| Presence | `mud:online`, `mud:player`, one-hour `mud:presence_op:*` retry tokens | Web presence and login/logout events | Privacy-safe payloads are published by a bounded worker; hash entries still lack per-entry expiry. |
+| Presence | `mud:presence:current`, expiring `mud:presence:session:<instance>:<pid>`, `mud:player`, one-hour `mud:presence_op:*` retry tokens | Web presence and login/logout events | Privacy-safe payloads use a fenced 180-second per-session lease refreshed only by the bounded worker. |
 | Donation integration | `mud:nchat` pub/sub | Broadcast external donation notices | Any publisher with channel access can generate an in-game and log message. |
 | Legacy UID | `mud:next_obj_uid` | Retired counter | SQL allocator is authoritative, but Redis still reads, writes, and displays the legacy key. |
 
@@ -1090,8 +1129,9 @@ external donation envelopes with independent keys so Redis access alone is insuf
 
 Severity: High
 Confidence: Confirmed
-Remediation status: Privacy policy and JSON safety are completed on branch. Per-entry
-presence expiry remains open.
+Remediation status: Completed on branch; privacy/visibility policy and JSON encoding are
+centralized, while each presence entry now has a fenced 180-second lease refreshed by the
+background worker and expires after process failure or missed logout.
 
 Evidence:
 

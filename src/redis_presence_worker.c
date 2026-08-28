@@ -9,12 +9,16 @@
 #include <cstdio>
 #include <cstring>
 #include <deque>
+#include <memory>
 #include <mutex>
 #include <new>
 #include <random>
 #include <string>
 #include <sys/time.h>
 #include <thread>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace
 {
@@ -32,32 +36,55 @@ struct presence_job
 	bool publish_event = false;
 	unsigned int attempts = 0;
 	uint64_t sequence = 0;
-	std::string payload;
+	std::shared_ptr<const std::string> payload;
+};
+
+enum class execution_result : uint8_t
+{
+	failure,
+	success,
+	fenced,
 };
 
 constexpr const char *PRESENCE_SCRIPT =
 	"if redis.call('EXISTS',KEYS[3]..ARGV[1])==1 then return 1 end "
-	"if ARGV[2]=='clear' then redis.call('DEL',KEYS[1]) "
-	"elseif ARGV[2]=='online' then redis.call('HSET',KEYS[1],ARGV[3],ARGV[4]) "
-	"else redis.call('HDEL',KEYS[1],ARGV[3]) end "
+	"if ARGV[2]=='clear' then redis.call('SET',KEYS[1],ARGV[6],'EX',ARGV[7]) "
+	"redis.call('DEL',KEYS[5]) "
+	"else local current=redis.call('GET',KEYS[1]) "
+	"if current and current~=ARGV[6] then return 2 end "
+	"redis.call('SET',KEYS[1],ARGV[6],'EX',ARGV[7]) "
+	"local session=KEYS[2]..ARGV[6]..':'..ARGV[3] "
+	"if ARGV[2]=='online' then redis.call('SET',session,ARGV[4],'EX',ARGV[7]) "
+	"else redis.call('DEL',session) end end "
 	"redis.call('SET',KEYS[3]..ARGV[1],'1','EX',3600) "
-	"if ARGV[5]~='' then redis.call('PUBLISH',KEYS[2],ARGV[5]) end "
+	"if ARGV[5]~='' then redis.call('PUBLISH',KEYS[4],ARGV[5]) end "
 	"return 1";
+constexpr const char *PRESENCE_HEARTBEAT_SCRIPT =
+	"if redis.call('GET',KEYS[1])~=ARGV[1] then return -1 end "
+	"redis.call('EXPIRE',KEYS[1],ARGV[2]) "
+	"local count=0 for i=3,#ARGV,2 do "
+	"redis.call('SET',KEYS[2]..ARGV[1]..':'..ARGV[i],ARGV[i+1],'EX',ARGV[2]) "
+	"count=count+1 end return count";
 
 std::mutex worker_mutex;
 std::condition_variable work_available;
 std::condition_variable worker_drained;
 std::deque<presence_job> pending_jobs;
+// Desired live sessions, updated at submission so a rejected offline job still stops renewal.
+std::unordered_map<int, std::shared_ptr<const std::string>> active_sessions;
 std::thread worker_thread;
 redis_presence_worker_health health = {};
 std::string configured_host;
 int configured_port = 0;
 int configured_connect_timeout_msec = 0;
 int configured_command_timeout_msec = 0;
+unsigned int configured_session_ttl_seconds = 0;
+unsigned int configured_heartbeat_interval_msec = 0;
 uint64_t instance_id = 0;
 uint64_t next_sequence = 1;
 bool accepting = false;
 bool stop_requested = false;
+bool generation_claimed = false;
 
 redisContext *connect_bounded()
 {
@@ -108,21 +135,21 @@ const char *operation_name(presence_operation operation)
 	return "";
 }
 
-bool execute_job(redisContext *context, const presence_job &job)
+execution_result execute_job(redisContext *context, const presence_job &job)
 {
 	char operation_id[64];
 	const int operation_id_length = snprintf(operation_id, sizeof operation_id, "%llx:%llu",
 						 (unsigned long long)instance_id,
 						 (unsigned long long)job.sequence);
 	if (operation_id_length <= 0 || (size_t)operation_id_length >= sizeof operation_id)
-		return false;
+		return execution_result::failure;
 
 	char pid[32] = {};
 	if (job.pid > 0)
 	{
 		const int pid_length = snprintf(pid, sizeof pid, "%d", job.pid);
 		if (pid_length <= 0 || (size_t)pid_length >= sizeof pid)
-			return false;
+			return execution_result::failure;
 	}
 	char event[128] = {};
 	if (job.publish_event)
@@ -131,18 +158,117 @@ bool execute_job(redisContext *context, const presence_job &job)
 			event, sizeof event, "{\"event\":\"%s\",\"pid\":%d}",
 			job.operation == presence_operation::online ? "login" : "logout", job.pid);
 		if (event_length <= 0 || (size_t)event_length >= sizeof event)
-			return false;
+			return execution_result::failure;
 	}
+	char instance[32] = {};
+	const int instance_length =
+		snprintf(instance, sizeof instance, "%llx", (unsigned long long)instance_id);
+	char ttl[16] = {};
+	const int ttl_length = snprintf(ttl, sizeof ttl, "%u", configured_session_ttl_seconds);
+	if (instance_length <= 0 || (size_t)instance_length >= sizeof instance || ttl_length <= 0 ||
+	    (size_t)ttl_length >= sizeof ttl)
+		return execution_result::failure;
 
-	redisReply *reply =
-		command(context, "EVAL %b 3 mud:online mud:player mud:presence_op: %b %s %b %b %b",
-			PRESENCE_SCRIPT, strlen(PRESENCE_SCRIPT), operation_id,
-			(size_t)operation_id_length, operation_name(job.operation), pid,
-			strlen(pid), job.payload.data(), job.payload.size(), event, strlen(event));
-	const bool succeeded = reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 1;
+	redisReply *reply = command(
+		context,
+		"EVAL %b 5 mud:presence:current mud:presence:session: mud:presence_op: mud:player "
+		"mud:online "
+		"%b %s %b %b %b %b %b",
+		PRESENCE_SCRIPT, strlen(PRESENCE_SCRIPT), operation_id, (size_t)operation_id_length,
+		operation_name(job.operation), pid, strlen(pid),
+		job.payload ? job.payload->data() : "", job.payload ? job.payload->size() : 0,
+		event, strlen(event), instance, (size_t)instance_length, ttl, (size_t)ttl_length);
+	const execution_result result = !reply || reply->type != REDIS_REPLY_INTEGER ?
+						execution_result::failure :
+					reply->integer == 1 ? execution_result::success :
+					reply->integer == 2 ? execution_result::fenced :
+							      execution_result::failure;
 	if (reply)
 		freeReplyObject(reply);
-	return succeeded;
+	return result;
+}
+
+execution_result refresh_active_sessions(redisContext *context)
+{
+	std::vector<std::pair<int, std::shared_ptr<const std::string>>> sessions;
+	try
+	{
+		std::lock_guard<std::mutex> lock(worker_mutex);
+		sessions.reserve(active_sessions.size());
+		for (const auto &session : active_sessions)
+			sessions.push_back(session);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return execution_result::failure;
+	}
+	if (sessions.empty())
+		return execution_result::success;
+	char instance[32] = {};
+	const int instance_length =
+		snprintf(instance, sizeof instance, "%llx", (unsigned long long)instance_id);
+	char ttl[16] = {};
+	const int ttl_length = snprintf(ttl, sizeof ttl, "%u", configured_session_ttl_seconds);
+	if (instance_length <= 0 || (size_t)instance_length >= sizeof instance || ttl_length <= 0 ||
+	    (size_t)ttl_length >= sizeof ttl)
+		return execution_result::failure;
+	auto cursor = sessions.cbegin();
+	while (cursor != sessions.cend())
+	{
+		std::vector<std::string> pids;
+		std::vector<const char *> arguments;
+		std::vector<size_t> lengths;
+		try
+		{
+			pids.reserve(REDIS_PRESENCE_HEARTBEAT_BATCH);
+			arguments.reserve(7 + REDIS_PRESENCE_HEARTBEAT_BATCH * 2);
+			lengths.reserve(7 + REDIS_PRESENCE_HEARTBEAT_BATCH * 2);
+			auto add_argument = [&arguments, &lengths](const char *value, size_t length)
+			{
+				arguments.push_back(value);
+				lengths.push_back(length);
+			};
+			add_argument("EVAL", 4);
+			add_argument(PRESENCE_HEARTBEAT_SCRIPT, strlen(PRESENCE_HEARTBEAT_SCRIPT));
+			add_argument("2", 1);
+			add_argument("mud:presence:current", strlen("mud:presence:current"));
+			add_argument("mud:presence:session:", strlen("mud:presence:session:"));
+			add_argument(instance, static_cast<size_t>(instance_length));
+			add_argument(ttl, static_cast<size_t>(ttl_length));
+			for (size_t count = 0;
+			     cursor != sessions.cend() && count < REDIS_PRESENCE_HEARTBEAT_BATCH;
+			     ++cursor, ++count)
+			{
+				pids.push_back(std::to_string(cursor->first));
+				add_argument(pids.back().data(), pids.back().size());
+				add_argument(cursor->second->data(), cursor->second->size());
+			}
+		}
+		catch (const std::bad_alloc &)
+		{
+			return execution_result::failure;
+		}
+		redisReply *reply =
+			(redisReply *)redisCommandArgv(context, static_cast<int>(arguments.size()),
+						       arguments.data(), lengths.data());
+		if (!reply || reply->type == REDIS_REPLY_ERROR ||
+		    reply->type != REDIS_REPLY_INTEGER)
+		{
+			if (reply)
+				freeReplyObject(reply);
+			return execution_result::failure;
+		}
+		if (reply->integer < 0)
+		{
+			freeReplyObject(reply);
+			return execution_result::fenced;
+		}
+		const uint64_t refreshed = static_cast<uint64_t>(reply->integer);
+		freeReplyObject(reply);
+		std::lock_guard<std::mutex> lock(worker_mutex);
+		health.lease_refreshes += refreshed;
+	}
+	return execution_result::success;
 }
 
 bool wait_for_retry(unsigned int delay_msec)
@@ -156,29 +282,52 @@ void worker_main()
 {
 	redisContext *context = nullptr;
 	unsigned int reconnect_delay_msec = 100;
+	auto next_heartbeat = std::chrono::steady_clock::now() +
+			      std::chrono::milliseconds(configured_heartbeat_interval_msec);
 	for (;;)
 	{
 		presence_job job;
+		bool heartbeat = false;
+		bool heartbeat_has_sessions = false;
 		{
 			std::unique_lock<std::mutex> lock(worker_mutex);
-			work_available.wait(lock,
-					    [] { return stop_requested || !pending_jobs.empty(); });
+			if (pending_jobs.empty() &&
+			    std::chrono::steady_clock::now() < next_heartbeat)
+				work_available.wait_until(
+					lock, next_heartbeat,
+					[] { return stop_requested || !pending_jobs.empty(); });
 			if (stop_requested)
 				break;
-			try
+			heartbeat = pending_jobs.empty() &&
+				    std::chrono::steady_clock::now() >= next_heartbeat;
+			heartbeat_has_sessions = heartbeat && generation_claimed &&
+						 !active_sessions.empty();
+			if (!heartbeat)
 			{
-				job = pending_jobs.front();
-			}
-			catch (const std::bad_alloc &)
-			{
-				pending_jobs.pop_front();
-				++health.dropped;
-				health.queued = pending_jobs.size();
-				if (pending_jobs.empty())
-					worker_drained.notify_all();
-				continue;
+				try
+				{
+					job = pending_jobs.front();
+				}
+				catch (const std::bad_alloc &)
+				{
+					pending_jobs.pop_front();
+					++health.dropped;
+					health.queued = pending_jobs.size();
+					if (pending_jobs.empty())
+						worker_drained.notify_all();
+					continue;
+				}
 			}
 			health.busy = true;
+		}
+		if (heartbeat && !heartbeat_has_sessions)
+		{
+			next_heartbeat =
+				std::chrono::steady_clock::now() +
+				std::chrono::milliseconds(configured_heartbeat_interval_msec);
+			std::lock_guard<std::mutex> lock(worker_mutex);
+			health.busy = false;
+			continue;
 		}
 
 		if (!context || context->err)
@@ -207,12 +356,55 @@ void worker_main()
 			reconnect_delay_msec = 100;
 		}
 
-		if (execute_job(context, job))
+		if (heartbeat)
+		{
+			const execution_result result = refresh_active_sessions(context);
+			if (result == execution_result::success ||
+			    result == execution_result::fenced)
+			{
+				next_heartbeat = std::chrono::steady_clock::now() +
+						 std::chrono::milliseconds(
+							 configured_heartbeat_interval_msec);
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				if (result == execution_result::fenced)
+				{
+					active_sessions.clear();
+					generation_claimed = false;
+				}
+				health.active_sessions = active_sessions.size();
+				health.busy = false;
+				continue;
+			}
+			{
+				std::lock_guard<std::mutex> lock(worker_mutex);
+				++health.lease_failures;
+				++health.command_failures;
+				health.connected = false;
+				health.busy = false;
+			}
+			redisFree(context);
+			context = nullptr;
+			if (!wait_for_retry(reconnect_delay_msec))
+				break;
+			reconnect_delay_msec = std::min(reconnect_delay_msec * 2, 60000U);
+			continue;
+		}
+
+		const execution_result result = execute_job(context, job);
+		if (result == execution_result::success || result == execution_result::fenced)
 		{
 			std::lock_guard<std::mutex> lock(worker_mutex);
+			if (result == execution_result::fenced)
+			{
+				active_sessions.clear();
+				generation_claimed = false;
+			}
+			else
+				generation_claimed = true;
 			pending_jobs.pop_front();
 			++health.completed;
 			health.queued = pending_jobs.size();
+			health.active_sessions = active_sessions.size();
 			health.busy = false;
 			if (pending_jobs.empty())
 				worker_drained.notify_all();
@@ -226,9 +418,18 @@ void worker_main()
 			++pending_jobs.front().attempts;
 			if (pending_jobs.front().attempts >= REDIS_PRESENCE_MAX_COMMAND_ATTEMPTS)
 			{
+				if (pending_jobs.front().operation == presence_operation::online)
+				{
+					const auto active =
+						active_sessions.find(pending_jobs.front().pid);
+					if (active != active_sessions.end() &&
+					    active->second == pending_jobs.front().payload)
+						active_sessions.erase(active);
+				}
 				pending_jobs.pop_front();
 				++health.dropped;
 				health.queued = pending_jobs.size();
+				health.active_sessions = active_sessions.size();
 				health.busy = false;
 				if (pending_jobs.empty())
 					worker_drained.notify_all();
@@ -262,11 +463,17 @@ bool submit(presence_operation operation, int pid, const char *payload, bool pub
 		++health.dropped;
 		return false;
 	}
+	if (operation == presence_operation::offline)
+		active_sessions.erase(pid);
+	else if (operation == presence_operation::clear)
+		active_sessions.clear();
+	health.active_sessions = active_sessions.size();
 	if (pending_jobs.size() >= REDIS_PRESENCE_QUEUE_CAPACITY)
 	{
 		++health.dropped;
 		return false;
 	}
+	bool queued = false;
 	try
 	{
 		presence_job job;
@@ -275,16 +482,27 @@ bool submit(presence_operation operation, int pid, const char *payload, bool pub
 		job.publish_event = publish_event;
 		job.sequence = next_sequence++;
 		if (payload)
-			job.payload.assign(payload, payload_size);
+			job.payload = std::make_shared<const std::string>(payload, payload_size);
 		pending_jobs.push_back(std::move(job));
+		queued = true;
+		if (operation == presence_operation::online)
+		{
+			if (active_sessions.size() >= REDIS_PRESENCE_QUEUE_CAPACITY &&
+			    active_sessions.find(pid) == active_sessions.end())
+				throw std::bad_alloc();
+			active_sessions.insert_or_assign(pid, pending_jobs.back().payload);
+		}
 	}
 	catch (const std::bad_alloc &)
 	{
+		if (queued)
+			pending_jobs.pop_back();
 		++health.dropped;
 		return false;
 	}
 	++health.submitted;
 	health.queued = pending_jobs.size();
+	health.active_sessions = active_sessions.size();
 	health.high_water = std::max(health.high_water, pending_jobs.size());
 	work_available.notify_one();
 	return true;
@@ -304,10 +522,13 @@ void stop_worker(bool discard_pending)
 	if (discard_pending)
 		health.dropped += pending_jobs.size();
 	pending_jobs.clear();
+	active_sessions.clear();
 	health.queued = 0;
+	health.active_sessions = 0;
 	health.initialized = false;
 	health.connected = false;
 	health.busy = false;
+	generation_claimed = false;
 }
 } // namespace
 
@@ -315,7 +536,9 @@ bool redis_presence_worker_init(const struct redis_presence_worker_config *confi
 {
 	if (!config || !config->host || !*config->host || config->port <= 0 ||
 	    config->port > 65535 || config->connect_timeout_msec <= 0 ||
-	    config->command_timeout_msec <= 0)
+	    config->command_timeout_msec <= 0 || config->session_ttl_seconds < 2 ||
+	    !config->heartbeat_interval_msec ||
+	    config->heartbeat_interval_msec >= config->session_ttl_seconds * 1000ULL)
 		return false;
 	std::lock_guard<std::mutex> lock(worker_mutex);
 	if (health.initialized)
@@ -326,16 +549,20 @@ bool redis_presence_worker_init(const struct redis_presence_worker_config *confi
 		configured_port = config->port;
 		configured_connect_timeout_msec = config->connect_timeout_msec;
 		configured_command_timeout_msec = config->command_timeout_msec;
+		configured_session_ttl_seconds = config->session_ttl_seconds;
+		configured_heartbeat_interval_msec = config->heartbeat_interval_msec;
 		std::random_device random;
 		instance_id = (static_cast<uint64_t>(random()) << 32) | random();
 		if (!instance_id)
 			instance_id = 1;
 		next_sequence = 1;
 		pending_jobs.clear();
+		active_sessions.clear();
 		health = {};
 		health.initialized = true;
 		accepting = true;
 		stop_requested = false;
+		generation_claimed = false;
 		worker_thread = std::thread(worker_main);
 	}
 	catch (...)
@@ -412,8 +639,11 @@ void redis_presence_worker_reset_for_tests(void)
 	configured_port = 0;
 	configured_connect_timeout_msec = 0;
 	configured_command_timeout_msec = 0;
+	configured_session_ttl_seconds = 0;
+	configured_heartbeat_interval_msec = 0;
 	instance_id = 0;
 	next_sequence = 1;
 	accepting = false;
 	stop_requested = false;
+	generation_claimed = false;
 }

@@ -6,6 +6,9 @@
 
 constexpr size_t REDIS_PRESENCE_QUEUE_CAPACITY = 1024;
 constexpr size_t REDIS_PRESENCE_MAX_PAYLOAD_BYTES = 4096;
+constexpr size_t REDIS_PRESENCE_HEARTBEAT_BATCH = 64;
+constexpr unsigned int REDIS_PRESENCE_SESSION_TTL_SECONDS = 180;
+constexpr unsigned int REDIS_PRESENCE_HEARTBEAT_INTERVAL_SECONDS = 60;
 constexpr unsigned int REDIS_PRESENCE_MAX_COMMAND_ATTEMPTS = 3;
 
 struct redis_presence_worker_config
@@ -14,6 +17,8 @@ struct redis_presence_worker_config
 	int port;
 	int connect_timeout_msec;
 	int command_timeout_msec;
+	unsigned int session_ttl_seconds;
+	unsigned int heartbeat_interval_msec;
 };
 
 struct redis_presence_worker_health
@@ -23,8 +28,11 @@ struct redis_presence_worker_health
 	uint64_t command_failures;
 	uint64_t reconnects;
 	uint64_t dropped;
+	uint64_t lease_refreshes;
+	uint64_t lease_failures;
 	size_t queued;
 	size_t high_water;
+	size_t active_sessions;
 	bool initialized;
 	bool connected;
 	bool busy;

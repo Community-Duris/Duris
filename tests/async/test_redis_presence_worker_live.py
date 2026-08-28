@@ -30,9 +30,11 @@ def main() -> None:
 #include <hiredis/hiredis.h>
 
 #include <cassert>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <thread>
 
 static redisReply *run(redisContext *context, const char *command)
 {
@@ -46,7 +48,7 @@ int main(int argc, char **argv)
     assert(argc == 3);
     const int live_port = atoi(argv[1]);
     const int unavailable_port = atoi(argv[2]);
-    redis_presence_worker_config config = {"127.0.0.1", live_port, 100, 100};
+    redis_presence_worker_config config = {"127.0.0.1", live_port, 100, 100, 6, 250};
     assert(redis_presence_worker_init(&config));
 
     // These submissions occur before the isolated server starts. They must stay local,
@@ -61,19 +63,32 @@ int main(int argc, char **argv)
 
     redisContext *context = redisConnect("127.0.0.1", live_port);
     assert(context && !context->err);
-    redisReply *reply = run(context, "HGET mud:online 101");
+    redisReply *reply = run(context, "GET mud:presence:current");
     assert(reply->type == REDIS_REPLY_STRING);
+    std::string instance(reply->str, reply->len);
+    freeReplyObject(reply);
+    const std::string session_key = "mud:presence:session:" + instance + ":101";
+    reply = (redisReply *)redisCommand(context, "GET %s", session_key.c_str());
+    assert(reply && reply->type == REDIS_REPLY_STRING);
     assert(!strcmp(reply->str, "{\"name\":\"Async\"}"));
     freeReplyObject(reply);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1200));
+    reply = (redisReply *)redisCommand(context, "TTL %s", session_key.c_str());
+    assert(reply && reply->type == REDIS_REPLY_INTEGER && reply->integer >= 4);
+    freeReplyObject(reply);
+    health = redis_presence_worker_health_copy();
+    assert(health.active_sessions == 1 && health.lease_refreshes >= 1 &&
+           health.lease_failures == 0);
 
     assert(redis_presence_worker_submit_offline(101, true));
     assert(redis_presence_worker_drain(1000));
-    reply = run(context, "HGET mud:online 101");
+    reply = (redisReply *)redisCommand(context, "GET %s", session_key.c_str());
     assert(reply->type == REDIS_REPLY_NIL);
     freeReplyObject(reply);
 
     // A permanent WRONGTYPE error must not write the retry marker or wedge the queue.
-    freeReplyObject(run(context, "SET mud:online wrong-type"));
+    freeReplyObject(run(context, "DEL mud:presence:current"));
+    freeReplyObject(run(context, "LPUSH mud:presence:current wrong-type"));
     health = redis_presence_worker_health_copy();
     const uint64_t completed_before_error = health.completed;
     const uint64_t dropped_before_error = health.dropped;
@@ -83,16 +98,35 @@ int main(int argc, char **argv)
     assert(health.completed == completed_before_error);
     assert(health.dropped == dropped_before_error + 1);
     assert(health.command_failures >= REDIS_PRESENCE_MAX_COMMAND_ATTEMPTS);
-    reply = run(context, "TYPE mud:online");
-    assert(reply->type == REDIS_REPLY_STATUS && !strcmp(reply->str, "string"));
+    reply = run(context, "TYPE mud:presence:current");
+    assert(reply->type == REDIS_REPLY_STATUS && !strcmp(reply->str, "list"));
     freeReplyObject(reply);
     assert(redis_presence_worker_submit_clear());
     assert(redis_presence_worker_drain(1000));
-    reply = run(context, "EXISTS mud:online");
-    assert(reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
+    reply = run(context, "TYPE mud:presence:current");
+    assert(reply->type == REDIS_REPLY_STATUS && !strcmp(reply->str, "string"));
+    freeReplyObject(reply);
+
+    assert(redis_presence_worker_submit_online(404, "{\"name\":\"Lease\"}", false));
+    assert(redis_presence_worker_drain(1000));
+    reply = run(context, "GET mud:presence:current");
+    assert(reply->type == REDIS_REPLY_STRING);
+    const std::string expiring_key = "mud:presence:session:" +
+                                     std::string(reply->str, reply->len) + ":404";
+    freeReplyObject(reply);
+    freeReplyObject(run(context, "SET mud:presence:current newer-instance EX 3"));
+    std::this_thread::sleep_for(std::chrono::milliseconds(600));
+    health = redis_presence_worker_health_copy();
+    assert(health.active_sessions == 0 && health.lease_failures == 0);
+    reply = run(context, "GET mud:presence:current");
+    assert(reply->type == REDIS_REPLY_STRING && !strcmp(reply->str, "newer-instance"));
+    freeReplyObject(reply);
+    assert(redis_presence_worker_shutdown(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(6200));
+    reply = (redisReply *)redisCommand(context, "EXISTS %s", expiring_key.c_str());
+    assert(reply && reply->type == REDIS_REPLY_INTEGER && reply->integer == 0);
     freeReplyObject(reply);
     redisFree(context);
-    assert(redis_presence_worker_shutdown(1000));
 
     // Cancellation may race a successful front job. Join before discarding the deque.
     redis_presence_worker_reset_for_tests();
@@ -120,6 +154,11 @@ int main(int argc, char **argv)
     health = redis_presence_worker_health_copy();
     assert(rejected > 0 && health.dropped == dropped_before_saturation + rejected);
     assert(health.queued <= REDIS_PRESENCE_QUEUE_CAPACITY);
+    const size_t active_before_rejected_offline = health.active_sessions;
+    assert(!redis_presence_worker_submit_offline(1, false));
+    health = redis_presence_worker_health_copy();
+    assert(active_before_rejected_offline > 0 &&
+           health.active_sessions == active_before_rejected_offline - 1);
     redis_presence_worker_cancel();
     redis_presence_worker_reset_for_tests();
     return 0;
@@ -189,7 +228,7 @@ int main(int argc, char **argv)
                 time.sleep(0.02)
             else:
                 raise AssertionError("isolated redis-server did not start")
-            assert harness_process.wait(timeout=10) == 0
+            assert harness_process.wait(timeout=20) == 0
         finally:
             if harness_process.poll() is None:
                 harness_process.terminate()

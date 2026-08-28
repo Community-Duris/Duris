@@ -76,12 +76,13 @@ static void redis_status_simple(P_char ch)
 
 	const redis_presence_worker_health presence = redis_presence_worker_health_copy();
 	pos += snprintf(buf + pos, sizeof(buf) - pos,
-			"  &+cpresence_worker&n  %s%-9s&n queued=%zu dropped=%llu\r\n",
+			"  &+cpresence_worker&n  %s%-9s&n queued=%zu active=%zu dropped=%llu\r\n",
 			presence.connected ? "&+G" : "&+Y",
 			!presence.initialized ? "OFF" :
 			presence.connected    ? "HEALTHY" :
 						"BACKOFF",
-			presence.queued, (unsigned long long)presence.dropped);
+			presence.queued, presence.active_sessions,
+			(unsigned long long)presence.dropped);
 	const redis_cache_store_health cache = redis_cache_store_health_copy();
 	pos += snprintf(
 		buf + pos, sizeof(buf) - pos,
@@ -158,15 +159,19 @@ static void redis_status_detailed(P_char ch)
 	const redis_presence_worker_health presence = redis_presence_worker_health_copy();
 	APPENDF(buf,
 		"&+g[Presence Worker]&n\r\n"
-		"  state=%s queued=%zu high_water=%zu busy=%s\r\n"
-		"  submitted=%llu completed=%llu dropped=%llu failures=%llu reconnects=%llu\r\n\r\n",
+		"  state=%s queued=%zu high_water=%zu active=%zu busy=%s\r\n"
+		"  submitted=%llu completed=%llu dropped=%llu failures=%llu reconnects=%llu\r\n"
+		"  lease_refreshes=%llu lease_failures=%llu\r\n\r\n",
 		!presence.initialized ? "off" :
 		presence.connected    ? "healthy" :
 					"backoff",
-		presence.queued, presence.high_water, presence.busy ? "yes" : "no",
-		(unsigned long long)presence.submitted, (unsigned long long)presence.completed,
-		(unsigned long long)presence.dropped, (unsigned long long)presence.command_failures,
-		(unsigned long long)presence.reconnects);
+		presence.queued, presence.high_water, presence.active_sessions,
+		presence.busy ? "yes" : "no", (unsigned long long)presence.submitted,
+		(unsigned long long)presence.completed, (unsigned long long)presence.dropped,
+		(unsigned long long)presence.command_failures,
+		(unsigned long long)presence.reconnects,
+		(unsigned long long)presence.lease_refreshes,
+		(unsigned long long)presence.lease_failures);
 	const redis_cache_store_health cache = redis_cache_store_health_copy();
 	APPENDF(buf,
 		"&+g[Cache Worker]&n\r\n"

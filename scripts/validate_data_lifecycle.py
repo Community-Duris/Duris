@@ -58,7 +58,8 @@ DESTRUCTIVE_ACTIONS = {
 REQUIRED_NON_DATABASE_STORES = {
     "redis:world_recovery": ("redis_keyspace", "redis world recovery generations"),
     "redis:presence": (
-        "redis_keyspace", "redis presence hash, channel, and retry tokens",
+        "redis_keyspace",
+        "redis expiring presence generation/session keys, channel, and retry tokens",
     ),
     "file:player_save_journal": ("journal", "PLAYER_SAVE_JOURNAL_DIR/player-save.journal"),
     "file:player_save_quarantine": (

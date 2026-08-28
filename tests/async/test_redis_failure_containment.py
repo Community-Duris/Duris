@@ -47,6 +47,7 @@ print("[PASS] all Redis connects and commands use bounded guarded helpers")
 
 assert presence_worker.count("redisConnectWithTimeout(") == 1
 assert presence_worker.count("redisvCommand(") == 1
+assert presence_worker.count("redisCommandArgv(") == 1
 for token in (
     "REDIS_PRESENCE_QUEUE_CAPACITY",
     "REDIS_PRESENCE_MAX_PAYLOAD_BYTES",
@@ -54,6 +55,10 @@ for token in (
     "reconnect_delay_msec = std::min(reconnect_delay_msec * 2, 60000U)",
     "redisSetTimeout",
     "PRESENCE_SCRIPT",
+    "PRESENCE_HEARTBEAT_SCRIPT",
+    "REDIS_PRESENCE_HEARTBEAT_BATCH",
+    "configured_heartbeat_interval_msec",
+    "active_sessions",
     "REDIS_PRESENCE_MAX_COMMAND_ATTEMPTS",
     "redis_presence_worker_drain",
     "redis_presence_worker_cancel",
@@ -69,7 +74,7 @@ assert "redis_presence_worker_cancel();" in section(
 assert "redis_presence_worker_shutdown" in section(
     "void redis_cleanup", "void redis_clear_floor_pickups"
 )
-print("[PASS] presence writes use a bounded healing worker outside the simulation thread")
+print("[PASS] presence writes and lease refreshes use a bounded healing worker outside the simulation thread")
 
 assert cache_store.count("redisConnectWithTimeout(") == 1
 assert cache_store.count("redisvCommand(") == 1
