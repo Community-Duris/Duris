@@ -316,6 +316,38 @@ int main(int argc, char **argv)
 			"restart reconciliation did not reconstruct the exact destination transfer: " +
 				error);
 	}
+	item_transfer_payload uncoupled = move;
+	uncoupled.from_owner = { item_owner_type::player, 77, 0 };
+	uncoupled.to_owner = { item_owner_type::room, 9001, 0 };
+	uncoupled.reason = item_transfer_reason::player_drop;
+	uncoupled.reason_id = 9001;
+	uncoupled.expected_from_revision = 1;
+	uncoupled.expected_to_revision = 0;
+	for (size_t index = 0; index < items.size(); ++index)
+		uncoupled.items[index] = { items[index].item_uid,
+					   items[index].root_item_uid,
+					   items[index].parent_item_uid,
+					   items[index].item_revision,
+					   items[index].vnum,
+					   items[index].state };
+	critical_command uncoupled_command = {};
+	require(item_transfer_command_build(&uncoupled_command, operation(5), uncoupled,
+					    critical_source_site::command,
+					    critical_deadline_class::interactive),
+		"could not build uncoupled room transfer");
+	uncoupled_command.accepted_at_usec = 5;
+	applied = flatfile_item_repository_apply(root.string(), uncoupled_command);
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == EOPNOTSUPP &&
+			flatfile_item_repository_apply(root.string(), uncoupled_command)
+					.error_code == EOPNOTSUPP,
+		"uncoupled room aggregate transfer did not fail closed and replay exactly");
+	items.clear();
+	require(flatfile_item_repository_load_owner(
+			root.string(), { item_owner_type::player, 77, 0 }, &owner_revision, &items,
+			&error) == flatfile_item_repository_result::ok &&
+			owner_revision == 1 && items.size() == 2,
+		"failed room transfer changed player ownership");
 
 	move.expected_from_revision = 1;
 	move.expected_to_revision = 0;

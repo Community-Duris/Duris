@@ -438,6 +438,12 @@ bool command_digest(const critical_command &command,
 	return true;
 }
 
+bool generic_materialization_owner(item_owner_type type)
+{
+	return type == item_owner_type::player || type == item_owner_type::system ||
+	       type == item_owner_type::destruction;
+}
+
 bool descendant_of(const std::vector<flatfile_item_ownership_record *> &root_items,
 		   const flatfile_item_ownership_record &candidate, uint64_t selected_uid)
 {
@@ -1212,9 +1218,28 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		return { critical_apply_outcome::retryable_failure, catalog.revision, ENOMEM };
 	}
 	item_transfer_result result = {};
-	const unsigned int result_code = apply_transfer(&candidate, payload, &result);
+	unsigned int result_code = apply_transfer(&candidate, payload, &result);
 	if (result_code == ENOMEM || result_code == EILSEQ)
 		return { critical_apply_outcome::retryable_failure, catalog.revision, result_code };
+	if (!result_code && command.payload_version == ITEM_TRANSFER_PAYLOAD_VERSION &&
+	    (!generic_materialization_owner(payload.from_owner.type) ||
+	     !generic_materialization_owner(payload.to_owner.type)))
+	{
+		try
+		{
+			candidate = catalog;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return { critical_apply_outcome::retryable_failure, catalog.revision,
+				 ENOMEM };
+		}
+		const owner_state *from = find_owner(&catalog, payload.from_owner);
+		const owner_state *to = find_owner(&catalog, payload.to_owner);
+		result = { payload.selected_item_uid, payload.item_count, from ? from->revision : 0,
+			   to ? to->revision : 0, 0 };
+		result_code = EOPNOTSUPP;
+	}
 	try
 	{
 		candidate.operations.push_back(

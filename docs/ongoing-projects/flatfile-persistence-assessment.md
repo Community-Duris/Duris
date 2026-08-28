@@ -2605,6 +2605,36 @@ sections below continue to describe the required end state.
   ownership transaction, then close trusted/gem purchase and MariaDB shop parity gaps without
   weakening exact replay or the boot blocker.
 
+### Checkpoint 82 - fail-closed non-player aggregate transfer boundary
+
+- **Audit result:** the locker and corpse/world catalogs currently support exact establishment and
+  prepared character deletion, but their live save/load routes remain SQL-only. Room objects have no
+  flat restart materializer, while auction and shop custody are owned by their separate composite
+  commands. A generic ownership commit involving any of those domains could therefore remove an
+  exact player object without durably publishing the non-player aggregate that must restore it.
+- **Fail-closed boundary:** new version 4 generic transfers now commit only when both owner types are
+  within the self-contained player/system/destruction set. Container, room, corpse, locker, auction,
+  and shopkeeper owner transitions return durable `EOPNOTSUPP` results before ownership or
+  materialization changes. Their eventual flat routes must use an aggregate-specific composite
+  repository that joins every after-image under the authority transaction rather than weakening
+  this guard.
+- **Replay behavior:** the unsupported result is recorded in the ownership operation catalog, so an
+  identical retry returns the same error without mutation and operation-ID reuse remains protected.
+  Commands already present in the catalog still replay their recorded result first. Version 3/2
+  compatibility remains available for historical journal recovery; those formats predate the exact
+  aggregate fence and retain their documented ownership-only exposure.
+- **Checks passed:** the fault-injected item repository regression now also attempts an exact nested
+  player-to-room move, observes `EOPNOTSUPP` twice, and proves the player's owner revision and full
+  custody remain unchanged. Changed-line formatting and the strict normal C++20 build pass alongside
+  the CP81 restart and compatibility suites.
+- **Exposure:** this is an integrity fence, not live flat support for drop/get, locker, corpse, auction,
+  or shopkeeper transfers. Those routes remain unavailable until their aggregate after-images and
+  restart materializers are composed and tested. Historical version 3/2 commands can still lack
+  exact evidence, and the flat-primary boot blocker remains required.
+- **Next action:** design held-lock mutation preparers for corpse and locker aggregates, including
+  creation/removal metadata and nested exact snapshots, then compose each with ownership and player
+  materialization in one operation-specific flat repository.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
