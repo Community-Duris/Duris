@@ -351,7 +351,7 @@ critical_apply_result flatfile_shop_trade_repository_apply(const std::string &ro
 	{
 		result.shop_revision = shop.shop_revision;
 		result.player_owner_revision = items.player_owner_revision;
-		result.shop_owner_revision = items.shop_owner_revision;
+		result.counterparty_owner_revision = items.counterparty_owner_revision;
 		result.item_count = items.item_count;
 		result.item_uids = items.item_uids;
 		result.item_revisions = items.item_revisions;

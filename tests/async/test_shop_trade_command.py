@@ -120,7 +120,7 @@ int main()
 	result.bank_revision = 11;
 	result.shop_revision = 12;
 	result.player_owner_revision = 13;
-	result.shop_owner_revision = 14;
+	result.counterparty_owner_revision = 14;
 	result.item_count = 2;
 	result.item_uids[0] = 100;
 	result.item_uids[1] = 101;
@@ -133,6 +133,15 @@ int main()
 						&decoded_result));
 	assert(decoded_result.shop_revision == 12 && decoded_result.item_uids[1] == 101 &&
 	       decoded_result.wallet.amount[3] == 4);
+	encoded_result[1] = 0;
+	assert(shop_trade_command_decode_result(encoded_result.data(), encoded_result.size(),
+						&decoded_result));
+	result.action = shop_trade_action::sell_destroy;
+	assert(shop_trade_command_encode_result(result, &encoded_result));
+	encoded_result[1] = 0;
+	assert(!shop_trade_command_decode_result(encoded_result.data(), encoded_result.size(),
+						 &decoded_result));
+	assert(shop_trade_command_encode_result(result, &encoded_result));
 	encoded_result.back() = 1;
 	assert(!shop_trade_command_decode_result(encoded_result.data(), encoded_result.size(),
 						 &decoded_result));

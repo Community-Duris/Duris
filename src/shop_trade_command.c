@@ -313,6 +313,7 @@ bool shop_trade_command_encode_result(const shop_trade_result &result,
 			return false;
 	encoded->fill(0);
 	(*encoded)[0] = static_cast<uint8_t>(result.action);
+	(*encoded)[1] = SHOP_TRADE_RESULT_VERSION;
 	put_u16(encoded->data() + 2, result.item_count);
 	for (size_t index = 0; index < CURRENCY_DENOMINATION_COUNT; ++index)
 	{
@@ -325,7 +326,7 @@ bool shop_trade_command_encode_result(const shop_trade_result &result,
 	put_u64(encoded->data() + 80, result.bank_revision);
 	put_u64(encoded->data() + 88, result.shop_revision);
 	put_u64(encoded->data() + 96, result.player_owner_revision);
-	put_u64(encoded->data() + 104, result.shop_owner_revision);
+	put_u64(encoded->data() + 104, result.counterparty_owner_revision);
 	for (size_t index = 0; index < result.item_count; ++index)
 	{
 		put_u64(encoded->data() + 112 + index * 16, result.item_uids[index]);
@@ -337,14 +338,17 @@ bool shop_trade_command_encode_result(const shop_trade_result &result,
 bool shop_trade_command_decode_result(const uint8_t *encoded, size_t size,
 				      shop_trade_result *result)
 {
-	if (!encoded || size != SHOP_TRADE_RESULT_BYTES || !result || encoded[1] || encoded[4] ||
-	    encoded[5] || encoded[6] || encoded[7])
+	if (!encoded || size != SHOP_TRADE_RESULT_BYTES || !result ||
+	    (encoded[1] && encoded[1] != SHOP_TRADE_RESULT_VERSION) || encoded[4] || encoded[5] ||
+	    encoded[6] || encoded[7])
 		return false;
 	*result = {};
 	result->action = static_cast<shop_trade_action>(encoded[0]);
 	result->item_count = get_u16(encoded + 2);
 	if (result->action <= shop_trade_action::unknown ||
 	    result->action > shop_trade_action::sell_destroy ||
+	    (!encoded[1] && (result->action == shop_trade_action::buy_produced ||
+			     result->action == shop_trade_action::sell_destroy)) ||
 	    result->item_count > result->item_uids.size())
 		return false;
 	for (size_t index = 0; index < CURRENCY_DENOMINATION_COUNT; ++index)
@@ -358,7 +362,7 @@ bool shop_trade_command_decode_result(const uint8_t *encoded, size_t size,
 	result->bank_revision = get_u64(encoded + 80);
 	result->shop_revision = get_u64(encoded + 88);
 	result->player_owner_revision = get_u64(encoded + 96);
-	result->shop_owner_revision = get_u64(encoded + 104);
+	result->counterparty_owner_revision = get_u64(encoded + 104);
 	for (size_t index = 0; index < result->item_count; ++index)
 	{
 		result->item_uids[index] = get_u64(encoded + 112 + index * 16);

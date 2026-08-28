@@ -96,6 +96,7 @@
 #include "critical_outbox.h"
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
+#include "shop_trade_transaction.h"
 #include "item_uid_allocator.h"
 #include "flatfile_item_repository.h"
 #include "auction_transaction.h"
@@ -222,6 +223,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	epic_transaction_handle_completions(completions, count);
 	currency_transaction_handle_completions(completions, count);
 	item_movement_transaction_handle_completions(completions, count);
+	shop_trade_transaction_handle_completions(completions, count);
 	auction_transaction_handle_completions(completions, count);
 	combat_outcome_transaction_handle_completions(completions, count);
 	artifact_guild_transaction_handle_completions(completions, count);

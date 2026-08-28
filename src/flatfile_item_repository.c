@@ -892,12 +892,16 @@ flatfile_item_repository_result flatfile_item_repository_prepare_shop_trade(
 		*result_code = applied;
 		return flatfile_item_repository_result::ok;
 	}
+	const item_owner_identity counterparty =
+		payload.action == shop_trade_action::buy_produced ? system :
+		payload.action == shop_trade_action::sell_destroy ? destruction :
+								    shop;
 	const owner_state *player_owner = find_owner(&catalog, player);
-	const owner_state *shop_owner = find_owner(&catalog, shop);
-	if (!player_owner || !shop_owner)
+	const owner_state *counterparty_owner = find_owner(&catalog, counterparty);
+	if (!player_owner || !counterparty_owner)
 		return flatfile_item_repository_result::invalid;
 	mutation->player_owner_revision = player_owner->revision;
-	mutation->shop_owner_revision = shop_owner->revision;
+	mutation->counterparty_owner_revision = counterparty_owner->revision;
 	mutation->item_count = payload.item_count;
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{

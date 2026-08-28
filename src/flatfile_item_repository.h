@@ -55,7 +55,7 @@ struct flatfile_item_auction_mutation
 struct flatfile_item_shop_trade_mutation
 {
 	uint64_t player_owner_revision = 0;
-	uint64_t shop_owner_revision = 0;
+	uint64_t counterparty_owner_revision = 0;
 	uint16_t item_count = 0;
 	std::array<uint64_t, SHOP_TRADE_MAX_ITEMS> item_uids = {};
 	std::array<uint64_t, SHOP_TRADE_MAX_ITEMS> item_revisions = {};

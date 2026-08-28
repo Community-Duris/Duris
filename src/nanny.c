@@ -28,6 +28,7 @@
 #include "epic_transaction.h"
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
+#include "shop_trade_transaction.h"
 #include "auction_transaction.h"
 #include "boon_reward_transaction.h"
 #include "files.h"
@@ -2878,6 +2879,7 @@ void enter_game(P_desc d)
 	epic_transaction_player_ready(ch);
 	currency_transaction_player_ready(ch);
 	item_movement_transaction_player_ready(ch);
+	shop_trade_transaction_player_ready(ch);
 	auction_transaction_player_ready(ch);
 	boon_reward_transaction_player_ready(ch);
 	writeCharacter(ch, 1, NOWHERE);
@@ -3476,6 +3478,7 @@ void reconnect(P_desc d, P_char tmp_ch)
 	epic_transaction_player_ready(tmp_ch);
 	currency_transaction_player_ready(tmp_ch);
 	item_movement_transaction_player_ready(tmp_ch);
+	shop_trade_transaction_player_ready(tmp_ch);
 	auction_transaction_player_ready(tmp_ch);
 	boon_reward_transaction_player_ready(tmp_ch);
 	act("$n has reconnected.", TRUE, tmp_ch, 0, 0, TO_ROOM);

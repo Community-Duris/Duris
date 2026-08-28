@@ -2333,6 +2333,36 @@ sections below continue to describe the required end state.
   mutating money or inventory ahead of the durable result, and add MariaDB command parity before
   selecting that route in normal operation.
 
+### Checkpoint 73 - shop-trade completion publication boundary
+
+- **Corrected owner result:** the second item-owner revision at the existing fixed wire offset is
+  now explicitly the action-dependent counterparty revision: shopkeeper for existing buys and
+  retained sales, system for produced creation, and destruction for duplicate/trash sales. This
+  preserves the result size and field layout while ensuring every changed transfer endpoint can be
+  published to the runtime registry; the prior shop-only interpretation omitted the changed
+  system/destruction owner revision. New results carry an explicit version byte; legacy unversioned
+  existing-buy/retained-sale results remain readable, while unsafe legacy produced/destroyed
+  results fail closed because they cannot identify the changed counterparty revision.
+- **Completed:** added a bounded per-player shop-trade transaction adapter that submits the
+  composite command, retains completions while a player is offline, and releases them on normal
+  login or reconnect. A decoded completion publishes authoritative wallet/bank state first, then
+  translates the shop result back into the exact item-transfer direction and revisions before
+  updating the in-memory custody registry.
+- **Fail-closed publication:** malformed results, balance publication failures, or custody-registry
+  conflicts do not report a successful gameplay completion. One pending trade per player prevents
+  locally queued commands from reusing the same optimistic wallet and owner revisions.
+- **Checks passed:** the executable transaction regression covers produced system-to-player
+  publication, destroyed player-to-destruction publication, counterparty revision mapping,
+  duplicate submission refusal, offline retention, and reconnect release. It also verifies the
+  main-loop completion hook and both player-ready hooks; command, item repository, composite
+  repository, changed-line formatting, and the normal C++20 build pass.
+- **Exposure:** this adapter deliberately does not move or destroy live objects itself. The shop
+  command still performs its legacy synchronous mutation and does not submit a composite command;
+  there is also no runtime shop-revision registry and no MariaDB shop-trade apply implementation.
+- **Next action:** add a bounded selected-item snapshot/payload builder plus runtime shop revision
+  hydration, then replace the flat-mode buy/sell mutation with submit-now and callback-after-commit
+  behavior while retaining the MariaDB path until repository parity exists.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

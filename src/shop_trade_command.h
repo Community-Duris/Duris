@@ -12,6 +12,7 @@ constexpr uint16_t SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION = 1;
 constexpr size_t SHOP_TRADE_MAX_ITEMS = ITEM_TRANSFER_MAX_ITEMS;
 constexpr size_t SHOP_TRADE_ITEM_BLOB_MAX_BYTES = 128 * 1024;
 constexpr size_t SHOP_TRADE_RESULT_BYTES = 304;
+constexpr uint8_t SHOP_TRADE_RESULT_VERSION = 1;
 
 enum class shop_trade_action : uint8_t
 {
@@ -62,7 +63,7 @@ struct shop_trade_result
 	uint64_t bank_revision;
 	uint64_t shop_revision;
 	uint64_t player_owner_revision;
-	uint64_t shop_owner_revision;
+	uint64_t counterparty_owner_revision;
 	uint16_t item_count;
 	std::array<uint64_t, SHOP_TRADE_MAX_ITEMS> item_uids;
 	std::array<uint64_t, SHOP_TRADE_MAX_ITEMS> item_revisions;

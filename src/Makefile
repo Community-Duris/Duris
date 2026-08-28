@@ -257,6 +257,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item_transfer_command.o \
 				 item_ownership_runtime.o \
 				 item_movement_transaction.o \
+				 shop_trade_transaction.o \
 				 item_transfer_repository.o \
 				 item_transfer_synthetic.o \
 				 item_uid_allocator.o \

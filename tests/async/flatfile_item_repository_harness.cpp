@@ -336,7 +336,7 @@ int main(int argc, char **argv)
 				shop_root.string(), lock, produced, &shop_mutation,
 				&shop_result_code, &error) == flatfile_item_repository_result::ok &&
 				shop_result_code == 0 && shop_mutation.player_owner_revision == 2 &&
-				shop_mutation.shop_owner_revision == 1 &&
+				shop_mutation.counterparty_owner_revision == 1 &&
 				shop_mutation.item_revisions[0] == 1,
 			"produced custody mutation did not prepare: " + error);
 		require(flatfile_authority_transaction_commit(
@@ -353,7 +353,7 @@ int main(int argc, char **argv)
 				shop_root.string(), lock, purchase, &shop_mutation,
 				&shop_result_code, &error) == flatfile_item_repository_result::ok &&
 				shop_result_code == 0 && shop_mutation.player_owner_revision == 3 &&
-				shop_mutation.shop_owner_revision == 2 &&
+				shop_mutation.counterparty_owner_revision == 2 &&
 				shop_mutation.item_revisions[0] == 2,
 			"purchase custody mutation did not prepare: " + error);
 		require(flatfile_authority_transaction_commit(
@@ -369,7 +369,7 @@ int main(int argc, char **argv)
 				shop_root.string(), lock, sale, &shop_mutation, &shop_result_code,
 				&error) == flatfile_item_repository_result::ok &&
 				shop_result_code == 0 && shop_mutation.player_owner_revision == 4 &&
-				shop_mutation.shop_owner_revision == 3 &&
+				shop_mutation.counterparty_owner_revision == 3 &&
 				shop_mutation.item_revisions[0] == 2,
 			"sale custody mutation did not prepare: " + error);
 		require(flatfile_authority_transaction_commit(
@@ -386,7 +386,7 @@ int main(int argc, char **argv)
 				shop_root.string(), lock, destruction, &shop_mutation,
 				&shop_result_code, &error) == flatfile_item_repository_result::ok &&
 				shop_result_code == 0 && shop_mutation.player_owner_revision == 5 &&
-				shop_mutation.shop_owner_revision == 3 &&
+				shop_mutation.counterparty_owner_revision == 1 &&
 				shop_mutation.item_revisions[0] == 2,
 			"destruction custody mutation did not prepare: " + error);
 		require(flatfile_authority_transaction_commit(

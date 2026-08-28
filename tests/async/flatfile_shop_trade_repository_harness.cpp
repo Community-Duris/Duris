@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 			purchased.wallet.amount == std::array<int64_t, 4>{ 0, 0, 9, 9 } &&
 			purchased.wallet_revision == 1 && purchased.bank_revision == 2 &&
 			purchased.shop_revision == 2 && purchased.player_owner_revision == 2 &&
-			purchased.shop_owner_revision == 2 && purchased.item_count == 1 &&
+			purchased.counterparty_owner_revision == 2 && purchased.item_count == 1 &&
 			purchased.item_uids[0] == 200 && purchased.item_revisions[0] == 2,
 		"recovered purchase did not replay its exact result");
 
