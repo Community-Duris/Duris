@@ -97,6 +97,7 @@ bool valid_snapshot(const player_load_result &result)
 	     result.authoritative_item_count > PLAYER_LOAD_ITEM_MAX))
 		return false;
 	if (result.read_components != PLAYER_LOAD_SESSION04_READS ||
+	    result.stale_item_rows > PLAYER_LOAD_ITEM_MAX ||
 	    result.recent_pvp_deaths.size() > PLAYER_LOAD_RECENT_PVP_MAX ||
 	    result.completed_epic_zones.size() > PLAYER_LOAD_COMPLETED_ZONE_MAX)
 		return false;
@@ -338,6 +339,11 @@ bool player_load_materialize(P_char ch, const player_load_result &result)
 		      result.snapshot.items.size());
 		return false;
 	}
+	if (result.stale_item_rows)
+		logit(LOG_DEBUG,
+		      "player_load_materialize: component=items pid=%d outcome=stale_rows_skipped "
+		      "count=%zu recovery=next_full_save",
+		      result.pid, result.stale_item_rows);
 	reset_char(ch);
 	int hit_difference = 0;
 	for (const player_snapshot_string &entry : result.snapshot.status_strings)

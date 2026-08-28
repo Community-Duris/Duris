@@ -43,6 +43,22 @@ std::string operation_key(const critical_operation_id &operation_id)
 			   operation_id.bytes.size());
 }
 
+bool owner_conflicts(const pending_movement &entry, const item_owner_identity &owner)
+{
+	return item_owner_identity_equal(entry.payload.from_owner, owner) ||
+	       item_owner_identity_equal(entry.payload.to_owner, owner) ||
+	       (entry.adopting && item_owner_identity_equal(entry.requested_to_owner, owner));
+}
+
+bool movement_conflicts(const item_owner_identity &from_owner, const item_owner_identity &to_owner)
+{
+	return std::any_of(pending.begin(), pending.end(),
+			   [&](const auto &entry) {
+				   return owner_conflicts(entry.second, from_owner) ||
+					  owner_conflicts(entry.second, to_owner);
+			   });
+}
+
 bool capture(P_obj object, uint64_t root_uid, uint64_t parent_uid,
 	     std::vector<item_transfer_entry> *items)
 {
@@ -167,7 +183,7 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !root || !root->obj_uid ||
 	    context_size > ITEM_MOVEMENT_CONTEXT_MAX_BYTES || (context_size && !context) ||
-	    pending.size() >= ITEM_MOVEMENT_PENDING_MAX)
+	    pending.size() >= ITEM_MOVEMENT_PENDING_MAX || movement_conflicts(from_owner, to_owner))
 		return false;
 	item_ownership_runtime_entry runtime = {};
 	item_ownership_runtime_entry target_runtime = {};

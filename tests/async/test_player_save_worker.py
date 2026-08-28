@@ -12,6 +12,9 @@ WORKER_HEADER = (ROOT / "src/player_save_worker.h").read_text()
 REPOSITORY = (ROOT / "src/player_snapshot_repository.c").read_text()
 DIAGNOSTICS = (ROOT / "src/actinf.c").read_text()
 
+assert "std::unordered_set<std::string> description_keys" in REPOSITORY
+assert "if (!description_keys.insert(std::move(description_key)).second)" in REPOSITORY
+
 
 HARNESS = r'''
 #include "player_save_worker.h"

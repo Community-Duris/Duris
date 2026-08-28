@@ -11,6 +11,7 @@ COMM = (ROOT / "src/comm.c").read_text()
 DB = (ROOT / "src/db.c").read_text()
 SHOP = (ROOT / "src/shop.c").read_text()
 STUDIOPROC = (ROOT / "src/studioproc.c").read_text()
+WEATHER = (ROOT / "src/weather.c").read_text()
 CYCLE = (ROOT / "scripts/cycle_mud.sh").read_text()
 
 required = (
@@ -76,6 +77,16 @@ assert "if (!mini_mode)\n\t\tlocker_async_init();" in pipeline_startup
 assert "player_save_pipeline_init" in pipeline_startup
 assert "critical_command_coordinator_init" in pipeline_startup
 assert "Skipping zone database publication in mini mode." in COMM
+
+flower_start = WEATHER.index("static void replace_hour_flower")
+flower_end = WEATHER.index("void event_another_hour", flower_start)
+flower_body = WEATHER[flower_start:flower_end]
+assert "flowerroom < 0 || flowerroom > top_of_world" in flower_body
+assert "replacement_rnum < 0" in flower_body
+assert "flower->R_num < 0 || flower->R_num > top_of_objt" in flower_body
+assert flower_body.index("read_object(replacement_rnum") < flower_body.index(
+    "extract_obj(flower)"
+)
 
 assert "--minimal)" in CYCLE
 assert "MINIMAL_MODE=1" in CYCLE

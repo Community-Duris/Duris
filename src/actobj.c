@@ -190,6 +190,14 @@ P_obj find_live_item_uid(uint64_t item_uid)
 	return NULL;
 }
 
+P_char find_live_player_pid(uint32_t pid)
+{
+	for (P_char character = character_list; character; character = character->next)
+		if (IS_PC(character) && GET_PID(character) == static_cast<int>(pid))
+			return character;
+	return NULL;
+}
+
 void item_get_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
 			 const uint8_t *encoded, size_t encoded_size)
 {
@@ -287,7 +295,7 @@ void item_give_completion(P_char actor, bool committed, const item_transfer_resu
 	give_movement_context context = {};
 	memcpy(&context, encoded, sizeof(context));
 	P_obj object = find_live_item_uid(context.item_uid);
-	P_char recipient = find_player_by_pid(context.recipient_pid);
+	P_char recipient = find_live_player_pid(context.recipient_pid);
 	if (!object || !recipient || !OBJ_CARRIED_BY(object, actor))
 	{
 		persistence_alert(AVATAR, "item_movement", "give_publish", "none", "none",

@@ -38,6 +38,7 @@ extern struct sector_data *sector_table;
 extern P_desc descriptor_list;
 extern const int top_of_world;
 extern P_index obj_index;
+extern int top_of_objt;
 
 int real_object(const int virt);
 /*
@@ -48,43 +49,36 @@ int real_object(const int virt);
 #define MAGIC_PRECIP_STOP 970
 #define STWS(z, t) send_to_weather_sector((z), (t))
 
+static void replace_hour_flower(int room_vnum, int current_vnum, int replacement_vnum)
+{
+	const int flowerroom = real_room(room_vnum);
+	const int replacement_rnum = real_object(replacement_vnum);
+	if (flowerroom < 0 || flowerroom > top_of_world || replacement_rnum < 0 ||
+	    replacement_rnum > top_of_objt)
+		return;
+
+	for (P_obj flower = world[flowerroom].contents; flower; flower = flower->next_content)
+	{
+		if (flower->R_num < 0 || flower->R_num > top_of_objt ||
+		    obj_index[flower->R_num].virtual_number != current_vnum)
+			continue;
+		P_obj replacement = read_object(replacement_rnum, REAL);
+		if (!replacement)
+			return;
+		extract_obj(flower);
+		obj_to_room(replacement, flowerroom);
+		return;
+	}
+}
+
 void event_another_hour(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, void * /*data*/)
 {
-	P_obj flower;
-	const int flowerroom = real_room(41059);
-
 	time_info.hour++;
 
 	if (time_info.hour == 23)
-	{
-		flower = world[flowerroom].contents;
-		while (flower)
-		{
-			if (obj_index[flower->R_num].virtual_number == 41004)
-			{
-				extract_obj(flower);
-				flower = read_object(real_object(41005), REAL);
-				obj_to_room(flower, flowerroom);
-				break;
-			}
-			flower = flower->next_content;
-		}
-	}
+		replace_hour_flower(41059, 41004, 41005);
 	else if (time_info.hour == 1)
-	{
-		flower = world[flowerroom].contents;
-		while (flower)
-		{
-			if (obj_index[flower->R_num].virtual_number == 41005)
-			{
-				extract_obj(flower);
-				flower = read_object(real_object(41004), REAL);
-				obj_to_room(flower, flowerroom);
-				break;
-			}
-			flower = flower->next_content;
-		}
-	}
+		replace_hour_flower(41059, 41005, 41004);
 
 	if (time_info.hour > 23)
 	{

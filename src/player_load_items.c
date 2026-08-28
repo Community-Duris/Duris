@@ -208,9 +208,41 @@ void apply_saved_strings(P_obj object, const player_item_snapshot &item)
 
 void apply_extra_descriptions(P_obj object, const player_item_snapshot &item)
 {
+	auto already_present = [object](const player_item_extra_description_snapshot &candidate)
+	{
+		std::array<char, (MAX_SKILLS + 1) / 8 + 1> spell_bits = {};
+		if (candidate.spellbook &&
+		    !parse_spellbook(candidate.description, spell_bits.data()))
+			return false;
+		for (const extra_descr_data *existing = object->ex_description; existing;
+		     existing = existing->next)
+		{
+			const bool existing_spellbook =
+				existing->keyword && strlen(existing->keyword) == 3 &&
+				existing->keyword[0] == 3 && existing->keyword[1] == 1 &&
+				existing->keyword[2] == 3;
+			if (candidate.spellbook != existing_spellbook)
+				continue;
+			if (candidate.spellbook)
+			{
+				if (existing->description &&
+				    memcmp(existing->description, spell_bits.data(),
+					   spell_bits.size()) == 0)
+					return true;
+				continue;
+			}
+			if (existing->keyword && candidate.keyword == existing->keyword &&
+			    candidate.description ==
+				    (existing->description ? existing->description : ""))
+				return true;
+		}
+		return false;
+	};
 	for (auto description = item.extra_descriptions.rbegin();
 	     description != item.extra_descriptions.rend(); ++description)
 	{
+		if (already_present(*description))
+			continue;
 		extra_descr_data *entry;
 		CREATE(entry, extra_descr_data, 1, MEM_TAG_EXDESCD);
 		memset(entry, 0, sizeof(*entry));

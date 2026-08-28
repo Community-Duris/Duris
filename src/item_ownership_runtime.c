@@ -105,7 +105,6 @@ bool item_ownership_runtime_hydrate_batch(const item_ownership_runtime_entry *ba
 		      (found->second.root_item_uid != entry.root_item_uid ||
 		       found->second.parent_item_uid != entry.parent_item_uid ||
 		       !item_owner_identity_equal(found->second.owner, entry.owner) ||
-		       found->second.owner_revision != entry.owner_revision ||
 		       found->second.vnum != entry.vnum || found->second.state != entry.state))))
 			return false;
 		previous.push_back({ entry.item_uid, found != entries.end(),

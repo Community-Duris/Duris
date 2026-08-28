@@ -16,6 +16,8 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <string>
+#include <unordered_set>
 #include "account.h"
 #include "assocs.h"
 #include "files.h"
@@ -2164,6 +2166,7 @@ static bool sql_save_item_extra_descr(int item_id, P_obj obj, const char *table)
 	if (!obj->ex_description)
 		return true;
 
+	std::unordered_set<std::string> description_keys;
 	struct extra_descr_data *ed;
 	for (ed = obj->ex_description; ed; ed = ed->next)
 	{
@@ -2191,6 +2194,17 @@ static bool sql_save_item_extra_descr(int item_id, P_obj obj, const char *table)
 
 		if (!db_keyword)
 			continue;
+		std::string description_key = db_keyword;
+		description_key.push_back('\0');
+		if (db_desc)
+			description_key += db_desc;
+		if (!description_keys.insert(std::move(description_key)).second)
+		{
+			free(db_keyword);
+			if (db_desc)
+				free(db_desc);
+			continue;
+		}
 
 		char query[8192];
 		if (db_desc)

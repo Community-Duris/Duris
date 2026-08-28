@@ -369,6 +369,7 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 		ids.push_back(item_id);
 
 		std::unordered_set<uint64_t> affect_keys;
+		std::unordered_set<std::string> description_keys;
 		for (const auto &affect : row.affects)
 		{
 			if (!affect[0] && !affect[1])
@@ -405,6 +406,11 @@ query_result insert_item_rows(MYSQL *connection, const std::vector<player_item_s
 				encoded << ']';
 				encoded_description = encoded.str();
 			}
+			std::string description_key = description.keyword;
+			description_key.push_back('\0');
+			description_key += encoded_description;
+			if (!description_keys.insert(std::move(description_key)).second)
+				continue;
 			result = execute(connection,
 					 "INSERT INTO " +
 						 std::string(pet_items ?
