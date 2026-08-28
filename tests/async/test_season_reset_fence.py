@@ -50,7 +50,9 @@ assert wipe.index("redis_clear_pwipe_state()") < wipe.index("sql_complete_pwipe_
 
 validate = section(REDIS, "bool redis_validate_pwipe_state", "void redis_cleanup")
 assert "redis_connection_open(redis_maintenance_settings)" in validate
-assert 'redis_command(context, "PING")' in validate
+assert "REDIS_SHARED_SCOPE_MAINTENANCE" in validate
+assert "REDIS_SHARED_COMMAND_READ" in validate
+assert 'context, "PING"' in validate
 
 pwipe_case = section(ACTWIZ, "case TimedShutdownData::PWIPE:", "default:")
 failure = pwipe_case[pwipe_case.index("if (!sql_pwipe(1723699))"):]

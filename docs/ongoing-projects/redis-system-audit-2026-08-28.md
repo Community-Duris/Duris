@@ -6,9 +6,54 @@ Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-001, RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
 RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, RDS-017, RDS-008, and RDS-021 are
-remediated, as are RDS-018 and RDS-025; the remaining findings are open.
+remediated, as are RDS-018, RDS-025, and RDS-015; RDS-026 remains open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-015 pwipe and materialization runtime closure
+
+Completed in this interval:
+
+- Moved world-recovery quiescence ahead of the pwipe maintenance connection attempt. An
+  active publisher and the floor pipeline are now canceled and joined even when the fresh
+  administrative connection or fence renewal fails; the destructive reset remains failed
+  closed and the already-quiesced process cannot publish old-season state.
+- Extended the compiled world-recovery harness with a deliberately blocked publisher. A
+  concurrent cancel is proven not to return until the publisher is released and joined,
+  and the health snapshot is stopped before deletion is allowed to continue.
+- Exercised the real recovery planner and materializer under ASan/UBSan with fake world,
+  SQL-authority, and custody adapters. Duplicate item identities and a descendant moved
+  out of its declared parent are rejected before mutation. SQL reconciliation failure
+  creates nothing, while atomic custody-hydration failure removes the object root created
+  earlier in the same attempt and clears the materialization guard.
+- Refreshed the season-boundary source gate for the categorized Redis command wrapper so
+  it continues to verify the maintenance `PING` without depending on a retired call shape.
+
+Performance effect:
+
+- The only production ordering change runs during explicit pwipe after gameplay has
+  already entered shutdown. It adds no work to a game pulse, normal capture, publication,
+  Redis command, or successful gameplay path.
+- The blocking publisher, fake adapters, fault cases, and sanitizers exist only in the
+  regression process.
+
+Validation:
+
+- `./scripts/format.sh --check` and `make -C src -j2`: passed.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed framing plus live-thread
+  cancel/join ordering, duplicate/moved graph rejection, SQL custody refusal, atomic
+  hydration failure, rollback, and materialization-guard checks under ASan/UBSan.
+- Pwipe invalidation, quiescence, durable season-boundary, live Redis fault-recovery, and
+  isolated scoped-deletion regressions passed.
+- All 23 `tests/async/test_redis*.py` regressions passed. The complete recovery-codec,
+  recovery-pipeline, recovery-transaction, pwipe fencing/quiescence/completion, and
+  season-reset manifest/fence groups also passed.
+
+RDS-015 is remediated. The layered suite now uses isolated Redis for transport, ACL,
+timeout, atomic publication, ambiguous-reply, worker-healing, and destructive deletion
+behavior; compiled runtime harnesses for publisher lifecycle and recovery
+planning/materialization; executable backup fault stubs; and source contracts only for
+static ownership and forbidden-call invariants.
 
 ### 2026-08-28 - RDS-015 live timeout and uncertain-reply recovery
 
@@ -53,7 +98,7 @@ Validation:
 - All 23 `tests/async/test_redis*.py` regressions passed, as did the backup atomicity,
   authority-first recovery, recovery codec/pipeline, and persistence-status gates.
 
-RDS-015 remains partially remediated. Live coverage now includes worker outage healing,
+At this checkpoint RDS-015 remained partially remediated. Live coverage included worker outage healing,
 timeouts, uncertain publication/transaction replies, fencing, atomic floor handoff, ACLs,
 TLS/authentication, scoped maintenance deletion, presence, donation, caches, and bounded
 queues. Completion still requires a live pwipe orchestration harness and a materialization
@@ -2085,14 +2130,18 @@ entries. Treat all cache failures as misses and preserve the SQL result.
 
 Severity: Medium
 Confidence: Confirmed by test inspection and execution
-Remediation status: Partially remediated. Ephemeral Redis tests now cover TCP, TLS, Unix
+Remediation status: Completed on branch. Ephemeral Redis tests cover TCP, TLS, Unix
 socket, authentication, selected database, subsystem ACL isolation, scoped destructive
 maintenance, cache/presence/donation outage healing, floor barriers, world fencing,
 authenticated chunked generations, atomic floor handoff, command timeout, and
 committed-but-lost `EVAL`/`EXEC` replies. Runtime codec tests cover privacy escaping,
 donation authentication/replay/bounds, and recovery framing. The backup script is exercised
-with successful and failing dump/compression stubs. Full pwipe orchestration and recovery
-materialization/rollback still rely primarily on source contracts.
+with successful and failing dump/compression stubs. A compiled ASan/UBSan harness now
+blocks and joins an in-flight publisher, runs real recovery planning/materialization
+against fake world and SQL custody adapters, rejects duplicate/moved item graphs, and
+proves rollback after atomic custody hydration failure. Pwipe quiescence precedes the
+maintenance connection attempt, while isolated Redis tests verify connection failures and
+scoped deletion/postflight behavior.
 
 At the audit baseline, most Redis assertions searched source text for helper names,
 ordering, and forbidden tokens. The world harness exercised framing but did not
@@ -2106,14 +2155,11 @@ materialize a world or use a Redis server. The original gaps were:
 - presence privacy and escaping, donation authenticity/bursts/backoff, or oversized values
 - script behavior against stubbed failing `mysqldump` and isolated Redis endpoints
 
-Most transport, worker, atomic-publication, privacy/authenticity, and backup items above
-are now covered or obsolete because Redis ship read authority and process-child persistence
-were retired. The remaining unproven runtime behaviors are:
-
-- complete pwipe quiesce/validate/delete/postflight behavior during connection failure and
-  an in-flight publisher
-- duplicate/moved descendant rejection plus semantic/custody failure rollback during real
-  recovery materialization with fake world and SQL adapters
+The original transport, worker, atomic-publication, pwipe, recovery-materialization,
+privacy/authenticity, and backup gaps are now covered or obsolete because Redis ship read
+authority and process-child persistence were retired. Source inspection remains only for
+static invariants such as the absence of gameplay-thread Redis calls and deliberate
+omission of NPC-carried inventory from recovery records.
 
 Recommendation: add ephemeral Redis integration tests on a random Unix socket or isolated
 port, plus small materialization harnesses with fake world/SQL custody adapters. Keep

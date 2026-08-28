@@ -26,12 +26,186 @@ HARNESS = r'''
 #include "world_recovery_pipeline.h"
 #include "world_recovery_codec.h"
 #include "copyover.h"
+#include "item_ownership_runtime.h"
 #include <array>
+#include <atomic>
 #include <cassert>
+#include <chrono>
+#include <condition_variable>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <mutex>
+#include <thread>
 #include <vector>
 #include <zlib.h>
+
+zone_data zones[1] = {};
+zone_data *zone_table = zones;
+room_data rooms[2] = {};
+room_data *world = rooms;
+P_char character_list = nullptr;
+P_obj object_list = nullptr;
+index_data mob_indexes[1] = {};
+index_data object_indexes[1] = {};
+P_index mob_index = mob_indexes;
+P_index obj_index = object_indexes;
+int top_of_world = 1;
+int top_of_zone_table = -1;
+bool reconcile_succeeds = true;
+bool hydrate_succeeds = true;
+bool materializing = false;
+int objects_read = 0;
+int objects_extracted = 0;
+
+P_char get_linked_char(P_char, ush_int)
+{
+    return nullptr;
+}
+
+[[noreturn]] int panic_corruption_int(const char *, const char *, ...)
+{
+    std::abort();
+}
+
+int real_room(int vnum)
+{
+    return vnum == 100 ? 0 : vnum == 200 ? 1 : -1;
+}
+
+int real_mobile(int vnum)
+{
+    return vnum == 2000 ? 0 : -1;
+}
+
+int real_object(int vnum)
+{
+    return vnum == 1000 ? 0 : -1;
+}
+
+P_obj read_object(int vnum, int)
+{
+    if (real_object(vnum) < 0)
+        return nullptr;
+    P_obj object = new obj_data{};
+    object->R_num = 0;
+    object->loc_p = LOC_NOWHERE;
+    object->next = object_list;
+    object_list = object;
+    ++objects_read;
+    return object;
+}
+
+void obj_to_obj(P_obj object, P_obj parent)
+{
+    object->loc_p = LOC_INSIDE;
+    object->loc.inside = parent;
+    object->next_content = parent->contains;
+    parent->contains = object;
+}
+
+void obj_to_room(P_obj object, int room)
+{
+    object->loc_p = LOC_ROOM;
+    object->loc.room = room;
+}
+
+void extract_obj(P_obj object, int)
+{
+    while (object->contains)
+        extract_obj(object->contains, FALSE);
+    if (object_list == object)
+        object_list = object->next;
+    else
+        for (P_obj prior = object_list; prior; prior = prior->next)
+            if (prior->next == object)
+            {
+                prior->next = object->next;
+                break;
+            }
+    std::free(object->name);
+    std::free(object->short_description);
+    std::free(object->description);
+    delete object;
+    ++objects_extracted;
+}
+
+void extract_char(P_char)
+{
+}
+
+P_char copyover_restore_mob_from_buffer(const char *, size_t, size_t *)
+{
+    return nullptr;
+}
+
+char *str_dup(const char *value)
+{
+    return strdup(value);
+}
+
+void str_free(const char *value)
+{
+    std::free(const_cast<char *>(value));
+}
+
+bool sql_persistence_reconcile_world_recovery_items(
+    const world_recovery_authority_item *items, size_t count,
+    item_ownership_runtime_entry *authoritative, size_t authoritative_capacity)
+{
+    if (!reconcile_succeeds || count != authoritative_capacity)
+        return false;
+    for (size_t index = 0; index < count; ++index)
+    {
+        authoritative[index] = {};
+        authoritative[index].item_uid = items[index].item_uid;
+        authoritative[index].root_item_uid = items[index].root_item_uid;
+        authoritative[index].parent_item_uid = items[index].parent_item_uid;
+        authoritative[index].vnum = items[index].vnum;
+    }
+    return true;
+}
+
+bool item_ownership_runtime_hydrate_many_atomic(const item_ownership_runtime_entry *, size_t)
+{
+    return hydrate_succeeds;
+}
+
+void redis_world_recovery_set_materializing(bool active)
+{
+    materializing = active;
+}
+
+int copyover_write_door_to_buffer(int, int, char *, size_t)
+{
+    return 0;
+}
+
+int copyover_write_zone_age_to_buffer(int, char *, size_t)
+{
+    return 0;
+}
+
+struct publish_gate
+{
+    std::mutex mutex;
+    std::condition_variable changed;
+    bool entered = false;
+    bool release = false;
+};
+
+static bool blocked_publish(const unsigned char *, size_t,
+                            const world_recovery_header *,
+                            redis_shared_command_outcome *outcome, void *raw)
+{
+    auto &gate = *static_cast<publish_gate *>(raw);
+    std::unique_lock<std::mutex> lock(gate.mutex);
+    gate.entered = true;
+    gate.changed.notify_all();
+    gate.changed.wait(lock, [&] { return gate.release; });
+    *outcome = REDIS_SHARED_OUTCOME_SUCCESS;
+    return true;
+}
 
 static void finish(std::vector<unsigned char>& blob, world_recovery_header& header)
 {
@@ -54,8 +228,52 @@ static std::vector<unsigned char> frame(world_recovery_record_type type,
     return framed;
 }
 
+static std::vector<unsigned char> object_generation(
+    const std::vector<std::vector<world_recovery_item_snapshot>>& trees)
+{
+    world_recovery_header header = {};
+    memcpy(header.magic, "WRS9", 4);
+    header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
+    header.header_size = WORLD_RECOVERY_WIRE_HEADER_BYTES;
+    header.sequence = 77;
+    header.timestamp = time(nullptr);
+    header.object_count = trees.size();
+    header.complete = 1;
+    std::vector<unsigned char> blob(WORLD_RECOVERY_WIRE_HEADER_BYTES);
+    for (const auto& tree : trees)
+    {
+        world_recovery_object_record object = {100, static_cast<uint32_t>(tree.size())};
+        std::vector<unsigned char> native(sizeof(object) +
+                                          tree.size() * sizeof(tree.front()));
+        memcpy(native.data(), &object, sizeof(object));
+        memcpy(native.data() + sizeof(object), tree.data(),
+               tree.size() * sizeof(tree.front()));
+        auto record = frame(world_recovery_record_type::object, native.data(), native.size());
+        blob.insert(blob.end(), record.begin(), record.end());
+    }
+    finish(blob, header);
+    return blob;
+}
+
+static world_recovery_item_snapshot item(uint64_t uid, uint64_t root, uint64_t parent)
+{
+    world_recovery_item_snapshot value = {};
+    value.item_uid = uid;
+    value.root_item_uid = root;
+    value.parent_item_uid = parent;
+    value.vnum = 1000;
+    value.type = ITEM_CONTAINER;
+    strcpy(value.name, "item");
+    strcpy(value.short_description, "an item");
+    strcpy(value.description, "An item is here.");
+    return value;
+}
+
 int main()
 {
+    rooms[0].number = 100;
+    rooms[1].number = 200;
+    object_indexes[0].virtual_number = 1000;
     world_recovery_header header = {};
     memcpy(header.magic, "WRS9", 4);
     header.schema_version = WORLD_RECOVERY_SCHEMA_VERSION;
@@ -119,6 +337,73 @@ int main()
     assert(!world_recovery_capture_age_expired(WORLD_RECOVERY_CAPTURE_MAX_AGE_MSEC - 1));
     assert(world_recovery_capture_age_expired(WORLD_RECOVERY_CAPTURE_MAX_AGE_MSEC));
     assert(world_recovery_capture_age_expired(UINT64_MAX));
+
+    publish_gate gate;
+    assert(world_recovery_pipeline_init(blocked_publish, &gate));
+    assert(world_recovery_pipeline_request());
+    world_recovery_pipeline_pulse();
+    {
+        std::unique_lock<std::mutex> lock(gate.mutex);
+        assert(gate.changed.wait_for(lock, std::chrono::seconds(2),
+                                     [&] { return gate.entered; }));
+    }
+    std::atomic<bool> cancel_started = false;
+    std::atomic<bool> cancel_returned = false;
+    std::thread canceler([&] {
+        cancel_started.store(true);
+        world_recovery_pipeline_cancel();
+        cancel_returned.store(true);
+    });
+    while (!cancel_started.load())
+        std::this_thread::yield();
+    std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    assert(!cancel_returned.load());
+    {
+        std::lock_guard<std::mutex> lock(gate.mutex);
+        gate.release = true;
+        gate.changed.notify_all();
+    }
+    canceler.join();
+    assert(cancel_returned.load());
+    const world_recovery_health canceled = world_recovery_pipeline_health_copy();
+    assert(!canceled.initialized && !canceled.worker_running && !canceled.worker_busy);
+    world_recovery_pipeline_reset_for_tests();
+
+    const auto valid_objects = object_generation({{item(500, 500, 0)}});
+    reconcile_succeeds = false;
+    assert(!world_recovery_restore(valid_objects.data(), valid_objects.size(), 300, 77,
+                                   nullptr));
+    assert(objects_read == 0 && objects_extracted == 0 && !materializing);
+
+    reconcile_succeeds = true;
+    hydrate_succeeds = false;
+    assert(!world_recovery_restore(valid_objects.data(), valid_objects.size(), 300, 77,
+                                   nullptr));
+    assert(objects_read == 1 && objects_extracted == 1 && object_list == nullptr &&
+           !materializing);
+
+    hydrate_succeeds = true;
+    const auto duplicates = object_generation(
+        {{item(600, 600, 0)}, {item(600, 600, 0)}});
+    assert(!world_recovery_restore(duplicates.data(), duplicates.size(), 300, 77, nullptr));
+
+    obj_data live_root = {};
+    obj_data moved_child = {};
+    live_root.obj_uid = 700;
+    live_root.R_num = 0;
+    live_root.loc_p = LOC_ROOM;
+    live_root.loc.room = 0;
+    live_root.next = &moved_child;
+    moved_child.obj_uid = 701;
+    moved_child.R_num = 0;
+    moved_child.loc_p = LOC_ROOM;
+    moved_child.loc.room = 0;
+    object_list = &live_root;
+    const auto moved_descendant = object_generation(
+        {{item(700, 700, 0), item(701, 700, 700)}});
+    assert(!world_recovery_restore(moved_descendant.data(), moved_descendant.size(), 300, 77,
+                                   nullptr));
+    object_list = nullptr;
     return 0;
 }
 '''
@@ -130,6 +415,7 @@ with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
     subprocess.run(
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
+            "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
             "-ffunction-sections", "-fdata-sections", "-Isrc", str(source),
             "src/world_recovery_pipeline.c", "src/world_recovery_codec.c",
             "src/redis_command_observability.c",
@@ -138,11 +424,11 @@ with tempfile.TemporaryDirectory(prefix="duris-world-recovery-") as temp_dir:
         ],
         cwd=ROOT,
         check=True,
-        capture_output=True,
-        text=True,
     )
     subprocess.run([str(binary)], check=True)
 print("[PASS] schema, sequence, completeness, age, length, and checksum framing validates")
+print("[PASS] in-flight publication joins before pwipe deletion can continue")
+print("[PASS] duplicate/moved items and custody failures fail closed with rollback")
 
 for token in (
     "WORLD_RECOVERY_MAX_BYTES = 64 * 1024 * 1024",
@@ -301,6 +587,10 @@ assert "world_recovery_pipeline_cancel()" in quiesce
 assert "redis_floor_store_cancel()" in quiesce
 assert "redis_world_writer_fence_claim()" in quiesce
 assert "redis_world_store_release_fence" not in quiesce
+pwipe = section(REDIS, "bool redis_clear_pwipe_state", "bool redis_validate_pwipe_state")
+assert pwipe.index("redis_world_recovery_quiesce()") < pwipe.index(
+    "redis_connection_open(redis_maintenance_settings)"
+)
 clear = section(REDIS, "bool redis_clear_world_state", "bool redis_load_world_state")
 generation_clear = "redis_clear_scan_match(REDIS_SHARED_SCOPE_WORLD, generation_pattern)"
 assert clear.index("redis_world_recovery_quiesce()") < clear.index(

@@ -1009,6 +1009,8 @@ bool redis_clear_pwipe_state(void)
 	redis_presence_worker_cancel();
 	redis_cache_store_cancel();
 	redis_floor_store_cancel();
+	if (!redis_world_recovery_quiesce())
+		return false;
 	redisContext *maintenance = redis_connection_open(redis_maintenance_settings);
 	if (!maintenance || maintenance->err)
 	{
