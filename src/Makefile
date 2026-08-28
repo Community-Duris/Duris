@@ -26,6 +26,7 @@ WARNING_FLAGS = -Wall -Wextra -Wpedantic -Werror \
 # profile or the feature defines below.
 EXTRA_CFLAGS =
 EXTRA_LDFLAGS =
+PERSISTENCE_BACKEND ?= mariadb
 
 CFLAGS = -g -std=c++20 $(HARDENING_FLAGS) $(WARNING_FLAGS)
 CFLAGS += -DTEST_MUD
@@ -33,11 +34,22 @@ CFLAGS += -D__NO_TESTS__    # exclude test suite from production build
 CFLAGS += $(EXTRA_CFLAGS)
 LDFLAGS += $(EXTRA_LDFLAGS)
 
+ifeq ($(PERSISTENCE_BACKEND),mariadb)
+MYSQL_INCLUDES = -I/usr/include/mysql
+MYSQL_LIBS = -lmysqlclient
+else ifeq ($(PERSISTENCE_BACKEND),flatfile)
+CFLAGS += -D__NO_MYSQL__
+MYSQL_INCLUDES =
+MYSQL_LIBS =
+else
+$(error PERSISTENCE_BACKEND must be mariadb or flatfile)
+endif
+
 #CFLAGS += -DCTF_MUD=1
 
-INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 -I/usr/include/mysql -I./ships
+INCLUDES	= -I. -I../tests/async -I/usr/include/libxml2 $(MYSQL_INCLUDES) -I./ships
 
-GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt -lmysqlclient -lgnutls -lssl -lcrypto -lcjson -lhiredis -lhiredis_ssl -lbsd -pthread
+GENERAL_LIBS    = -lm -lstdc++ -lz -lxml2 -lcrypt $(MYSQL_LIBS) -lgnutls -lssl -lcrypto -lcjson -lhiredis -lhiredis_ssl -lbsd -pthread
 
 # GENERAL_LIBS += -lcygipc
 LIBS += $(GENERAL_LIBS)
@@ -206,6 +218,7 @@ OBJS =  $(SHIP_OBJS) \
 				 outposts.o \
 				 persistence_checkpoint.o \
 				 persistence_observability.o \
+				 persistence_mode.o \
 				 critical_command.o \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \

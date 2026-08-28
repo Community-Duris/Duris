@@ -85,6 +85,7 @@
 #include "ws_handlers.h"
 #include "latency_trace.h"
 #include "persistence_queue.h"
+#include "persistence_mode.h"
 #include "locker_async.h"
 #include "maintenance_repository.h"
 #include "maintenance_scheduler.h"
@@ -491,11 +492,16 @@ int main(int argc, char **argv)
 	if (load_env_file() < 0)
 		fatal_boot_error("comm", "Unsafe environment configuration file");
 
-	if (initialize_mysql() < 0)
+	char persistence_error[2048];
+	if (!persistence_mode_configure(persistence_error, sizeof(persistence_error)))
+		fatal_boot_error("comm", "%s", persistence_error);
+	logit(LOG_STATUS, "Persistence mode: %s.", persistence_mode_name());
+
+	if (persistence_mode_requires_mysql() && initialize_mysql() < 0)
 	{
 		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
-	if (!sql_hydrate_item_owner_revisions())
+	if (persistence_mode_requires_mysql() && !sql_hydrate_item_owner_revisions())
 		logit(LOG_STATUS,
 		      "Authoritative item owner revisions unavailable; movement fails closed.");
 

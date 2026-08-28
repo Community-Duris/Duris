@@ -14,6 +14,7 @@ sections below continue to describe the required end state.
 ### Checkpoint 1 - assessment preserved and baseline reproduced
 
 - **Revision started from:** `68a916ec`
+- **Published revision:** `fefa7291`
 - **Completed:** source/history assessment, production requirements, implementation
   order, and acceptance-test inventory.
 - **Baseline command:** the isolated `make -C src ... EXTRA_CFLAGS=-D__NO_MYSQL__ -j2`
@@ -26,11 +27,38 @@ sections below continue to describe the required end state.
   configuration, with focused source-contract tests before attempting a clean DB-free
   server build.
 
+### Checkpoint 2 - explicit mode and dependency boundary
+
+- **Completed:** added `PERSISTENCE_BACKEND=mariadb|flatfile` to the server build. The
+  flat selection defines `__NO_MYSQL__` and removes both the MySQL include path and
+  `-lmysqlclient` from its compile/link configuration.
+- **Completed:** added runtime parsing for `mariadb-primary`,
+  `mariadb-primary-flatfile-fallback`, and `flatfile-primary`. The MariaDB mode remains
+  the default.
+- **Completed:** flat modes require an absolute `FLATFILE_STATE_DIR`, reject symlinks,
+  wrong ownership, and group/world permissions, and provision the initial authority
+  topology at mode `0700`.
+- **Completed:** incomplete flat modes fail boot with an explicit inventory of
+  unimplemented durable domains instead of continuing with SQL no-op/empty stubs.
+- **Checks passed:** `python3 tests/async/test_persistence_mode.py`,
+  `./scripts/format.sh --check`, `git diff --check`, and the normal `make -C src -j2`
+  server build.
+- **Flat build evidence:** isolated `make -C src PERSISTENCE_BACKEND=flatfile ... -j2`
+  commands no longer contain a MySQL include or client library. The build still fails
+  because `sql.h` leaks `MYSQL` in three declarations and `ships/ship_base.c` calls
+  transaction helpers that are absent under `__NO_MYSQL__`.
+- **Files changed:** `src/Makefile`, `src/comm.c`, `src/persistence_mode.[ch]`,
+  `tests/async/test_persistence_mode.py`, `docs/guides/BUILDING.md`, and
+  `docs/operations/CONFIGURATION.md`.
+- **Next action:** remove MySQL connection types from common interfaces, guard or route
+  ship shutdown persistence through a backend interface, then iterate the isolated flat
+  build to its next compile boundary.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
 |---|---|---|
-| P0 - real DB-free boundary | In progress | Baseline failure reproduced; implementation not yet present |
+| P0 - real DB-free boundary | In progress | Mode/root fail-closed contract and compile/link selection implemented; common source still exposes SQL types |
 | P1 - identity and player continuity | Not started | No flat account/player authority yet |
 | P2 - transactional gameplay and domains | Not started | No flat operation WAL/domain repositories yet |
 | P3 - production operations | Not started | No exporter, whole-authority backup, or restore drill yet |
@@ -69,25 +97,25 @@ implementation material, but neither is sufficient by itself.
 
 ## Scope and terminology
 
-For this assessment, “the DB got ripped out” means that no usable MySQL/MariaDB server,
+For this assessment, "the DB got ripped out" means that no usable MySQL/MariaDB server,
 schema, or client-backed persistence path is available. Redis is considered separately:
 it is not authoritative for player saves in the current design and cannot replace MySQL.
-If “DB” also includes Redis, the conclusion is unchanged and world-recovery facilities
+If "DB" also includes Redis, the conclusion is unchanged and world-recovery facilities
 become unavailable as well.
 
-“Fallback” means a complete, current flat-file authority that can be selected for the
+"Fallback" means a complete, current flat-file authority that can be selected for the
 whole server when MariaDB is unavailable. It does not mean writing a pfile only after an
 individual SQL save fails, nor mixing SQL and flat-file authority within one gameplay
 operation. Switching authority must be explicit, observable, and recoverable. The same
 flat backend must also support a configured flatfile-primary mode in which every durable
 read and write works without MariaDB being installed or reachable.
 
-“Before the DB system got started” is necessarily scoped to the recent **player pfile to
+"Before the DB system got started" is necessarily scoped to the recent **player pfile to
 SQL migration project**, not to the first SQL use in Duris. The exact boundary used here
 is:
 
-- `97a4166c` — last commit before the player migration project.
-- `35f66dfc` — its direct child, titled `phase 1 pfile-to-db: schema + sql_player basics`.
+- `97a4166c` - last commit before the player migration project.
+- `35f66dfc` - its direct child, titled `phase 1 pfile-to-db: schema + sql_player basics`.
 
 SQL had existed for years before that boundary. Calling `97a4166c` a universally
 flat-file or DB-free version would be inaccurate.
@@ -577,12 +605,12 @@ For each operation:
 7. compact only after the materialized generation is included in a verified backup.
 
 This is required for item/currency transfers, auctions, locker movement, guild funds,
-corpse recovery, and similar operations where “save both sides later” is unsafe.
+corpse recovery, and similar operations where "save both sides later" is unsafe.
 
 ### 6. Make backup a property of the backend
 
 The flat backend should expose a read-only snapshot/generation boundary. A backup must
-include the complete selected authority—accounts, indexes and allocators, players,
+include the complete selected authority-accounts, indexes and allocators, players,
 operations, every domain, mail if retained separately, and the manifest describing it.
 It should produce checksums, validate them, and regularly pass a cold restore test into
 an empty directory.
@@ -641,7 +669,7 @@ loss reporting. It cannot be made safe by starting the current binary with a fla
 
 ## Suggested implementation order
 
-### P0 — prove a real DB-free boundary
+### P0 - prove a real DB-free boundary
 
 - Remove MySQL headers, objects, and link dependencies from the flat build.
 - Add CI for a clean build on a host without MySQL development packages.
@@ -649,7 +677,7 @@ loss reporting. It cannot be made safe by starting the current binary with a fla
 - Make boot enumerate and reject every unimplemented durable domain.
 - Add a database-free smoke boot with both MySQL and Redis unreachable.
 
-### P1 — restore identity and player continuity
+### P1 - restore identity and player continuity
 
 - Implement atomic account/auth, account-character membership, name index, PID allocation,
   rename, delete, and block flows.
@@ -658,7 +686,7 @@ loss reporting. It cannot be made safe by starting the current binary with a fla
 - Make terminal save fences depend on flat materialization, not merely a queued record.
 - Import legacy pfiles only through an offline, audited conversion path.
 
-### P2 — restore transactional gameplay and domain coverage
+### P2 - restore transactional gameplay and domain coverage
 
 - Implement stable item UID allocation, owner index, and transfer ledger.
 - Implement the operation WAL and idempotent replay.
@@ -667,7 +695,7 @@ loss reporting. It cannot be made safe by starting the current binary with a fla
 - Audit every `qry`, `db_query`, SQL repository, and no-MySQL stub until none can silently
   discard or fabricate durable state.
 
-### P3 — production operations
+### P3 - production operations
 
 - Implement consistent export/cutover and whole-authority backups.
 - Add corruption quarantine, inspection, repair, compaction, and capacity tooling.

@@ -21,8 +21,17 @@ beyond owner read/write (`0600`).
 
 ## Database
 
+`PERSISTENCE_MODE` selects one whole-server authority. It defaults to
+`mariadb-primary`. The accepted values are `mariadb-primary`,
+`mariadb-primary-flatfile-fallback`, and `flatfile-primary`. The two flat-file modes are
+currently fail-closed implementation targets: the server provisions and validates the
+state layout, then rejects boot with the durable domains that are not implemented. They
+must not be enabled in production yet.
+
 | Variable | Requirement | Meaning |
 | --- | --- | --- |
+| `PERSISTENCE_MODE` | Optional; defaults to `mariadb-primary` | Select the complete persistence authority; mixed per-write failover is not supported. |
+| `FLATFILE_STATE_DIR` | Required by either flat-file mode | Absolute server-user-owned directory with mode `0700` or stricter. |
 | `ENVIRONMENT` | Required: `local` or `production` | Runtime trust role. |
 | `DB_HOST` | Required | MySQL/MariaDB host. |
 | `DB_PORT` | Optional; `1`-`65535` | Database TCP port; the client default applies when omitted. |

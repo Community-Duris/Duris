@@ -13,6 +13,18 @@ make -C src                             # produces bin/server/dms_new
 cp bin/server/dms_new bin/server/dms    # manually promote for a direct run
 ```
 
+The server build has an explicit compile-time persistence dependency boundary:
+
+```bash
+make -C src PERSISTENCE_BACKEND=mariadb
+make -C src PERSISTENCE_BACKEND=flatfile
+```
+
+`mariadb` is the default and includes and links the MySQL-compatible client. The
+`flatfile` selection defines `__NO_MYSQL__` and does not add the MySQL include path or
+client library. The flat build is an implementation target and is not yet production
+ready; boot currently fails closed with the durable domains that remain unimplemented.
+
 The root `Makefile` is the maintained full-project entry point. `make clean`
 removes compiled server, editor, and area-tool artifacts but preserves generated
 world data, the active runtime, package artifacts, and runtime history. Every
@@ -44,12 +56,10 @@ From the default build line:
 | `-std=c++20` | All `.c` files are compiled as C++20 with g++. |
 | `-DTEST_MUD` | Development build: selects the `duris_dev` database credentials in `src/sql.h` and enables test commands. |
 | `-D__NO_TESTS__` | Excludes built-in test hooks. |
+| `-D__NO_MYSQL__` | Selected by `PERSISTENCE_BACKEND=flatfile`; removes the client compile/link dependency. |
 
-MySQL/MariaDB client support is a mandatory server build dependency. The historical
-`-D__NO_MYSQL__` partial stubs remain only to keep narrow unit harnesses isolated; they do
-not define or advertise a supported whole-server build. Redis is optional at runtime, but
-Hiredis and OpenSSL remain build dependencies because one server binary supports both the
-enabled and disabled runtime configurations.
+Redis is optional at runtime, but Hiredis and OpenSSL remain build dependencies because
+one server binary supports both the enabled and disabled runtime configurations.
 
 `HARDENING_FLAGS` adds `-Og -D_FORTIFY_SOURCE=3 -fstack-protector-strong
 -fstack-clash-protection`. `EXTRA_CFLAGS` / `EXTRA_LDFLAGS` are appended last
