@@ -187,6 +187,29 @@
 - **Overall state:** the full objective is not complete. The global incomplete-domain
   boot fence remains in place while other concrete DB-free gaps are restored.
 
+### 2026-08-29 - connected artifact binding to flat authority
+
+- **Concrete gap:** soul-binding fields were already part of the canonical flat artifact
+  catalog, but the client-free `sql_get_bind_data` always failed and
+  `sql_update_bind_data` discarded every change. Existing artifact pickup, ownership
+  switching, feeding checks, and staff repair paths therefore could not use the flat data
+  that had already been built.
+- **Restoration:** the two existing compatibility functions now read and update binding
+  owner/timer fields in that catalog. Updates use its existing global authority lock,
+  transaction recovery, atomic replacement, checksums, and record/catalog revisions.
+  Missing artifacts, invalid values, overflow, and corrupt or unavailable authority fail
+  closed instead of synthesizing or overwriting state. The database-backed functions are
+  unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_artifact_repository.py` covers
+  missing authority and vnums, binding round trips and updates, idempotence, revision
+  advancement, record preservation, invalid input, and corrupt-state read/write refusal.
+  Its client-free runtime harness directly invokes the real SQL compatibility functions.
+- **Build evidence:** a clean full MariaDB build, the clean client-free build and boot
+  preflight, `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** this connects only the demonstrated binding gap. The broader artifact
+  gameplay/read/update routes still require audit and restoration, so the global
+  incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

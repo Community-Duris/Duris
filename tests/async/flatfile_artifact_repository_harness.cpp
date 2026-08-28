@@ -215,6 +215,46 @@ int main(int argc, char **argv)
 			records[0].revision == 2,
 		"corpse-held artifact was not released with player deletion semantics");
 
+	const fs::path bind_root = fs::path(argv[1]) / "bind";
+	prepare_root(bind_root);
+	int32_t bind_owner = 99;
+	int64_t bind_timer = 99;
+	require(flatfile_artifact_bind_get(bind_root.string(), 500, &bind_owner, &bind_timer,
+					   &error) == flatfile_artifact_result::not_found &&
+			bind_owner == 0 && bind_timer == 0,
+		"missing bind authority did not fail closed with cleared outputs");
+	const flatfile_artifact_record bind_record = {
+		500, true, FLATFILE_ARTIFACT_ON_PLAYER, 42, 5000, 1, 1000, 42, 4000, 3
+	};
+	require(flatfile_artifact_establish(bind_root.string(), { bind_record }, &error) ==
+			flatfile_artifact_result::ok,
+		"bind artifact establishment failed");
+	require(flatfile_artifact_bind_get(bind_root.string(), 500, &bind_owner, &bind_timer,
+					   &error) == flatfile_artifact_result::ok &&
+			bind_owner == 42 && bind_timer == 4000,
+		"artifact binding did not round trip");
+	require(flatfile_artifact_bind_update(bind_root.string(), 500, 77, 4100, &error) ==
+			flatfile_artifact_result::ok,
+		"artifact binding update failed: " + error);
+	require(flatfile_artifact_bind_update(bind_root.string(), 500, 77, 4100, &error) ==
+			flatfile_artifact_result::unchanged,
+		"identical artifact binding update was not idempotent");
+	require(flatfile_artifact_bind_get(bind_root.string(), 500, &bind_owner, &bind_timer,
+					   &error) == flatfile_artifact_result::ok &&
+			bind_owner == 77 && bind_timer == 4100,
+		"updated artifact binding did not round trip");
+	require(flatfile_artifact_bind_update(bind_root.string(), 501, 77, 4100, &error) ==
+			flatfile_artifact_result::not_found,
+		"binding update synthesized a missing artifact");
+	require(flatfile_artifact_bind_update(bind_root.string(), 500, -2, 4100, &error) ==
+			flatfile_artifact_result::invalid,
+		"invalid binding owner was accepted");
+	require(flatfile_artifact_list(bind_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.size() == 1 && records[0].bind_owner_pid == 77 &&
+			records[0].bind_timer == 4100 && records[0].revision == 4,
+		"binding update did not preserve the canonical artifact record");
+
 	const fs::path catalog = root / "domains/artifact_catalog";
 	{
 		std::fstream file(catalog, std::ios::in | std::ios::out | std::ios::binary);
@@ -229,6 +269,12 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_list(root.string(), &records, &error) ==
 			flatfile_artifact_result::invalid,
 		"corrupt artifact authority was exposed");
+	require(flatfile_artifact_bind_get(root.string(), 100, &bind_owner, &bind_timer, &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was exposed through binding lookup");
+	require(flatfile_artifact_bind_update(root.string(), 100, 42, 5000, &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was overwritten through binding update");
 	{
 		flatfile_authority_lock lock;
 		require(lock.acquire(root.string(), &error),

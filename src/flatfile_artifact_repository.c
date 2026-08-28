@@ -303,6 +303,74 @@ flatfile_artifact_result flatfile_artifact_list(const std::string &root,
 	return flatfile_artifact_result::ok;
 }
 
+flatfile_artifact_result flatfile_artifact_bind_get(const std::string &root, int32_t vnum,
+						    int32_t *owner_pid, int64_t *timer,
+						    std::string *error)
+{
+	if (owner_pid)
+		*owner_pid = 0;
+	if (timer)
+		*timer = 0;
+	if (root.empty() || vnum <= 0 || !owner_pid || !timer)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	const auto found = std::lower_bound(catalog.records.begin(), catalog.records.end(), vnum,
+					    [](const flatfile_artifact_record &record,
+					       int32_t sought) { return record.vnum < sought; });
+	if (found == catalog.records.end() || found->vnum != vnum)
+		return flatfile_artifact_result::not_found;
+	*owner_pid = found->bind_owner_pid;
+	*timer = found->bind_timer;
+	return flatfile_artifact_result::ok;
+}
+
+flatfile_artifact_result flatfile_artifact_bind_update(const std::string &root, int32_t vnum,
+						       int32_t owner_pid, int64_t timer,
+						       std::string *error)
+{
+	if (root.empty() || vnum <= 0 || owner_pid < -1 || timer < 0)
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	const auto found = std::lower_bound(catalog.records.begin(), catalog.records.end(), vnum,
+					    [](const flatfile_artifact_record &record,
+					       int32_t sought) { return record.vnum < sought; });
+	if (found == catalog.records.end() || found->vnum != vnum)
+		return flatfile_artifact_result::not_found;
+	if (found->bind_owner_pid == owner_pid && found->bind_timer == timer)
+		return flatfile_artifact_result::unchanged;
+	if (found->revision == std::numeric_limits<uint64_t>::max() ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_artifact_result::invalid;
+	found->bind_owner_pid = owner_pid;
+	found->bind_timer = timer;
+	++found->revision;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_artifact_result::ok :
+		       flatfile_artifact_result::io_error;
+}
+
 flatfile_artifact_result flatfile_artifact_prepare_player_release(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error)

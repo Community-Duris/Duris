@@ -52,6 +52,12 @@ flatfile_artifact_establish(const std::string &root,
 flatfile_artifact_result flatfile_artifact_list(const std::string &root,
 						std::vector<flatfile_artifact_record> *records,
 						std::string *error);
+flatfile_artifact_result flatfile_artifact_bind_get(const std::string &root, int32_t vnum,
+						    int32_t *owner_pid, int64_t *timer,
+						    std::string *error);
+flatfile_artifact_result flatfile_artifact_bind_update(const std::string &root, int32_t vnum,
+						       int32_t owner_pid, int64_t timer,
+						       std::string *error);
 flatfile_artifact_result flatfile_artifact_prepare_player_release(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error);

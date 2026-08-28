@@ -48,3 +48,49 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
     if run_result.returncode:
         raise SystemExit(run_result.stdout)
     print(run_result.stdout.strip())
+
+    runtime_binary = temporary_path / "flatfile_artifact_bind_runtime_test"
+    runtime_compile_result = subprocess.run(
+        [
+            "g++",
+            "-std=c++20",
+            "-Wall",
+            "-Wextra",
+            "-Wpedantic",
+            "-Werror",
+            "-D__NO_MYSQL__",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-Isrc/no_mysql",
+            "-Isrc",
+            "tests/async/flatfile_artifact_bind_runtime_harness.cpp",
+            "src/sql.c",
+            "src/flatfile_artifact_repository.c",
+            "src/player_snapshot_codec.c",
+            "src/item_transfer_command.c",
+            "src/critical_command.c",
+            "src/flatfile_authority_transaction.c",
+            "src/flatfile_store.c",
+            "-Wl,--gc-sections",
+            "-lcrypto",
+            "-pthread",
+            "-o",
+            str(runtime_binary),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if runtime_compile_result.returncode:
+        raise SystemExit(runtime_compile_result.stdout)
+    runtime_result = subprocess.run(
+        [str(runtime_binary), str(temporary_path / "runtime-state")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if runtime_result.returncode:
+        raise SystemExit(runtime_result.stdout)
+    print(runtime_result.stdout.strip())
