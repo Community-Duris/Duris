@@ -68,6 +68,7 @@ typedef bool (*world_recovery_publish_fn)(const unsigned char *data, size_t size
 bool world_recovery_pipeline_init(world_recovery_publish_fn publish, void *context);
 bool world_recovery_pipeline_set_sequence_floor(uint64_t durable_sequence);
 void world_recovery_pipeline_shutdown(void);
+void world_recovery_pipeline_cancel(void);
 bool world_recovery_pipeline_request(void);
 void world_recovery_pipeline_pulse(void);
 bool world_recovery_pipeline_take_completion(world_recovery_completion *completion);

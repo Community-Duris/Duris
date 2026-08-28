@@ -212,16 +212,28 @@ static void redis_clear_cache(P_char ch, const char *cache)
 
 	if (is_abbrev(cache, "world"))
 	{
-		redis_clear_world_state();
-		send_to_char("&+GCleared:&n world_state\r\n", ch);
+		if (redis_clear_world_state())
+			send_to_char(
+				"&+GCleared and quiesced:&n world_state (publishing resumes after restart)\r\n",
+				ch);
+		else
+			send_to_char("&+RFailed:&n world_state was not safely cleared\r\n", ch);
 		return;
 	}
 
 	if (is_abbrev(cache, "floor"))
 	{
+		if (!redis_world_recovery_quiesce())
+		{
+			send_to_char("&+RFailed:&n world publisher could not be safely fenced\r\n",
+				     ch);
+			return;
+		}
 		redis_clear_floor_drops();
 		redis_clear_floor_pickups();
-		send_to_char("&+GCleared:&n floor_drops, floor_pickups\r\n", ch);
+		send_to_char(
+			"&+GCleared and quiesced:&n floor_drops, floor_pickups (publishing resumes after restart)\r\n",
+			ch);
 		return;
 	}
 
@@ -267,11 +279,17 @@ static void redis_clear_all(P_char ch, bool confirmed)
 	}
 
 	// world recovery
-	redis_clear_world_state();
+	if (!redis_clear_world_state())
+	{
+		send_to_char("&+RFailed:&n world recovery was not safely cleared\r\n", ch);
+		return;
+	}
 	redis_clear_floor_drops();
 	redis_clear_floor_pickups();
 
-	send_to_char("&+GCleared:&n world_state, floor_drops, floor_pickups\r\n", ch);
+	send_to_char(
+		"&+GCleared and quiesced:&n world_state, floor_drops, floor_pickups (publishing resumes after restart)\r\n",
+		ch);
 
 	// content caches
 	redis_invalidate_artifact_cache();

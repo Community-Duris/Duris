@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PIPELINE = (ROOT / "src/world_recovery_pipeline.c").read_text()
 HEADER = (ROOT / "src/world_recovery_pipeline.h").read_text()
 REDIS = (ROOT / "src/redis.c").read_text()
+STORE = (ROOT / "src/redis_world_store.c").read_text()
 COMM = (ROOT / "src/comm.c").read_text()
 COPYOVER = (ROOT / "src/copyover.c").read_text()
 HANDLER = (ROOT / "src/handler.c").read_text()
@@ -115,12 +116,17 @@ print("[PASS] bounded capture is game-thread owned and publisher traverses no li
 
 save = section(REDIS, "bool redis_save_world_state(void)", "void redis_world_recovery_pulse")
 assert "fork()" not in save and "world_recovery_pipeline_request" in save
-publisher = section(REDIS, "static bool redis_publish_world_generation", "static bool redis_world_recovery_ensure_initialized")
-for token in ("MULTI", "SET mud:world_state:generation:%llu %b", "world_state:current",
-              "world_state:timestamp", "world_state:sequence",
-              "world_state:checksum", "world_state:complete 1", "EXEC"):
+initialize = section(REDIS, "bool redis_init(void)", "bool redis_clear_pwipe_state")
+ensure = section(REDIS, "static bool redis_world_recovery_ensure_initialized", "static redisReply *redis_command")
+assert "redis_world_writer_fence_claim()" in initialize
+assert "redis_world_writer_fence_claim()" not in ensure
+publisher = STORE[STORE.index("bool redis_world_store_publish"):]
+for token in ("WATCH mud:world_state:writer_fence", "token_matches", "MULTI",
+              "SET mud:world_state:generation:%llu %b", "world_state:current",
+              "world_state:timestamp", "world_state:sequence", "world_state:checksum",
+              "world_state:complete 1", "DEL mud:floor_drops", "PEXPIRE", "EXEC"):
     assert token in publisher
-assert publisher.index("SET mud:world_state:generation:%llu %b") < publisher.index("MULTI") < publisher.index("EXEC")
+assert publisher.index("MULTI") < publisher.index("SET mud:world_state:generation:%llu %b") < publisher.index("EXEC")
 assert "header.sequence == sequence" in section(REDIS, "bool redis_has_world_state", "time_t redis_world_state_timestamp")
 assert "world_recovery_restore" in section(REDIS, "bool redis_load_world_state", "void event_save_world_state")
 restore = section(PIPELINE, "bool world_recovery_restore", "void world_recovery_capture_forget_character")
@@ -131,14 +137,29 @@ print("[PASS] recovery publication is atomic and restore accepts only validated 
 flush = section(REDIS, "bool redis_flush_floor_drops", "void redis_remove_floor_drop")
 pulse = section(REDIS, "void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
 assert "world_recovery_pipeline_busy()" in flush
-assert "world_recovery_floor_ack_pending" in flush
-assert pulse.index("completion.sequence == recovery.last_acknowledged_sequence") < pulse.index(
-    "redis_clear_floor_drops_checked()"
+assert "world_recovery_floor_ack_pending" not in flush
+assert "redis_clear_floor_drops_checked()" not in pulse
+cancel = section(PIPELINE, "void world_recovery_pipeline_cancel", "bool world_recovery_pipeline_request")
+for token in ("stop_requested = true", "queued.clear()", "completions.clear()",
+              "active_capture = {}", "publisher_worker.join()"):
+    assert token in cancel
+quiesce = section(REDIS, "bool redis_world_recovery_quiesce", "bool redis_has_world_state")
+assert "world_recovery_pipeline_cancel()" in quiesce
+assert "redis_world_writer_fence_claim()" in quiesce
+assert "redis_world_store_release_fence" not in quiesce
+clear = section(REDIS, "bool redis_clear_world_state", "bool redis_load_world_state")
+assert clear.index("redis_world_recovery_quiesce()") < clear.index(
+    'redis_clear_scan_match("mud:world_state:generation:*")'
 )
+assert clear.index("if (!quiesced)") < clear.index(
+    'redis_clear_scan_match("mud:world_state:generation:*")'
+)
+cleanup = section(REDIS, "void redis_cleanup", "void redis_clear_floor_pickups")
+assert "redis_world_store_release_fence" in cleanup
 assert "world_recovery_capture_forget_character(ch);" in HANDLER
 assert "world_recovery_capture_forget_object(obj);" in HANDLER
 assert "redis_world_recovery_pulse();" in COMM
 assert "redis_world_recovery_drain(3000)" in COMM and "redis_world_recovery_drain(3000)" in COPYOVER
-print("[PASS] exact ACK owns floor-delta clearing and lifecycle/drain hooks are fail closed")
+print("[PASS] fenced publisher owns atomic floor handoff and cancel/join lifecycle is fail closed")
 
 print("immutable world recovery contracts passed")

@@ -27,6 +27,7 @@
 #include "player_save_worker.h"
 #include "presence_policy.h"
 #include "redis_presence_payload.h"
+#include "redis_world_store.h"
 #include "spells.h"
 #include "sql.h"
 #include "sql_player.h"
@@ -42,6 +43,7 @@
 #ifndef __NO_MYSQL__
 #include <cjson/cJSON.h>
 #include <hiredis/hiredis.h>
+#include <openssl/rand.h>
 #endif
 
 extern const int top_of_world;
@@ -78,7 +80,9 @@ int crash_recovery_boot = 0;
 
 static int world_state_interval = REDIS_WORLD_STATE_INTERVAL_DEFAULT;
 static int world_state_max_age = REDIS_WORLD_STATE_MAX_AGE_DEFAULT;
-static bool world_recovery_floor_ack_pending = false;
+static bool world_recovery_quiesced = false;
+static std::string world_writer_token;
+static uint64_t world_writer_lease_msec = 0;
 static redisContext *donation_sub_ctx = NULL;
 static volatile bool donation_sub_connected = false;
 static unsigned int donation_reconnect_delay = 1;
@@ -124,106 +128,87 @@ static redisContext *redis_connect_bounded(const char *host, int port)
 	return ctx;
 }
 
+static redis_world_store_config redis_world_store_config_copy(void)
+{
+	redis_world_store_config config = {};
+	config.host = getenv("REDIS_HOST");
+	if (!config.host || !*config.host)
+		config.host = "127.0.0.1";
+	config.port = 6379;
+	const char *port = getenv("REDIS_PORT");
+	if (port && *port)
+	{
+		const int configured = atoi(port);
+		if (configured > 0 && configured <= 65535)
+			config.port = configured;
+	}
+	config.connect_timeout_msec = REDIS_CONNECT_TIMEOUT_MSEC;
+	config.command_timeout_msec = REDIS_COMMAND_TIMEOUT_MSEC;
+	return config;
+}
+
+static bool redis_world_writer_token_create(void)
+{
+	unsigned char random[16] = {};
+	if (RAND_bytes(random, sizeof(random)) != 1)
+		return false;
+	static const char hex[] = "0123456789abcdef";
+	world_writer_token.resize(sizeof(random) * 2);
+	for (size_t index = 0; index < sizeof(random); ++index)
+	{
+		world_writer_token[index * 2] = hex[random[index] >> 4];
+		world_writer_token[index * 2 + 1] = hex[random[index] & 0x0f];
+	}
+	return true;
+}
+
+static bool redis_world_writer_fence_claim(void)
+{
+	if (!world_writer_token.empty())
+	{
+		const redis_world_store_config config = redis_world_store_config_copy();
+		return redis_world_store_renew_fence(&config, world_writer_token.c_str(),
+						     world_writer_lease_msec);
+	}
+	if (!redis_world_writer_token_create())
+		return false;
+	world_writer_lease_msec = 10 * 60 * 1000;
+	const redis_world_store_config config = redis_world_store_config_copy();
+	if (redis_world_store_claim_fence(&config, world_writer_token.c_str(),
+					  world_writer_lease_msec))
+		return true;
+	world_writer_token.clear();
+	world_writer_lease_msec = 0;
+	return false;
+}
+
 static bool redis_publish_world_generation(const unsigned char *data, size_t size,
 					   const world_recovery_header *header, void * /*context*/)
 {
-	if (!data || !size || !header)
+	if (!data || !size || !header || world_writer_token.empty() || !world_writer_lease_msec)
 		return false;
-	const char *redis_host = getenv("REDIS_HOST");
-	if (!redis_host || !*redis_host)
-		redis_host = "127.0.0.1";
-	int redis_port = 6379;
-	const char *redis_port_str = getenv("REDIS_PORT");
-	if (redis_port_str && *redis_port_str)
-	{
-		const int configured = atoi(redis_port_str);
-		if (configured > 0 && configured <= 65535)
-			redis_port = configured;
-	}
-	redisContext *ctx = redis_connect_bounded(redis_host, redis_port);
-	if (!ctx || ctx->err)
-	{
-		if (ctx)
-			redisFree(ctx);
-		return false;
-	}
-	auto command_ok = [ctx](const char *command, auto... args)
-	{
-		redisReply *reply = (redisReply *)redis_command(ctx, command, args...);
-		const bool ok = reply && reply->type != REDIS_REPLY_ERROR;
-		if (reply)
-			freeReplyObject(reply);
-		return ok;
-	};
-	uint64_t previous_sequence = 0;
-	redisReply *current_reply = (redisReply *)redis_command(ctx, "GET mud:world_state:current");
-	if (current_reply && current_reply->type == REDIS_REPLY_STRING && current_reply->str)
-		previous_sequence = strtoull(current_reply->str, NULL, 10);
-	if (current_reply)
-		freeReplyObject(current_reply);
-	bool ok = command_ok("SET mud:world_state:generation:%llu %b",
-			     static_cast<unsigned long long>(header->sequence), data, size) &&
-		  command_ok("MULTI") &&
-		  command_ok("SET mud:world_state:current %llu",
-			     static_cast<unsigned long long>(header->sequence)) &&
-		  command_ok("SET mud:world_state:timestamp %lld",
-			     static_cast<long long>(header->timestamp)) &&
-		  command_ok("SET mud:world_state:sequence %llu",
-			     static_cast<unsigned long long>(header->sequence)) &&
-		  command_ok("SET mud:world_state:checksum %u", header->checksum) &&
-		  command_ok("SET mud:world_state:complete 1");
-	if (ok)
-	{
-		redisReply *reply = (redisReply *)redis_command(ctx, "EXEC");
-		ok = reply && reply->type == REDIS_REPLY_ARRAY && reply->elements == 5;
-		if (ok)
-			for (size_t index = 0; index < reply->elements; ++index)
-				if (!reply->element[index] ||
-				    reply->element[index]->type == REDIS_REPLY_ERROR)
-					ok = false;
-		if (reply)
-			freeReplyObject(reply);
-	}
-	else
-	{
-		redisReply *reply = (redisReply *)redis_command(ctx, "DISCARD");
-		if (reply)
-			freeReplyObject(reply);
-	}
-	if (!ok)
-	{
-		redisReply *reply = (redisReply *)redis_command(ctx, "GET mud:world_state:current");
-		ok = reply && reply->type == REDIS_REPLY_STRING && reply->str &&
-		     strtoull(reply->str, NULL, 10) == header->sequence;
-		if (reply)
-			freeReplyObject(reply);
-	}
-	if (ok && previous_sequence && previous_sequence != header->sequence)
-	{
-		redisReply *reply = (redisReply *)redis_command(
-			ctx, "DEL mud:world_state:generation:%llu",
-			static_cast<unsigned long long>(previous_sequence));
-		if (reply)
-			freeReplyObject(reply);
-	}
-	if (!ok)
-	{
-		redisReply *reply = (redisReply *)redis_command(
-			ctx, "DEL mud:world_state:generation:%llu",
-			static_cast<unsigned long long>(header->sequence));
-		if (reply)
-			freeReplyObject(reply);
-	}
-	redisFree(ctx);
-	return ok;
+	const redis_world_store_config config = redis_world_store_config_copy();
+	return redis_world_store_publish(&config, world_writer_token.c_str(),
+					 world_writer_lease_msec, data, size, header->sequence,
+					 header->timestamp, header->checksum);
 }
 
 static bool redis_world_recovery_ensure_initialized(void)
 {
+	if (world_recovery_quiesced)
+		return false;
 	if (world_recovery_pipeline_health_copy().initialized)
 		return true;
-	if (!world_recovery_pipeline_init(redis_publish_world_generation, NULL))
+	if (world_writer_token.empty() || !world_writer_lease_msec)
 		return false;
+	const redis_world_store_config config = redis_world_store_config_copy();
+	if (!world_recovery_pipeline_init(redis_publish_world_generation, NULL))
+	{
+		redis_world_store_release_fence(&config, world_writer_token.c_str());
+		world_writer_token.clear();
+		world_writer_lease_msec = 0;
+		return false;
+	}
 	if (redis_ctx)
 	{
 		redisReply *sequence_reply =
@@ -279,8 +264,8 @@ static bool redis_clear_scan_match(const char *pattern)
 #ifndef __NO_MYSQL__
 	char cursor[64] = "0";
 
-	if (!redis_enabled || !redis_ctx || !pattern)
-		return true;
+	if (!pattern || !redis_enabled || !redis_ctx)
+		return false;
 
 	do
 	{
@@ -393,6 +378,9 @@ bool redis_init(void)
 		return true;
 	}
 	redis_enabled = true;
+	world_recovery_quiesced = false;
+	world_writer_token.clear();
+	world_writer_lease_msec = 0;
 	redis_donation_enabled = false;
 	donation_secret.clear();
 	const char *donation_env = getenv("REDIS_DONATION_SUBSCRIBER");
@@ -470,7 +458,15 @@ bool redis_init(void)
 	{
 		if (redis_donation_enabled)
 			redis_donation_subscribe_init();
+		if (redis_world_state_enabled && !redis_world_writer_fence_claim())
+		{
+			world_recovery_quiesced = true;
+			logit(LOG_SYS,
+			      "redis: world publisher disabled; writer lease unavailable at boot");
+		}
 	}
+	else if (redis_world_state_enabled)
+		world_recovery_quiesced = true;
 
 	return true;
 #endif
@@ -480,8 +476,11 @@ bool redis_clear_pwipe_state(void)
 {
 	if (!redis_enabled)
 		return true;
+	if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
+		return false;
 
-	redis_clear_world_state();
+	if (!redis_clear_world_state())
+		return false;
 	redis_clear_floor_drops();
 	redis_clear_floor_pickups();
 	redis_clear_online_players();
@@ -502,12 +501,25 @@ void redis_cleanup(void)
 #ifndef __NO_MYSQL__
 	if (redis_world_state_enabled)
 	{
-		if (world_recovery_pipeline_health_copy().initialized &&
-		    !redis_world_recovery_drain(REDIS_WORLD_DRAIN_TIMEOUT_MSEC))
+		const bool drained = !world_recovery_pipeline_health_copy().initialized ||
+				     redis_world_recovery_drain(REDIS_WORLD_DRAIN_TIMEOUT_MSEC);
+		if (!drained)
 			logit(LOG_SYS, "redis: world recovery drain timed out during shutdown");
 		if (world_recovery_pipeline_health_copy().initialized)
-			world_recovery_pipeline_shutdown();
+		{
+			if (drained)
+				world_recovery_pipeline_shutdown();
+			else
+				world_recovery_pipeline_cancel();
+		}
 	}
+	if (!world_writer_token.empty())
+	{
+		const redis_world_store_config config = redis_world_store_config_copy();
+		redis_world_store_release_fence(&config, world_writer_token.c_str());
+	}
+	world_writer_token.clear();
+	world_writer_lease_msec = 0;
 	if (redis_ctx)
 	{
 		redisFree(redis_ctx);
@@ -622,7 +634,7 @@ bool redis_flush_floor_drops(void)
 #ifndef __NO_MYSQL__
 	if (!redis_world_state_enabled)
 		return true;
-	if (world_recovery_floor_ack_pending || world_recovery_pipeline_busy())
+	if (world_recovery_pipeline_busy())
 		return false;
 	if (!redis_enabled || !redis_ctx)
 		return false;
@@ -1057,8 +1069,6 @@ bool redis_save_world_state(void)
 	redis_world_recovery_pulse();
 	if (world_recovery_pipeline_busy())
 		return true;
-	if (world_recovery_floor_ack_pending)
-		return false;
 	if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
 		return false;
 	if (!redis_flush_floor_drops())
@@ -1083,22 +1093,14 @@ void redis_world_recovery_pulse(void)
 		if (completion.published &&
 		    completion.sequence == recovery.last_acknowledged_sequence)
 		{
-			world_recovery_floor_ack_pending = true;
 			logit(LOG_SYS,
-			      "redis: world recovery generation acknowledged sequence=%llu attempts=%u",
+			      "redis: world recovery generation and floor handoff acknowledged sequence=%llu attempts=%u",
 			      (unsigned long long)completion.sequence, completion.attempts);
 		}
 		else if (!completion.published)
 			logit(LOG_SYS,
 			      "redis: world recovery generation publish failed sequence=%llu attempts=%u",
 			      (unsigned long long)completion.sequence, completion.attempts);
-	}
-	if (world_recovery_floor_ack_pending)
-	{
-		if ((!redis_ctx || redis_ctx->err) && !redis_reconnect())
-			return;
-		if (redis_clear_floor_drops_checked())
-			world_recovery_floor_ack_pending = false;
 	}
 #endif
 }
@@ -1118,11 +1120,23 @@ bool redis_world_recovery_drain(uint64_t timeout_msec)
 	while (std::chrono::steady_clock::now() < deadline)
 	{
 		redis_world_recovery_pulse();
-		if (!world_recovery_pipeline_busy() && !world_recovery_floor_ack_pending)
+		if (!world_recovery_pipeline_busy())
 			return true;
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	return false;
+#endif
+}
+
+bool redis_world_recovery_quiesce(void)
+{
+#ifdef __NO_MYSQL__
+	return true;
+#else
+	world_recovery_quiesced = true;
+	if (world_recovery_pipeline_health_copy().initialized)
+		world_recovery_pipeline_cancel();
+	return redis_world_writer_fence_claim();
 #endif
 }
 
@@ -1187,34 +1201,28 @@ time_t redis_world_state_timestamp(void)
 #endif
 }
 
-void redis_clear_world_state(void)
+bool redis_clear_world_state(void)
 {
 #ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx)
-		return;
-	uint64_t current_sequence = 0;
-	redisReply *current_reply =
-		(redisReply *)redis_command(redis_ctx, "GET mud:world_state:current");
-	if (current_reply && current_reply->type == REDIS_REPLY_STRING && current_reply->str)
-		current_sequence = strtoull(current_reply->str, NULL, 10);
-	if (current_reply)
-		freeReplyObject(current_reply);
-	if (current_sequence)
-	{
-		redisReply *generation_reply = (redisReply *)redis_command(
-			redis_ctx, "DEL mud:world_state:generation:%llu",
-			(unsigned long long)current_sequence);
-		if (generation_reply)
-			freeReplyObject(generation_reply);
-	}
+	if (!redis_enabled || ((!redis_ctx || redis_ctx->err) && !redis_reconnect()))
+		return false;
+	const bool quiesced = redis_world_recovery_quiesce();
+	if (!quiesced)
+		return false;
+	const bool generations_cleared = redis_clear_scan_match("mud:world_state:generation:*");
 
 	redisReply *reply = (redisReply *)redis_command(
 		redis_ctx,
 		"DEL mud:world_state:current mud:world_state:timestamp mud:world_state:sequence mud:world_state:checksum mud:world_state:complete");
+	const bool metadata_cleared = reply && reply->type == REDIS_REPLY_INTEGER;
 	if (reply)
 		freeReplyObject(reply);
 
-	logit(LOG_SYS, "redis: cleared world state snapshot");
+	if (quiesced && generations_cleared && metadata_cleared)
+		logit(LOG_SYS, "redis: cleared and quiesced world recovery until restart");
+	return quiesced && generations_cleared && metadata_cleared;
+#else
+	return false;
 #endif
 }
 
@@ -1285,7 +1293,6 @@ void event_save_world_state(P_char /*ch*/, P_char /*victim*/, P_obj /*obj*/, voi
 {
 	if (redis_enabled && redis_world_state_enabled)
 	{
-		redis_flush_floor_drops();
 		if (!redis_save_world_state())
 			nevent_periodic_mark_failure("world-state persistence did not complete");
 	}

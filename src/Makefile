@@ -243,6 +243,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player_load_materialize.o \
 				 presence_policy.o \
 				 redis_presence_payload.o \
+				 redis_world_store.o \
 				 currency_transaction.o \
 				 player_revision_state.o \
 				 player_save_worker.o \

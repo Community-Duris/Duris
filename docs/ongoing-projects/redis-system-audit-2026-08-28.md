@@ -3,10 +3,61 @@
 Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
-Status: Implementation in progress; RDS-006, RDS-010, RDS-012, RDS-013, RDS-014, RDS-019,
-and RDS-028 are remediated and the remaining findings are open.
+Status: Implementation in progress; RDS-002, RDS-003, RDS-006, RDS-010, RDS-012, RDS-013,
+RDS-014, RDS-019, and RDS-028 are remediated and the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-002/RDS-003 fenced atomic world publication
+
+Completed:
+
+- Added a random single-writer token with a renewable 10-minute Redis lease. Lease
+  acquisition occurs at boot, and game-loop snapshot requests fail fast if it was not
+  acquired.
+- Moved publication into a focused store adapter. Its watched transaction verifies the
+  fence token, writes the generation, advances all pointer metadata, consumes the stable
+  pre-capture floor hash, and renews the lease atomically.
+- Removed the later game-thread floor-hash delete and its acknowledgment state. Floor
+  changes made during capture remain in bounded memory and are flushed only after the
+  completed transaction, so they are not consumed with the captured generation.
+- Added explicit pipeline cancellation that discards active/queued captures and
+  completions, joins an in-flight publisher, and prevents new capture requests.
+- Administrator and pwipe world clears now acquire/retain the writer fence, cancel and
+  join before deletion, remove all generation keys, check the clear result, and keep
+  publication quiesced until process shutdown.
+- Added a real isolated Redis test covering lease exclusion, stale-writer rejection,
+  atomic pointer/floor behavior on both sides of publication, prior-generation cleanup,
+  and compare-and-delete fence release.
+
+Performance effect:
+
+- Removed the synchronous post-publication floor `DEL` from the simulation thread and
+  removed a redundant floor flush attempt from the periodic event wrapper.
+- Fence acquisition is boot-only. The additional `WATCH`, token read, and lease renewal
+  execute on the existing background publisher, not on a game pulse.
+- Normal capture remains bounded to 64 records or 2 ms per pulse. Failed boot fencing
+  disables publication for that process instead of retrying connections from gameplay.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_world_store_live.py`: passed against an isolated local
+  Redis server.
+- `python3 tests/async/test_world_recovery_pipeline.py`: passed.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+- `python3 tests/async/test_redis_pwipe_invalidation.py`: passed.
+- `python3 tests/async/test_redis_floor_world_gate.py`: passed.
+- `python3 tests/async/test_boot_log_hygiene.py`: passed.
+- `./scripts/format.sh --check`: passed.
+
+Remaining related work:
+
+- RDS-001 still needs the SQL season epoch and irreversible reset state machine. Redis
+  disabled-at-reset behavior and postconditions remain unsafe until that lands.
+- RDS-007 is partially remediated by the exclusive renewable lease and watched pointer
+  transaction, but sequence identity is not yet scoped to a durable SQL season epoch.
+- Staged UID reconciliation and duplicate rejection remain part of RDS-004/RDS-005.
 
 ### 2026-08-28 - RDS-028 legacy Redis API retirement
 
@@ -236,8 +287,8 @@ Validation:
 
 Remaining work:
 
-- All findings other than RDS-006, RDS-010, RDS-012, RDS-013, RDS-014, RDS-019, and RDS-028
-  remain open. The acceptance criteria are not yet met.
+- All findings other than RDS-002, RDS-003, RDS-006, RDS-010, RDS-012, RDS-013, RDS-014,
+  RDS-019, and RDS-028 remain open. The acceptance criteria are not yet met.
 
 ## Executive summary
 
@@ -356,6 +407,9 @@ database 0 and have no application, environment, deployment, or season prefix.
 
 Severity: Critical
 Confidence: Confirmed from reachable code paths
+Remediation status: Partially remediated; enabled-but-unavailable Redis now fails pwipe
+invalidation closed, and world writers are quiesced before checked deletion. The durable
+SQL season epoch and irreversible reset failure state remain open.
 
 Evidence:
 
@@ -391,6 +445,9 @@ against the exact epoch.
 
 Severity: Critical
 Confidence: Confirmed
+Remediation status: Completed on branch; destructive world clears cancel and join the
+publisher before deletion and retain an exclusive fence until shutdown, while every
+publication transaction rejects a stale writer token.
 
 Evidence:
 
@@ -422,6 +479,9 @@ coordination fails.
 
 Severity: Critical
 Confidence: Confirmed failure window
+Remediation status: Completed on branch for the deterministic handoff window; generation
+publication and consumption of the stable pre-capture floor hash are now one watched
+transaction, verified on both success and rejected-publication paths against live Redis.
 
 Evidence:
 
@@ -568,6 +628,9 @@ authority.
 
 Severity: High
 Confidence: Confirmed; multi-instance impact is conditional on concurrent writers
+Remediation status: Partially remediated; a renewable exclusive writer lease and watched
+token-checked publication transaction prevent overlapping writers. Durable season-scoped
+sequence identity remains open under RDS-001.
 
 Evidence:
 

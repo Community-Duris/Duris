@@ -392,6 +392,27 @@ void world_recovery_pipeline_shutdown(void)
 	publish_context = nullptr;
 }
 
+void world_recovery_pipeline_cancel(void)
+{
+	{
+		std::lock_guard<std::mutex> lock(recovery_mutex);
+		stop_requested = true;
+		queued.clear();
+		completions.clear();
+		active_capture = {};
+		health.capture_active = false;
+		health.queued_generations = 0;
+		generation_available.notify_all();
+	}
+	if (publisher_worker.joinable())
+		publisher_worker.join();
+	std::lock_guard<std::mutex> lock(recovery_mutex);
+	health.initialized = false;
+	health.worker_busy = false;
+	publish_callback = nullptr;
+	publish_context = nullptr;
+}
+
 bool world_recovery_pipeline_request(void)
 {
 	std::lock_guard<std::mutex> lock(recovery_mutex);

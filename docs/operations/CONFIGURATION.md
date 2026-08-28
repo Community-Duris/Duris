@@ -76,10 +76,18 @@ revisioned player-save pipeline and typed journal.
 | `REDIS_DONATION_SECRET` | none | At least 32 bytes | Independent HMAC key required when the donation subscriber is enabled. Do not reuse a Redis, database, or DurisWeb secret. |
 
 World recovery is intentionally separate from player saves and reconstructible caches.
-The publisher writes an immutable sequence-keyed payload, then atomically advances the
-current pointer and diagnostic metadata. Boot accepts only a complete, non-expired
-generation whose schema, sequence, size, and checksum validate. A failed or stale
-generation is ignored and the server continues with a normal boot.
+At boot, one publisher claims a renewable 10-minute writer lease. Each background
+publication verifies that lease, writes the immutable sequence-keyed payload, advances
+the current pointer and diagnostic metadata, consumes the pre-capture floor hash, and
+renews the lease in one watched transaction. A stale or second writer cannot publish.
+Boot accepts only a complete, non-expired generation whose schema, sequence, size, and
+checksum validate. A failed or stale generation is ignored and the server continues with
+a normal boot.
+
+The in-game `redis clear world`, `redis clear floor`, and `redis clear all confirm`
+commands cancel and join the publisher before deleting recovery state. They retain the
+writer fence and keep publication quiesced until shutdown; a restart is required to
+resume snapshots. This makes a successful clear durable against queued old work.
 
 For a local development session, the following is a reasonable starting point:
 

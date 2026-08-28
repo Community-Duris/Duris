@@ -38,11 +38,12 @@ extern int crash_recovery_boot;
 bool redis_save_world_state(void);
 bool redis_load_world_state(void);
 bool redis_has_world_state(void);
-void redis_clear_world_state(void);
+bool redis_clear_world_state(void);
 time_t redis_world_state_timestamp(void);
 void event_save_world_state(P_char ch, P_char victim, P_obj obj, void *data);
 void redis_world_recovery_pulse(void);
 bool redis_world_recovery_drain(uint64_t timeout_msec);
+bool redis_world_recovery_quiesce(void);
 
 // cache helpers
 bool redis_cache_set(const char *key, const char *value);

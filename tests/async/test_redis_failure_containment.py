@@ -5,6 +5,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
 text = (root / "src/redis.c").read_text()
+store = (root / "src/redis_world_store.c").read_text()
 header = (root / "src/redis.h").read_text()
 signals = (root / "src/signals.c").read_text()
 
@@ -19,6 +20,9 @@ assert "redisCommand(" not in text
 assert "redisConnect(" not in text
 assert text.count("redisConnectWithTimeout(") == 1
 assert text.count("redisvCommand(") == 1
+assert "redisConnect(" not in store
+assert store.count("redisConnectWithTimeout(") == 1
+assert store.count("redisvCommand(") == 1
 connect = section("static redisContext *redis_connect_bounded", "static redisReply *redis_command")
 command = section("static redisReply *redis_command", "/* Scan-and-delete with MATCH pattern.")
 assert "REDIS_CONNECT_TIMEOUT_MSEC" in connect
@@ -29,7 +33,6 @@ assert "REDIS_REPLY_ERROR" in command and '"error_reply"' in command
 assert '"timeout_or_io"' in command and '"no_reply"' in command
 for assignment in (
     "redis_ctx = redis_connect_bounded(redis_host, redis_port);",
-    "redisContext *ctx = redis_connect_bounded(redis_host, redis_port);",
     "donation_sub_ctx = redis_connect_bounded(redis_host, redis_port);",
 ):
     assert assignment in text
@@ -74,25 +77,22 @@ assert "waitpid(-1, &status, WNOHANG)" in signals
 assert "bool take_reaped_child_status(pid_t pid, int *status)" in signals
 print("[PASS] player and world persistence child paths are fully retired")
 
-publisher = section(
-    "static bool redis_publish_world_generation", "static bool redis_world_recovery_ensure_initialized"
-)
-assert "MULTI" in publisher and "EXEC" in publisher and "DISCARD" in publisher
+publisher = store[store.index("bool redis_world_store_publish"):]
+assert "WATCH mud:world_state:writer_fence" in publisher
+assert "MULTI" in publisher and "EXEC" in publisher and "DISCARD" in store
 assert "world_state:sequence" in publisher and "world_state:checksum" in publisher
+assert "DEL mud:floor_drops" in publisher and "PEXPIRE" in publisher
 print("[PASS] null, timeout, error reply, or incomplete world transaction forces worker failure")
 
 floor_flush = section("bool redis_flush_floor_drops(void)", "void redis_remove_floor_drop")
-assert "world_recovery_floor_ack_pending || world_recovery_pipeline_busy()" in floor_flush
+assert "world_recovery_pipeline_busy()" in floor_flush
+assert "world_recovery_floor_ack_pending" not in floor_flush
 assert floor_flush.index("return false;") < floor_flush.index("floor_drop_remove_count = 0;")
 assert floor_flush.index("return false;") < floor_flush.index("floor_drop_batch_count = 0;")
 assert "bool redis_flush_floor_drops(void);" in header
 ack = section("void redis_world_recovery_pulse", "bool redis_world_recovery_drain")
-assert ack.index("completion.sequence == recovery.last_acknowledged_sequence") < ack.index(
-    "redis_clear_floor_drops_checked()"
-)
-assert ack.index("redis_clear_floor_drops_checked()") < ack.index(
-    "world_recovery_floor_ack_pending = false;"
-)
+assert "redis_clear_floor_drops_checked()" not in ack
+assert "world_recovery_floor_ack_pending" not in ack
 event = section("void event_save_world_state", "bool redis_cache_set")
 assert "redis_clear_floor_drops" not in event
 print("[PASS] floor deltas clear only after exact snapshot success; newer deltas remain queued")
