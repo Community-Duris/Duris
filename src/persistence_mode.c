@@ -23,7 +23,7 @@ static const char unimplemented_domains[] =
 	"lockers/private chests, "
 	"corpses/saved items/shopkeepers/pets/shapes/recipes/spellbooks, "
 	"guilds/alliances/halls/outposts/towns/siege/nexus, ships/cargo/markets, "
-	"artifacts/auctions/economy/offline messages";
+	"artifacts/economy";
 
 static bool fail(char *error, size_t error_size, const char *format, ...)
 {

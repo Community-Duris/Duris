@@ -23,7 +23,8 @@
 namespace
 {
 constexpr std::array<uint8_t, 8> catalog_magic = { 'D', 'U', 'R', 'A', 'U', 'C', 'T', 0 };
-constexpr uint32_t catalog_version = 1;
+constexpr uint32_t catalog_version = 2;
+constexpr uint32_t catalog_legacy_version = 1;
 constexpr size_t catalog_maximum_bytes = 128 * 1024 * 1024;
 constexpr size_t catalog_maximum_listings = 262144;
 constexpr size_t catalog_maximum_money = 262144;
@@ -75,6 +76,7 @@ struct auction_operation
 	std::array<uint8_t, SHA256_DIGEST_LENGTH> command_digest = {};
 	unsigned int result_code = 0;
 	auction_command_result result = {};
+	bool event_published = false;
 };
 
 struct auction_catalog
@@ -310,6 +312,7 @@ bool encode_catalog(const auction_catalog &catalog, std::vector<uint8_t> *bytes)
 		if (!auction_command_encode_result(operation.result, &result))
 			return false;
 		payload.raw(result.data(), result.size());
+		payload.number<uint8_t>(operation.event_published);
 	}
 	if (!payload.valid || payload.bytes.size() > catalog_maximum_bytes)
 		return false;
@@ -338,7 +341,8 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, auction_catalog *catalog)
 	uint32_t version = 0, payload_size = 0;
 	uint64_t revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    !header.number(&revision) || version != catalog_version || !revision ||
+	    !header.number(&revision) ||
+	    (version != catalog_version && version != catalog_legacy_version) || !revision ||
 	    payload_size != bytes.size() - header_size)
 		return false;
 	const uint8_t *expected_digest = bytes.data() + 24;
@@ -477,17 +481,23 @@ bool decode_catalog(const std::vector<uint8_t> &bytes, auction_catalog *catalog)
 	try
 	{
 		for (auto &operation : decoded.operations)
+		{
+			uint8_t event_published = version == catalog_legacy_version;
 			if (!payload.raw(operation.operation_id.bytes.data(),
 					 operation.operation_id.bytes.size()) ||
 			    !payload.raw(operation.command_digest.data(),
 					 operation.command_digest.size()) ||
 			    !payload.number(&operation.result_code) ||
 			    !payload.raw(result.data(), result.size()) ||
+			    (version == catalog_version && !payload.number(&event_published)) ||
+			    event_published > 1 ||
 			    critical_operation_id_is_zero(operation.operation_id) ||
 			    !auction_command_decode_result(result.data(), result.size(),
 							   &operation.result) ||
 			    !operation_ids.insert(operation.operation_id.bytes).second)
 				return false;
+			operation.event_published = event_published;
+		}
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -705,6 +715,86 @@ flatfile_auction_find_pickup(const std::string &root, uint32_t pid,
 	}
 	*pickup = std::move(projected);
 	return flatfile_auction_query_result::ok;
+}
+
+flatfile_auction_query_result
+flatfile_auction_find_pending_event(const std::string &root,
+				    flatfile_auction_event_projection *event, std::string *error)
+{
+	if (!event)
+		return flatfile_auction_query_result::invalid;
+	auction_catalog catalog;
+	const auto loaded = query_catalog(root, &catalog, error);
+	if (loaded != flatfile_auction_query_result::ok)
+		return loaded;
+	const auto operation = std::find_if(catalog.operations.begin(), catalog.operations.end(),
+					    [](const auction_operation &candidate)
+					    { return !candidate.event_published; });
+	if (operation == catalog.operations.end())
+		return flatfile_auction_query_result::not_found;
+	const auction_listing *listing = find_listing(&catalog, operation->result.auction_id);
+	if (!listing)
+	{
+		if (error)
+			*error = "auction event references a missing listing";
+		return flatfile_auction_query_result::invalid;
+	}
+	flatfile_auction_event_projection projected;
+	projected.operation_id = operation->operation_id;
+	projected.result = operation->result;
+	if (!project_listing(*listing, 0, &projected.listing))
+		return flatfile_auction_query_result::io_error;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(projected.operation_id.bytes.data(), projected.operation_id.bytes.size(),
+	       digest.data());
+	for (size_t index = 0; index < sizeof(projected.outbox_id); ++index)
+		projected.outbox_id |= static_cast<uint64_t>(digest[index]) << (index * 8);
+	if (!projected.outbox_id)
+		projected.outbox_id = 1;
+	*event = std::move(projected);
+	return flatfile_auction_query_result::ok;
+}
+
+flatfile_auction_query_result
+flatfile_auction_acknowledge_event(const std::string &root,
+				   const critical_operation_id &operation_id, std::string *error)
+{
+	if (root.empty() || critical_operation_id_is_zero(operation_id))
+		return flatfile_auction_query_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_auction_query_result::io_error;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_auction_query_result::io_error :
+			       flatfile_auction_query_result::invalid;
+	auction_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_read_result::not_found)
+		return flatfile_auction_query_result::not_found;
+	if (loaded != flatfile_read_result::ok)
+		return loaded == flatfile_read_result::io_error ?
+			       flatfile_auction_query_result::io_error :
+			       flatfile_auction_query_result::invalid;
+	auto operation = std::find_if(
+		catalog.operations.begin(), catalog.operations.end(),
+		[&](const auction_operation &candidate)
+		{ return critical_operation_id_equal(candidate.operation_id, operation_id); });
+	if (operation == catalog.operations.end())
+		return flatfile_auction_query_result::not_found;
+	if (operation->event_published)
+		return flatfile_auction_query_result::ok;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_auction_query_result::io_error;
+	operation->event_published = true;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_auction_query_result::io_error;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_auction_query_result::ok :
+		       flatfile_auction_query_result::io_error;
 }
 
 critical_apply_result flatfile_auction_repository_apply(const std::string &root,
@@ -1135,7 +1225,12 @@ critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 	}
 	try
 	{
-		catalog.operations.push_back({ command.operation_id, digest, result_code, result });
+		const bool needs_publication =
+			!result_code && result.event_type != auction_event_type::none &&
+			result.event_type != auction_event_type::money_claimed &&
+			result.event_type != auction_event_type::item_claimed;
+		catalog.operations.push_back(
+			{ command.operation_id, digest, result_code, result, !needs_publication });
 	}
 	catch (const std::bad_alloc &)
 	{

@@ -1,6 +1,7 @@
 #ifndef DURIS_FLATFILE_AUCTION_REPOSITORY_H
 #define DURIS_FLATFILE_AUCTION_REPOSITORY_H
 
+#include "auction_command.h"
 #include "critical_command_coordinator.h"
 
 #include <cstdint>
@@ -48,6 +49,14 @@ struct flatfile_auction_pickup_projection
 	flatfile_auction_listing_projection item_claim;
 };
 
+struct flatfile_auction_event_projection
+{
+	critical_operation_id operation_id = {};
+	uint64_t outbox_id = 0;
+	auction_command_result result = {};
+	flatfile_auction_listing_projection listing;
+};
+
 flatfile_auction_query_result
 flatfile_auction_list_open(const std::string &root,
 			   std::vector<flatfile_auction_listing_projection> *listings,
@@ -58,6 +67,12 @@ flatfile_auction_find_open(const std::string &root, uint32_t auction_id,
 flatfile_auction_query_result
 flatfile_auction_find_pickup(const std::string &root, uint32_t pid,
 			     flatfile_auction_pickup_projection *pickup, std::string *error);
+flatfile_auction_query_result
+flatfile_auction_find_pending_event(const std::string &root,
+				    flatfile_auction_event_projection *event, std::string *error);
+flatfile_auction_query_result
+flatfile_auction_acknowledge_event(const std::string &root,
+				   const critical_operation_id &operation_id, std::string *error);
 
 critical_apply_result flatfile_auction_repository_apply(const std::string &root,
 							const critical_command &command);

@@ -12,6 +12,7 @@
 #include "auction_transaction.h"
 #include "currency_transaction.h"
 #include "flatfile_auction_repository.h"
+#include "flatfile_offline_message_repository.h"
 #include "item_ownership_runtime.h"
 #include "persistence_checkpoint.h"
 #include "persistence_mode.h"
@@ -19,6 +20,7 @@
 #include <cerrno>
 #include <climits>
 #include <ctime>
+#include <openssl/sha.h>
 #include <string.h>
 #include <string>
 #include <unordered_set>
@@ -245,6 +247,109 @@ bool report_flat_query_failure(P_char ch, const std::string &error)
 	logit(LOG_WIZ, "Flat auction query failed: %s", error.c_str());
 	return true;
 }
+
+flatfile_offline_message_id auction_event_message_id(const critical_operation_id &operation_id,
+						     uint8_t index)
+{
+	std::array<uint8_t, CRITICAL_COMMAND_ID_BYTES + 1> input = {};
+	std::copy(operation_id.bytes.begin(), operation_id.bytes.end(), input.begin());
+	input.back() = index;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(input.data(), input.size(), digest.data());
+	flatfile_offline_message_id id = {};
+	std::copy_n(digest.begin(), id.size(), id.begin());
+	return id;
+}
+
+bool stage_auction_event_message(const flatfile_auction_event_projection &event, uint32_t pid,
+				 uint8_t index, const std::string &message)
+{
+	if (!pid)
+		return true;
+	const char *root = flat_auction_root();
+	const auto id = auction_event_message_id(event.operation_id, index);
+	std::string error;
+	if (!root || flatfile_offline_message_enqueue(root, pid, id, message, &error) !=
+			     flatfile_offline_message_result::ok)
+	{
+		logit(LOG_WIZ, "Could not stage flat auction notification pid=%u auction=%u: %s",
+		      pid, event.result.auction_id, error.c_str());
+		return false;
+	}
+	if (send_to_pid(message.c_str(), pid))
+	{
+		const auto acknowledged =
+			flatfile_offline_message_acknowledge(root, pid, id, &error);
+		if (acknowledged != flatfile_offline_message_result::ok &&
+		    acknowledged != flatfile_offline_message_result::not_found)
+			logit(LOG_WIZ,
+			      "Flat auction live notification remains in mailbox pid=%u auction=%u: %s",
+			      pid, event.result.auction_id, error.c_str());
+	}
+	return true;
+}
+
+bool publish_flat_auction_event(const flatfile_auction_event_projection &event)
+{
+	char message[MAX_STRING_LENGTH] = {};
+	uint8_t message_index = 0;
+	if (event.result.event_type == auction_event_type::bid_placed &&
+	    event.result.previous_bidder_pid &&
+	    event.result.previous_bidder_pid != event.result.winner_pid)
+	{
+		snprintf(message, sizeof(message),
+			 "&+WA voice says in your mind, 'You were outbid in auction [%u] for %s, "
+			 "and your bid money is available for pickup.'\r\n",
+			 event.result.auction_id, event.listing.object_short.c_str());
+		if (!stage_auction_event_message(event, event.result.previous_bidder_pid,
+						 message_index++, message))
+			return false;
+	}
+	else if (event.result.event_type == auction_event_type::sold)
+	{
+		snprintf(message, sizeof(message),
+			 "&+WAuction [%u] for %s sold; your proceeds are available for pickup.\r\n",
+			 event.result.auction_id, event.listing.object_short.c_str());
+		if (!stage_auction_event_message(event, event.result.seller_pid, message_index++,
+						 message))
+			return false;
+		snprintf(message, sizeof(message),
+			 "&+WYou won auction [%u] for %s; the item is available for pickup.\r\n",
+			 event.result.auction_id, event.listing.object_short.c_str());
+		if (!stage_auction_event_message(event, event.result.winner_pid, message_index++,
+						 message))
+			return false;
+	}
+	else if (event.result.event_type == auction_event_type::expired ||
+		 event.result.event_type == auction_event_type::removed)
+	{
+		snprintf(message, sizeof(message),
+			 "&+WAuction [%u] for %s closed; the item is available for pickup.\r\n",
+			 event.result.auction_id, event.listing.object_short.c_str());
+		if (!stage_auction_event_message(event, event.result.seller_pid, message_index++,
+						 message))
+			return false;
+	}
+	if (event.result.event_type == auction_event_type::listed)
+		ws_broadcast_auction_new(event.result.auction_id, event.listing.seller_name.c_str(),
+					 event.listing.object_short.c_str(),
+					 static_cast<int>(event.listing.current_price),
+					 static_cast<int>(event.listing.buy_price),
+					 static_cast<int>(event.listing.end_time));
+	else if (event.result.event_type == auction_event_type::bid_placed)
+		ws_broadcast_auction_bid(event.result.auction_id, event.listing.winner_name.c_str(),
+					 static_cast<int>(event.result.final_price),
+					 event.result.previous_bidder_pid, "");
+	else
+		ws_broadcast_auction_close(
+			event.result.auction_id, event.listing.winner_name.c_str(),
+			event.result.winner_pid, static_cast<int>(event.result.final_price),
+			event.result.event_type == auction_event_type::sold    ? "sold" :
+			event.result.event_type == auction_event_type::removed ? "removed" :
+										 "expired",
+			event.result.seller_pid, event.listing.seller_name.c_str());
+	return true;
+}
 } // namespace
 
 string format_time(long seconds)
@@ -300,6 +405,29 @@ void auction_houses_activity()
 			std::max(0.0f, std::min(1.0f, flat_closing_fee)) * 10000.0f);
 		if (!auction_transaction_submit_background(payload, flat_finalize_completed))
 			pending_flat_finalizations.erase(listing.auction_id);
+	}
+	for (size_t published = 0; published < 16; ++published)
+	{
+		flatfile_auction_event_projection event;
+		const auto found = flatfile_auction_find_pending_event(root, &event, &error);
+		if (found == flatfile_auction_query_result::not_found)
+			break;
+		if (found != flatfile_auction_query_result::ok)
+		{
+			logit(LOG_WIZ, "Flat auction event scan failed: %s", error.c_str());
+			break;
+		}
+		if (!publish_flat_auction_event(event))
+			break;
+		if (flatfile_auction_acknowledge_event(root, event.operation_id, &error) !=
+		    flatfile_auction_query_result::ok)
+		{
+			logit(LOG_WIZ, "Flat auction event acknowledgement failed: %s",
+			      error.c_str());
+			break;
+		}
+		logit(LOG_DEBUG, "Published flat auction outbox %llu for auction %u",
+		      static_cast<unsigned long long>(event.outbox_id), event.result.auction_id);
 	}
 }
 

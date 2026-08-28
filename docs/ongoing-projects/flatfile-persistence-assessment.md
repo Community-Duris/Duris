@@ -968,6 +968,45 @@ sections below continue to describe the required end state.
   stage deterministic recipient messages into the new mailbox, publish the web event,
   and acknowledge the catalog event only after both steps succeed.
 
+### Checkpoint 29 - recoverable flat auction event publication
+
+- **Completed:** auction catalog schema v2 adds a durable publication bit to each
+  successful externally visible operation. Rejected decisions and money/item claims are
+  born acknowledged; list, bid, sale, expiry, and removal remain discoverable as pending
+  until publication succeeds. The reader accepts schema v1 and treats its historical
+  operations as already published, while every subsequent write upgrades the catalog to
+  v2 without replaying unknown historical notifications.
+- **Completed:** the client-free activity loop drains up to 16 pending events per pass.
+  Outbid, seller-proceeds, winner-claim, expiry, and removal messages receive IDs derived
+  from the operation ID and recipient index and are idempotently staged in the durable
+  flat mailbox before web publication. Online delivery acknowledges only that mailbox
+  record; failed or offline delivery leaves it for login.
+- **Completed:** list, bid, and close web events use the catalog projection and the
+  operation result. The catalog publication bit is atomically acknowledged only after
+  every required mailbox enqueue and broadcast call completes. A crash can repeat a web
+  broadcast or live message, but deterministic mailbox IDs prevent duplicate durable
+  notifications and no committed event is lost.
+- **Completed:** event query/ack APIs take the shared authority lock, recover surviving
+  compound transactions, reject a missing listing reference, derive a stable nonzero
+  outbox ID, and make acknowledgement idempotent. The repository regression exercises
+  pending discovery and acknowledgement for listing, bid, sale, expiry, and removal and
+  reconstructs a real schema-v1 catalog to verify upgrade readability.
+- **Boot diagnostic:** auction command authority, read/UI paths, expiry, claims, committed
+  events, and offline mail are now backed by flat repositories. `auctions` and
+  `offline messages` are removed from the unimplemented-domain list; the broader
+  `economy` fence remains for boon and other uncovered ledgers.
+- **Checks passed:** `python3 tests/async/test_flatfile_auction_repository.py`,
+  `python3 tests/async/test_flatfile_offline_message_repository.py`,
+  `python3 tests/async/test_auction_transactional_cutover.py`, `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`, `./scripts/format.sh --check`,
+  and `git diff --check` pass; adjacent auction regressions are rerun before publication.
+- **Files changed:** `src/flatfile_auction_repository.[ch]`, the no-MySQL auction activity
+  and publisher in `src/auction_houses.c`, `src/persistence_mode.c`, the focused auction
+  repository and source-contract tests, and this handoff ledger.
+- **Next action:** implement the boon reward command against the flat player-domain and
+  cross-authority preparation APIs, including durable replay and event publication;
+  then audit the remaining economy producers before narrowing that diagnostic.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

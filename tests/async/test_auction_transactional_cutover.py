@@ -154,12 +154,21 @@ class AuctionTransactionalCutoverTests(unittest.TestCase):
         self.assertIn("flatfile_auction_list_open", expiry)
         self.assertIn("pending_flat_finalizations", expiry)
         self.assertIn("auction_transaction_submit_background", expiry)
+        self.assertIn("flatfile_auction_find_pending_event", expiry)
+        self.assertIn("publish_flat_auction_event", expiry)
+        self.assertIn("flatfile_auction_acknowledge_event", expiry)
         self.assertIn("item_ownership_runtime_lookup", offer)
         self.assertIn("write_one_object", offer)
         for route in (offer, bid, remove):
             self.assertIn("auction_transaction_submit", route)
             self.assertNotIn("SUB_MONEY", route)
             self.assertNotIn("qry(", route)
+        publisher = section(no_mysql, "bool publish_flat_auction_event(", "} // namespace")
+        self.assertIn("stage_auction_event_message", publisher)
+        self.assertIn("ws_broadcast_auction_new", publisher)
+        self.assertIn("ws_broadcast_auction_bid", publisher)
+        self.assertIn("ws_broadcast_auction_close", publisher)
+        self.assertIn("flatfile_offline_message_enqueue", no_mysql)
 
     def test_repository_owns_settlement_claims_ledgers_and_outbox(self):
         repository = (SRC / "auction_repository.c").read_text()

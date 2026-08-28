@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <openssl/sha.h>
 #include <string>
 
 namespace fs = std::filesystem;
@@ -71,6 +72,88 @@ static auction_command_result result_of(const critical_apply_result &applied)
 					      &result),
 		"could not decode auction result");
 	return result;
+}
+
+static void expect_event(const std::string &root, auction_event_type type, uint32_t auction_id,
+			 std::string *error)
+{
+	flatfile_auction_event_projection event;
+	require(flatfile_auction_find_pending_event(root, &event, error) ==
+				flatfile_auction_query_result::ok &&
+			event.outbox_id != 0 && event.result.event_type == type &&
+			event.result.auction_id == auction_id &&
+			event.listing.auction_id == auction_id,
+		"expected auction event was not durably pending");
+	require(flatfile_auction_acknowledge_event(root, event.operation_id, error) ==
+				flatfile_auction_query_result::ok &&
+			flatfile_auction_acknowledge_event(root, event.operation_id, error) ==
+				flatfile_auction_query_result::ok &&
+			flatfile_auction_find_pending_event(root, &event, error) ==
+				flatfile_auction_query_result::not_found,
+		"auction event acknowledgement was not durable and idempotent");
+}
+
+static uint32_t read_u32(const std::vector<uint8_t> &bytes, size_t *offset)
+{
+	require(*offset + 4 <= bytes.size(), "legacy conversion exceeded catalog payload");
+	uint32_t value = 0;
+	for (size_t index = 0; index < 4; ++index)
+		value |= static_cast<uint32_t>(bytes[(*offset)++]) << (index * 8);
+	return value;
+}
+
+static void write_u32(std::vector<uint8_t> *bytes, size_t offset, uint32_t value)
+{
+	for (size_t index = 0; index < 4; ++index)
+		(*bytes)[offset + index] = static_cast<uint8_t>(value >> (index * 8));
+}
+
+static void convert_catalog_to_legacy_v1(const fs::path &path)
+{
+	std::ifstream input(path, std::ios::binary);
+	std::vector<uint8_t> file((std::istreambuf_iterator<char>(input)),
+				  std::istreambuf_iterator<char>());
+	require(file.size() >= 56, "auction catalog too short for legacy conversion");
+	std::vector<uint8_t> payload(file.begin() + 56, file.end());
+	size_t offset = 0;
+	const uint32_t listing_count = read_u32(payload, &offset);
+	for (uint32_t listing = 0; listing < listing_count; ++listing)
+	{
+		offset += 48;
+		for (size_t text = 0; text < 6; ++text)
+			offset += read_u32(payload, &offset);
+		offset += read_u32(payload, &offset);
+		require(offset + 2 <= payload.size(), "legacy conversion missed item count");
+		const uint16_t item_count = static_cast<uint16_t>(payload[offset]) |
+					    static_cast<uint16_t>(payload[offset + 1]) << 8;
+		offset += 2 + static_cast<size_t>(item_count) * 25;
+	}
+	const uint32_t money_count = read_u32(payload, &offset);
+	offset += static_cast<size_t>(money_count) * 20;
+	const size_t operations_header = offset;
+	const uint32_t operation_count = read_u32(payload, &offset);
+	constexpr size_t version_two_operation_size =
+		16 + 32 + 4 + AUCTION_RESULT_PAYLOAD_BYTES + 1;
+	constexpr size_t version_one_operation_size = version_two_operation_size - 1;
+	require(offset + static_cast<size_t>(operation_count) * version_two_operation_size ==
+			payload.size(),
+		"legacy conversion did not locate operation records");
+	std::vector<uint8_t> legacy(payload.begin(), payload.begin() + operations_header + 4);
+	for (uint32_t operation = 0; operation < operation_count; ++operation)
+	{
+		legacy.insert(legacy.end(), payload.begin() + offset,
+			      payload.begin() + offset + version_one_operation_size);
+		offset += version_two_operation_size;
+	}
+	write_u32(&file, 8, 1);
+	write_u32(&file, 12, legacy.size());
+	file.resize(56);
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	SHA256(legacy.data(), legacy.size(), digest.data());
+	std::copy(digest.begin(), digest.end(), file.begin() + 24);
+	file.insert(file.end(), legacy.begin(), legacy.end());
+	std::ofstream output(path, std::ios::binary | std::ios::trunc);
+	output.write(reinterpret_cast<const char *>(file.data()), file.size());
 }
 
 int main(int argc, char **argv)
@@ -145,6 +228,7 @@ int main(int argc, char **argv)
 			listed.event_type == auction_event_type::listed && listed.auction_id != 0 &&
 			listed.item_revisions[0] == 2,
 		"recovered listing did not replay its result");
+	expect_event(root.string(), auction_event_type::listed, listed.auction_id, &error);
 	flatfile_auction_listing_projection listing_view;
 	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==
 				flatfile_auction_query_result::ok &&
@@ -195,6 +279,7 @@ int main(int argc, char **argv)
 			bid_result.final_price == 3000 && bid_result.wallet_value_delta == -3000 &&
 			bid_result.auction_revision == 2,
 		"valid bid did not apply");
+	expect_event(root.string(), auction_event_type::bid_placed, listed.auction_id, &error);
 
 	auction_command_payload buy = {};
 	buy.action = auction_action::bid;
@@ -209,6 +294,7 @@ int main(int argc, char **argv)
 			buy_result.final_price == 5000 && buy_result.previous_bidder_pid == 43 &&
 			buy_result.auction_revision == 3,
 		"buy-now settlement did not apply");
+	expect_event(root.string(), auction_event_type::sold, listed.auction_id, &error);
 	flatfile_auction_pickup_projection bidder_pickup, seller_pickup, buyer_pickup;
 	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==
 				flatfile_auction_query_result::ok &&
@@ -281,6 +367,7 @@ int main(int argc, char **argv)
 	require(applied.outcome == critical_apply_outcome::applied &&
 			expiring_result.event_type == auction_event_type::listed,
 		"expiring listing did not apply");
+	expect_event(root.string(), auction_event_type::listed, expiring_result.auction_id, &error);
 	auction_command_payload finalize = {};
 	finalize.action = auction_action::finalize;
 	finalize.auction_id = expiring_result.auction_id;
@@ -289,6 +376,8 @@ int main(int argc, char **argv)
 	require(applied.outcome == critical_apply_outcome::applied &&
 			result_of(applied).event_type == auction_event_type::expired,
 		"expired auction did not finalize");
+	expect_event(root.string(), auction_event_type::expired, expiring_result.auction_id,
+		     &error);
 	auction_command_payload expired_claim = {};
 	expired_claim.action = auction_action::claim_item;
 	expired_claim.auction_id = expiring_result.auction_id;
@@ -308,6 +397,8 @@ int main(int argc, char **argv)
 	const auction_command_result removable_result = result_of(applied);
 	require(applied.outcome == critical_apply_outcome::applied,
 		"removable listing did not apply");
+	expect_event(root.string(), auction_event_type::listed, removable_result.auction_id,
+		     &error);
 	auction_command_payload unaffordable = {};
 	unaffordable.action = auction_action::bid;
 	unaffordable.auction_id = removable_result.auction_id;
@@ -329,6 +420,8 @@ int main(int argc, char **argv)
 			result_of(applied).event_type == auction_event_type::removed &&
 			result_of(applied).winner_pid == 0,
 		"open auction removal did not stage seller custody");
+	expect_event(root.string(), auction_event_type::removed, removable_result.auction_id,
+		     &error);
 	auction_command_payload removed_claim = {};
 	removed_claim.action = auction_action::claim_item;
 	removed_claim.auction_id = removable_result.auction_id;
@@ -339,6 +432,11 @@ int main(int argc, char **argv)
 				.outcome == critical_apply_outcome::applied,
 		"removed item was not reclaimable by its seller");
 	const fs::path catalog = domains / "auction_catalog";
+	convert_catalog_to_legacy_v1(catalog);
+	require(flatfile_auction_list_open(root.string(), &open_listings, &error) ==
+				flatfile_auction_query_result::ok &&
+			open_listings.empty(),
+		"legacy v1 auction catalog was not readable after the event-state upgrade");
 	{
 		std::fstream file(catalog, std::ios::in | std::ios::out | std::ios::binary);
 		require(file.good(), "could not open auction catalog for corruption");
