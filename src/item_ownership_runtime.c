@@ -312,6 +312,16 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 	    result.root_item_uid != payload.selected_item_uid)
 		return false;
 	const bool creation = payload.from_owner.type == item_owner_type::system;
+	if (payload.target_parent_item_uid)
+	{
+		const auto parent = entries.find(payload.target_parent_item_uid);
+		if (parent == entries.end() ||
+		    parent->second.root_item_uid != payload.target_root_item_uid ||
+		    !item_owner_identity_equal(parent->second.owner, payload.to_owner) ||
+		    parent->second.item_revision != payload.expected_target_parent_revision ||
+		    parent->second.state != item_custody_state::active)
+			return false;
+	}
 	if (creation)
 	{
 		for (size_t index = 0; index < payload.item_count; ++index)

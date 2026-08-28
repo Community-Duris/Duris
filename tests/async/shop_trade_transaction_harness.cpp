@@ -36,6 +36,7 @@ shop_trade_payload trade(shop_trade_action action, uint64_t uid)
 	payload.expected_bank_revision = 3;
 	payload.expected_shop_revision = 4;
 	payload.selected_item_uid = uid;
+	payload.target_root_item_uid = uid;
 	payload.item_count = 1;
 	payload.item_blob_size = 1;
 	payload.item_blob[0] = 0x5a;
@@ -147,7 +148,10 @@ int main()
 	character.only.pc = &pc;
 	pc.pid = 42;
 
-	const shop_trade_payload produced = trade(shop_trade_action::buy_produced, 300);
+	shop_trade_payload produced = trade(shop_trade_action::buy_produced, 300);
+	produced.target_root_item_uid = 700;
+	produced.target_parent_item_uid = 700;
+	produced.expected_target_parent_revision = 5;
 	assert(shop_trade_transaction_submit(&character, produced, completed));
 	assert(shop_trade_transaction_player_busy(&character));
 	assert(!shop_trade_transaction_submit(&character, produced, completed));
@@ -158,6 +162,9 @@ int main()
 	       completion_called && completion_committed && completion_error == 0 &&
 	       published_transfer.from_owner.type == item_owner_type::system &&
 	       published_transfer.to_owner.type == item_owner_type::player &&
+	       published_transfer.target_root_item_uid == 700 &&
+	       published_transfer.target_parent_item_uid == 700 &&
+	       published_transfer.expected_target_parent_revision == 5 &&
 	       published_transfer_result.from_owner_revision == 6 &&
 	       published_transfer_result.to_owner_revision == 8 &&
 	       !shop_trade_transaction_player_busy(&character));

@@ -25,11 +25,10 @@ bool shop_trade_runtime_advance(uint32_t shop_id, uint64_t expected_revision,
 				uint64_t new_revision);
 void shop_trade_runtime_reset_for_tests(void);
 
-shop_trade_payload_build_result shop_trade_runtime_build_payload(P_char player, P_obj selected,
-								 P_obj stock, uint32_t shop_id,
-								 shop_trade_action action,
-								 int64_t price,
-								 shop_trade_payload *payload);
+shop_trade_payload_build_result
+shop_trade_runtime_build_payload(P_char player, P_obj selected, P_obj stock, P_obj destination,
+				 uint32_t shop_id, shop_trade_action action, int64_t price,
+				 shop_trade_payload *payload);
 bool shop_trade_runtime_object_matches_payload(P_obj selected, const shop_trade_payload &payload);
 
 #endif

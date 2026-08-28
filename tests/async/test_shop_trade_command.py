@@ -37,6 +37,7 @@ shop_trade_payload trade(shop_trade_action action)
 	payload.expected_bank_revision = 8;
 	payload.expected_shop_revision = 9;
 	payload.selected_item_uid = 100;
+	payload.target_root_item_uid = 100;
 	payload.item_count = 2;
 	const bool creates = action == shop_trade_action::buy_produced;
 	const uint64_t revision = creates ? ITEM_TRANSFER_ABSENT_REVISION : 5;
@@ -90,9 +91,14 @@ int main()
 	       decoded.stock_item_uid == 100 && decoded.item_blob_size == 4 &&
 	       decoded.item_blob[3] == 0x77);
 
-	critical_command legacy = command;
+	critical_command previous = command;
+	previous.payload.erase(previous.payload.begin() + 50, previous.payload.begin() + 74);
+	previous.payload_version = SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION;
+	assert(shop_trade_command_decode_payload(previous, &decoded));
+	assert(decoded.target_root_item_uid == 100);
+	critical_command legacy = previous;
 	legacy.payload.erase(legacy.payload.begin() + 50, legacy.payload.begin() + 70);
-	legacy.payload_version = SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION;
+	legacy.payload_version = SHOP_TRADE_LEGACY_PAYLOAD_VERSION;
 	assert(shop_trade_command_decode_payload(legacy, &decoded));
 	assert(decoded.stock_item_uid == 100 && decoded.expected_stock_item_revision == 5);
 
@@ -103,10 +109,22 @@ int main()
 	assert(shop_trade_command_build(&command, operation(), produced,
 					critical_source_site::command,
 					critical_deadline_class::interactive));
-	legacy = command;
+	previous = command;
+	previous.payload.erase(previous.payload.begin() + 50, previous.payload.begin() + 74);
+	previous.payload_version = SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION;
+	assert(shop_trade_command_decode_payload(previous, &decoded));
+	legacy = previous;
 	legacy.payload.erase(legacy.payload.begin() + 50, legacy.payload.begin() + 70);
-	legacy.payload_version = SHOP_TRADE_PREVIOUS_PAYLOAD_VERSION;
+	legacy.payload_version = SHOP_TRADE_LEGACY_PAYLOAD_VERSION;
 	assert(!shop_trade_command_decode_payload(legacy, &decoded));
+	produced.target_root_item_uid = 700;
+	produced.target_parent_item_uid = 700;
+	produced.expected_target_parent_revision = 3;
+	assert(shop_trade_command_build(&command, operation(), produced,
+					critical_source_site::command,
+					critical_deadline_class::interactive));
+	assert(shop_trade_command_decode_payload(command, &decoded) &&
+	       decoded.target_parent_item_uid == 700 && command.keys.size() == 7);
 	produced.items[0].expected_state = item_custody_state::active;
 	assert(!shop_trade_command_build(&command, operation(), produced,
 					 critical_source_site::command,

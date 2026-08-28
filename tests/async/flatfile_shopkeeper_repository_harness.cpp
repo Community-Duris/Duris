@@ -78,6 +78,7 @@ static shop_trade_payload trade(shop_trade_action action, uint32_t shop_id, uint
 	payload.expected_bank_revision = 5;
 	payload.expected_shop_revision = shop_revision;
 	payload.selected_item_uid = object.object_uid;
+	payload.target_root_item_uid = object.object_uid;
 	payload.stock_item_uid = stock_uid;
 	payload.expected_stock_item_revision = stock_revision;
 	payload.stock_vnum = stock_uid ? object.vnum : 0;

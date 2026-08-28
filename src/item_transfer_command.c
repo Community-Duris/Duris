@@ -147,8 +147,7 @@ bool validate_payload(const item_transfer_payload &payload)
 		else if (!entry.parent_item_uid)
 			return false;
 	}
-	if (!found_selected ||
-	    (creation && (selected != source_root || payload.target_parent_item_uid)))
+	if (!found_selected || (creation && selected != source_root))
 		return false;
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{

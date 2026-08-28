@@ -67,6 +67,21 @@ int main()
 
 	set_reason(&command, item_transfer_reason::shop_buy);
 	assert(!item_transfer_command_decode_payload(command, &decoded));
+
+	payload.from_owner = { item_owner_type::system, 0, 0 };
+	payload.reason = item_transfer_reason::creation;
+	payload.selected_item_uid = 200;
+	payload.target_root_item_uid = 700;
+	payload.target_parent_item_uid = 700;
+	payload.expected_target_parent_revision = 4;
+	payload.items[0] = { 200, 200, 0, ITEM_TRANSFER_ABSENT_REVISION, 501,
+			     item_custody_state::absent };
+	assert(item_transfer_command_build(&command, operation(), payload,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(item_transfer_command_decode_payload(command, &decoded));
+	assert(decoded.target_root_item_uid == 700 && decoded.target_parent_item_uid == 700 &&
+	       decoded.expected_target_parent_revision == 4);
 	return 0;
 }
 '''

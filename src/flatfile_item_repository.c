@@ -846,7 +846,11 @@ flatfile_item_repository_result flatfile_item_repository_prepare_shop_trade(
 	item_transfer_payload transfer = {};
 	transfer.reason_id = payload.shop_id;
 	transfer.selected_item_uid = payload.selected_item_uid;
-	transfer.target_root_item_uid = payload.selected_item_uid;
+	transfer.target_root_item_uid = payload.target_root_item_uid ?
+						payload.target_root_item_uid :
+						payload.selected_item_uid;
+	transfer.target_parent_item_uid = payload.target_parent_item_uid;
+	transfer.expected_target_parent_revision = payload.expected_target_parent_revision;
 	transfer.item_count = payload.item_count;
 	if (payload.action == shop_trade_action::buy_existing)
 	{

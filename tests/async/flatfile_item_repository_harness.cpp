@@ -105,6 +105,7 @@ static shop_trade_payload shop_trade(shop_trade_action action, uint64_t item_uid
 	payload.expected_bank_revision = 1;
 	payload.expected_shop_revision = 1;
 	payload.selected_item_uid = item_uid;
+	payload.target_root_item_uid = item_uid;
 	payload.stock_item_uid = stock_uid;
 	payload.expected_stock_item_revision = stock_revision;
 	payload.stock_vnum = stock_uid ? vnum : 0;

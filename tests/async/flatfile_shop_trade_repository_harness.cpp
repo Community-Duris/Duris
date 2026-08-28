@@ -71,6 +71,7 @@ static shop_trade_payload purchase(const std::vector<player_item_snapshot> &item
 	payload.expected_bank_revision = 1;
 	payload.expected_shop_revision = 1;
 	payload.selected_item_uid = items.front().object_uid;
+	payload.target_root_item_uid = items.front().object_uid;
 	payload.stock_item_uid = items.front().object_uid;
 	payload.expected_stock_item_revision = 1;
 	payload.stock_vnum = items.front().vnum;
@@ -151,8 +152,15 @@ int main(int argc, char **argv)
 	const item_owner_identity player_owner = { item_owner_type::player, 42, 0 };
 	const item_owner_identity shop_owner = { item_owner_type::shopkeeper,
 						 item_shopkeeper_owner_id(0), 0 };
-	require(flatfile_item_repository_establish_owner(root.string(), player_owner, {}, &error) ==
-			flatfile_item_baseline_result::applied,
+	player_item_snapshot container = {};
+	container.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	container.object_uid = 700;
+	container.vnum = 1700;
+	container.name = "purchase container";
+	require(flatfile_item_repository_establish_owner(
+			root.string(), player_owner,
+			{ { 700, 700, 0, player_owner, 1, 1700, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
 		"could not establish player custody: " + error);
 	const std::vector<flatfile_item_ownership_record> shop_items = {
 		{ 200, 200, 0, shop_owner, 1, 800, item_custody_state::active },
@@ -207,10 +215,11 @@ int main(int argc, char **argv)
 			flatfile_item_repository_load_owner(
 				root.string(), shop_owner, &shop_revision, &remaining_shop_items,
 				&error) == flatfile_item_repository_result::ok &&
-			player_revision == 2 && shop_revision == 2 && player_items.size() == 2 &&
+			player_revision == 2 && shop_revision == 2 && player_items.size() == 3 &&
 			player_items[0].item_uid == 200 && player_items[0].item_revision == 2 &&
 			player_items[1].item_uid == 201 && player_items[1].parent_item_uid == 200 &&
-			player_items[1].item_revision == 2 && remaining_shop_items.empty(),
+			player_items[1].item_revision == 2 && player_items[2].item_uid == 700 &&
+			remaining_shop_items.empty(),
 		"purchase did not transfer global item custody");
 	player_snapshot stale_snapshot = {};
 	stale_snapshot.pid = 42;
@@ -278,7 +287,7 @@ int main(int argc, char **argv)
 	require(flatfile_item_repository_load_owner(root.string(), player_owner, &player_revision,
 						    &player_items, &error) ==
 				flatfile_item_repository_result::ok &&
-			player_items.empty(),
+			player_items.size() == 1 && player_items[0].item_uid == 700,
 		"retained sale did not remove player custody");
 	{
 		flatfile_authority_lock reconciliation_lock;
@@ -290,6 +299,51 @@ int main(int argc, char **argv)
 				&error) == flatfile_shop_trade_materialization_result::ok &&
 				stale_snapshot.items.empty(),
 			"restart reconciliation did not remove the committed sale: " + error);
+	}
+
+	player_item_snapshot produced_item = item;
+	produced_item.object_uid = 300;
+	produced_item.generated_key = 1300;
+	shop_trade_payload produced = purchase({ produced_item });
+	produced.action = shop_trade_action::buy_produced;
+	produced.expected_wallet_revision = 2;
+	produced.expected_bank_revision = 3;
+	produced.expected_shop_revision = 3;
+	produced.selected_item_uid = 300;
+	produced.target_root_item_uid = 700;
+	produced.target_parent_item_uid = 700;
+	produced.expected_target_parent_revision = 1;
+	produced.stock_item_uid = 200;
+	produced.expected_stock_item_revision = 3;
+	produced.items[0] = { 300, 300,
+			      0,   ITEM_TRANSFER_ABSENT_REVISION,
+			      800, item_custody_state::absent };
+	applied = flatfile_shop_trade_repository_apply(root.string(), command(produced, 4));
+	require(applied.outcome == critical_apply_outcome::applied,
+		"could not commit produced container purchase");
+	player_items.clear();
+	require(flatfile_item_repository_load_owner(root.string(), player_owner, &player_revision,
+						    &player_items, &error) ==
+				flatfile_item_repository_result::ok &&
+			player_items.size() == 2 && player_items[0].item_uid == 300 &&
+			player_items[0].root_item_uid == 700 &&
+			player_items[0].parent_item_uid == 700 && player_items[1].item_uid == 700,
+		"produced purchase did not commit container custody");
+	stale_snapshot.items = { container };
+	{
+		flatfile_authority_lock reconciliation_lock;
+		require(reconciliation_lock.acquire(root.string(), &error),
+			"could not lock produced purchase reconciliation: " + error);
+		require(flatfile_shop_trade_materialization_reconcile(
+				root.string(), reconciliation_lock, 42, player_items,
+				&stale_snapshot,
+				&error) == flatfile_shop_trade_materialization_result::ok &&
+				stale_snapshot.items.size() == 2 &&
+				stale_snapshot.items[0].object_uid == 700 &&
+				stale_snapshot.items[1].object_uid == 300 &&
+				stale_snapshot.items[1].parent_index == 0,
+			"restart reconciliation did not restore produced container placement: " +
+				error);
 	}
 	{
 		std::fstream catalog(domains / "shop_trade_materializations",

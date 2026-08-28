@@ -18,6 +18,8 @@ for token in (
     "std::sort(built.items.begin()",
     "ITEM_TRANSFER_ABSENT_REVISION",
     "item_ownership_runtime_lookup(stock->obj_uid",
+    "item_ownership_runtime_lookup(destination->obj_uid",
+    "built.target_parent_item_uid = target.item_uid",
     "shop_trade_command_encode_payload(built",
     "shop_trade_runtime_object_matches_payload",
     "encoded.size() == payload.item_blob_size",

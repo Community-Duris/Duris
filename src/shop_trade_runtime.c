@@ -75,16 +75,16 @@ void shop_trade_runtime_reset_for_tests(void)
 	shop_revisions.clear();
 }
 
-shop_trade_payload_build_result shop_trade_runtime_build_payload(P_char player, P_obj selected,
-								 P_obj stock, uint32_t shop_id,
-								 shop_trade_action action,
-								 int64_t price,
-								 shop_trade_payload *payload)
+shop_trade_payload_build_result
+shop_trade_runtime_build_payload(P_char player, P_obj selected, P_obj stock, P_obj destination,
+				 uint32_t shop_id, shop_trade_action action, int64_t price,
+				 shop_trade_payload *payload)
 {
 	if (!player || IS_NPC(player) || !player->only.pc || GET_PID(player) <= 0 || !selected ||
 	    !selected->obj_uid || !payload || price <= 0 || price > INT_MAX ||
 	    action <= shop_trade_action::unknown || action > shop_trade_action::sell_destroy ||
-	    ((action == shop_trade_action::buy_produced) != (stock != nullptr)))
+	    ((action == shop_trade_action::buy_produced) != (stock != nullptr)) ||
+	    (destination && action != shop_trade_action::buy_produced))
 		return shop_trade_payload_build_result::invalid;
 	const char *account_name = get_account_name_safe(player);
 	if (!account_name || !strcmp(account_name, "Unknown") ||
@@ -123,6 +123,7 @@ shop_trade_payload_build_result shop_trade_runtime_build_payload(P_char player, 
 	built.expected_bank_revision = player->only.pc->bank_revision;
 	built.expected_shop_revision = shop_revision;
 	built.selected_item_uid = selected->obj_uid;
+	built.target_root_item_uid = selected->obj_uid;
 	built.item_count = static_cast<uint16_t>(snapshots.size());
 	built.item_blob_size = static_cast<uint32_t>(blob.size());
 	std::copy(blob.begin(), blob.end(), built.item_blob.begin());
@@ -169,6 +170,20 @@ shop_trade_payload_build_result shop_trade_runtime_build_payload(P_char player, 
 		built.stock_item_uid = exemplar.item_uid;
 		built.expected_stock_item_revision = exemplar.item_revision;
 		built.stock_vnum = exemplar.vnum;
+		if (destination)
+		{
+			item_ownership_runtime_entry target = {};
+			if (!destination->obj_uid || destination->obj_uid == selected->obj_uid ||
+			    !item_ownership_runtime_lookup(destination->obj_uid, &target) ||
+			    !item_owner_identity_equal(target.owner, player_owner) ||
+			    target.root_item_uid != target.item_uid || target.parent_item_uid ||
+			    target.state != item_custody_state::active ||
+			    target.vnum != OBJ_VNUM(destination))
+				return shop_trade_payload_build_result::unavailable;
+			built.target_root_item_uid = target.root_item_uid;
+			built.target_parent_item_uid = target.item_uid;
+			built.expected_target_parent_revision = target.item_revision;
+		}
 	}
 	else if (action == shop_trade_action::buy_existing)
 	{

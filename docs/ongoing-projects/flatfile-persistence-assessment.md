@@ -2479,6 +2479,38 @@ sections below continue to describe the required end state.
   operations, then add safe materialization compaction/health reporting and audit other item-transfer
   domains for the same player-snapshot crash window.
 
+### Checkpoint 78 - durable produced-item destinations and sequential multi-buy
+
+- **Destination-fenced command:** shop-trade payload version 3 records the produced item's final
+  ownership root, optional parent container, and expected parent revision. The parent joins the
+  operation's item keys and revision fences; version 2 and safe version 1 commands remain readable.
+  Generic item creation transfers can now attach beneath an existing destination parent, with both
+  the repository and runtime publisher verifying its active owner, root, and revision.
+- **Crash-safe container custody:** flat-primary produced purchases validate a top-level carried
+  container before submission and commit the new item directly beneath that container in the
+  authoritative ownership graph. Live completion uses the normal `put` path only after ownership
+  publication. If the process stops after commit, the existing shop materialization reconciliation
+  reconstructs the exact purchased object beneath the committed container on the player's next load.
+- **Bounded multi-buy:** produced `buy <item> <container> <amount>` requests accept at most 50 items
+  and submit one complete composite shop operation per item. Each successful callback rechecks the
+  keeper, exemplar, container, carry/capacity constraints, and rebuilds current wallet, shop, stock,
+  and container revisions before submitting the next item. The sequence stops at the first failure,
+  so no uncommitted remainder is charged or materialized.
+- **Checks passed:** the shop repository fault/restart regression proves a produced clone commits
+  below an existing player container and is reconstructed there from materialization evidence. The
+  command codec covers version 3 parent fields plus version 2/1 compatibility; ownership, runtime,
+  transaction, item/shop repository, shopkeeper, and live-route focused regressions pass together
+  with changed-line formatting and the normal C++20 server build.
+- **Exposure:** the in-memory multi-buy remainder is intentionally not resumed after a crash; only
+  already committed individual purchases recover. Container open/capacity state is not part of the
+  authority revision, so completion rechecks it and raises a persistence alert if live placement can
+  no longer be reproduced. Trusted/gem purchases, invalid-stock destruction, MariaDB parity,
+  materialization compaction/health, and non-shop snapshot-convergence audits remain open. The
+  flat-primary boot blocker remains required.
+- **Next action:** add safe materialization compaction and capacity health reporting, then move
+  invalid shop-stock cleanup through custody authority and audit non-shop item-transfer domains for
+  the same player-snapshot crash window.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

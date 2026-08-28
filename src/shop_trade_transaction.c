@@ -73,7 +73,11 @@ bool publish_ownership(const shop_trade_payload &payload, const shop_trade_resul
 		return false;
 	transfer.reason_id = payload.shop_id;
 	transfer.selected_item_uid = payload.selected_item_uid;
-	transfer.target_root_item_uid = payload.selected_item_uid;
+	transfer.target_root_item_uid = payload.target_root_item_uid ?
+						payload.target_root_item_uid :
+						payload.selected_item_uid;
+	transfer.target_parent_item_uid = payload.target_parent_item_uid;
+	transfer.expected_target_parent_revision = payload.expected_target_parent_revision;
 	transfer.item_count = payload.item_count;
 	for (size_t index = 0; index < payload.item_count; ++index)
 		transfer.items[index] = { payload.items[index].item_uid,

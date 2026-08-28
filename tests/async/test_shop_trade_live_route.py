@@ -22,6 +22,10 @@ for token in (
     "committed shop trade could not publish live object",
     "produced && keeper && OBJ_NOWHERE(object)",
     "extract_obj(selected, FALSE)",
+    "produced_purchase_sequences",
+    "shop_trade_container_accepts",
+    "shop_trade_submit_produced_continuation",
+    "payload.target_parent_item_uid && !put(ch, object, destination, TRUE)",
 ):
     if token not in SOURCE:
         raise SystemExit(f"live shop trade route is missing {token}")
@@ -53,5 +57,12 @@ if not TRANSACTION.index("currency_transaction_publish_balances(") < TRANSACTION
     "completion(character, committed && published"
 ):
     raise SystemExit("shop callback can run before authoritative runtime publication")
+for token in (
+    "transfer.target_root_item_uid = payload.target_root_item_uid",
+    "transfer.target_parent_item_uid = payload.target_parent_item_uid",
+    "transfer.expected_target_parent_revision = payload.expected_target_parent_revision",
+):
+    if token not in TRANSACTION:
+        raise SystemExit(f"shop completion publication is missing {token}")
 
 print("flat-file live shop trade route contract passed")
