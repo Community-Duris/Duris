@@ -3386,7 +3386,9 @@ int process_output(P_desc t)
 			return (-1);
 	}
 
-	if (had_prompt && !t->connected)
+	/* Telnet prompt framing is useful during login/account states too. Those
+	 * screens queue their own prompt text instead of using make_prompt(). */
+	if (had_prompt)
 		if (send_ga(t) < 0)
 			return (-1);
 

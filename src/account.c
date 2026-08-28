@@ -378,18 +378,26 @@ void display_account_menu(P_desc d, char *arg)
 		SEND_TO_Q("&+L0) Disconnect from this account&n\r\n", d);
 		SEND_TO_Q("&+y------------------------------------------&n\r\n", d);
 		SEND_TO_Q("Please select an option: ", d);
+		d->prompt_mode = TRUE;
 		return;
 	}
-	switch (atoi(arg))
+
+	char *end = NULL;
+	while (isspace((unsigned char)*arg))
+		arg++;
+	long selection = strtol(arg, &end, 10);
+	while (end && isspace((unsigned char)*end))
+		end++;
+	if (!*arg || end == arg || (end && *end) || selection < 0 || selection > 8)
+	{
+		SEND_TO_Q("Invalid Selection, please try again.\r\n", d);
+		display_account_menu(d, NULL);
+		return;
+	}
+
+	switch (selection)
 	{
 	case 0:
-		/* Only disconnect if user actually typed '0', not invalid text */
-		if (*arg != '0')
-		{
-			SEND_TO_Q("Invalid Selection, please try again.\r\n", d);
-			display_account_menu(d, NULL);
-			break;
-		}
 		STATE(d) = CON_FLUSH;
 		SEND_TO_Q("\r\n\r\nThank you for playing!\r\n", d);
 		if (-1 == write_account(d->account))
@@ -831,7 +839,7 @@ void account_select_char(P_desc d, char *arg)
 	struct acct_chars *c = NULL;
 	struct acct_chars *sorted_chars[MAX_CHARS_PER_ACCOUNT];
 	struct acct_chars *temp;
-	int selection = -1;
+	long selection = -1;
 	int count = 0, i, j;
 
 	if (!arg)
@@ -840,10 +848,22 @@ void account_select_char(P_desc d, char *arg)
 		return;
 	}
 
+	while (isspace((unsigned char)*arg))
+		arg++;
+
 	// Check if input is numeric
-	if (isdigit(arg[0]))
+	if (isdigit((unsigned char)arg[0]) || arg[0] == '+' || arg[0] == '-')
 	{
-		selection = atoi(arg);
+		char *end = NULL;
+		selection = strtol(arg, &end, 10);
+		while (end && isspace((unsigned char)*end))
+			end++;
+		if (end == arg || (end && *end))
+		{
+			SEND_TO_Q("&+RInvalid selection.&n\r\n\r\n", d);
+			display_character_list(d);
+			return;
+		}
 
 		// Option 0 = back to account menu
 		if (selection == 0)
@@ -911,7 +931,8 @@ void account_select_char(P_desc d, char *arg)
 		if (c->racewar == ACCT_GOOD &&
 		    current_time < (d->account->acct_evil + racewarSwitchTimer))
 		{
-			time_remaining = (d->account->acct_evil + 3600) - current_time;
+			time_remaining =
+				(d->account->acct_evil + racewarSwitchTimer) - current_time;
 			minutes_remaining = (time_remaining + 59) / 60; // Round up
 			snprintf(
 				buf, 512,
@@ -924,7 +945,8 @@ void account_select_char(P_desc d, char *arg)
 		else if (c->racewar == ACCT_EVIL &&
 			 current_time < (d->account->acct_good + racewarSwitchTimer))
 		{
-			time_remaining = (d->account->acct_good + 3600) - current_time;
+			time_remaining =
+				(d->account->acct_good + racewarSwitchTimer) - current_time;
 			minutes_remaining = (time_remaining + 59) / 60; // Round up
 			snprintf(
 				buf, 512,
@@ -963,12 +985,13 @@ void account_select_char(P_desc d, char *arg)
 	char name_cap[32];
 	strlcpy(name_cap, c->charname, sizeof name_cap);
 	if (name_cap[0])
-		name_cap[0] = toupper(name_cap[0]);
+		name_cap[0] = toupper((unsigned char)name_cap[0]);
 
 	// Send confirmation prompt
 	char confirm_buf[256];
 	snprintf(confirm_buf, 256, "\r\nPlay as &+W%s&n? (Y/N) ", name_cap);
 	SEND_TO_Q(confirm_buf, d);
+	d->prompt_mode = TRUE;
 
 	// Change state to confirmation
 	STATE(d) = CON_ACCT_CONFIRM_CHAR;
@@ -1532,9 +1555,6 @@ void display_character_list(P_desc d, P_acct account)
 	int count = 0, i, j;
 	struct acct_chars *temp;
 
-	// Enable ANSI terminal mode for color display
-	d->term_type = TERM_ANSI;
-
 	if (!c)
 	{
 		snprintf(buf, 256, "Account currently doesn't have any characters (0/%d).\r\n",
@@ -1610,7 +1630,7 @@ void display_character_list(P_desc d, P_acct account)
 		// capitalize character name
 		strlcpy(name_capitalized, ch->charname, sizeof name_capitalized);
 		if (name_capitalized[0])
-			name_capitalized[0] = toupper(name_capitalized[0]);
+			name_capitalized[0] = toupper((unsigned char)name_capitalized[0]);
 
 		// get race name
 		extern const struct race_names race_names_table[];
@@ -1623,18 +1643,23 @@ void display_character_list(P_desc d, P_acct account)
 		extern const struct class_names class_names_table[];
 		int primary_idx = flag2idx(ch->m_class);
 		int secondary_idx = ch->secondary_class ? flag2idx(ch->secondary_class) : 0;
+		const char *primary_class = primary_idx >= 1 && primary_idx <= CLASS_COUNT ?
+						    class_names_table[primary_idx].normal :
+						    "Unknown";
+		const char *secondary_class = secondary_idx >= 1 && secondary_idx <= CLASS_COUNT ?
+						      class_names_table[secondary_idx].normal :
+						      NULL;
 
-		if (ch->secondary_class && secondary_idx > 0)
+		if (ch->secondary_class && secondary_class)
 		{
 			snprintf(level_str, 16, "%d", ch->level);
-			snprintf(class_str, sizeof class_str, "%s/%s",
-				 class_names_table[primary_idx].normal,
-				 class_names_table[secondary_idx].normal);
+			snprintf(class_str, sizeof class_str, "%s/%s", primary_class,
+				 secondary_class);
 		}
 		else
 		{
 			snprintf(level_str, 16, "%d", ch->level);
-			strlcpy(class_str, class_names_table[primary_idx].normal, sizeof class_str);
+			strlcpy(class_str, primary_class, sizeof class_str);
 		}
 
 		// truncate strings if too long for table
@@ -1659,20 +1684,24 @@ void display_character_list(P_desc d, P_acct account)
 		}
 
 		// truncate room name to fit column (16 visible chars) while preserving ansi codes
-		int src_idx = 0, dst_idx = 0, visible_count = 0;
+		size_t src_idx = 0, dst_idx = 0;
+		int visible_count = 0;
 		int max_visible = 16;
-		while (room_name_src[src_idx] && dst_idx < 126)
+		while (room_name_src[src_idx] && dst_idx + 1 < sizeof room_display)
 		{
 			if (room_name_src[src_idx] == '&' && room_name_src[src_idx + 1])
 			{
-				room_display[dst_idx++] = room_name_src[src_idx++];
-				room_display[dst_idx++] = room_name_src[src_idx++];
-				if (room_name_src[src_idx - 1] == '+' ||
-				    room_name_src[src_idx - 1] == '-')
-				{
-					if (room_name_src[src_idx])
-						room_display[dst_idx++] = room_name_src[src_idx++];
-				}
+				size_t color_length = (room_name_src[src_idx + 1] == '+' ||
+						       room_name_src[src_idx + 1] == '-') &&
+								      room_name_src[src_idx + 2] ?
+							      3 :
+							      2;
+				if (dst_idx + color_length >= sizeof room_display)
+					break;
+				memcpy(room_display + dst_idx, room_name_src + src_idx,
+				       color_length);
+				dst_idx += color_length;
+				src_idx += color_length;
 			}
 			else
 			{
@@ -1699,6 +1728,7 @@ void display_character_list(P_desc d, P_acct account)
 	{
 		SEND_TO_Q("\r\n&+W0&n) &+LBack to Account Menu&n\r\n\r\n", d);
 		SEND_TO_Q("Which character would you like to play? ", d);
+		d->prompt_mode = TRUE;
 	}
 }
 
