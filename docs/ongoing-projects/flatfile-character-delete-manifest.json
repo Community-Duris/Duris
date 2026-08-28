@@ -78,8 +78,8 @@
       "id": "artifacts",
       "source": "runtime-call",
       "key": "pid+item-vnum",
-      "disposition": "unimplemented",
-      "evidence": { "path": "src/files.c", "token": "remove_all_artifacts_sql(ch)" }
+      "disposition": "prepared_rewrite",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_artifact_prepare_player_release" }
     },
     {
       "id": "locker_access",

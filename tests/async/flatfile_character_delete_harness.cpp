@@ -1,5 +1,6 @@
 #include "flatfile_boon_repository.h"
 #include "flatfile_character_delete.h"
+#include "flatfile_artifact_repository.h"
 #include "flatfile_identity_repository.h"
 #include "flatfile_item_repository.h"
 #include "flatfile_offline_message_repository.h"
@@ -86,6 +87,11 @@ static void establish(const fs::path &root, bool establish_boons)
 	require(flatfile_spellbook_establish(root.string(), { { 1, { 2001 } } }, &error) ==
 			flatfile_spellbook_result::ok,
 		"spellbook baseline failed: " + error);
+	require(flatfile_artifact_establish(root.string(),
+					    { { 3001, true, FLATFILE_ARTIFACT_ON_PLAYER, 1, 9999, 1,
+						100, 1, 8888, 1 } },
+					    &error) == flatfile_artifact_result::ok,
+		"artifact baseline failed: " + error);
 	if (establish_boons)
 		require(flatfile_boon_establish(root.string(), {}, &error) ==
 				flatfile_boon_result::ok,
@@ -144,6 +150,15 @@ int main(int argc, char **argv)
 			root.string(), { item_owner_type::player, 1, 0 }, &owner_revision, &items,
 			&error) == flatfile_item_repository_result::not_found,
 		"recovered deletion retained the player item owner");
+	std::vector<flatfile_artifact_record> artifacts;
+	require(flatfile_artifact_list(root.string(), &artifacts, &error) ==
+				flatfile_artifact_result::ok &&
+			artifacts.size() == 1 && !artifacts[0].owned &&
+			artifacts[0].location_type == FLATFILE_ARTIFACT_NOT_IN_GAME &&
+			artifacts[0].location == 0 && artifacts[0].timer == 0 &&
+			artifacts[0].bind_owner_pid == -1 && artifacts[0].bind_timer == 0 &&
+			artifacts[0].revision == 2,
+		"recovered deletion did not release player artifacts");
 	std::vector<flatfile_offline_message_record> messages;
 	require(flatfile_offline_message_list(root.string(), 1, &messages, &error) ==
 				flatfile_offline_message_result::ok &&

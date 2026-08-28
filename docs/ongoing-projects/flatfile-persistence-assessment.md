@@ -1567,6 +1567,46 @@ sections below continue to describe the required end state.
   checked-empty precondition, then add artifact/binding disposition; keep the manifest as
   the gate for reducing the blocker count.
 
+### Checkpoint 47 - canonical flat artifact authority and deletion disposition
+
+- **Completed:** added a `DURARTF` v1 artifact catalog that replaces three legacy SQL
+  projections plus their revision state with one canonical record per vnum. Each record carries
+  ownership, location type/key, artifact timer/type/update time, soul-binding owner/timer,
+  and a monotonic record revision; the catalog adds its own revision, canonical vnum order,
+  fixed-width encoding, SHA-256 validation, and bounded record/file counts.
+- **Exporter boundary:** exact establishment canonicalizes ordering and is idempotent only
+  for an identical catalog. Missing authority fails closed, conflicting establishment is
+  rejected, and list reads never synthesize an empty catalog. This provides the typed
+  target needed to reconcile `artifacts`, `artifacts_mortal`, `artifact_bind`, and
+  `artifact_domain_state` during a future SQL-to-flat export rather than perpetuating four
+  live authorities.
+- **Deletion disposition:** under the held global authority lock, player-held artifacts are
+  made unowned/not-in-game with cleared location/timer, and any soul binding to the PID is
+  released. Every changed artifact revision and the catalog revision advance once, and the
+  checksummed after-image joins the core character-delete journal before snapshot/item and
+  identity removal. A retry is unchanged and cannot double-advance revisions.
+- **Corpse safety:** an artifact recorded on the deleting PID's corpse returns a conflict
+  before any image is published. Corpse item authority is still unimplemented, so silently
+  releasing that catalog row would leave contradictory corpse contents. The existing
+  corpse/saved-item blocker remains the required disposition boundary.
+- **Checks passed:** the standalone regression covers missing-authority refusal, canonical
+  exact establishment, conflicting establishment, round-trip decoding, unreferenced retry,
+  prepared journal publication, held/bound release, untouched-record preservation,
+  per-record revisions, corpse conflict/no mutation, checksum corruption refusal, and
+  corrupt-delete refusal. The expanded coordinator fault/recovery test proves artifact
+  release converges with all other core operations. Strict normal compilation passes and
+  CI now runs the artifact regression in the client-free job.
+- **Manifest and exposure:** artifact deletion advances from `unimplemented` to
+  `prepared_rewrite`, reducing the checked runtime blocker count from eight to seven. The
+  broader artifact gameplay/read/update domain is not yet routed to this catalog, so
+  `artifacts/economy` correctly remains in boot's unimplemented-domain fence and the live
+  delete route remains closed.
+- **Files changed:** artifact repository/codec and harness, coordinator/build/CI wiring,
+  deletion manifest/validator, and this handoff ledger.
+- **Next action:** implement the player-locker catalog with item UID custody integration
+  while keeping account lockers separate, then compose locker access/content removal into
+  deletion without touching account-scoped storage.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

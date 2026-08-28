@@ -90,6 +90,7 @@ if "flatfile_character_delete" in delete_body:
 
 coordinator = (ROOT / "src/flatfile_character_delete.c").read_text()
 prepared_order = [
+    "flatfile_artifact_prepare_player_release",
     "flatfile_player_snapshot_prepare_remove",
     "flatfile_player_domain_prepare_remove",
     "flatfile_item_repository_prepare_player_remove",
