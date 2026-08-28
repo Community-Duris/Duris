@@ -1903,6 +1903,39 @@ sections below continue to describe the required end state.
   player cleanup into deletion, and then audit the complete manifest and runtime exposure
   gate before routing the live terminal path.
 
+### Checkpoint 56 - account-reward summon authority and zero-blocker deletion manifest
+
+- **Completed:** added a checksummed `DURSUMN` v1
+  `account_reward_summon_catalog` for the character-reference state formerly held in
+  `account_bound_reward_summons`. Each canonical record carries stable account-grant ID,
+  character PID, absolute last-summoned timestamp, recovery-ready state, and revision.
+- **Authority boundary:** exact establishment sorts by the legacy `(grant ID, PID)` primary
+  key and is idempotent only for identical state. Validation rejects zero identities,
+  duplicate key pairs, negative timestamps, missing revisions, oversized catalogs,
+  checksum corruption, and trailing data. The account-level reward grant itself is not
+  deleted or reassigned by this character-reference repository.
+- **Deletion semantics:** under the held global authority lock, character deletion prepares
+  removal of every summon/cooldown row for the deleting PID regardless of grant, while
+  preserving the same grants' rows for all other characters. An absent PID is an idempotent
+  unchanged result; missing or corrupt authority fails closed.
+- **Coordinator composition:** the summon catalog image joins the recoverable transaction
+  immediately after the auction reference check. The bounded operation count is fifteen,
+  and the identity tombstone remains success-last. Fault recovery proves the deleting
+  PID's summon row is absent while another PID's row for the same grant survives.
+- **Checks passed:** strict standalone establishment/list, canonical ordering, duplicate and
+  timestamp validation, prepare-before-publish isolation, transactional removal, unrelated
+  PID preservation, retry stability, and checksum corruption tests pass. The expanded
+  fault-injected character-delete and manifest tests, changed-line formatting, normal
+  build, and client-free build/boot preflight pass; CI includes the new repository.
+- **Manifest and exposure:** `account_bound_summons` advances from `unimplemented` to
+  `prepared_remove`. The machine-readable deletion inventory now has zero unimplemented
+  entries. Runtime exposure intentionally remains `fenced` for a separate caller-semantics
+  audit, particularly the legacy `bDeleteLocker=false` paths; zero inventory blockers alone
+  do not authorize changing those call sites.
+- **Next action:** classify every live `deleteCharacter` caller, define flat semantics for
+  partial/transient deletion requests, then route only supported terminal deletion through
+  the coordinator and update the exposure contract with focused source/runtime tests.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

@@ -127,8 +127,8 @@
       "id": "account_bound_summons",
       "source": "schema-derived",
       "key": "pid",
-      "disposition": "unimplemented",
-      "evidence": { "path": "migrations/account_bound_rewards.sql", "token": "account_bound_reward_summons_pid_fk" }
+      "disposition": "prepared_remove",
+      "evidence": { "path": "src/flatfile_character_delete.c", "token": "flatfile_account_reward_summon_prepare_player_remove" }
     },
     {
       "id": "historical_operation_ledgers",

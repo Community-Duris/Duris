@@ -1,6 +1,7 @@
 #include "flatfile_boon_repository.h"
 #include "flatfile_character_delete.h"
 #include "flatfile_artifact_repository.h"
+#include "flatfile_account_reward_summon_repository.h"
 #include "flatfile_association_repository.h"
 #include "flatfile_frag_leaderboard_repository.h"
 #include "flatfile_identity_repository.h"
@@ -82,6 +83,10 @@ static void establish(const fs::path &root, bool establish_boons)
 	require(flatfile_identity_claim(root.string(), pid, "Player", "Account", &error) ==
 			flatfile_identity_result::ok,
 		"identity claim failed: " + error);
+	require(flatfile_account_reward_summon_establish(
+			root.string(), { { 5, 1, 1000, false, 1 }, { 5, 2, 2000, true, 1 } },
+			&error) == flatfile_account_reward_summon_result::ok,
+		"account reward summon baseline failed: " + error);
 	const auto applied =
 		flatfile_player_snapshot_apply(root.string(), make_snapshot(pid), &error);
 	require(applied.outcome == player_save_apply_outcome::applied,
@@ -313,6 +318,12 @@ int main(int argc, char **argv)
 				flatfile_offline_message_result::ok &&
 			messages.empty(),
 		"recovered deletion retained offline messages");
+	std::vector<flatfile_account_reward_summon_record> summons;
+	require(flatfile_account_reward_summon_list(root.string(), &summons, &error) ==
+				flatfile_account_reward_summon_result::ok &&
+			summons.size() == 1 && summons[0].grant_id == 5 && summons[0].pid == 2 &&
+			summons[0].recovery_ready,
+		"recovered deletion retained player summon reference or removed another PID");
 
 	const fs::path missing = fs::path(argv[1]) / "missing";
 	establish(missing, false);

@@ -13,6 +13,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
     sources = [
         "tests/async/flatfile_character_delete_harness.cpp",
         "src/flatfile_character_delete.c",
+        "src/flatfile_account_reward_summon_repository.c",
         "src/flatfile_artifact_repository.c",
         "src/flatfile_association_repository.c",
         "src/flatfile_frag_leaderboard_repository.c",
