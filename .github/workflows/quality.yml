@@ -97,6 +97,8 @@ jobs:
         run: python3 tests/async/test_flatfile_help_catalog.py
       - name: Verify database-independent launcher
         run: python3 tests/async/test_flatfile_launcher.py
+      - name: Verify flat-file multiplay whitelist
+        run: python3 tests/async/test_flatfile_multiplay_whitelist.py
 
   quality:
     runs-on: ubuntu-24.04

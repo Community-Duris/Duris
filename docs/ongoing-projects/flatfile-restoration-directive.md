@@ -68,6 +68,30 @@
 - **Overall state:** the full objective is not complete. The global incomplete-domain
   boot fence remains in place while other concrete DB-free gaps are restored.
 
+### 2026-08-29 - database-independent multiplay whitelist
+
+- **Concrete gap:** the multiplay whitelist was historically database-only. In a
+  client-free build, reads always returned an empty list and the existing staff add and
+  remove command paths always failed, so approved shared-network exceptions could not
+  be administered or survive a restart.
+- **Restoration:** the existing whitelist read/add/remove functions now preserve the
+  same visible fields and exact-pattern deletion behavior in `flatfile-primary`. They
+  use one bounded, versioned, checksummed record in the existing metadata directory,
+  published through the existing owner-only atomic store and serialized under a local
+  lock. Missing state is an empty whitelist; corrupt or unsafe state grants no login
+  exception and cannot be overwritten by a staff mutation. The database-backed path is
+  unchanged.
+- **Focused evidence:**
+  `python3 tests/async/test_flatfile_multiplay_whitelist.py` exercises add/list/match,
+  duplicate patterns, exact-pattern removal, missing-pattern compatibility, private
+  permissions, checksum corruption, fail-closed matching, and refusal to overwrite a
+  corrupt record. The test is included in the client-free CI job.
+- **Build evidence:** `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** the full objective is not complete. The global incomplete-domain
+  boot fence remains in place while other concrete DB-free gaps are restored.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,
