@@ -1,5 +1,6 @@
 #include "redis_presence_worker.h"
 #include "redis_connection.h"
+#include "redis_key_registry.h"
 
 #include <hiredis/hiredis.h>
 
@@ -154,15 +155,17 @@ execution_result execute_job(redisContext *context, const presence_job &job)
 	    (size_t)ttl_length >= sizeof ttl)
 		return execution_result::failure;
 
-	redisReply *reply = command(
-		context,
-		"EVAL %b 5 mud:presence:current mud:presence:session: mud:presence_op: mud:player "
-		"mud:online "
-		"%b %s %b %b %b %b %b",
-		PRESENCE_SCRIPT, strlen(PRESENCE_SCRIPT), operation_id, (size_t)operation_id_length,
-		operation_name(job.operation), pid, strlen(pid),
-		job.payload ? job.payload->data() : "", job.payload ? job.payload->size() : 0,
-		event, strlen(event), instance, (size_t)instance_length, ttl, (size_t)ttl_length);
+	redisReply *reply = command(context,
+				    "EVAL %b 5 %s %s %s %s %s "
+				    "%b %s %b %b %b %b %b",
+				    PRESENCE_SCRIPT, strlen(PRESENCE_SCRIPT),
+				    REDIS_PRESENCE_CURRENT, REDIS_PRESENCE_SESSION_PREFIX,
+				    REDIS_PRESENCE_RETRY_PREFIX, REDIS_PRESENCE_EVENT_CHANNEL,
+				    REDIS_LEGACY_ONLINE, operation_id, (size_t)operation_id_length,
+				    operation_name(job.operation), pid, strlen(pid),
+				    job.payload ? job.payload->data() : "",
+				    job.payload ? job.payload->size() : 0, event, strlen(event),
+				    instance, (size_t)instance_length, ttl, (size_t)ttl_length);
 	const execution_result result = !reply || reply->type != REDIS_REPLY_INTEGER ?
 						execution_result::failure :
 					reply->integer == 1 ? execution_result::success :
@@ -216,8 +219,9 @@ execution_result refresh_active_sessions(redisContext *context)
 			add_argument("EVAL", 4);
 			add_argument(PRESENCE_HEARTBEAT_SCRIPT, strlen(PRESENCE_HEARTBEAT_SCRIPT));
 			add_argument("2", 1);
-			add_argument("mud:presence:current", strlen("mud:presence:current"));
-			add_argument("mud:presence:session:", strlen("mud:presence:session:"));
+			add_argument(REDIS_PRESENCE_CURRENT, strlen(REDIS_PRESENCE_CURRENT));
+			add_argument(REDIS_PRESENCE_SESSION_PREFIX,
+				     strlen(REDIS_PRESENCE_SESSION_PREFIX));
 			add_argument(instance, static_cast<size_t>(instance_length));
 			add_argument(ttl, static_cast<size_t>(ttl_length));
 			for (size_t count = 0;

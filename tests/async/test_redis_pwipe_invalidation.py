@@ -26,16 +26,16 @@ assert wipe.index("redis_clear_pwipe_state()") < wipe.rindex("return TRUE;")
 # Season caches must be wiped so old-season scoreboards/lists cannot resurrect.
 pwipe_fn = source[source.index("bool redis_clear_pwipe_state(void)"): source.index("void redis_cleanup(void)")]
 assert contains(pwipe_fn, "redis_clear_floor_drops_checked()")
-for key in ("mud:floor_drops", "mud:floor_pickups", "mud:online",
-            "mud:presence:current",
-            "mud:world_state:current", "mud:world_state:timestamp",
-            "mud:world_state:sequence", "mud:world_state:checksum",
-            "mud:world_state:complete", "mud:world_state:writer_fence"):
-    assert contains(pwipe_fn, f'redis_delete_key_checked("{key}")')
-assert contains(pwipe_fn, 'redis_clear_scan_match("mud:cache:*)') or contains(pwipe_fn, 'redis_clear_scan_match("mud:cache:*")')
-assert contains(pwipe_fn, 'redis_clear_scan_match("mud:presence_op:*")')
-assert contains(pwipe_fn, 'redis_clear_scan_match("mud:presence:session:*")')
-assert contains(pwipe_fn, 'redis_clear_scan_match("mud:world_state:generation:*")')
+for key in ("REDIS_LEGACY_FLOOR_DROPS", "REDIS_LEGACY_FLOOR_PICKUPS",
+            "REDIS_LEGACY_ONLINE", "REDIS_PRESENCE_CURRENT",
+            "REDIS_LEGACY_WORLD_CURRENT", "REDIS_LEGACY_WORLD_TIMESTAMP",
+            "REDIS_LEGACY_WORLD_SEQUENCE", "REDIS_LEGACY_WORLD_CHECKSUM",
+            "REDIS_LEGACY_WORLD_COMPLETE", "REDIS_LEGACY_WORLD_FENCE"):
+    assert contains(pwipe_fn, f"redis_delete_key_checked({key})")
+for pattern in ("REDIS_CACHE_PATTERN", "REDIS_PRESENCE_RETRY_PATTERN",
+                "REDIS_PRESENCE_SESSION_PATTERN",
+                "REDIS_LEGACY_WORLD_GENERATION_PATTERN"):
+    assert contains(pwipe_fn, f"redis_clear_scan_match({pattern})")
 assert contains(pwipe_fn, "redis_clear_ship_snapshots()")
 assert not contains(pwipe_fn, "FLUSHALL")
 assert contains(source, "redis_clear_scan_match")

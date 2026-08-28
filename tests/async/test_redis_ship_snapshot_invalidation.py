@@ -25,7 +25,8 @@ stub_start = source.index("#ifdef __NO_MYSQL__")
 stub_end = source.index("#endif", stub_start)
 assert "bool redis_clear_ship_snapshots(void)" in source[stub_start:stub_end]
 assert "return true;" in source[stub_start:stub_end]
-assert '"SCAN %s MATCH ship:snapshot:* COUNT 256"' in source
+assert '"SCAN %s MATCH %s COUNT 256"' in source
+assert "REDIS_SHIP_SNAPSHOT_PATTERN" in source
 clear = source[source.index("bool redis_clear_pwipe_state(void)"):]
 assert "redis_clear_ship_snapshots()" in clear
 print("MySQL ship authority and legacy Redis invalidation checks passed")

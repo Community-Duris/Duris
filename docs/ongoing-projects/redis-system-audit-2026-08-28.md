@@ -4,11 +4,48 @@ Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
-RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-023,
-RDS-024, RDS-027, and RDS-028 are remediated. RDS-008 is remediated for connection security but
-remains partial for namespace isolation; the remaining findings are open.
+RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
+RDS-023, RDS-024, RDS-027, and RDS-028 are remediated. RDS-008 is remediated for
+connection security but remains partial for namespace isolation; the remaining findings
+are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-022 authoritative Redis key registry
+
+Completed in this interval:
+
+- Added one declarative registry for all 35 active and cleanup-only Redis keys, key
+  formats, prefixes, patterns, and channels across world recovery, floor deltas,
+  presence, content caches, donation delivery, and retired ship snapshots.
+- Replaced every `mud:` and `ship:snapshot:` literal in runtime C/C++ sources with
+  compile-time constants generated from the registry. World, presence, donation, cache,
+  pwipe, administrator, and ship-cleanup paths now consume the same declarations.
+- Made the lifecycle validator derive the Redis store IDs, kinds, and exact locators from
+  the registry instead of a second handwritten Python list. The manifest now explicitly
+  inventories content caches, donation pub/sub, retired ship cache cleanup, floor deltas,
+  world recovery, and presence.
+- Added fail-closed tests for unknown, missing, duplicate, and unused registry stores;
+  manifest/registry drift; runtime Redis literals outside the registry; and destructive
+  maintenance patterns that differ from the registry-owned patterns.
+
+Performance effect:
+
+- Runtime key lookup remains compile-time constant access. No registry parsing, scanning,
+  allocation, lock, network operation, or additional branch runs in gameplay paths.
+- Artifact boot priming now formats its six declared keys into fixed stack buffers instead
+  of duplicating those keys in a command literal. All validation and inventory comparison
+  runs offline in Python.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_key_registry.py`: passed with 35 declared surfaces and
+  exact destructive-maintenance pattern matching.
+- `python3 tests/async/test_data_lifecycle_manifest.py`: passed, including registry drift
+  and fail-closed coverage.
+- `python3 scripts/validate_data_lifecycle.py --json`: passed with 172 database tables,
+  21 non-database stores, and 35 Redis surfaces.
 
 ### 2026-08-28 - RDS-027 supported server build contract
 
@@ -1635,20 +1672,21 @@ cannot make old data current.
 
 Severity: Medium
 Confidence: Confirmed
-Remediation status: Partially remediated; presence state, events, and retry tokens are now
-required lifecycle entries alongside world recovery. Floor state, content caches, and the
-remaining Redis surfaces still need registry-backed inventory.
+Remediation status: Completed on branch. One declarative runtime registry owns all active
+and cleanup-only Redis surfaces, runtime code consumes its constants, destructive
+maintenance patterns are checked against it, and lifecycle validation derives Redis store
+coverage and exact locators from it.
 
-The audit baseline lifecycle manifest had only `redis:world_recovery`. This branch now
-also requires `redis:presence`, covering the online hash, player-event channel, and retry
-tokens. It still omits floor hashes, content caches, and other Redis surfaces. The
-validator's required list remains handwritten rather than generated from a runtime key
-registry, so it cannot discover a new or forgotten Redis store automatically. Tests can
-therefore still report full inventory coverage when both handwritten lists omit the same
-surface.
+The audit baseline lifecycle manifest had only `redis:world_recovery`, while runtime keys
+were duplicated as string literals. The registry now declares 35 surfaces mapped to five
+lifecycle stores: world/floor recovery, presence, content caches, donation pub/sub, and
+retired ship-cache cleanup. Runtime source is prohibited from introducing another
+`mud:` or `ship:snapshot:` literal, and the validator fails when a registry store is
+missing from the manifest or a manifest Redis store is absent from the registry.
 
-Impact: privacy, export, erasure, retention, season reset, and documentation controls can
-pass while known Redis data is outside the policy boundary.
+The lifecycle report exposes both non-database store count and Redis surface count, so
+inventory growth is visible in validation output. Destructive maintenance retains only
+the two registry-owned patterns and is checked for exact equality by the focused test.
 
 Recommendation: create one declarative Redis key/channel registry used by runtime,
 pwipe/admin tools, documentation, and lifecycle validation. The validator should compare

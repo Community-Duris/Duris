@@ -11,6 +11,7 @@
 #include "redis_cache_store.h"
 #include "redis_donation_worker.h"
 #include "redis_floor_store.h"
+#include "redis_key_registry.h"
 #include "redis_presence_worker.h"
 #include "world_recovery_pipeline.h"
 
@@ -239,7 +240,7 @@ static void redis_clear_cache(P_char ch, const char *cache)
 
 	if (is_abbrev(cache, "named"))
 	{
-		if (redis_cache_del("mud:cache:named"))
+		if (redis_cache_del(REDIS_CACHE_NAMED))
 			send_to_char("&+GQueued:&n named for background invalidation\r\n", ch);
 		else
 			send_to_char(

@@ -11,6 +11,7 @@ cache_store = (root / "src/redis_cache_store.c").read_text()
 floor_store = (root / "src/redis_floor_store.c").read_text()
 donation_worker = (root / "src/redis_donation_worker.c").read_text()
 connection = (root / "src/redis_connection.c").read_text()
+key_registry = (root / "src/redis_key_registry.def").read_text()
 header = (root / "src/redis.h").read_text()
 signals = (root / "src/signals.c").read_text()
 
@@ -172,7 +173,8 @@ assert "WORLD_PUBLISH_SCRIPT" in publisher and "EVAL %b 8" in publisher
 assert "redis.call('GET',KEYS[1])~=ARGV[1]" in store
 assert "current~=ARGV[2]" in store
 assert "reply->type == REDIS_REPLY_INTEGER && reply->integer == 1" in publisher
-assert "world_state:sequence" in store and "world_state:checksum" in store
+assert "REDIS_WORLD_SEQUENCE_SUFFIX" in store and "REDIS_WORLD_CHECKSUM_SUFFIX" in store
+assert '"world_state:sequence"' in key_registry and '"world_state:checksum"' in key_registry
 assert "redis.call('DEL',KEYS[8])" in store and "PEXPIRE" in store
 print("[PASS] null, timeout, error reply, or rejected world CAS forces worker failure")
 

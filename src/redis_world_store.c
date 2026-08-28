@@ -1,5 +1,6 @@
 #include "redis_world_store.h"
 #include "redis_connection.h"
+#include "redis_key_registry.h"
 
 #include "world_recovery_pipeline.h"
 
@@ -48,7 +49,7 @@ bool format_key(char *buffer, size_t size, uint64_t epoch, const char *suffix)
 	if (!buffer || size < 64 || !epoch || !suffix || !*suffix)
 		return false;
 	const int written =
-		snprintf(buffer, size, "mud:season:%llu:%s", (unsigned long long)epoch, suffix);
+		snprintf(buffer, size, REDIS_SEASON_KEY_FORMAT, (unsigned long long)epoch, suffix);
 	return written > 0 && (size_t)written < size;
 }
 
@@ -56,21 +57,21 @@ bool build_keys(const redis_world_store_config *config, world_keys *keys)
 {
 	return config && keys && config->season_epoch &&
 	       format_key(keys->fence, sizeof keys->fence, config->season_epoch,
-			  "world_state:writer_fence") &&
+			  REDIS_WORLD_FENCE_SUFFIX) &&
 	       format_key(keys->current, sizeof keys->current, config->season_epoch,
-			  "world_state:current") &&
+			  REDIS_WORLD_CURRENT_SUFFIX) &&
 	       format_key(keys->timestamp, sizeof keys->timestamp, config->season_epoch,
-			  "world_state:timestamp") &&
+			  REDIS_WORLD_TIMESTAMP_SUFFIX) &&
 	       format_key(keys->sequence, sizeof keys->sequence, config->season_epoch,
-			  "world_state:sequence") &&
+			  REDIS_WORLD_SEQUENCE_SUFFIX) &&
 	       format_key(keys->checksum, sizeof keys->checksum, config->season_epoch,
-			  "world_state:checksum") &&
+			  REDIS_WORLD_CHECKSUM_SUFFIX) &&
 	       format_key(keys->complete, sizeof keys->complete, config->season_epoch,
-			  "world_state:complete") &&
+			  REDIS_WORLD_COMPLETE_SUFFIX) &&
 	       format_key(keys->floor_drops, sizeof keys->floor_drops, config->season_epoch,
-			  "floor_drops") &&
+			  REDIS_FLOOR_DROPS_SUFFIX) &&
 	       format_key(keys->clean_shutdown, sizeof keys->clean_shutdown, config->season_epoch,
-			  "world_state:clean_shutdown");
+			  REDIS_WORLD_CLEAN_SHUTDOWN_SUFFIX);
 }
 
 redisContext *connect_bounded(const redis_world_store_config *config,
@@ -286,9 +287,12 @@ bool redis_world_store_consume_generation(const struct redis_world_store_config 
 {
 	world_keys keys = {};
 	char generation[160];
-	const std::string suffix = "world_state:generation:" + std::to_string(sequence);
+	char suffix[96];
+	const int suffix_length = snprintf(suffix, sizeof suffix, REDIS_WORLD_GENERATION_FORMAT,
+					   (unsigned long long)sequence);
 	if (!writer_token || !*writer_token || !sequence || !build_keys(config, &keys) ||
-	    !format_key(generation, sizeof generation, config->season_epoch, suffix.c_str()))
+	    suffix_length <= 0 || (size_t)suffix_length >= sizeof suffix ||
+	    !format_key(generation, sizeof generation, config->season_epoch, suffix))
 		return false;
 	redisContext *context = connect_bounded(config);
 	if (!context || context->err)
@@ -321,12 +325,15 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 {
 	world_keys keys = {};
 	char generation[160];
-	const std::string generation_suffix = "world_state:generation:" + std::to_string(sequence);
+	char generation_suffix[96];
+	const int suffix_length = snprintf(generation_suffix, sizeof generation_suffix,
+					   REDIS_WORLD_GENERATION_FORMAT,
+					   (unsigned long long)sequence);
 	if (!writer_token || !*writer_token || !lease_msec || !data || !size ||
 	    size > WORLD_RECOVERY_MAX_BYTES || !sequence || timestamp <= 0 || !config ||
-	    !config->generation_ttl_seconds || !build_keys(config, &keys) ||
-	    !format_key(generation, sizeof generation, config->season_epoch,
-			generation_suffix.c_str()))
+	    !config->generation_ttl_seconds || !build_keys(config, &keys) || suffix_length <= 0 ||
+	    (size_t)suffix_length >= sizeof generation_suffix ||
+	    !format_key(generation, sizeof generation, config->season_epoch, generation_suffix))
 		return false;
 	constexpr size_t assumed_bytes_per_second = 16 * 1024 * 1024;
 	constexpr int maximum_publish_timeout_msec = 5000;
@@ -378,12 +385,17 @@ bool redis_world_store_publish(const struct redis_world_store_config *config,
 	if (valid && previous_sequence && previous_sequence != sequence)
 	{
 		char previous[160];
-		const std::string previous_suffix =
-			"world_state:generation:" + std::to_string(previous_sequence);
-		redisReply *reply = format_key(previous, sizeof previous, config->season_epoch,
-					       previous_suffix.c_str()) ?
-					    command(context, "DEL %s", previous) :
-					    nullptr;
+		char previous_suffix[96];
+		const int previous_suffix_length = snprintf(previous_suffix, sizeof previous_suffix,
+							    REDIS_WORLD_GENERATION_FORMAT,
+							    (unsigned long long)previous_sequence);
+		redisReply *reply =
+			previous_suffix_length > 0 &&
+					(size_t)previous_suffix_length < sizeof previous_suffix &&
+					format_key(previous, sizeof previous, config->season_epoch,
+						   previous_suffix) ?
+				command(context, "DEL %s", previous) :
+				nullptr;
 		if (reply)
 			freeReplyObject(reply);
 	}

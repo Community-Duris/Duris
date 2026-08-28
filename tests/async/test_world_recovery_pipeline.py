@@ -11,6 +11,7 @@ PIPELINE = (ROOT / "src/world_recovery_pipeline.c").read_text()
 HEADER = (ROOT / "src/world_recovery_pipeline.h").read_text()
 REDIS = (ROOT / "src/redis.c").read_text()
 STORE = (ROOT / "src/redis_world_store.c").read_text()
+REGISTRY = (ROOT / "src/redis_key_registry.def").read_text()
 COMM = (ROOT / "src/comm.c").read_text()
 COPYOVER = (ROOT / "src/copyover.c").read_text()
 HANDLER = (ROOT / "src/handler.c").read_text()
@@ -182,7 +183,7 @@ for token in ("mud:season:%llu:%s", "world_state:writer_fence",
               "world_state:generation:", "world_state:current", "world_state:timestamp",
               "world_state:sequence", "world_state:checksum", "world_state:complete",
               "world_state:clean_shutdown", "floor_drops"):
-    assert token in STORE
+    assert token in REGISTRY
 for token in ("redis_world_store_mark_clean_shutdown",
               "redis_world_store_consume_clean_shutdown"):
     assert token in STORE
@@ -255,7 +256,7 @@ assert "redis_world_writer_fence_claim()" in quiesce
 assert "redis_world_store_release_fence" not in quiesce
 clear = section(REDIS, "bool redis_clear_world_state", "bool redis_load_world_state")
 assert clear.index("redis_world_recovery_quiesce()") < clear.index(
-    '"world_state:generation:*"'
+    "REDIS_WORLD_GENERATION_PATTERN"
 ) < clear.index("redis_clear_scan_match(generation_pattern)")
 assert clear.index("if (!quiesced)") < clear.index("redis_clear_scan_match(generation_pattern)")
 cleanup = section(REDIS, "void redis_cleanup", "void redis_clear_floor_pickups")

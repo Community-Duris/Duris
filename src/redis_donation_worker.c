@@ -1,5 +1,6 @@
 #include "redis_donation_worker.h"
 #include "redis_connection.h"
+#include "redis_key_registry.h"
 
 #include <hiredis/hiredis.h>
 
@@ -41,7 +42,8 @@ redisContext *connect_bounded()
 
 bool subscribe(redisContext *context)
 {
-	redisReply *reply = (redisReply *)redisCommand(context, "SUBSCRIBE mud:nchat");
+	redisReply *reply =
+		(redisReply *)redisCommand(context, "SUBSCRIBE %s", REDIS_DONATION_CHANNEL);
 	const bool subscribed = reply && reply->type == REDIS_REPLY_ARRAY;
 	if (reply)
 		freeReplyObject(reply);

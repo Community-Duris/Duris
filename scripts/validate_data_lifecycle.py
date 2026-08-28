@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "migrations" / "data_lifecycle_manifest.json"
+DEFAULT_REDIS_REGISTRY = ROOT / "src" / "redis_key_registry.def"
 DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "bootstrap_multithread_safe.sql",
     ROOT / "migrations" / "bootstrap_legacy_baseline.sql",
@@ -56,11 +57,6 @@ DESTRUCTIVE_ACTIONS = {
     "archive", "purge", "pseudonymize", "cascade", "restore_tombstone",
 }
 REQUIRED_NON_DATABASE_STORES = {
-    "redis:world_recovery": ("redis_keyspace", "redis world recovery generations"),
-    "redis:presence": (
-        "redis_keyspace",
-        "redis expiring presence generation/session keys, channel, and retry tokens",
-    ),
     "file:player_save_journal": ("journal", "PLAYER_SAVE_JOURNAL_DIR/player-save.journal"),
     "file:player_save_quarantine": (
         "quarantine", "PLAYER_SAVE_JOURNAL_DIR/player-save.journal.quarantine",
@@ -84,6 +80,7 @@ REQUIRED_NON_DATABASE_STORES = {
 }
 MAX_MANIFEST_BYTES = 2 * 1024 * 1024
 MAX_SCHEMA_BYTES = 8 * 1024 * 1024
+MAX_REDIS_REGISTRY_BYTES = 64 * 1024
 PROTECTED_EXCEPTIONS = {
     "protected_reconciliation_or_replay_horizon",
     "protected_recovery_replay_or_restore_horizon",
@@ -146,6 +143,56 @@ def read_regular_text(path: Path, maximum_bytes: int, label: str) -> str:
         return b"".join(chunks).decode("utf-8")
     except UnicodeDecodeError as error:
         raise ValidationError(f"{label} is not valid UTF-8: {path}") from error
+
+
+def redis_registry_inventory(
+    path: Path = DEFAULT_REDIS_REGISTRY,
+) -> tuple[dict[str, tuple[str, str]], int]:
+    text = read_regular_text(path, MAX_REDIS_REGISTRY_BYTES, "Redis key registry")
+    store_pattern = re.compile(
+        r'^REDIS_STORE\([A-Z0-9_]+, "([^"]+)", "([^"]+)", "([^"]+)"\)$'
+    )
+    surface_pattern = re.compile(
+        r'^REDIS_SURFACE\(([A-Z0-9_]+), "[^"]+", "[^"]+", '
+        r'([A-Z0-9_]+), "[^"]+", "(?:active|cleanup_only)"\)$'
+    )
+    owned_pattern = re.compile(r'^REDIS_OWNED_PATTERN\([A-Z0-9_]+, "[^"]+"\)$')
+    stores: dict[str, tuple[str, str]] = {}
+    store_symbols: dict[str, str] = {}
+    surfaces: set[str] = set()
+    surface_stores: set[str] = set()
+    for number, raw_line in enumerate(text.splitlines(), 1):
+        line = raw_line.strip()
+        if not line:
+            continue
+        store = store_pattern.fullmatch(line)
+        if store:
+            lifecycle_id, locator, kind = store.groups()
+            symbol = line.split("(", 1)[1].split(",", 1)[0]
+            if lifecycle_id in stores or symbol in store_symbols:
+                raise ValidationError(f"duplicate Redis registry store at line {number}")
+            stores[lifecycle_id] = (kind, locator)
+            store_symbols[symbol] = lifecycle_id
+            continue
+        surface = surface_pattern.fullmatch(line)
+        if surface:
+            name, store_symbol = surface.groups()
+            if name in surfaces:
+                raise ValidationError(f"duplicate Redis registry surface at line {number}")
+            surfaces.add(name)
+            surface_stores.add(store_symbol)
+            continue
+        if owned_pattern.fullmatch(line):
+            continue
+        raise ValidationError(f"invalid Redis registry declaration at line {number}")
+    unknown_stores = surface_stores - set(store_symbols)
+    unused_stores = set(store_symbols) - surface_stores
+    if not stores or not surfaces or unknown_stores or unused_stores:
+        raise ValidationError(
+            f"Redis registry coverage mismatch: unknown={sorted(unknown_stores)} "
+            f"unused={sorted(unused_stores)}"
+        )
+    return stores, len(surfaces)
 
 
 def schema_tables(paths: tuple[Path, ...]) -> set[str]:
@@ -229,7 +276,8 @@ def validate_dependency_graph(entries: dict[str, dict]) -> None:
 
 
 def validate_manifest(manifest: dict, expected_tables: set[str],
-                      foreign_keys: dict[str, set[str]]) -> dict[str, dict]:
+                      foreign_keys: dict[str, set[str]],
+                      redis_registry: Path = DEFAULT_REDIS_REGISTRY) -> dict[str, dict]:
     require_exact_fields(manifest, ROOT_FIELDS, "manifest")
     if type(manifest["schema_version"]) is not int or manifest["schema_version"] != 1 or \
             manifest["policy_id"] != "duris-lifecycle-v1":
@@ -278,6 +326,9 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
     entries: dict[str, dict] = {}
     database_tables: set[str] = set()
     non_database_ids: set[str] = set()
+    required_non_database_stores = dict(REQUIRED_NON_DATABASE_STORES)
+    redis_stores, _ = redis_registry_inventory(redis_registry)
+    required_non_database_stores.update(redis_stores)
     for index, entry in enumerate(raw_entries):
         if not isinstance(entry, dict):
             raise ValidationError(f"entry {index} must be an object")
@@ -365,7 +416,7 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
                 raise ValidationError(f"database entry mismatch for {entry_id}")
             database_tables.add(entry["locator"])
         else:
-            expected_store = REQUIRED_NON_DATABASE_STORES.get(entry_id)
+            expected_store = required_non_database_stores.get(entry_id)
             if expected_store != (entry["kind"], entry["locator"]):
                 raise ValidationError(f"non-database entry mismatch for {entry_id}")
             non_database_ids.add(entry_id)
@@ -377,7 +428,7 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
             f"schema coverage mismatch: missing={sorted(missing_tables)} "
             f"unknown={sorted(unknown_tables)}"
         )
-    required_non_database_ids = set(REQUIRED_NON_DATABASE_STORES)
+    required_non_database_ids = set(required_non_database_stores)
     if non_database_ids != required_non_database_ids:
         raise ValidationError(
             f"non-database coverage mismatch: "
@@ -424,6 +475,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--schema-file", type=Path, action="append")
+    parser.add_argument("--redis-registry", type=Path, default=DEFAULT_REDIS_REGISTRY)
     parser.add_argument("--destructive-preflight", nargs=2, metavar=("STORE_ID", "ACTION"))
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
@@ -436,7 +488,7 @@ def main() -> int:
         schema_paths = tuple(arguments.schema_file) if arguments.schema_file else DEFAULT_SCHEMA_FILES
         tables = schema_tables(schema_paths)
         dependencies = schema_dependencies(schema_paths)
-        entries = validate_manifest(manifest, tables, dependencies)
+        entries = validate_manifest(manifest, tables, dependencies, arguments.redis_registry)
         if arguments.destructive_preflight:
             destructive_preflight(manifest, entries, *arguments.destructive_preflight)
     except ValidationError as error:
@@ -447,6 +499,7 @@ def main() -> int:
         "policy_id": manifest["policy_id"],
         "database_tables": len(tables),
         "non_database_stores": len(entries) - len(tables),
+        "redis_surfaces": redis_registry_inventory(arguments.redis_registry)[1],
         "destructive_rules_enabled": False,
     }
     print(json.dumps(result, sort_keys=True) if arguments.json else
