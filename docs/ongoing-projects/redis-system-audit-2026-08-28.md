@@ -3,10 +3,35 @@
 Date: 2026-08-28
 Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
-Status: Implementation in progress; RDS-006, RDS-010, RDS-012, RDS-013, RDS-014, and
-RDS-019 are remediated and the remaining findings are open.
+Status: Implementation in progress; RDS-006, RDS-010, RDS-012, RDS-013, RDS-014, RDS-019,
+and RDS-028 are remediated and the remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-028 legacy Redis API retirement
+
+Completed:
+
+- Removed the obsolete `mud:next_obj_uid` read and write from server boot and shutdown. The
+  SQL range allocator remains the sole UID authority.
+- Removed the retired key from administrator status output so stale values cannot be
+  mistaken for authoritative allocator state.
+- Removed the unused generic ping, publish, and string-read exports and their
+  implementations. The already-retired floor lookup exports remain absent.
+- Added a source contract that prevents the legacy key and APIs from returning.
+
+Performance effect:
+
+- Redis-enabled boot and shutdown each perform one fewer synchronous network command.
+- Administrator status performs one fewer sequential Redis read.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_legacy_api_retirement.py`: passed.
+- `python3 tests/async/test_item_ownership_contract.py`: passed.
+- `python3 tests/async/test_redis_failure_containment.py`: passed.
+- `./scripts/format.sh --check`: passed.
 
 ### 2026-08-28 - RDS-010 donation subscriber hardening
 
@@ -211,8 +236,8 @@ Validation:
 
 Remaining work:
 
-- All findings other than RDS-006, RDS-010, RDS-012, RDS-013, RDS-014, and RDS-019 remain
-  open. The acceptance criteria are not yet met.
+- All findings other than RDS-006, RDS-010, RDS-012, RDS-013, RDS-014, RDS-019, and RDS-028
+  remain open. The acceptance criteria are not yet met.
 
 ## Executive summary
 
@@ -1037,6 +1062,8 @@ complete and conditionalize libraries and objects. Add the supported variant to 
 
 Severity: Low
 Confidence: Confirmed by call-site search
+Remediation status: Completed on branch; the retired UID key is no longer read, written, or
+displayed, and the unused generic Redis exports have been removed.
 
 `mud:next_obj_uid` is read only to log that SQL remains authoritative, yet it is still
 written at cleanup and displayed by the administrator command

@@ -152,14 +152,6 @@ static void redis_status_detailed(P_char ch)
 	int dirty = get_dirty_player_count();
 	APPENDF(buf, "  &+cplayer_queue&n     &+Y%-5d&n    pending async saves\r\n", dirty);
 
-	// obj uid counter
-	char *uid_str = redis_cache_get("mud:next_obj_uid");
-	if (uid_str)
-	{
-		APPENDF(buf, "  &+cnext_obj_uid&n     &+Y%s&n\r\n", uid_str);
-		free(uid_str);
-	}
-
 	APPENDF(buf, "\r\n&+g[Content Caches]&n\r\n");
 
 	// artifacts - show all 6 variants

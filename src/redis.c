@@ -468,7 +468,6 @@ bool redis_init(void)
 
 	if (redis_ctx)
 	{
-		redis_load_obj_uid_counter();
 		if (redis_donation_enabled)
 			redis_donation_subscribe_init();
 	}
@@ -511,8 +510,6 @@ void redis_cleanup(void)
 	}
 	if (redis_ctx)
 	{
-		// save obj_uid counter before disconnect
-		redis_save_obj_uid_counter();
 		redisFree(redis_ctx);
 		redis_ctx = NULL;
 	}
@@ -528,61 +525,6 @@ void redis_cleanup(void)
 	donation_secret.clear();
 	redis_donation_enabled = false;
 	redis_enabled = false;
-#endif
-}
-
-bool redis_ping(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx)
-		return false;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "PING");
-	if (!reply)
-	{
-		logit(LOG_DEBUG, "redis ping failed: no reply");
-		return false;
-	}
-
-	bool success = (reply->type == REDIS_REPLY_STATUS && reply->str &&
-			strcasecmp(reply->str, "PONG") == 0);
-	freeReplyObject(reply);
-	return success;
-#else
-	return false;
-#endif
-}
-
-void redis_save_obj_uid_counter(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx)
-		return;
-
-	redisReply *reply =
-		(redisReply *)redis_command(redis_ctx, "SET mud:next_obj_uid %lu", next_obj_uid);
-	if (reply)
-		freeReplyObject(reply);
-#endif
-}
-
-void redis_load_obj_uid_counter(void)
-{
-#ifndef __NO_MYSQL__
-	if (!redis_enabled || !redis_ctx)
-		return;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET mud:next_obj_uid");
-	if (reply && reply->type == REDIS_REPLY_STRING && reply->str)
-	{
-		unsigned long loaded = strtoul(reply->str, NULL, 10);
-		if (loaded > next_obj_uid)
-			logit(LOG_SYS,
-			      "redis: ignored legacy obj_uid counter %lu; SQL allocator is authoritative",
-			      loaded);
-	}
-	if (reply)
-		freeReplyObject(reply);
 #endif
 }
 
@@ -1488,25 +1430,6 @@ bool redis_clear_ship_snapshots(void)
 }
 #endif
 
-bool redis_publish(const char *channel, const char *message)
-{
-#ifdef __NO_MYSQL__
-	return false;
-#else
-	if (!redis_enabled || !redis_ctx || !channel || !message)
-		return false;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "PUBLISH %s %b", channel,
-							message, strlen(message));
-	if (!reply)
-		return false;
-
-	bool ok = (reply->type == REDIS_REPLY_INTEGER);
-	freeReplyObject(reply);
-	return ok;
-#endif
-}
-
 void redis_donation_subscribe_init(void)
 {
 #ifndef __NO_MYSQL__
@@ -2211,26 +2134,5 @@ long redis_scard(const char *key)
 
 	freeReplyObject(reply);
 	return card;
-#endif
-}
-
-char *redis_get_string(const char *key)
-{
-#ifdef __NO_MYSQL__
-	return NULL;
-#else
-	if (!redis_enabled || !redis_ctx || !key)
-		return NULL;
-
-	redisReply *reply = (redisReply *)redis_command(redis_ctx, "GET %s", key);
-	if (!reply)
-		return NULL;
-
-	char *result = NULL;
-	if (reply->type == REDIS_REPLY_STRING && reply->str)
-		result = strdup(reply->str);
-
-	freeReplyObject(reply);
-	return result;
 #endif
 }

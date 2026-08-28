@@ -13,11 +13,6 @@ extern bool redis_donation_enabled;
 
 bool redis_init(void);
 void redis_cleanup(void);
-bool redis_ping(void);
-
-// obj_uid counter persistence
-void redis_save_obj_uid_counter(void);
-void redis_load_obj_uid_counter(void);
 
 // Legacy floor-pickup key cleanup. New pickup entries are not created.
 void redis_clear_floor_pickups(void);
@@ -54,7 +49,6 @@ bool redis_cache_set(const char *key, const char *value);
 bool redis_cache_set_ex(const char *key, int seconds, const char *value);
 char *redis_cache_get(const char *key);
 void redis_cache_del(const char *key);
-bool redis_publish(const char *channel, const char *message);
 void redis_donation_subscribe_init(void);
 void redis_check_donation_messages(void);
 void event_check_donation_messages(P_char ch, P_char victim, P_obj obj, void *data);
@@ -89,7 +83,6 @@ bool redis_key_exists(const char *key);
 long redis_get_ttl(const char *key);
 long redis_hlen(const char *key);
 long redis_scard(const char *key);
-char *redis_get_string(const char *key);
 bool redis_clear_pwipe_state(void);
 
 // Legacy ship snapshot cleanup. MySQL is the only ship read authority.

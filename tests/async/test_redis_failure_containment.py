@@ -67,7 +67,7 @@ world = section("bool redis_save_world_state(void)", "bool redis_has_world_state
 assert "fork(" not in world
 assert "world_recovery_pipeline_request" in world
 assert "world_recovery_pipeline_busy" in world
-cleanup = section("void redis_cleanup(void)", "bool redis_ping(void)")
+cleanup = section("void redis_cleanup(void)", "void redis_clear_floor_pickups(void)")
 assert "redis_terminate_child" not in cleanup
 assert "world_recovery_pipeline_shutdown" in cleanup
 assert "waitpid(-1, &status, WNOHANG)" in signals
