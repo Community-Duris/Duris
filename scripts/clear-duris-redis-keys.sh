@@ -2,8 +2,6 @@
 set -euo pipefail
 
 : "${ENVIRONMENT:?ENVIRONMENT is required}"
-: "${REDIS_HOST:?REDIS_HOST is required}"
-: "${REDIS_PORT:?REDIS_PORT is required}"
 : "${REDIS_DB:?REDIS_DB is required}"
 : "${REDIS_NAMESPACE:?REDIS_NAMESPACE is required}"
 : "${REDIS_TLS:?REDIS_TLS is required}"
@@ -18,10 +16,6 @@ if [[ ! "$REDIS_NAMESPACE" =~ ^duris:local:[a-z0-9]([a-z0-9_-]{0,30}[a-z0-9])?$ 
     printf 'refusing Redis deletion: REDIS_NAMESPACE must match duris:local:<deployment>\n' >&2
     exit 2
 fi
-if [[ ! "$REDIS_PORT" =~ ^[0-9]+$ ]] || ((REDIS_PORT < 1 || REDIS_PORT > 65535)); then
-    printf 'refusing Redis deletion: invalid REDIS_PORT\n' >&2
-    exit 2
-fi
 if [[ ! "$REDIS_DB" =~ ^[0-9]+$ ]] || ((REDIS_DB > 255)); then
     printf 'refusing Redis deletion: REDIS_DB must be an integer from 0 through 255\n' >&2
     exit 2
@@ -30,17 +24,39 @@ if [[ "$REDIS_TLS" != "TRUE" && "$REDIS_TLS" != "FALSE" ]]; then
     printf 'refusing Redis deletion: REDIS_TLS must be TRUE or FALSE\n' >&2
     exit 2
 fi
-case "$REDIS_HOST" in
-    127.0.0.1|localhost|::1) ;;
-    *)
-        if [[ "$REDIS_TLS" != "TRUE" ]]; then
-            printf 'refusing Redis deletion: non-loopback Redis requires REDIS_TLS=TRUE\n' >&2
-            exit 2
-        fi
-        ;;
-esac
-
-TARGET="$REDIS_HOST:$REDIS_PORT/$REDIS_DB"
+if [[ -n "${REDIS_SOCKET:-}" ]]; then
+    if [[ -n "${REDIS_HOST:-}" || -n "${REDIS_PORT:-}" ]]; then
+        printf 'refusing Redis deletion: REDIS_SOCKET is mutually exclusive with REDIS_HOST and REDIS_PORT\n' >&2
+        exit 2
+    fi
+    if [[ "$REDIS_SOCKET" != /* || ${#REDIS_SOCKET} -gt 107 ]]; then
+        printf 'refusing Redis deletion: REDIS_SOCKET must be an absolute path of at most 107 bytes\n' >&2
+        exit 2
+    fi
+    if [[ "$REDIS_TLS" != "FALSE" ]]; then
+        printf 'refusing Redis deletion: TLS is not valid with REDIS_SOCKET\n' >&2
+        exit 2
+    fi
+    TARGET="unix:$REDIS_SOCKET/$REDIS_DB"
+    REDIS_CLI=(redis-cli --raw -s "$REDIS_SOCKET" -n "$REDIS_DB")
+else
+    if [[ -z "${REDIS_HOST:-}" || ! "${REDIS_PORT:-}" =~ ^[0-9]+$ ]] ||
+       ((REDIS_PORT < 1 || REDIS_PORT > 65535)); then
+        printf 'refusing Redis deletion: valid REDIS_HOST and REDIS_PORT are required for TCP\n' >&2
+        exit 2
+    fi
+    case "$REDIS_HOST" in
+        127.0.0.1|localhost|::1) ;;
+        *)
+            if [[ "$REDIS_TLS" != "TRUE" ]]; then
+                printf 'refusing Redis deletion: non-loopback Redis requires REDIS_TLS=TRUE\n' >&2
+                exit 2
+            fi
+            ;;
+    esac
+    TARGET="$REDIS_HOST:$REDIS_PORT/$REDIS_DB"
+    REDIS_CLI=(redis-cli --raw -h "$REDIS_HOST" -p "$REDIS_PORT" -n "$REDIS_DB")
+fi
 case ",$REDIS_ALLOWED_TARGETS," in
     *,"$TARGET",*) ;;
     *)
@@ -57,7 +73,6 @@ if ! command -v redis-cli >/dev/null 2>&1; then
     exit 2
 fi
 
-REDIS_CLI=(redis-cli --raw -h "$REDIS_HOST" -p "$REDIS_PORT" -n "$REDIS_DB")
 if [[ -n "${REDIS_USERNAME:-}" ]]; then
     REDIS_CLI+=(--user "$REDIS_USERNAME")
 fi

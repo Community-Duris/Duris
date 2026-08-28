@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-    printf 'usage: %s --confirm <host:port/database>\n' "$0"
+    printf 'usage: %s --confirm <host:port/database|unix:/absolute/socket/database>\n' "$0"
 }
 
 case "${1:-}" in
@@ -45,7 +45,9 @@ fi
 ENVIRONMENT="${ENVIRONMENT:-}" \
 REDIS_HOST="${REDIS_HOST:-}" \
 REDIS_PORT="${REDIS_PORT:-}" \
+REDIS_SOCKET="${REDIS_SOCKET:-}" \
 REDIS_DB="${REDIS_DB:-}" \
+REDIS_NAMESPACE="${REDIS_NAMESPACE:-}" \
 REDIS_USERNAME="${REDIS_USERNAME:-}" \
 REDIS_PASSWORD="${REDIS_PASSWORD:-}" \
 REDIS_TLS="${REDIS_TLS:-}" \

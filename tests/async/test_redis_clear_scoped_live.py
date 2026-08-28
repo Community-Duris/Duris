@@ -30,6 +30,7 @@ def run_helper(port: int, **updates: str) -> subprocess.CompletedProcess[str]:
             "ENVIRONMENT": "local",
             "REDIS_HOST": "127.0.0.1",
             "REDIS_PORT": str(port),
+            "REDIS_SOCKET": "",
             "REDIS_DB": "0",
             "REDIS_NAMESPACE": "duris:local:test",
             "REDIS_TLS": "FALSE",
@@ -68,6 +69,7 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory(prefix="redis-scoped-clear-") as temp_dir:
         port = free_port()
+        socket_path = Path(temp_dir) / "redis.sock"
         server = subprocess.Popen(
             [
                 "redis-server",
@@ -75,6 +77,10 @@ def main() -> None:
                 "127.0.0.1",
                 "--port",
                 str(port),
+                "--unixsocket",
+                str(socket_path),
+                "--unixsocketperm",
+                "700",
                 "--save",
                 "",
                 "--appendonly",
@@ -138,6 +144,30 @@ def main() -> None:
                 check=True,
             )
             assert unrelated.stdout.strip() == "value"
+
+            subprocess.run(
+                [*cli, "SET", "duris:local:test:season:43:cache:named", "value"],
+                check=True,
+                capture_output=True,
+            )
+            socket_target = f"unix:{socket_path}/0"
+            socket_cleared = run_helper(
+                port,
+                REDIS_HOST="",
+                REDIS_PORT="",
+                REDIS_SOCKET=str(socket_path),
+                REDIS_ALLOWED_TARGETS=socket_target,
+                REDIS_DESTRUCTIVE_CONFIRM=socket_target,
+            )
+            assert socket_cleared.returncode == 0, socket_cleared
+            assert "deleted 1 Duris Redis keys" in socket_cleared.stdout
+            exists = subprocess.run(
+                [*cli, "EXISTS", "duris:local:test:season:43:cache:named"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            assert exists.stdout.strip() == "0"
         finally:
             server.terminate()
             server.wait(timeout=5)

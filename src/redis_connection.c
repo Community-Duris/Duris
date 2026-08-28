@@ -10,11 +10,13 @@
 #include <mutex>
 #include <new>
 #include <string>
+#include <sys/un.h>
 #include <sys/time.h>
 
 struct redis_connection_settings
 {
 	std::string host;
+	std::string unix_socket;
 	int port = 0;
 	int connect_timeout_msec = 0;
 	int command_timeout_msec = 0;
@@ -44,10 +46,16 @@ bool status_ok(redisReply *reply)
 redis_connection_settings *
 redis_connection_settings_create(const struct redis_connection_options *options)
 {
-	if (!options || !options->host || !*options->host || options->port <= 0 ||
-	    options->port > 65535 || options->connect_timeout_msec <= 0 ||
-	    options->command_timeout_msec <= 0 || options->database < 0 ||
-	    options->database > 255 ||
+	if (!options)
+		return nullptr;
+	const bool tcp = options->host && *options->host;
+	const bool unix_socket = options->unix_socket && *options->unix_socket;
+	if (tcp == unix_socket || (tcp && (options->port <= 0 || options->port > 65535)) ||
+	    (unix_socket && (options->unix_socket[0] != '/' ||
+			     strlen(options->unix_socket) >= sizeof(sockaddr_un::sun_path))) ||
+	    (unix_socket && (options->tls || options->require_tls)) ||
+	    options->connect_timeout_msec <= 0 || options->command_timeout_msec <= 0 ||
+	    options->database < 0 || options->database > 255 ||
 	    (options->username && *options->username &&
 	     (!options->password || !*options->password)) ||
 	    (options->tls && (!options->ca_cert || !*options->ca_cert)) ||
@@ -58,7 +66,8 @@ redis_connection_settings_create(const struct redis_connection_options *options)
 	try
 	{
 		settings = new redis_connection_settings;
-		settings->host = options->host;
+		settings->host = tcp ? options->host : "";
+		settings->unix_socket = unix_socket ? options->unix_socket : "";
 		settings->port = options->port;
 		settings->connect_timeout_msec = options->connect_timeout_msec;
 		settings->command_timeout_msec = options->command_timeout_msec;
@@ -67,9 +76,9 @@ redis_connection_settings_create(const struct redis_connection_options *options)
 		settings->password = options->password ? options->password : "";
 		settings->tls = options->tls;
 		settings->ca_cert = options->ca_cert ? options->ca_cert : "";
-		settings->server_name = options->server_name && *options->server_name ?
+		settings->server_name = tcp && options->server_name && *options->server_name ?
 						options->server_name :
-						options->host;
+						settings->host;
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -120,7 +129,10 @@ redisContext *redis_connection_open_with_timeout(const struct redis_connection_s
 	struct timeval command_timeout = { command_timeout_msec / 1000,
 					   (command_timeout_msec % 1000) * 1000 };
 	redisContext *context =
-		redisConnectWithTimeout(settings->host.c_str(), settings->port, connect_timeout);
+		settings->unix_socket.empty() ?
+			redisConnectWithTimeout(settings->host.c_str(), settings->port,
+						connect_timeout) :
+			redisConnectUnixWithTimeout(settings->unix_socket.c_str(), connect_timeout);
 	if (!context || context->err)
 		return context;
 	if (settings->tls)

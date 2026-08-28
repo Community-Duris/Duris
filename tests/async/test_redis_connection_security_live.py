@@ -43,6 +43,18 @@ def wait_for_redis(port: int, tls: bool = False, ca_cert: Path | None = None) ->
     raise AssertionError(f"Redis on port {port} did not become ready")
 
 
+def wait_for_redis_socket(path: Path) -> None:
+    command = [
+        "redis-cli", "-s", str(path), "--no-auth-warning", "-a", PASSWORD, "PING"
+    ]
+    for _ in range(100):
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
+        if result.returncode == 0 and "PONG" in result.stdout:
+            return
+        time.sleep(0.05)
+    raise AssertionError(f"Redis socket {path} did not become ready")
+
+
 def main() -> None:
     for executable in ("redis-server", "redis-cli", "openssl", "g++"):
         if not shutil.which(executable):
@@ -71,10 +83,10 @@ static void set_marker(const redis_connection_options &options, const char *key)
 
 int main(int argc, char **argv)
 {
-    assert(argc == 5);
+    assert(argc == 6);
     redis_connection_options options = {
         "127.0.0.1", atoi(argv[1]), 250, 250, 2, nullptr, argv[3], false,
-        nullptr, nullptr, false};
+        nullptr, nullptr, false, nullptr};
     set_marker(options, "mud:auth-db-marker");
 
     options.username = "default";
@@ -109,6 +121,25 @@ int main(int argc, char **argv)
     context = redis_connection_open(settings);
     assert(!context);
     redis_connection_settings_destroy(settings);
+
+    options.host = nullptr;
+    options.port = 0;
+    options.database = 4;
+    options.tls = false;
+    options.ca_cert = nullptr;
+    options.server_name = nullptr;
+    options.require_tls = false;
+    options.unix_socket = argv[5];
+    set_marker(options, "mud:socket-marker");
+
+    options.tls = true;
+    assert(!redis_connection_settings_create(&options));
+    options.tls = false;
+    options.host = "127.0.0.1";
+    assert(!redis_connection_settings_create(&options));
+    options.host = nullptr;
+    options.unix_socket = "relative.sock";
+    assert(!redis_connection_settings_create(&options));
     return 0;
 }
 '''
@@ -117,6 +148,7 @@ int main(int argc, char **argv)
         temp = Path(temp_dir)
         plain_port = free_port()
         tls_port = free_port()
+        socket_path = temp / "redis.sock"
         source = temp / "harness.cpp"
         binary = temp / "harness"
         ca_key = temp / "ca.key"
@@ -175,6 +207,7 @@ int main(int argc, char **argv)
         plain_server = subprocess.Popen(
             [
                 "redis-server", "--bind", "127.0.0.1", "--port", str(plain_port),
+                "--unixsocket", str(socket_path), "--unixsocketperm", "700",
                 "--save", "", "--appendonly", "no", "--dir", str(temp),
                 "--requirepass", PASSWORD,
             ],
@@ -194,9 +227,11 @@ int main(int argc, char **argv)
         )
         try:
             wait_for_redis(plain_port)
+            wait_for_redis_socket(socket_path)
             wait_for_redis(tls_port, tls=True, ca_cert=ca_cert)
             subprocess.run(
-                [str(binary), str(plain_port), str(tls_port), PASSWORD, str(ca_cert)],
+                [str(binary), str(plain_port), str(tls_port), PASSWORD, str(ca_cert),
+                 str(socket_path)],
                 check=True,
             )
             db_two = subprocess.run(
@@ -219,13 +254,23 @@ int main(int argc, char **argv)
             )
             assert db_two.stdout.strip() == "2"
             assert db_zero.stdout.strip() == "0"
+            socket_db = subprocess.run(
+                [
+                    "redis-cli", "-s", str(socket_path), "--no-auth-warning", "-a",
+                    PASSWORD, "-n", "4", "DBSIZE",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            assert socket_db.stdout.strip() == "1"
         finally:
             plain_server.terminate()
             tls_server.terminate()
             plain_server.wait(timeout=5)
             tls_server.wait(timeout=5)
 
-    print("Redis ACL authentication, database selection, and verified TLS passed")
+    print("Redis TCP/TLS and Unix-socket authentication and database selection passed")
 
 
 if __name__ == "__main__":

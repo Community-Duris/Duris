@@ -5,11 +5,54 @@ Branch: `redis-refactor`
 Audit baseline commit: `68a916ec`
 Status: Implementation in progress; RDS-001, RDS-002, RDS-003, RDS-004, RDS-005, RDS-006, RDS-007,
 RDS-009, RDS-010, RDS-011, RDS-012, RDS-013, RDS-014, RDS-019, RDS-020, RDS-022,
-RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, and RDS-017 are remediated. RDS-008 is remediated for
-connection security and application/environment/deployment namespace isolation but remains
-partial for Unix-socket transport; the remaining findings are open.
+RDS-023, RDS-024, RDS-027, RDS-028, RDS-016, and RDS-017 are remediated. RDS-008 is
+remediated for connection, transport, and namespace isolation but remains partial for
+independent recovery-payload authenticity and least-privilege identity separation; the
+remaining findings are open.
 
 ## Implementation progress
+
+### 2026-08-28 - RDS-008 Unix-socket transport
+
+Completed in this interval:
+
+- Extended the shared Redis connection adapter with an optional absolute Unix-socket path.
+  TCP and socket endpoints are mutually exclusive, socket paths are bounded to the platform
+  address limit, relative paths fail closed, and TLS is rejected for local socket transport.
+  ACL username/password authentication, explicit database selection, connect timeouts, and
+  command timeouts apply identically after either connection type is established.
+- Routed the primary context plus presence, donation, cache, floor, and world workers through
+  the same immutable socket-aware settings object. `REDIS_SOCKET` is mutually exclusive with
+  `REDIS_HOST` and `REDIS_PORT`; ambiguous configuration disables Redis before connecting.
+- Extended stopped-server destructive maintenance to accept exact
+  `unix:/absolute/socket/database` allow-list and confirmation targets. Socket maintenance
+  retains local-environment, namespace, authentication, database, bounded deletion, and
+  empty-postcondition gates while rejecting TCP fields or TLS in socket mode.
+- Documented both transports in `.env.example`, the configuration reference, the migration
+  runbook, and operator help without weakening the existing production TCP/TLS policy.
+
+Performance effect:
+
+- Endpoint selection occurs only while constructing or reconnecting a Redis context. Unix
+  sockets can reduce local Redis transport overhead by avoiding the TCP/IP loopback stack.
+- Gameplay remains unchanged: it performs no connection construction, Redis command, wait,
+  allocation, filesystem access, or endpoint branching. All Redis I/O stays in existing
+  workers, boot/recovery, shutdown, or explicit maintenance paths.
+
+Validation:
+
+- `make -C src -j2`: passed with the warning-as-error profile.
+- `python3 tests/async/test_redis_connection_security_live.py`: passed under ASan/UBSan
+  against authenticated TCP, verified TLS, and authenticated Unix-socket endpoints,
+  including explicit database selection and invalid mixed/relative/TLS socket rejection.
+- `python3 tests/async/test_redis_clear_scoped_live.py`: passed both TCP and Unix-socket
+  destructive maintenance against isolated Redis while preserving unrelated keys.
+- `python3 tests/async/test_migration_runner_cli_safety.py`: passed socket/TCP target syntax,
+  mutual-exclusion, allow-list, confirmation, and no-`FLUSHDB` contracts.
+
+RDS-008 transport and namespace work is complete. Independent recovery-payload
+authentication and least-privilege subsystem identity separation remain open within the
+finding.
 
 ### 2026-08-28 - RDS-008 deployment namespace isolation
 
@@ -1179,8 +1222,8 @@ migration, wipe, backup, clear, or corpse-cleanup script was executed.
 | Donation integration | `<namespace>:season:<epoch>:nchat` pub/sub | Broadcast external donation notices | A bounded worker accepts only authenticated, fresh, replay-protected envelopes and delivers at most eight events per game pulse. |
 | Legacy UID | `mud:next_obj_uid` | Retired counter | No runtime read, write, or administrator display remains. |
 
-All runtime connections share bounded ACL/password, explicit database, and verified TLS
-settings. Every active key and channel uses a required, boot-validated
+All runtime connections share bounded ACL/password, explicit database, verified TCP TLS,
+and optional local Unix-socket settings. Every active key and channel uses a required, boot-validated
 `duris:<environment>:<deployment>` namespace followed by the captured SQL season epoch.
 
 ## Finding index
@@ -1479,12 +1522,13 @@ support one writer or enforce that invariant with a renewable lease.
 
 Severity: High
 Confidence: Confirmed configuration gap; exploitability depends on deployment reachability
-Remediation status: Partially remediated; runtime and destructive-maintenance connections
-support ACL/password authentication, explicit database selection, and verified TLS.
-Non-loopback production runtime endpoints fail closed without TLS, while destructive
-maintenance additionally requires an exact local target allow-list and confirmation.
-Every active key and channel now uses a required application/environment/deployment
-namespace plus the SQL season epoch. Unix-socket transport remains open.
+Remediation status: Partially remediated. Runtime and destructive-maintenance connections
+support ACL/password authentication, explicit database selection, verified TCP TLS, and
+bounded Unix-socket transport. Non-loopback production runtime endpoints fail closed without
+TLS, while destructive maintenance requires an exact local target allow-list and
+confirmation. Every active key and channel uses a required
+application/environment/deployment namespace plus the SQL season epoch. Independent world
+recovery payload authentication and least-privilege subsystem identities remain open.
 
 Evidence:
 
@@ -1494,6 +1538,9 @@ Evidence:
 - Runtime and maintenance configuration share host, port, database, credentials, TLS,
   CA, and an exact `duris:<environment>:<deployment>` namespace. Runtime validation rejects
   a namespace whose environment differs from `ENVIRONMENT` before connecting.
+- TCP and absolute Unix-socket endpoints are mutually exclusive and use the same bounded
+  authenticated, database-selected connection adapter. TLS is required for non-loopback
+  production TCP and rejected for local socket transport.
 - Recovery integrity is CRC32, which detects accidental corruption but does not
   authenticate the writer ([`src/world_recovery_pipeline.c`](../../src/world_recovery_pipeline.c#L183)).
 - A writer can influence mob stats, gold, affects, items, ships, artifact JSON, presence,

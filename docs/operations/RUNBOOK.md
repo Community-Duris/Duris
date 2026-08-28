@@ -276,8 +276,9 @@ clone is the only permitted target. Keep the original backup untouched.
 The legacy runner is mutation-capable and has no dry-run mode. `--help` is safe, and an
 unknown argument is rejected before configuration is loaded. A normal no-argument run
 begins work immediately. When `REDIS=TRUE`, its final step requires `ENVIRONMENT=local`,
-an exact `REDIS_HOST:REDIS_PORT/REDIS_DB` entry in `REDIS_ALLOWED_TARGETS`, and the
-configured ACL/TLS settings. It deletes only `<REDIS_NAMESPACE>:*`, legacy `mud:*`, and
+an exact `REDIS_HOST:REDIS_PORT/REDIS_DB` or `unix:REDIS_SOCKET/REDIS_DB` entry in
+`REDIS_ALLOWED_TARGETS`, and the configured ACL/TLS settings. It deletes only
+`<REDIS_NAMESPACE>:*`, legacy `mud:*`, and
 retired `ship:snapshot:*` keys, verifies
 the postcondition, and fails the migration if `redis-cli`, the connection, deletion, or
 postflight fails. When Redis is disabled, the step reports `not enabled` without requiring

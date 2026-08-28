@@ -67,16 +67,17 @@ revisioned player-save pipeline and typed journal.
 | Variable | Default | Accepted values / range | Meaning |
 | --- | --- | --- | --- |
 | `REDIS` | disabled | `TRUE` enables it | Enable Redis integration. |
-| `REDIS_HOST` | `127.0.0.1` | hostname or IP | Redis host. |
-| `REDIS_PORT` | `6379` | `1`-`65535` | Redis TCP port. An explicitly invalid value disables Redis at boot. |
+| `REDIS_HOST` | `127.0.0.1` | hostname or IP | Redis TCP host. Must be empty when `REDIS_SOCKET` is set. |
+| `REDIS_PORT` | `6379` | `1`-`65535` | Redis TCP port. Must be empty when `REDIS_SOCKET` is set; an explicitly invalid TCP value disables Redis at boot. |
+| `REDIS_SOCKET` | empty | Absolute path, at most 107 bytes | Optional local Unix socket used instead of TCP. It is mutually exclusive with `REDIS_HOST`/`REDIS_PORT` and with TLS. Every runtime worker uses the same socket through the shared adapter. |
 | `REDIS_DB` | `0` | `0`-`255` | Database explicitly selected by every runtime connection and destructive maintenance command. |
 | `REDIS_NAMESPACE` | none | `duris:<ENVIRONMENT>:<deployment>` | Required isolation prefix for every active key and channel. Deployment is 1-32 lowercase letters, digits, hyphens, or underscores and must not begin or end with punctuation. |
 | `REDIS_USERNAME` | empty | Redis ACL username | Optional runtime and maintenance ACL identity; requires a nonempty password. |
 | `REDIS_PASSWORD` | empty | Redis ACL password | Optional runtime secret. Maintenance passes it through `REDISCLI_AUTH`, not a command argument. |
-| `REDIS_TLS` | `FALSE` | Exact `TRUE` or `FALSE` | Enables verified TLS for every runtime and maintenance connection. Non-loopback production runtime endpoints require `TRUE`; destructive maintenance requires it for every non-loopback target. |
+| `REDIS_TLS` | `FALSE` | Exact `TRUE` or `FALSE` | Enables verified TLS for every TCP runtime and maintenance connection. Non-loopback production runtime endpoints require `TRUE`; destructive maintenance requires it for every non-loopback TCP target. Unix sockets require `FALSE`. |
 | `REDIS_CA_CERT` | empty | Readable CA bundle | Required when Redis TLS is enabled and used for peer verification. |
 | `REDIS_TLS_SERVER_NAME` | `REDIS_HOST` | Certificate DNS name | Optional runtime SNI and certificate-name override, useful when connecting by IP to a certificate issued for a DNS name. |
-| `REDIS_ALLOWED_TARGETS` | none | Comma-separated exact `host:port/database` values | Required destructive-maintenance allow-list. |
+| `REDIS_ALLOWED_TARGETS` | none | Comma-separated exact `host:port/database` or `unix:/absolute/socket/database` values | Required destructive-maintenance allow-list. |
 | `REDIS_WORLD_STATE` | disabled | `TRUE` enables it | Enable bounded capture and background publication of crash-recovery world generations. |
 | `REDIS_WORLD_STATE_INTERVAL` | `10` seconds | `5`-`300` | Snapshot interval when world-state recovery is enabled. |
 | `REDIS_WORLD_STATE_MAX_AGE` | `300` seconds | `60`-`3600` | Maximum snapshot age accepted during recovery. |
@@ -134,6 +135,7 @@ For a local development session, the following is a reasonable starting point:
 REDIS=TRUE
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
+REDIS_SOCKET=
 REDIS_DB=0
 REDIS_NAMESPACE=duris:local:default
 REDIS_TLS=FALSE
@@ -141,7 +143,8 @@ REDIS_WORLD_STATE=TRUE
 ```
 
 Stop the server before clearing Redis state. `scripts/clear-redis.sh --confirm
-<host:port/database>` loads the owner-only `.env`, requires `ENVIRONMENT=local`, checks the
+<host:port/database|unix:/absolute/socket/database>` loads the owner-only `.env`, requires
+`ENVIRONMENT=local`, checks the
 exact target against `REDIS_ALLOWED_TARGETS`, applies the configured database, ACL, and TLS
 settings, and deletes only `<REDIS_NAMESPACE>:*`, legacy `mud:*`, and retired
 `ship:snapshot:*` keys. It uses cursor scans and at most 128 keys per `DEL`, verifies that

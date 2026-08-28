@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 {
     assert(argc == 3);
     redis_connection_options options = {
-        "127.0.0.1", atoi(argv[1]), 100, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false};
+        "127.0.0.1", atoi(argv[1]), 100, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false, nullptr};
     redis_connection_settings *settings = redis_connection_settings_create(&options);
     assert(settings);
     redis_donation_worker_config config = {settings, argv[2], "mud:season:7:nchat"};

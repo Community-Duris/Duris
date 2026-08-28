@@ -47,7 +47,7 @@ int main(int argc, char **argv)
     assert(argc == 2);
     const int live_port = atoi(argv[1]);
     redis_connection_options options = {
-        "127.0.0.1", live_port, 250, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false};
+        "127.0.0.1", live_port, 250, 100, 0, nullptr, nullptr, false, nullptr, nullptr, false, nullptr};
     redis_connection_settings *settings = redis_connection_settings_create(&options);
     assert(settings);
     redis_world_store_config config = {settings, "mud", 42, 3600};

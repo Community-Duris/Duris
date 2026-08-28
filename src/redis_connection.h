@@ -18,6 +18,7 @@ struct redis_connection_options
 	const char *ca_cert;
 	const char *server_name;
 	bool require_tls;
+	const char *unix_socket;
 };
 
 struct redis_connection_settings *

@@ -518,7 +518,7 @@ static bool redis_configure_namespace(void)
 					redis_key_namespace, sizeof redis_key_namespace);
 }
 
-static bool redis_configure_connection(const char *host, int port)
+static bool redis_configure_connection(const char *host, int port, const char *unix_socket)
 {
 	int database = 0;
 	if (!redis_parse_number(getenv("REDIS_DB"), 0, 255, 0, &database))
@@ -529,7 +529,8 @@ static bool redis_configure_connection(const char *host, int port)
 	    strcasecmp(tls_value, "FALSE"))
 		return false;
 	const char *environment = getenv("ENVIRONMENT");
-	const bool require_tls = environment && !strcasecmp(environment, "production") &&
+	const bool require_tls = (!unix_socket || !*unix_socket) && environment &&
+				 !strcasecmp(environment, "production") &&
 				 !redis_host_is_loopback(host);
 	const redis_connection_options options = {
 		host,
@@ -543,6 +544,7 @@ static bool redis_configure_connection(const char *host, int port)
 		getenv("REDIS_CA_CERT"),
 		getenv("REDIS_TLS_SERVER_NAME"),
 		require_tls,
+		unix_socket,
 	};
 	redis_connection_settings *settings = redis_connection_settings_create(&options);
 	if (!settings)
@@ -636,19 +638,30 @@ bool redis_init(void)
 			      "redis: donation subscriber disabled; REDIS_DONATION_SECRET must be at least 32 bytes");
 	}
 
-	const char *redis_host = getenv("REDIS_HOST");
-	if (!redis_host || !*redis_host)
+	const char *redis_socket = getenv("REDIS_SOCKET");
+	const bool use_socket = redis_socket && *redis_socket;
+	const char *configured_host = getenv("REDIS_HOST");
+	const char *configured_port = getenv("REDIS_PORT");
+	if (use_socket &&
+	    ((configured_host && *configured_host) || (configured_port && *configured_port)))
+	{
+		logit(LOG_SYS,
+		      "redis: REDIS_SOCKET is mutually exclusive with REDIS_HOST and REDIS_PORT; Redis disabled");
+		redis_enabled = false;
+		return false;
+	}
+	const char *redis_host = use_socket ? NULL : configured_host;
+	if (!use_socket && (!redis_host || !*redis_host))
 		redis_host = "127.0.0.1";
 
-	const char *redis_port_str = getenv("REDIS_PORT");
-	int redis_port = 6379;
-	if (!redis_parse_number(redis_port_str, 1, 65535, 6379, &redis_port))
+	int redis_port = 0;
+	if (!use_socket && !redis_parse_number(configured_port, 1, 65535, 6379, &redis_port))
 	{
 		logit(LOG_SYS, "redis: invalid REDIS_PORT; Redis disabled");
 		redis_enabled = false;
 		return false;
 	}
-	if (!redis_configure_connection(redis_host, redis_port))
+	if (!redis_configure_connection(redis_host, redis_port, use_socket ? redis_socket : NULL))
 	{
 		logit(LOG_SYS, "redis: invalid connection security configuration; Redis disabled");
 		redis_enabled = false;
@@ -668,7 +681,10 @@ bool redis_init(void)
 	}
 	else
 	{
-		logit(LOG_SYS, "redis connected to %s:%d", redis_host, redis_port);
+		if (use_socket)
+			logit(LOG_SYS, "redis connected through configured Unix socket");
+		else
+			logit(LOG_SYS, "redis connected to %s:%d", redis_host, redis_port);
 	}
 
 	const redis_presence_worker_config presence_config = {
