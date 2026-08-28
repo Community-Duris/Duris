@@ -1644,6 +1644,35 @@ sections below continue to describe the required end state.
   complete locker catalog can encode chest metadata and object payloads while the existing
   item ledger remains the sole UID/custody authority.
 
+### Checkpoint 49 - reusable bounded nested-item snapshot codec
+
+- **Completed:** exposed the player persistence item's existing binary list envelope as a
+  typed encode/decode API. The shared boundary carries the complete item snapshot,
+  including UID/generated identity, parent/equipment placement, mutable object fields,
+  fixed and dynamic affects, extra descriptions, and embedded spell IDs. It does not
+  introduce a second object representation or change the enclosing player snapshot wire
+  format.
+- **Fail-closed bounds:** standalone encoding and decoding apply the same maximum payload,
+  object/row, string, and nesting limits as player snapshots. Both directions validate
+  parent ordering and maximum depth; decoding also rejects empty input, truncation,
+  trailing bytes, allocation failure, and malformed relationships before publishing an
+  output vector.
+- **Locker authority boundary:** the upcoming locker catalog can now persist a complete
+  chest object tree as one checksummed, bounded payload. That payload is materialized
+  object state only: the existing global item repository remains the sole authority for
+  object UID ownership and custody, so locker publication must compose its catalog image
+  with the corresponding item-owner image in one recoverable transaction.
+- **Checks passed:** the focused regression round-trips a nested container and all major
+  variable-width fields, and rejects truncation, trailing bytes, self-parenting,
+  over-depth trees, and oversized strings. Existing player-repository and save-journal
+  regressions pass unchanged, as does the strict normal server build. CI now runs the
+  standalone item-codec regression beside player materialization.
+- **Files changed:** shared player item codec API and focused harness, CI registration, and
+  this handoff ledger.
+- **Next action:** implement one canonical player/association locker catalog covering
+  locker and chest metadata, name-keyed access, and per-chest nested object payloads; then
+  compose locker deletion with item-custody removal without touching account lockers.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

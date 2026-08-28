@@ -287,6 +287,57 @@ bool valid_item_relationships(const std::vector<player_item_snapshot> &items)
 }
 } // namespace
 
+player_snapshot_codec_result
+player_item_snapshot_list_encode(const std::vector<player_item_snapshot> &items,
+				 std::vector<uint8_t> *encoded_out)
+{
+	if (!encoded_out || !valid_item_relationships(items))
+		return player_snapshot_codec_result::invalid_value;
+	try
+	{
+		encoder out;
+		encode_items(out, items);
+		if (!out.valid || out.bytes.size() > PLAYER_SNAPSHOT_MAX_BYTES)
+			return player_snapshot_codec_result::limit_exceeded;
+		std::vector<player_item_snapshot> validated;
+		const auto validation = player_item_snapshot_list_decode(
+			out.bytes.data(), out.bytes.size(), &validated);
+		if (validation != player_snapshot_codec_result::ok)
+			return validation;
+		*encoded_out = std::move(out.bytes);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
+player_snapshot_codec_result
+player_item_snapshot_list_decode(const uint8_t *encoded, size_t encoded_size,
+				 std::vector<player_item_snapshot> *items_out)
+{
+	if (!encoded || !encoded_size || !items_out)
+		return player_snapshot_codec_result::invalid_value;
+	if (encoded_size > PLAYER_SNAPSHOT_MAX_BYTES)
+		return player_snapshot_codec_result::limit_exceeded;
+	try
+	{
+		decoder in = { encoded, encoded_size };
+		std::vector<player_item_snapshot> items;
+		if (!decode_items(in, items))
+			return in.result;
+		if (in.offset != in.size || !valid_item_relationships(items))
+			return player_snapshot_codec_result::invalid_value;
+		*items_out = std::move(items);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+	return player_snapshot_codec_result::ok;
+}
+
 player_snapshot_codec_result player_snapshot_encode(const player_snapshot &snapshot,
 						    std::vector<uint8_t> *encoded_out)
 {

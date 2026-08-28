@@ -35,7 +35,9 @@ jobs:
       - name: Verify flat-file account membership authority
         run: python3 tests/async/test_flatfile_account_membership.py
       - name: Verify flat-file player materialization
-        run: python3 tests/async/test_flatfile_player_repository.py
+        run: |
+          python3 tests/async/test_flatfile_player_repository.py
+          python3 tests/async/test_player_item_snapshot_codec.py
       - name: Verify flat-file item UID authority
         run: python3 tests/async/test_flatfile_item_uid_allocator.py
       - name: Verify flat-file item ownership authority
