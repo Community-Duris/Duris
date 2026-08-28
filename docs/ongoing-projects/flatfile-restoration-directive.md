@@ -488,6 +488,30 @@
   sync, deletion cleanup compatibility, and any remaining executable direct-SQL artifact
   routes still require focused work. The global incomplete-domain boot fence remains.
 
+### 2026-08-29 - established artifact authority on fresh flat boot
+
+- **Concrete gap:** every restored artifact route intentionally failed closed when the
+  catalog was absent, but no live boot path created that catalog. Initial zone resets run
+  from `ne_init_events()` before the later artifact setup call, so a fresh no-database
+  state could not persist its first spawned artifact.
+- **Restoration:** flat-primary boot now ensures a valid artifact catalog immediately at
+  the start of `boot_db`, before event initialization and zone resets. A missing catalog is
+  created as an empty, checksummed authority; any valid existing catalog, including a
+  nonempty one, is preserved exactly; corrupt authority aborts boot rather than being
+  replaced. Database-backed boot does not invoke this path.
+- **Focused evidence:** repository tests cover fresh empty creation, first gameplay insert,
+  idempotent recognition and preservation of a nonempty catalog, and corrupt-authority
+  refusal. The source contract verifies the live boot call occurs before
+  `ne_init_events()`, and the persistence-mode runtime/build contract remains green.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `python3 tests/async/test_flatfile_artifact_repository.py`,
+  `python3 tests/async/test_nevent_maintenance_slicing.py`,
+  `python3 tests/async/test_persistence_mode.py`, `./scripts/format.sh --check`, and
+  `git diff --check` pass.
+- **Overall state:** fresh artifact catalog establishment is restored, but player-save
+  sync, deletion cleanup compatibility, and any remaining executable direct-SQL artifact
+  routes still require focused work. The global incomplete-domain boot fence remains.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

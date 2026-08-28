@@ -59,6 +59,7 @@ flatfile_artifact_result
 flatfile_artifact_establish(const std::string &root,
 			    const std::vector<flatfile_artifact_record> &records,
 			    std::string *error);
+flatfile_artifact_result flatfile_artifact_ensure(const std::string &root, std::string *error);
 flatfile_artifact_result flatfile_artifact_list(const std::string &root,
 						std::vector<flatfile_artifact_record> *records,
 						std::string *error);

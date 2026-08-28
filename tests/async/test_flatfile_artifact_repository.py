@@ -225,3 +225,12 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
     clear_end = artifact_source.index("\nvoid arti_poof_sql(", clear_start)
     if "flatfile_artifact_erase(" not in artifact_source[clear_start:clear_end]:
         raise AssertionError("client-free staff artifact clear bypasses catalog erase")
+
+    boot_source = (ROOT / "src/db.c").read_text()
+    boot_start = boot_source.index("void boot_db(int mini_mode)\n{")
+    boot_end = boot_source.index("\nvoid update_stat_data()", boot_start)
+    boot_body = boot_source[boot_start:boot_end]
+    if "flatfile_artifact_ensure(" not in boot_body:
+        raise AssertionError("flat boot does not establish artifact authority")
+    if boot_body.index("flatfile_artifact_ensure(") > boot_body.index("ne_init_events();"):
+        raise AssertionError("artifact authority is established after boot zone resets")

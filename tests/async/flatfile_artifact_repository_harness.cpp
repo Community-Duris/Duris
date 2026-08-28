@@ -64,6 +64,26 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_list(root.string(), &records, &error) ==
 			flatfile_artifact_result::not_found,
 		"missing artifact authority did not fail closed");
+	const fs::path ensure_root = fs::path(argv[1]) / "ensure";
+	prepare_root(ensure_root);
+	require(flatfile_artifact_ensure(ensure_root.string(), &error) ==
+			flatfile_artifact_result::ok,
+		"fresh artifact catalog ensure failed: " + error);
+	require(flatfile_artifact_list(ensure_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.empty(),
+		"fresh artifact catalog was not established empty");
+	require(flatfile_artifact_gameplay_update(ensure_root.string(), 99, true,
+						  FLATFILE_ARTIFACT_ON_GROUND, 1200, 5000, 1, 1000,
+						  &error) == flatfile_artifact_result::ok,
+		"ensured catalog did not accept its first gameplay artifact");
+	require(flatfile_artifact_ensure(ensure_root.string(), &error) ==
+			flatfile_artifact_result::already_exists,
+		"existing artifact catalog was not recognized by ensure");
+	require(flatfile_artifact_list(ensure_root.string(), &records, &error) ==
+				flatfile_artifact_result::ok &&
+			records.size() == 1 && records[0].vnum == 99,
+		"artifact ensure replaced an existing nonempty catalog");
 	const flatfile_artifact_record held = {
 		100, true, FLATFILE_ARTIFACT_ON_PLAYER, 42, 9000, 1, 1000, 42, 8000, 5
 	};
@@ -554,6 +574,9 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_apply_war_burn(root.string(), 42, 1000, 0.5, 1100, &error) ==
 			flatfile_artifact_result::invalid,
 		"corrupt artifact authority was overwritten through war timer burn");
+	require(flatfile_artifact_ensure(root.string(), &error) ==
+			flatfile_artifact_result::invalid,
+		"artifact ensure accepted or overwrote corrupt authority");
 	{
 		flatfile_authority_lock lock;
 		require(lock.acquire(root.string(), &error),

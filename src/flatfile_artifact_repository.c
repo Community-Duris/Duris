@@ -278,6 +278,30 @@ flatfile_artifact_establish(const std::string &root,
 		       flatfile_artifact_result::io_error;
 }
 
+flatfile_artifact_result flatfile_artifact_ensure(const std::string &root, std::string *error)
+{
+	if (root.empty())
+		return flatfile_artifact_result::invalid;
+	flatfile_authority_lock lock;
+	if (!lock.acquire(root, error))
+		return flatfile_artifact_result::io_error;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_artifact_result::ok)
+		return recovered;
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded == flatfile_artifact_result::ok)
+		return flatfile_artifact_result::already_exists;
+	if (loaded != flatfile_artifact_result::not_found)
+		return loaded;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	return flatfile_atomic_write(domains_directory(root), catalog_filename, bytes, error) ?
+		       flatfile_artifact_result::ok :
+		       flatfile_artifact_result::io_error;
+}
+
 flatfile_artifact_result flatfile_artifact_list(const std::string &root,
 						std::vector<flatfile_artifact_record> *records,
 						std::string *error)
