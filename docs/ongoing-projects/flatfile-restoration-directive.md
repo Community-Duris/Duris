@@ -210,6 +210,31 @@
   gameplay/read/update routes still require audit and restoration, so the global
   incomplete-domain boot fence remains in place.
 
+### 2026-08-29 - connected artifact gameplay reads and updates
+
+- **Concrete gap:** the canonical flat artifact record already retained ownership,
+  location, poof timer, type, and update time, but `get_artifact_data_sql` and both
+  `artifact_update_sql` overloads still used MySQL unconditionally. In a client-free
+  build, ordinary artifact movement and feeding paths therefore could neither read nor
+  update those existing flat fields.
+- **Restoration:** those live compatibility paths now perform keyed reads and gameplay
+  upserts through the existing artifact catalog. Existing records retain binding fields
+  while gameplay fields and revisions advance; a newly encountered vnum receives the
+  database path's ready-to-bind defaults. A missing catalog is never synthesized, and
+  corrupt or invalid state cannot be read or overwritten. Existing owned/unowned return
+  behavior, corpse-owner location preservation, timer normalization, and the MariaDB path
+  remain unchanged.
+- **Focused evidence:** `python3 tests/async/test_flatfile_artifact_repository.py` now
+  covers keyed reads, existing-record updates, idempotence, binding preservation, revision
+  advancement, sorted insertion, safe defaults, invalid input, and corruption refusal.
+  A second client-free runtime harness invokes the real `get_artifact_data_sql` and typed
+  `artifact_update_sql` overload directly, including missing and corrupt authority.
+- **Build evidence:** `make -C src -j2`, the clean client-free build and boot preflight,
+  `./scripts/format.sh --check`, and `git diff --check` pass.
+- **Overall state:** core keyed artifact reads and updates are connected, but boot
+  establishment plus listing, expiry, war-limit, and repair paths still require focused
+  restoration. The global incomplete-domain boot fence remains in place.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,

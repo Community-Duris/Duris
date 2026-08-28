@@ -94,3 +94,49 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-artifact-") as temporary:
     if runtime_result.returncode:
         raise SystemExit(runtime_result.stdout)
     print(runtime_result.stdout.strip())
+
+    gameplay_binary = temporary_path / "flatfile_artifact_gameplay_runtime_test"
+    gameplay_compile_result = subprocess.run(
+        [
+            "g++",
+            "-std=c++20",
+            "-Wall",
+            "-Wextra",
+            "-Wpedantic",
+            "-Werror",
+            "-D__NO_MYSQL__",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-Isrc/no_mysql",
+            "-Isrc",
+            "tests/async/flatfile_artifact_runtime_harness.cpp",
+            "src/artifact.c",
+            "src/flatfile_artifact_repository.c",
+            "src/player_snapshot_codec.c",
+            "src/item_transfer_command.c",
+            "src/critical_command.c",
+            "src/flatfile_authority_transaction.c",
+            "src/flatfile_store.c",
+            "-Wl,--gc-sections",
+            "-lcrypto",
+            "-pthread",
+            "-o",
+            str(gameplay_binary),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if gameplay_compile_result.returncode:
+        raise SystemExit(gameplay_compile_result.stdout)
+    gameplay_result = subprocess.run(
+        [str(gameplay_binary), str(temporary_path / "gameplay-state")],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    if gameplay_result.returncode:
+        raise SystemExit(gameplay_result.stdout)
+    print(gameplay_result.stdout.strip())

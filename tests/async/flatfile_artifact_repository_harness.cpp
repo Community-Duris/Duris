@@ -255,6 +255,54 @@ int main(int argc, char **argv)
 			records[0].bind_timer == 4100 && records[0].revision == 4,
 		"binding update did not preserve the canonical artifact record");
 
+	const fs::path gameplay_root = fs::path(argv[1]) / "gameplay";
+	prepare_root(gameplay_root);
+	flatfile_artifact_record gameplay_record;
+	require(flatfile_artifact_get(gameplay_root.string(), 700, &gameplay_record, &error) ==
+				flatfile_artifact_result::not_found &&
+			gameplay_record == flatfile_artifact_record{},
+		"missing gameplay authority did not fail closed with a cleared record");
+	const flatfile_artifact_record gameplay_original = {
+		700, false, FLATFILE_ARTIFACT_ON_GROUND, 1201, 5000, 2, 1000, 42, 4000, 5
+	};
+	require(flatfile_artifact_establish(gameplay_root.string(), { gameplay_original },
+					    &error) == flatfile_artifact_result::ok,
+		"gameplay artifact establishment failed");
+	require(flatfile_artifact_get(gameplay_root.string(), 700, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			gameplay_record == gameplay_original,
+		"gameplay artifact did not round trip");
+	require(flatfile_artifact_gameplay_update(gameplay_root.string(), 700, true,
+						  FLATFILE_ARTIFACT_ON_PLAYER, 77, 6000, 3, 1100,
+						  &error) == flatfile_artifact_result::ok,
+		"existing gameplay artifact update failed: " + error);
+	require(flatfile_artifact_gameplay_update(gameplay_root.string(), 700, true,
+						  FLATFILE_ARTIFACT_ON_PLAYER, 77, 6000, 3, 1100,
+						  &error) == flatfile_artifact_result::unchanged,
+		"identical gameplay artifact update was not idempotent");
+	require(flatfile_artifact_get(gameplay_root.string(), 700, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			gameplay_record.owned &&
+			gameplay_record.location_type == FLATFILE_ARTIFACT_ON_PLAYER &&
+			gameplay_record.location == 77 && gameplay_record.timer == 6000 &&
+			gameplay_record.type == 3 && gameplay_record.last_update == 1100 &&
+			gameplay_record.bind_owner_pid == 42 &&
+			gameplay_record.bind_timer == 4000 && gameplay_record.revision == 6,
+		"gameplay update did not preserve binding or advance its revision");
+	require(flatfile_artifact_gameplay_update(gameplay_root.string(), 701, true,
+						  FLATFILE_ARTIFACT_ON_GROUND, 1202, 7000, 1, 1200,
+						  &error) == flatfile_artifact_result::ok,
+		"new gameplay artifact upsert failed: " + error);
+	require(flatfile_artifact_get(gameplay_root.string(), 701, &gameplay_record, &error) ==
+				flatfile_artifact_result::ok &&
+			gameplay_record.vnum == 701 && gameplay_record.bind_owner_pid == 0 &&
+			gameplay_record.bind_timer == 0 && gameplay_record.revision == 1,
+		"new gameplay artifact did not receive safe binding and revision defaults");
+	require(flatfile_artifact_gameplay_update(gameplay_root.string(), 701, true, 99, 1202, 7000,
+						  1, 1200,
+						  &error) == flatfile_artifact_result::invalid,
+		"invalid gameplay artifact location type was accepted");
+
 	const fs::path catalog = root / "domains/artifact_catalog";
 	{
 		std::fstream file(catalog, std::ios::in | std::ios::out | std::ios::binary);
@@ -275,6 +323,13 @@ int main(int argc, char **argv)
 	require(flatfile_artifact_bind_update(root.string(), 100, 42, 5000, &error) ==
 			flatfile_artifact_result::invalid,
 		"corrupt artifact authority was overwritten through binding update");
+	require(flatfile_artifact_get(root.string(), 100, &gameplay_record, &error) ==
+			flatfile_artifact_result::invalid,
+		"corrupt artifact authority was exposed through gameplay lookup");
+	require(flatfile_artifact_gameplay_update(root.string(), 100, true,
+						  FLATFILE_ARTIFACT_ON_PLAYER, 42, 5000, 1, 1200,
+						  &error) == flatfile_artifact_result::invalid,
+		"corrupt artifact authority was overwritten through gameplay update");
 	{
 		flatfile_authority_lock lock;
 		require(lock.acquire(root.string(), &error),
