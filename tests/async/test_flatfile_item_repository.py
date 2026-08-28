@@ -29,6 +29,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-item-repository-test-") as t
             "src/flatfile_authority_transaction.c",
             "src/flatfile_store.c",
             "src/item_transfer_command.c",
+            "src/shop_trade_command.c",
             "src/critical_command.c",
             "src/epic_command.c",
             "src/currency_command.c",

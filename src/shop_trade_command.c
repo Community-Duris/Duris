@@ -82,7 +82,7 @@ bool valid_payload(const shop_trade_payload &payload)
 	{
 		const auto &item = payload.items[index];
 		if (!item.item_uid || !root_uid || item.root_item_uid != root_uid ||
-		    item.vnum <= 0 ||
+		    item.vnum <= 0 || (creates && item.item_uid == payload.stock_item_uid) ||
 		    item.expected_state !=
 			    (creates ? item_custody_state::absent : item_custody_state::active) ||
 		    (creates ? item.expected_item_revision != ITEM_TRANSFER_ABSENT_REVISION :

@@ -788,6 +788,131 @@ flatfile_item_repository_result flatfile_item_repository_prepare_auction_transfe
 	return flatfile_item_repository_result::ok;
 }
 
+flatfile_item_repository_result flatfile_item_repository_prepare_shop_trade(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const shop_trade_payload &payload, flatfile_item_shop_trade_mutation *mutation,
+	unsigned int *result_code, std::string *error)
+{
+	if (!mutation || !result_code || !lock.matches(root))
+		return flatfile_item_repository_result::invalid;
+	*mutation = {};
+	*result_code = 0;
+	std::vector<uint8_t> validated_payload;
+	if (!shop_trade_command_encode_payload(payload, &validated_payload))
+		return flatfile_item_repository_result::invalid;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	const item_owner_identity player = { item_owner_type::player, payload.player_pid, 0 };
+	const item_owner_identity shop = { item_owner_type::shopkeeper,
+					   item_shopkeeper_owner_id(payload.shop_id), 0 };
+	if (!find_owner(&catalog, player) || !find_owner(&catalog, shop))
+	{
+		*result_code = ESTALE;
+		return flatfile_item_repository_result::ok;
+	}
+	if (payload.action == shop_trade_action::buy_produced)
+	{
+		const auto *stock = find_item(&catalog, payload.stock_item_uid);
+		if (!stock || stock->root_item_uid != stock->item_uid || stock->parent_item_uid ||
+		    !item_owner_identity_equal(stock->owner, shop) ||
+		    stock->item_revision != payload.expected_stock_item_revision ||
+		    stock->vnum != payload.stock_vnum || stock->state != item_custody_state::active)
+		{
+			*result_code = ESTALE;
+			return flatfile_item_repository_result::ok;
+		}
+	}
+	const item_owner_identity system = { item_owner_type::system, 0, 0 };
+	const item_owner_identity destruction = { item_owner_type::destruction, 0, 0 };
+	item_transfer_payload transfer = {};
+	transfer.reason_id = payload.shop_id;
+	transfer.selected_item_uid = payload.selected_item_uid;
+	transfer.target_root_item_uid = payload.selected_item_uid;
+	transfer.item_count = payload.item_count;
+	if (payload.action == shop_trade_action::buy_existing)
+	{
+		transfer.from_owner = shop;
+		transfer.to_owner = player;
+		transfer.reason = item_transfer_reason::shop_buy;
+	}
+	else if (payload.action == shop_trade_action::buy_produced)
+	{
+		transfer.from_owner = system;
+		transfer.to_owner = player;
+		transfer.reason = item_transfer_reason::creation;
+		if (!ensure_owner(&catalog, system))
+			return flatfile_item_repository_result::io_error;
+	}
+	else if (payload.action == shop_trade_action::sell_store)
+	{
+		transfer.from_owner = player;
+		transfer.to_owner = shop;
+		transfer.reason = item_transfer_reason::shop_sell;
+	}
+	else if (payload.action == shop_trade_action::sell_destroy)
+	{
+		transfer.from_owner = player;
+		transfer.to_owner = destruction;
+		transfer.reason = item_transfer_reason::destruction;
+		if (!ensure_owner(&catalog, destruction))
+			return flatfile_item_repository_result::io_error;
+	}
+	else
+		return flatfile_item_repository_result::invalid;
+	owner_state *from = find_owner(&catalog, transfer.from_owner);
+	owner_state *to = find_owner(&catalog, transfer.to_owner);
+	if (!from || !to)
+		return flatfile_item_repository_result::invalid;
+	transfer.expected_from_revision = from->revision;
+	transfer.expected_to_revision = to->revision;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &item = payload.items[index];
+		transfer.items[index] = { item.item_uid,
+					  item.root_item_uid,
+					  item.parent_item_uid,
+					  item.expected_item_revision,
+					  item.vnum,
+					  item.expected_state };
+	}
+	item_transfer_result transfer_result = {};
+	const unsigned int applied = apply_transfer(&catalog, transfer, &transfer_result);
+	if (applied)
+	{
+		if (applied == ENOMEM)
+			return flatfile_item_repository_result::io_error;
+		*result_code = applied;
+		return flatfile_item_repository_result::ok;
+	}
+	const owner_state *player_owner = find_owner(&catalog, player);
+	const owner_state *shop_owner = find_owner(&catalog, shop);
+	if (!player_owner || !shop_owner)
+		return flatfile_item_repository_result::invalid;
+	mutation->player_owner_revision = player_owner->revision;
+	mutation->shop_owner_revision = shop_owner->revision;
+	mutation->item_count = payload.item_count;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto *item = find_item(&catalog, payload.items[index].item_uid);
+		if (!item)
+			return flatfile_item_repository_result::invalid;
+		mutation->item_uids[index] = item->item_uid;
+		mutation->item_revisions[index] = item->item_revision;
+	}
+	mutation->after_image.filename = ownership_filename;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max() ||
+	    !encode_catalog(catalog, catalog.revision + 1, &mutation->after_image.bytes))
+		return flatfile_item_repository_result::invalid;
+	return flatfile_item_repository_result::ok;
+}
+
 flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error)

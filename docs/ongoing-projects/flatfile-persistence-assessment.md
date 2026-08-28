@@ -2278,6 +2278,33 @@ sections below continue to describe the required end state.
   four shop actions, including produced creation and destruction, then compose it with the shop
   and wallet preparations in an idempotent shop-trade repository.
 
+### Checkpoint 71 - lock-scoped shop custody preparation
+
+- **Completed:** the item repository now translates each validated shop-trade action into the
+  existing full-graph transfer engine while the caller holds the whole-authority lock. It
+  derives current owner revisions from the locked ledger, enforces every submitted item
+  revision/topology/state, and returns the ownership catalog after-image without writing it.
+- **Action semantics:** existing purchases move shopkeeper custody to the player with
+  `shop_buy`; produced purchases validate a top-level active exemplar and create the absent
+  clone graph from system custody; retained sales move player custody to the shopkeeper with
+  `shop_sell`; duplicate/trash sales move the graph to destruction. Produced purchases leave
+  the exemplar and shop owner revision unchanged.
+- **Completion state:** the prepare result exposes the post-mutation player/shop owner
+  revisions plus every item UID and revision for eventual runtime publication. A stale exemplar,
+  missing owner, conflicting UID, wrong source, malformed graph, or revision mismatch produces
+  no after-image.
+- **Checks passed:** the strict item repository harness commits all four prepared action classes
+  through the authority transaction layer and verifies the exact final player/shop custody sets,
+  produced clone revision, exemplar preservation, transfer revisions, destruction, and stale
+  exemplar refusal. Shop command/catalog regressions, changed-line formatting, and the normal
+  C++20 server build pass.
+- **Exposure:** wallet, shop aggregate, and custody preparations now exist independently, but no
+  shop-trade repository yet combines them or records an idempotent operation result. The command
+  remains unrouted.
+- **Next action:** add an idempotent flat shop-trade operation catalog, invoke all three prepare
+  paths under one authority lock, encode the unified result, and publish every after-image in one
+  recoverable authority transaction.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

@@ -1,6 +1,7 @@
 #include "flatfile_item_repository.h"
 
 #include <cerrno>
+#include <cstring>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -87,6 +88,38 @@ static item_transfer_result result_of(const critical_apply_result &applied)
 						    applied.result_size, &result),
 		"could not decode item repository result");
 	return result;
+}
+
+static shop_trade_payload shop_trade(shop_trade_action action, uint64_t item_uid,
+				     uint64_t item_revision, int32_t vnum, uint64_t stock_uid = 0,
+				     uint64_t stock_revision = 0)
+{
+	shop_trade_payload payload = {};
+	payload.action = action;
+	payload.player_pid = 42;
+	payload.shop_id = 0;
+	payload.racewar = 1;
+	strcpy(payload.account_name.data(), "ShopTester");
+	payload.price = 100;
+	payload.expected_wallet_revision = 1;
+	payload.expected_bank_revision = 1;
+	payload.expected_shop_revision = 1;
+	payload.selected_item_uid = item_uid;
+	payload.stock_item_uid = stock_uid;
+	payload.expected_stock_item_revision = stock_revision;
+	payload.stock_vnum = stock_uid ? vnum : 0;
+	payload.item_count = 1;
+	payload.items[0] = { item_uid,
+			     item_uid,
+			     0,
+			     item_revision,
+			     vnum,
+			     action == shop_trade_action::buy_produced ?
+				     item_custody_state::absent :
+				     item_custody_state::active };
+	payload.item_blob_size = 1;
+	payload.item_blob[0] = 0xa5;
+	return payload;
 }
 
 int main(int argc, char **argv)
@@ -258,6 +291,123 @@ int main(int argc, char **argv)
 			&error) == flatfile_item_repository_result::ok &&
 			owner_revision == 1 && items.size() == 1 && items[0].item_uid == 200,
 		"concurrent replay duplicated or lost item creation");
+
+	const fs::path shop_root = fs::path(argv[1]).string() + "-shop";
+	fs::create_directories(shop_root / "domains");
+	fs::permissions(shop_root, fs::perms::owner_all, fs::perm_options::replace);
+	fs::permissions(shop_root / "domains", fs::perms::owner_all, fs::perm_options::replace);
+	const item_owner_identity shop_player = { item_owner_type::player, 42, 0 };
+	const item_owner_identity shop_owner = { item_owner_type::shopkeeper,
+						 item_shopkeeper_owner_id(0), 0 };
+	require(flatfile_item_repository_establish_owner(
+			shop_root.string(), shop_player,
+			{ { 100, 100, 0, shop_player, 1, 700, item_custody_state::active },
+			  { 101, 101, 0, shop_player, 1, 701, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"shop player custody baseline failed: " + error);
+	require(flatfile_item_repository_establish_owner(
+			shop_root.string(), shop_owner,
+			{ { 200, 200, 0, shop_owner, 1, 800, item_custody_state::active },
+			  { 201, 201, 0, shop_owner, 1, 801, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"shop inventory custody baseline failed: " + error);
+	flatfile_item_shop_trade_mutation shop_mutation;
+	unsigned int shop_result_code = 0;
+	auto produced = shop_trade(shop_trade_action::buy_produced, 300,
+				   ITEM_TRANSFER_ABSENT_REVISION, 801, 201, 1);
+	{
+		auto stale_stock = produced;
+		stale_stock.expected_stock_item_revision = 2;
+		flatfile_authority_lock lock;
+		require(lock.acquire(shop_root.string(), &error),
+			"could not acquire stale stock lock");
+		require(flatfile_item_repository_prepare_shop_trade(
+				shop_root.string(), lock, stale_stock, &shop_mutation,
+				&shop_result_code, &error) == flatfile_item_repository_result::ok &&
+				shop_result_code == ESTALE &&
+				shop_mutation.after_image.bytes.empty(),
+			"stale produced-stock exemplar was accepted");
+	}
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(shop_root.string(), &error),
+			"could not acquire produced lock");
+		require(flatfile_item_repository_prepare_shop_trade(
+				shop_root.string(), lock, produced, &shop_mutation,
+				&shop_result_code, &error) == flatfile_item_repository_result::ok &&
+				shop_result_code == 0 && shop_mutation.player_owner_revision == 2 &&
+				shop_mutation.shop_owner_revision == 1 &&
+				shop_mutation.item_revisions[0] == 1,
+			"produced custody mutation did not prepare: " + error);
+		require(flatfile_authority_transaction_commit(
+				shop_root.string(), lock, { shop_mutation.after_image }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"produced custody mutation did not commit: " + error);
+	}
+	auto purchase = shop_trade(shop_trade_action::buy_existing, 200, 1, 800, 200, 1);
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(shop_root.string(), &error),
+			"could not acquire purchase lock");
+		require(flatfile_item_repository_prepare_shop_trade(
+				shop_root.string(), lock, purchase, &shop_mutation,
+				&shop_result_code, &error) == flatfile_item_repository_result::ok &&
+				shop_result_code == 0 && shop_mutation.player_owner_revision == 3 &&
+				shop_mutation.shop_owner_revision == 2 &&
+				shop_mutation.item_revisions[0] == 2,
+			"purchase custody mutation did not prepare: " + error);
+		require(flatfile_authority_transaction_commit(
+				shop_root.string(), lock, { shop_mutation.after_image }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"purchase custody mutation did not commit: " + error);
+	}
+	auto sale = shop_trade(shop_trade_action::sell_store, 100, 1, 700);
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(shop_root.string(), &error), "could not acquire sale lock");
+		require(flatfile_item_repository_prepare_shop_trade(
+				shop_root.string(), lock, sale, &shop_mutation, &shop_result_code,
+				&error) == flatfile_item_repository_result::ok &&
+				shop_result_code == 0 && shop_mutation.player_owner_revision == 4 &&
+				shop_mutation.shop_owner_revision == 3 &&
+				shop_mutation.item_revisions[0] == 2,
+			"sale custody mutation did not prepare: " + error);
+		require(flatfile_authority_transaction_commit(
+				shop_root.string(), lock, { shop_mutation.after_image }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"sale custody mutation did not commit: " + error);
+	}
+	auto destruction = shop_trade(shop_trade_action::sell_destroy, 101, 1, 701);
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(shop_root.string(), &error),
+			"could not acquire destruction lock");
+		require(flatfile_item_repository_prepare_shop_trade(
+				shop_root.string(), lock, destruction, &shop_mutation,
+				&shop_result_code, &error) == flatfile_item_repository_result::ok &&
+				shop_result_code == 0 && shop_mutation.player_owner_revision == 5 &&
+				shop_mutation.shop_owner_revision == 3 &&
+				shop_mutation.item_revisions[0] == 2,
+			"destruction custody mutation did not prepare: " + error);
+		require(flatfile_authority_transaction_commit(
+				shop_root.string(), lock, { shop_mutation.after_image }, &error) ==
+				flatfile_authority_transaction_result::ok,
+			"destruction custody mutation did not commit: " + error);
+	}
+	items.clear();
+	require(flatfile_item_repository_load_owner(shop_root.string(), shop_player,
+						    &owner_revision, &items, &error) ==
+				flatfile_item_repository_result::ok &&
+			owner_revision == 5 && items.size() == 2 && items[0].item_uid == 200 &&
+			items[1].item_uid == 300,
+		"shop trades did not publish exact player custody");
+	items.clear();
+	require(flatfile_item_repository_load_owner(shop_root.string(), shop_owner, &owner_revision,
+						    &items, &error) ==
+				flatfile_item_repository_result::ok &&
+			owner_revision == 3 && items.size() == 2 && items[0].item_uid == 100 &&
+			items[1].item_uid == 201,
+		"shop trades did not preserve exact shop custody");
 
 	const fs::path combined_root = fs::path(argv[1]).string() + "-combined";
 	fs::create_directories(combined_root / "domains");
