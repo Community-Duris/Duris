@@ -18,6 +18,7 @@ bool currency_published = false;
 item_transfer_payload published_transfer = {};
 item_transfer_result published_transfer_result = {};
 bool ownership_published = false;
+bool shop_revision_published = false;
 bool completion_called = false;
 bool completion_committed = false;
 unsigned int completion_error = 0;
@@ -123,6 +124,19 @@ bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 	return true;
 }
 
+bool shop_trade_runtime_can_advance(uint32_t shop_id, uint64_t expected_revision,
+				    uint64_t new_revision)
+{
+	return shop_id == 7 && expected_revision == 4 && new_revision == 5;
+}
+
+bool shop_trade_runtime_advance(uint32_t shop_id, uint64_t expected_revision, uint64_t new_revision)
+{
+	shop_revision_published =
+		shop_trade_runtime_can_advance(shop_id, expected_revision, new_revision);
+	return shop_revision_published;
+}
+
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
 {
 	abort();
@@ -140,15 +154,16 @@ int main()
 	critical_completion produced_completion =
 		completion(result(shop_trade_action::buy_produced, 300, 8, 6));
 	shop_trade_transaction_handle_completions(&produced_completion, 1);
-	assert(currency_published && ownership_published && completion_called &&
-	       completion_committed && completion_error == 0 &&
+	assert(currency_published && ownership_published && shop_revision_published &&
+	       completion_called && completion_committed && completion_error == 0 &&
 	       published_transfer.from_owner.type == item_owner_type::system &&
 	       published_transfer.to_owner.type == item_owner_type::player &&
 	       published_transfer_result.from_owner_revision == 6 &&
 	       published_transfer_result.to_owner_revision == 8 &&
 	       !shop_trade_transaction_player_busy(&character));
 
-	currency_published = ownership_published = completion_called = completion_committed = false;
+	currency_published = ownership_published = shop_revision_published = completion_called =
+		completion_committed = false;
 	const shop_trade_payload destroyed = trade(shop_trade_action::sell_destroy, 301);
 	assert(shop_trade_transaction_submit(&character, destroyed, completed));
 	critical_completion destroyed_completion =
@@ -159,8 +174,8 @@ int main()
 	       !ownership_published && !completion_called);
 	player_online = true;
 	shop_trade_transaction_player_ready(&character);
-	assert(currency_published && ownership_published && completion_called &&
-	       completion_committed &&
+	assert(currency_published && ownership_published && shop_revision_published &&
+	       completion_called && completion_committed &&
 	       published_transfer.from_owner.type == item_owner_type::player &&
 	       published_transfer.to_owner.type == item_owner_type::destruction &&
 	       published_transfer_result.from_owner_revision == 9 &&

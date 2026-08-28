@@ -2,6 +2,7 @@
 
 #include "flatfile_shopkeeper_materialize.h"
 #include "item_ownership_runtime.h"
+#include "shop_trade_runtime.h"
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"
@@ -132,7 +133,6 @@ flatfile_shopkeeper_restore_result flatfile_shopkeeper_restore_catalog(const std
 			discard_staged(&staged, records);
 			return flatfile_shopkeeper_restore_result::publish_failure;
 		}
-
 	std::unordered_set<P_char> replacements;
 	try
 	{
@@ -141,6 +141,11 @@ flatfile_shopkeeper_restore_result flatfile_shopkeeper_restore_catalog(const std
 			replacements.insert(entry.character);
 	}
 	catch (const std::bad_alloc &)
+	{
+		discard_staged(&staged, records);
+		return flatfile_shopkeeper_restore_result::io_error;
+	}
+	if (!shop_trade_runtime_replace_revisions(records))
 	{
 		discard_staged(&staged, records);
 		return flatfile_shopkeeper_restore_result::io_error;

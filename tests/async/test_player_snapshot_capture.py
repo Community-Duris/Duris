@@ -162,8 +162,10 @@ for forbidden_route in (
     assert forbidden_route not in CAPTURE
 assert "P_char ch" in CAPTURE_HEADER
 assert "player_item_snapshot_list_capture" in CAPTURE_HEADER
+assert "player_item_snapshot_tree_capture" in CAPTURE_HEADER
 assert "bool omit_norent" in CAPTURE_HEADER
 assert "capture_items(owner, items, budget, equipment, inventory, omit_norent)" in CAPTURE
+assert "capture_item_tree(root, PLAYER_SNAPSHOT_NO_PARENT, 0, items" in CAPTURE
 assert "*items_out = std::move(items);" in CAPTURE
 assert CAPTURE.index("capture_items(owner, items, budget, equipment, inventory, omit_norent)") < CAPTURE.index(
     "*items_out = std::move(items);"

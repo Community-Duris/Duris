@@ -14,6 +14,8 @@ for token in (
     "captured.mob_vnum != existing->mob_vnum",
     "flatfile_shopkeeper_load_item_ownership(",
     "flatfile_shopkeeper_replace(root, captured, existing->revision, error)",
+    "shop_trade_runtime_can_advance(shop_id, existing->revision",
+    "shop_trade_runtime_advance(shop_id, existing->revision",
     "flatfile_shopkeeper_result::stale",
     "if (!shop_index[shop_id].dirty)",
     "real_room(shop_index[shop_id].in_room)",

@@ -19,6 +19,7 @@ for token in (
     "staged[index].character->in_room != staged[index].room_rnum",
     "discard_staged(&staged, records)",
     "item_ownership_runtime_forget(item.object_uid)",
+    "shop_trade_runtime_replace_revisions(records)",
     "replacements.find(existing) == replacements.end()",
     "extract_char(existing)",
     "shop_index[record.shop_id].dirty = 1",
@@ -29,7 +30,8 @@ for token in (
 stage = SOURCE.index("flatfile_shopkeeper_materialize(root, record")
 place = SOURCE.index("char_to_room(staged[index].character")
 replace = SOURCE.index("extract_char(existing)")
-if not stage < place < replace:
+revisions = SOURCE.index("shop_trade_runtime_replace_revisions(records)")
+if not stage < place < revisions < replace:
     raise SystemExit("shopkeepers are not fully staged and placed before incumbent replacement")
 
 print("flat-file shopkeeper catalog restore contract passed")

@@ -3,6 +3,7 @@
 #include "flatfile_shopkeeper_capture.h"
 #include "flatfile_shopkeeper_ownership.h"
 #include "flatfile_shopkeeper_repository.h"
+#include "shop_trade_runtime.h"
 #include "prototypes.h"
 #include "structs.h"
 #include "utils.h"
@@ -37,6 +38,8 @@ flatfile_shopkeeper_save_result flatfile_shopkeeper_save(const std::string &root
 		return flatfile_shopkeeper_save_result::not_found;
 	if (!existing->revision || existing->revision == std::numeric_limits<uint64_t>::max())
 		return flatfile_shopkeeper_save_result::invalid;
+	if (!shop_trade_runtime_can_advance(shop_id, existing->revision, existing->revision + 1))
+		return flatfile_shopkeeper_save_result::stale;
 
 	flatfile_shopkeeper_record captured = {};
 	if (flatfile_shopkeeper_capture(shopkeeper, shop_id, existing->revision + 1, saved_at,
@@ -55,7 +58,10 @@ flatfile_shopkeeper_save_result flatfile_shopkeeper_save(const std::string &root
 	const auto replaced =
 		flatfile_shopkeeper_replace(root, captured, existing->revision, error);
 	if (replaced == flatfile_shopkeeper_result::ok)
-		return flatfile_shopkeeper_save_result::ok;
+		return shop_trade_runtime_advance(shop_id, existing->revision,
+						  existing->revision + 1) ?
+			       flatfile_shopkeeper_save_result::ok :
+			       flatfile_shopkeeper_save_result::stale;
 	if (replaced == flatfile_shopkeeper_result::stale)
 		return flatfile_shopkeeper_save_result::stale;
 	return replaced == flatfile_shopkeeper_result::io_error ?

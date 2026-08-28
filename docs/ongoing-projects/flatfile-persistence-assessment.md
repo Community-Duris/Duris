@@ -2363,6 +2363,34 @@ sections below continue to describe the required end state.
   hydration, then replace the flat-mode buy/sell mutation with submit-now and callback-after-commit
   behavior while retaining the MariaDB path until repository parity exists.
 
+### Checkpoint 74 - revision-fenced live shop-trade payload capture
+
+- **Completed:** added a non-mutating selected-object tree capture adapter that reuses the bounded,
+  cycle-aware player item snapshot traversal without capturing unrelated inventory or equipment.
+  The shop payload builder encodes that exact tree, derives UID parent topology, sorts custody
+  fences canonically, and verifies every adopted UID/vnum/revision/owner relationship against the
+  runtime ownership registry before producing a command payload.
+- **Produced-stock fence:** a produced clone must be entirely absent from runtime custody, while
+  its separate stock exemplar must be a top-level active item owned by the requested shop with the
+  same vnum. Existing purchases require the selected tree to be shop-owned; both sale outcomes
+  require it to be player-owned. Account identity, wallet/bank revisions, price bounds, snapshot
+  byte limits, and the current shop aggregate revision are captured in the same immutable payload.
+- **Shop revision continuity:** catalog restore atomically replaces the runtime shop-revision map
+  only after every replacement shopkeeper is staged and placed. Custody-fenced dirty saves
+  compare/advance the same map, and successful composite completions preflight and publish the
+  exact next shop revision alongside money and item custody.
+- **Checks passed:** the runtime regression covers canonical revision hydration, exact monotonic
+  advance, stale refusal, duplicate-catalog rollback, and maximum-revision refusal, and its source
+  contract verifies bounded capture, canonical sorting, custody/exemplar fences, final command
+  validation, and absence of live mutation. Player capture, restore/save, transaction, changed-line
+  formatting, and the normal C++20 build pass; CI includes the new regression.
+- **Exposure:** the builder and completion publisher are not yet called from `shopping_buy` or
+  `shopping_sell`. Produced purchase setup still needs safe clone lifetime/UID handling, and live
+  callbacks must revalidate the selected object before moving or extracting it after commit.
+- **Next action:** route flat-mode existing buys and both sale outcomes through the builder and
+  transaction adapter first, with pointer-safe UID lookup in completion callbacks; then add
+  produced-clone submission and multi-buy sequencing.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

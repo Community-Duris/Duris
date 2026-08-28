@@ -3,6 +3,7 @@
 #include "currency_transaction.h"
 #include "item_ownership_runtime.h"
 #include "prototypes.h"
+#include "shop_trade_runtime.h"
 #include "utils.h"
 
 #include <algorithm>
@@ -107,13 +108,21 @@ bool publish(std::unordered_map<std::string, pending_trade>::iterator found, P_c
 	const bool committed = decoded &&
 			       (entry.completed.outcome == critical_apply_outcome::applied ||
 				entry.completed.outcome == critical_apply_outcome::already_applied);
-	bool published = decoded;
-	if (decoded)
+	bool published =
+		decoded &&
+		(!committed || shop_trade_runtime_can_advance(entry.payload.shop_id,
+							      entry.payload.expected_shop_revision,
+							      result.shop_revision));
+	if (published)
 		published = currency_transaction_publish_balances(
 			character, entry.payload.account_name.data(), entry.payload.racewar,
 			result.wallet, result.bank, result.wallet_revision, result.bank_revision);
 	if (published && committed)
 		published = publish_ownership(entry.payload, result);
+	if (published && committed)
+		published = shop_trade_runtime_advance(entry.payload.shop_id,
+						       entry.payload.expected_shop_revision,
+						       result.shop_revision);
 	const auto completion = entry.completion;
 	const shop_trade_payload payload = entry.payload;
 	const unsigned int error_code = decoded ? entry.completed.error_code : EBADMSG;
