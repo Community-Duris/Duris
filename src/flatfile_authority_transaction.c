@@ -265,6 +265,11 @@ bool flatfile_authority_lock::owns(const std::string &root) const
 	       state_->root == root;
 }
 
+bool flatfile_authority_lock::matches(const std::string &root) const
+{
+	return owns(root);
+}
+
 flatfile_authority_transaction_result
 flatfile_authority_transaction_recover(const std::string &root, const flatfile_authority_lock &lock,
 				       std::string *error)

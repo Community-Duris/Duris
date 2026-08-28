@@ -29,6 +29,7 @@ class flatfile_authority_lock
 	flatfile_authority_lock &operator=(const flatfile_authority_lock &) = delete;
 
 	bool acquire(const std::string &root, std::string *error);
+	bool matches(const std::string &root) const;
 
     private:
 	struct state;

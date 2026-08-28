@@ -1,8 +1,10 @@
 #ifndef DURIS_FLATFILE_PLAYER_DOMAIN_REPOSITORY_H
 #define DURIS_FLATFILE_PLAYER_DOMAIN_REPOSITORY_H
 
+#include "flatfile_authority_transaction.h"
 #include "player_load_repository.h"
 #include "critical_command_coordinator.h"
+#include "currency_command.h"
 
 #include <cstdint>
 #include <string>
@@ -27,6 +29,15 @@ enum class flatfile_player_domain_result
 	io_error
 };
 
+struct flatfile_wallet_mutation
+{
+	currency_vector wallet = {};
+	currency_vector bank = {};
+	uint64_t wallet_revision = 0;
+	uint64_t bank_revision = 0;
+	std::vector<flatfile_authority_after_image> after_images;
+};
+
 flatfile_player_domain_result
 flatfile_player_domain_establish(const std::string &root,
 				 const flatfile_player_domain_record &record, std::string *error);
@@ -39,5 +50,10 @@ flatfile_player_domain_result flatfile_player_domain_load(const std::string &roo
 							  std::string *error);
 critical_apply_result flatfile_player_domain_apply(const std::string &root,
 						   const critical_command &command);
+flatfile_player_domain_result flatfile_player_domain_prepare_wallet(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	const std::string &account_name, int8_t racewar, uint64_t expected_wallet_revision,
+	uint64_t expected_bank_revision, int64_t value_delta, bool apply_delta,
+	flatfile_wallet_mutation *mutation, unsigned int *result_code, std::string *error);
 
 #endif

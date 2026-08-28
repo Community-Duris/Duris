@@ -1,5 +1,6 @@
 #include "flatfile_item_repository.h"
 
+#include "flatfile_auction_repository.h"
 #include "flatfile_authority_transaction.h"
 #include "flatfile_store.h"
 #include "flatfile_player_domain_repository.h"
@@ -708,6 +709,84 @@ flatfile_item_repository_establish_owner(const std::string &root, const item_own
 	return flatfile_item_baseline_result::applied;
 }
 
+flatfile_item_repository_result flatfile_item_repository_prepare_auction_transfer(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const auction_command_payload &payload, uint32_t auction_id, bool to_auction,
+	flatfile_item_auction_mutation *mutation, unsigned int *result_code, std::string *error)
+{
+	if (!mutation || !result_code || !auction_id || !payload.actor_pid || !payload.item_count ||
+	    payload.item_count > payload.items.size() || !lock.matches(root))
+		return flatfile_item_repository_result::invalid;
+	*mutation = {};
+	*result_code = 0;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	const item_owner_identity player_owner = { item_owner_type::player, payload.actor_pid, 0 };
+	const item_owner_identity auction_owner = { item_owner_type::auction, auction_id, 0 };
+	const item_owner_identity &from_owner = to_auction ? player_owner : auction_owner;
+	const item_owner_identity &to_owner = to_auction ? auction_owner : player_owner;
+	if (!ensure_owner(&catalog, player_owner) || !ensure_owner(&catalog, auction_owner))
+		return flatfile_item_repository_result::io_error;
+	owner_state *player = find_owner(&catalog, player_owner);
+	owner_state *auction = find_owner(&catalog, auction_owner);
+	if (!player || !auction)
+		return flatfile_item_repository_result::invalid;
+	if (player->revision == std::numeric_limits<uint64_t>::max() ||
+	    auction->revision == std::numeric_limits<uint64_t>::max())
+	{
+		*result_code = ERANGE;
+		return flatfile_item_repository_result::ok;
+	}
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &expected = payload.items[index];
+		flatfile_item_ownership_record *item = find_item(&catalog, expected.item_uid);
+		if (!item || item->root_item_uid != item->item_uid || item->parent_item_uid ||
+		    !item_owner_identity_equal(item->owner, from_owner) ||
+		    item->item_revision != expected.expected_item_revision ||
+		    item->item_revision == std::numeric_limits<uint64_t>::max() ||
+		    item->vnum != expected.vnum || item->state != item_custody_state::active)
+		{
+			*result_code = ESTALE;
+			return flatfile_item_repository_result::ok;
+		}
+		for (size_t prior = 0; prior < index; ++prior)
+			if (payload.items[prior].item_uid == expected.item_uid)
+			{
+				*result_code = ESTALE;
+				return flatfile_item_repository_result::ok;
+			}
+	}
+	++player->revision;
+	++auction->revision;
+	mutation->player_owner_revision = player->revision;
+	mutation->auction_owner_revision = auction->revision;
+	mutation->item_count = payload.item_count;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		flatfile_item_ownership_record *item =
+			find_item(&catalog, payload.items[index].item_uid);
+		if (!item)
+			return flatfile_item_repository_result::invalid;
+		item->owner = to_owner;
+		++item->item_revision;
+		mutation->item_uids[index] = item->item_uid;
+		mutation->item_revisions[index] = item->item_revision;
+	}
+	mutation->after_image.filename = ownership_filename;
+	if (catalog.revision == std::numeric_limits<uint64_t>::max() ||
+	    !encode_catalog(catalog, catalog.revision + 1, &mutation->after_image.bytes))
+		return flatfile_item_repository_result::invalid;
+	return flatfile_item_repository_result::ok;
+}
+
 critical_apply_result flatfile_item_repository_apply(const std::string &root,
 						     const critical_command &command)
 {
@@ -799,6 +878,8 @@ flatfile_critical_command_repository_apply_selected(const critical_command &comm
 		return { critical_apply_outcome::terminal_failure, 0, ENOENT };
 	if (command.type == critical_command_type::item_transfer)
 		return flatfile_item_repository_apply(root, command);
+	if (command.type == critical_command_type::auction)
+		return flatfile_auction_repository_apply(root, command);
 	if (command.type == critical_command_type::epic ||
 	    command.type == critical_command_type::account_bank ||
 	    command.type == critical_command_type::combat_outcome)

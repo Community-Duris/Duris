@@ -858,6 +858,110 @@ flatfile_player_domain_result flatfile_player_domain_load(const std::string &roo
 	return flatfile_player_domain_result::ok;
 }
 
+flatfile_player_domain_result flatfile_player_domain_prepare_wallet(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
+	const std::string &account_name, int8_t racewar, uint64_t expected_wallet_revision,
+	uint64_t expected_bank_revision, int64_t value_delta, bool apply_delta,
+	flatfile_wallet_mutation *mutation, unsigned int *result_code, std::string *error)
+{
+	if (!mutation || !result_code || !pid || !lock.matches(root))
+		return flatfile_player_domain_result::invalid;
+	*mutation = {};
+	*result_code = 0;
+	const auto recovered = recover_authority(root, lock, error);
+	if (recovered != flatfile_player_domain_result::ok)
+		return recovered;
+	std::string account;
+	if (!canonical_account(account_name, &account))
+		return flatfile_player_domain_result::invalid;
+	player_authority player;
+	const auto player_loaded = load_player_authority(root, pid, &player, error);
+	if (player_loaded != flatfile_player_domain_result::ok)
+		return player_loaded;
+	if (player.record.account_name != account || player.record.racewar != racewar)
+		return flatfile_player_domain_result::not_found;
+	bank_record bank;
+	const auto bank_loaded = load_bank(root, account, racewar, &bank, error);
+	if (bank_loaded != flatfile_player_domain_result::ok)
+		return bank_loaded;
+	for (size_t index = 0; index < mutation->wallet.amount.size(); ++index)
+	{
+		if (player.record.domains.wallet[index] > INT_MAX || bank.balances[index] > INT_MAX)
+			return flatfile_player_domain_result::invalid;
+		mutation->wallet.amount[index] = player.record.domains.wallet[index];
+		mutation->bank.amount[index] = bank.balances[index];
+	}
+	mutation->wallet_revision = player.record.domains.wallet_revision;
+	mutation->bank_revision = bank.revision;
+	if (mutation->wallet_revision != expected_wallet_revision ||
+	    mutation->bank_revision != expected_bank_revision)
+	{
+		*result_code = ESTALE;
+		return flatfile_player_domain_result::ok;
+	}
+	if (!apply_delta)
+		return flatfile_player_domain_result::ok;
+	constexpr std::array<int64_t, CURRENCY_DENOMINATION_COUNT> coin_values = { 1, 10, 100,
+										   1000 };
+	int64_t wallet_value = 0;
+	for (size_t index = 0; index < mutation->wallet.amount.size(); ++index)
+		wallet_value += mutation->wallet.amount[index] * coin_values[index];
+	if (value_delta < 0)
+	{
+		const uint64_t magnitude = static_cast<uint64_t>(-(value_delta + 1)) + 1;
+		if (static_cast<uint64_t>(wallet_value) < magnitude)
+		{
+			*result_code = ENOSPC;
+			return flatfile_player_domain_result::ok;
+		}
+	}
+	else if (wallet_value > std::numeric_limits<int64_t>::max() - value_delta)
+	{
+		*result_code = ERANGE;
+		return flatfile_player_domain_result::ok;
+	}
+	if (mutation->wallet_revision == std::numeric_limits<uint64_t>::max() ||
+	    mutation->bank_revision == std::numeric_limits<uint64_t>::max())
+	{
+		*result_code = ERANGE;
+		return flatfile_player_domain_result::ok;
+	}
+	wallet_value += value_delta;
+	currency_vector after = {};
+	for (size_t index = after.amount.size(); index-- > 0;)
+	{
+		const int64_t amount = wallet_value / coin_values[index];
+		if (amount > INT_MAX)
+		{
+			*result_code = ERANGE;
+			return flatfile_player_domain_result::ok;
+		}
+		after.amount[index] = amount;
+		wallet_value %= coin_values[index];
+	}
+	mutation->wallet = after;
+	++mutation->wallet_revision;
+	++mutation->bank_revision;
+	for (size_t index = 0; index < mutation->wallet.amount.size(); ++index)
+		player.record.domains.wallet[index] = mutation->wallet.amount[index];
+	player.record.domains.wallet_revision = mutation->wallet_revision;
+	bank.revision = mutation->bank_revision;
+	try
+	{
+		mutation->after_images.resize(2);
+		mutation->after_images[0].filename = bank_filename(account, racewar);
+		mutation->after_images[1].filename = player_filename(pid);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_player_domain_result::io_error;
+	}
+	if (!encode_bank_record(bank, &mutation->after_images[0].bytes) ||
+	    !encode_player_authority(player, &mutation->after_images[1].bytes))
+		return flatfile_player_domain_result::invalid;
+	return flatfile_player_domain_result::ok;
+}
+
 critical_apply_result apply_epic_command(const std::string &root, const critical_command &command)
 {
 	epic_command_payload payload = {};

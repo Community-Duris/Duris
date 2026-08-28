@@ -812,6 +812,63 @@ sections below continue to describe the required end state.
   its catalog, custody, player, and bank after-images under the shared lock, and publish
   all four through the new cross-authority transaction.
 
+### Checkpoint 25 - recoverable flat auction command authority
+
+- **Completed:** added a bounded, checksummed `auction_catalog` containing listings,
+  staged refunds and sale proceeds, item and money claim state, and an embedded operation
+  ledger. Decode rejects checksum failures, oversized input, duplicate listing/money/
+  operation identifiers, and duplicate item identifiers rather than selecting an
+  ambiguous record.
+- **Completed:** the flat critical dispatcher now applies all seven existing auction
+  actions: list, bid, finalize, claim money, claim item, remove, and unknown-action
+  rejection. The state machine validates seller/bidder identity, expected listing,
+  wallet/bank/item/owner revisions, funds, price and fee ranges, expiry, and claim
+  eligibility. Listing identifiers are deterministic from the operation identifier, and
+  every accepted or rejected decision is durable and exactly replayable; conflicting
+  operation-ID reuse fails with `EEXIST`.
+- **Completed:** player-domain and item repositories expose preparation APIs that return
+  exact checksummed after-images while the matching shared authority lock is held.
+  Successful auction decisions publish the auction catalog together with any item
+  custody, player wallet, and shared-bank after-images through one generic critical
+  authority transaction. Decision rejection restores the original catalog before
+  recording only the rejection, so a failed bid cannot leak a staged refund, balance,
+  claim, or custody change.
+- **Completed:** the focused lifecycle regression injects interruption after the first
+  cross-authority publication during listing, then enters through a player load and
+  proves recovery republishes catalog, custody, bank, and player after-images before
+  exact replay. It also covers operation-ID conflict, durable stale and insufficient-
+  funds rejections, bidding and refund staging, buy-now settlement, seller proceeds,
+  buyer claim, expired finalization and seller reclaim, administrative removal, catalog
+  corruption, and temporary-file cleanup.
+- **Contract correction:** the auction transactional-cutover source test now scopes its
+  legacy-mutation scan to the live MySQL branch instead of accidentally selecting the
+  deliberately disabled no-MySQL prelude. The runtime auction command contract itself
+  is unchanged.
+- **Checks passed:** `python3 tests/async/test_flatfile_auction_repository.py`,
+  `python3 tests/async/test_flatfile_authority_transaction.py`,
+  `python3 tests/async/test_flatfile_player_domain_repository.py`,
+  `python3 tests/async/test_flatfile_item_repository.py`,
+  `python3 tests/async/test_flatfile_player_repository.py`,
+  `python3 tests/async/test_auction_transactional_cutover.py`,
+  `python3 tests/async/test_currency_transaction_contract.py`,
+  `python3 tests/async/test_auction_persistence.py`,
+  `python3 tests/async/test_auction_finalize_claim.py`,
+  `python3 tests/async/test_auction_ship_txn_fixes.py`,
+  `python3 tests/async/test_auction_transaction_engines.py`, `make -C src -j2`,
+  `python3 tests/async/test_flatfile_boot_preflight.py`,
+  `./scripts/format.sh --check`, and `git diff --check`.
+- **Files changed:** new `src/flatfile_auction_repository.[ch]` and focused harness/test;
+  the shared authority transaction, player-domain and item repository preparation APIs;
+  `src/Makefile`; affected standalone repository build lists; the corrected auction
+  source-contract test; and this handoff ledger.
+- **Remaining auction gap:** command mutation is now authoritative and recoverable, but
+  the interactive no-MySQL auction list/info/pickup surfaces still use disabled stubs or
+  SQL reads. The wider auction/economy boot diagnostic must remain until those reads are
+  routed to the flat catalog and exercised through the live command UI.
+- **Next action:** add read/query projections over the flat auction catalog and route the
+  no-MySQL auction browsing, inspection, and pickup-discovery surfaces through them;
+  then use the same cross-authority preparation protocol for boon rewards.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

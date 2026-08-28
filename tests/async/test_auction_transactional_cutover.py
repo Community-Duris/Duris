@@ -102,6 +102,7 @@ class AuctionTransactionalCutoverTests(unittest.TestCase):
 
     def test_live_routes_submit_commands_and_publish_after_ack(self):
         source = (SRC / "auction_houses.c").read_text()
+        source = source[source.index("#else", source.index("#ifdef __NO_MYSQL__")) :]
         routes = {
             "bool auction_offer(P_char": "bool auction_offer_legacy",
             "bool auction_bid(P_char": "bool auction_bid_legacy",
