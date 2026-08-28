@@ -231,6 +231,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_item_uid_allocator.o \
 				 flatfile_item_repository.o \
 				 flatfile_artifact_repository.o \
+				 flatfile_locker_repository.o \
 				 flatfile_frag_leaderboard_repository.o \
 				 flatfile_auction_repository.o \
 				 flatfile_boon_repository.o \

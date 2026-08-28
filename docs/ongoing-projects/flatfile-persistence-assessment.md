@@ -1673,6 +1673,45 @@ sections below continue to describe the required end state.
   locker and chest metadata, name-keyed access, and per-chest nested object payloads; then
   compose locker deletion with item-custody removal without touching account lockers.
 
+### Checkpoint 50 - canonical player and association locker catalog
+
+- **Completed:** added a `DURLOCK` v1 catalog for the legacy `lockers`,
+  `private_chests`, `locker_items` and child detail tables, and `locker_access` authority.
+  Each locker records stable ID, canonical name, exactly one player or association owner,
+  race dimensions, revision, and its public/private chests. Each chest records stable ID,
+  canonical name, password hash, public marker, sort configuration, revision, and the full
+  bounded nested-item payload introduced in Checkpoint 49. Access rows are canonical
+  owner/visitor pairs with revisions.
+- **Authority and bounds:** exact establishment canonicalizes locker, chest, and access
+  order and is idempotent only for identical source state. Reads fail closed on missing,
+  corrupt, oversized, non-canonical, or checksummed-invalid authority. Validation requires
+  globally unique locker/chest IDs and item UIDs, unique names at their schema scopes,
+  exactly one public chest per locker, valid access-to-locker references, one owner kind,
+  and valid nested object placement with no equipped locker items.
+- **Account boundary:** names under `account.*` are rejected deliberately. The separate
+  `account_lockers`, `locker_chests`, `account_locker_items`, and account access/session/log
+  tables are account-scoped and must not be deleted or silently imported as character
+  locker state.
+- **Custody boundary:** item payloads are materialized state, not an alternate ownership
+  ledger. Establishment rejects duplicate object UIDs inside the locker catalog, but the
+  exporter and runtime mutation paths must still reconcile and atomically compose these
+  payloads with `item_ownership` locker owners `{locker_id, chest_id}` before either
+  authority can be exposed for gameplay.
+- **Checks passed:** the focused strict regression proves missing-authority refusal,
+  canonical exact establishment and retry, player and association lockers, public/private
+  metadata, access rows, nested container/detail round trip, conflict rejection, account
+  boundary enforcement, duplicate-UID and structural rejection, dangling-access refusal,
+  and checksum corruption refusal. CI runs it in the client-free authority suite and the
+  normal server build includes the repository.
+- **Exposure and deletion remain fenced:** current SQL locker save/load/access/chest calls
+  are not yet routed to this catalog. Character deletion still needs one prepared catalog
+  rewrite that removes visitor access and, when requested, the PID-owned locker together
+  with one item-custody after-image. The checked deletion blocker count therefore remains
+  six.
+- **Next action:** add the held-lock locker deletion preparer and a combined item-owner
+  removal API for all locker chest identities, then compose both images in the recoverable
+  character-delete transaction and advance the two locker manifest entries together.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
