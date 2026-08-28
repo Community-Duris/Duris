@@ -184,6 +184,19 @@ For a foreground development session on port 4000, use this instead of
 ./scripts/cycle_mud.sh --dev
 ```
 
+For a fast development boot using only the tracked world data in `areas_mini/`,
+run:
+
+```bash
+./scripts/cycle_mud.sh --minimal
+```
+
+`--minimal` implies development mode and port 4000. It validates the minimal
+dataset, skips full `areas/world.*` generation and full-world runtime systems,
+but keeps the player load/save and critical-command pipelines available so a
+configured test character can log in, play, and disconnect cleanly. Use
+`./scripts/start_mud.sh --minimal` for the corresponding background launcher.
+
 ## Troubleshooting
 
 If the server stops during boot, inspect `logs/log/status` and

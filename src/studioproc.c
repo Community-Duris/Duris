@@ -130,6 +130,8 @@
 #include "utility.h"
 #include "studioproc.h"
 
+extern int mini_mode;
+
 /* ------------------------------------------------------------------ */
 /* engine globals we lean on                                          */
 /* ------------------------------------------------------------------ */
@@ -3180,6 +3182,11 @@ static void sp_bind(struct sp_rec *rec)
 
 void studioproc_boot(void)
 {
+	if (mini_mode == 1)
+	{
+		logit(LOG_STATUS, "STUDIOPROC: minimal world mode, proc engine idle.");
+		return;
+	}
 	FILE *fl;
 	struct sp_rec *rec;
 	char buf[MAX_STRING_LENGTH];

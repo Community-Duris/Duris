@@ -365,6 +365,15 @@ int main(int argc, char **argv)
 
 	while ((pos < argc) && (*(argv[pos]) == '-'))
 	{
+		if (!strcmp(argv[pos], "--minimal"))
+		{
+			mini_mode = 1;
+			no_random = 1;
+			no_ferries = 1;
+			logit(LOG_STATUS, "Running in minimal world mode");
+			pos++;
+			continue;
+		}
 		if (!strncmp(argv[pos], "--material-rarity-report",
 			     strlen("--material-rarity-report")))
 		{
@@ -404,6 +413,7 @@ int main(int argc, char **argv)
 			break;
 		case 'm':
 			mini_mode = 1;
+			no_random = 1;
 			no_ferries = 1;
 			logit(LOG_STATUS, "Running in mini mode");
 			break;
@@ -428,10 +438,10 @@ int main(int argc, char **argv)
 	{
 		if (!isdigit(*argv[pos]))
 		{
-			fatal_boot_error(
-				"comm",
-				"Usage: %s [-l] [-m] [-s] [-p] [-f] [-d pathname] [ port # ]",
-				argv[0]);
+			fatal_boot_error("comm",
+					 "Usage: %s [-l] [-m|--minimal] [-s] [-p] [-f] "
+					 "[-d pathname] [ port # ]",
+					 argv[0]);
 		}
 		else if ((port = atoi(argv[pos])) <= 1024)
 		{
@@ -595,11 +605,18 @@ void run_the_game(int port, int sslport)
 	else
 		fprintf(stderr, "Starting without random zones!.\n\r");
 
-	fprintf(stderr, "-- Updating zone database.\r\n");
-	update_zone_db();
-	if (!epic_task_catalog_refresh())
-		logit(LOG_STATUS,
-		      "Epic task catalog unavailable; zone task selection uses safe fallback.");
+	if (!mini_mode)
+	{
+		fprintf(stderr, "-- Updating zone database.\r\n");
+		update_zone_db();
+		if (!epic_task_catalog_refresh())
+			logit(LOG_STATUS,
+			      "Epic task catalog unavailable; zone task selection uses safe fallback.");
+	}
+	else
+	{
+		fprintf(stderr, "--  Skipping zone database publication in mini mode.\r\n");
+	}
 
 	calculate_map_coordinates();
 	fprintf(stderr, "--  Done calculating maps coordinates.\r\n");
@@ -717,36 +734,31 @@ void run_the_game(int port, int sslport)
 
 	fprintf(stderr, "Entering game loop.\n\r");
 	logit(LOG_STATUS, "Entering game loop.");
-	if (mini_mode)
-	{
-		logit(LOG_STATUS, "Skipping persistence worker startup in mini mode.");
-	}
-	else
-	{
+	if (!mini_mode)
 		locker_async_init();
-		const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
-		if (!player_save_pipeline_init(journal_directory))
-		{
-			logit(LOG_STATUS,
-			      "Player save pipeline unavailable; nonterminal saves fail closed.");
-			persistence_alert(AVATAR, "player_save", "pipeline", "none", "none",
-					  "start_failed", "check PLAYER_SAVE_JOURNAL_DIR");
-		}
-		const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
-		if (!critical_outbox_init(critical_gameplay_outbox_delivery, NULL) ||
-		    !critical_command_coordinator_init(critical_journal_directory,
-						       critical_command_repository_apply_from_pool,
-						       NULL))
-		{
-			critical_command_coordinator_shutdown();
-			critical_outbox_shutdown();
-			logit(LOG_STATUS,
-			      "Critical command pipeline unavailable; critical gameplay fails closed.");
-			persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
-					  "start_failed", "check critical schema and journal");
-		}
-		critical_command_coordinator_set_drain_observer(
-			critical_gameplay_handle_completions);
+	const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
+	if (!player_save_pipeline_init(journal_directory))
+	{
+		logit(LOG_STATUS,
+		      "Player save pipeline unavailable; nonterminal saves fail closed.");
+		persistence_alert(AVATAR, "player_save", "pipeline", "none", "none", "start_failed",
+				  "check PLAYER_SAVE_JOURNAL_DIR");
+	}
+	const char *critical_journal_directory = getenv("CRITICAL_COMMAND_JOURNAL_DIR");
+	if (!critical_outbox_init(critical_gameplay_outbox_delivery, NULL) ||
+	    !critical_command_coordinator_init(critical_journal_directory,
+					       critical_command_repository_apply_from_pool, NULL))
+	{
+		critical_command_coordinator_shutdown();
+		critical_outbox_shutdown();
+		logit(LOG_STATUS,
+		      "Critical command pipeline unavailable; critical gameplay fails closed.");
+		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
+				  "start_failed", "check critical schema and journal");
+	}
+	critical_command_coordinator_set_drain_observer(critical_gameplay_handle_completions);
+	if (!mini_mode)
+	{
 		const uint64_t maintenance_instance =
 			(static_cast<uint64_t>(static_cast<uint32_t>(port)) << 32) |
 			static_cast<uint32_t>(sslport);
