@@ -1512,8 +1512,7 @@ void artifact_feed_sql(P_char owner, P_obj arti, int feed_seconds, bool soulChec
 			     owner);
 	}
 
-	statuslog(MINLVLIMMORTAL,
-		  "Artifact: %s [%d] on %s fed [&+G%c%ld&+Lh &+G%ld&+Lm &+G%ld&+Ls&n]",
+	statuslog(MINLVLIMMORTAL, "Artifact: %s [%d] on %s fed [&+G%c%d&+Lh &+G%d&+Lm &+G%d&+Ls&n]",
 		  arti->short_description, OBJ_VNUM(arti), GET_NAME(owner), negFeed ? '-' : ' ',
 		  feed_seconds / 3600, (feed_seconds / 60) % 60, feed_seconds % 60);
 

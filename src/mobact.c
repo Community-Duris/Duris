@@ -9610,7 +9610,7 @@ void event_mob_hunt(P_char ch, [[maybe_unused]] P_char victim, P_obj /*obj*/, vo
 		dummy = data->path.size() - data->path_step;
 		if (world[(cur_room)].dir_option[(int)next_step] != NULL)
 		{
-			debug("event_mob_hunt: %s hunting %s, step %d of %d", J_NAME(ch),
+			debug("event_mob_hunt: %s hunting %s, step %d of %zu", J_NAME(ch),
 			      data->hunt_type < HUNT_LAST_VICTIM_TARGET ? J_NAME(vict) :
 									  world[targ_room].name,
 			      data->path_step, data->path.size());
