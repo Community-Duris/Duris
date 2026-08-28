@@ -2421,6 +2421,15 @@ void kill_gain(P_char ch, P_char victim);
  * player is stranded in STAT_DEAD - every command blocked by "Lie still; you are
  * DEAD!!!" - while still being a live target in the room. These two functions
  * re-attempt the save and finish the death the moment it lands.
+ *
+ * The same deferral covers make_corpse()'s asynchronous ownership handoff.
+ * submit_next_corpse_item() moves the corpse's items one transaction at a time
+ * and each completion is only published while the owner is still live, so
+ * extracting the character mid-chain stranded the remaining items as active
+ * rows in item_current_owner while the terminal save wrote an empty
+ * player_items.  The next login then failed the item custody invariant with
+ * "Sorry, I couldn't load that character!".  Waiting for the chain to drain
+ * keeps the database row set and the saved payload in agreement.
  */
 #define DEATH_EXTRACT_RETRY_INITIAL 4
 #define DEATH_EXTRACT_RETRY_MAX 60
@@ -2455,6 +2464,15 @@ static void event_death_extract_retry(P_char ch, P_char victim, P_obj obj, void 
 	{
 		persistence_alert(AVATAR, "player_save", "death", "none", "none",
 				  "death_recovery_abandoned", "stat=%d", GET_STAT(ch));
+		return;
+	}
+
+	if (item_movement_transaction_player_busy(ch))
+	{
+		persistence_alert(AVATAR, "player_save", "death", "none", "none",
+				  "death_recovery_awaiting_corpse_items", "delay=%d",
+				  previous_delay * 2);
+		schedule_death_extract_retry(ch, previous_delay * 2);
 		return;
 	}
 
@@ -3036,6 +3054,14 @@ void die(P_char ch, P_char killer)
 	{
 		REMOVE_BIT(ch->specials.act2, PLR2_SPEC_TIMER);
 		GET_HIT(ch) = 1;
+		if (!CHAR_IN_ARENA(ch) && item_movement_transaction_player_busy(ch))
+		{
+			persistence_alert(AVATAR, "player_save", "death", "none", "none",
+					  "corpse_items_in_flight",
+					  "extract_refused=1 recovery_scheduled=1");
+			schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);
+			return;
+		}
 		if (!CHAR_IN_ARENA(ch) && !persistence_save_character_terminal(ch, RENT_DEATH))
 		{
 			persistence_alert(AVATAR, "player_save", "death", "none", "none",

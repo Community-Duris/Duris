@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""Regression test for item custody across a player death.
+
+make_corpse() hands the corpse's items over one asynchronous transaction at a
+time: submit_next_corpse_item() submits a single item and corpse_item_completion()
+submits the next when that one commits.  A completion is only published while the
+owner is still live (item_movement_transaction_handle_completions() looks the
+actor up by pid), so die() extracting the character mid-chain stranded the
+remaining items as active rows in item_current_owner while
+persistence_save_character_terminal() wrote an empty player_items.
+
+load_items() then compared the two on the next login, saw owned_count !=
+payload_count, and refused the character with "Sorry, I couldn't load that
+character!" (player_load_outcome::component_failure).
+
+The fix reuses the death-extract retry that already exists for failed terminal
+saves: while item_movement_transaction_player_busy() is true, the death is
+deferred instead of being saved and extracted, so the chain drains against a
+live character and the two sides stay in agreement.
+"""
+
+from pathlib import Path
+import re
+import sys
+
+from contract_text import contains, index
+
+ROOT = Path(__file__).resolve().parents[2]
+fight = (ROOT / "src" / "fight.c").read_text(encoding="utf-8", errors="replace")
+movement = (ROOT / "src" / "item_movement_transaction.c").read_text(
+    encoding="utf-8", errors="replace")
+repository = (ROOT / "src" / "player_load_repository.c").read_text(
+    encoding="utf-8", errors="replace")
+
+
+def body(text, signature):
+    """Return one function from its signature through its closing brace."""
+    start = index(text, signature)
+    depth = 0
+    opening = text.index("{", start)
+    for position in range(opening, len(text)):
+        if text[position] == "{":
+            depth += 1
+        elif text[position] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:position + 1]
+    raise AssertionError(f"unterminated function: {signature}")
+
+
+checks = []
+
+# The hazard this guards against: completions are addressed to a live pid.
+checks.append((
+    "completions are only published to a live owner",
+    contains(movement, "if (P_char actor = find_player_by_pid(found->second.actor_pid))")
+))
+checks.append((
+    "the corpse handoff is still a one-item-at-a-time chain",
+    contains(body(fight, "void corpse_item_completion("),
+             "(void)submit_next_corpse_item(character, corpse);")
+))
+checks.append((
+    "the login invariant that rejected the desynchronised character still holds",
+    contains(repository, "owned_count == payload_count")
+))
+
+die = body(fight, "void die(P_char ch, P_char killer)")
+checks.append((
+    "die() defers the death while corpse item transfers are in flight",
+    contains(die, "item_movement_transaction_player_busy(ch)") and
+    contains(die, 'persistence_alert(AVATAR, "player_save", "death", "none", "none",'
+                  '"corpse_items_in_flight",') and
+    contains(die, "schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL);")
+))
+checks.append((
+    "the deferral happens before the terminal save and the extraction",
+    die.index("item_movement_transaction_player_busy(ch)") <
+    die.index("persistence_save_character_terminal(ch, RENT_DEATH)")
+))
+
+# the forward declaration shares the name, so match through the opening brace.
+retry = body(fight, "static void event_death_extract_retry(P_char ch, P_char victim, "
+                    "P_obj obj, void *data)\n{")
+checks.append((
+    "the retry keeps waiting instead of saving over a pending transfer",
+    contains(retry, "item_movement_transaction_player_busy(ch)") and
+    retry.index("item_movement_transaction_player_busy(ch)") <
+    retry.index("persistence_save_character_terminal(ch, RENT_DEATH)")
+))
+checks.append((
+    "the retry still finishes the death once nothing is pending",
+    contains(retry, "extract_char(ch);") and
+    contains(retry, "persistence_save_character_terminal(ch, RENT_DEATH)")
+))
+
+failed = [name for name, ok in checks if not ok]
+for name, ok in checks:
+    print(f"[{'PASS' if ok else 'FAIL'}] {name}")
+
+if failed:
+    print("\nFailed regression checks:")
+    for name in failed:
+        print(f"- {name}")
+    sys.exit(1)
+
+print("\nAll death item custody checks passed successfully.")

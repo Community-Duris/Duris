@@ -43,6 +43,15 @@ static int websocket_address_is_loopback(const char *address)
 	return address && (!strcmp(address, "127.0.0.1") || !strcmp(address, "::1"));
 }
 
+/*
+ * Loopback is the safe default: an unset listener address used to abort
+ * websocket_init() outright, which silently cost every deployment that
+ * configured only a port its WebSocket listener.  Binding 127.0.0.1 is
+ * strictly narrower than the telnet listener's unset default (in6addr_any)
+ * and still satisfies the production loopback requirement below.
+ */
+#define WEBSOCKET_DEFAULT_LISTEN_ADDRESS "127.0.0.1"
+
 static int websocket_listener_address(sockaddr_in6 *address, const char **configured)
 {
 	const char *value = getenv("DURIS_WEBSOCKET_LISTEN_ADDRESS");
@@ -50,7 +59,9 @@ static int websocket_listener_address(sockaddr_in6 *address, const char **config
 
 	if (!value || !*value)
 		value = getenv("LISTEN_ADDRESS");
-	if (!value || !*value || !address)
+	if (!value || !*value)
+		value = WEBSOCKET_DEFAULT_LISTEN_ADDRESS;
+	if (!address)
 		return 0;
 	memset(address, 0, sizeof(*address));
 	address->sin6_family = AF_INET6;
