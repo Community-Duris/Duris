@@ -2196,6 +2196,140 @@ void boon_shop(P_char ch, char *argument)
 	}
 }
 
+struct flat_boon_display_filters
+{
+	bool active = false;
+	bool inactive = false;
+	bool random = false;
+	bool manual = false;
+	std::vector<uint32_t> player_ids;
+	std::vector<std::string> authors;
+	std::vector<uint8_t> types;
+	std::vector<uint8_t> options;
+};
+
+static bool boon_like_match(const std::string &value, const std::string &pattern)
+{
+	size_t value_at = 0, pattern_at = 0;
+	size_t wildcard = std::string::npos, retry = 0;
+	while (value_at < value.size())
+	{
+		if (pattern_at < pattern.size() &&
+		    (pattern[pattern_at] == '_' ||
+		     LOWER(pattern[pattern_at]) == LOWER(value[value_at])))
+		{
+			++value_at;
+			++pattern_at;
+		}
+		else if (pattern_at < pattern.size() && pattern[pattern_at] == '%')
+		{
+			wildcard = pattern_at++;
+			retry = value_at;
+		}
+		else if (wildcard != std::string::npos)
+		{
+			pattern_at = wildcard + 1;
+			value_at = ++retry;
+		}
+		else
+			return false;
+	}
+	while (pattern_at < pattern.size() && pattern[pattern_at] == '%')
+		++pattern_at;
+	return pattern_at == pattern.size();
+}
+
+template <typename T>
+static bool boon_filter_contains(const std::vector<T> &values, const T &candidate)
+{
+	return values.empty() || std::find(values.begin(), values.end(), candidate) != values.end();
+}
+
+static int boon_display_flat(P_char ch, const flat_boon_display_filters &filters)
+{
+	const char *root = flat_boon_root();
+	if (!root)
+		return -1;
+	std::vector<flatfile_boon_definition> definitions;
+	std::string error;
+	if (flatfile_boon_load_definitions(root, &definitions, &error) != flatfile_boon_result::ok)
+		return -1;
+	if (IS_TRUSTED(ch))
+		send_to_char_f(ch,
+			       "&+C%-6s   %-10s %-8s %-7s %-6s %-9s %9s %9s %10s %7s %-10s&n\r\n",
+			       "ID", "Random", "Duration", "Racewar", "Type", "Option", "Criteria",
+			       "Criteria2", "Bonus", "Bonus2", "Assigned");
+	else
+		send_to_char_f(ch, "&+C%-6s   %-8s %-7s %-7s %-9s %10s&n\r\n", "ID", "Duration",
+			       "Racewar", "Type", "Option", "Reward");
+	int count = 0;
+	for (const auto &definition : definitions)
+	{
+		const bool active_match = (!filters.active && !filters.inactive) ||
+					  (filters.active && definition.active) ||
+					  (filters.inactive && !definition.active);
+		const bool mode_match = (!filters.manual && !filters.random) ||
+					(filters.manual && !definition.random) ||
+					(filters.random && definition.random);
+		const bool author_match =
+			filters.authors.empty() ||
+			std::any_of(filters.authors.begin(), filters.authors.end(),
+				    [&](const auto &pattern)
+				    { return boon_like_match(definition.author, pattern); });
+		if (!active_match || !mode_match || !author_match ||
+		    !boon_filter_contains(filters.player_ids, definition.target_pid) ||
+		    !boon_filter_contains(filters.types, definition.type) ||
+		    !boon_filter_contains(filters.options, definition.option) ||
+		    (!IS_TRUSTED(ch) &&
+		     ((definition.racewar && definition.racewar != GET_RACEWAR(ch)) ||
+		      (definition.target_pid &&
+		       definition.target_pid != static_cast<uint32_t>(GET_PID(ch))))))
+			continue;
+		BoonData boon;
+		if (!copy_flat_boon_definition(definition, &boon))
+			continue;
+		char duration[MAX_STRING_LENGTH];
+		if (boon.duration == -1)
+			snprintf(duration, sizeof(duration), "%-8s", "Forever");
+		else
+		{
+			const time_info_data remaining =
+				real_time_countdown(time(nullptr), boon.time, boon.duration * 60);
+			snprintf(duration, sizeof(duration), "%2d:%02d:%02d",
+				 remaining.day * 24 + remaining.hour, remaining.minute,
+				 remaining.second);
+		}
+		const char *racewar = "Unknown";
+		if (!boon.racewar)
+			racewar = "All";
+		else if (boon.racewar == RACEWAR_GOOD)
+			racewar = "Good";
+		else if (boon.racewar == RACEWAR_EVIL)
+			racewar = "Evil";
+		else if (boon.racewar == RACEWAR_UNDEAD)
+			racewar = "Undead";
+		else if (boon.racewar == RACEWAR_NEUTRAL)
+			racewar = "Neutral";
+		const char *assigned = boon.pid ? get_player_name_from_pid(boon.pid) : "";
+		if (IS_TRUSTED(ch))
+			send_to_char_f(
+				ch,
+				"%-6d %s %-10s %-8s %-7s %-6s %-9s %9.2f %9.2f %10.2f %7.2f %-10s&n\r\n",
+				boon.id, boon.repeat ? "R" : " ",
+				boon.random ? "Yes" : boon.author.c_str(), duration, racewar,
+				boon_types[boon.type].type, boon_options[boon.option].option,
+				boon.criteria, boon.criteria2, boon.bonus, boon.bonus2, assigned);
+		else
+			send_to_char_f(ch, "%-6d %s %-8s %-7s %-7s %-9s %10.2f&n\r\n", boon.id,
+				       boon.repeat ? "R" : " ", duration, racewar,
+				       boon_types[boon.type].type, boon_options[boon.option].option,
+				       boon.bonus);
+		++count;
+	}
+	send_to_char_f(ch, "Displaying %d result(s).\r\n", count);
+	return count ? TRUE : FALSE;
+}
+
 int boon_display(P_char ch, char *argument)
 {
 	char arg[MAX_STRING_LENGTH];
@@ -2207,6 +2341,7 @@ int boon_display(P_char ch, char *argument)
 	int active = 0, inactive = 0, random = 0, manual = 0;
 	char name[MAX_STRING_LENGTH], type[MAX_STRING_LENGTH], option[MAX_STRING_LENGTH];
 	char player[MAX_STRING_LENGTH], pname[MAX_STRING_LENGTH];
+	flat_boon_display_filters flat_filters;
 
 	*name = *type = *option = *pname = *player = '\0';
 
@@ -2233,6 +2368,7 @@ int boon_display(P_char ch, char *argument)
 						 "OR pid = '%d' ", pid);
 			else
 				snprintf(player, MAX_STRING_LENGTH, "pid = '%d' ", pid);
+			flat_filters.player_ids.push_back(static_cast<uint32_t>(pid));
 			break;
 		}
 		case 'u':
@@ -2244,6 +2380,7 @@ int boon_display(P_char ch, char *argument)
 						 "OR author LIKE '%s' ", arg);
 			else
 				checked_snprintf(name, MAX_STRING_LENGTH, "author LIKE '%s' ", arg);
+			flat_filters.authors.emplace_back(arg);
 			break;
 		}
 		case 't':
@@ -2259,14 +2396,15 @@ int boon_display(P_char ch, char *argument)
 			}
 			else
 			{
+				const int boon_type = get_valid_boon_type(arg);
 				if (*type)
 					checked_snprintf(type + strlen(type),
 							 MAX_STRING_LENGTH - strlen(type),
-							 "OR type = '%d' ",
-							 get_valid_boon_type(arg));
+							 "OR type = '%d' ", boon_type);
 				else
 					snprintf(type, MAX_STRING_LENGTH, "type = '%d' ",
-						 get_valid_boon_type(arg));
+						 boon_type);
+				flat_filters.types.push_back(static_cast<uint8_t>(boon_type));
 			}
 			break;
 		}
@@ -2284,14 +2422,15 @@ int boon_display(P_char ch, char *argument)
 			}
 			else
 			{
+				const int boon_option = get_valid_boon_option(arg);
 				if (*option)
 					checked_snprintf(option + strlen(option),
 							 MAX_STRING_LENGTH - strlen(option),
-							 "OR opt = '%d' ",
-							 get_valid_boon_option(arg));
+							 "OR opt = '%d' ", boon_option);
 				else
 					snprintf(option, MAX_STRING_LENGTH, "opt = '%d' ",
-						 get_valid_boon_option(arg));
+						 boon_option);
+				flat_filters.options.push_back(static_cast<uint8_t>(boon_option));
 			}
 			break;
 		}
@@ -2338,6 +2477,10 @@ int boon_display(P_char ch, char *argument)
 		random = 1;
 		manual = 1;
 	}
+	flat_filters.active = active;
+	flat_filters.inactive = inactive;
+	flat_filters.random = random;
+	flat_filters.manual = manual;
 
 	// debug("active: %d, inactive: %d, random: %d, manual: %d", active, inactive, random, manual);
 	// debug("name: %s, type: %s, option: %s", name, type, option);
@@ -2345,6 +2488,8 @@ int boon_display(P_char ch, char *argument)
 	send_to_char(
 		"&+WThe Gods of Duris have given you and your allies the following boons:&n\r\n",
 		ch);
+	if (flat_boon_root())
+		return boon_display_flat(ch, flat_filters);
 	// zone_table[zone_count].number = zone number
 	// pad_ansi(zone_table[zone_count].name, 45].c_str() = zone name
 	// zone_table[zone_count].avg_mob_level = way to find out range of zone

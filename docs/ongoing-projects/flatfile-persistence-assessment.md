@@ -1165,6 +1165,35 @@ sections below continue to describe the required end state.
   renderer consumes either SQL rows or flat definitions without duplicating presentation
   logic. Then implement typed, ledgered shop spending.
 
+### Checkpoint 35 - client-free boon list command
+
+- **Completed:** `boon list` now branches to the canonical definition projection before
+  constructing or issuing its SQL query in flat-primary mode. The adapter preserves the
+  default active/manual/random selection and the full explicit filter set: active,
+  inactive, manual, random, author `LIKE` patterns, type, option, assigned player,
+  racewar visibility, and trusted-player visibility.
+- **Completed:** author matching implements bounded, case-insensitive SQL-style `%` and
+  `_` wildcards without recursive backtracking. Definition/type/option/player filters use
+  typed vectors rather than constructing query fragments. Results remain ID ordered and
+  report the same result count contract.
+- **Completed:** flat trusted output exposes all canonical definition columns, assignment,
+  repeat marker, and remaining duration. Mortal output exposes the qualifying definition's
+  duration, racewar, type, option, and reward amount without leaking definitions assigned
+  to other players or racewar sides. MariaDB-primary retains the existing detailed
+  natural-language renderer unchanged.
+- **Checks passed:** the source-contract suite verifies flat-before-SQL routing and every
+  filter/visibility input; the normal strict build, isolated client-free build/boot
+  preflight, formatting, and diff checks pass.
+- **Files changed:** `src/boon.c`, the focused boon source-contract test, and this handoff
+  ledger.
+- **Remaining boon gap:** flat mortal list rows are intentionally concise and do not yet
+  share the MariaDB renderer's zone/mob/item/spell natural-language expansion. Typed shop
+  spending and exactly-once reward effect publication remain higher-risk gaps; the random
+  boon implementation is disabled in both backends.
+- **Next action:** implement operation-ID-ledgered boon shop spending with a durable player
+  stat after-image, then return to a shared presentation-only row formatter. Do not make
+  shop points durable separately from the selected player stat mutation.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

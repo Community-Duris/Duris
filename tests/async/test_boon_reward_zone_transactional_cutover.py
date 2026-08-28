@@ -184,6 +184,35 @@ class BoonRewardZoneCutoverTests(unittest.TestCase):
             maintenance.index('qry("SELECT id FROM boons'),
         )
 
+    def test_flat_boon_display_routes_before_sql_with_all_filters(self):
+        boon = (SRC / "boon.c").read_text()
+        start = boon.index("int boon_display(P_char")
+        end = boon.index("int create_boon(BoonData", start)
+        display = boon[start:end]
+        self.assertLess(display.index("boon_display_flat"), display.index("qry(dbqry)"))
+        for token in (
+            "flat_filters.player_ids",
+            "flat_filters.authors",
+            "flat_filters.types",
+            "flat_filters.options",
+            "flat_filters.active",
+            "flat_filters.inactive",
+            "flat_filters.random",
+            "flat_filters.manual",
+        ):
+            self.assertIn(token, display)
+
+        flat_start = boon.index("static int boon_display_flat")
+        flat_display = boon[flat_start:start]
+        for token in (
+            "flatfile_boon_load_definitions",
+            "boon_like_match",
+            "definition.target_pid",
+            "definition.racewar",
+            "Displaying %d result(s)",
+        ):
+            self.assertIn(token, flat_display)
+
     def test_account_bound_reward_boundary_remains_covered(self):
         contracts = "\n".join((ROOT / path).read_text() for path in (
             "tests/async/test_account_bound_reward_contract.py",
