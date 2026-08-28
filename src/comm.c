@@ -94,6 +94,7 @@
 #include "critical_command_coordinator.h"
 #include "critical_command_repository.h"
 #include "critical_outbox.h"
+#include "corpse_lifecycle_transaction.h"
 #include "currency_transaction.h"
 #include "item_movement_transaction.h"
 #include "shop_trade_transaction.h"
@@ -222,6 +223,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 {
 	epic_transaction_handle_completions(completions, count);
 	currency_transaction_handle_completions(completions, count);
+	corpse_lifecycle_transaction_handle_completions(completions, count);
 	item_movement_transaction_handle_completions(completions, count);
 	shop_trade_transaction_handle_completions(completions, count);
 	auction_transaction_handle_completions(completions, count);
@@ -1592,6 +1594,7 @@ resume_game_loop:
 			gmcp_flush_dirty_ship_info();
 			flush_pending_ship_saves();
 			locker_async_pulse();
+			corpse_lifecycle_transaction_pulse();
 			critical_completion critical_completions[64] = {};
 			const size_t critical_completion_count =
 				critical_command_coordinator_pulse(critical_completions, 64);

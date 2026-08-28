@@ -2787,6 +2787,43 @@ sections below continue to describe the required end state.
   money, and durable contents during flat load. Follow that with the room aggregate needed for atomic
   non-empty decay and extraction.
 
+### Checkpoint 87 - live corpse lifecycle and authoritative restart restore
+
+- **Revision-aware live routing:** flat-primary `writeCorpse` now captures room or carrier-room
+  placement, weight, values, identity strings, and recursively aggregated money, then stages a
+  corpse-lifecycle command instead of calling SQL. The bounded runtime tracks each stable PID/save-ID
+  corpse revision, coalesces repeated saves, waits behind item-transfer entity fences, and defers
+  removal until the next pulse so an ordinary `obj_from_room`/`obj_to_room` relocation becomes one
+  upsert rather than a transient durable delete. MariaDB modes retain their existing SQL routes.
+- **Cross-command revision handoff:** item-transfer results now include the corpse aggregate revision
+  produced by the atomic world mutation. The result codec accepts historical 40-byte results and
+  writes the new 48-byte form. Item ownership catalog version 2 persists that completion field while
+  retaining version 1 decoding. Death and loot completion callbacks publish the revision before
+  their follow-up corpse save, preventing stale lifecycle compare-and-swap submissions.
+- **Authoritative boot restore:** flat boot lists the version 2 world catalog, reconciles every corpse
+  snapshot UID/vnum/root/parent against the item ownership authority, and refuses missing or
+  contradictory custody. A detached item materializer restores exact nested object state, including
+  dynamic object affects, without attaching it to a character. Restore rebuilds corpse metadata,
+  identity, money, durable contents, placement, decay protection, ownership revisions, and lifecycle
+  revisions; unknown rooms/prototypes, malformed topology, or publication failures stop boot.
+- **Transport/storage normalization:** live item snapshots use inventory slot zero while corpse
+  authority stores detached slot `-1`. The world preparer now canonicalizes both forms before
+  creation or loot comparison, so real live captures round-trip while existing durable catalogs stay
+  canonical.
+- **Checks passed:** lifecycle transaction/coalescing, corpse command/repository, cross-authority
+  ownership reconciliation, restore publication, live source routing, item result/catalog backward
+  compatibility, world-item transport normalization, nested materialization, dynamic affects,
+  critical-command ordering/replay, and existing corpse/item movement contracts. Changed-line
+  formatting, `git diff --check`, the strict normal C++20 server build, and the isolated client-free
+  build/boot preflight pass.
+- **Exposure:** non-empty corpse decay or destructive extraction still refuses durable removal because
+  no revisioned room aggregate can receive its items and money atomically. The retained corpse
+  authority survives for restart recovery instead of discarding custody. Remaining unimplemented
+  domains continue to keep the flat-primary boot blocker in place.
+- **Next action:** implement the room aggregate and compose corpse-to-room item/money transfer with
+  corpse removal for non-empty decay/extraction, then route saved floor-item live save and restore
+  through that same world authority.
+
 ### Milestone status
 
 | Milestone | State | Evidence |

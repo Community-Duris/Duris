@@ -32,6 +32,7 @@
 #include "tradeskill.h"
 #include "crafting.h"
 #include "vnum.obj.h"
+#include "corpse_lifecycle_transaction.h"
 #include "item_movement_transaction.h"
 #include "item_ownership_runtime.h"
 #include "storage_lockers.h"
@@ -236,8 +237,8 @@ P_char find_live_player_pid(uint32_t pid)
 	return NULL;
 }
 
-void item_get_completion(P_char actor, bool committed, const item_transfer_result &, unsigned int,
-			 const uint8_t *encoded, size_t encoded_size)
+void item_get_completion(P_char actor, bool committed, const item_transfer_result &result,
+			 unsigned int, const uint8_t *encoded, size_t encoded_size)
 {
 	get_movement_context context = {};
 	const bool context_valid = encoded && encoded_size == sizeof(context);
@@ -279,6 +280,14 @@ void item_get_completion(P_char actor, bool committed, const item_transfer_resul
 			cancel_bulk_get(actor);
 		return;
 	}
+	if (container && container->type == ITEM_CORPSE &&
+	    IS_SET(container->value[CORPSE_FLAGS], PC_CORPSE) && result.corpse_revision &&
+	    !corpse_lifecycle_transaction_note_item_transfer(
+		    static_cast<uint32_t>(container->value[CORPSE_PID]),
+		    static_cast<uint32_t>(container->value[CORPSE_SAVEID]), result.corpse_revision))
+		persistence_alert(AVATAR, "corpse", "revision_publish", "none", "none",
+				  "runtime_rejected", "save_id=%d",
+				  container->value[CORPSE_SAVEID]);
 	item_get_ack_publication = true;
 	get(actor, object, container, context.showit);
 	item_get_ack_publication = false;

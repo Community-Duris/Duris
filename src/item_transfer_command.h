@@ -21,7 +21,8 @@ constexpr size_t ITEM_TRANSFER_CORPSE_NAME_MAX_BYTES = 255;
 constexpr size_t ITEM_TRANSFER_CORPSE_SHORT_DESCRIPTION_MAX_BYTES = 512;
 constexpr size_t ITEM_TRANSFER_CORPSE_DESCRIPTION_MAX_BYTES = 64 * 1024;
 constexpr size_t ITEM_TRANSFER_CORPSE_KEYWORDS_MAX_BYTES = 512;
-constexpr size_t ITEM_TRANSFER_RESULT_BYTES = 40;
+constexpr size_t ITEM_TRANSFER_LEGACY_RESULT_BYTES = 40;
+constexpr size_t ITEM_TRANSFER_RESULT_BYTES = 48;
 constexpr uint64_t ITEM_TRANSFER_ABSENT_REVISION = UINT64_MAX;
 
 enum class item_owner_type : uint8_t
@@ -124,6 +125,7 @@ struct item_transfer_result
 	uint64_t from_owner_revision;
 	uint64_t to_owner_revision;
 	uint64_t max_item_revision;
+	uint64_t corpse_revision;
 };
 
 bool item_owner_identity_valid(const item_owner_identity &owner);

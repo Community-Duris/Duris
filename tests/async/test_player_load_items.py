@@ -61,6 +61,12 @@ void release_tree(P_obj object)
         std::free(description->description);
         std::free(description);
     }
+    while (object->affects)
+    {
+        obj_affect *affect = object->affects;
+        object->affects = affect->next;
+        std::free(affect);
+    }
     ++extracts;
     std::free(object);
 }
@@ -324,6 +330,23 @@ void balance_affects(P_char)
     ++balance_calls;
 }
 
+void set_obj_affected_extra(P_obj object, int, sh_int type, sh_int data, ulong extra2)
+{
+    obj_affect *affect = static_cast<obj_affect *>(std::calloc(1, sizeof(obj_affect)));
+    assert(affect);
+    affect->type = type;
+    affect->data = data;
+    affect->extra2 = extra2;
+    affect->next = object->affects;
+    object->affects = affect;
+    object->extra2_flags |= extra2;
+}
+
+void set_obj_affected(P_obj object, int time, sh_int type, sh_int data)
+{
+    set_obj_affected_extra(object, time, type, data, 0);
+}
+
 void act(const char *, int, P_char, P_obj, void *, int)
 {
 }
@@ -467,12 +490,6 @@ int main()
         result.snapshot.items[0].craftsmanship = 8;
         player_load_item_materialize_metrics metrics = {};
         result.snapshot.items[0].dynamic_affects.push_back({1, 2, 3});
-        assert(!player_load_item_graph_materialize_for_owner(
-            &owner.character, result.snapshot.items, result.item_identities, shopkeeper,
-            result.item_owner_revision, true, true, &metrics));
-        assert(metrics.outcome == player_load_item_materialize_outcome::invalid_snapshot);
-        assert(!owner.character.carrying && item_ownership_runtime_size() == 0);
-        result.snapshot.items[0].dynamic_affects.clear();
         assert(player_load_item_graph_materialize_for_owner(
             &owner.character, result.snapshot.items, result.item_identities, shopkeeper,
             result.item_owner_revision, true, true, &metrics));
@@ -481,11 +498,51 @@ int main()
         assert(owner.character.carrying->anti2_flags == 6);
         assert(owner.character.carrying->extra2_flags == 7);
         assert(owner.character.carrying->craftsmanship == 8);
+        assert(owner.character.carrying->affects &&
+               owner.character.carrying->affects->type == 1 &&
+               owner.character.carrying->affects->data == 2 &&
+               owner.character.carrying->affects->extra2 == 3);
         item_ownership_runtime_entry entry = {};
         assert(item_ownership_runtime_lookup(10, &entry));
         assert(item_owner_identity_equal(entry.owner, shopkeeper));
         assert(metrics.outcome == player_load_item_materialize_outcome::applied);
         release_tree(owner.character.carrying);
+    }
+
+    {
+        reset_test_state();
+        player_load_result result = base_result();
+        add_item(result, 1, 30, 100, PLAYER_SNAPSHOT_NO_PARENT, -1);
+        add_item(result, 2, 31, 101, 0, -1);
+        result.snapshot.items[1].dynamic_affects.push_back({17, 8, 32});
+        const item_owner_identity corpse = {
+            item_owner_type::corpse, (static_cast<uint64_t>(42) << 32) | 20, 0
+        };
+        for (auto &identity : result.item_identities)
+            identity.owner = corpse;
+        std::vector<P_obj> roots;
+        player_load_item_materialize_metrics metrics = {};
+        assert(player_load_item_graph_materialize_detached(
+            result.snapshot.items, result.item_identities, corpse,
+            result.item_owner_revision, true, true, &roots, &metrics));
+        assert(roots.size() == 1 && roots[0]->obj_uid == 30 &&
+               roots[0]->loc_p == LOC_NOWHERE && roots[0]->contains &&
+               roots[0]->contains->obj_uid == 31 && roots[0]->contains->affects &&
+               roots[0]->contains->affects->type == 17 &&
+               roots[0]->contains->affects->extra2 == 32);
+        item_ownership_runtime_entry entry = {};
+        assert(item_ownership_runtime_lookup(31, &entry));
+        assert(item_owner_identity_equal(entry.owner, corpse));
+        release_tree(roots[0]);
+
+        reset_test_state();
+        result.snapshot.items[0].equipment_slot = 0;
+        roots.clear();
+        assert(!player_load_item_graph_materialize_detached(
+            result.snapshot.items, result.item_identities, corpse,
+            result.item_owner_revision, true, true, &roots, &metrics));
+        assert(roots.empty() && metrics.outcome ==
+               player_load_item_materialize_outcome::invalid_snapshot);
     }
 
     auto invalid = [](player_load_result result) {

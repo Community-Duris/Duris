@@ -27,7 +27,8 @@
 
 namespace
 {
-constexpr uint32_t ownership_format_version = 1;
+constexpr uint32_t ownership_format_version = 2;
+constexpr uint32_t ownership_legacy_format_version = 1;
 constexpr std::array<uint8_t, 8> ownership_magic = { 'D', 'U', 'R', 'O', 'W', 'N', 0, 0 };
 constexpr size_t ownership_maximum_bytes = 128 * 1024 * 1024;
 constexpr size_t ownership_maximum_entries = 262144;
@@ -254,6 +255,7 @@ bool encode_catalog(const ownership_catalog &catalog, uint64_t revision,
 		payload.number(entry.result.from_owner_revision);
 		payload.number(entry.result.to_owner_revision);
 		payload.number(entry.result.max_item_revision);
+		payload.number(entry.result.corpse_revision);
 	}
 	if (!payload.valid || payload.bytes.size() > ownership_maximum_bytes)
 		return false;
@@ -327,8 +329,9 @@ flatfile_item_repository_result decode_catalog(const std::vector<uint8_t> &bytes
 	uint32_t version = 0, payload_size = 0;
 	uint64_t revision = 0;
 	if (!header.number(&version) || !header.number(&payload_size) ||
-	    !header.number(&revision) || version != ownership_format_version || !revision ||
-	    payload_size != bytes.size() - header_size)
+	    !header.number(&revision) ||
+	    (version != ownership_format_version && version != ownership_legacy_format_version) ||
+	    !revision || payload_size != bytes.size() - header_size)
 		return flatfile_item_repository_result::invalid;
 	const uint8_t *stored_digest =
 		bytes.data() + ownership_magic.size() + sizeof(uint32_t) * 2 + sizeof(uint64_t);
@@ -385,7 +388,9 @@ flatfile_item_repository_result decode_catalog(const std::vector<uint8_t> &bytes
 		    !input.number(&entry.result.item_count) ||
 		    !input.number(&entry.result.from_owner_revision) ||
 		    !input.number(&entry.result.to_owner_revision) ||
-		    !input.number(&entry.result.max_item_revision))
+		    !input.number(&entry.result.max_item_revision) ||
+		    (version >= ownership_format_version &&
+		     !input.number(&entry.result.corpse_revision)))
 			return flatfile_item_repository_result::invalid;
 	}
 	if (input.offset != input.size || !valid_catalog(decoded))
@@ -417,11 +422,12 @@ flatfile_item_repository_result load_catalog(const std::string &root, ownership_
 critical_apply_result make_result(critical_apply_outcome outcome, unsigned int error_code,
 				  const item_transfer_result &result)
 {
-	critical_apply_result applied = { outcome,
-					  std::max({ result.from_owner_revision,
-						     result.to_owner_revision,
-						     result.max_item_revision }),
-					  error_code };
+	critical_apply_result applied = {
+		outcome,
+		std::max({ result.from_owner_revision, result.to_owner_revision,
+			   result.max_item_revision, result.corpse_revision }),
+		error_code
+	};
 	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> encoded = {};
 	if (!item_transfer_command_encode_result(result, &encoded))
 		return { critical_apply_outcome::terminal_failure, 0, EBADMSG };
@@ -551,8 +557,12 @@ unsigned int apply_transfer(ownership_catalog *catalog, const item_transfer_payl
 	if (!from_owner || !to_owner)
 		return EILSEQ;
 	const bool same_owner = item_owner_identity_equal(payload.from_owner, payload.to_owner);
-	*result = { payload.selected_item_uid, payload.item_count, from_owner->revision,
-		    to_owner->revision, 0 };
+	*result = { payload.selected_item_uid,
+		    payload.item_count,
+		    from_owner->revision,
+		    to_owner->revision,
+		    0,
+		    0 };
 	if (from_owner->revision != payload.expected_from_revision ||
 	    to_owner->revision != payload.expected_to_revision)
 		return ESTALE;
@@ -1312,8 +1322,12 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		}
 		const owner_state *from = find_owner(&catalog, payload.from_owner);
 		const owner_state *to = find_owner(&catalog, payload.to_owner);
-		result = { payload.selected_item_uid, payload.item_count, from ? from->revision : 0,
-			   to ? to->revision : 0, 0 };
+		result = { payload.selected_item_uid,
+			   payload.item_count,
+			   from ? from->revision : 0,
+			   to ? to->revision : 0,
+			   0,
+			   0 };
 		result_code = EOPNOTSUPP;
 	}
 	if (!result_code && command.payload_version == ITEM_TRANSFER_EXACT_PAYLOAD_VERSION &&
@@ -1335,8 +1349,12 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 			}
 			const owner_state *from = find_owner(&catalog, payload.from_owner);
 			const owner_state *to = find_owner(&catalog, payload.to_owner);
-			result = { payload.selected_item_uid, payload.item_count,
-				   from ? from->revision : 0, to ? to->revision : 0, 0 };
+			result = { payload.selected_item_uid,
+				   payload.item_count,
+				   from ? from->revision : 0,
+				   to ? to->revision : 0,
+				   0,
+				   0 };
 			result_code = EOPNOTSUPP;
 		}
 		else if (artifacts != flatfile_artifact_result::ok &&
@@ -1359,9 +1377,6 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 	{
 		return { critical_apply_outcome::retryable_failure, catalog.revision, ENOMEM };
 	}
-	std::vector<uint8_t> encoded;
-	if (!encode_catalog(candidate, catalog.revision + 1, &encoded))
-		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
 	flatfile_shop_trade_materialization_mutation materialization;
 	flatfile_locker_transfer_mutation locker;
 	flatfile_corpse_transfer_mutation corpse;
@@ -1410,6 +1425,8 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 					    corpse.created))
 			return { critical_apply_outcome::terminal_failure, catalog.revision,
 				 EILSEQ };
+		result.corpse_revision = corpse.corpse_revision;
+		candidate.operations.back().result = result;
 		include_corpse = true;
 	}
 	bool include_corpse_artifacts = false;
@@ -1450,6 +1467,9 @@ critical_apply_result flatfile_item_repository_apply(const std::string &root,
 		include_materialization = prepared ==
 					  flatfile_shop_trade_materialization_result::ok;
 	}
+	std::vector<uint8_t> encoded;
+	if (!encode_catalog(candidate, catalog.revision + 1, &encoded))
+		return { critical_apply_outcome::terminal_failure, catalog.revision, ENOSPC };
 	std::vector<flatfile_authority_after_image> images;
 	try
 	{

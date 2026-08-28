@@ -598,17 +598,24 @@ bool item_transfer_command_encode_result(const item_transfer_result &result,
 	put_u64(encoded->data() + 16, result.from_owner_revision);
 	put_u64(encoded->data() + 24, result.to_owner_revision);
 	put_u64(encoded->data() + 32, result.max_item_revision);
+	put_u64(encoded->data() + 40, result.corpse_revision);
 	return true;
 }
 
 bool item_transfer_command_decode_result(const uint8_t *encoded, size_t size,
 					 item_transfer_result *result)
 {
-	if (!encoded || size != ITEM_TRANSFER_RESULT_BYTES || !result || encoded[10] ||
-	    encoded[11] || encoded[12] || encoded[13] || encoded[14] || encoded[15])
+	if (!encoded ||
+	    (size != ITEM_TRANSFER_RESULT_BYTES && size != ITEM_TRANSFER_LEGACY_RESULT_BYTES) ||
+	    !result || encoded[10] || encoded[11] || encoded[12] || encoded[13] || encoded[14] ||
+	    encoded[15])
 		return false;
-	*result = { get_u64(encoded), get_u16(encoded + 8), get_u64(encoded + 16),
-		    get_u64(encoded + 24), get_u64(encoded + 32) };
+	*result = { get_u64(encoded),
+		    get_u16(encoded + 8),
+		    get_u64(encoded + 16),
+		    get_u64(encoded + 24),
+		    get_u64(encoded + 32),
+		    size == ITEM_TRANSFER_RESULT_BYTES ? get_u64(encoded + 40) : 0 };
 	return result->root_item_uid && result->item_count &&
 	       result->item_count <= ITEM_TRANSFER_MAX_ITEMS;
 }

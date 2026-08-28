@@ -15,6 +15,15 @@ HARNESS = r'''
 
 int main()
 {
+	const item_transfer_result extended = { 100, 1, 11, 1, 6, 7 };
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> encoded = {};
+	assert(item_transfer_command_encode_result(extended, &encoded));
+	item_transfer_result decoded = {};
+	assert(item_transfer_command_decode_result(encoded.data(), encoded.size(), &decoded));
+	assert(decoded.corpse_revision == 7);
+	assert(item_transfer_command_decode_result(encoded.data(),
+					   ITEM_TRANSFER_LEGACY_RESULT_BYTES, &decoded));
+	assert(decoded.corpse_revision == 0 && decoded.max_item_revision == 6);
 	item_ownership_runtime_reset();
 	const item_owner_identity player = { item_owner_type::player, 42, 0 };
 	const item_owner_identity room = { item_owner_type::room, 1200, 0 };
@@ -31,7 +40,7 @@ int main()
 	move.target_root_item_uid = 100;
 	move.item_count = 1;
 	move.items[0] = { 100, 100, 0, 5, 7, item_custody_state::active };
-	const item_transfer_result committed = { 100, 1, 11, 1, 6 };
+	const item_transfer_result committed = { 100, 1, 11, 1, 6, 0 };
 	assert(item_ownership_runtime_apply(move, committed));
 
 	item_ownership_runtime_entry untouched = {};
@@ -54,7 +63,7 @@ int main()
 	creation.item_count = 1;
 	creation.items[0] = { 200, 200, 0, ITEM_TRANSFER_ABSENT_REVISION, 9,
 			      item_custody_state::absent };
-	assert(item_ownership_runtime_apply(creation, { 200, 1, 1, 12, 1 }));
+	assert(item_ownership_runtime_apply(creation, { 200, 1, 1, 12, 1, 0 }));
 	item_ownership_runtime_entry created = {};
 	assert(item_ownership_runtime_lookup(200, &created));
 	assert(created.root_item_uid == 101 && created.parent_item_uid == 101 &&
@@ -62,7 +71,7 @@ int main()
 	creation.selected_item_uid = 201;
 	creation.items[0].item_uid = 201;
 	creation.expected_target_parent_revision = 2;
-	assert(!item_ownership_runtime_apply(creation, { 201, 1, 2, 13, 1 }));
+	assert(!item_ownership_runtime_apply(creation, { 201, 1, 2, 13, 1, 0 }));
 
 	const item_ownership_runtime_entry stale = {
 		101, 101, 0, player, 3, 10, 8, item_custody_state::active

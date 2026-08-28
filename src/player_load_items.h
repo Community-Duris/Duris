@@ -8,6 +8,8 @@
 
 struct char_data;
 typedef struct char_data *P_char;
+struct obj_data;
+typedef struct obj_data *P_obj;
 
 enum class player_load_item_materialize_outcome : uint8_t
 {
@@ -41,6 +43,12 @@ bool player_load_item_graph_materialize_for_owner(
 	const std::vector<player_load_item_identity> &identities,
 	const item_owner_identity &expected_owner, uint64_t owner_revision, bool hydrate_ownership,
 	bool complete_snapshot_state, player_load_item_materialize_metrics *metrics);
+bool player_load_item_graph_materialize_detached(
+	const std::vector<player_item_snapshot> &items,
+	const std::vector<player_load_item_identity> &identities,
+	const item_owner_identity &expected_owner, uint64_t owner_revision, bool hydrate_ownership,
+	bool complete_snapshot_state, std::vector<P_obj> *roots,
+	player_load_item_materialize_metrics *metrics);
 void player_load_items_activate_equipment(P_char character);
 void player_load_items_discard(P_char character);
 

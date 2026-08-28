@@ -105,6 +105,7 @@ bool publish_ownership(const shop_trade_payload &payload, const shop_trade_resul
 				     buying  ? result.player_owner_revision :
 					       result.counterparty_owner_revision,
 		.max_item_revision = 0,
+		.corpse_revision = 0,
 	};
 	for (size_t index = 0; index < result.item_count; ++index)
 		transfer_result.max_item_revision =

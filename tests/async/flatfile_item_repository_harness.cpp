@@ -278,6 +278,22 @@ int main(int argc, char **argv)
 			flatfile_item_baseline_result::conflict,
 		"conflicting owner baseline was accepted");
 	{
+		std::fstream legacy(domains / "item_ownership",
+				    std::ios::in | std::ios::out | std::ios::binary);
+		require(legacy.good(), "could not open item catalog for v1 compatibility fixture");
+		const char version[] = { 1, 0, 0, 0 };
+		legacy.seekp(8);
+		legacy.write(version, sizeof(version));
+		legacy.close();
+		uint64_t legacy_revision = 0;
+		std::vector<flatfile_item_ownership_record> legacy_items;
+		require(flatfile_item_repository_load_owner(
+				root.string(), baseline_owner, &legacy_revision, &legacy_items,
+				&error) == flatfile_item_repository_result::ok &&
+				legacy_revision == 1 && legacy_items.size() == 2,
+			"v1 ownership catalog without operation results did not remain readable");
+	}
+	{
 		flatfile_authority_lock lock;
 		flatfile_authority_operation operation;
 		require(lock.acquire(root.string(), &error) &&
@@ -596,6 +612,8 @@ int main(int argc, char **argv)
 	applied = flatfile_item_repository_apply(root.string(), loot_command);
 	require(applied.outcome == critical_apply_outcome::already_applied,
 		"corpse loot did not recover exactly");
+	require(result_of(applied).corpse_revision == 5,
+		"corpse loot completion omitted the aggregate revision");
 	std::vector<flatfile_corpse_record> corpses;
 	std::vector<flatfile_saved_world_item_record> saved_items;
 	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
@@ -670,6 +688,8 @@ int main(int argc, char **argv)
 	applied = flatfile_item_repository_apply(root.string(), artifact_command);
 	require(applied.outcome == critical_apply_outcome::already_applied,
 		"contextual artifact loot did not recover all authority images");
+	require(result_of(applied).corpse_revision == 6,
+		"artifact loot completion omitted the aggregate revision");
 	items.clear();
 	require(flatfile_item_repository_load_owner(root.string(), corpse_owner, &owner_revision,
 						    &items, &error) ==
@@ -733,6 +753,8 @@ int main(int argc, char **argv)
 	applied = flatfile_item_repository_apply(root.string(), create_corpse_command);
 	require(applied.outcome == critical_apply_outcome::already_applied,
 		"first corpse creation transfer did not recover exactly");
+	require(result_of(applied).corpse_revision == 1,
+		"first corpse creation completion omitted the aggregate revision");
 	corpses.clear();
 	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
 				flatfile_world_item_result::ok &&
@@ -768,6 +790,8 @@ int main(int argc, char **argv)
 	applied = flatfile_item_repository_apply(root.string(), append_corpse_command);
 	require(applied.outcome == critical_apply_outcome::applied,
 		"subsequent corpse creation transfer did not apply");
+	require(result_of(applied).corpse_revision == 2,
+		"subsequent corpse creation completion omitted the aggregate revision");
 	corpses.clear();
 	require(flatfile_world_item_list(root.string(), &corpses, &saved_items, &error) ==
 				flatfile_world_item_result::ok &&

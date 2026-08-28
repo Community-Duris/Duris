@@ -457,6 +457,19 @@ bool payload_items_match(const item_transfer_payload &payload,
 			   [&](const auto &item) { return expected.contains(item.object_uid); });
 }
 
+bool canonicalize_detached_items(std::vector<player_item_snapshot> *items)
+{
+	if (!items)
+		return false;
+	for (auto &item : *items)
+	{
+		if (item.equipment_slot != 0 && item.equipment_slot != -1)
+			return false;
+		item.equipment_slot = -1;
+	}
+	return true;
+}
+
 void apply_corpse_metadata(flatfile_corpse_record *corpse, const item_corpse_metadata &metadata)
 {
 	corpse->owner_name = canonical_name(metadata.owner_name);
@@ -755,11 +768,16 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_transfer(
 					     &exact_items) != player_snapshot_codec_result::ok ||
 	    !payload_items_match(payload, exact_items))
 		return flatfile_world_item_result::invalid;
+	std::vector<uint8_t> transport_blob;
+	if (player_item_snapshot_list_encode(exact_items, &transport_blob) !=
+		    player_snapshot_codec_result::ok ||
+	    transport_blob.size() != payload.item_blob_size ||
+	    !std::equal(transport_blob.begin(), transport_blob.end(), payload.item_blob.begin()) ||
+	    !canonicalize_detached_items(&exact_items))
+		return flatfile_world_item_result::invalid;
 	std::vector<uint8_t> exact_blob;
 	if (player_item_snapshot_list_encode(exact_items, &exact_blob) !=
-		    player_snapshot_codec_result::ok ||
-	    exact_blob.size() != payload.item_blob_size ||
-	    !std::equal(exact_blob.begin(), exact_blob.end(), payload.item_blob.begin()))
+	    player_snapshot_codec_result::ok)
 		return flatfile_world_item_result::invalid;
 	world_item_catalog catalog;
 	const auto loaded = load_catalog(root, &catalog, error);

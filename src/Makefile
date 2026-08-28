@@ -233,6 +233,8 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_item_repository.o \
 				 flatfile_artifact_repository.o \
 				 flatfile_corpse_repository.o \
+				 flatfile_corpse_ownership.o \
+				 flatfile_corpse_restore.o \
 				 flatfile_association_repository.o \
 				 flatfile_locker_repository.o \
 				 flatfile_frag_leaderboard_repository.o \
@@ -252,6 +254,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_shop_trade_repository.o \
 				 flatfile_shop_trade_materialization.o \
 				 flatfile_world_item_repository.o \
+				 corpse_lifecycle_transaction.o \
 				 critical_command.o \
 				 critical_command_journal.o \
 				 critical_command_coordinator.o \

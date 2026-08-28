@@ -57,6 +57,7 @@
 #include "world_quest.h"
 #include "ws_handlers.h"
 #include "artifact_guild_transaction.h"
+#include "corpse_lifecycle_transaction.h"
 #include "item_movement_transaction.h"
 #include "item_ownership_runtime.h"
 #include "combat_outcome_transaction.h"
@@ -1483,7 +1484,7 @@ P_obj corpse_live_item(uint64_t uid)
 
 bool submit_next_corpse_item(P_char character, P_obj corpse);
 
-void corpse_item_completion(P_char character, bool committed, const item_transfer_result &,
+void corpse_item_completion(P_char character, bool committed, const item_transfer_result &result,
 			    unsigned int, const uint8_t *encoded, size_t encoded_size)
 {
 	if (!character || !encoded || encoded_size != sizeof(corpse_transfer_context))
@@ -1505,6 +1506,12 @@ void corpse_item_completion(P_char character, bool committed, const item_transfe
 				  "stale_live_topology", "item_uid=%llu", context.item_uid);
 		return;
 	}
+	if (result.corpse_revision &&
+	    !corpse_lifecycle_transaction_note_item_transfer(
+		    static_cast<uint32_t>(corpse->value[CORPSE_PID]),
+		    static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]), result.corpse_revision))
+		persistence_alert(AVATAR, "corpse", "revision_publish", "none", "none",
+				  "runtime_rejected", "save_id=%d", corpse->value[CORPSE_SAVEID]);
 	obj_from_char(item);
 	obj_to_obj(item, corpse);
 	mark_player_dirty_components(GET_PID(character), PLAYER_COMPONENT_STATUS |

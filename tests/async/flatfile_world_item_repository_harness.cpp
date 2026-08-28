@@ -210,8 +210,9 @@ int main(int argc, char **argv)
 	transfer.target_root_item_uid = 300;
 	transfer.item_count = 1;
 	transfer.items[0] = { 300, 300, 0, 1, 500, item_custody_state::active };
-	const std::vector<player_item_snapshot> transferred_items = { item(
-		300, PLAYER_SNAPSHOT_NO_PARENT, 500) };
+	std::vector<player_item_snapshot> transferred_items = { item(300, PLAYER_SNAPSHOT_NO_PARENT,
+								     500) };
+	transferred_items[0].equipment_slot = 0;
 	std::vector<uint8_t> transfer_blob;
 	require(player_item_snapshot_list_encode(transferred_items, &transfer_blob) ==
 			player_snapshot_codec_result::ok,
@@ -252,7 +253,8 @@ int main(int argc, char **argv)
 				flatfile_world_item_result::ok &&
 			corpses.size() == 1 && corpses[0].owner_name == "transferowner" &&
 			corpses[0].room_vnum == 900 && corpses[0].weight == 55 &&
-			corpses[0].items.size() == 1 && corpses[0].items[0].object_uid == 300,
+			corpses[0].items.size() == 1 && corpses[0].items[0].object_uid == 300 &&
+			corpses[0].items[0].equipment_slot == -1,
 		"first corpse transfer did not preserve metadata and item state");
 	transfer.from_owner = transfer.to_owner;
 	transfer.to_owner = { item_owner_type::player, 10, 0 };

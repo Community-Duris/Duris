@@ -20,7 +20,9 @@
 #include "assocs.h"
 #include "config.h"
 #include "deferred_save_policy.h"
+#include "corpse_lifecycle_transaction.h"
 #include "flatfile_character_delete.h"
+#include "flatfile_corpse_restore.h"
 #include "justice.h"
 #include "mm.h"
 #include "necromancy.h"
@@ -34,6 +36,11 @@
 #include "storage_lockers.h"
 #include "trophy.h"
 #include "vnum.obj.h"
+#include <array>
+#include <limits>
+#include <new>
+#include <string>
+#include <vector>
 using namespace std;
 
 extern P_char character_list;
@@ -1217,6 +1224,81 @@ int write_one_object(P_obj obj, char *dest_buff, int include_persistent_uid)
  * event of a crash.
  */
 
+namespace
+{
+bool capture_corpse_money(P_obj object, std::array<int32_t, 4> *money)
+{
+	if (!money)
+		return false;
+	std::vector<P_obj> pending;
+	try
+	{
+		for (P_obj current = object; current; current = current->next_content)
+			pending.push_back(current);
+		while (!pending.empty())
+		{
+			P_obj current = pending.back();
+			pending.pop_back();
+			if (GET_ITEM_TYPE(current) == ITEM_MONEY)
+				for (size_t denomination = 0; denomination < money->size();
+				     ++denomination)
+				{
+					if (current->value[denomination] < 0 ||
+					    (*money)[denomination] >
+						    std::numeric_limits<int32_t>::max() -
+							    current->value[denomination])
+						return false;
+					(*money)[denomination] += current->value[denomination];
+				}
+			for (P_obj child = current->contains; child; child = child->next_content)
+				pending.push_back(child);
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool capture_corpse_lifecycle(P_obj corpse, corpse_lifecycle_action action,
+			      corpse_lifecycle_payload *payload)
+{
+	if (!corpse || !payload || !corpse->action_description || !*corpse->action_description ||
+	    corpse->value[CORPSE_PID] <= 0 || corpse->value[CORPSE_SAVEID] <= 0)
+		return false;
+	*payload = {};
+	payload->action = action;
+	payload->owner_pid = static_cast<uint32_t>(corpse->value[CORPSE_PID]);
+	payload->save_id = static_cast<uint32_t>(corpse->value[CORPSE_SAVEID]);
+	payload->owner_name = corpse->action_description;
+	if (action == corpse_lifecycle_action::remove)
+		return true;
+	int room = NOWHERE;
+	if (OBJ_ROOM(corpse))
+		room = corpse->loc.room;
+	else if (OBJ_CARRIED(corpse) && corpse->loc.carrying)
+		room = corpse->loc.carrying->in_room;
+	if (room <= NOWHERE || room > top_of_world)
+		return false;
+	payload->room_vnum = world[room].number;
+	payload->weight = corpse->weight;
+	for (size_t index = 0; index < payload->values.size(); ++index)
+		payload->values[index] = corpse->value[index];
+	payload->short_description = corpse->short_description ? corpse->short_description : "";
+	payload->description = corpse->description ? corpse->description : "";
+	payload->keywords = corpse->name ? corpse->name : "";
+	return capture_corpse_money(corpse->contains, &payload->money);
+}
+
+bool stage_corpse_lifecycle(P_obj corpse, corpse_lifecycle_action action)
+{
+	corpse_lifecycle_payload payload = {};
+	return capture_corpse_lifecycle(corpse, action, &payload) &&
+	       corpse_lifecycle_transaction_stage(payload);
+}
+} // namespace
+
 void writeCorpse(P_obj corpse)
 {
 	extern int skip_corpse_save;
@@ -1226,6 +1308,20 @@ void writeCorpse(P_obj corpse)
 	if (!corpse || (corpse->type != ITEM_CORPSE) || !IS_SET(corpse->value[1], PC_CORPSE))
 	{
 		logit(LOG_DEBUG, "item wasn't a corpse in writeCorpse!");
+		return;
+	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		const bool present = OBJ_ROOM(corpse) ||
+				     (OBJ_CARRIED(corpse) && corpse->loc.carrying != NULL);
+		if (present && corpse->value[CORPSE_SAVEID] == 0)
+			corpse->value[CORPSE_SAVEID] = time(NULL);
+		if ((!present && !corpse->value[CORPSE_SAVEID]) ||
+		    stage_corpse_lifecycle(corpse, present ? corpse_lifecycle_action::upsert :
+							     corpse_lifecycle_action::remove))
+			return;
+		persistence_alert(AVATAR, "corpse", "flatfile_lifecycle", "none", "none",
+				  "stage_failed", "save_id=%d", corpse->value[CORPSE_SAVEID]);
 		return;
 	}
 
@@ -1864,6 +1960,15 @@ void PurgeCorpseFile(P_obj corpse)
 	if (!corpse || (corpse->type != ITEM_CORPSE) || !IS_SET(corpse->value[1], PC_CORPSE))
 	{
 		logit(LOG_DEBUG, "item not a corpse in PurgeCorpseFile");
+		return;
+	}
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		if (!skip_corpse_save && corpse->value[CORPSE_SAVEID] &&
+		    !stage_corpse_lifecycle(corpse, corpse_lifecycle_action::remove))
+			persistence_alert(AVATAR, "corpse", "flatfile_remove", "none", "none",
+					  "stage_failed", "save_id=%d",
+					  corpse->value[CORPSE_SAVEID]);
 		return;
 	}
 
@@ -4034,6 +4139,18 @@ int restoreItemsOnly(P_char ch, int /*flatrate*/)
 
 void restoreCorpses(void)
 {
+	if (persistence_mode_get() == PERSISTENCE_MODE_FLATFILE_PRIMARY)
+	{
+		std::string error;
+		const char *root = persistence_mode_flatfile_root();
+		const auto restored = flatfile_corpse_restore_catalog(root ? root : "", &error);
+		if (restored != flatfile_corpse_restore_result::ok &&
+		    restored != flatfile_corpse_restore_result::not_found)
+			fatal_boot_error("corpse", "flat-file corpse restore failed: %s",
+					 error.empty() ? "invalid authoritative state" :
+							 error.c_str());
+		return;
+	}
 #ifndef __NO_MYSQL__
 	sql_load_all_corpses();
 #endif

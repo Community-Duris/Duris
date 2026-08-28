@@ -373,6 +373,12 @@ void item_ownership_runtime_forget(uint64_t item_uid)
 		entries.erase(item_uid);
 }
 
+void item_ownership_runtime_forget_owner(const item_owner_identity &owner)
+{
+	if (item_owner_identity_valid(owner))
+		owner_revisions.erase(owner);
+}
+
 void item_ownership_runtime_reset(void)
 {
 	entries.clear();
