@@ -2127,6 +2127,31 @@ sections below continue to describe the required end state.
   produced-item policy, existing-keeper replacement, rollback-safe cleanup, and explicit
   boot failure propagation.
 
+### Checkpoint 65 - catalog-wide shopkeeper staging and publication
+
+- **Completed:** added a catalog restore coordinator that loads the canonical authority,
+  validates every saved shop ID against the live shop table and keeper prototype, rejects
+  duplicate keeper vnums, and materializes the entire catalog before placing or replacing
+  any world shopkeeper.
+- **Produced-item policy:** every configured produced prototype must already appear as a
+  top-level inventory object in the authoritative aggregate. The flat backend does not
+  synthesize an anonymous replacement at boot; the captured instance retains its UID and
+  remains the shop's produced/infinite-stock exemplar.
+- **Publication and rollback:** all replacements are placed in their exact declared rooms
+  before incumbents are touched. Placement failure or unexpected room redirection extracts
+  every staged keeper and forgets all newly hydrated runtime UIDs, leaving incumbents in
+  place. Only after complete placement does the coordinator extract matching old prototypes,
+  excluding the replacement pointers, and mark the corresponding shops dirty.
+- **Checks passed:** the focused source contract proves list-before-stage, complete
+  stage-before-place, place-before-replace ordering, exact shop/produced-item checks,
+  hydrated-UID unwind, replacement exclusion, and post-publication dirty marking. The normal
+  C++20 server build and changed-line formatting pass; CI includes the coordinator contract.
+- **Exposure:** the coordinator is compiled but not yet selected by `restore_shopkeepers`.
+  Dynamic object affects remain a deliberate v1 materialization fence, and dirty-save
+  publication still needs a recoverable catalog/custody transaction.
+- **Next action:** add the recoverable dirty-save path, then route boot restore and periodic
+  saves through flat authority only when both paths can fail closed.
+
 ### Milestone status
 
 | Milestone | State | Evidence |
