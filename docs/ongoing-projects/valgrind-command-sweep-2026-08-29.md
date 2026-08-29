@@ -4,6 +4,13 @@ Working notes from a full Memcheck session against a minimal-world boot, in
 which the staff character executed the entire in-game command list and every
 privileged (`wizhelp`) command.
 
+**These are findings as observed. The single register of what is still
+outstanding — from this sweep and from the item-load work that came out of it —
+lives in
+[the orphan-row write-up](orphan-player-item-lockout-2026-08-29.md#still-open),
+so the two documents do not drift.** Findings 1, 3 and 5 below are all still
+unfixed as of `5359723fb`.
+
 ## Session setup
 
 | Item | Value |
@@ -144,7 +151,7 @@ which has since been deleted as too large to keep.
 
 ---
 
-## Finding 2 — a destroyed item can leave a character permanently unloadable (critical)
+## Finding 2 — an item with no ownership row leaves a character permanently unloadable (critical, reader side fixed)
 
 Not a memory bug, and the most serious thing this session turned up, so it has
 its own write-up: **[Orphan `player_items` row locks a character out of the
@@ -153,14 +160,22 @@ game](orphan-player-item-lockout-2026-08-29.md)**.
 In short: the argument pass loaded two objects with the staff `load` command,
 picked them up, destroyed one with `junk` and one with `purge`, then saved and
 quit. Every later attempt to enter the game with that character failed with
-"Sorry, I couldn't load that character!" — deterministically, on every retry.
-Item destruction had removed the `item_current_owner` row but left the
-`player_items` row behind, and a payload row with no ownership row makes the
-entire items component of the load fail rather than being skipped like other
-suspect rows. The character was recovered by deleting the orphan row from
-`duris_dev`; three connect/play/disconnect cycles then succeeded. Whether
-ordinary mortal item-destruction paths reach the same state is untested and is
-the first follow-up.
+"Sorry, I couldn't load that character!" — deterministically, on every retry. A
+`player_items` payload row with no `item_current_owner` row made the entire items
+component of the load fail rather than being skipped like other suspect rows. The
+character was recovered by deleting the orphan row from `duris_dev`; three
+connect/play/disconnect cycles then succeeded.
+
+**The reading recorded here originally — that item destruction removed the
+ownership row — is wrong, and the write-up corrects it.** The row was never
+removed; it was never created. `read_object()` registers no ownership and
+`do_load` hands the object over with `obj_to_char()` and no transfer, so the
+object that never left inventory never had a ledger row, while the one that
+reached the floor and was picked back up got one from the `get`. The trigger is
+object *creation* without an ownership record, not destruction.
+
+The load path was fixed and merged in `5359723fb`; the writer side is still open.
+Whether ordinary mortal paths reach the same state is untested.
 
 ---
 
@@ -293,12 +308,14 @@ session had to reconnect and hold the link open until the process exited.
   corpse object in the minimal world's start room. The two wizard-loaded
   entities created during the run (a bronze dracolich and a dagger) were purged.
 - One row was deleted from `duris_dev.player_items` to undo Finding 2; the exact
-  statement is in [the orphan-row write-up](orphan-player-item-lockout-2026-08-29.md#repair).
+  statement is in [the orphan-row write-up](orphan-player-item-lockout-2026-08-29.md#repair-no-longer-required-to-unlock-a-character).
 - Both Memcheck logs were moved out of the git-ignored `logs/valgrind/` and now
-  sit beside this document in `docs/ongoing-projects/`; they are untracked, so
-  decide deliberately whether to commit them. The project's memory-checking
-  standard says not to commit tool logs, and `docs/` is a tracked tree. The run-1
-  core was deleted.
+  sit beside this document in `docs/ongoing-projects/`. They were **committed**
+  (`5359723fb`), deliberately and against the project's usual standard of not
+  committing tool logs, to keep the evidence with the write-ups. Removing them is
+  tracked as an open item; see
+  [the orphan-row write-up](orphan-player-item-lockout-2026-08-29.md#still-open).
+  The run-1 core was deleted.
 - `scripts/valgrind_mud.sh` still cannot start a minimal-world boot: everything
   after `--` is passed to Valgrind, not to `dms`. A `--minimal` pass-through
   would make this session reproducible with the checked-in wrapper alone.
