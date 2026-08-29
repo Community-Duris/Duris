@@ -127,8 +127,13 @@ if ! command -v gzip >/dev/null 2>&1; then
   exit 2
 fi
 
-DUMP_ARGS=(
-  --connect-timeout=10
+# MariaDB's mysqldump rejects --connect-timeout, which only exists in the
+# MySQL build. Probe once and bound the connect only where it is supported.
+DUMP_ARGS=()
+if mysqldump --help 2>/dev/null | grep -q -- '--connect-timeout'; then
+  DUMP_ARGS+=(--connect-timeout=10)
+fi
+DUMP_ARGS+=(
   --user="$DB_USER"
   --single-transaction
   --quick

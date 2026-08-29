@@ -38,9 +38,25 @@ def run_backup(base: Path, mode: str, fail_gzip: bool = False) -> subprocess.Com
 
     stubs = base / "stubs"
     stubs.mkdir()
+    # Mirror MariaDB's mysqldump: advertise only the options it really has and
+    # reject anything else, so an unsupported flag fails the test instead of the
+    # next boot.
     write_executable(
         stubs / "mysqldump",
         "#!/usr/bin/env bash\n"
+        "supported=' --user --single-transaction --quick --hex-blob"
+        " --protocol --socket --host --port --ssl-ca --ssl-verify-server-cert"
+        " --databases '\n"
+        "for arg; do\n"
+        "  case \"$arg\" in\n"
+        "    --help) printf '%s\\n' $supported; exit 0 ;;\n"
+        "    --*) name=${arg%%=*}\n"
+        "      case \"$supported\" in\n"
+        "        *\" $name \"*) ;;\n"
+        "        *) echo \"mysqldump: unknown variable '${arg#--}'\" >&2; exit 7 ;;\n"
+        "      esac ;;\n"
+        "  esac\n"
+        "done\n"
         "case \"${DUMP_MODE:?}\" in\n"
         "  success)\n"
         "    printf '%s\\n' 'CREATE TABLE `accounts` (' 'CREATE TABLE `player_data` (' 'CREATE TABLE `ships` ('\n"
