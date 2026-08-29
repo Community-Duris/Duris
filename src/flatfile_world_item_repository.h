@@ -35,10 +35,20 @@ struct flatfile_saved_world_item_record
 	std::vector<player_item_snapshot> items;
 };
 
+struct flatfile_room_item_record
+{
+	int32_t room_vnum = 0;
+	uint64_t revision = 0;
+	std::array<int32_t, 4> money = {};
+	std::vector<player_item_snapshot> items;
+};
+
 struct flatfile_corpse_custody_item
 {
 	uint64_t item_uid = 0;
 	int32_t vnum = 0;
+	uint64_t root_item_uid = 0;
+	uint64_t parent_item_uid = 0;
 };
 
 struct flatfile_corpse_custody_owner
@@ -68,6 +78,15 @@ struct flatfile_corpse_lifecycle_mutation
 	uint64_t catalog_revision = 0;
 };
 
+struct flatfile_corpse_release_mutation
+{
+	flatfile_authority_after_image after_image;
+	std::vector<flatfile_corpse_custody_item> expected_items;
+	std::vector<player_item_snapshot> items;
+	uint64_t room_revision = 0;
+	uint64_t catalog_revision = 0;
+};
+
 enum class flatfile_world_item_result
 {
 	ok,
@@ -87,6 +106,9 @@ flatfile_world_item_result
 flatfile_world_item_list(const std::string &root, std::vector<flatfile_corpse_record> *corpses,
 			 std::vector<flatfile_saved_world_item_record> *saved_items,
 			 std::string *error);
+flatfile_world_item_result
+flatfile_world_item_list_rooms(const std::string &root,
+			       std::vector<flatfile_room_item_record> *rooms, std::string *error);
 flatfile_world_item_result flatfile_world_item_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	const std::string &expected_name, flatfile_world_item_player_removal *removal,
@@ -98,6 +120,10 @@ flatfile_world_item_result flatfile_world_item_prepare_corpse_transfer(
 flatfile_world_item_result flatfile_world_item_prepare_corpse_lifecycle(
 	const std::string &root, const flatfile_authority_lock &lock,
 	const corpse_lifecycle_payload &payload, flatfile_corpse_lifecycle_mutation *mutation,
+	std::string *error);
+flatfile_world_item_result flatfile_world_item_prepare_corpse_release(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const corpse_lifecycle_payload &payload, flatfile_corpse_release_mutation *mutation,
 	std::string *error);
 
 #endif

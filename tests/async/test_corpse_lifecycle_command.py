@@ -46,6 +46,7 @@ int main()
 					      critical_deadline_class::terminal));
 	command.accepted_at_usec = 100;
 	assert(critical_command_valid(command));
+	const auto upsert_command = command;
 	corpse_lifecycle_payload decoded = {};
 	assert(corpse_lifecycle_command_decode_payload(command, &decoded));
 	assert(decoded.owner_pid == 42 && decoded.save_id == 20 && decoded.money[3] == 4 &&
@@ -73,6 +74,14 @@ int main()
 	assert(corpse_lifecycle_command_decode_result(encoded_result.data(), encoded_result.size(),
 						      &decoded_result));
 	assert(decoded_result.corpse_revision == 2 && decoded_result.catalog_revision == 7);
+	assert(corpse_lifecycle_command_decode_result(encoded_result.data(),
+						      CORPSE_LIFECYCLE_LEGACY_RESULT_BYTES,
+						      &decoded_result));
+	auto legacy = upsert_command;
+	legacy.payload.erase(legacy.payload.begin() + 80, legacy.payload.begin() + 88);
+	legacy.payload_version = CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION;
+	assert(corpse_lifecycle_command_decode_payload(legacy, &decoded));
+	assert(decoded.expected_room_revision == 0);
 	corpse_lifecycle_payload remove = {};
 	remove.action = corpse_lifecycle_action::remove;
 	remove.owner_pid = 42;
@@ -84,6 +93,39 @@ int main()
 					      critical_deadline_class::terminal));
 	remove.room_vnum = 500;
 	assert(!corpse_lifecycle_command_build(&command, operation(4), remove,
+					       critical_source_site::command,
+					       critical_deadline_class::terminal));
+	corpse_lifecycle_payload release = {};
+	release.action = corpse_lifecycle_action::release;
+	release.owner_pid = 42;
+	release.save_id = 20;
+	release.expected_corpse_revision = 2;
+	release.expected_room_revision = 4;
+	release.room_vnum = 500;
+	release.owner_name = "Hero";
+	assert(corpse_lifecycle_command_build(&command, operation(5), release,
+					      critical_source_site::command,
+					      critical_deadline_class::terminal));
+	assert(command.keys.size() == 2 && command.expected_revisions.size() == 2);
+	assert(corpse_lifecycle_command_decode_payload(command, &decoded));
+	assert(decoded.action == corpse_lifecycle_action::release &&
+	       decoded.expected_room_revision == 4 && decoded.room_vnum == 500);
+	corpse_lifecycle_result release_result = {};
+	release_result.owner_pid = 42;
+	release_result.save_id = 20;
+	release_result.action = corpse_lifecycle_action::release;
+	release_result.catalog_revision = 8;
+	release_result.corpse_owner_revision = 5;
+	release_result.room_owner_revision = 5;
+	release_result.max_item_revision = 9;
+	release_result.item_count = 2;
+	assert(corpse_lifecycle_command_encode_result(release_result, &encoded_result));
+	assert(corpse_lifecycle_command_decode_result(encoded_result.data(), encoded_result.size(),
+						      &decoded_result));
+	assert(decoded_result.action == corpse_lifecycle_action::release &&
+	       decoded_result.room_owner_revision == 5 && decoded_result.item_count == 2);
+	release.money[0] = 1;
+	assert(!corpse_lifecycle_command_build(&command, operation(6), release,
 					       critical_source_site::command,
 					       critical_deadline_class::terminal));
 	return 0;

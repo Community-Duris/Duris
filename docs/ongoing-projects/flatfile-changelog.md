@@ -3865,3 +3865,41 @@ action" text below remains historical and does not authorize work.
 - **Next action:** implement the room aggregate and compose corpse-to-room item/money transfer with
   corpse removal for non-empty decay/extraction, then route saved floor-item live save and restore
   through that same world authority.
+
+### Checkpoint 88 - atomic corpse-to-room release authority
+
+- **Bounded release protocol:** corpse-lifecycle payload version 2 adds a `release` action and the
+  expected destination-room revision. Release commands fence canonical corpse and room entity keys,
+  while payload/result decoders retain version 1 and 32-byte result compatibility. Successful
+  results expose the world-catalog, corpse-owner, room-owner, maximum item, and item-count revisions
+  needed for deterministic completion and replay.
+- **Revisioned room aggregate:** world-item catalog version 3 adds sorted room records containing a
+  room VNUM, revision, four money denominations, and exact detached item snapshots. Version 2 money
+  catalogs and version 1 catalogs remain readable. A held-lock release proves the corpse identity,
+  revision, placement, and destination revision; preserves nested topology while appending to an
+  existing room; accumulates money with overflow checks; and removes the corpse only in its prepared
+  after-image.
+- **Cross-authority composition:** item ownership proves every active corpse UID, VNUM, root, and
+  parent against the world aggregate, advances both owner revisions, and moves the complete custody
+  set to the room. Registered artifacts move from corpse custody to `ON_GROUND` in the same room at
+  the command's accepted time. Ownership, world aggregate, optional artifact state, and the corpse
+  operation ledger publish in one recoverable authority transaction; semantic stale/not-found
+  failures and operation-ID reuse retain the existing exactly-once behavior.
+- **Crash and compatibility coverage:** the focused repository regression interrupts publication
+  after the ownership and world images, then verifies recovery removes the corpse, preserves exact
+  nested room snapshots and money, transfers ownership revisions, grounds the artifact, and returns
+  `already_applied`. It also covers a money-only corpse appended to an existing room and exact replay
+  failures. Command coverage exercises release keys/results plus legacy payload/result decoding, and
+  the world catalog fixture proves version 1 compatibility after the version 3 extension.
+- **Checks passed:** changed-line formatting, `git diff --check`, the strict normal C++20 server
+  build, and the focused command, world-item, artifact, item-ownership, corpse repository, lifecycle
+  transaction, corpse ownership/restore, character deletion, world recovery, live routing contract,
+  and retired SQL-corpse cleanup tests.
+- **Exposure:** no live game path submits `release` yet, and room aggregates are not restored into the
+  live world at boot. Non-empty decay/extraction therefore remains fail-closed rather than using this
+  primitive. General player drop/get and saved floor-item persistence are still fenced because their
+  corresponding room mutation and restart materialization have not been connected.
+- **Next action:** extend the live lifecycle transaction with a non-coalescing release completion,
+  route corpse decay/destructive extraction through it so live movement occurs only after durable
+  success, and restore version 3 room aggregates at boot. Then connect historical saved floor-item
+  save/restore to the same room authority.

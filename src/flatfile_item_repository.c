@@ -1073,6 +1073,92 @@ flatfile_item_repository_result flatfile_item_repository_prepare_shop_trade(
 	return flatfile_item_repository_result::ok;
 }
 
+flatfile_item_repository_result flatfile_item_repository_prepare_corpse_release(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const corpse_lifecycle_payload &payload,
+	const std::vector<flatfile_corpse_custody_item> &expected_items,
+	flatfile_item_corpse_release_mutation *mutation, std::string *error)
+{
+	if (!mutation || !lock.matches(root) ||
+	    payload.action != corpse_lifecycle_action::release || !payload.owner_pid ||
+	    !payload.save_id || payload.room_vnum <= 0 ||
+	    expected_items.size() > ownership_maximum_entries ||
+	    !std::is_sorted(expected_items.begin(), expected_items.end(),
+			    [](const auto &left, const auto &right)
+			    { return left.item_uid < right.item_uid; }))
+		return flatfile_item_repository_result::invalid;
+	*mutation = {};
+	for (size_t index = 0; index < expected_items.size(); ++index)
+	{
+		const auto &expected = expected_items[index];
+		if (!expected.item_uid || expected.vnum <= 0 || !expected.root_item_uid ||
+		    (index && expected_items[index - 1].item_uid == expected.item_uid))
+			return flatfile_item_repository_result::invalid;
+	}
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded;
+	const item_owner_identity corpse_owner = {
+		item_owner_type::corpse, item_corpse_owner_id(payload.owner_pid, payload.save_id), 0
+	};
+	const item_owner_identity room_owner = { item_owner_type::room,
+						 static_cast<uint64_t>(payload.room_vnum), 0 };
+	owner_state *corpse = find_owner(&catalog, corpse_owner);
+	owner_state *room = find_owner(&catalog, room_owner);
+	if ((!corpse && !expected_items.empty()) ||
+	    (room && room->revision != payload.expected_room_revision) ||
+	    (!room && payload.expected_room_revision) ||
+	    catalog.revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_item_repository_result::invalid;
+	size_t item_index = 0;
+	for (const auto &item : catalog.items)
+	{
+		if (!item_owner_identity_equal(item.owner, corpse_owner))
+			continue;
+		if (item_index >= expected_items.size())
+			return flatfile_item_repository_result::invalid;
+		const auto &expected = expected_items[item_index++];
+		if (item.item_uid != expected.item_uid ||
+		    item.root_item_uid != expected.root_item_uid ||
+		    item.parent_item_uid != expected.parent_item_uid ||
+		    item.vnum != expected.vnum || item.state != item_custody_state::active ||
+		    item.item_revision == std::numeric_limits<uint64_t>::max())
+			return flatfile_item_repository_result::invalid;
+	}
+	if (item_index != expected_items.size() || !ensure_owner(&catalog, corpse_owner) ||
+	    !ensure_owner(&catalog, room_owner))
+		return flatfile_item_repository_result::invalid;
+	corpse = find_owner(&catalog, corpse_owner);
+	room = find_owner(&catalog, room_owner);
+	if (!corpse || !room || corpse->revision == std::numeric_limits<uint64_t>::max() ||
+	    room->revision == std::numeric_limits<uint64_t>::max())
+		return flatfile_item_repository_result::invalid;
+	++corpse->revision;
+	++room->revision;
+	mutation->corpse_owner_revision = corpse->revision;
+	mutation->room_owner_revision = room->revision;
+	mutation->item_count = expected_items.size();
+	for (auto &item : catalog.items)
+	{
+		if (!item_owner_identity_equal(item.owner, corpse_owner))
+			continue;
+		item.owner = room_owner;
+		++item.item_revision;
+		mutation->max_item_revision =
+			std::max(mutation->max_item_revision, item.item_revision);
+	}
+	mutation->after_image.filename = ownership_filename;
+	if (!encode_catalog(catalog, catalog.revision + 1, &mutation->after_image.bytes))
+		return flatfile_item_repository_result::invalid;
+	return flatfile_item_repository_result::ok;
+}
+
 flatfile_item_repository_result flatfile_item_repository_prepare_player_remove(
 	const std::string &root, const flatfile_authority_lock &lock, uint32_t pid,
 	flatfile_authority_operation *operation, std::string *error)

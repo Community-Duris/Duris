@@ -7,17 +7,20 @@
 #include <cstdint>
 #include <string>
 
-constexpr uint16_t CORPSE_LIFECYCLE_PAYLOAD_VERSION = 1;
+constexpr uint16_t CORPSE_LIFECYCLE_PAYLOAD_VERSION = 2;
+constexpr uint16_t CORPSE_LIFECYCLE_LEGACY_PAYLOAD_VERSION = 1;
 constexpr size_t CORPSE_LIFECYCLE_OWNER_NAME_MAX_BYTES = 255;
 constexpr size_t CORPSE_LIFECYCLE_SHORT_DESCRIPTION_MAX_BYTES = 512;
 constexpr size_t CORPSE_LIFECYCLE_DESCRIPTION_MAX_BYTES = 64 * 1024;
 constexpr size_t CORPSE_LIFECYCLE_KEYWORDS_MAX_BYTES = 512;
-constexpr size_t CORPSE_LIFECYCLE_RESULT_BYTES = 32;
+constexpr size_t CORPSE_LIFECYCLE_LEGACY_RESULT_BYTES = 32;
+constexpr size_t CORPSE_LIFECYCLE_RESULT_BYTES = 64;
 
 enum class corpse_lifecycle_action : uint8_t
 {
 	upsert = 1,
 	remove = 2,
+	release = 3,
 };
 
 struct corpse_lifecycle_payload
@@ -26,6 +29,7 @@ struct corpse_lifecycle_payload
 	uint32_t owner_pid = 0;
 	uint32_t save_id = 0;
 	uint64_t expected_corpse_revision = 0;
+	uint64_t expected_room_revision = 0;
 	int32_t room_vnum = 0;
 	int32_t weight = 0;
 	std::array<int32_t, 8> values = {};
@@ -43,6 +47,10 @@ struct corpse_lifecycle_result
 	corpse_lifecycle_action action = corpse_lifecycle_action::upsert;
 	uint64_t corpse_revision = 0;
 	uint64_t catalog_revision = 0;
+	uint64_t corpse_owner_revision = 0;
+	uint64_t room_owner_revision = 0;
+	uint64_t max_item_revision = 0;
+	uint32_t item_count = 0;
 };
 
 bool corpse_lifecycle_command_encode_payload(const corpse_lifecycle_payload &payload,

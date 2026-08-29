@@ -1,5 +1,7 @@
 #include "corpse_lifecycle_command.h"
+#include "flatfile_artifact_repository.h"
 #include "flatfile_corpse_repository.h"
+#include "flatfile_item_repository.h"
 #include "flatfile_world_item_repository.h"
 
 #include <cerrno>
@@ -76,6 +78,19 @@ static player_item_snapshot item()
 	value.equipment_slot = -1;
 	value.object_uid = 900;
 	value.vnum = 1900;
+	return value;
+}
+
+static player_item_snapshot release_item(uint64_t uid, int32_t parent, int32_t vnum,
+					 bool artifact = false)
+{
+	player_item_snapshot value = {};
+	value.parent_index = parent;
+	value.equipment_slot = -1;
+	value.object_uid = uid;
+	value.vnum = vnum;
+	value.name = "released item";
+	value.extra_flags = artifact ? 1U << 28 : 0;
 	return value;
 }
 
@@ -198,6 +213,145 @@ int main(int argc, char **argv)
 				flatfile_world_item_result::ok &&
 			corpses.size() == 1 && corpses[0].items.size() == 1,
 		"occupied corpse removal changed authority");
+
+	const fs::path release_root = fs::path(argv[1]) / "release";
+	prepare_root(release_root);
+	flatfile_corpse_record released_corpse = {};
+	released_corpse.owner_pid = 42;
+	released_corpse.owner_name = "hero";
+	released_corpse.save_id = 20;
+	released_corpse.room_vnum = 500;
+	released_corpse.values[3] = 42;
+	released_corpse.values[5] = 1;
+	released_corpse.values[6] = 20;
+	released_corpse.money = { 10, 20, 30, 40 };
+	released_corpse.revision = 3;
+	released_corpse.items = {
+		release_item(900, PLAYER_SNAPSHOT_NO_PARENT, 1900),
+		release_item(901, 0, 1901, true),
+	};
+	require(flatfile_world_item_establish(release_root.string(), { released_corpse }, {},
+					      &error) == flatfile_world_item_result::ok,
+		"could not establish releasable corpse: " + error);
+	const item_owner_identity corpse_owner = { item_owner_type::corpse,
+						   item_corpse_owner_id(42, 20), 0 };
+	require(flatfile_item_repository_establish_owner(
+			release_root.string(), corpse_owner,
+			{ { 900, 900, 0, corpse_owner, 1, 1900, item_custody_state::active },
+			  { 901, 900, 900, corpse_owner, 1, 1901, item_custody_state::active } },
+			&error) == flatfile_item_baseline_result::applied,
+		"could not establish releasable corpse custody: " + error);
+	const flatfile_artifact_record corpse_artifact = {
+		1901, true, FLATFILE_ARTIFACT_ON_CORPSE, 42, 5000, 1, 1000, -1, 0, 1
+	};
+	require(flatfile_artifact_establish(release_root.string(), { corpse_artifact }, &error) ==
+			flatfile_artifact_result::ok,
+		"could not establish releasable corpse artifact: " + error);
+	corpse_lifecycle_payload release_payload = {};
+	release_payload.action = corpse_lifecycle_action::release;
+	release_payload.owner_pid = 42;
+	release_payload.save_id = 20;
+	release_payload.expected_corpse_revision = 3;
+	release_payload.expected_room_revision = 0;
+	release_payload.room_vnum = 500;
+	release_payload.owner_name = "Hero";
+	auto release_command = command(7, release_payload);
+	release_command.accepted_at_usec = 12000000;
+	setenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE", "2", 1);
+	applied = flatfile_corpse_repository_apply(release_root.string(), release_command);
+	unsetenv("DURIS_FLATFILE_TEST_INTERRUPT_AFTER_AUTHORITY_IMAGE");
+	require(applied.outcome == critical_apply_outcome::retryable_failure &&
+			applied.error_code == EIO,
+		"interrupted corpse release did not retain recoverable composite intent");
+	applied = flatfile_corpse_repository_apply(release_root.string(), release_command);
+	require(applied.outcome == critical_apply_outcome::already_applied &&
+			applied.result_size == CORPSE_LIFECYCLE_RESULT_BYTES,
+		"corpse release did not recover and replay exactly");
+	result = {};
+	require(corpse_lifecycle_command_decode_result(applied.result_payload.data(),
+						       applied.result_size, &result) &&
+			result.action == corpse_lifecycle_action::release &&
+			result.corpse_revision == 0 && result.catalog_revision == 2 &&
+			result.corpse_owner_revision == 2 && result.room_owner_revision == 1 &&
+			result.max_item_revision == 2 && result.item_count == 2,
+		"corpse release result did not expose all durable revisions");
+	corpses.clear();
+	saved.clear();
+	require(flatfile_world_item_list(release_root.string(), &corpses, &saved, &error) ==
+				flatfile_world_item_result::ok &&
+			corpses.empty(),
+		"recovered corpse release retained the corpse aggregate");
+	std::vector<flatfile_room_item_record> rooms;
+	require(flatfile_world_item_list_rooms(release_root.string(), &rooms, &error) ==
+				flatfile_world_item_result::ok &&
+			rooms.size() == 1 && rooms[0].room_vnum == 500 && rooms[0].revision == 1 &&
+			rooms[0].money == released_corpse.money && rooms[0].items.size() == 2 &&
+			rooms[0].items[0].object_uid == 900 && rooms[0].items[1].parent_index == 0,
+		"recovered corpse release did not publish the exact room aggregate");
+	uint64_t room_revision = 0;
+	std::vector<flatfile_item_ownership_record> room_items;
+	require(flatfile_item_repository_load_owner(
+			release_root.string(), { item_owner_type::room, 500, 0 }, &room_revision,
+			&room_items, &error) == flatfile_item_repository_result::ok &&
+			room_revision == 1 && room_items.size() == 2 &&
+			room_items[0].owner.type == item_owner_type::room &&
+			room_items[0].item_revision == 2 && room_items[1].parent_item_uid == 900,
+		"recovered corpse release did not publish room item custody");
+	flatfile_artifact_record grounded_artifact;
+	require(flatfile_artifact_get(release_root.string(), 1901, &grounded_artifact, &error) ==
+				flatfile_artifact_result::ok &&
+			grounded_artifact.owned &&
+			grounded_artifact.location_type == FLATFILE_ARTIFACT_ON_GROUND &&
+			grounded_artifact.location == 500 && grounded_artifact.last_update == 12 &&
+			grounded_artifact.revision == 2,
+		"recovered corpse release did not ground the artifact atomically");
+	auto altered_release_payload = release_payload;
+	altered_release_payload.room_vnum = 501;
+	applied = flatfile_corpse_repository_apply(release_root.string(),
+						   command(7, altered_release_payload));
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == EEXIST,
+		"corpse release operation ID reuse with different content was accepted");
+	applied = flatfile_corpse_repository_apply(release_root.string(),
+						   command(8, release_payload));
+	require(applied.outcome == critical_apply_outcome::terminal_failure &&
+			applied.error_code == ENOENT,
+		"second corpse release did not fail durably after aggregate removal");
+	auto money_corpse = upsert(0);
+	money_corpse.owner_pid = 77;
+	money_corpse.save_id = 21;
+	money_corpse.values[3] = 77;
+	money_corpse.values[6] = 21;
+	money_corpse.owner_name = "Other";
+	money_corpse.money = { 1, 2, 3, 4 };
+	applied = flatfile_corpse_repository_apply(release_root.string(), command(9, money_corpse));
+	require(applied.outcome == critical_apply_outcome::applied,
+		"money-only corpse did not establish beside the room aggregate");
+	corpse_lifecycle_payload money_release = {};
+	money_release.action = corpse_lifecycle_action::release;
+	money_release.owner_pid = 77;
+	money_release.save_id = 21;
+	money_release.expected_corpse_revision = 1;
+	money_release.expected_room_revision = 1;
+	money_release.room_vnum = 500;
+	money_release.owner_name = "Other";
+	applied =
+		flatfile_corpse_repository_apply(release_root.string(), command(10, money_release));
+	require(applied.outcome == critical_apply_outcome::applied,
+		"money-only corpse did not release into the existing room aggregate");
+	result = {};
+	require(corpse_lifecycle_command_decode_result(applied.result_payload.data(),
+						       applied.result_size, &result) &&
+			!result.item_count && !result.max_item_revision &&
+			result.corpse_owner_revision == 1 && result.room_owner_revision == 2,
+		"money-only corpse release returned incorrect owner revisions");
+	rooms.clear();
+	require(flatfile_world_item_list_rooms(release_root.string(), &rooms, &error) ==
+				flatfile_world_item_result::ok &&
+			rooms.size() == 1 && rooms[0].revision == 2 &&
+			rooms[0].money == std::array<int32_t, 4>{ 11, 22, 33, 44 } &&
+			rooms[0].items.size() == 2,
+		"money-only corpse release did not accumulate the existing room aggregate");
 	std::cout << "flat-file corpse lifecycle repository passed\n";
 	return 0;
 }

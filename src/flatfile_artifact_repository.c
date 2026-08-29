@@ -1179,3 +1179,68 @@ flatfile_artifact_result flatfile_artifact_prepare_corpse_transfer(
 	mutation->after_image = { catalog_filename, std::move(bytes) };
 	return flatfile_artifact_result::ok;
 }
+
+flatfile_artifact_result flatfile_artifact_prepare_corpse_release(
+	const std::string &root, const flatfile_authority_lock &lock, uint32_t corpse_pid,
+	int32_t room_vnum, uint64_t accepted_at_usec,
+	const std::vector<player_item_snapshot> &items,
+	flatfile_artifact_transfer_mutation *mutation, std::string *error)
+{
+	if (root.empty() || !lock.matches(root) || !mutation || !corpse_pid ||
+	    corpse_pid > INT32_MAX || room_vnum <= 0 || accepted_at_usec / 1000000 > INT64_MAX)
+		return flatfile_artifact_result::invalid;
+	*mutation = {};
+	artifact_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_artifact_result::ok)
+		return loaded;
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		const auto &item = items[index];
+		if (!(item.extra_flags & artifact_extra_flag))
+			continue;
+		if (std::any_of(items.begin(), items.begin() + index,
+				[&](const auto &prior) {
+					return (prior.extra_flags & artifact_extra_flag) &&
+					       prior.vnum == item.vnum;
+				}))
+			return flatfile_artifact_result::conflict;
+		flatfile_artifact_record key = {};
+		key.vnum = item.vnum;
+		const auto record = std::lower_bound(catalog.records.begin(), catalog.records.end(),
+						     key, record_less);
+		if (record == catalog.records.end() || record->vnum != key.vnum || !record->owned ||
+		    record->location_type != FLATFILE_ARTIFACT_ON_CORPSE ||
+		    record->location != static_cast<int32_t>(corpse_pid) ||
+		    record->revision == UINT64_MAX)
+			return flatfile_artifact_result::conflict;
+	}
+	const int64_t event_time = static_cast<int64_t>(accepted_at_usec / 1000000);
+	bool changed = false;
+	for (auto &record : catalog.records)
+	{
+		const bool selected = std::any_of(items.begin(), items.end(), [&](const auto &item)
+						  { return item.vnum == record.vnum; });
+		if (!selected)
+			continue;
+		if (!record.owned || record.location_type != FLATFILE_ARTIFACT_ON_CORPSE ||
+		    record.location != static_cast<int32_t>(corpse_pid) ||
+		    record.revision == UINT64_MAX)
+			return flatfile_artifact_result::conflict;
+		record.location_type = FLATFILE_ARTIFACT_ON_GROUND;
+		record.location = room_vnum;
+		record.last_update = event_time;
+		++record.revision;
+		changed = true;
+	}
+	if (!changed)
+		return flatfile_artifact_result::unchanged;
+	if (catalog.revision == UINT64_MAX)
+		return flatfile_artifact_result::invalid;
+	++catalog.revision;
+	std::vector<uint8_t> bytes;
+	if (!encode_catalog(catalog, &bytes))
+		return flatfile_artifact_result::invalid;
+	mutation->after_image = { catalog_filename, std::move(bytes) };
+	return flatfile_artifact_result::ok;
+}

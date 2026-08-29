@@ -106,6 +106,7 @@ static void convert_world_catalog_to_version_one(const fs::path &catalog)
 	size_t offset = header_size;
 	const uint32_t corpse_count = read_u32(bytes, &offset);
 	read_u32(bytes, &offset);
+	bytes.erase(bytes.begin() + offset, bytes.begin() + offset + 4);
 	std::vector<size_t> money_offsets;
 	for (uint32_t index = 0; index < corpse_count; ++index)
 	{

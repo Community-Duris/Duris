@@ -8,6 +8,21 @@
 Completed implementation history is maintained in
 [`flatfile-changelog.md`](./flatfile-changelog.md).
 
+## Current progress
+
+As of 2026-08-29, checkpoint 88 provides the recoverable repository boundary for
+releasing a non-empty corpse into a revisioned room aggregate. One lifecycle command now
+atomically transfers exact nested items, all money denominations, item ownership, and
+artifact location before removing the corpse, with backward-compatible catalog and
+command decoding. The live decay/extraction path is not routed through that command yet,
+so this is an integrity primitive rather than completed gameplay support.
+
+The next restoration boundary is to submit that release from the live corpse decay and
+destructive extraction paths, defer live graph mutation until durable completion, and
+restore the resulting room aggregates at boot. Saved floor-item save/restore should then
+reuse the same room authority. The siege/kingdom removal memo remains research only; it
+does not amend this directive's explicit requirement to restore historical siege state.
+
 ## Owner intent
 
 The purpose of this project is to restore the previous flat-file persistence system,
