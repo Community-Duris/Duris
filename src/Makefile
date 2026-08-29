@@ -240,6 +240,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile_frag_leaderboard_repository.o \
 				 flatfile_help_catalog.o \
 				 flatfile_ip_activity_repository.o \
+				 flatfile_nexus_repository.o \
 				 flatfile_auction_repository.o \
 				 flatfile_boon_repository.o \
 				 flatfile_offline_message_repository.o \

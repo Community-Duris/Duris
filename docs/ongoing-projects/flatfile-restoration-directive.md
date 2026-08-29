@@ -5,6 +5,42 @@
 
 ## Progress ledger
 
+### 2026-08-29 - restored historically database-only nexus persistence
+
+- **Concrete gap:** nexus stones were always stored in the `nexus_stones` table, and
+  client-free builds compiled out the entire gameplay implementation behind inert
+  stubs. No stones loaded; lookups and boon criteria failed; bonuses returned zero
+  instead of the original amount; and touches, expiry, staff lists/reloads, and enemy
+  nexus selection could not operate without MariaDB.
+- **Restoration:** the existing nexus gameplay code now compiles in both modes. No-DB
+  mode preserves the table's exact stored fields—ID, name, room, alignment, stat affect,
+  affect amount, last-touch time, and bonus—in one bounded nine-row authority record
+  using the existing private metadata lock and atomic store. Missing state establishes
+  an empty record, matching both the checked-in schema and the archived development
+  database, which contain no seed rows; no room, bonus, or stone definition was
+  invented. Configured rows drive the existing boot, info/boon, bonus, staff,
+  touch/alignment, expiry, and random-enemy paths. Corrupt or unsafe authority aborts
+  flat boot and cannot be overwritten. Alignment-save failure rolls the live alignment
+  back, and expiry is made durable before removing the live stone. MariaDB queries
+  remain in place; their info-row mapping now preserves `affect_amount` and the actual
+  last-touch column, invalid load rows/rooms fail safely, and random selection no longer
+  indexes beyond its candidates.
+- **Focused evidence:** `python3 tests/async/test_flatfile_nexus_repository.py` covers
+  empty establishment, exact field round trips, owner-only permissions, lookup,
+  alignment and touch-time updates, live info routing, side-specific bonus behavior,
+  missing and invalid mutations, checksum corruption, failed-live-read preservation,
+  overwrite refusal, and symlink refusal. Its client-free preprocessing contract proves
+  the full gameplay implementation is present while all nexus SQL is absent, and the
+  test is included in client-free CI. The existing boon reward, epic transaction,
+  currency, MySQL-result, save-logging, no-MySQL compatibility, and persistence-mode
+  contracts pass.
+- **Build evidence:** complete builds pass with both `PERSISTENCE_BACKEND=flatfile`
+  (without MySQL headers or client library) and `PERSISTENCE_BACKEND=mariadb`; the
+  client-free boot preflight, formatting check, and `git diff --check` pass.
+- **Overall state:** configured nexus gameplay and persistence now operate in both
+  modes. Other incomplete domains remain under audit, so the global incomplete-domain
+  boot fence remains.
+
 ### 2026-08-29 - restored historically database-only cargo-market persistence
 
 - **Concrete gap:** the global ship cargo and contraband modifiers were historically
