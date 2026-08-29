@@ -208,12 +208,8 @@ int load_nexus_stones()
 		return FALSE;
 	}
 
-	if (mysql_num_rows(res) < 1)
-	{
-		mysql_free_result(res);
-		return FALSE;
-	}
-
+	// An empty nexus_stones table is a valid world state, not a load failure;
+	// the flatfile path treats an empty record set the same way.
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(res)))
 	{
