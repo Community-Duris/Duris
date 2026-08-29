@@ -1,8 +1,7 @@
 # Flat-file persistence changelog
 
-This file contains completed implementation history moved from
-[`flatfile-restoration-directive.md`](./flatfile-restoration-directive.md) and
-[`flatfile-persistence-assessment.md`](./flatfile-persistence-assessment.md).
+This file contains completed implementation history moved from the restoration
+directive and the former persistence assessment.
 
 It is a historical record and does not define current scope or authorize further work.
 The restoration directive remains authoritative.
@@ -957,11 +956,96 @@ The restoration directive remains authoritative.
   boot fence remains.
 
 
+## Historical assessment record
+
+The assessment was performed on 2026-08-28 at revision `68a916ec`, using
+`97a4166c3fa10448b778a35e16854ad5b3e5e294` as the last pre-player-migration comparison
+point. Its current-state findings, proposed architecture, and implementation order were
+later superseded by the restoration directive. The enduring historical evidence is
+retained here.
+
+### Player migration boundary
+
+| Revision | Date | Historical significance |
+|---|---|---|
+| `97a4166c` | 2025-12-28 | Last revision before the player-to-database project; restoration comparison point. |
+| `35f66dfc` | 2025-12-28 | Began phase-one player schema and `sql_player` work. |
+| `732859d6` | 2025-12-28 | Added SQL player save/load. |
+| `dd06c92e` | 2025-12-28 | Introduced dual pfile and SQL writes. |
+| `6770ce74` | 2026-01-01 | Moved accounts and many player/world domains toward SQL. |
+| `27ac3084` | 2026-04-19 | Replaced flat existence/delete/rename behavior with SQL equivalents. |
+| `4f6b5fdf` | 2026-06-14 | Introduced asynchronous database persistence work. |
+| `28735fde` / `a16731bb` | 2026-08-27 | Moved nonterminal saves to the snapshot pipeline and added terminal fences. |
+| `f3e39720` | 2026-08-27 | Retired normal legacy flat save forks. |
+
+SQL had existed for years before this boundary. The reference revision represents the
+player/account flat-file era and was already a hybrid, MariaDB-dependent server.
+
+### Historical player and account formats
+
+Player files lived at `Players/<lowercase-first-character>/<lowercase-name>`. At the
+reference revision the binary record declared player save version 5, status version 47,
+skill version 2, item version 35, affect version 8, and witness version 2, with a nominal
+240,000-byte maximum. It included identity and descriptions; stats, race, classes,
+levels, flags, conditions, currencies, and bank values; trophies, languages,
+introductions, timers, skills, witnesses, and affects; and recursive inventory and
+equipment. Objects were prototype vnums plus differences, tying recovery to compatible
+world prototypes and codec assumptions.
+
+Account files lived at `Accounts/<lowercase-first-character>/<lowercase-account-name>`.
+The line-oriented format retained account identity, email, credentials, known IPs,
+flags, timestamps, and character membership metadata. Account and player files were
+published independently and could become inconsistent.
+
+### Other historical file-backed domains
+
+| Domain | Representation at `97a4166c` | Important limitation |
+|---|---|---|
+| Lockers | Synthetic `<name>.locker` pfile records | Access lists already depended on SQL. |
+| Corpses | `Players/Corpses/<owner><save-id>` object graphs | Backup rotation without fully durable publication. |
+| Saved world items | `Players/SavedItems/item.<word>.<pointer>` | Process pointers were used as filename identity. |
+| Shopkeepers | `Players/ShopKeepers/<shop-id>` aggregate files | Separate pfile-like whole-entity records. |
+| Guilds | `Players/Assocs/asc.<id>` plus `.motd` | Sparse IDs could be missed; alliances were SQL-backed. |
+| Towns | `Players/towns` | Direct whole-file rewrite. |
+| Siege | `Players/siege` mixed text/binary | Direct rewrite and no atomic multi-record publication. |
+| Ships | `Ships/ship_index` plus `Ships/<owner>` | Index and owner file lacked a cross-file transaction. |
+| Recipes | `Players/Tradeskills/<letter>/<name>.crafting` | Independent from rename and player lifecycle. |
+| Shapechange | `Players/Shapechange/<letter>/<Name>` | Direct rewrite without transaction with the pfile. |
+| Pets | Intended `Players/Pets/<id>` | Writer path and item restoration were already incomplete. |
+| Mail, boards, admin state | Independent binary/text stores | Inconsistent durability and no shared transaction boundary. |
+
+The baseline already used SQL for alliances, outposts, nexus stones, cargo-market
+state, locker/private-chest access metadata, artifacts, and other gameplay/economy
+records. The migration utility in `src-migrate/` corroborates the old layouts but was a
+one-way flat-to-SQL importer.
+
+### Historical durability findings
+
+- Native scalar layouts, prototype-delta objects, and independently versioned text
+  formats limited portability and long-term schema compatibility.
+- Most writers used direct truncation or simple `.bak` rotation without the full
+  write-sync-rename-parent-sync sequence. Multi-file entities had no atomic boundary.
+- Historical terminal character saves could extract live inventory before the new file
+  was safely published, allowing save failure to destroy items.
+- Cross-character and cross-domain operations had no general operation identity,
+  atomicity, or idempotent retry contract.
+- `Players/pc_idnumb` was a truncate-and-rewrite counter without safe concurrency or
+  durable atomic publication; some saved-item names used process pointers.
+- Static serializer buffers and late size validation provided weak bounds, concurrency,
+  and corruption handling.
+- Historical backups omitted accounts and other identity/domain state and copied a live
+  changing tree without a consistent generation, so they were not complete recovery
+  points.
+
+The assessment's stale current-state snapshot and superseded speculative design/phase
+plan were intentionally not retained here. The original remains available in Git
+history before its deletion.
+
 ## Earlier implementation checkpoints
 
 This section was the durable implementation handoff ledger in the original assessment.
-The assessment retains the design and remaining-state sections that these historical
-checkpoints referenced.
+Enduring requirements were folded into the restoration directive; embedded "next
+action" text below remains historical and does not authorize work.
 
 ### Completed milestone
 
