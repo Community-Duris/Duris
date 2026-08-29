@@ -6,7 +6,7 @@ import pathlib
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-MANIFEST = ROOT / "docs/ongoing-projects/flatfile-character-delete-manifest.json"
+MANIFEST = ROOT / "tests/async/flatfile_character_delete_manifest.json"
 
 required_ids = {
     "identity",
