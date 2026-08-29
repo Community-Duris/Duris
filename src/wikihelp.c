@@ -198,7 +198,7 @@ string wiki_help(string str)
 	{
 		mysql_free_result(res);
 		// Log bad help file requests.
-		logit(LOG_HELP, str.c_str());
+		logit(LOG_HELP, "%s", str.c_str());
 		return string("&+GSorry, but there are no help topics that match your search.");
 	}
 

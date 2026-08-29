@@ -175,7 +175,8 @@ void zone_trophy_update();
 #define EXPLOG "exp"
 #define CONNECTLOG "connect"
 
-void sql_log(P_char ch, const char *kind, const char *format, ...);
+void sql_log(P_char ch, const char *kind, const char *format, ...)
+	__attribute__((format(printf, 3, 4)));
 void sql_log_player_login(P_char ch, const char *status);
 
 struct zone_info

@@ -896,7 +896,7 @@ void do_trans(P_char ch, char *argument, int /*cmd*/)
 
 		logit(LOG_WIZ, "%s transferred all to %d", ch->player.name,
 		      world[ch->in_room].number);
-		sql_log(ch, WIZLOG, "Transferred all to", world[ch->in_room].number);
+		sql_log(ch, WIZLOG, "Transferred all to %d", world[ch->in_room].number);
 	}
 }
 
@@ -10301,7 +10301,7 @@ void flat_storage_completion(P_char actor, bool committed, const item_transfer_r
 		{
 			logit(LOG_FILE,
 			      "storage establish committed but live publication was stale (uid=%llu)",
-			      context.storage_uid);
+			      (unsigned long long)context.storage_uid);
 			send_to_char(
 				"The storage authority committed, but live publication failed.\r\n",
 				actor);
@@ -10320,7 +10320,7 @@ void flat_storage_completion(P_char actor, bool committed, const item_transfer_r
 	{
 		logit(LOG_FILE,
 		      "storage mutation committed but live publication was stale (uid=%llu)",
-		      context.storage_uid);
+		      (unsigned long long)context.storage_uid);
 		send_to_char("The storage authority committed, but live publication failed.\r\n",
 			     actor);
 		return;
@@ -10332,7 +10332,7 @@ void flat_storage_completion(P_char actor, bool committed, const item_transfer_r
 		{
 			logit(LOG_FILE,
 			      "storage child move committed but live topology was stale (uid=%llu)",
-			      context.item_uid);
+			      (unsigned long long)context.item_uid);
 			send_to_char("A storage item committed, but live publication failed.\r\n",
 				     actor);
 			return;
@@ -10349,7 +10349,7 @@ void flat_storage_completion(P_char actor, bool committed, const item_transfer_r
 	{
 		logit(LOG_FILE,
 		      "empty storage removal committed while live contents remained (uid=%llu)",
-		      context.storage_uid);
+		      (unsigned long long)context.storage_uid);
 		send_to_char("The storage authority committed, but live contents changed.\r\n",
 			     actor);
 		return;

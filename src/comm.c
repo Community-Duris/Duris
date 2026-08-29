@@ -3326,8 +3326,8 @@ void write_to_pc_log(P_char ch, const char *message, int log)
 
 	if (log < 0 || log >= NUM_LOGS)
 	{
-		logit(LOG_DEBUG, "Invalid log (%d) in write_to_pc_log()", GET_NAME(ch));
-		debug("Invalid log (%d) in write_to_pc_log()", GET_NAME(ch));
+		logit(LOG_DEBUG, "Invalid log (%d) in write_to_pc_log()", log);
+		debug("Invalid log (%d) in write_to_pc_log()", log);
 		return;
 	}
 

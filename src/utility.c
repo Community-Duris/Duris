@@ -1998,7 +1998,7 @@ void statuslog(int level, const char *format, ...)
 	for (size_t len = strlen(lbuf); len > 0 && (lbuf[len - 1] == '\n' || lbuf[len - 1] == '\r');
 	     --len)
 		lbuf[len - 1] = '\0';
-	logit(LOG_STATUS, strip_ansi(lbuf).c_str());
+	logit(LOG_STATUS, "%s", strip_ansi(lbuf).c_str());
 	free(lbuf);
 }
 
@@ -2028,7 +2028,7 @@ void epiclog(int level, const char *format, ...)
 	for (size_t len = strlen(lbuf); len > 0 && (lbuf[len - 1] == '\n' || lbuf[len - 1] == '\r');
 	     --len)
 		lbuf[len - 1] = '\0';
-	logit(LOG_EPIC, strip_ansi(lbuf).c_str());
+	logit(LOG_EPIC, "%s", strip_ansi(lbuf).c_str());
 	free(lbuf);
 }
 

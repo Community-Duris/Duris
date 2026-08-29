@@ -2213,7 +2213,7 @@ void do_save(P_char ch, char *argument, int /*cmd*/)
 		if (!writePet(ch))
 			wizlog(OVERLORD, "Pet %s did not save when ordered to.", GET_NAME(ch));
 		else
-			wizlog(OVERLORD, "Pet %s saved to file %ld!", GET_NAME(ch), GET_IDNUM(ch));
+			wizlog(OVERLORD, "Pet %s saved to file %d!", GET_NAME(ch), GET_IDNUM(ch));
 	}
 	snprintf(Gbuf1, MAX_STRING_LENGTH, "Save queued for %s.\r\n", GET_NAME(GET_PLYR(ch)));
 	send_to_char(Gbuf1, ch);

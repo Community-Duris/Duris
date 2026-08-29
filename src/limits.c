@@ -776,7 +776,7 @@ void display_gain(P_char ch, int gain, int type)
 	}
 	else
 	{
-		logexp("%s gained %d (%d) experience. points.curr_exp = %d, needed for level = %d\n",
+		logexp("%s gained %d (%d) experience. points.curr_exp = %d, needed for level = %ld\n",
 		       GET_NAME(ch), gain, type, GET_EXP(ch), new_exp_table[GET_LEVEL(ch) + 1]);
 	}
 	if (IS_SET(ch->specials.act2, PLR2_EXP) && type == EXP_KILL)
@@ -1446,7 +1446,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 	{
 		while (GET_EXP(ch) < 0)
 		{
-			logexp("LOSING LEVEL: %s - old exp: %d, new exp %d, difference: %d",
+			logexp("LOSING LEVEL: %s - old exp: %d, new exp %ld, difference: %ld",
 			       J_NAME(ch), GET_EXP(ch), GET_EXP(ch) + new_exp_table[GET_LEVEL(ch)],
 			       new_exp_table[GET_LEVEL(ch)]);
 			GET_EXP(ch) += new_exp_table[GET_LEVEL(ch)];

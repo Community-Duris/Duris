@@ -1328,7 +1328,7 @@ void artifact_update_sql(P_obj arti, char owned, time_t timer)
 			else
 			{
 				logit(LOG_ARTIFACT,
-				      "arti_update_sql: OBJ_CARRIED but no loc.carrying, arti vnum %d.",
+				      "arti_update_sql: OBJ_CARRIED but no loc.carrying, arti vnum %d/container vnum %d.",
 				      vnum, OBJ_VNUM(obj1));
 			}
 			return;
@@ -2824,7 +2824,7 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 								break;
 							case LOC_INSIDE:
 								logit(LOG_ARTIFACT,
-								      "event_artifact_check_poof_sql: Bad loc on 'OnGround' arti(%d)-container vnum %d inside nothing.",
+								      "event_artifact_check_poof_sql: Bad loc_p (%d) on 'OnGround' arti(%d)-container vnum %d inside nothing.",
 								      cont->loc_p, vnum,
 								      OBJ_VNUM(cont));
 								break;
@@ -3044,7 +3044,7 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 								break;
 							case LOC_INSIDE:
 								logit(LOG_ARTIFACT,
-								      "event_artifact_check_poof_sql: Bad loc on 'OnCorpse' arti(%d)-container vnum %d inside nothing.",
+								      "event_artifact_check_poof_sql: Bad loc_p (%d) on 'OnCorpse' arti(%d)-container vnum %d inside nothing.",
 								      cont->loc_p, vnum,
 								      OBJ_VNUM(cont));
 								break;
@@ -3104,7 +3104,7 @@ void event_artifact_check_poof_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 								break;
 							case LOC_INSIDE:
 								logit(LOG_ARTIFACT,
-								      "event_artifact_check_poof_sql: Bad loc on 'OnCorpse' arti(%d)-container vnum %d inside nothing.",
+								      "event_artifact_check_poof_sql: Bad loc_p (%d) on 'OnCorpse' arti(%d)-container vnum %d inside nothing.",
 								      cont->loc_p, vnum,
 								      OBJ_VNUM(cont));
 								break;
@@ -4471,7 +4471,7 @@ void event_artifact_check_bind_sql(P_char /*ch*/, P_char /*vict*/, P_obj /*obj*/
 					}
 					else if (entry.timer > curr_time)
 					{
-						debug("%3d: artifact '%s&n'%6d's timer is later than curr_time.",
+						debug("%3d: artifact '%s&n'%6d's timer is later than curr_time, owner '%s' %d.",
 						      ++counter,
 						      pad_ansi(arti ? OBJ_SHORT(arti) : "NULL", 35,
 							       TRUE)

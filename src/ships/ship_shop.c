@@ -785,7 +785,7 @@ int sell_cargo_slot(P_char ch, P_ship ship, int slot, int rroom)
 		GET_NAME(ch), crates, cargo_type_name(type), ports[rroom].loc_name,
 		ports[rroom].loc_room, coin_stringv(cost), profit);
 	statuslog(56, "%s", buf);
-	logit(LOG_SHIP, strip_ansi(buf).c_str());
+	logit(LOG_SHIP, "%s", strip_ansi(buf).c_str());
 
 	send_to_char_f(
 		ch,
@@ -934,7 +934,7 @@ int sell_contra_slot(P_char ch, P_ship ship, int slot, int rroom)
 		GET_NAME(ch), crates, contra_type_name(type), ports[rroom].loc_name,
 		ports[rroom].loc_room, coin_stringv(cost), profit);
 	statuslog(56, "%s", buf);
-	logit(LOG_SHIP, strip_ansi(buf).c_str());
+	logit(LOG_SHIP, "%s", strip_ansi(buf).c_str());
 
 	send_to_char_f(
 		ch,
@@ -1182,7 +1182,7 @@ void check_contraband(P_ship ship, int to_room)
 					contra_type_name(type), ports[rroom].loc_name,
 					ports[rroom].loc_room);
 				statuslog(56, "%s", buf);
-				logit(LOG_SHIP, strip_ansi(buf).c_str());
+				logit(LOG_SHIP, "%s", strip_ansi(buf).c_str());
 
 				act_to_all_in_ship_f(
 					ship,
@@ -1877,7 +1877,7 @@ int buy_cargo(P_char ch, P_ship ship, char *arg)
 		cargo_type_name(rroom), ports[rroom].loc_name, ports[rroom].loc_room,
 		coin_stringv(cost));
 	statuslog(56, "%s", buf);
-	logit(LOG_SHIP, strip_ansi(buf).c_str());
+	logit(LOG_SHIP, "%s", strip_ansi(buf).c_str());
 
 	send_to_char_f(ch, "&+gYou buy &+Y%d &+gcrates of &n%s &+gfor &n%s&+g.&n\n", placed,
 		       cargo_type_name(rroom), coin_stringv(cost));
@@ -2053,7 +2053,7 @@ int buy_contra(P_char ch, P_ship ship, char *arg)
 		contra_type_name(rroom), ports[rroom].loc_name, ports[rroom].loc_room,
 		coin_stringv(cost));
 	statuslog(56, "%s", buf);
-	logit(LOG_SHIP, strip_ansi(buf).c_str());
+	logit(LOG_SHIP, "%s", strip_ansi(buf).c_str());
 
 	send_to_char_f(ch, "&+gYou buy &+Y%d &+gcrates of &n%s &+gfor &n%s&+g.&n\n", placed,
 		       contra_type_name(rroom), coin_stringv(cost));

@@ -8378,7 +8378,7 @@ void spell_word_of_recall(int /*level*/, P_char ch, char * /*arg*/, int /*type*/
 	if (IS_DESTROYING(victim))
 		stop_destroying(victim);
 	if (IS_PC(victim))
-		sql_log(victim, PLAYERLOG, "Word of recalled", world[victim->in_room].number);
+		sql_log(victim, PLAYERLOG, "Word of recalled to %d", world[victim->in_room].number);
 
 	/* Exceeding wieght limit? */
 	e_pos = heavy = 0;
@@ -8397,7 +8397,7 @@ void spell_word_of_recall(int /*level*/, P_char ch, char * /*arg*/, int /*type*/
 				if (IS_PC(victim))
 				{
 					sql_log(victim, PLAYERLOG,
-						"Dropped %s&n [%d] while word of recalling.",
+						"Dropped %s&n [%d] in [%d] while word of recalling.",
 						victim->equipment[e_pos]->short_description,
 						obj_index[victim->equipment[e_pos]->R_num]
 							.virtual_number,

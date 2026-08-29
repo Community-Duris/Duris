@@ -3413,8 +3413,7 @@ bool violating_one_hour_rule(P_desc d)
 		return FALSE;
 
 	wizlog(AVATAR, "%s tried to break the one-hour rule.", GET_NAME(d->character));
-	sql_log(d->character, PLAYERLOG, "Tried to break the one-hour rule.",
-		GET_NAME(d->character));
+	sql_log(d->character, PLAYERLOG, "Tried to break the one-hour rule.");
 
 	send_to_char_f(d->character,
 		       "\n\rYou need to wait longer before logging a character on a different"

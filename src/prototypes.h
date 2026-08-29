@@ -2893,7 +2893,7 @@ void nq_char_death(P_char ch, P_char victim);
 
 /* utility.c */
 ClassSkillInfo SKILL_DATA_ALL(P_char ch, int skill);
-void debug(const char *format, ...);
+void debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
 int create_html();
 int god_check(char *name);
 
@@ -2928,7 +2928,7 @@ char *generate_appear(P_char);
 char *generate_modif(P_char);
 int room_has_valid_exit(const int rnum);
 int race_portal_check(P_char, P_char);
-void ereglog(int level, const char *format, ...);
+void ereglog(int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
 int char_in_list(const P_char);
 int is_char_in_room(const P_char, int);
 bool racewar(P_char, P_char);
@@ -2997,7 +2997,7 @@ void ADD_MONEY(P_char, int);
 void CAP(char *);
 void DECAP(char *);
 void InitGrantFastLookup(void);
-void logit(const char *, const char *, ...);
+void logit(const char *, const char *, ...) __attribute__((format(printf, 2, 3)));
 void persistence_alert(int level, const char *domain, const char *owner, const char *item_uid,
 		       const char *event_id, const char *action, const char *format, ...);
 unsigned long long persistence_next_item_uid(void);
@@ -3032,16 +3032,16 @@ bool persistence_save_all_characters_terminal(int type);
 void sprint64bit(ulong *, const char **, char *);
 void sprintbit(ulong, const char **, char *);
 void sprinttype(int, const char **, char *);
-void loginlog(int, const char *, ...);
-void statuslog(int, const char *, ...);
-void banlog(int, const char *, ...);
-void logit(const char *, const char *, ...);
+void loginlog(int, const char *, ...) __attribute__((format(printf, 2, 3)));
+void statuslog(int, const char *, ...) __attribute__((format(printf, 2, 3)));
+void banlog(int, const char *, ...) __attribute__((format(printf, 2, 3)));
+void logit(const char *, const char *, ...) __attribute__((format(printf, 2, 3)));
 void persistence_alert(int level, const char *domain, const char *owner, const char *fmt, ...);
-void epiclog(int, const char *, ...);
+void epiclog(int, const char *, ...) __attribute__((format(printf, 2, 3)));
 void strToLower(char *);
-void wizlog(int level, const char *, ...);
-void debug(const char *, ...);
-void logexp(const char *, ...);
+void wizlog(int level, const char *, ...) __attribute__((format(printf, 2, 3)));
+void debug(const char *, ...) __attribute__((format(printf, 1, 2)));
+void logexp(const char *, ...) __attribute__((format(printf, 1, 2)));
 
 void fatal_boot_error(const char *component, const char *fmt, ...);
 void panic_corruption(const char *component, const char *fmt, ...);

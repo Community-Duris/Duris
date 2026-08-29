@@ -4103,7 +4103,7 @@ bool falling_obj(P_obj obj, int speed, bool caller_is_event)
 		{
 			logit(LOG_DEBUG,
 			      "Room (%d) has sector type NOGROUND but has no valid 'down' exit.",
-			      world[obj->loc.room].number, obj_index[obj->R_num].virtual_number);
+			      world[obj->loc.room].number);
 			world[obj->loc.room].sector_type = SECT_INSIDE;
 		}
 		// If we didn't pass the room-sector criteria to start falling.

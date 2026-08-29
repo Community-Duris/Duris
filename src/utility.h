@@ -22,7 +22,7 @@ void disconnect_rooms(int v1, int v2);
 
 P_char get_char_online(char *name, bool include_linkdead = TRUE);
 
-void logit(const char *, const char *, ...);
+void logit(const char *, const char *, ...) __attribute__((format(printf, 2, 3)));
 
 int cmd_from_dir(int dir);
 int direction_tag(P_char ch);
