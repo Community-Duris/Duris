@@ -214,6 +214,9 @@ void do_build(P_char ch, char *argument, int /*cmd*/)
 
 	if (building->is_loaded())
 		buildings.push_back(building);
+	else
+		// Nothing took ownership, so this is the last reference to it.
+		delete building;
 }
 
 // Called in place of die() for outposts mobs

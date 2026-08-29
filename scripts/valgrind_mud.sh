@@ -5,6 +5,7 @@
 #   ./scripts/valgrind_mud.sh                 # memcheck on port 4000
 #   ./scripts/valgrind_mud.sh --tool=helgrind # data-race hunt
 #   ./scripts/valgrind_mud.sh --build --port 4321 -- --fair-sched=yes
+#   ./scripts/valgrind_mud.sh --minimal            # minimal-world boot
 #
 # See docs/guides/valgrind.md.
 set -euo pipefail
@@ -19,6 +20,7 @@ BUILD=0
 GEN_SUPP=0
 TRACE_CHILDREN="no"
 EXTRA=()
+SERVER_ARGS=()
 
 usage() {
   cat <<'USAGE'
@@ -30,9 +32,12 @@ Options:
   --build             run `make -C src` and refresh bin/server/dms first
   --gen-suppressions  emit ready-to-paste suppression blocks for every error
   --trace-children    follow exec() (copyover); off by default
+  --minimal           boot the tracked areas_mini dataset instead of the full world
+  --server-arg ARG    pass ARG through to the server; repeatable
   -h, --help          this message
 
-Everything after `--` is passed through to valgrind verbatim.
+Everything after `--` is passed through to valgrind verbatim. Server arguments
+need --minimal or --server-arg, because `--` belongs to valgrind.
 Reports land in logs/valgrind/.
 USAGE
 }
@@ -46,6 +51,9 @@ while [[ $# -gt 0 ]]; do
     --build)            BUILD=1 ;;
     --gen-suppressions) GEN_SUPP=1 ;;
     --trace-children)   TRACE_CHILDREN="yes" ;;
+    --minimal)          SERVER_ARGS+=("--minimal") ;;
+    --server-arg=*)     SERVER_ARGS+=("${1#*=}") ;;
+    --server-arg)       SERVER_ARGS+=("${2:?--server-arg needs a value}"); shift ;;
     -h|--help)          usage; exit 0 ;;
     --)                 shift; EXTRA=("$@"); break ;;
     *)                  echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
@@ -147,13 +155,14 @@ fi
 
 # The MUD ignores SIGPIPE and reboots itself on some exit codes; under
 # Valgrind we want a single, plain, foreground run instead.
-echo "Running: valgrind --tool=$TOOL $RUNTIME_BINARY $PORT"
+echo "Running: valgrind --tool=$TOOL $RUNTIME_BINARY ${SERVER_ARGS[*]-} $PORT"
 echo "Report:  $LOG"
 echo "Expect the game to boot roughly 20-50x slower than normal."
 echo
 
 set +e
-valgrind "${COMMON[@]}" ${EXTRA[@]+"${EXTRA[@]}"} "$RUNTIME_BINARY" "$PORT"
+valgrind "${COMMON[@]}" ${EXTRA[@]+"${EXTRA[@]}"} "$RUNTIME_BINARY" \
+  ${SERVER_ARGS[@]+"${SERVER_ARGS[@]}"} "$PORT"
 RESULT=$?
 set -e
 

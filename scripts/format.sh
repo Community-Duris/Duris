@@ -130,13 +130,42 @@ else
   ARGS+=("--force")
 fi
 
+# The line-scoped check passes while a file you touched has whole-file drift,
+# because the reformat lands on lines your diff never touched -- a change that
+# alters the shape of a block rather than its content does exactly that.  CI
+# (tests/async/test_formatting_tooling.py) clang-formats every tracked file and
+# fails.  Re-check the files this change actually touches so the two agree.
+check_touched_files_whole() {
+  local rc=0 f
+  local -a touched=()
+  mapfile -t touched < <(
+    { git diff --name-only ${REV:+"$REV"}; git diff --cached --name-only; } |
+      sort -u | grep -E '\.(c|h|cpp|hpp|cc|hh)$' || true
+  )
+  for f in "${touched[@]}"; do
+    [[ -f "$f" ]] || continue
+    clang-format --style=file --dry-run --Werror "$f" 2>/dev/null || {
+      echo "would reformat (whole file): $f"
+      rc=1
+    }
+  done
+  if (( rc )); then
+    echo
+    echo "Changed lines are clean, but a file you touched no longer matches"
+    echo ".clang-format as a whole -- CI checks every tracked file and will fail."
+    echo "Fix with: clang-format -i <file>"
+  fi
+  return "$rc"
+}
+
 if (( CHECK )); then
   # git-clang-format --diff prints the patch it would apply, or one of its
   # "nothing to do" messages, and exits 0 either way.
   out="$(git -c color.ui=false clang-format "${ARGS[@]}" ${REV:+"$REV"} || true)"
   case "$out" in
     ""|*"no modified files to format"*|*"clang-format did not modify any files"*)
-      echo "Formatting OK: changed lines match .clang-format."
+      check_touched_files_whole || exit 1
+      echo "Formatting OK: changed lines and touched files match .clang-format."
       exit 0
       ;;
   esac

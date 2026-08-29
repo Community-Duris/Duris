@@ -10,6 +10,7 @@ comm = (root / "src/comm.c").read_text()
 body = copyover[copyover.index("bool copyover_save("):copyover.index(
     "static P_char copyover_load_player", copyover.index("bool copyover_save(")
 )]
+recover = copyover[copyover.index("static P_char copyover_load_player"):]
 save = body.index("persistence_save_character_terminal")
 flush = body.index("persistence_flush_all_character_saves")
 drain = body.index("player_save_pipeline_drain")
@@ -45,6 +46,12 @@ checks = {
     "shutdown drain is fail closed": "!player_save_pipeline_drain(3000)" in comm and
                                       "pipeline_drain_failed" in comm,
     "no destructive restart fallback": "refusing fallback exit" in comm,
+    "copyover reloads SQL player inventory": "request.include_items = true;" in recover and
+                                               "request.include_pets = false;" in recover and
+                                               "restoreItemsOnly(ch, 0)" not in recover,
+    "copyover keeps materialized inventory attached": "reset_char(ch);" not in recover,
+    "minimal copyover preserves its world dataset":
+        'execl(DMS_RUNTIME_BINARY, "dms", "--minimal", "-C", exec_buf' in body,
 }
 
 for name, passed in checks.items():

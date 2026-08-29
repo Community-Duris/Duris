@@ -10,6 +10,7 @@
 #include "comm.h"
 #include "db.h"
 #include "interp.h"
+#include "item_movement_transaction.h"
 #include "utility.h"
 #include "utils.h"
 #include "shop.h"
@@ -958,53 +959,70 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	    shop_index[shop_nr].sell_percent += .03;
 	*/
 	/* Test if producing shop !   */
-	if (shop_producing(temp1, shop_nr))
+	const bool produced_purchase = shop_producing(temp1, shop_nr);
+	if (produced_purchase)
 	{
 		temp1 = read_object(temp1->R_num, REAL);
+		if (!temp1)
+		{
+			send_to_char("The shop could not create that item.\r\n", ch);
+			return;
+		}
 	}
 	else
 	{
 		obj_from_char(temp1);
 	}
 	SET_BIT(temp1->extra2_flags, ITEM2_STOREITEM);
-	obj_to_char(temp1, ch);
-	writeShopKeeper(keeper);
-
+	int purchase_count = 1;
+	container = NULL;
 	// Format: buy <object> <container> <amount>
-	if (shop_producing(temp1, shop_nr))
+	if (produced_purchase && *arg)
 	{
 		arg = one_argument(arg, arg2);
-		// Didn't specify a container.
-		if (!(*arg2))
-		{
-			return;
-		}
 		if (!(container = get_obj_in_list(arg2, ch->carrying)))
 		{
 			snprintf(Gbuf1, MAX_STRING_LENGTH, "You don't seem to have a '%s'.\r\n",
 				 arg2);
 			send_to_char(Gbuf1, ch);
-			return;
 		}
-		if (container->type != ITEM_CONTAINER)
+		else if (container->type != ITEM_CONTAINER)
 		{
 			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s&n isn't a container.\r\n",
 				 container->short_description);
 			send_to_char(Gbuf1, ch);
-			return;
+			container = NULL;
 		}
-		put(ch, temp1, container, TRUE);
-		arg = one_argument(arg, arg3);
-		if (atoi(arg3) > 1)
+		if (container)
 		{
-			if (atoi(arg3) > 50)
+			arg = one_argument(arg, arg3);
+			if (*arg3)
 			{
-				send_to_char("The limit for buying items is 50 at a time.\n\r", ch);
-				return;
+				purchase_count = atoi(arg3);
+				if (purchase_count < 1 || purchase_count > 50 || *arg)
+				{
+					send_to_char(
+						"The amount must be between 1 and 50 with no extra arguments.\n\r",
+						ch);
+					extract_obj(temp1, FALSE);
+					return;
+				}
 			}
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s %s %d", argm, arg2, atoi(arg3) - 1);
-			shop_keeper(keeper, ch, CMD_BUY, Gbuf1);
 		}
+	}
+	if (!item_creation_grant_submit_to_player(ch, temp1, ch, container))
+	{
+		extract_obj(temp1, FALSE);
+		send_to_char(
+			"The ownership authority is busy; the purchased item was not created.\r\n",
+			ch);
+		return;
+	}
+	writeShopKeeper(keeper);
+	if (produced_purchase && container && purchase_count > 1)
+	{
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s %s %d", argm, arg2, purchase_count - 1);
+		shop_keeper(keeper, ch, CMD_BUY, Gbuf1);
 	}
 
 	return;

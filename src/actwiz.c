@@ -5210,6 +5210,89 @@ void do_force(P_char ch, char *argument, int /*cmd*/)
 	}
 }
 
+namespace
+{
+// do_load used to hand the new object straight to the wizard with obj_to_char() and
+// submit no transfer, so it arrived carrying a uid the ownership ledger had never heard
+// of. The next save wrote a player_items row with no item_current_owner row - the orphan
+// that used to make the character permanently unloadable. Establish ownership the way
+// every other grant does, and let the completion do the live move.
+struct wizard_load_context
+{
+	uint64_t item_uid;
+	int32_t room;
+	int32_t to_room;
+};
+
+P_obj find_object_by_uid(uint64_t item_uid)
+{
+	if (!item_uid)
+		return NULL;
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == item_uid)
+			return object;
+	return NULL;
+}
+
+void wizard_load_completion(P_char actor, bool committed, const item_transfer_result &,
+			    unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	wizard_load_context context = {};
+	if (!actor || !encoded || encoded_size != sizeof(context))
+		return;
+	memcpy(&context, encoded, sizeof(context));
+	P_obj object = find_object_by_uid(context.item_uid);
+	if (!object)
+		return;
+	if (!committed)
+	{
+		// Nothing owns it and nothing ever will; leaving it in play would recreate
+		// exactly the orphan this submission exists to prevent.
+		send_to_char(
+			"The ownership authority did not commit; the object was discarded.\r\n",
+			actor);
+		if (OBJ_NOWHERE(object))
+			extract_obj(object, FALSE);
+		return;
+	}
+	if (!OBJ_NOWHERE(object) || context.room <= NOWHERE || context.room > top_of_world)
+	{
+		logit(LOG_FILE, "wizard load committed but live publication was stale (uid=%llu)",
+		      (unsigned long long)context.item_uid);
+		send_to_char("The ownership authority committed, but live publication failed.\r\n",
+			     actor);
+		return;
+	}
+	act("$n makes a strange magical gesture.", TRUE, actor, 0, 0, TO_ROOM);
+	act("$n has created $p!", TRUE, actor, object, 0, TO_ROOM);
+	act("You have created $p!", FALSE, actor, object, 0, TO_CHAR);
+	if (context.to_room)
+		obj_to_room(object, context.room);
+	else
+		obj_to_char(object, actor);
+}
+
+// Same-owner establish: the object has no ledger row yet, so source and destination are
+// both the owner it is about to have.
+bool submit_wizard_load_establish(P_char actor, P_obj object, bool to_room)
+{
+	if (!actor || !object || !OBJ_NOWHERE(object) || actor->in_room <= NOWHERE ||
+	    actor->in_room > top_of_world)
+		return false;
+	const item_owner_identity owner =
+		to_room ? item_owner_identity{ item_owner_type::room,
+					       static_cast<uint64_t>(world[actor->in_room].number),
+					       0 } :
+			  item_owner_identity{ item_owner_type::player,
+					       static_cast<uint64_t>(GET_PID(actor)), 0 };
+	const wizard_load_context context = { object->obj_uid, actor->in_room, to_room ? 1 : 0 };
+	return item_movement_transaction_submit(
+		actor, object, NULL, owner, owner, item_transfer_reason::creation,
+		object->R_num >= 0 ? obj_index[object->R_num].virtual_number : 0,
+		wizard_load_completion, &context, sizeof(context));
+}
+} // namespace
+
 void do_load(P_char ch, char *argument, int /*cmd*/)
 {
 	P_char mob;
@@ -5290,13 +5373,24 @@ void do_load(P_char ch, char *argument, int /*cmd*/)
 		      obj->short_description, world[ch->in_room].number);
 		sql_log(ch, WIZLOG, "Loaded obj %s &n[%s]", obj->short_description, num);
 		obj->z_cord = ch->specials.z_cord;
-		act("$n makes a strange magical gesture.", TRUE, ch, 0, 0, TO_ROOM);
-		act("$n has created $p!", TRUE, ch, obj, 0, TO_ROOM);
-		act("You have created $p!", FALSE, ch, obj, 0, TO_CHAR);
-		if (IS_SET(obj->wear_flags, ITEM_TAKE))
-			obj_to_char(obj, ch);
-		else
-			obj_to_room(obj, ch->in_room);
+		// An object with no uid never reaches the ownership ledger at all, so there is
+		// nothing to establish and nothing to orphan.
+		const bool to_room = !IS_SET(obj->wear_flags, ITEM_TAKE);
+		if (!obj->obj_uid)
+		{
+			act("$n makes a strange magical gesture.", TRUE, ch, 0, 0, TO_ROOM);
+			act("$n has created $p!", TRUE, ch, obj, 0, TO_ROOM);
+			act("You have created $p!", FALSE, ch, obj, 0, TO_CHAR);
+			if (to_room)
+				obj_to_room(obj, ch->in_room);
+			else
+				obj_to_char(obj, ch);
+		}
+		else if (!submit_wizard_load_establish(ch, obj, to_room))
+		{
+			send_to_char("Item ownership is busy; nothing was created.\r\n", ch);
+			extract_obj(obj, FALSE);
+		}
 	}
 	else
 		send_to_char("That'll have to be either 'char' or 'obj'.\n", ch);
@@ -12173,32 +12267,32 @@ char *food_modifiers(P_obj food)
 		{
 			mod = food->value[2];
 		}
-		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH, "MV_REG: %d, ", mod);
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "MV_REG: %d, ", mod);
 	}
 	if (food->value[4] != 0)
 	{
-		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH, "STR&CON: %d, ",
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "STR&CON: %d, ",
 				food->value[4]);
 	}
 	if (food->value[5] != 0)
 	{
-		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH, "AGI&DEX: %d, ",
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "AGI&DEX: %d, ",
 				food->value[5]);
 	}
 	if (food->value[6] != 0)
 	{
-		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH, "INT&WIS: %d, ",
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "INT&WIS: %d, ",
 				food->value[6]);
 	}
 	if (food->value[7] != 0)
 	{
-		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH, "HIT&DAM: %d, ",
+		sub += snprintf(mod_string + sub, MAX_STRING_LENGTH - sub, "HIT&DAM: %d, ",
 				food->value[7]);
 	}
 
 	// Duration is in value[0].
-	snprintf(mod_string + ((sub > 0) ? sub - 2 : sub), MAX_STRING_LENGTH, " for %d ticks",
-		 food->value[0]);
+	const int tail = (sub > 0) ? sub - 2 : sub;
+	snprintf(mod_string + tail, MAX_STRING_LENGTH - tail, " for %d ticks", food->value[0]);
 
 	return mod_string;
 }

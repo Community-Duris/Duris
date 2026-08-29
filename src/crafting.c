@@ -10,6 +10,7 @@
 #include "db.h"
 #include "events.h"
 #include "interp.h"
+#include "item_movement_transaction.h"
 #include "objmisc.h"
 #include "persistence_mode.h"
 #include "spells.h"
@@ -21,6 +22,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+namespace
+{
+bool grant_crafted_item(P_char ch, P_obj object)
+{
+	if (object && item_creation_grant_submit_to_player(ch, object, ch))
+		return true;
+	if (object)
+		extract_obj(object, FALSE);
+	send_to_char("The ownership authority is busy; the crafted item was not created.\r\n", ch);
+	return false;
+}
+}
 
 static int crafting_level_gate = 3;
 static int crafting_recipe_max_player_level = MAXLVLMORTAL;
@@ -896,7 +910,12 @@ static void crafting_handle_craft_command(P_char ch, char *argument, int cmd)
 		wizlog(56, "%s crafted '%s' (%d) ival %d.", GET_NAME(ch), tobj->short_description,
 		       selected, itemvalue(tobj));
 
-		obj_to_char(tobj, ch);
+		if (!grant_crafted_item(ch, tobj))
+		{
+			extract_obj(matLowest);
+			extract_obj(matHighest);
+			return;
+		}
 		act("&+W$n &+Ldelicately opens their &+ybox &+mof &+Rgnomish &+rcrafting &+mtools&+L and starts their work...\r\n"
 		    "&+W$n &+Lremoves the &+Wim&+wpur&+Lities &+Lfrom their &+ymaterials &+Land gently assembles a masterpiece...\r\n"
 		    "&+L...hands shaking, &+W$n &+Lraises their head and &+Ysmiles&+L, admiring their new $p.&N",
@@ -1440,7 +1459,8 @@ static void crafting_handle_forge_command(P_char ch, char *argument, int /*cmd*/
 
 		wizlog(56, "%s forged '%s' (%d) ival %d.", GET_NAME(ch), obj->short_description,
 		       objVnum, itemvalue(obj));
-		obj_to_char(obj, ch);
+		if (!grant_crafted_item(ch, obj))
+			return;
 
 		act("&+W$n &+Lgently takes their &+ymaterials&+L, their &nflux&+L, and places them into the &+rf&+Ro&+Yr&+Rg&+re&+L.\r\n"
 		    "&+W$n &+Lremoves the &+yitems &+Lfrom the &+rheat &+Land starts to &nhammer &+Laway at the mixture..\r\n"

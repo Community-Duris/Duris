@@ -106,7 +106,7 @@ require(
 die_body = section(FIGHT, "void die(P_char ch, P_char killer)", "\nvoid ")
 require(
     "!persistence_save_character_terminal(ch, RENT_DEATH)" in die_body
-    and "schedule_death_extract_retry(ch, DEATH_EXTRACT_RETRY_INITIAL)" in die_body,
+    and "schedule_death_extract_retry(ch, corpse, DEATH_EXTRACT_RETRY_INITIAL)" in die_body,
     "die() must schedule the recovery when the terminal save fails",
 )
 retry = section(FIGHT, "static void event_death_extract_retry(P_char ch, P_char victim", "\nvoid die(")
@@ -116,11 +116,11 @@ require(
 )
 require("extract_char(ch)" in retry, "the recovery event must complete the extraction")
 require(
-    "GET_STAT(ch) != STAT_DEAD" in retry,
-    "the recovery event must not extract a character who is no longer dead",
+    "schedule_death_extract_retry(ch, obj, previous_delay * 2)" in retry,
+    "the recovery event must stay linked to the corpse that cancels on resurrection",
 )
 require(
-    "schedule_death_extract_retry(ch, previous_delay * 2)" in retry,
+    "schedule_death_extract_retry(ch, obj, previous_delay * 2)" in retry,
     "a failed retry must reschedule with backoff",
 )
 require(

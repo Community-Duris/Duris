@@ -1467,7 +1467,8 @@ bool StorageLocker::MakeChests(P_char ch, char *args)
 		if (('\0' != GBuf2[0]) &&
 		    (helpMode == LOCKER_HELP_SHORT || helpMode == LOCKER_HELP_ALL_SHORT))
 		{
-			snprintf(GBuf2 + strlen(GBuf2) - 2, MAX_STRING_LENGTH, ".\n");
+			snprintf(GBuf2 + strlen(GBuf2) - 2, MAX_STRING_LENGTH - (strlen(GBuf2) - 2),
+				 ".\n");
 		}
 		send_to_char(GBuf2, ch);
 	}

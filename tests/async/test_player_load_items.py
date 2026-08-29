@@ -796,7 +796,8 @@ assert "result.stale_item_rows > PLAYER_LOAD_ITEM_SKIP_MAX" in MATERIALIZE
 assert "outcome=skip_limit_exceeded" in MATERIALIZE
 assert MATERIALIZE.count("wizlog(OVERLORD") == 1
 assert "alert_refusal_once(result.pid)" in MATERIALIZE
-assert "request.include_items = false" in COPYOVER
+assert "request.include_items = true" in COPYOVER
+assert "restoreItemsOnly(ch, 0)" not in COPYOVER
 rtype_zero = NANNY[NANNY.index("else if (d->rtype == 0)") :]
 assert "sql_load_player_items(ch)" not in rtype_zero[:500]
 

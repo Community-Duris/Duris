@@ -54,6 +54,7 @@ extern P_index mob_index;
 extern P_index obj_index;
 extern P_obj object_list;
 extern int RUNNING_PORT;
+extern int mini_mode;
 extern struct mm_ds *dead_mob_pool;
 extern struct mm_ds *dead_pconly_pool;
 extern struct mm_ds *dead_desc_pool;
@@ -784,7 +785,10 @@ bool copyover_save(int mother_desc, int mother_desc_ssl, int ws_desc)
 
 	logit(LOG_STATUS, "copyover: executing new binary...");
 
-	execl(DMS_RUNTIME_BINARY, "dms", "-C", exec_buf, (char *)NULL);
+	if (mini_mode)
+		execl(DMS_RUNTIME_BINARY, "dms", "--minimal", "-C", exec_buf, (char *)NULL);
+	else
+		execl(DMS_RUNTIME_BINARY, "dms", "-C", exec_buf, (char *)NULL);
 
 	// if we get here, exec failed
 	logit(LOG_STATUS, "copyover: execl failed: %s", strerror(errno));
@@ -812,7 +816,7 @@ static P_char copyover_load_player(const char *name, P_desc d)
 	request.request_id = player_load_pipeline_next_request_id();
 	request.player_name = name ? name : "";
 	request.deadline_usec = now + PLAYER_LOAD_TIMEOUT_USEC;
-	request.include_items = false;
+	request.include_items = true;
 	request.include_pets = false;
 	if (!player_load_pipeline_wait(request, &result, PLAYER_LOAD_TIMEOUT_USEC / 1000) ||
 	    result.request_id != request.request_id ||
@@ -822,7 +826,6 @@ static P_char copyover_load_player(const char *name, P_desc d)
 		      (unsigned long long)request.request_id, (unsigned int)result.outcome);
 		return NULL;
 	}
-
 	player = (P_char)mm_get(dead_mob_pool);
 	if (!player)
 		return NULL;
@@ -851,7 +854,6 @@ static P_char copyover_load_player(const char *name, P_desc d)
 		free_char(player);
 		return NULL;
 	}
-
 	return player;
 }
 
@@ -993,11 +995,6 @@ int copyover_recover(int *mother_desc, int *mother_desc_ssl, int *ws_desc)
 				}
 				ch->in_room = NOWHERE;
 				char_to_room(ch, save_room, FALSE);
-
-				reset_char(ch);
-				int items_result = restoreItemsOnly(ch, 0);
-				logit(LOG_STATUS, "copyover: restoreItemsOnly for %s returned %d",
-				      GET_NAME(ch), items_result);
 
 				// restore pets/followers with hp
 				for (int p = 0; p < desc_entry.num_pets && p < 10; p++)

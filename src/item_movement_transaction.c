@@ -2,6 +2,7 @@
 
 #include "item_ownership_runtime.h"
 #include "necromancy.h"
+#include "persistence_checkpoint.h"
 #include "player_snapshot_capture.h"
 #include "player_snapshot_codec.h"
 #include "prototypes.h"
@@ -11,6 +12,7 @@
 #include <array>
 #include <cerrno>
 #include <cstring>
+#include <deque>
 #include <new>
 #include <string>
 #include <unordered_map>
@@ -42,6 +44,23 @@ struct pending_movement
 
 std::unordered_map<std::string, pending_movement> pending;
 item_movement_health health = {};
+
+struct pending_creation_grant
+{
+	uint64_t item_uid;
+	uint64_t target_container_uid;
+	uint32_t recipient_pid;
+	int32_t room;
+	bool to_room;
+};
+
+struct creation_grant_queue
+{
+	std::deque<pending_creation_grant> requests;
+	bool active = false;
+};
+
+std::unordered_map<uint32_t, creation_grant_queue> creation_grants;
 
 std::string operation_key(const critical_operation_id &operation_id)
 {
@@ -155,6 +174,225 @@ P_obj find_item(uint64_t uid)
 		if (object->obj_uid == uid)
 			return object;
 	return NULL;
+}
+
+item_owner_identity creation_grant_owner(const pending_creation_grant &request)
+{
+	return request.to_room ?
+		       item_owner_identity{ item_owner_type::room,
+					    static_cast<uint64_t>(world[request.room].number), 0 } :
+		       item_owner_identity{ item_owner_type::player, request.recipient_pid, 0 };
+}
+
+bool creation_grant_request_valid(const pending_creation_grant &request)
+{
+	P_obj object = find_item(request.item_uid);
+	return object && OBJ_NOWHERE(object) &&
+	       (!request.to_room || (request.room > NOWHERE && request.room <= top_of_world));
+}
+
+void discard_creation_queue(P_char actor, creation_grant_queue &queue)
+{
+	for (const pending_creation_grant &request : queue.requests)
+		if (P_obj object = find_item(request.item_uid); object && OBJ_NOWHERE(object))
+			extract_obj(object, FALSE);
+	queue.requests.clear();
+	queue.active = false;
+	if (actor)
+		send_to_char(
+			"The ownership authority could not continue the item grant; nothing else was created.\r\n",
+			actor);
+}
+
+bool start_creation_grant(P_char actor, creation_grant_queue &queue);
+
+void pump_creation_grants()
+{
+	for (auto found = creation_grants.begin(); found != creation_grants.end();)
+	{
+		auto current = found++;
+		creation_grant_queue &queue = current->second;
+		if (queue.active || queue.requests.empty())
+			continue;
+		P_char actor = find_player_by_pid(current->first);
+		if (!actor)
+			continue;
+		const pending_creation_grant &request = queue.requests.front();
+		if (!creation_grant_request_valid(request))
+		{
+			discard_creation_queue(actor, queue);
+			creation_grants.erase(current);
+			continue;
+		}
+		const item_owner_identity owner = creation_grant_owner(request);
+		if (movement_conflicts(owner, owner))
+			continue;
+		if (!start_creation_grant(actor, queue))
+		{
+			discard_creation_queue(actor, queue);
+			creation_grants.erase(current);
+		}
+	}
+}
+
+void creation_grant_completion(P_char actor, bool committed, const item_transfer_result &,
+			       unsigned int, const uint8_t *encoded, size_t encoded_size)
+{
+	if (!actor || !encoded || encoded_size != sizeof(uint64_t) || IS_NPC(actor) ||
+	    GET_PID(actor) <= 0)
+		return;
+	uint64_t item_uid = 0;
+	memcpy(&item_uid, encoded, sizeof(item_uid));
+	auto queue_found = creation_grants.find(static_cast<uint32_t>(GET_PID(actor)));
+	if (queue_found == creation_grants.end() || queue_found->second.requests.empty() ||
+	    !queue_found->second.active ||
+	    queue_found->second.requests.front().item_uid != item_uid)
+		return;
+	creation_grant_queue &queue = queue_found->second;
+	const pending_creation_grant request = queue.requests.front();
+	P_obj object = find_item(request.item_uid);
+	if (!committed)
+	{
+		if (object && OBJ_NOWHERE(object))
+			extract_obj(object, FALSE);
+		send_to_char(
+			"The ownership authority did not commit; the granted item was discarded.\r\n",
+			actor);
+	}
+	else if (!object || !OBJ_NOWHERE(object))
+	{
+		logit(LOG_FILE,
+		      "item creation grant committed but live publication was stale (uid=%llu)",
+		      (unsigned long long)request.item_uid);
+		send_to_char(
+			"The ownership authority committed, but live item publication failed.\r\n",
+			actor);
+	}
+	else if (request.to_room)
+	{
+		if (request.room <= NOWHERE || request.room > top_of_world)
+		{
+			logit(LOG_FILE,
+			      "item creation grant committed to an unavailable room (uid=%llu room=%d)",
+			      (unsigned long long)request.item_uid, request.room);
+			send_to_char(
+				"The ownership authority committed, but the destination room vanished.\r\n",
+				actor);
+		}
+		else
+			obj_to_room(object, request.room);
+	}
+	else
+	{
+		P_char recipient = find_player_by_pid(request.recipient_pid);
+		if (!recipient)
+			logit(LOG_FILE,
+			      "item creation grant committed to an unavailable player (uid=%llu pid=%u)",
+			      (unsigned long long)request.item_uid, request.recipient_pid);
+		else
+		{
+			obj_to_char(object, recipient);
+			if (request.target_container_uid)
+			{
+				P_obj container = find_item(request.target_container_uid);
+				if (!container || !OBJ_CARRIED_BY(container, recipient) ||
+				    !put(recipient, object, container, TRUE))
+					logit(LOG_FILE,
+					      "item creation grant could not publish container placement (uid=%llu container_uid=%llu)",
+					      (unsigned long long)request.item_uid,
+					      (unsigned long long)request.target_container_uid);
+			}
+			mark_player_dirty_components(GET_PID(recipient),
+						     PLAYER_COMPONENT_EQUIPMENT |
+							     PLAYER_COMPONENT_INVENTORY);
+		}
+	}
+	queue.requests.pop_front();
+	queue.active = false;
+	if (queue.requests.empty())
+	{
+		creation_grants.erase(queue_found);
+		return;
+	}
+	const pending_creation_grant &next = queue.requests.front();
+	if (!creation_grant_request_valid(next))
+	{
+		discard_creation_queue(actor, queue);
+		creation_grants.erase(queue_found);
+		return;
+	}
+	const item_owner_identity owner = creation_grant_owner(next);
+	if (!movement_conflicts(owner, owner) && !start_creation_grant(actor, queue))
+	{
+		discard_creation_queue(actor, queue);
+		creation_grants.erase(queue_found);
+	}
+}
+
+bool start_creation_grant(P_char actor, creation_grant_queue &queue)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || queue.active ||
+	    queue.requests.empty())
+		return false;
+	const pending_creation_grant &request = queue.requests.front();
+	P_obj object = find_item(request.item_uid);
+	if (!creation_grant_request_valid(request))
+		return false;
+	const item_owner_identity owner = creation_grant_owner(request);
+	item_ownership_runtime_entry runtime = {};
+	const bool adopted = item_ownership_runtime_lookup(object->obj_uid, &runtime);
+	const item_owner_identity source = adopted ? runtime.owner : owner;
+	if (!item_movement_transaction_submit(
+		    actor, object, NULL, source, owner,
+		    adopted ? item_transfer_reason::operator_repair :
+			      item_transfer_reason::creation,
+		    object->R_num >= 0 ? obj_index[object->R_num].virtual_number : 0,
+		    creation_grant_completion, &request.item_uid, sizeof(request.item_uid)))
+		return false;
+	queue.active = true;
+	return true;
+}
+
+bool queue_creation_grant(P_char actor, P_obj object, P_char recipient, int room,
+			  P_obj target_container, bool to_room)
+{
+	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0 || !object || !object->obj_uid ||
+	    !OBJ_NOWHERE(object) ||
+	    (to_room ? (room <= NOWHERE || room > top_of_world) :
+		       (!recipient || IS_NPC(recipient) || GET_PID(recipient) <= 0)) ||
+	    (target_container && (to_room || !OBJ_CARRIED_BY(target_container, recipient) ||
+				  GET_ITEM_TYPE(target_container) != ITEM_CONTAINER)))
+		return false;
+	const uint32_t actor_pid = static_cast<uint32_t>(GET_PID(actor));
+	auto [found, inserted] = creation_grants.try_emplace(actor_pid);
+	creation_grant_queue &queue = found->second;
+	if (queue.requests.size() >= ITEM_MOVEMENT_PENDING_MAX)
+	{
+		if (inserted)
+			creation_grants.erase(found);
+		return false;
+	}
+	try
+	{
+		queue.requests.push_back(
+			{ object->obj_uid, target_container ? target_container->obj_uid : 0,
+			  recipient ? static_cast<uint32_t>(GET_PID(recipient)) : 0, room,
+			  to_room });
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (inserted)
+			creation_grants.erase(found);
+		return false;
+	}
+	if (queue.active || queue.requests.size() > 1)
+		return true;
+	if (start_creation_grant(actor, queue))
+		return true;
+	queue.requests.pop_back();
+	if (queue.requests.empty())
+		creation_grants.erase(found);
+	return false;
 }
 
 void account_health()
@@ -371,6 +609,17 @@ bool item_movement_transaction_submit(P_char actor, P_obj root, P_obj target_con
 	return true;
 }
 
+bool item_creation_grant_submit_to_player(P_char actor, P_obj object, P_char recipient,
+					  P_obj target_container)
+{
+	return queue_creation_grant(actor, object, recipient, NOWHERE, target_container, false);
+}
+
+bool item_creation_grant_submit_to_room(P_char actor, P_obj object, int room)
+{
+	return queue_creation_grant(actor, object, NULL, room, NULL, true);
+}
+
 void item_movement_transaction_handle_completions(const critical_completion *completions,
 						  size_t count)
 {
@@ -386,6 +635,7 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 		if (P_char actor = find_player_by_pid(found->second.actor_pid))
 			publish(found, actor);
 	}
+	pump_creation_grants();
 	account_health();
 }
 
@@ -408,15 +658,17 @@ void item_movement_transaction_player_ready(P_char actor)
 		/* publish may invoke a callback that inserts and rehashes pending. */
 		publish(found, actor);
 	}
+	pump_creation_grants();
 }
 
 bool item_movement_transaction_player_busy(P_char actor)
 {
 	if (!actor || IS_NPC(actor) || GET_PID(actor) <= 0)
 		return false;
-	return std::any_of(
-		pending.begin(), pending.end(), [&](const auto &entry)
-		{ return entry.second.actor_pid == static_cast<uint32_t>(GET_PID(actor)); });
+	const uint32_t pid = static_cast<uint32_t>(GET_PID(actor));
+	return creation_grants.find(pid) != creation_grants.end() ||
+	       std::any_of(pending.begin(), pending.end(),
+			   [pid](const auto &entry) { return entry.second.actor_pid == pid; });
 }
 
 item_movement_health item_movement_transaction_health_copy(void)
@@ -428,5 +680,6 @@ item_movement_health item_movement_transaction_health_copy(void)
 void item_movement_transaction_reset_for_tests(void)
 {
 	pending.clear();
+	creation_grants.clear();
 	health = {};
 }

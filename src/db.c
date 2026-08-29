@@ -507,6 +507,10 @@ void boot_db(int mini_mode)
 	boot_desc_data();
 	fprintf(stderr, "Opening mobile, object, help and info files.\r\n");
 	logit(LOG_STATUS, "Opening mobile, object, help and info files.");
+	// mob_f and obj_f stay open for the life of the process on purpose: read_mobile()
+	// and read_object() fseek into them every time a prototype is instantiated, so
+	// these are not descriptors to close after boot. Valgrind reports them as open at
+	// exit, which is expected rather than a leak.
 	if (!mini_mode)
 	{
 		if (!(mob_f = fopen(MOB_FILE, "r")))
@@ -4133,6 +4137,13 @@ void free_char(P_char ch)
 		if (ch->player.short_descr)
 		{
 			str_free(ch->player.short_descr);
+		}
+
+		// long_descr was the one player string this branch never released, so every
+		// character load that set one leaked it - definitely lost, once per login.
+		if (ch->player.long_descr)
+		{
+			str_free(ch->player.long_descr);
 		}
 
 		// must remove from room first or char_from_room logs with freed name
